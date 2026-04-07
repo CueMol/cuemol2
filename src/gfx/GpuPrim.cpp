@@ -13,50 +13,6 @@
 
 using namespace gfx;
 
-//////////////////////////////////////////////////////////////////////////
-// DrawParams UBO structs (must match std140 layout in the GLSL shaders)
-
-namespace {
-
-// SphereGpuPrim / CylinderGpuPrim — DrawParamsBlock (binding=2, 32 bytes)
-struct SphCylDrawUBO {
-    float frag_alpha;       // offset 0
-    float u_edge;           // offset 4
-    int u_bsilh;          // offset 8
-    float _pad;             // offset 12
-    float u_edgecolor[4];   // offset 16
-};
-
-// TrigGpuPrim main shader — DrawParamsBlock (binding=2, 16 bytes)
-struct TrigDrawUBO {
-    float frag_alpha;       // offset 0
-    int enable_lighting;  // offset 4
-    int u_nodepth;        // offset 8
-    float _pad;             // offset 12
-};
-
-// TrigGpuPrim edge shader — DrawParamsBlock (binding=2, 32 bytes)
-struct TrigEdgeDrawUBO {
-    float frag_alpha;       // offset 0
-    float edge_width;       // offset 4
-    int u_silh;           // offset 8
-    float _pad;             // offset 12
-    float edge_color[4];    // offset 16
-};
-
-// LineGpuPrim — DrawParamsBlock (binding=2, 48 bytes)
-struct LineDrawUBO {
-    float frag_alpha;       // offset 0
-    float lineWidth;        // offset 4
-    float stippleLen;       // offset 8
-    int u_nodepth;        // offset 12
-    float screenSize[2];    // offset 16
-    int use_u_color;      // offset 24
-    float _pad;             // offset 28
-    float u_color[4];       // offset 32
-};
-
-}  // namespace
 
 //////////////////////////////////////////////////////////////////////////
 // SphereGpuPrim
@@ -92,7 +48,7 @@ bool SphereGpuPrim::init(DisplayContext *pDC)
         return false;
     }
 
-    m_pPO->initDrawParamsUBO(sizeof(SphCylDrawUBO));
+    m_pPO->initDrawParamsUBO(sizeof(DrawParams));
     return true;
 }
 
@@ -161,7 +117,7 @@ void SphereGpuPrim::draw(DisplayContext *pDC)
 {
     if (m_pDrawElem == nullptr || m_pPO == nullptr) return;
 
-    SphCylDrawUBO ubo = {};
+    DrawParams ubo = {};
     ubo.frag_alpha = (float)pDC->getAlpha();
 
     if (pDC->getEdgeLineType() != DisplayContext::ELT_NONE) {
@@ -229,7 +185,7 @@ bool CylinderGpuPrim::init(DisplayContext *pDC)
         return false;
     }
 
-    m_pPO->initDrawParamsUBO(sizeof(SphCylDrawUBO));
+    m_pPO->initDrawParamsUBO(sizeof(DrawParams));
     return true;
 }
 
@@ -320,7 +276,7 @@ void CylinderGpuPrim::draw(DisplayContext *pDC)
 {
     if (m_pDrawElem == nullptr || m_pPO == nullptr) return;
 
-    SphCylDrawUBO ubo = {};
+    DrawParams ubo = {};
     ubo.frag_alpha = (float)pDC->getAlpha();
 
     if (pDC->getEdgeLineType() != DisplayContext::ELT_NONE) {
@@ -389,8 +345,8 @@ bool TrigGpuPrim::init(DisplayContext *pDC)
         return false;
     }
 
-    m_pPO->initDrawParamsUBO(sizeof(TrigDrawUBO));
-    m_pEdgePO->initDrawParamsUBO(sizeof(TrigEdgeDrawUBO));
+    m_pPO->initDrawParamsUBO(sizeof(DrawParams));
+    m_pEdgePO->initDrawParamsUBO(sizeof(EdgeDrawParams));
     return true;
 }
 
@@ -464,7 +420,7 @@ void TrigGpuPrim::draw(DisplayContext *pDC)
         drawEdges(pDC);
     }
 
-    TrigDrawUBO ubo = {};
+    DrawParams ubo = {};
     ubo.frag_alpha      = (float)pDC->getAlpha();
     ubo.enable_lighting = pDC->isLighting() ? 1 : 0;
     ubo.u_nodepth       = m_bNoDepth ? 1 : 0;
@@ -488,7 +444,7 @@ void TrigGpuPrim::drawEdges(DisplayContext *pDC)
 
     if (m_nEdgeLineType == DisplayContext::ELT_EDGES ||
         m_nEdgeLineType == DisplayContext::ELT_SILHOUETTE) {
-        TrigEdgeDrawUBO ubo = {};
+        EdgeDrawParams ubo = {};
         ubo.frag_alpha  = alpha;
         ubo.edge_width  = (float)pDC->getEdgeLineWidth();
         ubo.u_silh      = (m_nEdgeLineType == DisplayContext::ELT_SILHOUETTE) ? 1 : 0;
@@ -549,7 +505,7 @@ bool LineGpuPrim::init(DisplayContext *pDC)
         return false;
     }
 
-    m_pPO->initDrawParamsUBO(sizeof(LineDrawUBO));
+    m_pPO->initDrawParamsUBO(sizeof(DrawParams));
     MB_DPRINTLN("LineGpuPrim> shader loaded: %p", m_pPO);
     return true;
 }
@@ -629,7 +585,7 @@ void LineGpuPrim::draw(DisplayContext *pDC)
     float linew = (m_linew < 0.0f) ? 1.0f : m_linew;
     float stippleLen = m_bStipple ? 8.0f : 0.0f;
 
-    LineDrawUBO ubo = {};
+    DrawParams ubo = {};
     ubo.frag_alpha  = (float)pDC->getAlpha();
     ubo.lineWidth   = linew;
     ubo.stippleLen  = stippleLen;

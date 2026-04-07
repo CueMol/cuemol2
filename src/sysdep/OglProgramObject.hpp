@@ -297,13 +297,14 @@ public:
 
     void setProgParam(GLenum pname, GLint param);
 
-    // convenience functions
-    virtual void setupMat(gfx::DisplayContext *pdc) override;
+    // Platform-specific: set OpenGL viewport before matrices UBO upload.
+    virtual void setupViewport(gfx::DisplayContext *pdc) override;
 
     // UBO management
     virtual void initDrawParamsUBO(size_t size) override;
     virtual void updateDrawParamsUBO(const void *data, size_t size) override;
     virtual void updateFogUBO(const void *data, size_t size) override;
+    virtual void updateMatricesUBO(const void *data, size_t size) override;
 };
 
 }  // namespace sysdep
