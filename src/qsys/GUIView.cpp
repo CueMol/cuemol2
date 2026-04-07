@@ -19,6 +19,29 @@
 
 namespace qsys {
 
+void GUIView::dispatchMouseEvent(int nType, InDevEvent &ev)
+{
+    switch (nType) {
+    case DME_MOUSE_DOWN:
+        m_meh.buttonDown(ev);
+        break;
+    case DME_MOUSE_MOVE:
+        if (!m_meh.move(ev))
+            return;
+        break;
+    case DME_MOUSE_UP:
+        if (!m_meh.buttonUp(ev))
+            return;
+        break;
+    case DME_WHEEL:
+        break;
+    default:
+        MB_DPRINTLN("GUIView::dispatchMouseEvent unknown nType %d", nType);
+        return;
+    }
+    fireInDevEvent(ev);
+}
+
 GUIView::GUIView() : View()
 {
     auto pMark = DrawObjPtr(new CenterMarkDrawObj());

@@ -166,7 +166,7 @@ NS_IMETHODIMP XPCNativeWidget::HandleEvent(nsIDOMEvent* aEvent)
     MB_DPRINTLN("DOMMouseScroll event deltax=%d", delta);
     ev.setType(qsys::InDevEvent::INDEV_WHEEL);
     ev.setDeltaX(delta * -40);
-    dispatchMouseEvent(DME_WHEEL, ev);
+    dispatchMouseEvent(qsys::GUIView::DME_WHEEL, ev);
   }
   return NS_OK;
 }
@@ -266,54 +266,12 @@ NS_IMETHODIMP XPCNativeWidget::Reload(bool *_retval )
   return NS_OK;
 }
 
-/// non-DOM mouse event handling
+/// Forward mouse event to GUIView's dispatchMouseEvent
 void XPCNativeWidget::dispatchMouseEvent(int nType, qsys::InDevEvent &ev)
 {
-  switch (nType) {
-
-    // mouse down event
-  case DME_MOUSE_DOWN:
-    /*
-    if (m_meh.getState()==qsys::MouseEventHandler::DRAG_NONE) {
-      m_timer->InitWithFuncCallback(timerCallbackFunc, this, DBCLK_TIMER, nsITimer::TYPE_ONE_SHOT);
-    }
-    else {
-      m_timer->Cancel();
-    }
-    m_meh.buttonDown(ev, true);
-    break;
-    //return true;
-     */
-
-    m_meh.buttonDown(ev);
-    break;
-
-    // mouse move/dragging event
-  case DME_MOUSE_MOVE:
-    if (!m_meh.move(ev))
-      return; // skip event invokation
-    break;
-
-    // mouse up event
-  case DME_MOUSE_UP:
-    if (!m_meh.buttonUp(ev)) {
-      return; // skip event invokation
-    }
-    break;
-
-  case DME_WHEEL:
-    // wheel events
-    break;
-    
-    // should not be happen
-  default:
-    MB_DPRINTLN("XPCNativeWidget::dispatchMouseEvent unknown nType %d", nType);
-    return;
-    break;
-  }
-
-  m_rQmView->fireInDevEvent(ev);
-  return;
+  auto *pGUIView = dynamic_cast<qsys::GUIView *>(m_rQmView.get());
+  if (pGUIView)
+    pGUIView->dispatchMouseEvent(nType, ev);
 }
 
 void XPCNativeWidget::resetCursor()
@@ -405,7 +363,7 @@ void XPCNativeWidget::timerCallbackFunc(nsITimer *aTimer, void *aClosure)
   XPCNativeWidget *pThis = reinterpret_cast<XPCNativeWidget *>(aClosure);
 
   qsys::InDevEvent ev;
-  pThis->dispatchMouseEvent(DME_DBCHK_TIMEUP, ev);
+  pThis->dispatchMouseEvent(qsys::GUIView::DME_DBCHK_TIMEUP, ev);
   return;
 }
 

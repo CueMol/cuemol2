@@ -38,18 +38,6 @@ namespace sysdep {
 
     PIXELFORMATDESCRIPTOR m_pfd;
 
-    /// For mouse drag event generation
-    POINTS m_prevPt;
-    POINTS m_startPt;
-    
-    /// Mouse dragging start
-    int m_nDragStart;
-    enum {
-      DRAG_NONE,
-      DRAG_CHECK,
-      DRAG_DRAG
-    };
-    
     bool m_bCursorIn;
 
     // MSAA support

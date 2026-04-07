@@ -21,14 +21,8 @@ using qsys::InDevEvent;
 using namespace sysdep;
 
 XglView::XglView()
+  : m_bInitOK(false), m_pDisplay(NULL), m_xwin(0), m_pCtxt(NULL)
 {
-  // m_pHitBuf = MB_NEW GLuint[HITBUF_SIZE];
-  m_bInitOK = false;
-
-  m_pDisplay = NULL;
-  m_xwin = 0;
-  // m_cx = 0;
-  m_pCtxt = NULL;
 }
 
 XglView::~XglView()
@@ -164,10 +158,17 @@ void XglView::handleEvent(XEvent *xevent, Boolean *b)
   case ButtonPress: {
     MB_DPRINTLN("XEvent: btn press");
 
-    m_startPt_x = m_prevPt_x = xevent->xbutton.x;
-    m_startPt_y = m_prevPt_y = xevent->xbutton.y;
-    m_fDragStart = false;
-
+    InDevEvent ev;
+    // state before press does not include the pressed button, add it manually
+    unsigned int mask = xevent->xbutton.state;
+    switch (xevent->xbutton.button) {
+    case 1: mask |= Button1Mask; break;
+    case 2: mask |= Button2Mask; break;
+    case 3: mask |= Button3Mask; break;
+    }
+    setUpMouseEvent(mask, xevent->xbutton.x, xevent->xbutton.y,
+                    xevent->xbutton.x_root, xevent->xbutton.y_root, ev);
+    dispatchMouseEvent(DME_MOUSE_DOWN, ev);
     break;
   }
 
@@ -175,42 +176,27 @@ void XglView::handleEvent(XEvent *xevent, Boolean *b)
     MB_DPRINTLN("XEvent: btn rlse");
 
     InDevEvent ev;
-
     setUpMouseEvent(xevent->xbutton.state,
-		    xevent->xbutton.x, xevent->xbutton.y,
-		    xevent->xbutton.x_root, xevent->xbutton.y_root,
-		    ev);
+                    xevent->xbutton.x, xevent->xbutton.y,
+                    xevent->xbutton.x_root, xevent->xbutton.y_root, ev);
 
     // check wheel (usually mapped to btn4&5)
-    if (xevent->xbutton.state & Button4Mask) {
+    if (xevent->xbutton.button == 4) {
       MB_DPRINTLN("XEvent: wheel forw");
       ev.setType(qsys::InDevEvent::INDEV_WHEEL);
       ev.setDeltaX(zDelta);
-      fireInDevEvent(ev);
+      dispatchMouseEvent(DME_WHEEL, ev);
       return;
     }
-    else if (xevent->xbutton.state & Button5Mask) {
+    else if (xevent->xbutton.button == 5) {
       MB_DPRINTLN("XEvent: wheel backw");
       ev.setType(qsys::InDevEvent::INDEV_WHEEL);
       ev.setDeltaX(-zDelta);
-      fireInDevEvent(ev);
+      dispatchMouseEvent(DME_WHEEL, ev);
       return;
     }
 
-
-    if (m_fDragStart) {
-      // mouse drag is initiated
-      // case of the end of drag
-      ev.setType(InDevEvent::INDEV_DRAG_END);
-      fireInDevEvent(ev);
-      m_fDragStart = false;
-      break;
-    }
-
-    // click event case
-    ev.setType(InDevEvent::INDEV_LBTN_CLICK);
-    fireInDevEvent(ev);
-    m_fDragStart = false;
+    dispatchMouseEvent(DME_MOUSE_UP, ev);
     break;
   }
 
@@ -218,49 +204,17 @@ void XglView::handleEvent(XEvent *xevent, Boolean *b)
     unsigned int mask = xevent->xmotion.state;
 
     if (!(mask & Button1Mask) &&
-	!(mask & Button2Mask) &&
-	!(mask & Button3Mask))
+        !(mask & Button2Mask) &&
+        !(mask & Button3Mask))
       break;
 
-    Window root,child;
+    Window root, child;
     int rx, ry, wx, wy;
-    //MB_DPRINTLN("XEvent: motion");
     XQueryPointer(m_pDisplay, m_xwin, &root, &child, &rx, &ry, &wx, &wy, &mask);
 
     InDevEvent ev;
-
-    // check drag start
-    // TO DO : make the "Drag Start Range" configureable
-    if (!m_fDragStart) {
-      if (qlib::abs<int>(wx-m_prevPt_x)<2 &&
-	  qlib::abs<int>(wy-m_prevPt_y)<2 )
-	break;
-      m_fDragStart = true;
-      
-    //ev.setType(InDevEvent::INDEV_DRAG_START);
-    //setUpMouseEvent(mask, m_prevPt, ev);
-    //fireInDevEvent(ev);
-
-      ev.setType(InDevEvent::INDEV_DRAG_START);
-      setUpMouseEvent(mask, wx, wy, rx, ry, ev);
-      fireInDevEvent(ev);
-      
-      m_prevPt_x = wx;
-      m_prevPt_y = wy;
-      break;
-    }
-    
-    ev.setType(InDevEvent::INDEV_DRAG_MOVE);
     setUpMouseEvent(mask, wx, wy, rx, ry, ev);
-    ev.setDeltaX(wx - m_prevPt_x);
-    ev.setDeltaY(wy - m_prevPt_y);
-    ev.setMoveX(wx - m_startPt_x);
-    ev.setMoveY(wy - m_startPt_y);
-    
-    fireInDevEvent(ev);
-    m_prevPt_x = wx;
-    m_prevPt_y = wy;
-
+    dispatchMouseEvent(DME_MOUSE_MOVE, ev);
     break;
   }
 

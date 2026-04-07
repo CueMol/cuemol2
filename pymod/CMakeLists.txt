@@ -81,7 +81,7 @@ target_link_libraries(_cuemol_internal PRIVATE
 )
 
 
-file(TO_NATIVE_PATH "${LIBCUEMOL2_ROOT}/data/sysconfig.xml" DEFAULT_SYSCONFIG_PATH)
+file(TO_NATIVE_PATH "${LIBCUEMOL2_ROOT}/share/sysconfig.xml" DEFAULT_SYSCONFIG_PATH)
 STRING(REPLACE "\\" "\\\\" DEFAULT_SYSCONFIG_PATH ${DEFAULT_SYSCONFIG_PATH})
 message(STATUS "DEFAULT_SYSCONFIG_PATH: ${DEFAULT_SYSCONFIG_PATH}")
 target_compile_definitions(_cuemol_internal PUBLIC DEFAULT_CONFIG=\"${DEFAULT_SYSCONFIG_PATH}\")

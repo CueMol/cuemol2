@@ -8,6 +8,8 @@
 
 #include "qsys.hpp"
 #include "View.hpp"
+#include "MouseEventHandler.hpp"
+#include "InDevEvent.hpp"
 #include <gfx/Hittest.hpp>
 
 namespace qsys {
@@ -19,6 +21,19 @@ class QSYS_API GUIView : public qsys::View
 public:
     GUIView();
     virtual ~GUIView();
+
+    /// Mouse event dispatch types (platform-agnostic abstraction over native events)
+    enum {
+        DME_MOUSE_DOWN   = 0,
+        DME_MOUSE_MOVE   = 1,
+        DME_MOUSE_UP     = 2,
+        DME_WHEEL        = 3,
+        DME_DBCHK_TIMEUP = 4
+    };
+
+    /// Dispatch a native mouse event through the MouseEventHandler state machine
+    /// and fire the resulting InDevEvent to listeners.
+    void dispatchMouseEvent(int nType, InDevEvent &ev);
 
 
     virtual void setCenterMark(int nMode) override;
@@ -44,6 +59,9 @@ public:
     virtual LString hitTest(int x, int y) override;
 
     virtual LString hitTestRect(int x, int y, int w, int h, bool bNr) override;
+
+protected:
+    MouseEventHandler m_meh;
 
 private:
     gfx::HitData m_hitdata;
