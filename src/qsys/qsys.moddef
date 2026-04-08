@@ -27,6 +27,7 @@
 #include "RendGroup.qif"
 #include "MultiGradient.qif"
 #include "ScalarObject.qif"
+#include "GUIView.qif"
 
 #include "command/Command.qif"
 #include "command/NewSceneCommand.qif"
@@ -73,6 +74,8 @@ module qsys
   CmdMgr;
 
   SceneExporter;
+
+  GUIView;
 
 // #if !defined(QM_BUILD_LW)
 //  ImgSceneExporter;

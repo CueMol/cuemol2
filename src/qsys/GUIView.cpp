@@ -16,31 +16,7 @@
 #include "Renderer.hpp"
 #include "ViewInputConfig.hpp"
 
-
 namespace qsys {
-
-void GUIView::dispatchMouseEvent(int nType, InDevEvent &ev)
-{
-    switch (nType) {
-    case DME_MOUSE_DOWN:
-        m_meh.buttonDown(ev);
-        break;
-    case DME_MOUSE_MOVE:
-        if (!m_meh.move(ev))
-            return;
-        break;
-    case DME_MOUSE_UP:
-        if (!m_meh.buttonUp(ev))
-            return;
-        break;
-    case DME_WHEEL:
-        break;
-    default:
-        MB_DPRINTLN("GUIView::dispatchMouseEvent unknown nType %d", nType);
-        return;
-    }
-    fireInDevEvent(ev);
-}
 
 GUIView::GUIView() : View()
 {
@@ -56,8 +32,7 @@ void GUIView::setCenterMark(int nMode)
     super_t::setCenterMark(nMode);
     auto pdo = getDrawObj("CenterMarkDrawObj");
     auto *pcmdo = dynamic_cast<CenterMarkDrawObj *>(pdo.get());
-    if (pcmdo == nullptr)
-        return;
+    if (pcmdo == nullptr) return;
     pcmdo->setCenterMark(nMode);
 }
 
@@ -157,7 +132,7 @@ void GUIView::setUpProjMat(int cx, int cy)
 void GUIView::drawScene()
 {
     MB_DPRINTLN("GUIView::drawScene called");
-    
+
     // if (!m_bInitOK) return;
     if (!safeSetCurrent()) return;
 
@@ -173,7 +148,8 @@ void GUIView::drawScene()
     pdc->setCurrent();
 
     // gfx::ColorPtr pBgCol = pScene->getBgColor();
-    // glClearColor(float(pBgCol->fr()), float(pBgCol->fg()), float(pBgCol->fb()), 1.0f);
+    // glClearColor(float(pBgCol->fr()), float(pBgCol->fg()),
+    // float(pBgCol->fb()), 1.0f);
     setFogColorImpl(pdc);
 
     pdc->setLighting(false);
@@ -194,31 +170,31 @@ void GUIView::drawScene()
             pScene->display(pdc);
             break;
 
-        //     ////////////////////////////////////////////////
-        //     // Quad-buffer stereo
-        // case Camera::CSM_HW_QBUF:
+            //     ////////////////////////////////////////////////
+            //     // Quad-buffer stereo
+            // case Camera::CSM_HW_QBUF:
 
-        //     // for right eye
-        //     setUpModelMat(MM_STEREO_RIGHT);
-        //     if (isSwapStereoEyes())
-        //         glDrawBuffer(GL_BACK_LEFT);
-        //     else
-        //         glDrawBuffer(GL_BACK_RIGHT);
-        //     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        //     // Draw main 3D objects
-        //     pScene->display(pdc);
+            //     // for right eye
+            //     setUpModelMat(MM_STEREO_RIGHT);
+            //     if (isSwapStereoEyes())
+            //         glDrawBuffer(GL_BACK_LEFT);
+            //     else
+            //         glDrawBuffer(GL_BACK_RIGHT);
+            //     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            //     // Draw main 3D objects
+            //     pScene->display(pdc);
 
-        //     // for left eye
-        //     setUpModelMat(MM_STEREO_LEFT);
-        //     if (isSwapStereoEyes())
-        //         glDrawBuffer(GL_BACK_RIGHT);
-        //     else
-        //         glDrawBuffer(GL_BACK_LEFT);
-        //     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        //     // Draw main 3D objects
-        //     pScene->display(pdc);
+            //     // for left eye
+            //     setUpModelMat(MM_STEREO_LEFT);
+            //     if (isSwapStereoEyes())
+            //         glDrawBuffer(GL_BACK_RIGHT);
+            //     else
+            //         glDrawBuffer(GL_BACK_LEFT);
+            //     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            //     // Draw main 3D objects
+            //     pScene->display(pdc);
 
-        //     break;
+            //     break;
     }
 
     ////////////////////////////////////////////////
@@ -505,12 +481,14 @@ bool GUIView::hitTestImpl(gfx::DisplayContext *pdc, const Vector4D &parm, bool f
 
 qsys::View *GUIView::createOffScreenView(int w, int h, int aa_depth)
 {
+    // not implemented yet
     return nullptr;
 }
 
 void GUIView::readPixels(int x, int y, int width, int height, char *pbuf, int nbufsize,
                          int ncomp)
 {
+    // not implemented yet
 }
 
 void GUIView::setFogColorImpl(DisplayContext *pdc)
@@ -522,6 +500,80 @@ void GUIView::setFogColorImpl(DisplayContext *pdc)
         pdc->setCurrent();
     }
     pdc->setFogColor(pBgCol);
+}
+
+//////////
+// Mouse event handling
+
+void GUIView::dispatchMouseEvent(int nType, InDevEvent &ev)
+{
+    switch (nType) {
+        case DME_MOUSE_DOWN:
+            MB_DPRINTLN("onMouseDown (%d, %d) (%d, %d) %x", ev.getX(), ev.getY(),
+                        ev.getRootX(), ev.getRootY(), ev.getModifier());
+            m_meh.buttonDown(ev);
+            break;
+        case DME_MOUSE_MOVE:
+            if (!m_meh.move(ev)) {
+                return;
+            }
+            break;
+        case DME_MOUSE_UP:
+            if (!m_meh.buttonUp(ev)) {
+                return;
+            }
+            break;
+        case DME_WHEEL:
+            break;
+        default:
+            MB_DPRINTLN("GUIView::dispatchMouseEvent unknown nType %d", nType);
+            return;
+    }
+    fireInDevEvent(ev);
+}
+
+void GUIView::onMouseDown(double clientX, double clientY, double screenX,
+                          double screenY, int modif)
+{
+    InDevEvent ev;
+    setupInDevEvent(clientX, clientY, screenX, screenY, modif, ev);
+    dispatchMouseEvent(DME_MOUSE_DOWN, ev);
+}
+
+void GUIView::onMouseUp(double clientX, double clientY, double screenX, double screenY,
+                        int modif)
+{
+    InDevEvent ev;
+    setupInDevEvent(clientX, clientY, screenX, screenY, modif, ev);
+    dispatchMouseEvent(DME_MOUSE_UP, ev);
+}
+
+void GUIView::onMouseMove(double clientX, double clientY, double screenX,
+                          double screenY, int modif)
+{
+    InDevEvent ev;
+    setupInDevEvent(clientX, clientY, screenX, screenY, modif, ev);
+    dispatchMouseEvent(DME_MOUSE_MOVE, ev);
+}
+
+void GUIView::setupInDevEvent(double clientX, double clientY, double screenX,
+                              double screenY, int amodif, InDevEvent &ev)
+{
+    ev.setX(int(clientX));
+    ev.setY(int(clientY));
+
+    ev.setRootX(int(screenX));
+    ev.setRootY(int(screenY));
+
+    int modif = 0;
+
+    if (amodif & 32) modif |= InDevEvent::INDEV_CTRL;
+    if (amodif & 64) modif |= InDevEvent::INDEV_SHIFT;
+    if (amodif & 1) modif |= InDevEvent::INDEV_LBTN;
+    if (amodif & 2) modif |= InDevEvent::INDEV_RBTN;
+    if (amodif & 4) modif |= InDevEvent::INDEV_MBTN;
+
+    ev.setModifier(modif);
 }
 
 }  // namespace qsys

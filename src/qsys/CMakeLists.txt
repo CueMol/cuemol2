@@ -159,6 +159,7 @@ SceneExporter.qif
 RendGroup.qif
 MultiGradient.qif
 ScalarObject.qif
+GUIView.qif
 command/Command.qif
 command/NewSceneCommand.qif
 command/NewRendererCommand.qif

@@ -16,18 +16,23 @@ namespace qsys {
 
 class QSYS_API GUIView : public qsys::View
 {
+    MC_SCRIPTABLE;
+
     using super_t = qsys::View;
 
 public:
     GUIView();
     virtual ~GUIView();
 
+    //////////
+    // Mouse events
+
     /// Mouse event dispatch types (platform-agnostic abstraction over native events)
     enum {
-        DME_MOUSE_DOWN   = 0,
-        DME_MOUSE_MOVE   = 1,
-        DME_MOUSE_UP     = 2,
-        DME_WHEEL        = 3,
+        DME_MOUSE_DOWN = 0,
+        DME_MOUSE_MOVE = 1,
+        DME_MOUSE_UP = 2,
+        DME_WHEEL = 3,
         DME_DBCHK_TIMEUP = 4
     };
 
@@ -35,6 +40,18 @@ public:
     /// and fire the resulting InDevEvent to listeners.
     void dispatchMouseEvent(int nType, InDevEvent &ev);
 
+    void setupInDevEvent(double clientX, double clientY, double screenX, double screenY,
+                         int amodif, InDevEvent &ev);
+
+    void onMouseDown(double clientX, double clientY, double screenX, double screenY,
+                     int modif);
+    void onMouseUp(double clientX, double clientY, double screenX, double screenY,
+                   int modif);
+
+    void onMouseMove(double clientX, double clientY, double screenX, double screenY,
+                     int modif);
+
+    //////////
 
     virtual void setCenterMark(int nMode) override;
 
@@ -75,7 +92,7 @@ private:
     /// @far_factor factor of far slab limitation (1.0 for the same as display)
     bool hitTestImpl(gfx::DisplayContext *pdc, const Vector4D &parm, bool fGetAll,
                      double far_factor);
-    
+
     ////////////////////////////////////////////////
     // Framebuffer operations
 
@@ -88,5 +105,5 @@ public:
 
     void setFogColorImpl(DisplayContext *pdc);
 };
-    
-} // namespace qsys
+
+}  // namespace qsys
