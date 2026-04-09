@@ -1,6 +1,6 @@
 // -*-Mode: C++;-*-
 //
-//  Draw element
+// DrawElem implementation
 //
 
 #include <common.h>
@@ -8,32 +8,6 @@
 #include "DrawElem.hpp"
 
 namespace gfx {
-
-AbstDrawElem::AbstDrawElem()
-    : m_nSize(0),
-      m_pVBORep(NULL),
-      // m_pIndVBO(NULL),
-      m_nDrawMode(DRAW_POINTS),
-      m_bUpdate(false)
-{
-}
-
-AbstDrawElem::~AbstDrawElem()
-{
-    if (m_pVBORep != NULL) delete m_pVBORep;
-    // if (m_pIndVBO != NULL) delete m_pIndVBO;
-}
-
-void AbstDrawElem::invalidateCache() const
-{
-    if (m_pVBORep != NULL) delete m_pVBORep;
-    m_pVBORep = NULL;
-
-    // if (m_pIndVBO != NULL) delete m_pIndVBO;
-    // m_pIndVBO = NULL;
-}
-
-//////////
 
 DrawElem::DrawElem()
     : super_t(), m_fLineWidth(1.0f), m_nDefColor(0xFFFFFFFF)  // default color: white
