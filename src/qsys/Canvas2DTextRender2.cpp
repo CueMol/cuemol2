@@ -125,6 +125,8 @@ bool Canvas2DTextRender2::renderText(const qlib::LString &str, gfx::PixelBuffer 
     buf.setDepth(8);
     buf.setWidth(w);
     buf.setHeight(h);
+
+    MB_DPRINTLN("Canvas2DTextRender2> Text image size: w=%d, h=%d, nsize=%d created", w, h, nsize);
   }
 
   return true;

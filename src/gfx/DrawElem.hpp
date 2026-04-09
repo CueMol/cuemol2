@@ -69,20 +69,20 @@ public:
         m_pVBORep = p;
     }
 
-private:
-    /// buffer ID (for GL VBO impl)
-    mutable VBORep *m_pIndVBO;
+// private:
+//     /// buffer ID (for GL VBO impl)
+//     mutable VBORep *m_pIndVBO;
 
-public:
-    /// index VBO object access
-    VBORep *getIndexVBO() const
-    {
-        return m_pIndVBO;
-    }
-    void setIndexVBO(VBORep *p) const
-    {
-        m_pIndVBO = p;
-    }
+// public:
+//     /// index VBO object access
+//     VBORep *getIndexVBO() const
+//     {
+//         return m_pIndVBO;
+//     }
+//     void setIndexVBO(VBORep *p) const
+//     {
+//         m_pIndVBO = p;
+//     }
 
 private:
     /// update flag
@@ -100,26 +100,6 @@ public:
 
     //////////////////////////////////////////////////
     // Type ID definitions
-
-    /// vertex, normal, color
-    static constexpr int VA_VNC = 1;
-    /// vertex, color
-    static constexpr int VA_VC = 2;
-    /// vertex, normal (color is supplied separatedly)
-    static constexpr int VA_VN = 3;
-    /// vertex only (color is supplied separatedly)
-    static constexpr int VA_V = 4;
-    /// vertex, normal, color, and index
-    static constexpr int VA_VNCI = 5;
-
-    /// pixel data (UI label, etc)
-    static constexpr int VA_PIXEL = 6;
-
-    /// texture map ( to be implemented )
-    static constexpr int VA_TEXTURE = 7;
-
-    /// vertex, normal, color, and 32-bit index
-    static constexpr int VA_VNCI32 = 8;
 
     /// arbitary attribute array (for shader impl)
     static constexpr int VA_ATTRS = 9;

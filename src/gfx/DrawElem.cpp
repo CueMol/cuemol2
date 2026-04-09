@@ -12,7 +12,7 @@ namespace gfx {
 AbstDrawElem::AbstDrawElem()
     : m_nSize(0),
       m_pVBORep(NULL),
-      m_pIndVBO(NULL),
+      // m_pIndVBO(NULL),
       m_nDrawMode(DRAW_POINTS),
       m_bUpdate(false)
 {
@@ -21,7 +21,7 @@ AbstDrawElem::AbstDrawElem()
 AbstDrawElem::~AbstDrawElem()
 {
     if (m_pVBORep != NULL) delete m_pVBORep;
-    if (m_pIndVBO != NULL) delete m_pIndVBO;
+    // if (m_pIndVBO != NULL) delete m_pIndVBO;
 }
 
 void AbstDrawElem::invalidateCache() const
@@ -29,8 +29,8 @@ void AbstDrawElem::invalidateCache() const
     if (m_pVBORep != NULL) delete m_pVBORep;
     m_pVBORep = NULL;
 
-    if (m_pIndVBO != NULL) delete m_pIndVBO;
-    m_pIndVBO = NULL;
+    // if (m_pIndVBO != NULL) delete m_pIndVBO;
+    // m_pIndVBO = NULL;
 }
 
 //////////
