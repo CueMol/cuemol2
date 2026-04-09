@@ -16,7 +16,6 @@
 #include <modules/molstr/AtomIterator.hpp>
 #include <modules/molstr/BondIterator.hpp>
 
-#include <gfx/DrawAttrArray.hpp>
 #include <gfx/GpuPrim.hpp>
 
 using namespace molvis;

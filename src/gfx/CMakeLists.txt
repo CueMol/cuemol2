@@ -15,7 +15,7 @@ Material.cpp
 PixelBuffer.cpp
 ColCompiler.cpp
 DrawElem.cpp
-DrawAttrArray.cpp
+AbstDrawAttrs.cpp
 AbstDrawElem.cpp
 LabelCacheImpl.cpp
 SphereSet.cpp
@@ -39,7 +39,9 @@ ColCompiler.hpp
 ColProfMgr.hpp
 ColorTable.hpp
 DisplayContext.hpp
+AbstDrawAttrs.hpp
 DrawAttrArray.hpp
+DrawAttrElems.hpp
 DrawElem.hpp
 AbstDrawElem.hpp
 VBORep.hpp

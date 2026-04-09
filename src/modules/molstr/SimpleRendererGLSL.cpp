@@ -9,7 +9,6 @@
 #include "BondIterator.hpp"
 #include "AtomIterator.hpp"
 
-#include <gfx/DrawAttrArray.hpp>
 #include <gfx/GpuPrim.hpp>
 
 namespace molstr {

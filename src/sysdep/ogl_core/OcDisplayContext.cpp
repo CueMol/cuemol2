@@ -16,7 +16,7 @@
 #include "OcBufTexRep.hpp"
 #include <gfx/SolidColor.hpp>
 #include <gfx/Mesh.hpp>
-#include <gfx/DrawAttrArray.hpp>
+#include <gfx/AbstDrawAttrs.hpp>
 #include <gfx/ColProfMgr.hpp>
 
 #include <sysdep/OglError.hpp>

@@ -6,7 +6,6 @@
 #pragma once
 
 #include "gfx.hpp"
-#include "DrawAttrArray.hpp"
 #include "DisplayContext.hpp"
 
 #include <qlib/Vector4D.hpp>

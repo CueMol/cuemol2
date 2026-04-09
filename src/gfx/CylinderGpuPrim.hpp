@@ -6,7 +6,7 @@
 #pragma once
 
 #include "GpuPrim.hpp"
-#include "DrawAttrArray.hpp"
+#include "DrawAttrElems.hpp"
 
 #include <qlib/Vector4D.hpp>
 

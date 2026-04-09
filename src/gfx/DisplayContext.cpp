@@ -10,7 +10,7 @@
 #include "SolidColor.hpp"
 #include "ShaderObject.hpp"
 #include "PixelBuffer.hpp"
-#include "DrawAttrArray.hpp"
+#include "AbstDrawAttrs.hpp"
 #include "PixGpuPrim.hpp"
 
 using namespace gfx;

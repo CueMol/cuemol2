@@ -1,12 +1,11 @@
 // -*-Mode: C++;-*-
 //
-//  Draw attributes
+//  Abstract draw attributes
 //
 
 #include <common.h>
 
-#include "DrawAttrArray.hpp"
-#include "PixelBuffer.hpp"
+#include "AbstDrawAttrs.hpp"
 
 using namespace gfx;
 

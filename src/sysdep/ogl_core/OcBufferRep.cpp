@@ -8,7 +8,7 @@
 
 #include "OcBufferRep.hpp"
 #include <gfx/DisplayContext.hpp>
-#include <gfx/DrawAttrArray.hpp>
+#include <gfx/AbstDrawAttrs.hpp>
 #include <qsys/SceneManager.hpp>
 #include <sysdep/OglError.hpp>
 
