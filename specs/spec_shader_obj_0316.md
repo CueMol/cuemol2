@@ -1,0 +1,13 @@
+OglProgramObjectをOpenGL依存をなくしたgfx::ShaderObjectに変更し、
+sysdep以外の部分からOpenGL依存を低減させる
+
+OglProgramObjectはgfx::ShaderObjectのインタフェイスを持っているが、
+sysdep以外のコードで現在OglProgramObjectを参照し扱っている部分で、
+gfx::ShaderObjectのインタフェイスで十分かどうか調査する。
+
+簡単にgfx::ShaderObjectのインタフェイスに追加できそうな変更なら、変更を提案する。
+重度にOpenGLに依存しており、変更に工数がかかりそうなら、その旨を報告し、実装は開始しない。
+
+sysdep::OglProgObjMgrから、qsys::ShaderObjMgrに移行する
+sysdep::OglProgObjMgrとqsys::ShaderObjMgrはcreate/registerのAPIが異なるので、
+その辺の修正が必要か。
