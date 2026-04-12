@@ -29,11 +29,12 @@ private:
 
     using QuadArray = DrawAttrArray<Elem>;
 
+    // Predefined attribute locations (must match layout(location=N) in pixdraw_vert.glsl)
+    static constexpr int ATTRLOC_VERTEX   = 0;
+    static constexpr int ATTRLOC_TEXCOORD = 1;
+
     ShaderObject *m_pPO = nullptr;
     QuadArray *m_pDrawElem = nullptr;
-
-    int m_nVertexLoc = -1;
-    int m_nTexCoordLoc = -1;
 
 public:
     PixGpuPrim() = default;

@@ -10,6 +10,7 @@
 
 #include "PixelBuffer.hpp"
 #include <qlib/LScrObjects.hpp>
+#include <qlib/LByteArray.hpp>
 #include <qlib/LVariant.hpp>
 #include <qlib/LScrSmartPtr.hpp>
 #include <qlib/LTypes.hpp>
@@ -117,6 +118,23 @@ namespace gfx {
                  LString::format("TextImgBuf setAt() out of index %d", ind));
       }
       return pdata[ind];
+    }
+
+    void setDataFromRGBA(qlib::LByteArrayPtr pSrc)
+    {
+      if (pSrc.isnull())
+        MB_THROW(qlib::NullPointerException,
+                 LString("TextImgBuf setDataFromRGBA() src is null"));
+      const size_t npix = size();
+      if (pSrc->getSize() != npix * 4)
+        MB_THROW(IndexOutOfBoundsException,
+                 LString::format("TextImgBuf setDataFromRGBA() size mismatch: src=%d, expected=%d",
+                                 pSrc->getSize(), npix * 4));
+      const QUE_BYTE *src = pSrc->data();
+      QUE_BYTE *dst = data();
+      for (size_t i = 0; i < npix; ++i) {
+        dst[i] = src[i * 4 + 3];  // alpha channel
+      }
     }
 
     void dump() const

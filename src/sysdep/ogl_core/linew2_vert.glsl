@@ -6,28 +6,32 @@
 #define varying out
 
 #include "fog_inc.glsl"
+#include "matrices_inc.glsl"
 
 ////////////////////
-// Uniforms
-uniform vec2 screenSize;
-uniform float lineWidth;
-uniform float stippleLen;
+// DrawParamsBlock UBO: binding point 2
 
-uniform mat4 u_ModelViewMatrix;
-uniform mat4 u_ProjectionMatrix;
-
-uniform int u_nodepth;
+layout(std140) uniform DrawParamsBlock {
+    float frag_alpha;   // offset 0
+    float lineWidth;    // offset 4
+    float stippleLen;   // offset 8
+    int   u_nodepth;    // offset 12
+    vec2  screenSize;   // offset 16
+    int   use_u_color;  // offset 24
+    float _pad;         // offset 28
+    vec4  u_color;      // offset 32
+};
 
 ////////////////////
 // Vertex attributes
 
 // position
-attribute vec4 a_vertex1;
-attribute vec4 a_vertex2;
+layout(location = 0) in vec4 a_vertex1;
+layout(location = 1) in vec4 a_vertex2;
 
 // color
-attribute vec4 a_color1;
-attribute vec4 a_color2;
+layout(location = 2) in vec4 a_color1;
+layout(location = 3) in vec4 a_color2;
 
 ////////////////////
 // Varying

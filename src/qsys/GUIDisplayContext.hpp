@@ -32,7 +32,7 @@ public:
 
     void init() {}
 
-    virtual void setTargetView(qsys::View *pView);
+    virtual void setTargetView(qsys::View *pView) override;
 
     bool useShaderAlpha() const
     {
@@ -40,71 +40,71 @@ public:
     }
     void setUseShaderAlpha(bool) {}
 
-    virtual bool isFile() const
+    virtual bool isFile() const override
     {
         return false;
     }
 
-    virtual bool isDrawElemSupported() const
+    virtual bool isDrawElemSupported() const override
     {
         return true;
     }
 
     ////////////////
 
-    virtual void setPolygonMode(int id) {}
+    virtual void setPolygonMode(int id) override {}
 
-    virtual void startPoints()
+    virtual void startPoints() override
     {
         MB_ASSERT(false);
     }
-    virtual void startPolygon()
+    virtual void startPolygon() override
     {
         MB_ASSERT(false);
     }
-    virtual void startLines()
+    virtual void startLines() override
     {
         MB_ASSERT(false);
     }
-    virtual void startLineStrip()
+    virtual void startLineStrip() override
     {
         MB_ASSERT(false);
     }
-    virtual void startTriangles()
+    virtual void startTriangles() override
     {
         MB_ASSERT(false);
     }
-    virtual void startTriangleStrip()
+    virtual void startTriangleStrip() override
     {
         MB_ASSERT(false);
     }
-    virtual void startTriangleFan()
+    virtual void startTriangleFan() override
     {
         MB_ASSERT(false);
     }
-    virtual void startQuadStrip()
+    virtual void startQuadStrip() override
     {
         MB_ASSERT(false);
     }
-    virtual void startQuads()
+    virtual void startQuads() override
     {
         MB_ASSERT(false);
     }
-    virtual void end()
-    {
-        MB_ASSERT(false);
-    }
-
-    virtual void vertex(const Vector4D &)
-    {
-        MB_ASSERT(false);
-    }
-    virtual void normal(const Vector4D &)
+    virtual void end() override
     {
         MB_ASSERT(false);
     }
 
-    virtual void drawMesh(const gfx::Mesh &l)
+    virtual void vertex(const Vector4D &) override
+    {
+        MB_ASSERT(false);
+    }
+    virtual void normal(const Vector4D &) override
+    {
+        MB_ASSERT(false);
+    }
+
+    virtual void drawMesh(const gfx::Mesh &l) override
     {
         MB_ASSERT(false);
     }
@@ -112,13 +112,13 @@ public:
     ////////////////
     // image/text drawing
 
-    virtual void drawString(const Vector4D &pos, const qlib::LString &str);
+    virtual void drawString(const Vector4D &pos, const qlib::LString &str) override;
 
     ///////////////////////////////
     // Display List support
 
     virtual gfx::DisplayContext *createDisplayList() override;
-    virtual bool canCreateDL() const
+    virtual bool canCreateDL() const override
     {
         return true;
     }
@@ -126,17 +126,17 @@ public:
     virtual void callDisplayList(DisplayContext *pdl) override;
     virtual bool isCompatibleDL(DisplayContext *pdl) const override;
 
-    virtual bool isDisplayList() const
+    virtual bool isDisplayList() const override
     {
         return false;
     }
 
-    virtual bool recordStart()
+    virtual bool recordStart() override
     {
         return false;
     }
 
-    virtual void recordEnd() {}
+    virtual void recordEnd() override {}
 
     ///////////////////////////////
     // Shader object support: check cache, then delegate creation to subclass

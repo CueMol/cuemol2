@@ -86,6 +86,7 @@ bool MouseEventHandler::move(InDevEvent &ev)
 
 bool MouseEventHandler::buttonUp(InDevEvent &ev)
 {
+    MB_DPRINTLN("buttonUp> state=%d", m_nState);
   if (m_nState==DRAG_CHECK) {
     const qlib::time_value currt = qlib::EventManager::sGetCurrentTime();
     const qlib::time_value del_t = currt - m_prevClickTime;
@@ -107,6 +108,7 @@ bool MouseEventHandler::buttonUp(InDevEvent &ev)
       }
     }
     else {
+        MB_DPRINTLN("del_t %f >= DBLCLICK_TIME %f", double(del_t), double(DBLCLICK_TIME));
       // Mouse button clicked
       if (ev.isLButtonOn())
         ev.setType(InDevEvent::INDEV_LBTN_CLICK);

@@ -310,7 +310,7 @@ XPCNativeWidgetWin::handleEvent(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
     //MB_DPRINTLN("****** WM_MOUSE LR DOWN");
     qsys::InDevEvent ev;
     setupWinMouseEvent(msg, wParam, lParam, ev);
-    dispatchMouseEvent(DME_MOUSE_DOWN, ev);
+    dispatchMouseEvent(qsys::GUIView::DME_MOUSE_DOWN, ev);
     ::SetCapture(hWnd);
 
     return 0;
@@ -346,7 +346,7 @@ XPCNativeWidgetWin::handleEvent(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
       //MB_DPRINTLN("****** WM_MOUSE MOVE %p", lParam);
       qsys::InDevEvent ev;
       setupWinMouseEvent(msg, wParam, lParam, ev);
-      dispatchMouseEvent(DME_MOUSE_MOVE, ev);
+      dispatchMouseEvent(qsys::GUIView::DME_MOUSE_MOVE, ev);
     }
 
     {
@@ -395,7 +395,7 @@ XPCNativeWidgetWin::handleEvent(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 
     qsys::InDevEvent ev;
     setupWinMouseEvent(msg, nFlags, lParam, ev);
-    dispatchMouseEvent(DME_MOUSE_UP, ev);
+    dispatchMouseEvent(qsys::GUIView::DME_MOUSE_UP, ev);
 
     {
       // Generate DOM mousemove event
@@ -459,7 +459,7 @@ XPCNativeWidgetWin::handleEvent(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 
     ev.setType(qsys::InDevEvent::INDEV_WHEEL);
     ev.setDeltaX((int) zDelta);
-    dispatchMouseEvent(DME_WHEEL, ev);
+    dispatchMouseEvent(qsys::GUIView::DME_WHEEL, ev);
 
     return 0;
   }

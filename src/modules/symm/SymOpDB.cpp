@@ -424,7 +424,8 @@ void SymOpDB::load()
     path = pSec->getStringData();
 
   if (path.isEmpty()) {
-    path = LString("%%CONFDIR%%")+MB_PATH_SEPARATOR+"symop.dat";
+      // path = LString("%%CONFDIR%%")+MB_PATH_SEPARATOR+"data"+MB_PATH_SEPARATOR+"symop.dat";
+      path = LString("%%CONFDIR%%")+MB_PATH_SEPARATOR+"symop.dat";
   }
   // translate path name
   path = pconf->convPathName(path);

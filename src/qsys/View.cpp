@@ -1017,6 +1017,7 @@ void View::showDrawObj2D(DisplayContext *pdc)
   auto pView = ViewPtr(this);
   for (const auto & pair : m_drawObjTab) {
       if (pair.second->isEnabled()) {
+          MB_DPRINTLN("View::showDrawObj2D> drawobj %s", pair.first.c_str());
           pair.second->display2D(pdc, pView);
       }
   }

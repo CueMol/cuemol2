@@ -39,8 +39,6 @@ WglView::WglView()
   m_hGL = NULL;
   m_hWnd = NULL;
 
-  m_nDragStart = DRAG_NONE;
-
   m_bHasQuadBuffer = false;
 
   m_nMultiSamples = 16;  // default: 4xMSAA

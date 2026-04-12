@@ -31,7 +31,7 @@ public:
     //////////
 
 public:
-    virtual LString toString() const;
+    virtual LString toString() const override;
 
     void setup();
 

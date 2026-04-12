@@ -32,13 +32,13 @@ namespace sysdep {
     //////////
   
   public:
-    virtual LString toString() const;
+    virtual LString toString() const override;
 
-    virtual DisplayContext *getDisplayContext();
+    virtual DisplayContext *getDisplayContext() override;
 
-    virtual void swapBuffers();
+    virtual void swapBuffers() override;
 
-    virtual void unloading();
+    virtual void unloading() override;
 
     ////
     // framebuffer operations

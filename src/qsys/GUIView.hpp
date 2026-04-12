@@ -8,31 +8,63 @@
 
 #include "qsys.hpp"
 #include "View.hpp"
+#include "MouseEventHandler.hpp"
+#include "InDevEvent.hpp"
 #include <gfx/Hittest.hpp>
 
 namespace qsys {
 
 class QSYS_API GUIView : public qsys::View
 {
+    MC_SCRIPTABLE;
+
     using super_t = qsys::View;
 
 public:
     GUIView();
     virtual ~GUIView();
 
+    //////////
+    // Mouse events
+
+    /// Mouse event dispatch types (platform-agnostic abstraction over native events)
+    enum {
+        DME_MOUSE_DOWN = 0,
+        DME_MOUSE_MOVE = 1,
+        DME_MOUSE_UP = 2,
+        DME_WHEEL = 3,
+        DME_DBCHK_TIMEUP = 4
+    };
+
+    /// Dispatch a native mouse event through the MouseEventHandler state machine
+    /// and fire the resulting InDevEvent to listeners.
+    void dispatchMouseEvent(int nType, InDevEvent &ev);
+
+    void setupInDevEvent(double clientX, double clientY, double screenX, double screenY,
+                         int amodif, InDevEvent &ev);
+
+    void onMouseDown(double clientX, double clientY, double screenX, double screenY,
+                     int modif);
+    void onMouseUp(double clientX, double clientY, double screenX, double screenY,
+                   int modif);
+
+    void onMouseMove(double clientX, double clientY, double screenX, double screenY,
+                     int modif);
+
+    //////////
 
     virtual void setCenterMark(int nMode) override;
 
     /// Setup the projection matrix
-    void setUpProjMat(int cx, int cy);
+    virtual void setUpProjMat(int cx, int cy) override;
 
     /// Setup the light source color
     void setUpLightColor();
 
     /// Setup the projection matrix for stereo (View interface)
-    virtual void setUpModelMat(int nid);
+    virtual void setUpModelMat(int nid) override;
 
-    virtual void drawScene();
+    virtual void drawScene() override;
 
     /// Clean-up the drawing display with the current bg color
     virtual void clear();
@@ -41,9 +73,12 @@ public:
     // Hit test operations
 
 public:
-    virtual LString hitTest(int x, int y);
+    virtual LString hitTest(int x, int y) override;
 
-    virtual LString hitTestRect(int x, int y, int w, int h, bool bNr);
+    virtual LString hitTestRect(int x, int y, int w, int h, bool bNr) override;
+
+protected:
+    MouseEventHandler m_meh;
 
 private:
     gfx::HitData m_hitdata;
@@ -57,18 +92,18 @@ private:
     /// @far_factor factor of far slab limitation (1.0 for the same as display)
     bool hitTestImpl(gfx::DisplayContext *pdc, const Vector4D &parm, bool fGetAll,
                      double far_factor);
-    
+
     ////////////////////////////////////////////////
     // Framebuffer operations
 
 public:
     /// Create a new off-screen view compatible with this view
-    virtual View *createOffScreenView(int w, int h, int aa_depth);
+    virtual View *createOffScreenView(int w, int h, int aa_depth) override;
 
     virtual void readPixels(int x, int y, int width, int height, char *pbuf,
-                            int nbufsize, int ncomp);
+                            int nbufsize, int ncomp) override;
 
     void setFogColorImpl(DisplayContext *pdc);
 };
-    
-} // namespace qsys
+
+}  // namespace qsys

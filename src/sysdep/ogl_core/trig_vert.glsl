@@ -2,28 +2,28 @@
 //
 //  Triangle vertex shader for OpenGL
 //
-#define attribute in
 #define varying out
 
 #include "lighting_inc.glsl"
 #include "fog_inc.glsl"
+#include "matrices_inc.glsl"
 
 ////////////////////
-// Uniform variables
+// DrawParamsBlock UBO: binding point 2
 
-uniform bool enable_lighting;
-uniform mat4 u_ModelViewMatrix;
-uniform mat4 u_ProjectionMatrix;
-uniform mat3 u_NormalMatrix;
-
-uniform int u_nodepth;
+layout(std140) uniform DrawParamsBlock {
+    float frag_alpha;       // offset 0
+    int   enable_lighting;  // offset 4
+    int   u_nodepth;        // offset 8
+    float _pad;             // offset 12
+};
 
 ////////////////////
-// Vertex attributes
+// Vertex attributes (predefined locations)
 
-attribute vec4 aVertex;
-attribute vec4 aNormal;
-attribute vec4 aColor;
+layout(location = 0) in vec4 aVertex;
+layout(location = 1) in vec4 aNormal;
+layout(location = 2) in vec4 aColor;
 
 ////////////////////
 // Varying variables
@@ -34,13 +34,12 @@ varying float v_fogCoord;
 void main(void)
 {
     // Eye-coordinate position of vertex, needed in various calculations
-    // vec4 ecPosition = gl_ModelViewMatrix * aVertex;
     vec4 ecPosition = u_ModelViewMatrix * aVertex;
 
     gl_Position = u_ProjectionMatrix * ecPosition;
 
-    if (enable_lighting) {
-        vec3 normal = normalize(u_NormalMatrix * aNormal.xyz);
+    if (enable_lighting != 0) {
+        vec3 normal = normalize(mat3(u_NormalMatrix) * aNormal.xyz);
         v_frontColor = flight2(normal, ecPosition, aColor);
     } else {
         v_frontColor = aColor;

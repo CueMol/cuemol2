@@ -2,26 +2,30 @@
 //
 //  Pixel drawing shader for OpenGL
 //
-#define attribute in
 #define varying out
 
 #include "fog_inc.glsl"
+#include "matrices_inc.glsl"
 
 ////////////////////
-// Uniform variables
+// DrawParamsBlock UBO: binding point 2
 
-uniform vec3 u_position;
-uniform vec2 u_size;
-uniform vec2 u_viewportSize;
-
-uniform mat4 u_ModelViewMatrix;
-uniform mat4 u_ProjectionMatrix;
+layout(std140) uniform DrawParamsBlock {
+    float frag_alpha;     // offset 0
+    float _p1, _p2, _p3; // offset 4, 8, 12 (padding for vec3 alignment)
+    vec3  u_position;     // offset 16
+    float _p4;            // offset 28
+    vec2  u_size;         // offset 32
+    vec2  u_viewportSize; // offset 40
+    vec3  u_colorBias;    // offset 48
+    float _p5;            // offset 60
+};
 
 ////////////////////
-// Vertex attributes
+// Vertex attributes (predefined locations)
 
-attribute vec2 a_vertex;
-attribute vec2 a_texCoord;
+layout(location = 0) in vec2 a_vertex;
+layout(location = 1) in vec2 a_texCoord;
 
 ////////////////////
 // Varying variables
@@ -48,6 +52,5 @@ void main()
     gl_Position = vec4(quadPos * clipPos.w, clipPos.z, clipPos.w);
 
     v_texCoord = a_texCoord;
-    // v_fogCoord = abs(ecPos.z);
     v_fogCoord = ffog(ecPos.z);
 }

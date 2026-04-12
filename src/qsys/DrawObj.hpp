@@ -12,7 +12,6 @@
 #include <qlib/LScrSmartPtr.hpp>
 #include <qlib/LPropEvent.hpp>
 #include <qlib/mcutils.hpp>
-#include <gfx/DrawAttrArray.hpp>
 
 namespace gfx {
 class DisplayContext;

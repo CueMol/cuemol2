@@ -15,15 +15,20 @@ Material.cpp
 PixelBuffer.cpp
 ColCompiler.cpp
 DrawElem.cpp
-DrawAttrArray.cpp
+AbstDrawAttrs.cpp
+AbstDrawElem.cpp
 LabelCacheImpl.cpp
 SphereSet.cpp
 CmsXform.cpp
 ColProfMgr.cpp
 Hittest.cpp
-GpuPrim.cpp
+SphereGpuPrim.cpp
+CylinderGpuPrim.cpp
+TrigGpuPrim.cpp
+LineGpuPrim.cpp
 PixGpuPrim.cpp
 DisplayList.cpp
+ShaderObject.cpp
 )
 
 # Normal C++ header files
@@ -34,9 +39,19 @@ ColCompiler.hpp
 ColProfMgr.hpp
 ColorTable.hpp
 DisplayContext.hpp
+AbstDrawAttrs.hpp
 DrawAttrArray.hpp
+DrawAttrElems.hpp
 DrawElem.hpp
+AbstDrawElem.hpp
+VBORep.hpp
 GradientColor.hpp
+GpuPrim.hpp
+SphereGpuPrim.hpp
+CylinderGpuPrim.hpp
+TrigGpuPrim.hpp
+LineGpuPrim.hpp
+PixGpuPrim.hpp
 Hittest.hpp
 HittestContext.hpp
 LabelCacheImpl.hpp
@@ -50,6 +65,7 @@ SphereSet.hpp
 TextImgBuf.hpp
 TextRenderManager.hpp
 DisplayList.hpp
+ShaderObject.hpp
 # color_parser.h
 gfx.hpp
 )

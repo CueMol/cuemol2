@@ -8,11 +8,12 @@
 
 #include "OcBufferRep.hpp"
 #include <gfx/DisplayContext.hpp>
-#include <gfx/DrawAttrArray.hpp>
+#include <gfx/AbstDrawAttrs.hpp>
 #include <qsys/SceneManager.hpp>
-#include <sysdep/OglProgramObject.hpp>
-#include <sysdep/ShaderSetupHelper.hpp>
 #include <sysdep/OglError.hpp>
+
+// #include <sysdep/OglProgramObject.hpp>
+// #include <sysdep/ShaderSetupHelper.hpp>
 
 namespace sysdep {
 
@@ -104,12 +105,15 @@ void OcBufferRep::create(gfx::DisplayContext *pdc, const gfx::AbstDrawAttrs &ada
     // Init VBO & copy data
     glBindBuffer(GL_ARRAY_BUFFER, m_nBufID);
     glBufferData(GL_ARRAY_BUFFER, ada.getDataSize(), ada.getData(), GL_STATIC_DRAW);
+    MB_DPRINTLN("OcBufferRep> Buffer %d created for view %d, size=%d", m_nBufID, m_nViewID,
+                ada.getDataSize());
 
     if (ada.getType() == AbstDrawElem::VA_ATTR_INDS) {
         glGenBuffers(1, &m_nIndBufID);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nIndBufID);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, ada.getIndDataSize(), ada.getIndData(),
                      GL_STATIC_DRAW);
+        MB_DPRINTLN("OcBufferRep> Index Buffer %d created for view %d, size=%d", m_nIndBufID, m_nViewID, ada.getIndDataSize());
     }
 }
 
@@ -181,6 +185,7 @@ void OcBufferRep::draw(const gfx::AbstDrawAttrs &ada)
         } else {
             glDrawElementsInstanced(mode, ada.getIndSize(), ind_type, 0, ninst);
             CHK_GLERROR("glDrawElementsInstanced(mode, ada.getIndSize(), ind_type, 0, ninst)");
+            // MB_DPRINTLN("glDrawElementsInstanced(mode=%d, count=%d, type=%d, indices=0, instancecount=%d)", mode, ada.getIndSize(), ind_type, ninst);
         }
     } else if (itype == AbstDrawElem::VA_ATTRS) {
         if (ninst <= 0) {

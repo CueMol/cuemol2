@@ -6,21 +6,18 @@
 
 #include <lighting_inc.glsl>
 #include <fog_inc.glsl>
+#include <matrices_inc.glsl>
 
 ////////////////////
-// Uniform variables
+// DrawParamsBlock UBO: binding point 2
 
-uniform float frag_alpha;
-
-uniform float u_edge;
-
-// edge color
-uniform vec4 u_edgecolor;
-
-// silhouette mode flag
-uniform bool u_bsilh;
-
-uniform mat4 u_ProjectionMatrix;
+layout(std140) uniform DrawParamsBlock {
+    float frag_alpha;   // offset 0
+    float u_edge;       // offset 4
+    int   u_bsilh;      // offset 8
+    float _pad;         // offset 12
+    vec4  u_edgecolor;  // offset 16
+};
 
 ////////////////////
 // Varying variables
@@ -29,15 +26,11 @@ varying vec4 v_color;
 varying vec2 v_impos;
 varying vec4 v_ecpos;
 varying float v_ndec;
-// varying float v_dec;
-// varying float vw_len;
-// varying float v_sinph;
 varying float v_flag;
 
 varying float v_depmx;
 varying vec2 v_normadj;
 varying mat2 v_normmat;
-// varying vec2 v_vwdir;
 
 out vec4 o_FragColor;
 
@@ -61,7 +54,6 @@ void main()
     float depth = v_depmx * adj_cen;
 
     vec4 ecpos = v_ecpos;
-    // if (!bEdge) ecpos.z += depth;
     ecpos.z += bEdge ? 0.0 : depth;
 
     vec4 clip_space_pos = u_ProjectionMatrix * ecpos;
@@ -74,7 +66,7 @@ void main()
     }
 
     // set depth
-    if (bEdge && u_bsilh)
+    if (bEdge && u_bsilh != 0)
         gl_FragDepth = 0.99;
     else
         gl_FragDepth = fd;
@@ -85,9 +77,6 @@ void main()
         color = vec4(u_edgecolor.rgb, v_color.a);
     } else {
         vec3 normal = vec3(v_impos.x, v_normadj.x * adj_cen, v_normadj.y * adj_cen);
-        // mat2 rmat = mat2(v_vwdir.x, v_vwdir.y,
-        //-v_vwdir.y, v_vwdir.x);
-        // normal.xy *= rmat;
         normal.xy *= v_normmat;
 
         color = flight2(normal, ecpos, v_color);
@@ -98,5 +87,4 @@ void main()
     color = fragFogColor(color, frag_alpha, fogz);
 
     o_FragColor = color;
-    // o_FragColor = v_color;
 }

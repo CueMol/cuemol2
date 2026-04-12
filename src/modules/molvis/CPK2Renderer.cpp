@@ -12,7 +12,6 @@
 
 #include "CPK2Renderer.hpp"
 
-#include <gfx/DrawAttrArray.hpp>
 #include <gfx/GpuPrim.hpp>
 
 using namespace molvis;

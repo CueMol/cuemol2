@@ -6,11 +6,16 @@
 #pragma once
 
 ////////////////////
-// Uniform variables
+// FogBlock UBO: binding point 1
 
-uniform float u_fogEnd;
-uniform float u_fogScale;
-uniform vec3 u_fogColor;
+layout(std140) uniform FogBlock {
+    float u_fogEnd;    // offset 0
+    float u_fogScale;  // offset 4
+    float _fog_p1;     // offset 8  (padding for vec3 alignment)
+    float _fog_p2;     // offset 12
+    vec3 u_fogColor;   // offset 16
+    float _fog_p3;     // offset 28
+};
 
 ////////////////////
 

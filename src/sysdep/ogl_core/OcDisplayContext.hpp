@@ -30,16 +30,16 @@ public:
     OcDisplayContext();
     virtual ~OcDisplayContext();
 
-    virtual void enableDepthTest(bool);
+    virtual void enableDepthTest(bool) override;
 
-    virtual void setCullFace(bool f = true);
+    virtual void setCullFace(bool f = true) override;
 
     virtual void setInvertColorBlend(bool bInv) override;
 
     //////////
 
     /// Clear the target buffer with the specified color.
-    virtual void clearBuffer(const gfx::ColorPtr &pcol);
+    virtual void clearBuffer(const gfx::ColorPtr &pcol) override;
 
     //////////
     // Shader object creation (compiles GLSL via OglProgramObject)

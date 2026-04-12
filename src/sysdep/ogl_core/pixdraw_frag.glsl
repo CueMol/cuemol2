@@ -7,11 +7,22 @@
 #include "fog_inc.glsl"
 
 ////////////////////
-// Uniform variables
+// DrawParamsBlock UBO: binding point 2
+
+layout(std140) uniform DrawParamsBlock {
+    float frag_alpha;     // offset 0
+    float _p1, _p2, _p3; // offset 4, 8, 12 (padding for vec3 alignment)
+    vec3  u_position;     // offset 16
+    float _p4;            // offset 28
+    vec2  u_size;         // offset 32
+    vec2  u_viewportSize; // offset 40
+    vec3  u_colorBias;    // offset 48
+    float _p5;            // offset 60
+};
+
+////////////////////
+// Regular uniforms (samplers cannot go in UBO)
 uniform sampler2D u_texture;
-uniform vec3 u_colorBias;
-// uniform float u_alphaThreshold;
-uniform float frag_alpha;
 
 ////////////////////
 // Varying variables
@@ -23,12 +34,8 @@ out vec4 o_FragColor;
 
 void main()
 {
-    // o_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-    // return;
-    
     float alphaThreshold = 0.1;
 
-    // float alpha = texture2D(u_texture, v_texCoord).a;
     float alpha = texture(u_texture, v_texCoord).r;
 
     // Alpha test

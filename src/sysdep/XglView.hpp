@@ -70,13 +70,6 @@ namespace sysdep {
 			 int x, int y, int rtx, int rty,
 			 qsys::InDevEvent &ev);
 
-    /** for mouse drag event generation */
-    int m_prevPt_x, m_prevPt_y;
-    int m_startPt_x, m_startPt_y;
-    
-    /** mouse dragging start */
-    bool m_fDragStart;
-    
 
   };
 

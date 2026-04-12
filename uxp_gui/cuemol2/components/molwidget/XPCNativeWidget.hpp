@@ -15,10 +15,7 @@
 #include <nsIBaseWindow.h>
 #include "qINativeWidget.h"
 
-#include <qsys/View.hpp>
-#include <qsys/MouseEventHandler.hpp>
-
-namespace qsys { class InDevEvent; }
+#include <qsys/GUIView.hpp>
 
 namespace xpcom {
 
@@ -72,14 +69,7 @@ namespace xpcom {
     virtual nsresult attachImpl() =0;
 
     static const int DBCLK_TIMER = 500;
-    
-    enum {
-      DME_MOUSE_DOWN = 0,
-      DME_MOUSE_MOVE = 1,
-      DME_MOUSE_UP = 2,
-      DME_WHEEL = 3,
-      DME_DBCHK_TIMEUP = 4
-    };
+
     virtual void dispatchMouseEvent(int nType, qsys::InDevEvent &ev);
 
     // virtual void unloadImpl() =0;
@@ -96,7 +86,6 @@ namespace xpcom {
     bool useMultiTouchPad() const { return m_bUseMultiPad; }
 
     static void timerCallbackFunc(nsITimer *aTimer, void *aClosure);
-    
 
   protected:
     nsCOMPtr<nsIBaseWindow> mBaseWin;
@@ -108,8 +97,6 @@ namespace xpcom {
     int m_nSceneID, m_nViewID;
     qsys::ViewPtr m_rQmView;
 
-    qsys::MouseEventHandler m_meh;
-    
     bool m_bUseGlShader;
     bool m_bUseMultiPad;
     bool m_bUseHiDPI;

@@ -1,0 +1,19 @@
+// -*-Mode: C++;-*-
+
+#include "View.qif"
+
+runtime_class GUIView extends View
+{
+    client_hdr "GUIView.hpp";
+    client_name qsys::GUIView;
+
+    scriptable;
+    abstract;
+    smartptr;
+
+    // void setSclFac(real x, real y) => setSclFac;
+
+    void onMouseDown(real clientX, real clientY, real screenX, real screenY, integer modif) => onMouseDown;
+    void onMouseUp(real clientX, real clientY, real screenX, real screenY, integer modif) => onMouseUp;
+    void onMouseMove(real clientX, real clientY, real screenX, real screenY, integer modif) => onMouseMove;
+};

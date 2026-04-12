@@ -11,6 +11,7 @@ REPOS_DIR=$(cd $(dirname $0)/../..; pwd)
 TOP_DIR=${GITHUB_WORKSPACE:-$REPOS_DIR}
 
 BOOST_VER=boost_1_84_0
+BOOST_DIR=$BASEDIR/$BOOST_VER
 
 # Install location
 INST_PATH=$BASEDIR/cuemol2
@@ -32,10 +33,12 @@ cmake -G "$GENERATOR" \
       -S ${TOP_DIR}/cli -B $BUILD_DIR \
       -DCMAKE_INSTALL_PREFIX=$INST_PATH \
       -DCMAKE_PREFIX_PATH=$BASEDIR \
-      -DBoost_ROOT=$BASEDIR/$BOOST_VER/ \
+      -DBoost_ROOT=$BOOST_DIR/ \
       -DLIBCUEMOL2_ROOT=$BASEDIR/cuemol2 \
       -DCMAKE_BUILD_TYPE=$BUILD_TYPE
 
 cmake --build $BUILD_DIR --parallel --config $BUILD_TYPE
 cmake --install $BUILD_DIR --config $BUILD_TYPE
 
+# Copy dependent libs (boost)
+cp $BOOST_DIR/lib/lib* $BASEDIR/cuemol2/lib/

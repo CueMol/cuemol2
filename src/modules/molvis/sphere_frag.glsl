@@ -6,22 +6,18 @@
 
 #include <lighting_inc.glsl>
 #include <fog_inc.glsl>
+#include <matrices_inc.glsl>
 
 ////////////////////
-// Uniform variables
+// DrawParamsBlock UBO: binding point 2
 
-// edge rendering
-uniform float u_edge;
-
-// edge color
-uniform vec4 u_edgecolor;
-
-// total transparency
-uniform float frag_alpha;
-
-uniform bool u_bsilh;
-
-uniform mat4 u_ProjectionMatrix;
+layout(std140) uniform DrawParamsBlock {
+    float frag_alpha;   // offset 0
+    float u_edge;       // offset 4
+    int   u_bsilh;      // offset 8
+    float _pad;         // offset 12
+    vec4  u_edgecolor;  // offset 16
+};
 
 ////////////////////
 // Varying variables
@@ -75,7 +71,7 @@ void main()
     }
 
     // set depth
-    if (bEdge && u_bsilh) {
+    if (bEdge && u_bsilh != 0) {
         // edge
         gl_FragDepth = 0.99;
     } else {

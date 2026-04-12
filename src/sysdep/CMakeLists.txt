@@ -87,6 +87,7 @@ SET(SHADER_SOURCES
 SET(SHADER_DEPS
   ogl_core/lighting_inc.glsl
   ogl_core/fog_inc.glsl
+  ogl_core/matrices_inc.glsl
 )
 set_target_properties(sysdep PROPERTIES SHADER_SOURCES "${SHADER_SOURCES}")
 GLSL_PREPROC(sysdep "${SHADER_DEPS}")
@@ -129,4 +130,4 @@ install(TARGETS sysdep
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   FILE_SET HEADERS
 )
-install(FILES ${GLSL_SHADER_FILES} DESTINATION data/shaders)
+# install(FILES ${GLSL_SHADER_FILES} DESTINATION share/data/shaders)

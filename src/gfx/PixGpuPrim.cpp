@@ -14,6 +14,22 @@
 
 using namespace gfx;
 
+namespace {
+
+// PixGpuPrim DrawParamsBlock (binding=2, 64 bytes)
+struct PixDrawUBO {
+    float frag_alpha;       // offset 0
+    float _p1, _p2, _p3;   // offset 4, 8, 12 (padding for vec3 alignment)
+    float u_position[3];    // offset 16
+    float _p4;              // offset 28
+    float u_size[2];        // offset 32
+    float u_viewportSize[2];// offset 40
+    float u_colorBias[3];   // offset 48
+    float _p5;              // offset 60
+};
+
+}  // namespace
+
 bool PixGpuPrim::init(DisplayContext *pDC)
 {
     if (m_pPO != nullptr) return true;
@@ -26,11 +42,7 @@ bool PixGpuPrim::init(DisplayContext *pDC)
         return false;
     }
 
-    m_nVertexLoc = m_pPO->getAttribLocation("a_vertex");
-    m_nTexCoordLoc = m_pPO->getAttribLocation("a_texCoord");
-    MB_DPRINTLN("PixGpuPrim> a_vertex loc=%d, a_texCoord loc=%d",
-                m_nVertexLoc, m_nTexCoordLoc);
-
+    m_pPO->initDrawParamsUBO(sizeof(PixDrawUBO));
     alloc();
     return true;
 }
@@ -41,9 +53,9 @@ void PixGpuPrim::alloc()
     QuadArray &data = *m_pDrawElem;
 
     data.setAttrSize(2);
-    data.setAttrInfo(0, m_nVertexLoc, 2, qlib::type_consts::QTC_FLOAT32,
+    data.setAttrInfo(0, ATTRLOC_VERTEX, 2, qlib::type_consts::QTC_FLOAT32,
                      offsetof(Elem, x));
-    data.setAttrInfo(1, m_nTexCoordLoc, 2, qlib::type_consts::QTC_FLOAT32,
+    data.setAttrInfo(1, ATTRLOC_TEXCOORD, 2, qlib::type_consts::QTC_FLOAT32,
                      offsetof(Elem, tx));
 
     data.alloc(4);
@@ -82,17 +94,27 @@ void PixGpuPrim::draw(DisplayContext *pDC, const qlib::Vector4D &pos,
     float view_w = pView->convToBackingX(pView->getWidth());
     float view_h = pView->convToBackingY(pView->getHeight());
 
+    PixDrawUBO ubo = {};
+    ubo.frag_alpha      = (float)pDC->getAlpha();
+    ubo.u_position[0]   = (float)pos.x();
+    ubo.u_position[1]   = (float)pos.y();
+    ubo.u_position[2]   = (float)pos.z();
+    ubo.u_size[0]       = float(w);
+    ubo.u_size[1]       = float(h);
+    ubo.u_viewportSize[0] = view_w;
+    ubo.u_viewportSize[1] = view_h;
+    ubo.u_colorBias[0]  = r;
+    ubo.u_colorBias[1]  = g;
+    ubo.u_colorBias[2]  = b;
+
     pRep->bind(0);
 
     m_pPO->enable();
     m_pPO->setupFog(pDC);
     m_pPO->setupMat(pDC);
-    m_pPO->setUniformF("frag_alpha", pDC->getAlpha());
-    m_pPO->setUniformF("u_position", pos.x(), pos.y(), pos.z());
-    m_pPO->setUniformF("u_size", float(w), float(h));
-    m_pPO->setUniformF("u_viewportSize", view_w, view_h);
-    m_pPO->setUniformF("u_colorBias", r, g, b);
-    m_pPO->setUniformF("u_texture", 0);
+    m_pPO->updateDrawParamsUBO(&ubo, sizeof(ubo));
+    // u_texture is a sampler2D; must remain as a regular uniform
+    m_pPO->setUniform("u_texture", 0);
 
     pDC->drawElem(*m_pDrawElem);
 

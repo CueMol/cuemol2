@@ -7,13 +7,14 @@
 #include "fog_inc.glsl"
 
 ////////////////////
-// Uniform variables
+// DrawParamsBlock UBO: binding point 2
 
-uniform float frag_alpha;
-
-// uniform float u_fogEnd;
-// uniform float u_fogScale;
-// uniform vec3 u_fogColor;
+layout(std140) uniform DrawParamsBlock {
+    float frag_alpha;       // offset 0
+    int   enable_lighting;  // offset 4
+    int   u_nodepth;        // offset 8
+    float _pad;             // offset 12
+};
 
 ////////////////////
 // Varying variables
@@ -26,5 +27,4 @@ out vec4 o_FragColor;
 void main(void)
 {
     o_FragColor = fragFogColor(v_frontColor, frag_alpha, v_fogCoord);
-    // o_FragColor = vec4(1, 0, 0, 1);
 }
