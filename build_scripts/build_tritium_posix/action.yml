@@ -1,0 +1,17 @@
+name: 'Build tritium posix'
+description: 'Build Electron/React GUI app (tritium) on POSIX'
+
+inputs:
+  basedir:
+    description: 'base dir for deplibs'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+  - name: Build tritium (posix)
+    if: runner.os != 'Windows'
+    shell: bash
+    run: |
+      cd ${GITHUB_WORKSPACE}
+      bash build_scripts/build_tritium_posix/run.sh ${{ inputs.basedir }}
