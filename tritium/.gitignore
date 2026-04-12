@@ -1,0 +1,8 @@
+/core/node_modules/
+/core/src/wrappers/**
+/core/build/**
+/node_modules/
+/react-gui/node_modules/
+/react-gui/release/
+/react-gui/packaging/cuemol2-runtime/
+/react-gui/packaging/staging/

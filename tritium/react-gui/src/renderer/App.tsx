@@ -1,0 +1,360 @@
+/**
+ * Root component of the CueMol desktop application.
+ *
+ * Layout:
+ *   ┌─────────────────────────────────────────────────────┐
+ *   │  Toolbar  (menu buttons, macOS drag region)         │
+ *   ├──────┬──────────────┬───────────────────────────────┤
+ *   │      │              │  ContentArea (tabs)            │
+ *   │ Act. │  SidePanel   ├───────────────────────────────┤
+ *   │ Bar  │ (scene tree) │  BottomPanel (log / seq / anim)│
+ *   │      │              │                               │
+ *   ├──────┴──────────────┴───────────────────────────────┤
+ *   │  StatusBar                                          │
+ *   └─────────────────────────────────────────────────────┘
+ */
+
+import React, { useState, useCallback, useEffect, useRef } from "react";
+import type { SceneManager } from "@cuemol/core/src/wrappers/SceneManager";
+import { Allotment } from "allotment";
+import "allotment/dist/style.css";
+
+import { ActivityBar, type ActivityView } from "./components/ActivityBar";
+import { Toolbar } from "./components/Toolbar";
+import { SidePanel } from "./components/SidePanel";
+import { ContentArea } from "./components/ContentArea";
+import { BottomPanel } from "./components/BottomPanel";
+import { StatusBar } from "./components/StatusBar";
+import { InspectorPanel } from "./components/InspectorPanel";
+
+import type { AlignmentData, AnimationData } from "./types";
+
+import { SAMPLE_ALIGNMENT, SAMPLE_ANIMATION } from "./data/alignmentData";
+
+import { useLayoutPersistence } from "./hooks/useLayoutPersistence";
+import { useSceneState } from "./hooks/useSceneState";
+import { useInspectorState } from "./hooks/useInspectorState";
+import { useTabManager } from "./hooks/useTabManager";
+import { useCueMol } from "./hooks/useCueMol";
+import { useMolTabDispatch } from "./hooks/useMolTab";
+
+const App: React.FC = () => {
+
+  // ── Persistent layout state ────────────────────────────────
+
+  const {
+    layout,
+    loaded,
+    setMainSizes,
+    setRightPanelSizes,
+    setCenterSizes,
+    setInspectorOpen: persistInspectorOpen,
+    setViewSizes,
+    setViewCollapsed,
+  } = useLayoutPersistence();
+
+  // ── Activity-bar state ─────────────────────────────────────
+
+  const [activeView, setActiveView] = useState<ActivityView | null>("explorer");
+
+  const handleActivitySelect = useCallback((view: ActivityView) => {
+    setActiveView((prev) => (prev === view ? null : view));
+  }, []);
+
+  // ── Domain hooks ───────────────────────────────────────────
+
+  const {
+    scene,
+    sceneSelected,
+    setSceneSelected,
+    handleToggleVisibility,
+    resolveNodeName,
+  } = useSceneState();
+
+  const {
+    inspectorOpen,
+    rendererProps,
+    genericProps,
+    inspectorInfo,
+    handleShowProperty,
+    handleCloseInspector,
+    handlePropertyChange,
+    handleGenericChange,
+  } = useInspectorState({
+    layout,
+    loaded,
+    persistInspectorOpen,
+    resolveNodeName,
+  });
+
+  const {
+    tabs,
+    activeTab,
+    setActiveTab,
+    openFileFromData,
+    openSettingsTab,
+    addMolViewTab,
+    handleOpenFile,
+    handleCloseTab,
+    handleNewTab,
+    handleReorderTabs,
+    handleSave,
+  } = useTabManager();
+
+  // ── CueMol core ready → create initial scene/view ─────────
+
+  const { cueMolReady, cm } = useCueMol();
+  const { addMolTab, getActiveSceneInfo, setActiveViewByID } = useMolTabDispatch();
+
+  // Guard to prevent duplicate initial scene creation (React StrictMode)
+  const initialSceneCreatedRef = useRef(false);
+
+  useEffect(() => {
+    if (!cueMolReady || !cm) return;
+    if (initialSceneCreatedRef.current) return;
+    initialSceneCreatedRef.current = true;
+
+    let cancelled = false;
+    (async () => {
+      const sceMgr = (await cm.getService('SceneManager')) as SceneManager;
+      if (!sceMgr || cancelled) return;
+      const scene = await sceMgr.createScene();
+      const scene_uid = await scene.getUID();
+      const view = await scene.createView();
+      const view_uid = await view.getUID();
+      if (cancelled) return;
+      const title = `Scene ${scene_uid}`;
+      // Register in MolTabState first so MolViewPane can read getActiveViewID()
+      addMolTab(title, view_uid, scene_uid);
+      // Open the outer tab (causes ContentPane to mount MolViewPane)
+      addMolViewTab(title, view_uid);
+    })();
+    return () => { cancelled = true; };
+  }, [cueMolReady, cm, addMolTab, addMolViewTab]);
+
+  // ── Activate view when molview tab becomes active ──────────
+
+  useEffect(() => {
+    const tab = tabs.find((t) => t.id === activeTab);
+    if (tab?.type === 'molview' && tab.viewId !== undefined && cm && cueMolReady) {
+      setActiveViewByID(tab.viewId);
+      cm.activateView(tab.viewId);
+    }
+  }, [activeTab, tabs, cm, cueMolReady, setActiveViewByID]);
+
+  // ── Sample data ────────────────────────────────────────────
+
+  const [alignment] = useState<AlignmentData | null>(SAMPLE_ALIGNMENT);
+  const [animation] = useState<AnimationData | null>(SAMPLE_ANIMATION);
+
+  // ── Helper: create a new CueMol scene and open a molview tab ─
+
+  const createNewScene = useCallback(async (filePath?: string) => {
+    if (!cm) return;
+    const sceMgr = (await cm.getService('SceneManager')) as SceneManager;
+    if (!sceMgr) return;
+    const scene = await sceMgr.createScene();
+    const scene_uid = await scene.getUID();
+    const view = await scene.createView();
+    const view_uid = await view.getUID();
+    const dpr = window.devicePixelRatio || 1;
+    // Register the new view with the GfxManager (canvas already bound at this point)
+    await cm.addView(view_uid, dpr);
+    const title = `Scene ${scene_uid}`;
+    addMolTab(title, view_uid, scene_uid);
+    addMolViewTab(title, view_uid);
+    if (filePath) {
+      await cm.loadFile(filePath, scene_uid, view_uid);
+    }
+  }, [cm, addMolTab, addMolViewTab]);
+
+  // ── Electron IPC listeners ─────────────────────────────────
+
+  useEffect(() => {
+    const api = window.electronAPI;
+    if (!api) return;
+
+    const newSceneExts = ['qsc'];
+    const molExts = ['pdb', 'cif', 'mol2', 'sdf'];
+    const unsubs = [
+      api.onFileOpened((data) => {
+        const ext = data.path?.split('.').pop()?.toLowerCase() ?? '';
+        if (cm && newSceneExts.includes(ext)) {
+          // qsc files open in a new scene
+          createNewScene(data.path!).catch((e: unknown) =>
+            console.error('createNewScene failed:', e)
+          );
+          return;
+        }
+        if (cm && molExts.includes(ext)) {
+          // Other mol files load into the active scene
+          const info = getActiveSceneInfo();
+          if (info) {
+            cm.loadFile(data.path!, info.scene_uid, info.view_id)
+              .catch((e: unknown) => console.error('loadFile failed:', e));
+            return;
+          }
+        }
+        openFileFromData(data.name, data.content, data.path);
+      }),
+      api.onFileError((data) =>
+        console.error(`Failed to open ${data.path}: ${data.error}`)
+      ),
+      api.onMenuNewTab(() => handleNewTab()),
+      api.onMenuCloseTab(() => { if (activeTab) handleCloseTab(activeTab); }),
+      api.onMenuSave(() => handleSave()),
+      api.onMenuNewScene(() => {
+        createNewScene().catch((e: unknown) =>
+          console.error('createNewScene failed:', e)
+        );
+      }),
+    ];
+
+    return () => unsubs.forEach((unsub) => unsub());
+  }, [openFileFromData, handleNewTab, handleCloseTab, handleSave, createNewScene, activeTab, cm, getActiveSceneInfo]);
+
+  // ── macOS traffic-light inset ──────────────────────────────
+
+  useEffect(() => {
+    if (window.electronAPI?.platform === "darwin") {
+      document.documentElement.style.setProperty("--titlebar-inset", "78px");
+    }
+  }, []);
+
+  // ── Derived sidebar sub-panel state ───────────────────────
+
+  const viewSizes = layout.viewSizes ?? {
+    explorer: [220, 240],
+    selection: [260, 180],
+  };
+  const viewCollapsed = layout.viewCollapsed ?? {
+    explorer: { scene: false, color: false },
+    selection: { mol: false, selection: false },
+  };
+
+  // ── Derived values ─────────────────────────────────────────
+
+  const activeFile = tabs.find((t) => t.id === activeTab)?.title;
+  const sidebarVisible = activeView !== null;
+  const settingsActive = tabs.find((t) => t.id === activeTab)?.type === "settings";
+
+  // ── Render ─────────────────────────────────────────────────
+
+  return (
+    <div className="app">
+      <Toolbar
+        onOpenFile={handleOpenFile}
+        onNewTab={handleNewTab}
+        onSave={handleSave}
+      />
+
+      <div className="main-layout">
+        <div className="main-layout-inner">
+          <ActivityBar
+            activeView={activeView}
+            onSelect={handleActivitySelect}
+            onSettingsClick={openSettingsTab}
+            settingsActive={settingsActive}
+          />
+
+          <div className="main-content-area">
+            {loaded && (
+              <Allotment
+                onChange={setMainSizes}
+                defaultSizes={
+                  layout.mainSizes && layout.mainSizes.length > 0
+                    ? layout.mainSizes
+                    : undefined
+                }
+              >
+                {/* Left: Sidebar */}
+                <Allotment.Pane
+                  minSize={180}
+                  preferredSize={260}
+                  visible={sidebarVisible}
+                  snap
+                >
+                  <SidePanel
+                    activeView={activeView ?? "explorer"}
+                    scene={scene}
+                    sceneSelected={sceneSelected}
+                    onSceneSelect={setSceneSelected}
+                    onToggleVisibility={handleToggleVisibility}
+                    onShowProperty={handleShowProperty}
+                    viewSizes={viewSizes}
+                    viewCollapsed={viewCollapsed}
+                    onViewSizesChange={setViewSizes}
+                    onViewCollapsedChange={setViewCollapsed}
+                  />
+                </Allotment.Pane>
+
+                {/* Right section: center + inspector */}
+                <Allotment.Pane>
+                  <Allotment
+                    onChange={setRightPanelSizes}
+                    defaultSizes={
+                      layout.rightPanelSizes && layout.rightPanelSizes.length > 0
+                        ? layout.rightPanelSizes
+                        : undefined
+                    }
+                  >
+                    {/* Center: ContentArea + BottomPanel (vertical split) */}
+                    <Allotment.Pane>
+                      <Allotment
+                        vertical
+                        onChange={setCenterSizes}
+                        defaultSizes={
+                          layout.centerSizes && layout.centerSizes.length > 0
+                            ? layout.centerSizes
+                            : undefined
+                        }
+                      >
+                        <Allotment.Pane>
+                          <ContentArea
+                            tabs={tabs}
+                            activeTab={activeTab}
+                            onSelectTab={setActiveTab}
+                            onCloseTab={handleCloseTab}
+                            onReorderTabs={handleReorderTabs}
+                          />
+                        </Allotment.Pane>
+                        <Allotment.Pane minSize={100} preferredSize={200} snap>
+                          <BottomPanel
+                            alignment={alignment}
+                            animation={animation}
+                          />
+                        </Allotment.Pane>
+                      </Allotment>
+                    </Allotment.Pane>
+
+                    {/* Right: Inspector */}
+                    <Allotment.Pane
+                      minSize={240}
+                      preferredSize={300}
+                      visible={inspectorOpen}
+                      snap
+                    >
+                      <InspectorPanel
+                        rendererName={inspectorInfo.name}
+                        rendererType={inspectorInfo.type}
+                        properties={rendererProps}
+                        genericEntries={genericProps}
+                        onPropertyChange={handlePropertyChange}
+                        onGenericChange={handleGenericChange}
+                        onClose={handleCloseInspector}
+                      />
+                    </Allotment.Pane>
+                  </Allotment>
+                </Allotment.Pane>
+              </Allotment>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <StatusBar activeFile={activeFile} atomCount="13,167" />
+    </div>
+  );
+};
+
+export default App;

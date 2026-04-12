@@ -1,0 +1,30 @@
+
+.content {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.menuContainer {
+    flex-grow: 0;
+}
+.appContainer {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: row;
+}
+.statusContainer {
+    flex-grow: 0;
+}
+
+.sidePanelContainer {
+    flex-grow: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.mainContainer {
+    padding: 0px;
+    background: yellow;
+}

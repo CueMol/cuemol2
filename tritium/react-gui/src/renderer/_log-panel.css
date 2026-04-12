@@ -1,0 +1,184 @@
+/* ─── Log Panel ─── */
+.log-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-surface);
+  overflow: hidden;
+}
+
+.log-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  height: 30px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-secondary);
+  background: var(--bg-panel-header);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.log-panel-title {
+  display: flex;
+  align-items: center;
+}
+
+.log-count {
+  font-size: 10px !important;
+  min-width: 24px;
+  text-align: center;
+}
+
+.log-output {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+
+.log-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 1px 12px;
+  transition: background 0.1s;
+}
+
+.log-line:hover {
+  background: var(--overlay-subtle);
+}
+
+.log-time {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  font-size: 10.5px;
+}
+
+.log-level-tag {
+  flex-shrink: 0;
+  font-size: 10px !important;
+  min-height: 16px !important;
+  padding: 0 4px !important;
+  line-height: 16px !important;
+  min-width: 40px;
+  text-align: center;
+}
+
+.log-msg {
+  color: var(--text-primary);
+  word-break: break-all;
+}
+
+.log-warn .log-msg {
+  color: var(--log-warn);
+}
+
+.log-error .log-msg {
+  color: var(--log-error);
+}
+
+.log-debug .log-msg {
+  color: var(--text-muted);
+}
+
+/* ─── Log Prompt ─── */
+.log-prompt {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  height: 32px;
+  background: var(--bg-input);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.prompt-symbol {
+  color: var(--accent);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 13px;
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+.prompt-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-size: 12px;
+  caret-color: var(--accent);
+}
+
+.prompt-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* ─── Bottom Panel Tabs ─── */
+.bottom-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-surface);
+  overflow: hidden;
+}
+
+.bottom-panel-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 30px;
+  background: var(--bg-panel-header);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.bottom-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  height: 100%;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.bottom-tab:hover {
+  color: var(--text-secondary);
+  background: var(--bg-hover);
+}
+
+.bottom-tab.active {
+  color: var(--text-secondary);
+  border-bottom-color: var(--accent);
+}
+
+.bottom-tab .tab-icon {
+  color: inherit;
+}
+
+.bottom-tab .tab-badge {
+  font-size: 10px !important;
+  min-width: 20px;
+  text-align: center;
+}
+
+.bottom-panel-content {
+  flex: 1;
+  overflow: hidden;
+}
