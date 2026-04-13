@@ -6,10 +6,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 もしわからないことがあったら無理に探索して解決しようとせずにユーザーに尋ねること
 
-This repository contains two main components:
+This repository contains:
 
-- **libcuemol2** — C++17 shared library for macromolecular structure visualization (PDB, CCP4, CNS, MTZ, MSMS, APBS formats), with Python/Node.js bindings
-- **tritium** (`tritium/`) — CueMol3 proof-of-concept desktop app built on Electron + React, bridging libcuemol2 via a Node.js native addon
+- **libcuemol2** (`src/`) — C++17 shared library for macromolecular structure visualization (PDB, CCP4, CNS, MTZ, MSMS, APBS formats), with Python/Node.js bindings
+- **tritium** (`tritium/`) — CueMol desktop app (Electron + React 18 pnpm monorepo), bridging libcuemol2 via a Node.js native addon
+  - `tritium/core/` — C++ native addon (`@cuemol/core`)
+  - `tritium/react-gui/` — Electron + React 18 app
+- **UXP GUI** (`uxp_gui/`) — CueMol2 desktop app built on UXP (mozilla)
+
+**Auto-generated files — do not edit manually:**
+- `*_wrap.cpp` — generated from `.qif` interface files (scriptable object interfaces)
+- `tritium/core/src/wrappers/` — TypeScript wrappers generated from libcuemol2 at build time (copied by CMake's `copy_wrappers` target from `$LIBCUEMOL2_ROOT/share/typescript`)
 
 ## libcuemol2 Build
 
@@ -22,7 +29,7 @@ cd build_scripts/ && task download_deplibs
 ```sh
 cd build_scripts/ && task rebuild_libcuemol2
 ```
-あるいは、既存のbuild結果を全消ししてrebuildしたい場合
+既存のbuild結果を全消ししてrebuildしたい場合:
 ```sh
 cd build_scripts/ && task clean_libcuemol2 && task rebuild_libcuemol2
 ```
@@ -34,9 +41,7 @@ cd build_scripts/ && task build_libcuemol2
 
 Success indicators: `Install the project...` or `-- Up-to-date:...` in output.
 
-**注意: build出力の読み方**
-
-`task build_libcuemol2` は cmake build + install を両方行う。出力の末尾には install ステップの `-- Up-to-date: ...` が大量に並ぶが、これはビルドが実行されなかったことを意味しない。コンパイルエラーの有無は出力中の `error:` や `^\[N/M\]` の行で確認する。
+**注意:** `task build_libcuemol2` は cmake build + install を両方行う。出力末尾の `-- Up-to-date: ...` はビルドが実行されなかったことを意味しない。コンパイルエラーの有無は出力中の `error:` や `^\[N/M\]` の行で確認する。
 
 ## libcuemol2 Tests
 
@@ -64,34 +69,30 @@ src/
 
 **Module system**: Modules register with `qsys` (SceneManager, RendererFactory) at init time.
 
-**Wrapper generation**: `.qif` interface files define scriptable object interfaces; `*_wrap.cpp` files are auto-generated — do not edit them manually.
-
 ## C++ Coding Rules
 
 - Follow `.clang-format` for formatting
 - Use C++17 features where applicable; replace Boost with C++17 equivalents where possible
 - Build option `BUILD_TESTS=ON` enables gtest compilation
 - Headers inside `src/qsys/` must use `""` (quoted) form for intra-module includes, not `<>`. The test build's `-I` flags do not include `qsys/` directly, so `<View.hpp>` fails while `"View.hpp"` works.
+
+### gtest Policy
+
 - gtestが未実装のコードをrefactoring変更しようとする場合は、その部分に関連するgtestを作成してテストが通ることを確認してから実装を行う。実装後、gtestが通ることでrefactoringによりコードが壊れていないことを確認する。
-
-## gtest Implementation Policy
-
 - 本体のソースコードがおかしい場合は、無理にそちらに迎合してtestを作成/修正しようとせずに、本体を修正する
-- Unit tests cover all logic in `.hpp` and `.cpp` files
-- Exclude `*_wrap.cpp` (auto-generated) from test coverage
+- Unit tests cover all logic in `.hpp` and `.cpp` files (exclude `*_wrap.cpp`)
 - Tests in `src/tests/` mirror the module structure of `src/`
-- SetUp()では、src/libcuemol2_api/loader.cppのinit(...)と同様の初期化を行う必要がある。場合によってはqsys::init(...)に渡す引数confpathに、システムの設定ファイル、sysconfig.xmlのpathを渡す必要がある。
-  - sysconfig.xmlは、インストール前のものは、`<topdir>/data/sysconfig.xml` にある
-  - sysconfig.xmlは、インストール後は、`<install prefix>/data/sysconfig.xml` にある
+- SetUp()では、`src/libcuemol2_api/loader.cpp`のinit(...)と同様の初期化を行う必要がある。場合によっては`qsys::init(...)`に渡す引数confpathに、`sysconfig.xml`のpathを渡す必要がある。
+  - インストール前: `<topdir>/data/sysconfig.xml`
+  - インストール後: `<install prefix>/data/sysconfig.xml`
+- 各機能が仕様通りに機能するか検査する。
+- 不必要に類似のテストを実装しない。必要最低限のものにする。
+- 将来の別のupdate時にコードを改変した際に、想定した仕様動作が破壊されたかどうかを検知できるものにする。
+- 関数やmethodレベルのtestだけでなく、ある程度クラスやmethodを跨った機能単位の結合テストも必要性を検討し実装する。
 
 ---
 
 ## tritium Build & Development
-
-tritium is a pnpm monorepo under `tritium/`, consisting of:
-
-- `tritium/core/` — C++ native addon (`@cuemol/core`)
-- `tritium/react-gui/` — Electron + React 18 app
 
 ### Root (pnpm monorepo)
 
@@ -101,25 +102,25 @@ pnpm install        # Install all packages
 pnpm run build      # Build all packages recursively
 ```
 
-### Core (`tritium/core/` — C++ native addon)
+### Core (`tritium/core/`)
 
 ```bash
 cd tritium/core
-npm run install     # Compile C++ addon via cmake-js (requires LIBCUEMOL2_ROOT env var)
-npm run test        # Run Jest tests (sequential, ESM mode)
+npm run install     # Compile C++ addon via cmake-js
+npm run test        # Run Jest tests (sequential --runInBand, ESM mode)
 ```
 
-To run a single test file:
+Single test file:
 ```bash
 cd tritium/core
 cross-env NODE_OPTIONS="--experimental-vm-modules --no-warnings --expose-gc" npx jest --runInBand src/tests/qlib/Vector.test.ts
 ```
 
-**Required environment variables for building:**
+**Required environment variables:**
 - `LIBCUEMOL2_ROOT` — path to installed libcuemol2 (mandatory)
-- `Boost_ROOT` — path to Boost installation (optional, if not in standard path)
+- `Boost_ROOT` — path to Boost installation (optional)
 
-### React-GUI (`tritium/react-gui/` — Electron app)
+### React-GUI (`tritium/react-gui/`)
 
 ```bash
 cd tritium/react-gui
@@ -130,38 +131,25 @@ npm run start       # Preview production build
 
 ## tritium Architecture
 
-### Layer Stack
-
 ```
 react-gui (Electron + React 18)
-    └─ Main Process: electron menu, file dialog, IPC
-    └─ Renderer Process: React UI
-        └─ Web Worker: heavy CueMol operations (worker/main.ts, worker/services.ts)
+├─ Main Process: electron menu, file dialog, IPC
+│   → tritium/react-gui/src/main/index.ts
+└─ Renderer Process: React UI
+    │ → tritium/react-gui/src/renderer/App.tsx (root component, Allotment splitter)
+    │ → tritium/react-gui/src/renderer/hooks/ (useCueMol, useMolView, useLogEvent)
+    └─ Web Worker: heavy CueMol operations (worker/main.ts, worker/services.ts)
+
 core (@cuemol/core)
-    └─ TypeScript wrappers (src/wrappers/ — auto-generated from libcuemol2)
-    └─ cuemol.ts — main facade class
-    └─ BaseWrapper.ts — base for all C++ object wrappers
-    └─ C++ addon (cxx_src/) → build/Release/cuemol_internal.node
+├─ tritium/core/src/cuemol.ts — main CueMol facade class (top-level API)
+├─ tritium/core/src/BaseWrapper.ts — base class for all C++ object wrappers
+├─ tritium/core/src/interfaces.ts — shared TypeScript interfaces
+├─ tritium/core/src/wrappers/ — auto-generated TypeScript wrappers
+└─ C++ addon (cxx_src/) → build/Release/cuemol_internal.node
+
 libcuemol2 (external C++ library, path via LIBCUEMOL2_ROOT)
 ```
 
-### Key Design Points
+**IPC flow**: Electron main ↔ renderer via standard Electron IPC; renderer ↔ Web Worker via `postMessage`.
 
-- **TypeScript wrappers in `tritium/core/src/wrappers/`** are auto-generated from libcuemol2 at build time (copied by CMake's `copy_wrappers` target from `$LIBCUEMOL2_ROOT/share/typescript`). Do not edit these files manually.
-- **Web Worker pattern**: The renderer offloads CueMol operations to a Web Worker (`react-gui/src/renderer/worker/`) to keep the UI thread responsive.
-- **IPC flow**: Electron main ↔ renderer via standard Electron IPC; renderer ↔ Web Worker via `postMessage`.
-
-### tritium Entry Points
-
-- `tritium/core/src/cuemol.ts` — top-level `CueMol` class (main API surface)
-- `tritium/core/src/BaseWrapper.ts` — base class all wrapped C++ objects inherit from
-- `tritium/core/src/interfaces.ts` — shared TypeScript interfaces
-- `tritium/react-gui/src/main/index.ts` — Electron main process (menu, IPC, window management)
-- `tritium/react-gui/src/renderer/App.tsx` — root React component (layout with Allotment splitter)
-- `tritium/react-gui/src/renderer/hooks/` — custom hooks: `useCueMol`, `useMolView`, `useLogEvent`
-
-## tritium Tests
-
-Tests live in `tritium/core/src/tests/` and cover the C++ binding layer (qlib primitives: Vector, Matrix, etc., plus async and gfx). There are no GUI tests currently.
-
-Tests run sequentially (`--runInBand`) because the C++ addon is not thread-safe across Jest workers.
+**Tests** live in `tritium/core/src/tests/` covering the C++ binding layer (qlib primitives, async, gfx). Tests run sequentially (`--runInBand`) because the C++ addon is not thread-safe across Jest workers. No GUI tests currently.
