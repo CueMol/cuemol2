@@ -42,14 +42,19 @@ export async function handleOpenFile(mainWindow: BrowserWindow): Promise<void> {
     properties: ['openFile'],
   })
 
+  // These extensions are loaded directly from disk by the C++ core;
+  // sending the full content over IPC would be wasteful.
+  const PATH_ONLY_EXTS = new Set(['pdb', 'cif', 'mol2', 'sdf', 'qsc'])
+
   if (!result.canceled && result.filePaths.length > 0) {
     for (const filePath of result.filePaths) {
       try {
-        const content = fs.readFileSync(filePath, 'utf-8')
+        const ext = path.extname(filePath).slice(1).toLowerCase()
+        const pathOnly = PATH_ONLY_EXTS.has(ext)
         mainWindow.webContents.send(IPC.FILE_OPENED, {
           name: path.basename(filePath),
           path: filePath,
-          content,
+          content: pathOnly ? undefined : fs.readFileSync(filePath, 'utf-8'),
         })
       } catch (err) {
         mainWindow.webContents.send(IPC.FILE_ERROR, {

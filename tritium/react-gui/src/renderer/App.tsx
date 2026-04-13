@@ -37,6 +37,7 @@ import { useInspectorState } from "./hooks/useInspectorState";
 import { useTabManager } from "./hooks/useTabManager";
 import { useCueMol } from "./hooks/useCueMol";
 import { useMolTabDispatch } from "./hooks/useMolTab";
+import { useElectronIpc } from "./hooks/useElectronIpc";
 
 const App: React.FC = () => {
 
@@ -147,71 +148,19 @@ const App: React.FC = () => {
   const [alignment] = useState<AlignmentData | null>(SAMPLE_ALIGNMENT);
   const [animation] = useState<AnimationData | null>(SAMPLE_ANIMATION);
 
-  // ── Helper: create a new CueMol scene and open a molview tab ─
-
-  const createNewScene = useCallback(async (filePath?: string) => {
-    if (!cm) return;
-    const sceMgr = (await cm.getService('SceneManager')) as SceneManager;
-    if (!sceMgr) return;
-    const scene = await sceMgr.createScene();
-    const scene_uid = await scene.getUID();
-    const view = await scene.createView();
-    const view_uid = await view.getUID();
-    const dpr = window.devicePixelRatio || 1;
-    // Register the new view with the GfxManager (canvas already bound at this point)
-    await cm.addView(view_uid, dpr);
-    const title = `Scene ${scene_uid}`;
-    addMolTab(title, view_uid, scene_uid);
-    addMolViewTab(title, view_uid);
-    if (filePath) {
-      await cm.loadFile(filePath, scene_uid, view_uid);
-    }
-  }, [cm, addMolTab, addMolViewTab]);
-
   // ── Electron IPC listeners ─────────────────────────────────
 
-  useEffect(() => {
-    const api = window.electronAPI;
-    if (!api) return;
-
-    const newSceneExts = ['qsc'];
-    const molExts = ['pdb', 'cif', 'mol2', 'sdf'];
-    const unsubs = [
-      api.onFileOpened((data) => {
-        const ext = data.path?.split('.').pop()?.toLowerCase() ?? '';
-        if (cm && newSceneExts.includes(ext)) {
-          // qsc files open in a new scene
-          createNewScene(data.path!).catch((e: unknown) =>
-            console.error('createNewScene failed:', e)
-          );
-          return;
-        }
-        if (cm && molExts.includes(ext)) {
-          // Other mol files load into the active scene
-          const info = getActiveSceneInfo();
-          if (info) {
-            cm.loadFile(data.path!, info.scene_uid, info.view_id)
-              .catch((e: unknown) => console.error('loadFile failed:', e));
-            return;
-          }
-        }
-        openFileFromData(data.name, data.content, data.path);
-      }),
-      api.onFileError((data) =>
-        console.error(`Failed to open ${data.path}: ${data.error}`)
-      ),
-      api.onMenuNewTab(() => handleNewTab()),
-      api.onMenuCloseTab(() => { if (activeTab) handleCloseTab(activeTab); }),
-      api.onMenuSave(() => handleSave()),
-      api.onMenuNewScene(() => {
-        createNewScene().catch((e: unknown) =>
-          console.error('createNewScene failed:', e)
-        );
-      }),
-    ];
-
-    return () => unsubs.forEach((unsub) => unsub());
-  }, [openFileFromData, handleNewTab, handleCloseTab, handleSave, createNewScene, activeTab, cm, getActiveSceneInfo]);
+  useElectronIpc({
+    cm,
+    addMolTab,
+    addMolViewTab,
+    getActiveSceneInfo,
+    openFileFromData,
+    handleNewTab,
+    handleCloseTab,
+    handleSave,
+    activeTab,
+  });
 
   // ── macOS traffic-light inset ──────────────────────────────
 
