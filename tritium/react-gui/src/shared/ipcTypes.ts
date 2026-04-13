@@ -1,0 +1,95 @@
+/**
+ * Shared types for IPC communication between Electron main, preload, and renderer.
+ *
+ * This is the single source of truth for all data structures that cross
+ * process boundaries. Import from here instead of defining locally.
+ */
+
+// ── Layout ─────────────────────────────────────────────────────────────────
+
+/** Collapse state for sidebar sub-panels, keyed by pane id. */
+export type PaneCollapseState = Record<string, boolean>
+
+/**
+ * Persisted splitter / panel state.
+ *
+ * The flat `explorerSizes` / `explorerCollapsed` / `selectionSizes` /
+ * `selectionCollapsed` keys are kept for backwards compatibility with
+ * existing on-disk electron-store data. New code uses the generic
+ * `viewSizes` / `viewCollapsed` maps instead.
+ */
+export interface LayoutState {
+  mainSizes?: number[]
+  rightPanelSizes?: number[]
+  centerSizes?: number[]
+  sidebarOpen?: boolean
+  inspectorOpen?: boolean
+  // legacy flat keys (on-disk compatibility)
+  explorerSizes?: number[]
+  explorerCollapsed?: Record<string, boolean>
+  selectionSizes?: number[]
+  selectionCollapsed?: Record<string, boolean>
+  // modern generic keys
+  viewSizes?: Record<string, number[]>
+  viewCollapsed?: Record<string, PaneCollapseState>
+}
+
+// ── UI preferences ──────────────────────────────────────────────────────────
+
+/** Miscellaneous UI preferences exchanged with the main process. */
+export interface UiState {
+  sidebarActiveView?: string
+  selectionMolId?: string
+  theme?: 'dark' | 'light'
+}
+
+// ── File events ─────────────────────────────────────────────────────────────
+
+export interface FileOpenedData {
+  name: string
+  path: string
+  content: string
+}
+
+export interface FileErrorData {
+  path: string
+  error: string
+}
+
+// ── App path ────────────────────────────────────────────────────────────────
+
+export interface AppPathInfo {
+  appPath: string
+  exePath: string
+  modulePath: string
+  isPackaged: boolean
+  sysConfigPath: string
+}
+
+// ── ElectronAPI (the contextBridge contract) ────────────────────────────────
+
+export interface ElectronAPI {
+  platform: string
+
+  // App path info (for CueMol core init)
+  getAppPathInfo: () => Promise<AppPathInfo>
+
+  // File operations
+  openFile: () => Promise<void>
+
+  // Menu event listeners (return unsubscribe function)
+  onFileOpened: (callback: (data: FileOpenedData) => void) => () => void
+  onFileError: (callback: (data: FileErrorData) => void) => () => void
+  onMenuNewTab: (callback: () => void) => () => void
+  onMenuCloseTab: (callback: () => void) => () => void
+  onMenuSave: (callback: () => void) => () => void
+  onMenuNewScene: (callback: () => void) => () => void
+
+  // Layout persistence
+  loadLayout: () => Promise<LayoutState>
+  saveLayout: (state: LayoutState) => Promise<void>
+
+  // UI preferences persistence
+  loadUi: () => Promise<UiState>
+  saveUi: (state: Partial<UiState>) => Promise<void>
+}

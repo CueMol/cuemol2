@@ -8,6 +8,9 @@
  */
 
 import Store from 'electron-store'
+import type { LayoutState, UiState } from '../shared/ipcTypes'
+
+export type { LayoutState, UiState, PaneCollapseState } from '../shared/ipcTypes'
 
 // ─────────────────────────────────────────────
 // Types
@@ -19,24 +22,6 @@ export interface WindowBounds {
   width: number
   height: number
   isMaximized: boolean
-}
-
-export interface LayoutState {
-  mainSizes?: number[]
-  rightPanelSizes?: number[]
-  centerSizes?: number[]
-  sidebarOpen?: boolean
-  inspectorOpen?: boolean
-  explorerSizes?: number[]
-  explorerCollapsed?: Record<string, boolean>
-  selectionSizes?: number[]
-  selectionCollapsed?: Record<string, boolean>
-}
-
-export interface UiState {
-  sidebarActiveView?: string
-  selectionMolId?: string
-  theme?: 'dark' | 'light'
 }
 
 interface StoreSchema {

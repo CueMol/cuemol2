@@ -27,43 +27,12 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import type { PaneCollapseState, LayoutState, UiState } from "../../shared/ipcTypes";
 
-// ────────────────────────────────────────────────────────────
-// Types
-// ────────────────────────────────────────────────────────────
-
-/** Collapse state for sidebar sub-panels, keyed by pane id. */
-export type PaneCollapseState = Record<string, boolean>;
-
-export interface LayoutState {
-  /** Outer horizontal split: [sidebar, rightArea]. */
-  mainSizes?: number[];
-  /** Inner horizontal split: [center, inspector]. */
-  rightPanelSizes?: number[];
-  centerSizes?: number[];
-  sidebarOpen?: boolean;
-  inspectorOpen?: boolean;
-
-  /**
-   * Per-view splitter sizes (supports N views × M panes).
-   * e.g. `{ explorer: [220, 240], selection: [260, 180] }`
-   */
-  viewSizes?: Record<string, number[]>;
-
-  /**
-   * Per-view collapse flags (supports N views × M panes).
-   * e.g. `{ explorer: { scene: false, color: false }, … }`
-   */
-  viewCollapsed?: Record<string, PaneCollapseState>;
-}
-
-export interface UiState {
-  sidebarActiveView?: string;
-  selectionMolId?: string;
-}
+export type { PaneCollapseState, LayoutState, UiState };
 
 /** Default layout values used on first run (no saved state). */
-const LAYOUT_DEFAULTS: Required<LayoutState> = {
+const LAYOUT_DEFAULTS: LayoutState = {
   mainSizes: [],
   rightPanelSizes: [],
   centerSizes: [],
@@ -79,7 +48,7 @@ const LAYOUT_DEFAULTS: Required<LayoutState> = {
   },
 };
 
-const UI_DEFAULTS: Required<UiState> = {
+const UI_DEFAULTS: UiState = {
   sidebarActiveView: "explorer",
   selectionMolId: "",
 };

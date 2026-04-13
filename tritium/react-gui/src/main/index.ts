@@ -1,31 +1,12 @@
-import { app, BrowserWindow, ipcMain, dialog, Menu, screen } from 'electron'
+import { app, BrowserWindow, Menu, screen } from 'electron'
 import { join } from 'path'
-import fs from 'fs'
-import {
-  loadWindowBounds,
-  saveWindowBounds,
-  loadLayout,
-  saveLayout,
-  loadUi,
-  saveUi,
-  type WindowBounds,
-  type LayoutState,
-} from './stateStore'
+import { loadWindowBounds, saveWindowBounds, type WindowBounds } from './stateStore'
+import { registerIpcHandlers, handleOpenFile } from './ipcHandlers'
+import { IPC } from '../shared/ipcChannels'
 
 const isMac = process.platform === 'darwin'
 
 let mainWindow: BrowserWindow | null = null
-
-// ─────────────────────────────────────────────
-// sysconfig path helper
-// ─────────────────────────────────────────────
-
-function getSysConfigPath(): string {
-  if (app.isPackaged) {
-    return join(process.resourcesPath, 'cuemol2', 'share', 'sysconfig.xml')
-  }
-  return ''
-}
 
 // ─────────────────────────────────────────────
 // Window creation
@@ -112,6 +93,7 @@ const createWindow = (): void => {
   })
 
   trackWindowState(mainWindow)
+  registerIpcHandlers(mainWindow)
   createMenu()
 
   if (process.env['ELECTRON_RENDERER_URL']) {
@@ -152,23 +134,23 @@ function createMenu(): void {
         {
           label: 'Open File...',
           accelerator: 'CmdOrCtrl+O',
-          click: () => handleOpenFile(),
+          click: () => { if (mainWindow) handleOpenFile(mainWindow) },
         },
         {
           label: 'Save',
           accelerator: 'CmdOrCtrl+S',
-          click: () => mainWindow?.webContents.send('menu:save'),
+          click: () => mainWindow?.webContents.send(IPC.MENU_SAVE),
         },
         { type: 'separator' },
         {
           label: 'New Tab',
           accelerator: 'CmdOrCtrl+T',
-          click: () => mainWindow?.webContents.send('menu:new-tab'),
+          click: () => mainWindow?.webContents.send(IPC.MENU_NEW_TAB),
         },
         {
           label: 'Close Tab',
           accelerator: 'CmdOrCtrl+W',
-          click: () => mainWindow?.webContents.send('menu:close-tab'),
+          click: () => mainWindow?.webContents.send(IPC.MENU_CLOSE_TAB),
         },
         { type: 'separator' },
         isMac ? { role: 'close' } : { role: 'quit' },
@@ -205,11 +187,11 @@ function createMenu(): void {
       submenu: [
         {
           label: 'New Scene',
-          click: () => mainWindow?.webContents.send('menu:new-scene'),
+          click: () => mainWindow?.webContents.send(IPC.MENU_NEW_SCENE),
         },
         {
           label: 'Load Molecule...',
-          click: () => handleOpenFile(),
+          click: () => { if (mainWindow) handleOpenFile(mainWindow) },
         },
       ],
     },
@@ -226,73 +208,6 @@ function createMenu(): void {
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 }
-
-// ─────────────────────────────────────────────
-// File open IPC
-// ─────────────────────────────────────────────
-
-async function handleOpenFile(): Promise<void> {
-  if (!mainWindow) return
-
-  const result = await dialog.showOpenDialog(mainWindow, {
-    title: 'Open File',
-    filters: [
-      { name: 'All Supported', extensions: ['pdb', 'cif', 'mol2', 'sdf', 'qsc', 'json', 'py', 'txt'] },
-      { name: 'CueMol Scene', extensions: ['qsc'] },
-      { name: 'PDB Files', extensions: ['pdb'] },
-      { name: 'mmCIF Files', extensions: ['cif'] },
-      { name: 'All Files', extensions: ['*'] },
-    ],
-    properties: ['openFile'],
-  })
-
-  if (!result.canceled && result.filePaths.length > 0) {
-    for (const filePath of result.filePaths) {
-      try {
-        const content = fs.readFileSync(filePath, 'utf-8')
-        mainWindow.webContents.send('file:opened', {
-          name: require('path').basename(filePath),
-          path: filePath,
-          content,
-        })
-      } catch (err) {
-        mainWindow.webContents.send('file:error', {
-          path: filePath,
-          error: (err as Error).message,
-        })
-      }
-    }
-  }
-}
-
-// ─────────────────────────────────────────────
-// IPC handlers
-// ─────────────────────────────────────────────
-
-ipcMain.handle('apppath', async () => {
-  return {
-    appPath: app.getAppPath(),
-    exePath: app.getPath('exe'),
-    modulePath: app.getPath('module'),
-    isPackaged: app.isPackaged,
-    sysConfigPath: getSysConfigPath(),
-  }
-})
-
-ipcMain.handle('dialog:openFile', async () => {
-  await handleOpenFile()
-})
-
-ipcMain.handle('layout:load', async (): Promise<LayoutState | null> => {
-  return loadLayout() ?? null
-})
-
-ipcMain.handle('layout:save', async (_event, layout: LayoutState): Promise<void> => {
-  saveLayout(layout)
-})
-
-ipcMain.handle('ui:load', () => loadUi())
-ipcMain.handle('ui:save', (_e, state) => saveUi(state))
 
 // ─────────────────────────────────────────────
 // App lifecycle

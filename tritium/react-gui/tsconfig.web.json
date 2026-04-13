@@ -1,6 +1,6 @@
 {
   "extends": "@electron-toolkit/tsconfig/tsconfig.web.json",
-  "include": ["src/renderer/**/*"],
+  "include": ["src/renderer/**/*", "src/shared/**/*"],
   "compilerOptions": {
     "composite": true,
     "noImplicitAny": false
