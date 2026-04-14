@@ -11,6 +11,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type {
   FileOpenedData,
   FileErrorData,
+  FileDialogOptions,
   LayoutState,
   UiState,
   ElectronAPI,
@@ -28,7 +29,7 @@ const api: ElectronAPI = {
   getAppPathInfo: () => ipcRenderer.invoke(IPC.APP_PATH),
 
   // File operations
-  openFile: () => ipcRenderer.invoke(IPC.DIALOG_OPEN),
+  openFile: (options: FileDialogOptions) => ipcRenderer.invoke(IPC.DIALOG_OPEN, options),
 
   // Menu event listeners
   onFileOpened: (callback) => {
@@ -65,6 +66,18 @@ const api: ElectronAPI = {
     const handler = () => callback()
     ipcRenderer.on(IPC.MENU_NEW_SCENE, handler)
     return () => ipcRenderer.removeListener(IPC.MENU_NEW_SCENE, handler)
+  },
+
+  onMenuOpenFile: (callback) => {
+    const handler = () => callback()
+    ipcRenderer.on(IPC.MENU_OPEN_FILE, handler)
+    return () => ipcRenderer.removeListener(IPC.MENU_OPEN_FILE, handler)
+  },
+
+  onMenuOpenScene: (callback) => {
+    const handler = () => callback()
+    ipcRenderer.on(IPC.MENU_OPEN_SCENE, handler)
+    return () => ipcRenderer.removeListener(IPC.MENU_OPEN_SCENE, handler)
   },
 
   // Layout persistence

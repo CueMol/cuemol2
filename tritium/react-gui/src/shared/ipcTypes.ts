@@ -43,6 +43,18 @@ export interface UiState {
   theme?: 'dark' | 'light'
 }
 
+// ── File dialog ─────────────────────────────────────────────────────────────
+
+export interface ElectronFileFilter {
+  name: string
+  extensions: string[]
+}
+
+export interface FileDialogOptions {
+  dialogType: 'open-mol' | 'open-scene'
+  filters: ElectronFileFilter[]
+}
+
 // ── File events ─────────────────────────────────────────────────────────────
 
 export interface FileOpenedData {
@@ -76,7 +88,7 @@ export interface ElectronAPI {
   getAppPathInfo: () => Promise<AppPathInfo>
 
   // File operations
-  openFile: () => Promise<void>
+  openFile: (options: FileDialogOptions) => Promise<void>
 
   // Menu event listeners (return unsubscribe function)
   onFileOpened: (callback: (data: FileOpenedData) => void) => () => void
@@ -85,6 +97,8 @@ export interface ElectronAPI {
   onMenuCloseTab: (callback: () => void) => () => void
   onMenuSave: (callback: () => void) => () => void
   onMenuNewScene: (callback: () => void) => () => void
+  onMenuOpenFile: (callback: () => void) => () => void
+  onMenuOpenScene: (callback: () => void) => () => void
 
   // Layout persistence
   loadLayout: () => Promise<LayoutState>

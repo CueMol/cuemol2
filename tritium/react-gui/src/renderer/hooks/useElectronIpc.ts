@@ -13,11 +13,19 @@
 
 import { useEffect, useCallback } from 'react'
 import type { SceneManager } from '@cuemol/core/src/wrappers/SceneManager'
+import type { StreamManager } from '@cuemol/core/src/wrappers/StreamManager'
 import type { AsyncCueMol } from '../worker/AsyncCueMol'
 
 // Extensions that CueMol loads directly from disk; no need to send content.
 const NEW_SCENE_EXTS = new Set(['qsc'])
 const MOL_EXTS = new Set(['pdb', 'cif', 'mol2', 'sdf'])
+
+// Convert C++ fext pattern (e.g. "*.pdb;*.ent") to Electron extension array (e.g. ["pdb", "ent"])
+function parseFext(fext: string): string[] {
+  return fext.split(';')
+    .map(e => e.trim().replace(/^\*\./, ''))
+    .filter(e => e !== '' && e !== '*')
+}
 
 interface UseElectronIpcOptions {
   cm: AsyncCueMol | null
@@ -42,6 +50,23 @@ export function useElectronIpc({
   handleSave,
   activeTab,
 }: UseElectronIpcOptions): void {
+
+  // ── getOpenFilters ──────────────────────────────────────────────────────────
+
+  const getOpenFilters = useCallback(async (catId: number): Promise<ElectronFileFilter[]> => {
+    if (!cm) return []
+    const strMgr = (await cm.getService('StreamManager')) as StreamManager
+    // StreamManager wrappers return Promise at runtime via ObjProxy (async/sync mismatch).
+    const infoJson = await (strMgr.getInfoJSON2() as unknown as Promise<string>)
+    const info: Array<{ name: string; descr: string; fext: string; category: number }> = JSON.parse(infoJson)
+    const items = info.filter(e => e.category === catId)
+    const allExts = items.flatMap(e => parseFext(e.fext))
+    return [
+      { name: 'All Supported', extensions: allExts },
+      ...items.map(e => ({ name: e.descr, extensions: parseFext(e.fext) })),
+      { name: 'All Files', extensions: ['*'] },
+    ]
+  }, [cm])
 
   // ── createNewScene ──────────────────────────────────────────────────────────
 
@@ -100,11 +125,35 @@ export function useElectronIpc({
           console.error('createNewScene failed:', e)
         )
       }),
+
+      api.onMenuOpenFile(async () => {
+        if (!cm) return
+        try {
+          const strMgr = (await cm.getService('StreamManager')) as StreamManager
+          const catId = await (strMgr.OBJECT_READER as unknown as Promise<number>)
+          const filters = await getOpenFilters(catId)
+          await window.electronAPI.openFile({ dialogType: 'open-mol', filters })
+        } catch (e) {
+          console.error('onMenuOpenFile failed:', e)
+        }
+      }),
+
+      api.onMenuOpenScene(async () => {
+        if (!cm) return
+        try {
+          const strMgr = (await cm.getService('StreamManager')) as StreamManager
+          const catId = await (strMgr.SCENE_READER as unknown as Promise<number>)
+          const filters = await getOpenFilters(catId)
+          await window.electronAPI.openFile({ dialogType: 'open-scene', filters })
+        } catch (e) {
+          console.error('onMenuOpenScene failed:', e)
+        }
+      }),
     ]
 
     return () => unsubs.forEach((unsub) => unsub())
   }, [
     openFileFromData, handleNewTab, handleCloseTab, handleSave,
-    createNewScene, activeTab, cm, getActiveSceneInfo,
+    createNewScene, activeTab, cm, getActiveSceneInfo, getOpenFilters,
   ])
 }

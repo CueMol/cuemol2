@@ -8,10 +8,9 @@
 
 import { ipcMain, app, dialog } from 'electron'
 import type { BrowserWindow } from 'electron'
-import fs from 'fs'
 import path from 'path'
 import { IPC } from '../shared/ipcChannels'
-import type { LayoutState } from '../shared/ipcTypes'
+import type { LayoutState, FileDialogOptions } from '../shared/ipcTypes'
 import { loadLayout, saveLayout, loadUi, saveUi } from './stateStore'
 
 // ─────────────────────────────────────────────
@@ -29,32 +28,21 @@ function getSysConfigPath(): string {
 // File open
 // ─────────────────────────────────────────────
 
-export async function handleOpenFile(mainWindow: BrowserWindow): Promise<void> {
+export async function handleOpenFile(mainWindow: BrowserWindow, options: FileDialogOptions): Promise<void> {
+  const title = options.dialogType === 'open-scene' ? 'Open Scene' : 'Open File'
   const result = await dialog.showOpenDialog(mainWindow, {
-    title: 'Open File',
-    filters: [
-      { name: 'All Supported', extensions: ['pdb', 'cif', 'mol2', 'sdf', 'qsc', 'json', 'py', 'txt'] },
-      { name: 'CueMol Scene', extensions: ['qsc'] },
-      { name: 'PDB Files', extensions: ['pdb'] },
-      { name: 'mmCIF Files', extensions: ['cif'] },
-      { name: 'All Files', extensions: ['*'] },
-    ],
+    title,
+    filters: options.filters,
     properties: ['openFile'],
   })
-
-  // These extensions are loaded directly from disk by the C++ core;
-  // sending the full content over IPC would be wasteful.
-  const PATH_ONLY_EXTS = new Set(['pdb', 'cif', 'mol2', 'sdf', 'qsc'])
 
   if (!result.canceled && result.filePaths.length > 0) {
     for (const filePath of result.filePaths) {
       try {
-        const ext = path.extname(filePath).slice(1).toLowerCase()
-        const pathOnly = PATH_ONLY_EXTS.has(ext)
+        // Mol and scene files are loaded directly from disk by the C++ core.
         mainWindow.webContents.send(IPC.FILE_OPENED, {
           name: path.basename(filePath),
           path: filePath,
-          content: pathOnly ? undefined : fs.readFileSync(filePath, 'utf-8'),
         })
       } catch (err) {
         mainWindow.webContents.send(IPC.FILE_ERROR, {
@@ -79,8 +67,8 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
     sysConfigPath: getSysConfigPath(),
   }))
 
-  ipcMain.handle(IPC.DIALOG_OPEN, async () => {
-    await handleOpenFile(mainWindow)
+  ipcMain.handle(IPC.DIALOG_OPEN, async (_event, options: FileDialogOptions) => {
+    await handleOpenFile(mainWindow, options)
   })
 
   ipcMain.handle(IPC.LAYOUT_LOAD, async (): Promise<LayoutState | null> => {

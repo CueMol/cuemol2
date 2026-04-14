@@ -21,6 +21,8 @@ export const IPC = {
   MENU_NEW_TAB:   'menu:new-tab',
   MENU_CLOSE_TAB: 'menu:close-tab',
   MENU_NEW_SCENE: 'menu:new-scene',
+  MENU_OPEN_FILE:  'menu:open-file',
+  MENU_OPEN_SCENE: 'menu:open-scene',
 } as const
 
 export type IpcChannel = typeof IPC[keyof typeof IPC]

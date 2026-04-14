@@ -5,7 +5,6 @@
 import { app, Menu } from 'electron'
 import type { BrowserWindow } from 'electron'
 import { IPC } from '../shared/ipcChannels'
-import { handleOpenFile } from './ipcHandlers'
 
 const isMac = process.platform === 'darwin'
 
@@ -35,7 +34,7 @@ export function createMenu(mainWindow: BrowserWindow): void {
         {
           label: 'Open File...',
           accelerator: 'CmdOrCtrl+O',
-          click: () => handleOpenFile(mainWindow),
+          click: () => mainWindow.webContents.send(IPC.MENU_OPEN_FILE),
         },
         {
           label: 'Save',
@@ -92,7 +91,11 @@ export function createMenu(mainWindow: BrowserWindow): void {
         },
         {
           label: 'Load Molecule...',
-          click: () => handleOpenFile(mainWindow),
+          click: () => mainWindow.webContents.send(IPC.MENU_OPEN_FILE),
+        },
+        {
+          label: 'Open Scene...',
+          click: () => mainWindow.webContents.send(IPC.MENU_OPEN_SCENE),
         },
       ],
     },
