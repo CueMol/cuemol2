@@ -13,6 +13,7 @@ import type { StreamManager } from '@cuemol/core/src/wrappers/StreamManager'
 import type { AsyncCueMol } from '../worker/AsyncCueMol'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
+import type { FileOpenOptions } from '../components/FileOpenOptionDialog'
 
 // Category IDs from src/qsys/InOutHandler.hpp (IOH_CAT_*)
 const IOH_CAT_OBJREADER = 0
@@ -35,6 +36,8 @@ interface UseSceneCommandsOptions {
   handleNewTab: () => void
   handleCloseTab: (id: string) => void
   handleSave: () => void
+  /** Opens the file open option dialog; resolves to options on confirm, null on cancel. */
+  showFileOpenDialog: (filePath: string) => Promise<FileOpenOptions | null>
 }
 
 export function useSceneCommands({
@@ -46,6 +49,7 @@ export function useSceneCommands({
   handleNewTab,
   handleCloseTab,
   handleSave,
+  showFileOpenDialog,
 }: UseSceneCommandsOptions): void {
 
   // --- helpers ---
@@ -98,10 +102,16 @@ export function useSceneCommands({
       }
       if (!cm) return
       const info = getActiveSceneInfo()
-      if (info) {
-        cm.loadFile(data.path, info.scene_uid, info.view_id)
-          .catch((e: unknown) => console.error('loadFile failed:', e))
-      }
+      if (!info) return
+      showFileOpenDialog(data.path)
+        .then((options) => {
+          if (options === null) return  // user cancelled
+          // TODO: apply options.format and options.renderer to the reader/loader
+          //       once logic integration is implemented.
+          cm.loadFile(data.path, info.scene_uid, info.view_id)
+            .catch((e: unknown) => console.error('loadFile failed:', e))
+        })
+        .catch((e: unknown) => console.error('showFileOpenDialog failed:', e))
     },
   )
 
