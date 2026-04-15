@@ -11,13 +11,16 @@ import App from './App'
 import { MolTabProvider } from './hooks/useMolTab'
 import { CueMolProvider } from './hooks/useCueMol'
 import { ThemeProvider } from './contexts/ThemeContext'
+import { CommandProvider } from './commands/CommandRegistry'
 
 const container = document.getElementById('root') as HTMLElement
 createRoot(container).render(
   <CueMolProvider>
     <MolTabProvider>
       <ThemeProvider>
-        <App />
+        <CommandProvider>
+          <App />
+        </CommandProvider>
       </ThemeProvider>
     </MolTabProvider>
   </CueMolProvider>

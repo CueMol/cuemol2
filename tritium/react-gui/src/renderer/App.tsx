@@ -1,17 +1,7 @@
 /**
  * Root component of the CueMol desktop application.
  *
- * Layout:
- *   ┌─────────────────────────────────────────────────────┐
- *   │  Toolbar  (menu buttons, macOS drag region)         │
- *   ├──────┬──────────────┬───────────────────────────────┤
- *   │      │              │  ContentArea (tabs)            │
- *   │ Act. │  SidePanel   ├───────────────────────────────┤
- *   │ Bar  │ (scene tree) │  BottomPanel (log / seq / anim)│
- *   │      │              │                               │
- *   ├──────┴──────────────┴───────────────────────────────┤
- *   │  StatusBar                                          │
- *   └─────────────────────────────────────────────────────┘
+ * Layout: Toolbar / [ActivityBar | SidePanel | [ContentArea / BottomPanel] | InspectorPanel] / StatusBar
  */
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
@@ -38,10 +28,11 @@ import { useTabManager } from "./hooks/useTabManager";
 import { useCueMol } from "./hooks/useCueMol";
 import { useMolTabDispatch } from "./hooks/useMolTab";
 import { useElectronIpc } from "./hooks/useElectronIpc";
+import { useSceneCommands } from "./commands/useSceneCommands";
 
 const App: React.FC = () => {
 
-  // ── Persistent layout state ────────────────────────────────
+  // --- Persistent layout state ---
 
   const {
     layout,
@@ -54,7 +45,7 @@ const App: React.FC = () => {
     setViewCollapsed,
   } = useLayoutPersistence();
 
-  // ── Activity-bar state ─────────────────────────────────────
+  // --- Activity-bar state ---
 
   const [activeView, setActiveView] = useState<ActivityView | null>("explorer");
 
@@ -62,7 +53,7 @@ const App: React.FC = () => {
     setActiveView((prev) => (prev === view ? null : view));
   }, []);
 
-  // ── Domain hooks ───────────────────────────────────────────
+  // --- Domain hooks ---
 
   const {
     scene,
@@ -102,7 +93,7 @@ const App: React.FC = () => {
     handleSave,
   } = useTabManager();
 
-  // ── CueMol core ready → create initial scene/view ─────────
+  // --- CueMol core ready: create initial scene/view ---
 
   const { cueMolReady, cm } = useCueMol();
   const { addMolTab, getActiveSceneInfo, setActiveViewByID } = useMolTabDispatch();
@@ -133,7 +124,7 @@ const App: React.FC = () => {
     return () => { cancelled = true; };
   }, [cueMolReady, cm, addMolTab, addMolViewTab]);
 
-  // ── Activate view when molview tab becomes active ──────────
+  // --- Activate view when molview tab becomes active ---
 
   useEffect(() => {
     const tab = tabs.find((t) => t.id === activeTab);
@@ -143,14 +134,14 @@ const App: React.FC = () => {
     }
   }, [activeTab, tabs, cm, cueMolReady, setActiveViewByID]);
 
-  // ── Sample data ────────────────────────────────────────────
+  // --- Sample data ---
 
   const [alignment] = useState<AlignmentData | null>(SAMPLE_ALIGNMENT);
   const [animation] = useState<AnimationData | null>(SAMPLE_ANIMATION);
 
-  // ── Electron IPC listeners ─────────────────────────────────
+  // --- Command registrations and IPC wiring ---
 
-  useElectronIpc({
+  useSceneCommands({
     cm,
     addMolTab,
     addMolViewTab,
@@ -159,10 +150,11 @@ const App: React.FC = () => {
     handleNewTab,
     handleCloseTab,
     handleSave,
-    activeTab,
   });
 
-  // ── macOS traffic-light inset ──────────────────────────────
+  useElectronIpc(activeTab);
+
+  // --- macOS traffic-light inset ---
 
   useEffect(() => {
     if (window.electronAPI?.platform === "darwin") {
@@ -170,7 +162,7 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // ── Derived sidebar sub-panel state ───────────────────────
+  // --- Derived sidebar sub-panel state ---
 
   const viewSizes = layout.viewSizes ?? {
     explorer: [220, 240],
@@ -181,13 +173,13 @@ const App: React.FC = () => {
     selection: { mol: false, selection: false },
   };
 
-  // ── Derived values ─────────────────────────────────────────
+  // --- Derived values ---
 
   const activeFile = tabs.find((t) => t.id === activeTab)?.title;
   const sidebarVisible = activeView !== null;
   const settingsActive = tabs.find((t) => t.id === activeTab)?.type === "settings";
 
-  // ── Render ─────────────────────────────────────────────────
+  // --- Render ---
 
   return (
     <div className="app">

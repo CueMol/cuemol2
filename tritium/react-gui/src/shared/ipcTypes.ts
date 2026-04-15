@@ -51,7 +51,7 @@ export interface ElectronFileFilter {
 }
 
 export interface FileDialogOptions {
-  dialogType: 'open-mol' | 'open-scene'
+  dialogType: 'open-obj' | 'open-scene'
   filters: ElectronFileFilter[]
 }
 
@@ -91,7 +91,8 @@ export interface ElectronAPI {
   openFile: (options: FileDialogOptions) => Promise<void>
 
   // Menu event listeners (return unsubscribe function)
-  onFileOpened: (callback: (data: FileOpenedData) => void) => () => void
+  onObjFileOpened:   (callback: (data: FileOpenedData) => void) => () => void
+  onSceneFileOpened: (callback: (data: FileOpenedData) => void) => () => void
   onFileError: (callback: (data: FileErrorData) => void) => () => void
   onMenuNewTab: (callback: () => void) => () => void
   onMenuCloseTab: (callback: () => void) => () => void

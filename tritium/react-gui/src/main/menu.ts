@@ -90,7 +90,7 @@ export function createMenu(mainWindow: BrowserWindow): void {
           click: () => mainWindow.webContents.send(IPC.MENU_NEW_SCENE),
         },
         {
-          label: 'Load Molecule...',
+          label: 'Open File...',
           click: () => mainWindow.webContents.send(IPC.MENU_OPEN_FILE),
         },
         {

@@ -39,8 +39,11 @@ export async function handleOpenFile(mainWindow: BrowserWindow, options: FileDia
   if (!result.canceled && result.filePaths.length > 0) {
     for (const filePath of result.filePaths) {
       try {
-        // Mol and scene files are loaded directly from disk by the C++ core.
-        mainWindow.webContents.send(IPC.FILE_OPENED, {
+        // Obj and scene files are loaded directly from disk by the C++ core.
+        const channel = options.dialogType === 'open-scene'
+          ? IPC.SCENE_FILE_OPENED
+          : IPC.OBJ_FILE_OPENED
+        mainWindow.webContents.send(channel, {
           name: path.basename(filePath),
           path: filePath,
         })

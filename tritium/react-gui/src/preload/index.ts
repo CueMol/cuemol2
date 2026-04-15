@@ -32,10 +32,16 @@ const api: ElectronAPI = {
   openFile: (options: FileDialogOptions) => ipcRenderer.invoke(IPC.DIALOG_OPEN, options),
 
   // Menu event listeners
-  onFileOpened: (callback) => {
+  onObjFileOpened: (callback) => {
     const handler = (_event: Electron.IpcRendererEvent, data: FileOpenedData) => callback(data)
-    ipcRenderer.on(IPC.FILE_OPENED, handler)
-    return () => ipcRenderer.removeListener(IPC.FILE_OPENED, handler)
+    ipcRenderer.on(IPC.OBJ_FILE_OPENED, handler)
+    return () => ipcRenderer.removeListener(IPC.OBJ_FILE_OPENED, handler)
+  },
+
+  onSceneFileOpened: (callback) => {
+    const handler = (_event: Electron.IpcRendererEvent, data: FileOpenedData) => callback(data)
+    ipcRenderer.on(IPC.SCENE_FILE_OPENED, handler)
+    return () => ipcRenderer.removeListener(IPC.SCENE_FILE_OPENED, handler)
   },
 
   onFileError: (callback) => {

@@ -15,8 +15,9 @@ export const IPC = {
   UI_SAVE:        'ui:save',
 
   // push channels (main → renderer, no reply)
-  FILE_OPENED:    'file:opened',
-  FILE_ERROR:     'file:error',
+  OBJ_FILE_OPENED:   'file:obj-opened',
+  SCENE_FILE_OPENED: 'file:scene-opened',
+  FILE_ERROR:        'file:error',
   MENU_SAVE:      'menu:save',
   MENU_NEW_TAB:   'menu:new-tab',
   MENU_CLOSE_TAB: 'menu:close-tab',
