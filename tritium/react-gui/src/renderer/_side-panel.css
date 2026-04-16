@@ -139,11 +139,6 @@
   background: var(--border-subtle);
 }
 
-.side-panel-content .sash-container .sash:hover,
-.side-panel-content .sash-container .sash.active {
-  background: var(--accent) !important;
-}
-
 /* ─── Blueprint Tree Overrides (Scene & MolStruct) ─── */
 .scene-tree,
 .mol-tree {

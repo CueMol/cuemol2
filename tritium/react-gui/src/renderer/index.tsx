@@ -12,6 +12,7 @@ import { MolTabProvider } from './hooks/useMolTab'
 import { CueMolProvider } from './hooks/useCueMol'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { CommandProvider } from './commands/CommandRegistry'
+import { DialogProvider } from './contexts/DialogContext'
 
 const container = document.getElementById('root') as HTMLElement
 createRoot(container).render(
@@ -19,7 +20,9 @@ createRoot(container).render(
     <MolTabProvider>
       <ThemeProvider>
         <CommandProvider>
-          <App />
+          <DialogProvider>
+            <App />
+          </DialogProvider>
         </CommandProvider>
       </ThemeProvider>
     </MolTabProvider>

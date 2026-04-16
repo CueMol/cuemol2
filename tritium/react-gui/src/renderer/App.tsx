@@ -5,8 +5,6 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { FileOpenOptionDialog } from "./components/FileOpenOptionDialog";
-import type { FileOpenOptions } from "./components/FileOpenOptionDialog";
 import type { SceneManager } from "@cuemol/core/src/wrappers/SceneManager";
 import { Allotment } from "allotment";
 import "allotment/dist/style.css";
@@ -100,36 +98,6 @@ const App: React.FC = () => {
   const { cueMolReady, cm } = useCueMol();
   const { addMolTab, getActiveSceneInfo, setActiveViewByID } = useMolTabDispatch();
 
-  // --- File open option dialog ---
-
-  type DialogResolve = (options: FileOpenOptions | null) => void;
-
-  const [fileOpenDialogState, setFileOpenDialogState] = useState<{
-    isOpen: boolean;
-    filePath: string;
-  }>({ isOpen: false, filePath: '' });
-
-  const dialogResolveRef = useRef<DialogResolve | null>(null);
-
-  const showFileOpenDialog = useCallback((filePath: string): Promise<FileOpenOptions | null> => {
-    return new Promise((resolve) => {
-      dialogResolveRef.current = resolve;
-      setFileOpenDialogState({ isOpen: true, filePath });
-    });
-  }, []);
-
-  const handleFileOpenConfirm = useCallback((options: FileOpenOptions) => {
-    setFileOpenDialogState((s) => ({ ...s, isOpen: false }));
-    dialogResolveRef.current?.(options);
-    dialogResolveRef.current = null;
-  }, []);
-
-  const handleFileOpenCancel = useCallback(() => {
-    setFileOpenDialogState((s) => ({ ...s, isOpen: false }));
-    dialogResolveRef.current?.(null);
-    dialogResolveRef.current = null;
-  }, []);
-
   // Guard to prevent duplicate initial scene creation (React StrictMode)
   const initialSceneCreatedRef = useRef(false);
 
@@ -182,7 +150,6 @@ const App: React.FC = () => {
     handleNewTab,
     handleCloseTab,
     handleSave,
-    showFileOpenDialog,
   });
 
   useElectronIpc(activeTab);
@@ -327,13 +294,6 @@ const App: React.FC = () => {
       </div>
 
       <StatusBar activeFile={activeFile} atomCount="13,167" />
-
-      <FileOpenOptionDialog
-        isOpen={fileOpenDialogState.isOpen}
-        filePath={fileOpenDialogState.filePath}
-        onConfirm={handleFileOpenConfirm}
-        onCancel={handleFileOpenCancel}
-      />
     </div>
   );
 };

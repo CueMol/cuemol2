@@ -56,7 +56,7 @@ function basename(filePath: string): string {
 // ---- props ----
 
 export interface FileOpenOptionDialogProps {
-  isOpen: boolean;
+  visible: boolean;
   filePath: string;
   onConfirm: (options: FileOpenOptions) => void;
   onCancel: () => void;
@@ -65,7 +65,7 @@ export interface FileOpenOptionDialogProps {
 // ---- component ----
 
 export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
-  isOpen,
+  visible,
   filePath,
   onConfirm,
   onCancel,
@@ -101,7 +101,7 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
 
   return (
     <Dialog
-      isOpen={isOpen}
+      isOpen={visible}
       onClose={onCancel}
       title="Open File Options"
       className="fod-dialog"

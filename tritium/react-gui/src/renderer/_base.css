@@ -91,12 +91,16 @@ body {
   overflow: hidden !important;
 }
 
-.sash-container .sash {
-  background: transparent;
-  transition: background 0.15s;
+/* Use accent color for the built-in thin sash hover highlight (::before pseudo-element). */
+.sash-container {
+  --focus-border: var(--accent);
 }
 
-.sash-container .sash:hover,
-.sash-container .sash.active {
-  background: var(--accent) !important;
+.sash-container .sash {
+  background: transparent;
+}
+
+/* BlueprintJS overlays must stack above Allotment sashes (z-index: 35). */
+.bp5-overlay {
+  z-index: 40 !important;
 }
