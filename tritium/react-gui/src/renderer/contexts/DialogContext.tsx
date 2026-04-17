@@ -11,8 +11,8 @@
  */
 
 import React, { createContext, useContext, useState, useCallback, useRef, useMemo } from 'react'
-import { FileOpenOptionDialog } from '../components/FileOpenOptionDialog'
-import type { FileOpenOptions } from '../components/FileOpenOptionDialog'
+import { FileOpenOptionDialog } from '../components/fopen-opt-dlgs'
+import type { FileOpenOptions } from '../components/fopen-opt-dlgs'
 
 // ────────────────────────────────────────────────────────────
 // Types
