@@ -46,6 +46,14 @@
   color: var(--text-primary);
 }
 
+/* Suppress focus outline on Tooltip wrappers and items in the activity bar */
+.activity-bar .bp5-popover-target:focus,
+.activity-bar .bp5-popover-target:focus-visible,
+.activity-bar-item:focus,
+.activity-bar-item:focus-visible {
+  outline: none;
+}
+
 /* Left accent bar on active item */
 .activity-bar-item.active::before {
   content: "";
