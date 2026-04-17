@@ -83,7 +83,7 @@ export function useSceneCommands({
         addMolTab(title, view_uid, scene_uid)
         addMolViewTab(title, view_uid)
         if (filePath) {
-            await cm.loadFile(filePath, scene_uid, view_uid)
+            await cm.loadScene(filePath, scene_uid)
         }
     }, [cm, addMolTab, addMolViewTab])
 
@@ -105,11 +105,8 @@ export function useSceneCommands({
             showFileOpenOptionDialog(data.path)
                 .then((options) => {
                     if (options === null) return  // user cancelled
-                    // TODO: apply options.format and options.renderer to the reader/loader
-                    //       once logic integration is implemented.
-                    console.info('file option: ' + options)
-                    cm.loadFile(data.path, info.scene_uid, info.view_id)
-                        .catch((e: unknown) => console.error('loadFile failed:', e))
+                    cm.loadObject(data.path, info.scene_uid, options)
+                        .catch((e: unknown) => console.error('loadObject failed:', e))
                 })
                 .catch((e: unknown) => console.error('showFileOpenOptionDialog failed:', e))
         },
