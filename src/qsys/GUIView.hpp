@@ -51,6 +51,9 @@ public:
     void onMouseMove(double clientX, double clientY, double screenX, double screenY,
                      int modif);
 
+    void onWheel(double clientX, double clientY, double screenX, double screenY,
+                 int modif, double deltaX, double deltaY);
+
     //////////
 
     virtual void setCenterMark(int nMode) override;

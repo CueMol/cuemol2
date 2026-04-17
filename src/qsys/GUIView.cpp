@@ -556,6 +556,17 @@ void GUIView::onMouseMove(double clientX, double clientY, double screenX,
     dispatchMouseEvent(DME_MOUSE_MOVE, ev);
 }
 
+void GUIView::onWheel(double clientX, double clientY, double screenX, double screenY,
+                      int modif, double deltaX, double deltaY)
+{
+    InDevEvent ev;
+    setupInDevEvent(clientX, clientY, screenX, screenY, modif, ev);
+    ev.setType(InDevEvent::INDEV_WHEEL);
+    ev.setDeltaX(int(std::lround(deltaX)));
+    ev.setDeltaY(int(std::lround(deltaY)));
+    dispatchMouseEvent(DME_WHEEL, ev);
+}
+
 void GUIView::setupInDevEvent(double clientX, double clientY, double screenX,
                               double screenY, int amodif, InDevEvent &ev)
 {
@@ -567,12 +578,14 @@ void GUIView::setupInDevEvent(double clientX, double clientY, double screenX,
 
     int modif = 0;
 
-    if (amodif & 32) modif |= InDevEvent::INDEV_CTRL;
-    if (amodif & 64) modif |= InDevEvent::INDEV_SHIFT;
-    if (amodif & 1) modif |= InDevEvent::INDEV_LBTN;
-    if (amodif & 2) modif |= InDevEvent::INDEV_RBTN;
-    if (amodif & 4) modif |= InDevEvent::INDEV_MBTN;
+    if (amodif & 1)   modif |= InDevEvent::INDEV_LBTN;
+    if (amodif & 2)   modif |= InDevEvent::INDEV_RBTN;
+    if (amodif & 4)   modif |= InDevEvent::INDEV_MBTN;
+    if (amodif & 32)  modif |= InDevEvent::INDEV_CTRL;
+    if (amodif & 64)  modif |= InDevEvent::INDEV_SHIFT;
+    if (amodif & 128) modif |= InDevEvent::INDEV_ALT;
 
+    MB_DPRINTLN("setupInDevEvent: amodif=%d -> modif=%d", amodif, modif);
     ev.setModifier(modif);
 }
 

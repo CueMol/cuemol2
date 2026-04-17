@@ -732,20 +732,15 @@ bool View::mouseDragMove(InDevEvent &ev)
 
 bool View::mouseWheel(InDevEvent &ev)
 {
-  int xid = m_pInConf->findEvent(ViewInputConfig::MOUSE_WHEEL1, ev);
+  const int xid = m_pInConf->findEvent(ViewInputConfig::MOUSE_WHEEL1, ev);
+  const int yid = m_pInConf->findEvent(ViewInputConfig::MOUSE_WHEEL2, ev);
 
-  /*
-  const double del = double(ev.getDeltaX())/500.0;
-  double cv = getZoom();
-  cv += cv*del;
-  cv = qlib::max(cv, 0.1);
-  cv = qlib::min(cv, 1000.0);
-  //  MB_DPRINTLN("zoom: %f", cv);
-   */
-  bool fupdate;
-  fupdate = handleMouseDragImpl(xid, ev.getDeltaX()/2.5);
+  bool fupdate = false;
+  if (xid >= 0)
+    fupdate |= handleMouseDragImpl(xid, double(ev.getDeltaX()) / 2.5);
+  if (yid >= 0)
+    fupdate |= handleMouseDragImpl(yid, double(ev.getDeltaY()) / 2.5);
 
-  //setZoom(cv);
   if (fupdate)
     forceRedraw();
 

@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react'
+import { useWheel } from '@use-gesture/react'
 import styles from './MolViewPane.module.css'
 import { useMolTabDispatch } from '../hooks/useMolTab'
 import { useCueMol } from '../hooks/useCueMol'
@@ -110,6 +111,24 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
       resizeObserver.disconnect()
     }
   }, []) // stable — reads state via refs
+
+  // Trackpad wheel handler (2-finger pan + pinch-zoom via ctrl+wheel on Chromium).
+  // Registered via @use-gesture/react with passive:false so preventDefault() suppresses
+  // browser page scroll / page zoom. Events are forwarded to GUIView::onWheel in the
+  // worker, which dispatches through the qsys InDevEvent machinery (INDEV_WHEEL) and
+  // resolves to VIEW_TRAX/VIEW_TRAY/VIEW_ZOOM actions via ViewInputConfig bindings.
+  useWheel(
+    ({ event }) => {
+      const viewID = getActiveViewIDRef.current()
+      if (viewID === undefined || !cmRef.current) return
+      event.preventDefault()
+      cmRef.current.onWheelEvent(viewID, event)
+    },
+    {
+      target: canvasRef,
+      eventOptions: { passive: false },
+    },
+  )
 
   // Mouse event listeners registered once; reads latest IDs from refs
   useEffect(() => {

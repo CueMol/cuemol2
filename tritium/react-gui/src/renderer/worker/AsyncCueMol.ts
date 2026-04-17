@@ -272,6 +272,13 @@ export class AsyncCueMol {
         this.postMessage(method, cur_seq, [view_id, ev]);
     }
 
+    onWheelEvent(view_id: number, event: any): void {
+        const { offsetX, offsetY, screenX, screenY, deltaX, deltaY, ctrlKey, shiftKey, altKey } = event;
+        const ev = { offsetX, offsetY, screenX, screenY, deltaX, deltaY, ctrlKey, shiftKey, altKey };
+        const cur_seq = this.getSeqNo();
+        this.postMessage('wheel', cur_seq, [view_id, ev]);
+    }
+
     //////////
     // Event impl
 
@@ -485,7 +492,7 @@ export class AsyncCueMol {
             const tmpObj = await (reader as any).createDefaultObj();
             if (!tmpObj) return [];
 
-            const rendTypesStr = await (tmpObj.invokeMethod('searchCompatibleRendererNames') as unknown as Promise<string>);
+            const rendTypesStr = await (tmpObj.searchCompatibleRendererNames() as unknown as Promise<string>);
             if (!rendTypesStr) return [];
 
             return rendTypesStr

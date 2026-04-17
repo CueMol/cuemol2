@@ -39,16 +39,6 @@ InOutHandler  — setPath(path): void
 
 `createHandler(name, 0)` returns the concrete reader subclass. Use `(reader as any).setPath(...)` if the TypeScript return type is `any`.
 
-### Calling methods on objects returned as `any`
-
-When a wrapper method returns `any` (e.g., `ObjReader.createDefaultObj()`), the runtime value is an `ObjProxy`-backed wrapper. Call C++ methods via `invokeMethod`:
-
-```typescript
-const tmpObj = await (reader as any).createDefaultObj();
-// tmpObj is BaseWrapper (e.g. MolCoord). invokeMethod routes to ObjProxy → worker.
-const rendTypesStr = await (tmpObj.invokeMethod('searchCompatibleRendererNames') as unknown as Promise<string>);
-```
-
 ### searchCompatibleRendererNames
 
 `Object.searchCompatibleRendererNames()` returns a comma-separated string of renderer type names compatible with that object type. Filter out:
