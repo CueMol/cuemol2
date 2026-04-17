@@ -6,10 +6,6 @@
  *   1. File info bar (filename + format badge)
  *   2. Renderer options — always visible (object name, type, selection, etc.)
  *   3. Format-specific options — collapsed by default, revealed on demand
- *
- * Note: This is a UI mock-up. Options are collected and forwarded via onConfirm,
- * but the actual application of these options to the Reader/loader is deferred
- * to a future implementation session (marked with TODO comments).
  */
 
 import React, { useState, useCallback } from 'react';
@@ -58,6 +54,7 @@ function basename(filePath: string): string {
 export interface FileOpenOptionDialogProps {
   visible: boolean;
   filePath: string;
+  rendererTypes: string[];
   onConfirm: (options: FileOpenOptions) => void;
   onCancel: () => void;
 }
@@ -67,6 +64,7 @@ export interface FileOpenOptionDialogProps {
 export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
   visible,
   filePath,
+  rendererTypes,
   onConfirm,
   onCancel,
 }) => {
@@ -75,12 +73,14 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
   const formatName = formatLabel(formatKind);
   const hasFormatOptions = formatKind !== 'unknown';
 
+  const defaultRendType = rendererTypes.length > 0 ? rendererTypes[0] : undefined;
+
   // Option state
   const [formatOptions, setFormatOptions] = useState<FormatOptions>(() =>
     buildDefaultFormatOptions(formatKind)
   );
   const [rendererOptions, setRendererOptions] = useState<RendererOptions>(() =>
-    getDefaultRendererOptions(filePath)
+    getDefaultRendererOptions(filePath, defaultRendType)
   );
   const [isFormatExpanded, setIsFormatExpanded] = useState(false);
 
@@ -89,7 +89,7 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
   if (filePath !== lastFilePath) {
     setLastFilePath(filePath);
     setFormatOptions(buildDefaultFormatOptions(detectFormatKind(filePath)));
-    setRendererOptions(getDefaultRendererOptions(filePath));
+    setRendererOptions(getDefaultRendererOptions(filePath, defaultRendType));
     setIsFormatExpanded(false);
   }
 
@@ -122,6 +122,7 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
         <RendererOptionsPane
           options={rendererOptions}
           onChange={setRendererOptions}
+          rendererTypes={rendererTypes}
         />
 
         {/* Format-specific options — progressive disclosure */}

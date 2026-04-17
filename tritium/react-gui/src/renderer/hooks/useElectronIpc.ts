@@ -33,10 +33,10 @@ export function useElectronIpc(activeTab: string | null): void {
 
     const unsubs = [
       api.onObjFileOpened((d) =>
-        dispatch(CmdId.SceneOpenObjPath, d).catch(logErr('obj open:')),
+        dispatch(CmdId.OpenObjByPath, d).catch(logErr('obj open:')),
       ),
       api.onSceneFileOpened((d) =>
-        dispatch(CmdId.SceneOpenScenePath, d.path).catch(logErr('scene open:')),
+        dispatch(CmdId.OpenSceneByPath, d.path).catch(logErr('scene open:')),
       ),
       api.onFileError((d) =>
         console.error(`Failed to open ${d.path}: ${d.error}`),

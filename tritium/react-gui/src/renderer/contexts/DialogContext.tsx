@@ -20,7 +20,7 @@ import type { FileOpenOptions } from '../components/fopen-opt-dlgs'
 
 interface DialogContextValue {
   /** Show the file-open option dialog and wait for user input. */
-  showFileOpenOptionDialog(filePath: string): Promise<FileOpenOptions | null>
+  showFileOpenOptionDialog(filePath: string, rendererTypes?: string[]): Promise<FileOpenOptions | null>
 }
 
 type DialogResolve = (options: FileOpenOptions | null) => void
@@ -41,10 +41,12 @@ export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     filePath: '',
   })
   const resolveRef = useRef<DialogResolve | null>(null)
+  const rendererTypesRef = useRef<string[]>([])
 
-  const showFileOpenOptionDialog = useCallback((filePath: string): Promise<FileOpenOptions | null> => {
+  const showFileOpenOptionDialog = useCallback((filePath: string, rendererTypes: string[] = []): Promise<FileOpenOptions | null> => {
     return new Promise((resolve) => {
       resolveRef.current = resolve
+      rendererTypesRef.current = rendererTypes
       setOptionDlgState({ visible: true, filePath })
     })
   }, [])
@@ -72,6 +74,7 @@ export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       <FileOpenOptionDialog
         visible={optionDlgState.visible}
         filePath={optionDlgState.filePath}
+        rendererTypes={rendererTypesRef.current}
         onConfirm={handleConfirm}
         onCancel={handleCancel}
       />

@@ -129,12 +129,15 @@ export function getDefaultNamdCoorOptions(): NamdCoorOptions {
   return { psfFilePath: '' };
 }
 
-export function getDefaultRendererOptions(filePath: string): RendererOptions {
+export function getDefaultRendererOptions(filePath: string, defaultRendType?: string): RendererOptions {
   const fileName = filePath.split(/[\\/]/).pop()?.replace(/\.[^.]+$/, '') ?? 'molecule';
+  const rendererType = defaultRendType ?? 'simple';
   return {
     objectName: fileName,
-    rendererType: 'simple',
-    rendererName: 'simple1',
+    rendererType,
+    // TODO: renderer name should be unique in the scene (rendererType + incrementing suffix);
+    //       uniqueness check against existing renderers is not implemented yet.
+    rendererName: rendererType + '1',
     selection: '*',
     centerView: true,
   };

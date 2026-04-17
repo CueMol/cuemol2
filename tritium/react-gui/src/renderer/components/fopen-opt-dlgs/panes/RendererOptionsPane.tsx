@@ -1,32 +1,14 @@
-/**
- * @file panes/RendererOptionsPane.tsx
- * @description Always-visible renderer options section of the file open dialog.
- *
- * Note: renderer type list and selection validation are placeholder values.
- * Logic integration (fetching available types from SceneManager, unique name
- * generation, selection validation) is deferred to a future implementation session.
- */
-
 import React from 'react';
 import { InputGroup, HTMLSelect, Switch, FormGroup, Divider } from '@blueprintjs/core';
 import type { RendererOptions } from '../types';
 
-// Placeholder renderer types -- will be fetched from SceneManager in a future session
-const RENDERER_TYPE_OPTIONS = [
-  { label: 'Simple (ball & stick)', value: 'simple' },
-  { label: 'Cartoon (ribbon)', value: 'cartoon' },
-  { label: 'CPK (space filling)', value: 'cpk' },
-  { label: 'Tube', value: 'tube' },
-  { label: 'Surface (solvent)', value: 'molsurf' },
-  { label: 'Isosurface (map)', value: 'isosurf' },
-];
-
 interface RendererOptionsPaneProps {
   options: RendererOptions;
   onChange: (updated: RendererOptions) => void;
+  rendererTypes: string[];
 }
 
-export const RendererOptionsPane: React.FC<RendererOptionsPaneProps> = ({ options, onChange }) => {
+export const RendererOptionsPane: React.FC<RendererOptionsPaneProps> = ({ options, onChange, rendererTypes }) => {
   const set = <K extends keyof RendererOptions>(key: K) =>
     (value: RendererOptions[K]) => onChange({ ...options, [key]: value });
 
@@ -49,11 +31,10 @@ export const RendererOptionsPane: React.FC<RendererOptionsPaneProps> = ({ option
           fill
           value={options.rendererType}
           onChange={(e) => set('rendererType')(e.target.value)}
+          disabled={rendererTypes.length === 0}
         >
-          {RENDERER_TYPE_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
+          {rendererTypes.map((t) => (
+            <option key={t} value={t}>{t}</option>
           ))}
         </HTMLSelect>
       </FormGroup>

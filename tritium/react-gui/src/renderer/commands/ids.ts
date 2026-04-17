@@ -8,8 +8,8 @@
 export const CmdId = {
   // Scene operations
   SceneNew:           'scene.new',           // no args
-  SceneOpenObjPath:   'scene.openObjFromPath',    // args: FileOpenedData
-  SceneOpenScenePath: 'scene.openSceneFromPath',  // args: string (file path)
+  OpenObjByPath:      'scene.openObjFromPath',    // args: FileOpenedData
+  OpenSceneByPath:    'scene.openSceneFromPath',  // args: string (file path)
 
   // Dialog triggers
   UiOpenObjDialog:    'ui.openObjDialog',    // no args

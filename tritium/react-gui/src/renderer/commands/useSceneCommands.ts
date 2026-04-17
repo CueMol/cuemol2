@@ -92,7 +92,7 @@ export function useSceneCommands({
     useRegisterCommand(CmdId.SceneNew, () => openNewScene())
 
     useRegisterCommand(
-        CmdId.SceneOpenObjPath,
+        CmdId.OpenObjByPath,
         (data: FileOpenedData | undefined) => {
             if (!data) return
             if (data.content !== undefined) {
@@ -102,18 +102,17 @@ export function useSceneCommands({
             if (!cm) return
             const info = getActiveSceneInfo()
             if (!info) return
-            showFileOpenOptionDialog(data.path)
-                .then((options) => {
-                    if (options === null) return  // user cancelled
-                    cm.loadObject(data.path, info.scene_uid, options)
-                        .catch((e: unknown) => console.error('loadObject failed:', e))
-                })
-                .catch((e: unknown) => console.error('showFileOpenOptionDialog failed:', e))
+            ;(async () => {
+                const rendererTypes = await cm.getCompatibleRendererNames(data.path)
+                const options = await showFileOpenOptionDialog(data.path, rendererTypes)
+                if (options === null) return  // user cancelled
+                await cm.loadObject(data.path, info.scene_uid, options)
+            })().catch((e: unknown) => console.error('OpenObjByPath failed:', e))
         },
     )
 
     useRegisterCommand(
-        CmdId.SceneOpenScenePath,
+        CmdId.OpenSceneByPath,
         (path: string | undefined) => {
             if (!path) return
             openNewScene(path).catch((e: unknown) =>
