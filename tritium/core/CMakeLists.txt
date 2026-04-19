@@ -109,9 +109,11 @@ set_target_properties(cuemol_internal PROPERTIES
   BUILD_WITH_INSTALL_RPATH TRUE
 )
 
-# Post-build: copy dylibs to build/lib/ so the @loader_path/../lib rpath
-# resolves correctly during development (npm run dev / npm run test).
-add_custom_command(TARGET cuemol_internal POST_BUILD
+# Always copy dylibs to build/lib/ so the @loader_path/../lib rpath resolves
+# correctly during development. Using add_custom_target(ALL) ensures this runs
+# on every build even when cuemol_internal sources are unchanged (unlike
+# POST_BUILD which only fires when the target is rebuilt).
+add_custom_target(copy_dylibs ALL
   COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/lib"
   COMMAND bash -c "cp '${LIBCUEMOL2_LIBDIR}'/*.dylib '${CMAKE_BINARY_DIR}/lib/'"
   COMMENT "Copying dylibs from ${LIBCUEMOL2_LIBDIR} to build/lib/"

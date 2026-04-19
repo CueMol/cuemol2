@@ -70,6 +70,7 @@ export class WorkerService {
             'mouseUp': this.mouseUp,
             'mouseMove': this.mouseMove,
             'wheel': this.wheelEvent,
+            'rotate': this.rotateEvent,
         }
     }
 
@@ -418,6 +419,14 @@ export class WorkerService {
             event.screenY,
             modif
         );
+    }
+
+    rotateEvent(view_id: number, rotation: number): void {
+        const view = this._sceMgr.invokeMethod('getView', view_id);
+        // Match UXP scaling (XPCNativeWidgetCocoa::rotateGesture): negate so
+        // finger rotation direction matches viewer convention, scale by 4 for
+        // perceptible motion (same factor used in XPCNativeWidgetCocoa.mm).
+        view.invokeMethod('rotateView', 0, 0, -rotation * 4.0);
     }
 
     wheelEvent(view_id: number, event: any): void {

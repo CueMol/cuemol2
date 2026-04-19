@@ -7,6 +7,7 @@ import { join } from 'path'
 import { loadWindowBounds, saveWindowBounds, type WindowBounds } from './stateStore'
 import { registerIpcHandlers } from './ipcHandlers'
 import { createMenu } from './menu'
+import { IPC } from '../shared/ipcChannels'
 
 function isVisibleOnAnyDisplay(bounds: WindowBounds): boolean {
   return screen.getAllDisplays().some((d) => {
@@ -87,6 +88,13 @@ export function createWindow(): void {
   trackWindowState(win)
   registerIpcHandlers(win)
   createMenu(win)
+
+  // macOS trackpad 2-finger rotate gesture: Chromium does not emit a DOM
+  // event for this, so we capture it here and push it to the renderer via IPC.
+  // On non-macOS this event never fires but attaching is harmless.
+  win.on('rotate-gesture', (_event, rotation) => {
+    win.webContents.send(IPC.ROTATE_GESTURE, rotation)
+  })
 
   if (process.env['ELECTRON_RENDERER_URL']) {
     win.loadURL(process.env['ELECTRON_RENDERER_URL'])

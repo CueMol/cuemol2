@@ -279,6 +279,11 @@ export class AsyncCueMol {
         this.postMessage('wheel', cur_seq, [view_id, ev]);
     }
 
+    onRotateEvent(view_id: number, rotation: number): void {
+        const cur_seq = this.getSeqNo();
+        this.postMessage('rotate', cur_seq, [view_id, rotation]);
+    }
+
     //////////
     // Event impl
 

@@ -732,9 +732,12 @@ bool View::mouseDragMove(InDevEvent &ev)
 
 bool View::mouseWheel(InDevEvent &ev)
 {
+    MB_DPRINTLN("zoom conf: <%s>", m_pInConf->getConfZoom().c_str());
+
   const int xid = m_pInConf->findEvent(ViewInputConfig::MOUSE_WHEEL1, ev);
   const int yid = m_pInConf->findEvent(ViewInputConfig::MOUSE_WHEEL2, ev);
 
+  MB_DPRINTLN("View::mouseWheel() xid=%d, yid=%d", xid, yid);
   bool fupdate = false;
   if (xid >= 0)
     fupdate |= handleMouseDragImpl(xid, double(ev.getDeltaX()) / 2.5);

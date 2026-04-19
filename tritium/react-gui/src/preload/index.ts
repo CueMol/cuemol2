@@ -86,6 +86,12 @@ const api: ElectronAPI = {
     return () => ipcRenderer.removeListener(IPC.MENU_OPEN_SCENE, handler)
   },
 
+  onRotateGesture: (callback) => {
+    const handler = (_event: Electron.IpcRendererEvent, rotation: number) => callback(rotation)
+    ipcRenderer.on(IPC.ROTATE_GESTURE, handler)
+    return () => ipcRenderer.removeListener(IPC.ROTATE_GESTURE, handler)
+  },
+
   // Layout persistence
   loadLayout: () => ipcRenderer.invoke(IPC.LAYOUT_LOAD),
   saveLayout: (state: LayoutState) => ipcRenderer.invoke(IPC.LAYOUT_SAVE, state),

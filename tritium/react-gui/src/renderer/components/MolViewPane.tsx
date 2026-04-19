@@ -130,6 +130,18 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
     },
   )
 
+  // macOS trackpad 2-finger rotate gesture — sourced from Electron main's
+  // BrowserWindow 'rotate-gesture' event (Chromium has no DOM event for this).
+  // Forwarded to View::rotateView (already scriptable) via the worker.
+  useEffect(() => {
+    const unsubscribe = window.electronAPI.onRotateGesture((rotation) => {
+      const viewID = getActiveViewIDRef.current()
+      if (viewID === undefined || !cmRef.current) return
+      cmRef.current.onRotateEvent(viewID, rotation)
+    })
+    return unsubscribe
+  }, [])
+
   // Mouse event listeners registered once; reads latest IDs from refs
   useEffect(() => {
     const canvas = canvasRef.current

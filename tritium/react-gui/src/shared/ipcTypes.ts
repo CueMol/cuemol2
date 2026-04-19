@@ -101,6 +101,9 @@ export interface ElectronAPI {
   onMenuOpenFile: (callback: () => void) => () => void
   onMenuOpenScene: (callback: () => void) => () => void
 
+  // macOS-specific gesture events (sourced from Electron BrowserWindow)
+  onRotateGesture: (callback: (rotation: number) => void) => () => void
+
   // Layout persistence
   loadLayout: () => Promise<LayoutState>
   saveLayout: (state: LayoutState) => Promise<void>

@@ -24,6 +24,9 @@ export const IPC = {
   MENU_NEW_SCENE: 'menu:new-scene',
   MENU_OPEN_FILE:  'menu:open-file',
   MENU_OPEN_SCENE: 'menu:open-scene',
+
+  // gesture push channels (main → renderer)
+  ROTATE_GESTURE: 'gesture:rotate',
 } as const
 
 export type IpcChannel = typeof IPC[keyof typeof IPC]
