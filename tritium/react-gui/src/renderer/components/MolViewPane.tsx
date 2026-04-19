@@ -3,6 +3,7 @@ import { useWheel } from '@use-gesture/react'
 import styles from './MolViewPane.module.css'
 import { useMolTabDispatch } from '../hooks/useMolTab'
 import { useCueMol } from '../hooks/useCueMol'
+import { GES_PINCH, GES_ROTATE } from '../worker/gestureAxes'
 
 /**
  * Tab content pane for "molview" tabs — WebGL canvas for molecular visualization.
@@ -112,17 +113,30 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
     }
   }, []) // stable — reads state via refs
 
-  // Trackpad wheel handler (2-finger pan + pinch-zoom via ctrl+wheel on Chromium).
-  // Registered via @use-gesture/react with passive:false so preventDefault() suppresses
-  // browser page scroll / page zoom. Events are forwarded to GUIView::onWheel in the
-  // worker, which dispatches through the qsys InDevEvent machinery (INDEV_WHEEL) and
-  // resolves to VIEW_TRAX/VIEW_TRAY/VIEW_ZOOM actions via ViewInputConfig bindings.
+  // Trackpad wheel handler:
+  //   - ctrl+wheel: Chromium's encoding of a trackpad pinch gesture → dispatch as
+  //     GES_PINCH so ViewInputConfig bindings route it (e.g. to VIEW_ZOOM).
+  //   - plain wheel: 2-finger swipe or physical mouse wheel → INDEV_WHEEL path
+  //     (MOUSE_WHEEL1/2 bindings for translate). Registered with passive:false so
+  //     preventDefault() suppresses browser page-scroll / OS page-zoom.
   useWheel(
     ({ event }) => {
       const viewID = getActiveViewIDRef.current()
       if (viewID === undefined || !cmRef.current) return
       event.preventDefault()
-      cmRef.current.onWheelEvent(viewID, event)
+      if (event.ctrlKey) {
+        // Chromium signals trackpad pinch as wheel + synthetic ctrlKey=true.
+        // Strip that fake ctrl so the GES_PINCH binding in ViewInputConfig
+        // (stored with modifier bits = 0) matches in findEvent().
+        const synth = {
+          offsetX: event.offsetX, offsetY: event.offsetY,
+          screenX: event.screenX, screenY: event.screenY,
+          ctrlKey: false, shiftKey: event.shiftKey, altKey: event.altKey,
+        }
+        cmRef.current.onGestureEvent(viewID, GES_PINCH, event.deltaY, synth)
+      } else {
+        cmRef.current.onWheelEvent(viewID, event)
+      }
     },
     {
       target: canvasRef,
@@ -132,12 +146,13 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
 
   // macOS trackpad 2-finger rotate gesture — sourced from Electron main's
   // BrowserWindow 'rotate-gesture' event (Chromium has no DOM event for this).
-  // Forwarded to View::rotateView (already scriptable) via the worker.
+  // Forwarded via GES_ROTATE axis so ViewInputConfig bindings can route it
+  // (e.g. conf_rotz = "...,GES_ROTATE" in default_style.xml).
   useEffect(() => {
     const unsubscribe = window.electronAPI.onRotateGesture((rotation) => {
       const viewID = getActiveViewIDRef.current()
       if (viewID === undefined || !cmRef.current) return
-      cmRef.current.onRotateEvent(viewID, rotation)
+      cmRef.current.onGestureEvent(viewID, GES_ROTATE, rotation)
     })
     return unsubscribe
   }, [])

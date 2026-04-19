@@ -17,4 +17,5 @@ runtime_class GUIView extends View
     void onMouseUp(real clientX, real clientY, real screenX, real screenY, integer modif) => onMouseUp;
     void onMouseMove(real clientX, real clientY, real screenX, real screenY, integer modif) => onMouseMove;
     void onWheel(real clientX, real clientY, real screenX, real screenY, integer modif, real deltaX, real deltaY) => onWheel;
+    void onGesture(real clientX, real clientY, real screenX, real screenY, integer modif, integer axisID, real delta) => onGesture;
 };

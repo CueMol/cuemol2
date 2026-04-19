@@ -419,6 +419,8 @@ namespace qsys {
     
     /// mouse double click event (L,M,R button)
     virtual bool mouseWheel(InDevEvent &);
+
+    virtual bool mouseGesture(InDevEvent &);
     
     ////////////////////////////////////////////////
     // Hit test operations

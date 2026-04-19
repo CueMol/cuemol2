@@ -567,6 +567,18 @@ void GUIView::onWheel(double clientX, double clientY, double screenX, double scr
     dispatchMouseEvent(DME_WHEEL, ev);
 }
 
+void GUIView::onGesture(double clientX, double clientY, double screenX,
+                        double screenY, int modif, int axisID, double delta)
+{
+    InDevEvent ev;
+    setupInDevEvent(clientX, clientY, screenX, screenY, modif, ev);
+    ev.setType(InDevEvent::INDEV_GESTURE);
+    ev.setGestureAxis(axisID);
+    ev.setDeltaX(0);
+    ev.setDeltaY(int(std::lround(delta)));
+    fireInDevEvent(ev);
+}
+
 void GUIView::setupInDevEvent(double clientX, double clientY, double screenX,
                               double screenY, int amodif, InDevEvent &ev)
 {

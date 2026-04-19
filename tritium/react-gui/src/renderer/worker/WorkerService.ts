@@ -72,7 +72,7 @@ export class WorkerService {
             'mouseUp': this.mouseUp,
             'mouseMove': this.mouseMove,
             'wheel': this.wheelEvent,
-            'rotate': this.rotateEvent,
+            'gesture': this.gestureEvent,
         }
     }
 
@@ -467,39 +467,51 @@ export class WorkerService {
         );
     }
 
-    rotateEvent(view_id: number, rotation: number): void {
+    gestureEvent(view_id: number, event: any): void {
         const view = this._sceMgr.invokeMethod('getView', view_id);
-        // Match UXP scaling (XPCNativeWidgetCocoa::rotateGesture): negate so
-        // finger rotation direction matches viewer convention, scale by 4 for
-        // perceptible motion (same factor used in XPCNativeWidgetCocoa.mm).
-        view.invokeMethod('rotateView', 0, 0, -rotation * 4.0);
+        let modif = 0;
+        if (event.ctrlKey)  modif |= 32;
+        if (event.shiftKey) modif |= 64;
+        if (event.altKey)   modif |= 128;
+
+        // Scale constants preserve the gesture feel from the pre-refactor path.
+        // GES_PINCH: was deltaY*8 (PINCH_ZOOM_SCALE) then View::mouseWheel prescaled /2.5
+        //   => net multiplier 8/2.5 = 3.2 into handleMouseDragImpl.
+        // GES_ROTATE: was view.rotateView(0,0,-rotation*4.0); handleMouseDragImpl for
+        //   VIEW_ROTZ applies delta/4.0 => send delta_rotate=-rotation*16 to yield -rotation*4.
+        const GES_PINCH  = 6;
+        const GES_ROTATE = 7;
+        let scaled = event.delta;
+        if (event.axisID === GES_PINCH)  scaled = event.delta * 3.2;
+        if (event.axisID === GES_ROTATE) scaled = -event.delta * 16.0;
+
+        view.invokeMethod('onGesture',
+            event.offsetX,
+            event.offsetY,
+            event.screenX,
+            event.screenY,
+            modif,
+            event.axisID,
+            scaled
+        );
     }
 
     wheelEvent(view_id: number, event: any): void {
         const view = this._sceMgr.invokeMethod('getView', view_id);
-        // Use same amodif encoding as makeModif/setupInDevEvent:
         // ctrl=32, shift=64, alt=128 (buttons bits 0-2 unused for wheel)
         let modif = 0;
         if (event.ctrlKey)  modif |= 32;
         if (event.shiftKey) modif |= 64;
         if (event.altKey)   modif |= 128;
 
-        // Trackpad pinch is reported as ctrl+wheel with small deltaY (typically 1-10 px/event).
-        // Regular mouse wheel sends ~100 px/event. Scale up pinch deltas so the VIEW_ZOOM
-        // binding (which divides by 2.5*200=500) produces a perceptible zoom change per event.
-        const PINCH_ZOOM_SCALE = 8.0;
-        const deltaX = event.ctrlKey ? event.deltaX * PINCH_ZOOM_SCALE : event.deltaX;
-        const deltaY = event.ctrlKey ? event.deltaY * PINCH_ZOOM_SCALE : event.deltaY;
-
-        console.log('wheelEvent: modif=%d rawDY=%f scaledDY=%f ctrlKey=%s', modif, event.deltaY, deltaY, event.ctrlKey);
         view.invokeMethod('onWheel',
             event.offsetX,
             event.offsetY,
             event.screenX,
             event.screenY,
             modif,
-            deltaX,
-            deltaY
+            event.deltaX,
+            event.deltaY
         );
     }
 

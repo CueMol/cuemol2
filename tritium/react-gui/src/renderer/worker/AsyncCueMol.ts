@@ -299,9 +299,12 @@ export class AsyncCueMol {
         this.postMessage('wheel', cur_seq, [view_id, ev]);
     }
 
-    onRotateEvent(view_id: number, rotation: number): void {
+    onGestureEvent(view_id: number, axisID: number, delta: number, event?: any): void {
+        const { offsetX = 0, offsetY = 0, screenX = 0, screenY = 0,
+                ctrlKey = false, shiftKey = false, altKey = false } = event ?? {};
+        const ev = { offsetX, offsetY, screenX, screenY, ctrlKey, shiftKey, altKey, axisID, delta };
         const cur_seq = this.getSeqNo();
-        this.postMessage('rotate', cur_seq, [view_id, rotation]);
+        this.postMessage('gesture', cur_seq, [view_id, ev]);
     }
 
     //////////

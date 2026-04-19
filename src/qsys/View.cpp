@@ -730,6 +730,18 @@ bool View::mouseDragMove(InDevEvent &ev)
   return false;
 }
 
+bool View::mouseGesture(InDevEvent &ev)
+{
+  const int axis = ev.getGestureAxis();
+  if (axis < 0) return false;
+  const int id = m_pInConf->findEvent(axis, ev);
+  if (id < 0) return false;
+  const double delta = (double) ev.getDeltaY();
+  handleMouseDragImpl(id, delta);
+  forceRedraw();
+  return true;
+}
+
 bool View::mouseWheel(InDevEvent &ev)
 {
     MB_DPRINTLN("zoom conf: <%s>", m_pInConf->getConfZoom().c_str());
@@ -941,6 +953,11 @@ void View::fireInDevEvent(InDevEvent &ev)
   case InDevEvent::INDEV_WHEEL:
     m_pMscr->cancel();
     category = "mouseWheel";
+    break;
+
+  case InDevEvent::INDEV_GESTURE:
+    m_pMscr->cancel();
+    category = "mouseGesture";
     break;
 
   case InDevEvent::INDEV_MOUSE_DOWN:

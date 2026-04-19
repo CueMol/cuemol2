@@ -33,6 +33,7 @@ void InDevEvent::copyFrom(const InDevEvent &arg)
   m_pSource = arg.m_pSource;
   m_nType = arg.m_nType;
   m_nModifier = arg.m_nModifier;
+  m_nGestureAxis = arg.m_nGestureAxis;
   m_fConsumed = arg.m_fConsumed;
   m_x = arg.m_x;
   m_y = arg.m_y;

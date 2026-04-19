@@ -54,6 +54,9 @@ public:
     void onWheel(double clientX, double clientY, double screenX, double screenY,
                  int modif, double deltaX, double deltaY);
 
+    void onGesture(double clientX, double clientY, double screenX, double screenY,
+                   int modif, int axisID, double delta);
+
     //////////
 
     virtual void setCenterMark(int nMode) override;
