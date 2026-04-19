@@ -155,6 +155,26 @@ export class AsyncCueMol {
         }
     }
 
+    async loadUserStyle(userStylePath?: string): Promise<boolean> {
+        try {
+            const result = await this.invokeWorker('loadUserStyle', userStylePath);
+            return result[0] as boolean;
+        } catch (e) {
+            log.error('loadUserStyle failed: %s', e);
+            return false;
+        }
+    }
+
+    async setViewInputConfigStyle(styleName: string): Promise<boolean> {
+        try {
+            const result = await this.invokeWorker('setViewInputConfigStyle', styleName);
+            return result[0] as boolean;
+        } catch (e) {
+            log.error('setViewInputConfigStyle failed: %s', e);
+            return false;
+        }
+    }
+
     async terminateWorker(): Promise<void> {
         try {
             await this.invokeWorker('terminateWorker');

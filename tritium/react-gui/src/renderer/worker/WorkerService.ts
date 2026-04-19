@@ -50,6 +50,8 @@ export class WorkerService {
 
         this._methods = {
             'initCueMol': this.initCueMol,
+            'loadUserStyle': this.loadUserStyle,
+            'setViewInputConfigStyle': this.setViewInputConfigStyle,
             'terminateWorker': this.terminateWorker,
             'createObj': this.createObj,
             'getService': this.getService,
@@ -168,6 +170,50 @@ export class WorkerService {
         });
 
         return true;
+    }
+
+    loadUserStyle(userStylePath?: string): boolean {
+        const stylem = this._internal.getService('StyleManager');
+        if (stylem === null) {
+            log.error('Worker> StyleManager unavailable; skip user style');
+            return false;
+        }
+        try {
+            if (userStylePath) {
+                log.info('Worker> loading user style file: %s', userStylePath);
+                // loadStyleSetFromFile(scopeID=0, path, isReadOnly=false)
+                stylem.invokeMethod('loadStyleSetFromFile', 0, userStylePath, false);
+            } else {
+                log.info('Worker> user style absent; createStyleSet("user", 0)');
+                stylem.invokeMethod('createStyleSet', 'user', 0);
+            }
+            return true;
+        } catch (e) {
+            log.warn('Worker> user style load failed, fallback to createStyleSet:', e);
+            try {
+                stylem.invokeMethod('createStyleSet', 'user', 0);
+                return true;
+            } catch (e2) {
+                log.error('Worker> createStyleSet fallback also failed:', e2);
+                return false;
+            }
+        }
+    }
+
+    setViewInputConfigStyle(styleName: string): boolean {
+        const vic = this._internal.getService('ViewInputConfig');
+        if (vic === null) {
+            log.error('Worker> ViewInputConfig unavailable; skip style set');
+            return false;
+        }
+        try {
+            vic.setProp('style', styleName);
+            log.info('Worker> ViewInputConfig.style = %s', styleName);
+            return true;
+        } catch (e) {
+            log.error('Worker> ViewInputConfig.style set failed:', e);
+            return false;
+        }
     }
 
     terminateWorker(): void {

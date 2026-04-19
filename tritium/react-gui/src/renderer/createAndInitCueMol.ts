@@ -9,8 +9,21 @@ import { AsyncCueMol } from './worker/AsyncCueMol'
 // The path is forwarded to the Web Worker, which passes it to
 // cuemol_internal.initCueMol(path) before any scene operations are performed.
 export async function createAndInitCueMol(): Promise<AsyncCueMol> {
-    const { sysConfigPath } = await window.electronAPI.getAppPathInfo()
-    const instance = new AsyncCueMol()
-    await instance.initCueMol(sysConfigPath || undefined)
-    return instance
+    const { sysConfigPath, userStylePath, userStyleExists } =
+        await window.electronAPI.getAppPathInfo()
+    const cm = new AsyncCueMol()
+    await cm.initCueMol(sysConfigPath || undefined)
+
+    // Load user-defined global styles (uxp_gui cuemol2.js L48-55 equivalent).
+    // Pass undefined when the file is missing so Worker falls back to
+    // createStyleSet("user", 0).
+    await cm.loadUserStyle(userStyleExists ? userStylePath : undefined)
+
+    // Set ViewInputConfig.style (uxp_gui cuemol2.js L57-61 equivalent).
+    // The "cuemol2.ui.viewinconf" preference is not yet wired up in tritium;
+    // use the default name here. When preferences land, read from UiState.
+    const inconf = 'DefaultViewInConf'
+    await cm.setViewInputConfigStyle(`${inconf},UserViewConf`)
+
+    return cm
 }

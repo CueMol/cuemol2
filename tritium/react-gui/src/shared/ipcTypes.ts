@@ -77,6 +77,10 @@ export interface AppPathInfo {
   modulePath: string
   isPackaged: boolean
   sysConfigPath: string
+  /** Absolute path to user_styles.xml in the OS app-data directory. */
+  userStylePath: string
+  /** Whether userStylePath exists on disk (evaluated in Main where fs is available). */
+  userStyleExists: boolean
 }
 
 // ── ElectronAPI (the contextBridge contract) ────────────────────────────────

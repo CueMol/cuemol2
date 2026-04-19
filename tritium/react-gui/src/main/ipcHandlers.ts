@@ -9,6 +9,7 @@
 import { ipcMain, app, dialog } from 'electron'
 import type { BrowserWindow } from 'electron'
 import path from 'path'
+import fs from 'fs'
 import { IPC } from '../shared/ipcChannels'
 import type { LayoutState, FileDialogOptions } from '../shared/ipcTypes'
 import { loadLayout, saveLayout, loadUi, saveUi } from './stateStore'
@@ -22,6 +23,10 @@ function getSysConfigPath(): string {
     return path.join(process.resourcesPath, 'cuemol2', 'share', 'sysconfig.xml')
   }
   return ''
+}
+
+function getUserStylePath(): string {
+  return path.join(app.getPath('userData'), 'user_styles.xml')
 }
 
 // ─────────────────────────────────────────────
@@ -62,13 +67,24 @@ export async function handleOpenFile(mainWindow: BrowserWindow, options: FileDia
 // ─────────────────────────────────────────────
 
 export function registerIpcHandlers(mainWindow: BrowserWindow): void {
-  ipcMain.handle(IPC.APP_PATH, async () => ({
-    appPath: app.getAppPath(),
-    exePath: app.getPath('exe'),
-    modulePath: app.getPath('module'),
-    isPackaged: app.isPackaged,
-    sysConfigPath: getSysConfigPath(),
-  }))
+  ipcMain.handle(IPC.APP_PATH, async () => {
+    const userStylePath = getUserStylePath()
+    let userStyleExists = false
+    try {
+      userStyleExists = fs.existsSync(userStylePath)
+    } catch (e) {
+      console.warn('userStyle existsSync failed:', e)
+    }
+    return {
+      appPath: app.getAppPath(),
+      exePath: app.getPath('exe'),
+      modulePath: app.getPath('module'),
+      isPackaged: app.isPackaged,
+      sysConfigPath: getSysConfigPath(),
+      userStylePath,
+      userStyleExists,
+    }
+  })
 
   ipcMain.handle(IPC.DIALOG_OPEN, async (_event, options: FileDialogOptions) => {
     await handleOpenFile(mainWindow, options)
