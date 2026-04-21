@@ -36,10 +36,10 @@ export interface ToolDef {
 export const TOOLS: ToolDef[] = [
   { id: "navigate",    icon: "move",            label: "Navigate",    shortcut: "N", category: "navigate", cursor: "grab" },
   { id: "rectSelect",  icon: "widget",          label: "Rect Select", shortcut: "B", category: "select",   cursor: "crosshair" },
-  { id: "lassoSelect", icon: "draw",            label: "Lasso",       shortcut: "L", category: "select",   cursor: "crosshair" },
-  { id: "distance",    icon: "path",            label: "Distance",    shortcut: "D", category: "measure",  cursor: "crosshair" },
-  { id: "angle",       icon: "geosearch",       label: "Angle",       shortcut: "A", category: "measure",  cursor: "crosshair" },
-  { id: "torsion",     icon: "rotate-document", label: "Torsion",     shortcut: "T", category: "measure",  cursor: "crosshair" },
+  { id: "lassoSelect", icon: "polygon-filter",  label: "Lasso",       shortcut: "L", category: "select",   cursor: "crosshair" },
+  { id: "distance",    icon: "arrows-horizontal", label: "Distance",  shortcut: "D", category: "measure",  cursor: "crosshair" },
+  { id: "angle",       icon: "compass",         label: "Angle",       shortcut: "A", category: "measure",  cursor: "crosshair" },
+  { id: "torsion",     icon: "arrows-arc",      label: "Torsion",     shortcut: "T", category: "measure",  cursor: "crosshair" },
 ];
 
 /** Order in which categories appear in the palette (top-to-bottom). */

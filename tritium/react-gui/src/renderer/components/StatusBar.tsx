@@ -20,10 +20,6 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   return (
     <div className="status-bar">
       <div className="status-left">
-        <span className="status-item status-branch">
-          <Icon icon="git-branch" size={12} />
-          main
-        </span>
         <span className="status-item">
           <Icon icon="film" size={12} />
           Scene1
@@ -52,7 +48,6 @@ export const StatusBar: React.FC<StatusBarProps> = ({
       </div>
       <div className="status-right">
         <span className="status-item">Atoms: {atomCount}</span>
-        <span className="status-item">OpenGL 4.6</span>
         <span className="status-item status-ok">
           <Icon icon="full-circle" size={8} />
           Ready
