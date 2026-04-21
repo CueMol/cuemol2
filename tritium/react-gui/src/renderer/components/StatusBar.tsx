@@ -1,12 +1,22 @@
 import React from "react";
 import { Icon } from "@blueprintjs/core";
+import type { IconName } from "@blueprintjs/icons";
 
 interface StatusBarProps {
   activeFile?: string;
   atomCount: string;
+  activeToolLabel?: string;
+  activeToolShortcut?: string;
+  activeToolIcon?: IconName;
 }
 
-export const StatusBar: React.FC<StatusBarProps> = ({ activeFile, atomCount }) => {
+export const StatusBar: React.FC<StatusBarProps> = ({
+  activeFile,
+  atomCount,
+  activeToolLabel,
+  activeToolShortcut,
+  activeToolIcon,
+}) => {
   return (
     <div className="status-bar">
       <div className="status-left">
@@ -24,6 +34,15 @@ export const StatusBar: React.FC<StatusBarProps> = ({ activeFile, atomCount }) =
         </span>
       </div>
       <div className="status-center">
+        {activeToolLabel && (
+          <span className="status-item status-tool" title="Active viewport tool">
+            {activeToolIcon && <Icon icon={activeToolIcon} size={12} />}
+            <span>{activeToolLabel}</span>
+            {activeToolShortcut && (
+              <span className="status-tool-shortcut">({activeToolShortcut})</span>
+            )}
+          </span>
+        )}
         {activeFile && (
           <span className="status-item">
             <Icon icon="document" size={12} />

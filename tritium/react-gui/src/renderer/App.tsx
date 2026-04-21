@@ -22,6 +22,7 @@ import type { AlignmentData, AnimationData } from "./types";
 import { SAMPLE_ALIGNMENT, SAMPLE_ANIMATION } from "./data/alignmentData";
 
 import { useLayoutPersistence } from "./hooks/useLayoutPersistence";
+import { useActiveTool } from "./hooks/useActiveTool";
 import { useSceneState } from "./hooks/useSceneState";
 import { useInspectorState } from "./hooks/useInspectorState";
 import { useTabManager } from "./hooks/useTabManager";
@@ -31,6 +32,10 @@ import { useElectronIpc } from "./hooks/useElectronIpc";
 import { useSceneCommands } from "./commands/useSceneCommands";
 
 const App: React.FC = () => {
+
+  // --- Active tool state ---
+
+  const { activeDef } = useActiveTool();
 
   // --- Persistent layout state ---
 
@@ -293,7 +298,13 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      <StatusBar activeFile={activeFile} atomCount="13,167" />
+      <StatusBar
+        activeFile={activeFile}
+        atomCount="13,167"
+        activeToolLabel={activeDef.label}
+        activeToolShortcut={activeDef.shortcut}
+        activeToolIcon={activeDef.icon}
+      />
     </div>
   );
 };

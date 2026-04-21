@@ -34,3 +34,12 @@
 .status-ok {
   color: var(--accent-green);
 }
+
+.status-tool {
+  font-weight: 600;
+}
+
+.status-tool-shortcut {
+  opacity: 0.6;
+  font-weight: 400;
+}
