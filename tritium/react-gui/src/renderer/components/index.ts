@@ -11,5 +11,6 @@ export { CodeViewPane } from "./CodeViewPane";
 export { MolViewPane } from "./MolViewPane";
 export { LogPanel } from "./LogPanel";
 export { StatusBar } from "./StatusBar";
+export { ViewportToolPalette } from "./ViewportToolPalette";
 //export { ColorPanel } from "./ColorPanel";
 export { InspectorPanel } from "./InspectorPanel";

@@ -1,0 +1,71 @@
+/**
+ * @file ViewportToolPalette.tsx
+ * @description Floating vertical tool palette anchored to the left edge of
+ * the 3D viewport area. Each button activates a different interaction
+ * mode (navigate, select, measure, ...).
+ *
+ * Layout:
+ *   +----+
+ *   | N  |  <- navigate group
+ *   +----+  <- separator
+ *   | B  |  <- select group
+ *   | L  |
+ *   +----+  <- separator
+ *   | D  |  <- measure group
+ *   | A  |
+ *   | T  |
+ *   +----+
+ *
+ * @module ViewportToolPalette
+ */
+
+import React from "react";
+import { Icon, Tooltip } from "@blueprintjs/core";
+import {
+  TOOLS,
+  CATEGORY_ORDER,
+  type ToolId,
+} from "../data/viewportTools";
+
+interface Props {
+  activeTool: ToolId;
+  onSelect: (id: ToolId) => void;
+}
+
+export const ViewportToolPalette: React.FC<Props> = ({ activeTool, onSelect }) => {
+  return (
+    <div className="viewport-tool-palette" role="toolbar" aria-label="Viewport tools">
+      {CATEGORY_ORDER.map((cat, idx) => {
+        const tools = TOOLS.filter((t) => t.category === cat);
+        if (tools.length === 0) return null;
+        return (
+          <React.Fragment key={cat}>
+            {idx > 0 && <div className="tool-palette-separator" aria-hidden="true" />}
+            {tools.map((t) => (
+              <Tooltip
+                key={t.id}
+                placement="right"
+                compact
+                content={
+                  <span>
+                    {t.label} <kbd className="tool-shortcut">{t.shortcut}</kbd>
+                  </span>
+                }
+              >
+                <button
+                  type="button"
+                  className={`tool-btn${activeTool === t.id ? " active" : ""}`}
+                  onClick={() => onSelect(t.id)}
+                  aria-pressed={activeTool === t.id}
+                  aria-label={`${t.label} (${t.shortcut})`}
+                >
+                  <Icon icon={t.icon} size={18} />
+                </button>
+              </Tooltip>
+            ))}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+};

@@ -30,6 +30,7 @@
 
 import React from "react";
 import type { TabData } from "../types";
+import type { ToolId } from "../data/viewportTools";
 import { useTabDragDrop } from "../hooks/useTabDragDrop";
 import { TabBar } from "./TabBar";
 import { ContentPane } from "./ContentPane";
@@ -43,7 +44,6 @@ interface ContentAreaProps {
   activeTab: string;
   onSelectTab: (id: string) => void;
   onCloseTab: (id: string) => void;
-
   /**
    * Callback to reorder tabs via drag-and-drop.
    *
@@ -52,6 +52,8 @@ interface ContentAreaProps {
    * @param insertAfter - `true` when dropped on the right half of the target.
    */
   onReorderTabs?: (fromId: string, toId: string, insertAfter: boolean) => void;
+  activeTool: ToolId;
+  onSelectTool: (id: ToolId) => void;
 }
 
 // ────────────────────────────────────────────────────────────
@@ -64,6 +66,8 @@ export const ContentArea: React.FC<ContentAreaProps> = ({
   onSelectTab,
   onCloseTab,
   onReorderTabs,
+  activeTool,
+  onSelectTool,
 }) => {
   const active = tabs.find((t) => t.id === activeTab);
 
@@ -82,7 +86,12 @@ export const ContentArea: React.FC<ContentAreaProps> = ({
         dropTarget={dropTarget}
         dragDrop={dragDropHandlers}
       />
-      <ContentPane tabs={tabs} activeTab={active} />
+      <ContentPane
+        tabs={tabs}
+        activeTab={active}
+        activeTool={activeTool}
+        onSelectTool={onSelectTool}
+      />
     </div>
   );
 };

@@ -35,7 +35,7 @@ const App: React.FC = () => {
 
   // --- Active tool state ---
 
-  const { activeDef } = useActiveTool();
+  const { activeTool, activeDef, setActiveTool } = useActiveTool();
 
   // --- Persistent layout state ---
 
@@ -262,6 +262,8 @@ const App: React.FC = () => {
                             onSelectTab={setActiveTab}
                             onCloseTab={handleCloseTab}
                             onReorderTabs={handleReorderTabs}
+                            activeTool={activeTool}
+                            onSelectTool={setActiveTool}
                           />
                         </Allotment.Pane>
                         <Allotment.Pane minSize={100} preferredSize={200} snap>

@@ -135,6 +135,7 @@
 
 /* ─── Content Pane ─── */
 .content-pane {
+  position: relative; /* anchor for absolute-positioned ViewportToolPalette */
   flex: 1;
   overflow: hidden;
 }

@@ -17,10 +17,12 @@
 
 import React from "react";
 import type { TabData } from "../types";
+import type { ToolId } from "../data/viewportTools";
 import { WelcomePane } from "./WelcomePane";
 import { SettingsPane } from "./SettingsPane";
 import { CodeViewPane } from "./CodeViewPane";
 import { MolViewPane } from "./MolViewPane";
+import { ViewportToolPalette } from "./ViewportToolPalette";
 
 // ─────────────────────────────────────────────
 // Types
@@ -31,6 +33,10 @@ interface ContentPaneProps {
   tabs: TabData[];
   /** The currently active tab, or `undefined` if no tab is selected. */
   activeTab: TabData | undefined;
+  /** Currently active viewport tool. */
+  activeTool: ToolId;
+  /** Callback to change the active viewport tool. */
+  onSelectTool: (id: ToolId) => void;
 }
 
 // ─────────────────────────────────────────────
@@ -55,9 +61,15 @@ const renderContent = (tab: TabData | undefined): React.ReactNode => {
 // Component
 // ─────────────────────────────────────────────
 
-export const ContentPane: React.FC<ContentPaneProps> = ({ tabs, activeTab }) => {
+export const ContentPane: React.FC<ContentPaneProps> = ({
+  tabs,
+  activeTab,
+  activeTool,
+  onSelectTool,
+}) => {
   const hasMolViewTab = tabs.some((t) => t.type === "molview");
   const molViewVisible = activeTab?.type === "molview";
+  const showPalette = activeTab?.type !== "settings";
 
   return (
     <div className="content-pane">
@@ -70,6 +82,9 @@ export const ContentPane: React.FC<ContentPaneProps> = ({ tabs, activeTab }) => 
         </div>
       )}
       {!molViewVisible && renderContent(activeTab)}
+      {showPalette && (
+        <ViewportToolPalette activeTool={activeTool} onSelect={onSelectTool} />
+      )}
     </div>
   );
 };
