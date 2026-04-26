@@ -10,6 +10,7 @@ ElecView::ElecView()
     MB_DPRINTLN("ElecView::ElecView() created %p", this);
 
     m_bBound = false;
+    setActive(false);
     m_pCtxt = new ElecDisplayContext();
     m_pCtxt->init(this);
 }

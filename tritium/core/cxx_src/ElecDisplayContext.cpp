@@ -45,7 +45,7 @@ void ElecDisplayContext::clearBuffer(const gfx::ColorPtr &col)
 
 bool ElecDisplayContext::setCurrent()
 {
-    return true;
+    return m_pView != nullptr && m_pView->isBound();
 }
 
 bool ElecDisplayContext::isCurrent() const
