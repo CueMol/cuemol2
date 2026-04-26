@@ -32,7 +32,7 @@ export class AsyncCueMol {
         log.info('launch worker OK');
 
         this._worker.onmessage = (event: MessageEvent) => {
-            // log.info('worker message received: %s', event);
+            // log.info('worker message received:', event);
             const [method, seqno, ...args] = event.data;
 
             if (method === 'event-notify') {
@@ -61,7 +61,7 @@ export class AsyncCueMol {
     }
 
     postMessage(method: string, seq: number, args: any[], xfer: any = null) {
-        // log.debug('postMessage called: %s %s %s, xfer: %s', method, seq, args, xfer);
+        // log.debug(`postMessage called: ${method} ${seq}`, args, 'xfer:', xfer);
         if (xfer === null)
             this._worker.postMessage([method, seq, ...args]);
         else
@@ -117,18 +117,21 @@ export class AsyncCueMol {
     //////////
 
     createWrapperImpl(obj: ObjProxy): BaseWrapper {
-        // log.info('createWrapper called for obj: %s', obj);
+        // log.info('createWrapper called for obj:', obj);
         const className = obj.getClassName();
-        // log.info('createWrapper called for class: %s', className);
+        // log.info(`createWrapper called for class: ${className}`);
         const Klass = wrapper_map[className];
         const wrapper = new Klass(obj, this);
         return wrapper;
     }
 
     async createWrapper(prom: Promise<ObjProxy>): Promise<BaseWrapper | null> {
-        // log.info('createWrapper called for Promise: %s', prom);
+        // log.info('createWrapper called for Promise:', prom);
         return prom.then((resolvedObj: any) => {
-            // log.info('Promise resolved for obj: %s', resolvedObj);
+            if (resolvedObj === null || resolvedObj === undefined) {
+                return null;
+            }
+            // log.info('Promise resolved for obj:', resolvedObj);
             return this.createWrapperImpl(resolvedObj);
         }).catch((e: any) => {
             log.warn('Error resolving Promise for obj:', e);
@@ -143,7 +146,7 @@ export class AsyncCueMol {
     //////////
 
     async initCueMol(sysConfigPath?: string): Promise<void> {
-        log.info('initCueMol sysConfigPath=<%s>', sysConfigPath);
+        log.info(`initCueMol sysConfigPath=<${sysConfigPath}>`);
 
         try {
             await this.invokeWorker('initCueMol', sysConfigPath);
@@ -151,7 +154,7 @@ export class AsyncCueMol {
             this.sceMgr = await this.getService('SceneManager');
             this.cmdMgr = await this.getService('CmdMgr');
         } catch (e) {
-            log.error('initCueMol failed: %s', e);
+            log.error('initCueMol failed:', e);
         }
     }
 
@@ -160,7 +163,7 @@ export class AsyncCueMol {
             const result = await this.invokeWorker('loadUserStyle', userStylePath);
             return result[0] as boolean;
         } catch (e) {
-            log.error('loadUserStyle failed: %s', e);
+            log.error('loadUserStyle failed:', e);
             return false;
         }
     }
@@ -170,7 +173,7 @@ export class AsyncCueMol {
             const result = await this.invokeWorker('setViewInputConfigStyle', styleName);
             return result[0] as boolean;
         } catch (e) {
-            log.error('setViewInputConfigStyle failed: %s', e);
+            log.error('setViewInputConfigStyle failed:', e);
             return false;
         }
     }
@@ -182,7 +185,7 @@ export class AsyncCueMol {
             this._worker.terminate();
             this._ready = false;
         } catch (e) {
-            log.error('terminateWorker failed: %s', e);
+            log.error('terminateWorker failed:', e);
         }
     }
 
@@ -190,7 +193,7 @@ export class AsyncCueMol {
         try {
             const result = await this.invokeWorker('createObj', className);
             if (result === null) {
-                log.warn('createObj failed for class: %s', className);
+                log.warn(`createObj failed for class: ${className}`);
                 return null;
             }
             // log.info('createObj OK, result=', result);
@@ -198,7 +201,7 @@ export class AsyncCueMol {
             const natObj = new ObjProxy(obj_id, className, this);
             return this.createWrapperImpl(natObj);
         } catch (e) {
-            log.error('createObj failed: %s', e);
+            log.error('createObj failed:', e);
         }
         return null;
     }
@@ -207,7 +210,7 @@ export class AsyncCueMol {
         try {
             const result = await this.invokeWorker('getService', className);
             if (result === null) {
-                log.warn('getService failed for class: %s', className);
+                log.warn(`getService failed for class: ${className}`);
                 return null;
             }
             // log.info('createObj OK, result=', result);
@@ -215,7 +218,7 @@ export class AsyncCueMol {
             const natObj = new ObjProxy(obj_id, className, this);
             return this.createWrapperImpl(natObj);
         } catch (e) {
-            log.error('getService failed: %s', e);
+            log.error('getService failed:', e);
         }
         return null;
 
@@ -227,12 +230,12 @@ export class AsyncCueMol {
         try {
             const result = await this.invokeWorker('hasClass', className);
             if (result === null) {
-                log.warn('hasClass failed for class: %s', className);
+                log.warn(`hasClass failed for class: ${className}`);
                 return null;
             }
             return result[0] as boolean;
         } catch (e) {
-            log.error('hasClass failed: %s', e);
+            log.error('hasClass failed:', e);
         }
         return null;
     }
@@ -246,7 +249,7 @@ export class AsyncCueMol {
             }
             return result[0] as string;
         } catch (e) {
-            log.error('getAllClassNamesJSON failed: %s', e);
+            log.error('getAllClassNamesJSON failed:', e);
         }
         return null;
     }
@@ -266,7 +269,7 @@ export class AsyncCueMol {
     async addView(view_id: number, dpr: number): Promise<boolean> {
         const result = await this.invokeWorker('addView', view_id, dpr);
         if (result === null) {
-            log.warn('addView failed for view_id: %s', view_id);
+            log.warn(`addView failed for view_id: ${view_id}`);
             return false;
         }
         return result[0] as boolean;
@@ -451,15 +454,16 @@ export class AsyncCueMol {
                 await mol.createRenderer('*selection');
             }
         } catch (e) {
-            log.warn('autoCreateSelRend failed: %s', e);
+            log.warn('autoCreateSelRend failed:', e);
         }
 
         if (newObj) {
             try {
                 const coloring = await this.createDefPaintColoring();
                 mol.coloring = coloring;
+                log.info("*** default paint coloring set");
             } catch (e) {
-                log.warn('set default paint coloring failed: %s', e);
+                log.warn('set default paint coloring failed:', e);
             }
         }
         // TODO: disorder renderer target wiring (requires getRendNameList helper).
@@ -478,6 +482,7 @@ export class AsyncCueMol {
         cmd.default_style_name = this.getDefaultStyleName(rendOpts.rendererType);
         await cmd.run();
         const rend = await cmd.result_renderer;
+        log.info('renderer created: rend=', rend);
 
         // molPostProc + selection both apply only to MolCoord-derived classes,
         // whose renderers carry a 'sel' property (SelCommand object, not string).
@@ -492,7 +497,7 @@ export class AsyncCueMol {
                 if (sel) {
                     rend.sel = sel;
                 } else {
-                    log.warn('selection compile failed: %s', rendOpts.selection);
+                    log.warn(`selection compile failed: ${rendOpts.selection}`);
                 }
             }
         }
@@ -534,7 +539,7 @@ export class AsyncCueMol {
     }
 
     async loadScene(filePath: string, scene_id: number): Promise<boolean> {
-        log.info('loading QSC scene: %s', filePath);
+        log.info(`loading QSC scene: ${filePath}`);
         const scene = await this.sceMgr.getScene(scene_id);
         const cmd = await this.cmdMgr.getCmd('load_scene');
         cmd.target_scene = scene;
@@ -546,7 +551,7 @@ export class AsyncCueMol {
 
     async loadObject(filePath: string, scene_id: number,
                      options: FileOpenOptions): Promise<boolean> {
-        log.info('loading object file: %s', filePath);
+        log.info(`loading object file: ${filePath}`);
         const scene = await this.sceMgr.getScene(scene_id);
         const cmd = await this.cmdMgr.getCmd('load_object');
         cmd.target_scene = scene;
@@ -555,8 +560,7 @@ export class AsyncCueMol {
         //       applied yet — LoadObjectCommand (C++) has no reader option field.
         //       For now, log and discard.
         if (options.format.kind !== 'unknown') {
-            log.info('loadObject: format=%s options dropped (not wired to C++)',
-                     options.format.kind);
+            log.info(`loadObject: format=${options.format.kind} options dropped (not wired to C++)`);
         }
         await cmd.run();
         const mol = await cmd.result_object;

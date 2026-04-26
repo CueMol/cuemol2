@@ -29,7 +29,7 @@ export class ObjProxy {
                 this._obj,
                 propName,
             );
-            log.info('NativeObj.getProp OK, result: %s', result);
+            log.info('NativeObj.getProp(',propName,') OK, result:', result);
             if (isObjTuple(result[0])) {
                 const objTup = result[0] as ObjTuple;
                 return new ObjProxy(objTup._obj_id, objTup._class_name,
@@ -38,7 +38,7 @@ export class ObjProxy {
                 return result[0];
             }
         } catch (e) {
-            log.error('getProp failed: %s, %s', propName, e);
+            log.error(`getProp failed: ${propName},`, e);
             throw e;
         }
     }
@@ -51,9 +51,9 @@ export class ObjProxy {
                 propName,
                 value,
             );
-            log.info('NativeObj.setProp OK');
+            log.info('NativeObj.setProp(',propName,') OK');
         } catch (e) {
-            log.error('setProp failed: %s, %s', propName, e);
+            log.error(`setProp failed: ${propName},`, e);
             throw e;
         }
     }
@@ -62,7 +62,7 @@ export class ObjProxy {
         try {
             const result = await this._acm.invokeWorker("invokeMethod",
                 method, this._obj, args);
-            log.info('NativeObj.invokeMethod OK, result: %s', result);
+            log.info('NativeObj.invokeMethod(', method,') OK, result:', result);
             if (isObjTuple(result[0])) {
                 const objTup = result[0] as ObjTuple;
                 return new ObjProxy(objTup._obj_id, objTup._class_name,
@@ -71,7 +71,7 @@ export class ObjProxy {
                 return result[0];
             }
         } catch (e) {
-            log.error('invokeMethod failed: %s, %s', method, e);
+            log.error(`invokeMethod failed: ${method},`, e);
             throw e;
         }
 

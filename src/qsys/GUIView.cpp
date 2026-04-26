@@ -103,13 +103,13 @@ void GUIView::setUpProjMat(int cx, int cy)
     double vw = zoom / 2.0f;
     double fasp = (double)cx / (double)cy;
 
-    MB_DPRINTLN("OcView.setUpProjMat> CX=%d, CY=%d, Vw=%f, Fasp=%f", cx, cy, vw, fasp);
-    MB_DPRINTLN("OcView.setUpProjMat> Near=%f, Far=%f", slabnear, slabfar);
+    // MB_DPRINTLN("OcView.setUpProjMat> CX=%d, CY=%d, Vw=%f, Fasp=%f", cx, cy, vw, fasp);
+    // MB_DPRINTLN("OcView.setUpProjMat> Near=%f, Far=%f", slabnear, slabfar);
 
     int bcx = convToBackingX(cx);
     int bcy = convToBackingY(cy);
 
-    MB_DPRINTLN("OcView.setUpProjMat> BCX=%d, BCY=%d", bcx, bcy);
+    // MB_DPRINTLN("OcView.setUpProjMat> BCX=%d, BCY=%d", bcx, bcy);
 
     if (getStereoMode() == Camera::CSM_PARA || getStereoMode() == Camera::CSM_CROSS) {
         fasp /= 2.0f;
@@ -131,7 +131,7 @@ void GUIView::setUpProjMat(int cx, int cy)
 
 void GUIView::drawScene()
 {
-    MB_DPRINTLN("GUIView::drawScene called");
+    // MB_DPRINTLN("GUIView::drawScene called");
 
     // if (!m_bInitOK) return;
     if (!safeSetCurrent()) return;
@@ -509,8 +509,8 @@ void GUIView::dispatchMouseEvent(int nType, InDevEvent &ev)
 {
     switch (nType) {
         case DME_MOUSE_DOWN:
-            MB_DPRINTLN("onMouseDown (%d, %d) (%d, %d) %x", ev.getX(), ev.getY(),
-                        ev.getRootX(), ev.getRootY(), ev.getModifier());
+            // MB_DPRINTLN("onMouseDown (%d, %d) (%d, %d) %x", ev.getX(), ev.getY(),
+            //             ev.getRootX(), ev.getRootY(), ev.getModifier());
             m_meh.buttonDown(ev);
             break;
         case DME_MOUSE_MOVE:
@@ -597,7 +597,7 @@ void GUIView::setupInDevEvent(double clientX, double clientY, double screenX,
     if (amodif & 64)  modif |= InDevEvent::INDEV_SHIFT;
     if (amodif & 128) modif |= InDevEvent::INDEV_ALT;
 
-    MB_DPRINTLN("setupInDevEvent: amodif=%d -> modif=%d", amodif, modif);
+    // MB_DPRINTLN("setupInDevEvent: amodif=%d -> modif=%d", amodif, modif);
     ev.setModifier(modif);
 }
 

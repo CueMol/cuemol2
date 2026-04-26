@@ -875,7 +875,7 @@ void Scene::setActiveViewID(qlib::uid_t uid)
 
 void Scene::checkAndUpdate()
 {
-  // MB_DPRINTLN("scene %d update %d", m_nUID, m_bUpdateRequired);
+    // MB_DPRINTLN("Scene::checkAndUpdate> scene %d update %d", m_nUID, m_bUpdateRequired);
   if (m_bUpdateRequired) {
     // Force to redraw all views
     viewtab_t::const_iterator viter = m_viewtab.begin();

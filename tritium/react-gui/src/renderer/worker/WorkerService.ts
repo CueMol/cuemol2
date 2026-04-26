@@ -46,7 +46,7 @@ export class WorkerService {
         this._internal = getModule();
         this._postMessage = postMessage;
         this._close = close;
-        log.info("_internal: %s", this._internal);
+        log.info('_internal:', this._internal);
 
         this._methods = {
             'initCueMol': this.initCueMol,
@@ -77,9 +77,9 @@ export class WorkerService {
     }
 
     invoke(method: string, seqno: number, args: any[]): void {
-        // log.info('Worker> invoke called: %s seqno: %d args: %s', method, seqno, args);
+        // log.info(`Worker> invoke called: ${method} seqno: ${seqno} args:`, args);
         if (!(method in this._methods)) {
-            log.error('Worker> unknown method: %s', method);
+            log.error(`Worker> unknown method: ${method}`);
             this._postMessage([method, seqno, false]);
             return;
         }
@@ -92,16 +92,16 @@ export class WorkerService {
                 this._postMessage([method, seqno, true, result]);
             }
         } catch (e) {
-            log.error('Worker> call method failed: %s, %s', method, e);
+            log.error(`Worker> call method failed: ${method},`, e);
             this._postMessage([method, seqno, false, e]);
         }
     }
 
     getWrapped(obj: any, clsName?: string): ObjTuple | any {
         if (obj && typeof obj === 'object' && 'toObjID' in obj) {
-            log.info('Worker> getWrapped result is a native object, create wrapper');
+            // log.info('Worker> getWrapped result is a native object, create wrapper');
         } else {
-            log.info('Worker> getWrapped result is a primitive value, return directly: %s', obj);
+            // log.info(`Worker> getWrapped result is a primitive value, return directly: ${obj}`);
             return obj;
         }
 
@@ -109,10 +109,10 @@ export class WorkerService {
         if (!(slot_id in this._objSlot)) {
             this._objSlot[slot_id.toString()] = obj;
         } else {
-            log.info('Worker> getWrapped: obj already has slot, slot_id=%s', slot_id);
+            // log.info(`Worker> getWrapped: obj already has slot, slot_id=${slot_id}`);
         }
 
-        log.info('Worker> getWrapped OK, slot_id=%s, obj=%s', slot_id, obj);
+        // log.info(`Worker> getWrapped OK, slot_id=${slot_id}, obj=`, obj);
         if (clsName) {
             return new ObjTuple(slot_id, clsName);
         } else {
@@ -127,7 +127,7 @@ export class WorkerService {
         const objTuple = obj as ObjTuple;
         const slot_id = objTuple._obj_id;
         if (!(slot_id in this._objSlot)) {
-            log.error('Worker> resolveWrapped failed: invalid slot_id: %s', slot_id);
+            log.error(`Worker> resolveWrapped failed: invalid slot_id: ${slot_id}`);
             return null;
         }
         return this._objSlot[slot_id];
@@ -136,7 +136,7 @@ export class WorkerService {
     //////////
 
     initCueMol(loadPath?: string): boolean {
-        log.info('Worker> initCueMol called, loadPath: %s', loadPath);
+        log.info(`Worker> initCueMol called, loadPath: ${loadPath}`);
         if (!loadPath) {
             this._internal.initCueMol();
         } else {
@@ -180,7 +180,7 @@ export class WorkerService {
         }
         try {
             if (userStylePath) {
-                log.info('Worker> loading user style file: %s', userStylePath);
+                log.info(`Worker> loading user style file: ${userStylePath}`);
                 // loadStyleSetFromFile(scopeID=0, path, isReadOnly=false)
                 stylem.invokeMethod('loadStyleSetFromFile', 0, userStylePath, false);
             } else {
@@ -208,7 +208,7 @@ export class WorkerService {
         }
         try {
             vic.setProp('style', styleName);
-            log.info('Worker> ViewInputConfig.style = %s', styleName);
+            log.info(`Worker> ViewInputConfig.style = ${styleName}`);
             return true;
         } catch (e) {
             log.error('Worker> ViewInputConfig.style set failed:', e);
@@ -224,24 +224,24 @@ export class WorkerService {
     //////////
 
     createObj(className: string): ObjTuple | null {
-        // log.info('Worker> createObj called, className=%s', className);
+        // log.info(`Worker> createObj called, className=${className}`);
         const obj = this._internal.createObj(className);
         if (obj === null) {
-            log.error('Worker> createObj failed for class: %s', className);
+            log.error(`Worker> createObj failed for class: ${className}`);
             return null;
         }
-        // log.info('Worker> createObj result: %s', obj.toString());
+        // log.info('Worker> createObj result:', obj.toString());
         return this.getWrapped(obj, className);
     }
 
     getService(className: string): ObjTuple | null {
-        // log.info('Worker> getService called: %s', className);
+        // log.info(`Worker> getService called: ${className}`);
         const obj = this._internal.getService(className);
         if (obj === null) {
-            log.error('Worker> getService failed for class: %s', className);
+            log.error(`Worker> getService failed for class: ${className}`);
             return null;
         }
-        // log.info('Worker> getService result: %s', obj.toString());
+        // log.info('Worker> getService result:', obj.toString());
         return this.getWrapped(obj, className);
     }
 
@@ -254,42 +254,42 @@ export class WorkerService {
     }
 
     getProp(thisobj: ObjTuple, propName: string): any {
-        // log.info('Worker> getProp called: thisobj=%s, propName=%s', thisobj, propName);
+        // log.info(`Worker> getProp called: thisobj=${thisobj}, propName=${propName}`);
         const obj = this.resolveWrapped(thisobj);
         if (obj === null) {
-            log.error('Worker> getProp failed: could not resolve thisobj=%s, propName=%s', thisobj, propName);
+            log.error(`Worker> getProp failed: could not resolve thisobj=${thisobj}, propName=${propName}`);
             return null;
         }
         const rval = obj.getProp(propName);
-        // log.info('Worker> getProp OK, result: %s', rval);
+        // log.info('Worker> getProp OK, result:', rval);
         return this.getWrapped(rval);
     }
 
     setProp(thisobj: ObjTuple, propName: string, value: any): boolean {
-        // log.info('Worker> setProp called: thisobj=%s, propName=%s, value=%s', thisobj, propName, value);
+        // log.info(`Worker> setProp called: thisobj=${thisobj}, propName=${propName}, value=${value}`);
         const obj = this.resolveWrapped(thisobj);
         if (obj === null) {
-            log.error('Worker> setProp failed: could not resolve thisobj=%s, propName=%s, value=%s', thisobj, propName, value);
+            log.error(`Worker> setProp failed: could not resolve thisobj=${thisobj}, propName=${propName}, value=${value}`);
             return false;
         }
         const resolvedValue = this.resolveWrapped(value);
-        // log.info('Worker> setProp obj=%s propName=%s resolved value=%s', obj, propName, resolvedValue);
+        // log.info(`Worker> setProp obj=${obj} propName=${propName} resolved value=`, resolvedValue);
         const rval = obj.setProp(propName, resolvedValue);
-        // log.info('Worker> setProp OK, result: %s', rval);
+        // log.info('Worker> setProp OK, result:', rval);
         return rval;
     }
 
     invokeMethod(methodName: string, thisobj: ObjTuple, args: any[]): any {
-        // log.info('Worker> invokeMethod called: %s thisobj=%s args=%s', methodName, thisobj, args);
+        // log.info(`Worker> invokeMethod called: ${methodName} thisobj=${thisobj} args=`, args);
         const obj = this.resolveWrapped(thisobj);
         if (obj === null) {
             log.error('Worker> invokeMethod failed: could not resolve thisobj');
             return null;
         }
         const resolvedArgs = args.map(arg => this.resolveWrapped(arg));
-        // log.info('Worker> mth=%s thisobj=%s args=%s', methodName, thisobj, args);
+        // log.info(`Worker> mth=${methodName} thisobj=${thisobj} args=`, args);
         const rval = obj.invokeMethod(methodName, ...resolvedArgs);
-        // log.info('Worker> invokeMethod OK, result: %s', rval);
+        // log.info('Worker> invokeMethod OK, result:', rval);
         return this.getWrapped(rval);
     }
 

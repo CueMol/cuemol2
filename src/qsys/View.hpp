@@ -500,10 +500,11 @@ namespace qsys {
 
 
     void checkAndUpdate() {
-      if (m_bUpdateRequired) {
-        drawScene();
-      }
-      clearUpdateFlag();
+        if (m_bUpdateRequired) {
+            MB_DPRINTLN("View::checkAndUpdate> view %d update %d", m_uid, m_bUpdateRequired);
+            drawScene();
+        }
+        clearUpdateFlag();
     }
 
     void forceRedraw() {

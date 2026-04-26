@@ -142,9 +142,8 @@ export class GfxManager {
         // Cancel existing loop for this view if any
         const existing = this._afcbid_map.get(view_id);
         if (existing !== undefined) cancelAnimationFrame(existing);
-        const view = this._sceMgr.invokeMethod('getView', view_id);
         const render = (): void => {
-            view.invokeMethod('checkAndUpdate');
+            this._sceMgr.invokeMethod('checkAndUpdateScenes');
             this._afcbid_map.set(view_id, requestAnimationFrame(render));
         };
         render();
@@ -181,6 +180,11 @@ export class GfxManager {
         if (!this.bound_views.includes(view_id)) {
             console.warn(`activateView: view ${view_id} not in bound_views, skipping`);
             return;
+        }
+        // Sync View::m_bActive: only the activated view is active
+        for (const vid of this.bound_views) {
+            const v = this._sceMgr.invokeMethod('getView', vid);
+            v.setProp('active', vid === view_id);
         }
         // Single-canvas: stop all other active loops
         for (const vid of [...this._afcbid_map.keys()]) {
