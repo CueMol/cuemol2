@@ -2,6 +2,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import bindings from 'bindings';
 import { CueMol } from './cuemol';
+export { CueMol } from './cuemol';
 import type { CueMolInternal } from './interfaces';
 import { createLogger } from "@/logger";
 
