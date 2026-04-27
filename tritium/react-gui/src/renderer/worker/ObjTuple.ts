@@ -1,16 +1,14 @@
 
-export type ObjId = string | { future: number };
-
 export class ObjTuple {
-    _obj_id: ObjId;
+    _obj_id: string;
     _class_name: string;
 
-    constructor(obj_id: ObjId, class_name: string) {
+    constructor(obj_id: string, class_name: string) {
         this._obj_id = obj_id;
         this._class_name = class_name;
     }
 
-    get objId(): ObjId {
+    get objId(): string {
         return this._obj_id;
     }
 
@@ -26,8 +24,4 @@ export function isObjTuple(obj: any): boolean {
         }
     }
     return false;
-}
-
-export function isFutureRef(obj_id: ObjId): obj_id is { future: number } {
-    return typeof obj_id === 'object' && 'future' in obj_id;
 }

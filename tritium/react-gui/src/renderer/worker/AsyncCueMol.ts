@@ -69,12 +69,6 @@ export class AsyncCueMol {
             this._worker.postMessage([method, seq, ...args], [xfer]);
     }
 
-    // Fire-and-forget: send postMessage without registering a Promise listener.
-    // Used by pipelining paths (invokeMethodObj, invokeMethodVoid, getPropObj, setProp).
-    postPipelined(method: string, seq: number, args: any[]): void {
-        this._worker.postMessage([method, seq, ...args]);
-    }
-
     getSeqNo(): number {
         this._seqno++;
         return this._seqno;
@@ -124,35 +118,26 @@ export class AsyncCueMol {
     //////////
 
     createWrapperImpl(obj: ObjProxy): BaseWrapper {
+        // log.info('createWrapper called for obj:', obj);
         const className = obj.getClassName();
+        // log.info(`createWrapper called for class: ${className}`);
         const Klass = wrapper_map[className];
         const wrapper = new Klass(obj, this);
         return wrapper;
     }
 
-    // Accepts both an ObjProxy (sync, from invokeMethodObj/getPropObj fast path)
-    // and a Promise<ObjProxy> (legacy, from invokeMethod with object return).
-    // Returns sync BaseWrapper for sync input; Promise for async input.
-    createWrapper(input: ObjProxy | Promise<any> | null | undefined): any {
-        if (input === null || input === undefined) {
-            return null;
-        }
-        if (input instanceof ObjProxy) {
-            return this.createWrapperImpl(input);
-        }
-        if (typeof (input as any).then === 'function') {
-            return (input as Promise<any>).then((resolvedObj: any) => {
-                if (resolvedObj === null || resolvedObj === undefined) {
-                    return null;
-                }
-                return this.createWrapperImpl(resolvedObj);
-            }).catch((e: any) => {
-                log.warn('Error resolving Promise for obj:', e);
+    async createWrapper(prom: Promise<ObjProxy>): Promise<BaseWrapper | null> {
+        // log.info('createWrapper called for Promise:', prom);
+        return prom.then((resolvedObj: any) => {
+            if (resolvedObj === null || resolvedObj === undefined) {
                 return null;
-            });
-        }
-        log.warn('createWrapper: unexpected input type', input);
-        return null;
+            }
+            // log.info('Promise resolved for obj:', resolvedObj);
+            return this.createWrapperImpl(resolvedObj);
+        }).catch((e: any) => {
+            log.warn('Error resolving Promise for obj:', e);
+            return null;
+        });
     }
 
     getWrapped(obj: ObjProxy): ObjTuple {
@@ -488,7 +473,6 @@ export class AsyncCueMol {
     // Set up a renderer for a freshly loaded object.
     // Ported from uxp_gui/cuemol2/base/content/renderer.js:135-209 (doSetupRend).
     async setupRenderer(mol: any, rendOpts: RendererOptions): Promise<void> {
-        const t0 = performance.now();
         // TODO: preset renderer (createPresetRenderer) support — currently the
         //       dialog never returns a *RendPreset type.
         const cmd = await this.cmdMgr.getCmd('new_renderer');
@@ -498,7 +482,6 @@ export class AsyncCueMol {
         cmd.recenter_view = rendOpts.centerView;
         cmd.default_style_name = this.getDefaultStyleName(rendOpts.rendererType);
         await cmd.run();
-        const t1 = performance.now();
         const rend = await cmd.result_renderer;
         log.info('renderer created: rend=', rend);
 
@@ -519,8 +502,6 @@ export class AsyncCueMol {
                 }
             }
         }
-        const t2 = performance.now();
-        log.info(`[perf] setupRenderer: total=${(t2 - t0).toFixed(1)}ms (cmd.run=${(t1 - t0).toFixed(1)}ms, post=${(t2 - t1).toFixed(1)}ms)`);
     }
 
     async getCompatibleRendererNames(filePath: string): Promise<string[]> {
@@ -571,7 +552,6 @@ export class AsyncCueMol {
 
     async loadObject(filePath: string, scene_id: number,
                      options: FileOpenOptions): Promise<boolean> {
-        const t0 = performance.now();
         log.info(`loading object file: ${filePath}`);
         const scene = await this.sceMgr.getScene(scene_id);
         const cmd = await this.cmdMgr.getCmd('load_object');
@@ -584,16 +564,12 @@ export class AsyncCueMol {
             log.info(`loadObject: format=${options.format.kind} options dropped (not wired to C++)`);
         }
         await cmd.run();
-        const t1 = performance.now();
         const mol = await cmd.result_object;
 
         if (options.renderer.objectName) {
             mol.name = options.renderer.objectName;
         }
-        const t2 = performance.now();
         await this.setupRenderer(mol, options.renderer);
-        const t3 = performance.now();
-        log.info(`[perf] loadObject: total=${(t3 - t0).toFixed(1)}ms (load=${(t1 - t0).toFixed(1)}ms, mol_setup=${(t2 - t1).toFixed(1)}ms, setupRenderer=${(t3 - t2).toFixed(1)}ms)`);
         return true;
     }
 }

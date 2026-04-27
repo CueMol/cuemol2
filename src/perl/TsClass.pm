@@ -7,7 +7,6 @@ package TsClass;
 
 use File::Basename;
 use File::Path 'mkpath';
-use File::Find;
 
 use strict;
 use Utils;
@@ -23,55 +22,6 @@ our %imports;          # set of QIF names needing import { X } from './X'
 our %emitted_imports;  # QIF names already imported (parent + self), skip these
 our $cur_clsname;      # current class being generated (skip self-import)
 our @body;             # buffered body lines (flushed after imports are known)
-
-# Set of class names that appear as a parent in some other class's "extends".
-# Methods returning these types must use the slow path (invokeMethod) so the
-# Worker can resolve the actual subclass before the wrapper is constructed —
-# the future ObjProxy fast path would otherwise create a wrapper of the
-# declared base class, missing methods/setters defined on the subclass.
-our %polymorphic_classes;
-our $polymorphic_built = 0;
-
-sub buildPolymorphicSet
-{
-    return if $polymorphic_built;
-    $polymorphic_built = 1;
-
-    # Each mcwrapgen invocation only loads one qif (plus its includes), so
-    # %Parser::db cannot tell us about sibling classes that extend the same
-    # parent. Walk every -I include directory for *.qif files and grep for
-    # `runtime_class X extends Y` / `abstract_class X extends Y`. Y becomes
-    # part of the polymorphic set.
-    my @inc_dirs;
-    while ($Parser::CPPOPT =~ /-I\s*(\S+)/g) {
-        push @inc_dirs, $1 if -d $1;
-    }
-    return unless @inc_dirs;
-
-    find({
-        wanted => sub {
-            return unless /\.qif$/;
-            open(my $fh, '<', $File::Find::name) or return;
-            while (my $line = <$fh>) {
-                if ($line =~ /^\s*(?:runtime_class|abstract_class)\s+\w+\s+extends\s+([\w:]+)/) {
-                    my $parent = $1;
-                    $parent =~ s/.*:://;
-                    $polymorphic_classes{$parent} = 1;
-                }
-            }
-            close($fh);
-        },
-        no_chdir => 1,
-    }, @inc_dirs);
-}
-
-sub isPolymorphic($)
-{
-    my $qif = shift;
-    return 0 unless defined($qif) && $qif ne "";
-    buildPolymorphicSet();
-    return exists($polymorphic_classes{$qif}) ? 1 : 0;
-}
 
 sub emit { push @body, $_[0]; }
 
@@ -247,17 +197,9 @@ sub genTsObjPropCode($$$)
   my $prop = shift;
 
   my $ts_type = tsTypeOf($prop);
-  my $qif = $prop->{"qif"};
 
   emit("  get $propnm() : $ts_type {\n");
-  if (defined($qif) && $qif ne "" && $qif ne "LScrCallBack" && !isPolymorphic($qif)) {
-    # Known leaf class: fire-and-forget, return future ObjProxy (fast path)
-    emit("    const result = this.getPropObj(\'$propnm\', \'$ts_type\');\n");
-  } else {
-    # Polymorphic base class or untyped: real round trip so the wrapper
-    # is constructed from the actual subclass returned by the worker
-    emit("    const result = this.getProp(\'$propnm\');\n");
-  }
+  emit("    const result = this.getProp(\'$propnm\');\n");
   emit("    return this.createWrapper(result);\n");
   emit("  }\n");
   emit("\n");
@@ -288,34 +230,29 @@ sub genTsInvokeCode($$)
   my %mths = %{$cls->{"methods"}};
   foreach my $nm (sort keys %mths) {
     my $mth = $mths{$nm};
+    my $nargs = int(@{$mth->{"args"}});
     my $rettype = $mth->{"rettype"};
     my $rval_typename = $rettype->{"type"};
     my $ts_typename = tsTypeOf($rettype);
-    my $qif = $rettype->{"qif"};
-
     emit("// method: $nm\n");
     emit("  ${nm}(".makeMthSignt($mth).") : $ts_typename {\n");
-
-    if ($rval_typename eq "void") {
-      # Fire-and-forget: no round trip needed
-      emit("    this.invokeMethodVoid(".makeMthArg($mth).");\n");
-    }
-    elsif ($rval_typename eq "object" && defined($qif) && $qif ne "" && $qif ne "LScrCallBack" && !isPolymorphic($qif)) {
-      # Known leaf class return: fire postMessage immediately, return future ObjProxy
-      emit("    const result = this.invokeMethodObj(".makeMthArgObj($mth, $ts_typename).");\n");
-      emit("    return this.createWrapper(result);\n");
+    if ($rval_typename ne "void") {
+        emit("    const result = ");
     }
     else {
-      # Primitive, polymorphic base class, or untyped object: full round trip.
-      # For polymorphic base classes the worker returns the actual subclass,
-      # which createWrapper uses to instantiate the correct typed wrapper.
-      emit("    const result = this.invokeMethod(".makeMthArg($mth).");\n");
-      if ($rval_typename eq "object") {
+        emit("    ");
+    }
+    emit("this.invokeMethod(".makeMthArg($mth).");\n");
+
+    if ($rval_typename eq "object") {
         emit("    return this.createWrapper(result);\n");
-      }
-      else {
-        emit("    return result;\n");
-      }
+    }
+    elsif ($rval_typename eq "void") {
+      # No return code
+    }
+    else {
+      # basic types
+      emit("  return result;\n");
     }
 
     emit("};\n");
@@ -336,33 +273,6 @@ sub makeMthSignt($)
       my $arg_type = tsTypeOf($arg);
       push(@rval, "arg_$ind: $arg_type");
       ++$ind;
-  }
-  return join(", ", @rval);
-}
-
-# Build argument list for invokeMethodObj: "name", "ReturnClassName", arg0.wrapped, ...
-sub makeMthArgObj($$)
-{
-  my $mth = shift;
-  my $ret_classname = shift;
-  my $args = $mth->{"args"};
-  my $name = $mth->{"name"};
-
-  my @rval = ("\"$name\"", "\"$ret_classname\"");
-
-  my $ind = 0;
-  foreach my $arg (@{$args}) {
-    my $arg_type = $arg->{"type"};
-    if (isCallbackObj($arg)) {
-      push(@rval, "arg_$ind");
-    }
-    elsif ($arg_type eq "object") {
-      push(@rval, "arg_${ind}.wrapped");
-    }
-    else {
-      push(@rval, "arg_$ind");
-    }
-    ++$ind;
   }
   return join(", ", @rval);
 }

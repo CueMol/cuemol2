@@ -4,7 +4,7 @@
 import { getModule } from '@cuemol/core';
 import { CueMol } from '@cuemol/core/src/cuemol';
 import type { CueMolInternal } from '@cuemol/core/src/interfaces';
-import { ObjTuple, ObjId, isObjTuple, isFutureRef } from './ObjTuple';
+import { ObjTuple, isObjTuple } from './ObjTuple';
 import { GfxManager } from './gfx_manager';
 import * as event from '../event';
 import type { SceneManager } from '@cuemol/core/src/wrappers/SceneManager';
@@ -42,10 +42,6 @@ export class WorkerService {
     private _cm: CueMol;
     private _gfx_mgr: GfxManager | null = null;
     private _objSlot: { [key: string]: any } = {};
-    // Maps seqno → native C++ object for pipelining (future ObjProxy resolution).
-    // Evicted once the seqno is more than MAX_FUTURE_WINDOW behind the current head.
-    private _futureSlot: { [seq: string]: any } = {};
-    private static readonly MAX_FUTURE_WINDOW = 256;
     private _postMessage: (data: any[]) => void;
     private _close: () => void;
     private _sceMgr: SceneManager | null = null;
@@ -99,15 +95,6 @@ export class WorkerService {
 
         try {
             const result = this._methods[method].apply(this, args);
-            const primaryResult = Array.isArray(result) ? result[0] : result;
-            // Cache native object in _futureSlot so subsequent pipelined messages
-            // that reference this seqno as a future can resolve it synchronously.
-            if (isObjTuple(primaryResult)) {
-                const slotId = (primaryResult as ObjTuple)._obj_id as string;
-                if (slotId in this._objSlot) {
-                    this._futureSlot[seqno.toString()] = this._objSlot[slotId];
-                }
-            }
             if (Array.isArray(result)) {
                 this._postMessage([method, seqno, true, ...result]);
             } else {
@@ -115,20 +102,7 @@ export class WorkerService {
             }
         } catch (e) {
             log.error(`Worker> call method failed: ${method},`, e);
-            // Mark as broken so downstream futures that depend on this seqno also fail.
-            this._futureSlot[seqno.toString()] = { __broken: e };
             this._postMessage([method, seqno, false, e]);
-        }
-        this._evictFutureSlot(seqno);
-    }
-
-    private _evictFutureSlot(currentSeqno: number): void {
-        const cutoff = currentSeqno - WorkerService.MAX_FUTURE_WINDOW;
-        if (cutoff <= 0) return;
-        for (const key of Object.keys(this._futureSlot)) {
-            if (parseInt(key, 10) <= cutoff) {
-                delete this._futureSlot[key];
-            }
         }
     }
 
@@ -160,22 +134,7 @@ export class WorkerService {
             return obj;
         }
         const objTuple = obj as ObjTuple;
-        const obj_id: ObjId = objTuple._obj_id;
-
-        if (isFutureRef(obj_id)) {
-            const key = obj_id.future.toString();
-            const resolved = this._futureSlot[key];
-            if (resolved === undefined) {
-                log.error(`Worker> resolveWrapped: future ${obj_id.future} not yet resolved`);
-                return null;
-            }
-            if (resolved && typeof resolved === 'object' && '__broken' in resolved) {
-                throw resolved.__broken;
-            }
-            return resolved;
-        }
-
-        const slot_id = obj_id as string;
+        const slot_id = objTuple._obj_id;
         if (!(slot_id in this._objSlot)) {
             log.error(`Worker> resolveWrapped failed: invalid slot_id: ${slot_id}`);
             return null;
