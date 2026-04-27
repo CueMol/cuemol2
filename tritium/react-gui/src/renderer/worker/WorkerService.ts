@@ -8,18 +8,22 @@ import { ObjTuple, isObjTuple } from './ObjTuple';
 import { GfxManager } from './gfx_manager';
 import * as event from '../event';
 import type { SceneManager } from '@cuemol/core/src/wrappers/SceneManager';
+import type { CmdMgr } from '@cuemol/core/src/wrappers/CmdMgr';
+import type { StreamManager } from '@cuemol/core/src/wrappers/StreamManager';
 import type { ScrEventManager } from '@cuemol/core/src/wrappers/ScrEventManager';
 import type { GUIView } from '@cuemol/core/src/wrappers/GUIView';
 import type { StyleManager } from '@cuemol/core/src/wrappers/StyleManager';
 import type { ViewInputConfig } from '@cuemol/core/src/wrappers/ViewInputConfig';
 import type { TextImgBuf } from '@cuemol/core/src/wrappers/TextImgBuf';
 import type { ByteArray } from '@cuemol/core/src/wrappers/ByteArray';
+import type { WorkerContext } from './types/WorkerContext';
 
 // import { createLogger } from '@cuemol/core/src/logger';
 // const log = createLogger(import.meta.url);
 const log = console;
 
 type ServiceMethod = (...args: any[]) => any;
+type ServiceFn = (ctx: WorkerContext, args: any) => any | Promise<any>;
 
 const makeModif = (event: any): number => {
     let modif = 0;
@@ -38,6 +42,7 @@ const makeModif = (event: any): number => {
 export class WorkerService {
 
     private _methods: { [key: string]: ServiceMethod };
+    private _registered: { [name: string]: ServiceFn } = {};
     private _internal: CueMolInternal;
     private _cm: CueMol;
     private _gfx_mgr: GfxManager | null = null;
@@ -45,6 +50,9 @@ export class WorkerService {
     private _postMessage: (data: any[]) => void;
     private _close: () => void;
     private _sceMgr: SceneManager | null = null;
+    private _cmdMgr: CmdMgr | null = null;
+    private _strMgr: StreamManager | null = null;
+    private _styleMgr: StyleManager | null = null;
     private _evtMgr: ScrEventManager | null = null;
 
     constructor(
@@ -85,24 +93,55 @@ export class WorkerService {
         }
     }
 
+    register(name: string, fn: ServiceFn): void {
+        if (name in this._registered) {
+            log.warn(`WorkerService.register: overwriting "${name}"`);
+        }
+        this._registered[name] = fn;
+    }
+
+    registerObj(obj: any): ObjTuple {
+        return this.getWrapped(obj);
+    }
+
+    createCppObj(className: string): any | null {
+        const obj = this._internal.createObj(className);
+        if (!obj) return null;
+        return this._cm.createWrapper(obj);
+    }
+
+    private _buildContext(): WorkerContext {
+        return {
+            svc: this,
+            sceMgr: this._sceMgr!,
+            cmdMgr: this._cmdMgr!,
+            strMgr: this._strMgr!,
+            styleMgr: this._styleMgr!,
+        };
+    }
+
     invoke(method: string, seqno: number, args: any[]): void {
         // log.info(`Worker> invoke called: ${method} seqno: ${seqno} args:`, args);
-        if (!(method in this._methods)) {
+        if (method in this._methods) {
+            try {
+                const result = this._methods[method].apply(this, args);
+                if (Array.isArray(result)) {
+                    this._postMessage([method, seqno, true, ...result]);
+                } else {
+                    this._postMessage([method, seqno, true, result]);
+                }
+            } catch (e) {
+                log.error(`Worker> call method failed: ${method},`, e);
+                this._postMessage([method, seqno, false, e]);
+            }
+        } else if (method in this._registered) {
+            Promise.resolve()
+                .then(() => this._registered[method](this._buildContext(), args[0]))
+                .then((result) => this._postMessage([method, seqno, true, result]))
+                .catch((e) => this._postMessage([method, seqno, false, String(e)]));
+        } else {
             log.error(`Worker> unknown method: ${method}`);
             this._postMessage([method, seqno, false]);
-            return;
-        }
-
-        try {
-            const result = this._methods[method].apply(this, args);
-            if (Array.isArray(result)) {
-                this._postMessage([method, seqno, true, ...result]);
-            } else {
-                this._postMessage([method, seqno, true, result]);
-            }
-        } catch (e) {
-            log.error(`Worker> call method failed: ${method},`, e);
-            this._postMessage([method, seqno, false, e]);
         }
     }
 
@@ -151,6 +190,9 @@ export class WorkerService {
 
         this._gfx_mgr = new GfxManager(this._internal);
         this._sceMgr = this._cm.getSceneManager();
+        this._cmdMgr = this._cm.getService('CmdMgr') as CmdMgr;
+        this._strMgr = this._cm.getService('StreamManager') as StreamManager;
+        this._styleMgr = this._cm.getService('StyleManager') as StyleManager;
         this._evtMgr = this._cm.getService('ScrEventManager') as ScrEventManager;
 
         // TODO: removeListener ??
