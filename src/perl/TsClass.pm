@@ -197,9 +197,15 @@ sub genTsObjPropCode($$$)
   my $prop = shift;
 
   my $ts_type = tsTypeOf($prop);
+  my $qif = $prop->{"qif"};
 
   emit("  get $propnm() : $ts_type {\n");
-  emit("    const result = this.getProp(\'$propnm\');\n");
+  if (defined($qif) && $qif ne "" && $qif ne "LScrCallBack") {
+    # Known class: fire-and-forget, return future ObjProxy
+    emit("    const result = this.getPropObj(\'$propnm\', \'$ts_type\');\n");
+  } else {
+    emit("    const result = this.getProp(\'$propnm\');\n");
+  }
   emit("    return this.createWrapper(result);\n");
   emit("  }\n");
   emit("\n");
@@ -230,29 +236,32 @@ sub genTsInvokeCode($$)
   my %mths = %{$cls->{"methods"}};
   foreach my $nm (sort keys %mths) {
     my $mth = $mths{$nm};
-    my $nargs = int(@{$mth->{"args"}});
     my $rettype = $mth->{"rettype"};
     my $rval_typename = $rettype->{"type"};
     my $ts_typename = tsTypeOf($rettype);
+    my $qif = $rettype->{"qif"};
+
     emit("// method: $nm\n");
     emit("  ${nm}(".makeMthSignt($mth).") : $ts_typename {\n");
-    if ($rval_typename ne "void") {
-        emit("    const result = ");
-    }
-    else {
-        emit("    ");
-    }
-    emit("this.invokeMethod(".makeMthArg($mth).");\n");
 
-    if ($rval_typename eq "object") {
-        emit("    return this.createWrapper(result);\n");
+    if ($rval_typename eq "void") {
+      # Fire-and-forget: no round trip needed
+      emit("    this.invokeMethodVoid(".makeMthArg($mth).");\n");
     }
-    elsif ($rval_typename eq "void") {
-      # No return code
+    elsif ($rval_typename eq "object" && defined($qif) && $qif ne "" && $qif ne "LScrCallBack") {
+      # Known object return: fire postMessage immediately, return future ObjProxy
+      emit("    const result = this.invokeMethodObj(".makeMthArgObj($mth, $ts_typename).");\n");
+      emit("    return this.createWrapper(result);\n");
     }
     else {
-      # basic types
-      emit("  return result;\n");
+      # Primitive or untyped object: full round trip
+      emit("    const result = this.invokeMethod(".makeMthArg($mth).");\n");
+      if ($rval_typename eq "object") {
+        emit("    return this.createWrapper(result);\n");
+      }
+      else {
+        emit("    return result;\n");
+      }
     }
 
     emit("};\n");
@@ -273,6 +282,33 @@ sub makeMthSignt($)
       my $arg_type = tsTypeOf($arg);
       push(@rval, "arg_$ind: $arg_type");
       ++$ind;
+  }
+  return join(", ", @rval);
+}
+
+# Build argument list for invokeMethodObj: "name", "ReturnClassName", arg0.wrapped, ...
+sub makeMthArgObj($$)
+{
+  my $mth = shift;
+  my $ret_classname = shift;
+  my $args = $mth->{"args"};
+  my $name = $mth->{"name"};
+
+  my @rval = ("\"$name\"", "\"$ret_classname\"");
+
+  my $ind = 0;
+  foreach my $arg (@{$args}) {
+    my $arg_type = $arg->{"type"};
+    if (isCallbackObj($arg)) {
+      push(@rval, "arg_$ind");
+    }
+    elsif ($arg_type eq "object") {
+      push(@rval, "arg_${ind}.wrapped");
+    }
+    else {
+      push(@rval, "arg_$ind");
+    }
+    ++$ind;
   }
   return join(", ", @rval);
 }

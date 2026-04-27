@@ -99,6 +99,30 @@ export class BaseWrapper {
         return rval;
     }
 
+    // Pipelining variants: ObjProxy implements fast-path (fire-and-forget / future).
+    // C++ Wrapper (Worker context) falls back to the normal sync path.
+
+    invokeMethodObj(methodName: string, _className: string, ...args: any[]): any {
+        if (typeof this._wrapped.invokeMethodObj === 'function') {
+            return this._wrapped.invokeMethodObj(methodName, _className, ...args);
+        }
+        return this._wrapped.invokeMethod(methodName, ...args);
+    }
+
+    invokeMethodVoid(methodName: string, ...args: any[]): any {
+        if (typeof this._wrapped.invokeMethodVoid === 'function') {
+            return this._wrapped.invokeMethodVoid(methodName, ...args);
+        }
+        return this._wrapped.invokeMethod(methodName, ...args);
+    }
+
+    getPropObj(propName: string, _className: string): any {
+        if (typeof this._wrapped.getPropObj === 'function') {
+            return this._wrapped.getPropObj(propName, _className);
+        }
+        return this._wrapped.getProp(propName);
+    }
+
     getPropsJSON(): string {
         return this._wrapped.getPropsJSON();
     }

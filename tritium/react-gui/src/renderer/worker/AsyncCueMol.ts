@@ -69,6 +69,12 @@ export class AsyncCueMol {
             this._worker.postMessage([method, seq, ...args], [xfer]);
     }
 
+    // Fire-and-forget: send postMessage without registering a Promise listener.
+    // Used by pipelining paths (invokeMethodObj, invokeMethodVoid, getPropObj, setProp).
+    postPipelined(method: string, seq: number, args: any[]): void {
+        this._worker.postMessage([method, seq, ...args]);
+    }
+
     getSeqNo(): number {
         this._seqno++;
         return this._seqno;
