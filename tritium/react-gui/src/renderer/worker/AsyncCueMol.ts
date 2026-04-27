@@ -132,18 +132,29 @@ export class AsyncCueMol {
         return wrapper;
     }
 
-    async createWrapper(prom: Promise<ObjProxy>): Promise<BaseWrapper | null> {
-        // log.info('createWrapper called for Promise:', prom);
-        return prom.then((resolvedObj: any) => {
-            if (resolvedObj === null || resolvedObj === undefined) {
-                return null;
-            }
-            // log.info('Promise resolved for obj:', resolvedObj);
-            return this.createWrapperImpl(resolvedObj);
-        }).catch((e: any) => {
-            log.warn('Error resolving Promise for obj:', e);
+    // Accepts both an ObjProxy (sync, from invokeMethodObj/getPropObj fast path)
+    // and a Promise<ObjProxy> (legacy, from invokeMethod with object return).
+    // Returns sync BaseWrapper for sync input; Promise for async input.
+    createWrapper(input: ObjProxy | Promise<any> | null | undefined): any {
+        if (input === null || input === undefined) {
             return null;
-        });
+        }
+        if (input instanceof ObjProxy) {
+            return this.createWrapperImpl(input);
+        }
+        if (typeof (input as any).then === 'function') {
+            return (input as Promise<any>).then((resolvedObj: any) => {
+                if (resolvedObj === null || resolvedObj === undefined) {
+                    return null;
+                }
+                return this.createWrapperImpl(resolvedObj);
+            }).catch((e: any) => {
+                log.warn('Error resolving Promise for obj:', e);
+                return null;
+            });
+        }
+        log.warn('createWrapper: unexpected input type', input);
+        return null;
     }
 
     getWrapped(obj: ObjProxy): ObjTuple {
