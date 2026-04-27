@@ -11,6 +11,7 @@ import { useCallback } from 'react'
 import type { SceneManager } from '@cuemol/core/src/wrappers/SceneManager'
 import type { StreamManager } from '@cuemol/core/src/wrappers/StreamManager'
 import type { AsyncCueMol } from '../worker/AsyncCueMol'
+import { asAsync } from '../worker/asyncUtils'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
 import { useDialog } from '../contexts/DialogContext'
@@ -56,8 +57,7 @@ export function useSceneCommands({
     const getOpenFilters = useCallback(async (catId: number): Promise<ElectronFileFilter[]> => {
         if (!cm) return []
         const strMgr = (await cm.getService('StreamManager')) as StreamManager
-        // StreamManager wrappers return Promise at runtime via ObjProxy (async/sync mismatch).
-        const infoJson = await (strMgr.getInfoJSON2() as unknown as Promise<string>)
+        const infoJson = await asAsync(strMgr.getInfoJSON2())
         const info: Array<{ name: string; descr: string; fext: string; category: number }> =
             JSON.parse(infoJson)
         const items = info.filter((e) => e.category === catId && e.name.indexOf('qdf') != 0)

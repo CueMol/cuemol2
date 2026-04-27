@@ -4,6 +4,7 @@ import type { FileOpenOptions, RendererOptions } from '../components/fopen-opt-d
 import type { StreamManager } from '@cuemol/core/src/wrappers/StreamManager';
 import { ObjTuple } from './ObjTuple';
 import { ObjProxy } from './ObjProxy';
+import { asAsync } from './asyncUtils';
 
 // import { createLogger } from "@cuemol/core/src/logger";
 // const log = createLogger(import.meta.url);
@@ -508,7 +509,7 @@ export class AsyncCueMol {
             const strMgr = await this.getService('StreamManager') as StreamManager;
             if (!strMgr) return [];
 
-            const infoJson = await (strMgr.getInfoJSON2() as unknown as Promise<string>);
+            const infoJson = await asAsync(strMgr.getInfoJSON2());
             const info: Array<{ name: string; fext: string; category: number }> = JSON.parse(infoJson);
 
             const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
@@ -520,12 +521,12 @@ export class AsyncCueMol {
 
             const reader = await strMgr.createHandler(readerEntry.name, 0);
             if (!reader) return [];
-            await ((reader as any).setPath(filePath) as unknown as Promise<void>);
+            await asAsync((reader as any).setPath(filePath));
 
             const tmpObj = await (reader as any).createDefaultObj();
             if (!tmpObj) return [];
 
-            const rendTypesStr = await (tmpObj.searchCompatibleRendererNames() as unknown as Promise<string>);
+            const rendTypesStr = await asAsync(tmpObj.searchCompatibleRendererNames());
             if (!rendTypesStr) return [];
 
             return rendTypesStr

@@ -17,6 +17,45 @@ our $out_dir;
 our $use_es6_mod = 0;
 our $ts_nsname = "wrapper";
 
+# Per-class generation state (reset in genTsWrapper)
+our %imports;          # set of QIF names needing import { X } from './X'
+our %emitted_imports;  # QIF names already imported (parent + self), skip these
+our $cur_clsname;      # current class being generated (skip self-import)
+our @body;             # buffered body lines (flushed after imports are known)
+
+sub emit { push @body, $_[0]; }
+
+##########
+
+# Map a type-info hash to a TypeScript type string.
+# Side effect: adds object QIF names to %imports (excluding self and LScrCallBack).
+sub tsTypeOf($)
+{
+    my $tinfo = shift;
+    my $type  = $tinfo->{"type"};
+    my $qif   = $tinfo->{"qif"};
+
+    if ($type eq "void" || $type eq "boolean" || $type eq "string") {
+        return $type;
+    } elsif ($type eq "integer" || $type eq "real") {
+        return "number";
+    } elsif ($type eq "enum") {
+        return "number";
+    } elsif ($type eq "array") {
+        return "any[]";
+    } elsif ($type eq "dict") {
+        return "Record<string, any>";
+    } elsif ($type eq "object") {
+        return "any" unless defined($qif) && $qif ne "";
+        # LScrCallBack is passed as a plain JS function, no wrapper needed
+        return "Function" if $qif eq "LScrCallBack";
+        # Avoid importing self or already-emitted classes
+        $imports{$qif} = 1 unless exists $emitted_imports{$qif};
+        return $qif;
+    }
+    return "any";
+}
+
 ##########
 
 sub genTsWrapper($)
@@ -26,7 +65,6 @@ sub genTsWrapper($)
   my $qifname = $cls->{"qifname"};
   my $qif_fname = $cls->{"file"};
 
-
   my ($in_base, $in_dir, $in_ext) = fileparse($qif_fname, '\.qif');
   $in_dir =  "" if ($in_dir eq "./");
   my $out_fname = "$in_dir${in_base}.ts";
@@ -34,23 +72,18 @@ sub genTsWrapper($)
   if ($out_dir) {
     $out_fname = "$out_dir/${in_base}.ts";
     if (!-d $out_dir) {
-        # mkpath($out_dir) or die "Cannot create dir $out_dir: $!";
         mkpath($out_dir) or print("Cannot create dir $out_dir: $!\n");
     }
   }
 
   print("Output TS file: $out_fname\n");
 
-  open(OUT, ">$out_fname") || die "$?:$!";
-  set_building_file($out_fname);
-
-  # my $ts_clsname = $ts_nsname."_".$qifname;
-
-  print OUT "/////////////////////////////////////\n";
-  print OUT "//\n";
-  print OUT "// TypeScript wrapper class for $qifname\n";
-  print OUT "//\n";
-  print OUT "\n";
+  # Reset per-class generation state
+  %imports = ();
+  %emitted_imports = ();
+  @body = ();
+  $cur_clsname = $qifname;
+  $emitted_imports{$qifname} = 1;  # never self-import
 
   my $base_class = "BaseWrapper";
   my $base_class_path = "../BaseWrapper";
@@ -62,37 +95,48 @@ sub genTsWrapper($)
       if ($extends[0]) {
           $base_class = $extends[0];
           $base_class_path = "./${base_class}";
+          $emitted_imports{$base_class} = 1;  # parent already imported below
       }
   }
+
+  # Generate body (may populate %imports as a side effect)
+  genTsSupclsCodeImpl($cls, $qifname);
+
+  # Now write the file: header, imports, class body
+  open(OUT, ">$out_fname") || die "$?:$!";
+  set_building_file($out_fname);
+
+  print OUT "/////////////////////////////////////\n";
+  print OUT "//\n";
+  print OUT "// TypeScript wrapper class for $qifname\n";
+  print OUT "//\n";
   print OUT "\n";
+
   print OUT "import { ${base_class} } from '${base_class_path}';\n";
+  foreach my $qif (sort keys %imports) {
+      next if exists $emitted_imports{$qif};
+      print OUT "import { ${qif} } from './${qif}';\n";
+  }
   print OUT "\n";
 
   print OUT "export class ${qifname} extends ${base_class} {\n";
-
-  genTsSupclsCodeImpl($cls, $qifname);
-
+  print OUT @body;
   print OUT "\n";
   print OUT "}\n";
   print OUT "\n";
-  # genTsImplData($ts_clsname, $qifname);
   print OUT "\n";
 
   close(OUT);
 }
-		   
+
 sub genTsSupclsCodeImpl($$)
 {
   my ($cls, $cls_name) = @_;
 
-  # foreach my $i (@extends) {
-  #   genTsSupclsCodeImpl($class_name, $i);
-  # }
-
-  print OUT "/////////////////////////////////////\n";
-  print OUT "// Class $cls_name\n";
-  print OUT "//\n";
-  print OUT "\n";
+  emit("/////////////////////////////////////\n");
+  emit("// Class $cls_name\n");
+  emit("//\n");
+  emit("\n");
 
   genTsPropCode($cls, $cls_name);
   genTsInvokeCode($cls, $cls_name);
@@ -111,8 +155,7 @@ sub genTsPropCode($$)
 
     my $prop = $props{$propnm};
     my $type = $prop->{"type"};
-    # debug("JS: prop: $propnm, type: $type\n");
-    print OUT "// property: $propnm, type: $type\n";
+    emit("// property: $propnm, type: $type\n");
 
     if ($type eq "object") {
         genTsObjPropCode($clsname, $propnm, $prop);
@@ -126,45 +169,25 @@ sub genTsPropCode($$)
   }
 }
 
-sub convToTsType($)
-{
-    my $typenm = shift;
-    if ($typenm eq "void" ||
-        $typenm eq "boolean" ||
-        $typenm eq "string") {
-        return $typenm;
-    } elsif ($typenm eq "integer" ||
-             $typenm eq "real") {
-        return "number";
-    } else {
-        return "any";
-    }
-    # TODO: impl
-    # $typenm eq "array" ||
-    # $typenm eq "dict" ||
-    # $typenm eq "enum") {
-}
-
 sub genTsBasicPropCode($$$)
 {
   my $classnm = shift;
   my $propnm = shift;
   my $prop = shift;
-  my $type = $prop->{"type"};
 
-  my $tstype = convToTsType($type);
+  my $tstype = tsTypeOf($prop);
 
-  print OUT "  get $propnm() : $tstype {\n";
-  print OUT "    return this.getProp(\'$propnm\');\n";
-  print OUT "  }\n";
-  print OUT "\n";
-      
+  emit("  get $propnm() : $tstype {\n");
+  emit("    return this.getProp(\'$propnm\');\n");
+  emit("  }\n");
+  emit("\n");
+
   return if (contains($prop->{"options"}, "readonly"));
 
-  print OUT "  set $propnm(arg0: $tstype) {\n";
-  print OUT "    this.setProp(\'$propnm\', arg0);\n";
-  print OUT "  }\n";
-  print OUT "\n";
+  emit("  set $propnm(arg0: $tstype) {\n");
+  emit("    this.setProp(\'$propnm\', arg0);\n");
+  emit("  }\n");
+  emit("\n");
 }
 
 sub genTsObjPropCode($$$)
@@ -172,22 +195,21 @@ sub genTsObjPropCode($$$)
   my $classnm = shift;
   my $propnm = shift;
   my $prop = shift;
-  # my $type = $prop->{"type"};
-  my $propqif = $prop->{"qif"};
-  my $ts_type = "any";
 
-  print OUT "  get $propnm() : $ts_type {\n";
-  print OUT "    const result = this.getProp(\'$propnm\');\n";
-  print OUT "    return this.createWrapper(result);\n";
-  print OUT "  }\n";
-  print OUT "\n";
-      
+  my $ts_type = tsTypeOf($prop);
+
+  emit("  get $propnm() : $ts_type {\n");
+  emit("    const result = this.getProp(\'$propnm\');\n");
+  emit("    return this.createWrapper(result);\n");
+  emit("  }\n");
+  emit("\n");
+
   return if (contains($prop->{"options"}, "readonly"));
 
-  print OUT "  set $propnm(arg0: $ts_type) {\n";
-  print OUT "    this.setProp(\'$propnm\', arg0.wrapped);\n";
-  print OUT "  }\n";
-  print OUT "\n";
+  emit("  set $propnm(arg0: $ts_type) {\n");
+  emit("    this.setProp(\'$propnm\', arg0.wrapped);\n");
+  emit("  }\n");
+  emit("\n");
 }
 
 sub genTsEnumPropCode($$$)
@@ -195,16 +217,6 @@ sub genTsEnumPropCode($$$)
   my ($classnm, $propnm, $prop) = @_;
   genTsBasicPropCode($classnm, $propnm, $prop);
   defined($prop->{"enumdef"}) || die;
-
-  # my %enums = %{ $prop->{"enumdef"} };
-  # foreach my $defnm (sort keys %enums) {
-  #   my $key = $propnm."_".uc($defnm);
-  #   my $value = $enums{$defnm};
-  #   print OUT "  get $key() : number {\n";
-  #   print OUT "    return this.getEnumDef(\'$propnm\', \'$defnm\');\n";
-  #   print OUT "  }\n";
-  #   print OUT "\n";
-  # }	  
 }
 
 #####################
@@ -221,35 +233,33 @@ sub genTsInvokeCode($$)
     my $nargs = int(@{$mth->{"args"}});
     my $rettype = $mth->{"rettype"};
     my $rval_typename = $rettype->{"type"};
-    my $ts_typename = convToTsType($rval_typename);
-    print OUT "// method: $nm\n";
-    print OUT "  ${nm}(".makeMthSignt($mth).") : $ts_typename {\n";
+    my $ts_typename = tsTypeOf($rettype);
+    emit("// method: $nm\n");
+    emit("  ${nm}(".makeMthSignt($mth).") : $ts_typename {\n");
     if ($rval_typename ne "void") {
-        print OUT "    const result = ";
+        emit("    const result = ");
     }
     else {
-        print OUT "    ";
+        emit("    ");
     }
-    print OUT "this.invokeMethod(".makeMthArg($mth).");\n";
+    emit("this.invokeMethod(".makeMthArg($mth).");\n");
 
     if ($rval_typename eq "object") {
-        print OUT "    return this.createWrapper(result);\n";
+        emit("    return this.createWrapper(result);\n");
     }
     elsif ($rval_typename eq "void") {
       # No return code
     }
-    # elsif ($rval_typename eq "enum") {
-    # }
     else {
       # basic types
-      print OUT "  return result;\n";
+      emit("  return result;\n");
     }
 
-    print OUT "};\n";
-    print OUT "\n";
+    emit("};\n");
+    emit("\n");
   }
 
-  print OUT "\n";
+  emit("\n");
 }
 
 sub makeMthSignt($)
@@ -260,7 +270,7 @@ sub makeMthSignt($)
   my $ind = 0;
   my @rval;
   foreach my $arg (@{$args}) {
-      my $arg_type = convToTsType($arg->{"type"});
+      my $arg_type = tsTypeOf($arg);
       push(@rval, "arg_$ind: $arg_type");
       ++$ind;
   }
