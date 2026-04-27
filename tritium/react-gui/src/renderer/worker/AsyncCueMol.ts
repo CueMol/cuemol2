@@ -16,24 +16,6 @@ function makeMethodSeq(method: string, seqno: number): string {
     return method + '.' + seqno.toString();
 }
 
-// Proxy handler for wrappers whose declared class may be a base interface.
-// Forwards unknown method calls through BaseWrapper.invokeMethod so subclass
-// methods (e.g. ObjReader.createDefaultObj on an InOutHandler-typed wrapper)
-// remain callable. Symbol access and 'then' pass through unmodified so that
-// the wrapper is not mistakenly treated as a thenable.
-const futureProxyHandler: ProxyHandler<BaseWrapper> = {
-    get(target: any, prop: string | symbol, receiver: any): any {
-        if (typeof prop === 'symbol' || prop === 'then') {
-            return Reflect.get(target, prop, receiver);
-        }
-        if (prop in target) {
-            const val = Reflect.get(target, prop, receiver);
-            return typeof val === 'function' ? val.bind(target) : val;
-        }
-        return (...args: any[]) => target.invokeMethod(prop, ...args);
-    },
-};
-
 export class AsyncCueMol {
     private _ready: boolean = false;
     private _seqno: number = 0;
@@ -145,12 +127,7 @@ export class AsyncCueMol {
         const className = obj.getClassName();
         const Klass = wrapper_map[className];
         const wrapper = new Klass(obj, this);
-        // Future ObjProxy carries the *declared* class from the qif return type,
-        // but the actual C++ object may be a subclass with extra methods. Wrap
-        // in a Proxy that forwards unknown methods through invokeMethod (async)
-        // so callers like `await reader.createDefaultObj()` keep working when
-        // the declared type is a base interface (e.g. InOutHandler).
-        return new Proxy(wrapper, futureProxyHandler) as BaseWrapper;
+        return wrapper;
     }
 
     // Accepts both an ObjProxy (sync, from invokeMethodObj/getPropObj fast path)
