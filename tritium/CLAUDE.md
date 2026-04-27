@@ -4,30 +4,69 @@ See the root [`../CLAUDE.md`](../CLAUDE.md) for all guidance, including tritium-
 
 ---
 
-## AsyncCueMol / Worker calling conventions
+## Wrapper calling conventions
 
-### Wrapper methods return Promises at runtime
+TypeScript wrappers (`tritium/core/src/wrappers/`) all extend `BaseWrapper`, which holds a `_wrapped` object and a `_utils` helper. **The same wrapper class behaves differently depending on which context it runs in.**
 
-TypeScript wrapper classes (in `tritium/core/src/wrappers/`) declare return types as plain values (e.g., `string`, `void`, `any`), but **all methods actually return `Promise<T>` at runtime** because they route through `ObjProxy.invokeMethod` which is `async`.
+| Context | `_wrapped` | All method/prop calls |
+|---------|------------|-----------------------|
+| Worker thread (`WorkerService`, `services/*.service.ts`) | Native C++ object (addon) | **Synchronous** — no `await` |
+| Renderer thread (`AsyncCueMol`, React) | `ObjProxy` (IPC proxy) | **Asynchronous** — return `Promise<T>` at runtime |
 
-When calling wrapper methods from `AsyncCueMol.ts`, always `await` them and cast as needed:
+### Worker-side: fully synchronous
 
-```typescript
-// TypeScript says string, runtime gives Promise<string>
-const infoJson = await (strMgr.getInfoJSON2() as unknown as Promise<string>);
-
-// TypeScript says void, runtime gives Promise<void>
-await (reader.setPath(filePath) as unknown as Promise<void>);
-```
-
-### createWrapper flow
-
-`BaseWrapper.createWrapper(prom)` delegates to `AsyncCueMol.createWrapper(Promise<ObjProxy>)` which calls `createWrapperImpl` → looks up `wrapper_map[className]` → returns the typed subclass. Return type is `Promise<BaseWrapper | null>`.
+No `await`. Wrapper methods that return objects call `this.createWrapper(result)` internally, so the returned value is already a typed wrapper:
 
 ```typescript
-// strMgr.createHandler returns Promise<BaseWrapper | null> (via createWrapper)
-const reader = await strMgr.createHandler(readerName, 0);  // typed wrapper e.g. PDBFileReader
+const scene = ctx.sceMgr.getScene(sceneId);           // returns Scene wrapper (sync)
+const cmd = ctx.cmdMgr.getCmd('load_object') as LoadObjectCommand;
+cmd.target_scene = scene;                              // setProp (sync)
+cmd.run();
+const mol = cmd.result_object as MolCoord;             // getProp, returns wrapped MolCoord
 ```
+
+To create a new C++ object in a service: `ctx.svc.createCppObj('ClassName')` (returns a typed `BaseWrapper`).
+
+### Renderer-side: all methods return Promise at runtime
+
+TypeScript types declare plain values, but at runtime every call through `ObjProxy` is async. Always `await`, casting with `asAsync()` when the declared type is not `Promise`:
+
+```typescript
+// TypeScript declares string, runtime gives Promise<string>
+const infoJson = await asAsync(strMgr.getInfoJSON2());
+
+// TypeScript declares void, runtime gives Promise<void>
+await asAsync((reader as any).setPath(filePath));
+```
+
+Prefer moving multi-step C++ logic to a worker-side service rather than chaining many `await` calls in `AsyncCueMol`.
+
+### Passing wrappers as arguments
+
+Setters and method parameters that accept a wrapper call `arg.wrapped` internally to extract the raw C++ object. Just pass the wrapper directly — no manual unwrapping needed:
+
+```typescript
+cmd.target_scene = scene;    // setter does: this.setProp('target_scene', scene.wrapped)
+cmd.target_object = mol;
+coloring.append(sel, color); // invokeMethod receives sel.wrapped, color.wrapped
+```
+
+### createWrapper in renderer context
+
+`AsyncCueMol.createWrapper(Promise<ObjProxy>)` resolves the promise, looks up `wrapper_map[className]`, and returns `Promise<BaseWrapper | null>`:
+
+```typescript
+const reader = await strMgr.createHandler(readerName, 0);  // concrete subclass e.g. PDBFileReader
+```
+
+---
+
+## Other API notes
+
+### getService vs createHandler
+
+- `cm.getService('StreamManager')` — singleton service (cached in C++); cast with `as StreamManager`
+- `strMgr.createHandler(name, 0)` — creates a new reader/writer (category 0 = obj reader); returns concrete subclass
 
 ### Reader wrapper hierarchy
 
@@ -37,21 +76,6 @@ InOutHandler  — setPath(path): void
        └─ PDBFileReader, CCP4MapReader, MTZ2MapReader, ... (format-specific props)
 ```
 
-`createHandler(name, 0)` returns the concrete reader subclass. Use `(reader as any).setPath(...)` if the TypeScript return type is `any`.
-
 ### searchCompatibleRendererNames
 
-`Object.searchCompatibleRendererNames()` returns a comma-separated string of renderer type names compatible with that object type. Filter out:
-- Names starting with `*` (internal/special renderers like `*selection`)
-- Test-only names: `ms2test`, `symm`
-
-```typescript
-rendTypesStr.split(',')
-  .map((s) => s.trim())
-  .filter((s) => s.length > 0 && s.charAt(0) !== '*' && !FILTER_SET.has(s));
-```
-
-### getService vs createHandler
-
-- `cm.getService('StreamManager')` — returns a singleton service wrapper (cached in C++ layer); cast to specific type with `as StreamManager`
-- `strMgr.createHandler(name, category)` — creates a new reader/writer handler (category 0 = obj reader); returned wrapper is the concrete reader class
+`Object.searchCompatibleRendererNames()` returns a comma-separated string. Filter out names starting with `*` (internal) and test-only names (`ms2test`, `symm`).
