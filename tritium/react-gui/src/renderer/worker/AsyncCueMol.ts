@@ -488,6 +488,7 @@ export class AsyncCueMol {
     // Set up a renderer for a freshly loaded object.
     // Ported from uxp_gui/cuemol2/base/content/renderer.js:135-209 (doSetupRend).
     async setupRenderer(mol: any, rendOpts: RendererOptions): Promise<void> {
+        const t0 = performance.now();
         // TODO: preset renderer (createPresetRenderer) support — currently the
         //       dialog never returns a *RendPreset type.
         const cmd = await this.cmdMgr.getCmd('new_renderer');
@@ -497,6 +498,7 @@ export class AsyncCueMol {
         cmd.recenter_view = rendOpts.centerView;
         cmd.default_style_name = this.getDefaultStyleName(rendOpts.rendererType);
         await cmd.run();
+        const t1 = performance.now();
         const rend = await cmd.result_renderer;
         log.info('renderer created: rend=', rend);
 
@@ -517,6 +519,8 @@ export class AsyncCueMol {
                 }
             }
         }
+        const t2 = performance.now();
+        log.info(`[perf] setupRenderer: total=${(t2 - t0).toFixed(1)}ms (cmd.run=${(t1 - t0).toFixed(1)}ms, post=${(t2 - t1).toFixed(1)}ms)`);
     }
 
     async getCompatibleRendererNames(filePath: string): Promise<string[]> {
@@ -567,6 +571,7 @@ export class AsyncCueMol {
 
     async loadObject(filePath: string, scene_id: number,
                      options: FileOpenOptions): Promise<boolean> {
+        const t0 = performance.now();
         log.info(`loading object file: ${filePath}`);
         const scene = await this.sceMgr.getScene(scene_id);
         const cmd = await this.cmdMgr.getCmd('load_object');
@@ -579,12 +584,16 @@ export class AsyncCueMol {
             log.info(`loadObject: format=${options.format.kind} options dropped (not wired to C++)`);
         }
         await cmd.run();
+        const t1 = performance.now();
         const mol = await cmd.result_object;
 
         if (options.renderer.objectName) {
             mol.name = options.renderer.objectName;
         }
+        const t2 = performance.now();
         await this.setupRenderer(mol, options.renderer);
+        const t3 = performance.now();
+        log.info(`[perf] loadObject: total=${(t3 - t0).toFixed(1)}ms (load=${(t1 - t0).toFixed(1)}ms, mol_setup=${(t2 - t1).toFixed(1)}ms, setupRenderer=${(t3 - t2).toFixed(1)}ms)`);
         return true;
     }
 }

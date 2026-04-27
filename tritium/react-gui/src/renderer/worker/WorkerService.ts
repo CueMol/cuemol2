@@ -43,7 +43,9 @@ export class WorkerService {
     private _gfx_mgr: GfxManager | null = null;
     private _objSlot: { [key: string]: any } = {};
     // Maps seqno → native C++ object for pipelining (future ObjProxy resolution).
+    // Evicted once the seqno is more than MAX_FUTURE_WINDOW behind the current head.
     private _futureSlot: { [seq: string]: any } = {};
+    private static readonly MAX_FUTURE_WINDOW = 256;
     private _postMessage: (data: any[]) => void;
     private _close: () => void;
     private _sceMgr: SceneManager | null = null;
@@ -117,6 +119,17 @@ export class WorkerService {
             this._futureSlot[seqno.toString()] = { __broken: e };
             this._postMessage([method, seqno, false, e]);
         }
+        this._evictFutureSlot(seqno);
+    }
+
+    private _evictFutureSlot(currentSeqno: number): void {
+        const cutoff = currentSeqno - WorkerService.MAX_FUTURE_WINDOW;
+        if (cutoff <= 0) return;
+        for (const key of Object.keys(this._futureSlot)) {
+            if (parseInt(key, 10) <= cutoff) {
+                delete this._futureSlot[key];
+            }
+        }
     }
 
     getWrapped(obj: any, clsName?: string): ObjTuple | any {
@@ -156,7 +169,7 @@ export class WorkerService {
                 log.error(`Worker> resolveWrapped: future ${obj_id.future} not yet resolved`);
                 return null;
             }
-            if (resolved && '__broken' in resolved) {
+            if (resolved && typeof resolved === 'object' && '__broken' in resolved) {
                 throw resolved.__broken;
             }
             return resolved;
