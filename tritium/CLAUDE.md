@@ -29,17 +29,9 @@ To create a new C++ object in a service: `ctx.svc.createCppObj('ClassName')` (re
 
 ### Renderer-side: all methods return Promise at runtime
 
-TypeScript types declare plain values, but at runtime every call through `ObjProxy` is async. Always `await`, casting with `asAsync()` when the declared type is not `Promise`:
+TypeScript types declare plain values, but at runtime every call through `ObjProxy` is async. Always `await`. When the declared type is not `Promise`, cast with `asAsync()` from `asyncUtils.ts`.
 
-```typescript
-// TypeScript declares string, runtime gives Promise<string>
-const infoJson = await asAsync(strMgr.getInfoJSON2());
-
-// TypeScript declares void, runtime gives Promise<void>
-await asAsync((reader as any).setPath(filePath));
-```
-
-Prefer moving multi-step C++ logic to a worker-side service rather than chaining many `await` calls in `AsyncCueMol`.
+If you find yourself chaining multiple `await` calls on C++ wrappers in the renderer, that is a signal to write a worker-side service instead. Each `await` is one IPC round-trip; a service collapses N calls into 1.
 
 ### Passing wrappers as arguments
 
@@ -51,31 +43,63 @@ cmd.target_object = mol;
 coloring.append(sel, color); // invokeMethod receives sel.wrapped, color.wrapped
 ```
 
-### createWrapper in renderer context
+---
 
-`AsyncCueMol.createWrapper(Promise<ObjProxy>)` resolves the promise, looks up `wrapper_map[className]`, and returns `Promise<BaseWrapper | null>`:
+## Worker service module system
+
+Services live in `react-gui/src/renderer/worker/services/*.service.ts` and are auto-registered via `import.meta.glob` at worker startup — adding a new file is sufficient.
+
+### Service structure
 
 ```typescript
-const reader = await strMgr.createHandler(readerName, 0);  // concrete subclass e.g. PDBFileReader
+import type { WorkerContext } from '../types/WorkerContext';
+
+export const name = 'methodName';           // must match invokeWorker('methodName', args) call
+
+export interface MethodNameArgs { ... }     // single object payload
+
+export default function methodName(ctx: WorkerContext, args: MethodNameArgs): Result {
+    // All C++ wrapper calls are synchronous here — no await
+}
 ```
+
+Async functions are also accepted; `WorkerService.invoke` wraps the return value in `Promise.resolve()`.
+
+### WorkerContext
+
+| Field | Type | Contents |
+|-------|------|----------|
+| `ctx.svc` | `WorkerService` | Full service instance — call `ctx.svc.addView(id, dpr)` etc. to reach gfx_mgr |
+| `ctx.sceMgr` | `SceneManager` | Scene/view creation and lookup |
+| `ctx.cmdMgr` | `CmdMgr` | Command objects (`getCmd`, `run`) |
+| `ctx.strMgr` | `StreamManager` | `getInfoJSON2`, `createHandler` — **already the singleton; no need to call `getService` inside a service** |
+| `ctx.styleMgr` | `StyleManager` | Style management |
+
+### Two dispatch paths in WorkerService
+
+| Path | When to use | Args convention |
+|------|-------------|-----------------|
+| `_methods` | Infrastructure, high-frequency events (`getProp/setProp/invokeMethod`, mouse/wheel, `bindCanvas`) | Positional: `apply(this, args)` |
+| `_registered` (services) | Business logic with multi-step C++ operations | Single object: `args[0]` is the payload struct |
+
+Don't migrate `_methods` entries to services unless there's a concrete benefit (IPC reduction or cleaner caller code).
 
 ---
 
 ## Other API notes
 
-### getService vs createHandler
+### getService from renderer
 
-- `cm.getService('StreamManager')` — singleton service (cached in C++); cast with `as StreamManager`
-- `strMgr.createHandler(name, 0)` — creates a new reader/writer (category 0 = obj reader); returns concrete subclass
+`cm.getService('ClassName')` is a thin IPC call for ad-hoc singleton access (e.g. `MsgLog`, `SceneManager`). Prefer dedicated `AsyncCueMol` methods or worker services over chaining `getService` + further method calls — the chain becomes multiple IPC round-trips.
+
+In services, use `ctx.strMgr`, `ctx.sceMgr`, etc. directly; never call `getService` inside a service.
 
 ### Reader wrapper hierarchy
 
 ```
 InOutHandler  — setPath(path): void
-  └─ ObjReader  — createDefaultObj(): any, attach/detach/read
+  └─ ObjReader  — createDefaultObj(): Object, attach/detach/read
        └─ PDBFileReader, CCP4MapReader, MTZ2MapReader, ... (format-specific props)
 ```
 
-### searchCompatibleRendererNames
-
-`Object.searchCompatibleRendererNames()` returns a comma-separated string. Filter out names starting with `*` (internal) and test-only names (`ms2test`, `symm`).
+`strMgr.createHandler(name, 0)` creates a new reader (category 0 = obj reader) and returns the concrete subclass.

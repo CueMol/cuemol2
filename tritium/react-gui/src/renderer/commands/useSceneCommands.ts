@@ -8,10 +8,7 @@
  */
 
 import { useCallback } from 'react'
-import type { SceneManager } from '@cuemol/core/src/wrappers/SceneManager'
-import type { StreamManager } from '@cuemol/core/src/wrappers/StreamManager'
 import type { AsyncCueMol } from '../worker/AsyncCueMol'
-import { asAsync } from '../worker/asyncUtils'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
 import { useDialog } from '../contexts/DialogContext'
@@ -19,14 +16,6 @@ import { useDialog } from '../contexts/DialogContext'
 // Category IDs from src/qsys/InOutHandler.hpp (IOH_CAT_*)
 const IOH_CAT_OBJREADER = 0
 const IOH_CAT_SCEREADER = 3
-
-// Convert C++ fext pattern (e.g. "*.pdb;*.ent") to Electron extension array (e.g. ["pdb", "ent"])
-function parseFext(fext: string): string[] {
-    return fext
-        .split(';')
-        .map((e) => e.trim().replace(/^\*\./, ''))
-        .filter((e) => e !== '' && e !== '*')
-}
 
 interface UseSceneCommandsOptions {
     cm: AsyncCueMol | null
@@ -56,29 +45,15 @@ export function useSceneCommands({
 
     const getOpenFilters = useCallback(async (catId: number): Promise<ElectronFileFilter[]> => {
         if (!cm) return []
-        const strMgr = (await cm.getService('StreamManager')) as StreamManager
-        const infoJson = await asAsync(strMgr.getInfoJSON2())
-        const info: Array<{ name: string; descr: string; fext: string; category: number }> =
-            JSON.parse(infoJson)
-        const items = info.filter((e) => e.category === catId && e.name.indexOf('qdf') != 0)
-        const allExts = items.flatMap((e) => parseFext(e.fext))
-        return [
-            { name: 'All Supported', extensions: allExts },
-            ...items.map((e) => ({ name: e.descr, extensions: parseFext(e.fext) })),
-            { name: 'All Files', extensions: ['*'] },
-        ]
+        return cm.getOpenFilters(catId)
     }, [cm])
 
     const openNewScene = useCallback(async (filePath?: string): Promise<void> => {
         if (!cm) return
-        const sceMgr = (await cm.getService('SceneManager')) as SceneManager
-        if (!sceMgr) return
-        const scene = await sceMgr.createScene()
-        const scene_uid = await scene.getUID()
-        const view = await scene.createView()
-        const view_uid = await view.getUID()
         const dpr = window.devicePixelRatio || 1
-        await cm.addView(view_uid, dpr)
+        const ids = await cm.createNewSceneAndView(dpr)
+        if (!ids) return
+        const { scene_uid, view_uid } = ids
         const title = `Scene ${scene_uid}`
         addMolTab(title, view_uid, scene_uid)
         addMolViewTab(title, view_uid)

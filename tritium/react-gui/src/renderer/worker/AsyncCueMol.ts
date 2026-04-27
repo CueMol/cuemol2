@@ -1,16 +1,12 @@
 import { BaseWrapper } from '@cuemol/core/src/BaseWrapper';
 import { wrapper_map } from '@cuemol/core/src/wrappers/wrapper-loader';
 import type { FileOpenOptions } from '../components/fopen-opt-dlgs/types';
-import type { StreamManager } from '@cuemol/core/src/wrappers/StreamManager';
 import { ObjTuple } from './ObjTuple';
 import { ObjProxy } from './ObjProxy';
-import { asAsync } from './asyncUtils';
 
 // import { createLogger } from "@cuemol/core/src/logger";
 // const log = createLogger(import.meta.url);
 const log = console;
-
-const RENDERER_TEST_TYPES = new Set(['ms2test', 'symm']);
 
 function makeMethodSeq(method: string, seqno: number): string {
     return method + '.' + seqno.toString();
@@ -377,36 +373,31 @@ export class AsyncCueMol {
 
     async getCompatibleRendererNames(filePath: string): Promise<string[]> {
         try {
-            const strMgr = await this.getService('StreamManager') as StreamManager;
-            if (!strMgr) return [];
-
-            const infoJson = await asAsync(strMgr.getInfoJSON2());
-            const info: Array<{ name: string; fext: string; category: number }> = JSON.parse(infoJson);
-
-            const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
-            const readerEntry = info.find(
-                (e) => e.category === 0 &&
-                    e.fext.split(';').map((s) => s.trim().replace(/^\*\./, '').toLowerCase()).includes(ext)
-            );
-            if (!readerEntry) return [];
-
-            const reader = await strMgr.createHandler(readerEntry.name, 0);
-            if (!reader) return [];
-            await asAsync((reader as any).setPath(filePath));
-
-            const tmpObj = await (reader as any).createDefaultObj();
-            if (!tmpObj) return [];
-
-            const rendTypesStr = await asAsync(tmpObj.searchCompatibleRendererNames());
-            if (!rendTypesStr) return [];
-
-            return rendTypesStr
-                .split(',')
-                .map((s: string) => s.trim())
-                .filter((s: string) => s.length > 0 && s.charAt(0) !== '*' && !RENDERER_TEST_TYPES.has(s));
+            const result = await this.invokeWorker('getCompatibleRendererNames', { filePath });
+            return result?.[0] ?? [];
         } catch (e) {
             log.warn('getCompatibleRendererNames failed:', e);
             return [];
+        }
+    }
+
+    async getOpenFilters(catId: number): Promise<ElectronFileFilter[]> {
+        try {
+            const result = await this.invokeWorker('getOpenFilters', { catId });
+            return result?.[0] ?? [];
+        } catch (e) {
+            log.warn('getOpenFilters failed:', e);
+            return [];
+        }
+    }
+
+    async createNewSceneAndView(dpr: number): Promise<{ scene_uid: number; view_uid: number } | null> {
+        try {
+            const result = await this.invokeWorker('createNewSceneAndView', { dpr });
+            return result?.[0] ?? null;
+        } catch (e) {
+            log.error('createNewSceneAndView failed:', e);
+            return null;
         }
     }
 
