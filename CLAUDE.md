@@ -127,6 +127,7 @@ cd tritium/react-gui
 npm run dev         # Start development server with hot reload
 npm run build       # Production build → out/
 npm run start       # Preview production build
+npm test            # Run Vitest tests (vitest run)
 ```
 
 ## tritium Architecture
@@ -152,4 +153,4 @@ libcuemol2 (external C++ library, path via LIBCUEMOL2_ROOT)
 
 **IPC flow**: Electron main ↔ renderer via standard Electron IPC; renderer ↔ Web Worker via `postMessage`.
 
-**Tests** live in `tritium/core/src/tests/` covering the C++ binding layer (qlib primitives, async, gfx). Tests run sequentially (`--runInBand`) because the C++ addon is not thread-safe across Jest workers. No GUI tests currently.
+**Tests**: `tritium/core/src/tests/` covers the C++ binding layer (Jest, sequential `--runInBand`). `tritium/react-gui/src/renderer/__test__/` covers React hooks and components (Vitest + jsdom). See `tritium/CLAUDE.md` for react-gui test caveats.

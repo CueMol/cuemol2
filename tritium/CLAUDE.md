@@ -86,7 +86,66 @@ Don't migrate `_methods` entries to services unless there's a concrete benefit (
 
 ---
 
+## react-gui Tests (`tritium/react-gui/`)
+
+```bash
+cd tritium/react-gui
+npm test    # vitest run
+```
+
+Tests use **Vitest + jsdom**. Files go in `src/renderer/__test__/*.test.{ts,tsx}`. No `@testing-library/react` — use `createRoot` + `act()` directly, following the pattern in `useActiveTool.test.ts`.
+
+### Mocking AsyncCueMol in tests
+
+`AsyncCueMol.ts` imports `@cuemol/core/src/wrappers/wrapper-loader`, which glob-imports all wrappers including `Object.ts`. This file shadows the global `Object` and causes `Object.defineProperty is not a function`. Always add these mocks when a test file imports `AsyncCueMol`:
+
+```ts
+vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }));
+vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }));
+```
+
+### React 18 + fake timers
+
+`vi.useFakeTimers()` does **not** reliably flush `setState` called from timer callbacks via `act()` in jsdom + React 18 concurrent mode. To test `setTimeout`-based hook behavior:
+
+- **Spy after mounting** — install the spy on `globalThis.setTimeout` after `makeRenderHook()` so React internals during mount are not captured:
+
+```ts
+const { result, unmount } = makeRenderHook(() => useMyHook());
+const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
+// now trigger the code path that calls setTimeout
+```
+
+- **Test scheduling, not execution** — verify `setTimeout` was called with the right delay rather than trying to run the callback and observe state changes:
+
+```ts
+expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 150);
+expect(result).toBe(false); // state unchanged yet
+```
+
+- **Manual callback execution** — when you need to observe the state change, capture the callback in the mock and fire it inside `act()`:
+
+```ts
+let timerCb: (() => void) | null = null;
+vi.spyOn(globalThis, 'setTimeout').mockImplementation((cb: any) => {
+    timerCb = cb; return 0 as any;
+});
+// mount hook...
+act(() => { timerCb!(); }); // fires callback; React flushes inside act
+expect(result).toBe(true);
+```
+
+---
+
 ## Other API notes
+
+### AsyncCueMol dispatch summary
+
+| Method | Response awaited | Counted as pending |
+|--------|------------------|--------------------|
+| `invokeWorker` | Yes (Promise) | Yes — `isBusy()` / `subscribeBusy()` |
+| `invokeWorkerWithTransfer` | Yes (Promise) | No — used only by `bindCanvas` (one-time canvas transfer at view init) |
+| `resized`, `onMouseEvent`, `onWheelEvent`, `onGestureEvent` | No (fire-and-forget) | No |
 
 ### getService from renderer
 
