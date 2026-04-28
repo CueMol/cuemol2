@@ -115,4 +115,18 @@ export function useSceneCommands({
     })
 
     useRegisterCommand(CmdId.FileSave, () => handleSave())
+
+    useRegisterCommand(CmdId.Undo, async () => {
+        if (!cm) return
+        const info = getActiveSceneInfo()
+        if (!info) return
+        await cm.undo(info.scene_uid)
+    })
+
+    useRegisterCommand(CmdId.Redo, async () => {
+        if (!cm) return
+        const info = getActiveSceneInfo()
+        if (!info) return
+        await cm.redo(info.scene_uid)
+    })
 }

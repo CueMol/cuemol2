@@ -445,4 +445,14 @@ export class AsyncCueMol {
         const result = await this.invokeWorker('loadObject', { filePath, sceneId: scene_id, options });
         return result?.[0]?.ok ?? true;
     }
+
+    async undo(scene_id: number, depth = 0): Promise<boolean> {
+        const result = await this.invokeWorker('undo', { sceneId: scene_id, depth });
+        return result?.[0]?.ok ?? false;
+    }
+
+    async redo(scene_id: number, depth = 0): Promise<boolean> {
+        const result = await this.invokeWorker('redo', { sceneId: scene_id, depth });
+        return result?.[0]?.ok ?? false;
+    }
 }

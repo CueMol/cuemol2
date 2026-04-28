@@ -86,6 +86,18 @@ const api: ElectronAPI = {
     return () => ipcRenderer.removeListener(IPC.MENU_OPEN_SCENE, handler)
   },
 
+  onMenuUndo: (callback) => {
+    const handler = () => callback()
+    ipcRenderer.on(IPC.MENU_UNDO, handler)
+    return () => ipcRenderer.removeListener(IPC.MENU_UNDO, handler)
+  },
+
+  onMenuRedo: (callback) => {
+    const handler = () => callback()
+    ipcRenderer.on(IPC.MENU_REDO, handler)
+    return () => ipcRenderer.removeListener(IPC.MENU_REDO, handler)
+  },
+
   onRotateGesture: (callback) => {
     const handler = (_event: Electron.IpcRendererEvent, rotation: number) => callback(rotation)
     ipcRenderer.on(IPC.ROTATE_GESTURE, handler)

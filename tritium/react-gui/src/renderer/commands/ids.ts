@@ -21,6 +21,10 @@ export const CmdId = {
 
   // File operations
   FileSave:           'file.save',           // no args
+
+  // Undo/redo
+  Undo:               'edit.undo',           // no args
+  Redo:               'edit.redo',           // no args
 } as const
 
 export type CmdId = typeof CmdId[keyof typeof CmdId]

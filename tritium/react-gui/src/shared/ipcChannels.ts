@@ -24,6 +24,8 @@ export const IPC = {
   MENU_NEW_SCENE: 'menu:new-scene',
   MENU_OPEN_FILE:  'menu:open-file',
   MENU_OPEN_SCENE: 'menu:open-scene',
+  MENU_UNDO:      'menu:undo',
+  MENU_REDO:      'menu:redo',
 
   // gesture push channels (main → renderer)
   ROTATE_GESTURE: 'gesture:rotate',

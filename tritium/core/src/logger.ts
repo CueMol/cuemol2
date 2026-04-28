@@ -1,7 +1,7 @@
 // logger.ts
 import pino, { type Logger } from "pino";
 
-const isBrowser = typeof window !== 'undefined';
+const isBrowser = 'window' in globalThis;
 // const isBrowser = false;
 
 function resolveModule(id: string): string {

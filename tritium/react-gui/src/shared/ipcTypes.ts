@@ -104,6 +104,8 @@ export interface ElectronAPI {
   onMenuNewScene: (callback: () => void) => () => void
   onMenuOpenFile: (callback: () => void) => () => void
   onMenuOpenScene: (callback: () => void) => () => void
+  onMenuUndo: (callback: () => void) => () => void
+  onMenuRedo: (callback: () => void) => () => void
 
   // macOS-specific gesture events (sourced from Electron BrowserWindow)
   onRotateGesture: (callback: (rotation: number) => void) => () => void

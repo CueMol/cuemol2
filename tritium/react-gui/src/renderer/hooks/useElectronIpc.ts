@@ -59,6 +59,12 @@ export function useElectronIpc(activeTab: string | null): void {
       api.onMenuOpenScene(() =>
         dispatch(CmdId.UiOpenSceneDialog).catch(logErr('open scene dialog:')),
       ),
+      api.onMenuUndo(() =>
+        dispatch(CmdId.Undo).catch(logErr('undo:')),
+      ),
+      api.onMenuRedo(() =>
+        dispatch(CmdId.Redo).catch(logErr('redo:')),
+      ),
     ]
 
     return () => unsubs.forEach((u) => u())
