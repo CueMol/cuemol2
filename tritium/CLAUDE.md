@@ -47,7 +47,9 @@ coloring.append(sel, color); // invokeMethod receives sel.wrapped, color.wrapped
 
 ## Worker service module system
 
-Services live in `react-gui/src/renderer/worker/services/*.service.ts` and are auto-registered via `import.meta.glob` at worker startup — adding a new file is sufficient.
+Services live in `react-gui/src/renderer/worker/services/*.service.ts` and are auto-registered via `import.meta.glob` at worker startup.
+
+**Registration requirement**: a file is registered as a service only when it exports **both** `export const name` and `export default function`. Files that export neither (e.g. `setupRenderer.service.ts`, which is an internal helper called by `loadObject.service.ts`) are **not** registered and are not callable via `invokeWorker`. The `.service.ts` suffix is a naming convention only.
 
 ### Service structure
 
@@ -83,6 +85,36 @@ Async functions are also accepted; `WorkerService.invoke` wraps the return value
 | `_registered` (services) | Business logic with multi-step C++ operations | Single object: `args[0]` is the payload struct |
 
 Don't migrate `_methods` entries to services unless there's a concrete benefit (IPC reduction or cleaner caller code).
+
+---
+
+## Undo/Redo transaction
+
+Edit services that mutate scene state wrap their body with `withUndoTxn` from `services/withUndoTxn.ts`:
+
+```typescript
+import { withUndoTxn } from './withUndoTxn';
+
+export default function myService(ctx: WorkerContext, args: MyArgs): Result {
+    const scene = ctx.sceMgr.getScene(args.sceneId);
+    return withUndoTxn(scene, 'Human-readable label', () => {
+        // scene mutations here
+        return result;
+    });
+}
+```
+
+**When to wrap**: services that add/remove objects, create/delete renderers, or otherwise mutate scene state. If the equivalent UXP GUI operation uses `scene.startUndoTxn(...)`, the tritium service should use `withUndoTxn` too.
+
+**When NOT to wrap**: read-only services (no mutations), `createNewSceneAndView` (creating a fresh scene has no existing UndoManager to record onto), pure infrastructure services.
+
+**Nested txns are safe**: `UndoManager` (`src/qsys/UndoManager.cpp`) tracks `m_nTxnNestLevel`. An inner `startUndoTxn` call inside an active outer txn increments the counter and returns — the inner txn is silently absorbed into the outer one. This means services that call internal helpers that also use `withUndoTxn` work correctly without any coordination.
+
+**Multiple sequential txns**: a single service can open and commit multiple txns in sequence by calling `withUndoTxn` multiple times. Each call produces an independent undo step.
+
+**Never call from renderer**: `startUndoTxn`/`commitUndoTxn`/`rollbackUndoTxn` must only run inside worker services. Calling them from renderer code via `AsyncCueMol` is not supported.
+
+**Executing undo/redo**: `cm.undo(scene_id)` / `cm.redo(scene_id)` on `AsyncCueMol` dispatch to the `undo` / `redo` worker services, which call `scene.undo(0)` / `scene.redo(0)`. Depth `0` means one undo step (UndoManager loops `for i=0; i<=n` so depth 0 → 1 step). The Edit menu (Cmd+Z / Shift+Cmd+Z) sends `IPC.MENU_UNDO` / `IPC.MENU_REDO` from main → renderer → `CmdId.Undo` / `CmdId.Redo` command registry.
 
 ---
 
@@ -153,12 +185,14 @@ expect(result).toBe(true);
 
 In services, use `ctx.strMgr`, `ctx.sceMgr`, etc. directly; never call `getService` inside a service.
 
-### Reader wrapper hierarchy
+### Auto-generated wrapper enum properties
 
-```
-InOutHandler  — setPath(path): void
-  └─ ObjReader  — createDefaultObj(): Object, attach/detach/read
-       └─ PDBFileReader, CCP4MapReader, MTZ2MapReader, ... (format-specific props)
+Properties declared as `enum` in `.qif` files are typed as `number` in the generated TypeScript wrappers, but the C++ scripting layer accepts and returns **strings** at runtime (e.g. `stereoMode: 'none' | 'para' | 'cross' | 'hardware'`). When assigning or comparing such properties in tests or typed code, cast to bypass the incorrect declaration:
+
+```typescript
+sut.stereoMode = 'none' as unknown as number;
+expect(sut.stereoMode as unknown as string).toBe('none');
 ```
 
-`strMgr.createHandler(name, 0)` creates a new reader (category 0 = obj reader) and returns the concrete subclass.
+Do not change the generated wrapper files to fix this — they are overwritten at build time.
+

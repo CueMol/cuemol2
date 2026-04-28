@@ -139,7 +139,7 @@ react-gui (Electron + React 18)
 └─ Renderer Process: React UI
     │ → tritium/react-gui/src/renderer/App.tsx (root component, Allotment splitter)
     │ → tritium/react-gui/src/renderer/hooks/ (useCueMol, useMolView, useLogEvent)
-    └─ Web Worker: heavy CueMol operations (worker/main.ts, worker/services.ts)
+    └─ Web Worker: heavy CueMol operations (worker/WorkerService.ts, worker/services/*.service.ts)
 
 core (@cuemol/core)
 ├─ tritium/core/src/cuemol.ts — main CueMol facade class (top-level API)
