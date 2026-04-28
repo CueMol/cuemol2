@@ -8,6 +8,7 @@ interface StatusBarProps {
   activeToolLabel?: string;
   activeToolShortcut?: string;
   activeToolIcon?: IconName;
+  busy?: boolean;
 }
 
 export const StatusBar: React.FC<StatusBarProps> = ({
@@ -16,6 +17,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   activeToolLabel,
   activeToolShortcut,
   activeToolIcon,
+  busy,
 }) => {
   return (
     <div className="status-bar">
@@ -48,10 +50,17 @@ export const StatusBar: React.FC<StatusBarProps> = ({
       </div>
       <div className="status-right">
         <span className="status-item">Atoms: {atomCount}</span>
-        <span className="status-item status-ok">
-          <Icon icon="full-circle" size={8} />
-          Ready
-        </span>
+        {busy ? (
+          <span className="status-item status-busy" title="Worker is processing">
+            <Icon icon="refresh" size={10} className="status-spinner" />
+            Busy
+          </span>
+        ) : (
+          <span className="status-item status-ok">
+            <Icon icon="full-circle" size={8} />
+            Ready
+          </span>
+        )}
       </div>
     </div>
   );

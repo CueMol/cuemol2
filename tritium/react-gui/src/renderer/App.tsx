@@ -30,6 +30,7 @@ import { useCueMol } from "./hooks/useCueMol";
 import { useMolTabDispatch } from "./hooks/useMolTab";
 import { useElectronIpc } from "./hooks/useElectronIpc";
 import { useSceneCommands } from "./commands/useSceneCommands";
+import { useCueMolBusy } from "./hooks/useCueMolBusy";
 
 const App: React.FC = () => {
 
@@ -158,6 +159,8 @@ const App: React.FC = () => {
   });
 
   useElectronIpc(activeTab);
+
+  const cueMolBusy = useCueMolBusy();
 
   // --- macOS traffic-light inset ---
 
@@ -306,6 +309,7 @@ const App: React.FC = () => {
         activeToolLabel={activeDef.label}
         activeToolShortcut={activeDef.shortcut}
         activeToolIcon={activeDef.icon}
+        busy={cueMolBusy}
       />
     </div>
   );

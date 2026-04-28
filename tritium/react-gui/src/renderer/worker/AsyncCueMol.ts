@@ -18,6 +18,8 @@ export class AsyncCueMol {
     private _worker: Worker;
     private _worker_onmessage_dict: { [key: string]: any } = {};
     private _slot: { [key: string]: any } = {};
+    private _pendingCount: number = 0;
+    private _busyListeners: Set<(busy: boolean) => void> = new Set();
 
     constructor() {
         log.info('launch worker...');
@@ -73,16 +75,46 @@ export class AsyncCueMol {
         this._worker_onmessage_dict[method_seq] = handler;
     }
 
+    private _incPending(): void {
+        const wasBusy = this._pendingCount > 0;
+        this._pendingCount++;
+        if (!wasBusy) this._notifyBusyChange(true);
+    }
+
+    private _decPending(): void {
+        if (this._pendingCount <= 0) return;
+        this._pendingCount--;
+        if (this._pendingCount === 0) this._notifyBusyChange(false);
+    }
+
+    private _notifyBusyChange(busy: boolean): void {
+        for (const cb of this._busyListeners) {
+            try { cb(busy); } catch (e) { log.warn('busy listener error:', e); }
+        }
+    }
+
+    isBusy(): boolean { return this._pendingCount > 0; }
+
+    subscribeBusy(cb: (busy: boolean) => void): () => void {
+        this._busyListeners.add(cb);
+        return () => { this._busyListeners.delete(cb); };
+    }
+
     async invokeWorker(method: string, ...args: any[]): Promise<any[]> {
         const cur_seq = this.getSeqNo();
+        this._incPending();
         let promise = new Promise<any[]>((resolve, reject) => {
             this.addListener(method, cur_seq, (result: boolean, ...msgargs: any[]): void => {
-                if (result) {
-                    // log.info('invokeWorker OK:', method, 'msgargs:', msgargs);
-                    resolve(msgargs);
-                } else {
-                    // log.info('invokeWorker error:', method, 'error:', msgargs[0]);
-                    reject(msgargs[0]);
+                try {
+                    if (result) {
+                        // log.info('invokeWorker OK:', method, 'msgargs:', msgargs);
+                        resolve(msgargs);
+                    } else {
+                        // log.info('invokeWorker error:', method, 'error:', msgargs[0]);
+                        reject(msgargs[0]);
+                    }
+                } finally {
+                    this._decPending();
                 }
             });
         });
