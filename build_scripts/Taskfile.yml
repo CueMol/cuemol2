@@ -173,9 +173,14 @@ tasks:
       - task: build_libcuemol2
       - bash build_tritium_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
 
+  build_tritium:windows:
+    platforms: [windows]
+    cmds:
+      - task: build_libcuemol2
+      - '"C:/Program Files/Git/bin/bash.exe" build_tritium_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"'
+
   run_tritium:
     desc: "Run the built tritium Electron app"
-    platforms: [darwin]
     dir: "{{.ROOT_DIR}}/../tritium/react-gui"
     cmds:
       - pnpm run start

@@ -25,8 +25,11 @@ export Boost_ROOT=$BOOST_DIR
 cd $TRITIUM_DIR
 pnpm install --ignore-scripts
 
-# Ensure the electron binary is downloaded.
-pnpm rebuild electron
+# Ensure the electron binary is downloaded. `pnpm rebuild electron` is
+# unreliable across pnpm versions / platforms (no-op on pnpm v10 + Windows),
+# so invoke electron's install.js directly. electron is a react-gui dep.
+cd $TRITIUM_DIR/react-gui
+node "$(node -p "require.resolve('electron/install.js')")"
 
 # Build core native addon with the correct config
 cd $TRITIUM_DIR/core
