@@ -11,11 +11,11 @@
   display: flex;
   align-items: center;
   padding: 0 12px;
-  height: 36px;
+  height: 30px;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   color: var(--text-secondary);
   background: var(--toolbar-bg);
   border-bottom: 1px solid var(--border);
@@ -43,12 +43,12 @@
   justify-content: space-between;
   gap: 6px;
   padding: 0 4px 0 10px;
-  height: 28px;
-  min-height: 28px;
+  height: 24px;
+  min-height: 24px;
   font-weight: 600;
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.4px;
   color: var(--text-secondary);
   background: var(--bg-panel-header);
   border-bottom: 1px solid var(--border-subtle);
@@ -153,11 +153,11 @@
 
 .scene-tree .bp5-tree-node-content,
 .mol-tree .bp5-tree-node-content {
-  height: 26px;
+  height: 22px;
   padding-left: 4px;
   padding-right: 6px;
   cursor: pointer;
-  font-size: 12.5px;
+  font-size: 12px;
   color: var(--text-primary);
   transition: background 0.1s;
 }
@@ -201,7 +201,7 @@
 
 .scene-tree .bp5-tree-node-label,
 .mol-tree .bp5-tree-node-label {
-  font-size: 12.5px;
+  font-size: 12px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

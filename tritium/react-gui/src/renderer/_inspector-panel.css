@@ -15,8 +15,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 8px 0 12px;
-  height: 36px;
-  min-height: 36px;
+  height: 30px;
+  min-height: 30px;
   background: var(--toolbar-bg);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
@@ -121,11 +121,11 @@
   align-items: center;
   gap: 4px;
   padding: 0 10px;
-  height: 28px;
+  height: 24px;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.3px;
   color: var(--text-secondary);
   background: var(--bg-panel-header);
   cursor: pointer;
@@ -196,7 +196,7 @@
   border: 1px solid var(--border) !important;
   color: var(--text-primary) !important;
   font-size: 12px;
-  height: 26px;
+  height: 22px;
   border-radius: 3px;
   caret-color: var(--accent);
 }
@@ -217,7 +217,7 @@
   border: 1px solid var(--border) !important;
   color: var(--text-primary) !important;
   font-size: 12px;
-  height: 26px;
+  height: 22px;
   border-radius: 3px;
 }
 
@@ -282,7 +282,7 @@
   border: 1px solid var(--border) !important;
   color: var(--text-primary) !important;
   font-size: 11.5px;
-  height: 24px;
+  height: 20px;
   text-align: right;
   padding-right: 4px;
   border-radius: 3px;
@@ -312,8 +312,8 @@
 }
 
 .insp-color-swatch {
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
   padding: 0;
   border: 1px solid var(--border);
   border-radius: 3px;

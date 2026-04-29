@@ -115,7 +115,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
             onNodeClick={handleNodeClick}
             onNodeExpand={handleNodeExpand}
             onNodeCollapse={handleNodeCollapse}
-            className="mol-struct-tree"
+            className="mol-tree"
           />
         </div>
       )}

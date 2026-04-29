@@ -11,9 +11,9 @@
 .anim-transport {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
   padding: 0 10px;
-  height: 32px;
+  height: 28px;
   background: var(--bg-panel-header);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;

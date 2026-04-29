@@ -29,8 +29,8 @@
   align-items: center;
   gap: 8px;
   padding: 0 12px;
-  height: 36px;
-  min-height: 36px;
+  height: 30px;
+  min-height: 30px;
   background: var(--toolbar-bg);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
@@ -145,7 +145,7 @@
 /* ── Search bar ── */
 .config-search-bar {
   flex-shrink: 0;
-  padding: 10px 20px 8px;
+  padding: 8px 16px 6px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -196,12 +196,12 @@
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 0 20px 24px;
+  padding: 0 20px 12px;
 }
 
 /* ── Category groups ── */
 .config-category {
-  margin-top: 20px;
+  margin-top: 12px;
 }
 
 .config-category-header {
@@ -220,7 +220,7 @@
    ═══════════════════════════════════════════════════════════ */
 
 .config-setting {
-  padding: 10px 0;
+  padding: 6px 0;
   border-bottom: 1px solid var(--border-subtle);
 }
 
