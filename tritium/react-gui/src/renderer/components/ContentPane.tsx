@@ -40,6 +40,8 @@ interface ContentPaneProps {
   activeTool: ToolId;
   /** Callback to change the active viewport tool. */
   onSelectTool: (id: ToolId) => void;
+  /** Callback to push atom/pick status messages to the app status bar. */
+  onStatusMessage?: (msg: string | null) => void;
 }
 
 // ─────────────────────────────────────────────
@@ -69,12 +71,12 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
   activeTab,
   activeTool,
   onSelectTool,
+  onStatusMessage,
 }) => {
   const hasMolViewTab = tabs.some((t) => t.type === "molview");
   const molViewVisible = activeTab?.type === "molview";
   const showPalette = activeTab?.type !== "settings";
 
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [ctxMenuState, setCtxMenuState] = useState<NaviContextMenuState>({
     open: false, x: 0, y: 0, hitres: null,
   });
@@ -94,7 +96,7 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
     setCtxMenuState((s) => ({ ...s, open: false }));
   }, []);
 
-  useNaviClickHandler({ setStatusMessage, openContextMenu });
+  useNaviClickHandler({ setStatusMessage: onStatusMessage ?? (() => {}), openContextMenu });
 
   return (
     <div className="content-pane" style={{ position: "relative" }} onMouseUp={handleMouseUp}>
@@ -109,11 +111,6 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
       {!molViewVisible && renderContent(activeTab)}
       {showPalette && (
         <ViewportToolPalette activeTool={activeTool} onSelect={onSelectTool} />
-      )}
-      {statusMessage && molViewVisible && (
-        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "2px 8px", background: "rgba(0,0,0,0.6)", color: "#ccc", fontSize: 11, pointerEvents: "none" }}>
-          {statusMessage}
-        </div>
       )}
       <NaviContextMenu state={ctxMenuState} onClose={closeContextMenu} />
     </div>

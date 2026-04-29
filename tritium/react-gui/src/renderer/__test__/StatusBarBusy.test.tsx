@@ -23,7 +23,7 @@ afterEach(() => {
 function renderStatusBar(busy: boolean) {
     act(() => {
         root.render(
-            React.createElement(StatusBar, { atomCount: "0", busy }),
+            React.createElement(StatusBar, { busy }),
         );
     });
 }
@@ -46,7 +46,7 @@ describe("StatusBar - busy prop", () => {
         expect(container.textContent).toContain("Ready");
 
         act(() => {
-            root.render(React.createElement(StatusBar, { atomCount: "0", busy: true }));
+            root.render(React.createElement(StatusBar, { busy: true }));
         });
         expect(container.textContent).toContain("Busy");
     });
@@ -56,14 +56,14 @@ describe("StatusBar - busy prop", () => {
         expect(container.textContent).toContain("Busy");
 
         act(() => {
-            root.render(React.createElement(StatusBar, { atomCount: "0", busy: false }));
+            root.render(React.createElement(StatusBar, { busy: false }));
         });
         expect(container.textContent).toContain("Ready");
     });
 
     it("shows 'Ready' when busy prop is omitted", () => {
         act(() => {
-            root.render(React.createElement(StatusBar, { atomCount: "0" }));
+            root.render(React.createElement(StatusBar, {}));
         });
         expect(container.textContent).toContain("Ready");
     });

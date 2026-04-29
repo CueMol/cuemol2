@@ -54,6 +54,7 @@ interface ContentAreaProps {
   onReorderTabs?: (fromId: string, toId: string, insertAfter: boolean) => void;
   activeTool: ToolId;
   onSelectTool: (id: ToolId) => void;
+  onStatusMessage?: (msg: string | null) => void;
 }
 
 // ────────────────────────────────────────────────────────────
@@ -68,6 +69,7 @@ export const ContentArea: React.FC<ContentAreaProps> = ({
   onReorderTabs,
   activeTool,
   onSelectTool,
+  onStatusMessage,
 }) => {
   const active = tabs.find((t) => t.id === activeTab);
 
@@ -91,6 +93,7 @@ export const ContentArea: React.FC<ContentAreaProps> = ({
         activeTab={active}
         activeTool={activeTool}
         onSelectTool={onSelectTool}
+        onStatusMessage={onStatusMessage}
       />
     </div>
   );

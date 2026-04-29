@@ -3,33 +3,28 @@ import { Icon } from "@blueprintjs/core";
 import type { IconName } from "@blueprintjs/icons";
 
 interface StatusBarProps {
-  activeFile?: string;
-  atomCount: string;
   activeToolLabel?: string;
   activeToolShortcut?: string;
   activeToolIcon?: IconName;
   busy?: boolean;
+  statusMessage?: string | null;
 }
 
 export const StatusBar: React.FC<StatusBarProps> = ({
-  activeFile,
-  atomCount,
   activeToolLabel,
   activeToolShortcut,
   activeToolIcon,
   busy,
+  statusMessage,
 }) => {
   return (
     <div className="status-bar">
       <div className="status-left">
-        <span className="status-item">
-          <Icon icon="film" size={12} />
-          Scene1
-        </span>
-        <span className="status-item">
-          <Icon icon="symbol-circle" size={12} />
-          3 objects
-        </span>
+        {statusMessage && (
+          <span className="status-item">
+            {statusMessage}
+          </span>
+        )}
       </div>
       <div className="status-center">
         {activeToolLabel && (
@@ -41,15 +36,8 @@ export const StatusBar: React.FC<StatusBarProps> = ({
             )}
           </span>
         )}
-        {activeFile && (
-          <span className="status-item">
-            <Icon icon="document" size={12} />
-            {activeFile}
-          </span>
-        )}
       </div>
       <div className="status-right">
-        <span className="status-item">Atoms: {atomCount}</span>
         {busy ? (
           <span className="status-item status-busy" title="Worker is processing">
             <Icon icon="refresh" size={10} className="status-spinner" />

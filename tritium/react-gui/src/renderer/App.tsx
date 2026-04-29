@@ -164,6 +164,8 @@ const App: React.FC = () => {
 
   const cueMolBusy = useCueMolBusy();
 
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
   // --- macOS traffic-light inset ---
 
   useEffect(() => {
@@ -185,7 +187,6 @@ const App: React.FC = () => {
 
   // --- Derived values ---
 
-  const activeFile = tabs.find((t) => t.id === activeTab)?.title;
   const sidebarVisible = activeView !== null;
   const settingsActive = tabs.find((t) => t.id === activeTab)?.type === "settings";
 
@@ -273,6 +274,7 @@ const App: React.FC = () => {
                             onReorderTabs={handleReorderTabs}
                             activeTool={activeTool}
                             onSelectTool={setActiveTool}
+                            onStatusMessage={setStatusMessage}
                           />
                         </Allotment.Pane>
                         <Allotment.Pane minSize={100} preferredSize={200} snap>
@@ -310,12 +312,11 @@ const App: React.FC = () => {
       </div>
 
       <StatusBar
-        activeFile={activeFile}
-        atomCount="13,167"
         activeToolLabel={activeDef.label}
         activeToolShortcut={activeDef.shortcut}
         activeToolIcon={activeDef.icon}
         busy={cueMolBusy}
+        statusMessage={statusMessage}
       />
     </div>
     </ActiveToolProvider>
