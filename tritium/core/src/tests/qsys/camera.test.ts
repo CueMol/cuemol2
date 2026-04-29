@@ -292,9 +292,9 @@ describe('Camera', () => {
             ['cross', 'cross'],
             ['hardware', 'hardware'],
         ])('should set and get stereoMode "%s"', (mode, expected) => {
-            sut.stereoMode = mode;
+            sut.stereoMode = mode as unknown as number;
 
-            expect(sut.stereoMode).toBe(expected);
+            expect(sut.stereoMode as unknown as string).toBe(expected);
         });
     });
 
@@ -319,9 +319,9 @@ describe('Camera', () => {
             ['crosshair', 'crosshair'],
             ['axis', 'axis'],
         ])('should set and get centerMark "%s"', (mark, expected) => {
-            sut.centerMark = mark;
+            sut.centerMark = mark as unknown as number;
 
-            expect(sut.centerMark).toBe(expected);
+            expect(sut.centerMark as unknown as string).toBe(expected);
         });
     });
 
@@ -372,18 +372,18 @@ describe('Camera', () => {
             sut.slab = CUSTOM_SLAB;
             sut.distance = CUSTOM_DISTANCE;
             sut.stereoDist = CUSTOM_STEREO_DIST;
-            sut.stereoMode = 'para';
+            sut.stereoMode = 'para' as unknown as number;
             sut.perspec = true;
-            sut.centerMark = 'axis';
+            sut.centerMark = 'axis' as unknown as number;
 
             expect(sut.name).toBe('MultiPropTest');
             expect(sut.zoom).toBe(CUSTOM_ZOOM);
             expect(sut.slab).toBe(CUSTOM_SLAB);
             expect(sut.distance).toBe(CUSTOM_DISTANCE);
             expect(sut.stereoDist).toBe(CUSTOM_STEREO_DIST);
-            expect(sut.stereoMode).toBe('para');
+            expect(sut.stereoMode as unknown as string).toBe('para');
             expect(sut.perspec).toBe(true);
-            expect(sut.centerMark).toBe('axis');
+            expect(sut.centerMark as unknown as string).toBe('axis');
         });
 
         it('should allow resetting all properties to defaults', () => {

@@ -99,6 +99,7 @@ Napi::Value initCueMol(const Napi::CallbackInfo &info)
 
     node_jsbr::registerViewFactory();
 
+    g_bInitOK = true;
     LOG_DPRINTLN("CueMol2 nodejs module : INITIALIZED");
     return env.Null();
 }

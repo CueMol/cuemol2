@@ -1,5 +1,5 @@
-name: 'Build node.js addon posix'
-description: 'Build node.js addon posix'
+name: 'Build tritium/core addon'
+description: 'Build tritium/core addon'
 
 inputs:
   basedir:
@@ -9,7 +9,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-  - name: Build, install, and test nodejs addon (posix)
+  - name: Build, install, and test tritium/core addon (posix)
     if: runner.os != 'Windows'
     shell: bash
     # env:
@@ -18,7 +18,7 @@ runs:
       cd ${GITHUB_WORKSPACE}
       bash build_scripts/build_nodejs_posix/run.sh ${{ inputs.basedir }}
 
-  - name: Build, install, and test nodejs addon (windows)
+  - name: Build, install, and test tritium/core addon (windows)
     if: runner.os == 'Windows'
     shell: cmd
     run: |

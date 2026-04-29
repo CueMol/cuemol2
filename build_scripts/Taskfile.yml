@@ -121,6 +121,7 @@ tasks:
 #####
 
   build_nodejs:
+    desc: "Build and test tritium/core native addon"
     deps:
       - task: build_nodejs:{{OS}}
 

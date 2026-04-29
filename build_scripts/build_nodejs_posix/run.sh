@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# build script for nodejs addon in posix
+# build script for tritium/core addon in posix
 # usage: run.sh deplibs_dir
 #
 
@@ -17,16 +17,14 @@ BOOST_DIR=$BASEDIR/$BOOST_VER
 # Install location
 INST_PATH=$BASEDIR/cuemol2
 
-cd $WORKSPACE/nodejs
+cd $WORKSPACE/tritium/core
 npm --version
 node --version
-npm install
+# Use --ignore-scripts to skip the cmake-js lifecycle hook (run it manually below with explicit flags)
+npm install --ignore-scripts
 npx cmake-js compile \
     --CDLIBCUEMOL2_ROOT=$INST_PATH \
     --CDBoost_ROOT=$BOOST_DIR
-
-# npx cmake-js install
-npm install
 
 # Copy dependent libs (boost)
 ls -la $BOOST_DIR/lib/lib*
