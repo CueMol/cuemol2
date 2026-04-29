@@ -49,6 +49,10 @@ message(STATUS "NODE_ADDON_API_DIR: ${NODE_ADDON_API_DIR}")
 
 if (WIN32)
   add_definitions(-DNODEJS_EXPORTS=1)
+  # Mark libcuemol2 symbols as __declspec(dllimport). Required so the dllimport
+  # semantics of QLIB_API/QSYS_API propagate to base template static members
+  # (e.g. SingletonBase<T>::s_pInst) via the derived dllimport class.
+  add_definitions(-DLINK_SHARED)
 endif()
 
 SET(NODEJS_LINK_LIBRARIES
@@ -109,15 +113,41 @@ set_target_properties(cuemol_internal PROPERTIES
   BUILD_WITH_INSTALL_RPATH TRUE
 )
 
-# Always copy dylibs to build/lib/ so the @loader_path/../lib rpath resolves
-# correctly during development. Using add_custom_target(ALL) ensures this runs
-# on every build even when cuemol_internal sources are unchanged (unlike
-# POST_BUILD which only fires when the target is rebuilt).
-add_custom_target(copy_dylibs ALL
-  COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/lib"
-  COMMAND bash -c "cp '${LIBCUEMOL2_LIBDIR}'/*.dylib '${CMAKE_BINARY_DIR}/lib/'"
-  COMMENT "Copying dylibs from ${LIBCUEMOL2_LIBDIR} to build/lib/"
-)
+# Copy runtime libraries so the cuemol_internal .node addon can find them at
+# load time. Using add_custom_target(ALL) ensures this runs on every build even
+# when cuemol_internal sources are unchanged (unlike POST_BUILD which only
+# fires when the target is rebuilt).
+# - macOS/Linux: leverage the @loader_path/../lib rpath baked into the .node;
+#   copy shared libs to build/lib/.
+# - Windows: no rpath; place DLLs next to the .node file so the Windows DLL
+#   search resolves them.
+if(WIN32)
+  set(LIBCUEMOL2_BINDIR "${LIBCUEMOL2_ROOT}/bin")
+  file(GLOB LIBCUEMOL2_DLLS "${LIBCUEMOL2_BINDIR}/*.dll")
+  # cuemol2.dll has a transitive dependency on Boost.Filesystem etc.;
+  # the release Boost DLLs ship in ${Boost_ROOT}/lib and need to sit next to
+  # the .node so the Windows loader can resolve them. The glob excludes the
+  # `-gd-` debug variants by anchoring on the `-mt-x64-` release suffix.
+  file(GLOB BOOST_DLLS "${Boost_ROOT}/lib/boost_*-mt-x64-*.dll")
+  add_custom_target(copy_dylibs ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LIBCUEMOL2_DLLS} "$<TARGET_FILE_DIR:cuemol_internal>"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BOOST_DLLS} "$<TARGET_FILE_DIR:cuemol_internal>"
+    COMMENT "Copying libcuemol2 + Boost DLLs to .node directory"
+  )
+  add_dependencies(copy_dylibs cuemol_internal)
+elseif(APPLE)
+  add_custom_target(copy_dylibs ALL
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/lib"
+    COMMAND bash -c "cp '${LIBCUEMOL2_LIBDIR}'/*.dylib '${CMAKE_BINARY_DIR}/lib/'"
+    COMMENT "Copying dylibs from ${LIBCUEMOL2_LIBDIR} to build/lib/"
+  )
+else()
+  add_custom_target(copy_dylibs ALL
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/lib"
+    COMMAND bash -c "cp -P '${LIBCUEMOL2_LIBDIR}'/*.so* '${CMAKE_BINARY_DIR}/lib/'"
+    COMMENT "Copying shared libs from ${LIBCUEMOL2_LIBDIR} to build/lib/"
+  )
+endif()
 
 install(TARGETS cuemol_internal
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
