@@ -15,8 +15,10 @@
 // #include <gfx/gfx.hpp>
 // #include <qsys/qsys.hpp>
 
+#if defined(__APPLE__) || defined(_WIN32)
 #include "EcTimerImpl.hpp"
 #include "ElecView.hpp"
+#endif
 // #include "node_jsbr.hpp"
 #include "wrapper.hpp"
 #include "services.hpp"
@@ -87,7 +89,8 @@ Napi::Value initCueMol(const Napi::CallbackInfo &info)
     // setup text renderer
     g_pTR = cuemol2::initTextRender();
 
-    // setup timer
+#if defined(__APPLE__) || defined(_WIN32)
+    // setup timer (Electron libuv-based; not available in headless Linux builds)
     result = cuemol2::init_timer(new EcTimerImpl);
     if (result < 0) {
         LOG_DPRINTLN("initCueMol setup timer (%s) failed.", confpath.c_str());
@@ -95,9 +98,9 @@ Napi::Value initCueMol(const Napi::CallbackInfo &info)
             .ThrowAsJavaScriptException();
         return env.Null();
     }
-    // qlib::EventManager::getInstance()->initTimer(new EcTimerImpl);
 
     node_jsbr::registerViewFactory();
+#endif
 
     g_bInitOK = true;
     LOG_DPRINTLN("CueMol2 nodejs module : INITIALIZED");
@@ -156,8 +159,10 @@ Napi::Object Init(Napi::Env env, Napi::Object exports)
     // exports.Set(Napi::String::New(env, "getClassName"),
     //             Napi::Function::New(env, node_jsbr::getClassName));
 
+#if defined(__APPLE__) || defined(_WIN32)
     exports.Set(Napi::String::New(env, "bindPeer"),
                 Napi::Function::New(env, node_jsbr::bindPeer));
+#endif
 
     exports.Set(Napi::String::New(env, "copyFromTypedArray"),
                 Napi::Function::New(env, node_jsbr::copyFromTypedArray));

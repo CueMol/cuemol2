@@ -9,7 +9,9 @@ Napi::Value createObj(const Napi::CallbackInfo &info);
 Napi::Value hasClass(const Napi::CallbackInfo &info);
 Napi::String getAllClassNamesJSON(const Napi::CallbackInfo &info);
 
+#if defined(__APPLE__) || defined(_WIN32)
 Napi::Value bindPeer(const Napi::CallbackInfo &info);
+#endif
 
 /**
    Copy data from ByteArray to JS TypedArray
