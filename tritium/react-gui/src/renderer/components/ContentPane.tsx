@@ -15,7 +15,7 @@
  * tab is active (display-toggle strategy).
  */
 
-import React from "react";
+import React, { useState, useCallback, useRef } from "react";
 import type { TabData } from "../types";
 import type { ToolId } from "../data/viewportTools";
 import { WelcomePane } from "./WelcomePane";
@@ -23,6 +23,9 @@ import { SettingsPane } from "./SettingsPane";
 import { CodeViewPane } from "./CodeViewPane";
 import { MolViewPane } from "./MolViewPane";
 import { ViewportToolPalette } from "./ViewportToolPalette";
+import { NaviContextMenu, type NaviContextMenuState } from "./NaviContextMenu";
+import { useNaviClickHandler } from "../hooks/useNaviClickHandler";
+import type { HitTestResult } from "../types/HitTestResult";
 
 // ─────────────────────────────────────────────
 // Types
@@ -71,8 +74,30 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
   const molViewVisible = activeTab?.type === "molview";
   const showPalette = activeTab?.type !== "settings";
 
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [ctxMenuState, setCtxMenuState] = useState<NaviContextMenuState>({
+    open: false, x: 0, y: 0, hitres: null,
+  });
+
+  // Capture viewport mouse position on mouseup so context menu appears at cursor.
+  // C++ click events carry canvas-local coords, not viewport coords.
+  const lastClientPosRef = useRef({ x: 0, y: 0 });
+  const handleMouseUp = useCallback((e: React.MouseEvent) => {
+    lastClientPosRef.current = { x: e.clientX, y: e.clientY };
+  }, []);
+
+  const openContextMenu = useCallback((hit: HitTestResult) => {
+    setCtxMenuState({ open: true, x: lastClientPosRef.current.x, y: lastClientPosRef.current.y, hitres: hit });
+  }, []);
+
+  const closeContextMenu = useCallback(() => {
+    setCtxMenuState((s) => ({ ...s, open: false }));
+  }, []);
+
+  useNaviClickHandler({ setStatusMessage, openContextMenu });
+
   return (
-    <div className="content-pane">
+    <div className="content-pane" style={{ position: "relative" }} onMouseUp={handleMouseUp}>
       {/* MolViewPane is always mounted once the tab exists; hidden when inactive.
           Using display:none rather than unmounting to preserve WebGL context
           and the OffscreenCanvas transferred to the Web Worker. */}
@@ -85,6 +110,12 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
       {showPalette && (
         <ViewportToolPalette activeTool={activeTool} onSelect={onSelectTool} />
       )}
+      {statusMessage && molViewVisible && (
+        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "2px 8px", background: "rgba(0,0,0,0.6)", color: "#ccc", fontSize: 11, pointerEvents: "none" }}>
+          {statusMessage}
+        </div>
+      )}
+      <NaviContextMenu state={ctxMenuState} onClose={closeContextMenu} />
     </div>
   );
 };

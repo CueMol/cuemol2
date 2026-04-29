@@ -168,13 +168,17 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
     const onMouseDown = handleMouse('mouseDown')
     const onMouseUp = handleMouse('mouseUp')
     const onMouseMove = handleMouse('mouseMove')
+    // Prevent browser/Electron default context menu; navi tool opens its own.
+    const onContextMenu = (e: MouseEvent): void => { e.preventDefault() }
     canvas.addEventListener('mousedown', onMouseDown)
     canvas.addEventListener('mouseup', onMouseUp)
     canvas.addEventListener('mousemove', onMouseMove)
+    canvas.addEventListener('contextmenu', onContextMenu)
     return () => {
       canvas.removeEventListener('mousedown', onMouseDown)
       canvas.removeEventListener('mouseup', onMouseUp)
       canvas.removeEventListener('mousemove', onMouseMove)
+      canvas.removeEventListener('contextmenu', onContextMenu)
     }
   }, []) // stable — reads state via refs
 

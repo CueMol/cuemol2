@@ -23,6 +23,7 @@ import { SAMPLE_ALIGNMENT, SAMPLE_ANIMATION } from "./data/alignmentData";
 
 import { useLayoutPersistence } from "./hooks/useLayoutPersistence";
 import { useActiveTool } from "./hooks/useActiveTool";
+import { ActiveToolProvider } from "./contexts/ActiveToolContext";
 import { useSceneState } from "./hooks/useSceneState";
 import { useInspectorState } from "./hooks/useInspectorState";
 import { useTabManager } from "./hooks/useTabManager";
@@ -190,6 +191,7 @@ const App: React.FC = () => {
   // --- Render ---
 
   return (
+    <ActiveToolProvider activeTool={activeTool}>
     <div className="app">
       <Toolbar
         onOpenFile={handleOpenFile}
@@ -312,6 +314,7 @@ const App: React.FC = () => {
         busy={cueMolBusy}
       />
     </div>
+    </ActiveToolProvider>
   );
 };
 

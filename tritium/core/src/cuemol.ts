@@ -75,8 +75,8 @@ export class CueMol {
      * @returns Wrapped object or null if native_obj is undefined
      * @internal
      */
-    createWrapper(nativeObj: NativeObject | undefined): BaseWrapper | null {
-        if (typeof nativeObj === 'undefined') {
+    createWrapper(nativeObj: NativeObject | undefined | null): BaseWrapper | null {
+        if (nativeObj === null || typeof nativeObj === 'undefined') {
             return null;
         }
         // console.log('native_obj:', native_obj);

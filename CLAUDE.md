@@ -154,3 +154,39 @@ libcuemol2 (external C++ library, path via LIBCUEMOL2_ROOT)
 **IPC flow**: Electron main ↔ renderer via standard Electron IPC; renderer ↔ Web Worker via `postMessage`.
 
 **Tests**: `tritium/core/src/tests/` covers the C++ binding layer (Jest, sequential `--runInBand`). `tritium/react-gui/src/renderer/__test__/` covers React hooks and components (Vitest + jsdom). See `tritium/CLAUDE.md` for react-gui test caveats.
+
+---
+
+## UXP → tritium Migration Tracking
+
+Migration progress is tracked in `docs/migration/mapping/`. Update these docs whenever a UXP GUI feature is implemented in tritium.
+
+### Files to update
+
+| File | Purpose |
+|------|---------|
+| `docs/migration/mapping/<category>.md` | Per-item status — one row per UXP inventory entry |
+| `docs/migration/mapping/_index.md` | Summary counts, Mapping Type Breakdown, In Progress list |
+
+Category files mirror the UXP inventory categories: `toolbars.md`, `panels.md`, `menus.md`, `overlay.md`, `prop_dlgs.md`, `other_dlgs.md`, `tool_dlgs.md`, `custom_widgets.md`, `other.md`.
+
+### Row fields
+
+```
+| ID | React | Mapping | Status | PR | ADR | Notes |
+```
+
+- **React**: primary React component(s) implementing the feature (e.g., `MyComponent / useMyHook`)
+- **Mapping**: `direct` (1:1), `split` (one UXP item → multiple React components), `merged` (absorbed into existing component), `dropped` (feature removed), `deferred`
+- **Status**: `todo` → `wip` (implementation started) → `review` (PR open) → `done` (merged to main)
+- **Notes**: briefly list what is done and what remains pending within this item
+
+### _index.md update rules
+
+When any row's status changes, update `_index.md`:
+1. Category row — adjust `wip`, `todo`, `done` counts
+2. Total row — same adjustments
+3. Mapping Type Breakdown — increment the mapping type count when first assigned
+4. In Progress section — add the row when status becomes `wip`; remove it when `done`
+5. Unstarted count — decrement when status moves away from `todo`
+6. Updated date — set to today's date

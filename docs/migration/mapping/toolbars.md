@@ -18,5 +18,5 @@ Status values:
 
 | ID | React | Mapping | Status | PR | ADR | Notes |
 |----|-------|---------|--------|----|-----|-------|
-| [`toolbar.cuemol2-ribbon`](../uxp-inventory/toolbars.md#toolbarcuemol2-ribbon) | | | todo | | | |
+| [`toolbar.cuemol2-ribbon`](../uxp-inventory/toolbars.md#toolbarcuemol2-ribbon) | `ViewportToolPalette` / `useNaviClickHandler` / `NaviContextMenu` | split | wip | | | Navigate/RectSelect mode buttons done; left-click (status+atom label toggle), right-click (atom context menu shell), double-click (residue select toggle/extend) done; context menu actions (select/center/around etc.), measurement tool, rect-select drag pending; file/undo/redo ops tracked in menus.md |
 | [`toolbar.anim-ribbon`](../uxp-inventory/toolbars.md#toolbaranim-ribbon) | | | todo | | | |

@@ -455,4 +455,26 @@ export class AsyncCueMol {
         const result = await this.invokeWorker('redo', { sceneId: scene_id, depth });
         return result?.[0]?.ok ?? false;
     }
+
+    //////////
+    // Navigation tool services
+
+    async naviHitTest(args: { viewId: number; x: number; y: number }): Promise<{ hit: boolean; raw?: any } | null> {
+        const result = await this.invokeWorker('naviHitTest', args);
+        return result?.[0] ?? null;
+    }
+
+    async naviClickAtom(args: { viewId: number; x: number; y: number }): Promise<{ handled: boolean; statusMessage?: string; hitres?: any } | null> {
+        const result = await this.invokeWorker('naviClickAtom', args);
+        return result?.[0] ?? null;
+    }
+
+    async naviResidSel(args: {
+        viewId: number; x: number; y: number;
+        mode: 'toggle' | 'extend';
+        prevObjId?: number; prevAtomId?: number;
+    }): Promise<{ handled: boolean; objId?: number; atomId?: number } | null> {
+        const result = await this.invokeWorker('naviResidSel', args);
+        return result?.[0] ?? null;
+    }
 }
