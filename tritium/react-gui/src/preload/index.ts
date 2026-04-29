@@ -98,6 +98,8 @@ const api: ElectronAPI = {
     return () => ipcRenderer.removeListener(IPC.MENU_REDO, handler)
   },
 
+  invokeMenuRole: (role: string) => ipcRenderer.invoke(IPC.MENU_INVOKE_ROLE, role),
+
   onRotateGesture: (callback) => {
     const handler = (_event: Electron.IpcRendererEvent, rotation: number) => callback(rotation)
     ipcRenderer.on(IPC.ROTATE_GESTURE, handler)

@@ -10,20 +10,18 @@
  *   file:obj-opened   - dispatch SceneOpenObjPath
  *   file:scene-opened - dispatch SceneOpenScenePath
  *   file:error        - log error
- *   menu:new-tab      - dispatch TabNew
- *   menu:close-tab    - dispatch TabClose (with current activeTab)
- *   menu:save         - dispatch FileSave
- *   menu:new-scene    - dispatch SceneNew
- *   menu:open-file    - dispatch UiOpenObjDialog
- *   menu:open-scene   - dispatch UiOpenSceneDialog
+ *   menu:*            - delegated to useMenuDispatch
  */
 
 import { useEffect } from 'react'
 import { useCommands } from '../commands/CommandRegistry'
 import { CmdId } from '../commands/ids'
+import { IPC } from '../../shared/ipcChannels'
+import { useMenuDispatch } from './useMenuDispatch'
 
 export function useElectronIpc(activeTab: string | null): void {
   const { dispatch } = useCommands()
+  const { dispatchMenuChannel } = useMenuDispatch(activeTab)
 
   useEffect(() => {
     const api = window.electronAPI
@@ -41,32 +39,16 @@ export function useElectronIpc(activeTab: string | null): void {
       api.onFileError((d) =>
         console.error(`Failed to open ${d.path}: ${d.error}`),
       ),
-      api.onMenuNewTab(() =>
-        dispatch(CmdId.TabNew).catch(logErr('tab.new:')),
-      ),
-      api.onMenuCloseTab(() => {
-        if (activeTab) dispatch(CmdId.TabClose, activeTab).catch(logErr('tab.close:'))
-      }),
-      api.onMenuSave(() =>
-        dispatch(CmdId.FileSave).catch(logErr('file.save:')),
-      ),
-      api.onMenuNewScene(() =>
-        dispatch(CmdId.SceneNew).catch(logErr('scene.new:')),
-      ),
-      api.onMenuOpenFile(() =>
-        dispatch(CmdId.UiOpenObjDialog).catch(logErr('open obj dialog:')),
-      ),
-      api.onMenuOpenScene(() =>
-        dispatch(CmdId.UiOpenSceneDialog).catch(logErr('open scene dialog:')),
-      ),
-      api.onMenuUndo(() =>
-        dispatch(CmdId.Undo).catch(logErr('undo:')),
-      ),
-      api.onMenuRedo(() =>
-        dispatch(CmdId.Redo).catch(logErr('redo:')),
-      ),
+      api.onMenuNewTab(() => dispatchMenuChannel(IPC.MENU_NEW_TAB)),
+      api.onMenuCloseTab(() => dispatchMenuChannel(IPC.MENU_CLOSE_TAB)),
+      api.onMenuSave(() => dispatchMenuChannel(IPC.MENU_SAVE)),
+      api.onMenuNewScene(() => dispatchMenuChannel(IPC.MENU_NEW_SCENE)),
+      api.onMenuOpenFile(() => dispatchMenuChannel(IPC.MENU_OPEN_FILE)),
+      api.onMenuOpenScene(() => dispatchMenuChannel(IPC.MENU_OPEN_SCENE)),
+      api.onMenuUndo(() => dispatchMenuChannel(IPC.MENU_UNDO)),
+      api.onMenuRedo(() => dispatchMenuChannel(IPC.MENU_REDO)),
     ]
 
     return () => unsubs.forEach((u) => u())
-  }, [dispatch, activeTab])
+  }, [dispatch, dispatchMenuChannel])
 }

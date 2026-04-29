@@ -10,6 +10,7 @@ import { Allotment } from "allotment";
 import "allotment/dist/style.css";
 
 import { ActivityBar, type ActivityView } from "./components/ActivityBar";
+import { MenuBar } from "./components/MenuBar";
 import { Toolbar } from "./components/Toolbar";
 import { SidePanel } from "./components/SidePanel";
 import { ContentArea } from "./components/ContentArea";
@@ -193,6 +194,9 @@ const App: React.FC = () => {
   return (
     <ActiveToolProvider activeTool={activeTool}>
     <div className="app">
+      {window.electronAPI?.platform !== 'darwin' && (
+        <MenuBar activeTab={activeTab} />
+      )}
       <Toolbar
         onOpenFile={handleOpenFile}
         onNewTab={handleNewTab}

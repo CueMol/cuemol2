@@ -42,6 +42,8 @@ function trackWindowState(win: BrowserWindow): void {
   win.on('close', persist)
 }
 
+const isMac = process.platform === 'darwin'
+
 export function createWindow(): void {
   const saved = loadWindowBounds()
   const boundsOnScreen = saved ? isVisibleOnAnyDisplay(saved) : false
@@ -54,8 +56,20 @@ export function createWindow(): void {
     minHeight: 600,
     title: 'CueMol',
     backgroundColor: '#1e2028',
-    titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 12, y: 12 },
+    ...(isMac
+      ? {
+          titleBarStyle: 'hiddenInset' as const,
+          trafficLightPosition: { x: 12, y: 12 },
+        }
+      : {
+          titleBarStyle: 'hidden' as const,
+          titleBarOverlay: {
+            color: '#1e2028',
+            symbolColor: '#cccccc',
+            height: 30,
+          },
+          autoHideMenuBar: true,
+        }),
     webPreferences: {
       nodeIntegration: false,
       nodeIntegrationInWorker: true,
@@ -63,6 +77,10 @@ export function createWindow(): void {
       preload: join(__dirname, '../preload/index.js'),
     },
   })
+
+  if (!isMac) {
+    win.setMenuBarVisibility(false)
+  }
 
   if (saved?.isMaximized) {
     win.maximize()

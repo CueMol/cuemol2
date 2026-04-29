@@ -1,122 +1,78 @@
 /**
  * Application menu setup for the Electron main process.
+ *
+ * Menu structure is defined in shared/menuTemplate.ts so the renderer-side
+ * React MenuBar can read the same data without pulling in Electron APIs.
  */
 
 import { app, Menu } from 'electron'
-import type { BrowserWindow } from 'electron'
+import type { BrowserWindow, MenuItemConstructorOptions } from 'electron'
 import { IPC } from '../shared/ipcChannels'
+import { APP_MENU, toElectronTemplate } from '../shared/menuTemplate'
+import type { AppMenuGroup } from '../shared/menuTemplate'
 
 const isMac = process.platform === 'darwin'
 
+/** Map from ipcChannel string to a click handler that sends the IPC event to the renderer. */
+function buildClickHandlers(
+  mainWindow: BrowserWindow,
+): Record<string, () => void> {
+  return {
+    [IPC.MENU_OPEN_FILE]:  () => mainWindow.webContents.send(IPC.MENU_OPEN_FILE),
+    [IPC.MENU_SAVE]:       () => mainWindow.webContents.send(IPC.MENU_SAVE),
+    [IPC.MENU_NEW_TAB]:    () => mainWindow.webContents.send(IPC.MENU_NEW_TAB),
+    [IPC.MENU_CLOSE_TAB]:  () => mainWindow.webContents.send(IPC.MENU_CLOSE_TAB),
+    [IPC.MENU_UNDO]:       () => mainWindow.webContents.send(IPC.MENU_UNDO),
+    [IPC.MENU_REDO]:       () => mainWindow.webContents.send(IPC.MENU_REDO),
+    [IPC.MENU_NEW_SCENE]:  () => mainWindow.webContents.send(IPC.MENU_NEW_SCENE),
+    [IPC.MENU_OPEN_SCENE]: () => mainWindow.webContents.send(IPC.MENU_OPEN_SCENE),
+  }
+}
+
+
 export function createMenu(mainWindow: BrowserWindow): void {
-  const template: Electron.MenuItemConstructorOptions[] = [
-    ...(isMac
-      ? ([
-          {
-            label: app.name,
-            submenu: [
-              { role: 'about' },
-              { type: 'separator' },
-              { role: 'services' },
-              { type: 'separator' },
-              { role: 'hide' },
-              { role: 'hideOthers' },
-              { role: 'unhide' },
-              { type: 'separator' },
-              { role: 'quit' },
-            ],
-          },
-        ] as Electron.MenuItemConstructorOptions[])
-      : []),
-    {
-      label: 'File',
-      submenu: [
+  const macOnlyMenu: AppMenuGroup[] = isMac
+    ? [
         {
-          label: 'Open File...',
-          accelerator: 'CmdOrCtrl+O',
-          click: () => mainWindow.webContents.send(IPC.MENU_OPEN_FILE),
+          label: app.name,
+          submenu: [
+            { role: 'about' },
+            { type: 'separator' },
+            { role: 'services', darwinOnly: true },
+            { type: 'separator' },
+            { role: 'hide', darwinOnly: true },
+            { role: 'hideOthers', darwinOnly: true },
+            { role: 'unhide', darwinOnly: true },
+            { type: 'separator' },
+            { role: 'quit' },
+          ],
         },
-        {
-          label: 'Save',
-          accelerator: 'CmdOrCtrl+S',
-          click: () => mainWindow.webContents.send(IPC.MENU_SAVE),
-        },
-        { type: 'separator' },
-        {
-          label: 'New Tab',
-          accelerator: 'CmdOrCtrl+T',
-          click: () => mainWindow.webContents.send(IPC.MENU_NEW_TAB),
-        },
-        {
-          label: 'Close Tab',
-          accelerator: 'CmdOrCtrl+W',
-          click: () => mainWindow.webContents.send(IPC.MENU_CLOSE_TAB),
-        },
-        { type: 'separator' },
-        isMac ? { role: 'close' } : { role: 'quit' },
-      ],
-    },
-    {
-      label: 'Edit',
-      submenu: [
-        {
-          label: 'Undo',
-          accelerator: 'CmdOrCtrl+Z',
-          click: () => mainWindow.webContents.send(IPC.MENU_UNDO),
-        },
-        {
-          label: 'Redo',
-          accelerator: isMac ? 'Shift+CmdOrCtrl+Z' : 'CmdOrCtrl+Y',
-          click: () => mainWindow.webContents.send(IPC.MENU_REDO),
-        },
-        { type: 'separator' },
-        { role: 'cut' },
-        { role: 'copy' },
-        { role: 'paste' },
-        { role: 'selectAll' },
-      ],
-    },
-    {
-      label: 'View',
-      submenu: [
-        { role: 'reload' },
-        { role: 'forceReload' },
-        { role: 'toggleDevTools' },
-        { type: 'separator' },
-        { role: 'resetZoom' },
-        { role: 'zoomIn' },
-        { role: 'zoomOut' },
-        { type: 'separator' },
-        { role: 'togglefullscreen' },
-      ],
-    },
-    {
-      label: 'Scene',
-      submenu: [
-        {
-          label: 'New Scene',
-          click: () => mainWindow.webContents.send(IPC.MENU_NEW_SCENE),
-        },
-        {
-          label: 'Open File...',
-          click: () => mainWindow.webContents.send(IPC.MENU_OPEN_FILE),
-        },
-        {
-          label: 'Open Scene...',
-          click: () => mainWindow.webContents.send(IPC.MENU_OPEN_SCENE),
-        },
-      ],
-    },
-    {
-      label: 'Help',
-      submenu: [
-        {
-          label: 'About CueMol',
-          role: 'about',
-        },
-      ],
-    },
-  ]
+      ]
+    : []
+
+  const fullMenu: AppMenuGroup[] = [...macOnlyMenu, ...APP_MENU]
+  const template = toElectronTemplate(fullMenu, isMac) as MenuItemConstructorOptions[]
+
+  const handlers = buildClickHandlers(mainWindow)
+
+  // Attach click handlers: walk through APP_MENU (offset by macOnlyMenu.length on macOS)
+  const offset = macOnlyMenu.length
+  template.slice(offset).forEach((group, gi) => {
+    const srcGroup = APP_MENU[gi]
+    if (!srcGroup) return
+    const submenu = group.submenu as MenuItemConstructorOptions[] | undefined
+    if (!submenu) return
+
+    const srcItems = srcGroup.submenu.filter(
+      (item) => !item.darwinOnly && !(item.othersOnly && isMac),
+    )
+    submenu.forEach((item, ii) => {
+      const src = srcItems[ii]
+      if (src?.ipcChannel && handlers[src.ipcChannel]) {
+        item.click = handlers[src.ipcChannel]
+      }
+    })
+  })
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 }

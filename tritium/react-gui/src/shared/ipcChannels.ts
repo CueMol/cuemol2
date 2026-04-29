@@ -27,6 +27,9 @@ export const IPC = {
   MENU_UNDO:      'menu:undo',
   MENU_REDO:      'menu:redo',
 
+  // invoke channels (renderer → main, with reply) — menu role actions
+  MENU_INVOKE_ROLE: 'menu:invoke-role',
+
   // gesture push channels (main → renderer)
   ROTATE_GESTURE: 'gesture:rotate',
 } as const

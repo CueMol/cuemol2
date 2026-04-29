@@ -3,6 +3,7 @@
 
 @import "./_variables.css";
 @import "./_base.css";
+@import "./_menubar.css";
 @import "./_toolbar.css";
 @import "./_activity-bar.css";
 @import "./_side-panel.css";

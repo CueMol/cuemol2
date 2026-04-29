@@ -100,4 +100,20 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
 
   ipcMain.handle(IPC.UI_LOAD, () => loadUi())
   ipcMain.handle(IPC.UI_SAVE, (_e, state) => saveUi(state))
+
+  ipcMain.handle(IPC.MENU_INVOKE_ROLE, (_event, role: string) => {
+    const wc = mainWindow.webContents
+    switch (role) {
+      case 'reload': wc.reload(); break
+      case 'forceReload': wc.reloadIgnoringCache(); break
+      case 'toggleDevTools': wc.toggleDevTools(); break
+      case 'resetZoom': wc.setZoomLevel(0); break
+      case 'zoomIn': wc.setZoomLevel(wc.getZoomLevel() + 0.5); break
+      case 'zoomOut': wc.setZoomLevel(wc.getZoomLevel() - 0.5); break
+      case 'togglefullscreen': mainWindow.setFullScreen(!mainWindow.isFullScreen()); break
+      case 'about': app.showAboutPanel(); break
+      case 'quit': app.quit(); break
+      case 'close': mainWindow.close(); break
+    }
+  })
 }

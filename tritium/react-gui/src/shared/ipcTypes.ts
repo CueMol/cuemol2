@@ -107,6 +107,9 @@ export interface ElectronAPI {
   onMenuUndo: (callback: () => void) => () => void
   onMenuRedo: (callback: () => void) => () => void
 
+  // Invoke a native menu role action from the renderer (non-macOS custom menu)
+  invokeMenuRole: (role: string) => Promise<void>
+
   // macOS-specific gesture events (sourced from Electron BrowserWindow)
   onRotateGesture: (callback: (rotation: number) => void) => () => void
 
