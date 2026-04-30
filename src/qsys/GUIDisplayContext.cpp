@@ -88,3 +88,7 @@ bool GUIDisplayContext::isCompatibleDL(DisplayContext *pdl) const
 }
 
 }  // namespace qsys
+
+#if defined(__linux__) 
+extern "C" void qsys_GUIDisplayContext_anchor() {}
+#endif

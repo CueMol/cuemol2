@@ -68,10 +68,6 @@ SET(NODEJS_SRCS
   ${CMAKE_JS_SRC}
   )
 
-# Electron/OpenGL GUI source files — only available on macOS and Windows.
-# On Linux the sysdep display-context headers are not installed, so these
-# files cannot be compiled in a headless test build.
-if(APPLE OR WIN32)
   list(APPEND NODEJS_SRCS
     cxx_src/gui_services.cpp
     cxx_src/ElecView.cpp
@@ -81,7 +77,6 @@ if(APPLE OR WIN32)
     cxx_src/EcTexRep.cpp
     cxx_src/EcTimerImpl.cpp
   )
-endif()
 
 add_library(cuemol_internal SHARED ${NODEJS_SRCS})
 target_include_directories(

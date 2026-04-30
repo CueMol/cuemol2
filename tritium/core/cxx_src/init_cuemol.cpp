@@ -11,15 +11,9 @@
 #include <qlib/LExceptions.hpp>
 #include <qlib/LScriptable.hpp>
 #include <qlib/qlib.hpp>
-// #include <qlib/EventManager.hpp>
-// #include <gfx/gfx.hpp>
-// #include <qsys/qsys.hpp>
 
-#if defined(__APPLE__) || defined(_WIN32)
 #include "EcTimerImpl.hpp"
 #include "ElecView.hpp"
-#endif
-// #include "node_jsbr.hpp"
 #include "wrapper.hpp"
 #include "services.hpp"
 
@@ -89,7 +83,6 @@ Napi::Value initCueMol(const Napi::CallbackInfo &info)
     // setup text renderer
     g_pTR = cuemol2::initTextRender();
 
-#if defined(__APPLE__) || defined(_WIN32)
     // setup timer (Electron libuv-based; not available in headless Linux builds)
     result = cuemol2::init_timer(new EcTimerImpl);
     if (result < 0) {
@@ -100,7 +93,6 @@ Napi::Value initCueMol(const Napi::CallbackInfo &info)
     }
 
     node_jsbr::registerViewFactory();
-#endif
 
     g_bInitOK = true;
     LOG_DPRINTLN("CueMol2 nodejs module : INITIALIZED");

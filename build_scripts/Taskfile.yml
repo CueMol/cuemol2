@@ -131,6 +131,12 @@ tasks:
       - task: build_libcuemol2
       - bash build_nodejs_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
 
+  build_nodejs:linux:
+    platforms: [linux]
+    cmds:
+      - task: build_libcuemol2
+      - bash build_nodejs_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
+
   build_nodejs:windows:
     platforms: [windows]
     cmds:

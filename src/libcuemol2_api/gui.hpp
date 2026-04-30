@@ -7,11 +7,9 @@ namespace qsys { class MouseEventHandler; }
 
 namespace cuemol2 {
 
-#ifdef BUILD_OPENGL_SYSDEP
   LIBCUEMOL_API gfx::TextRenderImpl *initTextRender();
   LIBCUEMOL_API void finiTextRender(gfx::TextRenderImpl *pTR);
   LIBCUEMOL_API qsys::MouseEventHandler *createMouseEventHander();
-#endif
 
   void registerViewFactory();
 }

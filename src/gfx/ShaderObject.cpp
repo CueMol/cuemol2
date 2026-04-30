@@ -72,3 +72,7 @@ void ShaderObject::setupMat(DisplayContext *pdc)
 }
 
 }  // namespace gfx
+
+#if defined(__linux__) 
+extern "C" void gfx_ShaderObject_anchor() {}
+#endif

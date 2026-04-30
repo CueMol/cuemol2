@@ -6,9 +6,10 @@
 
 #ifdef BUILD_OPENGL_SYSDEP
 #include <sysdep/sysdep.hpp>
+#endif
+
 #include <qsys/qsys.hpp>
 #include <qsys/MouseEventHandler.hpp>
-#endif
 
 #if (GUI_ARCH == MB_GUI_ARCH_WIN)
 // Win32
@@ -93,7 +94,7 @@ namespace cuemol2 {
 #endif
 
 namespace cuemol2 {
-#ifdef BUILD_OPENGL_SYSDEP
+
   gfx::TextRenderImpl *initTextRender()
   {
     try {
@@ -117,11 +118,17 @@ namespace cuemol2 {
   {
     qsys::destroyTextRender(pTR);
   }
-#endif
 
-#ifdef BUILD_OPENGL_SYSDEP
   qsys::MouseEventHandler *createMouseEventHander() {
     return new qsys::MouseEventHandler();
   }
-#endif
 }
+
+#if defined(__linux__)
+extern "C" void qsys_GUIDisplayContext_anchor();
+extern "C" void gfx_ShaderObject_anchor();
+namespace {
+    [[gnu::used]] void (* volatile keep_qsys_GUIDisplayContext)() = &qsys_GUIDisplayContext_anchor;
+    [[gnu::used]] void (* volatile keep_gfx_ShaderObject)() = &gfx_ShaderObject_anchor;
+}
+#endif

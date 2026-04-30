@@ -7,7 +7,7 @@
 
 #include <napi.h>
 
-#include <sysdep/sysdep.hpp>
+// #include <sysdep/sysdep.hpp>
 #include <gfx/DrawElem.hpp>
 
 namespace gfx {
