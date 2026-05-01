@@ -144,12 +144,26 @@ elseif(APPLE)
     COMMAND bash -c "cp '${LIBCUEMOL2_LIBDIR}'/*.dylib '${CMAKE_BINARY_DIR}/lib/'"
     COMMENT "Copying dylibs from ${LIBCUEMOL2_LIBDIR} to build/lib/"
   )
+  file(GLOB LIBPYTHON_DYLIBS "${LIBCUEMOL2_LIBDIR}/python/lib/libpython*.dylib")
+  if(LIBPYTHON_DYLIBS)
+    add_custom_command(TARGET copy_dylibs POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LIBPYTHON_DYLIBS} "${CMAKE_BINARY_DIR}/lib"
+      COMMENT "Copying libpython dylibs to build/lib/"
+    )
+  endif()
 else()
   add_custom_target(copy_dylibs ALL
     COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/lib"
     COMMAND bash -c "cp -P '${LIBCUEMOL2_LIBDIR}'/*.so* '${CMAKE_BINARY_DIR}/lib/'"
     COMMENT "Copying shared libs from ${LIBCUEMOL2_LIBDIR} to build/lib/"
   )
+  file(GLOB LIBPYTHON_SOS "${LIBCUEMOL2_LIBDIR}/python/lib/libpython*.so*")
+  if(LIBPYTHON_SOS)
+    add_custom_command(TARGET copy_dylibs POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LIBPYTHON_SOS} "${CMAKE_BINARY_DIR}/lib"
+      COMMENT "Copying libpython shared libs to build/lib/"
+    )
+  endif()
 endif()
 
 install(TARGETS cuemol_internal
