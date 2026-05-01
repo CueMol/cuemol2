@@ -25,6 +25,7 @@
   --text-primary: #c9cdd6;
   --text-secondary: #8b949e;
   --text-muted: #565e6c;
+  --text-strong: #f6f7f9;
 
   /* Accent */
   --accent: #5fafd7;
@@ -121,6 +122,7 @@
   --text-primary: #1e1e1e;
   --text-secondary: #5a5d65;
   --text-muted: #9a9da5;
+  --text-strong: #1c2127;
 
   /* Accent — slightly deeper for contrast on light backgrounds */
   --accent: #2979b5;

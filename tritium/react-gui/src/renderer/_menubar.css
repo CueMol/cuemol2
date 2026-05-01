@@ -4,7 +4,7 @@
   -webkit-app-region: drag;
   display: flex;
   align-items: stretch;
-  height: 30px;
+  height: 36px;
   background: var(--bg-base);
   border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
@@ -21,7 +21,7 @@
   align-items: center;
   padding: 0 10px;
   font-size: var(--fs-lg);
-  color: var(--text-secondary);
+  color: var(--text-strong);
   cursor: default;
   white-space: nowrap;
 }
@@ -37,7 +37,7 @@
 .menubar__dropdown {
   -webkit-app-region: no-drag;
   position: fixed;
-  top: 30px;
+  top: 36px;
   min-width: 200px;
   background: var(--bg-elevated);
   border: 1px solid var(--border);
