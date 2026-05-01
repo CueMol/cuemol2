@@ -1,0 +1,81 @@
+/* Menu bar (Windows/Linux custom title bar menu) */
+
+.menubar {
+  -webkit-app-region: drag;
+  display: flex;
+  align-items: stretch;
+  height: 30px;
+  background: var(--bg-base);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+  /* Reserve space for the native window controls on the right side.
+     titleBarOverlay on Windows 11 uses ~138px; use a safe default. */
+  padding-right: 140px;
+  user-select: none;
+}
+
+.menubar__item {
+  -webkit-app-region: no-drag;
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: default;
+  white-space: nowrap;
+}
+
+.menubar__item:hover,
+.menubar__item--open {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* Dropdown panel */
+
+.menubar__dropdown {
+  -webkit-app-region: no-drag;
+  position: fixed;
+  top: 30px;
+  min-width: 200px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-top: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 9999;
+  padding: 4px 0;
+}
+
+.menubar__dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 24px 4px 16px;
+  font-size: 12px;
+  color: var(--text-primary);
+  cursor: default;
+  gap: 32px;
+  white-space: nowrap;
+}
+
+.menubar__dropdown-item:hover {
+  background: var(--bg-active);
+}
+
+.menubar__dropdown-item--disabled {
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.menubar__dropdown-separator {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 4px 0;
+}
+
+.menubar__dropdown-accelerator {
+  color: var(--text-muted);
+  font-size: 11px;
+  margin-left: auto;
+}

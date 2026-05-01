@@ -10,8 +10,12 @@ namespace qsys {
 /// Execute the command
 void NewRendererCommand::run()
 {
-
     m_pResRend = m_pTargObj->createRenderer(m_rendTypeName);
+    if (m_pResRend.isnull()) {
+        LOG_DPRINTLN("Failed to create renderer of type '%s'", m_rendTypeName.c_str());
+        MB_THROW(qlib::RuntimeException, "Failed to create renderer");
+    }
+
     m_pResRend->setPropStr("name", m_rendName);
 
     if (!m_styleName.isEmpty()) {
@@ -28,6 +32,8 @@ void NewRendererCommand::run()
             elem.second->setViewCenter(pos);
         }
     }
+
+    MB_DPRINTLN("Created renderer '%s' of type '%s'", m_rendName.c_str(), m_rendTypeName.c_str());
 }
 
 void NewRendererCommand::runGUI(void *pwnd_info) {}

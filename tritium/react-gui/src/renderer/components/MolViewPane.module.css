@@ -1,0 +1,9 @@
+.molView {
+    background: black;
+    padding: 0px;
+    margin: 0px;
+    border: 0px;
+    height: 0px;
+    width: 100%;
+    flex: 1 1 0px;
+}

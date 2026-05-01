@@ -1,0 +1,106 @@
+/* ─── Global Reset ─── */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+    sans-serif;
+  font-size: 13px;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+#root > .bp5-dark,
+#root > .bp5-light {
+  width: 100%;
+  height: 100%;
+}
+
+/* ─── Scrollbars ─── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* ─── App Layout ─── */
+.app {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.main-layout {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Activity Bar + sidebar + content sit side-by-side */
+.main-layout-inner {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Everything to the right of the activity bar */
+.main-content-area {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* ─── Blueprint.js Theme Overrides ─── */
+.bp5-dark .bp5-navbar,
+.bp5-navbar {
+  background: var(--toolbar-bg) !important;
+  box-shadow: none !important;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ─── Allotment Overrides (general) ─── */
+.split-view-view {
+  overflow: hidden !important;
+}
+
+/* Use accent color for the built-in thin sash hover highlight (::before pseudo-element). */
+.sash-container {
+  --focus-border: var(--accent);
+}
+
+.sash-container .sash {
+  background: transparent;
+}
+
+/* BlueprintJS overlays must stack above Allotment sashes (z-index: 35). */
+.bp5-overlay {
+  z-index: 40 !important;
+}

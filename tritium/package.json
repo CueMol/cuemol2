@@ -1,0 +1,16 @@
+{
+  "name": "cuemol3-poc2",
+  "version": "1.0.0",
+  "description": "CueMol3 Poc2",
+  "private": true,
+
+  "scripts": {
+    "build": "pnpm -r run build"
+  },
+
+  "packageManager": "pnpm@10.30.3",
+
+  "pnpm": {
+    "approvedBuiltDependencies": ["electron"]
+  }
+}

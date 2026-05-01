@@ -1,0 +1,6 @@
+packages:
+  - core
+  - react-gui
+
+ignoredBuiltDependencies:
+  - esbuild

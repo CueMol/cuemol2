@@ -26,8 +26,9 @@ SET BOOST_DIR=%BASEDIR%\boost_%BOOST_VER%
 REM Install location
 SET INSTPATH=%BASEDIR%\cuemol2
 
-pushd %TOP_DIR%\nodejs
-call npm install
+pushd %TOP_DIR%\tritium\core
+REM Use --ignore-scripts to skip the cmake-js lifecycle hook (run it manually below with explicit flags)
+call npm install --ignore-scripts
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 call npx cmake-js compile --CDLIBCUEMOL2_ROOT=%INSTPATH% --CDBoost_ROOT=%BOOST_DIR%

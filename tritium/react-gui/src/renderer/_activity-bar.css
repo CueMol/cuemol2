@@ -1,0 +1,67 @@
+/* ─── Activity Bar ─── */
+.activity-bar {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 44px;
+  min-width: 44px;
+  background: var(--bg-input);
+  border-right: 1px solid var(--border);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.activity-bar-top,
+.activity-bar-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.activity-bar-top {
+  padding-top: 4px;
+}
+
+.activity-bar-bottom {
+  padding-bottom: 8px;
+}
+
+.activity-bar-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  color: var(--text-muted);
+  position: relative;
+  transition: color 0.15s;
+}
+
+.activity-bar-item:hover {
+  color: var(--text-primary);
+}
+
+.activity-bar-item.active {
+  color: var(--text-primary);
+}
+
+/* Suppress focus outline on Tooltip wrappers and items in the activity bar */
+.activity-bar .bp5-popover-target:focus,
+.activity-bar .bp5-popover-target:focus-visible,
+.activity-bar-item:focus,
+.activity-bar-item:focus-visible {
+  outline: none;
+}
+
+/* Left accent bar on active item */
+.activity-bar-item.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 25%;
+  bottom: 25%;
+  width: 2px;
+  background: var(--accent);
+  border-radius: 0 2px 2px 0;
+}

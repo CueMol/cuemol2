@@ -730,22 +730,32 @@ bool View::mouseDragMove(InDevEvent &ev)
   return false;
 }
 
+bool View::mouseGesture(InDevEvent &ev)
+{
+  const int axis = ev.getGestureAxis();
+  if (axis < 0) return false;
+  const int id = m_pInConf->findEvent(axis, ev);
+  if (id < 0) return false;
+  const double delta = (double) ev.getDeltaY();
+  handleMouseDragImpl(id, delta);
+  forceRedraw();
+  return true;
+}
+
 bool View::mouseWheel(InDevEvent &ev)
 {
-  int xid = m_pInConf->findEvent(ViewInputConfig::MOUSE_WHEEL1, ev);
+    MB_DPRINTLN("zoom conf: <%s>", m_pInConf->getConfZoom().c_str());
 
-  /*
-  const double del = double(ev.getDeltaX())/500.0;
-  double cv = getZoom();
-  cv += cv*del;
-  cv = qlib::max(cv, 0.1);
-  cv = qlib::min(cv, 1000.0);
-  //  MB_DPRINTLN("zoom: %f", cv);
-   */
-  bool fupdate;
-  fupdate = handleMouseDragImpl(xid, ev.getDeltaX()/2.5);
+  const int xid = m_pInConf->findEvent(ViewInputConfig::MOUSE_WHEEL1, ev);
+  const int yid = m_pInConf->findEvent(ViewInputConfig::MOUSE_WHEEL2, ev);
 
-  //setZoom(cv);
+  MB_DPRINTLN("View::mouseWheel() xid=%d, yid=%d", xid, yid);
+  bool fupdate = false;
+  if (xid >= 0)
+    fupdate |= handleMouseDragImpl(xid, double(ev.getDeltaX()) / 2.5);
+  if (yid >= 0)
+    fupdate |= handleMouseDragImpl(yid, double(ev.getDeltaY()) / 2.5);
+
   if (fupdate)
     forceRedraw();
 
@@ -943,6 +953,11 @@ void View::fireInDevEvent(InDevEvent &ev)
   case InDevEvent::INDEV_WHEEL:
     m_pMscr->cancel();
     category = "mouseWheel";
+    break;
+
+  case InDevEvent::INDEV_GESTURE:
+    m_pMscr->cancel();
+    category = "mouseGesture";
     break;
 
   case InDevEvent::INDEV_MOUSE_DOWN:

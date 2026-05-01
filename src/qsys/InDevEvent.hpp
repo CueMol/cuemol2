@@ -24,6 +24,7 @@ namespace qsys {
     View *m_pSource;
     int m_nType;
     int m_nModifier;
+    int m_nGestureAxis;
 
   public:
     /// Event types
@@ -41,6 +42,7 @@ namespace qsys {
       INDEV_WHEEL,
       INDEV_MOUSE_DOWN,
       INDEV_MOUSE_ENTER,
+      INDEV_GESTURE,
     };
 
     /// Event modifiers
@@ -66,7 +68,7 @@ namespace qsys {
   public:
     InDevEvent()
       : m_pSource(NULL), m_nType(INDEV_NONE),
-	m_nModifier(0), m_fConsumed(false),
+	m_nModifier(0), m_nGestureAxis(-1), m_fConsumed(false),
 	m_x(0), m_y(0), m_deltax(0), m_deltay(0),
 	m_movex(0), m_movey(0),
         m_velox(0.0), m_veloy(0.0)
@@ -131,6 +133,9 @@ namespace qsys {
     double getVeloY() const { return m_veloy; }
     void setVeloY(double y) { m_veloy = y; }
 
+    int getGestureAxis() const { return m_nGestureAxis; }
+    void setGestureAxis(int n) { m_nGestureAxis = n; }
+
     const InDevEvent &operator=(const InDevEvent &arg)
     {
       if(&arg!=this){
@@ -166,6 +171,8 @@ namespace qsys {
 
     virtual bool mouseDown(InDevEvent &) { return false; }
     virtual bool mouseEnter(InDevEvent &) { return false; }
+
+    virtual bool mouseGesture(InDevEvent &) { return false; }
   };
 
   /////////////////////////////////////////////
@@ -229,6 +236,10 @@ namespace qsys {
 
       case InDevEvent::INDEV_MOUSE_ENTER:
         res = p->mouseEnter(ev);
+        break;
+
+      case InDevEvent::INDEV_GESTURE:
+        res = p->mouseGesture(ev);
         break;
 
       default:

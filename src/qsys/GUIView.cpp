@@ -103,13 +103,13 @@ void GUIView::setUpProjMat(int cx, int cy)
     double vw = zoom / 2.0f;
     double fasp = (double)cx / (double)cy;
 
-    MB_DPRINTLN("OcView.setUpProjMat> CX=%d, CY=%d, Vw=%f, Fasp=%f", cx, cy, vw, fasp);
-    MB_DPRINTLN("OcView.setUpProjMat> Near=%f, Far=%f", slabnear, slabfar);
+    // MB_DPRINTLN("OcView.setUpProjMat> CX=%d, CY=%d, Vw=%f, Fasp=%f", cx, cy, vw, fasp);
+    // MB_DPRINTLN("OcView.setUpProjMat> Near=%f, Far=%f", slabnear, slabfar);
 
     int bcx = convToBackingX(cx);
     int bcy = convToBackingY(cy);
 
-    MB_DPRINTLN("OcView.setUpProjMat> BCX=%d, BCY=%d", bcx, bcy);
+    // MB_DPRINTLN("OcView.setUpProjMat> BCX=%d, BCY=%d", bcx, bcy);
 
     if (getStereoMode() == Camera::CSM_PARA || getStereoMode() == Camera::CSM_CROSS) {
         fasp /= 2.0f;
@@ -131,7 +131,7 @@ void GUIView::setUpProjMat(int cx, int cy)
 
 void GUIView::drawScene()
 {
-    MB_DPRINTLN("GUIView::drawScene called");
+    // MB_DPRINTLN("GUIView::drawScene called");
 
     // if (!m_bInitOK) return;
     if (!safeSetCurrent()) return;
@@ -509,8 +509,8 @@ void GUIView::dispatchMouseEvent(int nType, InDevEvent &ev)
 {
     switch (nType) {
         case DME_MOUSE_DOWN:
-            MB_DPRINTLN("onMouseDown (%d, %d) (%d, %d) %x", ev.getX(), ev.getY(),
-                        ev.getRootX(), ev.getRootY(), ev.getModifier());
+            // MB_DPRINTLN("onMouseDown (%d, %d) (%d, %d) %x", ev.getX(), ev.getY(),
+            //             ev.getRootX(), ev.getRootY(), ev.getModifier());
             m_meh.buttonDown(ev);
             break;
         case DME_MOUSE_MOVE:
@@ -556,6 +556,29 @@ void GUIView::onMouseMove(double clientX, double clientY, double screenX,
     dispatchMouseEvent(DME_MOUSE_MOVE, ev);
 }
 
+void GUIView::onWheel(double clientX, double clientY, double screenX, double screenY,
+                      int modif, double deltaX, double deltaY)
+{
+    InDevEvent ev;
+    setupInDevEvent(clientX, clientY, screenX, screenY, modif, ev);
+    ev.setType(InDevEvent::INDEV_WHEEL);
+    ev.setDeltaX(int(std::lround(deltaX)));
+    ev.setDeltaY(int(std::lround(deltaY)));
+    dispatchMouseEvent(DME_WHEEL, ev);
+}
+
+void GUIView::onGesture(double clientX, double clientY, double screenX,
+                        double screenY, int modif, int axisID, double delta)
+{
+    InDevEvent ev;
+    setupInDevEvent(clientX, clientY, screenX, screenY, modif, ev);
+    ev.setType(InDevEvent::INDEV_GESTURE);
+    ev.setGestureAxis(axisID);
+    ev.setDeltaX(0);
+    ev.setDeltaY(int(std::lround(delta)));
+    fireInDevEvent(ev);
+}
+
 void GUIView::setupInDevEvent(double clientX, double clientY, double screenX,
                               double screenY, int amodif, InDevEvent &ev)
 {
@@ -567,12 +590,14 @@ void GUIView::setupInDevEvent(double clientX, double clientY, double screenX,
 
     int modif = 0;
 
-    if (amodif & 32) modif |= InDevEvent::INDEV_CTRL;
-    if (amodif & 64) modif |= InDevEvent::INDEV_SHIFT;
-    if (amodif & 1) modif |= InDevEvent::INDEV_LBTN;
-    if (amodif & 2) modif |= InDevEvent::INDEV_RBTN;
-    if (amodif & 4) modif |= InDevEvent::INDEV_MBTN;
+    if (amodif & 1)   modif |= InDevEvent::INDEV_LBTN;
+    if (amodif & 2)   modif |= InDevEvent::INDEV_RBTN;
+    if (amodif & 4)   modif |= InDevEvent::INDEV_MBTN;
+    if (amodif & 32)  modif |= InDevEvent::INDEV_CTRL;
+    if (amodif & 64)  modif |= InDevEvent::INDEV_SHIFT;
+    if (amodif & 128) modif |= InDevEvent::INDEV_ALT;
 
+    // MB_DPRINTLN("setupInDevEvent: amodif=%d -> modif=%d", amodif, modif);
     ev.setModifier(modif);
 }
 

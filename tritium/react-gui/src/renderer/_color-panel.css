@@ -1,0 +1,136 @@
+/* ─── Color Panel ─── */
+.color-panel-body {
+  gap: 6px;
+  padding: 8px 10px;
+}
+
+.color-mol-row {
+  flex-shrink: 0;
+}
+
+.color-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+/* Table wrapper — scrollable when there are many rows */
+.color-table-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--bg-input);
+}
+
+.color-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.color-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.color-table th {
+  padding: 3px 8px;
+  text-align: left;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  background: var(--bg-panel-header);
+  border-bottom: 1px solid var(--border);
+}
+
+.color-th-selection {
+  width: 45%;
+}
+
+.color-th-color {
+  width: 55%;
+}
+
+.color-row {
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.color-row:hover {
+  outline: 1px solid var(--border);
+  outline-offset: -1px;
+}
+
+.color-row.selected {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.color-cell-selection {
+  padding: 2px 4px;
+  color: var(--text-primary);
+  border-right: 1px solid var(--border-subtle);
+}
+
+.color-cell-color {
+  padding: 2px 4px;
+  color: #1a1a2e;
+  font-weight: 600;
+}
+
+/* Inline input for editing cell values directly */
+.color-inline-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: inherit;
+  font-family: inherit;
+  font-size: 12px;
+  padding: 2px 4px;
+  cursor: text;
+}
+
+.color-inline-input:focus {
+  background: var(--overlay-focus);
+  border-radius: 2px;
+}
+
+.color-value-input {
+  font-weight: 600;
+}
+
+/* Bottom action buttons */
+.color-actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding-top: 2px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.color-action-btn.bp5-button {
+  min-height: 24px !important;
+  min-width: 26px !important;
+  padding: 0 4px !important;
+  border-radius: 3px;
+}
+
+.color-action-btn.bp5-button .bp5-icon {
+  color: var(--text-muted);
+}
+
+.color-action-btn.bp5-button:hover {
+  background: var(--overlay-hover) !important;
+}
+
+.color-action-btn.bp5-button:hover .bp5-icon {
+  color: var(--text-secondary);
+}

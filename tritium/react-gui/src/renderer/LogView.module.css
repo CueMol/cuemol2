@@ -1,0 +1,18 @@
+.bottomContainer {
+    height: 100%;
+}
+
+.logContainer {
+    background: var(--bg-input);
+    color: var(--text-primary);
+
+    padding: 4px 8px;
+    margin: 0px;
+    border: 1px solid var(--border);
+    height: 100%;
+    width: 100%;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    font-size: 10pt;
+    box-sizing: border-box;
+}

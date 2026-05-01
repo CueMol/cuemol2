@@ -1,0 +1,18 @@
+.tabMolView {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.tabs {
+    flex: 0 0 auto;
+}
+
+.tabList {
+    border-bottom: 1px solid #aaa;
+    margin: 0 0 0px;
+    padding: 0;
+}
+.panel {
+    flex-grow: 1;
+}

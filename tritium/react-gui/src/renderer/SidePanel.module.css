@@ -1,0 +1,5 @@
+.sidePanel {
+    flex-grow: 1;
+    background: gray;
+    border: 1px solid red;
+}

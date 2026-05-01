@@ -121,11 +121,18 @@ tasks:
 #####
 
   build_nodejs:
+    desc: "Build and test tritium/core native addon"
     deps:
       - task: build_nodejs:{{OS}}
 
   build_nodejs:darwin:
     platforms: [darwin]
+    cmds:
+      - task: build_libcuemol2
+      - bash build_nodejs_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
+
+  build_nodejs:linux:
+    platforms: [linux]
     cmds:
       - task: build_libcuemol2
       - bash build_nodejs_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
@@ -153,6 +160,37 @@ tasks:
     cmds:
       # - task: build_cli
       - env LD_LIBRARY_PATH="{{.WORKDIR}}/cuemol2/lib" "{{.WORKDIR}}/cuemol2/bin/cuetty" -i
+
+#####
+
+  build_tritium:
+    desc: "Build tritium (Electron+React GUI app)"
+    deps:
+      - task: build_tritium:{{OS}}
+
+  build_tritium:darwin:
+    platforms: [darwin]
+    cmds:
+      - task: build_libcuemol2
+      - bash build_tritium_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
+
+  build_tritium:linux:
+    platforms: [linux]
+    cmds:
+      - task: build_libcuemol2
+      - bash build_tritium_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
+
+  build_tritium:windows:
+    platforms: [windows]
+    cmds:
+      - task: build_libcuemol2
+      - '"C:/Program Files/Git/bin/bash.exe" build_tritium_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"'
+
+  run_tritium:
+    desc: "Run the built tritium Electron app"
+    dir: "{{.ROOT_DIR}}/../tritium/react-gui"
+    cmds:
+      - pnpm run start
 
 #####
 

@@ -33,11 +33,13 @@ runtime_class ViewInputConfig
   default conf_roty = "LBUTTON|MOUSE_Y";
   default conf_rotz = "LBUTTON|RBUTTON|MOUSE_Y";
 
-  default conf_trax = "RBUTTON|MOUSE_X";
-  default conf_tray = "RBUTTON|MOUSE_Y";
+  default conf_trax = "RBUTTON|MOUSE_X,WHEEL1";
+  default conf_tray = "RBUTTON|MOUSE_Y,WHEEL2";
   default conf_traz = "LBUTTON|RBUTTON|MOUSE_X";
 
-  default conf_zoom = "LBUTTON|SHIFT|MOUSE_Y,WHEEL1";
+  // WHEEL1 (no modifier) pans X; WHEEL2 (no modifier) pans Y.
+  // CTRL|WHEEL2 zooms (Chromium maps trackpad pinch to ctrl+wheel deltaY).
+  default conf_zoom = "LBUTTON|SHIFT|MOUSE_Y,CTRL|WHEEL2";
   default conf_slab = "LBUTTON|SHIFT|MOUSE_X";
   default conf_dist = "";
 
