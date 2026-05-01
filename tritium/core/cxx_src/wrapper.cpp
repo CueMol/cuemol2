@@ -62,7 +62,7 @@ Napi::Value Wrapper::toObjID(const Napi::CallbackInfo &info)
         return env.Null();
     }
 
-    auto msg = qlib::LString::format("%p", this);
+    auto msg = qlib::LString::format("0x%llx", reinterpret_cast<unsigned long long>(this));
     return Napi::String::New(env, msg.c_str());
 }
 
