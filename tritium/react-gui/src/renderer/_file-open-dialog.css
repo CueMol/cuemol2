@@ -27,8 +27,8 @@
 }
 
 .fod-file-name {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-medium);
   color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -37,7 +37,7 @@
 }
 
 .fod-file-format {
-  font-size: 11px;
+  font-size: var(--fs-base);
   color: var(--accent);
   background: rgba(95, 175, 215, 0.12);
   border: 1px solid rgba(95, 175, 215, 0.25);
@@ -57,10 +57,10 @@
 }
 
 .fod-section-title {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--fs-base);
+  font-weight: var(--fw-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.05em; /* relative em unit; intentionally not a variable */
   color: var(--text-secondary);
   margin-bottom: 8px;
 }
@@ -84,7 +84,7 @@
 }
 
 .fod-form-group .bp5-label {
-  font-size: 12px;
+  font-size: var(--fs-lg);
   color: var(--text-secondary);
   margin-bottom: 3px;
 }
@@ -124,12 +124,12 @@
 }
 
 .fod-collapsible-label {
-  font-size: 12px;
+  font-size: var(--fs-lg);
   flex: 1;
 }
 
 .fod-collapsible-hint {
-  font-size: 11px;
+  font-size: var(--fs-base);
   color: var(--text-muted);
 }
 

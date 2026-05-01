@@ -12,10 +12,10 @@
   align-items: center;
   padding: 0 12px;
   height: 30px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--fs-base);
+  font-weight: var(--fw-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: var(--ls-wide);
   color: var(--text-secondary);
   background: var(--toolbar-bg);
   border-bottom: 1px solid var(--border);
@@ -45,10 +45,10 @@
   padding: 0 4px 0 10px;
   height: 24px;
   min-height: 24px;
-  font-weight: 600;
-  font-size: 11px;
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-base);
   text-transform: uppercase;
-  letter-spacing: 0.4px;
+  letter-spacing: var(--ls-normal);
   color: var(--text-secondary);
   background: var(--bg-panel-header);
   border-bottom: 1px solid var(--border-subtle);
@@ -82,8 +82,8 @@
 
 .scene-name-title {
   color: var(--text-primary);
-  font-weight: 600;
-  letter-spacing: 0.4px;
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-normal);
 }
 
 .sp-section-header-actions {
@@ -157,7 +157,7 @@
   padding-left: 4px;
   padding-right: 6px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--fs-lg);
   color: var(--text-primary);
   transition: background 0.1s;
 }
@@ -201,7 +201,7 @@
 
 .scene-tree .bp5-tree-node-label,
 .mol-tree .bp5-tree-node-label {
-  font-size: 12px;
+  font-size: var(--fs-lg);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -243,10 +243,10 @@
 }
 
 .selection-label {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--fs-base);
+  font-weight: var(--fw-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.6px;
+  letter-spacing: var(--ls-wider);
   color: var(--text-secondary);
 }
 
@@ -254,7 +254,7 @@
   background: var(--bg-input) !important;
   border: 1px solid var(--border) !important;
   color: var(--text-primary) !important;
-  font-size: 12px;
+  font-size: var(--fs-lg);
   height: 28px;
 }
 
@@ -277,8 +277,8 @@
   background: var(--bg-input) !important;
   border: 1px solid var(--border) !important;
   color: var(--text-primary) !important;
-  font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
-  font-size: 12px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-lg);
   resize: none;
   caret-color: var(--accent);
 }

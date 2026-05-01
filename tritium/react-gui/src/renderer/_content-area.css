@@ -33,7 +33,7 @@
   min-width: 100px;
   max-width: 200px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--fs-lg);
   color: var(--text-secondary);
   background: var(--bg-tab-inactive);
   border-right: 1px solid var(--border-subtle);
@@ -107,7 +107,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-weight: 500;
+  font-weight: var(--fw-medium);
 }
 
 .tab-close {
@@ -146,10 +146,9 @@
 }
 
 .code-view {
-  font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas",
-    monospace;
-  font-size: 12px;
-  line-height: 1.5;
+  font-family: var(--font-mono);
+  font-size: var(--fs-lg);
+  line-height: var(--lh-relaxed);
   padding: 8px 0;
   margin: 0;
   background: transparent;
@@ -192,7 +191,7 @@
 }
 
 .placeholder-icon {
-  font-size: 48px;
+  font-size: var(--fs-display);
   color: var(--accent);
   opacity: var(--accent-placeholder-opacity);
   filter: drop-shadow(0 0 8px var(--accent-glow));
@@ -200,14 +199,14 @@
 }
 
 .placeholder-title {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: var(--fs-hero);
+  font-weight: var(--fw-semibold);
   color: var(--text-secondary);
-  letter-spacing: 1px;
+  letter-spacing: var(--ls-spaced);
 }
 
 .placeholder-subtitle {
-  font-size: 12px;
+  font-size: var(--fs-lg);
   color: var(--text-muted);
   margin-bottom: 20px;
 }
@@ -222,13 +221,13 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 12px;
+  font-size: var(--fs-lg);
   color: var(--text-muted);
 }
 
 .shortcut-key {
-  font-family: "JetBrains Mono", monospace;
-  font-size: 11px !important;
+  font-family: var(--font-mono);
+  font-size: var(--fs-base) !important;
   min-width: 70px;
   text-align: center;
 }

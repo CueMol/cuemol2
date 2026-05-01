@@ -58,8 +58,8 @@
   margin-left: 4px;
   border: 1px solid var(--border);
   border-radius: 2px;
-  font-family: "JetBrains Mono", "Fira Code", monospace;
-  font-size: 10px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
   color: var(--text-secondary);
   background: var(--bg-input);
 }

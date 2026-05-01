@@ -66,6 +66,38 @@
   /* Log level colours */
   --log-warn: #e5c07b;
   --log-error: var(--accent-red);
+
+  /* Typography */
+  --font-ui:   "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;
+
+  --fs-xs:      9px;
+  --fs-sm:      10px;
+  --fs-sm2:     10.5px;
+  --fs-base:    11px;
+  --fs-md:      11.5px;
+  --fs-lg:      12px;
+  --fs-xl:      13px;
+  --fs-2xl:     14px;
+  --fs-icon:    18px;
+  --fs-hero:    20px;
+  --fs-display: 48px;
+
+  --fw-normal:   400;
+  --fw-medium:   500;
+  --fw-semibold: 600;
+
+  --lh-tight:   1;
+  --lh-snug:    1.3;
+  --lh-normal:  1.4;
+  --lh-relaxed: 1.5;
+
+  --ls-tight:  0.3px;
+  --ls-normal: 0.4px;
+  --ls-wide:   0.5px;
+  --ls-wider:  0.6px;
+  --ls-widest: 0.8px;
+  --ls-spaced: 1px;
 }
 
 /* ─── Light Theme ─── */

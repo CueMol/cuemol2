@@ -12,7 +12,7 @@
 }
 
 .app-toolbar .bp5-button {
-  font-size: 12px !important;
+  font-size: var(--fs-lg) !important;
   min-height: 24px !important;
   padding: 2px 6px !important;
 }
@@ -38,15 +38,15 @@
 }
 
 .brand-icon {
-  font-size: 18px;
+  font-size: var(--fs-icon);
   color: var(--accent);
   filter: drop-shadow(0 0 4px var(--accent-glow));
 }
 
 .brand-text {
-  font-weight: 600;
-  font-size: 14px;
-  letter-spacing: 0.5px;
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-2xl);
+  letter-spacing: var(--ls-wide);
   color: var(--text-primary);
 }
 

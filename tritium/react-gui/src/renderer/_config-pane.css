@@ -42,8 +42,8 @@
 }
 
 .config-tree-header-title {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
   color: var(--text-primary);
 }
 
@@ -62,7 +62,7 @@
   height: 26px;
   padding-right: 8px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--fs-lg);
   color: var(--text-primary);
   transition: background 0.1s;
   user-select: none;
@@ -83,7 +83,7 @@
 
 /* Parent nodes are slightly bolder */
 .cfg-tree-item.parent {
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   color: var(--text-secondary);
 }
 
@@ -113,7 +113,7 @@
 }
 
 .cfg-tree-badge {
-  font-size: 10px;
+  font-size: var(--fs-sm);
   min-width: 16px;
   height: 16px;
   padding: 0 4px;
@@ -160,7 +160,7 @@
   background: var(--bg-input) !important;
   border: 1px solid var(--border) !important;
   color: var(--text-primary) !important;
-  font-size: 13px;
+  font-size: var(--fs-xl);
   height: 32px;
   border-radius: 4px;
   caret-color: var(--accent);
@@ -184,7 +184,7 @@
 }
 
 .config-search-count {
-  font-size: 11px;
+  font-size: var(--fs-base);
   color: var(--text-muted);
   white-space: nowrap;
   flex-shrink: 0;
@@ -205,10 +205,10 @@
 }
 
 .config-category-header {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.8px;
+  letter-spacing: var(--ls-widest);
   color: var(--accent);
   padding-bottom: 6px;
   border-bottom: 1px solid var(--border-subtle);
@@ -229,16 +229,16 @@
 }
 
 .config-setting-label {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-medium);
   color: var(--text-primary);
-  line-height: 1.4;
+  line-height: var(--lh-normal);
 }
 
 .config-setting-desc {
-  font-size: 12px;
+  font-size: var(--fs-lg);
   color: var(--text-muted);
-  line-height: 1.4;
+  line-height: var(--lh-normal);
   margin-top: 1px;
 }
 
@@ -279,7 +279,7 @@
   background: var(--bg-input) !important;
   border: 1px solid var(--border) !important;
   color: var(--text-primary) !important;
-  font-size: 12px;
+  font-size: var(--fs-lg);
   height: 28px;
   border-radius: 3px;
 }
@@ -298,7 +298,7 @@
   background: var(--bg-input) !important;
   border: 1px solid var(--border) !important;
   color: var(--text-primary) !important;
-  font-size: 12px;
+  font-size: var(--fs-lg);
   height: 28px;
   border-radius: 3px;
   caret-color: var(--accent);
@@ -348,15 +348,15 @@
 }
 
 .config-setting-color-hex {
-  font-family: "JetBrains Mono", "Fira Code", monospace;
-  font-size: 12px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-lg);
   color: var(--text-secondary);
 }
 
 /* ── Switch overrides ── */
 .config-setting-switch.bp5-switch {
   margin-bottom: 0;
-  font-size: 12px;
+  font-size: var(--fs-lg);
   color: var(--text-primary);
 }
 
@@ -372,7 +372,7 @@
   gap: 8px;
   padding: 48px 0;
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: var(--fs-xl);
 }
 
 .config-no-results-icon {
