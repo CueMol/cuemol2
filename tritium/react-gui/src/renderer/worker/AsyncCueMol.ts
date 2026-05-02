@@ -477,4 +477,52 @@ export class AsyncCueMol {
         const result = await this.invokeWorker('naviResidSel', args);
         return result?.[0] ?? null;
     }
+
+    async naviCenterAt(args: { viewId: number; x: number; y: number; z: number }): Promise<{ ok: boolean } | null> {
+        const result = await this.invokeWorker('naviCenterAt', args);
+        return result?.[0] ?? null;
+    }
+
+    async naviCenterAtSymm(args: {
+        viewId: number; objId: number; rendId: number; atomId: number; symmId: number;
+    }): Promise<{ ok: boolean } | null> {
+        const result = await this.invokeWorker('naviCenterAtSymm', args);
+        return result?.[0] ?? null;
+    }
+
+    async naviCtxSelect(args: {
+        viewId: number; objId: number; atomId: number; mode: 'atom' | 'residue' | 'chain' | 'mol';
+    }): Promise<{ ok: boolean } | null> {
+        const result = await this.invokeWorker('naviCtxSelect', args);
+        return result?.[0] ?? null;
+    }
+
+    async naviCtxAddSelect(args: {
+        viewId: number; objId: number; atomId: number; mode: 'atom' | 'residue' | 'chain' | 'mol';
+    }): Promise<{ ok: boolean } | null> {
+        const result = await this.invokeWorker('naviCtxAddSelect', args);
+        return result?.[0] ?? null;
+    }
+
+    async naviCtxUnselect(args: { viewId: number; objId: number }): Promise<{ ok: boolean } | null> {
+        const result = await this.invokeWorker('naviCtxUnselect', args);
+        return result?.[0] ?? null;
+    }
+
+    async naviCtxInvertSel(args: { viewId: number; objId: number }): Promise<{ ok: boolean } | null> {
+        const result = await this.invokeWorker('naviCtxInvertSel', args);
+        return result?.[0] ?? null;
+    }
+
+    async naviCtxToggleSidechain(args: { viewId: number; objId: number }): Promise<{ ok: boolean } | null> {
+        const result = await this.invokeWorker('naviCtxToggleSidechain', args);
+        return result?.[0] ?? null;
+    }
+
+    async naviCtxAround(args: {
+        viewId: number; objId: number; distance: number; byres: boolean;
+    }): Promise<{ ok: boolean } | null> {
+        const result = await this.invokeWorker('naviCtxAround', args);
+        return result?.[0] ?? null;
+    }
 }

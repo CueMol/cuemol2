@@ -4,6 +4,14 @@ import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
 import { NaviContextMenu, type NaviContextMenuState } from '../components/NaviContextMenu';
 
+// Prevent wrapper-loader from glob-importing Object.ts, which shadows the global
+// Object and causes Object.defineProperty errors in jsdom.
+vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }));
+vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }));
+vi.mock('../hooks/useCueMol', () => ({
+    useCueMol: () => ({ cueMolReady: false, cm: null }),
+}));
+
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
 function makeHit(overrides: Record<string, any> = {}) {
@@ -37,33 +45,33 @@ function render(state: NaviContextMenuState, onClose = vi.fn()): { container: HT
 
 describe('NaviContextMenu', () => {
     it('renders nothing when closed', () => {
-        const { container, unmount } = render({ open: false, x: 0, y: 0, hitres: null });
+        const { container, unmount } = render({ open: false, x: 0, y: 0, hitres: null, viewId: null });
         expect(container.querySelector('.bp5-menu')).toBeNull();
         unmount();
     });
 
     it('renders menu when open with a hit', () => {
-        const { container, unmount } = render({ open: true, x: 50, y: 80, hitres: makeHit() });
+        const { container, unmount } = render({ open: true, x: 50, y: 80, hitres: makeHit(), viewId: 1 });
         expect(container.querySelector('.bp5-menu')).toBeTruthy();
         unmount();
     });
 
     it('displays atom header label', () => {
-        const { container, unmount } = render({ open: true, x: 0, y: 0, hitres: makeHit() });
+        const { container, unmount } = render({ open: true, x: 0, y: 0, hitres: makeHit(), viewId: 1 });
         const text = container.textContent ?? '';
         expect(text).toContain('mol1: ALA 10 CA');
         unmount();
     });
 
     it('displays renderer label', () => {
-        const { container, unmount } = render({ open: true, x: 0, y: 0, hitres: makeHit() });
+        const { container, unmount } = render({ open: true, x: 0, y: 0, hitres: makeHit(), viewId: 1 });
         const text = container.textContent ?? '';
         expect(text).toContain('ribbon1 (*ribbon)');
         unmount();
     });
 
     it('does not show symm items for non-symm renderer', () => {
-        const { container, unmount } = render({ open: true, x: 0, y: 0, hitres: makeHit({ rendtype: '*ribbon' }) });
+        const { container, unmount } = render({ open: true, x: 0, y: 0, hitres: makeHit({ rendtype: '*ribbon' }), viewId: 1 });
         expect(container.textContent ?? '').not.toContain('SYMM');
         unmount();
     });
@@ -72,6 +80,7 @@ describe('NaviContextMenu', () => {
         const { container, unmount } = render({
             open: true, x: 0, y: 0,
             hitres: makeHit({ rendtype: '*symm', symm_name: '2_555' }),
+            viewId: 1,
         });
         const text = container.textContent ?? '';
         expect(text).toContain('symop: 2_555');
@@ -80,7 +89,7 @@ describe('NaviContextMenu', () => {
     });
 
     it('positions menu at x+2, y+2', () => {
-        const { container, unmount } = render({ open: true, x: 100, y: 200, hitres: makeHit() });
+        const { container, unmount } = render({ open: true, x: 100, y: 200, hitres: makeHit(), viewId: 1 });
         const menuWrapper = container.firstElementChild as HTMLElement;
         expect(menuWrapper.style.left).toBe('102px');
         expect(menuWrapper.style.top).toBe('202px');
@@ -89,7 +98,7 @@ describe('NaviContextMenu', () => {
 
     it('calls onClose when outside click occurs', () => {
         const onClose = vi.fn();
-        const { unmount } = render({ open: true, x: 0, y: 0, hitres: makeHit() }, onClose);
+        const { unmount } = render({ open: true, x: 0, y: 0, hitres: makeHit(), viewId: 1 }, onClose);
         act(() => {
             document.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
         });

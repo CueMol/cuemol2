@@ -1,6 +1,6 @@
 # Migration Mapping — Index
 
-- Updated: 2026-04-29
+- Updated: 2026-05-02
 - Source files: `docs/migration/mapping/*.md` (excluding this file)
 
 ---
@@ -41,7 +41,7 @@
 
 | ID | React | Notes |
 |----|-------|-------|
-| [`toolbar.cuemol2-ribbon`](toolbars.md#toolbarcuemol2-ribbon) | `ViewportToolPalette` / `useNaviClickHandler` / `NaviContextMenu` | Navigate mode click+context menu shell done; context menu actions, measurement tool, rect-select drag pending |
+| [`toolbar.cuemol2-ribbon`](toolbars.md#toolbarcuemol2-ribbon) | `ViewportToolPalette` / `useNaviClickHandler` / `NaviContextMenu` | Context menu actions (center/select/around/invert/sidechain) done; Create SYMM mol deferred; measurement tool, rect-select drag pending |
 
 ---
 

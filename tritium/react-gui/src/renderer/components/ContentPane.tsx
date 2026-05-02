@@ -78,7 +78,7 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
   const showPalette = activeTab?.type !== "settings";
 
   const [ctxMenuState, setCtxMenuState] = useState<NaviContextMenuState>({
-    open: false, x: 0, y: 0, hitres: null,
+    open: false, x: 0, y: 0, hitres: null, viewId: null,
   });
 
   // Capture viewport mouse position on mouseup so context menu appears at cursor.
@@ -88,8 +88,8 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
     lastClientPosRef.current = { x: e.clientX, y: e.clientY };
   }, []);
 
-  const openContextMenu = useCallback((hit: HitTestResult) => {
-    setCtxMenuState({ open: true, x: lastClientPosRef.current.x, y: lastClientPosRef.current.y, hitres: hit });
+  const openContextMenu = useCallback((hit: HitTestResult, viewId: number) => {
+    setCtxMenuState({ open: true, x: lastClientPosRef.current.x, y: lastClientPosRef.current.y, hitres: hit, viewId });
   }, []);
 
   const closeContextMenu = useCallback(() => {

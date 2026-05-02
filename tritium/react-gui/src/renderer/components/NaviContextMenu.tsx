@@ -1,12 +1,14 @@
 import React, { useEffect, useRef } from 'react';
 import { Menu, MenuItem, MenuDivider } from '@blueprintjs/core';
 import type { HitTestResult } from '../types/HitTestResult';
+import { useCueMol } from '../hooks/useCueMol';
 
 export interface NaviContextMenuState {
     open: boolean;
     x: number;
     y: number;
     hitres: HitTestResult | null;
+    viewId: number | null;
 }
 
 interface NaviContextMenuProps {
@@ -15,6 +17,7 @@ interface NaviContextMenuProps {
 }
 
 export const NaviContextMenu: React.FC<NaviContextMenuProps> = ({ state, onClose }) => {
+    const { cm } = useCueMol();
     const menuRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -28,16 +31,85 @@ export const NaviContextMenu: React.FC<NaviContextMenuProps> = ({ state, onClose
         return () => document.removeEventListener('mousedown', handleOutsideClick);
     }, [state.open, onClose]);
 
-    if (!state.open || !state.hitres) return null;
+    if (!state.open || !state.hitres || state.viewId == null) return null;
 
     const hit = state.hitres;
+    const viewId = state.viewId;
     const isSymm = hit.rendtype === '*symm';
 
     const atomLabel = hit.obj_name ? `${hit.obj_name}: ${hit.message}` : hit.message;
     const rendLabel = `${hit.rend_name} (${hit.rendtype})`;
 
-    const handleAction = (action: string): void => {
-        console.log(`TODO: navi context menu action "${action}" for obj=${hit.obj_id} atom=${hit.atom_id}`);
+    const handleAction = async (action: string): Promise<void> => {
+        if (!cm) { onClose(); return; }
+        const objId = hit.obj_id;
+        const atomId = hit.atom_id;
+
+        switch (action) {
+            case 'centerAt':
+                await cm.naviCenterAt({ viewId, x: hit.x, y: hit.y, z: hit.z });
+                break;
+            case 'centerAtSymm':
+                if (hit.symm_id != null) {
+                    await cm.naviCenterAtSymm({ viewId, objId, rendId: hit.rend_id, atomId, symmId: hit.symm_id });
+                }
+                break;
+            case 'selectAtom':
+                await cm.naviCtxSelect({ viewId, objId, atomId, mode: 'atom' });
+                break;
+            case 'selectResid':
+                await cm.naviCtxSelect({ viewId, objId, atomId, mode: 'residue' });
+                break;
+            case 'selectChain':
+                await cm.naviCtxSelect({ viewId, objId, atomId, mode: 'chain' });
+                break;
+            case 'selectMol':
+                await cm.naviCtxSelect({ viewId, objId, atomId, mode: 'mol' });
+                break;
+            case 'addSelectAtom':
+                await cm.naviCtxAddSelect({ viewId, objId, atomId, mode: 'atom' });
+                break;
+            case 'addSelectResid':
+                await cm.naviCtxAddSelect({ viewId, objId, atomId, mode: 'residue' });
+                break;
+            case 'addSelectChain':
+                await cm.naviCtxAddSelect({ viewId, objId, atomId, mode: 'chain' });
+                break;
+            case 'unselect':
+                await cm.naviCtxUnselect({ viewId, objId });
+                break;
+            case 'invertSel':
+                await cm.naviCtxInvertSel({ viewId, objId });
+                break;
+            case 'toggleSidechain':
+                await cm.naviCtxToggleSidechain({ viewId, objId });
+                break;
+            case 'arByres3':
+                await cm.naviCtxAround({ viewId, objId, distance: 3, byres: true });
+                break;
+            case 'arByres5':
+                await cm.naviCtxAround({ viewId, objId, distance: 5, byres: true });
+                break;
+            case 'arByres7':
+                await cm.naviCtxAround({ viewId, objId, distance: 7, byres: true });
+                break;
+            case 'arByres10':
+                await cm.naviCtxAround({ viewId, objId, distance: 10, byres: true });
+                break;
+            case 'around3':
+                await cm.naviCtxAround({ viewId, objId, distance: 3, byres: false });
+                break;
+            case 'around5':
+                await cm.naviCtxAround({ viewId, objId, distance: 5, byres: false });
+                break;
+            case 'around7':
+                await cm.naviCtxAround({ viewId, objId, distance: 7, byres: false });
+                break;
+            case 'around10':
+                await cm.naviCtxAround({ viewId, objId, distance: 10, byres: false });
+                break;
+            // TODO: createSymm — requires new-name prompt + renderer setup dialog (not yet implemented)
+        }
         onClose();
     };
 
@@ -87,7 +159,7 @@ export const NaviContextMenu: React.FC<NaviContextMenuProps> = ({ state, onClose
                     <>
                         <MenuDivider />
                         <MenuItem text="Center at SYMM atom" onClick={() => handleAction('centerAtSymm')} />
-                        <MenuItem text="Create SYMM mol..." onClick={() => handleAction('createSymm')} />
+                        <MenuItem text="Create SYMM mol..." disabled />
                     </>
                 )}
             </Menu>
