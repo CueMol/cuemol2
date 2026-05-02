@@ -139,6 +139,7 @@ export interface ElectronAPI {
   onMenuOpenScene: (callback: () => void) => () => void
   onMenuUndo: (callback: () => void) => () => void
   onMenuRedo: (callback: () => void) => () => void
+  onMenuGeneric: (callback: (channel: string) => void) => () => void
 
   // Invoke a native menu role action from the renderer (non-macOS custom menu)
   invokeMenuRole: (role: string) => Promise<void>

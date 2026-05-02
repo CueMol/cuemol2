@@ -47,6 +47,7 @@ export function useElectronIpc(activeTab: string | null): void {
       api.onMenuOpenScene(() => dispatchMenuChannel(IPC.MENU_OPEN_SCENE)),
       api.onMenuUndo(() => dispatchMenuChannel(IPC.MENU_UNDO)),
       api.onMenuRedo(() => dispatchMenuChannel(IPC.MENU_REDO)),
+      api.onMenuGeneric((ch) => dispatchMenuChannel(ch)),
     ]
 
     return () => unsubs.forEach((u) => u())

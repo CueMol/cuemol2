@@ -99,6 +99,12 @@ const api: ElectronAPI = {
     return () => ipcRenderer.removeListener(IPC.MENU_REDO, handler)
   },
 
+  onMenuGeneric: (callback) => {
+    const handler = (_event: Electron.IpcRendererEvent, channel: string) => callback(channel)
+    ipcRenderer.on(IPC.MENU_GENERIC, handler)
+    return () => ipcRenderer.removeListener(IPC.MENU_GENERIC, handler)
+  },
+
   invokeMenuRole: (role: string) => ipcRenderer.invoke(IPC.MENU_INVOKE_ROLE, role),
 
   showNaviContextMenu: (payload: NaviCtxMenuPayload) =>

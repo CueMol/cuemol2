@@ -35,6 +35,9 @@ export const IPC = {
 
   // gesture push channels (main → renderer)
   ROTATE_GESTURE: 'gesture:rotate',
+
+  // generic push channel for menu items without specific handlers (main → renderer)
+  MENU_GENERIC: 'menu:generic',
 } as const
 
 export type IpcChannel = typeof IPC[keyof typeof IPC]

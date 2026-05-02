@@ -8,13 +8,13 @@
 import { app, Menu } from 'electron'
 import type { BrowserWindow, MenuItemConstructorOptions } from 'electron'
 import { IPC } from '../shared/ipcChannels'
-import { APP_MENU, toElectronTemplate } from '../shared/menuTemplate'
-import type { AppMenuGroup } from '../shared/menuTemplate'
+import { APP_MENU } from '../shared/menuTemplate'
+import type { AppMenuItem, AppMenuGroup } from '../shared/menuTemplate'
 
 const isMac = process.platform === 'darwin'
 
-/** Map from ipcChannel string to a click handler that sends the IPC event to the renderer. */
-function buildClickHandlers(
+/** Specific click handlers for menu items that have real implementations. */
+function buildSpecificHandlers(
   mainWindow: BrowserWindow,
 ): Record<string, () => void> {
   return {
@@ -29,20 +29,86 @@ function buildClickHandlers(
   }
 }
 
+/**
+ * Recursively convert an AppMenuItem to an Electron MenuItemConstructorOptions.
+ * Items with a specific handler get that handler; items with an ipcChannel but
+ * no specific handler fall back to the MENU_GENERIC channel.
+ */
+function buildItem(
+  item: AppMenuItem,
+  specificHandlers: Record<string, () => void>,
+  mainWindow: BrowserWindow,
+): MenuItemConstructorOptions | null {
+  if (item.darwinOnly && !isMac) return null
+  if (item.othersOnly && isMac) return null
+  if (item.type === 'separator') return { type: 'separator' }
+
+  const result: MenuItemConstructorOptions = {}
+
+  if (item.label) result.label = item.label
+
+  // Pure role items (no ipcChannel) delegate entirely to Electron.
+  if (item.role && !item.ipcChannel) {
+    result.role = item.role as MenuItemConstructorOptions['role']
+    return result
+  }
+
+  if (item.role) result.role = item.role as MenuItemConstructorOptions['role']
+
+  const acc = isMac ? (item.acceleratorMac ?? item.accelerator) : item.accelerator
+  if (acc) result.accelerator = acc
+
+  if (item.ipcChannel) {
+    if (specificHandlers[item.ipcChannel]) {
+      result.click = specificHandlers[item.ipcChannel]
+    } else {
+      const ch = item.ipcChannel
+      result.click = () => mainWindow.webContents.send(IPC.MENU_GENERIC, ch)
+    }
+  }
+
+  if (item.submenu) {
+    result.submenu = item.submenu.flatMap((i) => {
+      const built = buildItem(i, specificHandlers, mainWindow)
+      return built ? [built] : []
+    })
+  }
+
+  return result
+}
+
+function buildGroup(
+  group: AppMenuGroup,
+  specificHandlers: Record<string, () => void>,
+  mainWindow: BrowserWindow,
+): MenuItemConstructorOptions {
+  return {
+    label: group.label,
+    submenu: group.submenu.flatMap((item) => {
+      const built = buildItem(item, specificHandlers, mainWindow)
+      return built ? [built] : []
+    }),
+  }
+}
 
 export function createMenu(mainWindow: BrowserWindow): void {
-  const macOnlyMenu: AppMenuGroup[] = isMac
+  const specificHandlers = buildSpecificHandlers(mainWindow)
+
+  // macOS Application menu uses app.name (only available in main process)
+  const macOnlyGroups: AppMenuGroup[] = isMac
     ? [
         {
           label: app.name,
           submenu: [
             { role: 'about' },
             { type: 'separator' },
-            { role: 'services', darwinOnly: true },
+            { id: 'mac-prefs', label: 'Preferences...', accelerator: 'Cmd+,', ipcChannel: 'menu:options' },
             { type: 'separator' },
-            { role: 'hide', darwinOnly: true },
-            { role: 'hideOthers', darwinOnly: true },
-            { role: 'unhide', darwinOnly: true },
+            { role: 'services' },
+            { type: 'separator' },
+            { role: 'hide' },
+            { role: 'hideOthers' },
+            { role: 'unhide' },
             { type: 'separator' },
             { role: 'quit' },
           ],
@@ -50,29 +116,13 @@ export function createMenu(mainWindow: BrowserWindow): void {
       ]
     : []
 
-  const fullMenu: AppMenuGroup[] = [...macOnlyMenu, ...APP_MENU]
-  const template = toElectronTemplate(fullMenu, isMac) as MenuItemConstructorOptions[]
+  // Build groups: macOS App menu first, then APP_MENU excluding the darwinOnly placeholder
+  const appMenuGroups = APP_MENU.filter((g) => !g.darwinOnly)
 
-  const handlers = buildClickHandlers(mainWindow)
-
-  // Attach click handlers: walk through APP_MENU (offset by macOnlyMenu.length on macOS)
-  const offset = macOnlyMenu.length
-  template.slice(offset).forEach((group, gi) => {
-    const srcGroup = APP_MENU[gi]
-    if (!srcGroup) return
-    const submenu = group.submenu as MenuItemConstructorOptions[] | undefined
-    if (!submenu) return
-
-    const srcItems = srcGroup.submenu.filter(
-      (item) => !item.darwinOnly && !(item.othersOnly && isMac),
-    )
-    submenu.forEach((item, ii) => {
-      const src = srcItems[ii]
-      if (src?.ipcChannel && handlers[src.ipcChannel]) {
-        item.click = handlers[src.ipcChannel]
-      }
-    })
-  })
+  const template: MenuItemConstructorOptions[] = [
+    ...macOnlyGroups.map((g) => buildGroup(g, specificHandlers, mainWindow)),
+    ...appMenuGroups.map((g) => buildGroup(g, specificHandlers, mainWindow)),
+  ]
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 }

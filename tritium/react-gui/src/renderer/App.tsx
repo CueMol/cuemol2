@@ -195,8 +195,9 @@ const App: React.FC = () => {
   return (
     <ActiveToolProvider activeTool={activeTool}>
     <div className="app">
-      {/* TODO: remove darwin exception after testing */}
-      <MenuBar activeTab={activeTab} />
+      {window.electronAPI?.platform !== 'darwin' && (
+        <MenuBar activeTab={activeTab} />
+      )}
       <Toolbar
         onOpenFile={handleOpenFile}
         onNewTab={handleNewTab}
