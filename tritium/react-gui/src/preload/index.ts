@@ -15,6 +15,7 @@ import type {
   LayoutState,
   UiState,
   ElectronAPI,
+  NaviCtxMenuPayload,
 } from '../shared/ipcTypes'
 import { IPC } from '../shared/ipcChannels'
 
@@ -99,6 +100,9 @@ const api: ElectronAPI = {
   },
 
   invokeMenuRole: (role: string) => ipcRenderer.invoke(IPC.MENU_INVOKE_ROLE, role),
+
+  showNaviContextMenu: (payload: NaviCtxMenuPayload) =>
+    ipcRenderer.invoke(IPC.NAVI_CTX_SHOW, payload),
 
   onRotateGesture: (callback) => {
     const handler = (_event: Electron.IpcRendererEvent, rotation: number) => callback(rotation)

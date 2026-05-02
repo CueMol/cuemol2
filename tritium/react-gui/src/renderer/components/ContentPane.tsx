@@ -15,7 +15,7 @@
  * tab is active (display-toggle strategy).
  */
 
-import React, { useState, useCallback, useRef } from "react";
+import React, { useCallback, useRef } from "react";
 import type { TabData } from "../types";
 import type { ToolId } from "../data/viewportTools";
 import { WelcomePane } from "./WelcomePane";
@@ -23,8 +23,8 @@ import { SettingsPane } from "./SettingsPane";
 import { CodeViewPane } from "./CodeViewPane";
 import { MolViewPane } from "./MolViewPane";
 import { ViewportToolPalette } from "./ViewportToolPalette";
-import { NaviContextMenu, type NaviContextMenuState } from "./NaviContextMenu";
 import { useNaviClickHandler } from "../hooks/useNaviClickHandler";
+import { useNaviContextMenu } from "../hooks/useNaviContextMenu";
 import type { HitTestResult } from "../types/HitTestResult";
 
 // ─────────────────────────────────────────────
@@ -77,10 +77,6 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
   const molViewVisible = activeTab?.type === "molview";
   const showPalette = activeTab?.type !== "settings";
 
-  const [ctxMenuState, setCtxMenuState] = useState<NaviContextMenuState>({
-    open: false, x: 0, y: 0, hitres: null, viewId: null,
-  });
-
   // Capture viewport mouse position on mouseup so context menu appears at cursor.
   // C++ click events carry canvas-local coords, not viewport coords.
   const lastClientPosRef = useRef({ x: 0, y: 0 });
@@ -88,13 +84,12 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
     lastClientPosRef.current = { x: e.clientX, y: e.clientY };
   }, []);
 
-  const openContextMenu = useCallback((hit: HitTestResult, viewId: number) => {
-    setCtxMenuState({ open: true, x: lastClientPosRef.current.x, y: lastClientPosRef.current.y, hitres: hit, viewId });
-  }, []);
+  const { openContextMenu: openNativeContextMenu } = useNaviContextMenu();
 
-  const closeContextMenu = useCallback(() => {
-    setCtxMenuState((s) => ({ ...s, open: false }));
-  }, []);
+  const openContextMenu = useCallback((hit: HitTestResult, viewId: number) => {
+    const { x, y } = lastClientPosRef.current;
+    openNativeContextMenu(hit, viewId, x, y);
+  }, [openNativeContextMenu]);
 
   useNaviClickHandler({ setStatusMessage: onStatusMessage ?? (() => {}), openContextMenu });
 
@@ -112,7 +107,6 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
       {showPalette && (
         <ViewportToolPalette activeTool={activeTool} onSelect={onSelectTool} />
       )}
-      <NaviContextMenu state={ctxMenuState} onClose={closeContextMenu} />
     </div>
   );
 };

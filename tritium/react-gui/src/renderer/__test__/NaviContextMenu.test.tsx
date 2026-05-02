@@ -1,18 +1,55 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
-import { NaviContextMenu, type NaviContextMenuState } from '../components/NaviContextMenu';
+import { useNaviContextMenu } from '../hooks/useNaviContextMenu';
 
-// Prevent wrapper-loader from glob-importing Object.ts, which shadows the global
-// Object and causes Object.defineProperty errors in jsdom.
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }));
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }));
+
+const mockCm = {
+    naviCenterAt: vi.fn().mockResolvedValue({ ok: true }),
+    naviCenterAtSymm: vi.fn().mockResolvedValue({ ok: true }),
+    naviCtxSelect: vi.fn().mockResolvedValue({ ok: true }),
+    naviCtxAddSelect: vi.fn().mockResolvedValue({ ok: true }),
+    naviCtxUnselect: vi.fn().mockResolvedValue({ ok: true }),
+    naviCtxInvertSel: vi.fn().mockResolvedValue({ ok: true }),
+    naviCtxToggleSidechain: vi.fn().mockResolvedValue({ ok: true }),
+    naviCtxAround: vi.fn().mockResolvedValue({ ok: true }),
+};
+
 vi.mock('../hooks/useCueMol', () => ({
-    useCueMol: () => ({ cueMolReady: false, cm: null }),
+    useCueMol: () => ({ cueMolReady: true, cm: mockCm }),
 }));
 
+const mockShowMenu = vi.fn();
+
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+
+function makeRenderHook<T>(useHookFn: () => T) {
+    let result!: T;
+    let root!: Root;
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+
+    function TestComponent() {
+        result = useHookFn();
+        return null;
+    }
+
+    act(() => {
+        root = createRoot(container);
+        root.render(React.createElement(TestComponent));
+    });
+
+    return {
+        get result() { return result; },
+        unmount() {
+            act(() => root.unmount());
+            document.body.removeChild(container);
+        },
+    };
+}
 
 function makeHit(overrides: Record<string, any> = {}) {
     return {
@@ -26,83 +63,149 @@ function makeHit(overrides: Record<string, any> = {}) {
     };
 }
 
-function render(state: NaviContextMenuState, onClose = vi.fn()): { container: HTMLElement; unmount: () => void } {
-    const container = document.createElement('div');
-    document.body.appendChild(container);
-    let root!: Root;
-    act(() => {
-        root = createRoot(container);
-        root.render(React.createElement(NaviContextMenu, { state, onClose }));
-    });
-    return {
-        container,
-        unmount() {
-            act(() => root.unmount());
-            document.body.removeChild(container);
-        },
-    };
-}
+let hookHandle: ReturnType<typeof makeRenderHook<ReturnType<typeof useNaviContextMenu>>>;
 
-describe('NaviContextMenu', () => {
-    it('renders nothing when closed', () => {
-        const { container, unmount } = render({ open: false, x: 0, y: 0, hitres: null, viewId: null });
-        expect(container.querySelector('.bp5-menu')).toBeNull();
-        unmount();
-    });
+beforeEach(() => {
+    vi.clearAllMocks();
+    mockShowMenu.mockResolvedValue(null);
+    // In jsdom window === globalThis, so set electronAPI directly on window
+    (window as any).electronAPI = { showNaviContextMenu: mockShowMenu };
+    hookHandle = makeRenderHook(() => useNaviContextMenu());
+});
 
-    it('renders menu when open with a hit', () => {
-        const { container, unmount } = render({ open: true, x: 50, y: 80, hitres: makeHit(), viewId: 1 });
-        expect(container.querySelector('.bp5-menu')).toBeTruthy();
-        unmount();
-    });
+afterEach(() => {
+    hookHandle.unmount();
+});
 
-    it('displays atom header label', () => {
-        const { container, unmount } = render({ open: true, x: 0, y: 0, hitres: makeHit(), viewId: 1 });
-        const text = container.textContent ?? '';
-        expect(text).toContain('mol1: ALA 10 CA');
-        unmount();
-    });
-
-    it('displays renderer label', () => {
-        const { container, unmount } = render({ open: true, x: 0, y: 0, hitres: makeHit(), viewId: 1 });
-        const text = container.textContent ?? '';
-        expect(text).toContain('ribbon1 (*ribbon)');
-        unmount();
-    });
-
-    it('does not show symm items for non-symm renderer', () => {
-        const { container, unmount } = render({ open: true, x: 0, y: 0, hitres: makeHit({ rendtype: '*ribbon' }), viewId: 1 });
-        expect(container.textContent ?? '').not.toContain('SYMM');
-        unmount();
-    });
-
-    it('shows symm items for symm renderer', () => {
-        const { container, unmount } = render({
-            open: true, x: 0, y: 0,
-            hitres: makeHit({ rendtype: '*symm', symm_name: '2_555' }),
-            viewId: 1,
+describe('useNaviContextMenu', () => {
+    it('calls showNaviContextMenu with correct payload for normal renderer', async () => {
+        await act(async () => {
+            await hookHandle.result.openContextMenu(makeHit(), 1, 100, 200);
         });
-        const text = container.textContent ?? '';
-        expect(text).toContain('symop: 2_555');
-        expect(text).toContain('SYMM');
-        unmount();
-    });
-
-    it('positions menu at x+2, y+2', () => {
-        const { container, unmount } = render({ open: true, x: 100, y: 200, hitres: makeHit(), viewId: 1 });
-        const menuWrapper = container.firstElementChild as HTMLElement;
-        expect(menuWrapper.style.left).toBe('102px');
-        expect(menuWrapper.style.top).toBe('202px');
-        unmount();
-    });
-
-    it('calls onClose when outside click occurs', () => {
-        const onClose = vi.fn();
-        const { unmount } = render({ open: true, x: 0, y: 0, hitres: makeHit(), viewId: 1 }, onClose);
-        act(() => {
-            document.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+        expect(mockShowMenu).toHaveBeenCalledWith({
+            x: 100, y: 200,
+            isSymm: false,
+            atomLabel: 'mol1: ALA 10 CA',
+            rendLabel: 'ribbon1 (*ribbon)',
+            symmLabel: undefined,
         });
-        expect(onClose).toHaveBeenCalled();
-        unmount();
+    });
+
+    it('calls showNaviContextMenu with isSymm=true for symm renderer', async () => {
+        const hit = makeHit({ rendtype: '*symm', symm_id: 5, symm_name: '2_555' });
+        await act(async () => {
+            await hookHandle.result.openContextMenu(hit, 1, 0, 0);
+        });
+        expect(mockShowMenu).toHaveBeenCalledWith(expect.objectContaining({
+            isSymm: true,
+            symmLabel: '2_555',
+        }));
+    });
+
+    it('does nothing when menu is dismissed (action=null)', async () => {
+        await act(async () => {
+            await hookHandle.result.openContextMenu(makeHit(), 1, 0, 0);
+        });
+        expect(mockCm.naviCenterAt).not.toHaveBeenCalled();
+    });
+
+    it('dispatches centerAt', async () => {
+        mockShowMenu.mockResolvedValue('centerAt');
+        const hit = makeHit();
+        await act(async () => {
+            await hookHandle.result.openContextMenu(hit, 1, 0, 0);
+        });
+        expect(mockCm.naviCenterAt).toHaveBeenCalledWith({ viewId: 1, x: hit.x, y: hit.y, z: hit.z });
+    });
+
+    it('dispatches centerAtSymm', async () => {
+        mockShowMenu.mockResolvedValue('centerAtSymm');
+        const hit = makeHit({ rendtype: '*symm', symm_id: 3, rend_id: 10 });
+        await act(async () => {
+            await hookHandle.result.openContextMenu(hit, 1, 0, 0);
+        });
+        expect(mockCm.naviCenterAtSymm).toHaveBeenCalledWith({
+            viewId: 1, objId: hit.obj_id, rendId: hit.rend_id, atomId: hit.atom_id, symmId: 3,
+        });
+    });
+
+    it('skips centerAtSymm when symm_id is missing', async () => {
+        mockShowMenu.mockResolvedValue('centerAtSymm');
+        await act(async () => {
+            await hookHandle.result.openContextMenu(makeHit(), 1, 0, 0);
+        });
+        expect(mockCm.naviCenterAtSymm).not.toHaveBeenCalled();
+    });
+
+    it.each([
+        ['selectAtom', 'atom'],
+        ['selectResid', 'residue'],
+        ['selectChain', 'chain'],
+        ['selectMol', 'mol'],
+    ] as const)('dispatches %s with mode=%s', async (action, mode) => {
+        mockShowMenu.mockResolvedValue(action);
+        const hit = makeHit();
+        await act(async () => {
+            await hookHandle.result.openContextMenu(hit, 1, 0, 0);
+        });
+        expect(mockCm.naviCtxSelect).toHaveBeenCalledWith({ viewId: 1, objId: hit.obj_id, atomId: hit.atom_id, mode });
+    });
+
+    it.each([
+        ['addSelectAtom', 'atom'],
+        ['addSelectResid', 'residue'],
+        ['addSelectChain', 'chain'],
+    ] as const)('dispatches %s with mode=%s', async (action, mode) => {
+        mockShowMenu.mockResolvedValue(action);
+        const hit = makeHit();
+        await act(async () => {
+            await hookHandle.result.openContextMenu(hit, 1, 0, 0);
+        });
+        expect(mockCm.naviCtxAddSelect).toHaveBeenCalledWith({ viewId: 1, objId: hit.obj_id, atomId: hit.atom_id, mode });
+    });
+
+    it('dispatches unselect', async () => {
+        mockShowMenu.mockResolvedValue('unselect');
+        const hit = makeHit();
+        await act(async () => {
+            await hookHandle.result.openContextMenu(hit, 1, 0, 0);
+        });
+        expect(mockCm.naviCtxUnselect).toHaveBeenCalledWith({ viewId: 1, objId: hit.obj_id });
+    });
+
+    it('dispatches invertSel', async () => {
+        mockShowMenu.mockResolvedValue('invertSel');
+        const hit = makeHit();
+        await act(async () => {
+            await hookHandle.result.openContextMenu(hit, 1, 0, 0);
+        });
+        expect(mockCm.naviCtxInvertSel).toHaveBeenCalledWith({ viewId: 1, objId: hit.obj_id });
+    });
+
+    it('dispatches toggleSidechain', async () => {
+        mockShowMenu.mockResolvedValue('toggleSidechain');
+        const hit = makeHit();
+        await act(async () => {
+            await hookHandle.result.openContextMenu(hit, 1, 0, 0);
+        });
+        expect(mockCm.naviCtxToggleSidechain).toHaveBeenCalledWith({ viewId: 1, objId: hit.obj_id });
+    });
+
+    it.each([
+        ['arByres3', 3, true],
+        ['arByres5', 5, true],
+        ['arByres7', 7, true],
+        ['arByres10', 10, true],
+        ['around3', 3, false],
+        ['around5', 5, false],
+        ['around7', 7, false],
+        ['around10', 10, false],
+    ] as const)('dispatches %s with distance=%d byres=%s', async (action, distance, byres) => {
+        mockShowMenu.mockResolvedValue(action);
+        const hit = makeHit();
+        await act(async () => {
+            await hookHandle.result.openContextMenu(hit, 1, 0, 0);
+        });
+        expect(mockCm.naviCtxAround).toHaveBeenCalledWith({ viewId: 1, objId: hit.obj_id, distance, byres });
     });
 });
