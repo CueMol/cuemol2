@@ -33,7 +33,7 @@ import type { TabData } from "../types";
 import type { ToolId } from "../data/viewportTools";
 import { useTabDragDrop } from "../hooks/useTabDragDrop";
 import { TabBar } from "./TabBar";
-import { ContentPane } from "./ContentPane";
+import { ContentPane } from "./panes/ContentPane";
 
 // ────────────────────────────────────────────────────────────
 // Types

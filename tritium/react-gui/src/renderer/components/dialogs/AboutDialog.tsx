@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogBody, DialogFooter, Button, Colors } from '@blueprintjs/core';
-import { useTheme } from '../contexts/ThemeContext';
-import { useCueMol } from '../hooks/useCueMol';
-import aboutPng from '../assets/about.png';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useCueMol } from '../../hooks/useCueMol';
+import aboutPng from '../../assets/about.png';
 
 interface Props {
   visible: boolean;

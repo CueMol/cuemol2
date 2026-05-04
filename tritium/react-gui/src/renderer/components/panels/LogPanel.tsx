@@ -32,7 +32,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Tag } from "@blueprintjs/core";
-import type { LogEntry } from "../types";
+import type { LogEntry } from "../../types";
 
 // ────────────────────────────────────────────────────────────
 // Constants

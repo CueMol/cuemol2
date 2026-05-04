@@ -9,10 +9,10 @@
 import React, { useState } from "react";
 import { Icon } from "@blueprintjs/core";
 import type { IconName } from "@blueprintjs/icons";
-import { LogView } from "../LogView";
+import { LogView } from "../../LogView";
 import { SequencePanel } from "./SequencePanel";
 import { AnimationPanel } from "./AnimationPanel";
-import type { AlignmentData, AnimationData } from "../types";
+import type { AlignmentData, AnimationData } from "../../types";
 
 // ─────────────────────────────────────────────
 // Types

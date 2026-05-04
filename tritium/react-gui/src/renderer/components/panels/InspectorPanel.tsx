@@ -33,9 +33,9 @@ import {
   SegmentedControl,
 } from "@blueprintjs/core";
 
-import { PropertiesTab } from "./inspector/PropertiesTab";
-import { GenericTab } from "./inspector/GenericTab";
-import type { PropDef, GenericPropEntry } from "../data/rendererProperties";
+import { PropertiesTab } from "../inspector/PropertiesTab";
+import { GenericTab } from "../inspector/GenericTab";
+import type { PropDef, GenericPropEntry } from "../../data/rendererProperties";
 
 // ────────────────────────────────────────────────────────────
 // Types

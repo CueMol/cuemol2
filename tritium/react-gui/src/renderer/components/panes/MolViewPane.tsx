@@ -1,9 +1,9 @@
 import React, { useRef, useEffect } from 'react'
 import { useWheel } from '@use-gesture/react'
 import styles from './MolViewPane.module.css'
-import { useMolTabDispatch } from '../hooks/useMolTab'
-import { useCueMol } from '../hooks/useCueMol'
-import { GES_PINCH, GES_ROTATE } from '../worker/gestureAxes'
+import { useMolTabDispatch } from '../../hooks/useMolTab'
+import { useCueMol } from '../../hooks/useCueMol'
+import { GES_PINCH, GES_ROTATE } from '../../worker/gestureAxes'
 
 /**
  * Tab content pane for "molview" tabs — WebGL canvas for molecular visualization.

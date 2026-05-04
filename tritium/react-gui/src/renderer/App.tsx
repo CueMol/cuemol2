@@ -12,11 +12,11 @@ import "allotment/dist/style.css";
 import { ActivityBar, type ActivityView } from "./components/ActivityBar";
 import { MenuBar } from "./components/MenuBar";
 import { Toolbar } from "./components/Toolbar";
-import { SidePanel } from "./components/SidePanel";
+import { SidePanel } from "./components/panels/SidePanel";
 import { ContentArea } from "./components/ContentArea";
-import { BottomPanel } from "./components/BottomPanel";
+import { BottomPanel } from "./components/panels/BottomPanel";
 import { StatusBar } from "./components/StatusBar";
-import { InspectorPanel } from "./components/InspectorPanel";
+import { InspectorPanel } from "./components/panels/InspectorPanel";
 
 import type { AlignmentData, AnimationData } from "./types";
 

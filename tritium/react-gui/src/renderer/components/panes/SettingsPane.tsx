@@ -43,7 +43,7 @@ import {
   InputGroup,
 } from "@blueprintjs/core";
 import type { IconName } from "@blueprintjs/icons";
-import { useTheme } from "../contexts/ThemeContext";
+import { useTheme } from "../../contexts/ThemeContext";
 
 // ────────────────────────────────────────────────────────────
 // Category tree definition

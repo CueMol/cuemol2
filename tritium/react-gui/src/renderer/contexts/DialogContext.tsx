@@ -13,7 +13,7 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useMemo } from 'react'
 import { FileOpenOptionDialog } from '../components/fopen-opt-dlgs'
 import type { FileOpenOptions } from '../components/fopen-opt-dlgs'
-import { AboutDialog } from '../components/AboutDialog'
+import { AboutDialog } from '../components/dialogs/AboutDialog'
 
 // ────────────────────────────────────────────────────────────
 // Types

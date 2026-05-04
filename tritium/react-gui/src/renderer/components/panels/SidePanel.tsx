@@ -49,8 +49,8 @@ import React, { useCallback, useRef, useMemo } from "react";
 import { Allotment } from "allotment";
 import { Icon } from "@blueprintjs/core";
 
-import type { ActivityView } from "./ActivityBar";
-import type { PaneCollapseState } from "../hooks/useLayoutPersistence";
+import type { ActivityView } from "../ActivityBar";
+import type { PaneCollapseState } from "../../hooks/useLayoutPersistence";
 
 import {
   ScenePane,
@@ -61,16 +61,16 @@ import {
   DummyPane2,
   DummyPane3,
   DummyPane4,
-} from "./panes";
+} from "../panes";
 
-import type { SceneNode } from "./panes/ScenePane";
+import type { SceneNode } from "../panes/ScenePane";
 
-import { MOL_TREE, MOLECULE_OPTIONS } from "../data/sampleData";
+import { MOL_TREE, MOLECULE_OPTIONS } from "../../data/sampleData";
 
 /* ─── Re-export types for external consumers ─── */
-export type { SceneNode, SceneObjectNode, SceneRendererNode } from "./panes/ScenePane";
-export type { MolNode } from "./panes/MolStructPane";
-export type { MolOption } from "./panes/SelectionPane";
+export type { SceneNode, SceneObjectNode, SceneRendererNode } from "../panes/ScenePane";
+export type { MolNode } from "../panes/MolStructPane";
+export type { MolOption } from "../panes/SelectionPane";
 
 /* ─── Constants ─── */
 

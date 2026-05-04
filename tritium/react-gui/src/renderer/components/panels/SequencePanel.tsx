@@ -25,7 +25,7 @@
 
 import React, { useRef, useCallback, useState, useEffect, useMemo } from "react";
 import { Icon } from "@blueprintjs/core";
-import type { AlignmentData, AlignmentEntry } from "../types";
+import type { AlignmentData, AlignmentEntry } from "../../types";
 
 // ────────────────────────────────────────────────────────────
 // Constants

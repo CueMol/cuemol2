@@ -35,7 +35,7 @@ import React, {
 } from "react";
 import { Icon, Button, ButtonGroup, NumericInput } from "@blueprintjs/core";
 import type { IconName } from "@blueprintjs/icons";
-import type { AnimationData, AnimationTrack, Keyframe } from "../types";
+import type { AnimationData, AnimationTrack, Keyframe } from "../../types";
 
 // ────────────────────────────────────────────────────────────
 // Constants

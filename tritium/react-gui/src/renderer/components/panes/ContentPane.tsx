@@ -16,16 +16,16 @@
  */
 
 import React, { useCallback, useRef } from "react";
-import type { TabData } from "../types";
-import type { ToolId } from "../data/viewportTools";
+import type { TabData } from "../../types";
+import type { ToolId } from "../../data/viewportTools";
 import { WelcomePane } from "./WelcomePane";
 import { SettingsPane } from "./SettingsPane";
 import { CodeViewPane } from "./CodeViewPane";
 import { MolViewPane } from "./MolViewPane";
-import { ViewportToolPalette } from "./ViewportToolPalette";
-import { useNaviClickHandler } from "../hooks/useNaviClickHandler";
-import { useNaviContextMenu } from "../hooks/useNaviContextMenu";
-import type { HitTestResult } from "../types";
+import { ViewportToolPalette } from "../ViewportToolPalette";
+import { useNaviClickHandler } from "../../hooks/useNaviClickHandler";
+import { useNaviContextMenu } from "../../hooks/useNaviContextMenu";
+import type { HitTestResult } from "../../types";
 
 // ─────────────────────────────────────────────
 // Types
