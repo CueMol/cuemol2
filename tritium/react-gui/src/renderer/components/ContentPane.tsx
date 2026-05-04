@@ -25,7 +25,7 @@ import { MolViewPane } from "./MolViewPane";
 import { ViewportToolPalette } from "./ViewportToolPalette";
 import { useNaviClickHandler } from "../hooks/useNaviClickHandler";
 import { useNaviContextMenu } from "../hooks/useNaviContextMenu";
-import type { HitTestResult } from "../types/HitTestResult";
+import type { HitTestResult } from "../types";
 
 // ─────────────────────────────────────────────
 // Types

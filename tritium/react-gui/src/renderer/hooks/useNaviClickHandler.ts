@@ -3,7 +3,7 @@ import * as event from '../event';
 import { useCueMol } from './useCueMol';
 import { useMolTabState } from './useMolTab';
 import { useActiveToolContext } from '../contexts/ActiveToolContext';
-import type { HitTestResult } from '../types/HitTestResult';
+import type { HitTestResult } from '../types';
 
 export interface UseNaviClickHandlerArgs {
     setStatusMessage: (msg: string | null) => void;

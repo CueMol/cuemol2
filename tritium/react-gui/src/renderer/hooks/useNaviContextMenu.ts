@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useCueMol } from './useCueMol';
-import type { HitTestResult } from '../types/HitTestResult';
+import type { HitTestResult } from '../types';
 import type { NaviCtxAction } from '../../shared/ipcTypes';
 
 export function useNaviContextMenu(): {

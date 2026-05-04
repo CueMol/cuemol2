@@ -5,7 +5,7 @@ import type { NameLabelRenderer } from '@cuemol/core/src/wrappers/NameLabelRende
 import type { ResidRangeSet } from '@cuemol/core/src/wrappers/ResidRangeSet';
 import type { SelCommand } from '@cuemol/core/src/wrappers/SelCommand';
 import type { MolResidue } from '@cuemol/core/src/wrappers/MolResidue';
-import type { HitTestResult } from '../../types/HitTestResult';
+import type { HitTestResult } from '../../types';
 import { withUndoTxn } from './withUndoTxn';
 
 // ---- internal helpers ----
