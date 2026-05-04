@@ -3,6 +3,11 @@ declare module '*.module.css' {
   export default classes
 }
 
+declare module '*.png' {
+  const src: string
+  export default src
+}
+
 // Shared IPC types exposed as globals using TypeScript import() type syntax.
 // This works in script-mode .d.ts files without requiring export {} or declare global.
 type PaneCollapseState  = import('../../shared/ipcTypes').PaneCollapseState

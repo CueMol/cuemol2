@@ -41,7 +41,7 @@ export const APP_MENU: AppMenuGroup[] = [
     label: 'CueMol2',
     darwinOnly: true,
     submenu: [
-      { role: 'about' },
+      { id: 'about-mac', label: 'About CueMol3-tritium', ipcChannel: 'menu:about', darwinOnly: true },
       { type: 'separator' },
       { id: 'mac-prefs', label: 'Preferences...', accelerator: 'Cmd+,', ipcChannel: 'menu:options', darwinOnly: true },
       { type: 'separator' },
@@ -192,7 +192,7 @@ export const APP_MENU: AppMenuGroup[] = [
   {
     label: 'Help',
     submenu: [
-      { id: 'about', label: 'About CueMol2', role: 'about', othersOnly: true },
+      { id: 'about', label: 'About CueMol3-tritium', ipcChannel: 'menu:about', othersOnly: true },
       { type: 'separator' },
       { id: 'about-plugins',  label: 'About plugins...',  ipcChannel: 'menu:about-plugins' },
       { id: 'about-config',   label: 'About config...',   ipcChannel: 'menu:about-config' },

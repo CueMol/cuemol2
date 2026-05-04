@@ -456,6 +456,16 @@ export class AsyncCueMol {
         return result?.[0]?.ok ?? false;
     }
 
+    async getAppInfo(): Promise<{ version: string; build: string }> {
+        try {
+            const result = await this.invokeWorker('appInfo', {});
+            return result?.[0] ?? { version: '', build: '' };
+        } catch (e) {
+            log.warn('getAppInfo failed:', e);
+            return { version: '', build: '' };
+        }
+    }
+
     //////////
     // Navigation tool services
 

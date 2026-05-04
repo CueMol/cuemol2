@@ -39,7 +39,7 @@ export function useSceneCommands({
     handleSave,
 }: UseSceneCommandsOptions): void {
 
-    const { showFileOpenOptionDialog } = useDialog()
+    const { showFileOpenOptionDialog, showAboutDialog } = useDialog()
 
     // --- helpers ---
 
@@ -107,6 +107,8 @@ export function useSceneCommands({
         const filters = await getOpenFilters(IOH_CAT_SCEREADER)
         await window.electronAPI.openFile({ dialogType: 'open-scene', filters })
     })
+
+    useRegisterCommand(CmdId.UiAboutDialog, () => showAboutDialog())
 
     useRegisterCommand(CmdId.TabNew, () => handleNewTab())
 

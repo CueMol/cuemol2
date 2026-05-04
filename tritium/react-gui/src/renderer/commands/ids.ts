@@ -14,6 +14,7 @@ export const CmdId = {
   // Dialog triggers
   UiOpenObjDialog:    'ui.openObjDialog',    // no args
   UiOpenSceneDialog:  'ui.openSceneDialog',  // no args
+  UiAboutDialog:      'ui.aboutDialog',      // no args
 
   // Tab management
   TabNew:             'tab.new',             // no args
