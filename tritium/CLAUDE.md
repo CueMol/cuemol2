@@ -131,6 +131,28 @@ Use `Menu.buildFromTemplate()` + `menu.popup({ window, x, y, callback })` in the
 
 ---
 
+## OffscreenCanvas / WebGL lifecycle constraints
+
+`MolViewPane` (`react-gui/src/renderer/components/panes/MolViewPane.tsx`) calls `canvas.transferControlToOffscreen()` to hand the canvas to the Web Worker. This API has hard constraints:
+
+- **One-shot per canvas element** — calling it a second time throws `InvalidStateError`.
+- **After transfer, the renderer thread cannot read canvas pixels** — the Worker owns the context.
+- **`GfxManager._canvas` has no unbind path** — once `bindCanvas()` is called, the OffscreenCanvas is held for the Worker's lifetime.
+
+**Design rules that follow from these constraints:**
+
+- `MolViewPane` must **stay mounted from its first render until app exit**. `ContentPane.tsx` uses an `everHadMolViewRef` flag so that the component is never unmounted even when all molview tabs are closed. Unmounting would destroy the canvas DOM and make re-binding impossible.
+- Adding a new view (new scene tab) uses `addView()` (via `createNewSceneAndView.service.ts`), **not** `bindCanvas()`. `bindCanvas()` is the one-time WebGL init that also transfers the OffscreenCanvas; `addView()` attaches a new C++ View to the already-bound canvas.
+- Closing a molview tab must call both `removeMolTab(viewId)` and `cm.removeView(viewId)`. Skipping these leaks `MolTabState` entries and leaves the Worker `bound_views` and view loop running indefinitely.
+
+**Clean-up responsibility** (wired in `App.tsx` via `useTabManager({ onMolViewClose })`):
+1. `removeMolTab(viewId)` — removes the entry from `MolTabState`
+2. `cm.removeView(viewId)` — stops the view loop and removes from Worker `bound_views`
+
+Note: the C++ `View` / `Scene` objects are not destroyed by `removeView`; that is a separate future concern.
+
+---
+
 ## react-gui Tests (`tritium/react-gui/`)
 
 ```bash

@@ -90,6 +90,20 @@ const App: React.FC = () => {
     resolveNodeName,
   });
 
+  // --- CueMol core ready: create initial scene/view ---
+
+  const { cueMolReady, cm } = useCueMol();
+  const { addMolTab, removeMolTab, getActiveSceneInfo, setActiveViewByID } = useMolTabDispatch();
+
+  const handleMolViewClose = useCallback((viewId: number) => {
+    removeMolTab(viewId);
+    if (cm) {
+      cm.removeView(viewId).catch((err: unknown) => {
+        console.warn('removeView failed:', err);
+      });
+    }
+  }, [cm, removeMolTab]);
+
   const {
     tabs,
     activeTab,
@@ -102,12 +116,7 @@ const App: React.FC = () => {
     handleNewTab,
     handleReorderTabs,
     handleSave,
-  } = useTabManager();
-
-  // --- CueMol core ready: create initial scene/view ---
-
-  const { cueMolReady, cm } = useCueMol();
-  const { addMolTab, getActiveSceneInfo, setActiveViewByID } = useMolTabDispatch();
+  } = useTabManager({ onMolViewClose: handleMolViewClose });
 
   // Guard to prevent duplicate initial scene creation (React StrictMode)
   const initialSceneCreatedRef = useRef(false);

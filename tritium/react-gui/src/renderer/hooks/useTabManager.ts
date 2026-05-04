@@ -30,7 +30,9 @@ const SETTINGS_TAB_ID = "__settings__";
 // Hook
 // ────────────────────────────────────────────────────────────
 
-export function useTabManager() {
+export function useTabManager(opts?: {
+  onMolViewClose?: (viewId: number) => void;
+}) {
   const [tabs, setTabs] = useState<TabData[]>([
     { id: "welcome", title: "Welcome", icon: "home", content: null },
   ]);
@@ -122,7 +124,11 @@ export function useTabManager() {
   const handleCloseTab = useCallback(
     (id: string) => {
       setTabs((prev) => {
+        const closing = prev.find((t) => t.id === id);
         const next = prev.filter((t) => t.id !== id);
+        if (closing?.type === 'molview' && closing.viewId !== undefined) {
+          opts?.onMolViewClose?.(closing.viewId);
+        }
         // If the closing tab was active, switch to the last remaining tab.
         setActiveTab((currentActive) => {
           if (currentActive === id && next.length > 0) {
@@ -133,7 +139,7 @@ export function useTabManager() {
         return next;
       });
     },
-    [],
+    [opts],
   );
 
   const handleNewTab = useCallback(() => {

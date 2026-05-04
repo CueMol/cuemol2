@@ -77,6 +77,14 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
   const molViewVisible = activeTab?.type === "molview";
   const showPalette = activeTab?.type !== "settings";
 
+  // Once a molview tab has existed, keep MolViewPane mounted permanently.
+  // Unmounting the canvas destroys the WebGL context and the already-transferred
+  // OffscreenCanvas in the Worker. transferControlToOffscreen() is one-shot and
+  // the Worker has no unbindCanvas path, so re-mounting would throw 'already bound'.
+  const everHadMolViewRef = useRef(false);
+  if (hasMolViewTab) everHadMolViewRef.current = true;
+  const shouldRenderMolView = everHadMolViewRef.current;
+
   // Capture viewport mouse position on mouseup so context menu appears at cursor.
   // C++ click events carry canvas-local coords, not viewport coords.
   const lastClientPosRef = useRef({ x: 0, y: 0 });
@@ -98,7 +106,7 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
       {/* MolViewPane is always mounted once the tab exists; hidden when inactive.
           Using display:none rather than unmounting to preserve WebGL context
           and the OffscreenCanvas transferred to the Web Worker. */}
-      {hasMolViewTab && (
+      {shouldRenderMolView && (
         <div style={{ display: molViewVisible ? "flex" : "none", flexDirection: "column", height: "100%" }}>
           <MolViewPane />
         </div>
