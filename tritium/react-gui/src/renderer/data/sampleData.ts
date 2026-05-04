@@ -1,5 +1,5 @@
 import type { LogEntry } from "../types";
-import type { SceneNode, MolNode, MolOption } from "../components/SidePanel";
+import type { SceneNode, MolNode, MolOption } from "../components/panels/SidePanel";
 
 export const SCENE_DATA: SceneNode = {
   id: "scene1",

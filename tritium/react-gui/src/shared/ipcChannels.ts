@@ -30,8 +30,14 @@ export const IPC = {
   // invoke channels (renderer → main, with reply) — menu role actions
   MENU_INVOKE_ROLE: 'menu:invoke-role',
 
+  // invoke channel for native viewport context menu
+  NAVI_CTX_SHOW: 'navi-ctx:show',
+
   // gesture push channels (main → renderer)
   ROTATE_GESTURE: 'gesture:rotate',
+
+  // generic push channel for menu items without specific handlers (main → renderer)
+  MENU_GENERIC: 'menu:generic',
 } as const
 
 export type IpcChannel = typeof IPC[keyof typeof IPC]

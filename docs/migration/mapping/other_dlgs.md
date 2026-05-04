@@ -18,7 +18,7 @@ Status values:
 
 | ID | React | Mapping | Status | PR | ADR | Notes |
 |----|-------|---------|--------|----|-----|-------|
-| [`dialog.about`](../uxp-inventory/other_dlgs.md#dialogabout) | | | todo | | | |
+| [`dialog.about`](../uxp-inventory/other_dlgs.md#dialogabout) | `AboutDialog` / `useDialog` | direct | wip | | | GRE info・userAgent は省略 |
 | [`dialog.atomintr`](../uxp-inventory/other_dlgs.md#dialogatomintr) | | | todo | | | |
 | [`dialog.delete-object`](../uxp-inventory/other_dlgs.md#dialogdelete-object) | | | todo | | | |
 | [`dialog.dsurf`](../uxp-inventory/other_dlgs.md#dialogdsurf) | | | todo | | | |

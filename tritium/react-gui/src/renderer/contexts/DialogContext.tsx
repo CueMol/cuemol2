@@ -13,6 +13,7 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useMemo } from 'react'
 import { FileOpenOptionDialog } from '../components/fopen-opt-dlgs'
 import type { FileOpenOptions } from '../components/fopen-opt-dlgs'
+import { AboutDialog } from '../components/dialogs/AboutDialog'
 
 // ────────────────────────────────────────────────────────────
 // Types
@@ -21,6 +22,8 @@ import type { FileOpenOptions } from '../components/fopen-opt-dlgs'
 interface DialogContextValue {
   /** Show the file-open option dialog and wait for user input. */
   showFileOpenOptionDialog(filePath: string, rendererTypes?: string[]): Promise<FileOpenOptions | null>
+  /** Show the About dialog. */
+  showAboutDialog(): Promise<void>
 }
 
 type DialogResolve = (options: FileOpenOptions | null) => void
@@ -63,9 +66,25 @@ export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     resolveRef.current = null
   }, [])
 
+  const [aboutDlgVisible, setAboutDlgVisible] = useState(false)
+  const aboutResolveRef = useRef<(() => void) | null>(null)
+
+  const showAboutDialog = useCallback((): Promise<void> => {
+    return new Promise((resolve) => {
+      aboutResolveRef.current = resolve
+      setAboutDlgVisible(true)
+    })
+  }, [])
+
+  const handleAboutClose = useCallback(() => {
+    setAboutDlgVisible(false)
+    aboutResolveRef.current?.()
+    aboutResolveRef.current = null
+  }, [])
+
   const value = useMemo<DialogContextValue>(
-    () => ({ showFileOpenOptionDialog }),
-    [showFileOpenOptionDialog],
+    () => ({ showFileOpenOptionDialog, showAboutDialog }),
+    [showFileOpenOptionDialog, showAboutDialog],
   )
 
   return (
@@ -78,6 +97,7 @@ export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         onConfirm={handleConfirm}
         onCancel={handleCancel}
       />
+      <AboutDialog visible={aboutDlgVisible} onClose={handleAboutClose} />
     </DialogContext.Provider>
   )
 }

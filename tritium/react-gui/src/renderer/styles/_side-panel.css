@@ -1,0 +1,293 @@
+/* ─── Side Panel (outer shell) ─── */
+.side-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface);
+  height: 100%;
+  overflow: hidden;
+}
+
+.side-panel-header {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  height: 30px;
+  font-size: var(--fs-base);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-wide);
+  color: var(--text-secondary);
+  background: var(--toolbar-bg);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.side-panel-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ─── Side-Panel Pane (each Allotment child) ─── */
+.sp-pane {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Section header – fixed at top of each pane */
+.sp-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 0 4px 0 10px;
+  height: 24px;
+  min-height: 24px;
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-base);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-normal);
+  color: var(--text-secondary);
+  background: var(--bg-panel-header);
+  border-bottom: 1px solid var(--border-subtle);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.sp-section-header-left {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.sp-section-header-left .section-chevron {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.sp-section-header .section-icon {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.sp-section-header .section-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scene-name-title {
+  color: var(--text-primary);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-normal);
+}
+
+.sp-section-header-actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.sp-section-header-actions .bp5-button-group {
+  gap: 0;
+}
+
+.section-action-btn.bp5-button {
+  min-height: 20px !important;
+  min-width: 22px !important;
+  padding: 0 2px !important;
+  border-radius: 3px;
+}
+
+.section-action-btn.bp5-button .bp5-icon {
+  color: var(--text-muted);
+}
+
+.section-action-btn.bp5-button:hover {
+  background: var(--overlay-hover) !important;
+}
+
+.section-action-btn.bp5-button:hover .bp5-icon {
+  color: var(--text-secondary);
+}
+
+/* Scrollable body for tree panels */
+.sp-pane-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Flex-fill body for selection panel (textarea stretches) */
+.sp-pane-fill {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px;
+  gap: 6px;
+}
+
+/* ─── Side-Panel Allotment sash styling ─── */
+.side-panel-content .sash-container .sash {
+  background: var(--border-subtle);
+}
+
+/* ─── Blueprint Tree Overrides (Scene & MolStruct) ─── */
+.scene-tree,
+.mol-tree {
+  padding: 2px 0;
+  background: transparent;
+}
+
+.scene-tree .bp5-tree-node,
+.mol-tree .bp5-tree-node {
+  min-height: 0;
+}
+
+.scene-tree .bp5-tree-node-content,
+.mol-tree .bp5-tree-node-content {
+  height: 22px;
+  padding-left: 4px;
+  padding-right: 6px;
+  cursor: pointer;
+  font-size: var(--fs-lg);
+  color: var(--text-primary);
+  transition: background 0.1s;
+}
+
+.scene-tree .bp5-tree-node-content:hover,
+.mol-tree .bp5-tree-node-content:hover {
+  background: var(--bg-hover);
+}
+
+.scene-tree .bp5-tree-node.bp5-tree-node-selected > .bp5-tree-node-content,
+.mol-tree .bp5-tree-node.bp5-tree-node-selected > .bp5-tree-node-content {
+  background: var(--bg-active) !important;
+  color: var(--accent);
+}
+
+.scene-tree .bp5-tree-node-caret,
+.mol-tree .bp5-tree-node-caret {
+  color: var(--text-muted) !important;
+  min-width: 20px;
+}
+
+.scene-tree .bp5-tree-node-caret:hover,
+.mol-tree .bp5-tree-node-caret:hover {
+  color: var(--text-secondary) !important;
+}
+
+.scene-tree .bp5-tree-node-caret-none,
+.mol-tree .bp5-tree-node-caret-none {
+  min-width: 20px;
+}
+
+.scene-tree .bp5-tree-node-icon,
+.mol-tree .bp5-tree-node-icon {
+  color: var(--text-secondary);
+}
+
+.scene-tree .bp5-tree-node.bp5-tree-node-selected > .bp5-tree-node-content .bp5-tree-node-icon,
+.mol-tree .bp5-tree-node.bp5-tree-node-selected > .bp5-tree-node-content .bp5-tree-node-icon {
+  color: var(--accent);
+}
+
+.scene-tree .bp5-tree-node-label,
+.mol-tree .bp5-tree-node-label {
+  font-size: var(--fs-lg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scene-tree .bp5-tree-node-secondary-label,
+.mol-tree .bp5-tree-node-secondary-label {
+  display: flex;
+  align-items: center;
+}
+
+/* ─── Visibility Toggle ─── */
+.visibility-toggle.bp5-button {
+  min-height: 20px !important;
+  min-width: 20px !important;
+  padding: 0 !important;
+  border-radius: 3px;
+}
+
+.visibility-toggle.visible .bp5-icon {
+  color: var(--accent);
+}
+
+.visibility-toggle.hidden .bp5-icon {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.visibility-toggle.bp5-button:hover {
+  background: var(--overlay-hover) !important;
+}
+
+/* ─── Selection Panel ─── */
+.selection-row {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.selection-label {
+  font-size: var(--fs-base);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-wider);
+  color: var(--text-secondary);
+}
+
+.selection-mol-select.bp5-html-select select {
+  background: var(--bg-input) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-primary) !important;
+  font-size: var(--fs-lg);
+  height: 28px;
+}
+
+/* textarea row fills remaining space */
+.selection-text-row {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.selection-text-row .selection-label {
+  flex-shrink: 0;
+}
+
+.selection-textarea.bp5-input {
+  flex: 1;
+  min-height: 0;
+  background: var(--bg-input) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-primary) !important;
+  font-family: var(--font-mono);
+  font-size: var(--fs-lg);
+  resize: none;
+  caret-color: var(--accent);
+}
+
+.selection-textarea.bp5-input::placeholder {
+  color: var(--text-muted);
+}
+
+.selection-textarea.bp5-input:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 1px var(--accent) !important;
+}

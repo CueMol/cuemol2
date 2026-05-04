@@ -44,6 +44,11 @@ export function useMenuDispatch(activeTab: string | null): {
         case IPC.MENU_OPEN_SCENE:
           dispatch(CmdId.UiOpenSceneDialog).catch(logErr('open scene dialog:'))
           break
+        case 'menu:about':
+          dispatch(CmdId.UiAboutDialog).catch(logErr('about dialog:'))
+          break
+        default:
+          console.warn('menu action not yet implemented:', channel)
       }
     },
     [dispatch, activeTab],

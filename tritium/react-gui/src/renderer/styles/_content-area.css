@@ -1,0 +1,233 @@
+/* ─── Content Area ─── */
+.content-area {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-base);
+}
+
+.tab-bar {
+  display: flex;
+  background: var(--bg-tab-inactive);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  height: 35px;
+  overflow: hidden;
+}
+
+.tab-bar-scroll {
+  display: flex;
+  overflow-x: auto;
+  flex: 1;
+}
+
+.tab-bar-scroll::-webkit-scrollbar {
+  height: 0;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 7px;
+  min-width: 100px;
+  max-width: 200px;
+  cursor: pointer;
+  font-size: var(--fs-lg);
+  color: var(--text-secondary);
+  background: var(--bg-tab-inactive);
+  border-right: 1px solid var(--border-subtle);
+  transition: background 0.15s, color 0.15s;
+  user-select: none;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.tab:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.tab.active {
+  background: var(--bg-tab-active);
+  color: var(--text-primary);
+}
+
+.tab.active::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent);
+}
+
+/* ─── Drag & Drop States ─── */
+
+/* The tab being dragged becomes semi-transparent. */
+.tab.dragging {
+  opacity: 0.4;
+}
+
+/* Drop indicator — a vertical accent bar on the appropriate side. */
+.tab.drag-over-left::before,
+.tab.drag-over-right::before {
+  content: "";
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  background: var(--accent);
+  border-radius: 1px;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.tab.drag-over-left::before {
+  left: -1px;
+}
+
+.tab.drag-over-right::before {
+  right: -1px;
+}
+
+/* ─── Tab Content Elements ─── */
+
+.tab-icon {
+  color: var(--text-muted);
+}
+
+.tab.active .tab-icon {
+  color: var(--accent);
+}
+
+.tab-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: var(--fw-medium);
+}
+
+.tab-close {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  color: var(--text-muted);
+  transition: all 0.15s;
+  flex-shrink: 0;
+  opacity: 0;
+}
+
+.tab:hover .tab-close,
+.tab.active .tab-close {
+  opacity: 1;
+}
+
+.tab-close:hover {
+  background: var(--bg-active);
+  color: var(--accent-red);
+}
+
+/* ─── Content Pane ─── */
+.content-pane {
+  position: relative; /* anchor for absolute-positioned ViewportToolPalette */
+  flex: 1;
+  overflow: hidden;
+}
+
+.editor-content {
+  height: 100%;
+  overflow: auto;
+}
+
+.code-view {
+  font-family: var(--font-mono);
+  font-size: var(--fs-lg);
+  line-height: var(--lh-relaxed);
+  padding: 8px 0;
+  margin: 0;
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.code-line {
+  display: flex;
+  min-height: 18px;
+}
+
+.code-line:hover {
+  background: var(--overlay-subtle);
+}
+
+.line-number {
+  width: 48px;
+  padding: 0 12px 0 0;
+  text-align: right;
+  color: var(--text-muted);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.line-text {
+  flex: 1;
+  padding-right: 16px;
+  white-space: pre;
+}
+
+/* ─── Editor Placeholder / Welcome Screen ─── */
+.editor-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 8px;
+  color: var(--text-muted);
+}
+
+.placeholder-icon {
+  font-size: var(--fs-display);
+  color: var(--accent);
+  opacity: var(--accent-placeholder-opacity);
+  filter: drop-shadow(0 0 8px var(--accent-glow));
+  margin-bottom: 4px;
+}
+
+.placeholder-title {
+  font-size: var(--fs-hero);
+  font-weight: var(--fw-semibold);
+  color: var(--text-secondary);
+  letter-spacing: var(--ls-spaced);
+}
+
+.placeholder-subtitle {
+  font-size: var(--fs-lg);
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+
+.shortcut-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.shortcut-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--fs-lg);
+  color: var(--text-muted);
+}
+
+.shortcut-key {
+  font-family: var(--font-mono);
+  font-size: var(--fs-base) !important;
+  min-width: 70px;
+  text-align: center;
+}

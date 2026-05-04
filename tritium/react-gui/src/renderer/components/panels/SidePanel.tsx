@@ -1,0 +1,360 @@
+/**
+ * @file SidePanel.tsx
+ * @description Sidebar container that renders different pane sets depending
+ * on the currently active Activity Bar view.
+ *
+ * ## Architecture (N-pane generalization)
+ *
+ * Each view defines an ordered list of `PaneConfig` entries. The
+ * generic `renderView()` helper builds an Allotment with the correct
+ * number of children, applying collapse/expand constraints and size
+ * tracking that works correctly for any pane count.
+ *
+ * ## Views and Panes
+ *
+ * | View       | Panes                                   |
+ * |------------|-----------------------------------------|
+ * | Explorer   | ScenePane, ColorPane, DummyPane4        |
+ * | Selection  | MolStructPane, SelectionPane            |
+ * | Dummy      | DummyPane1, DummyPane2, DummyPane3      |
+ *
+ * New views and panes can be added by editing `buildViewPaneConfigs()`
+ * without touching the layout / persistence logic.
+ *
+ * ## Terminology
+ *
+ * - **View**: Activity bar-selectable container (ExplorerView, SelectionView)
+ * - **Pane**: Individual section within a view (ScenePane, ColorPane, etc.)
+ * - **PaneConfig**: Configuration for a single pane (id, defaultSize, render)
+ *
+ * ## Collapse-size tracking (bug fix for N > 2)
+ *
+ * When any pane is collapsed, Allotment redistributes the freed space
+ * among the remaining open panes. Those inflated sizes must never
+ * overwrite the "last known good" open sizes. This implementation uses
+ * a `Record<string, number>` keyed by pane id so it scales to any
+ * number of panes.
+ *
+ * ## Persistence
+ *
+ * Splitter positions and collapse states are persisted via callback
+ * props supplied by the parent (ultimately backed by
+ * `useLayoutPersistence`). The component itself is stateless with
+ * respect to layout — all layout state lives in the parent.
+ *
+ * @module SidePanel
+ */
+
+import React, { useCallback, useRef, useMemo } from "react";
+import { Allotment } from "allotment";
+import { Icon } from "@blueprintjs/core";
+
+import type { ActivityView } from "../ActivityBar";
+import type { PaneCollapseState } from "../../hooks/useLayoutPersistence";
+
+import {
+  ScenePane,
+  ColorPane,
+  MolStructPane,
+  SelectionPane,
+  DummyPane1,
+  DummyPane2,
+  DummyPane3,
+  DummyPane4,
+} from "../panes";
+
+import type { SceneNode } from "../panes/ScenePane";
+
+import { MOL_TREE, MOLECULE_OPTIONS } from "../../data/sampleData";
+
+/* ─── Re-export types for external consumers ─── */
+export type { SceneNode, SceneObjectNode, SceneRendererNode } from "../panes/ScenePane";
+export type { MolNode } from "../panes/MolStructPane";
+export type { MolOption } from "../panes/SelectionPane";
+
+/* ─── Constants ─── */
+
+/** Height of a collapsed pane (header-only). */
+const HEADER_HEIGHT = 28;
+
+/* ─── View title / icon mapping ─── */
+
+const VIEW_TITLES: Record<ActivityView, string> = {
+  explorer: "Explorer",
+  selection: "Selection",
+  dummy: "Dummy",
+};
+
+const VIEW_ICONS: Record<ActivityView, string> = {
+  explorer: "panel-table",
+  selection: "search",
+  dummy: "help",
+};
+
+/* ─── Pane configuration type ─── */
+
+/**
+ * Describes a single pane within a view's Allotment.
+ * New panes can be added to a view by appending entries to the config
+ * array — no structural code changes required.
+ */
+interface PaneConfig {
+  /** Unique key within the view (used for collapse-state lookup). */
+  id: string;
+  /** Fallback size when no persisted value exists. */
+  defaultSize: number;
+  /** Render function receiving collapse state and toggle callback. */
+  render: (collapsed: boolean, onToggleCollapse: () => void) => React.ReactNode;
+}
+
+/* ─── Props ─── */
+
+interface SidePanelProps {
+  /** Which activity-bar view is active. */
+  activeView: ActivityView;
+
+  /* Scene / Explorer props */
+  scene: SceneNode;
+  sceneSelected: string;
+  onSceneSelect: (id: string) => void;
+  onToggleVisibility: (id: string) => void;
+
+  /** Called when the user clicks the Property button in ScenePane. */
+  onShowProperty?: (id: string) => void;
+
+  /* ── Generic persistence props (per-view) ── */
+
+  /**
+   * Persisted splitter sizes keyed by view name.
+   * e.g. `{ explorer: [220, 240, 150], selection: [260, 180], dummy: [200, 200, 200] }`
+   */
+  viewSizes: Record<string, number[]>;
+
+  /**
+   * Persisted collapse state keyed by view name.
+   * e.g. `{ explorer: { scene: false, color: false, dummy4: false }, … }`
+   */
+  viewCollapsed: Record<string, PaneCollapseState>;
+
+  /** Called when any view's splitter sizes change. */
+  onViewSizesChange: (view: string, sizes: number[]) => void;
+
+  /** Called when any view's collapse state changes. */
+  onViewCollapsedChange: (view: string, collapsed: PaneCollapseState) => void;
+}
+
+/* ─── Component ─── */
+
+export const SidePanel: React.FC<SidePanelProps> = ({
+  activeView,
+  scene,
+  sceneSelected,
+  onSceneSelect,
+  onToggleVisibility,
+  onShowProperty,
+  viewSizes,
+  viewCollapsed,
+  onViewSizesChange,
+  onViewCollapsedChange,
+}) => {
+  /* ────────────────────────────────────────────────────────
+   * Open-size refs: keyed by `${view}:${paneId}`.
+   *
+   * Stores the last user-set height of each pane while it was
+   * expanded. Used as `defaultSizes` when remounting the
+   * Allotment after a collapse/expand toggle.
+   * ──────────────────────────────────────────────────────── */
+  const openSizesRef = useRef<Record<string, number>>({});
+
+  /**
+   * Look up the open size for a given view+pane, falling back to
+   * the persisted size and then the pane's own default.
+   */
+  const getOpenSize = useCallback(
+    (view: string, paneId: string, index: number, fallback: number): number => {
+      const refKey = `${view}:${paneId}`;
+      if (openSizesRef.current[refKey] != null) {
+        return openSizesRef.current[refKey];
+      }
+      const persisted = viewSizes[view]?.[index];
+      if (persisted != null && persisted > HEADER_HEIGHT) {
+        return persisted;
+      }
+      return fallback;
+    },
+    [viewSizes],
+  );
+
+  /* ── Build pane configs for each view ─── */
+
+  const buildViewPaneConfigs = useMemo((): Record<string, PaneConfig[]> => ({
+    explorer: [
+      {
+        id: "scene",
+        defaultSize: 220,
+        render: (collapsed, onToggle) => (
+          <ScenePane
+            scene={scene}
+            selectedId={sceneSelected}
+            onSelect={onSceneSelect}
+            onToggleVisibility={onToggleVisibility}
+            onShowProperty={onShowProperty}
+            collapsed={collapsed}
+            onToggleCollapse={onToggle}
+          />
+        ),
+      },
+      {
+        id: "color",
+        defaultSize: 240,
+        render: (collapsed, onToggle) => (
+          <ColorPane collapsed={collapsed} onToggleCollapse={onToggle} />
+        ),
+      },
+      {
+        id: "dummy4",
+        defaultSize: 150,
+        render: (collapsed, onToggle) => (
+          <DummyPane4 collapsed={collapsed} onToggleCollapse={onToggle} />
+        ),
+      },
+    ],
+    selection: [
+      {
+        id: "mol",
+        defaultSize: 260,
+        render: (collapsed, onToggle) => (
+          <MolStructPane
+            molTree={MOL_TREE}
+            collapsed={collapsed}
+            onToggleCollapse={onToggle}
+          />
+        ),
+      },
+      {
+        id: "selection",
+        defaultSize: 180,
+        render: (collapsed, onToggle) => (
+          <SelectionPane
+            molecules={MOLECULE_OPTIONS}
+            collapsed={collapsed}
+            onToggleCollapse={onToggle}
+          />
+        ),
+      },
+    ],
+    dummy: [
+      {
+        id: "dummy1",
+        defaultSize: 200,
+        render: (collapsed, onToggle) => (
+          <DummyPane1 collapsed={collapsed} onToggleCollapse={onToggle} />
+        ),
+      },
+      {
+        id: "dummy2",
+        defaultSize: 200,
+        render: (collapsed, onToggle) => (
+          <DummyPane2 collapsed={collapsed} onToggleCollapse={onToggle} />
+        ),
+      },
+      {
+        id: "dummy3",
+        defaultSize: 200,
+        render: (collapsed, onToggle) => (
+          <DummyPane3 collapsed={collapsed} onToggleCollapse={onToggle} />
+        ),
+      },
+    ],
+  }), [
+    scene, sceneSelected, onSceneSelect,
+    onToggleVisibility, onShowProperty,
+  ]);
+
+  /* ── Generic view renderer (works for any N panes) ─── */
+
+  const renderView = useCallback(
+    (view: string) => {
+      const panes = buildViewPaneConfigs[view];
+      if (!panes || panes.length === 0) return null;
+
+      const collapsed = viewCollapsed[view] ?? {};
+
+      /* Allotment key: force remount when any pane's collapse
+       * state changes so new defaultSizes / maxSize take effect. */
+      const key = panes.map((p) => `${p.id}:${collapsed[p.id] ?? false}`).join("|");
+
+      /* Compute defaultSizes: collapsed panes get HEADER_HEIGHT,
+       * expanded panes get their last-known open size. */
+      const defaults = panes.map((p, i) =>
+        collapsed[p.id]
+          ? HEADER_HEIGHT
+          : getOpenSize(view, p.id, i, p.defaultSize),
+      );
+
+      /* Size-change handler: update open-size refs only when
+       * ALL panes are expanded. If any pane is collapsed,
+       * Allotment's reported sizes are artificially inflated
+       * and must not overwrite the real proportions. */
+      const handleSizeChange = (sizes: number[]) => {
+        const anyCollapsed = panes.some((p) => collapsed[p.id]);
+        if (!anyCollapsed) {
+          panes.forEach((p, i) => {
+            openSizesRef.current[`${view}:${p.id}`] = sizes[i];
+          });
+        }
+        onViewSizesChange(view, sizes);
+      };
+
+      /* Toggle a single pane's collapse flag. */
+      const togglePane = (paneId: string) => {
+        const next = { ...collapsed, [paneId]: !collapsed[paneId] };
+        onViewCollapsedChange(view, next);
+      };
+
+      return (
+        <Allotment
+          key={key}
+          vertical
+          defaultSizes={defaults}
+          onChange={handleSizeChange}
+        >
+          {panes.map((pane) => (
+            <Allotment.Pane
+              key={pane.id}
+              minSize={HEADER_HEIGHT}
+              maxSize={collapsed[pane.id] ? HEADER_HEIGHT : undefined}
+            >
+              {pane.render(!!collapsed[pane.id], () => togglePane(pane.id))}
+            </Allotment.Pane>
+          ))}
+        </Allotment>
+      );
+    },
+    [
+      buildViewPaneConfigs,
+      viewCollapsed,
+      getOpenSize,
+      onViewSizesChange,
+      onViewCollapsedChange,
+    ],
+  );
+
+  /* ── Render ─── */
+
+  return (
+    <div className="side-panel">
+      <div className="side-panel-header">
+        <Icon
+          icon={VIEW_ICONS[activeView] as any}
+          size={14}
+          style={{ marginRight: 6 }}
+        />
+        {VIEW_TITLES[activeView]}
+      </div>
+      <div className="side-panel-content">
+        {renderView(activeView)}
+      </div>
+    </div>
+  );
+};

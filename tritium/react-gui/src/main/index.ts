@@ -1,6 +1,8 @@
 import { app, BrowserWindow } from 'electron'
 import { createWindow } from './windowManager'
 
+app.setName('CueMol3-tritium')
+
 app.whenReady().then(createWindow)
 
 app.on('window-all-closed', () => {

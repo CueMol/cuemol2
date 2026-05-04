@@ -12,11 +12,11 @@ import "allotment/dist/style.css";
 import { ActivityBar, type ActivityView } from "./components/ActivityBar";
 import { MenuBar } from "./components/MenuBar";
 import { Toolbar } from "./components/Toolbar";
-import { SidePanel } from "./components/SidePanel";
+import { SidePanel } from "./components/panels/SidePanel";
 import { ContentArea } from "./components/ContentArea";
-import { BottomPanel } from "./components/BottomPanel";
+import { BottomPanel } from "./components/panels/BottomPanel";
 import { StatusBar } from "./components/StatusBar";
-import { InspectorPanel } from "./components/InspectorPanel";
+import { InspectorPanel } from "./components/panels/InspectorPanel";
 
 import type { AlignmentData, AnimationData } from "./types";
 
@@ -32,6 +32,9 @@ import { useCueMol } from "./hooks/useCueMol";
 import { useMolTabDispatch } from "./hooks/useMolTab";
 import { useElectronIpc } from "./hooks/useElectronIpc";
 import { useSceneCommands } from "./commands/useSceneCommands";
+import { useUiDialogCommands } from "./commands/useUiDialogCommands";
+import { useTabCommands } from "./commands/useTabCommands";
+import { useEditCommands } from "./commands/useEditCommands";
 import { useCueMolBusy } from "./hooks/useCueMolBusy";
 
 const App: React.FC = () => {
@@ -87,6 +90,20 @@ const App: React.FC = () => {
     resolveNodeName,
   });
 
+  // --- CueMol core ready: create initial scene/view ---
+
+  const { cueMolReady, cm } = useCueMol();
+  const { addMolTab, removeMolTab, getActiveSceneInfo, setActiveViewByID } = useMolTabDispatch();
+
+  const handleMolViewClose = useCallback((viewId: number) => {
+    removeMolTab(viewId);
+    if (cm) {
+      cm.removeView(viewId).catch((err: unknown) => {
+        console.warn('removeView failed:', err);
+      });
+    }
+  }, [cm, removeMolTab]);
+
   const {
     tabs,
     activeTab,
@@ -99,12 +116,7 @@ const App: React.FC = () => {
     handleNewTab,
     handleReorderTabs,
     handleSave,
-  } = useTabManager();
-
-  // --- CueMol core ready: create initial scene/view ---
-
-  const { cueMolReady, cm } = useCueMol();
-  const { addMolTab, getActiveSceneInfo, setActiveViewByID } = useMolTabDispatch();
+  } = useTabManager({ onMolViewClose: handleMolViewClose });
 
   // Guard to prevent duplicate initial scene creation (React StrictMode)
   const initialSceneCreatedRef = useRef(false);
@@ -155,10 +167,13 @@ const App: React.FC = () => {
     addMolViewTab,
     getActiveSceneInfo,
     openFileFromData,
-    handleNewTab,
-    handleCloseTab,
-    handleSave,
   });
+
+  useUiDialogCommands({ cm });
+
+  useTabCommands({ handleNewTab, handleCloseTab });
+
+  useEditCommands({ cm, getActiveSceneInfo, handleSave });
 
   useElectronIpc(activeTab);
 

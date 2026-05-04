@@ -1,0 +1,146 @@
+/* File Open Option Dialog styles */
+
+.fod-dialog {
+  width: 480px;
+}
+
+.fod-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 8px 0;
+}
+
+/* File info row */
+.fod-file-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 4px;
+}
+
+.fod-file-icon {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.fod-file-name {
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-medium);
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.fod-file-format {
+  font-size: var(--fs-base);
+  color: var(--accent);
+  background: rgba(95, 175, 215, 0.12);
+  border: 1px solid rgba(95, 175, 215, 0.25);
+  border-radius: 3px;
+  padding: 1px 6px;
+  flex-shrink: 0;
+}
+
+/* Section container */
+.fod-section {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.fod-section:last-child {
+  border-bottom: none;
+}
+
+.fod-section-title {
+  font-size: var(--fs-base);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em; /* relative em unit; intentionally not a variable */
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+/* Switch rows */
+.fod-switch {
+  margin-bottom: 4px;
+}
+
+.fod-switch:last-child {
+  margin-bottom: 0;
+}
+
+/* Form group overrides for compact layout */
+.fod-form-group {
+  margin-bottom: 8px;
+}
+
+.fod-form-group:last-child {
+  margin-bottom: 0;
+}
+
+.fod-form-group .bp5-label {
+  font-size: var(--fs-lg);
+  color: var(--text-secondary);
+  margin-bottom: 3px;
+}
+
+/* Collapsible disclosure section (format-specific options) */
+.fod-collapsible {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.fod-collapsible-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text-secondary);
+  transition: background 0.1s;
+}
+
+.fod-collapsible-header:hover {
+  background: var(--overlay-hover);
+  color: var(--text-primary);
+}
+
+.fod-collapsible-chevron {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: color 0.1s;
+}
+
+.fod-collapsible-header:hover .fod-collapsible-chevron {
+  color: var(--text-secondary);
+}
+
+.fod-collapsible-label {
+  font-size: var(--fs-lg);
+  flex: 1;
+}
+
+.fod-collapsible-hint {
+  font-size: var(--fs-base);
+  color: var(--text-muted);
+}
+
+.fod-collapsible-hint--modified {
+  color: var(--accent);
+}
+
+.fod-collapsible-body {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.fod-collapsible-body .fod-section {
+  border-bottom: none;
+}

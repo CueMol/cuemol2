@@ -20,6 +20,64 @@ function getItemLabel(item: AppMenuItem): string {
   return ''
 }
 
+interface DropdownItemProps {
+  item: AppMenuItem
+  onAction: (item: AppMenuItem) => void
+}
+
+const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction }) => {
+  const [submenuOpen, setSubmenuOpen] = useState(false)
+  const itemRef = useRef<HTMLDivElement>(null)
+
+  if (item.type === 'separator') {
+    return <div className="menubar__dropdown-separator" role="separator" />
+  }
+
+  const label = getItemLabel(item)
+  const accel = item.accelerator ? toDisplayAccel(item.accelerator) : undefined
+  const hasSubmenu = !!item.submenu?.length
+
+  if (hasSubmenu) {
+    return (
+      <div
+        ref={itemRef}
+        className="menubar__dropdown-item menubar__dropdown-item--has-submenu"
+        role="menuitem"
+        aria-haspopup="true"
+        aria-expanded={submenuOpen}
+        onMouseEnter={() => setSubmenuOpen(true)}
+        onMouseLeave={() => setSubmenuOpen(false)}
+      >
+        <span>{label}</span>
+        <span className="menubar__dropdown-arrow">{'▶'}</span>
+        {submenuOpen && (
+          <div className="menubar__submenu" role="menu">
+            {item.submenu!.map((sub, idx) => (
+              <DropdownItem key={sub.id ?? idx} item={sub} onAction={onAction} />
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className="menubar__dropdown-item"
+      role="menuitem"
+      onClick={(e) => {
+        e.stopPropagation()
+        onAction(item)
+      }}
+    >
+      <span>{label}</span>
+      {accel && (
+        <span className="menubar__dropdown-accelerator">{accel}</span>
+      )}
+    </div>
+  )
+}
+
 export const MenuBar: React.FC<MenuBarProps> = ({ activeTab }) => {
   const { dispatchMenuChannel } = useMenuDispatch(activeTab)
   const [openMenu, setOpenMenu] = useState<string | null>(null)
@@ -61,7 +119,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ activeTab }) => {
     }
   }
 
-  const handleItemClick = useCallback(
+  const handleItemAction = useCallback(
     (item: AppMenuItem) => {
       close()
       if (item.ipcChannel) {
@@ -73,9 +131,12 @@ export const MenuBar: React.FC<MenuBarProps> = ({ activeTab }) => {
     [close, dispatchMenuChannel],
   )
 
+  // MenuBar is only used on Windows/Linux: exclude darwinOnly groups
+  const visibleGroups = APP_MENU.filter((g) => !g.darwinOnly)
+
   return (
     <div className="menubar" ref={barRef} role="menubar">
-      {APP_MENU.map((group) => {
+      {visibleGroups.map((group) => {
         const groupId = group.label
         const isOpen = openMenu === groupId
         const visibleItems = group.submenu.filter((item) => !item.darwinOnly)
@@ -102,29 +163,13 @@ export const MenuBar: React.FC<MenuBarProps> = ({ activeTab }) => {
                 role="menu"
                 style={{ left: dropdownPos.left }}
               >
-                {visibleItems.map((item, idx) => {
-                  if (item.type === 'separator') {
-                    return <div key={idx} className="menubar__dropdown-separator" role="separator" />
-                  }
-                  const label = getItemLabel(item)
-                  const accel = item.accelerator ? toDisplayAccel(item.accelerator) : undefined
-                  return (
-                    <div
-                      key={item.id ?? idx}
-                      className="menubar__dropdown-item"
-                      role="menuitem"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleItemClick(item)
-                      }}
-                    >
-                      <span>{label}</span>
-                      {accel && (
-                        <span className="menubar__dropdown-accelerator">{accel}</span>
-                      )}
-                    </div>
-                  )
-                })}
+                {visibleItems.map((item, idx) => (
+                  <DropdownItem
+                    key={item.id ?? idx}
+                    item={item}
+                    onAction={handleItemAction}
+                  />
+                ))}
               </div>
             )}
           </div>

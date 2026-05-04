@@ -3,11 +3,11 @@ import * as event from '../event';
 import { useCueMol } from './useCueMol';
 import { useMolTabState } from './useMolTab';
 import { useActiveToolContext } from '../contexts/ActiveToolContext';
-import type { HitTestResult } from '../types/HitTestResult';
+import type { HitTestResult } from '../types';
 
 export interface UseNaviClickHandlerArgs {
     setStatusMessage: (msg: string | null) => void;
-    openContextMenu: (hit: HitTestResult) => void;
+    openContextMenu: (hit: HitTestResult, viewId: number) => void;
 }
 
 const LBTN = 1 << 3;  // left button modifier bit (same as UXP)
@@ -41,7 +41,7 @@ export function useNaviClickHandler({ setStatusMessage, openContextMenu }: UseNa
                     // Right click — run hittest and open context menu
                     const result = await cm.naviHitTest({ viewId, x, y });
                     if (result?.hit && result.raw && result.raw.objtype === 'MolCoord') {
-                        openContextMenu(result.raw as HitTestResult);
+                        openContextMenu(result.raw as HitTestResult, viewId);
                     }
                 } else if (mod & LBTN) {
                     // Left click — hittest + log + atom label toggle

@@ -1,0 +1,70 @@
+/* ─── Status Bar ─── */
+.status-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  height: 24px;
+  background: var(--statusbar-bg);
+  flex-shrink: 0;
+  font-size: var(--fs-md);
+  border-top: 1px solid var(--overlay-border-top);
+}
+
+.status-left,
+.status-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.status-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  pointer-events: none;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--statusbar-text);
+  white-space: nowrap;
+}
+
+.status-branch {
+  font-weight: var(--fw-semibold);
+}
+
+.status-ok {
+  color: var(--accent-green);
+}
+
+.status-tool {
+  font-weight: var(--fw-semibold);
+}
+
+.status-tool-shortcut {
+  opacity: 0.6;
+  font-weight: var(--fw-normal);
+}
+
+.status-busy {
+  color: var(--accent-yellow, #d4a017);
+}
+
+@keyframes status-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.status-spinner,
+.status-spinner svg {
+  animation: status-spin 0.9s linear infinite;
+  transform-origin: 50% 50%;
+}

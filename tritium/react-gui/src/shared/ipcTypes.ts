@@ -83,6 +83,39 @@ export interface AppPathInfo {
   userStyleExists: boolean
 }
 
+// ── Native viewport context menu ────────────────────────────────────────────
+
+export type NaviCtxAction =
+  | 'centerAt'
+  | 'centerAtSymm'
+  | 'selectAtom'
+  | 'selectResid'
+  | 'selectChain'
+  | 'selectMol'
+  | 'addSelectAtom'
+  | 'addSelectResid'
+  | 'addSelectChain'
+  | 'unselect'
+  | 'invertSel'
+  | 'toggleSidechain'
+  | 'arByres3'
+  | 'arByres5'
+  | 'arByres7'
+  | 'arByres10'
+  | 'around3'
+  | 'around5'
+  | 'around7'
+  | 'around10'
+
+export interface NaviCtxMenuPayload {
+  x: number
+  y: number
+  isSymm: boolean
+  atomLabel: string
+  rendLabel: string
+  symmLabel?: string
+}
+
 // ── ElectronAPI (the contextBridge contract) ────────────────────────────────
 
 export interface ElectronAPI {
@@ -106,9 +139,13 @@ export interface ElectronAPI {
   onMenuOpenScene: (callback: () => void) => () => void
   onMenuUndo: (callback: () => void) => () => void
   onMenuRedo: (callback: () => void) => () => void
+  onMenuGeneric: (callback: (channel: string) => void) => () => void
 
   // Invoke a native menu role action from the renderer (non-macOS custom menu)
   invokeMenuRole: (role: string) => Promise<void>
+
+  // Show native viewport context menu; resolves with the chosen action or null
+  showNaviContextMenu: (payload: NaviCtxMenuPayload) => Promise<NaviCtxAction | null>
 
   // macOS-specific gesture events (sourced from Electron BrowserWindow)
   onRotateGesture: (callback: (rotation: number) => void) => () => void

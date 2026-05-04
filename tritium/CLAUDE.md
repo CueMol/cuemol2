@@ -6,165 +6,191 @@ See the root [`../CLAUDE.md`](../CLAUDE.md) for all guidance, including tritium-
 
 ## Wrapper calling conventions
 
-TypeScript wrappers (`tritium/core/src/wrappers/`) all extend `BaseWrapper`, which holds a `_wrapped` object and a `_utils` helper. **The same wrapper class behaves differently depending on which context it runs in.**
+TypeScript wrappers (`tritium/core/src/wrappers/`) all extend `BaseWrapper`. **The same wrapper class behaves differently depending on context.**
 
-| Context | `_wrapped` | All method/prop calls |
+| Context | `_wrapped` | Calls |
 |---------|------------|-----------------------|
-| Worker thread (`WorkerService`, `services/*.service.ts`) | Native C++ object (addon) | **Synchronous** — no `await` |
-| Renderer thread (`AsyncCueMol`, React) | `ObjProxy` (IPC proxy) | **Asynchronous** — return `Promise<T>` at runtime |
-
-### Worker-side: fully synchronous
-
-No `await`. Wrapper methods that return objects call `this.createWrapper(result)` internally, so the returned value is already a typed wrapper:
+| Worker thread (`services/*.service.ts`) | Native C++ addon object | **Synchronous** — no `await` |
+| Renderer thread (`AsyncCueMol`, React) | `ObjProxy` (IPC proxy) | **Asynchronous** — `Promise<T>` at runtime |
 
 ```typescript
-const scene = ctx.sceMgr.getScene(sceneId);           // returns Scene wrapper (sync)
+// Worker (sync)
+const scene = ctx.sceMgr.getScene(sceneId);
 const cmd = ctx.cmdMgr.getCmd('load_object') as LoadObjectCommand;
-cmd.target_scene = scene;                              // setProp (sync)
+cmd.target_scene = scene;  // pass wrapper directly — setter unwraps internally
 cmd.run();
-const mol = cmd.result_object as MolCoord;             // getProp, returns wrapped MolCoord
+const mol = cmd.result_object as MolCoord;
 ```
 
-To create a new C++ object in a service: `ctx.svc.createCppObj('ClassName')` (returns a typed `BaseWrapper`).
+If you find yourself chaining multiple `await` calls on C++ wrappers in the renderer, write a worker-side service instead — each `await` is one IPC round-trip.
 
-### Renderer-side: all methods return Promise at runtime
-
-TypeScript types declare plain values, but at runtime every call through `ObjProxy` is async. Always `await`. When the declared type is not `Promise`, cast with `asAsync()` from `asyncUtils.ts`.
-
-If you find yourself chaining multiple `await` calls on C++ wrappers in the renderer, that is a signal to write a worker-side service instead. Each `await` is one IPC round-trip; a service collapses N calls into 1.
-
-### Passing wrappers as arguments
-
-Setters and method parameters that accept a wrapper call `arg.wrapped` internally to extract the raw C++ object. Just pass the wrapper directly — no manual unwrapping needed:
-
-```typescript
-cmd.target_scene = scene;    // setter does: this.setProp('target_scene', scene.wrapped)
-cmd.target_object = mol;
-coloring.append(sel, color); // invokeMethod receives sel.wrapped, color.wrapped
-```
+To create a new C++ object in a service: `ctx.svc.createCppObj('ClassName') as TheWrapper`.
 
 ---
 
 ## Worker service module system
 
-Services live in `react-gui/src/renderer/worker/services/*.service.ts` and are auto-registered via `import.meta.glob` at worker startup.
+Services live in `react-gui/src/renderer/worker/services/*.service.ts` and are auto-registered via `import.meta.glob` at startup.
 
-**Registration requirement**: a file is registered as a service only when it exports **both** `export const name` and `export default function`. Files that export neither (e.g. `setupRenderer.service.ts`, which is an internal helper called by `loadObject.service.ts`) are **not** registered and are not callable via `invokeWorker`. The `.service.ts` suffix is a naming convention only.
-
-### Service structure
-
-```typescript
-import type { WorkerContext } from '../types/WorkerContext';
-
-export const name = 'methodName';           // must match invokeWorker('methodName', args) call
-
-export interface MethodNameArgs { ... }     // single object payload
-
-export default function methodName(ctx: WorkerContext, args: MethodNameArgs): Result {
-    // All C++ wrapper calls are synchronous here — no await
-}
-```
-
-Async functions are also accepted; `WorkerService.invoke` wraps the return value in `Promise.resolve()`.
+**Single-service** (`export const name`, `export default function`). **Multi-service** (`export const services = { actionOne, actionTwo }`). `index.ts` checks `services` first. Use multi-service when actions share imports/helpers (e.g. `naviCtxtMenu.service.ts`).
 
 ### WorkerContext
 
-| Field | Type | Contents |
-|-------|------|----------|
-| `ctx.svc` | `WorkerService` | Full service instance — call `ctx.svc.addView(id, dpr)` etc. to reach gfx_mgr |
-| `ctx.sceMgr` | `SceneManager` | Scene/view creation and lookup |
-| `ctx.cmdMgr` | `CmdMgr` | Command objects (`getCmd`, `run`) |
-| `ctx.strMgr` | `StreamManager` | `getInfoJSON2`, `createHandler` — **already the singleton; no need to call `getService` inside a service** |
-| `ctx.styleMgr` | `StyleManager` | Style management |
+| Field | Contents |
+|-------|----------|
+| `ctx.svc` | `WorkerService` — `addView`, `createCppObj` |
+| `ctx.sceMgr` | Scene/view creation and lookup |
+| `ctx.cmdMgr` | Command objects (`getCmd`, `run`) |
+| `ctx.strMgr` | `StreamManager` — `getInfoJSON2`, `createHandler` |
+| `ctx.styleMgr` | Style management |
 
-### Two dispatch paths in WorkerService
+`_methods` (infrastructure, high-freq events) vs `_registered` (services, business logic) — don't migrate `_methods` to services without concrete benefit.
 
-| Path | When to use | Args convention |
-|------|-------------|-----------------|
-| `_methods` | Infrastructure, high-frequency events (`getProp/setProp/invokeMethod`, mouse/wheel, `bindCanvas`) | Positional: `apply(this, args)` |
-| `_registered` (services) | Business logic with multi-step C++ operations | Single object: `args[0]` is the payload struct |
+---
 
-Don't migrate `_methods` entries to services unless there's a concrete benefit (IPC reduction or cleaner caller code).
+## Common service patterns
+
+### View → Scene → Object
+
+```typescript
+const view = ctx.sceMgr.getView(viewId) as GUIView;
+if (!view) return { ok: false };
+const scene = view.getScene();
+const mol = scene.getObject(objId) as MolCoord;
+if (!mol) return { ok: false };
+```
+
+Renderers: `scene.getRenderer(rendId)` or `mol.getRendererByType(type)` / `mol.getRendererByNameType(name, type)`.
+
+### Selection (`mol.sel`)
+
+Use `helpers/makeSel.ts` to compile a selection string:
+
+```typescript
+const sel = makeSel(ctx, selStr, scene.uid);  // returns SelCommand | null
+if (!sel) return { ok: false };
+mol.sel = sel;
+```
+
+Auto-create the `*selection` renderer before assigning:
+
+```typescript
+if (!mol.getRendererByType('*selection')) mol.createRenderer('*selection');
+```
 
 ---
 
 ## Undo/Redo transaction
 
-Edit services that mutate scene state wrap their body with `withUndoTxn` from `services/withUndoTxn.ts`:
+Wrap scene-mutating services with `withUndoTxn` from `services/withUndoTxn.ts`:
 
 ```typescript
-import { withUndoTxn } from './withUndoTxn';
-
-export default function myService(ctx: WorkerContext, args: MyArgs): Result {
-    const scene = ctx.sceMgr.getScene(args.sceneId);
-    return withUndoTxn(scene, 'Human-readable label', () => {
-        // scene mutations here
-        return result;
-    });
-}
+return withUndoTxn(scene, 'Label', () => { /* mutations */ return result; });
 ```
 
-**When to wrap**: services that add/remove objects, create/delete renderers, or otherwise mutate scene state. If the equivalent UXP GUI operation uses `scene.startUndoTxn(...)`, the tritium service should use `withUndoTxn` too.
+- **Don't wrap**: read-only services, `createNewSceneAndView` (no UndoManager yet).
+- **Nested txns are safe**: inner `startUndoTxn` inside an active outer txn is silently absorbed.
+- **Never call from renderer**: undo txn APIs must only run inside worker services.
+- **Executing undo/redo**: Cmd+Z / Shift+Cmd+Z → `IPC.MENU_UNDO` / `IPC.MENU_REDO` → `CmdId.Undo` / `CmdId.Redo`.
 
-**When NOT to wrap**: read-only services (no mutations), `createNewSceneAndView` (creating a fresh scene has no existing UndoManager to record onto), pure infrastructure services.
+---
 
-**Nested txns are safe**: `UndoManager` (`src/qsys/UndoManager.cpp`) tracks `m_nTxnNestLevel`. An inner `startUndoTxn` call inside an active outer txn increments the counter and returns — the inner txn is silently absorbed into the outer one. This means services that call internal helpers that also use `withUndoTxn` work correctly without any coordination.
+## IPC patterns
 
-**Multiple sequential txns**: a single service can open and commit multiple txns in sequence by calling `withUndoTxn` multiple times. Each call produces an independent undo step.
+All channel name constants live in `shared/ipcChannels.ts` (`IPC` object). Types live in `shared/ipcTypes.ts`. The preload script (`preload/index.ts`) exposes them via `contextBridge` as `window.electronAPI`.
 
-**Never call from renderer**: `startUndoTxn`/`commitUndoTxn`/`rollbackUndoTxn` must only run inside worker services. Calling them from renderer code via `AsyncCueMol` is not supported.
+### Invoke channel that returns a value (renderer → main → renderer)
 
-**Executing undo/redo**: `cm.undo(scene_id)` / `cm.redo(scene_id)` on `AsyncCueMol` dispatch to the `undo` / `redo` worker services, which call `scene.undo(0)` / `scene.redo(0)`. Depth `0` means one undo step (UndoManager loops `for i=0; i<=n` so depth 0 → 1 step). The Edit menu (Cmd+Z / Shift+Cmd+Z) sends `IPC.MENU_UNDO` / `IPC.MENU_REDO` from main → renderer → `CmdId.Undo` / `CmdId.Redo` command registry.
+For UI operations that need a result from the main process (e.g., a native menu selection), use `ipcMain.handle` returning a Promise:
+
+```typescript
+// main/ipcHandlers.ts
+ipcMain.handle(IPC.MY_ACTION, (_event, payload: MyPayload) =>
+  doSomethingInMain(mainWindow, payload),
+)
+
+// main/myFeature.ts — wrap non-blocking APIs in a Promise
+export function doSomethingInMain(win: BrowserWindow, payload: MyPayload): Promise<Result | null> {
+  return new Promise((resolve) => {
+    let chosen: Result | null = null
+    // e.g. Menu.popup — click handler runs before callback (close)
+    menu.popup({ window: win, callback: () => resolve(chosen) })
+  })
+}
+
+// preload/index.ts
+myAction: (payload: MyPayload) => ipcRenderer.invoke(IPC.MY_ACTION, payload),
+
+// renderer
+const result = await window.electronAPI.myAction(payload)
+```
+
+### Native context menus
+
+Use `Menu.buildFromTemplate()` + `menu.popup({ window, x, y, callback })` in the main process. See `main/naviContextMenu.ts` for a complete example. The `click` handler on each item runs **before** `callback`, enabling a `Promise<action | null>` pattern.
+
+---
+
+## OffscreenCanvas / WebGL lifecycle constraints
+
+`MolViewPane` (`react-gui/src/renderer/components/panes/MolViewPane.tsx`) calls `canvas.transferControlToOffscreen()` to hand the canvas to the Web Worker. This API has hard constraints:
+
+- **One-shot per canvas element** — calling it a second time throws `InvalidStateError`.
+- **After transfer, the renderer thread cannot read canvas pixels** — the Worker owns the context.
+- **`GfxManager._canvas` has no unbind path** — once `bindCanvas()` is called, the OffscreenCanvas is held for the Worker's lifetime.
+
+**Design rules that follow from these constraints:**
+
+- `MolViewPane` must **stay mounted from its first render until app exit**. `ContentPane.tsx` uses an `everHadMolViewRef` flag so that the component is never unmounted even when all molview tabs are closed. Unmounting would destroy the canvas DOM and make re-binding impossible.
+- Adding a new view (new scene tab) uses `addView()` (via `createNewSceneAndView.service.ts`), **not** `bindCanvas()`. `bindCanvas()` is the one-time WebGL init that also transfers the OffscreenCanvas; `addView()` attaches a new C++ View to the already-bound canvas.
+- Closing a molview tab must call both `removeMolTab(viewId)` and `cm.removeView(viewId)`. Skipping these leaks `MolTabState` entries and leaves the Worker `bound_views` and view loop running indefinitely.
+
+**Clean-up responsibility** (wired in `App.tsx` via `useTabManager({ onMolViewClose })`):
+1. `removeMolTab(viewId)` — removes the entry from `MolTabState`
+2. `cm.removeView(viewId)` — stops the view loop and removes from Worker `bound_views`
+
+Note: the C++ `View` / `Scene` objects are not destroyed by `removeView`; that is a separate future concern.
 
 ---
 
 ## react-gui Tests (`tritium/react-gui/`)
 
 ```bash
-cd tritium/react-gui
-npm test    # vitest run
+cd tritium/react-gui && npm test    # vitest run
 ```
 
 Tests use **Vitest + jsdom**. Files go in `src/renderer/__test__/*.test.{ts,tsx}`. No `@testing-library/react` — use `createRoot` + `act()` directly, following the pattern in `useActiveTool.test.ts`.
 
-### Mocking AsyncCueMol in tests
+### Required mocks
 
-`AsyncCueMol.ts` imports `@cuemol/core/src/wrappers/wrapper-loader`, which glob-imports all wrappers including `Object.ts`. This file shadows the global `Object` and causes `Object.defineProperty is not a function`. Always add these mocks when a test file imports `AsyncCueMol`:
+Always add when a test imports `AsyncCueMol` or any component/hook that uses `useCueMol`:
 
 ```ts
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }));
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }));
+// If the component/hook calls useCueMol():
+vi.mock('../hooks/useCueMol', () => ({
+    useCueMol: () => ({ cueMolReady: false, cm: null }),
+}));
+```
+
+To mock `window.electronAPI` (jsdom: `window === globalThis`):
+
+```ts
+beforeEach(() => {
+    (window as any).electronAPI = { showNaviContextMenu: vi.fn() };
+});
 ```
 
 ### React 18 + fake timers
 
-`vi.useFakeTimers()` does **not** reliably flush `setState` called from timer callbacks via `act()` in jsdom + React 18 concurrent mode. To test `setTimeout`-based hook behavior:
-
-- **Spy after mounting** — install the spy on `globalThis.setTimeout` after `makeRenderHook()` so React internals during mount are not captured:
-
-```ts
-const { result, unmount } = makeRenderHook(() => useMyHook());
-const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
-// now trigger the code path that calls setTimeout
-```
-
-- **Test scheduling, not execution** — verify `setTimeout` was called with the right delay rather than trying to run the callback and observe state changes:
-
-```ts
-expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 150);
-expect(result).toBe(false); // state unchanged yet
-```
-
-- **Manual callback execution** — when you need to observe the state change, capture the callback in the mock and fire it inside `act()`:
+`vi.useFakeTimers()` does **not** reliably flush `setState` from timer callbacks via `act()`. Instead, spy after mounting and either assert scheduling or capture + manually invoke the callback:
 
 ```ts
 let timerCb: (() => void) | null = null;
-vi.spyOn(globalThis, 'setTimeout').mockImplementation((cb: any) => {
-    timerCb = cb; return 0 as any;
-});
+vi.spyOn(globalThis, 'setTimeout').mockImplementation((cb: any) => { timerCb = cb; return 0 as any; });
 // mount hook...
-act(() => { timerCb!(); }); // fires callback; React flushes inside act
-expect(result).toBe(true);
+act(() => { timerCb!(); });
 ```
 
 ---
@@ -176,23 +202,20 @@ expect(result).toBe(true);
 | Method | Response awaited | Counted as pending |
 |--------|------------------|--------------------|
 | `invokeWorker` | Yes (Promise) | Yes — `isBusy()` / `subscribeBusy()` |
-| `invokeWorkerWithTransfer` | Yes (Promise) | No — used only by `bindCanvas` (one-time canvas transfer at view init) |
+| `invokeWorkerWithTransfer` | Yes (Promise) | No — used only by `bindCanvas` |
 | `resized`, `onMouseEvent`, `onWheelEvent`, `onGestureEvent` | No (fire-and-forget) | No |
 
 ### getService from renderer
 
-`cm.getService('ClassName')` is a thin IPC call for ad-hoc singleton access (e.g. `MsgLog`, `SceneManager`). Prefer dedicated `AsyncCueMol` methods or worker services over chaining `getService` + further method calls — the chain becomes multiple IPC round-trips.
-
-In services, use `ctx.strMgr`, `ctx.sceMgr`, etc. directly; never call `getService` inside a service.
+`cm.getService('ClassName')` is a thin IPC call. Prefer dedicated `AsyncCueMol` methods or worker services. Never call `getService` inside a worker service — use `ctx.strMgr`, `ctx.sceMgr`, etc.
 
 ### Auto-generated wrapper enum properties
 
-Properties declared as `enum` in `.qif` files are typed as `number` in the generated TypeScript wrappers, but the C++ scripting layer accepts and returns **strings** at runtime (e.g. `stereoMode: 'none' | 'para' | 'cross' | 'hardware'`). When assigning or comparing such properties in tests or typed code, cast to bypass the incorrect declaration:
+Properties declared as `enum` in `.qif` files are typed as `number` but the C++ layer accepts/returns **strings** at runtime. Cast to bypass:
 
 ```typescript
 sut.stereoMode = 'none' as unknown as number;
 expect(sut.stereoMode as unknown as string).toBe('none');
 ```
 
-Do not change the generated wrapper files to fix this — they are overwritten at build time.
-
+Do not edit generated wrapper files — they are overwritten at build time.
