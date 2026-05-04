@@ -1,10 +1,10 @@
 /**
  * @file commands/useSceneCommands.ts
- * @description Registers scene/file/tab command handlers into the command registry.
+ * @description Registers scene/object load command handlers.
  *
- * This hook is called once near the root of the app (App.tsx) and registers
- * all operations so they can be dispatched from IPC listeners, toolbar
- * buttons, keyboard shortcuts, or any other UI surface.
+ * Scope is limited to scene creation and object/scene-from-path loading.
+ * UI dialog triggers, tab management, and edit operations are split into
+ * useUiDialogCommands / useTabCommands / useEditCommands.
  */
 
 import { useCallback } from 'react'
@@ -13,19 +13,12 @@ import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
 import { useDialog } from '../contexts/DialogContext'
 
-// Category IDs from src/qsys/InOutHandler.hpp (IOH_CAT_*)
-const IOH_CAT_OBJREADER = 0
-const IOH_CAT_SCEREADER = 3
-
 interface UseSceneCommandsOptions {
     cm: AsyncCueMol | null
     addMolTab: (title: string, viewId: number, sceneId: number) => void
     addMolViewTab: (title: string, viewId: number) => void
     getActiveSceneInfo: () => { scene_uid: number; view_id: number } | null | undefined
     openFileFromData: (name: string, content: string, filePath?: string) => void
-    handleNewTab: () => void
-    handleCloseTab: (id: string) => void
-    handleSave: () => void
 }
 
 export function useSceneCommands({
@@ -34,19 +27,9 @@ export function useSceneCommands({
     addMolViewTab,
     getActiveSceneInfo,
     openFileFromData,
-    handleNewTab,
-    handleCloseTab,
-    handleSave,
 }: UseSceneCommandsOptions): void {
 
-    const { showFileOpenOptionDialog, showAboutDialog } = useDialog()
-
-    // --- helpers ---
-
-    const getOpenFilters = useCallback(async (catId: number): Promise<ElectronFileFilter[]> => {
-        if (!cm) return []
-        return cm.getOpenFilters(catId)
-    }, [cm])
+    const { showFileOpenOptionDialog } = useDialog()
 
     const openNewScene = useCallback(async (filePath?: string): Promise<void> => {
         if (!cm) return
@@ -61,8 +44,6 @@ export function useSceneCommands({
             await cm.loadScene(filePath, scene_uid)
         }
     }, [cm, addMolTab, addMolViewTab])
-
-    // --- command registrations ---
 
     useRegisterCommand(CmdId.SceneNew, () => openNewScene())
 
@@ -80,7 +61,7 @@ export function useSceneCommands({
             ;(async () => {
                 const rendererTypes = await cm.getCompatibleRendererNames(data.path)
                 const options = await showFileOpenOptionDialog(data.path, rendererTypes)
-                if (options === null) return  // user cancelled
+                if (options === null) return
                 await cm.loadObject(data.path, info.scene_uid, options)
             })().catch((e: unknown) => console.error('OpenObjByPath failed:', e))
         },
@@ -95,40 +76,4 @@ export function useSceneCommands({
             )
         },
     )
-
-    useRegisterCommand(CmdId.UiOpenObjDialog, async () => {
-        if (!cm) return
-        const filters = await getOpenFilters(IOH_CAT_OBJREADER)
-        await window.electronAPI.openFile({ dialogType: 'open-obj', filters })
-    })
-
-    useRegisterCommand(CmdId.UiOpenSceneDialog, async () => {
-        if (!cm) return
-        const filters = await getOpenFilters(IOH_CAT_SCEREADER)
-        await window.electronAPI.openFile({ dialogType: 'open-scene', filters })
-    })
-
-    useRegisterCommand(CmdId.UiAboutDialog, () => showAboutDialog())
-
-    useRegisterCommand(CmdId.TabNew, () => handleNewTab())
-
-    useRegisterCommand(CmdId.TabClose, (id: string | undefined) => {
-        if (id) handleCloseTab(id)
-    })
-
-    useRegisterCommand(CmdId.FileSave, () => handleSave())
-
-    useRegisterCommand(CmdId.Undo, async () => {
-        if (!cm) return
-        const info = getActiveSceneInfo()
-        if (!info) return
-        await cm.undo(info.scene_uid)
-    })
-
-    useRegisterCommand(CmdId.Redo, async () => {
-        if (!cm) return
-        const info = getActiveSceneInfo()
-        if (!info) return
-        await cm.redo(info.scene_uid)
-    })
 }

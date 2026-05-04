@@ -32,6 +32,9 @@ import { useCueMol } from "./hooks/useCueMol";
 import { useMolTabDispatch } from "./hooks/useMolTab";
 import { useElectronIpc } from "./hooks/useElectronIpc";
 import { useSceneCommands } from "./commands/useSceneCommands";
+import { useUiDialogCommands } from "./commands/useUiDialogCommands";
+import { useTabCommands } from "./commands/useTabCommands";
+import { useEditCommands } from "./commands/useEditCommands";
 import { useCueMolBusy } from "./hooks/useCueMolBusy";
 
 const App: React.FC = () => {
@@ -155,10 +158,13 @@ const App: React.FC = () => {
     addMolViewTab,
     getActiveSceneInfo,
     openFileFromData,
-    handleNewTab,
-    handleCloseTab,
-    handleSave,
   });
+
+  useUiDialogCommands({ cm });
+
+  useTabCommands({ handleNewTab, handleCloseTab });
+
+  useEditCommands({ cm, getActiveSceneInfo, handleSave });
 
   useElectronIpc(activeTab);
 
