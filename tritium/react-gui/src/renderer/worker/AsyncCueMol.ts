@@ -1,569 +1,183 @@
 import { BaseWrapper } from '@cuemol/core/src/BaseWrapper';
-import { wrapper_map } from '@cuemol/core/src/wrappers/wrapper-loader';
 import type { SceneBgColor, ViewCenterMark } from '../../shared/ipcTypes';
 import type { FileOpenOptions } from '../components/fopen-opt-dlgs/types';
 import { ObjTuple } from './ObjTuple';
 import { ObjProxy } from './ObjProxy';
+import { WorkerTransport } from './WorkerTransport';
+import { EventSlots } from './EventSlots';
+import { ObjectFactory } from './ObjectFactory';
+import * as lifecycleApi from './apis/lifecycleApi';
+import * as viewApi from './apis/viewApi';
+import * as inputApi from './apis/inputApi';
+import * as fileApi from './apis/fileApi';
+import * as editApi from './apis/editApi';
+import * as sceneViewApi from './apis/sceneViewApi';
+import * as naviApi from './apis/naviApi';
 
-// import { createLogger } from "@cuemol/core/src/logger";
-// const log = createLogger(import.meta.url);
 const log = console;
 
-function makeMethodSeq(method: string, seqno: number): string {
-    return method + '.' + seqno.toString();
-}
-
 export class AsyncCueMol {
-    private _ready: boolean = false;
-    private _seqno: number = 0;
-    private _worker: Worker;
-    private _worker_onmessage_dict: { [key: string]: any } = {};
-    private _slot: { [key: string]: any } = {};
-    private _pendingCount: number = 0;
-    private _busyListeners: Set<(busy: boolean) => void> = new Set();
+    private _transport: WorkerTransport;
+    private _slots: EventSlots;
+    private _factory: ObjectFactory;
 
     constructor() {
-        log.info('launch worker...');
-
-        this._worker = new Worker(new URL('./worker_launcher.ts', import.meta.url));
-
-        log.info('launch worker OK');
-
-        this._worker.onmessage = (event: MessageEvent) => {
-            // log.info('worker message received:', event);
-            const [method, seqno, ...args] = event.data;
-
-            if (method === 'event-notify') {
-                // const [, ...evtargs] = event.data;
-                const evtargs = event.data.slice(1) as [number, string, number, number, number, string];
-                try {
-                    this.eventNotify(...evtargs);
-                } catch (e) {
-                    log.info('event manager notify failed:', e);
-                }
-                return;
-            }
-
-            const method_seq = makeMethodSeq(method, seqno);
-            if (method_seq in this._worker_onmessage_dict) {
-                this._worker_onmessage_dict[method_seq].apply(this, args);
-                delete this._worker_onmessage_dict[method_seq];
-            }
-        };
-
-        this._ready = true;
+        this._slots = new EventSlots();
+        this._transport = new WorkerTransport({
+            onEventNotify: (args) => this._slots.notify(...args),
+        });
+        this._factory = new ObjectFactory(this._transport, this);
     }
 
-    isReady(): boolean {
-        return this._ready;
+    // -------- Transport facade (preserves test surface + ObjProxy contract)
+    isReady(): boolean { return this._transport.isReady(); }
+    isBusy(): boolean { return this._transport.isBusy(); }
+    subscribeBusy(cb: (busy: boolean) => void): () => void { return this._transport.subscribeBusy(cb); }
+    invokeWorker(method: string, ...args: any[]): Promise<any[]> {
+        return this._transport.invokeWorker(method, ...args);
     }
-
-    postMessage(method: string, seq: number, args: any[], xfer: any = null) {
-        // log.debug(`postMessage called: ${method} ${seq}`, args, 'xfer:', xfer);
-        if (xfer === null)
-            this._worker.postMessage([method, seq, ...args]);
-        else
-            this._worker.postMessage([method, seq, ...args], [xfer]);
+    invokeWorkerWithTransfer(method: string, transfer: any, ...args: any[]): Promise<any[]> {
+        return this._transport.invokeWorkerWithTransfer(method, transfer, ...args);
     }
-
-    getSeqNo(): number {
-        this._seqno++;
-        return this._seqno;
+    postMessage(method: string, seq: number, args: any[], xfer: any = null): void {
+        this._transport.postMessage(method, seq, args, xfer);
     }
-
+    getSeqNo(): number { return this._transport.getSeqNo(); }
     addListener(method: string, seqno: number, handler: any): void {
-        const method_seq = makeMethodSeq(method, seqno);
-        this._worker_onmessage_dict[method_seq] = handler;
+        this._transport.addListener(method, seqno, handler);
     }
 
-    private _incPending(): void {
-        const wasBusy = this._pendingCount > 0;
-        this._pendingCount++;
-        if (!wasBusy) this._notifyBusyChange(true);
-    }
+    // -------- Factory facade (preserves BaseWrapper._utils contract)
+    createWrapperImpl(obj: ObjProxy): BaseWrapper { return this._factory.createWrapperImpl(obj); }
+    createWrapper(prom: Promise<ObjProxy>): Promise<BaseWrapper | null> { return this._factory.createWrapper(prom); }
+    getWrapped(obj: ObjProxy): ObjTuple { return this._factory.getWrapped(obj); }
+    createObj(className: string): Promise<BaseWrapper | null> { return this._factory.createObj(className); }
+    getService(className: string): Promise<BaseWrapper | null> { return this._factory.getService(className); }
+    hasClass(className: string): Promise<boolean | null> { return this._factory.hasClass(className); }
+    getAllClassNamesJSON(): Promise<string | null> { return this._factory.getAllClassNamesJSON(); }
 
-    private _decPending(): void {
-        if (this._pendingCount <= 0) return;
-        this._pendingCount--;
-        if (this._pendingCount === 0) this._notifyBusyChange(false);
-    }
-
-    private _notifyBusyChange(busy: boolean): void {
-        for (const cb of this._busyListeners) {
-            try { cb(busy); } catch (e) { log.warn('busy listener error:', e); }
-        }
-    }
-
-    isBusy(): boolean { return this._pendingCount > 0; }
-
-    subscribeBusy(cb: (busy: boolean) => void): () => void {
-        this._busyListeners.add(cb);
-        return () => { this._busyListeners.delete(cb); };
-    }
-
-    async invokeWorker(method: string, ...args: any[]): Promise<any[]> {
-        const cur_seq = this.getSeqNo();
-        this._incPending();
-        let promise = new Promise<any[]>((resolve, reject) => {
-            this.addListener(method, cur_seq, (result: boolean, ...msgargs: any[]): void => {
-                try {
-                    if (result) {
-                        // log.info('invokeWorker OK:', method, 'msgargs:', msgargs);
-                        resolve(msgargs);
-                    } else {
-                        // log.info('invokeWorker error:', method, 'error:', msgargs[0]);
-                        reject(msgargs[0]);
-                    }
-                } finally {
-                    this._decPending();
-                }
-            });
-        });
-        // send invokeWorker message to worker thread
-        this.postMessage(method, cur_seq, args);
-        return promise;
-    }
-
-    async invokeWorkerWithTransfer(method: string, transfer: any, ...args: any[]): Promise<any[]> {
-        const cur_seq = this.getSeqNo();
-        let promise = new Promise<any[]>((resolve, reject) => {
-            this.addListener(method, cur_seq, (result: boolean, ...msgargs: any[]): void => {
-                if (result) {
-                    // log.info('invokeWorker OK:', method, 'msgargs:', msgargs);
-                    resolve(msgargs);
-                } else {
-                    // log.info('invokeWorker error:', method, 'error:', msgargs[0]);
-                    reject(msgargs[0]);
-                }
-            });
-        });
-        // send invokeWorker message to worker thread
-        this.postMessage(method, cur_seq, args, transfer);
-        return promise;
-    }
-
-    //////////
-
-    createWrapperImpl(obj: ObjProxy): BaseWrapper {
-        // log.info('createWrapper called for obj:', obj);
-        const className = obj.getClassName();
-        // log.info(`createWrapper called for class: ${className}`);
-        const Klass = wrapper_map[className];
-        const wrapper = new Klass(obj, this);
-        return wrapper;
-    }
-
-    async createWrapper(prom: Promise<ObjProxy>): Promise<BaseWrapper | null> {
-        // log.info('createWrapper called for Promise:', prom);
-        return prom.then((resolvedObj: any) => {
-            if (resolvedObj === null || resolvedObj === undefined) {
-                return null;
-            }
-            // log.info('Promise resolved for obj:', resolvedObj);
-            return this.createWrapperImpl(resolvedObj);
-        }).catch((e: any) => {
-            log.warn('Error resolving Promise for obj:', e);
-            return null;
-        });
-    }
-
-    getWrapped(obj: ObjProxy): ObjTuple {
-        return obj.getObjTuple();
-    }
-
-    //////////
-
-    async initCueMol(sysConfigPath?: string): Promise<void> {
-        log.info(`initCueMol sysConfigPath=<${sysConfigPath}>`);
-
-        try {
-            await this.invokeWorker('initCueMol', sysConfigPath);
-            log.info('initCueMol OK');
-        } catch (e) {
-            log.error('initCueMol failed:', e);
-        }
-    }
-
-    async loadUserStyle(userStylePath?: string): Promise<boolean> {
-        try {
-            const result = await this.invokeWorker('loadUserStyle', userStylePath);
-            return result[0] as boolean;
-        } catch (e) {
-            log.error('loadUserStyle failed:', e);
-            return false;
-        }
-    }
-
-    async setViewInputConfigStyle(styleName: string): Promise<boolean> {
-        try {
-            const result = await this.invokeWorker('setViewInputConfigStyle', styleName);
-            return result[0] as boolean;
-        } catch (e) {
-            log.error('setViewInputConfigStyle failed:', e);
-            return false;
-        }
-    }
-
-    async terminateWorker(): Promise<void> {
-        try {
-            await this.invokeWorker('terminateWorker');
-            log.info('terminateWorker OK');
-            this._worker.terminate();
-            this._ready = false;
-        } catch (e) {
-            log.error('terminateWorker failed:', e);
-        }
-    }
-
-    async createObj(className: string): Promise<BaseWrapper | null> {
-        try {
-            const result = await this.invokeWorker('createObj', className);
-            if (result === null) {
-                log.warn(`createObj failed for class: ${className}`);
-                return null;
-            }
-            // log.info('createObj OK, result=', result);
-            const obj_id = result[0]._obj_id;
-            const natObj = new ObjProxy(obj_id, className, this);
-            return this.createWrapperImpl(natObj);
-        } catch (e) {
-            log.error('createObj failed:', e);
-        }
-        return null;
-    }
-
-    async getService(className: string): Promise<BaseWrapper | null> {
-        try {
-            const result = await this.invokeWorker('getService', className);
-            if (result === null) {
-                log.warn(`getService failed for class: ${className}`);
-                return null;
-            }
-            // log.info('createObj OK, result=', result);
-            const obj_id = result[0]._obj_id;
-            const natObj = new ObjProxy(obj_id, className, this);
-            return this.createWrapperImpl(natObj);
-        } catch (e) {
-            log.error('getService failed:', e);
-        }
-        return null;
-
-        // const obj = this.internal.getService(className);
-        // return this.createWrapper(obj as NativeObject);
-    }
-
-    async hasClass(className: string): Promise<boolean | null> {
-        try {
-            const result = await this.invokeWorker('hasClass', className);
-            if (result === null) {
-                log.warn(`hasClass failed for class: ${className}`);
-                return null;
-            }
-            return result[0] as boolean;
-        } catch (e) {
-            log.error('hasClass failed:', e);
-        }
-        return null;
-    }
-
-    async getAllClassNamesJSON(): Promise<string | null> {
-        try {
-            const result = await this.invokeWorker('getAllClassNamesJSON');
-            if (result === null) {
-                log.warn('getAllClassNamesJSON failed');
-                return null;
-            }
-            return result[0] as string;
-        } catch (e) {
-            log.error('getAllClassNamesJSON failed:', e);
-        }
-        return null;
-    }
-
-    //////////
-    // Canvas binding
-
-    async bindCanvas(canvas: any, view_id: number, dpr: number): Promise<any[]> {
-        const offscreen = canvas.transferControlToOffscreen();
-        return await this.invokeWorkerWithTransfer('bindCanvas',
-            offscreen,
-            offscreen,
-            view_id,
-            dpr);
-    }
-
-    async addView(view_id: number, dpr: number): Promise<boolean> {
-        const result = await this.invokeWorker('addView', view_id, dpr);
-        if (result === null) {
-            log.warn(`addView failed for view_id: ${view_id}`);
-            return false;
-        }
-        return result[0] as boolean;
-    }
-
-    async activateView(view_id: number): Promise<void> {
-        await this.invokeWorker('activateView', view_id);
-    }
-
-    async removeView(view_id: number): Promise<void> {
-        await this.invokeWorker('removeView', view_id);
-    }
-
-    resized(view_id: number, w: number, h: number, dpr: number): void {
-        const cur_seq = this.getSeqNo();
-        this.postMessage('resized', cur_seq, [view_id, w, h, dpr]);
-    }
-
-    onMouseEvent(view_id: number, method: string, event: any): void {
-        const { clientX, clientY, screenX, screenY, offsetX, offsetY, buttons, button, ctrlKey, shiftKey } = event;
-        const ev = { clientX, clientY, screenX, screenY, offsetX, offsetY, buttons, button, ctrlKey, shiftKey };
-        const cur_seq = this.getSeqNo();
-        this.postMessage(method, cur_seq, [view_id, ev]);
-    }
-
-    onWheelEvent(view_id: number, event: any): void {
-        const { offsetX, offsetY, screenX, screenY, deltaX, deltaY, ctrlKey, shiftKey, altKey } = event;
-        const ev = { offsetX, offsetY, screenX, screenY, deltaX, deltaY, ctrlKey, shiftKey, altKey };
-        const cur_seq = this.getSeqNo();
-        this.postMessage('wheel', cur_seq, [view_id, ev]);
-    }
-
-    onGestureEvent(view_id: number, axisID: number, delta: number, event?: any): void {
-        const { offsetX = 0, offsetY = 0, screenX = 0, screenY = 0,
-                ctrlKey = false, shiftKey = false, altKey = false } = event ?? {};
-        const ev = { offsetX, offsetY, screenX, screenY, ctrlKey, shiftKey, altKey, axisID, delta };
-        const cur_seq = this.getSeqNo();
-        this.postMessage('gesture', cur_seq, [view_id, ev]);
-    }
-
-    //////////
-    // Event impl
-
-    async addEventListener(aCatStr: string,
-        aSrcType: number,
-        aEvtType: number,
-        aSrcID: number, aObs: any): Promise<number> {
-        const [slot_id,]: [number, any] = await this.invokeWorker('addEventListener',
-            aCatStr, aSrcType, aEvtType, aSrcID) as [number, any];
+    // -------- Event subscription
+    async addEventListener(
+        aCatStr: string, aSrcType: number, aEvtType: number, aSrcID: number, aObs: any,
+    ): Promise<number> {
+        const [slot_id]: [number, any] = await this._transport.invokeWorker(
+            'addEventListener', aCatStr, aSrcType, aEvtType, aSrcID,
+        ) as [number, any];
         log.info("event listener registered: <" + aCatStr + ">, id=" + slot_id);
-        this._slot[slot_id.toString()] = aObs;
+        this._slots.register(slot_id, aObs);
         return slot_id;
     }
-
     async removeEventListener(nID: number): Promise<void> {
-        await this.invokeWorker('removeEventListener', nID);
-        delete this._slot[nID.toString()];
+        await this._transport.invokeWorker('removeEventListener', nID);
+        this._slots.unregister(nID);
         log.info("EventManager, unload slot: " + nID);
     }
-
-    eventNotify(slot: number,
-        category: string,
-        srcCat: number,
-        evtType: number,
-        srcUID: number,
-        evtStr: string): any {
-        let json: string | null = null;
-        let jobj: any = null;
-
-        // console.log('notify called:', slot, category, srcCat, evtType, srcUID, evtStr);
-
-        if (typeof evtStr === 'string') {
-            json = evtStr;
-            if (json && json.length > 0)
-                jobj = JSON.parse(json);
-            else
-                jobj = new Object();
-        }
-        else {
-            // TODO: impl??
-            // let cm = require("cuemol");
-            // jobj = cm.convPolymObj(evtStr);
-            // dd("Event notify arg4=obj, "+jobj);
-            console.log('unknown evtStr type', evtStr);
-        }
-
-        const dict_args = {
-            method: category,
-            srcCat: srcCat,
-            evtType: evtType,
-            srcUID: srcUID,
-            obj: jobj,
-            // raw: args,
-        };
-
-        const strslot = slot.toString();
-        if (strslot in this._slot) {
-            const obs = this._slot[strslot];
-            if (typeof obs === "function")
-                return obs(dict_args);
-            else if ("notify" in obs && typeof obs.notify === "function")
-                return obs.notify(dict_args);
-            else
-                console.log("warning : event for slot " + strslot + " is not delivered!!");
-        }
-        return null;
+    eventNotify(
+        slot: number, category: string, srcCat: number, evtType: number, srcUID: number, evtStr: string,
+    ): any {
+        return this._slots.notify(slot, category, srcCat, evtType, srcUID, evtStr);
     }
 
-    async getCompatibleRendererNames(filePath: string): Promise<string[]> {
-        try {
-            const result = await this.invokeWorker('getCompatibleRendererNames', { filePath });
-            return result?.[0] ?? [];
-        } catch (e) {
-            log.warn('getCompatibleRendererNames failed:', e);
-            return [];
-        }
+    // -------- Lifecycle
+    initCueMol(sysConfigPath?: string): Promise<void> { return lifecycleApi.initCueMol(this._transport, sysConfigPath); }
+    loadUserStyle(userStylePath?: string): Promise<boolean> { return lifecycleApi.loadUserStyle(this._transport, userStylePath); }
+    setViewInputConfigStyle(styleName: string): Promise<boolean> { return lifecycleApi.setViewInputConfigStyle(this._transport, styleName); }
+    terminateWorker(): Promise<void> { return lifecycleApi.terminateWorker(this._transport); }
+    getAppInfo(): Promise<{ version: string; build: string }> { return lifecycleApi.getAppInfo(this._transport); }
+
+    // -------- View lifecycle
+    bindCanvas(canvas: any, view_id: number, dpr: number): Promise<any[]> { return viewApi.bindCanvas(this._transport, canvas, view_id, dpr); }
+    addView(view_id: number, dpr: number): Promise<boolean> { return viewApi.addView(this._transport, view_id, dpr); }
+    activateView(view_id: number): Promise<void> { return viewApi.activateView(this._transport, view_id); }
+    removeView(view_id: number): Promise<void> { return viewApi.removeView(this._transport, view_id); }
+    resized(view_id: number, w: number, h: number, dpr: number): void { viewApi.resized(this._transport, view_id, w, h, dpr); }
+
+    // -------- Input events (fire-and-forget)
+    onMouseEvent(view_id: number, method: string, event: any): void { inputApi.onMouseEvent(this._transport, view_id, method, event); }
+    onWheelEvent(view_id: number, event: any): void { inputApi.onWheelEvent(this._transport, view_id, event); }
+    onGestureEvent(view_id: number, axisID: number, delta: number, event?: any): void {
+        inputApi.onGestureEvent(this._transport, view_id, axisID, delta, event);
     }
 
-    async getOpenFilters(catId: number): Promise<ElectronFileFilter[]> {
-        try {
-            const result = await this.invokeWorker('getOpenFilters', { catId });
-            return result?.[0] ?? [];
-        } catch (e) {
-            log.warn('getOpenFilters failed:', e);
-            return [];
-        }
+    // -------- File operations
+    getCompatibleRendererNames(filePath: string): Promise<string[]> { return fileApi.getCompatibleRendererNames(this._transport, filePath); }
+    getOpenFilters(catId: number): Promise<ElectronFileFilter[]> { return fileApi.getOpenFilters(this._transport, catId); }
+    createNewSceneAndView(dpr: number): Promise<{ scene_uid: number; view_uid: number } | null> {
+        return fileApi.createNewSceneAndView(this._transport, dpr);
+    }
+    loadScene(filePath: string, scene_id: number): Promise<boolean> { return fileApi.loadScene(this._transport, filePath, scene_id); }
+    loadObject(filePath: string, scene_id: number, options: FileOpenOptions): Promise<boolean> {
+        return fileApi.loadObject(this._transport, filePath, scene_id, options);
     }
 
-    async createNewSceneAndView(dpr: number): Promise<{ scene_uid: number; view_uid: number } | null> {
-        try {
-            const result = await this.invokeWorker('createNewSceneAndView', { dpr });
-            return result?.[0] ?? null;
-        } catch (e) {
-            log.error('createNewSceneAndView failed:', e);
-            return null;
-        }
+    // -------- Edit
+    undo(scene_id: number, depth = 0): Promise<boolean> { return editApi.undo(this._transport, scene_id, depth); }
+    redo(scene_id: number, depth = 0): Promise<boolean> { return editApi.redo(this._transport, scene_id, depth); }
+
+    // -------- Scene / View settings
+    getViewProjection(viewId: number): Promise<{ ok: boolean; perspective: boolean } | null> {
+        return sceneViewApi.getViewProjection(this._transport, viewId);
+    }
+    setViewProjection(viewId: number, perspective: boolean): Promise<{ ok: boolean; perspective: boolean } | null> {
+        return sceneViewApi.setViewProjection(this._transport, viewId, perspective);
+    }
+    getViewCenterMark(viewId: number): Promise<{ ok: boolean; centerMark: ViewCenterMark } | null> {
+        return sceneViewApi.getViewCenterMark(this._transport, viewId);
+    }
+    setViewCenterMark(viewId: number, centerMark: ViewCenterMark): Promise<{ ok: boolean; centerMark: ViewCenterMark } | null> {
+        return sceneViewApi.setViewCenterMark(this._transport, viewId, centerMark);
+    }
+    getSceneBgColor(sceneId: number): Promise<{ ok: boolean; bgColor: SceneBgColor } | null> {
+        return sceneViewApi.getSceneBgColor(this._transport, sceneId);
+    }
+    setSceneBgColor(sceneId: number, colorName: 'white' | 'black'): Promise<{ ok: boolean; bgColor: SceneBgColor } | null> {
+        return sceneViewApi.setSceneBgColor(this._transport, sceneId, colorName);
     }
 
-    async loadScene(filePath: string, scene_id: number): Promise<boolean> {
-        log.info(`loading QSC scene: ${filePath}`);
-        const result = await this.invokeWorker('loadScene', { filePath, sceneId: scene_id });
-        return result?.[0]?.ok ?? true;
+    // -------- Navigation tools
+    naviHitTest(args: { viewId: number; x: number; y: number }): Promise<{ hit: boolean; raw?: any } | null> {
+        return naviApi.naviHitTest(this._transport, args);
     }
-
-    async loadObject(filePath: string, scene_id: number,
-                     options: FileOpenOptions): Promise<boolean> {
-        log.info(`loading object file: ${filePath}`);
-        const result = await this.invokeWorker('loadObject', { filePath, sceneId: scene_id, options });
-        return result?.[0]?.ok ?? true;
+    naviClickAtom(args: { viewId: number; x: number; y: number }): Promise<{ handled: boolean; statusMessage?: string; hitres?: any } | null> {
+        return naviApi.naviClickAtom(this._transport, args);
     }
-
-    async undo(scene_id: number, depth = 0): Promise<boolean> {
-        const result = await this.invokeWorker('undo', { sceneId: scene_id, depth });
-        return result?.[0]?.ok ?? false;
-    }
-
-    async redo(scene_id: number, depth = 0): Promise<boolean> {
-        const result = await this.invokeWorker('redo', { sceneId: scene_id, depth });
-        return result?.[0]?.ok ?? false;
-    }
-
-    async getViewProjection(viewId: number): Promise<{ ok: boolean; perspective: boolean } | null> {
-        const result = await this.invokeWorker('getViewProjection', { viewId });
-        return result?.[0] ?? null;
-    }
-
-    async setViewProjection(viewId: number, perspective: boolean): Promise<{ ok: boolean; perspective: boolean } | null> {
-        const result = await this.invokeWorker('setViewProjection', { viewId, perspective });
-        return result?.[0] ?? null;
-    }
-
-    async getViewCenterMark(viewId: number): Promise<{ ok: boolean; centerMark: ViewCenterMark } | null> {
-        const result = await this.invokeWorker('getViewCenterMark', { viewId });
-        return result?.[0] ?? null;
-    }
-
-    async setViewCenterMark(viewId: number, centerMark: ViewCenterMark): Promise<{ ok: boolean; centerMark: ViewCenterMark } | null> {
-        const result = await this.invokeWorker('setViewCenterMark', { viewId, centerMark });
-        return result?.[0] ?? null;
-    }
-
-    async getSceneBgColor(sceneId: number): Promise<{ ok: boolean; bgColor: SceneBgColor } | null> {
-        const result = await this.invokeWorker('getSceneBgColor', { sceneId });
-        return result?.[0] ?? null;
-    }
-
-    async setSceneBgColor(sceneId: number, colorName: 'white' | 'black'): Promise<{ ok: boolean; bgColor: SceneBgColor } | null> {
-        const result = await this.invokeWorker('setSceneBgColor', { sceneId, colorName });
-        return result?.[0] ?? null;
-    }
-
-    async getAppInfo(): Promise<{ version: string; build: string }> {
-        try {
-            const result = await this.invokeWorker('appInfo', {});
-            return result?.[0] ?? { version: '', build: '' };
-        } catch (e) {
-            log.warn('getAppInfo failed:', e);
-            return { version: '', build: '' };
-        }
-    }
-
-    //////////
-    // Navigation tool services
-
-    async naviHitTest(args: { viewId: number; x: number; y: number }): Promise<{ hit: boolean; raw?: any } | null> {
-        const result = await this.invokeWorker('naviHitTest', args);
-        return result?.[0] ?? null;
-    }
-
-    async naviClickAtom(args: { viewId: number; x: number; y: number }): Promise<{ handled: boolean; statusMessage?: string; hitres?: any } | null> {
-        const result = await this.invokeWorker('naviClickAtom', args);
-        return result?.[0] ?? null;
-    }
-
-    async naviResidSel(args: {
+    naviResidSel(args: {
         viewId: number; x: number; y: number;
         mode: 'toggle' | 'extend';
         prevObjId?: number; prevAtomId?: number;
     }): Promise<{ handled: boolean; objId?: number; atomId?: number } | null> {
-        const result = await this.invokeWorker('naviResidSel', args);
-        return result?.[0] ?? null;
+        return naviApi.naviResidSel(this._transport, args);
     }
-
-    async naviCenterAt(args: { viewId: number; x: number; y: number; z: number }): Promise<{ ok: boolean } | null> {
-        const result = await this.invokeWorker('naviCenterAt', args);
-        return result?.[0] ?? null;
+    naviCenterAt(args: { viewId: number; x: number; y: number; z: number }): Promise<{ ok: boolean } | null> {
+        return naviApi.naviCenterAt(this._transport, args);
     }
-
-    async naviCenterAtSymm(args: {
+    naviCenterAtSymm(args: {
         viewId: number; objId: number; rendId: number; atomId: number; symmId: number;
     }): Promise<{ ok: boolean } | null> {
-        const result = await this.invokeWorker('naviCenterAtSymm', args);
-        return result?.[0] ?? null;
+        return naviApi.naviCenterAtSymm(this._transport, args);
     }
-
-    async naviCtxSelect(args: {
+    naviCtxSelect(args: {
         viewId: number; objId: number; atomId: number; mode: 'atom' | 'residue' | 'chain' | 'mol';
     }): Promise<{ ok: boolean } | null> {
-        const result = await this.invokeWorker('naviCtxSelect', args);
-        return result?.[0] ?? null;
+        return naviApi.naviCtxSelect(this._transport, args);
     }
-
-    async naviCtxAddSelect(args: {
+    naviCtxAddSelect(args: {
         viewId: number; objId: number; atomId: number; mode: 'atom' | 'residue' | 'chain' | 'mol';
     }): Promise<{ ok: boolean } | null> {
-        const result = await this.invokeWorker('naviCtxAddSelect', args);
-        return result?.[0] ?? null;
+        return naviApi.naviCtxAddSelect(this._transport, args);
     }
-
-    async naviCtxUnselect(args: { viewId: number; objId: number }): Promise<{ ok: boolean } | null> {
-        const result = await this.invokeWorker('naviCtxUnselect', args);
-        return result?.[0] ?? null;
+    naviCtxUnselect(args: { viewId: number; objId: number }): Promise<{ ok: boolean } | null> {
+        return naviApi.naviCtxUnselect(this._transport, args);
     }
-
-    async naviCtxInvertSel(args: { viewId: number; objId: number }): Promise<{ ok: boolean } | null> {
-        const result = await this.invokeWorker('naviCtxInvertSel', args);
-        return result?.[0] ?? null;
+    naviCtxInvertSel(args: { viewId: number; objId: number }): Promise<{ ok: boolean } | null> {
+        return naviApi.naviCtxInvertSel(this._transport, args);
     }
-
-    async naviCtxToggleSidechain(args: { viewId: number; objId: number }): Promise<{ ok: boolean } | null> {
-        const result = await this.invokeWorker('naviCtxToggleSidechain', args);
-        return result?.[0] ?? null;
+    naviCtxToggleSidechain(args: { viewId: number; objId: number }): Promise<{ ok: boolean } | null> {
+        return naviApi.naviCtxToggleSidechain(this._transport, args);
     }
-
-    async naviCtxAround(args: {
+    naviCtxAround(args: {
         viewId: number; objId: number; distance: number; byres: boolean;
     }): Promise<{ ok: boolean } | null> {
-        const result = await this.invokeWorker('naviCtxAround', args);
-        return result?.[0] ?? null;
+        return naviApi.naviCtxAround(this._transport, args);
     }
 }
