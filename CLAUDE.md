@@ -104,6 +104,10 @@ core (@cuemol/core): C++ addon + auto-generated TypeScript wrappers
 
 `docs/migration/mapping/` 以下で進捗管理。UXP 機能を tritium に実装したら必ず更新する。
 
+`docs/migration/uxp-inventory/` は **UXP GUI 側の現状棚卸し**。Tritium/CueMol3 への移行状況、完了率、実装済み/未実装判定、stub/mock/wired などの進捗情報は書かない。inventory は UXP 側の UI・commands・handlers・i18n・notes に閉じる。
+
+移行進捗は **必ず `docs/migration/mapping/` に書く**。inventory entry より細かい粒度で進捗管理が必要な場合も、inventory ではなく mapping 側に補助セクションや詳細表を追加する。
+
 | File | Purpose |
 |------|---------|
 | `docs/migration/mapping/<category>.md` | Per-item status (one row per UXP inventory entry) |
@@ -115,3 +119,8 @@ core (@cuemol/core): C++ addon + auto-generated TypeScript wrappers
 - **Status**: `todo` → `wip` → `review` → `done`
 
 `_index.md` も status 変更のたびに counts・In Progress リストを更新すること。
+
+進捗の補助情報を追加するときの原則:
+- 完了率や item-level breakdown は mapping 側に置く
+- `_index.md` の category counts は inventory entry 単位の status 集計として扱い、補助的な詳細表の行数は混ぜない
+- `docs/migration/uxp-inventory/*.md` は auto-generated 扱いなので、手編集が必要な場合でも migration 進捗情報を入れない

@@ -1,6 +1,6 @@
 # Migration Mapping — Index
 
-- Updated: 2026-05-04
+- Updated: 2026-05-05
 - Source files: `docs/migration/mapping/*.md` (excluding this file)
 
 ---
@@ -42,8 +42,8 @@
 | ID | React | Notes |
 |----|-------|-------|
 | [`toolbar.cuemol2-ribbon`](toolbars.md#toolbarcuemol2-ribbon) | `ViewportToolPalette` / `useNaviClickHandler` / `NaviContextMenu` | Context menu actions (center/select/around/invert/sidechain) done; Create SYMM mol deferred; measurement tool, rect-select drag pending |
-| [`menu.cuemol2`](menus.md#menucuemol2) | `menuTemplate` / `MenuBar` / `useMenuDispatch` | Full 9-group structure added; functional items wired including View projection checked state; ~40 stubs; MenuBar suppressed on macOS |
-| [`menu.cuemol2-macos`](menus.md#menucuemol2-macos) | `main/menu.ts` | macOS App menu items added |
+| [`menu.cuemol2`](menus.md#menucuemol2) | `menuTemplate` / `MenuBar` / `useMenuDispatch` | Full 9-group structure added; item-level completion 12/55; MenuBar suppressed on macOS |
+| [`menu.cuemol2-macos`](menus.md#menucuemol2-macos) | `main/menu.ts` | macOS App menu added; item-level completion 6/7 |
 | [`dialog.about`](other_dlgs.md#dialogabout) | `AboutDialog` / `useDialog` | GRE info・userAgent は省略 |
 
 ---
