@@ -16,6 +16,7 @@ import type {
   UiState,
   ElectronAPI,
   NaviCtxMenuPayload,
+  MenuState,
 } from '../shared/ipcTypes'
 import { IPC } from '../shared/ipcChannels'
 
@@ -106,6 +107,7 @@ const api: ElectronAPI = {
   },
 
   invokeMenuRole: (role: string) => ipcRenderer.invoke(IPC.MENU_INVOKE_ROLE, role),
+  updateMenuState: (state: MenuState) => ipcRenderer.invoke(IPC.MENU_UPDATE_STATE, state),
 
   showNaviContextMenu: (payload: NaviCtxMenuPayload) =>
     ipcRenderer.invoke(IPC.NAVI_CTX_SHOW, payload),

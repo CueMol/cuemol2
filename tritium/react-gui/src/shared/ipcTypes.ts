@@ -116,6 +116,15 @@ export interface NaviCtxMenuPayload {
   symmLabel?: string
 }
 
+// ── Native menu state ───────────────────────────────────────────────────────
+
+export interface MenuState {
+  viewProjection?: {
+    enabled: boolean
+    perspective: boolean | null
+  }
+}
+
 // ── ElectronAPI (the contextBridge contract) ────────────────────────────────
 
 export interface ElectronAPI {
@@ -143,6 +152,7 @@ export interface ElectronAPI {
 
   // Invoke a native menu role action from the renderer (non-macOS custom menu)
   invokeMenuRole: (role: string) => Promise<void>
+  updateMenuState: (state: MenuState) => Promise<void>
 
   // Show native viewport context menu; resolves with the chosen action or null
   showNaviContextMenu: (payload: NaviCtxMenuPayload) => Promise<NaviCtxAction | null>

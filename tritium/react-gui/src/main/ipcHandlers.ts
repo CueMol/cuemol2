@@ -11,9 +11,10 @@ import type { BrowserWindow } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import { IPC } from '../shared/ipcChannels'
-import type { LayoutState, FileDialogOptions, NaviCtxMenuPayload } from '../shared/ipcTypes'
+import type { LayoutState, FileDialogOptions, NaviCtxMenuPayload, MenuState } from '../shared/ipcTypes'
 import { loadLayout, saveLayout, loadUi, saveUi } from './stateStore'
 import { showNaviContextMenu } from './naviContextMenu'
+import { updateMenuState } from './menu'
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -101,6 +102,7 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
 
   ipcMain.handle(IPC.UI_LOAD, () => loadUi())
   ipcMain.handle(IPC.UI_SAVE, (_e, state) => saveUi(state))
+  ipcMain.handle(IPC.MENU_UPDATE_STATE, (_e, state: MenuState) => updateMenuState(state))
 
   ipcMain.handle(IPC.NAVI_CTX_SHOW, (_event, payload: NaviCtxMenuPayload) =>
     showNaviContextMenu(mainWindow, payload),

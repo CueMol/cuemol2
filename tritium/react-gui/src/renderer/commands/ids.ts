@@ -26,6 +26,10 @@ export const CmdId = {
   // Undo/redo
   Undo:               'edit.undo',           // no args
   Redo:               'edit.redo',           // no args
+
+  // View operations
+  ViewPerspective:    'view.perspective',    // no args
+  ViewOrthographic:   'view.orthographic',   // no args
 } as const
 
 export type CmdId = typeof CmdId[keyof typeof CmdId]

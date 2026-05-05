@@ -21,7 +21,9 @@ export interface AppMenuItem {
   ipcChannel?: string
   /** Native Electron role. Handled natively in the main-process menu; handled via invokeMenuRole IPC in the renderer. */
   role?: AppMenuRole
-  type?: 'separator'
+  type?: 'separator' | 'checkbox'
+  checked?: boolean
+  enabled?: boolean
   submenu?: AppMenuItem[]
   /** If true, only include in the native menu on macOS (React menu bar never shows these). */
   darwinOnly?: boolean
@@ -119,10 +121,6 @@ export const APP_MENU: AppMenuGroup[] = [
   {
     label: 'Scene',
     submenu: [
-      { id: 'new-scene',  label: 'New Scene',    ipcChannel: 'menu:new-scene' },
-      { id: 'open-file2', label: 'Open File...',  ipcChannel: 'menu:open-file' },
-      { id: 'open-scene2', label: 'Open Scene...', ipcChannel: 'menu:open-scene' },
-      { type: 'separator' },
       {
         id: 'background', label: 'Background',
         submenu: [
@@ -140,8 +138,8 @@ export const APP_MENU: AppMenuGroup[] = [
   {
     label: 'View',
     submenu: [
-      { id: 'view-perspective',   label: 'Perspective',   ipcChannel: 'menu:view-perspective' },
-      { id: 'view-orthographic',  label: 'Orthographic',  ipcChannel: 'menu:view-orthographic' },
+      { id: 'view-perspective',   label: 'Perspective',   type: 'checkbox', enabled: false, ipcChannel: 'menu:view-perspective' },
+      { id: 'view-orthographic',  label: 'Orthographic',  type: 'checkbox', enabled: false, ipcChannel: 'menu:view-orthographic' },
       { type: 'separator' },
       {
         id: 'center-mark', label: 'Center mark',

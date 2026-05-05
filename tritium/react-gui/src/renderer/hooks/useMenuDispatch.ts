@@ -44,6 +44,12 @@ export function useMenuDispatch(activeTab: string | null): {
         case IPC.MENU_OPEN_SCENE:
           dispatch(CmdId.UiOpenSceneDialog).catch(logErr('open scene dialog:'))
           break
+        case IPC.MENU_VIEW_PERSPECTIVE:
+          dispatch(CmdId.ViewPerspective).catch(logErr('view.perspective:'))
+          break
+        case IPC.MENU_VIEW_ORTHOGRAPHIC:
+          dispatch(CmdId.ViewOrthographic).catch(logErr('view.orthographic:'))
+          break
         case 'menu:about':
           dispatch(CmdId.UiAboutDialog).catch(logErr('about dialog:'))
           break

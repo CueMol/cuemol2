@@ -68,6 +68,13 @@
   pointer-events: none;
 }
 
+.menubar__dropdown-check {
+  width: 14px;
+  flex: 0 0 14px;
+  color: var(--text-primary);
+  text-align: center;
+}
+
 .menubar__dropdown-separator {
   height: 1px;
   background: var(--border-subtle);

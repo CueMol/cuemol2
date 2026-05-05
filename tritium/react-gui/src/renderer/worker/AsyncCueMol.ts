@@ -456,6 +456,16 @@ export class AsyncCueMol {
         return result?.[0]?.ok ?? false;
     }
 
+    async getViewProjection(viewId: number): Promise<{ ok: boolean; perspective: boolean } | null> {
+        const result = await this.invokeWorker('getViewProjection', { viewId });
+        return result?.[0] ?? null;
+    }
+
+    async setViewProjection(viewId: number, perspective: boolean): Promise<{ ok: boolean; perspective: boolean } | null> {
+        const result = await this.invokeWorker('setViewProjection', { viewId, perspective });
+        return result?.[0] ?? null;
+    }
+
     async getAppInfo(): Promise<{ version: string; build: string }> {
         try {
             const result = await this.invokeWorker('appInfo', {});

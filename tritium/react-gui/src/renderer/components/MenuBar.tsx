@@ -5,6 +5,7 @@ import { useMenuDispatch } from '../hooks/useMenuDispatch'
 
 interface MenuBarProps {
   activeTab: string | null
+  viewProjection?: boolean | null
 }
 
 /** Convert an Electron accelerator string to a display string for Windows/Linux. */
@@ -23,9 +24,23 @@ function getItemLabel(item: AppMenuItem): string {
 interface DropdownItemProps {
   item: AppMenuItem
   onAction: (item: AppMenuItem) => void
+  viewProjection?: boolean | null
 }
 
-const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction }) => {
+const getViewProjectionState = (
+  item: AppMenuItem,
+  viewProjection: boolean | null | undefined,
+): { enabled: boolean; checked: boolean } | null => {
+  if (item.id === 'view-perspective') {
+    return { enabled: viewProjection !== null && viewProjection !== undefined, checked: viewProjection === true }
+  }
+  if (item.id === 'view-orthographic') {
+    return { enabled: viewProjection !== null && viewProjection !== undefined, checked: viewProjection === false }
+  }
+  return null
+}
+
+const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProjection }) => {
   const [submenuOpen, setSubmenuOpen] = useState(false)
   const itemRef = useRef<HTMLDivElement>(null)
 
@@ -36,12 +51,17 @@ const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction }) => {
   const label = getItemLabel(item)
   const accel = item.accelerator ? toDisplayAccel(item.accelerator) : undefined
   const hasSubmenu = !!item.submenu?.length
+  const projectionState = getViewProjectionState(item, viewProjection)
+  const enabled = projectionState?.enabled ?? item.enabled ?? true
+  const checked = projectionState?.checked ?? item.checked ?? false
+  const isCheckbox = item.type === 'checkbox'
+  const className = `menubar__dropdown-item${enabled ? '' : ' menubar__dropdown-item--disabled'}`
 
   if (hasSubmenu) {
     return (
       <div
         ref={itemRef}
-        className="menubar__dropdown-item menubar__dropdown-item--has-submenu"
+        className={`${className} menubar__dropdown-item--has-submenu`}
         role="menuitem"
         aria-haspopup="true"
         aria-expanded={submenuOpen}
@@ -53,7 +73,12 @@ const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction }) => {
         {submenuOpen && (
           <div className="menubar__submenu" role="menu">
             {item.submenu!.map((sub, idx) => (
-              <DropdownItem key={sub.id ?? idx} item={sub} onAction={onAction} />
+              <DropdownItem
+                key={sub.id ?? idx}
+                item={sub}
+                onAction={onAction}
+                viewProjection={viewProjection}
+              />
             ))}
           </div>
         )}
@@ -63,13 +88,19 @@ const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction }) => {
 
   return (
     <div
-      className="menubar__dropdown-item"
-      role="menuitem"
+      className={className}
+      role={isCheckbox ? 'menuitemcheckbox' : 'menuitem'}
+      aria-checked={isCheckbox ? checked : undefined}
+      aria-disabled={!enabled}
       onClick={(e) => {
         e.stopPropagation()
+        if (!enabled) return
         onAction(item)
       }}
     >
+      {isCheckbox && (
+        <span className="menubar__dropdown-check">{checked ? '\u2713' : ''}</span>
+      )}
       <span>{label}</span>
       {accel && (
         <span className="menubar__dropdown-accelerator">{accel}</span>
@@ -78,7 +109,7 @@ const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction }) => {
   )
 }
 
-export const MenuBar: React.FC<MenuBarProps> = ({ activeTab }) => {
+export const MenuBar: React.FC<MenuBarProps> = ({ activeTab, viewProjection = null }) => {
   const { dispatchMenuChannel } = useMenuDispatch(activeTab)
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [dropdownPos, setDropdownPos] = useState<{ left: number }>({ left: 0 })
@@ -168,6 +199,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ activeTab }) => {
                     key={item.id ?? idx}
                     item={item}
                     onAction={handleItemAction}
+                    viewProjection={viewProjection}
                   />
                 ))}
               </div>

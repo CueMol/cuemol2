@@ -35,6 +35,7 @@ import { useSceneCommands } from "./commands/useSceneCommands";
 import { useUiDialogCommands } from "./commands/useUiDialogCommands";
 import { useTabCommands } from "./commands/useTabCommands";
 import { useEditCommands } from "./commands/useEditCommands";
+import { useViewCommands } from "./commands/useViewCommands";
 import { useCueMolBusy } from "./hooks/useCueMolBusy";
 
 const App: React.FC = () => {
@@ -158,6 +159,24 @@ const App: React.FC = () => {
 
   const [alignment] = useState<AlignmentData | null>(SAMPLE_ALIGNMENT);
   const [animation] = useState<AnimationData | null>(SAMPLE_ANIMATION);
+  const [viewProjection, setViewProjection] = useState<boolean | null>(null);
+  const activeMolViewId = tabs.find((t) => t.id === activeTab && t.type === 'molview')?.viewId;
+
+  const syncNativeViewProjectionMenu = useCallback((perspective: boolean | null) => {
+    window.electronAPI?.updateMenuState({
+      viewProjection: {
+        enabled: perspective !== null,
+        perspective,
+      },
+    }).catch((err: unknown) => {
+      console.warn('update menu state failed:', err);
+    });
+  }, []);
+
+  const handleProjectionChanged = useCallback((perspective: boolean) => {
+    setViewProjection(perspective);
+    syncNativeViewProjectionMenu(perspective);
+  }, [syncNativeViewProjectionMenu]);
 
   // --- Command registrations and IPC wiring ---
 
@@ -175,6 +194,12 @@ const App: React.FC = () => {
 
   useEditCommands({ cm, getActiveSceneInfo, handleSave });
 
+  useViewCommands({
+    cm,
+    getActiveViewId: () => activeMolViewId,
+    onProjectionChanged: handleProjectionChanged,
+  });
+
   useElectronIpc(activeTab);
 
   const cueMolBusy = useCueMolBusy();
@@ -188,6 +213,30 @@ const App: React.FC = () => {
       document.documentElement.style.setProperty("--titlebar-inset", "78px");
     }
   }, []);
+
+  useEffect(() => {
+    if (!cm || activeMolViewId === undefined) {
+      setViewProjection(null);
+      syncNativeViewProjectionMenu(null);
+      return;
+    }
+
+    let cancelled = false;
+    cm.getViewProjection(activeMolViewId).then((result) => {
+      if (cancelled) return;
+      const perspective = result?.ok ? result.perspective : null;
+      setViewProjection(perspective);
+      syncNativeViewProjectionMenu(perspective);
+    }).catch((err: unknown) => {
+      if (!cancelled) {
+        console.warn('get view projection failed:', err);
+        setViewProjection(null);
+        syncNativeViewProjectionMenu(null);
+      }
+    });
+
+    return () => { cancelled = true; };
+  }, [activeMolViewId, cm, syncNativeViewProjectionMenu]);
 
   // --- Derived sidebar sub-panel state ---
 
@@ -211,7 +260,7 @@ const App: React.FC = () => {
     <ActiveToolProvider activeTool={activeTool}>
     <div className="app">
       {window.electronAPI?.platform !== 'darwin' && (
-        <MenuBar activeTab={activeTab} />
+        <MenuBar activeTab={activeTab} viewProjection={viewProjection} />
       )}
       <Toolbar
         onOpenFile={handleOpenFile}

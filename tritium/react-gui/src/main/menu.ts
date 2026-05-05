@@ -10,6 +10,7 @@ import type { BrowserWindow, MenuItemConstructorOptions } from 'electron'
 import { IPC } from '../shared/ipcChannels'
 import { APP_MENU } from '../shared/menuTemplate'
 import type { AppMenuItem, AppMenuGroup } from '../shared/menuTemplate'
+import type { MenuState } from '../shared/ipcTypes'
 
 const isMac = process.platform === 'darwin'
 
@@ -26,6 +27,8 @@ function buildSpecificHandlers(
     [IPC.MENU_REDO]:       () => mainWindow.webContents.send(IPC.MENU_REDO),
     [IPC.MENU_NEW_SCENE]:  () => mainWindow.webContents.send(IPC.MENU_NEW_SCENE),
     [IPC.MENU_OPEN_SCENE]: () => mainWindow.webContents.send(IPC.MENU_OPEN_SCENE),
+    [IPC.MENU_VIEW_PERSPECTIVE]:  () => mainWindow.webContents.send(IPC.MENU_GENERIC, IPC.MENU_VIEW_PERSPECTIVE),
+    [IPC.MENU_VIEW_ORTHOGRAPHIC]: () => mainWindow.webContents.send(IPC.MENU_GENERIC, IPC.MENU_VIEW_ORTHOGRAPHIC),
   }
 }
 
@@ -45,7 +48,11 @@ function buildItem(
 
   const result: MenuItemConstructorOptions = {}
 
+  if (item.id) result.id = item.id
   if (item.label) result.label = item.label
+  if (item.type === 'checkbox') result.type = 'checkbox'
+  if (item.checked !== undefined) result.checked = item.checked
+  if (item.enabled !== undefined) result.enabled = item.enabled
 
   // Pure role items (no ipcChannel) delegate entirely to Electron.
   if (item.role && !item.ipcChannel) {
@@ -125,4 +132,23 @@ export function createMenu(mainWindow: BrowserWindow): void {
   ]
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
+}
+
+export function updateMenuState(state: MenuState): void {
+  const menu = Menu.getApplicationMenu()
+  if (!menu) return
+
+  if (state.viewProjection) {
+    const { enabled, perspective } = state.viewProjection
+    const perspectiveItem = menu.getMenuItemById('view-perspective')
+    const orthographicItem = menu.getMenuItemById('view-orthographic')
+    if (perspectiveItem) {
+      perspectiveItem.enabled = enabled
+      perspectiveItem.checked = enabled && perspective === true
+    }
+    if (orthographicItem) {
+      orthographicItem.enabled = enabled
+      orthographicItem.checked = enabled && perspective === false
+    }
+  }
 }
