@@ -89,6 +89,12 @@ core (@cuemol/core): C++ addon + auto-generated TypeScript wrappers
 - macOS アプリメニューは `src/main/menu.ts` の `macOnlyGroups` にハードコードされており、`APP_MENU` の `darwinOnly` グループは無視される。macOS 側の変更は `menu.ts` を直接編集する
 - カスタム動作のメニュー項目には `role` ではなく `ipcChannel: 'menu:xxx'` を使う
 
+**実装時の確認原則**
+- wrapper/API の型は生成 TS だけで判断せず、既存 tests・`.qif`・C++/N-API 変換も確認する。`.qif` の `enum` property は数値ではなく文字列 ID で扱う
+- 状態同期は「どの値を source of truth にするか」を先に決める。UI 操作後の menu checked などは、必要がなければ不安定な読み返し値ではなく成功した command の要求値で更新する
+- Electron native menu と React menu は同じ template から作っても挙動が同一とは限らない。radio/checkbox など platform 側が状態を持つ item は、main 側の更新方式と衝突しないか確認する
+- 契約が確認できたら、その契約に従って実装し、不要な正規化や互換コードを足さない。防御コードが必要な場合は、実際に観測された入力差分に限定する
+
 **新規ダイアログの追加パターン**
 1. `worker/services/xxx.service.ts` — C++ データ取得
 2. `AsyncCueMol.ts` — `invokeWorker('xxx', args)` のラッパーメソッド

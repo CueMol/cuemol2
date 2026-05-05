@@ -118,10 +118,16 @@ export interface NaviCtxMenuPayload {
 
 // ── Native menu state ───────────────────────────────────────────────────────
 
+export type ViewCenterMark = 'none' | 'crosshair' | 'axis'
+
 export interface MenuState {
   viewProjection?: {
     enabled: boolean
     perspective: boolean | null
+  }
+  viewCenterMark?: {
+    enabled: boolean
+    centerMark: ViewCenterMark | null
   }
 }
 

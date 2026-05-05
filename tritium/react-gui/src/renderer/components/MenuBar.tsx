@@ -1,11 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { APP_MENU, getRoleLabel } from '../../shared/menuTemplate'
 import type { AppMenuItem, AppMenuRole } from '../../shared/menuTemplate'
+import type { ViewCenterMark } from '../../shared/ipcTypes'
 import { useMenuDispatch } from '../hooks/useMenuDispatch'
 
 interface MenuBarProps {
   activeTab: string | null
   viewProjection?: boolean | null
+  viewCenterMark?: ViewCenterMark | null
 }
 
 /** Convert an Electron accelerator string to a display string for Windows/Linux. */
@@ -25,6 +27,7 @@ interface DropdownItemProps {
   item: AppMenuItem
   onAction: (item: AppMenuItem) => void
   viewProjection?: boolean | null
+  viewCenterMark?: ViewCenterMark | null
 }
 
 const getViewProjectionState = (
@@ -40,7 +43,23 @@ const getViewProjectionState = (
   return null
 }
 
-const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProjection }) => {
+const getViewCenterMarkState = (
+  item: AppMenuItem,
+  viewCenterMark: ViewCenterMark | null | undefined,
+): { enabled: boolean; checked: boolean } | null => {
+  const itemValues: Record<string, ViewCenterMark> = {
+    'center-mark-none': 'none',
+    'center-mark-cross': 'crosshair',
+    'center-mark-axis': 'axis',
+  }
+  if (!item.id || !(item.id in itemValues)) return null
+  return {
+    enabled: viewCenterMark !== null && viewCenterMark !== undefined,
+    checked: viewCenterMark === itemValues[item.id],
+  }
+}
+
+const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProjection, viewCenterMark }) => {
   const [submenuOpen, setSubmenuOpen] = useState(false)
   const itemRef = useRef<HTMLDivElement>(null)
 
@@ -52,9 +71,10 @@ const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProject
   const accel = item.accelerator ? toDisplayAccel(item.accelerator) : undefined
   const hasSubmenu = !!item.submenu?.length
   const projectionState = getViewProjectionState(item, viewProjection)
-  const enabled = projectionState?.enabled ?? item.enabled ?? true
-  const checked = projectionState?.checked ?? item.checked ?? false
-  const isCheckbox = item.type === 'checkbox'
+  const centerMarkState = getViewCenterMarkState(item, viewCenterMark)
+  const enabled = projectionState?.enabled ?? centerMarkState?.enabled ?? item.enabled ?? true
+  const checked = projectionState?.checked ?? centerMarkState?.checked ?? item.checked ?? false
+  const isCheckable = item.type === 'checkbox' || item.type === 'radio'
   const className = `menubar__dropdown-item${enabled ? '' : ' menubar__dropdown-item--disabled'}`
 
   if (hasSubmenu) {
@@ -78,6 +98,7 @@ const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProject
                 item={sub}
                 onAction={onAction}
                 viewProjection={viewProjection}
+                viewCenterMark={viewCenterMark}
               />
             ))}
           </div>
@@ -89,8 +110,8 @@ const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProject
   return (
     <div
       className={className}
-      role={isCheckbox ? 'menuitemcheckbox' : 'menuitem'}
-      aria-checked={isCheckbox ? checked : undefined}
+      role={item.type === 'radio' ? 'menuitemradio' : isCheckable ? 'menuitemcheckbox' : 'menuitem'}
+      aria-checked={isCheckable ? checked : undefined}
       aria-disabled={!enabled}
       onClick={(e) => {
         e.stopPropagation()
@@ -98,7 +119,7 @@ const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProject
         onAction(item)
       }}
     >
-      {isCheckbox && (
+      {isCheckable && (
         <span className="menubar__dropdown-check">{checked ? '\u2713' : ''}</span>
       )}
       <span>{label}</span>
@@ -109,7 +130,7 @@ const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProject
   )
 }
 
-export const MenuBar: React.FC<MenuBarProps> = ({ activeTab, viewProjection = null }) => {
+export const MenuBar: React.FC<MenuBarProps> = ({ activeTab, viewProjection = null, viewCenterMark = null }) => {
   const { dispatchMenuChannel } = useMenuDispatch(activeTab)
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [dropdownPos, setDropdownPos] = useState<{ left: number }>({ left: 0 })
@@ -200,6 +221,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ activeTab, viewProjection = nu
                     item={item}
                     onAction={handleItemAction}
                     viewProjection={viewProjection}
+                    viewCenterMark={viewCenterMark}
                   />
                 ))}
               </div>

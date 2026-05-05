@@ -50,7 +50,7 @@ function buildItem(
 
   if (item.id) result.id = item.id
   if (item.label) result.label = item.label
-  if (item.type === 'checkbox') result.type = 'checkbox'
+  if (item.type === 'checkbox' || item.type === 'radio') result.type = 'checkbox'
   if (item.checked !== undefined) result.checked = item.checked
   if (item.enabled !== undefined) result.enabled = item.enabled
 
@@ -149,6 +149,22 @@ export function updateMenuState(state: MenuState): void {
     if (orthographicItem) {
       orthographicItem.enabled = enabled
       orthographicItem.checked = enabled && perspective === false
+    }
+  }
+
+  if (state.viewCenterMark) {
+    const { enabled, centerMark } = state.viewCenterMark
+    const markItems = [
+      { id: 'center-mark-none', value: 'none' },
+      { id: 'center-mark-cross', value: 'crosshair' },
+      { id: 'center-mark-axis', value: 'axis' },
+    ]
+    for (const { id, value } of markItems) {
+      const item = menu.getMenuItemById(id)
+      if (item) {
+        item.enabled = enabled
+        item.checked = enabled && centerMark === value
+      }
     }
   }
 }

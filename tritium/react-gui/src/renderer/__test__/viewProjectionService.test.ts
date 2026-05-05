@@ -3,7 +3,7 @@ import { services } from '../worker/services/viewProjection.service'
 import type { WorkerContext } from '../worker/types/WorkerContext'
 
 function makeCtx(initialPerspective = false) {
-    const mockView = { perspective: initialPerspective }
+    const mockView = { perspective: initialPerspective, centerMark: 'crosshair' }
     const getView = vi.fn(() => mockView)
     const ctx = {
         sceMgr: { getView },
@@ -13,7 +13,7 @@ function makeCtx(initialPerspective = false) {
 
 describe('viewProjection service', () => {
     let ctx: WorkerContext
-    let mockView: { perspective: boolean }
+    let mockView: { perspective: boolean; centerMark: string }
     let getView: ReturnType<typeof vi.fn>
 
     beforeEach(() => {
@@ -45,5 +45,29 @@ describe('viewProjection service', () => {
             perspective: false,
         })
         expect(mockView.perspective).toBe(false)
+    })
+
+    it('gets the current center mark', () => {
+        mockView.centerMark = 'axis'
+        expect(services.getViewCenterMark(ctx, { viewId: 14 })).toEqual({ ok: true, centerMark: 'axis' })
+        expect(getView).toHaveBeenCalledWith(14)
+    })
+
+    it('sets center mark values', () => {
+        expect(services.setViewCenterMark(ctx, { viewId: 15, centerMark: 'none' })).toEqual({
+            ok: true,
+            centerMark: 'none',
+        })
+        expect(mockView.centerMark).toBe('none')
+        expect(services.setViewCenterMark(ctx, { viewId: 15, centerMark: 'crosshair' })).toEqual({
+            ok: true,
+            centerMark: 'crosshair',
+        })
+        expect(mockView.centerMark).toBe('crosshair')
+        expect(services.setViewCenterMark(ctx, { viewId: 15, centerMark: 'axis' })).toEqual({
+            ok: true,
+            centerMark: 'axis',
+        })
+        expect(mockView.centerMark).toBe('axis')
     })
 })

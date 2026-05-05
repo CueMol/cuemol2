@@ -19,6 +19,7 @@ import { StatusBar } from "./components/StatusBar";
 import { InspectorPanel } from "./components/panels/InspectorPanel";
 
 import type { AlignmentData, AnimationData } from "./types";
+import type { ViewCenterMark } from "../shared/ipcTypes";
 
 import { SAMPLE_ALIGNMENT, SAMPLE_ANIMATION } from "./data/alignmentData";
 
@@ -160,14 +161,17 @@ const App: React.FC = () => {
   const [alignment] = useState<AlignmentData | null>(SAMPLE_ALIGNMENT);
   const [animation] = useState<AnimationData | null>(SAMPLE_ANIMATION);
   const [viewProjection, setViewProjection] = useState<boolean | null>(null);
+  const [viewCenterMark, setViewCenterMark] = useState<ViewCenterMark | null>(null);
   const activeMolViewId = tabs.find((t) => t.id === activeTab && t.type === 'molview')?.viewId;
 
-  const syncNativeViewProjectionMenu = useCallback((perspective: boolean | null) => {
+  const syncNativeViewMenu = useCallback((state: { perspective?: boolean | null; centerMark?: ViewCenterMark | null }) => {
     window.electronAPI?.updateMenuState({
-      viewProjection: {
-        enabled: perspective !== null,
-        perspective,
-      },
+      ...(state.perspective !== undefined
+        ? { viewProjection: { enabled: state.perspective !== null, perspective: state.perspective } }
+        : {}),
+      ...(state.centerMark !== undefined
+        ? { viewCenterMark: { enabled: state.centerMark !== null, centerMark: state.centerMark } }
+        : {}),
     }).catch((err: unknown) => {
       console.warn('update menu state failed:', err);
     });
@@ -175,8 +179,13 @@ const App: React.FC = () => {
 
   const handleProjectionChanged = useCallback((perspective: boolean) => {
     setViewProjection(perspective);
-    syncNativeViewProjectionMenu(perspective);
-  }, [syncNativeViewProjectionMenu]);
+    syncNativeViewMenu({ perspective });
+  }, [syncNativeViewMenu]);
+
+  const handleCenterMarkChanged = useCallback((centerMark: ViewCenterMark) => {
+    setViewCenterMark(centerMark);
+    syncNativeViewMenu({ centerMark });
+  }, [syncNativeViewMenu]);
 
   // --- Command registrations and IPC wiring ---
 
@@ -198,6 +207,7 @@ const App: React.FC = () => {
     cm,
     getActiveViewId: () => activeMolViewId,
     onProjectionChanged: handleProjectionChanged,
+    onCenterMarkChanged: handleCenterMarkChanged,
   });
 
   useElectronIpc(activeTab);
@@ -217,26 +227,33 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!cm || activeMolViewId === undefined) {
       setViewProjection(null);
-      syncNativeViewProjectionMenu(null);
+      setViewCenterMark(null);
+      syncNativeViewMenu({ perspective: null, centerMark: null });
       return;
     }
 
     let cancelled = false;
-    cm.getViewProjection(activeMolViewId).then((result) => {
+    Promise.all([
+      cm.getViewProjection(activeMolViewId),
+      cm.getViewCenterMark(activeMolViewId),
+    ]).then(([projectionResult, centerMarkResult]) => {
       if (cancelled) return;
-      const perspective = result?.ok ? result.perspective : null;
+      const perspective = projectionResult?.ok ? projectionResult.perspective : null;
+      const centerMark = centerMarkResult?.ok ? centerMarkResult.centerMark : null;
       setViewProjection(perspective);
-      syncNativeViewProjectionMenu(perspective);
+      setViewCenterMark(centerMark);
+      syncNativeViewMenu({ perspective, centerMark });
     }).catch((err: unknown) => {
       if (!cancelled) {
-        console.warn('get view projection failed:', err);
+        console.warn('get view state failed:', err);
         setViewProjection(null);
-        syncNativeViewProjectionMenu(null);
+        setViewCenterMark(null);
+        syncNativeViewMenu({ perspective: null, centerMark: null });
       }
     });
 
     return () => { cancelled = true; };
-  }, [activeMolViewId, cm, syncNativeViewProjectionMenu]);
+  }, [activeMolViewId, cm, syncNativeViewMenu]);
 
   // --- Derived sidebar sub-panel state ---
 
@@ -260,7 +277,7 @@ const App: React.FC = () => {
     <ActiveToolProvider activeTool={activeTool}>
     <div className="app">
       {window.electronAPI?.platform !== 'darwin' && (
-        <MenuBar activeTab={activeTab} viewProjection={viewProjection} />
+        <MenuBar activeTab={activeTab} viewProjection={viewProjection} viewCenterMark={viewCenterMark} />
       )}
       <Toolbar
         onOpenFile={handleOpenFile}

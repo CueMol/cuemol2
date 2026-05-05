@@ -30,10 +30,10 @@ Completion counts treat `wired` and `native` as complete. `stub` means the menu 
 | Scope | Complete | Stub / todo | Completion | Notes |
 |-------|---------:|------------:|-----------:|-------|
 | `menu.color` | 0 | 1 | 0% | Not migrated or itemized in Tritium yet |
-| `menu.cuemol2` | 12 | 43 | 22% | Main menubar structure exists; 55 item-level migration points tracked |
+| `menu.cuemol2` | 16 | 39 | 29% | Main menubar structure exists; 55 item-level migration points tracked |
 | `menu.cuemol2-macos` | 6 | 1 | 86% | OS-native items complete; Preferences is stubbed |
 | `menu.cuemol2-scripts` | 1 | 0 | 100% | Dropped intentionally because Electron module loading replaces the XUL script overlay |
-| **Total** | **19** | **45** | **30%** | 64 inventory-derived menu migration points |
+| **Total** | **23** | **41** | **36%** | 64 inventory-derived menu migration points |
 
 ## Menu Item Implementation Status
 
@@ -46,7 +46,13 @@ Implementation status values:
 - `deferred` -- intentionally left for later
 - `dropped` -- not migrated
 
-Current source of truth: `tritium/react-gui/src/shared/menuTemplate.ts`, `tritium/react-gui/src/main/menu.ts`, and `tritium/react-gui/src/renderer/hooks/useMenuDispatch.ts`.
+Current source of truth: `tritium/react-gui/src/shared/menuTemplate.ts`, `tritium/react-gui/src/main/menu.ts`, `tritium/react-gui/src/renderer/hooks/useMenuDispatch.ts`, `tritium/react-gui/src/renderer/commands/useViewCommands.ts`, and `tritium/react-gui/src/renderer/worker/services/viewProjection.service.ts`.
+
+View menu state notes:
+
+- Projection check state is synced from the active MolView through `MenuState.viewProjection`.
+- Center mark uses CueMol's string enum values (`none`, `crosshair`, `axis`) through `MenuState.viewCenterMark`.
+- The React `MenuBar` exposes Center mark entries as radio menu items. The Electron native menu builds them as checkable items and updates them exclusively in `updateMenuState()` to avoid relying on Electron radio auto-check behavior.
 
 | Menu | Item | Tritium entry | Dispatch / Implementation | Impl status | Notes |
 |------|------|---------------|---------------------------|-------------|-------|
@@ -88,10 +94,10 @@ Current source of truth: `tritium/react-gui/src/shared/menuTemplate.ts`, `tritiu
 | Scene | Properties... | `scene-props` / `menu:scene-props` | `MENU_GENERIC` -> `console.warn` | stub | Scene property dialog not connected |
 | View | Perspective | `view-perspective` / `menu:view-perspective` | `CmdId.ViewPerspective` + `updateMenuState` | wired | Checkbox state is updated through `MENU_UPDATE_STATE` |
 | View | Orthographic | `view-orthographic` / `menu:view-orthographic` | `CmdId.ViewOrthographic` + `updateMenuState` | wired | Checkbox state is updated through `MENU_UPDATE_STATE` |
-| View | Center mark > Cross | `center-mark-cross` / `menu:center-mark-cross` | `MENU_GENERIC` -> `console.warn` | stub | Radio/check state not connected |
-| View | Center mark > Axis | `center-mark-axis` / `menu:center-mark-axis` | `MENU_GENERIC` -> `console.warn` | stub | Radio/check state not connected |
-| View | Center mark > None | `center-mark-none` / `menu:center-mark-none` | `MENU_GENERIC` -> `console.warn` | stub | Radio/check state not connected |
-| View | Hardware stereo | `hw-stereo` / `menu:hw-stereo` | `MENU_GENERIC` -> `console.warn` | stub | Checkbox behavior not connected |
+| View | Center mark > Cross | `center-mark-cross` / `menu:center-mark-cross` | `CmdId.ViewCenterMarkCross` + `AsyncCueMol.setViewCenterMark('crosshair')` + `updateMenuState` | wired | Uses CueMol enum value `crosshair`; menu state is updated from the successful command request |
+| View | Center mark > Axis | `center-mark-axis` / `menu:center-mark-axis` | `CmdId.ViewCenterMarkAxis` + `AsyncCueMol.setViewCenterMark('axis')` + `updateMenuState` | wired | Uses CueMol enum value `axis`; menu state is updated from the successful command request |
+| View | Center mark > None | `center-mark-none` / `menu:center-mark-none` | `CmdId.ViewCenterMarkNone` + `AsyncCueMol.setViewCenterMark('none')` + `updateMenuState` | wired | Uses CueMol enum value `none`; menu state is updated from the successful command request |
+| View | Hardware stereo | — | removed from Tritium View menu | dropped | Removed by migration decision; hardware stereo menu is not carried forward |
 | View | View property... | `view-props` / `menu:view-props` | `MENU_GENERIC` -> `console.warn` | stub | View property dialog not connected |
 | Tools | Molecular superposition... | `mol-superpose` / `menu:mol-superpose` | `MENU_GENERIC` -> `console.warn` | stub | Tool dialog not connected |
 | Tools | Mol bond editor... | `bond-editor` / `menu:bond-editor` | `MENU_GENERIC` -> `console.warn` | stub | Tool dialog not connected |

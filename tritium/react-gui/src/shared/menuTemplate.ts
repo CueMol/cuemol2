@@ -21,7 +21,7 @@ export interface AppMenuItem {
   ipcChannel?: string
   /** Native Electron role. Handled natively in the main-process menu; handled via invokeMenuRole IPC in the renderer. */
   role?: AppMenuRole
-  type?: 'separator' | 'checkbox'
+  type?: 'separator' | 'checkbox' | 'radio'
   checked?: boolean
   enabled?: boolean
   submenu?: AppMenuItem[]
@@ -144,13 +144,11 @@ export const APP_MENU: AppMenuGroup[] = [
       {
         id: 'center-mark', label: 'Center mark',
         submenu: [
-          { id: 'center-mark-cross', label: 'Cross', ipcChannel: 'menu:center-mark-cross' },
-          { id: 'center-mark-axis',  label: 'Axis',  ipcChannel: 'menu:center-mark-axis' },
-          { id: 'center-mark-none',  label: 'None',  ipcChannel: 'menu:center-mark-none' },
+          { id: 'center-mark-cross', label: 'Cross', type: 'radio', checked: true, enabled: false, ipcChannel: 'menu:center-mark-cross' },
+          { id: 'center-mark-axis',  label: 'Axis',  type: 'radio', enabled: false, ipcChannel: 'menu:center-mark-axis' },
+          { id: 'center-mark-none',  label: 'None',  type: 'radio', enabled: false, ipcChannel: 'menu:center-mark-none' },
         ],
       },
-      { type: 'separator' },
-      { id: 'hw-stereo', label: 'Hardware stereo', ipcChannel: 'menu:hw-stereo' },
       { type: 'separator' },
       { id: 'view-props', label: 'View property...', ipcChannel: 'menu:view-props' },
     ],

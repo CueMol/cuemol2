@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import React from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
+import type { ViewCenterMark } from '../../shared/ipcTypes'
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
@@ -23,6 +24,7 @@ function setupElectronAPI(platform: string): void {
 function render(
   activeTab: string | null,
   viewProjection: boolean | null = null,
+  viewCenterMark: ViewCenterMark | null = null,
 ): { container: HTMLElement; root: Root; unmount: () => void } {
   const container = document.createElement('div')
   document.body.appendChild(container)
@@ -33,7 +35,7 @@ function render(
       React.createElement(
         CommandProvider,
         null,
-        React.createElement(MenuBar, { activeTab, viewProjection }),
+        React.createElement(MenuBar, { activeTab, viewProjection, viewCenterMark }),
       ),
     )
   })
@@ -172,6 +174,56 @@ describe('MenuBar', () => {
 
     const items = Array.from(container.querySelectorAll('[role="menuitemcheckbox"]')) as HTMLElement[]
     expect(items.length).toBeGreaterThanOrEqual(2)
+    expect(items.every((el) => el.getAttribute('aria-disabled') === 'true')).toBe(true)
+    expect(items.every((el) => el.getAttribute('aria-checked') === 'false')).toBe(true)
+    unmount()
+  })
+
+  it('checks the active center mark radio item', () => {
+    const { container, unmount } = render('molview-1', true, 'axis')
+    const viewItem = Array.from(container.querySelectorAll('.menubar__item')).find(
+      (el) => el.textContent?.includes('View'),
+    ) as HTMLElement
+
+    act(() => { viewItem.click() })
+
+    const centerMark = Array.from(container.querySelectorAll('.menubar__dropdown-item')).find(
+      (el) => el.textContent?.includes('Center mark'),
+    ) as HTMLElement
+
+    act(() => {
+      centerMark.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+    })
+
+    const items = Array.from(container.querySelectorAll('[role="menuitemradio"]'))
+    const cross = items.find((el) => el.textContent?.includes('Cross')) as HTMLElement
+    const axis = items.find((el) => el.textContent?.includes('Axis')) as HTMLElement
+    const none = items.find((el) => el.textContent?.includes('None')) as HTMLElement
+    expect(cross.getAttribute('aria-checked')).toBe('false')
+    expect(axis.getAttribute('aria-checked')).toBe('true')
+    expect(none.getAttribute('aria-checked')).toBe('false')
+    expect(axis.getAttribute('aria-disabled')).toBe('false')
+    unmount()
+  })
+
+  it('disables center mark radio items without an active MolView', () => {
+    const { container, unmount } = render(null, null, null)
+    const viewItem = Array.from(container.querySelectorAll('.menubar__item')).find(
+      (el) => el.textContent?.includes('View'),
+    ) as HTMLElement
+
+    act(() => { viewItem.click() })
+
+    const centerMark = Array.from(container.querySelectorAll('.menubar__dropdown-item')).find(
+      (el) => el.textContent?.includes('Center mark'),
+    ) as HTMLElement
+
+    act(() => {
+      centerMark.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+    })
+
+    const items = Array.from(container.querySelectorAll('[role="menuitemradio"]')) as HTMLElement[]
+    expect(items.length).toBe(3)
     expect(items.every((el) => el.getAttribute('aria-disabled') === 'true')).toBe(true)
     expect(items.every((el) => el.getAttribute('aria-checked') === 'false')).toBe(true)
     unmount()

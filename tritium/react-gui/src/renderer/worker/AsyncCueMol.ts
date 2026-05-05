@@ -1,5 +1,6 @@
 import { BaseWrapper } from '@cuemol/core/src/BaseWrapper';
 import { wrapper_map } from '@cuemol/core/src/wrappers/wrapper-loader';
+import type { ViewCenterMark } from '../../shared/ipcTypes';
 import type { FileOpenOptions } from '../components/fopen-opt-dlgs/types';
 import { ObjTuple } from './ObjTuple';
 import { ObjProxy } from './ObjProxy';
@@ -463,6 +464,16 @@ export class AsyncCueMol {
 
     async setViewProjection(viewId: number, perspective: boolean): Promise<{ ok: boolean; perspective: boolean } | null> {
         const result = await this.invokeWorker('setViewProjection', { viewId, perspective });
+        return result?.[0] ?? null;
+    }
+
+    async getViewCenterMark(viewId: number): Promise<{ ok: boolean; centerMark: ViewCenterMark } | null> {
+        const result = await this.invokeWorker('getViewCenterMark', { viewId });
+        return result?.[0] ?? null;
+    }
+
+    async setViewCenterMark(viewId: number, centerMark: ViewCenterMark): Promise<{ ok: boolean; centerMark: ViewCenterMark } | null> {
+        const result = await this.invokeWorker('setViewCenterMark', { viewId, centerMark });
         return result?.[0] ?? null;
     }
 

@@ -30,6 +30,9 @@ export const CmdId = {
   // View operations
   ViewPerspective:    'view.perspective',    // no args
   ViewOrthographic:   'view.orthographic',   // no args
+  ViewCenterMarkCross: 'view.centerMark.cross', // no args
+  ViewCenterMarkAxis:  'view.centerMark.axis',  // no args
+  ViewCenterMarkNone:  'view.centerMark.none',  // no args
 } as const
 
 export type CmdId = typeof CmdId[keyof typeof CmdId]
