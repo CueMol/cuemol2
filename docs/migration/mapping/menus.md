@@ -30,10 +30,10 @@ Completion counts treat `wired` and `native` as complete. `stub` means the menu 
 | Scope | Complete | Stub / todo | Completion | Notes |
 |-------|---------:|------------:|-----------:|-------|
 | `menu.color` | 0 | 1 | 0% | Not migrated or itemized in Tritium yet |
-| `menu.cuemol2` | 16 | 39 | 29% | Main menubar structure exists; 55 item-level migration points tracked |
+| `menu.cuemol2` | 18 | 37 | 33% | Main menubar structure exists; 55 item-level migration points tracked |
 | `menu.cuemol2-macos` | 6 | 1 | 86% | OS-native items complete; Preferences is stubbed |
 | `menu.cuemol2-scripts` | 1 | 0 | 100% | Dropped intentionally because Electron module loading replaces the XUL script overlay |
-| **Total** | **23** | **41** | **36%** | 64 inventory-derived menu migration points |
+| **Total** | **25** | **39** | **39%** | 64 inventory-derived menu migration points |
 
 ## Menu Item Implementation Status
 
@@ -88,8 +88,8 @@ View menu state notes:
 | Rendering | POV-Ray rendering... | `pov-render` / `menu:pov-render` | `MENU_GENERIC` -> `console.warn` | stub | Render dialog not connected |
 | Rendering | Animation rendering... | `anim-render` / `menu:anim-render` | `MENU_GENERIC` -> `console.warn` | stub | Animation render dialog not connected |
 | Rendering | Export scene... | `export-scene` / `menu:export-scene` | `MENU_GENERIC` -> `console.warn` | stub | Export scene behavior not connected |
-| Scene | Background > White | `bg-white` / `menu:bg-white` | `MENU_GENERIC` -> `console.warn` | stub | Background color state/action not connected |
-| Scene | Background > Black | `bg-black` / `menu:bg-black` | `MENU_GENERIC` -> `console.warn` | stub | Background color state/action not connected |
+| Scene | Background > White | `bg-white` / `menu:bg-white` | `CmdId.SceneBgWhite` + `AsyncCueMol.setSceneBgColor('white')` + `updateMenuState` | wired | Radio state derived from scene.bgcolor RGB; uses StyleManager.compileColor('white') via makeColor helper |
+| Scene | Background > Black | `bg-black` / `menu:bg-black` | `CmdId.SceneBgBlack` + `AsyncCueMol.setSceneBgColor('black')` + `updateMenuState` | wired | Radio state derived from scene.bgcolor RGB; uses StyleManager.compileColor('black') via makeColor helper |
 | Scene | Use color proofing | `color-proof` / `menu:color-proof` | `MENU_GENERIC` -> `console.warn` | stub | Checkbox behavior not connected |
 | Scene | Properties... | `scene-props` / `menu:scene-props` | `MENU_GENERIC` -> `console.warn` | stub | Scene property dialog not connected |
 | View | Perspective | `view-perspective` / `menu:view-perspective` | `CmdId.ViewPerspective` + `updateMenuState` | wired | Checkbox state is updated through `MENU_UPDATE_STATE` |

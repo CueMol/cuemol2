@@ -8,6 +8,7 @@
  */
 
 import { useCallback } from 'react'
+import type { SceneBgColor } from '../../shared/ipcTypes'
 import type { AsyncCueMol } from '../worker/AsyncCueMol'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
@@ -19,6 +20,7 @@ interface UseSceneCommandsOptions {
     addMolViewTab: (title: string, viewId: number) => void
     getActiveSceneInfo: () => { scene_uid: number; view_id: number } | null | undefined
     openFileFromData: (name: string, content: string, filePath?: string) => void
+    onBgColorChanged?: (bgColor: SceneBgColor) => void
 }
 
 export function useSceneCommands({
@@ -27,6 +29,7 @@ export function useSceneCommands({
     addMolViewTab,
     getActiveSceneInfo,
     openFileFromData,
+    onBgColorChanged,
 }: UseSceneCommandsOptions): void {
 
     const { showFileOpenOptionDialog } = useDialog()
@@ -46,6 +49,17 @@ export function useSceneCommands({
     }, [cm, addMolTab, addMolViewTab])
 
     useRegisterCommand(CmdId.SceneNew, () => openNewScene())
+
+    const setSceneBgColor = useCallback(async (colorName: 'white' | 'black'): Promise<void> => {
+        if (!cm) return
+        const info = getActiveSceneInfo()
+        if (!info) return
+        const result = await cm.setSceneBgColor(info.scene_uid, colorName)
+        if (result?.ok) onBgColorChanged?.(colorName)
+    }, [cm, getActiveSceneInfo, onBgColorChanged])
+
+    useRegisterCommand(CmdId.SceneBgWhite, () => setSceneBgColor('white'))
+    useRegisterCommand(CmdId.SceneBgBlack, () => setSceneBgColor('black'))
 
     useRegisterCommand(
         CmdId.OpenObjByPath,

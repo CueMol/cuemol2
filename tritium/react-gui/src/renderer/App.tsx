@@ -19,7 +19,7 @@ import { StatusBar } from "./components/StatusBar";
 import { InspectorPanel } from "./components/panels/InspectorPanel";
 
 import type { AlignmentData, AnimationData } from "./types";
-import type { ViewCenterMark } from "../shared/ipcTypes";
+import type { SceneBgColor, ViewCenterMark } from "../shared/ipcTypes";
 
 import { SAMPLE_ALIGNMENT, SAMPLE_ANIMATION } from "./data/alignmentData";
 
@@ -162,15 +162,23 @@ const App: React.FC = () => {
   const [animation] = useState<AnimationData | null>(SAMPLE_ANIMATION);
   const [viewProjection, setViewProjection] = useState<boolean | null>(null);
   const [viewCenterMark, setViewCenterMark] = useState<ViewCenterMark | null>(null);
+  const [sceneBgColor, setSceneBgColor] = useState<SceneBgColor | null>(null);
   const activeMolViewId = tabs.find((t) => t.id === activeTab && t.type === 'molview')?.viewId;
 
-  const syncNativeViewMenu = useCallback((state: { perspective?: boolean | null; centerMark?: ViewCenterMark | null }) => {
+  const syncNativeViewMenu = useCallback((state: {
+    perspective?: boolean | null;
+    centerMark?: ViewCenterMark | null;
+    bgColor?: SceneBgColor | null;
+  }) => {
     window.electronAPI?.updateMenuState({
       ...(state.perspective !== undefined
         ? { viewProjection: { enabled: state.perspective !== null, perspective: state.perspective } }
         : {}),
       ...(state.centerMark !== undefined
         ? { viewCenterMark: { enabled: state.centerMark !== null, centerMark: state.centerMark } }
+        : {}),
+      ...(state.bgColor !== undefined
+        ? { sceneBgColor: { enabled: state.bgColor !== null, bgColor: state.bgColor } }
         : {}),
     }).catch((err: unknown) => {
       console.warn('update menu state failed:', err);
@@ -187,6 +195,11 @@ const App: React.FC = () => {
     syncNativeViewMenu({ centerMark });
   }, [syncNativeViewMenu]);
 
+  const handleBgColorChanged = useCallback((bgColor: SceneBgColor) => {
+    setSceneBgColor(bgColor);
+    syncNativeViewMenu({ bgColor });
+  }, [syncNativeViewMenu]);
+
   // --- Command registrations and IPC wiring ---
 
   useSceneCommands({
@@ -195,6 +208,7 @@ const App: React.FC = () => {
     addMolViewTab,
     getActiveSceneInfo,
     openFileFromData,
+    onBgColorChanged: handleBgColorChanged,
   });
 
   useUiDialogCommands({ cm });
@@ -228,32 +242,40 @@ const App: React.FC = () => {
     if (!cm || activeMolViewId === undefined) {
       setViewProjection(null);
       setViewCenterMark(null);
-      syncNativeViewMenu({ perspective: null, centerMark: null });
+      setSceneBgColor(null);
+      syncNativeViewMenu({ perspective: null, centerMark: null, bgColor: null });
       return;
     }
+
+    const sceneInfo = getActiveSceneInfo();
+    const sceneId = sceneInfo?.scene_uid;
 
     let cancelled = false;
     Promise.all([
       cm.getViewProjection(activeMolViewId),
       cm.getViewCenterMark(activeMolViewId),
-    ]).then(([projectionResult, centerMarkResult]) => {
+      sceneId !== undefined ? cm.getSceneBgColor(sceneId) : Promise.resolve(null),
+    ]).then(([projectionResult, centerMarkResult, bgColorResult]) => {
       if (cancelled) return;
       const perspective = projectionResult?.ok ? projectionResult.perspective : null;
       const centerMark = centerMarkResult?.ok ? centerMarkResult.centerMark : null;
+      const bgColor = bgColorResult?.ok ? bgColorResult.bgColor : null;
       setViewProjection(perspective);
       setViewCenterMark(centerMark);
-      syncNativeViewMenu({ perspective, centerMark });
+      setSceneBgColor(bgColor);
+      syncNativeViewMenu({ perspective, centerMark, bgColor });
     }).catch((err: unknown) => {
       if (!cancelled) {
         console.warn('get view state failed:', err);
         setViewProjection(null);
         setViewCenterMark(null);
-        syncNativeViewMenu({ perspective: null, centerMark: null });
+        setSceneBgColor(null);
+        syncNativeViewMenu({ perspective: null, centerMark: null, bgColor: null });
       }
     });
 
     return () => { cancelled = true; };
-  }, [activeMolViewId, cm, syncNativeViewMenu]);
+  }, [activeMolViewId, cm, syncNativeViewMenu, getActiveSceneInfo]);
 
   // --- Derived sidebar sub-panel state ---
 
@@ -277,7 +299,7 @@ const App: React.FC = () => {
     <ActiveToolProvider activeTool={activeTool}>
     <div className="app">
       {window.electronAPI?.platform !== 'darwin' && (
-        <MenuBar activeTab={activeTab} viewProjection={viewProjection} viewCenterMark={viewCenterMark} />
+        <MenuBar activeTab={activeTab} viewProjection={viewProjection} viewCenterMark={viewCenterMark} sceneBgColor={sceneBgColor} />
       )}
       <Toolbar
         onOpenFile={handleOpenFile}

@@ -33,6 +33,10 @@ export const CmdId = {
   ViewCenterMarkCross: 'view.centerMark.cross', // no args
   ViewCenterMarkAxis:  'view.centerMark.axis',  // no args
   ViewCenterMarkNone:  'view.centerMark.none',  // no args
+
+  // Scene style
+  SceneBgWhite: 'scene.bg.white', // no args
+  SceneBgBlack: 'scene.bg.black', // no args
 } as const
 
 export type CmdId = typeof CmdId[keyof typeof CmdId]

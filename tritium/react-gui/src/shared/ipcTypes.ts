@@ -120,6 +120,8 @@ export interface NaviCtxMenuPayload {
 
 export type ViewCenterMark = 'none' | 'crosshair' | 'axis'
 
+export type SceneBgColor = 'white' | 'black' | 'other'
+
 export interface MenuState {
   viewProjection?: {
     enabled: boolean
@@ -128,6 +130,10 @@ export interface MenuState {
   viewCenterMark?: {
     enabled: boolean
     centerMark: ViewCenterMark | null
+  }
+  sceneBgColor?: {
+    enabled: boolean
+    bgColor: SceneBgColor | null
   }
 }
 

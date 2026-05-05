@@ -167,4 +167,19 @@ export function updateMenuState(state: MenuState): void {
       }
     }
   }
+
+  if (state.sceneBgColor) {
+    const { enabled, bgColor } = state.sceneBgColor
+    const bgItems = [
+      { id: 'bg-white', value: 'white' },
+      { id: 'bg-black', value: 'black' },
+    ]
+    for (const { id, value } of bgItems) {
+      const item = menu.getMenuItemById(id)
+      if (item) {
+        item.enabled = enabled
+        item.checked = enabled && bgColor === value
+      }
+    }
+  }
 }

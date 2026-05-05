@@ -59,6 +59,12 @@ export function useMenuDispatch(activeTab: string | null): {
         case 'menu:center-mark-none':
           dispatch(CmdId.ViewCenterMarkNone).catch(logErr('view.centerMark.none:'))
           break
+        case 'menu:bg-white':
+          dispatch(CmdId.SceneBgWhite).catch(logErr('scene.bg.white:'))
+          break
+        case 'menu:bg-black':
+          dispatch(CmdId.SceneBgBlack).catch(logErr('scene.bg.black:'))
+          break
         case 'menu:about':
           dispatch(CmdId.UiAboutDialog).catch(logErr('about dialog:'))
           break

@@ -1,13 +1,14 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { APP_MENU, getRoleLabel } from '../../shared/menuTemplate'
 import type { AppMenuItem, AppMenuRole } from '../../shared/menuTemplate'
-import type { ViewCenterMark } from '../../shared/ipcTypes'
+import type { SceneBgColor, ViewCenterMark } from '../../shared/ipcTypes'
 import { useMenuDispatch } from '../hooks/useMenuDispatch'
 
 interface MenuBarProps {
   activeTab: string | null
   viewProjection?: boolean | null
   viewCenterMark?: ViewCenterMark | null
+  sceneBgColor?: SceneBgColor | null
 }
 
 /** Convert an Electron accelerator string to a display string for Windows/Linux. */
@@ -28,6 +29,7 @@ interface DropdownItemProps {
   onAction: (item: AppMenuItem) => void
   viewProjection?: boolean | null
   viewCenterMark?: ViewCenterMark | null
+  sceneBgColor?: SceneBgColor | null
 }
 
 const getViewProjectionState = (
@@ -59,7 +61,22 @@ const getViewCenterMarkState = (
   }
 }
 
-const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProjection, viewCenterMark }) => {
+const getSceneBgColorState = (
+  item: AppMenuItem,
+  sceneBgColor: SceneBgColor | null | undefined,
+): { enabled: boolean; checked: boolean } | null => {
+  const itemValues: Record<string, SceneBgColor> = {
+    'bg-white': 'white',
+    'bg-black': 'black',
+  }
+  if (!item.id || !(item.id in itemValues)) return null
+  return {
+    enabled: sceneBgColor !== null && sceneBgColor !== undefined,
+    checked: sceneBgColor === itemValues[item.id],
+  }
+}
+
+const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProjection, viewCenterMark, sceneBgColor }) => {
   const [submenuOpen, setSubmenuOpen] = useState(false)
   const itemRef = useRef<HTMLDivElement>(null)
 
@@ -72,8 +89,9 @@ const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProject
   const hasSubmenu = !!item.submenu?.length
   const projectionState = getViewProjectionState(item, viewProjection)
   const centerMarkState = getViewCenterMarkState(item, viewCenterMark)
-  const enabled = projectionState?.enabled ?? centerMarkState?.enabled ?? item.enabled ?? true
-  const checked = projectionState?.checked ?? centerMarkState?.checked ?? item.checked ?? false
+  const bgColorState = getSceneBgColorState(item, sceneBgColor)
+  const enabled = projectionState?.enabled ?? centerMarkState?.enabled ?? bgColorState?.enabled ?? item.enabled ?? true
+  const checked = projectionState?.checked ?? centerMarkState?.checked ?? bgColorState?.checked ?? item.checked ?? false
   const isCheckable = item.type === 'checkbox' || item.type === 'radio'
   const className = `menubar__dropdown-item${enabled ? '' : ' menubar__dropdown-item--disabled'}`
 
@@ -99,6 +117,7 @@ const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProject
                 onAction={onAction}
                 viewProjection={viewProjection}
                 viewCenterMark={viewCenterMark}
+                sceneBgColor={sceneBgColor}
               />
             ))}
           </div>
@@ -130,7 +149,7 @@ const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProject
   )
 }
 
-export const MenuBar: React.FC<MenuBarProps> = ({ activeTab, viewProjection = null, viewCenterMark = null }) => {
+export const MenuBar: React.FC<MenuBarProps> = ({ activeTab, viewProjection = null, viewCenterMark = null, sceneBgColor = null }) => {
   const { dispatchMenuChannel } = useMenuDispatch(activeTab)
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [dropdownPos, setDropdownPos] = useState<{ left: number }>({ left: 0 })
@@ -222,6 +241,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ activeTab, viewProjection = nu
                     onAction={handleItemAction}
                     viewProjection={viewProjection}
                     viewCenterMark={viewCenterMark}
+                    sceneBgColor={sceneBgColor}
                   />
                 ))}
               </div>

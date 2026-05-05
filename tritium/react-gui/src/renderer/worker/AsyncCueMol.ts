@@ -1,6 +1,6 @@
 import { BaseWrapper } from '@cuemol/core/src/BaseWrapper';
 import { wrapper_map } from '@cuemol/core/src/wrappers/wrapper-loader';
-import type { ViewCenterMark } from '../../shared/ipcTypes';
+import type { SceneBgColor, ViewCenterMark } from '../../shared/ipcTypes';
 import type { FileOpenOptions } from '../components/fopen-opt-dlgs/types';
 import { ObjTuple } from './ObjTuple';
 import { ObjProxy } from './ObjProxy';
@@ -474,6 +474,16 @@ export class AsyncCueMol {
 
     async setViewCenterMark(viewId: number, centerMark: ViewCenterMark): Promise<{ ok: boolean; centerMark: ViewCenterMark } | null> {
         const result = await this.invokeWorker('setViewCenterMark', { viewId, centerMark });
+        return result?.[0] ?? null;
+    }
+
+    async getSceneBgColor(sceneId: number): Promise<{ ok: boolean; bgColor: SceneBgColor } | null> {
+        const result = await this.invokeWorker('getSceneBgColor', { sceneId });
+        return result?.[0] ?? null;
+    }
+
+    async setSceneBgColor(sceneId: number, colorName: 'white' | 'black'): Promise<{ ok: boolean; bgColor: SceneBgColor } | null> {
+        const result = await this.invokeWorker('setSceneBgColor', { sceneId, colorName });
         return result?.[0] ?? null;
     }
 

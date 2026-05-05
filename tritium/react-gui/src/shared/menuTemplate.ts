@@ -124,8 +124,8 @@ export const APP_MENU: AppMenuGroup[] = [
       {
         id: 'background', label: 'Background',
         submenu: [
-          { id: 'bg-white', label: 'White', ipcChannel: 'menu:bg-white' },
-          { id: 'bg-black', label: 'Black', ipcChannel: 'menu:bg-black' },
+          { id: 'bg-white', label: 'White', type: 'radio', enabled: false, ipcChannel: 'menu:bg-white' },
+          { id: 'bg-black', label: 'Black', type: 'radio', enabled: false, ipcChannel: 'menu:bg-black' },
         ],
       },
       { type: 'separator' },
