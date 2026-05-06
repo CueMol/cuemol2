@@ -98,6 +98,10 @@ void EcBufferRep::create(gfx::DisplayContext *pdc, const gfx::AbstDrawAttrs &dat
     MB_DPRINTLN("create buffer: name=%s, size=%d bytes, nelems=%d", m_bufName.c_str(),
                 buffer_size, nelems);
 
+    // m_arrayBufRef now holds the initial data; mark dirty so the first
+    // draw() triggers the GPU upload.
+    m_bDataUpdated = true;
+
     auto method = peer.Get("createBuffer").As<Napi::Function>();
     bool result = false;
     try {
@@ -116,6 +120,7 @@ void EcBufferRep::create(gfx::DisplayContext *pdc, const gfx::AbstDrawAttrs &dat
         MB_THROW(qlib::RuntimeException, "createBuffer failed");
         return;
     }
+
 }
 
 void EcBufferRep::bind() {}
