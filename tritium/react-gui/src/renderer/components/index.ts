@@ -7,7 +7,6 @@ export { TabBar } from "./TabBar";
 export { ContentPane } from "./panes/ContentPane";
 export { SettingsPane } from "./panes/SettingsPane";
 export { WelcomePane } from "./panes/WelcomePane";
-export { CodeViewPane } from "./panes/CodeViewPane";
 export { MolViewPane } from "./panes/MolViewPane";
 export { LogPanel } from "./panels/LogPanel";
 export { StatusBar } from "./StatusBar";

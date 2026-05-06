@@ -41,6 +41,7 @@ import { useViewCommands } from "./commands/useViewCommands";
 import { useCommands } from "./commands/CommandRegistry";
 import { CmdId } from "./commands/ids";
 import { useCueMolBusy } from "./hooks/useCueMolBusy";
+import { useDialog } from "./contexts/DialogContext";
 
 const App: React.FC = () => {
 
@@ -99,6 +100,7 @@ const App: React.FC = () => {
 
   const { cueMolReady, cm } = useCueMol();
   const { addMolTab, removeMolTab, getActiveSceneInfo, setActiveViewByID } = useMolTabDispatch();
+  const { showConfirmCloseTabDialog } = useDialog();
 
   const handleMolViewClose = useCallback((viewId: number) => {
     removeMolTab(viewId);
@@ -109,18 +111,29 @@ const App: React.FC = () => {
     }
   }, [cm, removeMolTab]);
 
+  const confirmCloseTab = useCallback(async (viewId: number): Promise<boolean> => {
+    if (!cm) return true;
+    const info = await cm.getSceneCloseInfo(viewId);
+    if (!info?.ok) return true;
+    if (!info.modified || info.viewCount !== 1) return true;
+    const result = await showConfirmCloseTabDialog({ sceneName: info.sceneName });
+    if (result === 'cancel') return false;
+    if (result === 'discard') return true;
+    // 'save': Save button is disabled (not yet implemented); abort close.
+    console.warn('[TODO] Scene save not yet implemented');
+    return false;
+  }, [cm, showConfirmCloseTabDialog]);
+
   const {
     tabs,
     activeTab,
     setActiveTab,
-    openFileFromData,
     openSettingsTab,
     addMolViewTab,
-    handleOpenFile,
     handleCloseTab,
     handleReorderTabs,
     handleSave,
-  } = useTabManager({ onMolViewClose: handleMolViewClose });
+  } = useTabManager({ onMolViewClose: handleMolViewClose, confirmCloseTab });
 
   // Guard to prevent duplicate initial scene creation (React StrictMode)
   const initialSceneCreatedRef = useRef(false);
@@ -209,7 +222,6 @@ const App: React.FC = () => {
     addMolTab,
     addMolViewTab,
     getActiveSceneInfo,
-    openFileFromData,
     onBgColorChanged: handleBgColorChanged,
   });
 
@@ -307,7 +319,7 @@ const App: React.FC = () => {
         <MenuBar activeTab={activeTab} viewProjection={viewProjection} viewCenterMark={viewCenterMark} sceneBgColor={sceneBgColor} />
       )}
       <Toolbar
-        onOpenFile={handleOpenFile}
+        onOpenFile={() => dispatchCommand(CmdId.UiOpenObjDialog).catch((e: unknown) => console.error('UiOpenObjDialog failed:', e))}
         onNewTab={() => dispatchCommand(CmdId.TabNew).catch((e: unknown) => console.error('TabNew failed:', e))}
         onSave={handleSave}
       />

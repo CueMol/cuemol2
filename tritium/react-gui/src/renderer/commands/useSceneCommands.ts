@@ -19,7 +19,6 @@ interface UseSceneCommandsOptions {
     addMolTab: (title: string, viewId: number, sceneId: number) => void
     addMolViewTab: (title: string, viewId: number) => void
     getActiveSceneInfo: () => { scene_uid: number; view_id: number } | null | undefined
-    openFileFromData: (name: string, content: string, filePath?: string) => void
     onBgColorChanged?: (bgColor: SceneBgColor) => void
 }
 
@@ -28,7 +27,6 @@ export function useSceneCommands({
     addMolTab,
     addMolViewTab,
     getActiveSceneInfo,
-    openFileFromData,
     onBgColorChanged,
 }: UseSceneCommandsOptions): void {
 
@@ -65,10 +63,6 @@ export function useSceneCommands({
         CmdId.OpenObjByPath,
         (data: FileOpenedData | undefined) => {
             if (!data) return
-            if (data.content !== undefined) {
-                openFileFromData(data.name, data.content, data.path)
-                return
-            }
             if (!cm) return
             const info = getActiveSceneInfo()
             if (!info) return

@@ -48,56 +48,33 @@ export interface TreeNodeData {
 // ────────────────────────────────────────────────────────────
 
 /**
- * Discriminator for special tab types.
+ * Discriminator for tab types.
  *
- * | Type       | Rendered as                        |
- * |------------|------------------------------------|
- * | `"codeview"` | CodeViewPane (default for all files)   |
- * | `"settings"` | SettingsPane (application settings)    |
- *
- * Additional types (e.g. `"diff"`, `"preview"`) can be added here
- * as the application grows.
+ * | Type        | Rendered as                         |
+ * |-------------|-------------------------------------|
+ * | `"welcome"` | WelcomePane (start screen)          |
+ * | `"settings"` | SettingsPane (application settings) |
+ * | `"molview"` | MolViewPane (WebGL molecule view)   |
  */
-export type TabType = "codeview" | "settings" | "molview";
+export type TabType = "welcome" | "settings" | "molview";
 
 /**
- * Metadata and content for a single editor tab in `TabPanel`.
- *
- * Tabs represent open files, scratch buffers, or special views like
- * the Settings pane.  A `null` content value signals that the tab
- * should render the Welcome screen instead of a code view (when
- * `type` is `"file"` or omitted).
+ * Metadata for a single editor tab.
  */
 export interface TabData {
   /** Stable, unique identifier generated at tab-creation time. */
   id: string;
 
-  /** Filename or buffer name shown on the tab strip. */
+  /** Label shown on the tab strip. */
   title: string;
 
   /**
    * Blueprint icon name for the tab label.
-   * Typically derived from the file extension (e.g. `"database"` for .pdb).
    */
   icon: string;
 
   /**
-   * Raw text content of the file.
-   * `null` means no file has been loaded yet (Welcome screen is shown).
-   * Ignored when `type` is `"settings"`.
-   */
-  content: string | null;
-
-  /**
-   * Absolute path to the source file on disk.
-   * Present only for tabs opened from the filesystem; absent for
-   * scratch / untitled buffers.
-   */
-  filePath?: string;
-
-  /**
-   * Discriminator for special tab types.
-   * Defaults to `"codeview"` when omitted.
+   * Discriminator for tab type.
    */
   type?: TabType;
 

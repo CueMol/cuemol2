@@ -16,6 +16,8 @@ import type { FileOpenOptions } from '../components/fopen-opt-dlgs'
 import { AboutDialog } from '../components/dialogs/AboutDialog'
 import { NewTabDialog } from '../components/dialogs/NewTabDialog'
 import type { NewTabDialogResult } from '../components/dialogs/NewTabDialog'
+import { ConfirmCloseTabDialog } from '../components/dialogs/ConfirmCloseTabDialog'
+import type { ConfirmCloseResult } from '../components/dialogs/ConfirmCloseTabDialog'
 
 // ────────────────────────────────────────────────────────────
 // Types
@@ -34,10 +36,13 @@ interface DialogContextValue {
   showAboutDialog(): Promise<void>
   /** Show the new-tab dialog and wait for user selection. */
   showNewTabDialog(args: NewTabDialogArgs): Promise<NewTabDialogResult | null>
+  /** Show the close-tab confirmation dialog and wait for user selection. */
+  showConfirmCloseTabDialog(args: { sceneName: string }): Promise<ConfirmCloseResult>
 }
 
 type DialogResolve = (options: FileOpenOptions | null) => void
 type NewTabResolve = (result: NewTabDialogResult | null) => void
+type ConfirmCloseResolve = (result: ConfirmCloseResult) => void
 
 // ────────────────────────────────────────────────────────────
 // Context
@@ -120,9 +125,28 @@ export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     newTabResolveRef.current = null
   }, [])
 
+  const [confirmCloseDlgState, setConfirmCloseDlgState] = useState<{ visible: boolean; sceneName: string }>({
+    visible: false,
+    sceneName: '',
+  })
+  const confirmCloseResolveRef = useRef<ConfirmCloseResolve | null>(null)
+
+  const showConfirmCloseTabDialog = useCallback((args: { sceneName: string }): Promise<ConfirmCloseResult> => {
+    return new Promise((resolve) => {
+      confirmCloseResolveRef.current = resolve
+      setConfirmCloseDlgState({ visible: true, sceneName: args.sceneName })
+    })
+  }, [])
+
+  const handleConfirmCloseResult = useCallback((result: ConfirmCloseResult) => {
+    setConfirmCloseDlgState((s) => ({ ...s, visible: false }))
+    confirmCloseResolveRef.current?.(result)
+    confirmCloseResolveRef.current = null
+  }, [])
+
   const value = useMemo<DialogContextValue>(
-    () => ({ showFileOpenOptionDialog, showAboutDialog, showNewTabDialog }),
-    [showFileOpenOptionDialog, showAboutDialog, showNewTabDialog],
+    () => ({ showFileOpenOptionDialog, showAboutDialog, showNewTabDialog, showConfirmCloseTabDialog }),
+    [showFileOpenOptionDialog, showAboutDialog, showNewTabDialog, showConfirmCloseTabDialog],
   )
 
   return (
@@ -143,6 +167,12 @@ export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         defaultViewName={newTabDlgState.defaultViewName}
         onConfirm={handleNewTabConfirm}
         onCancel={handleNewTabCancel}
+      />
+      <ConfirmCloseTabDialog
+        visible={confirmCloseDlgState.visible}
+        sceneName={confirmCloseDlgState.sceneName}
+        saveDisabled
+        onResult={handleConfirmCloseResult}
       />
     </DialogContext.Provider>
   )

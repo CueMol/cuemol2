@@ -60,8 +60,6 @@ export interface FileDialogOptions {
 export interface FileOpenedData {
   name: string
   path: string
-  /** File text content. Omitted for binary/mol files that are loaded by path. */
-  content?: string
 }
 
 export interface FileErrorData {

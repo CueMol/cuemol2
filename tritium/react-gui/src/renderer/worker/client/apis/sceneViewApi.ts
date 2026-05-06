@@ -2,6 +2,7 @@
 import type { ProposeUniqNameArgs, ProposeUniqNameResult } from '../../../worker/server/services/proposeUniqName.service';
 import type { CreateViewInSceneArgs, CreateViewInSceneResult } from '../../../worker/server/services/createViewInScene.service';
 import type { ProposeNewTabNamesArgs, ProposeNewTabNamesResult } from '../../../worker/server/services/proposeNewTabNames.service';
+import type { GetSceneCloseInfoArgs, GetSceneCloseInfoResult } from '../../../worker/server/services/getSceneCloseInfo.service';
 import { WorkerTransport } from '../WorkerTransport';
 import type { SceneBgColor, ViewCenterMark } from '../../../../shared/ipcTypes';
 
@@ -65,5 +66,12 @@ export async function proposeNewTabNames(
     transport: WorkerTransport, args: ProposeNewTabNamesArgs,
 ): Promise<ProposeNewTabNamesResult | null> {
     const result = await transport.invokeWorker('proposeNewTabNames', args);
+    return result?.[0] ?? null;
+}
+
+export async function getSceneCloseInfo(
+    transport: WorkerTransport, args: GetSceneCloseInfoArgs,
+): Promise<GetSceneCloseInfoResult | null> {
+    const result = await transport.invokeWorker('getSceneCloseInfo', args);
     return result?.[0] ?? null;
 }

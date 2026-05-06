@@ -15,6 +15,7 @@ import * as sceneViewApi from './apis/sceneViewApi';
 import type { ProposeUniqNameArgs, ProposeUniqNameResult } from '../server/services/proposeUniqName.service';
 import type { CreateViewInSceneArgs, CreateViewInSceneResult } from '../server/services/createViewInScene.service';
 import type { ProposeNewTabNamesArgs, ProposeNewTabNamesResult } from '../server/services/proposeNewTabNames.service';
+import type { GetSceneCloseInfoResult } from '../server/services/getSceneCloseInfo.service';
 import * as naviApi from './apis/naviApi';
 
 const log = console;
@@ -144,6 +145,9 @@ export class AsyncCueMol {
     }
     proposeNewTabNames(args: ProposeNewTabNamesArgs): Promise<ProposeNewTabNamesResult | null> {
         return sceneViewApi.proposeNewTabNames(this._transport, args);
+    }
+    getSceneCloseInfo(viewId: number): Promise<GetSceneCloseInfoResult | null> {
+        return sceneViewApi.getSceneCloseInfo(this._transport, { viewId });
     }
 
     // -------- Navigation tools
