@@ -1,4 +1,7 @@
 // Runs in renderer thread. Calls cross to worker via transport.invokeWorker.
+import type { ProposeUniqNameArgs, ProposeUniqNameResult } from '../../../worker/server/services/proposeUniqName.service';
+import type { CreateViewInSceneArgs, CreateViewInSceneResult } from '../../../worker/server/services/createViewInScene.service';
+import type { ProposeNewTabNamesArgs, ProposeNewTabNamesResult } from '../../../worker/server/services/proposeNewTabNames.service';
 import { WorkerTransport } from '../WorkerTransport';
 import type { SceneBgColor, ViewCenterMark } from '../../../../shared/ipcTypes';
 
@@ -41,5 +44,26 @@ export async function setSceneBgColor(
     transport: WorkerTransport, sceneId: number, colorName: 'white' | 'black',
 ): Promise<{ ok: boolean; bgColor: SceneBgColor } | null> {
     const result = await transport.invokeWorker('setSceneBgColor', { sceneId, colorName });
+    return result?.[0] ?? null;
+}
+
+export async function proposeUniqName(
+    transport: WorkerTransport, args: ProposeUniqNameArgs,
+): Promise<ProposeUniqNameResult | null> {
+    const result = await transport.invokeWorker('proposeUniqName', args);
+    return result?.[0] ?? null;
+}
+
+export async function createViewInScene(
+    transport: WorkerTransport, args: CreateViewInSceneArgs,
+): Promise<CreateViewInSceneResult | null> {
+    const result = await transport.invokeWorker('createViewInScene', args);
+    return result?.[0] ?? null;
+}
+
+export async function proposeNewTabNames(
+    transport: WorkerTransport, args: ProposeNewTabNamesArgs,
+): Promise<ProposeNewTabNamesResult | null> {
+    const result = await transport.invokeWorker('proposeNewTabNames', args);
     return result?.[0] ?? null;
 }

@@ -30,10 +30,10 @@ export async function getOpenFilters(
 }
 
 export async function createNewSceneAndView(
-    transport: WorkerTransport, dpr: number,
+    transport: WorkerTransport, dpr: number, name?: string,
 ): Promise<{ scene_uid: number; view_uid: number } | null> {
     try {
-        const result = await transport.invokeWorker('createNewSceneAndView', { dpr });
+        const result = await transport.invokeWorker('createNewSceneAndView', { dpr, name });
         return result?.[0] ?? null;
     } catch (e) {
         log.error('createNewSceneAndView failed:', e);

@@ -35,8 +35,11 @@ import { useElectronIpc } from "./hooks/useElectronIpc";
 import { useSceneCommands } from "./commands/useSceneCommands";
 import { useUiDialogCommands } from "./commands/useUiDialogCommands";
 import { useTabCommands } from "./commands/useTabCommands";
+import { useNewTabCommand } from "./commands/useNewTabCommand";
 import { useEditCommands } from "./commands/useEditCommands";
 import { useViewCommands } from "./commands/useViewCommands";
+import { useCommands } from "./commands/CommandRegistry";
+import { CmdId } from "./commands/ids";
 import { useCueMolBusy } from "./hooks/useCueMolBusy";
 
 const App: React.FC = () => {
@@ -115,7 +118,6 @@ const App: React.FC = () => {
     addMolViewTab,
     handleOpenFile,
     handleCloseTab,
-    handleNewTab,
     handleReorderTabs,
     handleSave,
   } = useTabManager({ onMolViewClose: handleMolViewClose });
@@ -213,7 +215,9 @@ const App: React.FC = () => {
 
   useUiDialogCommands({ cm });
 
-  useTabCommands({ handleNewTab, handleCloseTab });
+  useTabCommands({ handleCloseTab });
+
+  useNewTabCommand({ cm, addMolTab, addMolViewTab, getActiveSceneInfo });
 
   useEditCommands({ cm, getActiveSceneInfo, handleSave });
 
@@ -227,6 +231,7 @@ const App: React.FC = () => {
   useElectronIpc(activeTab);
 
   const cueMolBusy = useCueMolBusy();
+  const { dispatch: dispatchCommand } = useCommands();
 
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
@@ -303,7 +308,7 @@ const App: React.FC = () => {
       )}
       <Toolbar
         onOpenFile={handleOpenFile}
-        onNewTab={handleNewTab}
+        onNewTab={() => dispatchCommand(CmdId.TabNew).catch((e: unknown) => console.error('TabNew failed:', e))}
         onSave={handleSave}
       />
 

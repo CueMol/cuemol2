@@ -15,7 +15,7 @@
  * that create singleton tabs with the appropriate `type` discriminator.
  */
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useCallback } from "react";
 import type { TabData } from "../types";
 import { SAMPLE_FILES } from "../data/sampleData";
 
@@ -37,7 +37,6 @@ export function useTabManager(opts?: {
     { id: "welcome", title: "Welcome", icon: "home", content: null },
   ]);
   const [activeTab, setActiveTab] = useState("welcome");
-  const tabCounter = useRef(1);
 
   // ── Open a file from known content ───────────────────────
 
@@ -142,19 +141,6 @@ export function useTabManager(opts?: {
     [opts],
   );
 
-  const handleNewTab = useCallback(() => {
-    tabCounter.current++;
-    const t: TabData = {
-      id: `untitled-${Date.now()}`,
-      title: `Untitled-${tabCounter.current}`,
-      icon: "document",
-      content: "",
-      type: "codeview",
-    };
-    setTabs((prev) => [...prev, t]);
-    setActiveTab(t.id);
-  }, []);
-
   /**
    * Reorder tabs by moving a tab to a new position relative to a target.
    *
@@ -229,7 +215,6 @@ export function useTabManager(opts?: {
     addMolViewTab,
     handleOpenFile,
     handleCloseTab,
-    handleNewTab,
     handleReorderTabs,
     handleSave,
   } as const;

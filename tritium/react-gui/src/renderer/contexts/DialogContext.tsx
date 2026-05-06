@@ -14,19 +14,30 @@ import React, { createContext, useContext, useState, useCallback, useRef, useMem
 import { FileOpenOptionDialog } from '../components/fopen-opt-dlgs'
 import type { FileOpenOptions } from '../components/fopen-opt-dlgs'
 import { AboutDialog } from '../components/dialogs/AboutDialog'
+import { NewTabDialog } from '../components/dialogs/NewTabDialog'
+import type { NewTabDialogResult } from '../components/dialogs/NewTabDialog'
 
 // ────────────────────────────────────────────────────────────
 // Types
 // ────────────────────────────────────────────────────────────
+
+export interface NewTabDialogArgs {
+  currentSceneName: string | null;
+  defaultSceneName: string;
+  defaultViewName: string;
+}
 
 interface DialogContextValue {
   /** Show the file-open option dialog and wait for user input. */
   showFileOpenOptionDialog(filePath: string, rendererTypes?: string[]): Promise<FileOpenOptions | null>
   /** Show the About dialog. */
   showAboutDialog(): Promise<void>
+  /** Show the new-tab dialog and wait for user selection. */
+  showNewTabDialog(args: NewTabDialogArgs): Promise<NewTabDialogResult | null>
 }
 
 type DialogResolve = (options: FileOpenOptions | null) => void
+type NewTabResolve = (result: NewTabDialogResult | null) => void
 
 // ────────────────────────────────────────────────────────────
 // Context
@@ -82,9 +93,36 @@ export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     aboutResolveRef.current = null
   }, [])
 
+  const [newTabDlgState, setNewTabDlgState] = useState<NewTabDialogArgs & { visible: boolean }>({
+    visible: false,
+    currentSceneName: null,
+    defaultSceneName: 'Scene_1',
+    defaultViewName: 'View_1',
+  })
+  const newTabResolveRef = useRef<NewTabResolve | null>(null)
+
+  const showNewTabDialog = useCallback((args: NewTabDialogArgs): Promise<NewTabDialogResult | null> => {
+    return new Promise((resolve) => {
+      newTabResolveRef.current = resolve
+      setNewTabDlgState({ visible: true, ...args })
+    })
+  }, [])
+
+  const handleNewTabConfirm = useCallback((result: NewTabDialogResult) => {
+    setNewTabDlgState((s) => ({ ...s, visible: false }))
+    newTabResolveRef.current?.(result)
+    newTabResolveRef.current = null
+  }, [])
+
+  const handleNewTabCancel = useCallback(() => {
+    setNewTabDlgState((s) => ({ ...s, visible: false }))
+    newTabResolveRef.current?.(null)
+    newTabResolveRef.current = null
+  }, [])
+
   const value = useMemo<DialogContextValue>(
-    () => ({ showFileOpenOptionDialog, showAboutDialog }),
-    [showFileOpenOptionDialog, showAboutDialog],
+    () => ({ showFileOpenOptionDialog, showAboutDialog, showNewTabDialog }),
+    [showFileOpenOptionDialog, showAboutDialog, showNewTabDialog],
   )
 
   return (
@@ -98,6 +136,14 @@ export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         onCancel={handleCancel}
       />
       <AboutDialog visible={aboutDlgVisible} onClose={handleAboutClose} />
+      <NewTabDialog
+        visible={newTabDlgState.visible}
+        currentSceneName={newTabDlgState.currentSceneName}
+        defaultSceneName={newTabDlgState.defaultSceneName}
+        defaultViewName={newTabDlgState.defaultViewName}
+        onConfirm={handleNewTabConfirm}
+        onCancel={handleNewTabCancel}
+      />
     </DialogContext.Provider>
   )
 }

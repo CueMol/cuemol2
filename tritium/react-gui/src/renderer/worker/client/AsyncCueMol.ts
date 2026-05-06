@@ -12,6 +12,9 @@ import * as inputApi from './apis/inputApi';
 import * as fileApi from './apis/fileApi';
 import * as editApi from './apis/editApi';
 import * as sceneViewApi from './apis/sceneViewApi';
+import type { ProposeUniqNameArgs, ProposeUniqNameResult } from '../server/services/proposeUniqName.service';
+import type { CreateViewInSceneArgs, CreateViewInSceneResult } from '../server/services/createViewInScene.service';
+import type { ProposeNewTabNamesArgs, ProposeNewTabNamesResult } from '../server/services/proposeNewTabNames.service';
 import * as naviApi from './apis/naviApi';
 
 const log = console;
@@ -102,8 +105,8 @@ export class AsyncCueMol {
     // -------- File operations
     getCompatibleRendererNames(filePath: string): Promise<string[]> { return fileApi.getCompatibleRendererNames(this._transport, filePath); }
     getOpenFilters(catId: number): Promise<ElectronFileFilter[]> { return fileApi.getOpenFilters(this._transport, catId); }
-    createNewSceneAndView(dpr: number): Promise<{ scene_uid: number; view_uid: number } | null> {
-        return fileApi.createNewSceneAndView(this._transport, dpr);
+    createNewSceneAndView(dpr: number, name?: string): Promise<{ scene_uid: number; view_uid: number } | null> {
+        return fileApi.createNewSceneAndView(this._transport, dpr, name);
     }
     loadScene(filePath: string, scene_id: number): Promise<boolean> { return fileApi.loadScene(this._transport, filePath, scene_id); }
     loadObject(filePath: string, scene_id: number, options: FileOpenOptions): Promise<boolean> {
@@ -132,6 +135,15 @@ export class AsyncCueMol {
     }
     setSceneBgColor(sceneId: number, colorName: 'white' | 'black'): Promise<{ ok: boolean; bgColor: SceneBgColor } | null> {
         return sceneViewApi.setSceneBgColor(this._transport, sceneId, colorName);
+    }
+    proposeUniqName(args: ProposeUniqNameArgs): Promise<ProposeUniqNameResult | null> {
+        return sceneViewApi.proposeUniqName(this._transport, args);
+    }
+    createViewInScene(args: CreateViewInSceneArgs): Promise<CreateViewInSceneResult | null> {
+        return sceneViewApi.createViewInScene(this._transport, args);
+    }
+    proposeNewTabNames(args: ProposeNewTabNamesArgs): Promise<ProposeNewTabNamesResult | null> {
+        return sceneViewApi.proposeNewTabNames(this._transport, args);
     }
 
     // -------- Navigation tools

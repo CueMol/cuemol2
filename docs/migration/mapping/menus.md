@@ -64,7 +64,7 @@ View menu state notes:
 | macOS App | Show All | `role: unhide` | Electron role | native | OS-level item |
 | macOS App | Quit CueMol | `role: quit` | Electron role | native | OS-level item |
 | File | New Window | `new-window` / `menu:new-window` | `MENU_GENERIC` -> `console.warn` | stub | Entry exists in native menu and React `MenuBar` |
-| File | New Tab | `new-tab` / `menu:new-tab` | `CmdId.TabNew` | wired | Native menu has a specific push channel; React menu dispatches directly |
+| File | New Tab | `new-tab` / `menu:new-tab` | `CmdId.TabNew` → `useNewTabCommand` → `NewTabDialog` | done | UXP parity dialog (New Scene / New View + inherit camera). New Scene path: `createNewSceneAndView` service. New View path: `createViewInScene` service (adds view to existing scene; camera inherit via `saveViewToCam/__current/loadViewFromCam`); both paths manually verified. Canvas lifecycle: OffscreenCanvas bound once via `bindCanvas`; subsequent views use `addView()`. TODO: `MolTabEntry.bound` (useMolTab.tsx) is defined but never read — dead code or future reserved; clarify intent. |
 | File | Open File... | `open-file` / `menu:open-file` | `CmdId.UiOpenObjDialog` | wired | Opens object-file dialog path |
 | File | Get PDB... | `get-pdb` / `menu:get-pdb` | `MENU_GENERIC` -> `console.warn` | stub | UXP command not yet connected |
 | File | Open Recent > Clear Menu | `clear-recent` / `menu:clear-recent` | `MENU_GENERIC` -> `console.warn` | stub | Dynamic MRU population is not implemented |
