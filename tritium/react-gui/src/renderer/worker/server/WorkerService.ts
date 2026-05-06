@@ -6,6 +6,7 @@ import { CueMol } from '@cuemol/core/src/cuemol';
 import type { CueMolInternal } from '@cuemol/core/src/interfaces';
 import { ObjTuple, isObjTuple } from '../shared/ObjTuple';
 import { GfxManager } from './gfx_manager';
+import { PERF_MEASURE, perfCounters } from './perf';
 import * as event from '../../event';
 import type { SceneManager } from '@cuemol/core/src/wrappers/SceneManager';
 import type { CmdMgr } from '@cuemol/core/src/wrappers/CmdMgr';
@@ -476,6 +477,7 @@ export class WorkerService {
     }
 
     mouseMove(view_id: number, event: any): void {
+        if (PERF_MEASURE) perfCounters.mouseMoveCount++;
         const view = this._sceMgr!.getView(view_id) as GUIView;
         const modif = makeModif(event);
         view.onMouseMove(event.offsetX, event.offsetY, event.screenX, event.screenY, modif);

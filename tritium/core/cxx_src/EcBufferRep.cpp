@@ -122,6 +122,11 @@ void EcBufferRep::bind() {}
 
 void EcBufferRep::update(const gfx::AbstDrawAttrs &ada)
 {
+    if (!ada.isUpdated()) {
+        m_bDataUpdated = false;
+        return;
+    }
+
     const size_t buffer_size = ada.getDataSize();
     copyToBuffer(m_arrayBufRef, ada.getData(), buffer_size);
 
@@ -129,6 +134,9 @@ void EcBufferRep::update(const gfx::AbstDrawAttrs &ada)
     if (nindex_bytes > 0 && m_nIndexElems > 0) {
         copyToBuffer(m_indexBufRef, ada.getIndData(), nindex_bytes);
     }
+
+    ada.setUpdated(false);
+    m_bDataUpdated = true;
 }
 
 void EcBufferRep::setAttrib(const gfx::AbstDrawAttrs &ada) {}
@@ -146,7 +154,8 @@ void EcBufferRep::draw(const gfx::AbstDrawAttrs &ada)
     auto env = peer.Env();
 
     auto method = peer.Get("drawBuffer").As<Napi::Function>();
-    const bool isUpdated = ada.isUpdated();
+    const bool isUpdated = m_bDataUpdated;
+    m_bDataUpdated = false;
     const bool bEnableLighting = true;
     const int ninst = ada.getNumInstances();
     m_nDrawMode = ada.getDrawMode();
