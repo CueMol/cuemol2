@@ -4,14 +4,35 @@ See the root [`../CLAUDE.md`](../CLAUDE.md) for all guidance, including tritium-
 
 ---
 
+## Worker directory layout (`renderer/worker/`)
+
+The directory is split by execution thread:
+
+```
+renderer/worker/
+├── client/   # runs in renderer thread (UI-side facade)
+│   ├── AsyncCueMol.ts, WorkerTransport.ts, ObjProxy.ts, ...
+│   └── apis/   # AsyncCueMol method groups (lifecycleApi, viewApi, ...)
+├── server/   # runs in Web Worker thread
+│   ├── worker_launcher.ts (entry), WorkerService.ts, gfx_manager.ts
+│   └── services/   # *.service.ts auto-registered by import.meta.glob
+└── shared/   # imported from both threads (ObjTuple, gestureAxes)
+```
+
+**Rule of thumb**: file location determines execution thread. `client/` code talks to the worker via `transport.invokeWorker(...)`. `server/services/*.service.ts` runs synchronously inside the Web Worker.
+
+The Worker entry URL in `client/WorkerTransport.ts` resolves to `../server/worker_launcher.ts` and is auto-detected by Vite — no `electron.vite.config.ts` change is needed when files move within these subdirs.
+
+---
+
 ## Wrapper calling conventions
 
 TypeScript wrappers (`tritium/core/src/wrappers/`) all extend `BaseWrapper`. **The same wrapper class behaves differently depending on context.**
 
 | Context | `_wrapped` | Calls |
 |---------|------------|-----------------------|
-| Worker thread (`services/*.service.ts`) | Native C++ addon object | **Synchronous** — no `await` |
-| Renderer thread (`AsyncCueMol`, React) | `ObjProxy` (IPC proxy) | **Asynchronous** — `Promise<T>` at runtime |
+| Worker thread (`server/services/*.service.ts`) | Native C++ addon object | **Synchronous** — no `await` |
+| Renderer thread (`client/AsyncCueMol`, React) | `ObjProxy` (IPC proxy) | **Asynchronous** — `Promise<T>` at runtime |
 
 ```typescript
 // Worker (sync)
@@ -24,27 +45,63 @@ const mol = cmd.result_object as MolCoord;
 
 If you find yourself chaining multiple `await` calls on C++ wrappers in the renderer, write a worker-side service instead — each `await` is one IPC round-trip.
 
-To create a new C++ object in a service: `ctx.svc.createCppObj('ClassName') as TheWrapper`.
+### `WorkerService` method naming (worker side)
+
+Method names on `ctx.svc` are categorised by purpose:
+
+| Category | Example | Returns | Used by |
+|---|---|---|---|
+| Sync helper (public) | `ctx.svc.createObj(name)`, `ctx.svc.getService(name)` | `BaseWrapper` | service code |
+| RPC handler (private) | `_rpcCreateObj`, `_rpcGetService`, `_rpcInvokeMethod` | `ObjTuple` | dispatch table only (called from renderer over postMessage) |
+| Internal transport util | `toObjTuple`, `lookupNativeByObjTuple` | varies | `WorkerService` internals |
+
+The `_rpc` prefix means **never call directly from service code** — use the public sync helper instead. The dispatch-table string keys (`'createObj'`, `'getService'`, …) are unchanged for backward compatibility.
+
+The renderer/worker pair is symmetric:
+
+| Renderer (async) | Worker (sync) |
+|---|---|
+| `cm.createObj(name)` → `Promise<BaseWrapper>` | `ctx.svc.createObj(name)` → `BaseWrapper` |
+| `cm.getService(name)` → `Promise<BaseWrapper>` | `ctx.svc.getService(name)` → `BaseWrapper` |
+
+To create a new C++ object in a service: `ctx.svc.createObj('ClassName') as TheWrapper`.
 
 ---
 
 ## Worker service module system
 
-Services live in `react-gui/src/renderer/worker/services/*.service.ts` and are auto-registered via `import.meta.glob` at startup.
+Services live in `react-gui/src/renderer/worker/server/services/*.service.ts` and are auto-registered via `import.meta.glob` at startup.
 
-**Single-service** (`export const name`, `export default function`). **Multi-service** (`export const services = { actionOne, actionTwo }`). `index.ts` checks `services` first. Use multi-service when actions share imports/helpers (e.g. `naviCtxtMenu.service.ts`).
+All service files use the **multi-service pattern**:
+
+```ts
+function actionOne(ctx, args) { ... }
+function actionTwo(ctx, args) { ... }
+export const services = { actionOne, actionTwo };
+```
+
+A single-action file simply exports `services = { actionOne }`. `services/index.ts` registers every entry of `services` it finds and skips files that don't export it.
 
 ### WorkerContext
 
 | Field | Contents |
 |-------|----------|
-| `ctx.svc` | `WorkerService` — `addView`, `createCppObj` |
+| `ctx.svc` | `WorkerService` — `addView`, `createObj`, `getService` |
 | `ctx.sceMgr` | Scene/view creation and lookup |
 | `ctx.cmdMgr` | Command objects (`getCmd`, `run`) |
 | `ctx.strMgr` | `StreamManager` — `getInfoJSON2`, `createHandler` |
 | `ctx.styleMgr` | Style management |
 
-`_methods` (infrastructure, high-freq events) vs `_registered` (services, business logic) — don't migrate `_methods` to services without concrete benefit.
+### `_methods` vs `_registered`
+
+`WorkerService` has two dispatch tables, intentionally kept separate:
+
+| Table | Purpose | Examples | Dispatch |
+|---|---|---|---|
+| `_methods` (`ServiceMethod`) | Infrastructure, hot-path events, RPC handlers | `bindCanvas`, `mouseMove`, `_rpcCreateObj`, `_rpcInvokeMethod` | `fn.apply(this, args)` (sync) |
+| `_registered` (`ServiceFn`) | Business-logic services | `undo`, `loadObject`, `sceneBgColor`, `naviClickAtom` | `Promise.resolve().then(() => fn(ctx, args[0]))` |
+
+Don't migrate `_methods` entries into `_registered` without a concrete benefit — the two tables have different invocation semantics on purpose. New business-logic actions go into a `*.service.ts` file under `server/services/`.
 
 ---
 
@@ -64,7 +121,7 @@ Renderers: `scene.getRenderer(rendId)` or `mol.getRendererByType(type)` / `mol.g
 
 ### Selection (`mol.sel`)
 
-Use `helpers/makeSel.ts` to compile a selection string:
+Use `server/services/helpers/makeSel.ts` to compile a selection string:
 
 ```typescript
 const sel = makeSel(ctx, selStr, scene.uid);  // returns SelCommand | null
@@ -82,7 +139,7 @@ if (!mol.getRendererByType('*selection')) mol.createRenderer('*selection');
 
 ## Undo/Redo transaction
 
-Wrap scene-mutating services with `withUndoTxn` from `services/withUndoTxn.ts`:
+Wrap scene-mutating services with `withUndoTxn` from `server/services/withUndoTxn.ts`:
 
 ```typescript
 return withUndoTxn(scene, 'Label', () => { /* mutations */ return result; });

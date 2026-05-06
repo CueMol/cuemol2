@@ -1,5 +1,5 @@
 import React, { useState, useContext, useEffect, useMemo } from 'react'
-import { AsyncCueMol } from '../worker/AsyncCueMol'
+import { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import { createAndInitCueMol } from '../createAndInitCueMol'
 
 interface CueMolContextValue {

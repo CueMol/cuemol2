@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { services } from '../worker/services/viewProjection.service'
-import type { WorkerContext } from '../worker/types/WorkerContext'
+import { services } from '../worker/server/services/viewProjection.service'
+import type { WorkerContext } from '../worker/server/types/WorkerContext'
 
 function makeCtx(initialPerspective = false) {
     const mockView = { perspective: initialPerspective, centerMark: 'crosshair' }

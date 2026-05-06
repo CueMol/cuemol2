@@ -28,7 +28,7 @@ function getSentSeq(n = 0): [string, number] {
     return [payload[0] as string, payload[1] as number];
 }
 
-import { AsyncCueMol } from "../worker/AsyncCueMol";
+import { AsyncCueMol } from "../worker/client/AsyncCueMol";
 
 describe("AsyncCueMol - busy tracking", () => {
     let cm: AsyncCueMol;

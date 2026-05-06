@@ -1,13 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { WorkerContext } from '../worker/types/WorkerContext'
+import type { WorkerContext } from '../worker/server/types/WorkerContext'
 
-vi.mock('../worker/services/setupRenderer.service', () => ({
+vi.mock('../worker/server/services/setupRenderer.service', () => ({
     setupRenderer: vi.fn(),
 }))
 
 // Import services after mock is registered (vi.mock is hoisted automatically)
-import loadObject from '../worker/services/loadObject.service'
-import loadScene from '../worker/services/loadScene.service'
+import { services as loadObjectServices } from '../worker/server/services/loadObject.service'
+import { services as loadSceneServices } from '../worker/server/services/loadScene.service'
+const { loadObject } = loadObjectServices
+const { loadScene } = loadSceneServices
 
 function makeSceneAndCtx(cmdExtra: Record<string, unknown> = {}) {
     const calls: string[] = []

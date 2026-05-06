@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { services } from '../worker/services/sceneBgColor.service'
-import type { WorkerContext } from '../worker/types/WorkerContext'
+import { services } from '../worker/server/services/sceneBgColor.service'
+import type { WorkerContext } from '../worker/server/types/WorkerContext'
 
 function makeCtx(r = 0, g = 0, b = 0) {
     const mockColor = { r: vi.fn(() => r), g: vi.fn(() => g), b: vi.fn(() => b) }

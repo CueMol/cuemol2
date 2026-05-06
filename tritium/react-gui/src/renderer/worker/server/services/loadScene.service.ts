@@ -1,0 +1,26 @@
+// Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
+import type { WorkerContext } from '../types/WorkerContext';
+import type { LoadSceneCommand } from '@cuemol/core/src/wrappers/LoadSceneCommand';
+import { withUndoTxn } from './withUndoTxn';
+
+const log = console;
+
+export interface LoadSceneArgs {
+    filePath: string;
+    sceneId: number;
+}
+
+function loadScene(ctx: WorkerContext, args: LoadSceneArgs): { ok: boolean } {
+    log.info(`[worker] loading QSC scene: ${args.filePath}`);
+    const scene = ctx.sceMgr.getScene(args.sceneId);
+    return withUndoTxn(scene, 'Open scene', () => {
+        const cmd = ctx.cmdMgr.getCmd('load_scene') as LoadSceneCommand;
+        cmd.target_scene = scene;
+        cmd.file_path = args.filePath;
+        cmd.set_camera = true;
+        cmd.run();
+        return { ok: true };
+    });
+}
+
+export const services = { loadScene };
