@@ -89,6 +89,12 @@ core (@cuemol/core): C++ addon + auto-generated TypeScript wrappers
 - macOS アプリメニューは `src/main/menu.ts` の `macOnlyGroups` にハードコードされており、`APP_MENU` の `darwinOnly` グループは無視される。macOS 側の変更は `menu.ts` を直接編集する
 - カスタム動作のメニュー項目には `role` ではなく `ipcChannel: 'menu:xxx'` を使う
 
+**実装時の確認原則**
+- wrapper/API の型は生成 TS だけで判断せず、既存 tests・`.qif`・C++/N-API 変換も確認する。`.qif` の `enum` property は数値ではなく文字列 ID で扱う
+- 状態同期は「どの値を source of truth にするか」を先に決める。UI 操作後の menu checked などは、必要がなければ不安定な読み返し値ではなく成功した command の要求値で更新する
+- Electron native menu と React menu は同じ template から作っても挙動が同一とは限らない。radio/checkbox など platform 側が状態を持つ item は、main 側の更新方式と衝突しないか確認する
+- 契約が確認できたら、その契約に従って実装し、不要な正規化や互換コードを足さない。防御コードが必要な場合は、実際に観測された入力差分に限定する
+
 **新規ダイアログの追加パターン**
 1. `worker/services/xxx.service.ts` — C++ データ取得
 2. `AsyncCueMol.ts` — `invokeWorker('xxx', args)` のラッパーメソッド
@@ -104,6 +110,10 @@ core (@cuemol/core): C++ addon + auto-generated TypeScript wrappers
 
 `docs/migration/mapping/` 以下で進捗管理。UXP 機能を tritium に実装したら必ず更新する。
 
+`docs/migration/uxp-inventory/` は **UXP GUI 側の現状棚卸し**。Tritium/CueMol3 への移行状況、完了率、実装済み/未実装判定、stub/mock/wired などの進捗情報は書かない。inventory は UXP 側の UI・commands・handlers・i18n・notes に閉じる。
+
+移行進捗は **必ず `docs/migration/mapping/` に書く**。inventory entry より細かい粒度で進捗管理が必要な場合も、inventory ではなく mapping 側に補助セクションや詳細表を追加する。
+
 | File | Purpose |
 |------|---------|
 | `docs/migration/mapping/<category>.md` | Per-item status (one row per UXP inventory entry) |
@@ -115,3 +125,8 @@ core (@cuemol/core): C++ addon + auto-generated TypeScript wrappers
 - **Status**: `todo` → `wip` → `review` → `done`
 
 `_index.md` も status 変更のたびに counts・In Progress リストを更新すること。
+
+進捗の補助情報を追加するときの原則:
+- 完了率や item-level breakdown は mapping 側に置く
+- `_index.md` の category counts は inventory entry 単位の status 集計として扱い、補助的な詳細表の行数は混ぜない
+- `docs/migration/uxp-inventory/*.md` は auto-generated 扱いなので、手編集が必要な場合でも migration 進捗情報を入れない

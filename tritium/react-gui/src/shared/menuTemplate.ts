@@ -21,7 +21,9 @@ export interface AppMenuItem {
   ipcChannel?: string
   /** Native Electron role. Handled natively in the main-process menu; handled via invokeMenuRole IPC in the renderer. */
   role?: AppMenuRole
-  type?: 'separator'
+  type?: 'separator' | 'checkbox' | 'radio'
+  checked?: boolean
+  enabled?: boolean
   submenu?: AppMenuItem[]
   /** If true, only include in the native menu on macOS (React menu bar never shows these). */
   darwinOnly?: boolean
@@ -119,15 +121,11 @@ export const APP_MENU: AppMenuGroup[] = [
   {
     label: 'Scene',
     submenu: [
-      { id: 'new-scene',  label: 'New Scene',    ipcChannel: 'menu:new-scene' },
-      { id: 'open-file2', label: 'Open File...',  ipcChannel: 'menu:open-file' },
-      { id: 'open-scene2', label: 'Open Scene...', ipcChannel: 'menu:open-scene' },
-      { type: 'separator' },
       {
         id: 'background', label: 'Background',
         submenu: [
-          { id: 'bg-white', label: 'White', ipcChannel: 'menu:bg-white' },
-          { id: 'bg-black', label: 'Black', ipcChannel: 'menu:bg-black' },
+          { id: 'bg-white', label: 'White', type: 'radio', enabled: false, ipcChannel: 'menu:bg-white' },
+          { id: 'bg-black', label: 'Black', type: 'radio', enabled: false, ipcChannel: 'menu:bg-black' },
         ],
       },
       { type: 'separator' },
@@ -140,19 +138,17 @@ export const APP_MENU: AppMenuGroup[] = [
   {
     label: 'View',
     submenu: [
-      { id: 'view-perspective',   label: 'Perspective',   ipcChannel: 'menu:view-perspective' },
-      { id: 'view-orthographic',  label: 'Orthographic',  ipcChannel: 'menu:view-orthographic' },
+      { id: 'view-perspective',   label: 'Perspective',   type: 'checkbox', enabled: false, ipcChannel: 'menu:view-perspective' },
+      { id: 'view-orthographic',  label: 'Orthographic',  type: 'checkbox', enabled: false, ipcChannel: 'menu:view-orthographic' },
       { type: 'separator' },
       {
         id: 'center-mark', label: 'Center mark',
         submenu: [
-          { id: 'center-mark-cross', label: 'Cross', ipcChannel: 'menu:center-mark-cross' },
-          { id: 'center-mark-axis',  label: 'Axis',  ipcChannel: 'menu:center-mark-axis' },
-          { id: 'center-mark-none',  label: 'None',  ipcChannel: 'menu:center-mark-none' },
+          { id: 'center-mark-cross', label: 'Cross', type: 'radio', checked: true, enabled: false, ipcChannel: 'menu:center-mark-cross' },
+          { id: 'center-mark-axis',  label: 'Axis',  type: 'radio', enabled: false, ipcChannel: 'menu:center-mark-axis' },
+          { id: 'center-mark-none',  label: 'None',  type: 'radio', enabled: false, ipcChannel: 'menu:center-mark-none' },
         ],
       },
-      { type: 'separator' },
-      { id: 'hw-stereo', label: 'Hardware stereo', ipcChannel: 'menu:hw-stereo' },
       { type: 'separator' },
       { id: 'view-props', label: 'View property...', ipcChannel: 'menu:view-props' },
     ],

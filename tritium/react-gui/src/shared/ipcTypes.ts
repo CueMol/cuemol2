@@ -60,8 +60,6 @@ export interface FileDialogOptions {
 export interface FileOpenedData {
   name: string
   path: string
-  /** File text content. Omitted for binary/mol files that are loaded by path. */
-  content?: string
 }
 
 export interface FileErrorData {
@@ -116,6 +114,27 @@ export interface NaviCtxMenuPayload {
   symmLabel?: string
 }
 
+// ── Native menu state ───────────────────────────────────────────────────────
+
+export type ViewCenterMark = 'none' | 'crosshair' | 'axis'
+
+export type SceneBgColor = 'white' | 'black' | 'other'
+
+export interface MenuState {
+  viewProjection?: {
+    enabled: boolean
+    perspective: boolean | null
+  }
+  viewCenterMark?: {
+    enabled: boolean
+    centerMark: ViewCenterMark | null
+  }
+  sceneBgColor?: {
+    enabled: boolean
+    bgColor: SceneBgColor | null
+  }
+}
+
 // ── ElectronAPI (the contextBridge contract) ────────────────────────────────
 
 export interface ElectronAPI {
@@ -143,6 +162,7 @@ export interface ElectronAPI {
 
   // Invoke a native menu role action from the renderer (non-macOS custom menu)
   invokeMenuRole: (role: string) => Promise<void>
+  updateMenuState: (state: MenuState) => Promise<void>
 
   // Show native viewport context menu; resolves with the chosen action or null
   showNaviContextMenu: (payload: NaviCtxMenuPayload) => Promise<NaviCtxAction | null>

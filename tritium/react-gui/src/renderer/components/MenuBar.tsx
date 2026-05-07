@@ -1,10 +1,14 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { APP_MENU, getRoleLabel } from '../../shared/menuTemplate'
 import type { AppMenuItem, AppMenuRole } from '../../shared/menuTemplate'
+import type { SceneBgColor, ViewCenterMark } from '../../shared/ipcTypes'
 import { useMenuDispatch } from '../hooks/useMenuDispatch'
 
 interface MenuBarProps {
   activeTab: string | null
+  viewProjection?: boolean | null
+  viewCenterMark?: ViewCenterMark | null
+  sceneBgColor?: SceneBgColor | null
 }
 
 /** Convert an Electron accelerator string to a display string for Windows/Linux. */
@@ -23,9 +27,56 @@ function getItemLabel(item: AppMenuItem): string {
 interface DropdownItemProps {
   item: AppMenuItem
   onAction: (item: AppMenuItem) => void
+  viewProjection?: boolean | null
+  viewCenterMark?: ViewCenterMark | null
+  sceneBgColor?: SceneBgColor | null
 }
 
-const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction }) => {
+const getViewProjectionState = (
+  item: AppMenuItem,
+  viewProjection: boolean | null | undefined,
+): { enabled: boolean; checked: boolean } | null => {
+  if (item.id === 'view-perspective') {
+    return { enabled: viewProjection !== null && viewProjection !== undefined, checked: viewProjection === true }
+  }
+  if (item.id === 'view-orthographic') {
+    return { enabled: viewProjection !== null && viewProjection !== undefined, checked: viewProjection === false }
+  }
+  return null
+}
+
+const getViewCenterMarkState = (
+  item: AppMenuItem,
+  viewCenterMark: ViewCenterMark | null | undefined,
+): { enabled: boolean; checked: boolean } | null => {
+  const itemValues: Record<string, ViewCenterMark> = {
+    'center-mark-none': 'none',
+    'center-mark-cross': 'crosshair',
+    'center-mark-axis': 'axis',
+  }
+  if (!item.id || !(item.id in itemValues)) return null
+  return {
+    enabled: viewCenterMark !== null && viewCenterMark !== undefined,
+    checked: viewCenterMark === itemValues[item.id],
+  }
+}
+
+const getSceneBgColorState = (
+  item: AppMenuItem,
+  sceneBgColor: SceneBgColor | null | undefined,
+): { enabled: boolean; checked: boolean } | null => {
+  const itemValues: Record<string, SceneBgColor> = {
+    'bg-white': 'white',
+    'bg-black': 'black',
+  }
+  if (!item.id || !(item.id in itemValues)) return null
+  return {
+    enabled: sceneBgColor !== null && sceneBgColor !== undefined,
+    checked: sceneBgColor === itemValues[item.id],
+  }
+}
+
+const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProjection, viewCenterMark, sceneBgColor }) => {
   const [submenuOpen, setSubmenuOpen] = useState(false)
   const itemRef = useRef<HTMLDivElement>(null)
 
@@ -36,12 +87,19 @@ const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction }) => {
   const label = getItemLabel(item)
   const accel = item.accelerator ? toDisplayAccel(item.accelerator) : undefined
   const hasSubmenu = !!item.submenu?.length
+  const projectionState = getViewProjectionState(item, viewProjection)
+  const centerMarkState = getViewCenterMarkState(item, viewCenterMark)
+  const bgColorState = getSceneBgColorState(item, sceneBgColor)
+  const enabled = projectionState?.enabled ?? centerMarkState?.enabled ?? bgColorState?.enabled ?? item.enabled ?? true
+  const checked = projectionState?.checked ?? centerMarkState?.checked ?? bgColorState?.checked ?? item.checked ?? false
+  const isCheckable = item.type === 'checkbox' || item.type === 'radio'
+  const className = `menubar__dropdown-item${enabled ? '' : ' menubar__dropdown-item--disabled'}`
 
   if (hasSubmenu) {
     return (
       <div
         ref={itemRef}
-        className="menubar__dropdown-item menubar__dropdown-item--has-submenu"
+        className={`${className} menubar__dropdown-item--has-submenu`}
         role="menuitem"
         aria-haspopup="true"
         aria-expanded={submenuOpen}
@@ -53,7 +111,14 @@ const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction }) => {
         {submenuOpen && (
           <div className="menubar__submenu" role="menu">
             {item.submenu!.map((sub, idx) => (
-              <DropdownItem key={sub.id ?? idx} item={sub} onAction={onAction} />
+              <DropdownItem
+                key={sub.id ?? idx}
+                item={sub}
+                onAction={onAction}
+                viewProjection={viewProjection}
+                viewCenterMark={viewCenterMark}
+                sceneBgColor={sceneBgColor}
+              />
             ))}
           </div>
         )}
@@ -63,13 +128,19 @@ const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction }) => {
 
   return (
     <div
-      className="menubar__dropdown-item"
-      role="menuitem"
+      className={className}
+      role={item.type === 'radio' ? 'menuitemradio' : isCheckable ? 'menuitemcheckbox' : 'menuitem'}
+      aria-checked={isCheckable ? checked : undefined}
+      aria-disabled={!enabled}
       onClick={(e) => {
         e.stopPropagation()
+        if (!enabled) return
         onAction(item)
       }}
     >
+      {isCheckable && (
+        <span className="menubar__dropdown-check">{checked ? '\u2713' : ''}</span>
+      )}
       <span>{label}</span>
       {accel && (
         <span className="menubar__dropdown-accelerator">{accel}</span>
@@ -78,7 +149,7 @@ const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction }) => {
   )
 }
 
-export const MenuBar: React.FC<MenuBarProps> = ({ activeTab }) => {
+export const MenuBar: React.FC<MenuBarProps> = ({ activeTab, viewProjection = null, viewCenterMark = null, sceneBgColor = null }) => {
   const { dispatchMenuChannel } = useMenuDispatch(activeTab)
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [dropdownPos, setDropdownPos] = useState<{ left: number }>({ left: 0 })
@@ -168,6 +239,9 @@ export const MenuBar: React.FC<MenuBarProps> = ({ activeTab }) => {
                     key={item.id ?? idx}
                     item={item}
                     onAction={handleItemAction}
+                    viewProjection={viewProjection}
+                    viewCenterMark={viewCenterMark}
+                    sceneBgColor={sceneBgColor}
                   />
                 ))}
               </div>

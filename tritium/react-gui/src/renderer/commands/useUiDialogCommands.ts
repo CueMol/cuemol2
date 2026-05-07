@@ -4,7 +4,7 @@
  */
 
 import { useCallback } from 'react'
-import type { AsyncCueMol } from '../worker/AsyncCueMol'
+import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
 import { useDialog } from '../contexts/DialogContext'

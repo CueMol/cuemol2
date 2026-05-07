@@ -5,10 +5,10 @@
  *
  * | Tab type        | Rendered component                    |
  * |-----------------|---------------------------------------|
+ * | `"welcome"`     | `WelcomePane` (start screen)          |
  * | `"settings"`    | `SettingsPane` (app settings)         |
  * | `"molview"`     | `MolViewPane` (WebGL canvas)          |
- * | `"codeview"`    | `CodeViewPane` or `WelcomePane`       |
- * | none / no file  | `WelcomePane`                         |
+ * | none            | `WelcomePane`                         |
  *
  * MolViewPane is kept permanently mounted to preserve the WebGL context and
  * OffscreenCanvas binding. It is hidden with `display:none` when another
@@ -20,7 +20,6 @@ import type { TabData } from "../../types";
 import type { ToolId } from "../../data/viewportTools";
 import { WelcomePane } from "./WelcomePane";
 import { SettingsPane } from "./SettingsPane";
-import { CodeViewPane } from "./CodeViewPane";
 import { MolViewPane } from "./MolViewPane";
 import { ViewportToolPalette } from "../ViewportToolPalette";
 import { useNaviClickHandler } from "../../hooks/useNaviClickHandler";
@@ -50,14 +49,10 @@ interface ContentPaneProps {
 
 /** Map a tab to its content node. Returns null for molview (handled separately). */
 const renderContent = (tab: TabData | undefined): React.ReactNode => {
-  if (!tab || (tab.type === "codeview" && !tab.content)) return <WelcomePane />;
+  if (!tab) return <WelcomePane />;
   switch (tab.type) {
     case "settings": return <SettingsPane />;
-    case "codeview": return (
-      <div className="editor-content">
-        <CodeViewPane content={tab.content!} />
-      </div>
-    );
+    case "welcome":
     default: return <WelcomePane />;
   }
 };

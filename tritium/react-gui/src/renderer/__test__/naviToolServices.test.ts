@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { services } from '../worker/services/naviTool.service';
-import type { WorkerContext } from '../worker/types/WorkerContext';
+import { services } from '../worker/server/services/naviTool.service';
+import type { WorkerContext } from '../worker/server/types/WorkerContext';
 
 const { naviHitTest, naviClickAtom, naviResidSel } = services;
 
@@ -58,16 +58,15 @@ function makeCtx(hitStr: string | null = null): WorkerContext {
         commitUndoTxn: vi.fn(),
         rollbackUndoTxn: vi.fn(),
     };
-    const mockMsgLogTuple = { _obj_id: '1', _class_name: 'MsgLog' };
+    const mockMsgLog = { writeln: vi.fn() };
     const ctx = {
         sceMgr: {
             getView: vi.fn(() => mockView),
             getScene: vi.fn(() => mockScene),
         },
         svc: {
-            getService: vi.fn(() => mockMsgLogTuple),
-            invokeMethod: vi.fn(),
-            createCppObj: vi.fn((cls: string) => {
+            getService: vi.fn(() => mockMsgLog),
+            createObj: vi.fn((cls: string) => {
                 if (cls === 'ResidRangeSet') return mockRrs;
                 if (cls === 'SelCommand') return mockSel;
                 return null;
@@ -112,7 +111,8 @@ describe('naviClickAtom', () => {
         const r = naviClickAtom(ctx, { viewId: 1, x: 0, y: 0 });
         expect(r.handled).toBe(true);
         expect(r.statusMessage).toContain('LWObject');
-        expect(ctx.svc.invokeMethod).toHaveBeenCalledWith('writeln', expect.anything(), [expect.stringContaining('LWObject')]);
+        const msgLog = ctx.svc.getService('MsgLog') as any;
+        expect(msgLog.writeln).toHaveBeenCalledWith(expect.stringContaining('LWObject'));
     });
 
     it('handles MolCoord with statusMessage including occ/bfac/pos', () => {
@@ -135,7 +135,8 @@ describe('naviClickAtom', () => {
     it('calls MsgLog.writeln with the status message', () => {
         const ctx = makeCtx(makeHitResult());
         naviClickAtom(ctx, { viewId: 1, x: 0, y: 0 });
-        expect(ctx.svc.invokeMethod).toHaveBeenCalledWith('writeln', expect.anything(), [expect.any(String)]);
+        const msgLog = ctx.svc.getService('MsgLog') as any;
+        expect(msgLog.writeln).toHaveBeenCalledWith(expect.any(String));
     });
 
     it('calls withUndoTxn for atom label toggle', () => {

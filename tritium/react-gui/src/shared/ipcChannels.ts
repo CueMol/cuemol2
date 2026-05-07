@@ -13,6 +13,7 @@ export const IPC = {
   LAYOUT_SAVE:    'layout:save',
   UI_LOAD:        'ui:load',
   UI_SAVE:        'ui:save',
+  MENU_UPDATE_STATE: 'menu:update-state',
 
   // push channels (main → renderer, no reply)
   OBJ_FILE_OPENED:   'file:obj-opened',
@@ -26,6 +27,8 @@ export const IPC = {
   MENU_OPEN_SCENE: 'menu:open-scene',
   MENU_UNDO:      'menu:undo',
   MENU_REDO:      'menu:redo',
+  MENU_VIEW_PERSPECTIVE:  'menu:view-perspective',
+  MENU_VIEW_ORTHOGRAPHIC: 'menu:view-orthographic',
 
   // invoke channels (renderer → main, with reply) — menu role actions
   MENU_INVOKE_ROLE: 'menu:invoke-role',

@@ -123,6 +123,7 @@ build/**
 /tritium/react-gui/out/
 /tritium/react-gui/packaging/staging/
 /tritium/react-gui/packaging/cuemol2-runtime/
+*.tsbuildinfo
 
 /specs/
 

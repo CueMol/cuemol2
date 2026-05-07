@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import undoFn, { name as undoName } from '../worker/services/undo.service'
-import redoFn, { name as redoName } from '../worker/services/redo.service'
-import type { WorkerContext } from '../worker/types/WorkerContext'
+import { services as undoServices } from '../worker/server/services/undo.service'
+import { services as redoServices } from '../worker/server/services/redo.service'
+import type { WorkerContext } from '../worker/server/types/WorkerContext'
+
+const { undo: undoFn } = undoServices
+const { redo: redoFn } = redoServices
 
 function makeCtx() {
     const mockUndo = vi.fn(() => true)
@@ -23,8 +26,8 @@ describe('undo service', () => {
         mockUndo = m.mockUndo
     })
 
-    it('has name "undo"', () => {
-        expect(undoName).toBe('undo')
+    it('is registered as "undo"', () => {
+        expect('undo' in undoServices).toBe(true)
     })
 
     it('calls scene.undo(0) by default', () => {
@@ -58,8 +61,8 @@ describe('redo service', () => {
         mockRedo = m.mockRedo
     })
 
-    it('has name "redo"', () => {
-        expect(redoName).toBe('redo')
+    it('is registered as "redo"', () => {
+        expect('redo' in redoServices).toBe(true)
     })
 
     it('calls scene.redo(0) by default', () => {

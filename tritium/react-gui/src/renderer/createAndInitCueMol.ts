@@ -1,4 +1,4 @@
-import { AsyncCueMol } from './worker/AsyncCueMol'
+import { AsyncCueMol } from './worker/client/AsyncCueMol'
 
 // Create a CueMol instance and initialize the underlying C++ library.
 //

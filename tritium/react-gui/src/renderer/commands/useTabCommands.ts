@@ -1,20 +1,23 @@
 /**
  * @file commands/useTabCommands.ts
- * @description Registers tab management commands (new/close).
+ * @description Registers tab management commands (close).
+ * CmdId.TabNew is handled by useNewTabCommand.
  */
 
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
 
 interface UseTabCommandsOptions {
-    handleNewTab: () => void
-    handleCloseTab: (id: string) => void
+    handleCloseTab: (id: string) => void | Promise<void>
 }
 
-export function useTabCommands({ handleNewTab, handleCloseTab }: UseTabCommandsOptions): void {
-    useRegisterCommand(CmdId.TabNew, () => handleNewTab())
-
+export function useTabCommands({ handleCloseTab }: UseTabCommandsOptions): void {
     useRegisterCommand(CmdId.TabClose, (id: string | undefined) => {
-        if (id) handleCloseTab(id)
+        if (id) {
+            const result = handleCloseTab(id);
+            if (result instanceof Promise) {
+                result.catch((e: unknown) => console.error('TabClose failed:', e));
+            }
+        }
     })
 }

@@ -48,11 +48,15 @@ private:
     Napi::ObjectReference m_indexBufRef;
     size_t m_nIndexElems;
 
+    // True when update() copied fresh data that draw() should GPU-upload.
+    // Mirrors the role of OcBufferRep's isUpdated check-and-reset pattern.
+    bool m_bDataUpdated;
+
     // // material/lighting
     // bool m_bEnableLighting;
 
 public:
-    EcBufferRep() : m_nViewID(0), m_nDrawMode(-1), m_nElems(0), m_nIndexElems(0) {}
+    EcBufferRep() : m_nViewID(0), m_nDrawMode(-1), m_nElems(0), m_nIndexElems(0), m_bDataUpdated(false) {}
 
     virtual ~EcBufferRep();
 

@@ -19,6 +19,7 @@ import { StatusBar } from "./components/StatusBar";
 import { InspectorPanel } from "./components/panels/InspectorPanel";
 
 import type { AlignmentData, AnimationData } from "./types";
+import type { SceneBgColor, ViewCenterMark } from "../shared/ipcTypes";
 
 import { SAMPLE_ALIGNMENT, SAMPLE_ANIMATION } from "./data/alignmentData";
 
@@ -34,8 +35,13 @@ import { useElectronIpc } from "./hooks/useElectronIpc";
 import { useSceneCommands } from "./commands/useSceneCommands";
 import { useUiDialogCommands } from "./commands/useUiDialogCommands";
 import { useTabCommands } from "./commands/useTabCommands";
+import { useNewTabCommand } from "./commands/useNewTabCommand";
 import { useEditCommands } from "./commands/useEditCommands";
+import { useViewCommands } from "./commands/useViewCommands";
+import { useCommands } from "./commands/CommandRegistry";
+import { CmdId } from "./commands/ids";
 import { useCueMolBusy } from "./hooks/useCueMolBusy";
+import { useDialog } from "./contexts/DialogContext";
 
 const App: React.FC = () => {
 
@@ -94,6 +100,7 @@ const App: React.FC = () => {
 
   const { cueMolReady, cm } = useCueMol();
   const { addMolTab, removeMolTab, getActiveSceneInfo, setActiveViewByID } = useMolTabDispatch();
+  const { showConfirmCloseTabDialog } = useDialog();
 
   const handleMolViewClose = useCallback((viewId: number) => {
     removeMolTab(viewId);
@@ -104,19 +111,29 @@ const App: React.FC = () => {
     }
   }, [cm, removeMolTab]);
 
+  const confirmCloseTab = useCallback(async (viewId: number): Promise<boolean> => {
+    if (!cm) return true;
+    const info = await cm.getSceneCloseInfo(viewId);
+    if (!info?.ok) return true;
+    if (!info.modified || info.viewCount !== 1) return true;
+    const result = await showConfirmCloseTabDialog({ sceneName: info.sceneName });
+    if (result === 'cancel') return false;
+    if (result === 'discard') return true;
+    // 'save': Save button is disabled (not yet implemented); abort close.
+    console.warn('[TODO] Scene save not yet implemented');
+    return false;
+  }, [cm, showConfirmCloseTabDialog]);
+
   const {
     tabs,
     activeTab,
     setActiveTab,
-    openFileFromData,
     openSettingsTab,
     addMolViewTab,
-    handleOpenFile,
     handleCloseTab,
-    handleNewTab,
     handleReorderTabs,
     handleSave,
-  } = useTabManager({ onMolViewClose: handleMolViewClose });
+  } = useTabManager({ onMolViewClose: handleMolViewClose, confirmCloseTab });
 
   // Guard to prevent duplicate initial scene creation (React StrictMode)
   const initialSceneCreatedRef = useRef(false);
@@ -158,6 +175,45 @@ const App: React.FC = () => {
 
   const [alignment] = useState<AlignmentData | null>(SAMPLE_ALIGNMENT);
   const [animation] = useState<AnimationData | null>(SAMPLE_ANIMATION);
+  const [viewProjection, setViewProjection] = useState<boolean | null>(null);
+  const [viewCenterMark, setViewCenterMark] = useState<ViewCenterMark | null>(null);
+  const [sceneBgColor, setSceneBgColor] = useState<SceneBgColor | null>(null);
+  const activeMolViewId = tabs.find((t) => t.id === activeTab && t.type === 'molview')?.viewId;
+
+  const syncNativeViewMenu = useCallback((state: {
+    perspective?: boolean | null;
+    centerMark?: ViewCenterMark | null;
+    bgColor?: SceneBgColor | null;
+  }) => {
+    window.electronAPI?.updateMenuState({
+      ...(state.perspective !== undefined
+        ? { viewProjection: { enabled: state.perspective !== null, perspective: state.perspective } }
+        : {}),
+      ...(state.centerMark !== undefined
+        ? { viewCenterMark: { enabled: state.centerMark !== null, centerMark: state.centerMark } }
+        : {}),
+      ...(state.bgColor !== undefined
+        ? { sceneBgColor: { enabled: state.bgColor !== null, bgColor: state.bgColor } }
+        : {}),
+    }).catch((err: unknown) => {
+      console.warn('update menu state failed:', err);
+    });
+  }, []);
+
+  const handleProjectionChanged = useCallback((perspective: boolean) => {
+    setViewProjection(perspective);
+    syncNativeViewMenu({ perspective });
+  }, [syncNativeViewMenu]);
+
+  const handleCenterMarkChanged = useCallback((centerMark: ViewCenterMark) => {
+    setViewCenterMark(centerMark);
+    syncNativeViewMenu({ centerMark });
+  }, [syncNativeViewMenu]);
+
+  const handleBgColorChanged = useCallback((bgColor: SceneBgColor) => {
+    setSceneBgColor(bgColor);
+    syncNativeViewMenu({ bgColor });
+  }, [syncNativeViewMenu]);
 
   // --- Command registrations and IPC wiring ---
 
@@ -166,18 +222,28 @@ const App: React.FC = () => {
     addMolTab,
     addMolViewTab,
     getActiveSceneInfo,
-    openFileFromData,
+    onBgColorChanged: handleBgColorChanged,
   });
 
   useUiDialogCommands({ cm });
 
-  useTabCommands({ handleNewTab, handleCloseTab });
+  useTabCommands({ handleCloseTab });
+
+  useNewTabCommand({ cm, addMolTab, addMolViewTab, getActiveSceneInfo });
 
   useEditCommands({ cm, getActiveSceneInfo, handleSave });
+
+  useViewCommands({
+    cm,
+    getActiveViewId: () => activeMolViewId,
+    onProjectionChanged: handleProjectionChanged,
+    onCenterMarkChanged: handleCenterMarkChanged,
+  });
 
   useElectronIpc(activeTab);
 
   const cueMolBusy = useCueMolBusy();
+  const { dispatch: dispatchCommand } = useCommands();
 
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
@@ -188,6 +254,45 @@ const App: React.FC = () => {
       document.documentElement.style.setProperty("--titlebar-inset", "78px");
     }
   }, []);
+
+  useEffect(() => {
+    if (!cm || activeMolViewId === undefined) {
+      setViewProjection(null);
+      setViewCenterMark(null);
+      setSceneBgColor(null);
+      syncNativeViewMenu({ perspective: null, centerMark: null, bgColor: null });
+      return;
+    }
+
+    const sceneInfo = getActiveSceneInfo();
+    const sceneId = sceneInfo?.scene_uid;
+
+    let cancelled = false;
+    Promise.all([
+      cm.getViewProjection(activeMolViewId),
+      cm.getViewCenterMark(activeMolViewId),
+      sceneId !== undefined ? cm.getSceneBgColor(sceneId) : Promise.resolve(null),
+    ]).then(([projectionResult, centerMarkResult, bgColorResult]) => {
+      if (cancelled) return;
+      const perspective = projectionResult?.ok ? projectionResult.perspective : null;
+      const centerMark = centerMarkResult?.ok ? centerMarkResult.centerMark : null;
+      const bgColor = bgColorResult?.ok ? bgColorResult.bgColor : null;
+      setViewProjection(perspective);
+      setViewCenterMark(centerMark);
+      setSceneBgColor(bgColor);
+      syncNativeViewMenu({ perspective, centerMark, bgColor });
+    }).catch((err: unknown) => {
+      if (!cancelled) {
+        console.warn('get view state failed:', err);
+        setViewProjection(null);
+        setViewCenterMark(null);
+        setSceneBgColor(null);
+        syncNativeViewMenu({ perspective: null, centerMark: null, bgColor: null });
+      }
+    });
+
+    return () => { cancelled = true; };
+  }, [activeMolViewId, cm, syncNativeViewMenu, getActiveSceneInfo]);
 
   // --- Derived sidebar sub-panel state ---
 
@@ -211,11 +316,11 @@ const App: React.FC = () => {
     <ActiveToolProvider activeTool={activeTool}>
     <div className="app">
       {window.electronAPI?.platform !== 'darwin' && (
-        <MenuBar activeTab={activeTab} />
+        <MenuBar activeTab={activeTab} viewProjection={viewProjection} viewCenterMark={viewCenterMark} sceneBgColor={sceneBgColor} />
       )}
       <Toolbar
-        onOpenFile={handleOpenFile}
-        onNewTab={handleNewTab}
+        onOpenFile={() => dispatchCommand(CmdId.UiOpenObjDialog).catch((e: unknown) => console.error('UiOpenObjDialog failed:', e))}
+        onNewTab={() => dispatchCommand(CmdId.TabNew).catch((e: unknown) => console.error('TabNew failed:', e))}
         onSave={handleSave}
       />
 

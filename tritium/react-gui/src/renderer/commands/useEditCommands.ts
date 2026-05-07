@@ -3,7 +3,7 @@
  * @description Registers edit-layer commands (save, undo, redo) targeting the active scene.
  */
 
-import type { AsyncCueMol } from '../worker/AsyncCueMol'
+import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
 

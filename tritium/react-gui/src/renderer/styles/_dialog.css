@@ -1,0 +1,82 @@
+/* Compact dialog typography and widget sizing to match main window density. */
+
+.bp5-dialog {
+  font-size: var(--fs-xl);
+}
+
+/* Header — Blueprint default min-height is 40px; close button default is 30px.
+   Both must be overridden to actually compress the header row. */
+.bp5-dialog-header {
+  min-height: 0;
+  padding: 4px 8px 4px 14px;
+}
+
+.bp5-dialog-header .bp5-heading {
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-semibold);
+}
+
+.bp5-dialog-header .bp5-button {
+  min-height: 24px;
+  min-width: 24px;
+  padding: 0;
+}
+
+/* Body */
+.bp5-dialog-body {
+  padding: 12px 16px;
+  font-size: var(--fs-xl);
+  line-height: var(--lh-normal);
+}
+
+.bp5-dialog-body p {
+  margin-bottom: 8px;
+}
+
+/* Footer */
+.bp5-dialog-footer {
+  padding: 6px 12px;
+}
+
+.bp5-dialog-footer-actions {
+  gap: 6px;
+}
+
+/* Buttons inside body and footer (excluding header close button) */
+.bp5-dialog-body .bp5-button,
+.bp5-dialog-footer .bp5-button {
+  min-height: 26px;
+  padding: 3px 10px;
+  font-size: var(--fs-xl);
+}
+
+/* Input inside body */
+.bp5-dialog-body .bp5-input {
+  height: 26px;
+  font-size: var(--fs-lg);
+  padding: 0 8px;
+}
+
+/* FormGroup spacing */
+.bp5-dialog-body .bp5-form-group {
+  margin-bottom: 10px;
+}
+
+.bp5-dialog-body .bp5-form-group .bp5-label {
+  font-size: var(--fs-lg);
+  margin-bottom: 4px;
+}
+
+.bp5-dialog-body .bp5-form-group.bp5-inline .bp5-label {
+  margin-right: 8px;
+  margin-bottom: 0;
+}
+
+/* Radio, Checkbox, Switch labels */
+.bp5-dialog-body .bp5-radio,
+.bp5-dialog-body .bp5-checkbox,
+.bp5-dialog-body .bp5-switch {
+  font-size: var(--fs-xl);
+  line-height: 1.4;
+  min-height: 0;
+}
