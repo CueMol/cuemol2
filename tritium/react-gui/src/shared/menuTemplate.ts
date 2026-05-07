@@ -3,6 +3,8 @@
  * (native menu) and the renderer (React MenuBar on Windows/Linux).
  */
 
+import { IPC } from './ipcChannels'
+
 export type AppMenuRole =
   | 'cut' | 'copy' | 'paste' | 'selectAll'
   | 'reload' | 'forceReload' | 'toggleDevTools'
@@ -43,7 +45,7 @@ export const APP_MENU: AppMenuGroup[] = [
     label: 'CueMol2',
     darwinOnly: true,
     submenu: [
-      { id: 'about-mac', label: 'About CueMol3-tritium', ipcChannel: 'menu:about', darwinOnly: true },
+      { id: 'about-mac', label: 'About CueMol3-tritium', ipcChannel: IPC.MENU_ABOUT, darwinOnly: true },
       { type: 'separator' },
       { id: 'mac-prefs', label: 'Preferences...', accelerator: 'Cmd+,', ipcChannel: 'menu:options', darwinOnly: true },
       { type: 'separator' },
@@ -124,8 +126,8 @@ export const APP_MENU: AppMenuGroup[] = [
       {
         id: 'background', label: 'Background',
         submenu: [
-          { id: 'bg-white', label: 'White', type: 'radio', enabled: false, ipcChannel: 'menu:bg-white' },
-          { id: 'bg-black', label: 'Black', type: 'radio', enabled: false, ipcChannel: 'menu:bg-black' },
+          { id: 'bg-white', label: 'White', type: 'radio', enabled: false, ipcChannel: IPC.MENU_BG_WHITE },
+          { id: 'bg-black', label: 'Black', type: 'radio', enabled: false, ipcChannel: IPC.MENU_BG_BLACK },
         ],
       },
       { type: 'separator' },
@@ -144,9 +146,9 @@ export const APP_MENU: AppMenuGroup[] = [
       {
         id: 'center-mark', label: 'Center mark',
         submenu: [
-          { id: 'center-mark-cross', label: 'Cross', type: 'radio', checked: true, enabled: false, ipcChannel: 'menu:center-mark-cross' },
-          { id: 'center-mark-axis',  label: 'Axis',  type: 'radio', enabled: false, ipcChannel: 'menu:center-mark-axis' },
-          { id: 'center-mark-none',  label: 'None',  type: 'radio', enabled: false, ipcChannel: 'menu:center-mark-none' },
+          { id: 'center-mark-cross', label: 'Cross', type: 'radio', checked: true, enabled: false, ipcChannel: IPC.MENU_CENTER_MARK_CROSS },
+          { id: 'center-mark-axis',  label: 'Axis',  type: 'radio', enabled: false, ipcChannel: IPC.MENU_CENTER_MARK_AXIS },
+          { id: 'center-mark-none',  label: 'None',  type: 'radio', enabled: false, ipcChannel: IPC.MENU_CENTER_MARK_NONE },
         ],
       },
       { type: 'separator' },
@@ -188,7 +190,7 @@ export const APP_MENU: AppMenuGroup[] = [
   {
     label: 'Help',
     submenu: [
-      { id: 'about', label: 'About CueMol3-tritium', ipcChannel: 'menu:about', othersOnly: true },
+      { id: 'about', label: 'About CueMol3-tritium', ipcChannel: IPC.MENU_ABOUT, othersOnly: true },
       { type: 'separator' },
       { id: 'about-plugins',  label: 'About plugins...',  ipcChannel: 'menu:about-plugins' },
       { id: 'about-config',   label: 'About config...',   ipcChannel: 'menu:about-config' },

@@ -9,7 +9,7 @@ import { useCallback } from 'react'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
-import { useDialog } from '../contexts/DialogContext'
+import { useShowNewTabDialog } from '../components/dialogs/NewTabDialogProvider'
 
 interface UseNewTabCommandOptions {
     cm: AsyncCueMol | null
@@ -24,7 +24,7 @@ export function useNewTabCommand({
     addMolViewTab,
     getActiveSceneInfo,
 }: UseNewTabCommandOptions): void {
-    const { showNewTabDialog } = useDialog()
+    const showNewTabDialog = useShowNewTabDialog()
 
     const openNewTab = useCallback(async (): Promise<void> => {
         if (!cm) return

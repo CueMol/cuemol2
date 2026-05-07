@@ -2,8 +2,8 @@
  * IPC handler registration for the Electron main process.
  *
  * Call `registerIpcHandlers(mainWindow)` once after the BrowserWindow is
- * created. All channel names are imported from `shared/ipcChannels` so there
- * are no magic strings here.
+ * created. All channel names come from `shared/ipcChannels` and request /
+ * response shapes from `shared/ipcContract`.
  */
 
 import { ipcMain, app, dialog } from 'electron'
@@ -11,10 +11,34 @@ import type { BrowserWindow } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import { IPC } from '../shared/ipcChannels'
-import type { LayoutState, FileDialogOptions, NaviCtxMenuPayload, MenuState } from '../shared/ipcTypes'
+import type {
+  InvokeChannel,
+  InvokeReq,
+  InvokeRes,
+} from '../shared/ipcContract'
+import type { FileDialogOptions } from '../shared/ipcTypes'
 import { loadLayout, saveLayout, loadUi, saveUi } from './stateStore'
 import { showNaviContextMenu } from './naviContextMenu'
 import { updateMenuState } from './menu'
+
+// ─────────────────────────────────────────────
+// Typed handle wrapper
+// ─────────────────────────────────────────────
+
+/**
+ * Type-safe wrapper for `ipcMain.handle`. Picks request / response types from
+ * `InvokeChannels` so adding a channel only requires adding a map entry plus a
+ * handler call.
+ */
+function handleInvoke<C extends InvokeChannel>(
+  channel: C,
+  handler: (
+    event: Electron.IpcMainInvokeEvent,
+    req: InvokeReq<C>,
+  ) => InvokeRes<C> | Promise<InvokeRes<C>>,
+): void {
+  ipcMain.handle(channel, handler as Parameters<typeof ipcMain.handle>[1])
+}
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -69,7 +93,7 @@ export async function handleOpenFile(mainWindow: BrowserWindow, options: FileDia
 // ─────────────────────────────────────────────
 
 export function registerIpcHandlers(mainWindow: BrowserWindow): void {
-  ipcMain.handle(IPC.APP_PATH, async () => {
+  handleInvoke(IPC.APP_PATH, async () => {
     const userStylePath = getUserStylePath()
     let userStyleExists = false
     try {
@@ -88,27 +112,25 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
     }
   })
 
-  ipcMain.handle(IPC.DIALOG_OPEN, async (_event, options: FileDialogOptions) => {
+  handleInvoke(IPC.DIALOG_OPEN, async (_event, options) => {
     await handleOpenFile(mainWindow, options)
   })
 
-  ipcMain.handle(IPC.LAYOUT_LOAD, async (): Promise<LayoutState | null> => {
-    return loadLayout() ?? null
-  })
+  handleInvoke(IPC.LAYOUT_LOAD, async () => loadLayout() ?? null)
 
-  ipcMain.handle(IPC.LAYOUT_SAVE, async (_event, layout: LayoutState): Promise<void> => {
+  handleInvoke(IPC.LAYOUT_SAVE, async (_event, layout) => {
     saveLayout(layout)
   })
 
-  ipcMain.handle(IPC.UI_LOAD, () => loadUi())
-  ipcMain.handle(IPC.UI_SAVE, (_e, state) => saveUi(state))
-  ipcMain.handle(IPC.MENU_UPDATE_STATE, (_e, state: MenuState) => updateMenuState(state))
+  handleInvoke(IPC.UI_LOAD, () => loadUi())
+  handleInvoke(IPC.UI_SAVE, (_e, state) => saveUi(state))
+  handleInvoke(IPC.MENU_UPDATE_STATE, (_e, state) => updateMenuState(state))
 
-  ipcMain.handle(IPC.NAVI_CTX_SHOW, (_event, payload: NaviCtxMenuPayload) =>
+  handleInvoke(IPC.NAVI_CTX_SHOW, (_event, payload) =>
     showNaviContextMenu(mainWindow, payload),
   )
 
-  ipcMain.handle(IPC.MENU_INVOKE_ROLE, (_event, role: string) => {
+  handleInvoke(IPC.MENU_INVOKE_ROLE, (_event, role) => {
     const wc = mainWindow.webContents
     switch (role) {
       case 'reload': wc.reload(); break

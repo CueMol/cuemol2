@@ -3,6 +3,6 @@
   "include": ["src/renderer/**/*", "src/shared/**/*"],
   "compilerOptions": {
     "composite": true,
-    "noImplicitAny": false
+    "noImplicitAny": true
   }
 }

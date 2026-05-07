@@ -107,7 +107,7 @@ export function createMenu(mainWindow: BrowserWindow): void {
         {
           label: app.name,
           submenu: [
-            { id: 'about-mac', label: `About ${app.name}`, ipcChannel: 'menu:about' },
+            { id: 'about-mac', label: `About ${app.name}`, ipcChannel: IPC.MENU_ABOUT },
             { type: 'separator' },
             { id: 'mac-prefs', label: 'Preferences...', accelerator: 'Cmd+,', ipcChannel: 'menu:options' },
             { type: 'separator' },

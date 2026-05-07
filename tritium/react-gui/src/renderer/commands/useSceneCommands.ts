@@ -12,7 +12,7 @@ import type { SceneBgColor } from '../../shared/ipcTypes'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
-import { useDialog } from '../contexts/DialogContext'
+import { useShowFileOpenOptionDialog } from '../components/fopen-opt-dlgs/FileOpenOptionDialogProvider'
 
 interface UseSceneCommandsOptions {
     cm: AsyncCueMol | null
@@ -30,7 +30,7 @@ export function useSceneCommands({
     onBgColorChanged,
 }: UseSceneCommandsOptions): void {
 
-    const { showFileOpenOptionDialog } = useDialog()
+    const showFileOpenOptionDialog = useShowFileOpenOptionDialog()
 
     const openNewScene = useCallback(async (filePath?: string): Promise<void> => {
         if (!cm) return
@@ -68,7 +68,7 @@ export function useSceneCommands({
             if (!info) return
             ;(async () => {
                 const rendererTypes = await cm.getCompatibleRendererNames(data.path)
-                const options = await showFileOpenOptionDialog(data.path, rendererTypes)
+                const options = await showFileOpenOptionDialog({ filePath: data.path, rendererTypes })
                 if (options === null) return
                 await cm.loadObject(data.path, info.scene_uid, options)
             })().catch((e: unknown) => console.error('OpenObjByPath failed:', e))

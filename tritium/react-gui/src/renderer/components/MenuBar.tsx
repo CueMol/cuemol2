@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { APP_MENU, getRoleLabel } from '../../shared/menuTemplate'
 import type { AppMenuItem, AppMenuRole } from '../../shared/menuTemplate'
 import type { SceneBgColor, ViewCenterMark } from '../../shared/ipcTypes'
+import { IPC } from '../../shared/ipcChannels'
 import { useMenuDispatch } from '../hooks/useMenuDispatch'
 
 interface MenuBarProps {
@@ -260,6 +261,6 @@ function handleRole(role: AppMenuRole): void {
     // eslint-disable-next-line @typescript-eslint/no-deprecated
     document.execCommand(role === 'selectAll' ? 'selectAll' : role)
   } else {
-    window.electronAPI?.invokeMenuRole(role)
+    window.electronAPI?.invoke(IPC.MENU_INVOKE_ROLE, role)
   }
 }

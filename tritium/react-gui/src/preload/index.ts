@@ -1,130 +1,37 @@
 /**
- * Electron preload script — bridges the sandboxed renderer process to the
- * privileged main process via IPC.
+ * Electron preload script — bridges the sandboxed renderer to the privileged
+ * main process via IPC.
  *
- * All types are imported from `shared/ipcTypes` and all channel names from
- * `shared/ipcChannels` so there is a single source of truth for the contract.
- * The API is exposed on `window.electronAPI`.
+ * The renderer-facing API is two generic helpers (`invoke` for renderer→main
+ * request/reply and `onPush` for main→renderer notifications) backed by the
+ * typed channel maps in `shared/ipcContract.ts`. There is no per-channel
+ * method; every new channel is one entry in the map.
  */
 
 import { contextBridge, ipcRenderer } from 'electron'
 import type {
-  FileOpenedData,
-  FileErrorData,
-  FileDialogOptions,
-  LayoutState,
-  UiState,
   ElectronAPI,
-  NaviCtxMenuPayload,
-  MenuState,
-} from '../shared/ipcTypes'
-import { IPC } from '../shared/ipcChannels'
-
-// ─────────────────────────────────────────────
-// API implementation
-// ─────────────────────────────────────────────
+  InvokeArgs,
+  InvokeChannel,
+  InvokeRes,
+  PushCallback,
+  PushChannel,
+} from '../shared/ipcContract'
 
 const api: ElectronAPI = {
   platform: process.platform,
 
-  // App path info
-  getAppPathInfo: () => ipcRenderer.invoke(IPC.APP_PATH),
-
-  // File operations
-  openFile: (options: FileDialogOptions) => ipcRenderer.invoke(IPC.DIALOG_OPEN, options),
-
-  // Menu event listeners
-  onObjFileOpened: (callback) => {
-    const handler = (_event: Electron.IpcRendererEvent, data: FileOpenedData) => callback(data)
-    ipcRenderer.on(IPC.OBJ_FILE_OPENED, handler)
-    return () => ipcRenderer.removeListener(IPC.OBJ_FILE_OPENED, handler)
+  invoke<C extends InvokeChannel>(channel: C, ...args: InvokeArgs<C>): Promise<InvokeRes<C>> {
+    return ipcRenderer.invoke(channel, ...args) as Promise<InvokeRes<C>>
   },
 
-  onSceneFileOpened: (callback) => {
-    const handler = (_event: Electron.IpcRendererEvent, data: FileOpenedData) => callback(data)
-    ipcRenderer.on(IPC.SCENE_FILE_OPENED, handler)
-    return () => ipcRenderer.removeListener(IPC.SCENE_FILE_OPENED, handler)
+  onPush<C extends PushChannel>(channel: C, callback: PushCallback<C>): () => void {
+    const handler = (_event: Electron.IpcRendererEvent, ...payload: unknown[]) => {
+      ;(callback as (...a: unknown[]) => void)(...payload)
+    }
+    ipcRenderer.on(channel, handler)
+    return () => ipcRenderer.removeListener(channel, handler)
   },
-
-  onFileError: (callback) => {
-    const handler = (_event: Electron.IpcRendererEvent, data: FileErrorData) => callback(data)
-    ipcRenderer.on(IPC.FILE_ERROR, handler)
-    return () => ipcRenderer.removeListener(IPC.FILE_ERROR, handler)
-  },
-
-  onMenuNewTab: (callback) => {
-    const handler = () => callback()
-    ipcRenderer.on(IPC.MENU_NEW_TAB, handler)
-    return () => ipcRenderer.removeListener(IPC.MENU_NEW_TAB, handler)
-  },
-
-  onMenuCloseTab: (callback) => {
-    const handler = () => callback()
-    ipcRenderer.on(IPC.MENU_CLOSE_TAB, handler)
-    return () => ipcRenderer.removeListener(IPC.MENU_CLOSE_TAB, handler)
-  },
-
-  onMenuSave: (callback) => {
-    const handler = () => callback()
-    ipcRenderer.on(IPC.MENU_SAVE, handler)
-    return () => ipcRenderer.removeListener(IPC.MENU_SAVE, handler)
-  },
-
-  onMenuNewScene: (callback) => {
-    const handler = () => callback()
-    ipcRenderer.on(IPC.MENU_NEW_SCENE, handler)
-    return () => ipcRenderer.removeListener(IPC.MENU_NEW_SCENE, handler)
-  },
-
-  onMenuOpenFile: (callback) => {
-    const handler = () => callback()
-    ipcRenderer.on(IPC.MENU_OPEN_FILE, handler)
-    return () => ipcRenderer.removeListener(IPC.MENU_OPEN_FILE, handler)
-  },
-
-  onMenuOpenScene: (callback) => {
-    const handler = () => callback()
-    ipcRenderer.on(IPC.MENU_OPEN_SCENE, handler)
-    return () => ipcRenderer.removeListener(IPC.MENU_OPEN_SCENE, handler)
-  },
-
-  onMenuUndo: (callback) => {
-    const handler = () => callback()
-    ipcRenderer.on(IPC.MENU_UNDO, handler)
-    return () => ipcRenderer.removeListener(IPC.MENU_UNDO, handler)
-  },
-
-  onMenuRedo: (callback) => {
-    const handler = () => callback()
-    ipcRenderer.on(IPC.MENU_REDO, handler)
-    return () => ipcRenderer.removeListener(IPC.MENU_REDO, handler)
-  },
-
-  onMenuGeneric: (callback) => {
-    const handler = (_event: Electron.IpcRendererEvent, channel: string) => callback(channel)
-    ipcRenderer.on(IPC.MENU_GENERIC, handler)
-    return () => ipcRenderer.removeListener(IPC.MENU_GENERIC, handler)
-  },
-
-  invokeMenuRole: (role: string) => ipcRenderer.invoke(IPC.MENU_INVOKE_ROLE, role),
-  updateMenuState: (state: MenuState) => ipcRenderer.invoke(IPC.MENU_UPDATE_STATE, state),
-
-  showNaviContextMenu: (payload: NaviCtxMenuPayload) =>
-    ipcRenderer.invoke(IPC.NAVI_CTX_SHOW, payload),
-
-  onRotateGesture: (callback) => {
-    const handler = (_event: Electron.IpcRendererEvent, rotation: number) => callback(rotation)
-    ipcRenderer.on(IPC.ROTATE_GESTURE, handler)
-    return () => ipcRenderer.removeListener(IPC.ROTATE_GESTURE, handler)
-  },
-
-  // Layout persistence
-  loadLayout: () => ipcRenderer.invoke(IPC.LAYOUT_LOAD),
-  saveLayout: (state: LayoutState) => ipcRenderer.invoke(IPC.LAYOUT_SAVE, state),
-
-  // UI preferences persistence
-  loadUi: () => ipcRenderer.invoke(IPC.UI_LOAD),
-  saveUi: (state: Partial<UiState>) => ipcRenderer.invoke(IPC.UI_SAVE, state),
 }
 
 contextBridge.exposeInMainWorld('electronAPI', api)

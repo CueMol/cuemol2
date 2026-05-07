@@ -22,58 +22,43 @@ export class ObjProxy {
         return this._obj;
     }
 
-    async getProp(propName: string): Promise<any> {
+    async getProp(propName: string): Promise<unknown> {
         try {
-            const result = await this._acm.invokeWorker(
-                "getProp",
-                this._obj,
-                propName,
-            );
-            log.info('NativeObj.getProp(',propName,') OK, result:', result);
-            if (isObjTuple(result[0])) {
-                const objTup = result[0] as ObjTuple;
-                return new ObjProxy(objTup._obj_id, objTup._class_name,
-                    this._acm);
-            } else {
-                return result[0];
+            const result = await this._acm.invokeRpc('getProp', this._obj, propName);
+            log.info('NativeObj.getProp(', propName, ') OK, result:', result);
+            if (isObjTuple(result)) {
+                const objTup = result as ObjTuple;
+                return new ObjProxy(objTup._obj_id, objTup._class_name, this._acm);
             }
+            return result;
         } catch (e) {
             log.error(`getProp failed: ${propName},`, e);
             throw e;
         }
     }
 
-    async setProp(propName: string, value: any): Promise<void> {
+    async setProp(propName: string, value: unknown): Promise<void> {
         try {
-            await this._acm.invokeWorker(
-                "setProp",
-                this._obj,
-                propName,
-                value,
-            );
-            log.info('NativeObj.setProp(',propName,') OK');
+            await this._acm.invokeRpc('setProp', this._obj, propName, value);
+            log.info('NativeObj.setProp(', propName, ') OK');
         } catch (e) {
             log.error(`setProp failed: ${propName},`, e);
             throw e;
         }
     }
 
-    async invokeMethod(method: string, ...args: any[]): Promise<any> {
+    async invokeMethod(method: string, ...args: unknown[]): Promise<unknown> {
         try {
-            const result = await this._acm.invokeWorker("invokeMethod",
-                method, this._obj, args);
-            log.info('NativeObj.invokeMethod(', method,') OK, result:', result);
-            if (isObjTuple(result[0])) {
-                const objTup = result[0] as ObjTuple;
-                return new ObjProxy(objTup._obj_id, objTup._class_name,
-                    this._acm);
-            } else {
-                return result[0];
+            const result = await this._acm.invokeRpc('invokeMethod', method, this._obj, args);
+            log.info('NativeObj.invokeMethod(', method, ') OK, result:', result);
+            if (isObjTuple(result)) {
+                const objTup = result as ObjTuple;
+                return new ObjProxy(objTup._obj_id, objTup._class_name, this._acm);
             }
+            return result;
         } catch (e) {
             log.error(`invokeMethod failed: ${method},`, e);
             throw e;
         }
-
     }
 }

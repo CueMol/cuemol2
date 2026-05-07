@@ -19,12 +19,20 @@ import type { TextImgBuf } from '@cuemol/core/src/wrappers/TextImgBuf';
 import type { ByteArray } from '@cuemol/core/src/wrappers/ByteArray';
 import type { WorkerContext } from './types/WorkerContext';
 
+import type {
+    MethodKey,
+    RpcKey,
+    ServiceFn,
+    ServiceKey,
+} from '../shared/WorkerCalls';
+
 // import { createLogger } from '@cuemol/core/src/logger';
 // const log = createLogger(import.meta.url);
 const log = console;
 
-type ServiceMethod = (...args: any[]) => any;
-type ServiceFn = (ctx: WorkerContext, args: any) => any | Promise<any>;
+/** Erased dispatch-table value types (per-key types are enforced by the maps). */
+type AnyMethodFn = (...args: any[]) => any;
+type AnyServiceFn = (ctx: WorkerContext, args: any) => any | Promise<any>;
 
 const makeModif = (event: any): number => {
     let modif = 0;
@@ -42,8 +50,8 @@ const makeModif = (event: any): number => {
 
 export class WorkerService {
 
-    private _methods: { [key: string]: ServiceMethod };
-    private _registered: { [name: string]: ServiceFn } = {};
+    private _methods: { [K in MethodKey | RpcKey]: AnyMethodFn };
+    private _registered: { [K in ServiceKey]?: AnyServiceFn } = {};
     private _internal: CueMolInternal;
     private _cm: CueMol;
     private _gfx_mgr: GfxManager | null = null;
@@ -94,11 +102,11 @@ export class WorkerService {
         }
     }
 
-    register(name: string, fn: ServiceFn): void {
+    register<K extends ServiceKey>(name: K, fn: ServiceFn<K>): void {
         if (name in this._registered) {
             log.warn(`WorkerService.register: overwriting "${name}"`);
         }
-        this._registered[name] = fn;
+        this._registered[name] = fn as AnyServiceFn;
     }
 
     createObj(className: string): any | null {
@@ -125,9 +133,11 @@ export class WorkerService {
 
     invoke(method: string, seqno: number, args: any[]): void {
         // log.info(`Worker> invoke called: ${method} seqno: ${seqno} args:`, args);
-        if (method in this._methods) {
+        const methodFn = (this._methods as Record<string, AnyMethodFn>)[method];
+        const serviceFn = (this._registered as Record<string, AnyServiceFn | undefined>)[method];
+        if (methodFn) {
             try {
-                const result = this._methods[method].apply(this, args);
+                const result = methodFn.apply(this, args);
                 if (Array.isArray(result)) {
                     this._postMessage([method, seqno, true, ...result]);
                 } else {
@@ -137,9 +147,9 @@ export class WorkerService {
                 log.error(`Worker> call method failed: ${method},`, e);
                 this._postMessage([method, seqno, false, e]);
             }
-        } else if (method in this._registered) {
+        } else if (serviceFn) {
             Promise.resolve()
-                .then(() => this._registered[method](this._buildContext(), args[0]))
+                .then(() => serviceFn(this._buildContext(), args[0]))
                 .then((result) => this._postMessage([method, seqno, true, result]))
                 .catch((e) => this._postMessage([method, seqno, false, String(e)]));
         } else {

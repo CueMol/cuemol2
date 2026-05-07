@@ -17,6 +17,17 @@ import type { CreateViewInSceneArgs, CreateViewInSceneResult } from '../server/s
 import type { ProposeNewTabNamesArgs, ProposeNewTabNamesResult } from '../server/services/proposeNewTabNames.service';
 import type { GetSceneCloseInfoResult } from '../server/services/getSceneCloseInfo.service';
 import * as naviApi from './apis/naviApi';
+import type {
+    MethodArgs,
+    MethodKey,
+    MethodResult,
+    RpcArgs,
+    RpcKey,
+    RpcResult,
+    ServiceArgs,
+    ServiceKey,
+    ServiceResult,
+} from '../shared/WorkerCalls';
 
 const log = console;
 
@@ -42,6 +53,15 @@ export class AsyncCueMol {
     }
     invokeWorkerWithTransfer(method: string, transfer: any, ...args: any[]): Promise<any[]> {
         return this._transport.invokeWorkerWithTransfer(method, transfer, ...args);
+    }
+    invokeService<K extends ServiceKey>(name: K, args: ServiceArgs<K>): Promise<ServiceResult<K>> {
+        return this._transport.invokeService(name, args);
+    }
+    invokeMethodTyped<K extends MethodKey>(name: K, ...args: MethodArgs<K>): Promise<MethodResult<K>> {
+        return this._transport.invokeMethod(name, ...args);
+    }
+    invokeRpc<K extends RpcKey>(name: K, ...args: RpcArgs<K>): Promise<RpcResult<K>> {
+        return this._transport.invokeRpc(name, ...args);
     }
     postMessage(method: string, seq: number, args: any[], xfer: any = null): void {
         this._transport.postMessage(method, seq, args, xfer);

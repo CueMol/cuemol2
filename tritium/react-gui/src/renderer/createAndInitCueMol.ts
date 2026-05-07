@@ -1,4 +1,5 @@
 import { AsyncCueMol } from './worker/client/AsyncCueMol'
+import { IPC } from '../shared/ipcChannels'
 
 // Create a CueMol instance and initialize the underlying C++ library.
 //
@@ -10,7 +11,7 @@ import { AsyncCueMol } from './worker/client/AsyncCueMol'
 // cuemol_internal.initCueMol(path) before any scene operations are performed.
 export async function createAndInitCueMol(): Promise<AsyncCueMol> {
     const { sysConfigPath, userStylePath, userStyleExists } =
-        await window.electronAPI.getAppPathInfo()
+        await window.electronAPI.invoke(IPC.APP_PATH)
     const cm = new AsyncCueMol()
     await cm.initCueMol(sysConfigPath || undefined)
 

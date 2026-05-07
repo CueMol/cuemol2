@@ -1,4 +1,4 @@
-// Runs in renderer thread. Calls cross to worker via transport.invokeWorker.
+// Runs in renderer thread. Calls cross to worker via transport.invokeMethod.
 import { WorkerTransport } from '../WorkerTransport';
 
 const log = console;
@@ -15,20 +15,20 @@ export async function bindCanvas(
 export async function addView(
     transport: WorkerTransport, view_id: number, dpr: number,
 ): Promise<boolean> {
-    const result = await transport.invokeWorker('addView', view_id, dpr);
-    if (result === null) {
-        log.warn(`addView failed for view_id: ${view_id}`);
+    try {
+        return await transport.invokeMethod('addView', view_id, dpr);
+    } catch (e) {
+        log.warn(`addView failed for view_id: ${view_id}`, e);
         return false;
     }
-    return result[0] as boolean;
 }
 
 export async function activateView(transport: WorkerTransport, view_id: number): Promise<void> {
-    await transport.invokeWorker('activateView', view_id);
+    await transport.invokeMethod('activateView', view_id);
 }
 
 export async function removeView(transport: WorkerTransport, view_id: number): Promise<void> {
-    await transport.invokeWorker('removeView', view_id);
+    await transport.invokeMethod('removeView', view_id);
 }
 
 export function resized(

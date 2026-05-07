@@ -3,6 +3,7 @@ import React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
 import { useNaviContextMenu } from '../hooks/useNaviContextMenu';
+import { IPC } from '../../shared/ipcChannels';
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }));
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }));
@@ -68,8 +69,14 @@ let hookHandle: ReturnType<typeof makeRenderHook<ReturnType<typeof useNaviContex
 beforeEach(() => {
     vi.clearAllMocks();
     mockShowMenu.mockResolvedValue(null);
-    // In jsdom window === globalThis, so set electronAPI directly on window
-    (window as any).electronAPI = { showNaviContextMenu: mockShowMenu };
+    // After B, electronAPI exposes a generic `invoke(channel, payload)`. Route
+    // NAVI_CTX_SHOW through to mockShowMenu so existing assertions on the
+    // payload object remain valid.
+    (window as any).electronAPI = {
+      invoke: vi.fn((channel: string, payload: unknown) =>
+        channel === IPC.NAVI_CTX_SHOW ? mockShowMenu(payload) : Promise.resolve(),
+      ),
+    };
     hookHandle = makeRenderHook(() => useNaviContextMenu());
 });
 

@@ -1,0 +1,60 @@
+/**
+ * @file hooks/useCommandRegistrations.ts
+ * @description Composes the per-domain command-registration hooks
+ * (scene / dialog / tab / new-tab / edit / view) plus the Electron IPC bridge
+ * into a single call so App.tsx stays focused on layout.
+ *
+ * Each underlying hook keeps its own typed options surface; this composer
+ * merely passes through.
+ */
+
+import type { SceneBgColor, ViewCenterMark } from '../../shared/ipcTypes';
+import type { AsyncCueMol } from '../worker/client/AsyncCueMol';
+import { useSceneCommands } from '../commands/useSceneCommands';
+import { useUiDialogCommands } from '../commands/useUiDialogCommands';
+import { useTabCommands } from '../commands/useTabCommands';
+import { useNewTabCommand } from '../commands/useNewTabCommand';
+import { useEditCommands } from '../commands/useEditCommands';
+import { useViewCommands } from '../commands/useViewCommands';
+import { useElectronIpc } from './useElectronIpc';
+
+interface UseCommandRegistrationsOptions {
+  cm: AsyncCueMol | null;
+  addMolTab: (title: string, viewId: number, sceneId: number) => void;
+  addMolViewTab: (title: string, viewId: number) => void;
+  getActiveSceneInfo: () => { scene_uid: number; view_id: number } | null | undefined;
+  handleCloseTab: (id: string) => void | Promise<void>;
+  handleSave: () => void;
+  activeTab: string | null;
+  activeMolViewId: number | undefined;
+  onProjectionChanged: (perspective: boolean) => void;
+  onCenterMarkChanged: (centerMark: ViewCenterMark) => void;
+  onBgColorChanged: (bgColor: SceneBgColor) => void;
+}
+
+export function useCommandRegistrations({
+  cm,
+  addMolTab,
+  addMolViewTab,
+  getActiveSceneInfo,
+  handleCloseTab,
+  handleSave,
+  activeTab,
+  activeMolViewId,
+  onProjectionChanged,
+  onCenterMarkChanged,
+  onBgColorChanged,
+}: UseCommandRegistrationsOptions): void {
+  useSceneCommands({ cm, addMolTab, addMolViewTab, getActiveSceneInfo, onBgColorChanged });
+  useUiDialogCommands({ cm });
+  useTabCommands({ handleCloseTab });
+  useNewTabCommand({ cm, addMolTab, addMolViewTab, getActiveSceneInfo });
+  useEditCommands({ cm, getActiveSceneInfo, handleSave });
+  useViewCommands({
+    cm,
+    getActiveViewId: () => activeMolViewId,
+    onProjectionChanged,
+    onCenterMarkChanged,
+  });
+  useElectronIpc(activeTab);
+}

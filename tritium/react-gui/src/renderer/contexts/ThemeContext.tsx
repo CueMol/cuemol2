@@ -35,6 +35,7 @@ import React, {
   useEffect,
   useMemo,
 } from "react";
+import { IPC } from "../../shared/ipcChannels";
 
 // ────────────────────────────────────────────────────────────
 // Types
@@ -89,7 +90,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
     (async () => {
       try {
-        const ui = await window.electronAPI?.loadUi();
+        const ui = await window.electronAPI?.invoke(IPC.UI_LOAD);
         if (!cancelled && ui?.theme) {
           setThemeState(ui.theme);
           applyThemeToDOM(ui.theme);
@@ -113,13 +114,13 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const setTheme = useCallback((t: Theme) => {
     setThemeState(t);
     // Persist immediately — theme changes are infrequent; no debounce needed.
-    window.electronAPI?.saveUi({ theme: t });
+    window.electronAPI?.invoke(IPC.UI_SAVE, { theme: t });
   }, []);
 
   const toggleTheme = useCallback(() => {
     setThemeState((prev) => {
       const next = prev === "dark" ? "light" : "dark";
-      window.electronAPI?.saveUi({ theme: next });
+      window.electronAPI?.invoke(IPC.UI_SAVE, { theme: next });
       return next;
     });
   }, []);

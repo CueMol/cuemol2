@@ -28,6 +28,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { PaneCollapseState, LayoutState, UiState } from "../../shared/ipcTypes";
+import { IPC } from "../../shared/ipcChannels";
 
 export type { PaneCollapseState, LayoutState, UiState };
 
@@ -83,7 +84,7 @@ export function useLayoutPersistence() {
       return;
     }
 
-    Promise.all([api.loadLayout(), api.loadUi()]).then(([savedLayout, savedUi]) => {
+    Promise.all([api.invoke(IPC.LAYOUT_LOAD), api.invoke(IPC.UI_LOAD)]).then(([savedLayout, savedUi]) => {
       if (savedLayout) setLayout((prev) => ({ ...prev, ...savedLayout }));
       if (savedUi) setUi((prev) => ({ ...prev, ...savedUi }));
       setLoaded(true);
@@ -96,7 +97,7 @@ export function useLayoutPersistence() {
     if (!api) return;
     if (layoutTimerRef.current) clearTimeout(layoutTimerRef.current);
     layoutTimerRef.current = setTimeout(() => {
-      api.saveLayout(layoutRef.current);
+      api.invoke(IPC.LAYOUT_SAVE, layoutRef.current);
     }, SAVE_DEBOUNCE_MS);
   }, []);
 
@@ -105,7 +106,7 @@ export function useLayoutPersistence() {
     if (!api) return;
     if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
     uiTimerRef.current = setTimeout(() => {
-      api.saveUi(uiRef.current);
+      api.invoke(IPC.UI_SAVE, uiRef.current);
     }, SAVE_DEBOUNCE_MS);
   }, []);
 
@@ -207,11 +208,11 @@ export function useLayoutPersistence() {
     return () => {
       if (layoutTimerRef.current) {
         clearTimeout(layoutTimerRef.current);
-        window.electronAPI?.saveLayout(layoutRef.current);
+        window.electronAPI?.invoke(IPC.LAYOUT_SAVE, layoutRef.current);
       }
       if (uiTimerRef.current) {
         clearTimeout(uiTimerRef.current);
-        window.electronAPI?.saveUi(uiRef.current);
+        window.electronAPI?.invoke(IPC.UI_SAVE, uiRef.current);
       }
     };
   }, []);

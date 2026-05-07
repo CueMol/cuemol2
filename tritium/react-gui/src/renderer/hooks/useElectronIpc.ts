@@ -19,6 +19,18 @@ import { CmdId } from '../commands/ids'
 import { IPC } from '../../shared/ipcChannels'
 import { useMenuDispatch } from './useMenuDispatch'
 
+/** Push channels whose only effect is to forward themselves to dispatchMenuChannel. */
+const MENU_PASS_THROUGH = [
+  IPC.MENU_NEW_TAB,
+  IPC.MENU_CLOSE_TAB,
+  IPC.MENU_SAVE,
+  IPC.MENU_NEW_SCENE,
+  IPC.MENU_OPEN_FILE,
+  IPC.MENU_OPEN_SCENE,
+  IPC.MENU_UNDO,
+  IPC.MENU_REDO,
+] as const
+
 export function useElectronIpc(activeTab: string | null): void {
   const { dispatch } = useCommands()
   const { dispatchMenuChannel } = useMenuDispatch(activeTab)
@@ -30,24 +42,17 @@ export function useElectronIpc(activeTab: string | null): void {
     const logErr = (prefix: string) => (e: unknown) => console.error(prefix, e)
 
     const unsubs = [
-      api.onObjFileOpened((d) =>
+      api.onPush(IPC.OBJ_FILE_OPENED, (d) =>
         dispatch(CmdId.OpenObjByPath, d).catch(logErr('obj open:')),
       ),
-      api.onSceneFileOpened((d) =>
+      api.onPush(IPC.SCENE_FILE_OPENED, (d) =>
         dispatch(CmdId.OpenSceneByPath, d.path).catch(logErr('scene open:')),
       ),
-      api.onFileError((d) =>
+      api.onPush(IPC.FILE_ERROR, (d) =>
         console.error(`Failed to open ${d.path}: ${d.error}`),
       ),
-      api.onMenuNewTab(() => dispatchMenuChannel(IPC.MENU_NEW_TAB)),
-      api.onMenuCloseTab(() => dispatchMenuChannel(IPC.MENU_CLOSE_TAB)),
-      api.onMenuSave(() => dispatchMenuChannel(IPC.MENU_SAVE)),
-      api.onMenuNewScene(() => dispatchMenuChannel(IPC.MENU_NEW_SCENE)),
-      api.onMenuOpenFile(() => dispatchMenuChannel(IPC.MENU_OPEN_FILE)),
-      api.onMenuOpenScene(() => dispatchMenuChannel(IPC.MENU_OPEN_SCENE)),
-      api.onMenuUndo(() => dispatchMenuChannel(IPC.MENU_UNDO)),
-      api.onMenuRedo(() => dispatchMenuChannel(IPC.MENU_REDO)),
-      api.onMenuGeneric((ch) => dispatchMenuChannel(ch)),
+      api.onPush(IPC.MENU_GENERIC, (ch) => dispatchMenuChannel(ch)),
+      ...MENU_PASS_THROUGH.map((ch) => api.onPush(ch, () => dispatchMenuChannel(ch))),
     ]
 
     return () => unsubs.forEach((u) => u())

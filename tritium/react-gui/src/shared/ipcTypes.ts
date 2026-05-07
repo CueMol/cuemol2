@@ -135,46 +135,8 @@ export interface MenuState {
   }
 }
 
-// ── ElectronAPI (the contextBridge contract) ────────────────────────────────
+// ── ElectronAPI ─────────────────────────────────────────────────────────────
+// The ElectronAPI interface lives in ./ipcContract (it's defined in terms of
+// the InvokeChannels / PushChannels maps). Re-exported here for convenience.
 
-export interface ElectronAPI {
-  platform: string
-
-  // App path info (for CueMol core init)
-  getAppPathInfo: () => Promise<AppPathInfo>
-
-  // File operations
-  openFile: (options: FileDialogOptions) => Promise<void>
-
-  // Menu event listeners (return unsubscribe function)
-  onObjFileOpened:   (callback: (data: FileOpenedData) => void) => () => void
-  onSceneFileOpened: (callback: (data: FileOpenedData) => void) => () => void
-  onFileError: (callback: (data: FileErrorData) => void) => () => void
-  onMenuNewTab: (callback: () => void) => () => void
-  onMenuCloseTab: (callback: () => void) => () => void
-  onMenuSave: (callback: () => void) => () => void
-  onMenuNewScene: (callback: () => void) => () => void
-  onMenuOpenFile: (callback: () => void) => () => void
-  onMenuOpenScene: (callback: () => void) => () => void
-  onMenuUndo: (callback: () => void) => () => void
-  onMenuRedo: (callback: () => void) => () => void
-  onMenuGeneric: (callback: (channel: string) => void) => () => void
-
-  // Invoke a native menu role action from the renderer (non-macOS custom menu)
-  invokeMenuRole: (role: string) => Promise<void>
-  updateMenuState: (state: MenuState) => Promise<void>
-
-  // Show native viewport context menu; resolves with the chosen action or null
-  showNaviContextMenu: (payload: NaviCtxMenuPayload) => Promise<NaviCtxAction | null>
-
-  // macOS-specific gesture events (sourced from Electron BrowserWindow)
-  onRotateGesture: (callback: (rotation: number) => void) => () => void
-
-  // Layout persistence
-  loadLayout: () => Promise<LayoutState>
-  saveLayout: (state: LayoutState) => Promise<void>
-
-  // UI preferences persistence
-  loadUi: () => Promise<UiState>
-  saveUi: (state: Partial<UiState>) => Promise<void>
-}
+export type { ElectronAPI } from './ipcContract'
