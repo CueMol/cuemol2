@@ -39,7 +39,7 @@ function wrapGL(gl: any) {
     get(target, prop) {
       const orig = target[prop];
       if (typeof orig === 'function') {
-        return function (...args) {
+        return function (...args: unknown[]) {
           if (PERF_MEASURE) perfCounters.wrappedGlCalls++;
           const result = orig.apply(target, args);
           const err = target.getError();
@@ -141,7 +141,7 @@ export class GfxManager {
 
     removeView(view_id: number): void {
         this.stopViewLoop(view_id);
-        this.bound_views = this.bound_views.filter(x => x !== view_id);
+        this.bound_views = this.bound_views.filter((x: number) => x !== view_id);
     }
 
     startViewLoop(view_id: number): void {
@@ -501,7 +501,7 @@ export class GfxManager {
         gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
 
         const stride = nsize / num_elems;
-        elem_info.forEach((value) => {
+        elem_info.forEach((value: any) => {
             const aloc = value['nloc'];
             const atype = value['itype'];
             const gltype = convertType(gl, atype);

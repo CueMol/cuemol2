@@ -1,3 +1,15 @@
+import type {
+    MethodArgs,
+    MethodKey,
+    MethodResult,
+    RpcArgs,
+    RpcKey,
+    RpcResult,
+    ServiceArgs,
+    ServiceKey,
+    ServiceResult,
+} from '../shared/WorkerCalls';
+
 const log = console;
 
 function makeMethodSeq(method: string, seqno: number): string {
@@ -119,6 +131,27 @@ export class WorkerTransport {
         });
         this.postMessage(method, cur_seq, args, transfer);
         return promise;
+    }
+
+    // ───────────────────────────────────────────────────────────
+    // Typed call helpers (preferred over invokeWorker for new code).
+    // Each helper wraps invokeWorker's array-tail response into the
+    // single-value contract documented by the corresponding map.
+    // ───────────────────────────────────────────────────────────
+
+    async invokeService<K extends ServiceKey>(name: K, args: ServiceArgs<K>): Promise<ServiceResult<K>> {
+        const result = await this.invokeWorker(name, args);
+        return result[0] as ServiceResult<K>;
+    }
+
+    async invokeMethod<K extends MethodKey>(name: K, ...args: MethodArgs<K>): Promise<MethodResult<K>> {
+        const result = await this.invokeWorker(name, ...args);
+        return result[0] as MethodResult<K>;
+    }
+
+    async invokeRpc<K extends RpcKey>(name: K, ...args: RpcArgs<K>): Promise<RpcResult<K>> {
+        const result = await this.invokeWorker(name, ...args);
+        return result[0] as RpcResult<K>;
     }
 
     terminate(): void {

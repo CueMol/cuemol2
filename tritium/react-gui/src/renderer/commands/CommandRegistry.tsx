@@ -6,44 +6,63 @@
  *   - Wrap the app in <CommandProvider>.
  *   - Register handlers with useRegisterCommand(id, handler).
  *   - Dispatch commands with useCommands().dispatch(id, args).
+ *
+ * Type contracts come from `CommandMap`: each `CmdId` is paired with its
+ * `args` and `result` types. `dispatch` and `register` are both generic over
+ * the map, so the args / handler shape is enforced at every call site.
  */
 
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react'
+import type {
+  CommandArgs,
+  CommandDispatchArgs,
+  CommandHandler,
+  CommandKey,
+  CommandResult,
+} from './CommandMap'
 
+// Erased handler shape stored in the per-id map (per-key types are enforced
+// by the generic register / dispatch entry points).
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type CommandHandler<A = unknown, R = unknown> = (args?: A) => R | Promise<R>
+type AnyHandler = (args: any) => any
 
 interface CommandRegistryValue {
-  /** Register a handler for a command ID. Returns an unregister function. */
-  register(id: string, handler: CommandHandler): () => void
+  /** Register a typed handler for a command ID. Returns an unregister function. */
+  register<K extends CommandKey>(id: K, handler: CommandHandler<K>): () => void
   /** Dispatch a command by ID. Rejects if the ID is not registered. */
-  dispatch<A = unknown, R = unknown>(id: string, args?: A): Promise<R>
+  dispatch<K extends CommandKey>(
+    id: K,
+    ...args: CommandDispatchArgs<K>
+  ): Promise<CommandResult<K>>
   /** Returns true if a handler is currently registered for id. */
-  has(id: string): boolean
+  has(id: CommandKey): boolean
 }
 
 const CommandContext = createContext<CommandRegistryValue | null>(null)
 
 export function CommandProvider({ children }: { children: React.ReactNode }): React.JSX.Element {
-  const map = useRef(new Map<string, CommandHandler>())
+  const map = useRef(new Map<CommandKey, AnyHandler>())
 
   const value = useMemo<CommandRegistryValue>(() => ({
-    register(id, handler) {
+    register<K extends CommandKey>(id: K, handler: CommandHandler<K>): () => void {
       if (map.current.has(id)) {
         console.warn(`[CommandRegistry] command "${id}" already registered - overwriting`)
       }
-      map.current.set(id, handler)
+      map.current.set(id, handler as AnyHandler)
       return () => {
-        if (map.current.get(id) === handler) {
+        if (map.current.get(id) === (handler as AnyHandler)) {
           map.current.delete(id)
         }
       }
     },
 
-    dispatch<A, R>(id: string, args?: A): Promise<R> {
+    dispatch<K extends CommandKey>(
+      id: K,
+      ...args: CommandDispatchArgs<K>
+    ): Promise<CommandResult<K>> {
       const h = map.current.get(id)
       if (!h) return Promise.reject(new Error(`[CommandRegistry] unknown command: ${id}`))
-      return Promise.resolve(h(args) as R)
+      return Promise.resolve(h(args[0]) as CommandResult<K>)
     },
 
     has(id) { return map.current.has(id) },
@@ -69,17 +88,17 @@ export function useCommands(): CommandRegistryValue {
  * The handler is stored in a ref so it always sees the latest closure
  * without requiring re-registration on every render.
  */
-export function useRegisterCommand<A = unknown, R = unknown>(
-  id: string,
-  handler: CommandHandler<A, R>,
+export function useRegisterCommand<K extends CommandKey>(
+  id: K,
+  handler: CommandHandler<K>,
 ): void {
-  const ref = useRef<CommandHandler<A, R>>(handler)
+  const ref = useRef<CommandHandler<K>>(handler)
   ref.current = handler
 
   const { register } = useCommands()
 
   useEffect(
-    () => register(id, ((a) => ref.current(a as A)) as CommandHandler),
+    () => register(id, ((a: CommandArgs<K>) => ref.current(a)) as CommandHandler<K>),
     // register is stable (created once in useMemo); id changes trigger re-registration.
     [id, register],
   )

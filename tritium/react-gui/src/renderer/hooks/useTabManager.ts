@@ -36,13 +36,6 @@ export function useTabManager(opts?: {
   const tabsRef = useRef<TabData[]>(tabs);
   useEffect(() => { tabsRef.current = tabs; }, [tabs]);
 
-  // ── Open via dialog ──────────────────────────────────────
-
-  /** Trigger the native file-open dialog (Electron). */
-  const handleOpenFile = useCallback(() => {
-    window.electronAPI?.openFile();
-  }, []);
-
   // ── Settings tab (singleton) ─────────────────────────────
 
   const openSettingsTab = useCallback(() => {
@@ -140,7 +133,6 @@ export function useTabManager(opts?: {
     setActiveTab,
     openSettingsTab,
     addMolViewTab,
-    handleOpenFile,
     handleCloseTab,
     handleReorderTabs,
     handleSave,

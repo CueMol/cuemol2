@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useCueMol } from './useCueMol';
 import type { HitTestResult } from '../types';
 import type { NaviCtxAction } from '../../shared/ipcTypes';
+import { IPC } from '../../shared/ipcChannels';
 
 export function useNaviContextMenu(): {
     openContextMenu: (hit: HitTestResult, viewId: number, x: number, y: number) => Promise<void>;
@@ -18,7 +19,7 @@ export function useNaviContextMenu(): {
         const atomLabel = hit.obj_name ? `${hit.obj_name}: ${hit.message}` : hit.message;
         const rendLabel = `${hit.rend_name} (${hit.rendtype})`;
 
-        const action: NaviCtxAction | null = await window.electronAPI.showNaviContextMenu({
+        const action: NaviCtxAction | null = await window.electronAPI.invoke(IPC.NAVI_CTX_SHOW, {
             x,
             y,
             isSymm,

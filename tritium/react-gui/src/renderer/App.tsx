@@ -2,10 +2,14 @@
  * Root component of the CueMol desktop application.
  *
  * Layout: Toolbar / [ActivityBar | SidePanel | [ContentArea / BottomPanel] | InspectorPanel] / StatusBar
+ *
+ * Most domain wiring lives in extracted hooks:
+ *   - useAppInitialization      — first scene/view on launch (StrictMode guarded)
+ *   - useActiveViewState        — viewProjection / centerMark / bgColor cache + menu sync
+ *   - useCommandRegistrations   — registers all CmdId handlers + Electron IPC bridge
  */
 
-import React, { useState, useCallback, useEffect, useRef } from "react";
-import type { SceneManager } from "@cuemol/core/src/wrappers/SceneManager";
+import React, { useState, useCallback, useEffect } from "react";
 import { Allotment } from "allotment";
 import "allotment/dist/style.css";
 
@@ -19,7 +23,6 @@ import { StatusBar } from "./components/StatusBar";
 import { InspectorPanel } from "./components/panels/InspectorPanel";
 
 import type { AlignmentData, AnimationData } from "./types";
-import type { SceneBgColor, ViewCenterMark } from "../shared/ipcTypes";
 
 import { SAMPLE_ALIGNMENT, SAMPLE_ANIMATION } from "./data/alignmentData";
 
@@ -31,17 +34,13 @@ import { useInspectorState } from "./hooks/useInspectorState";
 import { useTabManager } from "./hooks/useTabManager";
 import { useCueMol } from "./hooks/useCueMol";
 import { useMolTabDispatch } from "./hooks/useMolTab";
-import { useElectronIpc } from "./hooks/useElectronIpc";
-import { useSceneCommands } from "./commands/useSceneCommands";
-import { useUiDialogCommands } from "./commands/useUiDialogCommands";
-import { useTabCommands } from "./commands/useTabCommands";
-import { useNewTabCommand } from "./commands/useNewTabCommand";
-import { useEditCommands } from "./commands/useEditCommands";
-import { useViewCommands } from "./commands/useViewCommands";
+import { useAppInitialization } from "./hooks/useAppInitialization";
+import { useActiveViewState } from "./hooks/useActiveViewState";
+import { useCommandRegistrations } from "./hooks/useCommandRegistrations";
 import { useCommands } from "./commands/CommandRegistry";
 import { CmdId } from "./commands/ids";
 import { useCueMolBusy } from "./hooks/useCueMolBusy";
-import { useDialog } from "./contexts/DialogContext";
+import { useShowConfirmCloseTabDialog } from "./components/dialogs/ConfirmCloseTabDialogProvider";
 
 const App: React.FC = () => {
 
@@ -96,11 +95,11 @@ const App: React.FC = () => {
     resolveNodeName,
   });
 
-  // --- CueMol core ready: create initial scene/view ---
+  // --- CueMol core / tabs ---
 
   const { cueMolReady, cm } = useCueMol();
   const { addMolTab, removeMolTab, getActiveSceneInfo, setActiveViewByID } = useMolTabDispatch();
-  const { showConfirmCloseTabDialog } = useDialog();
+  const showConfirmCloseTabDialog = useShowConfirmCloseTabDialog();
 
   const handleMolViewClose = useCallback((viewId: number) => {
     removeMolTab(viewId);
@@ -135,34 +134,10 @@ const App: React.FC = () => {
     handleSave,
   } = useTabManager({ onMolViewClose: handleMolViewClose, confirmCloseTab });
 
-  // Guard to prevent duplicate initial scene creation (React StrictMode)
-  const initialSceneCreatedRef = useRef(false);
+  // First scene/view on launch (StrictMode guarded)
+  useAppInitialization({ cm, cueMolReady, addMolTab, addMolViewTab });
 
-  useEffect(() => {
-    if (!cueMolReady || !cm) return;
-    if (initialSceneCreatedRef.current) return;
-    initialSceneCreatedRef.current = true;
-
-    let cancelled = false;
-    (async () => {
-      const sceMgr = (await cm.getService('SceneManager')) as SceneManager;
-      if (!sceMgr || cancelled) return;
-      const scene = await sceMgr.createScene();
-      const scene_uid = await scene.getUID();
-      const view = await scene.createView();
-      const view_uid = await view.getUID();
-      if (cancelled) return;
-      const title = `Scene ${scene_uid}`;
-      // Register in MolTabState first so MolViewPane can read getActiveViewID()
-      addMolTab(title, view_uid, scene_uid);
-      // Open the outer tab (causes ContentPane to mount MolViewPane)
-      addMolViewTab(title, view_uid);
-    })();
-    return () => { cancelled = true; };
-  }, [cueMolReady, cm, addMolTab, addMolViewTab]);
-
-  // --- Activate view when molview tab becomes active ---
-
+  // Activate worker view when a molview tab becomes active.
   useEffect(() => {
     const tab = tabs.find((t) => t.id === activeTab);
     if (tab?.type === 'molview' && tab.viewId !== undefined && cm && cueMolReady) {
@@ -171,76 +146,36 @@ const App: React.FC = () => {
     }
   }, [activeTab, tabs, cm, cueMolReady, setActiveViewByID]);
 
-  // --- Sample data ---
-
-  const [alignment] = useState<AlignmentData | null>(SAMPLE_ALIGNMENT);
-  const [animation] = useState<AnimationData | null>(SAMPLE_ANIMATION);
-  const [viewProjection, setViewProjection] = useState<boolean | null>(null);
-  const [viewCenterMark, setViewCenterMark] = useState<ViewCenterMark | null>(null);
-  const [sceneBgColor, setSceneBgColor] = useState<SceneBgColor | null>(null);
   const activeMolViewId = tabs.find((t) => t.id === activeTab && t.type === 'molview')?.viewId;
 
-  const syncNativeViewMenu = useCallback((state: {
-    perspective?: boolean | null;
-    centerMark?: ViewCenterMark | null;
-    bgColor?: SceneBgColor | null;
-  }) => {
-    window.electronAPI?.updateMenuState({
-      ...(state.perspective !== undefined
-        ? { viewProjection: { enabled: state.perspective !== null, perspective: state.perspective } }
-        : {}),
-      ...(state.centerMark !== undefined
-        ? { viewCenterMark: { enabled: state.centerMark !== null, centerMark: state.centerMark } }
-        : {}),
-      ...(state.bgColor !== undefined
-        ? { sceneBgColor: { enabled: state.bgColor !== null, bgColor: state.bgColor } }
-        : {}),
-    }).catch((err: unknown) => {
-      console.warn('update menu state failed:', err);
-    });
-  }, []);
+  // --- View-state cache for the active molview tab ---
+  const {
+    viewProjection,
+    viewCenterMark,
+    sceneBgColor,
+    onProjectionChanged,
+    onCenterMarkChanged,
+    onBgColorChanged,
+  } = useActiveViewState({ cm, activeMolViewId, getActiveSceneInfo });
 
-  const handleProjectionChanged = useCallback((perspective: boolean) => {
-    setViewProjection(perspective);
-    syncNativeViewMenu({ perspective });
-  }, [syncNativeViewMenu]);
-
-  const handleCenterMarkChanged = useCallback((centerMark: ViewCenterMark) => {
-    setViewCenterMark(centerMark);
-    syncNativeViewMenu({ centerMark });
-  }, [syncNativeViewMenu]);
-
-  const handleBgColorChanged = useCallback((bgColor: SceneBgColor) => {
-    setSceneBgColor(bgColor);
-    syncNativeViewMenu({ bgColor });
-  }, [syncNativeViewMenu]);
-
-  // --- Command registrations and IPC wiring ---
-
-  useSceneCommands({
+  // --- All command handlers + Electron IPC bridge ---
+  useCommandRegistrations({
     cm,
     addMolTab,
     addMolViewTab,
     getActiveSceneInfo,
-    onBgColorChanged: handleBgColorChanged,
+    handleCloseTab,
+    handleSave,
+    activeTab,
+    activeMolViewId,
+    onProjectionChanged,
+    onCenterMarkChanged,
+    onBgColorChanged,
   });
 
-  useUiDialogCommands({ cm });
-
-  useTabCommands({ handleCloseTab });
-
-  useNewTabCommand({ cm, addMolTab, addMolViewTab, getActiveSceneInfo });
-
-  useEditCommands({ cm, getActiveSceneInfo, handleSave });
-
-  useViewCommands({
-    cm,
-    getActiveViewId: () => activeMolViewId,
-    onProjectionChanged: handleProjectionChanged,
-    onCenterMarkChanged: handleCenterMarkChanged,
-  });
-
-  useElectronIpc(activeTab);
+  // --- Sample data ---
+  const [alignment] = useState<AlignmentData | null>(SAMPLE_ALIGNMENT);
+  const [animation] = useState<AnimationData | null>(SAMPLE_ANIMATION);
 
   const cueMolBusy = useCueMolBusy();
   const { dispatch: dispatchCommand } = useCommands();
@@ -254,45 +189,6 @@ const App: React.FC = () => {
       document.documentElement.style.setProperty("--titlebar-inset", "78px");
     }
   }, []);
-
-  useEffect(() => {
-    if (!cm || activeMolViewId === undefined) {
-      setViewProjection(null);
-      setViewCenterMark(null);
-      setSceneBgColor(null);
-      syncNativeViewMenu({ perspective: null, centerMark: null, bgColor: null });
-      return;
-    }
-
-    const sceneInfo = getActiveSceneInfo();
-    const sceneId = sceneInfo?.scene_uid;
-
-    let cancelled = false;
-    Promise.all([
-      cm.getViewProjection(activeMolViewId),
-      cm.getViewCenterMark(activeMolViewId),
-      sceneId !== undefined ? cm.getSceneBgColor(sceneId) : Promise.resolve(null),
-    ]).then(([projectionResult, centerMarkResult, bgColorResult]) => {
-      if (cancelled) return;
-      const perspective = projectionResult?.ok ? projectionResult.perspective : null;
-      const centerMark = centerMarkResult?.ok ? centerMarkResult.centerMark : null;
-      const bgColor = bgColorResult?.ok ? bgColorResult.bgColor : null;
-      setViewProjection(perspective);
-      setViewCenterMark(centerMark);
-      setSceneBgColor(bgColor);
-      syncNativeViewMenu({ perspective, centerMark, bgColor });
-    }).catch((err: unknown) => {
-      if (!cancelled) {
-        console.warn('get view state failed:', err);
-        setViewProjection(null);
-        setViewCenterMark(null);
-        setSceneBgColor(null);
-        syncNativeViewMenu({ perspective: null, centerMark: null, bgColor: null });
-      }
-    });
-
-    return () => { cancelled = true; };
-  }, [activeMolViewId, cm, syncNativeViewMenu, getActiveSceneInfo]);
 
   // --- Derived sidebar sub-panel state ---
 

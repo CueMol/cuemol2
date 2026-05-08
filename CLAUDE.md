@@ -94,15 +94,29 @@ core (@cuemol/core): C++ addon + auto-generated TypeScript wrappers
 - 状態同期は「どの値を source of truth にするか」を先に決める。UI 操作後の menu checked などは、必要がなければ不安定な読み返し値ではなく成功した command の要求値で更新する
 - Electron native menu と React menu は同じ template から作っても挙動が同一とは限らない。radio/checkbox など platform 側が状態を持つ item は、main 側の更新方式と衝突しないか確認する
 - 契約が確認できたら、その契約に従って実装し、不要な正規化や互換コードを足さない。防御コードが必要な場合は、実際に観測された入力差分に限定する
+- 境界 (main↔preload↔renderer / renderer↔worker / コマンド) をまたぐ追加は **型契約マップ** に行追加が起点 — `shared/ipcContract.ts` (`InvokeChannels`/`PushChannels`)、`worker/shared/WorkerCalls.ts` (`ServiceMap`/`MethodMap`/`RpcMap`)、`commands/CommandMap.ts`。マップ行を足すと callsite 側が compile error で誘導される。詳細は `tritium/CLAUDE.md`
+- LSP の警告 (`Cannot find module '@cuemol/core/...'`、`electronAPI does not exist on Window` など) は project-references 解決の noise が多い。検証は `npx tsc -p tsconfig.<project>.json --noEmit` と production build (`task build_tritium`) を真とする
 
-**新規ダイアログの追加パターン**
-1. `worker/services/xxx.service.ts` — C++ データ取得
-2. `AsyncCueMol.ts` — `invokeWorker('xxx', args)` のラッパーメソッド
-3. `components/XxxDialog.tsx` — Blueprint `Dialog` コンポーネント
-4. `contexts/DialogContext.tsx` — `showXxxDialog()` を追加
-5. `commands/ids.ts` — `CmdId.UiXxxDialog` を追加
-6. `hooks/useMenuDispatch.ts` — `'menu:xxx'` チャネルのハンドリング
-7. `commands/useSceneCommands.ts` — コマンド登録
+**End-to-end 検証チェーン**
+
+`npm test` は worker や main を mock するので、実 IPC 経路や bundle 整合性は捕捉できない。リファクタや境界変更の最終確認は次の順で:
+
+1. `cd tritium/react-gui && npm test` (Vitest, ~200+ tests)
+2. `cd tritium/react-gui && npx tsc -p tsconfig.web.json --noEmit` (renderer 型) と `tsconfig.node.json` (main + preload 型)
+3. `cd build_scripts && task build_tritium` (electron-vite production bundle — bundler レベルの依存解決を catch)
+4. `cd build_scripts && task run_tritium` で起動し、`launch worker OK` → `CueMol2 nodejs add-on : INITIALIZED` → `bindCanvas` → `shader program created OK` まで進むか確認
+
+**Refactoring 前の degrade 検出テスト**
+
+大きな構造変更 (ファイル分割・型システム入れ替え・状態同期パターン変更) の前に、**touch する境界の観測契約** を pin するテストを `__test__/` に先に書く。例: 「`invoke(IPC.X, payload)` は `ipcRenderer.invoke(channel, payload)` に流れる」「`useActiveViewState` は activeMolViewId 変化時に 3 getter を呼んで `MENU_UPDATE_STATE` を発火する」など。実装の中身ではなく **wire 形式 / IPC channel 名 / payload shape / 観測される call 順序** を pin することで、内部を入れ替えても同じテストが pass し続ける形にする
+
+**新規ダイアログの追加パターン (post-F factory)**
+- `components/.../XxxDialog.tsx` — Blueprint `Dialog` 本体 (props: `visible`, `onConfirm`/`onCancel` 等の既存パターン)
+- `components/.../XxxDialogProvider.tsx` — `createDialogHook` (`hooks/useDialogFactory.tsx`) で `Provider` / `useShowXxxDialog` を生やす (約 15 行)
+- `contexts/DialogContext.tsx` の composite に `<XxxDialogProvider>` を 1 行追加
+- `commands/ids.ts` に `CmdId.UiXxxDialog`、`commands/CommandMap.ts` に対応する `{ args; result }` 行
+- 対応 `commands/useXxxCommands.ts` で `useShowXxxDialog()` を呼んで `useRegisterCommand`
+- C++ データ取得が要れば `worker/server/services/xxx.service.ts` + `worker/shared/WorkerCalls.ts` の `ServiceMap` 行追加
 
 ---
 

@@ -4,6 +4,7 @@ import styles from './MolViewPane.module.css'
 import { useMolTabDispatch } from '../../hooks/useMolTab'
 import { useCueMol } from '../../hooks/useCueMol'
 import { GES_PINCH, GES_ROTATE } from '../../worker/shared/gestureAxes'
+import { IPC } from '../../../shared/ipcChannels'
 
 /**
  * Tab content pane for "molview" tabs — WebGL canvas for molecular visualization.
@@ -149,7 +150,7 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
   // Forwarded via GES_ROTATE axis so ViewInputConfig bindings can route it
   // (e.g. conf_rotz = "...,GES_ROTATE" in default_style.xml).
   useEffect(() => {
-    const unsubscribe = window.electronAPI.onRotateGesture((rotation) => {
+    const unsubscribe = window.electronAPI.onPush(IPC.ROTATE_GESTURE, (rotation) => {
       const viewID = getActiveViewIDRef.current()
       if (viewID === undefined || !cmRef.current) return
       cmRef.current.onGestureEvent(viewID, GES_ROTATE, rotation)

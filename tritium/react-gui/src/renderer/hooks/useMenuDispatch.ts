@@ -50,22 +50,22 @@ export function useMenuDispatch(activeTab: string | null): {
         case IPC.MENU_VIEW_ORTHOGRAPHIC:
           dispatch(CmdId.ViewOrthographic).catch(logErr('view.orthographic:'))
           break
-        case 'menu:center-mark-cross':
+        case IPC.MENU_CENTER_MARK_CROSS:
           dispatch(CmdId.ViewCenterMarkCross).catch(logErr('view.centerMark.cross:'))
           break
-        case 'menu:center-mark-axis':
+        case IPC.MENU_CENTER_MARK_AXIS:
           dispatch(CmdId.ViewCenterMarkAxis).catch(logErr('view.centerMark.axis:'))
           break
-        case 'menu:center-mark-none':
+        case IPC.MENU_CENTER_MARK_NONE:
           dispatch(CmdId.ViewCenterMarkNone).catch(logErr('view.centerMark.none:'))
           break
-        case 'menu:bg-white':
+        case IPC.MENU_BG_WHITE:
           dispatch(CmdId.SceneBgWhite).catch(logErr('scene.bg.white:'))
           break
-        case 'menu:bg-black':
+        case IPC.MENU_BG_BLACK:
           dispatch(CmdId.SceneBgBlack).catch(logErr('scene.bg.black:'))
           break
-        case 'menu:about':
+        case IPC.MENU_ABOUT:
           dispatch(CmdId.UiAboutDialog).catch(logErr('about dialog:'))
           break
         default:

@@ -19,7 +19,7 @@ renderer/worker/
 └── shared/   # imported from both threads (ObjTuple, gestureAxes)
 ```
 
-**Rule of thumb**: file location determines execution thread. `client/` code talks to the worker via `transport.invokeWorker(...)`. `server/services/*.service.ts` runs synchronously inside the Web Worker.
+**Rule of thumb**: file location determines execution thread. `client/` code talks to the worker via the typed helpers `transport.invokeService<K>` / `invokeMethod<K>` / `invokeRpc<K>` (or the low-level `invokeWorker` escape hatch). `server/services/*.service.ts` runs synchronously inside the Web Worker.
 
 The Worker entry URL in `client/WorkerTransport.ts` resolves to `../server/worker_launcher.ts` and is auto-detected by Vite — no `electron.vite.config.ts` change is needed when files move within these subdirs.
 
@@ -94,14 +94,15 @@ A single-action file simply exports `services = { actionOne }`. `services/index.
 
 ### `_methods` vs `_registered`
 
-`WorkerService` has two dispatch tables, intentionally kept separate:
+`WorkerService` has two dispatch tables, intentionally kept separate, plus an RPC handler table:
 
-| Table | Purpose | Examples | Dispatch |
+| Table | Purpose | Map (in `worker/shared/WorkerCalls.ts`) | Dispatch |
 |---|---|---|---|
-| `_methods` (`ServiceMethod`) | Infrastructure, hot-path events, RPC handlers | `bindCanvas`, `mouseMove`, `_rpcCreateObj`, `_rpcInvokeMethod` | `fn.apply(this, args)` (sync) |
-| `_registered` (`ServiceFn`) | Business-logic services | `undo`, `loadObject`, `sceneBgColor`, `naviClickAtom` | `Promise.resolve().then(() => fn(ctx, args[0]))` |
+| `_methods` (variadic) | Infrastructure / hot-path events | `MethodMap` (`bindCanvas`, `mouseMove`, …) | `fn.apply(this, args)` (sync) |
+| `_methods` (RPC) | ObjProxy bridge (proxy property access) | `RpcMap` (`createObj`, `getProp`, `invokeMethod`, …) | same as above; conceptually distinct |
+| `_registered` (single-arg) | Business-logic services | `ServiceMap` (`undo`, `loadObject`, `naviClickAtom`, …) | `Promise.resolve().then(() => fn(ctx, args[0]))` |
 
-Don't migrate `_methods` entries into `_registered` without a concrete benefit — the two tables have different invocation semantics on purpose. New business-logic actions go into a `*.service.ts` file under `server/services/`.
+Don't migrate `_methods` entries into `_registered` without a concrete benefit — the two tables have different invocation semantics on purpose. New business-logic actions go into a `*.service.ts` file under `server/services/` **and** a row in `ServiceMap`. Adding the row drives type-checking through `register<K>` and the renderer-side `invokeService<K>` helper.
 
 ---
 
@@ -154,37 +155,50 @@ return withUndoTxn(scene, 'Label', () => { /* mutations */ return result; });
 
 ## IPC patterns
 
-All channel name constants live in `shared/ipcChannels.ts` (`IPC` object). Types live in `shared/ipcTypes.ts`. The preload script (`preload/index.ts`) exposes them via `contextBridge` as `window.electronAPI`.
+All channel name constants live in `shared/ipcChannels.ts` (`IPC` object). The contract — request/response shapes for invoke channels and payload types for push channels — lives in `shared/ipcContract.ts` as the `InvokeChannels` / `PushChannels` maps. The preload script (`preload/index.ts`) exposes a single typed pair via `contextBridge`:
 
-### Invoke channel that returns a value (renderer → main → renderer)
-
-For UI operations that need a result from the main process (e.g., a native menu selection), use `ipcMain.handle` returning a Promise:
-
-```typescript
-// main/ipcHandlers.ts
-ipcMain.handle(IPC.MY_ACTION, (_event, payload: MyPayload) =>
-  doSomethingInMain(mainWindow, payload),
-)
-
-// main/myFeature.ts — wrap non-blocking APIs in a Promise
-export function doSomethingInMain(win: BrowserWindow, payload: MyPayload): Promise<Result | null> {
-  return new Promise((resolve) => {
-    let chosen: Result | null = null
-    // e.g. Menu.popup — click handler runs before callback (close)
-    menu.popup({ window: win, callback: () => resolve(chosen) })
-  })
-}
-
-// preload/index.ts
-myAction: (payload: MyPayload) => ipcRenderer.invoke(IPC.MY_ACTION, payload),
-
-// renderer
-const result = await window.electronAPI.myAction(payload)
+```ts
+window.electronAPI.invoke<C>(channel: C, ...args): Promise<InvokeRes<C>>
+window.electronAPI.onPush<C>(channel: C, callback): () => void   // returns unsubscribe
 ```
+
+`invoke` is for renderer→main request/reply; `onPush` is for main→renderer notifications.
+
+### Adding a new invoke channel
+
+1. Add the channel constant to `shared/ipcChannels.ts`.
+2. Add a row to `InvokeChannels` in `shared/ipcContract.ts`: `[IPC.MY_ACTION]: { req: MyPayload; res: MyResult }`.
+3. Register the handler in `main/ipcHandlers.ts` via the typed `handleInvoke` wrapper:
+   ```ts
+   handleInvoke(IPC.MY_ACTION, (_event, payload) => doSomethingInMain(mainWindow, payload))
+   ```
+4. Call from renderer: `await window.electronAPI.invoke(IPC.MY_ACTION, payload)` — `payload` and the resolved value are typed by the map.
+
+For `req: void` channels, `invoke(IPC.X)` works with no second arg (variadic-tuple `InvokeArgs<C>`).
+
+### Adding a new push channel
+
+1. Add the channel constant + a row to `PushChannels`.
+2. Send from main: `mainWindow.webContents.send(IPC.X, payload)`.
+3. Subscribe from renderer: `window.electronAPI.onPush(IPC.X, (payload) => ...)`. The callback is typed; `void`-payload channels take a `() => void` callback.
 
 ### Native context menus
 
-Use `Menu.buildFromTemplate()` + `menu.popup({ window, x, y, callback })` in the main process. See `main/naviContextMenu.ts` for a complete example. The `click` handler on each item runs **before** `callback`, enabling a `Promise<action | null>` pattern.
+Use `Menu.buildFromTemplate()` + `menu.popup({ window, x, y, callback })` in the main process. See `main/naviContextMenu.ts` for a complete example. The `click` handler on each item runs **before** `callback`, enabling a `Promise<action | null>` pattern returned through `IPC.NAVI_CTX_SHOW`.
+
+### Generic-dispatch design pattern (cross-process)
+
+The same shape recurs in every renderer↔(other-thread) boundary:
+
+| Boundary | Map file | Generic dispatcher |
+|---|---|---|
+| renderer ↔ main | `shared/ipcContract.ts` (`InvokeChannels` / `PushChannels`) | `electronAPI.invoke<C>` / `onPush<C>` |
+| renderer ↔ Web Worker | `worker/shared/WorkerCalls.ts` (`ServiceMap` / `MethodMap` / `RpcMap`) | `cm.invokeService<K>` / `invokeMethodTyped<K>` / `invokeRpc<K>` |
+| renderer-internal command bus | `commands/CommandMap.ts` | `useCommands().dispatch<K>` / `useRegisterCommand<K>` |
+
+Workflow when adding a feature: (1) add a row to the relevant map; (2) implement the producer side (`handleInvoke`, `*.service.ts`, `useRegisterCommand`); (3) call from the consumer side. The compiler walks both sides for you.
+
+Variadic-tuple trick for `void` args (used in all three): `type Args<K> = X extends void ? [] : [X]` so `dispatch(id)` works for void-args entries while non-void requires the payload.
 
 ---
 
@@ -216,7 +230,7 @@ Note: the C++ `View` / `Scene` objects are not destroyed by `removeView`; that i
 cd tritium/react-gui && npm test    # vitest run
 ```
 
-Tests use **Vitest + jsdom**. Files go in `src/renderer/__test__/*.test.{ts,tsx}`. No `@testing-library/react` — use `createRoot` + `act()` directly, following the pattern in `useActiveTool.test.ts`.
+Tests use **Vitest + jsdom**. Files go in `src/renderer/__test__/*.test.{ts,tsx}`. No `@testing-library/react` — use `createRoot` + `act()` directly, following the pattern in `useActiveTool.test.ts`. Common helpers (`makeRenderHook`, `mountTree`, `setupElectronAPI`, `flushPromises`) live in `__test__/helpers/testHarness.tsx`.
 
 ### Required mocks
 
@@ -231,13 +245,36 @@ vi.mock('../hooks/useCueMol', () => ({
 }));
 ```
 
-To mock `window.electronAPI` (jsdom: `window === globalThis`):
+To mock `window.electronAPI`, use the helper (matches the post-B `invoke` / `onPush` shape):
 
 ```ts
-beforeEach(() => {
-    (window as any).electronAPI = { showNaviContextMenu: vi.fn() };
-});
+import { setupElectronAPI, teardownElectronAPI } from './helpers/testHarness'
+
+beforeEach(() => { api = setupElectronAPI() })
+afterEach(() => { teardownElectronAPI() })
+// To route a specific channel, override:
+//   setupElectronAPI({ invoke: vi.fn((c, p) => c === IPC.X ? mockX(p) : Promise.resolve()) })
 ```
+
+`setupElectronAPI` returns the mock object so you can assert on `api.invoke.mock.calls` directly.
+
+### `import React` is required at vitest runtime
+
+Vitest's JSX transform uses the **classic** runtime even when production (electron-vite) uses automatic JSX. Files containing JSX MUST `import React from 'react'`; if React isn't otherwise referenced, add `void React` after the import to silence `noUnusedLocals` without removing the runtime-required identifier.
+
+### Stabilizing callbacks in effect deps
+
+A callback prop recreated on every render (e.g. `getActiveSceneInfo: () => ({ ... })`) will retrigger a `useEffect` whose dep list includes it, which in a tab-switch fetch can race with state set by user-action callbacks (the fetch resolves *after* the user click and overwrites the new value). When an effect needs to *read* a callback but should not *re-run* on its identity change, capture it via a ref:
+
+```ts
+const cbRef = useRef(callback)
+cbRef.current = callback
+useEffect(() => {
+  // ... use cbRef.current() instead of callback ...
+}, [/* identity-stable deps only */])
+```
+
+`hooks/useActiveViewState.ts` uses this pattern for `getActiveSceneInfo`.
 
 ### React 18 + fake timers
 
@@ -256,11 +293,16 @@ act(() => { timerCb!(); });
 
 ### AsyncCueMol dispatch summary
 
-| Method | Response awaited | Counted as pending |
-|--------|------------------|--------------------|
-| `invokeWorker` | Yes (Promise) | Yes — `isBusy()` / `subscribeBusy()` |
-| `invokeWorkerWithTransfer` | Yes (Promise) | No — used only by `bindCanvas` |
-| `resized`, `onMouseEvent`, `onWheelEvent`, `onGestureEvent` | No (fire-and-forget) | No |
+Prefer the typed helpers (`invokeService`, `invokeMethodTyped`, `invokeRpc`) — they pin the args/result shape against `WorkerCalls.ts`. The untyped `invokeWorker` is a low-level escape hatch that returns the raw response array tail.
+
+| Method | Maps to | Awaits | Pending count |
+|--------|---------|--------|---------------|
+| `invokeService<K>(name, args)` | `ServiceMap[K]` | Yes | Yes |
+| `invokeMethodTyped<K>(name, ...args)` | `MethodMap[K]` | Yes | Yes |
+| `invokeRpc<K>(name, ...args)` | `RpcMap[K]` (used by `ObjProxy`) | Yes | Yes |
+| `invokeWorker(method, ...args)` | none — raw transport | Yes | Yes — `isBusy()` / `subscribeBusy()` |
+| `invokeWorkerWithTransfer` | raw transport with transferable | Yes | No — used only by `bindCanvas` |
+| `resized`, `onMouseEvent`, `onWheelEvent`, `onGestureEvent` | direct `postMessage` | No (fire-and-forget) | No |
 
 ### getService from renderer
 
@@ -276,3 +318,34 @@ expect(sut.stereoMode as unknown as string).toBe('none');
 ```
 
 Do not edit generated wrapper files — they are overwritten at build time.
+
+---
+
+## Per-dialog factory pattern
+
+`hooks/useDialogFactory.tsx` exports `createDialogHook<TArgs, TResult>({ render, name })` which returns a `Provider` and `useShow` pair. Each dialog gets its own provider file under `components/dialogs/XxxDialogProvider.tsx` (or `components/.../XxxDialogProvider.tsx` for nested groups), and `contexts/DialogContext.tsx` mounts them as a composite.
+
+```tsx
+// components/dialogs/AboutDialogProvider.tsx
+import React from 'react'
+import { AboutDialog } from './AboutDialog'
+import { createDialogHook } from '../../hooks/useDialogFactory'
+void React  // required by classic JSX runtime in vitest
+
+export const { Provider: AboutDialogProvider, useShow: useShowAboutDialog } =
+  createDialogHook<void, void>({
+    name: 'AboutDialog',
+    render: ({ visible, resolve }) => (
+      <AboutDialog visible={visible} onClose={() => resolve()} />
+    ),
+  })
+```
+
+Caller side:
+
+```ts
+const showAbout = useShowAboutDialog()  // (args) => Promise<result>
+await showAbout()
+```
+
+The render-prop maps the dialog's existing `onConfirm`/`onCancel`/`onClose` props to a single `resolve(result)` call. Existing `Xxx.tsx` dialog components do **not** need to change — only the provider wrapper.

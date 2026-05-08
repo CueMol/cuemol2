@@ -29,6 +29,12 @@ export const IPC = {
   MENU_REDO:      'menu:redo',
   MENU_VIEW_PERSPECTIVE:  'menu:view-perspective',
   MENU_VIEW_ORTHOGRAPHIC: 'menu:view-orthographic',
+  MENU_CENTER_MARK_CROSS: 'menu:center-mark-cross',
+  MENU_CENTER_MARK_AXIS:  'menu:center-mark-axis',
+  MENU_CENTER_MARK_NONE:  'menu:center-mark-none',
+  MENU_BG_WHITE:  'menu:bg-white',
+  MENU_BG_BLACK:  'menu:bg-black',
+  MENU_ABOUT:     'menu:about',
 
   // invoke channels (renderer → main, with reply) — menu role actions
   MENU_INVOKE_ROLE: 'menu:invoke-role',
