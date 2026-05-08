@@ -23,7 +23,7 @@ Status values:
 | [`widget.colorslider`](../uxp-inventory/custom_widgets.md#widgetcolorslider) | | | todo | | | |
 | [`widget.colpicker`](../uxp-inventory/custom_widgets.md#widgetcolpicker) | | | todo | | | |
 | [`widget.mainview`](../uxp-inventory/custom_widgets.md#widgetmainview) | | | todo | | | |
-| [`widget.molsellist`](../uxp-inventory/custom_widgets.md#widgetmolsellist) | | | todo | | | |
+| [`widget.molsellist`](../uxp-inventory/custom_widgets.md#widgetmolsellist) | `components/widgets/MolSelList/MolSelList.tsx` | direct | wip | | | First consumer: `RendererOptionsPane` (file-open dialog). Editable `InputGroup` + chevron-only `HTMLSelect` (CSS-shrunk to ~30 px, hidden empty sentinel option keeps the display blank — no "Pick…" text). Click chevron → OS-native dropdown listbox with `<optgroup>` Preset / History / Scene / Global, sidesteps Dialog flip/overflow. History via `localStorage`. Worker services `getSelDefs` (StyleManager scene+global named-sel defs) / `validateSelection` added. |
 | [`widget.paintpanel`](../uxp-inventory/custom_widgets.md#widgetpaintpanel) | | | todo | | | |
 | [`widget.selection-widget`](../uxp-inventory/custom_widgets.md#widgetselection-widget) | | | todo | | | |
 | [`widget.sidepanelholder`](../uxp-inventory/custom_widgets.md#widgetsidepanelholder) | | | todo | | | |

@@ -68,7 +68,7 @@ export function useSceneCommands({
             if (!info) return
             ;(async () => {
                 const rendererTypes = await cm.getCompatibleRendererNames(data.path)
-                const options = await showFileOpenOptionDialog({ filePath: data.path, rendererTypes })
+                const options = await showFileOpenOptionDialog({ filePath: data.path, sceneId: info.scene_uid, rendererTypes })
                 if (options === null) return
                 await cm.loadObject(data.path, info.scene_uid, options)
             })().catch((e: unknown) => console.error('OpenObjByPath failed:', e))

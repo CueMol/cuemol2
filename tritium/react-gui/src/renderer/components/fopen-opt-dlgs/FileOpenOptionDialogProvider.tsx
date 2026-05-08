@@ -8,6 +8,7 @@ import { createDialogHook } from '../../hooks/useDialogFactory'
 
 export interface FileOpenOptionDialogArgs {
   filePath: string
+  sceneId: number
   rendererTypes?: string[]
 }
 
@@ -20,6 +21,7 @@ export const {
     <FileOpenOptionDialog
       visible={visible}
       filePath={args?.filePath ?? ''}
+      sceneId={args?.sceneId ?? 0}
       rendererTypes={args?.rendererTypes ?? []}
       onConfirm={(options) => resolve(options)}
       onCancel={() => resolve(null)}

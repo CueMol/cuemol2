@@ -1,0 +1,24 @@
+/*
+ * MolSelList — atom-selection editor styling.
+ *
+ * The picker is a Blueprint HTMLSelect that we want to render as a
+ * chevron-only button (no displayed text), sitting next to a wide InputGroup
+ * inside a ControlGroup. The select holds a hidden empty sentinel as its
+ * selected option, so the displayed text area is intrinsically blank — but
+ * native browsers still reserve space for it. We collapse that space with CSS
+ * while keeping Blueprint's overlaid chevron icon visible.
+ */
+
+.mol-sel-list .mol-sel-list-picker {
+  flex: 0 0 auto;
+}
+
+.mol-sel-list .mol-sel-list-picker > select {
+  /* Just enough width to host Blueprint's right-side chevron. */
+  width: 30px;
+  min-width: 30px;
+  padding-left: 0;
+  /* Hide any residual text rendered by the browser for the selected option. */
+  color: transparent;
+  text-shadow: none;
+}

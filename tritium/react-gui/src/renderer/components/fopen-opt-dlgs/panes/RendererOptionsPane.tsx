@@ -1,14 +1,16 @@
 import React from 'react';
 import { InputGroup, HTMLSelect, Switch, FormGroup, Divider } from '@blueprintjs/core';
 import type { RendererOptions } from '../types';
+import { MolSelList } from '../../widgets/MolSelList';
 
 interface RendererOptionsPaneProps {
   options: RendererOptions;
   onChange: (updated: RendererOptions) => void;
   rendererTypes: string[];
+  sceneId: number;
 }
 
-export const RendererOptionsPane: React.FC<RendererOptionsPaneProps> = ({ options, onChange, rendererTypes }) => {
+export const RendererOptionsPane: React.FC<RendererOptionsPaneProps> = ({ options, onChange, rendererTypes, sceneId }) => {
   const set = <K extends keyof RendererOptions>(key: K) =>
     (value: RendererOptions[K]) => onChange({ ...options, [key]: value });
 
@@ -49,10 +51,10 @@ export const RendererOptionsPane: React.FC<RendererOptionsPaneProps> = ({ option
       <Divider />
       <div className="fod-section-title">Atom Selection</div>
       <FormGroup label="Selection" labelFor="rend-sel" className="fod-form-group">
-        <InputGroup
-          id="rend-sel"
-          value={options.selection}
-          onChange={(e) => set('selection')(e.target.value)}
+        <MolSelList
+          sceneID={sceneId}
+          selectedSel={options.selection}
+          onSelectedSelChange={set('selection')}
           placeholder="* (all atoms)"
         />
       </FormGroup>
