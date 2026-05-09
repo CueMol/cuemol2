@@ -1,5 +1,5 @@
 import React from 'react';
-import { InputGroup, HTMLSelect, Switch, FormGroup, Divider } from '@blueprintjs/core';
+import { InputGroup, HTMLSelect, Switch, FormGroup, Divider, Checkbox } from '@blueprintjs/core';
 import type { RendererOptions } from '../types';
 import { MolSelList } from '../../widgets/MolSelList';
 
@@ -8,9 +8,10 @@ interface RendererOptionsPaneProps {
   onChange: (updated: RendererOptions) => void;
   rendererTypes: string[];
   sceneId: number;
+  isMolFormat: boolean;
 }
 
-export const RendererOptionsPane: React.FC<RendererOptionsPaneProps> = ({ options, onChange, rendererTypes, sceneId }) => {
+export const RendererOptionsPane: React.FC<RendererOptionsPaneProps> = ({ options, onChange, rendererTypes, sceneId, isMolFormat }) => {
   const set = <K extends keyof RendererOptions>(key: K) =>
     (value: RendererOptions[K]) => onChange({ ...options, [key]: value });
 
@@ -48,16 +49,28 @@ export const RendererOptionsPane: React.FC<RendererOptionsPaneProps> = ({ option
           placeholder="simple1"
         />
       </FormGroup>
-      <Divider />
-      <div className="fod-section-title">Atom Selection</div>
-      <FormGroup label="Selection" labelFor="rend-sel" className="fod-form-group">
-        <MolSelList
-          sceneID={sceneId}
-          selectedSel={options.selection}
-          onSelectedSelChange={set('selection')}
-          placeholder="* (all atoms)"
-        />
-      </FormGroup>
+      {isMolFormat && (
+        <FormGroup
+          label={
+            <Checkbox
+              checked={options.selectionEnabled}
+              onChange={(e) => set('selectionEnabled')(e.target.checked)}
+              label="Selection"
+              style={{ marginBottom: 0 }}
+            />
+          }
+          labelFor="rend-sel"
+          className="fod-form-group"
+        >
+          <MolSelList
+            sceneID={sceneId}
+            selectedSel={options.selection}
+            onSelectedSelChange={set('selection')}
+            disabled={!options.selectionEnabled}
+            placeholder="* (all atoms)"
+          />
+        </FormGroup>
+      )}
       <Divider />
       <Switch
         label="Center view on molecule after loading"

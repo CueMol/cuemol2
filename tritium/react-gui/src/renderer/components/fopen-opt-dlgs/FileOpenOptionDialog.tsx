@@ -20,6 +20,7 @@ import {
   buildDefaultFormatOptions,
   getDefaultRendererOptions,
   isFormatOptionsModified,
+  isMolFormat,
 } from './types';
 
 import { PdbOptionsPane } from './panes/PdbOptionsPane';
@@ -97,7 +98,7 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
   }
 
   const handleConfirm = useCallback(() => {
-    if (rendererOptions.selection) {
+    if (rendererOptions.selectionEnabled && rendererOptions.selection) {
       pushHistory(rendererOptions.selection);
     }
     onConfirm({ format: formatOptions, renderer: rendererOptions });
@@ -130,6 +131,7 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
           onChange={setRendererOptions}
           rendererTypes={rendererTypes}
           sceneId={sceneId}
+          isMolFormat={isMolFormat(formatKind)}
         />
 
         {/* Format-specific options — progressive disclosure */}

@@ -26,7 +26,7 @@ export function setupRenderer(ctx: WorkerContext, mol: any, rendOpts: RendererOp
     if (!NON_MOL_CLASSES.includes(className)) {
         molPostProc(ctx, mol, true);
 
-        if (rendOpts.selection && rendOpts.selection !== '' && rendOpts.selection !== '*') {
+        if (rendOpts.selectionEnabled && rendOpts.selection && rendOpts.selection !== '*') {
             const sel = makeSel(ctx, rendOpts.selection);
             if (sel) {
                 (rend as unknown as MolRenderer).sel = sel;
