@@ -44,6 +44,7 @@ export interface RendererOptions {
   objectName: string;
   rendererType: string;
   rendererName: string;
+  selectionEnabled: boolean;
   selection: string;
   centerView: boolean;
 }
@@ -138,9 +139,24 @@ export function getDefaultRendererOptions(filePath: string, defaultRendType?: st
     // TODO: renderer name should be unique in the scene (rendererType + incrementing suffix);
     //       uniqueness check against existing renderers is not implemented yet.
     rendererName: rendererType + '1',
+    selectionEnabled: false,
     selection: '*',
     centerView: true,
   };
+}
+
+// Returns true for formats that produce MolCoord-like objects, where atom
+// selection is meaningful. False for scalar/surface objects (mtz, ccp4map,
+// msms) — see NON_MOL_CLASSES in setupRenderer.service.ts.
+export function isMolFormat(kind: FormatKind): boolean {
+  switch (kind) {
+    case 'mtz':
+    case 'ccp4map':
+    case 'msms':
+      return false;
+    default:
+      return true;
+  }
 }
 
 /**

@@ -28,6 +28,7 @@ import type { CreateViewInSceneArgs, CreateViewInSceneResult } from '../server/s
 import type { GetCompatibleRendererNamesArgs } from '../server/services/getCompatibleRendererNames.service'
 import type { GetOpenFiltersArgs } from '../server/services/getOpenFilters.service'
 import type { GetSceneCloseInfoArgs, GetSceneCloseInfoResult } from '../server/services/getSceneCloseInfo.service'
+import type { GetSelDefsArgs, GetSelDefsResult } from '../server/services/getSelDefs.service'
 import type { LoadObjectArgs } from '../server/services/loadObject.service'
 import type { LoadSceneArgs } from '../server/services/loadScene.service'
 import type {
@@ -51,6 +52,10 @@ import type {
   SetSceneBgColorArgs,
 } from '../server/services/sceneBgColor.service'
 import type { UndoArgs } from '../server/services/undo.service'
+import type {
+  ValidateSelectionArgs,
+  ValidateSelectionResult,
+} from '../server/services/validateSelection.service'
 import type {
   ViewCenterMarkArgs,
   ViewCenterMarkResult,
@@ -100,12 +105,14 @@ export interface ServiceMap {
   getCompatibleRendererNames: { args: GetCompatibleRendererNamesArgs;  result: string[] }
   getOpenFilters:             { args: GetOpenFiltersArgs;              result: ElectronFileFilter[] }
   getSceneCloseInfo:          { args: GetSceneCloseInfoArgs;           result: GetSceneCloseInfoResult }
+  getSelDefs:                 { args: GetSelDefsArgs;                  result: GetSelDefsResult }
   loadObject:                 { args: LoadObjectArgs;                  result: { ok: boolean } }
   loadScene:                  { args: LoadSceneArgs;                   result: { ok: boolean } }
   proposeNewTabNames:         { args: ProposeNewTabNamesArgs;          result: ProposeNewTabNamesResult }
   proposeUniqName:            { args: ProposeUniqNameArgs;             result: ProposeUniqNameResult }
   redo:                       { args: RedoArgs;                        result: { ok: boolean } }
   undo:                       { args: UndoArgs;                        result: { ok: boolean } }
+  validateSelection:          { args: ValidateSelectionArgs;           result: ValidateSelectionResult }
   getSceneBgColor:            { args: SceneBgColorArgs;                result: SceneBgColorResult }
   setSceneBgColor:            { args: SetSceneBgColorArgs;             result: SceneBgColorResult }
   getViewProjection:          { args: ViewProjectionArgs;              result: ViewProjectionResult }

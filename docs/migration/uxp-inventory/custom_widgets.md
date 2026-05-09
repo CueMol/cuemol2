@@ -56,7 +56,9 @@
 
 #### Notes
 - Pure XBL widget; no external JS or DTD.
-- Migration: replace with a React component exposing an `onWheelChange` callback.
+- Bound to the `wheelbtn` element via `cuemol2.css` (`-moz-binding` rule).
+- Used as `<wheelbtn>` element in:
+  - `fakedial-panel.xul`
 
 ---
 
@@ -89,6 +91,12 @@
 #### Notes
 - `numslider-core` extends `chrome://global/content/bindings/scale.xml#scale`; this XBL base is removed in Firefox 75+.
 - `mTickMode` controls discrete vs. continuous stepping.
+- Bound to the `numslider` element via `cuemol2.css`, and `numslider-core` is bound to `.num-slider-scale` via `numslider.css`.
+- Used as `<numslider>` element in 25 XUL files, including:
+  - `atomintr-propdlg.xul`, `coloring-deck-rainbow.xul`, `coloring-panel.xul`, `densitymap-panel.xul`, `exportqsl-opt-dlg.xul`, `propeditor-radii-common.xul`
+  - `property/`: `ballstick-propdlg.xul`, `cartoon-coil-page.xul`, `cartoon-helix-page.xul`, `cartoon-propdlg.xul`, `cartoon-sheet-page.xul`, `contour-propdlg.xul`, `disorder-propdlg.xul`, `isosurf-propdlg.xul`, `molsurf-page.xul`, `nucl-propdlg.xul`, `renderer-common-page.xul`, `ribbon-coil-page.xul`, `ribbon-helix-page.xul`, `ribbon-propdlg.xul`, `ribbon-sheet-page.xul`, `simple-propdlg.xul`, `tube-page.xul`
+  - `tools/render-pov-dlg.xul`
+  - `anim/animobj-common-proppage.xul`
 
 ---
 
@@ -124,6 +132,8 @@
 #### Notes
 - SVG gradient is inlined in XBL `<content>`; relies on XBL anonymous content rendering.
 - `colslicore` extends the global `scale.xml#scale` XBL binding.
+- Bound to the `colorslider` element via `cuemol2.css`, and `colslicore` is bound to `colslicore` via `colorSlider.css`.
+- Not consumed directly by any XUL file; used internally by `widget.colpicker` (the panel inside the colpicker dropdown contains three `<xul:colorslider>` instances).
 
 ---
 
@@ -133,7 +143,7 @@
 - **Root element**: `<bindings>`
 - **Title**: `unknown`
 - **Chrome URL**: `chrome://cuemol2/content/colpicker-bindings.xml`
-- **Associated JS**: `none`
+- **Associated JS**: `colpicker.js` (defines `cuemolui.ColorPicker`; loaded via `<script src="chrome://cuemol2/content/colpicker.js"/>` from each consumer XUL)
 - **Overlays applied**: `none`
 
 #### User-visible features
@@ -154,8 +164,14 @@
 - none
 
 #### Notes
-- Color-model logic lives in `cuemolui.ColorPicker` (external JS module); XBL shell delegates to it.
+- Color-model logic lives in `cuemolui.ColorPicker` (external JS module in `colpicker.js`); XBL shell delegates to it.
 - Depends on `widget.colorslider` (`xul:colorslider` element used internally).
+- Bound to the `mycolpicker` tag via `cuemol2.css` (`mycolpicker { -moz-binding: ...#colpicker }`); the `<colpicker>` binding id and the `<mycolpicker>` consumer tag intentionally differ.
+- Used as `<mycolpicker>` element in 17 XUL files, including:
+  - `atomintr-propdlg.xul`, `coloring-deck-bfac.xul`, `coloring-deck-cpk.xul`, `coloring-deck-elepot.xul`, `coloring-panel.xul`, `config-misc.xul`, `densitymap-panel.xul`, `paint-propdlg.xul`, `propeditor-generic-page.xul`
+  - `property/`: `ballstick-propdlg.xul`, `disorder-propdlg.xul`, `renderer-common-page.xul`, `ribbon-helix-page.xul`, `ribbon-sheet-page.xul`
+  - `style/style_editor.xul`, `tools/multigrad_editor.xul`
+  - `cuemol2.xul` (top-level main window includes a hidden colpicker panel)
 
 ---
 
@@ -165,7 +181,7 @@
 - **Root element**: `<bindings>`
 - **Title**: `unknown`
 - **Chrome URL**: `chrome://cuemol2/content/mainViewBindings.xml`
-- **Associated JS**: `none`
+- **Associated JS**: `tabmolview.js` (defines `cuemolui.TabMolView` and `cuemolui.MolViewTabs`; instantiated in the binding constructors)
 - **Overlays applied**: `none`
 
 #### User-visible features
@@ -194,6 +210,9 @@
 #### Notes
 - `currentNativeWidget` property returns the raw OpenGL canvas element.
 - Critical migration target: this is the core viewport container of the entire application.
+- Bound to `tabmolview` / `.tabmolview-tab` / `.tabmolview-tabs` (and the dangling `scobjpanel`) elements via `cuemol2.css`.
+- Used as `<tabmolview>` element in:
+  - `cuemol2.xul` (the main application window)
 
 ---
 
@@ -203,7 +222,7 @@
 - **Root element**: `<bindings>`
 - **Title**: `unknown`
 - **Chrome URL**: `chrome://cuemol2/content/molsellist-bindings.xml`
-- **Associated JS**: `none`
+- **Associated JS**: `molsellist.js` (defines `cuemolui.MolSelList`; instantiated in the XBL constructor as `this.mImpl = new cuemolui.MolSelList(this)`; loaded via `<script src="chrome://cuemol2/content/molsellist.js"/>` from each consumer XUL)
 - **Overlays applied**: `none`
 
 #### User-visible features
@@ -223,8 +242,15 @@
 - none
 
 #### Notes
-- Controller logic lives in `cuemolui.MolSelList` (external JS module).
-- `mSelErrBox` property holds a reference to an error display element.
+- Controller logic lives in `cuemolui.MolSelList` (external JS module in `molsellist.js`); the XBL shell forwards property/method access to `this.mImpl`.
+- `mSelErrBox` property holds a reference to an error display element (looked up from the `errorbox` attribute of the host element).
+- Selection text is parsed via `cuemol.makeSel(val, sceneID)` and history is persisted through `util.selHistory`; menu list is rebuilt by `buildBox()` from scene mol objects, scene/global selection defs, and the history list.
+- Bound to the `molsellist` element via `cuemol2.css` (`molsellist { -moz-binding: ...#molsellist }`).
+- Used as `<molsellist>` element to enter molecular selection expressions in 18 XUL files:
+  - `fopen-renderopt-page.xul`, `paint-propdlg.xul`
+  - `property/`: `cartoon-propdlg.xul`, `contour-propdlg.xul`, `isosurf-propdlg.xul`, `molsurf-page.xul`, `object-propdlg.xul`, `renderer-common-page.xul`
+  - `tools/`: `apbs-calcpot.xul`, `chg_chname.xul`, `chg_resindex.xul`, `intr-tool-dlg.xul`, `makesurf.xul`, `mol_delete.xul`, `mol_merge.xul`, `msms-makesurf.xul`, `prot2ndry-tool-dlg.xul`, `ssm_sup.xul`
+- The `symm-chg-dlg.xul` tool also loads `molsellist.js` even though it does not currently mount a `<molsellist>` element.
 
 ---
 
@@ -255,6 +281,8 @@
 #### Notes
 - Item-level XBL bindings used inside a `richlistbox`; not standalone widgets.
 - `type` property on `paintlistitem-base` identifies the paint entry kind (solid, gradient, etc.).
+- Bound to `.paint-listitem` (and the `[selected="true"]` variant) classes via `cuemol2.css`; consumers attach the `paint-listitem` class to `<richlistitem>` children of a `<richlistbox>`.
+- Consumed by `paint-propdlg.xul` (the only paint-mode property dialog), driven from `paint-propdlg.js` / the `cuemolui.PaintPanel` controller.
 
 ---
 
@@ -287,6 +315,8 @@
 #### Notes
 - Item-level bindings used inside the `richlistbox` in the Selection panel.
 - Exposed properties: `boolop`, `chainName`, `residIndex`, `atomName`, `commandName`, `commandArgs`, `value`.
+- Bound via class selectors (`.molselitem-hier`, `.molselitem-term`, `.molselitem-around`) and tag selectors (`molselboolop`, `molselboolop[noop]`) in `selection-widgets.css`.
+- Consumed by `selection-panel.xul` (the structured selection builder UI), driven from `selection-panel.js`.
 
 ---
 
@@ -296,7 +326,7 @@
 - **Root element**: `<bindings>`
 - **Title**: `unknown`
 - **Chrome URL**: `chrome://cuemol2/content/sidepanelholder-bindings.xml`
-- **Associated JS**: `none`
+- **Associated JS**: `sidepanelholder.js` (defines `cuemolui.SidePanelHolder`; instantiated in the binding constructor and exposed globally as `cuemolui.sidepanel`)
 - **Overlays applied**: `none`
 
 #### User-visible features
@@ -323,6 +353,9 @@
 #### Notes
 - `color-menuitem` and `tlbtn-repeat` are utility bindings bundled in this file; they extend global XBL bindings.
 - `setBarImpl(aImpl)` wires the JS panel controller to the XBL bar element.
+- Bound via `cuemol2.css`: `sidepanelholder` → `#sidepanelholder`, `sidepanelbar` → `#sidepanelbar`, `.color-menuitem` → `#color-menuitem`, `toolbarbutton[type="repeat"]` → `#tlbtn-repeat`.
+- Used as `<sidepanelholder>` element in:
+  - `cuemol2.xul` (the main application window hosts `left_side_panel`, into which all side panels register themselves).
 
 ---
 
@@ -357,6 +390,10 @@
 #### Notes
 - One of the few XBL bindings with both a constructor and a destructor for scene lifecycle management.
 - `value` reflects the selected camera name as a string.
+- Bound to the `camerasel` element via `cuemol2.css`.
+- Used as `<camerasel>` element in:
+  - `anim/anim-panel.xul`
+  - `anim/animobj-common-proppage.xul`
 
 ---
 
@@ -384,6 +421,10 @@
 
 #### Notes
 - Thin wrapper around `chrome://global/content/bindings/scale.xml#scale`; adds animation-specific event semantics.
+- Bound via the `.animslider` class (each consumer XUL declares the `-moz-binding` rule inline at the top of the file rather than registering it globally in `cuemol2.css`).
+- Used as `<scale class="animslider">` in:
+  - `anim/anim-ribbon.xul` (scene preview animation slider)
+  - `anim/anim-render-dlg.xul` (render dialog progress scrubber)
 
 ---
 
@@ -416,6 +457,8 @@
 
 #### Notes
 - Used in animation dialogs to select multiple scene objects (e.g., visible renderers for an animation track).
+- Consumed as `<multiselect>` element in:
+  - `anim/animobj-common-proppage.xul`
 
 ---
 
@@ -451,6 +494,11 @@
 #### Notes
 - Used in animation timeline dialogs for entering frame-accurate time codes.
 - `_currentField` tracks which sub-field (hours/minutes/seconds/frames) is currently active.
+- Bound to the `timeedit` element via `cuemol2.css`.
+- Used as `<timeedit>` element in:
+  - `anim/anim-panel.xul`
+  - `anim/animobj-common-proppage.xul`
+  - `propeditor-generic-page.xul`
 
 ---
 
@@ -462,6 +510,6 @@
 ## Statistics
 
 - Total entries: 13
-- With JS handler: 0 (all JS is inline CDATA; no external `.js` files associated)
+- With external JS controller (same-name `.js` file in the same directory, instantiated from the XBL constructor): 4 — `widget.colpicker` (`colpicker.js`), `widget.mainview` (`tabmolview.js`), `widget.molsellist` (`molsellist.js`), `widget.sidepanelholder` (`sidepanelholder.js`). The remaining 9 widgets keep all logic inline in CDATA blocks within the XBL.
 - With i18n keys: 0
 - Unresolved: 0

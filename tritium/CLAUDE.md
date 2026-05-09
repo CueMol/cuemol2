@@ -287,6 +287,29 @@ vi.spyOn(globalThis, 'setTimeout').mockImplementation((cb: any) => { timerCb = c
 act(() => { timerCb!(); });
 ```
 
+### Worker-service tests with wrapper setter spying
+
+Worker services often assign values to C++ wrapper setters (`(rend as MolRenderer).sel = sel`, `mol.name = ...`, `cmd.target_object = mol`). To pin this contract in vitest without a real native addon, mock the wrapper as a plain object literal whose accessor records the assignment:
+
+```ts
+const setSel = vi.fn()
+const rend = {
+  get sel() { return undefined },
+  set sel(v: unknown) { setSel(v) },
+}
+// ...later...
+expect(setSel).toHaveBeenCalledWith(expectedValue)  // or .not.toHaveBeenCalled()
+```
+
+`vi.mock('../worker/server/services/helpers/<name>', () => ({ ... }))` stubs cross-helper dependencies (`makeSel`, `molPostProc`, `getDefaultStyleName`, …) so the test isolates the service under test. For services exported as plain functions (not via the `services` object), import them directly after the mocks:
+
+```ts
+vi.mock('../worker/server/services/helpers/makeSel', () => ({ makeSel: vi.fn(() => ({ __sel: true })) }))
+import { setupRenderer } from '../worker/server/services/setupRenderer.service'
+```
+
+Use this when pinning a cross-layer invariant (e.g. "field X gates whether wrapper Y is touched"). See `__test__/setupRendererService.test.ts` for a four-case example covering true/false toggle, special-value short-circuit, and class-name short-circuit.
+
 ---
 
 ## Other API notes

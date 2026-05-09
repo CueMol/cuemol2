@@ -20,6 +20,7 @@ import {
   buildDefaultFormatOptions,
   getDefaultRendererOptions,
   isFormatOptionsModified,
+  isMolFormat,
 } from './types';
 
 import { PdbOptionsPane } from './panes/PdbOptionsPane';
@@ -28,6 +29,7 @@ import { Ccp4MapOptionsPane } from './panes/Ccp4MapOptionsPane';
 import { MsmsOptionsPane } from './panes/MsmsOptionsPane';
 import { NamdCoorOptionsPane } from './panes/NamdCoorOptionsPane';
 import { RendererOptionsPane } from './panes/RendererOptionsPane';
+import { pushHistory } from '../widgets/MolSelList';
 
 import type { PdbOptions, MtzOptions, Ccp4MapOptions, MsmsOptions, NamdCoorOptions } from './types';
 
@@ -54,6 +56,7 @@ function basename(filePath: string): string {
 export interface FileOpenOptionDialogProps {
   visible: boolean;
   filePath: string;
+  sceneId: number;
   rendererTypes: string[];
   onConfirm: (options: FileOpenOptions) => void;
   onCancel: () => void;
@@ -64,6 +67,7 @@ export interface FileOpenOptionDialogProps {
 export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
   visible,
   filePath,
+  sceneId,
   rendererTypes,
   onConfirm,
   onCancel,
@@ -94,6 +98,9 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
   }
 
   const handleConfirm = useCallback(() => {
+    if (rendererOptions.selectionEnabled && rendererOptions.selection) {
+      pushHistory(rendererOptions.selection);
+    }
     onConfirm({ format: formatOptions, renderer: rendererOptions });
   }, [onConfirm, formatOptions, rendererOptions]);
 
@@ -123,6 +130,8 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
           options={rendererOptions}
           onChange={setRendererOptions}
           rendererTypes={rendererTypes}
+          sceneId={sceneId}
+          isMolFormat={isMolFormat(formatKind)}
         />
 
         {/* Format-specific options — progressive disclosure */}

@@ -38,7 +38,7 @@ function findButtonByText(root: ParentNode, text: string): HTMLButtonElement | n
 let showAbout: () => Promise<void>
 let showNewTab: (args: { currentSceneName: string | null; defaultSceneName: string; defaultViewName: string }) => Promise<unknown>
 let showConfirmClose: (args: { sceneName: string }) => Promise<unknown>
-let showFileOpenOption: (args: { filePath: string; rendererTypes?: string[] }) => Promise<unknown>
+let showFileOpenOption: (args: { filePath: string; sceneId: number; rendererTypes?: string[] }) => Promise<unknown>
 
 const Probe: React.FC = () => {
   showAbout = useShowAboutDialog()
@@ -145,7 +145,7 @@ describe('DialogProvider (per-dialog factory)', () => {
 
   it('useShowFileOpenOptionDialog: Cancel resolves with null', async () => {
     const handle = mount()
-    const p = showFileOpenOption({ filePath: '/tmp/foo.pdb', rendererTypes: ['*default'] })
+    const p = showFileOpenOption({ filePath: '/tmp/foo.pdb', sceneId: 0, rendererTypes: ['*default'] })
     await flushPromises()
 
     const cancelBtn = findButtonByText(document.body, 'Cancel')
