@@ -38,7 +38,7 @@ import { useCueMol } from '../../../hooks/useCueMol';
 import { getHistory } from './selHistory';
 
 const PICK_SENTINEL = '__mol_sel_list_pick__';
-const VALIDATE_DEBOUNCE_MS = 200;
+const VALIDATE_DEBOUNCE_MS = 500;
 
 export interface MolSelListProps {
     sceneID: number;

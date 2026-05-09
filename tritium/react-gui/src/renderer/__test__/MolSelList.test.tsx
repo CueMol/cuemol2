@@ -193,7 +193,7 @@ describe('MolSelList', () => {
         const { container, unmount } = mountTree(
             <MolSelList sceneID={1} selectedSel="bogus" onSelectedSelChange={() => undefined} />
         )
-        await act(async () => { vi.advanceTimersByTime(300) })
+        await act(async () => { vi.advanceTimersByTime(600) })
         await flushPromises()
         const input = getInput(container)
         expect(input.getAttribute('aria-invalid')).toBe('true')
@@ -207,7 +207,7 @@ describe('MolSelList', () => {
         mountTree(
             <MolSelList sceneID={1} selectedSel="*" onSelectedSelChange={() => undefined} />
         )
-        await act(async () => { vi.advanceTimersByTime(300) })
+        await act(async () => { vi.advanceTimersByTime(600) })
         await flushPromises()
         const validateCalls = mockCm.invokeService.mock.calls.filter((c: any[]) => c[0] === 'validateSelection')
         expect(validateCalls.length).toBe(0)
