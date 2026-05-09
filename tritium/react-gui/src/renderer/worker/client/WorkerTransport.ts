@@ -18,6 +18,8 @@ function makeMethodSeq(method: string, seqno: number): string {
 
 export type EventNotifyArgs = [number, string, number, number, number, string];
 
+export type StreamProgressListener = (reqId: string, bytes: number) => void;
+
 export interface WorkerTransportOptions {
     onEventNotify: (args: EventNotifyArgs) => void;
 }
@@ -30,6 +32,7 @@ export class WorkerTransport {
     private _pendingCount: number = 0;
     private _busyListeners: Set<(busy: boolean) => void> = new Set();
     private _onEventNotify: (args: EventNotifyArgs) => void;
+    private _streamProgressListeners: Set<StreamProgressListener> = new Set();
 
     constructor(opts: WorkerTransportOptions) {
         this._onEventNotify = opts.onEventNotify;
@@ -50,6 +53,15 @@ export class WorkerTransport {
                 return;
             }
 
+            if (method === 'stream-progress') {
+                // event.data shape: ['stream-progress', reqId, bytes]
+                const [reqId, bytes] = event.data.slice(1) as [string, number];
+                for (const cb of this._streamProgressListeners) {
+                    try { cb(reqId, bytes); } catch (e) { log.warn('stream-progress listener:', e); }
+                }
+                return;
+            }
+
             const method_seq = makeMethodSeq(method, seqno);
             if (method_seq in this._worker_onmessage_dict) {
                 this._worker_onmessage_dict[method_seq].apply(this, args);
@@ -58,6 +70,11 @@ export class WorkerTransport {
         };
 
         this._ready = true;
+    }
+
+    subscribeStreamProgress(cb: StreamProgressListener): () => void {
+        this._streamProgressListeners.add(cb);
+        return () => { this._streamProgressListeners.delete(cb); };
     }
 
     isReady(): boolean { return this._ready; }

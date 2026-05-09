@@ -68,6 +68,9 @@ export function useMenuDispatch(activeTab: string | null): {
         case IPC.MENU_ABOUT:
           dispatch(CmdId.UiAboutDialog).catch(logErr('about dialog:'))
           break
+        case IPC.MENU_GET_PDB:
+          dispatch(CmdId.UiGetPdbDialog).catch(logErr('get pdb dialog:'))
+          break
         default:
           console.warn('menu action not yet implemented:', channel)
       }

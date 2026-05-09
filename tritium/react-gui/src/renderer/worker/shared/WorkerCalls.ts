@@ -32,6 +32,16 @@ import type { GetSelDefsArgs, GetSelDefsResult } from '../server/services/getSel
 import type { LoadObjectArgs } from '../server/services/loadObject.service'
 import type { LoadSceneArgs } from '../server/services/loadScene.service'
 import type {
+  StreamLoadFromUrlArgs,
+  StreamLoadFromUrlResult,
+  CancelStreamLoadArgs,
+  CancelStreamLoadResult,
+} from '../server/services/streamLoadFromUrl.service'
+import type {
+  StreamLoadDensityMapArgs,
+  StreamLoadDensityMapResult,
+} from '../server/services/streamLoadDensityMap.service'
+import type {
   NaviCenterAtArgs,
   NaviCenterAtSymmArgs,
   NaviCtxAroundArgs,
@@ -108,6 +118,9 @@ export interface ServiceMap {
   getSelDefs:                 { args: GetSelDefsArgs;                  result: GetSelDefsResult }
   loadObject:                 { args: LoadObjectArgs;                  result: { ok: boolean } }
   loadScene:                  { args: LoadSceneArgs;                   result: { ok: boolean } }
+  streamLoadFromUrl:          { args: StreamLoadFromUrlArgs;           result: StreamLoadFromUrlResult }
+  streamLoadDensityMap:       { args: StreamLoadDensityMapArgs;        result: StreamLoadDensityMapResult }
+  cancelStreamLoad:           { args: CancelStreamLoadArgs;            result: CancelStreamLoadResult }
   proposeNewTabNames:         { args: ProposeNewTabNamesArgs;          result: ProposeNewTabNamesResult }
   proposeUniqName:            { args: ProposeUniqNameArgs;             result: ProposeUniqNameResult }
   redo:                       { args: RedoArgs;                        result: { ok: boolean } }

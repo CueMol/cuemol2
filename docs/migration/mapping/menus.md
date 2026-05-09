@@ -30,10 +30,10 @@ Completion counts treat `wired` and `native` as complete. `stub` means the menu 
 | Scope | Complete | Stub / todo | Completion | Notes |
 |-------|---------:|------------:|-----------:|-------|
 | `menu.color` | 0 | 1 | 0% | Not migrated or itemized in Tritium yet |
-| `menu.cuemol2` | 18 | 37 | 33% | Main menubar structure exists; 55 item-level migration points tracked |
+| `menu.cuemol2` | 19 | 36 | 35% | Main menubar structure exists; 55 item-level migration points tracked |
 | `menu.cuemol2-macos` | 6 | 1 | 86% | OS-native items complete; Preferences is stubbed |
 | `menu.cuemol2-scripts` | 1 | 0 | 100% | Dropped intentionally because Electron module loading replaces the XUL script overlay |
-| **Total** | **25** | **39** | **39%** | 64 inventory-derived menu migration points |
+| **Total** | **26** | **38** | **41%** | 64 inventory-derived menu migration points |
 
 ## Menu Item Implementation Status
 
@@ -66,7 +66,7 @@ View menu state notes:
 | File | New Window | `new-window` / `menu:new-window` | `MENU_GENERIC` -> `console.warn` | stub | Entry exists in native menu and React `MenuBar` |
 | File | New Tab | `new-tab` / `menu:new-tab` | `CmdId.TabNew` → `useNewTabCommand` → `NewTabDialog` | done | UXP parity dialog (New Scene / New View + inherit camera). New Scene path: `createNewSceneAndView` service. New View path: `createViewInScene` service (adds view to existing scene; camera inherit via `saveViewToCam/__current/loadViewFromCam`); both paths manually verified. Canvas lifecycle: OffscreenCanvas bound once via `bindCanvas`; subsequent views use `addView()`. TODO: `MolTabEntry.bound` (useMolTab.tsx) is defined but never read — dead code or future reserved; clarify intent. |
 | File | Open File... | `open-file` / `menu:open-file` | `CmdId.UiOpenObjDialog` | wired | Opens object-file dialog path |
-| File | Get PDB... | `get-pdb` / `menu:get-pdb` | `MENU_GENERIC` -> `console.warn` | stub | UXP command not yet connected |
+| File | Get PDB... | `get-pdb` / `menu:get-pdb` | `CmdId.UiGetPdbDialog` → `GetPdbDialog` → `streamLoadFromUrl` / `streamLoadDensityMap` / `cancelStreamLoad` services | wired | Streaming via StreamManager.supplyDataAsync (no temp file); UXP `forceCancel`-equivalent cancel path drains IOThread via waitLoadAsync (shared `streamFetchToReader` helper). Coord: RCSB CIF / RCSB PDB. Density map (2Fo-Fc / Fo-Fc) from RCSB cif.gz or EBI MTZ via `streamLoadDensityMap` with preset contour color/sigma + `obj.fitView`. Coord renderer-list lookup uses explicit readerName ('mmcif' / 'pdb') to avoid the .cif ambiguity (mmcifmap structure-factor reader vs. mmcif coord reader). PDB ID input history persisted in localStorage (`pdbIdHistory.ts`, LRU dedup, capped at 20) and surfaced via a native HTML5 `<datalist>` (Chromium-rendered type-to-filter autocomplete) on the InputGroup. |
 | File | Open Recent > Clear Menu | `clear-recent` / `menu:clear-recent` | `MENU_GENERIC` -> `console.warn` | stub | Dynamic MRU population is not implemented |
 | File | Save File As... | `save-file-as` / `menu:save-file-as` | `MENU_GENERIC` -> `console.warn` | stub | Separate from current `Save Scene` path |
 | File | Save current view... | `save-current-view` / `menu:save-current-view` | `MENU_GENERIC` -> `console.warn` | stub | Camera/image export behavior not connected |

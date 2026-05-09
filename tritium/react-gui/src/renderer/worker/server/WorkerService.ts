@@ -121,6 +121,14 @@ export class WorkerService {
         return this._cm.createWrapper(obj);
     }
 
+    /**
+     * Wrap a TypedArray as a ByteArray that shares memory (zero-copy).
+     * Used by streaming services to feed binary chunks into C++ readers.
+     */
+    fromTypedArray(src: any): any | null {
+        return this._cm.fromTypedArray(src);
+    }
+
     private _buildContext(): WorkerContext {
         return {
             svc: this,

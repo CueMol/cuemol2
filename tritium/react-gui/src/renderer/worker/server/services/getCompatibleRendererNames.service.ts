@@ -6,23 +6,38 @@ const RENDERER_TEST_TYPES = new Set(['ms2test', 'symm']);
 
 export interface GetCompatibleRendererNamesArgs {
     filePath: string;
+    /**
+     * Optional explicit reader name (e.g. 'mmcif', 'pdb'). When provided,
+     * skip the extension-based reader lookup. This avoids the .cif
+     * ambiguity where the mmcif coordinate reader and the mmcifmap
+     * structure-factor reader both register the .cif extension; in that
+     * case the JSON-order first hit wins. Get PDB uses this because it
+     * picks the reader by server type, not by extension.
+     */
+    readerName?: string;
 }
 
 function getCompatibleRendererNames(
     ctx: WorkerContext,
     args: GetCompatibleRendererNamesArgs
 ): string[] {
-    const infoJson = ctx.strMgr.getInfoJSON2();
-    const info: Array<{ name: string; fext: string; category: number }> = JSON.parse(infoJson);
+    let readerName: string;
+    if (args.readerName) {
+        readerName = args.readerName;
+    } else {
+        const infoJson = ctx.strMgr.getInfoJSON2();
+        const info: Array<{ name: string; fext: string; category: number }> = JSON.parse(infoJson);
 
-    const ext = args.filePath.split('.').pop()?.toLowerCase() ?? '';
-    const readerEntry = info.find(
-        (e) => e.category === 0 &&
-            e.fext.split(';').map((s) => s.trim().replace(/^\*\./, '').toLowerCase()).includes(ext)
-    );
-    if (!readerEntry) return [];
+        const ext = args.filePath.split('.').pop()?.toLowerCase() ?? '';
+        const readerEntry = info.find(
+            (e) => e.category === 0 &&
+                e.fext.split(';').map((s) => s.trim().replace(/^\*\./, '').toLowerCase()).includes(ext)
+        );
+        if (!readerEntry) return [];
+        readerName = readerEntry.name;
+    }
 
-    const reader = ctx.strMgr.createHandler(readerEntry.name, 0) as ObjReader;
+    const reader = ctx.strMgr.createHandler(readerName, 0) as ObjReader;
     if (!reader) return [];
     reader.setPath(args.filePath);
 

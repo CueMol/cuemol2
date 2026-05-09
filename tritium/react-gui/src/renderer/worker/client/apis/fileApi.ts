@@ -6,10 +6,12 @@ import type { FileOpenOptions } from '../../../components/fopen-opt-dlgs/types';
 const log = console;
 
 export async function getCompatibleRendererNames(
-    transport: WorkerTransport, filePath: string,
+    transport: WorkerTransport, filePath: string, readerName?: string,
 ): Promise<string[]> {
     try {
-        return await transport.invokeService('getCompatibleRendererNames', { filePath });
+        return await transport.invokeService('getCompatibleRendererNames', {
+            filePath, readerName,
+        });
     } catch (e) {
         log.warn('getCompatibleRendererNames failed:', e);
         return [];
