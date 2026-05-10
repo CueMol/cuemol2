@@ -30,10 +30,10 @@ Completion counts treat `wired` and `native` as complete. `stub` means the menu 
 | Scope | Complete | Stub / todo | Completion | Notes |
 |-------|---------:|------------:|-----------:|-------|
 | `menu.color` | 0 | 1 | 0% | Not migrated or itemized in Tritium yet |
-| `menu.cuemol2` | 19 | 36 | 35% | Main menubar structure exists; 55 item-level migration points tracked |
+| `menu.cuemol2` | 20 | 35 | 36% | Main menubar structure exists; 55 item-level migration points tracked |
 | `menu.cuemol2-macos` | 6 | 1 | 86% | OS-native items complete; Preferences is stubbed |
 | `menu.cuemol2-scripts` | 1 | 0 | 100% | Dropped intentionally because Electron module loading replaces the XUL script overlay |
-| **Total** | **26** | **38** | **41%** | 64 inventory-derived menu migration points |
+| **Total** | **27** | **37** | **42%** | 64 inventory-derived menu migration points |
 
 ## Menu Item Implementation Status
 
@@ -68,13 +68,13 @@ View menu state notes:
 | File | Open File... | `open-file` / `menu:open-file` | `CmdId.UiOpenObjDialog` | wired | Opens object-file dialog path |
 | File | Get PDB... | `get-pdb` / `menu:get-pdb` | `CmdId.UiGetPdbDialog` → `GetPdbDialog` → `streamLoadFromUrl` / `streamLoadDensityMap` / `cancelStreamLoad` services | wired | Streaming via StreamManager.supplyDataAsync (no temp file); UXP `forceCancel`-equivalent cancel path drains IOThread via waitLoadAsync (shared `streamFetchToReader` helper). Coord: RCSB CIF / RCSB PDB. Density map (2Fo-Fc / Fo-Fc) from RCSB cif.gz or EBI MTZ via `streamLoadDensityMap` with preset contour color/sigma + `obj.fitView`. Coord renderer-list lookup uses explicit readerName ('mmcif' / 'pdb') to avoid the .cif ambiguity (mmcifmap structure-factor reader vs. mmcif coord reader). PDB ID input history persisted in localStorage (`pdbIdHistory.ts`, LRU dedup, capped at 20) and surfaced via a native HTML5 `<datalist>` (Chromium-rendered type-to-filter autocomplete) on the InputGroup. |
 | File | Open Recent > Clear Menu | `clear-recent` / `menu:clear-recent` | `MENU_GENERIC` -> `console.warn` | stub | Dynamic MRU population is not implemented |
-| File | Save File As... | `save-file-as` / `menu:save-file-as` | `MENU_GENERIC` -> `console.warn` | stub | Separate from current `Save Scene` path |
+| File | Save File As... | `save-file-as` / `menu:save-file-as` | `MENU_GENERIC` -> `console.warn` | stub | Separate from current `Save Scene` path. Accelerator `Shift+CmdOrCtrl+S` reassigned to Save Scene As |
 | File | Save current view... | `save-current-view` / `menu:save-current-view` | `MENU_GENERIC` -> `console.warn` | stub | Camera/image export behavior not connected |
 | File | Close Tab | `close-tab` / `menu:close-tab` | `CmdId.TabClose` → `handleCloseTab` (async) | wired | Calls `getSceneCloseInfo` service; shows `ConfirmCloseTabDialog` (Save/Don't Save/Cancel) when scene is modified and viewCount==1, matching UXP `closeTabImpl` logic. Save button is currently disabled (scene save not yet implemented). |
 | File | Open Scene... | `open-scene` / `menu:open-scene` | `CmdId.UiOpenSceneDialog` | wired | Opens scene-file dialog path |
 | File | Reload Scene | `reload-scene` / `menu:reload-scene` | `MENU_GENERIC` -> `console.warn` | stub | Accelerator exists, behavior not connected |
-| File | Save Scene | `save-scene` / `menu:save` | `CmdId.FileSave` | wired | Current save command path |
-| File | Save Scene As... | `save-scene-as` / `menu:save-scene-as` | `MENU_GENERIC` -> `console.warn` | stub | Save-as behavior not connected |
+| File | Save Scene | `save-scene` / `menu:save` | `CmdId.FileSave` → `getSceneSaveInfo` + `saveScene` services | wired | UXP parity (`onSaveScene`/`writeSceneFile`): falls through to Save As when scene `src` is empty or `IPC.FILE_EXISTS` returns false. Otherwise `IPC.FILE_BACKUP_RENAME` (writes `<path>.bak`) then writes via `qsc_xml` writer. No option dialog on the plain Save path. |
+| File | Save Scene As... | `save-scene-as` / `menu:save-scene-as` | `CmdId.FileSaveAs` → `IPC.DIALOG_SAVE_SCENE` + `QscWriterOptionDialog` + `saveScene` service | wired | UXP parity (`onSaveSceneAs`/`qscwriter-option-dlg`): showSaveDialog (.qsc filter) → Blueprint-reframed option dialog (Embed possible / Compatibility QDF0|QDF1 / Compression / Text encoding; QDF0 forces base64=false, compress=none) → backup + write. Accelerator `CmdOrCtrl+Shift+S` (taken from stub Save File As). |
 | File | Open web page... | `open-webpage` / `menu:open-webpage` | `MENU_GENERIC` -> `console.warn` | stub | UXP web-page command not connected |
 | File | Quit/Exit | `role: quit` | Electron role | native | Non-macOS File menu item |
 | Edit | Undo | `undo` / `menu:undo` | `CmdId.Undo` | wired | Native menu has a specific push channel |

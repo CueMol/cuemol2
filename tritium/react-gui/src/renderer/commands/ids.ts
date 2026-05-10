@@ -23,6 +23,7 @@ export const CmdId = {
 
   // File operations
   FileSave:           'file.save',           // no args
+  FileSaveAs:         'file.saveAs',         // no args
 
   // Undo/redo
   Undo:               'edit.undo',           // no args

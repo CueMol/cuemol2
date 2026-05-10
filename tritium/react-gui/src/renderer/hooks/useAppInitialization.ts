@@ -1,52 +1,48 @@
 /**
  * @file hooks/useAppInitialization.ts
- * @description Creates the initial scene and view once CueMol is ready, and
- * registers them as the first molview tab. Guarded against React 18 StrictMode
- * double-invocation via a module-level ref.
+ * @description Creates the initial scene and view once CueMol is ready, by
+ * delegating to `useNewSceneAction` (the same code path used by File > New
+ * Tab). UXP routes both app launch and File > New Tab through a single
+ * `Qm2Main.onNewScene(scname)` entry; this hook mirrors that by calling the
+ * shared action with `name` omitted (so it picks up the default name from
+ * the worker, e.g. "Untitled 1").
  *
- * Extracted verbatim from App.tsx (pre-E) so that the side effect of "first
- * scene appears on launch" is preserved through E's structural refactor.
+ * `bindView: false` is required because the initial view is attached to the
+ * canvas by `MolViewPane.bindCanvas` after this effect runs. Calling
+ * `addView` before `bindCanvas` would throw in `gfx_manager`.
+ *
+ * Guarded against React 18 StrictMode double-invocation via a module-level
+ * ref.
  */
 
 import { useEffect, useRef } from 'react';
-import type { SceneManager } from '@cuemol/core/src/wrappers/SceneManager';
-import type { AsyncCueMol } from '../worker/client/AsyncCueMol';
+import type { NewSceneAction } from './useNewSceneAction';
 
 interface UseAppInitializationOptions {
-  cm: AsyncCueMol | null;
   cueMolReady: boolean;
-  addMolTab: (title: string, viewId: number, sceneId: number) => void;
-  addMolViewTab: (title: string, viewId: number) => void;
+  newScene: NewSceneAction;
 }
 
 export function useAppInitialization({
-  cm,
   cueMolReady,
-  addMolTab,
-  addMolViewTab,
+  newScene,
 }: UseAppInitializationOptions): void {
   const initialSceneCreatedRef = useRef(false);
 
   useEffect(() => {
-    if (!cueMolReady || !cm) return;
+    if (!cueMolReady) return;
     if (initialSceneCreatedRef.current) return;
     initialSceneCreatedRef.current = true;
 
     let cancelled = false;
     (async () => {
-      const sceMgr = (await cm.getService('SceneManager')) as SceneManager;
-      if (!sceMgr || cancelled) return;
-      const scene = await sceMgr.createScene();
-      const scene_uid = await scene.getUID();
-      const view = await scene.createView();
-      const view_uid = await view.getUID();
+      const result = await newScene({ bindView: false });
       if (cancelled) return;
-      const title = `Scene ${scene_uid}`;
-      // Register in MolTabState first so MolViewPane can read getActiveViewID()
-      addMolTab(title, view_uid, scene_uid);
-      // Open the outer tab (causes ContentPane to mount MolViewPane)
-      addMolViewTab(title, view_uid);
+      if (!result) {
+        // Allow retry on next ready/newScene change in case of failure.
+        initialSceneCreatedRef.current = false;
+      }
     })();
     return () => { cancelled = true; };
-  }, [cueMolReady, cm, addMolTab, addMolViewTab]);
+  }, [cueMolReady, newScene]);
 }

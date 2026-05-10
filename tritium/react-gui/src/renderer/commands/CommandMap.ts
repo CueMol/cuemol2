@@ -30,6 +30,7 @@ export interface CommandMap {
 
   // File
   [CmdId.FileSave]:            { args: void;            result: void }
+  [CmdId.FileSaveAs]:          { args: void;            result: void }
 
   // Edit
   [CmdId.Undo]:                { args: void;            result: void }

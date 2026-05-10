@@ -89,6 +89,50 @@ export async function handleOpenFile(mainWindow: BrowserWindow, options: FileDia
 }
 
 // ─────────────────────────────────────────────
+// Scene save helpers
+// ─────────────────────────────────────────────
+
+async function handleSaveSceneDialog(
+  mainWindow: BrowserWindow,
+  defaultName: string,
+): Promise<{ canceled: boolean; filePath: string }> {
+  const result = await dialog.showSaveDialog(mainWindow, {
+    title: 'Save Scene As',
+    defaultPath: defaultName,
+    filters: [
+      { name: 'CueMol Scene', extensions: ['qsc'] },
+      { name: 'All Files', extensions: ['*'] },
+    ],
+  })
+  return {
+    canceled: result.canceled,
+    filePath: result.filePath ?? '',
+  }
+}
+
+function handleFileExists(target: string): { exists: boolean } {
+  try {
+    return { exists: fs.existsSync(target) }
+  } catch {
+    return { exists: false }
+  }
+}
+
+function handleBackupRename(target: string): { ok: boolean; backed: boolean; error?: string } {
+  try {
+    if (!fs.existsSync(target)) return { ok: true, backed: false }
+    const backup = `${target}.bak`
+    if (fs.existsSync(backup)) {
+      try { fs.unlinkSync(backup) } catch { /* ignore */ }
+    }
+    fs.renameSync(target, backup)
+    return { ok: true, backed: true }
+  } catch (e) {
+    return { ok: false, backed: false, error: (e as Error).message }
+  }
+}
+
+// ─────────────────────────────────────────────
 // Handler registration
 // ─────────────────────────────────────────────
 
@@ -115,6 +159,14 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   handleInvoke(IPC.DIALOG_OPEN, async (_event, options) => {
     await handleOpenFile(mainWindow, options)
   })
+
+  handleInvoke(IPC.DIALOG_SAVE_SCENE, async (_event, payload) =>
+    handleSaveSceneDialog(mainWindow, payload.defaultName),
+  )
+
+  handleInvoke(IPC.FILE_EXISTS, (_event, payload) => handleFileExists(payload.path))
+
+  handleInvoke(IPC.FILE_BACKUP_RENAME, (_event, payload) => handleBackupRename(payload.path))
 
   handleInvoke(IPC.LAYOUT_LOAD, async () => loadLayout() ?? null)
 

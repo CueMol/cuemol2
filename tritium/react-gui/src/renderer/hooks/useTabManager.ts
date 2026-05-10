@@ -123,10 +123,6 @@ export function useTabManager(opts?: {
     setActiveTab(newTab.id);
   }, []);
 
-  const handleSave = useCallback(() => {
-    // TODO: dispatch save via IPC
-  }, []);
-
   return {
     tabs,
     activeTab,
@@ -135,6 +131,5 @@ export function useTabManager(opts?: {
     addMolViewTab,
     handleCloseTab,
     handleReorderTabs,
-    handleSave,
   } as const;
 }

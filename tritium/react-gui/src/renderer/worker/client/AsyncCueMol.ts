@@ -131,8 +131,8 @@ export class AsyncCueMol {
         return fileApi.getCompatibleRendererNames(this._transport, filePath, readerName);
     }
     getOpenFilters(catId: number): Promise<ElectronFileFilter[]> { return fileApi.getOpenFilters(this._transport, catId); }
-    createNewSceneAndView(dpr: number, name?: string): Promise<{ scene_uid: number; view_uid: number } | null> {
-        return fileApi.createNewSceneAndView(this._transport, dpr, name);
+    createNewSceneAndView(dpr: number, name?: string, bindView?: boolean): Promise<{ scene_uid: number; view_uid: number; scene_name: string; view_name: string } | null> {
+        return fileApi.createNewSceneAndView(this._transport, dpr, name, bindView);
     }
     loadScene(filePath: string, scene_id: number): Promise<boolean> { return fileApi.loadScene(this._transport, filePath, scene_id); }
     loadObject(filePath: string, scene_id: number, options: FileOpenOptions): Promise<boolean> {

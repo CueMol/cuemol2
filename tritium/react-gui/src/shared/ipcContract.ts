@@ -27,6 +27,11 @@ import type {
 export interface InvokeChannels {
   [IPC.APP_PATH]:          { req: void;                  res: AppPathInfo }
   [IPC.DIALOG_OPEN]:       { req: FileDialogOptions;     res: void }
+  [IPC.DIALOG_SAVE_SCENE]: { req: { defaultName: string };
+                             res: { canceled: boolean; filePath: string } }
+  [IPC.FILE_EXISTS]:       { req: { path: string };      res: { exists: boolean } }
+  [IPC.FILE_BACKUP_RENAME]:{ req: { path: string };
+                             res: { ok: boolean; backed: boolean; error?: string } }
   [IPC.LAYOUT_LOAD]:       { req: void;                  res: LayoutState | null }
   [IPC.LAYOUT_SAVE]:       { req: LayoutState;           res: void }
   [IPC.UI_LOAD]:           { req: void;                  res: UiState }
@@ -43,6 +48,7 @@ export interface PushChannels {
   [IPC.MENU_NEW_TAB]:      void
   [IPC.MENU_CLOSE_TAB]:    void
   [IPC.MENU_SAVE]:         void
+  [IPC.MENU_SAVE_SCENE_AS]: void
   [IPC.MENU_NEW_SCENE]:    void
   [IPC.MENU_OPEN_FILE]:    void
   [IPC.MENU_OPEN_SCENE]:   void

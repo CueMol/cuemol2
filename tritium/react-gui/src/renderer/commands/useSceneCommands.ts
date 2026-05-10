@@ -17,21 +17,20 @@ import { useShowGetPdbDialog } from '../components/dialogs/GetPdbDialogProvider'
 import type { CoordServerType, MapServerType } from '../components/dialogs/GetPdbDialog'
 import { useStreamProgressDialog, type StreamProgressApi } from '../components/dialogs/StreamProgressDialogProvider'
 import { pushHistory as pushPdbIdHistory } from '../components/dialogs/pdbIdHistory'
+import type { NewSceneAction } from '../hooks/useNewSceneAction'
 
 interface UseSceneCommandsOptions {
     cm: AsyncCueMol | null
-    addMolTab: (title: string, viewId: number, sceneId: number) => void
-    addMolViewTab: (title: string, viewId: number) => void
     getActiveSceneInfo: () => { scene_uid: number; view_id: number } | null | undefined
     onBgColorChanged?: (bgColor: SceneBgColor) => void
+    newScene: NewSceneAction
 }
 
 export function useSceneCommands({
     cm,
-    addMolTab,
-    addMolViewTab,
     getActiveSceneInfo,
     onBgColorChanged,
+    newScene,
 }: UseSceneCommandsOptions): void {
 
     const showFileOpenOptionDialog = useShowFileOpenOptionDialog()
@@ -40,17 +39,13 @@ export function useSceneCommands({
 
     const openNewScene = useCallback(async (filePath?: string): Promise<void> => {
         if (!cm) return
-        const dpr = window.devicePixelRatio || 1
-        const ids = await cm.createNewSceneAndView(dpr)
-        if (!ids) return
-        const { scene_uid, view_uid } = ids
-        const title = `Scene ${scene_uid}`
-        addMolTab(title, view_uid, scene_uid)
-        addMolViewTab(title, view_uid)
+        // Same path as app launch and File > New Tab (UXP onNewScene).
+        const created = await newScene()
+        if (!created) return
         if (filePath) {
-            await cm.loadScene(filePath, scene_uid)
+            await cm.loadScene(filePath, created.scene_uid)
         }
-    }, [cm, addMolTab, addMolViewTab])
+    }, [cm, newScene])
 
     useRegisterCommand(CmdId.SceneNew, () => openNewScene())
 
