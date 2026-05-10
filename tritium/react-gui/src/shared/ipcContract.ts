@@ -37,6 +37,7 @@ export interface InvokeChannels {
   [IPC.UI_LOAD]:           { req: void;                  res: UiState }
   [IPC.UI_SAVE]:           { req: Partial<UiState>;      res: void }
   [IPC.MENU_UPDATE_STATE]: { req: MenuState;             res: void }
+  [IPC.MENU_SET_MODAL_BLOCKED]: { req: boolean;          res: void }
   [IPC.MENU_INVOKE_ROLE]:  { req: string;                res: void }
   [IPC.APP_QUIT_PROCEED]:  { req: void;                  res: void }
   [IPC.NAVI_CTX_SHOW]:     { req: NaviCtxMenuPayload;    res: NaviCtxAction | null }

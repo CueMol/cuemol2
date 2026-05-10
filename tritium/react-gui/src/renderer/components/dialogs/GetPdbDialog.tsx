@@ -98,7 +98,8 @@ export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX
             title="Get PDB"
             style={{ width: 380 }}
             portalClassName={isDark ? 'bp5-dark' : ''}
-            canOutsideClickClose
+            canOutsideClickClose={false}
+            isCloseButtonShown={false}
         >
             <DialogBody>
                 <FormGroup label="PDB Accession Code:" labelFor="get-pdb-id">

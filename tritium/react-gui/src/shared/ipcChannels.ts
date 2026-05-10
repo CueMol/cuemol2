@@ -17,6 +17,7 @@ export const IPC = {
   UI_LOAD:        'ui:load',
   UI_SAVE:        'ui:save',
   MENU_UPDATE_STATE: 'menu:update-state',
+  MENU_SET_MODAL_BLOCKED: 'menu:set-modal-blocked',
 
   // push channels (main → renderer, no reply)
   OBJ_FILE_OPENED:   'file:obj-opened',

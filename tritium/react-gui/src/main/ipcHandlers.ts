@@ -19,7 +19,7 @@ import type {
 import type { FileDialogOptions } from '../shared/ipcTypes'
 import { loadLayout, saveLayout, loadUi, saveUi } from './stateStore'
 import { showNaviContextMenu } from './naviContextMenu'
-import { updateMenuState } from './menu'
+import { setMenuBlocked, updateMenuState, withMenuBlocked } from './menu'
 import { setQuitConfirmed } from './quitState'
 
 // ─────────────────────────────────────────────
@@ -62,11 +62,13 @@ function getUserStylePath(): string {
 
 export async function handleOpenFile(mainWindow: BrowserWindow, options: FileDialogOptions): Promise<void> {
   const title = options.dialogType === 'open-scene' ? 'Open Scene' : 'Open File'
-  const result = await dialog.showOpenDialog(mainWindow, {
-    title,
-    filters: options.filters,
-    properties: ['openFile'],
-  })
+  const result = await withMenuBlocked('native', () =>
+    dialog.showOpenDialog(mainWindow, {
+      title,
+      filters: options.filters,
+      properties: ['openFile'],
+    }),
+  )
 
   if (!result.canceled && result.filePaths.length > 0) {
     for (const filePath of result.filePaths) {
@@ -97,14 +99,16 @@ async function handleSaveSceneDialog(
   mainWindow: BrowserWindow,
   defaultName: string,
 ): Promise<{ canceled: boolean; filePath: string }> {
-  const result = await dialog.showSaveDialog(mainWindow, {
-    title: 'Save Scene As',
-    defaultPath: defaultName,
-    filters: [
-      { name: 'CueMol Scene', extensions: ['qsc'] },
-      { name: 'All Files', extensions: ['*'] },
-    ],
-  })
+  const result = await withMenuBlocked('native', () =>
+    dialog.showSaveDialog(mainWindow, {
+      title: 'Save Scene As',
+      defaultPath: defaultName,
+      filters: [
+        { name: 'CueMol Scene', extensions: ['qsc'] },
+        { name: 'All Files', extensions: ['*'] },
+      ],
+    }),
+  )
   return {
     canceled: result.canceled,
     filePath: result.filePath ?? '',
@@ -178,6 +182,9 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   handleInvoke(IPC.UI_LOAD, () => loadUi())
   handleInvoke(IPC.UI_SAVE, (_e, state) => saveUi(state))
   handleInvoke(IPC.MENU_UPDATE_STATE, (_e, state) => updateMenuState(state))
+  handleInvoke(IPC.MENU_SET_MODAL_BLOCKED, (_e, blocked) =>
+    setMenuBlocked('blueprint', blocked),
+  )
 
   handleInvoke(IPC.NAVI_CTX_SHOW, (_event, payload) =>
     showNaviContextMenu(mainWindow, payload),

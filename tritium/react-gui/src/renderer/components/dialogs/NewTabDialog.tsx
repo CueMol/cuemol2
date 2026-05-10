@@ -75,7 +75,8 @@ export function NewTabDialog({
             title="New Tab/Window"
             style={{ width: 360, paddingBottom: 0 }}
             portalClassName={isDark ? 'bp5-dark' : ''}
-            canOutsideClickClose
+            canOutsideClickClose={false}
+            isCloseButtonShown={false}
         >
             <DialogBody>
                 <p style={{ marginBottom: 10, marginTop: 0 }}>Create new tab for:</p>

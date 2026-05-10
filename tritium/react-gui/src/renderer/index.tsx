@@ -13,6 +13,7 @@ import { CueMolProvider } from './hooks/useCueMol'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { CommandProvider } from './commands/CommandRegistry'
 import { DialogProvider } from './contexts/DialogContext'
+import { ModalOpenCounterProvider } from './contexts/ModalOpenCounterContext'
 
 const container = document.getElementById('root') as HTMLElement
 createRoot(container).render(
@@ -20,9 +21,11 @@ createRoot(container).render(
     <MolTabProvider>
       <ThemeProvider>
         <CommandProvider>
-          <DialogProvider>
-            <App />
-          </DialogProvider>
+          <ModalOpenCounterProvider>
+            <DialogProvider>
+              <App />
+            </DialogProvider>
+          </ModalOpenCounterProvider>
         </CommandProvider>
       </ThemeProvider>
     </MolTabProvider>

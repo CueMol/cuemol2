@@ -36,6 +36,7 @@ export function ConfirmCloseTabDialog({ visible, sceneName, saveDisabled, onResu
       style={{ width: 400, paddingBottom: 0 }}
       portalClassName={isDark ? 'bp5-dark' : ''}
       canOutsideClickClose={false}
+      isCloseButtonShown={false}
     >
       <DialogBody>
         <p style={{ margin: 0 }}>

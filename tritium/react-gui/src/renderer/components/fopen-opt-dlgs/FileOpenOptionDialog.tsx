@@ -114,6 +114,7 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
       className="fod-dialog"
       portalClassName={theme === 'dark' ? 'bp5-dark' : ''}
       canOutsideClickClose={false}
+      isCloseButtonShown={false}
     >
       <DialogBody className="fod-body">
         {/* File info row */}

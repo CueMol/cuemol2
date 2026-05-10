@@ -4,27 +4,39 @@
   font-size: var(--fs-xl);
 }
 
-/* Header — Blueprint default min-height is 40px; close button default is 30px.
-   Both must be overridden to actually compress the header row. */
-.bp5-dialog-header {
+/* Header — render the title as an inline heading flush with the body, not
+   as a window-style title bar. The dialog is not draggable and exposes no
+   close (X) button (isCloseButtonShown={false} on every dialog), so the
+   header only carries the title text.
+   Selector specificity matches Blueprint's `.bp5-dark .bp5-dialog-header`
+   (0,2,0); a bare `.bp5-dialog-header` rule loses to the dark-mode override
+   and leaves the bar visible. */
+.bp5-dialog .bp5-dialog-header,
+.bp5-dialog.bp5-dark .bp5-dialog-header,
+.bp5-dark .bp5-dialog-header {
   min-height: 0;
-  padding: 4px 8px 4px 14px;
+  padding: 12px 16px 0 16px;
+  cursor: default;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
 }
 
+/* H4 heading inside the header. The bottom margin owns the gap between the
+   title and the body content; relying on body padding-top breaks dialogs
+   that override it inline (e.g. AboutDialog has DialogBody style={padding:0}
+   for its full-bleed image). Top margin stays 0 — the parent header padding
+   handles spacing above the title. */
 .bp5-dialog-header .bp5-heading {
   font-size: var(--fs-2xl);
   font-weight: var(--fw-semibold);
+  margin: 0 0 12px 0;
+  line-height: 1.2;
 }
 
-.bp5-dialog-header .bp5-button {
-  min-height: 24px;
-  min-width: 24px;
-  padding: 0;
-}
-
-/* Body */
+/* Body — no top padding; the heading's margin-bottom provides the gap. */
 .bp5-dialog-body {
-  padding: 12px 16px;
+  padding: 0 16px 12px 16px;
   font-size: var(--fs-xl);
   line-height: var(--lh-normal);
 }

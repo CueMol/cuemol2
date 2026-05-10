@@ -78,7 +78,8 @@ export function QscWriterOptionDialog({ visible, onConfirm, onCancel }: Props): 
             title="Scene options"
             style={{ width: 360 }}
             portalClassName={isDark ? 'bp5-dark' : ''}
-            canOutsideClickClose
+            canOutsideClickClose={false}
+            isCloseButtonShown={false}
         >
             <DialogBody>
                 <Switch
