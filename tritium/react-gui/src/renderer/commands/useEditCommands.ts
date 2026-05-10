@@ -71,29 +71,27 @@ export function useEditCommands({
     }, [cm, getActiveSceneInfo, showQscWriterOptionDialog, runWrite])
 
     useRegisterCommand(CmdId.FileSave, async () => {
-        if (!cm) return
+        if (!cm) return false
         const info = getActiveSceneInfo()
-        if (!info) return
+        if (!info) return false
         const sceneInfo = await cm.invokeService('getSceneSaveInfo', { sceneId: info.scene_uid })
         const src = sceneInfo?.src ?? ''
         if (!src) {
-            await runSaveAs()
-            return
+            return runSaveAs()
         }
         const fileExists = await window.electronAPI.invoke(IPC.FILE_EXISTS, { path: src })
         if (!fileExists.exists) {
             // UXP parity: util.isFile defence — fall through to Save As if
             // the previously associated file has disappeared.
-            await runSaveAs()
-            return
+            return runSaveAs()
         }
         // UXP `onSaveScene` writes with the writer's current default opts —
         // no option dialog on the plain Save path.
-        await runWrite(src, undefined)
+        return runWrite(src, undefined)
     })
 
     useRegisterCommand(CmdId.FileSaveAs, async () => {
-        await runSaveAs()
+        return runSaveAs()
     })
 
     useRegisterCommand(CmdId.Undo, async () => {

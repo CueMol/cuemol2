@@ -24,7 +24,7 @@ interface UseCommandRegistrationsOptions {
   addMolTab: (title: string, viewId: number, sceneId: number) => void;
   addMolViewTab: (title: string, viewId: number) => void;
   getActiveSceneInfo: () => { scene_uid: number; view_id: number } | null | undefined;
-  handleCloseTab: (id: string) => void | Promise<void>;
+  handleCloseTab: (id: string) => Promise<boolean>;
   activeTab: string | null;
   activeMolViewId: number | undefined;
   onProjectionChanged: (perspective: boolean) => void;

@@ -20,6 +20,7 @@ import type { FileDialogOptions } from '../shared/ipcTypes'
 import { loadLayout, saveLayout, loadUi, saveUi } from './stateStore'
 import { showNaviContextMenu } from './naviContextMenu'
 import { updateMenuState } from './menu'
+import { setQuitConfirmed } from './quitState'
 
 // ─────────────────────────────────────────────
 // Typed handle wrapper
@@ -181,6 +182,11 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   handleInvoke(IPC.NAVI_CTX_SHOW, (_event, payload) =>
     showNaviContextMenu(mainWindow, payload),
   )
+
+  handleInvoke(IPC.APP_QUIT_PROCEED, () => {
+    setQuitConfirmed(true)
+    app.quit()
+  })
 
   handleInvoke(IPC.MENU_INVOKE_ROLE, (_event, role) => {
     const wc = mainWindow.webContents

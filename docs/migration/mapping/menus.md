@@ -62,7 +62,7 @@ View menu state notes:
 | macOS App | Hide CueMol | `role: hide` | Electron role | native | OS-level item |
 | macOS App | Hide Others | `role: hideOthers` | Electron role | native | OS-level item |
 | macOS App | Show All | `role: unhide` | Electron role | native | OS-level item |
-| macOS App | Quit CueMol | `role: quit` | Electron role | native | OS-level item |
+| macOS App | Quit CueMol | `role: quit` | Electron role + `before-quit` → `IPC.APP_QUIT_REQUEST` → `useQuitHandler` walks all tabs through `handleCloseTab` → `IPC.APP_QUIT_PROCEED` | wired | UXP parity (`Qm2Main.onCloseEvent`/`closeTabImpl`): every tab is closed in id order with the per-tab modified-scene confirm dialog; cancel on any tab aborts the quit. macOS native menu item still uses `role: quit`; the `before-quit` event drives the chain. |
 | File | New Window | `new-window` / `menu:new-window` | `MENU_GENERIC` -> `console.warn` | stub | Entry exists in native menu and React `MenuBar` |
 | File | New Tab | `new-tab` / `menu:new-tab` | `CmdId.TabNew` → `useNewTabCommand` → `NewTabDialog` | done | UXP parity dialog (New Scene / New View + inherit camera). New Scene path: `createNewSceneAndView` service. New View path: `createViewInScene` service (adds view to existing scene; camera inherit via `saveViewToCam/__current/loadViewFromCam`); both paths manually verified. Canvas lifecycle: OffscreenCanvas bound once via `bindCanvas`; subsequent views use `addView()`. TODO: `MolTabEntry.bound` (useMolTab.tsx) is defined but never read — dead code or future reserved; clarify intent. |
 | File | Open File... | `open-file` / `menu:open-file` | `CmdId.UiOpenObjDialog` | wired | Opens object-file dialog path |
@@ -70,13 +70,13 @@ View menu state notes:
 | File | Open Recent > Clear Menu | `clear-recent` / `menu:clear-recent` | `MENU_GENERIC` -> `console.warn` | stub | Dynamic MRU population is not implemented |
 | File | Save File As... | `save-file-as` / `menu:save-file-as` | `MENU_GENERIC` -> `console.warn` | stub | Separate from current `Save Scene` path. Accelerator `Shift+CmdOrCtrl+S` reassigned to Save Scene As |
 | File | Save current view... | `save-current-view` / `menu:save-current-view` | `MENU_GENERIC` -> `console.warn` | stub | Camera/image export behavior not connected |
-| File | Close Tab | `close-tab` / `menu:close-tab` | `CmdId.TabClose` → `handleCloseTab` (async) | wired | Calls `getSceneCloseInfo` service; shows `ConfirmCloseTabDialog` (Save/Don't Save/Cancel) when scene is modified and viewCount==1, matching UXP `closeTabImpl` logic. Save button is currently disabled (scene save not yet implemented). |
+| File | Close Tab | `close-tab` / `menu:close-tab` | `CmdId.TabClose` → `handleCloseTab` (async) | wired | Calls `getSceneCloseInfo` service; shows `ConfirmCloseTabDialog` (Save/Don't Save/Cancel) when scene is modified and viewCount==1, matching UXP `closeTabImpl` logic. Save button is wired to `CmdId.FileSave` (saves the scene; close aborts if the user cancels the save dialog). |
 | File | Open Scene... | `open-scene` / `menu:open-scene` | `CmdId.UiOpenSceneDialog` | wired | Opens scene-file dialog path |
 | File | Reload Scene | `reload-scene` / `menu:reload-scene` | `MENU_GENERIC` -> `console.warn` | stub | Accelerator exists, behavior not connected |
 | File | Save Scene | `save-scene` / `menu:save` | `CmdId.FileSave` → `getSceneSaveInfo` + `saveScene` services | wired | UXP parity (`onSaveScene`/`writeSceneFile`): falls through to Save As when scene `src` is empty or `IPC.FILE_EXISTS` returns false. Otherwise `IPC.FILE_BACKUP_RENAME` (writes `<path>.bak`) then writes via `qsc_xml` writer. No option dialog on the plain Save path. |
 | File | Save Scene As... | `save-scene-as` / `menu:save-scene-as` | `CmdId.FileSaveAs` → `IPC.DIALOG_SAVE_SCENE` + `QscWriterOptionDialog` + `saveScene` service | wired | UXP parity (`onSaveSceneAs`/`qscwriter-option-dlg`): showSaveDialog (.qsc filter) → Blueprint-reframed option dialog (Embed possible / Compatibility QDF0|QDF1 / Compression / Text encoding; QDF0 forces base64=false, compress=none) → backup + write. Accelerator `CmdOrCtrl+Shift+S` (taken from stub Save File As). |
 | File | Open web page... | — | — | dropped | UXP entry removed from both `cuemol2-menus.xul` and `menuTemplate.ts`; not migrated |
-| File | Quit/Exit | `role: quit` | Electron role | native | Non-macOS File menu item |
+| File | Quit/Exit | `role: quit` | Electron role + `before-quit` quit chain (see macOS App > Quit CueMol) | wired | Non-macOS File menu item — same `before-quit` → `IPC.APP_QUIT_REQUEST` chain runs the per-tab modified-scene confirm walk. |
 | Edit | Undo | `undo` / `menu:undo` | `CmdId.Undo` | wired | Native menu has a specific push channel |
 | Edit | Redo | `redo` / `menu:redo` | `CmdId.Redo` | wired | Uses macOS accelerator override |
 | Edit | Clear undo data | `clear-undo` / `menu:clear-undo` | `MENU_GENERIC` -> `console.warn` | stub | Command not connected |

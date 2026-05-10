@@ -60,11 +60,11 @@ export function useTabManager(opts?: {
   // ── Close / Reorder ──────────────────────────────────────
 
   const handleCloseTab = useCallback(
-    async (id: string) => {
+    async (id: string): Promise<boolean> => {
       const closing = tabsRef.current.find((t) => t.id === id);
       if (closing?.type === "molview" && closing.viewId !== undefined && opts?.confirmCloseTab) {
         const proceed = await opts.confirmCloseTab(closing.viewId);
-        if (!proceed) return;
+        if (!proceed) return false;
       }
 
       setTabs((prev) => {
@@ -81,6 +81,7 @@ export function useTabManager(opts?: {
         });
         return next;
       });
+      return true;
     },
     [opts],
   );
@@ -125,6 +126,7 @@ export function useTabManager(opts?: {
 
   return {
     tabs,
+    tabsRef,
     activeTab,
     setActiveTab,
     openSettingsTab,

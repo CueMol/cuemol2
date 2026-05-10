@@ -29,8 +29,8 @@ export interface CommandMap {
   [CmdId.TabClose]:            { args: string;          result: void }
 
   // File
-  [CmdId.FileSave]:            { args: void;            result: void }
-  [CmdId.FileSaveAs]:          { args: void;            result: void }
+  [CmdId.FileSave]:            { args: void;            result: boolean }
+  [CmdId.FileSaveAs]:          { args: void;            result: boolean }
 
   // Edit
   [CmdId.Undo]:                { args: void;            result: void }
