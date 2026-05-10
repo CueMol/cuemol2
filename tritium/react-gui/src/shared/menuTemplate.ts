@@ -85,8 +85,6 @@ export const APP_MENU: AppMenuGroup[] = [
       { id: 'save-scene',  label: 'Save Scene',        accelerator: 'CmdOrCtrl+S',       ipcChannel: IPC.MENU_SAVE },
       { id: 'save-scene-as', label: 'Save Scene As...', accelerator: 'CmdOrCtrl+Shift+S', ipcChannel: IPC.MENU_SAVE_SCENE_AS },
       { type: 'separator' },
-      { id: 'open-webpage', label: 'Open web page...', ipcChannel: 'menu:open-webpage' },
-      { type: 'separator' },
       { role: 'quit', othersOnly: true },
     ],
   },

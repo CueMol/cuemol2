@@ -30,10 +30,10 @@ Completion counts treat `wired` and `native` as complete. `stub` means the menu 
 | Scope | Complete | Stub / todo | Completion | Notes |
 |-------|---------:|------------:|-----------:|-------|
 | `menu.color` | 0 | 1 | 0% | Not migrated or itemized in Tritium yet |
-| `menu.cuemol2` | 20 | 35 | 36% | Main menubar structure exists; 55 item-level migration points tracked |
+| `menu.cuemol2` | 21 | 34 | 38% | Main menubar structure exists; 55 item-level migration points tracked (1 dropped counted as complete) |
 | `menu.cuemol2-macos` | 6 | 1 | 86% | OS-native items complete; Preferences is stubbed |
 | `menu.cuemol2-scripts` | 1 | 0 | 100% | Dropped intentionally because Electron module loading replaces the XUL script overlay |
-| **Total** | **27** | **37** | **42%** | 64 inventory-derived menu migration points |
+| **Total** | **28** | **36** | **44%** | 64 inventory-derived menu migration points |
 
 ## Menu Item Implementation Status
 
@@ -75,7 +75,7 @@ View menu state notes:
 | File | Reload Scene | `reload-scene` / `menu:reload-scene` | `MENU_GENERIC` -> `console.warn` | stub | Accelerator exists, behavior not connected |
 | File | Save Scene | `save-scene` / `menu:save` | `CmdId.FileSave` → `getSceneSaveInfo` + `saveScene` services | wired | UXP parity (`onSaveScene`/`writeSceneFile`): falls through to Save As when scene `src` is empty or `IPC.FILE_EXISTS` returns false. Otherwise `IPC.FILE_BACKUP_RENAME` (writes `<path>.bak`) then writes via `qsc_xml` writer. No option dialog on the plain Save path. |
 | File | Save Scene As... | `save-scene-as` / `menu:save-scene-as` | `CmdId.FileSaveAs` → `IPC.DIALOG_SAVE_SCENE` + `QscWriterOptionDialog` + `saveScene` service | wired | UXP parity (`onSaveSceneAs`/`qscwriter-option-dlg`): showSaveDialog (.qsc filter) → Blueprint-reframed option dialog (Embed possible / Compatibility QDF0|QDF1 / Compression / Text encoding; QDF0 forces base64=false, compress=none) → backup + write. Accelerator `CmdOrCtrl+Shift+S` (taken from stub Save File As). |
-| File | Open web page... | `open-webpage` / `menu:open-webpage` | `MENU_GENERIC` -> `console.warn` | stub | UXP web-page command not connected |
+| File | Open web page... | — | — | dropped | UXP entry removed from both `cuemol2-menus.xul` and `menuTemplate.ts`; not migrated |
 | File | Quit/Exit | `role: quit` | Electron role | native | Non-macOS File menu item |
 | Edit | Undo | `undo` / `menu:undo` | `CmdId.Undo` | wired | Native menu has a specific push channel |
 | Edit | Redo | `redo` / `menu:redo` | `CmdId.Redo` | wired | Uses macOS accelerator override |
