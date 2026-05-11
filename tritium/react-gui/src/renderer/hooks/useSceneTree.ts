@@ -21,6 +21,7 @@ import type {
     SceneNodeType,
     SceneTreeNode,
 } from '../worker/shared/sceneTreeTypes'
+import type { NodeInfoEntry } from '../worker/server/services/sceneOps.service'
 import {
     SEM_SCENE,
     SEM_OBJECT,
@@ -36,11 +37,26 @@ interface UseSceneTreeOptions {
     sceneId: number | undefined
 }
 
+export interface NodeInfo {
+    title: string
+    entries: NodeInfoEntry[]
+}
+
 interface UseSceneTreeResult {
     tree: SceneTreeNode | null
     selectedId: string
+    /** Returns the resolved node for the current selection, if any. */
+    selectedNode: SceneTreeNode | null
+    /** Whether the current selection supports toolbar focus / delete / property. */
+    selectedHasOps: { focus: boolean; delete: boolean; property: boolean }
     setSelectedId: (id: string) => void
     toggleVisibility: (id: string) => void
+    /** Focus a node (typically the selection) in the given view. */
+    focusNode: (viewId: number, id: string) => Promise<boolean>
+    /** Delete a node (typically the selection). */
+    deleteNode: (id: string) => Promise<boolean>
+    /** Fetch property info for the property dialog. */
+    fetchNodeInfo: (id: string) => Promise<NodeInfo | null>
     refetch: () => void
     resolveNodeName: (id: string) => string
 }
@@ -178,12 +194,111 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         [tree],
     )
 
+    const focusNode = useCallback(
+        async (viewId: number, id: string): Promise<boolean> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return false
+            const numId = Number(id)
+            if (!Number.isFinite(numId)) return false
+            const node = findNode(tree, numId)
+            if (!node) return false
+            const res = await cm.invokeService('focusOnNode', {
+                sceneId: sid,
+                viewId,
+                nodeId: numId,
+                nodeType: node.type as SceneNodeType,
+            })
+            return res?.ok === true
+        },
+        [cm, tree],
+    )
+
+    const deleteNode = useCallback(
+        async (id: string): Promise<boolean> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return false
+            const numId = Number(id)
+            if (!Number.isFinite(numId)) return false
+            const node = findNode(tree, numId)
+            if (!node) return false
+            const childIds =
+                node.type === 'rendGroup'
+                    ? node.children.map((c) => c.id).filter((n) => n >= 0)
+                    : undefined
+            const res = await cm.invokeService('deleteNode', {
+                sceneId: sid,
+                nodeId: numId,
+                nodeType: node.type as SceneNodeType,
+                childIds,
+            })
+            // Event subscription handles refetch on success.
+            return res?.ok === true
+        },
+        [cm, tree],
+    )
+
+    const fetchNodeInfo = useCallback(
+        async (id: string): Promise<NodeInfo | null> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return null
+            const numId = Number(id)
+            if (!Number.isFinite(numId)) return null
+            const node = findNode(tree, numId)
+            if (!node) return null
+            const res = await cm.invokeService('getNodeInfo', {
+                sceneId: sid,
+                nodeId: numId,
+                nodeType: node.type as SceneNodeType,
+            })
+            if (!res?.ok) return null
+            return {
+                title: res.displayName || node.name || 'Properties',
+                entries: res.entries,
+            }
+        },
+        [cm, tree],
+    )
+
+    const selectedNode = selectedId
+        ? findNode(tree, Number(selectedId))
+        : null
+
+    const selectedHasOps = computeOps(selectedNode)
+
     return {
         tree,
         selectedId,
+        selectedNode,
+        selectedHasOps,
         setSelectedId,
         toggleVisibility,
+        focusNode,
+        deleteNode,
+        fetchNodeInfo,
         refetch,
         resolveNodeName,
+    }
+}
+
+/**
+ * Decide which toolbar actions are valid for a given selected node.
+ * Mirrors UXP `onTreeSelChanged` enablement rules: focus and delete are
+ * valid for object / renderer / rendGroup; property is valid for everything
+ * except the synthesised cameraRoot / styleRoot containers.
+ */
+function computeOps(
+    node: SceneTreeNode | null,
+): { focus: boolean; delete: boolean; property: boolean } {
+    if (!node) return { focus: false, delete: false, property: false }
+    const mutable =
+        node.type === 'object' ||
+        node.type === 'renderer' ||
+        node.type === 'rendGroup'
+    const propertyTarget =
+        node.type !== 'cameraRoot' && node.type !== 'styleRoot'
+    return {
+        focus: mutable,
+        delete: mutable,
+        property: propertyTarget,
     }
 }

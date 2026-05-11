@@ -121,6 +121,12 @@ interface SidePanelProps {
 
   /** Called when the user clicks the Property button in ScenePane. */
   onShowProperty?: (id: string) => void;
+  /** Called when the user clicks the Focus button in ScenePane. */
+  onFocusSelected?: (id: string) => void;
+  /** Called when the user clicks the Delete button in ScenePane. */
+  onDeleteSelected?: (id: string) => void;
+  /** Per-action enablement for the current scene selection. */
+  sceneOpsEnabled?: { focus: boolean; delete: boolean; property: boolean };
 
   /* ── Generic persistence props (per-view) ── */
 
@@ -152,6 +158,9 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   onSceneSelect,
   onToggleVisibility,
   onShowProperty,
+  onFocusSelected,
+  onDeleteSelected,
+  sceneOpsEnabled,
   viewSizes,
   viewCollapsed,
   onViewSizesChange,
@@ -199,6 +208,9 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             onSelect={onSceneSelect}
             onToggleVisibility={onToggleVisibility}
             onShowProperty={onShowProperty}
+            onFocusSelected={onFocusSelected}
+            onDeleteSelected={onDeleteSelected}
+            opsEnabled={sceneOpsEnabled}
             collapsed={collapsed}
             onToggleCollapse={onToggle}
           />
@@ -269,6 +281,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   }), [
     sceneTree, sceneSelected, onSceneSelect,
     onToggleVisibility, onShowProperty,
+    onFocusSelected, onDeleteSelected, sceneOpsEnabled,
   ]);
 
   /* ── Generic view renderer (works for any N panes) ─── */

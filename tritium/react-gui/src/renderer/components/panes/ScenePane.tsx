@@ -58,6 +58,12 @@ interface ScenePaneProps {
     onDeleteSelected?: (id: string) => void;
     onFocusSelected?: (id: string) => void;
     onShowProperty?: (id: string) => void;
+    /**
+     * Per-action enablement for the current selection. When omitted, all
+     * actions are enabled (legacy callers). Defaults to enabled=true so a
+     * caller that does not yet compute this still works.
+     */
+    opsEnabled?: { focus: boolean; delete: boolean; property: boolean };
     collapsed?: boolean;
     onToggleCollapse?: () => void;
 }
@@ -70,11 +76,17 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     onSelect,
     onToggleVisibility,
     onAddRenderer,
+    onDeleteSelected,
     onFocusSelected,
     onShowProperty,
+    opsEnabled,
     collapsed,
     onToggleCollapse,
 }) => {
+    const hasSelection = selectedId !== '';
+    const canFocus = hasSelection && (opsEnabled?.focus ?? true);
+    const canDelete = hasSelection && (opsEnabled?.delete ?? true);
+    const canProperty = hasSelection && (opsEnabled?.property ?? true);
     // Tracks tree rows the user has explicitly collapsed.  The scene root
     // defaults to expanded; cameraRoot / styleRoot default to collapsed
     // (their `uiCollapsed` hint is true).
@@ -198,6 +210,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                                 small
                                 icon={<Icon icon="style" size={14} />}
                                 className="section-action-btn"
+                                disabled={!onAddRenderer}
                                 onClick={onAddRenderer}
                             />
                         </Tooltip>
@@ -207,7 +220,18 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                                 small
                                 icon={<Icon icon="locate" size={14} />}
                                 className="section-action-btn"
-                                onClick={() => selectedId && onFocusSelected?.(selectedId)}
+                                disabled={!canFocus}
+                                onClick={() => onFocusSelected?.(selectedId)}
+                            />
+                        </Tooltip>
+                        <Tooltip content="Delete" placement="bottom" compact>
+                            <Button
+                                minimal
+                                small
+                                icon={<Icon icon="trash" size={14} />}
+                                className="section-action-btn"
+                                disabled={!canDelete}
+                                onClick={() => onDeleteSelected?.(selectedId)}
                             />
                         </Tooltip>
                         <Tooltip content="Property" placement="bottom" compact>
@@ -216,25 +240,22 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                                 small
                                 icon={<Icon icon="properties" size={14} />}
                                 className="section-action-btn"
-                                onClick={() => selectedId && onShowProperty?.(selectedId)}
+                                disabled={!canProperty}
+                                onClick={() => onShowProperty?.(selectedId)}
                             />
                         </Tooltip>
                     </ButtonGroup>
                 </div>
             </div>
-            {!collapsed && (
+            {!collapsed && tree && treeContents.length > 0 && (
                 <div className="sp-pane-scroll">
-                    {tree && treeContents.length > 0 ? (
-                        <Tree
-                            contents={treeContents}
-                            onNodeClick={handleNodeClick}
-                            onNodeExpand={handleNodeExpand}
-                            onNodeCollapse={handleNodeCollapse}
-                            className="scene-tree"
-                        />
-                    ) : (
-                        <div className="scene-tree-empty">No scene loaded</div>
-                    )}
+                    <Tree
+                        contents={treeContents}
+                        onNodeClick={handleNodeClick}
+                        onNodeExpand={handleNodeExpand}
+                        onNodeCollapse={handleNodeCollapse}
+                        className="scene-tree"
+                    />
                 </div>
             )}
         </div>

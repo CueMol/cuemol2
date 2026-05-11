@@ -73,6 +73,14 @@ import type {
   SetNodeVisibleArgs,
   SetNodeVisibleResult,
 } from '../server/services/sceneTree.service'
+import type {
+  FocusOnNodeArgs,
+  FocusOnNodeResult,
+  DeleteNodeArgs,
+  DeleteNodeResult,
+  GetNodeInfoArgs,
+  GetNodeInfoResult,
+} from '../server/services/sceneOps.service'
 import type { UndoArgs } from '../server/services/undo.service'
 import type {
   ValidateSelectionArgs,
@@ -144,6 +152,9 @@ export interface ServiceMap {
   setSceneBgColor:            { args: SetSceneBgColorArgs;             result: SceneBgColorResult }
   getSceneTree:               { args: GetSceneTreeArgs;                result: GetSceneTreeResult }
   setNodeVisible:             { args: SetNodeVisibleArgs;              result: SetNodeVisibleResult }
+  focusOnNode:                { args: FocusOnNodeArgs;                 result: FocusOnNodeResult }
+  deleteNode:                 { args: DeleteNodeArgs;                  result: DeleteNodeResult }
+  getNodeInfo:                { args: GetNodeInfoArgs;                 result: GetNodeInfoResult }
   getViewProjection:          { args: ViewProjectionArgs;              result: ViewProjectionResult }
   setViewProjection:          { args: ViewProjectionArgs;              result: ViewProjectionResult }
   getViewCenterMark:          { args: ViewCenterMarkArgs;              result: ViewCenterMarkResult }

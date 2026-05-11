@@ -42,6 +42,7 @@ import { useCommands } from "./commands/CommandRegistry";
 import { CmdId } from "./commands/ids";
 import { useCueMolBusy } from "./hooks/useCueMolBusy";
 import { useShowConfirmCloseTabDialog } from "./components/dialogs/ConfirmCloseTabDialogProvider";
+import { useShowNodePropertyDialog } from "./components/dialogs/NodePropertyDialogProvider";
 import { useQuitHandler } from "./hooks/useQuitHandler";
 
 const App: React.FC = () => {
@@ -83,8 +84,12 @@ const App: React.FC = () => {
   const {
     tree: sceneTree,
     selectedId: sceneSelected,
+    selectedHasOps: sceneOpsEnabled,
     setSelectedId: setSceneSelected,
     toggleVisibility: handleToggleVisibility,
+    focusNode: focusSceneNode,
+    deleteNode: deleteSceneNode,
+    fetchNodeInfo: fetchSceneNodeInfo,
     resolveNodeName,
   } = useSceneTree({ cm, sceneId: activeSceneId });
 
@@ -93,7 +98,6 @@ const App: React.FC = () => {
     rendererProps,
     genericProps,
     inspectorInfo,
-    handleShowProperty,
     handleCloseInspector,
     handlePropertyChange,
     handleGenericChange,
@@ -163,6 +167,28 @@ const App: React.FC = () => {
   }, [activeTab, tabs, cm, cueMolReady, setActiveViewByID]);
 
   const activeMolViewId = tabs.find((t) => t.id === activeTab && t.type === 'molview')?.viewId;
+
+  // --- Scene-tree toolbar handlers (UXP workspace_panel onBtn*Cmd) ---
+  const showNodePropertyDialog = useShowNodePropertyDialog();
+
+  const handleSceneFocus = useCallback((id: string) => {
+    if (activeMolViewId === undefined) return;
+    focusSceneNode(activeMolViewId, id).catch((err: unknown) => {
+      console.warn('focusSceneNode failed:', err);
+    });
+  }, [activeMolViewId, focusSceneNode]);
+
+  const handleSceneDelete = useCallback((id: string) => {
+    deleteSceneNode(id).catch((err: unknown) => {
+      console.warn('deleteSceneNode failed:', err);
+    });
+  }, [deleteSceneNode]);
+
+  const handleSceneShowProperty = useCallback(async (id: string) => {
+    const info = await fetchSceneNodeInfo(id);
+    if (!info) return;
+    await showNodePropertyDialog(info);
+  }, [fetchSceneNodeInfo, showNodePropertyDialog]);
 
   // --- View-state cache for the active molview tab ---
   const {
@@ -267,7 +293,10 @@ const App: React.FC = () => {
                     sceneSelected={sceneSelected}
                     onSceneSelect={setSceneSelected}
                     onToggleVisibility={handleToggleVisibility}
-                    onShowProperty={handleShowProperty}
+                    onShowProperty={handleSceneShowProperty}
+                    onFocusSelected={handleSceneFocus}
+                    onDeleteSelected={handleSceneDelete}
+                    sceneOpsEnabled={sceneOpsEnabled}
                     viewSizes={viewSizes}
                     viewCollapsed={viewCollapsed}
                     onViewSizesChange={setViewSizes}

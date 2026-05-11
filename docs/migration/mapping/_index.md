@@ -1,6 +1,6 @@
 # Migration Mapping — Index
 
-- Updated: 2026-05-11
+- Updated: 2026-05-12
 - Source files: `docs/migration/mapping/*.md` (excluding this file)
 
 ---
@@ -47,7 +47,7 @@
 | [`dialog.about`](other_dlgs.md#dialogabout) | `AboutDialog` / `useDialog` | GRE info・userAgent は省略 |
 | [`other.cuemol2`](other.md#othercuemol2) | `App` / `ContentArea` / `TabBar` / `ConfirmCloseTabDialog` / `useQuitHandler` | Main window layout done; close-tab confirmation dialog (UXP `closeTabImpl`) implemented; UXP `onCloseEvent` quit chain wired (cmd-Q walks all tabs via `before-quit` → `APP_QUIT_REQUEST` → `APP_QUIT_PROCEED`) |
 | [`widget.molsellist`](custom_widgets.md) | `MolSelList` (`components/widgets/MolSelList/`) | First consumer wired in `RendererOptionsPane` (file-open dialog); editable `InputGroup` + chevron-only `HTMLSelect` (OS-native dropdown listbox with `<optgroup>` Preset / History / Scene / Global); history via `localStorage`; worker services `getSelDefs` / `validateSelection` added |
-| [`panel.workspace`](panels.md#panelworkspace) | `ScenePane` / `useSceneTree` / `sceneTree.service` | Phase 1: live tree fetch + visibility toggle + selection wired (4 node types: scene/object/renderer/rendGroup). Phased rollout — Phase 2: toolbar + push-channel auto-refresh; Phase 3: context menus; Phase 4: drag-drop + copy/paste; Phase 5: camera/style file I/O + real property dialog; Phase 6: paint/around-byres/change-type. Camera/style root, drag-drop, context menus deferred. |
+| [`panel.workspace`](panels.md#panelworkspace) | `ScenePane` / `useSceneTree` / `sceneTree.service` / `sceneOps.service` / `NodePropertyDialog` | Phase 1: live tree (4 node types + synthesised cameraRoot / styleRoot), visibility toggle (undo-wrapped), node selection, auto-refresh via `cm.addEventListener` (SEM_SCENE\|OBJECT\|RENDERER\|CAMERA\|STYLE). Phase 2: toolbar Focus / Delete / Property buttons (UXP `onBtnZoomCmd` / `onDeleteCmd` / `onPropCmd`) wired through `focusOnNode` / `deleteNode` / `getNodeInfo` worker services; property dialog is a read-only key/value stub. Phase 3: context menus. Phase 4: drag-drop + copy/paste. Phase 5: camera/style file I/O + real property dialog. Phase 6: paint / around-byres / change-type. Add Renderer button and multi-select remain deferred. |
 
 ---
 

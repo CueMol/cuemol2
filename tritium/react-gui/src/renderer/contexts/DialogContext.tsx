@@ -17,6 +17,7 @@ import { FileOpenOptionDialogProvider } from '../components/fopen-opt-dlgs/FileO
 import { GetPdbDialogProvider } from '../components/dialogs/GetPdbDialogProvider'
 import { QscWriterOptionDialogProvider } from '../components/dialogs/QscWriterOptionDialogProvider'
 import { StreamProgressDialogProvider } from '../components/dialogs/StreamProgressDialogProvider'
+import { NodePropertyDialogProvider } from '../components/dialogs/NodePropertyDialogProvider'
 
 export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <AboutDialogProvider>
@@ -26,7 +27,9 @@ export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           <GetPdbDialogProvider>
             <QscWriterOptionDialogProvider>
               <StreamProgressDialogProvider>
-                {children}
+                <NodePropertyDialogProvider>
+                  {children}
+                </NodePropertyDialogProvider>
               </StreamProgressDialogProvider>
             </QscWriterOptionDialogProvider>
           </GetPdbDialogProvider>
