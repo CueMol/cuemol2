@@ -58,6 +58,8 @@ function buildTemplate(
         case 'scene':
             return [
                 ...header,
+                ...pasteItem(payload, 'object', action),
+                { type: 'separator' },
                 propertyItem(action),
             ]
 
@@ -68,6 +70,8 @@ function buildTemplate(
                 selectionSubmenu(action),
                 { type: 'separator' },
                 renameItem(action),
+                copyItem(action),
+                ...pasteItem(payload, 'renderer', action),
                 deleteItem(action),
                 { type: 'separator' },
                 propertyItem(action),
@@ -79,6 +83,7 @@ function buildTemplate(
                 ...header,
                 ...showHideItems(payload, action),
                 renameItem(action),
+                copyItem(action),
                 deleteItem(action),
                 { type: 'separator' },
                 propertyItem(action),
@@ -139,6 +144,27 @@ function propertyItem(
     action: (a: SceneCtxAction) => MenuItemConstructorOptions['click'],
 ): MenuItemConstructorOptions {
     return { label: 'Properties…', click: action({ kind: 'property' }) }
+}
+
+function copyItem(
+    action: (a: SceneCtxAction) => MenuItemConstructorOptions['click'],
+): MenuItemConstructorOptions {
+    return { label: 'Copy', click: action({ kind: 'copy' }) }
+}
+
+/**
+ * Paste menu item — only shown when the worker clipboard holds the
+ * matching kind. Scene rows accept object pastes; object rows accept
+ * renderer pastes.
+ */
+function pasteItem(
+    payload: SceneCtxMenuPayload,
+    expectedKind: 'object' | 'renderer',
+    action: (a: SceneCtxAction) => MenuItemConstructorOptions['click'],
+): MenuItemConstructorOptions[] {
+    if (payload.clipboardKind !== expectedKind) return []
+    const label = expectedKind === 'object' ? 'Paste Object' : 'Paste Renderer'
+    return [{ label, click: action({ kind: 'paste' }) }]
 }
 
 function selectionSubmenu(

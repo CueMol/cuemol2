@@ -60,6 +60,10 @@ interface UseSceneTreeResult {
     renameNode: (id: string, newName: string) => Promise<boolean>
     /** Object-mol selection helpers (Phase 3b). */
     selectObjectMol: (id: string, kind: SelectMolKind) => Promise<boolean>
+    /** Copy a node (object / renderer / rendGroup) to the worker clipboard. */
+    copyNode: (node: SceneTreeNode) => Promise<boolean>
+    /** Paste from the worker clipboard onto a target node. */
+    pasteNode: (node: SceneTreeNode) => Promise<boolean>
     /** Fetch property info for the property dialog. */
     fetchNodeInfo: (id: string) => Promise<NodeInfo | null>
     refetch: () => void
@@ -279,6 +283,44 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         [cm, tree],
     )
 
+    const copyNode = useCallback(
+        async (node: SceneTreeNode): Promise<boolean> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return false
+            if (
+                node.type !== 'object' &&
+                node.type !== 'renderer' &&
+                node.type !== 'rendGroup'
+            ) {
+                return false
+            }
+            const res = await cm.invokeService('copyNode', {
+                sceneId: sid,
+                nodeId: node.id,
+                nodeType: node.type,
+            })
+            return res?.ok === true
+        },
+        [cm],
+    )
+
+    const pasteNode = useCallback(
+        async (target: SceneTreeNode): Promise<boolean> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return false
+            // Scene row accepts object pastes (no targetObjId). Object row
+            // accepts renderer pastes (pass its id). Other node types are
+            // rejected by the worker.
+            const args =
+                target.type === 'object'
+                    ? { sceneId: sid, targetObjId: target.id }
+                    : { sceneId: sid }
+            const res = await cm.invokeService('pasteNode', args)
+            return res?.ok === true
+        },
+        [cm],
+    )
+
     const fetchNodeInfo = useCallback(
         async (id: string): Promise<NodeInfo | null> => {
             const sid = sceneIdRef.current
@@ -318,6 +360,8 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         deleteNode,
         renameNode,
         selectObjectMol,
+        copyNode,
+        pasteNode,
         fetchNodeInfo,
         refetch,
         resolveNodeName,

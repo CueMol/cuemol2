@@ -92,6 +92,8 @@ const App: React.FC = () => {
     deleteNode: deleteSceneNode,
     renameNode: renameSceneNode,
     selectObjectMol: selectSceneObjectMol,
+    copyNode: copySceneNode,
+    pasteNode: pasteSceneNode,
     fetchNodeInfo: fetchSceneNodeInfo,
     resolveNodeName,
   } = useSceneTree({ cm, sceneId: activeSceneId });
@@ -194,11 +196,14 @@ const App: React.FC = () => {
   }, [fetchSceneNodeInfo, showNodePropertyDialog]);
 
   const { openContextMenu: openSceneCtxMenu } = useSceneContextMenu({
+    cm,
     toggleVisibility: handleToggleVisibility,
     deleteNode: deleteSceneNode,
     renameNode: renameSceneNode,
     showProperty: handleSceneShowProperty,
     selectObjectMol: selectSceneObjectMol,
+    copyNode: copySceneNode,
+    pasteNode: pasteSceneNode,
   });
 
   const handleShowSceneCtxMenu = useCallback(

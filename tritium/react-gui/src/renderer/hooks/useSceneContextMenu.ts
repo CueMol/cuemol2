@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import type { SceneCtxAction, SelectMolKind } from '../../shared/ipcTypes'
 import { IPC } from '../../shared/ipcChannels'
 import type { SceneTreeNode } from '../worker/shared/sceneTreeTypes'
+import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 
 /**
  * Opens the native scene-tree context menu and dispatches the returned
@@ -12,17 +13,23 @@ import type { SceneTreeNode } from '../worker/shared/sceneTreeTypes'
  * Phase 3b: object Selection submenu (selectMol-* actions).
  */
 export interface UseSceneContextMenuOptions {
+    cm: AsyncCueMol | null
     toggleVisibility: (id: string) => void
     deleteNode: (id: string) => Promise<boolean>
     renameNode: (id: string, newName: string) => Promise<boolean>
     showProperty: (id: string) => Promise<void> | void
     selectObjectMol: (id: string, kind: SelectMolKind) => Promise<boolean>
+    copyNode: (node: SceneTreeNode) => Promise<boolean>
+    pasteNode: (node: SceneTreeNode) => Promise<boolean>
 }
 
 export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
     openContextMenu: (node: SceneTreeNode, x: number, y: number) => Promise<void>
 } {
-    const { toggleVisibility, deleteNode, renameNode, showProperty, selectObjectMol } = opts
+    const {
+        cm, toggleVisibility, deleteNode, renameNode, showProperty,
+        selectObjectMol, copyNode, pasteNode,
+    } = opts
 
     const openContextMenu = useCallback(
         async (node: SceneTreeNode, x: number, y: number): Promise<void> => {
@@ -30,6 +37,17 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                 node.type === 'object' ||
                 node.type === 'renderer' ||
                 node.type === 'rendGroup'
+
+            // Pre-fetch clipboard state so main can enable Paste items correctly.
+            let clipboardKind: 'object' | 'renderer' | null = null
+            if (cm) {
+                try {
+                    const r = await cm.invokeService('getClipboardKind', {})
+                    clipboardKind = r?.kind ?? null
+                } catch (err) {
+                    console.warn('getClipboardKind failed:', err)
+                }
+            }
 
             const action: SceneCtxAction | null = await window.electronAPI.invoke(
                 IPC.SCENE_CTX_SHOW,
@@ -40,6 +58,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                     nodeLabel: nodeMenuLabel(node),
                     isVisible: node.visible,
                     hasVisibility,
+                    clipboardKind,
                 },
             )
 
@@ -69,9 +88,18 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                     if (node.type !== 'object') break
                     await selectObjectMol(idStr, action.selectKind)
                     break
+                case 'copy':
+                    await copyNode(node)
+                    break
+                case 'paste':
+                    await pasteNode(node)
+                    break
             }
         },
-        [toggleVisibility, deleteNode, renameNode, showProperty, selectObjectMol],
+        [
+            cm, toggleVisibility, deleteNode, renameNode, showProperty,
+            selectObjectMol, copyNode, pasteNode,
+        ],
     )
 
     return { openContextMenu }

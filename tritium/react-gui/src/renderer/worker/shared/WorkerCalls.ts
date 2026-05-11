@@ -85,6 +85,14 @@ import type {
   SelectObjectMolArgs,
   SelectObjectMolResult,
 } from '../server/services/sceneOps.service'
+import type {
+  CopyNodeArgs,
+  CopyNodeResult,
+  PasteNodeArgs,
+  PasteNodeResult,
+  GetClipboardKindArgs,
+  GetClipboardKindResult,
+} from '../server/services/sceneClipboard.service'
 import type { UndoArgs } from '../server/services/undo.service'
 import type {
   ValidateSelectionArgs,
@@ -161,6 +169,9 @@ export interface ServiceMap {
   getNodeInfo:                { args: GetNodeInfoArgs;                 result: GetNodeInfoResult }
   renameNode:                 { args: RenameNodeArgs;                  result: RenameNodeResult }
   selectObjectMol:            { args: SelectObjectMolArgs;             result: SelectObjectMolResult }
+  copyNode:                   { args: CopyNodeArgs;                    result: CopyNodeResult }
+  pasteNode:                  { args: PasteNodeArgs;                   result: PasteNodeResult }
+  getClipboardKind:           { args: GetClipboardKindArgs;            result: GetClipboardKindResult }
   getViewProjection:          { args: ViewProjectionArgs;              result: ViewProjectionResult }
   setViewProjection:          { args: ViewProjectionArgs;              result: ViewProjectionResult }
   getViewCenterMark:          { args: ViewCenterMarkArgs;              result: ViewCenterMarkResult }

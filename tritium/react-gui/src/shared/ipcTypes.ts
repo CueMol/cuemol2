@@ -145,6 +145,8 @@ export type SceneCtxAction =
   | { kind: 'delete' }
   | { kind: 'property' }
   | { kind: 'selectMol'; selectKind: SelectMolKind }
+  | { kind: 'copy' }
+  | { kind: 'paste' }
 
 export type SceneCtxNodeType =
   | 'scene'
@@ -166,6 +168,8 @@ export interface SceneCtxMenuPayload {
   isVisible: boolean
   /** Whether the node carries a visibility flag at all. */
   hasVisibility: boolean
+  /** What the worker clipboard holds, used to gate Paste items. */
+  clipboardKind: 'object' | 'renderer' | null
 }
 
 // ── Native menu state ───────────────────────────────────────────────────────
