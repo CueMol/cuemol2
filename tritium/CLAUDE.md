@@ -118,7 +118,7 @@ const mol = scene.getObject(objId) as MolCoord;
 if (!mol) return { ok: false };
 ```
 
-Renderers: `scene.getRenderer(rendId)` or `mol.getRendererByType(type)` / `mol.getRendererByNameType(name, type)`.
+Renderers: `scene.getRenderer(rendId)` or `mol.getRendererByType(type)` / `mol.getRendererByNameType(name, type)`. `scene.getRenderer` returns the same wrapper for both regular renderers and renderer groups (RendGroup extends Renderer in C++).
 
 ### Selection (`mol.sel`)
 
@@ -135,6 +135,119 @@ Auto-create the `*selection` renderer before assigning:
 ```typescript
 if (!mol.getRendererByType('*selection')) mol.createRenderer('*selection');
 ```
+
+### Wrapper duck-typing
+
+Many C++ methods exist only on specific subclasses (e.g. `fitView` is on `MolCoord` but not on `Object`; `has_center` / `getCenter` are on `Renderer` but may throw for some renderer types). Generated TS wrapper types do not reflect the runtime subclass. Probe with `in` / `typeof` before calling, matching the UXP `'fitView' in target` pattern:
+
+```typescript
+if (typeof (obj as unknown as Record<string, unknown>).fitView === 'function') {
+    (obj as unknown as MolCoord).fitView(view, false);
+}
+```
+
+Wrap property reads that may throw in a small `safeRead` helper rather than letting the service crash — getters can throw `"Property X is read only"` or `"Method not found"` for missing-on-subclass cases.
+
+### Scene-content JSON schemas (C++ source of truth)
+
+The worker side typically reads scene contents via JSON-returning methods. Their shapes are stable and worth knowing:
+
+| API | Shape | Notes |
+|---|---|---|
+| `scene.getSceneDataJSON()` | `[sceneNode, ...objectNodes]` flat array | Scene element has `type: ""`, object element has C++ class name. **Does not include cameras or styles.** |
+| Object's `rends` field in the above | array of renderers / groups | Groups are distinguished by the presence of a `childNodes` array (regular renderers omit that field). |
+| `scene.getCameraInfoJSON()` | `[{ name, vis_size, src }, ...]` | Cameras are owned by the scene but **not** in `getSceneDataJSON`. |
+| `StyleMgr.getStyleNamesJSON(sceneId)` | `[{ name }, ...]` | Style sets are owned by `StyleManager` service, not the scene. |
+
+When mirroring UXP behaviour where a single tree view shows scene + cameras + styles, the worker side must call all three APIs and synthesise the combined structure; never assume one JSON covers everything.
+
+### IDs are not URLs
+
+The numeric `ID` returned in the JSON shapes above is a C++ `qlib::uid_t`. Treat it as opaque — never invent negative or large values for "virtual" UI rows except via clearly-marked synthesisers (see `buildCameraRoot` / `buildStyleRoot` in `sceneTreeTypes.ts`). Real C++ uids are non-negative.
+
+---
+
+## CueMol event framework
+
+CueMol has its own event manager (`qlib::ScrEventManager`, exposed as `cuemol.evtMgr` in UXP). C++ scenes fire events when objects, renderers, cameras, styles, or properties change. Subscribing keeps renderer state in sync **without polling** and is the only correct way to react to changes made outside the current call path (e.g. a PDB load triggered by another tab, an undo/redo, or a script).
+
+### Subscribing from the renderer
+
+`AsyncCueMol` exposes `addEventListener` / `removeEventListener` that bridge to the worker-side `qlib::ScrEventManager`. Pattern (see `hooks/useLogEvent.ts`, `hooks/useSceneTree.ts`):
+
+```ts
+import { SEM_SCENE, SEM_OBJECT, SEM_RENDERER, SEM_CAMERA, SEM_STYLE, SEM_ANY } from '../event'
+
+useEffect(() => {
+    if (!cm || sceneId === undefined) return
+    let cbid: number | null = null
+    let cancelled = false
+    ;(async () => {
+        const id = await cm.addEventListener(
+            '',                                                  // category string ('log' for log events, '' for source-uid match)
+            SEM_SCENE | SEM_OBJECT | SEM_RENDERER | SEM_CAMERA | SEM_STYLE,  // source-type bitmask (OR-combine)
+            SEM_ANY,                                             // event-type filter (or SEM_ADDED / SEM_REMOVING / SEM_PROPCHG / SEM_CHANGED)
+            sceneId,                                             // source uid scope (use scene.uid; SEM_ANY for global)
+            (args) => {
+                if (cancelled) return
+                // args has: { evtType, srcUID, obj: { ... }, method?, ... }
+                handleEvent(args)
+            },
+        )
+        if (cancelled) cm.removeEventListener(id).catch(() => {})
+        else cbid = id
+    })()
+    return () => {
+        cancelled = true
+        if (cbid !== null) cm.removeEventListener(cbid).catch(() => {})
+    }
+}, [cm, sceneId])
+```
+
+### Constants
+
+All filter constants are exported from `renderer/event.ts`:
+
+| Group | Constants |
+|---|---|
+| Source category bitmask | `SEM_LOG` `SEM_INDEV` `SEM_SCENE` `SEM_OBJECT` `SEM_RENDERER` `SEM_VIEW` `SEM_CAMERA` `SEM_STYLE` `SEM_ANIM` `SEM_EXTND` |
+| Event type | `SEM_ADDED` `SEM_REMOVING` `SEM_PROPCHG` `SEM_CHANGED` `SEM_OTHER` |
+| Wildcard | `SEM_ANY` (-1) — matches any source type **and** any event type depending on which argument it's passed as |
+
+### Event payload (`args`)
+
+| Field | Meaning |
+|---|---|
+| `args.evtType` | One of `SEM_ADDED` / `SEM_REMOVING` / `SEM_PROPCHG` / `SEM_CHANGED` |
+| `args.srcUID` | The uid of the firing scene / object |
+| `args.obj` | Event-specific payload object |
+| `args.obj.target_uid` | The uid of the affected object / renderer (used by ADDED / REMOVING / PROPCHG) |
+| `args.obj.propname` | Property name on PROPCHG (e.g. `"name"`, `"visible"`, `"locked"`, `"group"`) |
+| `args.method` | Some events carry a method label (`"cameraRemoving"`, `"styleRemoving"`, `"sceneAllCleared"`, `"sceneLoaded"`) |
+
+The UXP reference is `uxp_gui/cuemol2/base/content/workspace_panel.js` `_attachScene`.
+
+### Debouncing event bursts
+
+A single high-level operation (PDB load, scene load, paste, undo) fires **many** events in quick succession. If the listener triggers an expensive refetch / re-render per event, the UI jitters. Coalesce with a small timer (~30 ms is enough):
+
+```ts
+let timer: ReturnType<typeof setTimeout> | null = null
+const scheduleRefetch = () => {
+    if (timer !== null) return
+    timer = setTimeout(() => { timer = null; refetch() }, 30)
+}
+```
+
+### When to use the event manager (vs alternatives)
+
+- **Use the event manager** when state on the renderer must stay in sync with C++ state that any code path (worker service, undo, IPC) may mutate. This is the only path that catches mutations originating outside the current call.
+- **Use service-result refetch** when you know exactly which mutation just happened and can refresh once on success. Acceptable for one-shot operations but does not catch concurrent mutations.
+- **Never poll** for scene-state changes.
+
+### Cleanup is mandatory
+
+`cm.addEventListener` holds the callback on the worker side until `removeEventListener` is called. Forgetting cleanup leaks listeners across scene switches and causes "ghost" handlers to fire on stale state. Always return a cleanup function from `useEffect`, and guard the async-resolve-after-unmount race with a `cancelled` flag (see template above).
 
 ---
 
@@ -245,7 +358,7 @@ vi.mock('../hooks/useCueMol', () => ({
 }));
 ```
 
-To mock `window.electronAPI`, use the helper (matches the post-B `invoke` / `onPush` shape):
+To mock `window.electronAPI`, use the typed `invoke` / `onPush` helper:
 
 ```ts
 import { setupElectronAPI, teardownElectronAPI } from './helpers/testHarness'
@@ -372,3 +485,26 @@ await showAbout()
 ```
 
 The render-prop maps the dialog's existing `onConfirm`/`onCancel`/`onClose` props to a single `resolve(result)` call. Existing `Xxx.tsx` dialog components do **not** need to change — only the provider wrapper.
+
+---
+
+## Blueprint pitfalls
+
+### `Tree` indentation comes from a depth-keyed class
+
+`@blueprintjs/core` indents nested tree rows via `.bp5-tree-node-content-<depth>` (depth 0 = 0px, depth 1 = 23px, depth 2 = 46px, …). The flat selector `.bp5-tree-node-content { padding-left: ... }` has higher specificity than the depth-keyed selector and silently flattens the whole hierarchy.
+
+```css
+/* WRONG — flattens all depths to 4px */
+.scene-tree .bp5-tree-node-content { padding-left: 4px; }
+
+/* CORRECT — put the inset on the container, let Blueprint own per-depth padding */
+.scene-tree { padding: 2px 0 2px 4px; }
+.scene-tree .bp5-tree-node-content { padding-right: 6px; /* no padding-left */ }
+```
+
+Same applies anywhere depth-keyed Blueprint classes encode visual structure — never override the parent CSS rule that Blueprint uses to thread state through descendants.
+
+### `minimal` / `small` Button props are deprecated in v5
+
+Blueprint v5 deprecated the boolean props in favour of `variant`/`size`. We currently still use the deprecated form throughout to avoid touching every button; new components may use either. Lint shows `TS6385` warnings on the deprecated form — ignorable for now, but flag the wholesale migration as a separate task before adding many new buttons.
