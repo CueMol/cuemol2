@@ -35,12 +35,14 @@ import { useTabManager } from "./hooks/useTabManager";
 import { useCueMol } from "./hooks/useCueMol";
 import { useMolTabDispatch } from "./hooks/useMolTab";
 import { useAppInitialization } from "./hooks/useAppInitialization";
+import { useNewSceneAction } from "./hooks/useNewSceneAction";
 import { useActiveViewState } from "./hooks/useActiveViewState";
 import { useCommandRegistrations } from "./hooks/useCommandRegistrations";
 import { useCommands } from "./commands/CommandRegistry";
 import { CmdId } from "./commands/ids";
 import { useCueMolBusy } from "./hooks/useCueMolBusy";
 import { useShowConfirmCloseTabDialog } from "./components/dialogs/ConfirmCloseTabDialogProvider";
+import { useQuitHandler } from "./hooks/useQuitHandler";
 
 const App: React.FC = () => {
 
@@ -100,6 +102,7 @@ const App: React.FC = () => {
   const { cueMolReady, cm } = useCueMol();
   const { addMolTab, removeMolTab, getActiveSceneInfo, setActiveViewByID } = useMolTabDispatch();
   const showConfirmCloseTabDialog = useShowConfirmCloseTabDialog();
+  const { dispatch: dispatchCommand } = useCommands();
 
   const handleMolViewClose = useCallback((viewId: number) => {
     removeMolTab(viewId);
@@ -118,24 +121,32 @@ const App: React.FC = () => {
     const result = await showConfirmCloseTabDialog({ sceneName: info.sceneName });
     if (result === 'cancel') return false;
     if (result === 'discard') return true;
-    // 'save': Save button is disabled (not yet implemented); abort close.
-    console.warn('[TODO] Scene save not yet implemented');
-    return false;
-  }, [cm, showConfirmCloseTabDialog]);
+    // 'save': run the FileSave command; if save succeeds, proceed with close.
+    // If the user cancels the save dialog (or save fails), abort the close —
+    // matches UXP onSaveScene behaviour.
+    const saved = await dispatchCommand(CmdId.FileSave);
+    return saved === true;
+  }, [cm, showConfirmCloseTabDialog, dispatchCommand]);
 
   const {
     tabs,
+    tabsRef,
     activeTab,
     setActiveTab,
     openSettingsTab,
     addMolViewTab,
     handleCloseTab,
     handleReorderTabs,
-    handleSave,
   } = useTabManager({ onMolViewClose: handleMolViewClose, confirmCloseTab });
 
+  useQuitHandler({ tabsRef, handleCloseTab, setActiveTab });
+
+  // Shared "create scene + view + register tab" action used by both the
+  // launch path and the New Tab dialog (UXP onNewScene equivalent).
+  const newScene = useNewSceneAction({ cm, addMolTab, addMolViewTab });
+
   // First scene/view on launch (StrictMode guarded)
-  useAppInitialization({ cm, cueMolReady, addMolTab, addMolViewTab });
+  useAppInitialization({ cueMolReady, newScene });
 
   // Activate worker view when a molview tab becomes active.
   useEffect(() => {
@@ -165,12 +176,12 @@ const App: React.FC = () => {
     addMolViewTab,
     getActiveSceneInfo,
     handleCloseTab,
-    handleSave,
     activeTab,
     activeMolViewId,
     onProjectionChanged,
     onCenterMarkChanged,
     onBgColorChanged,
+    newScene,
   });
 
   // --- Sample data ---
@@ -178,7 +189,6 @@ const App: React.FC = () => {
   const [animation] = useState<AnimationData | null>(SAMPLE_ANIMATION);
 
   const cueMolBusy = useCueMolBusy();
-  const { dispatch: dispatchCommand } = useCommands();
 
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
@@ -217,7 +227,7 @@ const App: React.FC = () => {
       <Toolbar
         onOpenFile={() => dispatchCommand(CmdId.UiOpenObjDialog).catch((e: unknown) => console.error('UiOpenObjDialog failed:', e))}
         onNewTab={() => dispatchCommand(CmdId.TabNew).catch((e: unknown) => console.error('TabNew failed:', e))}
-        onSave={handleSave}
+        onSave={() => dispatchCommand(CmdId.FileSave).catch((e: unknown) => console.error('FileSave failed:', e))}
       />
 
       <div className="main-layout">

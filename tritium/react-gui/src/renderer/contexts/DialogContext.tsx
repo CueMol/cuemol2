@@ -14,13 +14,22 @@ import { AboutDialogProvider } from '../components/dialogs/AboutDialogProvider'
 import { NewTabDialogProvider } from '../components/dialogs/NewTabDialogProvider'
 import { ConfirmCloseTabDialogProvider } from '../components/dialogs/ConfirmCloseTabDialogProvider'
 import { FileOpenOptionDialogProvider } from '../components/fopen-opt-dlgs/FileOpenOptionDialogProvider'
+import { GetPdbDialogProvider } from '../components/dialogs/GetPdbDialogProvider'
+import { QscWriterOptionDialogProvider } from '../components/dialogs/QscWriterOptionDialogProvider'
+import { StreamProgressDialogProvider } from '../components/dialogs/StreamProgressDialogProvider'
 
 export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <AboutDialogProvider>
     <NewTabDialogProvider>
       <ConfirmCloseTabDialogProvider>
         <FileOpenOptionDialogProvider>
-          {children}
+          <GetPdbDialogProvider>
+            <QscWriterOptionDialogProvider>
+              <StreamProgressDialogProvider>
+                {children}
+              </StreamProgressDialogProvider>
+            </QscWriterOptionDialogProvider>
+          </GetPdbDialogProvider>
         </FileOpenOptionDialogProvider>
       </ConfirmCloseTabDialogProvider>
     </NewTabDialogProvider>

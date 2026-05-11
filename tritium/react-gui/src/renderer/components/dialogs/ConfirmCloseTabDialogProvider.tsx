@@ -18,7 +18,6 @@ export const {
     <ConfirmCloseTabDialog
       visible={visible}
       sceneName={args?.sceneName ?? ''}
-      saveDisabled
       onResult={(result) => resolve(result)}
     />
   ),

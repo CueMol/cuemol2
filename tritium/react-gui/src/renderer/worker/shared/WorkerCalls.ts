@@ -32,6 +32,16 @@ import type { GetSelDefsArgs, GetSelDefsResult } from '../server/services/getSel
 import type { LoadObjectArgs } from '../server/services/loadObject.service'
 import type { LoadSceneArgs } from '../server/services/loadScene.service'
 import type {
+  StreamLoadFromUrlArgs,
+  StreamLoadFromUrlResult,
+  CancelStreamLoadArgs,
+  CancelStreamLoadResult,
+} from '../server/services/streamLoadFromUrl.service'
+import type {
+  StreamLoadDensityMapArgs,
+  StreamLoadDensityMapResult,
+} from '../server/services/streamLoadDensityMap.service'
+import type {
   NaviCenterAtArgs,
   NaviCenterAtSymmArgs,
   NaviCtxAroundArgs,
@@ -46,6 +56,12 @@ import type {
 import type { ProposeNewTabNamesArgs, ProposeNewTabNamesResult } from '../server/services/proposeNewTabNames.service'
 import type { ProposeUniqNameArgs, ProposeUniqNameResult } from '../server/services/proposeUniqName.service'
 import type { RedoArgs } from '../server/services/redo.service'
+import type {
+  GetSceneSaveInfoArgs,
+  GetSceneSaveInfoResult,
+  SaveSceneArgs,
+  SaveSceneResult,
+} from '../server/services/saveScene.service'
 import type {
   SceneBgColorArgs,
   SceneBgColorResult,
@@ -108,10 +124,15 @@ export interface ServiceMap {
   getSelDefs:                 { args: GetSelDefsArgs;                  result: GetSelDefsResult }
   loadObject:                 { args: LoadObjectArgs;                  result: { ok: boolean } }
   loadScene:                  { args: LoadSceneArgs;                   result: { ok: boolean } }
+  streamLoadFromUrl:          { args: StreamLoadFromUrlArgs;           result: StreamLoadFromUrlResult }
+  streamLoadDensityMap:       { args: StreamLoadDensityMapArgs;        result: StreamLoadDensityMapResult }
+  cancelStreamLoad:           { args: CancelStreamLoadArgs;            result: CancelStreamLoadResult }
   proposeNewTabNames:         { args: ProposeNewTabNamesArgs;          result: ProposeNewTabNamesResult }
   proposeUniqName:            { args: ProposeUniqNameArgs;             result: ProposeUniqNameResult }
   redo:                       { args: RedoArgs;                        result: { ok: boolean } }
   undo:                       { args: UndoArgs;                        result: { ok: boolean } }
+  getSceneSaveInfo:           { args: GetSceneSaveInfoArgs;            result: GetSceneSaveInfoResult }
+  saveScene:                  { args: SaveSceneArgs;                   result: SaveSceneResult }
   validateSelection:          { args: ValidateSelectionArgs;           result: ValidateSelectionResult }
   getSceneBgColor:            { args: SceneBgColorArgs;                result: SceneBgColorResult }
   setSceneBgColor:            { args: SetSceneBgColorArgs;             result: SceneBgColorResult }

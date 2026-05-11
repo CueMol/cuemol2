@@ -32,7 +32,8 @@ export function AboutDialog({ visible, onClose }: Props): React.JSX.Element {
       title="About CueMol3-tritium"
       style={{ width: 300, paddingBottom: 0 }}
       portalClassName={isDark ? 'bp5-dark' : ''}
-      canOutsideClickClose
+      canOutsideClickClose={false}
+      isCloseButtonShown={false}
     >
       <DialogBody style={{ padding: 0 }}>
         <img

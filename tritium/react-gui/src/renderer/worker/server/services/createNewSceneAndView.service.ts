@@ -4,12 +4,21 @@ import type { WorkerContext } from '../types/WorkerContext';
 export interface CreateNewSceneAndViewArgs {
     dpr: number;
     name?: string;
+    // Whether to register the new view with GfxManager via addView().
+    // Defaults to true. Set to false for the initial app-launch scene whose
+    // view is attached to the canvas by MolViewPane via bindCanvas() instead;
+    // calling addView() before bindCanvas() throws ("not bound to canvas").
+    bindView?: boolean;
 }
 
 export interface CreateNewSceneAndViewResult {
     scene_uid: number;
     view_uid: number;
+    scene_name: string;
+    view_name: string;
 }
+
+const INITIAL_VIEW_NAME = '0';
 
 function createNewSceneAndView(
     ctx: WorkerContext,
@@ -21,10 +30,17 @@ function createNewSceneAndView(
     }
     const scene_uid = scene.getUID();
     const view = scene.createView();
-    view.name = '0';
+    view.name = INITIAL_VIEW_NAME;
     const view_uid = view.getUID();
-    ctx.svc.addView(view_uid, args.dpr);
-    return { scene_uid, view_uid };
+    if (args.bindView !== false) {
+        ctx.svc.addView(view_uid, args.dpr);
+    }
+    return {
+        scene_uid,
+        view_uid,
+        scene_name: args.name ?? '',
+        view_name: INITIAL_VIEW_NAME,
+    };
 }
 
 export const services = { createNewSceneAndView };

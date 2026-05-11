@@ -17,19 +17,20 @@ import { useNewTabCommand } from '../commands/useNewTabCommand';
 import { useEditCommands } from '../commands/useEditCommands';
 import { useViewCommands } from '../commands/useViewCommands';
 import { useElectronIpc } from './useElectronIpc';
+import type { NewSceneAction } from './useNewSceneAction';
 
 interface UseCommandRegistrationsOptions {
   cm: AsyncCueMol | null;
   addMolTab: (title: string, viewId: number, sceneId: number) => void;
   addMolViewTab: (title: string, viewId: number) => void;
   getActiveSceneInfo: () => { scene_uid: number; view_id: number } | null | undefined;
-  handleCloseTab: (id: string) => void | Promise<void>;
-  handleSave: () => void;
+  handleCloseTab: (id: string) => Promise<boolean>;
   activeTab: string | null;
   activeMolViewId: number | undefined;
   onProjectionChanged: (perspective: boolean) => void;
   onCenterMarkChanged: (centerMark: ViewCenterMark) => void;
   onBgColorChanged: (bgColor: SceneBgColor) => void;
+  newScene: NewSceneAction;
 }
 
 export function useCommandRegistrations({
@@ -38,18 +39,18 @@ export function useCommandRegistrations({
   addMolViewTab,
   getActiveSceneInfo,
   handleCloseTab,
-  handleSave,
   activeTab,
   activeMolViewId,
   onProjectionChanged,
   onCenterMarkChanged,
   onBgColorChanged,
+  newScene,
 }: UseCommandRegistrationsOptions): void {
-  useSceneCommands({ cm, addMolTab, addMolViewTab, getActiveSceneInfo, onBgColorChanged });
+  useSceneCommands({ cm, getActiveSceneInfo, onBgColorChanged, newScene });
   useUiDialogCommands({ cm });
   useTabCommands({ handleCloseTab });
-  useNewTabCommand({ cm, addMolTab, addMolViewTab, getActiveSceneInfo });
-  useEditCommands({ cm, getActiveSceneInfo, handleSave });
+  useNewTabCommand({ cm, addMolTab, addMolViewTab, getActiveSceneInfo, newScene });
+  useEditCommands({ cm, getActiveSceneInfo });
   useViewCommands({
     cm,
     getActiveViewId: () => activeMolViewId,

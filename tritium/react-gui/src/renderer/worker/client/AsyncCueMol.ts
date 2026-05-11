@@ -3,7 +3,7 @@ import type { SceneBgColor, ViewCenterMark } from '../../../shared/ipcTypes';
 import type { FileOpenOptions } from '../../components/fopen-opt-dlgs/types';
 import { ObjTuple } from '../shared/ObjTuple';
 import { ObjProxy } from './ObjProxy';
-import { WorkerTransport } from './WorkerTransport';
+import { WorkerTransport, type StreamProgressListener } from './WorkerTransport';
 import { EventSlots } from './EventSlots';
 import { ObjectFactory } from './ObjectFactory';
 import * as lifecycleApi from './apis/lifecycleApi';
@@ -48,6 +48,9 @@ export class AsyncCueMol {
     isReady(): boolean { return this._transport.isReady(); }
     isBusy(): boolean { return this._transport.isBusy(); }
     subscribeBusy(cb: (busy: boolean) => void): () => void { return this._transport.subscribeBusy(cb); }
+    subscribeStreamProgress(cb: StreamProgressListener): () => void {
+        return this._transport.subscribeStreamProgress(cb);
+    }
     invokeWorker(method: string, ...args: any[]): Promise<any[]> {
         return this._transport.invokeWorker(method, ...args);
     }
@@ -124,10 +127,12 @@ export class AsyncCueMol {
     }
 
     // -------- File operations
-    getCompatibleRendererNames(filePath: string): Promise<string[]> { return fileApi.getCompatibleRendererNames(this._transport, filePath); }
+    getCompatibleRendererNames(filePath: string, readerName?: string): Promise<string[]> {
+        return fileApi.getCompatibleRendererNames(this._transport, filePath, readerName);
+    }
     getOpenFilters(catId: number): Promise<ElectronFileFilter[]> { return fileApi.getOpenFilters(this._transport, catId); }
-    createNewSceneAndView(dpr: number, name?: string): Promise<{ scene_uid: number; view_uid: number } | null> {
-        return fileApi.createNewSceneAndView(this._transport, dpr, name);
+    createNewSceneAndView(dpr: number, name?: string, bindView?: boolean): Promise<{ scene_uid: number; view_uid: number; scene_name: string; view_name: string } | null> {
+        return fileApi.createNewSceneAndView(this._transport, dpr, name, bindView);
     }
     loadScene(filePath: string, scene_id: number): Promise<boolean> { return fileApi.loadScene(this._transport, filePath, scene_id); }
     loadObject(filePath: string, scene_id: number, options: FileOpenOptions): Promise<boolean> {

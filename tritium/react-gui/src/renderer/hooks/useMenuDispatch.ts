@@ -26,6 +26,9 @@ export function useMenuDispatch(activeTab: string | null): {
         case IPC.MENU_SAVE:
           dispatch(CmdId.FileSave).catch(logErr('file.save:'))
           break
+        case IPC.MENU_SAVE_SCENE_AS:
+          dispatch(CmdId.FileSaveAs).catch(logErr('file.saveAs:'))
+          break
         case IPC.MENU_NEW_TAB:
           dispatch(CmdId.TabNew).catch(logErr('tab.new:'))
           break
@@ -67,6 +70,9 @@ export function useMenuDispatch(activeTab: string | null): {
           break
         case IPC.MENU_ABOUT:
           dispatch(CmdId.UiAboutDialog).catch(logErr('about dialog:'))
+          break
+        case IPC.MENU_GET_PDB:
+          dispatch(CmdId.UiGetPdbDialog).catch(logErr('get pdb dialog:'))
           break
         default:
           console.warn('menu action not yet implemented:', channel)

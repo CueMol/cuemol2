@@ -15,6 +15,7 @@ export const CmdId = {
   UiOpenObjDialog:    'ui.openObjDialog',    // no args
   UiOpenSceneDialog:  'ui.openSceneDialog',  // no args
   UiAboutDialog:      'ui.aboutDialog',      // no args
+  UiGetPdbDialog:     'ui.getPdbDialog',     // no args
 
   // Tab management
   TabNew:             'tab.new',             // no args
@@ -22,6 +23,7 @@ export const CmdId = {
 
   // File operations
   FileSave:           'file.save',           // no args
+  FileSaveAs:         'file.saveAs',         // no args
 
   // Undo/redo
   Undo:               'edit.undo',           // no args

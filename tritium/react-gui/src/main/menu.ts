@@ -6,11 +6,13 @@
  */
 
 import { app, Menu } from 'electron'
-import type { BrowserWindow, MenuItemConstructorOptions } from 'electron'
+import type { BrowserWindow, MenuItem, MenuItemConstructorOptions } from 'electron'
 import { IPC } from '../shared/ipcChannels'
 import { APP_MENU } from '../shared/menuTemplate'
 import type { AppMenuItem, AppMenuGroup } from '../shared/menuTemplate'
 import type { MenuState } from '../shared/ipcTypes'
+
+export type MenuBlockReason = 'blueprint' | 'native'
 
 const isMac = process.platform === 'darwin'
 
@@ -134,7 +136,105 @@ export function createMenu(mainWindow: BrowserWindow): void {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 }
 
+// ─────────────────────────────────────────────
+// Modal-aware menu accelerator block
+// ─────────────────────────────────────────────
+//
+// When a Blueprint Dialog (or message box) is open in the renderer, or when
+// a native OS dialog is being shown from main, all application-menu items
+// are temporarily disabled so accelerators like Cmd+Q stop firing — matching
+// UXP's XUL `openDialog(..., 'modal')` behaviour.
+//
+// Multiple block sources are reference-counted via `blockReasons`. The
+// snapshot captures each item's `enabled` value at the moment we enter the
+// blocked state and restores it on exit, so prior `updateMenuState()` checks
+// (perspective / center-mark / bg-color) survive a block cycle.
+
+const blockReasons: Map<MenuBlockReason, number> = new Map()
+let snapshot: Map<MenuItem, boolean> | null = null
+
+/** Recursively visit every MenuItem in the tree (root submenu first). */
+export function walkMenuItems(menu: Menu, fn: (item: MenuItem) => void): void {
+  for (const item of menu.items) {
+    fn(item)
+    if (item.submenu) walkMenuItems(item.submenu, fn)
+  }
+}
+
+function totalBlockCount(): number {
+  let total = 0
+  for (const n of blockReasons.values()) total += n
+  return total
+}
+
+function applyBlock(): void {
+  const menu = Menu.getApplicationMenu()
+  if (!menu) return
+  if (snapshot) return // already blocked
+  const snap = new Map<MenuItem, boolean>()
+  walkMenuItems(menu, (item) => {
+    if (item.type === 'separator') return
+    snap.set(item, item.enabled)
+    item.enabled = false
+  })
+  snapshot = snap
+}
+
+function applyUnblock(): void {
+  if (!snapshot) return
+  for (const [item, prev] of snapshot) {
+    item.enabled = prev
+  }
+  snapshot = null
+}
+
+/**
+ * Increment / decrement the block counter for a given reason. Crossing the
+ * total 0 -> >=1 boundary disables every menu item; crossing >=1 -> 0
+ * restores them. Calls are idempotent against the same reason being toggled
+ * twice in the same direction (the counter still tracks correctly).
+ */
+export function setMenuBlocked(reason: MenuBlockReason, blocked: boolean): void {
+  const prev = blockReasons.get(reason) ?? 0
+  const next = blocked ? prev + 1 : Math.max(0, prev - 1)
+  blockReasons.set(reason, next)
+  const total = totalBlockCount()
+  if (total > 0 && !snapshot) applyBlock()
+  else if (total === 0 && snapshot) applyUnblock()
+}
+
+/** Test-only: reset block state between tests. */
+export function _resetMenuBlockForTest(): void {
+  blockReasons.clear()
+  snapshot = null
+}
+
+/**
+ * Run an async operation with the menu blocked under the given reason.
+ * Used by handlers that open native OS dialogs (showOpenDialog,
+ * showSaveDialog, showMessageBox) so the parent window's menu accelerators
+ * are suppressed for the duration of the dialog.
+ */
+export async function withMenuBlocked<T>(
+  reason: MenuBlockReason,
+  op: () => Promise<T>,
+): Promise<T> {
+  setMenuBlocked(reason, true)
+  try {
+    return await op()
+  } finally {
+    setMenuBlocked(reason, false)
+  }
+}
+
 export function updateMenuState(state: MenuState): void {
+  // While the menu is blocked, ignore renderer-side state updates. The
+  // renderer is expected to re-emit on the next active-view change after
+  // unblock; the snapshot itself preserves whatever enabled values were
+  // current at block entry, so on unblock the menu returns to its last
+  // known-good state.
+  if (snapshot) return
+
   const menu = Menu.getApplicationMenu()
   if (!menu) return
 

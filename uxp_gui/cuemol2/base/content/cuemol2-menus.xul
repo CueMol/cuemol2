@@ -241,10 +241,6 @@
 	      command ="cmd_save_scene"/>
 	    <menuitem label="&save_scene_as.label;" oncommand="gQm2Main.onSaveSceneAs();"/>
 
-	    <menuseparator/>
-
-	    <menuitem label="Open web page..." oncommand="gQm2Main.onOpenURL();"/>
-
 #ifndef XP_MACOSX
 	    <menuseparator/>
 	    <menuitem

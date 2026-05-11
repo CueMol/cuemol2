@@ -6,10 +6,12 @@ import type { FileOpenOptions } from '../../../components/fopen-opt-dlgs/types';
 const log = console;
 
 export async function getCompatibleRendererNames(
-    transport: WorkerTransport, filePath: string,
+    transport: WorkerTransport, filePath: string, readerName?: string,
 ): Promise<string[]> {
     try {
-        return await transport.invokeService('getCompatibleRendererNames', { filePath });
+        return await transport.invokeService('getCompatibleRendererNames', {
+            filePath, readerName,
+        });
     } catch (e) {
         log.warn('getCompatibleRendererNames failed:', e);
         return [];
@@ -28,10 +30,10 @@ export async function getOpenFilters(
 }
 
 export async function createNewSceneAndView(
-    transport: WorkerTransport, dpr: number, name?: string,
-): Promise<{ scene_uid: number; view_uid: number } | null> {
+    transport: WorkerTransport, dpr: number, name?: string, bindView?: boolean,
+): Promise<{ scene_uid: number; view_uid: number; scene_name: string; view_name: string } | null> {
     try {
-        return await transport.invokeService('createNewSceneAndView', { dpr, name });
+        return await transport.invokeService('createNewSceneAndView', { dpr, name, bindView });
     } catch (e) {
         log.error('createNewSceneAndView failed:', e);
         return null;

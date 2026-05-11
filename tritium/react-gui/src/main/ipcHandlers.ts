@@ -19,7 +19,8 @@ import type {
 import type { FileDialogOptions } from '../shared/ipcTypes'
 import { loadLayout, saveLayout, loadUi, saveUi } from './stateStore'
 import { showNaviContextMenu } from './naviContextMenu'
-import { updateMenuState } from './menu'
+import { setMenuBlocked, updateMenuState, withMenuBlocked } from './menu'
+import { setQuitConfirmed } from './quitState'
 
 // ─────────────────────────────────────────────
 // Typed handle wrapper
@@ -61,11 +62,13 @@ function getUserStylePath(): string {
 
 export async function handleOpenFile(mainWindow: BrowserWindow, options: FileDialogOptions): Promise<void> {
   const title = options.dialogType === 'open-scene' ? 'Open Scene' : 'Open File'
-  const result = await dialog.showOpenDialog(mainWindow, {
-    title,
-    filters: options.filters,
-    properties: ['openFile'],
-  })
+  const result = await withMenuBlocked('native', () =>
+    dialog.showOpenDialog(mainWindow, {
+      title,
+      filters: options.filters,
+      properties: ['openFile'],
+    }),
+  )
 
   if (!result.canceled && result.filePaths.length > 0) {
     for (const filePath of result.filePaths) {
@@ -85,6 +88,52 @@ export async function handleOpenFile(mainWindow: BrowserWindow, options: FileDia
         })
       }
     }
+  }
+}
+
+// ─────────────────────────────────────────────
+// Scene save helpers
+// ─────────────────────────────────────────────
+
+async function handleSaveSceneDialog(
+  mainWindow: BrowserWindow,
+  defaultName: string,
+): Promise<{ canceled: boolean; filePath: string }> {
+  const result = await withMenuBlocked('native', () =>
+    dialog.showSaveDialog(mainWindow, {
+      title: 'Save Scene As',
+      defaultPath: defaultName,
+      filters: [
+        { name: 'CueMol Scene', extensions: ['qsc'] },
+        { name: 'All Files', extensions: ['*'] },
+      ],
+    }),
+  )
+  return {
+    canceled: result.canceled,
+    filePath: result.filePath ?? '',
+  }
+}
+
+function handleFileExists(target: string): { exists: boolean } {
+  try {
+    return { exists: fs.existsSync(target) }
+  } catch {
+    return { exists: false }
+  }
+}
+
+function handleBackupRename(target: string): { ok: boolean; backed: boolean; error?: string } {
+  try {
+    if (!fs.existsSync(target)) return { ok: true, backed: false }
+    const backup = `${target}.bak`
+    if (fs.existsSync(backup)) {
+      try { fs.unlinkSync(backup) } catch { /* ignore */ }
+    }
+    fs.renameSync(target, backup)
+    return { ok: true, backed: true }
+  } catch (e) {
+    return { ok: false, backed: false, error: (e as Error).message }
   }
 }
 
@@ -116,6 +165,14 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
     await handleOpenFile(mainWindow, options)
   })
 
+  handleInvoke(IPC.DIALOG_SAVE_SCENE, async (_event, payload) =>
+    handleSaveSceneDialog(mainWindow, payload.defaultName),
+  )
+
+  handleInvoke(IPC.FILE_EXISTS, (_event, payload) => handleFileExists(payload.path))
+
+  handleInvoke(IPC.FILE_BACKUP_RENAME, (_event, payload) => handleBackupRename(payload.path))
+
   handleInvoke(IPC.LAYOUT_LOAD, async () => loadLayout() ?? null)
 
   handleInvoke(IPC.LAYOUT_SAVE, async (_event, layout) => {
@@ -125,10 +182,18 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   handleInvoke(IPC.UI_LOAD, () => loadUi())
   handleInvoke(IPC.UI_SAVE, (_e, state) => saveUi(state))
   handleInvoke(IPC.MENU_UPDATE_STATE, (_e, state) => updateMenuState(state))
+  handleInvoke(IPC.MENU_SET_MODAL_BLOCKED, (_e, blocked) =>
+    setMenuBlocked('blueprint', blocked),
+  )
 
   handleInvoke(IPC.NAVI_CTX_SHOW, (_event, payload) =>
     showNaviContextMenu(mainWindow, payload),
   )
+
+  handleInvoke(IPC.APP_QUIT_PROCEED, () => {
+    setQuitConfirmed(true)
+    app.quit()
+  })
 
   handleInvoke(IPC.MENU_INVOKE_ROLE, (_event, role) => {
     const wc = mainWindow.webContents

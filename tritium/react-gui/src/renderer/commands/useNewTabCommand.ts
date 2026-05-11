@@ -10,12 +10,14 @@ import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
 import { useShowNewTabDialog } from '../components/dialogs/NewTabDialogProvider'
+import type { NewSceneAction } from '../hooks/useNewSceneAction'
 
 interface UseNewTabCommandOptions {
     cm: AsyncCueMol | null
     addMolTab: (title: string, viewId: number, sceneId: number) => void
     addMolViewTab: (title: string, viewId: number) => void
     getActiveSceneInfo: () => { scene_uid: number; view_id: number } | null | undefined
+    newScene: NewSceneAction
 }
 
 export function useNewTabCommand({
@@ -23,6 +25,7 @@ export function useNewTabCommand({
     addMolTab,
     addMolViewTab,
     getActiveSceneInfo,
+    newScene,
 }: UseNewTabCommandOptions): void {
     const showNewTabDialog = useShowNewTabDialog()
 
@@ -43,11 +46,8 @@ export function useNewTabCommand({
         if (!result) return
 
         if (result.mode === 'new-scene') {
-            const ids = await cm.createNewSceneAndView(dpr, result.name)
-            if (!ids) return
-            const { scene_uid, view_uid } = ids
-            addMolTab(result.name, view_uid, scene_uid)
-            addMolViewTab(result.name, view_uid)
+            // Same path as app launch (UXP onNewScene).
+            await newScene({ name: result.name })
         } else {
             // new-view: add view to existing scene
             if (!active) return
@@ -58,10 +58,12 @@ export function useNewTabCommand({
                 dpr,
             })
             if (!res?.ok || res.view_uid === undefined) return
-            addMolTab(result.name, res.view_uid, active.scene_uid)
-            addMolViewTab(result.name, res.view_uid)
+            // UXP makeTabLabel format: `<scene name>:<view name>`.
+            const title = `${names.currentSceneName ?? ''}:${result.name}`
+            addMolTab(title, res.view_uid, active.scene_uid)
+            addMolViewTab(title, res.view_uid)
         }
-    }, [cm, addMolTab, addMolViewTab, getActiveSceneInfo, showNewTabDialog])
+    }, [cm, addMolTab, addMolViewTab, getActiveSceneInfo, showNewTabDialog, newScene])
 
     useRegisterCommand(CmdId.TabNew, () => {
         openNewTab().catch((e: unknown) => console.error('TabNew failed:', e))

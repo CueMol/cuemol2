@@ -27,12 +27,19 @@ import type {
 export interface InvokeChannels {
   [IPC.APP_PATH]:          { req: void;                  res: AppPathInfo }
   [IPC.DIALOG_OPEN]:       { req: FileDialogOptions;     res: void }
+  [IPC.DIALOG_SAVE_SCENE]: { req: { defaultName: string };
+                             res: { canceled: boolean; filePath: string } }
+  [IPC.FILE_EXISTS]:       { req: { path: string };      res: { exists: boolean } }
+  [IPC.FILE_BACKUP_RENAME]:{ req: { path: string };
+                             res: { ok: boolean; backed: boolean; error?: string } }
   [IPC.LAYOUT_LOAD]:       { req: void;                  res: LayoutState | null }
   [IPC.LAYOUT_SAVE]:       { req: LayoutState;           res: void }
   [IPC.UI_LOAD]:           { req: void;                  res: UiState }
   [IPC.UI_SAVE]:           { req: Partial<UiState>;      res: void }
   [IPC.MENU_UPDATE_STATE]: { req: MenuState;             res: void }
+  [IPC.MENU_SET_MODAL_BLOCKED]: { req: boolean;          res: void }
   [IPC.MENU_INVOKE_ROLE]:  { req: string;                res: void }
+  [IPC.APP_QUIT_PROCEED]:  { req: void;                  res: void }
   [IPC.NAVI_CTX_SHOW]:     { req: NaviCtxMenuPayload;    res: NaviCtxAction | null }
 }
 
@@ -43,6 +50,7 @@ export interface PushChannels {
   [IPC.MENU_NEW_TAB]:      void
   [IPC.MENU_CLOSE_TAB]:    void
   [IPC.MENU_SAVE]:         void
+  [IPC.MENU_SAVE_SCENE_AS]: void
   [IPC.MENU_NEW_SCENE]:    void
   [IPC.MENU_OPEN_FILE]:    void
   [IPC.MENU_OPEN_SCENE]:   void
@@ -50,6 +58,7 @@ export interface PushChannels {
   [IPC.MENU_REDO]:         void
   [IPC.MENU_GENERIC]:      string
   [IPC.ROTATE_GESTURE]:    number
+  [IPC.APP_QUIT_REQUEST]:  void
 }
 
 export type InvokeChannel = keyof InvokeChannels

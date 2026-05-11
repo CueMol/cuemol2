@@ -18,7 +18,8 @@
  *   await showAbout()
  */
 
-import React, { createContext, useCallback, useContext, useRef, useState } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
+import { useModalOpenCounterIfAny } from '../contexts/ModalOpenCounterContext'
 
 interface DialogState<TArgs> {
   visible: boolean
@@ -53,6 +54,15 @@ export function createDialogHook<TArgs, TResult>(
   const Provider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [state, setState] = useState<DialogState<TArgs>>({ visible: false, args: undefined })
     const resolveRef = useRef<((result: TResult) => void) | null>(null)
+    const counter = useModalOpenCounterIfAny()
+
+    // While this dialog is visible, contribute one tick to the global modal
+    // counter. The 0 -> 1 / 1 -> 0 boundary disables / re-enables the app menu.
+    useEffect(() => {
+      if (!counter || !state.visible) return
+      counter.inc()
+      return () => counter.dec()
+    }, [state.visible, counter])
 
     const show = useCallback((args: TArgs): Promise<TResult> => {
       return new Promise<TResult>((resolve) => {

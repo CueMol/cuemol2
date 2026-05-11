@@ -16,25 +16,26 @@ function proposeNewTabNames(
     ctx: WorkerContext,
     args: ProposeNewTabNamesArgs,
 ): ProposeNewTabNamesResult {
-    const defaultSceneName = uniqNameSvc.proposeUniqName(ctx, { kind: 'scene', prefix: 'Scene_' }).name;
+    // Mirrors UXP mainView.properties (en-US): "Untitled %1$S" for scenes,
+    // "%1$S" (number only) for views. Locale switching is intentionally
+    // omitted (no i18n in tritium yet).
+    const defaultSceneName = uniqNameSvc.proposeUniqName(ctx, { kind: 'scene', prefix: 'Untitled ' }).name;
 
     if (args.sceneId === undefined) {
-        return { currentSceneName: null, defaultSceneName, defaultViewName: 'View_1' };
+        return { currentSceneName: null, defaultSceneName, defaultViewName: '1' };
     }
 
     const scene = ctx.sceMgr.getScene(args.sceneId);
     if (!scene) {
-        return { currentSceneName: null, defaultSceneName, defaultViewName: 'View_1' };
+        return { currentSceneName: null, defaultSceneName, defaultViewName: '1' };
     }
 
-    // Fall back to "Scene_{uid}" when the C++ name is empty (e.g. initial scene
-    // created directly in App.tsx without calling scene.setName).
     const rawName: string = scene.name;
-    const currentSceneName = rawName || `Scene_${scene.getUID()}`;
+    const currentSceneName = rawName || null;
 
     const defaultViewName = uniqNameSvc.proposeUniqName(ctx, {
         kind: 'view',
-        prefix: 'View_',
+        prefix: '',
         sceneId: args.sceneId,
     }).name;
 

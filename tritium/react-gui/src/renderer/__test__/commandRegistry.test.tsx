@@ -71,7 +71,7 @@ describe('CommandRegistry', () => {
 
   it('has() reflects registration state', async () => {
     const h = makeRenderHook(() => {
-      useRegisterCommand(CmdId.FileSave, () => undefined)
+      useRegisterCommand(CmdId.FileSave, () => false)
       return useCommands()
     }, Wrapper)
     await flushPromises()
@@ -82,7 +82,7 @@ describe('CommandRegistry', () => {
 
   it('unmount removes the registered command', async () => {
     const h = makeRenderHook(() => {
-      useRegisterCommand(CmdId.FileSave, () => undefined)
+      useRegisterCommand(CmdId.FileSave, () => false)
       return useCommands()
     }, Wrapper)
     await flushPromises()
