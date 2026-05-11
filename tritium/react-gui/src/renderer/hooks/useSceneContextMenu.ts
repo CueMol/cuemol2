@@ -1,8 +1,19 @@
 import { useCallback } from 'react'
-import type { SceneCtxAction, SelectMolKind } from '../../shared/ipcTypes'
+import type { RendColoringId, SceneCtxAction, SelectMolKind } from '../../shared/ipcTypes'
 import { IPC } from '../../shared/ipcChannels'
 import type { SceneTreeNode } from '../worker/shared/sceneTreeTypes'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
+
+/**
+ * Renderer type names that don't support a `coloring` property — matches
+ * UXP `checkColoring` in `workspace_panel_ctxtmenu.js`. The Coloring submenu
+ * is hidden for these types.
+ */
+const RENDERER_TYPES_WITHOUT_COLORING = new Set([
+    '*selection',
+    '*namelabel',
+    'atomintr',
+])
 
 /**
  * Opens the native scene-tree context menu and dispatches the returned
@@ -11,9 +22,17 @@ import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
  *
  * Phase 3a: Show / Hide, Rename (window.prompt-based), Delete, Properties.
  * Phase 3b: object Selection submenu (selectMol-* actions).
+ * Phase 3c-1: renderer Coloring submenu (static items).
+ * Phase 3c-2: dynamic Paint (Secondary str.) sub-submenu populated from
+ *             StyleManager.getStyleNamesJSON via getPaintColoringStyles.
+ * Phase 3c-3a: Paint color-picker submenu (color-menu.xul replica) gated
+ *              by getRendererPaintInfo.canPaint.
+ * Phase 3c-3b: Style (shape) submenu populated from getRendererStyleEntries.
  */
 export interface UseSceneContextMenuOptions {
     cm: AsyncCueMol | null
+    /** Active scene UID — required to pre-fetch dynamic Paint(SS) styles. */
+    sceneId: number | undefined
     toggleVisibility: (id: string) => void
     deleteNode: (id: string) => Promise<boolean>
     renameNode: (id: string, newName: string) => Promise<boolean>
@@ -21,14 +40,20 @@ export interface UseSceneContextMenuOptions {
     selectObjectMol: (id: string, kind: SelectMolKind) => Promise<boolean>
     copyNode: (node: SceneTreeNode) => Promise<boolean>
     pasteNode: (node: SceneTreeNode) => Promise<boolean>
+    setRendererColoring: (id: string, coloringId: RendColoringId) => Promise<boolean>
+    paintRendererSelection: (id: string, colorValue: string) => Promise<boolean>
+    applyRendererStyle: (
+        id: string, styleName: string, pattern: string, flags: string,
+    ) => Promise<boolean>
 }
 
 export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
     openContextMenu: (node: SceneTreeNode, x: number, y: number) => Promise<void>
 } {
     const {
-        cm, toggleVisibility, deleteNode, renameNode, showProperty,
-        selectObjectMol, copyNode, pasteNode,
+        cm, sceneId, toggleVisibility, deleteNode, renameNode, showProperty,
+        selectObjectMol, copyNode, pasteNode, setRendererColoring,
+        paintRendererSelection, applyRendererStyle,
     } = opts
 
     const openContextMenu = useCallback(
@@ -38,6 +63,12 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                 node.type === 'renderer' ||
                 node.type === 'rendGroup'
 
+            // Coloring submenu is renderer-only and hidden for the special
+            // non-coloring renderer types (selection / label / atomintr).
+            const supportsColoring =
+                node.type === 'renderer' &&
+                !RENDERER_TYPES_WITHOUT_COLORING.has(node.className)
+
             // Pre-fetch clipboard state so main can enable Paste items correctly.
             let clipboardKind: 'object' | 'renderer' | null = null
             if (cm) {
@@ -46,6 +77,52 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                     clipboardKind = r?.kind ?? null
                 } catch (err) {
                     console.warn('getClipboardKind failed:', err)
+                }
+            }
+
+            // Pre-fetch renderer-specific submenu data in parallel.
+            // Coloring (paint styles + canPaint) is gated by supportsColoring;
+            // Style entries are pre-fetched whenever the node is a renderer
+            // since the gate (typeStyles/edgeStyles emptiness) is computed
+            // worker-side.
+            let paintStyles: { name: string; label: string }[] = []
+            let canPaint = false
+            let rendStyle:
+                | {
+                    typeStyles: {
+                        name: string; label: string; pattern: string; flags: string
+                    }[]
+                    edgeStyles: {
+                        name: string; label: string; pattern: string; flags: string
+                    }[]
+                }
+                | undefined
+            if (cm && node.type === 'renderer' && sceneId !== undefined) {
+                try {
+                    const coloringPromises = supportsColoring
+                        ? ([
+                              cm.invokeService('getPaintColoringStyles', { sceneId }),
+                              cm.invokeService('getRendererPaintInfo', {
+                                  sceneId, rendId: node.id,
+                              }),
+                          ] as const)
+                        : ([Promise.resolve(null), Promise.resolve(null)] as const)
+                    const stylePromise = cm.invokeService('getRendererStyleEntries', {
+                        sceneId, rendId: node.id,
+                    })
+                    const [styles, paintInfo, styleEntries] = await Promise.all([
+                        coloringPromises[0], coloringPromises[1], stylePromise,
+                    ])
+                    paintStyles = styles?.entries ?? []
+                    canPaint = paintInfo?.canPaint === true
+                    if (styleEntries?.ok) {
+                        rendStyle = {
+                            typeStyles: styleEntries.typeStyles,
+                            edgeStyles: styleEntries.edgeStyles,
+                        }
+                    }
+                } catch (err) {
+                    console.warn('renderer ctx pre-fetch failed:', err)
                 }
             }
 
@@ -59,6 +136,10 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                     isVisible: node.visible,
                     hasVisibility,
                     clipboardKind,
+                    supportsColoring,
+                    paintStyles,
+                    canPaint,
+                    rendStyle,
                 },
             )
 
@@ -94,11 +175,26 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                 case 'paste':
                     await pasteNode(node)
                     break
+                case 'setRendColoring':
+                    if (node.type !== 'renderer') break
+                    await setRendererColoring(idStr, action.coloringId)
+                    break
+                case 'paintRend':
+                    if (node.type !== 'renderer') break
+                    await paintRendererSelection(idStr, action.colorValue)
+                    break
+                case 'applyRendStyle':
+                    if (node.type !== 'renderer') break
+                    await applyRendererStyle(
+                        idStr, action.styleName, action.pattern, action.flags,
+                    )
+                    break
             }
         },
         [
-            cm, toggleVisibility, deleteNode, renameNode, showProperty,
-            selectObjectMol, copyNode, pasteNode,
+            cm, sceneId, toggleVisibility, deleteNode, renameNode, showProperty,
+            selectObjectMol, copyNode, pasteNode, setRendererColoring,
+            paintRendererSelection, applyRendererStyle,
         ],
     )
 

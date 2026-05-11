@@ -93,6 +93,22 @@ import type {
   GetClipboardKindArgs,
   GetClipboardKindResult,
 } from '../server/services/sceneClipboard.service'
+import type {
+  SetRendererColoringArgs,
+  SetRendererColoringResult,
+  GetPaintColoringStylesArgs,
+  GetPaintColoringStylesResult,
+  PaintRendererSelectionArgs,
+  PaintRendererSelectionResult,
+  GetRendererPaintInfoArgs,
+  GetRendererPaintInfoResult,
+} from '../server/services/rendererColoring.service'
+import type {
+  GetRendererStyleEntriesArgs,
+  GetRendererStyleEntriesResult,
+  ApplyRendererStyleArgs,
+  ApplyRendererStyleResult,
+} from '../server/services/rendererStyle.service'
 import type { UndoArgs } from '../server/services/undo.service'
 import type {
   ValidateSelectionArgs,
@@ -172,6 +188,12 @@ export interface ServiceMap {
   copyNode:                   { args: CopyNodeArgs;                    result: CopyNodeResult }
   pasteNode:                  { args: PasteNodeArgs;                   result: PasteNodeResult }
   getClipboardKind:           { args: GetClipboardKindArgs;            result: GetClipboardKindResult }
+  setRendererColoring:        { args: SetRendererColoringArgs;         result: SetRendererColoringResult }
+  getPaintColoringStyles:     { args: GetPaintColoringStylesArgs;      result: GetPaintColoringStylesResult }
+  paintRendererSelection:     { args: PaintRendererSelectionArgs;      result: PaintRendererSelectionResult }
+  getRendererPaintInfo:       { args: GetRendererPaintInfoArgs;        result: GetRendererPaintInfoResult }
+  getRendererStyleEntries:    { args: GetRendererStyleEntriesArgs;     result: GetRendererStyleEntriesResult }
+  applyRendererStyle:         { args: ApplyRendererStyleArgs;          result: ApplyRendererStyleResult }
   getViewProjection:          { args: ViewProjectionArgs;              result: ViewProjectionResult }
   setViewProjection:          { args: ViewProjectionArgs;              result: ViewProjectionResult }
   getViewCenterMark:          { args: ViewCenterMarkArgs;              result: ViewCenterMarkResult }

@@ -22,7 +22,7 @@ import type {
     SceneTreeNode,
 } from '../worker/shared/sceneTreeTypes'
 import type { NodeInfoEntry } from '../worker/server/services/sceneOps.service'
-import type { SelectMolKind } from '../../shared/ipcTypes'
+import type { RendColoringId, SelectMolKind } from '../../shared/ipcTypes'
 import {
     SEM_SCENE,
     SEM_OBJECT,
@@ -64,6 +64,17 @@ interface UseSceneTreeResult {
     copyNode: (node: SceneTreeNode) => Promise<boolean>
     /** Paste from the worker clipboard onto a target node. */
     pasteNode: (node: SceneTreeNode) => Promise<boolean>
+    /** Apply a static coloring submenu choice to a renderer (Phase 3c). */
+    setRendererColoring: (id: string, coloringId: RendColoringId) => Promise<boolean>
+    /** Insert a paint entry (color + current mol sel) into a PaintColoring renderer. */
+    paintRendererSelection: (id: string, colorValue: string) => Promise<boolean>
+    /** Apply a Style (shape) submenu choice (Phase 3c-3b). */
+    applyRendererStyle: (
+        id: string,
+        styleName: string,
+        pattern: string,
+        flags: string,
+    ) => Promise<boolean>
     /** Fetch property info for the property dialog. */
     fetchNodeInfo: (id: string) => Promise<NodeInfo | null>
     refetch: () => void
@@ -321,6 +332,67 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         [cm],
     )
 
+    const setRendererColoring = useCallback(
+        async (id: string, coloringId: RendColoringId): Promise<boolean> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return false
+            const numId = Number(id)
+            if (!Number.isFinite(numId)) return false
+            const node = findNode(tree, numId)
+            if (!node || node.type !== 'renderer') return false
+            const res = await cm.invokeService('setRendererColoring', {
+                sceneId: sid,
+                rendId: numId,
+                coloringId,
+            })
+            return res?.ok === true
+        },
+        [cm, tree],
+    )
+
+    const paintRendererSelection = useCallback(
+        async (id: string, colorValue: string): Promise<boolean> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return false
+            const numId = Number(id)
+            if (!Number.isFinite(numId)) return false
+            const node = findNode(tree, numId)
+            if (!node || node.type !== 'renderer') return false
+            const res = await cm.invokeService('paintRendererSelection', {
+                sceneId: sid,
+                rendId: numId,
+                colorValue,
+            })
+            return res?.ok === true
+        },
+        [cm, tree],
+    )
+
+    const applyRendererStyle = useCallback(
+        async (
+            id: string,
+            styleName: string,
+            pattern: string,
+            flags: string,
+        ): Promise<boolean> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return false
+            const numId = Number(id)
+            if (!Number.isFinite(numId)) return false
+            const node = findNode(tree, numId)
+            if (!node || node.type !== 'renderer') return false
+            const res = await cm.invokeService('applyRendererStyle', {
+                sceneId: sid,
+                rendId: numId,
+                styleName,
+                pattern,
+                flags,
+            })
+            return res?.ok === true
+        },
+        [cm, tree],
+    )
+
     const fetchNodeInfo = useCallback(
         async (id: string): Promise<NodeInfo | null> => {
             const sid = sceneIdRef.current
@@ -362,6 +434,9 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         selectObjectMol,
         copyNode,
         pasteNode,
+        setRendererColoring,
+        paintRendererSelection,
+        applyRendererStyle,
         fetchNodeInfo,
         refetch,
         resolveNodeName,

@@ -1,6 +1,7 @@
 import { Menu } from 'electron'
 import type { BrowserWindow, MenuItemConstructorOptions } from 'electron'
 import type {
+    RendColoringId,
     SceneCtxAction,
     SceneCtxMenuPayload,
     SceneCtxNodeType,
@@ -18,6 +19,7 @@ import type {
  * Phase coverage:
  *   - 3a: Show/Hide, Rename, Delete, Properties (common items)
  *   - 3b: Selection submenu on object nodes
+ *   - 3c (current): static Coloring submenu on renderer nodes
  */
 export function showSceneContextMenu(
     mainWindow: BrowserWindow,
@@ -78,6 +80,20 @@ function buildTemplate(
             ]
 
         case 'renderer':
+            return [
+                ...header,
+                ...showHideItems(payload, action),
+                ...coloringSubmenu(payload, action),
+                ...paintSubmenu(payload, action),
+                ...styleSubmenu(payload, action),
+                { type: 'separator' },
+                renameItem(action),
+                copyItem(action),
+                deleteItem(action),
+                { type: 'separator' },
+                propertyItem(action),
+            ]
+
         case 'rendGroup':
             return [
                 ...header,
@@ -165,6 +181,179 @@ function pasteItem(
     if (payload.clipboardKind !== expectedKind) return []
     const label = expectedKind === 'object' ? 'Paste Object' : 'Paste Renderer'
     return [{ label, click: action({ kind: 'paste' }) }]
+}
+
+/**
+ * Renderer Coloring submenu (Phase 3c).
+ *
+ * Static items (Phase 3c-1) plus dynamic Paint (Secondary str.) sub-submenu
+ * (Phase 3c-2) populated from `payload.paintStyles`. Layout mirrors UXP
+ * `wspcPanelRendColMenu`:
+ *
+ *   - "Paint (Secondary str.)" sub-submenu (only when paintStyles is non-empty)
+ *   - "CPK molcol"     → applyStyles DefaultCPKColoring
+ *   - "CPK dark gray"  → applyStyles DarkCPKColoring
+ *   - "CPK light gray" → applyStyles LightCPKColoring
+ *   - "B-factor"       → create BfacColoring + assign
+ *   - "Rainbow"        → create RainbowColoring + assign
+ *
+ * Hidden entirely for renderer types that don't support a `coloring`
+ * property (`*selection`, `*namelabel`, `atomintr`) — main process trusts
+ * the renderer-supplied `supportsColoring` flag.
+ */
+function coloringSubmenu(
+    payload: SceneCtxMenuPayload,
+    action: (a: SceneCtxAction) => MenuItemConstructorOptions['click'],
+): MenuItemConstructorOptions[] {
+    if (!payload.supportsColoring) return []
+    const item = (label: string, coloringId: RendColoringId): MenuItemConstructorOptions => ({
+        label,
+        click: action({ kind: 'setRendColoring', coloringId }),
+    })
+    const submenu: MenuItemConstructorOptions[] = []
+    const paintStyles = payload.paintStyles ?? []
+    if (paintStyles.length > 0) {
+        submenu.push({
+            label: 'Paint (Secondary str.)',
+            submenu: paintStyles.map((s) => ({
+                label: s.label,
+                click: action({ kind: 'setRendColoring', coloringId: `style-${s.name}` }),
+            })),
+        })
+        submenu.push({ type: 'separator' })
+    }
+    submenu.push(
+        item('CPK molcol', 'style-DefaultCPKColoring'),
+        item('CPK dark gray', 'style-DarkCPKColoring'),
+        item('CPK light gray', 'style-LightCPKColoring'),
+        { type: 'separator' },
+        item('B-factor', 'paint-type-bfac'),
+        item('Rainbow', 'paint-type-rainbow'),
+    )
+    return [{ label: 'Coloring', submenu }]
+}
+
+/**
+ * Renderer Paint color-picker submenu (Phase 3c-3a).
+ *
+ * Static replica of UXP `color-menu.xul` — eight color-family
+ * sub-submenus with brightness / saturation variations. Each leaf
+ * dispatches `paintRend` with the corresponding CueMol color value
+ * (`#FFF`, `hsb(0, 1.0, 1.0)`, etc.).
+ *
+ * Gated by `payload.canPaint` so the submenu only appears when the
+ * renderer's coloring is `PaintColoring` and the parent mol has a
+ * non-empty selection (UXP `checkPaintColoring` semantics).
+ */
+function paintSubmenu(
+    payload: SceneCtxMenuPayload,
+    action: (a: SceneCtxAction) => MenuItemConstructorOptions['click'],
+): MenuItemConstructorOptions[] {
+    if (!payload.canPaint) return []
+    return [{ label: 'Paint', submenu: buildPaintFamilyMenus(action) }]
+}
+
+interface PaintFamily {
+    label: string
+    items: { label: string; value: string }[]
+}
+
+const PAINT_FAMILIES: PaintFamily[] = [
+    {
+        label: 'Monochrome',
+        items: [
+            { label: 'White', value: '#FFF' },
+            { label: '75% Gray', value: 'rgb(0.75,0.75,0.75)' },
+            { label: '50% Gray', value: 'rgb(0.5,0.5,0.5)' },
+            { label: '25% Gray', value: 'rgb(0.25,0.25,0.25)' },
+            { label: 'Black', value: '#000' },
+        ],
+    },
+    ...(['Red', 0, 'Orange', 30, 'Yellow', 60, 'Green', 120,
+        'Cyan', 180, 'Blue', 240, 'Purple', 300] as const)
+        .reduce<PaintFamily[]>((acc, _, i, arr) => {
+            if (i % 2 !== 0) return acc
+            const label = arr[i] as string
+            const hue = arr[i + 1] as number
+            acc.push({
+                label,
+                items: [
+                    { label, value: `hsb(${hue}, 1.0, 1.0)` },
+                    { label: `${label}, sat 25%`, value: `hsb(${hue}, 0.25, 1.0)` },
+                    { label: `${label}, sat 50%`, value: `hsb(${hue}, 0.5, 1.0)` },
+                    { label: `${label}, sat 75%`, value: `hsb(${hue}, 0.75, 1.0)` },
+                    { label: `${label}, bri 75%`, value: `hsb(${hue}, 1.0, 0.75)` },
+                    { label: `${label}, bri 50%`, value: `hsb(${hue}, 1.0, 0.50)` },
+                    { label: `${label}, bri 25%`, value: `hsb(${hue}, 1.0, 0.25)` },
+                ],
+            })
+            return acc
+        }, []),
+]
+
+function buildPaintFamilyMenus(
+    action: (a: SceneCtxAction) => MenuItemConstructorOptions['click'],
+): MenuItemConstructorOptions[] {
+    return PAINT_FAMILIES.map(({ label, items }) => ({
+        label,
+        submenu: items.map((it) => ({
+            label: it.label,
+            click: action({ kind: 'paintRend', colorValue: it.value }),
+        })),
+    }))
+}
+
+/**
+ * Renderer Style (shape) submenu (Phase 3c-3b).
+ *
+ * Two groups separated by a separator, populated from
+ * `payload.rendStyle.{typeStyles, edgeStyles}`:
+ *   - Type-suffix styles matching `<renderer_type>$/i`
+ *   - Edge styles matching `^EgLine` (omitted for blocklist types)
+ *
+ * Each item dispatches `applyRendStyle` with the style name plus the
+ * regex pattern used to strip pre-existing entries (so the worker can
+ * apply the same strip / push transformation UXP `styleMol` performs).
+ *
+ * The submenu disappears entirely when both groups are empty.
+ */
+function styleSubmenu(
+    payload: SceneCtxMenuPayload,
+    action: (a: SceneCtxAction) => MenuItemConstructorOptions['click'],
+): MenuItemConstructorOptions[] {
+    const rs = payload.rendStyle
+    if (!rs) return []
+    const typeStyles = rs.typeStyles ?? []
+    const edgeStyles = rs.edgeStyles ?? []
+    if (typeStyles.length === 0 && edgeStyles.length === 0) return []
+
+    const submenu: MenuItemConstructorOptions[] = []
+    for (const s of typeStyles) {
+        submenu.push({
+            label: s.label,
+            click: action({
+                kind: 'applyRendStyle',
+                styleName: s.name,
+                pattern: s.pattern,
+                flags: s.flags,
+            }),
+        })
+    }
+    if (typeStyles.length > 0 && edgeStyles.length > 0) {
+        submenu.push({ type: 'separator' })
+    }
+    for (const s of edgeStyles) {
+        submenu.push({
+            label: s.label,
+            click: action({
+                kind: 'applyRendStyle',
+                styleName: s.name,
+                pattern: s.pattern,
+                flags: s.flags,
+            }),
+        })
+    }
+    return [{ label: 'Style', submenu }]
 }
 
 function selectionSubmenu(

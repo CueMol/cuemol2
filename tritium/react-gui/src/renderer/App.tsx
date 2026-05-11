@@ -94,6 +94,9 @@ const App: React.FC = () => {
     selectObjectMol: selectSceneObjectMol,
     copyNode: copySceneNode,
     pasteNode: pasteSceneNode,
+    setRendererColoring: setSceneRendererColoring,
+    paintRendererSelection: paintSceneRendererSelection,
+    applyRendererStyle: applySceneRendererStyle,
     fetchNodeInfo: fetchSceneNodeInfo,
     resolveNodeName,
   } = useSceneTree({ cm, sceneId: activeSceneId });
@@ -197,6 +200,7 @@ const App: React.FC = () => {
 
   const { openContextMenu: openSceneCtxMenu } = useSceneContextMenu({
     cm,
+    sceneId: activeSceneId,
     toggleVisibility: handleToggleVisibility,
     deleteNode: deleteSceneNode,
     renameNode: renameSceneNode,
@@ -204,6 +208,9 @@ const App: React.FC = () => {
     selectObjectMol: selectSceneObjectMol,
     copyNode: copySceneNode,
     pasteNode: pasteSceneNode,
+    setRendererColoring: setSceneRendererColoring,
+    paintRendererSelection: paintSceneRendererSelection,
+    applyRendererStyle: applySceneRendererStyle,
   });
 
   const handleShowSceneCtxMenu = useCallback(

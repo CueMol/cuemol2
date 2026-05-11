@@ -132,6 +132,31 @@ export type SelectMolKind =
   | 'sidechain'
 
 /**
+ * Coloring-submenu IDs applicable to renderer nodes (Phase 3c).
+ * Mirrors UXP `workspace_panel.xul` `wspcPanelRendColMenu` values.
+ *
+ * IDs prefixed with `style-` go through `Renderer.applyStyles` after
+ * stripping existing `/Paint$/` entries (mirrors `Qm2Main.setRendColoring`'s
+ * style-* branch). The suffix is the StyleManager style name; static labels
+ * for the CPK molcol / dark / light wired in Phase 3c-1 are kept here as
+ * literal subtypes for documentation. Dynamic Paint (Secondary str.) entries
+ * (Phase 3c-2) fold into the same template-literal supertype.
+ *
+ * IDs prefixed with `paint-type-` instantiate a fresh coloring object and
+ * assign it to `rend.coloring`.
+ */
+export type RendColoringStyleId =
+  | 'style-DefaultCPKColoring'
+  | 'style-DarkCPKColoring'
+  | 'style-LightCPKColoring'
+  | `style-${string}`
+
+export type RendColoringId =
+  | RendColoringStyleId
+  | 'paint-type-bfac'
+  | 'paint-type-rainbow'
+
+/**
  * Discriminated action returned from the scene-tree native context menu.
  * Phase 3a covers the common items shared across node types; later phases
  * add type-specific actions (selection ops, paint, camera/style file I/O).
@@ -147,6 +172,9 @@ export type SceneCtxAction =
   | { kind: 'selectMol'; selectKind: SelectMolKind }
   | { kind: 'copy' }
   | { kind: 'paste' }
+  | { kind: 'setRendColoring'; coloringId: RendColoringId }
+  | { kind: 'paintRend'; colorValue: string }
+  | { kind: 'applyRendStyle'; styleName: string; pattern: string; flags: string }
 
 export type SceneCtxNodeType =
   | 'scene'
@@ -170,6 +198,35 @@ export interface SceneCtxMenuPayload {
   hasVisibility: boolean
   /** What the worker clipboard holds, used to gate Paste items. */
   clipboardKind: 'object' | 'renderer' | null
+  /**
+   * Whether the targeted renderer supports the Coloring submenu (Phase 3c).
+   * False for the special `*selection` / `*namelabel` / `atomintr` types
+   * and for rendGroup containers. Renderer ctx only.
+   */
+  supportsColoring?: boolean
+  /**
+   * Dynamic entries for the "Paint (Secondary str.)" sub-submenu under
+   * Coloring (Phase 3c-2). Populated via `getPaintColoringStyles` worker
+   * service when `supportsColoring` is true; an empty list hides the
+   * sub-submenu entirely.
+   */
+  paintStyles?: { name: string; label: string }[]
+  /**
+   * Whether the Paint color-picker submenu (Phase 3c-3a) should appear.
+   * True iff the renderer's current coloring is `PaintColoring` and the
+   * parent mol has a non-empty selection — matches UXP `checkPaintColoring`.
+   * Pre-fetched via `getRendererPaintInfo` and gated client-side.
+   */
+  canPaint?: boolean
+  /**
+   * Entries for the Style (shape) submenu (Phase 3c-3b). Pre-fetched via
+   * `getRendererStyleEntries`. Both groups can be empty; the submenu is
+   * hidden when both are.
+   */
+  rendStyle?: {
+    typeStyles: { name: string; label: string; pattern: string; flags: string }[]
+    edgeStyles: { name: string; label: string; pattern: string; flags: string }[]
+  }
 }
 
 // ── Native menu state ───────────────────────────────────────────────────────
