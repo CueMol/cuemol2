@@ -2,13 +2,13 @@
 import type { WorkerContext } from '../types/WorkerContext';
 
 export type ProposeUniqNameArgs =
-    | { kind: 'scene'; prefix: string }
-    | { kind: 'view'; prefix: string; sceneId: number }
-    | { kind: 'object'; prefix: string; sceneId: number }
-    | { kind: 'renderer'; prefix: string; sceneId: number; molId: number }
+    | { kind: 'scene';         prefix: string }
+    | { kind: 'view';          prefix: string; sceneId: number }
+    | { kind: 'object';        prefix: string; sceneId: number; tryBare?: boolean; suffix?: 'numeric' | 'parens' }
+    | { kind: 'renderer';      prefix: string; sceneId: number; molId: number }
     | { kind: 'sceneRenderer'; prefix: string; sceneId: number }
-    | { kind: 'styleSet'; prefix: string; sceneId: number }
-    | { kind: 'camera'; prefix: string; sceneId: number };
+    | { kind: 'styleSet';      prefix: string; sceneId: number }
+    | { kind: 'camera';        prefix: string; sceneId: number };
 
 export interface ProposeUniqNameResult {
     name: string;
@@ -16,10 +16,16 @@ export interface ProposeUniqNameResult {
 
 const MAX_ITER = 9999;
 
+function buildCandidate(prefix: string, i: number, suffix: 'numeric' | 'parens'): string {
+    return suffix === 'parens' ? `${prefix}(${i})` : `${prefix}${i}`;
+}
+
 function proposeUniqName(ctx: WorkerContext, args: ProposeUniqNameArgs): ProposeUniqNameResult {
     const { prefix } = args;
 
     let tryFunc: (name: string) => unknown;
+    let tryBare = false;
+    let suffix: 'numeric' | 'parens' = 'numeric';
 
     switch (args.kind) {
         case 'scene': {
@@ -36,8 +42,13 @@ function proposeUniqName(ctx: WorkerContext, args: ProposeUniqNameArgs): Propose
         }
         case 'object': {
             const scene = ctx.sceMgr.getScene(args.sceneId);
+            tryBare = args.tryBare === true;
+            suffix = args.suffix ?? 'numeric';
             if (!scene) {
-                return { name: prefix + '1' };
+                // Without a scene we can't probe — return the most user-friendly
+                // candidate the caller asked for: bare prefix when tryBare,
+                // otherwise prefix+1 (legacy fallback).
+                return { name: tryBare ? prefix : prefix + '1' };
             }
             tryFunc = (name) => scene.getObjectByName(name);
             break;
@@ -62,7 +73,7 @@ function proposeUniqName(ctx: WorkerContext, args: ProposeUniqNameArgs): Propose
             // Scene-wide rendgroup naming: matches UXP `onNewRendGrp`'s
             // `scene.getRendByName` lookup so group names don't collide
             // with sibling renderers on other objects.
-            tryFunc = (name) => scene.getRendByName(name);
+            tryFunc = (name) => (scene as any).getRendByName(name);
             break;
         }
         case 'camera': {
@@ -99,8 +110,15 @@ function proposeUniqName(ctx: WorkerContext, args: ProposeUniqNameArgs): Propose
         }
     }
 
+    if (tryBare) {
+        const bare = tryFunc(prefix);
+        if (bare === null || bare === undefined) {
+            return { name: prefix };
+        }
+    }
+
     for (let i = 1; i <= MAX_ITER; ++i) {
-        const candidate = prefix + i.toString();
+        const candidate = buildCandidate(prefix, i, suffix);
         const existing = tryFunc(candidate);
         if (existing === null || existing === undefined) {
             return { name: candidate };

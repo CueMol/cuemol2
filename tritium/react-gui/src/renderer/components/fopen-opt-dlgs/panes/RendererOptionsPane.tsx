@@ -9,9 +9,16 @@ interface RendererOptionsPaneProps {
   rendererTypes: string[];
   sceneId: number;
   isMolFormat: boolean;
+  /**
+   * Routes renderer-name keystrokes through the parent so it can track
+   * whether the value is still the auto-generated default (UXP
+   * mRendNameDefault). When omitted, falls back to setting the field
+   * directly via the standard onChange path.
+   */
+  onRendererNameUserEdit?: (newValue: string) => void;
 }
 
-export const RendererOptionsPane: React.FC<RendererOptionsPaneProps> = ({ options, onChange, rendererTypes, sceneId, isMolFormat }) => {
+export const RendererOptionsPane: React.FC<RendererOptionsPaneProps> = ({ options, onChange, rendererTypes, sceneId, isMolFormat, onRendererNameUserEdit }) => {
   const set = <K extends keyof RendererOptions>(key: K) =>
     (value: RendererOptions[K]) => onChange({ ...options, [key]: value });
 
@@ -23,7 +30,6 @@ export const RendererOptionsPane: React.FC<RendererOptionsPaneProps> = ({ option
           id="rend-objname"
           value={options.objectName}
           onChange={(e) => set('objectName')(e.target.value)}
-          placeholder="molecule"
         />
       </FormGroup>
       <Divider />
@@ -45,8 +51,10 @@ export const RendererOptionsPane: React.FC<RendererOptionsPaneProps> = ({ option
         <InputGroup
           id="rend-name"
           value={options.rendererName}
-          onChange={(e) => set('rendererName')(e.target.value)}
-          placeholder="simple1"
+          onChange={(e) => {
+            if (onRendererNameUserEdit) onRendererNameUserEdit(e.target.value);
+            else set('rendererName')(e.target.value);
+          }}
         />
       </FormGroup>
       {isMolFormat && (

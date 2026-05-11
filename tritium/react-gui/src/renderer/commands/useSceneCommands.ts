@@ -68,8 +68,13 @@ export function useSceneCommands({
             const info = getActiveSceneInfo()
             if (!info) return
             ;(async () => {
-                const rendererTypes = await cm.getCompatibleRendererNames(data.path)
-                const options = await showFileOpenOptionDialog({ filePath: data.path, sceneId: info.scene_uid, rendererTypes })
+                const { types, objType } = await cm.getCompatibleRendererNames(data.path)
+                const options = await showFileOpenOptionDialog({
+                    filePath: data.path,
+                    sceneId: info.scene_uid,
+                    rendererTypes: types,
+                    objType,
+                })
                 if (options === null) return
                 await cm.loadObject(data.path, info.scene_uid, options)
             })().catch((e: unknown) => console.error('OpenObjByPath failed:', e))
@@ -109,7 +114,7 @@ export function useSceneCommands({
                     // Pass readerName explicitly so the renderer-list lookup matches the
                     // load reader. Skipping it re-introduces the .cif ambiguity
                     // (mmcifmap wins by JSON order).
-                    const rendererTypes = await cm.getCompatibleRendererNames(virtualFilename, readerName)
+                    const { types: rendererTypes, objType } = await cm.getCompatibleRendererNames(virtualFilename, readerName)
                     if (!rendererTypes || rendererTypes.length === 0) {
                         console.warn(`Get PDB: no compatible renderer for ${virtualFilename}`)
                     } else {
@@ -117,6 +122,7 @@ export function useSceneCommands({
                             filePath: virtualFilename,
                             sceneId: info.scene_uid,
                             rendererTypes,
+                            objType,
                         })
                         if (options !== null) {
                             tasks.push(() => streamWithProgress(

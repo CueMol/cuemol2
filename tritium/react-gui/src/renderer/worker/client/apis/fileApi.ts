@@ -2,19 +2,20 @@
 import { WorkerTransport } from '../WorkerTransport';
 import type { ElectronFileFilter } from '../../../../shared/ipcTypes';
 import type { FileOpenOptions } from '../../../components/fopen-opt-dlgs/types';
+import type { GetCompatibleRendererNamesResult } from '../../server/services/getCompatibleRendererNames.service';
 
 const log = console;
 
 export async function getCompatibleRendererNames(
     transport: WorkerTransport, filePath: string, readerName?: string,
-): Promise<string[]> {
+): Promise<GetCompatibleRendererNamesResult> {
     try {
         return await transport.invokeService('getCompatibleRendererNames', {
             filePath, readerName,
         });
     } catch (e) {
         log.warn('getCompatibleRendererNames failed:', e);
-        return [];
+        return { types: [], objType: '' };
     }
 }
 
