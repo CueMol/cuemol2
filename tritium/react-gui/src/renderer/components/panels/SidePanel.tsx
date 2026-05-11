@@ -63,12 +63,12 @@ import {
   DummyPane4,
 } from "../panes";
 
-import type { SceneNode } from "../panes/ScenePane";
+import type { SceneTreeNode } from "../../worker/shared/sceneTreeTypes";
 
 import { MOL_TREE, MOLECULE_OPTIONS } from "../../data/sampleData";
 
 /* ─── Re-export types for external consumers ─── */
-export type { SceneNode, SceneObjectNode, SceneRendererNode } from "../panes/ScenePane";
+export type { SceneTreeNode } from "../../worker/shared/sceneTreeTypes";
 export type { MolNode } from "../panes/MolStructPane";
 export type { MolOption } from "../panes/SelectionPane";
 
@@ -114,7 +114,7 @@ interface SidePanelProps {
   activeView: ActivityView;
 
   /* Scene / Explorer props */
-  scene: SceneNode;
+  sceneTree: SceneTreeNode | null;
   sceneSelected: string;
   onSceneSelect: (id: string) => void;
   onToggleVisibility: (id: string) => void;
@@ -147,7 +147,7 @@ interface SidePanelProps {
 
 export const SidePanel: React.FC<SidePanelProps> = ({
   activeView,
-  scene,
+  sceneTree,
   sceneSelected,
   onSceneSelect,
   onToggleVisibility,
@@ -194,7 +194,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         defaultSize: 220,
         render: (collapsed, onToggle) => (
           <ScenePane
-            scene={scene}
+            tree={sceneTree}
             selectedId={sceneSelected}
             onSelect={onSceneSelect}
             onToggleVisibility={onToggleVisibility}
@@ -267,7 +267,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
       },
     ],
   }), [
-    scene, sceneSelected, onSceneSelect,
+    sceneTree, sceneSelected, onSceneSelect,
     onToggleVisibility, onShowProperty,
   ]);
 

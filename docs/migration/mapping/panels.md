@@ -26,4 +26,4 @@ Status values:
 | [`panel.molstruct`](../uxp-inventory/panels.md#panelmolstruct) | | | todo | | | |
 | [`panel.selection`](../uxp-inventory/panels.md#panelselection) | | | todo | | | |
 | [`panel.symmetry`](../uxp-inventory/panels.md#panelsymmetry) | | | todo | | | |
-| [`panel.workspace`](../uxp-inventory/panels.md#panelworkspace) | | | todo | | | |
+| [`panel.workspace`](../uxp-inventory/panels.md#panelworkspace) | `ScenePane` / `useSceneTree` / `sceneTree.service` | split | wip | | | Phase 1 done: live tree (scene/object/renderer/rendGroup), eye-icon visibility toggle (undo-wrapped), node selection. Camera/style/group operations and toolbar buttons land in later phases. |

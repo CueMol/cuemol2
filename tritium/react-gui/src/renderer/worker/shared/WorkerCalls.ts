@@ -67,6 +67,12 @@ import type {
   SceneBgColorResult,
   SetSceneBgColorArgs,
 } from '../server/services/sceneBgColor.service'
+import type {
+  GetSceneTreeArgs,
+  GetSceneTreeResult,
+  SetNodeVisibleArgs,
+  SetNodeVisibleResult,
+} from '../server/services/sceneTree.service'
 import type { UndoArgs } from '../server/services/undo.service'
 import type {
   ValidateSelectionArgs,
@@ -136,6 +142,8 @@ export interface ServiceMap {
   validateSelection:          { args: ValidateSelectionArgs;           result: ValidateSelectionResult }
   getSceneBgColor:            { args: SceneBgColorArgs;                result: SceneBgColorResult }
   setSceneBgColor:            { args: SetSceneBgColorArgs;             result: SceneBgColorResult }
+  getSceneTree:               { args: GetSceneTreeArgs;                result: GetSceneTreeResult }
+  setNodeVisible:             { args: SetNodeVisibleArgs;              result: SetNodeVisibleResult }
   getViewProjection:          { args: ViewProjectionArgs;              result: ViewProjectionResult }
   setViewProjection:          { args: ViewProjectionArgs;              result: ViewProjectionResult }
   getViewCenterMark:          { args: ViewCenterMarkArgs;              result: ViewCenterMarkResult }

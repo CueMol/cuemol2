@@ -1,6 +1,6 @@
 # Migration Mapping — Index
 
-- Updated: 2026-05-10
+- Updated: 2026-05-11
 - Source files: `docs/migration/mapping/*.md` (excluding this file)
 
 ---
@@ -9,7 +9,7 @@
 
 | Category | File | Total | done | wip | review | todo | frozen |
 |----------|------|------:|-----:|----:|-------:|-----:|-------:|
-| Panel | [panels.md](panels.md) | 9 | 0 | 0 | 0 | 9 | 0 |
+| Panel | [panels.md](panels.md) | 9 | 0 | 1 | 0 | 8 | 0 |
 | Menu | [menus.md](menus.md) | 4 | 1 | 2 | 0 | 1 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 13 | 0 | 0 | 0 | 13 | 0 |
@@ -18,7 +18,7 @@
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 0 | 1 | 0 | 12 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 0 | 0 | 0 | 28 | 0 |
 | Other | [other.md](other.md) | 4 | 0 | 1 | 0 | 3 | 0 |
-| **Total** | | **112** | **1** | **6** | **0** | **105** | **0** |
+| **Total** | | **112** | **1** | **7** | **0** | **104** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -30,10 +30,10 @@
 |---------|------:|
 | 1:1 (`direct`) | 3 |
 | merged | 0 |
-| split | 3 |
+| split | 4 |
 | redesign | 0 |
 | deprecated (`dropped`) | 1 |
-| *(not yet assigned)* | 105 |
+| *(not yet assigned)* | 104 |
 
 ---
 
@@ -47,9 +47,10 @@
 | [`dialog.about`](other_dlgs.md#dialogabout) | `AboutDialog` / `useDialog` | GRE info・userAgent は省略 |
 | [`other.cuemol2`](other.md#othercuemol2) | `App` / `ContentArea` / `TabBar` / `ConfirmCloseTabDialog` / `useQuitHandler` | Main window layout done; close-tab confirmation dialog (UXP `closeTabImpl`) implemented; UXP `onCloseEvent` quit chain wired (cmd-Q walks all tabs via `before-quit` → `APP_QUIT_REQUEST` → `APP_QUIT_PROCEED`) |
 | [`widget.molsellist`](custom_widgets.md) | `MolSelList` (`components/widgets/MolSelList/`) | First consumer wired in `RendererOptionsPane` (file-open dialog); editable `InputGroup` + chevron-only `HTMLSelect` (OS-native dropdown listbox with `<optgroup>` Preset / History / Scene / Global); history via `localStorage`; worker services `getSelDefs` / `validateSelection` added |
+| [`panel.workspace`](panels.md#panelworkspace) | `ScenePane` / `useSceneTree` / `sceneTree.service` | Phase 1: live tree fetch + visibility toggle + selection wired (4 node types: scene/object/renderer/rendGroup). Phased rollout — Phase 2: toolbar + push-channel auto-refresh; Phase 3: context menus; Phase 4: drag-drop + copy/paste; Phase 5: camera/style file I/O + real property dialog; Phase 6: paint/around-byres/change-type. Camera/style root, drag-drop, context menus deferred. |
 
 ---
 
 ## Unstarted
 
-**105 / 112** items are `todo` (not yet started).
+**104 / 112** items are `todo` (not yet started).

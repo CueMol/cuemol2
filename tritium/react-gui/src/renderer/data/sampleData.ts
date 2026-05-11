@@ -1,43 +1,5 @@
 import type { LogEntry } from "../types";
-import type { SceneNode, MolNode, MolOption } from "../components/panels/SidePanel";
-
-export const SCENE_DATA: SceneNode = {
-  id: "scene1",
-  label: "Scene1",
-  icon: "film",
-  objects: [
-    {
-      id: "mol1",
-      label: "1CRN (Crambin)",
-      icon: "symbol-circle",
-      visible: true,
-      children: [
-        { id: "r1", label: "simple", icon: "style", visible: true },
-        { id: "r2", label: "cartoon", icon: "style", visible: true },
-        { id: "r3", label: "cpk", icon: "style", visible: false },
-      ],
-    },
-    {
-      id: "mol2",
-      label: "3J3Q (Ribosome)",
-      icon: "symbol-circle",
-      visible: true,
-      children: [
-        { id: "r4", label: "ribbon", icon: "style", visible: true },
-        { id: "r5", label: "ball+stick", icon: "style", visible: false },
-      ],
-    },
-    {
-      id: "mol3",
-      label: "6LU7 (SARS-CoV-2)",
-      icon: "symbol-circle",
-      visible: true,
-      children: [
-        { id: "r6", label: "surface", icon: "style", visible: true },
-      ],
-    },
-  ],
-};
+import type { MolNode, MolOption } from "../components/panels/SidePanel";
 
 export const MOL_TREE: MolNode[] = [
   {

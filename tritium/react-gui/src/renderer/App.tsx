@@ -29,11 +29,11 @@ import { SAMPLE_ALIGNMENT, SAMPLE_ANIMATION } from "./data/alignmentData";
 import { useLayoutPersistence } from "./hooks/useLayoutPersistence";
 import { useActiveTool } from "./hooks/useActiveTool";
 import { ActiveToolProvider } from "./contexts/ActiveToolContext";
-import { useSceneState } from "./hooks/useSceneState";
+import { useSceneTree } from "./hooks/useSceneTree";
 import { useInspectorState } from "./hooks/useInspectorState";
 import { useTabManager } from "./hooks/useTabManager";
 import { useCueMol } from "./hooks/useCueMol";
-import { useMolTabDispatch } from "./hooks/useMolTab";
+import { useMolTabDispatch, useMolTabState } from "./hooks/useMolTab";
 import { useAppInitialization } from "./hooks/useAppInitialization";
 import { useNewSceneAction } from "./hooks/useNewSceneAction";
 import { useActiveViewState } from "./hooks/useActiveViewState";
@@ -71,15 +71,22 @@ const App: React.FC = () => {
     setActiveView((prev) => (prev === view ? null : view));
   }, []);
 
+  // --- CueMol core / tabs (cm needed early for useSceneTree) ---
+
+  const { cueMolReady, cm } = useCueMol();
+  const { addMolTab, removeMolTab, getActiveSceneInfo, setActiveViewByID } = useMolTabDispatch();
+  const { molTabEntries } = useMolTabState();
+  const activeSceneId = molTabEntries.find((t) => t.active)?.scene_uid;
+
   // --- Domain hooks ---
 
   const {
-    scene,
-    sceneSelected,
-    setSceneSelected,
-    handleToggleVisibility,
+    tree: sceneTree,
+    selectedId: sceneSelected,
+    setSelectedId: setSceneSelected,
+    toggleVisibility: handleToggleVisibility,
     resolveNodeName,
-  } = useSceneState();
+  } = useSceneTree({ cm, sceneId: activeSceneId });
 
   const {
     inspectorOpen,
@@ -99,8 +106,6 @@ const App: React.FC = () => {
 
   // --- CueMol core / tabs ---
 
-  const { cueMolReady, cm } = useCueMol();
-  const { addMolTab, removeMolTab, getActiveSceneInfo, setActiveViewByID } = useMolTabDispatch();
   const showConfirmCloseTabDialog = useShowConfirmCloseTabDialog();
   const { dispatch: dispatchCommand } = useCommands();
 
@@ -258,7 +263,7 @@ const App: React.FC = () => {
                 >
                   <SidePanel
                     activeView={activeView ?? "explorer"}
-                    scene={scene}
+                    sceneTree={sceneTree}
                     sceneSelected={sceneSelected}
                     onSceneSelect={setSceneSelected}
                     onToggleVisibility={handleToggleVisibility}
