@@ -55,6 +55,8 @@ interface UseSceneTreeResult {
     focusNode: (viewId: number, id: string) => Promise<boolean>
     /** Delete a node (typically the selection). */
     deleteNode: (id: string) => Promise<boolean>
+    /** Rename a node (object / renderer / rendGroup only in Phase 3a). */
+    renameNode: (id: string, newName: string) => Promise<boolean>
     /** Fetch property info for the property dialog. */
     fetchNodeInfo: (id: string) => Promise<NodeInfo | null>
     refetch: () => void
@@ -237,6 +239,25 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         [cm, tree],
     )
 
+    const renameNode = useCallback(
+        async (id: string, newName: string): Promise<boolean> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return false
+            const numId = Number(id)
+            if (!Number.isFinite(numId)) return false
+            const node = findNode(tree, numId)
+            if (!node) return false
+            const res = await cm.invokeService('renameNode', {
+                sceneId: sid,
+                nodeId: numId,
+                nodeType: node.type as SceneNodeType,
+                newName,
+            })
+            return res?.ok === true
+        },
+        [cm, tree],
+    )
+
     const fetchNodeInfo = useCallback(
         async (id: string): Promise<NodeInfo | null> => {
             const sid = sceneIdRef.current
@@ -274,6 +295,7 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         toggleVisibility,
         focusNode,
         deleteNode,
+        renameNode,
         fetchNodeInfo,
         refetch,
         resolveNodeName,

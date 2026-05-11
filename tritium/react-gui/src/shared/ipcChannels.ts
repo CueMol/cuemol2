@@ -52,6 +52,9 @@ export const IPC = {
   // invoke channel for native viewport context menu
   NAVI_CTX_SHOW: 'navi-ctx:show',
 
+  // invoke channel for native scene-tree context menu (ScenePane right-click)
+  SCENE_CTX_SHOW: 'scene-ctx:show',
+
   // gesture push channels (main → renderer)
   ROTATE_GESTURE: 'gesture:rotate',
 

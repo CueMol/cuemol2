@@ -30,6 +30,7 @@ import { useLayoutPersistence } from "./hooks/useLayoutPersistence";
 import { useActiveTool } from "./hooks/useActiveTool";
 import { ActiveToolProvider } from "./contexts/ActiveToolContext";
 import { useSceneTree } from "./hooks/useSceneTree";
+import { useSceneContextMenu } from "./hooks/useSceneContextMenu";
 import { useInspectorState } from "./hooks/useInspectorState";
 import { useTabManager } from "./hooks/useTabManager";
 import { useCueMol } from "./hooks/useCueMol";
@@ -89,6 +90,7 @@ const App: React.FC = () => {
     toggleVisibility: handleToggleVisibility,
     focusNode: focusSceneNode,
     deleteNode: deleteSceneNode,
+    renameNode: renameSceneNode,
     fetchNodeInfo: fetchSceneNodeInfo,
     resolveNodeName,
   } = useSceneTree({ cm, sceneId: activeSceneId });
@@ -189,6 +191,22 @@ const App: React.FC = () => {
     if (!info) return;
     await showNodePropertyDialog(info);
   }, [fetchSceneNodeInfo, showNodePropertyDialog]);
+
+  const { openContextMenu: openSceneCtxMenu } = useSceneContextMenu({
+    toggleVisibility: handleToggleVisibility,
+    deleteNode: deleteSceneNode,
+    renameNode: renameSceneNode,
+    showProperty: handleSceneShowProperty,
+  });
+
+  const handleShowSceneCtxMenu = useCallback(
+    (node: Parameters<typeof openSceneCtxMenu>[0], x: number, y: number) => {
+      void openSceneCtxMenu(node, x, y).catch((err: unknown) => {
+        console.warn('scene context menu failed:', err);
+      });
+    },
+    [openSceneCtxMenu],
+  );
 
   // --- View-state cache for the active molview tab ---
   const {
@@ -296,6 +314,7 @@ const App: React.FC = () => {
                     onShowProperty={handleSceneShowProperty}
                     onFocusSelected={handleSceneFocus}
                     onDeleteSelected={handleSceneDelete}
+                    onShowSceneContextMenu={handleShowSceneCtxMenu}
                     sceneOpsEnabled={sceneOpsEnabled}
                     viewSizes={viewSizes}
                     viewCollapsed={viewCollapsed}

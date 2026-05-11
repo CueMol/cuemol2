@@ -52,6 +52,17 @@ export interface GetNodeInfoArgs {
     nodeType: SceneNodeType;
 }
 
+export interface RenameNodeArgs {
+    sceneId: number;
+    nodeId: number;
+    nodeType: SceneNodeType;
+    newName: string;
+}
+
+export interface RenameNodeResult {
+    ok: boolean;
+}
+
 export interface NodeInfoEntry {
     key: string;
     value: string;
@@ -245,8 +256,42 @@ function getNodeInfo(ctx: WorkerContext, args: GetNodeInfoArgs): GetNodeInfoResu
     return empty;
 }
 
+// ─── renameNode ───────────────────────────────────────────────────────────
+
+function renameNode(ctx: WorkerContext, args: RenameNodeArgs): RenameNodeResult {
+    // Only object / renderer / rendGroup support direct name assignment in
+    // Phase 3a. Camera and style rename require the atomic destroy + setCamera
+    // / re-register pattern; those land in Phase 5.
+    if (
+        args.nodeType !== 'object' &&
+        args.nodeType !== 'renderer' &&
+        args.nodeType !== 'rendGroup'
+    ) {
+        return { ok: false };
+    }
+    const trimmed = args.newName.trim();
+    if (trimmed.length === 0) return { ok: false };
+
+    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
+    if (!scene) return { ok: false };
+
+    let target: { name: string } | null = null;
+    if (args.nodeType === 'object') {
+        target = scene.getObject(args.nodeId) as unknown as { name: string } | null;
+    } else {
+        target = scene.getRenderer(args.nodeId) as unknown as { name: string } | null;
+    }
+    if (!target) return { ok: false };
+
+    withUndoTxn(scene, `Rename to ${trimmed}`, () => {
+        target!.name = trimmed;
+    });
+    return { ok: true };
+}
+
 export const services = {
     focusOnNode,
     deleteNode,
     getNodeInfo,
+    renameNode,
 };

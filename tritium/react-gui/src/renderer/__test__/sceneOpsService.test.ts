@@ -172,6 +172,78 @@ describe('sceneOps service', () => {
         })
     })
 
+    describe('renameNode', () => {
+        it('sets .name on object via undo txn', () => {
+            const setName = vi.fn()
+            const obj = {
+                get name() { return 'before' },
+                set name(v: string) { setName(v) },
+            }
+            const { ctx, startUndoTxn, commitUndoTxn } = makeCtx({
+                getObject: vi.fn(() => obj),
+            })
+            const res = services.renameNode(ctx, {
+                sceneId: 1, nodeId: 10, nodeType: 'object', newName: 'after',
+            })
+            expect(res.ok).toBe(true)
+            expect(startUndoTxn).toHaveBeenCalledWith('Rename to after')
+            expect(setName).toHaveBeenCalledWith('after')
+            expect(commitUndoTxn).toHaveBeenCalled()
+        })
+
+        it('sets .name on renderer via undo txn', () => {
+            const setName = vi.fn()
+            const rend = {
+                get name() { return 'r1' },
+                set name(v: string) { setName(v) },
+            }
+            const { ctx } = makeCtx({ getRenderer: vi.fn(() => rend) })
+            const res = services.renameNode(ctx, {
+                sceneId: 1, nodeId: 100, nodeType: 'renderer', newName: 'r2',
+            })
+            expect(res.ok).toBe(true)
+            expect(setName).toHaveBeenCalledWith('r2')
+        })
+
+        it('trims whitespace from the new name', () => {
+            const setName = vi.fn()
+            const obj = {
+                get name() { return 'old' },
+                set name(v: string) { setName(v) },
+            }
+            const { ctx, startUndoTxn } = makeCtx({ getObject: vi.fn(() => obj) })
+            services.renameNode(ctx, {
+                sceneId: 1, nodeId: 10, nodeType: 'object', newName: '  spaced  ',
+            })
+            expect(startUndoTxn).toHaveBeenCalledWith('Rename to spaced')
+            expect(setName).toHaveBeenCalledWith('spaced')
+        })
+
+        it('rejects empty / whitespace-only names', () => {
+            const setName = vi.fn()
+            const obj = {
+                get name() { return 'old' },
+                set name(v: string) { setName(v) },
+            }
+            const { ctx, startUndoTxn } = makeCtx({ getObject: vi.fn(() => obj) })
+            const res = services.renameNode(ctx, {
+                sceneId: 1, nodeId: 10, nodeType: 'object', newName: '   ',
+            })
+            expect(res.ok).toBe(false)
+            expect(startUndoTxn).not.toHaveBeenCalled()
+            expect(setName).not.toHaveBeenCalled()
+        })
+
+        it('returns ok:false for unsupported node types', () => {
+            const { ctx } = makeCtx()
+            for (const nt of ['scene', 'camera', 'style', 'cameraRoot', 'styleRoot'] as const) {
+                expect(services.renameNode(ctx, {
+                    sceneId: 1, nodeId: 1, nodeType: nt, newName: 'x',
+                }).ok).toBe(false)
+            }
+        })
+    })
+
     describe('getNodeInfo', () => {
         it('returns empty entries when scene missing', () => {
             const ctx = {

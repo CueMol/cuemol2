@@ -58,6 +58,8 @@ interface ScenePaneProps {
     onDeleteSelected?: (id: string) => void;
     onFocusSelected?: (id: string) => void;
     onShowProperty?: (id: string) => void;
+    /** Right-click handler — opens native context menu for the targeted node. */
+    onShowContextMenu?: (node: SceneTreeNode, x: number, y: number) => void;
     /**
      * Per-action enablement for the current selection. When omitted, all
      * actions are enabled (legacy callers). Defaults to enabled=true so a
@@ -79,6 +81,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     onDeleteSelected,
     onFocusSelected,
     onShowProperty,
+    onShowContextMenu,
     opsEnabled,
     collapsed,
     onToggleCollapse,
@@ -109,6 +112,34 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
             onSelect(String(node.id));
         },
         [onSelect],
+    );
+
+    // Build an id → SceneTreeNode lookup so onNodeContextMenu (which only
+    // receives the Blueprint TreeNodeInfo) can resolve back to the original
+    // typed node and forward it to the caller.
+    const nodeLookup = useMemo<Map<string, SceneTreeNode>>(() => {
+        const map = new Map<string, SceneTreeNode>();
+        if (!tree) return map;
+        const walk = (n: SceneTreeNode): void => {
+            map.set(String(n.id), n);
+            for (const c of n.children) walk(c);
+        };
+        walk(tree);
+        return map;
+    }, [tree]);
+
+    const handleNodeContextMenu = useCallback(
+        (node: TreeNodeInfo, _path: number[], e: React.MouseEvent<HTMLElement>) => {
+            if (!onShowContextMenu) return;
+            const sceneNode = nodeLookup.get(String(node.id));
+            if (!sceneNode) return;
+            e.preventDefault();
+            // Select the right-clicked row so subsequent toolbar / dialog
+            // actions act on it; matches UXP behaviour.
+            onSelect(String(node.id));
+            onShowContextMenu(sceneNode, e.clientX, e.clientY);
+        },
+        [nodeLookup, onShowContextMenu, onSelect],
     );
 
     const visibilityButton = useCallback(
@@ -254,6 +285,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                         onNodeClick={handleNodeClick}
                         onNodeExpand={handleNodeExpand}
                         onNodeCollapse={handleNodeCollapse}
+                        onNodeContextMenu={handleNodeContextMenu}
                         className="scene-tree"
                     />
                 </div>

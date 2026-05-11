@@ -19,6 +19,7 @@ import type {
 import type { FileDialogOptions } from '../shared/ipcTypes'
 import { loadLayout, saveLayout, loadUi, saveUi } from './stateStore'
 import { showNaviContextMenu } from './naviContextMenu'
+import { showSceneContextMenu } from './sceneContextMenu'
 import { setMenuBlocked, updateMenuState, withMenuBlocked } from './menu'
 import { setQuitConfirmed } from './quitState'
 
@@ -184,6 +185,10 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   handleInvoke(IPC.MENU_UPDATE_STATE, (_e, state) => updateMenuState(state))
   handleInvoke(IPC.MENU_SET_MODAL_BLOCKED, (_e, blocked) =>
     setMenuBlocked('blueprint', blocked),
+  )
+
+  handleInvoke(IPC.SCENE_CTX_SHOW, (_event, payload) =>
+    showSceneContextMenu(mainWindow, payload),
   )
 
   handleInvoke(IPC.NAVI_CTX_SHOW, (_event, payload) =>

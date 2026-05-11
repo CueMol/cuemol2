@@ -21,6 +21,8 @@ import type {
   MenuState,
   NaviCtxAction,
   NaviCtxMenuPayload,
+  SceneCtxAction,
+  SceneCtxMenuPayload,
   UiState,
 } from './ipcTypes'
 
@@ -41,6 +43,7 @@ export interface InvokeChannels {
   [IPC.MENU_INVOKE_ROLE]:  { req: string;                res: void }
   [IPC.APP_QUIT_PROCEED]:  { req: void;                  res: void }
   [IPC.NAVI_CTX_SHOW]:     { req: NaviCtxMenuPayload;    res: NaviCtxAction | null }
+  [IPC.SCENE_CTX_SHOW]:    { req: SceneCtxMenuPayload;   res: SceneCtxAction | null }
 }
 
 export interface PushChannels {

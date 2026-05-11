@@ -80,6 +80,8 @@ import type {
   DeleteNodeResult,
   GetNodeInfoArgs,
   GetNodeInfoResult,
+  RenameNodeArgs,
+  RenameNodeResult,
 } from '../server/services/sceneOps.service'
 import type { UndoArgs } from '../server/services/undo.service'
 import type {
@@ -155,6 +157,7 @@ export interface ServiceMap {
   focusOnNode:                { args: FocusOnNodeArgs;                 result: FocusOnNodeResult }
   deleteNode:                 { args: DeleteNodeArgs;                  result: DeleteNodeResult }
   getNodeInfo:                { args: GetNodeInfoArgs;                 result: GetNodeInfoResult }
+  renameNode:                 { args: RenameNodeArgs;                  result: RenameNodeResult }
   getViewProjection:          { args: ViewProjectionArgs;              result: ViewProjectionResult }
   setViewProjection:          { args: ViewProjectionArgs;              result: ViewProjectionResult }
   getViewCenterMark:          { args: ViewCenterMarkArgs;              result: ViewCenterMarkResult }

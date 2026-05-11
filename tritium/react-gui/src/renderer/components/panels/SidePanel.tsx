@@ -127,6 +127,8 @@ interface SidePanelProps {
   onDeleteSelected?: (id: string) => void;
   /** Per-action enablement for the current scene selection. */
   sceneOpsEnabled?: { focus: boolean; delete: boolean; property: boolean };
+  /** Right-click context-menu opener for scene-tree nodes. */
+  onShowSceneContextMenu?: (node: SceneTreeNode, x: number, y: number) => void;
 
   /* ── Generic persistence props (per-view) ── */
 
@@ -161,6 +163,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   onFocusSelected,
   onDeleteSelected,
   sceneOpsEnabled,
+  onShowSceneContextMenu,
   viewSizes,
   viewCollapsed,
   onViewSizesChange,
@@ -210,6 +213,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             onShowProperty={onShowProperty}
             onFocusSelected={onFocusSelected}
             onDeleteSelected={onDeleteSelected}
+            onShowContextMenu={onShowSceneContextMenu}
             opsEnabled={sceneOpsEnabled}
             collapsed={collapsed}
             onToggleCollapse={onToggle}
@@ -282,6 +286,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     sceneTree, sceneSelected, onSceneSelect,
     onToggleVisibility, onShowProperty,
     onFocusSelected, onDeleteSelected, sceneOpsEnabled,
+    onShowSceneContextMenu,
   ]);
 
   /* ── Generic view renderer (works for any N panes) ─── */

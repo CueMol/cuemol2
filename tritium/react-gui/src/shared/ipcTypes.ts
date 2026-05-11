@@ -114,6 +114,42 @@ export interface NaviCtxMenuPayload {
   symmLabel?: string
 }
 
+// ── Scene-tree context menu (ScenePane right-click) ─────────────────────────
+
+/**
+ * Discriminated action returned from the scene-tree native context menu.
+ * Phase 3a covers the common items shared across node types; later phases
+ * add type-specific actions (selection ops, paint, camera/style file I/O).
+ */
+export type SceneCtxAction =
+  | 'show'
+  | 'hide'
+  | 'rename'
+  | 'delete'
+  | 'property'
+
+export type SceneCtxNodeType =
+  | 'scene'
+  | 'object'
+  | 'renderer'
+  | 'rendGroup'
+  | 'cameraRoot'
+  | 'styleRoot'
+  | 'camera'
+  | 'style'
+
+export interface SceneCtxMenuPayload {
+  x: number
+  y: number
+  nodeType: SceneCtxNodeType
+  /** Display name shown as the disabled menu header. */
+  nodeLabel: string
+  /** Whether the targeted node is currently visible (drives Show/Hide). */
+  isVisible: boolean
+  /** Whether the node carries a visibility flag at all. */
+  hasVisibility: boolean
+}
+
 // ── Native menu state ───────────────────────────────────────────────────────
 
 export type ViewCenterMark = 'none' | 'crosshair' | 'axis'
