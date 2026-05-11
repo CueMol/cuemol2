@@ -9,12 +9,15 @@ import type {
 /**
  * Native context menu shown when the user right-clicks a row in `ScenePane`.
  *
- * Phase 3a only wires the common items shared across node types
- * (Show/Hide, Rename, Delete, Properties). The selection submenu for
- * objects, paint/coloring for renderers, and camera/style file I/O
- * land in later phases of the workspace_panel migration.
- *
+ * Action contract: each menu item's `click` handler stores a discriminated
+ * `SceneCtxAction` payload in a closure-captured `chosen` slot. Electron
+ * fires `click` **before** the menu's `callback`, so by the time the
+ * Promise resolves, `chosen` holds the action (or null for dismiss).
  * Mirrors the dispatch pattern in `main/naviContextMenu.ts`.
+ *
+ * Phase coverage:
+ *   - 3a: Show/Hide, Rename, Delete, Properties (common items)
+ *   - 3b: Selection submenu on object nodes
  */
 export function showSceneContextMenu(
     mainWindow: BrowserWindow,
@@ -49,8 +52,8 @@ function buildTemplate(
         { type: 'separator' },
     ]
 
-    // Phase 3a contents per node type. Items disabled here will be enabled
-    // as later phases land their backing services.
+    // Phase 3a/3b contents per node type. Items disabled here will be
+    // enabled as later phases land their backing services.
     switch (payload.nodeType) {
         case 'scene':
             return [
@@ -59,6 +62,17 @@ function buildTemplate(
             ]
 
         case 'object':
+            return [
+                ...header,
+                ...showHideItems(payload, action),
+                selectionSubmenu(action),
+                { type: 'separator' },
+                renameItem(action),
+                deleteItem(action),
+                { type: 'separator' },
+                propertyItem(action),
+            ]
+
         case 'renderer':
         case 'rendGroup':
             return [
@@ -104,27 +118,48 @@ function showHideItems(
 ): MenuItemConstructorOptions[] {
     if (!payload.hasVisibility) return []
     if (payload.isVisible) {
-        return [{ label: 'Hide', click: action('hide') }]
+        return [{ label: 'Hide', click: action({ kind: 'hide' }) }]
     }
-    return [{ label: 'Show', click: action('show') }]
+    return [{ label: 'Show', click: action({ kind: 'show' }) }]
 }
 
 function renameItem(
     action: (a: SceneCtxAction) => MenuItemConstructorOptions['click'],
 ): MenuItemConstructorOptions {
-    return { label: 'Rename…', click: action('rename') }
+    return { label: 'Rename…', click: action({ kind: 'rename' }) }
 }
 
 function deleteItem(
     action: (a: SceneCtxAction) => MenuItemConstructorOptions['click'],
 ): MenuItemConstructorOptions {
-    return { label: 'Delete', click: action('delete') }
+    return { label: 'Delete', click: action({ kind: 'delete' }) }
 }
 
 function propertyItem(
     action: (a: SceneCtxAction) => MenuItemConstructorOptions['click'],
 ): MenuItemConstructorOptions {
-    return { label: 'Properties…', click: action('property') }
+    return { label: 'Properties…', click: action({ kind: 'property' }) }
+}
+
+function selectionSubmenu(
+    action: (a: SceneCtxAction) => MenuItemConstructorOptions['click'],
+): MenuItemConstructorOptions {
+    return {
+        label: 'Selection',
+        submenu: [
+            { label: 'All', click: action({ kind: 'selectMol', selectKind: 'all' }) },
+            { label: 'Unselect', click: action({ kind: 'selectMol', selectKind: 'unselect' }) },
+            { label: 'Invert', click: action({ kind: 'selectMol', selectKind: 'invert' }) },
+            { type: 'separator' },
+            { label: 'Protein', click: action({ kind: 'selectMol', selectKind: 'protein' }) },
+            { label: 'Nucleic', click: action({ kind: 'selectMol', selectKind: 'nucleic' }) },
+            { label: 'Water', click: action({ kind: 'selectMol', selectKind: 'water' }) },
+            { label: 'Sugar', click: action({ kind: 'selectMol', selectKind: 'sugar' }) },
+            { label: 'Hydrogen', click: action({ kind: 'selectMol', selectKind: 'hydrogen' }) },
+            { type: 'separator' },
+            { label: 'Toggle Sidechain', click: action({ kind: 'selectMol', selectKind: 'sidechain' }) },
+        ],
+    }
 }
 
 function nodeTypeLabel(nodeType: SceneCtxNodeType): string {

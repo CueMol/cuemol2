@@ -1,6 +1,6 @@
 # Migration Mapping — Index
 
-- Updated: 2026-05-13
+- Updated: 2026-05-14
 - Source files: `docs/migration/mapping/*.md` (excluding this file)
 
 ---
@@ -47,7 +47,7 @@
 | [`dialog.about`](other_dlgs.md#dialogabout) | `AboutDialog` / `useDialog` | GRE info・userAgent は省略 |
 | [`other.cuemol2`](other.md#othercuemol2) | `App` / `ContentArea` / `TabBar` / `ConfirmCloseTabDialog` / `useQuitHandler` | Main window layout done; close-tab confirmation dialog (UXP `closeTabImpl`) implemented; UXP `onCloseEvent` quit chain wired (cmd-Q walks all tabs via `before-quit` → `APP_QUIT_REQUEST` → `APP_QUIT_PROCEED`) |
 | [`widget.molsellist`](custom_widgets.md) | `MolSelList` (`components/widgets/MolSelList/`) | First consumer wired in `RendererOptionsPane` (file-open dialog); editable `InputGroup` + chevron-only `HTMLSelect` (OS-native dropdown listbox with `<optgroup>` Preset / History / Scene / Global); history via `localStorage`; worker services `getSelDefs` / `validateSelection` added |
-| [`panel.workspace`](panels.md#panelworkspace) | `ScenePane` / `useSceneTree` / `useSceneContextMenu` / `sceneTree.service` / `sceneOps.service` / `main/sceneContextMenu` / `NodePropertyDialog` | Phase 1: live tree (4 node types + synthesised cameraRoot / styleRoot), visibility toggle (undo-wrapped), node selection, auto-refresh via `cm.addEventListener` (SEM_SCENE\|OBJECT\|RENDERER\|CAMERA\|STYLE). Phase 2: toolbar Focus / Delete / Property buttons (UXP `onBtnZoomCmd` / `onDeleteCmd` / `onPropCmd`) via `focusOnNode` / `deleteNode` / `getNodeInfo`; property dialog is a read-only key/value stub. Phase 3a: native context menu (`IPC.SCENE_CTX_SHOW`) with Show/Hide, Rename, Delete, Properties; renameNode worker service. Phase 3b: object selection submenu. Phase 3c: renderer paint/color/style. Phase 4: drag-drop + copy/paste. Phase 5: camera/style file I/O + real property dialog. Phase 6: around-byres / change-type / generate surface. Add Renderer and multi-select remain deferred. |
+| [`panel.workspace`](panels.md#panelworkspace) | `ScenePane` / `useSceneTree` / `useSceneContextMenu` / `sceneTree.service` / `sceneOps.service` / `main/sceneContextMenu` / `NodePropertyDialog` | Phase 1: live tree (4 node types + synthesised cameraRoot / styleRoot), visibility toggle (undo-wrapped), node selection, auto-refresh via `cm.addEventListener` (SEM_SCENE\|OBJECT\|RENDERER\|CAMERA\|STYLE). Phase 2: toolbar Focus / Delete / Property buttons (UXP `onBtnZoomCmd` / `onDeleteCmd` / `onPropCmd`) via `focusOnNode` / `deleteNode` / `getNodeInfo`; property dialog is a read-only key/value stub. Phase 3a: native context menu (`IPC.SCENE_CTX_SHOW`) with Show/Hide, Rename, Delete, Properties; renameNode worker service. Phase 3b: object Selection submenu (all/unselect/invert/protein/nucleic/water/sugar/hydrogen/sidechain) via `selectObjectMol`. Phase 3c: renderer paint/color/style. Phase 4: drag-drop + copy/paste. Phase 5: camera/style file I/O + real property dialog. Phase 6: around-byres / change-type / generate surface. Add Renderer and multi-select remain deferred. |
 
 ---
 

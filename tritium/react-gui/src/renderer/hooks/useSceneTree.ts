@@ -22,6 +22,7 @@ import type {
     SceneTreeNode,
 } from '../worker/shared/sceneTreeTypes'
 import type { NodeInfoEntry } from '../worker/server/services/sceneOps.service'
+import type { SelectMolKind } from '../../shared/ipcTypes'
 import {
     SEM_SCENE,
     SEM_OBJECT,
@@ -57,6 +58,8 @@ interface UseSceneTreeResult {
     deleteNode: (id: string) => Promise<boolean>
     /** Rename a node (object / renderer / rendGroup only in Phase 3a). */
     renameNode: (id: string, newName: string) => Promise<boolean>
+    /** Object-mol selection helpers (Phase 3b). */
+    selectObjectMol: (id: string, kind: SelectMolKind) => Promise<boolean>
     /** Fetch property info for the property dialog. */
     fetchNodeInfo: (id: string) => Promise<NodeInfo | null>
     refetch: () => void
@@ -258,6 +261,24 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         [cm, tree],
     )
 
+    const selectObjectMol = useCallback(
+        async (id: string, kind: SelectMolKind): Promise<boolean> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return false
+            const numId = Number(id)
+            if (!Number.isFinite(numId)) return false
+            const node = findNode(tree, numId)
+            if (!node || node.type !== 'object') return false
+            const res = await cm.invokeService('selectObjectMol', {
+                sceneId: sid,
+                objId: numId,
+                kind,
+            })
+            return res?.ok === true
+        },
+        [cm, tree],
+    )
+
     const fetchNodeInfo = useCallback(
         async (id: string): Promise<NodeInfo | null> => {
             const sid = sceneIdRef.current
@@ -296,6 +317,7 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         focusNode,
         deleteNode,
         renameNode,
+        selectObjectMol,
         fetchNodeInfo,
         refetch,
         resolveNodeName,

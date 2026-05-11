@@ -91,6 +91,7 @@ const App: React.FC = () => {
     focusNode: focusSceneNode,
     deleteNode: deleteSceneNode,
     renameNode: renameSceneNode,
+    selectObjectMol: selectSceneObjectMol,
     fetchNodeInfo: fetchSceneNodeInfo,
     resolveNodeName,
   } = useSceneTree({ cm, sceneId: activeSceneId });
@@ -197,6 +198,7 @@ const App: React.FC = () => {
     deleteNode: deleteSceneNode,
     renameNode: renameSceneNode,
     showProperty: handleSceneShowProperty,
+    selectObjectMol: selectSceneObjectMol,
   });
 
   const handleShowSceneCtxMenu = useCallback(

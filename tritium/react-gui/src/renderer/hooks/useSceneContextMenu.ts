@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import type { SceneCtxAction } from '../../shared/ipcTypes'
+import type { SceneCtxAction, SelectMolKind } from '../../shared/ipcTypes'
 import { IPC } from '../../shared/ipcChannels'
 import type { SceneTreeNode } from '../worker/shared/sceneTreeTypes'
 
@@ -9,20 +9,20 @@ import type { SceneTreeNode } from '../worker/shared/sceneTreeTypes'
  * by `useSceneTree`. Mirrors the pattern in `useNaviContextMenu`.
  *
  * Phase 3a: Show / Hide, Rename (window.prompt-based), Delete, Properties.
- * Selection ops, paint/coloring and camera/style file I/O land in later
- * phases.
+ * Phase 3b: object Selection submenu (selectMol-* actions).
  */
 export interface UseSceneContextMenuOptions {
     toggleVisibility: (id: string) => void
     deleteNode: (id: string) => Promise<boolean>
     renameNode: (id: string, newName: string) => Promise<boolean>
     showProperty: (id: string) => Promise<void> | void
+    selectObjectMol: (id: string, kind: SelectMolKind) => Promise<boolean>
 }
 
 export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
     openContextMenu: (node: SceneTreeNode, x: number, y: number) => Promise<void>
 } {
-    const { toggleVisibility, deleteNode, renameNode, showProperty } = opts
+    const { toggleVisibility, deleteNode, renameNode, showProperty, selectObjectMol } = opts
 
     const openContextMenu = useCallback(
         async (node: SceneTreeNode, x: number, y: number): Promise<void> => {
@@ -46,7 +46,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
             if (!action) return
             const idStr = String(node.id)
 
-            switch (action) {
+            switch (action.kind) {
                 case 'show':
                 case 'hide':
                     toggleVisibility(idStr)
@@ -65,9 +65,13 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                 case 'property':
                     await showProperty(idStr)
                     break
+                case 'selectMol':
+                    if (node.type !== 'object') break
+                    await selectObjectMol(idStr, action.selectKind)
+                    break
             }
         },
-        [toggleVisibility, deleteNode, renameNode, showProperty],
+        [toggleVisibility, deleteNode, renameNode, showProperty, selectObjectMol],
     )
 
     return { openContextMenu }

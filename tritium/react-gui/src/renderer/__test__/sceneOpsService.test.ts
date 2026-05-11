@@ -1,4 +1,11 @@
 import { describe, it, expect, vi } from 'vitest'
+
+vi.mock('../worker/server/services/helpers/makeSel', () => ({
+    makeSel: vi.fn((_ctx: unknown, selStr: string) =>
+        selStr === null || selStr === undefined ? null : { __sel: selStr },
+    ),
+}))
+
 import { services } from '../worker/server/services/sceneOps.service'
 import type { WorkerContext } from '../worker/server/types/WorkerContext'
 
@@ -241,6 +248,133 @@ describe('sceneOps service', () => {
                     sceneId: 1, nodeId: 1, nodeType: nt, newName: 'x',
                 }).ok).toBe(false)
             }
+        })
+    })
+
+    describe('selectObjectMol', () => {
+        function makeMolCtx(opts: {
+            prevSelStr?: string
+            hasSelRend?: boolean
+        } = {}) {
+            const setSel = vi.fn()
+            const createRenderer = vi.fn()
+            const getRendererByType = vi.fn(() =>
+                opts.hasSelRend ? { __selRend: true } : null,
+            )
+            const mol = {
+                get sel() {
+                    return opts.prevSelStr === undefined
+                        ? null
+                        : { toString: () => opts.prevSelStr! }
+                },
+                set sel(v: unknown) { setSel(v) },
+                getRendererByType,
+                createRenderer,
+            }
+            const startUndoTxn = vi.fn()
+            const commitUndoTxn = vi.fn()
+            const rollbackUndoTxn = vi.fn()
+            const mockScene = {
+                uid: 7,
+                getObject: vi.fn(() => mol),
+                startUndoTxn,
+                commitUndoTxn,
+                rollbackUndoTxn,
+            }
+            const ctx = {
+                sceMgr: { getScene: vi.fn(() => mockScene) },
+            } as unknown as WorkerContext
+            return {
+                ctx, mockScene, mol,
+                setSel, createRenderer, getRendererByType,
+                startUndoTxn, commitUndoTxn,
+            }
+        }
+
+        it.each([
+            ['all', '*', 'Select all atoms'],
+            ['protein', 'protein', 'Select protein'],
+            ['nucleic', 'nucleic', 'Select nucleic'],
+            ['water', 'water', 'Select water'],
+            ['sugar', 'sugar', 'Select sugar'],
+            ['hydrogen', 'elem H', 'Select hydrogen'],
+        ] as const)('maps %s to selStr=%s with undo label %s', (kind, expectedSel, expectedLabel) => {
+            const { ctx, setSel, startUndoTxn } = makeMolCtx()
+            const res = services.selectObjectMol(ctx, {
+                sceneId: 1, objId: 10, kind,
+            })
+            expect(res.ok).toBe(true)
+            expect(startUndoTxn).toHaveBeenCalledWith(expectedLabel)
+            expect(setSel).toHaveBeenCalledWith({ __sel: expectedSel })
+        })
+
+        it('unselect sends empty selStr', () => {
+            const { ctx, setSel, startUndoTxn } = makeMolCtx({ prevSelStr: 'protein' })
+            services.selectObjectMol(ctx, { sceneId: 1, objId: 10, kind: 'unselect' })
+            expect(startUndoTxn).toHaveBeenCalledWith('Unselect molecule')
+            expect(setSel).toHaveBeenCalledWith({ __sel: '' })
+        })
+
+        it('invert wraps non-negated input in !(...)', () => {
+            const { ctx, setSel } = makeMolCtx({ prevSelStr: 'protein' })
+            services.selectObjectMol(ctx, { sceneId: 1, objId: 10, kind: 'invert' })
+            expect(setSel).toHaveBeenCalledWith({ __sel: '!(protein)' })
+        })
+
+        it('invert unwraps !(...) input', () => {
+            const { ctx, setSel } = makeMolCtx({ prevSelStr: '!(protein)' })
+            services.selectObjectMol(ctx, { sceneId: 1, objId: 10, kind: 'invert' })
+            expect(setSel).toHaveBeenCalledWith({ __sel: 'protein' })
+        })
+
+        it('invert from empty selection selects all', () => {
+            const { ctx, setSel } = makeMolCtx({ prevSelStr: '' })
+            services.selectObjectMol(ctx, { sceneId: 1, objId: 10, kind: 'invert' })
+            expect(setSel).toHaveBeenCalledWith({ __sel: '*' })
+        })
+
+        it('sidechain toggle prepends bysidech when absent', () => {
+            const { ctx, setSel } = makeMolCtx({ prevSelStr: 'aid 1' })
+            services.selectObjectMol(ctx, { sceneId: 1, objId: 10, kind: 'sidechain' })
+            expect(setSel).toHaveBeenCalledWith({ __sel: 'bysidech aid 1' })
+        })
+
+        it('sidechain toggle strips bysidech when present', () => {
+            const { ctx, setSel } = makeMolCtx({ prevSelStr: 'bysidech aid 1' })
+            services.selectObjectMol(ctx, { sceneId: 1, objId: 10, kind: 'sidechain' })
+            expect(setSel).toHaveBeenCalledWith({ __sel: 'aid 1' })
+        })
+
+        it('sidechain toggle is a no-op when selection is empty', () => {
+            const { ctx, setSel, startUndoTxn } = makeMolCtx({ prevSelStr: '' })
+            const res = services.selectObjectMol(ctx, {
+                sceneId: 1, objId: 10, kind: 'sidechain',
+            })
+            expect(res.ok).toBe(false)
+            expect(startUndoTxn).not.toHaveBeenCalled()
+            expect(setSel).not.toHaveBeenCalled()
+        })
+
+        it('auto-creates *selection renderer when missing', () => {
+            const { ctx, createRenderer } = makeMolCtx({ hasSelRend: false })
+            services.selectObjectMol(ctx, { sceneId: 1, objId: 10, kind: 'all' })
+            expect(createRenderer).toHaveBeenCalledWith('*selection')
+        })
+
+        it('skips renderer creation when *selection already exists', () => {
+            const { ctx, createRenderer } = makeMolCtx({ hasSelRend: true })
+            services.selectObjectMol(ctx, { sceneId: 1, objId: 10, kind: 'all' })
+            expect(createRenderer).not.toHaveBeenCalled()
+        })
+
+        it('returns ok:false when scene missing', () => {
+            const ctx = {
+                sceMgr: { getScene: () => null },
+            } as unknown as WorkerContext
+            const res = services.selectObjectMol(ctx, {
+                sceneId: 1, objId: 10, kind: 'all',
+            })
+            expect(res.ok).toBe(false)
         })
     })
 

@@ -117,16 +117,34 @@ export interface NaviCtxMenuPayload {
 // ── Scene-tree context menu (ScenePane right-click) ─────────────────────────
 
 /**
+ * Selection-submenu items applicable to object nodes (Phase 3b).
+ * Mirrors UXP `workspace_panel_molsel.js`.
+ */
+export type SelectMolKind =
+  | 'all'
+  | 'unselect'
+  | 'invert'
+  | 'protein'
+  | 'nucleic'
+  | 'water'
+  | 'sugar'
+  | 'hydrogen'
+  | 'sidechain'
+
+/**
  * Discriminated action returned from the scene-tree native context menu.
  * Phase 3a covers the common items shared across node types; later phases
  * add type-specific actions (selection ops, paint, camera/style file I/O).
+ * Object-payload union (rather than a flat string union) keeps room to add
+ * action arguments — `selectMol` carries the chosen submenu item.
  */
 export type SceneCtxAction =
-  | 'show'
-  | 'hide'
-  | 'rename'
-  | 'delete'
-  | 'property'
+  | { kind: 'show' }
+  | { kind: 'hide' }
+  | { kind: 'rename' }
+  | { kind: 'delete' }
+  | { kind: 'property' }
+  | { kind: 'selectMol'; selectKind: SelectMolKind }
 
 export type SceneCtxNodeType =
   | 'scene'
