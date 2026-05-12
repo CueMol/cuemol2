@@ -18,6 +18,7 @@ import { GetPdbDialogProvider } from '../components/dialogs/GetPdbDialogProvider
 import { QscWriterOptionDialogProvider } from '../components/dialogs/QscWriterOptionDialogProvider'
 import { StreamProgressDialogProvider } from '../components/dialogs/StreamProgressDialogProvider'
 import { NodePropertyDialogProvider } from '../components/dialogs/NodePropertyDialogProvider'
+import { TextPromptDialogProvider } from '../components/dialogs/TextPromptDialogProvider'
 
 export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <AboutDialogProvider>
@@ -28,7 +29,9 @@ export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             <QscWriterOptionDialogProvider>
               <StreamProgressDialogProvider>
                 <NodePropertyDialogProvider>
-                  {children}
+                  <TextPromptDialogProvider>
+                    {children}
+                  </TextPromptDialogProvider>
                 </NodePropertyDialogProvider>
               </StreamProgressDialogProvider>
             </QscWriterOptionDialogProvider>

@@ -8,6 +8,7 @@ import type {
 import { IPC } from '../../shared/ipcChannels'
 import type { SceneTreeNode } from '../worker/shared/sceneTreeTypes'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
+import { useShowTextPromptDialog } from '../components/dialogs/TextPromptDialogProvider'
 
 /**
  * Renderer type names that don't support a `coloring` property — matches
@@ -68,6 +69,10 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
         setRendererSelection, generateRendererSurfObj,
         createRendererGroup,
     } = opts
+
+    // Electron disables window.prompt — use the in-app Blueprint dialog
+    // for Rename / New Group text input flows instead.
+    const showTextPrompt = useShowTextPromptDialog()
 
     const openContextMenu = useCallback(
         async (node: SceneTreeNode, x: number, y: number): Promise<void> => {
@@ -194,11 +199,14 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                     toggleVisibility(idStr)
                     break
                 case 'rename': {
-                    const next = window.prompt(`Rename ${node.name} to:`, node.name)
+                    const next = await showTextPrompt({
+                        title: 'Rename',
+                        label: `Rename ${node.name} to:`,
+                        defaultValue: node.name,
+                    })
                     if (next == null) break
-                    const trimmed = next.trim()
-                    if (trimmed.length === 0 || trimmed === node.name) break
-                    await renameNode(idStr, trimmed)
+                    if (next === node.name) break
+                    await renameNode(idStr, next)
                     break
                 }
                 case 'delete':
@@ -265,14 +273,14 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                             console.warn('proposeUniqName failed:', err)
                         }
                     }
-                    const entered = window.prompt(
-                        'Name for new group:',
-                        suggestion,
-                    )
+                    const entered = await showTextPrompt({
+                        title: 'New Renderer Group',
+                        label: 'Name for new group:',
+                        defaultValue: suggestion,
+                        confirmLabel: 'Create',
+                    })
                     if (entered == null) break
-                    const trimmed = entered.trim()
-                    if (trimmed.length === 0) break
-                    await createRendererGroup(idStr, trimmed)
+                    await createRendererGroup(idStr, entered)
                     break
                 }
             }
@@ -283,7 +291,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
             paintRendererSelection, applyRendererStyle,
             setSceneBackgroundColor, toggleSceneColorProofing,
             setRendererSelection, generateRendererSurfObj,
-            createRendererGroup,
+            createRendererGroup, showTextPrompt,
         ],
     )
 
