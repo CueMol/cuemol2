@@ -77,6 +77,7 @@ function buildTemplate(
                 renameItem(action),
                 copyItem(action),
                 ...pasteItem(payload, 'renderer', action),
+                newRendGroupItem(action),
                 deleteItem(action),
                 { type: 'separator' },
                 propertyItem(action),
@@ -453,6 +454,18 @@ function generateSurfObjItem(
         label: 'Generate surface obj',
         click: action({ kind: 'generateSurfObj' }),
     }]
+}
+
+/**
+ * Object-row "New Group..." item — creates an empty `*group` renderer
+ * under the targeted mol. Mirrors UXP `wspcPanelObjCtxtMenu` New Group.
+ * The renderer side prompts for the group name (with an auto-generated
+ * default) before dispatching to the worker.
+ */
+function newRendGroupItem(
+    action: (a: SceneCtxAction) => MenuItemConstructorOptions['click'],
+): MenuItemConstructorOptions {
+    return { label: 'New Group…', click: action({ kind: 'newRendGroup' }) }
 }
 
 function selectionSubmenu(

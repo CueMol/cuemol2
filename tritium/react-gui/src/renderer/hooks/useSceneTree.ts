@@ -79,6 +79,13 @@ interface UseSceneTreeResult {
     setRendererSelection: (id: string, selKind: ChangeRendSelKind) => Promise<boolean>
     /** Generate a MolSurfObj from an isosurf renderer. */
     generateRendererSurfObj: (id: string) => Promise<boolean>
+    /**
+     * Create an empty `*group` renderer under the given object. The
+     * caller passes the user-confirmed name (the renderer side prompts
+     * with a worker-suggested default); pass an empty string to let the
+     * worker auto-generate `groupN`.
+     */
+    createRendererGroup: (objId: string, name: string) => Promise<boolean>
     /** Set the scene's background color from the scene ctx menu. */
     setSceneBackgroundColor: (color: 'white' | 'black') => Promise<boolean>
     /** Toggle the scene's color-proofing flag. */
@@ -444,6 +451,24 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         [cm, tree],
     )
 
+    const createRendererGroup = useCallback(
+        async (objId: string, name: string): Promise<boolean> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return false
+            const numId = Number(objId)
+            if (!Number.isFinite(numId)) return false
+            const node = findNode(tree, numId)
+            if (!node || node.type !== 'object') return false
+            const res = await cm.invokeService('createRendererGroup', {
+                sceneId: sid,
+                objId: numId,
+                name,
+            })
+            return res?.ok === true
+        },
+        [cm, tree],
+    )
+
     const setSceneBackgroundColor = useCallback(
         async (color: 'white' | 'black'): Promise<boolean> => {
             const sid = sceneIdRef.current
@@ -515,6 +540,7 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         applyRendererStyle,
         setRendererSelection,
         generateRendererSurfObj,
+        createRendererGroup,
         setSceneBackgroundColor,
         toggleSceneColorProofing,
         fetchNodeInfo,

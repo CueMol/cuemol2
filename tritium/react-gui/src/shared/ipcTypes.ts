@@ -192,6 +192,7 @@ export type SceneCtxAction =
   | { kind: 'toggleColorProofing' }
   | { kind: 'setRendSel'; selKind: ChangeRendSelKind }
   | { kind: 'generateSurfObj' }
+  | { kind: 'newRendGroup' }
 
 export type SceneCtxNodeType =
   | 'scene'

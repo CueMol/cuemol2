@@ -54,6 +54,7 @@ export interface UseSceneContextMenuOptions {
     toggleSceneColorProofing: () => Promise<boolean>
     setRendererSelection: (id: string, selKind: ChangeRendSelKind) => Promise<boolean>
     generateRendererSurfObj: (id: string) => Promise<boolean>
+    createRendererGroup: (objId: string, name: string) => Promise<boolean>
 }
 
 export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
@@ -65,6 +66,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
         paintRendererSelection, applyRendererStyle,
         setSceneBackgroundColor, toggleSceneColorProofing,
         setRendererSelection, generateRendererSurfObj,
+        createRendererGroup,
     } = opts
 
     const openContextMenu = useCallback(
@@ -245,6 +247,34 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                     if (node.type !== 'renderer') break
                     await generateRendererSurfObj(idStr)
                     break
+                case 'newRendGroup': {
+                    if (node.type !== 'object') break
+                    // Pre-fetch a scene-wide-unique default name so the
+                    // prompt matches UXP `onNewRendGrp` (suggested name
+                    // pre-filled, user may accept or edit).
+                    let suggestion = 'group1'
+                    if (cm && sceneId !== undefined) {
+                        try {
+                            const r = await cm.invokeService('proposeUniqName', {
+                                kind: 'sceneRenderer',
+                                prefix: 'group',
+                                sceneId,
+                            })
+                            suggestion = r?.name ?? suggestion
+                        } catch (err) {
+                            console.warn('proposeUniqName failed:', err)
+                        }
+                    }
+                    const entered = window.prompt(
+                        'Name for new group:',
+                        suggestion,
+                    )
+                    if (entered == null) break
+                    const trimmed = entered.trim()
+                    if (trimmed.length === 0) break
+                    await createRendererGroup(idStr, trimmed)
+                    break
+                }
             }
         },
         [
@@ -253,6 +283,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
             paintRendererSelection, applyRendererStyle,
             setSceneBackgroundColor, toggleSceneColorProofing,
             setRendererSelection, generateRendererSurfObj,
+            createRendererGroup,
         ],
     )
 

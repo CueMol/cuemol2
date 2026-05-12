@@ -99,6 +99,7 @@ const App: React.FC = () => {
     applyRendererStyle: applySceneRendererStyle,
     setRendererSelection: setSceneRendererSelection,
     generateRendererSurfObj: generateSceneSurfObj,
+    createRendererGroup: createSceneRendererGroup,
     setSceneBackgroundColor: setSceneBgColorFromCtx,
     toggleSceneColorProofing: toggleSceneColorProofingFromCtx,
     fetchNodeInfo: fetchSceneNodeInfo,
@@ -217,6 +218,7 @@ const App: React.FC = () => {
     applyRendererStyle: applySceneRendererStyle,
     setRendererSelection: setSceneRendererSelection,
     generateRendererSurfObj: generateSceneSurfObj,
+    createRendererGroup: createSceneRendererGroup,
     setSceneBackgroundColor: setSceneBgColorFromCtx,
     toggleSceneColorProofing: toggleSceneColorProofingFromCtx,
   });

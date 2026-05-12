@@ -5,7 +5,8 @@ export type ProposeUniqNameArgs =
     | { kind: 'scene'; prefix: string }
     | { kind: 'view'; prefix: string; sceneId: number }
     | { kind: 'object'; prefix: string; sceneId: number }
-    | { kind: 'renderer'; prefix: string; sceneId: number; molId: number };
+    | { kind: 'renderer'; prefix: string; sceneId: number; molId: number }
+    | { kind: 'sceneRenderer'; prefix: string; sceneId: number };
 
 export interface ProposeUniqNameResult {
     name: string;
@@ -49,6 +50,17 @@ function proposeUniqName(ctx: WorkerContext, args: ProposeUniqNameArgs): Propose
                 return { name: prefix + '1' };
             }
             tryFunc = (name) => (mol as any).getRendererByName(name);
+            break;
+        }
+        case 'sceneRenderer': {
+            const scene = ctx.sceMgr.getScene(args.sceneId);
+            if (!scene) {
+                return { name: prefix + '1' };
+            }
+            // Scene-wide rendgroup naming: matches UXP `onNewRendGrp`'s
+            // `scene.getRendByName` lookup so group names don't collide
+            // with sibling renderers on other objects.
+            tryFunc = (name) => scene.getRendByName(name);
             break;
         }
     }
