@@ -154,6 +154,22 @@ interface UseSceneTreeResult {
         nodeId: number,
         scopeId: number,
     ) => Promise<{ ok: boolean; saved: boolean }>
+    /** Phase 5b camera ops. */
+    createCamera: (viewId: number, name: string) => Promise<boolean>
+    renameCamera: (oldName: string, newName: string) => Promise<boolean>
+    saveViewToCamera: (
+        viewId: number, name: string, withVisFlags: boolean,
+    ) => Promise<boolean>
+    applyCameraToView: (
+        viewId: number, name: string, withVisFlags: boolean,
+    ) => Promise<boolean>
+    clearCameraVisFlags: (name: string) => Promise<boolean>
+    loadCameraFromFile: (viewId: number, path: string) => Promise<boolean>
+    saveCameraToFile: (name: string, path: string) => Promise<boolean>
+    saveCameraToCurrentSrc: (
+        name: string,
+    ) => Promise<{ ok: boolean; saved: boolean }>
+    reloadCameraFromSrc: (name: string) => Promise<boolean>
     /** Fetch property info for the property dialog. */
     fetchNodeInfo: (id: string) => Promise<NodeInfo | null>
     refetch: () => void
@@ -362,6 +378,14 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
             // StyleManager.destroyStyleSet(scopeId, styleSetId).
             const scopeId =
                 node.type === 'style' ? node.styleInfo?.scopeId : undefined
+            // Camera nodes are keyed by name; deleteNode for cameras
+            // routes through the dedicated `destroyCamera` worker service.
+            if (node.type === 'camera') {
+                const res = await cm.invokeService('destroyCamera', {
+                    sceneId: sid, name: node.name,
+                })
+                return res?.ok === true
+            }
             const res = await cm.invokeService('deleteNode', {
                 sceneId: sid,
                 nodeId: numId,
@@ -420,17 +444,20 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
                 node.type !== 'object' &&
                 node.type !== 'renderer' &&
                 node.type !== 'rendGroup' &&
-                node.type !== 'style'
+                node.type !== 'style' &&
+                node.type !== 'camera'
             ) {
                 return false
             }
             const scopeId =
                 node.type === 'style' ? node.styleInfo?.scopeId : undefined
+            const cameraName = node.type === 'camera' ? node.name : undefined
             const res = await cm.invokeService('copyNode', {
                 sceneId: sid,
                 nodeId: node.id,
                 nodeType: node.type,
                 scopeId,
+                cameraName,
             })
             return res?.ok === true
         },
@@ -781,6 +808,116 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         [cm],
     )
 
+    // ── Phase 5b camera ops ──────────────────────────────────────────
+
+    const createCamera = useCallback(
+        async (viewId: number, name: string): Promise<boolean> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return false
+            const res = await cm.invokeService('createCamera', {
+                sceneId: sid, viewId, name,
+            })
+            return res?.ok === true
+        },
+        [cm],
+    )
+
+    const renameCamera = useCallback(
+        async (oldName: string, newName: string): Promise<boolean> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return false
+            const res = await cm.invokeService('renameCamera', {
+                sceneId: sid, oldName, newName,
+            })
+            return res?.ok === true
+        },
+        [cm],
+    )
+
+    const saveViewToCamera = useCallback(
+        async (viewId: number, name: string, withVisFlags: boolean): Promise<boolean> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return false
+            const res = await cm.invokeService('saveViewToCamera', {
+                sceneId: sid, viewId, name, withVisFlags,
+            })
+            return res?.ok === true
+        },
+        [cm],
+    )
+
+    const applyCameraToView = useCallback(
+        async (viewId: number, name: string, withVisFlags: boolean): Promise<boolean> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return false
+            const res = await cm.invokeService('applyCameraToView', {
+                sceneId: sid, viewId, name, withVisFlags,
+            })
+            return res?.ok === true
+        },
+        [cm],
+    )
+
+    const clearCameraVisFlags = useCallback(
+        async (name: string): Promise<boolean> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return false
+            const res = await cm.invokeService('clearCameraVisFlags', {
+                sceneId: sid, name,
+            })
+            return res?.ok === true
+        },
+        [cm],
+    )
+
+    const loadCameraFromFile = useCallback(
+        async (viewId: number, path: string): Promise<boolean> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return false
+            const res = await cm.invokeService('loadCameraFromFile', {
+                sceneId: sid, viewId, path,
+            })
+            return res?.ok === true
+        },
+        [cm],
+    )
+
+    const saveCameraToFile = useCallback(
+        async (name: string, path: string): Promise<boolean> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return false
+            const res = await cm.invokeService('saveCameraToFile', {
+                sceneId: sid, name, path,
+            })
+            return res?.ok === true
+        },
+        [cm],
+    )
+
+    const saveCameraToCurrentSrc = useCallback(
+        async (name: string): Promise<{ ok: boolean; saved: boolean }> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return { ok: false, saved: false }
+            const res = await cm.invokeService('saveCameraToCurrentSrc', {
+                sceneId: sid, name,
+            })
+            return { ok: res?.ok === true, saved: res?.saved === true }
+        },
+        [cm],
+    )
+
+    const reloadCameraFromSrc = useCallback(
+        async (name: string): Promise<boolean> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return false
+            const res = await cm.invokeService('reloadCameraFromSrc', {
+                sceneId: sid, name,
+            })
+            return res?.ok === true
+        },
+        [cm],
+    )
+
     const fetchNodeInfo = useCallback(
         async (id: string): Promise<NodeInfo | null> => {
             const sid = sceneIdRef.current
@@ -849,6 +986,15 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         loadStyleSetFromFile,
         saveStyleSetToFile,
         saveStyleSetToCurrentSrc,
+        createCamera,
+        renameCamera,
+        saveViewToCamera,
+        applyCameraToView,
+        clearCameraVisFlags,
+        loadCameraFromFile,
+        saveCameraToFile,
+        saveCameraToCurrentSrc,
+        reloadCameraFromSrc,
         fetchNodeInfo,
         refetch,
         resolveNodeName,

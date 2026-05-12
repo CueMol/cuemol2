@@ -211,6 +211,15 @@ export type SceneCtxAction =
   | { kind: 'styleSave' }
   | { kind: 'styleSaveAs' }
   | { kind: 'styleToggleReadOnly' }
+  | { kind: 'newCamera' }
+  | { kind: 'cameraLoad' }
+  | { kind: 'cameraReload' }
+  | { kind: 'cameraSave' }
+  | { kind: 'cameraSaveAs' }
+  | { kind: 'cameraSaveFromView'; withVisFlags: boolean }
+  | { kind: 'cameraApplyToView'; withVisFlags: boolean }
+  | { kind: 'cameraEditVisFlags' }
+  | { kind: 'cameraClearVisFlags' }
   | { kind: 'multiShow' }
   | { kind: 'multiHide' }
   | { kind: 'multiDelete' }
@@ -236,7 +245,7 @@ export interface SceneCtxMenuPayload {
   /** Whether the node carries a visibility flag at all. */
   hasVisibility: boolean
   /** What the worker clipboard holds, used to gate Paste items. */
-  clipboardKind: 'object' | 'renderer' | 'style' | null
+  clipboardKind: 'object' | 'renderer' | 'style' | 'camera' | null
   /**
    * Whether the targeted renderer supports the Coloring submenu (Phase 3c).
    * False for the special `*selection` / `*namelabel` / `atomintr` types
@@ -315,6 +324,14 @@ export interface SceneCtxMenuPayload {
     src: string
     readonly: boolean
     modified: boolean
+  }
+  /**
+   * Camera-node pre-fetch (Phase 5b). Drives Reload (has src) / Clear
+   * vis flags (vis_size > 0) gates. Camera ctx only.
+   */
+  cameraInfo?: {
+    src: string
+    visSize: number
   }
 }
 

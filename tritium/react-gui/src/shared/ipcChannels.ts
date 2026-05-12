@@ -12,6 +12,8 @@ export const IPC = {
   DIALOG_SAVE_SCENE: 'dialog:saveScene',
   DIALOG_STYLE_OPEN: 'dialog:styleOpen',
   DIALOG_STYLE_SAVE: 'dialog:styleSave',
+  DIALOG_CAMERA_OPEN: 'dialog:cameraOpen',
+  DIALOG_CAMERA_SAVE: 'dialog:cameraSave',
   FILE_EXISTS:        'file:exists',
   FILE_BACKUP_RENAME: 'file:backupRename',
   LAYOUT_LOAD:    'layout:load',

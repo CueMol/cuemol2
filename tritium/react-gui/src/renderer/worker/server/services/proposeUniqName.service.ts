@@ -7,7 +7,8 @@ export type ProposeUniqNameArgs =
     | { kind: 'object'; prefix: string; sceneId: number }
     | { kind: 'renderer'; prefix: string; sceneId: number; molId: number }
     | { kind: 'sceneRenderer'; prefix: string; sceneId: number }
-    | { kind: 'styleSet'; prefix: string; sceneId: number };
+    | { kind: 'styleSet'; prefix: string; sceneId: number }
+    | { kind: 'camera'; prefix: string; sceneId: number };
 
 export interface ProposeUniqNameResult {
     name: string;
@@ -63,6 +64,19 @@ function proposeUniqName(ctx: WorkerContext, args: ProposeUniqNameArgs): Propose
             // with sibling renderers on other objects.
             tryFunc = (name) => scene.getRendByName(name);
             break;
+        }
+        case 'camera': {
+            // UXP `createCamera` walks `camera_0`, `camera_1`, ... against
+            // `scene.getCameraRef(name)`. Mirror via `scene.hasCamera`.
+            const scene = ctx.sceMgr.getScene(args.sceneId);
+            if (!scene) return { name: `${prefix}_0` };
+            for (let i = 0; i <= MAX_ITER; ++i) {
+                const candidate = `${prefix}_${i}`;
+                if (!scene.hasCamera(candidate)) {
+                    return { name: candidate };
+                }
+            }
+            return { name: `${prefix}_${Date.now()}` };
         }
         case 'styleSet': {
             // StyleManager.hasStyleSet returns 0 when no set exists for

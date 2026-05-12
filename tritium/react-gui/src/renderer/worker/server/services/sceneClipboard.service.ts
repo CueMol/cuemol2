@@ -18,7 +18,7 @@ import type { LScrObject } from '@cuemol/core/src/wrappers/LScrObject';
 import type { WorkerContext } from '../types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
 
-export type ClipboardKind = 'object' | 'renderer' | 'style';
+export type ClipboardKind = 'object' | 'renderer' | 'style' | 'camera';
 
 interface ClipboardEntry {
     kind: ClipboardKind;
@@ -45,13 +45,20 @@ export function _resetClipboardForTest(): void {
 export interface CopyNodeArgs {
     sceneId: number;
     nodeId: number;
-    nodeType: 'object' | 'renderer' | 'rendGroup' | 'style';
+    nodeType: 'object' | 'renderer' | 'rendGroup' | 'style' | 'camera';
     /**
      * Style scope id (0 for global, scene.uid for scene-local). Required
      * when `nodeType === 'style'`; the renderer reads it from the tree
      * node's `styleInfo.scopeId` and forwards it. Ignored for other types.
      */
     scopeId?: number;
+    /**
+     * Camera name. Required when `nodeType === 'camera'` because cameras
+     * are keyed by name at the Scene API level (the tree-row id for
+     * cameras is a synthesised negative integer with no C++ meaning).
+     * Ignored for other types.
+     */
+    cameraName?: string;
 }
 
 export interface CopyNodeResult {
@@ -78,6 +85,16 @@ function copyNode(ctx: WorkerContext, args: CopyNodeArgs): CopyNodeResult {
         sourceClassName =
             safeRead(() => (obj as unknown as { className: string }).className) ?? '';
         kind = 'object';
+    } else if (args.nodeType === 'camera') {
+        if (!args.cameraName) return { ok: false, kind: null };
+        const cam = (safeRead(() =>
+            scene.getCameraRef(args.cameraName!),
+        ) as unknown as LScrObject | null) ?? null;
+        if (!cam) return { ok: false, kind: null };
+        target = cam;
+        sourceName = args.cameraName;
+        sourceClassName = 'Camera';
+        kind = 'camera';
     } else if (args.nodeType === 'style') {
         // UXP `onCopyStyle` rejects global (scope==0) styles before
         // toXML; the ctxmenu already disables Copy for those rows, but
@@ -144,6 +161,34 @@ function pasteNode(ctx: WorkerContext, args: PasteNodeArgs): PasteNodeResult {
 
     const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
     if (!scene) return empty;
+
+    if (entry.kind === 'camera') {
+        // Paste a Camera under the destination scene (UXP `onCameraPaste`).
+        // Cameras are keyed by name — uniquify via UXP's "copy<i>_<orig>"
+        // pattern when the destination already has one with that name.
+        let newName = '';
+        let ok = false;
+        withUndoTxn(scene, 'Paste camera', () => {
+            const restored = ctx.strMgr.fromXML(entry.xml, args.sceneId) as
+                | LScrObject
+                | null;
+            if (!restored) return;
+            const camView = restored as unknown as {
+                name: string;
+                notifyLoaded?: (s: Scene) => void;
+            };
+            const wanted = camView.name || entry.sourceName || 'camera';
+            const finalName = uniqueCameraNameViaScene(scene, wanted);
+            try { (scene as unknown as {
+                setCamera: (n: string, c: LScrObject) => void;
+            }).setCamera(finalName, restored); } catch { return; }
+            try { camView.notifyLoaded?.(scene); } catch { /* ignore */ }
+            newName = finalName;
+            ok = true;
+        });
+        if (!ok) return empty;
+        return { ok: true, newId: null, newName };
+    }
 
     if (entry.kind === 'style') {
         // Paste a StyleSet under the destination scene (UXP `onPasteStyle`).
@@ -294,6 +339,15 @@ function uniqueRendererName(obj: CueMolObject, prefix: string): string {
         if (!tryFn(candidate)) return candidate;
     }
     return `${prefix}_${Date.now()}`;
+}
+
+function uniqueCameraNameViaScene(scene: Scene, base: string): string {
+    if (!scene.hasCamera(base)) return base;
+    for (let i = 1; i < 10000; i++) {
+        const candidate = `copy${i}_${base}`;
+        if (!scene.hasCamera(candidate)) return candidate;
+    }
+    return `${base}_${Date.now()}`;
 }
 
 function uniqueStyleName(

@@ -180,7 +180,7 @@ describe('sceneTree service', () => {
             expect(types).toEqual(['object', 'cameraRoot', 'styleRoot'])
         })
 
-        it('populates cameraRoot children from getCameraInfoJSON', () => {
+        it('populates cameraRoot children from getCameraInfoJSON with src + visSize', () => {
             const json = JSON.stringify([{ name: 'Scene1', type: '', ID: 1 }])
             const cameraInfo = JSON.stringify([
                 { name: 'cam0', vis_size: 0, src: '' },
@@ -191,6 +191,15 @@ describe('sceneTree service', () => {
             const cameraRoot = res.tree?.children.find((c) => c.type === 'cameraRoot')
             expect(cameraRoot?.children).toHaveLength(2)
             expect(cameraRoot?.children.map((c) => c.name)).toEqual(['cam0', 'cam1'])
+            // cameraInfo carries the fields ctxmenu Reload + Clear-vis-flags
+            // gates rely on.
+            expect(cameraRoot?.children[0].cameraInfo).toEqual({ src: '', visSize: 0 })
+            expect(cameraRoot?.children[1].cameraInfo).toEqual({
+                src: 'foo.cam', visSize: 1,
+            })
+            // file-linked cameras pick up className='linked' for the dim-icon hint
+            expect(cameraRoot?.children[0].className).toBe('')
+            expect(cameraRoot?.children[1].className).toBe('linked')
         })
 
         it('populates styleRoot children from StyleManager.getStyleSetsJSON (global + scene)', () => {

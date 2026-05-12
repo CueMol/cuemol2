@@ -164,6 +164,30 @@ import type {
   SaveStyleSetToCurrentSrcArgs,
   SaveStyleSetToCurrentSrcResult,
 } from '../server/services/styleFile.service'
+import type {
+  CreateCameraArgs,
+  CreateCameraResult,
+  DestroyCameraArgs,
+  DestroyCameraResult,
+  RenameCameraArgs,
+  RenameCameraResult,
+  SaveViewToCameraArgs,
+  SaveViewToCameraResult,
+  ApplyCameraToViewArgs,
+  ApplyCameraToViewResult,
+  ClearCameraVisFlagsArgs,
+  ClearCameraVisFlagsResult,
+} from '../server/services/cameraOps.service'
+import type {
+  LoadCameraFromFileArgs,
+  LoadCameraFromFileResult,
+  SaveCameraToFileArgs,
+  SaveCameraToFileResult,
+  SaveCameraToCurrentSrcArgs,
+  SaveCameraToCurrentSrcResult,
+  ReloadCameraFromSrcArgs,
+  ReloadCameraFromSrcResult,
+} from '../server/services/cameraFile.service'
 import type { UndoArgs } from '../server/services/undo.service'
 import type {
   ValidateSelectionArgs,
@@ -267,6 +291,16 @@ export interface ServiceMap {
   loadStyleSetFromFile:       { args: LoadStyleSetFromFileArgs;        result: LoadStyleSetFromFileResult }
   saveStyleSetToFile:         { args: SaveStyleSetToFileArgs;          result: SaveStyleSetToFileResult }
   saveStyleSetToCurrentSrc:   { args: SaveStyleSetToCurrentSrcArgs;    result: SaveStyleSetToCurrentSrcResult }
+  createCamera:               { args: CreateCameraArgs;                result: CreateCameraResult }
+  destroyCamera:              { args: DestroyCameraArgs;               result: DestroyCameraResult }
+  renameCamera:               { args: RenameCameraArgs;                result: RenameCameraResult }
+  saveViewToCamera:           { args: SaveViewToCameraArgs;            result: SaveViewToCameraResult }
+  applyCameraToView:          { args: ApplyCameraToViewArgs;           result: ApplyCameraToViewResult }
+  clearCameraVisFlags:        { args: ClearCameraVisFlagsArgs;         result: ClearCameraVisFlagsResult }
+  loadCameraFromFile:         { args: LoadCameraFromFileArgs;          result: LoadCameraFromFileResult }
+  saveCameraToFile:           { args: SaveCameraToFileArgs;            result: SaveCameraToFileResult }
+  saveCameraToCurrentSrc:     { args: SaveCameraToCurrentSrcArgs;      result: SaveCameraToCurrentSrcResult }
+  reloadCameraFromSrc:        { args: ReloadCameraFromSrcArgs;         result: ReloadCameraFromSrcResult }
   getViewProjection:          { args: ViewProjectionArgs;              result: ViewProjectionResult }
   setViewProjection:          { args: ViewProjectionArgs;              result: ViewProjectionResult }
   getViewCenterMark:          { args: ViewCenterMarkArgs;              result: ViewCenterMarkResult }

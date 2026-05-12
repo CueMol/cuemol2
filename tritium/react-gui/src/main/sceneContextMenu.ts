@@ -132,13 +132,10 @@ function buildTemplate(
             ]
 
         case 'camera':
-            return [
-                ...header,
-                renameItem(action),
-                deleteItem(action),
-                { type: 'separator' },
-                propertyItem(action),
-            ]
+            return buildCameraNodeMenu(payload, header, action)
+
+        case 'cameraRoot':
+            return buildCameraRootMenu(payload, header, action)
 
         case 'style':
             return buildStyleNodeMenu(payload, header, action)
@@ -146,13 +143,112 @@ function buildTemplate(
         case 'styleRoot':
             return buildStyleRootMenu(payload, header, action)
 
-        case 'cameraRoot':
         default:
-            // Synthesised root containers — no operations in Phase 3a.
             return [
                 { label: payload.nodeLabel || nodeTypeLabel(payload.nodeType), enabled: false },
             ]
     }
+}
+
+/**
+ * Camera row context menu (Phase 5b) — UXP `wspcPanelCameraCtxtMenu` with
+ * `onCamCtxtShowing` gating:
+ *   - Copy / Paste — Copy enabled for cameras; Paste enabled when the
+ *     worker clipboard holds a 'camera' entry
+ *   - Delete — enabled
+ *   - Camera file submenu — Reload only when src is non-empty
+ *   - Save/Apply view + Save/Apply scene (with vis flags) — enabled
+ *   - Edit vis flags... — dialog dep (Phase 6c); item is rendered but
+ *     dispatches a stub (renderer logs and no-ops, matching the UXP
+ *     `visflagset-edit-dlg.xul` flow that we do not migrate here)
+ *   - Clear vis flags — enabled only when vis_size > 0
+ *   - Rename — enabled
+ */
+function buildCameraNodeMenu(
+    payload: SceneCtxMenuPayload,
+    header: MenuItemConstructorOptions[],
+    action: (a: SceneCtxAction) => MenuItemConstructorOptions['click'],
+): MenuItemConstructorOptions[] {
+    const info = payload.cameraInfo
+    const hasSrc = (info?.src ?? '').length > 0
+    const hasVis = (info?.visSize ?? 0) > 0
+
+    return [
+        ...header,
+        { label: 'New Camera…', click: action({ kind: 'newCamera' }) },
+        { type: 'separator' },
+        { label: 'Copy', click: action({ kind: 'copy' }) },
+        ...pasteItem(payload, 'camera', action),
+        { label: 'Delete', click: action({ kind: 'delete' }) },
+        { type: 'separator' },
+        {
+            label: 'Camera file',
+            submenu: [
+                { label: 'Load…', click: action({ kind: 'cameraLoad' }) },
+                {
+                    label: 'Reload',
+                    enabled: hasSrc,
+                    click: action({ kind: 'cameraReload' }),
+                },
+                { label: 'Save', click: action({ kind: 'cameraSave' }) },
+                { label: 'Save As…', click: action({ kind: 'cameraSaveAs' }) },
+            ],
+        },
+        { type: 'separator' },
+        {
+            label: 'Save from view',
+            click: action({ kind: 'cameraSaveFromView', withVisFlags: false }),
+        },
+        {
+            label: 'Apply to view',
+            click: action({ kind: 'cameraApplyToView', withVisFlags: false }),
+        },
+        { type: 'separator' },
+        {
+            label: 'Save from scene (with vis flags)',
+            click: action({ kind: 'cameraSaveFromView', withVisFlags: true }),
+        },
+        {
+            label: 'Apply to scene (with vis flags)',
+            click: action({ kind: 'cameraApplyToView', withVisFlags: true }),
+        },
+        {
+            label: 'Edit vis flags…',
+            enabled: false,
+            click: action({ kind: 'cameraEditVisFlags' }),
+        },
+        {
+            label: 'Clear vis flags',
+            enabled: hasVis,
+            click: action({ kind: 'cameraClearVisFlags' }),
+        },
+        { type: 'separator' },
+        renameItem(action),
+        { type: 'separator' },
+        propertyItem(action),
+    ]
+}
+
+/**
+ * Camera root row context menu (Phase 5b). UXP `wspcPanelCameraCtxtMenu`
+ * disables everything except New Camera + Camera-file Load + Paste when
+ * the selected element is the cameraRoot rather than an individual camera.
+ */
+function buildCameraRootMenu(
+    payload: SceneCtxMenuPayload,
+    header: MenuItemConstructorOptions[],
+    action: (a: SceneCtxAction) => MenuItemConstructorOptions['click'],
+): MenuItemConstructorOptions[] {
+    return [
+        ...header,
+        { label: 'New Camera…', click: action({ kind: 'newCamera' }) },
+        ...pasteItem(payload, 'camera', action),
+        { type: 'separator' },
+        {
+            label: 'Camera file',
+            submenu: [{ label: 'Load…', click: action({ kind: 'cameraLoad' }) }],
+        },
+    ]
 }
 
 /**
@@ -294,7 +390,7 @@ function copyItem(
  */
 function pasteItem(
     payload: SceneCtxMenuPayload,
-    expectedKind: 'object' | 'renderer' | 'style',
+    expectedKind: 'object' | 'renderer' | 'style' | 'camera',
     action: (a: SceneCtxAction) => MenuItemConstructorOptions['click'],
 ): MenuItemConstructorOptions[] {
     if (payload.clipboardKind !== expectedKind) return []
@@ -303,7 +399,9 @@ function pasteItem(
             ? 'Paste Object'
             : expectedKind === 'style'
               ? 'Paste Style'
-              : 'Paste Renderer'
+              : expectedKind === 'camera'
+                ? 'Paste Camera'
+                : 'Paste Renderer'
     return [{ label, click: action({ kind: 'paste' }) }]
 }
 

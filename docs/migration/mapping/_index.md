@@ -1,6 +1,6 @@
 # Migration Mapping — Index
 
-- Updated: 2026-05-12 (Phase 5c: style ctxmenu wired — CRUD + read-only toggle + file I/O + copy/paste)
+- Updated: 2026-05-13 (Phase 5b: camera ctxmenu wired — CRUD + rename + file I/O + copy/paste + save/apply-to-view + vis flags)
 - Source files: `docs/migration/mapping/*.md` (excluding this file)
 
 ---
@@ -9,7 +9,7 @@
 
 | Category | File | Total | done | wip | review | todo | frozen |
 |----------|------|------:|-----:|----:|-------:|-----:|-------:|
-| Panel | [panels.md](panels.md) | 17 | 0 | 8 | 0 | 9 | 0 |
+| Panel | [panels.md](panels.md) | 17 | 0 | 9 | 0 | 8 | 0 |
 | Menu | [menus.md](menus.md) | 4 | 1 | 2 | 0 | 1 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 13 | 0 | 0 | 0 | 13 | 0 |
@@ -18,7 +18,7 @@
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 0 | 1 | 0 | 12 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 0 | 0 | 0 | 28 | 0 |
 | Other | [other.md](other.md) | 4 | 0 | 1 | 0 | 3 | 0 |
-| **Total** | | **120** | **1** | **14** | **0** | **105** | **0** |
+| **Total** | | **120** | **1** | **15** | **0** | **104** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -61,9 +61,10 @@
 | [`panel.workspace.ctxmenu.renderer`](panels.md#panelworkspacectxmenurenderer) | `useSceneContextMenu` / `main/sceneContextMenu` (renderer) / `rendererColoring.service` / `rendererStyle.service` / `setRendererSelection.service` / `generateRendererSurfObj.service` / `getRendererChangeTypes.service` / `changeRendererType.service` / `sceneClipboard.service` / `createRendererOnObject.service` / `getNewRendererOptions.service` | Common items + Copy + Coloring + Paint(SS) + Paint picker + Style + Change sel + Generate surface obj + Change type + New Renderer wired; Edit-Create style / Edit interaction pending |
 | [`panel.workspace.ctxmenu.rendgroup`](panels.md#panelworkspacectxmenurendgroup) | `useSceneContextMenu` / `main/sceneContextMenu` (rendGroup) / `sceneClipboard.service` / `createRendererOnObject.service` / `getNewRendererOptions.service` | Common items + Copy + Paste Renderer into group + New Renderer (group-aware) wired |
 | [`panel.workspace.ctxmenu.style`](panels.md#panelworkspacectxmenustyle) | `useSceneContextMenu` / `main/sceneContextMenu` (style) / `styleOps.service` / `styleFile.service` / `sceneClipboard.service` (style kind) / `sceneOps.deleteNode` (style branch) | New Style + Copy / Paste + Delete + Style file Load / Save / Save As (Reload stub) + Read-only toggle wired; `sceneTree.service` switched to `getStyleSetsJSON` so style nodes carry real C++ uids + `styleInfo`. Editor dialog (Phase 5a) pending. |
+| [`panel.workspace.ctxmenu.camera`](panels.md#panelworkspacectxmenucamera) | `useSceneContextMenu` / `main/sceneContextMenu` (camera) / `cameraOps.service` / `cameraFile.service` / `sceneClipboard.service` (camera kind) | New Camera + Rename (atomic destroy+setCamera) + Delete + Copy / Paste + Camera file Load / Reload / Save / Save As + Save/Apply from view + Save/Apply with vis flags + Clear vis flags wired; `sceneTree.service` synthesises `cameraInfo` from `getCameraInfoJSON`. Edit vis flags dialog (Phase 6c) + property dialog (Phase 5a) pending. |
 
 ---
 
 ## Unstarted
 
-**105 / 120** items are `todo` (not yet started).
+**104 / 120** items are `todo` (not yet started).

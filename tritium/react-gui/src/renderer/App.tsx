@@ -114,6 +114,15 @@ const App: React.FC = () => {
     loadStyleSetFromFile: loadSceneStyleFromFile,
     saveStyleSetToFile: saveSceneStyleToFile,
     saveStyleSetToCurrentSrc: saveSceneStyleToCurrentSrc,
+    createCamera: createSceneCamera,
+    renameCamera: renameSceneCamera,
+    saveViewToCamera: saveViewToSceneCamera,
+    applyCameraToView: applySceneCameraToView,
+    clearCameraVisFlags: clearSceneCameraVisFlags,
+    loadCameraFromFile: loadSceneCameraFromFile,
+    saveCameraToFile: saveSceneCameraToFile,
+    saveCameraToCurrentSrc: saveSceneCameraToCurrentSrc,
+    reloadCameraFromSrc: reloadSceneCameraFromSrc,
     fetchNodeInfo: fetchSceneNodeInfo,
     resolveNodeName,
   } = useSceneTree({ cm, sceneId: activeSceneId });
@@ -246,6 +255,16 @@ const App: React.FC = () => {
     loadStyleSetFromFile: loadSceneStyleFromFile,
     saveStyleSetToFile: saveSceneStyleToFile,
     saveStyleSetToCurrentSrc: saveSceneStyleToCurrentSrc,
+    activeViewId: activeMolViewId,
+    createCamera: createSceneCamera,
+    renameCamera: renameSceneCamera,
+    saveViewToCamera: saveViewToSceneCamera,
+    applyCameraToView: applySceneCameraToView,
+    clearCameraVisFlags: clearSceneCameraVisFlags,
+    loadCameraFromFile: loadSceneCameraFromFile,
+    saveCameraToFile: saveSceneCameraToFile,
+    saveCameraToCurrentSrc: saveSceneCameraToCurrentSrc,
+    reloadCameraFromSrc: reloadSceneCameraFromSrc,
   });
 
   const handleShowSceneCtxMenu = useCallback(

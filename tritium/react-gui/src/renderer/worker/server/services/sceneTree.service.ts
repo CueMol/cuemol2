@@ -7,6 +7,7 @@ import {
     buildCameraRoot,
     buildStyleRoot,
     parseSceneTreeJSON,
+    type CameraRootEntry,
     type SceneNodeType,
     type SceneTreeNode,
     type StyleRootEntry,
@@ -35,6 +36,8 @@ export interface SetNodeVisibleResult {
 
 interface CameraInfoEntry {
     name?: string;
+    src?: string;
+    vis_size?: number;
 }
 
 interface StyleSetJSONEntry {
@@ -46,13 +49,23 @@ interface StyleSetJSONEntry {
     modified?: boolean;
 }
 
-function getCameraNames(scene: Scene): string[] {
+function getCameraEntries(scene: Scene): CameraRootEntry[] {
     try {
         const json = scene.getCameraInfoJSON();
         if (!json) return [];
         const parsed = JSON.parse(json) as CameraInfoEntry[];
         if (!Array.isArray(parsed)) return [];
-        return parsed.map((e) => e.name ?? '').filter((n) => n.length > 0);
+        const out: CameraRootEntry[] = [];
+        for (const e of parsed) {
+            const name = e.name ?? '';
+            if (name.length === 0) continue;
+            out.push({
+                name,
+                src: e.src ?? '',
+                visSize: typeof e.vis_size === 'number' ? e.vis_size : 0,
+            });
+        }
+        return out;
     } catch {
         return [];
     }
@@ -106,9 +119,9 @@ function getSceneTree(ctx: WorkerContext, args: GetSceneTreeArgs): GetSceneTreeR
     // Synthesize camera / style root branches so the tree matches UXP layout.
     // C++ `getSceneDataJSON` does not include cameras or styles; these come
     // from separate APIs.
-    const cameraNames = getCameraNames(scene);
+    const cameraEntries = getCameraEntries(scene);
     const styleEntries = getStyleEntries(ctx, args.sceneId);
-    tree.children.push(buildCameraRoot(cameraNames));
+    tree.children.push(buildCameraRoot(cameraEntries));
     tree.children.push(buildStyleRoot(styleEntries));
 
     return { ok: true, tree };

@@ -292,6 +292,96 @@ describe('sceneClipboard.pasteNode', () => {
     })
 })
 
+describe('sceneClipboard camera branch (Phase 5b)', () => {
+    function buildCameraCtx(opts: { existingNames?: string[] } = {}) {
+        const setCamera = vi.fn()
+        const hasCamera = vi.fn((n: string) =>
+            (opts.existingNames ?? []).includes(n),
+        )
+        const sourceCam = { name: 'cam0', uid: 555 }
+        const getCameraRef = vi.fn((n: string) =>
+            n === 'cam0' ? sourceCam : null,
+        )
+        const startUndoTxn = vi.fn()
+        const commitUndoTxn = vi.fn()
+        const rollbackUndoTxn = vi.fn()
+        const scene = {
+            uid: 7,
+            getObject: vi.fn(),
+            getRenderer: vi.fn(),
+            getObjectByName: vi.fn(),
+            addObject: vi.fn(),
+            getCameraRef, setCamera, hasCamera,
+            startUndoTxn, commitUndoTxn, rollbackUndoTxn,
+        }
+        const toXML = vi.fn(() => ({ __byteArray: true }))
+        const setRestoredName = vi.fn()
+        const restoredCam = {
+            get name() { return 'cam0' },
+            set name(v: string) { setRestoredName(v) },
+            notifyLoaded: vi.fn(),
+        }
+        const fromXML = vi.fn(() => restoredCam)
+        const ctx = {
+            sceMgr: { getScene: vi.fn(() => scene) },
+            strMgr: { toXML, fromXML },
+            svc: { getService: vi.fn(() => null) },
+        } as unknown as WorkerContext
+        return {
+            ctx, scene, sourceCam, restoredCam,
+            getCameraRef, hasCamera, setCamera, toXML, fromXML,
+            startUndoTxn, commitUndoTxn,
+        }
+    }
+
+    it('camera copy requires cameraName and calls strMgr.toXML on the cam ref', () => {
+        const { ctx, toXML, getCameraRef } = buildCameraCtx()
+        const noName = services.copyNode(ctx, {
+            sceneId: 1, nodeId: -1000, nodeType: 'camera',
+        })
+        expect(noName).toEqual({ ok: false, kind: null })
+        expect(toXML).not.toHaveBeenCalled()
+
+        const ok = services.copyNode(ctx, {
+            sceneId: 1, nodeId: -1000, nodeType: 'camera', cameraName: 'cam0',
+        })
+        expect(ok).toEqual({ ok: true, kind: 'camera' })
+        expect(getCameraRef).toHaveBeenCalledWith('cam0')
+        expect(toXML).toHaveBeenCalled()
+    })
+
+    it('camera paste calls scene.setCamera + notifyLoaded under "Paste camera" txn', () => {
+        const { ctx, setCamera, restoredCam, startUndoTxn } = buildCameraCtx()
+        services.copyNode(ctx, {
+            sceneId: 1, nodeId: -1000, nodeType: 'camera', cameraName: 'cam0',
+        })
+        const res = services.pasteNode(ctx, { sceneId: 1 })
+        expect(res.ok).toBe(true)
+        expect(res.newName).toBe('cam0')
+        expect(startUndoTxn).toHaveBeenCalledWith('Paste camera')
+        expect(setCamera).toHaveBeenCalledWith('cam0', restoredCam)
+        expect(restoredCam.notifyLoaded).toHaveBeenCalled()
+    })
+
+    it('camera paste uniquifies on name collision via copy{i}_<orig>', () => {
+        const { ctx, setCamera } = buildCameraCtx({ existingNames: ['cam0'] })
+        services.copyNode(ctx, {
+            sceneId: 1, nodeId: -1000, nodeType: 'camera', cameraName: 'cam0',
+        })
+        const res = services.pasteNode(ctx, { sceneId: 1 })
+        expect(res.newName).toBe('copy1_cam0')
+        expect(setCamera).toHaveBeenCalledWith('copy1_cam0', expect.anything())
+    })
+
+    it('getClipboardKind returns "camera" after a camera copy', () => {
+        const { ctx } = buildCameraCtx()
+        services.copyNode(ctx, {
+            sceneId: 1, nodeId: -1000, nodeType: 'camera', cameraName: 'cam0',
+        })
+        expect(services.getClipboardKind(ctx, {}).kind).toBe('camera')
+    })
+})
+
 describe('sceneClipboard style branch (Phase 5c)', () => {
     it('rejects style copy on global scope (scopeId === 0)', () => {
         const { ctx, toXML } = buildCtx()

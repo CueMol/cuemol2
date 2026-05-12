@@ -79,6 +79,23 @@ export interface UseSceneContextMenuOptions {
     saveStyleSetToCurrentSrc: (
         nodeId: number, scopeId: number,
     ) => Promise<{ ok: boolean; saved: boolean }>
+    /** Phase 5b camera ops. */
+    activeViewId: number | undefined
+    createCamera: (viewId: number, name: string) => Promise<boolean>
+    renameCamera: (oldName: string, newName: string) => Promise<boolean>
+    saveViewToCamera: (
+        viewId: number, name: string, withVisFlags: boolean,
+    ) => Promise<boolean>
+    applyCameraToView: (
+        viewId: number, name: string, withVisFlags: boolean,
+    ) => Promise<boolean>
+    clearCameraVisFlags: (name: string) => Promise<boolean>
+    loadCameraFromFile: (viewId: number, path: string) => Promise<boolean>
+    saveCameraToFile: (name: string, path: string) => Promise<boolean>
+    saveCameraToCurrentSrc: (
+        name: string,
+    ) => Promise<{ ok: boolean; saved: boolean }>
+    reloadCameraFromSrc: (name: string) => Promise<boolean>
 }
 
 export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
@@ -101,6 +118,12 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
         selectedIds, bulkSetNodeVisible, bulkDeleteNodes,
         createStyleSet, toggleStyleSetReadOnly,
         loadStyleSetFromFile, saveStyleSetToFile, saveStyleSetToCurrentSrc,
+        activeViewId,
+        createCamera, renameCamera,
+        saveViewToCamera, applyCameraToView,
+        clearCameraVisFlags,
+        loadCameraFromFile, saveCameraToFile, saveCameraToCurrentSrc,
+        reloadCameraFromSrc,
     } = opts
 
     // Electron disables window.prompt — use the in-app Blueprint dialog
@@ -210,7 +233,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                 node.type === 'renderer' && node.className === 'isosurf'
 
             // Pre-fetch clipboard state so main can enable Paste items correctly.
-            let clipboardKind: 'object' | 'renderer' | 'style' | null = null
+            let clipboardKind: 'object' | 'renderer' | 'style' | 'camera' | null = null
             if (cm) {
                 try {
                     const r = await cm.invokeService('getClipboardKind', {})
@@ -287,9 +310,10 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                 }
             }
 
-            // Style node pre-fetch is just a property read on the tree
-            // node — `styleInfo` is already populated by getSceneTree.
+            // Style + Camera node pre-fetches are just property reads on
+            // the tree node — getSceneTree already populated both.
             const styleInfo = node.type === 'style' ? node.styleInfo : undefined
+            const cameraInfo = node.type === 'camera' ? node.cameraInfo : undefined
 
             const action: SceneCtxAction | null = await window.electronAPI.invoke(
                 IPC.SCENE_CTX_SHOW,
@@ -311,6 +335,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                     canGenSurfObj,
                     rendChangeTypes,
                     styleInfo,
+                    cameraInfo,
                 },
             )
 
@@ -329,7 +354,13 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                     })
                     if (next == null) break
                     if (next === node.name) break
-                    await renameNode(idStr, next)
+                    if (node.type === 'camera') {
+                        // Cameras have no in-place name setter; renameCamera
+                        // does the atomic destroy + setCamera dance.
+                        await renameCamera(node.name, next)
+                    } else {
+                        await renameNode(idStr, next)
+                    }
                     break
                 }
                 case 'delete':
@@ -496,6 +527,96 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                     await saveStyleSetToFile(node.id, scope, save.filePath)
                     break
                 }
+                case 'newCamera': {
+                    if (
+                        node.type !== 'camera' &&
+                        node.type !== 'cameraRoot'
+                    ) break
+                    if (activeViewId === undefined) break
+                    let suggestion = 'camera_0'
+                    if (cm && sceneId !== undefined) {
+                        try {
+                            const r = await cm.invokeService('proposeUniqName', {
+                                kind: 'camera',
+                                prefix: 'camera',
+                                sceneId,
+                            })
+                            suggestion = r?.name ?? suggestion
+                        } catch (err) {
+                            console.warn('proposeUniqName failed:', err)
+                        }
+                    }
+                    const entered = await showTextPrompt({
+                        title: 'New Camera',
+                        label: 'Name for new camera:',
+                        defaultValue: suggestion,
+                        confirmLabel: 'Create',
+                    })
+                    if (entered == null) break
+                    await createCamera(activeViewId, entered)
+                    break
+                }
+                case 'cameraLoad': {
+                    if (activeViewId === undefined) break
+                    const r = await window.electronAPI.invoke(IPC.DIALOG_CAMERA_OPEN)
+                    if (r.canceled || !r.filePath) break
+                    await loadCameraFromFile(activeViewId, r.filePath)
+                    break
+                }
+                case 'cameraReload': {
+                    if (node.type !== 'camera') break
+                    await reloadCameraFromSrc(node.name)
+                    break
+                }
+                case 'cameraSave': {
+                    if (node.type !== 'camera') break
+                    const r = await saveCameraToCurrentSrc(node.name)
+                    if (r.ok && !r.saved) {
+                        // No src — fall through to Save As.
+                        const save = await window.electronAPI.invoke(
+                            IPC.DIALOG_CAMERA_SAVE,
+                            { defaultName: node.name },
+                        )
+                        if (save.canceled || !save.filePath) break
+                        await saveCameraToFile(node.name, save.filePath)
+                    }
+                    break
+                }
+                case 'cameraSaveAs': {
+                    if (node.type !== 'camera') break
+                    const save = await window.electronAPI.invoke(
+                        IPC.DIALOG_CAMERA_SAVE,
+                        { defaultName: node.name },
+                    )
+                    if (save.canceled || !save.filePath) break
+                    await saveCameraToFile(node.name, save.filePath)
+                    break
+                }
+                case 'cameraSaveFromView': {
+                    if (node.type !== 'camera') break
+                    if (activeViewId === undefined) break
+                    await saveViewToCamera(activeViewId, node.name, action.withVisFlags)
+                    break
+                }
+                case 'cameraApplyToView': {
+                    if (node.type !== 'camera') break
+                    if (activeViewId === undefined) break
+                    await applyCameraToView(activeViewId, node.name, action.withVisFlags)
+                    break
+                }
+                case 'cameraClearVisFlags': {
+                    if (node.type !== 'camera') break
+                    await clearCameraVisFlags(node.name)
+                    break
+                }
+                case 'cameraEditVisFlags': {
+                    // Dialog dep — UXP visflagset-edit-dlg.xul lands in
+                    // Phase 6c. Item is disabled in the menu, so this
+                    // branch should not normally fire; log to surface
+                    // unexpected dispatches in development.
+                    console.info('cameraEditVisFlags: deferred to Phase 6c')
+                    break
+                }
             }
         },
         [
@@ -508,6 +629,12 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
             selectedIds, bulkSetNodeVisible, bulkDeleteNodes,
             createStyleSet, toggleStyleSetReadOnly,
             loadStyleSetFromFile, saveStyleSetToFile, saveStyleSetToCurrentSrc,
+            activeViewId,
+            createCamera, renameCamera,
+            saveViewToCamera, applyCameraToView,
+            clearCameraVisFlags,
+            loadCameraFromFile, saveCameraToFile, saveCameraToCurrentSrc,
+            reloadCameraFromSrc,
             showTextPrompt, showNewRenderer, openNewRendererFlow,
         ],
     )
