@@ -19,6 +19,7 @@ import { QscWriterOptionDialogProvider } from '../components/dialogs/QscWriterOp
 import { StreamProgressDialogProvider } from '../components/dialogs/StreamProgressDialogProvider'
 import { NodePropertyDialogProvider } from '../components/dialogs/NodePropertyDialogProvider'
 import { TextPromptDialogProvider } from '../components/dialogs/TextPromptDialogProvider'
+import { NewRendererDialogProvider } from '../components/dialogs/NewRendererDialogProvider'
 
 export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <AboutDialogProvider>
@@ -30,7 +31,9 @@ export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               <StreamProgressDialogProvider>
                 <NodePropertyDialogProvider>
                   <TextPromptDialogProvider>
-                    {children}
+                    <NewRendererDialogProvider>
+                      {children}
+                    </NewRendererDialogProvider>
                   </TextPromptDialogProvider>
                 </NodePropertyDialogProvider>
               </StreamProgressDialogProvider>

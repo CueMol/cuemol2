@@ -92,6 +92,7 @@ function buildTemplate(
                 renameItem(action),
                 copyItem(action),
                 ...pasteItem(payload, 'renderer', action),
+                newRendererItem(action),
                 newRendGroupItem(action),
                 deleteItem(action),
                 { type: 'separator' },
@@ -111,6 +112,7 @@ function buildTemplate(
                 { type: 'separator' },
                 renameItem(action),
                 copyItem(action),
+                newRendererItem(action),
                 deleteItem(action),
                 { type: 'separator' },
                 propertyItem(action),
@@ -123,6 +125,7 @@ function buildTemplate(
                 renameItem(action),
                 copyItem(action),
                 ...pasteItem(payload, 'renderer', action),
+                newRendererItem(action),
                 deleteItem(action),
                 { type: 'separator' },
                 propertyItem(action),
@@ -503,6 +506,18 @@ function newRendGroupItem(
     action: (a: SceneCtxAction) => MenuItemConstructorOptions['click'],
 ): MenuItemConstructorOptions {
     return { label: 'New Group…', click: action({ kind: 'newRendGroup' }) }
+}
+
+/**
+ * "New Renderer..." item on object / renderer / rendGroup rows.
+ * The renderer side resolves the target obj + (optional) group name from
+ * the clicked row (UXP `onNewCmd`), shows the shared NewRendererDialog,
+ * and dispatches `createRendererOnObject`.
+ */
+function newRendererItem(
+    action: (a: SceneCtxAction) => MenuItemConstructorOptions['click'],
+): MenuItemConstructorOptions {
+    return { label: 'New Renderer…', click: action({ kind: 'newRenderer' }) }
 }
 
 function selectionSubmenu(

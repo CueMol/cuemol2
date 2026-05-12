@@ -2,6 +2,7 @@
 import type { WorkerContext } from '../types/WorkerContext';
 import type { NewRendererCommand } from '@cuemol/core/src/wrappers/NewRendererCommand';
 import type { MolRenderer } from '@cuemol/core/src/wrappers/MolRenderer';
+import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { RendererOptions } from '../../../components/fopen-opt-dlgs/types';
 import { getDefaultStyleName } from './helpers/getDefaultStyleName';
 import { makeSel } from './helpers/makeSel';
@@ -11,7 +12,11 @@ const log = console;
 
 const NON_MOL_CLASSES = ['ElePotMap', 'MolSurfObj', 'DensityMap'];
 
-export function setupRenderer(ctx: WorkerContext, mol: any, rendOpts: RendererOptions): void {
+export function setupRenderer(
+    ctx: WorkerContext,
+    mol: any,
+    rendOpts: RendererOptions,
+): Renderer | null {
     const cmd = ctx.cmdMgr.getCmd('new_renderer') as NewRendererCommand;
     cmd.target_object = mol;
     cmd.renderer_type = rendOpts.rendererType;
@@ -19,8 +24,9 @@ export function setupRenderer(ctx: WorkerContext, mol: any, rendOpts: RendererOp
     cmd.recenter_view = rendOpts.centerView;
     cmd.default_style_name = getDefaultStyleName(rendOpts.rendererType);
     cmd.run();
-    const rend = cmd.result_renderer;
+    const rend = cmd.result_renderer as Renderer | null;
     log.info('renderer created: rend=', rend);
+    if (!rend) return null;
 
     const className = mol.getClassName();
     if (!NON_MOL_CLASSES.includes(className)) {
@@ -35,4 +41,5 @@ export function setupRenderer(ctx: WorkerContext, mol: any, rendOpts: RendererOp
             }
         }
     }
+    return rend;
 }

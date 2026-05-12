@@ -100,6 +100,16 @@ interface UseSceneTreeResult {
     /** Replace a renderer with a new type (Phase 6b). */
     changeRendererType: (rendId: string, newType: string) => Promise<boolean>
     /**
+     * Create a new renderer on the given object (Phase 4d).
+     * Mirrors UXP `Qm2Main.setupRendByObjID`. Returns true on success;
+     * the tree refresh happens via the event listener.
+     */
+    createRendererOnObject: (
+        targetObjId: number,
+        rendOpts: import('../components/fopen-opt-dlgs/types').RendererOptions,
+        groupName?: string,
+    ) => Promise<boolean>
+    /**
      * Bulk Show / Hide / Delete on the multi-select set (Phase 4c).
      * Caller passes the set of ids; the hook resolves each to its tree
      * node, filters out non-operable types, and dispatches the worker
@@ -583,6 +593,25 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         [cm, tree],
     )
 
+    const createRendererOnObject = useCallback(
+        async (
+            targetObjId: number,
+            rendOpts: import('../components/fopen-opt-dlgs/types').RendererOptions,
+            groupName?: string,
+        ): Promise<boolean> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return false
+            const res = await cm.invokeService('createRendererOnObject', {
+                sceneId: sid,
+                objId: targetObjId,
+                rendOpts,
+                groupName,
+            })
+            return res?.ok === true
+        },
+        [cm],
+    )
+
     const resolveBulkItems = useCallback(
         (ids: Iterable<string>): {
             nodeId: number
@@ -724,6 +753,7 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         generateRendererSurfObj,
         createRendererGroup,
         changeRendererType,
+        createRendererOnObject,
         bulkSetNodeVisible,
         bulkDeleteNodes,
         moveSceneNode,

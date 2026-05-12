@@ -9,6 +9,8 @@ import { IPC } from '../../shared/ipcChannels'
 import type { SceneTreeNode } from '../worker/shared/sceneTreeTypes'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import { useShowTextPromptDialog } from '../components/dialogs/TextPromptDialogProvider'
+import { useShowNewRendererDialog } from '../components/dialogs/NewRendererDialogProvider'
+import type { RendererOptions } from '../components/fopen-opt-dlgs/types'
 
 /**
  * Renderer type names that don't support a `coloring` property — matches
@@ -57,6 +59,11 @@ export interface UseSceneContextMenuOptions {
     generateRendererSurfObj: (id: string) => Promise<boolean>
     createRendererGroup: (objId: string, name: string) => Promise<boolean>
     changeRendererType: (rendId: string, newType: string) => Promise<boolean>
+    createRendererOnObject: (
+        targetObjId: number,
+        rendOpts: RendererOptions,
+        groupName?: string,
+    ) => Promise<boolean>
     /** Current multi-select set (Phase 4c). When size > 1 the
      *  right-click on a member triggers the multi context menu. */
     selectedIds?: Set<string>
@@ -73,13 +80,14 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
         paintRendererSelection, applyRendererStyle,
         setSceneBackgroundColor, toggleSceneColorProofing,
         setRendererSelection, generateRendererSurfObj,
-        createRendererGroup, changeRendererType,
+        createRendererGroup, changeRendererType, createRendererOnObject,
         selectedIds, bulkSetNodeVisible, bulkDeleteNodes,
     } = opts
 
     // Electron disables window.prompt — use the in-app Blueprint dialog
     // for Rename / New Group text input flows instead.
     const showTextPrompt = useShowTextPromptDialog()
+    const showNewRenderer = useShowNewRendererDialog()
 
     const openContextMenu = useCallback(
         async (node: SceneTreeNode, x: number, y: number): Promise<void> => {
@@ -308,6 +316,42 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                     if (node.type !== 'renderer') break
                     await changeRendererType(idStr, action.typeName)
                     break
+                case 'newRenderer': {
+                    if (
+                        node.type !== 'object' &&
+                        node.type !== 'renderer' &&
+                        node.type !== 'rendGroup'
+                    ) break
+                    if (!cm || sceneId === undefined) break
+                    let info
+                    try {
+                        info = await cm.invokeService('getNewRendererOptions', {
+                            sceneId,
+                            sourceNodeId: node.id,
+                            sourceNodeType: node.type,
+                        })
+                    } catch (err) {
+                        console.warn('getNewRendererOptions failed:', err)
+                        break
+                    }
+                    if (!info?.ok || info.rendererTypes.length === 0) break
+                    const result = await showNewRenderer({
+                        sceneId,
+                        objName: info.objName,
+                        objClassName: info.objClassName,
+                        rendererTypes: info.rendererTypes,
+                        defaultName: info.defaultName,
+                        isMol: info.isMol,
+                        groupName: info.groupName || undefined,
+                    })
+                    if (!result) break
+                    await createRendererOnObject(
+                        info.targetObjId,
+                        result.rendOpts,
+                        info.groupName || undefined,
+                    )
+                    break
+                }
                 case 'newRendGroup': {
                     if (node.type !== 'object') break
                     // Pre-fetch a scene-wide-unique default name so the
@@ -344,9 +388,9 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
             paintRendererSelection, applyRendererStyle,
             setSceneBackgroundColor, toggleSceneColorProofing,
             setRendererSelection, generateRendererSurfObj,
-            createRendererGroup, changeRendererType,
+            createRendererGroup, changeRendererType, createRendererOnObject,
             selectedIds, bulkSetNodeVisible, bulkDeleteNodes,
-            showTextPrompt,
+            showTextPrompt, showNewRenderer,
         ],
     )
 

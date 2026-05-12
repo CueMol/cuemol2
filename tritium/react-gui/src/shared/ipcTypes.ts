@@ -203,6 +203,7 @@ export type SceneCtxAction =
   | { kind: 'setRendSel'; selKind: ChangeRendSelKind }
   | { kind: 'generateSurfObj' }
   | { kind: 'newRendGroup' }
+  | { kind: 'newRenderer' }
   | { kind: 'changeRendType'; typeName: string }
   | { kind: 'multiShow' }
   | { kind: 'multiHide' }
