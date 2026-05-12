@@ -157,6 +157,19 @@ export type RendColoringId =
   | 'paint-type-rainbow'
 
 /**
+ * Renderer "Change sel" submenu items (UXP `setRendSel`). 'current' uses
+ * the parent mol's UI selection; the others compile a canned predicate.
+ */
+export type ChangeRendSelKind =
+  | 'current'
+  | 'all'
+  | 'protein'
+  | 'nucleic'
+  | 'water'
+  | 'ligand'
+  | 'sugar'
+
+/**
  * Discriminated action returned from the scene-tree native context menu.
  * Phase 3a covers the common items shared across node types; later phases
  * add type-specific actions (selection ops, paint, camera/style file I/O).
@@ -177,6 +190,7 @@ export type SceneCtxAction =
   | { kind: 'applyRendStyle'; styleName: string; pattern: string; flags: string }
   | { kind: 'setSceneBgColor'; color: 'white' | 'black' }
   | { kind: 'toggleColorProofing' }
+  | { kind: 'setRendSel'; selKind: ChangeRendSelKind }
 
 export type SceneCtxNodeType =
   | 'scene'
@@ -242,6 +256,12 @@ export interface SceneCtxMenuPayload {
    * Scene ctx only.
    */
   colorProofingEnabled?: boolean
+  /**
+   * Whether the "Change sel" submenu should appear on the renderer ctx
+   * menu — false for the `*selection` synthetic renderer (matches UXP
+   * `onRendCtxtMenuShowing` `selitem.hidden` gate). Renderer ctx only.
+   */
+  supportsChangeSel?: boolean
 }
 
 // ── Native menu state ───────────────────────────────────────────────────────

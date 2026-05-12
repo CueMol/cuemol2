@@ -111,6 +111,10 @@ import type {
   ApplyRendererStyleArgs,
   ApplyRendererStyleResult,
 } from '../server/services/rendererStyle.service'
+import type {
+  SetRendererSelectionArgs,
+  SetRendererSelectionResult,
+} from '../server/services/setRendererSelection.service'
 import type { UndoArgs } from '../server/services/undo.service'
 import type {
   ValidateSelectionArgs,
@@ -198,6 +202,7 @@ export interface ServiceMap {
   getRendererPaintInfo:       { args: GetRendererPaintInfoArgs;        result: GetRendererPaintInfoResult }
   getRendererStyleEntries:    { args: GetRendererStyleEntriesArgs;     result: GetRendererStyleEntriesResult }
   applyRendererStyle:         { args: ApplyRendererStyleArgs;          result: ApplyRendererStyleResult }
+  setRendererSelection:       { args: SetRendererSelectionArgs;        result: SetRendererSelectionResult }
   getViewProjection:          { args: ViewProjectionArgs;              result: ViewProjectionResult }
   setViewProjection:          { args: ViewProjectionArgs;              result: ViewProjectionResult }
   getViewCenterMark:          { args: ViewCenterMarkArgs;              result: ViewCenterMarkResult }

@@ -22,7 +22,7 @@ import type {
     SceneTreeNode,
 } from '../worker/shared/sceneTreeTypes'
 import type { NodeInfoEntry } from '../worker/server/services/sceneOps.service'
-import type { RendColoringId, SelectMolKind } from '../../shared/ipcTypes'
+import type { ChangeRendSelKind, RendColoringId, SelectMolKind } from '../../shared/ipcTypes'
 import {
     SEM_SCENE,
     SEM_OBJECT,
@@ -75,6 +75,8 @@ interface UseSceneTreeResult {
         pattern: string,
         flags: string,
     ) => Promise<boolean>
+    /** Apply a "Change sel" submenu choice to a renderer. */
+    setRendererSelection: (id: string, selKind: ChangeRendSelKind) => Promise<boolean>
     /** Set the scene's background color from the scene ctx menu. */
     setSceneBackgroundColor: (color: 'white' | 'black') => Promise<boolean>
     /** Toggle the scene's color-proofing flag. */
@@ -397,6 +399,24 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         [cm, tree],
     )
 
+    const setRendererSelection = useCallback(
+        async (id: string, selKind: ChangeRendSelKind): Promise<boolean> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return false
+            const numId = Number(id)
+            if (!Number.isFinite(numId)) return false
+            const node = findNode(tree, numId)
+            if (!node || node.type !== 'renderer') return false
+            const res = await cm.invokeService('setRendererSelection', {
+                sceneId: sid,
+                rendId: numId,
+                selKind,
+            })
+            return res?.ok === true
+        },
+        [cm, tree],
+    )
+
     const setSceneBackgroundColor = useCallback(
         async (color: 'white' | 'black'): Promise<boolean> => {
             const sid = sceneIdRef.current
@@ -466,6 +486,7 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         setRendererColoring,
         paintRendererSelection,
         applyRendererStyle,
+        setRendererSelection,
         setSceneBackgroundColor,
         toggleSceneColorProofing,
         fetchNodeInfo,

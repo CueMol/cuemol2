@@ -86,6 +86,7 @@ function buildTemplate(
             return [
                 ...header,
                 ...showHideItems(payload, action),
+                ...changeSelSubmenu(payload, action),
                 ...coloringSubmenu(payload, action),
                 ...paintSubmenu(payload, action),
                 ...styleSubmenu(payload, action),
@@ -402,6 +403,39 @@ function colorProofingItem(
         checked: payload.colorProofingEnabled === true,
         click: action({ kind: 'toggleColorProofing' }),
     }
+}
+
+/**
+ * Renderer-row "Change sel" submenu. Mirrors UXP `wspcPanelRendSelMenu`
+ * (`workspace_panel.xul`). The submenu is hidden for the `*selection`
+ * renderer (controlled by `payload.supportsChangeSel`), matching UXP's
+ * `selitem.hidden = ... type_name=="*selection"` gate.
+ */
+function changeSelSubmenu(
+    payload: SceneCtxMenuPayload,
+    action: (a: SceneCtxAction) => MenuItemConstructorOptions['click'],
+): MenuItemConstructorOptions[] {
+    if (!payload.supportsChangeSel) return []
+    const item = (
+        label: string,
+        selKind: 'current' | 'all' | 'protein' | 'nucleic' | 'water' | 'ligand' | 'sugar',
+    ): MenuItemConstructorOptions => ({
+        label,
+        click: action({ kind: 'setRendSel', selKind }),
+    })
+    return [{
+        label: 'Change sel',
+        submenu: [
+            item('Current', 'current'),
+            item('All', 'all'),
+            { type: 'separator' },
+            item('Protein', 'protein'),
+            item('Nucleic acid', 'nucleic'),
+            item('Water', 'water'),
+            item('Ligand', 'ligand'),
+            item('Sugar', 'sugar'),
+        ],
+    }]
 }
 
 function selectionSubmenu(

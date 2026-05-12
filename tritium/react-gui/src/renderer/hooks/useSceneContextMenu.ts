@@ -1,5 +1,10 @@
 import { useCallback } from 'react'
-import type { RendColoringId, SceneCtxAction, SelectMolKind } from '../../shared/ipcTypes'
+import type {
+    ChangeRendSelKind,
+    RendColoringId,
+    SceneCtxAction,
+    SelectMolKind,
+} from '../../shared/ipcTypes'
 import { IPC } from '../../shared/ipcChannels'
 import type { SceneTreeNode } from '../worker/shared/sceneTreeTypes'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
@@ -47,6 +52,7 @@ export interface UseSceneContextMenuOptions {
     ) => Promise<boolean>
     setSceneBackgroundColor: (color: 'white' | 'black') => Promise<boolean>
     toggleSceneColorProofing: () => Promise<boolean>
+    setRendererSelection: (id: string, selKind: ChangeRendSelKind) => Promise<boolean>
 }
 
 export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
@@ -57,6 +63,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
         selectObjectMol, copyNode, pasteNode, setRendererColoring,
         paintRendererSelection, applyRendererStyle,
         setSceneBackgroundColor, toggleSceneColorProofing,
+        setRendererSelection,
     } = opts
 
     const openContextMenu = useCallback(
@@ -71,6 +78,11 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
             const supportsColoring =
                 node.type === 'renderer' &&
                 !RENDERER_TYPES_WITHOUT_COLORING.has(node.className)
+
+            // Change sel submenu is renderer-only and hidden for `*selection`
+            // (matches UXP `onRendCtxtMenuShowing` selitem.hidden gate).
+            const supportsChangeSel =
+                node.type === 'renderer' && node.className !== '*selection'
 
             // Pre-fetch clipboard state so main can enable Paste items correctly.
             let clipboardKind: 'object' | 'renderer' | null = null
@@ -161,6 +173,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                     rendStyle,
                     bgColor,
                     colorProofingEnabled,
+                    supportsChangeSel,
                 },
             )
 
@@ -218,6 +231,10 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                     if (node.type !== 'scene') break
                     await toggleSceneColorProofing()
                     break
+                case 'setRendSel':
+                    if (node.type !== 'renderer') break
+                    await setRendererSelection(idStr, action.selKind)
+                    break
             }
         },
         [
@@ -225,6 +242,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
             selectObjectMol, copyNode, pasteNode, setRendererColoring,
             paintRendererSelection, applyRendererStyle,
             setSceneBackgroundColor, toggleSceneColorProofing,
+            setRendererSelection,
         ],
     )
 
