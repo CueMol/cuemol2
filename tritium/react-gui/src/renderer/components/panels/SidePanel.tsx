@@ -52,6 +52,7 @@ import { Icon } from "@blueprintjs/core";
 import type { ActivityView } from "../ActivityBar";
 import type { PaneCollapseState } from "../../hooks/useLayoutPersistence";
 
+import type { MoveSceneNodeArgs } from "../panes/ScenePane";
 import {
   ScenePane,
   ColorPane,
@@ -129,6 +130,8 @@ interface SidePanelProps {
   sceneOpsEnabled?: { focus: boolean; delete: boolean; property: boolean };
   /** Right-click context-menu opener for scene-tree nodes. */
   onShowSceneContextMenu?: (node: SceneTreeNode, x: number, y: number) => void;
+  /** Drag-drop reorder callback (Phase 4b). */
+  onMoveSceneNode?: (args: MoveSceneNodeArgs) => unknown;
 
   /* ── Generic persistence props (per-view) ── */
 
@@ -164,6 +167,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   onDeleteSelected,
   sceneOpsEnabled,
   onShowSceneContextMenu,
+  onMoveSceneNode,
   viewSizes,
   viewCollapsed,
   onViewSizesChange,
@@ -214,6 +218,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             onFocusSelected={onFocusSelected}
             onDeleteSelected={onDeleteSelected}
             onShowContextMenu={onShowSceneContextMenu}
+            onMoveNode={onMoveSceneNode}
             opsEnabled={sceneOpsEnabled}
             collapsed={collapsed}
             onToggleCollapse={onToggle}
@@ -286,7 +291,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     sceneTree, sceneSelected, onSceneSelect,
     onToggleVisibility, onShowProperty,
     onFocusSelected, onDeleteSelected, sceneOpsEnabled,
-    onShowSceneContextMenu,
+    onShowSceneContextMenu, onMoveSceneNode,
   ]);
 
   /* ── Generic view renderer (works for any N panes) ─── */

@@ -88,6 +88,23 @@ interface UseSceneTreeResult {
     createRendererGroup: (objId: string, name: string) => Promise<boolean>
     /** Replace a renderer with a new type (Phase 6b). */
     changeRendererType: (rendId: string, newType: string) => Promise<boolean>
+    /**
+     * Drag-drop reorder (Phase 4b). Caller supplies a fully-resolved
+     * args object — kind, target/source uids, destObjId/destGroupName
+     * for renderers, and orientation. Returns true on success.
+     */
+    moveSceneNode: (
+        args:
+            | { kind: 'object'; sourceId: number; targetId: number; ori: -1 | 1 }
+            | {
+                kind: 'renderer'
+                sourceId: number
+                destObjId: number
+                destGroupName: string
+                targetId: number
+                ori: -1 | 0 | 1
+            },
+    ) => Promise<boolean>
     /** Set the scene's background color from the scene ctx menu. */
     setSceneBackgroundColor: (color: 'white' | 'black') => Promise<boolean>
     /** Toggle the scene's color-proofing flag. */
@@ -471,6 +488,30 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         [cm, tree],
     )
 
+    const moveSceneNode = useCallback(
+        async (
+            args:
+                | { kind: 'object'; sourceId: number; targetId: number; ori: -1 | 1 }
+                | {
+                    kind: 'renderer'
+                    sourceId: number
+                    destObjId: number
+                    destGroupName: string
+                    targetId: number
+                    ori: -1 | 0 | 1
+                },
+        ): Promise<boolean> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return false
+            const res = await cm.invokeService('reorderSceneNode', {
+                ...args,
+                sceneId: sid,
+            })
+            return res?.ok === true
+        },
+        [cm],
+    )
+
     const changeRendererType = useCallback(
         async (rendId: string, newType: string): Promise<boolean> => {
             const sid = sceneIdRef.current
@@ -562,6 +603,7 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         generateRendererSurfObj,
         createRendererGroup,
         changeRendererType,
+        moveSceneNode,
         setSceneBackgroundColor,
         toggleSceneColorProofing,
         fetchNodeInfo,

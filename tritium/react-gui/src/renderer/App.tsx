@@ -101,6 +101,7 @@ const App: React.FC = () => {
     generateRendererSurfObj: generateSceneSurfObj,
     createRendererGroup: createSceneRendererGroup,
     changeRendererType: changeSceneRendererType,
+    moveSceneNode,
     setSceneBackgroundColor: setSceneBgColorFromCtx,
     toggleSceneColorProofing: toggleSceneColorProofingFromCtx,
     fetchNodeInfo: fetchSceneNodeInfo,
@@ -341,6 +342,7 @@ const App: React.FC = () => {
                     onFocusSelected={handleSceneFocus}
                     onDeleteSelected={handleSceneDelete}
                     onShowSceneContextMenu={handleShowSceneCtxMenu}
+                    onMoveSceneNode={moveSceneNode}
                     sceneOpsEnabled={sceneOpsEnabled}
                     viewSizes={viewSizes}
                     viewCollapsed={viewCollapsed}
