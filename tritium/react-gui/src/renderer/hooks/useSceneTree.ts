@@ -86,6 +86,8 @@ interface UseSceneTreeResult {
      * worker auto-generate `groupN`.
      */
     createRendererGroup: (objId: string, name: string) => Promise<boolean>
+    /** Replace a renderer with a new type (Phase 6b). */
+    changeRendererType: (rendId: string, newType: string) => Promise<boolean>
     /** Set the scene's background color from the scene ctx menu. */
     setSceneBackgroundColor: (color: 'white' | 'black') => Promise<boolean>
     /** Toggle the scene's color-proofing flag. */
@@ -469,6 +471,24 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         [cm, tree],
     )
 
+    const changeRendererType = useCallback(
+        async (rendId: string, newType: string): Promise<boolean> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return false
+            const numId = Number(rendId)
+            if (!Number.isFinite(numId)) return false
+            const node = findNode(tree, numId)
+            if (!node || node.type !== 'renderer') return false
+            const res = await cm.invokeService('changeRendererType', {
+                sceneId: sid,
+                rendId: numId,
+                newType,
+            })
+            return res?.ok === true
+        },
+        [cm, tree],
+    )
+
     const setSceneBackgroundColor = useCallback(
         async (color: 'white' | 'black'): Promise<boolean> => {
             const sid = sceneIdRef.current
@@ -541,6 +561,7 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         setRendererSelection,
         generateRendererSurfObj,
         createRendererGroup,
+        changeRendererType,
         setSceneBackgroundColor,
         toggleSceneColorProofing,
         fetchNodeInfo,

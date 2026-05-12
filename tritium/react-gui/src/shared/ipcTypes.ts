@@ -203,6 +203,7 @@ export type SceneCtxAction =
   | { kind: 'setRendSel'; selKind: ChangeRendSelKind }
   | { kind: 'generateSurfObj' }
   | { kind: 'newRendGroup' }
+  | { kind: 'changeRendType'; typeName: string }
 
 export type SceneCtxNodeType =
   | 'scene'
@@ -280,6 +281,13 @@ export interface SceneCtxMenuPayload {
    * gate). Renderer ctx only.
    */
   canGenSurfObj?: boolean
+  /**
+   * Selectable type names for the "Change type" submenu on the renderer
+   * ctx menu (Phase 6b). Pre-fetched via `getRendererChangeTypes` —
+   * an empty list hides the submenu and is the only signal the main
+   * process uses (it does not re-evaluate gates).
+   */
+  rendChangeTypes?: string[]
 }
 
 // ── Native menu state ───────────────────────────────────────────────────────

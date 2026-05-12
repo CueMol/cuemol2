@@ -123,6 +123,14 @@ import type {
   CreateRendererGroupArgs,
   CreateRendererGroupResult,
 } from '../server/services/createRendererGroup.service'
+import type {
+  ChangeRendererTypeArgs,
+  ChangeRendererTypeResult,
+} from '../server/services/changeRendererType.service'
+import type {
+  GetRendererChangeTypesArgs,
+  GetRendererChangeTypesResult,
+} from '../server/services/getRendererChangeTypes.service'
 import type { UndoArgs } from '../server/services/undo.service'
 import type {
   ValidateSelectionArgs,
@@ -213,6 +221,8 @@ export interface ServiceMap {
   setRendererSelection:       { args: SetRendererSelectionArgs;        result: SetRendererSelectionResult }
   generateRendererSurfObj:    { args: GenerateRendererSurfObjArgs;     result: GenerateRendererSurfObjResult }
   createRendererGroup:        { args: CreateRendererGroupArgs;         result: CreateRendererGroupResult }
+  changeRendererType:         { args: ChangeRendererTypeArgs;          result: ChangeRendererTypeResult }
+  getRendererChangeTypes:     { args: GetRendererChangeTypesArgs;      result: GetRendererChangeTypesResult }
   getViewProjection:          { args: ViewProjectionArgs;              result: ViewProjectionResult }
   setViewProjection:          { args: ViewProjectionArgs;              result: ViewProjectionResult }
   getViewCenterMark:          { args: ViewCenterMarkArgs;              result: ViewCenterMarkResult }

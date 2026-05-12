@@ -88,6 +88,7 @@ function buildTemplate(
                 ...header,
                 ...showHideItems(payload, action),
                 ...changeSelSubmenu(payload, action),
+                ...changeTypeSubmenu(payload, action),
                 ...coloringSubmenu(payload, action),
                 ...paintSubmenu(payload, action),
                 ...styleSubmenu(payload, action),
@@ -438,6 +439,27 @@ function changeSelSubmenu(
             item('Ligand', 'ligand'),
             item('Sugar', 'sugar'),
         ],
+    }]
+}
+
+/**
+ * Renderer "Change type" submenu (Phase 6b). Populated from
+ * `payload.rendChangeTypes` (pre-fetched via `getRendererChangeTypes`).
+ * Hidden when the list is empty — that doubles as the visibility gate
+ * since the worker filters synthetic / current-type entries out.
+ */
+function changeTypeSubmenu(
+    payload: SceneCtxMenuPayload,
+    action: (a: SceneCtxAction) => MenuItemConstructorOptions['click'],
+): MenuItemConstructorOptions[] {
+    const types = payload.rendChangeTypes
+    if (!types || types.length === 0) return []
+    return [{
+        label: 'Change type',
+        submenu: types.map((name) => ({
+            label: name,
+            click: action({ kind: 'changeRendType', typeName: name }),
+        })),
     }]
 }
 

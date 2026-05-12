@@ -56,6 +56,7 @@ export interface UseSceneContextMenuOptions {
     setRendererSelection: (id: string, selKind: ChangeRendSelKind) => Promise<boolean>
     generateRendererSurfObj: (id: string) => Promise<boolean>
     createRendererGroup: (objId: string, name: string) => Promise<boolean>
+    changeRendererType: (rendId: string, newType: string) => Promise<boolean>
 }
 
 export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
@@ -67,7 +68,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
         paintRendererSelection, applyRendererStyle,
         setSceneBackgroundColor, toggleSceneColorProofing,
         setRendererSelection, generateRendererSurfObj,
-        createRendererGroup,
+        createRendererGroup, changeRendererType,
     } = opts
 
     // Electron disables window.prompt — use the in-app Blueprint dialog
@@ -124,6 +125,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                     }[]
                 }
                 | undefined
+            let rendChangeTypes: string[] = []
             if (cm && node.type === 'renderer' && sceneId !== undefined) {
                 try {
                     const coloringPromises = supportsColoring
@@ -137,8 +139,11 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                     const stylePromise = cm.invokeService('getRendererStyleEntries', {
                         sceneId, rendId: node.id,
                     })
-                    const [styles, paintInfo, styleEntries] = await Promise.all([
-                        coloringPromises[0], coloringPromises[1], stylePromise,
+                    const changeTypesPromise = cm.invokeService('getRendererChangeTypes', {
+                        sceneId, rendId: node.id,
+                    })
+                    const [styles, paintInfo, styleEntries, changeTypes] = await Promise.all([
+                        coloringPromises[0], coloringPromises[1], stylePromise, changeTypesPromise,
                     ])
                     paintStyles = styles?.entries ?? []
                     canPaint = paintInfo?.canPaint === true
@@ -148,6 +153,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                             edgeStyles: styleEntries.edgeStyles,
                         }
                     }
+                    rendChangeTypes = changeTypes?.typeNames ?? []
                 } catch (err) {
                     console.warn('renderer ctx pre-fetch failed:', err)
                 }
@@ -187,6 +193,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                     colorProofingEnabled,
                     supportsChangeSel,
                     canGenSurfObj,
+                    rendChangeTypes,
                 },
             )
 
@@ -255,6 +262,10 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                     if (node.type !== 'renderer') break
                     await generateRendererSurfObj(idStr)
                     break
+                case 'changeRendType':
+                    if (node.type !== 'renderer') break
+                    await changeRendererType(idStr, action.typeName)
+                    break
                 case 'newRendGroup': {
                     if (node.type !== 'object') break
                     // Pre-fetch a scene-wide-unique default name so the
@@ -291,7 +302,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
             paintRendererSelection, applyRendererStyle,
             setSceneBackgroundColor, toggleSceneColorProofing,
             setRendererSelection, generateRendererSurfObj,
-            createRendererGroup, showTextPrompt,
+            createRendererGroup, changeRendererType, showTextPrompt,
         ],
     )
 
