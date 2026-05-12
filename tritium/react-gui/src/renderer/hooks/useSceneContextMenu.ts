@@ -53,6 +53,7 @@ export interface UseSceneContextMenuOptions {
     setSceneBackgroundColor: (color: 'white' | 'black') => Promise<boolean>
     toggleSceneColorProofing: () => Promise<boolean>
     setRendererSelection: (id: string, selKind: ChangeRendSelKind) => Promise<boolean>
+    generateRendererSurfObj: (id: string) => Promise<boolean>
 }
 
 export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
@@ -63,7 +64,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
         selectObjectMol, copyNode, pasteNode, setRendererColoring,
         paintRendererSelection, applyRendererStyle,
         setSceneBackgroundColor, toggleSceneColorProofing,
-        setRendererSelection,
+        setRendererSelection, generateRendererSurfObj,
     } = opts
 
     const openContextMenu = useCallback(
@@ -83,6 +84,10 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
             // (matches UXP `onRendCtxtMenuShowing` selitem.hidden gate).
             const supportsChangeSel =
                 node.type === 'renderer' && node.className !== '*selection'
+
+            // Generate surface obj is isosurf-only (UXP gensurfitem gate).
+            const canGenSurfObj =
+                node.type === 'renderer' && node.className === 'isosurf'
 
             // Pre-fetch clipboard state so main can enable Paste items correctly.
             let clipboardKind: 'object' | 'renderer' | null = null
@@ -174,6 +179,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                     bgColor,
                     colorProofingEnabled,
                     supportsChangeSel,
+                    canGenSurfObj,
                 },
             )
 
@@ -235,6 +241,10 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                     if (node.type !== 'renderer') break
                     await setRendererSelection(idStr, action.selKind)
                     break
+                case 'generateSurfObj':
+                    if (node.type !== 'renderer') break
+                    await generateRendererSurfObj(idStr)
+                    break
             }
         },
         [
@@ -242,7 +252,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
             selectObjectMol, copyNode, pasteNode, setRendererColoring,
             paintRendererSelection, applyRendererStyle,
             setSceneBackgroundColor, toggleSceneColorProofing,
-            setRendererSelection,
+            setRendererSelection, generateRendererSurfObj,
         ],
     )
 

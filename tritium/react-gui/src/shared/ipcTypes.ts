@@ -191,6 +191,7 @@ export type SceneCtxAction =
   | { kind: 'setSceneBgColor'; color: 'white' | 'black' }
   | { kind: 'toggleColorProofing' }
   | { kind: 'setRendSel'; selKind: ChangeRendSelKind }
+  | { kind: 'generateSurfObj' }
 
 export type SceneCtxNodeType =
   | 'scene'
@@ -262,6 +263,12 @@ export interface SceneCtxMenuPayload {
    * `onRendCtxtMenuShowing` `selitem.hidden` gate). Renderer ctx only.
    */
   supportsChangeSel?: boolean
+  /**
+   * Whether the "Generate surface obj" item should appear on the renderer
+   * ctx menu. True iff the renderer is `isosurf` (matches UXP gensurfitem
+   * gate). Renderer ctx only.
+   */
+  canGenSurfObj?: boolean
 }
 
 // ── Native menu state ───────────────────────────────────────────────────────

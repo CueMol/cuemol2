@@ -77,6 +77,8 @@ interface UseSceneTreeResult {
     ) => Promise<boolean>
     /** Apply a "Change sel" submenu choice to a renderer. */
     setRendererSelection: (id: string, selKind: ChangeRendSelKind) => Promise<boolean>
+    /** Generate a MolSurfObj from an isosurf renderer. */
+    generateRendererSurfObj: (id: string) => Promise<boolean>
     /** Set the scene's background color from the scene ctx menu. */
     setSceneBackgroundColor: (color: 'white' | 'black') => Promise<boolean>
     /** Toggle the scene's color-proofing flag. */
@@ -417,6 +419,23 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         [cm, tree],
     )
 
+    const generateRendererSurfObj = useCallback(
+        async (id: string): Promise<boolean> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return false
+            const numId = Number(id)
+            if (!Number.isFinite(numId)) return false
+            const node = findNode(tree, numId)
+            if (!node || node.type !== 'renderer') return false
+            const res = await cm.invokeService('generateRendererSurfObj', {
+                sceneId: sid,
+                rendId: numId,
+            })
+            return res?.ok === true
+        },
+        [cm, tree],
+    )
+
     const setSceneBackgroundColor = useCallback(
         async (color: 'white' | 'black'): Promise<boolean> => {
             const sid = sceneIdRef.current
@@ -487,6 +506,7 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         paintRendererSelection,
         applyRendererStyle,
         setRendererSelection,
+        generateRendererSurfObj,
         setSceneBackgroundColor,
         toggleSceneColorProofing,
         fetchNodeInfo,

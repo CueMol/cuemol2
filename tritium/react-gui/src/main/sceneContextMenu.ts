@@ -90,6 +90,7 @@ function buildTemplate(
                 ...coloringSubmenu(payload, action),
                 ...paintSubmenu(payload, action),
                 ...styleSubmenu(payload, action),
+                ...generateSurfObjItem(payload, action),
                 { type: 'separator' },
                 renameItem(action),
                 copyItem(action),
@@ -435,6 +436,21 @@ function changeSelSubmenu(
             item('Ligand', 'ligand'),
             item('Sugar', 'sugar'),
         ],
+    }]
+}
+
+/**
+ * "Generate surface obj" item. Visible only for isosurf renderers
+ * (mirrors UXP `gensurfitem.hidden` gate driven by `checkRend("isosurf")`).
+ */
+function generateSurfObjItem(
+    payload: SceneCtxMenuPayload,
+    action: (a: SceneCtxAction) => MenuItemConstructorOptions['click'],
+): MenuItemConstructorOptions[] {
+    if (!payload.canGenSurfObj) return []
+    return [{
+        label: 'Generate surface obj',
+        click: action({ kind: 'generateSurfObj' }),
     }]
 }
 
