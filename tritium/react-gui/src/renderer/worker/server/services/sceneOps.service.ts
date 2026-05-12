@@ -43,6 +43,13 @@ export interface DeleteNodeArgs {
     nodeType: SceneNodeType;
     /** Child renderer IDs, required when nodeType === 'rendGroup'. */
     childIds?: number[];
+    /**
+     * Style scope id (0 for global, scene.uid for scene-local). Required
+     * when nodeType === 'style' so the worker can call
+     * `StyleManager.destroyStyleSet(scopeId, styleSetId)` with the right
+     * scope. Ignored for other node types.
+     */
+    scopeId?: number;
 }
 
 export interface DeleteNodeResult {
@@ -186,6 +193,19 @@ function deleteNode(ctx: WorkerContext, args: DeleteNodeArgs): DeleteNodeResult 
         return { ok: true };
     }
 
+    if (args.nodeType === 'style') {
+        if (args.scopeId === undefined) return { ok: false };
+        const mgr = ctx.svc.getService('StyleManager') as unknown as
+            | { destroyStyleSet: (scopeId: number, styleSetId: number) => boolean }
+            | null;
+        if (!mgr) return { ok: false };
+        let ok = false;
+        withUndoTxn(scene, 'Destroy style', () => {
+            ok = mgr.destroyStyleSet(args.scopeId!, args.nodeId);
+        });
+        return { ok };
+    }
+
     if (args.nodeType === 'rendGroup') {
         const grp = scene.getRenderer(args.nodeId) as Renderer | null;
         if (!grp) return { ok: false };
@@ -265,7 +285,22 @@ function getNodeInfo(ctx: WorkerContext, args: GetNodeInfoArgs): GetNodeInfoResu
         return { ok: true, entries, displayName: safeRead(() => rend.name) ?? 'Renderer' };
     }
 
-    // camera / style not supported in Phase 2 (Phase 5).
+    if (args.nodeType === 'style') {
+        const mgr = ctx.svc.getService('StyleManager') as unknown as
+            | { getStyleSet: (id: number) => unknown }
+            | null;
+        const set = mgr?.getStyleSet(args.nodeId) as unknown as Record<string, unknown> | null;
+        if (!set) return empty;
+        const entries: NodeInfoEntry[] = [];
+        pushEntry(entries, 'name', safeRead(() => set.name));
+        pushEntry(entries, 'src', safeRead(() => set.src));
+        pushEntry(entries, 'readonly', safeRead(() => set.readonly));
+        pushEntry(entries, 'modified', safeRead(() => set.modified));
+        const displayName = (safeRead(() => set.name) as string | undefined) || 'Style';
+        return { ok: true, entries, displayName };
+    }
+
+    // camera not supported in Phase 2 (Phase 5b).
     return empty;
 }
 

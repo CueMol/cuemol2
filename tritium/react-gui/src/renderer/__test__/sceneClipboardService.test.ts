@@ -16,7 +16,16 @@ interface BuildCtxOpts {
     restored?: unknown
 }
 
-function buildCtx(opts: BuildCtxOpts = {}) {
+function buildCtx(opts: BuildCtxOpts & {
+    /** Stub StyleSet for nodeId 700 (source). Only used by style tests. */
+    sourceStyleSet?: { name: string }
+    /** Restored StyleSet for paste tests. */
+    restoredStyle?: unknown
+    /** Style names that already exist in the destination scope. */
+    existingStyleNames?: string[]
+    /** What registerStyleSet should return. */
+    registerOk?: boolean
+} = {}) {
     const sourceObj = {
         uid: 10,
         name: 'mol1',
@@ -77,11 +86,29 @@ function buildCtx(opts: BuildCtxOpts = {}) {
     }
 
     const toXML = vi.fn(() => ({ __byteArray: true }))
-    const fromXML = vi.fn(() => restored)
+    // Default fromXML returns the object/renderer restored fixture; style
+    // tests override per-call via the `restoredStyle` arg below.
+    const fromXML = vi.fn((_: unknown) => restored)
+
+    // StyleManager mock used by both copyNode and pasteNode style branches.
+    const sourceStyleSet = opts.sourceStyleSet ?? { name: 'mystyle' }
+    const getStyleSet = vi.fn((id: number) =>
+        id === 700 ? sourceStyleSet : null,
+    )
+    const hasStyleSet = vi.fn((n: string, _scope: number) =>
+        (opts.existingStyleNames ?? []).includes(n) ? 1 : 0,
+    )
+    const destroyStyleSet = vi.fn(() => true)
+    const registerStyleSet = vi.fn(() => opts.registerOk ?? true)
+    const styleMgr = {
+        getStyleSet, hasStyleSet, destroyStyleSet, registerStyleSet,
+    }
+    const getService = vi.fn(() => styleMgr)
 
     const ctx = {
         sceMgr: { getScene: vi.fn(() => mockScene) },
         strMgr: { toXML, fromXML },
+        svc: { getService },
     } as unknown as WorkerContext
 
     return {
@@ -89,6 +116,8 @@ function buildCtx(opts: BuildCtxOpts = {}) {
         addObject, attachRenderer, toXML, fromXML,
         setObjName, setRendName,
         startUndoTxn, commitUndoTxn,
+        styleMgr, sourceStyleSet,
+        getStyleSet, hasStyleSet, registerStyleSet,
     }
 }
 
@@ -260,6 +289,85 @@ describe('sceneClipboard.pasteNode', () => {
         services.copyNode(ctx, { sceneId: 1, nodeId: 100, nodeType: 'renderer' })
         const res = services.pasteNode(ctx, { sceneId: 1, targetGroupId: 888 })
         expect(res.ok).toBe(false)
+    })
+})
+
+describe('sceneClipboard style branch (Phase 5c)', () => {
+    it('rejects style copy on global scope (scopeId === 0)', () => {
+        const { ctx, toXML } = buildCtx()
+        const res = services.copyNode(ctx, {
+            sceneId: 1, nodeId: 700, nodeType: 'style', scopeId: 0,
+        })
+        expect(res).toEqual({ ok: false, kind: null })
+        expect(toXML).not.toHaveBeenCalled()
+    })
+
+    it('style copy looks up via StyleManager.getStyleSet and serializes', () => {
+        const { ctx, toXML, getStyleSet } = buildCtx()
+        const res = services.copyNode(ctx, {
+            sceneId: 1, nodeId: 700, nodeType: 'style', scopeId: 1,
+        })
+        expect(res).toEqual({ ok: true, kind: 'style' })
+        expect(getStyleSet).toHaveBeenCalledWith(700)
+        expect(toXML).toHaveBeenCalled()
+    })
+
+    it('style paste calls StyleManager.registerStyleSet inside undo txn', () => {
+        const setName = vi.fn()
+        const restoredStyle = {
+            get name() { return 'pasted' },
+            set name(v: string) { setName(v) },
+            uid: 800,
+        }
+        const { ctx, fromXML, registerStyleSet, startUndoTxn, commitUndoTxn } =
+            buildCtx({ restored: restoredStyle })
+        services.copyNode(ctx, {
+            sceneId: 1, nodeId: 700, nodeType: 'style', scopeId: 1,
+        })
+        const res = services.pasteNode(ctx, { sceneId: 1 })
+        expect(res.ok).toBe(true)
+        expect(fromXML).toHaveBeenCalled()
+        expect(startUndoTxn).toHaveBeenCalledWith('Paste style')
+        expect(registerStyleSet).toHaveBeenCalledWith(restoredStyle, 0, 1)
+        expect(commitUndoTxn).toHaveBeenCalled()
+    })
+
+    it('style paste uniquifies the name when it collides with an existing one', () => {
+        const setName = vi.fn()
+        const restoredStyle = {
+            get name() { return 'mystyle' },
+            set name(v: string) { setName(v) },
+        }
+        const { ctx } = buildCtx({
+            restored: restoredStyle,
+            sourceStyleSet: { name: 'mystyle' },
+            existingStyleNames: ['mystyle'],
+        })
+        services.copyNode(ctx, {
+            sceneId: 1, nodeId: 700, nodeType: 'style', scopeId: 1,
+        })
+        const res = services.pasteNode(ctx, { sceneId: 1 })
+        expect(res.ok).toBe(true)
+        expect(res.newName).toBe('mystyle_1')
+        expect(setName).toHaveBeenCalledWith('mystyle_1')
+    })
+
+    it('style paste reports ok:false when registerStyleSet fails', () => {
+        const restoredStyle = { get name() { return 's' }, set name(_v: string) {} }
+        const { ctx } = buildCtx({ restored: restoredStyle, registerOk: false })
+        services.copyNode(ctx, {
+            sceneId: 1, nodeId: 700, nodeType: 'style', scopeId: 1,
+        })
+        const res = services.pasteNode(ctx, { sceneId: 1 })
+        expect(res.ok).toBe(false)
+    })
+
+    it('getClipboardKind returns "style" after a style copy', () => {
+        const { ctx } = buildCtx()
+        services.copyNode(ctx, {
+            sceneId: 1, nodeId: 700, nodeType: 'style', scopeId: 1,
+        })
+        expect(services.getClipboardKind(ctx, {}).kind).toBe('style')
     })
 })
 

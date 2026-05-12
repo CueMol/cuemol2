@@ -116,6 +116,54 @@ async function handleSaveSceneDialog(
   }
 }
 
+// ─────────────────────────────────────────────
+// Style file dialogs (Phase 5c)
+// ─────────────────────────────────────────────
+//
+// UXP uses `fp.appendFilter("Style file (*.xml)", "*.xml")` on the
+// nsIFilePicker for both load and save. The worker side performs the
+// actual `StyleManager.loadStyleSetFromFile` / `saveStyleSetToFile` call
+// once we return the resolved path.
+
+async function handleStyleOpenDialog(
+  mainWindow: BrowserWindow,
+): Promise<{ canceled: boolean; filePath: string }> {
+  const result = await withMenuBlocked('native', () =>
+    dialog.showOpenDialog(mainWindow, {
+      title: 'Open Style File',
+      filters: [
+        { name: 'Style file', extensions: ['xml'] },
+        { name: 'All Files', extensions: ['*'] },
+      ],
+      properties: ['openFile'],
+    }),
+  )
+  if (result.canceled || result.filePaths.length === 0) {
+    return { canceled: true, filePath: '' }
+  }
+  return { canceled: false, filePath: result.filePaths[0] }
+}
+
+async function handleStyleSaveDialog(
+  mainWindow: BrowserWindow,
+  defaultName: string,
+): Promise<{ canceled: boolean; filePath: string }> {
+  const result = await withMenuBlocked('native', () =>
+    dialog.showSaveDialog(mainWindow, {
+      title: 'Save Style As',
+      defaultPath: defaultName,
+      filters: [
+        { name: 'Style file', extensions: ['xml'] },
+        { name: 'All Files', extensions: ['*'] },
+      ],
+    }),
+  )
+  return {
+    canceled: result.canceled,
+    filePath: result.filePath ?? '',
+  }
+}
+
 function handleFileExists(target: string): { exists: boolean } {
   try {
     return { exists: fs.existsSync(target) }
@@ -168,6 +216,12 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
 
   handleInvoke(IPC.DIALOG_SAVE_SCENE, async (_event, payload) =>
     handleSaveSceneDialog(mainWindow, payload.defaultName),
+  )
+
+  handleInvoke(IPC.DIALOG_STYLE_OPEN, async () => handleStyleOpenDialog(mainWindow))
+
+  handleInvoke(IPC.DIALOG_STYLE_SAVE, async (_event, payload) =>
+    handleStyleSaveDialog(mainWindow, payload.defaultName),
   )
 
   handleInvoke(IPC.FILE_EXISTS, (_event, payload) => handleFileExists(payload.path))

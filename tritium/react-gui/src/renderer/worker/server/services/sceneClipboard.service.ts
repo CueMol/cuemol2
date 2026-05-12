@@ -18,13 +18,19 @@ import type { LScrObject } from '@cuemol/core/src/wrappers/LScrObject';
 import type { WorkerContext } from '../types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
 
-export type ClipboardKind = 'object' | 'renderer';
+export type ClipboardKind = 'object' | 'renderer' | 'style';
 
 interface ClipboardEntry {
     kind: ClipboardKind;
     xml: ByteArray;
     sourceName: string;
     sourceClassName: string;
+    /**
+     * Scope id used to look up an existing entry of the same kind at
+     * paste time (currently only used by style paste to detect a
+     * name collision under the destination scene).
+     */
+    sourceScopeId?: number;
 }
 
 let clipboard: ClipboardEntry | null = null;
@@ -39,7 +45,13 @@ export function _resetClipboardForTest(): void {
 export interface CopyNodeArgs {
     sceneId: number;
     nodeId: number;
-    nodeType: 'object' | 'renderer' | 'rendGroup';
+    nodeType: 'object' | 'renderer' | 'rendGroup' | 'style';
+    /**
+     * Style scope id (0 for global, scene.uid for scene-local). Required
+     * when `nodeType === 'style'`; the renderer reads it from the tree
+     * node's `styleInfo.scopeId` and forwards it. Ignored for other types.
+     */
+    scopeId?: number;
 }
 
 export interface CopyNodeResult {
@@ -56,6 +68,7 @@ function copyNode(ctx: WorkerContext, args: CopyNodeArgs): CopyNodeResult {
     let sourceName = '';
     let sourceClassName = '';
     let kind: ClipboardKind;
+    let sourceScopeId: number | undefined;
 
     if (args.nodeType === 'object') {
         const obj = scene.getObject(args.nodeId) as CueMolObject | null;
@@ -65,6 +78,24 @@ function copyNode(ctx: WorkerContext, args: CopyNodeArgs): CopyNodeResult {
         sourceClassName =
             safeRead(() => (obj as unknown as { className: string }).className) ?? '';
         kind = 'object';
+    } else if (args.nodeType === 'style') {
+        // UXP `onCopyStyle` rejects global (scope==0) styles before
+        // toXML; the ctxmenu already disables Copy for those rows, but
+        // we mirror the early-return here for defence in depth.
+        if (args.scopeId === undefined || args.scopeId === 0) {
+            return { ok: false, kind: null };
+        }
+        const styleMgr = ctx.svc.getService('StyleManager') as unknown as
+            | { getStyleSet: (id: number) => LScrObject | null }
+            | null;
+        if (!styleMgr) return { ok: false, kind: null };
+        const set = styleMgr.getStyleSet(args.nodeId);
+        if (!set) return { ok: false, kind: null };
+        target = set;
+        sourceName = safeRead(() => (set as unknown as { name: string }).name) ?? '';
+        sourceClassName = 'StyleSet';
+        sourceScopeId = args.scopeId;
+        kind = 'style';
     } else {
         // renderer or rendGroup
         const rend = scene.getRenderer(args.nodeId) as Renderer | null;
@@ -79,7 +110,7 @@ function copyNode(ctx: WorkerContext, args: CopyNodeArgs): CopyNodeResult {
     const xml = ctx.strMgr.toXML(target);
     if (!xml) return { ok: false, kind: null };
 
-    clipboard = { kind, xml, sourceName, sourceClassName };
+    clipboard = { kind, xml, sourceName, sourceClassName, sourceScopeId };
     return { ok: true, kind };
 }
 
@@ -113,6 +144,48 @@ function pasteNode(ctx: WorkerContext, args: PasteNodeArgs): PasteNodeResult {
 
     const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
     if (!scene) return empty;
+
+    if (entry.kind === 'style') {
+        // Paste a StyleSet under the destination scene (UXP `onPasteStyle`).
+        // The scope is always `sceneId`; the source `sourceScopeId` only
+        // matters for the copy-side gate.
+        const styleMgr = ctx.svc.getService('StyleManager') as unknown as
+            | {
+                  hasStyleSet: (name: string, scopeId: number) => number;
+                  destroyStyleSet: (scopeId: number, styleSetId: number) => boolean;
+                  registerStyleSet: (
+                      set: LScrObject,
+                      nbefore: number,
+                      scopeId: number,
+                  ) => boolean;
+              }
+            | null;
+        if (!styleMgr) return empty;
+
+        let newName = '';
+        let newId: number = -1;
+        let ok = false;
+        withUndoTxn(scene, 'Paste style', () => {
+            const restored = ctx.strMgr.fromXML(entry.xml, args.sceneId) as
+                | LScrObject
+                | null;
+            if (!restored) return;
+            const setView = restored as unknown as { name: string; uid?: number };
+            const wanted = (entry.sourceName || setView.name) || 'style';
+            // UXP prompts to replace on name conflict; we auto-rename to
+            // a unique name to match the object/renderer paste pattern
+            // and avoid an extra confirm round-trip.
+            const finalName = uniqueStyleName(styleMgr, wanted, args.sceneId);
+            try { setView.name = finalName; } catch { /* ignore */ }
+            ok = styleMgr.registerStyleSet(restored, 0, args.sceneId);
+            if (ok) {
+                newName = finalName;
+                newId = typeof setView.uid === 'number' ? setView.uid : -1;
+            }
+        });
+        if (!ok) return empty;
+        return { ok: true, newId, newName };
+    }
 
     if (entry.kind === 'object') {
         let newId: number = -1;
@@ -219,6 +292,19 @@ function uniqueRendererName(obj: CueMolObject, prefix: string): string {
     for (let i = 1; i < 10000; i++) {
         const candidate = `${prefix}_${i}`;
         if (!tryFn(candidate)) return candidate;
+    }
+    return `${prefix}_${Date.now()}`;
+}
+
+function uniqueStyleName(
+    mgr: { hasStyleSet: (name: string, scopeId: number) => number },
+    prefix: string,
+    scopeId: number,
+): string {
+    if (mgr.hasStyleSet(prefix, scopeId) === 0) return prefix;
+    for (let i = 1; i < 10000; i++) {
+        const candidate = `${prefix}_${i}`;
+        if (mgr.hasStyleSet(candidate, scopeId) === 0) return candidate;
     }
     return `${prefix}_${Date.now()}`;
 }

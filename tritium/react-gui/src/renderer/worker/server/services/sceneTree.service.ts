@@ -9,6 +9,7 @@ import {
     parseSceneTreeJSON,
     type SceneNodeType,
     type SceneTreeNode,
+    type StyleRootEntry,
 } from '../../shared/sceneTreeTypes';
 import { withUndoTxn } from './withUndoTxn';
 
@@ -36,8 +37,13 @@ interface CameraInfoEntry {
     name?: string;
 }
 
-interface StyleNameEntry {
+interface StyleSetJSONEntry {
     name?: string;
+    uid?: number;
+    scene_id?: number;
+    src?: string;
+    readonly?: boolean;
+    modified?: boolean;
 }
 
 function getCameraNames(scene: Scene): string[] {
@@ -52,22 +58,42 @@ function getCameraNames(scene: Scene): string[] {
     }
 }
 
-function getStyleNames(ctx: WorkerContext, sceneId: number): string[] {
+function parseStyleSetsJSON(
+    styleMgr: { getStyleSetsJSON: (id: number) => string },
+    scopeId: number,
+): StyleRootEntry[] {
     try {
-        // Phase 1 placeholder: returning empty is fine — Camera/Styles root
-        // are shown to match UXP layout; populating them lands in Phase 5.
-        const styleMgr = ctx.svc.getService('StyleManager') as unknown as
-            | { getStyleNamesJSON?: (id: number) => string }
-            | null;
-        if (!styleMgr?.getStyleNamesJSON) return [];
-        const json = styleMgr.getStyleNamesJSON(sceneId);
+        const json = styleMgr.getStyleSetsJSON(scopeId);
         if (!json) return [];
-        const parsed = JSON.parse(json) as StyleNameEntry[];
+        const parsed = JSON.parse(json) as StyleSetJSONEntry[];
         if (!Array.isArray(parsed)) return [];
-        return parsed.map((e) => e.name ?? '').filter((n) => n.length > 0);
+        const out: StyleRootEntry[] = [];
+        for (const e of parsed) {
+            if (typeof e.uid !== 'number') continue;
+            out.push({
+                name: e.name ?? '',
+                uid: e.uid,
+                scopeId: e.scene_id ?? scopeId,
+                src: e.src ?? '',
+                readonly: e.readonly === true,
+                modified: e.modified === true,
+            });
+        }
+        return out;
     } catch {
         return [];
     }
+}
+
+function getStyleEntries(ctx: WorkerContext, sceneId: number): StyleRootEntry[] {
+    // UXP `createStyleNodeData` concatenates `getStyleSetsJSON(0)` (global)
+    // with `getStyleSetsJSON(scene.uid)` (scene-local). Mirror that layout.
+    const styleMgr = ctx.svc.getService('StyleManager') as unknown as
+        | { getStyleSetsJSON?: (id: number) => string }
+        | null;
+    if (!styleMgr?.getStyleSetsJSON) return [];
+    const mgr = styleMgr as { getStyleSetsJSON: (id: number) => string };
+    return [...parseStyleSetsJSON(mgr, 0), ...parseStyleSetsJSON(mgr, sceneId)];
 }
 
 function getSceneTree(ctx: WorkerContext, args: GetSceneTreeArgs): GetSceneTreeResult {
@@ -81,9 +107,9 @@ function getSceneTree(ctx: WorkerContext, args: GetSceneTreeArgs): GetSceneTreeR
     // C++ `getSceneDataJSON` does not include cameras or styles; these come
     // from separate APIs.
     const cameraNames = getCameraNames(scene);
-    const styleNames = getStyleNames(ctx, args.sceneId);
+    const styleEntries = getStyleEntries(ctx, args.sceneId);
     tree.children.push(buildCameraRoot(cameraNames));
-    tree.children.push(buildStyleRoot(styleNames));
+    tree.children.push(buildStyleRoot(styleEntries));
 
     return { ok: true, tree };
 }

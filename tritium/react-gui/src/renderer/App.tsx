@@ -109,6 +109,11 @@ const App: React.FC = () => {
     bulkDeleteNodes: bulkSceneDelete,
     setSceneBackgroundColor: setSceneBgColorFromCtx,
     toggleSceneColorProofing: toggleSceneColorProofingFromCtx,
+    createStyleSet: createSceneStyleSet,
+    toggleStyleSetReadOnly: toggleSceneStyleReadOnly,
+    loadStyleSetFromFile: loadSceneStyleFromFile,
+    saveStyleSetToFile: saveSceneStyleToFile,
+    saveStyleSetToCurrentSrc: saveSceneStyleToCurrentSrc,
     fetchNodeInfo: fetchSceneNodeInfo,
     resolveNodeName,
   } = useSceneTree({ cm, sceneId: activeSceneId });
@@ -236,6 +241,11 @@ const App: React.FC = () => {
     bulkDeleteNodes: bulkSceneDelete,
     setSceneBackgroundColor: setSceneBgColorFromCtx,
     toggleSceneColorProofing: toggleSceneColorProofingFromCtx,
+    createStyleSet: createSceneStyleSet,
+    toggleStyleSetReadOnly: toggleSceneStyleReadOnly,
+    loadStyleSetFromFile: loadSceneStyleFromFile,
+    saveStyleSetToFile: saveSceneStyleToFile,
+    saveStyleSetToCurrentSrc: saveSceneStyleToCurrentSrc,
   });
 
   const handleShowSceneCtxMenu = useCallback(

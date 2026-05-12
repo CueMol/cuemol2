@@ -138,6 +138,22 @@ interface UseSceneTreeResult {
     setSceneBackgroundColor: (color: 'white' | 'black') => Promise<boolean>
     /** Toggle the scene's color-proofing flag. */
     toggleSceneColorProofing: () => Promise<boolean>
+    /** Phase 5c style ops. */
+    createStyleSet: (name: string) => Promise<{ ok: boolean; newId: number }>
+    toggleStyleSetReadOnly: (
+        nodeId: number,
+        scopeId: number,
+    ) => Promise<{ ok: boolean; readonly: boolean }>
+    loadStyleSetFromFile: (path: string) => Promise<boolean>
+    saveStyleSetToFile: (
+        nodeId: number,
+        scopeId: number,
+        path: string,
+    ) => Promise<boolean>
+    saveStyleSetToCurrentSrc: (
+        nodeId: number,
+        scopeId: number,
+    ) => Promise<{ ok: boolean; saved: boolean }>
     /** Fetch property info for the property dialog. */
     fetchNodeInfo: (id: string) => Promise<NodeInfo | null>
     refetch: () => void
@@ -342,11 +358,16 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
                 node.type === 'rendGroup'
                     ? node.children.map((c) => c.id).filter((n) => n >= 0)
                     : undefined
+            // Style nodes require the scope id so the worker can call
+            // StyleManager.destroyStyleSet(scopeId, styleSetId).
+            const scopeId =
+                node.type === 'style' ? node.styleInfo?.scopeId : undefined
             const res = await cm.invokeService('deleteNode', {
                 sceneId: sid,
                 nodeId: numId,
                 nodeType: node.type as SceneNodeType,
                 childIds,
+                scopeId,
             })
             // Event subscription handles refetch on success.
             return res?.ok === true
@@ -398,14 +419,18 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
             if (
                 node.type !== 'object' &&
                 node.type !== 'renderer' &&
-                node.type !== 'rendGroup'
+                node.type !== 'rendGroup' &&
+                node.type !== 'style'
             ) {
                 return false
             }
+            const scopeId =
+                node.type === 'style' ? node.styleInfo?.scopeId : undefined
             const res = await cm.invokeService('copyNode', {
                 sceneId: sid,
                 nodeId: node.id,
                 nodeType: node.type,
+                scopeId,
             })
             return res?.ok === true
         },
@@ -696,6 +721,66 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         [cm],
     )
 
+    const createStyleSet = useCallback(
+        async (name: string): Promise<{ ok: boolean; newId: number }> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return { ok: false, newId: -1 }
+            const res = await cm.invokeService('createStyleSet', {
+                sceneId: sid, name,
+            })
+            return { ok: res?.ok === true, newId: res?.newId ?? -1 }
+        },
+        [cm],
+    )
+
+    const toggleStyleSetReadOnly = useCallback(
+        async (nodeId: number, scopeId: number): Promise<{ ok: boolean; readonly: boolean }> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return { ok: false, readonly: false }
+            const res = await cm.invokeService('toggleStyleSetReadOnly', {
+                sceneId: sid, scopeId, styleSetId: nodeId,
+            })
+            return { ok: res?.ok === true, readonly: res?.readonly === true }
+        },
+        [cm],
+    )
+
+    const loadStyleSetFromFile = useCallback(
+        async (path: string): Promise<boolean> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return false
+            const res = await cm.invokeService('loadStyleSetFromFile', {
+                sceneId: sid, path,
+            })
+            return res?.ok === true
+        },
+        [cm],
+    )
+
+    const saveStyleSetToFile = useCallback(
+        async (nodeId: number, scopeId: number, path: string): Promise<boolean> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return false
+            const res = await cm.invokeService('saveStyleSetToFile', {
+                sceneId: sid, scopeId, styleSetId: nodeId, path,
+            })
+            return res?.ok === true
+        },
+        [cm],
+    )
+
+    const saveStyleSetToCurrentSrc = useCallback(
+        async (nodeId: number, scopeId: number): Promise<{ ok: boolean; saved: boolean }> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return { ok: false, saved: false }
+            const res = await cm.invokeService('saveStyleSetToCurrentSrc', {
+                sceneId: sid, scopeId, styleSetId: nodeId,
+            })
+            return { ok: res?.ok === true, saved: res?.saved === true }
+        },
+        [cm],
+    )
+
     const fetchNodeInfo = useCallback(
         async (id: string): Promise<NodeInfo | null> => {
             const sid = sceneIdRef.current
@@ -759,6 +844,11 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         moveSceneNode,
         setSceneBackgroundColor,
         toggleSceneColorProofing,
+        createStyleSet,
+        toggleStyleSetReadOnly,
+        loadStyleSetFromFile,
+        saveStyleSetToFile,
+        saveStyleSetToCurrentSrc,
         fetchNodeInfo,
         refetch,
         resolveNodeName,

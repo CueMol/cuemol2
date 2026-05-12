@@ -141,22 +141,115 @@ function buildTemplate(
             ]
 
         case 'style':
-            return [
-                ...header,
-                renameItem(action),
-                deleteItem(action),
-                { type: 'separator' },
-                propertyItem(action),
-            ]
+            return buildStyleNodeMenu(payload, header, action)
+
+        case 'styleRoot':
+            return buildStyleRootMenu(payload, header, action)
 
         case 'cameraRoot':
-        case 'styleRoot':
         default:
             // Synthesised root containers — no operations in Phase 3a.
             return [
                 { label: payload.nodeLabel || nodeTypeLabel(payload.nodeType), enabled: false },
             ]
     }
+}
+
+/**
+ * Style row context menu (Phase 5c) — UXP `wspcStyleCtxtMenu` with
+ * `onStyCtxtShowing` gating:
+ *   - Copy / Paste — Copy disabled on global rows (scope==0); Paste enabled
+ *     when the worker clipboard holds a 'style' entry
+ *   - Delete — disabled on global rows
+ *   - Style file submenu — Reload only when src is non-empty (external);
+ *     Save / Save As disabled on global rows
+ *   - Read-only checkbox — disabled on global rows OR when modified
+ *   - Rename — UXP has no JS implementation; omitted
+ *   - Edit — re-uses the per-row Properties stub (Phase 5a will replace).
+ */
+function buildStyleNodeMenu(
+    payload: SceneCtxMenuPayload,
+    header: MenuItemConstructorOptions[],
+    action: (a: SceneCtxAction) => MenuItemConstructorOptions['click'],
+): MenuItemConstructorOptions[] {
+    const info = payload.styleInfo
+    const isGlobal = info?.scopeId === 0
+    const hasSrc = (info?.src ?? '').length > 0
+    const isReadOnly = info?.readonly === true
+    const isModified = info?.modified === true
+
+    return [
+        ...header,
+        { label: 'New Style…', click: action({ kind: 'newStyle' }) },
+        { type: 'separator' },
+        {
+            label: 'Copy',
+            enabled: !isGlobal,
+            click: action({ kind: 'copy' }),
+        },
+        ...pasteItem(payload, 'style', action),
+        {
+            label: 'Delete',
+            enabled: !isGlobal,
+            click: action({ kind: 'delete' }),
+        },
+        { type: 'separator' },
+        {
+            label: 'Style file',
+            submenu: [
+                { label: 'Load…', click: action({ kind: 'styleLoad' }) },
+                {
+                    label: 'Reload',
+                    enabled: hasSrc,
+                    click: action({ kind: 'styleReload' }),
+                },
+                {
+                    label: 'Save',
+                    enabled: !isGlobal,
+                    click: action({ kind: 'styleSave' }),
+                },
+                {
+                    label: 'Save As…',
+                    enabled: !isGlobal,
+                    click: action({ kind: 'styleSaveAs' }),
+                },
+            ],
+        },
+        { type: 'separator' },
+        {
+            label: 'Read-only',
+            type: 'checkbox',
+            checked: isReadOnly,
+            // Mirrors UXP `onStyCtxtShowing`: disable on global rows and on
+            // RW-but-modified rows (transition to RO is unsafe).
+            enabled: !isGlobal && !(isReadOnly === false && isModified),
+            click: action({ kind: 'styleToggleReadOnly' }),
+        },
+        { type: 'separator' },
+        propertyItem(action),
+    ]
+}
+
+/**
+ * Style root row context menu (Phase 5c). Mirrors UXP onStyCtxtShowing
+ * fall-through branch for the styles top-node: only New Style + Paste
+ * (when clipboard has a style entry) + Load File apply.
+ */
+function buildStyleRootMenu(
+    payload: SceneCtxMenuPayload,
+    header: MenuItemConstructorOptions[],
+    action: (a: SceneCtxAction) => MenuItemConstructorOptions['click'],
+): MenuItemConstructorOptions[] {
+    return [
+        ...header,
+        { label: 'New Style…', click: action({ kind: 'newStyle' }) },
+        ...pasteItem(payload, 'style', action),
+        { type: 'separator' },
+        {
+            label: 'Style file',
+            submenu: [{ label: 'Load…', click: action({ kind: 'styleLoad' }) }],
+        },
+    ]
 }
 
 function showHideItems(
@@ -201,11 +294,16 @@ function copyItem(
  */
 function pasteItem(
     payload: SceneCtxMenuPayload,
-    expectedKind: 'object' | 'renderer',
+    expectedKind: 'object' | 'renderer' | 'style',
     action: (a: SceneCtxAction) => MenuItemConstructorOptions['click'],
 ): MenuItemConstructorOptions[] {
     if (payload.clipboardKind !== expectedKind) return []
-    const label = expectedKind === 'object' ? 'Paste Object' : 'Paste Renderer'
+    const label =
+        expectedKind === 'object'
+            ? 'Paste Object'
+            : expectedKind === 'style'
+              ? 'Paste Style'
+              : 'Paste Renderer'
     return [{ label, click: action({ kind: 'paste' }) }]
 }
 

@@ -10,6 +10,8 @@ export const IPC = {
   APP_PATH:       'apppath',
   DIALOG_OPEN:    'dialog:openFile',
   DIALOG_SAVE_SCENE: 'dialog:saveScene',
+  DIALOG_STYLE_OPEN: 'dialog:styleOpen',
+  DIALOG_STYLE_SAVE: 'dialog:styleSave',
   FILE_EXISTS:        'file:exists',
   FILE_BACKUP_RENAME: 'file:backupRename',
   LAYOUT_LOAD:    'layout:load',

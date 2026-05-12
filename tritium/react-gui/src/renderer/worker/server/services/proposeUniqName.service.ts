@@ -6,7 +6,8 @@ export type ProposeUniqNameArgs =
     | { kind: 'view'; prefix: string; sceneId: number }
     | { kind: 'object'; prefix: string; sceneId: number }
     | { kind: 'renderer'; prefix: string; sceneId: number; molId: number }
-    | { kind: 'sceneRenderer'; prefix: string; sceneId: number };
+    | { kind: 'sceneRenderer'; prefix: string; sceneId: number }
+    | { kind: 'styleSet'; prefix: string; sceneId: number };
 
 export interface ProposeUniqNameResult {
     name: string;
@@ -62,6 +63,25 @@ function proposeUniqName(ctx: WorkerContext, args: ProposeUniqNameArgs): Propose
             // with sibling renderers on other objects.
             tryFunc = (name) => scene.getRendByName(name);
             break;
+        }
+        case 'styleSet': {
+            // StyleManager.hasStyleSet returns 0 when no set exists for
+            // the (name, scope) pair, matching UXP `createStyle`'s loop.
+            const mgr = ctx.svc.getService('StyleManager') as unknown as
+                | { hasStyleSet: (name: string, scopeId: number) => number }
+                | null;
+            if (!mgr) return { name: prefix + '_0' };
+            tryFunc = (name) =>
+                mgr.hasStyleSet(name, args.sceneId) === 0 ? null : { __taken: true };
+            // UXP starts at `style_0`; mirror that by using underscore.
+            for (let i = 0; i <= MAX_ITER; ++i) {
+                const candidate = `${prefix}_${i}`;
+                const existing = tryFunc(candidate);
+                if (existing === null || existing === undefined) {
+                    return { name: candidate };
+                }
+            }
+            return { name: `${prefix}_${Date.now()}` };
         }
     }
 

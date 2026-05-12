@@ -148,6 +148,22 @@ import type {
   GetNewRendererOptionsArgs,
   GetNewRendererOptionsResult,
 } from '../server/services/getNewRendererOptions.service'
+import type {
+  CreateStyleSetArgs,
+  CreateStyleSetResult,
+  DestroyStyleSetArgs,
+  DestroyStyleSetResult,
+  ToggleStyleSetReadOnlyArgs,
+  ToggleStyleSetReadOnlyResult,
+} from '../server/services/styleOps.service'
+import type {
+  LoadStyleSetFromFileArgs,
+  LoadStyleSetFromFileResult,
+  SaveStyleSetToFileArgs,
+  SaveStyleSetToFileResult,
+  SaveStyleSetToCurrentSrcArgs,
+  SaveStyleSetToCurrentSrcResult,
+} from '../server/services/styleFile.service'
 import type { UndoArgs } from '../server/services/undo.service'
 import type {
   ValidateSelectionArgs,
@@ -245,6 +261,12 @@ export interface ServiceMap {
   bulkDeleteNode:             { args: BulkDeleteArgs;                  result: BulkOpResult }
   createRendererOnObject:     { args: CreateRendererOnObjectArgs;      result: CreateRendererOnObjectResult }
   getNewRendererOptions:      { args: GetNewRendererOptionsArgs;       result: GetNewRendererOptionsResult }
+  createStyleSet:             { args: CreateStyleSetArgs;              result: CreateStyleSetResult }
+  destroyStyleSet:            { args: DestroyStyleSetArgs;             result: DestroyStyleSetResult }
+  toggleStyleSetReadOnly:     { args: ToggleStyleSetReadOnlyArgs;      result: ToggleStyleSetReadOnlyResult }
+  loadStyleSetFromFile:       { args: LoadStyleSetFromFileArgs;        result: LoadStyleSetFromFileResult }
+  saveStyleSetToFile:         { args: SaveStyleSetToFileArgs;          result: SaveStyleSetToFileResult }
+  saveStyleSetToCurrentSrc:   { args: SaveStyleSetToCurrentSrcArgs;    result: SaveStyleSetToCurrentSrcResult }
   getViewProjection:          { args: ViewProjectionArgs;              result: ViewProjectionResult }
   setViewProjection:          { args: ViewProjectionArgs;              result: ViewProjectionResult }
   getViewCenterMark:          { args: ViewCenterMarkArgs;              result: ViewCenterMarkResult }

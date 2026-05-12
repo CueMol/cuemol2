@@ -69,6 +69,16 @@ export interface UseSceneContextMenuOptions {
     selectedIds?: Set<string>
     bulkSetNodeVisible?: (ids: Iterable<string>, visible: boolean) => Promise<boolean>
     bulkDeleteNodes?: (ids: Iterable<string>) => Promise<boolean>
+    /** Phase 5c style ops. */
+    createStyleSet: (name: string) => Promise<{ ok: boolean; newId: number }>
+    toggleStyleSetReadOnly: (
+        nodeId: number, scopeId: number,
+    ) => Promise<{ ok: boolean; readonly: boolean }>
+    loadStyleSetFromFile: (path: string) => Promise<boolean>
+    saveStyleSetToFile: (nodeId: number, scopeId: number, path: string) => Promise<boolean>
+    saveStyleSetToCurrentSrc: (
+        nodeId: number, scopeId: number,
+    ) => Promise<{ ok: boolean; saved: boolean }>
 }
 
 export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
@@ -89,6 +99,8 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
         setRendererSelection, generateRendererSurfObj,
         createRendererGroup, changeRendererType, createRendererOnObject,
         selectedIds, bulkSetNodeVisible, bulkDeleteNodes,
+        createStyleSet, toggleStyleSetReadOnly,
+        loadStyleSetFromFile, saveStyleSetToFile, saveStyleSetToCurrentSrc,
     } = opts
 
     // Electron disables window.prompt — use the in-app Blueprint dialog
@@ -198,7 +210,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                 node.type === 'renderer' && node.className === 'isosurf'
 
             // Pre-fetch clipboard state so main can enable Paste items correctly.
-            let clipboardKind: 'object' | 'renderer' | null = null
+            let clipboardKind: 'object' | 'renderer' | 'style' | null = null
             if (cm) {
                 try {
                     const r = await cm.invokeService('getClipboardKind', {})
@@ -275,6 +287,10 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                 }
             }
 
+            // Style node pre-fetch is just a property read on the tree
+            // node — `styleInfo` is already populated by getSceneTree.
+            const styleInfo = node.type === 'style' ? node.styleInfo : undefined
+
             const action: SceneCtxAction | null = await window.electronAPI.invoke(
                 IPC.SCENE_CTX_SHOW,
                 {
@@ -294,6 +310,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                     supportsChangeSel,
                     canGenSurfObj,
                     rendChangeTypes,
+                    styleInfo,
                 },
             )
 
@@ -396,6 +413,89 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                     await createRendererGroup(idStr, entered)
                     break
                 }
+                case 'newStyle': {
+                    if (
+                        node.type !== 'style' &&
+                        node.type !== 'styleRoot'
+                    ) break
+                    // UXP `createStyle` walks "style_0", "style_1", ...
+                    // until it finds a free name then prompts. We pre-fetch
+                    // a unique default via proposeUniqName + show the prompt.
+                    let suggestion = 'style_0'
+                    if (cm && sceneId !== undefined) {
+                        try {
+                            const r = await cm.invokeService('proposeUniqName', {
+                                kind: 'styleSet',
+                                prefix: 'style',
+                                sceneId,
+                            })
+                            suggestion = r?.name ?? suggestion
+                        } catch (err) {
+                            console.warn('proposeUniqName failed:', err)
+                        }
+                    }
+                    const entered = await showTextPrompt({
+                        title: 'New Style',
+                        label: 'Name for new style:',
+                        defaultValue: suggestion,
+                        confirmLabel: 'Create',
+                    })
+                    if (entered == null) break
+                    await createStyleSet(entered)
+                    break
+                }
+                case 'styleToggleReadOnly': {
+                    if (node.type !== 'style') break
+                    const scope = styleInfo?.scopeId
+                    if (scope === undefined) break
+                    await toggleStyleSetReadOnly(node.id, scope)
+                    break
+                }
+                case 'styleLoad': {
+                    // Path resolution via main-process native file picker.
+                    const r = await window.electronAPI.invoke(IPC.DIALOG_STYLE_OPEN)
+                    if (r.canceled || !r.filePath) break
+                    await loadStyleSetFromFile(r.filePath)
+                    break
+                }
+                case 'styleReload': {
+                    // Worker-side equivalent of UXP `onStyReloadFile` —
+                    // UXP itself reports "Not implemented" here, so we
+                    // mirror that: log + no-op. Kept as a menu entry so
+                    // the gating exercise (src.length > 0) is testable.
+                    console.info(
+                        'styleReload not implemented yet (matches UXP onStyReloadFile)',
+                    )
+                    break
+                }
+                case 'styleSave': {
+                    if (node.type !== 'style') break
+                    const scope = styleInfo?.scopeId
+                    if (scope === undefined) break
+                    const r = await saveStyleSetToCurrentSrc(node.id, scope)
+                    // Empty src: UXP fall-through to Save As.
+                    if (r.ok && !r.saved) {
+                        const save = await window.electronAPI.invoke(
+                            IPC.DIALOG_STYLE_SAVE,
+                            { defaultName: node.name === '(anonymous)' ? '' : node.name },
+                        )
+                        if (save.canceled || !save.filePath) break
+                        await saveStyleSetToFile(node.id, scope, save.filePath)
+                    }
+                    break
+                }
+                case 'styleSaveAs': {
+                    if (node.type !== 'style') break
+                    const scope = styleInfo?.scopeId
+                    if (scope === undefined) break
+                    const save = await window.electronAPI.invoke(
+                        IPC.DIALOG_STYLE_SAVE,
+                        { defaultName: node.name === '(anonymous)' ? '' : node.name },
+                    )
+                    if (save.canceled || !save.filePath) break
+                    await saveStyleSetToFile(node.id, scope, save.filePath)
+                    break
+                }
             }
         },
         [
@@ -406,7 +506,9 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
             setRendererSelection, generateRendererSurfObj,
             createRendererGroup, changeRendererType, createRendererOnObject,
             selectedIds, bulkSetNodeVisible, bulkDeleteNodes,
-            showTextPrompt, showNewRenderer,
+            createStyleSet, toggleStyleSetReadOnly,
+            loadStyleSetFromFile, saveStyleSetToFile, saveStyleSetToCurrentSrc,
+            showTextPrompt, showNewRenderer, openNewRendererFlow,
         ],
     )
 

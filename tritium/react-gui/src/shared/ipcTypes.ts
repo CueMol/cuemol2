@@ -205,6 +205,12 @@ export type SceneCtxAction =
   | { kind: 'newRendGroup' }
   | { kind: 'newRenderer' }
   | { kind: 'changeRendType'; typeName: string }
+  | { kind: 'newStyle' }
+  | { kind: 'styleLoad' }
+  | { kind: 'styleReload' }
+  | { kind: 'styleSave' }
+  | { kind: 'styleSaveAs' }
+  | { kind: 'styleToggleReadOnly' }
   | { kind: 'multiShow' }
   | { kind: 'multiHide' }
   | { kind: 'multiDelete' }
@@ -230,7 +236,7 @@ export interface SceneCtxMenuPayload {
   /** Whether the node carries a visibility flag at all. */
   hasVisibility: boolean
   /** What the worker clipboard holds, used to gate Paste items. */
-  clipboardKind: 'object' | 'renderer' | null
+  clipboardKind: 'object' | 'renderer' | 'style' | null
   /**
    * Whether the targeted renderer supports the Coloring submenu (Phase 3c).
    * False for the special `*selection` / `*namelabel` / `atomintr` types
@@ -298,6 +304,18 @@ export interface SceneCtxMenuPayload {
    * menu (Show / Hide / Delete) instead of the type-specific branch.
    */
   multiNodeIds?: number[]
+  /**
+   * Style-node pre-fetch (Phase 5c). Drives the Reload (has src) / Save
+   * (has src) / Read-only check + disable / Copy disable on global rows
+   * gates in the style ctxmenu. Style ctx only.
+   */
+  styleInfo?: {
+    /** Scope id — 0 for global, scene.uid for scene-local. */
+    scopeId: number
+    src: string
+    readonly: boolean
+    modified: boolean
+  }
 }
 
 // ── Native menu state ───────────────────────────────────────────────────────

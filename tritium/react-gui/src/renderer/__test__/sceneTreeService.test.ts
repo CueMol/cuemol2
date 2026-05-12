@@ -5,7 +5,14 @@ import type { WorkerContext } from '../worker/server/types/WorkerContext'
 
 function makeCtx(
     jsonOrScene: string | null | object,
-    opts: { cameraInfoJSON?: string; styleNamesJSON?: string } = {},
+    opts: {
+        cameraInfoJSON?: string
+        /**
+         * Map of scopeId → JSON string for StyleManager.getStyleSetsJSON.
+         * Default: `0` and any scene id both return `'[]'`.
+         */
+        styleSetsJSON?: Record<number, string>
+    } = {},
 ) {
     const startUndoTxn = vi.fn()
     const commitUndoTxn = vi.fn()
@@ -41,8 +48,11 @@ function makeCtx(
             : { ...(jsonOrScene as object), ...baseSceneMethods }
 
     const getScene = vi.fn(() => mockScene)
-    const getStyleNamesJSON = vi.fn(() => opts.styleNamesJSON ?? '[]')
-    const getService = vi.fn(() => ({ getStyleNamesJSON }))
+    const styleSetsJSON = opts.styleSetsJSON ?? {}
+    const getStyleSetsJSON = vi.fn((scopeId: number) =>
+        styleSetsJSON[scopeId] ?? '[]',
+    )
+    const getService = vi.fn(() => ({ getStyleSetsJSON }))
 
     const ctx = {
         sceMgr: { getScene },
@@ -50,7 +60,7 @@ function makeCtx(
     } as unknown as WorkerContext
 
     return {
-        ctx, mockScene, getScene, getService, getStyleNamesJSON,
+        ctx, mockScene, getScene, getService, getStyleSetsJSON,
         setObjectVisible, setRendererVisible,
         startUndoTxn, commitUndoTxn, rollbackUndoTxn,
     }
@@ -183,17 +193,54 @@ describe('sceneTree service', () => {
             expect(cameraRoot?.children.map((c) => c.name)).toEqual(['cam0', 'cam1'])
         })
 
-        it('populates styleRoot children from StyleManager.getStyleNamesJSON', () => {
+        it('populates styleRoot children from StyleManager.getStyleSetsJSON (global + scene)', () => {
             const json = JSON.stringify([{ name: 'Scene1', type: '', ID: 1 }])
-            const styleNames = JSON.stringify([
-                { name: 'Default' },
-                { name: 'BallStick' },
+            // Two global styles + one scene-local style under uid 1.
+            const globalStyles = JSON.stringify([
+                { name: 'Default', uid: 11, scene_id: 0, src: '', readonly: true, modified: false },
+                { name: 'BallStick', uid: 12, scene_id: 0, src: '', readonly: true, modified: false },
             ])
-            const { ctx, getService } = makeCtx(json, { styleNamesJSON: styleNames })
+            const sceneStyles = JSON.stringify([
+                { name: 'mine', uid: 23, scene_id: 1, src: '/x/mine.xml', readonly: false, modified: true },
+            ])
+            const { ctx, getService, getStyleSetsJSON } = makeCtx(json, {
+                styleSetsJSON: { 0: globalStyles, 1: sceneStyles },
+            })
             const res = services.getSceneTree(ctx, { sceneId: 1 })
             expect(getService).toHaveBeenCalledWith('StyleManager')
+            // Both global (scope=0) and scene-local (scope=sceneId) are fetched.
+            expect(getStyleSetsJSON).toHaveBeenCalledWith(0)
+            expect(getStyleSetsJSON).toHaveBeenCalledWith(1)
             const styleRoot = res.tree?.children.find((c) => c.type === 'styleRoot')
-            expect(styleRoot?.children.map((c) => c.name)).toEqual(['Default', 'BallStick'])
+            expect(styleRoot?.children.map((c) => c.name)).toEqual([
+                'Default', 'BallStick', 'mine',
+            ])
+            // styleInfo carries the scope / src / readonly / modified fields
+            // that the ctxmenu wiring keys on.
+            const mine = styleRoot!.children[2]
+            expect(mine.id).toBe(23)
+            expect(mine.styleInfo).toEqual({
+                scopeId: 1, src: '/x/mine.xml', readonly: false, modified: true,
+            })
+            // Global styles get className='global'; readonly local rows get 'readonly'.
+            expect(styleRoot!.children[0].className).toBe('global')
+            expect(mine.className).toBe('')
+            // Locked is true for global rows and for readonly local rows.
+            expect(styleRoot!.children[0].locked).toBe(true)
+            expect(mine.locked).toBe(false)
+        })
+
+        it('renders empty-name StyleSet as "(anonymous)" while preserving real uid', () => {
+            const json = JSON.stringify([{ name: 'Scene1', type: '', ID: 1 }])
+            const globalStyles = JSON.stringify([
+                { name: '', uid: 99, scene_id: 0, src: '', readonly: true, modified: false },
+            ])
+            const { ctx } = makeCtx(json, { styleSetsJSON: { 0: globalStyles } })
+            const res = services.getSceneTree(ctx, { sceneId: 1 })
+            const styleRoot = res.tree?.children.find((c) => c.type === 'styleRoot')
+            expect(styleRoot?.children).toHaveLength(1)
+            expect(styleRoot!.children[0].name).toBe('(anonymous)')
+            expect(styleRoot!.children[0].id).toBe(99)
         })
 
         it('tolerates camera/style API failures by returning empty roots', () => {
