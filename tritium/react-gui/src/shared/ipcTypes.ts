@@ -130,6 +130,16 @@ export type SelectMolKind =
   | 'sugar'
   | 'hydrogen'
   | 'sidechain'
+  // Around (atom-level) and Around by-residue (`byres` expansion) of the
+  // current mol selection — UXP `ws.aroundMolSel(dist, byres)` /
+  // `cuemolui.molSelAround`. No-op when the current selection is empty.
+  | 'around3'
+  | 'around5'
+  | 'around7'
+  | 'around10'
+  | 'aroundByres3'
+  | 'aroundByres5'
+  | 'aroundByres7'
 
 /**
  * Coloring-submenu IDs applicable to renderer nodes (Phase 3c).

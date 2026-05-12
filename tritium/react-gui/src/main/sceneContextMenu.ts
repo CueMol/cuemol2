@@ -471,6 +471,15 @@ function newRendGroupItem(
 function selectionSubmenu(
     action: (a: SceneCtxAction) => MenuItemConstructorOptions['click'],
 ): MenuItemConstructorOptions {
+    const aroundItem = (
+        label: string,
+        selectKind:
+            | 'around3' | 'around5' | 'around7' | 'around10'
+            | 'aroundByres3' | 'aroundByres5' | 'aroundByres7',
+    ): MenuItemConstructorOptions => ({
+        label,
+        click: action({ kind: 'selectMol', selectKind }),
+    })
     return {
         label: 'Selection',
         submenu: [
@@ -485,6 +494,24 @@ function selectionSubmenu(
             { label: 'Hydrogen', click: action({ kind: 'selectMol', selectKind: 'hydrogen' }) },
             { type: 'separator' },
             { label: 'Toggle Sidechain', click: action({ kind: 'selectMol', selectKind: 'sidechain' }) },
+            { type: 'separator' },
+            {
+                label: 'Around',
+                submenu: [
+                    aroundItem('3 Å', 'around3'),
+                    aroundItem('5 Å', 'around5'),
+                    aroundItem('7 Å', 'around7'),
+                    aroundItem('10 Å', 'around10'),
+                ],
+            },
+            {
+                label: 'Around (byres)',
+                submenu: [
+                    aroundItem('3 Å', 'aroundByres3'),
+                    aroundItem('5 Å', 'aroundByres5'),
+                    aroundItem('7 Å', 'aroundByres7'),
+                ],
+            },
         ],
     }
 }

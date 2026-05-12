@@ -6,6 +6,7 @@ import type { MolAtom } from '@cuemol/core/src/wrappers/MolAtom';
 import type { SymmRenderer } from '@cuemol/core/src/wrappers/SymmRenderer';
 import type { Vector } from '@cuemol/core/src/wrappers/Vector';
 import { makeSel } from './helpers/makeSel';
+import { invertSelStr, rewriteAround, toggleSidechainStr } from './helpers/selStrTransforms';
 import { withUndoTxn } from './withUndoTxn';
 
 type SelectMode = 'atom' | 'residue' | 'chain' | 'mol';
@@ -54,41 +55,6 @@ function buildSelStr(mol: MolCoord, atomId: number, mode: SelectMode): string | 
         case 'chain':    return `c;${chainName}`;
         case 'mol':      return '*';
     }
-}
-
-function rewriteAround(prevSelStr: string, dist: number, byres: boolean): string {
-    let base: string | null = null;
-    let m: RegExpMatchArray | null;
-
-    m = prevSelStr.match(/byres\s*\(\s*(.+)\s+around\s+[\d.]+\s*\)/);
-    if (m) { base = m[1]; }
-
-    if (!base) {
-        m = prevSelStr.match(/byres\s+(.+)\s+around\s+[\d.]+/);
-        if (m) { base = m[1]; }
-    }
-
-    if (!base) {
-        m = prevSelStr.match(/(.+)\s+around\s+[\d.]+/);
-        if (m) { base = m[1]; }
-    }
-
-    if (!base) { base = prevSelStr; }
-
-    return byres ? `byres ${base} around ${dist}` : `${base} around ${dist}`;
-}
-
-function invertSel(prevSelStr: string): string {
-    if (!prevSelStr) return '*';
-    const m = prevSelStr.match(/!\s*\((.+)\)/s);
-    if (m) return m[1];
-    return `!(${prevSelStr})`;
-}
-
-function toggleSidechainSel(prevSelStr: string): string {
-    const m = prevSelStr.match(/bysidech\s+(.+)/s);
-    if (m) return m[1];
-    return `bysidech ${prevSelStr}`;
 }
 
 // ---- services ----
@@ -167,7 +133,7 @@ function naviCtxInvertSel(ctx: WorkerContext, args: NaviCtxObjArgs): { ok: boole
     if (!vsm) return { ok: false };
     withUndoTxn(vsm.scene, 'Invert mol selection', () => {
         const prevSelStr = vsm.mol.sel.toString();
-        applyMolSel(ctx, vsm.mol, invertSel(prevSelStr), vsm.scene.uid);
+        applyMolSel(ctx, vsm.mol, invertSelStr(prevSelStr), vsm.scene.uid);
     });
     return { ok: true };
 }
@@ -178,7 +144,7 @@ function naviCtxToggleSidechain(ctx: WorkerContext, args: NaviCtxObjArgs): { ok:
     const prevSelStr = vsm.mol.sel.toString();
     if (!prevSelStr) return { ok: false };
     withUndoTxn(vsm.scene, 'Toggle bysidech', () => {
-        applyMolSel(ctx, vsm.mol, toggleSidechainSel(prevSelStr), vsm.scene.uid);
+        applyMolSel(ctx, vsm.mol, toggleSidechainStr(prevSelStr), vsm.scene.uid);
     });
     return { ok: true };
 }

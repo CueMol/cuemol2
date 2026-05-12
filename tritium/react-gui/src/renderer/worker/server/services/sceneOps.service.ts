@@ -23,6 +23,7 @@ import type { WorkerContext } from '../types/WorkerContext';
 import type { SceneNodeType } from '../../shared/sceneTreeTypes';
 import type { SelectMolKind } from '../../../../shared/ipcTypes';
 import { makeSel } from './helpers/makeSel';
+import { invertSelStr, rewriteAround, toggleSidechainStr } from './helpers/selStrTransforms';
 import { withUndoTxn } from './withUndoTxn';
 
 export interface FocusOnNodeArgs {
@@ -304,23 +305,8 @@ function renameNode(ctx: WorkerContext, args: RenameNodeArgs): RenameNodeResult 
 // ─── selectObjectMol ──────────────────────────────────────────────────────
 //
 // Mirrors UXP `workspace_panel_molsel.js` `selectMol` / `invertMolSel` /
-// `toggleSideCh`. The selection-string transforms (`invertSel`,
-// `toggleSidechainSel`) are duplicated from `naviCtxtMenu.service.ts` to
-// keep this file self-contained; extract to a shared helper if a third
-// caller appears.
-
-function invertSelStr(prev: string): string {
-    if (!prev) return '*';
-    const m = prev.match(/!\s*\((.+)\)/s);
-    if (m) return m[1];
-    return `!(${prev})`;
-}
-
-function toggleSidechainStr(prev: string): string {
-    const m = prev.match(/bysidech\s+(.+)/s);
-    if (m) return m[1];
-    return `bysidech ${prev}`;
-}
+// `toggleSideCh` / `aroundMolSel`. Selection-string transforms are
+// shared with `naviCtxtMenu.service.ts` via `helpers/selStrTransforms`.
 
 function autoCreateSelRend(mol: MolCoord): void {
     if (!mol.getRendererByType('*selection')) {
@@ -339,6 +325,16 @@ function applyMolSelStr(
     if (sel === null) return;
     mol.sel = sel;
 }
+
+const AROUND_KIND_DIST: Record<string, { dist: number; byres: boolean }> = {
+    around3: { dist: 3, byres: false },
+    around5: { dist: 5, byres: false },
+    around7: { dist: 7, byres: false },
+    around10: { dist: 10, byres: false },
+    aroundByres3: { dist: 3, byres: true },
+    aroundByres5: { dist: 5, byres: true },
+    aroundByres7: { dist: 7, byres: true },
+};
 
 function resolveSelStr(
     kind: SelectMolKind,
@@ -365,6 +361,22 @@ function resolveSelStr(
             // sidechain toggle is a no-op when nothing is currently selected.
             if (!prevSelStr) return null;
             return { selStr: toggleSidechainStr(prevSelStr), label: 'Toggle bysidech' };
+        case 'around3':
+        case 'around5':
+        case 'around7':
+        case 'around10':
+        case 'aroundByres3':
+        case 'aroundByres5':
+        case 'aroundByres7': {
+            // Around-selection rewrites the current selection; UXP
+            // `molSelAround` early-returns when prev is empty.
+            if (!prevSelStr) return null;
+            const { dist, byres } = AROUND_KIND_DIST[kind];
+            return {
+                selStr: rewriteAround(prevSelStr, dist, byres),
+                label: 'Around mol selection',
+            };
+        }
     }
 }
 

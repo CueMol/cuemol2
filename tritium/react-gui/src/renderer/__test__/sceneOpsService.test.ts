@@ -355,6 +355,56 @@ describe('sceneOps service', () => {
             expect(setSel).not.toHaveBeenCalled()
         })
 
+        // Around-selection kinds (UXP `ws.aroundMolSel` / `molSelAround`).
+        // The same selstr-rewrite logic is exercised in detail by the
+        // navi viewport context-menu tests; this block pins the
+        // SelectMolKind dispatch + empty-prev no-op behaviour for the
+        // scene-tree object ctxmenu path.
+        it.each([
+            ['around3', 'aid 1', 'aid 1 around 3'],
+            ['around5', 'aid 1', 'aid 1 around 5'],
+            ['around7', 'aid 1', 'aid 1 around 7'],
+            ['around10', 'aid 1', 'aid 1 around 10'],
+            ['aroundByres3', 'aid 1', 'byres aid 1 around 3'],
+            ['aroundByres5', 'protein', 'byres protein around 5'],
+            ['aroundByres7', 'aid 1', 'byres aid 1 around 7'],
+        ] as const)(
+            'around kind %s wraps prev=%s into %s with "Around mol selection" txn',
+            (kind, prev, expected) => {
+                const { ctx, setSel, startUndoTxn } = makeMolCtx({ prevSelStr: prev })
+                const res = services.selectObjectMol(ctx, {
+                    sceneId: 1, objId: 10, kind,
+                })
+                expect(res.ok).toBe(true)
+                expect(startUndoTxn).toHaveBeenCalledWith('Around mol selection')
+                expect(setSel).toHaveBeenCalledWith({ __sel: expected })
+            },
+        )
+
+        it('around5 strips an existing "X around N" wrapper and replaces dist', () => {
+            const { ctx, setSel } = makeMolCtx({ prevSelStr: 'aid 1 around 3' })
+            services.selectObjectMol(ctx, { sceneId: 1, objId: 10, kind: 'around5' })
+            expect(setSel).toHaveBeenCalledWith({ __sel: 'aid 1 around 5' })
+        })
+
+        it('aroundByres3 lifts inner sel from "byres (X around N)" form', () => {
+            const { ctx, setSel } = makeMolCtx({ prevSelStr: 'byres ( aid 1 around 5 )' })
+            services.selectObjectMol(ctx, {
+                sceneId: 1, objId: 10, kind: 'aroundByres3',
+            })
+            expect(setSel).toHaveBeenCalledWith({ __sel: 'byres aid 1 around 3' })
+        })
+
+        it.each([
+            ['around5'], ['aroundByres5'],
+        ] as const)('%s is a no-op when selection is empty', (kind) => {
+            const { ctx, setSel, startUndoTxn } = makeMolCtx({ prevSelStr: '' })
+            const res = services.selectObjectMol(ctx, { sceneId: 1, objId: 10, kind })
+            expect(res.ok).toBe(false)
+            expect(startUndoTxn).not.toHaveBeenCalled()
+            expect(setSel).not.toHaveBeenCalled()
+        })
+
         it('auto-creates *selection renderer when missing', () => {
             const { ctx, createRenderer } = makeMolCtx({ hasSelRend: false })
             services.selectObjectMol(ctx, { sceneId: 1, objId: 10, kind: 'all' })
