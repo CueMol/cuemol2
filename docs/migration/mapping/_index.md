@@ -1,6 +1,6 @@
 # Migration Mapping — Index
 
-- Updated: 2026-05-12 (renderer ctxmenu Generate surface obj wired)
+- Updated: 2026-05-12 (rendgroup ctxmenu Paste Renderer wired)
 - Source files: `docs/migration/mapping/*.md` (excluding this file)
 
 ---
@@ -58,7 +58,7 @@
 | [`panel.workspace.ctxmenu.scene`](panels.md#panelworkspacectxmenuscene) | `useSceneContextMenu` / `main/sceneContextMenu` (scene) / `sceneBgColor.service` | Background color submenu (W/B radio) + Use color proofing toggle (checkbox) + Paste Object wired; row stays wip because Properties is still the panel-wide read-only stub |
 | [`panel.workspace.ctxmenu.object`](panels.md#panelworkspacectxmenuobject) | `useSceneContextMenu` / `main/sceneContextMenu` (object) / `sceneOps.service` / `sceneClipboard.service` | Common items (Show/Hide/Rename/Delete/Props), Selection submenu, Copy / Paste Renderer wired; Paint / Regen surface / New Renderer / New Group / Save As pending |
 | [`panel.workspace.ctxmenu.renderer`](panels.md#panelworkspacectxmenurenderer) | `useSceneContextMenu` / `main/sceneContextMenu` (renderer) / `rendererColoring.service` / `rendererStyle.service` / `setRendererSelection.service` / `generateRendererSurfObj.service` / `sceneClipboard.service` | Common items + Copy + Coloring + Paint(SS) + Paint picker + Style + Change sel + Generate surface obj wired; Change type / Edit-Create style / Edit interaction / New Renderer pending |
-| [`panel.workspace.ctxmenu.rendgroup`](panels.md#panelworkspacectxmenurendgroup) | `useSceneContextMenu` / `main/sceneContextMenu` (rendGroup) / `sceneClipboard.service` | Common items + Copy wired; Paste Renderer into group + New Renderer pending |
+| [`panel.workspace.ctxmenu.rendgroup`](panels.md#panelworkspacectxmenurendgroup) | `useSceneContextMenu` / `main/sceneContextMenu` (rendGroup) / `sceneClipboard.service` | Common items + Copy + Paste Renderer into group wired (`pasteNode` extended with `targetGroupId`, sets `rend.group` before attach); New Renderer pending (depends on new-renderer dialog) |
 
 ---
 

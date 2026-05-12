@@ -87,8 +87,15 @@ function copyNode(ctx: WorkerContext, args: CopyNodeArgs): CopyNodeResult {
 
 export interface PasteNodeArgs {
     sceneId: number;
-    /** Required when pasting a renderer (target object to attach into). */
+    /** When pasting a renderer onto an object row, the object's uid. */
     targetObjId?: number;
+    /**
+     * When pasting a renderer onto a rendgroup row, the group's uid. The
+     * worker resolves the group's parent mol via `group.getClientObj()`
+     * and sets `rend.group = group.name` so the new renderer appears
+     * under the group. Mutually exclusive with `targetObjId`.
+     */
+    targetGroupId?: number;
 }
 
 export interface PasteNodeResult {
@@ -127,23 +134,41 @@ function pasteNode(ctx: WorkerContext, args: PasteNodeArgs): PasteNodeResult {
         return { ok: true, newId, newName };
     }
 
-    // renderer paste
-    if (args.targetObjId === undefined) return empty;
-    const target = scene.getObject(args.targetObjId) as CueMolObject | null;
-    if (!target) return empty;
+    // renderer paste — resolve the destination mol + group label from
+    // whichever target the caller supplied.
+    let target: CueMolObject | null = null;
+    let destGroupName = '';
+    let txnLabel = 'Paste renderer';
+    if (args.targetGroupId !== undefined) {
+        const group = scene.getRenderer(args.targetGroupId) as Renderer | null;
+        if (!group) return empty;
+        target = safeRead(() => group.getClientObj() as CueMolObject | null) ?? null;
+        if (!target) return empty;
+        destGroupName = safeRead(() => group.name) ?? '';
+        txnLabel = 'Paste renderer into group';
+    } else if (args.targetObjId !== undefined) {
+        target = scene.getObject(args.targetObjId) as CueMolObject | null;
+        if (!target) return empty;
+    } else {
+        return empty;
+    }
 
     let newName = '';
     let newId: number = -1;
-    withUndoTxn(scene, 'Paste renderer', () => {
+    withUndoTxn(scene, txnLabel, () => {
         const restored = ctx.strMgr.fromXML(entry.xml, args.sceneId) as
             | LScrObject
             | null;
         if (!restored) return;
         const rend = restored as unknown as Renderer;
         const wanted = entry.sourceName || 'rend';
-        const finalName = uniqueRendererName(target, wanted);
+        const finalName = uniqueRendererName(target!, wanted);
         try { rend.name = finalName; } catch { /* ignore */ }
-        target.attachRenderer(rend);
+        // Set the group string before attaching so the parent mol places
+        // the new renderer under the right branch. For object paste
+        // destGroupName is "" — explicit clear matches UXP pasteRendImpl.
+        try { rend.group = destGroupName; } catch { /* ignore */ }
+        target!.attachRenderer(rend);
         newName = finalName;
         newId = safeRead(() => (rend as unknown as { uid: number }).uid) ?? -1;
     });

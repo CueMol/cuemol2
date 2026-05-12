@@ -105,6 +105,7 @@ function buildTemplate(
                 ...showHideItems(payload, action),
                 renameItem(action),
                 copyItem(action),
+                ...pasteItem(payload, 'renderer', action),
                 deleteItem(action),
                 { type: 'separator' },
                 propertyItem(action),

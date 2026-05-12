@@ -327,13 +327,21 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         async (target: SceneTreeNode): Promise<boolean> => {
             const sid = sceneIdRef.current
             if (!cm || sid === undefined) return false
-            // Scene row accepts object pastes (no targetObjId). Object row
-            // accepts renderer pastes (pass its id). Other node types are
-            // rejected by the worker.
-            const args =
-                target.type === 'object'
-                    ? { sceneId: sid, targetObjId: target.id }
-                    : { sceneId: sid }
+            // Scene row accepts object pastes (no target id). Object row
+            // accepts renderer pastes via targetObjId. RendGroup row
+            // accepts renderer pastes via targetGroupId — worker resolves
+            // the group's parent mol and sets rend.group on attach. Other
+            // node types are rejected by the worker.
+            let args: {
+                sceneId: number
+                targetObjId?: number
+                targetGroupId?: number
+            } = { sceneId: sid }
+            if (target.type === 'object') {
+                args = { sceneId: sid, targetObjId: target.id }
+            } else if (target.type === 'rendGroup') {
+                args = { sceneId: sid, targetGroupId: target.id }
+            }
             const res = await cm.invokeService('pasteNode', args)
             return res?.ok === true
         },

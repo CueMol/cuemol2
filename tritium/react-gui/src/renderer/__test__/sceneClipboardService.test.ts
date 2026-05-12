@@ -37,6 +37,12 @@ function buildCtx(opts: BuildCtxOpts = {}) {
             (opts.existingRendererNames ?? []).includes(n) ? { __r: n } : null,
         ),
     }
+    // rendgroup paste target: a group renderer (uid=888) whose
+    // getClientObj returns the same parent mol used by object paste.
+    const targetGroup = {
+        name: 'grpA',
+        getClientObj: vi.fn(() => targetObj),
+    }
     const restored = opts.restored ?? {
         get name() { return '' },
         set name(v: string) { setObjName(v) },
@@ -58,7 +64,9 @@ function buildCtx(opts: BuildCtxOpts = {}) {
                     ? targetObj
                     : null,
         ),
-        getRenderer: vi.fn(() => sourceRend),
+        getRenderer: vi.fn((id?: number) =>
+            id === 888 ? targetGroup : sourceRend,
+        ),
         getObjectByName: vi.fn((n: string) =>
             (opts.existingObjectNames ?? []).includes(n) ? { __o: n } : null,
         ),
@@ -77,7 +85,7 @@ function buildCtx(opts: BuildCtxOpts = {}) {
     } as unknown as WorkerContext
 
     return {
-        ctx, mockScene, sourceObj, sourceRend, targetObj, restored,
+        ctx, mockScene, sourceObj, sourceRend, targetObj, targetGroup, restored,
         addObject, attachRenderer, toXML, fromXML,
         setObjName, setRendName,
         startUndoTxn, commitUndoTxn,
@@ -190,6 +198,68 @@ describe('sceneClipboard.pasteNode', () => {
         const res = services.pasteNode(ctx, { sceneId: 1, targetObjId: 999 })
         expect(res.newName).toBe('rend1_1')
         expect(setName).toHaveBeenCalledWith('rend1_1')
+    })
+
+    it('renderer paste onto an object clears rend.group (no group inherit)', () => {
+        const setGroup = vi.fn()
+        const restored = {
+            get name() { return '' },
+            set name(_v: string) {},
+            set group(v: string) { setGroup(v) },
+            get group() { return '' },
+        }
+        const { ctx } = buildCtx({ restored })
+        services.copyNode(ctx, { sceneId: 1, nodeId: 100, nodeType: 'renderer' })
+        services.pasteNode(ctx, { sceneId: 1, targetObjId: 999 })
+        expect(setGroup).toHaveBeenCalledWith('')
+    })
+
+    it('targetGroupId path resolves parent mol, sets rend.group to group name, and attaches', () => {
+        const setGroup = vi.fn()
+        const restored = {
+            get name() { return '' },
+            set name(_v: string) {},
+            set group(v: string) { setGroup(v) },
+            get group() { return '' },
+        }
+        const { ctx, targetGroup, targetObj, attachRenderer, startUndoTxn } = buildCtx({
+            restored,
+        })
+        services.copyNode(ctx, { sceneId: 1, nodeId: 100, nodeType: 'renderer' })
+        const res = services.pasteNode(ctx, { sceneId: 1, targetGroupId: 888 })
+        expect(res.ok).toBe(true)
+        expect(targetGroup.getClientObj).toHaveBeenCalled()
+        expect(setGroup).toHaveBeenCalledWith('grpA')
+        expect(attachRenderer).toHaveBeenCalledWith(restored)
+        expect(startUndoTxn).toHaveBeenCalledWith('Paste renderer into group')
+        // Sanity: name uniquification still goes through the group's parent obj.
+        expect(targetObj.getRendererByName).toHaveBeenCalledWith('rend1')
+    })
+
+    it('targetGroupId paste uniquifies name against the parent mol\'s existing renderers', () => {
+        const setName = vi.fn()
+        const restored = {
+            get name() { return '' },
+            set name(v: string) { setName(v) },
+            set group(_v: string) {},
+            get group() { return '' },
+        }
+        const { ctx } = buildCtx({
+            restored,
+            existingRendererNames: ['rend1'],
+        })
+        services.copyNode(ctx, { sceneId: 1, nodeId: 100, nodeType: 'renderer' })
+        const res = services.pasteNode(ctx, { sceneId: 1, targetGroupId: 888 })
+        expect(res.newName).toBe('rend1_1')
+        expect(setName).toHaveBeenCalledWith('rend1_1')
+    })
+
+    it('targetGroupId returns ok:false when the group has no resolvable client mol', () => {
+        const { ctx, targetGroup } = buildCtx()
+        targetGroup.getClientObj.mockReturnValueOnce(null as unknown as never)
+        services.copyNode(ctx, { sceneId: 1, nodeId: 100, nodeType: 'renderer' })
+        const res = services.pasteNode(ctx, { sceneId: 1, targetGroupId: 888 })
+        expect(res.ok).toBe(false)
     })
 })
 
