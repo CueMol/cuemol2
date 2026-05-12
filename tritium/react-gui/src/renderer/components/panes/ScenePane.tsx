@@ -270,21 +270,36 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     const canDelete = hasSelection && (opsEnabled?.delete ?? true);
     const canProperty = hasSelection && (opsEnabled?.property ?? true);
     const canAdd = hasSelection && (opsEnabled?.add ?? true);
-    // Tracks tree rows the user has explicitly collapsed.  The scene root
-    // defaults to expanded; cameraRoot / styleRoot default to collapsed
-    // (their `uiCollapsed` hint is true).
-    const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() => new Set());
+    // Tracks user expand/collapse overrides per row id. Default state
+    // comes from the SceneTreeNode's `uiCollapsed` hint (C++ for real
+    // nodes, true for the synthesised cameraRoot / styleRoot containers
+    // so they start closed). A boolean override here wins:
+    //   true  → user explicitly expanded
+    //   false → user explicitly collapsed
+    //   missing → use uiCollapsed default
+    // The previous "collapsedIds set" form could not distinguish
+    // "default-collapsed" from "user-collapsed", which meant a single
+    // expand click on a default-collapsed row (e.g. Styles root) was
+    // a no-op — the id was never in the set, so deleting it changed
+    // nothing.
+    const [expandOverrides, setExpandOverrides] = useState<Map<string, boolean>>(
+        () => new Map(),
+    );
 
     const handleNodeExpand = useCallback((node: TreeNodeInfo) => {
-        setCollapsedIds((prev) => {
-            const next = new Set(prev);
-            next.delete(String(node.id));
+        setExpandOverrides((prev) => {
+            const next = new Map(prev);
+            next.set(String(node.id), true);
             return next;
         });
     }, []);
 
     const handleNodeCollapse = useCallback((node: TreeNodeInfo) => {
-        setCollapsedIds((prev) => new Set(prev).add(String(node.id)));
+        setExpandOverrides((prev) => {
+            const next = new Map(prev);
+            next.set(String(node.id), false);
+            return next;
+        });
     }, []);
 
     const handleNodeClick = useCallback(
@@ -463,8 +478,9 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
         if (!tree) return [];
 
         const isExpanded = (n: SceneTreeNode, idStr: string): boolean => {
-            // User override wins.
-            if (collapsedIds.has(idStr)) return false;
+            // User override wins (true=expanded, false=collapsed).
+            const ovr = expandOverrides.get(idStr);
+            if (ovr !== undefined) return ovr;
             // Default: respect uiCollapsed hint from C++ / synthesized roots.
             // (cameraRoot / styleRoot ship uiCollapsed=true so they start closed.)
             return !n.uiCollapsed;
@@ -524,7 +540,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
             hasCaret: false,
         };
         return [sceneRow, ...tree.children.map(buildNode)];
-    }, [tree, collapsedIds, selectedId, selectedIds, visibilityButton, onMoveNode, handleDragStart, handleDragOver, handleDrop]);
+    }, [tree, expandOverrides, selectedId, selectedIds, visibilityButton, onMoveNode, handleDragStart, handleDragOver, handleDrop]);
 
     return (
         <div className="sp-pane">
