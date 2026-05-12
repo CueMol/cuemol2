@@ -60,6 +60,9 @@ function buildTemplate(
         case 'scene':
             return [
                 ...header,
+                bgColorSubmenu(payload, action),
+                colorProofingItem(payload, action),
+                { type: 'separator' },
                 ...pasteItem(payload, 'object', action),
                 { type: 'separator' },
                 propertyItem(action),
@@ -354,6 +357,51 @@ function styleSubmenu(
         })
     }
     return [{ label: 'Style', submenu }]
+}
+
+/**
+ * Scene-row Background color submenu. UXP only exposes White / Black
+ * presets here (the Menu bar has a richer color picker; this ctx item
+ * is a one-click shortcut). Radio state reflects `payload.bgColor`.
+ */
+function bgColorSubmenu(
+    payload: SceneCtxMenuPayload,
+    action: (a: SceneCtxAction) => MenuItemConstructorOptions['click'],
+): MenuItemConstructorOptions {
+    const current = payload.bgColor ?? 'other'
+    return {
+        label: 'Background color',
+        submenu: [
+            {
+                label: 'White',
+                type: 'radio',
+                checked: current === 'white',
+                click: action({ kind: 'setSceneBgColor', color: 'white' }),
+            },
+            {
+                label: 'Black',
+                type: 'radio',
+                checked: current === 'black',
+                click: action({ kind: 'setSceneBgColor', color: 'black' }),
+            },
+        ],
+    }
+}
+
+/**
+ * "Use color proofing" checkbox item. Combined-gate display matches UXP
+ * `onSceneMenuShowing`: checked iff `use_colproof && icc_filename !== ""`.
+ */
+function colorProofingItem(
+    payload: SceneCtxMenuPayload,
+    action: (a: SceneCtxAction) => MenuItemConstructorOptions['click'],
+): MenuItemConstructorOptions {
+    return {
+        label: 'Use color proofing',
+        type: 'checkbox',
+        checked: payload.colorProofingEnabled === true,
+        click: action({ kind: 'toggleColorProofing' }),
+    }
 }
 
 function selectionSubmenu(

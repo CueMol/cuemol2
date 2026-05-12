@@ -75,6 +75,10 @@ interface UseSceneTreeResult {
         pattern: string,
         flags: string,
     ) => Promise<boolean>
+    /** Set the scene's background color from the scene ctx menu. */
+    setSceneBackgroundColor: (color: 'white' | 'black') => Promise<boolean>
+    /** Toggle the scene's color-proofing flag. */
+    toggleSceneColorProofing: () => Promise<boolean>
     /** Fetch property info for the property dialog. */
     fetchNodeInfo: (id: string) => Promise<NodeInfo | null>
     refetch: () => void
@@ -393,6 +397,31 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         [cm, tree],
     )
 
+    const setSceneBackgroundColor = useCallback(
+        async (color: 'white' | 'black'): Promise<boolean> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return false
+            const res = await cm.invokeService('setSceneBgColor', {
+                sceneId: sid,
+                colorName: color,
+            })
+            return res?.ok === true
+        },
+        [cm],
+    )
+
+    const toggleSceneColorProofing = useCallback(
+        async (): Promise<boolean> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return false
+            const res = await cm.invokeService('toggleSceneColorProofing', {
+                sceneId: sid,
+            })
+            return res?.ok === true
+        },
+        [cm],
+    )
+
     const fetchNodeInfo = useCallback(
         async (id: string): Promise<NodeInfo | null> => {
             const sid = sceneIdRef.current
@@ -437,6 +466,8 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         setRendererColoring,
         paintRendererSelection,
         applyRendererStyle,
+        setSceneBackgroundColor,
+        toggleSceneColorProofing,
         fetchNodeInfo,
         refetch,
         resolveNodeName,

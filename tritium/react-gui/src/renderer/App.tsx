@@ -97,6 +97,8 @@ const App: React.FC = () => {
     setRendererColoring: setSceneRendererColoring,
     paintRendererSelection: paintSceneRendererSelection,
     applyRendererStyle: applySceneRendererStyle,
+    setSceneBackgroundColor: setSceneBgColorFromCtx,
+    toggleSceneColorProofing: toggleSceneColorProofingFromCtx,
     fetchNodeInfo: fetchSceneNodeInfo,
     resolveNodeName,
   } = useSceneTree({ cm, sceneId: activeSceneId });
@@ -211,6 +213,8 @@ const App: React.FC = () => {
     setRendererColoring: setSceneRendererColoring,
     paintRendererSelection: paintSceneRendererSelection,
     applyRendererStyle: applySceneRendererStyle,
+    setSceneBackgroundColor: setSceneBgColorFromCtx,
+    toggleSceneColorProofing: toggleSceneColorProofingFromCtx,
   });
 
   const handleShowSceneCtxMenu = useCallback(

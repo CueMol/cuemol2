@@ -2,17 +2,38 @@ import { describe, it, expect, vi } from 'vitest'
 import { services } from '../worker/server/services/sceneBgColor.service'
 import type { WorkerContext } from '../worker/server/types/WorkerContext'
 
-function makeCtx(r = 0, g = 0, b = 0) {
-    const mockColor = { r: vi.fn(() => r), g: vi.fn(() => g), b: vi.fn(() => b) }
+interface MakeCtxOpts {
+    r?: number
+    g?: number
+    b?: number
+    use_colproof?: boolean
+    icc_filename?: string
+    /** When true, ctx.sceMgr.getScene returns null. */
+    sceneMissing?: boolean
+}
+
+function makeCtx(opts: MakeCtxOpts | number = {}, g = 0, b = 0) {
+    // Back-compat with positional (r, g, b) signature used by existing tests.
+    const o: MakeCtxOpts =
+        typeof opts === 'number' ? { r: opts, g, b } : opts
+    const {
+        r = 0, g: gg = 0, b: bb = 0,
+        use_colproof = false,
+        icc_filename = '',
+        sceneMissing = false,
+    } = o
+    const mockColor = { r: vi.fn(() => r), g: vi.fn(() => gg), b: vi.fn(() => bb) }
     const mockScene = {
         bgcolor: mockColor,
         uid: 1,
+        use_colproof,
+        icc_filename,
         startUndoTxn: vi.fn(),
         commitUndoTxn: vi.fn(),
         rollbackUndoTxn: vi.fn(),
     }
     const mockCompileColor = vi.fn((str: string) => ({ _colorStr: str }))
-    const getScene = vi.fn(() => mockScene)
+    const getScene = vi.fn(() => (sceneMissing ? null : mockScene))
     const ctx = {
         sceMgr: { getScene },
         styleMgr: { compileColor: mockCompileColor },
@@ -69,6 +90,65 @@ describe('sceneBgColor service', () => {
             expect(() => services.setSceneBgColor(ctx, { sceneId: 10, colorName: 'white' })).toThrow('assign failed')
             expect(mockScene.rollbackUndoTxn).toHaveBeenCalled()
             expect(mockScene.commitUndoTxn).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('getSceneColorProofing', () => {
+        it('returns enabled:true only when both use_colproof and icc_filename are set', () => {
+            const { ctx } = makeCtx({ use_colproof: true, icc_filename: 'sRGB.icm' })
+            expect(services.getSceneColorProofing(ctx, { sceneId: 10 }))
+                .toEqual({ ok: true, enabled: true })
+        })
+
+        it('returns enabled:false when use_colproof is false', () => {
+            const { ctx } = makeCtx({ use_colproof: false, icc_filename: 'sRGB.icm' })
+            expect(services.getSceneColorProofing(ctx, { sceneId: 10 }))
+                .toEqual({ ok: true, enabled: false })
+        })
+
+        it('returns enabled:false when icc_filename is empty even if use_colproof is true', () => {
+            const { ctx } = makeCtx({ use_colproof: true, icc_filename: '' })
+            expect(services.getSceneColorProofing(ctx, { sceneId: 10 }))
+                .toEqual({ ok: true, enabled: false })
+        })
+
+        it('returns ok:false when scene lookup fails', () => {
+            const { ctx } = makeCtx({ sceneMissing: true })
+            expect(services.getSceneColorProofing(ctx, { sceneId: 10 }))
+                .toEqual({ ok: false, enabled: false })
+        })
+    })
+
+    describe('toggleSceneColorProofing', () => {
+        it('turn-on: sets use_colproof=true and assigns default ICC profile when empty', () => {
+            const { ctx, mockScene } = makeCtx({ use_colproof: false, icc_filename: '' })
+            const res = services.toggleSceneColorProofing(ctx, { sceneId: 10 })
+            expect(mockScene.use_colproof).toBe(true)
+            expect(mockScene.icc_filename).toBe('GenericCMYK.icm')
+            expect(mockScene.startUndoTxn).toHaveBeenCalledWith('Toggle color proofing')
+            expect(mockScene.commitUndoTxn).toHaveBeenCalled()
+            expect(res).toEqual({ ok: true, enabled: true })
+        })
+
+        it('turn-on: preserves a previously configured ICC profile', () => {
+            const { ctx, mockScene } = makeCtx({ use_colproof: false, icc_filename: 'Custom.icm' })
+            services.toggleSceneColorProofing(ctx, { sceneId: 10 })
+            expect(mockScene.use_colproof).toBe(true)
+            expect(mockScene.icc_filename).toBe('Custom.icm')
+        })
+
+        it('turn-off: only flips use_colproof; icc_filename retained for next turn-on', () => {
+            const { ctx, mockScene } = makeCtx({ use_colproof: true, icc_filename: 'sRGB.icm' })
+            const res = services.toggleSceneColorProofing(ctx, { sceneId: 10 })
+            expect(mockScene.use_colproof).toBe(false)
+            expect(mockScene.icc_filename).toBe('sRGB.icm')
+            expect(res).toEqual({ ok: true, enabled: false })
+        })
+
+        it('returns ok:false when scene lookup fails', () => {
+            const { ctx } = makeCtx({ sceneMissing: true })
+            expect(services.toggleSceneColorProofing(ctx, { sceneId: 10 }))
+                .toEqual({ ok: false, enabled: false })
         })
     })
 })

@@ -41,7 +41,63 @@ function setSceneBgColor(ctx: WorkerContext, args: SetSceneBgColorArgs): SceneBg
     return { ok: true, bgColor: args.colorName };
 }
 
+// ─── Color proofing (Phase: ctxmenu.scene) ────────────────────────────────
+//
+// Mirrors UXP `Qm2Main.onToggleColProof` / `onSceneMenuShowing`. The
+// "checked" state for the menu item is the combined gate of both flags:
+//   use_colproof === true && icc_filename !== ""
+// Toggling on sets a default CMYK profile when none is configured;
+// toggling off only flips use_colproof, preserving icc_filename so the
+// next toggle-on reuses the user's configured profile.
+
+export interface SceneColorProofingArgs {
+    sceneId: number;
+}
+
+export interface SceneColorProofingResult {
+    ok: boolean;
+    /** Combined gate matching UXP menu check display. */
+    enabled: boolean;
+}
+
+const DEFAULT_ICC_PROFILE = 'GenericCMYK.icm';
+
+function isColorProofingActive(scene: Scene): boolean {
+    return scene.use_colproof === true && scene.icc_filename !== '';
+}
+
+function getSceneColorProofing(
+    ctx: WorkerContext,
+    args: SceneColorProofingArgs,
+): SceneColorProofingResult {
+    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    if (!scene) return { ok: false, enabled: false };
+    return { ok: true, enabled: isColorProofingActive(scene) };
+}
+
+function toggleSceneColorProofing(
+    ctx: WorkerContext,
+    args: SceneColorProofingArgs,
+): SceneColorProofingResult {
+    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    if (!scene) return { ok: false, enabled: false };
+
+    withUndoTxn(scene, 'Toggle color proofing', () => {
+        if (isColorProofingActive(scene)) {
+            scene.use_colproof = false;
+        } else {
+            scene.use_colproof = true;
+            if (scene.icc_filename === '') {
+                scene.icc_filename = DEFAULT_ICC_PROFILE;
+            }
+        }
+    });
+    return { ok: true, enabled: isColorProofingActive(scene) };
+}
+
 export const services = {
     getSceneBgColor,
     setSceneBgColor,
+    getSceneColorProofing,
+    toggleSceneColorProofing,
 };

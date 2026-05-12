@@ -45,6 +45,8 @@ export interface UseSceneContextMenuOptions {
     applyRendererStyle: (
         id: string, styleName: string, pattern: string, flags: string,
     ) => Promise<boolean>
+    setSceneBackgroundColor: (color: 'white' | 'black') => Promise<boolean>
+    toggleSceneColorProofing: () => Promise<boolean>
 }
 
 export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
@@ -54,6 +56,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
         cm, sceneId, toggleVisibility, deleteNode, renameNode, showProperty,
         selectObjectMol, copyNode, pasteNode, setRendererColoring,
         paintRendererSelection, applyRendererStyle,
+        setSceneBackgroundColor, toggleSceneColorProofing,
     } = opts
 
     const openContextMenu = useCallback(
@@ -126,6 +129,22 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                 }
             }
 
+            // Pre-fetch scene-row submenu state (bg color + color proofing).
+            let bgColor: 'white' | 'black' | 'other' | undefined
+            let colorProofingEnabled = false
+            if (cm && node.type === 'scene' && sceneId !== undefined) {
+                try {
+                    const [bg, cp] = await Promise.all([
+                        cm.invokeService('getSceneBgColor', { sceneId }),
+                        cm.invokeService('getSceneColorProofing', { sceneId }),
+                    ])
+                    bgColor = bg?.bgColor
+                    colorProofingEnabled = cp?.enabled === true
+                } catch (err) {
+                    console.warn('scene ctx pre-fetch failed:', err)
+                }
+            }
+
             const action: SceneCtxAction | null = await window.electronAPI.invoke(
                 IPC.SCENE_CTX_SHOW,
                 {
@@ -140,6 +159,8 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                     paintStyles,
                     canPaint,
                     rendStyle,
+                    bgColor,
+                    colorProofingEnabled,
                 },
             )
 
@@ -189,12 +210,21 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                         idStr, action.styleName, action.pattern, action.flags,
                     )
                     break
+                case 'setSceneBgColor':
+                    if (node.type !== 'scene') break
+                    await setSceneBackgroundColor(action.color)
+                    break
+                case 'toggleColorProofing':
+                    if (node.type !== 'scene') break
+                    await toggleSceneColorProofing()
+                    break
             }
         },
         [
             cm, sceneId, toggleVisibility, deleteNode, renameNode, showProperty,
             selectObjectMol, copyNode, pasteNode, setRendererColoring,
             paintRendererSelection, applyRendererStyle,
+            setSceneBackgroundColor, toggleSceneColorProofing,
         ],
     )
 

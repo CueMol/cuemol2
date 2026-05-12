@@ -175,6 +175,8 @@ export type SceneCtxAction =
   | { kind: 'setRendColoring'; coloringId: RendColoringId }
   | { kind: 'paintRend'; colorValue: string }
   | { kind: 'applyRendStyle'; styleName: string; pattern: string; flags: string }
+  | { kind: 'setSceneBgColor'; color: 'white' | 'black' }
+  | { kind: 'toggleColorProofing' }
 
 export type SceneCtxNodeType =
   | 'scene'
@@ -227,6 +229,19 @@ export interface SceneCtxMenuPayload {
     typeStyles: { name: string; label: string; pattern: string; flags: string }[]
     edgeStyles: { name: string; label: string; pattern: string; flags: string }[]
   }
+  /**
+   * Current Background-color classification for the scene ctx menu's
+   * "Background color" submenu (white / black radio state). Pre-fetched
+   * via `getSceneBgColor`. Scene ctx only.
+   */
+  bgColor?: SceneBgColor
+  /**
+   * Current "Use color proofing" toggle state — true iff the scene has
+   * `use_colproof === true` AND `icc_filename !== ""` (matches UXP
+   * `onSceneMenuShowing` gate). Pre-fetched via `getSceneColorProofing`.
+   * Scene ctx only.
+   */
+  colorProofingEnabled?: boolean
 }
 
 // ── Native menu state ───────────────────────────────────────────────────────

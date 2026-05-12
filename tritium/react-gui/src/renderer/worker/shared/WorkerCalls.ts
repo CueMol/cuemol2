@@ -66,6 +66,8 @@ import type {
   SceneBgColorArgs,
   SceneBgColorResult,
   SetSceneBgColorArgs,
+  SceneColorProofingArgs,
+  SceneColorProofingResult,
 } from '../server/services/sceneBgColor.service'
 import type {
   GetSceneTreeArgs,
@@ -178,6 +180,8 @@ export interface ServiceMap {
   validateSelection:          { args: ValidateSelectionArgs;           result: ValidateSelectionResult }
   getSceneBgColor:            { args: SceneBgColorArgs;                result: SceneBgColorResult }
   setSceneBgColor:            { args: SetSceneBgColorArgs;             result: SceneBgColorResult }
+  getSceneColorProofing:      { args: SceneColorProofingArgs;          result: SceneColorProofingResult }
+  toggleSceneColorProofing:   { args: SceneColorProofingArgs;          result: SceneColorProofingResult }
   getSceneTree:               { args: GetSceneTreeArgs;                result: GetSceneTreeResult }
   setNodeVisible:             { args: SetNodeVisibleArgs;              result: SetNodeVisibleResult }
   focusOnNode:                { args: FocusOnNodeArgs;                 result: FocusOnNodeResult }
