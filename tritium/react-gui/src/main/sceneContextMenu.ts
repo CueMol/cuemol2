@@ -49,6 +49,21 @@ function buildTemplate(
     payload: SceneCtxMenuPayload,
     action: (a: SceneCtxAction) => MenuItemConstructorOptions['click'],
 ): MenuItemConstructorOptions[] {
+    // Phase 4c: when multiple nodes are selected, the multi menu wins
+    // and the type-specific branches below are bypassed. UXP equivalent:
+    // `wspcPanelMulCtxtMenu` (workspace_panel.xul).
+    const multi = payload.multiNodeIds ?? []
+    if (multi.length > 1) {
+        return [
+            { label: `${multi.length} items selected`, enabled: false },
+            { type: 'separator' },
+            { label: 'Show', click: action({ kind: 'multiShow' }) },
+            { label: 'Hide', click: action({ kind: 'multiHide' }) },
+            { type: 'separator' },
+            { label: 'Delete', click: action({ kind: 'multiDelete' }) },
+        ]
+    }
+
     const header: MenuItemConstructorOptions[] = [
         { label: payload.nodeLabel || nodeTypeLabel(payload.nodeType), enabled: false },
         { type: 'separator' },

@@ -211,7 +211,17 @@ interface ScenePaneProps {
     tree: SceneTreeNode | null;
     /** Currently selected node ID (string for compatibility with existing inspector wiring). */
     selectedId: string;
+    /**
+     * Multi-select set (Phase 4c). Drives visual selection on multiple
+     * rows. When omitted, falls back to single-select (selectedId only).
+     */
+    selectedIds?: Set<string>;
     onSelect: (id: string) => void;
+    /**
+     * Cmd/Ctrl+click handler — toggles membership of `id` in selectedIds.
+     * When omitted, modifier-clicks fall back to single-select.
+     */
+    onToggleSelect?: (id: string) => void;
     onToggleVisibility: (id: string) => void;
     onAddObject?: () => void;
     onAddRenderer?: () => void;
@@ -241,7 +251,9 @@ interface ScenePaneProps {
 export const ScenePane: React.FC<ScenePaneProps> = ({
     tree,
     selectedId,
+    selectedIds,
     onSelect,
+    onToggleSelect,
     onToggleVisibility,
     onAddRenderer,
     onDeleteSelected,
@@ -275,10 +287,24 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     }, []);
 
     const handleNodeClick = useCallback(
-        (node: TreeNodeInfo) => {
-            onSelect(String(node.id));
+        (
+            node: TreeNodeInfo,
+            _path: number[],
+            e: React.MouseEvent<HTMLElement>,
+        ) => {
+            const idStr = String(node.id);
+            // Cmd (macOS) or Ctrl (other) toggles the node in the multi-
+            // select set. Shift+click would normally extend a contiguous
+            // range; deferred — UXP's multi-select is also additive-only
+            // via Cmd-click, with Shift behaving as a range select that
+            // we don't migrate in Phase 4c.
+            if ((e.metaKey || e.ctrlKey) && onToggleSelect) {
+                onToggleSelect(idStr);
+                return;
+            }
+            onSelect(idStr);
         },
-        [onSelect],
+        [onSelect, onToggleSelect],
     );
 
     // Build an id → SceneTreeNode lookup so onNodeContextMenu (which only
@@ -380,15 +406,21 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     const handleNodeContextMenu = useCallback(
         (node: TreeNodeInfo, _path: number[], e: React.MouseEvent<HTMLElement>) => {
             if (!onShowContextMenu) return;
-            const sceneNode = nodeLookup.get(String(node.id));
+            const idStr = String(node.id);
+            const sceneNode = nodeLookup.get(idStr);
             if (!sceneNode) return;
             e.preventDefault();
-            // Select the right-clicked row so subsequent toolbar / dialog
-            // actions act on it; matches UXP behaviour.
-            onSelect(String(node.id));
+            // Preserve multi-selection when right-clicking on one of the
+            // already-selected rows (UXP behaviour). Otherwise reset to
+            // single selection of the right-clicked row.
+            const inMulti =
+                selectedIds && selectedIds.size > 1 && selectedIds.has(idStr);
+            if (!inMulti) {
+                onSelect(idStr);
+            }
             onShowContextMenu(sceneNode, e.clientX, e.clientY);
         },
-        [nodeLookup, onShowContextMenu, onSelect],
+        [nodeLookup, onShowContextMenu, onSelect, selectedIds],
     );
 
     const visibilityButton = useCallback(
@@ -460,6 +492,11 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
             );
         };
 
+        const isRowSelected = (idStr: string): boolean =>
+            (selectedIds && selectedIds.size > 0)
+                ? selectedIds.has(idStr)
+                : selectedId === idStr;
+
         const buildNode = (n: SceneTreeNode): TreeNodeInfo => {
             const idStr = String(n.id);
             const hasChildren = n.children.length > 0;
@@ -468,7 +505,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                 label: wrapLabel(n),
                 icon: TYPE_ICON[n.type],
                 isExpanded: hasChildren && isExpanded(n, idStr),
-                isSelected: selectedId === idStr,
+                isSelected: isRowSelected(idStr),
                 secondaryLabel: visibilityButton(idStr, n),
                 hasCaret: hasChildren,
                 childNodes: hasChildren ? n.children.map(buildNode) : undefined,
@@ -482,11 +519,11 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
             id: sceneIdStr,
             label: nodeLabel(tree),
             icon: TYPE_ICON.scene,
-            isSelected: selectedId === sceneIdStr,
+            isSelected: isRowSelected(sceneIdStr),
             hasCaret: false,
         };
         return [sceneRow, ...tree.children.map(buildNode)];
-    }, [tree, collapsedIds, selectedId, visibilityButton, onMoveNode, handleDragStart, handleDragOver, handleDrop]);
+    }, [tree, collapsedIds, selectedId, selectedIds, visibilityButton, onMoveNode, handleDragStart, handleDragOver, handleDrop]);
 
     return (
         <div className="sp-pane">

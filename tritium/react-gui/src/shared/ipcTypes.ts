@@ -204,6 +204,9 @@ export type SceneCtxAction =
   | { kind: 'generateSurfObj' }
   | { kind: 'newRendGroup' }
   | { kind: 'changeRendType'; typeName: string }
+  | { kind: 'multiShow' }
+  | { kind: 'multiHide' }
+  | { kind: 'multiDelete' }
 
 export type SceneCtxNodeType =
   | 'scene'
@@ -288,6 +291,12 @@ export interface SceneCtxMenuPayload {
    * process uses (it does not re-evaluate gates).
    */
   rendChangeTypes?: string[]
+  /**
+   * Multi-select context (Phase 4c). When `multiNodeIds.length > 1` AND
+   * the right-clicked node is in the set, main renders the multi-only
+   * menu (Show / Hide / Delete) instead of the type-specific branch.
+   */
+  multiNodeIds?: number[]
 }
 
 // ── Native menu state ───────────────────────────────────────────────────────

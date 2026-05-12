@@ -135,6 +135,11 @@ import type {
   ReorderSceneNodeArgs,
   ReorderSceneNodeResult,
 } from '../server/services/reorderSceneNode.service'
+import type {
+  BulkSetVisibleArgs,
+  BulkDeleteArgs,
+  BulkOpResult,
+} from '../server/services/bulkSceneNodeOps.service'
 import type { UndoArgs } from '../server/services/undo.service'
 import type {
   ValidateSelectionArgs,
@@ -228,6 +233,8 @@ export interface ServiceMap {
   changeRendererType:         { args: ChangeRendererTypeArgs;          result: ChangeRendererTypeResult }
   getRendererChangeTypes:     { args: GetRendererChangeTypesArgs;      result: GetRendererChangeTypesResult }
   reorderSceneNode:           { args: ReorderSceneNodeArgs;            result: ReorderSceneNodeResult }
+  bulkSetNodeVisible:         { args: BulkSetVisibleArgs;              result: BulkOpResult }
+  bulkDeleteNode:             { args: BulkDeleteArgs;                  result: BulkOpResult }
   getViewProjection:          { args: ViewProjectionArgs;              result: ViewProjectionResult }
   setViewProjection:          { args: ViewProjectionArgs;              result: ViewProjectionResult }
   getViewCenterMark:          { args: ViewCenterMarkArgs;              result: ViewCenterMarkResult }

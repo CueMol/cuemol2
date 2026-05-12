@@ -46,11 +46,22 @@ export interface NodeInfo {
 interface UseSceneTreeResult {
     tree: SceneTreeNode | null
     selectedId: string
+    /**
+     * Multi-select set (Phase 4c). Primary `selectedId` is always present
+     * in `selectedIds` when non-empty; Cmd/Shift+click extends the set.
+     */
+    selectedIds: Set<string>
     /** Returns the resolved node for the current selection, if any. */
     selectedNode: SceneTreeNode | null
     /** Whether the current selection supports toolbar focus / delete / property. */
     selectedHasOps: { focus: boolean; delete: boolean; property: boolean }
     setSelectedId: (id: string) => void
+    /**
+     * Cmd/Ctrl+click: toggle membership of `id` in `selectedIds`. If the
+     * resulting set is empty the primary `selectedId` is cleared; otherwise
+     * the primary becomes `id` (the most-recently-touched).
+     */
+    toggleInSelection: (id: string) => void
     toggleVisibility: (id: string) => void
     /** Focus a node (typically the selection) in the given view. */
     focusNode: (viewId: number, id: string) => Promise<boolean>
@@ -88,6 +99,14 @@ interface UseSceneTreeResult {
     createRendererGroup: (objId: string, name: string) => Promise<boolean>
     /** Replace a renderer with a new type (Phase 6b). */
     changeRendererType: (rendId: string, newType: string) => Promise<boolean>
+    /**
+     * Bulk Show / Hide / Delete on the multi-select set (Phase 4c).
+     * Caller passes the set of ids; the hook resolves each to its tree
+     * node, filters out non-operable types, and dispatches the worker
+     * service inside a single undo txn.
+     */
+    bulkSetNodeVisible: (ids: Iterable<string>, visible: boolean) => Promise<boolean>
+    bulkDeleteNodes: (ids: Iterable<string>) => Promise<boolean>
     /**
      * Drag-drop reorder (Phase 4b). Caller supplies a fully-resolved
      * args object — kind, target/source uids, destObjId/destGroupName
@@ -135,7 +154,41 @@ function findNode(root: SceneTreeNode | null, id: number): SceneTreeNode | null 
 
 export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTreeResult {
     const [tree, setTree] = useState<SceneTreeNode | null>(null)
-    const [selectedId, setSelectedId] = useState<string>('')
+    const [selectedId, setSelectedIdState] = useState<string>('')
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
+
+    // Single-select setter: clears the multi-set and replaces with `id`.
+    // Empty string means "no selection" (matches existing callers).
+    const setSelectedId = useCallback((id: string) => {
+        setSelectedIdState(id)
+        if (id === '') {
+            setSelectedIds((prev) => (prev.size === 0 ? prev : new Set()))
+        } else {
+            setSelectedIds(new Set([id]))
+        }
+    }, [])
+
+    const toggleInSelection = useCallback((id: string) => {
+        if (id === '') return
+        setSelectedIds((prev) => {
+            const next = new Set(prev)
+            if (next.has(id)) {
+                next.delete(id)
+            } else {
+                next.add(id)
+            }
+            // Primary `selectedId` follows the most-recently-touched node
+            // when the set is non-empty; clears when emptied.
+            if (next.size === 0) {
+                setSelectedIdState('')
+            } else if (!next.has(selectedId)) {
+                setSelectedIdState(id)
+            } else {
+                setSelectedIdState(id)
+            }
+            return next
+        })
+    }, [selectedId])
 
     // Latest sceneId in a ref so refetch identity stays stable.
     const sceneIdRef = useRef<number | undefined>(sceneId)
@@ -530,6 +583,65 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         [cm, tree],
     )
 
+    const resolveBulkItems = useCallback(
+        (ids: Iterable<string>): {
+            nodeId: number
+            nodeType: SceneNodeType
+            childIds?: number[]
+        }[] => {
+            const out: {
+                nodeId: number
+                nodeType: SceneNodeType
+                childIds?: number[]
+            }[] = []
+            for (const idStr of ids) {
+                const num = Number(idStr)
+                if (!Number.isFinite(num)) continue
+                const node = findNode(tree, num)
+                if (!node) continue
+                if (
+                    node.type !== 'object' &&
+                    node.type !== 'renderer' &&
+                    node.type !== 'rendGroup'
+                ) continue
+                const childIds = node.type === 'rendGroup'
+                    ? node.children.map((c) => c.id).filter((n) => n >= 0)
+                    : undefined
+                out.push({ nodeId: num, nodeType: node.type, childIds })
+            }
+            return out
+        },
+        [tree],
+    )
+
+    const bulkSetNodeVisible = useCallback(
+        async (ids: Iterable<string>, visible: boolean): Promise<boolean> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return false
+            const items = resolveBulkItems(ids)
+            if (items.length === 0) return false
+            const res = await cm.invokeService('bulkSetNodeVisible', {
+                sceneId: sid, items, visible,
+            })
+            return res?.ok === true
+        },
+        [cm, resolveBulkItems],
+    )
+
+    const bulkDeleteNodes = useCallback(
+        async (ids: Iterable<string>): Promise<boolean> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return false
+            const items = resolveBulkItems(ids)
+            if (items.length === 0) return false
+            const res = await cm.invokeService('bulkDeleteNode', {
+                sceneId: sid, items,
+            })
+            return res?.ok === true
+        },
+        [cm, resolveBulkItems],
+    )
+
     const setSceneBackgroundColor = useCallback(
         async (color: 'white' | 'black'): Promise<boolean> => {
             const sid = sceneIdRef.current
@@ -581,14 +693,23 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         ? findNode(tree, Number(selectedId))
         : null
 
-    const selectedHasOps = computeOps(selectedNode)
+    // Multi-select gates focus/property to single selection only; delete
+    // stays enabled (mirrors UXP toolbar behaviour where the multi
+    // ctxmenu still offers Delete).
+    const isMulti = selectedIds.size > 1
+    const singleOps = computeOps(selectedNode)
+    const selectedHasOps = isMulti
+        ? { focus: false, delete: singleOps.delete, property: false }
+        : singleOps
 
     return {
         tree,
         selectedId,
+        selectedIds,
         selectedNode,
         selectedHasOps,
         setSelectedId,
+        toggleInSelection,
         toggleVisibility,
         focusNode,
         deleteNode,
@@ -603,6 +724,8 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         generateRendererSurfObj,
         createRendererGroup,
         changeRendererType,
+        bulkSetNodeVisible,
+        bulkDeleteNodes,
         moveSceneNode,
         setSceneBackgroundColor,
         toggleSceneColorProofing,

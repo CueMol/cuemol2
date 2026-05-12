@@ -117,7 +117,11 @@ interface SidePanelProps {
   /* Scene / Explorer props */
   sceneTree: SceneTreeNode | null;
   sceneSelected: string;
+  /** Multi-select set (Phase 4c). */
+  sceneSelectedIds?: Set<string>;
   onSceneSelect: (id: string) => void;
+  /** Cmd/Ctrl+click toggle handler (Phase 4c). */
+  onSceneToggleSelect?: (id: string) => void;
   onToggleVisibility: (id: string) => void;
 
   /** Called when the user clicks the Property button in ScenePane. */
@@ -160,7 +164,9 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   activeView,
   sceneTree,
   sceneSelected,
+  sceneSelectedIds,
   onSceneSelect,
+  onSceneToggleSelect,
   onToggleVisibility,
   onShowProperty,
   onFocusSelected,
@@ -212,7 +218,9 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           <ScenePane
             tree={sceneTree}
             selectedId={sceneSelected}
+            selectedIds={sceneSelectedIds}
             onSelect={onSceneSelect}
+            onToggleSelect={onSceneToggleSelect}
             onToggleVisibility={onToggleVisibility}
             onShowProperty={onShowProperty}
             onFocusSelected={onFocusSelected}
@@ -288,7 +296,8 @@ export const SidePanel: React.FC<SidePanelProps> = ({
       },
     ],
   }), [
-    sceneTree, sceneSelected, onSceneSelect,
+    sceneTree, sceneSelected, sceneSelectedIds,
+    onSceneSelect, onSceneToggleSelect,
     onToggleVisibility, onShowProperty,
     onFocusSelected, onDeleteSelected, sceneOpsEnabled,
     onShowSceneContextMenu, onMoveSceneNode,

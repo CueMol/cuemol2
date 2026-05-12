@@ -1,6 +1,6 @@
 # Migration Mapping — Index
 
-- Updated: 2026-05-12 (tree drag-drop reorder wired — Phase 4b)
+- Updated: 2026-05-12 (multi-select + ctxmenu.multi wired — Phase 4c)
 - Source files: `docs/migration/mapping/*.md` (excluding this file)
 
 ---
@@ -9,7 +9,7 @@
 
 | Category | File | Total | done | wip | review | todo | frozen |
 |----------|------|------:|-----:|----:|-------:|-----:|-------:|
-| Panel | [panels.md](panels.md) | 17 | 0 | 6 | 0 | 11 | 0 |
+| Panel | [panels.md](panels.md) | 17 | 0 | 7 | 0 | 10 | 0 |
 | Menu | [menus.md](menus.md) | 4 | 1 | 2 | 0 | 1 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 13 | 0 | 0 | 0 | 13 | 0 |
@@ -18,7 +18,7 @@
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 0 | 1 | 0 | 12 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 0 | 0 | 0 | 28 | 0 |
 | Other | [other.md](other.md) | 4 | 0 | 1 | 0 | 3 | 0 |
-| **Total** | | **120** | **1** | **12** | **0** | **107** | **0** |
+| **Total** | | **120** | **1** | **13** | **0** | **106** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -53,7 +53,8 @@
 | [`dialog.about`](other_dlgs.md#dialogabout) | `AboutDialog` / `useDialog` | GRE info・userAgent は省略 |
 | [`other.cuemol2`](other.md#othercuemol2) | `App` / `ContentArea` / `TabBar` / `ConfirmCloseTabDialog` / `useQuitHandler` | Main window layout done; close-tab confirmation dialog (UXP `closeTabImpl`) implemented; UXP `onCloseEvent` quit chain wired (cmd-Q walks all tabs via `before-quit` → `APP_QUIT_REQUEST` → `APP_QUIT_PROCEED`) |
 | [`widget.molsellist`](custom_widgets.md) | `MolSelList` (`components/widgets/MolSelList/`) | First consumer wired in `RendererOptionsPane` (file-open dialog); editable `InputGroup` + chevron-only `HTMLSelect` (OS-native dropdown listbox with `<optgroup>` Preset / History / Scene / Global); history via `localStorage`; worker services `getSelDefs` / `validateSelection` added |
-| [`panel.workspace.tree`](panels.md#panelworkspacetree) | `ScenePane` (tree) / `useSceneTree` / `sceneTree.service` / `reorderSceneNode.service` | Live tree + visibility toggle + selection + event-driven auto-refresh + drag-drop reorder (worker + tests OK; in-app DnD does not fire — see panels.md follow-up); pending: inline rename, multi-select |
+| [`panel.workspace.tree`](panels.md#panelworkspacetree) | `ScenePane` (tree) / `useSceneTree` / `sceneTree.service` / `reorderSceneNode.service` | Live tree + visibility toggle + selection (single + multi via Cmd/Ctrl+click) + event-driven auto-refresh + drag-drop reorder (worker + tests OK; in-app DnD does not fire — see panels.md follow-up); pending: inline rename, Shift+range select |
+| [`panel.workspace.ctxmenu.multi`](panels.md#panelworkspacectxmenumulti) | `useSceneContextMenu` / `main/sceneContextMenu` (multi) / `bulkSceneNodeOps.service` | Right-clicking a multi-selected row opens a multi-only menu: Show / Hide / Delete via `bulkSetNodeVisible` / `bulkDeleteNode` (single undo txn per batch); pending: Copy (clipboard is single-item) |
 | [`panel.workspace.toolbar`](panels.md#panelworkspacetoolbar) | `ScenePane` (toolbar) / `sceneOps.service` | Focus / Delete / Property wired; property dialog is a read-only stub; Add button (new renderer/object dialog) pending |
 | [`panel.workspace.ctxmenu.scene`](panels.md#panelworkspacectxmenuscene) | `useSceneContextMenu` / `main/sceneContextMenu` (scene) / `sceneBgColor.service` | Background color submenu (W/B radio) + Use color proofing toggle (checkbox) + Paste Object wired; row stays wip because Properties is still the panel-wide read-only stub |
 | [`panel.workspace.ctxmenu.object`](panels.md#panelworkspacectxmenuobject) | `useSceneContextMenu` / `main/sceneContextMenu` (object) / `sceneOps.service` / `sceneClipboard.service` / `createRendererGroup.service` | Common items (Show/Hide/Rename/Delete/Props), Selection submenu incl. Around / Around-byres, Copy / Paste Renderer, New Group wired; Paint / Regen surface / New Renderer / Save As pending |
@@ -64,4 +65,4 @@
 
 ## Unstarted
 
-**107 / 120** items are `todo` (not yet started).
+**106 / 120** items are `todo` (not yet started).

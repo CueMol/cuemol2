@@ -85,8 +85,10 @@ const App: React.FC = () => {
   const {
     tree: sceneTree,
     selectedId: sceneSelected,
+    selectedIds: sceneSelectedIds,
     selectedHasOps: sceneOpsEnabled,
     setSelectedId: setSceneSelected,
+    toggleInSelection: toggleSceneSelected,
     toggleVisibility: handleToggleVisibility,
     focusNode: focusSceneNode,
     deleteNode: deleteSceneNode,
@@ -102,6 +104,8 @@ const App: React.FC = () => {
     createRendererGroup: createSceneRendererGroup,
     changeRendererType: changeSceneRendererType,
     moveSceneNode,
+    bulkSetNodeVisible: bulkSceneSetVisible,
+    bulkDeleteNodes: bulkSceneDelete,
     setSceneBackgroundColor: setSceneBgColorFromCtx,
     toggleSceneColorProofing: toggleSceneColorProofingFromCtx,
     fetchNodeInfo: fetchSceneNodeInfo,
@@ -222,6 +226,9 @@ const App: React.FC = () => {
     generateRendererSurfObj: generateSceneSurfObj,
     createRendererGroup: createSceneRendererGroup,
     changeRendererType: changeSceneRendererType,
+    selectedIds: sceneSelectedIds,
+    bulkSetNodeVisible: bulkSceneSetVisible,
+    bulkDeleteNodes: bulkSceneDelete,
     setSceneBackgroundColor: setSceneBgColorFromCtx,
     toggleSceneColorProofing: toggleSceneColorProofingFromCtx,
   });
@@ -336,7 +343,9 @@ const App: React.FC = () => {
                     activeView={activeView ?? "explorer"}
                     sceneTree={sceneTree}
                     sceneSelected={sceneSelected}
+                    sceneSelectedIds={sceneSelectedIds}
                     onSceneSelect={setSceneSelected}
+                    onSceneToggleSelect={toggleSceneSelected}
                     onToggleVisibility={handleToggleVisibility}
                     onShowProperty={handleSceneShowProperty}
                     onFocusSelected={handleSceneFocus}

@@ -57,6 +57,11 @@ export interface UseSceneContextMenuOptions {
     generateRendererSurfObj: (id: string) => Promise<boolean>
     createRendererGroup: (objId: string, name: string) => Promise<boolean>
     changeRendererType: (rendId: string, newType: string) => Promise<boolean>
+    /** Current multi-select set (Phase 4c). When size > 1 the
+     *  right-click on a member triggers the multi context menu. */
+    selectedIds?: Set<string>
+    bulkSetNodeVisible?: (ids: Iterable<string>, visible: boolean) => Promise<boolean>
+    bulkDeleteNodes?: (ids: Iterable<string>) => Promise<boolean>
 }
 
 export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
@@ -69,6 +74,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
         setSceneBackgroundColor, toggleSceneColorProofing,
         setRendererSelection, generateRendererSurfObj,
         createRendererGroup, changeRendererType,
+        selectedIds, bulkSetNodeVisible, bulkDeleteNodes,
     } = opts
 
     // Electron disables window.prompt — use the in-app Blueprint dialog
@@ -77,6 +83,43 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
 
     const openContextMenu = useCallback(
         async (node: SceneTreeNode, x: number, y: number): Promise<void> => {
+            // Multi-select right-click: when the targeted node is part of
+            // a multi-select set, send the multi payload and short-circuit
+            // the per-type pre-fetch — the main process renders the
+            // multi-only menu (Show / Hide / Delete).
+            const idStr = String(node.id)
+            const isMulti =
+                !!selectedIds && selectedIds.size > 1 && selectedIds.has(idStr)
+            if (isMulti) {
+                const multiNodeIds = Array.from(selectedIds!).map((s) => Number(s))
+                const action: SceneCtxAction | null = await window.electronAPI.invoke(
+                    IPC.SCENE_CTX_SHOW,
+                    {
+                        x,
+                        y,
+                        nodeType: node.type,
+                        nodeLabel: nodeMenuLabel(node),
+                        isVisible: node.visible,
+                        hasVisibility: false,
+                        clipboardKind: null,
+                        multiNodeIds,
+                    },
+                )
+                if (!action) return
+                switch (action.kind) {
+                    case 'multiShow':
+                        if (bulkSetNodeVisible) await bulkSetNodeVisible(selectedIds!, true)
+                        break
+                    case 'multiHide':
+                        if (bulkSetNodeVisible) await bulkSetNodeVisible(selectedIds!, false)
+                        break
+                    case 'multiDelete':
+                        if (bulkDeleteNodes) await bulkDeleteNodes(selectedIds!)
+                        break
+                }
+                return
+            }
+
             const hasVisibility =
                 node.type === 'object' ||
                 node.type === 'renderer' ||
@@ -198,7 +241,6 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
             )
 
             if (!action) return
-            const idStr = String(node.id)
 
             switch (action.kind) {
                 case 'show':
@@ -302,7 +344,9 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
             paintRendererSelection, applyRendererStyle,
             setSceneBackgroundColor, toggleSceneColorProofing,
             setRendererSelection, generateRendererSurfObj,
-            createRendererGroup, changeRendererType, showTextPrompt,
+            createRendererGroup, changeRendererType,
+            selectedIds, bulkSetNodeVisible, bulkDeleteNodes,
+            showTextPrompt,
         ],
     )
 
