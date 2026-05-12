@@ -73,6 +73,13 @@ export interface UseSceneContextMenuOptions {
 
 export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
     openContextMenu: (node: SceneTreeNode, x: number, y: number) => Promise<void>
+    /**
+     * Run the shared "New Renderer..." flow against a given source node
+     * (object / renderer / rendGroup). Used by both the ctxmenu item and
+     * the toolbar Add button — UXP `onNewCmd` dispatches both paths to
+     * the same code, so we expose a single entry point here.
+     */
+    openNewRendererFlow: (node: SceneTreeNode) => Promise<void>
 } {
     const {
         cm, sceneId, toggleVisibility, deleteNode, renameNode, showProperty,
@@ -88,6 +95,48 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
     // for Rename / New Group text input flows instead.
     const showTextPrompt = useShowTextPromptDialog()
     const showNewRenderer = useShowNewRendererDialog()
+
+    // Shared "New Renderer..." flow — also reused by the toolbar Add
+    // button. Mirrors UXP `onNewCmd` dispatch, which calls the same
+    // `setupRendByObjID` from both the ctxmenu item and the toolbar.
+    const openNewRendererFlow = useCallback(
+        async (node: SceneTreeNode): Promise<void> => {
+            if (
+                node.type !== 'object' &&
+                node.type !== 'renderer' &&
+                node.type !== 'rendGroup'
+            ) return
+            if (!cm || sceneId === undefined) return
+            let info
+            try {
+                info = await cm.invokeService('getNewRendererOptions', {
+                    sceneId,
+                    sourceNodeId: node.id,
+                    sourceNodeType: node.type,
+                })
+            } catch (err) {
+                console.warn('getNewRendererOptions failed:', err)
+                return
+            }
+            if (!info?.ok || info.rendererTypes.length === 0) return
+            const result = await showNewRenderer({
+                sceneId,
+                objName: info.objName,
+                objClassName: info.objClassName,
+                rendererTypes: info.rendererTypes,
+                defaultName: info.defaultName,
+                isMol: info.isMol,
+                groupName: info.groupName || undefined,
+            })
+            if (!result) return
+            await createRendererOnObject(
+                info.targetObjId,
+                result.rendOpts,
+                info.groupName || undefined,
+            )
+        },
+        [cm, sceneId, showNewRenderer, createRendererOnObject],
+    )
 
     const openContextMenu = useCallback(
         async (node: SceneTreeNode, x: number, y: number): Promise<void> => {
@@ -316,42 +365,9 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                     if (node.type !== 'renderer') break
                     await changeRendererType(idStr, action.typeName)
                     break
-                case 'newRenderer': {
-                    if (
-                        node.type !== 'object' &&
-                        node.type !== 'renderer' &&
-                        node.type !== 'rendGroup'
-                    ) break
-                    if (!cm || sceneId === undefined) break
-                    let info
-                    try {
-                        info = await cm.invokeService('getNewRendererOptions', {
-                            sceneId,
-                            sourceNodeId: node.id,
-                            sourceNodeType: node.type,
-                        })
-                    } catch (err) {
-                        console.warn('getNewRendererOptions failed:', err)
-                        break
-                    }
-                    if (!info?.ok || info.rendererTypes.length === 0) break
-                    const result = await showNewRenderer({
-                        sceneId,
-                        objName: info.objName,
-                        objClassName: info.objClassName,
-                        rendererTypes: info.rendererTypes,
-                        defaultName: info.defaultName,
-                        isMol: info.isMol,
-                        groupName: info.groupName || undefined,
-                    })
-                    if (!result) break
-                    await createRendererOnObject(
-                        info.targetObjId,
-                        result.rendOpts,
-                        info.groupName || undefined,
-                    )
+                case 'newRenderer':
+                    await openNewRendererFlow(node)
                     break
-                }
                 case 'newRendGroup': {
                     if (node.type !== 'object') break
                     // Pre-fetch a scene-wide-unique default name so the
@@ -394,7 +410,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
         ],
     )
 
-    return { openContextMenu }
+    return { openContextMenu, openNewRendererFlow }
 }
 
 function nodeMenuLabel(node: SceneTreeNode): string {

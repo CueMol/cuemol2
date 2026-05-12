@@ -241,7 +241,7 @@ interface ScenePaneProps {
      * actions are enabled (legacy callers). Defaults to enabled=true so a
      * caller that does not yet compute this still works.
      */
-    opsEnabled?: { focus: boolean; delete: boolean; property: boolean };
+    opsEnabled?: { focus: boolean; delete: boolean; property: boolean; add: boolean };
     collapsed?: boolean;
     onToggleCollapse?: () => void;
 }
@@ -269,6 +269,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     const canFocus = hasSelection && (opsEnabled?.focus ?? true);
     const canDelete = hasSelection && (opsEnabled?.delete ?? true);
     const canProperty = hasSelection && (opsEnabled?.property ?? true);
+    const canAdd = hasSelection && (opsEnabled?.add ?? true);
     // Tracks tree rows the user has explicitly collapsed.  The scene root
     // defaults to expanded; cameraRoot / styleRoot default to collapsed
     // (their `uiCollapsed` hint is true).
@@ -550,7 +551,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                                 small
                                 icon={<Icon icon="style" size={14} />}
                                 className="section-action-btn"
-                                disabled={!onAddRenderer}
+                                disabled={!onAddRenderer || !canAdd}
                                 onClick={onAddRenderer}
                             />
                         </Tooltip>

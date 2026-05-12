@@ -210,7 +210,10 @@ const App: React.FC = () => {
     await showNodePropertyDialog(info);
   }, [fetchSceneNodeInfo, showNodePropertyDialog]);
 
-  const { openContextMenu: openSceneCtxMenu } = useSceneContextMenu({
+  const {
+    openContextMenu: openSceneCtxMenu,
+    openNewRendererFlow: openSceneNewRendererFlow,
+  } = useSceneContextMenu({
     cm,
     sceneId: activeSceneId,
     toggleVisibility: handleToggleVisibility,
@@ -243,6 +246,29 @@ const App: React.FC = () => {
     },
     [openSceneCtxMenu],
   );
+
+  // Toolbar Add button — UXP `onNewCmd` dispatches the same New Renderer
+  // flow as the ctxmenu item, so we call the shared callback. Gated to
+  // selectedNode types that the worker can resolve (object / renderer /
+  // rendGroup); other selections produce a no-op.
+  const handleSceneAdd = useCallback(() => {
+    const numId = Number(sceneSelected);
+    if (!Number.isFinite(numId)) return;
+    const walk = (n: typeof sceneTree): typeof sceneTree => {
+      if (!n) return null;
+      if (n.id === numId) return n;
+      for (const c of n.children) {
+        const found = walk(c);
+        if (found) return found;
+      }
+      return null;
+    };
+    const node = walk(sceneTree);
+    if (!node) return;
+    void openSceneNewRendererFlow(node).catch((err: unknown) => {
+      console.warn('new-renderer toolbar add failed:', err);
+    });
+  }, [sceneSelected, sceneTree, openSceneNewRendererFlow]);
 
   // --- View-state cache for the active molview tab ---
   const {
@@ -352,6 +378,7 @@ const App: React.FC = () => {
                     onShowProperty={handleSceneShowProperty}
                     onFocusSelected={handleSceneFocus}
                     onDeleteSelected={handleSceneDelete}
+                    onAddSelected={handleSceneAdd}
                     onShowSceneContextMenu={handleShowSceneCtxMenu}
                     onMoveSceneNode={moveSceneNode}
                     sceneOpsEnabled={sceneOpsEnabled}

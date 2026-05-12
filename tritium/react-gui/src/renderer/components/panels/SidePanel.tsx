@@ -130,8 +130,10 @@ interface SidePanelProps {
   onFocusSelected?: (id: string) => void;
   /** Called when the user clicks the Delete button in ScenePane. */
   onDeleteSelected?: (id: string) => void;
+  /** Called when the user clicks the Add (Renderer) toolbar button. */
+  onAddSelected?: () => void;
   /** Per-action enablement for the current scene selection. */
-  sceneOpsEnabled?: { focus: boolean; delete: boolean; property: boolean };
+  sceneOpsEnabled?: { focus: boolean; delete: boolean; property: boolean; add: boolean };
   /** Right-click context-menu opener for scene-tree nodes. */
   onShowSceneContextMenu?: (node: SceneTreeNode, x: number, y: number) => void;
   /** Drag-drop reorder callback (Phase 4b). */
@@ -171,6 +173,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   onShowProperty,
   onFocusSelected,
   onDeleteSelected,
+  onAddSelected,
   sceneOpsEnabled,
   onShowSceneContextMenu,
   onMoveSceneNode,
@@ -225,6 +228,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             onShowProperty={onShowProperty}
             onFocusSelected={onFocusSelected}
             onDeleteSelected={onDeleteSelected}
+            onAddRenderer={onAddSelected}
             onShowContextMenu={onShowSceneContextMenu}
             onMoveNode={onMoveSceneNode}
             opsEnabled={sceneOpsEnabled}
@@ -299,7 +303,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     sceneTree, sceneSelected, sceneSelectedIds,
     onSceneSelect, onSceneToggleSelect,
     onToggleVisibility, onShowProperty,
-    onFocusSelected, onDeleteSelected, sceneOpsEnabled,
+    onFocusSelected, onDeleteSelected, onAddSelected, sceneOpsEnabled,
     onShowSceneContextMenu, onMoveSceneNode,
   ]);
 

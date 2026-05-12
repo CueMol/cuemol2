@@ -54,7 +54,7 @@ interface UseSceneTreeResult {
     /** Returns the resolved node for the current selection, if any. */
     selectedNode: SceneTreeNode | null
     /** Whether the current selection supports toolbar focus / delete / property. */
-    selectedHasOps: { focus: boolean; delete: boolean; property: boolean }
+    selectedHasOps: { focus: boolean; delete: boolean; property: boolean; add: boolean }
     setSelectedId: (id: string) => void
     /**
      * Cmd/Ctrl+click: toggle membership of `id` in `selectedIds`. If the
@@ -728,7 +728,7 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
     const isMulti = selectedIds.size > 1
     const singleOps = computeOps(selectedNode)
     const selectedHasOps = isMulti
-        ? { focus: false, delete: singleOps.delete, property: false }
+        ? { focus: false, delete: singleOps.delete, property: false, add: false }
         : singleOps
 
     return {
@@ -773,17 +773,21 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
  */
 function computeOps(
     node: SceneTreeNode | null,
-): { focus: boolean; delete: boolean; property: boolean } {
-    if (!node) return { focus: false, delete: false, property: false }
+): { focus: boolean; delete: boolean; property: boolean; add: boolean } {
+    if (!node) return { focus: false, delete: false, property: false, add: false }
     const mutable =
         node.type === 'object' ||
         node.type === 'renderer' ||
         node.type === 'rendGroup'
     const propertyTarget =
         node.type !== 'cameraRoot' && node.type !== 'styleRoot'
+    // UXP `onNewCmd` accepts object / renderer / rendGroup rows for the
+    // Add toolbar; camera/style branches go through their own paths
+    // (Phase 5b/5c) so we gate them out here.
     return {
         focus: mutable,
         delete: mutable,
         property: propertyTarget,
+        add: mutable,
     }
 }
