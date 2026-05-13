@@ -206,6 +206,7 @@ export type SceneCtxAction =
   | { kind: 'newRenderer' }
   | { kind: 'editRendStyle' }
   | { kind: 'createRendStyle' }
+  | { kind: 'saveAsObject' }
   | { kind: 'changeRendType'; typeName: string }
   | { kind: 'newStyle' }
   | { kind: 'styleLoad' }

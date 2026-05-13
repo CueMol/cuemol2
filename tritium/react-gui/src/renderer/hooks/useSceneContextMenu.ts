@@ -569,6 +569,50 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                     await createRendererGroup(idStr, entered)
                     break
                 }
+                case 'saveAsObject': {
+                    if (node.type !== 'object') break
+                    if (!cm || sceneId === undefined) break
+                    let info
+                    try {
+                        info = await cm.invokeService('getObjectSaveInfo', {
+                            sceneId, objId: node.id,
+                        })
+                    } catch (err) {
+                        console.warn('getObjectSaveInfo failed:', err)
+                        break
+                    }
+                    if (!info?.ok || info.filters.length === 0) {
+                        console.info('saveAsObject: no compatible writers for this object')
+                        break
+                    }
+                    const dlg = await window.electronAPI.invoke(
+                        IPC.DIALOG_OBJECT_SAVE,
+                        {
+                            defaultDir: info.defaultDir,
+                            defaultName: info.defaultFileName,
+                            filters: info.filters.map((f) => ({
+                                name: f.description,
+                                extensions: f.extensions,
+                            })),
+                            defaultFilterIndex: 0,
+                        },
+                    )
+                    if (dlg.canceled || !dlg.filePath) break
+                    const idx =
+                        dlg.filterIndex >= 0 && dlg.filterIndex < info.filters.length
+                            ? dlg.filterIndex
+                            : 0
+                    const writerName = info.filters[idx].name
+                    try {
+                        await cm.invokeService('saveObjectToFile', {
+                            sceneId, objId: node.id,
+                            path: dlg.filePath, writerName,
+                        })
+                    } catch (err) {
+                        console.warn('saveObjectToFile failed:', err)
+                    }
+                    break
+                }
                 case 'newStyle': {
                     if (
                         node.type !== 'style' &&

@@ -126,6 +126,12 @@ import type {
   CreateStyleFromRendererResult,
 } from '../server/services/createStyleFromRenderer.service'
 import type {
+  GetObjectSaveInfoArgs,
+  GetObjectSaveInfoResult,
+  SaveObjectToFileArgs,
+  SaveObjectToFileResult,
+} from '../server/services/objectSave.service'
+import type {
   SetRendererSelectionArgs,
   SetRendererSelectionResult,
 } from '../server/services/setRendererSelection.service'
@@ -295,6 +301,8 @@ export interface ServiceMap {
   applyRendererStyleList:     { args: ApplyRendererStyleListArgs;      result: ApplyRendererStyleListResult }
   getCreateRendStyleInfo:     { args: GetCreateRendStyleInfoArgs;      result: GetCreateRendStyleInfoResult }
   createStyleFromRenderer:    { args: CreateStyleFromRendererArgs;     result: CreateStyleFromRendererResult }
+  getObjectSaveInfo:          { args: GetObjectSaveInfoArgs;           result: GetObjectSaveInfoResult }
+  saveObjectToFile:           { args: SaveObjectToFileArgs;            result: SaveObjectToFileResult }
   setRendererSelection:       { args: SetRendererSelectionArgs;        result: SetRendererSelectionResult }
   generateRendererSurfObj:    { args: GenerateRendererSurfObjArgs;     result: GenerateRendererSurfObjResult }
   createRendererGroup:        { args: CreateRendererGroupArgs;         result: CreateRendererGroupResult }

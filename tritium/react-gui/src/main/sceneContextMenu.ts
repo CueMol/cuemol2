@@ -95,6 +95,7 @@ function buildTemplate(
                 ...pasteItem(payload, 'renderer', action),
                 newRendererItem(action),
                 newRendGroupItem(action),
+                { label: 'Save As…', click: action({ kind: 'saveAsObject' }) },
                 deleteItem(action),
                 { type: 'separator' },
                 propertyItem(action),

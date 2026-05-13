@@ -211,6 +211,55 @@ async function handleCameraSaveDialog(
   }
 }
 
+// ─────────────────────────────────────────────
+// Object save-as (ScenePane ctxmenu)
+// ─────────────────────────────────────────────
+//
+// The filter list is built worker-side from
+// `StreamManager.findCompatibleWriterNamesForObj` × the writer category
+// of `StreamManager.getInfoJSON2`; the renderer forwards it here. We
+// surface the selected filter index back to the caller so the worker can
+// pass the matching writer name to `createHandler`.
+
+async function handleObjectSaveDialog(
+  mainWindow: BrowserWindow,
+  payload: {
+    defaultDir: string
+    defaultName: string
+    filters: { name: string; extensions: string[] }[]
+    defaultFilterIndex?: number
+  },
+): Promise<{ canceled: boolean; filePath: string; filterIndex: number }> {
+  const defaultPath = payload.defaultDir
+    ? path.join(payload.defaultDir, payload.defaultName)
+    : payload.defaultName
+  const result = await withMenuBlocked('native', () =>
+    dialog.showSaveDialog(mainWindow, {
+      title: 'Save Object As',
+      defaultPath,
+      filters: [
+        ...payload.filters,
+        { name: 'All Files', extensions: ['*'] },
+      ],
+    }),
+  )
+  if (result.canceled || !result.filePath) {
+    return { canceled: true, filePath: '', filterIndex: -1 }
+  }
+  // Electron does not return the chosen filter index. Best-effort
+  // recover it from the file extension. Falls back to defaultFilterIndex
+  // (or 0) when no match — the worker will use that writer name.
+  const ext = (result.filePath.split('.').pop() ?? '').toLowerCase()
+  let filterIndex = payload.defaultFilterIndex ?? 0
+  for (let i = 0; i < payload.filters.length; i++) {
+    if (payload.filters[i].extensions.some((e) => e.toLowerCase() === ext)) {
+      filterIndex = i
+      break
+    }
+  }
+  return { canceled: false, filePath: result.filePath, filterIndex }
+}
+
 function handleFileExists(target: string): { exists: boolean } {
   try {
     return { exists: fs.existsSync(target) }
@@ -275,6 +324,10 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
 
   handleInvoke(IPC.DIALOG_CAMERA_SAVE, async (_event, payload) =>
     handleCameraSaveDialog(mainWindow, payload.defaultName),
+  )
+
+  handleInvoke(IPC.DIALOG_OBJECT_SAVE, async (_event, payload) =>
+    handleObjectSaveDialog(mainWindow, payload),
   )
 
   handleInvoke(IPC.FILE_EXISTS, (_event, payload) => handleFileExists(payload.path))
