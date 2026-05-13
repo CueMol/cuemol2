@@ -236,12 +236,28 @@ interface ScenePaneProps {
      */
     onNodeDoubleClick?: (node: SceneTreeNode) => void;
     /**
-     * Inline-rename commit handler. ScenePane handles the F2 trigger +
+     * Controlled inline-rename: when non-null, the row with this id
+     * shows an `<InputGroup>` in place of its label. The trigger lives
+     * at App level so both F2 (started via `onBeginInlineRename`) and
+     * the ctxmenu Rename action route through the same controller.
+     */
+    editingNodeId?: string | null;
+    /**
+     * F2 (or other in-tree trigger) requesting that the given row enter
+     * inline-rename mode. ScenePane forwards `selectedId` here on F2;
+     * the App-level controller decides whether to accept.
+     */
+    onBeginInlineRename?: (id: string) => void;
+    /** Esc / blur-without-commit asks the controller to drop the editor. */
+    onCancelInlineRename?: () => void;
+    /**
+     * Inline-rename commit handler. ScenePane handles the
      * `<InputGroup>` editor; on Enter (or blur with a non-empty edit
      * that differs from the original name) it calls back here with the
      * targeted node and the user-entered name. The caller is expected
      * to route to the appropriate worker service — UXP `onRenameCamera`
-     * for camera rows, `renameNode` for object / renderer / rendGroup.
+     * for camera rows, `renameNode` for object / renderer / rendGroup —
+     * AND to clear `editingNodeId` afterwards.
      */
     onCommitInlineRename?: (node: SceneTreeNode, newName: string) => void;
     /** Right-click handler — opens native context menu for the targeted node. */
@@ -276,6 +292,9 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     onFocusSelected,
     onShowProperty,
     onNodeDoubleClick,
+    editingNodeId,
+    onBeginInlineRename,
+    onCancelInlineRename,
     onCommitInlineRename,
     onShowContextMenu,
     onMoveNode,
@@ -304,13 +323,16 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
         () => new Map(),
     );
 
-    // Inline-rename state. `null` means no row is in edit mode. UXP only
-    // supports rename on object / renderer / rendGroup / camera; F2 on
-    // other rows is a no-op (filtered at the keydown handler).
-    const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
+    // Inline-rename is now controlled by the parent (App.tsx). ScenePane
+    // only owns the InputGroup focus ref and stashes callback refs so the
+    // handlers stay stable across renders.
     const inlineInputRef = useRef<HTMLInputElement | null>(null);
+    const beginRenameRef = useRef(onBeginInlineRename);
+    beginRenameRef.current = onBeginInlineRename;
     const commitRenameRef = useRef(onCommitInlineRename);
     commitRenameRef.current = onCommitInlineRename;
+    const cancelRenameRef = useRef(onCancelInlineRename);
+    cancelRenameRef.current = onCancelInlineRename;
 
     const handleNodeExpand = useCallback((node: TreeNodeInfo) => {
         setExpandOverrides((prev) => {
@@ -382,13 +404,13 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     const handleTreeKeyDown = useCallback(
         (e: React.KeyboardEvent<HTMLDivElement>) => {
             if (e.key !== "F2") return;
-            if (!commitRenameRef.current) return;
+            if (!beginRenameRef.current) return;
             if (!selectedId) return;
             const node = nodeLookup.get(selectedId);
             if (!node) return;
             if (!isRenameableType(node.type)) return;
             e.preventDefault();
-            setEditingNodeId(selectedId);
+            beginRenameRef.current(selectedId);
         },
         [selectedId, nodeLookup, isRenameableType],
     );
@@ -403,23 +425,28 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
         return () => window.clearTimeout(id);
     }, [editingNodeId]);
 
-    // Commit / cancel helpers — closured over the current row id and
-    // its original name so the InputGroup handlers stay small.
+    // Commit / cancel forward to the App-level controller. The controller
+    // is also responsible for clearing `editingNodeId`.
     const commitEdit = useCallback(
         (next: string) => {
             if (editingNodeId == null) return;
             const node = nodeLookup.get(editingNodeId);
-            setEditingNodeId(null);
-            if (!node) return;
+            if (!node) {
+                cancelRenameRef.current?.();
+                return;
+            }
             const trimmed = next.trim();
-            if (trimmed === "" || trimmed === node.name) return;
+            if (trimmed === "" || trimmed === node.name) {
+                cancelRenameRef.current?.();
+                return;
+            }
             commitRenameRef.current?.(node, trimmed);
         },
         [editingNodeId, nodeLookup],
     );
 
     const cancelEdit = useCallback(() => {
-        setEditingNodeId(null);
+        cancelRenameRef.current?.();
     }, []);
 
     // id → parent lookup, used by DnD to resolve same-parent / cross-group

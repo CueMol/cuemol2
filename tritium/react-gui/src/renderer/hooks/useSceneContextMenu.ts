@@ -48,6 +48,13 @@ export interface UseSceneContextMenuOptions {
     renameNode: (id: string, newName: string) => Promise<boolean>
     showProperty: (id: string) => Promise<void> | void
     selectObjectMol: (id: string, kind: SelectMolKind) => Promise<boolean>
+    /**
+     * Begin inline rename on the row with the given id. Both F2 and the
+     * ctxmenu Rename action go through this — the underlying editor
+     * lives in `ScenePane` and is controlled by the App-level
+     * `sceneEditingNodeId` state.
+     */
+    beginInlineRename: (id: string) => void
     copyNode: (node: SceneTreeNode) => Promise<boolean>
     pasteNode: (node: SceneTreeNode) => Promise<boolean>
     setRendererColoring: (id: string, coloringId: RendColoringId) => Promise<boolean>
@@ -120,7 +127,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
 } {
     const {
         cm, sceneId, toggleVisibility, deleteNode, renameNode, showProperty,
-        selectObjectMol, copyNode, pasteNode, setRendererColoring,
+        selectObjectMol, beginInlineRename, copyNode, pasteNode, setRendererColoring,
         paintRendererSelection, paintObjectSelection, applyRendererStyle,
         setSceneBackgroundColor, toggleSceneColorProofing,
         setRendererSelection, generateRendererSurfObj,
@@ -405,23 +412,16 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                 case 'hide':
                     toggleVisibility(idStr)
                     break
-                case 'rename': {
-                    const next = await showTextPrompt({
-                        title: 'Rename',
-                        label: `Rename ${node.name} to:`,
-                        defaultValue: node.name,
-                    })
-                    if (next == null) break
-                    if (next === node.name) break
-                    if (node.type === 'camera') {
-                        // Cameras have no in-place name setter; renameCamera
-                        // does the atomic destroy + setCamera dance.
-                        await renameCamera(node.name, next)
-                    } else {
-                        await renameNode(idStr, next)
-                    }
+                case 'rename':
+                    // Both ctxmenu and F2 trigger the same inline-rename
+                    // editor in ScenePane. The App-level controller
+                    // (useState<sceneEditingNodeId>) holds the active
+                    // row id; the commit handler routes to renameCamera
+                    // vs renameNode just like the old prompt-based flow
+                    // did, but the UX is uniform — no extra dialog
+                    // round-trip.
+                    beginInlineRename(idStr)
                     break
-                }
                 case 'delete':
                     await deleteNode(idStr)
                     break
@@ -769,7 +769,8 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
         },
         [
             cm, sceneId, toggleVisibility, deleteNode, renameNode, showProperty,
-            selectObjectMol, copyNode, pasteNode, setRendererColoring,
+            selectObjectMol, beginInlineRename,
+            copyNode, pasteNode, setRendererColoring,
             paintRendererSelection, paintObjectSelection, applyRendererStyle,
             setSceneBackgroundColor, toggleSceneColorProofing,
             setRendererSelection, generateRendererSurfObj,
