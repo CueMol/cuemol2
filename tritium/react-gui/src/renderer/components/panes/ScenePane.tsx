@@ -581,11 +581,11 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                     onClick={(e) => e.stopPropagation()}
                 >
                     <ButtonGroup minimal>
-                        <Tooltip content="Add Renderer" placement="bottom" compact>
+                        <Tooltip content="Add" placement="bottom" compact>
                             <Button
                                 minimal
                                 small
-                                icon={<Icon icon="style" size={14} />}
+                                icon={<Icon icon="add" size={14} />}
                                 className="section-action-btn"
                                 disabled={!onAddRenderer || !canAdd}
                                 onClick={onAddRenderer}
