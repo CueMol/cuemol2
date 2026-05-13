@@ -12,6 +12,7 @@ import type { WorkerContext } from '../worker/server/types/WorkerContext'
 interface SceneOverrides {
     getObject?: ReturnType<typeof vi.fn>
     getRenderer?: ReturnType<typeof vi.fn>
+    setName?: ReturnType<typeof vi.fn>
 }
 
 function makeCtx(overrides: SceneOverrides = {}) {
@@ -21,10 +22,12 @@ function makeCtx(overrides: SceneOverrides = {}) {
     const mockView = {
         setViewCenter: vi.fn(),
     }
+    const setName = overrides.setName ?? vi.fn()
     const mockScene = {
         getObject: overrides.getObject ?? vi.fn(() => null),
         getRenderer: overrides.getRenderer ?? vi.fn(() => null),
         destroyObject: vi.fn(() => true),
+        setName,
         startUndoTxn, commitUndoTxn, rollbackUndoTxn,
     }
     const getScene = vi.fn(() => mockScene)
@@ -32,7 +35,7 @@ function makeCtx(overrides: SceneOverrides = {}) {
     const ctx = {
         sceMgr: { getScene, getView },
     } as unknown as WorkerContext
-    return { ctx, mockScene, mockView, startUndoTxn, commitUndoTxn, rollbackUndoTxn }
+    return { ctx, mockScene, mockView, setName, startUndoTxn, commitUndoTxn, rollbackUndoTxn }
 }
 
 describe('sceneOps service', () => {
@@ -243,11 +246,44 @@ describe('sceneOps service', () => {
 
         it('returns ok:false for unsupported node types', () => {
             const { ctx } = makeCtx()
-            for (const nt of ['scene', 'camera', 'style', 'cameraRoot', 'styleRoot'] as const) {
+            // 'scene' has its own branch and is tested below; camera and
+            // style intentionally reject here (camera routes through
+            // cameraOps.renameCamera; style has no UXP rename handler).
+            for (const nt of ['camera', 'style', 'cameraRoot', 'styleRoot'] as const) {
                 expect(services.renameNode(ctx, {
                     sceneId: 1, nodeId: 1, nodeType: nt, newName: 'x',
                 }).ok).toBe(false)
             }
+        })
+
+        it('renames the scene via scene.setName under undo txn', () => {
+            const { ctx, setName, startUndoTxn, commitUndoTxn } = makeCtx()
+            const res = services.renameNode(ctx, {
+                sceneId: 1, nodeId: 1, nodeType: 'scene', newName: 'My Scene',
+            })
+            expect(res.ok).toBe(true)
+            expect(startUndoTxn).toHaveBeenCalledWith('Rename to My Scene')
+            // Scene.name is read-only at the .qif level, so the worker
+            // calls setName(name) rather than assigning to .name.
+            expect(setName).toHaveBeenCalledWith('My Scene')
+            expect(commitUndoTxn).toHaveBeenCalled()
+        })
+
+        it('trims whitespace on scene rename', () => {
+            const { ctx, setName } = makeCtx()
+            services.renameNode(ctx, {
+                sceneId: 1, nodeId: 1, nodeType: 'scene', newName: '  Trimmed  ',
+            })
+            expect(setName).toHaveBeenCalledWith('Trimmed')
+        })
+
+        it('rejects whitespace-only scene rename', () => {
+            const { ctx, setName } = makeCtx()
+            const res = services.renameNode(ctx, {
+                sceneId: 1, nodeId: 1, nodeType: 'scene', newName: '   ',
+            })
+            expect(res.ok).toBe(false)
+            expect(setName).not.toHaveBeenCalled()
         })
     })
 

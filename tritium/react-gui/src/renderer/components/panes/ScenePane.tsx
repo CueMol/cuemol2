@@ -348,13 +348,17 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
         return map;
     }, [tree]);
 
-    // Whether the given node accepts a rename (inline + ctxmenu). Mirrors
-    // the `rename` action handling in `useSceneContextMenu` — object /
-    // renderer / rendGroup go through `renameNode`, camera goes through
-    // `renameCamera`. Scene / cameraRoot / styleRoot / style have no
-    // rename path in UXP and the menu item doesn't surface there.
+    // Whether the given node accepts a rename (inline + ctxmenu).
+    // Routing (in App.handleCommitInlineRename):
+    //   - camera → renameCamera (atomic destroy + setCamera; cameras
+    //     have no in-place name setter once registered)
+    //   - everything else → renameNode worker
+    // renameNode itself accepts object / renderer / rendGroup / scene
+    // (scene uses scene.setName since `Scene.name` is read-only at the
+    // .qif level). cameraRoot / styleRoot / style are not renameable.
     const isRenameableType = useCallback((t: SceneNodeType): boolean => {
         return (
+            t === "scene" ||
             t === "object" || t === "renderer" || t === "rendGroup" ||
             t === "camera"
         );
