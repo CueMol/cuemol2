@@ -107,6 +107,13 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
      * the same code, so we expose a single entry point here.
      */
     openNewRendererFlow: (node: SceneTreeNode) => Promise<void>
+    /**
+     * Run the shared "New Camera..." flow (suggest-name + prompt +
+     * `saveViewToCam` worker). Used by both the ctxmenu item and the
+     * toolbar Add button when a camera / cameraRoot row is selected,
+     * mirroring UXP `onNewCmd` dispatch.
+     */
+    openNewCameraFlow: () => Promise<void>
 } {
     const {
         cm, sceneId, toggleVisibility, deleteNode, renameNode, showProperty,
@@ -130,6 +137,39 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
     // for Rename / New Group text input flows instead.
     const showTextPrompt = useShowTextPromptDialog()
     const showNewRenderer = useShowNewRendererDialog()
+
+    // Shared "New Camera..." flow — also reused by the toolbar Add
+    // button. Mirrors UXP `onNewCmd` dispatch (camera / cameraRoot
+    // branch). Worker rejects when activeViewId is undefined; we early-
+    // return here to skip the dialog noise.
+    const openNewCameraFlow = useCallback(
+        async (): Promise<void> => {
+            if (activeViewId === undefined) return
+            if (sceneId === undefined) return
+            let suggestion = 'camera_0'
+            if (cm) {
+                try {
+                    const r = await cm.invokeService('proposeUniqName', {
+                        kind: 'camera',
+                        prefix: 'camera',
+                        sceneId,
+                    })
+                    suggestion = r?.name ?? suggestion
+                } catch (err) {
+                    console.warn('proposeUniqName failed:', err)
+                }
+            }
+            const entered = await showTextPrompt({
+                title: 'New Camera',
+                label: 'Name for new camera:',
+                defaultValue: suggestion,
+                confirmLabel: 'Create',
+            })
+            if (entered == null) return
+            await createCamera(activeViewId, entered)
+        },
+        [cm, sceneId, activeViewId, showTextPrompt, createCamera],
+    )
 
     // Shared "New Renderer..." flow — also reused by the toolbar Add
     // button. Mirrors UXP `onNewCmd` dispatch, which calls the same
@@ -532,28 +572,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                         node.type !== 'camera' &&
                         node.type !== 'cameraRoot'
                     ) break
-                    if (activeViewId === undefined) break
-                    let suggestion = 'camera_0'
-                    if (cm && sceneId !== undefined) {
-                        try {
-                            const r = await cm.invokeService('proposeUniqName', {
-                                kind: 'camera',
-                                prefix: 'camera',
-                                sceneId,
-                            })
-                            suggestion = r?.name ?? suggestion
-                        } catch (err) {
-                            console.warn('proposeUniqName failed:', err)
-                        }
-                    }
-                    const entered = await showTextPrompt({
-                        title: 'New Camera',
-                        label: 'Name for new camera:',
-                        defaultValue: suggestion,
-                        confirmLabel: 'Create',
-                    })
-                    if (entered == null) break
-                    await createCamera(activeViewId, entered)
+                    await openNewCameraFlow()
                     break
                 }
                 case 'cameraLoad': {
@@ -635,11 +654,12 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
             clearCameraVisFlags,
             loadCameraFromFile, saveCameraToFile, saveCameraToCurrentSrc,
             reloadCameraFromSrc,
-            showTextPrompt, showNewRenderer, openNewRendererFlow,
+            showTextPrompt, showNewRenderer,
+            openNewRendererFlow, openNewCameraFlow,
         ],
     )
 
-    return { openContextMenu, openNewRendererFlow }
+    return { openContextMenu, openNewRendererFlow, openNewCameraFlow }
 }
 
 function nodeMenuLabel(node: SceneTreeNode): string {

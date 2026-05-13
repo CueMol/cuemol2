@@ -1003,27 +1003,33 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
 
 /**
  * Decide which toolbar actions are valid for a given selected node.
- * Mirrors UXP `onTreeSelChanged` enablement rules: focus and delete are
- * valid for object / renderer / rendGroup; property is valid for everything
- * except the synthesised cameraRoot / styleRoot containers.
+ * Mirrors UXP `onTreeSelChanged` + `onNewCmd` / `deleteCmdImpl` enablement
+ * rules:
+ *   - focus: object / renderer / rendGroup
+ *   - delete: object / renderer / rendGroup / camera (cameraRoot Delete is
+ *     disabled in UXP via `wspcCamCtxt-disable` keyed to elem.type=="camera")
+ *   - property: everything except the synthesised cameraRoot / styleRoot
+ *   - add: object / renderer / rendGroup → New Renderer;
+ *          camera / cameraRoot → New Camera
+ *          (style is handled via its own ctxmenu path for now)
  */
 function computeOps(
     node: SceneTreeNode | null,
 ): { focus: boolean; delete: boolean; property: boolean; add: boolean } {
     if (!node) return { focus: false, delete: false, property: false, add: false }
-    const mutable =
+    const isRendish =
         node.type === 'object' ||
         node.type === 'renderer' ||
         node.type === 'rendGroup'
     const propertyTarget =
         node.type !== 'cameraRoot' && node.type !== 'styleRoot'
-    // UXP `onNewCmd` accepts object / renderer / rendGroup rows for the
-    // Add toolbar; camera/style branches go through their own paths
-    // (Phase 5b/5c) so we gate them out here.
+    const canAdd =
+        isRendish || node.type === 'camera' || node.type === 'cameraRoot'
+    const canDelete = isRendish || node.type === 'camera'
     return {
-        focus: mutable,
-        delete: mutable,
+        focus: isRendish,
+        delete: canDelete,
         property: propertyTarget,
-        add: mutable,
+        add: canAdd,
     }
 }

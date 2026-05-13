@@ -228,6 +228,12 @@ interface ScenePaneProps {
     onDeleteSelected?: (id: string) => void;
     onFocusSelected?: (id: string) => void;
     onShowProperty?: (id: string) => void;
+    /**
+     * Double-click handler — UXP `onTreeItemClick` `aEvent.detail==2`
+     * branch: camera rows run `loadCamImpl(name, true)` (Apply to view
+     * with vis flags); other rows run `onPropCmd` (Properties dialog).
+     */
+    onNodeDoubleClick?: (node: SceneTreeNode) => void;
     /** Right-click handler — opens native context menu for the targeted node. */
     onShowContextMenu?: (node: SceneTreeNode, x: number, y: number) => void;
     /**
@@ -259,6 +265,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     onDeleteSelected,
     onFocusSelected,
     onShowProperty,
+    onNodeDoubleClick,
     onShowContextMenu,
     onMoveNode,
     opsEnabled,
@@ -322,6 +329,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
         },
         [onSelect, onToggleSelect],
     );
+
 
     // Build an id → SceneTreeNode lookup so onNodeContextMenu (which only
     // receives the Blueprint TreeNodeInfo) can resolve back to the original
@@ -437,6 +445,18 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
             onShowContextMenu(sceneNode, e.clientX, e.clientY);
         },
         [nodeLookup, onShowContextMenu, onSelect, selectedIds],
+    );
+
+    // Blueprint Tree's `onNodeDoubleClick` fires after the second mouse-up
+    // of a click pair. Resolve back to the typed SceneTreeNode and forward
+    // to the caller — UXP `onTreeItemClick` `aEvent.detail==2` path.
+    const handleNodeDoubleClick = useCallback(
+        (info: TreeNodeInfo) => {
+            if (!onNodeDoubleClick) return;
+            const node = nodeLookup.get(String(info.id));
+            if (node) onNodeDoubleClick(node);
+        },
+        [nodeLookup, onNodeDoubleClick],
     );
 
     const visibilityButton = useCallback(
@@ -609,6 +629,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                     <Tree
                         contents={treeContents}
                         onNodeClick={handleNodeClick}
+                        onNodeDoubleClick={handleNodeDoubleClick}
                         onNodeExpand={handleNodeExpand}
                         onNodeCollapse={handleNodeCollapse}
                         onNodeContextMenu={handleNodeContextMenu}

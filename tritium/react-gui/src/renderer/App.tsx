@@ -227,6 +227,7 @@ const App: React.FC = () => {
   const {
     openContextMenu: openSceneCtxMenu,
     openNewRendererFlow: openSceneNewRendererFlow,
+    openNewCameraFlow: openSceneNewCameraFlow,
   } = useSceneContextMenu({
     cm,
     sceneId: activeSceneId,
@@ -276,10 +277,35 @@ const App: React.FC = () => {
     [openSceneCtxMenu],
   );
 
-  // Toolbar Add button — UXP `onNewCmd` dispatches the same New Renderer
-  // flow as the ctxmenu item, so we call the shared callback. Gated to
-  // selectedNode types that the worker can resolve (object / renderer /
-  // rendGroup); other selections produce a no-op.
+  // Tree row double-click — UXP `onTreeItemClick` `aEvent.detail==2`:
+  // camera rows run `loadCamImpl(name, true)` (Apply to view with vis
+  // flags); other rows run `onPropCmd` (Properties dialog). The current
+  // Properties dialog is still the panel-wide key/value stub (Phase 5a),
+  // but UXP wires it the same way.
+  const handleSceneNodeDoubleClick = useCallback(
+    (node: Parameters<typeof openSceneCtxMenu>[0]) => {
+      if (node.type === 'camera') {
+        if (activeMolViewId === undefined) return;
+        void applySceneCameraToView(activeMolViewId, node.name, true).catch(
+          (err: unknown) => { console.warn('dblclick applyCameraToView failed:', err); },
+        );
+        return;
+      }
+      // Non-camera rows: UXP onPropCmd. cameraRoot / styleRoot have no
+      // property action (UXP onPropCmd early-returns for those), so we
+      // skip them. styleRoot is fine as a leaf-double-click no-op.
+      if (node.type === 'cameraRoot' || node.type === 'styleRoot') return;
+      void handleSceneShowProperty(String(node.id)).catch((err: unknown) => {
+        console.warn('dblclick showProperty failed:', err);
+      });
+    },
+    [activeMolViewId, applySceneCameraToView, handleSceneShowProperty],
+  );
+
+  // Toolbar Add button — UXP `onNewCmd` dispatches by selected row type:
+  // object / renderer / rendGroup → New Renderer flow;
+  // camera / cameraRoot → New Camera flow (createCamera + saveViewToCam).
+  // Other selections produce a no-op.
   const handleSceneAdd = useCallback(() => {
     const numId = Number(sceneSelected);
     if (!Number.isFinite(numId)) return;
@@ -294,10 +320,16 @@ const App: React.FC = () => {
     };
     const node = walk(sceneTree);
     if (!node) return;
+    if (node.type === 'camera' || node.type === 'cameraRoot') {
+      void openSceneNewCameraFlow().catch((err: unknown) => {
+        console.warn('new-camera toolbar add failed:', err);
+      });
+      return;
+    }
     void openSceneNewRendererFlow(node).catch((err: unknown) => {
       console.warn('new-renderer toolbar add failed:', err);
     });
-  }, [sceneSelected, sceneTree, openSceneNewRendererFlow]);
+  }, [sceneSelected, sceneTree, openSceneNewRendererFlow, openSceneNewCameraFlow]);
 
   // --- View-state cache for the active molview tab ---
   const {
@@ -408,6 +440,7 @@ const App: React.FC = () => {
                     onFocusSelected={handleSceneFocus}
                     onDeleteSelected={handleSceneDelete}
                     onAddSelected={handleSceneAdd}
+                    onSceneNodeDoubleClick={handleSceneNodeDoubleClick}
                     onShowSceneContextMenu={handleShowSceneCtxMenu}
                     onMoveSceneNode={moveSceneNode}
                     sceneOpsEnabled={sceneOpsEnabled}

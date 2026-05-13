@@ -1,6 +1,6 @@
 # Migration Mapping — Index
 
-- Updated: 2026-05-13 (Phase 5b: camera ctxmenu wired — CRUD + rename + file I/O + copy/paste + save/apply-to-view + vis flags)
+- Updated: 2026-05-13 (Wire camera toolbar Add/Delete + tree row dblclick → applyToView / property)
 - Source files: `docs/migration/mapping/*.md` (excluding this file)
 
 ---

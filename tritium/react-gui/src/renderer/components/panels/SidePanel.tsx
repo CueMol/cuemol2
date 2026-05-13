@@ -132,6 +132,8 @@ interface SidePanelProps {
   onDeleteSelected?: (id: string) => void;
   /** Called when the user clicks the Add (Renderer) toolbar button. */
   onAddSelected?: () => void;
+  /** Called when the user double-clicks a scene-tree row. */
+  onSceneNodeDoubleClick?: (node: SceneTreeNode) => void;
   /** Per-action enablement for the current scene selection. */
   sceneOpsEnabled?: { focus: boolean; delete: boolean; property: boolean; add: boolean };
   /** Right-click context-menu opener for scene-tree nodes. */
@@ -174,6 +176,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   onFocusSelected,
   onDeleteSelected,
   onAddSelected,
+  onSceneNodeDoubleClick,
   sceneOpsEnabled,
   onShowSceneContextMenu,
   onMoveSceneNode,
@@ -229,6 +232,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             onFocusSelected={onFocusSelected}
             onDeleteSelected={onDeleteSelected}
             onAddRenderer={onAddSelected}
+            onNodeDoubleClick={onSceneNodeDoubleClick}
             onShowContextMenu={onShowSceneContextMenu}
             onMoveNode={onMoveSceneNode}
             opsEnabled={sceneOpsEnabled}
