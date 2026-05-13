@@ -114,7 +114,17 @@ import type {
   GetRendererStyleEntriesResult,
   ApplyRendererStyleArgs,
   ApplyRendererStyleResult,
+  GetRendererStyleEditInfoArgs,
+  GetRendererStyleEditInfoResult,
+  ApplyRendererStyleListArgs,
+  ApplyRendererStyleListResult,
 } from '../server/services/rendererStyle.service'
+import type {
+  GetCreateRendStyleInfoArgs,
+  GetCreateRendStyleInfoResult,
+  CreateStyleFromRendererArgs,
+  CreateStyleFromRendererResult,
+} from '../server/services/createStyleFromRenderer.service'
 import type {
   SetRendererSelectionArgs,
   SetRendererSelectionResult,
@@ -281,6 +291,10 @@ export interface ServiceMap {
   getObjectPaintInfo:         { args: GetObjectPaintInfoArgs;          result: GetObjectPaintInfoResult }
   getRendererStyleEntries:    { args: GetRendererStyleEntriesArgs;     result: GetRendererStyleEntriesResult }
   applyRendererStyle:         { args: ApplyRendererStyleArgs;          result: ApplyRendererStyleResult }
+  getRendererStyleEditInfo:   { args: GetRendererStyleEditInfoArgs;    result: GetRendererStyleEditInfoResult }
+  applyRendererStyleList:     { args: ApplyRendererStyleListArgs;      result: ApplyRendererStyleListResult }
+  getCreateRendStyleInfo:     { args: GetCreateRendStyleInfoArgs;      result: GetCreateRendStyleInfoResult }
+  createStyleFromRenderer:    { args: CreateStyleFromRendererArgs;     result: CreateStyleFromRendererResult }
   setRendererSelection:       { args: SetRendererSelectionArgs;        result: SetRendererSelectionResult }
   generateRendererSurfObj:    { args: GenerateRendererSurfObjArgs;     result: GenerateRendererSurfObjResult }
   createRendererGroup:        { args: CreateRendererGroupArgs;         result: CreateRendererGroupResult }

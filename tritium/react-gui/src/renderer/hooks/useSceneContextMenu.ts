@@ -10,6 +10,8 @@ import type { SceneTreeNode } from '../worker/shared/sceneTreeTypes'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import { useShowTextPromptDialog } from '../components/dialogs/TextPromptDialogProvider'
 import { useShowNewRendererDialog } from '../components/dialogs/NewRendererDialogProvider'
+import { useShowApplyRendStyleDialog } from '../components/dialogs/ApplyRendStyleDialogProvider'
+import { useShowCreateRendStyleDialog } from '../components/dialogs/CreateRendStyleDialogProvider'
 import type { RendererOptions } from '../components/fopen-opt-dlgs/types'
 
 /**
@@ -138,6 +140,8 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
     // for Rename / New Group text input flows instead.
     const showTextPrompt = useShowTextPromptDialog()
     const showNewRenderer = useShowNewRendererDialog()
+    const showApplyRendStyle = useShowApplyRendStyleDialog()
+    const showCreateRendStyle = useShowCreateRendStyleDialog()
 
     // Shared "New Camera..." flow — also reused by the toolbar Add
     // button. Mirrors UXP `onNewCmd` dispatch (camera / cameraRoot
@@ -473,6 +477,67 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                     if (node.type !== 'renderer') break
                     await changeRendererType(idStr, action.typeName)
                     break
+                case 'editRendStyle': {
+                    if (node.type !== 'renderer') break
+                    if (!cm || sceneId === undefined) break
+                    let info
+                    try {
+                        info = await cm.invokeService('getRendererStyleEditInfo', {
+                            sceneId, rendId: node.id,
+                        })
+                    } catch (err) {
+                        console.warn('getRendererStyleEditInfo failed:', err)
+                        break
+                    }
+                    if (!info?.ok) break
+                    const result = await showApplyRendStyle({
+                        rendName: info.rendName,
+                        rendTypeName: info.rendTypeName,
+                        initialStyles: info.currentStyles,
+                        typeMatch: info.typeMatch,
+                        edgeMatch: info.edgeMatch,
+                        coloringMatch: info.coloringMatch,
+                    })
+                    if (!result) break
+                    try {
+                        await cm.invokeService('applyRendererStyleList', {
+                            sceneId, rendId: node.id, styleNames: result.styleNames,
+                        })
+                    } catch (err) {
+                        console.warn('applyRendererStyleList failed:', err)
+                    }
+                    break
+                }
+                case 'createRendStyle': {
+                    if (node.type !== 'renderer') break
+                    if (!cm || sceneId === undefined) break
+                    let info
+                    try {
+                        info = await cm.invokeService('getCreateRendStyleInfo', {
+                            sceneId, rendId: node.id,
+                        })
+                    } catch (err) {
+                        console.warn('getCreateRendStyleInfo failed:', err)
+                        break
+                    }
+                    if (!info?.ok) break
+                    const result = await showCreateRendStyle({
+                        rendName: info.rendName,
+                        rendTypeName: info.rendTypeName,
+                        styleSets: info.styleSets,
+                        defaultSelectedUid: info.defaultSelectedUid,
+                    })
+                    if (!result) break
+                    try {
+                        await cm.invokeService('createStyleFromRenderer', {
+                            sceneId, rendId: node.id,
+                            setUid: result.setUid, baseName: result.baseName,
+                        })
+                    } catch (err) {
+                        console.warn('createStyleFromRenderer failed:', err)
+                    }
+                    break
+                }
                 case 'newRenderer':
                     await openNewRendererFlow(node)
                     break
@@ -675,6 +740,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
             loadCameraFromFile, saveCameraToFile, saveCameraToCurrentSrc,
             reloadCameraFromSrc,
             showTextPrompt, showNewRenderer,
+            showApplyRendStyle, showCreateRendStyle,
             openNewRendererFlow, openNewCameraFlow,
         ],
     )

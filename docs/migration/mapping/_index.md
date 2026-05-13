@@ -1,6 +1,6 @@
 # Migration Mapping — Index
 
-- Updated: 2026-05-13 (Phase 5d: object ctxmenu Paint — paintObjectSelection + canPaint pre-fetch for object rows)
+- Updated: 2026-05-13 (Phase 6c: Edit / Create style dialogs wired on renderer ctxmenu)
 - Source files: `docs/migration/mapping/*.md` (excluding this file)
 
 ---
@@ -13,12 +13,12 @@
 | Menu | [menus.md](menus.md) | 4 | 1 | 2 | 0 | 1 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 13 | 0 | 0 | 0 | 13 | 0 |
-| Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 0 | 1 | 0 | 17 | 0 |
+| Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 0 | 3 | 0 | 15 | 0 |
 | Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 0 | 0 | 0 | 21 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 0 | 1 | 0 | 12 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 0 | 0 | 0 | 28 | 0 |
 | Other | [other.md](other.md) | 4 | 0 | 1 | 0 | 3 | 0 |
-| **Total** | | **120** | **1** | **15** | **0** | **104** | **0** |
+| **Total** | | **120** | **1** | **17** | **0** | **102** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -67,4 +67,4 @@
 
 ## Unstarted
 
-**104 / 120** items are `todo` (not yet started).
+**102 / 120** items are `todo` (not yet started).

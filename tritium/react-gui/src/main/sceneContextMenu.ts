@@ -109,6 +109,8 @@ function buildTemplate(
                 ...coloringSubmenu(payload, action),
                 ...paintSubmenu(payload, action),
                 ...styleSubmenu(payload, action),
+                { label: 'Edit style…', click: action({ kind: 'editRendStyle' }) },
+                { label: 'Create style…', click: action({ kind: 'createRendStyle' }) },
                 ...generateSurfObjItem(payload, action),
                 { type: 'separator' },
                 renameItem(action),

@@ -33,6 +33,6 @@ Status values:
 | [`dialog.setup-renderer`](../uxp-inventory/other_dlgs.md#dialogsetup-renderer) | | | todo | | | |
 | [`dialog.anim-render`](../uxp-inventory/other_dlgs.md#dialoganim-render) | | | todo | | | |
 | [`dialog.animobj`](../uxp-inventory/other_dlgs.md#dialoganimobj) | | | todo | | | |
-| [`dialog.apply-rend-style`](../uxp-inventory/other_dlgs.md#dialogapply-rend-style) | | | todo | | | |
-| [`dialog.rendstyle-create`](../uxp-inventory/other_dlgs.md#dialogrendstyle-create) | | | todo | | | |
+| [`dialog.apply-rend-style`](../uxp-inventory/other_dlgs.md#dialogapply-rend-style) | `ApplyRendStyleDialog` / `getRendererStyleEditInfo` / `applyRendererStyleList` | direct | wip | | | Blueprint replacement for UXP `apply_rend_style.xul`. List view + Add popup (type/edge/coloring sections) + Delete/Up/Down operating on the working list; commit dispatches `applyRendererStyleList` to call `rend.applyStyles` under "Change style" txn. Pre-fetch via `getRendererStyleEditInfo` (parses `rend.style`, groups available styles by regex, excludes already-applied entries). |
+| [`dialog.rendstyle-create`](../uxp-inventory/other_dlgs.md#dialogrendstyle-create) | `CreateRendStyleDialog` / `getCreateRendStyleInfo` / `createStyleFromRenderer` | direct | wip | | | Blueprint replacement for UXP `rendstyle_create.xul`. Writable style-set listbox (filters out readonly + global "system") + base-name input with `type_name` postfix; commit calls `createStyleFromRenderer` worker → `StyleManager.createStyleFromObj`. Same-name overwrite is handled by C++ internally (UXP's confirm prompt dropped — auto-overwrite matches our other paste patterns). |
 | [`dialog.style-editor`](../uxp-inventory/other_dlgs.md#dialogstyle-editor) | | | todo | | | |
