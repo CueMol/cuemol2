@@ -79,6 +79,8 @@ interface UseSceneTreeResult {
     setRendererColoring: (id: string, coloringId: RendColoringId) => Promise<boolean>
     /** Insert a paint entry (color + current mol sel) into a PaintColoring renderer. */
     paintRendererSelection: (id: string, colorValue: string) => Promise<boolean>
+    /** Object-level paint: insert a paint entry into a MolCoord's coloring. */
+    paintObjectSelection: (id: string, colorValue: string) => Promise<boolean>
     /** Apply a Style (shape) submenu choice (Phase 3c-3b). */
     applyRendererStyle: (
         id: string,
@@ -518,6 +520,24 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
             const res = await cm.invokeService('paintRendererSelection', {
                 sceneId: sid,
                 rendId: numId,
+                colorValue,
+            })
+            return res?.ok === true
+        },
+        [cm, tree],
+    )
+
+    const paintObjectSelection = useCallback(
+        async (id: string, colorValue: string): Promise<boolean> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return false
+            const numId = Number(id)
+            if (!Number.isFinite(numId)) return false
+            const node = findNode(tree, numId)
+            if (!node || node.type !== 'object') return false
+            const res = await cm.invokeService('paintObjectSelection', {
+                sceneId: sid,
+                objId: numId,
                 colorValue,
             })
             return res?.ok === true
@@ -970,6 +990,7 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         pasteNode,
         setRendererColoring,
         paintRendererSelection,
+        paintObjectSelection,
         applyRendererStyle,
         setRendererSelection,
         generateRendererSurfObj,

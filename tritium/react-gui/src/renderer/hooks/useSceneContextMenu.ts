@@ -50,6 +50,7 @@ export interface UseSceneContextMenuOptions {
     pasteNode: (node: SceneTreeNode) => Promise<boolean>
     setRendererColoring: (id: string, coloringId: RendColoringId) => Promise<boolean>
     paintRendererSelection: (id: string, colorValue: string) => Promise<boolean>
+    paintObjectSelection: (id: string, colorValue: string) => Promise<boolean>
     applyRendererStyle: (
         id: string, styleName: string, pattern: string, flags: string,
     ) => Promise<boolean>
@@ -118,7 +119,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
     const {
         cm, sceneId, toggleVisibility, deleteNode, renameNode, showProperty,
         selectObjectMol, copyNode, pasteNode, setRendererColoring,
-        paintRendererSelection, applyRendererStyle,
+        paintRendererSelection, paintObjectSelection, applyRendererStyle,
         setSceneBackgroundColor, toggleSceneColorProofing,
         setRendererSelection, generateRendererSurfObj,
         createRendererGroup, changeRendererType, createRendererOnObject,
@@ -334,6 +335,20 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                 }
             }
 
+            // Object-row paint pre-fetch — drives the Paint color-picker
+            // submenu gate (UXP `onPaintMol` object branch, hidden when
+            // sel is empty or coloring is not PaintColoring).
+            if (cm && node.type === 'object' && sceneId !== undefined) {
+                try {
+                    const info = await cm.invokeService('getObjectPaintInfo', {
+                        sceneId, objId: node.id,
+                    })
+                    canPaint = info?.canPaint === true
+                } catch (err) {
+                    console.warn('object paint pre-fetch failed:', err)
+                }
+            }
+
             // Pre-fetch scene-row submenu state (bg color + color proofing).
             let bgColor: 'white' | 'black' | 'other' | undefined
             let colorProofingEnabled = false
@@ -424,8 +439,13 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                     await setRendererColoring(idStr, action.coloringId)
                     break
                 case 'paintRend':
-                    if (node.type !== 'renderer') break
-                    await paintRendererSelection(idStr, action.colorValue)
+                    // UXP `ws.onPaintMol` is shared between the object and
+                    // renderer Paint menus — branch on node type.
+                    if (node.type === 'object') {
+                        await paintObjectSelection(idStr, action.colorValue)
+                    } else if (node.type === 'renderer') {
+                        await paintRendererSelection(idStr, action.colorValue)
+                    }
                     break
                 case 'applyRendStyle':
                     if (node.type !== 'renderer') break
@@ -641,7 +661,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
         [
             cm, sceneId, toggleVisibility, deleteNode, renameNode, showProperty,
             selectObjectMol, copyNode, pasteNode, setRendererColoring,
-            paintRendererSelection, applyRendererStyle,
+            paintRendererSelection, paintObjectSelection, applyRendererStyle,
             setSceneBackgroundColor, toggleSceneColorProofing,
             setRendererSelection, generateRendererSurfObj,
             createRendererGroup, changeRendererType, createRendererOnObject,

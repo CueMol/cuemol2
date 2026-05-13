@@ -171,3 +171,118 @@ describe('getRendererPaintInfo', () => {
         }
     })
 })
+
+// ─── paintObjectSelection / getObjectPaintInfo (Phase 5d) ────────────────
+//
+// Mirrors `paintRendererSelection` but operates on a MolCoord directly
+// rather than walking from renderer → parent mol. UXP `ws.onPaintMol`
+// object branch.
+
+interface ObjFixtureOpts {
+    coloringClass?: string
+    selIsEmpty?: boolean
+    selIsNull?: boolean
+    sceneExists?: boolean
+    molExists?: boolean
+}
+
+function makeObjFixture(opts: ObjFixtureOpts = {}) {
+    const {
+        coloringClass = 'PaintColoring',
+        selIsEmpty = false,
+        selIsNull = false,
+        sceneExists = true,
+        molExists = true,
+    } = opts
+
+    const insertBefore = vi.fn()
+    const coloring = { getClassName: () => coloringClass, insertBefore }
+    const isEmpty = vi.fn(() => selIsEmpty)
+    const sel = selIsNull ? null : { isEmpty }
+    const mol = molExists ? { sel, coloring } : null
+
+    const startUndoTxn = vi.fn()
+    const commitUndoTxn = vi.fn()
+    const rollbackUndoTxn = vi.fn()
+
+    const scene = {
+        uid: 7,
+        getObject: vi.fn(() => mol),
+        startUndoTxn, commitUndoTxn, rollbackUndoTxn,
+    }
+
+    const compileColor = vi.fn((str: string, _uid: number) => ({ __color: str }))
+    const ctx = {
+        sceMgr: { getScene: vi.fn(() => (sceneExists ? scene : null)) },
+        styleMgr: { compileColor },
+    } as unknown as WorkerContext
+
+    return { ctx, mol, sel, coloring, insertBefore, compileColor, startUndoTxn, commitUndoTxn }
+}
+
+describe('paintObjectSelection', () => {
+    beforeEach(() => vi.clearAllMocks())
+
+    it('inserts a paint entry under "Insert paint entry" undo txn', () => {
+        const { ctx, insertBefore, sel, compileColor, startUndoTxn, commitUndoTxn } =
+            makeObjFixture()
+        const res = services.paintObjectSelection(ctx, {
+            sceneId: 1, objId: 10, colorValue: 'hsb(120, 1.0, 1.0)',
+        })
+        expect(res).toEqual({ ok: true })
+        expect(compileColor).toHaveBeenCalledWith('hsb(120, 1.0, 1.0)', 7)
+        expect(insertBefore).toHaveBeenCalledWith(0, sel, { __color: 'hsb(120, 1.0, 1.0)' })
+        expect(startUndoTxn).toHaveBeenCalledWith('Insert paint entry')
+        expect(commitUndoTxn).toHaveBeenCalledTimes(1)
+    })
+
+    it('returns ok:false when object coloring is not PaintColoring', () => {
+        const { ctx, insertBefore } = makeObjFixture({ coloringClass: 'CPKColoring' })
+        const res = services.paintObjectSelection(ctx, {
+            sceneId: 1, objId: 10, colorValue: '#FFF',
+        })
+        expect(res).toEqual({ ok: false })
+        expect(insertBefore).not.toHaveBeenCalled()
+    })
+
+    it('returns ok:false when object sel is empty', () => {
+        const { ctx, insertBefore } = makeObjFixture({ selIsEmpty: true })
+        const res = services.paintObjectSelection(ctx, {
+            sceneId: 1, objId: 10, colorValue: '#FFF',
+        })
+        expect(res).toEqual({ ok: false })
+        expect(insertBefore).not.toHaveBeenCalled()
+    })
+
+    it('returns ok:false when scene / object lookup fails', () => {
+        for (const o of [{ sceneExists: false }, { molExists: false }] as const) {
+            const { ctx, insertBefore } = makeObjFixture(o)
+            expect(services.paintObjectSelection(ctx, {
+                sceneId: 1, objId: 10, colorValue: '#FFF',
+            })).toEqual({ ok: false })
+            expect(insertBefore).not.toHaveBeenCalled()
+        }
+    })
+})
+
+describe('getObjectPaintInfo', () => {
+    beforeEach(() => vi.clearAllMocks())
+
+    it('canPaint:true when coloring is PaintColoring + sel non-empty', () => {
+        const { ctx } = makeObjFixture()
+        expect(services.getObjectPaintInfo(ctx, { sceneId: 1, objId: 10 }))
+            .toEqual({ canPaint: true })
+    })
+
+    it.each([
+        ['non-Paint coloring', { coloringClass: 'CPKColoring' }],
+        ['empty sel', { selIsEmpty: true }],
+        ['null sel', { selIsNull: true }],
+        ['missing mol', { molExists: false }],
+        ['missing scene', { sceneExists: false }],
+    ] as const)('canPaint:false when %s', (_label, opts) => {
+        const { ctx } = makeObjFixture(opts)
+        expect(services.getObjectPaintInfo(ctx, { sceneId: 1, objId: 10 }))
+            .toEqual({ canPaint: false })
+    })
+})

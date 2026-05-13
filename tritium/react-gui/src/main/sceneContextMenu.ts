@@ -88,6 +88,7 @@ function buildTemplate(
                 ...header,
                 ...showHideItems(payload, action),
                 selectionSubmenu(action),
+                ...paintSubmenu(payload, action),
                 { type: 'separator' },
                 renameItem(action),
                 copyItem(action),

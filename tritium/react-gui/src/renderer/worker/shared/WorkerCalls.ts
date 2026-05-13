@@ -104,6 +104,10 @@ import type {
   PaintRendererSelectionResult,
   GetRendererPaintInfoArgs,
   GetRendererPaintInfoResult,
+  PaintObjectSelectionArgs,
+  PaintObjectSelectionResult,
+  GetObjectPaintInfoArgs,
+  GetObjectPaintInfoResult,
 } from '../server/services/rendererColoring.service'
 import type {
   GetRendererStyleEntriesArgs,
@@ -273,6 +277,8 @@ export interface ServiceMap {
   getPaintColoringStyles:     { args: GetPaintColoringStylesArgs;      result: GetPaintColoringStylesResult }
   paintRendererSelection:     { args: PaintRendererSelectionArgs;      result: PaintRendererSelectionResult }
   getRendererPaintInfo:       { args: GetRendererPaintInfoArgs;        result: GetRendererPaintInfoResult }
+  paintObjectSelection:       { args: PaintObjectSelectionArgs;        result: PaintObjectSelectionResult }
+  getObjectPaintInfo:         { args: GetObjectPaintInfoArgs;          result: GetObjectPaintInfoResult }
   getRendererStyleEntries:    { args: GetRendererStyleEntriesArgs;     result: GetRendererStyleEntriesResult }
   applyRendererStyle:         { args: ApplyRendererStyleArgs;          result: ApplyRendererStyleResult }
   setRendererSelection:       { args: SetRendererSelectionArgs;        result: SetRendererSelectionResult }
