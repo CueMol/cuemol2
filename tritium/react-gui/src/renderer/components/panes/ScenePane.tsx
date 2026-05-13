@@ -741,10 +741,15 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
 
         // UXP layout: scene row + objects + cameraRoot + styleRoot are ALL
         // siblings at depth 0. The scene row itself is a leaf (no children).
+        //
+        // Route the scene label through wrapLabel like every other row so
+        // the inline-rename editor (gated on editingNodeId === idStr)
+        // actually replaces the label when the user enters rename mode
+        // on the scene row.
         const sceneIdStr = String(tree.id);
         const sceneRow: TreeNodeInfo = {
             id: sceneIdStr,
-            label: nodeLabel(tree),
+            label: wrapLabel(tree),
             icon: TYPE_ICON.scene,
             isSelected: isRowSelected(sceneIdStr),
             hasCaret: false,
