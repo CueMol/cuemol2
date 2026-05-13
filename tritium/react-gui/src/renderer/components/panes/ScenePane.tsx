@@ -720,13 +720,19 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                 </div>
             </div>
             {!collapsed && tree && treeContents.length > 0 && (
-                // tabIndex=0 + onKeyDown captures F2 only while focus is
-                // inside the tree. The Blueprint Tree itself doesn't
-                // accept keyboard focus.
+                // tabIndex=-1 keeps the wrapper focusable for the F2
+                // keydown shortcut (Blueprint Tree rows are not natively
+                // focusable, so the click-target's focus bubbles up here),
+                // but removes it from the Tab order so keyboard nav skips
+                // it. `outline: none` suppresses the browser default
+                // focus ring — the selected-row background already
+                // conveys selection, and the ring rendered around an
+                // inner row label looked like a glitch (issue 2026-05-13).
                 <div
                     className="sp-pane-scroll"
-                    tabIndex={0}
+                    tabIndex={-1}
                     onKeyDown={handleTreeKeyDown}
+                    style={{ outline: 'none' }}
                 >
                     <Tree
                         contents={treeContents}
