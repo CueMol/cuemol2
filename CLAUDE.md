@@ -110,7 +110,7 @@ core (@cuemol/core): C++ addon + auto-generated TypeScript wrappers
 
 大きな構造変更 (ファイル分割・型システム入れ替え・状態同期パターン変更) の前に、**touch する境界の観測契約** を pin するテストを `__test__/` に先に書く。例: 「`invoke(IPC.X, payload)` は `ipcRenderer.invoke(channel, payload)` に流れる」「`useActiveViewState` は activeMolViewId 変化時に 3 getter を呼んで `MENU_UPDATE_STATE` を発火する」など。実装の中身ではなく **wire 形式 / IPC channel 名 / payload shape / 観測される call 順序** を pin することで、内部を入れ替えても同じテストが pass し続ける形にする
 
-**新規ダイアログの追加パターン (post-F factory)**
+**新規ダイアログの追加パターン**
 - `components/.../XxxDialog.tsx` — Blueprint `Dialog` 本体 (props: `visible`, `onConfirm`/`onCancel` 等の既存パターン)
 - `components/.../XxxDialogProvider.tsx` — `createDialogHook` (`hooks/useDialogFactory.tsx`) で `Provider` / `useShowXxxDialog` を生やす (約 15 行)
 - `contexts/DialogContext.tsx` の composite に `<XxxDialogProvider>` を 1 行追加

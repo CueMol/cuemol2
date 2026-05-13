@@ -66,7 +66,128 @@ import type {
   SceneBgColorArgs,
   SceneBgColorResult,
   SetSceneBgColorArgs,
+  SceneColorProofingArgs,
+  SceneColorProofingResult,
 } from '../server/services/sceneBgColor.service'
+import type {
+  GetSceneTreeArgs,
+  GetSceneTreeResult,
+  SetNodeVisibleArgs,
+  SetNodeVisibleResult,
+} from '../server/services/sceneTree.service'
+import type {
+  FocusOnNodeArgs,
+  FocusOnNodeResult,
+  DeleteNodeArgs,
+  DeleteNodeResult,
+  GetNodeInfoArgs,
+  GetNodeInfoResult,
+  RenameNodeArgs,
+  RenameNodeResult,
+  SelectObjectMolArgs,
+  SelectObjectMolResult,
+} from '../server/services/sceneOps.service'
+import type {
+  CopyNodeArgs,
+  CopyNodeResult,
+  PasteNodeArgs,
+  PasteNodeResult,
+  GetClipboardKindArgs,
+  GetClipboardKindResult,
+} from '../server/services/sceneClipboard.service'
+import type {
+  SetRendererColoringArgs,
+  SetRendererColoringResult,
+  GetPaintColoringStylesArgs,
+  GetPaintColoringStylesResult,
+  PaintRendererSelectionArgs,
+  PaintRendererSelectionResult,
+  GetRendererPaintInfoArgs,
+  GetRendererPaintInfoResult,
+} from '../server/services/rendererColoring.service'
+import type {
+  GetRendererStyleEntriesArgs,
+  GetRendererStyleEntriesResult,
+  ApplyRendererStyleArgs,
+  ApplyRendererStyleResult,
+} from '../server/services/rendererStyle.service'
+import type {
+  SetRendererSelectionArgs,
+  SetRendererSelectionResult,
+} from '../server/services/setRendererSelection.service'
+import type {
+  GenerateRendererSurfObjArgs,
+  GenerateRendererSurfObjResult,
+} from '../server/services/generateRendererSurfObj.service'
+import type {
+  CreateRendererGroupArgs,
+  CreateRendererGroupResult,
+} from '../server/services/createRendererGroup.service'
+import type {
+  ChangeRendererTypeArgs,
+  ChangeRendererTypeResult,
+} from '../server/services/changeRendererType.service'
+import type {
+  GetRendererChangeTypesArgs,
+  GetRendererChangeTypesResult,
+} from '../server/services/getRendererChangeTypes.service'
+import type {
+  ReorderSceneNodeArgs,
+  ReorderSceneNodeResult,
+} from '../server/services/reorderSceneNode.service'
+import type {
+  BulkSetVisibleArgs,
+  BulkDeleteArgs,
+  BulkOpResult,
+} from '../server/services/bulkSceneNodeOps.service'
+import type {
+  CreateRendererOnObjectArgs,
+  CreateRendererOnObjectResult,
+} from '../server/services/createRendererOnObject.service'
+import type {
+  GetNewRendererOptionsArgs,
+  GetNewRendererOptionsResult,
+} from '../server/services/getNewRendererOptions.service'
+import type {
+  CreateStyleSetArgs,
+  CreateStyleSetResult,
+  DestroyStyleSetArgs,
+  DestroyStyleSetResult,
+  ToggleStyleSetReadOnlyArgs,
+  ToggleStyleSetReadOnlyResult,
+} from '../server/services/styleOps.service'
+import type {
+  LoadStyleSetFromFileArgs,
+  LoadStyleSetFromFileResult,
+  SaveStyleSetToFileArgs,
+  SaveStyleSetToFileResult,
+  SaveStyleSetToCurrentSrcArgs,
+  SaveStyleSetToCurrentSrcResult,
+} from '../server/services/styleFile.service'
+import type {
+  CreateCameraArgs,
+  CreateCameraResult,
+  DestroyCameraArgs,
+  DestroyCameraResult,
+  RenameCameraArgs,
+  RenameCameraResult,
+  SaveViewToCameraArgs,
+  SaveViewToCameraResult,
+  ApplyCameraToViewArgs,
+  ApplyCameraToViewResult,
+  ClearCameraVisFlagsArgs,
+  ClearCameraVisFlagsResult,
+} from '../server/services/cameraOps.service'
+import type {
+  LoadCameraFromFileArgs,
+  LoadCameraFromFileResult,
+  SaveCameraToFileArgs,
+  SaveCameraToFileResult,
+  SaveCameraToCurrentSrcArgs,
+  SaveCameraToCurrentSrcResult,
+  ReloadCameraFromSrcArgs,
+  ReloadCameraFromSrcResult,
+} from '../server/services/cameraFile.service'
 import type { UndoArgs } from '../server/services/undo.service'
 import type {
   ValidateSelectionArgs,
@@ -136,6 +257,50 @@ export interface ServiceMap {
   validateSelection:          { args: ValidateSelectionArgs;           result: ValidateSelectionResult }
   getSceneBgColor:            { args: SceneBgColorArgs;                result: SceneBgColorResult }
   setSceneBgColor:            { args: SetSceneBgColorArgs;             result: SceneBgColorResult }
+  getSceneColorProofing:      { args: SceneColorProofingArgs;          result: SceneColorProofingResult }
+  toggleSceneColorProofing:   { args: SceneColorProofingArgs;          result: SceneColorProofingResult }
+  getSceneTree:               { args: GetSceneTreeArgs;                result: GetSceneTreeResult }
+  setNodeVisible:             { args: SetNodeVisibleArgs;              result: SetNodeVisibleResult }
+  focusOnNode:                { args: FocusOnNodeArgs;                 result: FocusOnNodeResult }
+  deleteNode:                 { args: DeleteNodeArgs;                  result: DeleteNodeResult }
+  getNodeInfo:                { args: GetNodeInfoArgs;                 result: GetNodeInfoResult }
+  renameNode:                 { args: RenameNodeArgs;                  result: RenameNodeResult }
+  selectObjectMol:            { args: SelectObjectMolArgs;             result: SelectObjectMolResult }
+  copyNode:                   { args: CopyNodeArgs;                    result: CopyNodeResult }
+  pasteNode:                  { args: PasteNodeArgs;                   result: PasteNodeResult }
+  getClipboardKind:           { args: GetClipboardKindArgs;            result: GetClipboardKindResult }
+  setRendererColoring:        { args: SetRendererColoringArgs;         result: SetRendererColoringResult }
+  getPaintColoringStyles:     { args: GetPaintColoringStylesArgs;      result: GetPaintColoringStylesResult }
+  paintRendererSelection:     { args: PaintRendererSelectionArgs;      result: PaintRendererSelectionResult }
+  getRendererPaintInfo:       { args: GetRendererPaintInfoArgs;        result: GetRendererPaintInfoResult }
+  getRendererStyleEntries:    { args: GetRendererStyleEntriesArgs;     result: GetRendererStyleEntriesResult }
+  applyRendererStyle:         { args: ApplyRendererStyleArgs;          result: ApplyRendererStyleResult }
+  setRendererSelection:       { args: SetRendererSelectionArgs;        result: SetRendererSelectionResult }
+  generateRendererSurfObj:    { args: GenerateRendererSurfObjArgs;     result: GenerateRendererSurfObjResult }
+  createRendererGroup:        { args: CreateRendererGroupArgs;         result: CreateRendererGroupResult }
+  changeRendererType:         { args: ChangeRendererTypeArgs;          result: ChangeRendererTypeResult }
+  getRendererChangeTypes:     { args: GetRendererChangeTypesArgs;      result: GetRendererChangeTypesResult }
+  reorderSceneNode:           { args: ReorderSceneNodeArgs;            result: ReorderSceneNodeResult }
+  bulkSetNodeVisible:         { args: BulkSetVisibleArgs;              result: BulkOpResult }
+  bulkDeleteNode:             { args: BulkDeleteArgs;                  result: BulkOpResult }
+  createRendererOnObject:     { args: CreateRendererOnObjectArgs;      result: CreateRendererOnObjectResult }
+  getNewRendererOptions:      { args: GetNewRendererOptionsArgs;       result: GetNewRendererOptionsResult }
+  createStyleSet:             { args: CreateStyleSetArgs;              result: CreateStyleSetResult }
+  destroyStyleSet:            { args: DestroyStyleSetArgs;             result: DestroyStyleSetResult }
+  toggleStyleSetReadOnly:     { args: ToggleStyleSetReadOnlyArgs;      result: ToggleStyleSetReadOnlyResult }
+  loadStyleSetFromFile:       { args: LoadStyleSetFromFileArgs;        result: LoadStyleSetFromFileResult }
+  saveStyleSetToFile:         { args: SaveStyleSetToFileArgs;          result: SaveStyleSetToFileResult }
+  saveStyleSetToCurrentSrc:   { args: SaveStyleSetToCurrentSrcArgs;    result: SaveStyleSetToCurrentSrcResult }
+  createCamera:               { args: CreateCameraArgs;                result: CreateCameraResult }
+  destroyCamera:              { args: DestroyCameraArgs;               result: DestroyCameraResult }
+  renameCamera:               { args: RenameCameraArgs;                result: RenameCameraResult }
+  saveViewToCamera:           { args: SaveViewToCameraArgs;            result: SaveViewToCameraResult }
+  applyCameraToView:          { args: ApplyCameraToViewArgs;           result: ApplyCameraToViewResult }
+  clearCameraVisFlags:        { args: ClearCameraVisFlagsArgs;         result: ClearCameraVisFlagsResult }
+  loadCameraFromFile:         { args: LoadCameraFromFileArgs;          result: LoadCameraFromFileResult }
+  saveCameraToFile:           { args: SaveCameraToFileArgs;            result: SaveCameraToFileResult }
+  saveCameraToCurrentSrc:     { args: SaveCameraToCurrentSrcArgs;      result: SaveCameraToCurrentSrcResult }
+  reloadCameraFromSrc:        { args: ReloadCameraFromSrcArgs;         result: ReloadCameraFromSrcResult }
   getViewProjection:          { args: ViewProjectionArgs;              result: ViewProjectionResult }
   setViewProjection:          { args: ViewProjectionArgs;              result: ViewProjectionResult }
   getViewCenterMark:          { args: ViewCenterMarkArgs;              result: ViewCenterMarkResult }

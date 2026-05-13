@@ -140,9 +140,13 @@
 }
 
 /* ─── Blueprint Tree Overrides (Scene & MolStruct) ─── */
+/* NOTE: the left inset lives on the container so Blueprint's depth-based
+ * padding (`.bp5-tree-node-content-<depth>`, +23px per level) still applies
+ * to nested rows. Overriding `padding-left` on `.bp5-tree-node-content`
+ * directly would flatten the indentation. */
 .scene-tree,
 .mol-tree {
-  padding: 2px 0;
+  padding: 2px 0 2px 4px;
   background: transparent;
 }
 
@@ -154,7 +158,6 @@
 .scene-tree .bp5-tree-node-content,
 .mol-tree .bp5-tree-node-content {
   height: 22px;
-  padding-left: 4px;
   padding-right: 6px;
   cursor: pointer;
   font-size: var(--fs-lg);

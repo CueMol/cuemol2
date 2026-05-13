@@ -21,6 +21,8 @@ import type {
   MenuState,
   NaviCtxAction,
   NaviCtxMenuPayload,
+  SceneCtxAction,
+  SceneCtxMenuPayload,
   UiState,
 } from './ipcTypes'
 
@@ -29,6 +31,14 @@ export interface InvokeChannels {
   [IPC.DIALOG_OPEN]:       { req: FileDialogOptions;     res: void }
   [IPC.DIALOG_SAVE_SCENE]: { req: { defaultName: string };
                              res: { canceled: boolean; filePath: string } }
+  [IPC.DIALOG_STYLE_OPEN]: { req: void;
+                             res: { canceled: boolean; filePath: string } }
+  [IPC.DIALOG_STYLE_SAVE]: { req: { defaultName: string };
+                             res: { canceled: boolean; filePath: string } }
+  [IPC.DIALOG_CAMERA_OPEN]: { req: void;
+                              res: { canceled: boolean; filePath: string } }
+  [IPC.DIALOG_CAMERA_SAVE]: { req: { defaultName: string };
+                              res: { canceled: boolean; filePath: string } }
   [IPC.FILE_EXISTS]:       { req: { path: string };      res: { exists: boolean } }
   [IPC.FILE_BACKUP_RENAME]:{ req: { path: string };
                              res: { ok: boolean; backed: boolean; error?: string } }
@@ -41,6 +51,7 @@ export interface InvokeChannels {
   [IPC.MENU_INVOKE_ROLE]:  { req: string;                res: void }
   [IPC.APP_QUIT_PROCEED]:  { req: void;                  res: void }
   [IPC.NAVI_CTX_SHOW]:     { req: NaviCtxMenuPayload;    res: NaviCtxAction | null }
+  [IPC.SCENE_CTX_SHOW]:    { req: SceneCtxMenuPayload;   res: SceneCtxAction | null }
 }
 
 export interface PushChannels {

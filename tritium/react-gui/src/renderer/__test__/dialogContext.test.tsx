@@ -27,6 +27,7 @@ const { useShowAboutDialog } = await import('../components/dialogs/AboutDialogPr
 const { useShowNewTabDialog } = await import('../components/dialogs/NewTabDialogProvider')
 const { useShowConfirmCloseTabDialog } = await import('../components/dialogs/ConfirmCloseTabDialogProvider')
 const { useShowFileOpenOptionDialog } = await import('../components/fopen-opt-dlgs/FileOpenOptionDialogProvider')
+const { useShowTextPromptDialog } = await import('../components/dialogs/TextPromptDialogProvider')
 
 import { mountTree, flushPromises, setupElectronAPI, teardownElectronAPI } from './helpers/testHarness'
 
@@ -39,12 +40,14 @@ let showAbout: () => Promise<void>
 let showNewTab: (args: { currentSceneName: string | null; defaultSceneName: string; defaultViewName: string }) => Promise<unknown>
 let showConfirmClose: (args: { sceneName: string }) => Promise<unknown>
 let showFileOpenOption: (args: { filePath: string; sceneId: number; rendererTypes?: string[] }) => Promise<unknown>
+let showTextPrompt: (args: { title: string; label: string; defaultValue?: string; confirmLabel?: string }) => Promise<string | null>
 
 const Probe: React.FC = () => {
   showAbout = useShowAboutDialog()
   showNewTab = useShowNewTabDialog()
   showConfirmClose = useShowConfirmCloseTabDialog()
   showFileOpenOption = useShowFileOpenOptionDialog()
+  showTextPrompt = useShowTextPromptDialog()
   return null
 }
 
@@ -153,6 +156,51 @@ describe('DialogProvider (per-dialog factory)', () => {
     cancelBtn!.click()
 
     expect(await p).toBeNull()
+    handle.unmount()
+  })
+
+  it('useShowTextPromptDialog: Cancel resolves with null', async () => {
+    const handle = mount()
+    const p = showTextPrompt({ title: 'Rename', label: 'New name:', defaultValue: 'foo' })
+    await flushPromises()
+
+    const cancelBtn = findButtonByText(document.body, 'Cancel')
+    expect(cancelBtn).toBeTruthy()
+    cancelBtn!.click()
+
+    expect(await p).toBeNull()
+    handle.unmount()
+  })
+
+  it('useShowTextPromptDialog: OK resolves with the trimmed default value', async () => {
+    const handle = mount()
+    const p = showTextPrompt({ title: 'Rename', label: 'New name:', defaultValue: 'foo' })
+    await flushPromises()
+
+    const okBtn = findButtonByText(document.body, 'OK')
+    expect(okBtn).toBeTruthy()
+    okBtn!.click()
+
+    expect(await p).toBe('foo')
+    handle.unmount()
+  })
+
+  it('useShowTextPromptDialog: custom confirmLabel renders on the OK button', async () => {
+    const handle = mount()
+    const p = showTextPrompt({
+      title: 'New Group',
+      label: 'Name:',
+      defaultValue: 'group1',
+      confirmLabel: 'Create',
+    })
+    await flushPromises()
+
+    expect(findButtonByText(document.body, 'OK')).toBeNull()
+    const createBtn = findButtonByText(document.body, 'Create')
+    expect(createBtn).toBeTruthy()
+    createBtn!.click()
+
+    expect(await p).toBe('group1')
     handle.unmount()
   })
 

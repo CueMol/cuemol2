@@ -1,14 +1,11 @@
-<!-- AUTO-GENERATED — DO NOT EDIT MANUALLY. See specs/260420_uxpgui_step1_panel.md for generation instructions. -->
-
 # UXP Inventory — Panel
 
-> ⚠️ このファイルは Claude Code による自動生成です。手修正しないでください。
-> 再生成する場合は `_spec.md` に従ってください。
+> Hand-maintained. See [`_spec.md`](./_spec.md) for entry format and
+> editing guidance.
 
-- Generated: 2026-04-20
-- Source: `uxp_gui/cuemol2/`
+- Origin: one-time scan of `uxp_gui/cuemol2/` (2026-04-20)
 - Spec: [_spec.md](./_spec.md)
-- Entries: 9
+- Entries: 17
 
 ## Index
 
@@ -20,7 +17,15 @@
 - [`panel.molstruct`](#panelmolstruct)
 - [`panel.selection`](#panelselection)
 - [`panel.symmetry`](#panelsymmetry)
-- [`panel.workspace`](#panelworkspace)
+- [`panel.workspace.tree`](#panelworkspacetree)
+- [`panel.workspace.toolbar`](#panelworkspacetoolbar)
+- [`panel.workspace.ctxmenu.scene`](#panelworkspacectxmenuscene)
+- [`panel.workspace.ctxmenu.object`](#panelworkspacectxmenuobject)
+- [`panel.workspace.ctxmenu.renderer`](#panelworkspacectxmenurenderer)
+- [`panel.workspace.ctxmenu.rendgroup`](#panelworkspacectxmenurendgroup)
+- [`panel.workspace.ctxmenu.camera`](#panelworkspacectxmenucamera)
+- [`panel.workspace.ctxmenu.style`](#panelworkspacectxmenustyle)
+- [`panel.workspace.ctxmenu.multi`](#panelworkspacectxmenumulti)
 
 ---
 
@@ -311,62 +316,30 @@
 
 ---
 
-### `panel.workspace`
+### `panel.workspace.tree`
 
-- **File**: `uxp_gui/cuemol2/base/content/workspace_panel.xul`
-- **Root element**: `<overlay>`
-- **Title**: "Scene" (`&workspacePanel.title;` in `cuemol2.dtd`)
+- **File**: `uxp_gui/cuemol2/base/content/workspace_panel.xul` (`<tree id="objectTree">`)
+- **Root element**: `<tree>`
+- **Title**: "Scene" (`&workspacePanel.title;` in `cuemol2.dtd`) — panel-level title shared across all `panel.workspace.*` surfaces
 - **Chrome URL**: `chrome://cuemol2/content/workspace_panel.xul`
-- **Associated JS**: `workspace_panel.js`, `treeview.js`
+- **Associated JS**: `workspace_panel.js`, `workspace_panel_dnd.js`, `treeview.js`
 - **Overlays applied**: none
 
 #### User-visible features
-- Scene object/renderer tree (`objectTree`): columns V (visibility toggle) and Name; editable, multi-select, drag-and-drop enabled
-- Toolbar buttons: Zoom at, Add, Delete, Property
-- **Scene context menu** (`wspcPanelSceneCtxtMenu`): Background color (White/Black), Use color proofing toggle, Paste, Properties
-- **Object context menu** (`wspcPanelObjCtxtMenu`): Regenerate surface, Selection submenu (All/Unselect/Invert/Toggle sidechain/Around by-resid/Around/protein/nucleic/water/ligand/sugar/hydrogen), Paint menu (inlined from `color-menu.xul`), Copy Object, Paste Renderer, New Renderer, New Group, Save As, Delete Object, Properties
-- **Renderer context menu** (`wspcPanelRendCtxtMenu`): Change sel submenu, Change type submenu, Coloring submenu, Paint menu, Style submenu, Edit style, Create style, Edit interaction list, Generate surface obj, Copy, New Renderer, Delete, Properties
-- **Renderer group context menu** (`wspcPanelRendGrpCtxtMenu`): Copy, Paste Renderer, Change Name, New Renderer, Delete
-- **Camera context menu** (`wspcPanelCameraCtxtMenu`): New Camera, Delete, Copy, Paste, Camera file (Load/Reload/Save/Save as), Save from view, Apply to view, Save from scene (vis flags), Apply to scene (vis flags), Edit vis flags, Clear vis flags, Rename, Properties
-- **Style context menu** (`wspcStyleCtxtMenu`): New Style, Copy, Paste, Delete, Style file (Load/Reload/Save/Save As), Read-only toggle, Rename, Edit
-- **Multi-selection context menu** (`wspcPanelMulCtxtMenu`): Copy, Delete, Show, Hide
-- Side panel toggle menu item
+- Object/renderer tree with columns **V** (visibility toggle) and **Name**
+- Inline name editing on the Name column
+- Multi-selection enabled (`seltype="multiple"`)
+- Drag-and-drop reorder of tree items (`onDragStart` / drop handlers in `workspace_panel_dnd.js`)
+- Side panel show/hide toggle menu item in the left-panels popup
 
 #### Commands / Handlers
 | Trigger | Handler | Description |
 |---------|---------|-------------|
-| Tree drag start | `cuemolui.panels.workspace.onDragStart(event)` | Initiates drag-and-drop for tree items |
-| Zoom at button | `cuemolui.panels.workspace.onBtnZoomCmd(event)` | Zooms view to selected object |
-| Add button | `cuemolui.panels.workspace.onNewCmd(event)` | Opens new renderer/object dialog |
-| Delete button | `cuemolui.panels.workspace.onDeleteCmd(event)` | Deletes selected object or renderer |
-| Property button | `cuemolui.panels.workspace.onPropCmd(event)` | Opens property dialog |
-| Scene ctx — Background color | `gQm2Main.setBgColor(...)` | Sets scene background color |
-| Scene ctx — Color proofing | `gQm2Main.onToggleColProof(event)` | Toggles color proofing mode |
-| Scene ctx — Paste | `cuemolui.panels.workspace.onPasteObj(event)` | Pastes copied object into scene |
-| Object ctx — selection ops | `cuemolui.panels.workspace.selectMol(...)`, `invertMolSel()`, `toggleSideCh()`, `aroundMolSel(...)` | Various selection commands |
-| Object ctx — Paint | `cuemolui.panels.workspace.onPaintMol(event)` | Applies paint color to object |
-| Object ctx — Copy Object | `cuemolui.panels.workspace.onCopyCmd(event)` | Copies object to clipboard |
-| Object ctx — Paste Renderer | `cuemolui.panels.workspace.onPasteRend(event)` | Pastes renderer onto object |
-| Object ctx — New Renderer | `cuemolui.panels.workspace.onNewCmd(event)` | Opens new renderer dialog |
-| Object ctx — New Group | `cuemolui.panels.workspace.onNewRendGrp(event)` | Creates renderer group |
-| Object ctx — Save As | `cuemolui.panels.workspace.onSaveAsObj(event)` | Saves object to file |
-| Object ctx — Regen surface | `cuemolui.panels.workspace.onMolSurfRegen(event)` | Regenerates molecular surface |
-| Renderer ctx — Change sel | `cuemolui.panels.workspace.setRendSel(...)` | Changes renderer atom selection |
-| Renderer ctx — Change type | `cuemolui.panels.workspace.chgRendType(event)` | Changes renderer type |
-| Renderer ctx — Coloring | `cuemolui.panels.workspace.onColoringMol(event)` | Applies coloring style |
-| Renderer ctx — Style | `cuemolui.panels.workspace.styleMol(event)` | Applies shape style |
-| Renderer ctx — Edit/Create style | `cuemolui.panels.workspace.onApplyStyle(event)` / `onCreateStyle(event)` | Style editing dialogs |
-| Renderer ctx — Edit interaction | `cuemolui.panels.workspace.onEditIntr(event)` | Opens interaction list editor |
-| Renderer ctx — Gen surface obj | `cuemolui.panels.workspace.onGenSurfObj(event)` | Generates surface object from renderer |
-| Camera ctx — New/Delete/Copy/Paste | `cuemolui.panels.workspace.onNewCmd` / `onDeleteCmd` / `onCameraCopy` / `onCameraPaste` | Camera CRUD operations |
-| Camera ctx — Load/Reload/Save file | `cuemolui.panels.workspace.onCamLoadFile` / `onCamReloadFile` / `onCamSaveFile` / `onCamSaveFileAs` | Camera file I/O |
-| Camera ctx — Save/Apply view | `cuemolui.panels.workspace.onLoadSaveCam(event, ...)` | Saves camera from / applies to view |
-| Camera ctx — Vis flags | `cuemolui.panels.workspace.onEditVisFlags` / `onClearVisFlags` | Visibility flag management |
-| Camera ctx — Rename | `cuemolui.panels.workspace.onRenameCamera(event)` | Renames camera |
-| Style ctx — copy/paste/delete/rename | `cuemolui.panels.workspace.onCopyStyle` / `onPasteStyle` / `onDeleteCmd` / `onRenameStyle` | Style clipboard and rename |
-| Style ctx — Load/Reload/Save file | `cuemolui.panels.workspace.onStyLoadFile` / `onStyReloadFile` / `onStySaveFile` / `onStySaveFileAs` | Style file I/O |
-| Style ctx — Read-only toggle | `cuemolui.panels.workspace.onStyToggleRo(event)` | Toggles style read-only flag |
-| Multi-select ctx — Show/Hide | `cuemolui.panels.workspace.onShowHideCmd(event, ...)` | Bulk show/hide of selected items |
+| V cell click | `cuemolui.panels.workspace.onTreeClicked(event)` | Toggles visibility for the clicked row |
+| Name cell commit | `cuemolui.panels.workspace.onTextCommit(...)` | Persists inline name edits |
+| Selection change | `cuemolui.panels.workspace.onTreeSelChanged(event)` | Updates toolbar / property button enable state |
+| Drag start | `cuemolui.panels.workspace.onDragStart(event)` | Initiates DnD payload for tree row |
+| Drop | `workspace_panel_dnd` drop handlers | Reorders / regroups renderers under the dropped target |
 | Panel toggle menu item | `cuemolui.sidepanel.onToggle('workspace-panel')` | Shows/hides the workspace side panel |
 
 #### i18n keys used
@@ -374,9 +347,293 @@
 - `&workspacePanel.object_tree.name;` (dtd: `cuemol2.dtd`)
 
 #### Notes
-- Object and renderer context menus use `#include color-menu.xul` (XUL preprocessor directive) to inline the color picker menu at build time; this is not a runtime overlay.
-- This is the central scene management panel; it has by far the most context menu items of any panel.
-- Context menu item states are controlled by `onCtxtMenuShowing` / `onRendCtxtMenuShowing` / `onCamCtxtShowing` / `onStyCtxtShowing` handlers registered per context menu.
+- Tree contents come from `scene.getSceneDataJSON()` plus synthesised camera / style root rows (cameras and styles are not part of the scene-data JSON).
+- Auto-refresh in UXP is driven by `_attachScene` subscribing to the CueMol event manager; the React port mirrors this with `cm.addEventListener` filtering `SEM_SCENE|OBJECT|RENDERER|CAMERA|STYLE`.
+
+---
+
+### `panel.workspace.toolbar`
+
+- **File**: `uxp_gui/cuemol2/base/content/workspace_panel.xul` (`<toolbar id="wspcPanelToolbar">`)
+- **Root element**: `<toolbar>`
+- **Title**: shares `panel.workspace` ("Scene"); toolbar has no own label
+- **Chrome URL**: `chrome://cuemol2/content/workspace_panel.xul`
+- **Associated JS**: `workspace_panel.js`
+- **Overlays applied**: none
+
+#### User-visible features
+- Four toolbar buttons acting on the currently selected tree row: **Zoom at**, **Add**, **Delete**, **Property**
+
+#### Commands / Handlers
+| Trigger | Handler | Description |
+|---------|---------|-------------|
+| Zoom at button | `cuemolui.panels.workspace.onBtnZoomCmd(event)` | Zooms view to selected object/renderer |
+| Add button | `cuemolui.panels.workspace.onNewCmd(event)` | Opens new renderer/object dialog |
+| Delete button | `cuemolui.panels.workspace.onDeleteCmd(event)` | Deletes selected object or renderer |
+| Property button | `cuemolui.panels.workspace.onPropCmd(event)` | Opens property dialog for the selection |
+
+#### i18n keys used
+- (none — button labels are tooltip-only in UXP)
+
+#### Notes
+- Add opens the same dialog as the Object / Renderer / RendGroup context menus' "New …" items.
+- Delete and Property are also reachable from each per-type context menu's "Delete" / "Properties" items; the toolbar variant works on the current tree selection.
+
+---
+
+### `panel.workspace.ctxmenu.scene`
+
+- **File**: `uxp_gui/cuemol2/base/content/workspace_panel.xul` (`<menupopup id="wspcPanelSceneCtxtMenu">`)
+- **Root element**: `<menupopup>`
+- **Title**: n/a (context menu — no titlebar)
+- **Chrome URL**: `chrome://cuemol2/content/workspace_panel.xul`
+- **Associated JS**: `workspace_panel_ctxtmenu.js`, `workspace_panel.js`
+- **Overlays applied**: none
+
+#### User-visible features
+- Background color submenu (White / Black)
+- Use color proofing toggle (`<menuitem type="checkbox">`)
+- Paste (enabled when clipboard holds an object)
+- Properties
+
+#### Commands / Handlers
+| Trigger | Handler | Description |
+|---------|---------|-------------|
+| Popup showing | `cuemolui.panels.workspace.onCtxtMenuShowing(event)` (scene branch) | Enables Paste based on `qsc-copipe` clipboard; reflects `scene.use_colproof` toggle state |
+| Background color | `gQm2Main.setBgColor(...)` | Sets scene background color |
+| Color proofing | `gQm2Main.onToggleColProof(event)` | Toggles color proofing mode |
+| Paste | `cuemolui.panels.workspace.onPasteObj(event)` | Pastes copied object into scene |
+| Properties | `cuemolui.panels.workspace.onPropCmd(event)` | Opens scene property dialog |
+
+#### i18n keys used
+- (none — labels hardcoded)
+
+#### Notes
+- Color proofing requires both `scene.use_colproof === true` AND `scene.icc_filename !== ""` to render as checked.
+- This is the only ctx menu in the panel that mutates global scene state (bg color, color proof) rather than acting on a tree row.
+
+---
+
+### `panel.workspace.ctxmenu.object`
+
+- **File**: `uxp_gui/cuemol2/base/content/workspace_panel.xul` (`<menupopup id="wspcPanelObjCtxtMenu">`)
+- **Root element**: `<menupopup>`
+- **Title**: n/a
+- **Chrome URL**: `chrome://cuemol2/content/workspace_panel.xul`
+- **Associated JS**: `workspace_panel_ctxtmenu.js`, `workspace_panel_molsel.js`, `workspace_panel_copipe.js`
+- **Overlays applied**: none
+
+#### User-visible features
+- Regenerate surface (visible only for `MolSurfObj` with a known origin mol)
+- Selection submenu: All / Unselect / Invert / Toggle sidechain / Around by-resid / Around (3/5/7/10) / protein / nucleic / water / ligand / sugar / hydrogen
+- Paint submenu (inlined from `color-menu.xul`)
+- Copy Object / Paste Renderer
+- New Renderer / New Group
+- Save As
+- Delete Object / Properties
+
+#### Commands / Handlers
+| Trigger | Handler | Description |
+|---------|---------|-------------|
+| Popup showing | `cuemolui.panels.workspace.onCtxtMenuShowing(event)` (object branch) + `setupMolSurfCtxtMenu` | Updates Paste enable + molsurf regen visibility |
+| Selection ops | `cuemolui.panels.workspace.selectMol(...)` / `invertMolSel()` / `toggleSideCh()` / `aroundMolSel(...)` | Per-item handlers from `workspace_panel_molsel.js` |
+| Paint | `cuemolui.panels.workspace.onPaintMol(event)` | Inserts a paint entry into the mol's coloring |
+| Copy Object | `cuemolui.panels.workspace.onCopyCmd(event)` | Copies object to `qscobj` clipboard |
+| Paste Renderer | `cuemolui.panels.workspace.onPasteRend(event)` | Pastes renderer from `qscrend` clipboard onto this object |
+| New Renderer | `cuemolui.panels.workspace.onNewCmd(event)` | Opens new renderer dialog targeted at this object |
+| New Group | `cuemolui.panels.workspace.onNewRendGrp(event)` | Creates a renderer group on this object |
+| Save As | `cuemolui.panels.workspace.onSaveAsObj(event)` | Saves object to file |
+| Regen surface | `cuemolui.panels.workspace.onMolSurfRegen(event)` | Regenerates `MolSurfObj` from its origin mol |
+| Delete / Properties | `cuemolui.panels.workspace.onDeleteCmd` / `onPropCmd` | Shared with toolbar |
+
+#### i18n keys used
+- (none — labels hardcoded)
+
+#### Notes
+- The Paint submenu is `#include`-d from `color-menu.xul` at XUL preprocessor time, not at runtime.
+- Selection menu items live in `workspace_panel_molsel.js` rather than the ctx-menu JS so they can be reused by other panels (e.g. the selection panel).
+
+---
+
+### `panel.workspace.ctxmenu.renderer`
+
+- **File**: `uxp_gui/cuemol2/base/content/workspace_panel.xul` (`<menupopup id="wspcPanelRendCtxtMenu">`)
+- **Root element**: `<menupopup>`
+- **Title**: n/a
+- **Chrome URL**: `chrome://cuemol2/content/workspace_panel.xul`
+- **Associated JS**: `workspace_panel_ctxtmenu.js`
+- **Overlays applied**: none
+
+#### User-visible features
+- Change sel submenu: Current / All / Protein / Nucleic / Water / Ligand / Sugar
+- Change type submenu (dynamically populated from compatible renderer types)
+- Coloring submenu: Paint (Secondary str.) sub-submenu / CPK molcol / CPK dark gray / CPK light gray / B-factor / Rainbow
+- Paint submenu (inlined from `color-menu.xul`)
+- Style submenu (dynamically populated from `<type_name>$/i` + edge styles `/^EgLine/`)
+- Edit style… / Create style…
+- Edit interaction list… (visible only for `atomintr` renderer)
+- Generate surface obj (visible only for `isosurf` renderer)
+- Copy / New Renderer / Delete / Properties
+
+#### Commands / Handlers
+| Trigger | Handler | Description |
+|---------|---------|-------------|
+| Popup showing | `cuemolui.panels.workspace.onRendCtxtMenuShowing(event)` | Enables/disables Paint / Coloring / Style / Copy by renderer type and current coloring class |
+| Change sel | `cuemolui.panels.workspace.setRendSel(...)` | Changes renderer atom selection |
+| Change type popup-showing | `cuemolui.panels.workspace.onChgRendTypeShowing(event)` | Populates compatible-types submenu |
+| Change type | `cuemolui.panels.workspace.chgRendType(event)` | Replaces renderer with chosen type |
+| Coloring | `cuemolui.panels.workspace.onColoringMol(event)` → `gQm2Main.setRendColoring(...)` | Applies coloring style (style-* or paint-type-*) |
+| Paint | `cuemolui.panels.workspace.onPaintMol(event)` | Inserts paint entry into `PaintColoring` |
+| Style popup-showing | `cuemolui.panels.workspace.onStyleShowing(event)` | Populates Style submenu via `populateStyleMenus` with `<type_name>$/i` + edge `/^EgLine/` |
+| Style item | `cuemolui.panels.workspace.styleMol(event)` | styleutil.remove + push, then `rend.applyStyles(...)` |
+| Edit / Create style | `cuemolui.panels.workspace.onApplyStyle(event)` / `onCreateStyle(event)` | Opens style apply / create dialogs |
+| Edit interaction | `cuemolui.panels.workspace.onEditIntr(event)` | Opens interaction list editor |
+| Gen surface obj | `cuemolui.panels.workspace.onGenSurfObj(event)` | Generates surface object from isosurf renderer |
+| Copy | `cuemolui.panels.workspace.onCopyCmd(event)` | Copies renderer to `qscrend` clipboard |
+| New Renderer / Delete / Properties | `onNewCmd` / `onDeleteCmd` / `onPropCmd` | Shared handlers |
+
+#### i18n keys used
+- (none — labels hardcoded)
+
+#### Notes
+- This is the most heavily-conditional ctx menu: most items depend on the renderer's `type_name` and on its current coloring class (e.g. Paint requires `PaintColoring`).
+- The Coloring submenu's "Paint (Secondary str.)" sub-submenu is populated at popup time from `StyleManager.getStyleNamesJSON` filtered by `/Paint$/`.
+- The Style submenu shows both type-specific styles and (for non-edge-blocklist types) `/^EgLine/` edge styles, separated by a separator.
+
+---
+
+### `panel.workspace.ctxmenu.rendgroup`
+
+- **File**: `uxp_gui/cuemol2/base/content/workspace_panel.xul` (`<menupopup id="wspcPanelRendGrpCtxtMenu">`)
+- **Root element**: `<menupopup>`
+- **Title**: n/a
+- **Chrome URL**: `chrome://cuemol2/content/workspace_panel.xul`
+- **Associated JS**: `workspace_panel_ctxtmenu.js`, `workspace_panel_copipe.js`
+- **Overlays applied**: none
+
+#### User-visible features
+- Copy / Paste Renderer
+- Change Name
+- New Renderer
+- Delete
+
+#### Commands / Handlers
+| Trigger | Handler | Description |
+|---------|---------|-------------|
+| Popup showing | `cuemolui.panels.workspace.onCtxtMenuShowing(event)` (rendgroup branch) | Enables Paste based on `qscrend`/`qscrendary` clipboard |
+| Copy | `cuemolui.panels.workspace.onCopyCmd(event)` | Copies group + its renderers to clipboard |
+| Paste Renderer | `cuemolui.panels.workspace.onPasteRend(event)` | Pastes a renderer into this group |
+| Change Name | `cuemolui.panels.workspace.onPropCmd(event)` (rename branch) | Inline rename |
+| New Renderer | `cuemolui.panels.workspace.onNewCmd(event)` | Opens new renderer dialog targeted at this group |
+| Delete | `cuemolui.panels.workspace.onDeleteCmd(event)` | Deletes the group + its children |
+
+#### i18n keys used
+- (none — labels hardcoded)
+
+#### Notes
+- Renderer groups are themselves `Renderer` instances (`RendGroup extends Renderer`) so most handlers are shared with the renderer ctx menu; the group-specific menu is much shorter because coloring / style / paint don't apply to the group container.
+
+---
+
+### `panel.workspace.ctxmenu.camera`
+
+- **File**: `uxp_gui/cuemol2/base/content/workspace_panel.xul` (`<menupopup id="wspcPanelCameraCtxtMenu">`)
+- **Root element**: `<menupopup>`
+- **Title**: n/a
+- **Chrome URL**: `chrome://cuemol2/content/workspace_panel.xul`
+- **Associated JS**: `workspace_panel_ctxtmenu.js`
+- **Overlays applied**: none
+
+#### User-visible features
+- New Camera / Delete / Copy / Paste
+- Camera file submenu: Load… / Reload / Save / Save As…
+- Save from view / Apply to view
+- Save from scene (vis flags) / Apply to scene (vis flags)
+- Edit vis flags / Clear vis flags
+- Rename
+- Properties
+
+#### Commands / Handlers
+| Trigger | Handler | Description |
+|---------|---------|-------------|
+| Popup showing | `cuemolui.panels.workspace.onCamCtxtShowing(event)` | Enables Paste based on `qsccam` clipboard; toggles Reload availability based on `cam.src` |
+| New / Delete / Copy / Paste | `cuemolui.panels.workspace.onNewCmd` / `onDeleteCmd` / `onCameraCopy` / `onCameraPaste` | Camera CRUD |
+| Load / Reload / Save / Save As | `onCamLoadFile` / `onCamReloadFile` / `onCamSaveFile` / `onCamSaveFileAs` | Camera file I/O |
+| Save / Apply view | `onLoadSaveCam(event, ...)` | Saves camera from view / applies camera to view |
+| Vis flags edit / clear | `onEditVisFlags` / `onClearVisFlags` | Visibility flag dialog |
+| Rename | `onRenameCamera(event)` | Atomic destroy + setCamera with new name |
+| Properties | `onPropCmd(event)` | Camera property dialog |
+
+#### i18n keys used
+- (none — labels hardcoded)
+
+#### Notes
+- Cameras are owned by `scene.getCameraInfoJSON()` (not by `getSceneDataJSON`); renaming requires removing the old `Camera` and re-registering a copy with the new name (no name setter).
+
+---
+
+### `panel.workspace.ctxmenu.style`
+
+- **File**: `uxp_gui/cuemol2/base/content/workspace_panel.xul` (`<menupopup id="wspcStyleCtxtMenu">`)
+- **Root element**: `<menupopup>`
+- **Title**: n/a
+- **Chrome URL**: `chrome://cuemol2/content/workspace_panel.xul`
+- **Associated JS**: `workspace_panel_ctxtmenu.js`
+- **Overlays applied**: none
+
+#### User-visible features
+- New Style / Copy / Paste / Delete
+- Style file submenu: Load… / Reload / Save / Save As…
+- Read-only toggle (`<menuitem type="checkbox">`)
+- Rename
+- Edit
+
+#### Commands / Handlers
+| Trigger | Handler | Description |
+|---------|---------|-------------|
+| Popup showing | `cuemolui.panels.workspace.onStyCtxtShowing(event)` | Enables/disables items based on style-set readonly / src / modified flags; gates copy for global styles |
+| Copy / Paste / Delete / Rename | `onCopyStyle` / `onPasteStyle` / `onDeleteCmd` / `onRenameStyle` | StyleSet clipboard + rename |
+| Load / Reload / Save / Save As | `onStyLoadFile` / `onStyReloadFile` / `onStySaveFile` / `onStySaveFileAs` | Style file I/O |
+| Read-only toggle | `onStyToggleRo(event)` | Flips `styleset.readonly`; disabled when set is modified |
+| Edit | `onPropCmd(event)` | Opens style editor |
+
+#### i18n keys used
+- (none — labels hardcoded)
+
+#### Notes
+- Global styles (`scene_id === 0`) cannot be copied or made writable.
+- A modified style set cannot be flipped back to read-only.
+
+---
+
+### `panel.workspace.ctxmenu.multi`
+
+- **File**: `uxp_gui/cuemol2/base/content/workspace_panel.xul` (`<menupopup id="wspcPanelMulCtxtMenu">`)
+- **Root element**: `<menupopup>`
+- **Title**: n/a
+- **Chrome URL**: `chrome://cuemol2/content/workspace_panel.xul`
+- **Associated JS**: `workspace_panel_ctxtmenu.js`
+- **Overlays applied**: none
+
+#### User-visible features
+- Copy (enabled only when the multi-selection contains only renderers)
+- Delete
+- Show
+- Hide
+
+#### Commands / Handlers
+| Trigger | Handler | Description |
+|---------|---------|-------------|
+| Popup showing | `cuemolui.panels.workspace.onMulCtxtMenuShowing(event)` | Enables Copy iff every selected node is a renderer |
+| Copy | `cuemolui.panels.workspace.onCopyCmd(event)` | Copies multiple renderers to clipboard |
+| Delete | `cuemolui.panels.workspace.onDeleteCmd(event)` | Bulk delete |
+| Show / Hide | `cuemolui.panels.workspace.onShowHideCmd(event, bShow)` | Bulk visibility toggle wrapped in one undo txn |
+
+#### i18n keys used
+- (none — labels hardcoded)
+
+#### Notes
+- This menu only appears when the tree has 2+ rows selected; the per-type ctx menus (`...ctxmenu.scene/object/renderer/...`) cover the single-selection case.
 
 ---
 
@@ -387,7 +644,11 @@
 
 ## Statistics
 
-- Total entries: 9
-- With JS handler: 9
-- With i18n keys: 4 (`panel.coloring`, `panel.densitymap`, `panel.symmetry`, `panel.workspace`)
+- Total entries: 17
+- With JS handler: 17 (every entry references at least one `cuemolui.panels.*` handler)
+- With i18n keys: 4 (`panel.coloring`, `panel.densitymap`, `panel.symmetry`, `panel.workspace.tree` — only the tree row owns the `&workspacePanel.*;` DTD entries; the other `panel.workspace.*` sub-entries share the panel title implicitly)
 - Unresolved: 0
+
+### History
+- 2026-04-20: Initial scan (9 entries).
+- 2026-05-12: `panel.workspace` split into 9 per-surface sub-entries (tree / toolbar / 7 context menus) so each Notes column tracks a single UI surface. See `mapping/panels.md` for migration status per surface.

@@ -19,6 +19,7 @@ import type {
 import type { FileDialogOptions } from '../shared/ipcTypes'
 import { loadLayout, saveLayout, loadUi, saveUi } from './stateStore'
 import { showNaviContextMenu } from './naviContextMenu'
+import { showSceneContextMenu } from './sceneContextMenu'
 import { setMenuBlocked, updateMenuState, withMenuBlocked } from './menu'
 import { setQuitConfirmed } from './quitState'
 
@@ -115,6 +116,101 @@ async function handleSaveSceneDialog(
   }
 }
 
+// ─────────────────────────────────────────────
+// Style file dialogs (Phase 5c)
+// ─────────────────────────────────────────────
+//
+// UXP uses `fp.appendFilter("Style file (*.xml)", "*.xml")` on the
+// nsIFilePicker for both load and save. The worker side performs the
+// actual `StyleManager.loadStyleSetFromFile` / `saveStyleSetToFile` call
+// once we return the resolved path.
+
+async function handleStyleOpenDialog(
+  mainWindow: BrowserWindow,
+): Promise<{ canceled: boolean; filePath: string }> {
+  const result = await withMenuBlocked('native', () =>
+    dialog.showOpenDialog(mainWindow, {
+      title: 'Open Style File',
+      filters: [
+        { name: 'Style file', extensions: ['xml'] },
+        { name: 'All Files', extensions: ['*'] },
+      ],
+      properties: ['openFile'],
+    }),
+  )
+  if (result.canceled || result.filePaths.length === 0) {
+    return { canceled: true, filePath: '' }
+  }
+  return { canceled: false, filePath: result.filePaths[0] }
+}
+
+async function handleStyleSaveDialog(
+  mainWindow: BrowserWindow,
+  defaultName: string,
+): Promise<{ canceled: boolean; filePath: string }> {
+  const result = await withMenuBlocked('native', () =>
+    dialog.showSaveDialog(mainWindow, {
+      title: 'Save Style As',
+      defaultPath: defaultName,
+      filters: [
+        { name: 'Style file', extensions: ['xml'] },
+        { name: 'All Files', extensions: ['*'] },
+      ],
+    }),
+  )
+  return {
+    canceled: result.canceled,
+    filePath: result.filePath ?? '',
+  }
+}
+
+// ─────────────────────────────────────────────
+// Camera file dialogs (Phase 5b)
+// ─────────────────────────────────────────────
+//
+// UXP uses an unfiltered nsIFilePicker for camera files (the on-disk
+// format is XML). We add the same .xml + All Files pair so the dialog
+// is consistent with the style-file picker.
+
+async function handleCameraOpenDialog(
+  mainWindow: BrowserWindow,
+): Promise<{ canceled: boolean; filePath: string }> {
+  const result = await withMenuBlocked('native', () =>
+    dialog.showOpenDialog(mainWindow, {
+      title: 'Open Camera File',
+      filters: [
+        { name: 'Camera file', extensions: ['xml'] },
+        { name: 'All Files', extensions: ['*'] },
+      ],
+      properties: ['openFile'],
+    }),
+  )
+  if (result.canceled || result.filePaths.length === 0) {
+    return { canceled: true, filePath: '' }
+  }
+  return { canceled: false, filePath: result.filePaths[0] }
+}
+
+async function handleCameraSaveDialog(
+  mainWindow: BrowserWindow,
+  defaultName: string,
+): Promise<{ canceled: boolean; filePath: string }> {
+  const result = await withMenuBlocked('native', () =>
+    dialog.showSaveDialog(mainWindow, {
+      title: 'Save Camera As',
+      defaultPath: defaultName,
+      filters: [
+        { name: 'Camera file', extensions: ['xml'] },
+        { name: 'All Files', extensions: ['*'] },
+      ],
+    }),
+  )
+  return {
+    canceled: result.canceled,
+    filePath: result.filePath ?? '',
+  }
+}
+
 function handleFileExists(target: string): { exists: boolean } {
   try {
     return { exists: fs.existsSync(target) }
@@ -169,6 +265,18 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
     handleSaveSceneDialog(mainWindow, payload.defaultName),
   )
 
+  handleInvoke(IPC.DIALOG_STYLE_OPEN, async () => handleStyleOpenDialog(mainWindow))
+
+  handleInvoke(IPC.DIALOG_STYLE_SAVE, async (_event, payload) =>
+    handleStyleSaveDialog(mainWindow, payload.defaultName),
+  )
+
+  handleInvoke(IPC.DIALOG_CAMERA_OPEN, async () => handleCameraOpenDialog(mainWindow))
+
+  handleInvoke(IPC.DIALOG_CAMERA_SAVE, async (_event, payload) =>
+    handleCameraSaveDialog(mainWindow, payload.defaultName),
+  )
+
   handleInvoke(IPC.FILE_EXISTS, (_event, payload) => handleFileExists(payload.path))
 
   handleInvoke(IPC.FILE_BACKUP_RENAME, (_event, payload) => handleBackupRename(payload.path))
@@ -184,6 +292,10 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   handleInvoke(IPC.MENU_UPDATE_STATE, (_e, state) => updateMenuState(state))
   handleInvoke(IPC.MENU_SET_MODAL_BLOCKED, (_e, blocked) =>
     setMenuBlocked('blueprint', blocked),
+  )
+
+  handleInvoke(IPC.SCENE_CTX_SHOW, (_event, payload) =>
+    showSceneContextMenu(mainWindow, payload),
   )
 
   handleInvoke(IPC.NAVI_CTX_SHOW, (_event, payload) =>

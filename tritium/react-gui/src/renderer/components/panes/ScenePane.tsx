@@ -1,205 +1,660 @@
 /**
  * @file ScenePane.tsx
- * @description Hierarchical scene tree pane for object and renderer management.
+ * @description Hierarchical scene tree pane mirroring the UXP
+ * `panel.workspace` layout.
  *
- * Displays a tree view of scene objects (top level) and their child renderers.
- * Users can select nodes, toggle visibility, and trigger property editing.
+ * Tree layout (matches UXP `syncContents`):
+ *   "Scene: <name>"               ← scene row (no children — leaf)
+ *   object1 (PDBMol)              ← object branches
+ *     └─ renderer1 (cartoon)
+ *   object2 (...)
+ *   Camera                        ← cameraRoot (children = saved cameras)
+ *   Styles                        ← styleRoot (children = registered styles)
  *
- * This pane is one of the components within the ExplorerView.
+ * Scene, objects, cameraRoot and styleRoot are all top-level siblings; the
+ * scene row itself does not nest the objects beneath it. This matches the
+ * UXP `object_name: "noindent"` flag on the scene row.
  *
  * @module ScenePane
  */
 
 import React, { useState, useCallback, useMemo } from "react";
 import {
-  Icon,
-  Tree,
-  Button,
-  ButtonGroup,
-  Tooltip,
-  type IconName,
-  type TreeNodeInfo,
+    Icon,
+    Tree,
+    Button,
+    ButtonGroup,
+    Tooltip,
+    type IconName,
+    type TreeNodeInfo,
 } from "@blueprintjs/core";
 
-/* ─── Types ─── */
+import type { SceneNodeType, SceneTreeNode } from "../../worker/shared/sceneTreeTypes";
 
-export interface SceneRendererNode {
-  id: string;
-  label: string;
-  icon: IconName;
-  visible: boolean;
+/* ─── Drag-drop reorder (Phase 4b) ─── */
+
+/** Mime type for the JSON payload carried during scene-tree DnD. */
+const SCENE_NODE_MIME = "application/x-scene-node";
+
+/** Source info written to dataTransfer on dragstart. */
+interface DragSourcePayload {
+    id: number;
+    type: SceneNodeType;
 }
 
-export interface SceneObjectNode {
-  id: string;
-  label: string;
-  icon: IconName;
-  visible: boolean;
-  children: SceneRendererNode[];
+/** Orientation of a drop relative to the target row. */
+type DragOri = -1 | 0 | 1;
+
+/** Computed move-intent passed to the worker after a drop. */
+export type MoveSceneNodeArgs =
+    | { kind: "object"; sourceId: number; targetId: number; ori: -1 | 1 }
+    | {
+        kind: "renderer";
+        sourceId: number;
+        destObjId: number;
+        destGroupName: string;
+        targetId: number;
+        ori: -1 | 0 | 1;
+    };
+
+/**
+ * Decide whether a (source, target, ori) combo represents a valid drop.
+ * Mirrors UXP `workspace_panel_dnd.js` `canDrop` (subset — multi-select
+ * deferred). Caller passes both nodes plus an `ori`.
+ *
+ * Returns the resolved `MoveSceneNodeArgs` on accept, or null on reject.
+ * The parentLookup gives the parent node for any tree id (returns the
+ * scene node for top-level objects, or the parent rendGroup / object
+ * for nested renderers).
+ */
+function planSceneNodeMove(
+    src: SceneTreeNode,
+    tgt: SceneTreeNode,
+    ori: DragOri,
+    parentLookup: (id: number) => SceneTreeNode | null,
+): MoveSceneNodeArgs | null {
+    if (src.id === tgt.id) return null;
+
+    // Object → object reorder.
+    if (src.type === "object") {
+        if (tgt.type !== "object") return null;
+        if (ori === 0) return null;  // dropping "into" object not supported
+        return { kind: "object", sourceId: src.id, targetId: tgt.id, ori };
+    }
+
+    // Renderer / rendGroup → renderer / rendGroup.
+    if (src.type === "renderer" || src.type === "rendGroup") {
+        if (tgt.type !== "renderer" && tgt.type !== "rendGroup") return null;
+
+        const srcPar = parentLookup(src.id);
+        const tgtPar = parentLookup(tgt.id);
+        if (!srcPar || !tgtPar) return null;
+
+        // Resolve dest obj + group, mirroring UXP `dropImpl` table.
+        let destObj: SceneTreeNode | null = null;
+        let destGroupName = "";
+
+        // "Drop INTO rendGroup" — only valid for source=renderer (rendgrps
+        // cannot nest). UXP: `if elem.type=="rendGroup" && ori==0`.
+        if (tgt.type === "rendGroup" && ori === 0) {
+            if (src.type !== "renderer") return null;
+            destObj = parentLookup(tgt.id);  // group's parent (an object)
+            if (!destObj || destObj.type !== "object") return null;
+            destGroupName = tgt.name;
+            // UXP: if group has children, snap target to its first child;
+            // otherwise keep target = group uid (worker treats sourceId ==
+            // targetId as "no slot swap, just update rend.group").
+            const targetId = tgt.children.length > 0
+                ? tgt.children[0].id
+                : tgt.id;
+            return {
+                kind: "renderer",
+                sourceId: src.id,
+                destObjId: destObj.id,
+                destGroupName,
+                targetId,
+                ori: 0,
+            };
+        }
+
+        // Same parent: in-place reorder. Source is allowed to be a
+        // rendGroup as long as we stay within the same object.
+        if (srcPar.id === tgtPar.id) {
+            destObj = srcPar.type === "object" ? srcPar : parentLookup(srcPar.id);
+            if (!destObj || destObj.type !== "object") return null;
+            destGroupName = srcPar.type === "rendGroup" ? srcPar.name : "";
+            return {
+                kind: "renderer",
+                sourceId: src.id,
+                destObjId: destObj.id,
+                destGroupName,
+                targetId: tgt.id,
+                ori,
+            };
+        }
+
+        // Cross-parent move. rendGroups cannot move across parents.
+        if (src.type === "rendGroup") return null;
+
+        // Allowed transitions (UXP):
+        //   srcPar=object,    tgtPar=rendGroup (same obj): obj → group
+        //   srcPar=rendGroup, tgtPar=object   (same obj): group → root
+        //   srcPar=rendGroup, tgtPar=rendGroup(same obj): group → group
+        if (srcPar.type === "object" && tgtPar.type === "rendGroup") {
+            // tgtPar's parent must equal srcPar (same object).
+            const grpParent = parentLookup(tgtPar.id);
+            if (!grpParent || grpParent.id !== srcPar.id) return null;
+            return {
+                kind: "renderer",
+                sourceId: src.id,
+                destObjId: srcPar.id,
+                destGroupName: tgtPar.name,
+                targetId: tgt.id,
+                ori,
+            };
+        }
+        if (srcPar.type === "rendGroup" && tgtPar.type === "object") {
+            const grpParent = parentLookup(srcPar.id);
+            if (!grpParent || grpParent.id !== tgtPar.id) return null;
+            return {
+                kind: "renderer",
+                sourceId: src.id,
+                destObjId: tgtPar.id,
+                destGroupName: "",
+                targetId: tgt.id,
+                ori,
+            };
+        }
+        if (srcPar.type === "rendGroup" && tgtPar.type === "rendGroup") {
+            const a = parentLookup(srcPar.id);
+            const b = parentLookup(tgtPar.id);
+            if (!a || !b || a.id !== b.id) return null;
+            return {
+                kind: "renderer",
+                sourceId: src.id,
+                destObjId: a.id,
+                destGroupName: tgtPar.name,
+                targetId: tgt.id,
+                ori,
+            };
+        }
+    }
+    return null;
 }
 
-export interface SceneNode {
-  id: string;
-  label: string;
-  icon: IconName;
-  objects: SceneObjectNode[];
+/** Y-position → orientation. Top 1/3 = -1, middle = 0, bottom 1/3 = +1. */
+function computeOri(rect: DOMRect, clientY: number): DragOri {
+    const rel = clientY - rect.top;
+    const t = rect.height / 3;
+    if (rel < t) return -1;
+    if (rel > rect.height - t) return 1;
+    return 0;
 }
 
-/* ─── ScenePane ─── */
+/* ─── Node-type → icon mapping ─── */
+
+const TYPE_ICON: Record<SceneNodeType, IconName> = {
+    scene: "film",
+    object: "cube",
+    renderer: "style",
+    rendGroup: "folder-close",
+    cameraRoot: "camera",
+    styleRoot: "folder-close",
+    camera: "camera",
+    style: "tag",
+};
+
+/* ─── Props ─── */
 
 interface ScenePaneProps {
-  scene: SceneNode;
-  selectedId: string;
-  onSelect: (id: string) => void;
-  onToggleVisibility: (id: string) => void;
-  onAddObject?: () => void;
-  onAddRenderer?: () => void;
-  onDeleteSelected?: (id: string) => void;
-  onFocusSelected?: (id: string) => void;
-  onShowProperty?: (id: string) => void;
-  collapsed?: boolean;
-  onToggleCollapse?: () => void;
+    /** Root scene node from `useSceneTree`. Null while loading or when no scene is active. */
+    tree: SceneTreeNode | null;
+    /** Currently selected node ID (string for compatibility with existing inspector wiring). */
+    selectedId: string;
+    /**
+     * Multi-select set (Phase 4c). Drives visual selection on multiple
+     * rows. When omitted, falls back to single-select (selectedId only).
+     */
+    selectedIds?: Set<string>;
+    onSelect: (id: string) => void;
+    /**
+     * Cmd/Ctrl+click handler — toggles membership of `id` in selectedIds.
+     * When omitted, modifier-clicks fall back to single-select.
+     */
+    onToggleSelect?: (id: string) => void;
+    onToggleVisibility: (id: string) => void;
+    onAddObject?: () => void;
+    onAddRenderer?: () => void;
+    onDeleteSelected?: (id: string) => void;
+    onFocusSelected?: (id: string) => void;
+    onShowProperty?: (id: string) => void;
+    /**
+     * Double-click handler — UXP `onTreeItemClick` `aEvent.detail==2`
+     * branch: camera rows run `loadCamImpl(name, true)` (Apply to view
+     * with vis flags); other rows run `onPropCmd` (Properties dialog).
+     */
+    onNodeDoubleClick?: (node: SceneTreeNode) => void;
+    /** Right-click handler — opens native context menu for the targeted node. */
+    onShowContextMenu?: (node: SceneTreeNode, x: number, y: number) => void;
+    /**
+     * Drag-drop reorder callback (Phase 4b). Receives a fully-resolved
+     * `MoveSceneNodeArgs`; ScenePane handles the validation + ori math.
+     * Return value is ignored — ScenePane uses event-driven refetch.
+     */
+    onMoveNode?: (args: MoveSceneNodeArgs) => unknown;
+    /**
+     * Per-action enablement for the current selection. When omitted, all
+     * actions are enabled (legacy callers). Defaults to enabled=true so a
+     * caller that does not yet compute this still works.
+     */
+    opsEnabled?: { focus: boolean; delete: boolean; property: boolean; add: boolean };
+    collapsed?: boolean;
+    onToggleCollapse?: () => void;
 }
 
+/* ─── Component ─── */
+
 export const ScenePane: React.FC<ScenePaneProps> = ({
-  scene,
-  selectedId,
-  onSelect,
-  onToggleVisibility,
-  onAddObject,
-  onAddRenderer,
-  onDeleteSelected,
-  onFocusSelected,
-  onShowProperty,
-  collapsed,
-  onToggleCollapse,
+    tree,
+    selectedId,
+    selectedIds,
+    onSelect,
+    onToggleSelect,
+    onToggleVisibility,
+    onAddRenderer,
+    onDeleteSelected,
+    onFocusSelected,
+    onShowProperty,
+    onNodeDoubleClick,
+    onShowContextMenu,
+    onMoveNode,
+    opsEnabled,
+    collapsed,
+    onToggleCollapse,
 }) => {
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(
-    () => new Set(scene.objects.map((o) => o.id))
-  );
+    const hasSelection = selectedId !== '';
+    const canFocus = hasSelection && (opsEnabled?.focus ?? true);
+    const canDelete = hasSelection && (opsEnabled?.delete ?? true);
+    const canProperty = hasSelection && (opsEnabled?.property ?? true);
+    const canAdd = hasSelection && (opsEnabled?.add ?? true);
+    // Tracks user expand/collapse overrides per row id. Default state
+    // comes from the SceneTreeNode's `uiCollapsed` hint (C++ for real
+    // nodes, true for the synthesised cameraRoot / styleRoot containers
+    // so they start closed). A boolean override here wins:
+    //   true  → user explicitly expanded
+    //   false → user explicitly collapsed
+    //   missing → use uiCollapsed default
+    // The previous "collapsedIds set" form could not distinguish
+    // "default-collapsed" from "user-collapsed", which meant a single
+    // expand click on a default-collapsed row (e.g. Styles root) was
+    // a no-op — the id was never in the set, so deleting it changed
+    // nothing.
+    const [expandOverrides, setExpandOverrides] = useState<Map<string, boolean>>(
+        () => new Map(),
+    );
 
-  const handleNodeExpand = useCallback((node: TreeNodeInfo) => {
-    setExpandedIds((prev) => new Set(prev).add(String(node.id)));
-  }, []);
+    const handleNodeExpand = useCallback((node: TreeNodeInfo) => {
+        setExpandOverrides((prev) => {
+            const next = new Map(prev);
+            next.set(String(node.id), true);
+            return next;
+        });
+    }, []);
 
-  const handleNodeCollapse = useCallback((node: TreeNodeInfo) => {
-    setExpandedIds((prev) => {
-      const next = new Set(prev);
-      next.delete(String(node.id));
-      return next;
-    });
-  }, []);
+    const handleNodeCollapse = useCallback((node: TreeNodeInfo) => {
+        setExpandOverrides((prev) => {
+            const next = new Map(prev);
+            next.set(String(node.id), false);
+            return next;
+        });
+    }, []);
 
-  const handleNodeClick = useCallback(
-    (node: TreeNodeInfo) => {
-      onSelect(String(node.id));
-    },
-    [onSelect]
-  );
+    const handleNodeClick = useCallback(
+        (
+            node: TreeNodeInfo,
+            _path: number[],
+            e: React.MouseEvent<HTMLElement>,
+        ) => {
+            const idStr = String(node.id);
+            // Cmd (macOS) or Ctrl (other) toggles the node in the multi-
+            // select set. Shift+click would normally extend a contiguous
+            // range; deferred — UXP's multi-select is also additive-only
+            // via Cmd-click, with Shift behaving as a range select that
+            // we don't migrate in Phase 4c.
+            if ((e.metaKey || e.ctrlKey) && onToggleSelect) {
+                onToggleSelect(idStr);
+                return;
+            }
+            onSelect(idStr);
+        },
+        [onSelect, onToggleSelect],
+    );
 
-  const visibilityButton = useCallback(
-    (nodeId: string, visible: boolean) => (
-      <Button
-        minimal
-        small
-        icon={<Icon icon={visible ? "eye-open" : "eye-off"} size={14} />}
-        className={`visibility-toggle ${visible ? "visible" : "hidden"}`}
-        onClick={(e: React.MouseEvent) => {
-          e.stopPropagation();
-          onToggleVisibility(nodeId);
-        }}
-      />
-    ),
-    [onToggleVisibility]
-  );
 
-  const treeContents: TreeNodeInfo[] = useMemo(() => {
-    return scene.objects.map((obj) => ({
-      id: obj.id,
-      label: obj.label,
-      icon: obj.icon,
-      isExpanded: expandedIds.has(obj.id),
-      isSelected: selectedId === obj.id,
-      secondaryLabel: visibilityButton(obj.id, obj.visible),
-      childNodes: obj.children.map((rend) => ({
-        id: rend.id,
-        label: rend.label,
-        icon: rend.icon as IconName,
-        isSelected: selectedId === rend.id,
-        secondaryLabel: visibilityButton(rend.id, rend.visible),
-      })),
-    }));
-  }, [scene, expandedIds, selectedId, visibilityButton]);
+    // Build an id → SceneTreeNode lookup so onNodeContextMenu (which only
+    // receives the Blueprint TreeNodeInfo) can resolve back to the original
+    // typed node and forward it to the caller.
+    const nodeLookup = useMemo<Map<string, SceneTreeNode>>(() => {
+        const map = new Map<string, SceneTreeNode>();
+        if (!tree) return map;
+        const walk = (n: SceneTreeNode): void => {
+            map.set(String(n.id), n);
+            for (const c of n.children) walk(c);
+        };
+        walk(tree);
+        return map;
+    }, [tree]);
 
-  return (
-    <div className="sp-pane">
-      <div
-        className={`sp-section-header ${onToggleCollapse ? "collapsible" : ""}`}
-        onClick={onToggleCollapse}
-      >
-        <div className="sp-section-header-left">
-          <Icon
-            icon={collapsed ? "chevron-right" : "chevron-down"}
-            size={12}
-            className="section-chevron"
-          />
-          <span className="section-title scene-name-title">{scene.label}</span>
+    // id → parent lookup, used by DnD to resolve same-parent / cross-group
+    // moves. Parent is null for the scene root.
+    const parentMap = useMemo<Map<number, SceneTreeNode>>(() => {
+        const map = new Map<number, SceneTreeNode>();
+        if (!tree) return map;
+        const walk = (n: SceneTreeNode): void => {
+            for (const c of n.children) {
+                map.set(c.id, n);
+                walk(c);
+            }
+        };
+        walk(tree);
+        return map;
+    }, [tree]);
+    const parentLookup = useCallback(
+        (id: number): SceneTreeNode | null => parentMap.get(id) ?? null,
+        [parentMap],
+    );
+
+    const handleDragStart = useCallback(
+        (e: React.DragEvent<HTMLSpanElement>, node: SceneTreeNode) => {
+            if (
+                node.type !== "object" &&
+                node.type !== "renderer" &&
+                node.type !== "rendGroup"
+            ) {
+                e.preventDefault();
+                return;
+            }
+            const payload: DragSourcePayload = { id: node.id, type: node.type };
+            e.dataTransfer.setData(SCENE_NODE_MIME, JSON.stringify(payload));
+            e.dataTransfer.effectAllowed = "move";
+        },
+        [],
+    );
+
+    const readDragSource = useCallback(
+        (e: React.DragEvent<HTMLSpanElement>): SceneTreeNode | null => {
+            const raw = e.dataTransfer.getData(SCENE_NODE_MIME);
+            if (!raw) return null;
+            try {
+                const parsed = JSON.parse(raw) as DragSourcePayload;
+                return nodeLookup.get(String(parsed.id)) ?? null;
+            } catch {
+                return null;
+            }
+        },
+        [nodeLookup],
+    );
+
+    const handleDragOver = useCallback(
+        (e: React.DragEvent<HTMLSpanElement>, node: SceneTreeNode) => {
+            if (!onMoveNode) return;
+            // dataTransfer.getData is unavailable on dragover (privacy);
+            // we still call planSceneNodeMove with the target only by
+            // optimistically accepting the drop. The drop handler does
+            // strict validation.
+            const types = e.dataTransfer.types;
+            if (!Array.from(types).includes(SCENE_NODE_MIME)) return;
+            // Allow the drop so the browser displays a "move" cursor.
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "move";
+            void node;
+        },
+        [onMoveNode],
+    );
+
+    const handleDrop = useCallback(
+        (e: React.DragEvent<HTMLSpanElement>, target: SceneTreeNode) => {
+            if (!onMoveNode) return;
+            const src = readDragSource(e);
+            if (!src) return;
+            e.preventDefault();
+            const rect = e.currentTarget.getBoundingClientRect();
+            const ori = computeOri(rect, e.clientY);
+            const plan = planSceneNodeMove(src, target, ori, parentLookup);
+            if (!plan) return;
+            void onMoveNode(plan);
+        },
+        [onMoveNode, parentLookup, readDragSource],
+    );
+
+    const handleNodeContextMenu = useCallback(
+        (node: TreeNodeInfo, _path: number[], e: React.MouseEvent<HTMLElement>) => {
+            if (!onShowContextMenu) return;
+            const idStr = String(node.id);
+            const sceneNode = nodeLookup.get(idStr);
+            if (!sceneNode) return;
+            e.preventDefault();
+            // Preserve multi-selection when right-clicking on one of the
+            // already-selected rows (UXP behaviour). Otherwise reset to
+            // single selection of the right-clicked row.
+            const inMulti =
+                selectedIds && selectedIds.size > 1 && selectedIds.has(idStr);
+            if (!inMulti) {
+                onSelect(idStr);
+            }
+            onShowContextMenu(sceneNode, e.clientX, e.clientY);
+        },
+        [nodeLookup, onShowContextMenu, onSelect, selectedIds],
+    );
+
+    // Blueprint Tree's `onNodeDoubleClick` fires after the second mouse-up
+    // of a click pair. Resolve back to the typed SceneTreeNode and forward
+    // to the caller — UXP `onTreeItemClick` `aEvent.detail==2` path.
+    const handleNodeDoubleClick = useCallback(
+        (info: TreeNodeInfo) => {
+            if (!onNodeDoubleClick) return;
+            const node = nodeLookup.get(String(info.id));
+            if (node) onNodeDoubleClick(node);
+        },
+        [nodeLookup, onNodeDoubleClick],
+    );
+
+    const visibilityButton = useCallback(
+        (nodeId: string, node: SceneTreeNode) => {
+            // Only object / renderer / rendGroup carry a real visibility flag.
+            if (
+                node.type !== "object" &&
+                node.type !== "renderer" &&
+                node.type !== "rendGroup"
+            ) {
+                return undefined;
+            }
+            const eyeIcon: IconName = node.visible ? "eye-open" : "eye-off";
+            const disabledByAncestor = node.visible && !node.effectiveVisible;
+            const className =
+                "visibility-toggle " +
+                (node.effectiveVisible
+                    ? "visible"
+                    : disabledByAncestor
+                      ? "disabled"
+                      : "hidden");
+            return (
+                <Button
+                    minimal
+                    small
+                    icon={<Icon icon={eyeIcon} size={14} />}
+                    className={className}
+                    onClick={(e: React.MouseEvent) => {
+                        e.stopPropagation();
+                        onToggleVisibility(nodeId);
+                    }}
+                />
+            );
+        },
+        [onToggleVisibility],
+    );
+
+    const treeContents: TreeNodeInfo[] = useMemo(() => {
+        if (!tree) return [];
+
+        const isExpanded = (n: SceneTreeNode, idStr: string): boolean => {
+            // User override wins (true=expanded, false=collapsed).
+            const ovr = expandOverrides.get(idStr);
+            if (ovr !== undefined) return ovr;
+            // Default: respect uiCollapsed hint from C++ / synthesized roots.
+            // (cameraRoot / styleRoot ship uiCollapsed=true so they start closed.)
+            return !n.uiCollapsed;
+        };
+
+        const draggable =
+            (n: SceneTreeNode): boolean =>
+                n.type === "object" ||
+                n.type === "renderer" ||
+                n.type === "rendGroup";
+
+        const wrapLabel = (n: SceneTreeNode): string | React.JSX.Element => {
+            const text = nodeLabel(n);
+            if (!onMoveNode) return text;
+            return (
+                <span
+                    draggable={draggable(n)}
+                    onDragStart={(e) => handleDragStart(e, n)}
+                    onDragOver={(e) => handleDragOver(e, n)}
+                    onDrop={(e) => handleDrop(e, n)}
+                    data-node-id={String(n.id)}
+                    style={{ display: "inline-block", cursor: draggable(n) ? "grab" : "default" }}
+                >
+                    {text}
+                </span>
+            );
+        };
+
+        const isRowSelected = (idStr: string): boolean =>
+            (selectedIds && selectedIds.size > 0)
+                ? selectedIds.has(idStr)
+                : selectedId === idStr;
+
+        const buildNode = (n: SceneTreeNode): TreeNodeInfo => {
+            const idStr = String(n.id);
+            const hasChildren = n.children.length > 0;
+            return {
+                id: idStr,
+                label: wrapLabel(n),
+                icon: TYPE_ICON[n.type],
+                isExpanded: hasChildren && isExpanded(n, idStr),
+                isSelected: isRowSelected(idStr),
+                secondaryLabel: visibilityButton(idStr, n),
+                hasCaret: hasChildren,
+                childNodes: hasChildren ? n.children.map(buildNode) : undefined,
+            };
+        };
+
+        // UXP layout: scene row + objects + cameraRoot + styleRoot are ALL
+        // siblings at depth 0. The scene row itself is a leaf (no children).
+        const sceneIdStr = String(tree.id);
+        const sceneRow: TreeNodeInfo = {
+            id: sceneIdStr,
+            label: nodeLabel(tree),
+            icon: TYPE_ICON.scene,
+            isSelected: isRowSelected(sceneIdStr),
+            hasCaret: false,
+        };
+        return [sceneRow, ...tree.children.map(buildNode)];
+    }, [tree, expandOverrides, selectedId, selectedIds, visibilityButton, onMoveNode, handleDragStart, handleDragOver, handleDrop]);
+
+    return (
+        <div className="sp-pane">
+            <div
+                className={`sp-section-header ${onToggleCollapse ? "collapsible" : ""}`}
+                onClick={onToggleCollapse}
+            >
+                <div className="sp-section-header-left">
+                    <Icon
+                        icon={collapsed ? "chevron-right" : "chevron-down"}
+                        size={12}
+                        className="section-chevron"
+                    />
+                    <span className="section-title scene-name-title">Scene</span>
+                </div>
+                <div
+                    className="sp-section-header-actions"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <ButtonGroup minimal>
+                        <Tooltip content="Add" placement="bottom" compact>
+                            <Button
+                                minimal
+                                small
+                                icon={<Icon icon="add" size={14} />}
+                                className="section-action-btn"
+                                disabled={!onAddRenderer || !canAdd}
+                                onClick={onAddRenderer}
+                            />
+                        </Tooltip>
+                        <Tooltip content="Focus" placement="bottom" compact>
+                            <Button
+                                minimal
+                                small
+                                icon={<Icon icon="locate" size={14} />}
+                                className="section-action-btn"
+                                disabled={!canFocus}
+                                onClick={() => onFocusSelected?.(selectedId)}
+                            />
+                        </Tooltip>
+                        <Tooltip content="Delete" placement="bottom" compact>
+                            <Button
+                                minimal
+                                small
+                                icon={<Icon icon="trash" size={14} />}
+                                className="section-action-btn"
+                                disabled={!canDelete}
+                                onClick={() => onDeleteSelected?.(selectedId)}
+                            />
+                        </Tooltip>
+                        <Tooltip content="Property" placement="bottom" compact>
+                            <Button
+                                minimal
+                                small
+                                icon={<Icon icon="properties" size={14} />}
+                                className="section-action-btn"
+                                disabled={!canProperty}
+                                onClick={() => onShowProperty?.(selectedId)}
+                            />
+                        </Tooltip>
+                    </ButtonGroup>
+                </div>
+            </div>
+            {!collapsed && tree && treeContents.length > 0 && (
+                <div className="sp-pane-scroll">
+                    <Tree
+                        contents={treeContents}
+                        onNodeClick={handleNodeClick}
+                        onNodeDoubleClick={handleNodeDoubleClick}
+                        onNodeExpand={handleNodeExpand}
+                        onNodeCollapse={handleNodeCollapse}
+                        onNodeContextMenu={handleNodeContextMenu}
+                        className="scene-tree"
+                    />
+                </div>
+            )}
         </div>
-        <div
-          className="sp-section-header-actions"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <ButtonGroup minimal>
-            <Tooltip content="Add Object" placement="bottom" compact>
-              <Button
-                minimal
-                small
-                icon={<Icon icon="cube-add" size={14} />}
-                className="section-action-btn"
-                onClick={onAddObject}
-              />
-            </Tooltip>
-            <Tooltip content="Add Renderer" placement="bottom" compact>
-              <Button
-                minimal
-                small
-                icon={<Icon icon="style" size={14} />}
-                className="section-action-btn"
-                onClick={onAddRenderer}
-              />
-            </Tooltip>
-            <Tooltip content="Focus" placement="bottom" compact>
-              <Button
-                minimal
-                small
-                icon={<Icon icon="locate" size={14} />}
-                className="section-action-btn"
-                onClick={() => selectedId && onFocusSelected?.(selectedId)}
-              />
-            </Tooltip>
-            <Tooltip content="Property" placement="bottom" compact>
-              <Button
-                minimal
-                small
-                icon={<Icon icon="properties" size={14} />}
-                className="section-action-btn"
-                onClick={() => selectedId && onShowProperty?.(selectedId)}
-              />
-            </Tooltip>
-          </ButtonGroup>
-        </div>
-      </div>
-      {!collapsed && (
-        <div className="sp-pane-scroll">
-          <Tree
-            contents={treeContents}
-            onNodeClick={handleNodeClick}
-            onNodeExpand={handleNodeExpand}
-            onNodeCollapse={handleNodeCollapse}
-            className="scene-tree"
-          />
-        </div>
-      )}
-    </div>
-  );
+    );
 };
+
+function nodeLabel(node: SceneTreeNode): string {
+    switch (node.type) {
+        case "scene":
+            return `Scene: ${node.name || "Untitled"}`;
+        case "object":
+            return node.className ? `${node.name} (${node.className})` : node.name;
+        case "renderer":
+            return node.className ? `${node.name} (${node.className})` : node.name;
+        case "rendGroup":
+        case "cameraRoot":
+        case "styleRoot":
+        case "camera":
+        case "style":
+        default:
+            return node.name;
+    }
+}

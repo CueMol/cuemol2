@@ -29,7 +29,7 @@
 
 /* ─── Existing Panes ─── */
 
-export { ScenePane, type SceneNode, type SceneObjectNode, type SceneRendererNode } from "./ScenePane";
+export { ScenePane } from "./ScenePane";
 export { ColorPane } from "./ColorPane";
 export { MolStructPane, type MolNode } from "./MolStructPane";
 export { SelectionPane, type MolOption } from "./SelectionPane";

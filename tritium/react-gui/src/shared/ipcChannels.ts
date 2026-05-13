@@ -10,6 +10,10 @@ export const IPC = {
   APP_PATH:       'apppath',
   DIALOG_OPEN:    'dialog:openFile',
   DIALOG_SAVE_SCENE: 'dialog:saveScene',
+  DIALOG_STYLE_OPEN: 'dialog:styleOpen',
+  DIALOG_STYLE_SAVE: 'dialog:styleSave',
+  DIALOG_CAMERA_OPEN: 'dialog:cameraOpen',
+  DIALOG_CAMERA_SAVE: 'dialog:cameraSave',
   FILE_EXISTS:        'file:exists',
   FILE_BACKUP_RENAME: 'file:backupRename',
   LAYOUT_LOAD:    'layout:load',
@@ -51,6 +55,9 @@ export const IPC = {
 
   // invoke channel for native viewport context menu
   NAVI_CTX_SHOW: 'navi-ctx:show',
+
+  // invoke channel for native scene-tree context menu (ScenePane right-click)
+  SCENE_CTX_SHOW: 'scene-ctx:show',
 
   // gesture push channels (main → renderer)
   ROTATE_GESTURE: 'gesture:rotate',

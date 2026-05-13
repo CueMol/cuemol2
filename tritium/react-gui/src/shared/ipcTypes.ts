@@ -114,6 +114,227 @@ export interface NaviCtxMenuPayload {
   symmLabel?: string
 }
 
+// ── Scene-tree context menu (ScenePane right-click) ─────────────────────────
+
+/**
+ * Selection-submenu items applicable to object nodes (Phase 3b).
+ * Mirrors UXP `workspace_panel_molsel.js`.
+ */
+export type SelectMolKind =
+  | 'all'
+  | 'unselect'
+  | 'invert'
+  | 'protein'
+  | 'nucleic'
+  | 'water'
+  | 'sugar'
+  | 'hydrogen'
+  | 'sidechain'
+  // Around (atom-level) and Around by-residue (`byres` expansion) of the
+  // current mol selection — UXP `ws.aroundMolSel(dist, byres)` /
+  // `cuemolui.molSelAround`. No-op when the current selection is empty.
+  | 'around3'
+  | 'around5'
+  | 'around7'
+  | 'around10'
+  | 'aroundByres3'
+  | 'aroundByres5'
+  | 'aroundByres7'
+
+/**
+ * Coloring-submenu IDs applicable to renderer nodes (Phase 3c).
+ * Mirrors UXP `workspace_panel.xul` `wspcPanelRendColMenu` values.
+ *
+ * IDs prefixed with `style-` go through `Renderer.applyStyles` after
+ * stripping existing `/Paint$/` entries (mirrors `Qm2Main.setRendColoring`'s
+ * style-* branch). The suffix is the StyleManager style name; static labels
+ * for the CPK molcol / dark / light wired in Phase 3c-1 are kept here as
+ * literal subtypes for documentation. Dynamic Paint (Secondary str.) entries
+ * (Phase 3c-2) fold into the same template-literal supertype.
+ *
+ * IDs prefixed with `paint-type-` instantiate a fresh coloring object and
+ * assign it to `rend.coloring`.
+ */
+export type RendColoringStyleId =
+  | 'style-DefaultCPKColoring'
+  | 'style-DarkCPKColoring'
+  | 'style-LightCPKColoring'
+  | `style-${string}`
+
+export type RendColoringId =
+  | RendColoringStyleId
+  | 'paint-type-bfac'
+  | 'paint-type-rainbow'
+
+/**
+ * Renderer "Change sel" submenu items (UXP `setRendSel`). 'current' uses
+ * the parent mol's UI selection; the others compile a canned predicate.
+ */
+export type ChangeRendSelKind =
+  | 'current'
+  | 'all'
+  | 'protein'
+  | 'nucleic'
+  | 'water'
+  | 'ligand'
+  | 'sugar'
+
+/**
+ * Discriminated action returned from the scene-tree native context menu.
+ * Phase 3a covers the common items shared across node types; later phases
+ * add type-specific actions (selection ops, paint, camera/style file I/O).
+ * Object-payload union (rather than a flat string union) keeps room to add
+ * action arguments — `selectMol` carries the chosen submenu item.
+ */
+export type SceneCtxAction =
+  | { kind: 'show' }
+  | { kind: 'hide' }
+  | { kind: 'rename' }
+  | { kind: 'delete' }
+  | { kind: 'property' }
+  | { kind: 'selectMol'; selectKind: SelectMolKind }
+  | { kind: 'copy' }
+  | { kind: 'paste' }
+  | { kind: 'setRendColoring'; coloringId: RendColoringId }
+  | { kind: 'paintRend'; colorValue: string }
+  | { kind: 'applyRendStyle'; styleName: string; pattern: string; flags: string }
+  | { kind: 'setSceneBgColor'; color: 'white' | 'black' }
+  | { kind: 'toggleColorProofing' }
+  | { kind: 'setRendSel'; selKind: ChangeRendSelKind }
+  | { kind: 'generateSurfObj' }
+  | { kind: 'newRendGroup' }
+  | { kind: 'newRenderer' }
+  | { kind: 'changeRendType'; typeName: string }
+  | { kind: 'newStyle' }
+  | { kind: 'styleLoad' }
+  | { kind: 'styleReload' }
+  | { kind: 'styleSave' }
+  | { kind: 'styleSaveAs' }
+  | { kind: 'styleToggleReadOnly' }
+  | { kind: 'newCamera' }
+  | { kind: 'cameraLoad' }
+  | { kind: 'cameraReload' }
+  | { kind: 'cameraSave' }
+  | { kind: 'cameraSaveAs' }
+  | { kind: 'cameraSaveFromView'; withVisFlags: boolean }
+  | { kind: 'cameraApplyToView'; withVisFlags: boolean }
+  | { kind: 'cameraEditVisFlags' }
+  | { kind: 'cameraClearVisFlags' }
+  | { kind: 'multiShow' }
+  | { kind: 'multiHide' }
+  | { kind: 'multiDelete' }
+
+export type SceneCtxNodeType =
+  | 'scene'
+  | 'object'
+  | 'renderer'
+  | 'rendGroup'
+  | 'cameraRoot'
+  | 'styleRoot'
+  | 'camera'
+  | 'style'
+
+export interface SceneCtxMenuPayload {
+  x: number
+  y: number
+  nodeType: SceneCtxNodeType
+  /** Display name shown as the disabled menu header. */
+  nodeLabel: string
+  /** Whether the targeted node is currently visible (drives Show/Hide). */
+  isVisible: boolean
+  /** Whether the node carries a visibility flag at all. */
+  hasVisibility: boolean
+  /** What the worker clipboard holds, used to gate Paste items. */
+  clipboardKind: 'object' | 'renderer' | 'style' | 'camera' | null
+  /**
+   * Whether the targeted renderer supports the Coloring submenu (Phase 3c).
+   * False for the special `*selection` / `*namelabel` / `atomintr` types
+   * and for rendGroup containers. Renderer ctx only.
+   */
+  supportsColoring?: boolean
+  /**
+   * Dynamic entries for the "Paint (Secondary str.)" sub-submenu under
+   * Coloring (Phase 3c-2). Populated via `getPaintColoringStyles` worker
+   * service when `supportsColoring` is true; an empty list hides the
+   * sub-submenu entirely.
+   */
+  paintStyles?: { name: string; label: string }[]
+  /**
+   * Whether the Paint color-picker submenu (Phase 3c-3a) should appear.
+   * True iff the renderer's current coloring is `PaintColoring` and the
+   * parent mol has a non-empty selection — matches UXP `checkPaintColoring`.
+   * Pre-fetched via `getRendererPaintInfo` and gated client-side.
+   */
+  canPaint?: boolean
+  /**
+   * Entries for the Style (shape) submenu (Phase 3c-3b). Pre-fetched via
+   * `getRendererStyleEntries`. Both groups can be empty; the submenu is
+   * hidden when both are.
+   */
+  rendStyle?: {
+    typeStyles: { name: string; label: string; pattern: string; flags: string }[]
+    edgeStyles: { name: string; label: string; pattern: string; flags: string }[]
+  }
+  /**
+   * Current Background-color classification for the scene ctx menu's
+   * "Background color" submenu (white / black radio state). Pre-fetched
+   * via `getSceneBgColor`. Scene ctx only.
+   */
+  bgColor?: SceneBgColor
+  /**
+   * Current "Use color proofing" toggle state — true iff the scene has
+   * `use_colproof === true` AND `icc_filename !== ""` (matches UXP
+   * `onSceneMenuShowing` gate). Pre-fetched via `getSceneColorProofing`.
+   * Scene ctx only.
+   */
+  colorProofingEnabled?: boolean
+  /**
+   * Whether the "Change sel" submenu should appear on the renderer ctx
+   * menu — false for the `*selection` synthetic renderer (matches UXP
+   * `onRendCtxtMenuShowing` `selitem.hidden` gate). Renderer ctx only.
+   */
+  supportsChangeSel?: boolean
+  /**
+   * Whether the "Generate surface obj" item should appear on the renderer
+   * ctx menu. True iff the renderer is `isosurf` (matches UXP gensurfitem
+   * gate). Renderer ctx only.
+   */
+  canGenSurfObj?: boolean
+  /**
+   * Selectable type names for the "Change type" submenu on the renderer
+   * ctx menu (Phase 6b). Pre-fetched via `getRendererChangeTypes` —
+   * an empty list hides the submenu and is the only signal the main
+   * process uses (it does not re-evaluate gates).
+   */
+  rendChangeTypes?: string[]
+  /**
+   * Multi-select context (Phase 4c). When `multiNodeIds.length > 1` AND
+   * the right-clicked node is in the set, main renders the multi-only
+   * menu (Show / Hide / Delete) instead of the type-specific branch.
+   */
+  multiNodeIds?: number[]
+  /**
+   * Style-node pre-fetch (Phase 5c). Drives the Reload (has src) / Save
+   * (has src) / Read-only check + disable / Copy disable on global rows
+   * gates in the style ctxmenu. Style ctx only.
+   */
+  styleInfo?: {
+    /** Scope id — 0 for global, scene.uid for scene-local. */
+    scopeId: number
+    src: string
+    readonly: boolean
+    modified: boolean
+  }
+  /**
+   * Camera-node pre-fetch (Phase 5b). Drives Reload (has src) / Clear
+   * vis flags (vis_size > 0) gates. Camera ctx only.
+   */
+  cameraInfo?: {
+    src: string
+    visSize: number
+  }
+}
+
 // ── Native menu state ───────────────────────────────────────────────────────
 
 export type ViewCenterMark = 'none' | 'crosshair' | 'axis'

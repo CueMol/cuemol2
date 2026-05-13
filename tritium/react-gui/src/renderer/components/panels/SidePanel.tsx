@@ -52,6 +52,7 @@ import { Icon } from "@blueprintjs/core";
 import type { ActivityView } from "../ActivityBar";
 import type { PaneCollapseState } from "../../hooks/useLayoutPersistence";
 
+import type { MoveSceneNodeArgs } from "../panes/ScenePane";
 import {
   ScenePane,
   ColorPane,
@@ -63,12 +64,12 @@ import {
   DummyPane4,
 } from "../panes";
 
-import type { SceneNode } from "../panes/ScenePane";
+import type { SceneTreeNode } from "../../worker/shared/sceneTreeTypes";
 
 import { MOL_TREE, MOLECULE_OPTIONS } from "../../data/sampleData";
 
 /* ─── Re-export types for external consumers ─── */
-export type { SceneNode, SceneObjectNode, SceneRendererNode } from "../panes/ScenePane";
+export type { SceneTreeNode } from "../../worker/shared/sceneTreeTypes";
 export type { MolNode } from "../panes/MolStructPane";
 export type { MolOption } from "../panes/SelectionPane";
 
@@ -114,13 +115,31 @@ interface SidePanelProps {
   activeView: ActivityView;
 
   /* Scene / Explorer props */
-  scene: SceneNode;
+  sceneTree: SceneTreeNode | null;
   sceneSelected: string;
+  /** Multi-select set (Phase 4c). */
+  sceneSelectedIds?: Set<string>;
   onSceneSelect: (id: string) => void;
+  /** Cmd/Ctrl+click toggle handler (Phase 4c). */
+  onSceneToggleSelect?: (id: string) => void;
   onToggleVisibility: (id: string) => void;
 
   /** Called when the user clicks the Property button in ScenePane. */
   onShowProperty?: (id: string) => void;
+  /** Called when the user clicks the Focus button in ScenePane. */
+  onFocusSelected?: (id: string) => void;
+  /** Called when the user clicks the Delete button in ScenePane. */
+  onDeleteSelected?: (id: string) => void;
+  /** Called when the user clicks the Add (Renderer) toolbar button. */
+  onAddSelected?: () => void;
+  /** Called when the user double-clicks a scene-tree row. */
+  onSceneNodeDoubleClick?: (node: SceneTreeNode) => void;
+  /** Per-action enablement for the current scene selection. */
+  sceneOpsEnabled?: { focus: boolean; delete: boolean; property: boolean; add: boolean };
+  /** Right-click context-menu opener for scene-tree nodes. */
+  onShowSceneContextMenu?: (node: SceneTreeNode, x: number, y: number) => void;
+  /** Drag-drop reorder callback (Phase 4b). */
+  onMoveSceneNode?: (args: MoveSceneNodeArgs) => unknown;
 
   /* ── Generic persistence props (per-view) ── */
 
@@ -147,11 +166,20 @@ interface SidePanelProps {
 
 export const SidePanel: React.FC<SidePanelProps> = ({
   activeView,
-  scene,
+  sceneTree,
   sceneSelected,
+  sceneSelectedIds,
   onSceneSelect,
+  onSceneToggleSelect,
   onToggleVisibility,
   onShowProperty,
+  onFocusSelected,
+  onDeleteSelected,
+  onAddSelected,
+  onSceneNodeDoubleClick,
+  sceneOpsEnabled,
+  onShowSceneContextMenu,
+  onMoveSceneNode,
   viewSizes,
   viewCollapsed,
   onViewSizesChange,
@@ -194,11 +222,20 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         defaultSize: 220,
         render: (collapsed, onToggle) => (
           <ScenePane
-            scene={scene}
+            tree={sceneTree}
             selectedId={sceneSelected}
+            selectedIds={sceneSelectedIds}
             onSelect={onSceneSelect}
+            onToggleSelect={onSceneToggleSelect}
             onToggleVisibility={onToggleVisibility}
             onShowProperty={onShowProperty}
+            onFocusSelected={onFocusSelected}
+            onDeleteSelected={onDeleteSelected}
+            onAddRenderer={onAddSelected}
+            onNodeDoubleClick={onSceneNodeDoubleClick}
+            onShowContextMenu={onShowSceneContextMenu}
+            onMoveNode={onMoveSceneNode}
+            opsEnabled={sceneOpsEnabled}
             collapsed={collapsed}
             onToggleCollapse={onToggle}
           />
@@ -267,8 +304,11 @@ export const SidePanel: React.FC<SidePanelProps> = ({
       },
     ],
   }), [
-    scene, sceneSelected, onSceneSelect,
+    sceneTree, sceneSelected, sceneSelectedIds,
+    onSceneSelect, onSceneToggleSelect,
     onToggleVisibility, onShowProperty,
+    onFocusSelected, onDeleteSelected, onAddSelected, sceneOpsEnabled,
+    onShowSceneContextMenu, onMoveSceneNode,
   ]);
 
   /* ── Generic view renderer (works for any N panes) ─── */
