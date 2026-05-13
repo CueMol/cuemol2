@@ -134,6 +134,13 @@ interface SidePanelProps {
   onAddSelected?: () => void;
   /** Called when the user double-clicks a scene-tree row. */
   onSceneNodeDoubleClick?: (node: SceneTreeNode) => void;
+  /**
+   * Called when the user commits an inline rename in the scene tree
+   * (F2 → Enter / blur on a non-empty new name). Caller routes to
+   * the appropriate worker — camera rows go through `renameCamera`
+   * because cameras have no in-place name setter.
+   */
+  onCommitInlineRename?: (node: SceneTreeNode, newName: string) => void;
   /** Per-action enablement for the current scene selection. */
   sceneOpsEnabled?: { focus: boolean; delete: boolean; property: boolean; add: boolean };
   /** Right-click context-menu opener for scene-tree nodes. */
@@ -177,6 +184,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   onDeleteSelected,
   onAddSelected,
   onSceneNodeDoubleClick,
+  onCommitInlineRename,
   sceneOpsEnabled,
   onShowSceneContextMenu,
   onMoveSceneNode,
@@ -233,6 +241,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             onDeleteSelected={onDeleteSelected}
             onAddRenderer={onAddSelected}
             onNodeDoubleClick={onSceneNodeDoubleClick}
+            onCommitInlineRename={onCommitInlineRename}
             onShowContextMenu={onShowSceneContextMenu}
             onMoveNode={onMoveSceneNode}
             opsEnabled={sceneOpsEnabled}

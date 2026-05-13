@@ -18,9 +18,10 @@
  * @module ScenePane
  */
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import {
     Icon,
+    InputGroup,
     Tree,
     Button,
     ButtonGroup,
@@ -234,6 +235,15 @@ interface ScenePaneProps {
      * with vis flags); other rows run `onPropCmd` (Properties dialog).
      */
     onNodeDoubleClick?: (node: SceneTreeNode) => void;
+    /**
+     * Inline-rename commit handler. ScenePane handles the F2 trigger +
+     * `<InputGroup>` editor; on Enter (or blur with a non-empty edit
+     * that differs from the original name) it calls back here with the
+     * targeted node and the user-entered name. The caller is expected
+     * to route to the appropriate worker service — UXP `onRenameCamera`
+     * for camera rows, `renameNode` for object / renderer / rendGroup.
+     */
+    onCommitInlineRename?: (node: SceneTreeNode, newName: string) => void;
     /** Right-click handler — opens native context menu for the targeted node. */
     onShowContextMenu?: (node: SceneTreeNode, x: number, y: number) => void;
     /**
@@ -266,6 +276,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     onFocusSelected,
     onShowProperty,
     onNodeDoubleClick,
+    onCommitInlineRename,
     onShowContextMenu,
     onMoveNode,
     opsEnabled,
@@ -292,6 +303,14 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     const [expandOverrides, setExpandOverrides] = useState<Map<string, boolean>>(
         () => new Map(),
     );
+
+    // Inline-rename state. `null` means no row is in edit mode. UXP only
+    // supports rename on object / renderer / rendGroup / camera; F2 on
+    // other rows is a no-op (filtered at the keydown handler).
+    const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
+    const inlineInputRef = useRef<HTMLInputElement | null>(null);
+    const commitRenameRef = useRef(onCommitInlineRename);
+    commitRenameRef.current = onCommitInlineRename;
 
     const handleNodeExpand = useCallback((node: TreeNodeInfo) => {
         setExpandOverrides((prev) => {
@@ -344,6 +363,64 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
         walk(tree);
         return map;
     }, [tree]);
+
+    // Whether the given node accepts a rename (inline + ctxmenu). Mirrors
+    // the `rename` action handling in `useSceneContextMenu` — object /
+    // renderer / rendGroup go through `renameNode`, camera goes through
+    // `renameCamera`. Scene / cameraRoot / styleRoot / style have no
+    // rename path in UXP and the menu item doesn't surface there.
+    const isRenameableType = useCallback((t: SceneNodeType): boolean => {
+        return (
+            t === "object" || t === "renderer" || t === "rendGroup" ||
+            t === "camera"
+        );
+    }, []);
+
+    // F2 begins inline rename on the current selection. We bind the
+    // listener on the scrolling wrapper (not document) so the shortcut
+    // only fires while the user is focused inside the scene tree.
+    const handleTreeKeyDown = useCallback(
+        (e: React.KeyboardEvent<HTMLDivElement>) => {
+            if (e.key !== "F2") return;
+            if (!commitRenameRef.current) return;
+            if (!selectedId) return;
+            const node = nodeLookup.get(selectedId);
+            if (!node) return;
+            if (!isRenameableType(node.type)) return;
+            e.preventDefault();
+            setEditingNodeId(selectedId);
+        },
+        [selectedId, nodeLookup, isRenameableType],
+    );
+
+    // Auto-focus + select the inline input each time the editor opens.
+    useEffect(() => {
+        if (editingNodeId == null) return;
+        const id = window.setTimeout(() => {
+            inlineInputRef.current?.focus();
+            inlineInputRef.current?.select();
+        }, 0);
+        return () => window.clearTimeout(id);
+    }, [editingNodeId]);
+
+    // Commit / cancel helpers — closured over the current row id and
+    // its original name so the InputGroup handlers stay small.
+    const commitEdit = useCallback(
+        (next: string) => {
+            if (editingNodeId == null) return;
+            const node = nodeLookup.get(editingNodeId);
+            setEditingNodeId(null);
+            if (!node) return;
+            const trimmed = next.trim();
+            if (trimmed === "" || trimmed === node.name) return;
+            commitRenameRef.current?.(node, trimmed);
+        },
+        [editingNodeId, nodeLookup],
+    );
+
+    const cancelEdit = useCallback(() => {
+        setEditingNodeId(null);
+    }, []);
 
     // id → parent lookup, used by DnD to resolve same-parent / cross-group
     // moves. Parent is null for the scene root.
@@ -513,6 +590,20 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                 n.type === "rendGroup";
 
         const wrapLabel = (n: SceneTreeNode): string | React.JSX.Element => {
+            const idStr = String(n.id);
+            // Inline-rename editor takes over the label when this row is
+            // the editing target. The InputGroup stops click propagation
+            // so typing inside doesn't toggle the Blueprint Tree row.
+            if (editingNodeId === idStr) {
+                return (
+                    <InlineRenameInput
+                        inputRef={inlineInputRef}
+                        defaultValue={n.name}
+                        onCommit={commitEdit}
+                        onCancel={cancelEdit}
+                    />
+                );
+            }
             const text = nodeLabel(n);
             if (!onMoveNode) return text;
             return (
@@ -560,7 +651,11 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
             hasCaret: false,
         };
         return [sceneRow, ...tree.children.map(buildNode)];
-    }, [tree, expandOverrides, selectedId, selectedIds, visibilityButton, onMoveNode, handleDragStart, handleDragOver, handleDrop]);
+    }, [
+        tree, expandOverrides, selectedId, selectedIds, visibilityButton,
+        onMoveNode, handleDragStart, handleDragOver, handleDrop,
+        editingNodeId, commitEdit, cancelEdit,
+    ]);
 
     return (
         <div className="sp-pane">
@@ -625,7 +720,14 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                 </div>
             </div>
             {!collapsed && tree && treeContents.length > 0 && (
-                <div className="sp-pane-scroll">
+                // tabIndex=0 + onKeyDown captures F2 only while focus is
+                // inside the tree. The Blueprint Tree itself doesn't
+                // accept keyboard focus.
+                <div
+                    className="sp-pane-scroll"
+                    tabIndex={0}
+                    onKeyDown={handleTreeKeyDown}
+                >
                     <Tree
                         contents={treeContents}
                         onNodeClick={handleNodeClick}
@@ -638,6 +740,57 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                 </div>
             )}
         </div>
+    );
+};
+
+/**
+ * Inline rename text input embedded inside a Blueprint Tree row label.
+ *
+ *   - Enter / blur with a non-empty edit → commit
+ *   - Escape → cancel (label is restored)
+ *   - clicks inside the input do NOT toggle the parent tree row
+ *     (stopPropagation in mousedown/click)
+ *
+ * Kept as a small local component so the rendered label has stable
+ * identity between renders — Blueprint Tree compares label props
+ * shallowly when deciding whether to reapply selection styles.
+ */
+const InlineRenameInput: React.FC<{
+    inputRef: React.MutableRefObject<HTMLInputElement | null>;
+    defaultValue: string;
+    onCommit: (value: string) => void;
+    onCancel: () => void;
+}> = ({ inputRef, defaultValue, onCommit, onCancel }) => {
+    const [value, setValue] = useState(defaultValue);
+    const handleKeyDown = useCallback(
+        (e: React.KeyboardEvent<HTMLInputElement>) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                e.stopPropagation();
+                onCommit(value);
+            } else if (e.key === "Escape") {
+                e.preventDefault();
+                e.stopPropagation();
+                onCancel();
+            }
+        },
+        [value, onCommit, onCancel],
+    );
+    return (
+        <InputGroup
+            inputRef={(el) => { inputRef.current = el; }}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onBlur={() => onCommit(value)}
+            // Prevent Blueprint Tree's row click from stealing focus / toggling
+            // selection while the user types inside the editor.
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            small
+            autoComplete="off"
+            style={{ display: "inline-flex", minWidth: 120 }}
+        />
     );
 };
 

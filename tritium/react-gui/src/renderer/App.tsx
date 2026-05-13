@@ -304,6 +304,25 @@ const App: React.FC = () => {
     [activeMolViewId, applySceneCameraToView, handleSceneShowProperty],
   );
 
+  // Inline-rename commit: identical routing to the ctxmenu 'rename'
+  // case in useSceneContextMenu — camera rows go through renameCamera
+  // (cameras have no in-place name setter once registered), everything
+  // else through the generic renameNode worker.
+  const handleCommitInlineRename = useCallback(
+    (node: Parameters<typeof openSceneCtxMenu>[0], newName: string) => {
+      if (node.type === 'camera') {
+        void renameSceneCamera(node.name, newName).catch((err: unknown) => {
+          console.warn('inline rename camera failed:', err);
+        });
+      } else {
+        void renameSceneNode(String(node.id), newName).catch((err: unknown) => {
+          console.warn('inline rename failed:', err);
+        });
+      }
+    },
+    [renameSceneCamera, renameSceneNode],
+  );
+
   // Toolbar Add button — UXP `onNewCmd` dispatches by selected row type:
   // object / renderer / rendGroup → New Renderer flow;
   // camera / cameraRoot → New Camera flow (createCamera + saveViewToCam).
@@ -443,6 +462,7 @@ const App: React.FC = () => {
                     onDeleteSelected={handleSceneDelete}
                     onAddSelected={handleSceneAdd}
                     onSceneNodeDoubleClick={handleSceneNodeDoubleClick}
+                    onCommitInlineRename={handleCommitInlineRename}
                     onShowSceneContextMenu={handleShowSceneCtxMenu}
                     onMoveSceneNode={moveSceneNode}
                     sceneOpsEnabled={sceneOpsEnabled}
