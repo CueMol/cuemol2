@@ -349,6 +349,15 @@ function paintObjectSelection(
 }
 
 // ─── getObjectPaintInfo (Phase 5d gate) ───────────────────────────────────
+//
+// UXP `wspcPnlObjPaintMenu` is shown unconditionally — the only gate is
+// `onPaintMol`'s "selection is empty" early-return + a try/catch that
+// silently rolls back the txn when `insertBefore` is missing (e.g. when
+// the current coloring is the default SolidColoring rather than
+// PaintColoring). We mirror that here by gating only on a non-empty sel
+// so the menu surfaces as soon as the user has something selected. The
+// worker `paintObjectSelection` still refuses safely when coloring is
+// not PaintColoring, so a stray click is a no-op rather than a crash.
 
 export interface GetObjectPaintInfoArgs {
     sceneId: number;
@@ -356,7 +365,7 @@ export interface GetObjectPaintInfoArgs {
 }
 
 export interface GetObjectPaintInfoResult {
-    /** True iff the object's coloring is PaintColoring AND sel is non-empty. */
+    /** True iff sel is non-empty. Coloring class is not gated here. */
     canPaint: boolean;
 }
 
@@ -368,7 +377,6 @@ function getObjectPaintInfo(
     if (!scene) return { canPaint: false };
     const mol = scene.getObject(args.objId) as MolCoord | null;
     if (!mol) return { canPaint: false };
-    if (getObjectColoringClassName(mol) !== 'PaintColoring') return { canPaint: false };
     const sel = getMolSel(mol);
     if (!sel || isSelEmpty(sel)) return { canPaint: false };
     return { canPaint: true };

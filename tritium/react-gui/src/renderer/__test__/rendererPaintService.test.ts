@@ -268,14 +268,24 @@ describe('paintObjectSelection', () => {
 describe('getObjectPaintInfo', () => {
     beforeEach(() => vi.clearAllMocks())
 
-    it('canPaint:true when coloring is PaintColoring + sel non-empty', () => {
+    it('canPaint:true when sel is non-empty (regardless of coloring class)', () => {
+        // UXP shows wspcPnlObjPaintMenu unconditionally; selection emptiness
+        // is the only menu-level gate. Default coloring is SolidColoring
+        // which won't accept insertBefore — the worker rejects safely.
         const { ctx } = makeObjFixture()
         expect(services.getObjectPaintInfo(ctx, { sceneId: 1, objId: 10 }))
+            .toEqual({ canPaint: true })
+
+        const solid = makeObjFixture({ coloringClass: 'SolidColoring' })
+        expect(services.getObjectPaintInfo(solid.ctx, { sceneId: 1, objId: 10 }))
+            .toEqual({ canPaint: true })
+
+        const cpk = makeObjFixture({ coloringClass: 'CPKColoring' })
+        expect(services.getObjectPaintInfo(cpk.ctx, { sceneId: 1, objId: 10 }))
             .toEqual({ canPaint: true })
     })
 
     it.each([
-        ['non-Paint coloring', { coloringClass: 'CPKColoring' }],
         ['empty sel', { selIsEmpty: true }],
         ['null sel', { selIsNull: true }],
         ['missing mol', { molExists: false }],
