@@ -334,6 +334,74 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     const cancelRenameRef = useRef(onCancelInlineRename);
     cancelRenameRef.current = onCancelInlineRename;
 
+    // id → SceneTreeNode lookup so click / dblclick / ctxmenu handlers
+    // can resolve a Blueprint TreeNodeInfo back to the typed node. Kept
+    // close to the rename logic because both rely on it.
+    const nodeLookup = useMemo<Map<string, SceneTreeNode>>(() => {
+        const map = new Map<string, SceneTreeNode>();
+        if (!tree) return map;
+        const walk = (n: SceneTreeNode): void => {
+            map.set(String(n.id), n);
+            for (const c of n.children) walk(c);
+        };
+        walk(tree);
+        return map;
+    }, [tree]);
+
+    // Whether the given node accepts a rename (inline + ctxmenu). Mirrors
+    // the `rename` action handling in `useSceneContextMenu` — object /
+    // renderer / rendGroup go through `renameNode`, camera goes through
+    // `renameCamera`. Scene / cameraRoot / styleRoot / style have no
+    // rename path in UXP and the menu item doesn't surface there.
+    const isRenameableType = useCallback((t: SceneNodeType): boolean => {
+        return (
+            t === "object" || t === "renderer" || t === "rendGroup" ||
+            t === "camera"
+        );
+    }, []);
+
+    // Click-pause-click rename schedule (Finder / Explorer parity).
+    // When the user clicks an already-selected single-selected renameable
+    // row, we set a small timer to enter rename mode. The timer is
+    // canceled by: a double-click on the same row (treated as a real
+    // double-click), a click on a different row, the editor opening from
+    // another path (F2 / ctxmenu Rename), or unmount.
+    //
+    // The delay must be at least the browser double-click threshold so a
+    // real dblclick has time to cancel the schedule. 500ms is the macOS
+    // / Windows default; we use the same.
+    const RENAME_CLICK_DELAY_MS = 500;
+    const renameTimerRef = useRef<number | null>(null);
+    const clearRenameTimer = useCallback(() => {
+        if (renameTimerRef.current !== null) {
+            window.clearTimeout(renameTimerRef.current);
+            renameTimerRef.current = null;
+        }
+    }, []);
+    // Latest selectedId in a ref so the timeout closure can re-check
+    // whether the targeted row is still selected when the delay elapses.
+    const selectedIdAtScheduleRef = useRef<string | null>(null);
+    const scheduleRename = useCallback((id: string) => {
+        clearRenameTimer();
+        selectedIdAtScheduleRef.current = id;
+        renameTimerRef.current = window.setTimeout(() => {
+            renameTimerRef.current = null;
+            // Defensive: only fire when the targeted row is still the
+            // single selection (the user may have clicked away inside
+            // the click-pause window).
+            if (selectedIdAtScheduleRef.current === id) {
+                beginRenameRef.current?.(id);
+            }
+        }, RENAME_CLICK_DELAY_MS);
+    }, [clearRenameTimer]);
+
+    // Cancel any pending click-pause schedule when an editor opens from
+    // another path (F2 / ctxmenu Rename), and on unmount.
+    useEffect(() => {
+        if (editingNodeId != null) clearRenameTimer();
+    }, [editingNodeId, clearRenameTimer]);
+    useEffect(() => clearRenameTimer, [clearRenameTimer]);
+
     const handleNodeExpand = useCallback((node: TreeNodeInfo) => {
         setExpandOverrides((prev) => {
             const next = new Map(prev);
@@ -363,41 +431,38 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
             // via Cmd-click, with Shift behaving as a range select that
             // we don't migrate in Phase 4c.
             if ((e.metaKey || e.ctrlKey) && onToggleSelect) {
+                clearRenameTimer();
                 onToggleSelect(idStr);
                 return;
             }
+            // Click-pause-click rename (Finder / Explorer parity).
+            // Triggered when the same single-selected, renameable row is
+            // clicked a second time without modifiers and not as part of
+            // a dblclick (handleNodeDoubleClick cancels the timer).
+            const isAlreadySelected = selectedId === idStr;
+            const isSingleSelected = !selectedIds || selectedIds.size <= 1;
+            if (isAlreadySelected && isSingleSelected) {
+                const sceneNode = nodeLookup.get(idStr);
+                if (sceneNode && isRenameableType(sceneNode.type)) {
+                    scheduleRename(idStr);
+                    return;
+                }
+            }
+            // Selecting a different row (or a non-renameable row): cancel
+            // any pending schedule before the selection state mutates.
+            clearRenameTimer();
             onSelect(idStr);
         },
-        [onSelect, onToggleSelect],
+        [
+            onSelect, onToggleSelect, selectedId, selectedIds,
+            nodeLookup, isRenameableType, scheduleRename, clearRenameTimer,
+        ],
     );
 
 
     // Build an id → SceneTreeNode lookup so onNodeContextMenu (which only
     // receives the Blueprint TreeNodeInfo) can resolve back to the original
     // typed node and forward it to the caller.
-    const nodeLookup = useMemo<Map<string, SceneTreeNode>>(() => {
-        const map = new Map<string, SceneTreeNode>();
-        if (!tree) return map;
-        const walk = (n: SceneTreeNode): void => {
-            map.set(String(n.id), n);
-            for (const c of n.children) walk(c);
-        };
-        walk(tree);
-        return map;
-    }, [tree]);
-
-    // Whether the given node accepts a rename (inline + ctxmenu). Mirrors
-    // the `rename` action handling in `useSceneContextMenu` — object /
-    // renderer / rendGroup go through `renameNode`, camera goes through
-    // `renameCamera`. Scene / cameraRoot / styleRoot / style have no
-    // rename path in UXP and the menu item doesn't surface there.
-    const isRenameableType = useCallback((t: SceneNodeType): boolean => {
-        return (
-            t === "object" || t === "renderer" || t === "rendGroup" ||
-            t === "camera"
-        );
-    }, []);
-
     // F2 begins inline rename on the current selection. We bind the
     // listener on the scrolling wrapper (not document) so the shortcut
     // only fires while the user is focused inside the scene tree.
@@ -554,13 +619,16 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     // Blueprint Tree's `onNodeDoubleClick` fires after the second mouse-up
     // of a click pair. Resolve back to the typed SceneTreeNode and forward
     // to the caller — UXP `onTreeItemClick` `aEvent.detail==2` path.
+    // Also cancel any click-pause rename schedule the second click would
+    // have armed: a real double-click takes precedence over rename.
     const handleNodeDoubleClick = useCallback(
         (info: TreeNodeInfo) => {
+            clearRenameTimer();
             if (!onNodeDoubleClick) return;
             const node = nodeLookup.get(String(info.id));
             if (node) onNodeDoubleClick(node);
         },
-        [nodeLookup, onNodeDoubleClick],
+        [nodeLookup, onNodeDoubleClick, clearRenameTimer],
     );
 
     const visibilityButton = useCallback(
