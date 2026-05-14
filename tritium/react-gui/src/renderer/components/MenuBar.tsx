@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { APP_MENU, getRoleLabel } from '../../shared/menuTemplate'
 import type { AppMenuItem, AppMenuRole } from '../../shared/menuTemplate'
-import type { SceneBgColor, ViewCenterMark } from '../../shared/ipcTypes'
+import type { RecentFileEntry, SceneBgColor, ViewCenterMark } from '../../shared/ipcTypes'
 import { IPC } from '../../shared/ipcChannels'
 import { useMenuDispatch } from '../hooks/useMenuDispatch'
 
@@ -10,6 +10,45 @@ interface MenuBarProps {
   viewProjection?: boolean | null
   viewCenterMark?: ViewCenterMark | null
   sceneBgColor?: SceneBgColor | null
+  recentFiles?: RecentFileEntry[]
+}
+
+function basename(p: string): string {
+  const i = Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'))
+  return i >= 0 ? p.slice(i + 1) : p
+}
+
+/**
+ * Replace the static `Clear Menu` placeholder in the `open-recent` submenu
+ * with dynamic MRU items + separator + Clear Menu. Mirrors the native
+ * menu build in main/menu.ts so both UI paths render the same structure.
+ *
+ * The dynamic recent items themselves do not use `ipcChannel` — DropdownItem
+ * routes their clicks through `onRecentOpen` so the file path is passed by
+ * reference instead of being encoded into a channel string (Windows paths
+ * contain `:`).
+ */
+function buildRecentSubmenuItems(recents: RecentFileEntry[]): AppMenuItem[] {
+  const clearItem: AppMenuItem = {
+    id: 'clear-recent',
+    label: 'Clear Menu',
+    enabled: recents.length > 0,
+    ipcChannel: 'menu:clear-recent',
+  }
+  if (recents.length === 0) {
+    return [
+      { id: 'recent-none', label: '(none)', enabled: false },
+      { type: 'separator' },
+      clearItem,
+    ]
+  }
+  const items: AppMenuItem[] = recents.map((entry, idx) => ({
+    id: `recent-${idx}`,
+    label: basename(entry.path),
+  }))
+  items.push({ type: 'separator' })
+  items.push(clearItem)
+  return items
 }
 
 /** Convert an Electron accelerator string to a display string for Windows/Linux. */
@@ -31,6 +70,8 @@ interface DropdownItemProps {
   viewProjection?: boolean | null
   viewCenterMark?: ViewCenterMark | null
   sceneBgColor?: SceneBgColor | null
+  recentFiles?: RecentFileEntry[]
+  onRecentOpen?: (entry: RecentFileEntry) => void
 }
 
 const getViewProjectionState = (
@@ -77,9 +118,19 @@ const getSceneBgColorState = (
   }
 }
 
-const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProjection, viewCenterMark, sceneBgColor }) => {
+const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProjection, viewCenterMark, sceneBgColor, recentFiles, onRecentOpen }) => {
   const [submenuOpen, setSubmenuOpen] = useState(false)
   const itemRef = useRef<HTMLDivElement>(null)
+
+  // Expand the static placeholder for "Open Recent" with the live MRU list.
+  // The recent entries are rendered as plain DropdownItems that capture
+  // their entry payload through a per-item onClick closure.
+  const submenu: AppMenuItem[] | undefined = useMemo(() => {
+    if (item.id === 'open-recent') {
+      return buildRecentSubmenuItems(recentFiles ?? [])
+    }
+    return item.submenu
+  }, [item.id, item.submenu, recentFiles])
 
   if (item.type === 'separator') {
     return <div className="menubar__dropdown-separator" role="separator" />
@@ -87,7 +138,7 @@ const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProject
 
   const label = getItemLabel(item)
   const accel = item.accelerator ? toDisplayAccel(item.accelerator) : undefined
-  const hasSubmenu = !!item.submenu?.length
+  const hasSubmenu = !!submenu?.length
   const projectionState = getViewProjectionState(item, viewProjection)
   const centerMarkState = getViewCenterMarkState(item, viewCenterMark)
   const bgColorState = getSceneBgColorState(item, sceneBgColor)
@@ -95,6 +146,12 @@ const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProject
   const checked = projectionState?.checked ?? centerMarkState?.checked ?? bgColorState?.checked ?? item.checked ?? false
   const isCheckable = item.type === 'checkbox' || item.type === 'radio'
   const className = `menubar__dropdown-item${enabled ? '' : ' menubar__dropdown-item--disabled'}`
+
+  // Recent items have an `id` like `recent-N` and no ipcChannel/role; click
+  // resolves to the same-index entry in the live recents list.
+  const recentMatch = item.id && /^recent-\d+$/.test(item.id)
+    ? recentFiles?.[Number(item.id.slice('recent-'.length))]
+    : undefined
 
   if (hasSubmenu) {
     return (
@@ -111,7 +168,7 @@ const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProject
         <span className="menubar__dropdown-arrow">{'▶'}</span>
         {submenuOpen && (
           <div className="menubar__submenu" role="menu">
-            {item.submenu!.map((sub, idx) => (
+            {submenu!.map((sub, idx) => (
               <DropdownItem
                 key={sub.id ?? idx}
                 item={sub}
@@ -119,6 +176,8 @@ const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProject
                 viewProjection={viewProjection}
                 viewCenterMark={viewCenterMark}
                 sceneBgColor={sceneBgColor}
+                recentFiles={recentFiles}
+                onRecentOpen={onRecentOpen}
               />
             ))}
           </div>
@@ -136,6 +195,10 @@ const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProject
       onClick={(e) => {
         e.stopPropagation()
         if (!enabled) return
+        if (recentMatch && onRecentOpen) {
+          onRecentOpen(recentMatch)
+          return
+        }
         onAction(item)
       }}
     >
@@ -150,8 +213,8 @@ const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProject
   )
 }
 
-export const MenuBar: React.FC<MenuBarProps> = ({ activeTab, viewProjection = null, viewCenterMark = null, sceneBgColor = null }) => {
-  const { dispatchMenuChannel } = useMenuDispatch(activeTab)
+export const MenuBar: React.FC<MenuBarProps> = ({ activeTab, viewProjection = null, viewCenterMark = null, sceneBgColor = null, recentFiles = [] }) => {
+  const { dispatchMenuChannel, dispatchOpenRecent } = useMenuDispatch(activeTab)
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [dropdownPos, setDropdownPos] = useState<{ left: number }>({ left: 0 })
   const barRef = useRef<HTMLDivElement>(null)
@@ -243,6 +306,8 @@ export const MenuBar: React.FC<MenuBarProps> = ({ activeTab, viewProjection = nu
                     viewProjection={viewProjection}
                     viewCenterMark={viewCenterMark}
                     sceneBgColor={sceneBgColor}
+                    recentFiles={recentFiles}
+                    onRecentOpen={dispatchOpenRecent}
                   />
                 ))}
               </div>

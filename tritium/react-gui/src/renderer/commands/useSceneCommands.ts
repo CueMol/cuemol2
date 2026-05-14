@@ -12,6 +12,7 @@ import type { SceneBgColor } from '../../shared/ipcTypes'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
+import { addRecent } from './addRecent'
 import { useShowFileOpenOptionDialog } from '../components/fopen-opt-dlgs/FileOpenOptionDialogProvider'
 import { useShowGetPdbDialog } from '../components/dialogs/GetPdbDialogProvider'
 import type { CoordServerType, MapServerType } from '../components/dialogs/GetPdbDialog'
@@ -44,6 +45,7 @@ export function useSceneCommands({
         if (!created) return
         if (filePath) {
             await cm.loadScene(filePath, created.scene_uid)
+            addRecent(filePath, 'scene')
         }
     }, [cm, newScene])
 
@@ -77,6 +79,7 @@ export function useSceneCommands({
                 })
                 if (options === null) return
                 await cm.loadObject(data.path, info.scene_uid, options)
+                addRecent(data.path, 'obj')
             })().catch((e: unknown) => console.error('OpenObjByPath failed:', e))
         },
     )

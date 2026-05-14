@@ -55,6 +55,23 @@ export interface FileDialogOptions {
   filters: ElectronFileFilter[]
 }
 
+// ── Recent files (MRU) ──────────────────────────────────────────────────────
+
+/**
+ * Whether a MRU entry should be re-opened as a coordinate / object file
+ * (mol/pdb/cif/...) or as a scene file (.qsc). The distinction drives
+ * which CmdId is dispatched on click. UXP `mru-files.js` stores the
+ * concrete reader_name (`pdb`, `mol2`, `qsc_xml`, ...); the tritium load
+ * paths auto-detect the reader from the file extension, so a coarse
+ * obj/scene flag is sufficient here.
+ */
+export type RecentFileType = 'obj' | 'scene'
+
+export interface RecentFileEntry {
+  path: string
+  ftype: RecentFileType
+}
+
 // ── File events ─────────────────────────────────────────────────────────────
 
 export interface FileOpenedData {

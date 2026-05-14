@@ -16,6 +16,7 @@ import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import { useShowQscWriterOptionDialog } from '../components/dialogs/QscWriterOptionDialogProvider'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
+import { addRecent } from './addRecent'
 
 interface UseEditCommandsOptions {
     cm: AsyncCueMol | null
@@ -47,7 +48,9 @@ export function useEditCommands({
                 filePath,
                 options,
             })
-            return !!res?.ok
+            const ok = !!res?.ok
+            if (ok) addRecent(filePath, 'scene')
+            return ok
         },
         [cm, getActiveSceneInfo],
     )

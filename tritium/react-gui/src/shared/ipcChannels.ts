@@ -24,6 +24,11 @@ export const IPC = {
   MENU_UPDATE_STATE: 'menu:update-state',
   MENU_SET_MODAL_BLOCKED: 'menu:set-modal-blocked',
 
+  // File > Open Recent (MRU) — renderer ↔ main
+  RECENT_LOAD:  'recent:load',
+  RECENT_ADD:   'recent:add',
+  RECENT_CLEAR: 'recent:clear',
+
   // push channels (main → renderer, no reply)
   OBJ_FILE_OPENED:   'file:obj-opened',
   SCENE_FILE_OPENED: 'file:scene-opened',
@@ -46,6 +51,8 @@ export const IPC = {
   MENU_BG_WHITE:  'menu:bg-white',
   MENU_BG_BLACK:  'menu:bg-black',
   MENU_ABOUT:     'menu:about',
+  MENU_OPEN_RECENT: 'menu:open-recent',
+  RECENT_UPDATED:   'recent:updated',
 
   // invoke channels (renderer → main, with reply) — menu role actions
   MENU_INVOKE_ROLE: 'menu:invoke-role',
