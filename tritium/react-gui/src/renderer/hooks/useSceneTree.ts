@@ -31,6 +31,7 @@ import {
     SEM_STYLE,
     SEM_ANY,
 } from '../event'
+import { useCueMolEventListener } from './useCueMolEventListener'
 
 interface UseSceneTreeOptions {
     cm: AsyncCueMol | null
@@ -261,51 +262,16 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
 
     // Subscribe to CueMol event manager; debounce a flurry of events into
     // one refetch. Unsubscribe on unmount or when sceneId changes.
-    useEffect(() => {
-        if (!cm || sceneId === undefined) return
-
-        let timer: ReturnType<typeof setTimeout> | null = null
-        let cbid: number | null = null
-        let cancelled = false
-
-        const scheduleRefetch = (): void => {
-            if (timer !== null) return
-            timer = setTimeout(() => {
-                timer = null
-                refetch()
-            }, REFETCH_DEBOUNCE_MS)
-        }
-
-        ;(async () => {
-            try {
-                const id = await cm.addEventListener(
-                    '',
-                    SCENE_EVENT_MASK,
-                    SEM_ANY,
-                    sceneId,
-                    () => {
-                        if (cancelled) return
-                        scheduleRefetch()
-                    },
-                )
-                if (cancelled) {
-                    cm.removeEventListener(id).catch(() => {})
-                    return
-                }
-                cbid = id
-            } catch (err) {
-                console.warn('scene event listener failed:', err)
-            }
-        })()
-
-        return () => {
-            cancelled = true
-            if (timer !== null) clearTimeout(timer)
-            if (cbid !== null) {
-                cm.removeEventListener(cbid).catch(() => {})
-            }
-        }
-    }, [cm, sceneId, refetch])
+    useCueMolEventListener({
+        cm,
+        enabled: sceneId !== undefined,
+        category: '',
+        srcMask: SCENE_EVENT_MASK,
+        evtMask: SEM_ANY,
+        scopeId: sceneId ?? -1,
+        handler: refetch,
+        debounceMs: REFETCH_DEBOUNCE_MS,
+    })
 
     const toggleVisibility = useCallback(
         (id: string) => {

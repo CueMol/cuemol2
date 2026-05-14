@@ -1,41 +1,38 @@
 import { useEffect } from 'react'
 import * as event from '../event'
-// import { cuemol_worker } from '../cuemol_worker'
 import { useCueMol } from './useCueMol'
+import { useCueMolEventListener } from './useCueMolEventListener'
 
 export function useLogEvent(callback: (msg: string) => void): void {
     const { cueMolReady, cm } = useCueMol()
 
+    // Subscribe to log events.
+    useCueMolEventListener({
+        cm,
+        enabled: cueMolReady,
+        category: 'log',
+        srcMask: event.SEM_ANY,
+        evtMask: event.SEM_ANY,
+        scopeId: event.SEM_ANY,
+        handler: (args) => {
+            const obj = (args as { obj?: { content?: string; newline?: boolean } } | null)?.obj
+            let msg: string = obj?.content ?? ''
+            if (obj?.newline) msg += '\n'
+            console.log('log event called:', msg)
+            callback(msg)
+        },
+    })
+
+    // Drain any messages accumulated before this hook subscribed.
     useEffect(() => {
-        if (!cueMolReady || !cm) return () => { };
-
-        // TODO: restore when cuemol_worker is re-enabled
-        let cbid: number;
-        (async () => {
-            cbid = await cm.addEventListener(
-                'log',
-                event.SEM_ANY,
-                event.SEM_ANY,
-                event.SEM_ANY,
-                (args: any) => {
-                    let msg: string = args.obj?.content ?? ''
-                    if (args.obj?.newline) msg += '\n'
-                    console.log('log event called:', msg)
-                    callback(msg)
-                }
-            )
-            console.log('add cuemol event listener cbid=', cbid)
-            // const accumMsg = await cm.startLogger()
-            const logMgr = await cm.getService('MsgLog') as any;
-            const accumMsg = await logMgr.getAccumMsg();
-            logMgr.removeAccumMsg();
-            if (accumMsg) callback(accumMsg)
-        })();
-
-        return () => {
-            if (cbid !== undefined) {
-                cm.removeEventListener(cbid)
-            }
-        }
-    }, [cueMolReady])
+        if (!cueMolReady || !cm) return
+        let cancelled = false
+        ;(async () => {
+            const logMgr = await cm.getService('MsgLog') as any
+            const accumMsg = await logMgr.getAccumMsg()
+            logMgr.removeAccumMsg()
+            if (!cancelled && accumMsg) callback(accumMsg)
+        })()
+        return () => { cancelled = true }
+    }, [cueMolReady, cm])  // eslint-disable-line react-hooks/exhaustive-deps
 }
