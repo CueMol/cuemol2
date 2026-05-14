@@ -104,13 +104,33 @@ import type {
   PaintRendererSelectionResult,
   GetRendererPaintInfoArgs,
   GetRendererPaintInfoResult,
+  PaintObjectSelectionArgs,
+  PaintObjectSelectionResult,
+  GetObjectPaintInfoArgs,
+  GetObjectPaintInfoResult,
 } from '../server/services/rendererColoring.service'
 import type {
   GetRendererStyleEntriesArgs,
   GetRendererStyleEntriesResult,
   ApplyRendererStyleArgs,
   ApplyRendererStyleResult,
+  GetRendererStyleEditInfoArgs,
+  GetRendererStyleEditInfoResult,
+  ApplyRendererStyleListArgs,
+  ApplyRendererStyleListResult,
 } from '../server/services/rendererStyle.service'
+import type {
+  GetCreateRendStyleInfoArgs,
+  GetCreateRendStyleInfoResult,
+  CreateStyleFromRendererArgs,
+  CreateStyleFromRendererResult,
+} from '../server/services/createStyleFromRenderer.service'
+import type {
+  GetObjectSaveInfoArgs,
+  GetObjectSaveInfoResult,
+  SaveObjectToFileArgs,
+  SaveObjectToFileResult,
+} from '../server/services/objectSave.service'
 import type {
   SetRendererSelectionArgs,
   SetRendererSelectionResult,
@@ -273,8 +293,16 @@ export interface ServiceMap {
   getPaintColoringStyles:     { args: GetPaintColoringStylesArgs;      result: GetPaintColoringStylesResult }
   paintRendererSelection:     { args: PaintRendererSelectionArgs;      result: PaintRendererSelectionResult }
   getRendererPaintInfo:       { args: GetRendererPaintInfoArgs;        result: GetRendererPaintInfoResult }
+  paintObjectSelection:       { args: PaintObjectSelectionArgs;        result: PaintObjectSelectionResult }
+  getObjectPaintInfo:         { args: GetObjectPaintInfoArgs;          result: GetObjectPaintInfoResult }
   getRendererStyleEntries:    { args: GetRendererStyleEntriesArgs;     result: GetRendererStyleEntriesResult }
   applyRendererStyle:         { args: ApplyRendererStyleArgs;          result: ApplyRendererStyleResult }
+  getRendererStyleEditInfo:   { args: GetRendererStyleEditInfoArgs;    result: GetRendererStyleEditInfoResult }
+  applyRendererStyleList:     { args: ApplyRendererStyleListArgs;      result: ApplyRendererStyleListResult }
+  getCreateRendStyleInfo:     { args: GetCreateRendStyleInfoArgs;      result: GetCreateRendStyleInfoResult }
+  createStyleFromRenderer:    { args: CreateStyleFromRendererArgs;     result: CreateStyleFromRendererResult }
+  getObjectSaveInfo:          { args: GetObjectSaveInfoArgs;           result: GetObjectSaveInfoResult }
+  saveObjectToFile:           { args: SaveObjectToFileArgs;            result: SaveObjectToFileResult }
   setRendererSelection:       { args: SetRendererSelectionArgs;        result: SetRendererSelectionResult }
   generateRendererSurfObj:    { args: GenerateRendererSurfObjArgs;     result: GenerateRendererSurfObjResult }
   createRendererGroup:        { args: CreateRendererGroupArgs;         result: CreateRendererGroupResult }

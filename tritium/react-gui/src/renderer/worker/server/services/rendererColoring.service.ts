@@ -295,9 +295,98 @@ function getRendererPaintInfo(
     return { canPaint: true };
 }
 
+// ─── paintObjectSelection (Phase 5d) ──────────────────────────────────────
+//
+// Object-level paint: insert a paint entry into the MolCoord's own
+// coloring scheme. Mirrors UXP `ws.onPaintMol` object branch — the same
+// handler that backs the renderer Paint menu also serves the object
+// Paint menu, branching on whether the selected node has `getClientObj`
+// (renderer) or `sel` directly (object).
+//
+// Gated client-side by `getObjectPaintInfo` so the Paint submenu is
+// hidden when the object's coloring is not PaintColoring or its sel is
+// empty.
+
+export interface PaintObjectSelectionArgs {
+    sceneId: number;
+    objId: number;
+    /** CueMol color value string, e.g. "#FFF", "hsb(0, 1.0, 1.0)". */
+    colorValue: string;
+}
+
+export interface PaintObjectSelectionResult {
+    ok: boolean;
+}
+
+function getObjectColoringClassName(mol: MolCoord): string {
+    try {
+        const c = (mol as unknown as { coloring: ColoringScheme | null }).coloring;
+        if (!c) return '';
+        return c.getClassName();
+    } catch {
+        return '';
+    }
+}
+
+function paintObjectSelection(
+    ctx: WorkerContext,
+    args: PaintObjectSelectionArgs,
+): PaintObjectSelectionResult {
+    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    if (!scene) return { ok: false };
+    const mol = scene.getObject(args.objId) as MolCoord | null;
+    if (!mol) return { ok: false };
+    const sel = getMolSel(mol);
+    if (!sel || isSelEmpty(sel)) return { ok: false };
+    if (getObjectColoringClassName(mol) !== 'PaintColoring') return { ok: false };
+
+    const coloring = (mol as unknown as { coloring: PaintColoring }).coloring;
+    const color = makeColor(ctx, args.colorValue, scene.uid);
+    withUndoTxn(scene, 'Insert paint entry', () => {
+        coloring.insertBefore(0, sel, color);
+    });
+    return { ok: true };
+}
+
+// ─── getObjectPaintInfo (Phase 5d gate) ───────────────────────────────────
+//
+// UXP `wspcPnlObjPaintMenu` is shown unconditionally — the only gate is
+// `onPaintMol`'s "selection is empty" early-return + a try/catch that
+// silently rolls back the txn when `insertBefore` is missing (e.g. when
+// the current coloring is the default SolidColoring rather than
+// PaintColoring). We mirror that here by gating only on a non-empty sel
+// so the menu surfaces as soon as the user has something selected. The
+// worker `paintObjectSelection` still refuses safely when coloring is
+// not PaintColoring, so a stray click is a no-op rather than a crash.
+
+export interface GetObjectPaintInfoArgs {
+    sceneId: number;
+    objId: number;
+}
+
+export interface GetObjectPaintInfoResult {
+    /** True iff sel is non-empty. Coloring class is not gated here. */
+    canPaint: boolean;
+}
+
+function getObjectPaintInfo(
+    ctx: WorkerContext,
+    args: GetObjectPaintInfoArgs,
+): GetObjectPaintInfoResult {
+    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    if (!scene) return { canPaint: false };
+    const mol = scene.getObject(args.objId) as MolCoord | null;
+    if (!mol) return { canPaint: false };
+    const sel = getMolSel(mol);
+    if (!sel || isSelEmpty(sel)) return { canPaint: false };
+    return { canPaint: true };
+}
+
 export const services = {
     setRendererColoring,
     getPaintColoringStyles,
     paintRendererSelection,
     getRendererPaintInfo,
+    paintObjectSelection,
+    getObjectPaintInfo,
 };

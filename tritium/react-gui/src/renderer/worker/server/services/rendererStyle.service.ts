@@ -181,7 +181,157 @@ function applyRendererStyle(
     return { ok: true };
 }
 
+// ─── getRendererStyleEditInfo (Phase 6c — Edit style dialog) ──────────────
+//
+// Full info needed to drive the "Edit Renderer Style" dialog (UXP
+// `apply_rend_style.xul`). Unlike `getRendererStyleEntries` (single-pick
+// Style submenu), this returns:
+//   - current style list parsed from `rend.style` ("a,b c" → ["a","b","c"])
+//   - available styles grouped into three sections, mirroring UXP
+//     `populateAddMenu`: type-suffix match, edge match, coloring match.
+//     Each section already excludes names already in the current list,
+//     so the dialog can render the Add popup directly.
+
+export interface GetRendererStyleEditInfoArgs {
+    sceneId: number;
+    rendId: number;
+}
+
+export interface RendererStyleNameEntry {
+    /** Raw style name (used as the value when adding to the list). */
+    name: string;
+    /** Display label: `<name> (<desc>)` when `desc` is set, else `<name>`. */
+    label: string;
+}
+
+export interface GetRendererStyleEditInfoResult {
+    ok: boolean;
+    rendName: string;
+    rendTypeName: string;
+    /** Ordered list of style names currently applied (`rend.style` split). */
+    currentStyles: string[];
+    /** Available styles whose name matches `<type_name>$/i`. */
+    typeMatch: RendererStyleNameEntry[];
+    /** Available styles whose name matches `^EgLine` (empty for blocklisted types). */
+    edgeMatch: RendererStyleNameEntry[];
+    /** Available styles whose name matches `(Coloring|Paint)$`, only when renderer has `coloring`. */
+    coloringMatch: RendererStyleNameEntry[];
+}
+
+function parseStyleList(styleStr: string): string[] {
+    if (!styleStr) return [];
+    return styleStr
+        .split(/[,\s]+/)
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+}
+
+function rendererHasColoring(rend: Renderer): boolean {
+    return 'coloring' in (rend as unknown as Record<string, unknown>);
+}
+
+function entriesMatchingNames(
+    raw: RawStyleEntry[],
+    re: RegExp,
+    exclude: Set<string>,
+): RendererStyleNameEntry[] {
+    const out: RendererStyleNameEntry[] = [];
+    for (const r of raw) {
+        const name = typeof r?.name === 'string' ? r.name : '';
+        if (!name || exclude.has(name) || !re.test(name)) continue;
+        const desc = typeof r?.desc === 'string' ? r.desc : '';
+        out.push({ name, label: desc ? `${name} (${desc})` : name });
+    }
+    return out;
+}
+
+function getRendererStyleEditInfo(
+    ctx: WorkerContext,
+    args: GetRendererStyleEditInfoArgs,
+): GetRendererStyleEditInfoResult {
+    const empty: GetRendererStyleEditInfoResult = {
+        ok: false, rendName: '', rendTypeName: '',
+        currentStyles: [], typeMatch: [], edgeMatch: [], coloringMatch: [],
+    };
+    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    if (!scene) return empty;
+    const rend = scene.getRenderer(args.rendId) as Renderer | null;
+    if (!rend) return empty;
+    const typeName = getRendererTypeName(rend);
+    if (!typeName) return empty;
+
+    const rendName =
+        (rend as unknown as { name?: string }).name ?? '';
+
+    const cur = (rend as unknown as { style?: string }).style ?? '';
+    const currentStyles = parseStyleList(cur);
+    const exclude = new Set<string>(currentStyles);
+
+    const raw = [
+        ...fetchStyleEntries(ctx, 0),
+        ...fetchStyleEntries(ctx, args.sceneId),
+    ];
+
+    const typeRe = new RegExp(`${escapeForRegExp(typeName)}$`, 'i');
+    const typeMatch = entriesMatchingNames(raw, typeRe, exclude);
+
+    let edgeMatch: RendererStyleNameEntry[] = [];
+    if (!EDGE_BLOCKLIST.has(typeName)) {
+        edgeMatch = entriesMatchingNames(raw, /^EgLine/, exclude);
+    }
+
+    let coloringMatch: RendererStyleNameEntry[] = [];
+    if (rendererHasColoring(rend)) {
+        coloringMatch = entriesMatchingNames(raw, /(Coloring|Paint)$/, exclude);
+    }
+
+    return {
+        ok: true,
+        rendName,
+        rendTypeName: typeName,
+        currentStyles,
+        typeMatch,
+        edgeMatch,
+        coloringMatch,
+    };
+}
+
+// ─── applyRendererStyleList (Phase 6c — Edit style dialog commit) ─────────
+
+export interface ApplyRendererStyleListArgs {
+    sceneId: number;
+    rendId: number;
+    /** Final ordered list of style names. Joined with "," for `applyStyles`. */
+    styleNames: string[];
+}
+
+export interface ApplyRendererStyleListResult {
+    ok: boolean;
+}
+
+function applyRendererStyleList(
+    ctx: WorkerContext,
+    args: ApplyRendererStyleListArgs,
+): ApplyRendererStyleListResult {
+    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    if (!scene) return { ok: false };
+    const rend = scene.getRenderer(args.rendId) as Renderer | null;
+    if (!rend) return { ok: false };
+
+    const stylestr = args.styleNames
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0)
+        .join(',');
+
+    withUndoTxn(scene, 'Change style', () => {
+        rend.applyStyles(stylestr);
+    });
+    return { ok: true };
+}
+
 export const services = {
     getRendererStyleEntries,
     applyRendererStyle,
+    getRendererStyleEditInfo,
+    applyRendererStyleList,
 };

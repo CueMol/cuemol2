@@ -98,6 +98,7 @@ const App: React.FC = () => {
     pasteNode: pasteSceneNode,
     setRendererColoring: setSceneRendererColoring,
     paintRendererSelection: paintSceneRendererSelection,
+    paintObjectSelection: paintSceneObjectSelection,
     applyRendererStyle: applySceneRendererStyle,
     setRendererSelection: setSceneRendererSelection,
     generateRendererSurfObj: generateSceneSurfObj,
@@ -224,6 +225,19 @@ const App: React.FC = () => {
     await showNodePropertyDialog(info);
   }, [fetchSceneNodeInfo, showNodePropertyDialog]);
 
+  // Inline-rename controller — owned at App level so both the F2
+  // keypath (initiated in ScenePane) and the ctxmenu Rename action
+  // (initiated in useSceneContextMenu) route through one piece of
+  // state. The targeted row id is null when no editor is open.
+  const [sceneEditingNodeId, setSceneEditingNodeId] =
+    useState<string | null>(null);
+  const beginInlineRename = useCallback((id: string) => {
+    setSceneEditingNodeId(id);
+  }, []);
+  const cancelInlineRename = useCallback(() => {
+    setSceneEditingNodeId(null);
+  }, []);
+
   const {
     openContextMenu: openSceneCtxMenu,
     openNewRendererFlow: openSceneNewRendererFlow,
@@ -236,10 +250,12 @@ const App: React.FC = () => {
     renameNode: renameSceneNode,
     showProperty: handleSceneShowProperty,
     selectObjectMol: selectSceneObjectMol,
+    beginInlineRename,
     copyNode: copySceneNode,
     pasteNode: pasteSceneNode,
     setRendererColoring: setSceneRendererColoring,
     paintRendererSelection: paintSceneRendererSelection,
+    paintObjectSelection: paintSceneObjectSelection,
     applyRendererStyle: applySceneRendererStyle,
     setRendererSelection: setSceneRendererSelection,
     generateRendererSurfObj: generateSceneSurfObj,
@@ -300,6 +316,26 @@ const App: React.FC = () => {
       });
     },
     [activeMolViewId, applySceneCameraToView, handleSceneShowProperty],
+  );
+
+  // Inline-rename commit: identical routing to the ctxmenu 'rename'
+  // case used to do — camera rows go through renameCamera (cameras
+  // have no in-place name setter once registered), everything else
+  // through the generic renameNode worker. Also clears the editor.
+  const handleCommitInlineRename = useCallback(
+    (node: Parameters<typeof openSceneCtxMenu>[0], newName: string) => {
+      setSceneEditingNodeId(null);
+      if (node.type === 'camera') {
+        void renameSceneCamera(node.name, newName).catch((err: unknown) => {
+          console.warn('inline rename camera failed:', err);
+        });
+      } else {
+        void renameSceneNode(String(node.id), newName).catch((err: unknown) => {
+          console.warn('inline rename failed:', err);
+        });
+      }
+    },
+    [renameSceneCamera, renameSceneNode],
   );
 
   // Toolbar Add button — UXP `onNewCmd` dispatches by selected row type:
@@ -441,6 +477,10 @@ const App: React.FC = () => {
                     onDeleteSelected={handleSceneDelete}
                     onAddSelected={handleSceneAdd}
                     onSceneNodeDoubleClick={handleSceneNodeDoubleClick}
+                    sceneEditingNodeId={sceneEditingNodeId}
+                    onBeginInlineRename={beginInlineRename}
+                    onCancelInlineRename={cancelInlineRename}
+                    onCommitInlineRename={handleCommitInlineRename}
                     onShowSceneContextMenu={handleShowSceneCtxMenu}
                     onMoveSceneNode={moveSceneNode}
                     sceneOpsEnabled={sceneOpsEnabled}

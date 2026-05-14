@@ -307,13 +307,16 @@ function getNodeInfo(ctx: WorkerContext, args: GetNodeInfoArgs): GetNodeInfoResu
 // ─── renameNode ───────────────────────────────────────────────────────────
 
 function renameNode(ctx: WorkerContext, args: RenameNodeArgs): RenameNodeResult {
-    // Only object / renderer / rendGroup support direct name assignment in
-    // Phase 3a. Camera and style rename require the atomic destroy + setCamera
-    // / re-register pattern; those land in Phase 5.
+    // object / renderer / rendGroup support direct `name =` assignment.
+    // scene uses an explicit `setName` method (its `name` property is
+    // read-only at the .qif level — see `Scene.qif`). Camera rename
+    // goes through `cameraOps.renameCamera` (atomic destroy + setCamera)
+    // and style has no UXP rename handler — both reject here.
     if (
         args.nodeType !== 'object' &&
         args.nodeType !== 'renderer' &&
-        args.nodeType !== 'rendGroup'
+        args.nodeType !== 'rendGroup' &&
+        args.nodeType !== 'scene'
     ) {
         return { ok: false };
     }
@@ -322,6 +325,17 @@ function renameNode(ctx: WorkerContext, args: RenameNodeArgs): RenameNodeResult 
 
     const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
     if (!scene) return { ok: false };
+
+    if (args.nodeType === 'scene') {
+        // The scene tree exposes the scene as a leaf node with id =
+        // scene.uid; we always rename the active scene rather than
+        // resolving via `getObject` etc. The setName method is on
+        // Scene itself.
+        withUndoTxn(scene, `Rename to ${trimmed}`, () => {
+            (scene as unknown as { setName: (n: string) => void }).setName(trimmed);
+        });
+        return { ok: true };
+    }
 
     let target: { name: string } | null = null;
     if (args.nodeType === 'object') {

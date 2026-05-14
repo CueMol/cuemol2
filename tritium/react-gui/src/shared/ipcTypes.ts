@@ -204,6 +204,9 @@ export type SceneCtxAction =
   | { kind: 'generateSurfObj' }
   | { kind: 'newRendGroup' }
   | { kind: 'newRenderer' }
+  | { kind: 'editRendStyle' }
+  | { kind: 'createRendStyle' }
+  | { kind: 'saveAsObject' }
   | { kind: 'changeRendType'; typeName: string }
   | { kind: 'newStyle' }
   | { kind: 'styleLoad' }

@@ -39,6 +39,14 @@ export interface InvokeChannels {
                               res: { canceled: boolean; filePath: string } }
   [IPC.DIALOG_CAMERA_SAVE]: { req: { defaultName: string };
                               res: { canceled: boolean; filePath: string } }
+  [IPC.DIALOG_OBJECT_SAVE]: { req: {
+                                defaultDir: string
+                                defaultName: string
+                                filters: { name: string; extensions: string[] }[]
+                                /** 0-based index into filters; selects the default filter. */
+                                defaultFilterIndex?: number
+                              };
+                              res: { canceled: boolean; filePath: string; filterIndex: number } }
   [IPC.FILE_EXISTS]:       { req: { path: string };      res: { exists: boolean } }
   [IPC.FILE_BACKUP_RENAME]:{ req: { path: string };
                              res: { ok: boolean; backed: boolean; error?: string } }

@@ -10,6 +10,8 @@ import type { SceneTreeNode } from '../worker/shared/sceneTreeTypes'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import { useShowTextPromptDialog } from '../components/dialogs/TextPromptDialogProvider'
 import { useShowNewRendererDialog } from '../components/dialogs/NewRendererDialogProvider'
+import { useShowApplyRendStyleDialog } from '../components/dialogs/ApplyRendStyleDialogProvider'
+import { useShowCreateRendStyleDialog } from '../components/dialogs/CreateRendStyleDialogProvider'
 import type { RendererOptions } from '../components/fopen-opt-dlgs/types'
 
 /**
@@ -46,10 +48,18 @@ export interface UseSceneContextMenuOptions {
     renameNode: (id: string, newName: string) => Promise<boolean>
     showProperty: (id: string) => Promise<void> | void
     selectObjectMol: (id: string, kind: SelectMolKind) => Promise<boolean>
+    /**
+     * Begin inline rename on the row with the given id. Both F2 and the
+     * ctxmenu Rename action go through this — the underlying editor
+     * lives in `ScenePane` and is controlled by the App-level
+     * `sceneEditingNodeId` state.
+     */
+    beginInlineRename: (id: string) => void
     copyNode: (node: SceneTreeNode) => Promise<boolean>
     pasteNode: (node: SceneTreeNode) => Promise<boolean>
     setRendererColoring: (id: string, coloringId: RendColoringId) => Promise<boolean>
     paintRendererSelection: (id: string, colorValue: string) => Promise<boolean>
+    paintObjectSelection: (id: string, colorValue: string) => Promise<boolean>
     applyRendererStyle: (
         id: string, styleName: string, pattern: string, flags: string,
     ) => Promise<boolean>
@@ -117,8 +127,8 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
 } {
     const {
         cm, sceneId, toggleVisibility, deleteNode, renameNode, showProperty,
-        selectObjectMol, copyNode, pasteNode, setRendererColoring,
-        paintRendererSelection, applyRendererStyle,
+        selectObjectMol, beginInlineRename, copyNode, pasteNode, setRendererColoring,
+        paintRendererSelection, paintObjectSelection, applyRendererStyle,
         setSceneBackgroundColor, toggleSceneColorProofing,
         setRendererSelection, generateRendererSurfObj,
         createRendererGroup, changeRendererType, createRendererOnObject,
@@ -137,6 +147,8 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
     // for Rename / New Group text input flows instead.
     const showTextPrompt = useShowTextPromptDialog()
     const showNewRenderer = useShowNewRendererDialog()
+    const showApplyRendStyle = useShowApplyRendStyleDialog()
+    const showCreateRendStyle = useShowCreateRendStyleDialog()
 
     // Shared "New Camera..." flow — also reused by the toolbar Add
     // button. Mirrors UXP `onNewCmd` dispatch (camera / cameraRoot
@@ -334,6 +346,20 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                 }
             }
 
+            // Object-row paint pre-fetch — drives the Paint color-picker
+            // submenu gate (UXP `onPaintMol` object branch, hidden when
+            // sel is empty or coloring is not PaintColoring).
+            if (cm && node.type === 'object' && sceneId !== undefined) {
+                try {
+                    const info = await cm.invokeService('getObjectPaintInfo', {
+                        sceneId, objId: node.id,
+                    })
+                    canPaint = info?.canPaint === true
+                } catch (err) {
+                    console.warn('object paint pre-fetch failed:', err)
+                }
+            }
+
             // Pre-fetch scene-row submenu state (bg color + color proofing).
             let bgColor: 'white' | 'black' | 'other' | undefined
             let colorProofingEnabled = false
@@ -386,23 +412,16 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                 case 'hide':
                     toggleVisibility(idStr)
                     break
-                case 'rename': {
-                    const next = await showTextPrompt({
-                        title: 'Rename',
-                        label: `Rename ${node.name} to:`,
-                        defaultValue: node.name,
-                    })
-                    if (next == null) break
-                    if (next === node.name) break
-                    if (node.type === 'camera') {
-                        // Cameras have no in-place name setter; renameCamera
-                        // does the atomic destroy + setCamera dance.
-                        await renameCamera(node.name, next)
-                    } else {
-                        await renameNode(idStr, next)
-                    }
+                case 'rename':
+                    // Both ctxmenu and F2 trigger the same inline-rename
+                    // editor in ScenePane. The App-level controller
+                    // (useState<sceneEditingNodeId>) holds the active
+                    // row id; the commit handler routes to renameCamera
+                    // vs renameNode just like the old prompt-based flow
+                    // did, but the UX is uniform — no extra dialog
+                    // round-trip.
+                    beginInlineRename(idStr)
                     break
-                }
                 case 'delete':
                     await deleteNode(idStr)
                     break
@@ -424,8 +443,13 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                     await setRendererColoring(idStr, action.coloringId)
                     break
                 case 'paintRend':
-                    if (node.type !== 'renderer') break
-                    await paintRendererSelection(idStr, action.colorValue)
+                    // UXP `ws.onPaintMol` is shared between the object and
+                    // renderer Paint menus — branch on node type.
+                    if (node.type === 'object') {
+                        await paintObjectSelection(idStr, action.colorValue)
+                    } else if (node.type === 'renderer') {
+                        await paintRendererSelection(idStr, action.colorValue)
+                    }
                     break
                 case 'applyRendStyle':
                     if (node.type !== 'renderer') break
@@ -453,6 +477,67 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                     if (node.type !== 'renderer') break
                     await changeRendererType(idStr, action.typeName)
                     break
+                case 'editRendStyle': {
+                    if (node.type !== 'renderer') break
+                    if (!cm || sceneId === undefined) break
+                    let info
+                    try {
+                        info = await cm.invokeService('getRendererStyleEditInfo', {
+                            sceneId, rendId: node.id,
+                        })
+                    } catch (err) {
+                        console.warn('getRendererStyleEditInfo failed:', err)
+                        break
+                    }
+                    if (!info?.ok) break
+                    const result = await showApplyRendStyle({
+                        rendName: info.rendName,
+                        rendTypeName: info.rendTypeName,
+                        initialStyles: info.currentStyles,
+                        typeMatch: info.typeMatch,
+                        edgeMatch: info.edgeMatch,
+                        coloringMatch: info.coloringMatch,
+                    })
+                    if (!result) break
+                    try {
+                        await cm.invokeService('applyRendererStyleList', {
+                            sceneId, rendId: node.id, styleNames: result.styleNames,
+                        })
+                    } catch (err) {
+                        console.warn('applyRendererStyleList failed:', err)
+                    }
+                    break
+                }
+                case 'createRendStyle': {
+                    if (node.type !== 'renderer') break
+                    if (!cm || sceneId === undefined) break
+                    let info
+                    try {
+                        info = await cm.invokeService('getCreateRendStyleInfo', {
+                            sceneId, rendId: node.id,
+                        })
+                    } catch (err) {
+                        console.warn('getCreateRendStyleInfo failed:', err)
+                        break
+                    }
+                    if (!info?.ok) break
+                    const result = await showCreateRendStyle({
+                        rendName: info.rendName,
+                        rendTypeName: info.rendTypeName,
+                        styleSets: info.styleSets,
+                        defaultSelectedUid: info.defaultSelectedUid,
+                    })
+                    if (!result) break
+                    try {
+                        await cm.invokeService('createStyleFromRenderer', {
+                            sceneId, rendId: node.id,
+                            setUid: result.setUid, baseName: result.baseName,
+                        })
+                    } catch (err) {
+                        console.warn('createStyleFromRenderer failed:', err)
+                    }
+                    break
+                }
                 case 'newRenderer':
                     await openNewRendererFlow(node)
                     break
@@ -482,6 +567,50 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                     })
                     if (entered == null) break
                     await createRendererGroup(idStr, entered)
+                    break
+                }
+                case 'saveAsObject': {
+                    if (node.type !== 'object') break
+                    if (!cm || sceneId === undefined) break
+                    let info
+                    try {
+                        info = await cm.invokeService('getObjectSaveInfo', {
+                            sceneId, objId: node.id,
+                        })
+                    } catch (err) {
+                        console.warn('getObjectSaveInfo failed:', err)
+                        break
+                    }
+                    if (!info?.ok || info.filters.length === 0) {
+                        console.info('saveAsObject: no compatible writers for this object')
+                        break
+                    }
+                    const dlg = await window.electronAPI.invoke(
+                        IPC.DIALOG_OBJECT_SAVE,
+                        {
+                            defaultDir: info.defaultDir,
+                            defaultName: info.defaultFileName,
+                            filters: info.filters.map((f) => ({
+                                name: f.description,
+                                extensions: f.extensions,
+                            })),
+                            defaultFilterIndex: 0,
+                        },
+                    )
+                    if (dlg.canceled || !dlg.filePath) break
+                    const idx =
+                        dlg.filterIndex >= 0 && dlg.filterIndex < info.filters.length
+                            ? dlg.filterIndex
+                            : 0
+                    const writerName = info.filters[idx].name
+                    try {
+                        await cm.invokeService('saveObjectToFile', {
+                            sceneId, objId: node.id,
+                            path: dlg.filePath, writerName,
+                        })
+                    } catch (err) {
+                        console.warn('saveObjectToFile failed:', err)
+                    }
                     break
                 }
                 case 'newStyle': {
@@ -640,8 +769,9 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
         },
         [
             cm, sceneId, toggleVisibility, deleteNode, renameNode, showProperty,
-            selectObjectMol, copyNode, pasteNode, setRendererColoring,
-            paintRendererSelection, applyRendererStyle,
+            selectObjectMol, beginInlineRename,
+            copyNode, pasteNode, setRendererColoring,
+            paintRendererSelection, paintObjectSelection, applyRendererStyle,
             setSceneBackgroundColor, toggleSceneColorProofing,
             setRendererSelection, generateRendererSurfObj,
             createRendererGroup, changeRendererType, createRendererOnObject,
@@ -655,6 +785,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
             loadCameraFromFile, saveCameraToFile, saveCameraToCurrentSrc,
             reloadCameraFromSrc,
             showTextPrompt, showNewRenderer,
+            showApplyRendStyle, showCreateRendStyle,
             openNewRendererFlow, openNewCameraFlow,
         ],
     )

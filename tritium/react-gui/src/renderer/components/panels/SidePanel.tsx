@@ -134,6 +134,23 @@ interface SidePanelProps {
   onAddSelected?: () => void;
   /** Called when the user double-clicks a scene-tree row. */
   onSceneNodeDoubleClick?: (node: SceneTreeNode) => void;
+  /**
+   * Controlled inline-rename target. Non-null id = that row shows
+   * an editor. App owns this state so the F2 keypath AND the
+   * ctxmenu Rename action both route through the same controller.
+   */
+  sceneEditingNodeId?: string | null;
+  /** Row asks to begin inline rename (F2). */
+  onBeginInlineRename?: (id: string) => void;
+  /** Editor was dismissed (Esc, blur-without-commit, etc.). */
+  onCancelInlineRename?: () => void;
+  /**
+   * Called when the user commits an inline rename in the scene tree.
+   * Caller routes to the appropriate worker — camera rows go through
+   * `renameCamera` because cameras have no in-place name setter —
+   * and also clears `sceneEditingNodeId`.
+   */
+  onCommitInlineRename?: (node: SceneTreeNode, newName: string) => void;
   /** Per-action enablement for the current scene selection. */
   sceneOpsEnabled?: { focus: boolean; delete: boolean; property: boolean; add: boolean };
   /** Right-click context-menu opener for scene-tree nodes. */
@@ -177,6 +194,10 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   onDeleteSelected,
   onAddSelected,
   onSceneNodeDoubleClick,
+  sceneEditingNodeId,
+  onBeginInlineRename,
+  onCancelInlineRename,
+  onCommitInlineRename,
   sceneOpsEnabled,
   onShowSceneContextMenu,
   onMoveSceneNode,
@@ -233,6 +254,10 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             onDeleteSelected={onDeleteSelected}
             onAddRenderer={onAddSelected}
             onNodeDoubleClick={onSceneNodeDoubleClick}
+            editingNodeId={sceneEditingNodeId}
+            onBeginInlineRename={onBeginInlineRename}
+            onCancelInlineRename={onCancelInlineRename}
+            onCommitInlineRename={onCommitInlineRename}
             onShowContextMenu={onShowSceneContextMenu}
             onMoveNode={onMoveSceneNode}
             opsEnabled={sceneOpsEnabled}
