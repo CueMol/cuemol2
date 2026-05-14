@@ -112,6 +112,8 @@ describe('preload electronAPI -- onPush routes through ipcRenderer.on', () => {
     IPC.MENU_REDO,
     IPC.MENU_GENERIC,
     IPC.ROTATE_GESTURE,
+    IPC.MENU_OPEN_RECENT,
+    IPC.RECENT_UPDATED,
   ])('onPush(%s) registers and unsubscribes', (channel) => {
     const cb = vi.fn()
     const unsubscribe = (api.onPush as (c: unknown, h: Handler) => () => void)(channel, cb)

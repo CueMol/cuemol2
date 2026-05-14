@@ -10,6 +10,13 @@ interface RendererOptionsPaneProps {
   sceneId: number;
   isMolFormat: boolean;
   /**
+   * Target molecule uid. Forwarded to MolSelList so the picker can show
+   * `current (<sel>)`. Set only when the dialog is attached to an existing
+   * molecule (e.g. scene-panel "New Renderer"); omitted for file-open
+   * where the object doesn't exist yet.
+   */
+  molID?: number;
+  /**
    * Routes renderer-name keystrokes through the parent so it can track
    * whether the value is still the auto-generated default (UXP
    * mRendNameDefault). When omitted, falls back to setting the field
@@ -18,7 +25,7 @@ interface RendererOptionsPaneProps {
   onRendererNameUserEdit?: (newValue: string) => void;
 }
 
-export const RendererOptionsPane: React.FC<RendererOptionsPaneProps> = ({ options, onChange, rendererTypes, sceneId, isMolFormat, onRendererNameUserEdit }) => {
+export const RendererOptionsPane: React.FC<RendererOptionsPaneProps> = ({ options, onChange, rendererTypes, sceneId, isMolFormat, molID, onRendererNameUserEdit }) => {
   const set = <K extends keyof RendererOptions>(key: K) =>
     (value: RendererOptions[K]) => onChange({ ...options, [key]: value });
 
@@ -72,6 +79,7 @@ export const RendererOptionsPane: React.FC<RendererOptionsPaneProps> = ({ option
         >
           <MolSelList
             sceneID={sceneId}
+            molID={molID}
             selectedSel={options.selection}
             onSelectedSelChange={set('selection')}
             disabled={!options.selectionEnabled}

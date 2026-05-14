@@ -8,7 +8,7 @@
  */
 
 import Store from 'electron-store'
-import type { LayoutState, UiState } from '../shared/ipcTypes'
+import type { LayoutState, RecentFileEntry, UiState } from '../shared/ipcTypes'
 
 export type { LayoutState, UiState, PaneCollapseState } from '../shared/ipcTypes'
 
@@ -28,6 +28,7 @@ interface StoreSchema {
   windowBounds: WindowBounds
   layout: LayoutState
   ui: UiState
+  recentFiles: RecentFileEntry[]
 }
 
 // ─────────────────────────────────────────────
@@ -51,6 +52,7 @@ const DEFAULTS: StoreSchema = {
     sidebarActiveView: 'explorer',
     theme: 'dark',
   },
+  recentFiles: [],
 }
 
 // ─────────────────────────────────────────────
@@ -94,4 +96,13 @@ export function loadUi(): UiState {
 export function saveUi(ui: Partial<UiState>): void {
   const current = getStore().get('ui')
   getStore().set('ui', { ...current, ...ui })
+}
+
+export function loadRecentFiles(): RecentFileEntry[] {
+  const v = getStore().get('recentFiles')
+  return Array.isArray(v) ? v : []
+}
+
+export function saveRecentFiles(entries: RecentFileEntry[]): void {
+  getStore().set('recentFiles', entries)
 }

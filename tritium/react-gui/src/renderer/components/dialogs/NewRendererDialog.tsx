@@ -26,6 +26,8 @@ interface Props {
     rendererTypes: string[]
     defaultName: string
     sceneId: number
+    /** Target molecule uid — forwarded to MolSelList for `current (<sel>)`. */
+    molID?: number
     isMol: boolean
     /** Optional group label appended to the dialog title for context. */
     groupName?: string
@@ -40,6 +42,7 @@ export function NewRendererDialog({
     rendererTypes,
     defaultName,
     sceneId,
+    molID,
     isMol,
     groupName,
     onConfirm,
@@ -112,6 +115,7 @@ export function NewRendererDialog({
                     onChange={setOptions}
                     rendererTypes={rendererTypes}
                     sceneId={sceneId}
+                    molID={molID}
                     isMolFormat={isMol}
                 />
             </DialogBody>

@@ -33,7 +33,7 @@ const MENU_PASS_THROUGH = [
 
 export function useElectronIpc(activeTab: string | null): void {
   const { dispatch } = useCommands()
-  const { dispatchMenuChannel } = useMenuDispatch(activeTab)
+  const { dispatchMenuChannel, dispatchOpenRecent } = useMenuDispatch(activeTab)
 
   useEffect(() => {
     const api = window.electronAPI
@@ -51,10 +51,11 @@ export function useElectronIpc(activeTab: string | null): void {
       api.onPush(IPC.FILE_ERROR, (d) =>
         console.error(`Failed to open ${d.path}: ${d.error}`),
       ),
+      api.onPush(IPC.MENU_OPEN_RECENT, (entry) => dispatchOpenRecent(entry)),
       api.onPush(IPC.MENU_GENERIC, (ch) => dispatchMenuChannel(ch)),
       ...MENU_PASS_THROUGH.map((ch) => api.onPush(ch, () => dispatchMenuChannel(ch))),
     ]
 
     return () => unsubs.forEach((u) => u())
-  }, [dispatch, dispatchMenuChannel])
+  }, [dispatch, dispatchMenuChannel, dispatchOpenRecent])
 }

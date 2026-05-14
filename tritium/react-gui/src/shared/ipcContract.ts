@@ -21,6 +21,7 @@ import type {
   MenuState,
   NaviCtxAction,
   NaviCtxMenuPayload,
+  RecentFileEntry,
   SceneCtxAction,
   SceneCtxMenuPayload,
   UiState,
@@ -56,6 +57,9 @@ export interface InvokeChannels {
   [IPC.UI_SAVE]:           { req: Partial<UiState>;      res: void }
   [IPC.MENU_UPDATE_STATE]: { req: MenuState;             res: void }
   [IPC.MENU_SET_MODAL_BLOCKED]: { req: boolean;          res: void }
+  [IPC.RECENT_LOAD]:       { req: void;                  res: RecentFileEntry[] }
+  [IPC.RECENT_ADD]:        { req: RecentFileEntry;       res: void }
+  [IPC.RECENT_CLEAR]:      { req: void;                  res: void }
   [IPC.MENU_INVOKE_ROLE]:  { req: string;                res: void }
   [IPC.APP_QUIT_PROCEED]:  { req: void;                  res: void }
   [IPC.NAVI_CTX_SHOW]:     { req: NaviCtxMenuPayload;    res: NaviCtxAction | null }
@@ -78,6 +82,8 @@ export interface PushChannels {
   [IPC.MENU_GENERIC]:      string
   [IPC.ROTATE_GESTURE]:    number
   [IPC.APP_QUIT_REQUEST]:  void
+  [IPC.MENU_OPEN_RECENT]:  RecentFileEntry
+  [IPC.RECENT_UPDATED]:    RecentFileEntry[]
 }
 
 export type InvokeChannel = keyof InvokeChannels

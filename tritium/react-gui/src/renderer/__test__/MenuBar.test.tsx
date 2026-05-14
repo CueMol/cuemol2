@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import React from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
-import type { ViewCenterMark } from '../../shared/ipcTypes'
+import type { RecentFileEntry, ViewCenterMark } from '../../shared/ipcTypes'
+import { IPC } from '../../shared/ipcChannels'
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
@@ -13,18 +14,24 @@ const { CommandProvider } = await import('../commands/CommandRegistry')
 
 ;(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true
 
-function setupElectronAPI(platform: string): void {
+function setupElectronAPI(platform: string, overrides: Record<string, unknown> = {}): Record<string, any> {
   ;(globalThis as any).window = globalThis
-  ;(window as any).electronAPI = {
+  const api: Record<string, any> = {
     platform,
     invokeMenuRole: vi.fn(),
+    invoke: vi.fn().mockResolvedValue(undefined),
+    onPush: vi.fn().mockReturnValue(() => undefined),
+    ...overrides,
   }
+  ;(window as any).electronAPI = api
+  return api
 }
 
 function render(
   activeTab: string | null,
   viewProjection: boolean | null = null,
   viewCenterMark: ViewCenterMark | null = null,
+  recentFiles: RecentFileEntry[] = [],
 ): { container: HTMLElement; root: Root; unmount: () => void } {
   const container = document.createElement('div')
   document.body.appendChild(container)
@@ -35,7 +42,7 @@ function render(
       React.createElement(
         CommandProvider,
         null,
-        React.createElement(MenuBar, { activeTab, viewProjection, viewCenterMark }),
+        React.createElement(MenuBar, { activeTab, viewProjection, viewCenterMark, recentFiles }),
       ),
     )
   })
@@ -203,6 +210,66 @@ describe('MenuBar', () => {
     expect(axis.getAttribute('aria-checked')).toBe('true')
     expect(none.getAttribute('aria-checked')).toBe('false')
     expect(axis.getAttribute('aria-disabled')).toBe('false')
+    unmount()
+  })
+
+  // --- Open Recent submenu ---
+
+  function openFileThenRecent(container: HTMLElement): HTMLElement {
+    const fileItem = Array.from(container.querySelectorAll('.menubar__item')).find(
+      (el) => el.textContent?.includes('File'),
+    ) as HTMLElement
+    act(() => { fileItem.click() })
+    const recent = Array.from(container.querySelectorAll('.menubar__dropdown-item')).find(
+      (el) => el.textContent?.startsWith('Open Recent'),
+    ) as HTMLElement
+    act(() => {
+      recent.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+    })
+    return container.querySelector('.menubar__submenu') as HTMLElement
+  }
+
+  it('shows "(none)" and a disabled Clear Menu when recents is empty', () => {
+    const { container, unmount } = render(null, null, null, [])
+    const submenu = openFileThenRecent(container)
+    expect(submenu).toBeTruthy()
+    expect(submenu.textContent).toContain('(none)')
+    const clear = Array.from(submenu.querySelectorAll('.menubar__dropdown-item')).find(
+      (el) => el.textContent?.includes('Clear Menu'),
+    ) as HTMLElement
+    expect(clear).toBeTruthy()
+    expect(clear.getAttribute('aria-disabled')).toBe('true')
+    unmount()
+  })
+
+  it('renders recent entries (basenames) with Clear Menu enabled', () => {
+    const recents: RecentFileEntry[] = [
+      { path: '/tmp/dir/a.pdb', ftype: 'obj' },
+      { path: '/another/b.qsc', ftype: 'scene' },
+    ]
+    const { container, unmount } = render(null, null, null, recents)
+    const submenu = openFileThenRecent(container)
+    expect(submenu.textContent).toContain('a.pdb')
+    expect(submenu.textContent).toContain('b.qsc')
+    expect(submenu.textContent).not.toContain('(none)')
+    const clear = Array.from(submenu.querySelectorAll('.menubar__dropdown-item')).find(
+      (el) => el.textContent?.includes('Clear Menu'),
+    ) as HTMLElement
+    expect(clear.getAttribute('aria-disabled')).toBe('false')
+    unmount()
+  })
+
+  it('invokes RECENT_CLEAR when Clear Menu is clicked', () => {
+    const api = setupElectronAPI('win32')
+    const { container, unmount } = render(null, null, null, [
+      { path: '/a.pdb', ftype: 'obj' },
+    ])
+    const submenu = openFileThenRecent(container)
+    const clear = Array.from(submenu.querySelectorAll('.menubar__dropdown-item')).find(
+      (el) => el.textContent?.includes('Clear Menu'),
+    ) as HTMLElement
+    act(() => { clear.click() })
+    expect(api.invoke).toHaveBeenCalledWith(IPC.RECENT_CLEAR)
     unmount()
   })
 

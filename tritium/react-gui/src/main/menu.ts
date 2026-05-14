@@ -7,14 +7,48 @@
 
 import { app, Menu } from 'electron'
 import type { BrowserWindow, MenuItem, MenuItemConstructorOptions } from 'electron'
+import path from 'path'
 import { IPC } from '../shared/ipcChannels'
 import { APP_MENU } from '../shared/menuTemplate'
 import type { AppMenuItem, AppMenuGroup } from '../shared/menuTemplate'
-import type { MenuState } from '../shared/ipcTypes'
+import type { MenuState, RecentFileEntry } from '../shared/ipcTypes'
+import { applyMenuStateTo, mergeMenuState } from '../shared/menuStateApply'
+import { getExistingRecents } from './recentFiles'
 
 export type MenuBlockReason = 'blueprint' | 'native'
 
 const isMac = process.platform === 'darwin'
+
+function buildRecentSubmenu(
+  mainWindow: BrowserWindow,
+  recents: RecentFileEntry[],
+): MenuItemConstructorOptions[] {
+  const clearItem: MenuItemConstructorOptions = {
+    id: 'clear-recent',
+    label: 'Clear Menu',
+    enabled: recents.length > 0,
+    click: () => mainWindow.webContents.send(IPC.MENU_GENERIC, 'menu:clear-recent'),
+  }
+  if (recents.length === 0) {
+    return [
+      { label: '(none)', enabled: false },
+      { type: 'separator' },
+      clearItem,
+    ]
+  }
+  const items: MenuItemConstructorOptions[] = recents.map((entry) => ({
+    label: path.basename(entry.path),
+    toolTip: entry.path,
+    click: () =>
+      mainWindow.webContents.send(IPC.MENU_OPEN_RECENT, {
+        path: entry.path,
+        ftype: entry.ftype,
+      }),
+  }))
+  items.push({ type: 'separator' })
+  items.push(clearItem)
+  return items
+}
 
 /** Specific click handlers for menu items that have real implementations. */
 function buildSpecificHandlers(
@@ -76,6 +110,13 @@ function buildItem(
     }
   }
 
+  // The static template carries only a placeholder Clear Menu under
+  // `open-recent`; replace its submenu with the dynamic MRU listing.
+  if (item.id === 'open-recent') {
+    result.submenu = buildRecentSubmenu(mainWindow, getExistingRecents())
+    return result
+  }
+
   if (item.submenu) {
     result.submenu = item.submenu.flatMap((i) => {
       const built = buildItem(i, specificHandlers, mainWindow)
@@ -100,7 +141,18 @@ function buildGroup(
   }
 }
 
-export function createMenu(mainWindow: BrowserWindow): void {
+let mainWindowRef: BrowserWindow | null = null
+let pendingRebuild = false
+
+// Most recent MenuState seen by updateMenuState. Re-applied after
+// every menu rebuild because Menu.setApplicationMenu(buildFromTemplate)
+// throws away the previous MenuItem instances that updateMenuState
+// had been mutating directly — otherwise the View > Perspective /
+// Center mark / Scene > Background entries silently return to their
+// static `enabled: false` template defaults after any RECENT_ADD.
+let lastMenuState: MenuState | null = null
+
+function buildAndSetMenu(mainWindow: BrowserWindow): void {
   const specificHandlers = buildSpecificHandlers(mainWindow)
 
   // macOS Application menu uses app.name (only available in main process)
@@ -134,6 +186,36 @@ export function createMenu(mainWindow: BrowserWindow): void {
   ]
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
+
+  // The fresh menu starts at the static template defaults; restore the
+  // last view/scene state cached from earlier updateMenuState pushes so
+  // that View > Perspective / Center mark / Scene > Background do not
+  // gray out across an MRU-triggered rebuild.
+  if (lastMenuState) {
+    const menu = Menu.getApplicationMenu()
+    if (menu) applyMenuStateTo(menu, lastMenuState)
+  }
+}
+
+export function createMenu(mainWindow: BrowserWindow): void {
+  mainWindowRef = mainWindow
+  buildAndSetMenu(mainWindow)
+}
+
+/**
+ * Rebuild the entire application menu. Call after recent files change so
+ * the dynamic `open-recent` submenu refreshes. When a modal block is
+ * active the rebuild is deferred — replacing the menu mid-block would
+ * lose the enabled-state snapshot. The deferred rebuild fires from
+ * `applyUnblock()`.
+ */
+export function rebuildApplicationMenu(): void {
+  if (!mainWindowRef) return
+  if (snapshot) {
+    pendingRebuild = true
+    return
+  }
+  buildAndSetMenu(mainWindowRef)
 }
 
 // ─────────────────────────────────────────────
@@ -186,6 +268,10 @@ function applyUnblock(): void {
     item.enabled = prev
   }
   snapshot = null
+  if (pendingRebuild && mainWindowRef) {
+    pendingRebuild = false
+    buildAndSetMenu(mainWindowRef)
+  }
 }
 
 /**
@@ -207,6 +293,9 @@ export function setMenuBlocked(reason: MenuBlockReason, blocked: boolean): void 
 export function _resetMenuBlockForTest(): void {
   blockReasons.clear()
   snapshot = null
+  mainWindowRef = null
+  pendingRebuild = false
+  lastMenuState = null
 }
 
 /**
@@ -235,51 +324,11 @@ export function updateMenuState(state: MenuState): void {
   // known-good state.
   if (snapshot) return
 
+  // Merge into the persistent cache so a later menu rebuild can replay
+  // the full view/scene state onto the freshly built MenuItem instances.
+  lastMenuState = mergeMenuState(lastMenuState, state)
+
   const menu = Menu.getApplicationMenu()
   if (!menu) return
-
-  if (state.viewProjection) {
-    const { enabled, perspective } = state.viewProjection
-    const perspectiveItem = menu.getMenuItemById('view-perspective')
-    const orthographicItem = menu.getMenuItemById('view-orthographic')
-    if (perspectiveItem) {
-      perspectiveItem.enabled = enabled
-      perspectiveItem.checked = enabled && perspective === true
-    }
-    if (orthographicItem) {
-      orthographicItem.enabled = enabled
-      orthographicItem.checked = enabled && perspective === false
-    }
-  }
-
-  if (state.viewCenterMark) {
-    const { enabled, centerMark } = state.viewCenterMark
-    const markItems = [
-      { id: 'center-mark-none', value: 'none' },
-      { id: 'center-mark-cross', value: 'crosshair' },
-      { id: 'center-mark-axis', value: 'axis' },
-    ]
-    for (const { id, value } of markItems) {
-      const item = menu.getMenuItemById(id)
-      if (item) {
-        item.enabled = enabled
-        item.checked = enabled && centerMark === value
-      }
-    }
-  }
-
-  if (state.sceneBgColor) {
-    const { enabled, bgColor } = state.sceneBgColor
-    const bgItems = [
-      { id: 'bg-white', value: 'white' },
-      { id: 'bg-black', value: 'black' },
-    ]
-    for (const { id, value } of bgItems) {
-      const item = menu.getMenuItemById(id)
-      if (item) {
-        item.enabled = enabled
-        item.checked = enabled && bgColor === value
-      }
-    }
-  }
+  applyMenuStateTo(menu, lastMenuState)
 }

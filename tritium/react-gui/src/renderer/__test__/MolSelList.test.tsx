@@ -33,7 +33,7 @@ import { STORAGE_KEY } from '../components/widgets/MolSelList/selHistory'
 import { mountTree, flushPromises } from './helpers/testHarness'
 
 function setupCm(opts?: {
-    selDefs?: { scene: string[]; global: string[] }
+    selDefs?: { scene: string[]; global: string[]; currentSel?: string }
     validateOk?: boolean
 }) {
     mockCm.invokeService.mockImplementation((name: string) => {
@@ -199,6 +199,38 @@ describe('MolSelList', () => {
         expect(input.getAttribute('aria-invalid')).toBe('true')
         const wrapper = input.closest('.bp5-input-group')
         expect(wrapper?.classList.contains('bp5-intent-danger')).toBe(true)
+        unmount()
+    })
+
+    it('forwards molID to getSelDefs and shows "current (<sel>)" above all/none', async () => {
+        setupCm({ selDefs: { scene: [], global: [], currentSel: 'chain.A' } })
+        const { container, unmount } = mountTree(
+            <MolSelList
+                sceneID={3}
+                molID={11}
+                selectedSel=""
+                onSelectedSelChange={() => undefined}
+            />
+        )
+        await flushPromises()
+        expect(mockCm.invokeService).toHaveBeenCalledWith('getSelDefs', { sceneId: 3, molId: 11 })
+        const presetGroup = getSelect(container).querySelector('optgroup[label="Preset"]')!
+        const labels = Array.from(presetGroup.querySelectorAll('option')).map((o) => o.textContent)
+        const values = Array.from(presetGroup.querySelectorAll('option')).map((o) => o.value)
+        expect(labels).toEqual(['current (chain.A)', 'all (*)', 'none'])
+        expect(values).toEqual(['chain.A', '*', ''])
+        unmount()
+    })
+
+    it('omits "current" when currentSel is not returned', async () => {
+        setupCm({ selDefs: { scene: [], global: [] } })
+        const { container, unmount } = mountTree(
+            <MolSelList sceneID={1} molID={11} selectedSel="" onSelectedSelChange={() => undefined} />
+        )
+        await flushPromises()
+        const presetGroup = getSelect(container).querySelector('optgroup[label="Preset"]')!
+        const labels = Array.from(presetGroup.querySelectorAll('option')).map((o) => o.textContent)
+        expect(labels).toEqual(['all (*)', 'none'])
         unmount()
     })
 

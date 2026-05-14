@@ -12,6 +12,8 @@ export interface NewRendererDialogArgs {
     rendererTypes: string[]
     defaultName: string
     isMol: boolean
+    /** Target molecule uid — forwarded to MolSelList for `current (<sel>)`. */
+    molID?: number
     groupName?: string
 }
 
@@ -29,6 +31,7 @@ export const {
             rendererTypes={args?.rendererTypes ?? []}
             defaultName={args?.defaultName ?? ''}
             isMol={args?.isMol ?? false}
+            molID={args?.molID}
             groupName={args?.groupName}
             onConfirm={(result) => resolve(result)}
             onCancel={() => resolve(null)}

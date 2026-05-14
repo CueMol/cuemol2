@@ -39,6 +39,7 @@ import { useAppInitialization } from "./hooks/useAppInitialization";
 import { useNewSceneAction } from "./hooks/useNewSceneAction";
 import { useActiveViewState } from "./hooks/useActiveViewState";
 import { useCommandRegistrations } from "./hooks/useCommandRegistrations";
+import { useRecentFiles } from "./hooks/useRecentFiles";
 import { useCommands } from "./commands/CommandRegistry";
 import { CmdId } from "./commands/ids";
 import { useCueMolBusy } from "./hooks/useCueMolBusy";
@@ -419,6 +420,10 @@ const App: React.FC = () => {
     selection: { mol: false, selection: false },
   };
 
+  // --- Recent files (MRU) for the File > Open Recent submenu ---
+
+  const recentFiles = useRecentFiles();
+
   // --- Derived values ---
 
   const sidebarVisible = activeView !== null;
@@ -430,7 +435,7 @@ const App: React.FC = () => {
     <ActiveToolProvider activeTool={activeTool}>
     <div className="app">
       {window.electronAPI?.platform !== 'darwin' && (
-        <MenuBar activeTab={activeTab} viewProjection={viewProjection} viewCenterMark={viewCenterMark} sceneBgColor={sceneBgColor} />
+        <MenuBar activeTab={activeTab} viewProjection={viewProjection} viewCenterMark={viewCenterMark} sceneBgColor={sceneBgColor} recentFiles={recentFiles} />
       )}
       <Toolbar
         onOpenFile={() => dispatchCommand(CmdId.UiOpenObjDialog).catch((e: unknown) => console.error('UiOpenObjDialog failed:', e))}

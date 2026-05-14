@@ -213,6 +213,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                 rendererTypes: info.rendererTypes,
                 defaultName: info.defaultName,
                 isMol: info.isMol,
+                molID: info.isMol && info.targetObjId >= 0 ? info.targetObjId : undefined,
                 groupName: info.groupName || undefined,
             })
             if (!result) return

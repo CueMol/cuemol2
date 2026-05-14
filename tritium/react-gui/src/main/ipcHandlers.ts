@@ -20,7 +20,8 @@ import type { FileDialogOptions } from '../shared/ipcTypes'
 import { loadLayout, saveLayout, loadUi, saveUi } from './stateStore'
 import { showNaviContextMenu } from './naviContextMenu'
 import { showSceneContextMenu } from './sceneContextMenu'
-import { setMenuBlocked, updateMenuState, withMenuBlocked } from './menu'
+import { rebuildApplicationMenu, setMenuBlocked, updateMenuState, withMenuBlocked } from './menu'
+import { addRecent, clearRecents, getRecents } from './recentFiles'
 import { setQuitConfirmed } from './quitState'
 
 // ─────────────────────────────────────────────
@@ -346,6 +347,21 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   handleInvoke(IPC.MENU_SET_MODAL_BLOCKED, (_e, blocked) =>
     setMenuBlocked('blueprint', blocked),
   )
+
+  handleInvoke(IPC.RECENT_LOAD, () => getRecents())
+  handleInvoke(IPC.RECENT_ADD, (_e, entry) => {
+    const next = addRecent(entry)
+    // OS-level integration (macOS Dock recent items / Windows Jump List).
+    try { app.addRecentDocument(entry.path) } catch { /* non-fatal */ }
+    rebuildApplicationMenu()
+    mainWindow.webContents.send(IPC.RECENT_UPDATED, next)
+  })
+  handleInvoke(IPC.RECENT_CLEAR, () => {
+    const next = clearRecents()
+    try { app.clearRecentDocuments() } catch { /* non-fatal */ }
+    rebuildApplicationMenu()
+    mainWindow.webContents.send(IPC.RECENT_UPDATED, next)
+  })
 
   handleInvoke(IPC.SCENE_CTX_SHOW, (_event, payload) =>
     showSceneContextMenu(mainWindow, payload),

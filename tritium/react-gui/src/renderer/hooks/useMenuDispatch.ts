@@ -10,9 +10,11 @@ import { useCallback } from 'react'
 import { useCommands } from '../commands/CommandRegistry'
 import { CmdId } from '../commands/ids'
 import { IPC } from '../../shared/ipcChannels'
+import type { RecentFileEntry } from '../../shared/ipcTypes'
 
 export function useMenuDispatch(activeTab: string | null): {
   dispatchMenuChannel: (channel: string) => void
+  dispatchOpenRecent: (entry: RecentFileEntry) => void
 } {
   const { dispatch } = useCommands()
 
@@ -74,6 +76,11 @@ export function useMenuDispatch(activeTab: string | null): {
         case IPC.MENU_GET_PDB:
           dispatch(CmdId.UiGetPdbDialog).catch(logErr('get pdb dialog:'))
           break
+        case 'menu:clear-recent':
+          window.electronAPI
+            ?.invoke(IPC.RECENT_CLEAR)
+            .catch(logErr('recent.clear:'))
+          break
         default:
           console.warn('menu action not yet implemented:', channel)
       }
@@ -81,5 +88,18 @@ export function useMenuDispatch(activeTab: string | null): {
     [dispatch, activeTab],
   )
 
-  return { dispatchMenuChannel }
+  const dispatchOpenRecent = useCallback(
+    (entry: RecentFileEntry) => {
+      const logErr = (prefix: string) => (e: unknown) => console.error(prefix, e)
+      if (entry.ftype === 'scene') {
+        dispatch(CmdId.OpenSceneByPath, entry.path).catch(logErr('recent.scene:'))
+      } else {
+        dispatch(CmdId.OpenObjByPath, { name: entry.path, path: entry.path })
+          .catch(logErr('recent.obj:'))
+      }
+    },
+    [dispatch],
+  )
+
+  return { dispatchMenuChannel, dispatchOpenRecent }
 }
