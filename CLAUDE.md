@@ -132,11 +132,15 @@ core (@cuemol/core): C++ addon + auto-generated TypeScript wrappers
 |------|---------|
 | `docs/migration/mapping/<category>.md` | Per-item status (one row per UXP inventory entry) |
 | `docs/migration/mapping/_index.md` | Summary counts, In Progress list |
+| `docs/migration/adr/ADR-NNNN-<slug>.md` | Architecture decision records — design rationale, UXP parity strategy, known issues |
+| `docs/migration/adr/_index.md` | ADR index (number / title / status / mapping rows) |
+| `docs/migration/adr/_template.md` | Template for new ADRs |
 
 **Row fields**: `ID | React | Mapping | Status | PR | ADR | Notes`
 
 - **Mapping**: `direct`, `split`, `merged`, `dropped`, `deferred`
 - **Status**: `todo` → `wip` → `review` → `done`
+- **ADR**: link(s) like `[ADR-0001](../adr/ADR-0001-<slug>.md)` — comma-separated when multiple
 
 `_index.md` も status 変更のたびに counts・In Progress リストを更新すること。
 
@@ -144,3 +148,12 @@ core (@cuemol/core): C++ addon + auto-generated TypeScript wrappers
 - 完了率や item-level breakdown は mapping 側に置く
 - `_index.md` の category counts は inventory entry 単位の status 集計として扱い、補助的な詳細表の行数は混ぜない
 - `docs/migration/uxp-inventory/*.md` は auto-generated 扱いなので、手編集が必要な場合でも migration 進捗情報を入れない
+
+ADR (Architecture Decision Records) の運用:
+- 設計判断・UXP parity 戦略・既知バグの詳細は `docs/migration/adr/ADR-NNNN-<slug>.md` に切り出す
+- mapping の Notes 列は **1–2 文の要約 + ADR リンク** に留める。次のいずれかに当たる場合は ADR を作る:
+  - Notes に書きたい設計判断が **3 文 (約 200 字) を超える**
+  - known issue を書きたい (Notes は 1 文要約 + ADR リンク)
+  - 1 mapping 行に複数 phase / 独立した複数判断が並ぶ
+- ADR 番号は 4 桁ゼロ詰連番。一度割り当てたら再利用しない (supersede は Status 行で記録)
+- 新規 ADR は `_template.md` をコピー。`_index.md` に 1 行追加
