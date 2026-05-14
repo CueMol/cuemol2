@@ -14,7 +14,9 @@
  * real option fires `onSelectedSelChange` then re-renders back to the sentinel.
  *
  * Items shown in the listbox (matches UXP `widget.molsellist.buildBox`):
- *   1. Preset optgroup     — `all (*)` / `none`
+ *   1. Preset optgroup     — `current (<sel>)` (only when `molID` resolves to a
+ *                            molecule with a non-empty selection), `all (*)`,
+ *                            `none`
  *   2. History optgroup    — localStorage-backed selection history
  *   3. Scene optgroup      — scene-level named sel defs (StyleManager)
  *   4. Global optgroup     — global named sel defs (StyleManager)
@@ -69,40 +71,44 @@ export const MolSelList: React.FC<MolSelListProps> = ({
     fill = true,
     refreshKey = 0,
 }) => {
-    // `molID` / `onMolIdChange` are part of the UXP-compatible API surface but
-    // not yet wired into the visual state — referencing them silences the
-    // unused-locals diagnostic without reshuffling the public contract.
-    void molID;
+    // `onMolIdChange` is part of the UXP-compatible API surface but is not
+    // yet wired — referencing it silences the unused-locals diagnostic without
+    // reshuffling the public contract.
     void onMolIdChange;
     const { cm } = useCueMol();
     const [sceneDefs, setSceneDefs] = useState<string[]>([]);
     const [globalDefs, setGlobalDefs] = useState<string[]>([]);
+    const [currentSel, setCurrentSel] = useState<string | undefined>(undefined);
     const [historyItems, setHistoryItems] = useState<string[]>(() => getHistory());
     const [isValid, setIsValid] = useState(true);
 
-    // ---- Fetch named selection defs (scene + global) ----
+    // ---- Fetch named selection defs (scene + global) and current mol sel ----
     useEffect(() => {
         if (!cm) {
             setSceneDefs([]);
             setGlobalDefs([]);
+            setCurrentSel(undefined);
             return;
         }
         let cancelled = false;
-        cm.invokeService('getSelDefs', { sceneId: sceneID })
+        const args = molID !== undefined ? { sceneId: sceneID, molId: molID } : { sceneId: sceneID };
+        cm.invokeService('getSelDefs', args)
             .then((res) => {
                 if (cancelled) return;
                 setSceneDefs(res.scene);
                 setGlobalDefs(res.global);
+                setCurrentSel(res.currentSel);
             })
             .catch(() => {
                 if (cancelled) return;
                 setSceneDefs([]);
                 setGlobalDefs([]);
+                setCurrentSel(undefined);
             });
         return () => {
             cancelled = true;
         };
-    }, [cm, sceneID, refreshKey]);
+    }, [cm, sceneID, molID, refreshKey]);
 
     // ---- Refresh history just before the picker is opened ----
     const refreshHistory = useCallback((): void => {
@@ -169,6 +175,9 @@ export const MolSelList: React.FC<MolSelListProps> = ({
                     a real option re-renders back to this sentinel. */}
                 <option value={PICK_SENTINEL} hidden></option>
                 <optgroup label="Preset">
+                    {currentSel !== undefined && (
+                        <option value={currentSel}>current ({currentSel})</option>
+                    )}
                     <option value="*">all (*)</option>
                     <option value="">none</option>
                 </optgroup>
