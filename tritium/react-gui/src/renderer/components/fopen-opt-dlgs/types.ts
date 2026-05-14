@@ -133,11 +133,12 @@ export function getDefaultNamdCoorOptions(): NamdCoorOptions {
 export function getDefaultRendererOptions(filePath: string, defaultRendType?: string): RendererOptions {
   const fileName = filePath.split(/[\\/]/).pop()?.replace(/\.[^.]+$/, '') ?? 'molecule';
   const rendererType = defaultRendType ?? 'simple';
+  // Initial placeholder values; scene-wide unique versions are filled in
+  // asynchronously by FileOpenOptionDialog via the worker `proposeUniqName`
+  // service (object name via tryBare+parens, renderer name scene-wide).
   return {
     objectName: fileName,
     rendererType,
-    // TODO: renderer name should be unique in the scene (rendererType + incrementing suffix);
-    //       uniqueness check against existing renderers is not implemented yet.
     rendererName: rendererType + '1',
     selectionEnabled: false,
     selection: '*',

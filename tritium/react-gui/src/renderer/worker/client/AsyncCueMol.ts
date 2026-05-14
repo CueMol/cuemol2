@@ -13,6 +13,7 @@ import * as fileApi from './apis/fileApi';
 import * as editApi from './apis/editApi';
 import * as sceneViewApi from './apis/sceneViewApi';
 import type { ProposeUniqNameArgs, ProposeUniqNameResult } from '../server/services/proposeUniqName.service';
+import type { GetCompatibleRendererNamesResult } from '../server/services/getCompatibleRendererNames.service';
 import type { CreateViewInSceneArgs, CreateViewInSceneResult } from '../server/services/createViewInScene.service';
 import type { ProposeNewTabNamesArgs, ProposeNewTabNamesResult } from '../server/services/proposeNewTabNames.service';
 import type { GetSceneCloseInfoResult } from '../server/services/getSceneCloseInfo.service';
@@ -127,7 +128,7 @@ export class AsyncCueMol {
     }
 
     // -------- File operations
-    getCompatibleRendererNames(filePath: string, readerName?: string): Promise<string[]> {
+    getCompatibleRendererNames(filePath: string, readerName?: string): Promise<GetCompatibleRendererNamesResult> {
         return fileApi.getCompatibleRendererNames(this._transport, filePath, readerName);
     }
     getOpenFilters(catId: number): Promise<ElectronFileFilter[]> { return fileApi.getOpenFilters(this._transport, catId); }

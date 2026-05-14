@@ -10,6 +10,12 @@ export interface FileOpenOptionDialogArgs {
   filePath: string
   sceneId: number
   rendererTypes?: string[]
+  /**
+   * C++ class name of the object the file resolves to (e.g. 'MolCoord',
+   * 'DensityMap'). Used by the dialog as the renderer-type history key.
+   * Empty string is treated as "no history" (safe no-op).
+   */
+  objType?: string
 }
 
 export const {
@@ -23,6 +29,7 @@ export const {
       filePath={args?.filePath ?? ''}
       sceneId={args?.sceneId ?? 0}
       rendererTypes={args?.rendererTypes ?? []}
+      objType={args?.objType ?? ''}
       onConfirm={(options) => resolve(options)}
       onCancel={() => resolve(null)}
     />

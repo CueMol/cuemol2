@@ -25,7 +25,7 @@ import type { ObjTuple } from './ObjTuple'
 import type { AppInfoResult } from '../server/services/appInfo.service'
 import type { CreateNewSceneAndViewArgs, CreateNewSceneAndViewResult } from '../server/services/createNewSceneAndView.service'
 import type { CreateViewInSceneArgs, CreateViewInSceneResult } from '../server/services/createViewInScene.service'
-import type { GetCompatibleRendererNamesArgs } from '../server/services/getCompatibleRendererNames.service'
+import type { GetCompatibleRendererNamesArgs, GetCompatibleRendererNamesResult } from '../server/services/getCompatibleRendererNames.service'
 import type { GetOpenFiltersArgs } from '../server/services/getOpenFilters.service'
 import type { GetSceneCloseInfoArgs, GetSceneCloseInfoResult } from '../server/services/getSceneCloseInfo.service'
 import type { GetSelDefsArgs, GetSelDefsResult } from '../server/services/getSelDefs.service'
@@ -259,7 +259,7 @@ export interface ServiceMap {
   appInfo:                    { args: Record<string, never>;          result: AppInfoResult }
   createNewSceneAndView:      { args: CreateNewSceneAndViewArgs;       result: CreateNewSceneAndViewResult }
   createViewInScene:          { args: CreateViewInSceneArgs;           result: CreateViewInSceneResult }
-  getCompatibleRendererNames: { args: GetCompatibleRendererNamesArgs;  result: string[] }
+  getCompatibleRendererNames: { args: GetCompatibleRendererNamesArgs;  result: GetCompatibleRendererNamesResult }
   getOpenFilters:             { args: GetOpenFiltersArgs;              result: ElectronFileFilter[] }
   getSceneCloseInfo:          { args: GetSceneCloseInfoArgs;           result: GetSceneCloseInfoResult }
   getSelDefs:                 { args: GetSelDefsArgs;                  result: GetSelDefsResult }
