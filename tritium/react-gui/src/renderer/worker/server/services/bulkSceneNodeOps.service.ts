@@ -7,11 +7,11 @@
 // The whole batch lives inside ONE undo transaction so the user can
 // undo a multi-delete or multi-visibility-toggle with a single Cmd+Z.
 
-import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { WorkerContext } from '../types/WorkerContext';
 import type { SceneNodeType } from '../../shared/sceneTreeTypes';
+import { getSceneOrNull } from './helpers/sceneResolver';
 import { withUndoTxn } from './withUndoTxn';
 
 export interface BulkSceneNodeItem {
@@ -46,7 +46,7 @@ function bulkSetNodeVisible(
     ctx: WorkerContext,
     args: BulkSetVisibleArgs,
 ): BulkOpResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false, applied: 0 };
     const items = args.items.filter((it) => isOperable(it.nodeType));
     if (items.length === 0) return { ok: false, applied: 0 };
@@ -79,7 +79,7 @@ function bulkDeleteNode(
     ctx: WorkerContext,
     args: BulkDeleteArgs,
 ): BulkOpResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false, applied: 0 };
     const items = args.items.filter((it) => isOperable(it.nodeType));
     if (items.length === 0) return { ok: false, applied: 0 };
