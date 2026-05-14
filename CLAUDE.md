@@ -113,7 +113,7 @@ core (@cuemol/core): C++ addon + auto-generated TypeScript wrappers
 **新規ダイアログの追加パターン**
 - `components/.../XxxDialog.tsx` — Blueprint `Dialog` 本体 (props: `visible`, `onConfirm`/`onCancel` 等の既存パターン)
 - `components/.../XxxDialogProvider.tsx` — `createDialogHook` (`hooks/useDialogFactory.tsx`) で `Provider` / `useShowXxxDialog` を生やす (約 15 行)
-- `contexts/DialogContext.tsx` の composite に `<XxxDialogProvider>` を 1 行追加
+- `contexts/DialogContext.tsx` の `composeProviders([...])` 配列に `XxxDialogProvider` を 1 行追加
 - `commands/ids.ts` に `CmdId.UiXxxDialog`、`commands/CommandMap.ts` に対応する `{ args; result }` 行
 - 対応 `commands/useXxxCommands.ts` で `useShowXxxDialog()` を呼んで `useRegisterCommand`
 - C++ データ取得が要れば `worker/server/services/xxx.service.ts` + `worker/shared/WorkerCalls.ts` の `ServiceMap` 行追加
