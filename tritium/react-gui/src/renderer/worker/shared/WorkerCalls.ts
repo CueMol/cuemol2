@@ -84,9 +84,11 @@ import type {
   GetNodeInfoResult,
   RenameNodeArgs,
   RenameNodeResult,
+} from '../server/services/sceneOps.service'
+import type {
   SelectObjectMolArgs,
   SelectObjectMolResult,
-} from '../server/services/sceneOps.service'
+} from '../server/services/selectObjectMol.service'
 import type {
   CopyNodeArgs,
   CopyNodeResult,
