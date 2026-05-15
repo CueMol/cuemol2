@@ -13,16 +13,15 @@
  * Events are coalesced through a small debounce so a burst (e.g. PDB load
  * fires many SEM_ADDED / SEM_PROPCHG in quick succession) results in one
  * refetch.
+ *
+ * This file is the core hook: it owns the tree fetch, the event
+ * subscription, and the selection state. The 40+ action callbacks are
+ * grouped by domain into the `sceneTree/` sub-hooks, composed below.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
-import type {
-    SceneNodeType,
-    SceneTreeNode,
-} from '../worker/shared/sceneTreeTypes'
-import type { NodeInfoEntry } from '../worker/server/services/sceneOps.service'
-import type { ChangeRendSelKind, RendColoringId, SelectMolKind } from '../../shared/ipcTypes'
+import type { SceneTreeNode } from '../worker/shared/sceneTreeTypes'
 import {
     SEM_SCENE,
     SEM_OBJECT,
@@ -32,6 +31,25 @@ import {
     SEM_ANY,
 } from '../event'
 import { useCueMolEventListener } from './useCueMolEventListener'
+import { findNode } from './sceneTree/sceneTreeNodeUtils'
+import {
+    useSceneTreeNodeOps,
+    type SceneTreeNodeOps,
+} from './sceneTree/useSceneTreeNodeOps'
+import {
+    useSceneTreeRendererOps,
+    type SceneTreeRendererOps,
+} from './sceneTree/useSceneTreeRendererOps'
+import {
+    useSceneTreeCameraOps,
+    type SceneTreeCameraOps,
+} from './sceneTree/useSceneTreeCameraOps'
+import {
+    useSceneTreeStyleOps,
+    type SceneTreeStyleOps,
+} from './sceneTree/useSceneTreeStyleOps'
+
+export type { NodeInfo } from './sceneTree/sceneTreeNodeUtils'
 
 interface UseSceneTreeOptions {
     cm: AsyncCueMol | null
@@ -39,12 +57,16 @@ interface UseSceneTreeOptions {
     sceneId: number | undefined
 }
 
-export interface NodeInfo {
-    title: string
-    entries: NodeInfoEntry[]
+/** Whether the current selection supports toolbar focus / delete / property. */
+export interface SceneTreeSelectionOps {
+    focus: boolean
+    delete: boolean
+    property: boolean
+    add: boolean
 }
 
-interface UseSceneTreeResult {
+/** Tree fetch + selection state owned by the core hook. */
+export interface SceneTreeCoreState {
     tree: SceneTreeNode | null
     selectedId: string
     /**
@@ -54,8 +76,7 @@ interface UseSceneTreeResult {
     selectedIds: Set<string>
     /** Returns the resolved node for the current selection, if any. */
     selectedNode: SceneTreeNode | null
-    /** Whether the current selection supports toolbar focus / delete / property. */
-    selectedHasOps: { focus: boolean; delete: boolean; property: boolean; add: boolean }
+    selectedHasOps: SceneTreeSelectionOps
     setSelectedId: (id: string) => void
     /**
      * Cmd/Ctrl+click: toggle membership of `id` in `selectedIds`. If the
@@ -63,121 +84,14 @@ interface UseSceneTreeResult {
      * the primary becomes `id` (the most-recently-touched).
      */
     toggleInSelection: (id: string) => void
-    toggleVisibility: (id: string) => void
-    /** Focus a node (typically the selection) in the given view. */
-    focusNode: (viewId: number, id: string) => Promise<boolean>
-    /** Delete a node (typically the selection). */
-    deleteNode: (id: string) => Promise<boolean>
-    /** Rename a node (object / renderer / rendGroup only in Phase 3a). */
-    renameNode: (id: string, newName: string) => Promise<boolean>
-    /** Object-mol selection helpers (Phase 3b). */
-    selectObjectMol: (id: string, kind: SelectMolKind) => Promise<boolean>
-    /** Copy a node (object / renderer / rendGroup) to the worker clipboard. */
-    copyNode: (node: SceneTreeNode) => Promise<boolean>
-    /** Paste from the worker clipboard onto a target node. */
-    pasteNode: (node: SceneTreeNode) => Promise<boolean>
-    /** Apply a static coloring submenu choice to a renderer (Phase 3c). */
-    setRendererColoring: (id: string, coloringId: RendColoringId) => Promise<boolean>
-    /** Insert a paint entry (color + current mol sel) into a PaintColoring renderer. */
-    paintRendererSelection: (id: string, colorValue: string) => Promise<boolean>
-    /** Object-level paint: insert a paint entry into a MolCoord's coloring. */
-    paintObjectSelection: (id: string, colorValue: string) => Promise<boolean>
-    /** Apply a Style (shape) submenu choice (Phase 3c-3b). */
-    applyRendererStyle: (
-        id: string,
-        styleName: string,
-        pattern: string,
-        flags: string,
-    ) => Promise<boolean>
-    /** Apply a "Change sel" submenu choice to a renderer. */
-    setRendererSelection: (id: string, selKind: ChangeRendSelKind) => Promise<boolean>
-    /** Generate a MolSurfObj from an isosurf renderer. */
-    generateRendererSurfObj: (id: string) => Promise<boolean>
-    /**
-     * Create an empty `*group` renderer under the given object. The
-     * caller passes the user-confirmed name (the renderer side prompts
-     * with a worker-suggested default); pass an empty string to let the
-     * worker auto-generate `groupN`.
-     */
-    createRendererGroup: (objId: string, name: string) => Promise<boolean>
-    /** Replace a renderer with a new type (Phase 6b). */
-    changeRendererType: (rendId: string, newType: string) => Promise<boolean>
-    /**
-     * Create a new renderer on the given object (Phase 4d).
-     * Mirrors UXP `Qm2Main.setupRendByObjID`. Returns true on success;
-     * the tree refresh happens via the event listener.
-     */
-    createRendererOnObject: (
-        targetObjId: number,
-        rendOpts: import('../components/fopen-opt-dlgs/types').RendererOptions,
-        groupName?: string,
-    ) => Promise<boolean>
-    /**
-     * Bulk Show / Hide / Delete on the multi-select set (Phase 4c).
-     * Caller passes the set of ids; the hook resolves each to its tree
-     * node, filters out non-operable types, and dispatches the worker
-     * service inside a single undo txn.
-     */
-    bulkSetNodeVisible: (ids: Iterable<string>, visible: boolean) => Promise<boolean>
-    bulkDeleteNodes: (ids: Iterable<string>) => Promise<boolean>
-    /**
-     * Drag-drop reorder (Phase 4b). Caller supplies a fully-resolved
-     * args object — kind, target/source uids, destObjId/destGroupName
-     * for renderers, and orientation. Returns true on success.
-     */
-    moveSceneNode: (
-        args:
-            | { kind: 'object'; sourceId: number; targetId: number; ori: -1 | 1 }
-            | {
-                kind: 'renderer'
-                sourceId: number
-                destObjId: number
-                destGroupName: string
-                targetId: number
-                ori: -1 | 0 | 1
-            },
-    ) => Promise<boolean>
-    /** Set the scene's background color from the scene ctx menu. */
-    setSceneBackgroundColor: (color: 'white' | 'black') => Promise<boolean>
-    /** Toggle the scene's color-proofing flag. */
-    toggleSceneColorProofing: () => Promise<boolean>
-    /** Phase 5c style ops. */
-    createStyleSet: (name: string) => Promise<{ ok: boolean; newId: number }>
-    toggleStyleSetReadOnly: (
-        nodeId: number,
-        scopeId: number,
-    ) => Promise<{ ok: boolean; readonly: boolean }>
-    loadStyleSetFromFile: (path: string) => Promise<boolean>
-    saveStyleSetToFile: (
-        nodeId: number,
-        scopeId: number,
-        path: string,
-    ) => Promise<boolean>
-    saveStyleSetToCurrentSrc: (
-        nodeId: number,
-        scopeId: number,
-    ) => Promise<{ ok: boolean; saved: boolean }>
-    /** Phase 5b camera ops. */
-    createCamera: (viewId: number, name: string) => Promise<boolean>
-    renameCamera: (oldName: string, newName: string) => Promise<boolean>
-    saveViewToCamera: (
-        viewId: number, name: string, withVisFlags: boolean,
-    ) => Promise<boolean>
-    applyCameraToView: (
-        viewId: number, name: string, withVisFlags: boolean,
-    ) => Promise<boolean>
-    clearCameraVisFlags: (name: string) => Promise<boolean>
-    loadCameraFromFile: (viewId: number, path: string) => Promise<boolean>
-    saveCameraToFile: (name: string, path: string) => Promise<boolean>
-    saveCameraToCurrentSrc: (
-        name: string,
-    ) => Promise<{ ok: boolean; saved: boolean }>
-    reloadCameraFromSrc: (name: string) => Promise<boolean>
-    /** Fetch property info for the property dialog. */
-    fetchNodeInfo: (id: string) => Promise<NodeInfo | null>
     refetch: () => void
-    resolveNodeName: (id: string) => string
 }
+
+export type UseSceneTreeResult = SceneTreeCoreState &
+    SceneTreeNodeOps &
+    SceneTreeRendererOps &
+    SceneTreeCameraOps &
+    SceneTreeStyleOps
 
 // Source-type bitmask matching UXP workspace_panel.js: any add/remove/propchg
 // on these categories triggers a tree refresh.
@@ -186,16 +100,6 @@ const SCENE_EVENT_MASK =
 
 // Coalesce event bursts (PDB load fires many add/propchg in quick succession).
 const REFETCH_DEBOUNCE_MS = 30
-
-function findNode(root: SceneTreeNode | null, id: number): SceneTreeNode | null {
-    if (!root) return null
-    if (root.id === id) return root
-    for (const child of root.children) {
-        const found = findNode(child, id)
-        if (found) return found
-    }
-    return null
-}
 
 export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTreeResult {
     const [tree, setTree] = useState<SceneTreeNode | null>(null)
@@ -273,658 +177,11 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         debounceMs: REFETCH_DEBOUNCE_MS,
     })
 
-    const toggleVisibility = useCallback(
-        (id: string) => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return
-            const numId = Number(id)
-            if (!Number.isFinite(numId)) return
-            const node = findNode(tree, numId)
-            if (!node) return
-            if (
-                node.type !== 'object' &&
-                node.type !== 'renderer' &&
-                node.type !== 'rendGroup'
-            ) {
-                return
-            }
-            cm.invokeService('setNodeVisible', {
-                sceneId: sid,
-                nodeId: numId,
-                nodeType: node.type as SceneNodeType,
-                visible: !node.visible,
-            }).catch((err: unknown) => {
-                console.warn('setNodeVisible failed:', err)
-            })
-            // Event subscription will trigger refetch automatically.
-        },
-        [cm, tree],
-    )
-
-    const resolveNodeName = useCallback(
-        (id: string): string => {
-            const numId = Number(id)
-            if (!Number.isFinite(numId)) return id
-            const node = findNode(tree, numId)
-            return node?.name ?? id
-        },
-        [tree],
-    )
-
-    const focusNode = useCallback(
-        async (viewId: number, id: string): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            const numId = Number(id)
-            if (!Number.isFinite(numId)) return false
-            const node = findNode(tree, numId)
-            if (!node) return false
-            const res = await cm.invokeService('focusOnNode', {
-                sceneId: sid,
-                viewId,
-                nodeId: numId,
-                nodeType: node.type as SceneNodeType,
-            })
-            return res?.ok === true
-        },
-        [cm, tree],
-    )
-
-    const deleteNode = useCallback(
-        async (id: string): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            const numId = Number(id)
-            if (!Number.isFinite(numId)) return false
-            const node = findNode(tree, numId)
-            if (!node) return false
-            const childIds =
-                node.type === 'rendGroup'
-                    ? node.children.map((c) => c.id).filter((n) => n >= 0)
-                    : undefined
-            // Style nodes require the scope id so the worker can call
-            // StyleManager.destroyStyleSet(scopeId, styleSetId).
-            const scopeId =
-                node.type === 'style' ? node.styleInfo?.scopeId : undefined
-            // Camera nodes are keyed by name; deleteNode for cameras
-            // routes through the dedicated `destroyCamera` worker service.
-            if (node.type === 'camera') {
-                const res = await cm.invokeService('destroyCamera', {
-                    sceneId: sid, name: node.name,
-                })
-                return res?.ok === true
-            }
-            const res = await cm.invokeService('deleteNode', {
-                sceneId: sid,
-                nodeId: numId,
-                nodeType: node.type as SceneNodeType,
-                childIds,
-                scopeId,
-            })
-            // Event subscription handles refetch on success.
-            return res?.ok === true
-        },
-        [cm, tree],
-    )
-
-    const renameNode = useCallback(
-        async (id: string, newName: string): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            const numId = Number(id)
-            if (!Number.isFinite(numId)) return false
-            const node = findNode(tree, numId)
-            if (!node) return false
-            const res = await cm.invokeService('renameNode', {
-                sceneId: sid,
-                nodeId: numId,
-                nodeType: node.type as SceneNodeType,
-                newName,
-            })
-            return res?.ok === true
-        },
-        [cm, tree],
-    )
-
-    const selectObjectMol = useCallback(
-        async (id: string, kind: SelectMolKind): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            const numId = Number(id)
-            if (!Number.isFinite(numId)) return false
-            const node = findNode(tree, numId)
-            if (!node || node.type !== 'object') return false
-            const res = await cm.invokeService('selectObjectMol', {
-                sceneId: sid,
-                objId: numId,
-                kind,
-            })
-            return res?.ok === true
-        },
-        [cm, tree],
-    )
-
-    const copyNode = useCallback(
-        async (node: SceneTreeNode): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            if (
-                node.type !== 'object' &&
-                node.type !== 'renderer' &&
-                node.type !== 'rendGroup' &&
-                node.type !== 'style' &&
-                node.type !== 'camera'
-            ) {
-                return false
-            }
-            const scopeId =
-                node.type === 'style' ? node.styleInfo?.scopeId : undefined
-            const cameraName = node.type === 'camera' ? node.name : undefined
-            const res = await cm.invokeService('copyNode', {
-                sceneId: sid,
-                nodeId: node.id,
-                nodeType: node.type,
-                scopeId,
-                cameraName,
-            })
-            return res?.ok === true
-        },
-        [cm],
-    )
-
-    const pasteNode = useCallback(
-        async (target: SceneTreeNode): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            // Scene row accepts object pastes (no target id). Object row
-            // accepts renderer pastes via targetObjId. RendGroup row
-            // accepts renderer pastes via targetGroupId — worker resolves
-            // the group's parent mol and sets rend.group on attach. Other
-            // node types are rejected by the worker.
-            let args: {
-                sceneId: number
-                targetObjId?: number
-                targetGroupId?: number
-            } = { sceneId: sid }
-            if (target.type === 'object') {
-                args = { sceneId: sid, targetObjId: target.id }
-            } else if (target.type === 'rendGroup') {
-                args = { sceneId: sid, targetGroupId: target.id }
-            }
-            const res = await cm.invokeService('pasteNode', args)
-            return res?.ok === true
-        },
-        [cm],
-    )
-
-    const setRendererColoring = useCallback(
-        async (id: string, coloringId: RendColoringId): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            const numId = Number(id)
-            if (!Number.isFinite(numId)) return false
-            const node = findNode(tree, numId)
-            if (!node || node.type !== 'renderer') return false
-            const res = await cm.invokeService('setRendererColoring', {
-                sceneId: sid,
-                rendId: numId,
-                coloringId,
-            })
-            return res?.ok === true
-        },
-        [cm, tree],
-    )
-
-    const paintRendererSelection = useCallback(
-        async (id: string, colorValue: string): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            const numId = Number(id)
-            if (!Number.isFinite(numId)) return false
-            const node = findNode(tree, numId)
-            if (!node || node.type !== 'renderer') return false
-            const res = await cm.invokeService('paintRendererSelection', {
-                sceneId: sid,
-                rendId: numId,
-                colorValue,
-            })
-            return res?.ok === true
-        },
-        [cm, tree],
-    )
-
-    const paintObjectSelection = useCallback(
-        async (id: string, colorValue: string): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            const numId = Number(id)
-            if (!Number.isFinite(numId)) return false
-            const node = findNode(tree, numId)
-            if (!node || node.type !== 'object') return false
-            const res = await cm.invokeService('paintObjectSelection', {
-                sceneId: sid,
-                objId: numId,
-                colorValue,
-            })
-            return res?.ok === true
-        },
-        [cm, tree],
-    )
-
-    const applyRendererStyle = useCallback(
-        async (
-            id: string,
-            styleName: string,
-            pattern: string,
-            flags: string,
-        ): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            const numId = Number(id)
-            if (!Number.isFinite(numId)) return false
-            const node = findNode(tree, numId)
-            if (!node || node.type !== 'renderer') return false
-            const res = await cm.invokeService('applyRendererStyle', {
-                sceneId: sid,
-                rendId: numId,
-                styleName,
-                pattern,
-                flags,
-            })
-            return res?.ok === true
-        },
-        [cm, tree],
-    )
-
-    const setRendererSelection = useCallback(
-        async (id: string, selKind: ChangeRendSelKind): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            const numId = Number(id)
-            if (!Number.isFinite(numId)) return false
-            const node = findNode(tree, numId)
-            if (!node || node.type !== 'renderer') return false
-            const res = await cm.invokeService('setRendererSelection', {
-                sceneId: sid,
-                rendId: numId,
-                selKind,
-            })
-            return res?.ok === true
-        },
-        [cm, tree],
-    )
-
-    const generateRendererSurfObj = useCallback(
-        async (id: string): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            const numId = Number(id)
-            if (!Number.isFinite(numId)) return false
-            const node = findNode(tree, numId)
-            if (!node || node.type !== 'renderer') return false
-            const res = await cm.invokeService('generateRendererSurfObj', {
-                sceneId: sid,
-                rendId: numId,
-            })
-            return res?.ok === true
-        },
-        [cm, tree],
-    )
-
-    const createRendererGroup = useCallback(
-        async (objId: string, name: string): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            const numId = Number(objId)
-            if (!Number.isFinite(numId)) return false
-            const node = findNode(tree, numId)
-            if (!node || node.type !== 'object') return false
-            const res = await cm.invokeService('createRendererGroup', {
-                sceneId: sid,
-                objId: numId,
-                name,
-            })
-            return res?.ok === true
-        },
-        [cm, tree],
-    )
-
-    const moveSceneNode = useCallback(
-        async (
-            args:
-                | { kind: 'object'; sourceId: number; targetId: number; ori: -1 | 1 }
-                | {
-                    kind: 'renderer'
-                    sourceId: number
-                    destObjId: number
-                    destGroupName: string
-                    targetId: number
-                    ori: -1 | 0 | 1
-                },
-        ): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            const res = await cm.invokeService('reorderSceneNode', {
-                ...args,
-                sceneId: sid,
-            })
-            return res?.ok === true
-        },
-        [cm],
-    )
-
-    const changeRendererType = useCallback(
-        async (rendId: string, newType: string): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            const numId = Number(rendId)
-            if (!Number.isFinite(numId)) return false
-            const node = findNode(tree, numId)
-            if (!node || node.type !== 'renderer') return false
-            const res = await cm.invokeService('changeRendererType', {
-                sceneId: sid,
-                rendId: numId,
-                newType,
-            })
-            return res?.ok === true
-        },
-        [cm, tree],
-    )
-
-    const createRendererOnObject = useCallback(
-        async (
-            targetObjId: number,
-            rendOpts: import('../components/fopen-opt-dlgs/types').RendererOptions,
-            groupName?: string,
-        ): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            const res = await cm.invokeService('createRendererOnObject', {
-                sceneId: sid,
-                objId: targetObjId,
-                rendOpts,
-                groupName,
-            })
-            return res?.ok === true
-        },
-        [cm],
-    )
-
-    const resolveBulkItems = useCallback(
-        (ids: Iterable<string>): {
-            nodeId: number
-            nodeType: SceneNodeType
-            childIds?: number[]
-        }[] => {
-            const out: {
-                nodeId: number
-                nodeType: SceneNodeType
-                childIds?: number[]
-            }[] = []
-            for (const idStr of ids) {
-                const num = Number(idStr)
-                if (!Number.isFinite(num)) continue
-                const node = findNode(tree, num)
-                if (!node) continue
-                if (
-                    node.type !== 'object' &&
-                    node.type !== 'renderer' &&
-                    node.type !== 'rendGroup'
-                ) continue
-                const childIds = node.type === 'rendGroup'
-                    ? node.children.map((c) => c.id).filter((n) => n >= 0)
-                    : undefined
-                out.push({ nodeId: num, nodeType: node.type, childIds })
-            }
-            return out
-        },
-        [tree],
-    )
-
-    const bulkSetNodeVisible = useCallback(
-        async (ids: Iterable<string>, visible: boolean): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            const items = resolveBulkItems(ids)
-            if (items.length === 0) return false
-            const res = await cm.invokeService('bulkSetNodeVisible', {
-                sceneId: sid, items, visible,
-            })
-            return res?.ok === true
-        },
-        [cm, resolveBulkItems],
-    )
-
-    const bulkDeleteNodes = useCallback(
-        async (ids: Iterable<string>): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            const items = resolveBulkItems(ids)
-            if (items.length === 0) return false
-            const res = await cm.invokeService('bulkDeleteNode', {
-                sceneId: sid, items,
-            })
-            return res?.ok === true
-        },
-        [cm, resolveBulkItems],
-    )
-
-    const setSceneBackgroundColor = useCallback(
-        async (color: 'white' | 'black'): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            const res = await cm.invokeService('setSceneBgColor', {
-                sceneId: sid,
-                colorName: color,
-            })
-            return res?.ok === true
-        },
-        [cm],
-    )
-
-    const toggleSceneColorProofing = useCallback(
-        async (): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            const res = await cm.invokeService('toggleSceneColorProofing', {
-                sceneId: sid,
-            })
-            return res?.ok === true
-        },
-        [cm],
-    )
-
-    const createStyleSet = useCallback(
-        async (name: string): Promise<{ ok: boolean; newId: number }> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return { ok: false, newId: -1 }
-            const res = await cm.invokeService('createStyleSet', {
-                sceneId: sid, name,
-            })
-            return { ok: res?.ok === true, newId: res?.newId ?? -1 }
-        },
-        [cm],
-    )
-
-    const toggleStyleSetReadOnly = useCallback(
-        async (nodeId: number, scopeId: number): Promise<{ ok: boolean; readonly: boolean }> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return { ok: false, readonly: false }
-            const res = await cm.invokeService('toggleStyleSetReadOnly', {
-                sceneId: sid, scopeId, styleSetId: nodeId,
-            })
-            return { ok: res?.ok === true, readonly: res?.readonly === true }
-        },
-        [cm],
-    )
-
-    const loadStyleSetFromFile = useCallback(
-        async (path: string): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            const res = await cm.invokeService('loadStyleSetFromFile', {
-                sceneId: sid, path,
-            })
-            return res?.ok === true
-        },
-        [cm],
-    )
-
-    const saveStyleSetToFile = useCallback(
-        async (nodeId: number, scopeId: number, path: string): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            const res = await cm.invokeService('saveStyleSetToFile', {
-                sceneId: sid, scopeId, styleSetId: nodeId, path,
-            })
-            return res?.ok === true
-        },
-        [cm],
-    )
-
-    const saveStyleSetToCurrentSrc = useCallback(
-        async (nodeId: number, scopeId: number): Promise<{ ok: boolean; saved: boolean }> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return { ok: false, saved: false }
-            const res = await cm.invokeService('saveStyleSetToCurrentSrc', {
-                sceneId: sid, scopeId, styleSetId: nodeId,
-            })
-            return { ok: res?.ok === true, saved: res?.saved === true }
-        },
-        [cm],
-    )
-
-    // ── Phase 5b camera ops ──────────────────────────────────────────
-
-    const createCamera = useCallback(
-        async (viewId: number, name: string): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            const res = await cm.invokeService('createCamera', {
-                sceneId: sid, viewId, name,
-            })
-            return res?.ok === true
-        },
-        [cm],
-    )
-
-    const renameCamera = useCallback(
-        async (oldName: string, newName: string): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            const res = await cm.invokeService('renameCamera', {
-                sceneId: sid, oldName, newName,
-            })
-            return res?.ok === true
-        },
-        [cm],
-    )
-
-    const saveViewToCamera = useCallback(
-        async (viewId: number, name: string, withVisFlags: boolean): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            const res = await cm.invokeService('saveViewToCamera', {
-                sceneId: sid, viewId, name, withVisFlags,
-            })
-            return res?.ok === true
-        },
-        [cm],
-    )
-
-    const applyCameraToView = useCallback(
-        async (viewId: number, name: string, withVisFlags: boolean): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            const res = await cm.invokeService('applyCameraToView', {
-                sceneId: sid, viewId, name, withVisFlags,
-            })
-            return res?.ok === true
-        },
-        [cm],
-    )
-
-    const clearCameraVisFlags = useCallback(
-        async (name: string): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            const res = await cm.invokeService('clearCameraVisFlags', {
-                sceneId: sid, name,
-            })
-            return res?.ok === true
-        },
-        [cm],
-    )
-
-    const loadCameraFromFile = useCallback(
-        async (viewId: number, path: string): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            const res = await cm.invokeService('loadCameraFromFile', {
-                sceneId: sid, viewId, path,
-            })
-            return res?.ok === true
-        },
-        [cm],
-    )
-
-    const saveCameraToFile = useCallback(
-        async (name: string, path: string): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            const res = await cm.invokeService('saveCameraToFile', {
-                sceneId: sid, name, path,
-            })
-            return res?.ok === true
-        },
-        [cm],
-    )
-
-    const saveCameraToCurrentSrc = useCallback(
-        async (name: string): Promise<{ ok: boolean; saved: boolean }> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return { ok: false, saved: false }
-            const res = await cm.invokeService('saveCameraToCurrentSrc', {
-                sceneId: sid, name,
-            })
-            return { ok: res?.ok === true, saved: res?.saved === true }
-        },
-        [cm],
-    )
-
-    const reloadCameraFromSrc = useCallback(
-        async (name: string): Promise<boolean> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return false
-            const res = await cm.invokeService('reloadCameraFromSrc', {
-                sceneId: sid, name,
-            })
-            return res?.ok === true
-        },
-        [cm],
-    )
-
-    const fetchNodeInfo = useCallback(
-        async (id: string): Promise<NodeInfo | null> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return null
-            const numId = Number(id)
-            if (!Number.isFinite(numId)) return null
-            const node = findNode(tree, numId)
-            if (!node) return null
-            const res = await cm.invokeService('getNodeInfo', {
-                sceneId: sid,
-                nodeId: numId,
-                nodeType: node.type as SceneNodeType,
-            })
-            if (!res?.ok) return null
-            return {
-                title: res.displayName || node.name || 'Properties',
-                entries: res.entries,
-            }
-        },
-        [cm, tree],
-    )
+    // ── Domain action callbacks ──────────────────────────────────────
+    const nodeOps = useSceneTreeNodeOps(cm, sceneIdRef, tree)
+    const rendererOps = useSceneTreeRendererOps(cm, sceneIdRef, tree)
+    const cameraOps = useSceneTreeCameraOps(cm, sceneIdRef)
+    const styleOps = useSceneTreeStyleOps(cm, sceneIdRef)
 
     const selectedNode = selectedId
         ? findNode(tree, Number(selectedId))
@@ -947,44 +204,11 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         selectedHasOps,
         setSelectedId,
         toggleInSelection,
-        toggleVisibility,
-        focusNode,
-        deleteNode,
-        renameNode,
-        selectObjectMol,
-        copyNode,
-        pasteNode,
-        setRendererColoring,
-        paintRendererSelection,
-        paintObjectSelection,
-        applyRendererStyle,
-        setRendererSelection,
-        generateRendererSurfObj,
-        createRendererGroup,
-        changeRendererType,
-        createRendererOnObject,
-        bulkSetNodeVisible,
-        bulkDeleteNodes,
-        moveSceneNode,
-        setSceneBackgroundColor,
-        toggleSceneColorProofing,
-        createStyleSet,
-        toggleStyleSetReadOnly,
-        loadStyleSetFromFile,
-        saveStyleSetToFile,
-        saveStyleSetToCurrentSrc,
-        createCamera,
-        renameCamera,
-        saveViewToCamera,
-        applyCameraToView,
-        clearCameraVisFlags,
-        loadCameraFromFile,
-        saveCameraToFile,
-        saveCameraToCurrentSrc,
-        reloadCameraFromSrc,
-        fetchNodeInfo,
         refetch,
-        resolveNodeName,
+        ...nodeOps,
+        ...rendererOps,
+        ...cameraOps,
+        ...styleOps,
     }
 }
 
@@ -1000,9 +224,7 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
  *          camera / cameraRoot → New Camera
  *          (style is handled via its own ctxmenu path for now)
  */
-function computeOps(
-    node: SceneTreeNode | null,
-): { focus: boolean; delete: boolean; property: boolean; add: boolean } {
+function computeOps(node: SceneTreeNode | null): SceneTreeSelectionOps {
     if (!node) return { focus: false, delete: false, property: false, add: false }
     const isRendish =
         node.type === 'object' ||
