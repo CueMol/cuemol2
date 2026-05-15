@@ -1,0 +1,223 @@
+/**
+ * Per-action dispatch contract for the scene-tree right-click. Asserts
+ * the case-by-case routing of SceneCtxAction to the appropriate ctx
+ * callback. Covers a representative subset (basic verbs + multi
+ * + dialog-driven case + node-type gates).
+ */
+
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import {
+    dispatchSceneCtxAction,
+    type DispatchSceneCtxActionCtx,
+} from '../hooks/sceneContextMenu/dispatchSceneCtxAction'
+import type { SceneCtxAction } from '../../shared/ipcTypes'
+import { IPC } from '../../shared/ipcChannels'
+
+function makeCtx(overrides: Partial<DispatchSceneCtxActionCtx> = {}): DispatchSceneCtxActionCtx {
+    return {
+        cm: null,
+        sceneId: 7,
+        activeViewId: 5,
+        toggleVisibility: vi.fn(),
+        deleteNode: vi.fn().mockResolvedValue(true),
+        showProperty: vi.fn(),
+        selectObjectMol: vi.fn().mockResolvedValue(true),
+        beginInlineRename: vi.fn(),
+        copyNode: vi.fn().mockResolvedValue(true),
+        pasteNode: vi.fn().mockResolvedValue(true),
+        setRendererColoring: vi.fn().mockResolvedValue(true),
+        paintRendererSelection: vi.fn().mockResolvedValue(true),
+        paintObjectSelection: vi.fn().mockResolvedValue(true),
+        applyRendererStyle: vi.fn().mockResolvedValue(true),
+        setSceneBackgroundColor: vi.fn().mockResolvedValue(true),
+        toggleSceneColorProofing: vi.fn().mockResolvedValue(true),
+        setRendererSelection: vi.fn().mockResolvedValue(true),
+        generateRendererSurfObj: vi.fn().mockResolvedValue(true),
+        createRendererGroup: vi.fn().mockResolvedValue(true),
+        changeRendererType: vi.fn().mockResolvedValue(true),
+        createRendererOnObject: vi.fn().mockResolvedValue(true),
+        bulkSetNodeVisible: vi.fn().mockResolvedValue(true),
+        bulkDeleteNodes: vi.fn().mockResolvedValue(true),
+        createStyleSet: vi.fn().mockResolvedValue({ ok: true, newId: 1 }),
+        toggleStyleSetReadOnly: vi.fn().mockResolvedValue({ ok: true, readonly: true }),
+        loadStyleSetFromFile: vi.fn().mockResolvedValue(true),
+        saveStyleSetToFile: vi.fn().mockResolvedValue(true),
+        saveStyleSetToCurrentSrc: vi.fn().mockResolvedValue({ ok: true, saved: true }),
+        createCamera: vi.fn().mockResolvedValue(true),
+        saveViewToCamera: vi.fn().mockResolvedValue(true),
+        applyCameraToView: vi.fn().mockResolvedValue(true),
+        clearCameraVisFlags: vi.fn().mockResolvedValue(true),
+        loadCameraFromFile: vi.fn().mockResolvedValue(true),
+        saveCameraToFile: vi.fn().mockResolvedValue(true),
+        saveCameraToCurrentSrc: vi.fn().mockResolvedValue({ ok: true, saved: true }),
+        reloadCameraFromSrc: vi.fn().mockResolvedValue(true),
+        showTextPrompt: vi.fn().mockResolvedValue('typed'),
+        showApplyRendStyle: vi.fn().mockResolvedValue(null),
+        showCreateRendStyle: vi.fn().mockResolvedValue(null),
+        openNewRendererFlow: vi.fn().mockResolvedValue(undefined),
+        openNewCameraFlow: vi.fn().mockResolvedValue(undefined),
+        ...overrides,
+    }
+}
+
+const objectNode = (overrides: Record<string, unknown> = {}): any => ({
+    id: 42, type: 'object', name: 'mol1', className: 'MolCoord',
+    visible: true, children: [], ...overrides,
+})
+const rendererNode = (overrides: Record<string, unknown> = {}): any => ({
+    id: 100, type: 'renderer', name: 'simple1', className: 'simple',
+    visible: true, children: [], ...overrides,
+})
+const cameraNode = (overrides: Record<string, unknown> = {}): any => ({
+    id: 200, type: 'camera', name: 'cam1', visible: true, children: [], ...overrides,
+})
+const styleNode = (overrides: Record<string, unknown> = {}): any => ({
+    id: 300, type: 'style', name: 'st1', visible: true, children: [],
+    styleInfo: { scopeId: 0, src: '', readonly: false, modified: false },
+    ...overrides,
+})
+
+describe('dispatchSceneCtxAction — simple verbs', () => {
+    it('show -> toggleVisibility', async () => {
+        const ctx = makeCtx()
+        await dispatchSceneCtxAction(objectNode(), { kind: 'show' } as SceneCtxAction, ctx)
+        expect(ctx.toggleVisibility).toHaveBeenCalledWith('42')
+    })
+
+    it('hide also routes to toggleVisibility (same callback flips state)', async () => {
+        const ctx = makeCtx()
+        await dispatchSceneCtxAction(objectNode(), { kind: 'hide' } as SceneCtxAction, ctx)
+        expect(ctx.toggleVisibility).toHaveBeenCalledWith('42')
+    })
+
+    it('rename -> beginInlineRename (not the legacy renameNode dialog)', async () => {
+        const ctx = makeCtx()
+        await dispatchSceneCtxAction(objectNode(), { kind: 'rename' } as SceneCtxAction, ctx)
+        expect(ctx.beginInlineRename).toHaveBeenCalledWith('42')
+    })
+
+    it('delete -> deleteNode', async () => {
+        const ctx = makeCtx()
+        await dispatchSceneCtxAction(objectNode(), { kind: 'delete' } as SceneCtxAction, ctx)
+        expect(ctx.deleteNode).toHaveBeenCalledWith('42')
+    })
+
+    it('property -> showProperty', async () => {
+        const ctx = makeCtx()
+        await dispatchSceneCtxAction(objectNode(), { kind: 'property' } as SceneCtxAction, ctx)
+        expect(ctx.showProperty).toHaveBeenCalledWith('42')
+    })
+})
+
+describe('dispatchSceneCtxAction — node-type gating', () => {
+    it('selectMol on a non-object node is a no-op', async () => {
+        const ctx = makeCtx()
+        await dispatchSceneCtxAction(
+            rendererNode(),
+            { kind: 'selectMol', selectKind: 'all' } as SceneCtxAction,
+            ctx,
+        )
+        expect(ctx.selectObjectMol).not.toHaveBeenCalled()
+    })
+
+    it('selectMol on an object node calls selectObjectMol', async () => {
+        const ctx = makeCtx()
+        await dispatchSceneCtxAction(
+            objectNode(),
+            { kind: 'selectMol', selectKind: 'all' } as SceneCtxAction,
+            ctx,
+        )
+        expect(ctx.selectObjectMol).toHaveBeenCalledWith('42', 'all')
+    })
+
+    it('paintRend routes object nodes to paintObjectSelection (UXP onPaintMol object branch)', async () => {
+        const ctx = makeCtx()
+        await dispatchSceneCtxAction(
+            objectNode(),
+            { kind: 'paintRend', colorValue: '#ff0000' } as SceneCtxAction,
+            ctx,
+        )
+        expect(ctx.paintObjectSelection).toHaveBeenCalledWith('42', '#ff0000')
+        expect(ctx.paintRendererSelection).not.toHaveBeenCalled()
+    })
+
+    it('paintRend routes renderer nodes to paintRendererSelection', async () => {
+        const ctx = makeCtx()
+        await dispatchSceneCtxAction(
+            rendererNode(),
+            { kind: 'paintRend', colorValue: '#00ff00' } as SceneCtxAction,
+            ctx,
+        )
+        expect(ctx.paintRendererSelection).toHaveBeenCalledWith('100', '#00ff00')
+        expect(ctx.paintObjectSelection).not.toHaveBeenCalled()
+    })
+
+    it('cameraSaveFromView is a no-op when activeViewId is undefined', async () => {
+        const ctx = makeCtx({ activeViewId: undefined })
+        await dispatchSceneCtxAction(
+            cameraNode(),
+            { kind: 'cameraSaveFromView', withVisFlags: false } as SceneCtxAction,
+            ctx,
+        )
+        expect(ctx.saveViewToCamera).not.toHaveBeenCalled()
+    })
+})
+
+describe('dispatchSceneCtxAction — multi-select cases', () => {
+    const selectedIds = new Set(['42', '43', '44'])
+
+    it('multiShow -> bulkSetNodeVisible(ids, true)', async () => {
+        const ctx = makeCtx({ selectedIds })
+        await dispatchSceneCtxAction(objectNode(), { kind: 'multiShow' } as SceneCtxAction, ctx)
+        expect(ctx.bulkSetNodeVisible).toHaveBeenCalledWith(selectedIds, true)
+    })
+
+    it('multiHide -> bulkSetNodeVisible(ids, false)', async () => {
+        const ctx = makeCtx({ selectedIds })
+        await dispatchSceneCtxAction(objectNode(), { kind: 'multiHide' } as SceneCtxAction, ctx)
+        expect(ctx.bulkSetNodeVisible).toHaveBeenCalledWith(selectedIds, false)
+    })
+
+    it('multiDelete -> bulkDeleteNodes(ids)', async () => {
+        const ctx = makeCtx({ selectedIds })
+        await dispatchSceneCtxAction(objectNode(), { kind: 'multiDelete' } as SceneCtxAction, ctx)
+        expect(ctx.bulkDeleteNodes).toHaveBeenCalledWith(selectedIds)
+    })
+
+    it('multi cases are no-ops when the bulk callbacks are not wired', async () => {
+        const ctx = makeCtx({
+            selectedIds, bulkSetNodeVisible: undefined, bulkDeleteNodes: undefined,
+        })
+        await dispatchSceneCtxAction(objectNode(), { kind: 'multiHide' } as SceneCtxAction, ctx)
+        await dispatchSceneCtxAction(objectNode(), { kind: 'multiDelete' } as SceneCtxAction, ctx)
+        // No throw; callbacks never invoked (they don't exist)
+    })
+})
+
+describe('dispatchSceneCtxAction — style fall-through', () => {
+    beforeEach(() => {
+        (window as any).electronAPI = {
+            invoke: vi.fn(async () => ({ canceled: false, filePath: '/tmp/x.qsl' })),
+        }
+    })
+
+    it('styleSave with empty src falls through to Save As (DIALOG_STYLE_SAVE)', async () => {
+        const ctx = makeCtx({
+            saveStyleSetToCurrentSrc: vi.fn().mockResolvedValue({ ok: true, saved: false }),
+        })
+        const node = styleNode({ name: 'st1' })
+        await dispatchSceneCtxAction(node, { kind: 'styleSave' } as SceneCtxAction, ctx)
+        const calls = (window as any).electronAPI.invoke.mock.calls
+        expect(calls[0][0]).toBe(IPC.DIALOG_STYLE_SAVE)
+        expect(ctx.saveStyleSetToFile).toHaveBeenCalledWith(node.id, 0, '/tmp/x.qsl')
+    })
+
+    it('styleSave returns early when the underlying save reported saved:true (no fallback)', async () => {
+        const ctx = makeCtx({
+            saveStyleSetToCurrentSrc: vi.fn().mockResolvedValue({ ok: true, saved: true }),
+        })
+        await dispatchSceneCtxAction(styleNode(), { kind: 'styleSave' } as SceneCtxAction, ctx)
+        expect((window as any).electronAPI.invoke).not.toHaveBeenCalled()
+        expect(ctx.saveStyleSetToFile).not.toHaveBeenCalled()
+    })
+})
