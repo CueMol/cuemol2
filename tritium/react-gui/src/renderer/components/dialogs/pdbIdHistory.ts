@@ -9,42 +9,32 @@
  * surface garbage in the picker.
  */
 
+import { loadJSON, removeKey, saveJSON } from '../../utils/localStorageJSON';
+
 export const STORAGE_KEY = 'cuemol.getPdbDialog.history';
 export const MAX_ENTRIES = 20;
 
 // Same shape as UXP openPDB.js:104-111 — first char digit, remaining alnum.
 const PDBID_RE = /^[0-9][0-9a-z]{3}$/i;
 
-function isStorageAvailable(): boolean {
-    return typeof globalThis !== 'undefined' && !!globalThis.localStorage;
+function asPdbIdArray(raw: unknown): string[] | null {
+    if (!Array.isArray(raw)) return null;
+    return raw.filter((v): v is string => typeof v === 'string' && PDBID_RE.test(v));
 }
 
 export function getHistory(): string[] {
-    if (!isStorageAvailable()) return [];
-    const raw = globalThis.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    try {
-        const parsed: unknown = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return [];
-        return parsed.filter(
-            (v): v is string => typeof v === 'string' && PDBID_RE.test(v),
-        );
-    } catch {
-        return [];
-    }
+    return loadJSON(STORAGE_KEY, asPdbIdArray, []);
 }
 
 export function pushHistory(value: string): void {
-    if (!isStorageAvailable()) return;
     const trimmed = value.trim().toLowerCase();
     if (!PDBID_RE.test(trimmed)) return;
     const current = getHistory().filter((v) => v !== trimmed);
     current.unshift(trimmed);
     if (current.length > MAX_ENTRIES) current.length = MAX_ENTRIES;
-    globalThis.localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+    saveJSON(STORAGE_KEY, current);
 }
 
 export function clearHistory(): void {
-    if (!isStorageAvailable()) return;
-    globalThis.localStorage.removeItem(STORAGE_KEY);
+    removeKey(STORAGE_KEY);
 }

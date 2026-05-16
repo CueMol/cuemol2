@@ -4,12 +4,12 @@
  * one place. Each individual dialog ships its own `<XxxDialogProvider>` and
  * `useShowXxxDialog()` hook (see `components/dialogs/*Provider.tsx`).
  *
- * Adding a new dialog: add its provider component beneath, then export the
- * matching `useShowXxx` hook from the dialog's own file. No code change here
- * apart from the one-line `<XxxDialogProvider>` wrapping.
+ * Adding a new dialog: append its provider component to the array below.
+ * The outer-to-inner mount order matches the array order (first entry is
+ * outermost), but dialogs do not depend on each other so the order is
+ * not load-bearing.
  */
 
-import React from 'react'
 import { AboutDialogProvider } from '../components/dialogs/AboutDialogProvider'
 import { NewTabDialogProvider } from '../components/dialogs/NewTabDialogProvider'
 import { ConfirmCloseTabDialogProvider } from '../components/dialogs/ConfirmCloseTabDialogProvider'
@@ -22,31 +22,19 @@ import { TextPromptDialogProvider } from '../components/dialogs/TextPromptDialog
 import { NewRendererDialogProvider } from '../components/dialogs/NewRendererDialogProvider'
 import { ApplyRendStyleDialogProvider } from '../components/dialogs/ApplyRendStyleDialogProvider'
 import { CreateRendStyleDialogProvider } from '../components/dialogs/CreateRendStyleDialogProvider'
+import { composeProviders } from './composeProviders'
 
-export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <AboutDialogProvider>
-    <NewTabDialogProvider>
-      <ConfirmCloseTabDialogProvider>
-        <FileOpenOptionDialogProvider>
-          <GetPdbDialogProvider>
-            <QscWriterOptionDialogProvider>
-              <StreamProgressDialogProvider>
-                <NodePropertyDialogProvider>
-                  <TextPromptDialogProvider>
-                    <NewRendererDialogProvider>
-                      <ApplyRendStyleDialogProvider>
-                        <CreateRendStyleDialogProvider>
-                          {children}
-                        </CreateRendStyleDialogProvider>
-                      </ApplyRendStyleDialogProvider>
-                    </NewRendererDialogProvider>
-                  </TextPromptDialogProvider>
-                </NodePropertyDialogProvider>
-              </StreamProgressDialogProvider>
-            </QscWriterOptionDialogProvider>
-          </GetPdbDialogProvider>
-        </FileOpenOptionDialogProvider>
-      </ConfirmCloseTabDialogProvider>
-    </NewTabDialogProvider>
-  </AboutDialogProvider>
-)
+export const DialogProvider = composeProviders([
+  AboutDialogProvider,
+  NewTabDialogProvider,
+  ConfirmCloseTabDialogProvider,
+  FileOpenOptionDialogProvider,
+  GetPdbDialogProvider,
+  QscWriterOptionDialogProvider,
+  StreamProgressDialogProvider,
+  NodePropertyDialogProvider,
+  TextPromptDialogProvider,
+  NewRendererDialogProvider,
+  ApplyRendStyleDialogProvider,
+  CreateRendStyleDialogProvider,
+])

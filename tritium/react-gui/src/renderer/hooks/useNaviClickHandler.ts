@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import * as event from '../event';
 import { useCueMol } from './useCueMol';
 import { useMolTabState } from './useMolTab';
 import { useActiveToolContext } from '../contexts/ActiveToolContext';
+import { useCueMolEventListener } from './useCueMolEventListener';
 import type { HitTestResult } from '../types';
 
 export interface UseNaviClickHandlerArgs {
@@ -23,78 +24,59 @@ export function useNaviClickHandler({ setStatusMessage, openContextMenu }: UseNa
     const prevObjIdRef = useRef<number | undefined>(undefined);
     const prevAtomIdRef = useRef<number | undefined>(undefined);
 
-    useEffect(() => {
-        if (!cueMolReady || !cm || activeViewID == null || activeTool !== 'navigate') {
-            return () => { };
-        }
+    const enabled = cueMolReady && activeViewID != null && activeTool === 'navigate';
+    const viewId = activeViewID ?? -1;
 
-        const viewId = activeViewID;
-        let clickCbId: number | undefined;
-        let dblClickCbId: number | undefined;
-
-        (async () => {
-            const handleClick = async (args: any): Promise<void> => {
-                const { x, y, mod } = args.obj ?? {};
-                if (x == null || y == null || mod == null) return;
-
-                if (mod & MBTN) {
-                    // Right click — run hittest and open context menu
-                    const result = await cm.naviHitTest({ viewId, x, y });
-                    if (result?.hit && result.raw && result.raw.objtype === 'MolCoord') {
-                        openContextMenu(result.raw as HitTestResult, viewId);
-                    }
-                } else if (mod & LBTN) {
-                    // Left click — hittest + log + atom label toggle
-                    const result = await cm.naviClickAtom({ viewId, x, y });
-                    if (result?.handled && result.statusMessage) {
-                        setStatusMessage(result.statusMessage);
-                    }
+    useCueMolEventListener({
+        cm,
+        enabled,
+        category: 'mouseClicked',
+        srcMask: event.SEM_INDEV,
+        evtMask: event.SEM_ANY,
+        scopeId: viewId,
+        handler: async (args) => {
+            if (!cm) return;
+            const { x, y, mod } = (args as { obj?: { x?: number; y?: number; mod?: number } } | null)?.obj ?? {};
+            if (x == null || y == null || mod == null) return;
+            if (mod & MBTN) {
+                const result = await cm.naviHitTest({ viewId, x, y });
+                if (result?.hit && result.raw && result.raw.objtype === 'MolCoord') {
+                    openContextMenu(result.raw as HitTestResult, viewId);
                 }
-            };
-
-            const handleDblClick = async (args: any): Promise<void> => {
-                const { x, y, mod } = args.obj ?? {};
-                if (x == null || y == null || mod == null) return;
-                if (!(mod & LBTN)) return;
-
-                const mode = (mod & SHIFT) ? 'extend' : 'toggle';
-                const result = await cm.naviResidSel({
-                    viewId,
-                    x,
-                    y,
-                    mode,
-                    prevObjId: prevObjIdRef.current,
-                    prevAtomId: prevAtomIdRef.current,
-                });
-
-                if (result?.handled) {
-                    if (mode === 'toggle') {
-                        prevObjIdRef.current = result.objId;
-                        prevAtomIdRef.current = result.atomId;
-                    }
+            } else if (mod & LBTN) {
+                const result = await cm.naviClickAtom({ viewId, x, y });
+                if (result?.handled && result.statusMessage) {
+                    setStatusMessage(result.statusMessage);
                 }
-            };
+            }
+        },
+    });
 
-            clickCbId = await cm.addEventListener(
-                'mouseClicked',
-                event.SEM_INDEV,
-                event.SEM_ANY,
+    useCueMolEventListener({
+        cm,
+        enabled,
+        category: 'mouseDoubleClicked',
+        srcMask: event.SEM_INDEV,
+        evtMask: event.SEM_ANY,
+        scopeId: viewId,
+        handler: async (args) => {
+            if (!cm) return;
+            const { x, y, mod } = (args as { obj?: { x?: number; y?: number; mod?: number } } | null)?.obj ?? {};
+            if (x == null || y == null || mod == null) return;
+            if (!(mod & LBTN)) return;
+            const mode = (mod & SHIFT) ? 'extend' : 'toggle';
+            const result = await cm.naviResidSel({
                 viewId,
-                handleClick,
-            );
-
-            dblClickCbId = await cm.addEventListener(
-                'mouseDoubleClicked',
-                event.SEM_INDEV,
-                event.SEM_ANY,
-                viewId,
-                handleDblClick,
-            );
-        })();
-
-        return () => {
-            if (clickCbId !== undefined) cm.removeEventListener(clickCbId);
-            if (dblClickCbId !== undefined) cm.removeEventListener(dblClickCbId);
-        };
-    }, [cueMolReady, activeViewID, activeTool]); // eslint-disable-line react-hooks/exhaustive-deps
+                x,
+                y,
+                mode,
+                prevObjId: prevObjIdRef.current,
+                prevAtomId: prevAtomIdRef.current,
+            });
+            if (result?.handled && mode === 'toggle') {
+                prevObjIdRef.current = result.objId;
+                prevAtomIdRef.current = result.atomId;
+            }
+        },
+    });
 }
