@@ -135,6 +135,7 @@ core (@cuemol/core): C++ addon + auto-generated TypeScript wrappers
 | `docs/migration/adr/ADR-NNNN-<slug>.md` | Architecture decision records — design rationale, UXP parity strategy, known issues |
 | `docs/migration/adr/_index.md` | ADR index (number / title / status / mapping rows) |
 | `docs/migration/adr/_template.md` | Template for new ADRs |
+| `docs/migration/option-ux-guidelines.md` | How to route a dialog migration to a modal / panel / drawer / popover pattern |
 
 **Row fields**: `ID | React | Mapping | Status | PR | ADR | Notes`
 

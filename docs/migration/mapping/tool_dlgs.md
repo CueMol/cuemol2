@@ -16,6 +16,10 @@ Status values:
 
 # Mapping — Dialog_tool
 
+> Option-specification UX: pick a pattern per row using
+> [option-ux-guidelines.md](../option-ux-guidelines.md). Sub-classify each tool
+> (attribute edit / object create / one-shot render / destructive / interactive).
+
 | ID | React | Mapping | Status | PR | ADR | Notes |
 |----|-------|---------|--------|----|-----|-------|
 | [`dialog.tool.aintr-edit`](../uxp-inventory/tool_dlgs.md#dialogtoolaintr-edit) | | | todo | | | |

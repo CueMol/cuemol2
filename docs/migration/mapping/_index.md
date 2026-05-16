@@ -1,7 +1,9 @@
 # Migration Mapping — Index
 
-- Updated: 2026-05-13 (Tree inline rename wired — F2 on selected row, Blueprint InputGroup overlay)
+- Updated: 2026-05-16 (Added option-specification UX guidelines reference)
 - Source files: `docs/migration/mapping/*.md` (excluding this file)
+- Option-specification UX: see [`../option-ux-guidelines.md`](../option-ux-guidelines.md)
+  for routing dialog migrations to modal / panel / drawer / popover patterns
 
 ---
 
