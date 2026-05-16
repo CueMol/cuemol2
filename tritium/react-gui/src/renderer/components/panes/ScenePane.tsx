@@ -861,7 +861,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                             <Button
                                 minimal
                                 small
-                                icon={<Icon icon="locate" size={14} />}
+                                icon={<Icon icon="zoom-to-fit" size={14} />}
                                 className="section-action-btn"
                                 disabled={!canFocus}
                                 onClick={() => onFocusSelected?.(selectedId)}

@@ -29,15 +29,19 @@ function makeChangeFixture(opts: ChangeFixtureOpts = {}) {
         uid: 100,
         name: 'rend1',
         type_name: oldType,
+        ui_order: 42,
         getClientObj: vi.fn(() => obj),
     }
 
     const applyStyles = vi.fn()
+    const setUiOrder = vi.fn()
     const newRend = {
         uid: 200,
         name: 'rend1',
         type_name: newType,
         applyStyles,
+        get ui_order() { return 200 },
+        set ui_order(v: number) { setUiOrder(v) },
     }
     const restored = fromXMLReturns === undefined ? newRend : fromXMLReturns
 
@@ -68,7 +72,7 @@ function makeChangeFixture(opts: ChangeFixtureOpts = {}) {
 
     return {
         ctx, scene, oldRend, newRend,
-        obj, destroyRenderer, attachRenderer, applyStyles,
+        obj, destroyRenderer, attachRenderer, applyStyles, setUiOrder,
         toXML2, fromXML,
         startUndoTxn, commitUndoTxn, rollbackUndoTxn,
     }
@@ -88,6 +92,17 @@ describe('changeRendererType.service', () => {
         expect(f.destroyRenderer).toHaveBeenCalledWith(100)
         expect(f.attachRenderer).toHaveBeenCalledWith(f.newRend)
         expect(f.commitUndoTxn).toHaveBeenCalledTimes(1)
+    })
+
+    it('carries the old renderer ui_order over to the new renderer', () => {
+        // ui_order is (nopersist) so the XML round-trip drops it; without
+        // an explicit copy the new renderer sorts to the end of the list
+        // and the type change visibly moves the row.
+        const f = makeChangeFixture({ oldType: 'simple', newType: 'cartoon' })
+        changeServices.changeRendererType(f.ctx, {
+            sceneId: 1, rendId: 100, newType: 'cartoon',
+        })
+        expect(f.setUiOrder).toHaveBeenCalledWith(42)
     })
 
     it('passes the correct default-style preset for ribbon', () => {

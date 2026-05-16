@@ -1,6 +1,6 @@
 # ADR-0007: Scene-tree multi-select bulk dispatch
 
-- Status: accepted (Cmd/Ctrl+click trigger pending — see Known issues)
+- Status: accepted
 - Date: 2026-05-12
 - Mapping rows: [`panel.workspace.ctxmenu.multi`](../mapping/panels.md#panelworkspacectxmenumulti),
   [`panel.workspace.tree`](../mapping/panels.md#panelworkspacetree)
@@ -80,30 +80,14 @@ bulk service.
 - `uxp_gui/cuemol2/base/content/workspace_panel_ctxtmenu.js` —
   `wspcPanelMulCtxtMenu`
 
-### Known issues
+### Resolved issues
 
-**Cmd/Ctrl+click does not produce a multi-selection (2026-05-12).** In
-the running app, second-row clicks with Cmd/Ctrl held still reset the
-selection to that one row — the worker bulk services and unit tests pin
-the dispatch semantics, but the UI cannot reach them via natural input.
-
-Likely causes:
-
-- Blueprint Tree's `onNodeClick` may pass a synthetic event that strips
-  the modifier-key flags.
-- Blueprint may clear selection on every click before our handler runs.
-
-**Follow-up.**
-
-1. Confirm via devtools that Blueprint's `onNodeClick` actually receives
-   `metaKey` / `ctrlKey`.
-2. If Blueprint strips them, attach a capture-phase listener on the tree
-   root that intercepts modifier-clicks before Blueprint sees them, and
-   forwards a synthesised event with the flags preserved.
-
-This issue is the reason the related refactor (splitting
-`useSceneTree.ts` selection state into a sub-hook) is deferred — see the
-project refactoring plan.
+**Cmd/Ctrl+click multi-selection (raised 2026-05-12, confirmed working
+2026-05-16).** An earlier pass could not reach the multi-select state by
+natural input. Cmd/Ctrl+click on a second row now correctly toggles its
+membership in `selectedIds` in the running app — `ScenePane.onNodeClick`
+receives the modifier flags and routes to `onToggleSelect`. The worker
+bulk services and unit tests continue to pin the dispatch semantics.
 
 ### Related ADRs
 

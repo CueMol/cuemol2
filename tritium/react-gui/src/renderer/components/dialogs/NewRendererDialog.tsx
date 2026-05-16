@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { Button, Dialog, DialogBody, DialogFooter } from '@blueprintjs/core'
 import { useTheme } from '../../contexts/ThemeContext'
 import { RendererOptionsPane } from '../fopen-opt-dlgs/panes/RendererOptionsPane'
+import { useRendererOptions } from '../fopen-opt-dlgs/useRendererOptions'
 import type { RendererOptions } from '../fopen-opt-dlgs/types'
 
 /**
@@ -9,6 +10,10 @@ import type { RendererOptions } from '../fopen-opt-dlgs/types'
  * open flow uses. Mirrors the UXP `setupRenderer.xul` dialog, which also
  * shares its renderer-options tab with the file-open dialog
  * (`fopen-renderopt-page.xul`).
+ *
+ * Renderer-type history and default-renderer-name follow are provided by
+ * the shared `useRendererOptions` hook — the same behaviour layer the
+ * file-open dialog uses.
  *
  * The object-name field is not editable here because we are attaching to
  * an existing object — UXP's same dialog sets `bEditObjName=false` when
@@ -51,28 +56,15 @@ export function NewRendererDialog({
     const { theme } = useTheme()
     const isDark = theme === 'dark'
 
-    const defaultType = rendererTypes[0] ?? ''
-    const [options, setOptions] = useState<RendererOptions>(() => ({
-        objectName: objName,
-        rendererType: defaultType,
-        rendererName: defaultName,
-        selectionEnabled: false,
-        selection: '*',
-        centerView: true,
-    }))
-
-    // Reset state on each open so the dialog reflects the latest pre-fetch.
-    useEffect(() => {
-        if (!visible) return
-        setOptions({
+    const { options, setOptions, onRendererNameUserEdit, commitHistory } =
+        useRendererOptions({
+            visible,
+            sceneId,
+            objClassName,
+            rendererTypes,
             objectName: objName,
-            rendererType: defaultType,
-            rendererName: defaultName,
-            selectionEnabled: false,
-            selection: '*',
-            centerView: true,
+            initialRendererName: defaultName,
         })
-    }, [visible, objName, defaultType, defaultName])
 
     const canSubmit =
         rendererTypes.length > 0 &&
@@ -81,6 +73,7 @@ export function NewRendererDialog({
 
     const handleOk = (): void => {
         if (!canSubmit) return
+        commitHistory()
         onConfirm({
             rendOpts: {
                 ...options,
@@ -117,6 +110,7 @@ export function NewRendererDialog({
                     sceneId={sceneId}
                     molID={molID}
                     isMolFormat={isMol}
+                    onRendererNameUserEdit={onRendererNameUserEdit}
                 />
             </DialogBody>
             <DialogFooter

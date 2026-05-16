@@ -41,6 +41,15 @@ function getTypeName(rend: Renderer): string {
     }
 }
 
+function getUiOrder(rend: Renderer): number | null {
+    try {
+        const v = (rend as unknown as { ui_order: number }).ui_order;
+        return typeof v === 'number' ? v : null;
+    } catch {
+        return null;
+    }
+}
+
 /** UXP gate: hide for `*`-prefixed (except *selection which has its
  *  own conversion path we don't migrate here) plus atomintr / disorder. */
 function isSyntheticType(name: string): boolean {
@@ -60,6 +69,9 @@ function changeRendererType(
 
     const oldType = getTypeName(rend);
     if (!oldType) return { ok: false };
+    // Renderer.ui_order is (nopersist), so the toXML2/fromXML round-trip
+    // below drops it. Capture it before the old renderer is destroyed.
+    const savedUiOrder = getUiOrder(rend);
     if (isSyntheticType(oldType)) return { ok: false };
     if (!args.newType || isSyntheticType(args.newType)) return { ok: false };
     if (args.newType === oldType) return { ok: false };
@@ -72,6 +84,18 @@ function changeRendererType(
     const restored = ctx.strMgr.fromXML(xml, args.sceneId) as LScrObject | null;
     if (!restored) return { ok: false };
     const newRend = restored as unknown as Renderer;
+
+    // Restore the display order dropped by the XML round-trip. A freshly
+    // created renderer initialises ui_order to its (new, larger) uid, so
+    // without this the renderer would sort to the end of the object's
+    // list and visibly jump position on a type change.
+    if (savedUiOrder !== null) {
+        try {
+            (newRend as unknown as { ui_order: number }).ui_order = savedUiOrder;
+        } catch (e) {
+            console.warn('copying ui_order to new renderer failed:', e);
+        }
+    }
 
     // Apply default-style preset for the new type (matches UXP
     // `setDefaultStyles`). This runs before attach so the initial

@@ -41,7 +41,8 @@ function makeFixture(opts: FixtureOpts = {}) {
         ? {
             uid: objUid,
             name: objName,
-            className: objClassName,
+            // C++ wrapper exposes getClassName() as a method, not a property.
+            getClassName: vi.fn(() => objClassName),
             searchCompatibleRendererNames,
         }
         : null
@@ -77,6 +78,9 @@ describe('getNewRendererOptions.service', () => {
         expect(res.rendererTypes).toEqual(['simple', 'cartoon', 'ballstick'])
         expect(res.isMol).toBe(true)
         expect(res.defaultName).toBe('simple1')
+        // objClassName is the renderer-type history key — must be the
+        // class name from getClassName(), not an empty string.
+        expect(res.objClassName).toBe('PDBMol')
     })
 
     it('renderer source: resolves parent obj via getClientObj + inherits rend.group', () => {
