@@ -437,11 +437,7 @@ const App: React.FC = () => {
       {window.electronAPI?.platform !== 'darwin' && (
         <MenuBar activeTab={activeTab} viewProjection={viewProjection} viewCenterMark={viewCenterMark} sceneBgColor={sceneBgColor} recentFiles={recentFiles} />
       )}
-      <Toolbar
-        onOpenFile={() => dispatchCommand(CmdId.UiOpenObjDialog).catch((e: unknown) => console.error('UiOpenObjDialog failed:', e))}
-        onNewTab={() => dispatchCommand(CmdId.TabNew).catch((e: unknown) => console.error('TabNew failed:', e))}
-        onSave={() => dispatchCommand(CmdId.FileSave).catch((e: unknown) => console.error('FileSave failed:', e))}
-      />
+      <Toolbar />
 
       <div className="main-layout">
         <div className="main-layout-inner">
