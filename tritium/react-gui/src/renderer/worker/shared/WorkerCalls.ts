@@ -86,6 +86,12 @@ import type {
   RenameNodeResult,
 } from '../server/services/sceneOps.service'
 import type {
+  GetGenericPropsArgs,
+  GetGenericPropsResult,
+  SetGenericPropArgs,
+  SetGenericPropResult,
+} from '../server/services/genericProps.service'
+import type {
   SelectObjectMolArgs,
   SelectObjectMolResult,
 } from '../server/services/selectObjectMol.service'
@@ -286,6 +292,8 @@ export interface ServiceMap {
   focusOnNode:                { args: FocusOnNodeArgs;                 result: FocusOnNodeResult }
   deleteNode:                 { args: DeleteNodeArgs;                  result: DeleteNodeResult }
   getNodeInfo:                { args: GetNodeInfoArgs;                 result: GetNodeInfoResult }
+  getGenericProps:            { args: GetGenericPropsArgs;             result: GetGenericPropsResult }
+  setGenericProp:             { args: SetGenericPropArgs;              result: SetGenericPropResult }
   renameNode:                 { args: RenameNodeArgs;                  result: RenameNodeResult }
   selectObjectMol:            { args: SelectObjectMolArgs;             result: SelectObjectMolResult }
   copyNode:                   { args: CopyNodeArgs;                    result: CopyNodeResult }

@@ -219,6 +219,12 @@ function deleteNode(ctx: WorkerContext, args: DeleteNodeArgs): DeleteNodeResult 
 }
 
 // ─── getNodeInfo ──────────────────────────────────────────────────────────
+//
+// @deprecated Superseded by the `getGenericProps` service
+// (genericProps.service.ts), which backs the generic property inspector.
+// `getNodeInfo` only fed the read-only `NodePropertyDialog` modal, now
+// retired. Kept compiling pending removal of that dialog; scheduled for
+// deletion together with its ServiceMap row.
 
 function pushEntry(entries: NodeInfoEntry[], key: string, raw: unknown): void {
     if (raw === undefined || raw === null) return;

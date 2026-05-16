@@ -88,6 +88,7 @@ describe('useMenuDispatch -- channel to CmdId mapping', () => {
     ['menu:save-file-as',       CmdId.ObjectSaveAs,        undefined],
     ['menu:save-current-view',  CmdId.SaveCurrentView,     undefined],
     ['menu:reload-scene',       CmdId.SceneReload,         undefined],
+    ['menu:view-props',         CmdId.UiViewProperty,      undefined],
   ]
 
   for (const [channel, expectedId, expectedArgs] of cases) {

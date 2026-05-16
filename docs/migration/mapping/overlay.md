@@ -34,7 +34,7 @@ Status values:
 | [`overlay.fopen-namdcooropt`](../uxp-inventory/overlay.md#overlayfopen-namdcooropt) | | | todo | | | |
 | [`overlay.fopen-pdbopt`](../uxp-inventory/overlay.md#overlayfopen-pdbopt) | | | todo | | | |
 | [`overlay.fopen-renderopt`](../uxp-inventory/overlay.md#overlayfopen-renderopt) | | | todo | | | |
-| [`overlay.propeditor-generic`](../uxp-inventory/overlay.md#overlaypropeditor-generic) | | | todo | | | |
+| [`overlay.propeditor-generic`](../uxp-inventory/overlay.md#overlaypropeditor-generic) | InspectorPanel / GenericTab | merged | wip | | [ADR-0015](../adr/ADR-0015-generic-property-inspector.md) | Generic tab of the docked inspector pane; live-apply, no OK/Cancel. First stage edits primitive types (string/int/real/bool/enum); color/vector/timeval/nested-object deferred. Targets object/renderer/scene (ScenePane tree) and View (View menu > View property...); follows content-tab switches via per-scene memory. Replaces the retired `NodePropertyDialog` modal. |
 | [`overlay.propeditor-radii-common`](../uxp-inventory/overlay.md#overlaypropeditor-radii-common) | | | todo | | | |
 | [`overlay.property.cartoon-coil`](../uxp-inventory/overlay.md#overlaypropertycartoon-coil) | | | todo | | | |
 | [`overlay.property.cartoon-helix`](../uxp-inventory/overlay.md#overlaypropertycartoon-helix) | | | todo | | | |

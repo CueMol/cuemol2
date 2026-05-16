@@ -1,23 +1,30 @@
 /**
  * @file hooks/useInspectorState.ts
- * @description Custom hook that manages the inspector panel lifecycle:
- * open/close state, the target node being inspected, and the property
- * data displayed inside the panel.
+ * @description Manages the inspector panel lifecycle: open/close state, the
+ * scene-tree node being inspected, and the property data shown inside.
  *
- * In the real application the property definitions will be fetched
- * from the backend when a node is selected.  This hook currently
- * uses static sample data but provides the same public interface
- * the production code will use.
+ * The "Generic" tab is backed by the real C++ property bridge: selecting a
+ * node in the scene tree fetches its full property list via the
+ * `getGenericProps` worker service, and edits are written back live through
+ * `setGenericProp`. The structured "Properties" tab still uses static
+ * sample data pending its own migration.
  */
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import type { LayoutState } from "./useLayoutPersistence";
+import type { AsyncCueMol } from "../worker/client/AsyncCueMol";
+import type { SceneTreeNode } from "../worker/shared/sceneTreeTypes";
+import type {
+  GenericPropEntry,
+  PropTargetType,
+} from "../worker/server/services/genericProps.service";
+import { findTypedNode } from "./sceneTree/sceneTreeNodeUtils";
+import { useCueMolEventListener } from "./useCueMolEventListener";
+import { SEM_OBJECT, SEM_RENDERER, SEM_SCENE, SEM_PROPCHG } from "../event";
 
 import {
   RIBBON_PROPERTIES,
-  RIBBON_GENERIC_PROPERTIES,
   type PropDef,
-  type GenericPropEntry,
 } from "../data/rendererProperties";
 
 // ────────────────────────────────────────────────────────────
@@ -30,6 +37,13 @@ export interface InspectorInfo {
   type: string;
 }
 
+/** Resolved identity of the node currently shown in the inspector. */
+interface InspectorTarget {
+  sceneId: number;
+  nodeId: number;
+  nodeType: PropTargetType;
+}
+
 export interface UseInspectorStateOptions {
   /** Persisted layout (used to restore open state on first load). */
   layout: LayoutState;
@@ -37,12 +51,16 @@ export interface UseInspectorStateOptions {
   loaded: boolean;
   /** Persist the inspector open/close flag to disk. */
   persistInspectorOpen: (open: boolean) => void;
-  /**
-   * Resolve a scene node ID into a display name and type string.
-   * Provided by the scene-state hook.
-   */
-  resolveNodeName: (id: string) => string;
+  /** Worker bridge (null until CueMol is ready). */
+  cm: AsyncCueMol | null;
+  /** Live scene tree; its root id is the active scene uid. */
+  sceneTree: SceneTreeNode | null;
 }
+
+/** Source-type mask for the property-change event subscription. */
+const PROPCHG_SRC_MASK = SEM_OBJECT | SEM_RENDERER | SEM_SCENE;
+/** Coalesce event bursts (one high-level op fires many PROPCHG events). */
+const REFETCH_DEBOUNCE_MS = 30;
 
 // ────────────────────────────────────────────────────────────
 // Hook
@@ -52,14 +70,30 @@ export function useInspectorState({
   layout,
   loaded,
   persistInspectorOpen,
-  resolveNodeName,
+  cm,
+  sceneTree,
 }: UseInspectorStateOptions) {
   // ── Local state ──────────────────────────────────────────
 
   const [inspectorOpen, setInspectorOpenLocal] = useState(false);
-  const [inspectorTarget, setInspectorTarget] = useState<string | null>(null);
+  const [inspectorTarget, setInspectorTarget] = useState<InspectorTarget | null>(null);
+  const [genericEntries, setGenericEntries] = useState<GenericPropEntry[]>([]);
+  const [genericLoading, setGenericLoading] = useState(false);
+  const [inspectorInfo, setInspectorInfo] = useState<InspectorInfo>({ name: "", type: "" });
+
+  // Structured Properties tab still uses sample data (own migration pending).
   const [rendererProps, setRendererProps] = useState<PropDef[]>(RIBBON_PROPERTIES);
-  const [genericProps, setGenericProps] = useState<GenericPropEntry[]>(RIBBON_GENERIC_PROPERTIES);
+
+  // Latest target in a ref so the event handler stays identity-stable.
+  const targetRef = useRef<InspectorTarget | null>(null);
+  targetRef.current = inspectorTarget;
+
+  // Per-scene memory of the last inspected target. Switching content tabs
+  // (= scenes) restores that scene's target so the inspector never stays
+  // pointed at a now-hidden scene's node.
+  const targetsBySceneRef = useRef<Map<number, InspectorTarget>>(new Map());
+  // Active scene id already handled by the tab-switch effect below.
+  const appliedSceneIdRef = useRef<number | undefined>(undefined);
 
   // Restore open state from persisted layout on first load.
   useEffect(() => {
@@ -79,28 +113,153 @@ export function useInspectorState({
     [persistInspectorOpen],
   );
 
-  // ── Public handlers ──────────────────────────────────────
-
-  /**
-   * Open the inspector for the given renderer / object ID.
-   * In the real application this will fetch the matching property
-   * set from the backend; here we always show the ribbon sample data.
-   */
-  const handleShowProperty = useCallback(
-    (id: string) => {
-      setInspectorTarget(id);
+  /** Set the inspector target, remember it for its scene, and open the panel. */
+  const applyTarget = useCallback(
+    (target: InspectorTarget) => {
+      targetsBySceneRef.current.set(target.sceneId, target);
+      setInspectorTarget(target);
       setInspectorOpen(true);
     },
     [setInspectorOpen],
   );
 
-  /** Close the inspector and clear the target. */
+  /** Fetch the generic property list for the current target. */
+  const fetchGenericProps = useCallback(async () => {
+    const target = targetRef.current;
+    if (!cm || !target) {
+      setGenericEntries([]);
+      setInspectorInfo({ name: "", type: "" });
+      return;
+    }
+    setGenericLoading(true);
+    try {
+      const res = await cm.invokeService("getGenericProps", {
+        sceneId: target.sceneId,
+        nodeId: target.nodeId,
+        nodeType: target.nodeType,
+      });
+      // Ignore a response that arrived after the target changed.
+      if (targetRef.current !== target) return;
+      if (res?.ok) {
+        setGenericEntries(res.entries);
+        setInspectorInfo({ name: res.displayName, type: res.typeLabel });
+      } else {
+        setGenericEntries([]);
+        setInspectorInfo({ name: "", type: "" });
+      }
+    } catch (err) {
+      console.warn("getGenericProps failed:", err);
+      setGenericEntries([]);
+    } finally {
+      if (targetRef.current === target) setGenericLoading(false);
+    }
+  }, [cm]);
+
+  // ── Public handlers ──────────────────────────────────────
+
+  /**
+   * Open the inspector for the given scene-tree node id. Unsupported node
+   * types (camera / style) resolve to an empty property list rather than
+   * an error - the panel shows "No properties available".
+   */
+  const handleShowGeneric = useCallback(
+    (id: string) => {
+      const sid = sceneTree ? Number(sceneTree.id) : undefined;
+      const found = findTypedNode(sceneTree, id);
+      if (sid === undefined || !found) return;
+      applyTarget({ sceneId: sid, nodeId: found.numId, nodeType: found.node.type });
+    },
+    [sceneTree, applyTarget],
+  );
+
+  /**
+   * Open the inspector for the active View (View menu > View property...).
+   * The View has no scene-tree node; it is keyed by view id under the
+   * active scene.
+   */
+  const handleShowViewProps = useCallback(
+    (viewId: number) => {
+      const sid = sceneTree ? Number(sceneTree.id) : undefined;
+      if (sid === undefined) return;
+      applyTarget({ sceneId: sid, nodeId: viewId, nodeType: "view" });
+    },
+    [sceneTree, applyTarget],
+  );
+
+  // Refetch whenever the target changes.
+  useEffect(() => {
+    void fetchGenericProps();
+  }, [inspectorTarget, fetchGenericProps]);
+
+  // Tab switch = active scene change. Restore that scene's remembered
+  // target (or clear) so the inspector follows the visible scene.
+  const activeSceneId = sceneTree?.id;
+  useEffect(() => {
+    if (activeSceneId === undefined) return; // transient null during refetch
+    if (activeSceneId === appliedSceneIdRef.current) return;
+    appliedSceneIdRef.current = activeSceneId;
+    setInspectorTarget(targetsBySceneRef.current.get(activeSceneId) ?? null);
+  }, [activeSceneId]);
+
+  /** Close the inspector, clear the target, and forget per-scene memory. */
   const handleCloseInspector = useCallback(() => {
     setInspectorOpen(false);
     setInspectorTarget(null);
+    setGenericEntries([]);
+    setInspectorInfo({ name: "", type: "" });
+    targetsBySceneRef.current.clear();
   }, [setInspectorOpen]);
 
-  /** Update a single property value in the structured property list. */
+  /** Write a single generic property value (live-apply). */
+  const handleGenericSet = useCallback(
+    async (key: string, valueType: string, value: string | number | boolean) => {
+      const target = targetRef.current;
+      if (!cm || !target) return;
+      try {
+        const res = await cm.invokeService("setGenericProp", {
+          sceneId: target.sceneId,
+          nodeId: target.nodeId,
+          nodeType: target.nodeType,
+          propName: key,
+          op: "set",
+          valueType,
+          value,
+        });
+        if (targetRef.current === target && res?.ok) {
+          setGenericEntries(res.entries);
+        }
+      } catch (err) {
+        console.warn("setGenericProp (set) failed:", err);
+      }
+    },
+    [cm],
+  );
+
+  /** Restore a generic property to its C++ default. */
+  const handleGenericReset = useCallback(
+    async (key: string) => {
+      const target = targetRef.current;
+      if (!cm || !target) return;
+      try {
+        const res = await cm.invokeService("setGenericProp", {
+          sceneId: target.sceneId,
+          nodeId: target.nodeId,
+          nodeType: target.nodeType,
+          propName: key,
+          op: "reset",
+          valueType: "",
+        });
+        if (targetRef.current === target && res?.ok) {
+          setGenericEntries(res.entries);
+        }
+      } catch (err) {
+        console.warn("setGenericProp (reset) failed:", err);
+      }
+    },
+    [cm],
+  );
+
+  /** Update a single property value in the structured (sample) list. */
   const handlePropertyChange = useCallback(
     (key: string, value: string | number | boolean) => {
       setRendererProps((prev) =>
@@ -110,32 +269,33 @@ export function useInspectorState({
     [],
   );
 
-  /** Update a single entry in the generic key-value list. */
-  const handleGenericChange = useCallback(
-    (key: string, value: string) => {
-      setGenericProps((prev) =>
-        prev.map((e) => (e.key === key ? { ...e, value } : e)),
-      );
+  // ── Live sync: refetch on external property changes ──────
+  // Catches undo/redo and script-driven mutations of the inspected node.
+  useCueMolEventListener({
+    cm,
+    enabled: inspectorOpen && inspectorTarget !== null,
+    category: "",
+    srcMask: PROPCHG_SRC_MASK,
+    evtMask: SEM_PROPCHG,
+    scopeId: inspectorTarget?.sceneId ?? -1,
+    handler: () => {
+      void fetchGenericProps();
     },
-    [],
-  );
-
-  /** Resolve inspector display info for the current target. */
-  const inspectorInfo: InspectorInfo = (() => {
-    if (!inspectorTarget) return { name: "unknown", type: "Renderer" };
-    // TODO: In the real app, the type string should come from the backend.
-    return { name: resolveNodeName(inspectorTarget), type: "Ribbon Renderer" };
-  })();
+    debounceMs: REFETCH_DEBOUNCE_MS,
+  });
 
   return {
     inspectorOpen,
     inspectorTarget,
     rendererProps,
-    genericProps,
+    genericEntries,
+    genericLoading,
     inspectorInfo,
-    handleShowProperty,
+    handleShowGeneric,
+    handleShowViewProps,
     handleCloseInspector,
     handlePropertyChange,
-    handleGenericChange,
+    handleGenericSet,
+    handleGenericReset,
   } as const;
 }

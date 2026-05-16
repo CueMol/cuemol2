@@ -31,6 +31,8 @@ interface UseCommandRegistrationsOptions {
   onProjectionChanged: (perspective: boolean) => void;
   onCenterMarkChanged: (centerMark: ViewCenterMark) => void;
   onBgColorChanged: (bgColor: SceneBgColor) => void;
+  /** Open the active View in the generic property inspector. */
+  showViewProperty: (viewId: number) => void;
   newScene: NewSceneAction;
 }
 
@@ -45,6 +47,7 @@ export function useCommandRegistrations({
   onProjectionChanged,
   onCenterMarkChanged,
   onBgColorChanged,
+  showViewProperty,
   newScene,
 }: UseCommandRegistrationsOptions): void {
   useSceneCommands({ cm, getActiveSceneInfo, onBgColorChanged, newScene });
@@ -58,6 +61,7 @@ export function useCommandRegistrations({
     getActiveViewId: () => activeMolViewId,
     onProjectionChanged,
     onCenterMarkChanged,
+    showViewProperty,
   });
   useElectronIpc(activeTab);
 }

@@ -45,6 +45,7 @@ export interface CommandMap {
   [CmdId.ViewCenterMarkCross]: { args: void;            result: void }
   [CmdId.ViewCenterMarkAxis]:  { args: void;            result: void }
   [CmdId.ViewCenterMarkNone]:  { args: void;            result: void }
+  [CmdId.UiViewProperty]:      { args: void;            result: void }
 
   // Scene background
   [CmdId.SceneBgWhite]:        { args: void;            result: void }

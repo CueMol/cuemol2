@@ -38,6 +38,7 @@ export const CmdId = {
   ViewCenterMarkCross: 'view.centerMark.cross', // no args
   ViewCenterMarkAxis:  'view.centerMark.axis',  // no args
   ViewCenterMarkNone:  'view.centerMark.none',  // no args
+  UiViewProperty:     'ui.viewProperty',     // no args -- open active view in inspector
 
   // Scene style
   SceneBgWhite: 'scene.bg.white', // no args

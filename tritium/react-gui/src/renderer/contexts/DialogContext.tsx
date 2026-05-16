@@ -17,7 +17,6 @@ import { FileOpenOptionDialogProvider } from '../components/fopen-opt-dlgs/FileO
 import { GetPdbDialogProvider } from '../components/dialogs/GetPdbDialogProvider'
 import { QscWriterOptionDialogProvider } from '../components/dialogs/QscWriterOptionDialogProvider'
 import { StreamProgressDialogProvider } from '../components/dialogs/StreamProgressDialogProvider'
-import { NodePropertyDialogProvider } from '../components/dialogs/NodePropertyDialogProvider'
 import { TextPromptDialogProvider } from '../components/dialogs/TextPromptDialogProvider'
 import { NewRendererDialogProvider } from '../components/dialogs/NewRendererDialogProvider'
 import { ApplyRendStyleDialogProvider } from '../components/dialogs/ApplyRendStyleDialogProvider'
@@ -34,7 +33,6 @@ export const DialogProvider = composeProviders([
   GetPdbDialogProvider,
   QscWriterOptionDialogProvider,
   StreamProgressDialogProvider,
-  NodePropertyDialogProvider,
   TextPromptDialogProvider,
   NewRendererDialogProvider,
   ApplyRendStyleDialogProvider,

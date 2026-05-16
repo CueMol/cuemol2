@@ -4,12 +4,14 @@ import { useTheme } from '../../contexts/ThemeContext'
 import type { NodeInfoEntry } from '../../worker/server/services/sceneOps.service'
 
 /**
- * Phase 2 stub for the per-node property dialog (UXP `onPropCmd`).
+ * @deprecated Superseded by the generic property inspector
+ * (`components/panels/InspectorPanel.tsx` + `components/inspector/GenericTab.tsx`).
+ * No longer mounted in `DialogContext`; scheduled for deletion together with
+ * `NodePropertyDialogProvider`, the `getNodeInfo` worker service and the
+ * `fetchNodeInfo` scene-tree helper.
  *
- * The eventual goal is a per-type editor (object / renderer / camera /
- * style) that can also mutate values, landing in Phase 5. Until then this
- * dialog renders the read-only key/value list returned by the
- * `getNodeInfo` worker service.
+ * Phase 2 stub for the per-node property dialog (UXP `onPropCmd`): renders
+ * the read-only key/value list returned by the `getNodeInfo` worker service.
  */
 
 interface Props {

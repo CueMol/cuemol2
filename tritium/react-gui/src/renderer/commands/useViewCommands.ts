@@ -8,8 +8,10 @@ export function useViewCommands(opts: {
   getActiveViewId: () => number | undefined
   onProjectionChanged?: (perspective: boolean) => void
   onCenterMarkChanged?: (centerMark: ViewCenterMark) => void
+  /** Open the active View in the generic property inspector. */
+  showViewProperty?: (viewId: number) => void
 }): void {
-  const { cm, getActiveViewId, onProjectionChanged, onCenterMarkChanged } = opts
+  const { cm, getActiveViewId, onProjectionChanged, onCenterMarkChanged, showViewProperty } = opts
 
   const setProjection = async (perspective: boolean): Promise<void> => {
     const viewId = getActiveViewId()
@@ -30,4 +32,9 @@ export function useViewCommands(opts: {
   useRegisterCommand(CmdId.ViewCenterMarkCross, () => setCenterMark('crosshair'))
   useRegisterCommand(CmdId.ViewCenterMarkAxis, () => setCenterMark('axis'))
   useRegisterCommand(CmdId.ViewCenterMarkNone, () => setCenterMark('none'))
+
+  useRegisterCommand(CmdId.UiViewProperty, () => {
+    const viewId = getActiveViewId()
+    if (viewId !== undefined) showViewProperty?.(viewId)
+  })
 }
