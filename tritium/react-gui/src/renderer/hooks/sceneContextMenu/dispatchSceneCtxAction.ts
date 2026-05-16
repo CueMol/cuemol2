@@ -22,6 +22,7 @@ import type { ApplyRendStyleDialogArgs } from '../../components/dialogs/ApplyRen
 import type { CreateRendStyleDialogArgs } from '../../components/dialogs/CreateRendStyleDialogProvider'
 import type { ApplyRendStyleDialogResult } from '../../components/dialogs/ApplyRendStyleDialog'
 import type { CreateRendStyleDialogResult } from '../../components/dialogs/CreateRendStyleDialog'
+import { runObjectSaveFlow } from './runObjectSaveFlow'
 
 export interface DispatchSceneCtxActionCtx {
     cm: AsyncCueMol | null
@@ -270,45 +271,7 @@ export async function dispatchSceneCtxAction(
         case 'saveAsObject': {
             if (node.type !== 'object') return
             if (!ctx.cm || ctx.sceneId === undefined) return
-            let info: any
-            try {
-                info = await ctx.cm.invokeService('getObjectSaveInfo', {
-                    sceneId: ctx.sceneId, objId: node.id,
-                })
-            } catch (err) {
-                console.warn('getObjectSaveInfo failed:', err)
-                return
-            }
-            if (!info?.ok || info.filters.length === 0) {
-                console.info('saveAsObject: no compatible writers for this object')
-                return
-            }
-            const dlg = await window.electronAPI.invoke(
-                IPC.DIALOG_OBJECT_SAVE,
-                {
-                    defaultDir: info.defaultDir,
-                    defaultName: info.defaultFileName,
-                    filters: info.filters.map((f: { description: string; extensions: string[] }) => ({
-                        name: f.description,
-                        extensions: f.extensions,
-                    })),
-                    defaultFilterIndex: 0,
-                },
-            )
-            if (dlg.canceled || !dlg.filePath) return
-            const idx =
-                dlg.filterIndex >= 0 && dlg.filterIndex < info.filters.length
-                    ? dlg.filterIndex
-                    : 0
-            const writerName = info.filters[idx].name
-            try {
-                await ctx.cm.invokeService('saveObjectToFile', {
-                    sceneId: ctx.sceneId, objId: node.id,
-                    path: dlg.filePath, writerName,
-                })
-            } catch (err) {
-                console.warn('saveObjectToFile failed:', err)
-            }
+            await runObjectSaveFlow(ctx.cm, ctx.sceneId, node.id)
             return
         }
         case 'newStyle': {

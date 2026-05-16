@@ -42,8 +42,14 @@ out of scope for this change.
 - Real-wired: New Tab (`TabNew`), Open File (`UiOpenObjDialog`), Open Scene
   (`UiOpenSceneDialog`), Save Scene (`FileSave`), Get PDB (`UiGetPdbDialog`),
   Undo (`Undo`, single step), Redo (`Redo`, single step).
-- Mock: object Save / object Save As / Reload Scene, plus the Undo/Redo
-  history dropdown.
+- Mock at the time of this ADR: object Save / object Save As / Reload Scene,
+  plus the Undo/Redo history dropdown.
+
+> **Update (2026-05-16, [ADR-0014](ADR-0014-file-menu-save-reload.md)):** the
+> File-menu migration added `ObjectSaveAs` and `SceneReload` commands, so the
+> Toolbar `Save As` and `Reload Scene` buttons are now real-wired. Only the
+> object `Save` (overwrite-in-place) button and the Undo/Redo history dropdown
+> remain mock.
 
 ## Consequences
 

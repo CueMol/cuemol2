@@ -31,6 +31,9 @@ export interface CommandMap {
   // File
   [CmdId.FileSave]:            { args: void;            result: boolean }
   [CmdId.FileSaveAs]:          { args: void;            result: boolean }
+  [CmdId.ObjectSaveAs]:        { args: void;            result: void }
+  [CmdId.SaveCurrentView]:     { args: void;            result: void }
+  [CmdId.SceneReload]:         { args: void;            result: void }
 
   // Edit
   [CmdId.Undo]:                { args: void;            result: void }

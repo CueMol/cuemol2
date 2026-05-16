@@ -24,6 +24,9 @@ export const CmdId = {
   // File operations
   FileSave:           'file.save',           // no args
   FileSaveAs:         'file.saveAs',         // no args
+  ObjectSaveAs:       'object.saveAs',       // no args -- object (not scene) save
+  SaveCurrentView:    'file.saveCurrentView', // no args
+  SceneReload:        'scene.reload',        // no args
 
   // Undo/redo
   Undo:               'edit.undo',           // no args

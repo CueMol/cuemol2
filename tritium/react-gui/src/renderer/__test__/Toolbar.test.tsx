@@ -51,7 +51,9 @@ describe('Toolbar', () => {
     const cases: [string, CmdId][] = [
       ['New Tab', CmdId.TabNew],
       ['Open File', CmdId.UiOpenObjDialog],
+      ['Save As', CmdId.ObjectSaveAs],
       ['Open Scene', CmdId.UiOpenSceneDialog],
+      ['Reload Scene', CmdId.SceneReload],
       ['Save Scene', CmdId.FileSave],
       ['Get PDB', CmdId.UiGetPdbDialog],
     ]
@@ -78,11 +80,10 @@ describe('Toolbar', () => {
 
   it('mock buttons do not dispatch any command', () => {
     const t = mountTree(<Toolbar />)
-    for (const text of ['Save', 'Save As', 'Reload Scene']) {
-      dispatch.mockClear()
-      clickButton(t.container, text)
-      expect(dispatch).not.toHaveBeenCalled()
-    }
+    // Object overwrite-save ("Save") has no command yet -- stays mock.
+    dispatch.mockClear()
+    clickButton(t.container, 'Save')
+    expect(dispatch).not.toHaveBeenCalled()
     t.unmount()
   })
 })

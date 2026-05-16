@@ -85,6 +85,9 @@ describe('useMenuDispatch -- channel to CmdId mapping', () => {
     ['menu:bg-black',           CmdId.SceneBgBlack,        undefined],
     ['menu:about',              CmdId.UiAboutDialog,       undefined],
     [IPC.MENU_GET_PDB,          CmdId.UiGetPdbDialog,      undefined],
+    ['menu:save-file-as',       CmdId.ObjectSaveAs,        undefined],
+    ['menu:save-current-view',  CmdId.SaveCurrentView,     undefined],
+    ['menu:reload-scene',       CmdId.SceneReload,         undefined],
   ]
 
   for (const [channel, expectedId, expectedArgs] of cases) {

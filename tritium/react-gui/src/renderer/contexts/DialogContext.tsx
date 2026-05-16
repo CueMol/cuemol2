@@ -22,6 +22,8 @@ import { TextPromptDialogProvider } from '../components/dialogs/TextPromptDialog
 import { NewRendererDialogProvider } from '../components/dialogs/NewRendererDialogProvider'
 import { ApplyRendStyleDialogProvider } from '../components/dialogs/ApplyRendStyleDialogProvider'
 import { CreateRendStyleDialogProvider } from '../components/dialogs/CreateRendStyleDialogProvider'
+import { ObjectPickerDialogProvider } from '../components/dialogs/ObjectPickerDialogProvider'
+import { ConfirmReloadSceneDialogProvider } from '../components/dialogs/ConfirmReloadSceneDialogProvider'
 import { composeProviders } from './composeProviders'
 
 export const DialogProvider = composeProviders([
@@ -37,4 +39,6 @@ export const DialogProvider = composeProviders([
   NewRendererDialogProvider,
   ApplyRendStyleDialogProvider,
   CreateRendStyleDialogProvider,
+  ObjectPickerDialogProvider,
+  ConfirmReloadSceneDialogProvider,
 ])

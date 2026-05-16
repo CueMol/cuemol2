@@ -81,6 +81,15 @@ export function useMenuDispatch(activeTab: string | null): {
             ?.invoke(IPC.RECENT_CLEAR)
             .catch(logErr('recent.clear:'))
           break
+        case 'menu:save-file-as':
+          dispatch(CmdId.ObjectSaveAs).catch(logErr('object.saveAs:'))
+          break
+        case 'menu:save-current-view':
+          dispatch(CmdId.SaveCurrentView).catch(logErr('file.saveCurrentView:'))
+          break
+        case 'menu:reload-scene':
+          dispatch(CmdId.SceneReload).catch(logErr('scene.reload:'))
+          break
         default:
           console.warn('menu action not yet implemented:', channel)
       }
