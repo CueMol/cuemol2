@@ -3,22 +3,30 @@
  * @description BottomPanel "Render" tab — render execution controls,
  * progress and log.
  *
- * Settings live in the Inspector (`renderSettings` target); this panel owns
- * the state-changing operations: Start / Stop, the progress bar, the phase
- * label and the render log. Phase 2 is mock-driven (see `useRenderJob`).
+ * Detailed settings live in the Inspector (`renderSettings` target); this
+ * panel owns the state-changing operations (Start / Stop), a quick
+ * image-size preset, a shortcut to the Inspector settings, the progress
+ * bar and the render log. Phase 2/3 is mock-driven (see `useRenderJob`).
  */
 
 import React from "react";
-import { Button, Icon, ProgressBar, type Intent } from "@blueprintjs/core";
+import { Button, Icon, HTMLSelect, ProgressBar, type Intent } from "@blueprintjs/core";
 import { type RenderJob, isRenderJobActive } from "../../hooks/useRenderJob";
+import { RENDER_SIZE_PRESETS } from "../../data/renderSettings";
 
 interface RenderPanelProps {
   /** Current render job, or null when none has run yet. */
   job: RenderJob | null;
+  /** Selected image-size preset label. */
+  preset: string;
   /** Start a new render. */
   onStart: () => void;
   /** Cancel the active render. */
   onCancel: () => void;
+  /** Apply an image-size preset. */
+  onApplyPreset: (label: string) => void;
+  /** Open the Render Settings editor in the Inspector. */
+  onOpenSettings: () => void;
 }
 
 /** Progress-bar intent for the job's status. */
@@ -41,8 +49,11 @@ const elapsedSec = (job: RenderJob): string =>
 
 export const RenderPanel: React.FC<RenderPanelProps> = ({
   job,
+  preset,
   onStart,
   onCancel,
+  onApplyPreset,
+  onOpenSettings,
 }) => {
   const active = isRenderJobActive(job);
 
@@ -69,6 +80,30 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
             onClick={onStart}
           />
         )}
+
+        <span className="render-panel-preset">
+          <span className="render-panel-preset-label">Image size</span>
+          <HTMLSelect
+            className="insp-select render-panel-preset-select"
+            value={preset}
+            onChange={(e) => onApplyPreset(e.currentTarget.value)}
+          >
+            {RENDER_SIZE_PRESETS.map((p) => (
+              <option key={p.label} value={p.label}>
+                {p.label}
+              </option>
+            ))}
+          </HTMLSelect>
+        </span>
+
+        <Button
+          small
+          minimal
+          icon={<Icon icon="cog" size={12} />}
+          text="Render Settings"
+          onClick={onOpenSettings}
+        />
+
         {job && (
           <span className="render-panel-status">
             {job.phase} · {job.progress}% · {elapsedSec(job)}s

@@ -257,6 +257,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  /* Allow the row to shrink within the inspector body so the numeric
+     input never overflows the panel edge. */
+  min-width: 0;
 }
 
 .insp-slider {
@@ -264,10 +267,13 @@
   min-width: 0;
 }
 
-/* Blueprint slider overrides */
+/* Blueprint slider overrides. `min-width: 0` (high specificity) lets the
+   slider shrink and yield space to the fixed-width numeric input. */
 .insp-slider.bp5-slider {
   min-height: 16px;
   height: 16px;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .insp-slider .bp5-slider-track {
@@ -302,10 +308,17 @@
   box-shadow: 0 0 0 2px var(--accent), 0 1px 3px var(--slider-handle-shadow);
 }
 
-/* Numeric input — compact width */
+/* Numeric input — fixed compact column that never shrinks or overflows. */
 .insp-numeric-input.bp5-numeric-input {
-  width: 62px;
-  flex-shrink: 0;
+  flex: 0 0 68px;
+  width: 68px;
+  min-width: 68px;
+}
+
+/* Keep the inner field within the fixed numeric-input width. */
+.insp-numeric-input .bp5-input-group {
+  width: 100%;
+  min-width: 0;
 }
 
 .insp-numeric-input .bp5-input-group .bp5-input {
@@ -314,6 +327,7 @@
   color: var(--text-primary) !important;
   font-size: var(--fs-md);
   height: 20px;
+  width: 100%;
   text-align: right;
   padding-right: 4px;
   border-radius: 3px;

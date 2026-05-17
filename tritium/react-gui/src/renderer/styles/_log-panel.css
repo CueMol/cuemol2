@@ -211,7 +211,24 @@
   font-weight: var(--fw-medium);
 }
 
+/* Image-size preset (quick dropdown; full size controls live in Inspector). */
+.render-panel-preset {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.render-panel-preset-label {
+  font-size: var(--fs-base);
+  color: var(--text-muted);
+}
+
+.render-panel-preset-select {
+  width: 168px;
+}
+
 .render-panel-status {
+  margin-left: auto;
   font-size: var(--fs-base);
   color: var(--text-muted);
   white-space: nowrap;

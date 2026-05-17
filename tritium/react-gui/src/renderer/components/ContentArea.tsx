@@ -31,6 +31,7 @@
 import React from "react";
 import type { TabData } from "../types";
 import type { ToolId } from "../data/viewportTools";
+import type { RenderResult } from "../data/renderResult";
 import { useTabDragDrop } from "../hooks/useTabDragDrop";
 import { TabBar } from "./TabBar";
 import { ContentPane } from "./panes/ContentPane";
@@ -55,6 +56,12 @@ interface ContentAreaProps {
   activeTool: ToolId;
   onSelectTool: (id: ToolId) => void;
   onStatusMessage?: (msg: string | null) => void;
+  /** Re-render from a render-result tab's settings snapshot. */
+  onReRender: (result: RenderResult) => void;
+  /** Switch to a render-result tab's source scene. */
+  onShowSourceScene: (result: RenderResult) => void;
+  /** Open the Render Settings editor in the Inspector. */
+  onOpenRenderSettings: () => void;
 }
 
 // ────────────────────────────────────────────────────────────
@@ -70,6 +77,9 @@ export const ContentArea: React.FC<ContentAreaProps> = ({
   activeTool,
   onSelectTool,
   onStatusMessage,
+  onReRender,
+  onShowSourceScene,
+  onOpenRenderSettings,
 }) => {
   const active = tabs.find((t) => t.id === activeTab);
 
@@ -94,6 +104,11 @@ export const ContentArea: React.FC<ContentAreaProps> = ({
         activeTool={activeTool}
         onSelectTool={onSelectTool}
         onStatusMessage={onStatusMessage}
+        renderResultActions={{
+          onReRender,
+          onShowSourceScene,
+          onOpenSettings: onOpenRenderSettings,
+        }}
       />
     </div>
   );

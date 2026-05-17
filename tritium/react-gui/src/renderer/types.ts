@@ -47,16 +47,19 @@ export interface TreeNodeData {
 // Editor tabs
 // ────────────────────────────────────────────────────────────
 
+import type { RenderResult } from "./data/renderResult";
+
 /**
  * Discriminator for tab types.
  *
- * | Type        | Rendered as                         |
- * |-------------|-------------------------------------|
- * | `"welcome"` | WelcomePane (start screen)          |
- * | `"settings"` | SettingsPane (application settings) |
- * | `"molview"` | MolViewPane (WebGL molecule view)   |
+ * | Type             | Rendered as                              |
+ * |------------------|------------------------------------------|
+ * | `"welcome"`      | WelcomePane (start screen)               |
+ * | `"settings"`     | SettingsPane (application settings)      |
+ * | `"molview"`      | MolViewPane (WebGL molecule view)        |
+ * | `"renderResult"` | RenderResultPane (completed render)      |
  */
-export type TabType = "welcome" | "settings" | "molview";
+export type TabType = "welcome" | "settings" | "molview" | "renderResult";
 
 /**
  * Metadata for a single editor tab.
@@ -83,6 +86,12 @@ export interface TabData {
    * Present only for tabs with `type === "molview"`.
    */
   viewId?: number;
+
+  /**
+   * Completed render data.
+   * Present only for tabs with `type === "renderResult"`.
+   */
+  renderResult?: RenderResult;
 }
 
 // ────────────────────────────────────────────────────────────

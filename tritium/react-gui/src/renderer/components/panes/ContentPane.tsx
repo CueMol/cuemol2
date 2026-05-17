@@ -18,9 +18,11 @@
 import React, { useCallback, useRef } from "react";
 import type { TabData } from "../../types";
 import type { ToolId } from "../../data/viewportTools";
+import type { RenderResult } from "../../data/renderResult";
 import { WelcomePane } from "./WelcomePane";
 import { SettingsPane } from "./SettingsPane";
 import { MolViewPane } from "./MolViewPane";
+import { RenderResultPane } from "./RenderResultPane";
 import { ViewportToolPalette } from "../ViewportToolPalette";
 import { useNaviClickHandler } from "../../hooks/useNaviClickHandler";
 import { useNaviContextMenu } from "../../hooks/useNaviContextMenu";
@@ -29,6 +31,13 @@ import type { HitTestResult } from "../../types";
 // ─────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────
+
+/** Render-result tab callbacks routed down from App. */
+interface RenderResultActions {
+  onReRender: (result: RenderResult) => void;
+  onShowSourceScene: (result: RenderResult) => void;
+  onOpenSettings: () => void;
+}
 
 interface ContentPaneProps {
   /** All open tabs — used to detect whether a MolViewPane tab exists. */
@@ -41,6 +50,8 @@ interface ContentPaneProps {
   onSelectTool: (id: ToolId) => void;
   /** Callback to push atom/pick status messages to the app status bar. */
   onStatusMessage?: (msg: string | null) => void;
+  /** Render-result tab actions. */
+  renderResultActions: RenderResultActions;
 }
 
 // ─────────────────────────────────────────────
@@ -48,10 +59,24 @@ interface ContentPaneProps {
 // ─────────────────────────────────────────────
 
 /** Map a tab to its content node. Returns null for molview (handled separately). */
-const renderContent = (tab: TabData | undefined): React.ReactNode => {
+const renderContent = (
+  tab: TabData | undefined,
+  renderResultActions: RenderResultActions,
+): React.ReactNode => {
   if (!tab) return <WelcomePane />;
   switch (tab.type) {
     case "settings": return <SettingsPane />;
+    case "renderResult":
+      return tab.renderResult ? (
+        <RenderResultPane
+          result={tab.renderResult}
+          onReRender={renderResultActions.onReRender}
+          onShowSourceScene={renderResultActions.onShowSourceScene}
+          onOpenSettings={renderResultActions.onOpenSettings}
+        />
+      ) : (
+        <WelcomePane />
+      );
     case "welcome":
     default: return <WelcomePane />;
   }
@@ -67,10 +92,12 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
   activeTool,
   onSelectTool,
   onStatusMessage,
+  renderResultActions,
 }) => {
   const hasMolViewTab = tabs.some((t) => t.type === "molview");
   const molViewVisible = activeTab?.type === "molview";
-  const showPalette = activeTab?.type !== "settings";
+  const showPalette =
+    activeTab?.type !== "settings" && activeTab?.type !== "renderResult";
 
   // Once a molview tab has existed, keep MolViewPane mounted permanently.
   // Unmounting the canvas destroys the WebGL context and the already-transferred
@@ -106,7 +133,7 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
           <MolViewPane />
         </div>
       )}
-      {!molViewVisible && renderContent(activeTab)}
+      {!molViewVisible && renderContent(activeTab, renderResultActions)}
       {showPalette && (
         <ViewportToolPalette activeTool={activeTool} onSelect={onSelectTool} />
       )}

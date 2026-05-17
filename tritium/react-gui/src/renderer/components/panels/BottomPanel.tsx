@@ -53,18 +53,27 @@ interface BottomPanelProps {
   animation: AnimationData | null;
   /** Current render job (Render tab). */
   renderJob: RenderJob | null;
+  /** Selected image-size preset label. */
+  renderPreset: string;
   /** Start a render. */
   onRenderStart: () => void;
   /** Cancel the active render. */
   onRenderCancel: () => void;
+  /** Apply an image-size preset. */
+  onRenderApplyPreset: (label: string) => void;
+  /** Open the Render Settings editor in the Inspector. */
+  onOpenRenderSettings: () => void;
 }
 
 export const BottomPanel: React.FC<BottomPanelProps> = ({
   alignment,
   animation,
   renderJob,
+  renderPreset,
   onRenderStart,
   onRenderCancel,
+  onRenderApplyPreset,
+  onOpenRenderSettings,
 }) => {
   const [activeTab, setActiveTab] = useState<BottomTabType>("output");
 
@@ -80,8 +89,11 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({
         return (
           <RenderPanel
             job={renderJob}
+            preset={renderPreset}
             onStart={onRenderStart}
             onCancel={onRenderCancel}
+            onApplyPreset={onRenderApplyPreset}
+            onOpenSettings={onOpenRenderSettings}
           />
         );
     }

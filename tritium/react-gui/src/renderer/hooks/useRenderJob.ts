@@ -9,6 +9,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import type { RenderSource } from "../data/renderResult";
 
 /** Lifecycle status of a render job. */
 export type RenderJobStatus =
@@ -35,6 +36,8 @@ export interface RenderJob {
   startedAt: number;
   /** Epoch ms when the job ended (done / error / cancelled). */
   finishedAt?: number;
+  /** Scene/view the render was started from (captured at start). */
+  source?: RenderSource;
 }
 
 /** Statuses in which the job is still progressing. */
@@ -93,7 +96,7 @@ export function useRenderJob() {
     }
   }, []);
 
-  const start = useCallback(() => {
+  const start = useCallback((source?: RenderSource) => {
     stopTimer();
     setJob({
       jobId: `render-${Date.now()}`,
@@ -102,6 +105,7 @@ export function useRenderJob() {
       phase: "Exporting scene",
       log: ["Render started", "Exporting scene..."],
       startedAt: Date.now(),
+      source,
     });
     timerRef.current = setInterval(() => {
       setJob((prev) => {

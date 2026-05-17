@@ -9,7 +9,7 @@
  *   - useCommandRegistrations   — registers all CmdId handlers + Electron IPC bridge
  */
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { Allotment } from "allotment";
 import "allotment/dist/style.css";
 
@@ -35,6 +35,13 @@ import { useInspectorState } from "./hooks/useInspectorState";
 import { useRenderSettings } from "./hooks/useRenderSettings";
 import { useRenderJob, isRenderJobActive } from "./hooks/useRenderJob";
 import { RENDER_BACKEND_IDS } from "./data/renderBackends";
+import { RENDER_SIZE_PRESETS } from "./data/renderSettings";
+import { buildMockRenderResult } from "./data/renderResult";
+import type {
+  RenderResult,
+  RenderSource,
+  RenderSettingsSnapshot,
+} from "./data/renderResult";
 import { useTabManager } from "./hooks/useTabManager";
 import { useCueMol } from "./hooks/useCueMol";
 import { useMolTabDispatch, useMolTabState } from "./hooks/useMolTab";
@@ -195,6 +202,7 @@ const App: React.FC = () => {
     setActiveTab,
     openSettingsTab,
     addMolViewTab,
+    addRenderResultTab,
     handleCloseTab,
     handleReorderTabs,
   } = useTabManager({ onMolViewClose: handleMolViewClose, confirmCloseTab });
@@ -218,6 +226,111 @@ const App: React.FC = () => {
   }, [activeTab, tabs, cm, cueMolReady, setActiveViewByID]);
 
   const activeMolViewId = tabs.find((t) => t.id === activeTab && t.type === 'molview')?.viewId;
+
+  // --- Render: job start / completion -> Render Result tab ---
+
+  // Settings snapshot frozen for the in-flight job.
+  const pendingRenderSnapshotRef = useRef<RenderSettingsSnapshot | null>(null);
+  // jobId whose completion has already been turned into a result tab.
+  const handledRenderJobRef = useRef<string | null>(null);
+
+  /** Scene/view reference for a render started right now. */
+  const getRenderSource = useCallback((): RenderSource | undefined => {
+    if (activeSceneId === undefined) return undefined;
+    return {
+      sceneId: activeSceneId,
+      sceneName: sceneTree?.name ?? `Scene ${activeSceneId}`,
+      viewId: activeMolViewId,
+    };
+  }, [activeSceneId, sceneTree, activeMolViewId]);
+
+  /** Start a render, freezing the snapshot it will be recorded with. */
+  const startRenderWith = useCallback(
+    (snapshot: RenderSettingsSnapshot, source: RenderSource | undefined) => {
+      pendingRenderSnapshotRef.current = snapshot;
+      renderJob.start(source);
+    },
+    [renderJob],
+  );
+
+  /** Start a render from the current Render Settings (Start button / F12). */
+  const handleRenderStart = useCallback(() => {
+    startRenderWith(renderSettings.getSnapshot(), getRenderSource());
+  }, [startRenderWith, renderSettings, getRenderSource]);
+
+  /** Re-render from a result tab's snapshot (also restores it into the editor). */
+  const handleReRender = useCallback(
+    (result: RenderResult) => {
+      renderSettings.restore(result.settingsSnapshot);
+      startRenderWith(result.settingsSnapshot, {
+        sceneId: result.sourceSceneId,
+        sceneName: result.sourceSceneName,
+        viewId: result.sourceViewId,
+      });
+    },
+    [renderSettings, startRenderWith],
+  );
+
+  /** Switch to a result tab's source scene (its molview tab). */
+  const handleShowSourceScene = useCallback(
+    (result: RenderResult) => {
+      if (result.sourceViewId === undefined) return;
+      const tab = tabs.find(
+        (t) => t.type === "molview" && t.viewId === result.sourceViewId,
+      );
+      if (tab) setActiveTab(tab.id);
+    },
+    [tabs, setActiveTab],
+  );
+
+  /**
+   * Apply an image-size preset from the Render tab. The "Current view"
+   * preset is resolved from the live molview canvas pixel size.
+   */
+  const handleApplyRenderPreset = useCallback(
+    (label: string) => {
+      const preset = RENDER_SIZE_PRESETS.find((p) => p.label === label);
+      if (preset?.dynamic) {
+        const canvas = document.querySelector("canvas");
+        if (canvas) {
+          const rect = canvas.getBoundingClientRect();
+          const dpr = window.devicePixelRatio || 1;
+          const width = Math.round(rect.width * dpr);
+          const height = Math.round(rect.height * dpr);
+          if (width > 0 && height > 0) {
+            renderSettings.applyPreset(label, { width, height });
+            return;
+          }
+        }
+      }
+      renderSettings.applyPreset(label);
+    },
+    [renderSettings],
+  );
+
+  // Open a Render Result tab when the job completes.
+  useEffect(() => {
+    const job = renderJob.job;
+    if (!job || job.status !== "done") return;
+    if (handledRenderJobRef.current === job.jobId) return;
+    handledRenderJobRef.current = job.jobId;
+
+    const snapshot =
+      pendingRenderSnapshotRef.current ?? renderSettings.getSnapshot();
+    const numOf = (key: string, fallback: number): number => {
+      const v = snapshot.commonProps.find((p) => p.key === key)?.value;
+      return typeof v === "number" ? v : fallback;
+    };
+    addRenderResultTab(
+      buildMockRenderResult({
+        width: numOf("width", 1200),
+        height: numOf("height", 900),
+        elapsedSec: ((job.finishedAt ?? Date.now()) - job.startedAt) / 1000,
+        source: job.source,
+        snapshot,
+      }),
+    );
+  }, [renderJob.job, renderSettings, addRenderResultTab]);
 
   // --- Scene-tree toolbar handlers (UXP workspace_panel onBtn*Cmd) ---
 
@@ -540,6 +653,9 @@ const App: React.FC = () => {
                             activeTool={activeTool}
                             onSelectTool={setActiveTool}
                             onStatusMessage={setStatusMessage}
+                            onReRender={handleReRender}
+                            onShowSourceScene={handleShowSourceScene}
+                            onOpenRenderSettings={handleShowRenderSettings}
                           />
                         </Allotment.Pane>
                         <Allotment.Pane minSize={100} preferredSize={200} snap>
@@ -547,8 +663,11 @@ const App: React.FC = () => {
                             alignment={alignment}
                             animation={animation}
                             renderJob={renderJob.job}
-                            onRenderStart={renderJob.start}
+                            renderPreset={renderSettings.preset}
+                            onRenderStart={handleRenderStart}
                             onRenderCancel={renderJob.cancel}
+                            onRenderApplyPreset={handleApplyRenderPreset}
+                            onOpenRenderSettings={handleShowRenderSettings}
                           />
                         </Allotment.Pane>
                       </Allotment>
