@@ -19,6 +19,11 @@ export interface ExportedScene {
   inputPath: string;
   /** Working directory for all intermediate files. */
   workDir: string;
+  /**
+   * Post-blend layer table parsed from the exporter (alpha-key → comma-
+   * separated object names). Empty when the scene needs no layering.
+   */
+  blendTable: Record<string, string>;
 }
 
 /** One external-process task for `ProcessManager.queueTask`. */
@@ -27,8 +32,12 @@ export interface RenderTaskSpec {
   exe: string;
   /** Single argument string. */
   args: string;
-  /** Space-separated dependency task ids ("" = run immediately). */
-  waitFor: string;
+  /**
+   * `render` tasks run first (in parallel) and drive the progress
+   * percentage; `finalize` tasks (e.g. blendpng) are queued only after all
+   * render tasks finish and are reported as the "blending" phase.
+   */
+  kind: "render" | "finalize";
 }
 
 /** A pluggable rendering backend. */

@@ -2,9 +2,11 @@
  * @file worker/server/services/renderBackends/PovrayBackend.ts
  * @description POV-Ray rendering backend (ports `uxp_gui` povrender.js).
  *
- * Phase 4 renders a single layer: the scene is exported to one `.pov`/`.inc`
- * pair and rendered by one POV-Ray process. Post-render alpha blending
- * (multi-layer + blendpng) is deferred to phase 5.
+ * The scene is exported to one `.pov`/`.inc` pair. When the exporter
+ * reports a post-blend table (semi-transparent objects), the scene is
+ * rendered as several layers and `blendpng` composites them; otherwise a
+ * single layer is rendered. `blendpng` always runs as the finalize step
+ * (it also stamps the output DPI), matching povrender.js.
  */
 
 import * as os from "os";
@@ -28,10 +30,11 @@ function expandHome(p: string): string {
   return p.startsWith("~/") ? path.join(os.homedir(), p.slice(2)) : p;
 }
 
-// Bundled-binary locations. App-bundle packaging is deferred; phase 5 makes
-// these configurable via the SettingsPane.
+// Bundled-binary locations. App-bundle packaging is deferred; phase 5b
+// makes these configurable via the SettingsPane.
 const POV_EXE = expandHome("~/tmp/proj64_deplibs/cuemol2_bundle_apps/povray/bin/povray");
 const POV_INC = expandHome("~/tmp/proj64_deplibs/cuemol2_bundle_apps/povray/include");
+const BLENDPNG_EXE = expandHome("~/tmp/proj64_deplibs/cuemol2/bin/blendpng");
 
 /** Map a radiosity preset label to POV-Ray's `_radiosity` code (-1 = off). */
 const RADIOSITY_LABELS = [
@@ -51,6 +54,90 @@ function stereoCode(mode: string): number {
 }
 
 const RENDERED_RE = /Rendered \d+ of \d+ pixels \((\d+)%\)/;
+
+/** One render layer: extra POV-Ray declares plus the layer's alpha. */
+interface RenderLayer {
+  optArgs: string[];
+  alpha: number;
+}
+
+/**
+ * Derive render layers from the exporter's blend table. An empty table
+ * yields a single layer; otherwise layer 0 hides every overlay object and
+ * each subsequent layer shows only its own objects (mirrors povrender.js).
+ */
+function computeLayers(blendTable: Record<string, string>): RenderLayer[] {
+  const keys = Object.keys(blendTable);
+  if (keys.length === 0) return [{ optArgs: [], alpha: 1.0 }];
+
+  const allNames = new Set<string>();
+  for (const k of keys) {
+    for (const n of blendTable[k].split(",")) if (n) allNames.add(n);
+  }
+  const layers: RenderLayer[] = [
+    // Layer 0 (background): hide every overlay object.
+    { optArgs: [...allNames].map((n) => `Declare=_show${n}=0`), alpha: 1.0 },
+  ];
+  for (const k of keys) {
+    const shown = new Set(blendTable[k].split(",").filter(Boolean));
+    layers.push({
+      optArgs: [...allNames]
+        .filter((n) => !shown.has(n))
+        .map((n) => `Declare=_show${n}=0`),
+      alpha: parseFloat(`0.${k}`),
+    });
+  }
+  return layers;
+}
+
+/** Build the POV-Ray argument string for one layer. */
+function buildPovArgs(
+  exported: ExportedScene,
+  snapshot: RenderSettingsSnapshot,
+  outPng: string,
+  optArgs: string[],
+): string {
+  const common = snapshot.commonProps;
+  const pov = snapshot.backendProps;
+  const perspective = strVal(common, "projection", "perspective") === "perspective";
+
+  const args: string[] = [
+    `"Input_File_Name='${exported.inputPath}'"`,
+    `"Output_File_Name='${outPng}'"`,
+    `"Library_Path='${POV_INC}'"`,
+    `"Library_Path='${exported.workDir}'"`,
+    `Declare=_stereo=${stereoCode(strVal(common, "stereoMode", "none"))}`,
+    `Declare=_iod=${numVal(common, "stereoDepth", 0.03)}`,
+    `Declare=_perspective=${perspective ? 1 : 0}`,
+    `Declare=_shadow=${boolVal(pov, "shadow", false) ? 1 : 0}`,
+    `Declare=_light_inten=${numVal(pov, "lightIntensity", 1.3)}`,
+    `Declare=_flash_frac=${numVal(pov, "flashFraction", 0.6)}`,
+    `Declare=_amb_frac=${numVal(pov, "ambientFraction", 0)}`,
+    "File_Gamma=1",
+    "-D",
+    `+WT${numVal(common, "numThreads", 2)}`,
+    `+W${numVal(common, "width", 640)}`,
+    `+H${numVal(common, "height", 480)}`,
+    "+FN8",
+    "Quality=11",
+    "Antialias=On",
+    "Antialias_Depth=3",
+    "Antialias_Threshold=0.1",
+    "Jitter=Off",
+    "+V",
+  ];
+
+  const spread = numVal(pov, "lightSpread", 1);
+  if (spread > 1) args.push(`Declare=_light_spread=${spread}`);
+  if (boolVal(common, "transparentBg", false)) {
+    args.push("+UA");
+    args.push("Declare=_transpbg=1");
+  }
+  const radio = radiosityCode(strVal(pov, "radiosityMode", "Disable"));
+  if (radio >= 0) args.push(`Declare=_radiosity=${radio}`);
+
+  return [...args, ...optArgs].join(" ");
+}
 
 export const povrayBackend: RenderBackend = {
   id: "povray",
@@ -83,56 +170,50 @@ export const povrayBackend: RenderBackend = {
     exporter.setPath(povPath);
     exporter.setSubPath("inc", incPath);
     exporter.write();
+    const blendTableJson = exporter.blendTable;
     exporter.detach();
 
-    return { inputPath: povPath, workDir };
+    let blendTable: Record<string, string> = {};
+    if (blendTableJson) {
+      try {
+        blendTable = JSON.parse(blendTableJson) as Record<string, string>;
+      } catch {
+        blendTable = {};
+      }
+    }
+    return { inputPath: povPath, workDir, blendTable };
   },
 
   buildTasks(
     exported: ExportedScene,
     snapshot: RenderSettingsSnapshot,
   ): RenderTaskSpec[] {
-    const common = snapshot.commonProps;
-    const pov = snapshot.backendProps;
-    const outPng = this.outputImagePath(exported);
-    const perspective = strVal(common, "projection", "perspective") === "perspective";
+    const layers = computeLayers(exported.blendTable);
+    const layerPaths = layers.map((_, i) =>
+      path.join(exported.workDir, `render-layer${i}.png`),
+    );
 
-    const args: string[] = [
-      `"Input_File_Name='${exported.inputPath}'"`,
-      `"Output_File_Name='${outPng}'"`,
-      `"Library_Path='${POV_INC}'"`,
-      `"Library_Path='${exported.workDir}'"`,
-      `Declare=_stereo=${stereoCode(strVal(common, "stereoMode", "none"))}`,
-      `Declare=_iod=${numVal(common, "stereoDepth", 0.03)}`,
-      `Declare=_perspective=${perspective ? 1 : 0}`,
-      `Declare=_shadow=${boolVal(pov, "shadow", false) ? 1 : 0}`,
-      `Declare=_light_inten=${numVal(pov, "lightIntensity", 1.3)}`,
-      `Declare=_flash_frac=${numVal(pov, "flashFraction", 0.6)}`,
-      `Declare=_amb_frac=${numVal(pov, "ambientFraction", 0)}`,
-      "File_Gamma=1",
-      "-D",
-      `+WT${numVal(common, "numThreads", 2)}`,
-      `+W${numVal(common, "width", 640)}`,
-      `+H${numVal(common, "height", 480)}`,
-      "+FN8",
-      "Quality=11",
-      "Antialias=On",
-      "Antialias_Depth=3",
-      "Antialias_Threshold=0.1",
-      "Jitter=Off",
-      "+V",
-    ];
+    // One POV-Ray task per layer (run in parallel).
+    const tasks: RenderTaskSpec[] = layers.map((layer, i) => ({
+      exe: POV_EXE,
+      args: buildPovArgs(exported, snapshot, layerPaths[i], layer.optArgs),
+      kind: "render",
+    }));
 
-    const spread = numVal(pov, "lightSpread", 1);
-    if (spread > 1) args.push(`Declare=_light_spread=${spread}`);
-    if (boolVal(common, "transparentBg", false)) {
-      args.push("+UA");
-      args.push("Declare=_transpbg=1");
+    // blendpng finalize task: composite layers, stamp DPI.
+    const blendArgs: string[] = [layerPaths[0]];
+    for (let i = 1; i < layers.length; i++) {
+      blendArgs.push(layerPaths[i]);
+      blendArgs.push(String(layers[i].alpha));
     }
-    const radio = radiosityCode(strVal(pov, "radiosityMode", "Disable"));
-    if (radio >= 0) args.push(`Declare=_radiosity=${radio}`);
-
-    return [{ exe: POV_EXE, args: args.join(" "), waitFor: "" }];
+    blendArgs.push(this.outputImagePath(exported));
+    blendArgs.push(String(numVal(snapshot.commonProps, "dpi", 600)));
+    tasks.push({
+      exe: BLENDPNG_EXE,
+      args: blendArgs.join(" "),
+      kind: "finalize",
+    });
+    return tasks;
   },
 
   parseProgress(stdout: string): number | null {

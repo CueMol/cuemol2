@@ -7,6 +7,15 @@
  * timer that pushes `render-progress` updates to the renderer. `renderCancel`
  * stops a running job. All file I/O uses Node `fs` (the worker runs with
  * `nodeIntegrationInWorker: true`).
+ *
+ * ## Queue ordering
+ *
+ * `ProcessManager` only advances its queue when `queueTask` is called (its
+ * idle-task pump is not driven inside the worker). So instead of queuing the
+ * blendpng finalize task up-front with a dependency, the pipeline runs in
+ * two phases: all render tasks are queued first, and the finalize task is
+ * queued by the poll loop once every render task has finished — that
+ * `queueTask` call is what starts it.
  */
 
 import * as fs from "fs";
@@ -25,7 +34,7 @@ import type {
 } from "../../shared/renderTypes";
 import { RENDER_PROGRESS_CHANNEL } from "../../shared/renderTypes";
 import { getRenderBackend, type RenderBackend } from "./renderBackends";
-import { numVal } from "./renderBackends/RenderBackend";
+import { numVal, type RenderTaskSpec } from "./renderBackends/RenderBackend";
 
 /** Poll interval for process status / stdout. */
 const POLL_MS = 700;
@@ -34,19 +43,27 @@ const POLL_MS = 700;
 const TASK_QUEUED = 0;
 const TASK_RUNNING = 1;
 
+/** Phase of a render job. */
+type JobPhase = "render" | "finalize";
+
 /** State of one in-flight render job. */
 interface RenderJobEntry {
   jobId: string;
   workDir: string;
-  /** Queued task ids; an id is set to -1 once its task has ended. */
-  taskIds: number[];
   outputPath: string;
   startedAt: number;
   timer: ReturnType<typeof setInterval> | null;
-  lastProgress: number;
   cancelled: boolean;
   /** Whether the working-dir path has been reported to the render log. */
   announcedDir: boolean;
+  /** Current phase. */
+  phase: JobPhase;
+  /** Finalize task specs, queued once render tasks finish. */
+  finalizeSpecs: RenderTaskSpec[];
+  /** Task ids of the current phase; an id is set to -1 once its task ends. */
+  taskIds: number[];
+  /** Per-task progress 0..100, parallel to `taskIds`. */
+  taskProgress: number[];
 }
 
 const jobs = new Map<string, RenderJobEntry>();
@@ -72,7 +89,7 @@ function stopTimer(entry: RenderJobEntry): void {
   }
 }
 
-/** Read the finished image, emit completion, and clean up. */
+/** Read the finished image and emit completion (or an error). */
 function finishJob(
   ctx: WorkerContext,
   entry: RenderJobEntry,
@@ -80,8 +97,7 @@ function finishJob(
 ): void {
   stopTimer(entry);
   jobs.delete(entry.jobId);
-  // Phase 4 keeps the working dir (render.pov / .inc / .png) for inspection;
-  // phase 5 re-enables success cleanup.
+  // Phase 5 keeps the working dir (render.pov / .inc / .png) for inspection.
   try {
     const buf = fs.readFileSync(entry.outputPath);
     emit(ctx, {
@@ -101,7 +117,42 @@ function finishJob(
   }
 }
 
-/** One poll tick: check process status, push progress, finish when done. */
+/** Poll the current phase's tasks; returns the accumulated stdout log. */
+function pollTasks(
+  ctx: WorkerContext,
+  backend: RenderBackend,
+  entry: RenderJobEntry,
+): { allDone: boolean; logChunk: string } {
+  const pm = ctx.svc.getService("ProcessManager") as ProcessManager;
+  let allDone = true;
+  let logChunk = "";
+  for (let i = 0; i < entry.taskIds.length; i++) {
+    const tid = entry.taskIds[i];
+    if (tid < 0) continue;
+    const status = pm.getTaskStatus(tid);
+    // getResultOutput also moves an ended task out of its slot.
+    const out = pm.getResultOutput(tid);
+    if (out) {
+      const p = backend.parseProgress(out);
+      if (p !== null) entry.taskProgress[i] = Math.max(entry.taskProgress[i], p);
+      else logChunk += out;
+    }
+    if (status === TASK_QUEUED || status === TASK_RUNNING) {
+      allDone = false;
+    } else {
+      entry.taskProgress[i] = 100;
+      entry.taskIds[i] = -1;
+    }
+  }
+  return { allDone, logChunk };
+}
+
+/** Mean of an array (0 when empty). */
+function mean(xs: number[]): number {
+  return xs.length ? Math.round(xs.reduce((s, x) => s + x, 0) / xs.length) : 0;
+}
+
+/** One poll tick. */
 function pollJob(
   ctx: WorkerContext,
   backend: RenderBackend,
@@ -109,46 +160,59 @@ function pollJob(
   args: RenderStartArgs,
 ): void {
   if (entry.cancelled) return;
-  const pm = ctx.svc.getService("ProcessManager") as ProcessManager;
+  const { allDone, logChunk: rawLog } = pollTasks(ctx, backend, entry);
 
-  let allDone = true;
-  let progress = entry.lastProgress;
-  let logChunk = "";
-  for (let i = 0; i < entry.taskIds.length; i++) {
-    const tid = entry.taskIds[i];
-    if (tid < 0) continue;
-    const status = pm.getTaskStatus(tid);
-    const out = pm.getResultOutput(tid);
-    if (out) {
-      const p = backend.parseProgress(out);
-      if (p !== null) progress = Math.max(progress, p);
-      else logChunk += out;
-    }
-    if (status === TASK_QUEUED || status === TASK_RUNNING) {
-      allDone = false;
-    } else {
-      entry.taskIds[i] = -1;
-    }
-  }
-  entry.lastProgress = progress;
-
-  // Report the working-dir path once so the .pov/.inc can be inspected.
+  let logChunk = rawLog;
   if (!entry.announcedDir) {
     logChunk = `Working dir: ${entry.workDir}\n${logChunk}`;
     entry.announcedDir = true;
   }
 
-  if (!allDone) {
+  if (entry.phase === "render") {
+    if (!allDone) {
+      emit(ctx, {
+        type: "progress",
+        jobId: entry.jobId,
+        progress: mean(entry.taskProgress),
+        phase: "running",
+        logChunk: logChunk || undefined,
+      });
+      return;
+    }
+    // All render tasks finished — queue the finalize task(s) now. The
+    // queueTask call is what advances the ProcessManager queue.
     emit(ctx, {
       type: "progress",
       jobId: entry.jobId,
-      progress,
-      phase: "running",
+      progress: 100,
+      phase: "blending",
       logChunk: logChunk || undefined,
     });
+    if (entry.finalizeSpecs.length === 0) {
+      finishJob(ctx, entry, args);
+      return;
+    }
+    const pm = ctx.svc.getService("ProcessManager") as ProcessManager;
+    const finIds: number[] = [];
+    for (const t of entry.finalizeSpecs) {
+      const tid = pm.queueTask(t.exe, t.args, "");
+      if (tid >= 0) finIds.push(tid);
+    }
+    entry.phase = "finalize";
+    entry.taskIds = finIds;
+    entry.taskProgress = finIds.map(() => 0);
     return;
   }
-  finishJob(ctx, entry, args);
+
+  // Finalize phase.
+  emit(ctx, {
+    type: "progress",
+    jobId: entry.jobId,
+    progress: 100,
+    phase: "blending",
+    logChunk: logChunk || undefined,
+  });
+  if (allDone) finishJob(ctx, entry, args);
 }
 
 /** Start a render job. */
@@ -174,24 +238,33 @@ function renderStart(ctx: WorkerContext, args: RenderStartArgs): RenderStartResu
   }
 
   const workDir = fs.mkdtempSync(path.join(os.tmpdir(), "cuemol-render-"));
-  emit(ctx, {
-    type: "progress",
-    jobId: "pending",
-    progress: 0,
-    phase: "exporting",
-  });
 
   let outputPath: string;
+  let renderSpecs: RenderTaskSpec[];
+  let finalizeSpecs: RenderTaskSpec[];
   let taskIds: number[];
   try {
     const exported = backend.exportScene(ctx, scene, args.snapshot, workDir);
     outputPath = backend.outputImagePath(exported);
     const tasks = backend.buildTasks(exported, args.snapshot);
+    renderSpecs = tasks.filter((t) => t.kind === "render");
+    finalizeSpecs = tasks.filter((t) => t.kind === "finalize");
+    if (renderSpecs.length === 0) throw new Error("backend produced no render tasks");
+
+    // Fail early with a clear message if a binary is missing.
+    for (const exe of new Set(tasks.map((t) => t.exe))) {
+      if (!fs.existsSync(exe)) throw new Error(`Executable not found: ${exe}`);
+    }
+
     const pm = ctx.svc.getService("ProcessManager") as ProcessManager;
+    // Give every render layer a slot so none waits in the (un-pumped) queue.
+    if (renderSpecs.length > pm.getSlotSize()) {
+      pm.setSlotSize(renderSpecs.length);
+    }
     taskIds = [];
-    for (const t of tasks) {
-      const tid = pm.queueTask(t.exe, t.args, t.waitFor);
-      if (tid < 0) throw new Error("ProcessManager could not queue the render task");
+    for (const t of renderSpecs) {
+      const tid = pm.queueTask(t.exe, t.args, "");
+      if (tid < 0) throw new Error("ProcessManager could not queue a render task");
       taskIds.push(tid);
     }
   } catch (e) {
@@ -203,13 +276,15 @@ function renderStart(ctx: WorkerContext, args: RenderStartArgs): RenderStartResu
   const entry: RenderJobEntry = {
     jobId,
     workDir,
-    taskIds,
     outputPath,
     startedAt: Date.now(),
     timer: null,
-    lastProgress: 0,
     cancelled: false,
     announcedDir: false,
+    phase: "render",
+    finalizeSpecs,
+    taskIds,
+    taskProgress: taskIds.map(() => 0),
   };
   jobs.set(jobId, entry);
   entry.timer = setInterval(() => {
@@ -219,7 +294,6 @@ function renderStart(ctx: WorkerContext, args: RenderStartArgs): RenderStartResu
       stopTimer(entry);
       jobs.delete(jobId);
       emit(ctx, { type: "error", jobId, error: String(e) });
-      cleanupDir(entry.workDir);
     }
   }, POLL_MS);
 
