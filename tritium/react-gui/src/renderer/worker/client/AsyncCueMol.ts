@@ -3,7 +3,11 @@ import type { SceneBgColor, ViewCenterMark } from '../../../shared/ipcTypes';
 import type { FileOpenOptions } from '../../components/fopen-opt-dlgs/types';
 import { ObjTuple } from '../shared/ObjTuple';
 import { ObjProxy } from './ObjProxy';
-import { WorkerTransport, type StreamProgressListener } from './WorkerTransport';
+import {
+    WorkerTransport,
+    type StreamProgressListener,
+    type RenderProgressListener,
+} from './WorkerTransport';
 import { EventSlots } from './EventSlots';
 import { ObjectFactory } from './ObjectFactory';
 import * as lifecycleApi from './apis/lifecycleApi';
@@ -51,6 +55,9 @@ export class AsyncCueMol {
     subscribeBusy(cb: (busy: boolean) => void): () => void { return this._transport.subscribeBusy(cb); }
     subscribeStreamProgress(cb: StreamProgressListener): () => void {
         return this._transport.subscribeStreamProgress(cb);
+    }
+    subscribeRenderProgress(cb: RenderProgressListener): () => void {
+        return this._transport.subscribeRenderProgress(cb);
     }
     invokeWorker(method: string, ...args: any[]): Promise<any[]> {
         return this._transport.invokeWorker(method, ...args);

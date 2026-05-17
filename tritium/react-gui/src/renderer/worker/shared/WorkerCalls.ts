@@ -21,6 +21,12 @@
  */
 
 import type { ObjTuple } from './ObjTuple'
+import type {
+  RenderStartArgs,
+  RenderStartResult,
+  RenderCancelArgs,
+  RenderCancelResult,
+} from './renderTypes'
 
 import type { AppInfoResult } from '../server/services/appInfo.service'
 import type { CreateNewSceneAndViewArgs, CreateNewSceneAndViewResult } from '../server/services/createNewSceneAndView.service'
@@ -276,6 +282,8 @@ export interface ServiceMap {
   streamLoadFromUrl:          { args: StreamLoadFromUrlArgs;           result: StreamLoadFromUrlResult }
   streamLoadDensityMap:       { args: StreamLoadDensityMapArgs;        result: StreamLoadDensityMapResult }
   cancelStreamLoad:           { args: CancelStreamLoadArgs;            result: CancelStreamLoadResult }
+  renderStart:                { args: RenderStartArgs;                 result: RenderStartResult }
+  renderCancel:               { args: RenderCancelArgs;                result: RenderCancelResult }
   proposeNewTabNames:         { args: ProposeNewTabNamesArgs;          result: ProposeNewTabNamesResult }
   proposeUniqName:            { args: ProposeUniqNameArgs;             result: ProposeUniqNameResult }
   redo:                       { args: RedoArgs;                        result: { ok: boolean } }

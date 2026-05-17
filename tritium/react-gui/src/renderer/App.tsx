@@ -9,7 +9,7 @@
  *   - useCommandRegistrations   — registers all CmdId handlers + Electron IPC bridge
  */
 
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Allotment } from "allotment";
 import "allotment/dist/style.css";
 
@@ -36,12 +36,7 @@ import { useRenderSettings } from "./hooks/useRenderSettings";
 import { useRenderJob, isRenderJobActive } from "./hooks/useRenderJob";
 import { RENDER_BACKEND_IDS } from "./data/renderBackends";
 import { RENDER_SIZE_PRESETS } from "./data/renderSettings";
-import { buildMockRenderResult } from "./data/renderResult";
-import type {
-  RenderResult,
-  RenderSource,
-  RenderSettingsSnapshot,
-} from "./data/renderResult";
+import type { RenderResult, RenderSource } from "./data/renderResult";
 import { useTabManager } from "./hooks/useTabManager";
 import { useCueMol } from "./hooks/useCueMol";
 import { useMolTabDispatch, useMolTabState } from "./hooks/useMolTab";
@@ -163,9 +158,6 @@ const App: React.FC = () => {
   // `renderSettings` target.
   const renderSettings = useRenderSettings();
 
-  // Render job lifecycle for the BottomPanel Render tab.
-  const renderJob = useRenderJob();
-
   // --- CueMol core / tabs ---
 
   const showConfirmCloseTabDialog = useShowConfirmCloseTabDialog();
@@ -227,48 +219,51 @@ const App: React.FC = () => {
 
   const activeMolViewId = tabs.find((t) => t.id === activeTab && t.type === 'molview')?.viewId;
 
-  // --- Render: job start / completion -> Render Result tab ---
+  // --- Render: job lifecycle + Render Result tab ---
 
-  // Settings snapshot frozen for the in-flight job.
-  const pendingRenderSnapshotRef = useRef<RenderSettingsSnapshot | null>(null);
-  // jobId whose completion has already been turned into a result tab.
-  const handledRenderJobRef = useRef<string | null>(null);
+  // Render job for the BottomPanel Render tab. On completion the worker
+  // sends the rendered image; `addRenderResultTab` opens (or overwrites)
+  // the source scene's result tab.
+  const renderJob = useRenderJob({ cm, onComplete: addRenderResultTab });
 
-  /** Scene/view reference for a render started right now. */
-  const getRenderSource = useCallback((): RenderSource | undefined => {
-    if (activeSceneId === undefined) return undefined;
-    return {
-      sceneId: activeSceneId,
-      sceneName: sceneTree?.name ?? `Scene ${activeSceneId}`,
-      viewId: activeMolViewId,
-    };
-  }, [activeSceneId, sceneTree, activeMolViewId]);
-
-  /** Start a render, freezing the snapshot it will be recorded with. */
-  const startRenderWith = useCallback(
-    (snapshot: RenderSettingsSnapshot, source: RenderSource | undefined) => {
-      pendingRenderSnapshotRef.current = snapshot;
-      renderJob.start(source);
-    },
-    [renderJob],
-  );
-
-  /** Start a render from the current Render Settings (Start button / F12). */
+  /**
+   * Start a render from the current Render Settings (Start button / F12).
+   * Uses the active molview's scene/view from `getActiveSceneInfo` — this
+   * stays correct even when a Render Result tab is the active content tab
+   * (so the render captures the latest camera via `saveViewToCam`).
+   */
   const handleRenderStart = useCallback(() => {
-    startRenderWith(renderSettings.getSnapshot(), getRenderSource());
-  }, [startRenderWith, renderSettings, getRenderSource]);
+    const info = getActiveSceneInfo();
+    if (!info) return;
+    const source: RenderSource = {
+      sceneId: info.scene_uid,
+      sceneName: sceneTree?.name ?? `Scene ${info.scene_uid}`,
+      viewId: info.view_id,
+    };
+    void renderJob.start({
+      sceneId: info.scene_uid,
+      viewId: info.view_id,
+      snapshot: renderSettings.getSnapshot(),
+      source,
+    });
+  }, [getActiveSceneInfo, sceneTree, renderJob, renderSettings]);
 
   /** Re-render from a result tab's snapshot (also restores it into the editor). */
   const handleReRender = useCallback(
     (result: RenderResult) => {
       renderSettings.restore(result.settingsSnapshot);
-      startRenderWith(result.settingsSnapshot, {
+      void renderJob.start({
         sceneId: result.sourceSceneId,
-        sceneName: result.sourceSceneName,
         viewId: result.sourceViewId,
+        snapshot: result.settingsSnapshot,
+        source: {
+          sceneId: result.sourceSceneId,
+          sceneName: result.sourceSceneName,
+          viewId: result.sourceViewId,
+        },
       });
     },
-    [renderSettings, startRenderWith],
+    [renderSettings, renderJob],
   );
 
   /** Switch to a result tab's source scene (its molview tab). */
@@ -307,30 +302,6 @@ const App: React.FC = () => {
     },
     [renderSettings],
   );
-
-  // Open a Render Result tab when the job completes.
-  useEffect(() => {
-    const job = renderJob.job;
-    if (!job || job.status !== "done") return;
-    if (handledRenderJobRef.current === job.jobId) return;
-    handledRenderJobRef.current = job.jobId;
-
-    const snapshot =
-      pendingRenderSnapshotRef.current ?? renderSettings.getSnapshot();
-    const numOf = (key: string, fallback: number): number => {
-      const v = snapshot.commonProps.find((p) => p.key === key)?.value;
-      return typeof v === "number" ? v : fallback;
-    };
-    addRenderResultTab(
-      buildMockRenderResult({
-        width: numOf("width", 1200),
-        height: numOf("height", 900),
-        elapsedSec: ((job.finishedAt ?? Date.now()) - job.startedAt) / 1000,
-        source: job.source,
-        snapshot,
-      }),
-    );
-  }, [renderJob.job, renderSettings, addRenderResultTab]);
 
   // --- Scene-tree toolbar handlers (UXP workspace_panel onBtn*Cmd) ---
 

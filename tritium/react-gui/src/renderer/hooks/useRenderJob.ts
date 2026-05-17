@@ -1,15 +1,26 @@
 /**
  * @file hooks/useRenderJob.ts
- * @description Drives a render job's lifecycle for the BottomPanel Render tab.
+ * @description Drives a render job from the renderer side.
  *
- * Phase 2 is mock-only: `start()` runs a timer that walks a fake job through
- * its phases (exporting → running → blending → done) so the panel, progress
- * bar and StatusBar wiring can be verified before the real worker-side
- * pipeline (phase 4) is connected.
+ * `start()` calls the `renderStart` worker service and then tracks the job
+ * via `render-progress` push updates; on completion the rendered image is
+ * handed to `onComplete` (which opens a Render Result tab). `cancel()` calls
+ * `renderCancel`.
  */
 
-import { useState, useCallback, useRef, useEffect } from "react";
-import type { RenderSource } from "../data/renderResult";
+import { useState, useCallback, useEffect, useRef } from "react";
+import type { AsyncCueMol } from "../worker/client/AsyncCueMol";
+import type {
+  RenderUpdate,
+  RenderUpdatePhase,
+  RenderStartResult,
+} from "../worker/shared/renderTypes";
+import {
+  type RenderSource,
+  type RenderSettingsSnapshot,
+  type RenderResult,
+  buildRenderResult,
+} from "../data/renderResult";
 
 /** Lifecycle status of a render job. */
 export type RenderJobStatus =
@@ -22,25 +33,24 @@ export type RenderJobStatus =
 
 /** State of a single render job. */
 export interface RenderJob {
-  /** Unique id of this job. */
   jobId: string;
-  /** Current lifecycle status. */
   status: RenderJobStatus;
-  /** Completion percentage, 0..100. */
-  progress: number;
-  /** Human-readable label of the current phase. */
+  progress: number; // 0..100
   phase: string;
-  /** Accumulated log lines. */
   log: string[];
-  /** Epoch ms when the job started. */
   startedAt: number;
-  /** Epoch ms when the job ended (done / error / cancelled). */
   finishedAt?: number;
-  /** Scene/view the render was started from (captured at start). */
   source?: RenderSource;
 }
 
-/** Statuses in which the job is still progressing. */
+/** Parameters needed to start a render. */
+export interface RenderStartParams {
+  sceneId: number;
+  viewId?: number;
+  snapshot: RenderSettingsSnapshot;
+  source: RenderSource;
+}
+
 const ACTIVE_STATUSES: RenderJobStatus[] = ["exporting", "running", "blending"];
 
 /** True (and narrows) while the job is still progressing. */
@@ -48,92 +58,167 @@ export function isRenderJobActive(job: RenderJob | null): job is RenderJob {
   return job !== null && ACTIVE_STATUSES.includes(job.status);
 }
 
-/** Mock job tick interval and per-tick progress step. */
-const TICK_MS = 400;
-const PROGRESS_STEP = 7;
+/** Cap on retained log lines. */
+const LOG_CAP = 500;
 
-/** Advance the mock job by one tick. */
-function advanceMockJob(job: RenderJob): RenderJob {
-  const progress = Math.min(100, job.progress + PROGRESS_STEP);
-  const log = [...job.log];
-  let status = job.status;
-  let phase = job.phase;
+const appendLog = (log: string[], lines: string[]): string[] => {
+  if (lines.length === 0) return log;
+  const next = [...log, ...lines];
+  return next.length > LOG_CAP ? next.slice(-LOG_CAP) : next;
+};
 
-  if (progress >= 100) {
-    log.push("Render completed");
-    return { ...job, progress, status: "done", phase: "Completed", log, finishedAt: Date.now() };
-  }
-  if (progress >= 90) {
-    if (status !== "blending") {
-      status = "blending";
-      phase = "Blending layers";
-      log.push("Blending layers...");
-    }
-  } else if (progress >= 15) {
-    if (status !== "running") {
-      status = "running";
-      phase = "Rendering";
-      log.push("Rendering scene...");
-    }
-    log.push(`Rendered ${progress}%`);
-  }
-  return { ...job, progress, status, phase, log };
-}
+const splitLog = (chunk: string): string[] =>
+  chunk.split(/\r?\n/).filter((l) => l.trim().length > 0);
 
-/**
- * Owns the current render job. `start()` begins a new (mock) job; `cancel()`
- * stops the active one. The job object is the single source of truth read by
- * both the Render panel and the StatusBar.
- */
-export function useRenderJob() {
+const PHASE_LABELS: Record<RenderUpdatePhase, string> = {
+  exporting: "Exporting scene",
+  running: "Rendering",
+  blending: "Blending layers",
+};
+
+export function useRenderJob(opts: {
+  /** Worker bridge (null until CueMol is ready). */
+  cm: AsyncCueMol | null;
+  /** Called with the finished result when a job completes. */
+  onComplete: (result: RenderResult) => void;
+}) {
+  const { cm, onComplete } = opts;
   const [job, setJob] = useState<RenderJob | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const stopTimer = useCallback(() => {
-    if (timerRef.current !== null) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-  }, []);
+  // Params of the in-flight job, keyed by the worker-assigned jobId.
+  const pendingRef = useRef<{ jobId: string; params: RenderStartParams } | null>(null);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
-  const start = useCallback((source?: RenderSource) => {
-    stopTimer();
-    setJob({
-      jobId: `render-${Date.now()}`,
-      status: "exporting",
-      progress: 0,
-      phase: "Exporting scene",
-      log: ["Render started", "Exporting scene..."],
-      startedAt: Date.now(),
-      source,
+  // Subscribe to worker render updates for the active job.
+  useEffect(() => {
+    if (!cm) return;
+    return cm.subscribeRenderProgress((u: RenderUpdate) => {
+      const pending = pendingRef.current;
+      if (!pending || u.jobId !== pending.jobId) return;
+
+      if (u.type === "progress") {
+        setJob((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: "running",
+                progress: u.progress,
+                phase: PHASE_LABELS[u.phase],
+                log: u.logChunk ? appendLog(prev.log, splitLog(u.logChunk)) : prev.log,
+              }
+            : prev,
+        );
+      } else if (u.type === "complete") {
+        setJob((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: "done",
+                progress: 100,
+                phase: "Completed",
+                finishedAt: Date.now(),
+                log: appendLog(prev.log, ["Render completed"]),
+              }
+            : prev,
+        );
+        pendingRef.current = null;
+        onCompleteRef.current(
+          buildRenderResult({
+            imageDataUrl: u.imageDataUrl,
+            width: u.width,
+            height: u.height,
+            elapsedSec: u.elapsedSec,
+            source: pending.params.source,
+            snapshot: pending.params.snapshot,
+          }),
+        );
+      } else {
+        setJob((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: "error",
+                phase: "Error",
+                finishedAt: Date.now(),
+                log: appendLog(prev.log, [u.error]),
+              }
+            : prev,
+        );
+        pendingRef.current = null;
+      }
     });
-    timerRef.current = setInterval(() => {
-      setJob((prev) => {
-        if (!isRenderJobActive(prev)) return prev;
-        const next = advanceMockJob(prev);
-        if (!isRenderJobActive(next)) stopTimer();
-        return next;
-      });
-    }, TICK_MS);
-  }, [stopTimer]);
+  }, [cm]);
 
-  const cancel = useCallback(() => {
-    stopTimer();
+  const start = useCallback(
+    async (params: RenderStartParams) => {
+      if (!cm) return;
+      setJob({
+        jobId: "",
+        status: "exporting",
+        progress: 0,
+        phase: "Exporting scene",
+        log: ["Render started"],
+        startedAt: Date.now(),
+        source: params.source,
+      });
+      let res: RenderStartResult | undefined;
+      try {
+        res = await cm.invokeService("renderStart", {
+          sceneId: params.sceneId,
+          viewId: params.viewId,
+          snapshot: params.snapshot,
+        });
+      } catch (e) {
+        setJob((prev) =>
+          prev
+            ? { ...prev, status: "error", phase: "Error", finishedAt: Date.now(), log: appendLog(prev.log, [String(e)]) }
+            : prev,
+        );
+        return;
+      }
+      if (res?.ok) {
+        pendingRef.current = { jobId: res.jobId, params };
+        setJob((prev) => (prev ? { ...prev, jobId: res.jobId } : prev));
+      } else {
+        setJob((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: "error",
+                phase: "Error",
+                finishedAt: Date.now(),
+                log: appendLog(prev.log, [res?.error ?? "Render failed to start"]),
+              }
+            : prev,
+        );
+      }
+    },
+    [cm],
+  );
+
+  const cancel = useCallback(async () => {
+    const pending = pendingRef.current;
+    pendingRef.current = null;
     setJob((prev) =>
       isRenderJobActive(prev)
         ? {
             ...prev,
             status: "cancelled",
             phase: "Cancelled",
-            log: [...prev.log, "Render cancelled"],
             finishedAt: Date.now(),
+            log: appendLog(prev.log, ["Render cancelled"]),
           }
         : prev,
     );
-  }, [stopTimer]);
-
-  // Stop the timer if the component unmounts mid-job.
-  useEffect(() => stopTimer, [stopTimer]);
+    if (cm && pending) {
+      try {
+        await cm.invokeService("renderCancel", { jobId: pending.jobId });
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [cm]);
 
   return { job, start, cancel } as const;
 }

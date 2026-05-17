@@ -55,84 +55,24 @@ export interface RenderResult {
 export const renderResultTabTitle = (r: RenderResult): string =>
   `${r.sourceSceneName} — ${r.width}×${r.height} (${r.elapsedSec.toFixed(1)}s)`;
 
-/** Largest canvas dimension used when synthesising the mock image. */
-const MOCK_IMAGE_CAP = 1600;
-
-/**
- * Synthesise a placeholder render image as a PNG data URL. Returns an empty
- * string when a 2D context is unavailable (e.g. jsdom under test).
- */
-export function makeMockRenderImage(
-  width: number,
-  height: number,
-  label: string,
-): string {
-  const scale = Math.min(1, MOCK_IMAGE_CAP / Math.max(width, height, 1));
-  const cw = Math.max(1, Math.round(width * scale));
-  const ch = Math.max(1, Math.round(height * scale));
-
-  const canvas = document.createElement("canvas");
-  canvas.width = cw;
-  canvas.height = ch;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return "";
-
-  // Diagonal gradient background.
-  const grad = ctx.createLinearGradient(0, 0, cw, ch);
-  grad.addColorStop(0, "#1b2a4a");
-  grad.addColorStop(1, "#3a1b46");
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, cw, ch);
-
-  // Faint grid so zoom / fit / pan are visually obvious.
-  ctx.strokeStyle = "rgba(255,255,255,0.06)";
-  ctx.lineWidth = 1;
-  const step = Math.max(24, Math.round(Math.min(cw, ch) / 12));
-  for (let x = step; x < cw; x += step) {
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, ch);
-    ctx.stroke();
-  }
-  for (let y = step; y < ch; y += step) {
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(cw, y);
-    ctx.stroke();
-  }
-
-  // Centred label and dimensions.
-  ctx.fillStyle = "rgba(255,255,255,0.9)";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  const titleSize = Math.max(14, Math.round(ch / 14));
-  ctx.font = `600 ${titleSize}px sans-serif`;
-  ctx.fillText(label, cw / 2, ch / 2 - titleSize * 0.4);
-  ctx.fillStyle = "rgba(255,255,255,0.55)";
-  ctx.font = `${Math.round(titleSize * 0.6)}px sans-serif`;
-  ctx.fillText(`${width} × ${height}`, cw / 2, ch / 2 + titleSize * 0.7);
-
-  return canvas.toDataURL("image/png");
-}
-
-/** Build a mock render result from the job's source and settings snapshot. */
-export function buildMockRenderResult(args: {
+/** Build a render result from the rendered image and the job's context. */
+export function buildRenderResult(args: {
+  imageDataUrl: string;
   width: number;
   height: number;
   elapsedSec: number;
-  source: RenderSource | undefined;
+  source: RenderSource;
   snapshot: RenderSettingsSnapshot;
 }): RenderResult {
-  const sceneName = args.source?.sceneName || "Scene";
   return {
     id: `render-result-${Date.now()}`,
-    imageDataUrl: makeMockRenderImage(args.width, args.height, sceneName),
+    imageDataUrl: args.imageDataUrl,
     width: args.width,
     height: args.height,
     elapsedSec: args.elapsedSec,
-    sourceSceneId: args.source?.sceneId ?? -1,
-    sourceSceneName: sceneName,
-    sourceViewId: args.source?.viewId,
+    sourceSceneId: args.source.sceneId,
+    sourceSceneName: args.source.sceneName || "Scene",
+    sourceViewId: args.source.viewId,
     settingsSnapshot: args.snapshot,
   };
 }

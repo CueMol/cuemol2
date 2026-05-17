@@ -9,6 +9,8 @@ import type {
     ServiceKey,
     ServiceResult,
 } from '../shared/WorkerCalls';
+import type { RenderUpdate } from '../shared/renderTypes';
+import { RENDER_PROGRESS_CHANNEL } from '../shared/renderTypes';
 
 const log = console;
 
@@ -19,6 +21,8 @@ function makeMethodSeq(method: string, seqno: number): string {
 export type EventNotifyArgs = [number, string, number, number, number, string];
 
 export type StreamProgressListener = (reqId: string, bytes: number) => void;
+
+export type RenderProgressListener = (update: RenderUpdate) => void;
 
 export interface WorkerTransportOptions {
     onEventNotify: (args: EventNotifyArgs) => void;
@@ -33,6 +37,7 @@ export class WorkerTransport {
     private _busyListeners: Set<(busy: boolean) => void> = new Set();
     private _onEventNotify: (args: EventNotifyArgs) => void;
     private _streamProgressListeners: Set<StreamProgressListener> = new Set();
+    private _renderProgressListeners: Set<RenderProgressListener> = new Set();
 
     constructor(opts: WorkerTransportOptions) {
         this._onEventNotify = opts.onEventNotify;
@@ -62,6 +67,15 @@ export class WorkerTransport {
                 return;
             }
 
+            if (method === RENDER_PROGRESS_CHANNEL) {
+                // event.data shape: ['render-progress', RenderUpdate]
+                const [update] = event.data.slice(1) as [RenderUpdate];
+                for (const cb of this._renderProgressListeners) {
+                    try { cb(update); } catch (e) { log.warn('render-progress listener:', e); }
+                }
+                return;
+            }
+
             const method_seq = makeMethodSeq(method, seqno);
             if (method_seq in this._worker_onmessage_dict) {
                 this._worker_onmessage_dict[method_seq].apply(this, args);
@@ -75,6 +89,11 @@ export class WorkerTransport {
     subscribeStreamProgress(cb: StreamProgressListener): () => void {
         this._streamProgressListeners.add(cb);
         return () => { this._streamProgressListeners.delete(cb); };
+    }
+
+    subscribeRenderProgress(cb: RenderProgressListener): () => void {
+        this._renderProgressListeners.add(cb);
+        return () => { this._renderProgressListeners.delete(cb); };
     }
 
     isReady(): boolean { return this._ready; }

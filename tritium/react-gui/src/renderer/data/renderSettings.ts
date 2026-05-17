@@ -78,10 +78,8 @@ export const RENDER_COMMON_PROPS: PropDef[] = [
   { key: "stereoDepth", label: "Stereo depth", type: "real", value: 0.03, group: "Camera", min: 0, max: 1, step: 0.01 },
 
   // ── Quality ──────────────────────────────────────────────
-  { key: "numThreads",  label: "CPU threads",        type: "integer", value: 2,  group: "Quality", min: 1, max: 32, step: 1 },
-  { key: "edgeLines",   label: "Edge lines",         type: "boolean", value: true, group: "Quality" },
-  { key: "creaseLimit", label: "Crease limit (deg)", type: "real",    value: 50, group: "Quality", min: 0, max: 180, step: 1 },
-  { key: "edgeRise",    label: "Edge rise",          type: "real",    value: 1.0, group: "Quality", min: 0, max: 10, step: 0.1 },
+  { key: "numThreads", label: "CPU threads", type: "integer", value: 2,    group: "Quality", min: 1, max: 32, step: 1 },
+  { key: "edgeLines",  label: "Edge lines",  type: "boolean", value: true, group: "Quality" },
 
   // ── Output ───────────────────────────────────────────────
   { key: "fileFormat",    label: "File format",                type: "enum",    value: "png", group: "Output", options: ["png"] },

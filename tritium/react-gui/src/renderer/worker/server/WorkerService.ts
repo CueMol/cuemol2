@@ -122,6 +122,14 @@ export class WorkerService {
     }
 
     /**
+     * Push a message to the renderer on an out-of-band channel (no reply).
+     * Used by long-running services (e.g. render jobs) to stream updates.
+     */
+    pushMessage(channel: string, ...args: unknown[]): void {
+        this._postMessage([channel, ...args]);
+    }
+
+    /**
      * Wrap a TypedArray as a ByteArray that shares memory (zero-copy).
      * Used by streaming services to feed binary chunks into C++ readers.
      */
