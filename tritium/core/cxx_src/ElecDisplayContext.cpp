@@ -18,11 +18,44 @@ void ElecDisplayContext::init(ElecView *pView)
 
 void ElecDisplayContext::enableDepthTest(bool) {}
 
-void ElecDisplayContext::setCullFace(bool) {}
+void ElecDisplayContext::setCullFace(bool f)
+{
+    if (!m_pView || !m_pView->isBound()) return;
+    auto peer = m_pView->getPeerObj();
+    auto env = peer.Env();
+    auto method = peer.Get("setCullFace").As<Napi::Function>();
+    try {
+        method.Call(peer, {Napi::Boolean::New(env, f)});
+    } catch (const Napi::Error &e) {
+        MB_DPRINTLN("ElecDisplayContext::setCullFace> Error: %s", e.Message().c_str());
+    }
+}
 
-void ElecDisplayContext::setInvertColorBlend(bool) {}
+void ElecDisplayContext::setInvertColorBlend(bool bInv)
+{
+    if (!m_pView || !m_pView->isBound()) return;
+    auto peer = m_pView->getPeerObj();
+    auto env = peer.Env();
+    auto method = peer.Get("setInvertColorBlend").As<Napi::Function>();
+    try {
+        method.Call(peer, {Napi::Boolean::New(env, bInv)});
+    } catch (const Napi::Error &e) {
+        MB_DPRINTLN("ElecDisplayContext::setInvertColorBlend> Error: %s", e.Message().c_str());
+    }
+}
 
-void ElecDisplayContext::setFrontFace(bool) {}
+void ElecDisplayContext::setFrontFace(bool bCCW)
+{
+    if (!m_pView || !m_pView->isBound()) return;
+    auto peer = m_pView->getPeerObj();
+    auto env = peer.Env();
+    auto method = peer.Get("setFrontFace").As<Napi::Function>();
+    try {
+        method.Call(peer, {Napi::Boolean::New(env, bCCW)});
+    } catch (const Napi::Error &e) {
+        MB_DPRINTLN("ElecDisplayContext::setFrontFace> Error: %s", e.Message().c_str());
+    }
+}
 
 void ElecDisplayContext::clearBuffer(const gfx::ColorPtr &col)
 {
