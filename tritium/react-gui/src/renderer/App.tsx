@@ -32,6 +32,8 @@ import { ActiveToolProvider } from "./contexts/ActiveToolContext";
 import { useSceneTree } from "./hooks/useSceneTree";
 import { useSceneContextMenu } from "./hooks/useSceneContextMenu";
 import { useInspectorState } from "./hooks/useInspectorState";
+import { useRenderSettings } from "./hooks/useRenderSettings";
+import { RENDER_BACKEND_IDS } from "./data/renderBackends";
 import { useTabManager } from "./hooks/useTabManager";
 import { useCueMol } from "./hooks/useCueMol";
 import { useMolTabDispatch, useMolTabState } from "./hooks/useMolTab";
@@ -129,12 +131,14 @@ const App: React.FC = () => {
   const {
     inspectorOpen,
     inspectorTarget,
+    inspectorCategory,
     rendererProps,
     genericEntries,
     genericLoading,
     inspectorInfo,
     handleShowGeneric,
     handleShowViewProps,
+    handleShowRenderSettings,
     handleCloseInspector,
     handlePropertyChange,
     handleGenericSet,
@@ -146,6 +150,10 @@ const App: React.FC = () => {
     cm,
     sceneTree,
   });
+
+  // Render Settings editing state (non-persistent) for the inspector
+  // `renderSettings` target.
+  const renderSettings = useRenderSettings();
 
   // --- CueMol core / tabs ---
 
@@ -388,6 +396,7 @@ const App: React.FC = () => {
     onCenterMarkChanged,
     onBgColorChanged,
     showViewProperty: handleShowViewProps,
+    showRenderSettings: handleShowRenderSettings,
     newScene,
   });
 
@@ -541,11 +550,21 @@ const App: React.FC = () => {
                     >
                       <InspectorPanel
                         hasTarget={inspectorTarget !== null}
+                        targetKind={inspectorTarget?.kind ?? null}
+                        targetCategory={inspectorCategory}
                         nodeName={inspectorInfo.name}
                         nodeType={inspectorInfo.type}
                         properties={rendererProps}
                         genericEntries={genericEntries}
                         genericLoading={genericLoading}
+                        renderSettings={{
+                          backend: renderSettings.backend,
+                          backendIds: RENDER_BACKEND_IDS,
+                          commonProps: renderSettings.commonProps,
+                          backendProps: renderSettings.backendProps,
+                          onBackendChange: renderSettings.setBackend,
+                          onChange: renderSettings.handleChange,
+                        }}
                         onPropertyChange={handlePropertyChange}
                         onGenericSet={handleGenericSet}
                         onGenericReset={handleGenericReset}

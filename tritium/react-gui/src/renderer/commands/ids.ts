@@ -43,6 +43,9 @@ export const CmdId = {
   // Scene style
   SceneBgWhite: 'scene.bg.white', // no args
   SceneBgBlack: 'scene.bg.black', // no args
+
+  // Rendering
+  UiRenderSettings:   'ui.renderSettings', // no args -- open Render Settings in inspector
 } as const
 
 export type CmdId = typeof CmdId[keyof typeof CmdId]

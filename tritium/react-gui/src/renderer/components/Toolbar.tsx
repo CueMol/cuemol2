@@ -37,6 +37,8 @@ const TOOLBAR_ITEMS: ToolbarItem[] = [
   { kind: "divider", id: "d3" },
   { kind: "cmd", id: "get-pdb", icon: "cloud-download", text: "Get PDB", cmd: CmdId.UiGetPdbDialog },
   { kind: "divider", id: "d4" },
+  { kind: "cmd", id: "render", icon: "media", text: "Render", cmd: CmdId.UiRenderSettings },
+  { kind: "divider", id: "d5" },
   { kind: "undo", id: "undo" },
   { kind: "redo", id: "redo" },
 ];

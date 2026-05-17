@@ -238,6 +238,18 @@
   font-size: var(--fs-lg);
   height: 22px;
   border-radius: 3px;
+  /* Reserve room for the caret icon so the value text never runs under it. */
+  padding-right: 24px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Caret icon — Blueprint positions it for the default 30px select; recenter
+   it within the compact 22px select so it stays inside the rounded border. */
+.insp-select.bp5-html-select .bp5-icon {
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
 }
 
 /* ── Numeric row (slider + input) ── */
@@ -348,6 +360,37 @@
 .insp-color-swatch::-webkit-color-swatch {
   border: none;
   border-radius: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Render Settings target
+   ═══════════════════════════════════════════════════════════ */
+
+/* Header category badge (target kind) */
+.inspector-header-badge.bp5-tag {
+  flex-shrink: 0;
+  font-size: var(--fs-sm2);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-wide);
+}
+
+/* Backend selector row above the render-settings accordions */
+.insp-render-backend-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--bg-panel-header);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.insp-render-backend-bar .insp-prop-label {
+  flex-shrink: 0;
+}
+
+.insp-render-backend-bar .insp-select {
+  flex: 1;
+  min-width: 0;
 }
 
 /* ═══════════════════════════════════════════════════════════
