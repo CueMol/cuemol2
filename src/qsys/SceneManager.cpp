@@ -290,6 +290,5 @@ LString SceneManager::getVerArchName() const
 
 void SceneManager::doIdleTask()
 {
-    MB_DPRINTLN("SceneManager::doIdleTask> called");
     checkAndUpdateScenes();
 }
