@@ -21,7 +21,10 @@ import { useColumnResize } from "../../hooks/useColumnResize";
 // ────────────────────────────────────────────────────────────
 
 /** Default column widths in px (Name & Type are resizable, Value fills remainder). */
-const DEFAULT_WIDTHS = { name: 170, type: 130 };
+const DEFAULT_WIDTHS = { name: 120, type: 80 };
+
+/** localStorage key for the persisted Name / Type column widths. */
+const GENERIC_COL_WIDTHS_KEY = "cuemol.inspector.genericTab.colWidths";
 
 // ────────────────────────────────────────────────────────────
 // Types
@@ -54,17 +57,20 @@ function displayValue(entry: GenericPropEntry): string {
 
 interface DetailEditorProps {
   entry: GenericPropEntry;
+  /** True while the property is sitting at its (not yet cleared) C++ default. */
+  atDefault: boolean;
   onSetValue: (key: string, valueType: string, value: string | number | boolean) => void;
 }
 
 /**
- * Editor for one property. Mounted with `key={entry.key}` so its draft
+ * Editor for one property. Mounted via `DetailPanel`'s `key` so its draft
  * state resets whenever the selected row changes.
  */
-const DetailEditor: React.FC<DetailEditorProps> = ({ entry, onSetValue }) => {
+const DetailEditor: React.FC<DetailEditorProps> = ({ entry, atDefault, onSetValue }) => {
   // Value widgets are disabled for read-only props and while a resettable
-  // property is sitting at its default (UXP: `mValueText.disabled`).
-  const disabled = entry.readonly || (entry.hasdefault && entry.isdefault);
+  // property is sitting at its default. Clearing the "default" checkbox
+  // re-enables the widget without changing the value (UXP: `defaultToggleCheck`).
+  const disabled = entry.readonly || atDefault;
 
   // Local draft for text / numeric widgets, committed on blur / Enter.
   const [draft, setDraft] = useState<string>(String(entry.value));
@@ -151,6 +157,57 @@ const DetailEditor: React.FC<DetailEditorProps> = ({ entry, onSetValue }) => {
 };
 
 // ────────────────────────────────────────────────────────────
+// Detail panel — "default" checkbox + type-aware editor
+// ────────────────────────────────────────────────────────────
+
+interface DetailPanelProps {
+  entry: GenericPropEntry;
+  onSetValue: (key: string, valueType: string, value: string | number | boolean) => void;
+  onResetValue: (key: string) => void;
+}
+
+/**
+ * Bottom detail area for the selected property. Mounted with a `key` that
+ * encodes the entry's value / default flag, so that `defaultCleared` resets
+ * whenever the row changes or the property list is refetched after a write.
+ */
+const DetailPanel: React.FC<DetailPanelProps> = ({ entry, onSetValue, onResetValue }) => {
+  // Local override mirroring UXP's `defaultToggleCheck`: unchecking "default"
+  // re-enables the editor without changing the value. There is no immutable
+  // `entry.isdefault` to mutate, so the cleared state lives here instead.
+  const [defaultCleared, setDefaultCleared] = useState(false);
+
+  const atDefault = entry.hasdefault && entry.isdefault && !defaultCleared;
+
+  return (
+    <>
+      <div className="insp-generic-detail-head">
+        <span className="insp-generic-detail-key">{entry.key}</span>
+        <span className="insp-generic-detail-type">{entry.type}</span>
+      </div>
+      <div className="insp-generic-detail-editor">
+        <Checkbox
+          label="default"
+          checked={atDefault}
+          disabled={entry.readonly || !entry.hasdefault}
+          onChange={(e) => {
+            // Checking restores the C++ default; unchecking only re-enables
+            // the widget so the next edit can set a non-default value.
+            if ((e.target as HTMLInputElement).checked) {
+              onResetValue(entry.key);
+            } else {
+              setDefaultCleared(true);
+            }
+          }}
+          className="insp-generic-default-check"
+        />
+        <DetailEditor entry={entry} atDefault={atDefault} onSetValue={onSetValue} />
+      </div>
+    </>
+  );
+};
+
+// ────────────────────────────────────────────────────────────
 // Component
 // ────────────────────────────────────────────────────────────
 
@@ -163,7 +220,11 @@ export const GenericTab: React.FC<GenericTabProps> = ({
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
 
-  const { widths, startResize } = useColumnResize(DEFAULT_WIDTHS);
+  const { widths, startResize } = useColumnResize(
+    DEFAULT_WIDTHS,
+    undefined,
+    GENERIC_COL_WIDTHS_KEY,
+  );
 
   const selectedEntry = entries.find((e) => e.key === selectedKey) ?? null;
 
@@ -192,7 +253,8 @@ export const GenericTab: React.FC<GenericTabProps> = ({
           <colgroup>
             <col style={{ width: widths.name }} />
             <col style={{ width: widths.type }} />
-            <col /> {/* Value — takes remaining space */}
+            {/* Value column takes the remaining space */}
+            <col />
           </colgroup>
 
           <thead>
@@ -243,32 +305,12 @@ export const GenericTab: React.FC<GenericTabProps> = ({
       {/* Bottom detail editor */}
       <div className="insp-generic-detail">
         {selectedEntry ? (
-          <>
-            <div className="insp-generic-detail-head">
-              <span className="insp-generic-detail-key">{selectedEntry.key}</span>
-              <span className="insp-generic-detail-type">{selectedEntry.type}</span>
-            </div>
-            <div className="insp-generic-detail-editor">
-              <Checkbox
-                label="default"
-                checked={selectedEntry.isdefault}
-                disabled={selectedEntry.readonly || !selectedEntry.hasdefault}
-                onChange={(e) => {
-                  // Restoring the default; unchecking only re-enables the
-                  // widget so the next edit can set a non-default value.
-                  if ((e.target as HTMLInputElement).checked) {
-                    onResetValue(selectedEntry.key);
-                  }
-                }}
-                className="insp-generic-default-check"
-              />
-              <DetailEditor
-                key={`${selectedEntry.key}:${String(selectedEntry.value)}:${selectedEntry.isdefault}`}
-                entry={selectedEntry}
-                onSetValue={onSetValue}
-              />
-            </div>
-          </>
+          <DetailPanel
+            key={`${selectedEntry.key}:${String(selectedEntry.value)}:${selectedEntry.isdefault}`}
+            entry={selectedEntry}
+            onSetValue={onSetValue}
+            onResetValue={onResetValue}
+          />
         ) : (
           <div className="insp-generic-detail-hint">
             Select a property to edit its value.
