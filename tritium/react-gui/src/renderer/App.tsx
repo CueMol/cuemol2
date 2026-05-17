@@ -33,6 +33,7 @@ import { useSceneTree } from "./hooks/useSceneTree";
 import { useSceneContextMenu } from "./hooks/useSceneContextMenu";
 import { useInspectorState } from "./hooks/useInspectorState";
 import { useRenderSettings } from "./hooks/useRenderSettings";
+import { useRenderJob, isRenderJobActive } from "./hooks/useRenderJob";
 import { RENDER_BACKEND_IDS } from "./data/renderBackends";
 import { useTabManager } from "./hooks/useTabManager";
 import { useCueMol } from "./hooks/useCueMol";
@@ -154,6 +155,9 @@ const App: React.FC = () => {
   // Render Settings editing state (non-persistent) for the inspector
   // `renderSettings` target.
   const renderSettings = useRenderSettings();
+
+  // Render job lifecycle for the BottomPanel Render tab.
+  const renderJob = useRenderJob();
 
   // --- CueMol core / tabs ---
 
@@ -436,6 +440,12 @@ const App: React.FC = () => {
   const sidebarVisible = activeView !== null;
   const settingsActive = tabs.find((t) => t.id === activeTab)?.type === "settings";
 
+  // StatusBar: a running render takes precedence over tool-hover messages.
+  const activeRenderJob = isRenderJobActive(renderJob.job) ? renderJob.job : null;
+  const statusBarMessage = activeRenderJob
+    ? `Rendering… ${activeRenderJob.progress}%`
+    : statusMessage;
+
   // --- Render ---
 
   return (
@@ -536,6 +546,9 @@ const App: React.FC = () => {
                           <BottomPanel
                             alignment={alignment}
                             animation={animation}
+                            renderJob={renderJob.job}
+                            onRenderStart={renderJob.start}
+                            onRenderCancel={renderJob.cancel}
                           />
                         </Allotment.Pane>
                       </Allotment>
@@ -583,8 +596,8 @@ const App: React.FC = () => {
         activeToolLabel={activeDef.label}
         activeToolShortcut={activeDef.shortcut}
         activeToolIcon={activeDef.icon}
-        busy={cueMolBusy}
-        statusMessage={statusMessage}
+        busy={cueMolBusy || activeRenderJob !== null}
+        statusMessage={statusBarMessage}
       />
     </div>
     </ActiveToolProvider>

@@ -1,6 +1,6 @@
 /**
  * Bottom panel with VSCode-style tabbed switching between Output,
- * Sequence alignment, and Animation timeline views.
+ * Sequence alignment, Animation timeline and Render views.
  *
  * The Output tab uses `LogView` (pre-element based) backed by
  * `useLogEvent` so it receives cuemol3 core log events via IPC.
@@ -12,13 +12,15 @@ import type { IconName } from "@blueprintjs/icons";
 import { LogView } from "../../LogView";
 import { SequencePanel } from "./SequencePanel";
 import { AnimationPanel } from "./AnimationPanel";
+import { RenderPanel } from "./RenderPanel";
+import type { RenderJob } from "../../hooks/useRenderJob";
 import type { AlignmentData, AnimationData } from "../../types";
 
 // ─────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────
 
-type BottomTabType = "output" | "sequence" | "animation";
+type BottomTabType = "output" | "sequence" | "animation" | "render";
 
 interface TabButtonProps {
   tab: BottomTabType;
@@ -49,9 +51,21 @@ const TabButton: React.FC<TabButtonProps> = ({ tab, activeTab, icon, label, onCl
 interface BottomPanelProps {
   alignment: AlignmentData | null;
   animation: AnimationData | null;
+  /** Current render job (Render tab). */
+  renderJob: RenderJob | null;
+  /** Start a render. */
+  onRenderStart: () => void;
+  /** Cancel the active render. */
+  onRenderCancel: () => void;
 }
 
-export const BottomPanel: React.FC<BottomPanelProps> = ({ alignment, animation }) => {
+export const BottomPanel: React.FC<BottomPanelProps> = ({
+  alignment,
+  animation,
+  renderJob,
+  onRenderStart,
+  onRenderCancel,
+}) => {
   const [activeTab, setActiveTab] = useState<BottomTabType>("output");
 
   const renderContent = () => {
@@ -62,6 +76,14 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({ alignment, animation }
         return <SequencePanel alignment={alignment} />;
       case "animation":
         return <AnimationPanel animation={animation} />;
+      case "render":
+        return (
+          <RenderPanel
+            job={renderJob}
+            onStart={onRenderStart}
+            onCancel={onRenderCancel}
+          />
+        );
     }
   };
 
@@ -71,6 +93,7 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({ alignment, animation }
         <TabButton tab="output" activeTab={activeTab} icon="console" label="Output" onClick={setActiveTab} />
         <TabButton tab="sequence" activeTab={activeTab} icon="align-left" label="Sequence" onClick={setActiveTab} />
         <TabButton tab="animation" activeTab={activeTab} icon="timeline-events" label="Animation" onClick={setActiveTab} />
+        <TabButton tab="render" activeTab={activeTab} icon="media" label="Render" onClick={setActiveTab} />
       </div>
       <div className="bottom-panel-content">{renderContent()}</div>
     </div>
