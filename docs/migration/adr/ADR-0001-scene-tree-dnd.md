@@ -1,6 +1,6 @@
 # ADR-0001: Scene-tree drag-and-drop detection strategy
 
-- Status: accepted (in-app verification pending — see Known issues)
+- Status: accepted
 - Date: 2026-05-12
 - Mapping rows: [`panel.workspace.tree`](../mapping/panels.md#panelworkspacetree)
 
@@ -70,25 +70,27 @@ reorder.
 - `uxp_gui/cuemol2/base/content/workspace_panel.js` — `_moveToImpl` (the
   bubble-sort and `rend.group` assignment)
 
-### Known issues
+### Resolved issues
 
-**In-app DnD does not fire (2026-05-12).** Worker service and unit tests
-pin the algorithm, but in the running app the drag from a Blueprint Tree
-row label is not producing the expected `dragstart` → `drop` chain.
-Likely causes:
+**In-app DnD did not fire (2026-05-12, fixed 2026-05-16).** The root
+cause was hitbox geometry, not Blueprint event interception: the
+`<span draggable>` wrapping the row label used `display: inline-block`,
+so it occupied only the label-text width. The visible row
+(`.bp5-tree-node-content`, full width / 22px) had no DnD handlers, so
+`dragover` / `drop` outside the glyphs landed on an unhandled element,
+were never `preventDefault`-ed, and the browser rejected the drop.
+Blueprint's row `<div>` binds only click / contextmenu / dblclick /
+mouseenter / mouseleave (no `mousedown`), so it does not block
+`dragstart`.
 
-- Blueprint Tree's own row event handlers intercept events before they
-  reach the `<span draggable>`.
-- The wrapping `<span>` does not extend to the full row hit-box, so most
-  of the row area is not draggable.
-
-**Follow-up.** Inspect actual DOM hit-test under Electron devtools, and
-consider attaching DnD handlers to a wider container (e.g. via the
-`secondaryLabel` slot or a custom row renderer that owns the full row
-width).
-
-This issue is the reason the related refactor (extracting DnD into
-`useSceneTreeDnD.ts`) is deferred — see the project refactoring plan.
+**Fix.** The label span now uses `display: block; width: 100%` so it
+fills the Blueprint label cell (a `flex: 1` region covering most of the
+row). A drag-over insertion indicator (top/bottom line for `ori ±1`,
+inset highlight for `ori 0`) was added; the dragged node is stashed in a
+ref at `dragstart` so `dragover` can validate the drop via
+`planSceneNodeMove` and show the indicator only on accepted positions.
+The icon / caret strip stays outside the hitbox — acceptable for tree
+DnD. Pinned by `__test__/scenePaneDnd.test.tsx`.
 
 ### Related ADRs
 

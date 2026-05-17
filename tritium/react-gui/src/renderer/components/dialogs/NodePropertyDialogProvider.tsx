@@ -1,3 +1,8 @@
+/*
+ * @deprecated Superseded by the generic property inspector. No longer mounted
+ * in `DialogContext`; scheduled for deletion together with `NodePropertyDialog`,
+ * the `getNodeInfo` worker service and the `fetchNodeInfo` scene-tree helper.
+ */
 import React from 'react'
 import { NodePropertyDialog } from './NodePropertyDialog'
 import { createDialogHook } from '../../hooks/useDialogFactory'

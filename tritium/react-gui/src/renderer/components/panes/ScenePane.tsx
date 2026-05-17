@@ -323,6 +323,15 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
         () => new Map(),
     );
 
+    // Mid-drag drop indicator: the row id currently hovered plus the
+    // resolved orientation. Only set when planSceneNodeMove accepts the
+    // (source, target, ori) combo, so the line never shows on an invalid
+    // drop position. `dragSourceRef` carries the dragged node across the
+    // dragover phase, where `dataTransfer.getData` is unavailable.
+    const [dropIndicator, setDropIndicator] =
+        useState<{ id: string; ori: DragOri } | null>(null);
+    const dragSourceRef = useRef<SceneTreeNode | null>(null);
+
     // Inline-rename is now controlled by the parent (App.tsx). ScenePane
     // only owns the InputGroup focus ref and stashes callback refs so the
     // handlers stay stable across renders.
@@ -548,6 +557,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                 return;
             }
             const payload: DragSourcePayload = { id: node.id, type: node.type };
+            dragSourceRef.current = node;
             e.dataTransfer.setData(SCENE_NODE_MIME, JSON.stringify(payload));
             e.dataTransfer.effectAllowed = "move";
         },
@@ -571,24 +581,39 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     const handleDragOver = useCallback(
         (e: React.DragEvent<HTMLSpanElement>, node: SceneTreeNode) => {
             if (!onMoveNode) return;
-            // dataTransfer.getData is unavailable on dragover (privacy);
-            // we still call planSceneNodeMove with the target only by
-            // optimistically accepting the drop. The drop handler does
-            // strict validation.
             const types = e.dataTransfer.types;
             if (!Array.from(types).includes(SCENE_NODE_MIME)) return;
             // Allow the drop so the browser displays a "move" cursor.
             e.preventDefault();
             e.dataTransfer.dropEffect = "move";
-            void node;
+            // Mid-drag indicator: resolve ori + validity so the line is
+            // shown only where a drop would actually be accepted.
+            // dataTransfer.getData is unavailable on dragover, so the
+            // source node comes from the dragstart-stashed ref.
+            const src = dragSourceRef.current;
+            const rect = e.currentTarget.getBoundingClientRect();
+            const ori = computeOri(rect, e.clientY);
+            const plan = src
+                ? planSceneNodeMove(src, node, ori, parentLookup)
+                : null;
+            setDropIndicator((prev) => {
+                if (!plan) return prev === null ? prev : null;
+                const id = String(node.id);
+                // dragover fires continuously; skip the state update
+                // (and re-render) when the target row + ori are unchanged.
+                if (prev && prev.id === id && prev.ori === ori) return prev;
+                return { id, ori };
+            });
         },
-        [onMoveNode],
+        [onMoveNode, parentLookup],
     );
 
     const handleDrop = useCallback(
         (e: React.DragEvent<HTMLSpanElement>, target: SceneTreeNode) => {
             if (!onMoveNode) return;
             const src = readDragSource(e);
+            setDropIndicator(null);
+            dragSourceRef.current = null;
             if (!src) return;
             e.preventDefault();
             const rect = e.currentTarget.getBoundingClientRect();
@@ -598,6 +623,22 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
             void onMoveNode(plan);
         },
         [onMoveNode, parentLookup, readDragSource],
+    );
+
+    // Clear the drag state when the drag ends (drop, Esc, or release
+    // outside any target) and when the pointer leaves the tree entirely.
+    const handleDragEnd = useCallback(() => {
+        dragSourceRef.current = null;
+        setDropIndicator(null);
+    }, []);
+
+    const handleTreeDragLeave = useCallback(
+        (e: React.DragEvent<HTMLDivElement>) => {
+            const related = e.relatedTarget as Node | null;
+            if (related && e.currentTarget.contains(related)) return;
+            setDropIndicator(null);
+        },
+        [],
     );
 
     const handleNodeContextMenu = useCallback(
@@ -705,16 +746,42 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
             }
             const text = nodeLabel(n);
             if (!onMoveNode) return text;
+            // The draggable span fills the whole Blueprint label cell
+            // (`display: block; width: 100%`) so drag-start and drop
+            // register anywhere across the row's label area, not just on
+            // the glyphs. An inline-block span sized to the text left
+            // most of the visible row a dead zone (ADR-0001).
+            const ind =
+                dropIndicator && dropIndicator.id === idStr
+                    ? dropIndicator.ori
+                    : null;
             return (
                 <span
                     draggable={draggable(n)}
                     onDragStart={(e) => handleDragStart(e, n)}
                     onDragOver={(e) => handleDragOver(e, n)}
                     onDrop={(e) => handleDrop(e, n)}
+                    onDragEnd={handleDragEnd}
                     data-node-id={String(n.id)}
-                    style={{ display: "inline-block", cursor: draggable(n) ? "grab" : "default" }}
+                    className={"sn-row-label" + (ind === 0 ? " sn-drop-into" : "")}
+                    style={{
+                        display: "block",
+                        position: "relative",
+                        width: "100%",
+                        lineHeight: "22px",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        cursor: draggable(n) ? "grab" : "default",
+                    }}
                 >
                     {text}
+                    {ind === -1 && (
+                        <span className="sn-drop-line sn-drop-line-top" />
+                    )}
+                    {ind === 1 && (
+                        <span className="sn-drop-line sn-drop-line-bottom" />
+                    )}
                 </span>
             );
         };
@@ -757,8 +824,8 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
         return [sceneRow, ...tree.children.map(buildNode)];
     }, [
         tree, expandOverrides, selectedId, selectedIds, visibilityButton,
-        onMoveNode, handleDragStart, handleDragOver, handleDrop,
-        editingNodeId, commitEdit, cancelEdit,
+        onMoveNode, handleDragStart, handleDragOver, handleDrop, handleDragEnd,
+        dropIndicator, editingNodeId, commitEdit, cancelEdit,
     ]);
 
     return (
@@ -794,7 +861,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                             <Button
                                 minimal
                                 small
-                                icon={<Icon icon="locate" size={14} />}
+                                icon={<Icon icon="zoom-to-fit" size={14} />}
                                 className="section-action-btn"
                                 disabled={!canFocus}
                                 onClick={() => onFocusSelected?.(selectedId)}
@@ -836,6 +903,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                     className="sp-pane-scroll"
                     tabIndex={-1}
                     onKeyDown={handleTreeKeyDown}
+                    onDragLeave={handleTreeDragLeave}
                     style={{ outline: 'none' }}
                 >
                     <Tree

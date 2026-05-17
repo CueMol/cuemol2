@@ -16,6 +16,10 @@ Status values:
 
 # Mapping — Dialog_property
 
+> Option-specification UX: pick a pattern per row using
+> [option-ux-guidelines.md](../option-ux-guidelines.md). Renderer property
+> dialogs are recommended to consolidate into one docked Properties panel.
+
 | ID | React | Mapping | Status | PR | ADR | Notes |
 |----|-------|---------|--------|----|-----|-------|
 | [`dialog.property.ballstick`](../uxp-inventory/prop_dlgs.md#dialogpropertyballstick) | | | todo | | | |

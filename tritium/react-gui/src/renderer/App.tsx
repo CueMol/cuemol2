@@ -44,8 +44,7 @@ import { useCommands } from "./commands/CommandRegistry";
 import { CmdId } from "./commands/ids";
 import { useCueMolBusy } from "./hooks/useCueMolBusy";
 import { useShowConfirmCloseTabDialog } from "./components/dialogs/ConfirmCloseTabDialogProvider";
-import { useShowNodePropertyDialog } from "./components/dialogs/NodePropertyDialogProvider";
-import { useQuitHandler } from "./hooks/useQuitHandler";
+import { useWindowCloseHandler } from "./hooks/useWindowCloseHandler";
 
 const App: React.FC = () => {
 
@@ -125,23 +124,27 @@ const App: React.FC = () => {
     saveCameraToFile: saveSceneCameraToFile,
     saveCameraToCurrentSrc: saveSceneCameraToCurrentSrc,
     reloadCameraFromSrc: reloadSceneCameraFromSrc,
-    fetchNodeInfo: fetchSceneNodeInfo,
-    resolveNodeName,
   } = useSceneTree({ cm, sceneId: activeSceneId });
 
   const {
     inspectorOpen,
+    inspectorTarget,
     rendererProps,
-    genericProps,
+    genericEntries,
+    genericLoading,
     inspectorInfo,
+    handleShowGeneric,
+    handleShowViewProps,
     handleCloseInspector,
     handlePropertyChange,
-    handleGenericChange,
+    handleGenericSet,
+    handleGenericReset,
   } = useInspectorState({
     layout,
     loaded,
     persistInspectorOpen,
-    resolveNodeName,
+    cm,
+    sceneTree,
   });
 
   // --- CueMol core / tabs ---
@@ -184,7 +187,7 @@ const App: React.FC = () => {
     handleReorderTabs,
   } = useTabManager({ onMolViewClose: handleMolViewClose, confirmCloseTab });
 
-  useQuitHandler({ tabsRef, handleCloseTab, setActiveTab });
+  useWindowCloseHandler({ tabsRef, handleCloseTab, setActiveTab });
 
   // Shared "create scene + view + register tab" action used by both the
   // launch path and the New Tab dialog (UXP onNewScene equivalent).
@@ -205,7 +208,6 @@ const App: React.FC = () => {
   const activeMolViewId = tabs.find((t) => t.id === activeTab && t.type === 'molview')?.viewId;
 
   // --- Scene-tree toolbar handlers (UXP workspace_panel onBtn*Cmd) ---
-  const showNodePropertyDialog = useShowNodePropertyDialog();
 
   const handleSceneFocus = useCallback((id: string) => {
     if (activeMolViewId === undefined) return;
@@ -220,11 +222,9 @@ const App: React.FC = () => {
     });
   }, [deleteSceneNode]);
 
-  const handleSceneShowProperty = useCallback(async (id: string) => {
-    const info = await fetchSceneNodeInfo(id);
-    if (!info) return;
-    await showNodePropertyDialog(info);
-  }, [fetchSceneNodeInfo, showNodePropertyDialog]);
+  // Scene-tree Property action: open the generic property inspector
+  // (UXP onPropCmd). Replaces the former read-only modal dialog.
+  const handleSceneShowProperty = handleShowGeneric;
 
   // Inline-rename controller — owned at App level so both the F2
   // keypath (initiated in ScenePane) and the ctxmenu Rename action
@@ -297,8 +297,7 @@ const App: React.FC = () => {
   // Tree row double-click — UXP `onTreeItemClick` `aEvent.detail==2`:
   // camera rows run `loadCamImpl(name, true)` (Apply to view with vis
   // flags); other rows run `onPropCmd` (Properties dialog). The current
-  // Properties dialog is still the panel-wide key/value stub (Phase 5a),
-  // but UXP wires it the same way.
+  // Double-click opens the generic property inspector (UXP onPropCmd).
   const handleSceneNodeDoubleClick = useCallback(
     (node: Parameters<typeof openSceneCtxMenu>[0]) => {
       if (node.type === 'camera') {
@@ -312,9 +311,7 @@ const App: React.FC = () => {
       // property action (UXP onPropCmd early-returns for those), so we
       // skip them. styleRoot is fine as a leaf-double-click no-op.
       if (node.type === 'cameraRoot' || node.type === 'styleRoot') return;
-      void handleSceneShowProperty(String(node.id)).catch((err: unknown) => {
-        console.warn('dblclick showProperty failed:', err);
-      });
+      handleSceneShowProperty(String(node.id));
     },
     [activeMolViewId, applySceneCameraToView, handleSceneShowProperty],
   );
@@ -390,6 +387,7 @@ const App: React.FC = () => {
     onProjectionChanged,
     onCenterMarkChanged,
     onBgColorChanged,
+    showViewProperty: handleShowViewProps,
     newScene,
   });
 
@@ -437,11 +435,7 @@ const App: React.FC = () => {
       {window.electronAPI?.platform !== 'darwin' && (
         <MenuBar activeTab={activeTab} viewProjection={viewProjection} viewCenterMark={viewCenterMark} sceneBgColor={sceneBgColor} recentFiles={recentFiles} />
       )}
-      <Toolbar
-        onOpenFile={() => dispatchCommand(CmdId.UiOpenObjDialog).catch((e: unknown) => console.error('UiOpenObjDialog failed:', e))}
-        onNewTab={() => dispatchCommand(CmdId.TabNew).catch((e: unknown) => console.error('TabNew failed:', e))}
-        onSave={() => dispatchCommand(CmdId.FileSave).catch((e: unknown) => console.error('FileSave failed:', e))}
-      />
+      <Toolbar />
 
       <div className="main-layout">
         <div className="main-layout-inner">
@@ -546,12 +540,15 @@ const App: React.FC = () => {
                       snap
                     >
                       <InspectorPanel
-                        rendererName={inspectorInfo.name}
-                        rendererType={inspectorInfo.type}
+                        hasTarget={inspectorTarget !== null}
+                        nodeName={inspectorInfo.name}
+                        nodeType={inspectorInfo.type}
                         properties={rendererProps}
-                        genericEntries={genericProps}
+                        genericEntries={genericEntries}
+                        genericLoading={genericLoading}
                         onPropertyChange={handlePropertyChange}
-                        onGenericChange={handleGenericChange}
+                        onGenericSet={handleGenericSet}
+                        onGenericReset={handleGenericReset}
                         onClose={handleCloseInspector}
                       />
                     </Allotment.Pane>

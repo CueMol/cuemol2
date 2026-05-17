@@ -303,6 +303,10 @@ export function useSceneTreeNodeOps(
         [cm, sceneIdRef, resolveBulkItems],
     )
 
+    // @deprecated Fed the retired read-only `NodePropertyDialog` modal via
+    // the `getNodeInfo` service. The scene-tree Property action now opens
+    // the generic property inspector (`useInspectorState.handleShowGeneric`).
+    // No live caller remains; scheduled for deletion with `getNodeInfo`.
     const fetchNodeInfo = useCallback(
         async (id: string): Promise<NodeInfo | null> => {
             const sid = sceneIdRef.current

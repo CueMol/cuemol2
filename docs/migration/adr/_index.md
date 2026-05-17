@@ -35,9 +35,13 @@ Architecture Decision Records for the UXP → tritium migration.
 | [ADR-0004](ADR-0004-renderer-ctxmenu.md) | Renderer context menu — Coloring, Paint, Style, Change-type | accepted (Edit/Create style dialog pending) | 2026-05-13 | `panel.workspace.ctxmenu.renderer` |
 | [ADR-0005](ADR-0005-camera-name-keyed.md) | Camera operations are name-keyed at the worker boundary | accepted | 2026-05-13 | `panel.workspace.ctxmenu.camera` |
 | [ADR-0006](ADR-0006-stylesets-uid-readonly.md) | StyleSets — uid keying, read-only toggle, save/load semantics | accepted | 2026-05-13 | `panel.workspace.ctxmenu.style` |
-| [ADR-0007](ADR-0007-scene-tree-multi-select.md) | Scene-tree multi-select bulk dispatch | accepted (Cmd/Ctrl+click trigger pending) | 2026-05-12 | `panel.workspace.ctxmenu.multi`, `panel.workspace.tree` |
+| [ADR-0007](ADR-0007-scene-tree-multi-select.md) | Scene-tree multi-select bulk dispatch | accepted | 2026-05-12 | `panel.workspace.ctxmenu.multi`, `panel.workspace.tree` |
 | [ADR-0008](ADR-0008-get-pdb-streaming.md) | File > Get PDB — streaming download via StreamManager | accepted | 2026-05-13 | `menu.cuemol2` (Get PDB) |
 | [ADR-0009](ADR-0009-open-recent-mru.md) | File > Open Recent — electron-store MRU + OS dock integration | accepted | 2026-05-13 | `menu.cuemol2` (Open Recent) |
-| [ADR-0010](ADR-0010-quit-chain.md) | Application quit — per-tab modified-scene confirm chain | accepted | 2026-05-13 | `menu.cuemol2` (Quit), `menu.cuemol2-macos` (Quit), `other.cuemol2` |
+| [ADR-0010](ADR-0010-quit-chain.md) | Application quit — per-tab modified-scene confirm chain | superseded by ADR-0016 | 2026-05-13 | `menu.cuemol2` (Quit), `menu.cuemol2-macos` (Quit), `other.cuemol2` |
 | [ADR-0011](ADR-0011-new-tab-canvas-lifecycle.md) | New Tab — OffscreenCanvas one-shot bind, addView() for new views | accepted | 2026-05-13 | `menu.cuemol2` (New Tab), `other.cuemol2` |
 | [ADR-0012](ADR-0012-save-scene-parity.md) | Save Scene / Save Scene As — UXP parity (.bak, qsc_xml, option dialog) | accepted | 2026-05-13 | `menu.cuemol2` (Save Scene, Save Scene As) |
+| [ADR-0013](ADR-0013-toolbar-ribbon-port.md) | Top Toolbar — UXP ribbon port as a tab-less Navbar | accepted (object Save / Reload Scene / undo history pending) | 2026-05-16 | `toolbar.cuemol2-ribbon` |
+| [ADR-0014](ADR-0014-file-menu-save-reload.md) | File menu — Save File As, Save current view, Reload Scene | accepted | 2026-05-16 | `menu.cuemol2` (Save File As, Save current view, Reload Scene) |
+| [ADR-0015](ADR-0015-generic-property-inspector.md) | Generic property inspector — docked pane, live-apply, getPropsJSON bridge | accepted (color/vector/timeval/nested-object pending) | 2026-05-16 | `overlay.propeditor-generic` |
+| [ADR-0016](ADR-0016-window-close-quit-funnel.md) | Window close and app quit — single win.on('close') confirm funnel | accepted (supersedes ADR-0010) | 2026-05-17 | `menu.cuemol2` (Quit), `menu.cuemol2-macos` (Quit), `other.cuemol2` |

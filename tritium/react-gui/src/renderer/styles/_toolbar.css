@@ -30,26 +30,6 @@
   border-color: var(--border);
 }
 
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding-right: 4px;
-}
-
-.brand-icon {
-  font-size: var(--fs-icon);
-  color: var(--accent);
-  filter: drop-shadow(0 0 4px var(--accent-glow));
-}
-
-.brand-text {
-  font-weight: var(--fw-semibold);
-  font-size: var(--fs-2xl);
-  letter-spacing: var(--ls-wide);
-  color: var(--text-primary);
-}
-
 /* ─── macOS Title Bar Draggable Region ─── */
 .app-toolbar {
   -webkit-app-region: drag;

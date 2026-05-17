@@ -216,6 +216,31 @@
   align-items: center;
 }
 
+/* ─── Scene-tree DnD drop indicator ─── */
+/* The draggable label span fills the Blueprint label cell; the indicator
+ * line / highlight are drawn relative to it during a drag-over. */
+.scene-tree .sn-drop-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent);
+  pointer-events: none;
+}
+
+.scene-tree .sn-drop-line-top {
+  top: 0;
+}
+
+.scene-tree .sn-drop-line-bottom {
+  bottom: 0;
+}
+
+.scene-tree .sn-drop-into {
+  box-shadow: inset 0 0 0 1px var(--accent);
+  border-radius: 2px;
+}
+
 /* ─── Visibility Toggle ─── */
 .visibility-toggle.bp5-button {
   min-height: 20px !important;

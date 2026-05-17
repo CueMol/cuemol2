@@ -98,46 +98,6 @@ export const RIBBON_PROPERTIES: PropDef[] = [
     min: 0, max: 200, step: 5 },
 ];
 
-/** All generic properties as a flat key-value table (for the Generic tab). */
-export interface GenericPropEntry {
-  key: string;
-  readonly: boolean;
-  type: string;
-  value: string;
-}
-
-export const RIBBON_GENERIC_PROPERTIES: GenericPropEntry[] = [
-  { key: "alpha",          readonly: false, type: "real",                   value: "1" },
-  { key: "axialdetail",    readonly: false, type: "integer",               value: "8" },
-  { key: "center",         readonly: true,  type: "object<Vector>",        value: "(-5.2044,1.711088,-2.1...)" },
-  { key: "coil",           readonly: true,  type: "object<TubeSection>",   value: "<node>" },
-  { key: "coil.detail",    readonly: false, type: "integer",               value: "16" },
-  { key: "coil.sharp",     readonly: false, type: "real",                  value: "0.4" },
-  { key: "coil.tuber",     readonly: false, type: "real",                  value: "1" },
-  { key: "coil.type",      readonly: false, type: "enum",                  value: "elliptical" },
-  { key: "coil.width",     readonly: false, type: "real",                  value: "0.35" },
-  { key: "coil_smooth",    readonly: false, type: "real",                  value: "0" },
-  { key: "coloring",       readonly: false, type: "object<ColoringSchem…>", value: "<node>" },
-  { key: "defaultcolor",   readonly: false, type: "object<AbstractColor>", value: "$molcol" },
-  { key: "egcolor",        readonly: false, type: "object<AbstractColor>", value: "#000000" },
-  { key: "eglinew",        readonly: false, type: "real",                  value: "0.01" },
-  { key: "egtype",         readonly: false, type: "enum",                  value: "none" },
-  { key: "end_captype",    readonly: false, type: "enum",                  value: "sphere" },
-  { key: "group",          readonly: false, type: "string",                value: "Default1RendPreset1" },
-  { key: "has_center",     readonly: true,  type: "boolean",               value: "true" },
-  { key: "helix",          readonly: true,  type: "object<TubeSection>",   value: "<node>" },
-  { key: "helix.detail",   readonly: false, type: "integer",               value: "16" },
-  { key: "helix.sharp",    readonly: false, type: "real",                  value: "0.4" },
-  { key: "helix.tuber",    readonly: false, type: "real",                  value: "6" },
-  { key: "helix.type",     readonly: false, type: "enum",                  value: "rectangle" },
-  { key: "helix.width",    readonly: false, type: "real",                  value: "0.2" },
-  { key: "helix_smooth",   readonly: false, type: "real",                  value: "0" },
-  { key: "name",           readonly: false, type: "string",                value: "ribbon1" },
-  { key: "opacity",        readonly: false, type: "real",                  value: "1.0" },
-  { key: "selection",      readonly: false, type: "string",                value: "protein" },
-  { key: "visible",        readonly: false, type: "boolean",               value: "true" },
-];
-
 /**
  * Ordered list of accordion groups for the Properties tab.
  * Controls rendering order and default expanded state.

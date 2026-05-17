@@ -1,5 +1,7 @@
 /* ═══════════════════════════════════════════════════════════
-   Generic Tab
+   Generic Tab — flat property table + detail editor.
+   Table rows match the ScenePane scene-tree metrics
+   (var(--fs-lg), 22px row height, var(--text-primary)).
    ═══════════════════════════════════════════════════════════ */
 
 .insp-generic-tab {
@@ -7,21 +9,41 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  background: var(--bg-surface);
 }
 
-/* Filter bar */
+/* ── Filter bar ── */
 .insp-generic-filter {
-  padding: 6px 10px;
+  padding: 4px 8px;
   flex-shrink: 0;
-  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
 }
 
-/* Scrollable table wrapper */
+/* Compact search field. */
+.insp-generic-filter .insp-input.bp5-input-group .bp5-input {
+  height: 24px;
+  border-radius: 4px;
+  font-size: var(--fs-lg);
+  background: var(--bg-input);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.insp-generic-filter .insp-input.bp5-input-group .bp5-input:focus {
+  box-shadow: inset 0 0 0 1px var(--accent), 0 0 0 2px var(--accent-glow);
+}
+
+.insp-generic-filter .insp-input.bp5-input-group .bp5-icon {
+  margin: 4px;
+  color: var(--text-muted);
+}
+
+/* ── Scrollable table wrapper ── */
 .insp-generic-table-wrap {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  border-top: 1px solid var(--border);
 }
 
 /* Table — fixed layout so colgroup widths are respected */
@@ -29,8 +51,8 @@
   width: 100%;
   table-layout: fixed;
   border-collapse: collapse;
-  font-size: var(--fs-md);
-  font-family: var(--font-mono);
+  font-size: var(--fs-lg);
+  font-family: var(--font-ui);
 }
 
 .insp-generic-table thead {
@@ -42,16 +64,13 @@
 /* ── Header cells ── */
 .insp-gt-th {
   position: relative;
-  padding: 3px 6px;
+  padding: 6px 10px;
   text-align: left;
-  font-size: var(--fs-sm);
+  font-size: var(--fs-lg);
   font-weight: var(--fw-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--ls-wide);
-  color: var(--text-muted);
+  color: var(--text-strong);
   background: var(--bg-panel-header);
   border-bottom: 1px solid var(--border);
-  font-family: var(--font-ui); /* deliberately resets to UI font for header contrast */
   user-select: none;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -62,30 +81,45 @@
   pointer-events: none;
 }
 
+/* Faint column divider running through the header. */
+.insp-gt-th:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 5px;
+  bottom: 5px;
+  width: 1px;
+  background: var(--border);
+}
+
 /* ── Resize handle — sits on the right edge of resizable headers ── */
 .insp-gt-resize-handle {
   position: absolute;
   top: 0;
-  right: -2px;
-  width: 5px;
+  right: -3px;
+  width: 7px;
   height: 100%;
   cursor: col-resize;
   z-index: 2;
   background: transparent;
-  transition: background 0.12s;
 }
 
 .insp-gt-resize-handle:hover,
 .insp-gt-resize-handle:active {
   background: var(--accent);
-  opacity: 0.5;
+  opacity: 0.6;
 }
 
-/* ── Rows ── */
+/* ── Rows — ScenePane tree metrics ── */
 .insp-gt-row {
   cursor: pointer;
-  transition: background 0.1s;
-  border-bottom: 1px solid var(--border-subtle);
+  height: 22px;
+}
+
+/* Zebra striping: even rows are a shade *darker* than the surface
+ * (var(--bg-base)) so text contrast is kept or improved, never reduced. */
+.insp-gt-row:nth-child(even) {
+  background: var(--bg-base);
 }
 
 .insp-gt-row:hover {
@@ -100,96 +134,100 @@
   color: var(--accent);
 }
 
-/* Read-only rows — greyed-out appearance */
-.insp-gt-row.readonly {
-  opacity: 0.50;
-  cursor: default;
-}
-
+/* Read-only rows — readable but visibly secondary (italic name). */
 .insp-gt-row.readonly .insp-gt-cell-name {
   font-style: italic;
 }
 
-.insp-gt-row.readonly .insp-gt-cell-value {
-  color: var(--text-muted);
+.insp-gt-row.readonly:not(.selected) td {
+  color: var(--text-secondary);
 }
 
-/* Ensure selected + readonly still shows accent but dimmed */
-.insp-gt-row.readonly.selected td {
-  color: var(--accent);
-  opacity: 0.7;
-}
-
-/* ── Cells ── */
-.insp-gt-cell-name {
-  padding: 3px 6px;
+/* ── Cells — same font family/weight/colour as the ScenePane tree ── */
+.insp-gt-cell-name,
+.insp-gt-cell-type,
+.insp-gt-cell-value {
+  padding: 2px 10px;
+  line-height: var(--lh-snug);
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.insp-gt-cell-type {
-  padding: 3px 6px;
-  color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  border-right: 1px solid var(--border-subtle);
 }
 
 .insp-gt-cell-value {
-  padding: 3px 6px;
-  color: var(--accent);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  border-right: none;
 }
 
-/* ── Bottom detail area ── */
+/* Empty state — no properties for the inspected node */
+.insp-generic-empty {
+  padding: 24px 10px;
+  text-align: center;
+  font-size: var(--fs-lg);
+  color: var(--text-secondary);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Bottom detail editor
+   ═══════════════════════════════════════════════════════════ */
+
 .insp-generic-detail {
   flex-shrink: 0;
-  padding: 6px 10px 8px;
+  padding: 10px 12px 12px;
   border-top: 1px solid var(--border);
   background: var(--bg-panel-header);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
 }
 
-.insp-generic-detail-row {
+/* Selected property identity line. */
+.insp-generic-detail-head {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
 }
 
-.insp-generic-detail-label {
-  font-size: var(--fs-base);
+.insp-generic-detail-key {
+  font-size: var(--fs-lg);
   font-weight: var(--fw-semibold);
-  color: var(--text-muted);
-  min-width: 40px;
-  flex-shrink: 0;
-}
-
-.insp-generic-detail-value {
-  font-size: var(--fs-md);
-  color: var(--text-primary);
+  color: var(--text-strong);
   font-family: var(--font-mono);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.insp-generic-detail-input-wrap {
-  flex: 1;
+.insp-generic-detail-type {
+  flex-shrink: 0;
+  font-size: var(--fs-base);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+
+/* Editor row — default checkbox + type-aware widget. */
+.insp-generic-detail-editor {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
 }
 
 .insp-generic-default-check.bp5-checkbox {
   margin: 0;
   flex-shrink: 0;
-  font-size: var(--fs-base);
-  color: var(--text-muted);
+  font-size: var(--fs-lg);
+  color: var(--text-primary);
+}
+
+/* Hint shown when no row is selected. */
+.insp-generic-detail-hint {
+  font-size: var(--fs-lg);
+  color: var(--text-secondary);
+  padding: 4px 0;
 }

@@ -82,7 +82,7 @@
 
 /* ── Mode switcher (SegmentedControl) ── */
 .inspector-mode-bar {
-  padding: 6px 10px;
+  padding: 4px 8px;
   flex-shrink: 0;
   background: var(--bg-panel-header);
   border-bottom: 1px solid var(--border-subtle);
@@ -95,12 +95,31 @@
   border-radius: 4px;
 }
 
+/* Compact segment buttons — keep the bar tight. */
+.inspector-mode-bar .bp5-segmented-control .bp5-button {
+  min-height: 20px;
+  padding-top: 0;
+  padding-bottom: 0;
+  font-size: var(--fs-base);
+}
+
 /* ── Scrollable body ── */
 .inspector-body {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+/* ── Empty state (no node selected) ── */
+.inspector-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  font-size: var(--fs-md);
+  color: var(--text-muted);
 }
 
 /* ═══════════════════════════════════════════════════════════

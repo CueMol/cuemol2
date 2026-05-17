@@ -31,6 +31,9 @@ export interface CommandMap {
   // File
   [CmdId.FileSave]:            { args: void;            result: boolean }
   [CmdId.FileSaveAs]:          { args: void;            result: boolean }
+  [CmdId.ObjectSaveAs]:        { args: void;            result: void }
+  [CmdId.SaveCurrentView]:     { args: void;            result: void }
+  [CmdId.SceneReload]:         { args: void;            result: void }
 
   // Edit
   [CmdId.Undo]:                { args: void;            result: void }
@@ -42,6 +45,7 @@ export interface CommandMap {
   [CmdId.ViewCenterMarkCross]: { args: void;            result: void }
   [CmdId.ViewCenterMarkAxis]:  { args: void;            result: void }
   [CmdId.ViewCenterMarkNone]:  { args: void;            result: void }
+  [CmdId.UiViewProperty]:      { args: void;            result: void }
 
   // Scene background
   [CmdId.SceneBgWhite]:        { args: void;            result: void }

@@ -1,7 +1,9 @@
 # Migration Mapping — Index
 
-- Updated: 2026-05-13 (Tree inline rename wired — F2 on selected row, Blueprint InputGroup overlay)
+- Updated: 2026-05-16 (Added option-specification UX guidelines reference)
 - Source files: `docs/migration/mapping/*.md` (excluding this file)
+- Option-specification UX: see [`../option-ux-guidelines.md`](../option-ux-guidelines.md)
+  for routing dialog migrations to modal / panel / drawer / popover patterns
 
 ---
 
@@ -16,9 +18,9 @@
 | Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 0 | 3 | 0 | 15 | 0 |
 | Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 0 | 0 | 0 | 21 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 0 | 1 | 0 | 12 | 0 |
-| Overlay | [overlay.md](overlay.md) | 28 | 0 | 0 | 0 | 28 | 0 |
+| Overlay | [overlay.md](overlay.md) | 28 | 0 | 1 | 0 | 27 | 0 |
 | Other | [other.md](other.md) | 4 | 0 | 1 | 0 | 3 | 0 |
-| **Total** | | **120** | **1** | **17** | **0** | **102** | **0** |
+| **Total** | | **120** | **1** | **18** | **0** | **101** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -35,11 +37,11 @@
 | Mapping | Count |
 |---------|------:|
 | 1:1 (`direct`) | 3 |
-| merged | 0 |
+| merged | 1 |
 | split | 12 |
 | redesign | 0 |
 | deprecated (`dropped`) | 1 |
-| *(not yet assigned)* | 104 |
+| *(not yet assigned)* | 103 |
 
 ---
 
@@ -48,13 +50,13 @@
 | ID | React | Notes |
 |----|-------|-------|
 | [`toolbar.cuemol2-ribbon`](toolbars.md#toolbarcuemol2-ribbon) | `ViewportToolPalette` / `useNaviClickHandler` / `NaviContextMenu` | Context menu actions (center/select/around/invert/sidechain) done; Create SYMM mol deferred; measurement tool, rect-select drag pending |
-| [`menu.cuemol2`](menus.md#menucuemol2) | `menuTemplate` / `MenuBar` / `useMenuDispatch` | Full 9-group structure added; View > Center mark wired; Scene > Background color wired; File > Get PDB wired (streaming via StreamManager); File > Open Recent wired (electron-store-backed MRU, app.addRecentDocument); Hardware stereo and Open web page dropped; item-level completion 22/55; MenuBar suppressed on macOS |
+| [`menu.cuemol2`](menus.md#menucuemol2) | `menuTemplate` / `MenuBar` / `useMenuDispatch` | Full 9-group structure added; View > Center mark wired; Scene > Background color wired; File > Get PDB wired (streaming via StreamManager); File > Open Recent wired (electron-store-backed MRU, app.addRecentDocument); Hardware stereo and Open web page dropped; File > Save File As / Save current view / Reload Scene wired; item-level completion 25/55; MenuBar suppressed on macOS |
 | [`menu.cuemol2-macos`](menus.md#menucuemol2-macos) | `main/menu.ts` | macOS App menu added; item-level completion 6/7 |
 | [`dialog.about`](other_dlgs.md#dialogabout) | `AboutDialog` / `useDialog` | GRE info・userAgent は省略 |
 | [`other.cuemol2`](other.md#othercuemol2) | `App` / `ContentArea` / `TabBar` / `ConfirmCloseTabDialog` / `useQuitHandler` | Main window layout done; close-tab confirmation dialog (UXP `closeTabImpl`) implemented; UXP `onCloseEvent` quit chain wired (cmd-Q walks all tabs via `before-quit` → `APP_QUIT_REQUEST` → `APP_QUIT_PROCEED`) |
 | [`widget.molsellist`](custom_widgets.md) | `MolSelList` (`components/widgets/MolSelList/`) | First consumer wired in `RendererOptionsPane` (file-open dialog); editable `InputGroup` + chevron-only `HTMLSelect` (OS-native dropdown listbox with `<optgroup>` Preset / History / Scene / Global); history via `localStorage`; worker services `getSelDefs` / `validateSelection` added |
-| [`panel.workspace.tree`](panels.md#panelworkspacetree) | `ScenePane` (tree) / `useSceneTree` / `sceneTree.service` / `reorderSceneNode.service` | Live tree + visibility toggle + selection (single + multi via Cmd/Ctrl+click) + event-driven auto-refresh + drag-drop reorder (worker + tests OK; in-app DnD does not fire — see panels.md follow-up) + F2 inline rename; pending: Shift+range select |
-| [`panel.workspace.ctxmenu.multi`](panels.md#panelworkspacectxmenumulti) | `useSceneContextMenu` / `main/sceneContextMenu` (multi) / `bulkSceneNodeOps.service` | Right-clicking a multi-selected row opens a multi-only menu: Show / Hide / Delete via `bulkSetNodeVisible` / `bulkDeleteNode` (single undo txn per batch); worker + tests OK but Cmd/Ctrl+click does not produce a multi-selection in-app — see panels.md follow-up; pending: Copy (clipboard is single-item) |
+| [`panel.workspace.tree`](panels.md#panelworkspacetree) | `ScenePane` (tree) / `useSceneTree` / `sceneTree.service` / `reorderSceneNode.service` | Live tree + visibility toggle + selection (single + multi via Cmd/Ctrl+click) + event-driven auto-refresh + drag-drop reorder (worker + in-app DnD OK; ADR-0001) + F2 inline rename; pending: Shift+range select |
+| [`panel.workspace.ctxmenu.multi`](panels.md#panelworkspacectxmenumulti) | `useSceneContextMenu` / `main/sceneContextMenu` (multi) / `bulkSceneNodeOps.service` | Right-clicking a multi-selected row opens a multi-only menu: Show / Hide / Delete via `bulkSetNodeVisible` / `bulkDeleteNode` (single undo txn per batch); worker + in-app multi-select OK; pending: Copy (clipboard is single-item) |
 | [`panel.workspace.toolbar`](panels.md#panelworkspacetoolbar) | `ScenePane` (toolbar) / `sceneOps.service` / `createRendererOnObject.service` / `getNewRendererOptions.service` | Focus / Delete / Property / Add wired (Add shares the New Renderer flow with the ctxmenu); property dialog still a read-only stub |
 | [`panel.workspace.ctxmenu.scene`](panels.md#panelworkspacectxmenuscene) | `useSceneContextMenu` / `main/sceneContextMenu` (scene) / `sceneBgColor.service` | Background color submenu (W/B radio) + Use color proofing toggle (checkbox) + Paste Object wired; row stays wip because Properties is still the panel-wide read-only stub |
 | [`panel.workspace.ctxmenu.object`](panels.md#panelworkspacectxmenuobject) | `useSceneContextMenu` / `main/sceneContextMenu` (object) / `sceneOps.service` / `sceneClipboard.service` / `createRendererGroup.service` / `createRendererOnObject.service` / `getNewRendererOptions.service` / `rendererColoring.service` (object paint) / `objectSave.service` | Common items (Show/Hide/Rename/Delete/Props), Selection submenu incl. Around / Around-byres, Copy / Paste Renderer, New Group, New Renderer, Paint (object-level via paintObjectSelection), Save As (multi-writer filter via DIALOG_OBJECT_SAVE) wired; Regen surface pending (Phase 6c, deferred). |
@@ -62,6 +64,7 @@
 | [`panel.workspace.ctxmenu.rendgroup`](panels.md#panelworkspacectxmenurendgroup) | `useSceneContextMenu` / `main/sceneContextMenu` (rendGroup) / `sceneClipboard.service` / `createRendererOnObject.service` / `getNewRendererOptions.service` | Common items + Copy + Paste Renderer into group + New Renderer (group-aware) wired |
 | [`panel.workspace.ctxmenu.style`](panels.md#panelworkspacectxmenustyle) | `useSceneContextMenu` / `main/sceneContextMenu` (style) / `styleOps.service` / `styleFile.service` / `sceneClipboard.service` (style kind) / `sceneOps.deleteNode` (style branch) | New Style + Copy / Paste + Delete + Style file Load / Save / Save As (Reload stub) + Read-only toggle wired; `sceneTree.service` switched to `getStyleSetsJSON` so style nodes carry real C++ uids + `styleInfo`. Editor dialog (Phase 5a) pending. |
 | [`panel.workspace.ctxmenu.camera`](panels.md#panelworkspacectxmenucamera) | `useSceneContextMenu` / `main/sceneContextMenu` (camera) / `cameraOps.service` / `cameraFile.service` / `sceneClipboard.service` (camera kind) | New Camera + Rename (atomic destroy+setCamera) + Delete + Copy / Paste + Camera file Load / Reload / Save / Save As + Save/Apply from view + Save/Apply with vis flags + Clear vis flags wired; `sceneTree.service` synthesises `cameraInfo` from `getCameraInfoJSON`. Edit vis flags dialog (Phase 6c) + property dialog (Phase 5a) pending. |
+| [`overlay.propeditor-generic`](overlay.md#overlaypropeditor-generic) | `InspectorPanel` / `GenericTab` / `genericProps.service` / `useInspectorState` | Generic property editor as the Generic tab of the docked inspector pane (ADR-0015); `getPropsJSON` bridge, live-apply, undo-wrapped writes. First stage edits primitive types (string/int/real/bool/enum); color/vector/timeval/nested-object editing deferred. Replaces the retired read-only `NodePropertyDialog` modal. |
 
 ---
 

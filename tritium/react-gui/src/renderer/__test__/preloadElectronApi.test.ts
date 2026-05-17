@@ -84,6 +84,7 @@ describe('preload electronAPI -- invoke routes through ipcRenderer.invoke', () =
     [IPC.UI_SAVE,          [{ theme: 'dark' }]],
     [IPC.MENU_UPDATE_STATE,[{ viewProjection: { enabled: true, perspective: true } }]],
     [IPC.MENU_INVOKE_ROLE, ['close']],
+    [IPC.WINDOW_CLOSE_PROCEED, [{ proceed: true }]],
     [IPC.NAVI_CTX_SHOW,    [{ x: 1, y: 2, isSymm: false, atomLabel: '', rendLabel: '' }]],
   ])('invoke(%s) -> ipcRenderer.invoke(%s, ...args)', (channel, args) => {
     ;(api.invoke as (...a: unknown[]) => unknown)(channel, ...args)
@@ -112,6 +113,7 @@ describe('preload electronAPI -- onPush routes through ipcRenderer.on', () => {
     IPC.MENU_REDO,
     IPC.MENU_GENERIC,
     IPC.ROTATE_GESTURE,
+    IPC.WINDOW_CLOSE_REQUEST,
     IPC.MENU_OPEN_RECENT,
     IPC.RECENT_UPDATED,
   ])('onPush(%s) registers and unsubscribes', (channel) => {

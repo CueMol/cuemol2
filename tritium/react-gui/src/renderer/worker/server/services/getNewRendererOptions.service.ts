@@ -86,9 +86,15 @@ function getNewRendererOptions(
 
     let objName = '';
     try { objName = obj.name ?? ''; } catch { /* ignore */ }
+    // Use the getClassName() METHOD, not a `className` property — the
+    // worker-side C++ wrapper exposes the former (the latter reads back
+    // undefined). This must match getCompatibleRendererNames.service so the
+    // renderer-type history key is shared between the file-open and
+    // add-renderer flows.
     let objClassName = '';
     try {
-        objClassName = (obj as unknown as { className: string }).className ?? '';
+        objClassName =
+            (obj as unknown as { getClassName?: () => string }).getClassName?.() ?? '';
     } catch { /* ignore */ }
 
     let listStr = '';

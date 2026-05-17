@@ -22,7 +22,7 @@ import { showNaviContextMenu } from './naviContextMenu'
 import { showSceneContextMenu } from './sceneContextMenu'
 import { rebuildApplicationMenu, setMenuBlocked, updateMenuState, withMenuBlocked } from './menu'
 import { addRecent, clearRecents, getRecents } from './recentFiles'
-import { setQuitConfirmed } from './quitState'
+import { setCloseConfirmed, setCloseInFlight, setAppQuitting } from './quitState'
 import {
   handleSaveSceneDialog,
   handleStyleOpenDialog,
@@ -215,9 +215,19 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
     showNaviContextMenu(mainWindow, payload),
   )
 
-  handleInvoke(IPC.APP_QUIT_PROCEED, () => {
-    setQuitConfirmed(true)
-    app.quit()
+  // Renderer reply to a WINDOW_CLOSE_REQUEST. `proceed: true` means every
+  // tab is confirmed/closed: mark the window confirmed and re-issue close()
+  // so the funnel lets it through. `proceed: false` (user cancelled) clears
+  // the in-flight flag and aborts any in-progress quit so the next Cmd+Q
+  // starts a fresh confirm chain.
+  handleInvoke(IPC.WINDOW_CLOSE_PROCEED, (_event, { proceed }) => {
+    setCloseInFlight(mainWindow, false)
+    if (proceed) {
+      setCloseConfirmed(mainWindow, true)
+      mainWindow.close()
+    } else {
+      setAppQuitting(false)
+    }
   })
 
   handleInvoke(IPC.MENU_INVOKE_ROLE, (_event, role) => {

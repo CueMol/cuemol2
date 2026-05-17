@@ -447,6 +447,34 @@ export class GfxManager {
     }
 
     //////////
+    // Draw state
+
+    /// API: toggle face culling (used by edge/silhouette rendering)
+    setCullFace(enabled: boolean): void {
+        const gl = this._context;
+        if (enabled) gl.enable(gl.CULL_FACE);
+        else gl.disable(gl.CULL_FACE);
+    }
+
+    /// API: set front-face winding (true=CCW, false=CW)
+    setFrontFace(bCCW: boolean): void {
+        const gl = this._context;
+        gl.frontFace(bCCW ? gl.CCW : gl.CW);
+    }
+
+    /// API: toggle inverted-color blend (ROP) used by the center mark.
+    /// WebGL2 has no logic-op, so emulate via blendFunc (matches OcDisplayContext).
+    setInvertColorBlend(bInv: boolean): void {
+        const gl = this._context;
+        if (bInv) {
+            gl.enable(gl.BLEND);
+            gl.blendFunc(gl.ONE_MINUS_DST_COLOR, gl.ZERO);
+        } else {
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        }
+    }
+
+    //////////
     // Projection uniforms
 
     // /// API

@@ -16,6 +16,9 @@ Status values:
 
 # Mapping — Dialog_other
 
+> Option-specification UX: pick a pattern per row using
+> [option-ux-guidelines.md](../option-ux-guidelines.md).
+
 | ID | React | Mapping | Status | PR | ADR | Notes |
 |----|-------|---------|--------|----|-----|-------|
 | [`dialog.about`](../uxp-inventory/other_dlgs.md#dialogabout) | `AboutDialog` / `useDialog` | direct | wip | | | GRE info・userAgent は省略 |

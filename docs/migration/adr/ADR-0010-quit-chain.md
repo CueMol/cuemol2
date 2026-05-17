@@ -1,10 +1,16 @@
 # ADR-0010: Application quit — per-tab modified-scene confirm chain
 
-- Status: accepted
+- Status: superseded by [ADR-0016](ADR-0016-window-close-quit-funnel.md)
 - Date: 2026-05-13
 - Mapping rows: [`menu.cuemol2`](../mapping/menus.md#menucuemol2) — Quit/Exit,
   [`menu.cuemol2-macos`](../mapping/menus.md#menucuemol2-macos) — Quit CueMol,
   [`other.cuemol2`](../mapping/other.md#othercuemol2)
+
+> **Superseded by [ADR-0016](ADR-0016-window-close-quit-funnel.md).** This
+> ADR hooked the confirm chain to `before-quit` and wrongly assumed the
+> window-close button also fires `before-quit`. It does not — the close
+> button fires `win.on('close')`. ADR-0016 moves the funnel to
+> `win.on('close')`. Kept for history.
 
 ## Context
 

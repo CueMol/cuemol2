@@ -1,8 +1,12 @@
 /**
- * Pins the UXP-parity quit chain wired by useQuitHandler:
- *   APP_QUIT_REQUEST → walk every tab via handleCloseTab →
- *     - all true   → invoke(APP_QUIT_PROCEED) exactly once
- *     - one false  → stop walking, do not invoke APP_QUIT_PROCEED
+ * Pins the UXP-parity window-close chain wired by useWindowCloseHandler:
+ *   WINDOW_CLOSE_REQUEST -> walk every tab via handleCloseTab ->
+ *     - all true   -> invoke(WINDOW_CLOSE_PROCEED, { proceed: true })
+ *     - one false  -> stop walking, invoke(WINDOW_CLOSE_PROCEED,
+ *                     { proceed: false }) exactly once
+ *
+ * Replying on cancel is mandatory: main clears its in-flight flag from the
+ * reply, so omitting it would wedge the close funnel.
  *
  * Mirrors UXP `Qm2Main.onCloseEvent` (uxp_gui/cuemol2/base/content/cuemol2.js:579).
  */
@@ -11,7 +15,7 @@ import React, { useRef } from 'react'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { IPC } from '../../shared/ipcChannels'
 import type { TabData } from '../types'
-import { useQuitHandler } from '../hooks/useQuitHandler'
+import { useWindowCloseHandler } from '../hooks/useWindowCloseHandler'
 import {
   makeRenderHook,
   setupElectronAPI,
@@ -23,7 +27,7 @@ void React
 
 interface Harness {
   api: ReturnType<typeof setupElectronAPI>
-  triggerQuitRequest: () => Promise<void>
+  triggerCloseRequest: () => Promise<void>
   handleCloseTab: ReturnType<typeof vi.fn>
   setActiveTab: ReturnType<typeof vi.fn>
   tabsRef: React.RefObject<TabData[]>
@@ -36,7 +40,7 @@ function mount(opts: {
 }): Harness {
   let captured: (() => void) | null = null
   const onPush = vi.fn((channel: string, cb: () => void) => {
-    if (channel === IPC.APP_QUIT_REQUEST) captured = cb
+    if (channel === IPC.WINDOW_CLOSE_REQUEST) captured = cb
     return () => undefined
   })
   const invoke = vi.fn().mockResolvedValue(undefined)
@@ -54,14 +58,14 @@ function mount(opts: {
   const handle = makeRenderHook(() => {
     const ref = useRef<TabData[]>(opts.tabs)
     tabsRef = ref
-    useQuitHandler({ tabsRef: ref, handleCloseTab, setActiveTab })
+    useWindowCloseHandler({ tabsRef: ref, handleCloseTab, setActiveTab })
   })
 
-  if (!captured) throw new Error('APP_QUIT_REQUEST listener was not registered')
+  if (!captured) throw new Error('WINDOW_CLOSE_REQUEST listener was not registered')
 
   return {
     api,
-    triggerQuitRequest: async () => {
+    triggerCloseRequest: async () => {
       ;(captured as unknown as () => void)()
       await flushPromises()
       await flushPromises()
@@ -73,7 +77,7 @@ function mount(opts: {
   }
 }
 
-describe('useQuitHandler (UXP-parity quit chain)', () => {
+describe('useWindowCloseHandler (UXP-parity window-close chain)', () => {
   beforeEach(() => {
     setupElectronAPI()
   })
@@ -83,7 +87,7 @@ describe('useQuitHandler (UXP-parity quit chain)', () => {
     vi.restoreAllMocks()
   })
 
-  it('walks all tabs in order and calls APP_QUIT_PROCEED when every close succeeds', async () => {
+  it('walks all tabs in order and calls WINDOW_CLOSE_PROCEED { proceed: true } when every close succeeds', async () => {
     const tabs: TabData[] = [
       { id: 'molview-1', title: 'A', icon: 'cube', type: 'molview', viewId: 1 },
       { id: 'molview-2', title: 'B', icon: 'cube', type: 'molview', viewId: 2 },
@@ -91,7 +95,7 @@ describe('useQuitHandler (UXP-parity quit chain)', () => {
     ]
     const h = mount({ tabs, closeResults: [true, true, true] })
 
-    await h.triggerQuitRequest()
+    await h.triggerCloseRequest()
 
     expect(h.handleCloseTab.mock.calls.map((c) => c[0])).toEqual([
       'molview-1', 'molview-2', 'welcome',
@@ -102,12 +106,12 @@ describe('useQuitHandler (UXP-parity quit chain)', () => {
       'molview-1', 'molview-2',
     ])
     expect(h.api.invoke).toHaveBeenCalledTimes(1)
-    expect(h.api.invoke).toHaveBeenCalledWith(IPC.APP_QUIT_PROCEED)
+    expect(h.api.invoke).toHaveBeenCalledWith(IPC.WINDOW_CLOSE_PROCEED, { proceed: true })
 
     h.unmount()
   })
 
-  it('aborts the chain when any tab returns false and does NOT invoke APP_QUIT_PROCEED', async () => {
+  it('aborts the walk when any tab returns false and replies WINDOW_CLOSE_PROCEED { proceed: false }', async () => {
     const tabs: TabData[] = [
       { id: 'molview-1', title: 'A', icon: 'cube', type: 'molview', viewId: 1 },
       { id: 'molview-2', title: 'B', icon: 'cube', type: 'molview', viewId: 2 },
@@ -116,17 +120,18 @@ describe('useQuitHandler (UXP-parity quit chain)', () => {
     // Second tab cancels (user clicked Cancel in confirm dialog).
     const h = mount({ tabs, closeResults: [true, false, true] })
 
-    await h.triggerQuitRequest()
+    await h.triggerCloseRequest()
 
     expect(h.handleCloseTab.mock.calls.map((c) => c[0])).toEqual([
       'molview-1', 'molview-2',
     ])
-    expect(h.api.invoke).not.toHaveBeenCalled()
+    expect(h.api.invoke).toHaveBeenCalledTimes(1)
+    expect(h.api.invoke).toHaveBeenCalledWith(IPC.WINDOW_CLOSE_PROCEED, { proceed: false })
 
     h.unmount()
   })
 
-  it('is idempotent under re-entrancy (a second APP_QUIT_REQUEST while the first is in flight is ignored)', async () => {
+  it('is idempotent under re-entrancy (a second WINDOW_CLOSE_REQUEST while the first is in flight is ignored)', async () => {
     const tabs: TabData[] = [
       { id: 'molview-1', title: 'A', icon: 'cube', type: 'molview', viewId: 1 },
     ]
@@ -136,7 +141,7 @@ describe('useQuitHandler (UXP-parity quit chain)', () => {
     const onPush = vi.fn()
     let captured: (() => void) | null = null
     onPush.mockImplementation((channel: string, cb: () => void) => {
-      if (channel === IPC.APP_QUIT_REQUEST) captured = cb
+      if (channel === IPC.WINDOW_CLOSE_REQUEST) captured = cb
       return () => undefined
     })
     const invoke = vi.fn().mockResolvedValue(undefined)
@@ -146,7 +151,7 @@ describe('useQuitHandler (UXP-parity quit chain)', () => {
 
     const handle = makeRenderHook(() => {
       const ref = useRef<TabData[]>(tabs)
-      useQuitHandler({ tabsRef: ref, handleCloseTab, setActiveTab })
+      useWindowCloseHandler({ tabsRef: ref, handleCloseTab, setActiveTab })
     })
 
     if (!captured) throw new Error('listener not registered')
@@ -164,7 +169,7 @@ describe('useQuitHandler (UXP-parity quit chain)', () => {
     await flushPromises()
 
     expect(api.invoke).toHaveBeenCalledTimes(1)
-    expect(api.invoke).toHaveBeenCalledWith(IPC.APP_QUIT_PROCEED)
+    expect(api.invoke).toHaveBeenCalledWith(IPC.WINDOW_CLOSE_PROCEED, { proceed: true })
 
     handle.unmount()
   })

@@ -24,6 +24,9 @@ export const CmdId = {
   // File operations
   FileSave:           'file.save',           // no args
   FileSaveAs:         'file.saveAs',         // no args
+  ObjectSaveAs:       'object.saveAs',       // no args -- object (not scene) save
+  SaveCurrentView:    'file.saveCurrentView', // no args
+  SceneReload:        'scene.reload',        // no args
 
   // Undo/redo
   Undo:               'edit.undo',           // no args
@@ -35,6 +38,7 @@ export const CmdId = {
   ViewCenterMarkCross: 'view.centerMark.cross', // no args
   ViewCenterMarkAxis:  'view.centerMark.axis',  // no args
   ViewCenterMarkNone:  'view.centerMark.none',  // no args
+  UiViewProperty:     'ui.viewProperty',     // no args -- open active view in inspector
 
   // Scene style
   SceneBgWhite: 'scene.bg.white', // no args

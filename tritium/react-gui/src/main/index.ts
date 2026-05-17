@@ -1,16 +1,18 @@
 import { app, BrowserWindow } from 'electron'
 import { createWindow } from './windowManager'
-import { IPC } from '../shared/ipcChannels'
-import { isQuitConfirmed, setQuitConfirmed } from './quitState'
+import { isAppQuitting, setAppQuitting } from './quitState'
 
 app.setName('CueMol3-tritium')
 
 app.whenReady().then(createWindow)
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
+  // Single-window app: closing the window quits on every OS, so no
+  // window-less zombie process is left behind.
+  // FUTURE (multi-window): on macOS keep the app alive in the Dock when
+  // the user closes the last window without quitting --
+  //   if (process.platform === 'darwin' && !isAppQuitting()) return
+  app.quit()
 })
 
 app.on('activate', () => {
@@ -20,16 +22,15 @@ app.on('activate', () => {
 })
 
 // Quit lifecycle (UXP parity: confirm modified scenes before shutdown).
-// First 'before-quit' preventDefaults and asks the renderer to walk every
-// tab; the renderer replies via IPC.APP_QUIT_PROCEED which flips the flag
-// and re-issues app.quit().
+// Cmd+Q / role:quit fires 'before-quit'. Rather than confirming here, we
+// route every window through its own win.on('close') confirm funnel; the
+// app terminates once all windows have closed (window-all-closed ->
+// app.quit() -> this listener re-enters with isAppQuitting() true).
 app.on('before-quit', (event) => {
-  if (isQuitConfirmed()) return
-  const win = BrowserWindow.getAllWindows().find((w) => !w.isDestroyed())
-  if (!win) {
-    setQuitConfirmed(true)
-    return
-  }
+  if (isAppQuitting()) return
+  const wins = BrowserWindow.getAllWindows().filter((w) => !w.isDestroyed())
+  if (wins.length === 0) return
+  setAppQuitting(true)
   event.preventDefault()
-  win.webContents.send(IPC.APP_QUIT_REQUEST)
+  for (const w of wins) w.close()
 })
