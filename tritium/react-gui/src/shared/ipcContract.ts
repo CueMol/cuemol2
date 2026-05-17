@@ -61,7 +61,7 @@ export interface InvokeChannels {
   [IPC.RECENT_ADD]:        { req: RecentFileEntry;       res: void }
   [IPC.RECENT_CLEAR]:      { req: void;                  res: void }
   [IPC.MENU_INVOKE_ROLE]:  { req: string;                res: void }
-  [IPC.APP_QUIT_PROCEED]:  { req: void;                  res: void }
+  [IPC.WINDOW_CLOSE_PROCEED]: { req: { proceed: boolean }; res: void }
   [IPC.NAVI_CTX_SHOW]:     { req: NaviCtxMenuPayload;    res: NaviCtxAction | null }
   [IPC.SCENE_CTX_SHOW]:    { req: SceneCtxMenuPayload;   res: SceneCtxAction | null }
 }
@@ -81,7 +81,7 @@ export interface PushChannels {
   [IPC.MENU_REDO]:         void
   [IPC.MENU_GENERIC]:      string
   [IPC.ROTATE_GESTURE]:    number
-  [IPC.APP_QUIT_REQUEST]:  void
+  [IPC.WINDOW_CLOSE_REQUEST]: void
   [IPC.MENU_OPEN_RECENT]:  RecentFileEntry
   [IPC.RECENT_UPDATED]:    RecentFileEntry[]
 }

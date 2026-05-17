@@ -44,7 +44,7 @@ import { useCommands } from "./commands/CommandRegistry";
 import { CmdId } from "./commands/ids";
 import { useCueMolBusy } from "./hooks/useCueMolBusy";
 import { useShowConfirmCloseTabDialog } from "./components/dialogs/ConfirmCloseTabDialogProvider";
-import { useQuitHandler } from "./hooks/useQuitHandler";
+import { useWindowCloseHandler } from "./hooks/useWindowCloseHandler";
 
 const App: React.FC = () => {
 
@@ -187,7 +187,7 @@ const App: React.FC = () => {
     handleReorderTabs,
   } = useTabManager({ onMolViewClose: handleMolViewClose, confirmCloseTab });
 
-  useQuitHandler({ tabsRef, handleCloseTab, setActiveTab });
+  useWindowCloseHandler({ tabsRef, handleCloseTab, setActiveTab });
 
   // Shared "create scene + view + register tab" action used by both the
   // launch path and the New Tab dialog (UXP onNewScene equivalent).

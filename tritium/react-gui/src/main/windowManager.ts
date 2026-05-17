@@ -8,6 +8,7 @@ import { loadWindowBounds, saveWindowBounds, type WindowBounds } from './stateSt
 import { registerIpcHandlers } from './ipcHandlers'
 import { createMenu } from './menu'
 import { IPC } from '../shared/ipcChannels'
+import { isCloseConfirmed, isCloseInFlight, setCloseInFlight } from './quitState'
 
 function isVisibleOnAnyDisplay(bounds: WindowBounds): boolean {
   return screen.getAllDisplays().some((d) => {
@@ -40,6 +41,24 @@ function trackWindowState(win: BrowserWindow): void {
   win.on('maximize', persist)
   win.on('unmaximize', persist)
   win.on('close', persist)
+}
+
+/**
+ * Confirm funnel for window close. The first 'close' for a window
+ * preventDefaults and asks the renderer to walk every tab through its
+ * close-confirm flow (see quitState.ts). When the renderer replies via
+ * IPC.WINDOW_CLOSE_PROCEED the window is marked confirmed and re-closed,
+ * and this funnel lets the second 'close' through. The red-button and
+ * Cmd+Q (which calls win.close() per window) both reach this funnel.
+ */
+function handleWindowClose(win: BrowserWindow, event: Electron.Event): void {
+  if (isCloseConfirmed(win)) return
+  event.preventDefault()
+  // A confirm request is already being processed -- ignore the extra
+  // close (e.g. red-button mashing, or Cmd+Q on top of a red-button).
+  if (isCloseInFlight(win)) return
+  setCloseInFlight(win, true)
+  win.webContents.send(IPC.WINDOW_CLOSE_REQUEST)
 }
 
 const isMac = process.platform === 'darwin'
@@ -106,6 +125,10 @@ export function createWindow(): void {
   trackWindowState(win)
   registerIpcHandlers(win)
   createMenu(win)
+
+  // Close confirm funnel (separate from trackWindowState's bounds-saving
+  // 'close' listener; both listeners fire on close).
+  win.on('close', (event) => handleWindowClose(win, event))
 
   // macOS trackpad 2-finger rotate gesture: Chromium does not emit a DOM
   // event for this, so we capture it here and push it to the renderer via IPC.

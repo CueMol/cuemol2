@@ -57,9 +57,10 @@ export const IPC = {
   // invoke channels (renderer → main, with reply) — menu role actions
   MENU_INVOKE_ROLE: 'menu:invoke-role',
 
-  // App quit lifecycle
-  APP_QUIT_REQUEST: 'app:quit-request',
-  APP_QUIT_PROCEED: 'app:quit-proceed',
+  // Window close / app quit lifecycle (red-button and Cmd+Q both funnel
+  // through win.on('close'))
+  WINDOW_CLOSE_REQUEST: 'window:close-request',
+  WINDOW_CLOSE_PROCEED: 'window:close-proceed',
 
   // invoke channel for native viewport context menu
   NAVI_CTX_SHOW: 'navi-ctx:show',
