@@ -38,7 +38,7 @@ Status values:
 | [`dialog.tool.netpdb-progress`](../uxp-inventory/tool_dlgs.md#dialogtoolnetpdb-progress) | | | todo | | | |
 | [`dialog.tool.open-pdb`](../uxp-inventory/tool_dlgs.md#dialogtoolopen-pdb) | | | todo | | | |
 | [`dialog.tool.prot2ndry-tool`](../uxp-inventory/tool_dlgs.md#dialogtoolprot2ndry-tool) | | | todo | | | |
-| [`dialog.tool.render-pov`](../uxp-inventory/tool_dlgs.md#dialogtoolrender-pov) | | | todo | | | |
+| [`dialog.tool.render-pov`](../uxp-inventory/tool_dlgs.md#dialogtoolrender-pov) | `InspectorPanel` (RenderSettingsEditor) / `RenderPanel` / `RenderResultPane` / `renderJob.service` / `PovrayBackend` / `useRenderJob` | split | done | | [ADR-0017](../adr/ADR-0017-povray-rendering-ui.md) | Re-designed as Inspector Render Settings + BottomPanel Render tab + ContentArea Render Result tab; worker pipeline drives POV-Ray / blendpng via ProcessManager. Single-frame only; animation rendering deferred. See ADR-0017. |
 | [`dialog.tool.ssm-sup`](../uxp-inventory/tool_dlgs.md#dialogtoolssm-sup) | | | todo | | | |
 | [`dialog.tool.surf-cutbyplane`](../uxp-inventory/tool_dlgs.md#dialogtoolsurf-cutbyplane) | | | todo | | | |
 | [`dialog.tool.symm-chg`](../uxp-inventory/tool_dlgs.md#dialogtoolsymm-chg) | | | todo | | | |
