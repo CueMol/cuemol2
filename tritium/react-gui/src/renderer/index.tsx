@@ -14,6 +14,7 @@ import { ThemeProvider } from './contexts/ThemeContext'
 import { CommandProvider } from './commands/CommandRegistry'
 import { DialogProvider } from './contexts/DialogContext'
 import { ModalOpenCounterProvider } from './contexts/ModalOpenCounterContext'
+import { RenderConfigProvider } from './contexts/RenderConfigContext'
 
 const container = document.getElementById('root') as HTMLElement
 createRoot(container).render(
@@ -23,7 +24,9 @@ createRoot(container).render(
         <CommandProvider>
           <ModalOpenCounterProvider>
             <DialogProvider>
-              <App />
+              <RenderConfigProvider>
+                <App />
+              </RenderConfigProvider>
             </DialogProvider>
           </ModalOpenCounterProvider>
         </CommandProvider>

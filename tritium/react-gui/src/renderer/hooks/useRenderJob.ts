@@ -14,6 +14,7 @@ import type {
   RenderUpdate,
   RenderUpdatePhase,
   RenderStartResult,
+  RenderBinaries,
 } from "../worker/shared/renderTypes";
 import {
   type RenderSource,
@@ -49,6 +50,8 @@ export interface RenderStartParams {
   viewId?: number;
   snapshot: RenderSettingsSnapshot;
   source: RenderSource;
+  /** External binary paths (POV-Ray / blendpng). */
+  binaries: RenderBinaries;
 }
 
 const ACTIVE_STATUSES: RenderJobStatus[] = ["exporting", "running", "blending"];
@@ -168,6 +171,7 @@ export function useRenderJob(opts: {
           sceneId: params.sceneId,
           viewId: params.viewId,
           snapshot: params.snapshot,
+          binaries: params.binaries,
         });
       } catch (e) {
         setJob((prev) =>

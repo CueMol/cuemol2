@@ -246,7 +246,7 @@ function renderStart(ctx: WorkerContext, args: RenderStartArgs): RenderStartResu
   try {
     const exported = backend.exportScene(ctx, scene, args.snapshot, workDir);
     outputPath = backend.outputImagePath(exported);
-    const tasks = backend.buildTasks(exported, args.snapshot);
+    const tasks = backend.buildTasks(exported, args.snapshot, args.binaries);
     renderSpecs = tasks.filter((t) => t.kind === "render");
     finalizeSpecs = tasks.filter((t) => t.kind === "finalize");
     if (renderSpecs.length === 0) throw new Error("backend produced no render tasks");

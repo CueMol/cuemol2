@@ -12,6 +12,7 @@ import type { Scene } from "@cuemol/core/src/wrappers/Scene";
 import type { WorkerContext } from "../../types/WorkerContext";
 import type { PropDef } from "../../../../data/rendererProperties";
 import type { RenderSettingsSnapshot } from "../../../../data/renderResult";
+import type { RenderBinaries } from "../../../shared/renderTypes";
 
 /** Paths produced by a backend's `exportScene`. */
 export interface ExportedScene {
@@ -55,6 +56,7 @@ export interface RenderBackend {
   buildTasks(
     exported: ExportedScene,
     snapshot: RenderSettingsSnapshot,
+    binaries: RenderBinaries,
   ): RenderTaskSpec[];
   /** Extract a 0..100 progress percentage from a stdout chunk (null = none). */
   parseProgress(stdout: string): number | null;

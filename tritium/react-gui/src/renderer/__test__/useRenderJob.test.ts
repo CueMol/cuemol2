@@ -10,6 +10,7 @@ import { act } from 'react';
 import { makeRenderHook } from './helpers/testHarness';
 import { useRenderJob, isRenderJobActive } from '../hooks/useRenderJob';
 import type { RenderUpdate, RenderStartResult } from '../worker/shared/renderTypes';
+import { DEFAULT_RENDER_BINARIES } from '../worker/shared/renderTypes';
 import type {
     RenderResult,
     RenderSettingsSnapshot,
@@ -22,7 +23,13 @@ const snapshot: RenderSettingsSnapshot = {
     backendProps: [],
 };
 const source: RenderSource = { sceneId: 1, sceneName: 'Scene1', viewId: 7 };
-const startParams = { sceneId: 1, viewId: 7, snapshot, source };
+const startParams = {
+    sceneId: 1,
+    viewId: 7,
+    snapshot,
+    source,
+    binaries: DEFAULT_RENDER_BINARIES,
+};
 
 /** Fake AsyncCueMol exposing an `emit` to push render-progress updates. */
 function makeCm(startResult: RenderStartResult = { ok: true, jobId: 'job-1' }) {
@@ -48,7 +55,7 @@ describe('useRenderJob', () => {
         await act(async () => { await h.result.start(startParams); });
 
         expect(cm.invokeService).toHaveBeenCalledWith('renderStart', {
-            sceneId: 1, viewId: 7, snapshot,
+            sceneId: 1, viewId: 7, snapshot, binaries: DEFAULT_RENDER_BINARIES,
         });
         expect(h.result.job?.status).toBe('exporting');
         expect(h.result.job?.jobId).toBe('job-1');

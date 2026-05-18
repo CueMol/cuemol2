@@ -49,6 +49,7 @@ import { useCommands } from "./commands/CommandRegistry";
 import { CmdId } from "./commands/ids";
 import { useCueMolBusy } from "./hooks/useCueMolBusy";
 import { useShowConfirmCloseTabDialog } from "./components/dialogs/ConfirmCloseTabDialogProvider";
+import { useRenderConfig } from "./contexts/RenderConfigContext";
 import { useWindowCloseHandler } from "./hooks/useWindowCloseHandler";
 
 const App: React.FC = () => {
@@ -158,6 +159,9 @@ const App: React.FC = () => {
   // `renderSettings` target.
   const renderSettings = useRenderSettings();
 
+  // Persistent render binary paths (POV-Ray / blendpng) from SettingsPane.
+  const { binaries: renderBinaries } = useRenderConfig();
+
   // --- CueMol core / tabs ---
 
   const showConfirmCloseTabDialog = useShowConfirmCloseTabDialog();
@@ -245,8 +249,9 @@ const App: React.FC = () => {
       viewId: info.view_id,
       snapshot: renderSettings.getSnapshot(),
       source,
+      binaries: renderBinaries,
     });
-  }, [getActiveSceneInfo, sceneTree, renderJob, renderSettings]);
+  }, [getActiveSceneInfo, sceneTree, renderJob, renderSettings, renderBinaries]);
 
   /** Re-render from a result tab's snapshot (also restores it into the editor). */
   const handleReRender = useCallback(
@@ -261,9 +266,10 @@ const App: React.FC = () => {
           sceneName: result.sourceSceneName,
           viewId: result.sourceViewId,
         },
+        binaries: renderBinaries,
       });
     },
-    [renderSettings, renderJob],
+    [renderSettings, renderJob, renderBinaries],
   );
 
   /** Switch to a result tab's source scene (its molview tab). */

@@ -16,6 +16,7 @@ import type { Scene } from "@cuemol/core/src/wrappers/Scene";
 import type { PovSceneExporter } from "@cuemol/core/src/wrappers/PovSceneExporter";
 import type { WorkerContext } from "../../types/WorkerContext";
 import type { RenderSettingsSnapshot } from "../../../../data/renderResult";
+import type { RenderBinaries } from "../../../shared/renderTypes";
 import {
   type RenderBackend,
   type ExportedScene,
@@ -29,12 +30,6 @@ import {
 function expandHome(p: string): string {
   return p.startsWith("~/") ? path.join(os.homedir(), p.slice(2)) : p;
 }
-
-// Bundled-binary locations. App-bundle packaging is deferred; phase 5b
-// makes these configurable via the SettingsPane.
-const POV_EXE = expandHome("~/tmp/proj64_deplibs/cuemol2_bundle_apps/povray/bin/povray");
-const POV_INC = expandHome("~/tmp/proj64_deplibs/cuemol2_bundle_apps/povray/include");
-const BLENDPNG_EXE = expandHome("~/tmp/proj64_deplibs/cuemol2/bin/blendpng");
 
 /** Map a radiosity preset label to POV-Ray's `_radiosity` code (-1 = off). */
 const RADIOSITY_LABELS = [
@@ -96,6 +91,7 @@ function buildPovArgs(
   snapshot: RenderSettingsSnapshot,
   outPng: string,
   optArgs: string[],
+  povInc: string,
 ): string {
   const common = snapshot.commonProps;
   const pov = snapshot.backendProps;
@@ -104,7 +100,7 @@ function buildPovArgs(
   const args: string[] = [
     `"Input_File_Name='${exported.inputPath}'"`,
     `"Output_File_Name='${outPng}'"`,
-    `"Library_Path='${POV_INC}'"`,
+    `"Library_Path='${povInc}'"`,
     `"Library_Path='${exported.workDir}'"`,
     `Declare=_stereo=${stereoCode(strVal(common, "stereoMode", "none"))}`,
     `Declare=_iod=${numVal(common, "stereoDepth", 0.03)}`,
@@ -187,7 +183,12 @@ export const povrayBackend: RenderBackend = {
   buildTasks(
     exported: ExportedScene,
     snapshot: RenderSettingsSnapshot,
+    binaries: RenderBinaries,
   ): RenderTaskSpec[] {
+    const povExe = expandHome(binaries.povrayExe);
+    const povInc = expandHome(binaries.povrayInc);
+    const blendpngExe = expandHome(binaries.blendpng);
+
     const layers = computeLayers(exported.blendTable);
     const layerPaths = layers.map((_, i) =>
       path.join(exported.workDir, `render-layer${i}.png`),
@@ -195,8 +196,8 @@ export const povrayBackend: RenderBackend = {
 
     // One POV-Ray task per layer (run in parallel).
     const tasks: RenderTaskSpec[] = layers.map((layer, i) => ({
-      exe: POV_EXE,
-      args: buildPovArgs(exported, snapshot, layerPaths[i], layer.optArgs),
+      exe: povExe,
+      args: buildPovArgs(exported, snapshot, layerPaths[i], layer.optArgs, povInc),
       kind: "render",
     }));
 
@@ -209,7 +210,7 @@ export const povrayBackend: RenderBackend = {
     blendArgs.push(this.outputImagePath(exported));
     blendArgs.push(String(numVal(snapshot.commonProps, "dpi", 600)));
     tasks.push({
-      exe: BLENDPNG_EXE,
+      exe: blendpngExe,
       args: blendArgs.join(" "),
       kind: "finalize",
     });

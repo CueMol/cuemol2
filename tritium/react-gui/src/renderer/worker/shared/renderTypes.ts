@@ -10,6 +10,26 @@ import type { RenderSettingsSnapshot } from "../../data/renderResult";
 /** Push-channel name for worker → renderer render updates. */
 export const RENDER_PROGRESS_CHANNEL = "render-progress";
 
+/**
+ * Paths to the external binaries the render pipeline drives. Configured in
+ * the SettingsPane and persisted; a leading `~` is expanded by the worker.
+ */
+export interface RenderBinaries {
+  /** POV-Ray executable. */
+  povrayExe: string;
+  /** POV-Ray standard include directory. */
+  povrayInc: string;
+  /** blendpng layer-compositing executable. */
+  blendpng: string;
+}
+
+/** Default binary locations (app-bundle packaging is a later concern). */
+export const DEFAULT_RENDER_BINARIES: RenderBinaries = {
+  povrayExe: "~/tmp/proj64_deplibs/cuemol2_bundle_apps/povray/bin/povray",
+  povrayInc: "~/tmp/proj64_deplibs/cuemol2_bundle_apps/povray/include",
+  blendpng: "~/tmp/proj64_deplibs/cuemol2/bin/blendpng",
+};
+
 /** Arguments for the `renderStart` worker service. */
 export interface RenderStartArgs {
   sceneId: number;
@@ -17,6 +37,8 @@ export interface RenderStartArgs {
   viewId?: number;
   /** Frozen settings used for this render. */
   snapshot: RenderSettingsSnapshot;
+  /** External binary paths to use. */
+  binaries: RenderBinaries;
 }
 
 export interface RenderStartResult {

@@ -30,6 +30,7 @@ import {
   handleCameraOpenDialog,
   handleCameraSaveDialog,
   handleObjectSaveDialog,
+  handlePickPathDialog,
 } from './handlers/fileDialogs'
 
 // ─────────────────────────────────────────────
@@ -173,6 +174,10 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
 
   handleInvoke(IPC.DIALOG_OBJECT_SAVE, async (_event, payload) =>
     handleObjectSaveDialog(mainWindow, payload),
+  )
+
+  handleInvoke(IPC.DIALOG_PICK_PATH, async (_event, payload) =>
+    handlePickPathDialog(mainWindow, payload),
   )
 
   handleInvoke(IPC.FILE_EXISTS, (_event, payload) => handleFileExists(payload.path))
