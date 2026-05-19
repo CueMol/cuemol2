@@ -20,9 +20,9 @@
 
 import React from "react";
 import { Icon } from "@blueprintjs/core";
+import type { IconName } from "@blueprintjs/icons";
 import type { TabData } from "../types";
 import type { DropTarget, TabDragDropAPI } from "../hooks/useTabDragDrop";
-import { getFileIcon } from "../utils";
 
 // ────────────────────────────────────────────────────────────
 // Types
@@ -128,8 +128,9 @@ export const TabBar: React.FC<TabBarProps> = ({
             onDrop={(e) => handleDrop(e, tab.id)}
             onDragEnd={handleDragEnd}
           >
+            {/* Per-type icon: home / cog / cube / media — one icon per tab. */}
             <Icon
-              icon={getFileIcon(tab.title)}
+              icon={tab.icon as IconName}
               size={14}
               className="tab-icon"
             />

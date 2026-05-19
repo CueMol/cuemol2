@@ -37,12 +37,21 @@ const workerExternal = [
   'node:module',
   'node:path',
   'node:url',
+
+  // --- Node.js built-ins used at runtime by the render pipeline ---
+  // (the worker runs with nodeIntegrationInWorker: true)
+  'fs',
+  'os',
+  'path',
 ]
 
 const workerGlobals: Record<string, string> = {
   // Map the external to a require() call executed at IIFE init time.
   // Electron's nodeIntegrationInWorker injects the global require.
   '@cuemol/core': 'require("@cuemol/core")',
+  fs: 'require("fs")',
+  os: 'require("os")',
+  path: 'require("path")',
 }
 
 export default defineConfig({

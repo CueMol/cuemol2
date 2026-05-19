@@ -1,6 +1,6 @@
 # Migration Mapping — Index
 
-- Updated: 2026-05-16 (Added option-specification UX guidelines reference)
+- Updated: 2026-05-18 (POV-Ray rendering dialog migrated — phases 1–5)
 - Source files: `docs/migration/mapping/*.md` (excluding this file)
 - Option-specification UX: see [`../option-ux-guidelines.md`](../option-ux-guidelines.md)
   for routing dialog migrations to modal / panel / drawer / popover patterns
@@ -16,11 +16,11 @@
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 13 | 0 | 0 | 0 | 13 | 0 |
 | Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 0 | 3 | 0 | 15 | 0 |
-| Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 0 | 0 | 0 | 21 | 0 |
+| Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 1 | 0 | 0 | 20 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 0 | 1 | 0 | 12 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 0 | 1 | 0 | 27 | 0 |
 | Other | [other.md](other.md) | 4 | 0 | 1 | 0 | 3 | 0 |
-| **Total** | | **120** | **1** | **18** | **0** | **101** | **0** |
+| **Total** | | **120** | **2** | **18** | **0** | **100** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -38,10 +38,10 @@
 |---------|------:|
 | 1:1 (`direct`) | 3 |
 | merged | 1 |
-| split | 12 |
+| split | 13 |
 | redesign | 0 |
 | deprecated (`dropped`) | 1 |
-| *(not yet assigned)* | 103 |
+| *(not yet assigned)* | 102 |
 
 ---
 
@@ -70,4 +70,4 @@
 
 ## Unstarted
 
-**102 / 120** items are `todo` (not yet started).
+**100 / 120** items are `todo` (not yet started).

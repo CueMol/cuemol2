@@ -41,6 +41,12 @@ export interface UiState {
   sidebarActiveView?: string
   selectionMolId?: string
   theme?: 'dark' | 'light'
+  /** POV-Ray executable path (Rendering settings). */
+  povrayExe?: string
+  /** POV-Ray include directory path (Rendering settings). */
+  povrayInc?: string
+  /** blendpng executable path (Rendering settings). */
+  blendpng?: string
 }
 
 // ── File dialog ─────────────────────────────────────────────────────────────

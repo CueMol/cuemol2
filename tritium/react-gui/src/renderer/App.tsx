@@ -32,6 +32,11 @@ import { ActiveToolProvider } from "./contexts/ActiveToolContext";
 import { useSceneTree } from "./hooks/useSceneTree";
 import { useSceneContextMenu } from "./hooks/useSceneContextMenu";
 import { useInspectorState } from "./hooks/useInspectorState";
+import { useRenderSettings } from "./hooks/useRenderSettings";
+import { useRenderJob, isRenderJobActive } from "./hooks/useRenderJob";
+import { RENDER_BACKEND_IDS } from "./data/renderBackends";
+import { RENDER_SIZE_PRESETS } from "./data/renderSettings";
+import type { RenderResult, RenderSource } from "./data/renderResult";
 import { useTabManager } from "./hooks/useTabManager";
 import { useCueMol } from "./hooks/useCueMol";
 import { useMolTabDispatch, useMolTabState } from "./hooks/useMolTab";
@@ -44,6 +49,7 @@ import { useCommands } from "./commands/CommandRegistry";
 import { CmdId } from "./commands/ids";
 import { useCueMolBusy } from "./hooks/useCueMolBusy";
 import { useShowConfirmCloseTabDialog } from "./components/dialogs/ConfirmCloseTabDialogProvider";
+import { useRenderConfig } from "./contexts/RenderConfigContext";
 import { useWindowCloseHandler } from "./hooks/useWindowCloseHandler";
 
 const App: React.FC = () => {
@@ -129,12 +135,14 @@ const App: React.FC = () => {
   const {
     inspectorOpen,
     inspectorTarget,
+    inspectorCategory,
     rendererProps,
     genericEntries,
     genericLoading,
     inspectorInfo,
     handleShowGeneric,
     handleShowViewProps,
+    handleShowRenderSettings,
     handleCloseInspector,
     handlePropertyChange,
     handleGenericSet,
@@ -146,6 +154,13 @@ const App: React.FC = () => {
     cm,
     sceneTree,
   });
+
+  // Render Settings editing state (non-persistent) for the inspector
+  // `renderSettings` target.
+  const renderSettings = useRenderSettings();
+
+  // Persistent render binary paths (POV-Ray / blendpng) from SettingsPane.
+  const { binaries: renderBinaries } = useRenderConfig();
 
   // --- CueMol core / tabs ---
 
@@ -183,6 +198,7 @@ const App: React.FC = () => {
     setActiveTab,
     openSettingsTab,
     addMolViewTab,
+    addRenderResultTab,
     handleCloseTab,
     handleReorderTabs,
   } = useTabManager({ onMolViewClose: handleMolViewClose, confirmCloseTab });
@@ -206,6 +222,92 @@ const App: React.FC = () => {
   }, [activeTab, tabs, cm, cueMolReady, setActiveViewByID]);
 
   const activeMolViewId = tabs.find((t) => t.id === activeTab && t.type === 'molview')?.viewId;
+
+  // --- Render: job lifecycle + Render Result tab ---
+
+  // Render job for the BottomPanel Render tab. On completion the worker
+  // sends the rendered image; `addRenderResultTab` opens (or overwrites)
+  // the source scene's result tab.
+  const renderJob = useRenderJob({ cm, onComplete: addRenderResultTab });
+
+  /**
+   * Start a render from the current Render Settings (Start button / F12).
+   * Uses the active molview's scene/view from `getActiveSceneInfo` — this
+   * stays correct even when a Render Result tab is the active content tab
+   * (so the render captures the latest camera via `saveViewToCam`).
+   */
+  const handleRenderStart = useCallback(() => {
+    const info = getActiveSceneInfo();
+    if (!info) return;
+    const source: RenderSource = {
+      sceneId: info.scene_uid,
+      sceneName: sceneTree?.name ?? `Scene ${info.scene_uid}`,
+      viewId: info.view_id,
+    };
+    void renderJob.start({
+      sceneId: info.scene_uid,
+      viewId: info.view_id,
+      snapshot: renderSettings.getSnapshot(),
+      source,
+      binaries: renderBinaries,
+    });
+  }, [getActiveSceneInfo, sceneTree, renderJob, renderSettings, renderBinaries]);
+
+  /** Re-render from a result tab's snapshot (also restores it into the editor). */
+  const handleReRender = useCallback(
+    (result: RenderResult) => {
+      renderSettings.restore(result.settingsSnapshot);
+      void renderJob.start({
+        sceneId: result.sourceSceneId,
+        viewId: result.sourceViewId,
+        snapshot: result.settingsSnapshot,
+        source: {
+          sceneId: result.sourceSceneId,
+          sceneName: result.sourceSceneName,
+          viewId: result.sourceViewId,
+        },
+        binaries: renderBinaries,
+      });
+    },
+    [renderSettings, renderJob, renderBinaries],
+  );
+
+  /** Switch to a result tab's source scene (its molview tab). */
+  const handleShowSourceScene = useCallback(
+    (result: RenderResult) => {
+      if (result.sourceViewId === undefined) return;
+      const tab = tabs.find(
+        (t) => t.type === "molview" && t.viewId === result.sourceViewId,
+      );
+      if (tab) setActiveTab(tab.id);
+    },
+    [tabs, setActiveTab],
+  );
+
+  /**
+   * Apply an image-size preset from the Render tab. The "Current view"
+   * preset is resolved from the live molview canvas pixel size.
+   */
+  const handleApplyRenderPreset = useCallback(
+    (label: string) => {
+      const preset = RENDER_SIZE_PRESETS.find((p) => p.label === label);
+      if (preset?.dynamic) {
+        const canvas = document.querySelector("canvas");
+        if (canvas) {
+          const rect = canvas.getBoundingClientRect();
+          const dpr = window.devicePixelRatio || 1;
+          const width = Math.round(rect.width * dpr);
+          const height = Math.round(rect.height * dpr);
+          if (width > 0 && height > 0) {
+            renderSettings.applyPreset(label, { width, height });
+            return;
+          }
+        }
+      }
+      renderSettings.applyPreset(label);
+    },
+    [renderSettings],
+  );
 
   // --- Scene-tree toolbar handlers (UXP workspace_panel onBtn*Cmd) ---
 
@@ -388,6 +490,7 @@ const App: React.FC = () => {
     onCenterMarkChanged,
     onBgColorChanged,
     showViewProperty: handleShowViewProps,
+    showRenderSettings: handleShowRenderSettings,
     newScene,
   });
 
@@ -426,6 +529,12 @@ const App: React.FC = () => {
 
   const sidebarVisible = activeView !== null;
   const settingsActive = tabs.find((t) => t.id === activeTab)?.type === "settings";
+
+  // StatusBar: a running render takes precedence over tool-hover messages.
+  const activeRenderJob = isRenderJobActive(renderJob.job) ? renderJob.job : null;
+  const statusBarMessage = activeRenderJob
+    ? `Rendering… ${activeRenderJob.progress}%`
+    : statusMessage;
 
   // --- Render ---
 
@@ -521,12 +630,21 @@ const App: React.FC = () => {
                             activeTool={activeTool}
                             onSelectTool={setActiveTool}
                             onStatusMessage={setStatusMessage}
+                            onReRender={handleReRender}
+                            onShowSourceScene={handleShowSourceScene}
+                            onOpenRenderSettings={handleShowRenderSettings}
                           />
                         </Allotment.Pane>
                         <Allotment.Pane minSize={100} preferredSize={200} snap>
                           <BottomPanel
                             alignment={alignment}
                             animation={animation}
+                            renderJob={renderJob.job}
+                            renderPreset={renderSettings.preset}
+                            onRenderStart={handleRenderStart}
+                            onRenderCancel={renderJob.cancel}
+                            onRenderApplyPreset={handleApplyRenderPreset}
+                            onOpenRenderSettings={handleShowRenderSettings}
                           />
                         </Allotment.Pane>
                       </Allotment>
@@ -541,11 +659,21 @@ const App: React.FC = () => {
                     >
                       <InspectorPanel
                         hasTarget={inspectorTarget !== null}
+                        targetKind={inspectorTarget?.kind ?? null}
+                        targetCategory={inspectorCategory}
                         nodeName={inspectorInfo.name}
                         nodeType={inspectorInfo.type}
                         properties={rendererProps}
                         genericEntries={genericEntries}
                         genericLoading={genericLoading}
+                        renderSettings={{
+                          backend: renderSettings.backend,
+                          backendIds: RENDER_BACKEND_IDS,
+                          commonProps: renderSettings.commonProps,
+                          backendProps: renderSettings.backendProps,
+                          onBackendChange: renderSettings.setBackend,
+                          onChange: renderSettings.handleChange,
+                        }}
                         onPropertyChange={handlePropertyChange}
                         onGenericSet={handleGenericSet}
                         onGenericReset={handleGenericReset}
@@ -564,8 +692,8 @@ const App: React.FC = () => {
         activeToolLabel={activeDef.label}
         activeToolShortcut={activeDef.shortcut}
         activeToolIcon={activeDef.icon}
-        busy={cueMolBusy}
-        statusMessage={statusMessage}
+        busy={cueMolBusy || activeRenderJob !== null}
+        statusMessage={statusBarMessage}
       />
     </div>
     </ActiveToolProvider>

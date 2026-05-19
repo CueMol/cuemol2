@@ -17,6 +17,7 @@ import { useNewTabCommand } from '../commands/useNewTabCommand';
 import { useEditCommands } from '../commands/useEditCommands';
 import { useFileCommands } from '../commands/useFileCommands';
 import { useViewCommands } from '../commands/useViewCommands';
+import { useRenderCommands } from '../commands/useRenderCommands';
 import { useElectronIpc } from './useElectronIpc';
 import type { NewSceneAction } from './useNewSceneAction';
 
@@ -33,6 +34,8 @@ interface UseCommandRegistrationsOptions {
   onBgColorChanged: (bgColor: SceneBgColor) => void;
   /** Open the active View in the generic property inspector. */
   showViewProperty: (viewId: number) => void;
+  /** Open the active scene's Render Settings in the inspector. */
+  showRenderSettings: () => void;
   newScene: NewSceneAction;
 }
 
@@ -48,6 +51,7 @@ export function useCommandRegistrations({
   onCenterMarkChanged,
   onBgColorChanged,
   showViewProperty,
+  showRenderSettings,
   newScene,
 }: UseCommandRegistrationsOptions): void {
   useSceneCommands({ cm, getActiveSceneInfo, onBgColorChanged, newScene });
@@ -63,5 +67,6 @@ export function useCommandRegistrations({
     onCenterMarkChanged,
     showViewProperty,
   });
+  useRenderCommands({ showRenderSettings });
   useElectronIpc(activeTab);
 }

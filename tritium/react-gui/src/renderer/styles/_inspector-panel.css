@@ -238,6 +238,18 @@
   font-size: var(--fs-lg);
   height: 22px;
   border-radius: 3px;
+  /* Reserve room for the caret icon so the value text never runs under it. */
+  padding-right: 24px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Caret icon — Blueprint positions it for the default 30px select; recenter
+   it within the compact 22px select so it stays inside the rounded border. */
+.insp-select.bp5-html-select .bp5-icon {
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
 }
 
 /* ── Numeric row (slider + input) ── */
@@ -245,6 +257,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  /* Allow the row to shrink within the inspector body so the numeric
+     input never overflows the panel edge. */
+  min-width: 0;
 }
 
 .insp-slider {
@@ -252,10 +267,13 @@
   min-width: 0;
 }
 
-/* Blueprint slider overrides */
+/* Blueprint slider overrides. `min-width: 0` (high specificity) lets the
+   slider shrink and yield space to the fixed-width numeric input. */
 .insp-slider.bp5-slider {
   min-height: 16px;
   height: 16px;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .insp-slider .bp5-slider-track {
@@ -290,10 +308,17 @@
   box-shadow: 0 0 0 2px var(--accent), 0 1px 3px var(--slider-handle-shadow);
 }
 
-/* Numeric input — compact width */
+/* Numeric input — fixed compact column that never shrinks or overflows. */
 .insp-numeric-input.bp5-numeric-input {
-  width: 62px;
-  flex-shrink: 0;
+  flex: 0 0 68px;
+  width: 68px;
+  min-width: 68px;
+}
+
+/* Keep the inner field within the fixed numeric-input width. */
+.insp-numeric-input .bp5-input-group {
+  width: 100%;
+  min-width: 0;
 }
 
 .insp-numeric-input .bp5-input-group .bp5-input {
@@ -302,6 +327,7 @@
   color: var(--text-primary) !important;
   font-size: var(--fs-md);
   height: 20px;
+  width: 100%;
   text-align: right;
   padding-right: 4px;
   border-radius: 3px;
@@ -348,6 +374,37 @@
 .insp-color-swatch::-webkit-color-swatch {
   border: none;
   border-radius: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Render Settings target
+   ═══════════════════════════════════════════════════════════ */
+
+/* Header category badge (target kind) */
+.inspector-header-badge.bp5-tag {
+  flex-shrink: 0;
+  font-size: var(--fs-sm2);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-wide);
+}
+
+/* Backend selector row above the render-settings accordions */
+.insp-render-backend-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--bg-panel-header);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.insp-render-backend-bar .insp-prop-label {
+  flex-shrink: 0;
+}
+
+.insp-render-backend-bar .insp-select {
+  flex: 1;
+  min-width: 0;
 }
 
 /* ═══════════════════════════════════════════════════════════

@@ -10,6 +10,8 @@
  */
 
 import type { IconName } from '@blueprintjs/icons'
+import type { RenderBinaries } from '../../../worker/shared/renderTypes'
+import { DEFAULT_RENDER_BINARIES } from '../../../worker/shared/renderTypes'
 
 // ── Category tree ───────────────────────────────────────────────────────
 
@@ -73,6 +75,7 @@ export type SettingControl =
   | { kind: 'number'; min: number; max: number; step: number; minorStep?: number }
   | { kind: 'toggle' }
   | { kind: 'color' }
+  | { kind: 'path'; directory?: boolean }
 
 export interface SettingDef {
   key: string
@@ -165,6 +168,27 @@ export const SETTINGS: SettingDef[] = [
     description: 'Depth-cue fog intensity applied to distant objects.',
     category: 'display.rendering',
     control: { kind: 'number', min: 0, max: 1.0, step: 0.05, minorStep: 0.01 },
+  },
+  {
+    key: 'rendering.povrayExe',
+    label: 'POV-Ray Executable',
+    description: 'Path to the POV-Ray binary used for ray-traced rendering.',
+    category: 'display.rendering',
+    control: { kind: 'path' },
+  },
+  {
+    key: 'rendering.povrayInc',
+    label: 'POV-Ray Include Directory',
+    description: 'Directory containing the POV-Ray standard include files.',
+    category: 'display.rendering',
+    control: { kind: 'path', directory: true },
+  },
+  {
+    key: 'rendering.blendpng',
+    label: 'blendpng Executable',
+    description: 'Path to the blendpng tool that composites render layers.',
+    category: 'display.rendering',
+    control: { kind: 'path' },
   },
 
   // ── Display > Colors ──
@@ -322,6 +346,9 @@ export const DEFAULTS: Record<string, string | number | boolean> = {
   'rendering.shadows': false,
   'rendering.ambientOcclusion': false,
   'rendering.fogDensity': 0.3,
+  'rendering.povrayExe': DEFAULT_RENDER_BINARIES.povrayExe,
+  'rendering.povrayInc': DEFAULT_RENDER_BINARIES.povrayInc,
+  'rendering.blendpng': DEFAULT_RENDER_BINARIES.blendpng,
   'colors.background': '#1E2028',
   'colors.selectionHighlight': '#5FAFD7',
   'colors.labelBackground': '#000000',
@@ -356,3 +383,13 @@ function buildLabelMap(nodes: CategoryNode[]): Record<string, string> {
 }
 
 export const CATEGORY_LABELS = buildLabelMap(CATEGORY_TREE)
+
+// ── Render-binary settings ──────────────────────────────────────────────
+// These setting keys are backed by RenderConfigContext (persistent paths),
+// not the mock `values` state. SettingsPane routes them accordingly.
+
+export const RENDER_BINARY_SETTING_KEYS: Record<string, keyof RenderBinaries> = {
+  'rendering.povrayExe': 'povrayExe',
+  'rendering.povrayInc': 'povrayInc',
+  'rendering.blendpng': 'blendpng',
+}

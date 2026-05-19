@@ -174,7 +174,7 @@ describe('useInspectorState', () => {
         });
         await settle();
         expect(h.result.inspectorTarget).toEqual({
-            sceneId: 1, nodeId: 42, nodeType: 'view',
+            kind: 'node', sceneId: 1, nodeId: 42, nodeType: 'view',
         });
         expect(cm.invokeService).toHaveBeenCalledWith('getGenericProps', {
             sceneId: 1, nodeId: 42, nodeType: 'view',
@@ -214,7 +214,40 @@ describe('useInspectorState', () => {
 
         await h.setSceneTree(makeTree(1, 5));
         expect(h.result.inspectorTarget).toEqual({
-            sceneId: 1, nodeId: 42, nodeType: 'view',
+            kind: 'node', sceneId: 1, nodeId: 42, nodeType: 'view',
+        });
+        h.unmount();
+    });
+
+    it('handleShowRenderSettings targets render settings without a worker call', async () => {
+        const h = mountHook(cm, makeTree(1, 5));
+        act(() => {
+            h.result.handleShowRenderSettings();
+        });
+        await settle();
+        expect(h.result.inspectorTarget).toEqual({
+            kind: 'renderSettings', sceneId: 1,
+        });
+        expect(h.result.inspectorOpen).toBe(true);
+        expect(h.result.inspectorCategory).toBe('Render Settings');
+        // Render Settings is not backed by the C++ property bridge.
+        expect(cm.invokeService).not.toHaveBeenCalled();
+        h.unmount();
+    });
+
+    it('per-scene memory restores a render-settings target too', async () => {
+        const h = mountHook(cm, makeTree(1, 5));
+        act(() => {
+            h.result.handleShowRenderSettings();
+        });
+        await settle();
+
+        await h.setSceneTree(makeTree(2, 9));
+        expect(h.result.inspectorTarget).toBeNull();
+
+        await h.setSceneTree(makeTree(1, 5));
+        expect(h.result.inspectorTarget).toEqual({
+            kind: 'renderSettings', sceneId: 1,
         });
         h.unmount();
     });

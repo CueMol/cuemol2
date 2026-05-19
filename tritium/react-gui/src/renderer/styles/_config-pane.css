@@ -353,6 +353,38 @@
   color: var(--text-secondary);
 }
 
+/* ── Path (file/directory) control ── */
+.config-setting-path-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 520px;
+}
+
+.config-setting-path-input {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  padding: 0 8px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--fs-md);
+  caret-color: var(--accent);
+}
+
+.config-setting-path-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.config-setting-path-row .bp5-button {
+  flex-shrink: 0;
+}
+
 /* ── Switch overrides ── */
 .config-setting-switch.bp5-switch {
   margin-bottom: 0;

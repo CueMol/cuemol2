@@ -128,6 +128,27 @@ export async function handleCameraSaveDialog(
 // surface the selected filter index back to the caller so the worker can
 // pass the matching writer name to `createHandler`.
 
+/**
+ * Generic "pick a file or directory" dialog. Used by the SettingsPane to
+ * choose external binary paths (POV-Ray executable, include directory,
+ * blendpng). Returns the resolved absolute path.
+ */
+export async function handlePickPathDialog(
+  mainWindow: BrowserWindow,
+  payload: { title: string; directory?: boolean },
+): Promise<{ canceled: boolean; filePath: string }> {
+  const result = await withMenuBlocked('native', () =>
+    dialog.showOpenDialog(mainWindow, {
+      title: payload.title,
+      properties: [payload.directory ? 'openDirectory' : 'openFile'],
+    }),
+  )
+  if (result.canceled || result.filePaths.length === 0) {
+    return { canceled: true, filePath: '' }
+  }
+  return { canceled: false, filePath: result.filePaths[0] }
+}
+
 export async function handleObjectSaveDialog(
   mainWindow: BrowserWindow,
   payload: {

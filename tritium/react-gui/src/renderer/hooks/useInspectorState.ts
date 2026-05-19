@@ -10,7 +10,7 @@
  * sample data pending its own migration.
  */
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import type { LayoutState } from "./useLayoutPersistence";
 import type { AsyncCueMol } from "../worker/client/AsyncCueMol";
 import type { SceneTreeNode } from "../worker/shared/sceneTreeTypes";
@@ -37,12 +37,26 @@ export interface InspectorInfo {
   type: string;
 }
 
-/** Resolved identity of the node currently shown in the inspector. */
-interface InspectorTarget {
-  sceneId: number;
-  nodeId: number;
-  nodeType: PropTargetType;
-}
+/**
+ * Identity of whatever is currently shown in the inspector.
+ *
+ * - `node` — a scene-tree node or the View, edited through the generic
+ *   C++ property bridge (`getGenericProps` / `setGenericProp`).
+ * - `renderSettings` — the scene's render output settings; not a scene-tree
+ *   node and not backed by the property bridge (see `RenderSettingsEditor`).
+ */
+export type InspectorTarget =
+  | { kind: "node"; sceneId: number; nodeId: number; nodeType: PropTargetType }
+  | { kind: "renderSettings"; sceneId: number };
+
+/** Header category label for each scene-tree node type. */
+const NODE_CATEGORY_LABELS: Record<string, string> = {
+  scene: "Scene",
+  object: "Object",
+  renderer: "Renderer",
+  rendGroup: "Renderer group",
+  view: "View",
+};
 
 export interface UseInspectorStateOptions {
   /** Persisted layout (used to restore open state on first load). */
@@ -131,6 +145,13 @@ export function useInspectorState({
       setInspectorInfo({ name: "", type: "" });
       return;
     }
+    // Render Settings is not a property-bridge node — it has its own editor.
+    // The header category badge already names it, so leave name/type blank.
+    if (target.kind === "renderSettings") {
+      setGenericEntries([]);
+      setInspectorInfo({ name: "", type: "" });
+      return;
+    }
     setGenericLoading(true);
     try {
       const res = await cm.invokeService("getGenericProps", {
@@ -167,7 +188,12 @@ export function useInspectorState({
       const sid = sceneTree ? Number(sceneTree.id) : undefined;
       const found = findTypedNode(sceneTree, id);
       if (sid === undefined || !found) return;
-      applyTarget({ sceneId: sid, nodeId: found.numId, nodeType: found.node.type });
+      applyTarget({
+        kind: "node",
+        sceneId: sid,
+        nodeId: found.numId,
+        nodeType: found.node.type,
+      });
     },
     [sceneTree, applyTarget],
   );
@@ -181,10 +207,21 @@ export function useInspectorState({
     (viewId: number) => {
       const sid = sceneTree ? Number(sceneTree.id) : undefined;
       if (sid === undefined) return;
-      applyTarget({ sceneId: sid, nodeId: viewId, nodeType: "view" });
+      applyTarget({ kind: "node", sceneId: sid, nodeId: viewId, nodeType: "view" });
     },
     [sceneTree, applyTarget],
   );
+
+  /**
+   * Open the inspector on the active scene's Render Settings (Toolbar
+   * Render button / F12). Render Settings belongs to the scene as a whole
+   * and has no scene-tree node.
+   */
+  const handleShowRenderSettings = useCallback(() => {
+    const sid = sceneTree ? Number(sceneTree.id) : undefined;
+    if (sid === undefined) return;
+    applyTarget({ kind: "renderSettings", sceneId: sid });
+  }, [sceneTree, applyTarget]);
 
   // Refetch whenever the target changes.
   useEffect(() => {
@@ -214,7 +251,7 @@ export function useInspectorState({
   const handleGenericSet = useCallback(
     async (key: string, valueType: string, value: string | number | boolean) => {
       const target = targetRef.current;
-      if (!cm || !target) return;
+      if (!cm || !target || target.kind !== "node") return;
       try {
         const res = await cm.invokeService("setGenericProp", {
           sceneId: target.sceneId,
@@ -239,7 +276,7 @@ export function useInspectorState({
   const handleGenericReset = useCallback(
     async (key: string) => {
       const target = targetRef.current;
-      if (!cm || !target) return;
+      if (!cm || !target || target.kind !== "node") return;
       try {
         const res = await cm.invokeService("setGenericProp", {
           sceneId: target.sceneId,
@@ -284,15 +321,24 @@ export function useInspectorState({
     debounceMs: REFETCH_DEBOUNCE_MS,
   });
 
+  // Conceptual category of the current target, shown as a header badge.
+  const inspectorCategory = useMemo(() => {
+    if (!inspectorTarget) return "";
+    if (inspectorTarget.kind === "renderSettings") return "Render Settings";
+    return NODE_CATEGORY_LABELS[inspectorTarget.nodeType] ?? "Node";
+  }, [inspectorTarget]);
+
   return {
     inspectorOpen,
     inspectorTarget,
+    inspectorCategory,
     rendererProps,
     genericEntries,
     genericLoading,
     inspectorInfo,
     handleShowGeneric,
     handleShowViewProps,
+    handleShowRenderSettings,
     handleCloseInspector,
     handlePropertyChange,
     handleGenericSet,

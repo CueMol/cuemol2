@@ -31,18 +31,23 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { Icon, InputGroup } from '@blueprintjs/core'
 import { useTheme } from '../../contexts/ThemeContext'
+import { useRenderConfig } from '../../contexts/RenderConfigContext'
 import {
   CATEGORY_TREE,
   ALL_LEAF_IDS,
   SETTINGS,
   DEFAULTS,
   CATEGORY_LABELS,
+  RENDER_BINARY_SETTING_KEYS,
 } from './settings/settingsConfig'
 import { ConfigTreeNode } from './settings/ConfigTreeNode'
 import { SettingRow } from './settings/SettingRow'
 
 export const SettingsPane: React.FC = () => {
   const { theme, setTheme } = useTheme()
+  // Render binary paths are backed by RenderConfigContext (persistent),
+  // not the mock `values` state.
+  const { binaries, setBinary } = useRenderConfig()
 
   const [filter, setFilter] = useState('')
   const [values, setValues] = useState<Record<string, string | number | boolean>>(() => ({
@@ -62,6 +67,13 @@ export const SettingsPane: React.FC = () => {
 
   const handleChange = useCallback(
     (key: string, value: string | number | boolean) => {
+      // Render binary paths persist via RenderConfigContext.
+      const binaryKey = RENDER_BINARY_SETTING_KEYS[key]
+      if (binaryKey) {
+        setBinary(binaryKey, String(value))
+        return
+      }
+
       setValues((prev) => ({ ...prev, [key]: value }))
 
       // Sync theme toggle with the ThemeContext.
@@ -69,7 +81,7 @@ export const SettingsPane: React.FC = () => {
         setTheme(value ? 'dark' : 'light')
       }
     },
-    [setTheme],
+    [setTheme, setBinary],
   )
 
   // Keep the toggle in sync if theme changes externally.
@@ -218,14 +230,17 @@ export const SettingsPane: React.FC = () => {
               </div>
               {filtered
                 .filter((s) => s.category === catId)
-                .map((s) => (
-                  <SettingRow
-                    key={s.key}
-                    def={s}
-                    value={values[s.key]}
-                    onChange={handleChange}
-                  />
-                ))}
+                .map((s) => {
+                  const binaryKey = RENDER_BINARY_SETTING_KEYS[s.key]
+                  return (
+                    <SettingRow
+                      key={s.key}
+                      def={s}
+                      value={binaryKey ? binaries[binaryKey] : values[s.key]}
+                      onChange={handleChange}
+                    />
+                  )
+                })}
             </div>
           ))}
 

@@ -7,7 +7,8 @@
  */
 
 import React from 'react'
-import { HTMLSelect, NumericInput, Switch } from '@blueprintjs/core'
+import { Button, HTMLSelect, NumericInput, Switch } from '@blueprintjs/core'
+import { IPC } from '../../../../shared/ipcChannels'
 import type { SettingDef } from './settingsConfig'
 
 export interface SettingRowProps {
@@ -65,6 +66,32 @@ export const SettingRow: React.FC<SettingRowProps> = ({ def, value, onChange }) 
             <span className="config-setting-color-hex">{value as string}</span>
           </div>
         )
+      case 'path': {
+        const directory = control.directory === true
+        const handleBrowse = async (): Promise<void> => {
+          try {
+            const res = await window.electronAPI?.invoke(IPC.DIALOG_PICK_PATH, {
+              title: `Select ${label}`,
+              directory,
+            })
+            if (res && !res.canceled && res.filePath) onChange(key, res.filePath)
+          } catch {
+            /* dialog unavailable (e.g. Vite dev server) — ignore */
+          }
+        }
+        return (
+          <div className="config-setting-path-row">
+            <input
+              type="text"
+              className="config-setting-path-input"
+              value={value as string}
+              spellCheck={false}
+              onChange={(e) => onChange(key, e.target.value)}
+            />
+            <Button small text="Browse…" onClick={handleBrowse} />
+          </div>
+        )
+      }
       default:
         return null
     }
