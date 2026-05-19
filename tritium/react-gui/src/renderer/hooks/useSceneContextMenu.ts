@@ -38,9 +38,8 @@ export interface UseSceneContextMenuOptions {
     selectObjectMol: (id: string, kind: SelectMolKind) => Promise<boolean>
     /**
      * Begin inline rename on the row with the given id. Both F2 and the
-     * ctxmenu Rename action go through this — the underlying editor
-     * lives in `ScenePane` and is controlled by the App-level
-     * `sceneEditingNodeId` state.
+     * ctxmenu Rename action go through this; the underlying editor lives in
+     * `ScenePane` and is controlled by `useSceneTreeController`.
      */
     beginInlineRename: (id: string) => void
     copyNode: (node: SceneTreeNode) => Promise<boolean>
@@ -62,12 +61,12 @@ export interface UseSceneContextMenuOptions {
         rendOpts: RendererOptions,
         groupName?: string,
     ) => Promise<boolean>
-    /** Current multi-select set (Phase 4c). When size > 1 the
-     *  right-click on a member triggers the multi context menu. */
+    /** Current multi-select set. When size > 1 a right-click on a member
+     *  triggers the multi context menu. */
     selectedIds?: Set<string>
     bulkSetNodeVisible?: (ids: Iterable<string>, visible: boolean) => Promise<boolean>
     bulkDeleteNodes?: (ids: Iterable<string>) => Promise<boolean>
-    /** Phase 5c style ops. */
+    /** Style-set ops (create / read-only toggle / file load-save). */
     createStyleSet: (name: string) => Promise<{ ok: boolean; newId: number }>
     toggleStyleSetReadOnly: (
         nodeId: number, scopeId: number,
@@ -77,7 +76,7 @@ export interface UseSceneContextMenuOptions {
     saveStyleSetToCurrentSrc: (
         nodeId: number, scopeId: number,
     ) => Promise<{ ok: boolean; saved: boolean }>
-    /** Phase 5b camera ops. */
+    /** Camera ops (create / rename / save-apply / file load-save). */
     activeViewId: number | undefined
     createCamera: (viewId: number, name: string) => Promise<boolean>
     renameCamera: (oldName: string, newName: string) => Promise<boolean>

@@ -29,13 +29,19 @@ export function makeModif(event: any): number {
     return modif;
 }
 
+/** Forward a pointer-down event to `View::onMouseDown`. */
 export function handleMouseDown(view: GUIView, event: any): void {
     const modif = makeModif(event);
     view.onMouseDown(event.offsetX, event.offsetY, event.screenX, event.screenY, modif);
 }
 
+/**
+ * Forward a pointer-up event to `View::onMouseUp`.
+ *
+ * @remarks On mouseup `event.buttons` is already 0, so the button modifier
+ * is derived from `event.button` (0=left, 1=middle, 2=right) instead.
+ */
 export function handleMouseUp(view: GUIView, event: any): void {
-    // For mouseup, event.buttons=0 (already released); use event.button (0=left,1=middle,2=right)
     const buttonMap: number[] = [1, 2, 4];
     let modif = buttonMap[event.button] ?? 0;
     if (event.ctrlKey) modif += 32;
@@ -43,12 +49,19 @@ export function handleMouseUp(view: GUIView, event: any): void {
     view.onMouseUp(event.offsetX, event.offsetY, event.screenX, event.screenY, modif);
 }
 
+/** Forward a pointer-move event to `View::onMouseMove`. */
 export function handleMouseMove(view: GUIView, event: any): void {
     if (PERF_MEASURE) perfCounters.mouseMoveCount++;
     const modif = makeModif(event);
     view.onMouseMove(event.offsetX, event.offsetY, event.screenX, event.screenY, modif);
 }
 
+/**
+ * Forward a trackpad gesture (pinch / rotate) to `View::onGesture`.
+ *
+ * @remarks The pinch (3.2x) and rotate (-16x) scale constants reproduce the
+ * gesture feel of the pre-refactor wheel/rotate path; see the inline notes.
+ */
 export function handleGesture(view: GUIView, event: any): void {
     let modif = 0;
     if (event.ctrlKey)  modif |= 32;
@@ -70,6 +83,7 @@ export function handleGesture(view: GUIView, event: any): void {
         modif, event.axisID, scaled);
 }
 
+/** Forward a wheel / scroll event to `View::onWheel`. */
 export function handleWheel(view: GUIView, event: any): void {
     // ctrl=32, shift=64, alt=128 (buttons bits 0-2 unused for wheel)
     let modif = 0;

@@ -3,17 +3,16 @@
  * @description Hierarchical scene tree pane mirroring the UXP
  * `panel.workspace` layout.
  *
- * Tree layout (matches UXP `syncContents`):
- *   "Scene: <name>"               ← scene row (no children — leaf)
- *   object1 (PDBMol)              ← object branches
- *     └─ renderer1 (cartoon)
+ * Tree layout:
+ *   "Scene: <name>"          -- scene row (no children, a leaf)
+ *   object1 (PDBMol)         -- object branches
+ *     renderer1 (cartoon)
  *   object2 (...)
- *   Camera                        ← cameraRoot (children = saved cameras)
- *   Styles                        ← styleRoot (children = registered styles)
+ *   Camera                   -- cameraRoot (children = saved cameras)
+ *   Styles                   -- styleRoot (children = registered styles)
  *
  * Scene, objects, cameraRoot and styleRoot are all top-level siblings; the
- * scene row itself does not nest the objects beneath it. This matches the
- * UXP `object_name: "noindent"` flag on the scene row.
+ * scene row itself does not nest the objects beneath it.
  *
  * @module ScenePane
  */
@@ -40,7 +39,7 @@ import {
 } from "./sceneTreeDnd";
 import { InlineRenameInput } from "./InlineRenameInput";
 
-/* ─── Node-type → icon mapping ─── */
+/* --- Node-type to icon mapping --- */
 
 const TYPE_ICON: Record<SceneNodeType, IconName> = {
     scene: "film",
@@ -53,7 +52,7 @@ const TYPE_ICON: Record<SceneNodeType, IconName> = {
     style: "tag",
 };
 
-/* ─── Props ─── */
+/* --- Props --- */
 
 interface ScenePaneProps {
     /** Root scene node from `useSceneTree`. Null while loading or when no scene is active. */
@@ -61,8 +60,8 @@ interface ScenePaneProps {
     /** Currently selected node ID (string for compatibility with existing inspector wiring). */
     selectedId: string;
     /**
-     * Multi-select set (Phase 4c). Drives visual selection on multiple
-     * rows. When omitted, falls back to single-select (selectedId only).
+     * Multi-select set. Drives visual selection on multiple rows. When
+     * omitted, falls back to single-select (selectedId only).
      */
     selectedIds?: Set<string>;
     onSelect: (id: string) => void;
@@ -84,36 +83,35 @@ interface ScenePaneProps {
      */
     onNodeDoubleClick?: (node: SceneTreeNode) => void;
     /**
-     * Controlled inline-rename: when non-null, the row with this id
-     * shows an `<InputGroup>` in place of its label. The trigger lives
-     * at App level so both F2 (started via `onBeginInlineRename`) and
-     * the ctxmenu Rename action route through the same controller.
+     * Controlled inline-rename: when non-null, the row with this id shows
+     * an `<InputGroup>` in place of its label. The trigger is owned by
+     * `useSceneTreeController` so both F2 (started via `onBeginInlineRename`)
+     * and the ctxmenu Rename action route through the same controller.
      */
     editingNodeId?: string | null;
     /**
      * F2 (or other in-tree trigger) requesting that the given row enter
      * inline-rename mode. ScenePane forwards `selectedId` here on F2;
-     * the App-level controller decides whether to accept.
+     * `useSceneTreeController` decides whether to accept.
      */
     onBeginInlineRename?: (id: string) => void;
     /** Esc / blur-without-commit asks the controller to drop the editor. */
     onCancelInlineRename?: () => void;
     /**
-     * Inline-rename commit handler. ScenePane handles the
-     * `<InputGroup>` editor; on Enter (or blur with a non-empty edit
-     * that differs from the original name) it calls back here with the
-     * targeted node and the user-entered name. The caller is expected
-     * to route to the appropriate worker service — UXP `onRenameCamera`
-     * for camera rows, `renameNode` for object / renderer / rendGroup —
-     * AND to clear `editingNodeId` afterwards.
+     * Inline-rename commit handler. ScenePane handles the `<InputGroup>`
+     * editor; on Enter (or blur with a non-empty edit that differs from the
+     * original name) it calls back here with the targeted node and the
+     * user-entered name. The caller routes to the appropriate worker
+     * service (renameCamera for camera rows, renameNode otherwise) and
+     * clears `editingNodeId` afterwards.
      */
     onCommitInlineRename?: (node: SceneTreeNode, newName: string) => void;
     /** Right-click handler — opens native context menu for the targeted node. */
     onShowContextMenu?: (node: SceneTreeNode, x: number, y: number) => void;
     /**
-     * Drag-drop reorder callback (Phase 4b). Receives a fully-resolved
-     * `MoveSceneNodeArgs`; ScenePane handles the validation + ori math.
-     * Return value is ignored — ScenePane uses event-driven refetch.
+     * Drag-drop reorder callback. Receives a fully-resolved
+     * `MoveSceneNodeArgs`; ScenePane handles the validation and ori math.
+     * The return value is ignored - ScenePane uses event-driven refetch.
      */
     onMoveNode?: (args: MoveSceneNodeArgs) => unknown;
     /**
@@ -126,8 +124,18 @@ interface ScenePaneProps {
     onToggleCollapse?: () => void;
 }
 
-/* ─── Component ─── */
+/* --- Component --- */
 
+/**
+ * Scene tree pane: renders the hierarchical scene / object / renderer tree
+ * with a per-row visibility toggle, multi-select, drag-drop reorder, inline
+ * rename and a right-click context menu.
+ *
+ * Selection, the editing-row id and the move / menu callbacks are owned by
+ * the parent (`useSceneTreeController`); this component handles the
+ * Blueprint `Tree` wiring, the click-pause-click rename schedule, and the
+ * drag-drop geometry.
+ */
 export const ScenePane: React.FC<ScenePaneProps> = ({
     tree,
     selectedId,
@@ -180,9 +188,9 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
         useState<{ id: string; ori: DragOri } | null>(null);
     const dragSourceRef = useRef<SceneTreeNode | null>(null);
 
-    // Inline-rename is now controlled by the parent (App.tsx). ScenePane
-    // only owns the InputGroup focus ref and stashes callback refs so the
-    // handlers stay stable across renders.
+    // Inline-rename is controlled by the parent (useSceneTreeController).
+    // ScenePane only owns the InputGroup focus ref and stashes callback
+    // refs so the handlers stay stable across renders.
     const inlineInputRef = useRef<HTMLInputElement | null>(null);
     const beginRenameRef = useRef(onBeginInlineRename);
     beginRenameRef.current = onBeginInlineRename;
@@ -206,12 +214,11 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     }, [tree]);
 
     // Whether the given node accepts a rename (inline + ctxmenu).
-    // Routing (in App.handleCommitInlineRename):
-    //   - camera → renameCamera (atomic destroy + setCamera; cameras
-    //     have no in-place name setter once registered)
-    //   - everything else → renameNode worker
-    // renameNode itself accepts object / renderer / rendGroup / scene
-    // (scene uses scene.setName since `Scene.name` is read-only at the
+    // Commit routing (in useSceneTreeController): camera rows go through
+    // renameCamera (atomic destroy + setCamera, since a registered camera
+    // has no in-place name setter); every other type goes through the
+    // renameNode worker, which accepts object / renderer / rendGroup /
+    // scene (scene uses scene.setName as Scene.name is read-only at the
     // .qif level). cameraRoot / styleRoot / style are not renameable.
     const isRenameableType = useCallback((t: SceneNodeType): boolean => {
         return (
@@ -287,10 +294,8 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
         ) => {
             const idStr = String(node.id);
             // Cmd (macOS) or Ctrl (other) toggles the node in the multi-
-            // select set. Shift+click would normally extend a contiguous
-            // range; deferred — UXP's multi-select is also additive-only
-            // via Cmd-click, with Shift behaving as a range select that
-            // we don't migrate in Phase 4c.
+            // select set. Shift+click contiguous range-select is not
+            // supported - multi-select is additive-only via Cmd-click.
             if ((e.metaKey || e.ctrlKey) && onToggleSelect) {
                 clearRenameTimer();
                 onToggleSelect(idStr);
@@ -321,12 +326,9 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     );
 
 
-    // Build an id → SceneTreeNode lookup so onNodeContextMenu (which only
-    // receives the Blueprint TreeNodeInfo) can resolve back to the original
-    // typed node and forward it to the caller.
-    // F2 begins inline rename on the current selection. We bind the
-    // listener on the scrolling wrapper (not document) so the shortcut
-    // only fires while the user is focused inside the scene tree.
+    // F2 begins inline rename on the current selection. The listener is
+    // bound on the scrolling wrapper (not document) so the shortcut only
+    // fires while the user is focused inside the scene tree.
     const handleTreeKeyDown = useCallback(
         (e: React.KeyboardEvent<HTMLDivElement>) => {
             if (e.key !== "F2") return;
@@ -351,8 +353,9 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
         return () => window.clearTimeout(id);
     }, [editingNodeId]);
 
-    // Commit / cancel forward to the App-level controller. The controller
-    // is also responsible for clearing `editingNodeId`.
+    // Commit / cancel forward to the parent controller
+    // (useSceneTreeController), which is also responsible for clearing
+    // `editingNodeId`.
     const commitEdit = useCallback(
         (next: string) => {
             if (editingNodeId == null) return;
@@ -769,6 +772,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     );
 };
 
+/** Build the display label for a tree row from its node type and name. */
 function nodeLabel(node: SceneTreeNode): string {
     switch (node.type) {
         case "scene":

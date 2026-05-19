@@ -108,6 +108,11 @@ export class WorkerService {
         }
     }
 
+    /**
+     * Register a business-logic service handler under `name`.
+     * Called once per `*.service.ts` entry during worker startup; the key
+     * must exist in `ServiceMap` (WorkerCalls.ts).
+     */
     register<K extends ServiceKey>(name: K, fn: ServiceFn<K>): void {
         if (name in this._registered) {
             log.warn(`WorkerService.register: overwriting "${name}"`);
@@ -115,12 +120,20 @@ export class WorkerService {
         this._registered[name] = fn as AnyServiceFn;
     }
 
+    /**
+     * Create a new native C++ object and return its TS wrapper.
+     * Service-side facade exposed as `ctx.svc.createObj`.
+     */
     createObj(className: string): any | null {
         const obj = this._internal.createObj(className);
         if (!obj) return null;
         return this._cm.createWrapper(obj);
     }
 
+    /**
+     * Resolve a native singleton service and return its TS wrapper.
+     * Service-side facade exposed as `ctx.svc.getService`.
+     */
     getService(className: string): any | null {
         const obj = this._internal.getService(className);
         if (!obj) return null;
@@ -153,6 +166,20 @@ export class WorkerService {
         };
     }
 
+    /**
+     * Single entry point for every renderer -> worker call.
+     *
+     * Looks `method` up in both dispatch tables and replies on the same
+     * channel with `[method, seqno, ok, ...result]`:
+     *   - `_methods` (infrastructure / RPC): invoked synchronously via apply.
+     *   - `_registered` (business services): invoked async with a fresh
+     *     `WorkerContext`; only the first arg is passed.
+     * An unknown method replies with `ok = false`.
+     *
+     * @param method - dispatch-table key
+     * @param seqno - renderer-side sequence number, echoed back for matching
+     * @param args - call arguments
+     */
     invoke(method: string, seqno: number, args: any[]): void {
         // log.info(`Worker> invoke called: ${method} seqno: ${seqno} args:`, args);
         const methodFn = (this._methods as Record<string, AnyMethodFn>)[method];
@@ -214,6 +241,12 @@ export class WorkerService {
 
     //////////
 
+    /**
+     * Initialize the C++ library, then resolve the core service singletons
+     * (`SceneManager` / `CmdMgr` / `StreamManager` / `StyleManager` /
+     * `ScrEventManager`) and the `GfxManager`, and wire the event listener.
+     * Must be the first worker call; all other methods assume it has run.
+     */
     initCueMol(loadPath?: string): boolean {
         log.info(`Worker> initCueMol called, loadPath: ${loadPath}`);
         this._cm.initCueMol(loadPath);
@@ -231,14 +264,17 @@ export class WorkerService {
         return true;
     }
 
+    /** Load the user style set (see `workerLifecycle.loadUserStyle`). */
     loadUserStyle(userStylePath?: string): boolean {
         return loadUserStyleImpl(this._cm, userStylePath);
     }
 
+    /** Select the active mouse/gesture input-config preset. */
     setViewInputConfigStyle(styleName: string): boolean {
         return setViewInputConfigStyleImpl(this._cm, styleName);
     }
 
+    /** Shut the worker down (closes the worker global scope). */
     terminateWorker(): void {
         log.info('Worker> terminateWorker called');
         this._close();
@@ -246,16 +282,26 @@ export class WorkerService {
 
     //////////
 
+    /**
+     * Subscribe to the CueMol event manager and return a slot id the
+     * renderer later passes to `removeEventListener`.
+     */
     addEventListener(aCatStr: string, aSrcType: any, aEvtType: any, aSrcID: number): number {
         const slot_id = this._evtMgr!.append(aCatStr, aSrcType, aEvtType, aSrcID);
         console.log('addEventListener OK slot_id=', slot_id);
         return slot_id;
     }
 
+    /** Unsubscribe a previously registered event listener by slot id. */
     removeEventListener(nID: number): any {
         return this._evtMgr!.remove(nID);
     }
 
+    /**
+     * One-time WebGL init: bind the transferred OffscreenCanvas to the
+     * GfxManager and activate the given view. Calling twice throws (the
+     * canvas can only be transferred once); use `addView` for extra views.
+     */
     bindCanvas(canvas: any, view_id: number, dpr: number): boolean {
         if (this._gfx_mgr) {
             console.log('bindCanvas:', canvas, view_id, dpr);
@@ -268,6 +314,10 @@ export class WorkerService {
         }
     }
 
+    /**
+     * Attach an additional view to the already-bound canvas and activate it.
+     * Used for new scene tabs (`bindCanvas` is the one-time init).
+     */
     addView(view_id: number, dpr: number): boolean {
         if (this._gfx_mgr) {
             console.log('addView:', view_id, dpr);
@@ -280,6 +330,7 @@ export class WorkerService {
         }
     }
 
+    /** Make `view_id` the view driven by the render loop. */
     activateView(view_id: number): void {
         if (this._gfx_mgr) {
             this._gfx_mgr.activateView(view_id);
@@ -288,6 +339,7 @@ export class WorkerService {
         }
     }
 
+    /** Detach a view from the GfxManager (used when a scene tab closes). */
     removeView(view_id: number): boolean {
         if (this._gfx_mgr) {
             console.log('removeView:', view_id);

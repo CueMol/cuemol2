@@ -22,6 +22,7 @@ export class ObjProxyBridge {
         private _cm: CueMol,
     ) {}
 
+    /** Create a new native object of `className` and return it as an `ObjTuple`. */
     createObj(className: string): ObjTuple | null {
         const obj = this._internal.createObj(className);
         if (obj === null) {
@@ -31,6 +32,7 @@ export class ObjProxyBridge {
         return this.toObjTuple(obj, className);
     }
 
+    /** Resolve a native singleton service by class name as an `ObjTuple`. */
     getService(className: string): ObjTuple | null {
         const obj = this._internal.getService(className);
         if (obj === null) {
@@ -40,14 +42,17 @@ export class ObjProxyBridge {
         return this.toObjTuple(obj, className);
     }
 
+    /** Whether the C++ layer registers a class with the given name. */
     hasClass(className: string): boolean {
         return this._cm.hasClass(className);
     }
 
+    /** JSON array of every registered C++ class name. */
     getAllClassNamesJSON(): string {
         return this._cm.getAllClassNamesJSON();
     }
 
+    /** Read property `propName` on the object behind `thisobj`. */
     getProp(thisobj: ObjTuple, propName: string): any {
         const native = this.lookupNativeByObjTuple(thisobj);
         if (native === null) {
@@ -59,6 +64,10 @@ export class ObjProxyBridge {
         return this.toObjTuple(rval);
     }
 
+    /**
+     * Write `value` to property `propName` on the object behind `thisobj`.
+     * An `ObjTuple` value is resolved back to its native object first.
+     */
     setProp(thisobj: ObjTuple, propName: string, value: any): boolean {
         const native = this.lookupNativeByObjTuple(thisobj);
         if (native === null) {
@@ -71,6 +80,10 @@ export class ObjProxyBridge {
         return true;
     }
 
+    /**
+     * Invoke `methodName` on the object behind `thisobj`. Each `ObjTuple`
+     * argument is resolved to its native object before the call.
+     */
     invokeMethod(methodName: string, thisobj: ObjTuple, args: any[]): any {
         const native = this.lookupNativeByObjTuple(thisobj);
         if (native === null) {

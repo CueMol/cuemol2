@@ -40,7 +40,7 @@
  * Splitter positions and collapse states are persisted via callback
  * props supplied by the parent (ultimately backed by
  * `useLayoutPersistence`). The component itself is stateless with
- * respect to layout — all layout state lives in the parent.
+ * respect to layout; all layout state lives in the parent.
  *
  * @module SidePanel
  */
@@ -68,17 +68,17 @@ import type { SceneTreeNode } from "../../worker/shared/sceneTreeTypes";
 
 import { MOL_TREE, MOLECULE_OPTIONS } from "../../data/sampleData";
 
-/* ─── Re-export types for external consumers ─── */
+/* --- Re-export types for external consumers --- */
 export type { SceneTreeNode } from "../../worker/shared/sceneTreeTypes";
 export type { MolNode } from "../panes/MolStructPane";
 export type { MolOption } from "../panes/SelectionPane";
 
-/* ─── Constants ─── */
+/* --- Constants --- */
 
 /** Height of a collapsed pane (header-only). */
 const HEADER_HEIGHT = 28;
 
-/* ─── View title / icon mapping ─── */
+/* --- View title / icon mapping --- */
 
 const VIEW_TITLES: Record<ActivityView, string> = {
   explorer: "Explorer",
@@ -92,7 +92,7 @@ const VIEW_ICONS: Record<ActivityView, string> = {
   dummy: "help",
 };
 
-/* ─── Pane configuration type ─── */
+/* --- Pane configuration type --- */
 
 /**
  * Describes a single pane within a view's Allotment.
@@ -108,7 +108,7 @@ interface PaneConfig {
   render: (collapsed: boolean, onToggleCollapse: () => void) => React.ReactNode;
 }
 
-/* ─── Props ─── */
+/* --- Props --- */
 
 interface SidePanelProps {
   /** Which activity-bar view is active. */
@@ -117,10 +117,10 @@ interface SidePanelProps {
   /* Scene / Explorer props */
   sceneTree: SceneTreeNode | null;
   sceneSelected: string;
-  /** Multi-select set (Phase 4c). */
+  /** Multi-select set. */
   sceneSelectedIds?: Set<string>;
   onSceneSelect: (id: string) => void;
-  /** Cmd/Ctrl+click toggle handler (Phase 4c). */
+  /** Cmd/Ctrl+click toggle handler for multi-select. */
   onSceneToggleSelect?: (id: string) => void;
   onToggleVisibility: (id: string) => void;
 
@@ -135,9 +135,9 @@ interface SidePanelProps {
   /** Called when the user double-clicks a scene-tree row. */
   onSceneNodeDoubleClick?: (node: SceneTreeNode) => void;
   /**
-   * Controlled inline-rename target. Non-null id = that row shows
-   * an editor. App owns this state so the F2 keypath AND the
-   * ctxmenu Rename action both route through the same controller.
+   * Controlled inline-rename target. A non-null id means that row shows
+   * an editor. `useSceneTreeController` owns this state so the F2 keypath
+   * and the ctxmenu Rename action both route through one controller.
    */
   sceneEditingNodeId?: string | null;
   /** Row asks to begin inline rename (F2). */
@@ -145,9 +145,9 @@ interface SidePanelProps {
   /** Editor was dismissed (Esc, blur-without-commit, etc.). */
   onCancelInlineRename?: () => void;
   /**
-   * Called when the user commits an inline rename in the scene tree.
-   * Caller routes to the appropriate worker — camera rows go through
-   * `renameCamera` because cameras have no in-place name setter —
+   * Called when the user commits an inline rename in the scene tree. The
+   * caller routes to the appropriate worker (camera rows go through
+   * `renameCamera`, as a registered camera has no in-place name setter)
    * and also clears `sceneEditingNodeId`.
    */
   onCommitInlineRename?: (node: SceneTreeNode, newName: string) => void;
@@ -155,10 +155,10 @@ interface SidePanelProps {
   sceneOpsEnabled?: { focus: boolean; delete: boolean; property: boolean; add: boolean };
   /** Right-click context-menu opener for scene-tree nodes. */
   onShowSceneContextMenu?: (node: SceneTreeNode, x: number, y: number) => void;
-  /** Drag-drop reorder callback (Phase 4b). */
+  /** Drag-drop reorder callback. */
   onMoveSceneNode?: (args: MoveSceneNodeArgs) => unknown;
 
-  /* ── Generic persistence props (per-view) ── */
+  /* --- Generic persistence props (per-view) --- */
 
   /**
    * Persisted splitter sizes keyed by view name.
@@ -168,7 +168,7 @@ interface SidePanelProps {
 
   /**
    * Persisted collapse state keyed by view name.
-   * e.g. `{ explorer: { scene: false, color: false, dummy4: false }, … }`
+   * e.g. `{ explorer: { scene: false, color: false, dummy4: false }, ... }`
    */
   viewCollapsed: Record<string, PaneCollapseState>;
 
@@ -179,8 +179,13 @@ interface SidePanelProps {
   onViewCollapsedChange: (view: string, collapsed: PaneCollapseState) => void;
 }
 
-/* ─── Component ─── */
+/* --- Component --- */
 
+/**
+ * Sidebar container. Renders the pane set for the active Activity Bar view
+ * via the generic `renderView` helper, which builds a vertical Allotment
+ * from the view's `PaneConfig[]` and applies collapse / size tracking.
+ */
 export const SidePanel: React.FC<SidePanelProps> = ({
   activeView,
   sceneTree,
@@ -206,13 +211,12 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   onViewSizesChange,
   onViewCollapsedChange,
 }) => {
-  /* ────────────────────────────────────────────────────────
-   * Open-size refs: keyed by `${view}:${paneId}`.
-   *
-   * Stores the last user-set height of each pane while it was
-   * expanded. Used as `defaultSizes` when remounting the
-   * Allotment after a collapse/expand toggle.
-   * ──────────────────────────────────────────────────────── */
+  /*
+   * Open-size refs, keyed by `${view}:${paneId}`. Stores the last
+   * user-set height of each pane while it was expanded. Used as
+   * `defaultSizes` when remounting the Allotment after a collapse/expand
+   * toggle.
+   */
   const openSizesRef = useRef<Record<string, number>>({});
 
   /**
@@ -234,7 +238,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     [viewSizes],
   );
 
-  /* ── Build pane configs for each view ─── */
+  /* --- Build pane configs for each view --- */
 
   const buildViewPaneConfigs = useMemo((): Record<string, PaneConfig[]> => ({
     explorer: [
@@ -336,7 +340,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     onShowSceneContextMenu, onMoveSceneNode,
   ]);
 
-  /* ── Generic view renderer (works for any N panes) ─── */
+  /* --- Generic view renderer (works for any N panes) --- */
 
   const renderView = useCallback(
     (view: string) => {
@@ -405,7 +409,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     ],
   );
 
-  /* ── Render ─── */
+  /* --- Render --- */
 
   return (
     <div className="side-panel">

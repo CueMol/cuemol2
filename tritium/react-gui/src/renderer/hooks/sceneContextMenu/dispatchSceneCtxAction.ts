@@ -102,6 +102,14 @@ export interface DispatchSceneCtxActionCtx {
     openNewCameraFlow: () => Promise<void>
 }
 
+/**
+ * Execute a single `SceneCtxAction` against the supplied callbacks.
+ *
+ * One `switch` over `action.kind` covering every scene-tree context-menu
+ * entry: visibility, rename, delete, clipboard, coloring, style, camera,
+ * and bulk multi-select actions. An (action, node type) pair that does not
+ * apply returns without effect.
+ */
 export async function dispatchSceneCtxAction(
     node: SceneTreeNode,
     action: SceneCtxAction,
@@ -117,9 +125,8 @@ export async function dispatchSceneCtxAction(
             return
         case 'rename':
             // Both ctxmenu and F2 trigger the same inline-rename editor in
-            // ScenePane. The App-level controller (useState<sceneEditingNodeId>)
-            // holds the active row id; the commit handler routes to
-            // renameCamera vs renameNode just like the old prompt-based flow.
+            // ScenePane. useSceneTreeController owns the active row id; its
+            // commit handler routes to renameCamera vs renameNode.
             ctx.beginInlineRename(idStr)
             return
         case 'delete':
@@ -409,10 +416,10 @@ export async function dispatchSceneCtxAction(
             return
         }
         case 'cameraEditVisFlags': {
-            // Dialog dep — UXP visflagset-edit-dlg.xul lands in Phase 6c.
-            // The menu item is disabled, so this branch should not normally
-            // fire; log to surface unexpected dispatches in development.
-            console.info('cameraEditVisFlags: deferred to Phase 6c')
+            // The vis-flag editing dialog is not implemented yet; the menu
+            // item is disabled, so this branch should not normally fire.
+            // Log to surface unexpected dispatches in development.
+            console.info('cameraEditVisFlags: not implemented yet')
             return
         }
         case 'multiShow':

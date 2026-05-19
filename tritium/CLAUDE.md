@@ -4,6 +4,46 @@ See the root [`../CLAUDE.md`](../CLAUDE.md) for all guidance, including tritium-
 
 ---
 
+## Comment & docstring convention (`react-gui/src/`)
+
+Use JSDoc/TSDoc — a `/** ... */` block placed **immediately before** the
+declaration. There is no ESLint enforcement; consistency is by convention.
+
+**File header** (top of file, before imports):
+
+```ts
+/**
+ * @file <path relative to src>
+ * @description <one-paragraph summary of the module's responsibility>
+ *
+ * <optional extra paragraphs: execution thread, design decisions>
+ */
+```
+
+**Function / hook / component:**
+
+```ts
+/**
+ * <1-2 sentence summary of what it does>
+ *
+ * @param x - <meaning>
+ * @returns <meaning>
+ * @remarks <optional: caveats, parity notes>
+ */
+```
+
+Rules:
+- Document every exported function / component / hook, plus internal
+  helpers whose logic is not self-evident. Trivial one-line functions may
+  be skipped.
+- Comments are English and ASCII-only (no `─`, `→`, `—`, `…`). Use `--`,
+  `->`, `-` and `...`. Section banners: `// --- Section ---`.
+- Do not leave migration-process labels (`Phase 5b`, etc.) in committed
+  code — they are meaningless once the work lands. Fold any still-useful
+  context into the `@description` / `@remarks` prose.
+
+---
+
 ## Worker directory layout (`renderer/worker/`)
 
 The directory is split by execution thread:

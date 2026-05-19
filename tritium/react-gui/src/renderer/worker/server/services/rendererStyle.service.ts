@@ -1,21 +1,18 @@
-// Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
-//
-// Phase 3c-3b of the panel.workspace migration: Style (shape) submenu on
-// the ScenePane renderer context menu.
-//
-// Mirrors UXP `ws.onStyleShowing` (population) and `ws.styleMol` (action)
-// in `workspace_panel_ctxtmenu.js`. The submenu lists styles registered
-// in `StyleManager` filtered by `<type_name>$/i` (global + scene-local),
-// optionally followed by `/^EgLine/` edge styles for renderer types that
-// support them.
-
+/**
+ * @file worker/server/services/rendererStyle.service.ts
+ * @description Worker-thread services backing the ScenePane renderer Style
+ * (shape) context-menu submenu and the Edit Renderer Style dialog.
+ *
+ * Runs in the Web Worker thread; C++ wrappers are called synchronously.
+ * Styles are read from `StyleManager` (global + scene-local) and filtered
+ * by renderer type: `<type_name>$/i` for shape styles, `^EgLine` for edge
+ * styles, `(Coloring|Paint)$` for coloring styles.
+ */
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { WorkerContext } from '../types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
 import { getSceneOrNull } from './helpers/sceneResolver';
 import { remove as styleRemove, push as stylePush } from './helpers/styleutil';
-
-// ─── getRendererStyleEntries ──────────────────────────────────────────────
 
 export interface GetRendererStyleEntriesArgs {
     sceneId: number;
@@ -57,6 +54,7 @@ const EDGE_BLOCKLIST = new Set<string>([
     'simple', 'trace', 'spline', '*namelabel', '*selection', 'coutour',
 ]);
 
+/** Parse `StyleManager.getStyleNamesJSON` for a scope; `[]` on any error. */
 function fetchStyleEntries(ctx: WorkerContext, sceneId: number): RawStyleEntry[] {
     try {
         const json = ctx.styleMgr.getStyleNamesJSON(sceneId);
@@ -69,6 +67,7 @@ function fetchStyleEntries(ctx: WorkerContext, sceneId: number): RawStyleEntry[]
     }
 }
 
+/** Filter raw style entries by `re`, carrying `pattern`/`flags` for the strip step. */
 function entriesMatching(
     raw: RawStyleEntry[],
     re: RegExp,
@@ -85,6 +84,7 @@ function entriesMatching(
     return out;
 }
 
+/** Read a renderer's `type_name`, or `''` if it cannot be read. */
 function getRendererTypeName(rend: Renderer): string {
     try {
         return (rend as unknown as { type_name: string }).type_name ?? '';
@@ -93,6 +93,11 @@ function getRendererTypeName(rend: Renderer): string {
     }
 }
 
+/**
+ * Collect the styles offered by the renderer Style submenu: shape styles
+ * matching `<type_name>$/i`, plus edge styles matching `^EgLine` (omitted
+ * for blocklisted renderer types). Merges global and scene-local styles.
+ */
 function getRendererStyleEntries(
     ctx: WorkerContext,
     args: GetRendererStyleEntriesArgs,
@@ -137,8 +142,6 @@ function escapeForRegExp(s: string): string {
     return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-// ─── applyRendererStyle ───────────────────────────────────────────────────
-
 export interface ApplyRendererStyleArgs {
     sceneId: number;
     rendId: number;
@@ -154,6 +157,11 @@ export interface ApplyRendererStyleResult {
     ok: boolean;
 }
 
+/**
+ * Apply a single style pick from the Style submenu: strip pre-existing
+ * entries matching `pattern`/`flags` from `rend.style`, push `styleName`,
+ * and re-apply the result within an undo transaction.
+ */
 function applyRendererStyle(
     ctx: WorkerContext,
     args: ApplyRendererStyleArgs,
@@ -181,17 +189,6 @@ function applyRendererStyle(
     return { ok: true };
 }
 
-// ─── getRendererStyleEditInfo (Phase 6c — Edit style dialog) ──────────────
-//
-// Full info needed to drive the "Edit Renderer Style" dialog (UXP
-// `apply_rend_style.xul`). Unlike `getRendererStyleEntries` (single-pick
-// Style submenu), this returns:
-//   - current style list parsed from `rend.style` ("a,b c" → ["a","b","c"])
-//   - available styles grouped into three sections, mirroring UXP
-//     `populateAddMenu`: type-suffix match, edge match, coloring match.
-//     Each section already excludes names already in the current list,
-//     so the dialog can render the Add popup directly.
-
 export interface GetRendererStyleEditInfoArgs {
     sceneId: number;
     rendId: number;
@@ -218,6 +215,7 @@ export interface GetRendererStyleEditInfoResult {
     coloringMatch: RendererStyleNameEntry[];
 }
 
+/** Split a `rend.style` string ("a,b c") into a trimmed name list. */
 function parseStyleList(styleStr: string): string[] {
     if (!styleStr) return [];
     return styleStr
@@ -226,10 +224,12 @@ function parseStyleList(styleStr: string): string[] {
         .filter((s) => s.length > 0);
 }
 
+/** Whether the renderer exposes a `coloring` property (gates coloring styles). */
 function rendererHasColoring(rend: Renderer): boolean {
     return 'coloring' in (rend as unknown as Record<string, unknown>);
 }
 
+/** Filter raw style entries by `re`, dropping any name in `exclude`. */
 function entriesMatchingNames(
     raw: RawStyleEntry[],
     re: RegExp,
@@ -245,6 +245,15 @@ function entriesMatchingNames(
     return out;
 }
 
+/**
+ * Full info for the Edit Renderer Style dialog.
+ *
+ * Unlike `getRendererStyleEntries` (single-pick submenu), this returns the
+ * renderer's current ordered style list (parsed from `rend.style`) plus
+ * available styles grouped into three sections - type-suffix, edge and
+ * coloring - each already excluding names present in the current list so
+ * the dialog can render the Add popup directly.
+ */
 function getRendererStyleEditInfo(
     ctx: WorkerContext,
     args: GetRendererStyleEditInfoArgs,
@@ -296,8 +305,6 @@ function getRendererStyleEditInfo(
     };
 }
 
-// ─── applyRendererStyleList (Phase 6c — Edit style dialog commit) ─────────
-
 export interface ApplyRendererStyleListArgs {
     sceneId: number;
     rendId: number;
@@ -309,6 +316,10 @@ export interface ApplyRendererStyleListResult {
     ok: boolean;
 }
 
+/**
+ * Commit the Edit Renderer Style dialog: apply the final ordered style
+ * list (joined with commas) to the renderer within an undo transaction.
+ */
 function applyRendererStyleList(
     ctx: WorkerContext,
     args: ApplyRendererStyleListArgs,

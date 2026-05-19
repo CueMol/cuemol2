@@ -1,15 +1,14 @@
-// Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
-//
-// Internal scene clipboard for Copy / Paste of object / renderer nodes.
-// Lives as a worker-process-local module singleton because the worker is
-// single-threaded — every service shares this module's state. No need to
-// thread the slot through WorkerContext.
-//
-// Mirrors UXP `workspace_panel_copipe.js` `onCopyCmd` / `onPasteObj` /
-// `onPasteRend`, but with the simplification that XML is held as a C++
-// ByteArray reference rather than a JS string (no marshalling needed
-// since clipboard never leaves the worker process).
-
+/**
+ * @file worker/server/services/sceneClipboard.service.ts
+ * @description Internal scene clipboard for Copy / Paste of object,
+ * renderer, style and camera nodes.
+ *
+ * Runs in the Web Worker thread; C++ wrappers are called synchronously.
+ * The clipboard is a worker-process-local module singleton: the worker is
+ * single-threaded so every service shares this state, and there is no need
+ * to thread it through WorkerContext. Copied XML is held as a C++ ByteArray
+ * reference (not a JS string) since the clipboard never leaves the worker.
+ */
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
@@ -41,8 +40,6 @@ export function _resetClipboardForTest(): void {
     clipboard = null;
 }
 
-// ─── copyNode ─────────────────────────────────────────────────────────────
-
 export interface CopyNodeArgs {
     sceneId: number;
     nodeId: number;
@@ -68,6 +65,13 @@ export interface CopyNodeResult {
     kind: ClipboardKind | null;
 }
 
+/**
+ * Serialize a scene node to XML and place it on the clipboard.
+ *
+ * Resolves the target by `nodeType` (object / renderer / rendGroup /
+ * style / camera); renderer and rendGroup both land as kind `'renderer'`.
+ * Copying a global-scope (scopeId 0) style is rejected.
+ */
 function copyNode(ctx: WorkerContext, args: CopyNodeArgs): CopyNodeResult {
     const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false, kind: null };
@@ -132,8 +136,6 @@ function copyNode(ctx: WorkerContext, args: CopyNodeArgs): CopyNodeResult {
     return { ok: true, kind };
 }
 
-// ─── pasteNode ────────────────────────────────────────────────────────────
-
 export interface PasteNodeArgs {
     sceneId: number;
     /** When pasting a renderer onto an object row, the object's uid. */
@@ -155,6 +157,15 @@ export interface PasteNodeResult {
     newName: string;
 }
 
+/**
+ * Restore the clipboard entry into the destination scene.
+ *
+ * Branches by clipboard kind. The pasted node is uniquified against the
+ * destination (objects / renderers / styles gain a `_<i>` suffix, cameras
+ * a `copy<i>_` prefix). A renderer paste targets either an object row
+ * (`targetObjId`) or a rendgroup row (`targetGroupId`). Wrapped in an undo
+ * transaction.
+ */
 function pasteNode(ctx: WorkerContext, args: PasteNodeArgs): PasteNodeResult {
     const empty: PasteNodeResult = { ok: false, newId: null, newName: '' };
     const entry = clipboard;
@@ -295,8 +306,6 @@ function pasteNode(ctx: WorkerContext, args: PasteNodeArgs): PasteNodeResult {
     return { ok: true, newId, newName };
 }
 
-// ─── getClipboardKind ─────────────────────────────────────────────────────
-
 export interface GetClipboardKindArgs {
     /** Empty payload; ServiceMap requires an args shape. */
     _?: never;
@@ -308,6 +317,7 @@ export interface GetClipboardKindResult {
     sourceName: string;
 }
 
+/** Report the current clipboard kind and source label (for UI hints). */
 function getClipboardKind(
     _ctx: WorkerContext,
     _args: GetClipboardKindArgs,
@@ -316,12 +326,14 @@ function getClipboardKind(
     return { kind: clipboard.kind, sourceName: clipboard.sourceName };
 }
 
-// ─── helpers ──────────────────────────────────────────────────────────────
+// --- helpers ---
 
+/** Run a getter, returning `undefined` if it throws. */
 function safeRead<T>(read: () => T): T | undefined {
     try { return read(); } catch { return undefined; }
 }
 
+/** Return `prefix`, or `prefix_<i>` if the scene already has that object. */
 function uniqueObjectName(scene: Scene, prefix: string): string {
     if (!scene.getObjectByName(prefix)) return prefix;
     for (let i = 1; i < 10000; i++) {
@@ -331,6 +343,7 @@ function uniqueObjectName(scene: Scene, prefix: string): string {
     return `${prefix}_${Date.now()}`;
 }
 
+/** Return `prefix`, or `prefix_<i>` if the object already has that renderer. */
 function uniqueRendererName(obj: CueMolObject, prefix: string): string {
     const tryFn = (n: string): unknown =>
         (obj as unknown as { getRendererByName: (s: string) => unknown }).getRendererByName(n);
@@ -342,6 +355,7 @@ function uniqueRendererName(obj: CueMolObject, prefix: string): string {
     return `${prefix}_${Date.now()}`;
 }
 
+/** Return `base`, or `copy<i>_<base>` if the scene already has that camera. */
 function uniqueCameraNameViaScene(scene: Scene, base: string): string {
     if (!scene.hasCamera(base)) return base;
     for (let i = 1; i < 10000; i++) {
@@ -351,6 +365,7 @@ function uniqueCameraNameViaScene(scene: Scene, base: string): string {
     return `${base}_${Date.now()}`;
 }
 
+/** Return `prefix`, or `prefix_<i>` if the scope already has that style set. */
 function uniqueStyleName(
     mgr: { hasStyleSet: (name: string, scopeId: number) => number },
     prefix: string,

@@ -1,6 +1,6 @@
 /**
  * @file sceneTreeDnd.ts
- * @description Pure drag-drop reorder logic for the scene tree (Phase 4b).
+ * @description Pure drag-drop reorder logic for the scene tree.
  *
  * Extracted from `ScenePane.tsx`: `planSceneNodeMove` is a ~110-line pure
  * function (no React) that resolves a (source, target, orientation) drag

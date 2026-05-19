@@ -134,6 +134,11 @@ const App: React.FC = () => {
     }
   }, [cm, removeMolTab]);
 
+  /**
+   * Decide whether a molview tab may close, prompting to save when it is
+   * the last view of a modified scene. Returns true to proceed with the
+   * close, false to abort it.
+   */
   const confirmCloseTab = useCallback(async (viewId: number): Promise<boolean> => {
     if (!cm) return true;
     const info = await cm.getSceneCloseInfo(viewId);
