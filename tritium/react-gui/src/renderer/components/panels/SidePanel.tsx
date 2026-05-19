@@ -52,7 +52,7 @@ import { Icon } from "@blueprintjs/core";
 import type { ActivityView } from "../ActivityBar";
 import type { PaneCollapseState } from "../../hooks/useLayoutPersistence";
 
-import type { MoveSceneNodeArgs } from "../panes/ScenePane";
+import type { MoveSceneNodeArgs } from "../panes/sceneTreeDnd";
 import {
   ScenePane,
   ColorPane,

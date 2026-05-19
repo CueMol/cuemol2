@@ -10,13 +10,13 @@
 // transfers the source renderer's color setup so the new surface looks
 // visually consistent with the contour it was generated from.
 
-import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { MapSurfRenderer } from '@cuemol/core/src/wrappers/MapSurfRenderer';
 import type { MolSurfRenderer } from '@cuemol/core/src/wrappers/MolSurfRenderer';
 import type { WorkerContext } from '../types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
+import { getSceneOrNull } from './helpers/sceneResolver';
 
 export interface GenerateRendererSurfObjArgs {
     sceneId: number;
@@ -95,7 +95,7 @@ function generateRendererSurfObj(
     ctx: WorkerContext,
     args: GenerateRendererSurfObjArgs,
 ): GenerateRendererSurfObjResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false };
     const rend = scene.getRenderer(args.rendId) as Renderer | null;
     if (!rend) return { ok: false };

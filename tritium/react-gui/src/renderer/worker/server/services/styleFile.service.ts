@@ -13,9 +13,9 @@
 // (via DIALOG_STYLE_OPEN / DIALOG_STYLE_SAVE IPCs) and forwarding the
 // resolved absolute path here. The worker does not own the dialog.
 
-import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { WorkerContext } from '../types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
+import { getSceneOrNull } from './helpers/sceneResolver';
 
 interface StyleManagerLike {
     loadStyleSetFromFile(scopeId: number, path: string, readOnly: boolean): number;
@@ -48,7 +48,7 @@ function loadStyleSetFromFile(
 ): LoadStyleSetFromFileResult {
     const empty: LoadStyleSetFromFileResult = { ok: false, newId: -1 };
     if (args.path.length === 0) return empty;
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return empty;
     const mgr = getStyleMgr(ctx);
     if (!mgr) return empty;
@@ -85,7 +85,7 @@ function saveStyleSetToFile(
     args: SaveStyleSetToFileArgs,
 ): SaveStyleSetToFileResult {
     if (args.path.length === 0) return { ok: false };
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false };
     const mgr = getStyleMgr(ctx);
     if (!mgr) return { ok: false };
@@ -122,7 +122,7 @@ function saveStyleSetToCurrentSrc(
     args: SaveStyleSetToCurrentSrcArgs,
 ): SaveStyleSetToCurrentSrcResult {
     const empty: SaveStyleSetToCurrentSrcResult = { ok: false, saved: false };
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return empty;
     const mgr = getStyleMgr(ctx);
     if (!mgr) return empty;

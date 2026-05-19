@@ -9,10 +9,10 @@
 // optionally followed by `/^EgLine/` edge styles for renderer types that
 // support them.
 
-import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { WorkerContext } from '../types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
+import { getSceneOrNull } from './helpers/sceneResolver';
 import { remove as styleRemove, push as stylePush } from './helpers/styleutil';
 
 // ─── getRendererStyleEntries ──────────────────────────────────────────────
@@ -100,7 +100,7 @@ function getRendererStyleEntries(
     const empty: GetRendererStyleEntriesResult = {
         ok: false, typeStyles: [], edgeStyles: [],
     };
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return empty;
     const rend = scene.getRenderer(args.rendId) as Renderer | null;
     if (!rend) return empty;
@@ -159,7 +159,7 @@ function applyRendererStyle(
     args: ApplyRendererStyleArgs,
 ): ApplyRendererStyleResult {
     if (!args.styleName) return { ok: false };
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false };
     const rend = scene.getRenderer(args.rendId) as Renderer | null;
     if (!rend) return { ok: false };
@@ -253,7 +253,7 @@ function getRendererStyleEditInfo(
         ok: false, rendName: '', rendTypeName: '',
         currentStyles: [], typeMatch: [], edgeMatch: [], coloringMatch: [],
     };
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return empty;
     const rend = scene.getRenderer(args.rendId) as Renderer | null;
     if (!rend) return empty;
@@ -313,7 +313,7 @@ function applyRendererStyleList(
     ctx: WorkerContext,
     args: ApplyRendererStyleListArgs,
 ): ApplyRendererStyleListResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false };
     const rend = scene.getRenderer(args.rendId) as Renderer | null;
     if (!rend) return { ok: false };

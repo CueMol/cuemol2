@@ -12,9 +12,9 @@
 //     `createHandler` → `setPath` → `convToLink=true` → `attach` →
 //     `write` → `detach` dance UXP performs after the dialog.
 
-import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { WorkerContext } from '../types/WorkerContext';
+import { getSceneOrNull } from './helpers/sceneResolver';
 
 // ─── helpers ──────────────────────────────────────────────────────────────
 
@@ -92,7 +92,7 @@ function getObjectSaveInfo(
     const empty: GetObjectSaveInfoResult = {
         ok: false, filters: [], defaultFileName: '', defaultDir: '',
     };
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return empty;
     const obj = scene.getObject(args.objId) as CueMolObject | null;
     if (!obj) return empty;
@@ -183,7 +183,7 @@ function saveObjectToFile(
 ): SaveObjectToFileResult {
     if (args.path.length === 0) return { ok: false };
     if (args.writerName.length === 0) return { ok: false };
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false };
     const obj = scene.getObject(args.objId) as CueMolObject | null;
     if (!obj) return { ok: false };

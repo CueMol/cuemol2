@@ -1,7 +1,7 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
-import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { SceneXMLWriter } from '@cuemol/core/src/wrappers/SceneXMLWriter';
 import type { WorkerContext } from '../types/WorkerContext';
+import { getSceneOrNull } from './helpers/sceneResolver';
 
 export interface GetSceneSaveInfoArgs {
     sceneId: number;
@@ -40,7 +40,7 @@ function getSceneSaveInfo(
     ctx: WorkerContext,
     args: GetSceneSaveInfoArgs,
 ): GetSceneSaveInfoResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false, src: '', name: '', srctype: '' };
     return {
         ok: true,
@@ -51,7 +51,7 @@ function getSceneSaveInfo(
 }
 
 function saveScene(ctx: WorkerContext, args: SaveSceneArgs): SaveSceneResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false };
 
     // UXP parity (qsc-io.writeSceneFile): persist current view into the

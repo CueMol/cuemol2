@@ -56,36 +56,38 @@ function wrapGL(gl: any) {
 
 export class GfxManager {
     // for program object
-    private _prog_data: any = {};
+    private _prog_data: { [key: string]: WebGLProgram } = {};
 
     // common UBO info
     private _mvp_mat_loc: number = 0;
-    private _mat_ubo: any = null;
+    private _mat_ubo: WebGLBuffer | null = null;
 
     private _light_loc: number = 1;
-    private _light_ubo: any = null;
+    private _light_ubo: WebGLBuffer | null = null;
 
     // per-shader DrawParamsBlock UBO (binding point 2)
-    private _draw_params_ubo: any = {};
+    private _draw_params_ubo: { [key: string]: WebGLBuffer } = {};
 
     // for VBOs
-    private _draw_data: any = {};
+    private _draw_data: {
+        [key: string]: [WebGLVertexArrayObject, WebGLBuffer, WebGLBuffer | null];
+    } = {};
 
     // for textures
-    private _tex_data: any = {};
+    private _tex_data: { [key: string]: WebGLTexture } = {};
 
     private cuemol: any;
     private _sceMgr: any;
     private _canvas: any = null;
     private _afcbid_map: Map<number, number> = new Map();
-    private bound_views: any = [];
+    private bound_views: number[] = [];
 
     // Last known logical canvas size (CSS pixels), updated by WorkerService.resized.
     // Used to sync the size to newly activated views.
     private _logicalW: number = 0;
     private _logicalH: number = 0;
 
-    private _context: any;
+    private _context!: WebGL2RenderingContext;
 
     private _enable_lighting_loc: number = 0;
 
@@ -254,7 +256,7 @@ export class GfxManager {
     //////////
     // Program objects
 
-    toShaderTypeID(name: string): any {
+    toShaderTypeID(name: string): number {
         const gl = this._context;
         if (name === 'vertex') {
             return gl.VERTEX_SHADER;
@@ -273,12 +275,12 @@ export class GfxManager {
             // return false;
             return true;
         }
-        const program = gl.createProgram();
+        const program = gl.createProgram()!;
 
         for (const [key, value] of Object.entries(data)) {
             // console.info("key: " + key + "\nsrc:" + value);
             let shader_type = this.toShaderTypeID(key);
-            const shader = gl.createShader(shader_type);
+            const shader = gl.createShader(shader_type)!;
             gl.shaderSource(shader, "#version 300 es\nprecision highp float;\nprecision highp int;\n" + value);
             gl.compileShader(shader);
 
@@ -343,7 +345,7 @@ export class GfxManager {
         const gl = this._context;
         const prog = this._prog_data[shader_name];
         // console.info(`enableShader called: shader_name=${shader_name}, program=${prog}`);
-        if (prog === undefined) {
+        if (!prog) {
             throw `shader ${shader_name} not found`;
         }
         gl.useProgram(prog);
@@ -420,7 +422,7 @@ export class GfxManager {
     /// API: allocate per-shader DrawParamsBlock UBO (binding point 2)
     initDrawParamsUBO(shader_name: string, size: number): void {
         const gl = this._context;
-        const ubo = gl.createBuffer();
+        const ubo = gl.createBuffer()!;
         gl.bindBuffer(gl.UNIFORM_BUFFER, ubo);
         gl.bufferData(gl.UNIFORM_BUFFER, size, gl.DYNAMIC_DRAW);
         gl.bindBufferBase(gl.UNIFORM_BUFFER, 2, ubo);
@@ -522,10 +524,10 @@ export class GfxManager {
         let elem_info = JSON.parse(elem_info_str);
 
         // VAO
-        let vao = gl.createVertexArray();
+        let vao = gl.createVertexArray()!;
         gl.bindVertexArray(vao);
 
-        let vertexBuffer = gl.createBuffer();
+        let vertexBuffer = gl.createBuffer()!;
         gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
 
         const stride = nsize / num_elems;
@@ -585,7 +587,7 @@ export class GfxManager {
         // (current behavior). When true, honor the C++ side's isUpdated value.
         const doUpload = RESPECT_ISUPDATED ? isUpdated : true;
 
-        if (obj === undefined) {
+        if (!obj) {
             throw `buffer ${id} not found`;
         }
 
@@ -612,7 +614,7 @@ export class GfxManager {
             }
         }
 
-        let nglmode = gl.TRIANGLES;
+        let nglmode: number = gl.TRIANGLES;
         if (nmode == 4) {
             nglmode = gl.LINES;
         } else if (nmode == 5) {
@@ -644,7 +646,7 @@ export class GfxManager {
 
         if (!(id in this._draw_data)) return false;
         const obj = this._draw_data[id];
-        if (obj === null) return false;
+        if (!obj) return false;
 
         delete this._draw_data[id];
         // delete VBO
@@ -670,7 +672,7 @@ export class GfxManager {
         }
 
         const gl = this._context;
-        const tex = gl.createTexture();
+        const tex = gl.createTexture()!;
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, tex);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, width, height, 0,
@@ -690,7 +692,7 @@ export class GfxManager {
     bindTexture(name: string, texUnit: number): void {
         const gl = this._context;
         const tex = this._tex_data[name];
-        if (tex === undefined) {
+        if (!tex) {
             throw `texture ${name} not found`;
         }
         gl.activeTexture(gl.TEXTURE0 + texUnit);

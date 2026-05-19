@@ -24,6 +24,7 @@ import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Camera } from '@cuemol/core/src/wrappers/Camera';
 import type { WorkerContext } from '../types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
+import { getSceneOrNull } from './helpers/sceneResolver';
 
 // ─── helpers ──────────────────────────────────────────────────────────────
 
@@ -48,7 +49,7 @@ export interface CreateCameraResult {
 function createCamera(ctx: WorkerContext, args: CreateCameraArgs): CreateCameraResult {
     const trimmed = args.name.trim();
     if (trimmed.length === 0) return { ok: false };
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false };
     if (scene.hasCamera(trimmed)) return { ok: false };
 
@@ -71,7 +72,7 @@ export interface DestroyCameraResult {
 }
 
 function destroyCamera(ctx: WorkerContext, args: DestroyCameraArgs): DestroyCameraResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false };
     if (!scene.hasCamera(args.name)) return { ok: false };
 
@@ -104,7 +105,7 @@ function renameCamera(ctx: WorkerContext, args: RenameCameraArgs): RenameCameraR
     if (trimmed.length === 0) return { ok: false };
     if (trimmed === args.oldName) return { ok: false };
 
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false };
     if (scene.hasCamera(trimmed)) return { ok: false };
     const cam = getCameraRef(scene, args.oldName);
@@ -137,7 +138,7 @@ function saveViewToCamera(
     ctx: WorkerContext,
     args: SaveViewToCameraArgs,
 ): SaveViewToCameraResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false };
 
     let ok = false;
@@ -173,7 +174,7 @@ function applyCameraToView(
     ctx: WorkerContext,
     args: ApplyCameraToViewArgs,
 ): ApplyCameraToViewResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false };
     if (!scene.hasCamera(args.name)) return { ok: false };
 
@@ -208,7 +209,7 @@ function clearCameraVisFlags(
     ctx: WorkerContext,
     args: ClearCameraVisFlagsArgs,
 ): ClearCameraVisFlagsResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false };
     const cam = getCameraRef(scene, args.name);
     if (!cam) return { ok: false };

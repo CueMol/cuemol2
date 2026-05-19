@@ -4,6 +4,7 @@ import type { SceneBgColor } from '../../../../shared/ipcTypes';
 import type { WorkerContext } from '../types/WorkerContext';
 import { makeColor } from './helpers/makeColor';
 import { withUndoTxn } from './withUndoTxn';
+import { getSceneOrNull } from './helpers/sceneResolver';
 
 export interface SceneBgColorArgs {
     sceneId: number;
@@ -26,14 +27,14 @@ function classifyBgColor(r: number, g: number, b: number): SceneBgColor {
 }
 
 function getSceneBgColor(ctx: WorkerContext, args: SceneBgColorArgs): SceneBgColorResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false, bgColor: 'other' };
     const color = scene.bgcolor;
     return { ok: true, bgColor: classifyBgColor(color.r(), color.g(), color.b()) };
 }
 
 function setSceneBgColor(ctx: WorkerContext, args: SetSceneBgColorArgs): SceneBgColorResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false, bgColor: 'other' };
     withUndoTxn(scene, 'Set background color', () => {
         scene.bgcolor = makeColor(ctx, args.colorName, scene.uid);
@@ -70,7 +71,7 @@ function getSceneColorProofing(
     ctx: WorkerContext,
     args: SceneColorProofingArgs,
 ): SceneColorProofingResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false, enabled: false };
     return { ok: true, enabled: isColorProofingActive(scene) };
 }
@@ -79,7 +80,7 @@ function toggleSceneColorProofing(
     ctx: WorkerContext,
     args: SceneColorProofingArgs,
 ): SceneColorProofingResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false, enabled: false };
 
     withUndoTxn(scene, 'Toggle color proofing', () => {

@@ -60,6 +60,8 @@ reorder.
 
 - `tritium/react-gui/src/renderer/components/panes/ScenePane.tsx` — DnD
   wiring around the Blueprint Tree row label
+- `tritium/react-gui/src/renderer/components/panes/sceneTreeDnd.ts` —
+  `planSceneNodeMove` drop-resolution logic + `computeOri`
 - `tritium/react-gui/src/renderer/worker/server/services/reorderSceneNode.service.ts`
   — `_moveToImpl` port + undo txn
 - `tritium/react-gui/src/renderer/__test__/reorderSceneNodeService.test.ts`

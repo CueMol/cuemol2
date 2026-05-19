@@ -9,7 +9,6 @@
 // out of scope here — the submenu is hidden for synthetic renderers
 // at gate time, so the worker only handles concrete-type conversions.
 
-import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { LScrObject } from '@cuemol/core/src/wrappers/LScrObject';
@@ -17,6 +16,7 @@ import type { ByteArray } from '@cuemol/core/src/wrappers/ByteArray';
 import type { WorkerContext } from '../types/WorkerContext';
 import { getDefaultStyleName } from './helpers/getDefaultStyleName';
 import { withUndoTxn } from './withUndoTxn';
+import { getSceneOrNull } from './helpers/sceneResolver';
 
 export interface ChangeRendererTypeArgs {
     sceneId: number;
@@ -60,7 +60,7 @@ function changeRendererType(
     ctx: WorkerContext,
     args: ChangeRendererTypeArgs,
 ): ChangeRendererTypeResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false };
     const rend = scene.getRenderer(args.rendId) as Renderer | null;
     if (!rend) return { ok: false };

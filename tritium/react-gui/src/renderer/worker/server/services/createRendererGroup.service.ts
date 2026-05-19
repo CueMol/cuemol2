@@ -5,11 +5,11 @@
 // `groupN` name (scene-wide), `obj.createRenderer('*group')`, assign the
 // chosen name, all inside a "Create renderer group: <name>" undo txn.
 
-import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { WorkerContext } from '../types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
+import { getSceneOrNull } from './helpers/sceneResolver';
 
 export interface CreateRendererGroupArgs {
     sceneId: number;
@@ -44,7 +44,7 @@ function createRendererGroup(
     ctx: WorkerContext,
     args: CreateRendererGroupArgs,
 ): CreateRendererGroupResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false };
     const obj = scene.getObject(args.objId) as CueMolObject | null;
     if (!obj) return { ok: false };

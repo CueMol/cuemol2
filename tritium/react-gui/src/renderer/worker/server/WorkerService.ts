@@ -4,20 +4,27 @@
 import { getModule } from '@cuemol/core';
 import { CueMol } from '@cuemol/core/src/cuemol';
 import type { CueMolInternal } from '@cuemol/core/src/interfaces';
-import { ObjTuple, isObjTuple } from '../shared/ObjTuple';
 import { GfxManager } from './gfx_manager';
-import { PERF_MEASURE, perfCounters } from './perf';
-import * as event from '../../event';
 import type { SceneManager } from '@cuemol/core/src/wrappers/SceneManager';
 import type { CmdMgr } from '@cuemol/core/src/wrappers/CmdMgr';
 import type { StreamManager } from '@cuemol/core/src/wrappers/StreamManager';
 import type { ScrEventManager } from '@cuemol/core/src/wrappers/ScrEventManager';
 import type { GUIView } from '@cuemol/core/src/wrappers/GUIView';
 import type { StyleManager } from '@cuemol/core/src/wrappers/StyleManager';
-import type { ViewInputConfig } from '@cuemol/core/src/wrappers/ViewInputConfig';
-import type { TextImgBuf } from '@cuemol/core/src/wrappers/TextImgBuf';
-import type { ByteArray } from '@cuemol/core/src/wrappers/ByteArray';
 import type { WorkerContext } from './types/WorkerContext';
+import { ObjProxyBridge } from './objProxyBridge';
+import {
+    handleMouseDown,
+    handleMouseUp,
+    handleMouseMove,
+    handleGesture,
+    handleWheel,
+} from './inputEvents';
+import {
+    loadUserStyle as loadUserStyleImpl,
+    setViewInputConfigStyle as setViewInputConfigStyleImpl,
+    registerWorkerEventListener,
+} from './workerLifecycle';
 
 import type {
     MethodKey,
@@ -34,28 +41,26 @@ const log = console;
 type AnyMethodFn = (...args: any[]) => any;
 type AnyServiceFn = (ctx: WorkerContext, args: any) => any | Promise<any>;
 
-const makeModif = (event: any): number => {
-    let modif = 0;
-    if (event.buttons & 1) modif |= 1; // left button
-    if (event.buttons & 4) modif |= 2; // middle button (DOM:4 → CueMol:2)
-    if (event.buttons & 2) modif |= 4; // right button  (DOM:2 → CueMol:4)
-    if (event.ctrlKey) {
-        modif += 32;
-    }
-    if (event.shiftKey) {
-        modif += 64;
-    }
-    return modif;
-};
-
+/**
+ * Worker-thread RPC coordinator.
+ *
+ * Owns the two dispatch tables and the `invoke()` entry point. The actual
+ * method implementations live in sibling modules:
+ *   - `objProxyBridge.ts`   — ObjProxy create / get / set / invoke bridge
+ *   - `inputEvents.ts`      — pointer / wheel / gesture handling
+ *   - `workerLifecycle.ts`  — user-style / input-config / event wiring
+ *   - `textRender.ts`       — OffscreenCanvas text rasterisation
+ * The `ctx.svc` facade (`createObj` / `getService` / `pushMessage` /
+ * `fromTypedArray` / `addView`) and the canvas/view delegation stay here.
+ */
 export class WorkerService {
 
     private _methods: { [K in MethodKey | RpcKey]: AnyMethodFn };
     private _registered: { [K in ServiceKey]?: AnyServiceFn } = {};
     private _internal: CueMolInternal;
     private _cm: CueMol;
+    private _bridge: ObjProxyBridge;
     private _gfx_mgr: GfxManager | null = null;
-    private _objSlot: { [key: string]: any } = {};
     private _postMessage: (data: any[]) => void;
     private _close: () => void;
     private _sceMgr: SceneManager | null = null;
@@ -70,6 +75,7 @@ export class WorkerService {
     ) {
         this._internal = getModule();
         this._cm = new CueMol({ internal: this._internal });
+        this._bridge = new ObjProxyBridge(this._internal, this._cm);
         this._postMessage = postMessage;
         this._close = close;
         log.info('_internal:', this._internal);
@@ -174,40 +180,36 @@ export class WorkerService {
         }
     }
 
-    private toObjTuple(obj: any, clsName?: string): ObjTuple | any {
-        if (obj && typeof obj === 'object' && 'toObjID' in obj) {
-            // log.info('Worker> toObjTuple result is a native object, create wrapper');
-        } else {
-            // log.info(`Worker> toObjTuple result is a primitive value, return directly: ${obj}`);
-            return obj;
-        }
+    //////////
+    // ObjProxy bridge — thin forwarders to ObjProxyBridge. Kept as methods
+    // so the `_methods` dispatch table binds stable references at construction.
 
-        const slot_id = obj.toObjID();
-        if (!(slot_id in this._objSlot)) {
-            this._objSlot[slot_id.toString()] = obj;
-        } else {
-            // log.info(`Worker> toObjTuple: obj already has slot, slot_id=${slot_id}`);
-        }
-
-        // log.info(`Worker> toObjTuple OK, slot_id=${slot_id}, obj=`, obj);
-        if (clsName) {
-            return new ObjTuple(slot_id, clsName);
-        } else {
-            return new ObjTuple(slot_id, obj.getClassName());
-        }
+    private _rpcCreateObj(className: string) {
+        return this._bridge.createObj(className);
     }
 
-    private lookupNativeByObjTuple(obj: any): any {
-        if (!isObjTuple(obj)) {
-            return obj;
-        }
-        const objTuple = obj as ObjTuple;
-        const slot_id = objTuple._obj_id;
-        if (!(slot_id in this._objSlot)) {
-            log.error(`Worker> lookupNativeByObjTuple failed: invalid slot_id: ${slot_id}`);
-            return null;
-        }
-        return this._objSlot[slot_id];
+    private _rpcGetService(className: string) {
+        return this._bridge.getService(className);
+    }
+
+    private _rpcHasClass(className: string) {
+        return this._bridge.hasClass(className);
+    }
+
+    private _rpcGetAllClassNamesJSON() {
+        return this._bridge.getAllClassNamesJSON();
+    }
+
+    private _rpcGetProp(thisobj: any, propName: string) {
+        return this._bridge.getProp(thisobj, propName);
+    }
+
+    private _rpcSetProp(thisobj: any, propName: string, value: any) {
+        return this._bridge.setProp(thisobj, propName, value);
+    }
+
+    private _rpcInvokeMethod(methodName: string, thisobj: any, args: any[]) {
+        return this._bridge.invokeMethod(methodName, thisobj, args);
     }
 
     //////////
@@ -224,140 +226,22 @@ export class WorkerService {
         this._styleMgr = this._cm.getService('StyleManager') as StyleManager;
         this._evtMgr = this._cm.getService('ScrEventManager') as ScrEventManager;
 
-        // TODO: removeListener ??
-        this._evtMgr.append("renderText", event.SEM_EXTND, event.SEM_OTHER, event.SEM_ANY);
-        this._evtMgr.addListener((...args: any[]) => {
-            const category = args[1];
-            if (category === "renderText") {
-                // Handle synchronously in the Worker thread using OffscreenCanvas 2D.
-                // The native TextRender object cannot be transferred via postMessage.
-                const trObj = args[5];
-                this.handleRenderText(trObj);
-                return;
-            }
-            try {
-                this._postMessage(['event-notify', ...args]);
-            } catch (e) {
-                log.error('Worker> event manager notify failed:', e);
-            }
-        });
+        registerWorkerEventListener(this._evtMgr, this._cm, this._postMessage);
 
         return true;
     }
 
     loadUserStyle(userStylePath?: string): boolean {
-        const stylem = this._cm.getService('StyleManager') as StyleManager;
-        if (stylem === null) {
-            log.error('Worker> StyleManager unavailable; skip user style');
-            return false;
-        }
-        try {
-            if (userStylePath) {
-                log.info(`Worker> loading user style file: ${userStylePath}`);
-                stylem.loadStyleSetFromFile(0, userStylePath, false);
-            } else {
-                log.info('Worker> user style absent; createStyleSet("user", 0)');
-                stylem.createStyleSet('user', 0);
-            }
-            return true;
-        } catch (e) {
-            log.warn('Worker> user style load failed, fallback to createStyleSet:', e);
-            try {
-                stylem.createStyleSet('user', 0);
-                return true;
-            } catch (e2) {
-                log.error('Worker> createStyleSet fallback also failed:', e2);
-                return false;
-            }
-        }
+        return loadUserStyleImpl(this._cm, userStylePath);
     }
 
     setViewInputConfigStyle(styleName: string): boolean {
-        const vic = this._cm.getService('ViewInputConfig') as ViewInputConfig;
-        if (vic === null) {
-            log.error('Worker> ViewInputConfig unavailable; skip style set');
-            return false;
-        }
-        try {
-            vic.style = styleName;
-            log.info(`Worker> ViewInputConfig.style = ${styleName}`);
-            return true;
-        } catch (e) {
-            log.error('Worker> ViewInputConfig.style set failed:', e);
-            return false;
-        }
+        return setViewInputConfigStyleImpl(this._cm, styleName);
     }
 
     terminateWorker(): void {
         log.info('Worker> terminateWorker called');
         this._close();
-    }
-
-    //////////
-
-    private _rpcCreateObj(className: string): ObjTuple | null {
-        // log.info(`Worker> _rpcCreateObj called, className=${className}`);
-        const obj = this._internal.createObj(className);
-        if (obj === null) {
-            log.error(`Worker> _rpcCreateObj failed for class: ${className}`);
-            return null;
-        }
-        // log.info('Worker> _rpcCreateObj result:', obj.toString());
-        return this.toObjTuple(obj, className);
-    }
-
-    private _rpcGetService(className: string): ObjTuple | null {
-        // log.info(`Worker> _rpcGetService called: ${className}`);
-        const obj = this._internal.getService(className);
-        if (obj === null) {
-            log.error(`Worker> _rpcGetService failed for class: ${className}`);
-            return null;
-        }
-        // log.info('Worker> _rpcGetService result:', obj.toString());
-        return this.toObjTuple(obj, className);
-    }
-
-    private _rpcHasClass(className: string): boolean {
-        return this._cm.hasClass(className);
-    }
-
-    private _rpcGetAllClassNamesJSON(): string {
-        return this._cm.getAllClassNamesJSON();
-    }
-
-    private _rpcGetProp(thisobj: ObjTuple, propName: string): any {
-        const native = this.lookupNativeByObjTuple(thisobj);
-        if (native === null) {
-            log.error(`Worker> _rpcGetProp failed: could not resolve thisobj=${thisobj}, propName=${propName}`);
-            return null;
-        }
-        const wrapper = this._cm.createWrapper(native)!;
-        const rval = wrapper.getProp(propName);
-        return this.toObjTuple(rval);
-    }
-
-    private _rpcSetProp(thisobj: ObjTuple, propName: string, value: any): boolean {
-        const native = this.lookupNativeByObjTuple(thisobj);
-        if (native === null) {
-            log.error(`Worker> _rpcSetProp failed: could not resolve thisobj=${thisobj}, propName=${propName}, value=${value}`);
-            return false;
-        }
-        const resolvedValue = this.lookupNativeByObjTuple(value);
-        const wrapper = this._cm.createWrapper(native)!;
-        wrapper.setProp(propName, resolvedValue);
-        return true;
-    }
-
-    private _rpcInvokeMethod(methodName: string, thisobj: ObjTuple, args: any[]): any {
-        const native = this.lookupNativeByObjTuple(thisobj);
-        if (native === null) {
-            log.error('Worker> _rpcInvokeMethod failed: could not resolve thisobj');
-            return null;
-        }
-        const resolvedArgs = args.map(arg => this.lookupNativeByObjTuple(arg));
-        const wrapper = this._cm.createWrapper(native)!;
-        const rval = wrapper.invokeMethod(methodName, ...resolvedArgs);
-        return this.toObjTuple(rval);
     }
 
     //////////
@@ -449,99 +333,27 @@ export class WorkerService {
         view.checkAndUpdate();
     }
 
+    //////////
+    // Input events — resolve `view_id → GUIView` then delegate to inputEvents.
+
     mouseDown(view_id: number, event: any): void {
-        const view = this._sceMgr!.getView(view_id) as GUIView;
-        const modif = makeModif(event);
-        view.onMouseDown(event.offsetX, event.offsetY, event.screenX, event.screenY, modif);
+        handleMouseDown(this._sceMgr!.getView(view_id) as GUIView, event);
     }
 
     mouseUp(view_id: number, event: any): void {
-        const view = this._sceMgr!.getView(view_id) as GUIView;
-        // For mouseup, event.buttons=0 (already released); use event.button (0=left,1=middle,2=right)
-        const buttonMap: number[] = [1, 2, 4];
-        let modif = buttonMap[event.button] ?? 0;
-        if (event.ctrlKey) modif += 32;
-        if (event.shiftKey) modif += 64;
-        view.onMouseUp(event.offsetX, event.offsetY, event.screenX, event.screenY, modif);
-    }
-
-    private handleRenderText(trNative: any): void {
-        const tr = this._cm.createWrapper(trNative) as TextImgBuf;
-        const text: string = tr.text;
-        const fontstr: string = tr.font;
-        const h: number = tr.height;
-
-        // Measure text width using a temporary OffscreenCanvas
-        const tmpCanvas = new OffscreenCanvas(1, 1);
-        const tmpCtx = tmpCanvas.getContext('2d')!;
-        tmpCtx.font = fontstr;
-        const metrics = tmpCtx.measureText(text);
-        let w = Math.ceil(metrics.width);
-        // Align to 4-byte boundary (same as cuemol2 reference implementation)
-        if (w % 4 !== 0) w += (4 - w % 4);
-
-        // Render text onto a properly-sized OffscreenCanvas
-        const canvas = new OffscreenCanvas(w, h);
-        const ctx = canvas.getContext('2d')!;
-        ctx.font = fontstr;
-        ctx.textBaseline = 'bottom';
-        ctx.fillStyle = 'white';
-        ctx.fillText(text, 0, h);
-
-        // Extract alpha channel values and write back to the native C++ TextRender object
-        const img = ctx.getImageData(0, 0, w, h);
-        const size = w * h;
-
-        tr.width = w;
-        tr.resize(size);
-
-        // Wrap img.data (Uint8ClampedArray, RGBA) as a Uint8Array view (zero-copy),
-        // then pass to C++ as a ByteArray for bulk alpha extraction — avoids N JS→C++ calls.
-        const rgbaView = new Uint8Array(img.data.buffer, img.data.byteOffset, img.data.byteLength);
-        const ba = this._cm.fromTypedArray(rgbaView) as ByteArray;
-        tr.setDataFromRGBA(ba);
+        handleMouseUp(this._sceMgr!.getView(view_id) as GUIView, event);
     }
 
     mouseMove(view_id: number, event: any): void {
-        if (PERF_MEASURE) perfCounters.mouseMoveCount++;
-        const view = this._sceMgr!.getView(view_id) as GUIView;
-        const modif = makeModif(event);
-        view.onMouseMove(event.offsetX, event.offsetY, event.screenX, event.screenY, modif);
+        handleMouseMove(this._sceMgr!.getView(view_id) as GUIView, event);
     }
 
     gestureEvent(view_id: number, event: any): void {
-        const view = this._sceMgr!.getView(view_id) as GUIView;
-        let modif = 0;
-        if (event.ctrlKey)  modif |= 32;
-        if (event.shiftKey) modif |= 64;
-        if (event.altKey)   modif |= 128;
-
-        // Scale constants preserve the gesture feel from the pre-refactor path.
-        // GES_PINCH: was deltaY*8 (PINCH_ZOOM_SCALE) then View::mouseWheel prescaled /2.5
-        //   => net multiplier 8/2.5 = 3.2 into handleMouseDragImpl.
-        // GES_ROTATE: was view.rotateView(0,0,-rotation*4.0); handleMouseDragImpl for
-        //   VIEW_ROTZ applies delta/4.0 => send delta_rotate=-rotation*16 to yield -rotation*4.
-        const GES_PINCH  = 6;
-        const GES_ROTATE = 7;
-        let scaled = event.delta;
-        if (event.axisID === GES_PINCH)  scaled = event.delta * 3.2;
-        if (event.axisID === GES_ROTATE) scaled = -event.delta * 16.0;
-
-        view.onGesture(event.offsetX, event.offsetY, event.screenX, event.screenY,
-            modif, event.axisID, scaled);
+        handleGesture(this._sceMgr!.getView(view_id) as GUIView, event);
     }
 
     wheelEvent(view_id: number, event: any): void {
-        const view = this._sceMgr!.getView(view_id) as GUIView;
-        // ctrl=32, shift=64, alt=128 (buttons bits 0-2 unused for wheel)
-        let modif = 0;
-        if (event.ctrlKey)  modif |= 32;
-        if (event.shiftKey) modif |= 64;
-        if (event.altKey)   modif |= 128;
-
-        view.onWheel(event.offsetX, event.offsetY, event.screenX, event.screenY,
-            modif, event.deltaX, event.deltaY);
+        handleWheel(this._sceMgr!.getView(view_id) as GUIView, event);
     }
 
 }
-

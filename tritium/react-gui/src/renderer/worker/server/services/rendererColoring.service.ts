@@ -9,7 +9,6 @@
 //             `cuemolui.populateStyleMenus` filtered by /Paint$/
 // Phase 3c-3a: Paint color picker — `ws.onPaintMol`
 
-import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { MolRenderer } from '@cuemol/core/src/wrappers/MolRenderer';
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
@@ -19,6 +18,7 @@ import type { PaintColoring } from '@cuemol/core/src/wrappers/PaintColoring';
 import type { WorkerContext } from '../types/WorkerContext';
 import type { RendColoringId } from '../../../../shared/ipcTypes';
 import { withUndoTxn } from './withUndoTxn';
+import { getSceneOrNull } from './helpers/sceneResolver';
 import { remove as styleRemove, push as stylePush } from './helpers/styleutil';
 import { makeColor } from './helpers/makeColor';
 
@@ -144,7 +144,7 @@ function setRendererColoring(
     ctx: WorkerContext,
     args: SetRendererColoringArgs,
 ): SetRendererColoringResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false };
     const rend = scene.getRenderer(args.rendId) as Renderer | null;
     if (!rend) return { ok: false };
@@ -245,7 +245,7 @@ function paintRendererSelection(
     ctx: WorkerContext,
     args: PaintRendererSelectionArgs,
 ): PaintRendererSelectionResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false };
     const rend = scene.getRenderer(args.rendId) as Renderer | null;
     if (!rend) return { ok: false };
@@ -283,7 +283,7 @@ function getRendererPaintInfo(
     ctx: WorkerContext,
     args: GetRendererPaintInfoArgs,
 ): GetRendererPaintInfoResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { canPaint: false };
     const rend = scene.getRenderer(args.rendId) as Renderer | null;
     if (!rend) return { canPaint: false };
@@ -332,7 +332,7 @@ function paintObjectSelection(
     ctx: WorkerContext,
     args: PaintObjectSelectionArgs,
 ): PaintObjectSelectionResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false };
     const mol = scene.getObject(args.objId) as MolCoord | null;
     if (!mol) return { ok: false };
@@ -373,7 +373,7 @@ function getObjectPaintInfo(
     ctx: WorkerContext,
     args: GetObjectPaintInfoArgs,
 ): GetObjectPaintInfoResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { canPaint: false };
     const mol = scene.getObject(args.objId) as MolCoord | null;
     if (!mol) return { canPaint: false };

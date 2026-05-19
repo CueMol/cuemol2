@@ -20,6 +20,7 @@ import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Camera } from '@cuemol/core/src/wrappers/Camera';
 import type { WorkerContext } from '../types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
+import { getSceneOrNull } from './helpers/sceneResolver';
 
 function safeRead<T>(read: () => T): T | undefined {
     try { return read(); } catch { return undefined; }
@@ -59,7 +60,7 @@ function loadCameraFromFile(
 ): LoadCameraFromFileResult {
     const empty: LoadCameraFromFileResult = { ok: false, name: '' };
     if (args.path.length === 0) return empty;
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return empty;
 
     let cam: Camera | null;
@@ -111,7 +112,7 @@ function saveCameraToFile(
     args: SaveCameraToFileArgs,
 ): SaveCameraToFileResult {
     if (args.path.length === 0) return { ok: false };
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false };
 
     let ok = false;
@@ -140,7 +141,7 @@ function saveCameraToCurrentSrc(
     ctx: WorkerContext,
     args: SaveCameraToCurrentSrcArgs,
 ): SaveCameraToCurrentSrcResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false, saved: false };
     const cam = getCameraRef(scene, args.name);
     if (!cam) return { ok: false, saved: false };
@@ -173,7 +174,7 @@ function reloadCameraFromSrc(
     ctx: WorkerContext,
     args: ReloadCameraFromSrcArgs,
 ): ReloadCameraFromSrcResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false };
     const cam = getCameraRef(scene, args.name);
     if (!cam) return { ok: false };

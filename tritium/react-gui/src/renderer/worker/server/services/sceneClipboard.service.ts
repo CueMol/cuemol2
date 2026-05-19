@@ -17,6 +17,7 @@ import type { ByteArray } from '@cuemol/core/src/wrappers/ByteArray';
 import type { LScrObject } from '@cuemol/core/src/wrappers/LScrObject';
 import type { WorkerContext } from '../types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
+import { getSceneOrNull } from './helpers/sceneResolver';
 
 export type ClipboardKind = 'object' | 'renderer' | 'style' | 'camera';
 
@@ -68,7 +69,7 @@ export interface CopyNodeResult {
 }
 
 function copyNode(ctx: WorkerContext, args: CopyNodeArgs): CopyNodeResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false, kind: null };
 
     let target: LScrObject | null = null;
@@ -159,7 +160,7 @@ function pasteNode(ctx: WorkerContext, args: PasteNodeArgs): PasteNodeResult {
     const entry = clipboard;
     if (!entry) return empty;
 
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return empty;
 
     if (entry.kind === 'camera') {
