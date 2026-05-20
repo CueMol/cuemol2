@@ -10,8 +10,8 @@
 //   stylem.getStrDataDefsJSON("sel", 0)         // global
 //   obj.sel.toString()                          // current selection
 import type { WorkerContext } from '../types/WorkerContext';
-import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
+import { getSceneOrNull } from './helpers/sceneResolver';
 
 export interface GetSelDefsArgs {
     sceneId: number;
@@ -37,7 +37,7 @@ function parseDefs(json: string): string[] {
 
 function readCurrentSel(ctx: WorkerContext, sceneId: number, molId: number): string | undefined {
     try {
-        const scene = ctx.sceMgr.getScene(sceneId) as Scene | null;
+        const scene = getSceneOrNull(ctx, sceneId);
         if (!scene) return undefined;
         const mol = scene.getObject(molId) as MolCoord | null;
         if (!mol) return undefined;

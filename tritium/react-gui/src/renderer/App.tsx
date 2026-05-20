@@ -30,7 +30,7 @@ import { useLayoutPersistence } from "./hooks/useLayoutPersistence";
 import { useActiveTool } from "./hooks/useActiveTool";
 import { ActiveToolProvider } from "./contexts/ActiveToolContext";
 import { useSceneTree } from "./hooks/useSceneTree";
-import { useSceneContextMenu } from "./hooks/useSceneContextMenu";
+import { useSceneTreeController } from "./hooks/useSceneTreeController";
 import { useInspectorState } from "./hooks/useInspectorState";
 import { useRenderSettings } from "./hooks/useRenderSettings";
 import { useRenderJob, isRenderJobActive } from "./hooks/useRenderJob";
@@ -88,49 +88,7 @@ const App: React.FC = () => {
 
   // --- Domain hooks ---
 
-  const {
-    tree: sceneTree,
-    selectedId: sceneSelected,
-    selectedIds: sceneSelectedIds,
-    selectedHasOps: sceneOpsEnabled,
-    setSelectedId: setSceneSelected,
-    toggleInSelection: toggleSceneSelected,
-    toggleVisibility: handleToggleVisibility,
-    focusNode: focusSceneNode,
-    deleteNode: deleteSceneNode,
-    renameNode: renameSceneNode,
-    selectObjectMol: selectSceneObjectMol,
-    copyNode: copySceneNode,
-    pasteNode: pasteSceneNode,
-    setRendererColoring: setSceneRendererColoring,
-    paintRendererSelection: paintSceneRendererSelection,
-    paintObjectSelection: paintSceneObjectSelection,
-    applyRendererStyle: applySceneRendererStyle,
-    setRendererSelection: setSceneRendererSelection,
-    generateRendererSurfObj: generateSceneSurfObj,
-    createRendererGroup: createSceneRendererGroup,
-    changeRendererType: changeSceneRendererType,
-    createRendererOnObject: createSceneRendererOnObject,
-    moveSceneNode,
-    bulkSetNodeVisible: bulkSceneSetVisible,
-    bulkDeleteNodes: bulkSceneDelete,
-    setSceneBackgroundColor: setSceneBgColorFromCtx,
-    toggleSceneColorProofing: toggleSceneColorProofingFromCtx,
-    createStyleSet: createSceneStyleSet,
-    toggleStyleSetReadOnly: toggleSceneStyleReadOnly,
-    loadStyleSetFromFile: loadSceneStyleFromFile,
-    saveStyleSetToFile: saveSceneStyleToFile,
-    saveStyleSetToCurrentSrc: saveSceneStyleToCurrentSrc,
-    createCamera: createSceneCamera,
-    renameCamera: renameSceneCamera,
-    saveViewToCamera: saveViewToSceneCamera,
-    applyCameraToView: applySceneCameraToView,
-    clearCameraVisFlags: clearSceneCameraVisFlags,
-    loadCameraFromFile: loadSceneCameraFromFile,
-    saveCameraToFile: saveSceneCameraToFile,
-    saveCameraToCurrentSrc: saveSceneCameraToCurrentSrc,
-    reloadCameraFromSrc: reloadSceneCameraFromSrc,
-  } = useSceneTree({ cm, sceneId: activeSceneId });
+  const scene = useSceneTree({ cm, sceneId: activeSceneId });
 
   const {
     inspectorOpen,
@@ -152,7 +110,7 @@ const App: React.FC = () => {
     loaded,
     persistInspectorOpen,
     cm,
-    sceneTree,
+    sceneTree: scene.tree,
   });
 
   // Render Settings editing state (non-persistent) for the inspector
@@ -176,6 +134,11 @@ const App: React.FC = () => {
     }
   }, [cm, removeMolTab]);
 
+  /**
+   * Decide whether a molview tab may close, prompting to save when it is
+   * the last view of a modified scene. Returns true to proceed with the
+   * close, false to abort it.
+   */
   const confirmCloseTab = useCallback(async (viewId: number): Promise<boolean> => {
     if (!cm) return true;
     const info = await cm.getSceneCloseInfo(viewId);
@@ -241,7 +204,7 @@ const App: React.FC = () => {
     if (!info) return;
     const source: RenderSource = {
       sceneId: info.scene_uid,
-      sceneName: sceneTree?.name ?? `Scene ${info.scene_uid}`,
+      sceneName: scene.tree?.name ?? `Scene ${info.scene_uid}`,
       viewId: info.view_id,
     };
     void renderJob.start({
@@ -251,7 +214,7 @@ const App: React.FC = () => {
       source,
       binaries: renderBinaries,
     });
-  }, [getActiveSceneInfo, sceneTree, renderJob, renderSettings, renderBinaries]);
+  }, [getActiveSceneInfo, scene.tree, renderJob, renderSettings, renderBinaries]);
 
   /** Re-render from a result tab's snapshot (also restores it into the editor). */
   const handleReRender = useCallback(
@@ -309,163 +272,16 @@ const App: React.FC = () => {
     [renderSettings],
   );
 
-  // --- Scene-tree toolbar handlers (UXP workspace_panel onBtn*Cmd) ---
-
-  const handleSceneFocus = useCallback((id: string) => {
-    if (activeMolViewId === undefined) return;
-    focusSceneNode(activeMolViewId, id).catch((err: unknown) => {
-      console.warn('focusSceneNode failed:', err);
-    });
-  }, [activeMolViewId, focusSceneNode]);
-
-  const handleSceneDelete = useCallback((id: string) => {
-    deleteSceneNode(id).catch((err: unknown) => {
-      console.warn('deleteSceneNode failed:', err);
-    });
-  }, [deleteSceneNode]);
-
-  // Scene-tree Property action: open the generic property inspector
-  // (UXP onPropCmd). Replaces the former read-only modal dialog.
-  const handleSceneShowProperty = handleShowGeneric;
-
-  // Inline-rename controller — owned at App level so both the F2
-  // keypath (initiated in ScenePane) and the ctxmenu Rename action
-  // (initiated in useSceneContextMenu) route through one piece of
-  // state. The targeted row id is null when no editor is open.
-  const [sceneEditingNodeId, setSceneEditingNodeId] =
-    useState<string | null>(null);
-  const beginInlineRename = useCallback((id: string) => {
-    setSceneEditingNodeId(id);
-  }, []);
-  const cancelInlineRename = useCallback(() => {
-    setSceneEditingNodeId(null);
-  }, []);
-
-  const {
-    openContextMenu: openSceneCtxMenu,
-    openNewRendererFlow: openSceneNewRendererFlow,
-    openNewCameraFlow: openSceneNewCameraFlow,
-  } = useSceneContextMenu({
+  // --- Scene-tree wiring (selection, handlers, ctxmenu, inline rename) ---
+  // Aggregated into useSceneTreeController so App no longer destructures
+  // ~40 useSceneTree callbacks and re-assembles them for useSceneContextMenu.
+  const sceneController = useSceneTreeController({
+    scene,
     cm,
-    sceneId: activeSceneId,
-    toggleVisibility: handleToggleVisibility,
-    deleteNode: deleteSceneNode,
-    renameNode: renameSceneNode,
-    showProperty: handleSceneShowProperty,
-    selectObjectMol: selectSceneObjectMol,
-    beginInlineRename,
-    copyNode: copySceneNode,
-    pasteNode: pasteSceneNode,
-    setRendererColoring: setSceneRendererColoring,
-    paintRendererSelection: paintSceneRendererSelection,
-    paintObjectSelection: paintSceneObjectSelection,
-    applyRendererStyle: applySceneRendererStyle,
-    setRendererSelection: setSceneRendererSelection,
-    generateRendererSurfObj: generateSceneSurfObj,
-    createRendererGroup: createSceneRendererGroup,
-    changeRendererType: changeSceneRendererType,
-    createRendererOnObject: createSceneRendererOnObject,
-    selectedIds: sceneSelectedIds,
-    bulkSetNodeVisible: bulkSceneSetVisible,
-    bulkDeleteNodes: bulkSceneDelete,
-    setSceneBackgroundColor: setSceneBgColorFromCtx,
-    toggleSceneColorProofing: toggleSceneColorProofingFromCtx,
-    createStyleSet: createSceneStyleSet,
-    toggleStyleSetReadOnly: toggleSceneStyleReadOnly,
-    loadStyleSetFromFile: loadSceneStyleFromFile,
-    saveStyleSetToFile: saveSceneStyleToFile,
-    saveStyleSetToCurrentSrc: saveSceneStyleToCurrentSrc,
-    activeViewId: activeMolViewId,
-    createCamera: createSceneCamera,
-    renameCamera: renameSceneCamera,
-    saveViewToCamera: saveViewToSceneCamera,
-    applyCameraToView: applySceneCameraToView,
-    clearCameraVisFlags: clearSceneCameraVisFlags,
-    loadCameraFromFile: loadSceneCameraFromFile,
-    saveCameraToFile: saveSceneCameraToFile,
-    saveCameraToCurrentSrc: saveSceneCameraToCurrentSrc,
-    reloadCameraFromSrc: reloadSceneCameraFromSrc,
+    activeSceneId,
+    activeMolViewId,
+    showGeneric: handleShowGeneric,
   });
-
-  const handleShowSceneCtxMenu = useCallback(
-    (node: Parameters<typeof openSceneCtxMenu>[0], x: number, y: number) => {
-      void openSceneCtxMenu(node, x, y).catch((err: unknown) => {
-        console.warn('scene context menu failed:', err);
-      });
-    },
-    [openSceneCtxMenu],
-  );
-
-  // Tree row double-click — UXP `onTreeItemClick` `aEvent.detail==2`:
-  // camera rows run `loadCamImpl(name, true)` (Apply to view with vis
-  // flags); other rows run `onPropCmd` (Properties dialog). The current
-  // Double-click opens the generic property inspector (UXP onPropCmd).
-  const handleSceneNodeDoubleClick = useCallback(
-    (node: Parameters<typeof openSceneCtxMenu>[0]) => {
-      if (node.type === 'camera') {
-        if (activeMolViewId === undefined) return;
-        void applySceneCameraToView(activeMolViewId, node.name, true).catch(
-          (err: unknown) => { console.warn('dblclick applyCameraToView failed:', err); },
-        );
-        return;
-      }
-      // Non-camera rows: UXP onPropCmd. cameraRoot / styleRoot have no
-      // property action (UXP onPropCmd early-returns for those), so we
-      // skip them. styleRoot is fine as a leaf-double-click no-op.
-      if (node.type === 'cameraRoot' || node.type === 'styleRoot') return;
-      handleSceneShowProperty(String(node.id));
-    },
-    [activeMolViewId, applySceneCameraToView, handleSceneShowProperty],
-  );
-
-  // Inline-rename commit: identical routing to the ctxmenu 'rename'
-  // case used to do — camera rows go through renameCamera (cameras
-  // have no in-place name setter once registered), everything else
-  // through the generic renameNode worker. Also clears the editor.
-  const handleCommitInlineRename = useCallback(
-    (node: Parameters<typeof openSceneCtxMenu>[0], newName: string) => {
-      setSceneEditingNodeId(null);
-      if (node.type === 'camera') {
-        void renameSceneCamera(node.name, newName).catch((err: unknown) => {
-          console.warn('inline rename camera failed:', err);
-        });
-      } else {
-        void renameSceneNode(String(node.id), newName).catch((err: unknown) => {
-          console.warn('inline rename failed:', err);
-        });
-      }
-    },
-    [renameSceneCamera, renameSceneNode],
-  );
-
-  // Toolbar Add button — UXP `onNewCmd` dispatches by selected row type:
-  // object / renderer / rendGroup → New Renderer flow;
-  // camera / cameraRoot → New Camera flow (createCamera + saveViewToCam).
-  // Other selections produce a no-op.
-  const handleSceneAdd = useCallback(() => {
-    const numId = Number(sceneSelected);
-    if (!Number.isFinite(numId)) return;
-    const walk = (n: typeof sceneTree): typeof sceneTree => {
-      if (!n) return null;
-      if (n.id === numId) return n;
-      for (const c of n.children) {
-        const found = walk(c);
-        if (found) return found;
-      }
-      return null;
-    };
-    const node = walk(sceneTree);
-    if (!node) return;
-    if (node.type === 'camera' || node.type === 'cameraRoot') {
-      void openSceneNewCameraFlow().catch((err: unknown) => {
-        console.warn('new-camera toolbar add failed:', err);
-      });
-      return;
-    }
-    void openSceneNewRendererFlow(node).catch((err: unknown) => {
-      console.warn('new-renderer toolbar add failed:', err);
-    });
-  }, [sceneSelected, sceneTree, openSceneNewRendererFlow, openSceneNewCameraFlow]);
 
   // --- View-state cache for the active molview tab ---
   const {
@@ -574,24 +390,7 @@ const App: React.FC = () => {
                 >
                   <SidePanel
                     activeView={activeView ?? "explorer"}
-                    sceneTree={sceneTree}
-                    sceneSelected={sceneSelected}
-                    sceneSelectedIds={sceneSelectedIds}
-                    onSceneSelect={setSceneSelected}
-                    onSceneToggleSelect={toggleSceneSelected}
-                    onToggleVisibility={handleToggleVisibility}
-                    onShowProperty={handleSceneShowProperty}
-                    onFocusSelected={handleSceneFocus}
-                    onDeleteSelected={handleSceneDelete}
-                    onAddSelected={handleSceneAdd}
-                    onSceneNodeDoubleClick={handleSceneNodeDoubleClick}
-                    sceneEditingNodeId={sceneEditingNodeId}
-                    onBeginInlineRename={beginInlineRename}
-                    onCancelInlineRename={cancelInlineRename}
-                    onCommitInlineRename={handleCommitInlineRename}
-                    onShowSceneContextMenu={handleShowSceneCtxMenu}
-                    onMoveSceneNode={moveSceneNode}
-                    sceneOpsEnabled={sceneOpsEnabled}
+                    {...sceneController}
                     viewSizes={viewSizes}
                     viewCollapsed={viewCollapsed}
                     onViewSizesChange={setViewSizes}

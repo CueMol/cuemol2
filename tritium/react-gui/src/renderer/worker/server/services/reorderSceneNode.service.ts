@@ -18,6 +18,7 @@ import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { WorkerContext } from '../types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
+import { getSceneOrNull } from './helpers/sceneResolver';
 
 /** -1 = drop BEFORE target; 0 = drop AT target (used for rendGroup INTO); +1 = drop AFTER. */
 export type ReorderOri = -1 | 0 | 1;
@@ -166,7 +167,7 @@ function reorderSceneNode(
     ctx: WorkerContext,
     args: ReorderSceneNodeArgs,
 ): ReorderSceneNodeResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false };
 
     if (args.kind === 'object') {

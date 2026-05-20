@@ -13,6 +13,7 @@ import {
     type StyleRootEntry,
 } from '../../shared/sceneTreeTypes';
 import { withUndoTxn } from './withUndoTxn';
+import { getSceneOrNull } from './helpers/sceneResolver';
 
 export interface GetSceneTreeArgs {
     sceneId: number;
@@ -110,7 +111,7 @@ function getStyleEntries(ctx: WorkerContext, sceneId: number): StyleRootEntry[] 
 }
 
 function getSceneTree(ctx: WorkerContext, args: GetSceneTreeArgs): GetSceneTreeResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false, tree: null };
     const json = scene.getSceneDataJSON();
     const tree = parseSceneTreeJSON(json);
@@ -139,7 +140,7 @@ function setNodeVisible(
     ) {
         return { ok: false };
     }
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false };
 
     const label = args.visible ? 'Show' : 'Hide';

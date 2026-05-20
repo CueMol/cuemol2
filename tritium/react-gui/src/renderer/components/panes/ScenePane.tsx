@@ -3,17 +3,16 @@
  * @description Hierarchical scene tree pane mirroring the UXP
  * `panel.workspace` layout.
  *
- * Tree layout (matches UXP `syncContents`):
- *   "Scene: <name>"               ← scene row (no children — leaf)
- *   object1 (PDBMol)              ← object branches
- *     └─ renderer1 (cartoon)
+ * Tree layout:
+ *   "Scene: <name>"          -- scene row (no children, a leaf)
+ *   object1 (PDBMol)         -- object branches
+ *     renderer1 (cartoon)
  *   object2 (...)
- *   Camera                        ← cameraRoot (children = saved cameras)
- *   Styles                        ← styleRoot (children = registered styles)
+ *   Camera                   -- cameraRoot (children = saved cameras)
+ *   Styles                   -- styleRoot (children = registered styles)
  *
  * Scene, objects, cameraRoot and styleRoot are all top-level siblings; the
- * scene row itself does not nest the objects beneath it. This matches the
- * UXP `object_name: "noindent"` flag on the scene row.
+ * scene row itself does not nest the objects beneath it.
  *
  * @module ScenePane
  */
@@ -21,7 +20,6 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import {
     Icon,
-    InputGroup,
     Tree,
     Button,
     ButtonGroup,
@@ -31,168 +29,17 @@ import {
 } from "@blueprintjs/core";
 
 import type { SceneNodeType, SceneTreeNode } from "../../worker/shared/sceneTreeTypes";
+import {
+    SCENE_NODE_MIME,
+    planSceneNodeMove,
+    computeOri,
+    type DragSourcePayload,
+    type DragOri,
+    type MoveSceneNodeArgs,
+} from "./sceneTreeDnd";
+import { InlineRenameInput } from "./InlineRenameInput";
 
-/* ─── Drag-drop reorder (Phase 4b) ─── */
-
-/** Mime type for the JSON payload carried during scene-tree DnD. */
-const SCENE_NODE_MIME = "application/x-scene-node";
-
-/** Source info written to dataTransfer on dragstart. */
-interface DragSourcePayload {
-    id: number;
-    type: SceneNodeType;
-}
-
-/** Orientation of a drop relative to the target row. */
-type DragOri = -1 | 0 | 1;
-
-/** Computed move-intent passed to the worker after a drop. */
-export type MoveSceneNodeArgs =
-    | { kind: "object"; sourceId: number; targetId: number; ori: -1 | 1 }
-    | {
-        kind: "renderer";
-        sourceId: number;
-        destObjId: number;
-        destGroupName: string;
-        targetId: number;
-        ori: -1 | 0 | 1;
-    };
-
-/**
- * Decide whether a (source, target, ori) combo represents a valid drop.
- * Mirrors UXP `workspace_panel_dnd.js` `canDrop` (subset — multi-select
- * deferred). Caller passes both nodes plus an `ori`.
- *
- * Returns the resolved `MoveSceneNodeArgs` on accept, or null on reject.
- * The parentLookup gives the parent node for any tree id (returns the
- * scene node for top-level objects, or the parent rendGroup / object
- * for nested renderers).
- */
-function planSceneNodeMove(
-    src: SceneTreeNode,
-    tgt: SceneTreeNode,
-    ori: DragOri,
-    parentLookup: (id: number) => SceneTreeNode | null,
-): MoveSceneNodeArgs | null {
-    if (src.id === tgt.id) return null;
-
-    // Object → object reorder.
-    if (src.type === "object") {
-        if (tgt.type !== "object") return null;
-        if (ori === 0) return null;  // dropping "into" object not supported
-        return { kind: "object", sourceId: src.id, targetId: tgt.id, ori };
-    }
-
-    // Renderer / rendGroup → renderer / rendGroup.
-    if (src.type === "renderer" || src.type === "rendGroup") {
-        if (tgt.type !== "renderer" && tgt.type !== "rendGroup") return null;
-
-        const srcPar = parentLookup(src.id);
-        const tgtPar = parentLookup(tgt.id);
-        if (!srcPar || !tgtPar) return null;
-
-        // Resolve dest obj + group, mirroring UXP `dropImpl` table.
-        let destObj: SceneTreeNode | null = null;
-        let destGroupName = "";
-
-        // "Drop INTO rendGroup" — only valid for source=renderer (rendgrps
-        // cannot nest). UXP: `if elem.type=="rendGroup" && ori==0`.
-        if (tgt.type === "rendGroup" && ori === 0) {
-            if (src.type !== "renderer") return null;
-            destObj = parentLookup(tgt.id);  // group's parent (an object)
-            if (!destObj || destObj.type !== "object") return null;
-            destGroupName = tgt.name;
-            // UXP: if group has children, snap target to its first child;
-            // otherwise keep target = group uid (worker treats sourceId ==
-            // targetId as "no slot swap, just update rend.group").
-            const targetId = tgt.children.length > 0
-                ? tgt.children[0].id
-                : tgt.id;
-            return {
-                kind: "renderer",
-                sourceId: src.id,
-                destObjId: destObj.id,
-                destGroupName,
-                targetId,
-                ori: 0,
-            };
-        }
-
-        // Same parent: in-place reorder. Source is allowed to be a
-        // rendGroup as long as we stay within the same object.
-        if (srcPar.id === tgtPar.id) {
-            destObj = srcPar.type === "object" ? srcPar : parentLookup(srcPar.id);
-            if (!destObj || destObj.type !== "object") return null;
-            destGroupName = srcPar.type === "rendGroup" ? srcPar.name : "";
-            return {
-                kind: "renderer",
-                sourceId: src.id,
-                destObjId: destObj.id,
-                destGroupName,
-                targetId: tgt.id,
-                ori,
-            };
-        }
-
-        // Cross-parent move. rendGroups cannot move across parents.
-        if (src.type === "rendGroup") return null;
-
-        // Allowed transitions (UXP):
-        //   srcPar=object,    tgtPar=rendGroup (same obj): obj → group
-        //   srcPar=rendGroup, tgtPar=object   (same obj): group → root
-        //   srcPar=rendGroup, tgtPar=rendGroup(same obj): group → group
-        if (srcPar.type === "object" && tgtPar.type === "rendGroup") {
-            // tgtPar's parent must equal srcPar (same object).
-            const grpParent = parentLookup(tgtPar.id);
-            if (!grpParent || grpParent.id !== srcPar.id) return null;
-            return {
-                kind: "renderer",
-                sourceId: src.id,
-                destObjId: srcPar.id,
-                destGroupName: tgtPar.name,
-                targetId: tgt.id,
-                ori,
-            };
-        }
-        if (srcPar.type === "rendGroup" && tgtPar.type === "object") {
-            const grpParent = parentLookup(srcPar.id);
-            if (!grpParent || grpParent.id !== tgtPar.id) return null;
-            return {
-                kind: "renderer",
-                sourceId: src.id,
-                destObjId: tgtPar.id,
-                destGroupName: "",
-                targetId: tgt.id,
-                ori,
-            };
-        }
-        if (srcPar.type === "rendGroup" && tgtPar.type === "rendGroup") {
-            const a = parentLookup(srcPar.id);
-            const b = parentLookup(tgtPar.id);
-            if (!a || !b || a.id !== b.id) return null;
-            return {
-                kind: "renderer",
-                sourceId: src.id,
-                destObjId: a.id,
-                destGroupName: tgtPar.name,
-                targetId: tgt.id,
-                ori,
-            };
-        }
-    }
-    return null;
-}
-
-/** Y-position → orientation. Top 1/3 = -1, middle = 0, bottom 1/3 = +1. */
-function computeOri(rect: DOMRect, clientY: number): DragOri {
-    const rel = clientY - rect.top;
-    const t = rect.height / 3;
-    if (rel < t) return -1;
-    if (rel > rect.height - t) return 1;
-    return 0;
-}
-
-/* ─── Node-type → icon mapping ─── */
+/* --- Node-type to icon mapping --- */
 
 const TYPE_ICON: Record<SceneNodeType, IconName> = {
     scene: "film",
@@ -205,7 +52,7 @@ const TYPE_ICON: Record<SceneNodeType, IconName> = {
     style: "tag",
 };
 
-/* ─── Props ─── */
+/* --- Props --- */
 
 interface ScenePaneProps {
     /** Root scene node from `useSceneTree`. Null while loading or when no scene is active. */
@@ -213,8 +60,8 @@ interface ScenePaneProps {
     /** Currently selected node ID (string for compatibility with existing inspector wiring). */
     selectedId: string;
     /**
-     * Multi-select set (Phase 4c). Drives visual selection on multiple
-     * rows. When omitted, falls back to single-select (selectedId only).
+     * Multi-select set. Drives visual selection on multiple rows. When
+     * omitted, falls back to single-select (selectedId only).
      */
     selectedIds?: Set<string>;
     onSelect: (id: string) => void;
@@ -236,36 +83,35 @@ interface ScenePaneProps {
      */
     onNodeDoubleClick?: (node: SceneTreeNode) => void;
     /**
-     * Controlled inline-rename: when non-null, the row with this id
-     * shows an `<InputGroup>` in place of its label. The trigger lives
-     * at App level so both F2 (started via `onBeginInlineRename`) and
-     * the ctxmenu Rename action route through the same controller.
+     * Controlled inline-rename: when non-null, the row with this id shows
+     * an `<InputGroup>` in place of its label. The trigger is owned by
+     * `useSceneTreeController` so both F2 (started via `onBeginInlineRename`)
+     * and the ctxmenu Rename action route through the same controller.
      */
     editingNodeId?: string | null;
     /**
      * F2 (or other in-tree trigger) requesting that the given row enter
      * inline-rename mode. ScenePane forwards `selectedId` here on F2;
-     * the App-level controller decides whether to accept.
+     * `useSceneTreeController` decides whether to accept.
      */
     onBeginInlineRename?: (id: string) => void;
     /** Esc / blur-without-commit asks the controller to drop the editor. */
     onCancelInlineRename?: () => void;
     /**
-     * Inline-rename commit handler. ScenePane handles the
-     * `<InputGroup>` editor; on Enter (or blur with a non-empty edit
-     * that differs from the original name) it calls back here with the
-     * targeted node and the user-entered name. The caller is expected
-     * to route to the appropriate worker service — UXP `onRenameCamera`
-     * for camera rows, `renameNode` for object / renderer / rendGroup —
-     * AND to clear `editingNodeId` afterwards.
+     * Inline-rename commit handler. ScenePane handles the `<InputGroup>`
+     * editor; on Enter (or blur with a non-empty edit that differs from the
+     * original name) it calls back here with the targeted node and the
+     * user-entered name. The caller routes to the appropriate worker
+     * service (renameCamera for camera rows, renameNode otherwise) and
+     * clears `editingNodeId` afterwards.
      */
     onCommitInlineRename?: (node: SceneTreeNode, newName: string) => void;
     /** Right-click handler — opens native context menu for the targeted node. */
     onShowContextMenu?: (node: SceneTreeNode, x: number, y: number) => void;
     /**
-     * Drag-drop reorder callback (Phase 4b). Receives a fully-resolved
-     * `MoveSceneNodeArgs`; ScenePane handles the validation + ori math.
-     * Return value is ignored — ScenePane uses event-driven refetch.
+     * Drag-drop reorder callback. Receives a fully-resolved
+     * `MoveSceneNodeArgs`; ScenePane handles the validation and ori math.
+     * The return value is ignored - ScenePane uses event-driven refetch.
      */
     onMoveNode?: (args: MoveSceneNodeArgs) => unknown;
     /**
@@ -278,8 +124,18 @@ interface ScenePaneProps {
     onToggleCollapse?: () => void;
 }
 
-/* ─── Component ─── */
+/* --- Component --- */
 
+/**
+ * Scene tree pane: renders the hierarchical scene / object / renderer tree
+ * with a per-row visibility toggle, multi-select, drag-drop reorder, inline
+ * rename and a right-click context menu.
+ *
+ * Selection, the editing-row id and the move / menu callbacks are owned by
+ * the parent (`useSceneTreeController`); this component handles the
+ * Blueprint `Tree` wiring, the click-pause-click rename schedule, and the
+ * drag-drop geometry.
+ */
 export const ScenePane: React.FC<ScenePaneProps> = ({
     tree,
     selectedId,
@@ -332,9 +188,9 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
         useState<{ id: string; ori: DragOri } | null>(null);
     const dragSourceRef = useRef<SceneTreeNode | null>(null);
 
-    // Inline-rename is now controlled by the parent (App.tsx). ScenePane
-    // only owns the InputGroup focus ref and stashes callback refs so the
-    // handlers stay stable across renders.
+    // Inline-rename is controlled by the parent (useSceneTreeController).
+    // ScenePane only owns the InputGroup focus ref and stashes callback
+    // refs so the handlers stay stable across renders.
     const inlineInputRef = useRef<HTMLInputElement | null>(null);
     const beginRenameRef = useRef(onBeginInlineRename);
     beginRenameRef.current = onBeginInlineRename;
@@ -358,12 +214,11 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     }, [tree]);
 
     // Whether the given node accepts a rename (inline + ctxmenu).
-    // Routing (in App.handleCommitInlineRename):
-    //   - camera → renameCamera (atomic destroy + setCamera; cameras
-    //     have no in-place name setter once registered)
-    //   - everything else → renameNode worker
-    // renameNode itself accepts object / renderer / rendGroup / scene
-    // (scene uses scene.setName since `Scene.name` is read-only at the
+    // Commit routing (in useSceneTreeController): camera rows go through
+    // renameCamera (atomic destroy + setCamera, since a registered camera
+    // has no in-place name setter); every other type goes through the
+    // renameNode worker, which accepts object / renderer / rendGroup /
+    // scene (scene uses scene.setName as Scene.name is read-only at the
     // .qif level). cameraRoot / styleRoot / style are not renameable.
     const isRenameableType = useCallback((t: SceneNodeType): boolean => {
         return (
@@ -439,10 +294,8 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
         ) => {
             const idStr = String(node.id);
             // Cmd (macOS) or Ctrl (other) toggles the node in the multi-
-            // select set. Shift+click would normally extend a contiguous
-            // range; deferred — UXP's multi-select is also additive-only
-            // via Cmd-click, with Shift behaving as a range select that
-            // we don't migrate in Phase 4c.
+            // select set. Shift+click contiguous range-select is not
+            // supported - multi-select is additive-only via Cmd-click.
             if ((e.metaKey || e.ctrlKey) && onToggleSelect) {
                 clearRenameTimer();
                 onToggleSelect(idStr);
@@ -473,12 +326,9 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     );
 
 
-    // Build an id → SceneTreeNode lookup so onNodeContextMenu (which only
-    // receives the Blueprint TreeNodeInfo) can resolve back to the original
-    // typed node and forward it to the caller.
-    // F2 begins inline rename on the current selection. We bind the
-    // listener on the scrolling wrapper (not document) so the shortcut
-    // only fires while the user is focused inside the scene tree.
+    // F2 begins inline rename on the current selection. The listener is
+    // bound on the scrolling wrapper (not document) so the shortcut only
+    // fires while the user is focused inside the scene tree.
     const handleTreeKeyDown = useCallback(
         (e: React.KeyboardEvent<HTMLDivElement>) => {
             if (e.key !== "F2") return;
@@ -503,8 +353,9 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
         return () => window.clearTimeout(id);
     }, [editingNodeId]);
 
-    // Commit / cancel forward to the App-level controller. The controller
-    // is also responsible for clearing `editingNodeId`.
+    // Commit / cancel forward to the parent controller
+    // (useSceneTreeController), which is also responsible for clearing
+    // `editingNodeId`.
     const commitEdit = useCallback(
         (next: string) => {
             if (editingNodeId == null) return;
@@ -921,57 +772,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     );
 };
 
-/**
- * Inline rename text input embedded inside a Blueprint Tree row label.
- *
- *   - Enter / blur with a non-empty edit → commit
- *   - Escape → cancel (label is restored)
- *   - clicks inside the input do NOT toggle the parent tree row
- *     (stopPropagation in mousedown/click)
- *
- * Kept as a small local component so the rendered label has stable
- * identity between renders — Blueprint Tree compares label props
- * shallowly when deciding whether to reapply selection styles.
- */
-const InlineRenameInput: React.FC<{
-    inputRef: React.MutableRefObject<HTMLInputElement | null>;
-    defaultValue: string;
-    onCommit: (value: string) => void;
-    onCancel: () => void;
-}> = ({ inputRef, defaultValue, onCommit, onCancel }) => {
-    const [value, setValue] = useState(defaultValue);
-    const handleKeyDown = useCallback(
-        (e: React.KeyboardEvent<HTMLInputElement>) => {
-            if (e.key === "Enter") {
-                e.preventDefault();
-                e.stopPropagation();
-                onCommit(value);
-            } else if (e.key === "Escape") {
-                e.preventDefault();
-                e.stopPropagation();
-                onCancel();
-            }
-        },
-        [value, onCommit, onCancel],
-    );
-    return (
-        <InputGroup
-            inputRef={(el) => { inputRef.current = el; }}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onBlur={() => onCommit(value)}
-            // Prevent Blueprint Tree's row click from stealing focus / toggling
-            // selection while the user types inside the editor.
-            onMouseDown={(e) => e.stopPropagation()}
-            onClick={(e) => e.stopPropagation()}
-            small
-            autoComplete="off"
-            style={{ display: "inline-flex", minWidth: 120 }}
-        />
-    );
-};
-
+/** Build the display label for a tree row from its node type and name. */
 function nodeLabel(node: SceneTreeNode): string {
     switch (node.type) {
         case "scene":

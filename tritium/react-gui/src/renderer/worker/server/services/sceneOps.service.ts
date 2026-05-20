@@ -1,17 +1,11 @@
-// Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
-//
-// Phase 2 of the panel.workspace migration: toolbar operations that act on
-// the currently selected scene-tree node — focus (zoom), delete, and
-// property-info fetch (drives a JSON-dump stub dialog).
-//
-// Behaviour mirrors the UXP equivalents:
-//   - focusOnNode       → workspace_panel.js  onBtnZoomCmd
-//   - deleteNode        → workspace_panel.js  onDeleteCmd / deleteCmdImpl
-//   - getNodeInfo       → workspace_panel.js  onPropCmd (stub; real per-type
-//                         property editor lands in Phase 5)
-//
-// scene / camera / style nodes are out of Phase 2 scope and report ok:false.
-
+/**
+ * @file worker/server/services/sceneOps.service.ts
+ * @description Worker-thread services for ScenePane toolbar / context-menu
+ * operations on the selected scene-tree node: focus (zoom-to), delete and
+ * rename, plus a legacy property-info fetch.
+ *
+ * Runs in the Web Worker thread; C++ wrappers are called synchronously.
+ */
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
@@ -83,16 +77,19 @@ export interface GetNodeInfoResult {
     displayName: string;
 }
 
-// ─── helpers ──────────────────────────────────────────────────────────────
+// --- helpers ---
 
+/** Whether `obj` has a callable method named `name`. */
 function hasMethod<T>(obj: T, name: string): boolean {
     return obj != null && typeof (obj as unknown as Record<string, unknown>)[name] === 'function';
 }
 
+/** Whether `obj` has an own/inherited property named `name`. */
 function hasProp<T>(obj: T, name: string): boolean {
     return obj != null && name in (obj as unknown as Record<string, unknown>);
 }
 
+/** Run a getter, returning `undefined` if it throws. */
 function safeRead<T>(read: () => T): T | undefined {
     try {
         return read();
@@ -101,8 +98,14 @@ function safeRead<T>(read: () => T): T | undefined {
     }
 }
 
-// ─── focusOnNode ──────────────────────────────────────────────────────────
-
+/**
+ * Zoom the view to fit a scene-tree node.
+ *
+ * Objects use `fitView`; renderers/groups prefer `fitView2` with the
+ * renderer's selection, fall back to `fitView`, then to `getCenter` for
+ * scalar / density-map renderers. scene / camera / style have no focus
+ * action and report `ok: false`.
+ */
 function focusOnNode(ctx: WorkerContext, args: FocusOnNodeArgs): FocusOnNodeResult {
     const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
     const view = ctx.sceMgr.getView(args.viewId) as GUIView;
@@ -151,8 +154,13 @@ function focusOnNode(ctx: WorkerContext, args: FocusOnNodeArgs): FocusOnNodeResu
     return { ok: false };
 }
 
-// ─── deleteNode ───────────────────────────────────────────────────────────
-
+/**
+ * Delete a scene-tree node within an undo transaction.
+ *
+ * Supports object / renderer / rendGroup / style nodes; a rendGroup also
+ * destroys its child renderers (`childIds`). scene / camera are not
+ * supported and report `ok: false`.
+ */
 function deleteNode(ctx: WorkerContext, args: DeleteNodeArgs): DeleteNodeResult {
     const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
     if (!scene) return { ok: false };
@@ -218,14 +226,7 @@ function deleteNode(ctx: WorkerContext, args: DeleteNodeArgs): DeleteNodeResult 
     return { ok: false };
 }
 
-// ─── getNodeInfo ──────────────────────────────────────────────────────────
-//
-// @deprecated Superseded by the `getGenericProps` service
-// (genericProps.service.ts), which backs the generic property inspector.
-// `getNodeInfo` only fed the read-only `NodePropertyDialog` modal, now
-// retired. Kept compiling pending removal of that dialog; scheduled for
-// deletion together with its ServiceMap row.
-
+/** Stringify `raw` and append it as a `{ key, value }` entry; skips null/undefined. */
 function pushEntry(entries: NodeInfoEntry[], key: string, raw: unknown): void {
     if (raw === undefined || raw === null) return;
     let value: string;
@@ -241,6 +242,7 @@ function pushEntry(entries: NodeInfoEntry[], key: string, raw: unknown): void {
     entries.push({ key, value });
 }
 
+/** Collect the common uid / name / visible / locked properties of a node. */
 function collectCommonProps(target: unknown): NodeInfoEntry[] {
     const out: NodeInfoEntry[] = [];
     const t = target as Record<string, unknown>;
@@ -251,6 +253,15 @@ function collectCommonProps(target: unknown): NodeInfoEntry[] {
     return out;
 }
 
+/**
+ * Collect a flat list of human-readable property entries for a node, used
+ * by the read-only property dialog.
+ *
+ * Deprecated: superseded by the `getGenericProps` service
+ * (genericProps.service.ts) backing the generic property inspector. Kept
+ * compiling pending removal of the retired `NodePropertyDialog` modal;
+ * scheduled for deletion together with its ServiceMap row.
+ */
 function getNodeInfo(ctx: WorkerContext, args: GetNodeInfoArgs): GetNodeInfoResult {
     const empty: GetNodeInfoResult = { ok: false, entries: [], displayName: '' };
     const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
@@ -297,14 +308,15 @@ function getNodeInfo(ctx: WorkerContext, args: GetNodeInfoArgs): GetNodeInfoResu
     return empty;
 }
 
-// ─── renameNode ───────────────────────────────────────────────────────────
-
+/**
+ * Rename a scene-tree node within an undo transaction.
+ *
+ * object / renderer / rendGroup assign `name` directly; scene uses
+ * `setName` (its `name` is read-only at the .qif level). camera rename
+ * goes through `cameraOps.renameCamera`; style has no rename - both are
+ * rejected here. An empty / whitespace-only name is rejected.
+ */
 function renameNode(ctx: WorkerContext, args: RenameNodeArgs): RenameNodeResult {
-    // object / renderer / rendGroup support direct `name =` assignment.
-    // scene uses an explicit `setName` method (its `name` property is
-    // read-only at the .qif level — see `Scene.qif`). Camera rename
-    // goes through `cameraOps.renameCamera` (atomic destroy + setCamera)
-    // and style has no UXP rename handler — both reject here.
     if (
         args.nodeType !== 'object' &&
         args.nodeType !== 'renderer' &&

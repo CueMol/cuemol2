@@ -8,13 +8,13 @@
 // Split out of `sceneOps.service.ts`: molecular selection is a distinct
 // concern from the node lifecycle / query operations that remain there.
 
-import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { WorkerContext } from '../types/WorkerContext';
 import type { SelectMolKind } from '../../../../shared/ipcTypes';
 import { makeSel } from './helpers/makeSel';
 import { invertSelStr, rewriteAround, toggleSidechainStr } from './helpers/selStrTransforms';
 import { withUndoTxn } from './withUndoTxn';
+import { getSceneOrNull } from './helpers/sceneResolver';
 
 export interface SelectObjectMolArgs {
     sceneId: number;
@@ -110,7 +110,7 @@ function selectObjectMol(
     ctx: WorkerContext,
     args: SelectObjectMolArgs,
 ): SelectObjectMolResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false };
     const mol = scene.getObject(args.objId) as MolCoord | null;
     if (!mol) return { ok: false };

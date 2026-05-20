@@ -26,7 +26,7 @@ destroy and re-register the camera under the new name.
 
 ## Decision
 
-The App-level `sceneEditingNodeId` state is the **single controller**.
+The `sceneEditingNodeId` state is the **single controller**.
 All three triggers route through it via a `beginInlineRename(idStr)`
 callback. The Blueprint `<InputGroup>` overlay is rendered when
 `sceneEditingNodeId === node.id`.
@@ -74,10 +74,12 @@ cameraRoot / styleRoot / style rows do not show the editor.
 
 ### Implementation pointers
 
-- `tritium/react-gui/src/renderer/App.tsx` — `sceneEditingNodeId` state
-  and `beginInlineRename` callback wiring
+- `tritium/react-gui/src/renderer/hooks/useSceneTreeController.ts` —
+  `sceneEditingNodeId` state and `beginInlineRename` callback wiring
+- `tritium/react-gui/src/renderer/components/panes/InlineRenameInput.tsx`
+  — the InputGroup overlay component
 - `tritium/react-gui/src/renderer/components/panes/ScenePane.tsx` — the
-  InputGroup overlay and click-pause-click 500 ms scheduler
+  click-pause-click 500 ms scheduler
 - `tritium/react-gui/src/renderer/hooks/useSceneContextMenu.ts` —
   `rename` case calls `beginInlineRename`
 - `tritium/react-gui/src/renderer/worker/server/services/renameCamera.service.ts`

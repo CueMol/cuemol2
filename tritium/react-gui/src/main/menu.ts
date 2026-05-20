@@ -19,6 +19,11 @@ export type MenuBlockReason = 'blueprint' | 'native'
 
 const isMac = process.platform === 'darwin'
 
+/**
+ * Build the dynamic `open-recent` submenu: one item per MRU entry (each
+ * opening that file), a separator, and the Clear Menu item. Shows a
+ * disabled `(none)` placeholder when there are no recent files.
+ */
 function buildRecentSubmenu(
   mainWindow: BrowserWindow,
   recents: RecentFileEntry[],
@@ -127,6 +132,7 @@ function buildItem(
   return result
 }
 
+/** Convert a top-level `AppMenuGroup` to an Electron submenu group. */
 function buildGroup(
   group: AppMenuGroup,
   specificHandlers: Record<string, () => void>,
@@ -152,6 +158,11 @@ let pendingRebuild = false
 // static `enabled: false` template defaults after any RECENT_ADD.
 let lastMenuState: MenuState | null = null
 
+/**
+ * Build the full application menu from `APP_MENU` (plus the macOS App menu)
+ * and install it, then re-apply the last cached `MenuState` so dynamic
+ * view / scene checks survive the rebuild.
+ */
 function buildAndSetMenu(mainWindow: BrowserWindow): void {
   const specificHandlers = buildSpecificHandlers(mainWindow)
 
@@ -197,6 +208,7 @@ function buildAndSetMenu(mainWindow: BrowserWindow): void {
   }
 }
 
+/** Build and install the application menu for the given window (first run). */
 export function createMenu(mainWindow: BrowserWindow): void {
   mainWindowRef = mainWindow
   buildAndSetMenu(mainWindow)
@@ -218,9 +230,7 @@ export function rebuildApplicationMenu(): void {
   buildAndSetMenu(mainWindowRef)
 }
 
-// ─────────────────────────────────────────────
-// Modal-aware menu accelerator block
-// ─────────────────────────────────────────────
+// --- Modal-aware menu accelerator block ---
 //
 // When a Blueprint Dialog (or message box) is open in the renderer, or when
 // a native OS dialog is being shown from main, all application-menu items
@@ -249,6 +259,7 @@ function totalBlockCount(): number {
   return total
 }
 
+/** Disable every menu item, snapshotting their current `enabled` values. */
 function applyBlock(): void {
   const menu = Menu.getApplicationMenu()
   if (!menu) return
@@ -262,6 +273,7 @@ function applyBlock(): void {
   snapshot = snap
 }
 
+/** Restore the menu items' `enabled` values from the block snapshot, then run any deferred rebuild. */
 function applyUnblock(): void {
   if (!snapshot) return
   for (const [item, prev] of snapshot) {
@@ -316,6 +328,11 @@ export async function withMenuBlocked<T>(
   }
 }
 
+/**
+ * Apply renderer-pushed view / scene state (perspective, center-mark,
+ * background) to the live menu, caching it for replay across rebuilds.
+ * No-op while the menu is blocked.
+ */
 export function updateMenuState(state: MenuState): void {
   // While the menu is blocked, ignore renderer-side state updates. The
   // renderer is expected to re-emit on the next active-view change after

@@ -1,15 +1,12 @@
-// Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
-//
-// Phase 3c of the panel.workspace migration: renderer Coloring / Paint menu
-// support in the ScenePane right-click context menu.
-//
-// Phase 3c-1: static Coloring submenu items — `Qm2Main.setRendColoring`
-//             (style-* and paint-type-* branches)
-// Phase 3c-2: dynamic Paint (Secondary str.) sub-submenu —
-//             `cuemolui.populateStyleMenus` filtered by /Paint$/
-// Phase 3c-3a: Paint color picker — `ws.onPaintMol`
-
-import type { Scene } from '@cuemol/core/src/wrappers/Scene';
+/**
+ * @file worker/server/services/rendererColoring.service.ts
+ * @description Worker-thread services backing the ScenePane renderer- and
+ * object-level Coloring / Paint context-menu actions: static coloring
+ * styles, the dynamic "Paint (Secondary str.)" style submenu, and the
+ * Paint color picker.
+ *
+ * Runs in the Web Worker thread; C++ wrappers are called synchronously.
+ */
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { MolRenderer } from '@cuemol/core/src/wrappers/MolRenderer';
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
@@ -19,15 +16,9 @@ import type { PaintColoring } from '@cuemol/core/src/wrappers/PaintColoring';
 import type { WorkerContext } from '../types/WorkerContext';
 import type { RendColoringId } from '../../../../shared/ipcTypes';
 import { withUndoTxn } from './withUndoTxn';
+import { getSceneOrNull } from './helpers/sceneResolver';
 import { remove as styleRemove, push as stylePush } from './helpers/styleutil';
 import { makeColor } from './helpers/makeColor';
-
-// ─── getPaintColoringStyles (Phase 3c-2) ──────────────────────────────────
-//
-// Mirrors UXP `cuemolui.populateStyleMenus` with the `/Paint$/` regex used
-// by the renderer Coloring submenu's "Paint (Secondary str.)" sub-submenu.
-// We always merge the global style set (sceneId = 0) with the scene-local
-// set so user styles in the active scene are included.
 
 export interface GetPaintColoringStylesArgs {
     sceneId: number;
@@ -65,6 +56,12 @@ function fetchStyleEntries(ctx: WorkerContext, sceneId: number): RawStyleEntry[]
     }
 }
 
+/**
+ * Collect style names ending in `Paint` for the renderer Coloring submenu's
+ * "Paint (Secondary str.)" sub-submenu. Merges the global style set
+ * (sceneId 0) with the scene-local set so the active scene's user styles
+ * are included.
+ */
 function getPaintColoringStyles(
     ctx: WorkerContext,
     args: GetPaintColoringStylesArgs,
@@ -140,17 +137,24 @@ function applyObjColoring(
     (rend as unknown as MolRenderer).coloring = coloring;
 }
 
+/**
+ * Apply a coloring to a renderer from a Coloring-submenu selection.
+ *
+ * `style-XXX` ids (both static items and dynamic Paint(SS) entries) route
+ * through `applyStyleColoring`; `paint-type-XXX` ids instantiate a fresh
+ * coloring object. Wrapped in an undo transaction.
+ */
 function setRendererColoring(
     ctx: WorkerContext,
     args: SetRendererColoringArgs,
 ): SetRendererColoringResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false };
     const rend = scene.getRenderer(args.rendId) as Renderer | null;
     if (!rend) return { ok: false };
 
-    // style-* IDs share one handler (Phase 3c-1 static + Phase 3c-2 dynamic
-    // Paint(SS) entries flow through the same applyStyles path).
+    // style-* ids share one handler: static and dynamic Paint(SS) entries
+    // both flow through the same applyStyles path.
     if (args.coloringId.startsWith('style-')) {
         const styleName = args.coloringId.substring('style-'.length);
         if (!styleName) return { ok: false };
@@ -178,20 +182,6 @@ function setRendererColoring(
             return { ok: false };
     }
 }
-
-// ─── paintRendererSelection (Phase 3c-3a) ─────────────────────────────────
-//
-// Insert a paint entry (color + selection) into the renderer's coloring.
-// Mirrors UXP `ws.onPaintMol` (`workspace_panel_ctxtmenu.js`). The selection
-// is read from the renderer's parent MolCoord — the renderer's own `sel`
-// restricts display but the Paint menu always uses the mol's active sel
-// (matching UXP behaviour).
-//
-// Prerequisites verified per-call:
-//   - renderer's coloring class is `PaintColoring`
-//   - parent mol has a non-empty `sel`
-// Both gated client-side via `getRendererPaintInfo` (the Paint submenu is
-// hidden when canPaint is false) but re-checked here for correctness.
 
 export interface PaintRendererSelectionArgs {
     sceneId: number;
@@ -241,11 +231,19 @@ function getColoringClassName(rend: Renderer): string {
     }
 }
 
+/**
+ * Insert a paint entry (color + selection) into a renderer's coloring.
+ *
+ * The selection is read from the renderer's parent MolCoord (not the
+ * renderer's own display `sel`). Refuses unless the coloring is
+ * `PaintColoring` and the mol has a non-empty selection; these are also
+ * gated client-side by `getRendererPaintInfo` but re-checked here.
+ */
 function paintRendererSelection(
     ctx: WorkerContext,
     args: PaintRendererSelectionArgs,
 ): PaintRendererSelectionResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false };
     const rend = scene.getRenderer(args.rendId) as Renderer | null;
     if (!rend) return { ok: false };
@@ -264,11 +262,6 @@ function paintRendererSelection(
     return { ok: true };
 }
 
-// ─── getRendererPaintInfo (Phase 3c-3a gate) ──────────────────────────────
-//
-// Tells the renderer side whether the Paint submenu should be shown for
-// a given renderer right now. Mirrors UXP's `checkPaintColoring()` gate.
-
 export interface GetRendererPaintInfoArgs {
     sceneId: number;
     rendId: number;
@@ -279,11 +272,16 @@ export interface GetRendererPaintInfoResult {
     canPaint: boolean;
 }
 
+/**
+ * Gate query: whether the renderer Paint submenu should be shown now -
+ * true iff the coloring is `PaintColoring` and the parent mol has a
+ * non-empty selection.
+ */
 function getRendererPaintInfo(
     ctx: WorkerContext,
     args: GetRendererPaintInfoArgs,
 ): GetRendererPaintInfoResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { canPaint: false };
     const rend = scene.getRenderer(args.rendId) as Renderer | null;
     if (!rend) return { canPaint: false };
@@ -294,18 +292,6 @@ function getRendererPaintInfo(
     if (!sel || isSelEmpty(sel)) return { canPaint: false };
     return { canPaint: true };
 }
-
-// ─── paintObjectSelection (Phase 5d) ──────────────────────────────────────
-//
-// Object-level paint: insert a paint entry into the MolCoord's own
-// coloring scheme. Mirrors UXP `ws.onPaintMol` object branch — the same
-// handler that backs the renderer Paint menu also serves the object
-// Paint menu, branching on whether the selected node has `getClientObj`
-// (renderer) or `sel` directly (object).
-//
-// Gated client-side by `getObjectPaintInfo` so the Paint submenu is
-// hidden when the object's coloring is not PaintColoring or its sel is
-// empty.
 
 export interface PaintObjectSelectionArgs {
     sceneId: number;
@@ -328,11 +314,17 @@ function getObjectColoringClassName(mol: MolCoord): string {
     }
 }
 
+/**
+ * Object-level paint: insert a paint entry into a MolCoord's own coloring
+ * scheme. The object counterpart of `paintRendererSelection`. Refuses
+ * unless the object's coloring is `PaintColoring` and its selection is
+ * non-empty.
+ */
 function paintObjectSelection(
     ctx: WorkerContext,
     args: PaintObjectSelectionArgs,
 ): PaintObjectSelectionResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false };
     const mol = scene.getObject(args.objId) as MolCoord | null;
     if (!mol) return { ok: false };
@@ -348,17 +340,6 @@ function paintObjectSelection(
     return { ok: true };
 }
 
-// ─── getObjectPaintInfo (Phase 5d gate) ───────────────────────────────────
-//
-// UXP `wspcPnlObjPaintMenu` is shown unconditionally — the only gate is
-// `onPaintMol`'s "selection is empty" early-return + a try/catch that
-// silently rolls back the txn when `insertBefore` is missing (e.g. when
-// the current coloring is the default SolidColoring rather than
-// PaintColoring). We mirror that here by gating only on a non-empty sel
-// so the menu surfaces as soon as the user has something selected. The
-// worker `paintObjectSelection` still refuses safely when coloring is
-// not PaintColoring, so a stray click is a no-op rather than a crash.
-
 export interface GetObjectPaintInfoArgs {
     sceneId: number;
     objId: number;
@@ -369,11 +350,20 @@ export interface GetObjectPaintInfoResult {
     canPaint: boolean;
 }
 
+/**
+ * Gate query for the object Paint submenu: true iff the object has a
+ * non-empty selection.
+ *
+ * @remarks The coloring class is intentionally not gated here - the menu
+ * surfaces as soon as something is selected, and `paintObjectSelection`
+ * refuses safely when the coloring is not `PaintColoring`, so a stray
+ * click is a no-op rather than a crash.
+ */
 function getObjectPaintInfo(
     ctx: WorkerContext,
     args: GetObjectPaintInfoArgs,
 ): GetObjectPaintInfoResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { canPaint: false };
     const mol = scene.getObject(args.objId) as MolCoord | null;
     if (!mol) return { canPaint: false };

@@ -18,10 +18,10 @@
 //     a UI nicety; we drop it in favour of the same auto-handle pattern
 //     used by object / renderer / style paste paths).
 
-import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { LScrObject } from '@cuemol/core/src/wrappers/LScrObject';
 import type { WorkerContext } from '../types/WorkerContext';
+import { getSceneOrNull } from './helpers/sceneResolver';
 
 // ─── getCreateRendStyleInfo ───────────────────────────────────────────────
 
@@ -93,7 +93,7 @@ function getCreateRendStyleInfo(
         ok: false, rendName: '', rendTypeName: '',
         styleSets: [], defaultSelectedUid: -1,
     };
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return empty;
     const rend = scene.getRenderer(args.rendId) as Renderer | null;
     if (!rend) return empty;
@@ -163,7 +163,7 @@ function createStyleFromRenderer(
     const baseName = args.baseName.trim();
     if (baseName.length === 0) return empty;
 
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return empty;
     const rend = scene.getRenderer(args.rendId) as Renderer | null;
     if (!rend) return empty;

@@ -1,0 +1,148 @@
+import { describe, it, expect, vi } from 'vitest';
+
+// WorkerService's constructor calls getModule() and `new CueMol(...)`.
+// Mock both so the class instantiates without the native C++ addon.
+vi.mock('@cuemol/core', () => ({ getModule: () => ({}) }));
+vi.mock('@cuemol/core/src/cuemol', () => ({
+    CueMol: class CueMol {
+        constructor(_opts: unknown) {
+            void _opts;
+        }
+    },
+}));
+
+import { WorkerService } from '../worker/server/WorkerService';
+
+/**
+ * Degrade-detection test for `WorkerService.invoke` — the worker-side RPC
+ * dispatcher.
+ *
+ * Phase 2 of the react-gui refactor extracts the method implementations
+ * (input events, ObjProxy bridge, lifecycle, text render) into separate
+ * modules while `WorkerService` stays as the dispatch-table owner. This
+ * test pins the *observable wire contract* of `invoke()` so the extraction
+ * is provably behaviour-preserving:
+ *   - which dispatch table (`_methods` vs `_registered`) a name routes to
+ *   - the `[method, seqno, ok, ...payload]` shape posted back
+ *   - sync (`_methods`) vs async (`_registered`) invocation semantics
+ *   - the full set of built-in `_methods` keys
+ */
+
+type AnyFn = (...args: unknown[]) => unknown;
+
+/** Resolve pending microtasks — the `_registered` path chains two `.then`. */
+const flush = (): Promise<void> => new Promise((r) => setTimeout(r, 0));
+
+function makeSvc(): { svc: WorkerService; posted: unknown[][] } {
+    const posted: unknown[][] = [];
+    const svc = new WorkerService(
+        (data: unknown[]) => {
+            posted.push(data);
+        },
+        () => {},
+    );
+    return { svc, posted };
+}
+
+/** Inject a fake handler into the private `_methods` table. */
+function injectMethod(svc: WorkerService, name: string, fn: AnyFn): void {
+    (svc as unknown as { _methods: Record<string, AnyFn> })._methods[name] = fn;
+}
+
+/** Call the typed `register` with a test-only service name. */
+function registerService(svc: WorkerService, name: string, fn: AnyFn): void {
+    (svc.register as unknown as (n: string, f: AnyFn) => void)(name, fn);
+}
+
+describe('WorkerService.invoke dispatch contract', () => {
+    it('_methods scalar return posts [method, seqno, true, result]', () => {
+        const { svc, posted } = makeSvc();
+        injectMethod(svc, 'testScalar', () => 42);
+        svc.invoke('testScalar', 7, []);
+        expect(posted).toEqual([['testScalar', 7, true, 42]]);
+    });
+
+    it('_methods array return spreads the result into the message tail', () => {
+        const { svc, posted } = makeSvc();
+        injectMethod(svc, 'testArr', () => [1, 2, 3]);
+        svc.invoke('testArr', 8, []);
+        expect(posted).toEqual([['testArr', 8, true, 1, 2, 3]]);
+    });
+
+    it('_methods receives the full args array as positional params', () => {
+        const { svc, posted } = makeSvc();
+        const spy = vi.fn((a: number, b: number) => a + b);
+        injectMethod(svc, 'testArgs', spy as unknown as AnyFn);
+        svc.invoke('testArgs', 1, [10, 20]);
+        expect(spy).toHaveBeenCalledWith(10, 20);
+        expect(posted).toEqual([['testArgs', 1, true, 30]]);
+    });
+
+    it('_methods throw posts [method, seqno, false, error]', () => {
+        const { svc, posted } = makeSvc();
+        const err = new Error('boom');
+        injectMethod(svc, 'testThrow', () => {
+            throw err;
+        });
+        svc.invoke('testThrow', 9, []);
+        expect(posted).toEqual([['testThrow', 9, false, err]]);
+    });
+
+    it('registered service runs async as fn(ctx, args[0]) and posts the result', async () => {
+        const { svc, posted } = makeSvc();
+        const spy = vi.fn((_ctx: unknown, arg: unknown) => ({ ok: true, echo: arg }));
+        registerService(svc, 'testSvc', spy as unknown as AnyFn);
+        svc.invoke('testSvc', 3, [{ x: 1 }]);
+        // Service dispatch is async — nothing is posted synchronously.
+        expect(posted).toEqual([]);
+        await flush();
+        expect(spy).toHaveBeenCalledTimes(1);
+        // First arg is the WorkerContext, second is args[0].
+        expect((spy.mock.calls[0][0] as { svc: unknown }).svc).toBe(svc);
+        expect(spy.mock.calls[0][1]).toEqual({ x: 1 });
+        expect(posted).toEqual([['testSvc', 3, true, { ok: true, echo: { x: 1 } }]]);
+    });
+
+    it('rejected service posts [method, seqno, false, String(error)]', async () => {
+        const { svc, posted } = makeSvc();
+        registerService(svc, 'testFail', () => {
+            throw new Error('svc-fail');
+        });
+        svc.invoke('testFail', 4, [null]);
+        await flush();
+        expect(posted).toEqual([['testFail', 4, false, 'Error: svc-fail']]);
+    });
+
+    it('unknown method posts [method, seqno, false] with no result element', () => {
+        const { svc, posted } = makeSvc();
+        svc.invoke('nonexistent', 5, []);
+        expect(posted).toEqual([['nonexistent', 5, false]]);
+    });
+
+    it('_methods takes precedence when a name is in both tables', () => {
+        const { svc, posted } = makeSvc();
+        injectMethod(svc, 'dup', () => 'from-methods');
+        registerService(svc, 'dup', () => 'from-service');
+        svc.invoke('dup', 6, []);
+        expect(posted).toEqual([['dup', 6, true, 'from-methods']]);
+    });
+
+    it('exposes the full built-in _methods dispatch table', () => {
+        const { svc } = makeSvc();
+        const methods = (svc as unknown as { _methods: Record<string, AnyFn> })
+            ._methods;
+        const expected = [
+            'initCueMol', 'loadUserStyle', 'setViewInputConfigStyle',
+            'terminateWorker',
+            'createObj', 'getService', 'hasClass', 'getAllClassNamesJSON',
+            'getProp', 'setProp', 'invokeMethod',
+            'addEventListener', 'removeEventListener',
+            'bindCanvas', 'addView', 'activateView', 'removeView', 'resized',
+            'mouseDown', 'mouseUp', 'mouseMove', 'wheel', 'gesture',
+        ];
+        for (const key of expected) {
+            expect(typeof methods[key]).toBe('function');
+        }
+        expect(Object.keys(methods).sort()).toEqual([...expected].sort());
+    });
+});

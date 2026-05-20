@@ -1,3 +1,15 @@
+/**
+ * @file worker/server/gfx_manager.ts
+ * @description WebGL2 rendering backend for the Worker thread.
+ *
+ * `GfxManager` is the JS-side peer of the C++ display context: the native
+ * renderer calls into it to compile shaders, upload vertex/index buffers and
+ * textures, and issue draw calls against a single shared OffscreenCanvas.
+ * It also owns the per-view `requestAnimationFrame` render loop.
+ *
+ * Methods marked `/// API` are the peer API invoked from C++ via `bindPeer`;
+ * they must keep stable names and signatures.
+ */
 import {
     BYPASS_WRAP_GL,
     PERF_MEASURE,
@@ -13,6 +25,7 @@ const NORM_MAT_SIZE = 4 * 4 * FLOAT_SIZE;
 
 const LIGHT_UBO_SIZE = 4 * FLOAT_SIZE + 4 * FLOAT_SIZE;
 
+/** Map a CueMol element type id to its WebGL component type constant. */
 const convertType = (gl: any, itype: string): number => {
     switch (itype) {
         case "1": return gl.UNSIGNED_BYTE;
@@ -23,6 +36,7 @@ const convertType = (gl: any, itype: string): number => {
     }
 }
     
+/** Whether a CueMol element type id should be normalized when uploaded. */
 const convGLNorm = (itype: string): boolean => {
     switch (itype) {
         case "1": return true;
@@ -33,6 +47,11 @@ const convGLNorm = (itype: string): boolean => {
     }
 }
 
+/**
+ * Wrap a WebGL context in a Proxy that calls `getError()` after every GL
+ * call and logs any error with the offending method and arguments. A debug
+ * aid; bypassed (returns the raw context) when `BYPASS_WRAP_GL` is set.
+ */
 function wrapGL(gl: any) {
   if (BYPASS_WRAP_GL) return gl;
   return new Proxy(gl, {
@@ -54,38 +73,48 @@ function wrapGL(gl: any) {
   });
 }
 
+/**
+ * WebGL2 renderer peer bound to a single shared OffscreenCanvas.
+ *
+ * Holds the GL resource tables (shader programs, VBO/VAO sets, textures,
+ * UBOs) keyed by the names the C++ side assigns, and drives one
+ * `requestAnimationFrame` loop per active view. Only one view renders at a
+ * time (single canvas), so `activateView` stops the other loops.
+ */
 export class GfxManager {
     // for program object
-    private _prog_data: any = {};
+    private _prog_data: { [key: string]: WebGLProgram } = {};
 
     // common UBO info
     private _mvp_mat_loc: number = 0;
-    private _mat_ubo: any = null;
+    private _mat_ubo: WebGLBuffer | null = null;
 
     private _light_loc: number = 1;
-    private _light_ubo: any = null;
+    private _light_ubo: WebGLBuffer | null = null;
 
     // per-shader DrawParamsBlock UBO (binding point 2)
-    private _draw_params_ubo: any = {};
+    private _draw_params_ubo: { [key: string]: WebGLBuffer } = {};
 
     // for VBOs
-    private _draw_data: any = {};
+    private _draw_data: {
+        [key: string]: [WebGLVertexArrayObject, WebGLBuffer, WebGLBuffer | null];
+    } = {};
 
     // for textures
-    private _tex_data: any = {};
+    private _tex_data: { [key: string]: WebGLTexture } = {};
 
     private cuemol: any;
     private _sceMgr: any;
     private _canvas: any = null;
     private _afcbid_map: Map<number, number> = new Map();
-    private bound_views: any = [];
+    private bound_views: number[] = [];
 
     // Last known logical canvas size (CSS pixels), updated by WorkerService.resized.
     // Used to sync the size to newly activated views.
     private _logicalW: number = 0;
     private _logicalH: number = 0;
 
-    private _context: any;
+    private _context!: WebGL2RenderingContext;
 
     private _enable_lighting_loc: number = 0;
 
@@ -94,6 +123,12 @@ export class GfxManager {
         this._sceMgr = this.cuemol.getService('SceneManager');
     }
 
+    /**
+     * One-time WebGL2 init: acquire the context from the transferred
+     * OffscreenCanvas, set up depth-test / blending, create the shared UBOs,
+     * and bind the first view as a C++ render peer. Throws if already bound
+     * (the canvas can only be transferred once).
+     */
     bindCanvas(canvas: any, view_id: number, dpr: number | null = null): void {
         if (this._canvas !== null) {
             throw Error('already bound to canvas');
@@ -126,6 +161,7 @@ export class GfxManager {
         return this._canvas;
     }
 
+    /** Bind an additional view as a render peer on the already-bound canvas. */
     addView(view_id: number, dpr: number): void {
         if (this._canvas === null) {
             throw Error('not bound to canvas');
@@ -139,11 +175,17 @@ export class GfxManager {
         this.bound_views.push(view_id);
     }
 
+    /** Stop a view's render loop and drop it from the bound-views list. */
     removeView(view_id: number): void {
         this.stopViewLoop(view_id);
         this.bound_views = this.bound_views.filter((x: number) => x !== view_id);
     }
 
+    /**
+     * Start the `requestAnimationFrame` render loop for a view. Each frame
+     * calls `checkAndUpdateScenes`; an existing loop for the same view is
+     * cancelled first. No-op if the view is not bound.
+     */
     startViewLoop(view_id: number): void {
         if (!this.bound_views.includes(view_id)) {
             console.warn(`startViewLoop: view ${view_id} not in bound_views, skipping`);
@@ -171,6 +213,7 @@ export class GfxManager {
         render();
     }
 
+    /** Cancel a view's `requestAnimationFrame` render loop, if running. */
     stopViewLoop(view_id: number): void {
         const id = this._afcbid_map.get(view_id);
         if (id !== undefined) {
@@ -224,7 +267,11 @@ export class GfxManager {
     //////////
     // UBO
 
-    // Create UBO
+    /**
+     * Create the two shared uniform buffer objects bound for every shader:
+     * the MVP matrices block (binding point 0) and the lighting/fog block
+     * (binding point 1).
+     */
     createUBO(): void {
         const gl = this._context;
 
@@ -254,7 +301,7 @@ export class GfxManager {
     //////////
     // Program objects
 
-    toShaderTypeID(name: string): any {
+    toShaderTypeID(name: string): number {
         const gl = this._context;
         if (name === 'vertex') {
             return gl.VERTEX_SHADER;
@@ -265,7 +312,13 @@ export class GfxManager {
         }
     }
 
-    /// API
+    /**
+     * Peer API. Compile and link a shader program from a map of
+     * `{ 'vertex' | 'fragment': source }` and register it under `name`.
+     * Reuses an already-registered program; returns false on compile/link
+     * failure. Also wires the MatricesBlock / FogBlock / DrawParamsBlock
+     * uniform blocks to their binding points.
+     */
     createShader(name: string, data: { [key: string]: string }): boolean {
         const gl = this._context;
         if (name in this._prog_data) {
@@ -273,12 +326,12 @@ export class GfxManager {
             // return false;
             return true;
         }
-        const program = gl.createProgram();
+        const program = gl.createProgram()!;
 
         for (const [key, value] of Object.entries(data)) {
             // console.info("key: " + key + "\nsrc:" + value);
             let shader_type = this.toShaderTypeID(key);
-            const shader = gl.createShader(shader_type);
+            const shader = gl.createShader(shader_type)!;
             gl.shaderSource(shader, "#version 300 es\nprecision highp float;\nprecision highp int;\n" + value);
             gl.compileShader(shader);
 
@@ -343,7 +396,7 @@ export class GfxManager {
         const gl = this._context;
         const prog = this._prog_data[shader_name];
         // console.info(`enableShader called: shader_name=${shader_name}, program=${prog}`);
-        if (prog === undefined) {
+        if (!prog) {
             throw `shader ${shader_name} not found`;
         }
         gl.useProgram(prog);
@@ -420,7 +473,7 @@ export class GfxManager {
     /// API: allocate per-shader DrawParamsBlock UBO (binding point 2)
     initDrawParamsUBO(shader_name: string, size: number): void {
         const gl = this._context;
-        const ubo = gl.createBuffer();
+        const ubo = gl.createBuffer()!;
         gl.bindBuffer(gl.UNIFORM_BUFFER, ubo);
         gl.bufferData(gl.UNIFORM_BUFFER, size, gl.DYNAMIC_DRAW);
         gl.bindBufferBase(gl.UNIFORM_BUFFER, 2, ubo);
@@ -510,7 +563,12 @@ export class GfxManager {
     //////////
     // Buffer
 
-    /// API
+    /**
+     * Peer API. Create a VAO + vertex buffer (and optional index buffer)
+     * under `name`, configuring vertex attributes from the JSON
+     * `elem_info_str` (per-attribute location / type / size / divisor).
+     * Returns false if `name` is already taken.
+     */
     createBuffer(name: string, nsize: number, num_elems: number,
         nsize_index: number, elem_info_str: string): boolean {
         if (name in this._draw_data) {
@@ -522,10 +580,10 @@ export class GfxManager {
         let elem_info = JSON.parse(elem_info_str);
 
         // VAO
-        let vao = gl.createVertexArray();
+        let vao = gl.createVertexArray()!;
         gl.bindVertexArray(vao);
 
-        let vertexBuffer = gl.createBuffer();
+        let vertexBuffer = gl.createBuffer()!;
         gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
 
         const stride = nsize / num_elems;
@@ -564,7 +622,14 @@ export class GfxManager {
         return true;
     }
 
-    /// API
+    /**
+     * Peer API. Issue a draw call for buffer `id`: optionally re-upload the
+     * vertex/index data, then draw with the GL primitive matching `nmode`
+     * (4=LINES, 5=TRIANGLE_STRIP, else TRIANGLES), instanced when `ninst>0`.
+     *
+     * @remarks Re-upload is gated by `isUpdated` only when `RESPECT_ISUPDATED`
+     * is set; otherwise data is re-uploaded every frame.
+     */
     drawBuffer(id: number, nmode: number, nelems: number,
         array_buf: any, index_buf: any, isUpdated: boolean, ninst: number): void {
         const gl = this._context;
@@ -585,7 +650,7 @@ export class GfxManager {
         // (current behavior). When true, honor the C++ side's isUpdated value.
         const doUpload = RESPECT_ISUPDATED ? isUpdated : true;
 
-        if (obj === undefined) {
+        if (!obj) {
             throw `buffer ${id} not found`;
         }
 
@@ -612,7 +677,7 @@ export class GfxManager {
             }
         }
 
-        let nglmode = gl.TRIANGLES;
+        let nglmode: number = gl.TRIANGLES;
         if (nmode == 4) {
             nglmode = gl.LINES;
         } else if (nmode == 5) {
@@ -644,7 +709,7 @@ export class GfxManager {
 
         if (!(id in this._draw_data)) return false;
         const obj = this._draw_data[id];
-        if (obj === null) return false;
+        if (!obj) return false;
 
         delete this._draw_data[id];
         // delete VBO
@@ -662,7 +727,11 @@ export class GfxManager {
     //////////
     // Texture
 
-    /// API
+    /**
+     * Peer API. Create a single-channel (R8) 2D texture under `name` from
+     * `array_buf`, with clamp-to-edge wrapping and nearest filtering.
+     * Returns false if `name` is already taken.
+     */
     createTexture(name: string, width: number, height: number, array_buf: any): boolean {
         if (name in this._tex_data) {
             console.log(`texture name ${name} already exists`);
@@ -670,7 +739,7 @@ export class GfxManager {
         }
 
         const gl = this._context;
-        const tex = gl.createTexture();
+        const tex = gl.createTexture()!;
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, tex);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, width, height, 0,
@@ -690,7 +759,7 @@ export class GfxManager {
     bindTexture(name: string, texUnit: number): void {
         const gl = this._context;
         const tex = this._tex_data[name];
-        if (tex === undefined) {
+        if (!tex) {
             throw `texture ${name} not found`;
         }
         gl.activeTexture(gl.TEXTURE0 + texUnit);

@@ -22,6 +22,7 @@ import type {
 
 export type SceneCtxActionFn = (a: SceneCtxAction) => MenuItemConstructorOptions['click']
 
+/** Show or Hide item, depending on the node's current visibility. */
 export function showHideItems(
     payload: SceneCtxMenuPayload,
     action: SceneCtxActionFn,
@@ -33,18 +34,22 @@ export function showHideItems(
     return [{ label: 'Show', click: action({ kind: 'show' }) }]
 }
 
+/** Rename item (begins inline rename on the targeted row). */
 export function renameItem(action: SceneCtxActionFn): MenuItemConstructorOptions {
     return { label: 'Rename…', click: action({ kind: 'rename' }) }
 }
 
+/** Delete item for the targeted node. */
 export function deleteItem(action: SceneCtxActionFn): MenuItemConstructorOptions {
     return { label: 'Delete', click: action({ kind: 'delete' }) }
 }
 
+/** Properties item (opens the property inspector for the targeted node). */
 export function propertyItem(action: SceneCtxActionFn): MenuItemConstructorOptions {
     return { label: 'Properties…', click: action({ kind: 'property' }) }
 }
 
+/** Copy item (copies the targeted node to the worker clipboard). */
 export function copyItem(action: SceneCtxActionFn): MenuItemConstructorOptions {
     return { label: 'Copy', click: action({ kind: 'copy' }) }
 }
@@ -72,13 +77,12 @@ export function pasteItem(
 }
 
 /**
- * Renderer Coloring submenu (Phase 3c).
+ * Renderer Coloring submenu.
  *
- * Static items (Phase 3c-1) plus dynamic Paint (Secondary str.) sub-submenu
- * (Phase 3c-2) populated from `payload.paintStyles`. Layout mirrors UXP
- * `wspcPanelRendColMenu`. Hidden entirely for renderer types that don't
- * support a `coloring` property — main process trusts the
- * renderer-supplied `supportsColoring` flag.
+ * Static coloring items plus a dynamic "Paint (Secondary str.)"
+ * sub-submenu populated from `payload.paintStyles`. Hidden entirely for
+ * renderer types that do not support a `coloring` property (gated by the
+ * renderer-supplied `supportsColoring` flag).
  */
 export function coloringSubmenu(
     payload: SceneCtxMenuPayload,
@@ -113,13 +117,11 @@ export function coloringSubmenu(
 }
 
 /**
- * Renderer Paint color-picker submenu (Phase 3c-3a).
+ * Renderer Paint color-picker submenu.
  *
- * Static replica of UXP `color-menu.xul` — eight color-family
- * sub-submenus with brightness / saturation variations. Gated by
- * `payload.canPaint` so the submenu only appears when the renderer's
- * coloring is `PaintColoring` and the parent mol has a non-empty
- * selection (UXP `checkPaintColoring` semantics).
+ * Eight color-family sub-submenus with brightness / saturation variations.
+ * Gated by `payload.canPaint`, so it only appears when the renderer's
+ * coloring is `PaintColoring` and the parent mol has a non-empty selection.
  */
 export function paintSubmenu(
     payload: SceneCtxMenuPayload,
@@ -167,6 +169,7 @@ const PAINT_FAMILIES: PaintFamily[] = [
         }, []),
 ]
 
+/** Build the per-color-family sub-submenus from `PAINT_FAMILIES`. */
 function buildPaintFamilyMenus(action: SceneCtxActionFn): MenuItemConstructorOptions[] {
     return PAINT_FAMILIES.map(({ label, items }) => ({
         label,
@@ -178,7 +181,7 @@ function buildPaintFamilyMenus(action: SceneCtxActionFn): MenuItemConstructorOpt
 }
 
 /**
- * Renderer Style (shape) submenu (Phase 3c-3b).
+ * Renderer Style (shape) submenu.
  *
  * Two groups separated by a separator, populated from
  * `payload.rendStyle.{typeStyles, edgeStyles}`. Each item dispatches
@@ -302,10 +305,9 @@ export function changeSelSubmenu(
 }
 
 /**
- * Renderer "Change type" submenu (Phase 6b). Populated from
- * `payload.rendChangeTypes`. Hidden when the list is empty — that doubles
- * as the visibility gate since the worker filters synthetic / current-type
- * entries out.
+ * Renderer "Change type" submenu, populated from `payload.rendChangeTypes`.
+ * Hidden when the list is empty - that doubles as the visibility gate,
+ * since the worker filters synthetic / current-type entries out.
  */
 export function changeTypeSubmenu(
     payload: SceneCtxMenuPayload,
@@ -355,6 +357,11 @@ export function newRendererItem(action: SceneCtxActionFn): MenuItemConstructorOp
     return { label: 'New Renderer…', click: action({ kind: 'newRenderer' }) }
 }
 
+/**
+ * Object-row "Selection" submenu: whole-molecule selection presets
+ * (All / protein / water / ...) plus the Around / Around-byres distance
+ * sub-submenus.
+ */
 export function selectionSubmenu(action: SceneCtxActionFn): MenuItemConstructorOptions {
     const aroundItem = (
         label: string,
@@ -401,6 +408,7 @@ export function selectionSubmenu(action: SceneCtxActionFn): MenuItemConstructorO
     }
 }
 
+/** Human-readable label for a scene-tree node type (used as the menu header). */
 export function nodeTypeLabel(nodeType: SceneCtxNodeType): string {
     switch (nodeType) {
         case 'scene': return 'Scene'

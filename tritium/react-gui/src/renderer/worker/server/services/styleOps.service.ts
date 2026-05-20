@@ -11,9 +11,9 @@
 // Style nodes have no name setter and global styles (`scopeId === 0`) are
 // not editable, matching UXP `onStyToggleRo` early-return.
 
-import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { WorkerContext } from '../types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
+import { getSceneOrNull } from './helpers/sceneResolver';
 
 interface StyleManagerLike {
     createStyleSet(name: string, scopeId: number): number;
@@ -56,7 +56,7 @@ function createStyleSet(
     const empty: CreateStyleSetResult = { ok: false, newId: -1 };
     const trimmed = args.name.trim();
     if (trimmed.length === 0) return empty;
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return empty;
     const mgr = getStyleMgr(ctx);
     if (!mgr) return empty;
@@ -87,7 +87,7 @@ function destroyStyleSet(
     ctx: WorkerContext,
     args: DestroyStyleSetArgs,
 ): DestroyStyleSetResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false };
     const mgr = getStyleMgr(ctx);
     if (!mgr) return { ok: false };
@@ -124,7 +124,7 @@ function toggleStyleSetReadOnly(
 ): ToggleStyleSetReadOnlyResult {
     const empty: ToggleStyleSetReadOnlyResult = { ok: false, readonly: false };
     if (args.scopeId === 0) return empty;
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return empty;
     const mgr = getStyleMgr(ctx);
     if (!mgr) return empty;

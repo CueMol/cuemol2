@@ -5,15 +5,15 @@
  * ## Layout
  *
  * ```
- * ┌───────────────┬──────────────────────────────────────────┐
- * │  [|◀ ▶ ▶|]   │  Frame: [120]  / 300   FPS: [30]        │ ← transport bar
- * ├───────────────┼──────────────────────────────────────────┤
- * │               │  0   30   60   90  120  150  ...         │ ← frame ruler
- * ├───────────────┼──────────────────────────────────────────┤
- * │  Camera       │  ◆────────────◆──────────◆              │ ← keyframe tracks
- * │  Mol1 Opacity │  ◆──────◆                               │
- * │  Light        │       ◆─────────────────◆               │
- * └───────────────┴──────────────────────────────────────────┘
+ * +---------------+------------------------------------------+
+ * |  [|< > >|]    |  Frame: [120] / 300   FPS: [30]          |  transport bar
+ * +---------------+------------------------------------------+
+ * |               |  0   30   60   90  120  150  ...         |  frame ruler
+ * +---------------+------------------------------------------+
+ * |  Camera       |  *------------*----------*               |  keyframe tracks
+ * |  Mol1 Opacity |  *------*                                |
+ * |  Light        |       *-----------------*                |
+ * +---------------+------------------------------------------+
  * ```
  *
  * Features:
@@ -37,9 +37,7 @@ import { Icon, Button, ButtonGroup, NumericInput } from "@blueprintjs/core";
 import type { IconName } from "@blueprintjs/icons";
 import type { AnimationData, AnimationTrack, Keyframe } from "../../types";
 
-// ────────────────────────────────────────────────────────────
-// Constants
-// ────────────────────────────────────────────────────────────
+// --- Constants ---
 
 /** Pixels per frame on the timeline. */
 const PX_PER_FRAME = 4;
@@ -50,9 +48,7 @@ const RULER_HEIGHT = 22;
 /** Width of the track label column. */
 const TRACK_LABEL_WIDTH = 140;
 
-// ────────────────────────────────────────────────────────────
-// Sub-component: FrameRuler
-// ────────────────────────────────────────────────────────────
+// --- Sub-component: FrameRuler ---
 
 interface FrameRulerProps {
   /** Total number of frames in the animation. */
@@ -105,9 +101,7 @@ const FrameRuler: React.FC<FrameRulerProps> = ({ totalFrames, fps }) => {
   );
 };
 
-// ────────────────────────────────────────────────────────────
-// Sub-component: KeyframeTrack
-// ────────────────────────────────────────────────────────────
+// --- Sub-component: KeyframeTrack ---
 
 interface KeyframeTrackRowProps {
   /** Track data with keyframes. */
@@ -174,9 +168,7 @@ const KeyframeTrackRow: React.FC<KeyframeTrackRowProps> = ({
   );
 };
 
-// ────────────────────────────────────────────────────────────
-// Main Component
-// ────────────────────────────────────────────────────────────
+// --- Main Component ---
 
 interface AnimationPanelProps {
   /** Animation data including tracks, total frames, and FPS. */
@@ -203,7 +195,7 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({ animation }) => 
   const fps = animation?.fps ?? 30;
   const tracks = animation?.tracks ?? [];
 
-  // ── Playback loop ──────────────────────────────────────────
+  // --- Playback loop ---
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -233,7 +225,7 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({ animation }) => 
     return () => cancelAnimationFrame(animFrameRef.current);
   }, [isPlaying, fps, totalFrames]);
 
-  // ── Transport controls ─────────────────────────────────────
+  // --- Transport controls ---
 
   const handlePlayPause = useCallback(() => {
     setIsPlaying((prev) => !prev);
@@ -264,7 +256,7 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({ animation }) => 
     setCurrentFrame(totalFrames);
   }, [totalFrames]);
 
-  // ── Playhead drag on ruler / timeline ──────────────────────
+  // --- Playhead drag on ruler / timeline ---
 
   const handleTimelineClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -284,7 +276,7 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({ animation }) => 
     }
   }, []);
 
-  // ── Frame input handler ────────────────────────────────────
+  // --- Frame input handler ---
 
   const handleFrameChange = useCallback(
     (val: number) => {
@@ -294,7 +286,7 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({ animation }) => 
     [totalFrames]
   );
 
-  // ── Empty state ────────────────────────────────────────────
+  // --- Empty state ---
 
   if (!animation) {
     return (
@@ -309,7 +301,7 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({ animation }) => 
 
   return (
     <div className="animation-panel">
-      {/* ── Transport bar ── */}
+      {/* Transport bar */}
       <div className="anim-transport">
         <div className="anim-transport-controls">
           <ButtonGroup minimal>
@@ -379,7 +371,7 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({ animation }) => 
         </div>
       </div>
 
-      {/* ── Timeline body ── */}
+      {/* Timeline body */}
       <div className="anim-body">
         {/* Track labels */}
         <div className="anim-label-column" style={{ width: TRACK_LABEL_WIDTH }}>

@@ -23,7 +23,6 @@ import * as os from "os";
 import * as path from "path";
 
 import type { ProcessManager } from "@cuemol/core/src/wrappers/ProcessManager";
-import type { Scene } from "@cuemol/core/src/wrappers/Scene";
 import type { WorkerContext } from "../types/WorkerContext";
 import type {
   RenderStartArgs,
@@ -35,6 +34,7 @@ import type {
 import { RENDER_PROGRESS_CHANNEL } from "../../shared/renderTypes";
 import { getRenderBackend, type RenderBackend } from "./renderBackends";
 import { numVal, type RenderTaskSpec } from "./renderBackends/RenderBackend";
+import { getSceneOrNull } from "./helpers/sceneResolver";
 
 /** Poll interval for process status / stdout. */
 const POLL_MS = 700;
@@ -217,7 +217,7 @@ function pollJob(
 
 /** Start a render job. */
 function renderStart(ctx: WorkerContext, args: RenderStartArgs): RenderStartResult {
-  const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+  const scene = getSceneOrNull(ctx, args.sceneId);
   if (!scene) return { ok: false, jobId: "", error: "Scene not found" };
 
   const backend = getRenderBackend(args.snapshot.backend);

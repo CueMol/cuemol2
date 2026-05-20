@@ -1,3 +1,14 @@
+/**
+ * @file components/MenuBar.tsx
+ * @description Custom HTML menu bar for Windows / Linux.
+ *
+ * Renders the shared `APP_MENU` template as nested dropdowns. macOS uses the
+ * native application menu instead, so `darwinOnly` groups / items are
+ * excluded here. Item clicks dispatch either an `ipcChannel` (custom action)
+ * or a `role` (standard edit role). Checkbox / radio state for the View menu
+ * is derived live from the `viewProjection` / `viewCenterMark` /
+ * `sceneBgColor` props.
+ */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { APP_MENU, getRoleLabel } from '../../shared/menuTemplate'
 import type { AppMenuItem, AppMenuRole } from '../../shared/menuTemplate'
@@ -13,6 +24,7 @@ interface MenuBarProps {
   recentFiles?: RecentFileEntry[]
 }
 
+/** Return the last path segment of a file path (handles both / and \). */
 function basename(p: string): string {
   const i = Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'))
   return i >= 0 ? p.slice(i + 1) : p
@@ -58,6 +70,7 @@ function toDisplayAccel(acc: string): string {
 
 const EXEC_COMMAND_ROLES = new Set<AppMenuRole>(['cut', 'copy', 'paste', 'selectAll'])
 
+/** Resolve a menu item's display label from its `label` or its `role`. */
 function getItemLabel(item: AppMenuItem): string {
   if (item.label) return item.label
   if (item.role) return getRoleLabel(item.role)
@@ -74,6 +87,10 @@ interface DropdownItemProps {
   onRecentOpen?: (entry: RecentFileEntry) => void
 }
 
+/**
+ * Derive enabled / checked state for the perspective / orthographic radio
+ * items, or null if `item` is neither.
+ */
 const getViewProjectionState = (
   item: AppMenuItem,
   viewProjection: boolean | null | undefined,
@@ -87,6 +104,10 @@ const getViewProjectionState = (
   return null
 }
 
+/**
+ * Derive enabled / checked state for the center-mark radio items
+ * (none / crosshair / axis), or null if `item` is none of them.
+ */
 const getViewCenterMarkState = (
   item: AppMenuItem,
   viewCenterMark: ViewCenterMark | null | undefined,
@@ -103,6 +124,10 @@ const getViewCenterMarkState = (
   }
 }
 
+/**
+ * Derive enabled / checked state for the background-color radio items
+ * (white / black), or null if `item` is neither.
+ */
 const getSceneBgColorState = (
   item: AppMenuItem,
   sceneBgColor: SceneBgColor | null | undefined,
@@ -118,6 +143,12 @@ const getSceneBgColorState = (
   }
 }
 
+/**
+ * One menu row: a separator, a leaf item, or a submenu parent. Resolves the
+ * enabled / checked state (deriving View-menu radio state from props) and
+ * routes a click to `onAction`, or to `onRecentOpen` for a dynamic
+ * recent-file entry.
+ */
 const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProjection, viewCenterMark, sceneBgColor, recentFiles, onRecentOpen }) => {
   const [submenuOpen, setSubmenuOpen] = useState(false)
   const itemRef = useRef<HTMLDivElement>(null)
@@ -213,6 +244,11 @@ const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProject
   )
 }
 
+/**
+ * Windows / Linux menu bar. Owns the open-menu and dropdown-position state
+ * plus the click-away / Escape close handlers, and renders each non-darwin
+ * `APP_MENU` group as a dropdown.
+ */
 export const MenuBar: React.FC<MenuBarProps> = ({ activeTab, viewProjection = null, viewCenterMark = null, sceneBgColor = null, recentFiles = [] }) => {
   const { dispatchMenuChannel, dispatchOpenRecent } = useMenuDispatch(activeTab)
   const [openMenu, setOpenMenu] = useState<string | null>(null)
@@ -319,6 +355,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ activeTab, viewProjection = nu
   )
 }
 
+/** Run a standard menu role: edit roles via `execCommand`, others via IPC. */
 function handleRole(role: AppMenuRole): void {
   if (EXEC_COMMAND_ROLES.has(role)) {
     // execCommand is deprecated but remains the most reliable way to trigger

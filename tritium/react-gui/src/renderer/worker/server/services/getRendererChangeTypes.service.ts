@@ -5,10 +5,10 @@
 // Mirrors UXP `ws.onChgRendTypeShowing` filter logic in
 // `workspace_panel.js`.
 
-import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { WorkerContext } from '../types/WorkerContext';
+import { getSceneOrNull } from './helpers/sceneResolver';
 
 export interface GetRendererChangeTypesArgs {
     sceneId: number;
@@ -33,7 +33,7 @@ function getRendererChangeTypes(
     args: GetRendererChangeTypesArgs,
 ): GetRendererChangeTypesResult {
     const empty: GetRendererChangeTypesResult = { typeNames: [] };
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return empty;
     const rend = scene.getRenderer(args.rendId) as Renderer | null;
     if (!rend) return empty;

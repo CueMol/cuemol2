@@ -8,7 +8,6 @@
 // either to the mol's current selection ('current') or to a fresh
 // compiled SelCommand for one of the canned predicates.
 
-import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { MolRenderer } from '@cuemol/core/src/wrappers/MolRenderer';
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
@@ -17,6 +16,7 @@ import type { WorkerContext } from '../types/WorkerContext';
 import type { ChangeRendSelKind } from '../../../../shared/ipcTypes';
 import { makeSel } from './helpers/makeSel';
 import { withUndoTxn } from './withUndoTxn';
+import { getSceneOrNull } from './helpers/sceneResolver';
 
 export interface SetRendererSelectionArgs {
     sceneId: number;
@@ -47,7 +47,7 @@ function setRendererSelection(
     ctx: WorkerContext,
     args: SetRendererSelectionArgs,
 ): SetRendererSelectionResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false };
     const rend = scene.getRenderer(args.rendId) as Renderer | null;
     if (!rend) return { ok: false };

@@ -20,18 +20,18 @@ export interface SceneTreeNodeOps {
     focusNode: (viewId: number, id: string) => Promise<boolean>
     /** Delete a node (typically the selection). */
     deleteNode: (id: string) => Promise<boolean>
-    /** Rename a node (object / renderer / rendGroup only in Phase 3a). */
+    /** Rename a node (object / renderer / rendGroup). */
     renameNode: (id: string, newName: string) => Promise<boolean>
-    /** Object-mol selection helpers (Phase 3b). */
+    /** Apply an object-mol selection (e.g. around / by-residue). */
     selectObjectMol: (id: string, kind: SelectMolKind) => Promise<boolean>
     /** Copy a node (object / renderer / rendGroup) to the worker clipboard. */
     copyNode: (node: SceneTreeNode) => Promise<boolean>
     /** Paste from the worker clipboard onto a target node. */
     pasteNode: (node: SceneTreeNode) => Promise<boolean>
     /**
-     * Drag-drop reorder (Phase 4b). Caller supplies a fully-resolved
-     * args object — kind, target/source uids, destObjId/destGroupName
-     * for renderers, and orientation. Returns true on success.
+     * Drag-drop reorder. Caller supplies a fully-resolved args object:
+     * kind, target/source uids, destObjId/destGroupName for renderers,
+     * and orientation. Returns true on success.
      */
     moveSceneNode: (
         args:
@@ -46,10 +46,10 @@ export interface SceneTreeNodeOps {
             },
     ) => Promise<boolean>
     /**
-     * Bulk Show / Hide / Delete on the multi-select set (Phase 4c).
-     * Caller passes the set of ids; the hook resolves each to its tree
-     * node, filters out non-operable types, and dispatches the worker
-     * service inside a single undo txn.
+     * Bulk Show / Hide / Delete on the multi-select set. Caller passes the
+     * set of ids; the hook resolves each to its tree node, filters out
+     * non-operable types, and dispatches the worker service inside a single
+     * undo txn.
      */
     bulkSetNodeVisible: (ids: Iterable<string>, visible: boolean) => Promise<boolean>
     bulkDeleteNodes: (ids: Iterable<string>) => Promise<boolean>

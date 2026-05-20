@@ -3,7 +3,7 @@
  * @description Declarative catalogue for the SettingsPane: the category
  * tree, the setting definitions, and their default values.
  *
- * Mock data — only `display.darkMode` is wired to a real backing
+ * Mock data: only `display.darkMode` is wired to a real backing
  * (ThemeContext). Real persistence lands when the backend config API is
  * ready; at that point this file is the single place the catalogue is
  * swapped, while SettingsPane / ConfigTreeNode / SettingRow stay generic.
@@ -13,7 +13,7 @@ import type { IconName } from '@blueprintjs/icons'
 import type { RenderBinaries } from '../../../worker/shared/renderTypes'
 import { DEFAULT_RENDER_BINARIES } from '../../../worker/shared/renderTypes'
 
-// ── Category tree ───────────────────────────────────────────────────────
+// --- Category tree ---
 
 /** A node in the settings category tree. */
 export interface CategoryNode {
@@ -68,7 +68,7 @@ export const ALL_LEAF_IDS: string[] = CATEGORY_TREE.flatMap((parent) =>
     : [parent.id],
 )
 
-// ── Setting definitions ─────────────────────────────────────────────────
+// --- Setting definitions ---
 
 export type SettingControl =
   | { kind: 'select'; options: string[] }
@@ -87,7 +87,7 @@ export interface SettingDef {
 }
 
 export const SETTINGS: SettingDef[] = [
-  // ── Display > Theme ──
+  // --- Display > Theme ---
   {
     key: 'display.darkMode',
     label: 'Dark Mode',
@@ -96,7 +96,7 @@ export const SETTINGS: SettingDef[] = [
     control: { kind: 'toggle' },
   },
 
-  // ── Display > Atom Labels ──
+  // --- Display > Atom Labels ---
   {
     key: 'atomLabel.font',
     label: 'Atom Label Font',
@@ -133,7 +133,7 @@ export const SETTINGS: SettingDef[] = [
     control: { kind: 'toggle' },
   },
 
-  // ── Display > Rendering ──
+  // --- Display > Rendering ---
   {
     key: 'rendering.hiDpi',
     label: 'Enable HiDPI (Retina) Display',
@@ -191,7 +191,7 @@ export const SETTINGS: SettingDef[] = [
     control: { kind: 'path' },
   },
 
-  // ── Display > Colors ──
+  // --- Display > Colors ---
   {
     key: 'colors.background',
     label: 'Background Color',
@@ -214,7 +214,7 @@ export const SETTINGS: SettingDef[] = [
     control: { kind: 'color' },
   },
 
-  // ── Input > Mouse & Navigation ──
+  // --- Input > Mouse & Navigation ---
   {
     key: 'mouse.preset',
     label: 'View Operation Preset',
@@ -244,7 +244,7 @@ export const SETTINGS: SettingDef[] = [
     control: { kind: 'toggle' },
   },
 
-  // ── Input > Keyboard Shortcuts ──
+  // --- Input > Keyboard Shortcuts ---
   {
     key: 'keyboard.enableVimMode',
     label: 'Vim-style Navigation',
@@ -260,7 +260,7 @@ export const SETTINGS: SettingDef[] = [
     control: { kind: 'toggle' },
   },
 
-  // ── Input > Trackpad ──
+  // --- Input > Trackpad ---
   {
     key: 'trackpad.multiTouch',
     label: 'Enable Multi-touch Trackpad',
@@ -283,7 +283,7 @@ export const SETTINGS: SettingDef[] = [
     control: { kind: 'select', options: ['Natural', 'Inverted'] },
   },
 
-  // ── General > Language & Region ──
+  // --- General > Language & Region ---
   {
     key: 'general.language',
     label: 'Language',
@@ -299,7 +299,7 @@ export const SETTINGS: SettingDef[] = [
     control: { kind: 'select', options: ['YYYY-MM-DD', 'MM/DD/YYYY', 'DD/MM/YYYY'] },
   },
 
-  // ── General > Updates ──
+  // --- General > Updates ---
   {
     key: 'updates.autoCheck',
     label: 'Check for Updates Automatically',
@@ -315,7 +315,7 @@ export const SETTINGS: SettingDef[] = [
     control: { kind: 'select', options: ['Stable', 'Beta', 'Nightly'] },
   },
 
-  // ── General > Privacy ──
+  // --- General > Privacy ---
   {
     key: 'privacy.telemetry',
     label: 'Send Usage Statistics',
@@ -332,7 +332,7 @@ export const SETTINGS: SettingDef[] = [
   },
 ]
 
-// ── Default values (mock state) ─────────────────────────────────────────
+// --- Default values (mock state) ---
 
 export const DEFAULTS: Record<string, string | number | boolean> = {
   'display.darkMode': true,
@@ -369,8 +369,9 @@ export const DEFAULTS: Record<string, string | number | boolean> = {
   'privacy.crashReports': true,
 }
 
-// ── Label lookup — maps leaf category ids to their display titles ───────
+// --- Label lookup: maps leaf category ids to their display titles ---
 
+/** Recursively flatten the category tree into an `{ id: label }` map. */
 function buildLabelMap(nodes: CategoryNode[]): Record<string, string> {
   const map: Record<string, string> = {}
   for (const node of nodes) {
@@ -384,7 +385,7 @@ function buildLabelMap(nodes: CategoryNode[]): Record<string, string> {
 
 export const CATEGORY_LABELS = buildLabelMap(CATEGORY_TREE)
 
-// ── Render-binary settings ──────────────────────────────────────────────
+// --- Render-binary settings ---
 // These setting keys are backed by RenderConfigContext (persistent paths),
 // not the mock `values` state. SettingsPane routes them accordingly.
 

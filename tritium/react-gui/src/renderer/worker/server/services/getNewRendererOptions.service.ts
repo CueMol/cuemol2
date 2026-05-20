@@ -10,6 +10,7 @@ import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { WorkerContext } from '../types/WorkerContext';
+import { getSceneOrNull } from './helpers/sceneResolver';
 
 const NON_MOL_CLASSES = new Set(['ElePotMap', 'MolSurfObj', 'DensityMap']);
 
@@ -78,7 +79,7 @@ function getNewRendererOptions(
     ctx: WorkerContext,
     args: GetNewRendererOptionsArgs,
 ): GetNewRendererOptionsResult {
-    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene | null;
+    const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return EMPTY;
     const resolved = resolveTarget(scene, args);
     if (!resolved) return EMPTY;
