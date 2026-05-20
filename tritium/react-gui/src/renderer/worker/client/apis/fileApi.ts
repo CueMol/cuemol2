@@ -1,4 +1,12 @@
-// Runs in renderer thread. Calls cross to worker via transport.invokeService.
+/**
+ * @file renderer/worker/client/apis/fileApi.ts
+ * @description Renderer-thread thin wrappers for worker file-I/O services
+ * (renderer-compatibility probe, open-dialog filters, new scene+view,
+ * scene / object load).
+ *
+ * Each function returns a Promise resolved with the worker reply and logs
+ * a warning on failure.
+ */
 import { WorkerTransport } from '../WorkerTransport';
 import type { ElectronFileFilter } from '../../../../shared/ipcTypes';
 import type { FileOpenOptions } from '../../../components/fopen-opt-dlgs/types';
@@ -6,6 +14,18 @@ import type { GetCompatibleRendererNamesResult } from '../../server/services/get
 
 const log = console;
 
+/**
+ * Ask the worker which renderer types are compatible with the contents of
+ * `filePath`. Drives the "open file" renderer-picker dialog.
+ *
+ * @param transport - Worker transport.
+ * @param filePath - Absolute file path the user selected.
+ * @param readerName - Optional explicit reader to use instead of
+ *   auto-detection.
+ * @returns Object listing compatible renderer types and the detected
+ *   object type; empty fields on failure.
+ * @remarks Calls `getCompatibleRendererNames` worker service.
+ */
 export async function getCompatibleRendererNames(
     transport: WorkerTransport, filePath: string, readerName?: string,
 ): Promise<GetCompatibleRendererNamesResult> {
@@ -19,6 +39,15 @@ export async function getCompatibleRendererNames(
     }
 }
 
+/**
+ * Fetch the file-type filter list for an open-dialog category.
+ *
+ * @param transport - Worker transport.
+ * @param catId - File-category id (see C++ `FileCatTypes`).
+ * @returns `ElectronFileFilter[]` for the Electron dialog; empty on
+ *   failure.
+ * @remarks Calls `getOpenFilters` worker service.
+ */
 export async function getOpenFilters(
     transport: WorkerTransport, catId: number,
 ): Promise<ElectronFileFilter[]> {
@@ -30,6 +59,19 @@ export async function getOpenFilters(
     }
 }
 
+/**
+ * Create a new scene plus default view on the worker side.
+ *
+ * @param transport - Worker transport.
+ * @param dpr - Device pixel ratio for the new view.
+ * @param name - Optional scene name; the worker proposes a unique one if
+ *   omitted.
+ * @param bindView - When `true`, immediately bind the new view; defaults
+ *   to deferred binding so `MolViewPane` can call `bindCanvas` later.
+ * @returns `{ scene_uid, view_uid, scene_name, view_name }`, or `null` on
+ *   failure.
+ * @remarks Calls `createNewSceneAndView` worker service.
+ */
 export async function createNewSceneAndView(
     transport: WorkerTransport, dpr: number, name?: string, bindView?: boolean,
 ): Promise<{ scene_uid: number; view_uid: number; scene_name: string; view_name: string } | null> {
@@ -41,6 +83,15 @@ export async function createNewSceneAndView(
     }
 }
 
+/**
+ * Load a QSC scene file into an existing scene.
+ *
+ * @param transport - Worker transport.
+ * @param filePath - Absolute path to the `.qsc` file.
+ * @param scene_id - Target scene uid.
+ * @returns `true` on success (also `true` when reply lacks `ok`).
+ * @remarks Calls `loadScene` worker service.
+ */
 export async function loadScene(
     transport: WorkerTransport, filePath: string, scene_id: number,
 ): Promise<boolean> {
@@ -49,6 +100,17 @@ export async function loadScene(
     return result?.ok ?? true;
 }
 
+/**
+ * Load an object (PDB / map / mesh / ...) into a scene.
+ *
+ * @param transport - Worker transport.
+ * @param filePath - Absolute path to the file.
+ * @param scene_id - Target scene uid.
+ * @param options - File-type-specific open options collected from the
+ *   user (renderer type, builder name, ...).
+ * @returns `true` on success.
+ * @remarks Calls `loadObject` worker service.
+ */
 export async function loadObject(
     transport: WorkerTransport, filePath: string, scene_id: number, options: FileOpenOptions,
 ): Promise<boolean> {

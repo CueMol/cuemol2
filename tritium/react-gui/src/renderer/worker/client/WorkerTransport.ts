@@ -1,3 +1,13 @@
+/**
+ * @file renderer/worker/client/WorkerTransport.ts
+ * @description Renderer-side handle for the Web Worker process.
+ *
+ * Owns the `Worker` instance, allocates per-call sequence numbers, routes
+ * replies back to their callers, and exposes typed `invokeService<K>` /
+ * `invokeMethod<K>` / `invokeRpc<K>` helpers built on top of the low-level
+ * `invokeWorker` array-tail protocol. Also fans out `event-notify`,
+ * `stream-progress` and `render-progress` push messages to subscribers.
+ */
 import type {
     MethodArgs,
     MethodKey,
@@ -14,20 +24,38 @@ import { RENDER_PROGRESS_CHANNEL } from '../shared/renderTypes';
 
 const log = console;
 
+/** Build the per-call dispatch key from a method name and sequence number. */
 function makeMethodSeq(method: string, seqno: number): string {
     return method + '.' + seqno.toString();
 }
 
+/**
+ * Payload tuple for a worker `event-notify` push:
+ * `[slot, category, srcCat, evtType, srcUID, evtStr]`.
+ */
 export type EventNotifyArgs = [number, string, number, number, number, string];
 
+/**
+ * Listener for `stream-progress` push messages.
+ *
+ * @param reqId - Stream-request identifier issued by the worker.
+ * @param bytes - Cumulative bytes transferred so far.
+ */
 export type StreamProgressListener = (reqId: string, bytes: number) => void;
 
+/** Listener for `render-progress` push messages from `renderJob`. */
 export type RenderProgressListener = (update: RenderUpdate) => void;
 
+/** Construction options for {@link WorkerTransport}. */
 export interface WorkerTransportOptions {
+    /** Forwarder for `event-notify` payloads (typically routes to `EventSlots.notify`). */
     onEventNotify: (args: EventNotifyArgs) => void;
 }
 
+/**
+ * Web Worker transport. One instance per renderer process; owned by
+ * `AsyncCueMol`.
+ */
 export class WorkerTransport {
     private _ready: boolean = false;
     private _seqno: number = 0;
@@ -39,6 +67,13 @@ export class WorkerTransport {
     private _streamProgressListeners: Set<StreamProgressListener> = new Set();
     private _renderProgressListeners: Set<RenderProgressListener> = new Set();
 
+    /**
+     * Spawn the Web Worker (entry: `../server/worker_launcher.ts`) and
+     * install the `onmessage` dispatcher.
+     *
+     * @param opts - `onEventNotify` handler used for `event-notify` push
+     *   messages.
+     */
     constructor(opts: WorkerTransportOptions) {
         this._onEventNotify = opts.onEventNotify;
         log.info('launch worker...');
@@ -86,18 +121,38 @@ export class WorkerTransport {
         this._ready = true;
     }
 
+    /**
+     * Subscribe to `stream-progress` push messages.
+     *
+     * @returns An unsubscribe function.
+     */
     subscribeStreamProgress(cb: StreamProgressListener): () => void {
         this._streamProgressListeners.add(cb);
         return () => { this._streamProgressListeners.delete(cb); };
     }
 
+    /**
+     * Subscribe to `render-progress` push messages from `renderJob`.
+     *
+     * @returns An unsubscribe function.
+     */
     subscribeRenderProgress(cb: RenderProgressListener): () => void {
         this._renderProgressListeners.add(cb);
         return () => { this._renderProgressListeners.delete(cb); };
     }
 
+    /** Whether the worker has been launched and not yet terminated. */
     isReady(): boolean { return this._ready; }
 
+    /**
+     * Low-level send. Bypasses the busy counter; used by typed helpers and
+     * by fire-and-forget event forwarders.
+     *
+     * @param method - Worker-side handler name.
+     * @param seq - Sequence number from {@link getSeqNo}.
+     * @param args - Positional arguments forwarded to the worker.
+     * @param xfer - Optional `Transferable` (used by `bindCanvas`).
+     */
     postMessage(method: string, seq: number, args: any[], xfer: any = null): void {
         if (xfer === null)
             this._worker.postMessage([method, seq, ...args]);
@@ -105,41 +160,68 @@ export class WorkerTransport {
             this._worker.postMessage([method, seq, ...args], [xfer]);
     }
 
+    /** Allocate the next call sequence number. */
     getSeqNo(): number {
         this._seqno++;
         return this._seqno;
     }
 
+    /**
+     * Register a one-shot reply handler keyed by `method.seqno`. Consumed
+     * by `onmessage` when the worker replies, then deleted.
+     */
     addListener(method: string, seqno: number, handler: any): void {
         const method_seq = makeMethodSeq(method, seqno);
         this._worker_onmessage_dict[method_seq] = handler;
     }
 
+    /** Increment the pending-call counter, firing `busy=true` on rising edge. */
     private _incPending(): void {
         const wasBusy = this._pendingCount > 0;
         this._pendingCount++;
         if (!wasBusy) this._notifyBusyChange(true);
     }
 
+    /** Decrement the pending-call counter, firing `busy=false` at zero. */
     private _decPending(): void {
         if (this._pendingCount <= 0) return;
         this._pendingCount--;
         if (this._pendingCount === 0) this._notifyBusyChange(false);
     }
 
+    /** Fan-out helper invoked when the pending-call edge crosses zero. */
     private _notifyBusyChange(busy: boolean): void {
         for (const cb of this._busyListeners) {
             try { cb(busy); } catch (e) { log.warn('busy listener error:', e); }
         }
     }
 
+    /** Whether at least one tracked call is currently in flight. */
     isBusy(): boolean { return this._pendingCount > 0; }
 
+    /**
+     * Subscribe to busy-state edges.
+     *
+     * @param cb - Called with `true` when the first call goes pending and
+     *   `false` when the last call resolves.
+     * @returns An unsubscribe function.
+     */
     subscribeBusy(cb: (busy: boolean) => void): () => void {
         this._busyListeners.add(cb);
         return () => { this._busyListeners.delete(cb); };
     }
 
+    /**
+     * Raw worker call. Returns the worker reply as the `args` tail of the
+     * message; reject on a `result === false` reply.
+     *
+     * @param method - Worker-side handler name.
+     * @param args - Positional arguments.
+     * @returns The trailing args of the worker's reply message.
+     * @remarks Tracked by the busy counter. Prefer the typed helpers
+     *   ({@link invokeService}, {@link invokeMethod}, {@link invokeRpc})
+     *   for any new call site.
+     */
     async invokeWorker(method: string, ...args: any[]): Promise<any[]> {
         const cur_seq = this.getSeqNo();
         this._incPending();
@@ -157,6 +239,17 @@ export class WorkerTransport {
         return promise;
     }
 
+    /**
+     * Raw worker call carrying a `Transferable`. Used by `bindCanvas` to
+     * hand off an `OffscreenCanvas`.
+     *
+     * @param method - Worker-side handler name.
+     * @param transfer - The `Transferable` (passed in the `[transfer]`
+     *   list).
+     * @param args - Positional arguments.
+     * @returns The trailing args of the worker's reply.
+     * @remarks **Not** tracked by the busy counter (one-shot init only).
+     */
     async invokeWorkerWithTransfer(method: string, transfer: any, ...args: any[]): Promise<any[]> {
         const cur_seq = this.getSeqNo();
         const promise = new Promise<any[]>((resolve, reject) => {
@@ -169,27 +262,50 @@ export class WorkerTransport {
         return promise;
     }
 
-    // ───────────────────────────────────────────────────────────
-    // Typed call helpers (preferred over invokeWorker for new code).
-    // Each helper wraps invokeWorker's array-tail response into the
-    // single-value contract documented by the corresponding map.
-    // ───────────────────────────────────────────────────────────
+    // --- Typed call helpers ---
+    // Preferred over `invokeWorker` for new code. Each helper wraps the
+    // array-tail response into the single-value contract documented by
+    // the corresponding map in `worker/shared/WorkerCalls.ts`.
 
+    /**
+     * Call a worker service (`ServiceMap` entry).
+     *
+     * @param name - Service key (compile-checked against `ServiceMap`).
+     * @param args - Service request payload.
+     */
     async invokeService<K extends ServiceKey>(name: K, args: ServiceArgs<K>): Promise<ServiceResult<K>> {
         const result = await this.invokeWorker(name, args);
         return result[0] as ServiceResult<K>;
     }
 
+    /**
+     * Call a worker variadic method (`MethodMap` entry -- infrastructure /
+     * hot-path events such as `bindCanvas` or `mouseMove`).
+     *
+     * @param name - Method key.
+     * @param args - Variadic argument tuple.
+     */
     async invokeMethod<K extends MethodKey>(name: K, ...args: MethodArgs<K>): Promise<MethodResult<K>> {
         const result = await this.invokeWorker(name, ...args);
         return result[0] as MethodResult<K>;
     }
 
+    /**
+     * Call a worker RPC handler (`RpcMap` entry -- used by `ObjProxy` for
+     * `createObj`, `getProp`, `invokeMethod`, ...).
+     *
+     * @param name - RPC key.
+     * @param args - Variadic argument tuple.
+     */
     async invokeRpc<K extends RpcKey>(name: K, ...args: RpcArgs<K>): Promise<RpcResult<K>> {
         const result = await this.invokeWorker(name, ...args);
         return result[0] as RpcResult<K>;
     }
 
+    /**
+     * Terminate the underlying `Worker`. After this, `isReady()` returns
+     * false and no further calls may be made.
+     */
     terminate(): void {
         this._worker.terminate();
         this._ready = false;
