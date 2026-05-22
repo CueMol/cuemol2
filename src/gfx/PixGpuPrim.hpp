@@ -51,7 +51,7 @@ public:
               const PixelBuffer &pixbuf, const ColorPtr &pcol);
 
 private:
-    void alloc();
+    void alloc(DisplayContext *pDC);
 };
 
 }  // namespace gfx

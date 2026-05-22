@@ -56,10 +56,11 @@ public:
     bool init(DisplayContext *pDC) override;
 
     /**
-     * Allocate GPU storage for nsph spheres (nsph×4 vertices, nsph×6 indices).
-     * Must call init() first.
+     * Allocate GPU storage for nsph spheres (nsph*4 vertices, nsph*6 indices).
+     * Must call init() first. Storage is allocated via the display context's
+     * allocBuffer() so the backend (e.g. WebGL) can route to V8 cage memory.
      */
-    void alloc(int nsph);
+    void alloc(DisplayContext *pDC, int nsph);
 
     // ─── Data upload ─────────────────────────────────────────────────────────
 

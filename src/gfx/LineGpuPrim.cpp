@@ -48,15 +48,15 @@ bool LineGpuPrim::init(DisplayContext *pDC)
     return true;
 }
 
-void LineGpuPrim::alloc(int nlines)
+void LineGpuPrim::alloc(DisplayContext *pDC, int nlines)
 {
     MB_ASSERT(m_pPO != nullptr);
+    MB_ASSERT(pDC != nullptr);
 
     m_pDrawAry = MB_NEW LineArray();
     LineArray &data = *m_pDrawAry;
 
-    data.alloc(nlines);
-    data.allocInd(6);
+    pDC->allocBuffer(data, nlines, 6);
     data.assignInds({0, 1, 2, 2, 1, 3});
     data.setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
     data.setNumInstances(nlines);

@@ -86,7 +86,7 @@ void BallStickRenderer::display(DisplayContext *pdc)
 
     // shader rendering mode
     if (!m_pSphGpuPrim->isValid()) {
-      renderShaderImpl();
+      renderShaderImpl(pdc);
       if (!m_pSphGpuPrim->isValid())
         return; // Error, Cannot draw anything (ignore)
     }
@@ -435,7 +435,7 @@ void BallStickRenderer::propChanged(qlib::LPropEvent &ev)
 
 ////////////
 
-void BallStickRenderer::renderShaderImpl()
+void BallStickRenderer::renderShaderImpl(DisplayContext *pdc)
 {
   MolCoordPtr pMol = getClientMol();
   if (pMol.isnull()) {
@@ -462,7 +462,7 @@ void BallStickRenderer::renderShaderImpl()
   }
 
   if (nsphs!=0) {
-    m_pSphGpuPrim->alloc(nsphs);
+    m_pSphGpuPrim->alloc(pdc, nsphs);
 
     AtomIterator iter(pMol, getSelection());
     int i=0;
@@ -510,7 +510,7 @@ void BallStickRenderer::renderShaderImpl()
   }
 
   if (nbons!=0) {
-    m_pCylGpuPrim->alloc(nbons);
+    m_pCylGpuPrim->alloc(pdc, nbons);
 
     BondIterator biter(pMol, getSelection());
     int i=0;

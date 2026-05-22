@@ -497,3 +497,9 @@ PixRep *DisplayContext::createPixRep(const PixelBuffer &)
 {
     return nullptr;
 }
+
+void DisplayContext::allocBuffer(AbstDrawAttrs &ada, int nvert, int nind)
+{
+    ada.allocOwnedData(nvert);
+    if (nind > 0) ada.allocOwnedIndData(nind);
+}

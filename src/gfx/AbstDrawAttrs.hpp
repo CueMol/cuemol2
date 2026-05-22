@@ -6,6 +6,7 @@
 #ifndef GFX_ABSTDRAWATTRS_HPP_INCLUDE_
 #define GFX_ABSTDRAWATTRS_HPP_INCLUDE_
 
+#include <functional>
 #include <vector>
 #include "gfx.hpp"
 #include "AbstDrawElem.hpp"
@@ -14,6 +15,11 @@ namespace gfx {
 
   class GFX_API AbstDrawAttrs : public AbstDrawElem
   {
+  public:
+    /// Finalizer callback invoked from dtor to release backend-specific
+    /// external storage (e.g., release a V8 Persistent reference).
+    using Finalizer = std::function<void()>;
+
   private:
     struct AttrInfo {
       int nAttrLoc;
@@ -28,8 +34,25 @@ namespace gfx {
     /** number of instances for instanced rendering */
     int m_nInsts;
 
+    /// Opaque backend-specific handle for the vertex storage.
+    /// E.g., a Napi::ObjectReference* in WebGL, so the backend can
+    /// fetch the existing V8 ArrayBuffer reference without re-allocating.
+    /// The gfx layer treats this as void* (impl-layer-non-dependent).
+    void *m_pExtDataHandle;
+    void *m_pExtIndDataHandle;
+
+    /// Finalizers run from this object's dtor to release the external storage.
+    Finalizer m_dataFinalizer;
+    Finalizer m_indDataFinalizer;
+
   public:
-    AbstDrawAttrs() : m_nInsts(0) {}
+    AbstDrawAttrs() : m_nInsts(0), m_pExtDataHandle(nullptr), m_pExtIndDataHandle(nullptr) {}
+
+    virtual ~AbstDrawAttrs()
+    {
+        if (m_dataFinalizer) m_dataFinalizer();
+        if (m_indDataFinalizer) m_indDataFinalizer();
+    }
 
     // attribute query methods
 
@@ -71,6 +94,43 @@ namespace gfx {
     }
 
   public:
+    //
+    // Storage allocation hooks. allocBuffer() in DisplayContext routes
+    // through these. allocOwned* allocates owning C++ heap memory in
+    // the template subclass; setDataRef / setIndDataRef attach external
+    // (non-owning) memory via qlib::Array::refer().
+    //
+
+    /// Allocate owning C++ heap storage (default impl path).
+    virtual void allocOwnedData(int nelems) = 0;
+
+    /// Allocate owning C++ heap storage for index buffer.
+    /// Default no-op so the vertex-only DrawAttrArray doesn't need to override.
+    virtual void allocOwnedIndData(int /*nelems*/) {}
+
+    /// Attach external vertex storage (non-owning); template subclass
+    /// routes through qlib::Array::refer().
+    virtual void setDataRef(void *p, int nelems) = 0;
+
+    /// Attach external index storage.
+    /// Default no-op so the vertex-only DrawAttrArray doesn't need to override.
+    virtual void setIndDataRef(void * /*p*/, int /*nelems*/) {}
+
+    //
+    // Opaque external storage handle (backend-specific).
+    // The gfx layer keeps this as void* so AbstDrawAttrs does not depend
+    // on N-API / V8 types.
+    //
+
+    inline void *getExtDataHandle() const { return m_pExtDataHandle; }
+    inline void setExtDataHandle(void *p) { m_pExtDataHandle = p; }
+    inline void *getExtIndDataHandle() const { return m_pExtIndDataHandle; }
+    inline void setExtIndDataHandle(void *p) { m_pExtIndDataHandle = p; }
+
+    /// Finalizers invoked from dtor to release the external storage.
+    inline void setDataFinalizer(Finalizer cb) { m_dataFinalizer = std::move(cb); }
+    inline void setIndDataFinalizer(Finalizer cb) { m_indDataFinalizer = std::move(cb); }
+
     /// returns attribute buffer ptr
     virtual const void *getData() const;
     virtual size_t getElemSize() const;

@@ -299,7 +299,7 @@ void DisplayList::createLineObj(DisplayContext *pdc)
     MB_ASSERT(m_pLineObj == nullptr);
     m_pLineObj = MB_NEW gfx::LineGpuPrim();
     m_pLineObj->init(pdc);
-    m_pLineObj->alloc(nelems / 2);
+    m_pLineObj->alloc(pdc, nelems / 2);
 
     for (size_t i = 0; i < nelems; i += 2) {
         m_pLineObj->setLine(i / 2,
@@ -331,7 +331,7 @@ void DisplayList::createTrigObj(DisplayContext *pdc)
     MB_ASSERT(m_pTrigObj == nullptr);
     m_pTrigObj = MB_NEW gfx::TrigGpuPrim();
     m_pTrigObj->init(pdc);
-    m_pTrigObj->alloc(n, n / 3);
+    m_pTrigObj->alloc(pdc, n, n / 3);
 
     for (size_t i = 0; i < n; ++i) {
         const auto &e = m_trigBuf[i];
@@ -357,7 +357,7 @@ void DisplayList::createTrigMeshObj(DisplayContext *pdc)
     MB_ASSERT(m_pTrigMeshObj == nullptr);
     m_pTrigMeshObj = MB_NEW gfx::TrigGpuPrim();
     m_pTrigMeshObj->init(pdc);
-    m_pTrigMeshObj->alloc(nMeshVerts, nMeshFaces);
+    m_pTrigMeshObj->alloc(pdc, nMeshVerts, nMeshFaces);
 
     size_t i = 0;
     for (const auto *pelem : m_mesh.getVertexData()) {

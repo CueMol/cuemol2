@@ -30,11 +30,11 @@ bool RectSelDrawObj::init(DisplayContext *pdc)
     if (!m_linePrim.init(pdc) || !m_trigPrim.init(pdc))
         return false;
 
-    m_linePrim.alloc(4);
+    m_linePrim.alloc(pdc, 4);
     m_linePrim.setLineWidth(1.0f);
     m_linePrim.setNoDepth(true);
 
-    m_trigPrim.alloc(4, 2);
+    m_trigPrim.alloc(pdc, 4, 2);
     m_trigPrim.setFace(0, 0, 2, 1);
     m_trigPrim.setFace(1, 2, 0, 3);
     m_trigPrim.setNoDepth(true);

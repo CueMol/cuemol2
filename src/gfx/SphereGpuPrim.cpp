@@ -51,9 +51,10 @@ bool SphereGpuPrim::init(DisplayContext *pDC)
     return true;
 }
 
-void SphereGpuPrim::alloc(int nsph)
+void SphereGpuPrim::alloc(DisplayContext *pDC, int nsph)
 {
     MB_ASSERT(m_pPO != nullptr);
+    MB_ASSERT(pDC != nullptr);
 
     auto *pdata = MB_NEW SphElemAry32();
     m_pDrawElem = pdata;
@@ -69,8 +70,7 @@ void SphereGpuPrim::alloc(int nsph)
     sphdata.setAttrInfo(3, ATTRLOC_COLOR, 4, qlib::type_consts::QTC_UINT8,
                         offsetof(SphElem, r));
 
-    sphdata.alloc(nsph * 4);
-    sphdata.allocInd(nsph * 6);
+    pDC->allocBuffer(sphdata, nsph * 4, nsph * 6);
     sphdata.setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
 }
 

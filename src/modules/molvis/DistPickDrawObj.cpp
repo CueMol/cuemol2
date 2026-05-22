@@ -32,7 +32,7 @@ bool DistPickDrawObj::init(DisplayContext* pdc)
 
     const qlib::quint32 ccode = 0xFFFFFF80;  // White color
 
-    m_linePrim.alloc(3);
+    m_linePrim.alloc(pdc, 3);
     const float dsize = 0.25f;
 
     m_linePrim.setLineWidth(m_width);

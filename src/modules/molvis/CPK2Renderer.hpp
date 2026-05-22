@@ -100,7 +100,7 @@ namespace molvis {
     ///////////////////////////////////
     // shader rendering implementations
 
-    void renderShaderImpl();
+    void renderShaderImpl(DisplayContext *pdc);
 
   private:
     int m_nGlRendMode;

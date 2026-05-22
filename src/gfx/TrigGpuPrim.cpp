@@ -54,14 +54,14 @@ bool TrigGpuPrim::init(DisplayContext *pDC)
     return true;
 }
 
-void TrigGpuPrim::alloc(int nverts, int nfaces)
+void TrigGpuPrim::alloc(DisplayContext *pDC, int nverts, int nfaces)
 {
     MB_ASSERT(m_pPO != nullptr);
+    MB_ASSERT(pDC != nullptr);
 
     m_pDrawElems = MB_NEW TrigMesh();
     auto &data = *m_pDrawElems;
-    data.alloc(nverts);
-    data.allocInd(nfaces * 3);
+    pDC->allocBuffer(data, nverts, nfaces * 3);
     data.setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
 }
 

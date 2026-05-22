@@ -139,7 +139,7 @@ public:
 
 private:
     /// Build and upload line geometry to LineGpuPrim
-    void renderShaderImpl();
+    void renderShaderImpl(gfx::DisplayContext *pdc);
 };
 
 }  // namespace molstr

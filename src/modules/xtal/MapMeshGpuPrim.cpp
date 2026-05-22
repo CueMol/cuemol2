@@ -32,7 +32,7 @@ bool MapMeshGpuPrim::init(gfx::DisplayContext *pDC)
     // The shader uses gl_VertexID (0 or 1) and gl_InstanceID only.
     m_pDrawElem = MB_NEW InstDrawArray();
     m_pDrawElem->setAttrSize(0);   // no vertex attributes
-    m_pDrawElem->alloc(2);         // 2 vertices per instance (for DRAW_LINES)
+    pDC->allocBuffer(*m_pDrawElem, 2, 0);  // 2 vertices per instance (for DRAW_LINES)
     m_pDrawElem->setDrawMode(gfx::AbstDrawElem::DRAW_LINES);
 
     m_pPO = pDC->loadShaderObject("gpu_mapmesh",

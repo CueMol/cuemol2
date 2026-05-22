@@ -68,9 +68,9 @@ public:
 
     /**
      * Allocate GPU storage for nverts vertices and nfaces triangles.
-     * Must call init() first.
+     * Must call init() first. Storage is routed via DisplayContext::allocBuffer.
      */
-    void alloc(int nverts, int nfaces);
+    void alloc(DisplayContext *pDC, int nverts, int nfaces);
 
     // ─── Data upload ─────────────────────────────────────────────────────────
 

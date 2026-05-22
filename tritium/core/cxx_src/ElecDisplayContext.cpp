@@ -6,6 +6,8 @@
 #include "EcBufferRep.hpp"
 #include "EcTexRep.hpp"
 
+#include <gfx/AbstDrawAttrs.hpp>
+
 namespace node_jsbr {
 
 ElecDisplayContext::~ElecDisplayContext() {}
@@ -128,6 +130,45 @@ gfx::PixRep *ElecDisplayContext::createPixRep(const gfx::PixelBuffer &pb)
     auto pRep = MB_NEW EcTexRep();
     pRep->create(this, pb);
     return pRep;
+}
+
+void ElecDisplayContext::allocBuffer(gfx::AbstDrawAttrs &ada, int nvert, int nind)
+{
+    if (m_pView == nullptr || !m_pView->isBound()) {
+        // Fallback: behave like the default impl when no peer is available.
+        ada.allocOwnedData(nvert);
+        if (nind > 0) ada.allocOwnedIndData(nind);
+        return;
+    }
+
+    auto peer = m_pView->getPeerObj();
+    auto env = peer.Env();
+
+    // Vertex buffer: allocate the V8 ArrayBuffer and refer the C++ side
+    // (m_data via DrawAttrArray::setDataRef) at the same backing store.
+    const size_t vert_bytes = static_cast<size_t>(nvert) * ada.getElemSize();
+    Napi::ArrayBuffer vert_ab = Napi::ArrayBuffer::New(env, vert_bytes);
+    auto *pVertRef = new Napi::ObjectReference();
+    pVertRef->Reset(vert_ab, 1);  // strong ref; AbstDrawAttrs finalizer resets it
+    ada.setDataRef(vert_ab.Data(), nvert);
+    ada.setExtDataHandle(pVertRef);
+    ada.setDataFinalizer([pVertRef]() {
+        pVertRef->Reset();
+        delete pVertRef;
+    });
+
+    if (nind > 0) {
+        const size_t ind_bytes = static_cast<size_t>(nind) * ada.getIndElemSize();
+        Napi::ArrayBuffer ind_ab = Napi::ArrayBuffer::New(env, ind_bytes);
+        auto *pIndRef = new Napi::ObjectReference();
+        pIndRef->Reset(ind_ab, 1);
+        ada.setIndDataRef(ind_ab.Data(), nind);
+        ada.setExtIndDataHandle(pIndRef);
+        ada.setIndDataFinalizer([pIndRef]() {
+            pIndRef->Reset();
+            delete pIndRef;
+        });
+    }
 }
 
 }  // namespace node_jsbr

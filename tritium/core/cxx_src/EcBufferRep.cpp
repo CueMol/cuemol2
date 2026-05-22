@@ -74,9 +74,21 @@ void EcBufferRep::create(gfx::DisplayContext *pdc, const gfx::AbstDrawAttrs &dat
     auto peer = pView->getPeerObj();
     auto env = peer.Env();
 
+    // Vertex buffer reference.
+    // If ElecDisplayContext::allocBuffer pre-allocated a V8 ArrayBuffer,
+    // grab that existing Persistent and skip the memcpy. Otherwise fall
+    // back to the legacy path of allocating a new ArrayBuffer and copying
+    // the C++ heap data into it (memcpy).
     try {
-        Napi::Object array_buf = createBuffer(env, data.getData(), buffer_size);
-        m_arrayBufRef = Napi::Persistent(array_buf);
+        auto *pVertRef =
+            static_cast<Napi::ObjectReference *>(data.getExtDataHandle());
+        if (pVertRef != nullptr) {
+            m_arrayBufRef = Napi::Persistent(pVertRef->Value().As<Napi::Object>());
+        } else {
+            Napi::Object array_buf =
+                createBuffer(env, data.getData(), buffer_size);
+            m_arrayBufRef = Napi::Persistent(array_buf);
+        }
     } catch (const Napi::Error &e) {
         MB_DPRINTLN("create array buffer failed: %s", e.Message().c_str());
         return;
@@ -87,10 +99,16 @@ void EcBufferRep::create(gfx::DisplayContext *pdc, const gfx::AbstDrawAttrs &dat
     MB_DPRINTLN("index buffer size: %d bytes = %d * %d",
                 nindex_bytes, data.getIndSize(), data.getIndElemSize());
     if (nindex_bytes > 0) {
-        auto pind = const_cast<void *>(data.getIndData());
-        MB_ASSERT(pind != nullptr);
-        Napi::Object ind_buf = createBuffer(env, pind, nindex_bytes);
-        m_indexBufRef = Napi::Persistent(ind_buf);
+        auto *pIndRef =
+            static_cast<Napi::ObjectReference *>(data.getExtIndDataHandle());
+        if (pIndRef != nullptr) {
+            m_indexBufRef = Napi::Persistent(pIndRef->Value().As<Napi::Object>());
+        } else {
+            auto pind = const_cast<void *>(data.getIndData());
+            MB_ASSERT(pind != nullptr);
+            Napi::Object ind_buf = createBuffer(env, pind, nindex_bytes);
+            m_indexBufRef = Napi::Persistent(ind_buf);
+        }
         m_nIndexElems = data.getIndSize();
     }
 
@@ -132,12 +150,17 @@ void EcBufferRep::update(const gfx::AbstDrawAttrs &ada)
         return;
     }
 
-    const size_t buffer_size = ada.getDataSize();
-    copyToBuffer(m_arrayBufRef, ada.getData(), buffer_size);
+    // If the storage is externally backed (V8 ArrayBuffer), the renderer's
+    // at(i) writes already landed in the same backing store as
+    // m_arrayBufRef -- no memcpy needed. Otherwise copy from C++ heap.
+    if (ada.getExtDataHandle() == nullptr) {
+        const size_t buffer_size = ada.getDataSize();
+        copyToBuffer(m_arrayBufRef, ada.getData(), buffer_size);
 
-    const size_t nindex_bytes = ada.getIndDataSize();
-    if (nindex_bytes > 0 && m_nIndexElems > 0) {
-        copyToBuffer(m_indexBufRef, ada.getIndData(), nindex_bytes);
+        const size_t nindex_bytes = ada.getIndDataSize();
+        if (nindex_bytes > 0 && m_nIndexElems > 0) {
+            copyToBuffer(m_indexBufRef, ada.getIndData(), nindex_bytes);
+        }
     }
 
     ada.setUpdated(false);
