@@ -2,13 +2,23 @@
  * BrowserWindow creation and lifecycle management.
  */
 
-import { BrowserWindow, screen } from 'electron'
+import { app, BrowserWindow, screen } from 'electron'
 import { join } from 'path'
 import { loadWindowBounds, saveWindowBounds, type WindowBounds } from './stateStore'
 import { registerIpcHandlers } from './ipcHandlers'
 import { createMenu } from './menu'
 import { IPC } from '../shared/ipcChannels'
-import { isCloseConfirmed, isCloseInFlight, setCloseInFlight } from './quitState'
+import {
+  clearCloseWatchdog,
+  isCloseConfirmed,
+  isCloseInFlight,
+  setAppQuitting,
+  setCloseConfirmed,
+  setCloseInFlight,
+  setCloseWatchdog,
+  setForceQuit,
+  WINDOW_CLOSE_WATCHDOG_MS,
+} from './quitState'
 
 function isVisibleOnAnyDisplay(bounds: WindowBounds): boolean {
   return screen.getAllDisplays().some((d) => {
@@ -59,6 +69,23 @@ function handleWindowClose(win: BrowserWindow, event: Electron.Event): void {
   if (isCloseInFlight(win)) return
   setCloseInFlight(win, true)
   win.webContents.send(IPC.WINDOW_CLOSE_REQUEST)
+
+  // Watchdog: if the renderer never replies (crashed or wedged), force the
+  // window closed so the user is not stuck unable to quit. Cleared on
+  // WINDOW_CLOSE_PROCEED via `clearCloseWatchdog`.
+  const timer = setTimeout(() => {
+    if (win.isDestroyed()) return
+    if (!isCloseInFlight(win)) return
+    console.error(
+      '[Main] WINDOW_CLOSE_REQUEST watchdog fired after',
+      WINDOW_CLOSE_WATCHDOG_MS,
+      'ms; forcing close',
+    )
+    setCloseInFlight(win, false)
+    setCloseConfirmed(win, true)
+    win.close()
+  }, WINDOW_CLOSE_WATCHDOG_MS)
+  setCloseWatchdog(win, timer)
 }
 
 const isMac = process.platform === 'darwin'
@@ -120,6 +147,32 @@ export function createWindow(): void {
     } else {
       console.log('[Renderer]', message + src)
     }
+  })
+
+  // Renderer process crashed (segfault, OOM, or process.crash). The
+  // confirm funnel cannot complete because the renderer is dead -- mark
+  // every closure path satisfied and exit immediately.
+  win.webContents.on('render-process-gone', (_event, details) => {
+    console.error(
+      '[Main] render-process-gone:',
+      details.reason,
+      'exitCode=' + details.exitCode,
+    )
+    clearCloseWatchdog(win)
+    setCloseConfirmed(win, true)
+    setForceQuit(true)
+    setAppQuitting(true)
+    app.exit(1)
+  })
+
+  // Renderer is hung (e.g. infinite loop in JS or blocked on a sync call).
+  // Logged but not auto-killed -- transient stalls are common during heavy
+  // work and false-positive force-quits would be worse than the symptom.
+  win.webContents.on('unresponsive', () => {
+    console.error('[Main] renderer unresponsive')
+  })
+  win.webContents.on('responsive', () => {
+    console.log('[Main] renderer responsive again')
   })
 
   trackWindowState(win)

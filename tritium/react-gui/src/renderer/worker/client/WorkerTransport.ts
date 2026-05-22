@@ -21,6 +21,8 @@ import type {
 } from '../shared/WorkerCalls';
 import type { RenderUpdate } from '../shared/renderTypes';
 import { RENDER_PROGRESS_CHANNEL } from '../shared/renderTypes';
+import type { CrashSource } from '../../../shared/ipcTypes';
+import { report as reportCrash } from '../../crash/CrashReporter';
 
 const log = console;
 
@@ -58,6 +60,7 @@ export interface WorkerTransportOptions {
  */
 export class WorkerTransport {
     private _ready: boolean = false;
+    private _crashed: boolean = false;
     private _seqno: number = 0;
     private _worker: Worker;
     private _worker_onmessage_dict: { [key: string]: any } = {};
@@ -80,7 +83,50 @@ export class WorkerTransport {
         this._worker = new Worker(new URL('../server/worker_launcher.ts', import.meta.url));
         log.info('launch worker OK');
 
+        // Native worker termination signal -- e.g. an unhandled throw in a
+        // worker event handler not caught by the launcher's global error
+        // listener, or a runtime-level kill. After this fires, further
+        // postMessage calls are silently dropped, so mark the transport
+        // crashed and reject any in-flight calls.
+        this._worker.onerror = (e: ErrorEvent) => {
+            this._handleWorkerCrash('worker-global', {
+                message: e.message || '(worker error)',
+                stack: (e.error instanceof Error) ? e.error.stack : undefined,
+                filename: e.filename || undefined,
+                lineno: e.lineno || undefined,
+                colno: e.colno || undefined,
+            });
+        };
+
+        // Structured-clone failure on a postMessage payload. The worker is
+        // technically alive but data is now out of sync with our reply
+        // dispatch, so treat it as fatal too.
+        this._worker.onmessageerror = () => {
+            this._handleWorkerCrash('worker-global', {
+                message: 'Worker postMessage deserialization failed',
+            });
+        };
+
         this._worker.onmessage = (event: MessageEvent) => {
+            // Crash report posted from inside the worker (launcher global
+            // handlers or render-loop try-catch). Branch before normal
+            // dispatch so it does not collide with method names.
+            if (Array.isArray(event.data) && event.data[0] === '__worker_crash__') {
+                const p = event.data[1] ?? {};
+                const isRenderLoop = p && p.type === 'render-loop';
+                this._handleWorkerCrash(
+                    isRenderLoop ? 'worker-render-loop' : 'worker-message',
+                    {
+                        message: typeof p.message === 'string' ? p.message : '(worker crash)',
+                        stack: typeof p.stack === 'string' ? p.stack : undefined,
+                        filename: typeof p.filename === 'string' ? p.filename : undefined,
+                        lineno: typeof p.lineno === 'number' ? p.lineno : undefined,
+                        colno: typeof p.colno === 'number' ? p.colno : undefined,
+                    },
+                );
+                return;
+            }
+
             const [method, seqno, ...args] = event.data;
 
             if (method === 'event-notify') {
@@ -143,6 +189,49 @@ export class WorkerTransport {
 
     /** Whether the worker has been launched and not yet terminated. */
     isReady(): boolean { return this._ready; }
+
+    /**
+     * Whether the worker has crashed. After this becomes true any pending
+     * `invokeWorker` is rejected and new calls are rejected synchronously.
+     */
+    isCrashed(): boolean { return this._crashed; }
+
+    /**
+     * Funnel for every worker-side crash signal (`onerror`,
+     * `onmessageerror`, and the worker-posted `__worker_crash__` message).
+     * Reports through the renderer-wide CrashReporter and tears the worker
+     * down so further calls fail fast instead of hanging forever.
+     */
+    private _handleWorkerCrash(
+        source: Extract<CrashSource, 'worker-global' | 'worker-message' | 'worker-render-loop'>,
+        payload: { message: string; stack?: string; filename?: string; lineno?: number; colno?: number },
+    ): void {
+        if (this._crashed) {
+            // Already handled -- a single crash often surfaces through
+            // multiple channels (postMessage + re-throw -> onerror).
+            return;
+        }
+        this._crashed = true;
+        this._ready = false;
+        reportCrash({
+            source,
+            message: payload.message,
+            stack: payload.stack,
+            filename: payload.filename,
+            lineno: payload.lineno,
+            colno: payload.colno,
+            timestamp: Date.now(),
+        });
+        // Reject every pending call so callers do not hang waiting on a
+        // dead worker.
+        const err = new Error('Worker crashed: ' + payload.message);
+        const pending = this._worker_onmessage_dict;
+        this._worker_onmessage_dict = {};
+        for (const key in pending) {
+            try { pending[key].call(this, false, err); } catch { /* ignore */ }
+        }
+        try { this._worker.terminate(); } catch { /* worker may already be dead */ }
+    }
 
     /**
      * Low-level send. Bypasses the busy counter; used by typed helpers and
@@ -223,6 +312,9 @@ export class WorkerTransport {
      *   for any new call site.
      */
     async invokeWorker(method: string, ...args: any[]): Promise<any[]> {
+        if (this._crashed) {
+            throw new Error('Worker has crashed; ' + method + ' call rejected');
+        }
         const cur_seq = this.getSeqNo();
         this._incPending();
         const promise = new Promise<any[]>((resolve, reject) => {
@@ -251,6 +343,9 @@ export class WorkerTransport {
      * @remarks **Not** tracked by the busy counter (one-shot init only).
      */
     async invokeWorkerWithTransfer(method: string, transfer: any, ...args: any[]): Promise<any[]> {
+        if (this._crashed) {
+            throw new Error('Worker has crashed; ' + method + ' call rejected');
+        }
         const cur_seq = this.getSeqNo();
         const promise = new Promise<any[]>((resolve, reject) => {
             this.addListener(method, cur_seq, (result: boolean, ...msgargs: any[]): void => {

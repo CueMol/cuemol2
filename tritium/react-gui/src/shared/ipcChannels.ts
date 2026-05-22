@@ -63,6 +63,10 @@ export const IPC = {
   WINDOW_CLOSE_REQUEST: 'window:close-request',
   WINDOW_CLOSE_PROCEED: 'window:close-proceed',
 
+  // Renderer/Worker crash reporting + fallback UI's Quit button
+  CRASH_REPORT: 'app:crash-report',
+  FORCE_QUIT:   'app:force-quit',
+
   // invoke channel for native viewport context menu
   NAVI_CTX_SHOW: 'navi-ctx:show',
 

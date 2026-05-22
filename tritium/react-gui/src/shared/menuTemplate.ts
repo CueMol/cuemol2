@@ -151,6 +151,8 @@ export const APP_MENU: AppMenuGroup[] = [
       },
       { type: 'separator' },
       { id: 'view-props', label: 'View property...', ipcChannel: 'menu:view-props' },
+      { type: 'separator' },
+      { role: 'toggleDevTools' },
     ],
   },
 

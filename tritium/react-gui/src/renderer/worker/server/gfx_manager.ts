@@ -195,20 +195,37 @@ export class GfxManager {
         const existing = this._afcbid_map.get(view_id);
         if (existing !== undefined) cancelAnimationFrame(existing);
         const render = (): void => {
-            if (PERF_MEASURE) {
-                const t0 = performance.now();
-                this._sceMgr.invokeMethod('checkAndUpdateScenes');
-                const elapsed = performance.now() - t0;
-                perfCounters.frameCount++;
-                perfCounters.frameTimeMs += elapsed;
-                if (elapsed > perfCounters.frameTimeMaxMs) {
-                    perfCounters.frameTimeMaxMs = elapsed;
+            try {
+                if (PERF_MEASURE) {
+                    const t0 = performance.now();
+                    this._sceMgr.invokeMethod('checkAndUpdateScenes');
+                    const elapsed = performance.now() - t0;
+                    perfCounters.frameCount++;
+                    perfCounters.frameTimeMs += elapsed;
+                    if (elapsed > perfCounters.frameTimeMaxMs) {
+                        perfCounters.frameTimeMaxMs = elapsed;
+                    }
+                    maybeFlushPerf();
+                } else {
+                    this._sceMgr.invokeMethod('checkAndUpdateScenes');
                 }
-                maybeFlushPerf();
-            } else {
-                this._sceMgr.invokeMethod('checkAndUpdateScenes');
+                this._afcbid_map.set(view_id, requestAnimationFrame(render));
+            } catch (err) {
+                // A render-loop fault is fatal -- do not reschedule the rAF.
+                // Forward to the renderer so the fallback UI surfaces; also
+                // re-throw so the worker global error handler in
+                // worker_launcher.ts can capture filename / line via the
+                // ErrorEvent (some C++ throws have no usable .stack).
+                const e = err as { message?: unknown; stack?: unknown };
+                try {
+                    self.postMessage(['__worker_crash__', {
+                        message: typeof e?.message === 'string' ? e.message : String(err),
+                        stack: typeof e?.stack === 'string' ? e.stack : undefined,
+                        type: 'render-loop',
+                    }]);
+                } catch (_postErr) { /* worker may already be torn down */ }
+                throw err;
             }
-            this._afcbid_map.set(view_id, requestAnimationFrame(render));
         };
         render();
     }

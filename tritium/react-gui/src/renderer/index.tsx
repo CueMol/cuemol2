@@ -15,22 +15,30 @@ import { CommandProvider } from './commands/CommandRegistry'
 import { DialogProvider } from './contexts/DialogContext'
 import { ModalOpenCounterProvider } from './contexts/ModalOpenCounterContext'
 import { RenderConfigProvider } from './contexts/RenderConfigContext'
+import { ErrorBoundary } from './crash/ErrorBoundary'
+import { installGlobalCrashHandlers } from './crash/installGlobalCrashHandlers'
+
+// Install before React renders so that synchronous throws in any
+// Provider's constructor still surface through the crash funnel.
+installGlobalCrashHandlers()
 
 const container = document.getElementById('root') as HTMLElement
 createRoot(container).render(
-  <CueMolProvider>
-    <MolTabProvider>
-      <ThemeProvider>
-        <CommandProvider>
-          <ModalOpenCounterProvider>
-            <DialogProvider>
-              <RenderConfigProvider>
-                <App />
-              </RenderConfigProvider>
-            </DialogProvider>
-          </ModalOpenCounterProvider>
-        </CommandProvider>
-      </ThemeProvider>
-    </MolTabProvider>
-  </CueMolProvider>
+  <ErrorBoundary>
+    <CueMolProvider>
+      <MolTabProvider>
+        <ThemeProvider>
+          <CommandProvider>
+            <ModalOpenCounterProvider>
+              <DialogProvider>
+                <RenderConfigProvider>
+                  <App />
+                </RenderConfigProvider>
+              </DialogProvider>
+            </ModalOpenCounterProvider>
+          </CommandProvider>
+        </ThemeProvider>
+      </MolTabProvider>
+    </CueMolProvider>
+  </ErrorBoundary>
 )
