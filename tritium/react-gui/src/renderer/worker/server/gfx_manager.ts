@@ -577,7 +577,9 @@ export class GfxManager {
      * Returns false if `name` is already taken.
      */
     createBuffer(name: string, nsize: number, num_elems: number,
-        nsize_index: number, elem_info_str: string): boolean {
+                 nsize_index: number, elem_info_str: string,
+                 array_buf: any | null = null,
+                 index_buf: any | null = null): boolean {
         if (name in this._draw_data) {
             console.log(`name ${name} already exists`);
             return false;
@@ -590,6 +592,7 @@ export class GfxManager {
         let vao = gl.createVertexArray()!;
         gl.bindVertexArray(vao);
 
+        // Create buffer
         let vertexBuffer = gl.createBuffer()!;
         gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
 
@@ -611,14 +614,24 @@ export class GfxManager {
             );
             gl.vertexAttribDivisor(aloc, value['idiv']);
         });
-        gl.bufferData(gl.ARRAY_BUFFER, nsize, gl.STATIC_DRAW);
+
+        // vertex buffer
+        if (array_buf) {
+            gl.bufferData(gl.ARRAY_BUFFER, array_buf, gl.STATIC_DRAW);
+        } else {
+            gl.bufferData(gl.ARRAY_BUFFER, nsize, gl.STATIC_DRAW);
+        }
 
         // index buffer
         let indexBuffer = null;
         if (nsize_index > 0) {
             indexBuffer = gl.createBuffer();
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, nsize_index, gl.STATIC_DRAW);
+            if (index_buf) {
+                gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, index_buf, gl.STATIC_DRAW);
+            } else {
+                gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, nsize_index, gl.STATIC_DRAW);
+            }
         }
 
         gl.bindVertexArray(null);

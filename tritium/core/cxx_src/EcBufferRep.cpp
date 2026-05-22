@@ -80,13 +80,11 @@ void EcBufferRep::create(gfx::DisplayContext *pdc, const gfx::AbstDrawAttrs &dat
     // back to the legacy path of allocating a new ArrayBuffer and copying
     // the C++ heap data into it (memcpy).
     try {
-        auto *pVertRef =
-            static_cast<Napi::ObjectReference *>(data.getExtDataHandle());
+        auto *pVertRef = static_cast<Napi::ObjectReference *>(data.getExtDataHandle());
         if (pVertRef != nullptr) {
             m_arrayBufRef = Napi::Persistent(pVertRef->Value().As<Napi::Object>());
         } else {
-            Napi::Object array_buf =
-                createBuffer(env, data.getData(), buffer_size);
+            Napi::Object array_buf = createBuffer(env, data.getData(), buffer_size);
             m_arrayBufRef = Napi::Persistent(array_buf);
         }
     } catch (const Napi::Error &e) {
@@ -96,8 +94,8 @@ void EcBufferRep::create(gfx::DisplayContext *pdc, const gfx::AbstDrawAttrs &dat
 
     // index data
     const size_t nindex_bytes = data.getIndDataSize();
-    MB_DPRINTLN("index buffer size: %d bytes = %d * %d",
-                nindex_bytes, data.getIndSize(), data.getIndElemSize());
+    MB_DPRINTLN("index buffer size: %d bytes = %d * %d", nindex_bytes,
+                data.getIndSize(), data.getIndElemSize());
     if (nindex_bytes > 0) {
         auto *pIndRef =
             static_cast<Napi::ObjectReference *>(data.getExtIndDataHandle());
@@ -118,17 +116,24 @@ void EcBufferRep::create(gfx::DisplayContext *pdc, const gfx::AbstDrawAttrs &dat
 
     // m_arrayBufRef now holds the initial data; mark dirty so the first
     // draw() triggers the GPU upload.
-    m_bDataUpdated = true;
+    // m_bDataUpdated = true;
 
     auto method = peer.Get("createBuffer").As<Napi::Function>();
     bool result = false;
     try {
+        auto pbuf = m_arrayBufRef.Value();
+        auto pindbuf = (m_nIndexElems > 0) ? m_indexBufRef.Value() : env.Null();
+        MB_DPRINTLN("createBuffer(%s): pbuf=%p, pindbuf=%p", m_bufName.c_str(), pbuf,
+                    pindbuf);
         auto rval = method.Call(
             peer,
             {Napi::String::New(env, m_bufName), Napi::Number::New(env, buffer_size),
              Napi::Number::New(env, nelems), Napi::Number::New(env, nindex_bytes),
-             Napi::String::New(env, json_str)});
+             Napi::String::New(env, json_str), pbuf, pindbuf});
         result = rval.As<Napi::Boolean>().Value();
+
+        // createBuffer succeeded, so the data is now on the GPU. Mark it clean.
+        m_bDataUpdated = false;
     } catch (const Napi::Error &e) {
         MB_DPRINTLN("createBuffer failed: %s", e.Message().c_str());
         return;
@@ -138,33 +143,32 @@ void EcBufferRep::create(gfx::DisplayContext *pdc, const gfx::AbstDrawAttrs &dat
         MB_THROW(qlib::RuntimeException, "createBuffer failed");
         return;
     }
-
 }
 
 void EcBufferRep::bind() {}
 
 void EcBufferRep::update(const gfx::AbstDrawAttrs &ada)
 {
-    if (!ada.isUpdated()) {
-        m_bDataUpdated = false;
-        return;
-    }
+    // if (!ada.isUpdated()) {
+    //     m_bDataUpdated = false;
+    //     return;
+    // }
 
-    // If the storage is externally backed (V8 ArrayBuffer), the renderer's
-    // at(i) writes already landed in the same backing store as
-    // m_arrayBufRef -- no memcpy needed. Otherwise copy from C++ heap.
-    if (ada.getExtDataHandle() == nullptr) {
-        const size_t buffer_size = ada.getDataSize();
-        copyToBuffer(m_arrayBufRef, ada.getData(), buffer_size);
+    // // If the storage is externally backed (V8 ArrayBuffer), the renderer's
+    // // at(i) writes already landed in the same backing store as
+    // // m_arrayBufRef -- no memcpy needed. Otherwise copy from C++ heap.
+    // if (ada.getExtDataHandle() == nullptr) {
+    //     const size_t buffer_size = ada.getDataSize();
+    //     copyToBuffer(m_arrayBufRef, ada.getData(), buffer_size);
 
-        const size_t nindex_bytes = ada.getIndDataSize();
-        if (nindex_bytes > 0 && m_nIndexElems > 0) {
-            copyToBuffer(m_indexBufRef, ada.getIndData(), nindex_bytes);
-        }
-    }
+    //     const size_t nindex_bytes = ada.getIndDataSize();
+    //     if (nindex_bytes > 0 && m_nIndexElems > 0) {
+    //         copyToBuffer(m_indexBufRef, ada.getIndData(), nindex_bytes);
+    //     }
+    // }
 
-    ada.setUpdated(false);
-    m_bDataUpdated = true;
+    // ada.setUpdated(false);
+    // m_bDataUpdated = true;
 }
 
 void EcBufferRep::setAttrib(const gfx::AbstDrawAttrs &ada) {}
@@ -189,20 +193,17 @@ void EcBufferRep::draw(const gfx::AbstDrawAttrs &ada)
     m_nDrawMode = ada.getDrawMode();
 
     try {
-        if (m_nIndexElems > 0) {
-            method.Call(
-                peer,
-                {Napi::String::New(env, m_bufName), Napi::Number::New(env, m_nDrawMode),
-                 Napi::Number::New(env, m_nIndexElems), m_arrayBufRef.Value(),
-                 m_indexBufRef.Value(), Napi::Boolean::New(env, isUpdated),
-                 Napi::Number::New(env, ninst)});
-        } else {
-            method.Call(
-                peer,
-                {Napi::String::New(env, m_bufName), Napi::Number::New(env, m_nDrawMode),
-                 Napi::Number::New(env, m_nElems), m_arrayBufRef.Value(), env.Null(),
-                 Napi::Boolean::New(env, isUpdated), Napi::Number::New(env, ninst)});
-        }
+        // if (m_nIndexElems > 0) {
+        auto pbuf = m_arrayBufRef.Value();
+        auto pindbuf = (m_nIndexElems > 0) ? m_indexBufRef.Value() : env.Null();
+        MB_DPRINTLN("drawBuffer(%s): pbuf=%p, pindbuf=%p", m_bufName.c_str(), pbuf,
+                    pindbuf);
+        int nelems = (m_nIndexElems > 0) ? m_nIndexElems : m_nElems;
+        method.Call(
+            peer,
+            {Napi::String::New(env, m_bufName), Napi::Number::New(env, m_nDrawMode),
+             Napi::Number::New(env, nelems), pbuf, pindbuf,
+             Napi::Boolean::New(env, isUpdated), Napi::Number::New(env, ninst)});
     } catch (const Napi::Error &e) {
         MB_DPRINTLN("drawBuffer failed: %s", e.Message().c_str());
         return;
