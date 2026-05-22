@@ -11,14 +11,41 @@ import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { MolRenderer } from '@cuemol/core/src/wrappers/MolRenderer';
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { MolSelection } from '@cuemol/core/src/wrappers/MolSelection';
+import type { AbstractColor } from '@cuemol/core/src/wrappers/AbstractColor';
 import type { ColoringScheme } from '@cuemol/core/src/wrappers/ColoringScheme';
 import type { PaintColoring } from '@cuemol/core/src/wrappers/PaintColoring';
+import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { WorkerContext } from '../types/WorkerContext';
 import type { RendColoringId } from '../../../../shared/ipcTypes';
 import { withUndoTxn } from './withUndoTxn';
 import { getSceneOrNull } from './helpers/sceneResolver';
 import { remove as styleRemove, push as stylePush } from './helpers/styleutil';
 import { makeColor } from './helpers/makeColor';
+import { makeSel } from './helpers/makeSel';
+
+/**
+ * Discriminator for the Coloring panel's selector: both top-level objects
+ * (`MolCoord`) and renderers (`MolRenderer`, `MolSurfRenderer`) expose the
+ * same `coloring` / `defaultcolor` / `resetProp` interface; UXP's
+ * `paint_coloring_filter` accepts both. We default `targetKind` to
+ * `'renderer'` so existing renderer-ctxmenu callers stay unchanged.
+ */
+export type ColoringTargetKind = 'object' | 'renderer';
+
+/**
+ * Resolve a coloring target (object or renderer) to a single wrapper that
+ * exposes the `coloring` / `defaultcolor` / `resetProp` interface.
+ */
+function resolveColoringTarget(
+    scene: Scene,
+    kind: ColoringTargetKind | undefined,
+    id: number,
+): Renderer | null {
+    if (kind === 'object') {
+        return (scene.getObject(id) as unknown as Renderer | null) ?? null;
+    }
+    return (scene.getRenderer(id) as Renderer | null) ?? null;
+}
 
 export interface GetPaintColoringStylesArgs {
     sceneId: number;
@@ -84,6 +111,8 @@ export interface SetRendererColoringArgs {
     sceneId: number;
     rendId: number;
     coloringId: RendColoringId;
+    /** Default 'renderer' for back-compat with the renderer ctxmenu callers. */
+    targetKind?: ColoringTargetKind;
 }
 
 export interface SetRendererColoringResult {
@@ -150,12 +179,14 @@ function setRendererColoring(
 ): SetRendererColoringResult {
     const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return { ok: false };
-    const rend = scene.getRenderer(args.rendId) as Renderer | null;
+    const rend = resolveColoringTarget(scene, args.targetKind, args.rendId);
     if (!rend) return { ok: false };
 
     // style-* ids share one handler: static and dynamic Paint(SS) entries
-    // both flow through the same applyStyles path.
+    // both flow through the same applyStyles path. Objects have no
+    // `applyStyles` so the style path is renderer-only.
     if (args.coloringId.startsWith('style-')) {
+        if (args.targetKind === 'object') return { ok: false };
         const styleName = args.coloringId.substring('style-'.length);
         if (!styleName) return { ok: false };
         withUndoTxn(scene, 'Change coloring style', () => {
@@ -173,6 +204,20 @@ function setRendererColoring(
         case 'paint-type-rainbow':
             withUndoTxn(scene, 'Change coloring', () => {
                 applyObjColoring(ctx, rend, 'RainbowColoring');
+            });
+            return { ok: true };
+        case 'paint-type-paint':
+            withUndoTxn(scene, 'Change coloring', () => {
+                applyObjColoring(ctx, rend, 'PaintColoring');
+            });
+            return { ok: true };
+        case 'paint-type-solid':
+        case 'paint-type-resetdef':
+            // UXP `setRendColoring`: both Solid and "Reset to default" route
+            // through `resetProp("coloring")`. The unknown deck then shows
+            // the renderer's defaultcolor picker.
+            withUndoTxn(scene, 'Reset coloring', () => {
+                rend.resetProp('coloring');
             });
             return { ok: true };
         default:
@@ -372,6 +417,446 @@ function getObjectPaintInfo(
     return { canPaint: true };
 }
 
+// ────────────────────────────────────────────────────────────
+// Coloring panel — renderer listing + state + Paint CRUD + Solid
+// ────────────────────────────────────────────────────────────
+
+export interface ListPaintCapableRenderersArgs {
+    sceneId: number;
+}
+
+/**
+ * One row in the Coloring panel's selector. Mirrors UXP
+ * `paint_coloring_filter`, which accepts both top-level objects
+ * (`elem.cat === 'obj'`) and renderers (`elem.cat === 'rend'`) that expose
+ * a `coloring` property. For objects the panel edits `mol.coloring`
+ * directly; for renderers it edits `rend.coloring` (or `rend.defaultcolor`
+ * for the Solid deck).
+ */
+export interface PaintCapableRendererEntry {
+    /** 'object' for MolCoord rows, 'renderer' for child renderer rows. */
+    targetKind: ColoringTargetKind;
+    /** C++ uid of the object or renderer this row represents. */
+    rendId: number;
+    /** Display name of the target. */
+    name: string;
+    /**
+     * For renderer rows this is `type_name` (e.g. "cartoon"); for object
+     * rows it is the object's class name (e.g. "MolCoord"). Used purely
+     * for the secondary label in the selector.
+     */
+    typeName: string;
+    /** Parent object id; equal to `rendId` for object rows. */
+    objId: number;
+    /** Parent object name; equal to `name` for object rows. */
+    objName: string;
+}
+
+export interface ListPaintCapableRenderersResult {
+    ok: boolean;
+    renderers: PaintCapableRendererEntry[];
+}
+
+interface RawSceneObjItem {
+    name?: string;
+    type?: string;
+    ID?: number;
+    rends?: RawSceneRendItem[];
+}
+
+interface RawSceneRendItem {
+    name?: string;
+    type?: string;
+    ID?: number;
+    childNodes?: RawSceneRendItem[];
+}
+
+function rendererHasColoringProp(rend: Renderer): boolean {
+    // The `paint_coloring_filter` UXP gate checks that the renderer exposes a
+    // `coloring` property. Wrapper getters throw for missing properties, so
+    // probe via the proxy and discard read-only errors.
+    try {
+        const c = (rend as unknown as MolRenderer).coloring;
+        return c !== undefined;
+    } catch {
+        return false;
+    }
+}
+
+function collectRendsRecursive(
+    items: RawSceneRendItem[] | undefined,
+    out: { id: number; name: string; typeName: string }[],
+): void {
+    if (!Array.isArray(items)) return;
+    for (const it of items) {
+        if (typeof it?.ID === 'number') {
+            out.push({
+                id: it.ID,
+                name: it.name ?? '',
+                typeName: it.type ?? '',
+            });
+        }
+        if (Array.isArray(it.childNodes)) {
+            collectRendsRecursive(it.childNodes, out);
+        }
+    }
+}
+
+function objectHasColoringProp(obj: unknown): boolean {
+    try {
+        const c = (obj as { coloring?: unknown })?.coloring;
+        return c !== undefined;
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Build the selector list for the Coloring panel.
+ *
+ * Mirrors UXP `paint_coloring_filter`, which accepts both top-level
+ * objects (`elem.cat === 'obj'`) and renderers (`elem.cat === 'rend'`)
+ * with a `coloring` property. The returned list interleaves an object
+ * row followed by its paint-capable child renderer rows, so a grouped
+ * selector renders the molecule and its sub-renderers together.
+ *
+ * Renderer groups have no coloring of their own and are skipped (only
+ * their leaf renderers contribute rows).
+ */
+function listPaintCapableRenderers(
+    ctx: WorkerContext,
+    args: ListPaintCapableRenderersArgs,
+): ListPaintCapableRenderersResult {
+    const scene = getSceneOrNull(ctx, args.sceneId);
+    if (!scene) return { ok: false, renderers: [] };
+
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(scene.getSceneDataJSON());
+    } catch {
+        return { ok: false, renderers: [] };
+    }
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+        return { ok: false, renderers: [] };
+    }
+
+    const out: PaintCapableRendererEntry[] = [];
+    // Skip index 0 (the scene element); the rest are objects.
+    for (let i = 1; i < parsed.length; i++) {
+        const obj = parsed[i] as RawSceneObjItem;
+        if (typeof obj?.ID !== 'number') continue;
+        const objWrap = scene.getObject(obj.ID);
+        if (objWrap && objectHasColoringProp(objWrap)) {
+            out.push({
+                targetKind: 'object',
+                rendId: obj.ID,
+                name: obj.name ?? '',
+                typeName: obj.type ?? '',
+                objId: obj.ID,
+                objName: obj.name ?? '',
+            });
+        }
+        const rendList: { id: number; name: string; typeName: string }[] = [];
+        collectRendsRecursive(obj.rends, rendList);
+        for (const r of rendList) {
+            // UXP `paint_coloring_filter` excludes the selection-display
+            // renderer (the per-mol "*selection" overlay). It exposes a
+            // `coloring` property but is not user-editable.
+            if (r.typeName === '*selection') continue;
+            const rend = scene.getRenderer(r.id) as Renderer | null;
+            if (!rend) continue;
+            if (!rendererHasColoringProp(rend)) continue;
+            out.push({
+                targetKind: 'renderer',
+                rendId: r.id,
+                name: r.name,
+                typeName: r.typeName,
+                objId: obj.ID,
+                objName: obj.name ?? '',
+            });
+        }
+    }
+    return { ok: true, renderers: out };
+}
+
+export interface GetRendererColoringStateArgs {
+    sceneId: number;
+    rendId: number;
+    /** Default 'renderer' for back-compat. */
+    targetKind?: ColoringTargetKind;
+}
+
+export interface PaintEntryDto {
+    /** Zero-based index in PaintColoring. */
+    idx: number;
+    /** Compiled MolSelection re-stringified for display. */
+    selStr: string;
+    /** Color value formatted by `AbstractColor.toString()`. */
+    colorValue: string;
+}
+
+export interface GetRendererColoringStateResult {
+    ok: boolean;
+    /** Coloring class name (e.g. "PaintColoring"), or "" when coloring is null. */
+    className: string;
+    /** Stringified renderer.defaultcolor (falls back to "" if unreadable). */
+    defaultColor: string;
+    /** Populated only when className === "PaintColoring". */
+    paintEntries: PaintEntryDto[];
+}
+
+function readDefaultColor(rend: Renderer): string {
+    try {
+        const c = (rend as unknown as { defaultcolor: AbstractColor })
+            .defaultcolor;
+        return c ? c.toString() : '';
+    } catch {
+        return '';
+    }
+}
+
+function readPaintEntries(coloring: PaintColoring): PaintEntryDto[] {
+    const out: PaintEntryDto[] = [];
+    let size = 0;
+    try {
+        size = coloring.size;
+    } catch {
+        return out;
+    }
+    for (let i = 0; i < size; i++) {
+        let selStr = '';
+        let colorValue = '';
+        try {
+            const sel = coloring.getSelAt(i);
+            selStr = sel ? sel.toString() : '';
+        } catch {
+            selStr = '';
+        }
+        try {
+            const col = coloring.getColorAt(i);
+            colorValue = col ? col.toString() : '';
+        } catch {
+            colorValue = '';
+        }
+        out.push({ idx: i, selStr, colorValue });
+    }
+    return out;
+}
+
+/**
+ * Snapshot of the renderer's current coloring for the Coloring panel.
+ *
+ * The panel uses `className` to decide which deck page to show (PaintColoring
+ * → Paint deck; "" or unknown class → Solid/Unknown deck). For the Paint
+ * deck the entries are returned eagerly so the panel can render the table
+ * without round-tripping.
+ */
+function getRendererColoringState(
+    ctx: WorkerContext,
+    args: GetRendererColoringStateArgs,
+): GetRendererColoringStateResult {
+    const scene = getSceneOrNull(ctx, args.sceneId);
+    if (!scene) {
+        return { ok: false, className: '', defaultColor: '', paintEntries: [] };
+    }
+    const rend = resolveColoringTarget(scene, args.targetKind, args.rendId);
+    if (!rend) {
+        return { ok: false, className: '', defaultColor: '', paintEntries: [] };
+    }
+
+    const className = getColoringClassName(rend);
+    const defaultColor = readDefaultColor(rend);
+
+    let paintEntries: PaintEntryDto[] = [];
+    if (className === 'PaintColoring') {
+        const coloring = (rend as unknown as MolRenderer).coloring as PaintColoring;
+        paintEntries = readPaintEntries(coloring);
+    }
+
+    return { ok: true, className, defaultColor, paintEntries };
+}
+
+export interface AddPaintEntryArgs {
+    sceneId: number;
+    rendId: number;
+    /** Default 'renderer'. */
+    targetKind?: ColoringTargetKind;
+    /** Insert position; pass `size` to append. */
+    idx: number;
+    selStr: string;
+    colorValue: string;
+}
+
+export interface PaintMutationResult {
+    ok: boolean;
+}
+
+function getPaintColoring(rend: Renderer): PaintColoring | null {
+    if (getColoringClassName(rend) !== 'PaintColoring') return null;
+    try {
+        return (rend as unknown as MolRenderer).coloring as PaintColoring;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Add a paint entry. `idx === size` appends; otherwise inserts before idx.
+ */
+function addPaintEntry(
+    ctx: WorkerContext,
+    args: AddPaintEntryArgs,
+): PaintMutationResult {
+    const scene = getSceneOrNull(ctx, args.sceneId);
+    if (!scene) return { ok: false };
+    const rend = resolveColoringTarget(scene, args.targetKind, args.rendId);
+    if (!rend) return { ok: false };
+    const coloring = getPaintColoring(rend);
+    if (!coloring) return { ok: false };
+
+    const sel = makeSel(ctx, args.selStr, scene.uid);
+    if (!sel) return { ok: false };
+    const color = makeColor(ctx, args.colorValue, scene.uid);
+
+    withUndoTxn(scene, 'Add paint entry', () => {
+        if (args.idx >= coloring.size) {
+            coloring.append(sel, color);
+        } else {
+            coloring.insertBefore(args.idx, sel, color);
+        }
+    });
+    return { ok: true };
+}
+
+export interface RemovePaintEntryArgs {
+    sceneId: number;
+    rendId: number;
+    targetKind?: ColoringTargetKind;
+    idx: number;
+}
+
+function removePaintEntry(
+    ctx: WorkerContext,
+    args: RemovePaintEntryArgs,
+): PaintMutationResult {
+    const scene = getSceneOrNull(ctx, args.sceneId);
+    if (!scene) return { ok: false };
+    const rend = resolveColoringTarget(scene, args.targetKind, args.rendId);
+    if (!rend) return { ok: false };
+    const coloring = getPaintColoring(rend);
+    if (!coloring) return { ok: false };
+
+    withUndoTxn(scene, 'Delete paint entry', () => {
+        coloring.removeAt(args.idx);
+    });
+    return { ok: true };
+}
+
+export interface UpdatePaintEntryArgs {
+    sceneId: number;
+    rendId: number;
+    targetKind?: ColoringTargetKind;
+    idx: number;
+    selStr: string;
+    colorValue: string;
+}
+
+function updatePaintEntry(
+    ctx: WorkerContext,
+    args: UpdatePaintEntryArgs,
+): PaintMutationResult {
+    const scene = getSceneOrNull(ctx, args.sceneId);
+    if (!scene) return { ok: false };
+    const rend = resolveColoringTarget(scene, args.targetKind, args.rendId);
+    if (!rend) return { ok: false };
+    const coloring = getPaintColoring(rend);
+    if (!coloring) return { ok: false };
+
+    const sel = makeSel(ctx, args.selStr, scene.uid);
+    if (!sel) return { ok: false };
+    const color = makeColor(ctx, args.colorValue, scene.uid);
+
+    withUndoTxn(scene, 'Change paint entry', () => {
+        coloring.changeAt(args.idx, sel, color);
+    });
+    return { ok: true };
+}
+
+export interface MovePaintEntryArgs {
+    sceneId: number;
+    rendId: number;
+    targetKind?: ColoringTargetKind;
+    fromIdx: number;
+    toIdx: number;
+}
+
+/**
+ * Move a paint entry from `fromIdx` to `toIdx`.
+ *
+ * Mirrors UXP `_moveUpDownImpl`: snapshot (sel, color) → removeAt → reinsert.
+ */
+function movePaintEntry(
+    ctx: WorkerContext,
+    args: MovePaintEntryArgs,
+): PaintMutationResult {
+    const scene = getSceneOrNull(ctx, args.sceneId);
+    if (!scene) return { ok: false };
+    const rend = resolveColoringTarget(scene, args.targetKind, args.rendId);
+    if (!rend) return { ok: false };
+    const coloring = getPaintColoring(rend);
+    if (!coloring) return { ok: false };
+
+    const { fromIdx, toIdx } = args;
+    if (fromIdx === toIdx) return { ok: true };
+    const size = coloring.size;
+    if (fromIdx < 0 || fromIdx >= size) return { ok: false };
+    if (toIdx < 0 || toIdx > size - 1) return { ok: false };
+
+    withUndoTxn(scene, 'Move paint entry', () => {
+        const sel = coloring.getSelAt(fromIdx);
+        const col = coloring.getColorAt(fromIdx);
+        coloring.removeAt(fromIdx);
+        // toIdx is the target index in the post-remove array; covers both
+        // move-up (toIdx < fromIdx) and move-down (toIdx > fromIdx).
+        if (toIdx >= coloring.size) {
+            coloring.append(sel, col);
+        } else {
+            coloring.insertBefore(toIdx, sel, col);
+        }
+    });
+    return { ok: true };
+}
+
+export interface SetRendererDefaultColorArgs {
+    sceneId: number;
+    rendId: number;
+    targetKind?: ColoringTargetKind;
+    colorValue: string;
+}
+
+export interface SetRendererDefaultColorResult {
+    ok: boolean;
+}
+
+/**
+ * Solid-deck color picker: write the renderer's `defaultcolor` property.
+ */
+function setRendererDefaultColor(
+    ctx: WorkerContext,
+    args: SetRendererDefaultColorArgs,
+): SetRendererDefaultColorResult {
+    const scene = getSceneOrNull(ctx, args.sceneId);
+    if (!scene) return { ok: false };
+    const rend = resolveColoringTarget(scene, args.targetKind, args.rendId);
+    if (!rend) return { ok: false };
+
+    const color = makeColor(ctx, args.colorValue, scene.uid);
+    withUndoTxn(scene, 'Change default color', () => {
+        (rend as unknown as { defaultcolor: AbstractColor }).defaultcolor = color;
+    });
+    return { ok: true };
+}
+
 export const services = {
     setRendererColoring,
     getPaintColoringStyles,
@@ -379,4 +864,11 @@ export const services = {
     getRendererPaintInfo,
     paintObjectSelection,
     getObjectPaintInfo,
+    listPaintCapableRenderers,
+    getRendererColoringState,
+    addPaintEntry,
+    removePaintEntry,
+    updatePaintEntry,
+    movePaintEntry,
+    setRendererDefaultColor,
 };

@@ -134,3 +134,78 @@
 .color-action-btn.bp5-button:hover .bp5-icon {
   color: var(--text-secondary);
 }
+
+/* Shell row: renderer selector + coloring dropdown */
+.color-shell-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.color-shell-row .bp5-html-select {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Empty / placeholder decks */
+.color-empty-row td {
+  padding: 8px 6px;
+  font-style: italic;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.color-undef-deck,
+.color-deferred-deck {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 6px;
+  font-size: var(--fs-base);
+  color: var(--text-secondary);
+}
+
+.color-deferred-note {
+  margin: 0;
+  font-size: var(--fs-base);
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* Solid deck */
+.color-solid-deck {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.color-solid-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.color-solid-label {
+  font-size: var(--fs-base);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.color-solid-swatch {
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.color-solid-input {
+  flex: 1;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  border-radius: 3px;
+  padding: 3px 6px;
+}

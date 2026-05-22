@@ -21,11 +21,27 @@ Status values:
 > Notes column grew unwieldy as different UI surfaces (tree, toolbar,
 > seven context menus) progressed on independent phases.
 
+> `panel.coloring` was split into 10 per-surface rows on 2026-05-22 for
+> the same reason: the panel's `<deck>` switches between 9 sub-pages
+> (Paint / CPK / Rainbow / Bfac / Elepot / Script / Multigrad / Solid /
+> Undef), each of which migrates on its own phase. `panel.coloring.shell`
+> covers the renderer selector + coloring-type dropdown chrome; the nine
+> `panel.coloring.deck.*` rows cover each deck page.
+
 | ID | React | Mapping | Status | PR | ADR | Notes |
 |----|-------|---------|--------|----|-----|-------|
 | [`panel.anim`](../uxp-inventory/panels.md#panelanim) | | | todo | | | |
 | [`panel.btmpanel-holder`](../uxp-inventory/panels.md#panelbtmpanel-holder) | | | todo | | | |
-| [`panel.coloring`](../uxp-inventory/panels.md#panelcoloring) | | | todo | | | |
+| [`panel.coloring.shell`](../uxp-inventory/panels.md#panelcoloringshell) | `ColorPane` / `usePaintCapableRenderers` / `rendererColoring.service` (`listPaintCapableRenderers`, extended `setRendererColoring`) | split | wip | | | Renderer selector (paint-capable filter via `coloring` property probe) + Coloring type dropdown. Phase 1 enables Paint / Solid / Reset to default; CPK / Bfac / Rainbow / Elepot / Multi-gradient remain disabled "coming soon" placeholders. |
+| [`panel.coloring.deck.undef`](../uxp-inventory/panels.md#panelcoloringdeckundef) | | | todo | | | |
+| [`panel.coloring.deck.solid`](../uxp-inventory/panels.md#panelcoloringdecksolid) | `ColorPane` / `useRendererColoringState` / `rendererColoring.service` (`setRendererDefaultColor`, `paint-type-solid` case) | direct | wip | | | Default-color text input with live preview swatch; commits on blur via `setRendererDefaultColor` under "Change default color" undo. Renders when the renderer's coloring class is `""` (null) or `SolidColoring`. |
+| [`panel.coloring.deck.multigrad`](../uxp-inventory/panels.md#panelcoloringdeckmultigrad) | | | todo | | | |
+| [`panel.coloring.deck.paint`](../uxp-inventory/panels.md#panelcoloringdeckpaint) | `ColorPane` / `useRendererColoringState` / `rendererColoring.service` (Paint CRUD: `addPaintEntry`, `removePaintEntry`, `updatePaintEntry`, `movePaintEntry`) | direct | wip | | | Inline-edited paint table (no `paint-propdlg` dialog in Phase 1): cell inputs commit on blur via `updatePaintEntry`; Add inserts a new wildcard row; Delete / Move up / Move down operate on the selected row. Each mutation runs under its own labelled undo txn. |
+| [`panel.coloring.deck.cpk`](../uxp-inventory/panels.md#panelcoloringdeckcpk) | | | todo | | | |
+| [`panel.coloring.deck.rainbow`](../uxp-inventory/panels.md#panelcoloringdeckrainbow) | | | todo | | | |
+| [`panel.coloring.deck.bfac`](../uxp-inventory/panels.md#panelcoloringdeckbfac) | | | todo | | | |
+| [`panel.coloring.deck.elepot`](../uxp-inventory/panels.md#panelcoloringdeckelepot) | | | todo | | | |
+| [`panel.coloring.deck.script`](../uxp-inventory/panels.md#panelcoloringdeckscript) | | | todo | | | |
 | [`panel.densitymap`](../uxp-inventory/panels.md#paneldensitymap) | | | todo | | | |
 | [`panel.fakedial`](../uxp-inventory/panels.md#panelfakedial) | | | todo | | | |
 | [`panel.molstruct`](../uxp-inventory/panels.md#panelmolstruct) | | | todo | | | |

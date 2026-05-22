@@ -5,13 +5,22 @@
 
 - Origin: one-time scan of `uxp_gui/cuemol2/` (2026-04-20)
 - Spec: [_spec.md](./_spec.md)
-- Entries: 17
+- Entries: 26
 
 ## Index
 
 - [`panel.anim`](#panelanim)
 - [`panel.btmpanel-holder`](#panelbtmpanel-holder)
-- [`panel.coloring`](#panelcoloring)
+- [`panel.coloring.shell`](#panelcoloringshell)
+- [`panel.coloring.deck.undef`](#panelcoloringdeckundef)
+- [`panel.coloring.deck.solid`](#panelcoloringdecksolid)
+- [`panel.coloring.deck.multigrad`](#panelcoloringdeckmultigrad)
+- [`panel.coloring.deck.paint`](#panelcoloringdeckpaint)
+- [`panel.coloring.deck.cpk`](#panelcoloringdeckcpk)
+- [`panel.coloring.deck.rainbow`](#panelcoloringdeckrainbow)
+- [`panel.coloring.deck.bfac`](#panelcoloringdeckbfac)
+- [`panel.coloring.deck.elepot`](#panelcoloringdeckelepot)
+- [`panel.coloring.deck.script`](#panelcoloringdeckscript)
 - [`panel.densitymap`](#paneldensitymap)
 - [`panel.fakedial`](#panelfakedial)
 - [`panel.molstruct`](#panelmolstruct)
@@ -98,9 +107,9 @@
 
 ---
 
-### `panel.coloring`
+### `panel.coloring.shell`
 
-- **File**: `uxp_gui/cuemol2/base/content/coloring-panel.xul`
+- **File**: `uxp_gui/cuemol2/base/content/coloring-panel.xul` (`<vbox id="coloring-panel">`)
 - **Root element**: `<overlay>`
 - **Title**: "Color" (`&coloringPanel.title;` in `cuemol2.dtd`)
 - **Chrome URL**: `chrome://cuemol2/content/coloring-panel.xul`
@@ -108,29 +117,313 @@
 - **Overlays applied**: `coloring-deck-paint.xul`, `coloring-deck-cpk.xul`, `coloring-deck-rainbow.xul`, `coloring-deck-bfac.xul`, `coloring-deck-elepot.xul`, `coloring-deck-script.xul`
 
 #### User-visible features
-- Renderer selector menulist
-- Coloring type dropdown button with menu: Paint coloring (submenu), Solid coloring, CPK coloring, Bfac/Occ coloring, Rainbow coloring, Electrostatic potential, Multi-gradient coloring, Reset to default style
-- Deck widget that switches sub-panels per coloring mode:
-  - Index 0 (`coloring-deck-undef`): "Coloring isn't supported" message
-  - Index 1 (`coloring-deck-unknown`): class name label + default color picker
-  - Index 2 (`coloring-deck-multigrad`): label + color map object selector + "Edit color…" button
-  - Additional deck pages injected by the six `<?xul-overlay?>` overlays (paint, cpk, rainbow, bfac, elepot, script)
-- Side panel toggle menu item
+- Renderer selector menulist (`colpanel-rend-menulist`) — paint-capable renderers only (filtered by `paint_coloring_filter`)
+- Coloring type dropdown button (`colpanel-coloring-menu`) with items:
+  - Paint coloring (submenu, populated at popup-show time from style names ending in `Paint`)
+  - Solid coloring (`paint-type-solid`)
+  - CPK coloring (`paint-type-cpk`)
+  - Bfac/Occ coloring (`paint-type-bfac`)
+  - Rainbow coloring (`paint-type-rainbow`)
+  - Electrostatic potential (`paint-type-elepot`)
+  - Multi-gradient coloring (`paint-type-multigrad`)
+  - Reset to default style (`paint-type-resetdef`)
+- `<deck id="colpanel-deck">` container — drives which sub-pane (`panel.coloring.deck.*`) is shown
+- Side panel show/hide toggle menu item (`menu-coloring-panel-toggle`) in `window-leftpanels-popup`
 
 #### Commands / Handlers
 | Trigger | Handler | Description |
 |---------|---------|-------------|
-| Coloring type dropdown | `cuemolui.panels.paint.onChgColoring(event)` | Switches active coloring mode, updates deck index |
-| Paint coloring submenu showing | `cuemolui.panels.paint.onPaintColShowing(event)` | Populates paint style submenu |
-| Default color picker change | `cuemolui.panels.paint.onDefaultColorChanged(event)` | Updates default solid color on renderer |
-| Edit color button | `cuemolui.panels.paint.onEditMultiGrad(event)` | Opens multi-gradient editor dialog |
+| Renderer selector change | wired in `coloring-panel.js` via `cuemolui.ObjMenuList` | Loads the chosen renderer's coloring state into the active deck |
+| Renderer property change | `addPropChgListener("*", …)` → `targetPropChanged()` | Refreshes widgets when the renderer's `coloring` / `defaultcolor` changes |
+| Coloring type dropdown command | `cuemolui.panels.paint.onChgColoring(event)` | Switches active coloring mode and updates the `<deck>` selectedIndex (resetdef → `cuemol.resetProp(rend, "coloring")`; other items → `gQm2Main.setRendColoring(id, rend)` under an undo txn) |
+| Paint submenu popup-showing | `cuemolui.panels.paint.onPaintColShowing(event)` | Populates the Paint submenu via `cuemolui.populateStyleMenus(scene_uid, menu, /Paint$/, true)` |
 | Panel toggle menu item | `cuemolui.sidepanel.onToggle('coloring-panel')` | Shows/hides the coloring side panel |
 
 #### i18n keys used
 - `&coloringPanel.title;` (dtd: `cuemol2.dtd`)
 
 #### Notes
-- Six deck sub-pages are dynamically injected at runtime via `<?xul-overlay?>` PIs; the deck panels for cpk, rainbow, bfac, elepot, and script coloring modes come from those overlay files.
+- `_setupData` (`coloring-panel.js`) reads `aRend.coloring._wrapped.getClassName()` and maps it to one of the deck indices: `PaintColoring` → Paint, `CPKColoring` → CPK, `RainbowColoring` → Rainbow, `BfacColoring` → Bfac, `ScriptColoring` → Script, otherwise → unknown/solid fallback. `molsurf`/`dsurface` renderers additionally allow Elepot and Multi-gradient.
+- The `paint-type-elepot` and `paint-type-multigrad` items in the dropdown are only meaningful for surface renderers (handled inside `onChgColoring`).
+- This entry owns the side-panel container; the deck pages live in `panel.coloring.deck.*` sub-entries.
+
+---
+
+### `panel.coloring.deck.undef`
+
+- **File**: `uxp_gui/cuemol2/base/content/coloring-panel.xul` (`<vbox id="coloring-deck-undef">`)
+- **Root element**: `<vbox>` (deck page, index 0)
+- **Title**: shares `panel.coloring.shell` ("Color"); deck page has no own label
+- **Chrome URL**: `chrome://cuemol2/content/coloring-panel.xul`
+- **Associated JS**: none — purely static markup
+- **Overlays applied**: none
+
+#### User-visible features
+- A single read-only `<description value="Coloring isn't supported"/>` label
+- No controls
+
+#### Commands / Handlers
+| Trigger | Handler | Description |
+|---------|---------|-------------|
+| (none) | (none) | This deck has no interactive elements. |
+
+#### i18n keys used
+- none
+
+#### Notes
+- Displayed by `_setupData` when the active renderer either has no `coloring` property or its renderer type does not support coloring at all.
+- The base XUL holds a commented-out `<numslider>` stub; the current behaviour is label-only.
+
+---
+
+### `panel.coloring.deck.solid`
+
+- **File**: `uxp_gui/cuemol2/base/content/coloring-panel.xul` (`<vbox id="coloring-deck-unknown">`)
+- **Root element**: `<vbox>` (deck page, index 1)
+- **Title**: shares `panel.coloring.shell` ("Color"); deck page has no own label
+- **Chrome URL**: `chrome://cuemol2/content/coloring-panel.xul`
+- **Associated JS**: `coloring-panel.js`
+- **Overlays applied**: none
+
+#### User-visible features
+- Read-only class-name label (`colpanel-clsname`) showing the current coloring class (or "(none)") — fallback display when the panel does not recognise the coloring class
+- "Default color" label + `<mycolpicker id="paint-default-color">` — edits the renderer's `defaultcolor` property
+
+#### Commands / Handlers
+| Trigger | Handler | Description |
+|---------|---------|-------------|
+| Default color picker change | `cuemolui.panels.paint.onDefaultColorChanged(event)` | After `aEvent.isCompleted`, calls `commitRendPropChange("defaultcolor", color._wrapped, ...)` on the active renderer (undo-wrapped) |
+
+#### i18n keys used
+- none
+
+#### Notes
+- The deck `id` (`coloring-deck-unknown`) is historical; it doubles as the "Solid coloring" mode when the active coloring is null/unset (default color is the only meaningful control).
+- `colpanel-clsname` is set from `aRend.coloring._wrapped.getClassName()` for the unknown-class case (e.g. a third-party plug-in coloring); for the truly-solid case the label is "(none)".
+
+---
+
+### `panel.coloring.deck.multigrad`
+
+- **File**: `uxp_gui/cuemol2/base/content/coloring-panel.xul` (`<vbox id="coloring-deck-multigrad">`)
+- **Root element**: `<vbox>` (deck page, index 2)
+- **Title**: shares `panel.coloring.shell` ("Color"); deck page has no own label
+- **Chrome URL**: `chrome://cuemol2/content/coloring-panel.xul`
+- **Associated JS**: `coloring-panel.js`
+- **Overlays applied**: none
+
+#### User-visible features
+- Read-only `<description value="Multi-gradient coloring:"/>` label
+- Color map object selector menulist (`paint-colmap-obj-selector`) — chooses a `ColorMap` object from the scene
+- "Edit color…" button (`colpanel-editmultig`)
+
+#### Commands / Handlers
+| Trigger | Handler | Description |
+|---------|---------|-------------|
+| Color map object selector change | wired in `coloring-panel.js` (`onColMapSelChanged`) | Assigns the chosen `ColorMap` object to the renderer's multi-gradient coloring |
+| Edit color button | `cuemolui.panels.paint.onEditMultiGrad(event)` | Opens `chrome://cuemol2/content/tools/multigrad_editor.xul` with `scene_id` / `rend_id` args |
+
+#### i18n keys used
+- none
+
+#### Notes
+- This deck is only reachable for renderers whose type supports `multi_grad` (in practice scalar-field surface renderers such as `molsurf` / `dsurface`).
+- The multigrad editor itself is a separate dialog (`dialog.tool.multigrad-editor`); this deck is just the entry point.
+
+---
+
+### `panel.coloring.deck.paint`
+
+- **File**: `uxp_gui/cuemol2/base/content/coloring-deck-paint.xul` (`<vbox id="coloring-deck-paint">`)
+- **Root element**: `<overlay>` (overlay-target `colpanel-deck`)
+- **Title**: shares `panel.coloring.shell` ("Color"); deck page has no own label
+- **Chrome URL**: `chrome://cuemol2/content/coloring-deck-paint.xul`
+- **Associated JS**: `coloring-panel.js` (handlers under `cuemolui.panels.paint`)
+- **Overlays applied**: none (this file itself is overlayed into `coloring-panel.xul`)
+
+#### User-visible features
+- Read-only `<description value="Paint coloring:"/>` label
+- Two-column tree (`paint-listbox`) with **Selection** / **Color** columns; `seltype="multiple"`, splitter between columns
+- Toolbar buttons (icon-only, with tooltips):
+  - **Add** (`paintpanel-addbtn`) — opens `paint-propdlg.xul` to enter selection + color
+  - **Delete** (`paintpanel-delbtn`) — removes the selected rows (multi-row aware)
+  - **Delete all** (`paintpanel-delallbtn`) — clears every paint entry
+  - **Change** (`paintpanel-propbtn`) — opens `paint-propdlg.xul` for the selected row
+  - **Move up** (`paintpanel-moveupbtn`) — moves selected row up
+  - **Move down** (`paintpanel-movedownbtn`) — moves selected row down
+- Context menu (`paintPanelCtxtMenu`): Change… / Delete / Add… / Cut / Copy / Paste
+
+#### Commands / Handlers
+| Trigger | Handler | Description |
+|---------|---------|-------------|
+| Add / context Add | `cuemolui.panels.paint.onAddCmd(event)` | Opens `paint-propdlg.xul`; on accept calls `coloring.insertBefore(idx, sel, col)` under an undo txn |
+| Delete | `cuemolui.panels.paint.onDeleteCmd(event)` | Iterates selected rows in descending index order, calls `coloring.removeAt(idx)`; `paintpanel-delallbtn` passes a `bDelAll` flag |
+| Change / context Change… | `cuemolui.panels.paint.onPropCmd(event)` | Opens `paint-propdlg.xul` for the selected entry; on accept calls `coloring.changeAt(idx, sel, col)` |
+| Move up / Move down | `cuemolui.panels.paint.onMoveUpCmd` / `onMoveDownCmd` | Copy → `removeAt` → `insertBefore` / `append` round-trip via `_moveUpDownImpl(event, bUp)` |
+| Context menu popup-showing | `cuemolui.panels.paint.onCtxtMenuShowing(event)` | Enables Paste based on internal `qsc-paint` clipboard; updates Change/Delete state |
+| Cut / Copy / Paste | `cuemolui.panels.paint.onCut` / `onCopy` / `onPaste` | Clipboard ops on paint entries (per-panel buffer, not OS clipboard) |
+
+#### i18n keys used
+- none
+
+#### Notes
+- Tree contents are driven by `cuemolui.TreeView` bound to the renderer's `PaintColoring` object (`size` + `getSelAt(i)` + `getColorAt(i)`).
+- Add / Change open `chrome://cuemol2/content/paint-propdlg.xul` (covered separately in the Dialog inventory) to capture selection + color before mutating the C++ object.
+- All mutations are wrapped in `scene.startUndoTxn()` / `commitUndoTxn()` in the handler.
+
+---
+
+### `panel.coloring.deck.cpk`
+
+- **File**: `uxp_gui/cuemol2/base/content/coloring-deck-cpk.xul` (`<vbox id="coloring-deck-cpk">`)
+- **Root element**: `<overlay>` (overlay-target `colpanel-deck`)
+- **Title**: shares `panel.coloring.shell` ("Color"); deck page has no own label
+- **Chrome URL**: `chrome://cuemol2/content/coloring-deck-cpk.xul`
+- **Associated JS**: `coloring-panel.js` (`onCPKColChanged`)
+- **Overlays applied**: none
+
+#### User-visible features
+- Read-only `<description value="CPK coloring:"/>` label
+- Two-column grid of element label + `<mycolpicker>` pairs:
+  - Carbon (`cpk_col_C`), Nitrogen (`cpk_col_N`), Oxygen (`cpk_col_O`), Sulfur (`cpk_col_S`), Phosphorus (`cpk_col_P`), Hydrogen (`cpk_col_H`), Others (`cpk_col_X`)
+
+#### Commands / Handlers
+| Trigger | Handler | Description |
+|---------|---------|-------------|
+| Any element color picker change | `cuemolui.panels.paint.onCPKColChanged(event)` | After `aEvent.isCompleted`, updates the matching `CPKColoring` property (`col_C` / `col_N` / …) on the active renderer's coloring; undo-wrapped |
+
+#### i18n keys used
+- `&elem.carbon;` (dtd: `cuemol2.dtd`)
+- `&elem.nitrogen;` (dtd: `cuemol2.dtd`)
+- `&elem.oxygen;` (dtd: `cuemol2.dtd`)
+- `&elem.sulfur;` (dtd: `cuemol2.dtd`)
+- `&elem.phosphorus;` (dtd: `cuemol2.dtd`)
+- `&elem.hydrogen;` (dtd: `cuemol2.dtd`)
+- `&elem.others;` (dtd: `cuemol2.dtd`)
+
+#### Notes
+- The handler resolves which element a picker corresponds to via the `id` suffix (`cpk_col_<elem>`).
+- The deck is only valid when the renderer's coloring class is `CPKColoring`; switching to it via the dropdown instantiates a fresh `CPKColoring` with default per-element colors.
+
+---
+
+### `panel.coloring.deck.rainbow`
+
+- **File**: `uxp_gui/cuemol2/base/content/coloring-deck-rainbow.xul` (`<vbox id="coloring-deck-rainbow">`)
+- **Root element**: `<overlay>` (overlay-target `colpanel-deck`)
+- **Title**: shares `panel.coloring.shell` ("Color"); deck page has no own label
+- **Chrome URL**: `chrome://cuemol2/content/coloring-deck-rainbow.xul`
+- **Associated JS**: `coloring-panel.js` (`onRainbowChange`)
+- **Overlays applied**: none
+
+#### User-visible features
+- Read-only `<description value="Rainbow coloring:"/>` label
+- **Mode** menulist (`paint-rnb-mode`): Molecule / Chain (a "Shown" item is commented out in source)
+- **Change by** menulist (`paint-rnb-incrmode`): Chain / Residue / Prot secstr
+- **Start H** numslider (`paint-rnb-starth`) — 0–360°, step 1°
+- **End H** numslider (`paint-rnb-endh`) — 0–360°, step 1°
+- **Brightness** numslider (`paint-rnb-bri`) — 0–100%, step 1%
+- **Saturation** numslider (`paint-rnb-sat`) — 0–100%, step 1%
+
+#### Commands / Handlers
+| Trigger | Handler | Description |
+|---------|---------|-------------|
+| Any menulist or slider change | `cuemolui.panels.paint.onRainbowChange(event)` | Reads all six widgets and pushes the values onto the active renderer's `RainbowColoring` (mode/incrmode/starth/endh/brightness/saturation); undo-wrapped |
+
+#### i18n keys used
+- none
+
+#### Notes
+- A "Shown" mode (`value="rend"`) is present in the markup but commented out; only Molecule / Chain are active.
+
+---
+
+### `panel.coloring.deck.bfac`
+
+- **File**: `uxp_gui/cuemol2/base/content/coloring-deck-bfac.xul` (`<vbox id="coloring-deck-bfac">`)
+- **Root element**: `<overlay>` (overlay-target `colpanel-deck`)
+- **Title**: shares `panel.coloring.shell` ("Color"); deck page has no own label
+- **Chrome URL**: `chrome://cuemol2/content/coloring-deck-bfac.xul`
+- **Associated JS**: `coloring-panel.js` (`onBfacChange`)
+- **Overlays applied**: none
+
+#### User-visible features
+- Read-only `<description value="Bfac coloring:"/>` label
+- **Mode** menulist (`paint-bfac-mode`): B-factor / Occupancy / Distance from center
+- Low / High `<mycolpicker>` pair (`paint-bfac-collo` / `paint-bfac-colhi`) for the gradient endpoints
+- **Parameter** groupbox:
+  - Auto/manual menulist (`paint-bfac-auto`): Manual / Auto (by mol) / Auto (by rend)
+  - Low textbox (`paint-bfac-parlo`) and High textbox (`paint-bfac-parhi`) — numeric, infinite-decimal
+- Body is wrapped in a scrollable `<vbox>` so it can overflow vertically
+
+#### Commands / Handlers
+| Trigger | Handler | Description |
+|---------|---------|-------------|
+| Any menulist / colorpicker / textbox change | `cuemolui.panels.paint.onBfacChange(event)` | Pushes mode / Low / High colors / auto-mode / low-high params to the renderer's `BfacColoring`; undo-wrapped |
+
+#### i18n keys used
+- none
+
+#### Notes
+- "Auto (by mol)" derives the Low/High parameters from the parent molecule's range; "Auto (by rend)" uses only the renderer's selection range. The Low/High textboxes are visible (and edited) only when mode is Manual.
+
+---
+
+### `panel.coloring.deck.elepot`
+
+- **File**: `uxp_gui/cuemol2/base/content/coloring-deck-elepot.xul` (`<vbox id="coloring-deck-elepot">`)
+- **Root element**: `<overlay>` (overlay-target `colpanel-deck`)
+- **Title**: shares `panel.coloring.shell` ("Color"); deck page has no own label
+- **Chrome URL**: `chrome://cuemol2/content/coloring-deck-elepot.xul`
+- **Associated JS**: `coloring-panel.js` (`onElepotChange`)
+- **Overlays applied**: none
+
+#### User-visible features
+- Read-only `<description value="Elepot coloring:"/>` label
+- ElePotMap object selector menulist (`paint-elepot-obj-selector`)
+- "Color by SAS" checkbox (`paint-elepot-ramp-above`)
+- Three-row grid (High / Mid / Low):
+  - numeric textbox for the value threshold (`paint-elepot-parh` / `paint-elepot-parm` / `paint-elepot-parl`)
+  - `<mycolpicker>` for the color at that threshold (`paint-elepot-colh` / `paint-elepot-colm` / `paint-elepot-coll`)
+
+#### Commands / Handlers
+| Trigger | Handler | Description |
+|---------|---------|-------------|
+| Any control change | `cuemolui.panels.paint.onElepotChange(event)` | Pushes ElePotMap target / SAS flag / High/Mid/Low thresholds + colors onto the renderer's electrostatic-potential coloring; undo-wrapped |
+
+#### i18n keys used
+- none
+
+#### Notes
+- This deck is only valid for surface renderers (`molsurf` / `dsurface`); the dropdown enables it conditionally.
+- The selector lists scene objects of class `ElePotMap`; the editor reads/writes through that object rather than embedding the field in the coloring scheme.
+
+---
+
+### `panel.coloring.deck.script`
+
+- **File**: `uxp_gui/cuemol2/base/content/coloring-deck-script.xul` (`<vbox id="coloring-deck-script">`)
+- **Root element**: `<overlay>` (overlay-target `colpanel-deck`)
+- **Title**: shares `panel.coloring.shell` ("Color"); deck page has no own label
+- **Chrome URL**: `chrome://cuemol2/content/coloring-deck-script.xul`
+- **Associated JS**: `coloring-panel.js` (`onLoadColoringScript`)
+- **Overlays applied**: none
+
+#### User-visible features
+- Header row with `<description value="Script coloring:"/>` and an **Update** button (`paint-script-updatebtn`)
+- Multi-line textbox (`paint-sciprt-textbox`) with placeholder `(noscript)`
+
+#### Commands / Handlers
+| Trigger | Handler | Description |
+|---------|---------|-------------|
+| Update button | `cuemolui.panels.paint.onLoadColoringScript(event)` | Reads the textbox content and pushes it as the script body of the renderer's `ScriptColoring`; undo-wrapped |
+
+#### i18n keys used
+- none
+
+#### Notes
+- The textbox id (`paint-sciprt-textbox`) contains an apparent typo (`sciprt`); referenced verbatim from `coloring-panel.js`.
+- The `<overlay id="coloring-deck-paint-overlay">` element in this file shares its id with `coloring-deck-paint.xul` (harmless duplicate at the XUL overlay layer).
 
 ---
 
@@ -644,11 +937,12 @@
 
 ## Statistics
 
-- Total entries: 17
-- With JS handler: 17 (every entry references at least one `cuemolui.panels.*` handler)
-- With i18n keys: 4 (`panel.coloring`, `panel.densitymap`, `panel.symmetry`, `panel.workspace.tree` — only the tree row owns the `&workspacePanel.*;` DTD entries; the other `panel.workspace.*` sub-entries share the panel title implicitly)
+- Total entries: 26
+- With JS handler: 25 (every entry except `panel.coloring.deck.undef`, which is a static label-only placeholder with no controls)
+- With i18n keys: 5 (`panel.coloring.shell`, `panel.coloring.deck.cpk`, `panel.densitymap`, `panel.symmetry`, `panel.workspace.tree`). The other `panel.coloring.deck.*` and `panel.workspace.*` sub-entries share the panel-level title implicitly. `panel.coloring.deck.cpk` is the only deck page that owns its own DTD entries (`&elem.*;`).
 - Unresolved: 0
 
 ### History
 - 2026-04-20: Initial scan (9 entries).
 - 2026-05-12: `panel.workspace` split into 9 per-surface sub-entries (tree / toolbar / 7 context menus) so each Notes column tracks a single UI surface. See `mapping/panels.md` for migration status per surface.
+- 2026-05-22: `panel.coloring` split into 10 sub-entries (`shell` + 9 `deck.*` pages — undef / solid / multigrad / paint / cpk / rainbow / bfac / elepot / script) so each `<deck>` page and the panel chrome are tracked independently. See `mapping/panels.md` for migration status per surface.

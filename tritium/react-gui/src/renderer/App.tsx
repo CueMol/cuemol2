@@ -390,6 +390,8 @@ const App: React.FC = () => {
                 >
                   <SidePanel
                     activeView={activeView ?? "explorer"}
+                    cm={cm}
+                    activeSceneId={activeSceneId}
                     {...sceneController}
                     viewSizes={viewSizes}
                     viewCollapsed={viewCollapsed}
