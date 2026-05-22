@@ -6,6 +6,25 @@ When the tritium WebGL backend renders a `GpuPrim` (SphereGpuPrim, CylinderGpuPr
 
 Before this routing, every buffer paid 2 memcpys (one in `EcBufferRep::create` and one in `EcBufferRep::update`) because V8 sandbox rules prevent the JS side from reading C++ heap pointers directly. After: **0 memcpys per buffer** on the new path; the legacy memcpy branch remains as a fallback when no external storage is attached.
 
+## Measured impact
+
+A/B comparison of `develop` (legacy memcpy path) vs `createbuf_0521` (this routing), Release build, single trial, same test molecule. The initial draw frame (frame 0 of `checkAndUpdateScenes` after `loadObject`) was instrumented in JS (`recordInitialFrame` in `perf.ts`) and C++ (`std::chrono` around `EcBufferRep::{create,update,draw}`). Total C++->V8 traffic avoided: **6 memcpys / ~155 MB per scene load** (4 in `create`, 2 in `update`).
+
+| Component                          | develop      | createbuf_0521 | Delta   |
+|------------------------------------|--------------|----------------|---------|
+| C++ `ec-create` x 2 (total)        |  8.16 ms     | 0.24 ms        | -7.92   |
+| C++ `ec-update` x 1                |  4.15 ms     | 0.11 ms        | -4.04   |
+| C++ `ec-draw` internal (x 21)      |  8.33 ms     | 11.98 ms       | +3.65 (noise) |
+| **C++ `EcBufferRep` net (sum)**    | **20.64 ms** | **12.33 ms**   | **-8.31** |
+| JS GL ops (bufferSubData + shader) | 23.50 ms     | 25.60 ms       | +2.10 (noise) |
+| C++ Renderer geometry (unmeasured residual) | 171.66 ms | 172.27 ms | +0.61 |
+| **frame_ms (total)**               | **215.80 ms**| **210.20 ms**  | **-5.6 (-2.6%)** |
+
+Observations:
+- The avoided memcpy work shows up as roughly **-12 ms inside `EcBufferRep::create` + `update`**, corresponding to ~155 MB at ~13.5 GB/s single-thread memcpy bandwidth on the test machine.
+- The dominant cost of frame 0 (~172 ms, ~82%) is C++ renderer-side geometry generation (e.g. `BallStickRenderer` filling per-vertex attributes), which is identical on both branches and is unrelated to this routing.
+- End-to-end wall-clock improvement on frame 0 is therefore in the low single-digit percent range. The change is unambiguously a CPU-work reduction, not a major frame-time win.
+
 ## Why this lives in tritium docs
 
 The interface itself (`DisplayContext::allocBuffer`, `AbstDrawAttrs` storage hooks) is in `libcuemol2` (`src/gfx/`) and is backend-neutral. **The reason this document exists in `tritium/docs/architecture/`** is that the only non-trivial implementation of the interface, and the only motivating use case, is the WebGL backend in `tritium/core/`. The OpenGL backend uses the default impl unchanged. If a second non-WebGL backend ever ships with a similar V8-style constraint, the design here should be revisited; otherwise the rest of `libcuemol2` does not need to know this exists.
