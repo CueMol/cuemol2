@@ -43,12 +43,14 @@ bool PixGpuPrim::init(DisplayContext *pDC)
     }
 
     m_pPO->initDrawParamsUBO(sizeof(PixDrawUBO));
-    alloc();
+    alloc(pDC);
     return true;
 }
 
-void PixGpuPrim::alloc()
+void PixGpuPrim::alloc(DisplayContext *pDC)
 {
+    MB_ASSERT(pDC != nullptr);
+
     m_pDrawElem = MB_NEW QuadArray();
     QuadArray &data = *m_pDrawElem;
 
@@ -58,7 +60,7 @@ void PixGpuPrim::alloc()
     data.setAttrInfo(1, ATTRLOC_TEXCOORD, 2, qlib::type_consts::QTC_FLOAT32,
                      offsetof(Elem, tx));
 
-    data.alloc(4);
+    pDC->allocBuffer(data, 4, 0);
     data.setDrawMode(AbstDrawElem::DRAW_TRIANGLE_STRIP);
 
     data.at(0) = {0.0f, 1.0f, 0.0f, 1.0f};  // top-left

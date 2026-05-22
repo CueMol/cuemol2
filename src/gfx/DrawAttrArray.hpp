@@ -31,10 +31,24 @@ namespace gfx {
         return AbstDrawElem::VA_ATTRS;
     }
 
+    /// Backwards-compatible owning allocation.
+    /// Delegates to allocOwnedData so callers that haven't migrated to
+    /// DisplayContext::allocBuffer keep working.
     virtual void alloc(int nsize)
     {
-      m_data.allocate(nsize);
-      super_t::setSize(nsize);
+      allocOwnedData(nsize);
+    }
+
+    // Storage allocation hooks (see AbstDrawAttrs).
+    void allocOwnedData(int nelems) override
+    {
+      m_data.allocate(nelems);
+      super_t::setSize(nelems);
+    }
+    void setDataRef(void *p, int nelems) override
+    {
+      m_data.refer(nelems, static_cast<_ElemType *>(p));
+      super_t::setSize(nelems);
     }
 
     virtual const void *getData() const

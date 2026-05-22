@@ -195,20 +195,37 @@ export class GfxManager {
         const existing = this._afcbid_map.get(view_id);
         if (existing !== undefined) cancelAnimationFrame(existing);
         const render = (): void => {
-            if (PERF_MEASURE) {
-                const t0 = performance.now();
-                this._sceMgr.invokeMethod('checkAndUpdateScenes');
-                const elapsed = performance.now() - t0;
-                perfCounters.frameCount++;
-                perfCounters.frameTimeMs += elapsed;
-                if (elapsed > perfCounters.frameTimeMaxMs) {
-                    perfCounters.frameTimeMaxMs = elapsed;
+            try {
+                if (PERF_MEASURE) {
+                    const t0 = performance.now();
+                    this._sceMgr.invokeMethod('checkAndUpdateScenes');
+                    const elapsed = performance.now() - t0;
+                    perfCounters.frameCount++;
+                    perfCounters.frameTimeMs += elapsed;
+                    if (elapsed > perfCounters.frameTimeMaxMs) {
+                        perfCounters.frameTimeMaxMs = elapsed;
+                    }
+                    maybeFlushPerf();
+                } else {
+                    this._sceMgr.invokeMethod('checkAndUpdateScenes');
                 }
-                maybeFlushPerf();
-            } else {
-                this._sceMgr.invokeMethod('checkAndUpdateScenes');
+                this._afcbid_map.set(view_id, requestAnimationFrame(render));
+            } catch (err) {
+                // A render-loop fault is fatal -- do not reschedule the rAF.
+                // Forward to the renderer so the fallback UI surfaces; also
+                // re-throw so the worker global error handler in
+                // worker_launcher.ts can capture filename / line via the
+                // ErrorEvent (some C++ throws have no usable .stack).
+                const e = err as { message?: unknown; stack?: unknown };
+                try {
+                    self.postMessage(['__worker_crash__', {
+                        message: typeof e?.message === 'string' ? e.message : String(err),
+                        stack: typeof e?.stack === 'string' ? e.stack : undefined,
+                        type: 'render-loop',
+                    }]);
+                } catch (_postErr) { /* worker may already be torn down */ }
+                throw err;
             }
-            this._afcbid_map.set(view_id, requestAnimationFrame(render));
         };
         render();
     }
@@ -516,12 +533,19 @@ export class GfxManager {
     }
 
     /// API: toggle inverted-color blend (ROP) used by the center mark.
-    /// WebGL2 has no logic-op, so emulate via blendFunc (matches OcDisplayContext).
+    /// WebGL2 has no logic-op, so emulate via blendFuncSeparate. RGB inverts
+    /// against the destination color (matches OcDisplayContext); alpha passes
+    /// the source through so the framebuffer alpha stays opaque -- the canvas
+    /// is created with premultipliedAlpha: true, so an alpha=0 fragment would
+    /// be composited as fully transparent and the inverted RGB lost.
     setInvertColorBlend(bInv: boolean): void {
         const gl = this._context;
         if (bInv) {
             gl.enable(gl.BLEND);
-            gl.blendFunc(gl.ONE_MINUS_DST_COLOR, gl.ZERO);
+            gl.blendFuncSeparate(
+                gl.ONE_MINUS_DST_COLOR, gl.ZERO,
+                gl.ONE, gl.ZERO,
+            );
         } else {
             gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
         }
@@ -570,7 +594,9 @@ export class GfxManager {
      * Returns false if `name` is already taken.
      */
     createBuffer(name: string, nsize: number, num_elems: number,
-        nsize_index: number, elem_info_str: string): boolean {
+                 nsize_index: number, elem_info_str: string,
+                 array_buf: any | null = null,
+                 index_buf: any | null = null): boolean {
         if (name in this._draw_data) {
             console.log(`name ${name} already exists`);
             return false;
@@ -583,6 +609,7 @@ export class GfxManager {
         let vao = gl.createVertexArray()!;
         gl.bindVertexArray(vao);
 
+        // Create buffer
         let vertexBuffer = gl.createBuffer()!;
         gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
 
@@ -604,14 +631,24 @@ export class GfxManager {
             );
             gl.vertexAttribDivisor(aloc, value['idiv']);
         });
-        gl.bufferData(gl.ARRAY_BUFFER, nsize, gl.STATIC_DRAW);
+
+        // vertex buffer
+        if (array_buf) {
+            gl.bufferData(gl.ARRAY_BUFFER, array_buf, gl.STATIC_DRAW);
+        } else {
+            gl.bufferData(gl.ARRAY_BUFFER, nsize, gl.STATIC_DRAW);
+        }
 
         // index buffer
         let indexBuffer = null;
         if (nsize_index > 0) {
             indexBuffer = gl.createBuffer();
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, nsize_index, gl.STATIC_DRAW);
+            if (index_buf) {
+                gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, index_buf, gl.STATIC_DRAW);
+            } else {
+                gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, nsize_index, gl.STATIC_DRAW);
+            }
         }
 
         gl.bindVertexArray(null);

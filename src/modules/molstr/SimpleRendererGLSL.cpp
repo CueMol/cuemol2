@@ -32,7 +32,7 @@ void SimpleRenderer::display(DisplayContext *pdc)
 
     if (m_bUseShader) {
         if (!m_lineGpuPrim.isValid()) {
-            renderShaderImpl();
+            renderShaderImpl(pdc);
             if (!m_lineGpuPrim.isValid()) return;  // Error: cannot draw anything
         }
         preRender(pdc);
@@ -46,7 +46,7 @@ void SimpleRenderer::display(DisplayContext *pdc)
     }
 }
 
-void SimpleRenderer::renderShaderImpl()
+void SimpleRenderer::renderShaderImpl(gfx::DisplayContext *pdc)
 {
     MolCoordPtr pMol = getClientMol();
     if (pMol.isnull()) return;
@@ -108,7 +108,7 @@ void SimpleRenderer::renderShaderImpl()
         return;
     }
 
-    m_lineGpuPrim.alloc(nlines);
+    m_lineGpuPrim.alloc(pdc, nlines);
 
     // Pass 2: fill line segment data
     int iline = 0;

@@ -51,9 +51,10 @@ bool CylinderGpuPrim::init(DisplayContext *pDC)
     return true;
 }
 
-void CylinderGpuPrim::alloc(int ncyl)
+void CylinderGpuPrim::alloc(DisplayContext *pDC, int ncyl)
 {
     MB_ASSERT(m_pPO != nullptr);
+    MB_ASSERT(pDC != nullptr);
 
     auto *pdata = MB_NEW CylElemAry32();
     m_pDrawElem = pdata;
@@ -71,8 +72,7 @@ void CylinderGpuPrim::alloc(int ncyl)
     cyldata.setAttrInfo(4, ATTRLOC_COLOR, 4, qlib::type_consts::QTC_UINT8,
                         offsetof(CylElem, r));
 
-    cyldata.alloc(ncyl * 4);
-    cyldata.allocInd(ncyl * 6);
+    pDC->allocBuffer(cyldata, ncyl * 4, ncyl * 6);
     cyldata.setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
 }
 

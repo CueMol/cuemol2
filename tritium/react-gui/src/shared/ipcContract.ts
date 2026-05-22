@@ -14,6 +14,7 @@
 import { IPC } from './ipcChannels'
 import type {
   AppPathInfo,
+  CrashReport,
   FileDialogOptions,
   FileErrorData,
   FileOpenedData,
@@ -66,6 +67,8 @@ export interface InvokeChannels {
   [IPC.WINDOW_CLOSE_PROCEED]: { req: { proceed: boolean }; res: void }
   [IPC.NAVI_CTX_SHOW]:     { req: NaviCtxMenuPayload;    res: NaviCtxAction | null }
   [IPC.SCENE_CTX_SHOW]:    { req: SceneCtxMenuPayload;   res: SceneCtxAction | null }
+  [IPC.CRASH_REPORT]:      { req: CrashReport;           res: void }
+  [IPC.FORCE_QUIT]:        { req: void;                  res: void }
 }
 
 export interface PushChannels {

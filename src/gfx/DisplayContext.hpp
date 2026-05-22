@@ -511,6 +511,19 @@ public:
     /// Returns nullptr if this context does not support drawPixels.
     virtual PixRep *createPixRep(const PixelBuffer &pixbuf);
 
+    ///////////////////////////////
+    // Buffer allocation
+
+    /// Allocate CPU-side storage for the given draw attributes.
+    /// Pure memory allocation; does NOT read attribute layout.
+    /// Default impl allocates owning C++ heap storage via
+    /// allocOwnedData / allocOwnedIndData on the attrs object.
+    /// Backend overrides (e.g. WebGL) may allocate V8-cage memory and
+    /// attach it via setDataRef / setIndDataRef so renderer-side writes
+    /// land directly in V8 ArrayBuffer backing storage (no memcpy).
+    /// nind == 0 means no index buffer.
+    virtual void allocBuffer(AbstDrawAttrs &ada, int nvert, int nind);
+
 protected:
     PixGpuPrim *m_pPixGpuPrim = nullptr;
 };

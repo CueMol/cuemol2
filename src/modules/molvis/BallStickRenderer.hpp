@@ -137,7 +137,7 @@ namespace molvis {
     gfx::SphereGpuPrim *m_pSphGpuPrim;
     gfx::CylinderGpuPrim *m_pCylGpuPrim;
 
-    void renderShaderImpl();
+    void renderShaderImpl(DisplayContext *pdc);
 
   private:
     int m_nGlRendMode;

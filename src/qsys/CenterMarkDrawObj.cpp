@@ -37,7 +37,7 @@ bool CenterMarkDrawObj::initPrim(gfx::DisplayContext *pdc)
     linew *= pdc->getPixSclFac();
 
     if (m_nCenterMark == Camera::CCM_AXIS) {
-        m_linePrim.alloc(3);
+        m_linePrim.alloc(pdc, 3);
         const float dsize = 20.0f;
         m_linePrim.setLineWidth(linew);
         m_linePrim.setNoDepth(true);
@@ -46,7 +46,7 @@ bool CenterMarkDrawObj::initPrim(gfx::DisplayContext *pdc)
         m_linePrim.setLine(2, Vector4D(0, 0, 0), ccode, Vector4D(0, 0, dsize), ccode);
 
     } else if (m_nCenterMark == Camera::CCM_CROSS) {
-        m_linePrim.alloc(2);
+        m_linePrim.alloc(pdc, 2);
         const float dsize = 10.0f;
         m_linePrim.setLineWidth(linew);
         m_linePrim.setNoDepth(true);

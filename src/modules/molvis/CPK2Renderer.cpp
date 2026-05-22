@@ -56,7 +56,7 @@ void CPK2Renderer::display(DisplayContext *pdc)
        m_nGlRendMode==REND_SHADER)) {
     // shader rendering mode
     if (!m_sphGpuPrim.isValid()) {
-      renderShaderImpl();
+      renderShaderImpl(pdc);
       if (!m_sphGpuPrim.isValid())
         return; // Error, Cannot draw anything (ignore)
     }
@@ -156,7 +156,7 @@ void CPK2Renderer::rendAtom(DisplayContext *pdl, MolAtomPtr pAtom, bool)
 //////////////////////
 // Shader implementation
 
-void CPK2Renderer::renderShaderImpl()
+void CPK2Renderer::renderShaderImpl(DisplayContext *pdc)
 {
   MolCoordPtr pMol = getClientMol();
   if (pMol.isnull()) {
@@ -183,7 +183,7 @@ void CPK2Renderer::renderShaderImpl()
   getColSchm()->start(pMol, this);
   pMol->getColSchm()->start(pMol, this);
 
-  m_sphGpuPrim.alloc(nsphs);
+  m_sphGpuPrim.alloc(pdc, nsphs);
 
   {
     AtomIterator iter(pMol, getSelection());

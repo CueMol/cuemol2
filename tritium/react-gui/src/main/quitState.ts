@@ -63,3 +63,58 @@ export function isAppQuitting(): boolean {
 export function setAppQuitting(value: boolean): void {
   appQuitting = value
 }
+
+// --- Force-quit (crash / fallback UI / watchdog) ---
+
+/**
+ * Set when the normal confirm funnel must be bypassed -- the renderer is
+ * known dead (render-process-gone), the user clicked Quit on the crash
+ * fallback UI, or the close watchdog fired. `before-quit` short-circuits
+ * on this flag so the quit sequence is not re-routed through the
+ * window-close confirm chain.
+ */
+let forceQuit = false
+
+export function isForceQuit(): boolean {
+  return forceQuit
+}
+
+export function setForceQuit(value: boolean): void {
+  forceQuit = value
+}
+
+// --- Close-request watchdog ---
+
+/**
+ * Time the main process will wait for a WINDOW_CLOSE_PROCEED reply before
+ * assuming the renderer is wedged and forcing the window closed. Tuned to
+ * avoid false positives during slow confirm dialogs; shorten if hangs
+ * become a routine issue.
+ */
+export const WINDOW_CLOSE_WATCHDOG_MS = 10000
+
+const closeWatchdogs = new WeakMap<BrowserWindow, ReturnType<typeof setTimeout>>()
+
+export function setCloseWatchdog(
+  win: BrowserWindow,
+  timer: ReturnType<typeof setTimeout>,
+): void {
+  closeWatchdogs.set(win, timer)
+}
+
+/**
+ * Cancel the WINDOW_CLOSE_REQUEST watchdog for `win`. Called when the
+ * renderer replies via WINDOW_CLOSE_PROCEED so the timer does not fire
+ * after a successful confirm.
+ */
+export function clearCloseWatchdog(win: BrowserWindow): void {
+  const timer = closeWatchdogs.get(win)
+  if (timer !== undefined) {
+    clearTimeout(timer)
+    closeWatchdogs.delete(win)
+  }
+}
+
+export function hasCloseWatchdog(win: BrowserWindow): boolean {
+  return closeWatchdogs.has(win)
+}

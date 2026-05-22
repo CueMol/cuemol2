@@ -61,9 +61,9 @@ public:
 
     /**
      * Allocate GPU storage for nlines line segments.
-     * Must call init() first.
+     * Must call init() first. Storage is routed via DisplayContext::allocBuffer.
      */
-    void alloc(int nlines);
+    void alloc(DisplayContext *pDC, int nlines);
 
     // ─── Data upload ─────────────────────────────────────────────────────────
 

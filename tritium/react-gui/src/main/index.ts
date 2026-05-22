@@ -1,6 +1,6 @@
 import { app, BrowserWindow } from 'electron'
 import { createWindow } from './windowManager'
-import { isAppQuitting, setAppQuitting } from './quitState'
+import { isAppQuitting, isForceQuit, setAppQuitting } from './quitState'
 
 app.setName('CueMol3-tritium')
 
@@ -27,10 +27,24 @@ app.on('activate', () => {
 // app terminates once all windows have closed (window-all-closed ->
 // app.quit() -> this listener re-enters with isAppQuitting() true).
 app.on('before-quit', (event) => {
+  // Force-quit path (crash listener, fallback UI Quit button, watchdog):
+  // skip the confirm funnel entirely.
+  if (isForceQuit()) return
   if (isAppQuitting()) return
   const wins = BrowserWindow.getAllWindows().filter((w) => !w.isDestroyed())
   if (wins.length === 0) return
   setAppQuitting(true)
   event.preventDefault()
   for (const w of wins) w.close()
+})
+
+// Utility/GPU process crashes (Web Workers run inside the renderer process
+// and therefore surface in `render-process-gone` instead, but this is the
+// catch-all for everything else Chromium spawns).
+app.on('child-process-gone', (_event, details) => {
+  console.error(
+    '[Main] child-process-gone: type=' + details.type,
+    'reason=' + details.reason,
+    'exitCode=' + details.exitCode,
+  )
 })

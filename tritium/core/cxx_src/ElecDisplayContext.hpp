@@ -51,6 +51,12 @@ public:
     virtual gfx::VBORep *createVBORep(const gfx::AbstDrawAttrs &ada) override;
 
     virtual gfx::PixRep *createPixRep(const gfx::PixelBuffer &pixbuf) override;
+
+    /// Allocate vertex/index buffers in V8 cage memory so the C++ side
+    /// can write directly into them via qlib::Array::refer(), and the
+    /// JS side can hand the same backing store to gl.bufferData
+    /// without any C++ to V8 memcpy.
+    virtual void allocBuffer(gfx::AbstDrawAttrs &ada, int nvert, int nind) override;
 };
 
 }  // namespace node_jsbr

@@ -22,7 +22,13 @@ import { showNaviContextMenu } from './naviContextMenu'
 import { showSceneContextMenu } from './sceneContextMenu'
 import { rebuildApplicationMenu, setMenuBlocked, updateMenuState, withMenuBlocked } from './menu'
 import { addRecent, clearRecents, getRecents } from './recentFiles'
-import { setCloseConfirmed, setCloseInFlight, setAppQuitting } from './quitState'
+import {
+  clearCloseWatchdog,
+  setAppQuitting,
+  setCloseConfirmed,
+  setCloseInFlight,
+  setForceQuit,
+} from './quitState'
 import {
   handleSaveSceneDialog,
   handleStyleOpenDialog,
@@ -226,6 +232,7 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   // the in-flight flag and aborts any in-progress quit so the next Cmd+Q
   // starts a fresh confirm chain.
   handleInvoke(IPC.WINDOW_CLOSE_PROCEED, (_event, { proceed }) => {
+    clearCloseWatchdog(mainWindow)
     setCloseInFlight(mainWindow, false)
     if (proceed) {
       setCloseConfirmed(mainWindow, true)
@@ -233,6 +240,36 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
     } else {
       setAppQuitting(false)
     }
+  })
+
+  // Renderer-side crash report. The renderer's CrashReporter forwards
+  // every crash source (window.onerror, unhandledrejection, ErrorBoundary,
+  // worker.onerror, worker postMessage crash, render-loop) here so the
+  // stack lands in stderr regardless of whether DevTools is open.
+  handleInvoke(IPC.CRASH_REPORT, (_event, report) => {
+    console.error('[Crash][' + report.source + ']', report.message)
+    if (report.filename) {
+      const loc = report.lineno !== undefined
+        ? `${report.filename}:${report.lineno}:${report.colno ?? 0}`
+        : report.filename
+      console.error('  at', loc)
+    }
+    if (report.stack) console.error(report.stack)
+    if (report.componentStack) {
+      console.error('Component stack:' + report.componentStack)
+    }
+  })
+
+  // Quit button on the crash fallback UI. Bypass the close-confirm funnel
+  // entirely -- the renderer is broken so there is nothing to confirm.
+  handleInvoke(IPC.FORCE_QUIT, () => {
+    setForceQuit(true)
+    setAppQuitting(true)
+    for (const w of mainWindow.isDestroyed() ? [] : [mainWindow]) {
+      clearCloseWatchdog(w)
+      setCloseConfirmed(w, true)
+    }
+    app.exit(0)
   })
 
   handleInvoke(IPC.MENU_INVOKE_ROLE, (_event, role) => {

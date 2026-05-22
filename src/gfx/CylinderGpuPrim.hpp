@@ -58,10 +58,10 @@ public:
     bool init(DisplayContext *pDC) override;
 
     /**
-     * Allocate GPU storage for ncyl cylinders (ncyl×4 vertices, ncyl×6 indices).
-     * Must call init() first.
+     * Allocate GPU storage for ncyl cylinders (ncyl*4 vertices, ncyl*6 indices).
+     * Must call init() first. Storage is routed via DisplayContext::allocBuffer.
      */
-    void alloc(int ncyl);
+    void alloc(DisplayContext *pDC, int ncyl);
 
     // ─── Data upload ─────────────────────────────────────────────────────────
 

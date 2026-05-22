@@ -30,9 +30,20 @@ namespace gfx {
         return AbstDrawElem::VA_ATTR_INDS;
     }
 
+    /// Backwards-compatible owning allocation for the index buffer.
     void allocInd(int nsize)
     {
-      m_inds.allocate(nsize);
+      this->allocOwnedIndData(nsize);
+    }
+
+    // Storage allocation hooks (see AbstDrawAttrs).
+    void allocOwnedIndData(int nelems) override
+    {
+      m_inds.allocate(nelems);
+    }
+    void setIndDataRef(void *p, int nelems) override
+    {
+      m_inds.refer(nelems, static_cast<_IndType *>(p));
     }
 
     virtual const void *getIndData() const
