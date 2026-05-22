@@ -521,17 +521,29 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
     const onAddRow = useCallback(() => {
         const t = requireTarget()
         if (!t || !cm) return
-        // New paint entries start with a wildcard selection + default color
-        // (mirrors UXP `paint-propdlg` defaults). Users then inline-edit.
+        // UXP `onAddCmd` parity:
+        //   - insert before the selected row (id = elem.obj_id);
+        //     when no row is selected, id = 0 (insert at top).
+        //   - inherit sel / color from the selected row (UXP also checks
+        //     the parent mol's `sel` first; deferred to a later phase).
+        //   - fall back to "*" / "#FFF" when there is no row to inherit
+        //     from (paint-propdlg defaults).
+        const idx = selectedRow !== null ? selectedRow : 0
+        const ref = selectedRow !== null ? entries[selectedRow] : undefined
+        const selStr = ref?.selStr ?? '*'
+        const colorValue = ref?.colorValue ?? '#FFFFFF'
         cm.invokeService('addPaintEntry', {
             ...t,
-            idx: entries.length,
-            selStr: '*',
-            colorValue: '#FFFFFF',
+            idx,
+            selStr,
+            colorValue,
         }).catch((err: unknown) => {
             console.warn('addPaintEntry failed:', err)
         })
-    }, [cm, requireTarget, entries.length])
+        // The new entry occupies the insert position; track it so the
+        // toolbar buttons act on the freshly-added row.
+        setSelectedRow(idx)
+    }, [cm, requireTarget, selectedRow, entries])
 
     const onRemoveRow = useCallback(() => {
         const t = requireTarget()

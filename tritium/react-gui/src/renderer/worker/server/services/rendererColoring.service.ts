@@ -701,6 +701,30 @@ function getPaintColoring(rend: Renderer): PaintColoring | null {
 }
 
 /**
+ * Mirror UXP `if (rend._wrapped.isPropDefault("coloring")) rend.coloring = coloring`.
+ *
+ * When the renderer's `coloring` property is still at its style-inherited
+ * default value, the wrapper returns a shared `ColoringScheme` instance.
+ * Mutating that shared object would either leak into other renderers or
+ * be silently discarded on the next reload. Re-assigning the same value
+ * back through the setter materializes a per-renderer non-default copy
+ * so subsequent mutations stick. Must be called inside the same undo
+ * transaction as the mutation.
+ */
+function materializeColoringIfDefault(rend: Renderer): void {
+    try {
+        if (rend.hasPropDefault('coloring')) {
+            const coloring = (rend as unknown as MolRenderer).coloring;
+            (rend as unknown as MolRenderer).coloring = coloring;
+        }
+    } catch {
+        // hasPropDefault throws for renderers without the property; if it
+        // throws we wouldn't have reached here (getPaintColoring would
+        // have failed earlier), so swallow defensively and proceed.
+    }
+}
+
+/**
  * Add a paint entry. `idx === size` appends; otherwise inserts before idx.
  */
 function addPaintEntry(
@@ -719,10 +743,12 @@ function addPaintEntry(
     const color = makeColor(ctx, args.colorValue, scene.uid);
 
     withUndoTxn(scene, 'Add paint entry', () => {
-        if (args.idx >= coloring.size) {
-            coloring.append(sel, color);
+        materializeColoringIfDefault(rend);
+        const live = (rend as unknown as MolRenderer).coloring as PaintColoring;
+        if (args.idx >= live.size) {
+            live.append(sel, color);
         } else {
-            coloring.insertBefore(args.idx, sel, color);
+            live.insertBefore(args.idx, sel, color);
         }
     });
     return { ok: true };
@@ -747,7 +773,9 @@ function removePaintEntry(
     if (!coloring) return { ok: false };
 
     withUndoTxn(scene, 'Delete paint entry', () => {
-        coloring.removeAt(args.idx);
+        materializeColoringIfDefault(rend);
+        const live = (rend as unknown as MolRenderer).coloring as PaintColoring;
+        live.removeAt(args.idx);
     });
     return { ok: true };
 }
@@ -777,7 +805,9 @@ function updatePaintEntry(
     const color = makeColor(ctx, args.colorValue, scene.uid);
 
     withUndoTxn(scene, 'Change paint entry', () => {
-        coloring.changeAt(args.idx, sel, color);
+        materializeColoringIfDefault(rend);
+        const live = (rend as unknown as MolRenderer).coloring as PaintColoring;
+        live.changeAt(args.idx, sel, color);
     });
     return { ok: true };
 }
@@ -813,15 +843,18 @@ function movePaintEntry(
     if (toIdx < 0 || toIdx > size - 1) return { ok: false };
 
     withUndoTxn(scene, 'Move paint entry', () => {
-        const sel = coloring.getSelAt(fromIdx);
-        const col = coloring.getColorAt(fromIdx);
-        coloring.removeAt(fromIdx);
+        materializeColoringIfDefault(rend);
+        // After materialize, refetch the (possibly new) coloring instance.
+        const live = (rend as unknown as MolRenderer).coloring as PaintColoring;
+        const sel = live.getSelAt(fromIdx);
+        const col = live.getColorAt(fromIdx);
+        live.removeAt(fromIdx);
         // toIdx is the target index in the post-remove array; covers both
         // move-up (toIdx < fromIdx) and move-down (toIdx > fromIdx).
-        if (toIdx >= coloring.size) {
-            coloring.append(sel, col);
+        if (toIdx >= live.size) {
+            live.append(sel, col);
         } else {
-            coloring.insertBefore(toIdx, sel, col);
+            live.insertBefore(toIdx, sel, col);
         }
     });
     return { ok: true };

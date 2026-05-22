@@ -375,6 +375,7 @@ function makeRichFixture(opts: MakeRichOpts) {
         const resetProp = vi.fn()
         const applyStyles = vi.fn()
         const setColoring = vi.fn()
+        const hasPropDefault = vi.fn((_propName: string) => false)
 
         const paintEntries: PaintEntry[] = spec.paintEntries
             ? [...spec.paintEntries]
@@ -447,6 +448,7 @@ function makeRichFixture(opts: MakeRichOpts) {
             },
             resetProp,
             applyStyles,
+            hasPropDefault,
         }
 
         return {
@@ -454,6 +456,7 @@ function makeRichFixture(opts: MakeRichOpts) {
             spies: {
                 append, insertBefore, removeAt, changeAt,
                 getSelAt, getColorAt, setDefaultColor, resetProp,
+                setColoring, hasPropDefault,
             },
             getEntries: () => paintEntries,
         }
@@ -727,6 +730,29 @@ describe('Paint entry CRUD', () => {
             sceneId: 1, rendId: 100, fromIdx: 99, toIdx: 0,
         })
         expect(res).toEqual({ ok: false })
+    })
+
+    it('materializes default coloring before mutating (UXP isPropDefault guard)', () => {
+        const f = paintFixture()
+        // Mark the coloring as default-inherited so the guard fires.
+        f.rendWrappers.get(100)!.spies.hasPropDefault.mockReturnValue(true)
+        services.movePaintEntry(f.ctx, {
+            sceneId: 1, rendId: 100, fromIdx: 0, toIdx: 2,
+        })
+        expect(f.rendWrappers.get(100)!.spies.hasPropDefault)
+            .toHaveBeenCalledWith('coloring')
+        // The reassignment `rend.coloring = coloring` must fire to materialize
+        // a per-renderer instance before the move mutations.
+        expect(f.rendWrappers.get(100)!.spies.setColoring).toHaveBeenCalled()
+    })
+
+    it('skips materialize when coloring is already non-default', () => {
+        const f = paintFixture()
+        f.rendWrappers.get(100)!.spies.hasPropDefault.mockReturnValue(false)
+        services.movePaintEntry(f.ctx, {
+            sceneId: 1, rendId: 100, fromIdx: 0, toIdx: 1,
+        })
+        expect(f.rendWrappers.get(100)!.spies.setColoring).not.toHaveBeenCalled()
     })
 
     it('paint CRUD short-circuits when coloring is not PaintColoring', () => {
