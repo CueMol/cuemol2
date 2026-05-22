@@ -18,6 +18,7 @@ const GL = {
     CCW: 0x901,
     CW: 0x900,
     ZERO: 0,
+    ONE: 1,
     SRC_ALPHA: 0x302,
     ONE_MINUS_SRC_ALPHA: 0x303,
     ONE_MINUS_DST_COLOR: 0x307,
@@ -30,6 +31,7 @@ function makeGl() {
         disable: vi.fn(),
         frontFace: vi.fn(),
         blendFunc: vi.fn(),
+        blendFuncSeparate: vi.fn(),
     }
 }
 
@@ -68,10 +70,19 @@ describe('GfxManager draw-state methods', () => {
         expect(gl.frontFace).toHaveBeenCalledWith(GL.CW)
     })
 
-    it('setInvertColorBlend(true) selects the inverted-color blend func', () => {
+    // Alpha must pass src.a (= ONE/ZERO) so the framebuffer alpha stays
+    // opaque -- the canvas is created with premultipliedAlpha: true, so an
+    // alpha=0 fragment would be composited as fully transparent and the
+    // inverted RGB lost.  blendFunc(ONE_MINUS_DST_COLOR, ZERO) would zero
+    // the alpha and is the regression this test guards against.
+    it('setInvertColorBlend(true) selects the inverted-color blend func with pass-through alpha', () => {
         gfx.setInvertColorBlend(true)
         expect(gl.enable).toHaveBeenCalledWith(GL.BLEND)
-        expect(gl.blendFunc).toHaveBeenCalledWith(GL.ONE_MINUS_DST_COLOR, GL.ZERO)
+        expect(gl.blendFuncSeparate).toHaveBeenCalledWith(
+            GL.ONE_MINUS_DST_COLOR, GL.ZERO,
+            GL.ONE, GL.ZERO,
+        )
+        expect(gl.blendFunc).not.toHaveBeenCalled()
     })
 
     it('setInvertColorBlend(false) restores standard alpha blending', () => {

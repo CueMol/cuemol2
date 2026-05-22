@@ -516,12 +516,19 @@ export class GfxManager {
     }
 
     /// API: toggle inverted-color blend (ROP) used by the center mark.
-    /// WebGL2 has no logic-op, so emulate via blendFunc (matches OcDisplayContext).
+    /// WebGL2 has no logic-op, so emulate via blendFuncSeparate. RGB inverts
+    /// against the destination color (matches OcDisplayContext); alpha passes
+    /// the source through so the framebuffer alpha stays opaque -- the canvas
+    /// is created with premultipliedAlpha: true, so an alpha=0 fragment would
+    /// be composited as fully transparent and the inverted RGB lost.
     setInvertColorBlend(bInv: boolean): void {
         const gl = this._context;
         if (bInv) {
             gl.enable(gl.BLEND);
-            gl.blendFunc(gl.ONE_MINUS_DST_COLOR, gl.ZERO);
+            gl.blendFuncSeparate(
+                gl.ONE_MINUS_DST_COLOR, gl.ZERO,
+                gl.ONE, gl.ZERO,
+            );
         } else {
             gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
         }
