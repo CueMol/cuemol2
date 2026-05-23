@@ -3,15 +3,22 @@
 // (uxp_gui/cuemol2/base/content/renderer.js, openMapImpl loadFunc in
 // netpdbopen.js).
 //
-// Color and sigma values are intentionally hardcoded — they match the
+// Color and sigma values are intentionally hardcoded -- they match the
 // preset chosen by UXP and ensure the density visualization is meaningful
 // straight after download. Users can tune them later via renderer
 // properties.
+//
+// Uses `obj.createRenderer(type)` directly rather than the
+// `NewRendererCommand` property-setter pattern: the setter
+// `cmd.target_object = obj` corrupts `obj.m_thisname` via
+// `setupParentData`, which then breaks the undo path through any
+// child-property mutation on obj (see `setupRenderer.service.ts` header
+// for the full chain). UXP avoids this by calling createRenderer
+// directly; we do the same here.
 
 import type { WorkerContext } from '../../types/WorkerContext';
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Object as CObject } from '@cuemol/core/src/wrappers/Object';
-import type { NewRendererCommand } from '@cuemol/core/src/wrappers/NewRendererCommand';
 import type { MapRenderer } from '@cuemol/core/src/wrappers/MapRenderer';
 import { getDefaultStyleName } from './getDefaultStyleName';
 import { makeColor } from './makeColor';
@@ -40,19 +47,20 @@ export function setupDensityMapRenderers(
     mapType: DensityMapType,
 ): void {
     const specs = mapType === '2fofc' ? SPEC_2FOFC : SPEC_FOFC;
+    const styleName = getDefaultStyleName('contour');
     for (const spec of specs) {
-        const cmd = ctx.cmdMgr.getCmd('new_renderer') as NewRendererCommand;
-        cmd.target_object = obj;
-        cmd.renderer_type = 'contour';
-        cmd.renderer_name = spec.name;
-        // Defer view recentering: callers run obj.fitView once after all
-        // contours are created (matches UXP openMapImpl flow).
-        cmd.recenter_view = false;
-        cmd.default_style_name = getDefaultStyleName('contour');
-        cmd.run();
-
-        const rend = cmd.result_renderer as unknown as MapRenderer;
+        const rend = (obj as unknown as {
+            createRenderer: (type: string) => MapRenderer | null;
+        }).createRenderer('contour');
+        if (!rend) continue;
+        (rend as unknown as { name: string }).name = spec.name;
+        if (styleName) {
+            (rend as unknown as { applyStyles: (n: string) => void }).applyStyles(styleName);
+        }
         rend.color = makeColor(ctx, spec.color, scene.uid);
         rend.siglevel = spec.sigma;
+        // Callers run obj.fitView once after all contours are created
+        // (matches UXP openMapImpl flow), so we deliberately do not
+        // recenter each renderer here.
     }
 }

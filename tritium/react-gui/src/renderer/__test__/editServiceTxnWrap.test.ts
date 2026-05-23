@@ -1,3 +1,12 @@
+/**
+ * Cross-cutting undo-txn-wrap contract for loadObject / loadScene.
+ *
+ * Pins: both services run their body inside startUndoTxn / commitUndoTxn,
+ * and roll back on throw. The direct-API call shapes (reader.read,
+ * scene.addObject, etc.) are covered in detail by the per-service tests
+ * (`loadSceneService.test.ts`, `loadObjectService.test.ts`).
+ */
+
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { WorkerContext } from '../worker/server/types/WorkerContext'
 
@@ -5,48 +14,67 @@ vi.mock('../worker/server/services/setupRenderer.service', () => ({
     setupRenderer: vi.fn(),
 }))
 
-// Import services after mock is registered (vi.mock is hoisted automatically)
 import { services as loadObjectServices } from '../worker/server/services/loadObject.service'
 import { services as loadSceneServices } from '../worker/server/services/loadScene.service'
 const { loadObject } = loadObjectServices
 const { loadScene } = loadSceneServices
 
-function makeSceneAndCtx(cmdExtra: Record<string, unknown> = {}) {
-    const calls: string[] = []
+const OBJREADER_CATEGORY = 0
+const SCEREADER_CATEGORY = 3
 
-    const mockScene = {
-        startUndoTxn: vi.fn((label: string) => { calls.push(`start:${label}`) }),
-        commitUndoTxn: vi.fn(() => { calls.push('commit') }),
-        rollbackUndoTxn: vi.fn(() => { calls.push('rollback') }),
-    }
+function makeCtx(opts: {
+    objreaderReadFn?: () => void
+    scereaderReadFn?: () => void
+} = {}) {
+    const calls: string[] = []
 
     const mockMol = { name: '', getClassName: () => 'MolCoord' }
 
-    const mockLoadObjCmd = {
-        target_scene: null as unknown,
-        file_path: '',
-        run: vi.fn(() => { calls.push('cmd.run') }),
-        result_object: mockMol,
+    const objReader = {
+        setPath: vi.fn(),
+        attach: vi.fn(),
+        read: vi.fn(opts.objreaderReadFn ?? (() => calls.push('reader.read'))),
+        detach: vi.fn(),
+        createDefaultObj: vi.fn(() => mockMol),
+    }
+    const sceReader = {
+        setPath: vi.fn(),
+        attach: vi.fn(),
+        read: vi.fn(opts.scereaderReadFn ?? (() => calls.push('reader.read'))),
+        detach: vi.fn(),
     }
 
-    const mockLoadSceneCmd = {
-        target_scene: null as unknown,
-        file_path: '',
-        set_camera: false,
-        run: vi.fn(() => { calls.push('cmd.run') }),
-        ...cmdExtra,
+    const mockScene = {
+        view_uids: '',
+        getView: vi.fn(),
+        loadViewFromCam: vi.fn(),
+        addObject: vi.fn(),
+        startUndoTxn: vi.fn((label: string) => calls.push(`start:${label}`)),
+        commitUndoTxn: vi.fn(() => calls.push('commit')),
+        rollbackUndoTxn: vi.fn(() => calls.push('rollback')),
     }
+
+    const objInfo = JSON.stringify([
+        { name: 'pdb', fext: '*.pdb', category: OBJREADER_CATEGORY },
+    ])
+    const sceInfo = JSON.stringify([
+        { name: 'qsc_xml', fext: '*.qsc', category: SCEREADER_CATEGORY },
+    ])
 
     const ctx = {
         sceMgr: { getScene: vi.fn(() => mockScene) },
-        cmdMgr: { getCmd: vi.fn((name: string) => {
-            if (name === 'load_object') return mockLoadObjCmd
-            if (name === 'load_scene') return mockLoadSceneCmd
-            return null
-        }) },
+        cmdMgr: { getCmd: vi.fn(() => { throw new Error('cmd path not used') }) },
+        strMgr: {
+            getInfoJSON2: vi.fn(() => `${objInfo.slice(0, -1)},${sceInfo.slice(1)}`),
+            createHandler: vi.fn((name: string, cat: number) => {
+                if (cat === OBJREADER_CATEGORY && name === 'pdb') return objReader
+                if (cat === SCEREADER_CATEGORY && name === 'qsc_xml') return sceReader
+                return null
+            }),
+        },
     } as unknown as WorkerContext
 
-    return { calls, mockScene, ctx }
+    return { calls, ctx, mockScene, objReader, sceReader }
 }
 
 describe('loadObject service — undo txn wrapping', () => {
@@ -54,7 +82,7 @@ describe('loadObject service — undo txn wrapping', () => {
     let ctx: WorkerContext
 
     beforeEach(() => {
-        const m = makeSceneAndCtx()
+        const m = makeCtx()
         calls = m.calls
         ctx = m.ctx
     })
@@ -65,31 +93,26 @@ describe('loadObject service — undo txn wrapping', () => {
             sceneId: 1,
             options: {
                 format: { kind: 'unknown' },
-                renderer: { objectName: '', rendererType: 'BallStick', rendererName: 'bs1', centerView: true, selection: '*' },
+                renderer: { objectName: '', rendererType: 'BallStick', rendererName: 'bs1', centerView: false, selection: '*' },
             } as any,
         })
-        expect(calls).toEqual(['start:Open file', 'cmd.run', 'commit'])
+        expect(calls[0]).toBe('start:Open file')
+        expect(calls).toContain('commit')
+        expect(calls).not.toContain('rollback')
     })
 
     it('calls rollbackUndoTxn and re-throws on error', () => {
-        const { calls: c, ctx: ctx2, mockScene } = makeSceneAndCtx()
-        ;(mockScene.commitUndoTxn as any) = vi.fn(() => { c.push('commit') })
-        ;(ctx2 as any).cmdMgr.getCmd = vi.fn(() => ({
-            target_scene: null,
-            file_path: '',
-            run: vi.fn(() => { throw new Error('cmd failed') }),
-            result_object: null,
-        }))
+        const m = makeCtx({ objreaderReadFn: () => { throw new Error('cmd failed') } })
         expect(() =>
-            loadObject(ctx2, {
+            loadObject(m.ctx, {
                 filePath: '/fail.pdb',
                 sceneId: 1,
                 options: { format: { kind: 'unknown' }, renderer: { objectName: '', rendererType: '', rendererName: '', centerView: false, selection: '' } } as any,
             })
         ).toThrow('cmd failed')
-        expect(c).toContain('start:Open file')
-        expect(c).toContain('rollback')
-        expect(c).not.toContain('commit')
+        expect(m.calls).toContain('start:Open file')
+        expect(m.calls).toContain('rollback')
+        expect(m.calls).not.toContain('commit')
     })
 })
 
@@ -98,13 +121,15 @@ describe('loadScene service — undo txn wrapping', () => {
     let ctx: WorkerContext
 
     beforeEach(() => {
-        const m = makeSceneAndCtx()
+        const m = makeCtx()
         calls = m.calls
         ctx = m.ctx
     })
 
     it('wraps body with startUndoTxn("Open scene") and commitUndoTxn', () => {
         loadScene(ctx, { filePath: '/test.qsc', sceneId: 1 })
-        expect(calls).toEqual(['start:Open scene', 'cmd.run', 'commit'])
+        expect(calls[0]).toBe('start:Open scene')
+        expect(calls).toContain('commit')
+        expect(calls).not.toContain('rollback')
     })
 })
