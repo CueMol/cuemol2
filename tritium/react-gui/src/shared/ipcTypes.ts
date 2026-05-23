@@ -189,6 +189,7 @@ export type RendColoringId =
   | 'paint-type-bfac'
   | 'paint-type-rainbow'
   | 'paint-type-paint'
+  | 'paint-type-cpk'
   | 'paint-type-solid'
   | 'paint-type-resetdef'
 

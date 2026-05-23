@@ -1,6 +1,6 @@
 # Migration Mapping — Index
 
-- Updated: 2026-05-22 (`panel.coloring` split into 10 sub-entries; Phase 1 wires `shell` + `deck.paint` + `deck.solid`)
+- Updated: 2026-05-22 (`panel.coloring` Phase 2 wires `deck.cpk` + `deck.rainbow` + `deck.bfac`)
 - Source files: `docs/migration/mapping/*.md` (excluding this file)
 - Option-specification UX: see [`../option-ux-guidelines.md`](../option-ux-guidelines.md)
   for routing dialog migrations to modal / panel / drawer / popover patterns
@@ -11,7 +11,7 @@
 
 | Category | File | Total | done | wip | review | todo | frozen |
 |----------|------|------:|-----:|----:|-------:|-----:|-------:|
-| Panel | [panels.md](panels.md) | 26 | 0 | 12 | 0 | 14 | 0 |
+| Panel | [panels.md](panels.md) | 26 | 0 | 15 | 0 | 11 | 0 |
 | Menu | [menus.md](menus.md) | 4 | 1 | 2 | 0 | 1 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 13 | 0 | 0 | 0 | 13 | 0 |
@@ -20,7 +20,7 @@
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 0 | 1 | 0 | 12 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 0 | 1 | 0 | 27 | 0 |
 | Other | [other.md](other.md) | 4 | 0 | 1 | 0 | 3 | 0 |
-| **Total** | | **129** | **2** | **21** | **0** | **106** | **0** |
+| **Total** | | **129** | **2** | **24** | **0** | **103** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -43,12 +43,12 @@
 
 | Mapping | Count |
 |---------|------:|
-| 1:1 (`direct`) | 5 |
+| 1:1 (`direct`) | 8 |
 | merged | 1 |
 | split | 14 |
 | redesign | 0 |
 | deprecated (`dropped`) | 1 |
-| *(not yet assigned)* | 108 |
+| *(not yet assigned)* | 105 |
 
 ---
 
@@ -75,9 +75,12 @@
 | [`panel.coloring.shell`](panels.md#panelcoloringshell) | `ColorPane` / `usePaintCapableRenderers` / `rendererColoring.service` | Phase 1: renderer selector (paint-capable filter) + Coloring type dropdown (Paint / Solid / Reset enabled; CPK / Bfac / Rainbow / Elepot / Multi-gradient "coming soon"). |
 | [`panel.coloring.deck.paint`](panels.md#panelcoloringdeckpaint) | `ColorPane` / `useRendererColoringState` / `rendererColoring.service` (Paint CRUD) | Phase 1: inline-edit Paint table (no `paint-propdlg` dialog yet). Add / Delete / Move + cell-level commit on blur via `add/remove/update/movePaintEntry`. |
 | [`panel.coloring.deck.solid`](panels.md#panelcoloringdecksolid) | `ColorPane` / `useRendererColoringState` / `rendererColoring.service` (`setRendererDefaultColor`) | Phase 1: default-color text input + preview swatch; commits on blur via `setRendererDefaultColor`. |
+| [`panel.coloring.deck.cpk`](panels.md#panelcoloringdeckcpk) | `ColorPane` (CpkDeck) / `rendererColoring.service` (`setColoringProp`) | Phase 2: 7 element colour fields (col_C…col_X) committing through `setColoringProp` with the materialize-on-default guard. |
+| [`panel.coloring.deck.rainbow`](panels.md#panelcoloringdeckrainbow) | `ColorPane` (RainbowDeck) / `rendererColoring.service` (`setColoringProp`) | Phase 2: Mode / Change-by + Start H / End H / Brightness / Saturation. UI scales bri/sat 0–100% ↔ stored 0–1. |
+| [`panel.coloring.deck.bfac`](panels.md#panelcoloringdeckbfac) | `ColorPane` (BfacDeck) / `rendererColoring.service` (`setColoringProp`) | Phase 2: Mode + Low/High colour + Auto/Manual + Low/High parameter (disabled outside Manual). |
 
 ---
 
 ## Unstarted
 
-**106 / 129** items are `todo` (not yet started).
+**103 / 129** items are `todo` (not yet started).

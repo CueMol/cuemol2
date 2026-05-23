@@ -38,12 +38,16 @@ import {
     Tooltip,
 } from '@blueprintjs/core'
 import { SectionHeader } from './SectionHeader'
+import { SliderNumericField } from '../widgets/SliderNumericField'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import type { RendColoringId } from '../../../shared/ipcTypes'
 import type {
+    BfacParams,
     ColoringTargetKind,
+    CpkColors,
     PaintCapableRendererEntry,
     PaintEntryDto,
+    RainbowParams,
 } from '../../worker/server/services/rendererColoring.service'
 import { usePaintCapableRenderers } from '../../hooks/usePaintCapableRenderers'
 import { useRendererColoringState } from '../../hooks/useRendererColoringState'
@@ -89,19 +93,19 @@ const resolveColorPreview = (color: string): string => {
 interface ColoringModeItem {
     label: string
     coloringId: RendColoringId | null
-    /** Phase 1 enables Paint / Solid / Reset; others are placeholders. */
+    /** Phase 1 wired Paint / Solid / Reset; Phase 2 adds CPK / Bfac / Rainbow. */
     enabled: boolean
 }
 
 const COLORING_MODE_ITEMS: ColoringModeItem[] = [
-    { label: 'Paint coloring',        coloringId: 'paint-type-paint',    enabled: true  },
-    { label: 'Solid coloring',        coloringId: 'paint-type-solid',    enabled: true  },
-    { label: 'CPK coloring',          coloringId: null,                  enabled: false },
-    { label: 'Bfac/Occ coloring',     coloringId: null,                  enabled: false },
-    { label: 'Rainbow coloring',      coloringId: null,                  enabled: false },
-    { label: 'Electrostatic potential', coloringId: null,                enabled: false },
-    { label: 'Multi-gradient coloring', coloringId: null,                enabled: false },
-    { label: 'Reset to default style', coloringId: 'paint-type-resetdef', enabled: true },
+    { label: 'Paint coloring',          coloringId: 'paint-type-paint',    enabled: true  },
+    { label: 'Solid coloring',          coloringId: 'paint-type-solid',    enabled: true  },
+    { label: 'CPK coloring',            coloringId: 'paint-type-cpk',      enabled: true  },
+    { label: 'Bfac/Occ coloring',       coloringId: 'paint-type-bfac',     enabled: true  },
+    { label: 'Rainbow coloring',        coloringId: 'paint-type-rainbow',  enabled: true  },
+    { label: 'Electrostatic potential', coloringId: null,                  enabled: false },
+    { label: 'Multi-gradient coloring', coloringId: null,                  enabled: false },
+    { label: 'Reset to default style',  coloringId: 'paint-type-resetdef', enabled: true  },
 ]
 
 // ────────────────────────────────────────────────────────────
@@ -163,7 +167,13 @@ const RendererSelector: React.FC<RendererSelectorProps> = ({
 
     if (renderers.length === 0) {
         return (
-            <HTMLSelect disabled fill value="" onChange={() => {}}>
+            <HTMLSelect
+                disabled
+                fill
+                value=""
+                onChange={() => {}}
+                className="color-enum-select"
+            >
                 <option value="">(no paint-capable renderers)</option>
             </HTMLSelect>
         )
@@ -173,6 +183,7 @@ const RendererSelector: React.FC<RendererSelectorProps> = ({
         <HTMLSelect
             fill
             value={selectedKey ?? ''}
+            className="color-enum-select"
             onChange={(e) => {
                 const v = e.target.value
                 onChange(v === '' ? null : v)
@@ -432,6 +443,244 @@ const DeferredDeck: React.FC<DeferredDeckProps> = ({ className }) => (
     </div>
 )
 
+/**
+ * Shared colour-cell editor (text input + preview swatch). Commits on
+ * blur via `onCommit(value)`. Used by CPK / Bfac decks so the same
+ * inline-edit + swatch UX from the Paint table extends to scalar colour
+ * properties.
+ */
+interface ColorFieldProps {
+    label: string
+    value: string
+    onCommit: (next: string) => void
+}
+
+const ColorField: React.FC<ColorFieldProps> = ({ label, value, onCommit }) => {
+    const [draft, setDraft] = useState(value)
+    useEffect(() => setDraft(value), [value])
+    const commit = () => {
+        if (draft !== value) onCommit(draft)
+    }
+    return (
+        <div className="color-field-row">
+            <label className="color-field-label">{label}</label>
+            <div
+                className="color-solid-swatch"
+                style={{ backgroundColor: resolveColorPreview(draft) }}
+            />
+            <input
+                className="color-inline-input color-value-input color-field-input"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onBlur={commit}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter') e.currentTarget.blur()
+                }}
+                spellCheck={false}
+            />
+        </div>
+    )
+}
+
+interface CpkDeckProps {
+    colors: CpkColors
+    onCommit: (propName: string, value: string) => void
+}
+
+/** Mirrors UXP `coloring-deck-cpk.xul`: 7 per-element colour pickers. */
+const CpkDeck: React.FC<CpkDeckProps> = ({ colors, onCommit }) => (
+    <div className="color-deck-scroll">
+        <div className="color-section-label">CPK coloring:</div>
+        <ColorField label="Carbon"     value={colors.colC} onCommit={(v) => onCommit('col_C', v)} />
+        <ColorField label="Nitrogen"   value={colors.colN} onCommit={(v) => onCommit('col_N', v)} />
+        <ColorField label="Oxygen"     value={colors.colO} onCommit={(v) => onCommit('col_O', v)} />
+        <ColorField label="Sulfur"     value={colors.colS} onCommit={(v) => onCommit('col_S', v)} />
+        <ColorField label="Phosphorus" value={colors.colP} onCommit={(v) => onCommit('col_P', v)} />
+        <ColorField label="Hydrogen"   value={colors.colH} onCommit={(v) => onCommit('col_H', v)} />
+        <ColorField label="Others"     value={colors.colX} onCommit={(v) => onCommit('col_X', v)} />
+    </div>
+)
+
+/**
+ * Numeric input with blur-commit. Accepts an optional unit suffix and
+ * a (min, max) clamp; values outside the range are dropped silently
+ * (matches UXP `onRainbowChange` / `onBfacChange` validation).
+ */
+interface NumberFieldProps {
+    label: string
+    value: number
+    min?: number
+    max?: number
+    unit?: string
+    /** Scale factor: stored / shown ratio. 1 by default; 100 for sat / bri. */
+    scale?: number
+    decimals?: number
+    onCommit: (next: number) => void
+    disabled?: boolean
+}
+
+const NumberField: React.FC<NumberFieldProps> = ({
+    label, value, min, max, unit, scale = 1, decimals, onCommit, disabled,
+}) => {
+    const shown = (value * scale).toString()
+    const [draft, setDraft] = useState(shown)
+    useEffect(() => setDraft(shown), [shown])
+    const commit = () => {
+        const parsed = parseFloat(draft)
+        if (isNaN(parsed)) {
+            setDraft(shown)
+            return
+        }
+        if (min !== undefined && parsed < min) { setDraft(shown); return }
+        if (max !== undefined && parsed > max) { setDraft(shown); return }
+        const stored = parsed / scale
+        const fixed = decimals !== undefined ? Number(stored.toFixed(decimals + 4)) : stored
+        if (fixed !== value) onCommit(fixed)
+    }
+    return (
+        <div className="color-field-row">
+            <label className="color-field-label">{label}</label>
+            <input
+                className="color-inline-input color-field-input"
+                type="number"
+                value={draft}
+                disabled={disabled}
+                onChange={(e) => setDraft(e.target.value)}
+                onBlur={commit}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter') e.currentTarget.blur()
+                }}
+            />
+            {unit && <span className="color-field-unit">{unit}</span>}
+        </div>
+    )
+}
+
+/** Shared <HTMLSelect> wrapper with a label column. */
+interface EnumFieldProps {
+    label: string
+    value: string
+    options: { value: string; label: string }[]
+    onCommit: (next: string) => void
+    disabled?: boolean
+}
+
+const EnumField: React.FC<EnumFieldProps> = ({
+    label, value, options, onCommit, disabled,
+}) => (
+    <div className="color-field-row">
+        <label className="color-field-label">{label}</label>
+        <HTMLSelect
+            value={value}
+            disabled={disabled}
+            onChange={(e) => onCommit(e.target.value)}
+            className="color-field-input color-enum-select"
+        >
+            {options.map((o) => (
+                <option key={o.value} value={o.value}>
+                    {o.label}
+                </option>
+            ))}
+        </HTMLSelect>
+    </div>
+)
+
+interface RainbowDeckProps {
+    params: RainbowParams
+    onCommit: (propName: string, value: string | number) => void
+}
+
+/** Mirrors UXP `coloring-deck-rainbow.xul` -- the four numerics use the
+ * `<numslider>` widget (slider + numeric spinbox + unit). */
+const RainbowDeck: React.FC<RainbowDeckProps> = ({ params, onCommit }) => (
+    <div className="color-deck-scroll">
+        <div className="color-section-label">Rainbow coloring:</div>
+        <EnumField
+            label="Mode" value={params.mode}
+            options={[
+                { value: 'mol',   label: 'Molecule' },
+                { value: 'chain', label: 'Chain'    },
+            ]}
+            onCommit={(v) => onCommit('mode', v)}
+        />
+        <EnumField
+            label="Change by" value={params.incrMode}
+            options={[
+                { value: 'chain',  label: 'Chain'        },
+                { value: 'resid',  label: 'Residue'      },
+                { value: 'protss', label: 'Prot secstr'  },
+            ]}
+            onCommit={(v) => onCommit('incr_mode', v)}
+        />
+        <SliderNumericField
+            label="Start H" value={params.startHue} min={0} max={360} unit="°"
+            onCommit={(v) => onCommit('start_hue', v)}
+        />
+        <SliderNumericField
+            label="End H" value={params.endHue} min={0} max={360} unit="°"
+            onCommit={(v) => onCommit('end_hue', v)}
+        />
+        <SliderNumericField
+            label="Brightness" value={params.brightness} min={0} max={100} scale={100} unit="%"
+            onCommit={(v) => onCommit('bri', v)}
+        />
+        <SliderNumericField
+            label="Saturation" value={params.saturation} min={0} max={100} scale={100} unit="%"
+            onCommit={(v) => onCommit('sat', v)}
+        />
+    </div>
+)
+
+interface BfacDeckProps {
+    params: BfacParams
+    onCommit: (propName: string, value: string | number) => void
+}
+
+/** Mirrors UXP `coloring-deck-bfac.xul`. */
+const BfacDeck: React.FC<BfacDeckProps> = ({ params, onCommit }) => {
+    const manual = params.autoMode === 'none'
+    return (
+        <div className="color-deck-scroll">
+            <div className="color-section-label">Bfac coloring:</div>
+            <EnumField
+                label="Mode" value={params.mode}
+                options={[
+                    { value: 'bfac',   label: 'B-factor'              },
+                    { value: 'occ',    label: 'Occupancy'             },
+                    { value: 'center', label: 'Distance from center'  },
+                ]}
+                onCommit={(v) => onCommit('mode', v)}
+            />
+            <ColorField
+                label="Low"  value={params.lowColor}
+                onCommit={(v) => onCommit('lowcol', v)}
+            />
+            <ColorField
+                label="High" value={params.highColor}
+                onCommit={(v) => onCommit('highcol', v)}
+            />
+            <div className="color-section-sublabel">Parameter</div>
+            <EnumField
+                label="Auto" value={params.autoMode}
+                options={[
+                    { value: 'none', label: 'Manual'        },
+                    { value: 'mol',  label: 'Auto (by mol)' },
+                    { value: 'rend', label: 'Auto (by rend)' },
+                ]}
+                onCommit={(v) => onCommit('auto', v)}
+            />
+            <NumberField
+                label="Low" value={params.lowParam} disabled={!manual}
+                onCommit={(v) => onCommit('lowpar', v)}
+            />
+            <NumberField
+                label="High" value={params.highParam} disabled={!manual}
+                onCommit={(v) => onCommit('highpar', v)}
+            />
+        </div>
+    )
+}
+
 // ────────────────────────────────────────────────────────────
 // Main component
 // ────────────────────────────────────────────────────────────
@@ -604,6 +853,26 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
         [cm, requireTarget],
     )
 
+    /**
+     * Generic ColoringScheme property commit (CPK col_X, Rainbow start_hue,
+     * Bfac mode, etc.). Routes through `setColoringProp` which mirrors
+     * UXP `commitPropChange` (materialize on default + setProp under undo).
+     */
+    const onSetColoringProp = useCallback(
+        (propName: string, value: string | number) => {
+            const t = requireTarget()
+            if (!t || !cm) return
+            cm.invokeService('setColoringProp', {
+                ...t,
+                propName,
+                propValue: value,
+            }).catch((err: unknown) => {
+                console.warn('setColoringProp failed:', err)
+            })
+        },
+        [cm, requireTarget],
+    )
+
     // ── Deck routing ──
     const renderDeck = (): React.ReactNode => {
         if (sceneId === undefined || target === null) {
@@ -646,6 +915,15 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
                     onCommit={onDefaultColorCommit}
                 />
             )
+        }
+        if (className === 'CPKColoring' && state.cpkColors) {
+            return <CpkDeck colors={state.cpkColors} onCommit={onSetColoringProp} />
+        }
+        if (className === 'RainbowColoring' && state.rainbowParams) {
+            return <RainbowDeck params={state.rainbowParams} onCommit={onSetColoringProp} />
+        }
+        if (className === 'BfacColoring' && state.bfacParams) {
+            return <BfacDeck params={state.bfacParams} onCommit={onSetColoringProp} />
         }
         return <DeferredDeck className={className} />
     }

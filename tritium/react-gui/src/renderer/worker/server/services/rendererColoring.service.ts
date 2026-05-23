@@ -211,6 +211,11 @@ function setRendererColoring(
                 applyObjColoring(ctx, rend, 'PaintColoring');
             });
             return { ok: true };
+        case 'paint-type-cpk':
+            withUndoTxn(scene, 'Change coloring', () => {
+                applyObjColoring(ctx, rend, 'CPKColoring');
+            });
+            return { ok: true };
         case 'paint-type-solid':
         case 'paint-type-resetdef':
             // UXP `setRendColoring`: both Solid and "Reset to default" route
@@ -595,6 +600,44 @@ export interface PaintEntryDto {
     colorValue: string;
 }
 
+/** Per-element colour palette for `CPKColoring`. */
+export interface CpkColors {
+    colC: string; colN: string; colO: string; colS: string;
+    colP: string; colH: string; colX: string;
+}
+
+/** Editor params for `RainbowColoring`. */
+export interface RainbowParams {
+    /** "mol" | "chain" — mirrors UXP `coloring.mode`. */
+    mode: string;
+    /** "chain" | "resid" | "protss" — UXP `coloring.incr_mode`. */
+    incrMode: string;
+    /** Hue range start, 0-360 degrees. UXP `coloring.start_hue`. */
+    startHue: number;
+    /** Hue range end, 0-360 degrees. UXP `coloring.end_hue`. */
+    endHue: number;
+    /** 0..1; UXP `coloring.sat` (panel widget shows 0..100). */
+    saturation: number;
+    /** 0..1; UXP `coloring.bri`. */
+    brightness: number;
+}
+
+/** Editor params for `BfacColoring`. */
+export interface BfacParams {
+    /** "bfac" | "occ" | "center"; UXP `coloring.mode`. */
+    mode: string;
+    /** Low-side colour as a CueMol colour string. */
+    lowColor: string;
+    /** High-side colour. */
+    highColor: string;
+    /** "none" | "mol" | "rend"; UXP `coloring.auto`. */
+    autoMode: string;
+    /** Low parameter value; UXP `coloring.lowpar` (manual mode only). */
+    lowParam: number;
+    /** High parameter value; UXP `coloring.highpar`. */
+    highParam: number;
+}
+
 export interface GetRendererColoringStateResult {
     ok: boolean;
     /** Coloring class name (e.g. "PaintColoring"), or "" when coloring is null. */
@@ -603,6 +646,12 @@ export interface GetRendererColoringStateResult {
     defaultColor: string;
     /** Populated only when className === "PaintColoring". */
     paintEntries: PaintEntryDto[];
+    /** Populated only when className === "CPKColoring". */
+    cpkColors?: CpkColors;
+    /** Populated only when className === "RainbowColoring". */
+    rainbowParams?: RainbowParams;
+    /** Populated only when className === "BfacColoring". */
+    bfacParams?: BfacParams;
 }
 
 function readDefaultColor(rend: Renderer): string {
@@ -643,6 +692,68 @@ function readPaintEntries(coloring: PaintColoring): PaintEntryDto[] {
     return out;
 }
 
+/** Safe property read with stringified fallback. Used for colour props. */
+function safeReadColorString(obj: unknown, prop: string): string {
+    try {
+        const v = (obj as Record<string, AbstractColor | undefined>)[prop];
+        return v ? v.toString() : '';
+    } catch {
+        return '';
+    }
+}
+
+function safeReadString(obj: unknown, prop: string): string {
+    try {
+        const v = (obj as Record<string, unknown>)[prop];
+        return typeof v === 'string' ? v : '';
+    } catch {
+        return '';
+    }
+}
+
+function safeReadNumber(obj: unknown, prop: string): number {
+    try {
+        const v = (obj as Record<string, unknown>)[prop];
+        return typeof v === 'number' ? v : 0;
+    } catch {
+        return 0;
+    }
+}
+
+function readCpkColors(coloring: unknown): CpkColors {
+    return {
+        colC: safeReadColorString(coloring, 'col_C'),
+        colN: safeReadColorString(coloring, 'col_N'),
+        colO: safeReadColorString(coloring, 'col_O'),
+        colS: safeReadColorString(coloring, 'col_S'),
+        colP: safeReadColorString(coloring, 'col_P'),
+        colH: safeReadColorString(coloring, 'col_H'),
+        colX: safeReadColorString(coloring, 'col_X'),
+    };
+}
+
+function readRainbowParams(coloring: unknown): RainbowParams {
+    return {
+        mode: safeReadString(coloring, 'mode'),
+        incrMode: safeReadString(coloring, 'incr_mode'),
+        startHue: safeReadNumber(coloring, 'start_hue'),
+        endHue: safeReadNumber(coloring, 'end_hue'),
+        saturation: safeReadNumber(coloring, 'sat'),
+        brightness: safeReadNumber(coloring, 'bri'),
+    };
+}
+
+function readBfacParams(coloring: unknown): BfacParams {
+    return {
+        mode: safeReadString(coloring, 'mode'),
+        lowColor: safeReadColorString(coloring, 'lowcol'),
+        highColor: safeReadColorString(coloring, 'highcol'),
+        autoMode: safeReadString(coloring, 'auto'),
+        lowParam: safeReadNumber(coloring, 'lowpar'),
+        highParam: safeReadNumber(coloring, 'highpar'),
+    };
+}
+
 /**
  * Snapshot of the renderer's current coloring for the Coloring panel.
  *
@@ -667,13 +778,28 @@ function getRendererColoringState(
     const className = getColoringClassName(rend);
     const defaultColor = readDefaultColor(rend);
 
-    let paintEntries: PaintEntryDto[] = [];
+    const result: GetRendererColoringStateResult = {
+        ok: true,
+        className,
+        defaultColor,
+        paintEntries: [],
+    };
+
     if (className === 'PaintColoring') {
         const coloring = (rend as unknown as MolRenderer).coloring as PaintColoring;
-        paintEntries = readPaintEntries(coloring);
+        result.paintEntries = readPaintEntries(coloring);
+    } else if (className === 'CPKColoring') {
+        const coloring = (rend as unknown as MolRenderer).coloring;
+        result.cpkColors = readCpkColors(coloring);
+    } else if (className === 'RainbowColoring') {
+        const coloring = (rend as unknown as MolRenderer).coloring;
+        result.rainbowParams = readRainbowParams(coloring);
+    } else if (className === 'BfacColoring') {
+        const coloring = (rend as unknown as MolRenderer).coloring;
+        result.bfacParams = readBfacParams(coloring);
     }
 
-    return { ok: true, className, defaultColor, paintEntries };
+    return result;
 }
 
 export interface AddPaintEntryArgs {
@@ -890,6 +1016,79 @@ function setRendererDefaultColor(
     return { ok: true };
 }
 
+// ────────────────────────────────────────────────────────────
+// Generic coloring-scheme property writer (CPK / Rainbow / Bfac decks)
+// ────────────────────────────────────────────────────────────
+
+/**
+ * Property names whose value is a CueMol colour string and must be
+ * compiled through `makeColor` before being assigned. Keep this set
+ * tight: every entry was confirmed against the UXP `coloring-panel.js`
+ * commit sites (`onCPKColChanged`, `onBfacChange` `lowcol`/`highcol`).
+ */
+const COLOR_VALUED_PROPS = new Set<string>([
+    'col_C', 'col_N', 'col_O', 'col_S', 'col_P', 'col_H', 'col_X',
+    'lowcol', 'highcol',
+]);
+
+export interface SetColoringPropArgs {
+    sceneId: number;
+    rendId: number;
+    targetKind?: ColoringTargetKind;
+    /** Property name on the ColoringScheme (e.g. "col_C", "mode", "bri"). */
+    propName: string;
+    /**
+     * Value to write. Strings whose `propName` is in the colour whitelist
+     * are compiled via `makeColor` first; otherwise the value is passed
+     * through (mode/incr_mode/auto are string enums, hue / params are
+     * numbers).
+     */
+    propValue: string | number;
+}
+
+export interface SetColoringPropResult {
+    ok: boolean;
+}
+
+/**
+ * Mirror UXP `commitPropChange`: open an undo txn, materialize the
+ * renderer's coloring if still style-default, then assign one property
+ * on the active ColoringScheme.
+ *
+ * Used by the CPK / Rainbow / Bfac decks. Paint deck CRUD has dedicated
+ * services (`addPaintEntry`, ...) because it mutates list items rather
+ * than scalar properties.
+ */
+function setColoringProp(
+    ctx: WorkerContext,
+    args: SetColoringPropArgs,
+): SetColoringPropResult {
+    const scene = getSceneOrNull(ctx, args.sceneId);
+    if (!scene) return { ok: false };
+    const rend = resolveColoringTarget(scene, args.targetKind, args.rendId);
+    if (!rend) return { ok: false };
+    if (getColoringClassName(rend) === '') return { ok: false };
+
+    // For colour-valued props, compile the string into an AbstractColor
+    // wrapper and pass the raw `.wrapped` native object -- this mirrors
+    // UXP `commitPropChange` which passes `color._wrapped` directly.
+    // For non-colour props (mode/incr_mode/auto strings, sliders/params
+    // numbers), forward the value as-is.
+    let value: unknown = args.propValue;
+    if (COLOR_VALUED_PROPS.has(args.propName) && typeof args.propValue === 'string') {
+        const ac = makeColor(ctx, args.propValue, scene.uid);
+        value = ac.wrapped;
+    }
+
+    withUndoTxn(scene, 'Change coloring property', () => {
+        materializeColoringIfDefault(rend);
+        const live = (rend as unknown as MolRenderer).coloring;
+        if (!live) return;
+        live.setProp(args.propName, value);
+    });
+    return { ok: true };
+}
+
 export const services = {
     setRendererColoring,
     getPaintColoringStyles,
@@ -904,4 +1103,5 @@ export const services = {
     updatePaintEntry,
     movePaintEntry,
     setRendererDefaultColor,
+    setColoringProp,
 };

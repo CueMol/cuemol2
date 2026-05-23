@@ -331,6 +331,8 @@ interface RendSpec {
     coloringClass?: string | null
     defaultColor?: string
     paintEntries?: PaintEntry[]
+    /** Initial scalar properties on the coloring (CPK col_C, Rainbow mode, ...). */
+    coloringProps?: Record<string, unknown>
 }
 
 interface ObjectSpec {
@@ -340,6 +342,7 @@ interface ObjectSpec {
     coloringClass?: string | null
     defaultColor?: string
     paintEntries?: PaintEntry[]
+    coloringProps?: Record<string, unknown>
     rends: RendSpec[]
 }
 
@@ -412,10 +415,18 @@ function makeRichFixture(opts: MakeRichOpts) {
             toString: () => paintEntries[idx]?.color ?? '',
         }))
 
+        // Scalar properties on the ColoringScheme (CPK col_C, Rainbow mode,
+        // Bfac lowpar...) live on the coloring object directly. `setProp`
+        // mutates this dict so `setColoringProp` tests can observe writes.
+        const props: Record<string, unknown> = { ...(spec.coloringProps ?? {}) }
+        const setProp = vi.fn((name: string, value: unknown) => {
+            props[name] = value
+        })
+
         const coloring =
             spec.coloringClass === null || spec.coloringClass === undefined
                 ? undefined
-                : {
+                : new Proxy({
                       getClassName: () => spec.coloringClass!,
                       get size() {
                           return paintEntries.length
@@ -426,7 +437,15 @@ function makeRichFixture(opts: MakeRichOpts) {
                       changeAt,
                       getSelAt,
                       getColorAt,
-                  }
+                      setProp,
+                  }, {
+                      get(target: Record<string, unknown>, key: string) {
+                          // Methods + size + getClassName first; scalar
+                          // props fall through.
+                          if (key in target) return target[key]
+                          return props[key]
+                      },
+                  })
 
         const typeName =
             (spec as RendSpec).typeName ?? (spec as ObjectSpec).name ?? ''
@@ -456,9 +475,10 @@ function makeRichFixture(opts: MakeRichOpts) {
             spies: {
                 append, insertBefore, removeAt, changeAt,
                 getSelAt, getColorAt, setDefaultColor, resetProp,
-                setColoring, hasPropDefault,
+                setColoring, hasPropDefault, setProp,
             },
             getEntries: () => paintEntries,
+            getProps: () => props,
         }
     }
 
@@ -867,5 +887,218 @@ describe('targetKind: "object" routes to scene.getObject', () => {
             coloringId: 'style-DefaultCPKColoring',
         })
         expect(res).toEqual({ ok: false })
+    })
+})
+
+// ─────────────────────────────────────────────────────────────
+// Phase 2 -- CPK / Rainbow / Bfac decks
+// ─────────────────────────────────────────────────────────────
+
+describe('setRendererColoring -- paint-type-cpk', () => {
+    beforeEach(() => vi.clearAllMocks())
+
+    it('instantiates CPKColoring and assigns under undo', () => {
+        const { ctx, createObj, setColoring, startUndoTxn } = makeFixture()
+        const res = services.setRendererColoring(ctx, baseArgs('paint-type-cpk'))
+        expect(res).toEqual({ ok: true })
+        expect(createObj).toHaveBeenCalledWith('CPKColoring')
+        expect(setColoring).toHaveBeenCalledWith({ __coloring: 'CPKColoring' })
+        expect(startUndoTxn).toHaveBeenCalledWith('Change coloring')
+    })
+})
+
+describe('getRendererColoringState -- per-class params', () => {
+    beforeEach(() => vi.clearAllMocks())
+
+    it('returns cpkColors for CPKColoring', () => {
+        const { ctx } = makeRichFixture({
+            objects: [{
+                id: 10, name: 'mol1', rends: [{
+                    id: 100, name: 'r1', typeName: 'cartoon',
+                    coloringClass: 'CPKColoring',
+                    coloringProps: {
+                        col_C: { toString: () => '#A0A0A0' },
+                        col_N: { toString: () => '#0000FF' },
+                        col_O: { toString: () => '#FF0000' },
+                        col_S: { toString: () => '#FFFF00' },
+                        col_P: { toString: () => '#FFA500' },
+                        col_H: { toString: () => '#FFFFFF' },
+                        col_X: { toString: () => '#888888' },
+                    },
+                }],
+            }],
+        })
+        const res = services.getRendererColoringState(ctx, { sceneId: 1, rendId: 100 })
+        expect(res.className).toBe('CPKColoring')
+        expect(res.cpkColors).toEqual({
+            colC: '#A0A0A0', colN: '#0000FF', colO: '#FF0000', colS: '#FFFF00',
+            colP: '#FFA500', colH: '#FFFFFF', colX: '#888888',
+        })
+        expect(res.paintEntries).toEqual([])
+    })
+
+    it('returns rainbowParams for RainbowColoring', () => {
+        const { ctx } = makeRichFixture({
+            objects: [{
+                id: 10, name: 'mol1', rends: [{
+                    id: 100, name: 'r1', typeName: 'cartoon',
+                    coloringClass: 'RainbowColoring',
+                    coloringProps: {
+                        mode: 'chain', incr_mode: 'resid',
+                        start_hue: 0, end_hue: 240,
+                        sat: 0.8, bri: 0.9,
+                    },
+                }],
+            }],
+        })
+        const res = services.getRendererColoringState(ctx, { sceneId: 1, rendId: 100 })
+        expect(res.className).toBe('RainbowColoring')
+        expect(res.rainbowParams).toEqual({
+            mode: 'chain', incrMode: 'resid',
+            startHue: 0, endHue: 240,
+            saturation: 0.8, brightness: 0.9,
+        })
+    })
+
+    it('returns bfacParams for BfacColoring', () => {
+        const { ctx } = makeRichFixture({
+            objects: [{
+                id: 10, name: 'mol1', rends: [{
+                    id: 100, name: 'r1', typeName: 'cartoon',
+                    coloringClass: 'BfacColoring',
+                    coloringProps: {
+                        mode: 'bfac',
+                        lowcol: { toString: () => '#0000FF' },
+                        highcol: { toString: () => '#FF0000' },
+                        auto: 'mol',
+                        lowpar: 10, highpar: 50,
+                    },
+                }],
+            }],
+        })
+        const res = services.getRendererColoringState(ctx, { sceneId: 1, rendId: 100 })
+        expect(res.className).toBe('BfacColoring')
+        expect(res.bfacParams).toEqual({
+            mode: 'bfac',
+            lowColor: '#0000FF', highColor: '#FF0000',
+            autoMode: 'mol',
+            lowParam: 10, highParam: 50,
+        })
+    })
+})
+
+describe('setColoringProp', () => {
+    beforeEach(() => vi.clearAllMocks())
+
+    function cpkFixture() {
+        return makeRichFixture({
+            objects: [{
+                id: 10, name: 'mol1', rends: [{
+                    id: 100, name: 'r1', typeName: 'cartoon',
+                    coloringClass: 'CPKColoring',
+                    coloringProps: { col_C: { toString: () => '#A0A0A0' } },
+                }],
+            }],
+        })
+    }
+
+    it('writes a numeric prop via coloring.setProp under undo', () => {
+        const f = cpkFixture()
+        const res = services.setColoringProp(f.ctx, {
+            sceneId: 1, rendId: 100,
+            propName: 'sat', propValue: 0.5,
+        })
+        expect(res).toEqual({ ok: true })
+        expect(f.rendWrappers.get(100)!.spies.setProp)
+            .toHaveBeenCalledWith('sat', 0.5)
+        expect(f.startUndoTxn).toHaveBeenCalledWith('Change coloring property')
+    })
+
+    it('writes a string-enum prop via coloring.setProp', () => {
+        const f = cpkFixture()
+        services.setColoringProp(f.ctx, {
+            sceneId: 1, rendId: 100,
+            propName: 'mode', propValue: 'chain',
+        })
+        expect(f.rendWrappers.get(100)!.spies.setProp)
+            .toHaveBeenCalledWith('mode', 'chain')
+    })
+
+    it('compiles colour-whitelisted props through makeColor and passes .wrapped', () => {
+        const f = cpkFixture()
+        services.setColoringProp(f.ctx, {
+            sceneId: 1, rendId: 100,
+            propName: 'col_C', propValue: '#FF0000',
+        })
+        // makeColor was mocked to return `{ __color, __uid }`; the worker
+        // unwraps via `.wrapped`. Our mock objects have no `.wrapped`
+        // member so we receive `undefined` -- the contract being pinned is
+        // that the value passed is NOT the raw string "#FF0000".
+        const call = f.rendWrappers.get(100)!.spies.setProp.mock.calls[0]
+        expect(call[0]).toBe('col_C')
+        expect(call[1]).not.toBe('#FF0000')
+    })
+
+    it('routes lowcol / highcol through makeColor too (Bfac deck)', () => {
+        const f = makeRichFixture({
+            objects: [{
+                id: 10, name: 'mol1', rends: [{
+                    id: 100, name: 'r1', typeName: 'cartoon',
+                    coloringClass: 'BfacColoring',
+                    coloringProps: {},
+                }],
+            }],
+        })
+        services.setColoringProp(f.ctx, {
+            sceneId: 1, rendId: 100,
+            propName: 'lowcol', propValue: '#0000FF',
+        })
+        const call = f.rendWrappers.get(100)!.spies.setProp.mock.calls[0]
+        expect(call[0]).toBe('lowcol')
+        expect(call[1]).not.toBe('#0000FF')
+    })
+
+    it('materializes default coloring before writing (UXP guard)', () => {
+        const f = cpkFixture()
+        f.rendWrappers.get(100)!.spies.hasPropDefault.mockReturnValue(true)
+        services.setColoringProp(f.ctx, {
+            sceneId: 1, rendId: 100,
+            propName: 'sat', propValue: 0.5,
+        })
+        expect(f.rendWrappers.get(100)!.spies.hasPropDefault)
+            .toHaveBeenCalledWith('coloring')
+        expect(f.rendWrappers.get(100)!.spies.setColoring).toHaveBeenCalled()
+    })
+
+    it('rejects when coloring class is unset', () => {
+        const f = makeRichFixture({
+            objects: [{
+                id: 10, name: 'mol1', rends: [{
+                    id: 100, name: 'r1', typeName: 'simple',
+                    coloringClass: null,
+                }],
+            }],
+        })
+        const res = services.setColoringProp(f.ctx, {
+            sceneId: 1, rendId: 100,
+            propName: 'mode', propValue: 'bfac',
+        })
+        expect(res).toEqual({ ok: false })
+    })
+
+    it('targetKind "object" routes the write to scene.getObject', () => {
+        const f = makeRichFixture({
+            objects: [{
+                id: 10, name: 'mol1',
+                coloringClass: 'CPKColoring',
+                coloringProps: {},
+                rends: [],
+            }],
+        })
+        services.setColoringProp(f.ctx, {
+            sceneId: 1, rendId: 10, targetKind: 'object',
+            propName: 'sat', propValue: 0.7,
+        })
+        expect(f.scene.getObject).toHaveBeenCalledWith(10)
     })
 })
