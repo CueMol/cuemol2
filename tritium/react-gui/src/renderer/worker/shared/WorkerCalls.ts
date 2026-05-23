@@ -135,6 +135,10 @@ import type {
   SetRendererDefaultColorResult,
   SetColoringPropArgs,
   SetColoringPropResult,
+  ListElePotMapObjectsArgs,
+  ListElePotMapObjectsResult,
+  SetRendererElepotPropArgs,
+  SetRendererElepotPropResult,
 } from '../server/services/rendererColoring.service'
 import type {
   GetRendererStyleEntriesArgs,
@@ -334,6 +338,8 @@ export interface ServiceMap {
   movePaintEntry:             { args: MovePaintEntryArgs;              result: PaintMutationResult }
   setRendererDefaultColor:    { args: SetRendererDefaultColorArgs;     result: SetRendererDefaultColorResult }
   setColoringProp:            { args: SetColoringPropArgs;             result: SetColoringPropResult }
+  listElePotMapObjects:       { args: ListElePotMapObjectsArgs;        result: ListElePotMapObjectsResult }
+  setRendererElepotProp:      { args: SetRendererElepotPropArgs;       result: SetRendererElepotPropResult }
   getRendererStyleEntries:    { args: GetRendererStyleEntriesArgs;     result: GetRendererStyleEntriesResult }
   applyRendererStyle:         { args: ApplyRendererStyleArgs;          result: ApplyRendererStyleResult }
   getRendererStyleEditInfo:   { args: GetRendererStyleEditInfoArgs;    result: GetRendererStyleEditInfoResult }

@@ -176,6 +176,33 @@ describe('useRendererColoringState', () => {
         h.unmount()
     })
 
+    it('refetches on Elepot renderer-level PROPCHG (colormode / elepot / lowcol / lowpar / ramp_above)', async () => {
+        // The Elepot deck's props live on the surface renderer (not on a
+        // ColoringScheme), so their PROPCHG events surface with the
+        // renderer-side propname. The hook must whitelist them; otherwise
+        // committing a slider, swatch, or selector silently no-ops in the UI
+        // (the user reported this regression after Phase 3 wiring).
+        for (const propname of [
+            'colormode', 'elepot', 'ramp_above',
+            'lowcol', 'midcol', 'highcol',
+            'lowpar', 'midpar', 'highpar',
+        ]) {
+            const cm = makeCm()
+            const h = mountHook(cm)
+            await flush()
+            cm.invokeService.mockClear()
+            act(() => {
+                cm.fireEvent({ obj: { propname } })
+            })
+            await act(async () => {
+                await new Promise((r) => setTimeout(r, 50))
+            })
+            await flush()
+            expect(cm.invokeService).toHaveBeenCalled()
+            h.unmount()
+        }
+    })
+
     it('ignores unrelated PROPCHG events (e.g. "visible")', async () => {
         const cm = makeCm()
         const h = mountHook(cm)

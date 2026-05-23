@@ -11,7 +11,7 @@
 
 | Category | File | Total | done | wip | review | todo | frozen |
 |----------|------|------:|-----:|----:|-------:|-----:|-------:|
-| Panel | [panels.md](panels.md) | 26 | 0 | 15 | 0 | 11 | 0 |
+| Panel | [panels.md](panels.md) | 26 | 1 | 16 | 0 | 9 | 0 |
 | Menu | [menus.md](menus.md) | 4 | 1 | 2 | 0 | 1 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 13 | 0 | 0 | 0 | 13 | 0 |
@@ -20,7 +20,7 @@
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 0 | 1 | 0 | 12 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 0 | 1 | 0 | 27 | 0 |
 | Other | [other.md](other.md) | 4 | 0 | 1 | 0 | 3 | 0 |
-| **Total** | | **129** | **2** | **24** | **0** | **103** | **0** |
+| **Total** | | **129** | **3** | **25** | **0** | **101** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -47,8 +47,8 @@
 | merged | 1 |
 | split | 14 |
 | redesign | 0 |
-| deprecated (`dropped`) | 1 |
-| *(not yet assigned)* | 105 |
+| deprecated (`dropped`) | 2 |
+| *(not yet assigned)* | 103 |
 
 ---
 
@@ -78,9 +78,10 @@
 | [`panel.coloring.deck.cpk`](panels.md#panelcoloringdeckcpk) | `ColorPane` (CpkDeck) / `rendererColoring.service` (`setColoringProp`) | Phase 2: 7 element colour fields (col_C…col_X) committing through `setColoringProp` with the materialize-on-default guard. |
 | [`panel.coloring.deck.rainbow`](panels.md#panelcoloringdeckrainbow) | `ColorPane` (RainbowDeck) / `rendererColoring.service` (`setColoringProp`) | Phase 2: Mode / Change-by + Start H / End H / Brightness / Saturation. UI scales bri/sat 0–100% ↔ stored 0–1. |
 | [`panel.coloring.deck.bfac`](panels.md#panelcoloringdeckbfac) | `ColorPane` (BfacDeck) / `rendererColoring.service` (`setColoringProp`) | Phase 2: Mode + Low/High colour + Auto/Manual + Low/High parameter (disabled outside Manual). |
+| [`panel.coloring.deck.elepot`](panels.md#panelcoloringdeckelepot) | `ColorPane` (ElepotDeck) / `useElePotMapObjects` / `rendererColoring.service` (`setRendererElepotProp`, `listElePotMapObjects`, `paint-type-elepot`) | Phase 3: ElePotMap selector + Color-by-SAS + Low/Mid/High (par, colour) ramp. Elepot props live on the surface renderer (not a ColoringScheme); deck appears when `colormode === "potential"` on `molsurf` / `dsurface`. Dropdown item is surface-gated. |
 
 ---
 
 ## Unstarted
 
-**103 / 129** items are `todo` (not yet started).
+**102 / 129** items are `todo` (not yet started).

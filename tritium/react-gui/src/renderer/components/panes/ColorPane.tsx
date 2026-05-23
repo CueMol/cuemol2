@@ -45,12 +45,16 @@ import type {
     BfacParams,
     ColoringTargetKind,
     CpkColors,
+    ElePotMapObjectEntry,
+    ElepotParams,
     PaintCapableRendererEntry,
     PaintEntryDto,
     RainbowParams,
 } from '../../worker/server/services/rendererColoring.service'
 import { usePaintCapableRenderers } from '../../hooks/usePaintCapableRenderers'
 import { useRendererColoringState } from '../../hooks/useRendererColoringState'
+import { useElePotMapObjects } from '../../hooks/useElePotMapObjects'
+import { PaintSelCell } from './PaintSelCell'
 
 // ────────────────────────────────────────────────────────────
 // Named colour --> CSS hex preview (subset; informational only)
@@ -93,8 +97,15 @@ const resolveColorPreview = (color: string): string => {
 interface ColoringModeItem {
     label: string
     coloringId: RendColoringId | null
-    /** Phase 1 wired Paint / Solid / Reset; Phase 2 adds CPK / Bfac / Rainbow. */
+    /** Wired in Phase 1/2/3 (Multi-gradient still deferred). */
     enabled: boolean
+    /**
+     * UXP `setupColoringSelector` hides the Electrostatic-potential item
+     * unless the renderer is `molsurf` / `dsurface`. We mirror that with a
+     * per-item gate that the parent component evaluates against
+     * `state.surfaceType`.
+     */
+    surfaceOnly?: boolean
 }
 
 const COLORING_MODE_ITEMS: ColoringModeItem[] = [
@@ -103,7 +114,7 @@ const COLORING_MODE_ITEMS: ColoringModeItem[] = [
     { label: 'CPK coloring',            coloringId: 'paint-type-cpk',      enabled: true  },
     { label: 'Bfac/Occ coloring',       coloringId: 'paint-type-bfac',     enabled: true  },
     { label: 'Rainbow coloring',        coloringId: 'paint-type-rainbow',  enabled: true  },
-    { label: 'Electrostatic potential', coloringId: null,                  enabled: false },
+    { label: 'Electrostatic potential', coloringId: 'paint-type-elepot',   enabled: true, surfaceOnly: true },
     { label: 'Multi-gradient coloring', coloringId: null,                  enabled: false },
     { label: 'Reset to default style',  coloringId: 'paint-type-resetdef', enabled: true  },
 ]
@@ -218,6 +229,15 @@ interface PaintTableProps {
     onMoveUp: () => void
     onMoveDown: () => void
     onUpdate: (idx: number, field: 'selStr' | 'colorValue', value: string) => void
+    /** sceneId required for MolSelList named-def lookup. */
+    sceneId: number
+    /**
+     * Parent mol uid (for renderer-row targets, the renderer's parent
+     * object; for object-row targets, the object itself). Forwarded to
+     * MolSelList so the picker shows the molecule's "current (<sel>)"
+     * preset and any mol-scope named defs.
+     */
+    molId?: number
 }
 
 const PaintTable: React.FC<PaintTableProps> = ({
@@ -229,6 +249,8 @@ const PaintTable: React.FC<PaintTableProps> = ({
     onMoveUp,
     onMoveDown,
     onUpdate,
+    sceneId,
+    molId,
 }) => {
     // Local edit buffer keyed by idx, so typing in the input is responsive
     // and only commits to the worker on blur.
@@ -298,18 +320,14 @@ const PaintTable: React.FC<PaintTableProps> = ({
                                     onClick={() => onSelect(entry.idx)}
                                 >
                                     <td className="color-cell-selection">
-                                        <input
-                                            className="color-inline-input"
-                                            value={cellValue(entry.idx, 'selStr')}
-                                            onChange={(e) =>
-                                                setCell(entry.idx, 'selStr', e.target.value)
-                                            }
+                                        <PaintSelCell
+                                            sceneID={sceneId}
+                                            molID={molId}
+                                            value={entry.selStr}
                                             onFocus={() => onSelect(entry.idx)}
-                                            onBlur={() => commit(entry.idx, 'selStr')}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') e.currentTarget.blur()
-                                            }}
-                                            spellCheck={false}
+                                            onCommit={(v) =>
+                                                onUpdate(entry.idx, 'selStr', v)
+                                            }
                                         />
                                     </td>
                                     <td
@@ -681,6 +699,129 @@ const BfacDeck: React.FC<BfacDeckProps> = ({ params, onCommit }) => {
     )
 }
 
+interface ElepotDeckProps {
+    params: ElepotParams
+    /** ElePotMap objects available for the "potential object" selector. */
+    objects: ElePotMapObjectEntry[]
+    onCommit: (propName: string, value: string | number | boolean) => void
+}
+
+/**
+ * Mirrors UXP `coloring-deck-elepot.xul`. Properties live on the surface
+ * renderer itself (not on a ColoringScheme); the deck appears whenever the
+ * renderer's `colormode === "potential"`. The selector is the only widget
+ * unique to this deck -- everything else reuses ColorField / NumberField.
+ */
+const ElepotDeck: React.FC<ElepotDeckProps> = ({ params, objects, onCommit }) => (
+    <div className="color-deck-scroll">
+        <div className="color-section-label">Elepot coloring:</div>
+        <div className="color-field-row">
+            <label className="color-field-label">Potential</label>
+            <HTMLSelect
+                value={params.elepot}
+                disabled={objects.length === 0}
+                onChange={(e) => onCommit('elepot', e.target.value)}
+                className="color-field-input color-enum-select"
+            >
+                {/* When the renderer's elepot is unset or points to a now-deleted
+                  * object, show a sentinel row so the dropdown is still
+                  * controlled. UXP shows the same "(none)" state via
+                  * `mPotSel.selectObjectByName("")`. */}
+                {objects.find((o) => o.name === params.elepot) === undefined && (
+                    <option value={params.elepot}>
+                        {params.elepot || '(no ElePotMap selected)'}
+                    </option>
+                )}
+                {objects.map((o) => (
+                    <option key={o.objId} value={o.name}>
+                        {o.name}
+                    </option>
+                ))}
+            </HTMLSelect>
+        </div>
+        <div className="color-field-row">
+            <label className="color-field-label">By SAS</label>
+            <input
+                type="checkbox"
+                checked={params.rampAbove}
+                onChange={(e) => onCommit('ramp_above', e.target.checked)}
+            />
+        </div>
+        <div className="color-field-row color-elepot-ramp-row">
+            <label className="color-elepot-ramp-label">High</label>
+            <NumberFieldInline value={params.highParam} onCommit={(v) => onCommit('highpar', v)} />
+            <ColorSwatchInline value={params.highColor} onCommit={(v) => onCommit('highcol', v)} />
+        </div>
+        <div className="color-field-row color-elepot-ramp-row">
+            <label className="color-elepot-ramp-label">Mid</label>
+            <NumberFieldInline value={params.midParam} onCommit={(v) => onCommit('midpar', v)} />
+            <ColorSwatchInline value={params.midColor} onCommit={(v) => onCommit('midcol', v)} />
+        </div>
+        <div className="color-field-row color-elepot-ramp-row">
+            <label className="color-elepot-ramp-label">Low</label>
+            <NumberFieldInline value={params.lowParam} onCommit={(v) => onCommit('lowpar', v)} />
+            <ColorSwatchInline value={params.lowColor} onCommit={(v) => onCommit('lowcol', v)} />
+        </div>
+    </div>
+)
+
+/**
+ * Compact numeric editor used inside the Elepot ramp rows. Same blur-commit
+ * semantics as NumberField but rendered without its label column so the
+ * (value, colour) pair fits on one row.
+ */
+const NumberFieldInline: React.FC<{
+    value: number
+    onCommit: (next: number) => void
+}> = ({ value, onCommit }) => {
+    const [draft, setDraft] = useState(value.toString())
+    useEffect(() => setDraft(value.toString()), [value])
+    const commit = () => {
+        const parsed = parseFloat(draft)
+        if (isNaN(parsed)) { setDraft(value.toString()); return }
+        if (parsed !== value) onCommit(parsed)
+    }
+    return (
+        <input
+            className="color-inline-input color-field-input color-elepot-number"
+            type="number"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }}
+        />
+    )
+}
+
+/**
+ * Colour swatch + text editor without the label column. Pair with
+ * `NumberFieldInline` to recreate the UXP `(param, colour)` row.
+ */
+const ColorSwatchInline: React.FC<{
+    value: string
+    onCommit: (next: string) => void
+}> = ({ value, onCommit }) => {
+    const [draft, setDraft] = useState(value)
+    useEffect(() => setDraft(value), [value])
+    const commit = () => { if (draft !== value) onCommit(draft) }
+    return (
+        <>
+            <div
+                className="color-solid-swatch"
+                style={{ backgroundColor: resolveColorPreview(draft) }}
+            />
+            <input
+                className="color-inline-input color-value-input color-field-input"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onBlur={commit}
+                onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }}
+                spellCheck={false}
+            />
+        </>
+    )
+}
+
 // ────────────────────────────────────────────────────────────
 // Main component
 // ────────────────────────────────────────────────────────────
@@ -725,6 +866,17 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
 
     const target = selectedKey ? parseTargetKey(selectedKey) : null
 
+    // Parent mol uid for the currently-selected target. Forwarded to
+    // PaintSelCell so MolSelList can populate its "current (<sel>)" preset
+    // and surface molecule-scoped named sel defs.
+    const parentMolId = useMemo(() => {
+        if (target === null) return undefined
+        const entry = renderers.find(
+            (r) => r.targetKind === target.targetKind && r.rendId === target.id,
+        )
+        return entry?.objId
+    }, [target, renderers])
+
     const { state } = useRendererColoringState({
         cm,
         sceneId,
@@ -735,6 +887,18 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
     const className = state?.className ?? ''
     const defaultColor = state?.defaultColor ?? ''
     const entries = state?.paintEntries ?? []
+    const surfaceType = state?.surfaceType ?? ''
+    const isSurface = surfaceType === 'molsurf' || surfaceType === 'dsurface'
+    const isElepotActive = isSurface && state?.colormode === 'potential'
+
+    // Fetch the ElePotMap object list only while the Elepot deck is active;
+    // outside of that the dropdown is hidden and the listener would burn
+    // cycles on unrelated object-add/remove events.
+    const { objects: elePotObjects } = useElePotMapObjects({
+        cm,
+        sceneId,
+        enabled: isElepotActive,
+    })
 
     // ── Mutation handlers ──
     const requireTarget = useCallback(
@@ -873,6 +1037,26 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
         [cm, requireTarget],
     )
 
+    /**
+     * Elepot widgets commit directly on the renderer (lowpar/midpar/highpar
+     * etc.) -- not on a ColoringScheme -- so they route through a separate
+     * service. Mirrors UXP `commitElepotPropChange`.
+     */
+    const onSetElepotProp = useCallback(
+        (propName: string, value: string | number | boolean) => {
+            const t = requireTarget()
+            if (!t || !cm) return
+            cm.invokeService('setRendererElepotProp', {
+                ...t,
+                propName,
+                propValue: value,
+            }).catch((err: unknown) => {
+                console.warn('setRendererElepotProp failed:', err)
+            })
+        },
+        [cm, requireTarget],
+    )
+
     // ── Deck routing ──
     const renderDeck = (): React.ReactNode => {
         if (sceneId === undefined || target === null) {
@@ -893,6 +1077,19 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
                 </div>
             )
         }
+        // UXP `_setupData` routes surface + colormode==potential to the
+        // Elepot deck before evaluating the coloring class, so do the same
+        // here -- a surface may have a stale CPK/Rainbow coloring set when
+        // it is in potential mode and that should not surface its deck.
+        if (isElepotActive && state.elepotParams) {
+            return (
+                <ElepotDeck
+                    params={state.elepotParams}
+                    objects={elePotObjects}
+                    onCommit={onSetElepotProp}
+                />
+            )
+        }
         if (className === PAINT_DECK_CLASS) {
             return (
                 <PaintTable
@@ -904,6 +1101,8 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
                     onMoveUp={() => onMoveRow('up')}
                     onMoveDown={() => onMoveRow('down')}
                     onUpdate={onUpdateCell}
+                    sceneId={sceneId}
+                    molId={parentMolId}
                 />
             )
         }
@@ -952,22 +1151,29 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
                             placement="bottom-end"
                             content={
                                 <Menu>
-                                    {COLORING_MODE_ITEMS.map((it, i) => (
-                                        <MenuItem
-                                            key={i}
-                                            text={
-                                                it.enabled
-                                                    ? it.label
-                                                    : `${it.label} (coming soon)`
-                                            }
-                                            disabled={!it.enabled}
-                                            onClick={() => {
-                                                if (it.enabled && it.coloringId) {
-                                                    onSelectMode(it.coloringId)
+                                    {COLORING_MODE_ITEMS
+                                        // UXP `setupColoringSelector` hides
+                                        // the Electrostatic-potential item on
+                                        // non-surface renderers; do the same
+                                        // here so the dropdown matches the
+                                        // active target's capabilities.
+                                        .filter((it) => !it.surfaceOnly || isSurface)
+                                        .map((it, i) => (
+                                            <MenuItem
+                                                key={i}
+                                                text={
+                                                    it.enabled
+                                                        ? it.label
+                                                        : `${it.label} (coming soon)`
                                                 }
-                                            }}
-                                        />
-                                    ))}
+                                                disabled={!it.enabled}
+                                                onClick={() => {
+                                                    if (it.enabled && it.coloringId) {
+                                                        onSelectMode(it.coloringId)
+                                                    }
+                                                }}
+                                            />
+                                        ))}
                                 </Menu>
                             }
                         >

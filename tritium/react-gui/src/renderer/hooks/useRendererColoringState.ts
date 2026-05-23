@@ -24,6 +24,21 @@ const REFETCH_DEBOUNCE_MS = 30
 // keeps the subscription wire identical regardless of target kind.
 const COLORING_EVENT_MASK = SEM_OBJECT | SEM_RENDERER
 
+/**
+ * Renderer-level props that the Elepot deck reads. PROPCHG events for
+ * these surface with the propname matching the renderer's own field
+ * (not "coloring"), so the filter has to allow them through. Kept in sync
+ * with `readElepotParams` + `paint-type-elepot` mutation set in
+ * `rendererColoring.service.ts`.
+ */
+const ELEPOT_REFETCH_PROPS = new Set<string>([
+    'colormode',
+    'elepot',
+    'ramp_above',
+    'lowcol', 'midcol', 'highcol',
+    'lowpar', 'midpar', 'highpar',
+])
+
 export interface UseRendererColoringStateOptions {
     cm: AsyncCueMol | null
     sceneId: number | undefined
@@ -42,6 +57,8 @@ const EMPTY_STATE: GetRendererColoringStateResult = {
     className: '',
     defaultColor: '',
     paintEntries: [],
+    surfaceType: '',
+    colormode: '',
 }
 
 /**
@@ -96,6 +113,15 @@ export function useRendererColoringState({
     // ADDED / REMOVING events on the renderer (paint entries are
     // implementation details of the PaintColoring object; their churn
     // surfaces as ADDED / REMOVING events scoped to the parent renderer).
+    //
+    // For CPK / Rainbow / Bfac decks the C++ side fires the PROPCHG on the
+    // parent renderer with `propname === "coloring"` because the change
+    // happens to the renderer's coloring sub-object. For the Elepot deck
+    // the eight ramp props live directly on the surface renderer, so the
+    // events surface with their own propnames -- whitelist those too so
+    // the deck refreshes after every commit. `colormode` is included
+    // because switching it (e.g. molecule -> potential) needs the deck to
+    // re-route.
     const handler = useCallback((args: unknown) => {
         const payload = args as { obj?: { propname?: string } } | undefined
         const propname = payload?.obj?.propname
@@ -104,7 +130,11 @@ export function useRendererColoringState({
             refetch()
             return
         }
-        if (propname === 'coloring' || propname === 'defaultcolor') {
+        if (
+            propname === 'coloring' ||
+            propname === 'defaultcolor' ||
+            ELEPOT_REFETCH_PROPS.has(propname)
+        ) {
             refetch()
         }
     }, [refetch])

@@ -1102,3 +1102,282 @@ describe('setColoringProp', () => {
         expect(f.scene.getObject).toHaveBeenCalledWith(10)
     })
 })
+
+// ============================================================
+// Elepot deck (Phase 3)
+// ============================================================
+//
+// Elepot props live on the surface renderer itself (not on a coloring
+// scheme), so the rich-fixture proxy that targets `coloring.setProp`
+// doesn't fit. Build a focused fixture per test instead.
+
+interface ElepotRendOpts {
+    typeName?: string // 'molsurf' | 'dsurface' | other
+    colormode?: string
+    elepot?: string
+    rampAbove?: boolean
+    lowpar?: number
+    midpar?: number
+    highpar?: number
+    lowcol?: string
+    midcol?: string
+    highcol?: string
+    /** Extra scene objects to expose in getSceneDataJSON for the selector tests. */
+    sceneObjects?: { id: number; name: string; type: string }[]
+}
+
+function makeElepotFixture(opts: ElepotRendOpts = {}) {
+    const {
+        typeName = 'molsurf',
+        colormode = 'potential',
+        elepot = '',
+        rampAbove = false,
+        lowpar = -1, midpar = 0, highpar = 1,
+        lowcol = '#0000FF', midcol = '#FFFFFF', highcol = '#FF0000',
+        sceneObjects = [],
+    } = opts
+
+    const setProp = vi.fn()
+    const props: Record<string, unknown> = {
+        type_name: typeName,
+        colormode,
+        elepot,
+        ramp_above: rampAbove,
+        lowpar, midpar, highpar,
+        lowcol: { toString: () => lowcol },
+        midcol: { toString: () => midcol },
+        highcol: { toString: () => highcol },
+    }
+    const rend = new Proxy({ setProp }, {
+        get(target: Record<string, unknown>, key: string) {
+            if (key in target) return target[key]
+            return props[key]
+        },
+        set(_t, key: string, value: unknown) {
+            props[key as string] = value
+            return true
+        },
+    })
+
+    const sceneDataJSON: unknown[] = [
+        { type: '', ID: 1, name: 'scene' },
+        // Default: include a single molsurf object containing the rend.
+        { type: 'MolSurfObj', ID: 50, name: 'surf1', rends: [{
+            ID: 100, name: 'r1', type: typeName,
+        }] },
+        ...sceneObjects.map((o) => ({ ID: o.id, name: o.name, type: o.type })),
+    ]
+
+    const scene = {
+        uid: 7,
+        getRenderer: vi.fn((id: number) => (id === 100 ? rend : null)),
+        getObject: vi.fn(() => null),
+        getSceneDataJSON: vi.fn(() => JSON.stringify(sceneDataJSON)),
+        startUndoTxn: vi.fn(),
+        commitUndoTxn: vi.fn(),
+        rollbackUndoTxn: vi.fn(),
+    }
+
+    const ctx = {
+        sceMgr: { getScene: vi.fn(() => scene) },
+        svc: { createObj: vi.fn() },
+        styleMgr: { getStyleNamesJSON: vi.fn(() => '[]') },
+    } as unknown as WorkerContext
+
+    return { ctx, scene, rend, setProp, props }
+}
+
+describe('getRendererColoringState -- Elepot deck routing', () => {
+    beforeEach(() => vi.clearAllMocks())
+
+    it('returns elepotParams when surface + colormode == "potential"', () => {
+        const { ctx } = makeElepotFixture({
+            typeName: 'molsurf',
+            colormode: 'potential',
+            elepot: 'pot1', rampAbove: true,
+            lowpar: -1.5, midpar: 0.0, highpar: 1.5,
+            lowcol: '#0000FF', midcol: '#FFFFFF', highcol: '#FF0000',
+        })
+        const res = services.getRendererColoringState(ctx, {
+            sceneId: 1, rendId: 100,
+        })
+        expect(res.ok).toBe(true)
+        expect(res.surfaceType).toBe('molsurf')
+        expect(res.colormode).toBe('potential')
+        expect(res.elepotParams).toEqual({
+            elepot: 'pot1',
+            rampAbove: true,
+            lowParam: -1.5, midParam: 0, highParam: 1.5,
+            lowColor: '#0000FF', midColor: '#FFFFFF', highColor: '#FF0000',
+        })
+    })
+
+    it('omits elepotParams when surface but colormode != "potential"', () => {
+        const { ctx } = makeElepotFixture({
+            typeName: 'molsurf', colormode: 'molecule',
+        })
+        const res = services.getRendererColoringState(ctx, {
+            sceneId: 1, rendId: 100,
+        })
+        expect(res.elepotParams).toBeUndefined()
+        expect(res.surfaceType).toBe('molsurf')
+        expect(res.colormode).toBe('molecule')
+    })
+
+    it('omits elepotParams on non-surface renderers even with potential mode', () => {
+        const { ctx } = makeElepotFixture({
+            typeName: 'cartoon', colormode: 'potential',
+        })
+        const res = services.getRendererColoringState(ctx, {
+            sceneId: 1, rendId: 100,
+        })
+        expect(res.elepotParams).toBeUndefined()
+        expect(res.surfaceType).toBe('cartoon')
+        expect(res.colormode).toBe('')
+    })
+
+    it('accepts dsurface as an Elepot-capable surface', () => {
+        const { ctx } = makeElepotFixture({
+            typeName: 'dsurface', colormode: 'potential',
+        })
+        const res = services.getRendererColoringState(ctx, {
+            sceneId: 1, rendId: 100,
+        })
+        expect(res.elepotParams).toBeDefined()
+        expect(res.surfaceType).toBe('dsurface')
+    })
+})
+
+describe('listElePotMapObjects', () => {
+    beforeEach(() => vi.clearAllMocks())
+
+    it('returns only ElePotMap-typed objects', () => {
+        const { ctx } = makeElepotFixture({
+            sceneObjects: [
+                { id: 10, name: 'mol1', type: 'PDBMol' },
+                { id: 11, name: 'pot1', type: 'ElePotMap' },
+                { id: 12, name: 'pot2', type: 'ElePotMap' },
+                { id: 13, name: 'dmap', type: 'DensityMap' },
+            ],
+        })
+        const res = services.listElePotMapObjects(ctx, { sceneId: 1 })
+        expect(res.ok).toBe(true)
+        expect(res.objects).toEqual([
+            { objId: 11, name: 'pot1' },
+            { objId: 12, name: 'pot2' },
+        ])
+    })
+
+    it('returns an empty list when the scene has no ElePotMap', () => {
+        const { ctx } = makeElepotFixture()
+        const res = services.listElePotMapObjects(ctx, { sceneId: 1 })
+        expect(res.ok).toBe(true)
+        expect(res.objects).toEqual([])
+    })
+})
+
+describe('setRendererElepotProp', () => {
+    beforeEach(() => vi.clearAllMocks())
+
+    it('writes a numeric prop on the renderer under undo', () => {
+        const f = makeElepotFixture()
+        const res = services.setRendererElepotProp(f.ctx, {
+            sceneId: 1, rendId: 100, propName: 'highpar', propValue: 2.5,
+        })
+        expect(res).toEqual({ ok: true })
+        expect(f.setProp).toHaveBeenCalledWith('highpar', 2.5)
+        expect(f.scene.startUndoTxn).toHaveBeenCalledWith('Change Elepot coloring')
+        expect(f.scene.commitUndoTxn).toHaveBeenCalled()
+    })
+
+    it('writes a boolean ramp_above prop', () => {
+        const f = makeElepotFixture()
+        services.setRendererElepotProp(f.ctx, {
+            sceneId: 1, rendId: 100, propName: 'ramp_above', propValue: true,
+        })
+        expect(f.setProp).toHaveBeenCalledWith('ramp_above', true)
+    })
+
+    it('writes the elepot object name as a string', () => {
+        const f = makeElepotFixture()
+        services.setRendererElepotProp(f.ctx, {
+            sceneId: 1, rendId: 100, propName: 'elepot', propValue: 'pot1',
+        })
+        expect(f.setProp).toHaveBeenCalledWith('elepot', 'pot1')
+    })
+
+    it('compiles colour-valued props through makeColor (not the raw string)', () => {
+        const f = makeElepotFixture()
+        services.setRendererElepotProp(f.ctx, {
+            sceneId: 1, rendId: 100, propName: 'lowcol', propValue: '#0000FF',
+        })
+        const call = f.setProp.mock.calls[0]
+        expect(call[0]).toBe('lowcol')
+        // makeColor wraps the string in { __color, __uid }; the worker
+        // unwraps via .wrapped, which our mock leaves undefined. The
+        // contract being pinned is that the raw string is not passed.
+        expect(call[1]).not.toBe('#0000FF')
+    })
+
+    it('rejects on non-surface renderers', () => {
+        const f = makeElepotFixture({ typeName: 'cartoon' })
+        const res = services.setRendererElepotProp(f.ctx, {
+            sceneId: 1, rendId: 100, propName: 'highpar', propValue: 1,
+        })
+        expect(res).toEqual({ ok: false })
+        expect(f.setProp).not.toHaveBeenCalled()
+    })
+})
+
+describe('setRendererColoring -- paint-type-elepot', () => {
+    beforeEach(() => vi.clearAllMocks())
+
+    it('sets colormode = "potential" on a surface renderer', () => {
+        const f = makeElepotFixture({
+            typeName: 'molsurf', colormode: 'molecule', elepot: 'pot1',
+        })
+        const res = services.setRendererColoring(f.ctx, {
+            sceneId: 1, rendId: 100, coloringId: 'paint-type-elepot',
+        })
+        expect(res).toEqual({ ok: true })
+        expect(f.props.colormode).toBe('potential')
+        // elepot was already set so don't overwrite it.
+        expect(f.props.elepot).toBe('pot1')
+        expect(f.scene.startUndoTxn).toHaveBeenCalledWith('Change to elepot coloring')
+    })
+
+    it('picks the first ElePotMap when the renderer has no elepot yet', () => {
+        const f = makeElepotFixture({
+            typeName: 'molsurf', colormode: 'molecule', elepot: '',
+            sceneObjects: [
+                { id: 20, name: 'potA', type: 'ElePotMap' },
+                { id: 21, name: 'potB', type: 'ElePotMap' },
+            ],
+        })
+        services.setRendererColoring(f.ctx, {
+            sceneId: 1, rendId: 100, coloringId: 'paint-type-elepot',
+        })
+        expect(f.props.elepot).toBe('potA')
+        expect(f.props.colormode).toBe('potential')
+    })
+
+    it('leaves elepot empty when the scene has no ElePotMap', () => {
+        const f = makeElepotFixture({
+            typeName: 'molsurf', colormode: 'molecule', elepot: '',
+        })
+        services.setRendererColoring(f.ctx, {
+            sceneId: 1, rendId: 100, coloringId: 'paint-type-elepot',
+        })
+        expect(f.props.elepot).toBe('')
+        expect(f.props.colormode).toBe('potential')
+    })
+
+    it('refuses on non-surface renderers', () => {
+        const f = makeElepotFixture({ typeName: 'cartoon' })
+        const res = services.setRendererColoring(f.ctx, {
+            sceneId: 1, rendId: 100, coloringId: 'paint-type-elepot',
+        })
+        expect(res).toEqual({ ok: false })
+        expect(f.scene.startUndoTxn).not.toHaveBeenCalled()
+    })
+})

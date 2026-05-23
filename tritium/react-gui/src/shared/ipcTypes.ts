@@ -191,6 +191,7 @@ export type RendColoringId =
   | 'paint-type-paint'
   | 'paint-type-cpk'
   | 'paint-type-solid'
+  | 'paint-type-elepot'
   | 'paint-type-resetdef'
 
 /**

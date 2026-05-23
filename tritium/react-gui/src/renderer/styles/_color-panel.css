@@ -308,3 +308,62 @@
   top: 4px;
   right: 4px;
 }
+
+/* Elepot ramp row mirrors the UXP `coloring-deck-elepot` 3-column grid:
+ * a narrow label, a compact numeric input, a swatch, then a hex text box
+ * that takes the remaining width. The default `.color-field-label`
+ * min-width (78px) leaves a big gap before "High"/"Mid"/"Low" -- shrink it
+ * here so the row reads as a tight unit like the UXP screenshot. */
+.color-elepot-ramp-row {
+  gap: 4px;
+}
+
+.color-elepot-ramp-label {
+  /* "High" / "Mid" / "Low" fit in ~36px at the default font size. */
+  min-width: 36px;
+  font-size: var(--fs-base);
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.color-elepot-number {
+  flex: 0 0 50px;
+  width: 50px;
+  text-align: right;
+}
+
+/* Paint table selection cell uses MolSelList (InputGroup + picker).
+ * Override the widget's default 30px height to match the rest of the
+ * table's compact rows, and strip the cell padding so the MolSelList
+ * border sits flush with the cell edge. MolSelList's height is driven
+ * by --mol-sel-list-height (see _mol-sel-list.css), so a single var
+ * assignment cascades to both the InputGroup and the picker <select>. */
+.color-cell-selection:has(.color-paint-sel-cell) {
+  padding: 0;
+}
+
+.color-paint-sel-cell {
+  width: 100%;
+}
+
+.color-paint-sel-cell .mol-sel-list {
+  --mol-sel-list-height: 22px;
+}
+
+/* Make the InputGroup blend into the row: kill its rounded border + bg
+ * so the cell reads as one continuous text field, only highlighting on
+ * focus so the user can see what is being edited. */
+.color-paint-sel-cell .bp5-input-group .bp5-input {
+  height: 22px;
+  min-height: 22px;
+  line-height: 22px;
+  font-size: var(--fs-lg);
+  padding: 0 4px;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.color-paint-sel-cell .bp5-input-group .bp5-input:focus {
+  box-shadow: inset 0 0 0 1px var(--accent);
+}

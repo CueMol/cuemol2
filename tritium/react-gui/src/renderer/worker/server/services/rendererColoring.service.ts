@@ -128,6 +128,25 @@ function isMolSurf(rend: Renderer): boolean {
 }
 
 /**
+ * Read `type_name` from a renderer; returns "" for wrappers that don't expose
+ * the field (e.g. some renderer groups, or non-renderer objects).
+ */
+function readTypeName(rend: Renderer): string {
+    try {
+        const t = (rend as unknown as { type_name?: unknown }).type_name;
+        return typeof t === 'string' ? t : '';
+    } catch {
+        return '';
+    }
+}
+
+/** Surface-class renderers eligible for the Elepot deck. */
+function isElepotCapable(rend: Renderer): boolean {
+    const t = readTypeName(rend);
+    return t === 'molsurf' || t === 'dsurface';
+}
+
+/**
  * Apply a `style-XXX` coloring style.
  *
  * Steps mirror UXP:
@@ -223,6 +242,24 @@ function setRendererColoring(
             // the renderer's defaultcolor picker.
             withUndoTxn(scene, 'Reset coloring', () => {
                 rend.resetProp('coloring');
+            });
+            return { ok: true };
+        case 'paint-type-elepot':
+            // UXP `setDefaultElepot`: only valid for molsurf / dsurface.
+            // Switches `colormode = "potential"` and, when the renderer has
+            // no `elepot` yet, picks the first ElePotMap in the scene as a
+            // sensible default. Mirrors `setDefaultElepot` in coloring-panel.js.
+            if (!isElepotCapable(rend)) return { ok: false };
+            withUndoTxn(scene, 'Change to elepot coloring', () => {
+                const r = rend as unknown as {
+                    colormode: string;
+                    elepot: string;
+                };
+                if (!r.elepot) {
+                    const defName = findFirstElePotMapName(ctx, scene);
+                    if (defName) r.elepot = defName;
+                }
+                r.colormode = 'potential';
             });
             return { ok: true };
         default:
@@ -622,6 +659,25 @@ export interface RainbowParams {
     brightness: number;
 }
 
+/**
+ * Editor params for the Elepot deck. Unlike CPK/Rainbow/Bfac these properties
+ * live on the **renderer** itself (lowpar/midpar/highpar/lowcol/midcol/highcol/
+ * elepot/ramp_above), not on a ColoringScheme; the deck appears when a
+ * surface renderer has `colormode === "potential"`.
+ */
+export interface ElepotParams {
+    /** Currently selected ElePotMap object name (empty when none). */
+    elepot: string;
+    /** UXP `ramp_above` -- "Color by SAS" checkbox. */
+    rampAbove: boolean;
+    lowColor: string;
+    midColor: string;
+    highColor: string;
+    lowParam: number;
+    midParam: number;
+    highParam: number;
+}
+
 /** Editor params for `BfacColoring`. */
 export interface BfacParams {
     /** "bfac" | "occ" | "center"; UXP `coloring.mode`. */
@@ -652,6 +708,19 @@ export interface GetRendererColoringStateResult {
     rainbowParams?: RainbowParams;
     /** Populated only when className === "BfacColoring". */
     bfacParams?: BfacParams;
+    /**
+     * Renderer type name (e.g. "molsurf", "dsurface", "cartoon"). Empty for
+     * objects and groups. Used by the renderer-side dropdown to gate the
+     * "Electrostatic potential" item.
+     */
+    surfaceType: string;
+    /**
+     * MolSurfRenderer colormode (e.g. "molecule", "potential", "solid").
+     * Empty for renderers without the colormode property.
+     */
+    colormode: string;
+    /** Populated only when the renderer is a surface AND colormode === "potential". */
+    elepotParams?: ElepotParams;
 }
 
 function readDefaultColor(rend: Renderer): string {
@@ -754,6 +823,57 @@ function readBfacParams(coloring: unknown): BfacParams {
     };
 }
 
+function safeReadBool(obj: unknown, prop: string): boolean {
+    try {
+        const v = (obj as Record<string, unknown>)[prop];
+        return v === true;
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Read the eight Elepot widget values directly off the surface renderer.
+ * Mirrors `updateElepotWidgets` in UXP coloring-panel.js. All reads are
+ * defensive because dsurface lacks some of the props that molsurf carries.
+ */
+function readElepotParams(rend: Renderer): ElepotParams {
+    return {
+        elepot: safeReadString(rend, 'elepot'),
+        rampAbove: safeReadBool(rend, 'ramp_above'),
+        lowColor: safeReadColorString(rend, 'lowcol'),
+        midColor: safeReadColorString(rend, 'midcol'),
+        highColor: safeReadColorString(rend, 'highcol'),
+        lowParam: safeReadNumber(rend, 'lowpar'),
+        midParam: safeReadNumber(rend, 'midpar'),
+        highParam: safeReadNumber(rend, 'highpar'),
+    };
+}
+
+/**
+ * Walk the scene's top-level objects and return the first ElePotMap's name.
+ * Returns "" when the scene has no ElePotMap; mirrors the `mPotSel.getItemCount() > 0`
+ * + `getSelectedObj()` fallback in UXP `setDefaultElepot`.
+ */
+function findFirstElePotMapName(ctx: WorkerContext, scene: Scene): string {
+    try {
+        const json = scene.getSceneDataJSON();
+        const parsed = JSON.parse(json) as unknown;
+        if (!Array.isArray(parsed)) return '';
+        for (let i = 1; i < parsed.length; i++) {
+            const obj = parsed[i] as { type?: string; name?: string };
+            if (obj?.type === 'ElePotMap' && typeof obj.name === 'string') {
+                return obj.name;
+            }
+        }
+    } catch {
+        // Fall through to empty.
+    }
+    // `ctx` reserved for future scene-tree helpers; mark as used.
+    void ctx;
+    return '';
+}
+
 /**
  * Snapshot of the renderer's current coloring for the Coloring panel.
  *
@@ -768,22 +888,45 @@ function getRendererColoringState(
 ): GetRendererColoringStateResult {
     const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) {
-        return { ok: false, className: '', defaultColor: '', paintEntries: [] };
+        return {
+            ok: false, className: '', defaultColor: '',
+            paintEntries: [], surfaceType: '', colormode: '',
+        };
     }
     const rend = resolveColoringTarget(scene, args.targetKind, args.rendId);
     if (!rend) {
-        return { ok: false, className: '', defaultColor: '', paintEntries: [] };
+        return {
+            ok: false, className: '', defaultColor: '',
+            paintEntries: [], surfaceType: '', colormode: '',
+        };
     }
 
     const className = getColoringClassName(rend);
     const defaultColor = readDefaultColor(rend);
+    // Surface info (only meaningful for renderers; objects have no type_name
+    // / colormode and yield empty strings).
+    const surfaceType =
+        args.targetKind === 'object' ? '' : readTypeName(rend);
+    const colormode = isElepotCapable(rend)
+        ? safeReadString(rend, 'colormode')
+        : '';
 
     const result: GetRendererColoringStateResult = {
         ok: true,
         className,
         defaultColor,
         paintEntries: [],
+        surfaceType,
+        colormode,
     };
+
+    // Elepot deck takes priority over the coloring class on surface renderers
+    // (mirrors UXP `_setupData` which checks colormode === "potential" before
+    // dispatching by coloring class).
+    if (isElepotCapable(rend) && colormode === 'potential') {
+        result.elepotParams = readElepotParams(rend);
+        return result;
+    }
 
     if (className === 'PaintColoring') {
         const coloring = (rend as unknown as MolRenderer).coloring as PaintColoring;
@@ -1089,6 +1232,117 @@ function setColoringProp(
     return { ok: true };
 }
 
+// --- Elepot deck (renderer-property writer + ElePotMap selector list) ---
+
+export interface ListElePotMapObjectsArgs {
+    sceneId: number;
+}
+
+export interface ElePotMapObjectEntry {
+    /** C++ uid of the ElePotMap object. */
+    objId: number;
+    /** Object name shown in the selector. */
+    name: string;
+}
+
+export interface ListElePotMapObjectsResult {
+    ok: boolean;
+    objects: ElePotMapObjectEntry[];
+}
+
+/**
+ * List all ElePotMap objects in the scene. Drives the Elepot deck's
+ * "potential object" dropdown. Mirrors UXP `paint-elepot-obj-selector`
+ * which filters on `elem.type === "ElePotMap"`.
+ */
+function listElePotMapObjects(
+    ctx: WorkerContext,
+    args: ListElePotMapObjectsArgs,
+): ListElePotMapObjectsResult {
+    const scene = getSceneOrNull(ctx, args.sceneId);
+    if (!scene) return { ok: false, objects: [] };
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(scene.getSceneDataJSON());
+    } catch {
+        return { ok: false, objects: [] };
+    }
+    if (!Array.isArray(parsed)) return { ok: false, objects: [] };
+    const out: ElePotMapObjectEntry[] = [];
+    for (let i = 1; i < parsed.length; i++) {
+        const obj = parsed[i] as { ID?: number; type?: string; name?: string };
+        if (obj?.type !== 'ElePotMap') continue;
+        if (typeof obj.ID !== 'number') continue;
+        out.push({ objId: obj.ID, name: obj.name ?? '' });
+    }
+    return { ok: true, objects: out };
+}
+
+/**
+ * Elepot props whose value is a CueMol colour string and must be compiled
+ * through `makeColor` before being assigned. Reflects UXP `onElepotChange`
+ * commit branches.
+ */
+const ELEPOT_COLOR_PROPS = new Set<string>(['lowcol', 'midcol', 'highcol']);
+
+export interface SetRendererElepotPropArgs {
+    sceneId: number;
+    rendId: number;
+    targetKind?: ColoringTargetKind;
+    /**
+     * Property name on the surface renderer
+     * (`elepot` | `ramp_above` | `lowcol` | `midcol` | `highcol` |
+     *  `lowpar` | `midpar` | `highpar`).
+     */
+    propName: string;
+    /**
+     * Value to write. Colour-valued props compile to `AbstractColor.wrapped`;
+     * `ramp_above` is a boolean; numeric params come through as numbers;
+     * `elepot` is the target ElePotMap object name (string).
+     */
+    propValue: string | number | boolean;
+}
+
+export interface SetRendererElepotPropResult {
+    ok: boolean;
+}
+
+/**
+ * Write one Elepot property on a surface renderer.
+ *
+ * Mirrors UXP `commitElepotPropChange`: open an undo txn, call
+ * `rend._wrapped.setProp(propname, val)`. Refuses on non-surface renderers
+ * (matches the UXP `rend_type=="molsurf" || "dsurface"` gate).
+ */
+function setRendererElepotProp(
+    ctx: WorkerContext,
+    args: SetRendererElepotPropArgs,
+): SetRendererElepotPropResult {
+    const scene = getSceneOrNull(ctx, args.sceneId);
+    if (!scene) return { ok: false };
+    const rend = resolveColoringTarget(scene, args.targetKind, args.rendId);
+    if (!rend) return { ok: false };
+    if (!isElepotCapable(rend)) return { ok: false };
+
+    let value: unknown = args.propValue;
+    if (
+        ELEPOT_COLOR_PROPS.has(args.propName) &&
+        typeof args.propValue === 'string'
+    ) {
+        const ac = makeColor(ctx, args.propValue, scene.uid);
+        value = ac.wrapped;
+    }
+
+    withUndoTxn(scene, 'Change Elepot coloring', () => {
+        // Surface props live directly on the renderer's native wrapper;
+        // use the wrapper's setProp escape hatch (mirrors UXP
+        // `rend._wrapped.setProp(propname, val)`).
+        (rend as unknown as { setProp: (n: string, v: unknown) => void })
+            .setProp(args.propName, value);
+    });
+    return { ok: true };
+}
+
 export const services = {
     setRendererColoring,
     getPaintColoringStyles,
@@ -1104,4 +1358,6 @@ export const services = {
     movePaintEntry,
     setRendererDefaultColor,
     setColoringProp,
+    listElePotMapObjects,
+    setRendererElepotProp,
 };
