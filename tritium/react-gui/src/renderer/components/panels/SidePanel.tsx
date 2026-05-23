@@ -51,6 +51,7 @@ import { Icon } from "@blueprintjs/core";
 
 import type { ActivityView } from "../ActivityBar";
 import type { PaneCollapseState } from "../../hooks/useLayoutPersistence";
+import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
 
 import type { MoveSceneNodeArgs } from "../panes/sceneTreeDnd";
 import {
@@ -113,6 +114,11 @@ interface PaneConfig {
 interface SidePanelProps {
   /** Which activity-bar view is active. */
   activeView: ActivityView;
+
+  /** AsyncCueMol bridge; null until the worker finishes initialising. */
+  cm: AsyncCueMol | null;
+  /** Active scene UID, or undefined when no scene is active. */
+  activeSceneId: number | undefined;
 
   /* Scene / Explorer props */
   sceneTree: SceneTreeNode | null;
@@ -188,6 +194,8 @@ interface SidePanelProps {
  */
 export const SidePanel: React.FC<SidePanelProps> = ({
   activeView,
+  cm,
+  activeSceneId,
   sceneTree,
   sceneSelected,
   sceneSelectedIds,
@@ -274,7 +282,12 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         id: "color",
         defaultSize: 240,
         render: (collapsed, onToggle) => (
-          <ColorPane collapsed={collapsed} onToggleCollapse={onToggle} />
+          <ColorPane
+            cm={cm}
+            sceneId={activeSceneId}
+            collapsed={collapsed}
+            onToggleCollapse={onToggle}
+          />
         ),
       },
       {

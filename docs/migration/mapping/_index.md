@@ -1,6 +1,6 @@
 # Migration Mapping — Index
 
-- Updated: 2026-05-18 (POV-Ray rendering dialog migrated — phases 1–5)
+- Updated: 2026-05-22 (`panel.coloring` Phase 2 wires `deck.cpk` + `deck.rainbow` + `deck.bfac`)
 - Source files: `docs/migration/mapping/*.md` (excluding this file)
 - Option-specification UX: see [`../option-ux-guidelines.md`](../option-ux-guidelines.md)
   for routing dialog migrations to modal / panel / drawer / popover patterns
@@ -11,7 +11,7 @@
 
 | Category | File | Total | done | wip | review | todo | frozen |
 |----------|------|------:|-----:|----:|-------:|-----:|-------:|
-| Panel | [panels.md](panels.md) | 17 | 0 | 9 | 0 | 8 | 0 |
+| Panel | [panels.md](panels.md) | 26 | 1 | 16 | 0 | 9 | 0 |
 | Menu | [menus.md](menus.md) | 4 | 1 | 2 | 0 | 1 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 13 | 0 | 0 | 0 | 13 | 0 |
@@ -20,7 +20,7 @@
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 0 | 1 | 0 | 12 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 0 | 1 | 0 | 27 | 0 |
 | Other | [other.md](other.md) | 4 | 0 | 1 | 0 | 3 | 0 |
-| **Total** | | **120** | **2** | **18** | **0** | **100** | **0** |
+| **Total** | | **129** | **3** | **25** | **0** | **101** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -30,18 +30,25 @@
 > match the actual UI granularity. See `mapping/panels.md` for the
 > header note and `uxp-inventory/panels.md` for the inventory split.
 
+> Panel category grew from 17 → 26 on 2026-05-22: `panel.coloring` was
+> split into 10 per-surface rows (`panel.coloring.shell` + nine
+> `panel.coloring.deck.*` pages: undef / solid / multigrad / paint / cpk
+> / rainbow / bfac / elepot / script) so each `<deck>` page tracks its
+> own migration status. See `mapping/panels.md` for the header note and
+> `uxp-inventory/panels.md` for the inventory split.
+
 ---
 
 ## Mapping Type Breakdown
 
 | Mapping | Count |
 |---------|------:|
-| 1:1 (`direct`) | 3 |
+| 1:1 (`direct`) | 8 |
 | merged | 1 |
-| split | 13 |
+| split | 14 |
 | redesign | 0 |
-| deprecated (`dropped`) | 1 |
-| *(not yet assigned)* | 102 |
+| deprecated (`dropped`) | 2 |
+| *(not yet assigned)* | 103 |
 
 ---
 
@@ -65,9 +72,16 @@
 | [`panel.workspace.ctxmenu.style`](panels.md#panelworkspacectxmenustyle) | `useSceneContextMenu` / `main/sceneContextMenu` (style) / `styleOps.service` / `styleFile.service` / `sceneClipboard.service` (style kind) / `sceneOps.deleteNode` (style branch) | New Style + Copy / Paste + Delete + Style file Load / Save / Save As (Reload stub) + Read-only toggle wired; `sceneTree.service` switched to `getStyleSetsJSON` so style nodes carry real C++ uids + `styleInfo`. Editor dialog (Phase 5a) pending. |
 | [`panel.workspace.ctxmenu.camera`](panels.md#panelworkspacectxmenucamera) | `useSceneContextMenu` / `main/sceneContextMenu` (camera) / `cameraOps.service` / `cameraFile.service` / `sceneClipboard.service` (camera kind) | New Camera + Rename (atomic destroy+setCamera) + Delete + Copy / Paste + Camera file Load / Reload / Save / Save As + Save/Apply from view + Save/Apply with vis flags + Clear vis flags wired; `sceneTree.service` synthesises `cameraInfo` from `getCameraInfoJSON`. Edit vis flags dialog (Phase 6c) + property dialog (Phase 5a) pending. |
 | [`overlay.propeditor-generic`](overlay.md#overlaypropeditor-generic) | `InspectorPanel` / `GenericTab` / `genericProps.service` / `useInspectorState` | Generic property editor as the Generic tab of the docked inspector pane (ADR-0015); `getPropsJSON` bridge, live-apply, undo-wrapped writes. First stage edits primitive types (string/int/real/bool/enum); color/vector/timeval/nested-object editing deferred. Replaces the retired read-only `NodePropertyDialog` modal. |
+| [`panel.coloring.shell`](panels.md#panelcoloringshell) | `ColorPane` / `usePaintCapableRenderers` / `rendererColoring.service` | Phase 1: renderer selector (paint-capable filter) + Coloring type dropdown (Paint / Solid / Reset enabled; CPK / Bfac / Rainbow / Elepot / Multi-gradient "coming soon"). |
+| [`panel.coloring.deck.paint`](panels.md#panelcoloringdeckpaint) | `ColorPane` / `useRendererColoringState` / `rendererColoring.service` (Paint CRUD) | Phase 1: inline-edit Paint table (no `paint-propdlg` dialog yet). Add / Delete / Move + cell-level commit on blur via `add/remove/update/movePaintEntry`. |
+| [`panel.coloring.deck.solid`](panels.md#panelcoloringdecksolid) | `ColorPane` / `useRendererColoringState` / `rendererColoring.service` (`setRendererDefaultColor`) | Phase 1: default-color text input + preview swatch; commits on blur via `setRendererDefaultColor`. |
+| [`panel.coloring.deck.cpk`](panels.md#panelcoloringdeckcpk) | `ColorPane` (CpkDeck) / `rendererColoring.service` (`setColoringProp`) | Phase 2: 7 element colour fields (col_C…col_X) committing through `setColoringProp` with the materialize-on-default guard. |
+| [`panel.coloring.deck.rainbow`](panels.md#panelcoloringdeckrainbow) | `ColorPane` (RainbowDeck) / `rendererColoring.service` (`setColoringProp`) | Phase 2: Mode / Change-by + Start H / End H / Brightness / Saturation. UI scales bri/sat 0–100% ↔ stored 0–1. |
+| [`panel.coloring.deck.bfac`](panels.md#panelcoloringdeckbfac) | `ColorPane` (BfacDeck) / `rendererColoring.service` (`setColoringProp`) | Phase 2: Mode + Low/High colour + Auto/Manual + Low/High parameter (disabled outside Manual). |
+| [`panel.coloring.deck.elepot`](panels.md#panelcoloringdeckelepot) | `ColorPane` (ElepotDeck) / `useElePotMapObjects` / `rendererColoring.service` (`setRendererElepotProp`, `listElePotMapObjects`, `paint-type-elepot`) | Phase 3: ElePotMap selector + Color-by-SAS + Low/Mid/High (par, colour) ramp. Elepot props live on the surface renderer (not a ColoringScheme); deck appears when `colormode === "potential"` on `molsurf` / `dsurface`. Dropdown item is surface-gated. |
 
 ---
 
 ## Unstarted
 
-**100 / 120** items are `todo` (not yet started).
+**102 / 129** items are `todo` (not yet started).

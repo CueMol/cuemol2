@@ -99,7 +99,13 @@ body {
   background: transparent;
 }
 
-/* BlueprintJS overlays must stack above Allotment sashes (z-index: 35). */
+/* BlueprintJS overlays must stack above Allotment sashes (z-index: 35).
+ * Popovers render into `.bp5-portal` (no built-in z-index) carrying a
+ * `.bp5-overlay` child; bumping the portal itself catches both Popovers
+ * (which don't always use the overlay class) and Dialog overlays. */
+.bp5-portal {
+  z-index: 40;
+}
 .bp5-overlay {
   z-index: 40 !important;
 }

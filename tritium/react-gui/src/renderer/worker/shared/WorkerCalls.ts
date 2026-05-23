@@ -122,6 +122,23 @@ import type {
   PaintObjectSelectionResult,
   GetObjectPaintInfoArgs,
   GetObjectPaintInfoResult,
+  ListPaintCapableRenderersArgs,
+  ListPaintCapableRenderersResult,
+  GetRendererColoringStateArgs,
+  GetRendererColoringStateResult,
+  AddPaintEntryArgs,
+  RemovePaintEntryArgs,
+  UpdatePaintEntryArgs,
+  MovePaintEntryArgs,
+  PaintMutationResult,
+  SetRendererDefaultColorArgs,
+  SetRendererDefaultColorResult,
+  SetColoringPropArgs,
+  SetColoringPropResult,
+  ListElePotMapObjectsArgs,
+  ListElePotMapObjectsResult,
+  SetRendererElepotPropArgs,
+  SetRendererElepotPropResult,
 } from '../server/services/rendererColoring.service'
 import type {
   GetRendererStyleEntriesArgs,
@@ -313,6 +330,16 @@ export interface ServiceMap {
   getRendererPaintInfo:       { args: GetRendererPaintInfoArgs;        result: GetRendererPaintInfoResult }
   paintObjectSelection:       { args: PaintObjectSelectionArgs;        result: PaintObjectSelectionResult }
   getObjectPaintInfo:         { args: GetObjectPaintInfoArgs;          result: GetObjectPaintInfoResult }
+  listPaintCapableRenderers:  { args: ListPaintCapableRenderersArgs;   result: ListPaintCapableRenderersResult }
+  getRendererColoringState:   { args: GetRendererColoringStateArgs;    result: GetRendererColoringStateResult }
+  addPaintEntry:              { args: AddPaintEntryArgs;               result: PaintMutationResult }
+  removePaintEntry:           { args: RemovePaintEntryArgs;            result: PaintMutationResult }
+  updatePaintEntry:           { args: UpdatePaintEntryArgs;            result: PaintMutationResult }
+  movePaintEntry:             { args: MovePaintEntryArgs;              result: PaintMutationResult }
+  setRendererDefaultColor:    { args: SetRendererDefaultColorArgs;     result: SetRendererDefaultColorResult }
+  setColoringProp:            { args: SetColoringPropArgs;             result: SetColoringPropResult }
+  listElePotMapObjects:       { args: ListElePotMapObjectsArgs;        result: ListElePotMapObjectsResult }
+  setRendererElepotProp:      { args: SetRendererElepotPropArgs;       result: SetRendererElepotPropResult }
   getRendererStyleEntries:    { args: GetRendererStyleEntriesArgs;     result: GetRendererStyleEntriesResult }
   applyRendererStyle:         { args: ApplyRendererStyleArgs;          result: ApplyRendererStyleResult }
   getRendererStyleEditInfo:   { args: GetRendererStyleEditInfoArgs;    result: GetRendererStyleEditInfoResult }

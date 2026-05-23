@@ -1,9 +1,59 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
+//
+// Same parent-linkage caveat as `loadObject.service.ts`: the
+// `cmd.target_scene = scene` wrapper setter would call
+// `setPropHelper -> setupParentData("target_scene")` on the command,
+// overwriting `scene.m_thisname` to "target_scene" and re-rooting the
+// scene under the command. After that, every child property assignment
+// under the scene produces a path like "target_scenefoo" with no dot,
+// which NestedPropHandler cannot navigate -- undo records stored against
+// such paths silently fail. To avoid the corruption we mirror
+// `LoadSceneCommand::run()` directly without going through the command
+// property setters.
+
 import type { WorkerContext } from '../types/WorkerContext';
-import type { LoadSceneCommand } from '@cuemol/core/src/wrappers/LoadSceneCommand';
+import type { Scene } from '@cuemol/core/src/wrappers/Scene';
+import type { SceneXMLReader } from '@cuemol/core/src/wrappers/SceneXMLReader';
+import type { View } from '@cuemol/core/src/wrappers/View';
 import { withUndoTxn } from './withUndoTxn';
 
 const log = console;
+
+const SCEREADER_CATEGORY = 3; // InOutHandler::IOH_CAT_SCEREADER
+
+interface StreamHandlerInfo {
+    name: string;
+    fext: string;
+    category: number;
+}
+
+/** Mirror `LoadSceneCommand::guessFileFormat(IOH_CAT_SCEREADER)` (3). */
+function guessReaderName(ctx: WorkerContext, filePath: string): string | null {
+    let infoJson: string;
+    try {
+        infoJson = ctx.strMgr.getInfoJSON2();
+    } catch (e) {
+        log.warn('getInfoJSON2 failed:', e);
+        return null;
+    }
+    let info: StreamHandlerInfo[];
+    try {
+        info = JSON.parse(infoJson) as StreamHandlerInfo[];
+    } catch {
+        return null;
+    }
+    const ext = filePath.toLowerCase().split('.').pop() ?? '';
+    if (!ext) return null;
+    const hit = info.find(
+        (e) =>
+            e.category === SCEREADER_CATEGORY &&
+            e.fext
+                .split(';')
+                .map((s) => s.trim().replace(/^\*\./, '').toLowerCase())
+                .includes(ext),
+    );
+    return hit?.name ?? null;
+}
 
 export interface LoadSceneArgs {
     filePath: string;
@@ -12,13 +62,44 @@ export interface LoadSceneArgs {
 
 function loadScene(ctx: WorkerContext, args: LoadSceneArgs): { ok: boolean } {
     log.info(`[worker] loading QSC scene: ${args.filePath}`);
-    const scene = ctx.sceMgr.getScene(args.sceneId);
+    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
     return withUndoTxn(scene, 'Open scene', () => {
-        const cmd = ctx.cmdMgr.getCmd('load_scene') as LoadSceneCommand;
-        cmd.target_scene = scene;
-        cmd.file_path = args.filePath;
-        cmd.set_camera = true;
-        cmd.run();
+        const readerName = guessReaderName(ctx, args.filePath);
+        if (!readerName) {
+            log.warn(`[worker] loadScene: cannot guess reader for ${args.filePath}`);
+            return { ok: false };
+        }
+        const reader = ctx.strMgr.createHandler(
+            readerName,
+            SCEREADER_CATEGORY,
+        ) as unknown as SceneXMLReader | null;
+        if (!reader) {
+            log.warn(`[worker] loadScene: createHandler('${readerName}') failed`);
+            return { ok: false };
+        }
+        reader.setPath(args.filePath);
+        reader.attach(scene);
+        try {
+            reader.read();
+        } finally {
+            reader.detach();
+        }
+
+        // Apply the saved "__current" camera to every view, mirroring the
+        // `m_bSetCamera == true` block in LoadSceneCommand::run().
+        const uidStr = scene.view_uids;
+        if (uidStr) {
+            for (const tok of uidStr.split(',')) {
+                const uid = Number(tok.trim());
+                if (!Number.isFinite(uid)) continue;
+                try {
+                    const view = scene.getView(uid) as View | null;
+                    if (view) scene.loadViewFromCam(uid, '__current');
+                } catch (e) {
+                    log.warn(`loadViewFromCam failed for view ${uid}:`, e);
+                }
+            }
+        }
         return { ok: true };
     });
 }

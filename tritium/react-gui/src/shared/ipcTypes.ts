@@ -188,6 +188,11 @@ export type RendColoringId =
   | RendColoringStyleId
   | 'paint-type-bfac'
   | 'paint-type-rainbow'
+  | 'paint-type-paint'
+  | 'paint-type-cpk'
+  | 'paint-type-solid'
+  | 'paint-type-elepot'
+  | 'paint-type-resetdef'
 
 /**
  * Renderer "Change sel" submenu items (UXP `setRendSel`). 'current' uses

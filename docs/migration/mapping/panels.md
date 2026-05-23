@@ -21,11 +21,27 @@ Status values:
 > Notes column grew unwieldy as different UI surfaces (tree, toolbar,
 > seven context menus) progressed on independent phases.
 
+> `panel.coloring` was split into 10 per-surface rows on 2026-05-22 for
+> the same reason: the panel's `<deck>` switches between 9 sub-pages
+> (Paint / CPK / Rainbow / Bfac / Elepot / Script / Multigrad / Solid /
+> Undef), each of which migrates on its own phase. `panel.coloring.shell`
+> covers the renderer selector + coloring-type dropdown chrome; the nine
+> `panel.coloring.deck.*` rows cover each deck page.
+
 | ID | React | Mapping | Status | PR | ADR | Notes |
 |----|-------|---------|--------|----|-----|-------|
 | [`panel.anim`](../uxp-inventory/panels.md#panelanim) | | | todo | | | |
 | [`panel.btmpanel-holder`](../uxp-inventory/panels.md#panelbtmpanel-holder) | | | todo | | | |
-| [`panel.coloring`](../uxp-inventory/panels.md#panelcoloring) | | | todo | | | |
+| [`panel.coloring.shell`](../uxp-inventory/panels.md#panelcoloringshell) | `ColorPane` / `usePaintCapableRenderers` / `rendererColoring.service` (`listPaintCapableRenderers`, extended `setRendererColoring`) | split | wip | | | Renderer selector (paint-capable filter via `coloring` property probe) + Coloring type dropdown. Phase 1 enables Paint / Solid / Reset to default; CPK / Bfac / Rainbow / Elepot / Multi-gradient remain disabled "coming soon" placeholders. |
+| [`panel.coloring.deck.undef`](../uxp-inventory/panels.md#panelcoloringdeckundef) | | | todo | | | |
+| [`panel.coloring.deck.solid`](../uxp-inventory/panels.md#panelcoloringdecksolid) | `ColorPane` / `useRendererColoringState` / `rendererColoring.service` (`setRendererDefaultColor`, `paint-type-solid` case) | direct | wip | | | Default-color text input with live preview swatch; commits on blur via `setRendererDefaultColor` under "Change default color" undo. Renders when the renderer's coloring class is `""` (null) or `SolidColoring`. |
+| [`panel.coloring.deck.multigrad`](../uxp-inventory/panels.md#panelcoloringdeckmultigrad) | | | todo | | | |
+| [`panel.coloring.deck.paint`](../uxp-inventory/panels.md#panelcoloringdeckpaint) | `ColorPane` / `useRendererColoringState` / `rendererColoring.service` (Paint CRUD: `addPaintEntry`, `removePaintEntry`, `updatePaintEntry`, `movePaintEntry`) | direct | wip | | | Inline-edited paint table (no `paint-propdlg` dialog in Phase 1): cell inputs commit on blur via `updatePaintEntry`; Add inserts a new wildcard row; Delete / Move up / Move down operate on the selected row. Each mutation runs under its own labelled undo txn. |
+| [`panel.coloring.deck.cpk`](../uxp-inventory/panels.md#panelcoloringdeckcpk) | `ColorPane` (CpkDeck) / `useRendererColoringState` / `rendererColoring.service` (`setColoringProp`, `paint-type-cpk` case) | direct | wip | | | Phase 2: 7-element colour fields (Carbon / Nitrogen / Oxygen / Sulfur / Phosphorus / Hydrogen / Others). Each ColorField commits via `setColoringProp` (`col_C` … `col_X`) under a "Change coloring property" undo txn with the UXP `isPropDefault("coloring")` materialize guard. |
+| [`panel.coloring.deck.rainbow`](../uxp-inventory/panels.md#panelcoloringdeckrainbow) | `ColorPane` (RainbowDeck) / `useRendererColoringState` / `rendererColoring.service` (`setColoringProp`, `paint-type-rainbow` case) | direct | wip | | | Phase 2: Mode / Change-by enum menus + Start H / End H / Brightness / Saturation numeric fields. Brightness and Saturation widgets show 0–100 (%) while the C++ side stores 0–1; the deck rescales via `NumberField`'s `scale` prop. |
+| [`panel.coloring.deck.bfac`](../uxp-inventory/panels.md#panelcoloringdeckbfac) | `ColorPane` (BfacDeck) / `useRendererColoringState` / `rendererColoring.service` (`setColoringProp`, `paint-type-bfac` case) | direct | wip | | | Phase 2: Mode (B-factor / Occupancy / Distance) + Low/High colour fields + Parameter group (Auto enum + Low/High numeric). Low/High numeric inputs are disabled when Auto ≠ "Manual" (UXP `updateBfacWidgets` gate). |
+| [`panel.coloring.deck.elepot`](../uxp-inventory/panels.md#panelcoloringdeckelepot) | `ColorPane` (ElepotDeck) / `useRendererColoringState` / `useElePotMapObjects` / `rendererColoring.service` (`setRendererElepotProp`, `listElePotMapObjects`, `paint-type-elepot` case) | direct | wip | | | Phase 3: ElePotMap potential-object selector + "Color by SAS" checkbox + Low / Mid / High (parameter, colour) ramp rows. Elepot props live on the surface renderer itself (`lowpar`, `lowcol`, ... not on a ColoringScheme); the deck appears whenever `colormode === "potential"` on a `molsurf` / `dsurface` and routes through a dedicated `setRendererElepotProp` writer under a "Change Elepot coloring" undo txn. The Electrostatic-potential dropdown item is gated on `surfaceType in {molsurf,dsurface}` to match UXP `setupColoringSelector`. |
+| [`panel.coloring.deck.script`](../uxp-inventory/panels.md#panelcoloringdeckscript) | — | dropped | done | | | Script coloring deck (`coloring-deck-script.xul`) is not used in production scenes and will not be migrated to Tritium. |
 | [`panel.densitymap`](../uxp-inventory/panels.md#paneldensitymap) | | | todo | | | |
 | [`panel.fakedial`](../uxp-inventory/panels.md#panelfakedial) | | | todo | | | |
 | [`panel.molstruct`](../uxp-inventory/panels.md#panelmolstruct) | | | todo | | | |
