@@ -1,124 +1,219 @@
 /**
  * @file MolStructPane.tsx
- * @description Tree view pane for molecular structure hierarchy.
+ * @description Side-panel surface that mirrors UXP `panel.molstruct`
+ * (`uxp_gui/cuemol2/base/content/molstruct-panel.{xul,js}`).
  *
- * Displays the hierarchical molecular structure (chains → residues → atoms)
- * in a collapsible tree format. The selected-node state is managed internally
- * by this pane—no parent needs to track which tree node is selected.
+ * Contents:
+ *   - molecule selector (`HTMLSelect` over MolCoord-like scene objects)
+ *   - chain / residue / atom tree (Blueprint `Tree`, multi-select)
+ *   - toolbar: Select / Center / Zoom / Properties
  *
- * This pane is one of the components within the SelectionView.
- *
- * ## State ownership
- *
- * The selected-node state is managed **internally** by this component.
- * No parent needs to track which tree node is selected — it is a purely
- * local UI concern with no cross-pane side-effects.
- *
- * If a future feature requires the selection to drive another pane
- * (e.g. highlighting atoms in the 3D viewport), the state can be
- * lifted into a shared hook at that point.
+ * Phase 1 wires chain-level selection + the `Select` button. Center /
+ * Zoom / Properties are rendered as disabled placeholders so the
+ * toolbar shape matches UXP; they become live in Phase 2.
  *
  * @module MolStructPane
  */
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
-  Tree,
-  type IconName,
-  type TreeNodeInfo,
+    Button,
+    ButtonGroup,
+    HTMLSelect,
+    Icon,
+    Tooltip,
+    Tree,
+    type IconName,
+    type TreeNodeInfo,
 } from "@blueprintjs/core";
-import { SectionHeader } from "./SectionHeader";
+import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
+import { useMolStructure } from "../../hooks/useMolStructure";
+import {
+    encodeChainId,
+    selStrFromTree,
+    type MolTreeId,
+} from "./molStruct/selStrFromTree";
 
-/* ─── Types ─── */
-
-export interface MolNode {
-  id: string;
-  label: string;
-  icon: IconName;
-  children: MolNode[];
-}
-
-/* ─── Default selected node ─── */
-
-const DEFAULT_SELECTED_ID = "chainA";
-
-/* ─── MolStructPane ─── */
+/* --- Props --- */
 
 interface MolStructPaneProps {
-  /** Hierarchical molecular structure data (chains → residues → atoms). */
-  molTree: MolNode[];
-  collapsed?: boolean;
-  onToggleCollapse?: () => void;
+    cm: AsyncCueMol | null;
+    /** Active scene UID, or undefined when no scene is active. */
+    activeSceneId: number | undefined;
+    collapsed?: boolean;
+    onToggleCollapse?: () => void;
 }
 
+/* --- Component --- */
+
 export const MolStructPane: React.FC<MolStructPaneProps> = ({
-  molTree,
-  collapsed,
-  onToggleCollapse,
+    cm,
+    activeSceneId,
+    collapsed,
+    onToggleCollapse,
 }) => {
-  // Selection state — purely local to this pane.
-  const [selectedId, setSelectedId] = useState(DEFAULT_SELECTED_ID);
+    const {
+        mols,
+        selectedMolId,
+        setSelectedMolId,
+        chains,
+    } = useMolStructure({ cm, sceneId: activeSceneId });
 
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(
-    () => new Set(molTree.map((n) => n.id))
-  );
+    // Multi-select tree state. Cmd/Ctrl+click toggles membership; a plain
+    // click replaces the set with the single clicked id. Mirrors UXP
+    // `seltype="multiple"` on `molStructTree`.
+    const [selectedIds, setSelectedIds] = useState<Set<MolTreeId>>(() => new Set());
 
-  const handleNodeExpand = useCallback((node: TreeNodeInfo) => {
-    setExpandedIds((prev) => new Set(prev).add(String(node.id)));
-  }, []);
+    const handleSelectMol = useCallback(
+        (e: React.ChangeEvent<HTMLSelectElement>) => {
+            const next = Number(e.target.value);
+            if (Number.isFinite(next)) {
+                setSelectedMolId(next);
+                // Switching molecule invalidates any previous tree selection.
+                setSelectedIds(new Set());
+            }
+        },
+        [setSelectedMolId],
+    );
 
-  const handleNodeCollapse = useCallback((node: TreeNodeInfo) => {
-    setExpandedIds((prev) => {
-      const next = new Set(prev);
-      next.delete(String(node.id));
-      return next;
-    });
-  }, []);
+    const handleNodeClick = useCallback(
+        (node: TreeNodeInfo, _path: number[], e: React.MouseEvent<HTMLElement>) => {
+            const id = String(node.id);
+            setSelectedIds((prev) => {
+                if (e.metaKey || e.ctrlKey) {
+                    const next = new Set(prev);
+                    if (next.has(id)) next.delete(id);
+                    else next.add(id);
+                    return next;
+                }
+                return new Set([id]);
+            });
+        },
+        [],
+    );
 
-  const handleNodeClick = useCallback((node: TreeNodeInfo) => {
-    setSelectedId(String(node.id));
-  }, []);
+    // Phase 1: only chain rows. Phase 2 will expand to residue / atom
+    // children with lazy loading.
+    const treeContents: TreeNodeInfo[] = useMemo(() => {
+        return chains.map((chain) => {
+            const id = encodeChainId(chain.name);
+            return {
+                id,
+                label: `chain "${chain.name}"`,
+                icon: "git-branch" as IconName,
+                isSelected: selectedIds.has(id),
+                hasCaret: false,
+            };
+        });
+    }, [chains, selectedIds]);
 
-  const buildNodes = useCallback(
-    (nodes: MolNode[]): TreeNodeInfo[] =>
-      nodes.map((node) => ({
-        id: node.id,
-        label: node.label,
-        icon: node.icon as IconName,
-        isExpanded: expandedIds.has(node.id),
-        isSelected: selectedId === node.id,
-        childNodes:
-          node.children.length > 0
-            ? buildNodes(node.children)
-            : undefined,
-      })),
-    [selectedId, expandedIds]
-  );
+    const hasSelection = selectedIds.size > 0;
+    const onSelect = useCallback(() => {
+        if (!cm || activeSceneId === undefined || selectedMolId === undefined) return;
+        const selStr = selStrFromTree(selectedIds);
+        if (!selStr) return;
+        cm.invokeService("applyMolSelString", {
+            sceneId: activeSceneId,
+            molId: selectedMolId,
+            selStr,
+        }).catch((err: unknown) => {
+            console.warn("applyMolSelString failed:", err);
+        });
+    }, [cm, activeSceneId, selectedMolId, selectedIds]);
 
-  const treeContents: TreeNodeInfo[] = useMemo(
-    () => buildNodes(molTree),
-    [molTree, buildNodes]
-  );
-
-  return (
-    <div className="sp-pane">
-      <SectionHeader
-        title="Mol Struct"
-        icon="git-branch"
-        collapsed={collapsed}
-        onToggleCollapse={onToggleCollapse}
-      />
-      {!collapsed && (
-        <div className="sp-pane-scroll">
-          <Tree
-            contents={treeContents}
-            onNodeClick={handleNodeClick}
-            onNodeExpand={handleNodeExpand}
-            onNodeCollapse={handleNodeCollapse}
-            className="mol-tree"
-          />
+    return (
+        <div className="sp-pane">
+            <div
+                className={`sp-section-header ${onToggleCollapse ? "collapsible" : ""}`}
+                onClick={onToggleCollapse}
+            >
+                <div className="sp-section-header-left">
+                    {onToggleCollapse != null && (
+                        <Icon
+                            icon={collapsed ? "chevron-right" : "chevron-down"}
+                            size={12}
+                            className="section-chevron"
+                        />
+                    )}
+                    <Icon icon="git-branch" size={14} className="section-icon" />
+                    <span className="section-title">Mol Struct</span>
+                </div>
+                <div
+                    className="sp-section-header-actions"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <ButtonGroup minimal>
+                        <Tooltip content="Select atoms" placement="bottom" compact>
+                            <Button
+                                minimal
+                                small
+                                icon={<Icon icon="select" size={14} />}
+                                className="section-action-btn"
+                                disabled={!hasSelection || selectedMolId === undefined}
+                                onClick={onSelect}
+                            />
+                        </Tooltip>
+                        <Tooltip content="Center at" placement="bottom" compact>
+                            <Button
+                                minimal
+                                small
+                                icon={<Icon icon="locate" size={14} />}
+                                className="section-action-btn"
+                                disabled
+                            />
+                        </Tooltip>
+                        <Tooltip content="Zoom at" placement="bottom" compact>
+                            <Button
+                                minimal
+                                small
+                                icon={<Icon icon="zoom-to-fit" size={14} />}
+                                className="section-action-btn"
+                                disabled
+                            />
+                        </Tooltip>
+                        <Tooltip content="Properties" placement="bottom" compact>
+                            <Button
+                                minimal
+                                small
+                                icon={<Icon icon="properties" size={14} />}
+                                className="section-action-btn"
+                                disabled
+                            />
+                        </Tooltip>
+                    </ButtonGroup>
+                </div>
+            </div>
+            {!collapsed && (
+                <div className="sp-pane-fill">
+                    <div className="selection-row">
+                        <label className="selection-label">Molecule</label>
+                        <HTMLSelect
+                            value={selectedMolId ?? ""}
+                            onChange={handleSelectMol}
+                            fill
+                            disabled={mols.length === 0}
+                            className="selection-mol-select"
+                        >
+                            {mols.length === 0 ? (
+                                <option value="">(no molecules)</option>
+                            ) : (
+                                mols.map((mol) => (
+                                    <option key={mol.uid} value={mol.uid}>
+                                        {mol.name || `Mol ${mol.uid}`}
+                                    </option>
+                                ))
+                            )}
+                        </HTMLSelect>
+                    </div>
+                    <div className="sp-pane-scroll mol-tree-scroll">
+                        <Tree
+                            contents={treeContents}
+                            onNodeClick={handleNodeClick}
+                            className="mol-tree"
+                        />
+                    </div>
+                </div>
+            )}
         </div>
-      )}
-    </div>
-  );
+    );
 };

@@ -102,6 +102,16 @@ import type {
   SelectObjectMolResult,
 } from '../server/services/selectObjectMol.service'
 import type {
+  ListMolsArgs,
+  ListMolsResult,
+  GetMolChainsArgs,
+  GetMolChainsResult,
+} from '../server/services/getMolStructure.service'
+import type {
+  ApplyMolSelStringArgs,
+  ApplyMolSelStringResult,
+} from '../server/services/applyMolSelString.service'
+import type {
   CopyNodeArgs,
   CopyNodeResult,
   PasteNodeArgs,
@@ -321,6 +331,9 @@ export interface ServiceMap {
   setGenericProp:             { args: SetGenericPropArgs;              result: SetGenericPropResult }
   renameNode:                 { args: RenameNodeArgs;                  result: RenameNodeResult }
   selectObjectMol:            { args: SelectObjectMolArgs;             result: SelectObjectMolResult }
+  listMols:                   { args: ListMolsArgs;                    result: ListMolsResult }
+  getMolChains:               { args: GetMolChainsArgs;                result: GetMolChainsResult }
+  applyMolSelString:          { args: ApplyMolSelStringArgs;           result: ApplyMolSelStringResult }
   copyNode:                   { args: CopyNodeArgs;                    result: CopyNodeResult }
   pasteNode:                  { args: PasteNodeArgs;                   result: PasteNodeResult }
   getClipboardKind:           { args: GetClipboardKindArgs;            result: GetClipboardKindResult }
