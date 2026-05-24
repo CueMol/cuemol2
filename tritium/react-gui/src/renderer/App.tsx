@@ -392,6 +392,7 @@ const App: React.FC = () => {
                     activeView={activeView ?? "explorer"}
                     cm={cm}
                     activeSceneId={activeSceneId}
+                    activeMolViewId={activeMolViewId}
                     {...sceneController}
                     viewSizes={viewSizes}
                     viewCollapsed={viewCollapsed}

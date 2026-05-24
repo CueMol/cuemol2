@@ -155,6 +155,25 @@
   min-height: 0;
 }
 
+/* Disable Blueprint Collapse animation in the mol-tree so chain /
+ * residue / atom children appear instantly on expand. Scoped to
+ * .mol-tree to keep the default animation on the scene tree (where the
+ * subtree is small and the easing is fine).
+ *
+ * Note: the Collapse component still steps through its JS enter/entering
+ * /entered lifecycle which inserts an extra render frame between Loading
+ * and the full child list. Killing transitions / animations on every
+ * descendant ensures both the height tween AND the caret rotation /
+ * any other staged easing land in a single commit, so a freshly
+ * fetched residue / atom list paints all at once. */
+.mol-tree .bp5-collapse,
+.mol-tree .bp5-collapse .bp5-collapse-body,
+.mol-tree .bp5-tree-node-caret,
+.mol-tree .bp5-tree-node-content {
+  transition: none !important;
+  animation: none !important;
+}
+
 .scene-tree .bp5-tree-node-content,
 .mol-tree .bp5-tree-node-content {
   height: 22px;

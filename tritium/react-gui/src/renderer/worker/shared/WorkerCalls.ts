@@ -106,10 +106,18 @@ import type {
   ListMolsResult,
   GetMolChainsArgs,
   GetMolChainsResult,
+  GetMolResiduesArgs,
+  GetMolResiduesResult,
+  GetMolAtomsArgs,
+  GetMolAtomsResult,
 } from '../server/services/getMolStructure.service'
 import type {
   ApplyMolSelStringArgs,
   ApplyMolSelStringResult,
+  CenterMolSelectionArgs,
+  CenterMolSelectionResult,
+  ZoomMolSelectionArgs,
+  ZoomMolSelectionResult,
 } from '../server/services/applyMolSelString.service'
 import type {
   CopyNodeArgs,
@@ -333,7 +341,11 @@ export interface ServiceMap {
   selectObjectMol:            { args: SelectObjectMolArgs;             result: SelectObjectMolResult }
   listMols:                   { args: ListMolsArgs;                    result: ListMolsResult }
   getMolChains:               { args: GetMolChainsArgs;                result: GetMolChainsResult }
+  getMolResidues:             { args: GetMolResiduesArgs;              result: GetMolResiduesResult }
+  getMolAtoms:                { args: GetMolAtomsArgs;                 result: GetMolAtomsResult }
   applyMolSelString:          { args: ApplyMolSelStringArgs;           result: ApplyMolSelStringResult }
+  centerMolSelection:         { args: CenterMolSelectionArgs;          result: CenterMolSelectionResult }
+  zoomMolSelection:           { args: ZoomMolSelectionArgs;            result: ZoomMolSelectionResult }
   copyNode:                   { args: CopyNodeArgs;                    result: CopyNodeResult }
   pasteNode:                  { args: PasteNodeArgs;                   result: PasteNodeResult }
   getClipboardKind:           { args: GetClipboardKindArgs;            result: GetClipboardKindResult }

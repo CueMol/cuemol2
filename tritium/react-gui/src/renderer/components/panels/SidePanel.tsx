@@ -118,6 +118,8 @@ interface SidePanelProps {
   cm: AsyncCueMol | null;
   /** Active scene UID, or undefined when no scene is active. */
   activeSceneId: number | undefined;
+  /** Active mol-view UID for the focused molview tab. */
+  activeMolViewId: number | undefined;
 
   /* Scene / Explorer props */
   sceneTree: SceneTreeNode | null;
@@ -195,6 +197,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   activeView,
   cm,
   activeSceneId,
+  activeMolViewId,
   sceneTree,
   sceneSelected,
   sceneSelectedIds,
@@ -305,6 +308,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           <MolStructPane
             cm={cm}
             activeSceneId={activeSceneId}
+            activeMolViewId={activeMolViewId}
             collapsed={collapsed}
             onToggleCollapse={onToggle}
           />

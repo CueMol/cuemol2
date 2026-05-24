@@ -46,3 +46,4 @@ Architecture Decision Records for the UXP → tritium migration.
 | [ADR-0015](ADR-0015-generic-property-inspector.md) | Generic property inspector — docked pane, live-apply, getPropsJSON bridge | accepted (color/vector/timeval/nested-object pending) | 2026-05-16 | `overlay.propeditor-generic` |
 | [ADR-0016](ADR-0016-window-close-quit-funnel.md) | Window close and app quit — single win.on('close') confirm funnel | accepted (supersedes ADR-0010) | 2026-05-17 | `menu.cuemol2` (Quit), `menu.cuemol2-macos` (Quit), `other.cuemol2` |
 | [ADR-0017](ADR-0017-povray-rendering-ui.md) | POV-Ray rendering UI — Inspector settings, BottomPanel tab, Render Result tab, worker pipeline | accepted (single-frame; animation deferred) | 2026-05-18 | `dialog.tool.render-pov` |
+| [ADR-0018](ADR-0018-molstruct-panel.md) | MolStruct panel — lazy load, multi-select, deferred virtualization | accepted (tree perf deferred) | 2026-05-24 | `panel.molstruct` |

@@ -15,6 +15,8 @@
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
+import type { MolChain } from '@cuemol/core/src/wrappers/MolChain';
+import type { MolResidue } from '@cuemol/core/src/wrappers/MolResidue';
 import type { WorkerContext } from '../types/WorkerContext';
 import { getSceneOrNull } from './helpers/sceneResolver';
 import { parseSceneTreeJSON, type SceneTreeNode } from '../../shared/sceneTreeTypes';
@@ -47,6 +49,47 @@ export interface MolChainEntry {
 export interface GetMolChainsResult {
     ok: boolean;
     chains: MolChainEntry[];
+}
+
+export interface GetMolResiduesArgs {
+    sceneId: number;
+    molId: number;
+    chainName: string;
+}
+
+export interface MolResidueEntry {
+    /**
+     * ResidIndex serialised by C++ (e.g. "10" or "10A" — insertion codes
+     * are preserved). Keep as string in the wire format so callers can
+     * round-trip the exact UXP selection-string syntax.
+     */
+    index: string;
+    name: string;
+    /** Single-letter residue code (UXP `getResidsJSON` `single` field). */
+    single: string;
+}
+
+export interface GetMolResiduesResult {
+    ok: boolean;
+    residues: MolResidueEntry[];
+}
+
+export interface GetMolAtomsArgs {
+    sceneId: number;
+    molId: number;
+    chainName: string;
+    residueIndex: string;
+}
+
+export interface MolAtomEntry {
+    id: number;
+    name: string;
+    elem: string;
+}
+
+export interface GetMolAtomsResult {
+    ok: boolean;
+    atoms: MolAtomEntry[];
 }
 
 /**
@@ -122,7 +165,126 @@ function getMolChains(ctx: WorkerContext, args: GetMolChainsArgs): GetMolChainsR
     return { ok: true, chains: parseChainsJSON(json) };
 }
 
+interface RawResidueEntry {
+    name?: unknown;
+    single?: unknown;
+    index?: unknown;
+}
+
+function parseResiduesJSON(json: string): MolResidueEntry[] {
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(json);
+    } catch {
+        return [];
+    }
+    if (!Array.isArray(parsed)) return [];
+    const out: MolResidueEntry[] = [];
+    for (const raw of parsed as RawResidueEntry[]) {
+        // C++ MolChain::getResidsJSON emits `index` as a string
+        // (ResidIndex::toString()) so insertion codes survive.
+        const index = typeof raw?.index === 'string' ? raw.index : String(raw?.index ?? '');
+        if (!index) continue;
+        out.push({
+            index,
+            name: typeof raw?.name === 'string' ? raw.name : '',
+            single: typeof raw?.single === 'string' ? raw.single : '',
+        });
+    }
+    return out;
+}
+
+function getMolResidues(
+    ctx: WorkerContext,
+    args: GetMolResiduesArgs,
+): GetMolResiduesResult {
+    const scene = getSceneOrNull(ctx, args.sceneId);
+    if (!scene) return { ok: false, residues: [] };
+    const mol = scene.getObject(args.molId) as MolCoord | null;
+    if (!mol) return { ok: false, residues: [] };
+
+    let chain: MolChain | null;
+    try {
+        chain = mol.getChain(args.chainName) as MolChain | null;
+    } catch {
+        return { ok: false, residues: [] };
+    }
+    if (!chain) return { ok: false, residues: [] };
+
+    let json: string;
+    try {
+        json = chain.getResidsJSON();
+    } catch {
+        return { ok: false, residues: [] };
+    }
+    return { ok: true, residues: parseResiduesJSON(json) };
+}
+
+interface RawAtomEntry {
+    name?: unknown;
+    id?: unknown;
+    elem?: unknown;
+}
+
+function parseAtomsJSON(json: string): MolAtomEntry[] {
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(json);
+    } catch {
+        return [];
+    }
+    if (!Array.isArray(parsed)) return [];
+    const out: MolAtomEntry[] = [];
+    for (const raw of parsed as RawAtomEntry[]) {
+        const id = typeof raw?.id === 'number' ? raw.id : Number(raw?.id);
+        if (!Number.isFinite(id)) continue;
+        out.push({
+            id,
+            name: typeof raw?.name === 'string' ? raw.name : '',
+            elem: typeof raw?.elem === 'string' ? raw.elem : '',
+        });
+    }
+    return out;
+}
+
+function getMolAtoms(
+    ctx: WorkerContext,
+    args: GetMolAtomsArgs,
+): GetMolAtomsResult {
+    const scene = getSceneOrNull(ctx, args.sceneId);
+    if (!scene) return { ok: false, atoms: [] };
+    const mol = scene.getObject(args.molId) as MolCoord | null;
+    if (!mol) return { ok: false, atoms: [] };
+
+    let chain: MolChain | null;
+    try {
+        chain = mol.getChain(args.chainName) as MolChain | null;
+    } catch {
+        return { ok: false, atoms: [] };
+    }
+    if (!chain) return { ok: false, atoms: [] };
+
+    let residue: MolResidue | null;
+    try {
+        // MolChain.getResidue takes a ResidIndex string ("10" / "10A").
+        residue = chain.getResidue(args.residueIndex) as MolResidue | null;
+    } catch {
+        return { ok: false, atoms: [] };
+    }
+    if (!residue) return { ok: false, atoms: [] };
+
+    let json: string;
+    try {
+        json = residue.getAtomsJSON();
+    } catch {
+        return { ok: false, atoms: [] };
+    }
+    return { ok: true, atoms: parseAtomsJSON(json) };
+}
+
 export const services = {
     listMols,
     getMolChains,
+    getMolResidues,
+    getMolAtoms,
 };
