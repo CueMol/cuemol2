@@ -1,11 +1,4 @@
 import type { LogEntry } from "../types";
-import type { MolOption } from "../components/panels/SidePanel";
-
-export const MOLECULE_OPTIONS: MolOption[] = [
-  { id: "mol1", label: "1CRN (Crambin)" },
-  { id: "mol2", label: "3J3Q (Ribosome)" },
-  { id: "mol3", label: "6LU7 (SARS-CoV-2)" },
-];
 
 export const INITIAL_LOGS: LogEntry[] = [
   { time: "09:00:01", level: "INFO", msg: "CueMol2 v4.2.0 initialized" },

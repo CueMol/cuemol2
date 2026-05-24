@@ -324,8 +324,15 @@
   background: var(--bg-input) !important;
   border: 1px solid var(--border) !important;
   color: var(--text-primary) !important;
-  font-family: var(--font-mono);
-  font-size: var(--fs-lg);
+  /* Match LogPanel output typography. The log output renders at the
+   * Blueprint-default 14px even though `.log-output` declares
+   * `var(--fs-md)`, because Blueprint's `.bp5-tag` and other inline
+   * elements inside the log line carry their own larger font-size and
+   * dominate the visual baseline. Use `--fs-2xl` (14px) here so the
+   * textarea matches what the user actually sees in OUTPUT. */
+  font-family: var(--font-mono) !important;
+  font-size: var(--fs-2xl) !important;
+  line-height: var(--lh-normal) !important;
   resize: none;
   caret-color: var(--accent);
 }
@@ -334,7 +341,15 @@
   color: var(--text-muted);
 }
 
-.selection-textarea.bp5-input:focus {
+.selection-error {
+  flex-shrink: 0;
+  font-size: var(--fs-base);
+  color: var(--intent-danger, #cd4246);
+}
+
+/* Only steal the focus ring when the textarea is *not* showing a
+ * danger intent -- otherwise Blueprint's red ring needs to win. */
+.selection-textarea.bp5-input:focus:not(.bp5-intent-danger) {
   border-color: var(--accent) !important;
   box-shadow: 0 0 0 1px var(--accent) !important;
 }

@@ -1,95 +1,278 @@
 /**
  * @file SelectionPane.tsx
- * @description Atom-selection query pane with molecule selector and
- * free-text selection expression input.
+ * @description Side-panel surface that mirrors the Command tab of UXP
+ * `panel.selection` (`uxp_gui/cuemol2/base/content/selection-panel.{xul,js}`).
  *
- * ## State ownership
+ * Contents:
+ *   - molecule selector (`HTMLSelect` over MolCoord-like scene objects)
+ *   - free-form multi-line `TextArea` for the selection expression
+ *   - toolbar: Select / Clear / History
  *
- * Both the selected-molecule dropdown and the selection-text input are
- * managed **internally** by this component. These values are purely
- * local UI state with no cross-pane dependencies.
+ * Select dispatches `applyMolSelString` (shared with MolStructPane); on
+ * success the entry is appended via `pushHistory` from the MolSelList
+ * widget's history module, so MolSelList instances (e.g. PaintSelCell)
+ * see the same MRU entries. History is read back via `getHistory` when
+ * the picker opens. Live validation runs through `validateSelection`
+ * with the same 500 ms debounce MolSelList uses.
  *
- * When the backend scripting engine is integrated, the selection text
- * will be dispatched as a command; at that point the state can be
- * lifted into a hook that also handles IPC.
- *
- * This pane is one of the components within the SelectionView.
+ * UXP's Editor tab is intentionally not ported -- the free-text path
+ * covers the dominant use case. See `docs/migration/mapping/panels.md`.
  *
  * @module SelectionPane
  */
 
-import React, { useState } from "react";
-import { HTMLSelect, TextArea } from "@blueprintjs/core";
-import { SectionHeader } from "./SectionHeader";
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+    Button,
+    ButtonGroup,
+    HTMLSelect,
+    Icon,
+    Intent,
+    Menu,
+    MenuItem,
+    Popover,
+    TextArea,
+    Tooltip,
+} from '@blueprintjs/core';
+import type { AsyncCueMol } from '../../worker/client/AsyncCueMol';
+import { useMolStructure } from '../../hooks/useMolStructure';
+import {
+    getHistory,
+    pushHistory,
+} from '../widgets/MolSelList/selHistory';
 
-/* ─── Types ─── */
-
-export interface MolOption {
-  id: string;
-  label: string;
-}
-
-/* ─── Defaults ─── */
-
-const DEFAULT_SELECTED_MOL = "mol1";
-const DEFAULT_SELECTION_TEXT = "";
-
-/* ─── SelectionPane ─── */
+/* --- Props --- */
 
 interface SelectionPaneProps {
-  /** Available molecules for the dropdown. */
-  molecules: MolOption[];
-  collapsed?: boolean;
-  onToggleCollapse?: () => void;
+    cm: AsyncCueMol | null;
+    /** Active scene UID, or undefined when no scene is active. */
+    activeSceneId: number | undefined;
+    collapsed?: boolean;
+    onToggleCollapse?: () => void;
 }
 
-export const SelectionPane: React.FC<SelectionPaneProps> = ({
-  molecules,
-  collapsed,
-  onToggleCollapse,
-}) => {
-  // Interaction state — purely local to this pane.
-  const [selectedMol, setSelectedMol] = useState(DEFAULT_SELECTED_MOL);
-  const [selectionText, setSelectionText] = useState(DEFAULT_SELECTION_TEXT);
+/* --- Constants --- */
 
-  return (
-    <div className="sp-pane">
-      <SectionHeader
-        title="Selection"
-        icon="select"
-        collapsed={collapsed}
-        onToggleCollapse={onToggleCollapse}
-      />
-      {!collapsed && (
-        <div className="sp-pane-fill">
-          <div className="selection-row">
-            <label className="selection-label">Molecule</label>
-            <HTMLSelect
-              value={selectedMol}
-              onChange={(e) => setSelectedMol(e.target.value)}
-              fill
-              className="selection-mol-select"
+const VALIDATE_DEBOUNCE_MS = 500;
+// Mirror MolSelList/selHistory.SKIP: values that pushHistory ignores.
+// Skipping the validate round-trip for these as well matches MolSelList.
+const VALIDATE_SKIP = new Set(['', '*', 'none']);
+
+/* --- Component --- */
+
+export const SelectionPane: React.FC<SelectionPaneProps> = ({
+    cm,
+    activeSceneId,
+    collapsed,
+    onToggleCollapse,
+}) => {
+    const { mols, selectedMolId, setSelectedMolId } = useMolStructure({
+        cm,
+        sceneId: activeSceneId,
+    });
+
+    const [selStr, setSelStr] = useState('');
+    const [isValid, setIsValid] = useState(true);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    const [historyItems, setHistoryItems] = useState<string[]>(() => getHistory());
+
+    const handleSelectMol = useCallback(
+        (e: React.ChangeEvent<HTMLSelectElement>) => {
+            const next = Number(e.target.value);
+            if (Number.isFinite(next)) setSelectedMolId(next);
+        },
+        [setSelectedMolId],
+    );
+
+    // ---- Live validation (debounced, mirrors MolSelList) ----
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(() => {
+        if (!cm || activeSceneId === undefined) {
+            setIsValid(true);
+            return;
+        }
+        if (debounceRef.current !== null) clearTimeout(debounceRef.current);
+        const trimmed = selStr.trim();
+        if (VALIDATE_SKIP.has(trimmed)) {
+            setIsValid(true);
+            return;
+        }
+        let cancelled = false;
+        debounceRef.current = setTimeout(() => {
+            cm.invokeService('validateSelection', { selStr: trimmed, sceneId: activeSceneId })
+                .then((res) => {
+                    if (!cancelled) setIsValid(res.ok);
+                })
+                .catch(() => {
+                    // Transport error -- don't flag the input as invalid.
+                    if (!cancelled) setIsValid(true);
+                });
+        }, VALIDATE_DEBOUNCE_MS);
+        return () => {
+            cancelled = true;
+            if (debounceRef.current !== null) clearTimeout(debounceRef.current);
+        };
+    }, [cm, selStr, activeSceneId]);
+
+    const canApply =
+        cm !== null && activeSceneId !== undefined && selectedMolId !== undefined;
+
+    const onSelect = useCallback(() => {
+        if (!canApply) return;
+        const sid = activeSceneId!;
+        const mid = selectedMolId!;
+        cm!
+            .invokeService('applyMolSelString', { sceneId: sid, molId: mid, selStr })
+            .then((res) => {
+                if (res?.ok) {
+                    setErrorMsg(null);
+                    pushHistory(selStr);
+                    setHistoryItems(getHistory());
+                } else {
+                    setErrorMsg('Invalid selection expression.');
+                }
+            })
+            .catch((err: unknown) => {
+                console.warn('applyMolSelString failed:', err);
+                setErrorMsg('Failed to apply selection.');
+            });
+    }, [cm, canApply, activeSceneId, selectedMolId, selStr]);
+
+    const onClear = useCallback(() => {
+        setSelStr('');
+        setErrorMsg(null);
+    }, []);
+
+    // Refresh history just before the picker opens, in case another
+    // pane (MolSelList instance) appended something while we were idle.
+    const onHistoryOpening = useCallback(() => {
+        setHistoryItems(getHistory());
+    }, []);
+
+    const onPickHistory = useCallback((value: string) => {
+        setSelStr(value);
+        setErrorMsg(null);
+    }, []);
+
+    const historyMenu = (
+        <Menu>
+            {historyItems.length === 0 ? (
+                <MenuItem text="(no history)" disabled />
+            ) : (
+                historyItems.map((entry) => (
+                    <MenuItem
+                        key={entry}
+                        text={entry}
+                        onClick={() => onPickHistory(entry)}
+                    />
+                ))
+            )}
+        </Menu>
+    );
+
+    const intent = isValid ? Intent.NONE : Intent.DANGER;
+
+    return (
+        <div className="sp-pane">
+            <div
+                className={`sp-section-header ${onToggleCollapse ? 'collapsible' : ''}`}
+                onClick={onToggleCollapse}
             >
-              {molecules.map((mol) => (
-                <option key={mol.id} value={mol.id}>
-                  {mol.label}
-                </option>
-              ))}
-            </HTMLSelect>
-          </div>
-          <div className="selection-text-row">
-            <label className="selection-label">Selection</label>
-            <TextArea
-              value={selectionText}
-              onChange={(e) => setSelectionText(e.target.value)}
-              placeholder="e.g. chain.A AND resid.1:10"
-              fill
-              growVertically={false}
-              className="selection-textarea"
-            />
-          </div>
+                <div className="sp-section-header-left">
+                    {onToggleCollapse != null && (
+                        <Icon
+                            icon={collapsed ? 'chevron-right' : 'chevron-down'}
+                            size={12}
+                            className="section-chevron"
+                        />
+                    )}
+                    <Icon icon="select" size={14} className="section-icon" />
+                    <span className="section-title">Selection</span>
+                </div>
+                <div
+                    className="sp-section-header-actions"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <ButtonGroup minimal>
+                        <Tooltip content="Select" placement="bottom" compact>
+                            <Button
+                                minimal
+                                small
+                                icon={<Icon icon="select" size={14} />}
+                                className="section-action-btn"
+                                disabled={!canApply}
+                                onClick={onSelect}
+                            />
+                        </Tooltip>
+                        <Tooltip content="Clear input" placement="bottom" compact>
+                            <Button
+                                minimal
+                                small
+                                icon={<Icon icon="eraser" size={14} />}
+                                className="section-action-btn"
+                                disabled={selStr.length === 0}
+                                onClick={onClear}
+                            />
+                        </Tooltip>
+                        <Popover
+                            content={historyMenu}
+                            onOpening={onHistoryOpening}
+                            placement="bottom-end"
+                        >
+                            <Tooltip content="History" placement="bottom" compact>
+                                <Button
+                                    minimal
+                                    small
+                                    icon={<Icon icon="history" size={14} />}
+                                    className="section-action-btn"
+                                />
+                            </Tooltip>
+                        </Popover>
+                    </ButtonGroup>
+                </div>
+            </div>
+            {!collapsed && (
+                <div className="sp-pane-fill">
+                    <div className="selection-row">
+                        <label className="selection-label">Molecule</label>
+                        <HTMLSelect
+                            value={selectedMolId ?? ''}
+                            onChange={handleSelectMol}
+                            fill
+                            disabled={mols.length === 0}
+                            className="selection-mol-select"
+                        >
+                            {mols.length === 0 ? (
+                                <option value="">(no molecules)</option>
+                            ) : (
+                                mols.map((mol) => (
+                                    <option key={mol.uid} value={mol.uid}>
+                                        {mol.name || `Mol ${mol.uid}`}
+                                    </option>
+                                ))
+                            )}
+                        </HTMLSelect>
+                    </div>
+                    <div className="selection-text-row">
+                        <label className="selection-label">Selection</label>
+                        <TextArea
+                            value={selStr}
+                            onChange={(e) => {
+                                setSelStr(e.target.value);
+                                if (errorMsg) setErrorMsg(null);
+                            }}
+                            placeholder="Input selection command"
+                            fill
+                            growVertically={false}
+                            intent={intent}
+                            className="selection-textarea"
+                        />
+                        {errorMsg !== null && (
+                            <div className="selection-error">{errorMsg}</div>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
-      )}
-    </div>
-  );
+    );
 };

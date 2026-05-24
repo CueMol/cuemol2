@@ -67,11 +67,8 @@ import {
 
 import type { SceneTreeNode } from "../../worker/shared/sceneTreeTypes";
 
-import { MOLECULE_OPTIONS } from "../../data/sampleData";
-
 /* --- Re-export types for external consumers --- */
 export type { SceneTreeNode } from "../../worker/shared/sceneTreeTypes";
-export type { MolOption } from "../panes/SelectionPane";
 
 /* --- Constants --- */
 
@@ -319,7 +316,8 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         defaultSize: 180,
         render: (collapsed, onToggle) => (
           <SelectionPane
-            molecules={MOLECULE_OPTIONS}
+            cm={cm}
+            activeSceneId={activeSceneId}
             collapsed={collapsed}
             onToggleCollapse={onToggle}
           />
