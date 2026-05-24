@@ -1,247 +1,536 @@
 /**
  * @file SequencePanel.tsx
- * @description Multiple Sequence Alignment (MSA) viewer panel.
+ * @description Bottom-panel Sequence tab, mirrors UXP
+ * `bottom-panels/seqpanel.{xul,js}` (`panel.btmpanel-holder.seq`).
  *
- * ## Layout
+ * Every MolCoord in the active scene contributes one row per chain --
+ * UXP shows them all at once, with no per-mol selector. The chain-name
+ * column on the left labels each row "<chain>:<molname>".
  *
- * ```
- * ┌──────────────┬─────────────────────────────────────────┐
- * │              │  50   55   60   65   70   75   ...      │ ← position ruler
- * ├──────────────┼─────────────────────────────────────────┤
- * │ A:P34897_0   │ ESLSDSDPEMWELLQREKDRQCRGLELIA...        │ ← aligned rows
- * │ L:P34897_0   │ ------DPEMWELLQREKDRQ---------...       │
- * │ A:5v7i       │ ESLSDSDPEMWELLQREKDRQCRGLELIA...        │
- * │ B:5v7i       │ ESLSDSDPEMWELLQREKDRQCRGLELIA...        │
- * └──────────────┴─────────────────────────────────────────┘
- *                  ← horizontal scroll for long alignments →
- * ```
+ * Phase 1 covers:
+ *   - Canvas-rendered chain x residue grid (1 cell per residue, cyan
+ *     background when `residue.sel === true`)
+ *   - per-residue marker (red stroked rect) at the last clicked position
+ *   - sticky position ruler (UXP `ruler_canvas`) above the seq canvas
+ *   - left-side chain name column synced to vertical scroll
+ *   - left-click toggles a single residue's selection through the
+ *     `toggleResidueSelection` worker (ResidRangeSet-based; mirrors UXP
+ *     `panel.toggleResidSel`)
+ *   - right-click context menu with `Center here` enabled; the remaining
+ *     12 UXP items are listed disabled to pin the menu shape for Phase
+ *     2/3 wiring.
  *
- * The label column is fixed on the left while the sequence area scrolls
- * horizontally. A position ruler at the top shows residue numbering with
- * tick marks every 5 positions and labels every 10 positions.
- *
- * @module SequencePanel
+ * Phase 2 (drag range select + shift+click range extend with green
+ * tracking rect) and Phase 3 (around / invert / clear / copy ctx items)
+ * are deferred.
  */
 
-import React, { useRef, useCallback, useState, useEffect, useMemo } from "react";
-import { Icon } from "@blueprintjs/core";
-import type { AlignmentData, AlignmentEntry } from "../../types";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+    Icon,
+    Menu,
+    MenuDivider,
+    MenuItem,
+    showContextMenu,
+} from '@blueprintjs/core'
+import { Allotment } from 'allotment'
+import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
+import { useMolSequenceData, type SeqRow } from '../../hooks/useMolSequenceData'
+import { useTheme } from '../../contexts/ThemeContext'
 
-// ────────────────────────────────────────────────────────────
-// Constants
-// ────────────────────────────────────────────────────────────
+// --- Layout / drawing constants ---
+//
+// Font + size pulled from --font-mono (13px) so the seq grid reads
+// with the rest of the app rather than UXP's bold 14px monospace.
 
-/** Width of each residue cell in pixels. */
-const CELL_WIDTH = 9.6;
-/** Height of each sequence row in pixels. */
-const ROW_HEIGHT = 20;
-/** Height of the ruler area in pixels. */
-const RULER_HEIGHT = 24;
-/** Width of the label column in pixels. */
-const LABEL_WIDTH = 140;
+const FONT_SIZE = 13
+const FONT_FAMILY = '"JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas", monospace'
+const FONT = `${FONT_SIZE}px ${FONT_FAMILY}`
+const ROW_MARGIN = 6
+const SEQ_HSEP = 2
+const RULER_HEIGHT = 16
+// Browser canvas API caps practical bitmap width; UXP uses the same
+// 30000 px guard. We apply the cap to the CSS-pixel size before HiDPI
+// scaling so the backing bitmap (cssW * dpr) stays within reach.
+const MAX_CANVAS_WIDTH = 30000
 
-// ────────────────────────────────────────────────────────────
-// Sub-component: PositionRuler
-// ────────────────────────────────────────────────────────────
-
-interface PositionRulerProps {
-  /** Starting residue position (1-based). */
-  startPos: number;
-  /** Total number of columns in the alignment. */
-  length: number;
+/**
+ * Resize a canvas so its backing bitmap matches device pixels (no blur
+ * on HiDPI displays) while CSS layout uses logical pixels. Returns the
+ * 2D context with a (dpr, dpr) scale already applied so subsequent
+ * drawing coordinates stay in CSS pixels.
+ *
+ * Skips bitmap reallocation when the requested size matches what the
+ * canvas already holds -- assigning to `canvas.width` reallocates the
+ * backing buffer (tens of MB on HiDPI for long sequences) so guarding
+ * this is the single biggest redraw saving.
+ */
+function setupHiDpiCanvas(
+    canvas: HTMLCanvasElement,
+    cssWidth: number,
+    cssHeight: number,
+): CanvasRenderingContext2D | null {
+    const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1
+    const wantW = Math.floor(cssWidth * dpr)
+    const wantH = Math.floor(cssHeight * dpr)
+    if (canvas.width !== wantW) canvas.width = wantW
+    if (canvas.height !== wantH) canvas.height = wantH
+    // CSS pixel sizing is cheap to assign every time (browsers no-op
+    // when the style string is unchanged).
+    canvas.style.width = `${cssWidth}px`
+    canvas.style.height = `${cssHeight}px`
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return null
+    // setTransform replaces any existing transform. Always reset --
+    // assigning canvas.width clears it, but if we skipped that branch
+    // the previous transform may have changed in the meantime.
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    return ctx
 }
 
 /**
- * Horizontal ruler showing residue position numbers and tick marks.
- *
- * Major ticks are drawn every 10 positions with a numeric label;
- * minor ticks appear every 5 positions without labels.
+ * Resolve a CSS custom property declared on :root (handles both dark
+ * and light themes since they only differ in custom-property values).
+ * Returns the supplied fallback when running outside the DOM (e.g.
+ * jsdom tests, before mount).
  */
-const PositionRuler: React.FC<PositionRulerProps> = ({ startPos, length }) => {
-  const ticks: JSX.Element[] = [];
+function readCssVar(name: string, fallback: string): string {
+    if (typeof document === 'undefined') return fallback
+    const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+    return v || fallback
+}
 
-  for (let i = 0; i < length; i++) {
-    const pos = startPos + i;
+interface ThemeColors {
+    /** Glyph fill color. */
+    text: string
+    /** Alternate-row background tint. */
+    rowAlt: string
+    /** Selection highlight under residue glyphs. */
+    selection: string
+    /** Click marker stroke. */
+    marker: string
+    /** Drag tracking rect stroke (Phase 2). */
+    track: string
+    /** Ruler tick + label color. */
+    ruler: string
+}
 
-    if (pos % 10 === 0) {
-      // Major tick with label
-      ticks.push(
-        <div
-          key={`tick-${i}`}
-          className="msa-ruler-tick msa-ruler-major"
-          style={{ left: i * CELL_WIDTH }}
-        >
-          <span className="msa-ruler-label">{pos}</span>
-          <span className="msa-ruler-mark" />
-        </div>
-      );
-    } else if (pos % 5 === 0) {
-      // Minor tick without label
-      ticks.push(
-        <div
-          key={`tick-${i}`}
-          className="msa-ruler-tick msa-ruler-minor"
-          style={{ left: i * CELL_WIDTH }}
-        />
-      );
+function readThemeColors(): ThemeColors {
+    return {
+        text: readCssVar('--text-primary', '#c9cdd6'),
+        rowAlt: readCssVar('--overlay-hover', 'rgba(255,255,255,0.08)'),
+        // Selection highlight: keep recognisable cyan for parity, but
+        // route through accent so it picks up the theme's accent hue.
+        selection: readCssVar('--accent-glow', 'rgba(95,175,215,0.5)'),
+        marker: readCssVar('--accent-red', '#e06c75'),
+        track: readCssVar('--accent-green', '#87c38a'),
+        ruler: readCssVar('--text-muted', '#888'),
     }
-  }
-
-  return (
-    <div className="msa-ruler" style={{ height: RULER_HEIGHT }}>
-      <div
-        className="msa-ruler-track"
-        style={{ width: length * CELL_WIDTH, position: "relative" }}
-      >
-        {ticks}
-      </div>
-    </div>
-  );
-};
-
-// ────────────────────────────────────────────────────────────
-// Sub-component: SequenceRow
-// ────────────────────────────────────────────────────────────
-
-interface SequenceRowProps {
-  /** The aligned sequence string (may contain gap characters '-'). */
-  sequence: string;
-  /** Whether this row is currently highlighted. */
-  highlighted: boolean;
 }
-
-/**
- * A single row of aligned residue characters.
- *
- * Each character is rendered at a fixed width so columns align perfectly
- * across all rows. Gap characters ('-') receive a dimmed style.
- */
-const SequenceRow: React.FC<SequenceRowProps> = ({ sequence, highlighted }) => (
-  <div
-    className={`msa-seq-row ${highlighted ? "msa-row-highlight" : ""}`}
-    style={{ height: ROW_HEIGHT }}
-  >
-    {sequence.split("").map((char, i) => (
-      <span
-        key={i}
-        className={`msa-residue ${char === "-" ? "msa-gap" : ""}`}
-        style={{ width: CELL_WIDTH }}
-      >
-        {char}
-      </span>
-    ))}
-  </div>
-);
-
-// ────────────────────────────────────────────────────────────
-// Main Component
-// ────────────────────────────────────────────────────────────
 
 interface SequencePanelProps {
-  /** Alignment data containing all entries for the MSA viewer. */
-  alignment: AlignmentData | null;
+    cm: AsyncCueMol | null
+    /** Active scene UID, or undefined when no scene is active. */
+    activeSceneId: number | undefined
+    /** Active mol-view UID -- required for Center here. */
+    activeMolViewId: number | undefined
+}
+
+interface CellMetrics {
+    /** Cell width (one residue), including horizontal separation. */
+    cellW: number
+    /** Row height. */
+    rowH: number
 }
 
 /**
- * Multiple Sequence Alignment viewer.
- *
- * Features:
- * - Fixed label column on the left
- * - Horizontally scrollable sequence area
- * - Position ruler with major/minor tick marks
- * - Row highlighting on hover
- * - Synchronized vertical scroll between labels and sequences
+ * Measure 'M' once with the seq font so cell width matches UXP's
+ * `mTextW`. The measurement is done on an offscreen canvas to avoid
+ * mounting-order assumptions.
  */
-export const SequencePanel: React.FC<SequencePanelProps> = ({ alignment }) => {
-  const seqScrollRef = useRef<HTMLDivElement>(null);
-  const labelScrollRef = useRef<HTMLDivElement>(null);
-  const [hoveredRow, setHoveredRow] = useState<number>(-1);
+function measureCell(): CellMetrics {
+    const probe = document.createElement('canvas')
+    const ctx = probe.getContext('2d')
+    if (!ctx) return { cellW: 12, rowH: FONT_SIZE + ROW_MARGIN }
+    ctx.font = FONT
+    const m = ctx.measureText('M')
+    return { cellW: m.width + SEQ_HSEP, rowH: FONT_SIZE + ROW_MARGIN }
+}
 
-  /** Sync vertical scroll between label and sequence panes. */
-  const handleSeqScroll = useCallback(() => {
-    if (seqScrollRef.current && labelScrollRef.current) {
-      labelScrollRef.current.scrollTop = seqScrollRef.current.scrollTop;
+/**
+ * Resolve the residue cell at viewport coordinates (`clientX/Y`),
+ * relative to the seq canvas. Returns `null` when outside any row or
+ * past the last residue of that chain.
+ */
+function pickCell(
+    rows: SeqRow[],
+    canvas: HTMLCanvasElement,
+    metrics: CellMetrics,
+    clientX: number,
+    clientY: number,
+): { row: SeqRow; rowIndex: number; residueIndex: string } | null {
+    const rect = canvas.getBoundingClientRect()
+    const x = clientX - rect.left
+    const y = clientY - rect.top
+    const ix = Math.floor(x / metrics.cellW)
+    const iy = Math.floor(y / metrics.rowH)
+    if (iy < 0 || iy >= rows.length) return null
+    const row = rows[iy]
+    // UXP keys residue lookup by the numeric residue index (column
+    // position). Find the residue whose parsed index matches the
+    // clicked column; non-numeric (insertion-coded) residues are still
+    // pickable because we compare against the leading integer.
+    const match = row.residues.find((r) => parseInt(r.index, 10) === ix)
+    if (!match) return null
+    return { row, rowIndex: iy, residueIndex: match.index }
+}
+
+interface SeqRendererState {
+    cellW: number
+    rowH: number
+    nMaxColumn: number
+}
+
+/**
+ * Draw the position ruler. Ticks every 5 columns, numeric labels every
+ * 5 columns starting at 5. Matches UXP `panel.renderRuler`.
+ */
+function drawRuler(
+    canvas: HTMLCanvasElement,
+    cellW: number,
+    nMaxColumn: number,
+    colors: ThemeColors,
+): void {
+    const cssW = Math.min(cellW * (nMaxColumn + 1), MAX_CANVAS_WIDTH)
+    const ctx = setupHiDpiCanvas(canvas, cssW, RULER_HEIGHT)
+    if (!ctx) return
+    ctx.clearRect(0, 0, cssW, RULER_HEIGHT)
+    ctx.strokeStyle = colors.ruler
+    ctx.beginPath()
+    for (let i = 0; i < nMaxColumn; ++i) {
+        const x = (i + 0.5) * cellW
+        ctx.moveTo(x, 12)
+        ctx.lineTo(x, 16)
     }
-  }, []);
+    ctx.stroke()
+    ctx.font = `10px ${FONT_FAMILY}`
+    ctx.fillStyle = colors.ruler
+    for (let i = 5; i < nMaxColumn; i += 5) {
+        const label = String(i)
+        const mtx = ctx.measureText(label)
+        const x = (i + 0.5) * cellW - mtx.width / 2
+        ctx.fillText(label, x, 10)
+    }
+}
 
-  /** Alignment length (number of columns). */
-  const alignmentLength = useMemo(
-    () => alignment?.entries[0]?.sequence.length ?? 0,
-    [alignment]
-  );
+/**
+ * Draw the chain x residue grid. Mirrors UXP `panel.renderSeq` minus
+ * the marker (rendered as a DOM overlay so click latency is not gated
+ * on a full canvas redraw) and the green drag-tracking rect (Phase 2).
+ */
+function drawSeq(
+    canvas: HTMLCanvasElement,
+    rows: SeqRow[],
+    state: SeqRendererState,
+    colors: ThemeColors,
+): void {
+    const { cellW, rowH, nMaxColumn } = state
+    const cssW = Math.min(cellW * (nMaxColumn + 1), MAX_CANVAS_WIDTH)
+    const cssH = rowH * rows.length
+    const ctx = setupHiDpiCanvas(canvas, cssW, cssH)
+    if (!ctx) return
 
-  // Empty state
-  if (!alignment || alignment.entries.length === 0) {
-    return (
-      <div className="sequence-panel">
-        <div className="sequence-placeholder">
-          <Icon icon="widget" size={48} className="placeholder-icon" />
-          <div>No alignment data available</div>
-        </div>
-      </div>
-    );
-  }
+    ctx.clearRect(0, 0, cssW, cssH)
+    ctx.font = FONT
+    ctx.textBaseline = 'bottom'
 
-  return (
-    <div className="sequence-panel">
-      <div className="msa-container">
-        {/* ── Fixed label column ── */}
-        <div className="msa-label-column" style={{ width: LABEL_WIDTH }}>
-          {/* Spacer to align with ruler */}
-          <div className="msa-label-spacer" style={{ height: RULER_HEIGHT }} />
-          {/* Scrollable label list */}
-          <div className="msa-label-scroll" ref={labelScrollRef}>
-            {alignment.entries.map((entry, idx) => (
-              <div
-                key={entry.id}
-                className={`msa-label ${hoveredRow === idx ? "msa-row-highlight" : ""}`}
-                style={{ height: ROW_HEIGHT }}
-                onMouseEnter={() => setHoveredRow(idx)}
-                onMouseLeave={() => setHoveredRow(-1)}
-                title={entry.label}
-              >
-                {entry.label}
-              </div>
-            ))}
-          </div>
-        </div>
+    // Alternating row backgrounds (UXP "buttonface" -> theme overlay).
+    for (let y = 0; y < rows.length; ++y) {
+        if (y % 2 === 1) {
+            ctx.fillStyle = colors.rowAlt
+            ctx.fillRect(0, y * rowH, cssW, rowH)
+        }
+    }
 
-        {/* ── Scrollable sequence area ── */}
-        <div className="msa-seq-area">
-          {/* Position ruler */}
-          <div className="msa-ruler-wrapper">
-            <PositionRuler
-              startPos={alignment.startPosition}
-              length={alignmentLength}
-            />
-          </div>
+    // Per-residue cells.
+    for (let y = 0; y < rows.length; ++y) {
+        const residues = rows[y].residues
+        for (const res of residues) {
+            const ires = parseInt(res.index, 10)
+            if (!Number.isFinite(ires)) continue
+            const xx = ires * cellW
+            const yy = y * rowH
+            if (res.sel) {
+                ctx.fillStyle = colors.selection
+                ctx.fillRect(xx, yy, cellW, rowH)
+            }
+            ctx.fillStyle = colors.text
+            const sg = res.single === '' ? '*' : res.single
+            ctx.fillText(sg, xx + SEQ_HSEP / 2, yy + (rowH + FONT_SIZE) / 2)
+        }
+    }
+}
 
-          {/* Sequence rows */}
-          <div
-            className="msa-seq-scroll"
-            ref={seqScrollRef}
-            onScroll={handleSeqScroll}
-          >
-            <div
-              className="msa-seq-inner"
-              style={{ minWidth: alignmentLength * CELL_WIDTH }}
-            >
-              {alignment.entries.map((entry, idx) => (
-                <div
-                  key={entry.id}
-                  onMouseEnter={() => setHoveredRow(idx)}
-                  onMouseLeave={() => setHoveredRow(-1)}
-                >
-                  <SequenceRow
-                    sequence={entry.sequence}
-                    highlighted={hoveredRow === idx}
-                  />
+export const SequencePanel: React.FC<SequencePanelProps> = ({
+    cm,
+    activeSceneId,
+    activeMolViewId,
+}) => {
+    const { rows } = useMolSequenceData({ cm, sceneId: activeSceneId })
+    // Subscribe to theme so canvas redraws picks up the new color set.
+    const { theme } = useTheme()
+    const colors = useMemo<ThemeColors>(() => readThemeColors(), [theme])
+
+    // Cell metrics are stable for a given font; compute once and reuse.
+    const metrics = useMemo<CellMetrics>(() => measureCell(), [])
+
+    // Marker (red rect) at the last click; clear when row set churns
+    // (e.g. all mols removed, scene swap).
+    const [marker, setMarker] = useState<{ row: number; col: number } | null>(null)
+    useEffect(() => {
+        if (rows.length === 0) setMarker(null)
+    }, [rows])
+
+    // Largest residue index across all rendered rows determines canvas
+    // width. Clamp to keep canvas under MAX_CANVAS_WIDTH.
+    const nMaxColumn = useMemo(() => {
+        let nmax = 0
+        for (const row of rows) {
+            for (const r of row.residues) {
+                const i = parseInt(r.index, 10)
+                if (Number.isFinite(i) && i > nmax) nmax = i
+            }
+        }
+        const cap = Math.floor(MAX_CANVAS_WIDTH / metrics.cellW)
+        return Math.min(nmax + 10, cap)
+    }, [rows, metrics.cellW])
+
+    // --- Refs to canvases / scroll containers ---
+    const seqCanvasRef = useRef<HTMLCanvasElement | null>(null)
+    const rulerCanvasRef = useRef<HTMLCanvasElement | null>(null)
+    const scrollWrapRef = useRef<HTMLDivElement | null>(null)
+    const nameListRef = useRef<HTMLDivElement | null>(null)
+
+    // Redraw the seq canvas only when data / metrics / theme change.
+    // The marker rect is a DOM overlay (see JSX below) so clicking
+    // does not pay the full canvas redraw cost.
+    useEffect(() => {
+        const c = seqCanvasRef.current
+        if (!c) return
+        drawSeq(
+            c,
+            rows,
+            { cellW: metrics.cellW, rowH: metrics.rowH, nMaxColumn },
+            colors,
+        )
+    }, [rows, metrics, nMaxColumn, colors])
+
+    useEffect(() => {
+        const c = rulerCanvasRef.current
+        if (!c) return
+        drawRuler(c, metrics.cellW, nMaxColumn, colors)
+    }, [metrics.cellW, nMaxColumn, colors])
+
+    // Scroll sync: ruler tracks horizontal, name list tracks vertical
+    // (UXP `panel.onSeqBoxScroll`).
+    const onScroll = useCallback(() => {
+        const wrap = scrollWrapRef.current
+        if (!wrap) return
+        if (rulerCanvasRef.current) {
+            rulerCanvasRef.current.style.marginLeft = `${-wrap.scrollLeft}px`
+        }
+        if (nameListRef.current) {
+            nameListRef.current.style.marginTop = `${-wrap.scrollTop}px`
+        }
+    }, [])
+
+    // --- Click handlers ---
+
+    const handleToggle = useCallback(
+        async (row: SeqRow, residueIndex: string) => {
+            if (!cm || activeSceneId === undefined) return
+            await cm
+                .invokeService('toggleResidueSelection', {
+                    sceneId: activeSceneId,
+                    molId: row.molUid,
+                    chainName: row.chainName,
+                    residueIndex,
+                })
+                .catch((err: unknown) => {
+                    console.warn('toggleResidueSelection failed:', err)
+                })
+        },
+        [cm, activeSceneId],
+    )
+
+    const handleCenter = useCallback(
+        async (row: SeqRow, residueIndex: string) => {
+            if (!cm || activeSceneId === undefined || activeMolViewId === undefined) return
+            await cm
+                .invokeService('centerOnResidue', {
+                    sceneId: activeSceneId,
+                    viewId: activeMolViewId,
+                    molId: row.molUid,
+                    chainName: row.chainName,
+                    residueIndex,
+                })
+                .catch((err: unknown) => {
+                    console.warn('centerOnResidue failed:', err)
+                })
+        },
+        [cm, activeSceneId, activeMolViewId],
+    )
+
+    const onCanvasMouseDown = useCallback(
+        (event: React.MouseEvent<HTMLCanvasElement>) => {
+            if (event.button !== 0) return
+            const canvas = seqCanvasRef.current
+            if (!canvas) return
+            const hit = pickCell(rows, canvas, metrics, event.clientX, event.clientY)
+            if (!hit) return
+            const ix = parseInt(hit.residueIndex, 10)
+            if (Number.isFinite(ix)) setMarker({ row: hit.rowIndex, col: ix })
+            void handleToggle(hit.row, hit.residueIndex)
+        },
+        [rows, metrics, handleToggle],
+    )
+
+    // Context menu: Phase 1 wires Center here only; the rest of the UXP
+    // items are listed disabled so the menu shape is review-able. The
+    // residue label header mirrors UXP `seq-ctm-reslabel`.
+    const onCanvasContextMenu = useCallback(
+        (event: React.MouseEvent<HTMLCanvasElement>) => {
+            event.preventDefault()
+            const canvas = seqCanvasRef.current
+            if (!canvas) return
+            const hit = pickCell(rows, canvas, metrics, event.clientX, event.clientY)
+            if (!hit) return
+
+            const ix = parseInt(hit.residueIndex, 10)
+            if (Number.isFinite(ix)) setMarker({ row: hit.rowIndex, col: ix })
+
+            const residue = hit.row.residues.find((r) => r.index === hit.residueIndex)
+            const label = residue
+                ? `${hit.row.molName} ${hit.row.chainName}${hit.residueIndex} ${residue.name}`
+                : `${hit.row.molName} ${hit.row.chainName}${hit.residueIndex}`
+
+            const aroundByresItems = [3, 5, 7, 10].map((d) => (
+                <MenuItem key={d} text={`${d} A`} disabled />
+            ))
+            const aroundItems = [3, 5, 7, 10].map((d) => (
+                <MenuItem key={d} text={`${d} A`} disabled />
+            ))
+
+            const menu = (
+                <Menu>
+                    <MenuItem text={label} disabled />
+                    <MenuDivider />
+                    <MenuItem
+                        text="Center here"
+                        onClick={() => void handleCenter(hit.row, hit.residueIndex)}
+                    />
+                    <MenuItem text="Toggle sel" disabled />
+                    <MenuItem text="Around Byresid" disabled>
+                        {aroundByresItems}
+                    </MenuItem>
+                    <MenuItem text="Around" disabled>
+                        {aroundItems}
+                    </MenuItem>
+                    <MenuDivider />
+                    <MenuItem text="Unselect all" disabled />
+                    <MenuItem text="Invert sel" disabled />
+                    <MenuDivider />
+                    <MenuItem text="Copy sequence" disabled />
+                </Menu>
+            )
+
+            showContextMenu({
+                content: menu,
+                targetOffset: { left: event.clientX, top: event.clientY },
+            })
+        },
+        [rows, metrics, handleCenter],
+    )
+
+    // --- Render ---
+
+    if (rows.length === 0) {
+        return (
+            <div className="sequence-panel">
+                <div className="sequence-placeholder">
+                    <Icon icon="widget" size={48} />
+                    <div>No molecule loaded</div>
                 </div>
-              ))}
             </div>
-          </div>
+        )
+    }
+
+    const rowH = metrics.rowH
+
+    return (
+        <div className="sequence-panel">
+            <div className="seq-panel-body">
+                {/* Resizable split between chain-name column and grid.
+                    Mirrors UXP `<splitter class="seqpanel-splitter"/>`. */}
+                <Allotment defaultSizes={[140, 600]} proportionalLayout={false}>
+                    <Allotment.Pane minSize={40} preferredSize={140}>
+                        <div className="seq-name-column">
+                            <div className="seq-name-spacer" style={{ height: RULER_HEIGHT }} />
+                            <div className="seq-name-list" ref={nameListRef}>
+                                {rows.map((row, idx) => (
+                                    <div
+                                        key={`${row.molUid}:${row.chainName}`}
+                                        className={`seq-name-item${idx % 2 === 1 ? ' seq-name-odd' : ''}`}
+                                        style={{ height: rowH }}
+                                        title={`${row.chainName}:${row.molName}`}
+                                    >
+                                        {row.chainName}:{row.molName}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </Allotment.Pane>
+                    <Allotment.Pane minSize={100}>
+                        <div className="seq-grid-area">
+                            <div className="seq-ruler-wrap" style={{ height: RULER_HEIGHT }}>
+                                <canvas
+                                    ref={rulerCanvasRef}
+                                    className="seq-ruler-canvas"
+                                    height={RULER_HEIGHT}
+                                />
+                            </div>
+                            <div
+                                className="seq-scroll-wrap"
+                                ref={scrollWrapRef}
+                                onScroll={onScroll}
+                            >
+                                {/* Position-anchor for the marker overlay
+                                    so it scrolls with the canvas content. */}
+                                <div className="seq-canvas-stack">
+                                    <canvas
+                                        ref={seqCanvasRef}
+                                        className="seq-canvas"
+                                        onMouseDown={onCanvasMouseDown}
+                                        onContextMenu={onCanvasContextMenu}
+                                    />
+                                    {marker && (
+                                        <div
+                                            className="seq-marker"
+                                            style={{
+                                                left: marker.col * metrics.cellW,
+                                                top: marker.row * metrics.rowH,
+                                                width: metrics.cellW,
+                                                height: metrics.rowH,
+                                                borderColor: colors.marker,
+                                            }}
+                                        />
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </Allotment.Pane>
+                </Allotment>
+            </div>
         </div>
-      </div>
-    </div>
-  );
-};
+    )
+}

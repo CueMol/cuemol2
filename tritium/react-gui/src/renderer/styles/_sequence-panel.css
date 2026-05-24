@@ -1,4 +1,5 @@
-/* ─── Sequence Panel (MSA Viewer) ─── */
+/* --- Sequence Panel (UXP `panel.btmpanel-holder.seq` parity) --- */
+
 .sequence-panel {
   display: flex;
   flex-direction: column;
@@ -7,162 +8,112 @@
   overflow: hidden;
 }
 
-/* ── MSA container: label column + scrollable sequence area ── */
-.msa-container {
-  display: flex;
+/* Main grid: name column | splitter | (ruler + scrollable seq canvas).
+   The split is owned by <Allotment>; this wrapper just gives it room. */
+.seq-panel-body {
+  position: relative;
   flex: 1;
   min-height: 0;
   overflow: hidden;
 }
 
-/* ── Fixed label column ── */
-.msa-label-column {
-  flex-shrink: 0;
+/* Chain-name list (left pane). Fills the Allotment pane; the pane
+   itself controls width, the splitter is between panes. */
+.seq-name-column {
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--border);
+  width: 100%;
+  height: 100%;
   background: var(--bg-panel-header);
+  border-right: 1px solid var(--border);
   overflow: hidden;
 }
 
-.msa-label-spacer {
-  flex-shrink: 0;
-  border-bottom: 1px solid var(--border);
+/* Spacer above the chain names that lines up with the ruler row. */
+.seq-name-spacer {
+  flex: 0 0 auto;
 }
 
-.msa-label-scroll {
+/* Scrolls vertically in lockstep with the seq canvas via JS-set
+   `margin-top: -scrollTop` (mirrors UXP `onSeqBoxScroll`). */
+.seq-name-list {
+  position: relative;
+  overflow: hidden;
   flex: 1;
-  overflow: hidden;
 }
 
-.msa-label {
+.seq-name-item {
   display: flex;
   align-items: center;
   padding: 0 10px;
-  font-family: var(--font-mono);
-  font-size: var(--fs-base);
-  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  /* Larger than the residue glyphs (--fs-lg, 12px) so chain:mol
+     labels read at a glance against the dense grid. */
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-medium);
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  cursor: default;
-  transition: background 0.1s;
 }
 
-.msa-label.msa-row-highlight {
-  background: var(--bg-hover);
-  color: var(--text-primary);
+.seq-name-item.seq-name-odd {
+  background: var(--overlay-hover);
 }
 
-/* ── Scrollable sequence area ── */
-.msa-seq-area {
-  flex: 1;
-  min-width: 0;
+/* Right side: ruler + scrollable seq canvas. Fills the Allotment pane. */
+.seq-grid-area {
   display: flex;
   flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
   overflow: hidden;
 }
 
-.msa-ruler-wrapper {
-  flex-shrink: 0;
+/* Ruler row: clips the canvas; JS sets `margin-left: -scrollLeft` */
+.seq-ruler-wrap {
+  flex: 0 0 auto;
   overflow: hidden;
+  background: var(--bg-panel-header);
   border-bottom: 1px solid var(--border);
 }
 
-.msa-seq-scroll {
+.seq-ruler-canvas {
+  display: block;
+}
+
+/* Seq canvas wrap: both axes scroll */
+.seq-scroll-wrap {
   flex: 1;
   overflow: auto;
+  background: var(--bg-surface);
 }
 
-.msa-seq-inner {
-  display: flex;
-  flex-direction: column;
-}
-
-/* ── Position ruler ── */
-.msa-ruler {
+/* Wraps the seq canvas + marker overlay so the marker scrolls in
+   lockstep with the canvas content (UXP `mMarkRow / mMarkPos`). */
+.seq-canvas-stack {
   position: relative;
-  background: var(--bg-panel-header);
-  overflow: hidden;
+  /* Shrink-wrap to the canvas so the absolute marker measures against
+     the right reference box. */
+  display: inline-block;
 }
 
-.msa-ruler-track {
-  height: 100%;
-}
-
-.msa-ruler-tick {
-  position: absolute;
-  top: 0;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-}
-
-.msa-ruler-major {
-  width: 1px;
-}
-
-.msa-ruler-label {
-  font-family: var(--font-mono);
-  font-size: var(--fs-xs);
-  color: var(--text-muted);
-  white-space: nowrap;
-  line-height: var(--lh-tight);
-  margin-bottom: 2px;
-}
-
-.msa-ruler-mark {
-  width: 1px;
-  height: 6px;
-  background: var(--text-muted);
-  flex-shrink: 0;
-}
-
-.msa-ruler-minor {
-  width: 1px;
-  height: 100%;
-  display: flex;
-  align-items: flex-end;
-}
-
-.msa-ruler-minor::after {
-  content: "";
-  width: 1px;
-  height: 4px;
-  background: var(--border);
-}
-
-/* ── Sequence rows ── */
-.msa-seq-row {
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
-  transition: background 0.1s;
-}
-
-.msa-seq-row.msa-row-highlight {
-  background: var(--bg-hover);
-}
-
-.msa-residue {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-mono);
-  font-size: var(--fs-md);
-  color: var(--text-primary);
+.seq-canvas {
+  display: block;
   cursor: default;
-  flex-shrink: 0;
 }
 
-.msa-gap {
-  color: var(--text-muted);
-  opacity: 0.4;
+/* DOM-backed marker rect (UXP `panel.renderSeq` red stroked rect).
+   Keeping the marker outside the canvas means click->marker latency
+   is just a React reconciliation, not a full canvas re-blit. */
+.seq-marker {
+  position: absolute;
+  border: 1px solid;
+  pointer-events: none;
+  box-sizing: border-box;
 }
 
-/* ── Placeholder (empty state) ── */
 .sequence-placeholder {
   display: flex;
   flex-direction: column;

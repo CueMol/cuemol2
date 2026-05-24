@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-05-24 (`panel.btmpanel-holder` split into `.log` / `.seq`; `.seq` Phase 1 wip: Canvas grid + click toggle + Center ctx menu)
 - Updated: 2026-05-24 (`panel.selection` Command tab done: molecule selector + multi-line text + History MRU shared with `MolSelList` via `applyMolSelString`; E2E verified)
 - Updated: 2026-05-24 (`panel.molstruct` Phase 1+2: live tree, lazy load, Select / Center / Zoom — ADR-0018)
 - Source files: `docs/migration/mapping/*.md` (excluding this file)
@@ -12,7 +13,7 @@
 
 | Category | File | Total | done | wip | review | todo | frozen |
 |----------|------|------:|-----:|----:|-------:|-----:|-------:|
-| Panel | [panels.md](panels.md) | 26 | 2 | 17 | 0 | 7 | 0 |
+| Panel | [panels.md](panels.md) | 27 | 2 | 18 | 0 | 7 | 0 |
 | Menu | [menus.md](menus.md) | 4 | 1 | 2 | 0 | 1 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 13 | 0 | 0 | 0 | 13 | 0 |
@@ -21,7 +22,7 @@
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 0 | 1 | 0 | 12 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 0 | 1 | 0 | 27 | 0 |
 | Other | [other.md](other.md) | 4 | 0 | 1 | 0 | 3 | 0 |
-| **Total** | | **129** | **4** | **26** | **0** | **99** | **0** |
+| **Total** | | **130** | **4** | **27** | **0** | **99** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -38,6 +39,11 @@
 > own migration status. See `mapping/panels.md` for the header note and
 > `uxp-inventory/panels.md` for the inventory split.
 
+> Panel category grew from 26 → 27 on 2026-05-24: `panel.btmpanel-holder`
+> was split into `panel.btmpanel-holder.log` and `panel.btmpanel-holder.seq`
+> rows (Output tab vs Sequence tab) per the spec's "one user-visible
+> surface per entry" rule.
+
 ---
 
 ## Mapping Type Breakdown
@@ -46,10 +52,10 @@
 |---------|------:|
 | 1:1 (`direct`) | 8 |
 | merged | 1 |
-| split | 16 |
+| split | 17 |
 | redesign | 0 |
 | deprecated (`dropped`) | 2 |
-| *(not yet assigned)* | 101 |
+| *(not yet assigned)* | 102 |
 
 ---
 
@@ -81,6 +87,7 @@
 | [`panel.coloring.deck.bfac`](panels.md#panelcoloringdeckbfac) | `ColorPane` (BfacDeck) / `rendererColoring.service` (`setColoringProp`) | Phase 2: Mode + Low/High colour + Auto/Manual + Low/High parameter (disabled outside Manual). |
 | [`panel.coloring.deck.elepot`](panels.md#panelcoloringdeckelepot) | `ColorPane` (ElepotDeck) / `useElePotMapObjects` / `rendererColoring.service` (`setRendererElepotProp`, `listElePotMapObjects`, `paint-type-elepot`) | Phase 3: ElePotMap selector + Color-by-SAS + Low/Mid/High (par, colour) ramp. Elepot props live on the surface renderer (not a ColoringScheme); deck appears when `colormode === "potential"` on `molsurf` / `dsurface`. Dropdown item is surface-gated. |
 | [`panel.molstruct`](panels.md#panelmolstruct) | `MolStructPane` / `useMolStructure` / `selStrFromTree` / `getMolStructure.service` / `applyMolSelString.service` | Phase 1+2: molecule selector + lazy chain/residue/atom tree (per-chain & per-residue cache, self-heal on missing) + multi-select + Select / Center / Zoom (ADR-0018). Known issue: first-expand stagger from Blueprint `Tree` Collapse JS state machine (virtualization swap deferred). |
+| [`panel.btmpanel-holder.seq`](panels.md#panelbtmpanel-holderseq) | `SequencePanel` / `useMolSequenceData` / `seqPanelOps.service` / `getSeqPanelData.service` / `selectObjectMol.service` (reused) | Phase 1: HiDPI Canvas all-mol x all-chain residue grid + Allotment splitter (UXP parity) + DOM-overlay marker + theme-aware colors + click toggle + Center here ctx menu. Bulk `getSeqPanelData` collapses per-chain IPC to one round trip. Known issue: selection commit -> cyan highlight ~0.5 s lag (ADR-0019). Phase 2 (drag/shift range select) + Phase 3 (around / invert / clear / copy + remaining 12 ctxmenu items) deferred. |
 
 ---
 

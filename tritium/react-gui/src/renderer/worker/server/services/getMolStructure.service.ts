@@ -59,7 +59,7 @@ export interface GetMolResiduesArgs {
 
 export interface MolResidueEntry {
     /**
-     * ResidIndex serialised by C++ (e.g. "10" or "10A" — insertion codes
+     * ResidIndex serialised by C++ (e.g. "10" or "10A" -- insertion codes
      * are preserved). Keep as string in the wire format so callers can
      * round-trip the exact UXP selection-string syntax.
      */
@@ -67,6 +67,12 @@ export interface MolResidueEntry {
     name: string;
     /** Single-letter residue code (UXP `getResidsJSON` `single` field). */
     single: string;
+    /**
+     * Whether this residue is in the molecule's current `sel`. Used by
+     * the sequence panel for cyan highlighting; the molstruct tree
+     * ignores it.
+     */
+    sel: boolean;
 }
 
 export interface GetMolResiduesResult {
@@ -169,6 +175,7 @@ interface RawResidueEntry {
     name?: unknown;
     single?: unknown;
     index?: unknown;
+    sel?: unknown;
 }
 
 function parseResiduesJSON(json: string): MolResidueEntry[] {
@@ -189,6 +196,7 @@ function parseResiduesJSON(json: string): MolResidueEntry[] {
             index,
             name: typeof raw?.name === 'string' ? raw.name : '',
             single: typeof raw?.single === 'string' ? raw.single : '',
+            sel: raw?.sel === true,
         });
     }
     return out;

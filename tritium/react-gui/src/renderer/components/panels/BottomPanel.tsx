@@ -14,7 +14,8 @@ import { SequencePanel } from "./SequencePanel";
 import { AnimationPanel } from "./AnimationPanel";
 import { RenderPanel } from "./RenderPanel";
 import type { RenderJob } from "../../hooks/useRenderJob";
-import type { AlignmentData, AnimationData } from "../../types";
+import type { AnimationData } from "../../types";
+import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
 
 // ─────────────────────────────────────────────
 // Types
@@ -49,7 +50,11 @@ const TabButton: React.FC<TabButtonProps> = ({ tab, activeTab, icon, label, onCl
 // ─────────────────────────────────────────────
 
 interface BottomPanelProps {
-  alignment: AlignmentData | null;
+  cm: AsyncCueMol | null;
+  /** Active scene UID; undefined when no scene is active. */
+  activeSceneId: number | undefined;
+  /** Active mol-view UID; required by SequencePanel "Center here". */
+  activeMolViewId: number | undefined;
   animation: AnimationData | null;
   /** Current render job (Render tab). */
   renderJob: RenderJob | null;
@@ -66,7 +71,9 @@ interface BottomPanelProps {
 }
 
 export const BottomPanel: React.FC<BottomPanelProps> = ({
-  alignment,
+  cm,
+  activeSceneId,
+  activeMolViewId,
   animation,
   renderJob,
   renderPreset,
@@ -82,7 +89,13 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({
       case "output":
         return <LogView />;
       case "sequence":
-        return <SequencePanel alignment={alignment} />;
+        return (
+          <SequencePanel
+            cm={cm}
+            activeSceneId={activeSceneId}
+            activeMolViewId={activeMolViewId}
+          />
+        );
       case "animation":
         return <AnimationPanel animation={animation} />;
       case "render":

@@ -129,55 +129,6 @@ export interface LogEntry {
 }
 
 // ────────────────────────────────────────────────────────────
-// Sequence Alignment (MSA)
-// ────────────────────────────────────────────────────────────
-
-/**
- * A single entry (row) in a multiple sequence alignment.
- *
- * Each entry represents one chain or sequence that participates in the
- * alignment. The `sequence` field contains the aligned string, including
- * gap characters ('-') to maintain column correspondence.
- */
-export interface AlignmentEntry {
-  /** Stable, unique identifier for this alignment row. */
-  id: string;
-
-  /**
-   * Display label shown in the left column (e.g. "A:P34897_0_poc",
-   * "B:5v7i"). Typically formatted as "Chain:Source".
-   */
-  label: string;
-
-  /**
-   * Aligned sequence string using one-letter amino acid codes.
-   * Gap characters ('-') indicate insertions/deletions.
-   * All entries in the same alignment must have identical length.
-   */
-  sequence: string;
-}
-
-/**
- * Complete alignment data for the MSA viewer.
- *
- * Contains metadata about the alignment (name, start position)
- * and an ordered list of aligned sequence entries.
- */
-export interface AlignmentData {
-  /** Human-readable name for this alignment set. */
-  name: string;
-
-  /**
-   * Starting residue position of the alignment (1-based).
-   * Used to render position numbers on the ruler.
-   */
-  startPosition: number;
-
-  /** Ordered list of aligned sequence entries (rows). */
-  entries: AlignmentEntry[];
-}
-
-// ────────────────────────────────────────────────────────────
 // Animation Timeline
 // ────────────────────────────────────────────────────────────
 

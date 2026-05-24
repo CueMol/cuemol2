@@ -28,10 +28,17 @@ Status values:
 > covers the renderer selector + coloring-type dropdown chrome; the nine
 > `panel.coloring.deck.*` rows cover each deck page.
 
+> `panel.btmpanel-holder` was split into `panel.btmpanel-holder.log` and
+> `panel.btmpanel-holder.seq` on 2026-05-24 because the Output tab (log +
+> command prompt) and the Sequence tab (mol residue grid + selection sync
+> + 13-item context menu) are entirely unrelated UI surfaces and progress
+> on independent phases.
+
 | ID | React | Mapping | Status | PR | ADR | Notes |
 |----|-------|---------|--------|----|-----|-------|
 | [`panel.anim`](../uxp-inventory/panels.md#panelanim) | | | todo | | | |
-| [`panel.btmpanel-holder`](../uxp-inventory/panels.md#panelbtmpanel-holder) | | | todo | | | |
+| [`panel.btmpanel-holder.log`](../uxp-inventory/panels.md#panelbtmpanel-holderlog) | | | todo | | | |
+| [`panel.btmpanel-holder.seq`](../uxp-inventory/panels.md#panelbtmpanel-holderseq) | `SequencePanel` / `useMolSequenceData` / `seqPanelOps.service` (`toggleResidueSelection`, `rangeSelectResidues`, `centerOnResidue`) / `getSeqPanelData.service` (bulk fetch) / `selectObjectMol.service` (reused) | split | wip | | [ADR-0019](../adr/ADR-0019-seq-panel-selection-latency.md) | Phase 1: HiDPI Canvas chain x residue grid (one row per chain across every MolCoord -- no per-mol selector, mirrors UXP) + DOM-overlay click marker + Allotment splitter between name column and grid (UXP `seqpanel-splitter` parity) + theme-aware colors + single-click toggle (ResidRangeSet-based, mirrors `naviResidSel`) + scroll sync (ruler / name list) + `Center here` context menu. Per-click latency: bulk `getSeqPanelData` folds the per-mol / per-chain fan-out into one IPC; SEM_PROPCHG `sel` events surgical-refetch only the affected mol's rows via the same service's `molIds` filter. Known issue: selection commit -> cyan highlight still feels laggy (~0.5 s) -- root cause analysis and candidate fixes in [ADR-0019](../adr/ADR-0019-seq-panel-selection-latency.md). Phase 2 (drag range select / shift+click range extend with green tracking rect) and Phase 3 (remaining 12 ctxmenu items: Around 3/5/7/10 / Around Byresid 3/5/7/10 reusing `selectObjectMol` with new `aroundByres10` kind / Unselect all / Invert sel / Copy sequence) are deferred to follow-up checkpoints. |
 | [`panel.coloring.shell`](../uxp-inventory/panels.md#panelcoloringshell) | `ColorPane` / `usePaintCapableRenderers` / `rendererColoring.service` (`listPaintCapableRenderers`, extended `setRendererColoring`) | split | wip | | | Renderer selector (paint-capable filter via `coloring` property probe) + Coloring type dropdown. Phase 1 enables Paint / Solid / Reset to default; CPK / Bfac / Rainbow / Elepot / Multi-gradient remain disabled "coming soon" placeholders. |
 | [`panel.coloring.deck.undef`](../uxp-inventory/panels.md#panelcoloringdeckundef) | | | todo | | | |
 | [`panel.coloring.deck.solid`](../uxp-inventory/panels.md#panelcoloringdecksolid) | `ColorPane` / `useRendererColoringState` / `rendererColoring.service` (`setRendererDefaultColor`, `paint-type-solid` case) | direct | wip | | | Default-color text input with live preview swatch; commits on blur via `setRendererDefaultColor` under "Change default color" undo. Renders when the renderer's coloring class is `""` (null) or `SolidColoring`. |

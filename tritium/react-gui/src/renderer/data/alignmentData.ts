@@ -1,68 +1,16 @@
 /**
  * @file data/alignmentData.ts
- * @description Sample MSA (Multiple Sequence Alignment) data and animation
- * timeline data for demo purposes.
- *
- * The alignment data mimics a typical structural alignment result where
- * multiple chains from different PDB entries are aligned against a reference
- * sequence (e.g. UniProt P34897).
+ * @description Sample animation timeline data for the bottom-panel
+ * Animation tab. The MSA mock that previously lived here was removed
+ * when SequencePanel was rewritten as a live UXP-parity sequence viewer
+ * (`panel.btmpanel-holder.seq`).
  *
  * @module alignmentData
  */
 
-import type { AlignmentData, AnimationData } from "../types";
+import type { AnimationData } from "../types";
 
-// ────────────────────────────────────────────────────────────
-// MSA sample data
-// ────────────────────────────────────────────────────────────
-
-/** Sample multiple sequence alignment — structural overlay of SDH chains. */
-export const SAMPLE_ALIGNMENT: AlignmentData = {
-  name: "P34897 vs 5v7i alignment",
-  startPosition: 48,
-  entries: [
-    {
-      id: "aln-1",
-      label: "A:P34897_0_poc",
-      sequence:
-        "ESLSDSDPEMWELLQREKDRQCRGELIASENFC" +
-        "SRAALEALGSCLNNKYSEGYPGKRYYGGAEVVDEIE" +
-        "SLSDSDPEMWELLQREKDRQCRGELIASENFC" +
-        "SRAALEALGSCLNNKYSEGYPGKRYYGGAEVVDEIE",
-    },
-    {
-      id: "aln-2",
-      label: "L:P34897_0_poc",
-      sequence:
-        "---------------------------------" +
-        "-----------------------------------" +
-        "---------------------------------" +
-        "-----------------------------------",
-    },
-    {
-      id: "aln-3",
-      label: "A:5v7i",
-      sequence:
-        "ESLSDSDPEMWELLQREKDRQCRGELIASENFC" +
-        "SRAALEALGSCLNNKYSEGYPGKRYYGGAEVVDEIE" +
-        "ESLSDSDPEMWELLQREKDRQCRGELIASENFC" +
-        "SRAALEALGSCLNNKYSEGYPGKRYYGGAEVVDEIE",
-    },
-    {
-      id: "aln-4",
-      label: "B:5v7i",
-      sequence:
-        "ESLSDSDPEMWELLQREKDRQCRGELIASENFC" +
-        "SRAALEALGSCLNNKYSEGYPGKRYYGGAEVVDEIE" +
-        "ESLSDSDPEMWELLQREKDRQCRGELIASENFC" +
-        "SRAALEALGSCLNNKYSEGYPGKRYYGGAEVVDEIE",
-    },
-  ],
-};
-
-// ────────────────────────────────────────────────────────────
-// Animation timeline sample data
-// ────────────────────────────────────────────────────────────
+// --- Animation timeline sample data ---
 
 /** Sample animation — rotation and opacity keyframes over 300 frames at 30fps. */
 export const SAMPLE_ANIMATION: AnimationData = {

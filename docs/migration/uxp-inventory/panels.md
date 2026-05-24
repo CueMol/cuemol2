@@ -5,12 +5,13 @@
 
 - Origin: one-time scan of `uxp_gui/cuemol2/` (2026-04-20)
 - Spec: [_spec.md](./_spec.md)
-- Entries: 26
+- Entries: 27
 
 ## Index
 
 - [`panel.anim`](#panelanim)
-- [`panel.btmpanel-holder`](#panelbtmpanel-holder)
+- [`panel.btmpanel-holder.log`](#panelbtmpanel-holderlog)
+- [`panel.btmpanel-holder.seq`](#panelbtmpanel-holderseq)
 - [`panel.coloring.shell`](#panelcoloringshell)
 - [`panel.coloring.deck.undef`](#panelcoloringdeckundef)
 - [`panel.coloring.deck.solid`](#panelcoloringdecksolid)
@@ -77,33 +78,97 @@
 
 ---
 
-### `panel.btmpanel-holder`
+### `panel.btmpanel-holder.log`
 
-- **File**: `uxp_gui/cuemol2/base/content/bottom-panels/btmpanel-holder.xul`
-- **Root element**: `<overlay>`
-- **Title**: unknown (no `title` attribute on the panel container)
+- **File**: `uxp_gui/cuemol2/base/content/bottom-panels/btmpanel-holder.xul` (`<tabpanel id="log-btmpanel-tabpanel">`)
+- **Root element**: `<overlay>` (overlay-target `btmpanels-overlay-target`)
+- **Title**: "Output" (hardcoded on `<tab id="log-btmpanel-tab">`)
 - **Chrome URL**: `chrome://cuemol2/content/bottom-panels/btmpanel-holder.xul`
-- **Associated JS**: `bottom-panels/logpanel.js`, `bottom-panels/seqpanel.js`
+- **Associated JS**: `bottom-panels/logpanel.js`
 - **Overlays applied**: none
 
 #### User-visible features
-- Two-tab bottom panel (tabs at bottom edge): **Output** tab and **Sequence** tab
-- Output tab: scrollable monospace log text area (read-only), command prompt input field
-- Sequence tab: residue name list (left side), ruler canvas and sequence canvas (right side), horizontal splitter between name list and canvas area
-- Sequence context menu: residue label (disabled), Center here, Toggle sel, Around Byresid (3/5/7/10 Å), Around (3/5/7/10 Å), Unselect all, Invert sel, Copy sequence
+- Read-only multi-line log text area (`<textbox id="log_content" multiline="true" readonly="true">`) styled monospace bold
+- Command-prompt row: `<label id="cmd_prompt_label" value="&gt;">` + single-line `<textbox id="output_cmdbox">`
 
 #### Commands / Handlers
 | Trigger | Handler | Description |
 |---------|---------|-------------|
-| Sequence context menu items | wired in `seqpanel.js` (not in XUL) | Center, selection toggle, around-selection, copy sequence operations |
+| Log line append | wired in `logpanel.js` (not in XUL) | Streams CueMol core log events into `log_content` |
+| Command prompt Enter | wired in `logpanel.js` | Executes the typed command via the CueMol command processor |
 
 #### i18n keys used
 - none
 
 #### Notes
-- Overlays into `btmpanels-overlay-target` (not `panels-overlay-target` like other panels); this targets the dedicated bottom panel region.
-- JS files are loaded with relative (non-chrome) paths, resolving to `bottom-panels/logpanel.js` and `bottom-panels/seqpanel.js`.
-- Context menu item `oncommand` handlers are not defined in XUL; wired via `seqpanel.js`.
+- The bottom-panel `<tabbox>` chrome (tabs at bottom edge: Output / Sequence) lives in the shared XUL file but is logically owned by neither sub-entry; the two tabs are independent UIs that happen to share the holder element.
+- Overlays into `btmpanels-overlay-target` (not `panels-overlay-target` like side panels); this targets the dedicated bottom-panel region.
+- The JS file is loaded with a relative (non-chrome) path, resolving to `bottom-panels/logpanel.js`.
+
+---
+
+### `panel.btmpanel-holder.seq`
+
+- **File**: `uxp_gui/cuemol2/base/content/bottom-panels/btmpanel-holder.xul` (`<tabpanel id="seq-btmpanel-tabpanel">`)
+- **Root element**: `<overlay>` (overlay-target `btmpanels-overlay-target`)
+- **Title**: "Sequence" (hardcoded on `<tab id="seq-btmpanel-tab">`)
+- **Chrome URL**: `chrome://cuemol2/content/bottom-panels/btmpanel-holder.xul`
+- **Associated JS**: `bottom-panels/seqpanel.js`
+- **Overlays applied**: none
+
+#### User-visible features
+- Three-region layout in the Sequence tab:
+  - Left: chain-name list (`<vbox id="seq_name_list">` inside `seq_name_list_container`), persistable width
+  - Splitter (`<splitter class="seqpanel-splitter">`) between name list and grid area
+  - Right top: position ruler (`<html:canvas id="ruler_canvas">`)
+  - Right bottom: scrollable residue grid (`<html:canvas id="seq_canvas">` inside `<vbox id="seq_scrollbox">`) with both horizontal and vertical scrollbars
+- Per-residue background highlight (cyan) when the residue is currently in `mol.sel`
+- Marker (red stroked rect) at the last clicked / context-menu-target residue
+- Drag tracking rect (green stroked rect) drawn during click-and-drag range select
+- Right-click context menu (`seq_ctxtmenu`, lives in `menus-overlay-target`):
+  - Residue label header (`seq-ctm-reslabel`, disabled — shows `<molName> <chain><sindex> <resName>`)
+  - Center here (`seq-ctm-center`)
+  - Toggle sel (`seq-ctm-select`)
+  - Around Byresid submenu: 3 / 5 / 7 / 10 Å (`seq-ctm-arbyres-3..10`)
+  - Around submenu: 3 / 5 / 7 / 10 Å (`seq-ctm-arnd-3..10`)
+  - Unselect all (`seq-ctm-unselectall`)
+  - Invert sel (`seq-ctm-invsel`)
+  - Copy sequence (`seq-ctm-copyseq`)
+
+#### Commands / Handlers
+All handlers live in `cuemolui.seqpanel` (`bottom-panels/seqpanel.js`); the XUL has no inline `oncommand` attributes.
+
+| Trigger | Handler | Description |
+|---------|---------|-------------|
+| Tab `select` | `attachScene(getCurrentSceneID())` | Detaches previous scene listeners and rebinds the panel to the newly-active scene |
+| Scene `SEM_CHANGED` (sceneLoaded / sceneAllCleared) | `loadScene(scene)` + `renderSeq()` | Re-enumerates all MolCoord objects in the scene and redraws |
+| Object `SEM_ADDED` | `addMolIDData(uid)` + `renderSeq()` | Adds the new mol's chains / residues to `mData` |
+| Object `SEM_REMOVING` | `removeMolData(uid)` + `renderSeq()` | Drops the mol from `mData` |
+| Object `SEM_PROPCHG propname="sel"` | `removeMolData(uid)` + `addMolIDData(uid)` + `renderSeq()` | Re-fetches `getResidsJSON` so the new `sel` flags drive the cyan highlights |
+| Object `SEM_CHANGED method="topologyChanged"` | `loadScene(scene)` + `renderSeq()` | Full reload on topology change |
+| Canvas `mousedown` (left) | `onMouseDown(event)` | Captures mouse, marks `mPrevRes`, sets marker (unless `shiftKey`), enables drag tracking rect |
+| Canvas `mousemove` (while captured) | `onMouseMoved(event)` | Updates `mTRPos2` and re-renders for the tracking rect |
+| Canvas `mouseup` (left) | `onMouseUp(event)` | Click → `toggleResidSel` + `centerAt`; shift+click → `rangeSelect(false)` from marker; drag → `rangeSelect(true)` |
+| Canvas `contextmenu` | `showCtxtMenu(event)` | Computes residue under cursor, sets `seq-ctm-reslabel`, opens `seq_ctxtmenu` at click position |
+| Ctx `seq-ctm-center` | `centerAt(res)` | `view.setViewCenter(res.getPivotPos())` |
+| Ctx `seq-ctm-select` | `toggleResidSel(mol, res)` | `ResidRangeSet`-based toggle of `'<chain>'.<sindex>.*` under "Toggle select atom(s)" undo txn |
+| Ctx `seq-ctm-unselectall` | `cuemolui.molSelClear(mol)` | Sets `mol.sel = null` under "Unselect molecule" undo txn |
+| Ctx `seq-ctm-invsel` | `cuemolui.molSelInvert(mol)` | Rewrites current selstr as `!(...)` under "Invert mol selection" undo txn |
+| Ctx `seq-ctm-arbyres-{3,5,7,10}` | `selAround(res, true, dist)` → `cuemolui.molSelAround(mol, dist, true)` | Expands current selection by `byres ... around N` |
+| Ctx `seq-ctm-arnd-{3,5,7,10}` | `selAround(res, false, dist)` → `cuemolui.molSelAround(mol, dist, false)` | Expands current selection by `... around N` |
+| Ctx `seq-ctm-copyseq` | `copySeq(iy)` | Concatenates `single` letters of the clicked row's chain into a FASTA-style string and pushes to system clipboard |
+| Scrollbox `scroll` | `onSeqBoxScroll(event)` | Syncs `ruler_canvas.style.marginLeft` and `seq_name_list.style.marginTop` to the seq canvas scroll position |
+
+#### i18n keys used
+- none
+
+#### Notes
+- Backing data structure: `mData[molUid][chainName] = [{index, name, single, sel}, ...]` populated from `mol.getChainsJSON()` + `chain.getResidsJSON()`.
+- Canvas size: `mCanvas.width = mTextW * (nmax + 10)`, `mCanvas.height = mTextH * nsize`; clipped at 30000 px width.
+- Selection is mediated through `cuemol.createObj("ResidRangeSet")` + `fromSel` / `contains` / `append` / `remove` / `toSel` rather than direct selstr manipulation, so non-contiguous selections survive round-trip.
+- Around / Invert / Unselect-all delegate to shared helpers `cuemolui.molSelAround` / `molSelInvert` / `molSelClear` defined in `cuemol2-utils.js` (also used by the workspace ctx menu).
+- Copy sequence uses `require("clipboard")` (UXP internal API); the C++ side is not involved.
+- JS file is loaded with a relative (non-chrome) path, resolving to `bottom-panels/seqpanel.js`.
 
 ---
 
@@ -937,8 +1002,8 @@
 
 ## Statistics
 
-- Total entries: 26
-- With JS handler: 25 (every entry except `panel.coloring.deck.undef`, which is a static label-only placeholder with no controls)
+- Total entries: 27
+- With JS handler: 26 (every entry except `panel.coloring.deck.undef`, which is a static label-only placeholder with no controls)
 - With i18n keys: 5 (`panel.coloring.shell`, `panel.coloring.deck.cpk`, `panel.densitymap`, `panel.symmetry`, `panel.workspace.tree`). The other `panel.coloring.deck.*` and `panel.workspace.*` sub-entries share the panel-level title implicitly. `panel.coloring.deck.cpk` is the only deck page that owns its own DTD entries (`&elem.*;`).
 - Unresolved: 0
 
@@ -946,3 +1011,4 @@
 - 2026-04-20: Initial scan (9 entries).
 - 2026-05-12: `panel.workspace` split into 9 per-surface sub-entries (tree / toolbar / 7 context menus) so each Notes column tracks a single UI surface. See `mapping/panels.md` for migration status per surface.
 - 2026-05-22: `panel.coloring` split into 10 sub-entries (`shell` + 9 `deck.*` pages — undef / solid / multigrad / paint / cpk / rainbow / bfac / elepot / script) so each `<deck>` page and the panel chrome are tracked independently. See `mapping/panels.md` for migration status per surface.
+- 2026-05-24: `panel.btmpanel-holder` split into `panel.btmpanel-holder.log` and `panel.btmpanel-holder.seq` sub-entries (Output tab vs Sequence tab) per spec rule "one user-visible surface per entry". See `mapping/panels.md` for migration status per surface.

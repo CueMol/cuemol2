@@ -120,6 +120,18 @@ import type {
   ZoomMolSelectionResult,
 } from '../server/services/applyMolSelString.service'
 import type {
+  ToggleResidueSelectionArgs,
+  ToggleResidueSelectionResult,
+  RangeSelectResiduesArgs,
+  RangeSelectResiduesResult,
+  CenterOnResidueArgs,
+  CenterOnResidueResult,
+} from '../server/services/seqPanelOps.service'
+import type {
+  GetSeqPanelDataArgs,
+  GetSeqPanelDataResult,
+} from '../server/services/getSeqPanelData.service'
+import type {
   CopyNodeArgs,
   CopyNodeResult,
   PasteNodeArgs,
@@ -346,6 +358,10 @@ export interface ServiceMap {
   applyMolSelString:          { args: ApplyMolSelStringArgs;           result: ApplyMolSelStringResult }
   centerMolSelection:         { args: CenterMolSelectionArgs;          result: CenterMolSelectionResult }
   zoomMolSelection:           { args: ZoomMolSelectionArgs;            result: ZoomMolSelectionResult }
+  toggleResidueSelection:     { args: ToggleResidueSelectionArgs;      result: ToggleResidueSelectionResult }
+  rangeSelectResidues:        { args: RangeSelectResiduesArgs;         result: RangeSelectResiduesResult }
+  centerOnResidue:            { args: CenterOnResidueArgs;             result: CenterOnResidueResult }
+  getSeqPanelData:            { args: GetSeqPanelDataArgs;             result: GetSeqPanelDataResult }
   copyNode:                   { args: CopyNodeArgs;                    result: CopyNodeResult }
   pasteNode:                  { args: PasteNodeArgs;                   result: PasteNodeResult }
   getClipboardKind:           { args: GetClipboardKindArgs;            result: GetClipboardKindResult }

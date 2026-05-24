@@ -235,9 +235,9 @@ describe('getMolResidues — chain residue enumeration', () => {
         expect(result).toEqual({
             ok: true,
             residues: [
-                { index: '10', name: 'ALA', single: 'A' },
-                { index: '10A', name: 'CYS', single: 'C' },
-                { index: '11', name: 'GLY', single: 'G' },
+                { index: '10', name: 'ALA', single: 'A', sel: false },
+                { index: '10A', name: 'CYS', single: 'C', sel: true },
+                { index: '11', name: 'GLY', single: 'G', sel: false },
             ],
         })
         expect(getResidsJSON).toHaveBeenCalledTimes(1)
