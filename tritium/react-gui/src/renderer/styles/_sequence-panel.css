@@ -114,6 +114,16 @@
   box-sizing: border-box;
 }
 
+/* Drag-tracking rect (UXP `panel.renderSeq` green stroked rect).
+   Lives in the same overlay layer as the marker so it scrolls
+   together with the canvas content. */
+.seq-track-rect {
+  position: absolute;
+  border: 1px solid;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
 .sequence-placeholder {
   display: flex;
   flex-direction: column;

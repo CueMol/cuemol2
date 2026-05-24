@@ -1,10 +1,15 @@
 /**
- * Pin Phase 1 wire-up of `SequencePanel`:
+ * Pin Phase 1 + Phase 2 wire-up of `SequencePanel`:
  *
  *   - empty-state placeholder when rows is empty.
  *   - the chain-name column lists "<chain>:<molname>" for every row.
- *   - left-click on a residue cell dispatches `toggleResidueSelection`
- *     with the right sceneId / molId / chainName / residueIndex.
+ *   - plain click (pointerdown + pointerup on same residue) dispatches
+ *     `toggleResidueSelection` and `centerOnResidue` (Phase 1 / 2).
+ *   - drag (pointerdown on residue A, pointerup on residue B in same
+ *     chain) dispatches `rangeSelectResidues` with toggle=true (Phase 2).
+ *   - shift+click (pointerdown shift, pointerup on same residue with
+ *     an existing marker) dispatches `rangeSelectResidues` with
+ *     toggle=false (Phase 2).
  *
  * Drawing logic is not pinned (Canvas calls aren't readable in jsdom);
  * the contract under test is the React-side click wiring.
@@ -60,6 +65,30 @@ function pinCanvasBoundingRect(canvas: HTMLCanvasElement, rect: Partial<DOMRect>
         } as DOMRect)
 }
 
+/**
+ * jsdom doesn't expose `PointerEvent` globally, but React's pointer
+ * handlers just listen for the DOM event by name -- a `MouseEvent`
+ * dispatched with `type: 'pointerdown'` (etc.) fires the same React
+ * handler. We patch `pointerId` on so the React synthetic event has
+ * a value to mirror.
+ */
+function makePointerEvent(
+    type: 'pointerdown' | 'pointermove' | 'pointerup' | 'pointercancel',
+    opts: { clientX: number; clientY: number; pointerId?: number; shiftKey?: boolean },
+): MouseEvent {
+    const ev = new MouseEvent(type, {
+        bubbles: true,
+        button: 0,
+        clientX: opts.clientX,
+        clientY: opts.clientY,
+        shiftKey: opts.shiftKey,
+    })
+    if (opts.pointerId !== undefined) {
+        Object.defineProperty(ev, 'pointerId', { value: opts.pointerId })
+    }
+    return ev
+}
+
 describe('SequencePanel', () => {
     beforeEach(() => {
         useMolSequenceDataMock.mockReset()
@@ -109,16 +138,16 @@ describe('SequencePanel', () => {
         unmount()
     })
 
-    it('dispatches toggleResidueSelection on left-click of a residue cell', async () => {
+    it('plain click (pointerdown + pointerup on same residue) toggles + centers', async () => {
         useMolSequenceDataMock.mockReturnValue({
             rows: [
                 {
                     molUid: 11,
                     molName: '1CRN',
                     chainName: 'A',
-                    // Residue at column 5; cellW falls back to 12 in jsdom
-                    // (see SequencePanel.measureCell), so column 5 spans
-                    // x in [60, 72). Click in the middle.
+                    // jsdom getContext returns null, measureCell falls
+                    // back to cellW=12, rowH=19. Column 5 spans
+                    // x in [60, 72); the only row spans y in [0, 19).
                     residues: [
                         { index: '5', name: 'GLY', single: 'G', sel: false },
                     ],
@@ -132,29 +161,168 @@ describe('SequencePanel', () => {
             <SequencePanel cm={cm as unknown as never} activeSceneId={100} activeMolViewId={7} />,
         )
         const canvas = container.querySelector('.seq-canvas') as HTMLCanvasElement
-        expect(canvas).not.toBeNull()
-        // jsdom canvas.getContext returns null, so measureCell falls
-        // back to { cellW: 12, rowH: 19 }. Column 5 spans x in [60, 72)
-        // and the only row spans y in [0, 19); click at the middle.
         pinCanvasBoundingRect(canvas, {})
 
         await act(async () => {
             canvas.dispatchEvent(
-                new MouseEvent('mousedown', {
-                    bubbles: true,
-                    button: 0,
-                    clientX: 65,
-                    clientY: 10,
+                makePointerEvent('pointerdown', {
+                    pointerId: 1,
+                    clientX: 65, clientY: 10,
+                }),
+            )
+        })
+        await act(async () => {
+            canvas.dispatchEvent(
+                makePointerEvent('pointerup', {
+                    pointerId: 1,
+                    clientX: 65, clientY: 10,
                 }),
             )
         })
         await flushPromises()
 
-        expect(cm.invokeService).toHaveBeenCalledWith('toggleResidueSelection', {
-            sceneId: 100,
-            molId: 11,
-            chainName: 'A',
-            residueIndex: '5',
+        const calls = cm.invokeService.mock.calls.map((c) => c[0])
+        expect(calls).toContain('toggleResidueSelection')
+        expect(calls).toContain('centerOnResidue')
+        expect(calls).not.toContain('rangeSelectResidues')
+        const toggleCall = cm.invokeService.mock.calls.find(
+            (c) => c[0] === 'toggleResidueSelection',
+        )!
+        expect(toggleCall[1]).toEqual({
+            sceneId: 100, molId: 11, chainName: 'A', residueIndex: '5',
+        })
+        unmount()
+    })
+
+    it('drag (pointerdown on residue A, pointerup on residue B) range-selects with toggle=true', async () => {
+        useMolSequenceDataMock.mockReturnValue({
+            rows: [
+                {
+                    molUid: 11,
+                    molName: '1CRN',
+                    chainName: 'A',
+                    residues: [
+                        { index: '3', name: 'ALA', single: 'A', sel: false },
+                        { index: '7', name: 'GLY', single: 'G', sel: false },
+                    ],
+                },
+            ],
+            loading: false,
+            refetch: () => undefined,
+        })
+        const cm = makeCm()
+        const { container, unmount } = mountTree(
+            <SequencePanel cm={cm as unknown as never} activeSceneId={100} activeMolViewId={7} />,
+        )
+        const canvas = container.querySelector('.seq-canvas') as HTMLCanvasElement
+        pinCanvasBoundingRect(canvas, {})
+
+        // Column 3 starts at x=36, column 7 starts at x=84 (cellW=12).
+        await act(async () => {
+            canvas.dispatchEvent(
+                makePointerEvent('pointerdown', {
+                    pointerId: 1,
+                    clientX: 40, clientY: 10,
+                }),
+            )
+        })
+        await act(async () => {
+            canvas.dispatchEvent(
+                makePointerEvent('pointerup', {
+                    pointerId: 1,
+                    clientX: 90, clientY: 10,
+                }),
+            )
+        })
+        await flushPromises()
+
+        const rangeCall = cm.invokeService.mock.calls.find(
+            (c) => c[0] === 'rangeSelectResidues',
+        )
+        expect(rangeCall).toBeDefined()
+        expect(rangeCall![1]).toEqual({
+            sceneId: 100, molId: 11, chainName: 'A',
+            fromIndex: '3', toIndex: '7', toggle: true,
+        })
+        // Drag must not also fire toggle or center.
+        expect(cm.invokeService.mock.calls.map((c) => c[0])).not.toContain(
+            'toggleResidueSelection',
+        )
+        expect(cm.invokeService.mock.calls.map((c) => c[0])).not.toContain('centerOnResidue')
+        unmount()
+    })
+
+    it('shift+click on a different residue (with existing marker) range-selects with toggle=false', async () => {
+        useMolSequenceDataMock.mockReturnValue({
+            rows: [
+                {
+                    molUid: 11,
+                    molName: '1CRN',
+                    chainName: 'A',
+                    residues: [
+                        { index: '3', name: 'ALA', single: 'A', sel: false },
+                        { index: '7', name: 'GLY', single: 'G', sel: false },
+                    ],
+                },
+            ],
+            loading: false,
+            refetch: () => undefined,
+        })
+        const cm = makeCm()
+        const { container, unmount } = mountTree(
+            <SequencePanel cm={cm as unknown as never} activeSceneId={100} activeMolViewId={7} />,
+        )
+        const canvas = container.querySelector('.seq-canvas') as HTMLCanvasElement
+        pinCanvasBoundingRect(canvas, {})
+
+        // First click on column 3 places the marker.
+        await act(async () => {
+            canvas.dispatchEvent(
+                makePointerEvent('pointerdown', {
+                    pointerId: 1,
+                    clientX: 40, clientY: 10,
+                }),
+            )
+        })
+        await act(async () => {
+            canvas.dispatchEvent(
+                makePointerEvent('pointerup', {
+                    pointerId: 1,
+                    clientX: 40, clientY: 10,
+                }),
+            )
+        })
+        await flushPromises()
+        cm.invokeService.mockClear()
+
+        // Shift+click on column 7 -- but pointerup with same xy as
+        // pointerdown so the "same position" branch + shiftKey hits
+        // the rangeSelect-from-marker path.
+        await act(async () => {
+            canvas.dispatchEvent(
+                makePointerEvent('pointerdown', {
+                    pointerId: 2,
+                    clientX: 90, clientY: 10, shiftKey: true,
+                }),
+            )
+        })
+        await act(async () => {
+            canvas.dispatchEvent(
+                makePointerEvent('pointerup', {
+                    pointerId: 2,
+                    clientX: 90, clientY: 10, shiftKey: true,
+                }),
+            )
+        })
+        await flushPromises()
+
+        const rangeCall = cm.invokeService.mock.calls.find(
+            (c) => c[0] === 'rangeSelectResidues',
+        )
+        expect(rangeCall).toBeDefined()
+        expect(rangeCall![1]).toEqual({
+            sceneId: 100, molId: 11, chainName: 'A',
+            fromIndex: '3', toIndex: '7', toggle: false,
         })
         unmount()
     })

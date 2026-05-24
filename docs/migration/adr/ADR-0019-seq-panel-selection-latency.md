@@ -89,6 +89,56 @@ Candidate next steps, roughly in order of expected payoff:
   cumulative there during testing, it should jump to the top of the
   follow-up queue.
 
+## Update — Phase 2 observation (2026-05-24)
+
+Phase 2 (drag range select + shift+click range extend) is wired and
+working. The latency described above is **reproducible on every
+selection-changing interaction**, not just single-click toggle:
+
+- single click: marker appears immediately, cyan highlight after
+  ~0.5 s
+- drag select: green tracking rect follows the pointer fluidly, but
+  cyan only appears after release, with the same ~0.5 s wait
+- shift+click range: same ~0.5 s gap
+
+User report frames the gap as living in the **"select dispatched ->
+actual selection committed in C++ -> seq panel update"** chain --
+i.e. between `toggleResidueSelection` / `rangeSelectResidues`
+returning and the SEM_PROPCHG sel handler firing in the renderer.
+
+This narrows the suspect list from the original three hypotheses:
+
+- **Likely**: the SEM_PROPCHG event dispatch from worker -> renderer
+  (`cm.addEventListener` callback marshalling, postMessage queue
+  pressure from the active render loop in `MolViewPane`). The whole
+  click->cyan chain stays the same shape even when the redraw side
+  is cheap (the marker overlay confirmed this).
+- **Possible**: serialisation behind queued worker tasks
+  (`withUndoTxn` commit competing with the render loop).
+- **Less likely now**: per-cell `drawSeq` cost. The DOM-overlay
+  marker proved the React side is cheap; if the residue redraw
+  itself were the bottleneck, drag-tracking would also stutter and
+  it does not.
+
+Updated priority for the candidate next steps:
+
+1. **Profile the SEM_PROPCHG roundtrip first.** Add `performance.now()`
+   markers around (a) `cm.invokeService('toggleResidueSelection', ...)`
+   return, (b) the SEM_PROPCHG callback firing in
+   `useMolSequenceData.handleObjectEvent`, (c) the
+   `refetchMolRows` getSeqPanelData IPC return, and (d) the next paint
+   after setRows. The user's "select -> commit -> update" framing
+   suggests most of the 0.5 s lives between (a) and (b).
+2. If (a)->(b) dominates, the fix is in the event-bridge layer (worker
+   `_attachScene` listener / postMessage queue), not in SequencePanel.
+3. If (b)->(d) dominates, the diff-only redraw / two-canvas separation
+   ideas from the original Decision still apply.
+
+This is the **immediate next handoff item** for the seq panel work --
+please pick it up before Phase 3 (around / invert / clear / copy ctx
+menu items), since Phase 3 adds more selection-commit triggers that
+will inherit the same lag.
+
 ## Notes
 
 - Implementation pointers:
