@@ -16,7 +16,7 @@
  * |------------|---------------------------------------------|
  * | Explorer   | ScenePane, ColorPane, DummyPane4            |
  * | Selection  | MolStructPane, SelectionPane                |
- * | Crystal    | SymmetryPane, DummyPane2, DummyPane3        |
+ * | Crystal    | SymmetryPane, DensityMapPane, DummyPane3    |
  *
  * New views and panes can be added by editing `buildViewPaneConfigs()`
  * without touching the layout / persistence logic.
@@ -60,7 +60,7 @@ import {
   MolStructPane,
   SelectionPane,
   SymmetryPane,
-  DummyPane2,
+  DensityMapPane,
   DummyPane3,
   DummyPane4,
 } from "../panes";
@@ -339,10 +339,16 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         ),
       },
       {
-        id: "dummy2",
-        defaultSize: 200,
+        id: "density",
+        defaultSize: 240,
         render: (collapsed, onToggle) => (
-          <DummyPane2 collapsed={collapsed} onToggleCollapse={onToggle} />
+          <DensityMapPane
+            cm={cm}
+            activeSceneId={activeSceneId}
+            activeMolViewId={activeMolViewId}
+            collapsed={collapsed}
+            onToggleCollapse={onToggle}
+          />
         ),
       },
       {

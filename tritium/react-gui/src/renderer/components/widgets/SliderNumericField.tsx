@@ -1,6 +1,6 @@
 /**
  * @file widgets/SliderNumericField.tsx
- * @description Reusable label + Blueprint Slider + NumericInput row,
+ * @description Reusable label + Blueprint Slider + numeric input row
  * with an optional unit suffix.
  *
  * Visual style is shared with the inspector's `NumericEditor`
@@ -10,12 +10,21 @@
  * `.snf-*` selectors instead.
  *
  * Used by the Coloring panel's Rainbow deck (Start H / End H /
- * Brightness / Saturation). Designed to be dropped into any pane that
- * needs the same slider + numeric + unit triple.
+ * Brightness / Saturation) and the Density-map panel.
+ *
+ * Commit timing:
+ *   - Slider: commit on release (`onRelease`); drag updates the draft
+ *     only.
+ *   - Numeric input typing: commit on blur or Enter; mid-typing stays
+ *     local.
+ *   - Stepper buttons: commit immediately on click. The native browser
+ *     steppers on `<input type="number">` are hidden via CSS so we can
+ *     own the click event ourselves (and apply step-precision rounding
+ *     to avoid IEEE-754 drift like `0.2 + 0.1 = 0.30000000000000004`).
  */
 
 import React, { useCallback, useEffect, useState } from 'react'
-import { Slider } from '@blueprintjs/core'
+import { Icon, Slider } from '@blueprintjs/core'
 
 void React // classic JSX runtime (vitest)
 
@@ -49,9 +58,25 @@ export interface SliderNumericFieldProps {
 }
 
 /**
- * Slider + NumericInput row with an optional unit. Commits via
- * `onCommit(storedValue)`; the slider commits on release, the numeric
- * input commits on blur / Enter.
+ * Round `v` to the precision implied by `step`. For step=0.1 the
+ * result is rounded to 1 decimal place, etc. Prevents IEEE-754
+ * drift from accumulating across stepper clicks.
+ */
+function quantize(v: number, step: number): number {
+    if (!Number.isFinite(step) || step <= 0) return v
+    const decimals = Math.max(0, -Math.floor(Math.log10(step)))
+    return Number(v.toFixed(decimals))
+}
+
+/** Clamp + quantize for use after every stepper click. */
+function clampAndQuantize(v: number, min: number, max: number, step: number): number {
+    const clamped = Math.min(max, Math.max(min, v))
+    return quantize(clamped, step)
+}
+
+/**
+ * Slider + numeric input + custom stepper row. Commits via
+ * `onCommit(storedValue)`.
  */
 export const SliderNumericField: React.FC<SliderNumericFieldProps> = ({
     label,
@@ -77,25 +102,53 @@ export const SliderNumericField: React.FC<SliderNumericFieldProps> = ({
         [scale, value, onCommit],
     )
 
-    // Blueprint Slider's `onChange` fires continuously while dragging;
-    // `onRelease` fires when the user lets go. Drive the live preview
-    // off `onChange`, commit on `onRelease`.
+    // --- Slider handlers ---
+    // Blueprint `Slider`'s `onChange` fires continuously while
+    // dragging; `onRelease` fires when the user lets go. Drive the
+    // live preview off `onChange`, commit on `onRelease`.
     const handleSliderChange = useCallback((v: number) => {
         setDraft(v)
     }, [])
     const handleSliderRelease = useCallback(
-        (v: number) => {
-            commit(v)
-        },
+        (v: number) => { commit(v) },
         [commit],
     )
 
-    // Plain HTML number input -- keeps the widget chrome light and
-    // matches the textbox styling used elsewhere in the Coloring panel.
-    // Commits on blur / Enter.
+    // --- Numeric input handlers (typing path) ---
+    // Mid-typing stays local; commit on blur / Enter.
+    const handleNumericChange = useCallback(
+        (e: React.ChangeEvent<HTMLInputElement>) => {
+            const v = Number(e.target.value)
+            if (Number.isNaN(v)) return
+            setDraft(v)
+        },
+        [],
+    )
     const handleNumericBlur = useCallback(() => {
         commit(draft)
     }, [commit, draft])
+    const handleNumericKeyDown = useCallback(
+        (e: React.KeyboardEvent<HTMLInputElement>) => {
+            if (e.key === 'Enter') e.currentTarget.blur()
+        },
+        [],
+    )
+
+    // --- Stepper handlers ---
+    // Custom +/- buttons (native HTML steppers are hidden via CSS).
+    // Each click both updates the draft (so the slider follows along)
+    // and commits immediately, step-aligned to avoid float drift.
+    const stepBy = useCallback(
+        (sign: 1 | -1) => {
+            const next = clampAndQuantize(draft + sign * step, min, max, step)
+            if (next === draft) return
+            setDraft(next)
+            commit(next)
+        },
+        [draft, step, min, max, commit],
+    )
+    const handleStepUp = useCallback(() => { stepBy(1) }, [stepBy])
+    const handleStepDown = useCallback(() => { stepBy(-1) }, [stepBy])
 
     return (
         <div className={`snf-row ${className ?? ''}`}>
@@ -119,12 +172,32 @@ export const SliderNumericField: React.FC<SliderNumericFieldProps> = ({
                 step={step}
                 value={draft}
                 disabled={disabled}
-                onChange={(e) => setDraft(Number(e.target.value))}
+                onChange={handleNumericChange}
                 onBlur={handleNumericBlur}
-                onKeyDown={(e) => {
-                    if (e.key === 'Enter') e.currentTarget.blur()
-                }}
+                onKeyDown={handleNumericKeyDown}
             />
+            <div className="snf-stepper">
+                <button
+                    type="button"
+                    className="snf-stepper-btn"
+                    disabled={disabled || draft >= max}
+                    onClick={handleStepUp}
+                    aria-label="Increment"
+                    tabIndex={-1}
+                >
+                    <Icon icon="chevron-up" size={10} />
+                </button>
+                <button
+                    type="button"
+                    className="snf-stepper-btn"
+                    disabled={disabled || draft <= min}
+                    onClick={handleStepDown}
+                    aria-label="Decrement"
+                    tabIndex={-1}
+                >
+                    <Icon icon="chevron-down" size={10} />
+                </button>
+            </div>
             {unit && <span className="snf-unit">{unit}</span>}
         </div>
     )

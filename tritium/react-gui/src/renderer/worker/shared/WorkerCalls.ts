@@ -294,6 +294,16 @@ import type {
   ShowUnitCellRendererArgs,
   ShowUnitCellRendererResult,
 } from '../server/services/symmetryPanelOps.service'
+import type {
+  ListMapRenderersArgs,
+  ListMapRenderersResult,
+  GetMapRendererStateArgs,
+  GetMapRendererStateResult,
+  SetMapRendererPropArgs,
+  SetMapRendererPropResult,
+  RedrawMapCenterArgs,
+  RedrawMapCenterResult,
+} from '../server/services/densityMapPanelOps.service'
 import type { ElectronFileFilter } from '../../../shared/ipcTypes'
 import type { WorkerContext } from '../server/types/WorkerContext'
 
@@ -449,6 +459,10 @@ export interface ServiceMap {
   changeSymmetryInfo:         { args: ChangeSymmetryInfoArgs;          result: ChangeSymmetryInfoResult }
   showSymmRenderer:           { args: ShowSymmRendererArgs;            result: ShowSymmRendererResult }
   showUnitCellRenderer:       { args: ShowUnitCellRendererArgs;        result: ShowUnitCellRendererResult }
+  listMapRenderers:           { args: ListMapRenderersArgs;            result: ListMapRenderersResult }
+  getMapRendererState:        { args: GetMapRendererStateArgs;         result: GetMapRendererStateResult }
+  setMapRendererProp:         { args: SetMapRendererPropArgs;          result: SetMapRendererPropResult }
+  redrawMapCenter:            { args: RedrawMapCenterArgs;             result: RedrawMapCenterResult }
 }
 
 export type ServiceKey = keyof ServiceMap

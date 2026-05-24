@@ -67,7 +67,10 @@
   box-shadow: 0 0 0 2px var(--accent), 0 1px 3px var(--slider-handle-shadow);
 }
 
-/* Plain numeric textbox -- fixed-width column to the right of the slider. */
+/* Plain numeric textbox -- fixed-width column to the right of the slider.
+ * Native browser stepper controls are hidden; the row instead carries a
+ * separate `.snf-stepper` element with explicit +/- buttons so the
+ * widget can commit on click (see SliderNumericField.tsx). */
 .snf-number {
   flex: 0 0 52px;
   width: 52px;
@@ -82,6 +85,16 @@
   padding: 0 4px;
   text-align: right;
   outline: none;
+  -moz-appearance: textfield;
+}
+
+/* Hide native WebKit / Blink stepper arrows so the custom .snf-stepper
+ * is the only stepper UI on the row. */
+.snf-number::-webkit-outer-spin-button,
+.snf-number::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
 }
 
 .snf-number:focus {
@@ -92,10 +105,55 @@
   opacity: 0.5;
 }
 
+/* Custom stepper: vertical pair of small +/- buttons sitting flush
+ * to the right of the numeric input. Click handlers commit
+ * immediately (no blur required) and quantize the new value to the
+ * step grid to avoid IEEE-754 drift.
+ *
+ * Negative left-margin tightens the input <-> stepper gap from the
+ * row's 8px gap default down to 1px. */
+.snf-stepper {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: 1px;
+  margin-left: -7px;
+}
+
+.snf-stepper-btn {
+  width: 16px;
+  height: 10px;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  border-radius: 2px;
+  cursor: pointer;
+  outline: none;
+}
+
+.snf-stepper-btn:hover:not(:disabled) {
+  background: var(--overlay-hover);
+  color: var(--text-primary);
+}
+
+.snf-stepper-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Negative side-margins tighten the gaps around the unit suffix
+ * from the row's 8px gap default down to 1px on each side. */
 .snf-unit {
   font-size: var(--fs-sm2);
   color: var(--text-secondary);
   flex-shrink: 0;
   width: 14px;
   text-align: left;
+  margin-left: -7px;
+  margin-right: -7px;
 }

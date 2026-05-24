@@ -10,7 +10,7 @@
  *   ScenePane,
  *   ColorPane,
  *   SymmetryPane,
- *   DummyPane2,
+ *   DensityMapPane,
  *   // ... etc
  * } from "./panes";
  * ```
@@ -34,10 +34,10 @@ export { ColorPane } from "./ColorPane";
 export { MolStructPane } from "./MolStructPane";
 export { SelectionPane } from "./SelectionPane";
 export { SymmetryPane } from "./SymmetryPane";
+export { DensityMapPane } from "./DensityMapPane";
 
 /* ─── PoC Dummy Panes ─── */
 
-export { DummyPane2 } from "./DummyPane2";
 export { DummyPane3 } from "./DummyPane3";
 export { DummyPane4 } from "./DummyPane4";
 
