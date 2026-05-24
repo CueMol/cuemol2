@@ -1,5 +1,5 @@
 /**
- * Pin Phase 1 + Phase 2 wire-up of `SequencePanel`:
+ * Pin Phase 1 + Phase 2 + Phase 3 wire-up of `SequencePanel`:
  *
  *   - empty-state placeholder when rows is empty.
  *   - the chain-name column lists "<chain>:<molname>" for every row.
@@ -10,6 +10,10 @@
  *   - shift+click (pointerdown shift, pointerup on same residue with
  *     an existing marker) dispatches `rangeSelectResidues` with
  *     toggle=false (Phase 2).
+ *   - context menu items wire up to the corresponding worker services
+ *     and clipboard call (Phase 3): Around / Around Byresid /
+ *     Unselect all / Invert sel via `selectObjectMol`; Copy sequence
+ *     via `navigator.clipboard.writeText`.
  *
  * Drawing logic is not pinned (Canvas calls aren't readable in jsdom);
  * the contract under test is the React-side click wiring.
@@ -35,6 +39,20 @@ vi.mock('../hooks/useMolSequenceData', () => ({
 vi.mock('../contexts/ThemeContext', () => ({
     useTheme: () => ({ theme: 'dark', toggleTheme: () => undefined, setTheme: () => undefined }),
 }))
+
+// Capture the menu JSX passed to `showContextMenu` so Phase 3 tests
+// can mount it standalone and click individual items without going
+// through Blueprint's portal layer.
+const showContextMenuMock = vi.fn()
+vi.mock('@blueprintjs/core', async () => {
+    const actual = await vi.importActual<typeof import('@blueprintjs/core')>(
+        '@blueprintjs/core',
+    )
+    return {
+        ...actual,
+        showContextMenu: (props: unknown) => showContextMenuMock(props),
+    }
+})
 
 import { SequencePanel } from '../components/panels/SequencePanel'
 import { mountTree, flushPromises } from './helpers/testHarness'
@@ -92,6 +110,7 @@ function makePointerEvent(
 describe('SequencePanel', () => {
     beforeEach(() => {
         useMolSequenceDataMock.mockReset()
+        showContextMenuMock.mockReset()
     })
 
     it('shows the empty-state placeholder when rows is empty', () => {
@@ -325,5 +344,132 @@ describe('SequencePanel', () => {
             fromIndex: '3', toIndex: '7', toggle: false,
         })
         unmount()
+    })
+
+    // ---- Phase 3 context menu wiring ----
+
+    /**
+     * Right-click the seq canvas to trigger the ctx menu, then render
+     * the captured menu JSX inline so individual items are clickable.
+     * Returns the menu container + the cleanup for the panel mount.
+     */
+    function setupCtxMenu(cm: MockCm) {
+        useMolSequenceDataMock.mockReturnValue({
+            rows: [
+                {
+                    molUid: 11,
+                    molName: '1CRN',
+                    chainName: 'A',
+                    residues: [
+                        { index: '3', name: 'ALA', single: 'A', sel: false },
+                        { index: '5', name: 'GLY', single: 'G', sel: false },
+                        // Test ligand fallback: empty single -> '*'
+                        { index: '6', name: 'HOH', single: '', sel: false },
+                    ],
+                },
+            ],
+            loading: false,
+            refetch: () => undefined,
+        })
+        const { container: panelContainer, unmount: unmountPanel } = mountTree(
+            <SequencePanel
+                cm={cm as unknown as never}
+                activeSceneId={100}
+                activeMolViewId={7}
+            />,
+        )
+        const canvas = panelContainer.querySelector('.seq-canvas') as HTMLCanvasElement
+        pinCanvasBoundingRect(canvas, {})
+        // Right-click on column 5 (x in [60, 72) at cellW=12).
+        act(() => {
+            canvas.dispatchEvent(
+                new MouseEvent('contextmenu', {
+                    bubbles: true, clientX: 65, clientY: 10,
+                }),
+            )
+        })
+        expect(showContextMenuMock).toHaveBeenCalledTimes(1)
+        const args = showContextMenuMock.mock.calls[0][0] as { content: React.ReactElement }
+        const { container: menuContainer, unmount: unmountMenu } = mountTree(
+            args.content,
+        )
+        return {
+            menuContainer,
+            cleanup() {
+                unmountMenu()
+                unmountPanel()
+            },
+        }
+    }
+
+    /**
+     * Resolve a menu item by exact label text and return the underlying
+     * Blueprint anchor element (which carries the onClick handler).
+     */
+    function findMenuItem(menuContainer: HTMLElement, text: string): HTMLElement | null {
+        const items = Array.from(menuContainer.querySelectorAll('.bp5-menu-item'))
+        for (const it of items) {
+            // Blueprint nests the label inside .bp5-text-overflow-ellipsis
+            const label = it.querySelector('.bp5-text-overflow-ellipsis')?.textContent ?? ''
+            if (label.trim() === text) return it as HTMLElement
+        }
+        return null
+    }
+
+    it('Phase 3: Toggle sel menu item dispatches toggleResidueSelection', async () => {
+        const cm = makeCm()
+        const { menuContainer, cleanup } = setupCtxMenu(cm)
+        cm.invokeService.mockClear()
+        const item = findMenuItem(menuContainer, 'Toggle sel')
+        expect(item).not.toBeNull()
+        await act(async () => {
+            item!.click()
+        })
+        await flushPromises()
+        const call = cm.invokeService.mock.calls.find((c) => c[0] === 'toggleResidueSelection')
+        expect(call).toBeDefined()
+        expect(call![1]).toEqual({
+            sceneId: 100, molId: 11, chainName: 'A', residueIndex: '5',
+        })
+        cleanup()
+    })
+
+    it.each([
+        ['Unselect all', 'unselect'],
+        ['Invert sel', 'invert'],
+    ])('Phase 3: %s dispatches selectObjectMol(kind=%s)', async (label, kind) => {
+        const cm = makeCm()
+        const { menuContainer, cleanup } = setupCtxMenu(cm)
+        cm.invokeService.mockClear()
+        const item = findMenuItem(menuContainer, label)
+        expect(item).not.toBeNull()
+        await act(async () => {
+            item!.click()
+        })
+        await flushPromises()
+        const call = cm.invokeService.mock.calls.find((c) => c[0] === 'selectObjectMol')
+        expect(call).toBeDefined()
+        expect(call![1]).toEqual({ sceneId: 100, objId: 11, kind })
+        cleanup()
+    })
+
+    it('Phase 3: Copy sequence writes the chain letters to the clipboard', async () => {
+        const writeText = vi.fn().mockResolvedValue(undefined)
+        Object.defineProperty(navigator, 'clipboard', {
+            value: { writeText },
+            configurable: true,
+        })
+        const cm = makeCm()
+        const { menuContainer, cleanup } = setupCtxMenu(cm)
+        const item = findMenuItem(menuContainer, 'Copy sequence')
+        expect(item).not.toBeNull()
+        await act(async () => {
+            item!.click()
+        })
+        await flushPromises()
+        // Residues: '3' A, '5' G, '6' '' -> '*'. UXP `copySeq` glosses
+        // the empty single letter as '*'.
+        expect(writeText).toHaveBeenCalledWith('AG*')
+        cleanup()
     })
 })

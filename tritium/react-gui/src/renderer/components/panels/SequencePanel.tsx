@@ -35,6 +35,7 @@ import {
 } from '@blueprintjs/core'
 import { Allotment } from 'allotment'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
+import type { SelectMolKind } from '../../../shared/ipcTypes'
 import { useMolSequenceData, type SeqRow } from '../../hooks/useMolSequenceData'
 import { useTheme } from '../../contexts/ThemeContext'
 
@@ -413,6 +414,44 @@ export const SequencePanel: React.FC<SequencePanelProps> = ({
         [cm, activeSceneId],
     )
 
+    /**
+     * Whole-mol selection ops dispatched from the ctx menu:
+     * `Unselect all` / `Invert sel` / `Around N` / `Around Byresid N`.
+     * Reuses the same `selectObjectMol` worker the scene tree's
+     * Selection submenu wires (UXP `workspace_panel_molsel.js` parity).
+     */
+    const handleSelectMol = useCallback(
+        async (row: SeqRow, kind: SelectMolKind) => {
+            if (!cm || activeSceneId === undefined) return
+            await cm
+                .invokeService('selectObjectMol', {
+                    sceneId: activeSceneId,
+                    objId: row.molUid,
+                    kind,
+                })
+                .catch((err: unknown) => {
+                    console.warn(`selectObjectMol(${kind}) failed:`, err)
+                })
+        },
+        [cm, activeSceneId],
+    )
+
+    /**
+     * Copy a chain's single-letter sequence to the system clipboard.
+     * Empty single-letter codes (HOH, ligands, ...) become '*' to match
+     * UXP `panel.copySeq`. Renderer-side `navigator.clipboard` is the
+     * Electron-friendly path (no worker / IPC needed).
+     */
+    const handleCopySeq = useCallback((row: SeqRow) => {
+        const text = row.residues
+            .map((r) => (r.single === '' ? '*' : r.single))
+            .join('')
+        if (typeof navigator === 'undefined' || !navigator.clipboard) return
+        navigator.clipboard.writeText(text).catch((err: unknown) => {
+            console.warn('clipboard.writeText failed:', err)
+        })
+    }, [])
+
     // --- Drag / pointer flow (Phase 2) ---
     //
     // Mirrors UXP `onMouseDown` / `onMouseMoved` / `onMouseUp` (plus
@@ -599,11 +638,24 @@ export const SequencePanel: React.FC<SequencePanelProps> = ({
                 ? `${hit.row.molName} ${hit.row.chainName}${hit.residueIndex} ${residue.name}`
                 : `${hit.row.molName} ${hit.row.chainName}${hit.residueIndex}`
 
-            const aroundByresItems = [3, 5, 7, 10].map((d) => (
-                <MenuItem key={d} text={`${d} A`} disabled />
+            const distances: ReadonlyArray<3 | 5 | 7 | 10> = [3, 5, 7, 10]
+            const aroundByresItems = distances.map((d) => (
+                <MenuItem
+                    key={d}
+                    text={`${d} A`}
+                    onClick={() =>
+                        void handleSelectMol(hit.row, `aroundByres${d}` as SelectMolKind)
+                    }
+                />
             ))
-            const aroundItems = [3, 5, 7, 10].map((d) => (
-                <MenuItem key={d} text={`${d} A`} disabled />
+            const aroundItems = distances.map((d) => (
+                <MenuItem
+                    key={d}
+                    text={`${d} A`}
+                    onClick={() =>
+                        void handleSelectMol(hit.row, `around${d}` as SelectMolKind)
+                    }
+                />
             ))
 
             const menu = (
@@ -614,18 +666,26 @@ export const SequencePanel: React.FC<SequencePanelProps> = ({
                         text="Center here"
                         onClick={() => void handleCenter(hit.row, hit.residueIndex)}
                     />
-                    <MenuItem text="Toggle sel" disabled />
-                    <MenuItem text="Around Byresid" disabled>
-                        {aroundByresItems}
-                    </MenuItem>
-                    <MenuItem text="Around" disabled>
-                        {aroundItems}
-                    </MenuItem>
+                    <MenuItem
+                        text="Toggle sel"
+                        onClick={() => void handleToggle(hit.row, hit.residueIndex)}
+                    />
+                    <MenuItem text="Around Byresid">{aroundByresItems}</MenuItem>
+                    <MenuItem text="Around">{aroundItems}</MenuItem>
                     <MenuDivider />
-                    <MenuItem text="Unselect all" disabled />
-                    <MenuItem text="Invert sel" disabled />
+                    <MenuItem
+                        text="Unselect all"
+                        onClick={() => void handleSelectMol(hit.row, 'unselect')}
+                    />
+                    <MenuItem
+                        text="Invert sel"
+                        onClick={() => void handleSelectMol(hit.row, 'invert')}
+                    />
                     <MenuDivider />
-                    <MenuItem text="Copy sequence" disabled />
+                    <MenuItem
+                        text="Copy sequence"
+                        onClick={() => handleCopySeq(hit.row)}
+                    />
                 </Menu>
             )
 
@@ -634,7 +694,7 @@ export const SequencePanel: React.FC<SequencePanelProps> = ({
                 targetOffset: { left: event.clientX, top: event.clientY },
             })
         },
-        [rows, metrics, handleCenter],
+        [rows, metrics, handleCenter, handleToggle, handleSelectMol, handleCopySeq],
     )
 
     // --- Render ---
