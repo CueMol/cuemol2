@@ -25,7 +25,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     Button,
     ButtonGroup,
-    HTMLSelect,
     Icon,
     Intent,
     Menu,
@@ -35,7 +34,7 @@ import {
     Tooltip,
 } from '@blueprintjs/core';
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol';
-import { useMolStructure } from '../../hooks/useMolStructure';
+import { ObjectSelect, objectFilters } from '../widgets/ObjectSelect';
 import {
     getHistory,
     pushHistory,
@@ -66,23 +65,12 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({
     collapsed,
     onToggleCollapse,
 }) => {
-    const { mols, selectedMolId, setSelectedMolId } = useMolStructure({
-        cm,
-        sceneId: activeSceneId,
-    });
+    const [selectedMolId, setSelectedMolId] = useState<number | undefined>(undefined);
 
     const [selStr, setSelStr] = useState('');
     const [isValid, setIsValid] = useState(true);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [historyItems, setHistoryItems] = useState<string[]>(() => getHistory());
-
-    const handleSelectMol = useCallback(
-        (e: React.ChangeEvent<HTMLSelectElement>) => {
-            const next = Number(e.target.value);
-            if (Number.isFinite(next)) setSelectedMolId(next);
-        },
-        [setSelectedMolId],
-    );
 
     // ---- Live validation (debounced, mirrors MolSelList) ----
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -233,26 +221,16 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({
             </div>
             {!collapsed && (
                 <div className="sp-pane-fill">
-                    <div className="selection-row">
-                        <label className="selection-label">Molecule</label>
-                        <HTMLSelect
-                            value={selectedMolId ?? ''}
-                            onChange={handleSelectMol}
-                            fill
-                            disabled={mols.length === 0}
-                            className="selection-mol-select"
-                        >
-                            {mols.length === 0 ? (
-                                <option value="">(no molecules)</option>
-                            ) : (
-                                mols.map((mol) => (
-                                    <option key={mol.uid} value={mol.uid}>
-                                        {mol.name || `Mol ${mol.uid}`}
-                                    </option>
-                                ))
-                            )}
-                        </HTMLSelect>
-                    </div>
+                    <ObjectSelect
+                        cm={cm}
+                        sceneId={activeSceneId}
+                        label="Molecule"
+                        filter={objectFilters.molCoord}
+                        selectedId={selectedMolId}
+                        onChange={setSelectedMolId}
+                        emptyText="(no molecules)"
+                        fallbackName={(m) => `Mol ${m.uid}`}
+                    />
                     <div className="selection-text-row">
                         <label className="selection-label">Selection</label>
                         <TextArea

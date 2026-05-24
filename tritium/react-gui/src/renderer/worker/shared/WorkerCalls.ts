@@ -102,8 +102,6 @@ import type {
   SelectObjectMolResult,
 } from '../server/services/selectObjectMol.service'
 import type {
-  ListMolsArgs,
-  ListMolsResult,
   GetMolChainsArgs,
   GetMolChainsResult,
   GetMolResiduesArgs,
@@ -280,6 +278,22 @@ import type {
   ViewProjectionArgs,
   ViewProjectionResult,
 } from '../server/services/viewProjection.service'
+import type {
+  ListSceneObjectsArgs,
+  ListSceneObjectsResult,
+} from '../server/services/listSceneObjects.service'
+import type {
+  GetSymmetryPanelInfoArgs,
+  GetSymmetryPanelInfoResult,
+  GetSpaceGroupNamesArgs,
+  GetSpaceGroupNamesResult,
+  ChangeSymmetryInfoArgs,
+  ChangeSymmetryInfoResult,
+  ShowSymmRendererArgs,
+  ShowSymmRendererResult,
+  ShowUnitCellRendererArgs,
+  ShowUnitCellRendererResult,
+} from '../server/services/symmetryPanelOps.service'
 import type { ElectronFileFilter } from '../../../shared/ipcTypes'
 import type { WorkerContext } from '../server/types/WorkerContext'
 
@@ -351,7 +365,6 @@ export interface ServiceMap {
   setGenericProp:             { args: SetGenericPropArgs;              result: SetGenericPropResult }
   renameNode:                 { args: RenameNodeArgs;                  result: RenameNodeResult }
   selectObjectMol:            { args: SelectObjectMolArgs;             result: SelectObjectMolResult }
-  listMols:                   { args: ListMolsArgs;                    result: ListMolsResult }
   getMolChains:               { args: GetMolChainsArgs;                result: GetMolChainsResult }
   getMolResidues:             { args: GetMolResiduesArgs;              result: GetMolResiduesResult }
   getMolAtoms:                { args: GetMolAtomsArgs;                 result: GetMolAtomsResult }
@@ -430,6 +443,12 @@ export interface ServiceMap {
   naviCtxInvertSel:           { args: NaviCtxObjArgs;                  result: { ok: boolean } }
   naviCtxToggleSidechain:     { args: NaviCtxObjArgs;                  result: { ok: boolean } }
   naviCtxAround:              { args: NaviCtxAroundArgs;               result: { ok: boolean } }
+  listSceneObjects:           { args: ListSceneObjectsArgs;            result: ListSceneObjectsResult }
+  getSymmetryPanelInfo:       { args: GetSymmetryPanelInfoArgs;        result: GetSymmetryPanelInfoResult }
+  getSpaceGroupNames:         { args: GetSpaceGroupNamesArgs;          result: GetSpaceGroupNamesResult }
+  changeSymmetryInfo:         { args: ChangeSymmetryInfoArgs;          result: ChangeSymmetryInfoResult }
+  showSymmRenderer:           { args: ShowSymmRendererArgs;            result: ShowSymmRendererResult }
+  showUnitCellRenderer:       { args: ShowUnitCellRendererArgs;        result: ShowUnitCellRendererResult }
 }
 
 export type ServiceKey = keyof ServiceMap

@@ -20,7 +20,7 @@ import { Icon, Tooltip, type IconName } from "@blueprintjs/core";
 // ────────────────────────────────────────────────────────────
 
 /** Identifiers for the sidebar views toggled by the activity bar. */
-export type ActivityView = "explorer" | "selection" | "dummy";
+export type ActivityView = "explorer" | "selection" | "crystal";
 
 interface ActivityItemDef {
   id: ActivityView;
@@ -32,7 +32,7 @@ interface ActivityItemDef {
 const ITEMS: ActivityItemDef[] = [
   { id: "explorer", icon: "panel-table", label: "Explorer" },
   { id: "selection", icon: "search", label: "Selection" },
-  { id: "dummy", icon: "help", label: "Dummy" },
+  { id: "crystal", icon: "cube", label: "Crystal" },
 ];
 
 // ────────────────────────────────────────────────────────────

@@ -2,7 +2,8 @@
  * Tests for SelectionPane (Command-tab port of UXP panel.selection).
  *
  * Contract pinned here:
- *  1. molecule selector is populated from useMolStructure's `listMols`
+ *  1. molecule selector is populated from the ObjectSelect widget,
+ *     which calls `listSceneObjects` and filters to MolCoord-like
  *  2. Select click invokes applyMolSelString with the active scene/mol
  *     and the current textarea value
  *  3. pushHistory fires only when the worker returns { ok: true }
@@ -30,8 +31,8 @@ vi.mock('../components/widgets/MolSelList/selHistory', () => ({
     MAX_ENTRIES: 20,
 }))
 
-// Stub event listener subscription used by useMolStructure -- we don't
-// need to drive events from these tests.
+// Stub event listener subscription used by the ObjectSelect widget --
+// we don't need to drive scene events from these tests.
 vi.mock('../hooks/useCueMolEventListener', () => ({
     useCueMolEventListener: () => undefined,
 }))
@@ -49,9 +50,13 @@ function makeCm(opts?: {
     validateOk?: boolean
 }): MockCm {
     const mols = opts?.mols ?? [{ uid: 11, name: '1CRN' }]
+    // ObjectSelect calls `listSceneObjects` and filters client-side
+    // for MolCoord-like classes; we report `className: 'MolCoord'`
+    // so the filter accepts each entry.
+    const objects = mols.map((m) => ({ ...m, className: 'MolCoord' }))
     return {
         invokeService: vi.fn((name: string) => {
-            if (name === 'listMols') return Promise.resolve({ mols })
+            if (name === 'listSceneObjects') return Promise.resolve({ objects })
             if (name === 'getMolChains') return Promise.resolve({ chains: [] })
             if (name === 'applyMolSelString') {
                 return Promise.resolve({ ok: opts?.applyOk ?? true })
@@ -96,7 +101,7 @@ describe('SelectionPane', () => {
         // Nothing — each test uses its own mount/unmount.
     })
 
-    it('populates the molecule selector from listMols', async () => {
+    it('populates the molecule selector from listSceneObjects', async () => {
         const cm = makeCm({ mols: [{ uid: 11, name: '1CRN' }, { uid: 22, name: '3J3Q' }] })
         const { container, unmount } = mountTree(
             <SelectionPane cm={cm as never} activeSceneId={1} />,
@@ -104,7 +109,7 @@ describe('SelectionPane', () => {
         await flushPromises()
         const opts = Array.from(container.querySelectorAll('select option'))
         expect(opts.map((o) => o.textContent)).toEqual(['1CRN', '3J3Q'])
-        expect(cm.invokeService).toHaveBeenCalledWith('listMols', { sceneId: 1 })
+        expect(cm.invokeService).toHaveBeenCalledWith('listSceneObjects', { sceneId: 1 })
         unmount()
     })
 

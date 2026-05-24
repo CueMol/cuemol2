@@ -9,7 +9,7 @@
  * import {
  *   ScenePane,
  *   ColorPane,
- *   DummyPane1,
+ *   SymmetryPane,
  *   DummyPane2,
  *   // ... etc
  * } from "./panes";
@@ -20,7 +20,7 @@
  * ```typescript
  * import { ScenePane } from "./panes/ScenePane";
  * import { ColorPane } from "./panes/ColorPane";
- * import { DummyPane1 } from "./panes/DummyPane1";
+ * import { SymmetryPane } from "./panes/SymmetryPane";
  * // ... cluttered imports
  * ```
  *
@@ -33,10 +33,10 @@ export { ScenePane } from "./ScenePane";
 export { ColorPane } from "./ColorPane";
 export { MolStructPane } from "./MolStructPane";
 export { SelectionPane } from "./SelectionPane";
+export { SymmetryPane } from "./SymmetryPane";
 
 /* ─── PoC Dummy Panes ─── */
 
-export { DummyPane1 } from "./DummyPane1";
 export { DummyPane2 } from "./DummyPane2";
 export { DummyPane3 } from "./DummyPane3";
 export { DummyPane4 } from "./DummyPane4";

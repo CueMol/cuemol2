@@ -12,11 +12,11 @@
  *
  * ## Views and Panes
  *
- * | View       | Panes                                   |
- * |------------|-----------------------------------------|
- * | Explorer   | ScenePane, ColorPane, DummyPane4        |
- * | Selection  | MolStructPane, SelectionPane            |
- * | Dummy      | DummyPane1, DummyPane2, DummyPane3      |
+ * | View       | Panes                                       |
+ * |------------|---------------------------------------------|
+ * | Explorer   | ScenePane, ColorPane, DummyPane4            |
+ * | Selection  | MolStructPane, SelectionPane                |
+ * | Crystal    | SymmetryPane, DummyPane2, DummyPane3        |
  *
  * New views and panes can be added by editing `buildViewPaneConfigs()`
  * without touching the layout / persistence logic.
@@ -59,7 +59,7 @@ import {
   ColorPane,
   MolStructPane,
   SelectionPane,
-  DummyPane1,
+  SymmetryPane,
   DummyPane2,
   DummyPane3,
   DummyPane4,
@@ -80,13 +80,13 @@ const HEADER_HEIGHT = 28;
 const VIEW_TITLES: Record<ActivityView, string> = {
   explorer: "Explorer",
   selection: "Selection",
-  dummy: "Dummy",
+  crystal: "Crystal",
 };
 
 const VIEW_ICONS: Record<ActivityView, string> = {
   explorer: "panel-table",
   selection: "search",
-  dummy: "help",
+  crystal: "cube",
 };
 
 /* --- Pane configuration type --- */
@@ -166,7 +166,7 @@ interface SidePanelProps {
 
   /**
    * Persisted splitter sizes keyed by view name.
-   * e.g. `{ explorer: [220, 240, 150], selection: [260, 180], dummy: [200, 200, 200] }`
+   * e.g. `{ explorer: [220, 240, 150], selection: [260, 180], crystal: [240, 200, 200] }`
    */
   viewSizes: Record<string, number[]>;
 
@@ -324,12 +324,18 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         ),
       },
     ],
-    dummy: [
+    crystal: [
       {
-        id: "dummy1",
-        defaultSize: 200,
+        id: "symmetry",
+        defaultSize: 240,
         render: (collapsed, onToggle) => (
-          <DummyPane1 collapsed={collapsed} onToggleCollapse={onToggle} />
+          <SymmetryPane
+            cm={cm}
+            activeSceneId={activeSceneId}
+            activeMolViewId={activeMolViewId}
+            collapsed={collapsed}
+            onToggleCollapse={onToggle}
+          />
         ),
       },
       {
@@ -348,6 +354,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
       },
     ],
   }), [
+    cm, activeSceneId, activeMolViewId,
     sceneTree, sceneSelected, sceneSelectedIds,
     onSceneSelect, onSceneToggleSelect,
     onToggleVisibility, onShowProperty,

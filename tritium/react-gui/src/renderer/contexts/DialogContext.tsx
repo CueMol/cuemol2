@@ -23,6 +23,7 @@ import { ApplyRendStyleDialogProvider } from '../components/dialogs/ApplyRendSty
 import { CreateRendStyleDialogProvider } from '../components/dialogs/CreateRendStyleDialogProvider'
 import { ObjectPickerDialogProvider } from '../components/dialogs/ObjectPickerDialogProvider'
 import { ConfirmReloadSceneDialogProvider } from '../components/dialogs/ConfirmReloadSceneDialogProvider'
+import { SymmetryChangeDialogProvider } from '../components/dialogs/SymmetryChangeDialogProvider'
 import { composeProviders } from './composeProviders'
 
 export const DialogProvider = composeProviders([
@@ -39,4 +40,5 @@ export const DialogProvider = composeProviders([
   CreateRendStyleDialogProvider,
   ObjectPickerDialogProvider,
   ConfirmReloadSceneDialogProvider,
+  SymmetryChangeDialogProvider,
 ])

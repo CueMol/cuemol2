@@ -1,40 +1,19 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 //
-// MolStructPane (UXP `panel.molstruct`) data source:
-//   - listMols: enumerate MolCoord-like objects in a scene for the
-//     molecule selector dropdown.
-//   - getMolChains: chain-level data for the structure tree.
+// MolStructPane (UXP `panel.molstruct`) data source for chain /
+// residue / atom enumeration of one already-selected mol. Mol
+// enumeration (the selector dropdown) lives in
+// `listSceneObjects.service` and the `ObjectSelect` widget; this
+// file only walks downward from a known molId.
 //
-// UXP reference: uxp_gui/cuemol2/base/content/molstruct-panel.js
-// (`setupTreeData` + `mSelector` ObjMenuList with `implIface(elem.type,
-// "MolCoord")` filter).
-//
-// Phase 1 only fetches chain names eagerly; residue / atom enumeration
-// will arrive in Phase 2 alongside lazy node loading.
+// UXP reference: uxp_gui/cuemol2/base/content/molstruct-panel.js.
 
-import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { MolChain } from '@cuemol/core/src/wrappers/MolChain';
 import type { MolResidue } from '@cuemol/core/src/wrappers/MolResidue';
 import type { WorkerContext } from '../types/WorkerContext';
 import { getSceneOrNull } from './helpers/sceneResolver';
-import { parseSceneTreeJSON, type SceneTreeNode } from '../../shared/sceneTreeTypes';
-
-export interface ListMolsArgs {
-    sceneId: number;
-}
-
-export interface MolListEntry {
-    /** C++ uid of the MolCoord object. */
-    uid: number;
-    /** Display name. */
-    name: string;
-}
-
-export interface ListMolsResult {
-    mols: MolListEntry[];
-}
 
 export interface GetMolChainsArgs {
     sceneId: number;
@@ -107,31 +86,6 @@ function isMolCoordLike(obj: CueMolObject | null): obj is MolCoord {
     if (!obj) return false;
     const candidate = obj as unknown as { getChainsJSON?: unknown };
     return typeof candidate.getChainsJSON === 'function';
-}
-
-function collectObjectNodes(scene: Scene): SceneTreeNode[] {
-    let json: string;
-    try {
-        json = scene.getSceneDataJSON();
-    } catch {
-        return [];
-    }
-    const tree = parseSceneTreeJSON(json);
-    if (!tree) return [];
-    return tree.children.filter((n) => n.type === 'object');
-}
-
-function listMols(ctx: WorkerContext, args: ListMolsArgs): ListMolsResult {
-    const scene = getSceneOrNull(ctx, args.sceneId);
-    if (!scene) return { mols: [] };
-
-    const out: MolListEntry[] = [];
-    for (const node of collectObjectNodes(scene)) {
-        const obj = scene.getObject(node.id) as CueMolObject | null;
-        if (!isMolCoordLike(obj)) continue;
-        out.push({ uid: node.id, name: node.name });
-    }
-    return { mols: out };
 }
 
 function parseChainsJSON(json: string): MolChainEntry[] {
@@ -291,7 +245,6 @@ function getMolAtoms(
 }
 
 export const services = {
-    listMols,
     getMolChains,
     getMolResidues,
     getMolAtoms,
