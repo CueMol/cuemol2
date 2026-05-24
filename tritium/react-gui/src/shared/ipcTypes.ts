@@ -163,6 +163,7 @@ export type SelectMolKind =
   | 'aroundByres3'
   | 'aroundByres5'
   | 'aroundByres7'
+  | 'aroundByres10'
 
 /**
  * Coloring-submenu IDs applicable to renderer nodes (Phase 3c).

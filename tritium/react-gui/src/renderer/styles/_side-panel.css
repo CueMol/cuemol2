@@ -155,6 +155,25 @@
   min-height: 0;
 }
 
+/* Disable Blueprint Collapse animation in the mol-tree so chain /
+ * residue / atom children appear instantly on expand. Scoped to
+ * .mol-tree to keep the default animation on the scene tree (where the
+ * subtree is small and the easing is fine).
+ *
+ * Note: the Collapse component still steps through its JS enter/entering
+ * /entered lifecycle which inserts an extra render frame between Loading
+ * and the full child list. Killing transitions / animations on every
+ * descendant ensures both the height tween AND the caret rotation /
+ * any other staged easing land in a single commit, so a freshly
+ * fetched residue / atom list paints all at once. */
+.mol-tree .bp5-collapse,
+.mol-tree .bp5-collapse .bp5-collapse-body,
+.mol-tree .bp5-tree-node-caret,
+.mol-tree .bp5-tree-node-content {
+  transition: none !important;
+  animation: none !important;
+}
+
 .scene-tree .bp5-tree-node-content,
 .mol-tree .bp5-tree-node-content {
   height: 22px;
@@ -305,8 +324,15 @@
   background: var(--bg-input) !important;
   border: 1px solid var(--border) !important;
   color: var(--text-primary) !important;
-  font-family: var(--font-mono);
-  font-size: var(--fs-lg);
+  /* Match LogPanel output typography. The log output renders at the
+   * Blueprint-default 14px even though `.log-output` declares
+   * `var(--fs-md)`, because Blueprint's `.bp5-tag` and other inline
+   * elements inside the log line carry their own larger font-size and
+   * dominate the visual baseline. Use `--fs-2xl` (14px) here so the
+   * textarea matches what the user actually sees in OUTPUT. */
+  font-family: var(--font-mono) !important;
+  font-size: var(--fs-2xl) !important;
+  line-height: var(--lh-normal) !important;
   resize: none;
   caret-color: var(--accent);
 }
@@ -315,7 +341,15 @@
   color: var(--text-muted);
 }
 
-.selection-textarea.bp5-input:focus {
+.selection-error {
+  flex-shrink: 0;
+  font-size: var(--fs-base);
+  color: var(--intent-danger, #cd4246);
+}
+
+/* Only steal the focus ring when the textarea is *not* showing a
+ * danger intent -- otherwise Blueprint's red ring needs to win. */
+.selection-textarea.bp5-input:focus:not(.bp5-intent-danger) {
   border-color: var(--accent) !important;
   box-shadow: 0 0 0 1px var(--accent) !important;
 }

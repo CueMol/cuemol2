@@ -22,9 +22,9 @@ import { BottomPanel } from "./components/panels/BottomPanel";
 import { StatusBar } from "./components/StatusBar";
 import { InspectorPanel } from "./components/panels/InspectorPanel";
 
-import type { AlignmentData, AnimationData } from "./types";
+import type { AnimationData } from "./types";
 
-import { SAMPLE_ALIGNMENT, SAMPLE_ANIMATION } from "./data/alignmentData";
+import { SAMPLE_ANIMATION } from "./data/alignmentData";
 
 import { useLayoutPersistence } from "./hooks/useLayoutPersistence";
 import { useActiveTool } from "./hooks/useActiveTool";
@@ -311,7 +311,6 @@ const App: React.FC = () => {
   });
 
   // --- Sample data ---
-  const [alignment] = useState<AlignmentData | null>(SAMPLE_ALIGNMENT);
   const [animation] = useState<AnimationData | null>(SAMPLE_ANIMATION);
 
   const cueMolBusy = useCueMolBusy();
@@ -392,6 +391,7 @@ const App: React.FC = () => {
                     activeView={activeView ?? "explorer"}
                     cm={cm}
                     activeSceneId={activeSceneId}
+                    activeMolViewId={activeMolViewId}
                     {...sceneController}
                     viewSizes={viewSizes}
                     viewCollapsed={viewCollapsed}
@@ -438,7 +438,9 @@ const App: React.FC = () => {
                         </Allotment.Pane>
                         <Allotment.Pane minSize={100} preferredSize={200} snap>
                           <BottomPanel
-                            alignment={alignment}
+                            cm={cm}
+                            activeSceneId={activeSceneId}
+                            activeMolViewId={activeMolViewId}
                             animation={animation}
                             renderJob={renderJob.job}
                             renderPreset={renderSettings.preset}

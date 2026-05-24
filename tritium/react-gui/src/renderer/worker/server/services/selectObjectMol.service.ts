@@ -60,6 +60,7 @@ const AROUND_KIND_DIST: Record<string, { dist: number; byres: boolean }> = {
     aroundByres3: { dist: 3, byres: true },
     aroundByres5: { dist: 5, byres: true },
     aroundByres7: { dist: 7, byres: true },
+    aroundByres10: { dist: 10, byres: true },
 };
 
 function resolveSelStr(
@@ -93,7 +94,8 @@ function resolveSelStr(
         case 'around10':
         case 'aroundByres3':
         case 'aroundByres5':
-        case 'aroundByres7': {
+        case 'aroundByres7':
+        case 'aroundByres10': {
             // Around-selection rewrites the current selection; UXP
             // `molSelAround` early-returns when prev is empty.
             if (!prevSelStr) return null;

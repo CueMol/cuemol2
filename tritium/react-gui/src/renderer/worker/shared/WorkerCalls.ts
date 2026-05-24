@@ -102,6 +102,36 @@ import type {
   SelectObjectMolResult,
 } from '../server/services/selectObjectMol.service'
 import type {
+  ListMolsArgs,
+  ListMolsResult,
+  GetMolChainsArgs,
+  GetMolChainsResult,
+  GetMolResiduesArgs,
+  GetMolResiduesResult,
+  GetMolAtomsArgs,
+  GetMolAtomsResult,
+} from '../server/services/getMolStructure.service'
+import type {
+  ApplyMolSelStringArgs,
+  ApplyMolSelStringResult,
+  CenterMolSelectionArgs,
+  CenterMolSelectionResult,
+  ZoomMolSelectionArgs,
+  ZoomMolSelectionResult,
+} from '../server/services/applyMolSelString.service'
+import type {
+  ToggleResidueSelectionArgs,
+  ToggleResidueSelectionResult,
+  RangeSelectResiduesArgs,
+  RangeSelectResiduesResult,
+  CenterOnResidueArgs,
+  CenterOnResidueResult,
+} from '../server/services/seqPanelOps.service'
+import type {
+  GetSeqPanelDataArgs,
+  GetSeqPanelDataResult,
+} from '../server/services/getSeqPanelData.service'
+import type {
   CopyNodeArgs,
   CopyNodeResult,
   PasteNodeArgs,
@@ -321,6 +351,17 @@ export interface ServiceMap {
   setGenericProp:             { args: SetGenericPropArgs;              result: SetGenericPropResult }
   renameNode:                 { args: RenameNodeArgs;                  result: RenameNodeResult }
   selectObjectMol:            { args: SelectObjectMolArgs;             result: SelectObjectMolResult }
+  listMols:                   { args: ListMolsArgs;                    result: ListMolsResult }
+  getMolChains:               { args: GetMolChainsArgs;                result: GetMolChainsResult }
+  getMolResidues:             { args: GetMolResiduesArgs;              result: GetMolResiduesResult }
+  getMolAtoms:                { args: GetMolAtomsArgs;                 result: GetMolAtomsResult }
+  applyMolSelString:          { args: ApplyMolSelStringArgs;           result: ApplyMolSelStringResult }
+  centerMolSelection:         { args: CenterMolSelectionArgs;          result: CenterMolSelectionResult }
+  zoomMolSelection:           { args: ZoomMolSelectionArgs;            result: ZoomMolSelectionResult }
+  toggleResidueSelection:     { args: ToggleResidueSelectionArgs;      result: ToggleResidueSelectionResult }
+  rangeSelectResidues:        { args: RangeSelectResiduesArgs;         result: RangeSelectResiduesResult }
+  centerOnResidue:            { args: CenterOnResidueArgs;             result: CenterOnResidueResult }
+  getSeqPanelData:            { args: GetSeqPanelDataArgs;             result: GetSeqPanelDataResult }
   copyNode:                   { args: CopyNodeArgs;                    result: CopyNodeResult }
   pasteNode:                  { args: PasteNodeArgs;                   result: PasteNodeResult }
   getClipboardKind:           { args: GetClipboardKindArgs;            result: GetClipboardKindResult }

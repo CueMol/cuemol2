@@ -31,8 +31,8 @@
 
 export { ScenePane } from "./ScenePane";
 export { ColorPane } from "./ColorPane";
-export { MolStructPane, type MolNode } from "./MolStructPane";
-export { SelectionPane, type MolOption } from "./SelectionPane";
+export { MolStructPane } from "./MolStructPane";
+export { SelectionPane } from "./SelectionPane";
 
 /* ─── PoC Dummy Panes ─── */
 

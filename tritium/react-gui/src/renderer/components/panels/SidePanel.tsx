@@ -67,12 +67,8 @@ import {
 
 import type { SceneTreeNode } from "../../worker/shared/sceneTreeTypes";
 
-import { MOL_TREE, MOLECULE_OPTIONS } from "../../data/sampleData";
-
 /* --- Re-export types for external consumers --- */
 export type { SceneTreeNode } from "../../worker/shared/sceneTreeTypes";
-export type { MolNode } from "../panes/MolStructPane";
-export type { MolOption } from "../panes/SelectionPane";
 
 /* --- Constants --- */
 
@@ -119,6 +115,8 @@ interface SidePanelProps {
   cm: AsyncCueMol | null;
   /** Active scene UID, or undefined when no scene is active. */
   activeSceneId: number | undefined;
+  /** Active mol-view UID for the focused molview tab. */
+  activeMolViewId: number | undefined;
 
   /* Scene / Explorer props */
   sceneTree: SceneTreeNode | null;
@@ -196,6 +194,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   activeView,
   cm,
   activeSceneId,
+  activeMolViewId,
   sceneTree,
   sceneSelected,
   sceneSelectedIds,
@@ -304,7 +303,9 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         defaultSize: 260,
         render: (collapsed, onToggle) => (
           <MolStructPane
-            molTree={MOL_TREE}
+            cm={cm}
+            activeSceneId={activeSceneId}
+            activeMolViewId={activeMolViewId}
             collapsed={collapsed}
             onToggleCollapse={onToggle}
           />
@@ -315,7 +316,8 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         defaultSize: 180,
         render: (collapsed, onToggle) => (
           <SelectionPane
-            molecules={MOLECULE_OPTIONS}
+            cm={cm}
+            activeSceneId={activeSceneId}
             collapsed={collapsed}
             onToggleCollapse={onToggle}
           />
