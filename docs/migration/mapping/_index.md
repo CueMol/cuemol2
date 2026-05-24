@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-05-24 (`panel.btmpanel-holder.seq` mapping done after E2E verification; remaining selection-commit latency tracked in ADR-0019)
 - Updated: 2026-05-24 (`panel.btmpanel-holder.seq` Phase 3: all 13 ctx menu items wired -- Toggle sel / Around 3-10 / Around Byresid 3-10 / Unselect all / Invert sel / Copy sequence)
 - Updated: 2026-05-24 (`panel.btmpanel-holder.seq` Phase 2: drag range select + shift+click range extend with green tracking rect; pointer flow + setPointerCapture)
 - Updated: 2026-05-24 (`panel.btmpanel-holder` split into `.log` / `.seq`; `.seq` Phase 1 wip: Canvas grid + click toggle + Center ctx menu)
@@ -15,7 +16,7 @@
 
 | Category | File | Total | done | wip | review | todo | frozen |
 |----------|------|------:|-----:|----:|-------:|-----:|-------:|
-| Panel | [panels.md](panels.md) | 27 | 2 | 18 | 0 | 7 | 0 |
+| Panel | [panels.md](panels.md) | 27 | 3 | 17 | 0 | 7 | 0 |
 | Menu | [menus.md](menus.md) | 4 | 1 | 2 | 0 | 1 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 13 | 0 | 0 | 0 | 13 | 0 |
@@ -24,7 +25,7 @@
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 0 | 1 | 0 | 12 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 0 | 1 | 0 | 27 | 0 |
 | Other | [other.md](other.md) | 4 | 0 | 1 | 0 | 3 | 0 |
-| **Total** | | **130** | **4** | **27** | **0** | **99** | **0** |
+| **Total** | | **130** | **5** | **26** | **0** | **99** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -89,10 +90,9 @@
 | [`panel.coloring.deck.bfac`](panels.md#panelcoloringdeckbfac) | `ColorPane` (BfacDeck) / `rendererColoring.service` (`setColoringProp`) | Phase 2: Mode + Low/High colour + Auto/Manual + Low/High parameter (disabled outside Manual). |
 | [`panel.coloring.deck.elepot`](panels.md#panelcoloringdeckelepot) | `ColorPane` (ElepotDeck) / `useElePotMapObjects` / `rendererColoring.service` (`setRendererElepotProp`, `listElePotMapObjects`, `paint-type-elepot`) | Phase 3: ElePotMap selector + Color-by-SAS + Low/Mid/High (par, colour) ramp. Elepot props live on the surface renderer (not a ColoringScheme); deck appears when `colormode === "potential"` on `molsurf` / `dsurface`. Dropdown item is surface-gated. |
 | [`panel.molstruct`](panels.md#panelmolstruct) | `MolStructPane` / `useMolStructure` / `selStrFromTree` / `getMolStructure.service` / `applyMolSelString.service` | Phase 1+2: molecule selector + lazy chain/residue/atom tree (per-chain & per-residue cache, self-heal on missing) + multi-select + Select / Center / Zoom (ADR-0018). Known issue: first-expand stagger from Blueprint `Tree` Collapse JS state machine (virtualization swap deferred). |
-| [`panel.btmpanel-holder.seq`](panels.md#panelbtmpanel-holderseq) | `SequencePanel` / `useMolSequenceData` / `seqPanelOps.service` / `getSeqPanelData.service` / `selectObjectMol.service` (reused) | Phase 1+2+3: HiDPI Canvas all-mol x all-chain residue grid + Allotment splitter + DOM-overlay marker + theme-aware colors; pointer flow with click toggle+center, drag range select (toggle), shift+click range extend (no toggle) with green tracking rect; every UXP ctxmenu item wired (Toggle sel / Center here / Around 3-10 / Around Byresid 3-10 / Unselect all / Invert sel / Copy sequence). Bulk `getSeqPanelData` collapses per-chain IPC to one round trip. Known issue: selection commit -> cyan highlight ~0.5 s lag on every selection-changing interaction; flagged as next-session handoff (ADR-0019). |
 
 ---
 
 ## Unstarted
 
-**99 / 129** items are `todo` (not yet started).
+**99 / 130** items are `todo` (not yet started).
