@@ -51,6 +51,12 @@ export interface InvokeChannels {
                               res: { canceled: boolean; filePath: string; filterIndex: number } }
   [IPC.DIALOG_PICK_PATH]:  { req: { title: string; directory?: boolean };
                              res: { canceled: boolean; filePath: string } }
+  [IPC.SAVE_TEXT_AS]:      { req: {
+                                defaultName: string
+                                content: string
+                                filters?: { name: string; extensions: string[] }[]
+                              };
+                              res: { canceled: boolean; filePath?: string; error?: string } }
   [IPC.FILE_EXISTS]:       { req: { path: string };      res: { exists: boolean } }
   [IPC.FILE_BACKUP_RENAME]:{ req: { path: string };
                              res: { ok: boolean; backed: boolean; error?: string } }

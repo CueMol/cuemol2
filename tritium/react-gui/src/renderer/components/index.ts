@@ -9,6 +9,7 @@ export { SettingsPane } from "./panes/SettingsPane";
 export { WelcomePane } from "./panes/WelcomePane";
 export { MolViewPane } from "./panes/MolViewPane";
 export { LogPanel } from "./panels/LogPanel";
+export { LogReplDraft } from "./panels/LogReplDraft";
 export { StatusBar } from "./StatusBar";
 export { ViewportToolPalette } from "./ViewportToolPalette";
 //export { ColorPanel } from "./ColorPanel";

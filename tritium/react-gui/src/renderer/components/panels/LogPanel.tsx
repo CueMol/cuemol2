@@ -1,244 +1,102 @@
 /**
- * @file LogPanel.tsx
- * @description Scrollable output log with an embedded REPL prompt.
+ * @file components/panels/LogPanel.tsx
+ * @description BottomPanel "Output" tab -- presentation-only viewer that
+ * renders the cuemol3 core log stream as a scrollable `<pre>` block,
+ * topped with a toolbar (filter input + clear / lock / save buttons)
+ * styled to match the Render tab.
  *
- * ## Structure
- *
- * ```
- * ┌──────────────────────────── header ────┐
- * │  ⬢ Output                      [N]    │
- * ├────────────────────────────────────────┤
- * │  HH:MM:SS  [INFO]  message text        │  ← scrollable log output
- * │  HH:MM:SS  [WARN]  ...                 │
- * │  ...                                   │
- * ├────────────────────────────────────────┤
- * │  ❯  _command input_                   │  ← REPL prompt
- * └────────────────────────────────────────┘
- * ```
- *
- * ## REPL behaviour
- *
- * - **Submit** — `Enter` fires `onCommand` with the trimmed input and clears
- *   the field.
- * - **History navigation** — `↑ / ↓` cycle through previously submitted
- *   commands (newest-first ring stored in local state).
- * - **Auto-scroll** — the log view scrolls to the bottom whenever new entries
- *   are appended.
- * - **Click-to-focus** — clicking anywhere in the panel focuses the input so
- *   the user can start typing immediately.
- *
- * @module LogPanel
+ * Log accumulation, filter text, autoScroll flag and the save / clear
+ * callbacks all live in the parent `BottomPanel` so they survive when
+ * the user switches to another bottom tab and back. This component
+ * receives them as props and is responsible only for rendering the
+ * toolbar, filtering the text for display, and keeping the viewport
+ * pinned to the bottom while `autoScroll` is on.
  */
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
-import { Tag } from "@blueprintjs/core";
-import type { LogEntry } from "../../types";
-
-// ────────────────────────────────────────────────────────────
-// Constants
-// ────────────────────────────────────────────────────────────
-
-/**
- * Maps each log level to a Blueprint `Tag` intent so entries are
- * colour-coded without conditional logic in the render loop.
- *
- * | Level   | Intent    | Visual colour   |
- * |---------|-----------|-----------------|
- * | INFO    | none      | neutral / grey  |
- * | WARN    | warning   | amber           |
- * | ERROR   | danger    | red             |
- * | DEBUG   | primary   | blue            |
- */
-const LEVEL_INTENT: Record<LogEntry["level"], "none" | "warning" | "danger" | "primary"> = {
-  INFO: "none",
-  WARN: "warning",
-  ERROR: "danger",
-  DEBUG: "primary",
-};
-
-// ────────────────────────────────────────────────────────────
-// Sub-components
-// ────────────────────────────────────────────────────────────
-
-interface LogLineProps {
-  /** The log entry to render. */
-  entry: LogEntry;
-}
-
-/**
- * A single row in the log output area.
- *
- * Extracted to keep the parent render function readable and to give each
- * row a stable component boundary for React's reconciler.
- */
-const LogLine: React.FC<LogLineProps> = ({ entry }) => (
-  <div className={`log-line log-${entry.level.toLowerCase()}`}>
-    <span className="log-time">{entry.time}</span>
-    <Tag
-      minimal
-      intent={LEVEL_INTENT[entry.level]}
-      className="log-level-tag"
-    >
-      {entry.level}
-    </Tag>
-    <span className="log-msg">{entry.msg}</span>
-  </div>
-);
-
-// ────────────────────────────────────────────────────────────
-// Main Component
-// ────────────────────────────────────────────────────────────
+import React, { useRef, useEffect, useMemo } from 'react'
+import { Button, Icon, InputGroup } from '@blueprintjs/core'
+import styles from './LogPanel.module.css'
+import { applyLogFilter } from '../../utils/logFilter'
 
 interface LogPanelProps {
-  /** Ordered list of log entries to display, newest last. */
-  logs: LogEntry[];
-  /**
-   * Callback invoked when the user submits a non-empty command.
-   *
-   * The string is already trimmed; the panel handles clearing the input
-   * and pushing to history internally.
-   *
-   * @param cmd - Trimmed command string.
-   */
-  onCommand: (cmd: string) => void;
+  /** Accumulated log text, newest content appended at the end. */
+  contents: string
+  /** Current filter expression. Empty string shows everything. */
+  filter: string
+  /** Whether the viewport should follow new log lines. */
+  autoScroll: boolean
+  onFilterChange: (value: string) => void
+  onAutoScrollToggle: () => void
+  onClear: () => void
+  onSaveAs: () => void
 }
 
 /**
- * Scrollable log viewer combined with a command-history-aware REPL prompt.
- *
- * All REPL state (current input, command history, history cursor) is local
- * to this component because it has no meaning outside the panel.
+ * Toolbar + filtered log viewer. Pure presentation: every piece of state
+ * lives in the parent so tab switches do not lose it.
  */
-export const LogPanel: React.FC<LogPanelProps> = ({ logs, onCommand }) => {
-  // ── REPL state ─────────────────────────────────────────────
+export function LogPanel({
+  contents,
+  filter,
+  autoScroll,
+  onFilterChange,
+  onAutoScrollToggle,
+  onClear,
+  onSaveAs,
+}: LogPanelProps): React.JSX.Element {
+  const preRef = useRef<HTMLPreElement>(null)
 
-  /** Current value of the command input field. */
-  const [cmd, setCmd] = useState("");
+  const filteredContents = useMemo(
+    () => applyLogFilter(contents, filter),
+    [contents, filter],
+  )
 
-  /**
-   * Ring buffer of previously submitted commands.
-   * Stored newest-first so index 0 is always the most recent entry,
-   * matching the expected ↑-key behaviour.
-   */
-  const [history, setHistory] = useState<string[]>([]);
-
-  /**
-   * Cursor into `history`; `-1` means the user is on a fresh (unsaved) input.
-   * Incremented on ↑, decremented on ↓, reset to `-1` after each submission.
-   */
-  const [historyIdx, setHistoryIdx] = useState(-1);
-
-  // ── Refs ────────────────────────────────────────────────────
-
-  /** Sentinel element placed after the last log line for scroll-into-view. */
-  const logEndRef = useRef<HTMLDivElement>(null);
-
-  /** Direct reference to the `<input>` so we can `focus()` it on click. */
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  // ── Effects ─────────────────────────────────────────────────
-
-  /**
-   * Auto-scroll to the bottom of the log output whenever new entries arrive.
-   * Uses smooth scrolling so rapid bursts of messages don't cause jarring
-   * jumps.
-   */
   useEffect(() => {
-    logEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [logs]);
-
-  // ── Handlers ────────────────────────────────────────────────
-
-  /**
-   * Submit the current command string.
-   *
-   * Guards against empty / whitespace-only input, prepends the trimmed
-   * string to the history ring, resets the history cursor, and clears the
-   * input field.
-   */
-  const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
-      e.preventDefault();
-      const trimmed = cmd.trim();
-      if (!trimmed) return;
-
-      onCommand(trimmed);
-      setHistory((prev) => [trimmed, ...prev]);
-      setHistoryIdx(-1);
-      setCmd("");
-    },
-    [cmd, onCommand]
-  );
-
-  /**
-   * Handle ↑ / ↓ key presses to navigate command history.
-   *
-   * - `↑` moves the cursor toward older commands (higher index).
-   * - `↓` moves the cursor toward newer commands (lower index); reaching
-   *   `-1` restores an empty input so the user can type a fresh command.
-   *
-   * Both keys call `preventDefault` to prevent the caret from jumping to
-   * the start/end of the input text.
-   */
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        const nextIdx = Math.min(historyIdx + 1, history.length - 1);
-        setHistoryIdx(nextIdx);
-        if (history[nextIdx] !== undefined) setCmd(history[nextIdx]);
-      } else if (e.key === "ArrowDown") {
-        e.preventDefault();
-        const nextIdx = historyIdx - 1;
-        if (nextIdx < 0) {
-          setHistoryIdx(-1);
-          setCmd("");
-        } else {
-          setHistoryIdx(nextIdx);
-          setCmd(history[nextIdx]);
-        }
-      }
-    },
-    [history, historyIdx]
-  );
-
-  // ── Render ──────────────────────────────────────────────────
+    if (!autoScroll) return
+    if (preRef.current) {
+      const h = preRef.current.scrollHeight
+      preRef.current.scrollTo(0, h)
+    }
+  }, [filteredContents, autoScroll])
 
   return (
-    <div className="log-panel" onClick={() => inputRef.current?.focus()}>
-      {/* Header */}
-      <div className="log-panel-header">
-        <span className="log-panel-title">
-          <span style={{ marginRight: 6 }}>⬢</span>Output
-        </span>
-        <Tag minimal round className="log-count">
-          {logs.length}
-        </Tag>
-      </div>
-
-      {/* Scrollable log output */}
-      <div className="log-output">
-        {logs.map((log, i) => (
-          <LogLine key={i} entry={log} />
-        ))}
-        {/* Scroll anchor — kept invisible at the bottom of the list */}
-        <div ref={logEndRef} />
-      </div>
-
-      {/* REPL prompt */}
-      <form className="log-prompt" onSubmit={handleSubmit}>
-        <span className="prompt-symbol">❯</span>
-        <input
-          ref={inputRef}
-          type="text"
-          value={cmd}
-          onChange={(e) => setCmd(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Enter command... (type 'help' for commands)"
-          className="prompt-input"
-          spellCheck={false}
+    <div className={styles.bottomContainer}>
+      <div className={styles.toolbar}>
+        <InputGroup
+          className={styles.filterInput}
+          leftIcon={<Icon icon="filter" size={12} />}
+          placeholder="Filter (e.g. text, !excluded)"
+          value={filter}
+          onChange={(e) => onFilterChange(e.currentTarget.value)}
         />
-      </form>
+        <Button
+          small
+          minimal
+          icon={<Icon icon="eraser" size={12} />}
+          text="Clear"
+          onClick={onClear}
+          aria-label="Clear Output"
+        />
+        <Button
+          small
+          minimal
+          icon={<Icon icon={autoScroll ? 'unlock' : 'lock'} size={12} />}
+          text={autoScroll ? 'Unlock' : 'Lock'}
+          onClick={onAutoScrollToggle}
+          aria-label="Toggle Auto Scroll"
+        />
+        <Button
+          small
+          minimal
+          icon={<Icon icon="floppy-disk" size={12} />}
+          text="Save"
+          onClick={onSaveAs}
+          aria-label="Save Output As"
+        />
+      </div>
+      <pre className={styles.logContainer} ref={preRef}>
+        {filteredContents}
+      </pre>
     </div>
-  );
-};
+  )
+}

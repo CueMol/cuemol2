@@ -99,7 +99,8 @@ export interface TabData {
 // ────────────────────────────────────────────────────────────
 
 /**
- * A single structured log entry displayed in `LogPanel`.
+ * A single structured log entry displayed in `LogReplDraft` (a draft
+ * REPL-enabled Output panel not yet wired into the app).
  *
  * Entries are created by `App.addLog` and are intentionally immutable
  * once appended to the log list.
