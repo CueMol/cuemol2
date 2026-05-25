@@ -21,7 +21,6 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
     Button,
     ButtonGroup,
-    HTMLSelect,
     Icon,
     Tooltip,
     Tree,
@@ -30,6 +29,7 @@ import {
 } from "@blueprintjs/core";
 import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
 import { useMolStructure } from "../../hooks/useMolStructure";
+import { ObjectSelect, objectFilters } from "../widgets/ObjectSelect";
 import {
     encodeChainId,
     encodeResidueId,
@@ -59,16 +59,14 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
     collapsed,
     onToggleCollapse,
 }) => {
+    const [selectedMolId, setSelectedMolId] = useState<number | undefined>(undefined);
     const {
-        mols,
-        selectedMolId,
-        setSelectedMolId,
         chains,
         residuesByChain,
         atomsByResidue,
         loadResidues,
         loadAtoms,
-    } = useMolStructure({ cm, sceneId: activeSceneId });
+    } = useMolStructure({ cm, sceneId: activeSceneId, molId: selectedMolId });
 
     // Multi-select tree state. Click semantics mirror Finder / VS Code
     // (and UXP `seltype="multiple"` on `molStructTree`):
@@ -123,16 +121,6 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
             }
         }
     }, [expandedIds, residuesByChain, atomsByResidue, loadResidues, loadAtoms]);
-
-    const handleSelectMol = useCallback(
-        (e: React.ChangeEvent<HTMLSelectElement>) => {
-            const next = Number(e.target.value);
-            if (Number.isFinite(next)) {
-                setSelectedMolId(next);
-            }
-        },
-        [setSelectedMolId],
-    );
 
     // Flat list of visible row ids in render order. Used by Shift+click
     // range selection. Placeholder rows ("Loading..." / "(no atoms)" /
@@ -462,26 +450,16 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
             </div>
             {!collapsed && (
                 <div className="sp-pane-fill">
-                    <div className="selection-row">
-                        <label className="selection-label">Molecule</label>
-                        <HTMLSelect
-                            value={selectedMolId ?? ""}
-                            onChange={handleSelectMol}
-                            fill
-                            disabled={mols.length === 0}
-                            className="selection-mol-select"
-                        >
-                            {mols.length === 0 ? (
-                                <option value="">(no molecules)</option>
-                            ) : (
-                                mols.map((mol) => (
-                                    <option key={mol.uid} value={mol.uid}>
-                                        {mol.name || `Mol ${mol.uid}`}
-                                    </option>
-                                ))
-                            )}
-                        </HTMLSelect>
-                    </div>
+                    <ObjectSelect
+                        cm={cm}
+                        sceneId={activeSceneId}
+                        label="Molecule"
+                        filter={objectFilters.molCoord}
+                        selectedId={selectedMolId}
+                        onChange={setSelectedMolId}
+                        emptyText="(no molecules)"
+                        fallbackName={(m) => `Mol ${m.uid}`}
+                    />
                     <div className="sp-pane-scroll mol-tree-scroll">
                         <Tree
                             contents={treeContents}

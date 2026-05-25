@@ -1,22 +1,25 @@
 /**
  * @file hooks/useMolStructure.ts
- * @description Live data source for `MolStructPane`.
+ * @description Live data source for `MolStructPane`'s chain / residue
+ * / atom tree.
  *
- * Enumerates MolCoord-like objects in the active scene and fetches chain
- * names for the currently-selected molecule. Residue and atom data are
- * lazy-loaded on demand via `loadResidues` / `loadAtoms`, cached per
- * chain / residue. The cache is invalidated whenever the active mol
- * changes, and a SEM_OBJECT event subscription forces a full refetch
- * (clearing the cache) when scene topology changes — PDB load, undo,
- * paste, etc. Mirrors UXP `panel.molstruct.onLoad`'s
- * `addListener("topologyChanged", SEM_OBJECT, SEM_CHANGED, -1, ...)`
- * plus the ObjMenuList rebind on SEM_OBJECT ADDED/REMOVING.
+ * The hook is scoped to a single `molId` chosen externally
+ * (typically by an `ObjectSelect` widget driving local React state).
+ * Chain names are fetched eagerly when the mol changes; residue and
+ * atom data are lazy-loaded on demand via `loadResidues` /
+ * `loadAtoms`, cached per chain / residue. The cache is invalidated
+ * whenever the active mol changes, and a SEM_OBJECT event
+ * subscription soft-refetches chains (caches preserved) when scene
+ * state churns -- mirrors UXP `panel.molstruct.onLoad`'s
+ * `addListener("topologyChanged", SEM_OBJECT, SEM_CHANGED, -1, ...)`.
+ *
+ * Mol enumeration (the dropdown) lives in `ObjectSelect`; this hook
+ * only concerns itself with the structure of the selected mol.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol';
 import type {
-    MolListEntry,
     MolChainEntry,
     MolResidueEntry,
     MolAtomEntry,
@@ -28,32 +31,24 @@ export interface UseMolStructureOptions {
     cm: AsyncCueMol | null;
     /** Active scene UID, or undefined when no scene is active. */
     sceneId: number | undefined;
+    /** Currently-selected molecule uid (e.g. from `ObjectSelect`). */
+    molId: number | undefined;
 }
 
 export interface UseMolStructureResult {
-    /** MolCoord-like objects available in the current scene. */
-    mols: MolListEntry[];
-    /** Currently-selected molecule uid; undefined when no mol is available. */
-    selectedMolId: number | undefined;
-    /** Programmatic mol selector — used by the dropdown handler. */
-    setSelectedMolId: (uid: number | undefined) => void;
     /** Chain entries for the selected molecule. */
     chains: MolChainEntry[];
     /** Residues already fetched, keyed by chain name. */
     residuesByChain: ReadonlyMap<string, MolResidueEntry[]>;
     /** Atoms already fetched, keyed by `${chain}:${residueIndex}`. */
     atomsByResidue: ReadonlyMap<string, MolAtomEntry[]>;
-    /** Lazy fetch — resolves the chain's residue list and caches it. */
+    /** Lazy fetch -- resolves the chain's residue list and caches it. */
     loadResidues: (chainName: string) => Promise<MolResidueEntry[]>;
-    /** Lazy fetch — resolves the residue's atom list and caches it. */
+    /** Lazy fetch -- resolves the residue's atom list and caches it. */
     loadAtoms: (chainName: string, residueIndex: string) => Promise<MolAtomEntry[]>;
-    /** True while any top-level (mols / chains) fetch is in flight. */
+    /** True while a chains fetch is in flight. */
     loading: boolean;
-    /**
-     * Force a re-fetch of mols + chains AND clear the lazy residue / atom
-     * caches. Use this for explicit user actions (e.g. mol switch). The
-     * SEM_OBJECT event listener uses a softer refresh that keeps caches.
-     */
+    /** Force a chains refetch AND clear the lazy residue / atom caches. */
     refetch: () => void;
 }
 
@@ -61,11 +56,10 @@ function atomKey(chainName: string, residueIndex: string): string {
     return `${chainName}:${residueIndex}`;
 }
 
-export function useMolStructure({ cm, sceneId }: UseMolStructureOptions): UseMolStructureResult {
-    const [mols, setMols] = useState<MolListEntry[]>([]);
-    const [selectedMolId, setSelectedMolIdState] = useState<number | undefined>(undefined);
+export function useMolStructure(
+    { cm, sceneId, molId }: UseMolStructureOptions,
+): UseMolStructureResult {
     const [chains, setChains] = useState<MolChainEntry[]>([]);
-    const [molsLoading, setMolsLoading] = useState(false);
     const [chainsLoading, setChainsLoading] = useState(false);
     const [residuesByChain, setResiduesByChain] = useState<Map<string, MolResidueEntry[]>>(
         () => new Map(),
@@ -74,12 +68,12 @@ export function useMolStructure({ cm, sceneId }: UseMolStructureOptions): UseMol
         () => new Map(),
     );
 
-    // Latest sceneId / selectedMolId in refs so refetch identity stays
-    // stable across renders (avoids resubscribing the event listener).
+    // Latest sceneId / molId in refs so event-driven refetches keep a
+    // stable identity (no resubscribe on every render).
     const sceneIdRef = useRef<number | undefined>(sceneId);
     sceneIdRef.current = sceneId;
-    const selectedMolIdRef = useRef<number | undefined>(selectedMolId);
-    selectedMolIdRef.current = selectedMolId;
+    const molIdRef = useRef<number | undefined>(molId);
+    molIdRef.current = molId;
     // In-flight lazy fetches deduped by key so React re-renders during
     // load don't trigger a second invokeService.
     const inflightResiduesRef = useRef<Map<string, Promise<MolResidueEntry[]>>>(new Map());
@@ -92,52 +86,9 @@ export function useMolStructure({ cm, sceneId }: UseMolStructureOptions): UseMol
         inflightAtomsRef.current.clear();
     }, []);
 
-    const setSelectedMolId = useCallback(
-        (uid: number | undefined) => {
-            setSelectedMolIdState(uid);
-            clearLazyCaches();
-        },
-        [clearLazyCaches],
-    );
-
-    const fetchMols = useCallback(() => {
-        const sid = sceneIdRef.current;
-        if (!cm || sid === undefined) {
-            setMols([]);
-            setSelectedMolIdState(undefined);
-            return;
-        }
-        setMolsLoading(true);
-        let cancelled = false;
-        cm.invokeService('listMols', { sceneId: sid })
-            .then((res) => {
-                if (cancelled) return;
-                const list = res?.mols ?? [];
-                setMols(list);
-                setSelectedMolIdState((prev) => {
-                    if (prev !== undefined && list.some((m: MolListEntry) => m.uid === prev)) {
-                        return prev;
-                    }
-                    return list.length > 0 ? list[0].uid : undefined;
-                });
-            })
-            .catch((err: unknown) => {
-                if (cancelled) return;
-                console.warn('listMols failed:', err);
-                setMols([]);
-                setSelectedMolIdState(undefined);
-            })
-            .finally(() => {
-                if (!cancelled) setMolsLoading(false);
-            });
-        return () => {
-            cancelled = true;
-        };
-    }, [cm]);
-
     const fetchChains = useCallback(() => {
         const sid = sceneIdRef.current;
-        const mid = selectedMolIdRef.current;
+        const mid = molIdRef.current;
         if (!cm || sid === undefined || mid === undefined) {
             setChains([]);
             return;
@@ -164,54 +115,38 @@ export function useMolStructure({ cm, sceneId }: UseMolStructureOptions): UseMol
 
     const refetch = useCallback(() => {
         clearLazyCaches();
-        fetchMols();
         fetchChains();
-    }, [clearLazyCaches, fetchMols, fetchChains]);
+    }, [clearLazyCaches, fetchChains]);
 
-    /**
-     * Soft refresh used by the SEM_OBJECT listener. We deliberately keep
-     * the residue / atom caches: many incoming events are unrelated to
-     * topology (renderer added for *selection, mol.sel = ..., visibility
-     * toggle, ...), and clearing on every burst would flash "Loading..."
-     * across every expanded node each time the user hits Select / Zoom.
-     * If chain identity actually changes (PDB reload), stale residue
-     * entries simply stop being rendered because the tree only walks
-     * chains currently in `chains`.
-     */
-    const softRefetch = useCallback(() => {
-        fetchMols();
-        fetchChains();
-    }, [fetchMols, fetchChains]);
-
-    // Re-list mols when the active scene changes.
+    // Clear lazy caches and refetch chains whenever the active mol
+    // changes. The widget driving `molId` is responsible for picking
+    // a sensible default; this hook just reacts.
     useEffect(() => {
-        return fetchMols();
-    }, [cm, sceneId, fetchMols]);
-
-    // Re-fetch chains when the active mol (or scene) changes.
-    useEffect(() => {
+        clearLazyCaches();
         return fetchChains();
-    }, [cm, sceneId, selectedMolId, fetchChains]);
+    }, [cm, sceneId, molId, clearLazyCaches, fetchChains]);
 
-    // Object add / remove / property-change subscriber. Soft refresh only
-    // — the lazy caches stay intact so expanded subtrees do not blank to
-    // "Loading...". For genuine topology changes (rare, e.g. applyTopology)
-    // a manual refetch via the molecule selector still works.
+    // SEM_OBJECT subscriber for soft refresh: the lazy caches stay
+    // intact so expanded subtrees do not blank to "Loading..." when
+    // unrelated events fire (renderer added for *selection, mol.sel
+    // assignment, visibility toggle, ...). Genuine topology changes
+    // (PDB reload) are rare; the user can force a hard refresh via
+    // the mol selector.
     useCueMolEventListener({
         cm,
-        enabled: sceneId !== undefined,
+        enabled: sceneId !== undefined && molId !== undefined,
         category: '',
         srcMask: SEM_OBJECT,
         evtMask: SEM_ANY,
         scopeId: sceneId ?? -1,
-        handler: softRefetch,
+        handler: fetchChains,
         debounceMs: 30,
     });
 
     const loadResidues = useCallback(
         (chainName: string): Promise<MolResidueEntry[]> => {
             const sid = sceneIdRef.current;
-            const mid = selectedMolIdRef.current;
+            const mid = molIdRef.current;
             if (!cm || sid === undefined || mid === undefined) return Promise.resolve([]);
             const cached = residuesByChain.get(chainName);
             if (cached) return Promise.resolve(cached);
@@ -244,7 +179,7 @@ export function useMolStructure({ cm, sceneId }: UseMolStructureOptions): UseMol
     const loadAtoms = useCallback(
         (chainName: string, residueIndex: string): Promise<MolAtomEntry[]> => {
             const sid = sceneIdRef.current;
-            const mid = selectedMolIdRef.current;
+            const mid = molIdRef.current;
             if (!cm || sid === undefined || mid === undefined) return Promise.resolve([]);
             const key = atomKey(chainName, residueIndex);
             const cached = atomsByResidue.get(key);
@@ -281,15 +216,12 @@ export function useMolStructure({ cm, sceneId }: UseMolStructureOptions): UseMol
     );
 
     return {
-        mols,
-        selectedMolId,
-        setSelectedMolId,
         chains,
         residuesByChain,
         atomsByResidue,
         loadResidues,
         loadAtoms,
-        loading: molsLoading || chainsLoading,
+        loading: chainsLoading,
         refetch,
     };
 }
