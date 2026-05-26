@@ -13,6 +13,7 @@
 import { dialog } from 'electron'
 import type { BrowserWindow } from 'electron'
 import path from 'path'
+import { promises as fsp } from 'fs'
 import { withMenuBlocked } from '../menu'
 
 export async function handleSaveSceneDialog(
@@ -147,6 +148,47 @@ export async function handlePickPathDialog(
     return { canceled: true, filePath: '' }
   }
   return { canceled: false, filePath: result.filePaths[0] }
+}
+
+/**
+ * Generic "save plain text to a user-chosen path" handler. Used by the
+ * bottom Output panel's "Save Output As..." action and any future caller
+ * that needs to dump a text blob without going through the C++ writer
+ * pipeline.
+ *
+ * The dialog and the write are performed back-to-back so renderers only
+ * have to issue one IPC round-trip. Cancellation returns `canceled: true`
+ * with no filePath; write failures return `canceled: false` together with
+ * an `error` string so the caller can surface a toast.
+ */
+export async function handleSaveTextAsDialog(
+  mainWindow: BrowserWindow,
+  payload: {
+    defaultName: string
+    content: string
+    filters?: { name: string; extensions: string[] }[]
+  },
+): Promise<{ canceled: boolean; filePath?: string; error?: string }> {
+  const result = await withMenuBlocked('native', () =>
+    dialog.showSaveDialog(mainWindow, {
+      title: 'Save Output As',
+      defaultPath: payload.defaultName,
+      filters: payload.filters ?? [
+        { name: 'Log Files', extensions: ['log'] },
+        { name: 'Text Files', extensions: ['txt'] },
+        { name: 'All Files', extensions: ['*'] },
+      ],
+    }),
+  )
+  if (result.canceled || !result.filePath) {
+    return { canceled: true }
+  }
+  try {
+    await fsp.writeFile(result.filePath, payload.content, 'utf8')
+    return { canceled: false, filePath: result.filePath }
+  } catch (e) {
+    return { canceled: false, filePath: result.filePath, error: (e as Error).message }
+  }
 }
 
 export async function handleObjectSaveDialog(

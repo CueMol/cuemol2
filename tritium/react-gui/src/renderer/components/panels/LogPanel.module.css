@@ -1,0 +1,65 @@
+.bottomContainer {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--bg-surface);
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+/* Mirrors .render-panel-bar so the bottom-panel tabs share a toolbar
+ * vocabulary: same header background, border, padding and gap. */
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px;
+    background: var(--bg-panel-header);
+    border-bottom: 1px solid var(--border-subtle);
+    flex-shrink: 0;
+}
+
+.filterInput {
+    width: 240px;
+    flex: 0 0 auto;
+}
+
+/* Match .render-action-btn sizing so action buttons line up vertically
+ * with the Render tab. */
+.toolbar :global(.bp5-button) {
+    min-height: 22px;
+    padding: 0 10px;
+    font-size: var(--fs-base);
+    font-weight: var(--fw-medium);
+}
+
+.toolbar :global(.bp5-input-group),
+.toolbar :global(.bp5-input-group .bp5-input) {
+    min-height: 22px;
+    height: 22px;
+    line-height: 22px;
+}
+
+.toolbar :global(.bp5-input) {
+    font-size: var(--fs-base);
+}
+
+.toolbar :global(.bp5-input-group .bp5-icon) {
+    margin-top: 3px;
+    margin-bottom: 3px;
+}
+
+.logContainer {
+    background: var(--bg-input);
+    color: var(--text-primary);
+    padding: 4px 8px;
+    margin: 0;
+    flex: 1 1 auto;
+    width: 100%;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    font-family: var(--font-mono);
+    font-size: 10pt;
+    line-height: normal;
+    box-sizing: border-box;
+}

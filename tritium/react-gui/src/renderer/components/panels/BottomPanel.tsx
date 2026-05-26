@@ -2,17 +2,21 @@
  * Bottom panel with VSCode-style tabbed switching between Output,
  * Sequence alignment, Animation timeline and Render views.
  *
- * The Output tab uses `LogView` (pre-element based) backed by
- * `useLogEvent` so it receives cuemol3 core log events via IPC.
+ * The Output tab renders `LogPanel` (pre-element based). The log
+ * subscription (`useLogEvent`) and accumulated buffer live here, not
+ * inside `LogPanel`, so that switching to another tab does not unmount
+ * the buffer or drop incoming messages from the cuemol3 core.
  */
 
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { Icon } from "@blueprintjs/core";
 import type { IconName } from "@blueprintjs/icons";
-import { LogView } from "../../LogView";
+import { LogPanel } from "./LogPanel";
 import { SequencePanel } from "./SequencePanel";
 import { AnimationPanel } from "./AnimationPanel";
 import { RenderPanel } from "./RenderPanel";
+import { useLogEvent } from "../../hooks/useLogEvent";
+import { IPC } from "../../../shared/ipcChannels";
 import type { RenderJob } from "../../hooks/useRenderJob";
 import type { AnimationData } from "../../types";
 import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
@@ -84,10 +88,42 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<BottomTabType>("output");
 
+  // Keep the log buffer and Output-tab UI state in the always-mounted
+  // BottomPanel so they survive tab switches; LogPanel itself is unmounted
+  // when another tab is active.
+  const [logContents, setLogContents] = useState("");
+  const [logFilter, setLogFilter] = useState("");
+  const [logAutoScroll, setLogAutoScroll] = useState(true);
+  useLogEvent((msg) => setLogContents((c) => c + msg));
+
+  const handleClearLog = useCallback(() => setLogContents(""), []);
+  const handleToggleAutoScroll = useCallback(() => setLogAutoScroll((v) => !v), []);
+  const handleSaveLogAs = useCallback(async () => {
+    // Save the unfiltered buffer so downstream readers get the full
+    // debugging trail regardless of the current Filter input.
+    const res = await window.electronAPI.invoke(IPC.SAVE_TEXT_AS, {
+      defaultName: "output.log",
+      content: logContents,
+    });
+    if (res.error) {
+      console.error("Save Output As failed:", res.error);
+    }
+  }, [logContents]);
+
   const renderContent = () => {
     switch (activeTab) {
       case "output":
-        return <LogView />;
+        return (
+          <LogPanel
+            contents={logContents}
+            filter={logFilter}
+            autoScroll={logAutoScroll}
+            onFilterChange={setLogFilter}
+            onAutoScrollToggle={handleToggleAutoScroll}
+            onClear={handleClearLog}
+            onSaveAs={handleSaveLogAs}
+          />
+        );
       case "sequence":
         return (
           <SequencePanel
