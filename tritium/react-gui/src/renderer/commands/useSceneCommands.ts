@@ -70,7 +70,14 @@ export function useSceneCommands({
             const info = getActiveSceneInfo()
             if (!info) return
             ;(async () => {
-                const { types, objType } = await cm.getCompatibleRendererNames(data.path)
+                // Pass `data.contentFirst` here too -- the renderer-list
+                // lookup and the actual load must resolve to the same
+                // reader, otherwise (e.g.) the dialog offers density-map
+                // renderers for a coordinate CIF and the subsequent load
+                // crashes when the chosen renderer is applied to a MolCoord.
+                const { types, objType } = await cm.getCompatibleRendererNames(
+                    data.path, undefined, data.contentFirst,
+                )
                 const options = await showFileOpenOptionDialog({
                     filePath: data.path,
                     sceneId: info.scene_uid,
@@ -78,7 +85,7 @@ export function useSceneCommands({
                     objType,
                 })
                 if (options === null) return
-                await cm.loadObject(data.path, info.scene_uid, options)
+                await cm.loadObject(data.path, info.scene_uid, options, data.contentFirst)
                 addRecent(data.path, 'obj')
             })().catch((e: unknown) => console.error('OpenObjByPath failed:', e))
         },

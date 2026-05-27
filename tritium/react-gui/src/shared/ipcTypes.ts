@@ -83,6 +83,17 @@ export interface RecentFileEntry {
 export interface FileOpenedData {
   name: string
   path: string
+  /**
+   * Whether the worker should pick the object reader purely from file
+   * content. Inferred in the main process by inspecting the file
+   * dialog's filter list against the selected path:
+   *   - exactly one specific filter matches the extension -> false
+   *     (the user picked that filter; extension is authoritative)
+   *   - multiple specific filters match, only catch-all filters
+   *     match, or no match at all -> true (let the C++ side sniff).
+   * Always false for scene files (.qsc).
+   */
+  contentFirst: boolean
 }
 
 export interface FileErrorData {

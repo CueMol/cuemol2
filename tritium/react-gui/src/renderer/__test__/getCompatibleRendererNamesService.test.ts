@@ -42,12 +42,13 @@ function makeEnv(opts: {
         }),
     }))
     const getInfoJSON2 = vi.fn(() => JSON.stringify(opts.info))
+    const searchReaderByContent = vi.fn(() => (opts as { sniffResult?: string }).sniffResult ?? '')
 
     const ctx = {
-        strMgr: { createHandler, getInfoJSON2 },
+        strMgr: { createHandler, getInfoJSON2, searchReaderByContent },
     } as unknown as WorkerContext
 
-    return { ctx, createHandler, getInfoJSON2 }
+    return { ctx, createHandler, getInfoJSON2, searchReaderByContent }
 }
 
 describe('getCompatibleRendererNames — explicit readerName branch', () => {
@@ -145,8 +146,8 @@ describe('getCompatibleRendererNames — .cif ambiguity (regression)', () => {
     beforeEach(() => { vi.clearAllMocks() })
 
     // Set up the JSON so mmcifmap (structure factor → density map) appears
-    // BEFORE mmcif (coord). This is the configuration that causes the bug
-    // observed in production.
+    // BEFORE mmcif (coord). Under the old extension-only logic this
+    // produced the contour-renderer-for-coordinate-CIF bug.
     const ambiguousInfo = [
         { name: 'mmcifmap', fext: '*.cif', category: 0 },
         { name: 'mmcif',    fext: '*.cif', category: 0 },
@@ -158,19 +159,63 @@ describe('getCompatibleRendererNames — .cif ambiguity (regression)', () => {
 
     const classNames = { mmcif: 'MolCoord', mmcifmap: 'DensityMap' }
 
-    it('without readerName: extension lookup picks the first JSON hit (mmcifmap)', () => {
-        const env = makeEnv({ readerRendTypes: rendTypes, readerClassNames: classNames, info: ambiguousInfo })
+    // Ext-first mode (default): the two candidates share the extension,
+    // so the service must consult the C++ sniffer (searchReaderByContent)
+    // with the candidate list, and use the verdict instead of the first
+    // JSON hit.
+    it('ext-first mode: sniff verdict overrides JSON-order first hit', () => {
+        const env = makeEnv({
+            readerRendTypes: rendTypes,
+            readerClassNames: classNames,
+            info: ambiguousInfo,
+            sniffResult: 'mmcif',  // canHandleContent disambiguation hit
+        } as never)
+        const result = getCompatibleRendererNames(env.ctx, { filePath: '1mbn.cif' })
+        expect(env.searchReaderByContent).toHaveBeenCalledWith('1mbn.cif', 'mmcifmap,mmcif', 0, false)
+        expect(env.createHandler).toHaveBeenCalledWith('mmcif', 0)
+        expect(result).toEqual({ types: ['simple', 'cartoon', 'tube', 'ribbon'], objType: 'MolCoord' })
+    })
+
+    // When the sniffer returns empty (e.g. header too short, both readers
+    // returned UNKNOWN), fall back to the first extension-matched candidate
+    // so the load still has a chance to proceed.
+    it('ext-first mode: sniff empty -> falls back to first candidate', () => {
+        const env = makeEnv({
+            readerRendTypes: rendTypes,
+            readerClassNames: classNames,
+            info: ambiguousInfo,
+            sniffResult: '',
+        } as never)
         const result = getCompatibleRendererNames(env.ctx, { filePath: '1mbn.cif' })
         expect(env.createHandler).toHaveBeenCalledWith('mmcifmap', 0)
         expect(result).toEqual({ types: ['contour', 'isosurf'], objType: 'DensityMap' })
     })
 
-    it('with readerName="mmcif": explicit override defeats the ambiguity', () => {
+    // Content-first mode: the extension is ignored entirely; the sniffer
+    // is called with an empty CSV ("all registered readers in category").
+    it('content-first mode: searchReaderByContent("") drives the choice', () => {
+        const env = makeEnv({
+            readerRendTypes: rendTypes,
+            readerClassNames: classNames,
+            info: ambiguousInfo,
+            sniffResult: 'mmcif',
+        } as never)
+        const result = getCompatibleRendererNames(env.ctx, {
+            filePath: '1mbn.cif',
+            contentFirst: true,
+        })
+        expect(env.searchReaderByContent).toHaveBeenCalledWith('1mbn.cif', '', 0, false)
+        expect(env.createHandler).toHaveBeenCalledWith('mmcif', 0)
+        expect(result).toEqual({ types: ['simple', 'cartoon', 'tube', 'ribbon'], objType: 'MolCoord' })
+    })
+
+    it('with readerName="mmcif": explicit override skips the lookup entirely', () => {
         const env = makeEnv({ readerRendTypes: rendTypes, readerClassNames: classNames, info: ambiguousInfo })
         const result = getCompatibleRendererNames(env.ctx, {
             filePath: '1mbn.cif',
             readerName: 'mmcif',
         })
+        expect(env.searchReaderByContent).not.toHaveBeenCalled()
         expect(env.createHandler).toHaveBeenCalledWith('mmcif', 0)
         expect(result).toEqual({ types: ['simple', 'cartoon', 'tube', 'ribbon'], objType: 'MolCoord' })
     })

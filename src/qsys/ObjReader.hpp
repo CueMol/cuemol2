@@ -66,15 +66,27 @@ namespace qsys {
 
     virtual int getCatID() const { return IOH_CAT_OBJREADER; }
 
-    /*
+    //////////////////////////////////////////////
+    // Content sniffing (tri-state)
+
+    /// Tri-state verdict returned from canHandleContent().
+    /// YES: this reader recognizes the content as its own format.
+    /// NO:  this reader recognizes the content as another format.
+    /// UNKNOWN: no opinion (default for readers that don't implement sniffing).
     enum {
-      SF_NOIMPL, // operation not implemented
-      SF_UNKNOWN, // unknown file type
-      SF_SUPPORTED // OK
+      CONTENT_NO = 0,
+      CONTENT_YES = 1,
+      CONTENT_UNKNOWN = 2
     };
 
-    virtual int isSupportedFile(const char *fname, qlib::InStream *pins);
-    */
+    /// Inspect a peeked head buffer and decide whether this reader can
+    /// handle the file content. The default implementation returns
+    /// CONTENT_UNKNOWN; subclasses that can fingerprint their format
+    /// should override.
+    virtual int canHandleContent(qlib::InStream &ins) const
+    {
+      return CONTENT_UNKNOWN;
+    }
 
     virtual int getCompressMode() const;
     virtual void setCompressMode(int);

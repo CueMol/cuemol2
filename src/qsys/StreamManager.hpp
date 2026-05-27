@@ -119,11 +119,61 @@ public:
     /// Returns comma separated list of compatible ObjWriter names for the object
     LString findCompatibleWriterNamesForObj(qlib::uid_t objid);
 
+    /// Sniff the file at `path` and return every registered reader whose
+    /// canHandleContent() returns CONTENT_YES, joined with ',' (in
+    /// m_rdrinfotab iteration order, which is sorted by ABI name).
+    /// `nicknames_csv` filters the candidate set; pass an empty string to
+    /// search every reader registered under `nCatID`. Returns an empty
+    /// string when the head cannot be peeked or no reader claims the
+    /// content.
+    ///
+    /// When `supportCompression` is true, the head is first inspected for
+    /// gzip / xz magic bytes; matching streams are decompressed
+    /// transparently before being handed to canHandleContent(). When
+    /// false, paths ending in .gz / .xz short-circuit to an empty buffer
+    /// (and therefore an empty result).
+    ///
+    /// Reader nicknames are alphanumeric, so no escaping is needed.
+    LString searchReadersByContent(const LString &path,
+                                   const LString &nicknames_csv,
+                                   int nCatID,
+                                   bool supportCompression = false) const;
+
+    /// Same as searchReadersByContent() but returns only the first YES
+    /// match (or empty string when none matches).
+    LString searchReaderByContent(const LString &path,
+                                  const LString &nicknames_csv,
+                                  int nCatID,
+                                  bool supportCompression = false) const;
+
 private:
     LString getIOHInfoJSONImpl(int aCatID) const;
 
     /// Register an object reader/writer by C++-ABI name (implementation)
     void regIOHImpl(const LString &abiname);
+
+    /// Read up to `nBytes` from the head of `path` and return it as a
+    /// LString.
+    ///
+    /// When `supportCompression` is true, gzip / xz magic bytes are
+    /// detected and the head is transparently decompressed (mirroring
+    /// the filter-chain logic in ObjReader::read2()).
+    ///
+    /// When `supportCompression` is false, paths whose name ends in .gz
+    /// or .xz short-circuit and return an empty string (raw compressed
+    /// bytes would never match any reader's canHandleContent()).
+    LString peekHead(const LString &path, int nBytes,
+                     bool supportCompression = false) const;
+
+    /// Shared core of searchReader{,s}ByContent. When `bFirstOnly` is
+    /// true, returns at the first YES verdict without querying further
+    /// readers; otherwise collects every YES match and joins them with
+    /// ','.
+    LString searchByContentImpl(const LString &path,
+                                const LString &nicknames_csv,
+                                int nCatID,
+                                bool supportCompression,
+                                bool bFirstOnly) const;
 
     //////////
 

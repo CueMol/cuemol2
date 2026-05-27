@@ -99,6 +99,12 @@ class IMPORTERS_API MmcifMolReader : public qsys::ObjReader, CifParserClient
     /// create default object for this reader
     virtual qsys::ObjectPtr createDefaultObj() const;
 
+    /// Content sniffer: YES when the header carries an `_atom_site.`
+    /// CIF category (this reader's coordinate target), NO when it
+    /// carries `_refln.` instead (an MmcifMapReader file), UNKNOWN
+    /// otherwise. Scans up to ~200 lines or the end of the peek buffer.
+    virtual int canHandleContent(qlib::InStream &ins) const;
+
     //////////////////////////////////////////////
 
     virtual void readDataItem(CifParser &parser);

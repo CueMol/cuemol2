@@ -28,6 +28,19 @@ runtime_class StreamManager
 
   object<InOutHandler$> createHandler(string name, integer category);
 
+  // Content sniffing: return the first reader nickname whose
+  // canHandleContent() returns YES. `nicknames` is a comma-separated
+  // filter list (empty string = every registered reader of `category`).
+  // When `supportCompression` is true, gzip / xz magic bytes are
+  // detected and the head is decompressed transparently. Returns ""
+  // when no reader matches.
+  string searchReaderByContent(string path, string nicknames, integer category, boolean supportCompression);
+
+  // Content sniffing (multi-match): return all reader nicknames whose
+  // canHandleContent() returns YES as a comma-separated string. Reader
+  // nicknames are alphanumeric so no escaping is needed.
+  string searchReadersByContent(string path, string nicknames, integer category, boolean supportCompression);
+
   // Asynchronous data loading
   integer loadObjectAsync(object<ObjReader$>);
   void supplyDataAsync(integer, object<ByteArray$>, integer);

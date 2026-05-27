@@ -12,8 +12,13 @@
 #include <qlib/ClassRegistry.hpp>
 
 #include <qlib/FileStream.hpp>
+#include <qlib/GzipStream.hpp>
 #include <qlib/LByteArray.hpp>
 #include <qlib/LVarArray.hpp>
+
+#ifdef HAVE_LZMA_H
+#include <qlib/XzStream.hpp>
+#endif
 
 #include <qlib/PipeStream.hpp>
 #include "IOThread.hpp"
@@ -297,6 +302,215 @@ LString StreamManager::getInitRendererNames(const LString &rdrnm) const
   return rval;
 }
 */
+
+namespace {
+// Default sniff buffer size. Real-world PDB-derived mmCIF files carry
+// long metadata headers (entity, entity_src_gen, struct_ref, ...): even
+// the 46-residue 1CRN places `_atom_site.` at byte ~20000. 64 KB covers
+// virtually all PDB cif headers while staying trivial in I/O cost.
+static const int SNIFF_PEEK_BYTES = 65536;
+
+// Drain up to `nBytes` from `src` into a std::string. Partial reads
+// (EOF, truncation, read errors) are tolerated -- we return whatever
+// bytes were successfully collected.
+std::string drainHead(qlib::InStream &src, int nBytes)
+{
+  std::string buf;
+  buf.reserve(nBytes);
+  try {
+    for (int i = 0; i < nBytes; ++i) {
+      int c = src.read();
+      if (c < 0) break;
+      buf.push_back(static_cast<char>(c));
+    }
+  }
+  catch (...) {
+    // Tolerate; return whatever we've accumulated so far.
+  }
+  return buf;
+}
+
+enum HeadEncoding { ENC_RAW, ENC_GZIP, ENC_XZ };
+
+// Probe the first few bytes of `path` and return what compression (if
+// any) the file appears to use. The 6-byte sample is large enough to
+// capture both gzip (2-byte magic) and xz (6-byte magic).
+HeadEncoding detectEncoding(const LString &path)
+{
+  qlib::FileInStream probe;
+  try {
+    probe.open(path);
+  }
+  catch (...) {
+    return ENC_RAW;  // Caller's open() will fail too and bail.
+  }
+
+  unsigned char magic[6] = {0};
+  int nRead = 0;
+  try {
+    nRead = probe.read(reinterpret_cast<char *>(magic), 0, 6);
+  }
+  catch (...) {
+    nRead = 0;
+  }
+  try { probe.close(); } catch (...) {}
+
+  if (nRead >= 2 && magic[0] == 0x1f && magic[1] == 0x8b) {
+    return ENC_GZIP;
+  }
+  // xz magic: FD 37 7A 58 5A 00  ("\xfd7zXZ\0")
+  if (nRead >= 6 && magic[0] == 0xfd && magic[1] == '7' && magic[2] == 'z' &&
+      magic[3] == 'X' && magic[4] == 'Z' && magic[5] == 0) {
+    return ENC_XZ;
+  }
+  return ENC_RAW;
+}
+}  // namespace
+
+LString StreamManager::peekHead(const LString &path, int nBytes,
+                                bool supportCompression) const
+{
+  if (!supportCompression) {
+    // Caller has not opted into transparent decompression. The raw head
+    // bytes of a compressed file would never match any reader's
+    // canHandleContent(), so return an empty buffer (which the caller
+    // treats as "no sniff verdict, use ext fallback") instead of wasting
+    // the read.
+    LString lowered = path.toLowerCase();
+    if (lowered.endsWith(".gz") || lowered.endsWith(".xz")) {
+      return LString();
+    }
+  }
+
+  HeadEncoding enc = supportCompression ? detectEncoding(path) : ENC_RAW;
+
+  qlib::FileInStream file_ins;
+  try {
+    file_ins.open(path);
+  }
+  catch (...) {
+    return LString();
+  }
+
+  std::string buf;
+
+  // Mirror ObjReader::read2()'s filter-chain pattern: wrap the raw file
+  // stream in a Gzip/Xz decompressor when the magic bytes say so.
+  if (enc == ENC_GZIP) {
+    try {
+      qlib::GzipInStream gzin(file_ins);
+      buf = drainHead(gzin, nBytes);
+      try { gzin.close(); } catch (...) {}
+    }
+    catch (...) {
+      // Corrupt gzip header etc. -- treat as no buffer.
+    }
+  }
+#ifdef HAVE_LZMA_H
+  else if (enc == ENC_XZ) {
+    try {
+      qlib::XzInStream xzin(file_ins);
+      buf = drainHead(xzin, nBytes);
+      try { xzin.close(); } catch (...) {}
+    }
+    catch (...) {
+    }
+  }
+#endif
+  else {
+    buf = drainHead(file_ins, nBytes);
+  }
+
+  try { file_ins.close(); } catch (...) {}
+
+  return LString(buf.c_str(), static_cast<int>(buf.size()));
+}
+
+// Shared core of searchReader{,s}ByContent. When `bFirstOnly` is true,
+// returns at the first YES verdict (no further readers are queried);
+// otherwise collects every YES match and joins them with ','.
+LString StreamManager::searchByContentImpl(const LString &path,
+                                           const LString &nicknames_csv,
+                                           int nCatID,
+                                           bool supportCompression,
+                                           bool bFirstOnly) const
+{
+  // Parse CSV into a quick-lookup list. Empty CSV means "walk every
+  // registered reader of the given category". split_of() treats every
+  // char in its first arg as a separator and silently drops empty
+  // tokens, so a humanised CSV like " mmcif , mmcifmap " collapses to
+  // ["mmcif", "mmcifmap"] without an extra trim pass. Reader nicknames
+  // are alphanumeric, so the broader "comma OR whitespace" delimiter
+  // set is benign.
+  qlib::LStringList wanted;
+  if (!nicknames_csv.isEmpty()) {
+    nicknames_csv.split_of(", \t", wanted);
+  }
+  const bool filtered = !wanted.empty();
+
+  std::vector<const ReaderInfo *> candidates;
+  for (const auto &entry : m_rdrinfotab) {
+    if (entry.second.nCatID != nCatID) continue;
+    if (filtered) {
+      bool match = false;
+      for (const LString &nm : wanted) {
+        if (entry.second.nickname.equals(nm)) {
+          match = true;
+          break;
+        }
+      }
+      if (!match) continue;
+    }
+    candidates.push_back(&entry.second);
+  }
+
+  if (candidates.empty()) return LString();
+
+  LString headBuf = peekHead(path, SNIFF_PEEK_BYTES, supportCompression);
+  if (headBuf.isEmpty()) return LString();
+
+  qlib::LStringList hits;
+  for (const ReaderInfo *pInfo : candidates) {
+    qlib::LClass *pCls = pInfo->pClass;
+    MB_ASSERT(pCls != NULL);
+    ObjReader *pRdr = dynamic_cast<ObjReader *>(pCls->createObj());
+    if (pRdr == NULL) continue;
+
+    int verdict = ObjReader::CONTENT_UNKNOWN;
+    try {
+      qlib::StrInStream ins(headBuf);
+      verdict = pRdr->canHandleContent(ins);
+    }
+    catch (...) {
+      // Swallow per-reader sniff exceptions; treat as UNKNOWN.
+    }
+    delete pRdr;
+
+    if (verdict == ObjReader::CONTENT_YES) {
+      if (bFirstOnly) return pInfo->nickname;
+      hits.push_back(pInfo->nickname);
+    }
+  }
+
+  if (hits.empty()) return LString();
+  return LString::join(",", hits);
+}
+
+LString StreamManager::searchReadersByContent(
+    const LString &path, const LString &nicknames_csv, int nCatID,
+    bool supportCompression) const
+{
+  return searchByContentImpl(path, nicknames_csv, nCatID, supportCompression,
+                             /*bFirstOnly=*/false);
+}
+
+LString StreamManager::searchReaderByContent(
+    const LString &path, const LString &nicknames_csv, int nCatID,
+    bool supportCompression) const
+{
+  return searchByContentImpl(path, nicknames_csv, nCatID, supportCompression,
+                             /*bFirstOnly=*/true);
+}
 
 LString StreamManager::findCompatibleWriterNamesForObj(qlib::uid_t objid)
 {

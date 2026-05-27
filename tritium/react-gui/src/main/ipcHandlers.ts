@@ -78,6 +78,35 @@ function getUserStylePath(): string {
 // File open
 // ─────────────────────────────────────────────
 
+/**
+ * Electron's `dialog.showOpenDialog` does not surface which filter the
+ * user selected, so we infer the intent from the chosen extension:
+ *
+ *   - exactly one *specific* filter matches the extension -> the user
+ *     almost certainly picked that filter -> ext-driven mode (false)
+ *   - multiple specific filters match (ambiguous: e.g. .cif is both
+ *     mmcif and mmcifmap), or only catch-all filters match (the
+ *     "All Supported" / "All Files" rows in getOpenFilters), or no
+ *     filter matches at all -> defer to content sniffing (true)
+ *
+ * The catch-all rows are identified by `extensions.includes('*')`
+ * (the "All Files" row) or by `extensions.length > 1` (the
+ * "All Supported" aggregate). Keep in sync with getOpenFilters.service.ts.
+ */
+function inferContentFirst(filePath: string, filters: { name: string; extensions: string[] }[]): boolean {
+  const ext = (filePath.split('.').pop() ?? '').toLowerCase()
+  let matched = 0
+  for (const f of filters) {
+    if (f.extensions.includes('*')) continue
+    if (f.extensions.length > 1) continue
+    if (f.extensions.some((e) => e.toLowerCase() === ext)) {
+      matched++
+      if (matched > 1) break
+    }
+  }
+  return matched !== 1
+}
+
 export async function handleOpenFile(mainWindow: BrowserWindow, options: FileDialogOptions): Promise<void> {
   const title = options.dialogType === 'open-scene' ? 'Open Scene' : 'Open File'
   const result = await withMenuBlocked('native', () =>
@@ -95,9 +124,15 @@ export async function handleOpenFile(mainWindow: BrowserWindow, options: FileDia
         const channel = options.dialogType === 'open-scene'
           ? IPC.SCENE_FILE_OPENED
           : IPC.OBJ_FILE_OPENED
+        // Scene files (.qsc) have a single registered reader, so the
+        // content-sniff path is irrelevant; force false.
+        const contentFirst = options.dialogType === 'open-scene'
+          ? false
+          : inferContentFirst(filePath, options.filters)
         mainWindow.webContents.send(channel, {
           name: path.basename(filePath),
           path: filePath,
+          contentFirst,
         })
       } catch (err) {
         mainWindow.webContents.send(IPC.FILE_ERROR, {

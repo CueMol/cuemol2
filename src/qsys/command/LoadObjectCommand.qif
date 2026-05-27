@@ -36,6 +36,20 @@ runtime_class LoadObjectCommand extends Command
     property string file_format => m_fileFmt;
     default file_format = "";
 
+    /// When true, the reader is picked purely from content sniffing
+    /// (file extension is ignored). When false, the extension narrows
+    /// the candidate set first and sniff disambiguates only when
+    /// multiple readers share that extension.
+    property boolean content_first => m_bContentFirst;
+    default content_first = false;
+
+    /// Setter for the target scene that bypasses the property setter
+    /// path. The auto-generated setter for `target_scene` routes through
+    /// setPropHelper -> setupParentData which clobbers the scene's
+    /// parent linkage (m_thisname / m_rootuid) and breaks nested undo
+    /// records. Non-UXP callers should prefer this method.
+    void setTargetScene(object<Scene$> pScene);
+
     //////////
     // properties (output)
 

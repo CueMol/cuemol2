@@ -13,15 +13,26 @@ namespace fs = boost::filesystem;
 namespace qsys {
 
 // TO DO: use common impl with LoadSceneCommand
-LString LoadObjectCommand::guessFileFormat(int nCatID) const
+LString LoadObjectCommand::guessFileFormat(int nCatID, bool bContentFirst) const
 {
+    auto strMgr = qsys::StreamManager::getInstance();
+
+    if (bContentFirst) {
+        // Content-first mode: ignore the extension entirely. Ask every
+        // registered reader of nCatID whether the head of the file
+        // matches its format and return the first YES.
+        return strMgr->searchReaderByContent(m_filePath, LString(), nCatID,
+                                             /*supportCompression=*/false);
+    }
+
+    // Ext-first mode: collect every reader whose registered fext matches
+    // the file's extension.
     fs::path file_path = m_filePath.c_str();
     auto extension = LString(file_path.extension().string());
 
-    auto strMgr = qsys::StreamManager::getInstance();
+    qlib::LStringList extCandidates;
     const auto &infos = strMgr->getStreamHandlerInfo();
     for (const auto &i : infos) {
-        // LOG_DPRINTLN("%s: %s", nm.c_str(), shi.nickname.c_str());
         if (i.second.nCatID != nCatID) continue;
         auto &&fext = i.second.fext;
         qlib::LStringList exts;
@@ -30,17 +41,30 @@ LString LoadObjectCommand::guessFileFormat(int nCatID) const
             continue;
         }
         for (const auto &e : exts) {
-            // LOG_DPRINTLN("%s: %s", i.first.c_str(), e.c_str());
             if (e.endsWith(extension)) {
-                LOG_DPRINTLN("exten mached: %s==%s (%s)", extension.c_str(), e.c_str(),
-                             i.first.c_str());
-                return i.second.nickname;
+                extCandidates.push_back(i.second.nickname);
+                break;
             }
         }
     }
 
-    // not found
-    return LString();
+    if (extCandidates.empty()) return LString();
+    if (extCandidates.size() == 1) {
+        // Unique extension match: legacy behaviour, no sniff needed.
+        return extCandidates.front();
+    }
+
+    // Several readers share the extension -- disambiguate by content
+    // among just those candidates.
+    LString hit = strMgr->searchReaderByContent(
+        m_filePath, LString::join(",", extCandidates), nCatID,
+        /*supportCompression=*/false);
+    if (!hit.isEmpty()) return hit;
+
+    // Sniff yielded nothing (file too short, no candidate implements
+    // canHandleContent, etc). Fall through to the first ext-matched
+    // candidate so the load at least attempts to proceed.
+    return extCandidates.front();
 }
 
 /// Execute the command
@@ -49,7 +73,7 @@ void LoadObjectCommand::run()
     MB_ASSERT(!m_pTargScene.isnull());
 
     if (m_fileFmt.isEmpty()) {
-        m_fileFmt = guessFileFormat(nCatID);
+        m_fileFmt = guessFileFormat(nCatID, m_bContentFirst);
         if (m_fileFmt.isEmpty()) {
             // cannot determine file format from the file name
             MB_THROW(qlib::RuntimeException, "cannot guess file type");

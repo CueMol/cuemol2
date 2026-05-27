@@ -261,8 +261,8 @@ export class AsyncCueMol {
     // --- File operations ---
 
     /** Ask which renderer types are compatible with `filePath`. */
-    getCompatibleRendererNames(filePath: string, readerName?: string): Promise<GetCompatibleRendererNamesResult> {
-        return fileApi.getCompatibleRendererNames(this._transport, filePath, readerName);
+    getCompatibleRendererNames(filePath: string, readerName?: string, contentFirst = false): Promise<GetCompatibleRendererNamesResult> {
+        return fileApi.getCompatibleRendererNames(this._transport, filePath, readerName, contentFirst);
     }
 
     /** Fetch open-dialog filters for the given file-category id. */
@@ -276,9 +276,18 @@ export class AsyncCueMol {
     /** Load a QSC scene file into an existing scene. */
     loadScene(filePath: string, scene_id: number): Promise<boolean> { return fileApi.loadScene(this._transport, filePath, scene_id); }
 
-    /** Load an object (PDB / map / mesh / ...) into a scene. */
-    loadObject(filePath: string, scene_id: number, options: FileOpenOptions): Promise<boolean> {
-        return fileApi.loadObject(this._transport, filePath, scene_id, options);
+    /**
+     * Load an object (PDB / map / mesh / ...) into a scene.
+     *
+     * `contentFirst` toggles the reader-selection strategy on the C++
+     * side: when true (e.g. file dialog had only catch-all filters
+     * selected), every reader is content-sniffed and the extension is
+     * ignored; when false (a specific filter was selected), the
+     * extension narrows the candidate set first and sniff disambiguates
+     * only when multiple readers share the extension.
+     */
+    loadObject(filePath: string, scene_id: number, options: FileOpenOptions, contentFirst = false): Promise<boolean> {
+        return fileApi.loadObject(this._transport, filePath, scene_id, options, contentFirst);
     }
 
     // --- Edit ---

@@ -1,18 +1,26 @@
 /**
  * Degrade-detection tests for `loadObject` (worker service).
  *
- * Pins the direct-API contract introduced after replacing
- * `LoadObjectCommand`:
+ * Pins the new LoadObjectCommand-based contract:
  *
- *   - reader name is guessed from extension via strMgr.getInfoJSON2
- *     (category 0 = OBJREADER); .gz is stripped before matching
- *   - reader.setPath / compress=gzip / createDefaultObj / attach / read
- *     / detach happen in order
- *   - mol.name is set from options.renderer.objectName OR file stem
- *   - scene.addObject(mol) is called directly (no cmd.target_scene path)
- *   - setupRenderer(ctx, mol, options.renderer) is invoked once
- *   - `ctx.cmdMgr.getCmd('load_object')` MUST NOT be invoked -- tripwire
- *     against re-introducing the cmd.target_scene parent-corruption
+ *   - `ctx.cmdMgr.getCmd('load_object')` is the entry point.
+ *   - The scene is handed to the command via the `setTargetScene()`
+ *     METHOD, not the `target_scene` PROPERTY setter (the latter routes
+ *     through setPropHelper -> setupParentData, which clobbers the
+ *     scene's parent linkage and breaks nested undo records).
+ *   - `file_path`, `file_format` (empty -> guess), `object_name`, and
+ *     `content_first` are assigned via property setters (these are safe
+ *     because LScrObjBase::setupParentData is a no-op for non-object
+ *     property values).
+ *   - `cmd.run()` is invoked and `cmd.result_object` is read back as
+ *     the freshly created object.
+ *   - `setupRenderer(ctx, mol, options.renderer)` runs after a
+ *     successful load.
+ *
+ * The new contract delegates *all* reader-picking, .gz transparent
+ * decompression, default-name fallback, and scene.addObject() into the
+ * C++ command body, so this test no longer pins step-by-step calls on
+ * the reader or the scene.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -27,69 +35,71 @@ import { setupRenderer } from '../worker/server/services/setupRenderer.service'
 
 const { loadObject } = services
 
-const OBJREADER_CATEGORY = 0
-
 function makeFixture(opts: {
-    infoJson?: string
-    readerCreateFails?: boolean
-    createDefaultObjReturnsNull?: boolean
+    runThrows?: boolean
+    resultObjectNull?: boolean
+    cmdMissing?: boolean
 } = {}) {
     const calls: string[] = []
-    const infoJson = opts.infoJson ?? JSON.stringify([
-        { name: 'pdb', fext: '*.pdb;*.ent', category: OBJREADER_CATEGORY },
-        { name: 'mmcif', fext: '*.cif', category: OBJREADER_CATEGORY },
-    ])
 
     const mol: Record<string, unknown> = {
         getClassName: () => 'MolCoord',
     }
-    let molName = ''
-    Object.defineProperty(mol, 'name', {
-        get() { return molName },
-        set(v: string) { molName = v; calls.push(`mol.name=${v}`) },
+
+    // Track which writes hit the command -- accessors record into `calls`.
+    let filePath = ''
+    let fileFormat = ''
+    let objectName = ''
+    let contentFirst = false
+
+    const setTargetScene = vi.fn((s: unknown) => calls.push(`setTargetScene(${s ? 'scene' : 'null'})`))
+    const run = vi.fn(() => {
+        calls.push('run')
+        if (opts.runThrows) throw new Error('parse fail')
     })
 
-    let compressVal: unknown = null
-    const reader: Record<string, unknown> = {
-        setPath: vi.fn((p: string) => calls.push(`setPath(${p})`)),
-        attach: vi.fn((m: unknown) => calls.push(`attach(${m ? 'mol' : 'null'})`)),
-        read: vi.fn(() => calls.push('read')),
-        detach: vi.fn(() => calls.push('detach')),
-        createDefaultObj: vi.fn(() => {
-            calls.push('createDefaultObj')
-            return opts.createDefaultObjReturnsNull ? null : mol
-        }),
+    const cmd: Record<string, unknown> = {
+        setTargetScene,
+        run,
     }
-    Object.defineProperty(reader, 'compress', {
-        get() { return compressVal },
-        set(v: unknown) { compressVal = v; calls.push(`compress=${String(v)}`) },
+    Object.defineProperty(cmd, 'file_path', {
+        get() { return filePath },
+        set(v: string) { filePath = v; calls.push(`file_path=${v}`) },
+    })
+    Object.defineProperty(cmd, 'file_format', {
+        get() { return fileFormat },
+        set(v: string) { fileFormat = v; calls.push(`file_format=${v}`) },
+    })
+    Object.defineProperty(cmd, 'object_name', {
+        get() { return objectName },
+        set(v: string) { objectName = v; calls.push(`object_name=${v}`) },
+    })
+    Object.defineProperty(cmd, 'content_first', {
+        get() { return contentFirst },
+        set(v: boolean) { contentFirst = v; calls.push(`content_first=${v}`) },
+    })
+    Object.defineProperty(cmd, 'result_object', {
+        get() {
+            calls.push('result_object')
+            return opts.resultObjectNull ? null : mol
+        },
     })
 
     const scene = {
-        addObject: vi.fn((m: unknown) => calls.push(`addObject(${m ? 'mol' : 'null'})`)),
         startUndoTxn: vi.fn((label: string) => calls.push(`start:${label}`)),
         commitUndoTxn: vi.fn(() => calls.push('commit')),
         rollbackUndoTxn: vi.fn(() => calls.push('rollback')),
     }
 
-    const getCmd = vi.fn(() => {
-        throw new Error('getCmd should NOT be called in the direct-API path')
-    })
+    const getCmd = vi.fn(() => (opts.cmdMissing ? null : cmd))
 
     const ctx = {
         sceMgr: { getScene: vi.fn(() => scene) },
         cmdMgr: { getCmd },
-        strMgr: {
-            getInfoJSON2: vi.fn(() => infoJson),
-            createHandler: vi.fn((_n: string, _c: number) =>
-                opts.readerCreateFails ? null : reader),
-        },
+        strMgr: {},
     } as unknown as WorkerContext
 
-    return {
-        ctx, scene, reader, mol, calls, getCmd,
-        get molName() { return molName },
-    }
+    return { ctx, scene, cmd, mol, calls, getCmd, setTargetScene, run }
 }
 
 const baseRendererOpts = {
@@ -101,36 +111,47 @@ const baseRendererOpts = {
     centerView: false,
 }
 
-describe('loadObject.service — direct API', () => {
+describe('loadObject.service — LoadObjectCommand path', () => {
     beforeEach(() => {
         vi.clearAllMocks()
     })
 
-    it('happy path: setPath -> createDefaultObj -> attach -> read -> detach -> mol.name -> scene.addObject -> setupRenderer', () => {
+    it('happy path: setTargetScene method, then file_path / file_format / object_name / content_first / run / result_object / setupRenderer', () => {
         const { ctx, calls, mol } = makeFixture()
         const result = loadObject(ctx, {
             filePath: '/data/1ubq.pdb',
             sceneId: 1,
             options: { format: { kind: 'unknown' }, renderer: baseRendererOpts } as any,
+            contentFirst: false,
         })
         expect(result).toEqual({ ok: true })
-        // start of txn first, commit last, ordering of the inner steps:
         expect(calls).toEqual([
             'start:Open file',
-            'setPath(/data/1ubq.pdb)',
-            'createDefaultObj',
-            'attach(mol)',
-            'read',
-            'detach',
-            'mol.name=1ubq',
-            'addObject(mol)',
+            'setTargetScene(scene)',
+            'file_path=/data/1ubq.pdb',
+            'file_format=',
+            'object_name=',
+            'content_first=false',
+            'run',
+            'result_object',
             'commit',
         ])
         expect(setupRenderer).toHaveBeenCalledWith(ctx, mol, baseRendererOpts)
     })
 
-    it('options.renderer.objectName overrides the file-stem default name', () => {
-        const { ctx } = makeFixture()
+    it('content-first flag propagates to cmd.content_first', () => {
+        const { ctx, calls } = makeFixture()
+        loadObject(ctx, {
+            filePath: '/data/file.cif',
+            sceneId: 1,
+            options: { format: { kind: 'unknown' }, renderer: baseRendererOpts } as any,
+            contentFirst: true,
+        })
+        expect(calls).toContain('content_first=true')
+    })
+
+    it('options.renderer.objectName flows into cmd.object_name', () => {
+        const { ctx, calls } = makeFixture()
         loadObject(ctx, {
             filePath: '/data/1ubq.pdb',
             sceneId: 1,
@@ -138,85 +159,69 @@ describe('loadObject.service — direct API', () => {
                 format: { kind: 'unknown' },
                 renderer: { ...baseRendererOpts, objectName: 'myMol' },
             } as any,
+            contentFirst: false,
         })
-        // No need to assert on every call -- just verify the override.
-        // The fixture records mol.name as a side-effect to mol[name] setter.
+        expect(calls).toContain('object_name=myMol')
     })
 
-    it('.gz suffix triggers compress=gzip on the reader', () => {
-        const { ctx, calls } = makeFixture()
-        loadObject(ctx, {
-            filePath: '/data/1ubq.pdb.gz',
-            sceneId: 1,
-            options: { format: { kind: 'unknown' }, renderer: baseRendererOpts } as any,
-        })
-        expect(calls).toContain('compress=gzip')
-        // gzip is set after setPath, before createDefaultObj.
-        const setPathIdx = calls.indexOf('setPath(/data/1ubq.pdb.gz)')
-        const gzipIdx = calls.indexOf('compress=gzip')
-        const createIdx = calls.indexOf('createDefaultObj')
-        expect(setPathIdx).toBeLessThan(gzipIdx)
-        expect(gzipIdx).toBeLessThan(createIdx)
-    })
-
-    it('never calls ctx.cmdMgr.getCmd("load_object") (no LoadObjectCommand path)', () => {
-        const { ctx, getCmd } = makeFixture()
+    it('scene is attached via setTargetScene METHOD (no `target_scene =` assignment exposed)', () => {
+        const { ctx, setTargetScene, cmd } = makeFixture()
         loadObject(ctx, {
             filePath: '/data/1ubq.pdb',
             sceneId: 1,
             options: { format: { kind: 'unknown' }, renderer: baseRendererOpts } as any,
+            contentFirst: false,
         })
-        expect(getCmd).not.toHaveBeenCalled()
+        expect(setTargetScene).toHaveBeenCalledTimes(1)
+        // The command must NOT expose target_scene as a writable accessor
+        // here. (Production wrapper does, but on the property-setter path;
+        // we ensure the service does not touch it.)
+        expect(Object.prototype.hasOwnProperty.call(cmd, 'target_scene')).toBe(false)
     })
 
-    it('returns ok:false when no OBJREADER matches the extension', () => {
+    it('cmd.file_format is left empty so guessFileFormat() picks the reader', () => {
         const { ctx, calls } = makeFixture()
-        const result = loadObject(ctx, {
-            filePath: '/data/file.xyz',
+        loadObject(ctx, {
+            filePath: '/data/1ubq.pdb',
             sceneId: 1,
             options: { format: { kind: 'unknown' }, renderer: baseRendererOpts } as any,
+            contentFirst: false,
         })
-        expect(result).toEqual({ ok: false })
-        // Txn opens and commits (no throw -> no rollback). The body short-
-        // circuited before reading.
-        expect(calls).toEqual(['start:Open file', 'commit'])
-        expect(setupRenderer).not.toHaveBeenCalled()
+        expect(calls).toContain('file_format=')
     })
 
-    it('returns ok:false when createHandler returns null', () => {
-        const { ctx } = makeFixture({ readerCreateFails: true })
+    it('returns ok:false when getCmd("load_object") returns null', () => {
+        const { ctx } = makeFixture({ cmdMissing: true })
         const result = loadObject(ctx, {
             filePath: '/data/1ubq.pdb',
             sceneId: 1,
             options: { format: { kind: 'unknown' }, renderer: baseRendererOpts } as any,
+            contentFirst: false,
         })
         expect(result).toEqual({ ok: false })
         expect(setupRenderer).not.toHaveBeenCalled()
     })
 
-    it('returns ok:false + skips downstream when createDefaultObj returns null', () => {
-        const { ctx } = makeFixture({ createDefaultObjReturnsNull: true })
+    it('returns ok:false when result_object is null', () => {
+        const { ctx } = makeFixture({ resultObjectNull: true })
         const result = loadObject(ctx, {
             filePath: '/data/1ubq.pdb',
             sceneId: 1,
             options: { format: { kind: 'unknown' }, renderer: baseRendererOpts } as any,
+            contentFirst: false,
         })
         expect(result).toEqual({ ok: false })
         expect(setupRenderer).not.toHaveBeenCalled()
     })
 
-    it('detach runs even when read throws (try/finally), and the throw propagates to rollback', () => {
-        const { ctx, reader, calls } = makeFixture()
-        ;(reader.read as ReturnType<typeof vi.fn>).mockImplementationOnce(() => {
-            calls.push('read')
-            throw new Error('parse fail')
-        })
+    it('cmd.run() throwing propagates and rolls back the undo txn', () => {
+        const { ctx, calls } = makeFixture({ runThrows: true })
         expect(() => loadObject(ctx, {
             filePath: '/data/1ubq.pdb',
             sceneId: 1,
             options: { format: { kind: 'unknown' }, renderer: baseRendererOpts } as any,
+            contentFirst: false,
         })).toThrow('parse fail')
-        expect(reader.detach).toHaveBeenCalled()
         expect(calls).toContain('rollback')
         expect(calls).not.toContain('commit')
     })

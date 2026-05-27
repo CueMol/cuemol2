@@ -73,6 +73,7 @@ add_executable(test_qsys
   qsys/test_scenemanager.cpp
   qsys/test_scene.cpp
   qsys/test_streammanager.cpp
+  qsys/test_stream_manager_search.cpp
   qsys/test_objreader.cpp
   qsys/test_objwriter.cpp
   qsys/test_sceneexporter.cpp
@@ -140,6 +141,8 @@ gtest_discover_tests(test_molvis PROPERTIES LABELS "test_molvis")
 add_executable(test_importers
   modules/importers/test_main.cpp
   modules/importers/test_sdfmolreader.cpp
+  modules/importers/test_mmcif_sniff.cpp
+  modules/importers/test_load_object_command_guess.cpp
 )
 target_include_directories(test_importers PRIVATE
   ${CMAKE_SOURCE_DIR}/src
