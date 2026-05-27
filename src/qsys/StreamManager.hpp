@@ -124,46 +124,41 @@ public:
     /// m_rdrinfotab iteration order, which is sorted by ABI name).
     /// `nicknames_csv` filters the candidate set; pass an empty string to
     /// search every reader registered under `nCatID`. Returns an empty
-    /// string when the head cannot be peeked or no reader claims the
+    /// string when the file cannot be opened or no reader claims the
     /// content.
     ///
-    /// When `supportCompression` is true, the head is first inspected for
-    /// gzip / xz magic bytes; matching streams are decompressed
-    /// transparently before being handed to canHandleContent(). When
-    /// false, paths ending in .gz / .xz short-circuit to an empty buffer
-    /// (and therefore an empty result).
+    /// When `supportCompression` is true, gzip / xz magic bytes are
+    /// detected and the underlying file stream is wrapped with a
+    /// matching decompression filter before being handed to
+    /// canHandleContent(). When false, paths ending in .gz / .xz short-
+    /// circuit to an empty result.
+    ///
+    /// `maxBytes` caps how many bytes each candidate's
+    /// canHandleContent() is allowed to consume. The default value
+    /// (0) means unlimited -- each reader reads until it returns a
+    /// verdict or hits EOF. Pass a positive value to bound pathological
+    /// scans against huge inputs.
     ///
     /// Reader nicknames are alphanumeric, so no escaping is needed.
     LString searchReadersByContent(const LString &path,
                                    const LString &nicknames_csv,
                                    int nCatID,
-                                   bool supportCompression = false) const;
+                                   bool supportCompression = false,
+                                   qlib::quint64 maxBytes = 0) const;
 
     /// Same as searchReadersByContent() but returns only the first YES
     /// match (or empty string when none matches).
     LString searchReaderByContent(const LString &path,
                                   const LString &nicknames_csv,
                                   int nCatID,
-                                  bool supportCompression = false) const;
+                                  bool supportCompression = false,
+                                  qlib::quint64 maxBytes = 0) const;
 
 private:
     LString getIOHInfoJSONImpl(int aCatID) const;
 
     /// Register an object reader/writer by C++-ABI name (implementation)
     void regIOHImpl(const LString &abiname);
-
-    /// Read up to `nBytes` from the head of `path` and return it as a
-    /// LString.
-    ///
-    /// When `supportCompression` is true, gzip / xz magic bytes are
-    /// detected and the head is transparently decompressed (mirroring
-    /// the filter-chain logic in ObjReader::read2()).
-    ///
-    /// When `supportCompression` is false, paths whose name ends in .gz
-    /// or .xz short-circuit and return an empty string (raw compressed
-    /// bytes would never match any reader's canHandleContent()).
-    LString peekHead(const LString &path, int nBytes,
-                     bool supportCompression = false) const;
 
     /// Shared core of searchReader{,s}ByContent. When `bFirstOnly` is
     /// true, returns at the first YES verdict without querying further
@@ -173,7 +168,8 @@ private:
                                 const LString &nicknames_csv,
                                 int nCatID,
                                 bool supportCompression,
-                                bool bFirstOnly) const;
+                                bool bFirstOnly,
+                                qlib::quint64 maxBytes) const;
 
     //////////
 

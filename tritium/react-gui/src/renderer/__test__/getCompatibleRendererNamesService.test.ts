@@ -171,7 +171,7 @@ describe('getCompatibleRendererNames — .cif ambiguity (regression)', () => {
             sniffResult: 'mmcif',  // canHandleContent disambiguation hit
         } as never)
         const result = getCompatibleRendererNames(env.ctx, { filePath: '1mbn.cif' })
-        expect(env.searchReaderByContent).toHaveBeenCalledWith('1mbn.cif', 'mmcifmap,mmcif', 0, false)
+        expect(env.searchReaderByContent).toHaveBeenCalledWith('1mbn.cif', 'mmcifmap,mmcif', 0, false, 0)
         expect(env.createHandler).toHaveBeenCalledWith('mmcif', 0)
         expect(result).toEqual({ types: ['simple', 'cartoon', 'tube', 'ribbon'], objType: 'MolCoord' })
     })
@@ -204,7 +204,7 @@ describe('getCompatibleRendererNames — .cif ambiguity (regression)', () => {
             filePath: '1mbn.cif',
             contentFirst: true,
         })
-        expect(env.searchReaderByContent).toHaveBeenCalledWith('1mbn.cif', '', 0, false)
+        expect(env.searchReaderByContent).toHaveBeenCalledWith('1mbn.cif', '', 0, false, 0)
         expect(env.createHandler).toHaveBeenCalledWith('mmcif', 0)
         expect(result).toEqual({ types: ['simple', 'cartoon', 'tube', 'ribbon'], objType: 'MolCoord' })
     })

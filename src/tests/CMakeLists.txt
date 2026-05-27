@@ -25,6 +25,7 @@ add_executable(test_qlib
   qlib/test_binstream.cpp
   qlib/test_eventmanager.cpp
   qlib/test_lprocmgr.cpp
+  qlib/test_limited_in_stream.cpp
 )
 target_include_directories(test_qlib PRIVATE
   ${CMAKE_SOURCE_DIR}/src

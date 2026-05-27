@@ -51,6 +51,7 @@ function makeFixture(opts: {
     let fileFormat = ''
     let objectName = ''
     let contentFirst = false
+    let maxSniffBytes = 0
 
     const setTargetScene = vi.fn((s: unknown) => calls.push(`setTargetScene(${s ? 'scene' : 'null'})`))
     const run = vi.fn(() => {
@@ -77,6 +78,10 @@ function makeFixture(opts: {
     Object.defineProperty(cmd, 'content_first', {
         get() { return contentFirst },
         set(v: boolean) { contentFirst = v; calls.push(`content_first=${v}`) },
+    })
+    Object.defineProperty(cmd, 'max_sniff_bytes', {
+        get() { return maxSniffBytes },
+        set(v: number) { maxSniffBytes = v; calls.push(`max_sniff_bytes=${v}`) },
     })
     Object.defineProperty(cmd, 'result_object', {
         get() {
@@ -148,6 +153,31 @@ describe('loadObject.service — LoadObjectCommand path', () => {
             contentFirst: true,
         })
         expect(calls).toContain('content_first=true')
+    })
+
+    it('maxSniffBytes > 0 propagates to cmd.max_sniff_bytes', () => {
+        const { ctx, calls } = makeFixture()
+        loadObject(ctx, {
+            filePath: '/data/file.cif',
+            sceneId: 1,
+            options: { format: { kind: 'unknown' }, renderer: baseRendererOpts } as any,
+            contentFirst: false,
+            maxSniffBytes: 4096,
+        })
+        expect(calls).toContain('max_sniff_bytes=4096')
+    })
+
+    // Skipping the setter when the cap is 0 / undefined leaves the C++
+    // default in place (unbounded) and avoids needless IPC.
+    it('maxSniffBytes 0 / undefined leaves cmd.max_sniff_bytes untouched', () => {
+        const { ctx, calls } = makeFixture()
+        loadObject(ctx, {
+            filePath: '/data/file.cif',
+            sceneId: 1,
+            options: { format: { kind: 'unknown' }, renderer: baseRendererOpts } as any,
+            contentFirst: false,
+        })
+        expect(calls.some((c) => c.startsWith('max_sniff_bytes='))).toBe(false)
     })
 
     it('options.renderer.objectName flows into cmd.object_name', () => {

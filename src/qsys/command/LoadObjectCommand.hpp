@@ -1,6 +1,7 @@
 #pragma once
 
 #include <qlib/LString.hpp>
+#include <qlib/LTypes.hpp>
 #include <qsys/ObjReader.hpp>
 #include <qsys/Scene.hpp>
 #include <qsys/View.hpp>
@@ -45,7 +46,13 @@ public:
     /// if several readers share the extension, content sniff
     /// disambiguates among just those candidates, with a final
     /// alphabetic-first fallback when sniffing yields nothing.
-    LString guessFileFormat(int nCatID, bool bContentFirst = false) const;
+    ///
+    /// `maxSniffBytes` caps how many bytes each reader's
+    /// canHandleContent() sees during disambiguation. 0 (the default)
+    /// means unbounded -- the streaming sniff reads each candidate's
+    /// stream until it returns a verdict or hits EOF.
+    LString guessFileFormat(int nCatID, bool bContentFirst = false,
+                            qlib::quint64 maxSniffBytes = 0) const;
 
     LString createDefaultObjName() const;
 
@@ -80,6 +87,13 @@ public:
     /// the candidate set first and sniff disambiguates only when
     /// multiple readers share that extension.
     bool m_bContentFirst = false;
+
+    /// Maximum bytes each reader's canHandleContent() is allowed to
+    /// consume during sniff. 0 = unbounded (default), positive value
+    /// = byte cap exposed to StreamManager's searchReader{,s}ByContent.
+    /// Scripts override this when they want to bound sniffing against
+    /// pathological / very large inputs.
+    qlib::quint64 m_nMaxSniffBytes = 0;
 
     //////////
     // properties (output)

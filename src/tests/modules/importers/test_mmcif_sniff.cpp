@@ -215,3 +215,181 @@ TEST(MmcifSniffIntegration, MixedCifMultiMatchReturnsOnlyMmcif)
     EXPECT_NE(std::string(csv.c_str()).find("mmcif"), std::string::npos);
     EXPECT_EQ(std::string(csv.c_str()).find("mmcifmap"), std::string::npos);
 }
+
+// -----------------------------------------------------------------------
+// Streaming-mode regression: real PDB-derived mmCIF can carry a very
+// long metadata header (entity, struct_ref, struct_conn, ...) before
+// the first `_atom_site.` token. The previous implementation drained a
+// fixed 64 KB head buffer; anything past that boundary was invisible to
+// the sniffer. With the streaming refactor each reader reads from a
+// FileInStream and breaks on first hit, so arbitrarily long headers
+// are handled correctly.
+// -----------------------------------------------------------------------
+
+namespace {
+
+// Build a synthetic coord CIF whose `_atom_site.` line sits past
+// `padBytes` of leading garbage-but-CIF-shaped lines. The padding lines
+// are CIF-comment-shaped and ~256 bytes each so test runs cross byte
+// thresholds without piling up an excessive line count (which keeps the
+// test independent of any per-reader line-budget that may exist).
+std::string makeLongHeaderCif(int padBytes, const std::string &payloadHeader)
+{
+    std::string padding;
+    padding.reserve(padBytes + payloadHeader.size());
+    padding.append("data_test\n");
+    const std::string line = std::string("# padding line - ignored by the "
+                                         "sniffer (long enough to keep the "
+                                         "line count low while still pushing "
+                                         "byte offsets past the legacy 64 KB "
+                                         "peek-buffer boundary in only a few "
+                                         "hundred lines)\n");
+    while (static_cast<int>(padding.size()) < padBytes) padding += line;
+    padding += payloadHeader;
+    return padding;
+}
+
+}  // namespace
+
+// `_atom_site.` past the 64 KB boundary (~128 KB) -- the streaming code
+// must still hit it because no peek-buffer cap exists.
+TEST(MmcifSniffIntegration, LongHeaderCifIsFoundBeyondLegacyPeekCap)
+{
+    const std::string content = makeLongHeaderCif(
+        /*padBytes=*/128 * 1024,
+        std::string("loop_\n_atom_site.group_PDB\n_atom_site.id\n"
+                    "ATOM 1 N N\n"));
+    LString path = writeTempCif(".cif", content.c_str());
+    LString hit = StreamManager::getInstance()->searchReaderByContent(
+        path, LString(), InOutHandler::IOH_CAT_OBJREADER);
+    EXPECT_EQ(std::string(hit.c_str()), std::string("mmcif"));
+}
+
+// Symmetric: long-header SF CIF still resolves to mmcifmap.
+TEST(MmcifSniffIntegration, LongHeaderSfCifIsFoundBeyondLegacyPeekCap)
+{
+    const std::string content = makeLongHeaderCif(
+        /*padBytes=*/128 * 1024,
+        std::string("loop_\n_refln.index_h\n_refln.index_k\n"
+                    "0 0 0 1.0\n"));
+    LString path = writeTempCif(".cif", content.c_str());
+    LString hit = StreamManager::getInstance()->searchReaderByContent(
+        path, LString(), InOutHandler::IOH_CAT_OBJREADER);
+    EXPECT_EQ(std::string(hit.c_str()), std::string("mmcifmap"));
+}
+
+// maxBytes=0 (the default) means unbounded -- equivalent to omitting
+// the parameter. Long-header CIF still hits.
+TEST(MmcifSniffIntegration, MaxBytesZeroIsUnbounded)
+{
+    const std::string content = makeLongHeaderCif(
+        /*padBytes=*/64 * 1024,
+        std::string("loop_\n_atom_site.group_PDB\nATOM 1 N N\n"));
+    LString path = writeTempCif(".cif", content.c_str());
+    LString hit = StreamManager::getInstance()->searchReaderByContent(
+        path, LString(), InOutHandler::IOH_CAT_OBJREADER,
+        /*supportCompression=*/false, /*maxBytes=*/0);
+    EXPECT_EQ(std::string(hit.c_str()), std::string("mmcif"));
+}
+
+// maxBytes set to a small cap prevents readers from seeing the hit
+// even when content sits later in the file. Result: no YES verdict,
+// empty string returned. Acts as the safety knob script callers can
+// use against pathological / very large inputs.
+TEST(MmcifSniffIntegration, MaxBytesCapPreventsLateHitDiscovery)
+{
+    const std::string content = makeLongHeaderCif(
+        /*padBytes=*/8 * 1024,  // _atom_site. sits past 8 KB
+        std::string("loop_\n_atom_site.group_PDB\nATOM 1 N N\n"));
+    LString path = writeTempCif(".cif", content.c_str());
+    LString hit = StreamManager::getInstance()->searchReaderByContent(
+        path, LString(), InOutHandler::IOH_CAT_OBJREADER,
+        /*supportCompression=*/false, /*maxBytes=*/1024);
+    EXPECT_TRUE(hit.isEmpty());
+}
+
+// Same maxBytes cap, but with the hit positioned within the cap range:
+// the verdict comes back normally.
+TEST(MmcifSniffIntegration, MaxBytesAllowsHitInsideCap)
+{
+    // No padding: `_atom_site.` is near the top of the file, well
+    // within a 1 KB window.
+    LString path = writeTempCif(".cif", COORD_CIF);
+    LString hit = StreamManager::getInstance()->searchReaderByContent(
+        path, LString(), InOutHandler::IOH_CAT_OBJREADER,
+        /*supportCompression=*/false, /*maxBytes=*/1024);
+    EXPECT_EQ(std::string(hit.c_str()), std::string("mmcif"));
+}
+
+// -----------------------------------------------------------------------
+// Reader-side line-budget removal: the readers used to give up after a
+// fixed line count (MMCIF_SNIFF_MAX_LINES = 2000). With per-reader caps
+// removed, the only safety knob is the caller's maxBytes. These tests
+// pin "reader scans until decision or EOF".
+// -----------------------------------------------------------------------
+
+namespace {
+
+// Build a CIF with a *line-heavy* preamble: short comment lines that
+// quickly exceed the legacy 2000-line per-reader budget without
+// crossing the byte-cap. Each padding line is ~10 bytes so 30000 lines
+// is only ~300 KB.
+std::string makeManyShortLinesCif(int padLines,
+                                  const std::string &payloadHeader)
+{
+    std::string out;
+    out.reserve(padLines * 10 + payloadHeader.size());
+    out.append("data_test\n");
+    for (int i = 0; i < padLines; ++i) out += "# pad\n";
+    out += payloadHeader;
+    return out;
+}
+
+}  // namespace
+
+// 5000 padding lines (>= old MMCIF_SNIFF_MAX_LINES cap) followed by an
+// `_atom_site.` block. Pre-refactor the reader would have given up at
+// line 2000 and returned UNKNOWN; the streaming refactor scans the
+// whole file and finds the hit.
+TEST(MmcifSniffIntegration, ReaderScansBeyondLegacyLineBudget)
+{
+    const std::string content = makeManyShortLinesCif(
+        /*padLines=*/5000,
+        std::string("loop_\n_atom_site.group_PDB\nATOM 1 N N\n"));
+    LString path = writeTempCif(".cif", content.c_str());
+    LString hit = StreamManager::getInstance()->searchReaderByContent(
+        path, LString(), InOutHandler::IOH_CAT_OBJREADER);
+    EXPECT_EQ(std::string(hit.c_str()), std::string("mmcif"));
+}
+
+// Symmetric: line-heavy SF CIF still resolves to mmcifmap.
+TEST(MmcifSniffIntegration, MapReaderScansBeyondLegacyLineBudget)
+{
+    const std::string content = makeManyShortLinesCif(
+        /*padLines=*/5000,
+        std::string("loop_\n_refln.index_h\n0 0 0 1.0\n"));
+    LString path = writeTempCif(".cif", content.c_str());
+    LString hit = StreamManager::getInstance()->searchReaderByContent(
+        path, LString(), InOutHandler::IOH_CAT_OBJREADER);
+    EXPECT_EQ(std::string(hit.c_str()), std::string("mmcifmap"));
+}
+
+// Pathological: a non-CIF text file that's ~200 KB of ASCII garbage.
+// No reader prefix appears anywhere. Both readers must scan to EOF
+// without crashing, return UNKNOWN, and the search returns "" in a
+// reasonable amount of time (the gtest framework's per-test timeout
+// catches runaway scans).
+TEST(MmcifSniffIntegration, NonCifGarbageReturnsEmpty)
+{
+    std::string content;
+    content.reserve(200 * 1024);
+    // Deterministic ASCII garbage with line breaks every ~80 chars so
+    // the LineStream produces a finite, well-formed iteration sequence.
+    const std::string line =
+        "abcdefghijklmnopqrstuvwxyz 0123456789 !@#$%^&*() ABCDEFGHIJKLMNOPQRSTUV\n";
+    while (content.size() < 200 * 1024) content += line;
+    LString path = writeTempCif(".dat", content.c_str());
+    LString hit = StreamManager::getInstance()->searchReaderByContent(
+        path, LString(), InOutHandler::IOH_CAT_OBJREADER);
+    EXPECT_TRUE(hit.isEmpty());
+}

@@ -59,20 +59,15 @@ qsys::ObjectPtr MmcifMolReader::createDefaultObj() const
   return qsys::ObjectPtr(MB_NEW MolCoord());
 }
 
-// Max number of CIF header lines to inspect during content sniffing.
-// Real PDB-derived mmCIF carries a long metadata header (entity,
-// entity_src_gen, struct_ref, ...) before the coordinate / reflection
-// loop_, so the limit must comfortably exceed it. 2000 lines pairs
-// with the 64 KB peek buffer to cover essentially every PDB cif.
-#define MMCIF_SNIFF_MAX_LINES 2000
-
 int MmcifMolReader::canHandleContent(qlib::InStream &ins) const
 {
+  // Scan until EOF or a verdict-forming prefix. Callers cap how much of
+  // the file is exposed via StreamManager's `maxBytes` parameter (or a
+  // wrapping LimitedInStream); the reader itself has no artificial line
+  // budget so arbitrarily long PDB-derived headers still resolve.
   qlib::LineStream lin(ins);
-  int n = 0;
-  while (lin.ready() && n < MMCIF_SNIFF_MAX_LINES) {
+  while (lin.ready()) {
     LString line = lin.readLine().trim();
-    ++n;
     if (line.isEmpty()) continue;
     if (line.startsWith("#")) continue;
     if (line.startsWith("_atom_site.")) return CONTENT_YES;

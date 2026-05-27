@@ -171,3 +171,83 @@ TEST(LoadObjectCommandContentFirstDefault, IsFalseByDefault)
     LoadObjectCommand cmd;
     EXPECT_FALSE(cmd.m_bContentFirst);
 }
+
+// -----------------------------------------------------------------------
+// m_nMaxSniffBytes default + plumbing into the sniff path.
+// -----------------------------------------------------------------------
+
+TEST(LoadObjectCommandMaxSniffBytesDefault, IsZeroByDefault)
+{
+    LoadObjectCommand cmd;
+    EXPECT_EQ(cmd.m_nMaxSniffBytes, 0u);
+}
+
+namespace {
+
+// CIF whose `_atom_site.` token sits past ~8 KB of padding lines. With
+// a small maxBytes cap the sniffer never reaches the hit and the
+// ambiguous-extension fallback kicks in.
+std::string makeBigHeaderCoordCif()
+{
+    std::string out;
+    out.reserve(16 * 1024);
+    out.append("data_test\n");
+    const std::string line = std::string("# padding line - ignored by the "
+                                         "sniffer (kept long enough to "
+                                         "force atom_site past any small "
+                                         "maxBytes cap with few lines)\n");
+    while (out.size() < 8 * 1024) out += line;
+    out += "loop_\n_atom_site.group_PDB\nATOM 1 N\n";
+    return out;
+}
+
+}  // namespace
+
+// With m_nMaxSniffBytes > 0 in ext-first mode, the sniffer only sees
+// the capped head. For an ambiguous .cif where the verdict lies past
+// the cap, sniff disambiguation fails and guessFileFormat falls back
+// to the first ext-matched candidate. The candidate list is collected
+// in m_rdrinfotab iteration order (sorted by ABI name), which for the
+// CIF pair starts with mmcifmap (xtal namespace) before mmcif
+// (importers namespace). The exact identity matters less than that the
+// fallback path is reached: any valid CIF reader nickname is OK.
+TEST(LoadObjectCommandMaxSniffBytesExtFirst, CapLimitsSniffDisambiguation)
+{
+    LoadObjectCommand cmd;
+    cmd.m_filePath = writeTempCif(".cif", makeBigHeaderCoordCif().c_str());
+    cmd.m_nMaxSniffBytes = 1024;
+    LString fmt = cmd.guessFileFormat(InOutHandler::IOH_CAT_OBJREADER,
+                                      /*bContentFirst=*/false,
+                                      cmd.m_nMaxSniffBytes);
+    const std::string got(fmt.c_str());
+    EXPECT_TRUE(got == "mmcif" || got == "mmcifmap")
+        << "Fallback returned '" << got
+        << "', expected one of the registered CIF readers";
+}
+
+// Same setup but in content-first mode: cap applies, no reader claims
+// the head, result is empty.
+TEST(LoadObjectCommandMaxSniffBytesContentFirst, CapForcesEmpty)
+{
+    LoadObjectCommand cmd;
+    cmd.m_filePath = writeTempCif(".cif", makeBigHeaderCoordCif().c_str());
+    cmd.m_nMaxSniffBytes = 1024;
+    LString fmt = cmd.guessFileFormat(InOutHandler::IOH_CAT_OBJREADER,
+                                      /*bContentFirst=*/true,
+                                      cmd.m_nMaxSniffBytes);
+    EXPECT_TRUE(fmt.isEmpty());
+}
+
+// With m_nMaxSniffBytes = 0 (unbounded, the default), the same payload
+// resolves to the right reader because the streaming scan reaches the
+// `_atom_site.` token.
+TEST(LoadObjectCommandMaxSniffBytesContentFirst, ZeroCapIsUnbounded)
+{
+    LoadObjectCommand cmd;
+    cmd.m_filePath = writeTempCif(".cif", makeBigHeaderCoordCif().c_str());
+    cmd.m_nMaxSniffBytes = 0;
+    LString fmt = cmd.guessFileFormat(InOutHandler::IOH_CAT_OBJREADER,
+                                      /*bContentFirst=*/true,
+                                      cmd.m_nMaxSniffBytes);
+    EXPECT_EQ(std::string(fmt.c_str()), std::string("mmcif"));
+}

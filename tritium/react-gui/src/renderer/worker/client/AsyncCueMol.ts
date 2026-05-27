@@ -286,8 +286,10 @@ export class AsyncCueMol {
      * extension narrows the candidate set first and sniff disambiguates
      * only when multiple readers share the extension.
      */
-    loadObject(filePath: string, scene_id: number, options: FileOpenOptions, contentFirst = false): Promise<boolean> {
-        return fileApi.loadObject(this._transport, filePath, scene_id, options, contentFirst);
+    loadObject(filePath: string, scene_id: number, options: FileOpenOptions,
+               contentFirst = false, maxSniffBytes?: number): Promise<boolean> {
+        return fileApi.loadObject(this._transport, filePath, scene_id, options,
+                                  contentFirst, maxSniffBytes);
     }
 
     // --- Edit ---

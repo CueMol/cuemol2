@@ -13,7 +13,8 @@ namespace fs = boost::filesystem;
 namespace qsys {
 
 // TO DO: use common impl with LoadSceneCommand
-LString LoadObjectCommand::guessFileFormat(int nCatID, bool bContentFirst) const
+LString LoadObjectCommand::guessFileFormat(int nCatID, bool bContentFirst,
+                                           qlib::quint64 maxSniffBytes) const
 {
     auto strMgr = qsys::StreamManager::getInstance();
 
@@ -22,7 +23,8 @@ LString LoadObjectCommand::guessFileFormat(int nCatID, bool bContentFirst) const
         // registered reader of nCatID whether the head of the file
         // matches its format and return the first YES.
         return strMgr->searchReaderByContent(m_filePath, LString(), nCatID,
-                                             /*supportCompression=*/false);
+                                             /*supportCompression=*/false,
+                                             maxSniffBytes);
     }
 
     // Ext-first mode: collect every reader whose registered fext matches
@@ -58,7 +60,7 @@ LString LoadObjectCommand::guessFileFormat(int nCatID, bool bContentFirst) const
     // among just those candidates.
     LString hit = strMgr->searchReaderByContent(
         m_filePath, LString::join(",", extCandidates), nCatID,
-        /*supportCompression=*/false);
+        /*supportCompression=*/false, maxSniffBytes);
     if (!hit.isEmpty()) return hit;
 
     // Sniff yielded nothing (file too short, no candidate implements
@@ -73,7 +75,7 @@ void LoadObjectCommand::run()
     MB_ASSERT(!m_pTargScene.isnull());
 
     if (m_fileFmt.isEmpty()) {
-        m_fileFmt = guessFileFormat(nCatID, m_bContentFirst);
+        m_fileFmt = guessFileFormat(nCatID, m_bContentFirst, m_nMaxSniffBytes);
         if (m_fileFmt.isEmpty()) {
             // cannot determine file format from the file name
             MB_THROW(qlib::RuntimeException, "cannot guess file type");

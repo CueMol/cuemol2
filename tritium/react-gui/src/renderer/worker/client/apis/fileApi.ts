@@ -115,14 +115,18 @@ export async function loadScene(
  * @param contentFirst - When true, the worker selects the reader purely
  *   from content sniffing (extension is ignored). When false (default),
  *   the extension narrows the candidate set first.
+ * @param maxSniffBytes - Optional byte cap forwarded to
+ *   LoadObjectCommand.max_sniff_bytes. 0 / undefined leaves the worker
+ *   in unbounded mode (each reader scans its stream until it returns a
+ *   verdict or hits EOF).
  * @returns `true` on success.
  * @remarks Calls `loadObject` worker service.
  */
 export async function loadObject(
     transport: WorkerTransport, filePath: string, scene_id: number, options: FileOpenOptions,
-    contentFirst = false,
+    contentFirst = false, maxSniffBytes?: number,
 ): Promise<boolean> {
     log.info(`loading object file: ${filePath}`);
-    const result = await transport.invokeService('loadObject', { filePath, sceneId: scene_id, options, contentFirst });
+    const result = await transport.invokeService('loadObject', { filePath, sceneId: scene_id, options, contentFirst, maxSniffBytes });
     return result?.ok ?? true;
 }

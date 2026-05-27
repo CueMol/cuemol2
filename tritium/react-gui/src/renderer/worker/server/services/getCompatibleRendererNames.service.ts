@@ -53,7 +53,10 @@ function pickReaderName(
     if (contentFirst) {
         // Pure content-first: every registered reader's canHandleContent
         // runs; the first YES wins. Returns '' when nothing claims it.
-        return ctx.strMgr.searchReaderByContent(filePath, '', OBJREADER_CATEGORY, false);
+        // maxBytes=0 means unbounded -- readers scan their stream until
+        // a verdict or EOF. The UI layer doesn't need a cap for the
+        // disambiguation step (real files break out within a few KB).
+        return ctx.strMgr.searchReaderByContent(filePath, '', OBJREADER_CATEGORY, false, 0);
     }
 
     // Ext-first: collect every reader whose fext claims this extension.
@@ -73,7 +76,7 @@ function pickReaderName(
 
     // Multiple readers share this extension. Disambiguate by content.
     const csv = candidates.join(',');
-    const hit = ctx.strMgr.searchReaderByContent(filePath, csv, OBJREADER_CATEGORY, false);
+    const hit = ctx.strMgr.searchReaderByContent(filePath, csv, OBJREADER_CATEGORY, false, 0);
     return hit || candidates[0];
 }
 

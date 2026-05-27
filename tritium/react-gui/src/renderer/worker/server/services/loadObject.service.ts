@@ -36,6 +36,14 @@ export interface LoadObjectArgs {
      * false (default), the extension narrows the candidate set first.
      */
     contentFirst: boolean;
+    /**
+     * Optional byte cap forwarded to LoadObjectCommand.max_sniff_bytes.
+     * 0 / undefined leaves the C++ side at its default (unbounded -- the
+     * streaming sniffer reads each candidate's stream until it returns a
+     * verdict or hits EOF). Scripts that want to bound sniff against
+     * pathological / very large inputs can pass a positive value here.
+     */
+    maxSniffBytes?: number;
 }
 
 function loadObject(ctx: WorkerContext, args: LoadObjectArgs): { ok: boolean } {
@@ -59,6 +67,12 @@ function loadObject(ctx: WorkerContext, args: LoadObjectArgs): { ok: boolean } {
         // Enum properties cross the wrapper as their string ID, but
         // boolean properties go through as plain booleans.
         cmd.content_first = args.contentFirst;
+        // Only touch the cap when the caller asked for one. Skipping
+        // the setter when the value is 0/undefined keeps the property
+        // at its C++ default and avoids needless IPC.
+        if (args.maxSniffBytes && args.maxSniffBytes > 0) {
+            cmd.max_sniff_bytes = args.maxSniffBytes;
+        }
 
         if (args.options.format.kind !== 'unknown') {
             log.info(

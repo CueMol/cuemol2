@@ -55,18 +55,13 @@ qsys::ObjectPtr MmcifMapReader::createDefaultObj() const
     return qsys::ObjectPtr(new DensityMap());
 }
 
-// Max number of CIF header lines to inspect during content sniffing.
-// Mirrors the limit in MmcifMolReader::canHandleContent() (see comment
-// there for why the bound has to be generous).
-#define MMCIFMAP_SNIFF_MAX_LINES 2000
-
 int MmcifMapReader::canHandleContent(qlib::InStream &ins) const
 {
+    // Scan until EOF or a verdict-forming prefix. See the parallel
+    // comment in MmcifMolReader::canHandleContent for the rationale.
     qlib::LineStream lin(ins);
-    int n = 0;
-    while (lin.ready() && n < MMCIFMAP_SNIFF_MAX_LINES) {
+    while (lin.ready()) {
         LString line = lin.readLine().trim();
-        ++n;
         if (line.isEmpty()) continue;
         if (line.startsWith("#")) continue;
         if (line.startsWith("_refln.")) return CONTENT_YES;
