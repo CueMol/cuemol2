@@ -15,6 +15,7 @@ import { CmdId } from './ids'
 import { addRecent } from './addRecent'
 import { useShowFileOpenOptionDialog } from '../components/fopen-opt-dlgs/FileOpenOptionDialogProvider'
 import { useShowGetPdbDialog } from '../components/dialogs/GetPdbDialogProvider'
+import { useShowErrorAlert } from '../components/dialogs/ErrorAlertDialogProvider'
 import type { CoordServerType, MapServerType } from '../components/dialogs/GetPdbDialog'
 import { useStreamProgressDialog, type StreamProgressApi } from '../components/dialogs/StreamProgressDialogProvider'
 import { pushHistory as pushPdbIdHistory } from '../components/dialogs/pdbIdHistory'
@@ -36,6 +37,7 @@ export function useSceneCommands({
 
     const showFileOpenOptionDialog = useShowFileOpenOptionDialog()
     const showGetPdbDialog = useShowGetPdbDialog()
+    const showErrorAlert = useShowErrorAlert()
     const streamProgress = useStreamProgressDialog()
 
     const openNewScene = useCallback(async (filePath?: string): Promise<void> => {
@@ -70,24 +72,45 @@ export function useSceneCommands({
             const info = getActiveSceneInfo()
             if (!info) return
             ;(async () => {
-                // Pass `data.contentFirst` here too -- the renderer-list
-                // lookup and the actual load must resolve to the same
-                // reader, otherwise (e.g.) the dialog offers density-map
-                // renderers for a coordinate CIF and the subsequent load
-                // crashes when the chosen renderer is applied to a MolCoord.
-                const { types, objType } = await cm.getCompatibleRendererNames(
-                    data.path, undefined, data.contentFirst,
-                )
-                const options = await showFileOpenOptionDialog({
-                    filePath: data.path,
-                    sceneId: info.scene_uid,
-                    rendererTypes: types,
-                    objType,
-                })
-                if (options === null) return
-                await cm.loadObject(data.path, info.scene_uid, options, data.contentFirst)
-                addRecent(data.path, 'obj')
-            })().catch((e: unknown) => console.error('OpenObjByPath failed:', e))
+                try {
+                    // Pass `data.contentFirst` here too -- the renderer-list
+                    // lookup and the actual load must resolve to the same
+                    // reader, otherwise (e.g.) the dialog offers density-map
+                    // renderers for a coordinate CIF and the subsequent load
+                    // crashes when the chosen renderer is applied to a MolCoord.
+                    const { types, objType } = await cm.getCompatibleRendererNames(
+                        data.path, undefined, data.contentFirst,
+                    )
+                    // Empty types means the C++ side could not identify a
+                    // compatible reader (or extracted no compatible renderer
+                    // list). Surface this instead of opening the option
+                    // dialog in a half-populated state.
+                    if (types.length === 0) {
+                        await showErrorAlert({
+                            title: 'Cannot open file',
+                            message: `Could not determine a compatible reader for:\n${data.path}\n\n` +
+                                'The file may be corrupt, an unsupported format, or its extension does not match its content.',
+                        })
+                        return
+                    }
+                    const options = await showFileOpenOptionDialog({
+                        filePath: data.path,
+                        sceneId: info.scene_uid,
+                        rendererTypes: types,
+                        objType,
+                    })
+                    if (options === null) return
+                    await cm.loadObject(data.path, info.scene_uid, options, data.contentFirst)
+                    addRecent(data.path, 'obj')
+                } catch (e) {
+                    const msg = e instanceof Error ? e.message : String(e)
+                    console.error('OpenObjByPath failed:', e)
+                    await showErrorAlert({
+                        title: 'Open File failed',
+                        message: `Failed to open:\n${data.path}\n\n${msg}`,
+                    })
+                }
+            })()
         },
     )
 
@@ -127,6 +150,11 @@ export function useSceneCommands({
                     const { types: rendererTypes, objType } = await cm.getCompatibleRendererNames(virtualFilename, readerName)
                     if (!rendererTypes || rendererTypes.length === 0) {
                         console.warn(`Get PDB: no compatible renderer for ${virtualFilename}`)
+                        await showErrorAlert({
+                            title: 'Get PDB failed',
+                            message: `Could not find a compatible reader for the requested PDB:\n${virtualFilename}\n\n` +
+                                'The selected server type may not provide this entry, or the format is unsupported.',
+                        })
                     } else {
                         const options = await showFileOpenOptionDialog({
                             filePath: virtualFilename,
@@ -174,11 +202,23 @@ export function useSceneCommands({
                         const result = await task()
                         if (result.canceled) break
                     } catch (e) {
+                        const msg = e instanceof Error ? e.message : String(e)
                         console.error('Get PDB chain item failed:', e)
+                        await showErrorAlert({
+                            title: 'Get PDB failed',
+                            message: `A download or load step failed:\n\n${msg}`,
+                        })
                         break
                     }
                 }
-            })().catch((e: unknown) => console.error('UiGetPdbDialog handler failed:', e))
+            })().catch(async (e: unknown) => {
+                const msg = e instanceof Error ? e.message : String(e)
+                console.error('UiGetPdbDialog handler failed:', e)
+                await showErrorAlert({
+                    title: 'Get PDB failed',
+                    message: msg,
+                })
+            })
         },
     )
 }

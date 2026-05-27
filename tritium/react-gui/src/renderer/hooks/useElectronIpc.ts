@@ -18,6 +18,7 @@ import { useCommands } from '../commands/CommandRegistry'
 import { CmdId } from '../commands/ids'
 import { IPC } from '../../shared/ipcChannels'
 import { useMenuDispatch } from './useMenuDispatch'
+import { useShowErrorAlert } from '../components/dialogs/ErrorAlertDialogProvider'
 
 /** Push channels whose only effect is to forward themselves to dispatchMenuChannel. */
 const MENU_PASS_THROUGH = [
@@ -34,6 +35,7 @@ const MENU_PASS_THROUGH = [
 export function useElectronIpc(activeTab: string | null): void {
   const { dispatch } = useCommands()
   const { dispatchMenuChannel, dispatchOpenRecent } = useMenuDispatch(activeTab)
+  const showErrorAlert = useShowErrorAlert()
 
   useEffect(() => {
     const api = window.electronAPI
@@ -48,14 +50,18 @@ export function useElectronIpc(activeTab: string | null): void {
       api.onPush(IPC.SCENE_FILE_OPENED, (d) =>
         dispatch(CmdId.OpenSceneByPath, d.path).catch(logErr('scene open:')),
       ),
-      api.onPush(IPC.FILE_ERROR, (d) =>
-        console.error(`Failed to open ${d.path}: ${d.error}`),
-      ),
+      api.onPush(IPC.FILE_ERROR, (d) => {
+        console.error(`Failed to open ${d.path}: ${d.error}`)
+        showErrorAlert({
+          title: 'Open File failed',
+          message: `Failed to open:\n${d.path}\n\n${d.error}`,
+        }).catch(logErr('FILE_ERROR alert:'))
+      }),
       api.onPush(IPC.MENU_OPEN_RECENT, (entry) => dispatchOpenRecent(entry)),
       api.onPush(IPC.MENU_GENERIC, (ch) => dispatchMenuChannel(ch)),
       ...MENU_PASS_THROUGH.map((ch) => api.onPush(ch, () => dispatchMenuChannel(ch))),
     ]
 
     return () => unsubs.forEach((u) => u())
-  }, [dispatch, dispatchMenuChannel, dispatchOpenRecent])
+  }, [dispatch, dispatchMenuChannel, dispatchOpenRecent, showErrorAlert])
 }
