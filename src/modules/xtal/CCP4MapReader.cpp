@@ -65,6 +65,46 @@ const char *CCP4MapReader::getFileExt() const
   return "*.map; *.ccp4; *.mrc; *.ccp4.gz";
 }
 
+/// Content-sniff: peek the first 212 bytes and check for the "MAP "
+/// literal at byte offset 208 (52*4 = 208 bytes of header precede it).
+/// Fast-rejects text inputs (Xplor/CNS map, mmCIF, PDB, OpenDX, ...)
+/// when the first 4 bytes are all printable ASCII -- CCP4 byte 0..3
+/// hold the int32 NC column count whose high bytes are zero for any
+/// plausibly sized map.
+int CCP4MapReader::canHandleContent(qlib::InStream &ins) const
+{
+  const int PEEK = 212;
+  char buf[PEEK];
+  int total = 0;
+  while (total < PEEK) {
+    int n = ins.read(buf, total, PEEK - total);
+    if (n <= 0) break;
+    total += n;
+  }
+
+  if (total < 4) return CONTENT_UNKNOWN;
+
+  // Fast NO: first 4 bytes all printable ASCII -> text format.
+  auto isPrintable = [](unsigned char c) {
+    return c >= 0x20 && c < 0x7F;
+  };
+  if (isPrintable((unsigned char) buf[0]) &&
+      isPrintable((unsigned char) buf[1]) &&
+      isPrintable((unsigned char) buf[2]) &&
+      isPrintable((unsigned char) buf[3])) {
+    return CONTENT_NO;
+  }
+
+  if (total < 212) return CONTENT_UNKNOWN;
+
+  if (buf[208] == 'M' && buf[209] == 'A' &&
+      buf[210] == 'P' && buf[211] == ' ') {
+    return CONTENT_YES;
+  }
+
+  return CONTENT_UNKNOWN;
+}
+
 ///////////////////////////////////////////
 
 // read CCP4 format map file from stream

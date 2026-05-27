@@ -56,6 +56,42 @@ const char *XplorMapReader::getFileExt() const
   return "*.map;*.cns";
 }
 
+/// Content-sniff: peek up to 4 KB and look for a "ZYX" axis-order line
+/// at column 0 (the only axis order the parser implements -- see
+/// readAxisInfo). Rejects binary inputs (NUL/control bytes in the
+/// first 256 bytes) to disambiguate against CCP4/MRC binary maps.
+int XplorMapReader::canHandleContent(qlib::InStream &ins) const
+{
+  const int PEEK = 4096;
+  char buf[PEEK];
+  int total = 0;
+  while (total < PEEK) {
+    int n = ins.read(buf, total, PEEK - total);
+    if (n <= 0) break;
+    total += n;
+  }
+  if (total == 0) return CONTENT_UNKNOWN;
+
+  // Binary reject: NUL or control char (excluding \t \n \r) within the
+  // first 256 bytes implies CCP4 / other binary format.
+  const int binScan = total < 256 ? total : 256;
+  for (int i = 0; i < binScan; ++i) {
+    unsigned char c = (unsigned char) buf[i];
+    if (c == 0) return CONTENT_NO;
+    if (c < 0x20 && c != '\t' && c != '\n' && c != '\r')
+      return CONTENT_NO;
+  }
+
+  // Positive signature: "ZYX" at column 0 of some line.
+  for (int i = 0; i + 3 <= total; ++i) {
+    if (i != 0 && buf[i-1] != '\n') continue;
+    if (buf[i] == 'Z' && buf[i+1] == 'Y' && buf[i+2] == 'X')
+      return CONTENT_YES;
+  }
+
+  return CONTENT_UNKNOWN;
+}
+
 ///////////////////////////////////////////
 
 bool XplorMapReader::read(qlib::InStream &arg)
