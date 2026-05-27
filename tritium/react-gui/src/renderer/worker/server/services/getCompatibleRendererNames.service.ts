@@ -2,6 +2,7 @@
 import type { WorkerContext } from '../types/WorkerContext';
 import type { ObjReader } from '@cuemol/core/src/wrappers/ObjReader';
 
+const log = console;
 const RENDERER_TEST_TYPES = new Set(['ms2test', 'symm']);
 const OBJREADER_CATEGORY = 0;
 
@@ -85,6 +86,7 @@ function getCompatibleRendererNames(
     args: GetCompatibleRendererNamesArgs
 ): GetCompatibleRendererNamesResult {
     const readerName = args.readerName ?? pickReaderName(ctx, args.filePath, args.contentFirst ?? false);
+    log.info(`[getCompatibleRendererNames] path=${args.filePath} contentFirst=${args.contentFirst ?? false} picked="${readerName}"`);
     if (!readerName) return EMPTY_RESULT;
 
     const reader = ctx.strMgr.createHandler(readerName, OBJREADER_CATEGORY) as ObjReader;
