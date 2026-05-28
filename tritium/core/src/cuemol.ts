@@ -74,18 +74,26 @@ export class CueMol {
      * @param native_obj - Native object from C++ bindings
      * @returns Wrapped object or null if native_obj is undefined
      * @internal
+     *
+     * `nativeObj.getClassName()` returns the nearest MC_SCRIPTABLE
+     * ancestor's class name (resolved on the C++ side via
+     * getScrClassObj()), so a simple wrapper_map lookup is sufficient
+     * even for MC_DYNCLASS-only natives such as XplorMapReader -- they
+     * surface here as their parent class ("ObjReader" in that case)
+     * and route all method calls through the C++ funcMap chain.
      */
     createWrapper(nativeObj: NativeObject | undefined | null): BaseWrapper | null {
         if (nativeObj === null || typeof nativeObj === 'undefined') {
             return null;
         }
-        // console.log('native_obj:', native_obj);
         const className = nativeObj.getClassName();
-        // console.log('className:', className);
         const Klass = wrapper_map[className];
-        const obj = new Klass(nativeObj, this);
-        // console.log('wrapper created:', obj);
-        return obj;
+        if (!Klass) {
+            throw new Error(
+                `createWrapper: no wrapper registered for class "${className}".`,
+            );
+        }
+        return new Klass(nativeObj, this);
     }
 
     getWrapped(wrappedObj: any): IWrappedObject {

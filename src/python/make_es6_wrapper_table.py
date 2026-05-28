@@ -64,6 +64,7 @@ def main():
 
         f.write("};\n")
         f.write("\n")
+
         f.write("export { wrapper_map };\n")
         f.write("\n")
 
