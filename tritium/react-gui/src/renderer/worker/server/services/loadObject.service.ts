@@ -23,6 +23,7 @@ import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { FileOpenOptions } from '../../../components/fopen-opt-dlgs/types';
 import { setupRenderer } from './setupRenderer.service';
 import { withUndoTxn } from './withUndoTxn';
+import { DEFAULT_SNIFF_CAP } from '../../shared/sniffConfig';
 
 const log = console;
 
@@ -67,12 +68,13 @@ function loadObject(ctx: WorkerContext, args: LoadObjectArgs): { ok: boolean } {
         // Enum properties cross the wrapper as their string ID, but
         // boolean properties go through as plain booleans.
         cmd.content_first = args.contentFirst;
-        // Only touch the cap when the caller asked for one. Skipping
-        // the setter when the value is 0/undefined keeps the property
-        // at its C++ default and avoids needless IPC.
-        if (args.maxSniffBytes && args.maxSniffBytes > 0) {
-            cmd.max_sniff_bytes = args.maxSniffBytes;
-        }
+        // Always apply a sniff cap. Defaults to the worker-side
+        // DEFAULT_SNIFF_CAP (64 KB) so pathological inputs can't stall
+        // the sniff loop; callers may override per-request when a real
+        // file genuinely needs more.
+        cmd.max_sniff_bytes = args.maxSniffBytes && args.maxSniffBytes > 0
+            ? args.maxSniffBytes
+            : DEFAULT_SNIFF_CAP;
 
         if (args.options.format.kind !== 'unknown') {
             log.info(

@@ -1,6 +1,7 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 import type { WorkerContext } from '../types/WorkerContext';
 import type { ObjReader } from '@cuemol/core/src/wrappers/ObjReader';
+import { DEFAULT_SNIFF_CAP } from '../../shared/sniffConfig';
 
 const log = console;
 const RENDERER_TEST_TYPES = new Set(['ms2test', 'symm']);
@@ -57,7 +58,7 @@ function pickReaderName(
         // maxBytes=0 means unbounded -- readers scan their stream until
         // a verdict or EOF. The UI layer doesn't need a cap for the
         // disambiguation step (real files break out within a few KB).
-        return ctx.strMgr.searchReaderByContent(filePath, '', OBJREADER_CATEGORY, false, 0);
+        return ctx.strMgr.searchReaderByContent(filePath, '', OBJREADER_CATEGORY, false, DEFAULT_SNIFF_CAP);
     }
 
     // Ext-first: collect every reader whose fext claims this extension.
@@ -77,7 +78,7 @@ function pickReaderName(
 
     // Multiple readers share this extension. Disambiguate by content.
     const csv = candidates.join(',');
-    const hit = ctx.strMgr.searchReaderByContent(filePath, csv, OBJREADER_CATEGORY, false, 0);
+    const hit = ctx.strMgr.searchReaderByContent(filePath, csv, OBJREADER_CATEGORY, false, DEFAULT_SNIFF_CAP);
     return hit || candidates[0];
 }
 

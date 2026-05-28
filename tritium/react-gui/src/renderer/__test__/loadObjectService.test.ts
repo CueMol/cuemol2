@@ -121,7 +121,7 @@ describe('loadObject.service — LoadObjectCommand path', () => {
         vi.clearAllMocks()
     })
 
-    it('happy path: setTargetScene method, then file_path / file_format / object_name / content_first / run / result_object / setupRenderer', () => {
+    it('happy path: setTargetScene method, then file_path / file_format / object_name / content_first / max_sniff_bytes / run / result_object / setupRenderer', () => {
         const { ctx, calls, mol } = makeFixture()
         const result = loadObject(ctx, {
             filePath: '/data/1ubq.pdb',
@@ -137,6 +137,7 @@ describe('loadObject.service — LoadObjectCommand path', () => {
             'file_format=',
             'object_name=',
             'content_first=false',
+            'max_sniff_bytes=65536',
             'run',
             'result_object',
             'commit',
@@ -167,9 +168,12 @@ describe('loadObject.service — LoadObjectCommand path', () => {
         expect(calls).toContain('max_sniff_bytes=4096')
     })
 
-    // Skipping the setter when the cap is 0 / undefined leaves the C++
-    // default in place (unbounded) and avoids needless IPC.
-    it('maxSniffBytes 0 / undefined leaves cmd.max_sniff_bytes untouched', () => {
+    // The service always sets a cap. When the caller omits maxSniffBytes
+    // (or passes 0), the worker-side DEFAULT_SNIFF_CAP (64 KB) is applied
+    // so pathological inputs can't stall the sniff loop. Pins the
+    // contract: the cap is the source-of-truth ceiling, not the reader's
+    // own peek window.
+    it('maxSniffBytes 0 / undefined falls back to DEFAULT_SNIFF_CAP (65536)', () => {
         const { ctx, calls } = makeFixture()
         loadObject(ctx, {
             filePath: '/data/file.cif',
@@ -177,7 +181,7 @@ describe('loadObject.service — LoadObjectCommand path', () => {
             options: { format: { kind: 'unknown' }, renderer: baseRendererOpts } as any,
             contentFirst: false,
         })
-        expect(calls.some((c) => c.startsWith('max_sniff_bytes='))).toBe(false)
+        expect(calls).toContain('max_sniff_bytes=65536')
     })
 
     it('options.renderer.objectName flows into cmd.object_name', () => {

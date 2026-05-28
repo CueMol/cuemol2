@@ -61,18 +61,21 @@ namespace xtal {
     ///
     virtual bool read(qlib::InStream &ins);
 
+    /// Content-sniff: report whether `ins` looks like a BRIX map.
+    virtual int canHandleContent(qlib::InStream &ins) const;
+
     //////////////////////////////////////////////
     // Information query methods
-    
+
     /// get the nickname of this reader (referred from script interface)
     virtual const char *getName() const;
-    
+
     /// get file-type description
     virtual const char *getTypeDescr() const;
-    
+
     /// get file extension
     virtual const char *getFileExt() const;
-    
+
     /// create default object for this reader
     virtual qsys::ObjectPtr createDefaultObj() const;
 

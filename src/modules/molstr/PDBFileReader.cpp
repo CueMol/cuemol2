@@ -66,6 +66,43 @@ const char *PDBFileReader::getFileExt() const
   //return "*.pdb; *.ent";
 }
 
+/// Content-sniff: scan each line for canonical PDB record names at
+/// column 0. Restricted to records that uniquely identify PDB (no
+/// mmCIF overlap): HEADER / REMARK / CRYST1 / HETATM / ANISOU /
+/// SSBOND / HELIX / SHEET / TITLE / MODEL / ATOM. ATOM is matched
+/// with two trailing spaces to enforce the 6-char fixed-width
+/// record-name field (mmCIF "ATOM 1 ..." has only one space). A
+/// `data_` line is a definitive CIF marker -> NO.
+/// Callers cap input via upstream LimitedInStream; the reader has no
+/// in-reader peek budget.
+int PDBFileReader::canHandleContent(qlib::InStream &ins) const
+{
+  qlib::LineStream lin(ins);
+  while (lin.ready()) {
+    // Strip the trailing CR/LF only -- keep leading content so column 0
+    // stays at index 0 for the fixed-width 6-char record-name checks.
+    LString line = lin.readLine().trim("\r\n");
+    const int len = static_cast<int>(line.length());
+    const char *L = line.c_str();
+    if (len >= 5 &&
+        L[0] == 'd' && L[1] == 'a' && L[2] == 't' && L[3] == 'a' && L[4] == '_') {
+      return CONTENT_NO;
+    }
+    if (len < 6) continue;
+    auto eq6 = [L](const char *e) {
+      for (int k = 0; k < 6; ++k) if (L[k] != e[k]) return false;
+      return true;
+    };
+    if (eq6("HEADER") || eq6("REMARK") || eq6("CRYST1") ||
+        eq6("HETATM") || eq6("ANISOU") || eq6("SSBOND") ||
+        eq6("HELIX ") || eq6("SHEET ") || eq6("TITLE ") ||
+        eq6("MODEL ") || eq6("ATOM  ")) {
+      return CONTENT_YES;
+    }
+  }
+  return CONTENT_UNKNOWN;
+}
+
 qsys::ObjectPtr PDBFileReader::createDefaultObj() const
 {
   return qsys::ObjectPtr(MB_NEW MolCoord());

@@ -51,6 +51,34 @@ const char *SDFMolReader::getFileExt() const
     return "*.mol; *.sdf";
 }
 
+/// Content-sniff: read 3 header lines, then check the 6-byte version
+/// slot at column 33 (0-indexed) of line 4. Only V2000 is supported
+/// by the parser, so V3000 is reported as definitive NO -- the actual
+/// read() throws on it. Callers cap input via upstream LimitedInStream.
+int SDFMolReader::canHandleContent(qlib::InStream &ins) const
+{
+    qlib::LineStream lin(ins);
+    // Skip lines 1-3 (title / software / comment).
+    for (int i = 0; i < 3; ++i) {
+        if (!lin.ready()) return CONTENT_UNKNOWN;
+        lin.readLine();
+    }
+    if (!lin.ready()) return CONTENT_UNKNOWN;
+    LString counts = lin.readLine().trim("\r\n");
+    if (static_cast<int>(counts.length()) < 33 + 6) return CONTENT_UNKNOWN;
+
+    const char *ver = counts.c_str() + 33;
+    if (ver[0] == ' ' && ver[1] == 'V' && ver[2] == '2' &&
+        ver[3] == '0' && ver[4] == '0' && ver[5] == '0') {
+        return CONTENT_YES;
+    }
+    if (ver[0] == ' ' && ver[1] == 'V' && ver[2] == '3' &&
+        ver[3] == '0' && ver[4] == '0' && ver[5] == '0') {
+        return CONTENT_NO;
+    }
+    return CONTENT_UNKNOWN;
+}
+
 qsys::ObjectPtr SDFMolReader::createDefaultObj() const
 {
     return qsys::ObjectPtr(MB_NEW MolCoord());

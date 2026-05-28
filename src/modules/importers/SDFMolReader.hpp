@@ -83,6 +83,9 @@ namespace importers {
     ///
     virtual bool read(qlib::InStream &ins);
 
+    /// Content-sniff: report whether `ins` looks like a V2000 SDF/MOL.
+    virtual int canHandleContent(qlib::InStream &ins) const;
+
     //////////////////////////////////////////////
     // Information query methods
 

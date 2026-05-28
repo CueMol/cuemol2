@@ -50,6 +50,19 @@ const char *OpenDXPotReader::getName() const
   return "apbs";
 }
 
+/// Content-sniff: scan lines for the verdict-forming text
+/// "object 1 class gridpositions" at column 0 (matches the regex
+/// anchor in readHeader). Callers cap input via upstream LimitedInStream.
+int OpenDXPotReader::canHandleContent(qlib::InStream &ins) const
+{
+  qlib::LineStream lin(ins);
+  while (lin.ready()) {
+    LString line = lin.readLine().trim("\r\n");
+    if (line.startsWith("object 1 class gridpositions")) return CONTENT_YES;
+  }
+  return CONTENT_UNKNOWN;
+}
+
 ///////////////////////////////////////////
 
 void OpenDXPotReader::readRecord(qlib::LineStream &ins)

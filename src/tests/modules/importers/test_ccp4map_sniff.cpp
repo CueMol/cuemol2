@@ -65,19 +65,20 @@ TEST(CCP4MapReaderSniffTest, Ccp4HeaderReturnsYes)
     EXPECT_EQ(sniff(reader, payload), ObjReader::CONTENT_YES);
 }
 
-TEST(CCP4MapReaderSniffTest, XplorTextReturnsNo)
+TEST(CCP4MapReaderSniffTest, XplorTextReturnsUnknown)
 {
     CCP4MapReader reader;
-    // Xplor map header starts with printable ASCII (whitespace + digits +
-    // letters). The first 4 bytes are all printable, so CCP4's sniff
-    // must fast-reject as CONTENT_NO.
+    // CCP4 reads 212 bytes and checks byte 208 for "MAP ". A short
+    // text payload like an Xplor header either fails to reach byte
+    // 212 (short read -> UNKNOWN) or has random text at 208-211
+    // (no match -> UNKNOWN). No explicit text fast-reject is needed.
     const std::string payload =
         "       2\n"
         " REMARKS test xplor map\n"
         " REMARKS more\n"
         "       1       1       1       1       1       1       1       1       1\n"
         "ZYX\n";
-    EXPECT_EQ(sniff(reader, payload), ObjReader::CONTENT_NO);
+    EXPECT_EQ(sniff(reader, payload), ObjReader::CONTENT_UNKNOWN);
 }
 
 TEST(CCP4MapReaderSniffTest, EmptyReturnsUnknown)

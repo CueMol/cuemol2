@@ -87,6 +87,25 @@ const char *MTZ2MapReader::getFileExt() const
   return "*.mtz";
 }
 
+/// Content-sniff: MTZ files start with the 4-byte ASCII magic
+/// "MTZ " at offset 0 (note the trailing space). Matches the
+/// validation in read().
+int MTZ2MapReader::canHandleContent(qlib::InStream &ins) const
+{
+  char buf[4];
+  int total = 0;
+  while (total < 4) {
+    int n = ins.read(buf, total, 4 - total);
+    if (n <= 0) break;
+    total += n;
+  }
+  if (total < 4) return CONTENT_UNKNOWN;
+  if (buf[0] == 'M' && buf[1] == 'T' && buf[2] == 'Z' && buf[3] == ' ') {
+    return CONTENT_YES;
+  }
+  return CONTENT_UNKNOWN;
+}
+
 ///////////////////////////////////////////
 
 bool MTZ2MapReader::read(qlib::InStream &arg)

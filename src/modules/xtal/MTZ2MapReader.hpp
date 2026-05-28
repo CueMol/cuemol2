@@ -46,6 +46,9 @@ public:
   /// read from stream
   virtual bool read(qlib::InStream &ins);
 
+  /// Content-sniff: report whether `ins` looks like an MTZ file.
+  virtual int canHandleContent(qlib::InStream &ins) const;
+
   //////////////////////////////////////////////
   // Information query interface (ObjReader)
   

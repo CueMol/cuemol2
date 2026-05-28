@@ -56,39 +56,19 @@ const char *XplorMapReader::getFileExt() const
   return "*.map;*.cns";
 }
 
-/// Content-sniff: peek up to 4 KB and look for a "ZYX" axis-order line
-/// at column 0 (the only axis order the parser implements -- see
-/// readAxisInfo). Rejects binary inputs (NUL/control bytes in the
-/// first 256 bytes) to disambiguate against CCP4/MRC binary maps.
+/// Content-sniff: scan line-by-line for the "ZYX" axis-order line
+/// (the only axis order readAxisInfo accepts). The reader has no
+/// fixed peek window -- callers cap input via the upstream
+/// LimitedInStream so unbounded reading is safe. Real CNS/Xplor maps
+/// can push the ZYX marker past byte 4900 with verbose REMARKS title
+/// blocks; LineStream walks past them without any in-reader budget.
 int XplorMapReader::canHandleContent(qlib::InStream &ins) const
 {
-  const int PEEK = 4096;
-  char buf[PEEK];
-  int total = 0;
-  while (total < PEEK) {
-    int n = ins.read(buf, total, PEEK - total);
-    if (n <= 0) break;
-    total += n;
+  qlib::LineStream lin(ins);
+  while (lin.ready()) {
+    LString line = lin.readLine().trim(" \t\r\n");
+    if (line.startsWith("ZYX")) return CONTENT_YES;
   }
-  if (total == 0) return CONTENT_UNKNOWN;
-
-  // Binary reject: NUL or control char (excluding \t \n \r) within the
-  // first 256 bytes implies CCP4 / other binary format.
-  const int binScan = total < 256 ? total : 256;
-  for (int i = 0; i < binScan; ++i) {
-    unsigned char c = (unsigned char) buf[i];
-    if (c == 0) return CONTENT_NO;
-    if (c < 0x20 && c != '\t' && c != '\n' && c != '\r')
-      return CONTENT_NO;
-  }
-
-  // Positive signature: "ZYX" at column 0 of some line.
-  for (int i = 0; i + 3 <= total; ++i) {
-    if (i != 0 && buf[i-1] != '\n') continue;
-    if (buf[i] == 'Z' && buf[i+1] == 'Y' && buf[i+2] == 'X')
-      return CONTENT_YES;
-  }
-
   return CONTENT_UNKNOWN;
 }
 

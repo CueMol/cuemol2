@@ -145,6 +145,12 @@ add_executable(test_importers
   modules/importers/test_mmcif_sniff.cpp
   modules/importers/test_ccp4map_sniff.cpp
   modules/importers/test_xplormap_sniff.cpp
+  modules/importers/test_pdb_sniff.cpp
+  modules/importers/test_sdf_sniff.cpp
+  modules/importers/test_mol2_sniff.cpp
+  modules/importers/test_brix_sniff.cpp
+  modules/importers/test_mtz_sniff.cpp
+  modules/importers/test_opendx_sniff.cpp
   modules/importers/test_load_object_command_guess.cpp
 )
 target_include_directories(test_importers PRIVATE
