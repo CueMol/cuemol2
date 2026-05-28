@@ -68,6 +68,11 @@ namespace qsys {
 
     //////////////////////////////////////////////
     // Content sniffing (tri-state)
+    //
+    // See docs/architecture/objreader-content-sniff.md for the cap
+    // contract (callers may wrap `ins` in a LimitedInStream), the
+    // NO-vs-UNKNOWN policy, and the LineStream / minimum-byte
+    // implementation patterns shared by every reader.
 
     /// Tri-state verdict returned from canHandleContent().
     /// YES: this reader recognizes the content as its own format.
