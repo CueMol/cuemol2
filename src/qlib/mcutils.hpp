@@ -10,7 +10,18 @@
 #include "qlib.hpp"
 
 //
-// dynamic class macros
+// Class registration macros for the script-bridge metaclass system.
+// See docs/architecture/cpp-scripting-bridge.md for the contract that
+// MC_DYNCLASS / MC_SCRIPTABLE / MC_DYNCLASS_IMPL participate in --
+// in particular, the getClassObj() vs getScrClassObj() distinction
+// and what external scripting bridges must do to wrap native objects.
+//
+//   MC_DYNCLASS   -- class is reachable from script but exposes no
+//                    scripted surface of its own. Script sees
+//                    instances as the nearest MC_SCRIPTABLE ancestor.
+//   MC_SCRIPTABLE -- class has its own scripted properties / methods
+//                    (declared in a .qif). Pair with MC_INVOKE_IMPL2
+//                    in the auto-generated _wrap.cpp; see LWrapper.hpp.
 //
 
 #define MC_DYNCLASS \

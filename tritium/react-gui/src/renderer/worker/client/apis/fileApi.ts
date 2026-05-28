@@ -22,16 +22,20 @@ const log = console;
  * @param filePath - Absolute file path the user selected.
  * @param readerName - Optional explicit reader to use instead of
  *   auto-detection.
+ * @param contentFirst - Mirrors `loadObject`'s flag. Must match what
+ *   the subsequent `loadObject()` call passes so the dialog's renderer
+ *   list reflects the reader that will actually load the file.
  * @returns Object listing compatible renderer types and the detected
  *   object type; empty fields on failure.
  * @remarks Calls `getCompatibleRendererNames` worker service.
  */
 export async function getCompatibleRendererNames(
     transport: WorkerTransport, filePath: string, readerName?: string,
+    contentFirst = false,
 ): Promise<GetCompatibleRendererNamesResult> {
     try {
         return await transport.invokeService('getCompatibleRendererNames', {
-            filePath, readerName,
+            filePath, readerName, contentFirst,
         });
     } catch (e) {
         log.warn('getCompatibleRendererNames failed:', e);
@@ -108,13 +112,21 @@ export async function loadScene(
  * @param scene_id - Target scene uid.
  * @param options - File-type-specific open options collected from the
  *   user (renderer type, builder name, ...).
+ * @param contentFirst - When true, the worker selects the reader purely
+ *   from content sniffing (extension is ignored). When false (default),
+ *   the extension narrows the candidate set first.
+ * @param maxSniffBytes - Optional byte cap forwarded to
+ *   LoadObjectCommand.max_sniff_bytes. 0 / undefined leaves the worker
+ *   in unbounded mode (each reader scans its stream until it returns a
+ *   verdict or hits EOF).
  * @returns `true` on success.
  * @remarks Calls `loadObject` worker service.
  */
 export async function loadObject(
     transport: WorkerTransport, filePath: string, scene_id: number, options: FileOpenOptions,
+    contentFirst = false, maxSniffBytes?: number,
 ): Promise<boolean> {
     log.info(`loading object file: ${filePath}`);
-    const result = await transport.invokeService('loadObject', { filePath, sceneId: scene_id, options });
+    const result = await transport.invokeService('loadObject', { filePath, sceneId: scene_id, options, contentFirst, maxSniffBytes });
     return result?.ok ?? true;
 }

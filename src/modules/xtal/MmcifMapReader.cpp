@@ -55,6 +55,21 @@ qsys::ObjectPtr MmcifMapReader::createDefaultObj() const
     return qsys::ObjectPtr(new DensityMap());
 }
 
+int MmcifMapReader::canHandleContent(qlib::InStream &ins) const
+{
+    // Scan until EOF or a verdict-forming prefix. See the parallel
+    // comment in MmcifMolReader::canHandleContent for the rationale.
+    qlib::LineStream lin(ins);
+    while (lin.ready()) {
+        LString line = lin.readLine().trim();
+        if (line.isEmpty()) continue;
+        if (line.startsWith("#")) continue;
+        if (line.startsWith("_refln.")) return CONTENT_YES;
+        if (line.startsWith("_atom_site.")) return CONTENT_NO;
+    }
+    return CONTENT_UNKNOWN;
+}
+
 /////////
 
 bool MmcifMapReader::read(qlib::InStream &ins)

@@ -59,6 +59,37 @@ const char *BrixMapReader::getFileExt() const
   return "*.brix; *.omap; *.omap.gz";
 }
 
+/// Content-sniff: BRIX header starts with ":-)" as the first
+/// whitespace-delimited token (mirrors the strtok check in read()).
+/// 32 bytes is enough to see past any leading delimiters to the
+/// smiley; callers cap further reads via LimitedInStream upstream.
+/// DSN6 fallback is intentionally not sniffed here -- it has no
+/// unique magic and a soft header[18]==100 check would over-claim.
+int BrixMapReader::canHandleContent(qlib::InStream &ins) const
+{
+  char buf[32];
+  int total = 0;
+  while (total < 32) {
+    int n = ins.read(buf, total, 32 - total);
+    if (n <= 0) break;
+    total += n;
+  }
+  if (total < 3) return CONTENT_UNKNOWN;
+
+  int p = 0;
+  while (p < total) {
+    char c = buf[p];
+    if (c == ' ' || c == ',' || c == '\t' || c == '\r' || c == '\n') {
+      ++p; continue;
+    }
+    break;
+  }
+  if (p + 3 <= total && buf[p] == ':' && buf[p+1] == '-' && buf[p+2] == ')') {
+    return CONTENT_YES;
+  }
+  return CONTENT_UNKNOWN;
+}
+
 ///////////////////////////////////////////
 
 bool BrixMapReader::read(qlib::InStream &ins)

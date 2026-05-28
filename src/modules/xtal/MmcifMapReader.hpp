@@ -86,7 +86,11 @@ public:
     /// create default object for this reader
     virtual qsys::ObjectPtr createDefaultObj() const;
 
-    // virtual int isSupportedFile(const char *fname, qlib::InStream *pins);
+    /// Content sniffer: YES when the header carries a `_refln.` CIF
+    /// category (this reader's structure-factor target), NO when it
+    /// carries `_atom_site.` instead (an MmcifMolReader file), UNKNOWN
+    /// otherwise. Scans up to ~200 lines or the end of the peek buffer.
+    virtual int canHandleContent(qlib::InStream &ins) const;
 
     //////////////////////////////////////////////
 

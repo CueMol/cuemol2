@@ -106,7 +106,10 @@ export function useMenuDispatch(activeTab: string | null): {
       if (entry.ftype === 'scene') {
         dispatch(CmdId.OpenSceneByPath, entry.path).catch(logErr('recent.scene:'))
       } else {
-        dispatch(CmdId.OpenObjByPath, { name: entry.path, path: entry.path })
+        // No filter context for recent files: default to content-first
+        // so reopening a renamed / extension-spoofed file still resolves
+        // to the right reader.
+        dispatch(CmdId.OpenObjByPath, { name: entry.path, path: entry.path, contentFirst: true })
           .catch(logErr('recent.obj:'))
       }
     },

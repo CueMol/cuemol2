@@ -43,6 +43,21 @@ qsys::ObjectPtr MSMSFileReader::createDefaultObj() const
   return qsys::ObjectPtr(new MolSurfObj());
 }
 
+/// Content sniff: MSMS-emitted .face and .vert files begin with a
+/// header comment starting with "# MSMS ...". Scan the leading
+/// comment block; the first non-comment line means it is not MSMS.
+int MSMSFileReader::canHandleContent(qlib::InStream &ins) const
+{
+  qlib::LineStream lin(ins);
+  while (lin.ready()) {
+    LString line = lin.readLine().trim(" \t\r\n");
+    if (line.isEmpty()) continue;
+    if (line.startsWith("# MSMS")) return CONTENT_YES;
+    if (!line.startsWith("#")) return CONTENT_UNKNOWN;
+  }
+  return CONTENT_UNKNOWN;
+}
+
 void MSMSFileReader::attach(qsys::ObjectPtr pObj)
 {
   super_t::attach(pObj);

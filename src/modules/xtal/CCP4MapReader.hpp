@@ -56,6 +56,9 @@ public:
   ///
   virtual bool read(qlib::InStream &ins);
 
+  /// Content-sniff: report whether `ins` looks like a CCP4/MRC map.
+  virtual int canHandleContent(qlib::InStream &ins) const;
+
   //////////////////////////////////////////////
   // Information query methods
   

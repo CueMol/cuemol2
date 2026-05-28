@@ -108,7 +108,13 @@ Napi::Value Wrapper::getClassName(const Napi::CallbackInfo &info)
 
     qlib::LString str;
     if (pScObj) {
-        qlib::LClass *pCls = pScObj->getClassObj();
+        // Use getScrClassObj() instead of getClassObj(): for an
+        // MC_DYNCLASS-only native (no .qif, no auto-generated TS
+        // wrapper) this resolves to the nearest MC_SCRIPTABLE ancestor
+        // via virtual dispatch, so the JS side sees a class name that
+        // is always present in wrapper_map. This matches the UXP
+        // XPCObjWrapper::GetClassName behaviour.
+        qlib::LClass *pCls = pScObj->getScrClassObj();
         if (pCls) {
             str = pCls->getClassName();
         } else {

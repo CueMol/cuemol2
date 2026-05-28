@@ -20,6 +20,7 @@ import type { FileDialogOptions } from '../shared/ipcTypes'
 import { loadLayout, saveLayout, loadUi, saveUi } from './stateStore'
 import { showNaviContextMenu } from './naviContextMenu'
 import { showSceneContextMenu } from './sceneContextMenu'
+import { inferContentFirst } from './helpers/inferContentFirst'
 import { rebuildApplicationMenu, setMenuBlocked, updateMenuState, withMenuBlocked } from './menu'
 import { addRecent, clearRecents, getRecents } from './recentFiles'
 import {
@@ -78,6 +79,7 @@ function getUserStylePath(): string {
 // File open
 // ─────────────────────────────────────────────
 
+
 export async function handleOpenFile(mainWindow: BrowserWindow, options: FileDialogOptions): Promise<void> {
   const title = options.dialogType === 'open-scene' ? 'Open Scene' : 'Open File'
   const result = await withMenuBlocked('native', () =>
@@ -95,9 +97,15 @@ export async function handleOpenFile(mainWindow: BrowserWindow, options: FileDia
         const channel = options.dialogType === 'open-scene'
           ? IPC.SCENE_FILE_OPENED
           : IPC.OBJ_FILE_OPENED
+        // Scene files (.qsc) have a single registered reader, so the
+        // content-sniff path is irrelevant; force false.
+        const contentFirst = options.dialogType === 'open-scene'
+          ? false
+          : inferContentFirst(filePath, options.filters)
         mainWindow.webContents.send(channel, {
           name: path.basename(filePath),
           path: filePath,
+          contentFirst,
         })
       } catch (err) {
         mainWindow.webContents.send(IPC.FILE_ERROR, {

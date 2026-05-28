@@ -65,6 +65,31 @@ const char *CCP4MapReader::getFileExt() const
   return "*.map; *.ccp4; *.mrc; *.ccp4.gz";
 }
 
+/// Content-sniff: read the first 212 bytes and check for the "MAP "
+/// literal at byte offset 208 (52*4 = 208 bytes of header precede it).
+/// Short reads (cap hit upstream, or file shorter than 212 bytes)
+/// return UNKNOWN. Non-CCP4 inputs simply fail the byte-208 check and
+/// return UNKNOWN, so no explicit text fast-reject is needed.
+int CCP4MapReader::canHandleContent(qlib::InStream &ins) const
+{
+  char buf[212];
+  int total = 0;
+  while (total < 212) {
+    int n = ins.read(buf, total, 212 - total);
+    if (n <= 0) break;
+    total += n;
+  }
+
+  if (total < 212) return CONTENT_UNKNOWN;
+
+  if (buf[208] == 'M' && buf[209] == 'A' &&
+      buf[210] == 'P' && buf[211] == ' ') {
+    return CONTENT_YES;
+  }
+
+  return CONTENT_UNKNOWN;
+}
+
 ///////////////////////////////////////////
 
 // read CCP4 format map file from stream

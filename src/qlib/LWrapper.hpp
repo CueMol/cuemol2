@@ -721,6 +721,12 @@ namespace qlib {
   }
 
 
+// MC_INVOKE_IMPL2: emitted into the auto-generated <class>_wrap.cpp
+// for every MC_SCRIPTABLE class. Wires invokeMethod / hasMethod /
+// getScrClassObj / implements to the wrapper's funcMap, and makes
+// getScrClassObj return this class's own class object (which is what
+// the scripting bridge contract relies on). See
+// docs/architecture/cpp-scripting-bridge.md.
 #define MC_INVOKE_IMPL2(CLASSNAME, WRAPPER)                             \
   bool CLASSNAME::hasMethod(const qlib::LString &nm) const              \
   {                                                                     \

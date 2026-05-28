@@ -45,9 +45,13 @@ namespace qlib {
     /// Is convertable between string?
     virtual bool isStrConv() const =0;
 
-    /// Get metaclass obj of scriptable class
-    //   (Required for js wrapper class creation.
-    //    The class of the returned class obj must has QIF definition and JS wrapper class.
+    /// Get metaclass obj of scriptable class.
+    /// Returns the nearest MC_SCRIPTABLE ancestor's class object;
+    /// MC_DYNCLASS-only classes do not override this, so virtual
+    /// dispatch falls through to the parent's MC_INVOKE_IMPL2 override.
+    /// External scripting bridges must call this (not getClassObj)
+    /// when surfacing a class name to script -- see
+    /// docs/architecture/cpp-scripting-bridge.md.
     virtual LClass *getScrClassObj() const =0;
     
     /// scriptable interface query method

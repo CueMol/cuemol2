@@ -56,6 +56,22 @@ const char *XplorMapReader::getFileExt() const
   return "*.map;*.cns";
 }
 
+/// Content-sniff: scan line-by-line for the "ZYX" axis-order line
+/// (the only axis order readAxisInfo accepts). The reader has no
+/// fixed peek window -- callers cap input via the upstream
+/// LimitedInStream so unbounded reading is safe. Real CNS/Xplor maps
+/// can push the ZYX marker past byte 4900 with verbose REMARKS title
+/// blocks; LineStream walks past them without any in-reader budget.
+int XplorMapReader::canHandleContent(qlib::InStream &ins) const
+{
+  qlib::LineStream lin(ins);
+  while (lin.ready()) {
+    LString line = lin.readLine().trim(" \t\r\n");
+    if (line.startsWith("ZYX")) return CONTENT_YES;
+  }
+  return CONTENT_UNKNOWN;
+}
+
 ///////////////////////////////////////////
 
 bool XplorMapReader::read(qlib::InStream &arg)

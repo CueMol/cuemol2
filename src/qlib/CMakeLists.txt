@@ -78,6 +78,7 @@ FormatStream.hpp
 GenericTable.hpp
 GzipStream.hpp
 HashMap.hpp
+LimitedInStream.hpp
 HashTable.hpp
 IndexedTable.hpp
 IntVec3D.hpp

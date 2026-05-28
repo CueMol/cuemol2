@@ -25,6 +25,7 @@ add_executable(test_qlib
   qlib/test_binstream.cpp
   qlib/test_eventmanager.cpp
   qlib/test_lprocmgr.cpp
+  qlib/test_limited_in_stream.cpp
 )
 target_include_directories(test_qlib PRIVATE
   ${CMAKE_SOURCE_DIR}/src
@@ -73,6 +74,7 @@ add_executable(test_qsys
   qsys/test_scenemanager.cpp
   qsys/test_scene.cpp
   qsys/test_streammanager.cpp
+  qsys/test_stream_manager_search.cpp
   qsys/test_objreader.cpp
   qsys/test_objwriter.cpp
   qsys/test_sceneexporter.cpp
@@ -140,6 +142,18 @@ gtest_discover_tests(test_molvis PROPERTIES LABELS "test_molvis")
 add_executable(test_importers
   modules/importers/test_main.cpp
   modules/importers/test_sdfmolreader.cpp
+  modules/importers/test_mmcif_sniff.cpp
+  modules/importers/test_ccp4map_sniff.cpp
+  modules/importers/test_xplormap_sniff.cpp
+  modules/importers/test_pdb_sniff.cpp
+  modules/importers/test_sdf_sniff.cpp
+  modules/importers/test_mol2_sniff.cpp
+  modules/importers/test_brix_sniff.cpp
+  modules/importers/test_mtz_sniff.cpp
+  modules/importers/test_opendx_sniff.cpp
+  modules/importers/test_msms_sniff.cpp
+  modules/importers/test_namdcoor_sniff.cpp
+  modules/importers/test_load_object_command_guess.cpp
 )
 target_include_directories(test_importers PRIVATE
   ${CMAKE_SOURCE_DIR}/src
@@ -150,7 +164,7 @@ target_include_directories(test_importers PRIVATE
 target_compile_definitions(test_importers PRIVATE
   CUEMOL2_SYSCONFIG_PATH="${CMAKE_SOURCE_DIR}/data/sysconfig.xml"
 )
-target_link_libraries(test_importers PRIVATE importers surface symm xtal molvis molstr qsys gfx qlib Boost::filesystem GTest::gtest)
+target_link_libraries(test_importers PRIVATE importers surface symm xtal mdtools molvis molstr qsys gfx qlib Boost::filesystem GTest::gtest)
 if (BUILD_OPENGL_SYSDEP)
   target_link_libraries(test_importers PRIVATE sysdep)
 endif()

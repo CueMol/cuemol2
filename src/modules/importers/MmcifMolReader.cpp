@@ -59,6 +59,23 @@ qsys::ObjectPtr MmcifMolReader::createDefaultObj() const
   return qsys::ObjectPtr(MB_NEW MolCoord());
 }
 
+int MmcifMolReader::canHandleContent(qlib::InStream &ins) const
+{
+  // Scan until EOF or a verdict-forming prefix. Callers cap how much of
+  // the file is exposed via StreamManager's `maxBytes` parameter (or a
+  // wrapping LimitedInStream); the reader itself has no artificial line
+  // budget so arbitrarily long PDB-derived headers still resolve.
+  qlib::LineStream lin(ins);
+  while (lin.ready()) {
+    LString line = lin.readLine().trim();
+    if (line.isEmpty()) continue;
+    if (line.startsWith("#")) continue;
+    if (line.startsWith("_atom_site.")) return CONTENT_YES;
+    if (line.startsWith("_refln.")) return CONTENT_NO;
+  }
+  return CONTENT_UNKNOWN;
+}
+
 /////////
 
 // read PDB file from stream

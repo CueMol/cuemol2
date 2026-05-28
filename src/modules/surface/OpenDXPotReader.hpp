@@ -65,6 +65,9 @@ public:
   ///
   virtual bool read(qlib::InStream &ins);
 
+  /// Content-sniff: report whether `ins` looks like an OpenDX/APBS map.
+  virtual int canHandleContent(qlib::InStream &ins) const;
+
   ///////////////////////////////////////////
 
 private:

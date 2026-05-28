@@ -52,6 +52,19 @@ const char *MOL2MolReader::getFileExt() const
   return "*.mol2";
 }
 
+/// Content-sniff: scan lines for the TRIPOS section marker
+/// "@<TRIPOS>MOLECULE" at column 0 (matches the line-equality check
+/// in readMol). Callers cap input via upstream LimitedInStream.
+int MOL2MolReader::canHandleContent(qlib::InStream &ins) const
+{
+  qlib::LineStream lin(ins);
+  while (lin.ready()) {
+    LString line = lin.readLine().trim("\r\n");
+    if (line.equals("@<TRIPOS>MOLECULE")) return CONTENT_YES;
+  }
+  return CONTENT_UNKNOWN;
+}
+
 qsys::ObjectPtr MOL2MolReader::createDefaultObj() const
 {
   return qsys::ObjectPtr(MB_NEW MolCoord());

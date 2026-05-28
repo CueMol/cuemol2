@@ -12,8 +12,14 @@
 #include <qlib/ClassRegistry.hpp>
 
 #include <qlib/FileStream.hpp>
+#include <qlib/GzipStream.hpp>
 #include <qlib/LByteArray.hpp>
 #include <qlib/LVarArray.hpp>
+#include <qlib/LimitedInStream.hpp>
+
+#ifdef HAVE_LZMA_H
+#include <qlib/XzStream.hpp>
+#endif
 
 #include <qlib/PipeStream.hpp>
 #include "IOThread.hpp"
@@ -297,6 +303,191 @@ LString StreamManager::getInitRendererNames(const LString &rdrnm) const
   return rval;
 }
 */
+
+namespace {
+
+enum HeadEncoding { ENC_RAW, ENC_GZIP, ENC_XZ };
+
+// Probe the first few bytes of `path` and return what compression (if
+// any) the file appears to use. The 6-byte sample is large enough to
+// capture both gzip (2-byte magic) and xz (6-byte magic).
+HeadEncoding detectEncoding(const LString &path)
+{
+  qlib::FileInStream probe;
+  try {
+    probe.open(path);
+  }
+  catch (...) {
+    return ENC_RAW;  // Caller's open() will fail too and bail.
+  }
+
+  unsigned char magic[6] = {0};
+  int nRead = 0;
+  try {
+    nRead = probe.read(reinterpret_cast<char *>(magic), 0, 6);
+  }
+  catch (...) {
+    nRead = 0;
+  }
+  try { probe.close(); } catch (...) {}
+
+  if (nRead >= 2 && magic[0] == 0x1f && magic[1] == 0x8b) {
+    return ENC_GZIP;
+  }
+  // xz magic: FD 37 7A 58 5A 00  ("\xfd7zXZ\0")
+  if (nRead >= 6 && magic[0] == 0xfd && magic[1] == '7' && magic[2] == 'z' &&
+      magic[3] == 'X' && magic[4] == 'Z' && magic[5] == 0) {
+    return ENC_XZ;
+  }
+  return ENC_RAW;
+}
+
+// Run `rdr.canHandleContent` against a freshly opened stream for `path`.
+// The file is wrapped with a Gzip/Xz decompressor when `enc` says so,
+// and again with a LimitedInStream when `maxBytes` is positive. Each
+// candidate gets its own stream chain (per-candidate re-open / re-decode)
+// because canHandleContent is non-rewinding -- the OS page cache covers
+// the cost of repeated file reads, and readers typically break out of
+// their scan within a few KB.
+int sniffWithChain(qsys::ObjReader &rdr, const LString &path,
+                   HeadEncoding enc, qlib::quint64 maxBytes)
+{
+  qlib::FileInStream fis;
+  try {
+    fis.open(path);
+  }
+  catch (...) {
+    return qsys::ObjReader::CONTENT_UNKNOWN;
+  }
+
+  // Inner helper: apply the optional byte cap and call canHandleContent.
+  auto withCap = [&](qlib::InStream &stream) -> int {
+    if (maxBytes > 0) {
+      qlib::LimitedInStream lim(stream, static_cast<qlib::qint64>(maxBytes));
+      return rdr.canHandleContent(lim);
+    }
+    return rdr.canHandleContent(stream);
+  };
+
+  int verdict = qsys::ObjReader::CONTENT_UNKNOWN;
+
+  try {
+    if (enc == ENC_GZIP) {
+      qlib::GzipInStream gzin(fis);
+      verdict = withCap(gzin);
+      try { gzin.close(); } catch (...) {}
+    }
+#ifdef HAVE_LZMA_H
+    else if (enc == ENC_XZ) {
+      qlib::XzInStream xzin(fis);
+      verdict = withCap(xzin);
+      try { xzin.close(); } catch (...) {}
+    }
+#endif
+    else {
+      verdict = withCap(fis);
+    }
+  }
+  catch (...) {
+    // Corrupt input, mid-decompression error, reader exception, etc.
+    verdict = qsys::ObjReader::CONTENT_UNKNOWN;
+  }
+
+  try { fis.close(); } catch (...) {}
+  return verdict;
+}
+
+}  // namespace
+
+// Shared core of searchReader{,s}ByContent. When `bFirstOnly` is true,
+// returns at the first YES verdict (no further readers are queried);
+// otherwise collects every YES match and joins them with ','.
+LString StreamManager::searchByContentImpl(const LString &path,
+                                           const LString &nicknames_csv,
+                                           int nCatID,
+                                           bool supportCompression,
+                                           bool bFirstOnly,
+                                           qlib::quint64 maxBytes) const
+{
+  // Parse CSV into a quick-lookup list. Empty CSV means "walk every
+  // registered reader of the given category". split_of() treats every
+  // char in its first arg as a separator and silently drops empty
+  // tokens, so a humanised CSV like " mmcif , mmcifmap " collapses to
+  // ["mmcif", "mmcifmap"] without an extra trim pass. Reader nicknames
+  // are alphanumeric, so the broader "comma OR whitespace" delimiter
+  // set is benign.
+  qlib::LStringList wanted;
+  if (!nicknames_csv.isEmpty()) {
+    nicknames_csv.split_of(", \t", wanted);
+  }
+  const bool filtered = !wanted.empty();
+
+  std::vector<const ReaderInfo *> candidates;
+  for (const auto &entry : m_rdrinfotab) {
+    if (entry.second.nCatID != nCatID) continue;
+    if (filtered) {
+      bool match = false;
+      for (const LString &nm : wanted) {
+        if (entry.second.nickname.equals(nm)) {
+          match = true;
+          break;
+        }
+      }
+      if (!match) continue;
+    }
+    candidates.push_back(&entry.second);
+  }
+
+  if (candidates.empty()) return LString();
+
+  // Short-circuit by extension when transparent decompression is off:
+  // the raw bytes of a .gz / .xz file would never match any reader's
+  // canHandleContent(), so don't waste a file open.
+  if (!supportCompression) {
+    LString lowered = path.toLowerCase();
+    if (lowered.endsWith(".gz") || lowered.endsWith(".xz")) {
+      return LString();
+    }
+  }
+
+  // Probe magic bytes once -- candidates share the encoding decision.
+  HeadEncoding enc = supportCompression ? detectEncoding(path) : ENC_RAW;
+
+  qlib::LStringList hits;
+  for (const ReaderInfo *pInfo : candidates) {
+    qlib::LClass *pCls = pInfo->pClass;
+    MB_ASSERT(pCls != NULL);
+    ObjReader *pRdr = dynamic_cast<ObjReader *>(pCls->createObj());
+    if (pRdr == NULL) continue;
+
+    int verdict = sniffWithChain(*pRdr, path, enc, maxBytes);
+    delete pRdr;
+
+    if (verdict == ObjReader::CONTENT_YES) {
+      if (bFirstOnly) return pInfo->nickname;
+      hits.push_back(pInfo->nickname);
+    }
+  }
+
+  if (hits.empty()) return LString();
+  return LString::join(",", hits);
+}
+
+LString StreamManager::searchReadersByContent(
+    const LString &path, const LString &nicknames_csv, int nCatID,
+    bool supportCompression, qlib::quint64 maxBytes) const
+{
+  return searchByContentImpl(path, nicknames_csv, nCatID, supportCompression,
+                             /*bFirstOnly=*/false, maxBytes);
+}
+
+LString StreamManager::searchReaderByContent(
+    const LString &path, const LString &nicknames_csv, int nCatID,
+    bool supportCompression, qlib::quint64 maxBytes) const
+{
+  return searchByContentImpl(path, nicknames_csv, nCatID, supportCompression,
+                             /*bFirstOnly=*/true, maxBytes);
+}
 
 LString StreamManager::findCompatibleWriterNamesForObj(qlib::uid_t objid)
 {

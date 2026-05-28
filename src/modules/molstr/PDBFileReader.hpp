@@ -101,6 +101,9 @@ namespace molstr {
     */
     virtual bool read(qlib::InStream &ins);
 
+    /// Content-sniff: report whether `ins` looks like a PDB file.
+    virtual int canHandleContent(qlib::InStream &ins) const;
+
     //////////////////////////////////////////////
     // Information query methods
 
