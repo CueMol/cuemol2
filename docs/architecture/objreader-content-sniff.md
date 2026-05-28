@@ -135,6 +135,25 @@ bytes will help -- if the format's magic is at byte 0, the read is
 `CONTENT_NO` from a binary reader is appropriate only when the prefix
 positively matches a competing format. That is rare.
 
+### Binary readers: IEEE sanity check (no magic bytes)
+
+A few binary formats lack any header magic but their leading fields
+are structurally constrained -- for example, a small positive `int32`
+count followed by IEEE `float64` coordinates. In that case, read the
+fixed-size prefix, then accept only if **all** of the following hold
+under **either** native or byte-swapped interpretation:
+
+- the leading integer count is positive and within a plausible upper
+  bound,
+- every float field is `std::isfinite` (rules out NaN/Inf),
+- every float field's magnitude is within a domain-specific cap.
+
+Stray ASCII or unrelated binary input fails the float-sanity check
+almost certainly, so the false-positive risk is low. The
+endian-pair retry mirrors the runtime swap-detection that the
+reader's `read()` already performs. `NAMDCoorReader::canHandleContent`
+implements this pattern.
+
 ## Decision table: NO vs UNKNOWN
 
 A reader inspecting content is in one of three states:
@@ -174,6 +193,14 @@ readers fight each other on unusual inputs. The rule: NO is for
 
 The reader's existing `read()` path is untouched. `canHandleContent`
 is read-only and lives parallel to `read()`.
+
+## Readers without sniff coverage
+
+`PsfReader` (`src/modules/mdtools/PsfReader.cpp`) is not a
+`qsys::ObjReader` subclass; it is an internal helper used only from
+`NAMDCoorReader::loadTopology()` to consume a `"topo"` sub-stream.
+It has no entry in the file-type registry and never reaches the
+sniff chain, so no `canHandleContent` is added.
 
 ## Related files
 

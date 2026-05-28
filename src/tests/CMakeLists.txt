@@ -151,6 +151,8 @@ add_executable(test_importers
   modules/importers/test_brix_sniff.cpp
   modules/importers/test_mtz_sniff.cpp
   modules/importers/test_opendx_sniff.cpp
+  modules/importers/test_msms_sniff.cpp
+  modules/importers/test_namdcoor_sniff.cpp
   modules/importers/test_load_object_command_guess.cpp
 )
 target_include_directories(test_importers PRIVATE
@@ -162,7 +164,7 @@ target_include_directories(test_importers PRIVATE
 target_compile_definitions(test_importers PRIVATE
   CUEMOL2_SYSCONFIG_PATH="${CMAKE_SOURCE_DIR}/data/sysconfig.xml"
 )
-target_link_libraries(test_importers PRIVATE importers surface symm xtal molvis molstr qsys gfx qlib Boost::filesystem GTest::gtest)
+target_link_libraries(test_importers PRIVATE importers surface symm xtal mdtools molvis molstr qsys gfx qlib Boost::filesystem GTest::gtest)
 if (BUILD_OPENGL_SYSDEP)
   target_link_libraries(test_importers PRIVATE sysdep)
 endif()

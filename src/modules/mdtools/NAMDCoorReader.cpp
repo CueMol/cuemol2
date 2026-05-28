@@ -7,6 +7,9 @@
 
 #include "NAMDCoorReader.hpp"
 
+#include <cmath>
+#include <cstring>
+
 #include <qlib/BinStream.hpp>
 #include <modules/molstr/MolCoord.hpp>
 #include <modules/molstr/MolChain.hpp>
@@ -49,6 +52,55 @@ const char *NAMDCoorReader::getFileExt() const
 qsys::ObjectPtr NAMDCoorReader::createDefaultObj() const
 {
   return qsys::ObjectPtr(MB_NEW MolCoord());
+}
+
+namespace {
+constexpr qint32 SNIFF_MAX_NATOMS = 10000000;  // 1e7 atoms -- upper bound for realistic MD systems
+constexpr qfloat64 SNIFF_COORD_MAX = 10000.0;  // Angstrom -- normal MD coords stay well within this range
+}
+
+/// Content sniff: NAMD coor begins with int32 natoms followed by
+/// (natoms * 3) float64 xyz. There is no magic, so validate that
+/// natoms is in a plausible range and that the first atom xyz are
+/// IEEE-finite and within a sane magnitude. Try both native and
+/// byte-swapped interpretations (the file's endian matches the
+/// machine that wrote the paired PSF).
+int NAMDCoorReader::canHandleContent(qlib::InStream &ins) const
+{
+  constexpr int HEADER_SIZE = 4 + 3 * 8;  // int32 natoms + 3 * float64 xyz
+  char buf[HEADER_SIZE];
+  int total = 0;
+  while (total < HEADER_SIZE) {
+    int n = ins.read(buf, total, HEADER_SIZE - total);
+    if (n <= 0) break;
+    total += n;
+  }
+  if (total < HEADER_SIZE) return CONTENT_UNKNOWN;
+
+  auto plausible = [](qint32 natoms, qfloat64 x, qfloat64 y, qfloat64 z) -> bool {
+    if (natoms < 1 || natoms > SNIFF_MAX_NATOMS) return false;
+    if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(z)) return false;
+    if (std::abs(x) > SNIFF_COORD_MAX) return false;
+    if (std::abs(y) > SNIFF_COORD_MAX) return false;
+    if (std::abs(z) > SNIFF_COORD_MAX) return false;
+    return true;
+  };
+
+  qint32 natoms;
+  qfloat64 x, y, z;
+  std::memcpy(&natoms, buf + 0,  sizeof(qint32));
+  std::memcpy(&x,      buf + 4,  sizeof(qfloat64));
+  std::memcpy(&y,      buf + 12, sizeof(qfloat64));
+  std::memcpy(&z,      buf + 20, sizeof(qfloat64));
+  if (plausible(natoms, x, y, z)) return CONTENT_YES;
+
+  qlib::LByteSwapper<qint32>::swap(natoms);
+  qlib::LByteSwapper<qfloat64>::swap(x);
+  qlib::LByteSwapper<qfloat64>::swap(y);
+  qlib::LByteSwapper<qfloat64>::swap(z);
+  if (plausible(natoms, x, y, z)) return CONTENT_YES;
+
+  return CONTENT_UNKNOWN;
 }
 
 /////////

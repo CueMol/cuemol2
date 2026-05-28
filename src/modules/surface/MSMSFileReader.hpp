@@ -79,6 +79,10 @@ public:
   /// Read from the input stream ins, and build the attached object.
   virtual bool read(qlib::InStream &ins);
 
+  /// Content sniff: positive marker is "# MSMS" in the leading
+  /// comment block written by the MSMS program.
+  virtual int canHandleContent(qlib::InStream &ins) const;
+
 private:
   // read MSMS file from stream
   bool readVert(qlib::LineStream &ins);

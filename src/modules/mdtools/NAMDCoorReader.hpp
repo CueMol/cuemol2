@@ -48,6 +48,11 @@ namespace mdtools {
     ///
     virtual bool read(qlib::InStream &ins);
 
+    /// Content sniff: NAMD coor has no magic. Validate that the
+    /// first int32 (natoms) plus the first atom xyz (3 * float64)
+    /// look plausible under either native or byte-swapped endian.
+    virtual int canHandleContent(qlib::InStream &ins) const;
+
     //////////////////////////////////////////////
     // Information query methods
 
