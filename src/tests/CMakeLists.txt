@@ -155,6 +155,8 @@ add_executable(test_importers
   modules/importers/test_namdcoor_sniff.cpp
   modules/importers/test_gro_sniff.cpp
   modules/importers/test_grofilereader.cpp
+  modules/importers/test_amber_sniff.cpp
+  modules/importers/test_amber_reader.cpp
   modules/importers/test_load_object_command_guess.cpp
 )
 target_include_directories(test_importers PRIVATE

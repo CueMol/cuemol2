@@ -3,6 +3,7 @@
 
 #include "NAMDCoorReader.qif"
 #include "GROFileReader.qif"
+#include "AmberPrmtopReader.qif"
 
 module mdtools
 {
@@ -11,5 +12,6 @@ module mdtools
 
   NAMDCoorReader;
   GROFileReader;
+  AmberPrmtopReader;
 };
 

@@ -11,6 +11,7 @@
 #include <qsys/StreamManager.hpp>
 #include "NAMDCoorReader.hpp"
 #include "GROFileReader.hpp"
+#include "AmberPrmtopReader.hpp"
 
 extern void mdtools_regClasses();
 extern void mdtools_unregClasses();
@@ -28,6 +29,7 @@ namespace mdtools {
     StreamManager *pSM = StreamManager::getInstance();
     pSM->registWriter<NAMDCoorReader>();
     pSM->registReader<GROFileReader>();
+    pSM->registReader<AmberPrmtopReader>();
 
     MB_DPRINTLN("mdtools init: OK");
     return true;
