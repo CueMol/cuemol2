@@ -2,6 +2,7 @@
 //
 
 #include "NAMDCoorReader.qif"
+#include "GROFileReader.qif"
 
 module mdtools
 {
@@ -9,5 +10,6 @@ module mdtools
   fini mdtools::fini();
 
   NAMDCoorReader;
+  GROFileReader;
 };
 

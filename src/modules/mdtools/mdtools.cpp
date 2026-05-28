@@ -10,6 +10,7 @@
 #include <qsys/RendererFactory.hpp>
 #include <qsys/StreamManager.hpp>
 #include "NAMDCoorReader.hpp"
+#include "GROFileReader.hpp"
 
 extern void mdtools_regClasses();
 extern void mdtools_unregClasses();
@@ -26,6 +27,7 @@ namespace mdtools {
     // register IO handlers
     StreamManager *pSM = StreamManager::getInstance();
     pSM->registWriter<NAMDCoorReader>();
+    pSM->registReader<GROFileReader>();
 
     MB_DPRINTLN("mdtools init: OK");
     return true;

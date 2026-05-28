@@ -1,0 +1,21 @@
+// -*-Mode: C++;-*-
+//
+// GROMACS .gro file reader scripting interface
+//
+
+#ifndef GRO_FILE_READER_QIF_INCLUDED
+#define GRO_FILE_READER_QIF_INCLUDED
+
+#include <qsys/ObjReader.qif>
+
+runtime_class GROFileReader extends ObjReader
+{
+  client_hdr "GROFileReader.hpp";
+  client_name mdtools::GROFileReader;
+
+  scriptable;
+  smartptr;
+
+};
+
+#endif
