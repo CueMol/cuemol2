@@ -136,12 +136,14 @@ export async function handleCameraSaveDialog(
  */
 export async function handlePickPathDialog(
   mainWindow: BrowserWindow,
-  payload: { title: string; directory?: boolean },
+  payload: { title: string; directory?: boolean; filters?: { name: string; extensions: string[] }[] },
 ): Promise<{ canceled: boolean; filePath: string }> {
   const result = await withMenuBlocked('native', () =>
     dialog.showOpenDialog(mainWindow, {
       title: payload.title,
       properties: [payload.directory ? 'openDirectory' : 'openFile'],
+      // Filters only apply to file mode; ignored by the OS for directories.
+      ...(payload.filters && !payload.directory ? { filters: payload.filters } : {}),
     }),
   )
   if (result.canceled || result.filePaths.length === 0) {

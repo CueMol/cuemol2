@@ -1,29 +1,32 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 //
-// Routes object-file loads through `qsys::LoadObjectCommand`, mirroring
-// UXP / CLI semantics:
+// Loads an object file directly through a StreamManager reader, mirroring
+// the UXP fileOpenHelper1 flow (uxp_gui/cuemol2/base/content/fileopen.js):
 //
-//   1. cmd.setTargetScene(scene)  -- method, NOT the auto-generated
-//      `target_scene` property setter. Property setters route through
-//      LScrObjBase::setPropHelper -> setupParentData which clobbers the
-//      scene's m_thisname / m_rootuid and breaks nested undo records.
-//   2. file_path / file_format / object_name / content_first are string /
-//      boolean properties, which are no-ops in setupParentData and safe.
-//   3. cmd.run() picks the reader via guessFileFormat(catID, content_first),
-//      reads the file, names the new object, and calls scene.addObject().
-//   4. cmd.result_object is a readonly getter -- getter paths never call
-//      setupParentData, so it is safe to read back.
+//   1. pickReaderName() resolves the reader nickname the same way the C++
+//      LoadObjectCommand::guessFileFormat() does (and the same way the
+//      dialog's renderer-type preview did), so this load and the preview
+//      agree on which reader runs.
+//   2. createHandler() + setPath() + (.gz) compress mirror UXP's reader
+//      setup.
+//   3. applyReaderOptions() wires the dialog's format-specific options
+//      (loadModel, build2ndry, clmn_F, normalize, vertex_file, psf, ...)
+//      onto the reader BEFORE read(). LoadObjectCommand had no interface
+//      for this, which is why these options were previously dropped.
+//   4. createDefaultObj / attach / read / detach / name / addObject runs
+//      inside the undo txn so a parse failure rolls back cleanly.
 //
 // Renderer-side setup (selection / colorscheme / render-style) stays
-// outside the command path and runs via setupRenderer().
+// outside the reader path and runs via setupRenderer().
 import type { WorkerContext } from '../types/WorkerContext';
-import type { LoadObjectCommand } from '@cuemol/core/src/wrappers/LoadObjectCommand';
-import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
+import type { ObjReader } from '@cuemol/core/src/wrappers/ObjReader';
+import type { Object as CObject } from '@cuemol/core/src/wrappers/Object';
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { FileOpenOptions } from '../../../components/fopen-opt-dlgs/types';
 import { setupRenderer } from './setupRenderer.service';
 import { withUndoTxn } from './withUndoTxn';
-import { DEFAULT_SNIFF_CAP } from '../../shared/sniffConfig';
+import { pickReaderName, OBJREADER_CATEGORY } from './helpers/pickReaderName';
+import { applyReaderOptions } from './helpers/applyReaderOptions';
 
 const log = console;
 
@@ -32,70 +35,76 @@ export interface LoadObjectArgs {
     sceneId: number;
     options: FileOpenOptions;
     /**
-     * When true, ignore the file extension and have C++ side pick the
-     * reader purely by content-sniffing every registered reader. When
-     * false (default), the extension narrows the candidate set first.
+     * When true, ignore the file extension and pick the reader purely by
+     * content-sniffing every registered reader. When false (default), the
+     * extension narrows the candidate set first.
      */
     contentFirst: boolean;
     /**
-     * Optional byte cap forwarded to LoadObjectCommand.max_sniff_bytes.
-     * 0 / undefined leaves the C++ side at its default (unbounded -- the
-     * streaming sniffer reads each candidate's stream until it returns a
-     * verdict or hits EOF). Scripts that want to bound sniff against
-     * pathological / very large inputs can pass a positive value here.
+     * Optional byte cap forwarded to pickReaderName's content-sniff. 0 /
+     * undefined falls back to DEFAULT_SNIFF_CAP. Lets scripts bound sniff
+     * against pathological / very large inputs.
      */
     maxSniffBytes?: number;
 }
 
+/**
+ * Default object name: the file's basename with its final extension removed.
+ * Mirrors C++ LoadObjectCommand::createDefaultObjName (path stem).
+ */
+function fileStem(filePath: string): string {
+    const base = filePath.split(/[\\/]/).pop() ?? filePath;
+    return base.replace(/\.[^.]+$/, '');
+}
+
 function loadObject(ctx: WorkerContext, args: LoadObjectArgs): { ok: boolean } {
     log.info(`[worker] loading object file: ${args.filePath} (contentFirst=${args.contentFirst})`);
+
+    const nickname = pickReaderName(ctx, args.filePath, args.contentFirst, args.maxSniffBytes);
+    if (!nickname) {
+        log.warn(`[worker] loadObject: no reader matched ${args.filePath}`);
+        return { ok: false };
+    }
+
+    const reader = ctx.strMgr.createHandler(nickname, OBJREADER_CATEGORY) as unknown as ObjReader | null;
+    if (!reader) {
+        log.warn(`[worker] loadObject: createHandler failed for "${nickname}"`);
+        return { ok: false };
+    }
+
+    reader.setPath(args.filePath);
+    // Transparent gzip, mirroring UXP fileopen.js (reader.compress = "gzip").
+    // compress is enum-typed in the wrapper but accepts strings at runtime.
+    if (args.filePath.toLowerCase().endsWith('.gz')) {
+        (reader as unknown as { compress: string }).compress = 'gzip';
+    }
+    // Wire the dialog's format-specific reader options before read().
+    applyReaderOptions(reader, nickname, args.options.format);
+
     const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
 
     return withUndoTxn(scene, 'Open file', () => {
-        const cmd = ctx.cmdMgr.getCmd('load_object') as unknown as LoadObjectCommand | null;
-        if (!cmd) {
-            log.warn('[worker] loadObject: load_object command not registered');
-            return { ok: false };
-        }
-
-        // Method-based scene setter avoids the parent-linkage corruption
-        // the auto-generated `target_scene` property setter would cause.
-        cmd.setTargetScene(scene);
-        cmd.file_path = args.filePath;
-        // Empty file_format hands picking back to guessFileFormat().
-        cmd.file_format = '';
-        cmd.object_name = args.options.renderer.objectName ?? '';
-        // Enum properties cross the wrapper as their string ID, but
-        // boolean properties go through as plain booleans.
-        cmd.content_first = args.contentFirst;
-        // Always apply a sniff cap. Defaults to the worker-side
-        // DEFAULT_SNIFF_CAP (64 KB) so pathological inputs can't stall
-        // the sniff loop; callers may override per-request when a real
-        // file genuinely needs more.
-        cmd.max_sniff_bytes = args.maxSniffBytes && args.maxSniffBytes > 0
-            ? args.maxSniffBytes
-            : DEFAULT_SNIFF_CAP;
-
-        if (args.options.format.kind !== 'unknown') {
-            log.info(
-                `[worker] loadObject: format=${args.options.format.kind} options dropped (not wired to C++)`,
-            );
-        }
-
+        let obj: CObject | null = null;
         try {
-            cmd.run();
+            obj = reader.createDefaultObj() as unknown as CObject;
+            reader.attach(obj);
+            reader.read();
+            reader.detach();
         } catch (e) {
-            log.warn('[worker] loadObject: cmd.run() failed:', e);
+            log.warn('[worker] loadObject: reader.read() failed:', e);
             throw e;  // bubble up so withUndoTxn rolls back
         }
 
-        const mol = cmd.result_object as unknown as MolCoord | null;
-        if (!mol) {
-            log.warn('[worker] loadObject: result_object is null');
+        if (!obj) {
+            log.warn('[worker] loadObject: createDefaultObj returned null');
             return { ok: false };
         }
 
-        setupRenderer(ctx, mol, args.options.renderer);
+        (obj as unknown as { name: string }).name =
+            args.options.renderer.objectName || fileStem(args.filePath);
+        (scene as unknown as { addObject: (o: CObject) => void }).addObject(obj);
+
+        setupRenderer(ctx, obj, args.options.renderer);
         return { ok: true };
     });
 }

@@ -25,22 +25,28 @@ import { useCueMol } from '../../hooks/useCueMol';
 import {
   type FileOpenOptions,
   type FormatOptions,
-  detectFormatKind,
+  formatKindForReader,
   buildDefaultFormatOptions,
   isFormatOptionsModified,
   isMolFormat,
+  deriveDefaultPsfPath,
 } from './types';
 import { useRendererOptions } from './useRendererOptions';
+import { computeMtzDefaults } from './mtzColumns';
+import { getLastPsfPath, setLastPsfPath } from './psfPathHistory';
+import { getLastCoordPath, setLastCoordPath } from './coordPathHistory';
+import type { GetMtzColumnInfoResult } from '../../worker/server/services/getMtzColumnInfo.service';
 
 import { PdbOptionsPane } from './panes/PdbOptionsPane';
 import { MtzOptionsPane } from './panes/MtzOptionsPane';
 import { Ccp4MapOptionsPane } from './panes/Ccp4MapOptionsPane';
 import { MsmsOptionsPane } from './panes/MsmsOptionsPane';
 import { NamdCoorOptionsPane } from './panes/NamdCoorOptionsPane';
+import { AmberPrmtopOptionsPane } from './panes/AmberPrmtopOptionsPane';
 import { RendererOptionsPane } from './panes/RendererOptionsPane';
 import { pushHistory } from '../widgets/MolSelList';
 
-import type { PdbOptions, MtzOptions, Ccp4MapOptions, MsmsOptions, NamdCoorOptions } from './types';
+import type { PdbOptions, MtzOptions, Ccp4MapOptions, MsmsOptions, NamdCoorOptions, AmberPrmtopOptions } from './types';
 
 // ---- helpers ----
 
@@ -52,6 +58,7 @@ function formatLabel(kind: string): string {
     case 'ccp4map': return 'CCP4/MRC Map';
     case 'msms': return 'MSMS Surface';
     case 'namdcoor': return 'NAMD Coordinate';
+    case 'amberprm': return 'AMBER prmtop';
     default: return '';
   }
 }
@@ -77,6 +84,12 @@ export interface FileOpenOptionDialogProps {
    * string disables history get/set (a safe no-op).
    */
   objType: string;
+  /**
+   * Reader nickname cuemol/core resolved for this file (e.g. 'pdb',
+   * 'mtzmap'). The single source of truth for which format-specific option
+   * pane to show -- never re-derived from the extension on the TS side.
+   */
+  readerName: string;
   onConfirm: (options: FileOpenOptions) => void;
   onCancel: () => void;
 }
@@ -89,12 +102,13 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
   sceneId,
   rendererTypes,
   objType,
+  readerName,
   onConfirm,
   onCancel,
 }) => {
   const { theme } = useTheme();
   const { cm } = useCueMol();
-  const formatKind = detectFormatKind(filePath);
+  const formatKind = formatKindForReader(readerName);
   const formatName = formatLabel(formatKind);
   const hasFormatOptions = formatKind !== 'unknown';
 
@@ -118,16 +132,22 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
   // Stale-response guard for the object-name proposeUniqName fetch.
   const objNameSeqRef = useRef(0);
 
+  // MTZ column info read from the file header (null until loaded / non-MTZ).
+  const [mtzColumnInfo, setMtzColumnInfo] = useState<GetMtzColumnInfoResult | null>(null);
+  const mtzSeqRef = useRef(0);
+
   // Reset format state when a new file is shown (filePath changes between
   // opens). Renderer-options reset is handled by the shared hook on the
   // dialog's visibility transition.
   const [lastFilePath, setLastFilePath] = useState(filePath);
   if (filePath !== lastFilePath) {
     setLastFilePath(filePath);
-    setFormatOptions(buildDefaultFormatOptions(detectFormatKind(filePath)));
+    setFormatOptions(buildDefaultFormatOptions(formatKind));
     setIsFormatExpanded(false);
-    // Discard any in-flight object-name response for the previous file.
+    setMtzColumnInfo(null);
+    // Discard any in-flight responses for the previous file.
     objNameSeqRef.current += 1;
+    mtzSeqRef.current += 1;
   }
 
   // Effect: resolve a scene-wide unique object name when the dialog opens or
@@ -151,11 +171,74 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
     })();
   }, [cm, visible, filePath, sceneId]);
 
+  // Effect: when an MTZ file is shown, read its column labels + resolution
+  // range and seed the dialog's default column selections (UXP onInit +
+  // selectDefaultColumns). Runs once per file/scene open.
+  useEffect(() => {
+    if (!visible || !cm || formatKind !== 'mtz') return;
+    const seq = ++mtzSeqRef.current;
+    (async () => {
+      const info = await cm.getMtzColumnInfo(filePath);
+      if (seq !== mtzSeqRef.current) return; // stale
+      setMtzColumnInfo(info);
+      if (!info.ok) return;
+      const defs = computeMtzDefaults(info.columns);
+      setFormatOptions({
+        kind: 'mtz',
+        options: {
+          ...defs,
+          // Round to 1 decimal place to match UXP's decimalplaces="1" widget.
+          resolutionLimit: Math.round(info.resolution * 10) / 10,
+          gridSpacing: 0.25,
+        },
+      });
+    })();
+  }, [cm, visible, filePath, formatKind]);
+
+  // Effect: when a NAMD coordinate file is shown, seed the PSF topology path
+  // from history (last-used) or, failing that, the coordinate path with a
+  // `.psf` extension (UXP fopen-namdcooropt onInit). Only seeds while the
+  // path is still empty so it never clobbers a user edit.
+  useEffect(() => {
+    if (!visible || formatKind !== 'namdcoor') return;
+    const seeded = getLastPsfPath() ?? deriveDefaultPsfPath(filePath);
+    if (!seeded) return;
+    setFormatOptions((prev) =>
+      prev.kind === 'namdcoor' && prev.options.psfFilePath === ''
+        ? { kind: 'namdcoor', options: { psfFilePath: seeded } }
+        : prev,
+    );
+  }, [visible, filePath, formatKind]);
+
+  // Effect: when an AMBER prmtop file is shown, seed the coordinate path from
+  // history (last-used). Unlike NAMD's required PSF, the coord sub-stream is
+  // optional and its extension (rst7 / inpcrd / restrt) is ambiguous, so there
+  // is no path-derivation fallback -- an empty path means topology-only.
+  useEffect(() => {
+    if (!visible || formatKind !== 'amberprm') return;
+    const seeded = getLastCoordPath();
+    if (!seeded) return;
+    setFormatOptions((prev) =>
+      prev.kind === 'amberprm' && prev.options.coordFilePath === ''
+        ? { kind: 'amberprm', options: { coordFilePath: seeded } }
+        : prev,
+    );
+  }, [visible, filePath, formatKind]);
+
   const handleConfirm = useCallback(() => {
     if (rendererOptions.selectionEnabled && rendererOptions.selection) {
       pushHistory(rendererOptions.selection);
     }
     commitHistory();
+    // Remember the chosen PSF path for the next NAMD coordinate load (UXP
+    // pref "cuemol2.ui.histories.namdcoor.psfpath").
+    if (formatOptions.kind === 'namdcoor' && formatOptions.options.psfFilePath) {
+      setLastPsfPath(formatOptions.options.psfFilePath);
+    }
+    // Remember the chosen AMBER coordinate path for the next prmtop load.
+    if (formatOptions.kind === 'amberprm' && formatOptions.options.coordFilePath) {
+      setLastCoordPath(formatOptions.options.coordFilePath);
+    }
     onConfirm({ format: formatOptions, renderer: rendererOptions });
   }, [onConfirm, formatOptions, rendererOptions, commitHistory]);
 
@@ -229,6 +312,7 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
                   <MtzOptionsPane
                     options={formatOptions.options}
                     onChange={(opts: MtzOptions) => setFormatOptions({ kind: 'mtz', options: opts })}
+                    columnInfo={mtzColumnInfo}
                   />
                 )}
                 {formatKind === 'ccp4map' && formatOptions.kind === 'ccp4map' && (
@@ -247,6 +331,12 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
                   <NamdCoorOptionsPane
                     options={formatOptions.options}
                     onChange={(opts: NamdCoorOptions) => setFormatOptions({ kind: 'namdcoor', options: opts })}
+                  />
+                )}
+                {formatKind === 'amberprm' && formatOptions.kind === 'amberprm' && (
+                  <AmberPrmtopOptionsPane
+                    options={formatOptions.options}
+                    onChange={(opts: AmberPrmtopOptions) => setFormatOptions({ kind: 'amberprm', options: opts })}
                   />
                 )}
               </div>

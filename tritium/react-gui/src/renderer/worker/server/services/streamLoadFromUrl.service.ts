@@ -9,6 +9,7 @@ import type { FileOpenOptions } from '../../../components/fopen-opt-dlgs/types';
 import { setupRenderer } from './setupRenderer.service';
 import { withUndoTxn } from './withUndoTxn';
 import { streamFetchToReader, cancelStream } from './helpers/streamFetchToReader';
+import { applyReaderOptions } from './helpers/applyReaderOptions';
 
 const log = console;
 
@@ -44,6 +45,10 @@ async function streamLoadFromUrl(
     if (!reader) {
         throw new Error(`createHandler failed for reader "${args.readerName}"`);
     }
+
+    // Wire the dialog's format-specific reader options before streaming, the
+    // same way the local file-open path does (readerName is the nickname).
+    applyReaderOptions(reader, args.readerName, args.options.format);
 
     const { obj, canceled } = await streamFetchToReader(ctx, {
         reqId: args.reqId,

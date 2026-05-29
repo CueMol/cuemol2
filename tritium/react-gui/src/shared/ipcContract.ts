@@ -49,7 +49,9 @@ export interface InvokeChannels {
                                 defaultFilterIndex?: number
                               };
                               res: { canceled: boolean; filePath: string; filterIndex: number } }
-  [IPC.DIALOG_PICK_PATH]:  { req: { title: string; directory?: boolean };
+  [IPC.DIALOG_PICK_PATH]:  { req: { title: string; directory?: boolean;
+                                     /** Optional open-dialog file filters (file mode only). */
+                                     filters?: { name: string; extensions: string[] }[] };
                              res: { canceled: boolean; filePath: string } }
   [IPC.SAVE_TEXT_AS]:      { req: {
                                 defaultName: string

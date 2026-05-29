@@ -81,6 +81,7 @@ function mount(props: Partial<React.ComponentProps<typeof FileOpenOptionDialog>>
             sceneId: 7,
             rendererTypes: ['simple', 'ribbon', 'cartoon'],
             objType: 'MolCoord',
+            readerName: 'pdb',
             onConfirm: (o: FileOpenOptions) => { captured = o },
             onCancel: () => { canceled = true },
             ...props,

@@ -11,6 +11,7 @@ import { WorkerTransport } from '../WorkerTransport';
 import type { ElectronFileFilter } from '../../../../shared/ipcTypes';
 import type { FileOpenOptions } from '../../../components/fopen-opt-dlgs/types';
 import type { GetCompatibleRendererNamesResult } from '../../server/services/getCompatibleRendererNames.service';
+import type { GetMtzColumnInfoResult } from '../../server/services/getMtzColumnInfo.service';
 
 const log = console;
 
@@ -39,7 +40,27 @@ export async function getCompatibleRendererNames(
         });
     } catch (e) {
         log.warn('getCompatibleRendererNames failed:', e);
-        return { types: [], objType: '' };
+        return { types: [], objType: '', readerName: '' };
+    }
+}
+
+/**
+ * Read an MTZ file's column labels + resolution range to populate the
+ * file-open dialog's amplitude / phase / weight dropdowns.
+ *
+ * @param transport - Worker transport.
+ * @param filePath - Absolute path of the MTZ file.
+ * @returns Column list and resolution range; `ok:false` (empty) on failure.
+ * @remarks Calls `getMtzColumnInfo` worker service.
+ */
+export async function getMtzColumnInfo(
+    transport: WorkerTransport, filePath: string,
+): Promise<GetMtzColumnInfoResult> {
+    try {
+        return await transport.invokeService('getMtzColumnInfo', { filePath });
+    } catch (e) {
+        log.warn('getMtzColumnInfo failed:', e);
+        return { ok: false, columns: [], minRes: 0, maxRes: 0, resolution: 0 };
     }
 }
 

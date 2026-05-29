@@ -5,7 +5,7 @@
 
 // ---- Format kind ----
 
-export type FormatKind = 'pdb' | 'mmcif' | 'mtz' | 'ccp4map' | 'msms' | 'namdcoor' | 'unknown';
+export type FormatKind = 'pdb' | 'mmcif' | 'mtz' | 'ccp4map' | 'msms' | 'namdcoor' | 'amberprm' | 'unknown';
 
 // ---- Per-format option types ----
 
@@ -21,14 +21,20 @@ export interface PdbOptions {
 export interface MtzOptions {
   columnF: string;
   columnPhi: string;
+  /** Whether the phase column is used (UXP "Phase" checkbox). */
+  phaseEnabled: boolean;
   columnW: string;
+  /** Whether the weight column is used (UXP "Weight" checkbox). */
+  weightEnabled: boolean;
   resolutionLimit: number;
   gridSpacing: number;
 }
 
 export interface Ccp4MapOptions {
   normalize: boolean;
+  truncateMinEnabled: boolean;
   truncateMin: number;
+  truncateMaxEnabled: boolean;
   truncateMax: number;
 }
 
@@ -38,6 +44,14 @@ export interface MsmsOptions {
 
 export interface NamdCoorOptions {
   psfFilePath: string;
+}
+
+export interface AmberPrmtopOptions {
+  /**
+   * Optional AMBER coordinate file (inpcrd / rst7 / restrt) attached as the
+   * reader's "coord" sub-stream. Empty -> topology-only load (atoms at zero).
+   */
+  coordFilePath: string;
 }
 
 export interface RendererOptions {
@@ -57,6 +71,7 @@ export type FormatOptions =
   | { kind: 'ccp4map'; options: Ccp4MapOptions }
   | { kind: 'msms'; options: MsmsOptions }
   | { kind: 'namdcoor'; options: NamdCoorOptions }
+  | { kind: 'amberprm'; options: AmberPrmtopOptions }
   | { kind: 'unknown'; options: Record<string, never> };
 
 export interface FileOpenOptions {
@@ -66,29 +81,29 @@ export interface FileOpenOptions {
 
 // ---- Format detection ----
 
-export function detectFormatKind(filePath: string): FormatKind {
-  const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
-  switch (ext) {
-    case 'pdb':
-    case 'ent':
-      return 'pdb';
-    case 'cif':
-    case 'mmcif':
-      return 'mmcif';
-    case 'mtz':
-      return 'mtz';
-    case 'ccp4':
-    case 'map':
-    case 'mrc':
-      return 'ccp4map';
-    case 'face':
-      return 'msms';
-    case 'crd':
-    case 'namdbin':
-      return 'namdcoor';
-    default:
-      return 'unknown';
-  }
+// Maps a cuemol/core reader nickname (the single source of truth for file
+// type, resolved C++-side by StreamManager) to the dialog's option-pane kind.
+// This mirrors UXP `selectShowTab(reader_name, "<nickname>")`: the pane is
+// keyed on the resolved reader, never on an ad-hoc extension parse. Reader
+// nicknames come from each ObjReader's getName() (PDBFileReader -> "pdb",
+// MTZ2MapReader -> "mtzmap", etc.).
+const READER_NICK_TO_KIND: Record<string, FormatKind> = {
+  pdb: 'pdb',
+  mmcif: 'mmcif',
+  mtzmap: 'mtz',
+  ccp4map: 'ccp4map',
+  msms: 'msms',
+  namdcoor: 'namdcoor',
+  amberprm: 'amberprm',
+};
+
+/**
+ * Resolve which format-specific option pane to show from the reader nickname
+ * that cuemol/core picked for the file. Returns 'unknown' (no pane) for any
+ * reader without dialog options.
+ */
+export function formatKindForReader(readerName: string): FormatKind {
+  return READER_NICK_TO_KIND[readerName] ?? 'unknown';
 }
 
 // ---- Default values ----
@@ -105,19 +120,29 @@ export function getDefaultPdbOptions(): PdbOptions {
 }
 
 export function getDefaultMtzOptions(): MtzOptions {
+  // Placeholders; the real defaults (column selections + resolution) are
+  // filled in by FileOpenOptionDialog once the worker reads the MTZ header.
+  // Grid spacing defaults to the UXP "Fine" preset (0.25).
   return {
     columnF: '',
     columnPhi: '',
+    phaseEnabled: true,
     columnW: '',
+    weightEnabled: false,
     resolutionLimit: 0,
-    gridSpacing: 0.33,
+    gridSpacing: 0.25,
   };
 }
 
 export function getDefaultCcp4MapOptions(): Ccp4MapOptions {
+  // Truncation disabled by default, matching the CCP4MapReader defaults
+  // (truncate_min / truncate_max false). The sigma values are retained as
+  // editable defaults so enabling a toggle uses a sensible clamp.
   return {
     normalize: true,
+    truncateMinEnabled: false,
     truncateMin: -5.0,
+    truncateMaxEnabled: false,
     truncateMax: 5.0,
   };
 }
@@ -128,6 +153,22 @@ export function getDefaultMsmsOptions(): MsmsOptions {
 
 export function getDefaultNamdCoorOptions(): NamdCoorOptions {
   return { psfFilePath: '' };
+}
+
+export function getDefaultAmberPrmtopOptions(): AmberPrmtopOptions {
+  // Coord sub-stream is optional; default empty (topology-only). The dialog
+  // seeds the last-used coord path from history when available.
+  return { coordFilePath: '' };
+}
+
+/**
+ * Default PSF topology path for a NAMD coordinate file: the coordinate path
+ * with its final extension replaced by `.psf`. Mirrors UXP fopen-namdcooropt
+ * (`util.splitFileName(path, "*.coor") + ".psf"`).
+ */
+export function deriveDefaultPsfPath(coorPath: string): string {
+  if (!coorPath) return '';
+  return coorPath.replace(/\.[^.\\/]+$/, '') + '.psf';
 }
 
 export function getDefaultRendererOptions(filePath: string, defaultRendType?: string): RendererOptions {
@@ -185,8 +226,9 @@ export function isFormatOptionsModified(options: FormatOptions): boolean {
       return (
         o.columnF !== d.columnF ||
         o.columnPhi !== d.columnPhi ||
+        o.phaseEnabled !== d.phaseEnabled ||
         o.columnW !== d.columnW ||
-        o.resolutionLimit !== d.resolutionLimit ||
+        o.weightEnabled !== d.weightEnabled ||
         o.gridSpacing !== d.gridSpacing
       );
     }
@@ -195,7 +237,9 @@ export function isFormatOptionsModified(options: FormatOptions): boolean {
       const o = options.options;
       return (
         o.normalize !== d.normalize ||
+        o.truncateMinEnabled !== d.truncateMinEnabled ||
         o.truncateMin !== d.truncateMin ||
+        o.truncateMaxEnabled !== d.truncateMaxEnabled ||
         o.truncateMax !== d.truncateMax
       );
     }
@@ -203,6 +247,8 @@ export function isFormatOptionsModified(options: FormatOptions): boolean {
       return options.options.vertFilePath !== '';
     case 'namdcoor':
       return options.options.psfFilePath !== '';
+    case 'amberprm':
+      return options.options.coordFilePath !== '';
     default:
       return false;
   }
@@ -222,6 +268,8 @@ export function buildDefaultFormatOptions(kind: FormatKind): FormatOptions {
       return { kind: 'msms', options: getDefaultMsmsOptions() };
     case 'namdcoor':
       return { kind: 'namdcoor', options: getDefaultNamdCoorOptions() };
+    case 'amberprm':
+      return { kind: 'amberprm', options: getDefaultAmberPrmtopOptions() };
     default:
       return { kind: 'unknown', options: {} };
   }

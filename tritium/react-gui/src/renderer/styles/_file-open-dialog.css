@@ -65,6 +65,12 @@
   margin-bottom: var(--space-4);
 }
 
+/* Inline hint / placeholder text (e.g. "Reading MTZ header...") */
+.fod-hint {
+  font-size: var(--fs-lg);
+  color: var(--text-secondary);
+}
+
 /* Switch rows */
 .fod-switch {
   margin-bottom: var(--space-2);
