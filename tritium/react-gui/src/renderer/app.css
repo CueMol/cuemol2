@@ -2,6 +2,7 @@
 /* Each partial handles a specific component or concern. */
 
 @import "./styles/_variables.css";
+@import "./styles/_typography.css";
 @import "./styles/_base.css";
 @import "./styles/_menubar.css";
 @import "./styles/_toolbar.css";

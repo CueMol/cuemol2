@@ -33,8 +33,9 @@
    reads dense, not sparse. Scoped to .selbuilder-popover to avoid touching
    other Tabs in the app. */
 .selbuilder-popover .bp5-tab {
+  /* line-height stays the 24px click target; text size follows the row role. */
   line-height: var(--ctrl-h-md);
-  font-size: var(--fs-lg);
+  font-size: var(--type-row-fs);
 }
 
 .selbuilder-popover .bp5-tab-panel {
@@ -82,8 +83,11 @@
   gap: var(--space-3);
 }
 
+/* "No terms yet" placeholder: descriptive body text. */
 .selbuilder-empty {
-  font-size: var(--fs-base);
+  font-size: var(--type-body-fs);
+  line-height: var(--type-body-lh);
+  font-weight: var(--type-body-fw);
   color: var(--text-muted);
   font-style: italic;
 }
@@ -97,7 +101,8 @@
 
 .selbuilder-preview code {
   font-family: var(--font-mono);
-  font-size: var(--fs-lg);
+  font-size: var(--type-mono-fs);
+  line-height: var(--type-mono-lh);
   color: var(--accent);
   word-break: break-all;
 }
@@ -117,12 +122,12 @@
   min-width: 220px;
 }
 
-/* Unify item typography across the Library and History menus: same
-   font-size and a tight, consistent row height. Both tabs use plain
-   `MenuItem`s under `.selbuilder-menu`, so this single rule keeps them
-   identical (and matches the popover's other 12px text). */
+/* Unify item typography across the Library and History menus: the "row"
+   role keeps them identical (and matches the popover's other row text).
+   Blueprint renders these `MenuItem`s, so we reference the row role tokens
+   directly rather than applying the .type-row class. */
 .selbuilder-menu .bp5-menu-item {
-  font-size: var(--fs-lg);
-  line-height: var(--lh-snug);
+  font-size: var(--type-row-fs);
+  line-height: var(--type-row-lh);
   min-height: var(--ctrl-h-md);
 }

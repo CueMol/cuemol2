@@ -60,11 +60,12 @@ button.cp-swatch {
   flex-direction: column;
 }
 
-/* "Mol" mode note (no editable params). */
+/* "Mol" mode note (no editable params): descriptive body text. */
 .cp-mol-note {
-  font-size: var(--fs-base);
+  font-size: var(--type-body-fs);
+  line-height: var(--type-body-lh);
+  font-weight: var(--type-body-fw);
   color: var(--text-secondary);
-  line-height: var(--lh-normal);
   padding: var(--space-3) var(--space-2);
 }
 
@@ -89,7 +90,9 @@ button.cp-swatch {
 
 .cp-slider-label {
   width: var(--space-5);
-  font-size: var(--fs-base);
+  font-size: var(--type-label-fs);
+  line-height: var(--type-label-lh);
+  font-weight: var(--type-label-fw);
   color: var(--text-primary);
   flex-shrink: 0;
   text-align: center;
@@ -213,8 +216,8 @@ button.cp-swatch {
   flex-shrink: 0;
 }
 
+/* Text size/weight come from the .type-row utility class on the span. */
 .cp-named-name {
-  font-size: var(--fs-lg);
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;

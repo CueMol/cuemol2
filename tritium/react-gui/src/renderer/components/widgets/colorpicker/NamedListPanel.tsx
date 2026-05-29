@@ -73,7 +73,7 @@ export const NamedListPanel: React.FC<NamedListPanelProps> = ({
                     onClick={() => onSelect(e.name)}
                 >
                     <span className="cp-named-swatch" style={{ background: e.hex }} />
-                    <span className="cp-named-name">{e.name}</span>
+                    <span className="cp-named-name type-row">{e.name}</span>
                 </button>
             ))}
         </div>

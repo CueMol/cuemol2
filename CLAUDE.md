@@ -82,8 +82,9 @@ core (@cuemol/core): C++ addon + auto-generated TypeScript wrappers
 **スタイル・デザイントークン (MUST)** — 全トークンは `react-gui/src/renderer/styles/_variables.css` に定義。詳細・一覧・移植チェックリストは [`docs/migration/ui-style-guide.md`](docs/migration/ui-style-guide.md)。
 - **色**: 必ずアプリ semantic トークン (`var(--bg-*)` / `var(--text-*)` / `var(--accent*)` / `var(--border*)`) 経由。生 hex / `rgb()` / `Colors.*` (`@blueprintjs/core`) / Blueprint 内部変数 `var(--pt-*)` は**禁止**。例外は `crash/` (テーマアクセス不可)・NAMED_COLORS 等の分子色データ・`--swatch-text` のような固定コントラスト色のみ。
 - **余白/サイズ/角丸**: `var(--space-0..6)` / `var(--ctrl-h-sm|md|lg)` / `var(--panel-header-h)` / `var(--icon-sm|md|lg)` / `var(--radius-sm|md|lg)` 経由。生 px を新規に書かない。新しい値が要るときは**まず `_variables.css` にトークンを足してから参照**する (コンポーネントに直書きしない)。
-- **フォント**: `var(--fs-*)` / `var(--fw-*)` / `var(--lh-*)` 経由。inline `style` の `fontSize` 数値・`em` 直書き禁止 (`--fs-*` は `--ui-scale` で将来一括スケール可能にしてある)。
-- **既定値**: panel header 高さ = `--panel-header-h` (30px、トップレベルのみ。sub-section は `--ctrl-h-md`)、icon = `--icon-md` (14px)。毎回サイズを決め直さない。
+- **フォント (意味的 role で選ぶ)**: テキストは **px やトークンを「目的の見た目」から逆算して選ばず、UI 上の役割 (role) で選ぶ**。`styles/_typography.css` の `.type-*` ユーティリティクラスを JSX に貼る: `.type-title` / `.type-subtitle` / `.type-eyebrow` (大文字セクション見出し) / `.type-label` / `.type-row` (リスト・ツリー行) / `.type-body` (説明文) / `.type-caption` / `.type-mono` / `.type-hero`。同じ role の UI は必ず同じクラスを使い統一する。自前で描画しない Blueprint 注入要素 (`.bp5-tree-node-content`, `.bp5-menu-item` 等) だけ、対応する `--type-<role>-fs|-lh|-fw` 変数を CSS で参照する。生 `--fs-*` / `--lh-*` を component CSS で新規直参照しない (raw primitive であり role の裏方)。inline `style` の `fontSize` 数値・`em` 直書きも禁止。
+- **構造 role**: panel header = `.panel-header`、sub-section header = `.section-header`、リスト/ツリー行 = `.list-row` (`_typography.css`)。同じ役割の box を component ごとに重複定義しない。
+- **既定値**: panel header 高さ = `--panel-header-h` (30px、トップレベルのみ。sub-section は `--ctrl-h-md`)、リスト/ツリー行高さ = `--row-h` (22px)、icon = `--icon-md` (14px)。毎回サイズを決め直さない。
 - 新規スタイルは原則 `styles/_*.css` のクラスに置く。inline `style={{}}` は動的値 (計算した色プレビュー等) のみ許可。
 - 検証: `cd tritium/react-gui && npm run lint:style` (または `task lint_tritium_style`) で生 hex/px を検出 (warn-only)。新規追加でベースライン件数を増やさないこと。
 - ダークモード: `portalClassName={isDark ? 'bp5-dark' : ''}` を Dialog に付与すれば Blueprint が自動対応。テーマ切替は `data-theme` 属性 + semantic トークンの再マッピングで一括解決される。

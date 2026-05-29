@@ -1,0 +1,122 @@
+/*
+ * Semantic typography & structural role utilities.
+ *
+ * These classes are the primary way to style text and common containers:
+ * pick a role by MEANING and apply its class, instead of restating
+ * font-size / line-height / font-weight (or a raw --fs-* chosen to hit a
+ * pixel target) in each component. Every value comes from the --type-*
+ * role tokens in _variables.css, so all sibling UIs that share a role stay
+ * visually identical and scale together via --ui-scale.
+ *
+ * See docs/migration/ui-style-guide.md for which role to pick.
+ */
+
+/* --- Text roles --- */
+
+.type-title {
+  font-size: var(--type-title-fs);
+  line-height: var(--type-title-lh);
+  font-weight: var(--type-title-fw);
+}
+
+.type-subtitle {
+  font-size: var(--type-subtitle-fs);
+  line-height: var(--type-subtitle-lh);
+  font-weight: var(--type-subtitle-fw);
+}
+
+/* Uppercase eyebrow used by panel and section headers. */
+.type-eyebrow {
+  font-size: var(--type-eyebrow-fs);
+  line-height: var(--type-eyebrow-lh);
+  font-weight: var(--type-eyebrow-fw);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-wide);
+}
+
+.type-label {
+  font-size: var(--type-label-fs);
+  line-height: var(--type-label-lh);
+  font-weight: var(--type-label-fw);
+}
+
+.type-row {
+  font-size: var(--type-row-fs);
+  line-height: var(--type-row-lh);
+  font-weight: var(--type-row-fw);
+}
+
+.type-body {
+  font-size: var(--type-body-fs);
+  line-height: var(--type-body-lh);
+  font-weight: var(--type-body-fw);
+}
+
+.type-caption {
+  font-size: var(--type-caption-fs);
+  line-height: var(--type-caption-lh);
+  font-weight: var(--type-caption-fw);
+}
+
+.type-mono {
+  font-family: var(--font-mono);
+  font-size: var(--type-mono-fs);
+  line-height: var(--type-mono-lh);
+  font-weight: var(--type-mono-fw);
+}
+
+.type-hero {
+  font-size: var(--type-hero-fs);
+  line-height: var(--type-hero-lh);
+  font-weight: var(--type-hero-fw);
+}
+
+/* --- Structural roles --- */
+
+/*
+ * Top-level panel header bar (Explorer / Inspector / Settings / Log title
+ * rows). Owns height, chrome background and bottom border; pair with
+ * .type-eyebrow for the label text. Components add only their own padding.
+ */
+.panel-header {
+  display: flex;
+  align-items: center;
+  height: var(--panel-header-h);
+  min-height: var(--panel-header-h);
+  color: var(--text-secondary);
+  background: var(--toolbar-bg);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/*
+ * Sub-section header within a panel. Shorter than a panel header and uses
+ * the panel-header background tint. Pair with .type-eyebrow.
+ */
+.section-header {
+  display: flex;
+  align-items: center;
+  height: var(--ctrl-h-md);
+  min-height: var(--ctrl-h-md);
+  color: var(--text-secondary);
+  background: var(--bg-panel-header);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+/*
+ * List / tree row. Fixed-height clickable row with .type-row text and a
+ * hover highlight. Use for selectable list and tree items.
+ */
+.list-row {
+  display: flex;
+  align-items: center;
+  height: var(--row-h);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.list-row:hover {
+  background: var(--bg-hover);
+}
