@@ -71,6 +71,7 @@ describe('getCompatibleRendererNames — explicit readerName branch', () => {
         expect(result).toEqual({
             types: ['simple', 'cartoon', 'tube', 'ribbon'],
             objType: 'MolCoord',
+            readerName: 'mmcif',
         })
     })
 
@@ -84,7 +85,7 @@ describe('getCompatibleRendererNames — explicit readerName branch', () => {
             filePath: '1mbn.cif',
             readerName: 'mmcif',
         })
-        expect(result).toEqual({ types: ['simple', 'cartoon'], objType: 'MolCoord' })
+        expect(result).toEqual({ types: ['simple', 'cartoon'], objType: 'MolCoord', readerName: 'mmcif' })
     })
 
     it('returns empty objType when tmpObj.getClassName() is undefined', () => {
@@ -97,7 +98,7 @@ describe('getCompatibleRendererNames — explicit readerName branch', () => {
             filePath: '1mbn.cif',
             readerName: 'mmcif',
         })
-        expect(result).toEqual({ types: ['simple', 'cartoon'], objType: '' })
+        expect(result).toEqual({ types: ['simple', 'cartoon'], objType: '', readerName: 'mmcif' })
     })
 })
 
@@ -115,7 +116,7 @@ describe('getCompatibleRendererNames — extension fallback branch', () => {
         const result = getCompatibleRendererNames(env.ctx, { filePath: '/x/foo.pdb' })
         expect(env.getInfoJSON2).toHaveBeenCalled()
         expect(env.createHandler).toHaveBeenCalledWith('pdb', 0)
-        expect(result).toEqual({ types: ['simple', 'cartoon'], objType: 'MolCoord' })
+        expect(result).toEqual({ types: ['simple', 'cartoon'], objType: 'MolCoord', readerName: 'pdb' })
     })
 
     it('returns empty types and empty objType when no reader matches the extension', () => {
@@ -124,7 +125,7 @@ describe('getCompatibleRendererNames — extension fallback branch', () => {
             info: [{ name: 'pdb', fext: '*.pdb', category: 0 }],
         })
         const result = getCompatibleRendererNames(env.ctx, { filePath: '/x/unknown.xyz' })
-        expect(result).toEqual({ types: [], objType: '' })
+        expect(result).toEqual({ types: [], objType: '', readerName: '' })
     })
 
     it('respects category filter (only OBJECT_READER, category=0)', () => {
@@ -138,7 +139,7 @@ describe('getCompatibleRendererNames — extension fallback branch', () => {
         })
         const result = getCompatibleRendererNames(env.ctx, { filePath: '1mbn.cif' })
         expect(env.createHandler).toHaveBeenCalledWith('mmcif', 0)
-        expect(result).toEqual({ types: ['simple', 'cartoon'], objType: 'MolCoord' })
+        expect(result).toEqual({ types: ['simple', 'cartoon'], objType: 'MolCoord', readerName: 'mmcif' })
     })
 })
 
@@ -173,7 +174,7 @@ describe('getCompatibleRendererNames — .cif ambiguity (regression)', () => {
         const result = getCompatibleRendererNames(env.ctx, { filePath: '1mbn.cif' })
         expect(env.searchReaderByContent).toHaveBeenCalledWith('1mbn.cif', 'mmcifmap,mmcif', 0, false, 65536)
         expect(env.createHandler).toHaveBeenCalledWith('mmcif', 0)
-        expect(result).toEqual({ types: ['simple', 'cartoon', 'tube', 'ribbon'], objType: 'MolCoord' })
+        expect(result).toEqual({ types: ['simple', 'cartoon', 'tube', 'ribbon'], objType: 'MolCoord', readerName: 'mmcif' })
     })
 
     // When the sniffer returns empty (e.g. header too short, both readers
@@ -188,7 +189,7 @@ describe('getCompatibleRendererNames — .cif ambiguity (regression)', () => {
         } as never)
         const result = getCompatibleRendererNames(env.ctx, { filePath: '1mbn.cif' })
         expect(env.createHandler).toHaveBeenCalledWith('mmcifmap', 0)
-        expect(result).toEqual({ types: ['contour', 'isosurf'], objType: 'DensityMap' })
+        expect(result).toEqual({ types: ['contour', 'isosurf'], objType: 'DensityMap', readerName: 'mmcifmap' })
     })
 
     // Content-first mode: the extension is ignored entirely; the sniffer
@@ -206,7 +207,7 @@ describe('getCompatibleRendererNames — .cif ambiguity (regression)', () => {
         })
         expect(env.searchReaderByContent).toHaveBeenCalledWith('1mbn.cif', '', 0, false, 65536)
         expect(env.createHandler).toHaveBeenCalledWith('mmcif', 0)
-        expect(result).toEqual({ types: ['simple', 'cartoon', 'tube', 'ribbon'], objType: 'MolCoord' })
+        expect(result).toEqual({ types: ['simple', 'cartoon', 'tube', 'ribbon'], objType: 'MolCoord', readerName: 'mmcif' })
     })
 
     it('with readerName="mmcif": explicit override skips the lookup entirely', () => {
@@ -217,6 +218,6 @@ describe('getCompatibleRendererNames — .cif ambiguity (regression)', () => {
         })
         expect(env.searchReaderByContent).not.toHaveBeenCalled()
         expect(env.createHandler).toHaveBeenCalledWith('mmcif', 0)
-        expect(result).toEqual({ types: ['simple', 'cartoon', 'tube', 'ribbon'], objType: 'MolCoord' })
+        expect(result).toEqual({ types: ['simple', 'cartoon', 'tube', 'ribbon'], objType: 'MolCoord', readerName: 'mmcif' })
     })
 })

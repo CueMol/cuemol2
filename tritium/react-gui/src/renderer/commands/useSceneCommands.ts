@@ -78,7 +78,7 @@ export function useSceneCommands({
                     // reader, otherwise (e.g.) the dialog offers density-map
                     // renderers for a coordinate CIF and the subsequent load
                     // crashes when the chosen renderer is applied to a MolCoord.
-                    const { types, objType } = await cm.getCompatibleRendererNames(
+                    const { types, objType, readerName } = await cm.getCompatibleRendererNames(
                         data.path, undefined, data.contentFirst,
                     )
                     // Empty types means the C++ side could not identify a
@@ -98,6 +98,7 @@ export function useSceneCommands({
                         sceneId: info.scene_uid,
                         rendererTypes: types,
                         objType,
+                        readerName,
                     })
                     if (options === null) return
                     await cm.loadObject(data.path, info.scene_uid, options, data.contentFirst)
@@ -161,6 +162,7 @@ export function useSceneCommands({
                             sceneId: info.scene_uid,
                             rendererTypes,
                             objType,
+                            readerName,
                         })
                         if (options !== null) {
                             tasks.push(() => streamWithProgress(

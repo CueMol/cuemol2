@@ -29,6 +29,7 @@ import * as editApi from './apis/editApi';
 import * as sceneViewApi from './apis/sceneViewApi';
 import type { ProposeUniqNameArgs, ProposeUniqNameResult } from '../server/services/proposeUniqName.service';
 import type { GetCompatibleRendererNamesResult } from '../server/services/getCompatibleRendererNames.service';
+import type { GetMtzColumnInfoResult } from '../server/services/getMtzColumnInfo.service';
 import type { CreateViewInSceneArgs, CreateViewInSceneResult } from '../server/services/createViewInScene.service';
 import type { ProposeNewTabNamesArgs, ProposeNewTabNamesResult } from '../server/services/proposeNewTabNames.service';
 import type { GetSceneCloseInfoResult } from '../server/services/getSceneCloseInfo.service';
@@ -263,6 +264,11 @@ export class AsyncCueMol {
     /** Ask which renderer types are compatible with `filePath`. */
     getCompatibleRendererNames(filePath: string, readerName?: string, contentFirst = false): Promise<GetCompatibleRendererNamesResult> {
         return fileApi.getCompatibleRendererNames(this._transport, filePath, readerName, contentFirst);
+    }
+
+    /** Read MTZ column labels + resolution range for the file-open dialog. */
+    getMtzColumnInfo(filePath: string): Promise<GetMtzColumnInfoResult> {
+        return fileApi.getMtzColumnInfo(this._transport, filePath);
     }
 
     /** Fetch open-dialog filters for the given file-category id. */

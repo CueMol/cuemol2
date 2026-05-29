@@ -148,6 +148,7 @@ describe('Modal dialog: backdrop click + close button are disabled', () => {
         sceneId: 0,
         rendererTypes: ['*default'],
         objType: '',
+        readerName: 'pdb',
         onConfirm: () => {},
         onCancel: () => {},
       }),

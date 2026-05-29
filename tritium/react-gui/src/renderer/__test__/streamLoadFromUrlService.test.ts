@@ -20,9 +20,13 @@ vi.mock('../worker/server/services/setupRenderer.service', () => ({
 vi.mock('../worker/server/services/withUndoTxn', () => ({
     withUndoTxn: vi.fn((_scene: unknown, _label: string, fn: () => unknown) => fn()),
 }))
+vi.mock('../worker/server/services/helpers/applyReaderOptions', () => ({
+    applyReaderOptions: vi.fn(),
+}))
 
 import { services } from '../worker/server/services/streamLoadFromUrl.service'
 import { setupRenderer } from '../worker/server/services/setupRenderer.service'
+import { applyReaderOptions } from '../worker/server/services/helpers/applyReaderOptions'
 
 const { streamLoadFromUrl, cancelStreamLoad } = services
 
@@ -133,6 +137,10 @@ describe('streamLoadFromUrl service', () => {
         })
 
         expect(env.createHandler).toHaveBeenCalledWith('mmcif', 0)
+        // Format options are wired onto the reader before streaming.
+        expect(applyReaderOptions).toHaveBeenCalledWith(
+            env.reader, 'mmcif', expect.objectContaining({ kind: 'mmcif' }),
+        )
         expect(env.loadObjectAsync).toHaveBeenCalledWith(env.reader)
         expect(env.supplyDataAsync).toHaveBeenCalledTimes(2)
         expect(env.supplyDataAsync.mock.calls[0]).toEqual([42, expect.objectContaining({ len: 4 }), 4])

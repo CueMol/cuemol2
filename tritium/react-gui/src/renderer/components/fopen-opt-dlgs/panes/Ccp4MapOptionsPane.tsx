@@ -29,21 +29,35 @@ export const Ccp4MapOptionsPane: React.FC<Ccp4MapOptionsPaneProps> = ({ options,
       />
       <Divider />
       <div className="fod-section-title">Truncation (sigma)</div>
+      <Switch
+        label="Truncate minimum"
+        checked={options.truncateMinEnabled}
+        onChange={(e) => onChange({ ...options, truncateMinEnabled: e.target.checked })}
+        className="fod-switch"
+      />
       <FormGroup label="Minimum" labelFor="ccp4-min" className="fod-form-group">
         <NumericInput
           id="ccp4-min"
           value={options.truncateMin}
           onValueChange={setNum('truncateMin')}
+          disabled={!options.truncateMinEnabled}
           stepSize={0.5}
           minorStepSize={0.1}
           fill
         />
       </FormGroup>
+      <Switch
+        label="Truncate maximum"
+        checked={options.truncateMaxEnabled}
+        onChange={(e) => onChange({ ...options, truncateMaxEnabled: e.target.checked })}
+        className="fod-switch"
+      />
       <FormGroup label="Maximum" labelFor="ccp4-max" className="fod-form-group">
         <NumericInput
           id="ccp4-max"
           value={options.truncateMax}
           onValueChange={setNum('truncateMax')}
+          disabled={!options.truncateMaxEnabled}
           stepSize={0.5}
           minorStepSize={0.1}
           fill

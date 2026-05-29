@@ -16,6 +16,11 @@ export interface FileOpenOptionDialogArgs {
    * Empty string is treated as "no history" (safe no-op).
    */
   objType?: string
+  /**
+   * Reader nickname cuemol/core resolved for the file (e.g. 'pdb', 'mtzmap').
+   * Drives which format-specific option pane is shown.
+   */
+  readerName?: string
 }
 
 export const {
@@ -30,6 +35,7 @@ export const {
       sceneId={args?.sceneId ?? 0}
       rendererTypes={args?.rendererTypes ?? []}
       objType={args?.objType ?? ''}
+      readerName={args?.readerName ?? ''}
       onConfirm={(options) => resolve(options)}
       onCancel={() => resolve(null)}
     />

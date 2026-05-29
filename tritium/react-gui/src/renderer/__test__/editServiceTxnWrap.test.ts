@@ -19,6 +19,7 @@ import { services as loadSceneServices } from '../worker/server/services/loadSce
 const { loadObject } = loadObjectServices
 const { loadScene } = loadSceneServices
 
+const OBJREADER_CATEGORY = 0
 const SCEREADER_CATEGORY = 3
 
 function makeCtx(opts: {
@@ -29,21 +30,16 @@ function makeCtx(opts: {
 
     const mockMol = { name: '', getClassName: () => 'MolCoord' }
 
-    // loadObject path: LoadObjectCommand mock. `run()` either records
-    // a success or throws (used by the rollback test). `result_object`
-    // returns mockMol after a successful run.
-    const cmdRunFn = opts.objreaderReadFn ?? (() => calls.push('cmd.run'))
-    const loadObjCmd: Record<string, unknown> = {
-        setTargetScene: vi.fn(() => calls.push('setTargetScene')),
-        run: vi.fn(cmdRunFn),
+    // loadObject path: reader-based load (no LoadObjectCommand). createHandler
+    // returns this objReader for the 'pdb' nickname; read() either records a
+    // success or throws (used by the rollback test).
+    const objReader = {
+        setPath: vi.fn(),
+        createDefaultObj: vi.fn(() => mockMol),
+        attach: vi.fn(),
+        read: vi.fn(opts.objreaderReadFn ?? (() => calls.push('reader.read'))),
+        detach: vi.fn(),
     }
-    let fp = '', ff = '', on = ''
-    let cf = false
-    Object.defineProperty(loadObjCmd, 'file_path', { get() { return fp }, set(v: string) { fp = v } })
-    Object.defineProperty(loadObjCmd, 'file_format', { get() { return ff }, set(v: string) { ff = v } })
-    Object.defineProperty(loadObjCmd, 'object_name', { get() { return on }, set(v: string) { on = v } })
-    Object.defineProperty(loadObjCmd, 'content_first', { get() { return cf }, set(v: boolean) { cf = v } })
-    Object.defineProperty(loadObjCmd, 'result_object', { get() { return mockMol } })
 
     // loadScene path: still the direct-API SceneXMLReader call.
     const sceReader = {
@@ -63,28 +59,26 @@ function makeCtx(opts: {
         rollbackUndoTxn: vi.fn(() => calls.push('rollback')),
     }
 
-    const sceInfo = JSON.stringify([
+    // Reader info: a pdb objreader and the qsc scene reader, so pickReaderName
+    // (ext-first) resolves /test.pdb -> 'pdb' and /test.qsc -> 'qsc_xml'.
+    const info = JSON.stringify([
+        { name: 'pdb', fext: '*.pdb', category: OBJREADER_CATEGORY },
         { name: 'qsc_xml', fext: '*.qsc', category: SCEREADER_CATEGORY },
     ])
 
     const ctx = {
         sceMgr: { getScene: vi.fn(() => mockScene) },
-        cmdMgr: {
-            getCmd: vi.fn((name: string) => {
-                if (name === 'load_object') return loadObjCmd
-                throw new Error(`cmd path not used: ${name}`)
-            }),
-        },
         strMgr: {
-            getInfoJSON2: vi.fn(() => sceInfo),
+            getInfoJSON2: vi.fn(() => info),
             createHandler: vi.fn((name: string, cat: number) => {
+                if (cat === OBJREADER_CATEGORY && name === 'pdb') return objReader
                 if (cat === SCEREADER_CATEGORY && name === 'qsc_xml') return sceReader
                 return null
             }),
         },
     } as unknown as WorkerContext
 
-    return { calls, ctx, mockScene, loadObjCmd, sceReader }
+    return { calls, ctx, mockScene, objReader, sceReader }
 }
 
 describe('loadObject service — undo txn wrapping', () => {
