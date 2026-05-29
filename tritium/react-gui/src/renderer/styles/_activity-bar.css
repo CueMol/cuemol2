@@ -19,11 +19,11 @@
 }
 
 .activity-bar-top {
-  padding-top: 4px;
+  padding-top: var(--space-2);
 }
 
 .activity-bar-bottom {
-  padding-bottom: 8px;
+  padding-bottom: var(--space-4);
 }
 
 .activity-bar-item {
@@ -63,5 +63,5 @@
   bottom: 25%;
   width: 2px;
   background: var(--accent);
-  border-radius: 0 2px 2px 0;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }

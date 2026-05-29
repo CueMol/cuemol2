@@ -42,7 +42,7 @@ export function StreamProgressDialog({
         >
             <DialogBody>
                 <ProgressBar intent="primary" />
-                <div style={{ marginTop: 8, color: 'var(--pt-text-color-muted)' }}>
+                <div style={{ marginTop: 8, color: 'var(--text-secondary)' }}>
                     {status === 'canceling'
                         ? 'Canceling…'
                         : `Read ${formatBytes(bytesReceived)}`}

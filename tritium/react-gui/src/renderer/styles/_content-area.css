@@ -28,7 +28,7 @@
 .tab {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-3);
   padding: 0 7px;
   min-width: 100px;
   max-width: 200px;
@@ -116,7 +116,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 3px;
+  border-radius: var(--radius-md);
   color: var(--text-muted);
   transition: all 0.15s;
   flex-shrink: 0;
@@ -149,7 +149,7 @@
   font-family: var(--font-mono);
   font-size: var(--fs-lg);
   line-height: var(--lh-relaxed);
-  padding: 8px 0;
+  padding: var(--space-4) 0;
   margin: 0;
   background: transparent;
   color: var(--text-primary);
@@ -166,7 +166,7 @@
 
 .line-number {
   width: 48px;
-  padding: 0 12px 0 0;
+  padding: 0 var(--space-5) 0 0;
   text-align: right;
   color: var(--text-muted);
   user-select: none;
@@ -175,7 +175,7 @@
 
 .line-text {
   flex: 1;
-  padding-right: 16px;
+  padding-right: var(--space-6);
   white-space: pre;
 }
 
@@ -186,7 +186,7 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  gap: 8px;
+  gap: var(--space-4);
   color: var(--text-muted);
 }
 
@@ -195,7 +195,7 @@
   color: var(--accent);
   opacity: var(--accent-placeholder-opacity);
   filter: drop-shadow(0 0 8px var(--accent-glow));
-  margin-bottom: 4px;
+  margin-bottom: var(--space-2);
 }
 
 .placeholder-title {
@@ -214,13 +214,13 @@
 .shortcut-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-3);
 }
 
 .shortcut-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-4);
   font-size: var(--fs-lg);
   color: var(--text-muted);
 }
@@ -247,8 +247,8 @@
 .render-result-toolbar {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px 10px;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
   background: var(--bg-panel-header);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
@@ -264,7 +264,7 @@
 
 .render-result-info {
   margin-left: auto;
-  padding-left: 6px;
+  padding-left: var(--space-3);
   font-size: var(--fs-base);
   color: var(--text-muted);
   white-space: nowrap;
@@ -281,8 +281,8 @@
 .riv-toolbar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 10px;
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-4);
   background: var(--bg-panel-header);
   border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
@@ -323,7 +323,7 @@
 
 /* ── Settings snapshot popover ── */
 .rr-snapshot-pop {
-  padding: 8px 10px;
+  padding: var(--space-4) var(--space-4);
   max-height: 360px;
   overflow-y: auto;
   font-size: var(--fs-base);
@@ -331,11 +331,11 @@
 
 .rr-snapshot-backend {
   font-weight: var(--fw-semibold);
-  margin-bottom: 6px;
+  margin-bottom: var(--space-3);
 }
 
 .rr-snapshot-group-title {
-  margin: 6px 0 2px;
+  margin: var(--space-3) 0 var(--space-1);
   font-weight: var(--fw-semibold);
   text-transform: uppercase;
   letter-spacing: var(--ls-tight);
@@ -345,7 +345,7 @@
 .rr-snapshot-row {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--space-6);
   padding: 1px 0;
 }
 

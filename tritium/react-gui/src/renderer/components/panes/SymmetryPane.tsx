@@ -179,7 +179,7 @@ export const SymmetryPane: React.FC<SymmetryPaneProps> = ({
                         emptyText="(no objects)"
                     />
 
-                    <div style={{ fontSize: 12 }}>
+                    <div style={{ fontSize: 'var(--fs-lg)' }}>
                         {latticeDisplay(info?.lattice ?? '')}
                         {info && info.hm_spacegroup ? (
                             <>
@@ -196,7 +196,7 @@ export const SymmetryPane: React.FC<SymmetryPaneProps> = ({
                             gridTemplateColumns: 'repeat(3, 1fr)',
                             columnGap: 6,
                             rowGap: 2,
-                            fontSize: 12,
+                            fontSize: 'var(--fs-lg)',
                         }}
                     >
                         <span>

@@ -1,7 +1,7 @@
 /* ─── Toolbar ─── */
 .app-toolbar {
-  padding: 0 8px !important;
-  padding-left: var(--titlebar-inset, 8px) !important;
+  padding: 0 var(--space-4) !important;
+  padding-left: var(--titlebar-inset, var(--space-4)) !important;
   height: 36px !important;
   min-height: 36px !important;
   flex-shrink: 0;
@@ -14,7 +14,7 @@
 .app-toolbar .bp5-button {
   font-size: var(--fs-lg) !important;
   min-height: 24px !important;
-  padding: 2px 6px !important;
+  padding: var(--space-1) var(--space-3) !important;
 }
 
 .app-toolbar .bp5-button .bp5-icon {
@@ -26,7 +26,7 @@
 }
 
 .app-toolbar .bp5-divider {
-  margin: 0 6px;
+  margin: 0 var(--space-3);
   border-color: var(--border);
 }
 

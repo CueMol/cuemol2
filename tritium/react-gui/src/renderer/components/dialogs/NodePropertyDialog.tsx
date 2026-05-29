@@ -41,7 +41,7 @@ export function NodePropertyDialog({
         >
             <DialogBody>
                 {entries.length === 0 ? (
-                    <div style={{ color: 'var(--pt-text-color-muted)' }}>
+                    <div style={{ color: 'var(--text-secondary)' }}>
                         No properties available for this node.
                     </div>
                 ) : (
@@ -51,7 +51,7 @@ export function NodePropertyDialog({
                             borderCollapse: 'collapse',
                             fontFamily:
                                 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
-                            fontSize: 12,
+                            fontSize: 'var(--fs-lg)',
                         }}
                     >
                         <tbody>
@@ -60,7 +60,7 @@ export function NodePropertyDialog({
                                     <td
                                         style={{
                                             padding: '4px 12px 4px 0',
-                                            color: 'var(--pt-text-color-muted)',
+                                            color: 'var(--text-secondary)',
                                             verticalAlign: 'top',
                                             whiteSpace: 'nowrap',
                                         }}
@@ -70,7 +70,7 @@ export function NodePropertyDialog({
                                     <td
                                         style={{
                                             padding: '4px 0',
-                                            color: 'var(--pt-text-color)',
+                                            color: 'var(--text-primary)',
                                             wordBreak: 'break-all',
                                         }}
                                     >

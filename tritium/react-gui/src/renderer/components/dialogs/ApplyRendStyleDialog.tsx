@@ -190,8 +190,8 @@ export function ApplyRendStyleDialog({
                     style={{
                         display: 'flex',
                         justifyContent: 'flex-end',
-                        fontSize: 11,
-                        color: 'var(--pt-text-color-muted)',
+                        fontSize: 'var(--fs-base)',
+                        color: 'var(--text-secondary)',
                     }}
                 >
                     (low priority)
@@ -200,20 +200,20 @@ export function ApplyRendStyleDialog({
                     role="listbox"
                     aria-label="Applied styles"
                     style={{
-                        border: '1px solid var(--pt-divider-black)',
+                        border: '1px solid var(--border)',
                         borderRadius: 3,
                         minHeight: 120,
                         maxHeight: 220,
                         overflowY: 'auto',
                         padding: 2,
-                        background: 'var(--pt-app-background-color)',
+                        background: 'var(--bg-surface)',
                     }}
                 >
                     {styles.length === 0 ? (
                         <div
                             style={{
                                 padding: '8px 4px',
-                                color: 'var(--pt-text-color-muted)',
+                                color: 'var(--text-secondary)',
                                 fontStyle: 'italic',
                             }}
                         >
@@ -231,12 +231,12 @@ export function ApplyRendStyleDialog({
                                     cursor: 'pointer',
                                     background:
                                         idx === selectedIdx
-                                            ? 'var(--pt-intent-primary)'
+                                            ? 'var(--accent)'
                                             : 'transparent',
                                     color:
                                         idx === selectedIdx
                                             ? 'white'
-                                            : 'var(--pt-text-color)',
+                                            : 'var(--text-primary)',
                                     borderRadius: 2,
                                 }}
                             >
@@ -249,8 +249,8 @@ export function ApplyRendStyleDialog({
                     style={{
                         display: 'flex',
                         justifyContent: 'flex-end',
-                        fontSize: 11,
-                        color: 'var(--pt-text-color-muted)',
+                        fontSize: 'var(--fs-base)',
+                        color: 'var(--text-secondary)',
                     }}
                 >
                     (high priority)

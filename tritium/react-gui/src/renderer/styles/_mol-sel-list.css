@@ -12,11 +12,11 @@
 /*
  * Picker height + chevron icon offset are driven by CSS variables so we can
  * follow whatever height the surrounding InputGroup uses in each context.
- * Defaults match Blueprint's `--pt-input-height` (30px); the file-open dialog
- * shrinks .bp5-input to 26px in `_dialog.css` and we mirror that below.
+ * Defaults to --ctrl-h-lg (30px, the Blueprint input height); the file-open
+ * dialog shrinks .bp5-input to 26px in `_dialog.css` and we mirror that below.
  */
 .mol-sel-list {
-  --mol-sel-list-height: var(--pt-input-height, 30px);
+  --mol-sel-list-height: var(--ctrl-h-lg);
 }
 
 .bp5-dialog-body .mol-sel-list {

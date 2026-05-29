@@ -1,7 +1,7 @@
 /* ─── Color Panel ─── */
 .color-panel-body {
-  gap: 6px;
-  padding: 8px 10px;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-4);
 }
 
 .color-mol-row {
@@ -26,7 +26,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: var(--radius-md);
   background: var(--bg-input);
 }
 
@@ -43,7 +43,7 @@
 }
 
 .color-table th {
-  padding: 3px 8px;
+  padding: 3px var(--space-4);
   text-align: left;
   font-size: var(--fs-sm2);
   font-weight: var(--fw-semibold);
@@ -78,14 +78,14 @@
 }
 
 .color-cell-selection {
-  padding: 2px 4px;
+  padding: var(--space-1) var(--space-2);
   color: var(--text-primary);
   border-right: 1px solid var(--border-subtle);
 }
 
 .color-cell-color {
-  padding: 2px 4px;
-  color: #1a1a2e;
+  padding: var(--space-1) var(--space-2);
+  color: var(--swatch-text);
   font-weight: var(--fw-semibold);
 }
 
@@ -98,13 +98,13 @@
   color: inherit;
   font-family: inherit;
   font-size: var(--fs-lg);
-  padding: 2px 4px;
+  padding: var(--space-1) var(--space-2);
   cursor: text;
 }
 
 .color-inline-input:focus {
   background: var(--overlay-focus);
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
 }
 
 .color-value-input {
@@ -116,15 +116,15 @@
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  padding-top: 2px;
+  padding-top: var(--space-1);
   border-top: 1px solid var(--border-subtle);
 }
 
 .color-action-btn.bp5-button {
   min-height: 24px !important;
   min-width: 26px !important;
-  padding: 0 4px !important;
-  border-radius: 3px;
+  padding: 0 var(--space-2) !important;
+  border-radius: var(--radius-md);
 }
 
 .color-action-btn.bp5-button .bp5-icon {
@@ -142,7 +142,7 @@
 /* Shell row: renderer selector + coloring dropdown */
 .color-shell-row {
   display: flex;
-  gap: 6px;
+  gap: var(--space-3);
   align-items: center;
   flex-shrink: 0;
 }
@@ -154,7 +154,7 @@
 
 /* Empty / placeholder decks */
 .color-empty-row td {
-  padding: 8px 6px;
+  padding: var(--space-4) var(--space-3);
   font-style: italic;
   color: var(--text-muted);
   text-align: center;
@@ -165,8 +165,8 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 12px 6px;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-3);
   font-size: var(--fs-base);
   color: var(--text-secondary);
 }
@@ -182,14 +182,14 @@
 .color-solid-deck {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-3);
   flex-shrink: 0;
 }
 
 .color-solid-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-3);
 }
 
 .color-solid-label {
@@ -202,7 +202,7 @@
   width: 22px;
   height: 22px;
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: var(--radius-md);
   flex-shrink: 0;
 }
 
@@ -210,8 +210,8 @@
   flex: 1;
   border: 1px solid var(--border);
   background: var(--bg-input);
-  border-radius: 3px;
-  padding: 3px 6px;
+  border-radius: var(--radius-md);
+  padding: 3px var(--space-3);
 }
 
 /* CPK / Rainbow / Bfac deck shared field rows */
@@ -221,14 +221,14 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding-right: 4px;
+  gap: var(--space-2);
+  padding-right: var(--space-2);
 }
 
 .color-field-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-3);
   flex-shrink: 0;
 }
 
@@ -243,8 +243,8 @@
   flex: 1;
   border: 1px solid var(--border);
   background: var(--bg-input);
-  border-radius: 3px;
-  padding: 2px 6px;
+  border-radius: var(--radius-md);
+  padding: var(--space-1) var(--space-3);
   font-size: var(--fs-base);
 }
 
@@ -264,7 +264,7 @@
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: var(--ls-wide);
-  margin-top: 4px;
+  margin-top: var(--space-2);
   flex-shrink: 0;
 }
 
@@ -279,7 +279,7 @@
   background: transparent;
   box-shadow: none;
   border: none;
-  border-radius: 3px;
+  border-radius: var(--radius-md);
   padding: 0;
 }
 
@@ -293,9 +293,9 @@
 .color-enum-select.bp5-html-select select:hover {
   height: 24px;
   min-height: 24px;
-  padding: 0 22px 0 6px;
+  padding: 0 22px 0 var(--space-3);
   font-size: var(--fs-base);
-  border-radius: 3px;
+  border-radius: var(--radius-md);
   /* Override Blueprint's inset-shadow border with a single explicit one. */
   box-shadow: none;
   border: 1px solid var(--border);
@@ -315,7 +315,7 @@
  * min-width (78px) leaves a big gap before "High"/"Mid"/"Low" -- shrink it
  * here so the row reads as a tight unit like the UXP screenshot. */
 .color-elepot-ramp-row {
-  gap: 4px;
+  gap: var(--space-2);
 }
 
 .color-elepot-ramp-label {
@@ -358,7 +358,7 @@
   min-height: 22px;
   line-height: 22px;
   font-size: var(--fs-lg);
-  padding: 0 4px;
+  padding: 0 var(--space-2);
   border-radius: 0;
   background: transparent;
   box-shadow: none;
