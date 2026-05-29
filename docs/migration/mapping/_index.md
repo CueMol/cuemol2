@@ -7,7 +7,7 @@
 - Updated: 2026-05-24 (`panel.btmpanel-holder.seq` Phase 2: drag range select + shift+click range extend with green tracking rect; pointer flow + setPointerCapture)
 - Updated: 2026-05-24 (`panel.btmpanel-holder` split into `.log` / `.seq`; `.seq` Phase 1 wip: Canvas grid + click toggle + Center ctx menu)
 - Updated: 2026-05-24 (`panel.selection` Command tab done: molecule selector + multi-line text + History MRU shared with `MolSelList` via `applyMolSelString`; E2E verified)
-- Updated: 2026-05-24 (`panel.molstruct` Phase 1+2: live tree, lazy load, Select / Center / Zoom — ADR-0018)
+- Updated: 2026-05-29 (`widget.colpicker` / `widget.colorslider` / `menu.color`: color picker widget — ADR-0020)
 - Source files: `docs/migration/mapping/*.md` (excluding this file)
 - Option-specification UX: see [`../option-ux-guidelines.md`](../option-ux-guidelines.md)
   for routing dialog migrations to modal / panel / drawer / popover patterns
@@ -19,15 +19,15 @@
 | Category | File | Total | done | wip | review | todo | frozen |
 |----------|------|------:|-----:|----:|-------:|-----:|-------:|
 | Panel | [panels.md](panels.md) | 27 | 4 | 17 | 1 | 5 | 0 |
-| Menu | [menus.md](menus.md) | 4 | 1 | 2 | 0 | 1 | 0 |
+| Menu | [menus.md](menus.md) | 4 | 2 | 2 | 0 | 0 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 13 | 0 | 0 | 0 | 13 | 0 |
 | Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 0 | 3 | 0 | 15 | 0 |
 | Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 1 | 0 | 0 | 20 | 0 |
-| Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 0 | 1 | 0 | 12 | 0 |
+| Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 1 | 2 | 0 | 10 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 0 | 1 | 0 | 27 | 0 |
 | Other | [other.md](other.md) | 4 | 0 | 1 | 0 | 3 | 0 |
-| **Total** | | **130** | **6** | **26** | **1** | **97** | **0** |
+| **Total** | | **130** | **8** | **27** | **1** | **94** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -74,6 +74,7 @@
 | [`dialog.about`](other_dlgs.md#dialogabout) | `AboutDialog` / `useDialog` | GRE info・userAgent は省略 |
 | [`other.cuemol2`](other.md#othercuemol2) | `App` / `ContentArea` / `TabBar` / `ConfirmCloseTabDialog` / `useQuitHandler` | Main window layout done; close-tab confirmation dialog (UXP `closeTabImpl`) implemented; UXP `onCloseEvent` quit chain wired (cmd-Q walks all tabs via `before-quit` → `APP_QUIT_REQUEST` → `APP_QUIT_PROCEED`) |
 | [`widget.molsellist`](custom_widgets.md) | `MolSelList` (`components/widgets/MolSelList/`) | First consumer wired in `RendererOptionsPane` (file-open dialog); editable `InputGroup` + chevron-only `HTMLSelect` (OS-native dropdown listbox with `<optgroup>` Preset / History / Scene / Global); history via `localStorage`; worker services `getSelDefs` / `validateSelection` added |
+| [`widget.colpicker`](custom_widgets.md) | `ColorPicker` (`components/widgets/colorpicker/`) / `colorPicker.service` | UXP colpicker port (ADR-0020): swatch + text box + caret opening a single popover with a segmented mode switch (RGB / HSB / Named / Palette / Mol) + out-of-gamut warning; `compileColor` / `getNamedColors` worker services. Wired into ColorPane Solid/CPK/Bfac/Elepot decks; Paint table cell + Inspector ColorEditor still pending |
 | [`panel.workspace.tree`](panels.md#panelworkspacetree) | `ScenePane` (tree) / `useSceneTree` / `useSceneTreeController` / `sceneTreeDnd` / `InlineRenameInput` / `sceneTree.service` / `reorderSceneNode.service` | Live tree + visibility toggle + selection (single + multi via Cmd/Ctrl+click) + event-driven auto-refresh + drag-drop reorder (worker + in-app DnD OK; ADR-0001) + F2 inline rename; pending: Shift+range select |
 | [`panel.workspace.ctxmenu.multi`](panels.md#panelworkspacectxmenumulti) | `useSceneContextMenu` / `main/sceneContextMenu` (multi) / `bulkSceneNodeOps.service` | Right-clicking a multi-selected row opens a multi-only menu: Show / Hide / Delete via `bulkSetNodeVisible` / `bulkDeleteNode` (single undo txn per batch); worker + in-app multi-select OK; pending: Copy (clipboard is single-item) |
 | [`panel.workspace.toolbar`](panels.md#panelworkspacetoolbar) | `ScenePane` (toolbar) / `useSceneTreeController` / `sceneOps.service` / `createRendererOnObject.service` / `getNewRendererOptions.service` | Focus / Delete / Property / Add wired (Add shares the New Renderer flow with the ctxmenu); property dialog still a read-only stub |
