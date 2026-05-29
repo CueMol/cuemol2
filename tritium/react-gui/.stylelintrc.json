@@ -1,0 +1,34 @@
+{
+  "plugins": ["stylelint-declaration-strict-value"],
+  "rules": {
+    "color-no-hex": true,
+    "scale-unlimited/declaration-strict-value": [
+      [
+        "/color/",
+        "fill",
+        "stroke",
+        "padding",
+        "padding-top",
+        "padding-right",
+        "padding-bottom",
+        "padding-left",
+        "margin",
+        "margin-top",
+        "margin-right",
+        "margin-bottom",
+        "margin-left",
+        "gap",
+        "row-gap",
+        "column-gap",
+        "font-size",
+        "border-radius"
+      ],
+      {
+        "ignoreValues": ["transparent", "currentColor", "inherit", "initial", "unset", "none", "auto", "0", "1px", "50%"],
+        "disableFix": true,
+        "message": "Use a design token (var(--...)) from styles/_variables.css instead of a raw value"
+      }
+    ]
+  },
+  "ignoreFiles": ["**/_variables.css", "**/node_modules/**", "**/out/**", "**/dist/**"]
+}

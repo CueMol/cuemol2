@@ -11,7 +11,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 12px;
+  padding: 0 var(--space-5);
   height: 26px;
   font-size: var(--fs-base);
   font-weight: var(--fw-semibold);
@@ -37,7 +37,7 @@
 .log-output {
   flex: 1;
   overflow-y: auto;
-  padding: 4px 0;
+  padding: var(--space-2) 0;
   font-family: var(--font-mono);
   font-size: var(--fs-md);
   line-height: var(--lh-normal);
@@ -46,8 +46,8 @@
 .log-line {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 1px 12px;
+  gap: var(--space-4);
+  padding: 1px var(--space-5);
   transition: background 0.1s;
 }
 
@@ -65,7 +65,7 @@
   flex-shrink: 0;
   font-size: var(--fs-sm) !important;
   min-height: 16px !important;
-  padding: 0 4px !important;
+  padding: 0 var(--space-2) !important;
   line-height: 16px !important;
   min-width: 40px;
   text-align: center;
@@ -92,7 +92,7 @@
 .log-prompt {
   display: flex;
   align-items: center;
-  padding: 0 12px;
+  padding: 0 var(--space-5);
   height: 32px;
   background: var(--bg-input);
   border-top: 1px solid var(--border);
@@ -104,7 +104,7 @@
   font-family: var(--font-mono);
   font-size: var(--fs-xl);
   font-weight: var(--fw-semibold);
-  margin-right: 8px;
+  margin-right: var(--space-4);
 }
 
 .prompt-input {
@@ -135,8 +135,8 @@
   display: flex;
   align-items: center;
   gap: 0;
-  /* Match the Side Panel / Inspector Panel header height (30px). */
-  height: 30px;
+  /* Shares --panel-header-h with the Side Panel / Inspector / Settings headers. */
+  height: var(--panel-header-h);
   background: var(--bg-panel-header);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
@@ -145,8 +145,8 @@
 .bottom-tab {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 0 12px;
+  gap: var(--space-3);
+  padding: 0 var(--space-5);
   height: 100%;
   font-size: var(--fs-base);
   font-weight: var(--fw-semibold);
@@ -196,8 +196,8 @@
 .render-panel-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 12px;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-5);
   background: var(--bg-panel-header);
   border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
@@ -206,7 +206,7 @@
 /* Compact action button — kept visually subordinate to the panel tabs. */
 .render-action-btn.bp5-button {
   min-height: 22px;
-  padding: 0 10px;
+  padding: 0 var(--space-4);
   font-size: var(--fs-base);
   font-weight: var(--fw-medium);
 }
@@ -215,7 +215,7 @@
 .render-panel-preset {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-3);
 }
 
 .render-panel-preset-label {
@@ -237,7 +237,7 @@
 }
 
 .render-panel-progress {
-  padding: 8px 12px;
+  padding: var(--space-4) var(--space-5);
   flex-shrink: 0;
 }
 
@@ -245,11 +245,11 @@
 .render-panel-log {
   flex: 1;
   overflow-y: auto;
-  padding: 4px 8px;
+  padding: var(--space-2) var(--space-4);
   background: var(--bg-input);
   color: var(--text-primary);
   font-family: var(--font-mono);
-  font-size: 10pt;
+  font-size: var(--fs-xl);
   line-height: normal;
 }
 
@@ -259,8 +259,8 @@
 }
 
 .render-panel-empty {
-  padding: 4px 8px;
+  padding: var(--space-2) var(--space-4);
   font-family: var(--font-mono);
-  font-size: 10pt;
+  font-size: var(--fs-xl);
   color: var(--text-muted);
 }

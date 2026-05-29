@@ -35,7 +35,7 @@ export function ErrorAlertDialog({ visible, title, message, onClose }: Props): R
             canOutsideClickClose={false}
         >
             <DialogBody>
-                <div style={{ whiteSpace: 'pre-wrap', color: 'var(--pt-text-color)' }}>
+                <div style={{ whiteSpace: 'pre-wrap', color: 'var(--text-primary)' }}>
                     {message}
                 </div>
             </DialogBody>

@@ -4,7 +4,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 10px;
+  padding: 0 var(--space-4);
   height: 24px;
   background: var(--statusbar-bg);
   flex-shrink: 0;
@@ -32,7 +32,7 @@
 .status-item {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-2);
   color: var(--statusbar-text);
   white-space: nowrap;
 }
@@ -55,7 +55,7 @@
 }
 
 .status-busy {
-  color: var(--accent-yellow, #d4a017);
+  color: var(--accent-yellow);
 }
 
 @keyframes status-spin {

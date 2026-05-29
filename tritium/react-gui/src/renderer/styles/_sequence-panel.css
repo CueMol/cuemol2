@@ -45,7 +45,7 @@
 .seq-name-item {
   display: flex;
   align-items: center;
-  padding: 0 10px;
+  padding: 0 var(--space-4);
   font-family: var(--font-ui);
   /* Larger than the residue glyphs (--fs-lg, 12px) so chain:mol
      labels read at a glance against the dense grid. */
@@ -130,6 +130,6 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  gap: 8px;
+  gap: var(--space-4);
   color: var(--text-muted);
 }

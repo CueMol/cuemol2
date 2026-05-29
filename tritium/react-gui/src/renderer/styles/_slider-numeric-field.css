@@ -7,7 +7,7 @@
 .snf-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-4);
   min-width: 0;
   flex-shrink: 0;
 }
@@ -42,7 +42,7 @@
 
 .snf-slider .bp5-slider-progress {
   background: var(--accent);
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
 }
 
 .snf-slider .bp5-slider-progress.bp5-intent-primary {
@@ -77,12 +77,12 @@
   min-width: 52px;
   height: 20px;
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: var(--radius-md);
   background: var(--bg-input);
   color: var(--text-primary);
   font-family: inherit;
   font-size: var(--fs-base);
-  padding: 0 4px;
+  padding: 0 var(--space-2);
   text-align: right;
   outline: none;
   -moz-appearance: textfield;
@@ -131,7 +131,7 @@
   border: 1px solid var(--border);
   background: var(--bg-input);
   color: var(--text-secondary);
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   outline: none;
 }

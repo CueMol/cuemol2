@@ -105,20 +105,20 @@ export function CreateRendStyleDialog({
                         role="listbox"
                         aria-label="Style sets"
                         style={{
-                            border: '1px solid var(--pt-divider-black)',
+                            border: '1px solid var(--border)',
                             borderRadius: 3,
                             minHeight: 100,
                             maxHeight: 180,
                             overflowY: 'auto',
                             padding: 2,
-                            background: 'var(--pt-app-background-color)',
+                            background: 'var(--bg-surface)',
                         }}
                     >
                         {styleSets.length === 0 ? (
                             <div
                                 style={{
                                     padding: '8px 4px',
-                                    color: 'var(--pt-text-color-muted)',
+                                    color: 'var(--text-secondary)',
                                     fontStyle: 'italic',
                                 }}
                             >
@@ -138,11 +138,11 @@ export function CreateRendStyleDialog({
                                             padding: '3px 6px',
                                             cursor: 'pointer',
                                             background: selected
-                                                ? 'var(--pt-intent-primary)'
+                                                ? 'var(--accent)'
                                                 : 'transparent',
                                             color: selected
                                                 ? 'white'
-                                                : 'var(--pt-text-color)',
+                                                : 'var(--text-primary)',
                                             borderRadius: 2,
                                         }}
                                     >
@@ -170,7 +170,7 @@ export function CreateRendStyleDialog({
                         />
                         <span
                             style={{
-                                color: 'var(--pt-text-color-muted)',
+                                color: 'var(--text-secondary)',
                                 whiteSpace: 'nowrap',
                             }}
                         >

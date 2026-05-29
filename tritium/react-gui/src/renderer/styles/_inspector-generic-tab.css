@@ -14,7 +14,7 @@
 
 /* ── Filter bar ── */
 .insp-generic-filter {
-  padding: 4px 8px;
+  padding: var(--space-2) var(--space-4);
   flex-shrink: 0;
   background: var(--bg-surface);
 }
@@ -22,7 +22,7 @@
 /* Compact search field. */
 .insp-generic-filter .insp-input.bp5-input-group .bp5-input {
   height: 24px;
-  border-radius: 4px;
+  border-radius: var(--radius-lg);
   font-size: var(--fs-lg);
   background: var(--bg-input);
   box-shadow: inset 0 0 0 1px var(--border);
@@ -33,7 +33,7 @@
 }
 
 .insp-generic-filter .insp-input.bp5-input-group .bp5-icon {
-  margin: 4px;
+  margin: var(--space-2);
   color: var(--text-muted);
 }
 
@@ -64,7 +64,7 @@
 /* ── Header cells ── */
 .insp-gt-th {
   position: relative;
-  padding: 6px 10px;
+  padding: var(--space-3) var(--space-4);
   text-align: left;
   font-size: var(--fs-lg);
   font-weight: var(--fw-semibold);
@@ -147,7 +147,7 @@
 .insp-gt-cell-name,
 .insp-gt-cell-type,
 .insp-gt-cell-value {
-  padding: 2px 10px;
+  padding: var(--space-1) var(--space-4);
   line-height: var(--lh-snug);
   color: var(--text-primary);
   white-space: nowrap;
@@ -162,7 +162,7 @@
 
 /* Empty state — no properties for the inspected node */
 .insp-generic-empty {
-  padding: 24px 10px;
+  padding: 24px var(--space-4);
   text-align: center;
   font-size: var(--fs-lg);
   color: var(--text-secondary);
@@ -174,19 +174,19 @@
 
 .insp-generic-detail {
   flex-shrink: 0;
-  padding: 10px 12px 12px;
+  padding: var(--space-4) var(--space-5) var(--space-5);
   border-top: 1px solid var(--border);
   background: var(--bg-panel-header);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-4);
 }
 
 /* Selected property identity line. */
 .insp-generic-detail-head {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: var(--space-4);
   min-width: 0;
 }
 
@@ -205,16 +205,16 @@
   font-size: var(--fs-base);
   color: var(--text-secondary);
   font-family: var(--font-mono);
-  padding: 1px 6px;
+  padding: 1px var(--space-3);
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: var(--radius-md);
 }
 
 /* Editor row — default checkbox + type-aware widget. */
 .insp-generic-detail-editor {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-4);
   min-width: 0;
 }
 
@@ -229,5 +229,5 @@
 .insp-generic-detail-hint {
   font-size: var(--fs-lg);
   color: var(--text-secondary);
-  padding: 4px 0;
+  padding: var(--space-2) 0;
 }

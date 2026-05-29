@@ -192,6 +192,12 @@ tasks:
     cmds:
       - pnpm run start
 
+  lint_tritium_style:
+    desc: "Lint react-gui CSS for raw hex/px outside the design tokens (warn-only; not wired into build_tritium)"
+    dir: "{{.ROOT_DIR}}/../tritium/react-gui"
+    cmds:
+      - pnpm run lint:style
+
 #####
 
   rebuild_uxpgui:

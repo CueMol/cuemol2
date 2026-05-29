@@ -26,11 +26,18 @@
   --text-secondary: #8b949e;
   --text-muted: #565e6c;
   --text-strong: #f6f7f9;
+  /* Fixed dark text drawn on top of an arbitrary colour swatch (color cells).
+     Theme-independent: the swatch background is user data, not the theme, so
+     this must stay dark for contrast against typically light colours. */
+  --swatch-text: #1a1a2e;
 
   /* Accent */
   --accent: #5fafd7;
   --accent-green: #87c38a;
   --accent-red: #e06c75;
+  /* Amber used for the status-bar busy indicator. The status bar is blue in
+     both themes, so a single value works -- light does not override it. */
+  --accent-yellow: #d4a017;
 
   /* Chrome */
   --toolbar-bg: #1a1c24;
@@ -72,17 +79,26 @@
   --font-ui:   "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;
 
-  --fs-xs:      9px;
-  --fs-sm:      10px;
-  --fs-sm2:     10.5px;
-  --fs-base:    11px;
-  --fs-md:      11.5px;
-  --fs-lg:      12px;
-  --fs-xl:      13px;
-  --fs-2xl:     14px;
-  --fs-icon:    18px;
-  --fs-hero:    20px;
-  --fs-display: 48px;
+  /*
+   * UI text scale hook. Default 1 produces identical output. Future
+   * "larger text" support can set this on documentElement via JS, or use
+   * Electron webFrame.setZoomLevel for whole-UI zoom (the VSCode approach).
+   * Not wired to any UI yet -- defining the multiplier now keeps the font
+   * tokens forward-compatible so the feature is a one-line change later.
+   */
+  --ui-scale: 1;
+
+  --fs-xs:      calc(9px    * var(--ui-scale));
+  --fs-sm:      calc(10px   * var(--ui-scale));
+  --fs-sm2:     calc(10.5px * var(--ui-scale));
+  --fs-base:    calc(11px   * var(--ui-scale));
+  --fs-md:      calc(11.5px * var(--ui-scale));
+  --fs-lg:      calc(12px   * var(--ui-scale));
+  --fs-xl:      calc(13px   * var(--ui-scale));
+  --fs-2xl:     calc(14px   * var(--ui-scale));
+  --fs-icon:    calc(18px   * var(--ui-scale));
+  --fs-hero:    calc(20px   * var(--ui-scale));
+  --fs-display: calc(48px   * var(--ui-scale));
 
   --fw-normal:   400;
   --fw-medium:   500;
@@ -99,6 +115,41 @@
   --ls-wider:  0.6px;
   --ls-widest: 0.8px;
   --ls-spaced: 1px;
+
+  /*
+   * Spacing scale (padding / margin / gap). Six steps cover 95%+ of the
+   * existing usage. Stray values snap to the nearest step at migration
+   * time; only add a step if a visual check shows breakage. Note 10px sits
+   * between --space-4 and --space-5; default to snapping it to 8px.
+   * These tokens are theme-independent, so the light block does not
+   * override them.
+   */
+  --space-0: 0;
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 6px;
+  --space-4: 8px;
+  --space-5: 12px;
+  --space-6: 16px;
+
+  /* Control heights. sm absorbs 20/22, md absorbs 24/26/28, lg 30/32/36. */
+  --ctrl-h-sm: 20px;
+  --ctrl-h-md: 24px;
+  --ctrl-h-lg: 30px;
+  /* Top-level panel header height (Explorer / Inspector / Settings / Log
+     title bars are all 30px). Sub-section headers within a panel are
+     intentionally smaller and use --ctrl-h-md. */
+  --panel-header-h: 30px;
+
+  /* Icon sizes. The 14px step is the default; singletons stay inline. */
+  --icon-sm: 12px;
+  --icon-md: 14px;
+  --icon-lg: 18px;
+
+  /* Corner radii. The lone 8px usage stays inline. */
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
 }
 
 /* ─── Light Theme ─── */

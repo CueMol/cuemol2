@@ -79,11 +79,14 @@ core (@cuemol/core): C++ addon + auto-generated TypeScript wrappers
 
 ### React-GUI Coding Conventions
 
-**スタイル・色**
-- 色のハードコード (`#rrggbb`) は避ける
-- 静的パレット色: `Colors.*` を `@blueprintjs/core` から使う
-- テーマ追従色: Blueprint CSS 変数 `var(--pt-text-color)`, `var(--pt-text-color-muted)` などを使う
-- ダークモード: `portalClassName={isDark ? 'bp5-dark' : ''}` を Dialog に付与すれば Blueprint が自動対応
+**スタイル・デザイントークン (MUST)** — 全トークンは `react-gui/src/renderer/styles/_variables.css` に定義。詳細・一覧・移植チェックリストは [`docs/migration/ui-style-guide.md`](docs/migration/ui-style-guide.md)。
+- **色**: 必ずアプリ semantic トークン (`var(--bg-*)` / `var(--text-*)` / `var(--accent*)` / `var(--border*)`) 経由。生 hex / `rgb()` / `Colors.*` (`@blueprintjs/core`) / Blueprint 内部変数 `var(--pt-*)` は**禁止**。例外は `crash/` (テーマアクセス不可)・NAMED_COLORS 等の分子色データ・`--swatch-text` のような固定コントラスト色のみ。
+- **余白/サイズ/角丸**: `var(--space-0..6)` / `var(--ctrl-h-sm|md|lg)` / `var(--panel-header-h)` / `var(--icon-sm|md|lg)` / `var(--radius-sm|md|lg)` 経由。生 px を新規に書かない。新しい値が要るときは**まず `_variables.css` にトークンを足してから参照**する (コンポーネントに直書きしない)。
+- **フォント**: `var(--fs-*)` / `var(--fw-*)` / `var(--lh-*)` 経由。inline `style` の `fontSize` 数値・`em` 直書き禁止 (`--fs-*` は `--ui-scale` で将来一括スケール可能にしてある)。
+- **既定値**: panel header 高さ = `--panel-header-h` (30px、トップレベルのみ。sub-section は `--ctrl-h-md`)、icon = `--icon-md` (14px)。毎回サイズを決め直さない。
+- 新規スタイルは原則 `styles/_*.css` のクラスに置く。inline `style={{}}` は動的値 (計算した色プレビュー等) のみ許可。
+- 検証: `cd tritium/react-gui && npm run lint:style` (または `task lint_tritium_style`) で生 hex/px を検出 (warn-only)。新規追加でベースライン件数を増やさないこと。
+- ダークモード: `portalClassName={isDark ? 'bp5-dark' : ''}` を Dialog に付与すれば Blueprint が自動対応。テーマ切替は `data-theme` 属性 + semantic トークンの再マッピングで一括解決される。
 
 **macOS ネイティブメニュー**
 - macOS アプリメニューは `src/main/menu.ts` の `macOnlyGroups` にハードコードされており、`APP_MENU` の `darwinOnly` グループは無視される。macOS 側の変更は `menu.ts` を直接編集する

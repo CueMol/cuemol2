@@ -71,7 +71,7 @@ export const DummyPane4: React.FC<DummyPane4Props> = ({
         <div className="pane-content">
           <div className="pane-placeholder">
             <p>Dummy Pane 4</p>
-            <p style={{ fontSize: "0.9em", color: "#999" }}>
+            <p style={{ fontSize: "var(--fs-sm)", color: "var(--text-muted)" }}>
               実装予定: 具体的な機能がここに入ります
             </p>
           </div>

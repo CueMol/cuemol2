@@ -386,7 +386,7 @@ export function SymmetryChangeDialog({
                 </fieldset>
 
                 {errorMsg !== null && (
-                    <div style={{ color: 'var(--pt-intent-danger)', marginTop: 8 }}>
+                    <div style={{ color: 'var(--accent-red)', marginTop: 8 }}>
                         {errorMsg}
                     </div>
                 )}

@@ -8,17 +8,17 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  padding: 8px 0;
+  padding: var(--space-4) 0;
 }
 
 /* File info row */
 .fod-file-info {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px 10px;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5) var(--space-4);
   border-bottom: 1px solid var(--border-subtle);
-  margin-bottom: 4px;
+  margin-bottom: var(--space-2);
 }
 
 .fod-file-icon {
@@ -41,14 +41,14 @@
   color: var(--accent);
   background: rgba(95, 175, 215, 0.12);
   border: 1px solid rgba(95, 175, 215, 0.25);
-  border-radius: 3px;
-  padding: 1px 6px;
+  border-radius: var(--radius-md);
+  padding: 1px var(--space-3);
   flex-shrink: 0;
 }
 
 /* Section container */
 .fod-section {
-  padding: 8px 12px;
+  padding: var(--space-4) var(--space-5);
   border-bottom: 1px solid var(--border-subtle);
 }
 
@@ -62,12 +62,12 @@
   text-transform: uppercase;
   letter-spacing: 0.05em; /* relative em unit; intentionally not a variable */
   color: var(--text-secondary);
-  margin-bottom: 8px;
+  margin-bottom: var(--space-4);
 }
 
 /* Switch rows */
 .fod-switch {
-  margin-bottom: 4px;
+  margin-bottom: var(--space-2);
 }
 
 .fod-switch:last-child {
@@ -76,7 +76,7 @@
 
 /* Form group overrides for compact layout */
 .fod-form-group {
-  margin-bottom: 8px;
+  margin-bottom: var(--space-4);
 }
 
 .fod-form-group:last-child {
@@ -97,9 +97,9 @@
 .fod-collapsible-header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-3);
   width: 100%;
-  padding: 8px 12px;
+  padding: var(--space-4) var(--space-5);
   background: none;
   border: none;
   cursor: pointer;

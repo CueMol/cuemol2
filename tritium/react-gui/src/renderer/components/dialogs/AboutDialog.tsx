@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogBody, DialogFooter, Button, Colors } from '@blueprintjs/core';
+import { Dialog, DialogBody, DialogFooter, Button } from '@blueprintjs/core';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useCueMol } from '../../hooks/useCueMol';
 import aboutPng from '../../assets/about.png';
@@ -46,7 +46,7 @@ export function AboutDialog({ visible, onClose }: Props): React.JSX.Element {
             fontSize: 30,
             fontWeight: 'bold',
             fontFamily: 'Verdana, Arial, Helvetica, sans-serif',
-            color: isDark ? Colors.BLUE5 : Colors.BLUE3,
+            color: 'var(--accent)',
             marginTop: '0.5em',
             marginLeft: 17,
             marginBottom: 4,
@@ -56,7 +56,7 @@ export function AboutDialog({ visible, onClose }: Props): React.JSX.Element {
 
           <div style={{
             fontWeight: 'bold',
-            color: 'var(--pt-text-color-muted)',
+            color: 'var(--text-secondary)',
             marginLeft: 17,
             marginBottom: 2,
           }}>
@@ -64,7 +64,7 @@ export function AboutDialog({ visible, onClose }: Props): React.JSX.Element {
           </div>
 
           <div style={{
-            color: 'var(--pt-text-color-muted)',
+            color: 'var(--text-secondary)',
             marginLeft: 17,
             marginBottom: 10,
           }}>
@@ -72,11 +72,11 @@ export function AboutDialog({ visible, onClose }: Props): React.JSX.Element {
           </div>
 
           <div style={{
-            fontSize: '0.85em',
+            fontSize: 'var(--fs-sm)',
             marginLeft: 16,
             marginRight: 16,
             marginBottom: 4,
-            color: 'var(--pt-text-color)',
+            color: 'var(--text-primary)',
           }}>
             ©1998-2026 Contributors. All Rights Reserved.
           </div>
