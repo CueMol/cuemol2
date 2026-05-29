@@ -113,6 +113,13 @@
   color: var(--text-primary);
 }
 
+/* Suppress the full-width focus outline: it renders as prominent blue
+ * horizontal lines above and below the header on click. */
+.fod-collapsible-header:focus,
+.fod-collapsible-header:focus-visible {
+  outline: none;
+}
+
 .fod-collapsible-chevron {
   flex-shrink: 0;
   color: var(--text-muted);
@@ -124,7 +131,9 @@
 }
 
 .fod-collapsible-label {
-  font-size: var(--fs-lg);
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-semibold);
+  color: var(--text-primary);
   flex: 1;
 }
 
