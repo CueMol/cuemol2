@@ -115,6 +115,18 @@
   color: var(--text-secondary);
 }
 
+/* Suppress the click-focus outline ring: with the small button height its
+ * default outline-offset draws outside the button and looks like it sticks
+ * out. Keyboard focus still uses the same suppression as other panel toolbars. */
+.section-action-btn.bp5-button:focus,
+.section-action-btn.bp5-button:focus-visible {
+  outline: none;
+}
+
+.section-action-btn.bp5-button:active {
+  background: var(--overlay-focus) !important;
+}
+
 /* Scrollable body for tree panels */
 .sp-pane-scroll {
   flex: 1;
