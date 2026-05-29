@@ -2,6 +2,8 @@
 //
 
 #include "NAMDCoorReader.qif"
+#include "GROFileReader.qif"
+#include "AmberPrmtopReader.qif"
 
 module mdtools
 {
@@ -9,5 +11,7 @@ module mdtools
   fini mdtools::fini();
 
   NAMDCoorReader;
+  GROFileReader;
+  AmberPrmtopReader;
 };
 

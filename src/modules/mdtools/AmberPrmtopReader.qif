@@ -1,0 +1,21 @@
+// -*-Mode: C++;-*-
+//
+// AMBER prmtop topology reader scripting interface
+//
+
+#ifndef AMBER_PRMTOP_READER_QIF_INCLUDED
+#define AMBER_PRMTOP_READER_QIF_INCLUDED
+
+#include <qsys/ObjReader.qif>
+
+runtime_class AmberPrmtopReader extends ObjReader
+{
+  client_hdr "AmberPrmtopReader.hpp";
+  client_name mdtools::AmberPrmtopReader;
+
+  scriptable;
+  smartptr;
+
+};
+
+#endif
