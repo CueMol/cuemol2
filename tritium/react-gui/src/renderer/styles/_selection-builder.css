@@ -1,0 +1,128 @@
+/*
+ * SelectionBuilder -- Popover query helper for composing CueMol
+ * selection-syntax expressions.
+ *
+ * Rendered as a third segment of MolSelList's ControlGroup (a chevron
+ * button that opens a 3-tab Popover: Builder / Library / History). All
+ * sizing/colour values come from the app's semantic tokens in
+ * `_variables.css` so the popover follows the active theme. The two raw
+ * lengths kept here (popover width, menu scroll cap) are deliberate
+ * layout constants, not theme values.
+ */
+
+/* Keep the trigger from stretching inside the fill ControlGroup, like the
+   picker does. The Popover target wrapper carries this class. */
+.mol-sel-list .selbuilder-trigger {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+}
+
+.selbuilder-popover {
+  width: 320px; /* fixed popover width -- layout constant */
+  /* Stable height so switching Builder / Library / History tabs does not
+     resize the popover and make Popper reposition it (jump up/down). Sized
+     to fit the tallest panel (Builder) snugly so shorter tabs do not look
+     empty. Layout constant. */
+  min-height: 184px;
+  padding: var(--space-4);
+}
+
+/* Blueprint Tabs default to an airy layout (tab-panel margin-top: 20px,
+   tab line-height: 30px). Tighten both inside the popover so the content
+   reads dense, not sparse. Scoped to .selbuilder-popover to avoid touching
+   other Tabs in the app. */
+.selbuilder-popover .bp5-tab {
+  line-height: var(--ctrl-h-md);
+  font-size: var(--fs-lg);
+}
+
+.selbuilder-popover .bp5-tab-panel {
+  margin-top: var(--space-2);
+}
+
+.selbuilder-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.selbuilder-form {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.selbuilder-form .bp5-html-select,
+.selbuilder-form .bp5-input-group {
+  flex: 1 1 80px;
+  min-width: 0;
+}
+
+.selbuilder-range-sep {
+  color: var(--text-secondary);
+  font-weight: var(--fw-semibold);
+}
+
+.selbuilder-terms {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: var(--ctrl-h-md);
+  /* Bound the term list so a long draft scrolls instead of growing the
+     popover (which would defeat the stable-height fix above). */
+  max-height: 116px;
+  overflow-y: auto;
+}
+
+.selbuilder-term-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.selbuilder-empty {
+  font-size: var(--fs-base);
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.selbuilder-preview {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+}
+
+.selbuilder-preview code {
+  font-family: var(--font-mono);
+  font-size: var(--fs-lg);
+  color: var(--accent);
+  word-break: break-all;
+}
+
+.selbuilder-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.selbuilder-menu {
+  /* Scroll cap chosen so a long Library list stays near the Builder tab's
+     height (see .selbuilder-popover min-height), avoiding a size jump on
+     tab switch. Layout constant. */
+  max-height: 138px;
+  overflow-y: auto;
+  min-width: 220px;
+}
+
+/* Unify item typography across the Library and History menus: same
+   font-size and a tight, consistent row height. Both tabs use plain
+   `MenuItem`s under `.selbuilder-menu`, so this single rule keeps them
+   identical (and matches the popover's other 12px text). */
+.selbuilder-menu .bp5-menu-item {
+  font-size: var(--fs-lg);
+  line-height: var(--lh-snug);
+  min-height: var(--ctrl-h-md);
+}
