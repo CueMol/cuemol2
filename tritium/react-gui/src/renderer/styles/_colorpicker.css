@@ -1,0 +1,252 @@
+/* ─── Colour picker widget (UXP colpicker.js port) ─── */
+
+.cp-widget {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 0;
+}
+
+.cp-swatch {
+  width: var(--ctrl-h-md);
+  height: var(--ctrl-h-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+  padding: 0;
+}
+
+button.cp-swatch {
+  cursor: pointer;
+}
+
+/* Out-of-gamut warning: amber ring + clickable to clamp. */
+.cp-swatch--warn {
+  border-color: var(--accent-yellow);
+  box-shadow: 0 0 0 1px var(--accent-yellow);
+}
+
+/* "Use mol color" indicator: dashed border over the swatch background. */
+.cp-swatch--mol {
+  border-style: dashed;
+  border-color: var(--accent);
+}
+
+.cp-textbox {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ─── Popover panel shell ─── */
+
+.cp-panel {
+  box-sizing: border-box;
+  width: 240px;
+  padding: var(--space-3);
+  background: var(--bg-elevated);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* Segmented mode switch (RGB / HSB / Named / Palette / Mol). */
+.cp-modebar {
+  flex-shrink: 0;
+}
+
+.cp-panel-body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* "Mol" mode note (no editable params). */
+.cp-mol-note {
+  font-size: var(--fs-base);
+  color: var(--text-secondary);
+  line-height: var(--lh-normal);
+  padding: var(--space-3) var(--space-2);
+}
+
+.cp-mol-note code {
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+
+/* ─── RGB / HSB slider panel ─── */
+
+.cp-slider-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.cp-slider-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.cp-slider-label {
+  width: var(--space-5);
+  font-size: var(--fs-base);
+  color: var(--text-primary);
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.cp-slider {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: var(--ctrl-h-md);
+  display: flex;
+  align-items: center;
+}
+
+.cp-slider-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.cp-slider-input {
+  position: relative;
+  width: 100%;
+  margin: 0;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  height: var(--ctrl-h-md);
+  cursor: pointer;
+}
+
+.cp-slider-input::-webkit-slider-runnable-track {
+  background: transparent;
+  height: var(--ctrl-h-md);
+}
+
+.cp-slider-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 18px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  border: 1px solid var(--text-secondary);
+  box-shadow: 0 1px 2px var(--slider-handle-shadow);
+}
+
+.cp-slider-input:focus {
+  outline: none;
+}
+
+.cp-slider-input:focus::-webkit-slider-thumb {
+  border-color: var(--accent);
+}
+
+.cp-slider-spinner {
+  flex: 0 0 64px;
+  width: 64px;
+  /* min-width:auto (the flex default) would keep the NumericInput at its
+     min-content width and blow out the panel; pin it to 0 so width holds. */
+  min-width: 0;
+}
+
+/* Keep the NumericInput compact so it never blows out the panel width. */
+.cp-slider-spinner .bp5-input-group {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.cp-slider-spinner .bp5-input {
+  width: 100%;
+  min-width: 0;
+  padding-right: var(--space-2);
+}
+
+/* ─── Named colour list panel ─── */
+
+.cp-named-list {
+  width: 100%;
+  max-height: 280px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.cp-named-loading {
+  width: 100%;
+  padding: var(--space-5);
+  display: flex;
+  justify-content: center;
+}
+
+.cp-named-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-1) var(--space-2);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  border-radius: var(--radius-sm);
+}
+
+.cp-named-row:hover {
+  background: var(--bg-hover);
+}
+
+.cp-named-row--selected {
+  background: var(--bg-active);
+}
+
+.cp-named-swatch {
+  width: var(--icon-lg);
+  height: var(--icon-lg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.cp-named-name {
+  font-size: var(--fs-lg);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ─── Palette panel ─── */
+
+.cp-palette {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* Seven equal columns so hue rows fill the panel width and columns align;
+   the grayscale row (5 cells) leaves its last two columns empty. */
+.cp-palette-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--space-1);
+}
+
+.cp-palette-cell {
+  width: 100%;
+  height: var(--ctrl-h-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0;
+  cursor: pointer;
+}
+
+.cp-palette-cell:hover {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}

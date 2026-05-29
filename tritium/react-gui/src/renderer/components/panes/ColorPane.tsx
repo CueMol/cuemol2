@@ -26,7 +26,7 @@
  * This pane is one of the components within the ExplorerView.
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import {
     Button,
     ButtonGroup,
@@ -51,6 +51,7 @@ import type {
     PaintEntryDto,
     RainbowParams,
 } from '../../worker/server/services/rendererColoring.service'
+import { ColorPicker } from '../widgets/colorpicker/ColorPicker'
 import { usePaintCapableRenderers } from '../../hooks/usePaintCapableRenderers'
 import { useRendererColoringState } from '../../hooks/useRendererColoringState'
 import { useElePotMapObjects } from '../../hooks/useElePotMapObjects'
@@ -88,6 +89,44 @@ const resolveColorPreview = (color: string): string => {
         return trimmed
     // Unknown format (e.g. "(255,128,0,255)" tuple) -- let the browser try.
     return trimmed
+}
+
+// ────────────────────────────────────────────────────────────
+// Colour-picker context
+//
+// The deck colour editors are nested several components deep; rather than
+// thread `cm` / `sceneId` through every deck, ColorPane publishes them via
+// a context that `PaneColorPicker` consumes. `PaneColorPicker` adapts the
+// reusable ColorPicker widget to the deck `onCommit(value)` convention by
+// forwarding only completed edits.
+// ────────────────────────────────────────────────────────────
+
+interface ColorPickerCtx {
+    cm: AsyncCueMol | null
+    sceneId: number | undefined
+}
+
+const ColorPickerContext = createContext<ColorPickerCtx>({ cm: null, sceneId: undefined })
+
+interface PaneColorPickerProps {
+    value: string
+    onCommit: (value: string) => void
+    className?: string
+}
+
+const PaneColorPicker: React.FC<PaneColorPickerProps> = ({ value, onCommit, className }) => {
+    const { cm, sceneId } = useContext(ColorPickerContext)
+    return (
+        <ColorPicker
+            value={value}
+            cm={cm}
+            sceneId={sceneId}
+            className={className}
+            onChange={(v, completed) => {
+                if (completed && v !== value) onCommit(v)
+            }}
+        />
+    )
 }
 
 // ────────────────────────────────────────────────────────────
@@ -412,40 +451,17 @@ interface SolidDeckProps {
     onCommit: (color: string) => void
 }
 
-const SolidDeck: React.FC<SolidDeckProps> = ({ className, defaultColor, onCommit }) => {
-    const [draft, setDraft] = useState(defaultColor)
-    useEffect(() => setDraft(defaultColor), [defaultColor])
-
-    const commit = useCallback(() => {
-        if (draft === defaultColor) return
-        onCommit(draft)
-    }, [draft, defaultColor, onCommit])
-
-    return (
-        <div className="color-solid-deck">
-            <div className="color-section-label">
-                {className === '' ? 'Solid coloring' : className}
-            </div>
-            <div className="color-solid-row">
-                <label className="color-solid-label">Default color</label>
-                <div
-                    className="color-solid-swatch"
-                    style={{ backgroundColor: resolveColorPreview(draft) }}
-                />
-                <input
-                    className="color-inline-input color-value-input color-solid-input"
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    onBlur={commit}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter') e.currentTarget.blur()
-                    }}
-                    spellCheck={false}
-                />
-            </div>
+const SolidDeck: React.FC<SolidDeckProps> = ({ className, defaultColor, onCommit }) => (
+    <div className="color-solid-deck">
+        <div className="color-section-label">
+            {className === '' ? 'Solid coloring' : className}
         </div>
-    )
-}
+        <div className="color-solid-row">
+            <label className="color-solid-label">Default color</label>
+            <PaneColorPicker value={defaultColor} onCommit={onCommit} />
+        </div>
+    </div>
+)
 
 interface DeferredDeckProps {
     className: string
@@ -473,32 +489,12 @@ interface ColorFieldProps {
     onCommit: (next: string) => void
 }
 
-const ColorField: React.FC<ColorFieldProps> = ({ label, value, onCommit }) => {
-    const [draft, setDraft] = useState(value)
-    useEffect(() => setDraft(value), [value])
-    const commit = () => {
-        if (draft !== value) onCommit(draft)
-    }
-    return (
-        <div className="color-field-row">
-            <label className="color-field-label">{label}</label>
-            <div
-                className="color-solid-swatch"
-                style={{ backgroundColor: resolveColorPreview(draft) }}
-            />
-            <input
-                className="color-inline-input color-value-input color-field-input"
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onBlur={commit}
-                onKeyDown={(e) => {
-                    if (e.key === 'Enter') e.currentTarget.blur()
-                }}
-                spellCheck={false}
-            />
-        </div>
-    )
-}
+const ColorField: React.FC<ColorFieldProps> = ({ label, value, onCommit }) => (
+    <div className="color-field-row">
+        <label className="color-field-label">{label}</label>
+        <PaneColorPicker value={value} onCommit={onCommit} />
+    </div>
+)
 
 interface CpkDeckProps {
     colors: CpkColors
@@ -800,27 +796,9 @@ const NumberFieldInline: React.FC<{
 const ColorSwatchInline: React.FC<{
     value: string
     onCommit: (next: string) => void
-}> = ({ value, onCommit }) => {
-    const [draft, setDraft] = useState(value)
-    useEffect(() => setDraft(value), [value])
-    const commit = () => { if (draft !== value) onCommit(draft) }
-    return (
-        <>
-            <div
-                className="color-solid-swatch"
-                style={{ backgroundColor: resolveColorPreview(draft) }}
-            />
-            <input
-                className="color-inline-input color-value-input color-field-input"
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onBlur={commit}
-                onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }}
-                spellCheck={false}
-            />
-        </>
-    )
-}
+}> = ({ value, onCommit }) => (
+    <PaneColorPicker value={value} onCommit={onCommit} />
+)
 
 // ────────────────────────────────────────────────────────────
 // Main component
@@ -1130,6 +1108,7 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
     const dropdownDisabled = target === null
 
     return (
+        <ColorPickerContext.Provider value={{ cm, sceneId }}>
         <div className="sp-pane">
             <SectionHeader
                 title="Color"
@@ -1191,5 +1170,6 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
                 </div>
             )}
         </div>
+        </ColorPickerContext.Provider>
     )
 }

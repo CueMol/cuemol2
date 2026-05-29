@@ -77,6 +77,12 @@ import type {
   SceneColorProofingResult,
 } from '../server/services/sceneBgColor.service'
 import type {
+  CompileColorArgs,
+  CompileColorResult,
+  GetNamedColorsArgs,
+  GetNamedColorsResult,
+} from '../server/services/colorPicker.service'
+import type {
   GetSceneTreeArgs,
   GetSceneTreeResult,
   SetNodeVisibleArgs,
@@ -368,6 +374,8 @@ export interface ServiceMap {
   setSceneBgColor:            { args: SetSceneBgColorArgs;             result: SceneBgColorResult }
   getSceneColorProofing:      { args: SceneColorProofingArgs;          result: SceneColorProofingResult }
   toggleSceneColorProofing:   { args: SceneColorProofingArgs;          result: SceneColorProofingResult }
+  compileColor:               { args: CompileColorArgs;                result: CompileColorResult }
+  getNamedColors:             { args: GetNamedColorsArgs;              result: GetNamedColorsResult }
   getSceneTree:               { args: GetSceneTreeArgs;                result: GetSceneTreeResult }
   setNodeVisible:             { args: SetNodeVisibleArgs;              result: SetNodeVisibleResult }
   focusOnNode:                { args: FocusOnNodeArgs;                 result: FocusOnNodeResult }

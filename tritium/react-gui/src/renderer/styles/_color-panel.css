@@ -233,7 +233,10 @@
 }
 
 .color-field-label {
-  min-width: 78px;
+  /* Sized to the longest CPK element label ("Phosphorus") so element rows
+     stay column-aligned; trimmed from 78px to reduce the gap before the
+     colour picker swatch for shorter labels. */
+  min-width: 64px;
   font-size: var(--fs-base);
   color: var(--text-primary);
   flex-shrink: 0;
