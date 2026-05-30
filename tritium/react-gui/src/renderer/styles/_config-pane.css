@@ -321,36 +321,10 @@
 }
 
 /* ── Color picker ── */
-.config-setting-color-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-}
-
-.config-setting-color-swatch {
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: transparent;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.config-setting-color-swatch::-webkit-color-swatch-wrapper {
-  padding: var(--space-1);
-}
-
-.config-setting-color-swatch::-webkit-color-swatch {
-  border: none;
-  border-radius: var(--radius-sm);
-}
-
-.config-setting-color-hex {
-  font-family: var(--font-mono);
-  font-size: var(--fs-lg);
-  color: var(--text-secondary);
+.config-setting-color-field {
+  /* Parent .config-setting-control is not a flex row, so size the picker
+     to fill its max-width. */
+  width: 100%;
 }
 
 /* ── Path (file/directory) control ── */

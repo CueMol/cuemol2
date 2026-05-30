@@ -16,6 +16,7 @@ import {
   Slider,
 } from "@blueprintjs/core";
 import type { PropDef } from "../../data/rendererProperties";
+import { CueColorField } from "../widgets/colorpicker/CueColorField";
 
 // ────────────────────────────────────────────────────────────
 // Shared row wrapper
@@ -171,20 +172,10 @@ interface ColorEditorProps {
 
 export const ColorEditor: React.FC<ColorEditorProps> = ({ prop, onChange }) => (
   <PropRow label={prop.label}>
-    <div className="insp-color-row">
-      <input
-        type="color"
-        value={String(prop.value)}
-        onChange={(e) => onChange(prop.key, e.target.value)}
-        className="insp-color-swatch"
-      />
-      <InputGroup
-        small
-        fill
-        value={String(prop.value)}
-        onChange={(e) => onChange(prop.key, e.target.value)}
-        className="insp-input"
-      />
-    </div>
+    <CueColorField
+      value={String(prop.value)}
+      onCommit={(v) => onChange(prop.key, v)}
+      disabled={prop.readonly}
+    />
   </PropRow>
 );

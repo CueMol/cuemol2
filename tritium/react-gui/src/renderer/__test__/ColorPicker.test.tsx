@@ -148,6 +148,99 @@ describe('ColorPicker', () => {
         unmount()
     })
 
+    it('opens on the panel matching the value representation (hsb -> HSB)', async () => {
+        const cm = makeCm()
+        const { container, unmount } = mountTree(
+            <ColorPicker value="hsb(240,1,0.5)" sceneId={0} cm={cm as never} onChange={vi.fn()} />,
+        )
+        await act(async () => {
+            await flushPromises()
+        })
+        const caret = container.querySelector('button.bp5-button') as HTMLButtonElement
+        await act(async () => {
+            caret.click()
+            await flushPromises()
+        })
+        const active = document.querySelector('.cp-modebar button.bp5-active')
+        expect(active?.textContent).toBe('HSB')
+        unmount()
+    })
+
+    it('opens on the Named panel with the current named colour preselected (case-insensitive)', async () => {
+        const cm = {
+            invokeService: vi.fn((name: string) => {
+                if (name === 'compileColor') {
+                    return Promise.resolve({
+                        ok: true, r: 224, g: 108, b: 117, hex: '#e06c75',
+                        className: 'NamedColor', inGamut: true,
+                    })
+                }
+                return Promise.resolve({
+                    scene: [],
+                    global: [
+                        { name: 'red', hex: '#e06c75' },
+                        { name: 'blue', hex: '#3b82f6' },
+                    ],
+                })
+            }),
+        }
+        // jsdom does not implement scrollIntoView; stub it to assert the
+        // selected entry is scrolled into view.
+        const scrollSpy = vi.fn()
+        ;(HTMLElement.prototype as unknown as { scrollIntoView: unknown }).scrollIntoView =
+            scrollSpy
+        // Value casing ("RED") differs from the definition's ("red").
+        const { container, unmount } = mountTree(
+            <ColorPicker value="RED" sceneId={0} cm={cm as never} onChange={vi.fn()} />,
+        )
+        await act(async () => {
+            await flushPromises()
+        })
+        const caret = container.querySelector('button.bp5-button') as HTMLButtonElement
+        await act(async () => {
+            caret.click()
+            await flushPromises()
+        })
+        // Named panel is shown...
+        expect(document.querySelector('.cp-named-list')).toBeTruthy()
+        // ...with the current entry preselected (so re-picking is a no-op),
+        // matched case-insensitively.
+        const selected = document.querySelectorAll('.cp-named-row--selected')
+        expect(selected.length).toBe(1)
+        expect(selected[0].textContent).toContain('red')
+        // ...and scrolled into view (it can sit below the fold in the full list).
+        expect(scrollSpy).toHaveBeenCalled()
+        unmount()
+    })
+
+    it('restricts the segmented switch to the given `modes`', async () => {
+        const cm = makeCm()
+        const { container, unmount } = mountTree(
+            <ColorPicker
+                value="#0000FF"
+                sceneId={0}
+                cm={cm as never}
+                onChange={vi.fn()}
+                modes={['rgb', 'hsb', 'palette']}
+            />,
+        )
+        await act(async () => {
+            await flushPromises()
+        })
+        const caret = container.querySelector('button.bp5-button') as HTMLButtonElement
+        await act(async () => {
+            caret.click()
+            await flushPromises()
+        })
+        const labels = Array.from(
+            document.querySelectorAll('.cp-modebar button'),
+        ).map((el) => el.textContent)
+        expect(labels).toEqual(['RGB', 'HSB', 'Palette'])
+        expect(labels).not.toContain('Named')
+        expect(labels).not.toContain('Mol')
+        unmount()
+    })
+
     it('applies $molcol immediately when the Mol segment is chosen', async () => {
         const cm = makeCm()
         const onChange = vi.fn()

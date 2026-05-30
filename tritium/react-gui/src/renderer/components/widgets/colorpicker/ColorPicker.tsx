@@ -20,7 +20,7 @@
  * worker services so previews match the C++ StyleManager exactly.
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, ButtonGroup, InputGroup, Popover, Tooltip } from '@blueprintjs/core'
 import { useTheme } from '../../../contexts/ThemeContext'
 import type { AsyncCueMol } from '../../../worker/client/AsyncCueMol'
@@ -32,7 +32,7 @@ import { PalettePanel } from './PalettePanel'
 
 const MOL_COLOR = '$molcol'
 
-type Mode = 'rgb' | 'hsb' | 'named' | 'palette' | 'mol'
+export type Mode = 'rgb' | 'hsb' | 'named' | 'palette' | 'mol'
 
 const MODE_SEGMENTS: Array<{ mode: Mode; label: string }> = [
     { mode: 'rgb', label: 'RGB' },
@@ -41,6 +41,25 @@ const MODE_SEGMENTS: Array<{ mode: Mode; label: string }> = [
     { mode: 'palette', label: 'Palette' },
     { mode: 'mol', label: 'Mol' },
 ]
+
+/**
+ * Pick the panel that matches a colour string's representation, so opening
+ * the popover lands on the mode that edits the value in place rather than
+ * silently converting it to another representation (e.g. a named colour
+ * being rewritten as `#hex` just because the popover opened in RGB mode).
+ *
+ *   `$molcol`            -> mol
+ *   `hsb(...)`           -> hsb
+ *   `#hex` / `rgb(...)`  -> rgb
+ *   bare name (`red`)    -> named
+ */
+function representationMode(value: string): Mode {
+    const t = value.trim().toLowerCase()
+    if (t === MOL_COLOR) return 'mol'
+    if (t.startsWith('hsb(')) return 'hsb'
+    if (t.startsWith('#') || t.startsWith('rgb(')) return 'rgb'
+    return 'named'
+}
 
 interface ColorPickerProps {
     /** Canonical CueMol colour string (e.g. "#0000FF", "red", "$molcol"). */
@@ -51,6 +70,12 @@ interface ColorPickerProps {
     onChange: (value: string, completed: boolean) => void
     disabled?: boolean
     className?: string
+    /**
+     * Subset of mode segments to expose, in display order. Defaults to all
+     * five. Use e.g. `['rgb', 'hsb', 'palette']` for scene-independent colours
+     * where "Named" / "Mol" make no sense (app settings).
+     */
+    modes?: Mode[]
 }
 
 /**
@@ -64,15 +89,33 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
     onChange,
     disabled,
     className,
+    modes,
 }) => {
     const { theme } = useTheme()
     const portalClassName = theme === 'dark' ? 'bp5-dark' : ''
+
+    // Visible mode segments, honouring the optional `modes` allow-list.
+    const segments = useMemo(
+        () => (modes ? MODE_SEGMENTS.filter((seg) => modes.includes(seg.mode)) : MODE_SEGMENTS),
+        [modes],
+    )
+
+    // Mode that matches the current value's representation, clamped to the
+    // visible segments (e.g. a named colour in a settings picker without a
+    // "Named" segment falls back to the first available mode).
+    const modeForValue = useCallback(
+        (v: string): Mode => {
+            const m = representationMode(v)
+            return segments.some((seg) => seg.mode === m) ? m : segments[0]?.mode ?? 'rgb'
+        },
+        [segments],
+    )
 
     const [draft, setDraft] = useState(value)
     const [resolved, setResolved] = useState<CompileColorResult | null>(null)
     const [liveRgb, setLiveRgb] = useState<Rgb | null>(null)
     const [open, setOpen] = useState(false)
-    const [mode, setMode] = useState<Mode>(value === MOL_COLOR ? 'mol' : 'rgb')
+    const [mode, setMode] = useState<Mode>(() => modeForValue(value))
 
     // Latest live value, so the popover-close commit reports the final colour.
     const liveValueRef = useRef(value)
@@ -155,6 +198,14 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
         }
     }
 
+    // Open on the panel that matches the current value's representation, so
+    // the popover edits the value in place (and a named colour shows its
+    // entry preselected) instead of defaulting to RGB.
+    const handleOpen = () => {
+        setMode(modeForValue(value))
+        setOpen(true)
+    }
+
     // Commit the live colour when the popover closes (UXP onPopupHiding).
     const handleClose = () => {
         setOpen(false)
@@ -179,8 +230,11 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
                     <NamedListPanel
                         cm={cm}
                         sceneId={sceneId}
+                        // A bare-name value is a named colour; pass it straight
+                        // through (NamedListPanel matches case-insensitively).
+                        // Independent of the async `compileColor` class name.
                         selectedName={
-                            resolved?.className === 'NamedColor' ? value : undefined
+                            representationMode(value) === 'named' ? value : undefined
                         }
                         onSelect={handlePick}
                     />
@@ -199,7 +253,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
     const popoverContent = (
         <div className="cp-panel">
             <ButtonGroup className="cp-modebar" fill>
-                {MODE_SEGMENTS.map((seg) => (
+                {segments.map((seg) => (
                     <Button
                         key={seg.mode}
                         small
@@ -270,7 +324,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
                         minimal
                         rightIcon="caret-down"
                         disabled={disabled}
-                        onClick={() => (open ? handleClose() : setOpen(true))}
+                        onClick={() => (open ? handleClose() : handleOpen())}
                     />
                 </div>
             )}

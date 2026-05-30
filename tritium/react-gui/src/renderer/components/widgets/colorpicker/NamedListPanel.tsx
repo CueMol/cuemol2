@@ -8,7 +8,7 @@
  * per open via the `getNamedColors` worker service.
  */
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Spinner } from '@blueprintjs/core'
 import type { AsyncCueMol } from '../../../worker/client/AsyncCueMol'
 import type { NamedColorEntry } from '../../../worker/server/services/colorPicker.service'
@@ -25,6 +25,17 @@ interface NamedListPanelProps {
 /**
  * Scrollable list of scene + global named colours.
  */
+/**
+ * Normalise a colour name for matching: CueMol names are case-insensitive,
+ * and `NamedColor::toString()` may append a `{...}` modifier suffix that is
+ * absent from the definition names, so fold case and drop the suffix.
+ */
+function normalizeName(name: string): string {
+    const brace = name.indexOf('{')
+    const base = brace >= 0 ? name.slice(0, brace) : name
+    return base.trim().toLowerCase()
+}
+
 export const NamedListPanel: React.FC<NamedListPanelProps> = ({
     cm,
     sceneId,
@@ -32,6 +43,7 @@ export const NamedListPanel: React.FC<NamedListPanelProps> = ({
     onSelect,
 }) => {
     const [entries, setEntries] = useState<NamedColorEntry[] | null>(null)
+    const selectedRef = useRef<HTMLButtonElement | null>(null)
 
     useEffect(() => {
         let cancelled = false
@@ -52,6 +64,14 @@ export const NamedListPanel: React.FC<NamedListPanelProps> = ({
         }
     }, [cm, sceneId])
 
+    const selectedKey = selectedName !== undefined ? normalizeName(selectedName) : undefined
+
+    // Bring the selected entry into view -- the colour list is long (the full
+    // HTML/X11 set), so the match is otherwise below the fold on open.
+    useEffect(() => {
+        selectedRef.current?.scrollIntoView?.({ block: 'nearest' })
+    }, [entries, selectedKey])
+
     if (entries === null) {
         return (
             <div className="cp-named-loading">
@@ -62,20 +82,22 @@ export const NamedListPanel: React.FC<NamedListPanelProps> = ({
 
     return (
         <div className="cp-named-list">
-            {entries.map((e) => (
+            {entries.map((e) => {
+                const isSelected =
+                    selectedKey !== undefined && normalizeName(e.name) === selectedKey
+                return (
                 <button
                     type="button"
                     key={e.name}
-                    className={
-                        'cp-named-row' +
-                        (e.name === selectedName ? ' cp-named-row--selected' : '')
-                    }
+                    ref={isSelected ? selectedRef : undefined}
+                    className={'cp-named-row' + (isSelected ? ' cp-named-row--selected' : '')}
                     onClick={() => onSelect(e.name)}
                 >
                     <span className="cp-named-swatch" style={{ background: e.hex }} />
                     <span className="cp-named-name type-row">{e.name}</span>
                 </button>
-            ))}
+                )
+            })}
         </div>
     )
 }

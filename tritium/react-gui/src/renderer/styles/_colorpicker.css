@@ -204,8 +204,14 @@ button.cp-swatch {
   background: var(--bg-hover);
 }
 
+/* Match the scene / mol tree selected-row convention: --bg-active fill with
+   accent-coloured label (see _side-panel.css bp5-tree-node-selected). */
 .cp-named-row--selected {
   background: var(--bg-active);
+}
+
+.cp-named-row--selected .cp-named-name {
+  color: var(--accent);
 }
 
 .cp-named-swatch {
