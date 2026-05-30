@@ -30,6 +30,7 @@ import * as sceneViewApi from './apis/sceneViewApi';
 import type { ProposeUniqNameArgs, ProposeUniqNameResult } from '../server/services/proposeUniqName.service';
 import type { GetCompatibleRendererNamesResult } from '../server/services/getCompatibleRendererNames.service';
 import type { GetMtzColumnInfoResult } from '../server/services/getMtzColumnInfo.service';
+import type { GetReaderDefaultOptionsResult } from '../server/services/getReaderDefaultOptions.service';
 import type { CreateViewInSceneArgs, CreateViewInSceneResult } from '../server/services/createViewInScene.service';
 import type { ProposeNewTabNamesArgs, ProposeNewTabNamesResult } from '../server/services/proposeNewTabNames.service';
 import type { GetSceneCloseInfoResult } from '../server/services/getSceneCloseInfo.service';
@@ -269,6 +270,11 @@ export class AsyncCueMol {
     /** Read MTZ column labels + resolution range for the file-open dialog. */
     getMtzColumnInfo(filePath: string): Promise<GetMtzColumnInfoResult> {
         return fileApi.getMtzColumnInfo(this._transport, filePath);
+    }
+
+    /** Read an ObjReader's option-property defaults (C++ source of truth). */
+    getReaderDefaultOptions(nickname: string): Promise<GetReaderDefaultOptionsResult> {
+        return fileApi.getReaderDefaultOptions(this._transport, nickname);
     }
 
     /** Fetch open-dialog filters for the given file-category id. */

@@ -102,6 +102,19 @@ describe('PaintSelCell', () => {
         unmount()
     })
 
+    it('does NOT render the Selection Builder trigger (Popover portal would break blur-commit)', async () => {
+        const onCommit = vi.fn()
+        const { unmount } = mountTree(
+            <PaintSelCell sceneID={1} value="chain A" onCommit={onCommit} />,
+        )
+        await flushPromises()
+        // Guard: PaintSelCell must mount MolSelList with the builder OFF. A
+        // Popover renders in a portal outside the cell, so its open/click
+        // would count as a focus-out and prematurely commit the draft.
+        expect(document.querySelector('button[aria-label="Build selection"]')).toBeNull()
+        unmount()
+    })
+
     it('does not commit on keystroke (draft-only)', async () => {
         const onCommit = vi.fn()
         const { container, unmount } = mountTree(

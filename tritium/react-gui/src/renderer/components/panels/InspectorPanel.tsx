@@ -32,6 +32,8 @@ import { RenderSettingsEditor } from "../inspector/RenderSettingsEditor";
 import type { PropDef } from "../../data/rendererProperties";
 import type { RenderBackendId } from "../../data/renderSettings";
 import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
+import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
+import { ColorPickerProvider } from "../widgets/colorpicker/ColorPickerContext";
 
 // ────────────────────────────────────────────────────────────
 // Types
@@ -79,6 +81,10 @@ interface InspectorPanelProps {
   onGenericReset: (key: string) => void;
   /** Called when the user clicks the close button. */
   onClose: () => void;
+  /** CueMol handle for colour resolution in property colour editors. */
+  cm: AsyncCueMol | null;
+  /** Active scene id for colour resolution (named colours / gamut). */
+  sceneId: number | undefined;
 }
 
 // ────────────────────────────────────────────────────────────
@@ -99,6 +105,8 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
   onGenericSet,
   onGenericReset,
   onClose,
+  cm,
+  sceneId,
 }) => {
   // Generic tab is the real, data-backed view - default to it.
   const [mode, setMode] = useState<InspectorMode>("generic");
@@ -115,6 +123,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
   const isRenderSettings = targetKind === "renderSettings";
 
   return (
+    <ColorPickerProvider cm={cm} sceneId={sceneId}>
     <div className="inspector-panel">
       {/* ── Header ── */}
       <div className="inspector-header">
@@ -192,5 +201,6 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
         </>
       )}
     </div>
+    </ColorPickerProvider>
   );
 };

@@ -1,7 +1,16 @@
 /**
  * @file FileOpenOptionDialog/types.ts
  * @description Type definitions and default values for the file open option dialog.
+ *
+ * Reader-option defaults are NOT hardcoded here: they come from the C++ reader
+ * (qif `default` / constructor), fetched at dialog-open via the
+ * `getReaderDefaultOptions` worker service and mapped by
+ * `mapReaderDefaultsToFormatOptions`. The `getDefault*Options` functions below
+ * return transient placeholders only (overwritten before the user sees the
+ * pane), mirroring the MTZ header-driven defaults. The lone exception is the
+ * MTZ grid spacing, a deliberate UXP UI preset (see `getDefaultMtzOptions`).
  */
+import type { ReaderDefaultOptions } from '../../worker/server/services/getReaderDefaultOptions.service';
 
 // ---- Format kind ----
 
@@ -109,12 +118,16 @@ export function formatKindForReader(readerName: string): FormatKind {
 // ---- Default values ----
 
 export function getDefaultPdbOptions(): PdbOptions {
+  // Placeholders only. The authoritative defaults come from the C++ reader
+  // (PDBFileReader / MmcifMolReader qif), fetched by FileOpenOptionDialog via
+  // `getReaderDefaultOptions` and applied through
+  // `mapReaderDefaultsToFormatOptions`. Do NOT treat these as real defaults.
   return {
-    loadModel: true,
+    loadModel: false,
     loadAnisou: false,
     loadAltConf: false,
     loadSegid: false,
-    build2ndry: true,
+    build2ndry: false,
     autoTopology: false,
   };
 }
@@ -122,7 +135,10 @@ export function getDefaultPdbOptions(): PdbOptions {
 export function getDefaultMtzOptions(): MtzOptions {
   // Placeholders; the real defaults (column selections + resolution) are
   // filled in by FileOpenOptionDialog once the worker reads the MTZ header.
-  // Grid spacing defaults to the UXP "Fine" preset (0.25).
+  // Grid spacing is the lone reader-option default kept on the TS side: UXP
+  // itself hardcodes the "Fine (0.25)" UI preset (fopen-mtzopt-page.js
+  // `selectMenuListByValue(mGridList, "0.25")`) rather than reading the
+  // reader's gridsize (C++ default 0.333), so 0.25 is the UXP-faithful value.
   return {
     columnF: '',
     columnPhi: '',
@@ -135,15 +151,17 @@ export function getDefaultMtzOptions(): MtzOptions {
 }
 
 export function getDefaultCcp4MapOptions(): Ccp4MapOptions {
-  // Truncation disabled by default, matching the CCP4MapReader defaults
-  // (truncate_min / truncate_max false). The sigma values are retained as
-  // editable defaults so enabling a toggle uses a sensible clamp.
+  // Placeholders only. The authoritative defaults come from the C++
+  // CCP4MapReader (constructor: normalize=false, truncate_min/max=false,
+  // min=0, max=5), fetched by FileOpenOptionDialog via
+  // `getReaderDefaultOptions` and applied through
+  // `mapReaderDefaultsToFormatOptions`. Do NOT treat these as real defaults.
   return {
-    normalize: true,
+    normalize: false,
     truncateMinEnabled: false,
-    truncateMin: -5.0,
+    truncateMin: 0,
     truncateMaxEnabled: false,
-    truncateMax: 5.0,
+    truncateMax: 0,
   };
 }
 
@@ -202,15 +220,21 @@ export function isMolFormat(kind: FormatKind): boolean {
 }
 
 /**
- * Returns true if the given FormatOptions differ from the defaults for that format.
- * Used to display a "(modified)" hint in the collapsible header.
+ * Returns true if `options` differs from the baseline `defaults` for that
+ * format. Used to display a "(modified)" hint in the collapsible header.
+ *
+ * @param options - The current dialog state.
+ * @param defaults - The baseline to compare against. For PDB/mmCIF/CCP4 this
+ *   is the C++-sourced default seeded by FileOpenOptionDialog; for the other
+ *   formats it is the static `getDefault*Options` baseline.
  */
-export function isFormatOptionsModified(options: FormatOptions): boolean {
+export function isFormatOptionsModified(options: FormatOptions, defaults: FormatOptions): boolean {
+  if (options.kind !== defaults.kind) return false;
   switch (options.kind) {
     case 'pdb':
     case 'mmcif': {
-      const d = getDefaultPdbOptions();
       const o = options.options;
+      const d = defaults.options as PdbOptions;
       return (
         o.loadModel !== d.loadModel ||
         o.loadAnisou !== d.loadAnisou ||
@@ -221,8 +245,8 @@ export function isFormatOptionsModified(options: FormatOptions): boolean {
       );
     }
     case 'mtz': {
-      const d = getDefaultMtzOptions();
       const o = options.options;
+      const d = defaults.options as MtzOptions;
       return (
         o.columnF !== d.columnF ||
         o.columnPhi !== d.columnPhi ||
@@ -233,8 +257,8 @@ export function isFormatOptionsModified(options: FormatOptions): boolean {
       );
     }
     case 'ccp4map': {
-      const d = getDefaultCcp4MapOptions();
       const o = options.options;
+      const d = defaults.options as Ccp4MapOptions;
       return (
         o.normalize !== d.normalize ||
         o.truncateMinEnabled !== d.truncateMinEnabled ||
@@ -244,13 +268,70 @@ export function isFormatOptionsModified(options: FormatOptions): boolean {
       );
     }
     case 'msms':
-      return options.options.vertFilePath !== '';
+      return options.options.vertFilePath !== (defaults.options as MsmsOptions).vertFilePath;
     case 'namdcoor':
-      return options.options.psfFilePath !== '';
+      return options.options.psfFilePath !== (defaults.options as NamdCoorOptions).psfFilePath;
     case 'amberprm':
-      return options.options.coordFilePath !== '';
+      return options.options.coordFilePath !== (defaults.options as AmberPrmtopOptions).coordFilePath;
     default:
       return false;
+  }
+}
+
+/**
+ * Map the C++ reader's option-property values (from `getReaderDefaultOptions`)
+ * onto the dialog's `FormatOptions`. The single place that translates reader
+ * property names to dialog field names; used by FileOpenOptionDialog to seed
+ * PDB / mmCIF / CCP4 defaults from the reader (UXP `fopen-*opt-page` onInit).
+ *
+ * @param kind - The dialog format kind to build options for.
+ * @param v - Reader-backed values keyed by reader property name.
+ * @returns FormatOptions for `kind`; falls back to the static placeholder for
+ *   kinds without reader-backed value options.
+ */
+export function mapReaderDefaultsToFormatOptions(kind: FormatKind, v: ReaderDefaultOptions): FormatOptions {
+  switch (kind) {
+    case 'pdb':
+      return {
+        kind: 'pdb',
+        options: {
+          loadModel: !!v.loadmodel,
+          loadAnisou: !!v.loadanisou,
+          loadAltConf: !!v.loadaltconf,
+          loadSegid: !!v.loadsegid,
+          build2ndry: !!v.build2ndry,
+          autoTopology: !!v.autoTopoGen,
+        },
+      };
+    case 'mmcif':
+      return {
+        kind: 'mmcif',
+        options: {
+          loadModel: !!v.loadmodel,
+          loadAnisou: !!v.loadanisou,
+          loadAltConf: !!v.loadaltconf,
+          // mmCIF reader has no loadsegid property; dialog field stays false.
+          loadSegid: false,
+          // mmCIF exposes loadsecstr (load 2ndry from file). The dialog's
+          // build2ndry (recompute) is its inverse, matching applyReaderOptions
+          // (loadsecstr = !build2ndry).
+          build2ndry: !v.loadsecstr,
+          autoTopology: !!v.autoTopoGen,
+        },
+      };
+    case 'ccp4map':
+      return {
+        kind: 'ccp4map',
+        options: {
+          normalize: !!v.normalize,
+          truncateMinEnabled: !!v.truncate_min,
+          truncateMin: v.min ?? 0,
+          truncateMaxEnabled: !!v.truncate_max,
+          truncateMax: v.max ?? 0,
+        },
+      };
+    default:
+      return buildDefaultFormatOptions(kind);
   }
 }
 

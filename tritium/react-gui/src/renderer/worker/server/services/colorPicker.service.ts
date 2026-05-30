@@ -49,10 +49,20 @@ function packHex(r: number, g: number, b: number): string {
  */
 function compileColor(ctx: WorkerContext, args: CompileColorArgs): CompileColorResult {
     const sceneId = args.sceneId || 0;
-    let color: AbstractColor;
+    // An empty string is never a valid colour; short-circuit so the C++
+    // compiler does not log a parse error (and returns null) for it.
+    if (!args.colorStr) {
+        return { ok: false };
+    }
+    let color: AbstractColor | null;
     try {
         color = ctx.styleMgr.compileColor(args.colorStr, sceneId);
     } catch {
+        return { ok: false };
+    }
+    // compileColor returns null (not throws) for an unparseable colour
+    // string -- guard before reading components to avoid a null deref.
+    if (!color) {
         return { ok: false };
     }
 

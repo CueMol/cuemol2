@@ -98,6 +98,47 @@ TEST(SelCompilerTest, CompileNotOperatorReturnsNonNull)
     delete pNode;
 }
 
+// ---- SelectionBuilder emitted-syntax guards ----
+//
+// The tritium SelectionBuilder (widgets/MolSelList/SelectionBuilder.tsx)
+// composes selection fragments as `keyword value` (space-separated), quotes
+// chain values, and wraps negation as `not (...)`. These tests pin that the
+// exact strings it emits remain valid CueMol syntax, so a grammar change is
+// caught before the UI emits dead expressions.
+
+TEST(SelCompilerTest, CompileQuotedChainReturnsNonNull)
+{
+    // Builder quotes chain values: `chain 'A'`.
+    SelSuperNode *pNode = SelCompiler::getInstance()->compile("chain 'A'");
+    ASSERT_NE(pNode, nullptr);
+    delete pNode;
+}
+
+TEST(SelCompilerTest, CompileElementReturnsNonNull)
+{
+    SelSuperNode *pNode = SelCompiler::getInstance()->compile("elem C");
+    ASSERT_NE(pNode, nullptr);
+    delete pNode;
+}
+
+TEST(SelCompilerTest, CompileNegatedParenTermReturnsNonNull)
+{
+    // Builder negation wrap: `not (<frag>)`.
+    SelSuperNode *pNode = SelCompiler::getInstance()->compile("not (resn HOH)");
+    ASSERT_NE(pNode, nullptr);
+    delete pNode;
+}
+
+TEST(SelCompilerTest, CompileBuilderCompositeReturnsNonNull)
+{
+    // A representative builder output combining a quoted chain term with a
+    // negated term via AND.
+    SelSuperNode *pNode =
+        SelCompiler::getInstance()->compile("chain 'A' and not (resn HOH)");
+    ASSERT_NE(pNode, nullptr);
+    delete pNode;
+}
+
 // ---- SelCommand default constructor tests ----
 
 TEST(SelCommandTest, DefaultConstructorIsEmpty)

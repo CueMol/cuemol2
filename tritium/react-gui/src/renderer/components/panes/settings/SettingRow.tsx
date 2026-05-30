@@ -10,6 +10,15 @@ import React from 'react'
 import { Button, HTMLSelect, NumericInput, Switch } from '@blueprintjs/core'
 import { IPC } from '../../../../shared/ipcChannels'
 import type { SettingDef } from './settingsConfig'
+import { CueColorField } from '../../widgets/colorpicker/CueColorField'
+import type { Mode } from '../../widgets/colorpicker/ColorPicker'
+
+/**
+ * App settings colours are scene-independent plain colours, so the picker
+ * exposes only the editable colour spaces -- "Named" / "Mol" (which resolve
+ * against a scene's StyleManager) make no sense here.
+ */
+const SETTING_COLOR_MODES: Mode[] = ['rgb', 'hsb', 'palette']
 
 export interface SettingRowProps {
   def: SettingDef
@@ -56,15 +65,12 @@ export const SettingRow: React.FC<SettingRowProps> = ({ def, value, onChange }) 
         )
       case 'color':
         return (
-          <div className="config-setting-color-row">
-            <input
-              type="color"
-              className="config-setting-color-swatch"
-              value={value as string}
-              onChange={(e) => onChange(key, e.target.value)}
-            />
-            <span className="config-setting-color-hex">{value as string}</span>
-          </div>
+          <CueColorField
+            value={value as string}
+            onCommit={(v) => onChange(key, v)}
+            modes={SETTING_COLOR_MODES}
+            className="config-setting-color-field"
+          />
         )
       case 'path': {
         const directory = control.directory === true

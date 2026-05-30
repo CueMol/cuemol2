@@ -481,6 +481,8 @@ const App: React.FC = () => {
                         onGenericSet={handleGenericSet}
                         onGenericReset={handleGenericReset}
                         onClose={handleCloseInspector}
+                        cm={cm}
+                        sceneId={activeSceneId}
                       />
                     </Allotment.Pane>
                   </Allotment>

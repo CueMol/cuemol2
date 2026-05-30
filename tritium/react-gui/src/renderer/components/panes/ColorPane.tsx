@@ -26,7 +26,7 @@
  * This pane is one of the components within the ExplorerView.
  */
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
     Button,
     ButtonGroup,
@@ -51,86 +51,19 @@ import type {
     PaintEntryDto,
     RainbowParams,
 } from '../../worker/server/services/rendererColoring.service'
-import { ColorPicker } from '../widgets/colorpicker/ColorPicker'
+import { CueColorField } from '../widgets/colorpicker/CueColorField'
+import { ColorPickerProvider } from '../widgets/colorpicker/ColorPickerContext'
 import { usePaintCapableRenderers } from '../../hooks/usePaintCapableRenderers'
 import { useRendererColoringState } from '../../hooks/useRendererColoringState'
 import { useElePotMapObjects } from '../../hooks/useElePotMapObjects'
 import { PaintSelCell } from './PaintSelCell'
 
 // ────────────────────────────────────────────────────────────
-// Named colour --> CSS hex preview (subset; informational only)
-// ────────────────────────────────────────────────────────────
-
-const NAMED_COLORS: Record<string, string> = {
-    SteelBlue: '#4682B4',
-    khaki: '#C3B091',
-    yellow: '#FFE000',
-    red: '#E06C75',
-    green: '#87C38A',
-    cyan: '#56B6C2',
-    magenta: '#C678DD',
-    orange: '#D19A66',
-    white: '#FFFFFF',
-    gray: '#808080',
-    black: '#000000',
-    blue: '#3B82F6',
-}
-
-/** Resolve a CueMol colour string to something the browser can preview. */
-const resolveColorPreview = (color: string): string => {
-    const trimmed = color.trim()
-    if (!trimmed) return 'transparent'
-    if (NAMED_COLORS[trimmed]) return NAMED_COLORS[trimmed]
-    if (
-        trimmed.startsWith('#') ||
-        trimmed.startsWith('rgb') ||
-        trimmed.startsWith('hsl')
-    )
-        return trimmed
-    // Unknown format (e.g. "(255,128,0,255)" tuple) -- let the browser try.
-    return trimmed
-}
-
-// ────────────────────────────────────────────────────────────
-// Colour-picker context
-//
-// The deck colour editors are nested several components deep; rather than
-// thread `cm` / `sceneId` through every deck, ColorPane publishes them via
-// a context that `PaneColorPicker` consumes. `PaneColorPicker` adapts the
-// reusable ColorPicker widget to the deck `onCommit(value)` convention by
-// forwarding only completed edits.
-// ────────────────────────────────────────────────────────────
-
-interface ColorPickerCtx {
-    cm: AsyncCueMol | null
-    sceneId: number | undefined
-}
-
-const ColorPickerContext = createContext<ColorPickerCtx>({ cm: null, sceneId: undefined })
-
-interface PaneColorPickerProps {
-    value: string
-    onCommit: (value: string) => void
-    className?: string
-}
-
-const PaneColorPicker: React.FC<PaneColorPickerProps> = ({ value, onCommit, className }) => {
-    const { cm, sceneId } = useContext(ColorPickerContext)
-    return (
-        <ColorPicker
-            value={value}
-            cm={cm}
-            sceneId={sceneId}
-            className={className}
-            onChange={(v, completed) => {
-                if (completed && v !== value) onCommit(v)
-            }}
-        />
-    )
-}
-
-// ────────────────────────────────────────────────────────────
 // Coloring type dropdown items
+//
+// The deck colour editors below use the reusable `CueColorField`, which
+// reads `cm` / `sceneId` from the `ColorPickerProvider` wrapped around this
+// pane's body (so they need no prop threading).
 // ────────────────────────────────────────────────────────────
 
 interface ColoringModeItem {
@@ -291,46 +224,6 @@ const PaintTable: React.FC<PaintTableProps> = ({
     sceneId,
     molId,
 }) => {
-    // Local edit buffer keyed by idx, so typing in the input is responsive
-    // and only commits to the worker on blur.
-    const [draft, setDraft] = useState<Record<number, { selStr?: string; colorValue?: string }>>({})
-    // Reset drafts when entries change underneath us (event-driven refresh).
-    useEffect(() => {
-        setDraft({})
-    }, [entries])
-
-    const commit = (idx: number, field: 'selStr' | 'colorValue') => {
-        const buf = draft[idx]?.[field]
-        if (buf === undefined) return
-        const current = entries[idx]
-        if (!current) return
-        if (buf === current[field]) {
-            setDraft((p) => {
-                const n = { ...p }
-                if (n[idx]) {
-                    delete n[idx][field]
-                    if (!n[idx].selStr && !n[idx].colorValue) delete n[idx]
-                }
-                return n
-            })
-            return
-        }
-        onUpdate(idx, field, buf)
-    }
-
-    const cellValue = (idx: number, field: 'selStr' | 'colorValue'): string => {
-        const buf = draft[idx]?.[field]
-        if (buf !== undefined) return buf
-        return entries[idx]?.[field] ?? ''
-    }
-
-    const setCell = (idx: number, field: 'selStr' | 'colorValue', value: string) => {
-        setDraft((prev) => ({
-            ...prev,
-            [idx]: { ...(prev[idx] ?? {}), [field]: value },
-        }))
-    }
-
     const isRowSelected = selectedIdx !== null
 
     return (
@@ -369,26 +262,12 @@ const PaintTable: React.FC<PaintTableProps> = ({
                                             }
                                         />
                                     </td>
-                                    <td
-                                        className="color-cell-color"
-                                        style={{
-                                            backgroundColor: resolveColorPreview(
-                                                cellValue(entry.idx, 'colorValue'),
-                                            ),
-                                        }}
-                                    >
-                                        <input
-                                            className="color-inline-input color-value-input"
-                                            value={cellValue(entry.idx, 'colorValue')}
-                                            onChange={(e) =>
-                                                setCell(entry.idx, 'colorValue', e.target.value)
+                                    <td className="color-cell-color">
+                                        <CueColorField
+                                            value={entry.colorValue ?? ''}
+                                            onCommit={(v) =>
+                                                onUpdate(entry.idx, 'colorValue', v)
                                             }
-                                            onFocus={() => onSelect(entry.idx)}
-                                            onBlur={() => commit(entry.idx, 'colorValue')}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') e.currentTarget.blur()
-                                            }}
-                                            spellCheck={false}
                                         />
                                     </td>
                                 </tr>
@@ -458,7 +337,7 @@ const SolidDeck: React.FC<SolidDeckProps> = ({ className, defaultColor, onCommit
         </div>
         <div className="color-solid-row">
             <label className="color-solid-label">Default color</label>
-            <PaneColorPicker value={defaultColor} onCommit={onCommit} />
+            <CueColorField value={defaultColor} onCommit={onCommit} />
         </div>
     </div>
 )
@@ -492,7 +371,7 @@ interface ColorFieldProps {
 const ColorField: React.FC<ColorFieldProps> = ({ label, value, onCommit }) => (
     <div className="color-field-row">
         <label className="color-field-label">{label}</label>
-        <PaneColorPicker value={value} onCommit={onCommit} />
+        <CueColorField value={value} onCommit={onCommit} />
     </div>
 )
 
@@ -797,7 +676,7 @@ const ColorSwatchInline: React.FC<{
     value: string
     onCommit: (next: string) => void
 }> = ({ value, onCommit }) => (
-    <PaneColorPicker value={value} onCommit={onCommit} />
+    <CueColorField value={value} onCommit={onCommit} />
 )
 
 // ────────────────────────────────────────────────────────────
@@ -1108,7 +987,7 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
     const dropdownDisabled = target === null
 
     return (
-        <ColorPickerContext.Provider value={{ cm, sceneId }}>
+        <ColorPickerProvider cm={cm} sceneId={sceneId}>
         <div className="sp-pane">
             <SectionHeader
                 title="Color"
@@ -1170,6 +1049,6 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
                 </div>
             )}
         </div>
-        </ColorPickerContext.Provider>
+        </ColorPickerProvider>
     )
 }

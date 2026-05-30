@@ -28,6 +28,7 @@ vi.mock('../contexts/ThemeContext', () => ({
 const mockCm = {
     proposeUniqName: vi.fn(),
     invokeService: vi.fn(),
+    getReaderDefaultOptions: vi.fn(),
 }
 
 vi.mock('../hooks/useCueMol', () => ({
@@ -99,6 +100,16 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
         globalThis.localStorage.clear()
         mockCm.proposeUniqName.mockReset()
         mockCm.invokeService.mockReset()
+        mockCm.getReaderDefaultOptions.mockReset()
+        // Seed the PDB pane from the C++ reader defaults (the real source of
+        // truth). Mirrors PDBFileReader's qif defaults.
+        mockCm.getReaderDefaultOptions.mockResolvedValue({
+            ok: true,
+            values: {
+                loadmodel: false, loadanisou: true, loadaltconf: true,
+                loadsegid: false, build2ndry: true, autoTopoGen: true,
+            },
+        })
         mockCm.invokeService.mockImplementation((name: string) => {
             if (name === 'getSelDefs') return Promise.resolve({ scene: [], global: [] })
             if (name === 'validateSelection') return Promise.resolve({ ok: true })

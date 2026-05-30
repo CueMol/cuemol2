@@ -117,6 +117,54 @@
   --ls-spaced: 1px;
 
   /*
+   * Semantic typography roles. Each role bundles font-size / line-height /
+   * font-weight for ONE UI context, built on the raw --fs-* / --lh-* / --fw-*
+   * primitives above. Pick a role by meaning (a list row, a body paragraph,
+   * a section eyebrow) instead of picking a raw --fs-* by its pixel value --
+   * choosing by meaning is what keeps sibling UIs visually consistent.
+   * Apply via the .type-* utility classes in _typography.css; reference these
+   * vars directly only for Blueprint-injected elements we do not render
+   * ourselves (e.g. .bp5-tree-node-content, .bp5-menu-item). Theme-independent,
+   * so the light block does not override them.
+   */
+  /* Dialog / major title */
+  --type-title-fs: var(--fs-2xl);
+  --type-title-lh: var(--lh-snug);
+  --type-title-fw: var(--fw-semibold);
+  /* Secondary heading */
+  --type-subtitle-fs: var(--fs-xl);
+  --type-subtitle-lh: var(--lh-snug);
+  --type-subtitle-fw: var(--fw-semibold);
+  /* Uppercase section / panel-header eyebrow (pair with uppercase + --ls-wide) */
+  --type-eyebrow-fs: var(--fs-base);
+  --type-eyebrow-lh: var(--lh-tight);
+  --type-eyebrow-fw: var(--fw-semibold);
+  /* Form / control label */
+  --type-label-fs: var(--fs-base);
+  --type-label-lh: var(--lh-tight);
+  --type-label-fw: var(--fw-medium);
+  /* List / tree row text */
+  --type-row-fs: var(--fs-lg);
+  --type-row-lh: var(--lh-snug);
+  --type-row-fw: var(--fw-normal);
+  /* Body text / descriptions / notes */
+  --type-body-fs: var(--fs-lg);
+  --type-body-lh: var(--lh-normal);
+  --type-body-fw: var(--fw-normal);
+  /* Muted caption / metadata */
+  --type-caption-fs: var(--fs-sm2);
+  --type-caption-lh: var(--lh-tight);
+  --type-caption-fw: var(--fw-normal);
+  /* Monospace code / console (pair with --font-mono) */
+  --type-mono-fs: var(--fs-lg);
+  --type-mono-lh: var(--lh-normal);
+  --type-mono-fw: var(--fw-normal);
+  /* Empty-state / splash hero */
+  --type-hero-fs: var(--fs-hero);
+  --type-hero-lh: var(--lh-tight);
+  --type-hero-fw: var(--fw-normal);
+
+  /*
    * Spacing scale (padding / margin / gap). Six steps cover 95%+ of the
    * existing usage. Stray values snap to the nearest step at migration
    * time; only add a step if a visual check shows breakage. Note 10px sits
@@ -140,6 +188,9 @@
      title bars are all 30px). Sub-section headers within a panel are
      intentionally smaller and use --ctrl-h-md. */
   --panel-header-h: 30px;
+  /* List / tree row height -- the box that .type-row text sits in
+     (scene/mol tree rows, named-colour rows, inspector rows). */
+  --row-h: 22px;
 
   /* Icon sizes. The 14px step is the default; singletons stay inline. */
   --icon-sm: 12px;

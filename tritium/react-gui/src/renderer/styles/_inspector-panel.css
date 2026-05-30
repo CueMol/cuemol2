@@ -349,33 +349,6 @@
   font-size: var(--fs-lg);
 }
 
-/* ── Color editor ── */
-.insp-color-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.insp-color-swatch {
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: transparent;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.insp-color-swatch::-webkit-color-swatch-wrapper {
-  padding: var(--space-1);
-}
-
-.insp-color-swatch::-webkit-color-swatch {
-  border: none;
-  border-radius: var(--radius-sm);
-}
-
 /* ═══════════════════════════════════════════════════════════
    Render Settings target
    ═══════════════════════════════════════════════════════════ */

@@ -38,6 +38,8 @@ import {
 } from '@blueprintjs/core';
 import { useCueMol } from '../../../hooks/useCueMol';
 import { getHistory } from './selHistory';
+import { SelectionBuilder } from './SelectionBuilder';
+import { useSelectionValues } from './useSelectionValues';
 
 const PICK_SENTINEL = '__mol_sel_list_pick__';
 const VALIDATE_DEBOUNCE_MS = 500;
@@ -58,6 +60,13 @@ export interface MolSelListProps {
      * forces a refresh (e.g. when the parent knows the scene's defs changed).
      */
     refreshKey?: number;
+    /**
+     * Show the Selection Builder popover trigger inside the control group.
+     * Defaults to false so existing callers are unaffected. Not enabled in
+     * PaintSelCell: its blur-commit logic treats the Popover portal as a
+     * focus-out and would prematurely commit the draft.
+     */
+    enableBuilder?: boolean;
 }
 
 export const MolSelList: React.FC<MolSelListProps> = ({
@@ -70,6 +79,7 @@ export const MolSelList: React.FC<MolSelListProps> = ({
     placeholder = '* (all atoms)',
     fill = true,
     refreshKey = 0,
+    enableBuilder = false,
 }) => {
     // `onMolIdChange` is part of the UXP-compatible API surface but is not
     // yet wired — referencing it silences the unused-locals diagnostic without
@@ -151,6 +161,24 @@ export const MolSelList: React.FC<MolSelListProps> = ({
         onSelectedSelChange(v);
     };
 
+    // ---- Selection Builder wiring (opt-in via enableBuilder) ----
+    const resolveValues = useSelectionValues({ cm, sceneID, molID });
+
+    // Apply an expression emitted from the builder. Insert appends with an
+    // ` and ` join; an empty / "*" base is replaced outright so the result
+    // is not the redundant "* and <frag>".
+    const handleEmit = useCallback(
+        (next: string, mode: 'insert' | 'replace'): void => {
+            if (mode === 'replace') {
+                onSelectedSelChange(next);
+                return;
+            }
+            const prev = selectedSel.trim();
+            onSelectedSelChange(prev === '' || prev === '*' ? next : `${prev} and ${next}`);
+        },
+        [selectedSel, onSelectedSelChange],
+    );
+
     return (
         <ControlGroup fill={fill} className="mol-sel-list">
             <InputGroup
@@ -162,47 +190,64 @@ export const MolSelList: React.FC<MolSelListProps> = ({
                 intent={isValid ? Intent.NONE : Intent.DANGER}
                 aria-invalid={!isValid}
             />
-            <HTMLSelect
-                value={PICK_SENTINEL}
-                onChange={handlePick}
-                onMouseDown={refreshHistory}
-                onFocus={refreshHistory}
-                disabled={disabled}
-                aria-label="Pick selection"
-                className="mol-sel-list-picker"
-            >
-                {/* Hidden empty option keeps the display area blank; selecting
-                    a real option re-renders back to this sentinel. */}
-                <option value={PICK_SENTINEL} hidden></option>
-                <optgroup label="Preset">
-                    {currentSel !== undefined && (
-                        <option value={currentSel}>current ({currentSel})</option>
+            {enableBuilder ? (
+                // The Selection Builder popover supersedes the OS-native
+                // picker: its Library tab carries the same Preset / Scene /
+                // Global / History lists plus the guided term composer.
+                <SelectionBuilder
+                    value={selectedSel}
+                    onEmit={handleEmit}
+                    history={historyItems}
+                    currentSel={currentSel}
+                    sceneDefs={sceneDefs}
+                    globalDefs={globalDefs}
+                    resolveValues={resolveValues}
+                    onOpening={refreshHistory}
+                    disabled={disabled}
+                />
+            ) : (
+                <HTMLSelect
+                    value={PICK_SENTINEL}
+                    onChange={handlePick}
+                    onMouseDown={refreshHistory}
+                    onFocus={refreshHistory}
+                    disabled={disabled}
+                    aria-label="Pick selection"
+                    className="mol-sel-list-picker"
+                >
+                    {/* Hidden empty option keeps the display area blank;
+                        selecting a real option re-renders to this sentinel. */}
+                    <option value={PICK_SENTINEL} hidden></option>
+                    <optgroup label="Preset">
+                        {currentSel !== undefined && (
+                            <option value={currentSel}>current ({currentSel})</option>
+                        )}
+                        <option value="*">all (*)</option>
+                        <option value="">none</option>
+                    </optgroup>
+                    {historyItems.length > 0 && (
+                        <optgroup label="History">
+                            {historyItems.map((v) => (
+                                <option key={v} value={v}>{v}</option>
+                            ))}
+                        </optgroup>
                     )}
-                    <option value="*">all (*)</option>
-                    <option value="">none</option>
-                </optgroup>
-                {historyItems.length > 0 && (
-                    <optgroup label="History">
-                        {historyItems.map((v) => (
-                            <option key={v} value={v}>{v}</option>
-                        ))}
-                    </optgroup>
-                )}
-                {sceneDefs.length > 0 && (
-                    <optgroup label="Scene">
-                        {sceneDefs.map((v) => (
-                            <option key={v} value={v}>{v}</option>
-                        ))}
-                    </optgroup>
-                )}
-                {globalDefs.length > 0 && (
-                    <optgroup label="Global">
-                        {globalDefs.map((v) => (
-                            <option key={v} value={v}>{v}</option>
-                        ))}
-                    </optgroup>
-                )}
-            </HTMLSelect>
+                    {sceneDefs.length > 0 && (
+                        <optgroup label="Scene">
+                            {sceneDefs.map((v) => (
+                                <option key={v} value={v}>{v}</option>
+                            ))}
+                        </optgroup>
+                    )}
+                    {globalDefs.length > 0 && (
+                        <optgroup label="Global">
+                            {globalDefs.map((v) => (
+                                <option key={v} value={v}>{v}</option>
+                            ))}
+                        </optgroup>
+                    )}
+                </HTMLSelect>
+            )}
         </ControlGroup>
     );
 };

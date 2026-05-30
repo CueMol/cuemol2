@@ -49,3 +49,4 @@ Architecture Decision Records for the UXP → tritium migration.
 | [ADR-0018](ADR-0018-molstruct-panel.md) | MolStruct panel — lazy load, multi-select, deferred virtualization | accepted (tree perf deferred) | 2026-05-24 | `panel.molstruct` |
 | [ADR-0019](ADR-0019-seq-panel-selection-latency.md) | Sequence panel — residual selection-commit latency (future work) | proposed (future work) | 2026-05-24 | `panel.btmpanel-holder.seq` |
 | [ADR-0020](ADR-0020-color-picker-widget.md) | Color picker widget — popover-panel port of UXP colpicker | accepted (ColorPane decks wired; Paint table + Inspector deferred) | 2026-05-29 | `widget.colpicker`, `widget.colorslider`, `menu.color` |
+| [ADR-0021](ADR-0021-selection-builder.md) | Selection Builder popover for MolSelList — one-way guided query builder, verified grammar | accepted (RendererOptionsPane only; PaintSelCell / SelectionPane deferred) | 2026-05-29 | `widget.molsellist` |

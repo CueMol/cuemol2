@@ -7,6 +7,13 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import React from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
+
+// The colour control renders the ColorPicker widget, which reads the theme
+// for its Blueprint dark portal class.
+vi.mock('../contexts/ThemeContext', () => ({
+    useTheme: () => ({ theme: 'dark' }),
+}))
+
 import { SettingRow } from '../components/panes/settings/SettingRow'
 import type { SettingDef } from '../components/panes/settings/settingsConfig'
 
@@ -81,13 +88,29 @@ describe('SettingRow', () => {
         expect(onChange).toHaveBeenCalledWith('k', true)
     })
 
-    it('renders a color control with the hex value shown', () => {
+    it('renders the colour picker widget (not a native colour input)', () => {
         const el = mount(
             <SettingRow def={def({ kind: 'color' })} value="#FF0000" onChange={vi.fn()} />,
         )
-        const colorInput = el.querySelector('input[type="color"]') as HTMLInputElement
-        expect(colorInput).not.toBeNull()
-        expect(colorInput.value).toBe('#ff0000')
-        expect(el.querySelector('.config-setting-color-hex')?.textContent).toBe('#FF0000')
+        // Migrated to the unified ColorPicker -- no native input[type=color].
+        expect(el.querySelector('input[type="color"]')).toBeNull()
+        const picker = el.querySelector('.cp-widget')
+        expect(picker).not.toBeNull()
+        const textbox = el.querySelector('.cp-textbox input') as HTMLInputElement
+        expect(textbox.value).toBe('#FF0000')
+    })
+
+    it('limits the colour picker to scene-independent modes', () => {
+        const el = mount(
+            <SettingRow def={def({ kind: 'color' })} value="#FF0000" onChange={vi.fn()} />,
+        )
+        const caret = el.querySelector('button.bp5-button') as HTMLButtonElement
+        act(() => {
+            caret.click()
+        })
+        const labels = Array.from(
+            document.querySelectorAll('.cp-modebar button'),
+        ).map((b) => b.textContent)
+        expect(labels).toEqual(['RGB', 'HSB', 'Palette'])
     })
 })

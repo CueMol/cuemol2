@@ -28,6 +28,11 @@ vi.mock('../hooks/useCueMol', () => ({
     useCueMol: () => ({ cueMolReady: true, cm: mockCm }),
 }))
 
+// SelectionBuilder (mounted only when enableBuilder is set) reads the theme.
+vi.mock('../contexts/ThemeContext', () => ({
+    useTheme: () => ({ theme: 'dark', toggleTheme: () => undefined, setTheme: () => undefined }),
+}))
+
 import { MolSelList } from '../components/widgets/MolSelList/MolSelList'
 import { STORAGE_KEY } from '../components/widgets/MolSelList/selHistory'
 import { mountTree, flushPromises } from './helpers/testHarness'
@@ -243,5 +248,111 @@ describe('MolSelList', () => {
         await flushPromises()
         const validateCalls = mockCm.invokeService.mock.calls.filter((c: any[]) => c[0] === 'validateSelection')
         expect(validateCalls.length).toBe(0)
+    })
+
+    // ---- Selection Builder integration (enableBuilder opt-in) ----
+
+    function builderTrigger(): HTMLButtonElement | null {
+        return document.querySelector('button[aria-label="Build selection"]')
+    }
+
+    /** Open the builder, add one chain 'A' term, run the given action button. */
+    async function addChainAAndClick(action: 'Insert' | 'Replace all'): Promise<void> {
+        await act(async () => { builderTrigger()!.click() })
+        await flushPromises()
+        const valueInput = document.querySelector(
+            '.selbuilder-popover input.bp5-input',
+        ) as HTMLInputElement
+        const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+        await act(async () => {
+            setter.call(valueInput, 'A')
+            valueInput.dispatchEvent(new Event('input', { bubbles: true }))
+        })
+        const click = (text: string) => {
+            const btn = Array.from(
+                document.querySelectorAll('.selbuilder-popover button'),
+            ).find((b) => b.textContent?.trim() === text) as HTMLButtonElement
+            btn.click()
+        }
+        await act(async () => { click('Add') })
+        await flushPromises()
+        await act(async () => { click(action) })
+        await flushPromises()
+    }
+
+    it('hides the builder trigger by default', async () => {
+        setupCm()
+        const { unmount } = mountTree(
+            <MolSelList sceneID={1} selectedSel="" onSelectedSelChange={() => undefined} />
+        )
+        await flushPromises()
+        expect(builderTrigger()).toBeNull()
+        unmount()
+    })
+
+    it('shows the builder trigger when enableBuilder is set', async () => {
+        setupCm()
+        const { unmount } = mountTree(
+            <MolSelList sceneID={1} selectedSel="" onSelectedSelChange={() => undefined} enableBuilder />
+        )
+        await flushPromises()
+        expect(builderTrigger()).not.toBeNull()
+        unmount()
+    })
+
+    it('replaces the native picker with the builder when enableBuilder is set', async () => {
+        setupCm({ selDefs: { scene: ['mySceneSel'], global: [] } })
+        // Default: native HTMLSelect picker present, no builder.
+        const off = mountTree(
+            <MolSelList sceneID={1} selectedSel="" onSelectedSelChange={() => undefined} />
+        )
+        await flushPromises()
+        expect(off.container.querySelector('select.bp5-html-select, .mol-sel-list-picker')).not.toBeNull()
+        expect(builderTrigger()).toBeNull()
+        off.unmount()
+        // enableBuilder: picker gone, builder trigger present.
+        const on = mountTree(
+            <MolSelList sceneID={1} selectedSel="" onSelectedSelChange={() => undefined} enableBuilder />
+        )
+        await flushPromises()
+        expect(on.container.querySelector('.mol-sel-list-picker')).toBeNull()
+        expect(builderTrigger()).not.toBeNull()
+        on.unmount()
+    })
+
+    it('insert appends " and " to a non-empty selection', async () => {
+        setupCm()
+        const onChange = vi.fn()
+        const { unmount } = mountTree(
+            <MolSelList sceneID={1} selectedSel="chain 'X'" onSelectedSelChange={onChange} enableBuilder />
+        )
+        await flushPromises()
+        await addChainAAndClick('Insert')
+        expect(onChange).toHaveBeenCalledWith("chain 'X' and chain 'A'")
+        unmount()
+    })
+
+    it('insert onto "*" or empty replaces without a join', async () => {
+        setupCm()
+        const onChange = vi.fn()
+        const { unmount } = mountTree(
+            <MolSelList sceneID={1} selectedSel="*" onSelectedSelChange={onChange} enableBuilder />
+        )
+        await flushPromises()
+        await addChainAAndClick('Insert')
+        expect(onChange).toHaveBeenCalledWith("chain 'A'")
+        unmount()
+    })
+
+    it('replace emits the composed value verbatim', async () => {
+        setupCm()
+        const onChange = vi.fn()
+        const { unmount } = mountTree(
+            <MolSelList sceneID={1} selectedSel="chain 'X'" onSelectedSelChange={onChange} enableBuilder />
+        )
+        await flushPromises()
+        await addChainAAndClick('Replace all')
+        expect(onChange).toHaveBeenCalledWith("chain 'A'")
+        unmount()
     })
 })

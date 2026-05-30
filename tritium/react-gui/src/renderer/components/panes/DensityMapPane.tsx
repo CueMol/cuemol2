@@ -41,6 +41,8 @@ import {
     SEM_ANY,
 } from '../../event'
 import { useCueMolEventListener } from '../../hooks/useCueMolEventListener'
+import { CueColorField } from '../widgets/colorpicker/CueColorField'
+import { ColorPickerProvider } from '../widgets/colorpicker/ColorPickerContext'
 
 interface DensityMapPaneProps {
     cm: AsyncCueMol | null
@@ -48,30 +50,6 @@ interface DensityMapPaneProps {
     activeMolViewId: number | undefined
     collapsed?: boolean
     onToggleCollapse?: () => void
-}
-
-// Named-colour preview palette mirroring the (much larger) table in
-// ColorPane. Keep narrow on purpose -- map renderers ship with
-// "#0000FF" defaults so hex paths cover the common case.
-const NAMED_COLORS: Record<string, string> = {
-    white: '#FFFFFF',
-    black: '#000000',
-    red: '#E06C75',
-    green: '#87C38A',
-    blue: '#3B82F6',
-    yellow: '#FFE000',
-    cyan: '#56B6C2',
-    magenta: '#C678DD',
-    orange: '#D19A66',
-    gray: '#808080',
-}
-
-function resolveColorPreview(color: string): string {
-    const t = color.trim()
-    if (!t) return 'transparent'
-    if (NAMED_COLORS[t]) return NAMED_COLORS[t]
-    if (t.startsWith('#') || t.startsWith('rgb') || t.startsWith('hsl')) return t
-    return t
 }
 
 /**
@@ -205,15 +183,6 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
         })
     }, [cm, activeSceneId, selectedEntry])
 
-    // --- Color input draft (commit on blur, like ColorPane) ---
-    const [colorDraft, setColorDraft] = useState<string>('')
-    useEffect(() => { setColorDraft(state?.color ?? '') }, [state?.color])
-    const commitColor = useCallback(() => {
-        if (!state) return
-        if (colorDraft === state.color) return
-        setProp('color', colorDraft)
-    }, [state, colorDraft, setProp])
-
     // --- Mode menu ---
     const onPickLevelMode = useCallback(
         (useAbs: boolean) => {
@@ -272,6 +241,7 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
     )
 
     return (
+        <ColorPickerProvider cm={cm} sceneId={activeSceneId}>
         <div className="sp-pane">
             <div
                 className={`sp-section-header ${onToggleCollapse ? 'collapsible' : ''}`}
@@ -333,20 +303,10 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
                         <Button small onClick={onShowCell} disabled={disabled}>
                             Cell
                         </Button>
-                        <div
-                            className="color-solid-swatch"
-                            style={{ backgroundColor: resolveColorPreview(colorDraft) }}
-                        />
-                        <input
-                            className="color-inline-input color-value-input color-solid-input"
-                            value={colorDraft}
+                        <CueColorField
+                            value={state?.color ?? ''}
+                            onCommit={(v) => setProp('color', v)}
                             disabled={disabled}
-                            onChange={(e) => setColorDraft(e.target.value)}
-                            onBlur={commitColor}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') e.currentTarget.blur()
-                            }}
-                            spellCheck={false}
                         />
                     </div>
 
@@ -384,5 +344,6 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
                 </div>
             )}
         </div>
+        </ColorPickerProvider>
     )
 }

@@ -1,6 +1,6 @@
 # ADR-0020: Color picker widget — popover-panel port of UXP colpicker
 
-- Status: accepted (ColorPane decks wired; Paint table + Inspector deferred)
+- Status: accepted (rolled out to all colour-selection UIs)
 - Date: 2026-05-29
 - Mapping rows: [`widget.colpicker`](../mapping/custom_widgets.md#widgetcolpicker), [`widget.colorslider`](../mapping/custom_widgets.md#widgetcolorslider), [`menu.color`](../mapping/menus.md#menucolor)
 
@@ -57,10 +57,43 @@ chrome are not reproduced.
   3D view until the gesture completes (commit-on-release), matching the prior
   blur-commit behaviour and avoiding undo-step spam. True live 3D preview is
   future work.
-- Scope is the Solid / CPK / Bfac / Elepot decks. The Paint table cell (a
-  distinct td-background layout) and the Inspector `ColorEditor` (native
-  `<input type=color>`) are not yet migrated; `NAMED_COLORS` /
-  `resolveColorPreview` remain only for the Paint table.
+- The widget is now the single colour-selection control across the app: the
+  ColorPane decks (Solid / CPK / Rainbow / Bfac / Elepot) and Paint table
+  cell, the DensityMap solid colour, the Inspector `ColorEditor`
+  (renderer/render-settings property colours), and the App Settings colours.
+  The native `<input type=color>` sites and the per-pane `NAMED_COLORS` /
+  `resolveColorPreview` preview maps are removed.
+
+## Full rollout (2026-05-30)
+
+Extended the widget from the ColorPane decks to every remaining colour UI.
+
+- **Shared plumbing.** `ColorPickerContext` / `PaneColorPicker` (previously
+  private to `ColorPane.tsx`) are promoted to the widget module as
+  `ColorPickerProvider` + `useColorPickerCtx` (`ColorPickerContext.tsx`) and a
+  reusable `CueColorField` adapter (`CueColorField.tsx`). `CueColorField`
+  reads `cm` / `sceneId` from the ambient provider and commits on completed
+  changes only, so consumers supply just `value` + `onCommit`. This avoids
+  threading `cm` / `sceneId` through the inspector's `PropGroupedEditor` ->
+  `renderPropEditor` dispatcher (shared by `PropertiesTab` and
+  `RenderSettingsEditor`); each consuming pane/panel wraps its subtree in
+  `ColorPickerProvider`.
+- **Restricted modes.** `ColorPicker` gains an optional `modes` prop. App
+  Settings colours are scene-independent plain colours, so they expose only
+  `['rgb', 'hsb', 'palette']` -- "Named" / "Mol" (which resolve against a
+  scene's StyleManager, and `$molcol` in particular) make no sense there.
+  Settings pass `sceneId={undefined}` (the service falls back to scope 0).
+- **Representation-preserving open.** The popover opens on the panel that
+  matches the current value's representation (`$molcol` -> Mol, `hsb(...)` ->
+  HSB, `#hex` / `rgb(...)` -> RGB, bare name -> Named, clamped to the visible
+  `modes`), and a named colour shows its list entry preselected. This avoids
+  silently rewriting the value into another representation (e.g. a named
+  colour becoming `#hex`) merely because the popover defaulted to RGB.
+- **Sites migrated:** `components/inspector/PropEditors.tsx` (`ColorEditor`),
+  `components/panes/ColorPane.tsx` (Paint table cell), `DensityMapPane.tsx`
+  (solid colour), `components/panes/settings/SettingRow.tsx` +
+  `SettingsPane.tsx`. `InspectorPanel` gains `cm` / `sceneId` props (wired
+  from `App.tsx`).
 
 ## Notes
 
@@ -70,11 +103,16 @@ chrome are not reproduced.
 - Worker service: `react-gui/src/renderer/worker/server/services/colorPicker.service.ts`;
   `ServiceMap` rows `compileColor` / `getNamedColors` in
   `worker/shared/WorkerCalls.ts`.
-- Integration: `components/panes/ColorPane.tsx` (`ColorPickerContext`,
-  `PaneColorPicker`, `SolidDeck`, `ColorField`, `ColorSwatchInline`).
+- Shared adapter: `components/widgets/colorpicker/ColorPickerContext.tsx`
+  (`ColorPickerProvider` / `useColorPickerCtx`) and `CueColorField.tsx`.
+- Integration: `components/panes/ColorPane.tsx` (decks + Paint cell),
+  `DensityMapPane.tsx`, `components/inspector/PropEditors.tsx`,
+  `components/panels/InspectorPanel.tsx`,
+  `components/panes/settings/SettingRow.tsx` + `SettingsPane.tsx`.
 - UXP parity references: `uxp_gui/cuemol2/base/content/colpicker.js`,
   `colorSlider.xml`, `color-menu.xul`; colour maths from
   `uxp_gui/cuemol2/components/jsmods/cuemol2ui-lib/util.js`
   (`convHSB2RGB` / `convRGB2HSB` / `packToHTMLColor`).
 - Tests: `__test__/colorMath.test.ts`, `__test__/colorPickerService.test.ts`,
-  `__test__/ColorPicker.test.tsx`.
+  `__test__/ColorPicker.test.tsx` (incl. `modes` restriction),
+  `__test__/cueColorField.test.tsx`, `__test__/settingRow.test.tsx`.

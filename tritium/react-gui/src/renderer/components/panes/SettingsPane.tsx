@@ -32,6 +32,8 @@ import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { Icon, InputGroup } from '@blueprintjs/core'
 import { useTheme } from '../../contexts/ThemeContext'
 import { useRenderConfig } from '../../contexts/RenderConfigContext'
+import { useCueMol } from '../../hooks/useCueMol'
+import { ColorPickerProvider } from '../widgets/colorpicker/ColorPickerContext'
 import {
   CATEGORY_TREE,
   ALL_LEAF_IDS,
@@ -48,6 +50,9 @@ export const SettingsPane: React.FC = () => {
   // Render binary paths are backed by RenderConfigContext (persistent),
   // not the mock `values` state.
   const { binaries, setBinary } = useRenderConfig()
+  // App settings colours are scene-independent; `sceneId` is left undefined
+  // so the colour picker resolves against the global StyleManager scope.
+  const { cm } = useCueMol()
 
   const [filter, setFilter] = useState('')
   const [values, setValues] = useState<Record<string, string | number | boolean>>(() => ({
@@ -166,6 +171,7 @@ export const SettingsPane: React.FC = () => {
   const matchCount = filtered.length
 
   return (
+    <ColorPickerProvider cm={cm} sceneId={undefined}>
     <div className="config-pane">
       {/* ── Left: category tree ── */}
       <div className="config-tree-panel">
@@ -253,5 +259,6 @@ export const SettingsPane: React.FC = () => {
         </div>
       </div>
     </div>
+    </ColorPickerProvider>
   )
 }

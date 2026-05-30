@@ -89,6 +89,11 @@
   font-weight: var(--fw-semibold);
 }
 
+/* The colour picker fills the table cell. */
+.color-cell-color .cp-widget {
+  width: 100%;
+}
+
 /* Inline input for editing cell values directly */
 .color-inline-input {
   width: 100%;
@@ -105,10 +110,6 @@
 .color-inline-input:focus {
   background: var(--overlay-focus);
   border-radius: var(--radius-sm);
-}
-
-.color-value-input {
-  font-weight: var(--fw-semibold);
 }
 
 /* Bottom action buttons */
@@ -198,21 +199,6 @@
   flex-shrink: 0;
 }
 
-.color-solid-swatch {
-  width: 22px;
-  height: 22px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  flex-shrink: 0;
-}
-
-.color-solid-input {
-  flex: 1;
-  border: 1px solid var(--border);
-  background: var(--bg-input);
-  border-radius: var(--radius-md);
-  padding: 3px var(--space-3);
-}
 
 /* CPK / Rainbow / Bfac deck shared field rows */
 .color-deck-scroll {

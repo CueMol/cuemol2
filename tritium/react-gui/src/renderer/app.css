@@ -2,6 +2,7 @@
 /* Each partial handles a specific component or concern. */
 
 @import "./styles/_variables.css";
+@import "./styles/_typography.css";
 @import "./styles/_base.css";
 @import "./styles/_menubar.css";
 @import "./styles/_toolbar.css";
@@ -21,4 +22,5 @@
 @import "./styles/_dialog.css";
 @import "./styles/_file-open-dialog.css";
 @import "./styles/_mol-sel-list.css";
+@import "./styles/_selection-builder.css";
 @import "./styles/_slider-numeric-field.css";
