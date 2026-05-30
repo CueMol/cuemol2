@@ -29,7 +29,7 @@
  * unmount.
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     ControlGroup,
     HTMLSelect,
@@ -91,6 +91,8 @@ export const MolSelList: React.FC<MolSelListProps> = ({
     const [currentSel, setCurrentSel] = useState<string | undefined>(undefined);
     const [historyItems, setHistoryItems] = useState<string[]>(() => getHistory());
     const [isValid, setIsValid] = useState(true);
+    // Bumped after a successful "Save as..." to re-fetch the named defs.
+    const [saveBump, setSaveBump] = useState(0);
 
     // ---- Fetch named selection defs (scene + global) and current mol sel ----
     useEffect(() => {
@@ -118,7 +120,7 @@ export const MolSelList: React.FC<MolSelListProps> = ({
         return () => {
             cancelled = true;
         };
-    }, [cm, sceneID, molID, refreshKey]);
+    }, [cm, sceneID, molID, refreshKey, saveBump]);
 
     // ---- Refresh history just before the picker is opened ----
     const refreshHistory = useCallback((): void => {
@@ -164,19 +166,37 @@ export const MolSelList: React.FC<MolSelListProps> = ({
     // ---- Selection Builder wiring (opt-in via enableBuilder) ----
     const resolveValues = useSelectionValues({ cm, sceneID, molID });
 
-    // Apply an expression emitted from the builder. Insert appends with an
-    // ` and ` join; an empty / "*" base is replaced outright so the result
-    // is not the redundant "* and <frag>".
+    // The builder writes its confirmed expression into the controlled text
+    // value; the molecule / undo history are untouched here (the container's
+    // commit path owns that).
     const handleEmit = useCallback(
-        (next: string, mode: 'insert' | 'replace'): void => {
-            if (mode === 'replace') {
-                onSelectedSelChange(next);
-                return;
-            }
-            const prev = selectedSel.trim();
-            onSelectedSelChange(prev === '' || prev === '*' ? next : `${prev} and ${next}`);
+        (next: string): void => onSelectedSelChange(next),
+        [onSelectedSelChange],
+    );
+
+    // Read-only atom-count probe for the builder's hit-count badges. Only
+    // available once a target molecule is known.
+    const getHitCount = useMemo(
+        () =>
+            cm && molID !== undefined
+                ? (selStr: string): Promise<number | null> =>
+                      cm
+                          .invokeService('getSelHitCount', { sceneId: sceneID, molId: molID, selStr })
+                          .then((r) => r.count)
+                : undefined,
+        [cm, sceneID, molID],
+    );
+
+    // Persist a named selection ("Save as..."); refresh the defs list on
+    // success so the new name appears under the Named source.
+    const handleSaveAs = useCallback(
+        async (name: string, expr: string): Promise<boolean> => {
+            if (!cm) return false;
+            const res = await cm.invokeService('saveSelDef', { sceneId: sceneID, name, expr });
+            if (res.ok) setSaveBump((n) => n + 1);
+            return res.ok;
         },
-        [selectedSel, onSelectedSelChange],
+        [cm, sceneID],
     );
 
     return (
@@ -202,6 +222,8 @@ export const MolSelList: React.FC<MolSelListProps> = ({
                     sceneDefs={sceneDefs}
                     globalDefs={globalDefs}
                     resolveValues={resolveValues}
+                    getHitCount={getHitCount}
+                    onSaveAs={handleSaveAs}
                     onOpening={refreshHistory}
                     disabled={disabled}
                 />

@@ -1,13 +1,11 @@
 /*
- * SelectionBuilder -- Popover query helper for composing CueMol
- * selection-syntax expressions.
+ * SelectionBuilder -- Popover for composing CueMol selection-syntax
+ * expressions via set operations and unary transforms.
  *
- * Rendered as a third segment of MolSelList's ControlGroup (a chevron
- * button that opens a 3-tab Popover: Builder / Library / History). All
- * sizing/colour values come from the app's semantic tokens in
- * `_variables.css` so the popover follows the active theme. The two raw
- * lengths kept here (popover width, menu scroll cap) are deliberate
- * layout constants, not theme values.
+ * Four stacked blocks (Current selection / Term / Apply term / Apply to
+ * selection). All sizing/colour values come from the app's semantic tokens
+ * in `_variables.css` so the popover follows the active theme. The single
+ * raw length kept here (popover width) is a deliberate layout constant.
  */
 
 /* Keep the trigger from stretching inside the fill ControlGroup, like the
@@ -19,87 +17,46 @@
 }
 
 .selbuilder-popover {
-  width: 320px; /* fixed popover width -- layout constant */
-  /* Stable height so switching Builder / Library / History tabs does not
-     resize the popover and make Popper reposition it (jump up/down). Sized
-     to fit the tallest panel (Builder) snugly so shorter tabs do not look
-     empty. Layout constant. */
-  min-height: 184px;
+  width: 380px; /* fixed popover width -- layout constant */
   padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
 }
 
-/* Blueprint Tabs default to an airy layout (tab-panel margin-top: 20px,
-   tab line-height: 30px). Tighten both inside the popover so the content
-   reads dense, not sparse. Scoped to .selbuilder-popover to avoid touching
-   other Tabs in the app. */
-.selbuilder-popover .bp5-tab {
-  /* line-height stays the 24px click target; text size follows the row role. */
-  line-height: var(--ctrl-h-md);
-  font-size: var(--type-row-fs);
-}
+/* --- Blocks --- */
 
-.selbuilder-popover .bp5-tab-panel {
-  margin-top: var(--space-2);
-}
-
-.selbuilder-panel {
+.selbuilder-block {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
 }
 
-.selbuilder-form {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  flex-wrap: wrap;
-}
-
-.selbuilder-form .bp5-html-select,
-.selbuilder-form .bp5-input-group {
-  flex: 1 1 80px;
-  min-width: 0;
-}
-
-.selbuilder-range-sep {
+/* Eyebrow section label, matching the app convention (uppercase + --ls-wide,
+   same as .selection-label / inspector / color-panel headings). */
+.selbuilder-block-head {
   color: var(--text-secondary);
-  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-wide);
 }
 
-.selbuilder-terms {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  min-height: var(--ctrl-h-md);
-  /* Bound the term list so a long draft scrolls instead of growing the
-     popover (which would defeat the stable-height fix above). */
-  max-height: 116px;
-  overflow-y: auto;
-}
+/* --- Current selection / term preview --- */
 
-.selbuilder-term-row {
+.selbuilder-current,
+.selbuilder-term-preview {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-}
-
-/* "No terms yet" placeholder: descriptive body text. */
-.selbuilder-empty {
-  font-size: var(--type-body-fs);
-  line-height: var(--type-body-lh);
-  font-weight: var(--type-body-fw);
-  color: var(--text-muted);
-  font-style: italic;
-}
-
-.selbuilder-preview {
   background: var(--bg-input);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: var(--space-2) var(--space-3);
+  min-height: var(--ctrl-h-md);
 }
 
-.selbuilder-preview code {
+.selbuilder-current code,
+.selbuilder-term-preview code {
+  flex: 1 1 auto;
   font-family: var(--font-mono);
   font-size: var(--type-mono-fs);
   line-height: var(--type-mono-lh);
@@ -107,27 +64,103 @@
   word-break: break-all;
 }
 
-.selbuilder-actions {
+.selbuilder-count {
+  flex: 0 0 auto;
+}
+
+.selbuilder-modify-row,
+.selbuilder-distance-row,
+.selbuilder-current-actions {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
   gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+/* Inline control labels (Modify / Distance) -- subdued like field labels. */
+.selbuilder-field-label,
+.selbuilder-unit {
+  color: var(--text-secondary);
+}
+
+/* Narrow numeric distance field -- fixed small width is a layout constant. */
+.selbuilder-distance {
+  flex: 0 0 64px;
+  width: 64px;
+}
+
+.selbuilder-current-actions {
+  justify-content: space-between;
+}
+
+.selbuilder-saverow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1 1 auto;
+}
+
+/* --- Term --- */
+
+.selbuilder-property {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.selbuilder-property > .bp5-html-select {
+  flex: 0 0 auto;
+}
+
+.selbuilder-term-form {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1 1 120px;
+  min-width: 0;
+}
+
+.selbuilder-term-form .bp5-input-group {
+  flex: 1 1 60px;
+  min-width: 0;
+}
+
+.selbuilder-sep {
+  color: var(--text-secondary);
+  font-weight: var(--fw-semibold);
 }
 
 .selbuilder-menu {
-  /* Scroll cap chosen so a long Library list stays near the Builder tab's
-     height (see .selbuilder-popover min-height), avoiding a size jump on
-     tab switch. Layout constant. */
-  max-height: 138px;
+  max-height: 160px;
   overflow-y: auto;
-  min-width: 220px;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
 }
 
-/* Unify item typography across the Library and History menus: the "row"
-   role keeps them identical (and matches the popover's other row text).
-   Blueprint renders these `MenuItem`s, so we reference the row role tokens
-   directly rather than applying the .type-row class. */
+/* Unify menu item typography with the popover's other row text. Blueprint
+   renders these MenuItems, so reference the row role tokens directly. */
 .selbuilder-menu .bp5-menu-item {
   font-size: var(--type-row-fs);
   line-height: var(--type-row-lh);
   min-height: var(--ctrl-h-md);
+}
+
+/* --- Apply term --- */
+
+/* 2x2 grid so each button has room for its icon + label + hit-count badge
+   (a single 4-up row is too narrow and the badge overflows). */
+.selbuilder-apply-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.selbuilder-apply-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-width: 0;
 }

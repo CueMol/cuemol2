@@ -20,6 +20,11 @@ void React
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
 
+// SelectionPane embeds the SelectionBuilder, which reads the theme.
+vi.mock('../contexts/ThemeContext', () => ({
+    useTheme: () => ({ theme: 'dark', toggleTheme: () => undefined, setTheme: () => undefined }),
+}))
+
 const pushHistoryMock = vi.fn()
 const getHistoryMock = vi.fn<() => string[]>(() => [])
 
@@ -58,6 +63,7 @@ function makeCm(opts?: {
         invokeService: vi.fn((name: string) => {
             if (name === 'listSceneObjects') return Promise.resolve({ objects })
             if (name === 'getMolChains') return Promise.resolve({ chains: [] })
+            if (name === 'getSelDefs') return Promise.resolve({ scene: [], global: [] })
             if (name === 'applyMolSelString') {
                 return Promise.resolve({ ok: opts?.applyOk ?? true })
             }

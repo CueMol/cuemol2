@@ -21,7 +21,7 @@
  * @module SelectionPane
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     Button,
     ButtonGroup,
@@ -39,6 +39,8 @@ import {
     getHistory,
     pushHistory,
 } from '../widgets/MolSelList/selHistory';
+import { SelectionBuilder } from '../widgets/MolSelList';
+import { useSelectionValues } from '../widgets/MolSelList/useSelectionValues';
 
 /* --- Props --- */
 
@@ -71,6 +73,75 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({
     const [isValid, setIsValid] = useState(true);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [historyItems, setHistoryItems] = useState<string[]>(() => getHistory());
+
+    // Named selection defs + target mol's current selection, for the builder.
+    const [sceneDefs, setSceneDefs] = useState<string[]>([]);
+    const [globalDefs, setGlobalDefs] = useState<string[]>([]);
+    const [currentSel, setCurrentSel] = useState<string | undefined>(undefined);
+    // Bumped after a successful "Save as..." to re-fetch the named defs.
+    const [saveBump, setSaveBump] = useState(0);
+
+    useEffect(() => {
+        if (!cm || activeSceneId === undefined) {
+            setSceneDefs([]);
+            setGlobalDefs([]);
+            setCurrentSel(undefined);
+            return;
+        }
+        let cancelled = false;
+        const args =
+            selectedMolId !== undefined
+                ? { sceneId: activeSceneId, molId: selectedMolId }
+                : { sceneId: activeSceneId };
+        cm.invokeService('getSelDefs', args)
+            .then((res) => {
+                if (cancelled) return;
+                setSceneDefs(res.scene);
+                setGlobalDefs(res.global);
+                setCurrentSel(res.currentSel);
+            })
+            .catch(() => {
+                if (cancelled) return;
+                setSceneDefs([]);
+                setGlobalDefs([]);
+                setCurrentSel(undefined);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [cm, activeSceneId, selectedMolId, saveBump]);
+
+    const resolveValues = useSelectionValues({ cm, sceneID: activeSceneId, molID: selectedMolId });
+
+    const getHitCount = useMemo(
+        () =>
+            cm && activeSceneId !== undefined && selectedMolId !== undefined
+                ? (str: string): Promise<number | null> =>
+                      cm
+                          .invokeService('getSelHitCount', {
+                              sceneId: activeSceneId,
+                              molId: selectedMolId,
+                              selStr: str,
+                          })
+                          .then((r) => r.count)
+                : undefined,
+        [cm, activeSceneId, selectedMolId],
+    );
+
+    const onSaveAs = useCallback(
+        async (name: string, expr: string): Promise<boolean> => {
+            if (!cm || activeSceneId === undefined) return false;
+            const res = await cm.invokeService('saveSelDef', { sceneId: activeSceneId, name, expr });
+            if (res.ok) setSaveBump((n) => n + 1);
+            return res.ok;
+        },
+        [cm, activeSceneId],
+    );
+
+    const onBuilderEmit = useCallback((expr: string) => {
+        setSelStr(expr);
+        setErrorMsg(null);
+    }, []);
 
     // ---- Live validation (debounced, mirrors MolSelList) ----
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -232,7 +303,22 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({
                         fallbackName={(m) => `Mol ${m.uid}`}
                     />
                     <div className="selection-text-row">
-                        <label className="selection-label">Selection</label>
+                        <div className="selection-label-row">
+                            <label className="selection-label">Selection</label>
+                            <SelectionBuilder
+                                value={selStr}
+                                onEmit={onBuilderEmit}
+                                history={historyItems}
+                                currentSel={currentSel}
+                                sceneDefs={sceneDefs}
+                                globalDefs={globalDefs}
+                                resolveValues={resolveValues}
+                                getHitCount={getHitCount}
+                                onSaveAs={onSaveAs}
+                                onOpening={onHistoryOpening}
+                                disabled={cm === null || activeSceneId === undefined}
+                            />
+                        </div>
                         <TextArea
                             value={selStr}
                             onChange={(e) => {

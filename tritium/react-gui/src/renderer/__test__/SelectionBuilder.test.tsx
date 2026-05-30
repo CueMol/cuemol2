@@ -1,22 +1,21 @@
 /**
- * Tests for SelectionBuilder -- pin the emitted CueMol selection syntax and
- * the one-way builder->text contract:
- *  1. the trigger button renders; clicking it opens the tabbed popover
- *  2. Builder: keyword + value -> preview uses SPACE-separated keyword syntax
- *     (chain 'A'), NOT the dot form
- *  3. resi keyword exposes a range field; Insert emits "resi 1:10"
- *  4. Replace all emits ('<expr>', 'replace') and clears the draft
- *  5. Macros: clicking a macro emits its NAME with replace; hover discloses
- *     its real definition
- *  6. NOT toggle wraps the term as not (...)
- *  7. History: clicking an entry emits it with replace; empty -> "No history"
- *  8. resolveValues feeds a datalist when values exist
+ * Tests for SelectionBuilder (current-selection + set-operation model).
+ *
+ * Pins the observable contract:
+ *  1. the trigger renders; clicking it opens the four-block popover
+ *  2. Property keyword + value composes SPACE-separated syntax (chain 'A')
+ *     and "Set" makes it the current selection
+ *  3. the current expression is mirrored to the parent via onEmit in real time
+ *  4. "Add" composes "(current) or (term)" seeded from the value prop
+ *  5. Named source pick + Set applies the global named selection
+ *  6. resolveValues feeds a datalist for autocomplete
+ *  7. "Define name..." calls onSaveAs with (name, current)
  *
  * The popover renders in a portal on document.body, so content is queried
  * from `document`, not the mount container.
  */
 import React from 'react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
 
 void React
@@ -34,12 +33,6 @@ function setInputValue(input: HTMLInputElement, value: string): void {
     input.dispatchEvent(new Event('input', { bubbles: true }))
 }
 
-function setSelectValue(select: HTMLSelectElement, value: string): void {
-    const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')!.set!
-    setter.call(select, value)
-    select.dispatchEvent(new Event('change', { bubbles: true }))
-}
-
 function trigger(container: HTMLElement): HTMLButtonElement {
     return container.querySelector('button[aria-label="Build selection"]') as HTMLButtonElement
 }
@@ -51,7 +44,6 @@ async function openPopover(container: HTMLElement): Promise<void> {
     await flushPromises()
 }
 
-/** Query a popover region by class from the document body (portal). */
 function popover(): HTMLElement {
     return document.querySelector('.selbuilder-popover') as HTMLElement
 }
@@ -63,177 +55,154 @@ function clickButtonByText(root: ParentNode, text: string): void {
     btn.click()
 }
 
-function clickTab(id: string): void {
-    const tab = document.querySelector(`[role="tab"][data-tab-id="${id}"]`) as HTMLElement
-    tab.click()
+/** Let the Blueprint popover open/close transition settle before unmount. */
+async function settle(): Promise<void> {
+    await act(async () => {
+        await new Promise((r) => setTimeout(r, 350))
+    })
+}
+
+/** Close the popover (no Apply button -- toggle via the trigger) and settle. */
+async function closePopover(container: HTMLElement): Promise<void> {
+    await act(async () => { trigger(container).click() })
+    await flushPromises()
+    await settle()
+}
+
+function currentText(): string {
+    return popover().querySelector('.selbuilder-current code')!.textContent!.trim()
+}
+
+function termValueInput(): HTMLInputElement {
+    return popover().querySelector('.selbuilder-term-form input.bp5-input') as HTMLInputElement
 }
 
 describe('SelectionBuilder', () => {
-    beforeEach(() => {
-        document.body.innerHTML = ''
-    })
-
-    it('renders the trigger and opens the tabbed popover on click', async () => {
-        const { container, unmount } = mountTree(
-            <SelectionBuilder value="" onEmit={() => undefined} />,
-        )
-        expect(trigger(container)).toBeTruthy()
-        await openPopover(container)
-        const tabLabels = Array.from(document.querySelectorAll('[role="tab"]')).map((t) =>
-            t.textContent?.trim(),
-        )
-        expect(tabLabels).toEqual(['Builder', 'Library', 'History'])
-        unmount()
-    })
-
-    it('composes space-separated keyword syntax (chain \'A\', not chain.A)', async () => {
+    it('opens the four-block popover on trigger click', async () => {
         const { container, unmount } = mountTree(
             <SelectionBuilder value="" onEmit={() => undefined} />,
         )
         await openPopover(container)
-        const valueInput = popover().querySelector('input.bp5-input') as HTMLInputElement
-        await act(async () => setInputValue(valueInput, 'A'))
-        await act(async () => clickButtonByText(popover(), 'Add'))
-        await flushPromises()
-        const preview = popover().querySelector('.selbuilder-preview code')!
-        expect(preview.textContent).toBe("chain 'A'")
+        const heads = Array.from(popover().querySelectorAll('.selbuilder-block-head')).map((e) =>
+            e.textContent?.trim(),
+        )
+        expect(heads).toEqual(['Current selection', 'Term', 'Apply term'])
+        await closePopover(container)
         unmount()
     })
 
-    it('emits "resi 1:10" via the range field on Insert', async () => {
-        const onEmit = vi.fn()
-        const { container, unmount } = mountTree(<SelectionBuilder value="" onEmit={onEmit} />)
-        await openPopover(container)
-        const select = popover().querySelector('select') as HTMLSelectElement
-        await act(async () => setSelectValue(select, 'resi'))
-        await flushPromises()
-        const inputs = popover().querySelectorAll('input.bp5-input')
-        // First input is the value; second is the range "to" field.
-        await act(async () => setInputValue(inputs[0] as HTMLInputElement, '1'))
-        await act(async () => setInputValue(inputs[1] as HTMLInputElement, '10'))
-        await act(async () => clickButtonByText(popover(), 'Add'))
-        await flushPromises()
-        expect(popover().querySelector('.selbuilder-preview code')!.textContent).toBe('resi 1:10')
-        await act(async () => clickButtonByText(popover(), 'Insert'))
-        await flushPromises()
-        expect(onEmit).toHaveBeenCalledWith('resi 1:10', 'insert')
-        unmount()
-    })
-
-    it('Replace all emits replace and clears the draft terms', async () => {
-        const onEmit = vi.fn()
-        const { container, unmount } = mountTree(<SelectionBuilder value="" onEmit={onEmit} />)
-        await openPopover(container)
-        const valueInput = popover().querySelector('input.bp5-input') as HTMLInputElement
-        await act(async () => setInputValue(valueInput, 'A'))
-        await act(async () => clickButtonByText(popover(), 'Add'))
-        await flushPromises()
-        await act(async () => clickButtonByText(popover(), 'Replace all'))
-        await flushPromises()
-        expect(onEmit).toHaveBeenCalledWith("chain 'A'", 'replace')
-        // Popover closed + terms cleared: re-open shows the empty hint.
-        await openPopover(container)
-        expect(popover().querySelector('.selbuilder-empty')?.textContent).toBe('No terms yet.')
-        unmount()
-    })
-
-    it('NOT toggle wraps the term as not (...)', async () => {
+    it('composes space-separated syntax and Set makes it current', async () => {
         const { container, unmount } = mountTree(
             <SelectionBuilder value="" onEmit={() => undefined} />,
         )
         await openPopover(container)
-        const valueInput = popover().querySelector('input.bp5-input') as HTMLInputElement
-        await act(async () => setInputValue(valueInput, 'A'))
-        await act(async () => clickButtonByText(popover(), 'Add'))
+        await act(async () => { setInputValue(termValueInput(), 'A') })
+        clickButtonByText(popover(), 'Set')
         await flushPromises()
-        const tag = popover().querySelector('.bp5-tag') as HTMLElement
-        await act(async () => tag.click())
-        await flushPromises()
-        expect(popover().querySelector('.selbuilder-preview code')!.textContent).toBe(
-            "not (chain 'A')",
-        )
+        expect(currentText()).toBe("chain 'A'")
+        await closePopover(container)
         unmount()
     })
 
-    it('Library tab emits the macro NAME with replace', async () => {
+    it('syncs the current expression to the parent in real time', async () => {
         const onEmit = vi.fn()
         const { container, unmount } = mountTree(<SelectionBuilder value="" onEmit={onEmit} />)
         await openPopover(container)
-        await act(async () => clickTab('library'))
+        await act(async () => { setInputValue(termValueInput(), 'A') })
+        clickButtonByText(popover(), 'Set')
         await flushPromises()
-        const water = Array.from(document.querySelectorAll('.selbuilder-menu a')).find((el) =>
-            el.textContent?.includes('Water'),
+        expect(onEmit).toHaveBeenLastCalledWith("chain 'A'")
+        await closePopover(container)
+        unmount()
+    })
+
+    it('Add composes "(current) or (term)" seeded from value', async () => {
+        const onEmit = vi.fn()
+        const { container, unmount } = mountTree(
+            <SelectionBuilder value="chain 'X'" onEmit={onEmit} />,
+        )
+        await openPopover(container)
+        await act(async () => { setInputValue(termValueInput(), 'A') })
+        clickButtonByText(popover(), 'Add')
+        await flushPromises()
+        expect(currentText()).toBe("(chain 'X') or (chain 'A')")
+        expect(onEmit).toHaveBeenLastCalledWith("(chain 'X') or (chain 'A')")
+        await closePopover(container)
+        unmount()
+    })
+
+    it('Named source: picking a global named selection and Set applies its name', async () => {
+        // Built-in macros (protein, water, ...) arrive here as global defs
+        // loaded from default_style.xml; there is no hardcoded macro list.
+        const { container, unmount } = mountTree(
+            <SelectionBuilder value="" onEmit={() => undefined} globalDefs={['protein']} />,
+        )
+        await openPopover(container)
+        await act(async () => { clickButtonByText(popover(), 'Named') })
+        await flushPromises()
+        const protein = Array.from(popover().querySelectorAll('.bp5-menu-item')).find(
+            (e) => e.textContent?.trim() === 'protein',
         ) as HTMLElement
-        await act(async () => water.click())
+        await act(async () => { protein.click() })
+        await act(async () => { clickButtonByText(popover(), 'Set') })
         await flushPromises()
-        // Macro is emitted by NAME; the C++ compiler resolves the definition.
-        expect(onEmit).toHaveBeenCalledWith('water', 'replace')
+        expect(currentText()).toBe('protein')
+        await closePopover(container)
         unmount()
     })
 
-    it('Library tab presets emit "*" / "" and scene/global defs emit their name', async () => {
-        const onEmit = vi.fn()
-        const { container, unmount } = mountTree(
-            <SelectionBuilder
-                value=""
-                onEmit={onEmit}
-                currentSel="chain 'A'"
-                sceneDefs={['mySceneSel']}
-                globalDefs={['myGlobalSel']}
-            />,
-        )
-        await openPopover(container)
-        await act(async () => clickTab('library'))
-        await flushPromises()
-        const click = (text: string) => {
-            const item = Array.from(document.querySelectorAll('.selbuilder-menu a')).find(
-                (el) => el.textContent?.trim() === text,
-            ) as HTMLElement
-            item.click()
-        }
-        await act(async () => click('all (*)'))
-        expect(onEmit).toHaveBeenLastCalledWith('*', 'replace')
-        await openPopover(container)
-        await act(async () => clickTab('library'))
-        await act(async () => click('mySceneSel'))
-        expect(onEmit).toHaveBeenLastCalledWith('mySceneSel', 'replace')
-        await openPopover(container)
-        await act(async () => clickTab('library'))
-        await act(async () => click('myGlobalSel'))
-        expect(onEmit).toHaveBeenLastCalledWith('myGlobalSel', 'replace')
-        unmount()
-    })
-
-    it('History tab emits a stored entry with replace; empty shows "No history"', async () => {
-        const onEmit = vi.fn()
-        const { container, unmount } = mountTree(
-            <SelectionBuilder value="" onEmit={onEmit} history={['resi 1:10']} />,
-        )
-        await openPopover(container)
-        await act(async () => clickTab('history'))
-        await flushPromises()
-        const entry = Array.from(document.querySelectorAll('.selbuilder-menu a')).find(
-            (el) => el.textContent?.trim() === 'resi 1:10',
-        ) as HTMLElement
-        expect(entry).toBeTruthy()
-        await act(async () => entry.click())
-        await flushPromises()
-        expect(onEmit).toHaveBeenCalledWith('resi 1:10', 'replace')
-        unmount()
-    })
-
-    it('renders a datalist of resolved values for the active keyword', async () => {
-        const resolveValues = vi.fn().mockResolvedValue(['A', 'B'])
+    it('resolveValues feeds a datalist for autocomplete', async () => {
+        const resolveValues = vi.fn(async () => ['A', 'B'])
         const { container, unmount } = mountTree(
             <SelectionBuilder value="" onEmit={() => undefined} resolveValues={resolveValues} />,
         )
         await openPopover(container)
         await flushPromises()
-        expect(resolveValues).toHaveBeenCalledWith('chain')
         const opts = Array.from(document.querySelectorAll('#selbuilder-value-list option')).map(
             (o) => (o as HTMLOptionElement).value,
         )
         expect(opts).toEqual(['A', 'B'])
+        expect(resolveValues).toHaveBeenCalledWith('chain')
+        await closePopover(container)
+        unmount()
+    })
+
+    it('Define name... calls onSaveAs with (name, current)', async () => {
+        const onSaveAs = vi.fn(async () => true)
+        const { container, unmount } = mountTree(
+            <SelectionBuilder value="chain 'A'" onEmit={() => undefined} onSaveAs={onSaveAs} />,
+        )
+        await openPopover(container)
+        clickButtonByText(popover(), 'Define name...')
+        await flushPromises()
+        const nameInput = popover().querySelector(
+            '.selbuilder-saverow input.bp5-input',
+        ) as HTMLInputElement
+        await act(async () => { setInputValue(nameInput, 'mysel') })
+        clickButtonByText(popover(), 'Define')
+        await flushPromises()
+        expect(onSaveAs).toHaveBeenCalledWith('mysel', "chain 'A'")
+        await closePopover(container)
+        unmount()
+    })
+
+    it('Step back (undo) reverts the last operation', async () => {
+        const { container, unmount } = mountTree(
+            <SelectionBuilder value="" onEmit={() => undefined} />,
+        )
+        await openPopover(container)
+        await act(async () => { setInputValue(termValueInput(), 'A') })
+        clickButtonByText(popover(), 'Set')
+        await flushPromises()
+        // Apply Mainchain by mistake, then step back.
+        clickButtonByText(popover(), 'Mainchain')
+        await flushPromises()
+        expect(currentText()).toBe("bymainch (chain 'A')")
+        const undo = popover().querySelector('button[aria-label="Step back"]') as HTMLButtonElement
+        await act(async () => { undo.click() })
+        await flushPromises()
+        expect(currentText()).toBe("chain 'A'")
+        await closePopover(container)
         unmount()
     })
 })

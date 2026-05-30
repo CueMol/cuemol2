@@ -256,28 +256,26 @@ describe('MolSelList', () => {
         return document.querySelector('button[aria-label="Build selection"]')
     }
 
-    /** Open the builder, add one chain 'A' term, run the given action button. */
-    async function addChainAAndClick(action: 'Insert' | 'Replace all'): Promise<void> {
+    /** Open the builder and type "A" into the Property value field. */
+    async function openAndTypeChainA(): Promise<void> {
         await act(async () => { builderTrigger()!.click() })
         await flushPromises()
         const valueInput = document.querySelector(
-            '.selbuilder-popover input.bp5-input',
+            '.selbuilder-term-form input.bp5-input',
         ) as HTMLInputElement
         const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
         await act(async () => {
             setter.call(valueInput, 'A')
             valueInput.dispatchEvent(new Event('input', { bubbles: true }))
         })
-        const click = (text: string) => {
-            const btn = Array.from(
-                document.querySelectorAll('.selbuilder-popover button'),
-            ).find((b) => b.textContent?.trim() === text) as HTMLButtonElement
-            btn.click()
-        }
-        await act(async () => { click('Add') })
-        await flushPromises()
-        await act(async () => { click(action) })
-        await flushPromises()
+    }
+
+    /** Click a builder button by its visible label. */
+    function clickBuilderButton(text: string): void {
+        const btn = Array.from(
+            document.querySelectorAll('.selbuilder-popover button'),
+        ).find((b) => b.textContent?.trim() === text) as HTMLButtonElement
+        btn.click()
     }
 
     it('hides the builder trigger by default', async () => {
@@ -320,39 +318,35 @@ describe('MolSelList', () => {
         on.unmount()
     })
 
-    it('insert appends " and " to a non-empty selection', async () => {
+    it('Set syncs the term to onSelectedSelChange in real time', async () => {
+        setupCm()
+        const onChange = vi.fn()
+        const { unmount } = mountTree(
+            <MolSelList sceneID={1} selectedSel="" onSelectedSelChange={onChange} enableBuilder />
+        )
+        await flushPromises()
+        await openAndTypeChainA()
+        await act(async () => { clickBuilderButton('Set') })
+        await flushPromises()
+        expect(onChange).toHaveBeenLastCalledWith("chain 'A'")
+        await act(async () => { builderTrigger()!.click() }) // close
+        await flushPromises()
+        unmount()
+    })
+
+    it('Add composes "(current) or (term)" seeded from the text value', async () => {
         setupCm()
         const onChange = vi.fn()
         const { unmount } = mountTree(
             <MolSelList sceneID={1} selectedSel="chain 'X'" onSelectedSelChange={onChange} enableBuilder />
         )
         await flushPromises()
-        await addChainAAndClick('Insert')
-        expect(onChange).toHaveBeenCalledWith("chain 'X' and chain 'A'")
-        unmount()
-    })
-
-    it('insert onto "*" or empty replaces without a join', async () => {
-        setupCm()
-        const onChange = vi.fn()
-        const { unmount } = mountTree(
-            <MolSelList sceneID={1} selectedSel="*" onSelectedSelChange={onChange} enableBuilder />
-        )
+        await openAndTypeChainA()
+        await act(async () => { clickBuilderButton('Add') })
         await flushPromises()
-        await addChainAAndClick('Insert')
-        expect(onChange).toHaveBeenCalledWith("chain 'A'")
-        unmount()
-    })
-
-    it('replace emits the composed value verbatim', async () => {
-        setupCm()
-        const onChange = vi.fn()
-        const { unmount } = mountTree(
-            <MolSelList sceneID={1} selectedSel="chain 'X'" onSelectedSelChange={onChange} enableBuilder />
-        )
+        expect(onChange).toHaveBeenLastCalledWith("(chain 'X') or (chain 'A')")
+        await act(async () => { builderTrigger()!.click() }) // close
         await flushPromises()
-        await addChainAAndClick('Replace all')
-        expect(onChange).toHaveBeenCalledWith("chain 'A'")
         unmount()
     })
 })
