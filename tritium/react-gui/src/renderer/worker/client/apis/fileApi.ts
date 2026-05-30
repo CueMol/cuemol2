@@ -12,6 +12,7 @@ import type { ElectronFileFilter } from '../../../../shared/ipcTypes';
 import type { FileOpenOptions } from '../../../components/fopen-opt-dlgs/types';
 import type { GetCompatibleRendererNamesResult } from '../../server/services/getCompatibleRendererNames.service';
 import type { GetMtzColumnInfoResult } from '../../server/services/getMtzColumnInfo.service';
+import type { GetReaderDefaultOptionsResult } from '../../server/services/getReaderDefaultOptions.service';
 
 const log = console;
 
@@ -61,6 +62,28 @@ export async function getMtzColumnInfo(
     } catch (e) {
         log.warn('getMtzColumnInfo failed:', e);
         return { ok: false, columns: [], minRes: 0, maxRes: 0, resolution: 0 };
+    }
+}
+
+/**
+ * Read an ObjReader's option-property default values so the file-open dialog
+ * can seed its format-specific option pane from the C++ reader instead of
+ * hardcoding the defaults on the TS side.
+ *
+ * @param transport - Worker transport.
+ * @param nickname - Resolved reader nickname (pdb / mmcif / ccp4map / ...).
+ * @returns Reader-backed defaults keyed by reader property name; `ok:false`
+ *   (empty) on failure.
+ * @remarks Calls `getReaderDefaultOptions` worker service.
+ */
+export async function getReaderDefaultOptions(
+    transport: WorkerTransport, nickname: string,
+): Promise<GetReaderDefaultOptionsResult> {
+    try {
+        return await transport.invokeService('getReaderDefaultOptions', { nickname });
+    } catch (e) {
+        log.warn('getReaderDefaultOptions failed:', e);
+        return { ok: false, values: {} };
     }
 }
 

@@ -28,6 +28,7 @@ import {
   formatKindForReader,
   buildDefaultFormatOptions,
   isFormatOptionsModified,
+  mapReaderDefaultsToFormatOptions,
   isMolFormat,
   deriveDefaultPsfPath,
 } from './types';
@@ -127,7 +128,16 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
   const [formatOptions, setFormatOptions] = useState<FormatOptions>(() =>
     buildDefaultFormatOptions(formatKind)
   );
+  // Baseline defaults the "(modified)" hint compares against. For
+  // PDB/mmCIF/CCP4 this is replaced by the C++-sourced defaults once the
+  // reader-options fetch resolves; for the other formats it stays the static
+  // placeholder.
+  const [formatDefaults, setFormatDefaults] = useState<FormatOptions>(() =>
+    buildDefaultFormatOptions(formatKind)
+  );
   const [isFormatExpanded, setIsFormatExpanded] = useState(false);
+  // Stale-response guard for the reader-default-options fetch.
+  const readerOptSeqRef = useRef(0);
 
   // Stale-response guard for the object-name proposeUniqName fetch.
   const objNameSeqRef = useRef(0);
@@ -143,11 +153,13 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
   if (filePath !== lastFilePath) {
     setLastFilePath(filePath);
     setFormatOptions(buildDefaultFormatOptions(formatKind));
+    setFormatDefaults(buildDefaultFormatOptions(formatKind));
     setIsFormatExpanded(false);
     setMtzColumnInfo(null);
     // Discard any in-flight responses for the previous file.
     objNameSeqRef.current += 1;
     mtzSeqRef.current += 1;
+    readerOptSeqRef.current += 1;
   }
 
   // Effect: resolve a scene-wide unique object name when the dialog opens or
@@ -194,6 +206,25 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
       });
     })();
   }, [cm, visible, filePath, formatKind]);
+
+  // Effect: seed PDB / mmCIF / CCP4 option defaults from the C++ reader so the
+  // dialog never hardcodes reader-option defaults (UXP fopen-*opt-page onInit,
+  // which reads rdr.<prop>). Also sets the "(modified)" baseline. MTZ columns /
+  // resolution are seeded by the dedicated effect above; the other formats have
+  // no reader-backed value options.
+  useEffect(() => {
+    if (!visible || !cm) return;
+    if (formatKind !== 'pdb' && formatKind !== 'mmcif' && formatKind !== 'ccp4map') return;
+    const seq = ++readerOptSeqRef.current;
+    (async () => {
+      const res = await cm.getReaderDefaultOptions(readerName);
+      if (seq !== readerOptSeqRef.current) return; // stale
+      if (!res.ok) return;
+      const seeded = mapReaderDefaultsToFormatOptions(formatKind, res.values);
+      setFormatOptions(seeded);
+      setFormatDefaults(seeded);
+    })();
+  }, [cm, visible, formatKind, readerName]);
 
   // Effect: when a NAMD coordinate file is shown, seed the PSF topology path
   // from history (last-used) or, failing that, the coordinate path with a
@@ -242,7 +273,7 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
     onConfirm({ format: formatOptions, renderer: rendererOptions });
   }, [onConfirm, formatOptions, rendererOptions, commitHistory]);
 
-  const isModified = hasFormatOptions && isFormatOptionsModified(formatOptions);
+  const isModified = hasFormatOptions && isFormatOptionsModified(formatOptions, formatDefaults);
 
   return (
     <Dialog
