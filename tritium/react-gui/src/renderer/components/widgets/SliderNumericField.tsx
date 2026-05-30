@@ -94,6 +94,20 @@ export const SliderNumericField: React.FC<SliderNumericFieldProps> = ({
     const [draft, setDraft] = useState<number>(shown)
     useEffect(() => setDraft(shown), [shown])
 
+    // Raw text held while the user is editing the numeric input. When
+    // null, the input mirrors `draft` (step-quantized) so it follows the
+    // slider / stepper / external value. When non-null, the user is
+    // mid-edit and we show their literal keystrokes -- this is what lets
+    // an empty field stay empty instead of snapping to 0.
+    const [editText, setEditText] = useState<string | null>(null)
+
+    // Format a value to the precision implied by `step`, stripping
+    // IEEE-754 noise (e.g. 0.30000000000000004 -> "0.3").
+    const formatNum = useCallback(
+        (n: number) => String(quantize(n, step)),
+        [step],
+    )
+
     const commit = useCallback(
         (next: number) => {
             const stored = next / scale
@@ -105,28 +119,36 @@ export const SliderNumericField: React.FC<SliderNumericFieldProps> = ({
     // --- Slider handlers ---
     // Blueprint `Slider`'s `onChange` fires continuously while
     // dragging; `onRelease` fires when the user lets go. Drive the
-    // live preview off `onChange`, commit on `onRelease`.
+    // live preview off `onChange`, commit on `onRelease`. Quantize the
+    // raw slider value so the input display stays step-aligned.
     const handleSliderChange = useCallback((v: number) => {
-        setDraft(v)
-    }, [])
+        setDraft(quantize(v, step))
+        setEditText(null)
+    }, [step])
     const handleSliderRelease = useCallback(
-        (v: number) => { commit(v) },
-        [commit],
+        (v: number) => { commit(quantize(v, step)) },
+        [commit, step],
     )
 
     // --- Numeric input handlers (typing path) ---
-    // Mid-typing stays local; commit on blur / Enter.
+    // Mid-typing stays local as a raw string; commit on blur / Enter.
     const handleNumericChange = useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => {
-            const v = Number(e.target.value)
-            if (Number.isNaN(v)) return
-            setDraft(v)
+            setEditText(e.target.value)
         },
         [],
     )
     const handleNumericBlur = useCallback(() => {
-        commit(draft)
-    }, [commit, draft])
+        if (editText !== null) {
+            const parsed = Number(editText)
+            if (editText.trim() !== '' && Number.isFinite(parsed)) {
+                const next = clampAndQuantize(parsed, min, max, step)
+                setDraft(next)
+                commit(next)
+            }
+            setEditText(null)
+        }
+    }, [editText, min, max, step, commit])
     const handleNumericKeyDown = useCallback(
         (e: React.KeyboardEvent<HTMLInputElement>) => {
             if (e.key === 'Enter') e.currentTarget.blur()
@@ -143,6 +165,7 @@ export const SliderNumericField: React.FC<SliderNumericFieldProps> = ({
             const next = clampAndQuantize(draft + sign * step, min, max, step)
             if (next === draft) return
             setDraft(next)
+            setEditText(null)
             commit(next)
         },
         [draft, step, min, max, commit],
@@ -170,7 +193,7 @@ export const SliderNumericField: React.FC<SliderNumericFieldProps> = ({
                 min={min}
                 max={max}
                 step={step}
-                value={draft}
+                value={editText ?? formatNum(draft)}
                 disabled={disabled}
                 onChange={handleNumericChange}
                 onBlur={handleNumericBlur}
