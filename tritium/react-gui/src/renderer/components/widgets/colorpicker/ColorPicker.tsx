@@ -131,13 +131,20 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
             return
         }
         ;(async () => {
-            const res = await cm.invokeService('compileColor', {
-                colorStr: value,
-                sceneId: sceneId ?? 0,
-            })
-            if (cancelled) return
-            setResolved(res)
-            setLiveRgb(res.ok && res.r !== undefined ? [res.r, res.g!, res.b!] : null)
+            try {
+                const res = await cm.invokeService('compileColor', {
+                    colorStr: value,
+                    sceneId: sceneId ?? 0,
+                })
+                if (cancelled) return
+                setResolved(res ?? null)
+                setLiveRgb(res?.ok && res.r !== undefined ? [res.r, res.g!, res.b!] : null)
+            } catch (err: unknown) {
+                if (cancelled) return
+                console.warn('compileColor failed:', err)
+                setResolved(null)
+                setLiveRgb(null)
+            }
         })()
         return () => {
             cancelled = true
@@ -175,11 +182,16 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
             onChange(draft, true)
             return
         }
-        const res = await cm.invokeService('compileColor', {
-            colorStr: draft,
-            sceneId: sceneId ?? 0,
-        })
-        if (res.ok) {
+        let res: CompileColorResult | null = null
+        try {
+            res = await cm.invokeService('compileColor', {
+                colorStr: draft,
+                sceneId: sceneId ?? 0,
+            })
+        } catch (err: unknown) {
+            console.warn('compileColor failed:', err)
+        }
+        if (res?.ok) {
             onChange(draft, true)
         } else {
             // Invalid input -- revert to the last valid value.

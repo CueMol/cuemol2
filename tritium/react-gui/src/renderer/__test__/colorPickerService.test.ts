@@ -83,6 +83,28 @@ describe('colorPicker.compileColor', () => {
             ok: false,
         })
     })
+
+    it('short-circuits an empty string without calling the StyleManager', () => {
+        // An empty colour string (e.g. a density-map renderer with no colour
+        // yet) must not reach the C++ compiler, which logs a parse error.
+        const compileColor = vi.fn()
+        const ctx = makeCtx({ compileColor })
+
+        expect(services.compileColor(ctx, { colorStr: '', sceneId: 0 })).toEqual({ ok: false })
+        expect(compileColor).not.toHaveBeenCalled()
+    })
+
+    it('returns ok:false when compileColor returns null (no crash)', () => {
+        // C++ ColCompiler::compile returns NULL (does not throw) for an
+        // unparseable string. Reading color.r() on null previously crashed
+        // the app via an unhandled rejection in the ColorPicker widget.
+        const compileColor = vi.fn(() => null)
+        const ctx = makeCtx({ compileColor })
+
+        expect(services.compileColor(ctx, { colorStr: 'garbage', sceneId: 0 })).toEqual({
+            ok: false,
+        })
+    })
 })
 
 describe('colorPicker.getNamedColors', () => {
