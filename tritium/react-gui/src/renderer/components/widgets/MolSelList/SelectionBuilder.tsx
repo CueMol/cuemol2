@@ -1,7 +1,7 @@
 /**
  * @file components/widgets/MolSelList/SelectionBuilder.tsx
- * @description Popover UI for composing CueMol selection-syntax expressions
- * without memorising the grammar.
+ * @description Inline UI for composing CueMol selection-syntax expressions
+ * without memorising the grammar. Lives in the SelectionPane.
  *
  * ## Model
  *
@@ -9,17 +9,19 @@
  * A "term" (from one of three sources) is combined into it via binary set
  * operations (Set / Add / Intersect / Sub); the current selection itself is
  * reshaped by unary transforms (Not / Byres / Sidechain / Mainchain /
- * Around / Expand). "Save as..." names the current selection so it can be
+ * Around / Expand). "Define name..." names the current selection so it can be
  * reused as a parenthesised sub-expression. Logical operators are never typed
  * by the user -- they are produced by these buttons.
  *
- * One-way: the builder is a controlled component. The container seeds the
- * initial current selection via `value` (which need not be `mol.sel`) when the
- * popover opens, and the current expression is mirrored back into the parent's
- * text box in real time via `onEmit` (no explicit Apply button). The builder
- * never mutates `mol.sel` or touches the undo history; history / selection
- * commits stay the container's job (e.g. SelectionPane's Select button). Hit
- * counts are read-only probes.
+ * Two-way: the builder is a controlled editor of the parent's selection text.
+ * The container seeds the current selection via `value` and the current
+ * expression is mirrored back via `onEmit` in real time. External edits to
+ * `value` (manual text typing, Clear, History pick) re-seed the builder; the
+ * `value !== current` guard prevents an emit/re-seed loop and preserves the
+ * builder-local undo history across applied operations. The builder never
+ * mutates `mol.sel` or touches the scene undo history; selection commits stay
+ * the container's job (SelectionPane's Select button). Hit counts are
+ * read-only probes.
  *
  * Grammar reference: `src/modules/molstr/parser_sel.yxx` / `scanner_sel.lxx`
  * (see selectionExpr.ts / selectionGrammar.ts).
@@ -28,8 +30,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
-import { Button, ButtonGroup, HTMLSelect, InputGroup, Menu, MenuDivider, MenuItem, Popover, SegmentedControl, Tag } from '@blueprintjs/core';
-import { useTheme } from '../../../contexts/ThemeContext';
+import { Button, ButtonGroup, HTMLSelect, InputGroup, SegmentedControl, Tag } from '@blueprintjs/core';
 import type { ResolveValues } from './useSelectionValues';
 import { KEYWORDS, getKeywordDef } from './selectionGrammar';
 import type { BinaryOp, UnaryOp } from './selectionExpr';
@@ -44,13 +45,14 @@ import {
     type TermSource,
 } from './selBuilderReducer';
 import { useSelHitCount, type GetHitCount, type HitCount } from './useSelHitCount';
+import { HistoryMenu, NamedSelMenu } from './SelMenus';
 
 /* --- Props --- */
 
 export interface SelectionBuilderProps {
     /** Seed expression for the current selection (container-provided). */
     value: string;
-    /** Emit the confirmed expression to the parent (writes its text box). */
+    /** Emit the current expression to the parent (writes its text box). */
     onEmit: (expr: string) => void;
     /** Recently used expressions, newest first (History source). */
     history?: string[];
@@ -64,10 +66,8 @@ export interface SelectionBuilderProps {
     resolveValues?: ResolveValues;
     /** Read-only resolver: expression -> matched-atom count. */
     getHitCount?: GetHitCount;
-    /** Persist the current selection under a name ("Save as..."). */
+    /** Persist the current selection under a name ("Define name..."). */
     onSaveAs?: (name: string, expr: string) => Promise<boolean> | void;
-    /** Refresh history just before the popover opens. */
-    onOpening?: () => void;
     disabled?: boolean;
 }
 
@@ -118,36 +118,33 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
     resolveValues,
     getHitCount,
     onSaveAs,
-    onOpening,
     disabled,
 }) => {
-    const { theme } = useTheme();
-    const portalClassName = theme === 'dark' ? 'bp5-dark' : '';
-
-    const [isOpen, setIsOpen] = useState(false);
     const [state, dispatch] = useReducer(builderReducer, value, initBuilderState);
-
-    // Re-seed the current selection from the container each time the popover
-    // opens, so it reflects the latest text-box value.
-    const handleInteraction = useCallback(
-        (next: boolean) => {
-            if (next && !isOpen) {
-                onOpening?.();
-                dispatch({ type: 'SET_CURRENT', value });
-            }
-            setIsOpen(next);
-        },
-        [isOpen, value, onOpening],
-    );
 
     const keywordDef = getKeywordDef(state.keyword);
     const term = selectTerm(state);
+
+    // --- Two-way sync with the parent's selection text ---
+    // Mirror the current expression out on every change.
+    useEffect(() => {
+        onEmit(state.current);
+    }, [state.current, onEmit]);
+
+    // Re-seed from external edits (manual typing, Clear, History pick). The
+    // guard skips the no-op case after our own emit round-trips back, so the
+    // builder-local undo history survives applied operations -- only a genuine
+    // external change starts a fresh session.
+    useEffect(() => {
+        if (value !== state.current) dispatch({ type: 'SET_CURRENT', value });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [value]);
 
     // --- Autocomplete values for the active Property keyword ---
     const [suggestItems, setSuggestItems] = useState<string[]>([]);
     useEffect(() => {
         const kind = keywordDef.autocomplete;
-        if (!isOpen || state.source !== 'property' || !kind || !resolveValues) {
+        if (state.source !== 'property' || !kind || !resolveValues) {
             setSuggestItems([]);
             return;
         }
@@ -162,11 +159,11 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
         return () => {
             cancelled = true;
         };
-    }, [isOpen, state.source, keywordDef.autocomplete, resolveValues]);
+    }, [state.source, keywordDef.autocomplete, resolveValues]);
 
     // --- Hit counts (read-only probes) ---
-    const currentCount = useSelHitCount(getHitCount, state.current, isOpen);
-    const termCount = useSelHitCount(getHitCount, term, isOpen);
+    const currentCount = useSelHitCount(getHitCount, state.current, true);
+    const termCount = useSelHitCount(getHitCount, term, true);
 
     // --- Define a named selection (StyleManager 'sel' def, not a disk file) ---
     const [defining, setDefining] = useState(false);
@@ -178,17 +175,6 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
         setDefining(false);
         setDefName('');
     }, [defName, state.current, onSaveAs]);
-
-    // --- Real-time sync to the parent ---
-    // While open, mirror the current selection into the parent's text box on
-    // every change (and on dismiss, since the last value is already synced).
-    // There is no explicit Apply button; the builder is a live editor of the
-    // text value. The parent re-seeds `current` only on open, so this never
-    // loops.
-    useEffect(() => {
-        if (!isOpen) return;
-        onEmit(state.current);
-    }, [isOpen, state.current, onEmit]);
 
     const setField = (name: string, v: string) => dispatch({ type: 'SET_FIELD', name, value: v });
 
@@ -202,6 +188,7 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                     <div className="selbuilder-term-form">
                         <HTMLSelect
                             value={state.fields.op ?? '<'}
+                            disabled={disabled}
                             onChange={(e) => setField('op', e.target.value)}
                             options={[
                                 { value: '<', label: '<' },
@@ -211,6 +198,7 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                         />
                         <InputGroup
                             value={state.fields.value ?? ''}
+                            disabled={disabled}
                             onChange={(e) => setField('value', e.target.value)}
                             placeholder="value"
                         />
@@ -221,12 +209,14 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                     <div className="selbuilder-term-form">
                         <InputGroup
                             value={state.fields.name ?? ''}
+                            disabled={disabled}
                             onChange={(e) => setField('name', e.target.value)}
                             placeholder="property"
                         />
                         <span className="selbuilder-sep">=</span>
                         <InputGroup
                             value={state.fields.value ?? ''}
+                            disabled={disabled}
                             onChange={(e) => setField('value', e.target.value)}
                             placeholder="value"
                         />
@@ -237,16 +227,19 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                     <div className="selbuilder-term-form">
                         <InputGroup
                             value={state.fields.chain ?? ''}
+                            disabled={disabled}
                             onChange={(e) => setField('chain', e.target.value)}
                             placeholder="chain"
                         />
                         <InputGroup
                             value={state.fields.resid ?? ''}
+                            disabled={disabled}
                             onChange={(e) => setField('resid', e.target.value)}
                             placeholder="resid"
                         />
                         <InputGroup
                             value={state.fields.aname ?? ''}
+                            disabled={disabled}
                             onChange={(e) => setField('aname', e.target.value)}
                             placeholder="atom"
                         />
@@ -258,6 +251,7 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                     <div className="selbuilder-term-form">
                         <InputGroup
                             value={state.fields.value ?? ''}
+                            disabled={disabled}
                             onChange={(e) => setField('value', e.target.value)}
                             placeholder={keywordDef.valueKind === 'numList' ? '1:10, 20' : 'value'}
                             list={suggestItems.length > 0 ? VALUE_LIST_ID : undefined}
@@ -274,95 +268,25 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                 );
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [keywordDef, state.fields, suggestItems]);
+    }, [keywordDef, state.fields, suggestItems, disabled]);
 
-    /* -- Named source menu (Selected / Scene / Global) --
-       Built-in macros (protein, water, ...) are global named selections
-       loaded from data/default_style.xml into scope 0, so they already
-       surface under "Global" -- no separate hardcoded list. */
-    const hasNamed = currentSel !== undefined || sceneDefs.length > 0 || globalDefs.length > 0;
-    const namedMenu = (
-        <Menu className="selbuilder-menu">
-            {!hasNamed && <MenuItem disabled text="No named selections" />}
-            {currentSel !== undefined && (
-                <>
-                    <MenuDivider title="Selected" />
-                    <MenuItem
-                        text={currentSel}
-                        active={state.picked === currentSel}
-                        shouldDismissPopover={false}
-                        onClick={() => dispatch({ type: 'SET_PICKED', value: currentSel })}
-                    />
-                </>
-            )}
-            {sceneDefs.length > 0 && (
-                <>
-                    <MenuDivider title="Scene" />
-                    {sceneDefs.map((v) => (
-                        <MenuItem
-                            key={`s-${v}`}
-                            text={v}
-                            active={state.picked === v}
-                            shouldDismissPopover={false}
-                            onClick={() => dispatch({ type: 'SET_PICKED', value: v })}
-                        />
-                    ))}
-                </>
-            )}
-            {globalDefs.length > 0 && (
-                <>
-                    <MenuDivider title="Global" />
-                    {globalDefs.map((v) => (
-                        <MenuItem
-                            key={`g-${v}`}
-                            text={v}
-                            active={state.picked === v}
-                            shouldDismissPopover={false}
-                            onClick={() => dispatch({ type: 'SET_PICKED', value: v })}
-                        />
-                    ))}
-                </>
-            )}
-        </Menu>
-    );
-
-    /* -- History source menu -- */
-    const historyMenu = (
-        <Menu className="selbuilder-menu">
-            {history.length === 0 ? (
-                <MenuItem disabled text="No history" />
-            ) : (
-                history.map((h, i) => (
-                    <MenuItem
-                        key={i}
-                        text={h}
-                        active={state.picked === h}
-                        shouldDismissPopover={false}
-                        onClick={() => dispatch({ type: 'SET_PICKED', value: h })}
-                    />
-                ))
-            )}
-        </Menu>
-    );
-
-    const content = (
-        <div className="selbuilder-popover">
+    return (
+        <div className={`selbuilder${disabled ? ' selbuilder--disabled' : ''}`}>
             {/* 1. Current selection */}
             <div className="selbuilder-block">
-                <div className="selbuilder-block-head type-eyebrow">Current selection</div>
-                <div className="selbuilder-current">
-                    <code>{state.current || '—'}</code>
+                <div className="selbuilder-block-head type-eyebrow">
+                    <span>Current selection</span>
                     <CountTag count={currentCount} />
                 </div>
                 <div className="selbuilder-modify-row">
                     <span className="type-label selbuilder-field-label">Modify</span>
-                    <ButtonGroup>
+                    <ButtonGroup className="selbuilder-modify-btns">
                         {MODIFY_OPS.map((m) => (
                             <Button
                                 key={m.op}
                                 small
                                 text={m.label}
-                                disabled={!canApplyUnary(state, m.op)}
+                                disabled={disabled || !canApplyUnary(state, m.op)}
                                 onClick={() => dispatch({ type: 'APPLY_UNARY', op: m.op })}
                             />
                         ))}
@@ -373,6 +297,7 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                     <InputGroup
                         className="selbuilder-distance"
                         value={state.distance}
+                        disabled={disabled}
                         onChange={(e) => dispatch({ type: 'SET_DISTANCE', value: e.target.value })}
                         placeholder="0"
                     />
@@ -380,13 +305,13 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                     <Button
                         small
                         text="Around"
-                        disabled={!canApplyUnary(state, 'around')}
+                        disabled={disabled || !canApplyUnary(state, 'around')}
                         onClick={() => dispatch({ type: 'APPLY_UNARY', op: 'around' })}
                     />
                     <Button
                         small
                         text="Expand"
-                        disabled={!canApplyUnary(state, 'expand')}
+                        disabled={disabled || !canApplyUnary(state, 'expand')}
                         onClick={() => dispatch({ type: 'APPLY_UNARY', op: 'expand' })}
                     />
                 </div>
@@ -398,7 +323,7 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                             icon="undo"
                             title="Step back"
                             aria-label="Step back"
-                            disabled={!canUndo(state)}
+                            disabled={disabled || !canUndo(state)}
                             onClick={() => dispatch({ type: 'UNDO' })}
                         />
                         <Button
@@ -407,7 +332,7 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                             icon="redo"
                             title="Step forward"
                             aria-label="Step forward"
-                            disabled={!canRedo(state)}
+                            disabled={disabled || !canRedo(state)}
                             onClick={() => dispatch({ type: 'REDO' })}
                         />
                         <Button
@@ -415,7 +340,7 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                             minimal
                             icon="eraser"
                             text="Clear"
-                            disabled={state.current === ''}
+                            disabled={disabled || state.current === ''}
                             onClick={() => dispatch({ type: 'CLEAR' })}
                         />
                     </ButtonGroup>
@@ -441,7 +366,7 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                             icon="tag"
                             text="Define name..."
                             title="Define as a named selection (reusable in this scene)"
-                            disabled={state.current.trim() === '' || !onSaveAs}
+                            disabled={disabled || state.current.trim() === '' || !onSaveAs}
                             onClick={() => setDefining(true)}
                         />
                     )}
@@ -466,6 +391,7 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                     <div className="selbuilder-property">
                         <HTMLSelect
                             value={state.keyword}
+                            disabled={disabled}
                             onChange={(e) =>
                                 dispatch({
                                     type: 'SET_KEYWORD',
@@ -477,8 +403,22 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                         {valueInput}
                     </div>
                 )}
-                {state.source === 'named' && namedMenu}
-                {state.source === 'history' && historyMenu}
+                {state.source === 'named' && (
+                    <NamedSelMenu
+                        currentSel={currentSel}
+                        sceneDefs={sceneDefs}
+                        globalDefs={globalDefs}
+                        activeValue={state.picked}
+                        onPick={(v) => dispatch({ type: 'SET_PICKED', value: v })}
+                    />
+                )}
+                {state.source === 'history' && (
+                    <HistoryMenu
+                        history={history}
+                        activeValue={state.picked}
+                        onPick={(v) => dispatch({ type: 'SET_PICKED', value: v })}
+                    />
+                )}
                 <div className="selbuilder-term-preview">
                     <code>{term ?? '—'}</code>
                     <CountTag count={termCount} />
@@ -498,33 +438,13 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                             current={state.current}
                             term={term}
                             getHitCount={getHitCount}
-                            enabled={isOpen}
+                            enabled={!disabled}
                             onApply={() => dispatch({ type: 'APPLY_BINARY', op: b.op })}
                         />
                     ))}
                 </div>
             </div>
         </div>
-    );
-
-    return (
-        <Popover
-            isOpen={isOpen}
-            onInteraction={handleInteraction}
-            placement="bottom-end"
-            portalClassName={portalClassName}
-            className="selbuilder-trigger"
-            disabled={disabled}
-            content={content}
-        >
-            <Button
-                icon="caret-down"
-                minimal
-                disabled={disabled}
-                title="Build selection"
-                aria-label="Build selection"
-            />
-        </Popover>
     );
 };
 
@@ -556,7 +476,7 @@ const ApplyButton: React.FC<ApplyButtonProps> = ({
     enabled,
     onApply,
 }) => {
-    const applicable = term !== null && canApplyBinary(current, op);
+    const applicable = enabled && term !== null && canApplyBinary(current, op);
     const preview = applicable ? applyBinary(current, term, op) : null;
     const count = useSelHitCount(getHitCount, preview, enabled);
     return (

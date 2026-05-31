@@ -20,7 +20,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { HTMLSelect } from '@blueprintjs/core'
+import { Field, SelectField } from './form'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import type { SceneObjectEntry } from '../../worker/server/services/listSceneObjects.service'
 import { SEM_OBJECT, SEM_SCENE, SEM_ANY } from '../../event'
@@ -146,22 +146,20 @@ export const ObjectSelect: React.FC<Props> = ({
     }, [items])
 
     const handleChange = useCallback(
-        (e: React.ChangeEvent<HTMLSelectElement>) => {
-            const v = Number(e.currentTarget.value)
+        (value: string) => {
+            const v = Number(value)
             if (Number.isFinite(v)) onChange(v)
         },
         [onChange],
     )
 
     return (
-        <div className="selection-row">
-            <label className="selection-label">{label}</label>
-            <HTMLSelect
+        <Field label={label} className="object-select">
+            <SelectField
                 value={selectedId ?? ''}
                 onChange={handleChange}
-                fill
                 disabled={items.length === 0}
-                className="selection-mol-select"
+                aria-label={label}
             >
                 {items.length === 0 ? (
                     <option value="">{emptyText}</option>
@@ -172,7 +170,7 @@ export const ObjectSelect: React.FC<Props> = ({
                         </option>
                     ))
                 )}
-            </HTMLSelect>
-        </div>
+            </SelectField>
+        </Field>
     )
 }

@@ -201,6 +201,19 @@
   --radius-sm: 2px;
   --radius-md: 3px;
   --radius-lg: 4px;
+
+  /* ── Form / field sizing (single source for the form-kit catalog) ──
+     ONLY styles/_form-kit.css references these. UI code must never set
+     control height / row gap / label gap directly -- it composes the
+     form-kit components (Field / TextField / SelectField / ...), which carry
+     these values, so a size is never re-chosen per component. */
+  --field-h: 22px;                     /* standard control height (text / select) */
+  --field-h-sm: var(--ctrl-h-sm);      /* compact control (numeric) -- 20px */
+  --field-label-gap: var(--space-1);   /* label -> control gap (stack layout) */
+  --field-row-pad: var(--space-1);     /* vertical padding around one field row */
+  --form-row-gap: var(--space-1);      /* gap between rows in a FieldGroup */
+  --form-section-gap: var(--space-3);  /* gap between form sections */
+  --field-btn-h: var(--ctrl-h-sm);     /* compact form button height */
 }
 
 /* ─── Light Theme ─── */

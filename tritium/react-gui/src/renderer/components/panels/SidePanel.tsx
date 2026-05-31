@@ -355,7 +355,11 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         id: "dummy3",
         defaultSize: 200,
         render: (collapsed, onToggle) => (
-          <DummyPane3 collapsed={collapsed} onToggleCollapse={onToggle} />
+          <DummyPane3
+            collapsed={collapsed}
+            onToggleCollapse={onToggle}
+            activeSceneId={activeSceneId}
+          />
         ),
       },
     ],

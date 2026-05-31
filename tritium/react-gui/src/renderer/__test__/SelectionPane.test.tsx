@@ -75,8 +75,10 @@ function makeCm(opts?: {
     }
 }
 
-function getTextArea(container: HTMLElement): HTMLTextAreaElement {
-    return container.querySelector('textarea') as HTMLTextAreaElement
+// The selection input is now a form-kit TextField (single-line input) inside
+// the `.selection-input-field` Field, distinct from the builder's controls.
+function getTextArea(container: HTMLElement): HTMLInputElement {
+    return container.querySelector('.selection-input-field input') as HTMLInputElement
 }
 
 function setNativeValue(el: HTMLInputElement | HTMLTextAreaElement, value: string): void {
@@ -113,7 +115,9 @@ describe('SelectionPane', () => {
             <SelectionPane cm={cm as never} activeSceneId={1} />,
         )
         await flushPromises()
-        const opts = Array.from(container.querySelectorAll('select option'))
+        // Scope to the molecule selector -- the inline builder also renders a
+        // keyword <select>, so an unscoped `select option` query is ambiguous.
+        const opts = Array.from(container.querySelectorAll('.object-select select option'))
         expect(opts.map((o) => o.textContent)).toEqual(['1CRN', '3J3Q'])
         expect(cm.invokeService).toHaveBeenCalledWith('listSceneObjects', { sceneId: 1 })
         unmount()

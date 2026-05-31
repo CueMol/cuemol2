@@ -215,7 +215,7 @@
   border: 1px solid var(--border) !important;
   color: var(--text-primary) !important;
   font-size: var(--fs-lg);
-  height: 22px;
+  height: var(--field-h);
   border-radius: var(--radius-md);
   caret-color: var(--accent);
 }
@@ -236,7 +236,7 @@
   border: 1px solid var(--border) !important;
   color: var(--text-primary) !important;
   font-size: var(--fs-lg);
-  height: 22px;
+  height: var(--field-h);
   border-radius: var(--radius-md);
   /* Reserve room for the caret icon so the value text never runs under it. */
   padding-right: 24px;
@@ -326,7 +326,7 @@
   border: 1px solid var(--border) !important;
   color: var(--text-primary) !important;
   font-size: var(--fs-md);
-  height: 20px;
+  height: var(--field-h-sm);
   width: 100%;
   text-align: right;
   padding-right: var(--space-2);

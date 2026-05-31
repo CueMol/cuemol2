@@ -1,0 +1,168 @@
+/**
+ * Degrade-detection tests for the form-kit catalog
+ * (`components/widgets/form/`).
+ *
+ * The catalog is the single source of control/row SIZING. These tests pin the
+ * contract that future changes must not break:
+ *  - each component emits its canonical `.fk-*` class (so the one CSS source in
+ *    `_form-kit.css` actually applies)
+ *  - components do NOT leak inline sizing (height/min-height/padding/margin) --
+ *    sizing must come from CSS, never from per-instance style props
+ *  - the controls remain controlled (onChange/onCommit fire)
+ *
+ * If someone reintroduces a bespoke size (inline style or a non-fk class),
+ * these tests fail.
+ */
+import React from 'react'
+import { describe, it, expect, vi } from 'vitest'
+import { act } from 'react'
+
+void React
+
+vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
+vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
+
+import {
+    Field,
+    FieldGroup,
+    TextField,
+    SelectField,
+    SwitchField,
+    NumericField,
+    ButtonRow,
+    FormButton,
+} from '../components/widgets/form'
+import { mountTree } from './helpers/testHarness'
+
+/** Assert no element in the subtree carries inline sizing styles. */
+function expectNoInlineSizing(root: HTMLElement): void {
+    const all = [root, ...Array.from(root.querySelectorAll<HTMLElement>('*'))]
+    for (const el of all) {
+        const s = el.getAttribute('style') ?? ''
+        expect(s).not.toMatch(/height|min-height|padding|margin|gap/i)
+    }
+}
+
+describe('form-kit catalog', () => {
+    it('Field emits canonical row/label/control classes', () => {
+        const { container, unmount } = mountTree(
+            <Field label="Name">
+                <span>ctrl</span>
+            </Field>,
+        )
+        expect(container.querySelector('.fk-field-row')).not.toBeNull()
+        expect(container.querySelector('.fk-field-label')?.textContent).toBe('Name')
+        expect(container.querySelector('.fk-field-control')?.textContent).toBe('ctrl')
+        expect(container.querySelector('.fk-field-row.fk-inline')).toBeNull()
+        expectNoInlineSizing(container)
+        unmount()
+    })
+
+    it('Field inline adds the fk-inline modifier', () => {
+        const { container, unmount } = mountTree(
+            <Field label="On" inline>
+                <span>ctrl</span>
+            </Field>,
+        )
+        expect(container.querySelector('.fk-field-row.fk-inline')).not.toBeNull()
+        unmount()
+    })
+
+    it('FieldGroup emits the group class and renders an optional section header', () => {
+        const { container, unmount } = mountTree(
+            <FieldGroup title="Section">
+                <Field label="A"><span>a</span></Field>
+            </FieldGroup>,
+        )
+        expect(container.querySelector('.fk-field-group')).not.toBeNull()
+        expect(container.querySelector('.section-header')?.textContent).toBe('Section')
+        unmount()
+    })
+
+    it('TextField emits .fk-input, fires onChange, flags invalid, no inline sizing', () => {
+        const onChange = vi.fn()
+        const { container, unmount } = mountTree(
+            <TextField value="abc" onChange={onChange} invalid />,
+        )
+        const input = container.querySelector('.fk-input input') as HTMLInputElement
+        expect(input).not.toBeNull()
+        expect(input.value).toBe('abc')
+        // invalid -> danger intent on the wrapper
+        expect(container.querySelector('.fk-input.bp5-intent-danger')).not.toBeNull()
+        const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+        act(() => {
+            setter.call(input, 'xyz')
+            input.dispatchEvent(new Event('input', { bubbles: true }))
+        })
+        expect(onChange).toHaveBeenCalledWith('xyz')
+        expectNoInlineSizing(container)
+        unmount()
+    })
+
+    it('SelectField emits .fk-select and fires onChange', () => {
+        const onChange = vi.fn()
+        const { container, unmount } = mountTree(
+            <SelectField value="a" onChange={onChange}>
+                <option value="a">A</option>
+                <option value="b">B</option>
+            </SelectField>,
+        )
+        const select = container.querySelector('.fk-select select') as HTMLSelectElement
+        expect(select).not.toBeNull()
+        const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')!.set!
+        act(() => {
+            setter.call(select, 'b')
+            select.dispatchEvent(new Event('change', { bubbles: true }))
+        })
+        expect(onChange).toHaveBeenCalledWith('b')
+        expectNoInlineSizing(container)
+        unmount()
+    })
+
+    it('SwitchField emits .fk-switch and fires onChange(boolean)', () => {
+        const onChange = vi.fn()
+        const { container, unmount } = mountTree(
+            <SwitchField checked={false} onChange={onChange} />,
+        )
+        const input = container.querySelector('.fk-switch input') as HTMLInputElement
+        expect(input).not.toBeNull()
+        act(() => { input.click() })
+        expect(onChange).toHaveBeenCalledWith(true)
+        unmount()
+    })
+
+    it('NumericField emits .fk-numeric (+ slider by default)', () => {
+        const { container, unmount } = mountTree(
+            <NumericField value={5} onChange={() => undefined} min={0} max={10} />,
+        )
+        expect(container.querySelector('.fk-numeric-row')).not.toBeNull()
+        expect(container.querySelector('.fk-numeric')).not.toBeNull()
+        expect(container.querySelector('.fk-slider')).not.toBeNull()
+        unmount()
+    })
+
+    it('NumericField omits the slider when slider=false', () => {
+        const { container, unmount } = mountTree(
+            <NumericField value={5} onChange={() => undefined} slider={false} />,
+        )
+        expect(container.querySelector('.fk-slider')).toBeNull()
+        expect(container.querySelector('.fk-numeric')).not.toBeNull()
+        unmount()
+    })
+
+    it('FormButton locks the canonical .fk-btn class; ButtonRow wraps in .fk-btn-row', () => {
+        const onClick = vi.fn()
+        const { container, unmount } = mountTree(
+            <ButtonRow>
+                <FormButton text="Go" onClick={onClick} />
+            </ButtonRow>,
+        )
+        expect(container.querySelector('.fk-btn-row')).not.toBeNull()
+        const btn = container.querySelector('button.fk-btn') as HTMLButtonElement
+        expect(btn).not.toBeNull()
+        act(() => { btn.click() })
+        expect(onClick).toHaveBeenCalled()
+        expectNoInlineSizing(container)
+        unmount()
+    })
+})

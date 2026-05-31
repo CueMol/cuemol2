@@ -1,27 +1,55 @@
 /*
- * SelectionBuilder -- Popover for composing CueMol selection-syntax
- * expressions via set operations and unary transforms.
+ * SelectionBuilder -- inline UI for composing CueMol selection-syntax
+ * expressions via set operations and unary transforms. Rendered inside the
+ * SelectionPane, so it fills the (narrow) side-panel width rather than a
+ * fixed popover. All sizing/colour values come from the app's semantic
+ * tokens in `_variables.css` so it follows the active theme.
  *
- * Four stacked blocks (Current selection / Term / Apply term / Apply to
- * selection). All sizing/colour values come from the app's semantic tokens
- * in `_variables.css` so the popover follows the active theme. The single
- * raw length kept here (popover width) is a deliberate layout constant.
+ * Three stacked blocks (Current selection / Term / Apply term). Button rows
+ * wrap/grid so they stay usable at the side panel's minimum width (~180px).
  */
 
-/* Keep the trigger from stretching inside the fill ControlGroup, like the
-   picker does. The Popover target wrapper carries this class. */
-.mol-sel-list .selbuilder-trigger {
+/* Keep the MolSelList picker trigger from stretching inside the fill
+   ControlGroup. The Popover target wrapper carries this class. */
+.mol-sel-list .mol-sel-list-trigger {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
 }
 
-.selbuilder-popover {
-  width: 380px; /* fixed popover width -- layout constant */
-  padding: var(--space-4);
+/* MolSelList picker popover: Named/History segmented control + a menu. */
+.mol-sel-list-popover {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-3);
+  padding: var(--space-3);
+  min-width: 180px;
+}
+
+.selbuilder {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.selbuilder--disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* Builder controls take the form-kit canonical heights (single source:
+   --field-* tokens in _variables.css). The builder owns only its bespoke
+   LAYOUT (grids, preview boxes); it never re-chooses a control height. */
+.selbuilder .bp5-input-group .bp5-input {
+  height: var(--field-h);
+}
+
+.selbuilder .bp5-html-select select {
+  height: var(--field-h);
+}
+
+.selbuilder .bp5-button {
+  min-height: var(--field-btn-h);
 }
 
 /* --- Blocks --- */
@@ -29,12 +57,17 @@
 .selbuilder-block {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
 /* Eyebrow section label, matching the app convention (uppercase + --ls-wide,
-   same as .selection-label / inspector / color-panel headings). */
+   same as .selection-label / inspector / color-panel headings). The block-1
+   head also carries the current-selection hit-count badge on its right. */
 .selbuilder-block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: var(--ls-wide);
@@ -50,8 +83,8 @@
   background: var(--bg-input);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: var(--space-2) var(--space-3);
-  min-height: var(--ctrl-h-md);
+  padding: var(--space-1) var(--space-3);
+  min-height: var(--field-h);
 }
 
 .selbuilder-current code,
@@ -73,14 +106,30 @@
 .selbuilder-current-actions {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2) var(--space-3);
   flex-wrap: wrap;
 }
 
-/* Inline control labels (Modify / Distance) -- subdued like field labels. */
+/* Inline control labels (Modify / Distance) -- subdued like field labels,
+   sized via the label role. They sit inline; the controls wrap beside them. */
 .selbuilder-field-label,
 .selbuilder-unit {
+  font-size: var(--type-label-fs);
+  font-weight: var(--type-label-fw);
   color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+/* Modify ops as a 2x2 grid so the four labelled buttons fit a ~180px pane. */
+.selbuilder-modify-btns.bp5-button-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-1);
+  width: 100%;
+}
+
+.selbuilder-modify-btns.bp5-button-group > .bp5-button {
+  margin: 0;
 }
 
 /* Narrow numeric distance field -- fixed small width is a layout constant. */

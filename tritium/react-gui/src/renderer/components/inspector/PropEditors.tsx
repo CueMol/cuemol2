@@ -2,39 +2,29 @@
  * @file components/inspector/PropEditors.tsx
  * @description Individual editor widgets for each property type.
  *
- * Each editor is a small, focused component that handles a single
- * property type (string, integer, real, boolean, enum, color).
- * The parent `PropertiesTab` maps `PropDef.type` to the correct editor.
+ * Each editor maps a single `PropDef` onto a form-kit catalog component
+ * (`components/widgets/form/`), so control sizing/layout is owned by the
+ * shared catalog -- the inspector never re-chooses sizes. The parent
+ * `PropertiesTab` maps `PropDef.type` to the correct editor.
  */
 
-import React, { useCallback } from "react";
-import {
-  InputGroup,
-  NumericInput,
-  Switch,
-  HTMLSelect,
-  Slider,
-} from "@blueprintjs/core";
+import React from "react";
 import type { PropDef } from "../../data/rendererProperties";
-import { CueColorField } from "../widgets/colorpicker/CueColorField";
+import {
+  Field,
+  TextField,
+  SelectField,
+  NumericField,
+  SwitchField,
+  ColorField,
+} from "../widgets/form";
 
 // ────────────────────────────────────────────────────────────
-// Shared row wrapper
+// Shared row wrapper -- kept as a catalog alias for back-compat.
+// New code should import `Field` from components/widgets/form.
 // ────────────────────────────────────────────────────────────
 
-interface PropRowProps {
-  label: string;
-  /** If true, render children inline (for booleans). */
-  inline?: boolean;
-  children: React.ReactNode;
-}
-
-export const PropRow: React.FC<PropRowProps> = ({ label, inline, children }) => (
-  <div className={`insp-prop-row ${inline ? "inline" : ""}`}>
-    <label className="insp-prop-label">{label}</label>
-    <div className="insp-prop-control">{children}</div>
-  </div>
-);
+export { Field as PropRow } from "../widgets/form";
 
 // ────────────────────────────────────────────────────────────
 // String editor
@@ -46,16 +36,13 @@ interface StringEditorProps {
 }
 
 export const StringEditor: React.FC<StringEditorProps> = ({ prop, onChange }) => (
-  <PropRow label={prop.label}>
-    <InputGroup
-      small
-      fill
+  <Field label={prop.label}>
+    <TextField
       value={String(prop.value)}
-      onChange={(e) => onChange(prop.key, e.target.value)}
-      className="insp-input"
+      onChange={(v) => onChange(prop.key, v)}
       readOnly={prop.readonly}
     />
-  </PropRow>
+  </Field>
 );
 
 // ────────────────────────────────────────────────────────────
@@ -68,49 +55,17 @@ interface NumericEditorProps {
 }
 
 export const NumericEditor: React.FC<NumericEditorProps> = ({ prop, onChange }) => {
-  const val = Number(prop.value);
   const step = prop.step ?? (prop.type === "integer" ? 1 : 0.01);
-  const min = prop.min ?? 0;
-  const max = prop.max ?? 100;
-
-  const handleSlider = useCallback(
-    (v: number) => onChange(prop.key, v),
-    [prop.key, onChange]
-  );
-
-  const handleNumeric = useCallback(
-    (_vn: number, vs: string) => {
-      const parsed = parseFloat(vs);
-      if (!isNaN(parsed)) onChange(prop.key, parsed);
-    },
-    [prop.key, onChange]
-  );
-
   return (
-    <PropRow label={prop.label}>
-      <div className="insp-numeric-row">
-        <Slider
-          min={min}
-          max={max}
-          stepSize={step}
-          value={val}
-          onChange={handleSlider}
-          labelRenderer={false}
-          className="insp-slider"
-        />
-        <NumericInput
-          small
-          value={val}
-          onValueChange={handleNumeric}
-          min={min}
-          max={max}
-          stepSize={step}
-          minorStepSize={null}
-          className="insp-numeric-input"
-          fill={false}
-        />
-      </div>
-    </PropRow>
+    <Field label={prop.label}>
+      <NumericField
+        value={Number(prop.value)}
+        onChange={(v) => onChange(prop.key, v)}
+        min={prop.min ?? 0}
+        max={prop.max ?? 100}
+        step={step}
+      />
+    </Field>
   );
 };
 
@@ -124,15 +79,12 @@ interface BooleanEditorProps {
 }
 
 export const BooleanEditor: React.FC<BooleanEditorProps> = ({ prop, onChange }) => (
-  <PropRow label={prop.label} inline>
-    <Switch
+  <Field label={prop.label} inline>
+    <SwitchField
       checked={Boolean(prop.value)}
-      onChange={(e) =>
-        onChange(prop.key, (e.target as HTMLInputElement).checked)
-      }
-      className="insp-switch"
+      onChange={(c) => onChange(prop.key, c)}
     />
-  </PropRow>
+  </Field>
 );
 
 // ────────────────────────────────────────────────────────────
@@ -145,20 +97,15 @@ interface EnumEditorProps {
 }
 
 export const EnumEditor: React.FC<EnumEditorProps> = ({ prop, onChange }) => (
-  <PropRow label={prop.label}>
-    <HTMLSelect
-      fill
-      value={String(prop.value)}
-      onChange={(e) => onChange(prop.key, e.target.value)}
-      className="insp-select"
-    >
+  <Field label={prop.label}>
+    <SelectField value={String(prop.value)} onChange={(v) => onChange(prop.key, v)}>
       {prop.options?.map((opt) => (
         <option key={opt} value={opt}>
           {opt}
         </option>
       ))}
-    </HTMLSelect>
-  </PropRow>
+    </SelectField>
+  </Field>
 );
 
 // ────────────────────────────────────────────────────────────
@@ -171,11 +118,11 @@ interface ColorEditorProps {
 }
 
 export const ColorEditor: React.FC<ColorEditorProps> = ({ prop, onChange }) => (
-  <PropRow label={prop.label}>
-    <CueColorField
+  <Field label={prop.label}>
+    <ColorField
       value={String(prop.value)}
       onCommit={(v) => onChange(prop.key, v)}
       disabled={prop.readonly}
     />
-  </PropRow>
+  </Field>
 );

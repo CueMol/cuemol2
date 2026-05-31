@@ -26,15 +26,14 @@ import {
     Button,
     ButtonGroup,
     Icon,
-    Intent,
     Menu,
     MenuItem,
     Popover,
-    TextArea,
     Tooltip,
 } from '@blueprintjs/core';
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol';
 import { ObjectSelect, objectFilters } from '../widgets/ObjectSelect';
+import { Field, TextField } from '../widgets/form';
 import {
     getHistory,
     pushHistory,
@@ -229,8 +228,6 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({
         </Menu>
     );
 
-    const intent = isValid ? Intent.NONE : Intent.DANGER;
-
     return (
         <div className="sp-pane">
             <div
@@ -303,37 +300,32 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({
                         fallbackName={(m) => `Mol ${m.uid}`}
                     />
                     <div className="selection-text-row">
-                        <div className="selection-label-row">
-                            <label className="selection-label">Selection</label>
-                            <SelectionBuilder
+                        <Field label="Selection" className="selection-input-field">
+                            <TextField
                                 value={selStr}
-                                onEmit={onBuilderEmit}
-                                history={historyItems}
-                                currentSel={currentSel}
-                                sceneDefs={sceneDefs}
-                                globalDefs={globalDefs}
-                                resolveValues={resolveValues}
-                                getHitCount={getHitCount}
-                                onSaveAs={onSaveAs}
-                                onOpening={onHistoryOpening}
-                                disabled={cm === null || activeSceneId === undefined}
+                                onChange={(v) => {
+                                    setSelStr(v);
+                                    if (errorMsg) setErrorMsg(null);
+                                }}
+                                placeholder="Input selection command"
+                                invalid={!isValid}
                             />
-                        </div>
-                        <TextArea
-                            value={selStr}
-                            onChange={(e) => {
-                                setSelStr(e.target.value);
-                                if (errorMsg) setErrorMsg(null);
-                            }}
-                            placeholder="Input selection command"
-                            fill
-                            growVertically={false}
-                            intent={intent}
-                            className="selection-textarea"
-                        />
+                        </Field>
                         {errorMsg !== null && (
                             <div className="selection-error">{errorMsg}</div>
                         )}
+                        <SelectionBuilder
+                            value={selStr}
+                            onEmit={onBuilderEmit}
+                            history={historyItems}
+                            currentSel={currentSel}
+                            sceneDefs={sceneDefs}
+                            globalDefs={globalDefs}
+                            resolveValues={resolveValues}
+                            getHitCount={getHitCount}
+                            onSaveAs={onSaveAs}
+                            disabled={cm === null || activeSceneId === undefined}
+                        />
                     </div>
                 </div>
             )}

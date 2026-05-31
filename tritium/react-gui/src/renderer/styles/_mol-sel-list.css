@@ -1,94 +1,10 @@
 /*
- * MolSelList — atom-selection editor styling.
+ * MolSelList -- atom-selection picker styling.
  *
- * The picker is a Blueprint HTMLSelect that we want to render as a
- * chevron-only button (no displayed text), sitting next to a wide InputGroup
- * inside a ControlGroup. The select holds a hidden empty sentinel as its
- * selected option, so the displayed text area is intrinsically blank — but
- * native browsers still reserve space for it. We collapse that space with CSS
- * while keeping Blueprint's overlaid chevron icon visible.
+ * The control is a form-kit `TextField` plus a caret button that opens a
+ * Named/History popover. Control sizing comes from the form-kit catalog
+ * (`.fk-input`, see `_form-kit.css`); the popover trigger sizing lives in
+ * `_selection-builder.css` (`.mol-sel-list-trigger`). No bespoke heights are
+ * defined here -- the old native-`<select>` picker rules were removed when the
+ * picker became a popover.
  */
-
-/*
- * Picker height + chevron icon offset are driven by CSS variables so we can
- * follow whatever height the surrounding InputGroup uses in each context.
- * Defaults to --ctrl-h-lg (30px, the Blueprint input height); the file-open
- * dialog shrinks .bp5-input to 26px in `_dialog.css` and we mirror that below.
- */
-.mol-sel-list {
-  --mol-sel-list-height: var(--ctrl-h-lg);
-}
-
-.bp5-dialog-body .mol-sel-list {
-  /* `_dialog.css` forces .bp5-input to 26px inside dialog bodies — keep the
-     picker the same height so the two boxes align pixel-for-pixel. */
-  --mol-sel-list-height: 26px;
-}
-
-.mol-sel-list .mol-sel-list-picker {
-  flex: 0 0 auto;
-  /* Pin wrapper to the InputGroup height. Without this ControlGroup's
-     `align-items: stretch` would let the picker grow to whichever child is
-     tallest (the native <select> defaults to 30px even when the input is 26px). */
-  height: var(--mol-sel-list-height);
-  min-height: var(--mol-sel-list-height);
-  max-height: var(--mol-sel-list-height);
-  box-sizing: border-box;
-}
-
-.mol-sel-list .mol-sel-list-picker > select {
-  /* Just enough width to host Blueprint's right-side chevron. */
-  width: 30px;
-  min-width: 30px;
-  /* Force the inner native <select> to fill the wrapper exactly. Blueprint
-     declares `height: 30px` directly on the <select>, so we override here
-     so the dialog's 26px context flows through. */
-  height: 100%;
-  min-height: 100%;
-  max-height: 100%;
-  padding: 0;
-  margin: 0;
-  outline: none;
-  box-sizing: border-box;
-  /* Hide any residual text rendered by the browser for the selected option. */
-  color: transparent;
-  text-shadow: none;
-}
-
-/* Center the absolutely-positioned chevron purely geometrically. Blueprint's
-   default `top: 7px; right: 10px;` was sized for a wider select with text
-   inside; with our 30px-wide chevron-only button it ends up biased to the
-   bottom-left. Using 50%/50% + translate decouples the centering from the
-   wrapper height (30px outside dialogs, 26px inside) and from the icon
-   span's intrinsic 16px size, so it stays centered if any of those change. */
-.mol-sel-list .mol-sel-list-picker > .bp5-icon {
-  top: 50%;
-  right: auto;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-/*
- * Drop Blueprint HTMLSelect's outer drop shadow so the button's visual
- * boundary matches the adjacent InputGroup pixel-for-pixel. By default
- * `.bp5-html-select select` uses `box-shadow: inset 0 0 0 1px ..., 0 1px 2px ...`
- * — the trailing non-inset shadow makes the button extend ~2px below the
- * input edge and shifts the chevron icon off-center within the perceived
- * rectangle. `.bp5-input` only uses inset shadows, so we strip the outer
- * one here while preserving the inset 1px border for the click affordance.
- * State pseudo-classes are listed explicitly because Blueprint reapplies
- * the outer shadow on :hover / :active / .bp5-active.
- */
-.mol-sel-list .mol-sel-list-picker > select,
-.mol-sel-list .mol-sel-list-picker > select:hover,
-.mol-sel-list .mol-sel-list-picker > select:active,
-.mol-sel-list .mol-sel-list-picker > select.bp5-active {
-  box-shadow: inset 0 0 0 1px rgba(17, 20, 24, 0.2);
-}
-
-.bp5-dark .mol-sel-list .mol-sel-list-picker > select,
-.bp5-dark .mol-sel-list .mol-sel-list-picker > select:hover,
-.bp5-dark .mol-sel-list .mol-sel-list-picker > select:active,
-.bp5-dark .mol-sel-list .mol-sel-list-picker > select.bp5-active {
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
-}

@@ -84,7 +84,6 @@ export const RendererOptionsPane: React.FC<RendererOptionsPaneProps> = ({ option
             onSelectedSelChange={set('selection')}
             disabled={!options.selectionEnabled}
             placeholder="* (all atoms)"
-            enableBuilder
           />
         </FormGroup>
       )}

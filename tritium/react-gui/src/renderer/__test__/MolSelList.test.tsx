@@ -1,15 +1,17 @@
 /**
- * Tests for MolSelList — pin the contract that:
+ * Tests for MolSelList -- the lightweight Named/History selection picker.
+ *
+ * Pins the contract that:
  *  1. getSelDefs is invoked with the supplied sceneID on mount
  *  2. selectedSel is reflected in the InputGroup (controlled, persists on blur)
  *  3. typing fires onSelectedSelChange on every keystroke
- *  4. the picker (HTMLSelect) renders Preset + History + Scene + Global optgroups
- *     in that order, when their respective lists are non-empty
- *  5. the picker's selected value is a hidden empty sentinel — blank display
- *     area, no "Pick…" text
- *  6. picking an option fires onSelectedSelChange (the sentinel never does)
- *  7. validateSelection drives the input's danger intent
- *  8. selectedSel of `*` / empty does not invoke validateSelection
+ *  4. the picker is a popover opened by the caret trigger; it carries a
+ *     Named | History SegmentedControl
+ *  5. the Named menu lists Selected / Scene / Global named defs
+ *  6. the History tab lists getHistory() entries
+ *  7. picking an item fires onSelectedSelChange and closes the popover
+ *  8. validateSelection drives the input's danger intent
+ *  9. selectedSel of `*` / empty does not invoke validateSelection
  */
 import React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -28,7 +30,6 @@ vi.mock('../hooks/useCueMol', () => ({
     useCueMol: () => ({ cueMolReady: true, cm: mockCm }),
 }))
 
-// SelectionBuilder (mounted only when enableBuilder is set) reads the theme.
 vi.mock('../contexts/ThemeContext', () => ({
     useTheme: () => ({ theme: 'dark', toggleTheme: () => undefined, setTheme: () => undefined }),
 }))
@@ -56,33 +57,46 @@ function getInput(container: HTMLElement): HTMLInputElement {
     return container.querySelector('input.bp5-input') as HTMLInputElement
 }
 
-function getSelect(container: HTMLElement): HTMLSelectElement {
-    return container.querySelector('select') as HTMLSelectElement
+function pickerTrigger(): HTMLButtonElement {
+    return document.querySelector('button[aria-label="Pick selection"]') as HTMLButtonElement
 }
 
-function setSelectValue(select: HTMLSelectElement, value: string): void {
-    const setter = Object.getOwnPropertyDescriptor(
-        HTMLSelectElement.prototype, 'value',
-    )!.set!
-    setter.call(select, value)
-    select.dispatchEvent(new Event('change', { bubbles: true }))
+/** Open the picker popover (rendered in a portal on document.body). */
+async function openPicker(): Promise<void> {
+    await act(async () => { pickerTrigger().click() })
+    await flushPromises()
+}
+
+/** Click a button/segment by its visible text, searched in document. */
+function clickByText(text: string): void {
+    const el = Array.from(document.querySelectorAll('button, .bp5-menu-item')).find(
+        (b) => b.textContent?.trim() === text,
+    ) as HTMLElement
+    el.click()
+}
+
+function menuItemTexts(): string[] {
+    return Array.from(document.querySelectorAll('.mol-sel-list-popover .bp5-menu-item')).map(
+        (el) => el.textContent?.trim() ?? '',
+    )
 }
 
 describe('MolSelList', () => {
     beforeEach(() => {
         globalThis.localStorage.clear()
         mockCm.invokeService.mockReset()
-        vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+        // Real timers: the popover open path and validation debounce both
+        // settle via flushPromises; fake timers complicate portal mounting.
     })
 
     afterEach(() => {
-        vi.useRealTimers()
+        document.body.innerHTML = ''
     })
 
     it('invokes getSelDefs with the supplied sceneID on mount', async () => {
         setupCm()
         const { unmount } = mountTree(
-            <MolSelList sceneID={42} selectedSel="*" onSelectedSelChange={() => undefined} />
+            <MolSelList sceneID={42} selectedSel="*" onSelectedSelChange={() => undefined} />,
         )
         await flushPromises()
         expect(mockCm.invokeService).toHaveBeenCalledWith('getSelDefs', { sceneId: 42 })
@@ -92,7 +106,7 @@ describe('MolSelList', () => {
     it('reflects selectedSel in the input and persists on blur', async () => {
         setupCm()
         const { container, unmount } = mountTree(
-            <MolSelList sceneID={1} selectedSel="chain.A" onSelectedSelChange={() => undefined} />
+            <MolSelList sceneID={1} selectedSel="chain.A" onSelectedSelChange={() => undefined} />,
         )
         await flushPromises()
         const input = getInput(container)
@@ -107,7 +121,7 @@ describe('MolSelList', () => {
         setupCm()
         const onChange = vi.fn()
         const { container, unmount } = mountTree(
-            <MolSelList sceneID={1} selectedSel="" onSelectedSelChange={onChange} />
+            <MolSelList sceneID={1} selectedSel="" onSelectedSelChange={onChange} />,
         )
         await flushPromises()
         const input = getInput(container)
@@ -122,83 +136,77 @@ describe('MolSelList', () => {
         unmount()
     })
 
-    it('uses a hidden empty-text sentinel for the picker (no "Pick…" label)', async () => {
+    it('opens a popover with a Named | History SegmentedControl', async () => {
         setupCm()
-        const { container, unmount } = mountTree(
-            <MolSelList sceneID={1} selectedSel="" onSelectedSelChange={() => undefined} />
+        const { unmount } = mountTree(
+            <MolSelList sceneID={1} selectedSel="" onSelectedSelChange={() => undefined} />,
         )
         await flushPromises()
-        const select = getSelect(container)
-        // The selected option is the sentinel — first <option> child of the
-        // <select> (not inside an optgroup), with hidden=true and empty text.
-        const sentinel = select.querySelector(':scope > option') as HTMLOptionElement
-        expect(sentinel).toBeTruthy()
-        expect(sentinel.hidden).toBe(true)
-        expect(sentinel.textContent).toBe('')
-        // It must be the currently-selected option.
-        expect(select.value).toBe(sentinel.value)
+        await openPicker()
+        const popover = document.querySelector('.mol-sel-list-popover')
+        expect(popover).not.toBeNull()
+        const btnTexts = Array.from(popover!.querySelectorAll('button')).map((b) =>
+            b.textContent?.trim(),
+        )
+        expect(btnTexts).toEqual(expect.arrayContaining(['Named', 'History']))
         unmount()
     })
 
-    it('renders Preset + History + Scene + Global optgroups in order', async () => {
-        globalThis.localStorage.setItem(STORAGE_KEY, JSON.stringify(['chain.A']))
-        setupCm({ selDefs: { scene: ['mySceneSel'], global: ['myGlobalSel'] } })
-        const { container, unmount } = mountTree(
-            <MolSelList sceneID={1} selectedSel="" onSelectedSelChange={() => undefined} />
+    it('Named tab lists Selected / Scene / Global named defs', async () => {
+        setupCm({ selDefs: { scene: ['mySceneSel'], global: ['myGlobalSel'], currentSel: 'chain.A' } })
+        const { unmount } = mountTree(
+            <MolSelList sceneID={3} molID={11} selectedSel="" onSelectedSelChange={() => undefined} />,
         )
         await flushPromises()
-        const select = getSelect(container)
-        const groups = Array.from(select.querySelectorAll('optgroup'))
-        const labels = groups.map((g) => g.getAttribute('label'))
-        expect(labels).toEqual(['Preset', 'History', 'Scene', 'Global'])
+        await openPicker()
+        // Default tab is Named.
+        expect(menuItemTexts()).toEqual(expect.arrayContaining(['chain.A', 'mySceneSel', 'myGlobalSel']))
+        // Dividers carry the scope titles.
+        const dividers = Array.from(
+            document.querySelectorAll('.mol-sel-list-popover .bp5-menu-header'),
+        ).map((el) => el.textContent?.trim())
+        expect(dividers).toEqual(expect.arrayContaining(['Selected', 'Scene', 'Global']))
         unmount()
     })
 
-    it('always includes "all (*)" and "none" presets', async () => {
+    it('History tab lists getHistory() entries', async () => {
+        globalThis.localStorage.setItem(STORAGE_KEY, JSON.stringify(['chain.A', 'aname CA']))
         setupCm()
-        const { container, unmount } = mountTree(
-            <MolSelList sceneID={1} selectedSel="" onSelectedSelChange={() => undefined} />
+        const { unmount } = mountTree(
+            <MolSelList sceneID={1} selectedSel="" onSelectedSelChange={() => undefined} />,
         )
         await flushPromises()
-        const presetGroup = getSelect(container).querySelector('optgroup[label="Preset"]')!
-        const values = Array.from(presetGroup.querySelectorAll('option')).map((o) => o.value)
-        const labels = Array.from(presetGroup.querySelectorAll('option')).map((o) => o.textContent)
-        expect(values).toEqual(['*', ''])
-        expect(labels).toEqual(['all (*)', 'none'])
+        await openPicker()
+        await act(async () => { clickByText('History') })
+        await flushPromises()
+        expect(menuItemTexts()).toEqual(expect.arrayContaining(['chain.A', 'aname CA']))
         unmount()
     })
 
-    it('omits History / Scene / Global optgroups when their lists are empty', async () => {
-        setupCm({ selDefs: { scene: [], global: [] } })
-        const { container, unmount } = mountTree(
-            <MolSelList sceneID={1} selectedSel="" onSelectedSelChange={() => undefined} />
-        )
-        await flushPromises()
-        const labels = Array.from(getSelect(container).querySelectorAll('optgroup')).map((g) => g.getAttribute('label'))
-        expect(labels).toEqual(['Preset'])
-        unmount()
-    })
-
-    it('picking an option fires onSelectedSelChange', async () => {
+    it('picking a Named item fires onSelectedSelChange and closes the popover', async () => {
         const onChange = vi.fn()
         setupCm({ selDefs: { scene: ['mySceneSel'], global: [] } })
-        const { container, unmount } = mountTree(
-            <MolSelList sceneID={1} selectedSel="" onSelectedSelChange={onChange} />
+        const { unmount } = mountTree(
+            <MolSelList sceneID={1} selectedSel="" onSelectedSelChange={onChange} />,
         )
         await flushPromises()
-        const select = getSelect(container)
-        await act(async () => { setSelectValue(select, 'mySceneSel') })
+        await openPicker()
+        await act(async () => { clickByText('mySceneSel') })
         await flushPromises()
         expect(onChange).toHaveBeenCalledWith('mySceneSel')
+        // Popover dismissed on pick (wait out the Blueprint close transition).
+        await act(async () => { await new Promise((r) => setTimeout(r, 350)) })
+        expect(document.querySelector('.mol-sel-list-popover')).toBeNull()
         unmount()
     })
 
     it('marks input intent=danger when validateSelection returns ok:false', async () => {
         setupCm({ validateOk: false })
         const { container, unmount } = mountTree(
-            <MolSelList sceneID={1} selectedSel="bogus" onSelectedSelChange={() => undefined} />
+            <MolSelList sceneID={1} selectedSel="bogus" onSelectedSelChange={() => undefined} />,
         )
-        await act(async () => { vi.advanceTimersByTime(600) })
+        // Validation is debounced 500ms; wait it out with real timers.
+        await new Promise((r) => setTimeout(r, 600))
         await flushPromises()
         const input = getInput(container)
         expect(input.getAttribute('aria-invalid')).toBe('true')
@@ -207,146 +215,25 @@ describe('MolSelList', () => {
         unmount()
     })
 
-    it('forwards molID to getSelDefs and shows "current (<sel>)" above all/none', async () => {
+    it('does not invoke validateSelection for empty / "*" values', async () => {
+        setupCm({ validateOk: false })
+        const { unmount } = mountTree(
+            <MolSelList sceneID={1} selectedSel="*" onSelectedSelChange={() => undefined} />,
+        )
+        await new Promise((r) => setTimeout(r, 600))
+        await flushPromises()
+        const validateCalls = mockCm.invokeService.mock.calls.filter((c: unknown[]) => c[0] === 'validateSelection')
+        expect(validateCalls.length).toBe(0)
+        unmount()
+    })
+
+    it('forwards molID to getSelDefs', async () => {
         setupCm({ selDefs: { scene: [], global: [], currentSel: 'chain.A' } })
-        const { container, unmount } = mountTree(
-            <MolSelList
-                sceneID={3}
-                molID={11}
-                selectedSel=""
-                onSelectedSelChange={() => undefined}
-            />
+        const { unmount } = mountTree(
+            <MolSelList sceneID={3} molID={11} selectedSel="" onSelectedSelChange={() => undefined} />,
         )
         await flushPromises()
         expect(mockCm.invokeService).toHaveBeenCalledWith('getSelDefs', { sceneId: 3, molId: 11 })
-        const presetGroup = getSelect(container).querySelector('optgroup[label="Preset"]')!
-        const labels = Array.from(presetGroup.querySelectorAll('option')).map((o) => o.textContent)
-        const values = Array.from(presetGroup.querySelectorAll('option')).map((o) => o.value)
-        expect(labels).toEqual(['current (chain.A)', 'all (*)', 'none'])
-        expect(values).toEqual(['chain.A', '*', ''])
-        unmount()
-    })
-
-    it('omits "current" when currentSel is not returned', async () => {
-        setupCm({ selDefs: { scene: [], global: [] } })
-        const { container, unmount } = mountTree(
-            <MolSelList sceneID={1} molID={11} selectedSel="" onSelectedSelChange={() => undefined} />
-        )
-        await flushPromises()
-        const presetGroup = getSelect(container).querySelector('optgroup[label="Preset"]')!
-        const labels = Array.from(presetGroup.querySelectorAll('option')).map((o) => o.textContent)
-        expect(labels).toEqual(['all (*)', 'none'])
-        unmount()
-    })
-
-    it('does not invoke validateSelection for empty / "*" values', async () => {
-        setupCm({ validateOk: false })
-        mountTree(
-            <MolSelList sceneID={1} selectedSel="*" onSelectedSelChange={() => undefined} />
-        )
-        await act(async () => { vi.advanceTimersByTime(600) })
-        await flushPromises()
-        const validateCalls = mockCm.invokeService.mock.calls.filter((c: any[]) => c[0] === 'validateSelection')
-        expect(validateCalls.length).toBe(0)
-    })
-
-    // ---- Selection Builder integration (enableBuilder opt-in) ----
-
-    function builderTrigger(): HTMLButtonElement | null {
-        return document.querySelector('button[aria-label="Build selection"]')
-    }
-
-    /** Open the builder and type "A" into the Property value field. */
-    async function openAndTypeChainA(): Promise<void> {
-        await act(async () => { builderTrigger()!.click() })
-        await flushPromises()
-        const valueInput = document.querySelector(
-            '.selbuilder-term-form input.bp5-input',
-        ) as HTMLInputElement
-        const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
-        await act(async () => {
-            setter.call(valueInput, 'A')
-            valueInput.dispatchEvent(new Event('input', { bubbles: true }))
-        })
-    }
-
-    /** Click a builder button by its visible label. */
-    function clickBuilderButton(text: string): void {
-        const btn = Array.from(
-            document.querySelectorAll('.selbuilder-popover button'),
-        ).find((b) => b.textContent?.trim() === text) as HTMLButtonElement
-        btn.click()
-    }
-
-    it('hides the builder trigger by default', async () => {
-        setupCm()
-        const { unmount } = mountTree(
-            <MolSelList sceneID={1} selectedSel="" onSelectedSelChange={() => undefined} />
-        )
-        await flushPromises()
-        expect(builderTrigger()).toBeNull()
-        unmount()
-    })
-
-    it('shows the builder trigger when enableBuilder is set', async () => {
-        setupCm()
-        const { unmount } = mountTree(
-            <MolSelList sceneID={1} selectedSel="" onSelectedSelChange={() => undefined} enableBuilder />
-        )
-        await flushPromises()
-        expect(builderTrigger()).not.toBeNull()
-        unmount()
-    })
-
-    it('replaces the native picker with the builder when enableBuilder is set', async () => {
-        setupCm({ selDefs: { scene: ['mySceneSel'], global: [] } })
-        // Default: native HTMLSelect picker present, no builder.
-        const off = mountTree(
-            <MolSelList sceneID={1} selectedSel="" onSelectedSelChange={() => undefined} />
-        )
-        await flushPromises()
-        expect(off.container.querySelector('select.bp5-html-select, .mol-sel-list-picker')).not.toBeNull()
-        expect(builderTrigger()).toBeNull()
-        off.unmount()
-        // enableBuilder: picker gone, builder trigger present.
-        const on = mountTree(
-            <MolSelList sceneID={1} selectedSel="" onSelectedSelChange={() => undefined} enableBuilder />
-        )
-        await flushPromises()
-        expect(on.container.querySelector('.mol-sel-list-picker')).toBeNull()
-        expect(builderTrigger()).not.toBeNull()
-        on.unmount()
-    })
-
-    it('Set syncs the term to onSelectedSelChange in real time', async () => {
-        setupCm()
-        const onChange = vi.fn()
-        const { unmount } = mountTree(
-            <MolSelList sceneID={1} selectedSel="" onSelectedSelChange={onChange} enableBuilder />
-        )
-        await flushPromises()
-        await openAndTypeChainA()
-        await act(async () => { clickBuilderButton('Set') })
-        await flushPromises()
-        expect(onChange).toHaveBeenLastCalledWith("chain 'A'")
-        await act(async () => { builderTrigger()!.click() }) // close
-        await flushPromises()
-        unmount()
-    })
-
-    it('Add composes "(current) or (term)" seeded from the text value', async () => {
-        setupCm()
-        const onChange = vi.fn()
-        const { unmount } = mountTree(
-            <MolSelList sceneID={1} selectedSel="chain 'X'" onSelectedSelChange={onChange} enableBuilder />
-        )
-        await flushPromises()
-        await openAndTypeChainA()
-        await act(async () => { clickBuilderButton('Add') })
-        await flushPromises()
-        expect(onChange).toHaveBeenLastCalledWith("(chain 'X') or (chain 'A')")
-        await act(async () => { builderTrigger()!.click() }) // close
-        await flushPromises()
         unmount()
     })
 })

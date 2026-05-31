@@ -4,20 +4,23 @@
  * coloring table.
  *
  * Replaces the plain `<input>` used in the selection column with a full
- * `MolSelList` (free-text InputGroup + dropdown picker with preset /
- * history / scene-def / global-def optgroups). The wrapper preserves the
- * Paint table's existing blur-commit semantics:
+ * `MolSelList` (free-text InputGroup + caret button opening a Named/History
+ * picker popover). The wrapper preserves the Paint table's existing
+ * blur-commit semantics:
  *
  *   - Keystrokes update a local `draft` state only; the worker is not
  *     touched until the user moves focus out of the cell.
- *   - Focus shifts *within* the cell (e.g. clicking the picker chevron
+ *   - Focus shifts *within* the cell (e.g. clicking the picker trigger
  *     while the input is focused) must NOT commit -- otherwise an
  *     in-progress edit would be flushed with the stale draft before the
  *     picker selection has updated it. We detect this by checking
  *     whether the blur's `relatedTarget` is contained in the cell.
+ *   - The picker menu renders in a portal *outside* the cell, so focus
+ *     moving into it (`.mol-sel-list-popover`) is also treated as staying
+ *     inside the edit -- otherwise opening the picker would prematurely
+ *     commit the draft.
  *   - Enter on the input commits and blurs (matches the other inline
- *     editors); Enter on the native `<select>` is left to the browser so
- *     it keeps the OS dropdown behaviour.
+ *     editors).
  *   - Successful commits push the value to the shared selection history
  *     (same store the `MolSelList` picker reads from).
  */
@@ -62,10 +65,14 @@ export const PaintSelCell: React.FC<PaintSelCellProps> = ({
     }, [value])
 
     const handleBlur = (e: React.FocusEvent<HTMLDivElement>): void => {
-        // Blur into a sibling inside the cell (typically the picker
-        // <select>) is not a real exit -- ignore so the in-progress draft
-        // is not committed prematurely.
-        if (e.currentTarget.contains(e.relatedTarget as Node | null)) return
+        const related = e.relatedTarget as HTMLElement | null
+        // Blur into a sibling inside the cell (e.g. the picker trigger) is not
+        // a real exit -- ignore so the in-progress draft is not committed
+        // prematurely.
+        if (e.currentTarget.contains(related)) return
+        // The picker menu renders in a portal outside the cell; focus moving
+        // into it is also "inside the edit", not a real exit.
+        if (related && related.closest('.mol-sel-list-popover')) return
         if (draft === value) return
         onCommit(draft)
         pushHistory(draft)
@@ -74,7 +81,7 @@ export const PaintSelCell: React.FC<PaintSelCellProps> = ({
     const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>): void => {
         if (e.key !== 'Enter') return
         const t = e.target as HTMLElement
-        // Let the native <select> handle Enter (open the dropdown / pick).
+        // Only the free-text input commits on Enter.
         if (t.tagName !== 'INPUT') return
         t.blur()
     }
