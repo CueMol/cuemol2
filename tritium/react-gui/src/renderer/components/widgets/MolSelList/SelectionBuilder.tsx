@@ -30,7 +30,9 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
-import { Button, ButtonGroup, HTMLSelect, InputGroup, SegmentedControl, Tag } from '@blueprintjs/core';
+import { Button, ButtonGroup, HTMLSelect, InputGroup, Popover } from '@blueprintjs/core';
+import { SegmentField } from '../form';
+import { useTheme } from '../../../contexts/ThemeContext';
 import type { ResolveValues } from './useSelectionValues';
 import { KEYWORDS, getKeywordDef } from './selectionGrammar';
 import type { BinaryOp, UnaryOp } from './selectionExpr';
@@ -42,9 +44,9 @@ import {
     canUndo,
     initBuilderState,
     selectTerm,
-    type TermSource,
 } from './selBuilderReducer';
-import { useSelHitCount, type GetHitCount, type HitCount } from './useSelHitCount';
+import { useSelHitCount, type GetHitCount } from './useSelHitCount';
+import { CountTag } from './CountTag';
 import { HistoryMenu, NamedSelMenu } from './SelMenus';
 
 /* --- Props --- */
@@ -71,41 +73,28 @@ export interface SelectionBuilderProps {
     disabled?: boolean;
 }
 
-/* --- Hit-count badge --- */
+/* --- Component --- */
 
 const VALUE_LIST_ID = 'selbuilder-value-list';
-
-/** Render a hit-count as a Tag, warning (red) when the selection is empty. */
-const CountTag: React.FC<{ count: HitCount }> = ({ count }) => {
-    if (count === undefined) return null;
-    if (count === 'loading') return <Tag minimal round className="selbuilder-count">...</Tag>;
-    if (count === null) return null;
-    return (
-        <Tag minimal round intent={count === 0 ? 'warning' : 'none'} className="selbuilder-count">
-            {count}
-        </Tag>
-    );
-};
-
-/* --- Component --- */
 
 /** Blueprint icon identifier (or element), as accepted by Button's `icon`. */
 type IconId = React.ComponentProps<typeof Button>['icon'];
 
 // Set-operation icons: import = load/overwrite the current with the term,
-// plus/minus = union/difference, intersection = the overlap.
-const BINARY_OPS: { op: BinaryOp; label: string; icon: IconId }[] = [
+// plus/minus = union/difference, intersection = the overlap. `full` is the
+// hover tooltip for an abbreviated label.
+const BINARY_OPS: { op: BinaryOp; label: string; full?: string; icon: IconId }[] = [
     { op: 'set', label: 'Set', icon: 'import' },
     { op: 'add', label: 'Add', icon: 'plus' },
-    { op: 'intersect', label: 'Intsec', icon: 'intersection' },
+    { op: 'intersect', label: 'Isec', full: 'Intersect', icon: 'intersection' },
     { op: 'sub', label: 'Sub', icon: 'minus' },
 ];
 
-const MODIFY_OPS: { op: UnaryOp; label: string }[] = [
+const MODIFY_OPS: { op: UnaryOp; label: string; full?: string }[] = [
     { op: 'not', label: 'Not' },
     { op: 'byres', label: 'Byres' },
-    { op: 'sidechain', label: 'Sidechain' },
-    { op: 'mainchain', label: 'Mainchain' },
+    { op: 'sidechain', label: 'Sidech', full: 'Sidechain' },
+    { op: 'mainchain', label: 'Mainch', full: 'Mainchain' },
 ];
 
 export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
@@ -121,6 +110,13 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
     disabled,
 }) => {
     const [state, dispatch] = useReducer(builderReducer, value, initBuilderState);
+
+    // Named/History term lists are shown in a Popover (portal) so a long list
+    // never pushes the Apply-term buttons off-screen. Theme class is needed
+    // because the portal is mounted outside the themed app root.
+    const [pickerOpen, setPickerOpen] = useState(false);
+    const { theme } = useTheme();
+    const portalClassName = theme === 'dark' ? 'bp5-dark' : '';
 
     const keywordDef = getKeywordDef(state.keyword);
     const term = selectTerm(state);
@@ -160,10 +156,6 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
             cancelled = true;
         };
     }, [state.source, keywordDef.autocomplete, resolveValues]);
-
-    // --- Hit counts (read-only probes) ---
-    const currentCount = useSelHitCount(getHitCount, state.current, true);
-    const termCount = useSelHitCount(getHitCount, term, true);
 
     // --- Define a named selection (StyleManager 'sel' def, not a disk file) ---
     const [defining, setDefining] = useState(false);
@@ -273,12 +265,9 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
 
     return (
         <div className={`selbuilder${disabled ? ' selbuilder--disabled' : ''}`}>
-            {/* 1. Current selection */}
+            {/* 1. Current selection -- no header row: the container's selection
+                text field (with its hit-count badge) is the current selection. */}
             <div className="selbuilder-block">
-                <div className="selbuilder-block-head type-eyebrow">
-                    <span>Current selection</span>
-                    <CountTag count={currentCount} />
-                </div>
                 <div className="selbuilder-modify-row">
                     <span className="type-label selbuilder-field-label">Modify</span>
                     <ButtonGroup className="selbuilder-modify-btns">
@@ -287,6 +276,7 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                                 key={m.op}
                                 small
                                 text={m.label}
+                                title={m.full ?? m.label}
                                 disabled={disabled || !canApplyUnary(state, m.op)}
                                 onClick={() => dispatch({ type: 'APPLY_UNARY', op: m.op })}
                             />
@@ -294,7 +284,7 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                     </ButtonGroup>
                 </div>
                 <div className="selbuilder-distance-row">
-                    <span className="type-label selbuilder-field-label">Distance</span>
+                    <span className="type-label selbuilder-field-label" title="Distance">Dist</span>
                     <InputGroup
                         className="selbuilder-distance"
                         value={state.distance}
@@ -377,13 +367,11 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
             {/* 2. Term */}
             <div className="selbuilder-block">
                 <div className="selbuilder-block-head type-eyebrow">Term</div>
-                <SegmentedControl
-                    small
-                    fill
+                <SegmentField
                     value={state.source}
-                    onValueChange={(v) => dispatch({ type: 'SET_SOURCE', source: v as TermSource })}
+                    onValueChange={(v) => dispatch({ type: 'SET_SOURCE', source: v })}
                     options={[
-                        { label: 'Property', value: 'property' },
+                        { label: 'Prop', value: 'property' },
                         { label: 'Named', value: 'named' },
                         { label: 'History', value: 'history' },
                     ]}
@@ -394,37 +382,72 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                             className="fk-select"
                             value={state.keyword}
                             disabled={disabled}
+                            title={keywordDef.full ?? keywordDef.label}
                             onChange={(e) =>
                                 dispatch({
                                     type: 'SET_KEYWORD',
                                     keyword: e.target.value as typeof state.keyword,
                                 })
                             }
-                            options={KEYWORDS.map((k) => ({ value: k.key, label: k.label }))}
-                        />
+                        >
+                            {KEYWORDS.map((k) => (
+                                <option key={k.key} value={k.key} title={k.full ?? k.label}>
+                                    {k.label}
+                                </option>
+                            ))}
+                        </HTMLSelect>
                         {valueInput}
                     </div>
                 )}
-                {state.source === 'named' && (
-                    <NamedSelMenu
-                        currentSel={currentSel}
-                        sceneDefs={sceneDefs}
-                        globalDefs={globalDefs}
-                        activeValue={state.picked}
-                        onPick={(v) => dispatch({ type: 'SET_PICKED', value: v })}
-                    />
+                {(state.source === 'named' || state.source === 'history') && (
+                    <Popover
+                        isOpen={pickerOpen}
+                        onInteraction={setPickerOpen}
+                        placement="bottom-start"
+                        portalClassName={portalClassName}
+                        fill
+                        disabled={disabled}
+                        content={
+                            <div className="selbuilder-term-popover">
+                                {state.source === 'named' ? (
+                                    <NamedSelMenu
+                                        currentSel={currentSel}
+                                        sceneDefs={sceneDefs}
+                                        globalDefs={globalDefs}
+                                        activeValue={state.picked}
+                                        onPick={(v) => {
+                                            dispatch({ type: 'SET_PICKED', value: v });
+                                            setPickerOpen(false);
+                                        }}
+                                        dismissOnPick
+                                    />
+                                ) : (
+                                    <HistoryMenu
+                                        history={history}
+                                        activeValue={state.picked}
+                                        onPick={(v) => {
+                                            dispatch({ type: 'SET_PICKED', value: v });
+                                            setPickerOpen(false);
+                                        }}
+                                        dismissOnPick
+                                    />
+                                )}
+                            </div>
+                        }
+                    >
+                        <Button
+                            fill
+                            alignText="left"
+                            rightIcon="caret-down"
+                            className="selbuilder-term-trigger"
+                            disabled={disabled}
+                            text={
+                                state.picked ||
+                                (state.source === 'named' ? 'Select named...' : 'Select history...')
+                            }
+                        />
+                    </Popover>
                 )}
-                {state.source === 'history' && (
-                    <HistoryMenu
-                        history={history}
-                        activeValue={state.picked}
-                        onPick={(v) => dispatch({ type: 'SET_PICKED', value: v })}
-                    />
-                )}
-                <div className="selbuilder-term-preview">
-                    <code>{term ?? '—'}</code>
-                    <CountTag count={termCount} />
-                </div>
             </div>
 
             {/* 3. Apply term */}
@@ -436,6 +459,7 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                             key={b.op}
                             op={b.op}
                             label={b.label}
+                            title={b.full ?? b.label}
                             icon={b.icon}
                             current={state.current}
                             term={term}
@@ -455,6 +479,8 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
 interface ApplyButtonProps {
     op: BinaryOp;
     label: string;
+    /** Hover tooltip (full label when abbreviated). */
+    title?: string;
     icon: IconId;
     current: string;
     term: string | null;
@@ -471,6 +497,7 @@ interface ApplyButtonProps {
 const ApplyButton: React.FC<ApplyButtonProps> = ({
     op,
     label,
+    title,
     icon,
     current,
     term,
@@ -485,6 +512,7 @@ const ApplyButton: React.FC<ApplyButtonProps> = ({
         <Button
             small
             icon={icon}
+            title={title ?? label}
             className="selbuilder-apply-btn"
             disabled={!applicable}
             onClick={onApply}

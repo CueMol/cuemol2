@@ -40,6 +40,8 @@ import {
 } from '../widgets/MolSelList/selHistory';
 import { SelectionBuilder } from '../widgets/MolSelList';
 import { useSelectionValues } from '../widgets/MolSelList/useSelectionValues';
+import { useSelHitCount } from '../widgets/MolSelList/useSelHitCount';
+import { CountTag } from '../widgets/MolSelList/CountTag';
 
 /* --- Props --- */
 
@@ -126,6 +128,11 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({
                 : undefined,
         [cm, activeSceneId, selectedMolId],
     );
+
+    // Hit count of the current selection expression, shown as a badge inside
+    // the selection text field (the builder no longer renders its own header
+    // row for this). selStr mirrors the builder's current selection.
+    const currentCount = useSelHitCount(getHitCount, selStr);
 
     const onSaveAs = useCallback(
         async (name: string, expr: string): Promise<boolean> => {
@@ -301,15 +308,18 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({
                     />
                     <div className="selection-text-row">
                         <Field label="Selection" className="selection-input-field">
-                            <TextField
-                                value={selStr}
-                                onChange={(v) => {
-                                    setSelStr(v);
-                                    if (errorMsg) setErrorMsg(null);
-                                }}
-                                placeholder="Input selection command"
-                                invalid={!isValid}
-                            />
+                            <div className="selection-input-with-count">
+                                <TextField
+                                    value={selStr}
+                                    onChange={(v) => {
+                                        setSelStr(v);
+                                        if (errorMsg) setErrorMsg(null);
+                                    }}
+                                    placeholder="Input selection command"
+                                    invalid={!isValid}
+                                />
+                                <CountTag count={currentCount} />
+                            </div>
                         </Field>
                         {errorMsg !== null && (
                             <div className="selection-error">{errorMsg}</div>

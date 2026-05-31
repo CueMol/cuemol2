@@ -24,7 +24,8 @@
  */
 
 import React, { useState, useCallback, useEffect } from "react";
-import { Icon, Button, SegmentedControl, Tag } from "@blueprintjs/core";
+import { Icon, Button, Tag } from "@blueprintjs/core";
+import { SegmentField } from "../widgets/form";
 
 import { PropertiesTab } from "../inspector/PropertiesTab";
 import { GenericTab } from "../inspector/GenericTab";
@@ -173,9 +174,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
         <>
           {/* ── Mode switcher ── */}
           <div className="inspector-mode-bar">
-            <SegmentedControl
-              small
-              fill
+            <SegmentField
               value={mode}
               onValueChange={handleModeChange}
               options={[

@@ -28,11 +28,10 @@ import {
     Button,
     ControlGroup,
     Popover,
-    SegmentedControl,
 } from '@blueprintjs/core';
 import { useCueMol } from '../../../hooks/useCueMol';
 import { useTheme } from '../../../contexts/ThemeContext';
-import { TextField } from '../form';
+import { TextField, SegmentField } from '../form';
 import { getHistory } from './selHistory';
 import { HistoryMenu, NamedSelMenu } from './SelMenus';
 
@@ -160,11 +159,9 @@ export const MolSelList: React.FC<MolSelListProps> = ({
 
     const pickerContent = (
         <div className="mol-sel-list-popover">
-            <SegmentedControl
-                small
-                fill
+            <SegmentField
                 value={source}
-                onValueChange={(v) => setSource(v as PickSource)}
+                onValueChange={setSource}
                 options={[
                     { label: 'Named', value: 'named' },
                     { label: 'History', value: 'history' },

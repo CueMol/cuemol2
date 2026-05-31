@@ -62,6 +62,18 @@ function setInputValue(input: HTMLInputElement, value: string): void {
     input.dispatchEvent(new Event('input', { bubbles: true }))
 }
 
+/**
+ * Select a Property keyword from the builder's keyword dropdown. The default
+ * keyword is `hierarchical`, so tests that exercise a single-value keyword
+ * (e.g. chain) switch to it explicitly to stay independent of the default.
+ */
+function selectKeyword(container: HTMLElement, key: string): void {
+    const select = container.querySelector('.selbuilder-property select') as HTMLSelectElement
+    const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')!.set!
+    setter.call(select, key)
+    select.dispatchEvent(new Event('change', { bubbles: true }))
+}
+
 function clickButtonByText(root: ParentNode, text: string): void {
     const btn = Array.from(root.querySelectorAll('button')).find(
         (b) => b.textContent?.trim() === text,
@@ -76,13 +88,16 @@ describe('SelectionBuilder', () => {
         const heads = Array.from(container.querySelectorAll('.selbuilder-block-head')).map((e) =>
             e.textContent?.trim(),
         )
-        expect(heads).toEqual(['Current selection', 'Term', 'Apply term'])
+        // Block 1 (current selection) has no header row -- the container's
+        // selection text field is the current selection.
+        expect(heads).toEqual(['Term', 'Apply term'])
         unmount()
     })
 
     it('composes space-separated syntax and Set makes it current', async () => {
         const { container, unmount } = mountTree(<Harness />)
         await flushPromises()
+        await act(async () => { selectKeyword(container, 'chain') })
         await act(async () => { setInputValue(termValueInput(container), 'A') })
         await act(async () => { clickButtonByText(container, 'Set') })
         await flushPromises()
@@ -93,6 +108,7 @@ describe('SelectionBuilder', () => {
     it('Add composes "(current) or (term)" seeded from value', async () => {
         const { container, unmount } = mountTree(<Harness initial="chain 'X'" />)
         await flushPromises()
+        await act(async () => { selectKeyword(container, 'chain') })
         await act(async () => { setInputValue(termValueInput(container), 'A') })
         await act(async () => { clickButtonByText(container, 'Add') })
         await flushPromises()
@@ -119,11 +135,12 @@ describe('SelectionBuilder', () => {
     it('Step back (undo) survives the emit round-trip', async () => {
         const { container, unmount } = mountTree(<Harness />)
         await flushPromises()
+        await act(async () => { selectKeyword(container, 'chain') })
         await act(async () => { setInputValue(termValueInput(container), 'A') })
         await act(async () => { clickButtonByText(container, 'Set') })
         await flushPromises()
         // Apply Mainchain by mistake, then step back.
-        await act(async () => { clickButtonByText(container, 'Mainchain') })
+        await act(async () => { clickButtonByText(container, 'Mainch') })
         await flushPromises()
         expect(current(container)).toBe("bymainch (chain 'A')")
         const undo = container.querySelector('button[aria-label="Step back"]') as HTMLButtonElement
@@ -138,12 +155,16 @@ describe('SelectionBuilder', () => {
         // loaded from default_style.xml; there is no hardcoded macro list.
         const { container, unmount } = mountTree(<Harness globalDefs={['protein']} />)
         await flushPromises()
+        // Switch the term source to Named, then open the picker popover (the
+        // list renders in a portal so a long list never pushes Apply down).
         await act(async () => { clickButtonByText(container, 'Named') })
+        await act(async () => { clickButtonByText(container, 'Select named...') })
         await flushPromises()
-        const protein = Array.from(container.querySelectorAll('.bp5-menu-item')).find(
+        const protein = Array.from(document.querySelectorAll('.bp5-menu-item')).find(
             (e) => e.textContent?.trim() === 'protein',
         ) as HTMLElement
         await act(async () => { protein.click() })
+        await flushPromises()
         await act(async () => { clickButtonByText(container, 'Set') })
         await flushPromises()
         expect(current(container)).toBe('protein')
@@ -153,6 +174,9 @@ describe('SelectionBuilder', () => {
     it('resolveValues feeds a datalist for autocomplete', async () => {
         const resolveValues = vi.fn(async () => ['A', 'B'])
         const { container, unmount } = mountTree(<Harness resolveValues={resolveValues} />)
+        await flushPromises()
+        // chain has an autocomplete category; the default keyword (hier) does not.
+        await act(async () => { selectKeyword(container, 'chain') })
         await flushPromises()
         const opts = Array.from(container.querySelectorAll('#selbuilder-value-list option')).map(
             (o) => (o as HTMLOptionElement).value,

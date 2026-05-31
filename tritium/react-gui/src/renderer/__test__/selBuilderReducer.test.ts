@@ -9,16 +9,19 @@ import {
     type BuilderState,
 } from '../components/widgets/MolSelList/selBuilderReducer'
 
+// The real default keyword is `hierarchical` (see initBuilderState); these
+// reducer-behaviour fixtures pin a single-value keyword (chain) so the term
+// composition is exercised independently of whatever the default happens to be.
 function withCurrent(current: string, over: Partial<BuilderState> = {}): BuilderState {
-    return { ...initBuilderState(current), ...over }
+    return { ...initBuilderState(current), keyword: 'chain', ...over }
 }
 
 describe('initBuilderState', () => {
-    it('seeds current and defaults to the property/chain source', () => {
+    it('seeds current and defaults to the property/hierarchical source', () => {
         const s = initBuilderState('chain A')
         expect(s.current).toBe('chain A')
         expect(s.source).toBe('property')
-        expect(s.keyword).toBe('chain')
+        expect(s.keyword).toBe('hierarchical')
     })
 })
 

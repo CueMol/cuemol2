@@ -27,6 +27,7 @@ label+control の UI (フォーム行・テキスト入力・select・numeric・
 | `SwitchField` | 真偽トグル (`inline` Field 内で使う) | Blueprint Switch |
 | `ColorField` | 色 (`CueColorField` の薄いラッパ) | - |
 | `ButtonRow` / `FormButton` | コンパクトボタンの行 / ボタン | 高 `--field-btn-h`, ラベル `--fs-base` |
+| `SegmentField` | モード/ソース切替 (`Named\|History` 等) | 高 `--field-btn-h`, ラベル `--fs-base` (= `FormButton` と同一, `.fk-segmented`) |
 
 **なぜカタログか (最重要)**: トークン (`--space-*` / `--ctrl-h-*`) は「どの値か」を統一するが、**値を選ぶ行為自体がサイズ選び**になり強制力にならない (typography の `.type-*` role がテキストで解決したのと同じ問題が、コントロール高・行・余白の軸に残っていた)。カタログコンポーネントは **size props を公開しない** ので、**同じコンポーネントを使えば必ず同じサイズ**になる。これが「コンポーネント追加のたびにサイズがおかしくなる」再発を仕組みで防ぐ唯一の方法。
 
@@ -48,8 +49,9 @@ label+control の UI (フォーム行・テキスト入力・select・numeric・
 | numeric | `.insp-numeric-input`(20) / `.snf-number`(20) | `NumericField` (20) |
 | switch | `.insp-switch` | `SwitchField` |
 | compact button | 20/22/24/26px がファイル毎 | `FormButton` (`--field-btn-h`) |
+| segmented control | `.inspector-mode-bar` の直書き override / 各所の生 `SegmentedControl` | `SegmentField` (`--field-btn-h`, `.fk-segmented`) |
 
-**済**: form-kit、Inspector `PropEditors`、`ObjectSelect`、`SelectionPane`/`SelectionBuilder`、`MolSelList`、`LogPanel`/`RenderPanel` ツールバー、catalog gallery (`DummyPane3` = activity bar の Component Catalog)。**残 (新規変更時にカタログへ寄せる)**: `RenderSettingsEditor` の直接 `.insp-*`、`SettingRow`(`.config-setting`)、`SliderNumericField`(`.snf-*`)、`_dialog.css` の 26px 入力 (高さは `--field-*` トークンに揃え済み)。
+**済**: form-kit、Inspector `PropEditors`/モード切替 (`SegmentField`)、`ObjectSelect`、`SelectionPane`/`SelectionBuilder`、`MolSelList` (Named/History 切替も `SegmentField`)、`LogPanel`/`RenderPanel` ツールバー、catalog gallery (`DummyPane3` = activity bar の Component Catalog)。**残 (新規変更時にカタログへ寄せる)**: `RenderSettingsEditor` の直接 `.insp-*`、`SettingRow`(`.config-setting`)、`SliderNumericField`(`.snf-*`)、`_dialog.css` の 26px 入力 (高さは `--field-*` トークンに揃え済み)。
 
 ---
 

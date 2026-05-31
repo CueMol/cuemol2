@@ -26,3 +26,5 @@ export { ColorField } from './ColorField';
 export type { ColorFieldProps } from './ColorField';
 export { ButtonRow, FormButton } from './ButtonRow';
 export type { ButtonRowProps } from './ButtonRow';
+export { SegmentField } from './SegmentField';
+export type { SegmentFieldProps, SegmentFieldOption } from './SegmentField';

@@ -80,27 +80,15 @@
   color: var(--text-secondary);
 }
 
-/* ── Mode switcher (SegmentedControl) ── */
+/* ── Mode switcher (SegmentField) ──
+ * The switcher itself (background / border / segment height / label scale) is
+ * the catalog SegmentField (`.fk-segmented` in `_form-kit.css`); only the bar
+ * container lives here. */
 .inspector-mode-bar {
   padding: var(--space-2) var(--space-4);
   flex-shrink: 0;
   background: var(--bg-panel-header);
   border-bottom: 1px solid var(--border-subtle);
-}
-
-/* Blueprint SegmentedControl overrides */
-.inspector-mode-bar .bp5-segmented-control {
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-}
-
-/* Compact segment buttons — keep the bar tight. */
-.inspector-mode-bar .bp5-segmented-control .bp5-button {
-  min-height: 20px;
-  padding-top: 0;
-  padding-bottom: 0;
-  font-size: var(--fs-base);
 }
 
 /* ── Scrollable body ── */

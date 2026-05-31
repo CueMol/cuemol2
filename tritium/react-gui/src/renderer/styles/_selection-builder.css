@@ -29,7 +29,7 @@
 .selbuilder {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
 .selbuilder--disabled {
@@ -45,6 +45,9 @@
    inset focus ring here so the highlight never overflows the tight rows. */
 .selbuilder .bp5-input-group .bp5-input {
   height: var(--field-h);
+  /* Match the catalog TextField (.fk-input) label scale. Without this the
+     inputs inherit Blueprint's default 14px and read larger than the SoT. */
+  font-size: var(--fs-lg);
 }
 
 .selbuilder .bp5-input-group .bp5-input:focus {
@@ -53,6 +56,19 @@
 
 .selbuilder .bp5-button {
   min-height: var(--field-btn-h);
+  /* Match the catalog FormButton (.fk-btn) label scale so builder buttons read
+     the same as the LogPanel / RenderPanel toolbar buttons. */
+  font-size: var(--fs-base);
+}
+
+/* Inset focus ring, mirroring the catalog button (.fk-btn). Blueprint's default
+   outset focus outline overflows the button box and overlaps neighbours in the
+   tight modify / apply grids (--space-1 gap); an inset ring stays within bounds
+   at any spacing. */
+.selbuilder .bp5-button:focus,
+.selbuilder .bp5-button:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 
 /* --- Blocks --- */
@@ -60,46 +76,21 @@
 .selbuilder-block {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-1);
 }
 
 /* Eyebrow section label, matching the app convention (uppercase + --ls-wide,
-   same as .selection-label / inspector / color-panel headings). The block-1
-   head also carries the current-selection hit-count badge on its right. */
+   same as .selection-label / inspector / color-panel headings). */
 .selbuilder-block-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-2);
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: var(--ls-wide);
 }
 
-/* --- Current selection / term preview --- */
-
-.selbuilder-current,
-.selbuilder-term-preview {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: var(--space-1) var(--space-3);
-  min-height: var(--field-h);
-}
-
-.selbuilder-current code,
-.selbuilder-term-preview code {
-  flex: 1 1 auto;
-  font-family: var(--font-mono);
-  font-size: var(--type-mono-fs);
-  line-height: var(--type-mono-lh);
-  color: var(--accent);
-  word-break: break-all;
-}
-
+/* Hit-count badge (shared with the SelectionPane current-selection badge). */
 .selbuilder-count {
   flex: 0 0 auto;
 }
@@ -135,10 +126,11 @@
   margin: 0;
 }
 
-/* Narrow numeric distance field -- fixed small width is a layout constant. */
+/* Narrow numeric distance field -- fixed small width is a layout constant.
+   Holds a short radius value (e.g. "5"), so half the former width is plenty. */
 .selbuilder-distance {
-  flex: 0 0 64px;
-  width: 64px;
+  flex: 0 0 32px;
+  width: 32px;
 }
 
 .selbuilder-current-actions {
@@ -181,6 +173,16 @@
 .selbuilder-sep {
   color: var(--text-secondary);
   font-weight: var(--fw-semibold);
+}
+
+/* Named/History term picker: trigger button shows the picked value; the list
+   lives in a floating Popover so it never pushes the Apply-term buttons down. */
+.selbuilder-term-trigger.bp5-button {
+  justify-content: space-between;
+}
+
+.selbuilder-term-popover {
+  min-width: 180px;
 }
 
 .selbuilder-menu {

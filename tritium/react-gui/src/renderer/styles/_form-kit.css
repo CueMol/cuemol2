@@ -211,12 +211,14 @@
   font-size: var(--fs-base);
 }
 
-/* Compact keyboard-focus ring (Blueprint's default outline is large and
-   overflows the tight form rows). */
+/* Compact keyboard-focus ring. Drawn INSET (inside the button box) so the
+   highlight never bleeds past the button edge -- an outset ring overflows and
+   overlaps neighbours once the row/grid gap is tight (--space-1). The inset
+   ring is spacing-independent: it stays within bounds at any gap. */
 .fk-btn.bp5-button:focus,
 .fk-btn.bp5-button:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 1px var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 
 .fk-btn-row {
@@ -224,4 +226,20 @@
   align-items: center;
   gap: var(--space-2);
   flex-wrap: wrap;
+}
+
+/* ── Segmented control (mode / source switcher) ── */
+.fk-segmented.bp5-segmented-control {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+/* Segment height + label scale match the catalog button (.fk-btn): single
+   source so a switcher reads the same as a button row. */
+.fk-segmented.bp5-segmented-control .bp5-button {
+  min-height: var(--field-btn-h);
+  padding-top: 0;
+  padding-bottom: 0;
+  font-size: var(--fs-base);
 }

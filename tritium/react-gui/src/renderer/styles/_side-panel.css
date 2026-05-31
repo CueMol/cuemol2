@@ -249,6 +249,19 @@
   gap: var(--space-2);
 }
 
+/* Selection input + hit-count badge on its right (the badge sits beside the
+   field, not inside it, so it never overflows the input box). */
+.selection-input-with-count {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.selection-input-with-count .fk-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 /* Inline validation message: body text in the danger colour. */
 .selection-error {
   flex-shrink: 0;

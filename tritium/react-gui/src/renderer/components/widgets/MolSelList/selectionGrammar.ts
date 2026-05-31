@@ -42,8 +42,10 @@ export type ValueKind =
 export interface KeywordDef {
     /** Stable key used in builder state. */
     key: Keyword;
-    /** Human-readable label shown in the keyword dropdown. */
+    /** Short label shown in the keyword dropdown. */
     label: string;
+    /** Full label shown as a hover tooltip when the short label is abbreviated. */
+    full?: string;
     /** Emitted selection keyword (e.g. `resi` -> `resid`). */
     emit: string;
     /** Value-input UI shape. */
@@ -56,19 +58,23 @@ export interface KeywordDef {
     allowNull?: boolean;
 }
 
-/** Ordered keyword definitions; drives the Property keyword dropdown. */
+/**
+ * Ordered keyword definitions; drives the Property keyword dropdown. Ordered by
+ * expected usage frequency (hier / chain / resid first), then the remaining
+ * keywords in their original order. Abbreviated labels carry a `full` tooltip.
+ */
 export const KEYWORDS: KeywordDef[] = [
-    { key: 'all', label: 'All', emit: 'all', valueKind: 'none', quote: false },
-    { key: 'none', label: 'None', emit: 'none', valueKind: 'none', quote: false },
-    { key: 'chain', label: 'Chain', emit: 'chain', valueKind: 'nameList', quote: true, autocomplete: 'chain' },
-    { key: 'resi', label: 'Residue index', emit: 'resid', valueKind: 'numList', quote: false },
-    { key: 'resn', label: 'Residue name', emit: 'resn', valueKind: 'nameList', quote: false, autocomplete: 'resname' },
-    { key: 'name', label: 'Atom name', emit: 'name', valueKind: 'nameList', quote: false, autocomplete: 'aname' },
+    { key: 'hierarchical', label: 'hier', full: 'Hierarchical', emit: '', valueKind: 'hierarchical', quote: false },
+    { key: 'chain', label: 'chain', emit: 'chain', valueKind: 'nameList', quote: true, autocomplete: 'chain' },
+    { key: 'resi', label: 'resid', full: 'Residue index', emit: 'resid', valueKind: 'numList', quote: false },
+    { key: 'all', label: 'all', emit: 'all', valueKind: 'none', quote: false },
+    { key: 'none', label: 'none', emit: 'none', valueKind: 'none', quote: false },
+    { key: 'resn', label: 'resn', full: 'Residue name', emit: 'resn', valueKind: 'nameList', quote: false, autocomplete: 'resname' },
+    { key: 'name', label: 'name', full: 'Atom name', emit: 'name', valueKind: 'nameList', quote: false, autocomplete: 'aname' },
     { key: 'elem', label: 'Element', emit: 'elem', valueKind: 'nameList', quote: false, autocomplete: 'elem' },
     { key: 'alt', label: 'Altloc', emit: 'alt', valueKind: 'nameList', quote: false, allowNull: true },
-    { key: 'bfac', label: 'B-factor', emit: 'bfac', valueKind: 'compare', quote: false },
-    { key: 'rprop', label: 'Residue prop', emit: 'rprop', valueKind: 'nameValue', quote: false },
-    { key: 'hierarchical', label: 'Hierarchical', emit: '', valueKind: 'hierarchical', quote: false },
+    { key: 'bfac', label: 'bfac', full: 'B-factor', emit: 'bfac', valueKind: 'compare', quote: false },
+    { key: 'rprop', label: 'rprop', full: 'Residue prop', emit: 'rprop', valueKind: 'nameValue', quote: false },
 ];
 
 /** Look up a keyword definition; falls back to the first entry. */

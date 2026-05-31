@@ -73,8 +73,8 @@ export function initBuilderState(current: string): BuilderState {
     return {
         current,
         source: 'property',
-        keyword: 'chain',
-        fields: defaultFields('chain'),
+        keyword: 'hierarchical',
+        fields: defaultFields('hierarchical'),
         picked: '',
         distance: DEFAULT_DISTANCE,
         past: [],

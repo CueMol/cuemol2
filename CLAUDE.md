@@ -80,7 +80,7 @@ core (@cuemol/core): C++ addon + auto-generated TypeScript wrappers
 ### React-GUI Coding Conventions
 
 **UI/UX・CSS・コンポーネント規約 (MUST)** — 規約は全て [`docs/migration/ui-style-guide.md`](docs/migration/ui-style-guide.md) に**集約**。UI/UX の記述をこの CLAUDE.md や他所に分散させない (新規規約はガイドへ追記)。新規 UI を書く前に必ず一読すること。要点:
-- **label+control UI は form-kit カタログで組む / サイズは選ばない (最重要)**: フォーム行・テキスト入力・select・numeric・switch・color・compact button・ツールバー類は `react-gui/src/renderer/components/widgets/form/` の `Field` / `FieldGroup` / `TextField` / `SelectField` / `NumericField` / `SwitchField` / `ColorField` / `FormButton` を使う。これらは size props を持たず、サイズの単一ソースは `_form-kit.css` ＋ `--field-*`/`--form-*` トークン。**コントロール高・行高・label gap・section spacing を consumer の CSS/inline `style` で指定しない**。無い部品は**先にカタログへ追加**してから使う。「コンポーネント追加のたびにサイズが崩れる」のを防ぐ核心規約。
+- **label+control UI は form-kit カタログで組む / サイズは選ばない (最重要)**: フォーム行・テキスト入力・select・numeric・switch・color・compact button・segmented control・ツールバー類は `react-gui/src/renderer/components/widgets/form/` の `Field` / `FieldGroup` / `TextField` / `SelectField` / `NumericField` / `SwitchField` / `ColorField` / `FormButton` / `SegmentField` を使う。これらは size props を持たず、サイズの単一ソースは `_form-kit.css` ＋ `--field-*`/`--form-*` トークン。**コントロール高・行高・label gap・section spacing を consumer の CSS/inline `style` で指定しない**。無い部品は**先にカタログへ追加**してから使う。「コンポーネント追加のたびにサイズが崩れる」のを防ぐ核心規約。
 - 色・余白・サイズ・角丸は `_variables.css` のトークン経由 (生 hex/px 禁止)。テキストは `.type-*` role で選ぶ (px 逆算しない)。構造は `.panel-header` / `.section-header` / `.list-row`。inline `style={{}}` は動的値のみ。
 - dark/light 両テーマで確認。検証: `cd tritium/react-gui && npm run lint:style` (または `task lint_tritium_style`)。新規追加でベースライン件数を増やさない。
 - 詳細 (トークン一覧・カタログ component 表・typography role・do/don't・移植チェックリスト) は ui-style-guide.md を見る。

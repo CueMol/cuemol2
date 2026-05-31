@@ -25,6 +25,7 @@ import {
   ColorField,
   ButtonRow,
   FormButton,
+  SegmentField,
 } from "../widgets/form";
 import { Listbox, ListRow } from "../widgets/list";
 import { MolSelList } from "../widgets/MolSelList";
@@ -63,6 +64,7 @@ export const DummyPane3: React.FC<DummyPane3Props> = ({
   const [opacity, setOpacity] = useState(80);
   const [filter, setFilter] = useState("");
   const [listSel, setListSel] = useState("3J3Q");
+  const [seg, setSeg] = useState("all");
 
   return (
     <div className="sp-pane">
@@ -154,6 +156,18 @@ export const DummyPane3: React.FC<DummyPane3Props> = ({
                   </ListRow>
                 ))}
               </Listbox>
+            </FieldGroup>
+
+            <FieldGroup title="Segmented control">
+              <SegmentField
+                value={seg}
+                onValueChange={setSeg}
+                options={[
+                  { label: "All", value: "all" },
+                  { label: "Backbone", value: "backbone" },
+                  { label: "Sidechain", value: "sidechain" },
+                ]}
+              />
             </FieldGroup>
 
             <FieldGroup title="Buttons">
