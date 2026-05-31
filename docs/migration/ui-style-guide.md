@@ -1,12 +1,55 @@
-# React-GUI UI Style Guide (design tokens)
+# React-GUI UI Style Guide (UI/UX 規約の単一ソース)
 
-tritium/react-gui のUIスタイルは **デザイントークン** (CSS custom properties) に一元化されている。トークンは全て `tritium/react-gui/src/renderer/styles/_variables.css` に定義され、dark がデフォルト (`:root`)、light は `:root[data-theme="light"]` で上書きされる。
+このガイドが **tritium/react-gui の UI/UX・CSS・コンポーネント規約の単一ソース**。`CLAUDE.md` 等は要点とこのファイルへのリンクだけを持つ — UI/UX に関する記述を他所に分散させない (新しい規約はここに追記する)。UXP→tritium 移植や新規UI追加のたびに参照し、場当たり的なハードコード・サイズの作り直しを防ぐこと。
 
-このガイドは [`../../CLAUDE.md`](../../CLAUDE.md) の「スタイル・デザイントークン (MUST)」の詳細版。UXP→tritium 移植や新規UI追加のたびに参照し、場当たり的なハードコードを防ぐこと。
+UIスタイルは **デザイントークン** (CSS custom properties) に一元化されている。トークンは全て `tritium/react-gui/src/renderer/styles/_variables.css` に定義され、dark がデフォルト (`:root`)、light は `:root[data-theme="light"]` で上書きされる。
+
+**まず §0 (form-kit カタログ) を読むこと** — label+control の UI は必ずカタログで組み、サイズを選ばない。これが「コンポーネント追加のたびにサイズがおかしくなる」のを防ぐ最重要規約。
 
 > **原則1 (生値を書かない)**: 生の値 (hex / px / pt / em) を直接書かない。必ずトークン経由で参照する。新しい値が要るときは、まず `_variables.css` にトークンを足してから参照する (1コンポーネントに直書きしない)。命名は why-based (`--text-error` 系。`--text-red` のような値ベース名を新設しない)。
 >
 > **原則2 (意味で選ぶ / MOST IMPORTANT)**: テキストやサイズは「目的の見た目 (11px に見せたい)」から逆算してトークンを選ばない。**UI 上の役割 (role) で選ぶ**。`--fs-base` を「11px が欲しいから」ではなく「これはフォームの label だから `.type-label`」と決める。これが本来の目的 ── 同じ役割の UI が常に同じ見た目になり統一感が出る。生値を書かないこと自体は手段にすぎない (数字を消すだけで role を無視すると、`size1..6` を px に当てはめるのと同じで無意味)。typography は §意味的 typography role、構造 (行・ヘッダ) は `.panel-header` / `.section-header` / `.list-row` を使う。
+
+---
+
+## 0. 新規UIの組み方 — form-kit カタログ (MUST / まずこれ)
+
+label+control の UI (フォーム行・テキスト入力・select・numeric・switch・color・compact button・ツールバーのボタン/フィルタ入力) は、**必ず `components/widgets/form/` のカタログコンポーネントで組む**。生の Blueprint `Button`/`InputGroup`/`HTMLSelect` を独自 CSS で並べない。
+
+| コンポーネント | 用途 | canonical サイズ (source) |
+|---|---|---|
+| `Field` | label + control の1行 (stack / `inline`) | 行 padding `--field-row-pad`, label↔control gap `--field-label-gap`, label は `.type-label` |
+| `FieldGroup` | Field の縦スタック / セクション (任意で `title`) | 行間 `--form-row-gap`, section 間 `--form-section-gap` |
+| `SectionHeader` | サブセクション見出し | `.section-header` role (高 `--ctrl-h-md`) |
+| `TextField` | 単一行テキスト入力 (任意 `leftIcon` = フィルタ/検索) | 高 `--field-h` (22px) |
+| `SelectField` | ドロップダウン (`<option>` を children に) | 高 `--field-h` (22px) |
+| `NumericField` | 数値 (任意で slider・`unit`) | 入力高 `--field-h-sm` (20px) |
+| `SwitchField` | 真偽トグル (`inline` Field 内で使う) | Blueprint Switch |
+| `ColorField` | 色 (`CueColorField` の薄いラッパ) | - |
+| `ButtonRow` / `FormButton` | コンパクトボタンの行 / ボタン | 高 `--field-btn-h`, ラベル `--fs-base` |
+
+**なぜカタログか (最重要)**: トークン (`--space-*` / `--ctrl-h-*`) は「どの値か」を統一するが、**値を選ぶ行為自体がサイズ選び**になり強制力にならない (typography の `.type-*` role がテキストで解決したのと同じ問題が、コントロール高・行・余白の軸に残っていた)。カタログコンポーネントは **size props を公開しない** ので、**同じコンポーネントを使えば必ず同じサイズ**になる。これが「コンポーネント追加のたびにサイズがおかしくなる」再発を仕組みで防ぐ唯一の方法。
+
+**ルール**:
+- コントロール高・行高・label gap・section spacing を **consumer の CSS や inline `style` で指定しない**。サイズの単一ソースは `styles/_form-kit.css` ＋ `_variables.css` の `--field-*` / `--form-*` トークンのみ。
+- 必要なコントロールがカタログに無ければ、**先にカタログへ 1 つ追加** (`_form-kit.css` にサイズを 1 定義) してから使う。consumer 側でサイズを決めない。
+- サイズを変えたい時は **トークンか `_form-kit.css`** を 1 箇所編集する。consumer の CSS は触らない。
+- フォーカスリング等の見た目もカタログ (`.fk-*`) が所有する。生 Blueprint コントロールを使うと大きいフォーカス枠や caret ズレが出る — `.fk-select`/`.fk-input` を付けて単一ソースを再利用する。
+- dense な専用 widget (例: `SelectionBuilder`) で component 化が難しい箇所のみ、**スコープした CSS から `--field-*` トークンと `.fk-*` クラスを参照** する (生 px 禁止)。
+- `_form-kit.css` は lint の `ignoreFiles` (`_variables.css` と同じく primitive 置き場)。サイズ一貫性は lint ではなくカタログ component が担保する。
+
+### 既存UIの対応 (インベントリ → canonical)
+
+| 論理コンポーネント | 旧・分裂実装 | canonical |
+|---|---|---|
+| labeled 行 | `.insp-prop-row` / `.selection-row` / `.snf-row` / `.config-setting` | `Field` |
+| text input | `.insp-input`(22) / dialog `.bp5-input`(26) | `TextField` (22) |
+| select | `.insp-select`(22) / `.selection-mol-select`(28) | `SelectField` (22) |
+| numeric | `.insp-numeric-input`(20) / `.snf-number`(20) | `NumericField` (20) |
+| switch | `.insp-switch` | `SwitchField` |
+| compact button | 20/22/24/26px がファイル毎 | `FormButton` (`--field-btn-h`) |
+
+**済**: form-kit、Inspector `PropEditors`、`ObjectSelect`、`SelectionPane`/`SelectionBuilder`、`MolSelList`、`LogPanel`/`RenderPanel` ツールバー、catalog gallery (`DummyPane3` = activity bar の Component Catalog)。**残 (新規変更時にカタログへ寄せる)**: `GenericTab`/`RenderSettingsEditor` の直接 `.insp-*`、`SettingRow`(`.config-setting`)、`SliderNumericField`(`.snf-*`)、`_dialog.css` の 26px 入力 (高さは `--field-*` トークンに揃え済み)。
 
 ---
 
@@ -91,6 +134,7 @@ tritium/react-gui のUIスタイルは **デザイントークン** (CSS custom 
 | リスト/ツリー行高さ | `--row-h` | 22px (`.list-row` / tree 行) |
 | icon | `--icon-sm` `--icon-md` `--icon-lg` | 12 / 14 / 18 px |
 | 角丸 | `--radius-sm` `--radius-md` `--radius-lg` | 2 / 3 / 4 px |
+| form-kit (§0 カタログ専用) | `--field-h` `--field-h-sm` `--field-label-gap` `--field-row-pad` `--form-row-gap` `--form-section-gap` `--field-btn-h` | 22 / 20px ほか。**`_form-kit.css` だけが参照**。consumer は直接使わずカタログ component を使う |
 
 既定値: panel header (Explorer / Inspector / Settings / Log のタイトルバー) = `--panel-header-h` (30px)。パネル内の sub-section header は意図的に小さく `--ctrl-h-md` (24px)。icon の既定は `--icon-md` (14px)。
 
@@ -133,6 +177,7 @@ color: 'var(--accent)'
 
 UXP機能を tritium に起こす / 新規コンポーネントを追加するときに確認:
 
+- [ ] **label+control の UI は §0 の form-kit カタログ (`Field`/`TextField`/`SelectField`/…) で組んだか** (生 Blueprint コントロール＋独自サイズ CSS を書いていないか)。コントロール高・行高・label gap・section spacing を consumer 側で指定していないか。無い部品は先にカタログへ追加したか
 - [ ] 色はすべて `var(--bg-*|--text-*|--accent*|--border*)` 経由か (生 hex / `Colors.*` / `--pt-*` を使っていないか)
 - [ ] 余白・gap は `var(--space-*)` か
 - [ ] 高さは `var(--ctrl-h-*)` / `--panel-header-h` / `--row-h` か (新しい高さを直書きしていないか)
@@ -151,7 +196,7 @@ UXP機能を tritium に起こす / 新規コンポーネントを追加する�
 `cd tritium/react-gui && npm run lint:style` (または `cd build_scripts && task lint_tritium_style`)。
 
 - 設定: `tritium/react-gui/.stylelintrc.json`。`color-no-hex` + `declaration-strict-value` (color 系 / padding / margin / gap / font-size / border-radius は `var()` 必須)。
-- `_variables.css` のみ除外 (生値の唯一の置き場)。
+- `_variables.css` と `_form-kit.css` を除外 (トークン/カタログ primitive の置き場)。
 - **warn-only** (build はブロックしない)。意図的な例外は `/* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- <理由> */` で明示。
 
 > **lint の限界 (現状) と今後**: `declaration-strict-value` は「`var()` を使っているか」しか見ず、**「role を選んだか / 生 `--fs-*` を px 逆算で使ったか」「`line-height` が生値か」は検出できない** (= 原則2 は lint で守れない。レビューと本ガイドで担保する)。`line-height` を検査対象に追加し、component CSS での生 `--fs-*` 直参照を warn する強化は、未移行ファイル (現状 `font-size: var(--fs-*)` が約 118 箇所、生 `line-height` が数箇所) を role へ一掃した後にまとめて入れる予定 (今入れると警告が殺到しベースライン方針と矛盾するため保留)。
