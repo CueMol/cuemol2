@@ -13,6 +13,7 @@
  */
 
 import React, { useState } from "react";
+import { Icon } from "@blueprintjs/core";
 import { SectionHeader } from "./SectionHeader";
 import {
   Field,
@@ -25,8 +26,12 @@ import {
   ButtonRow,
   FormButton,
 } from "../widgets/form";
+import { Listbox, ListRow } from "../widgets/list";
 import { MolSelList } from "../widgets/MolSelList";
 import { SliderNumericField } from "../widgets/SliderNumericField";
+
+/** Sample rows for the Listbox showcase. */
+const LISTBOX_ITEMS = ["1CRN", "3J3Q", "Water", "Ligand"];
 
 /* ─── Props ─── */
 
@@ -57,6 +62,7 @@ export const DummyPane3: React.FC<DummyPane3Props> = ({
   const [molSel, setMolSel] = useState("*");
   const [opacity, setOpacity] = useState(80);
   const [filter, setFilter] = useState("");
+  const [listSel, setListSel] = useState("3J3Q");
 
   return (
     <div className="sp-pane">
@@ -133,6 +139,21 @@ export const DummyPane3: React.FC<DummyPane3Props> = ({
                 max={100}
                 unit="%"
               />
+            </FieldGroup>
+
+            <FieldGroup title="Listbox (list / tree row)">
+              <Listbox>
+                {LISTBOX_ITEMS.map((item) => (
+                  <ListRow
+                    key={item}
+                    selected={listSel === item}
+                    onClick={() => setListSel(item)}
+                  >
+                    <Icon icon="cube" size={14} />
+                    <span>{item}</span>
+                  </ListRow>
+                ))}
+              </Listbox>
             </FieldGroup>
 
             <FieldGroup title="Buttons">

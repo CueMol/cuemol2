@@ -214,6 +214,13 @@
   --form-row-gap: var(--space-1);      /* gap between rows in a FieldGroup */
   --form-section-gap: var(--space-3);  /* gap between form sections */
   --field-btn-h: var(--ctrl-h-sm);     /* compact form button height */
+
+  /* ── Listbox / list-tree rows (single source for styles/_list-kit.css) ──
+     Row height reuses --row-h (22px). hover/selected reuse --bg-hover /
+     --bg-active / --accent. Only _list-kit.css references the two below; list
+     UIs compose the list-kit role classes / <ListRow>, never re-choose these. */
+  --list-row-pad-x: var(--space-3);    /* row horizontal padding */
+  --list-row-gap: var(--space-2);      /* icon -> label gap in a row */
 }
 
 /* ─── Light Theme ─── */

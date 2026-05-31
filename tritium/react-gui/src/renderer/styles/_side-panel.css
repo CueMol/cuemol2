@@ -154,8 +154,12 @@
   background: var(--border-subtle);
 }
 
-/* ─── Blueprint Tree Overrides (Scene & MolStruct) ─── */
-/* NOTE: the left inset lives on the container so Blueprint's depth-based
+/* ─── Scene & MolStruct trees ─── */
+/* Shared row metrics (height / hover / selected / caret / icon / label) live in
+ * `_list-kit.css` keyed on `.listbox-tree`; both trees carry that class. Only
+ * tree-SPECIFIC layout stays here.
+ *
+ * NOTE: the left inset lives on the container so Blueprint's depth-based
  * padding (`.bp5-tree-node-content-<depth>`, +23px per level) still applies
  * to nested rows. Overriding `padding-left` on `.bp5-tree-node-content`
  * directly would flatten the indentation. */
@@ -163,11 +167,6 @@
 .mol-tree {
   padding: var(--space-1) 0 var(--space-1) var(--space-2);
   background: transparent;
-}
-
-.scene-tree .bp5-tree-node,
-.mol-tree .bp5-tree-node {
-  min-height: 0;
 }
 
 /* Disable Blueprint Collapse animation in the mol-tree so chain /
@@ -189,69 +188,7 @@
   animation: none !important;
 }
 
-/* Blueprint-rendered tree rows: the "row" role, referenced via tokens since
-   we cannot put the .type-row / .list-row class on Blueprint's element. */
-.scene-tree .bp5-tree-node-content,
-.mol-tree .bp5-tree-node-content {
-  height: var(--row-h);
-  padding-right: var(--space-3);
-  cursor: pointer;
-  font-size: var(--type-row-fs);
-  line-height: var(--type-row-lh);
-  color: var(--text-primary);
-  transition: background 0.1s;
-}
-
-.scene-tree .bp5-tree-node-content:hover,
-.mol-tree .bp5-tree-node-content:hover {
-  background: var(--bg-hover);
-}
-
-.scene-tree .bp5-tree-node.bp5-tree-node-selected > .bp5-tree-node-content,
-.mol-tree .bp5-tree-node.bp5-tree-node-selected > .bp5-tree-node-content {
-  background: var(--bg-active) !important;
-  color: var(--accent);
-}
-
-.scene-tree .bp5-tree-node-caret,
-.mol-tree .bp5-tree-node-caret {
-  color: var(--text-muted) !important;
-  min-width: 20px;
-}
-
-.scene-tree .bp5-tree-node-caret:hover,
-.mol-tree .bp5-tree-node-caret:hover {
-  color: var(--text-secondary) !important;
-}
-
-.scene-tree .bp5-tree-node-caret-none,
-.mol-tree .bp5-tree-node-caret-none {
-  min-width: 20px;
-}
-
-.scene-tree .bp5-tree-node-icon,
-.mol-tree .bp5-tree-node-icon {
-  color: var(--text-secondary);
-}
-
-.scene-tree .bp5-tree-node.bp5-tree-node-selected > .bp5-tree-node-content .bp5-tree-node-icon,
-.mol-tree .bp5-tree-node.bp5-tree-node-selected > .bp5-tree-node-content .bp5-tree-node-icon {
-  color: var(--accent);
-}
-
-.scene-tree .bp5-tree-node-label,
-.mol-tree .bp5-tree-node-label {
-  font-size: var(--type-row-fs);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.scene-tree .bp5-tree-node-secondary-label,
-.mol-tree .bp5-tree-node-secondary-label {
-  display: flex;
-  align-items: center;
-}
+/* (Shared tree row metrics moved to `_list-kit.css` `.listbox-tree`.) */
 
 /* ─── Scene-tree DnD drop indicator ─── */
 /* The draggable label span fills the Blueprint label cell; the indicator

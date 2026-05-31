@@ -106,17 +106,7 @@
 }
 
 /*
- * List / tree row. Fixed-height clickable row with .type-row text and a
- * hover highlight. Use for selectable list and tree items.
+ * List / tree row roles (`.list-row` / `.list-table*` / `.listbox-tree`) live
+ * in `styles/_list-kit.css` -- the single source for list/tree row metrics.
+ * Use the list-kit role classes or the <ListRow>/<Listbox> components.
  */
-.list-row {
-  display: flex;
-  align-items: center;
-  height: var(--row-h);
-  color: var(--text-primary);
-  cursor: pointer;
-}
-
-.list-row:hover {
-  background: var(--bg-hover);
-}

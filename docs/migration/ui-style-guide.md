@@ -49,7 +49,25 @@ label+control の UI (フォーム行・テキスト入力・select・numeric・
 | switch | `.insp-switch` | `SwitchField` |
 | compact button | 20/22/24/26px がファイル毎 | `FormButton` (`--field-btn-h`) |
 
-**済**: form-kit、Inspector `PropEditors`、`ObjectSelect`、`SelectionPane`/`SelectionBuilder`、`MolSelList`、`LogPanel`/`RenderPanel` ツールバー、catalog gallery (`DummyPane3` = activity bar の Component Catalog)。**残 (新規変更時にカタログへ寄せる)**: `GenericTab`/`RenderSettingsEditor` の直接 `.insp-*`、`SettingRow`(`.config-setting`)、`SliderNumericField`(`.snf-*`)、`_dialog.css` の 26px 入力 (高さは `--field-*` トークンに揃え済み)。
+**済**: form-kit、Inspector `PropEditors`、`ObjectSelect`、`SelectionPane`/`SelectionBuilder`、`MolSelList`、`LogPanel`/`RenderPanel` ツールバー、catalog gallery (`DummyPane3` = activity bar の Component Catalog)。**残 (新規変更時にカタログへ寄せる)**: `RenderSettingsEditor` の直接 `.insp-*`、`SettingRow`(`.config-setting`)、`SliderNumericField`(`.snf-*`)、`_dialog.css` の 26px 入力 (高さは `--field-*` トークンに揃え済み)。
+
+---
+
+## 0.5. listbox (list / tree 行) — list-kit (MUST)
+
+選択可能なリスト・ツリー行 (scene tree, mol struct tree, inspector generic tab, named-color list 等) は、**行高・水平 padding・icon gap・hover/selected を `styles/_list-kit.css` の単一ソースに統一**する。行高は `--row-h`(22px)、padding は `--list-row-pad-x`、hover=`--bg-hover`、selected=`--bg-active`+`--accent` (font は `.type-row` role)。**行高や hover/selected を consumer 側で直書きしない**。
+
+listbox はフォームと違い**描画基盤が3種**あり単一コンポーネントに統一できないので、基盤ごとに同じトークンを読む role クラスで揃える:
+
+| 基盤 | 使うもの | 備考 |
+|---|---|---|
+| flex (自前 React リスト) | `<Listbox>` + `<ListRow selected>` (`components/widgets/list/`) | size props 無し。`.list-row .type-row` を出す |
+| HTML `<table>` | `.list-table` + `<tr class="list-table-row">`、選択は `.is-selected` | 行高/hover/selected を list-kit が供給。zebra・セル境界等は consumer 固有 (例: `.insp-gt-row`) |
+| Blueprint `<Tree>` | Tree の `className` に **`listbox-tree`** を足す | Blueprint 注入要素 (`.bp5-tree-node-content`) に list-kit がトークンを当てる。indent は Blueprint の depth padding に委ねる (`.bp5-tree-node-content` の `padding-left` を直接上書きしない) |
+
+**例外**: color swatch テーブル (`_color-panel.css`) は、色見本セル上で背景ハイライトが読めないため hover/selected を **outline 方式**で残す (SoT 公認の例外)。
+
+`_list-kit.css` は lint `ignoreFiles` (トークン/role primitive の置き場)。行の見栄え統一は list-kit が担保する。
 
 ---
 
@@ -178,6 +196,7 @@ color: 'var(--accent)'
 UXP機能を tritium に起こす / 新規コンポーネントを追加するときに確認:
 
 - [ ] **label+control の UI は §0 の form-kit カタログ (`Field`/`TextField`/`SelectField`/…) で組んだか** (生 Blueprint コントロール＋独自サイズ CSS を書いていないか)。コントロール高・行高・label gap・section spacing を consumer 側で指定していないか。無い部品は先にカタログへ追加したか
+- [ ] **list / tree 行は §0.5 の list-kit で揃えたか** (flex=`<ListRow>`、table=`.list-table-row`+`.is-selected`、Blueprint Tree=`listbox-tree` クラス)。行高・hover/selected を直書きしていないか
 - [ ] 色はすべて `var(--bg-*|--text-*|--accent*|--border*)` 経由か (生 hex / `Colors.*` / `--pt-*` を使っていないか)
 - [ ] 余白・gap は `var(--space-*)` か
 - [ ] 高さは `var(--ctrl-h-*)` / `--panel-header-h` / `--row-h` か (新しい高さを直書きしていないか)
@@ -196,7 +215,7 @@ UXP機能を tritium に起こす / 新規コンポーネントを追加する�
 `cd tritium/react-gui && npm run lint:style` (または `cd build_scripts && task lint_tritium_style`)。
 
 - 設定: `tritium/react-gui/.stylelintrc.json`。`color-no-hex` + `declaration-strict-value` (color 系 / padding / margin / gap / font-size / border-radius は `var()` 必須)。
-- `_variables.css` と `_form-kit.css` を除外 (トークン/カタログ primitive の置き場)。
+- `_variables.css` / `_form-kit.css` / `_list-kit.css` を除外 (トークン/カタログ primitive の置き場)。
 - **warn-only** (build はブロックしない)。意図的な例外は `/* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- <理由> */` で明示。
 
 > **lint の限界 (現状) と今後**: `declaration-strict-value` は「`var()` を使っているか」しか見ず、**「role を選んだか / 生 `--fs-*` を px 逆算で使ったか」「`line-height` が生値か」は検出できない** (= 原則2 は lint で守れない。レビューと本ガイドで担保する)。`line-height` を検査対象に追加し、component CSS での生 `--fs-*` 直参照を warn する強化は、未移行ファイル (現状 `font-size: var(--fs-*)` が約 118 箇所、生 `line-height` が数箇所) を role へ一掃した後にまとめて入れる予定 (今入れると警告が殺到しベースライン方針と矛盾するため保留)。

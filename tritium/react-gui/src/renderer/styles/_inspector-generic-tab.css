@@ -110,28 +110,17 @@
   opacity: 0.6;
 }
 
-/* ── Rows — ScenePane tree metrics ── */
-.insp-gt-row {
-  cursor: pointer;
-  height: 22px;
-}
+/* ── Rows ──
+ * Row height / hover / selected come from list-kit (`.list-table-row`,
+ * applied alongside `.insp-gt-row` in GenericTab). Only generic-tab-specific
+ * styling lives here. */
 
 /* Zebra striping: even rows are a shade *darker* than the surface
- * (var(--bg-base)) so text contrast is kept or improved, never reduced. */
-.insp-gt-row:nth-child(even) {
+ * (var(--bg-base)) so text contrast is kept or improved, never reduced.
+ * Suppressed on hover/selected so the list-kit highlight (defined in an
+ * earlier-imported file) always wins regardless of cascade order. */
+.insp-gt-row:nth-child(even):not(:hover):not(.is-selected) {
   background: var(--bg-base);
-}
-
-.insp-gt-row:hover {
-  background: var(--bg-hover);
-}
-
-.insp-gt-row.selected {
-  background: var(--bg-active);
-}
-
-.insp-gt-row.selected td {
-  color: var(--accent);
 }
 
 /* Read-only rows — readable but visibly secondary (italic name). */
@@ -139,7 +128,7 @@
   font-style: italic;
 }
 
-.insp-gt-row.readonly:not(.selected) td {
+.insp-gt-row.readonly:not(.is-selected) td {
   color: var(--text-secondary);
 }
 
