@@ -139,7 +139,13 @@
   --type-eyebrow-fs: var(--fs-base);
   --type-eyebrow-lh: var(--lh-tight);
   --type-eyebrow-fw: var(--fw-semibold);
-  /* Form / control label */
+  /* Top-level group / section label inside a pane (first-letter caps, NOT
+     uppercased). Heavier than a field label so a section heading reads as one
+     hierarchy level above the fields it groups. Pair with --ls-wide. */
+  --type-group-label-fs: var(--fs-base);
+  --type-group-label-lh: var(--lh-tight);
+  --type-group-label-fw: var(--fw-semibold);
+  /* Form / control label (one level below a group label) */
   --type-label-fs: var(--fs-base);
   --type-label-lh: var(--lh-tight);
   --type-label-fw: var(--fw-medium);

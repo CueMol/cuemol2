@@ -22,18 +22,10 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-    Button,
-    ButtonGroup,
-    Icon,
-    Menu,
-    MenuItem,
-    Popover,
-    Tooltip,
-} from '@blueprintjs/core';
+import { Icon } from '@blueprintjs/core';
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol';
 import { ObjectSelect, objectFilters } from '../widgets/ObjectSelect';
-import { Field, TextField } from '../widgets/form';
+import { FieldSection, TextField } from '../widgets/form';
 import {
     getHistory,
     pushHistory,
@@ -49,6 +41,8 @@ interface SelectionPaneProps {
     cm: AsyncCueMol | null;
     /** Active scene UID, or undefined when no scene is active. */
     activeSceneId: number | undefined;
+    /** Active mol-view UID -- required for the Center action. */
+    activeMolViewId?: number | undefined;
     collapsed?: boolean;
     onToggleCollapse?: () => void;
 }
@@ -65,6 +59,7 @@ const VALIDATE_SKIP = new Set(['', '*', 'none']);
 export const SelectionPane: React.FC<SelectionPaneProps> = ({
     cm,
     activeSceneId,
+    activeMolViewId,
     collapsed,
     onToggleCollapse,
 }) => {
@@ -203,40 +198,23 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({
             });
     }, [cm, canApply, activeSceneId, selectedMolId, selStr]);
 
-    const onClear = useCallback(() => {
-        setSelStr('');
-        setErrorMsg(null);
-    }, []);
-
-    // Refresh history just before the picker opens, in case another
-    // pane (MolSelList instance) appended something while we were idle.
-    const onHistoryOpening = useCallback(() => {
-        setHistoryItems(getHistory());
-    }, []);
-
-    const onPickHistory = useCallback((value: string) => {
-        setSelStr(value);
-        setErrorMsg(null);
-    }, []);
-
-    const historyMenu = (
-        <Menu>
-            {historyItems.length === 0 ? (
-                <MenuItem text="(no history)" disabled />
-            ) : (
-                historyItems.map((entry) => (
-                    <MenuItem
-                        key={entry}
-                        text={entry}
-                        onClick={() => onPickHistory(entry)}
-                    />
-                ))
-            )}
-        </Menu>
-    );
+    // Center the active view on the current selection (reuses the same worker
+    // service as MolStructPane's Center action).
+    const canCenter = canApply && activeMolViewId !== undefined;
+    const onCenter = useCallback(() => {
+        if (!cm || !canCenter) return;
+        cm.invokeService('centerMolSelection', {
+            sceneId: activeSceneId!,
+            viewId: activeMolViewId!,
+            molId: selectedMolId!,
+            selStr,
+        }).catch((err: unknown) => {
+            console.warn('centerMolSelection failed:', err);
+        });
+    }, [cm, canCenter, activeSceneId, activeMolViewId, selectedMolId, selStr]);
 
     return (
-        <div className="sp-pane">
+        <div className="sp-pane selection-pane">
             <div
                 className={`sp-section-header ${onToggleCollapse ? 'collapsible' : ''}`}
                 onClick={onToggleCollapse}
@@ -252,62 +230,24 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({
                     <Icon icon="select" size={14} className="section-icon" />
                     <span className="section-title">Selection</span>
                 </div>
-                <div
-                    className="sp-section-header-actions"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <ButtonGroup minimal>
-                        <Tooltip content="Select" placement="bottom" compact>
-                            <Button
-                                minimal
-                                small
-                                icon={<Icon icon="select" size={14} />}
-                                className="section-action-btn"
-                                disabled={!canApply}
-                                onClick={onSelect}
-                            />
-                        </Tooltip>
-                        <Tooltip content="Clear input" placement="bottom" compact>
-                            <Button
-                                minimal
-                                small
-                                icon={<Icon icon="eraser" size={14} />}
-                                className="section-action-btn"
-                                disabled={selStr.length === 0}
-                                onClick={onClear}
-                            />
-                        </Tooltip>
-                        <Popover
-                            content={historyMenu}
-                            onOpening={onHistoryOpening}
-                            placement="bottom-end"
-                        >
-                            <Tooltip content="History" placement="bottom" compact>
-                                <Button
-                                    minimal
-                                    small
-                                    icon={<Icon icon="history" size={14} />}
-                                    className="section-action-btn"
-                                />
-                            </Tooltip>
-                        </Popover>
-                    </ButtonGroup>
-                </div>
             </div>
             {!collapsed && (
                 <div className="sp-pane-fill">
-                    <ObjectSelect
-                        cm={cm}
-                        sceneId={activeSceneId}
-                        label="Molecule"
-                        filter={objectFilters.molCoord}
-                        selectedId={selectedMolId}
-                        onChange={setSelectedMolId}
-                        emptyText="(no molecules)"
-                        fallbackName={(m) => `Mol ${m.uid}`}
-                    />
+                    <FieldSection title="Molecule" className="object-select-section">
+                        <ObjectSelect
+                            cm={cm}
+                            sceneId={activeSceneId}
+                            label="Molecule"
+                            filter={objectFilters.molCoord}
+                            selectedId={selectedMolId}
+                            onChange={setSelectedMolId}
+                            emptyText="(no molecules)"
+                            fallbackName={(m) => `Mol ${m.uid}`}
+                            hideLabel
+                        />
+                    </FieldSection>
                     <div className="selection-text-row">
-                        <Field label="Selection" className="selection-input-field">
+                        <FieldSection title="Selection" className="selection-input-field">
                             <div className="selection-input-with-count">
                                 <TextField
                                     value={selStr}
@@ -320,10 +260,10 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({
                                 />
                                 <CountTag count={currentCount} />
                             </div>
-                        </Field>
-                        {errorMsg !== null && (
-                            <div className="selection-error">{errorMsg}</div>
-                        )}
+                            {errorMsg !== null && (
+                                <div className="selection-error">{errorMsg}</div>
+                            )}
+                        </FieldSection>
                         <SelectionBuilder
                             value={selStr}
                             onEmit={onBuilderEmit}
@@ -334,6 +274,10 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({
                             resolveValues={resolveValues}
                             getHitCount={getHitCount}
                             onSaveAs={onSaveAs}
+                            onSelect={onSelect}
+                            onCenter={onCenter}
+                            canSelect={canApply}
+                            canCenter={canCenter}
                             disabled={cm === null || activeSceneId === undefined}
                         />
                     </div>

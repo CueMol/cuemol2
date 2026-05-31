@@ -34,6 +34,15 @@
   letter-spacing: var(--ls-wide);
 }
 
+/* Top-level group / section label inside a pane (e.g. "Molecule", "Term").
+   One hierarchy level above .type-label; first-letter caps, never uppercased. */
+.type-group-label {
+  font-size: var(--type-group-label-fs);
+  line-height: var(--type-group-label-lh);
+  font-weight: var(--type-group-label-fw);
+  letter-spacing: var(--ls-wide);
+}
+
 .type-label {
   font-size: var(--type-label-fs);
   line-height: var(--type-label-lh);

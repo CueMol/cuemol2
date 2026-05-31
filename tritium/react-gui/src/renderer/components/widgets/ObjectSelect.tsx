@@ -64,6 +64,12 @@ interface Props {
     emptyText?: string
     /** Fallback display name when `item.name` is the empty string. */
     fallbackName?: (item: SceneObjectEntry) => string
+    /**
+     * Render only the dropdown (no `Field` label row), for placement inside a
+     * `FieldSection` whose title already provides the label. `label` is still
+     * used as the accessible name.
+     */
+    hideLabel?: boolean
 }
 
 export const ObjectSelect: React.FC<Props> = ({
@@ -71,6 +77,7 @@ export const ObjectSelect: React.FC<Props> = ({
     selectedId, onChange,
     emptyText = '(no items)',
     fallbackName,
+    hideLabel = false,
 }) => {
     const [allItems, setAllItems] = useState<SceneObjectEntry[]>([])
     const fetchToken = useRef(0)
@@ -153,24 +160,31 @@ export const ObjectSelect: React.FC<Props> = ({
         [onChange],
     )
 
+    const select = (
+        <SelectField
+            value={selectedId ?? ''}
+            onChange={handleChange}
+            disabled={items.length === 0}
+            aria-label={label}
+        >
+            {items.length === 0 ? (
+                <option value="">{emptyText}</option>
+            ) : (
+                items.map((it) => (
+                    <option key={it.uid} value={it.uid}>
+                        {it.name || fallbackName?.(it) || `Obj ${it.uid}`}
+                    </option>
+                ))
+            )}
+        </SelectField>
+    )
+
+    // Bare dropdown (no Field label) for use inside a FieldSection.
+    if (hideLabel) return <div className="object-select">{select}</div>
+
     return (
         <Field label={label} className="object-select">
-            <SelectField
-                value={selectedId ?? ''}
-                onChange={handleChange}
-                disabled={items.length === 0}
-                aria-label={label}
-            >
-                {items.length === 0 ? (
-                    <option value="">{emptyText}</option>
-                ) : (
-                    items.map((it) => (
-                        <option key={it.uid} value={it.uid}>
-                            {it.name || fallbackName?.(it) || `Obj ${it.uid}`}
-                        </option>
-                    ))
-                )}
-            </SelectField>
+            {select}
         </Field>
     )
 }

@@ -85,12 +85,13 @@ describe('SelectionBuilder', () => {
     it('renders the three blocks inline', async () => {
         const { container, unmount } = mountTree(<Harness />)
         await flushPromises()
-        const heads = Array.from(container.querySelectorAll('.selbuilder-block-head')).map((e) =>
+        const heads = Array.from(container.querySelectorAll('.fk-field-section-title')).map((e) =>
             e.textContent?.trim(),
         )
-        // Block 1 (current selection) has no header row -- the container's
-        // selection text field is the current selection.
-        expect(heads).toEqual(['Term', 'Apply term'])
+        // The action toolbar has no header (the selection text field is the
+        // current selection). Term (binary ops) and Modify (unary ops) are the
+        // two sibling FieldSections (Term first); Apply is nested under Term.
+        expect(heads).toEqual(['Term', 'Modify'])
         unmount()
     })
 

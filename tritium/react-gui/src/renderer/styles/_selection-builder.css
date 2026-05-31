@@ -29,7 +29,11 @@
 .selbuilder {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  /* One section gap for every top-level group, shared with the pane's
+     sp-pane-fill / selection-text-row containers, so the action toolbar and the
+     Term / Modify FieldSections sit at the same rhythm as the Molecule /
+     Selection sections above them -- no per-section tuning. */
+  gap: var(--form-section-gap);
 }
 
 .selbuilder--disabled {
@@ -71,24 +75,9 @@
   box-shadow: inset 0 0 0 1px var(--accent);
 }
 
-/* --- Blocks --- */
-
-.selbuilder-block {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-/* Eyebrow section label, matching the app convention (uppercase + --ls-wide,
-   same as .selection-label / inspector / color-panel headings). */
-.selbuilder-block-head {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: var(--ls-wide);
-}
+/* Term / Modify are now form-kit FieldSections (title = .type-group-label,
+   spacing owned by the .selbuilder container gap); no bespoke block / heading
+   styles live here anymore. */
 
 /* Hit-count badge (shared with the SelectionPane current-selection badge). */
 .selbuilder-count {
@@ -201,7 +190,15 @@
   min-height: var(--ctrl-h-md);
 }
 
-/* --- Apply term --- */
+/* --- Apply (nested under Term) --- */
+
+/* Apply is a child of the Term block (label + button grid), not a sibling
+   block, so its "Apply" sub-label reads as belonging to the term above it. */
+.selbuilder-apply {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
 
 /* 2x2 grid so each button has room for its icon + label + hit-count badge
    (a single 4-up row is too narrow and the badge overflows). */

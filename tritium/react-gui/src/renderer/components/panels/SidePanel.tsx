@@ -320,6 +320,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           <SelectionPane
             cm={cm}
             activeSceneId={activeSceneId}
+            activeMolViewId={activeMolViewId}
             collapsed={collapsed}
             onToggleCollapse={onToggle}
           />

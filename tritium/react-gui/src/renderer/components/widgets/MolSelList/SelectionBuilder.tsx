@@ -31,7 +31,7 @@
 
 import React, { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 import { Button, ButtonGroup, HTMLSelect, InputGroup, Popover } from '@blueprintjs/core';
-import { SegmentField } from '../form';
+import { SegmentField, FieldSection } from '../form';
 import { useTheme } from '../../../contexts/ThemeContext';
 import type { ResolveValues } from './useSelectionValues';
 import { KEYWORDS, getKeywordDef } from './selectionGrammar';
@@ -70,6 +70,14 @@ export interface SelectionBuilderProps {
     getHitCount?: GetHitCount;
     /** Persist the current selection under a name ("Define name..."). */
     onSaveAs?: (name: string, expr: string) => Promise<boolean> | void;
+    /** Apply the current selection to the molecule (container action). */
+    onSelect?: () => void;
+    /** Center the active view on the current selection (container action). */
+    onCenter?: () => void;
+    /** Enable the Select button (container: a molecule is available). */
+    canSelect?: boolean;
+    /** Enable the Center button (container: molecule + an active view). */
+    canCenter?: boolean;
     disabled?: boolean;
 }
 
@@ -107,6 +115,10 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
     resolveValues,
     getHitCount,
     onSaveAs,
+    onSelect,
+    onCenter,
+    canSelect,
+    canCenter,
     disabled,
 }) => {
     const [state, dispatch] = useReducer(builderReducer, value, initBuilderState);
@@ -265,49 +277,29 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
 
     return (
         <div className={`selbuilder${disabled ? ' selbuilder--disabled' : ''}`}>
-            {/* 1. Current selection -- no header row: the container's selection
-                text field (with its hit-count badge) is the current selection. */}
-            <div className="selbuilder-block">
-                <div className="selbuilder-modify-row">
-                    <span className="type-label selbuilder-field-label">Modify</span>
-                    <ButtonGroup className="selbuilder-modify-btns">
-                        {MODIFY_OPS.map((m) => (
-                            <Button
-                                key={m.op}
-                                small
-                                text={m.label}
-                                title={m.full ?? m.label}
-                                disabled={disabled || !canApplyUnary(state, m.op)}
-                                onClick={() => dispatch({ type: 'APPLY_UNARY', op: m.op })}
-                            />
-                        ))}
-                    </ButtonGroup>
-                </div>
-                <div className="selbuilder-distance-row">
-                    <span className="type-label selbuilder-field-label" title="Distance">Dist</span>
-                    <InputGroup
-                        className="selbuilder-distance"
-                        value={state.distance}
-                        disabled={disabled}
-                        onChange={(e) => dispatch({ type: 'SET_DISTANCE', value: e.target.value })}
-                        placeholder="0"
-                    />
-                    <span className="type-caption selbuilder-unit">{'Å'}</span>
-                    <Button
-                        small
-                        text="Around"
-                        disabled={disabled || !canApplyUnary(state, 'around')}
-                        onClick={() => dispatch({ type: 'APPLY_UNARY', op: 'around' })}
-                    />
-                    <Button
-                        small
-                        text="Expand"
-                        disabled={disabled || !canApplyUnary(state, 'expand')}
-                        onClick={() => dispatch({ type: 'APPLY_UNARY', op: 'expand' })}
-                    />
-                </div>
-                <div className="selbuilder-current-actions">
+            {/* Action toolbar for the current selection (no heading -- the
+                container's selection text field is the current selection). A
+                direct child of .selbuilder so it shares the section gap. */}
+            <div className="selbuilder-current-actions">
                     <ButtonGroup>
+                        <Button
+                            small
+                            minimal
+                            icon="select"
+                            title="Select atoms (apply to molecule)"
+                            aria-label="Select atoms"
+                            disabled={disabled || !canSelect}
+                            onClick={onSelect}
+                        />
+                        <Button
+                            small
+                            minimal
+                            icon="locate"
+                            title="Center view on selection"
+                            aria-label="Center view on selection"
+                            disabled={disabled || !canCenter}
+                            onClick={onCenter}
+                        />
                         <Button
                             small
                             minimal
@@ -362,11 +354,10 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                         />
                     )}
                 </div>
-            </div>
 
-            {/* 2. Term */}
-            <div className="selbuilder-block">
-                <div className="selbuilder-block-head type-eyebrow">Term</div>
+            {/* Term: build a term and apply it via binary set operations.
+                Placed above Modify (the unary transforms). */}
+            <FieldSection title="Term">
                 <SegmentField
                     value={state.source}
                     onValueChange={(v) => dispatch({ type: 'SET_SOURCE', source: v })}
@@ -448,28 +439,70 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                         />
                     </Popover>
                 )}
-            </div>
 
-            {/* 3. Apply term */}
-            <div className="selbuilder-block">
-                <div className="selbuilder-block-head type-eyebrow">Apply term</div>
-                <div className="selbuilder-apply-row">
-                    {BINARY_OPS.map((b) => (
-                        <ApplyButton
-                            key={b.op}
-                            op={b.op}
-                            label={b.label}
-                            title={b.full ?? b.label}
-                            icon={b.icon}
-                            current={state.current}
-                            term={term}
-                            getHitCount={getHitCount}
-                            enabled={!disabled}
-                            onApply={() => dispatch({ type: 'APPLY_BINARY', op: b.op })}
-                        />
-                    ))}
+                {/* Apply the term into the current selection (nested under Term). */}
+                <div className="selbuilder-apply">
+                    <span className="type-label selbuilder-field-label">Apply</span>
+                    <div className="selbuilder-apply-row">
+                        {BINARY_OPS.map((b) => (
+                            <ApplyButton
+                                key={b.op}
+                                op={b.op}
+                                label={b.label}
+                                title={b.full ?? b.label}
+                                icon={b.icon}
+                                current={state.current}
+                                term={term}
+                                getHitCount={getHitCount}
+                                enabled={!disabled}
+                                onApply={() => dispatch({ type: 'APPLY_BINARY', op: b.op })}
+                            />
+                        ))}
+                    </div>
                 </div>
-            </div>
+            </FieldSection>
+
+            {/* Modify: unary transforms on the current selection. A sibling
+                section of Term (binary ops), placed below it. */}
+            <FieldSection title="Modify">
+                <div className="selbuilder-modify-row">
+                    <ButtonGroup className="selbuilder-modify-btns">
+                        {MODIFY_OPS.map((m) => (
+                            <Button
+                                key={m.op}
+                                small
+                                text={m.label}
+                                title={m.full ?? m.label}
+                                disabled={disabled || !canApplyUnary(state, m.op)}
+                                onClick={() => dispatch({ type: 'APPLY_UNARY', op: m.op })}
+                            />
+                        ))}
+                    </ButtonGroup>
+                </div>
+                <div className="selbuilder-distance-row">
+                    <span className="type-label selbuilder-field-label" title="Distance">Dist</span>
+                    <InputGroup
+                        className="selbuilder-distance"
+                        value={state.distance}
+                        disabled={disabled}
+                        onChange={(e) => dispatch({ type: 'SET_DISTANCE', value: e.target.value })}
+                        placeholder="0"
+                    />
+                    <span className="type-caption selbuilder-unit">{'Å'}</span>
+                    <Button
+                        small
+                        text="Around"
+                        disabled={disabled || !canApplyUnary(state, 'around')}
+                        onClick={() => dispatch({ type: 'APPLY_UNARY', op: 'around' })}
+                    />
+                    <Button
+                        small
+                        text="Expand"
+                        disabled={disabled || !canApplyUnary(state, 'expand')}
+                        onClick={() => dispatch({ type: 'APPLY_UNARY', op: 'expand' })}
+                    />
+                </div>
+            </FieldSection>
         </div>
     );
 };

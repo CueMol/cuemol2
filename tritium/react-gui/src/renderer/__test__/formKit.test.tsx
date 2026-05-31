@@ -25,6 +25,7 @@ vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
 import {
     Field,
     FieldGroup,
+    FieldSection,
     TextField,
     SelectField,
     SwitchField,
@@ -76,6 +77,33 @@ describe('form-kit catalog', () => {
         )
         expect(container.querySelector('.fk-field-group')).not.toBeNull()
         expect(container.querySelector('.section-header')?.textContent).toBe('Section')
+        unmount()
+    })
+
+    it('FieldSection emits the section class + a group-label-role title', () => {
+        const { container, unmount } = mountTree(
+            <FieldSection title="Term">
+                <span>body</span>
+            </FieldSection>,
+        )
+        expect(container.querySelector('.fk-field-section')).not.toBeNull()
+        const title = container.querySelector('.fk-field-section-title') as HTMLElement
+        expect(title?.textContent).toBe('Term')
+        // The title carries the group-label typography role (single source for
+        // the top-level label look) -- not a bespoke per-pane style.
+        expect(title.classList.contains('type-group-label')).toBe(true)
+        expectNoInlineSizing(container)
+        unmount()
+    })
+
+    it('FieldSection without a title renders no head', () => {
+        const { container, unmount } = mountTree(
+            <FieldSection>
+                <span>body</span>
+            </FieldSection>,
+        )
+        expect(container.querySelector('.fk-field-section')).not.toBeNull()
+        expect(container.querySelector('.fk-field-section-title')).toBeNull()
         unmount()
     })
 

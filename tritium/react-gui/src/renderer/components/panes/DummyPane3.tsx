@@ -18,6 +18,7 @@ import { SectionHeader } from "./SectionHeader";
 import {
   Field,
   FieldGroup,
+  FieldSection,
   TextField,
   SelectField,
   NumericField,
@@ -77,6 +78,20 @@ export const DummyPane3: React.FC<DummyPane3Props> = ({
       {!collapsed && (
         <div className="sp-pane-fill">
           <div className="sp-pane-scroll catalog-gallery">
+            <FieldGroup title="Label hierarchy (FieldSection vs Field)">
+              <FieldSection title="Molecule">
+                <SelectField value={select} onChange={setSelect}>
+                  <option value="ribbon">1CRN</option>
+                  <option value="cpk">3J3Q</option>
+                </SelectField>
+              </FieldSection>
+              <FieldSection title="Term">
+                <Field label="Dist">
+                  <TextField value={text} onChange={setText} />
+                </Field>
+              </FieldSection>
+            </FieldGroup>
+
             <FieldGroup title="Text & Select">
               <Field label="TextField">
                 <TextField value={text} onChange={setText} placeholder="value" />

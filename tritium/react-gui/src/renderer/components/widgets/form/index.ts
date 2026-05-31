@@ -12,6 +12,8 @@ export { Field } from './Field';
 export type { FieldProps } from './Field';
 export { FieldGroup } from './FieldGroup';
 export type { FieldGroupProps } from './FieldGroup';
+export { FieldSection } from './FieldSection';
+export type { FieldSectionProps } from './FieldSection';
 export { SectionHeader } from './SectionHeader';
 export type { SectionHeaderProps } from './SectionHeader';
 export { TextField } from './TextField';

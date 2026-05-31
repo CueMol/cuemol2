@@ -54,6 +54,29 @@
   margin-top: var(--form-section-gap);
 }
 
+/* ── Field section (top-level labelled group; see FieldSection.tsx) ──
+ * Title -> content gap is owned here; the gap BETWEEN sibling sections comes
+ * from the parent container's `gap` (set it to --form-section-gap), so a whole
+ * pane's sections share one spacing value with no per-section tuning. */
+.fk-field-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--field-label-gap);
+  min-width: 0;
+}
+
+.fk-field-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.fk-field-section-title {
+  color: var(--text-secondary);
+}
+
 /* ── Text input ── */
 .fk-input.bp5-input-group .bp5-input,
 .fk-input.bp5-input-group input {

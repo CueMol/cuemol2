@@ -18,9 +18,10 @@ label+control の UI (フォーム行・テキスト入力・select・numeric・
 
 | コンポーネント | 用途 | canonical サイズ (source) |
 |---|---|---|
-| `Field` | label + control の1行 (stack / `inline`) | 行 padding `--field-row-pad`, label↔control gap `--field-label-gap`, label は `.type-label` |
-| `FieldGroup` | Field の縦スタック / セクション (任意で `title`) | 行間 `--form-row-gap`, section 間 `--form-section-gap` |
-| `SectionHeader` | サブセクション見出し | `.section-header` role (高 `--ctrl-h-md`) |
+| `FieldSection` | **pane 内の最上位グループ** (`title` = グループ見出し + 任意の中身) | title は `.type-group-label` role, section 間 gap は親 container の `gap: --form-section-gap` |
+| `Field` | label + control の1行 (stack / `inline`) — **下位ラベル** | 行 padding `--field-row-pad`, label↔control gap `--field-label-gap`, label は `.type-label` |
+| `FieldGroup` | Field の縦スタック / セクション (任意で `title` → 重い `SectionHeader` バー) | 行間 `--form-row-gap`, section 間 `--form-section-gap` |
+| `SectionHeader` | サブセクション見出し**バー** (背景tint+下線, 大文字) | `.section-header` role (高 `--ctrl-h-md`) |
 | `TextField` | 単一行テキスト入力 (任意 `leftIcon` = フィルタ/検索) | 高 `--field-h` (22px) |
 | `SelectField` | ドロップダウン (`<option>` を children に) | 高 `--field-h` (22px) |
 | `NumericField` | 数値 (任意で slider・`unit`) | 入力高 `--field-h-sm` (20px) |
@@ -30,6 +31,8 @@ label+control の UI (フォーム行・テキスト入力・select・numeric・
 | `SegmentField` | モード/ソース切替 (`Named\|History` 等) | 高 `--field-btn-h`, ラベル `--fs-base` (= `FormButton` と同一, `.fk-segmented`) |
 
 **なぜカタログか (最重要)**: トークン (`--space-*` / `--ctrl-h-*`) は「どの値か」を統一するが、**値を選ぶ行為自体がサイズ選び**になり強制力にならない (typography の `.type-*` role がテキストで解決したのと同じ問題が、コントロール高・行・余白の軸に残っていた)。カタログコンポーネントは **size props を公開しない** ので、**同じコンポーネントを使えば必ず同じサイズ**になる。これが「コンポーネント追加のたびにサイズがおかしくなる」再発を仕組みで防ぐ唯一の方法。
+
+**ラベルの階層 (これも component で強制 / 微調整しない)**: pane 内のラベルは2階層。**最上位グループ** (例: `Molecule` / `Selection` / `Term` / `Modify`) は **`FieldSection` の `title`** で出す → `.type-group-label` role (頭文字のみ大文字・semibold・`--ls-wide`)。**下位ラベル** (section 内の行ラベル, 例: `Dist` / `Apply`) は `Field` の label か `.type-label`。section 間の余白は **親 container に `gap: var(--form-section-gap)` を 1 回指定**するだけ (FieldSection 自身は margin を持たない) → 全グループが同一リズムになり、weight/大文字/letter-spacing/spacing を **consumer 側で個別調整しない**。「最上位かそうでないか」は `FieldSection` か `Field` かの**選択だけ**で決まる。
 
 **ルール**:
 - コントロール高・行高・label gap・section spacing を **consumer の CSS や inline `style` で指定しない**。サイズの単一ソースは `styles/_form-kit.css` ＋ `_variables.css` の `--field-*` / `--form-*` トークンのみ。
@@ -51,7 +54,7 @@ label+control の UI (フォーム行・テキスト入力・select・numeric・
 | compact button | 20/22/24/26px がファイル毎 | `FormButton` (`--field-btn-h`) |
 | segmented control | `.inspector-mode-bar` の直書き override / 各所の生 `SegmentedControl` | `SegmentField` (`--field-btn-h`, `.fk-segmented`) |
 
-**済**: form-kit、Inspector `PropEditors`/モード切替 (`SegmentField`)、`ObjectSelect`、`SelectionPane`/`SelectionBuilder`、`MolSelList` (Named/History 切替も `SegmentField`)、`LogPanel`/`RenderPanel` ツールバー、catalog gallery (`DummyPane3` = activity bar の Component Catalog)。**残 (新規変更時にカタログへ寄せる)**: `RenderSettingsEditor` の直接 `.insp-*`、`SettingRow`(`.config-setting`)、`SliderNumericField`(`.snf-*`)、`_dialog.css` の 26px 入力 (高さは `--field-*` トークンに揃え済み)。
+**済**: form-kit、Inspector `PropEditors`/モード切替 (`SegmentField`)、`ObjectSelect`、`SelectionPane`/`SelectionBuilder` (最上位グループは `FieldSection`, 下位は `Field`)、`MolSelList` (Named/History 切替も `SegmentField`)、`LogPanel`/`RenderPanel` ツールバー、catalog gallery (`DummyPane3` = activity bar の Component Catalog)。**残 (新規変更時にカタログへ寄せる)**: `RenderSettingsEditor` の直接 `.insp-*`、`SettingRow`(`.config-setting`)、`SliderNumericField`(`.snf-*`)、`_dialog.css` の 26px 入力 (高さは `--field-*` トークンに揃え済み)。
 
 ---
 

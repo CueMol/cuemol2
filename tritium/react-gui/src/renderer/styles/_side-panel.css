@@ -28,6 +28,9 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  /* Theme the Allotment inter-pane separator (a 1px line at the top of each
+     non-first pane) so it reads as a clean VSCode-style section divider. */
+  --separator-border: var(--border);
 }
 
 /* ─── Side-Panel Pane (each Allotment child) ─── */
@@ -38,7 +41,9 @@
   overflow: hidden;
 }
 
-/* Section header – fixed at top of each pane */
+/* Section header -- fixed at top of each pane (VSCode-style section title:
+ * blends with the sidebar background, no bottom rule; the section divider is
+ * the 1px Allotment separator drawn above each non-first pane). */
 .sp-section-header {
   display: flex;
   align-items: center;
@@ -53,10 +58,14 @@
   text-transform: uppercase;
   letter-spacing: var(--ls-wide);
   color: var(--text-secondary);
-  background: var(--bg-panel-header);
-  border-bottom: 1px solid var(--border-subtle);
+  background: transparent;
   user-select: none;
   flex-shrink: 0;
+}
+
+/* Subtle hover feedback for the collapsible (click-to-toggle) headers. */
+.sp-section-header.collapsible:hover {
+  background: var(--bg-hover);
 }
 
 .sp-section-header-left {
@@ -149,10 +158,11 @@
   gap: var(--space-3);
 }
 
-/* ─── Side-Panel Allotment sash styling ─── */
-.side-panel-content .sash-container .sash {
-  background: var(--border-subtle);
-}
+/* ─── Side-Panel Allotment sash ───
+ * The resize handle stays transparent (inherits the base .sash rule); the
+ * visible divider is the 1px Allotment separator above each pane. Colouring the
+ * 8px-tall sash here previously produced a thick band that overlapped the
+ * section header top and made the title look vertically off-centre. */
 
 /* ─── Scene & MolStruct trees ─── */
 /* Shared row metrics (height / hover / selected / caret / icon / label) live in
@@ -244,10 +254,21 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  /* Only vertical scrolling -- without this, overflow-y:auto promotes
+     overflow-x to auto, so the vertical scrollbar's width spawns a permanent
+     phantom horizontal scrollbar. The builder lays out to the width (grids /
+     flex-wrap), so horizontal scroll is never wanted. */
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  /* Same section gap as sp-pane-fill / the builder, so the Selection section
+     and the builder's sections share one uniform rhythm. */
+  gap: var(--form-section-gap);
 }
+
+/* Molecule / Selection / Term / Modify are all FieldSections, so their titles
+   share the .type-group-label role automatically -- no per-pane label override
+   is needed here. */
 
 /* Selection input + hit-count badge on its right (the badge sits beside the
    field, not inside it, so it never overflows the input box). */
