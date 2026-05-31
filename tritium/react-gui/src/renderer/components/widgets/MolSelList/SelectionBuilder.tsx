@@ -187,6 +187,7 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                 return (
                     <div className="selbuilder-term-form">
                         <HTMLSelect
+                            className="fk-select"
                             value={state.fields.op ?? '<'}
                             disabled={disabled}
                             onChange={(e) => setField('op', e.target.value)}
@@ -390,6 +391,7 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                 {state.source === 'property' && (
                     <div className="selbuilder-property">
                         <HTMLSelect
+                            className="fk-select"
                             value={state.keyword}
                             disabled={disabled}
                             onChange={(e) =>

@@ -19,34 +19,11 @@
     flex-shrink: 0;
 }
 
+/* Width column for the filter field; the field itself (form-kit TextField)
+ * fills it and owns its height/font. */
 .filterInput {
     width: 240px;
     flex: 0 0 auto;
-}
-
-/* Match .render-action-btn sizing so action buttons line up vertically
- * with the Render tab. */
-.toolbar :global(.bp5-button) {
-    min-height: 22px;
-    padding: 0 var(--space-4);
-    font-size: var(--fs-base);
-    font-weight: var(--fw-medium);
-}
-
-.toolbar :global(.bp5-input-group),
-.toolbar :global(.bp5-input-group .bp5-input) {
-    min-height: 22px;
-    height: 22px;
-    line-height: 22px;
-}
-
-.toolbar :global(.bp5-input) {
-    font-size: var(--fs-base);
-}
-
-.toolbar :global(.bp5-input-group .bp5-icon) {
-    margin-top: var(--space-2);
-    margin-bottom: var(--space-2);
 }
 
 .logContainer {

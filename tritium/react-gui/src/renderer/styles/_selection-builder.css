@@ -37,15 +37,18 @@
   pointer-events: none;
 }
 
-/* Builder controls take the form-kit canonical heights (single source:
-   --field-* tokens in _variables.css). The builder owns only its bespoke
-   LAYOUT (grids, preview boxes); it never re-chooses a control height. */
+/* Builder controls take the form-kit canonical heights + focus treatment
+   (single source: --field-* tokens / _form-kit.css). The builder owns only
+   its bespoke LAYOUT (grids, preview boxes); it never re-chooses a control
+   height or focus ring. Selects carry the `.fk-select` class directly (so
+   they get the shadow strip + recentred caret); inputs use a scoped compact
+   inset focus ring here so the highlight never overflows the tight rows. */
 .selbuilder .bp5-input-group .bp5-input {
   height: var(--field-h);
 }
 
-.selbuilder .bp5-html-select select {
-  height: var(--field-h);
+.selbuilder .bp5-input-group .bp5-input:focus {
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 
 .selbuilder .bp5-button {

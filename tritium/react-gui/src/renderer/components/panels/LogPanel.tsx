@@ -14,8 +14,8 @@
  */
 
 import React, { useRef, useEffect, useMemo } from 'react'
-import { Button, Icon, InputGroup } from '@blueprintjs/core'
 import styles from './LogPanel.module.css'
+import { TextField, FormButton } from '../widgets/form'
 import { applyLogFilter } from '../../utils/logFilter'
 
 interface LogPanelProps {
@@ -62,33 +62,31 @@ export function LogPanel({
   return (
     <div className={styles.bottomContainer}>
       <div className={styles.toolbar}>
-        <InputGroup
-          className={styles.filterInput}
-          leftIcon={<Icon icon="filter" size={12} />}
-          placeholder="Filter (e.g. text, !excluded)"
-          value={filter}
-          onChange={(e) => onFilterChange(e.currentTarget.value)}
-        />
-        <Button
-          small
+        <div className={styles.filterInput}>
+          <TextField
+            leftIcon="filter"
+            placeholder="Filter (e.g. text, !excluded)"
+            value={filter}
+            onChange={onFilterChange}
+          />
+        </div>
+        <FormButton
           minimal
-          icon={<Icon icon="eraser" size={12} />}
+          icon="eraser"
           text="Clear"
           onClick={onClear}
           aria-label="Clear Output"
         />
-        <Button
-          small
+        <FormButton
           minimal
-          icon={<Icon icon={autoScroll ? 'unlock' : 'lock'} size={12} />}
+          icon={autoScroll ? 'unlock' : 'lock'}
           text={autoScroll ? 'Unlock' : 'Lock'}
           onClick={onAutoScrollToggle}
           aria-label="Toggle Auto Scroll"
         />
-        <Button
-          small
+        <FormButton
           minimal
-          icon={<Icon icon="floppy-disk" size={12} />}
+          icon="floppy-disk"
           text="Save"
           onClick={onSaveAs}
           aria-label="Save Output As"

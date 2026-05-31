@@ -206,6 +206,9 @@
 /* ── Compact form button + a row of them ── */
 .fk-btn.bp5-button {
   min-height: var(--field-btn-h);
+  /* One step down from Blueprint's small-button text so the label reads as a
+     control, not a heading (matches the field-label scale). */
+  font-size: var(--fs-base);
 }
 
 /* Compact keyboard-focus ring (Blueprint's default outline is large and
