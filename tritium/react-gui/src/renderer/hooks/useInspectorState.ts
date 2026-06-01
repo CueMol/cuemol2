@@ -17,6 +17,7 @@ import type { SceneTreeNode } from "../worker/shared/sceneTreeTypes";
 import type {
   GenericPropEntry,
   PropTargetType,
+  PropWriteOpts,
 } from "../worker/server/services/genericProps.service";
 import { findTypedNode } from "./sceneTree/sceneTreeNodeUtils";
 import { useCueMolEventListener } from "./useCueMolEventListener";
@@ -241,7 +242,12 @@ export function useInspectorState({
 
   /** Write a single generic property value (live-apply). */
   const handleGenericSet = useCallback(
-    async (key: string, valueType: string, value: string | number | boolean) => {
+    async (
+      key: string,
+      valueType: string,
+      value: string | number | boolean,
+      opts?: PropWriteOpts,
+    ) => {
       const target = targetRef.current;
       if (!cm || !target || target.kind !== "node") return;
       try {
@@ -253,8 +259,12 @@ export function useInspectorState({
           op: "set",
           valueType,
           value,
+          mode: opts?.mode,
+          originalValue: opts?.originalValue,
         });
-        if (targetRef.current === target && res?.ok) {
+        // A preview write returns no entries (the field drives itself from its
+        // local draft during a drag); only refresh on a real commit.
+        if (targetRef.current === target && res?.ok && opts?.mode !== "preview") {
           setGenericEntries(res.entries);
         }
       } catch (err) {

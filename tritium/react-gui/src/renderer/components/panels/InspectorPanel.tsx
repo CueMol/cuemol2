@@ -32,7 +32,10 @@ import { GenericTab } from "../inspector/GenericTab";
 import { RenderSettingsEditor } from "../inspector/RenderSettingsEditor";
 import type { PropDef } from "../../data/rendererProperties";
 import type { RenderBackendId } from "../../data/renderSettings";
-import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
+import type {
+  GenericPropEntry,
+  PropWriteOpts,
+} from "../../worker/server/services/genericProps.service";
 import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
 import { ColorPickerProvider } from "../widgets/colorpicker/ColorPickerContext";
 
@@ -72,8 +75,13 @@ interface InspectorPanelProps {
   genericLoading: boolean;
   /** Render Settings state, present only for the `renderSettings` target. */
   renderSettings: RenderSettingsView | null;
-  /** Called to write a Generic property value (live-apply). */
-  onGenericSet: (key: string, valueType: string, value: string | number | boolean) => void;
+  /** Called to write a Generic property value (live-apply). `opts` carries realtime-drag info. */
+  onGenericSet: (
+    key: string,
+    valueType: string,
+    value: string | number | boolean,
+    opts?: PropWriteOpts,
+  ) => void;
   /** Called to restore a Generic property to its C++ default. */
   onGenericReset: (key: string) => void;
   /** Called when the user clicks the close button. */

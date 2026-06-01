@@ -28,6 +28,7 @@ import {
 } from "../widgets/form";
 import { MolSelList } from "../widgets/MolSelList/MolSelList";
 import { useCueMol } from "../../hooks/useCueMol";
+import { useRealtimeDragProp } from "../../hooks/useRealtimeDragProp";
 import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
 import type { RendererPropSectionProps } from "./rendererPropSections";
 
@@ -81,20 +82,45 @@ interface NumRowProps extends RowProps {
   step: number;
   unit?: string;
   disabled?: boolean;
+  /** Live-apply the value to the renderer during the drag (one undo step). */
+  realtime?: boolean;
 }
 
-/** Drag-to-snap numeric field committed on drag end / Enter (e.g. Opacity, Width). */
-const NumRow: React.FC<NumRowProps> = ({ entry, label, onSet, min, max, step, unit, disabled }) => {
-  const [draft, setDraft] = useState(Number(entry.value));
-  const commit = (v: number) => {
-    if (v !== Number(entry.value)) onSet(entry.key, entry.type, v);
-  };
+/**
+ * Drag-to-snap numeric field committed on drag end / Enter (e.g. Opacity,
+ * Width). With `realtime`, the renderer updates live during the drag (the
+ * worker previews without undo and commits a single step on release).
+ */
+const NumRow: React.FC<NumRowProps> = ({
+  entry,
+  label,
+  onSet,
+  min,
+  max,
+  step,
+  unit,
+  disabled,
+  realtime,
+}) => {
+  const committed = Number(entry.value);
+  const dragProps = useRealtimeDragProp({
+    committed,
+    realtime,
+    onPreview: (v) => onSet(entry.key, entry.type, v, { mode: "preview" }),
+    onCommit: (original, v) => {
+      if (v === original) return;
+      // Realtime: the renderer was previewed, so restore `original` before the
+      // single undo step. Non-realtime: plain commit (current behavior).
+      if (realtime)
+        onSet(entry.key, entry.type, v, { mode: "commit", originalValue: original });
+      else onSet(entry.key, entry.type, v);
+    },
+    onAbort: (original) => onSet(entry.key, entry.type, original, { mode: "preview" }),
+  });
   return (
     <Field label={label}>
       <DragNumericField
-        value={draft}
-        onChange={setDraft}
-        onRelease={commit}
+        {...dragProps}
         min={min}
         max={max}
         step={step}
@@ -264,13 +290,14 @@ export const RendererCommonSection: React.FC<RendererPropSectionProps> = ({
           )}
           {alpha && (
             <NumRow
-              key={`alpha:${alpha.value}`}
+              key="alpha"
               entry={alpha}
               label="Opacity"
               onSet={onSet}
               min={0}
               max={1}
               step={0.1}
+              realtime
             />
           )}
         </AccordionSection>
@@ -281,7 +308,7 @@ export const RendererCommonSection: React.FC<RendererPropSectionProps> = ({
           {egtype && <EnumRow entry={egtype} label="Edge type" onSet={onSet} />}
           {eglinew && (
             <NumRow
-              key={`eglinew:${eglinew.value}`}
+              key="eglinew"
               entry={eglinew}
               label="Width"
               onSet={onSet}

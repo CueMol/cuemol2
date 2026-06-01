@@ -39,6 +39,15 @@
  * once at the end of an interaction (drag end, step click, Enter/blur) so the
  * parent can push a single undo step.
  *
+ * Realtime mode (`realtime`): for props that benefit from live object feedback,
+ * the field also emits `onDragStart` when a drag begins and `onDragCancel` if a
+ * drag is aborted (Esc mid-drag, or unmount mid-drag). This lets a parent run a
+ * preview-while-dragging / single-commit-on-release lifecycle (apply the value
+ * to the object every `onChange` without undo, then commit one undo step on
+ * `onRelease`, or roll back on `onDragCancel`). Without `realtime` (the
+ * default), behaviour is unchanged: no drag-lifecycle callbacks fire and Esc
+ * mid-drag commits the current value like a normal release.
+ *
  * @module form/DragNumericField
  */
 
@@ -79,6 +88,26 @@ export interface DragNumericFieldProps {
     /** Optional unit suffix, e.g. "deg", "A", "%". Rendered in a non-editable span. */
     unit?: string;
     disabled?: boolean;
+    /**
+     * Treat a drag as a live transaction: emit `onDragStart` / `onDragCancel`
+     * so the parent can preview-while-dragging and commit once on release. When
+     * false (default), no drag-lifecycle callbacks fire and behaviour is
+     * unchanged. See the file header.
+     */
+    realtime?: boolean;
+    /**
+     * Fired once when a drag crosses the movement threshold (only when
+     * `realtime`). The parent typically snapshots the pre-drag value here so it
+     * can roll back / build a single undo step.
+     */
+    onDragStart?: () => void;
+    /**
+     * Fired when a realtime drag is aborted rather than released: Esc (pointer
+     * lock lost) mid-drag, or the field unmounting mid-drag. The parent should
+     * restore the object to its pre-drag value. Never fires when `realtime` is
+     * false.
+     */
+    onDragCancel?: () => void;
 }
 
 /** Decimal places implied by `step` (0.1 -> 1, 0.01 -> 2, 1 -> 0). */
@@ -130,6 +159,9 @@ export const DragNumericField: React.FC<DragNumericFieldProps> = ({
     decimals,
     unit,
     disabled,
+    realtime = false,
+    onDragStart,
+    onDragCancel,
 }) => {
     const [mode, setMode] = useState<Mode>('idle');
     const [draft, setDraft] = useState('');
@@ -154,8 +186,8 @@ export const DragNumericField: React.FC<DragNumericFieldProps> = ({
 
     // Stable refs to props the global listeners use, so the listeners attached
     // once at mousedown always reach current behavior.
-    const cbRef = useRef({ onChange, onRelease, min, max, step });
-    cbRef.current = { onChange, onRelease, min, max, step };
+    const cbRef = useRef({ onChange, onRelease, min, max, step, realtime, onDragStart, onDragCancel });
+    cbRef.current = { onChange, onRelease, min, max, step, realtime, onDragStart, onDragCancel };
 
     // --- Drag (global listeners + pointer lock) ---
 
@@ -170,6 +202,9 @@ export const DragNumericField: React.FC<DragNumericFieldProps> = ({
             if (Math.abs(d.accumPx) <= DRAG_THRESHOLD_PX) return;
             d.crossed = true;
             setMode('dragging');
+            // Realtime: announce the drag start before the first onChange so
+            // the parent can snapshot the pre-drag value for a single commit.
+            if (cbRef.current.realtime) cbRef.current.onDragStart?.();
             // Hide the OS cursor + unbind from screen edges (best-effort).
             const locked = rootRef.current?.requestPointerLock?.() as
                 | Promise<void>
@@ -218,14 +253,22 @@ export const DragNumericField: React.FC<DragNumericFieldProps> = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [teardown, format]);
 
-    // If pointer lock is lost mid-drag (e.g. user pressed Esc), end the drag
-    // cleanly as if released.
+    // If pointer lock is lost mid-drag (e.g. user pressed Esc): in realtime mode
+    // treat it as a cancel (roll back the live preview); otherwise end the drag
+    // cleanly as if released (commit the current value).
     const handlePointerLockChange = useCallback(() => {
         if (dragRef.current?.crossed && document.pointerLockElement !== rootRef.current) {
-            handleMouseUp();
+            if (cbRef.current.realtime) {
+                dragRef.current = null;
+                teardown();
+                setMode('hover');
+                cbRef.current.onDragCancel?.();
+            } else {
+                handleMouseUp();
+            }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [handleMouseUp]);
+    }, [handleMouseUp, teardown]);
 
     const handleMouseDown = useCallback(
         (e: React.MouseEvent) => {
@@ -243,8 +286,17 @@ export const DragNumericField: React.FC<DragNumericFieldProps> = ({
         [disabled, mode, value, handleMouseMove, handleMouseUp, handlePointerLockChange],
     );
 
-    // Clean up listeners + any pointer lock on unmount (mid-drag safety).
-    useEffect(() => teardown, [teardown]);
+    // Clean up listeners + any pointer lock on unmount (mid-drag safety). If a
+    // realtime drag is still in progress, let the parent roll back so the
+    // object is not left at an uncommitted preview value.
+    useEffect(() => {
+        return () => {
+            if (cbRef.current.realtime && dragRef.current?.crossed) {
+                cbRef.current.onDragCancel?.();
+            }
+            teardown();
+        };
+    }, [teardown]);
 
     // --- Step arrows ---
 

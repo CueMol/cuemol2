@@ -13,9 +13,13 @@ import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 vi.mock('../worker/server/services/helpers/resolvePropTarget', () => ({
   resolvePropTarget: vi.fn(),
 }))
+// Run the mutation body synchronously (no real UndoManager) while exposing a
+// spy so tests can assert whether / when a write went through a transaction.
+const withUndoTxnSpy = vi.hoisted(() =>
+  vi.fn((_scene: unknown, _label: string, fn: () => unknown) => fn()),
+)
 vi.mock('../worker/server/services/withUndoTxn', () => ({
-  // Run the mutation body synchronously, no real UndoManager.
-  withUndoTxn: (_scene: unknown, _label: string, fn: () => unknown) => fn(),
+  withUndoTxn: withUndoTxnSpy,
 }))
 vi.mock('../worker/server/services/helpers/makeSel', () => ({
   makeSel: vi.fn(),
@@ -79,5 +83,44 @@ describe('setGenericProp', () => {
     expect(res.ok).toBe(true)
     expect(resetProp).toHaveBeenCalledWith('alpha')
     expect(setProp).not.toHaveBeenCalled()
+  })
+
+  // --- Realtime drag write modes ---
+
+  it('previews a write without an undo transaction and returns no entries', () => {
+    const res = call({ propName: 'alpha', valueType: 'real', value: 0.7, mode: 'preview' })
+    expect(res.ok).toBe(true)
+    expect(res.entries).toEqual([])
+    expect(setProp).toHaveBeenCalledWith('alpha', 0.7)
+    expect(withUndoTxnSpy).not.toHaveBeenCalled()
+  })
+
+  it('realtime commit restores the original (txn-free) then commits the final inside a txn', () => {
+    const res = call({
+      propName: 'alpha',
+      valueType: 'real',
+      value: 0.7,
+      mode: 'commit',
+      originalValue: 0.2,
+    })
+    expect(res.ok).toBe(true)
+    expect(setProp).toHaveBeenNthCalledWith(1, 'alpha', 0.2)
+    expect(setProp).toHaveBeenNthCalledWith(2, 'alpha', 0.7)
+    expect(withUndoTxnSpy).toHaveBeenCalledTimes(1)
+    // The restore precedes opening the txn; the final write happens inside it.
+    expect(setProp.mock.invocationCallOrder[0]).toBeLessThan(
+      withUndoTxnSpy.mock.invocationCallOrder[0],
+    )
+    expect(setProp.mock.invocationCallOrder[1]).toBeGreaterThan(
+      withUndoTxnSpy.mock.invocationCallOrder[0],
+    )
+  })
+
+  it('default commit (no mode/originalValue) wraps a single write in one txn', () => {
+    const res = call({ propName: 'alpha', valueType: 'real', value: 0.7 })
+    expect(res.ok).toBe(true)
+    expect(withUndoTxnSpy).toHaveBeenCalledTimes(1)
+    expect(setProp).toHaveBeenCalledTimes(1)
+    expect(setProp).toHaveBeenCalledWith('alpha', 0.7)
   })
 })

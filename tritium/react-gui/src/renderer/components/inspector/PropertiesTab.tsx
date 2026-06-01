@@ -17,15 +17,23 @@ import React from "react";
 import { AccordionSection } from "./AccordionSection";
 import { RendererCommonSection } from "./RendererCommonSection";
 import { DUMMY_SECTION, getRendererPropSections } from "./rendererPropSections";
-import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
+import type {
+  GenericPropEntry,
+  PropWriteOpts,
+} from "../../worker/server/services/genericProps.service";
 
 interface PropertiesTabProps {
   /** Live property list of the inspected node. */
   entries: GenericPropEntry[];
   /** Renderer `type_name` used to resolve type-specific sections. */
   rendererType: string;
-  /** Write a property value (live-apply). */
-  onSet: (key: string, valueType: string, value: string | number | boolean) => void;
+  /** Write a property value (live-apply). `opts` carries realtime-drag info. */
+  onSet: (
+    key: string,
+    valueType: string,
+    value: string | number | boolean,
+    opts?: PropWriteOpts,
+  ) => void;
   /** Restore a property to its C++ default. */
   onReset: (key: string) => void;
   /** Active scene id (for selection / material / colour lookups). */

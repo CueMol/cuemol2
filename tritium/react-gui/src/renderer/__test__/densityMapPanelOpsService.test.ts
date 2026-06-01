@@ -286,6 +286,45 @@ describe('setMapRendererProp', () => {
         expect(res.ok).toBe(false)
         expect(res.error).toMatch(/rejected/)
     })
+
+    it('preview writes a numeric prop without an undo txn', () => {
+        const setProp = vi.fn()
+        const rend = { setProp }
+        const scene = makeUndoScene(100)
+        scene.getRenderer = vi.fn(() => rend)
+        const ctx = makeCtx({ scene })
+
+        const res = setMapRendererProp(ctx, {
+            sceneId: 100, rendId: 11, propName: 'alpha', value: 0.5, mode: 'preview',
+        })
+        expect(res).toEqual({ ok: true })
+        expect(scene.startUndoTxn).not.toHaveBeenCalled()
+        expect(setProp).toHaveBeenCalledWith('alpha', 0.5)
+    })
+
+    it('realtime commit restores the original (txn-free) then commits the final inside the txn', () => {
+        const setProp = vi.fn()
+        const rend = { setProp }
+        const scene = makeUndoScene(100)
+        scene.getRenderer = vi.fn(() => rend)
+        const ctx = makeCtx({ scene })
+
+        const res = setMapRendererProp(ctx, {
+            sceneId: 100, rendId: 11, propName: 'alpha', value: 0.7,
+            mode: 'commit', originalValue: 0.2,
+        })
+        expect(res).toEqual({ ok: true })
+        expect(setProp).toHaveBeenNthCalledWith(1, 'alpha', 0.2)
+        expect(setProp).toHaveBeenNthCalledWith(2, 'alpha', 0.7)
+        expect(scene.startUndoTxn).toHaveBeenCalledTimes(1)
+        // The restore precedes opening the txn; the final write happens inside.
+        expect(setProp.mock.invocationCallOrder[0]).toBeLessThan(
+            scene.startUndoTxn.mock.invocationCallOrder[0],
+        )
+        expect(setProp.mock.invocationCallOrder[1]).toBeGreaterThan(
+            scene.startUndoTxn.mock.invocationCallOrder[0],
+        )
+    })
 })
 
 // ─── redrawMapCenter ─────────────────────────────────────────────

@@ -81,6 +81,17 @@ function mouseUp() {
     })
 }
 
+/**
+ * Simulate losing pointer lock mid-drag (the browser fires this when the user
+ * presses Esc). jsdom never acquires the lock, so `pointerLockElement` stays
+ * null and the widget's guard treats this as "lock lost".
+ */
+function pointerLockLost() {
+    act(() => {
+        document.dispatchEvent(new Event('pointerlockchange'))
+    })
+}
+
 const base = {
     value: 1.0,
     onChange: () => {},
@@ -251,5 +262,72 @@ describe('DragNumericField', () => {
         mouseUp()
         expect(onChange).not.toHaveBeenCalled()
         expect(getEditInput()).toBeNull()
+    })
+
+    // --- Realtime drag lifecycle ---
+
+    it('does not fire drag-lifecycle callbacks when realtime is off (default)', () => {
+        const onChange = vi.fn()
+        const onRelease = vi.fn()
+        const onDragStart = vi.fn()
+        const onDragCancel = vi.fn()
+        render({ value: 1.0, step: 0.1, onChange, onRelease, onDragStart, onDragCancel })
+        mouseDownBody()
+        moveBy(80)
+        expect(onChange).toHaveBeenCalled()
+        expect(onDragStart).not.toHaveBeenCalled()
+        mouseUp()
+        expect(onRelease).toHaveBeenCalledTimes(1)
+        expect(onDragCancel).not.toHaveBeenCalled()
+    })
+
+    it('fires onDragStart once at drag begin and onRelease at end in realtime mode', () => {
+        const onChange = vi.fn()
+        const onRelease = vi.fn()
+        const onDragStart = vi.fn()
+        const onDragCancel = vi.fn()
+        render({ value: 1.0, step: 0.1, realtime: true, onChange, onRelease, onDragStart, onDragCancel })
+        mouseDownBody()
+        moveBy(40) // cross threshold -> drag begins
+        expect(onDragStart).toHaveBeenCalledTimes(1)
+        moveBy(40) // another frame -> onChange again, but no second onDragStart
+        expect(onDragStart).toHaveBeenCalledTimes(1)
+        expect(onChange.mock.calls.length).toBeGreaterThanOrEqual(2)
+        mouseUp()
+        expect(onRelease).toHaveBeenCalledTimes(1)
+        expect(onDragCancel).not.toHaveBeenCalled()
+    })
+
+    it('cancels (onDragCancel, not onRelease) on Esc / pointer-lock loss in realtime mode', () => {
+        const onRelease = vi.fn()
+        const onDragCancel = vi.fn()
+        const onDragStart = vi.fn()
+        render({ value: 1.0, step: 0.1, realtime: true, onRelease, onDragCancel, onDragStart })
+        mouseDownBody()
+        moveBy(40)
+        expect(onDragStart).toHaveBeenCalledTimes(1)
+        pointerLockLost()
+        expect(onDragCancel).toHaveBeenCalledTimes(1)
+        expect(onRelease).not.toHaveBeenCalled()
+    })
+
+    it('commits (onRelease) on pointer-lock loss when realtime is off', () => {
+        const onRelease = vi.fn()
+        const onDragCancel = vi.fn()
+        render({ value: 1.0, step: 0.1, onRelease, onDragCancel })
+        mouseDownBody()
+        moveBy(40)
+        pointerLockLost()
+        expect(onRelease).toHaveBeenCalledTimes(1)
+        expect(onDragCancel).not.toHaveBeenCalled()
+    })
+
+    it('fires onDragCancel if unmounted mid-drag in realtime mode', () => {
+        const onDragCancel = vi.fn()
+        render({ value: 1.0, step: 0.1, realtime: true, onDragCancel })
+        mouseDownBody()
+        moveBy(40)
+        act(() => root.unmount())
+        expect(onDragCancel).toHaveBeenCalledTimes(1)
     })
 })

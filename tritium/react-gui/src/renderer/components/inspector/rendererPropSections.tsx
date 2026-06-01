@@ -17,7 +17,10 @@
  */
 
 import React from "react";
-import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
+import type {
+  GenericPropEntry,
+  PropWriteOpts,
+} from "../../worker/server/services/genericProps.service";
 
 // ────────────────────────────────────────────────────────────
 // Types
@@ -27,8 +30,17 @@ import type { GenericPropEntry } from "../../worker/server/services/genericProps
 export interface RendererPropSectionProps {
   /** Full live property list of the inspected renderer. */
   entries: GenericPropEntry[];
-  /** Write a property value (live-apply). `valueType` is the C++ type tag. */
-  onSet: (key: string, valueType: string, value: string | number | boolean) => void;
+  /**
+   * Write a property value (live-apply). `valueType` is the C++ type tag.
+   * `opts` carries realtime-drag info (`mode` / `originalValue`); omit for a
+   * plain single-step commit.
+   */
+  onSet: (
+    key: string,
+    valueType: string,
+    value: string | number | boolean,
+    opts?: PropWriteOpts,
+  ) => void;
   /** Restore a property to its C++ default. */
   onReset: (key: string) => void;
   /** Active scene id (for selection / material / colour lookups). */
