@@ -218,27 +218,8 @@
   color: var(--text-muted);
 }
 
-/* ── Select overrides ── */
-.insp-select.bp5-html-select select {
-  background: var(--bg-input) !important;
-  border: 1px solid var(--border) !important;
-  color: var(--text-primary) !important;
-  font-size: var(--fs-lg);
-  height: var(--field-h);
-  border-radius: var(--radius-md);
-  /* Reserve room for the caret icon so the value text never runs under it. */
-  padding-right: 24px;
-  -webkit-appearance: none;
-  appearance: none;
-}
-
-/* Caret icon — Blueprint positions it for the default 30px select; recenter
-   it within the compact 22px select so it stays inside the rounded border. */
-.insp-select.bp5-html-select .bp5-icon {
-  top: 50%;
-  right: 6px;
-  transform: translateY(-50%);
-}
+/* Select look (height / border / chevron) comes from the form-kit `.fk-select`
+   class (styles/_form-kit.css); `.insp-select` carries layout only. */
 
 /* ── Numeric row (slider + input) ── */
 .insp-numeric-row {

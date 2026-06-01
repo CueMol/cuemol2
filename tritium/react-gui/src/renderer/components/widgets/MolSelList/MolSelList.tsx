@@ -207,7 +207,8 @@ export const MolSelList: React.FC<MolSelListProps> = ({
                 content={pickerContent}
             >
                 <Button
-                    icon="caret-down"
+                    className="fk-dropdown-caret"
+                    icon={<span className="fk-caret" aria-hidden />}
                     minimal
                     disabled={disabled}
                     title="Pick selection"

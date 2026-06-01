@@ -203,6 +203,13 @@
   --icon-md: 14px;
   --icon-lg: 18px;
 
+  /* Blender-style dropdown chevron. Single source for the glyph used by both
+     the native-select caret (CSS mask in _form-kit.css) and the
+     dropdown-trigger buttons (.fk-caret). Thin stroked V, drawn as a mask so
+     the color comes from the consumer's background-color token (theme-aware).
+     The stroke color here is irrelevant -- only the alpha is used. */
+  --chevron-down-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M4 6l4 4 4-4' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+
   /* Corner radii. The lone 8px usage stays inline. */
   --radius-sm: 2px;
   --radius-md: 3px;

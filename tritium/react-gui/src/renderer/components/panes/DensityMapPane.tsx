@@ -271,7 +271,7 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
                             }}
                             fill
                             disabled={items.length === 0}
-                            className="selection-mol-select"
+                            className="selection-mol-select fk-select"
                         >
                             {items.length === 0 ? (
                                 <option value="">(no map renderers)</option>
@@ -288,7 +288,8 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
                         <Popover content={modeMenu} placement="bottom-end" disabled={disabled}>
                             <Button
                                 small
-                                rightIcon="caret-down"
+                                className="fk-dropdown-caret"
+                                rightIcon={<span className="fk-caret" aria-hidden />}
                                 disabled={disabled}
                                 aria-label="Level mode"
                             />

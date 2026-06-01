@@ -54,7 +54,7 @@ export const RenderSettingsEditor: React.FC<RenderSettingsEditorProps> = ({
       <div className="insp-render-backend-bar">
         <span className="insp-prop-label">Backend</span>
         <HTMLSelect
-          className="insp-select"
+          className="insp-select fk-select"
           fill
           value={backend}
           onChange={handleBackendChange}

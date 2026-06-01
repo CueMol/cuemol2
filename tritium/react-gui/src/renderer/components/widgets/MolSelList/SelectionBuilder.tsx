@@ -429,8 +429,8 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                         <Button
                             fill
                             alignText="left"
-                            rightIcon="caret-down"
-                            className="selbuilder-term-trigger"
+                            rightIcon={<span className="fk-caret" aria-hidden />}
+                            className="selbuilder-term-trigger fk-dropdown-caret"
                             disabled={disabled}
                             text={
                                 state.picked ||

@@ -44,6 +44,7 @@ export const RendererOptionsPane: React.FC<RendererOptionsPaneProps> = ({ option
       <FormGroup label="Renderer type" labelFor="rend-type" className="fod-form-group">
         <HTMLSelect
           id="rend-type"
+          className="fk-select"
           fill
           value={options.rendererType}
           onChange={(e) => set('rendererType')(e.target.value)}

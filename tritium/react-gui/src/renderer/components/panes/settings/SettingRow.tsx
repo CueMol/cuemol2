@@ -34,7 +34,7 @@ export const SettingRow: React.FC<SettingRowProps> = ({ def, value, onChange }) 
       case 'select':
         return (
           <HTMLSelect
-            className="config-setting-select"
+            className="config-setting-select fk-select"
             value={value as string}
             onChange={(e) => onChange(key, e.target.value)}
             options={control.options}

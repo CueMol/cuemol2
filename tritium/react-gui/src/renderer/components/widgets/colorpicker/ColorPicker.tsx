@@ -334,7 +334,8 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
                     <Button
                         small
                         minimal
-                        rightIcon="caret-down"
+                        className="fk-dropdown-caret"
+                        rightIcon={<span className="fk-caret" aria-hidden />}
                         disabled={disabled}
                         onClick={() => (open ? handleClose() : handleOpen())}
                     />

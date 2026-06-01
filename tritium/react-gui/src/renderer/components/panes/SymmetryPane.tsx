@@ -229,7 +229,8 @@ export const SymmetryPane: React.FC<SymmetryPaneProps> = ({
                         <Popover content={symmMolMenu} placement="bottom-start" disabled={!symmEnabled}>
                             <Button
                                 small
-                                rightIcon="caret-down"
+                                className="fk-dropdown-caret"
+                                rightIcon={<span className="fk-caret" aria-hidden />}
                                 disabled={!symmEnabled}
                             >
                                 Symm mol

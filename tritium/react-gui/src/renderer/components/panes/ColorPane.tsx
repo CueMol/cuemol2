@@ -155,7 +155,7 @@ const RendererSelector: React.FC<RendererSelectorProps> = ({
                 fill
                 value=""
                 onChange={() => {}}
-                className="color-enum-select"
+                className="color-enum-select fk-select"
             >
                 <option value="">(no paint-capable renderers)</option>
             </HTMLSelect>
@@ -166,7 +166,7 @@ const RendererSelector: React.FC<RendererSelectorProps> = ({
         <HTMLSelect
             fill
             value={selectedKey ?? ''}
-            className="color-enum-select"
+            className="color-enum-select fk-select"
             onChange={(e) => {
                 const v = e.target.value
                 onChange(v === '' ? null : v)
@@ -467,7 +467,7 @@ const EnumField: React.FC<EnumFieldProps> = ({
             value={value}
             disabled={disabled}
             onChange={(e) => onCommit(e.target.value)}
-            className="color-field-input color-enum-select"
+            className="color-field-input color-enum-select fk-select"
         >
             {options.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -596,7 +596,7 @@ const ElepotDeck: React.FC<ElepotDeckProps> = ({ params, objects, onCommit }) =>
                 value={params.elepot}
                 disabled={objects.length === 0}
                 onChange={(e) => onCommit('elepot', e.target.value)}
-                className="color-field-input color-enum-select"
+                className="color-field-input color-enum-select fk-select"
             >
                 {/* When the renderer's elepot is unset or points to a now-deleted
                   * object, show a sentinel row so the dropdown is still
@@ -1037,7 +1037,8 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
                         >
                             <Button
                                 small
-                                rightIcon="caret-down"
+                                className="fk-dropdown-caret"
+                                rightIcon={<span className="fk-caret" aria-hidden />}
                                 text="Coloring"
                                 disabled={dropdownDisabled}
                             />

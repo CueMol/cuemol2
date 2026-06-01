@@ -108,7 +108,7 @@ const DetailEditor: React.FC<DetailEditorProps> = ({ entry, atDefault, onSetValu
         value={String(entry.value)}
         disabled={disabled}
         onChange={(e) => onSetValue(entry.key, entry.type, e.target.value)}
-        className="insp-select"
+        className="insp-select fk-select"
       >
         {(entry.enumdef ?? [String(entry.value)]).map((opt) => (
           <option key={opt} value={opt}>
