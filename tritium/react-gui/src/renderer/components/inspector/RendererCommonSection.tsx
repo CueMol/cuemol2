@@ -22,7 +22,7 @@ import {
   Field,
   TextField,
   SelectField,
-  NumericField,
+  DragNumericField,
   SwitchField,
   ColorField,
 } from "../widgets/form";
@@ -83,7 +83,7 @@ interface NumRowProps extends RowProps {
   disabled?: boolean;
 }
 
-/** Slider + numeric input committed on release / blur (e.g. Opacity, Width). */
+/** Drag-to-snap numeric field committed on drag end / Enter (e.g. Opacity, Width). */
 const NumRow: React.FC<NumRowProps> = ({ entry, label, onSet, min, max, step, unit, disabled }) => {
   const [draft, setDraft] = useState(Number(entry.value));
   const commit = (v: number) => {
@@ -91,7 +91,7 @@ const NumRow: React.FC<NumRowProps> = ({ entry, label, onSet, min, max, step, un
   };
   return (
     <Field label={label}>
-      <NumericField
+      <DragNumericField
         value={draft}
         onChange={setDraft}
         onRelease={commit}

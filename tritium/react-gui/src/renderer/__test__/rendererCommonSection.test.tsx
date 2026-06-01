@@ -147,8 +147,8 @@ describe('RendererCommonSection', () => {
       entry({ key: 'eglinew', type: 'real', value: 0.1 }),
       entry({ key: 'egcolor', type: 'object<AbstractColor>', value: 'blue' }),
     ])
-    const widthInput = rowByLabel(container, 'Width')!.querySelector('input') as HTMLInputElement
-    expect(widthInput.disabled).toBe(true)
+    const widthDrag = rowByLabel(container, 'Width')!.querySelector('.fk-drag') as HTMLElement
+    expect(widthDrag.classList.contains('fk-drag-disabled')).toBe(true)
     expect(
       container.querySelector('[data-testid="egcolor"]')!.getAttribute('data-disabled'),
     ).toBe('true')
@@ -161,8 +161,8 @@ describe('RendererCommonSection', () => {
       entry({ key: 'eglinew', type: 'real', value: 0.1 }),
       entry({ key: 'egcolor', type: 'object<AbstractColor>', value: 'blue' }),
     ])
-    const widthInput = rowByLabel(container, 'Width')!.querySelector('input') as HTMLInputElement
-    expect(widthInput.disabled).toBe(false)
+    const widthDrag = rowByLabel(container, 'Width')!.querySelector('.fk-drag') as HTMLElement
+    expect(widthDrag.classList.contains('fk-drag-disabled')).toBe(false)
     expect(
       container.querySelector('[data-testid="egcolor"]')!.getAttribute('data-disabled'),
     ).toBe('false')
