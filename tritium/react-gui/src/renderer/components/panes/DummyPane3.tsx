@@ -1,74 +1,205 @@
 /**
  * @file DummyPane3.tsx
- * @description Placeholder pane for demonstrating N-pane system extensibility.
+ * @description Live gallery of the form-kit component catalog
+ * (`components/widgets/form/`). Renders every catalog component with sample
+ * state so the canonical sizes / designs are visible at a glance -- a visual
+ * reference for "what a Field / TextField / SelectField / ... looks like".
  *
- * This pane serves as a test fixture for the refactored SidePanel architecture.
- * In a real implementation, this would contain specific domain logic
- * (e.g., file explorer, property editor, asset library, etc.).
- *
- * ## Props
- *
- * - `collapsed` – Current collapse state (header-only if true)
- * - `onToggleCollapse` – Callback to toggle collapse state
- *
- * ## Layout
- *
- * ```
- * ┌────────────────────────────────┐
- * │ Dummy Pane 3            [≡]   │  ← SectionHeader
- * ├────────────────────────────────┤
- * │ Pane 3 Content               │  ← Scrollable content area
- * │                              │
- * └────────────────────────────────┘
- * ```
+ * This is a showcase, not a feature pane: it owns no app state and talks to no
+ * worker. Sizing comes entirely from the catalog (`styles/_form-kit.css`); this
+ * file intentionally sets no control sizes itself.
  *
  * @module DummyPane3
  */
 
-import React from "react";
+import React, { useState } from "react";
+import { Icon } from "@blueprintjs/core";
 import { SectionHeader } from "./SectionHeader";
+import {
+  Field,
+  FieldGroup,
+  FieldSection,
+  TextField,
+  SelectField,
+  NumericField,
+  SwitchField,
+  ColorField,
+  ButtonRow,
+  FormButton,
+  SegmentField,
+} from "../widgets/form";
+import { Listbox, ListRow } from "../widgets/list";
+import { MolSelList } from "../widgets/MolSelList";
+import { SliderNumericField } from "../widgets/SliderNumericField";
+
+/** Sample rows for the Listbox showcase. */
+const LISTBOX_ITEMS = ["1CRN", "3J3Q", "Water", "Ligand"];
 
 /* ─── Props ─── */
 
 interface DummyPane3Props {
-  /** Whether this pane is currently collapsed (header-only). */
   collapsed?: boolean;
-  /** Callback fired when the user clicks the collapse/expand toggle. */
   onToggleCollapse?: () => void;
+  /** Active scene uid, forwarded to the MolSelList sample (picker defs). */
+  activeSceneId?: number;
 }
 
 /* ─── Component ─── */
 
 /**
- * Dummy pane component for PoC validation of the N-pane system.
- *
- * This pane demonstrates:
- * - Integration with SectionHeader for consistent UI
- * - Receiving and responding to collapse state
- * - Providing a content area for future feature implementation
- *
- * @param props – Component props
- * @returns Rendered pane with header and optional content area
+ * Catalog gallery. Each `FieldGroup` is one section; each `Field` shows one
+ * control role at its canonical size.
  */
 export const DummyPane3: React.FC<DummyPane3Props> = ({
   collapsed = false,
   onToggleCollapse,
+  activeSceneId,
 }) => {
+  const [text, setText] = useState("aname CA");
+  const [select, setSelect] = useState("ribbon");
+  const [num, setNum] = useState(50);
+  const [num2, setNum2] = useState(8);
+  const [sw, setSw] = useState(true);
+  const [color, setColor] = useState("#3b82f6");
+  const [molSel, setMolSel] = useState("*");
+  const [opacity, setOpacity] = useState(80);
+  const [filter, setFilter] = useState("");
+  const [listSel, setListSel] = useState("3J3Q");
+  const [seg, setSeg] = useState("all");
+
   return (
-    <div className="pane-container">
+    <div className="sp-pane">
       <SectionHeader
-        title="Dummy Pane 3"
-        icon="properties"
+        title="Component Catalog"
+        icon="widget"
         collapsed={collapsed}
         onToggleCollapse={onToggleCollapse}
       />
       {!collapsed && (
-        <div className="pane-content">
-          <div className="pane-placeholder">
-            <p>Dummy Pane 3</p>
-            <p style={{ fontSize: "var(--fs-sm)", color: "var(--text-muted)" }}>
-              実装予定: 具体的な機能がここに入ります
-            </p>
+        <div className="sp-pane-fill">
+          <div className="sp-pane-scroll catalog-gallery">
+            <FieldGroup title="Label hierarchy (FieldSection vs Field)">
+              <FieldSection title="Molecule">
+                <SelectField value={select} onChange={setSelect}>
+                  <option value="ribbon">1CRN</option>
+                  <option value="cpk">3J3Q</option>
+                </SelectField>
+              </FieldSection>
+              <FieldSection title="Term">
+                <Field label="Dist">
+                  <TextField value={text} onChange={setText} />
+                </Field>
+              </FieldSection>
+            </FieldGroup>
+
+            <FieldGroup title="Text & Select">
+              <Field label="TextField">
+                <TextField value={text} onChange={setText} placeholder="value" />
+              </Field>
+              <Field label="TextField (invalid)">
+                <TextField value="bogus(" onChange={() => undefined} invalid />
+              </Field>
+              <Field label="TextField (disabled)">
+                <TextField value="locked" onChange={() => undefined} disabled />
+              </Field>
+              <Field label="TextField (filter / leftIcon)">
+                <TextField
+                  value={filter}
+                  onChange={setFilter}
+                  placeholder="Filter..."
+                  leftIcon="filter"
+                />
+              </Field>
+              <Field label="SelectField">
+                <SelectField value={select} onChange={setSelect}>
+                  <option value="ribbon">Ribbon</option>
+                  <option value="cpk">CPK</option>
+                  <option value="stick">Stick</option>
+                </SelectField>
+              </Field>
+            </FieldGroup>
+
+            <FieldGroup title="Numeric, Switch & Color">
+              <Field label="NumericField (slider + unit)">
+                <NumericField value={num} onChange={setNum} min={0} max={100} unit="Å" />
+              </Field>
+              <Field label="NumericField (no slider)">
+                <NumericField
+                  value={num2}
+                  onChange={setNum2}
+                  min={0}
+                  max={100}
+                  slider={false}
+                />
+              </Field>
+              <Field label="SwitchField" inline>
+                <SwitchField checked={sw} onChange={setSw} />
+              </Field>
+              <Field label="ColorField">
+                <ColorField value={color} onCommit={setColor} />
+              </Field>
+            </FieldGroup>
+
+            <FieldGroup title="Shared widgets">
+              <Field label="MolSelList (selection picker)">
+                <MolSelList
+                  sceneID={activeSceneId ?? 0}
+                  selectedSel={molSel}
+                  onSelectedSelChange={setMolSel}
+                />
+              </Field>
+              <SliderNumericField
+                label="Opacity"
+                value={opacity}
+                onCommit={setOpacity}
+                min={0}
+                max={100}
+                unit="%"
+              />
+            </FieldGroup>
+
+            <FieldGroup title="Listbox (list / tree row)">
+              <Listbox>
+                {LISTBOX_ITEMS.map((item) => (
+                  <ListRow
+                    key={item}
+                    selected={listSel === item}
+                    onClick={() => setListSel(item)}
+                  >
+                    <Icon icon="cube" size={14} />
+                    <span>{item}</span>
+                  </ListRow>
+                ))}
+              </Listbox>
+            </FieldGroup>
+
+            <FieldGroup title="Segmented control">
+              <SegmentField
+                value={seg}
+                onValueChange={setSeg}
+                options={[
+                  { label: "All", value: "all" },
+                  { label: "Backbone", value: "backbone" },
+                  { label: "Sidechain", value: "sidechain" },
+                ]}
+              />
+            </FieldGroup>
+
+            <FieldGroup title="Buttons">
+              <ButtonRow>
+                <FormButton text="Default" />
+                <FormButton text="Primary" intent="primary" />
+                <FormButton text="Icon" icon="tick" />
+                <FormButton text="Minimal" minimal />
+                <FormButton text="Disabled" disabled />
+              </ButtonRow>
+            </FieldGroup>
+
+            <div className="catalog-note type-caption">
+              All controls render at the catalog&apos;s canonical sizes (text /
+              select 22px, numeric 20px). Sizing lives in styles/_form-kit.css
+              -- this pane sets none itself.
+            </div>
           </div>
         </div>
       )}

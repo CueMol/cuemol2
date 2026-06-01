@@ -619,7 +619,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                         display: "block",
                         position: "relative",
                         width: "100%",
-                        lineHeight: "22px",
+                        lineHeight: "var(--row-h)",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap",
@@ -764,7 +764,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                         onNodeExpand={handleNodeExpand}
                         onNodeCollapse={handleNodeCollapse}
                         onNodeContextMenu={handleNodeContextMenu}
-                        className="scene-tree"
+                        className="scene-tree listbox-tree"
                     />
                 </div>
             )}

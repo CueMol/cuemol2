@@ -249,7 +249,7 @@ export const GenericTab: React.FC<GenericTabProps> = ({
 
       {/* Scrollable table */}
       <div className="insp-generic-table-wrap">
-        <table className="insp-generic-table">
+        <table className="insp-generic-table list-table">
           <colgroup>
             <col style={{ width: widths.name }} />
             <col style={{ width: widths.type }} />
@@ -284,8 +284,8 @@ export const GenericTab: React.FC<GenericTabProps> = ({
               <tr
                 key={entry.key}
                 className={
-                  "insp-gt-row" +
-                  (selectedKey === entry.key ? " selected" : "") +
+                  "insp-gt-row list-table-row" +
+                  (selectedKey === entry.key ? " is-selected" : "") +
                   (entry.readonly ? " readonly" : "")
                 }
                 onClick={() => setSelectedKey(entry.key)}

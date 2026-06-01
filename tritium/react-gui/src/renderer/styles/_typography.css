@@ -34,6 +34,15 @@
   letter-spacing: var(--ls-wide);
 }
 
+/* Top-level group / section label inside a pane (e.g. "Molecule", "Term").
+   One hierarchy level above .type-label; first-letter caps, never uppercased. */
+.type-group-label {
+  font-size: var(--type-group-label-fs);
+  line-height: var(--type-group-label-lh);
+  font-weight: var(--type-group-label-fw);
+  letter-spacing: var(--ls-wide);
+}
+
 .type-label {
   font-size: var(--type-label-fs);
   line-height: var(--type-label-lh);
@@ -106,17 +115,7 @@
 }
 
 /*
- * List / tree row. Fixed-height clickable row with .type-row text and a
- * hover highlight. Use for selectable list and tree items.
+ * List / tree row roles (`.list-row` / `.list-table*` / `.listbox-tree`) live
+ * in `styles/_list-kit.css` -- the single source for list/tree row metrics.
+ * Use the list-kit role classes or the <ListRow>/<Listbox> components.
  */
-.list-row {
-  display: flex;
-  align-items: center;
-  height: var(--row-h);
-  color: var(--text-primary);
-  cursor: pointer;
-}
-
-.list-row:hover {
-  background: var(--bg-hover);
-}

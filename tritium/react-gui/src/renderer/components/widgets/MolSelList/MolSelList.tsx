@@ -1,25 +1,19 @@
 /**
  * @file MolSelList.tsx
- * @description Atom-selection editor: a free-text Blueprint `InputGroup`
- * paired with a chevron-only `HTMLSelect` that hosts a true OS-rendered
- * dropdown listbox.
+ * @description Lightweight atom-selection picker: a free-text Blueprint
+ * `InputGroup` paired with a caret button that opens a popover listing
+ * ready-made selection expressions.
  *
- * Why this layout? `<input list="…">` + `<datalist>` (HTML5 autocomplete)
- * only surfaces a filtered list as the user types — it isn't a real
- * "click-the-button-to-open-the-full-list" combobox. To get that behaviour
- * with native (OS-rendered, dialog-flip-immune) styling we keep the editable
- * field as an `InputGroup` and put a chevron-only `HTMLSelect` next to it as
- * the dropdown trigger. The `<select>` always shows an empty hidden sentinel
- * option (so its display area is blank — no "Pick…" text), and selecting any
- * real option fires `onSelectedSelChange` then re-renders back to the sentinel.
+ * The popover has a `Named | History` `SegmentedControl` at the top; choosing
+ * a tab shows the corresponding list (see `SelMenus.tsx`). "Named" surfaces the
+ * target molecule's current selection ("Selected"), scene-level named defs, and
+ * global named defs (built-in macros like `protein` / `water` arrive under
+ * "Global" automatically). "History" lists recently used expressions. Picking
+ * an item writes it into the controlled value and closes the popover.
  *
- * Items shown in the listbox (matches UXP `widget.molsellist.buildBox`):
- *   1. Preset optgroup     — `current (<sel>)` (only when `molID` resolves to a
- *                            molecule with a non-empty selection), `all (*)`,
- *                            `none`
- *   2. History optgroup    — localStorage-backed selection history
- *   3. Scene optgroup      — scene-level named sel defs (StyleManager)
- *   4. Global optgroup     — global named sel defs (StyleManager)
+ * This is the reusable picker used across panes/panels. Authoring complex
+ * selections (set operations, distance shells, ...) lives in the SelectionPane
+ * builder; named selections defined there reappear here under "Named".
  *
  * Live validation: each `selectedSel` change is sent (debounced) to the
  * `validateSelection` worker service; on failure the input gets `Intent.DANGER`.
@@ -31,18 +25,19 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+    Button,
     ControlGroup,
-    HTMLSelect,
-    InputGroup,
-    Intent,
+    Popover,
 } from '@blueprintjs/core';
 import { useCueMol } from '../../../hooks/useCueMol';
+import { useTheme } from '../../../contexts/ThemeContext';
+import { TextField, SegmentField } from '../form';
 import { getHistory } from './selHistory';
-import { SelectionBuilder } from './SelectionBuilder';
-import { useSelectionValues } from './useSelectionValues';
+import { HistoryMenu, NamedSelMenu } from './SelMenus';
 
-const PICK_SENTINEL = '__mol_sel_list_pick__';
 const VALIDATE_DEBOUNCE_MS = 500;
+
+type PickSource = 'named' | 'history';
 
 export interface MolSelListProps {
     sceneID: number;
@@ -60,13 +55,6 @@ export interface MolSelListProps {
      * forces a refresh (e.g. when the parent knows the scene's defs changed).
      */
     refreshKey?: number;
-    /**
-     * Show the Selection Builder popover trigger inside the control group.
-     * Defaults to false so existing callers are unaffected. Not enabled in
-     * PaintSelCell: its blur-commit logic treats the Popover portal as a
-     * focus-out and would prematurely commit the draft.
-     */
-    enableBuilder?: boolean;
 }
 
 export const MolSelList: React.FC<MolSelListProps> = ({
@@ -79,18 +67,22 @@ export const MolSelList: React.FC<MolSelListProps> = ({
     placeholder = '* (all atoms)',
     fill = true,
     refreshKey = 0,
-    enableBuilder = false,
 }) => {
     // `onMolIdChange` is part of the UXP-compatible API surface but is not
-    // yet wired — referencing it silences the unused-locals diagnostic without
+    // yet wired -- referencing it silences the unused-locals diagnostic without
     // reshuffling the public contract.
     void onMolIdChange;
     const { cm } = useCueMol();
+    const { theme } = useTheme();
+    const portalClassName = theme === 'dark' ? 'bp5-dark' : '';
+
     const [sceneDefs, setSceneDefs] = useState<string[]>([]);
     const [globalDefs, setGlobalDefs] = useState<string[]>([]);
     const [currentSel, setCurrentSel] = useState<string | undefined>(undefined);
     const [historyItems, setHistoryItems] = useState<string[]>(() => getHistory());
     const [isValid, setIsValid] = useState(true);
+    const [isOpen, setIsOpen] = useState(false);
+    const [source, setSource] = useState<PickSource>('named');
 
     // ---- Fetch named selection defs (scene + global) and current mol sel ----
     useEffect(() => {
@@ -120,11 +112,6 @@ export const MolSelList: React.FC<MolSelListProps> = ({
         };
     }, [cm, sceneID, molID, refreshKey]);
 
-    // ---- Refresh history just before the picker is opened ----
-    const refreshHistory = useCallback((): void => {
-        setHistoryItems(getHistory());
-    }, []);
-
     // ---- Live validation (debounced) ----
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     useEffect(() => {
@@ -134,7 +121,7 @@ export const MolSelList: React.FC<MolSelListProps> = ({
         }
         if (debounceRef.current !== null) clearTimeout(debounceRef.current);
         const trimmed = selectedSel.trim();
-        // Treat empty / "*" as "no constraint" — same branch as setupRenderer.service.ts:29.
+        // Treat empty / "*" as "no constraint" -- same branch as setupRenderer.service.ts:29.
         if (trimmed === '' || trimmed === '*') {
             setIsValid(true);
             return;
@@ -155,99 +142,78 @@ export const MolSelList: React.FC<MolSelListProps> = ({
         };
     }, [cm, selectedSel, sceneID]);
 
-    const handlePick = (e: React.ChangeEvent<HTMLSelectElement>): void => {
-        const v = e.target.value;
-        if (v === PICK_SENTINEL) return;
-        onSelectedSelChange(v);
-    };
+    // Refresh history each time the popover opens, in case another pane
+    // appended an entry while we were idle.
+    const handleInteraction = useCallback((next: boolean) => {
+        if (next) setHistoryItems(getHistory());
+        setIsOpen(next);
+    }, []);
 
-    // ---- Selection Builder wiring (opt-in via enableBuilder) ----
-    const resolveValues = useSelectionValues({ cm, sceneID, molID });
-
-    // Apply an expression emitted from the builder. Insert appends with an
-    // ` and ` join; an empty / "*" base is replaced outright so the result
-    // is not the redundant "* and <frag>".
-    const handleEmit = useCallback(
-        (next: string, mode: 'insert' | 'replace'): void => {
-            if (mode === 'replace') {
-                onSelectedSelChange(next);
-                return;
-            }
-            const prev = selectedSel.trim();
-            onSelectedSelChange(prev === '' || prev === '*' ? next : `${prev} and ${next}`);
+    const handlePick = useCallback(
+        (value: string): void => {
+            onSelectedSelChange(value);
+            setIsOpen(false);
         },
-        [selectedSel, onSelectedSelChange],
+        [onSelectedSelChange],
+    );
+
+    const pickerContent = (
+        <div className="mol-sel-list-popover">
+            <SegmentField
+                value={source}
+                onValueChange={setSource}
+                options={[
+                    { label: 'Named', value: 'named' },
+                    { label: 'History', value: 'history' },
+                ]}
+            />
+            {source === 'named' ? (
+                <NamedSelMenu
+                    currentSel={currentSel}
+                    sceneDefs={sceneDefs}
+                    globalDefs={globalDefs}
+                    activeValue={selectedSel}
+                    onPick={handlePick}
+                    dismissOnPick
+                />
+            ) : (
+                <HistoryMenu
+                    history={historyItems}
+                    activeValue={selectedSel}
+                    onPick={handlePick}
+                    dismissOnPick
+                />
+            )}
+        </div>
     );
 
     return (
         <ControlGroup fill={fill} className="mol-sel-list">
-            <InputGroup
+            <TextField
                 value={selectedSel}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => onSelectedSelChange(e.target.value)}
+                onChange={onSelectedSelChange}
                 placeholder={placeholder}
                 disabled={disabled}
+                invalid={!isValid}
                 fill={fill}
-                intent={isValid ? Intent.NONE : Intent.DANGER}
-                aria-invalid={!isValid}
             />
-            {enableBuilder ? (
-                // The Selection Builder popover supersedes the OS-native
-                // picker: its Library tab carries the same Preset / Scene /
-                // Global / History lists plus the guided term composer.
-                <SelectionBuilder
-                    value={selectedSel}
-                    onEmit={handleEmit}
-                    history={historyItems}
-                    currentSel={currentSel}
-                    sceneDefs={sceneDefs}
-                    globalDefs={globalDefs}
-                    resolveValues={resolveValues}
-                    onOpening={refreshHistory}
+            <Popover
+                isOpen={isOpen}
+                onInteraction={handleInteraction}
+                placement="bottom-end"
+                portalClassName={portalClassName}
+                className="mol-sel-list-trigger"
+                disabled={disabled}
+                content={pickerContent}
+            >
+                <Button
+                    icon="caret-down"
+                    minimal
                     disabled={disabled}
-                />
-            ) : (
-                <HTMLSelect
-                    value={PICK_SENTINEL}
-                    onChange={handlePick}
-                    onMouseDown={refreshHistory}
-                    onFocus={refreshHistory}
-                    disabled={disabled}
+                    title="Pick selection"
                     aria-label="Pick selection"
-                    className="mol-sel-list-picker"
-                >
-                    {/* Hidden empty option keeps the display area blank;
-                        selecting a real option re-renders to this sentinel. */}
-                    <option value={PICK_SENTINEL} hidden></option>
-                    <optgroup label="Preset">
-                        {currentSel !== undefined && (
-                            <option value={currentSel}>current ({currentSel})</option>
-                        )}
-                        <option value="*">all (*)</option>
-                        <option value="">none</option>
-                    </optgroup>
-                    {historyItems.length > 0 && (
-                        <optgroup label="History">
-                            {historyItems.map((v) => (
-                                <option key={v} value={v}>{v}</option>
-                            ))}
-                        </optgroup>
-                    )}
-                    {sceneDefs.length > 0 && (
-                        <optgroup label="Scene">
-                            {sceneDefs.map((v) => (
-                                <option key={v} value={v}>{v}</option>
-                            ))}
-                        </optgroup>
-                    )}
-                    {globalDefs.length > 0 && (
-                        <optgroup label="Global">
-                            {globalDefs.map((v) => (
-                                <option key={v} value={v}>{v}</option>
-                            ))}
-                        </optgroup>
-                    )}
-                </HTMLSelect>
-            )}
+                />
+            </Popover>
         </ControlGroup>
     );
 };

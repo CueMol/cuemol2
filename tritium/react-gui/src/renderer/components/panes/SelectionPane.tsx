@@ -21,24 +21,19 @@
  * @module SelectionPane
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-    Button,
-    ButtonGroup,
-    Icon,
-    Intent,
-    Menu,
-    MenuItem,
-    Popover,
-    TextArea,
-    Tooltip,
-} from '@blueprintjs/core';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Icon } from '@blueprintjs/core';
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol';
 import { ObjectSelect, objectFilters } from '../widgets/ObjectSelect';
+import { FieldSection, TextField } from '../widgets/form';
 import {
     getHistory,
     pushHistory,
 } from '../widgets/MolSelList/selHistory';
+import { SelectionBuilder } from '../widgets/MolSelList';
+import { useSelectionValues } from '../widgets/MolSelList/useSelectionValues';
+import { useSelHitCount } from '../widgets/MolSelList/useSelHitCount';
+import { CountTag } from '../widgets/MolSelList/CountTag';
 
 /* --- Props --- */
 
@@ -46,6 +41,8 @@ interface SelectionPaneProps {
     cm: AsyncCueMol | null;
     /** Active scene UID, or undefined when no scene is active. */
     activeSceneId: number | undefined;
+    /** Active mol-view UID -- required for the Center action. */
+    activeMolViewId?: number | undefined;
     collapsed?: boolean;
     onToggleCollapse?: () => void;
 }
@@ -62,6 +59,7 @@ const VALIDATE_SKIP = new Set(['', '*', 'none']);
 export const SelectionPane: React.FC<SelectionPaneProps> = ({
     cm,
     activeSceneId,
+    activeMolViewId,
     collapsed,
     onToggleCollapse,
 }) => {
@@ -71,6 +69,80 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({
     const [isValid, setIsValid] = useState(true);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [historyItems, setHistoryItems] = useState<string[]>(() => getHistory());
+
+    // Named selection defs + target mol's current selection, for the builder.
+    const [sceneDefs, setSceneDefs] = useState<string[]>([]);
+    const [globalDefs, setGlobalDefs] = useState<string[]>([]);
+    const [currentSel, setCurrentSel] = useState<string | undefined>(undefined);
+    // Bumped after a successful "Save as..." to re-fetch the named defs.
+    const [saveBump, setSaveBump] = useState(0);
+
+    useEffect(() => {
+        if (!cm || activeSceneId === undefined) {
+            setSceneDefs([]);
+            setGlobalDefs([]);
+            setCurrentSel(undefined);
+            return;
+        }
+        let cancelled = false;
+        const args =
+            selectedMolId !== undefined
+                ? { sceneId: activeSceneId, molId: selectedMolId }
+                : { sceneId: activeSceneId };
+        cm.invokeService('getSelDefs', args)
+            .then((res) => {
+                if (cancelled) return;
+                setSceneDefs(res.scene);
+                setGlobalDefs(res.global);
+                setCurrentSel(res.currentSel);
+            })
+            .catch(() => {
+                if (cancelled) return;
+                setSceneDefs([]);
+                setGlobalDefs([]);
+                setCurrentSel(undefined);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [cm, activeSceneId, selectedMolId, saveBump]);
+
+    const resolveValues = useSelectionValues({ cm, sceneID: activeSceneId, molID: selectedMolId });
+
+    const getHitCount = useMemo(
+        () =>
+            cm && activeSceneId !== undefined && selectedMolId !== undefined
+                ? (str: string): Promise<number | null> =>
+                      cm
+                          .invokeService('getSelHitCount', {
+                              sceneId: activeSceneId,
+                              molId: selectedMolId,
+                              selStr: str,
+                          })
+                          .then((r) => r.count)
+                : undefined,
+        [cm, activeSceneId, selectedMolId],
+    );
+
+    // Hit count of the current selection expression, shown as a badge inside
+    // the selection text field (the builder no longer renders its own header
+    // row for this). selStr mirrors the builder's current selection.
+    const currentCount = useSelHitCount(getHitCount, selStr);
+
+    const onSaveAs = useCallback(
+        async (name: string, expr: string): Promise<boolean> => {
+            if (!cm || activeSceneId === undefined) return false;
+            const res = await cm.invokeService('saveSelDef', { sceneId: activeSceneId, name, expr });
+            if (res.ok) setSaveBump((n) => n + 1);
+            return res.ok;
+        },
+        [cm, activeSceneId],
+    );
+
+    const onBuilderEmit = useCallback((expr: string) => {
+        setSelStr(expr);
+        setErrorMsg(null);
+    }, []);
 
     // ---- Live validation (debounced, mirrors MolSelList) ----
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -126,42 +198,23 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({
             });
     }, [cm, canApply, activeSceneId, selectedMolId, selStr]);
 
-    const onClear = useCallback(() => {
-        setSelStr('');
-        setErrorMsg(null);
-    }, []);
-
-    // Refresh history just before the picker opens, in case another
-    // pane (MolSelList instance) appended something while we were idle.
-    const onHistoryOpening = useCallback(() => {
-        setHistoryItems(getHistory());
-    }, []);
-
-    const onPickHistory = useCallback((value: string) => {
-        setSelStr(value);
-        setErrorMsg(null);
-    }, []);
-
-    const historyMenu = (
-        <Menu>
-            {historyItems.length === 0 ? (
-                <MenuItem text="(no history)" disabled />
-            ) : (
-                historyItems.map((entry) => (
-                    <MenuItem
-                        key={entry}
-                        text={entry}
-                        onClick={() => onPickHistory(entry)}
-                    />
-                ))
-            )}
-        </Menu>
-    );
-
-    const intent = isValid ? Intent.NONE : Intent.DANGER;
+    // Center the active view on the current selection (reuses the same worker
+    // service as MolStructPane's Center action).
+    const canCenter = canApply && activeMolViewId !== undefined;
+    const onCenter = useCallback(() => {
+        if (!cm || !canCenter) return;
+        cm.invokeService('centerMolSelection', {
+            sceneId: activeSceneId!,
+            viewId: activeMolViewId!,
+            molId: selectedMolId!,
+            selStr,
+        }).catch((err: unknown) => {
+            console.warn('centerMolSelection failed:', err);
+        });
+    }, [cm, canCenter, activeSceneId, activeMolViewId, selectedMolId, selStr]);
 
     return (
-        <div className="sp-pane">
+        <div className="sp-pane selection-pane">
             <div
                 className={`sp-section-header ${onToggleCollapse ? 'collapsible' : ''}`}
                 onClick={onToggleCollapse}
@@ -177,77 +230,56 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({
                     <Icon icon="select" size={14} className="section-icon" />
                     <span className="section-title">Selection</span>
                 </div>
-                <div
-                    className="sp-section-header-actions"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <ButtonGroup minimal>
-                        <Tooltip content="Select" placement="bottom" compact>
-                            <Button
-                                minimal
-                                small
-                                icon={<Icon icon="select" size={14} />}
-                                className="section-action-btn"
-                                disabled={!canApply}
-                                onClick={onSelect}
-                            />
-                        </Tooltip>
-                        <Tooltip content="Clear input" placement="bottom" compact>
-                            <Button
-                                minimal
-                                small
-                                icon={<Icon icon="eraser" size={14} />}
-                                className="section-action-btn"
-                                disabled={selStr.length === 0}
-                                onClick={onClear}
-                            />
-                        </Tooltip>
-                        <Popover
-                            content={historyMenu}
-                            onOpening={onHistoryOpening}
-                            placement="bottom-end"
-                        >
-                            <Tooltip content="History" placement="bottom" compact>
-                                <Button
-                                    minimal
-                                    small
-                                    icon={<Icon icon="history" size={14} />}
-                                    className="section-action-btn"
-                                />
-                            </Tooltip>
-                        </Popover>
-                    </ButtonGroup>
-                </div>
             </div>
             {!collapsed && (
                 <div className="sp-pane-fill">
-                    <ObjectSelect
-                        cm={cm}
-                        sceneId={activeSceneId}
-                        label="Molecule"
-                        filter={objectFilters.molCoord}
-                        selectedId={selectedMolId}
-                        onChange={setSelectedMolId}
-                        emptyText="(no molecules)"
-                        fallbackName={(m) => `Mol ${m.uid}`}
-                    />
-                    <div className="selection-text-row">
-                        <label className="selection-label">Selection</label>
-                        <TextArea
-                            value={selStr}
-                            onChange={(e) => {
-                                setSelStr(e.target.value);
-                                if (errorMsg) setErrorMsg(null);
-                            }}
-                            placeholder="Input selection command"
-                            fill
-                            growVertically={false}
-                            intent={intent}
-                            className="selection-textarea"
+                    <FieldSection title="Molecule" className="object-select-section">
+                        <ObjectSelect
+                            cm={cm}
+                            sceneId={activeSceneId}
+                            label="Molecule"
+                            filter={objectFilters.molCoord}
+                            selectedId={selectedMolId}
+                            onChange={setSelectedMolId}
+                            emptyText="(no molecules)"
+                            fallbackName={(m) => `Mol ${m.uid}`}
+                            hideLabel
                         />
-                        {errorMsg !== null && (
-                            <div className="selection-error">{errorMsg}</div>
-                        )}
+                    </FieldSection>
+                    <div className="selection-text-row">
+                        <FieldSection title="Selection" className="selection-input-field">
+                            <div className="selection-input-with-count">
+                                <TextField
+                                    value={selStr}
+                                    onChange={(v) => {
+                                        setSelStr(v);
+                                        if (errorMsg) setErrorMsg(null);
+                                    }}
+                                    placeholder="Input selection command"
+                                    invalid={!isValid}
+                                />
+                                <CountTag count={currentCount} />
+                            </div>
+                            {errorMsg !== null && (
+                                <div className="selection-error">{errorMsg}</div>
+                            )}
+                        </FieldSection>
+                        <SelectionBuilder
+                            value={selStr}
+                            onEmit={onBuilderEmit}
+                            history={historyItems}
+                            currentSel={currentSel}
+                            sceneDefs={sceneDefs}
+                            globalDefs={globalDefs}
+                            resolveValues={resolveValues}
+                            getHitCount={getHitCount}
+                            onSaveAs={onSaveAs}
+                            onSelect={onSelect}
+                            onCenter={onCenter}
+                            canSelect={canApply}
+                            canCenter={canCenter}
+                            disabled={cm === null || activeSceneId === undefined}
+                        />
                     </div>
                 </div>
             )}

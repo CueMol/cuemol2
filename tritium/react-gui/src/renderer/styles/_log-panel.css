@@ -203,14 +203,6 @@
   flex-shrink: 0;
 }
 
-/* Compact action button — kept visually subordinate to the panel tabs. */
-.render-action-btn.bp5-button {
-  min-height: 22px;
-  padding: 0 var(--space-4);
-  font-size: var(--fs-base);
-  font-weight: var(--fw-medium);
-}
-
 /* Image-size preset (quick dropdown; full size controls live in Inspector). */
 .render-panel-preset {
   display: flex;
@@ -218,13 +210,16 @@
   gap: var(--space-3);
 }
 
+/* Standard form label (typography from the .type-label role; not muted). */
 .render-panel-preset-label {
-  font-size: var(--fs-base);
-  color: var(--text-muted);
+  color: var(--text-secondary);
+  white-space: nowrap;
 }
 
 .render-panel-preset-select {
+  display: flex;
   width: 168px;
+  flex: 0 0 auto;
 }
 
 .render-panel-status {

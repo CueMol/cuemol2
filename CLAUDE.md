@@ -79,15 +79,12 @@ core (@cuemol/core): C++ addon + auto-generated TypeScript wrappers
 
 ### React-GUI Coding Conventions
 
-**スタイル・デザイントークン (MUST)** — 全トークンは `react-gui/src/renderer/styles/_variables.css` に定義。詳細・一覧・移植チェックリストは [`docs/migration/ui-style-guide.md`](docs/migration/ui-style-guide.md)。
-- **色**: 必ずアプリ semantic トークン (`var(--bg-*)` / `var(--text-*)` / `var(--accent*)` / `var(--border*)`) 経由。生 hex / `rgb()` / `Colors.*` (`@blueprintjs/core`) / Blueprint 内部変数 `var(--pt-*)` は**禁止**。例外は `crash/` (テーマアクセス不可)・NAMED_COLORS 等の分子色データ・`--swatch-text` のような固定コントラスト色のみ。
-- **余白/サイズ/角丸**: `var(--space-0..6)` / `var(--ctrl-h-sm|md|lg)` / `var(--panel-header-h)` / `var(--icon-sm|md|lg)` / `var(--radius-sm|md|lg)` 経由。生 px を新規に書かない。新しい値が要るときは**まず `_variables.css` にトークンを足してから参照**する (コンポーネントに直書きしない)。
-- **フォント (意味的 role で選ぶ)**: テキストは **px やトークンを「目的の見た目」から逆算して選ばず、UI 上の役割 (role) で選ぶ**。`styles/_typography.css` の `.type-*` ユーティリティクラスを JSX に貼る: `.type-title` / `.type-subtitle` / `.type-eyebrow` (大文字セクション見出し) / `.type-label` / `.type-row` (リスト・ツリー行) / `.type-body` (説明文) / `.type-caption` / `.type-mono` / `.type-hero`。同じ role の UI は必ず同じクラスを使い統一する。自前で描画しない Blueprint 注入要素 (`.bp5-tree-node-content`, `.bp5-menu-item` 等) だけ、対応する `--type-<role>-fs|-lh|-fw` 変数を CSS で参照する。生 `--fs-*` / `--lh-*` を component CSS で新規直参照しない (raw primitive であり role の裏方)。inline `style` の `fontSize` 数値・`em` 直書きも禁止。
-- **構造 role**: panel header = `.panel-header`、sub-section header = `.section-header`、リスト/ツリー行 = `.list-row` (`_typography.css`)。同じ役割の box を component ごとに重複定義しない。
-- **既定値**: panel header 高さ = `--panel-header-h` (30px、トップレベルのみ。sub-section は `--ctrl-h-md`)、リスト/ツリー行高さ = `--row-h` (22px)、icon = `--icon-md` (14px)。毎回サイズを決め直さない。
-- 新規スタイルは原則 `styles/_*.css` のクラスに置く。inline `style={{}}` は動的値 (計算した色プレビュー等) のみ許可。
-- 検証: `cd tritium/react-gui && npm run lint:style` (または `task lint_tritium_style`) で生 hex/px を検出 (warn-only)。新規追加でベースライン件数を増やさないこと。
-- ダークモード: `portalClassName={isDark ? 'bp5-dark' : ''}` を Dialog に付与すれば Blueprint が自動対応。テーマ切替は `data-theme` 属性 + semantic トークンの再マッピングで一括解決される。
+**UI/UX・CSS・コンポーネント規約 (MUST)** — 規約は全て [`docs/migration/ui-style-guide.md`](docs/migration/ui-style-guide.md) に**集約**。UI/UX の記述をこの CLAUDE.md や他所に分散させない (新規規約はガイドへ追記)。新規 UI を書く前に必ず一読すること。要点:
+- **label+control UI は form-kit カタログで組む / サイズは選ばない (最重要)**: フォーム行・テキスト入力・select・numeric・switch・color・compact button・segmented control・ツールバー類は `react-gui/src/renderer/components/widgets/form/` の `Field` / `FieldGroup` / `FieldSection` / `TextField` / `SelectField` / `NumericField` / `SwitchField` / `ColorField` / `FormButton` / `SegmentField` を使う。これらは size props を持たず、サイズの単一ソースは `_form-kit.css` ＋ `--field-*`/`--form-*` トークン。**コントロール高・行高・label gap・section spacing を consumer の CSS/inline `style` で指定しない**。無い部品は**先にカタログへ追加**してから使う。「コンポーネント追加のたびにサイズが崩れる」のを防ぐ核心規約。
+- **ラベルの階層も component で決める (微調整しない)**: pane 内の**最上位グループ見出し** (例 `Molecule`/`Term`) は `FieldSection` の `title` (= `.type-group-label` role)、**下位の行ラベル**は `Field`/`.type-label`。section 間余白は親 container の `gap: var(--form-section-gap)` 1 回のみ。weight/大文字/字間/spacing を consumer 側で個別に足さない (詳細は ui-style-guide.md §0)。
+- 色・余白・サイズ・角丸は `_variables.css` のトークン経由 (生 hex/px 禁止)。テキストは `.type-*` role で選ぶ (px 逆算しない)。構造は `.panel-header` / `.section-header` / `.list-row`。inline `style={{}}` は動的値のみ。
+- dark/light 両テーマで確認。検証: `cd tritium/react-gui && npm run lint:style` (または `task lint_tritium_style`)。新規追加でベースライン件数を増やさない。
+- 詳細 (トークン一覧・カタログ component 表・typography role・do/don't・移植チェックリスト) は ui-style-guide.md を見る。
 
 **macOS ネイティブメニュー**
 - macOS アプリメニューは `src/main/menu.ts` の `macOnlyGroups` にハードコードされており、`APP_MENU` の `darwinOnly` グループは無視される。macOS 側の変更は `menu.ts` を直接編集する

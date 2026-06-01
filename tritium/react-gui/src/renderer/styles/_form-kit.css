@@ -1,0 +1,268 @@
+/*
+ * Form-kit -- the single source of truth for label+control sizing.
+ *
+ * These `.fk-*` classes are emitted ONLY by the form-kit catalog components
+ * (`components/widgets/form/`). UI code composes those components and never
+ * sets control height / row height / label gap / section spacing itself, so a
+ * size is never re-chosen per component. All size-determining values come from
+ * the `--field-*` / `--form-*` tokens in `_variables.css`; everything else uses
+ * the existing semantic tokens so the kit follows the active theme.
+ *
+ * To change the canonical size of a control, edit the token (one place) -- not
+ * a consumer's CSS.
+ */
+
+/* ── Field row (label + control) ── */
+.fk-field-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--field-label-gap);
+  padding: var(--field-row-pad) 0;
+  min-width: 0;
+}
+
+/* Inline variant: label and control on one line (e.g. switches). */
+.fk-field-row.fk-inline {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.fk-field-label {
+  font-size: var(--type-label-fs);
+  font-weight: var(--type-label-fw);
+  line-height: var(--lh-snug);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fk-field-control {
+  min-width: 0;
+}
+
+/* ── Field group (vertical stack of rows / a section) ── */
+.fk-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--form-row-gap);
+  min-width: 0;
+}
+
+.fk-field-group + .fk-field-group {
+  margin-top: var(--form-section-gap);
+}
+
+/* ── Field section (top-level labelled group; see FieldSection.tsx) ──
+ * Title -> content gap is owned here; the gap BETWEEN sibling sections comes
+ * from the parent container's `gap` (set it to --form-section-gap), so a whole
+ * pane's sections share one spacing value with no per-section tuning. */
+.fk-field-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--field-label-gap);
+  min-width: 0;
+}
+
+.fk-field-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.fk-field-section-title {
+  color: var(--text-secondary);
+}
+
+/* ── Text input ── */
+.fk-input.bp5-input-group .bp5-input,
+.fk-input.bp5-input-group input {
+  background: var(--bg-input) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-primary) !important;
+  font-size: var(--fs-lg);
+  height: var(--field-h);
+  border-radius: var(--radius-md);
+  caret-color: var(--accent);
+}
+
+/* Compact, INSET focus ring -- stays within the control so it never
+   overflows the (tight) row height into neighbouring rows. */
+.fk-input.bp5-input-group .bp5-input:focus,
+.fk-input.bp5-input-group input:focus {
+  border-color: var(--accent) !important;
+  box-shadow: inset 0 0 0 1px var(--accent) !important;
+}
+
+.fk-input.bp5-input-group .bp5-icon {
+  color: var(--text-muted);
+}
+
+/* ── Select ── */
+.fk-select.bp5-html-select select {
+  background: var(--bg-input) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-primary) !important;
+  font-size: var(--fs-lg);
+  height: var(--field-h);
+  border-radius: var(--radius-md);
+  /* Reserve room for the caret icon so the value text never runs under it. */
+  padding-right: 24px;
+  -webkit-appearance: none;
+  appearance: none;
+  /* Drop Blueprint's default inset+outer shadow; the 1px border is the
+     boundary. Prevents a doubled/oversized edge against the input border. */
+  box-shadow: none !important;
+}
+
+/* Compact, INSET focus ring -- matches the text input and never overflows the
+   row. (Blueprint's default select focus ring is large and spills into the
+   adjacent rows when the row gap is tight.) */
+.fk-select.bp5-html-select select:focus {
+  outline: none;
+  border-color: var(--accent) !important;
+  box-shadow: inset 0 0 0 1px var(--accent) !important;
+}
+
+/* Recenter the caret within the compact select height. */
+.fk-select.bp5-html-select .bp5-icon {
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+}
+
+/* ── Numeric (slider + compact input) ── */
+.fk-numeric-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.fk-slider.bp5-slider {
+  min-height: 16px;
+  height: 16px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.fk-slider .bp5-slider-track {
+  height: 4px;
+  top: 6px;
+}
+
+.fk-slider .bp5-slider-progress.bp5-intent-primary,
+.fk-slider .bp5-slider-progress {
+  background: var(--accent);
+  border-radius: var(--radius-sm);
+}
+
+.fk-slider .bp5-slider-handle {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--slider-handle);
+  border: none;
+  box-shadow: 0 1px 3px var(--slider-handle-shadow);
+}
+
+.fk-slider .bp5-slider-handle:hover {
+  background: var(--slider-handle-hover);
+}
+
+.fk-slider .bp5-slider-handle:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent), 0 1px 3px var(--slider-handle-shadow);
+}
+
+/* Fixed compact numeric column that never shrinks or overflows. */
+.fk-numeric.bp5-numeric-input {
+  flex: 0 0 68px;
+  width: 68px;
+  min-width: 68px;
+}
+
+.fk-numeric .bp5-input-group {
+  width: 100%;
+  min-width: 0;
+}
+
+.fk-numeric .bp5-input-group .bp5-input {
+  background: var(--bg-input) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-primary) !important;
+  font-size: var(--fs-md);
+  height: var(--field-h-sm);
+  width: 100%;
+  text-align: right;
+  padding-right: var(--space-2);
+  border-radius: var(--radius-md);
+  caret-color: var(--accent);
+}
+
+.fk-numeric .bp5-input-group .bp5-input:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 1px var(--accent) !important;
+}
+
+/* Hide the numeric spinner buttons for the compact layout. */
+.fk-numeric .bp5-button-group {
+  display: none;
+}
+
+/* Unit suffix after a numeric input. */
+.fk-unit {
+  flex: 0 0 auto;
+  font-size: var(--type-caption-fs);
+  color: var(--text-secondary);
+}
+
+/* ── Switch ── */
+.fk-switch.bp5-switch {
+  margin-bottom: 0;
+  font-size: var(--fs-lg);
+}
+
+/* ── Compact form button + a row of them ── */
+.fk-btn.bp5-button {
+  min-height: var(--field-btn-h);
+  /* One step down from Blueprint's small-button text so the label reads as a
+     control, not a heading (matches the field-label scale). */
+  font-size: var(--fs-base);
+}
+
+/* Compact keyboard-focus ring. Drawn INSET (inside the button box) so the
+   highlight never bleeds past the button edge -- an outset ring overflows and
+   overlaps neighbours once the row/grid gap is tight (--space-1). The inset
+   ring is spacing-independent: it stays within bounds at any gap. */
+.fk-btn.bp5-button:focus,
+.fk-btn.bp5-button:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.fk-btn-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* ── Segmented control (mode / source switcher) ── */
+.fk-segmented.bp5-segmented-control {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+/* Segment height + label scale match the catalog button (.fk-btn): single
+   source so a switcher reads the same as a button row. */
+.fk-segmented.bp5-segmented-control .bp5-button {
+  min-height: var(--field-btn-h);
+  padding-top: 0;
+  padding-bottom: 0;
+  font-size: var(--fs-base);
+}

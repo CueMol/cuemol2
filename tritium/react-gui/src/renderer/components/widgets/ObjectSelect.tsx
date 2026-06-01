@@ -20,7 +20,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { HTMLSelect } from '@blueprintjs/core'
+import { Field, SelectField } from './form'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import type { SceneObjectEntry } from '../../worker/server/services/listSceneObjects.service'
 import { SEM_OBJECT, SEM_SCENE, SEM_ANY } from '../../event'
@@ -64,6 +64,12 @@ interface Props {
     emptyText?: string
     /** Fallback display name when `item.name` is the empty string. */
     fallbackName?: (item: SceneObjectEntry) => string
+    /**
+     * Render only the dropdown (no `Field` label row), for placement inside a
+     * `FieldSection` whose title already provides the label. `label` is still
+     * used as the accessible name.
+     */
+    hideLabel?: boolean
 }
 
 export const ObjectSelect: React.FC<Props> = ({
@@ -71,6 +77,7 @@ export const ObjectSelect: React.FC<Props> = ({
     selectedId, onChange,
     emptyText = '(no items)',
     fallbackName,
+    hideLabel = false,
 }) => {
     const [allItems, setAllItems] = useState<SceneObjectEntry[]>([])
     const fetchToken = useRef(0)
@@ -146,33 +153,38 @@ export const ObjectSelect: React.FC<Props> = ({
     }, [items])
 
     const handleChange = useCallback(
-        (e: React.ChangeEvent<HTMLSelectElement>) => {
-            const v = Number(e.currentTarget.value)
+        (value: string) => {
+            const v = Number(value)
             if (Number.isFinite(v)) onChange(v)
         },
         [onChange],
     )
 
+    const select = (
+        <SelectField
+            value={selectedId ?? ''}
+            onChange={handleChange}
+            disabled={items.length === 0}
+            aria-label={label}
+        >
+            {items.length === 0 ? (
+                <option value="">{emptyText}</option>
+            ) : (
+                items.map((it) => (
+                    <option key={it.uid} value={it.uid}>
+                        {it.name || fallbackName?.(it) || `Obj ${it.uid}`}
+                    </option>
+                ))
+            )}
+        </SelectField>
+    )
+
+    // Bare dropdown (no Field label) for use inside a FieldSection.
+    if (hideLabel) return <div className="object-select">{select}</div>
+
     return (
-        <div className="selection-row">
-            <label className="selection-label">{label}</label>
-            <HTMLSelect
-                value={selectedId ?? ''}
-                onChange={handleChange}
-                fill
-                disabled={items.length === 0}
-                className="selection-mol-select"
-            >
-                {items.length === 0 ? (
-                    <option value="">{emptyText}</option>
-                ) : (
-                    items.map((it) => (
-                        <option key={it.uid} value={it.uid}>
-                            {it.name || fallbackName?.(it) || `Obj ${it.uid}`}
-                        </option>
-                    ))
-                )}
-            </HTMLSelect>
-        </div>
+        <Field label={label} className="object-select">
+            {select}
+        </Field>
     )
 }

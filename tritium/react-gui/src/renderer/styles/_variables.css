@@ -139,7 +139,13 @@
   --type-eyebrow-fs: var(--fs-base);
   --type-eyebrow-lh: var(--lh-tight);
   --type-eyebrow-fw: var(--fw-semibold);
-  /* Form / control label */
+  /* Top-level group / section label inside a pane (first-letter caps, NOT
+     uppercased). Heavier than a field label so a section heading reads as one
+     hierarchy level above the fields it groups. Pair with --ls-wide. */
+  --type-group-label-fs: var(--fs-base);
+  --type-group-label-lh: var(--lh-tight);
+  --type-group-label-fw: var(--fw-semibold);
+  /* Form / control label (one level below a group label) */
   --type-label-fs: var(--fs-base);
   --type-label-lh: var(--lh-tight);
   --type-label-fw: var(--fw-medium);
@@ -201,6 +207,26 @@
   --radius-sm: 2px;
   --radius-md: 3px;
   --radius-lg: 4px;
+
+  /* ── Form / field sizing (single source for the form-kit catalog) ──
+     ONLY styles/_form-kit.css references these. UI code must never set
+     control height / row gap / label gap directly -- it composes the
+     form-kit components (Field / TextField / SelectField / ...), which carry
+     these values, so a size is never re-chosen per component. */
+  --field-h: 22px;                     /* standard control height (text / select) */
+  --field-h-sm: var(--ctrl-h-sm);      /* compact control (numeric) -- 20px */
+  --field-label-gap: var(--space-1);   /* label -> control gap (stack layout) */
+  --field-row-pad: var(--space-1);     /* vertical padding around one field row */
+  --form-row-gap: var(--space-1);      /* gap between rows in a FieldGroup */
+  --form-section-gap: var(--space-3);  /* gap between form sections */
+  --field-btn-h: var(--ctrl-h-sm);     /* compact form button height */
+
+  /* ── Listbox / list-tree rows (single source for styles/_list-kit.css) ──
+     Row height reuses --row-h (22px). hover/selected reuse --bg-hover /
+     --bg-active / --accent. Only _list-kit.css references the two below; list
+     UIs compose the list-kit role classes / <ListRow>, never re-choose these. */
+  --list-row-pad-x: var(--space-3);    /* row horizontal padding */
+  --list-row-gap: var(--space-2);      /* icon -> label gap in a row */
 }
 
 /* ─── Light Theme ─── */

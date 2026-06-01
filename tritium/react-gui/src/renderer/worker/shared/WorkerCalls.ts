@@ -37,6 +37,8 @@ import type { GetReaderDefaultOptionsArgs, GetReaderDefaultOptionsResult } from 
 import type { GetOpenFiltersArgs } from '../server/services/getOpenFilters.service'
 import type { GetSceneCloseInfoArgs, GetSceneCloseInfoResult } from '../server/services/getSceneCloseInfo.service'
 import type { GetSelDefsArgs, GetSelDefsResult } from '../server/services/getSelDefs.service'
+import type { GetSelHitCountArgs, GetSelHitCountResult } from '../server/services/getSelHitCount.service'
+import type { SaveSelDefArgs, SaveSelDefResult } from '../server/services/saveSelDef.service'
 import type { LoadObjectArgs } from '../server/services/loadObject.service'
 import type { LoadSceneArgs } from '../server/services/loadScene.service'
 import type {
@@ -358,6 +360,8 @@ export interface ServiceMap {
   getOpenFilters:             { args: GetOpenFiltersArgs;              result: ElectronFileFilter[] }
   getSceneCloseInfo:          { args: GetSceneCloseInfoArgs;           result: GetSceneCloseInfoResult }
   getSelDefs:                 { args: GetSelDefsArgs;                  result: GetSelDefsResult }
+  getSelHitCount:             { args: GetSelHitCountArgs;              result: GetSelHitCountResult }
+  saveSelDef:                 { args: SaveSelDefArgs;                  result: SaveSelDefResult }
   loadObject:                 { args: LoadObjectArgs;                  result: { ok: boolean } }
   loadScene:                  { args: LoadSceneArgs;                   result: { ok: boolean } }
   streamLoadFromUrl:          { args: StreamLoadFromUrlArgs;           result: StreamLoadFromUrlResult }

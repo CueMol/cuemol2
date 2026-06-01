@@ -28,6 +28,9 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  /* Theme the Allotment inter-pane separator (a 1px line at the top of each
+     non-first pane) so it reads as a clean VSCode-style section divider. */
+  --separator-border: var(--border);
 }
 
 /* ─── Side-Panel Pane (each Allotment child) ─── */
@@ -38,7 +41,9 @@
   overflow: hidden;
 }
 
-/* Section header – fixed at top of each pane */
+/* Section header -- fixed at top of each pane (VSCode-style section title:
+ * blends with the sidebar background, no bottom rule; the section divider is
+ * the 1px Allotment separator drawn above each non-first pane). */
 .sp-section-header {
   display: flex;
   align-items: center;
@@ -53,10 +58,14 @@
   text-transform: uppercase;
   letter-spacing: var(--ls-wide);
   color: var(--text-secondary);
-  background: var(--bg-panel-header);
-  border-bottom: 1px solid var(--border-subtle);
+  background: transparent;
   user-select: none;
   flex-shrink: 0;
+}
+
+/* Subtle hover feedback for the collapsible (click-to-toggle) headers. */
+.sp-section-header.collapsible:hover {
+  background: var(--bg-hover);
 }
 
 .sp-section-header-left {
@@ -149,13 +158,18 @@
   gap: var(--space-3);
 }
 
-/* ─── Side-Panel Allotment sash styling ─── */
-.side-panel-content .sash-container .sash {
-  background: var(--border-subtle);
-}
+/* ─── Side-Panel Allotment sash ───
+ * The resize handle stays transparent (inherits the base .sash rule); the
+ * visible divider is the 1px Allotment separator above each pane. Colouring the
+ * 8px-tall sash here previously produced a thick band that overlapped the
+ * section header top and made the title look vertically off-centre. */
 
-/* ─── Blueprint Tree Overrides (Scene & MolStruct) ─── */
-/* NOTE: the left inset lives on the container so Blueprint's depth-based
+/* ─── Scene & MolStruct trees ─── */
+/* Shared row metrics (height / hover / selected / caret / icon / label) live in
+ * `_list-kit.css` keyed on `.listbox-tree`; both trees carry that class. Only
+ * tree-SPECIFIC layout stays here.
+ *
+ * NOTE: the left inset lives on the container so Blueprint's depth-based
  * padding (`.bp5-tree-node-content-<depth>`, +23px per level) still applies
  * to nested rows. Overriding `padding-left` on `.bp5-tree-node-content`
  * directly would flatten the indentation. */
@@ -163,11 +177,6 @@
 .mol-tree {
   padding: var(--space-1) 0 var(--space-1) var(--space-2);
   background: transparent;
-}
-
-.scene-tree .bp5-tree-node,
-.mol-tree .bp5-tree-node {
-  min-height: 0;
 }
 
 /* Disable Blueprint Collapse animation in the mol-tree so chain /
@@ -189,69 +198,7 @@
   animation: none !important;
 }
 
-/* Blueprint-rendered tree rows: the "row" role, referenced via tokens since
-   we cannot put the .type-row / .list-row class on Blueprint's element. */
-.scene-tree .bp5-tree-node-content,
-.mol-tree .bp5-tree-node-content {
-  height: var(--row-h);
-  padding-right: var(--space-3);
-  cursor: pointer;
-  font-size: var(--type-row-fs);
-  line-height: var(--type-row-lh);
-  color: var(--text-primary);
-  transition: background 0.1s;
-}
-
-.scene-tree .bp5-tree-node-content:hover,
-.mol-tree .bp5-tree-node-content:hover {
-  background: var(--bg-hover);
-}
-
-.scene-tree .bp5-tree-node.bp5-tree-node-selected > .bp5-tree-node-content,
-.mol-tree .bp5-tree-node.bp5-tree-node-selected > .bp5-tree-node-content {
-  background: var(--bg-active) !important;
-  color: var(--accent);
-}
-
-.scene-tree .bp5-tree-node-caret,
-.mol-tree .bp5-tree-node-caret {
-  color: var(--text-muted) !important;
-  min-width: 20px;
-}
-
-.scene-tree .bp5-tree-node-caret:hover,
-.mol-tree .bp5-tree-node-caret:hover {
-  color: var(--text-secondary) !important;
-}
-
-.scene-tree .bp5-tree-node-caret-none,
-.mol-tree .bp5-tree-node-caret-none {
-  min-width: 20px;
-}
-
-.scene-tree .bp5-tree-node-icon,
-.mol-tree .bp5-tree-node-icon {
-  color: var(--text-secondary);
-}
-
-.scene-tree .bp5-tree-node.bp5-tree-node-selected > .bp5-tree-node-content .bp5-tree-node-icon,
-.mol-tree .bp5-tree-node.bp5-tree-node-selected > .bp5-tree-node-content .bp5-tree-node-icon {
-  color: var(--accent);
-}
-
-.scene-tree .bp5-tree-node-label,
-.mol-tree .bp5-tree-node-label {
-  font-size: var(--type-row-fs);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.scene-tree .bp5-tree-node-secondary-label,
-.mol-tree .bp5-tree-node-secondary-label {
-  display: flex;
-  align-items: center;
-}
+/* (Shared tree row metrics moved to `_list-kit.css` `.listbox-tree`.) */
 
 /* ─── Scene-tree DnD drop indicator ─── */
 /* The draggable label span fills the Blueprint label cell; the indicator
@@ -300,66 +247,40 @@
 }
 
 /* ─── Selection Panel ─── */
-.selection-row {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.selection-label {
-  font-size: var(--type-eyebrow-fs);
-  line-height: var(--type-eyebrow-lh);
-  font-weight: var(--type-eyebrow-fw);
-  text-transform: uppercase;
-  letter-spacing: var(--ls-wide);
-  color: var(--text-secondary);
-}
-
-.selection-mol-select.bp5-html-select select {
-  background: var(--bg-input) !important;
-  border: 1px solid var(--border) !important;
-  color: var(--text-primary) !important;
-  font-size: var(--type-row-fs);
-  height: 28px;
-}
-
-/* textarea row fills remaining space */
+/* Selection area: a compact text field on top, the inline builder below.
+   Controls come from the form-kit catalog (canonical sizing); this row only
+   owns the vertical stacking and scroll. */
 .selection-text-row {
   flex: 1;
   min-height: 0;
+  overflow-y: auto;
+  /* Only vertical scrolling -- without this, overflow-y:auto promotes
+     overflow-x to auto, so the vertical scrollbar's width spawns a permanent
+     phantom horizontal scrollbar. The builder lays out to the width (grids /
+     flex-wrap), so horizontal scroll is never wanted. */
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
+  /* Same section gap as sp-pane-fill / the builder, so the Selection section
+     and the builder's sections share one uniform rhythm. */
+  gap: var(--form-section-gap);
+}
+
+/* Molecule / Selection / Term / Modify are all FieldSections, so their titles
+   share the .type-group-label role automatically -- no per-pane label override
+   is needed here. */
+
+/* Selection input + hit-count badge on its right (the badge sits beside the
+   field, not inside it, so it never overflows the input box). */
+.selection-input-with-count {
+  display: flex;
+  align-items: center;
   gap: var(--space-2);
 }
 
-.selection-text-row .selection-label {
-  flex-shrink: 0;
-}
-
-.selection-textarea.bp5-input {
-  flex: 1;
-  min-height: 0;
-  background: var(--bg-input) !important;
-  border: 1px solid var(--border) !important;
-  color: var(--text-primary) !important;
-  /* Match LogPanel output typography. The log output renders at the
-   * Blueprint-default 14px even though `.log-output` declares
-   * `var(--fs-md)`, because Blueprint's `.bp5-tag` and other inline
-   * elements inside the log line carry their own larger font-size and
-   * dominate the visual baseline. Use `--fs-2xl` (14px) here so the
-   * textarea matches what the user actually sees in OUTPUT -- this is a
-   * deliberate exception to the `mono` typography role (12px) pinned to the
-   * log; revisit together with the log panel when it migrates to roles. */
-  font-family: var(--font-mono) !important;
-  font-size: var(--fs-2xl) !important;
-  line-height: var(--lh-normal) !important;
-  resize: none;
-  caret-color: var(--accent);
-}
-
-.selection-textarea.bp5-input::placeholder {
-  color: var(--text-muted);
+.selection-input-with-count .fk-input {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 /* Inline validation message: body text in the danger colour. */
@@ -370,9 +291,8 @@
   color: var(--accent-red);
 }
 
-/* Only steal the focus ring when the textarea is *not* showing a
- * danger intent -- otherwise Blueprint's red ring needs to win. */
-.selection-textarea.bp5-input:focus:not(.bp5-intent-danger) {
-  border-color: var(--accent) !important;
-  box-shadow: 0 0 0 1px var(--accent) !important;
+/* ─── Component Catalog gallery (DummyPane3 showcase) ─── */
+.catalog-note {
+  margin-top: var(--form-section-gap);
+  color: var(--text-muted);
 }

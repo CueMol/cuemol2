@@ -1,133 +1,217 @@
 /*
- * SelectionBuilder -- Popover query helper for composing CueMol
- * selection-syntax expressions.
+ * SelectionBuilder -- inline UI for composing CueMol selection-syntax
+ * expressions via set operations and unary transforms. Rendered inside the
+ * SelectionPane, so it fills the (narrow) side-panel width rather than a
+ * fixed popover. All sizing/colour values come from the app's semantic
+ * tokens in `_variables.css` so it follows the active theme.
  *
- * Rendered as a third segment of MolSelList's ControlGroup (a chevron
- * button that opens a 3-tab Popover: Builder / Library / History). All
- * sizing/colour values come from the app's semantic tokens in
- * `_variables.css` so the popover follows the active theme. The two raw
- * lengths kept here (popover width, menu scroll cap) are deliberate
- * layout constants, not theme values.
+ * Three stacked blocks (Current selection / Term / Apply term). Button rows
+ * wrap/grid so they stay usable at the side panel's minimum width (~180px).
  */
 
-/* Keep the trigger from stretching inside the fill ControlGroup, like the
-   picker does. The Popover target wrapper carries this class. */
-.mol-sel-list .selbuilder-trigger {
+/* Keep the MolSelList picker trigger from stretching inside the fill
+   ControlGroup. The Popover target wrapper carries this class. */
+.mol-sel-list .mol-sel-list-trigger {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
 }
 
-.selbuilder-popover {
-  width: 320px; /* fixed popover width -- layout constant */
-  /* Stable height so switching Builder / Library / History tabs does not
-     resize the popover and make Popper reposition it (jump up/down). Sized
-     to fit the tallest panel (Builder) snugly so shorter tabs do not look
-     empty. Layout constant. */
-  min-height: 184px;
-  padding: var(--space-4);
-}
-
-/* Blueprint Tabs default to an airy layout (tab-panel margin-top: 20px,
-   tab line-height: 30px). Tighten both inside the popover so the content
-   reads dense, not sparse. Scoped to .selbuilder-popover to avoid touching
-   other Tabs in the app. */
-.selbuilder-popover .bp5-tab {
-  /* line-height stays the 24px click target; text size follows the row role. */
-  line-height: var(--ctrl-h-md);
-  font-size: var(--type-row-fs);
-}
-
-.selbuilder-popover .bp5-tab-panel {
-  margin-top: var(--space-2);
-}
-
-.selbuilder-panel {
+/* MolSelList picker popover: Named/History segmented control + a menu. */
+.mol-sel-list-popover {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  padding: var(--space-3);
+  min-width: 180px;
 }
 
-.selbuilder-form {
+.selbuilder {
+  display: flex;
+  flex-direction: column;
+  /* One section gap for every top-level group, shared with the pane's
+     sp-pane-fill / selection-text-row containers, so the action toolbar and the
+     Term / Modify FieldSections sit at the same rhythm as the Molecule /
+     Selection sections above them -- no per-section tuning. */
+  gap: var(--form-section-gap);
+}
+
+.selbuilder--disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* Builder controls take the form-kit canonical heights + focus treatment
+   (single source: --field-* tokens / _form-kit.css). The builder owns only
+   its bespoke LAYOUT (grids, preview boxes); it never re-chooses a control
+   height or focus ring. Selects carry the `.fk-select` class directly (so
+   they get the shadow strip + recentred caret); inputs use a scoped compact
+   inset focus ring here so the highlight never overflows the tight rows. */
+.selbuilder .bp5-input-group .bp5-input {
+  height: var(--field-h);
+  /* Match the catalog TextField (.fk-input) label scale. Without this the
+     inputs inherit Blueprint's default 14px and read larger than the SoT. */
+  font-size: var(--fs-lg);
+}
+
+.selbuilder .bp5-input-group .bp5-input:focus {
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.selbuilder .bp5-button {
+  min-height: var(--field-btn-h);
+  /* Match the catalog FormButton (.fk-btn) label scale so builder buttons read
+     the same as the LogPanel / RenderPanel toolbar buttons. */
+  font-size: var(--fs-base);
+}
+
+/* Inset focus ring, mirroring the catalog button (.fk-btn). Blueprint's default
+   outset focus outline overflows the button box and overlaps neighbours in the
+   tight modify / apply grids (--space-1 gap); an inset ring stays within bounds
+   at any spacing. */
+.selbuilder .bp5-button:focus,
+.selbuilder .bp5-button:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+/* Term / Modify are now form-kit FieldSections (title = .type-group-label,
+   spacing owned by the .selbuilder container gap); no bespoke block / heading
+   styles live here anymore. */
+
+/* Hit-count badge (shared with the SelectionPane current-selection badge). */
+.selbuilder-count {
+  flex: 0 0 auto;
+}
+
+.selbuilder-modify-row,
+.selbuilder-distance-row,
+.selbuilder-current-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  flex-wrap: wrap;
+}
+
+/* Inline control labels (Modify / Distance) -- subdued like field labels,
+   sized via the label role. They sit inline; the controls wrap beside them. */
+.selbuilder-field-label,
+.selbuilder-unit {
+  font-size: var(--type-label-fs);
+  font-weight: var(--type-label-fw);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+/* Modify ops as a 2x2 grid so the four labelled buttons fit a ~180px pane. */
+.selbuilder-modify-btns.bp5-button-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-1);
+  width: 100%;
+}
+
+.selbuilder-modify-btns.bp5-button-group > .bp5-button {
+  margin: 0;
+}
+
+/* Narrow numeric distance field -- fixed small width is a layout constant.
+   Holds a short radius value (e.g. "5"), so half the former width is plenty. */
+.selbuilder-distance {
+  flex: 0 0 32px;
+  width: 32px;
+}
+
+.selbuilder-current-actions {
+  justify-content: space-between;
+}
+
+.selbuilder-saverow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1 1 auto;
+}
+
+/* --- Term --- */
+
+.selbuilder-property {
   display: flex;
   align-items: center;
   gap: var(--space-3);
   flex-wrap: wrap;
 }
 
-.selbuilder-form .bp5-html-select,
-.selbuilder-form .bp5-input-group {
-  flex: 1 1 80px;
+.selbuilder-property > .bp5-html-select {
+  flex: 0 0 auto;
+}
+
+.selbuilder-term-form {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1 1 120px;
   min-width: 0;
 }
 
-.selbuilder-range-sep {
+.selbuilder-term-form .bp5-input-group {
+  flex: 1 1 60px;
+  min-width: 0;
+}
+
+.selbuilder-sep {
   color: var(--text-secondary);
   font-weight: var(--fw-semibold);
 }
 
-.selbuilder-terms {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  min-height: var(--ctrl-h-md);
-  /* Bound the term list so a long draft scrolls instead of growing the
-     popover (which would defeat the stable-height fix above). */
-  max-height: 116px;
-  overflow-y: auto;
+/* Named/History term picker: trigger button shows the picked value; the list
+   lives in a floating Popover so it never pushes the Apply-term buttons down. */
+.selbuilder-term-trigger.bp5-button {
+  justify-content: space-between;
 }
 
-.selbuilder-term-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-/* "No terms yet" placeholder: descriptive body text. */
-.selbuilder-empty {
-  font-size: var(--type-body-fs);
-  line-height: var(--type-body-lh);
-  font-weight: var(--type-body-fw);
-  color: var(--text-muted);
-  font-style: italic;
-}
-
-.selbuilder-preview {
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: var(--space-2) var(--space-3);
-}
-
-.selbuilder-preview code {
-  font-family: var(--font-mono);
-  font-size: var(--type-mono-fs);
-  line-height: var(--type-mono-lh);
-  color: var(--accent);
-  word-break: break-all;
-}
-
-.selbuilder-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-3);
+.selbuilder-term-popover {
+  min-width: 180px;
 }
 
 .selbuilder-menu {
-  /* Scroll cap chosen so a long Library list stays near the Builder tab's
-     height (see .selbuilder-popover min-height), avoiding a size jump on
-     tab switch. Layout constant. */
-  max-height: 138px;
+  max-height: 160px;
   overflow-y: auto;
-  min-width: 220px;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
 }
 
-/* Unify item typography across the Library and History menus: the "row"
-   role keeps them identical (and matches the popover's other row text).
-   Blueprint renders these `MenuItem`s, so we reference the row role tokens
-   directly rather than applying the .type-row class. */
+/* Unify menu item typography with the popover's other row text. Blueprint
+   renders these MenuItems, so reference the row role tokens directly. */
 .selbuilder-menu .bp5-menu-item {
   font-size: var(--type-row-fs);
   line-height: var(--type-row-lh);
   min-height: var(--ctrl-h-md);
+}
+
+/* --- Apply (nested under Term) --- */
+
+/* Apply is a child of the Term block (label + button grid), not a sibling
+   block, so its "Apply" sub-label reads as belonging to the term above it. */
+.selbuilder-apply {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* 2x2 grid so each button has room for its icon + label + hit-count badge
+   (a single 4-up row is too narrow and the badge overflows). */
+.selbuilder-apply-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.selbuilder-apply-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-width: 0;
 }

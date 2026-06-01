@@ -30,5 +30,5 @@
       }
     ]
   },
-  "ignoreFiles": ["**/_variables.css", "**/node_modules/**", "**/out/**", "**/dist/**"]
+  "ignoreFiles": ["**/_variables.css", "**/_form-kit.css", "**/_list-kit.css", "**/node_modules/**", "**/out/**", "**/dist/**"]
 }

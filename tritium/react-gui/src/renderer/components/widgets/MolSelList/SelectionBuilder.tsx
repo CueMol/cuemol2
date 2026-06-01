@@ -1,170 +1,109 @@
 /**
  * @file components/widgets/MolSelList/SelectionBuilder.tsx
- * @description Popover-based helper UI for composing CueMol selection-syntax
- * expressions without memorising the grammar. Lives as a third segment of
- * MolSelList's control group (a chevron button opening a 3-tab Popover).
+ * @description Inline UI for composing CueMol selection-syntax expressions
+ * without memorising the grammar. Lives in the SelectionPane.
  *
- * ## Design
+ * ## Model
  *
- * One-way model: the builder writes into the selection text but never parses
- * it back. Power users hand-edit the text freely; novices get a guided path.
- * Three tabs:
- *  - Builder: pick a property keyword + value, combine terms with AND/OR/NOT.
- *  - Macros: apply a named selection (protein, water, ...); hover discloses
- *    its real definition (read-only) so users learn the raw grammar.
- *  - History: re-apply a recently committed expression.
+ * A single "current selection" expression is the target of every operation.
+ * A "term" (from one of three sources) is combined into it via binary set
+ * operations (Set / Add / Intersect / Sub); the current selection itself is
+ * reshaped by unary transforms (Not / Byres / Sidechain / Mainchain /
+ * Around / Expand). "Define name..." names the current selection so it can be
+ * reused as a parenthesised sub-expression. Logical operators are never typed
+ * by the user -- they are produced by these buttons.
  *
- * ## Grammar (verified against src/modules/molstr/parser_sel.yxx and the
- * tritium generator molStruct/selStrFromTree.ts)
+ * Two-way: the builder is a controlled editor of the parent's selection text.
+ * The container seeds the current selection via `value` and the current
+ * expression is mirrored back via `onEmit` in real time. External edits to
+ * `value` (manual text typing, Clear, History pick) re-seed the builder; the
+ * `value !== current` guard prevents an emit/re-seed loop and preserves the
+ * builder-local undo history across applied operations. The builder never
+ * mutates `mol.sel` or touches the scene undo history; selection commits stay
+ * the container's job (SelectionPane's Select button). Hit counts are
+ * read-only probes.
  *
- * CueMol selection terms are `keyword value` separated by WHITESPACE -- NOT
- * dot-separated. Keywords: `chain`, `resi`/`resid` (rangeable with `:`),
- * `resn` (residue name), `name` (atom name), `elem`. Chain values are
- * single-quoted (matching selStrFromTree's `c;'A'` convention). Boolean
- * operators are `and` / `or` / `not` with parentheses. Named macros
- * (`protein`, `water`, ...) are emitted by name and resolved by the C++
- * compiler at runtime; their definitions live in data/default_style.xml.
- *
- * @remarks
- *  - The builder never writes selection history. History is recorded only
- *    when the committed text is applied by the parent (e.g. PaintSelCell
- *    blur, SelectionPane Select).
- *  - Emitted fragments are validated live by MolSelList's existing
- *    `validateSelection` round-trip, so a malformed fragment surfaces as a
- *    danger intent on the input.
+ * Grammar reference: `src/modules/molstr/parser_sel.yxx` / `scanner_sel.lxx`
+ * (see selectionExpr.ts / selectionGrammar.ts).
  *
  * @module SelectionBuilder
  */
 
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import {
-    Button,
-    Popover,
-    Tabs,
-    Tab,
-    HTMLSelect,
-    InputGroup,
-    Tag,
-    Menu,
-    MenuItem,
-    MenuDivider,
-} from '@blueprintjs/core';
+import React, { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
+import { Button, ButtonGroup, HTMLSelect, InputGroup, Popover } from '@blueprintjs/core';
+import { SegmentField, FieldSection } from '../form';
 import { useTheme } from '../../../contexts/ThemeContext';
-import type { SelValueKind, ResolveValues } from './useSelectionValues';
+import type { ResolveValues } from './useSelectionValues';
+import { KEYWORDS, getKeywordDef } from './selectionGrammar';
+import type { BinaryOp, UnaryOp } from './selectionExpr';
+import { applyBinary, canApplyBinary } from './selectionExpr';
+import {
+    builderReducer,
+    canApplyUnary,
+    canRedo,
+    canUndo,
+    initBuilderState,
+    selectTerm,
+} from './selBuilderReducer';
+import { useSelHitCount, type GetHitCount } from './useSelHitCount';
+import { CountTag } from './CountTag';
+import { HistoryMenu, NamedSelMenu } from './SelMenus';
 
-/* --- Grammar metadata --- */
-
-/** A selectable property and how its value is formatted into syntax. */
-interface PropertyDef {
-    /** Emitted selection keyword, e.g. "chain", "resn", "name". */
-    key: string;
-    /** Human-readable label shown in the dropdown. */
-    label: string;
-    /** Whether the value supports a numeric range (`a:b`). */
-    rangeable: boolean;
-    /** Single-quote the value when emitting (matches selStrFromTree). */
-    quote: boolean;
-    /**
-     * Autocomplete category resolved from the active molecule. Note this is
-     * the value-source kind, which differs from the emitted keyword
-     * (kind "resname" -> keyword "resn", kind "aname" -> keyword "name").
-     */
-    valueKind?: SelValueKind;
-}
-
-const PROPERTIES: PropertyDef[] = [
-    { key: 'chain', label: 'Chain', rangeable: false, quote: true, valueKind: 'chain' },
-    { key: 'resi', label: 'Residue index', rangeable: true, quote: false },
-    { key: 'resn', label: 'Residue name', rangeable: false, quote: false, valueKind: 'resname' },
-    { key: 'name', label: 'Atom name', rangeable: false, quote: false, valueKind: 'aname' },
-    { key: 'elem', label: 'Element', rangeable: false, quote: false, valueKind: 'elem' },
-];
-
-/**
- * Named macros. The macro name is emitted and resolved by the C++ compiler
- * at runtime (definitions live in data/default_style.xml, e.g.
- * water = `rprop type=water`).
- */
-interface MacroDef {
-    key: string;
-    label: string;
-}
-
-const MACROS: MacroDef[] = [
-    { key: 'protein', label: 'Protein' },
-    { key: 'nucleic', label: 'Nucleic acid' },
-    { key: 'ligand', label: 'Ligand' },
-    { key: 'water', label: 'Water' },
-    { key: 'sugar', label: 'Sugar' },
-    { key: 'hydrogen', label: 'Hydrogen' },
-    { key: 'helix', label: 'Helix' },
-    { key: 'sheet', label: 'Sheet' },
-    { key: 'coil', label: 'Coil' },
-];
-
-type BoolOp = 'and' | 'or';
-
-/** A single builder term plus the operator that joins it to the next term. */
-interface Term {
-    id: string;
-    /** Rendered selection fragment, e.g. "chain 'A'" or "resi 1:10". */
-    text: string;
-    /** Negation applied to this term. */
-    negate: boolean;
-    /** Operator joining THIS term to the following one (ignored on last). */
-    joiner: BoolOp;
-}
-
-/* --- Helpers --- */
-
-/** Build a selection fragment from a property + value(s). */
-function makeFragment(prop: PropertyDef, value: string, rangeTo: string): string {
-    const v = value.trim();
-    if (prop.rangeable && rangeTo.trim() !== '') {
-        return `${prop.key} ${v}:${rangeTo.trim()}`;
-    }
-    const rendered = prop.quote ? `'${v}'` : v;
-    return `${prop.key} ${rendered}`;
-}
-
-/** Join all terms into a single selection expression. */
-function composeExpression(terms: Term[]): string {
-    return terms
-        .map((t, i) => {
-            const frag = t.negate ? `not (${t.text})` : t.text;
-            const joiner = i < terms.length - 1 ? ` ${t.joiner} ` : '';
-            return frag + joiner;
-        })
-        .join('');
-}
-
-/** datalist id for the value field's native autocomplete. */
-const VALUE_LIST_ID = 'selbuilder-value-list';
-
-/* --- Component --- */
+/* --- Props --- */
 
 export interface SelectionBuilderProps {
-    /** Current committed selection text (read-only here). */
+    /** Seed expression for the current selection (container-provided). */
     value: string;
-    /** Emit a new expression to the parent. */
-    onEmit: (next: string, mode: 'insert' | 'replace') => void;
-    /** Recently used expressions, newest first. */
+    /** Emit the current expression to the parent (writes its text box). */
+    onEmit: (expr: string) => void;
+    /** Recently used expressions, newest first (History source). */
     history?: string[];
-    /** Molecule's current selection string, shown as a preset (if any). */
+    /** Target molecule's current selection (Named source "Selected" item). */
     currentSel?: string;
     /** Scene-level named selection defs (StyleManager). */
     sceneDefs?: string[];
     /** Global named selection defs (StyleManager). */
     globalDefs?: string[];
-    /**
-     * Resolve candidate values for a keyword from the active molecule.
-     * Returns [] when unavailable; the field then accepts free text.
-     */
+    /** Resolve candidate values for a keyword from the active molecule. */
     resolveValues?: ResolveValues;
-    /** Refresh history just before the popover opens. */
-    onOpening?: () => void;
+    /** Read-only resolver: expression -> matched-atom count. */
+    getHitCount?: GetHitCount;
+    /** Persist the current selection under a name ("Define name..."). */
+    onSaveAs?: (name: string, expr: string) => Promise<boolean> | void;
+    /** Apply the current selection to the molecule (container action). */
+    onSelect?: () => void;
+    /** Center the active view on the current selection (container action). */
+    onCenter?: () => void;
+    /** Enable the Select button (container: a molecule is available). */
+    canSelect?: boolean;
+    /** Enable the Center button (container: molecule + an active view). */
+    canCenter?: boolean;
     disabled?: boolean;
 }
+
+/* --- Component --- */
+
+const VALUE_LIST_ID = 'selbuilder-value-list';
+
+/** Blueprint icon identifier (or element), as accepted by Button's `icon`. */
+type IconId = React.ComponentProps<typeof Button>['icon'];
+
+// Set-operation icons: import = load/overwrite the current with the term,
+// plus/minus = union/difference, intersection = the overlap. `full` is the
+// hover tooltip for an abbreviated label.
+const BINARY_OPS: { op: BinaryOp; label: string; full?: string; icon: IconId }[] = [
+    { op: 'set', label: 'Set', icon: 'import' },
+    { op: 'add', label: 'Add', icon: 'plus' },
+    { op: 'intersect', label: 'Isec', full: 'Intersect', icon: 'intersection' },
+    { op: 'sub', label: 'Sub', icon: 'minus' },
+];
+
+const MODIFY_OPS: { op: UnaryOp; label: string; full?: string }[] = [
+    { op: 'not', label: 'Not' },
+    { op: 'byres', label: 'Byres' },
+    { op: 'sidechain', label: 'Sidech', full: 'Sidechain' },
+    { op: 'mainchain', label: 'Mainch', full: 'Mainchain' },
+];
 
 export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
     value,
@@ -174,38 +113,51 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
     sceneDefs = [],
     globalDefs = [],
     resolveValues,
-    onOpening,
+    getHitCount,
+    onSaveAs,
+    onSelect,
+    onCenter,
+    canSelect,
+    canCenter,
     disabled,
 }) => {
-    void value;
+    const [state, dispatch] = useReducer(builderReducer, value, initBuilderState);
+
+    // Named/History term lists are shown in a Popover (portal) so a long list
+    // never pushes the Apply-term buttons off-screen. Theme class is needed
+    // because the portal is mounted outside the themed app root.
+    const [pickerOpen, setPickerOpen] = useState(false);
     const { theme } = useTheme();
     const portalClassName = theme === 'dark' ? 'bp5-dark' : '';
 
-    const [isOpen, setIsOpen] = useState(false);
+    const keywordDef = getKeywordDef(state.keyword);
+    const term = selectTerm(state);
 
-    // Builder draft state -- local until emitted.
-    const [terms, setTerms] = useState<Term[]>([]);
-    const [propKey, setPropKey] = useState(PROPERTIES[0].key);
-    const [val, setVal] = useState('');
-    const [rangeTo, setRangeTo] = useState('');
-    // Monotonic counter for term ids (avoids Date.now duplicate-key risk).
-    const [seq, setSeq] = useState(0);
+    // --- Two-way sync with the parent's selection text ---
+    // Mirror the current expression out on every change.
+    useEffect(() => {
+        onEmit(state.current);
+    }, [state.current, onEmit]);
 
-    const activeProp = useMemo(
-        () => PROPERTIES.find((p) => p.key === propKey) ?? PROPERTIES[0],
-        [propKey],
-    );
+    // Re-seed from external edits (manual typing, Clear, History pick). The
+    // guard skips the no-op case after our own emit round-trips back, so the
+    // builder-local undo history survives applied operations -- only a genuine
+    // external change starts a fresh session.
+    useEffect(() => {
+        if (value !== state.current) dispatch({ type: 'SET_CURRENT', value });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [value]);
 
-    // Autocomplete values for the active keyword, loaded async on open /
-    // keyword change. Empty array -> free-text input fallback.
+    // --- Autocomplete values for the active Property keyword ---
     const [suggestItems, setSuggestItems] = useState<string[]>([]);
     useEffect(() => {
-        if (!isOpen || !activeProp.valueKind || !resolveValues) {
+        const kind = keywordDef.autocomplete;
+        if (state.source !== 'property' || !kind || !resolveValues) {
             setSuggestItems([]);
             return;
         }
         let cancelled = false;
-        resolveValues(activeProp.valueKind)
+        resolveValues(kind)
             .then((vals) => {
                 if (!cancelled) setSuggestItems(vals);
             })
@@ -215,215 +167,391 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
         return () => {
             cancelled = true;
         };
-    }, [isOpen, activeProp, resolveValues]);
+    }, [state.source, keywordDef.autocomplete, resolveValues]);
 
-    /* -- Term manipulation -- */
+    // --- Define a named selection (StyleManager 'sel' def, not a disk file) ---
+    const [defining, setDefining] = useState(false);
+    const [defName, setDefName] = useState('');
+    const onConfirmDefine = useCallback(() => {
+        const name = defName.trim();
+        if (name === '' || state.current.trim() === '' || !onSaveAs) return;
+        void Promise.resolve(onSaveAs(name, state.current));
+        setDefining(false);
+        setDefName('');
+    }, [defName, state.current, onSaveAs]);
 
-    const addTerm = useCallback(() => {
-        if (val.trim() === '') return;
-        const text = makeFragment(activeProp, val, rangeTo);
-        setTerms((prev) => [
-            ...prev,
-            { id: `t-${seq}`, text, negate: false, joiner: 'and' },
-        ]);
-        setSeq((s) => s + 1);
-        setVal('');
-        setRangeTo('');
-    }, [activeProp, val, rangeTo, seq]);
+    const setField = (name: string, v: string) => dispatch({ type: 'SET_FIELD', name, value: v });
 
-    const removeTerm = useCallback((id: string) => {
-        setTerms((prev) => prev.filter((t) => t.id !== id));
-    }, []);
-
-    const toggleNegate = useCallback((id: string) => {
-        setTerms((prev) => prev.map((t) => (t.id === id ? { ...t, negate: !t.negate } : t)));
-    }, []);
-
-    const setJoiner = useCallback((id: string, joiner: BoolOp) => {
-        setTerms((prev) => prev.map((t) => (t.id === id ? { ...t, joiner } : t)));
-    }, []);
-
-    /* -- Emit -- */
-
-    const preview = useMemo(() => composeExpression(terms), [terms]);
-
-    const emit = useCallback(
-        (mode: 'insert' | 'replace') => {
-            if (preview === '') return;
-            onEmit(preview, mode);
-            setIsOpen(false);
-            setTerms([]);
-        },
-        [preview, onEmit],
-    );
-
-    // Apply a ready-made expression (preset / macro / named def / history).
-    const emitReplace = useCallback(
-        (expr: string) => {
-            onEmit(expr, 'replace');
-            setIsOpen(false);
-        },
-        [onEmit],
-    );
-
-    /* -- Tab panels -- */
-
-    const builderPanel = (
-        <div className="selbuilder-panel">
-            <div className="selbuilder-form">
-                {/* Keyword picker. */}
-                <HTMLSelect
-                    value={propKey}
-                    onChange={(e) => setPropKey(e.target.value)}
-                    options={PROPERTIES.map((p) => ({ value: p.key, label: p.label }))}
-                />
-                {/* Value field. When the active molecule yields real values
-                    they feed a native datalist for type-ahead autocomplete;
-                    otherwise it is a plain free-text field. */}
-                <InputGroup
-                    value={val}
-                    onChange={(e) => setVal(e.target.value)}
-                    placeholder="value"
-                    list={suggestItems.length > 0 ? VALUE_LIST_ID : undefined}
-                />
-                {suggestItems.length > 0 && (
-                    <datalist id={VALUE_LIST_ID}>
-                        {suggestItems.map((s) => (
-                            <option key={s} value={s} />
-                        ))}
-                    </datalist>
-                )}
-                {activeProp.rangeable && (
-                    <>
-                        <span className="selbuilder-range-sep">:</span>
-                        <InputGroup
-                            value={rangeTo}
-                            onChange={(e) => setRangeTo(e.target.value)}
-                            placeholder="to (optional)"
+    /* -- Value input, keyword-dependent -- */
+    const valueInput = useMemo(() => {
+        switch (keywordDef.valueKind) {
+            case 'none':
+                return null;
+            case 'compare':
+                return (
+                    <div className="selbuilder-term-form">
+                        <HTMLSelect
+                            className="fk-select"
+                            value={state.fields.op ?? '<'}
+                            disabled={disabled}
+                            onChange={(e) => setField('op', e.target.value)}
+                            options={[
+                                { value: '<', label: '<' },
+                                { value: '>', label: '>' },
+                                { value: '=', label: '=' },
+                            ]}
                         />
-                    </>
-                )}
-                <Button icon="plus" intent="primary" onClick={addTerm} text="Add" />
-            </div>
-
-            {/* Current terms as removable tags with per-term joiner / negate. */}
-            <div className="selbuilder-terms">
-                {terms.length === 0 && <span className="selbuilder-empty">No terms yet.</span>}
-                {terms.map((t, i) => (
-                    <div key={t.id} className="selbuilder-term-row">
-                        <Tag
-                            minimal
-                            interactive
-                            intent={t.negate ? 'danger' : 'none'}
-                            onClick={() => toggleNegate(t.id)}
-                            onRemove={() => removeTerm(t.id)}
-                            title="Click to toggle NOT"
-                        >
-                            {t.negate ? 'not ' : ''}
-                            {t.text}
-                        </Tag>
-                        {i < terms.length - 1 && (
-                            <HTMLSelect
-                                value={t.joiner}
-                                onChange={(e) => setJoiner(t.id, e.target.value as BoolOp)}
-                                options={[
-                                    { value: 'and', label: 'AND' },
-                                    { value: 'or', label: 'OR' },
-                                ]}
-                            />
+                        <InputGroup
+                            value={state.fields.value ?? ''}
+                            disabled={disabled}
+                            onChange={(e) => setField('value', e.target.value)}
+                            placeholder="value"
+                        />
+                    </div>
+                );
+            case 'nameValue':
+                return (
+                    <div className="selbuilder-term-form">
+                        <InputGroup
+                            value={state.fields.name ?? ''}
+                            disabled={disabled}
+                            onChange={(e) => setField('name', e.target.value)}
+                            placeholder="property"
+                        />
+                        <span className="selbuilder-sep">=</span>
+                        <InputGroup
+                            value={state.fields.value ?? ''}
+                            disabled={disabled}
+                            onChange={(e) => setField('value', e.target.value)}
+                            placeholder="value"
+                        />
+                    </div>
+                );
+            case 'hierarchical':
+                return (
+                    <div className="selbuilder-term-form">
+                        <InputGroup
+                            value={state.fields.chain ?? ''}
+                            disabled={disabled}
+                            onChange={(e) => setField('chain', e.target.value)}
+                            placeholder="chain"
+                        />
+                        <InputGroup
+                            value={state.fields.resid ?? ''}
+                            disabled={disabled}
+                            onChange={(e) => setField('resid', e.target.value)}
+                            placeholder="resid"
+                        />
+                        <InputGroup
+                            value={state.fields.aname ?? ''}
+                            disabled={disabled}
+                            onChange={(e) => setField('aname', e.target.value)}
+                            placeholder="atom"
+                        />
+                    </div>
+                );
+            default:
+                // nameList / numList -- single value field with autocomplete.
+                return (
+                    <div className="selbuilder-term-form">
+                        <InputGroup
+                            value={state.fields.value ?? ''}
+                            disabled={disabled}
+                            onChange={(e) => setField('value', e.target.value)}
+                            placeholder={keywordDef.valueKind === 'numList' ? '1:10, 20' : 'value'}
+                            list={suggestItems.length > 0 ? VALUE_LIST_ID : undefined}
+                            fill
+                        />
+                        {suggestItems.length > 0 && (
+                            <datalist id={VALUE_LIST_ID}>
+                                {suggestItems.map((s) => (
+                                    <option key={s} value={s} />
+                                ))}
+                            </datalist>
                         )}
                     </div>
-                ))}
-            </div>
-
-            {/* Live preview of the composed expression. */}
-            <div className="selbuilder-preview">
-                <code>{preview || '\u2014'}</code>
-            </div>
-
-            <div className="selbuilder-actions">
-                <Button text="Replace all" onClick={() => emit('replace')} />
-                <Button text="Insert" intent="primary" onClick={() => emit('insert')} />
-            </div>
-        </div>
-    );
-
-    // Library tab: presets + built-in macros + scene / global named defs.
-    // Replaces the former OS-native HTMLSelect picker; clicking any entry
-    // applies it (replace).
-    const libraryPanel = (
-        <Menu className="selbuilder-menu">
-            <MenuDivider title="Presets" />
-            {currentSel !== undefined && (
-                <MenuItem text={`current (${currentSel})`} onClick={() => emitReplace(currentSel)} />
-            )}
-            <MenuItem text="all (*)" onClick={() => emitReplace('*')} />
-            <MenuItem text="none" onClick={() => emitReplace('')} />
-
-            <MenuDivider title="Macros" />
-            {MACROS.map((m) => (
-                <MenuItem key={m.key} text={m.label} onClick={() => emitReplace(m.key)} />
-            ))}
-
-            {sceneDefs.length > 0 && (
-                <>
-                    <MenuDivider title="Scene" />
-                    {sceneDefs.map((v) => (
-                        <MenuItem key={`s-${v}`} text={v} onClick={() => emitReplace(v)} />
-                    ))}
-                </>
-            )}
-            {globalDefs.length > 0 && (
-                <>
-                    <MenuDivider title="Global" />
-                    {globalDefs.map((v) => (
-                        <MenuItem key={`g-${v}`} text={v} onClick={() => emitReplace(v)} />
-                    ))}
-                </>
-            )}
-        </Menu>
-    );
-
-    const historyPanel = (
-        <Menu className="selbuilder-menu">
-            {history.length === 0 ? (
-                <MenuItem disabled text="No history" />
-            ) : (
-                history.map((h, i) => (
-                    <MenuItem key={i} text={h} onClick={() => emitReplace(h)} />
-                ))
-            )}
-        </Menu>
-    );
+                );
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [keywordDef, state.fields, suggestItems, disabled]);
 
     return (
-        <Popover
-            isOpen={isOpen}
-            onInteraction={(next) => {
-                if (next && !isOpen) onOpening?.();
-                setIsOpen(next);
-            }}
-            placement="bottom-end"
-            portalClassName={portalClassName}
-            className="selbuilder-trigger"
-            disabled={disabled}
-            content={
-                <div className="selbuilder-popover">
-                    <Tabs id="selbuilder-tabs" defaultSelectedTabId="builder">
-                        <Tab id="builder" title="Builder" panel={builderPanel} />
-                        <Tab id="library" title="Library" panel={libraryPanel} />
-                        <Tab id="history" title="History" panel={historyPanel} />
-                    </Tabs>
+        <div className={`selbuilder${disabled ? ' selbuilder--disabled' : ''}`}>
+            {/* Action toolbar for the current selection (no heading -- the
+                container's selection text field is the current selection). A
+                direct child of .selbuilder so it shares the section gap. */}
+            <div className="selbuilder-current-actions">
+                    <ButtonGroup>
+                        <Button
+                            small
+                            minimal
+                            icon="select"
+                            title="Select atoms (apply to molecule)"
+                            aria-label="Select atoms"
+                            disabled={disabled || !canSelect}
+                            onClick={onSelect}
+                        />
+                        <Button
+                            small
+                            minimal
+                            icon="locate"
+                            title="Center view on selection"
+                            aria-label="Center view on selection"
+                            disabled={disabled || !canCenter}
+                            onClick={onCenter}
+                        />
+                        <Button
+                            small
+                            minimal
+                            icon="undo"
+                            title="Step back"
+                            aria-label="Step back"
+                            disabled={disabled || !canUndo(state)}
+                            onClick={() => dispatch({ type: 'UNDO' })}
+                        />
+                        <Button
+                            small
+                            minimal
+                            icon="redo"
+                            title="Step forward"
+                            aria-label="Step forward"
+                            disabled={disabled || !canRedo(state)}
+                            onClick={() => dispatch({ type: 'REDO' })}
+                        />
+                        <Button
+                            small
+                            minimal
+                            icon="eraser"
+                            text="Clear"
+                            disabled={disabled || state.current === ''}
+                            onClick={() => dispatch({ type: 'CLEAR' })}
+                        />
+                    </ButtonGroup>
+                    {defining ? (
+                        <div className="selbuilder-saverow">
+                            <InputGroup
+                                value={defName}
+                                onChange={(e) => setDefName(e.target.value)}
+                                placeholder="name"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') onConfirmDefine();
+                                    if (e.key === 'Escape') setDefining(false);
+                                }}
+                            />
+                            <Button small intent="primary" text="Define" onClick={onConfirmDefine} />
+                            <Button small minimal text="Cancel" onClick={() => setDefining(false)} />
+                        </div>
+                    ) : (
+                        <Button
+                            small
+                            minimal
+                            icon="tag"
+                            text="Define name..."
+                            title="Define as a named selection (reusable in this scene)"
+                            disabled={disabled || state.current.trim() === '' || !onSaveAs}
+                            onClick={() => setDefining(true)}
+                        />
+                    )}
                 </div>
-            }
+
+            {/* Term: build a term and apply it via binary set operations.
+                Placed above Modify (the unary transforms). */}
+            <FieldSection title="Term">
+                <SegmentField
+                    value={state.source}
+                    onValueChange={(v) => dispatch({ type: 'SET_SOURCE', source: v })}
+                    options={[
+                        { label: 'Prop', value: 'property' },
+                        { label: 'Named', value: 'named' },
+                        { label: 'History', value: 'history' },
+                    ]}
+                />
+                {state.source === 'property' && (
+                    <div className="selbuilder-property">
+                        <HTMLSelect
+                            className="fk-select"
+                            value={state.keyword}
+                            disabled={disabled}
+                            title={keywordDef.full ?? keywordDef.label}
+                            onChange={(e) =>
+                                dispatch({
+                                    type: 'SET_KEYWORD',
+                                    keyword: e.target.value as typeof state.keyword,
+                                })
+                            }
+                        >
+                            {KEYWORDS.map((k) => (
+                                <option key={k.key} value={k.key} title={k.full ?? k.label}>
+                                    {k.label}
+                                </option>
+                            ))}
+                        </HTMLSelect>
+                        {valueInput}
+                    </div>
+                )}
+                {(state.source === 'named' || state.source === 'history') && (
+                    <Popover
+                        isOpen={pickerOpen}
+                        onInteraction={setPickerOpen}
+                        placement="bottom-start"
+                        portalClassName={portalClassName}
+                        fill
+                        disabled={disabled}
+                        content={
+                            <div className="selbuilder-term-popover">
+                                {state.source === 'named' ? (
+                                    <NamedSelMenu
+                                        currentSel={currentSel}
+                                        sceneDefs={sceneDefs}
+                                        globalDefs={globalDefs}
+                                        activeValue={state.picked}
+                                        onPick={(v) => {
+                                            dispatch({ type: 'SET_PICKED', value: v });
+                                            setPickerOpen(false);
+                                        }}
+                                        dismissOnPick
+                                    />
+                                ) : (
+                                    <HistoryMenu
+                                        history={history}
+                                        activeValue={state.picked}
+                                        onPick={(v) => {
+                                            dispatch({ type: 'SET_PICKED', value: v });
+                                            setPickerOpen(false);
+                                        }}
+                                        dismissOnPick
+                                    />
+                                )}
+                            </div>
+                        }
+                    >
+                        <Button
+                            fill
+                            alignText="left"
+                            rightIcon="caret-down"
+                            className="selbuilder-term-trigger"
+                            disabled={disabled}
+                            text={
+                                state.picked ||
+                                (state.source === 'named' ? 'Select named...' : 'Select history...')
+                            }
+                        />
+                    </Popover>
+                )}
+
+                {/* Apply the term into the current selection (nested under Term). */}
+                <div className="selbuilder-apply">
+                    <span className="type-label selbuilder-field-label">Apply</span>
+                    <div className="selbuilder-apply-row">
+                        {BINARY_OPS.map((b) => (
+                            <ApplyButton
+                                key={b.op}
+                                op={b.op}
+                                label={b.label}
+                                title={b.full ?? b.label}
+                                icon={b.icon}
+                                current={state.current}
+                                term={term}
+                                getHitCount={getHitCount}
+                                enabled={!disabled}
+                                onApply={() => dispatch({ type: 'APPLY_BINARY', op: b.op })}
+                            />
+                        ))}
+                    </div>
+                </div>
+            </FieldSection>
+
+            {/* Modify: unary transforms on the current selection. A sibling
+                section of Term (binary ops), placed below it. */}
+            <FieldSection title="Modify">
+                <div className="selbuilder-modify-row">
+                    <ButtonGroup className="selbuilder-modify-btns">
+                        {MODIFY_OPS.map((m) => (
+                            <Button
+                                key={m.op}
+                                small
+                                text={m.label}
+                                title={m.full ?? m.label}
+                                disabled={disabled || !canApplyUnary(state, m.op)}
+                                onClick={() => dispatch({ type: 'APPLY_UNARY', op: m.op })}
+                            />
+                        ))}
+                    </ButtonGroup>
+                </div>
+                <div className="selbuilder-distance-row">
+                    <span className="type-label selbuilder-field-label" title="Distance">Dist</span>
+                    <InputGroup
+                        className="selbuilder-distance"
+                        value={state.distance}
+                        disabled={disabled}
+                        onChange={(e) => dispatch({ type: 'SET_DISTANCE', value: e.target.value })}
+                        placeholder="0"
+                    />
+                    <span className="type-caption selbuilder-unit">{'Å'}</span>
+                    <Button
+                        small
+                        text="Around"
+                        disabled={disabled || !canApplyUnary(state, 'around')}
+                        onClick={() => dispatch({ type: 'APPLY_UNARY', op: 'around' })}
+                    />
+                    <Button
+                        small
+                        text="Expand"
+                        disabled={disabled || !canApplyUnary(state, 'expand')}
+                        onClick={() => dispatch({ type: 'APPLY_UNARY', op: 'expand' })}
+                    />
+                </div>
+            </FieldSection>
+        </div>
+    );
+};
+
+/* --- Apply button with post-apply hit count --- */
+
+interface ApplyButtonProps {
+    op: BinaryOp;
+    label: string;
+    /** Hover tooltip (full label when abbreviated). */
+    title?: string;
+    icon: IconId;
+    current: string;
+    term: string | null;
+    getHitCount?: GetHitCount;
+    enabled: boolean;
+    onApply: () => void;
+}
+
+/**
+ * A binary-op button showing the would-be hit count after applying it, so the
+ * user does not accidentally build an empty selection. Disabled when the op
+ * is not applicable (e.g. Add on an empty current selection).
+ */
+const ApplyButton: React.FC<ApplyButtonProps> = ({
+    op,
+    label,
+    title,
+    icon,
+    current,
+    term,
+    getHitCount,
+    enabled,
+    onApply,
+}) => {
+    const applicable = enabled && term !== null && canApplyBinary(current, op);
+    const preview = applicable ? applyBinary(current, term, op) : null;
+    const count = useSelHitCount(getHitCount, preview, enabled);
+    return (
+        <Button
+            small
+            icon={icon}
+            title={title ?? label}
+            className="selbuilder-apply-btn"
+            disabled={!applicable}
+            onClick={onApply}
         >
-            <Button
-                icon="caret-down"
-                minimal
-                disabled={disabled}
-                title="Build selection"
-                aria-label="Build selection"
-            />
-        </Popover>
+            <span>{label}</span>
+            <CountTag count={count} />
+        </Button>
     );
 };

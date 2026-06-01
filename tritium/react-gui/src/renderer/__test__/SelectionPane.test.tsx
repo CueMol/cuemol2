@@ -8,8 +8,10 @@
  *     and the current textarea value
  *  3. pushHistory fires only when the worker returns { ok: true }
  *  4. Clear button empties the textarea and disables itself
- *  5. History popover surfaces entries from getHistory and applies a
- *     chosen entry back into the textarea (no auto-Select)
+ *  5. Center click invokes centerMolSelection (and is disabled without a view)
+ *
+ * The action toolbar (Select / Center / Undo / Redo / Clear / Define) lives in
+ * the embedded SelectionBuilder, directly under the selection field.
  */
 import React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -19,6 +21,11 @@ void React
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
+
+// SelectionPane embeds the SelectionBuilder, which reads the theme.
+vi.mock('../contexts/ThemeContext', () => ({
+    useTheme: () => ({ theme: 'dark', toggleTheme: () => undefined, setTheme: () => undefined }),
+}))
 
 const pushHistoryMock = vi.fn()
 const getHistoryMock = vi.fn<() => string[]>(() => [])
@@ -58,6 +65,7 @@ function makeCm(opts?: {
         invokeService: vi.fn((name: string) => {
             if (name === 'listSceneObjects') return Promise.resolve({ objects })
             if (name === 'getMolChains') return Promise.resolve({ chains: [] })
+            if (name === 'getSelDefs') return Promise.resolve({ scene: [], global: [] })
             if (name === 'applyMolSelString') {
                 return Promise.resolve({ ok: opts?.applyOk ?? true })
             }
@@ -69,8 +77,10 @@ function makeCm(opts?: {
     }
 }
 
-function getTextArea(container: HTMLElement): HTMLTextAreaElement {
-    return container.querySelector('textarea') as HTMLTextAreaElement
+// The selection input is now a form-kit TextField (single-line input) inside
+// the `.selection-input-field` Field, distinct from the builder's controls.
+function getTextArea(container: HTMLElement): HTMLInputElement {
+    return container.querySelector('.selection-input-field input') as HTMLInputElement
 }
 
 function setNativeValue(el: HTMLInputElement | HTMLTextAreaElement, value: string): void {
@@ -80,14 +90,17 @@ function setNativeValue(el: HTMLInputElement | HTMLTextAreaElement, value: strin
     el.dispatchEvent(new Event('input', { bubbles: true }))
 }
 
-function findActionByTooltip(container: HTMLElement, tooltip: string): HTMLButtonElement | null {
-    const buttons = Array.from(container.querySelectorAll('button.section-action-btn'))
-    for (const btn of buttons) {
-        const aria = btn.getAttribute('aria-label')
-        if (aria === tooltip) return btn as HTMLButtonElement
-    }
-    // Tooltip is attached via parent; fall back to ordered position.
-    return null
+// The action toolbar (Select / Center / Undo / Redo / Clear / Define) now lives
+// in the SelectionBuilder, directly under the selection field. Find buttons by
+// their stable aria-label / text rather than a header class.
+function actionByAria(container: HTMLElement, aria: string): HTMLButtonElement {
+    return container.querySelector(`button[aria-label="${aria}"]`) as HTMLButtonElement
+}
+
+function buttonByText(container: HTMLElement, text: string): HTMLButtonElement {
+    return Array.from(container.querySelectorAll('button')).find(
+        (b) => b.textContent?.trim() === text,
+    ) as HTMLButtonElement
 }
 
 describe('SelectionPane', () => {
@@ -107,7 +120,9 @@ describe('SelectionPane', () => {
             <SelectionPane cm={cm as never} activeSceneId={1} />,
         )
         await flushPromises()
-        const opts = Array.from(container.querySelectorAll('select option'))
+        // Scope to the molecule selector -- the inline builder also renders a
+        // keyword <select>, so an unscoped `select option` query is ambiguous.
+        const opts = Array.from(container.querySelectorAll('.object-select select option'))
         expect(opts.map((o) => o.textContent)).toEqual(['1CRN', '3J3Q'])
         expect(cm.invokeService).toHaveBeenCalledWith('listSceneObjects', { sceneId: 1 })
         unmount()
@@ -122,11 +137,7 @@ describe('SelectionPane', () => {
         await act(async () => { setNativeValue(getTextArea(container), 'aname CA') })
         await flushPromises()
 
-        // Section-header action buttons are the only `.section-action-btn`s here.
-        // Order in JSX: Select, Clear, History.
-        const buttons = container.querySelectorAll<HTMLButtonElement>('button.section-action-btn')
-        expect(buttons.length).toBeGreaterThanOrEqual(3)
-        await act(async () => { buttons[0].click() })
+        await act(async () => { actionByAria(container, 'Select atoms').click() })
         await flushPromises()
 
         expect(cm.invokeService).toHaveBeenCalledWith('applyMolSelString', {
@@ -145,9 +156,7 @@ describe('SelectionPane', () => {
         await flushPromises()
         await act(async () => { setNativeValue(getTextArea(container), 'aname CA') })
         await flushPromises()
-        await act(async () => {
-            container.querySelectorAll<HTMLButtonElement>('button.section-action-btn')[0].click()
-        })
+        await act(async () => { actionByAria(container, 'Select atoms').click() })
         await flushPromises()
         expect(pushHistoryMock).toHaveBeenCalledWith('aname CA')
         unmount()
@@ -161,9 +170,7 @@ describe('SelectionPane', () => {
         await flushPromises()
         await act(async () => { setNativeValue(getTextArea(container), 'bogus') })
         await flushPromises()
-        await act(async () => {
-            container.querySelectorAll<HTMLButtonElement>('button.section-action-btn')[0].click()
-        })
+        await act(async () => { actionByAria(container, 'Select atoms').click() })
         await flushPromises()
         expect(pushHistoryMock).not.toHaveBeenCalled()
         // Inline error message renders.
@@ -180,43 +187,40 @@ describe('SelectionPane', () => {
         const textarea = getTextArea(container)
         await act(async () => { setNativeValue(textarea, 'aname CA') })
         await flushPromises()
-        const buttons = container.querySelectorAll<HTMLButtonElement>('button.section-action-btn')
-        // Clear is the second action button in JSX order.
-        expect(buttons[1].disabled).toBe(false)
-        await act(async () => { buttons[1].click() })
+        expect(buttonByText(container, 'Clear').disabled).toBe(false)
+        await act(async () => { buttonByText(container, 'Clear').click() })
         await flushPromises()
         expect(getTextArea(container).value).toBe('')
-        expect(
-            container.querySelectorAll<HTMLButtonElement>('button.section-action-btn')[1].disabled,
-        ).toBe(true)
+        expect(buttonByText(container, 'Clear').disabled).toBe(true)
         unmount()
     })
 
-    it('history popover lists getHistory entries and applies one into the textarea', async () => {
-        getHistoryMock.mockReturnValue(['aname CA', 'chain.A'])
+    it('Center click invokes centerMolSelection when a view is active', async () => {
+        const cm = makeCm()
+        const { container, unmount } = mountTree(
+            <SelectionPane cm={cm as never} activeSceneId={7} activeMolViewId={5} />,
+        )
+        await flushPromises()
+        await act(async () => { setNativeValue(getTextArea(container), 'aname CA') })
+        await flushPromises()
+        await act(async () => { actionByAria(container, 'Center view on selection').click() })
+        await flushPromises()
+        expect(cm.invokeService).toHaveBeenCalledWith('centerMolSelection', {
+            sceneId: 7,
+            viewId: 5,
+            molId: 11,
+            selStr: 'aname CA',
+        })
+        unmount()
+    })
+
+    it('disables Center when no active view is available', async () => {
         const cm = makeCm()
         const { container, unmount } = mountTree(
             <SelectionPane cm={cm as never} activeSceneId={1} />,
         )
         await flushPromises()
-        // History is the third action button. Click it to open the popover.
-        const buttons = container.querySelectorAll<HTMLButtonElement>('button.section-action-btn')
-        await act(async () => { buttons[2].click() })
-        await flushPromises()
-        // Popover content goes to document.body — query globally.
-        const items = Array.from(document.querySelectorAll('.bp5-menu-item'))
-        const labels = items.map((el) => el.textContent?.trim())
-        expect(labels).toEqual(expect.arrayContaining(['aname CA', 'chain.A']))
-        // Click the first entry.
-        const first = items.find((el) => el.textContent?.trim() === 'aname CA') as HTMLElement
-        await act(async () => { first.click() })
-        await flushPromises()
-        expect(getTextArea(container).value).toBe('aname CA')
-        // Auto-Select must NOT have happened (UXP parity).
-        expect(cm.invokeService).not.toHaveBeenCalledWith(
-            'applyMolSelString',
-            expect.anything(),
-        )
+        expect(actionByAria(container, 'Center view on selection').disabled).toBe(true)
         unmount()
     })
 
@@ -226,10 +230,7 @@ describe('SelectionPane', () => {
             <SelectionPane cm={cm as never} activeSceneId={1} />,
         )
         await flushPromises()
-        const selectBtn = container.querySelectorAll<HTMLButtonElement>('button.section-action-btn')[0]
-        expect(selectBtn.disabled).toBe(true)
+        expect(actionByAria(container, 'Select atoms').disabled).toBe(true)
         unmount()
     })
 })
-// silence unused warning if findActionByTooltip is not used in some build paths
-void findActionByTooltip

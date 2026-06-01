@@ -10,7 +10,8 @@
  */
 
 import React from "react";
-import { Button, Icon, HTMLSelect, ProgressBar, type Intent } from "@blueprintjs/core";
+import { ProgressBar, type Intent } from "@blueprintjs/core";
+import { SelectField, FormButton } from "../widgets/form";
 import { type RenderJob, isRenderJobActive } from "../../hooks/useRenderJob";
 import { RENDER_SIZE_PRESETS } from "../../data/renderSettings";
 
@@ -62,44 +63,37 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
       {/* ── Action bar ── */}
       <div className="render-panel-bar">
         {active ? (
-          <Button
-            small
+          <FormButton
             intent="danger"
-            className="render-action-btn"
-            icon={<Icon icon="stop" size={11} />}
+            icon="stop"
             text="Stop"
             onClick={onCancel}
           />
         ) : (
-          <Button
-            small
+          <FormButton
             intent="primary"
-            className="render-action-btn"
-            icon={<Icon icon="play" size={11} />}
+            icon="play"
             text="Start Render"
             onClick={onStart}
           />
         )}
 
         <span className="render-panel-preset">
-          <span className="render-panel-preset-label">Image size</span>
-          <HTMLSelect
-            className="insp-select render-panel-preset-select"
-            value={preset}
-            onChange={(e) => onApplyPreset(e.currentTarget.value)}
-          >
-            {RENDER_SIZE_PRESETS.map((p) => (
-              <option key={p.label} value={p.label}>
-                {p.label}
-              </option>
-            ))}
-          </HTMLSelect>
+          <span className="render-panel-preset-label type-label">Image size</span>
+          <span className="render-panel-preset-select">
+            <SelectField value={preset} onChange={onApplyPreset} fill>
+              {RENDER_SIZE_PRESETS.map((p) => (
+                <option key={p.label} value={p.label}>
+                  {p.label}
+                </option>
+              ))}
+            </SelectField>
+          </span>
         </span>
 
-        <Button
-          small
+        <FormButton
           minimal
-          icon={<Icon icon="cog" size={12} />}
+          icon="cog"
           text="Render Settings"
           onClick={onOpenSettings}
         />

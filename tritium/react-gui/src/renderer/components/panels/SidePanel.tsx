@@ -81,12 +81,14 @@ const VIEW_TITLES: Record<ActivityView, string> = {
   explorer: "Explorer",
   selection: "Selection",
   crystal: "Crystal",
+  catalog: "Component Catalog",
 };
 
 const VIEW_ICONS: Record<ActivityView, string> = {
   explorer: "panel-table",
   selection: "search",
   crystal: "cube",
+  catalog: "widget",
 };
 
 /* --- Pane configuration type --- */
@@ -318,6 +320,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           <SelectionPane
             cm={cm}
             activeSceneId={activeSceneId}
+            activeMolViewId={activeMolViewId}
             collapsed={collapsed}
             onToggleCollapse={onToggle}
           />
@@ -351,11 +354,17 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           />
         ),
       },
+    ],
+    catalog: [
       {
-        id: "dummy3",
-        defaultSize: 200,
+        id: "catalog",
+        defaultSize: 600,
         render: (collapsed, onToggle) => (
-          <DummyPane3 collapsed={collapsed} onToggleCollapse={onToggle} />
+          <DummyPane3
+            collapsed={collapsed}
+            onToggleCollapse={onToggle}
+            activeSceneId={activeSceneId}
+          />
         ),
       },
     ],
