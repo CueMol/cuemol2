@@ -38,6 +38,21 @@ button.cp-swatch {
   min-width: 0;
 }
 
+/* Match the form-kit text input: Blueprint's default input text is brighter
+   (and so reads as heavier) than --text-primary, which made the colour hex box
+   stand out from sibling fields. Align colour + size with .fk-input, and dim
+   the disabled state like the other form-kit controls. */
+.cp-textbox.bp5-input-group .bp5-input,
+.cp-textbox.bp5-input-group input {
+  color: var(--text-primary) !important;
+  font-size: var(--fs-lg);
+}
+
+.cp-textbox.bp5-input-group .bp5-input:disabled,
+.cp-textbox.bp5-input-group input:disabled {
+  color: var(--text-muted) !important;
+}
+
 /* ─── Popover panel shell ─── */
 
 .cp-panel {

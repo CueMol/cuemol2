@@ -101,6 +101,17 @@
   color: var(--text-muted);
 }
 
+/* Disabled controls dim their text clearly below the enabled --text-primary so
+   the two states are distinguishable. The enabled `color` rules use
+   `!important` (Blueprint specificity), which otherwise keeps disabled text at
+   full brightness, so the disabled override must also be `!important`. */
+.fk-input.bp5-input-group .bp5-input:disabled,
+.fk-input.bp5-input-group input:disabled,
+.fk-select.bp5-html-select select:disabled,
+.fk-numeric .bp5-input-group .bp5-input:disabled {
+  color: var(--text-muted) !important;
+}
+
 /* ── Dropdown chevron (single source) ──
  * Shared Blender-style chevron glyph. Used both as the ::after caret of
  * .fk-select and as the icon node of .fk-dropdown-caret buttons, so the
@@ -239,7 +250,7 @@
   background: var(--bg-input) !important;
   border: 1px solid var(--border) !important;
   color: var(--text-primary) !important;
-  font-size: var(--fs-md);
+  font-size: var(--fs-lg);
   height: var(--field-h-sm);
   width: 100%;
   text-align: right;
@@ -263,6 +274,121 @@
   flex: 0 0 auto;
   font-size: var(--type-caption-fs);
   color: var(--text-secondary);
+}
+
+/* ── Drag numeric (Blender number button) ── */
+/* A compact field dragged horizontally to change its value, clicked to
+   text-edit, and stepped by the < > arrows shown on hover. Drag uses the
+   Pointer Lock API (cursor hidden, unbounded) -- see DragNumericField.tsx. */
+.fk-drag {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: var(--field-h-sm);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: var(--fs-lg);
+  user-select: none;
+}
+
+/* Blender-style hover affordance: <|> resize-like cursor over the body. */
+.fk-drag:hover {
+  cursor: col-resize;
+}
+
+/* Focus lives on the widget as a whole, never on its parts. */
+.fk-drag:focus {
+  outline: none;
+}
+
+.fk-drag:focus-visible,
+.fk-drag.fk-drag-active {
+  cursor: col-resize;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.fk-drag-value {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: center;
+  padding: 0 var(--space-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fk-drag-unit {
+  margin-left: var(--space-1);
+  font-size: var(--type-caption-fs);
+  color: var(--text-secondary);
+}
+
+/* Inline text-edit input (single click). Centered to match the value span. */
+.fk-drag-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  background: var(--bg-input);
+  border: none;
+  color: var(--text-primary);
+  font-size: var(--fs-lg);
+  text-align: center;
+  padding: 0 var(--space-2);
+  caret-color: var(--accent);
+}
+
+.fk-drag-input:focus {
+  outline: none;
+}
+
+/* Hide the native number spinner. */
+.fk-drag-input::-webkit-inner-spin-button,
+.fk-drag-input::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+/* < > step affordances: always visible (muted) so the field reads as a drag
+   control rather than a plain textbox; brightens on hover. */
+.fk-drag-arrow {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--icon-sm);
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.fk-drag-arrow:hover:not(:disabled) {
+  color: var(--text-primary);
+}
+
+/* Parts never show their own focus ring -- focus belongs to the widget. */
+.fk-drag-arrow:focus,
+.fk-drag-arrow:focus-visible {
+  outline: none;
+}
+
+.fk-drag-arrow:disabled {
+  cursor: default;
+  opacity: 0;
+}
+
+.fk-drag.fk-drag-disabled {
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.fk-drag.fk-drag-disabled:hover {
+  cursor: default;
 }
 
 /* ── Switch ── */

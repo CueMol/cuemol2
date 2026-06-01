@@ -22,6 +22,7 @@ import {
   TextField,
   SelectField,
   NumericField,
+  DragNumericField,
   SwitchField,
   ColorField,
   ButtonRow,
@@ -59,6 +60,7 @@ export const DummyPane3: React.FC<DummyPane3Props> = ({
   const [select, setSelect] = useState("ribbon");
   const [num, setNum] = useState(50);
   const [num2, setNum2] = useState(8);
+  const [drag, setDrag] = useState(1.0);
   const [sw, setSw] = useState(true);
   const [color, setColor] = useState("#3b82f6");
   const [molSel, setMolSel] = useState("*");
@@ -130,6 +132,16 @@ export const DummyPane3: React.FC<DummyPane3Props> = ({
                   min={0}
                   max={100}
                   slider={false}
+                />
+              </Field>
+              <Field label="DragNumericField (drag-snap / click-edit)">
+                <DragNumericField
+                  value={drag}
+                  onChange={setDrag}
+                  min={0}
+                  max={10}
+                  step={0.1}
+                  unit="Å"
                 />
               </Field>
               <Field label="SwitchField" inline>
