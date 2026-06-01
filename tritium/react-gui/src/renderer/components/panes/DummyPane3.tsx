@@ -19,6 +19,8 @@ import {
   Field,
   FieldGroup,
   FieldSection,
+  FieldGrid,
+  FieldGridRow,
   TextField,
   SelectField,
   NumericField,
@@ -61,6 +63,9 @@ export const DummyPane3: React.FC<DummyPane3Props> = ({
   const [num, setNum] = useState(50);
   const [num2, setNum2] = useState(8);
   const [drag, setDrag] = useState(1.0);
+  const [gx, setGx] = useState(-0.52);
+  const [gy, setGy] = useState(-0.7);
+  const [gz, setGz] = useState(0.54612);
   const [sw, setSw] = useState(true);
   const [color, setColor] = useState("#3b82f6");
   const [molSel, setMolSel] = useState("*");
@@ -150,6 +155,20 @@ export const DummyPane3: React.FC<DummyPane3Props> = ({
               <Field label="ColorField">
                 <ColorField value={color} onCommit={setColor} />
               </Field>
+            </FieldGroup>
+
+            <FieldGroup title="FieldGrid (aligned label column)">
+              <FieldGrid>
+                <FieldGridRow label="Location X">
+                  <DragNumericField value={gx} onChange={setGx} step={0.1} unit="m" />
+                </FieldGridRow>
+                <FieldGridRow label="Y">
+                  <DragNumericField value={gy} onChange={setGy} step={0.1} unit="m" />
+                </FieldGridRow>
+                <FieldGridRow label="Z">
+                  <DragNumericField value={gz} onChange={setGz} step={0.1} unit="m" />
+                </FieldGridRow>
+              </FieldGrid>
             </FieldGroup>
 
             <FieldGroup title="Shared widgets">

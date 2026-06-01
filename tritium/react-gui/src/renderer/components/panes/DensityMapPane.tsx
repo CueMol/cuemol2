@@ -29,7 +29,7 @@ import {
 } from '@blueprintjs/core'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import { useDensityMapPanel } from '../../hooks/useDensityMapPanel'
-import { SliderNumericField } from '../widgets/SliderNumericField'
+import { FieldGrid, FieldGridRow, DragNumericField } from '../widgets/form'
 import type {
     MapRendererEntry,
     MapRendererPropName,
@@ -43,6 +43,45 @@ import {
 import { useCueMolEventListener } from '../../hooks/useCueMolEventListener'
 import { CueColorField } from '../widgets/colorpicker/CueColorField'
 import { ColorPickerProvider } from '../widgets/colorpicker/ColorPickerContext'
+
+/**
+ * Labeled drag-to-snap numeric row for the density-map panel. Mirrors the old
+ * SliderNumericField wiring: holds a local draft in displayed units (stored *
+ * scale) for live feedback, and commits the stored value on drag end / Enter
+ * (via DragNumericField's onRelease) so a drag is one undo step.
+ */
+const DragRow: React.FC<{
+    label: string
+    value: number
+    min: number
+    max: number
+    step: number
+    unit?: string
+    scale?: number
+    disabled?: boolean
+    onCommit: (stored: number) => void
+}> = ({ label, value, min, max, step, unit, scale = 1, disabled, onCommit }) => {
+    const shown = value * scale
+    const [draft, setDraft] = useState(shown)
+    useEffect(() => setDraft(shown), [shown])
+    return (
+        <FieldGridRow label={label}>
+            <DragNumericField
+                value={draft}
+                onChange={setDraft}
+                onRelease={(v) => {
+                    const stored = v / scale
+                    if (stored !== value) onCommit(stored)
+                }}
+                min={min}
+                max={max}
+                step={step}
+                unit={unit}
+                disabled={disabled}
+            />
+        </FieldGridRow>
+    )
+}
 
 interface DensityMapPaneProps {
     cm: AsyncCueMol | null
@@ -311,37 +350,39 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
                         />
                     </div>
 
-                    {/* Sliders */}
-                    <SliderNumericField
-                        label="Transp:"
-                        value={state?.alpha ?? 0}
-                        min={0}
-                        max={1}
-                        step={0.1}
-                        onCommit={(v) => setProp('alpha', v)}
-                        disabled={disabled}
-                    />
-                    <SliderNumericField
-                        label="Level:"
-                        value={levelProps.value}
-                        min={levelProps.min}
-                        max={levelProps.max}
-                        step={levelProps.step}
-                        unit={levelProps.unit || undefined}
-                        scale={levelProps.scale}
-                        onCommit={(v) => setProp('siglevel', v)}
-                        disabled={disabled}
-                    />
-                    <SliderNumericField
-                        label="Extent:"
-                        value={state?.extent ?? 0}
-                        min={0}
-                        max={state?.maxExtent ?? 100}
-                        step={1}
-                        unit="Å"
-                        onCommit={(v) => setProp('extent', v)}
-                        disabled={disabled}
-                    />
+                    {/* Numeric rows */}
+                    <FieldGrid>
+                        <DragRow
+                            label="Transp"
+                            value={state?.alpha ?? 0}
+                            min={0}
+                            max={1}
+                            step={0.1}
+                            onCommit={(v) => setProp('alpha', v)}
+                            disabled={disabled}
+                        />
+                        <DragRow
+                            label="Level"
+                            value={levelProps.value}
+                            min={levelProps.min}
+                            max={levelProps.max}
+                            step={levelProps.step}
+                            unit={levelProps.unit || undefined}
+                            scale={levelProps.scale}
+                            onCommit={(v) => setProp('siglevel', v)}
+                            disabled={disabled}
+                        />
+                        <DragRow
+                            label="Extent"
+                            value={state?.extent ?? 0}
+                            min={0}
+                            max={state?.maxExtent ?? 100}
+                            step={1}
+                            unit="Å"
+                            onCommit={(v) => setProp('extent', v)}
+                            disabled={disabled}
+                        />
+                    </FieldGrid>
                 </div>
             )}
         </div>

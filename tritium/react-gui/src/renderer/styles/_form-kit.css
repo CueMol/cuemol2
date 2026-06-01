@@ -28,6 +28,39 @@
   justify-content: space-between;
 }
 
+/* ── Field grid (aligned label column + filling control) ──
+ * A grid whose rows share one label-column width so every control's left edge
+ * lines up (Blender-style property rows). Rows use display:contents so their
+ * label/control become direct grid items of the container. See FieldGrid.tsx. */
+.fk-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: var(--space-3);
+  row-gap: var(--form-row-gap);
+  align-items: center;
+  min-width: 0;
+}
+
+.fk-grid-row {
+  display: contents;
+}
+
+.fk-grid-label {
+  justify-self: end;
+  text-align: right;
+  font-size: var(--type-label-fs);
+  font-weight: var(--type-label-fw);
+  line-height: var(--lh-snug);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fk-grid-control {
+  min-width: 0;
+}
+
 .fk-field-label {
   font-size: var(--type-label-fs);
   font-weight: var(--type-label-fw);
