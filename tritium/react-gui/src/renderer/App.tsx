@@ -94,7 +94,6 @@ const App: React.FC = () => {
     inspectorOpen,
     inspectorTarget,
     inspectorCategory,
-    rendererProps,
     genericEntries,
     genericLoading,
     inspectorInfo,
@@ -102,7 +101,6 @@ const App: React.FC = () => {
     handleShowViewProps,
     handleShowRenderSettings,
     handleCloseInspector,
-    handlePropertyChange,
     handleGenericSet,
     handleGenericReset,
   } = useInspectorState({
@@ -466,7 +464,6 @@ const App: React.FC = () => {
                         targetCategory={inspectorCategory}
                         nodeName={inspectorInfo.name}
                         nodeType={inspectorInfo.type}
-                        properties={rendererProps}
                         genericEntries={genericEntries}
                         genericLoading={genericLoading}
                         renderSettings={{
@@ -477,7 +474,6 @@ const App: React.FC = () => {
                           onBackendChange: renderSettings.setBackend,
                           onChange: renderSettings.handleChange,
                         }}
-                        onPropertyChange={handlePropertyChange}
                         onGenericSet={handleGenericSet}
                         onGenericReset={handleGenericReset}
                         onClose={handleCloseInspector}

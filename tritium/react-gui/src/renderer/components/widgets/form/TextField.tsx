@@ -22,6 +22,8 @@ export interface TextFieldProps {
     /** Leading icon (Blueprint icon name or element), e.g. a filter/search glyph. */
     leftIcon?: React.ComponentProps<typeof InputGroup>['leftIcon'];
     onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
+    /** Fired on blur -- used to commit a draft value (e.g. live-apply on focus loss). */
+    onBlur?: React.FocusEventHandler<HTMLInputElement>;
 }
 
 export const TextField: React.FC<TextFieldProps> = ({
@@ -34,6 +36,7 @@ export const TextField: React.FC<TextFieldProps> = ({
     fill = true,
     leftIcon,
     onKeyDown,
+    onBlur,
 }) => (
     <InputGroup
         small
@@ -48,5 +51,6 @@ export const TextField: React.FC<TextFieldProps> = ({
         intent={invalid ? Intent.DANGER : Intent.NONE}
         aria-invalid={invalid || undefined}
         onKeyDown={onKeyDown}
+        onBlur={onBlur}
     />
 );

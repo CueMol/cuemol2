@@ -21,6 +21,13 @@ export interface NumericFieldProps {
     /** Optional unit suffix shown after the numeric input (e.g. "Å", "%"). */
     unit?: string;
     disabled?: boolean;
+    /**
+     * Fired when an interaction commits a value: slider release, numeric-input
+     * blur, or Enter. Use this (rather than `onChange`) to push a single undo
+     * step instead of one per drag frame. `onChange` still fires continuously
+     * so a parent draft can track the value live.
+     */
+    onRelease?: (value: number) => void;
 }
 
 export const NumericField: React.FC<NumericFieldProps> = ({
@@ -32,6 +39,7 @@ export const NumericField: React.FC<NumericFieldProps> = ({
     slider = true,
     unit,
     disabled,
+    onRelease,
 }) => {
     const handleSlider = useCallback((v: number) => onChange(v), [onChange]);
     const handleNumeric = useCallback(
@@ -41,6 +49,7 @@ export const NumericField: React.FC<NumericFieldProps> = ({
         },
         [onChange],
     );
+    const commit = useCallback(() => onRelease?.(value), [onRelease, value]);
 
     return (
         <div className="fk-numeric-row">
@@ -51,6 +60,7 @@ export const NumericField: React.FC<NumericFieldProps> = ({
                     stepSize={step}
                     value={value}
                     onChange={handleSlider}
+                    onRelease={onRelease}
                     labelRenderer={false}
                     disabled={disabled}
                     className="fk-slider"
@@ -67,6 +77,10 @@ export const NumericField: React.FC<NumericFieldProps> = ({
                 disabled={disabled}
                 className="fk-numeric"
                 fill={false}
+                onBlur={commit}
+                onKeyDown={(e) => {
+                    if (e.key === "Enter") commit();
+                }}
             />
             {unit != null && <span className="fk-unit">{unit}</span>}
         </div>

@@ -22,11 +22,6 @@ import { findTypedNode } from "./sceneTree/sceneTreeNodeUtils";
 import { useCueMolEventListener } from "./useCueMolEventListener";
 import { SEM_OBJECT, SEM_RENDERER, SEM_SCENE, SEM_PROPCHG } from "../event";
 
-import {
-  RIBBON_PROPERTIES,
-  type PropDef,
-} from "../data/rendererProperties";
-
 // ────────────────────────────────────────────────────────────
 // Types
 // ────────────────────────────────────────────────────────────
@@ -94,9 +89,6 @@ export function useInspectorState({
   const [genericEntries, setGenericEntries] = useState<GenericPropEntry[]>([]);
   const [genericLoading, setGenericLoading] = useState(false);
   const [inspectorInfo, setInspectorInfo] = useState<InspectorInfo>({ name: "", type: "" });
-
-  // Structured Properties tab still uses sample data (own migration pending).
-  const [rendererProps, setRendererProps] = useState<PropDef[]>(RIBBON_PROPERTIES);
 
   // Latest target in a ref so the event handler stays identity-stable.
   const targetRef = useRef<InspectorTarget | null>(null);
@@ -296,16 +288,6 @@ export function useInspectorState({
     [cm],
   );
 
-  /** Update a single property value in the structured (sample) list. */
-  const handlePropertyChange = useCallback(
-    (key: string, value: string | number | boolean) => {
-      setRendererProps((prev) =>
-        prev.map((p) => (p.key === key ? { ...p, value } : p)),
-      );
-    },
-    [],
-  );
-
   // ── Live sync: refetch on external property changes ──────
   // Catches undo/redo and script-driven mutations of the inspected node.
   useCueMolEventListener({
@@ -332,7 +314,6 @@ export function useInspectorState({
     inspectorOpen,
     inspectorTarget,
     inspectorCategory,
-    rendererProps,
     genericEntries,
     genericLoading,
     inspectorInfo,
@@ -340,7 +321,6 @@ export function useInspectorState({
     handleShowViewProps,
     handleShowRenderSettings,
     handleCloseInspector,
-    handlePropertyChange,
     handleGenericSet,
     handleGenericReset,
   } as const;

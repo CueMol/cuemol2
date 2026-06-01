@@ -31,7 +31,7 @@ Status values:
 | [`dialog.property.molsurf`](../uxp-inventory/prop_dlgs.md#dialogpropertymolsurf) | | | todo | | | |
 | [`dialog.property.nucl`](../uxp-inventory/prop_dlgs.md#dialogpropertynucl) | | | todo | | | |
 | [`dialog.property.object`](../uxp-inventory/prop_dlgs.md#dialogpropertyobject) | | | todo | | | |
-| [`dialog.property.renderer`](../uxp-inventory/prop_dlgs.md#dialogpropertyrenderer) | | | todo | | | |
+| [`dialog.property.renderer`](../uxp-inventory/prop_dlgs.md#dialogpropertyrenderer) | `inspector/RendererCommonSection`, `inspector/PropertiesTab` | merged | wip | | | renderer-common-page (Basic settings + Edge lines) を Inspector の Properties タブに実装、live `getGenericProps`/`setGenericProp` 連携。renderer type 別 section は `rendererPropSections` registry で今後追加 (現状は Common + 折りたたみ dummy)。 |
 | [`dialog.property.ribbon`](../uxp-inventory/prop_dlgs.md#dialogpropertyribbon) | | | todo | | | |
 | [`dialog.property.simple`](../uxp-inventory/prop_dlgs.md#dialogpropertysimple) | | | todo | | | |
 | [`dialog.property.tube`](../uxp-inventory/prop_dlgs.md#dialogpropertytube) | | | todo | | | |

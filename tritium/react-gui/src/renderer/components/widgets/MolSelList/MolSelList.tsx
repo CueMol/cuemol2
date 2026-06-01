@@ -44,6 +44,12 @@ export interface MolSelListProps {
     /** Current selection-string value (controlled). */
     selectedSel: string;
     onSelectedSelChange: (value: string) => void;
+    /**
+     * Fired when the value should be committed: a popover pick or input blur.
+     * Lets a parent live-apply once (e.g. compile + assign a selection) rather
+     * than on every keystroke.
+     */
+    onCommit?: (value: string) => void;
     /** Optional: currently selected molecule UID (controlled). */
     molID?: number;
     onMolIdChange?: (molId: number | undefined) => void;
@@ -61,6 +67,7 @@ export const MolSelList: React.FC<MolSelListProps> = ({
     sceneID,
     selectedSel,
     onSelectedSelChange,
+    onCommit,
     molID,
     onMolIdChange,
     disabled,
@@ -152,9 +159,10 @@ export const MolSelList: React.FC<MolSelListProps> = ({
     const handlePick = useCallback(
         (value: string): void => {
             onSelectedSelChange(value);
+            onCommit?.(value);
             setIsOpen(false);
         },
-        [onSelectedSelChange],
+        [onSelectedSelChange, onCommit],
     );
 
     const pickerContent = (
@@ -192,6 +200,7 @@ export const MolSelList: React.FC<MolSelListProps> = ({
             <TextField
                 value={selectedSel}
                 onChange={onSelectedSelChange}
+                onBlur={() => onCommit?.(selectedSel)}
                 placeholder={placeholder}
                 disabled={disabled}
                 invalid={!isValid}

@@ -10,6 +10,7 @@ import type { WorkerContext } from '../types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
 import { resolvePropTarget, type PropTargetType } from './helpers/resolvePropTarget';
 import { parseGenericProps, type GenericPropEntry } from './helpers/parseGenericProps';
+import { makeSel } from './helpers/makeSel';
 
 export type { GenericPropEntry } from './helpers/parseGenericProps';
 export type { PropTargetType } from './helpers/resolvePropTarget';
@@ -136,6 +137,13 @@ function setGenericProp(
         withUndoTxn(scene, label, () => {
             if (args.op === 'reset') {
                 target.resetProp(args.propName);
+            } else if (args.valueType.startsWith('object<MolSelection>')) {
+                // Selection properties need a compiled SelCommand, not a raw
+                // string (UXP `commitPropChange` MolSelection branch). An empty
+                // string compiles to "select all".
+                const sel = makeSel(ctx, String(args.value ?? ''), scene.uid);
+                if (!sel) throw new Error(`bad selection: ${String(args.value)}`);
+                target.setProp(args.propName, sel.wrapped);
             } else {
                 target.setProp(args.propName, args.value);
             }

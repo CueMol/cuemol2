@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-06-01 (`dialog.property.renderer` wip: renderer-common-page (Basic settings + Edge lines) implemented as the Inspector Properties tab via live `getGenericProps`/`setGenericProp`; renderer-type-specific sections deferred to `rendererPropSections` registry — currently Common + collapsed dummy)
 - Updated: 2026-05-25 (`panel.densitymap` done: DensityMapPane wired with custom stepper (+ step-precision quantize) and typed-property-setter writes for color/center; multi-gradient mode dropped)
 - Updated: 2026-05-24 (`panel.symmetry` ported: SymmetryPane + Change modal + Symm-mol/Unit-cell renderer setup; activity bar group renamed Dummy → Crystal with cube icon)
 - Updated: 2026-05-24 (`panel.btmpanel-holder.seq` mapping done after E2E verification; remaining selection-commit latency tracked in ADR-0019)
@@ -22,13 +23,13 @@
 | Panel | [panels.md](panels.md) | 27 | 4 | 17 | 1 | 5 | 0 |
 | Menu | [menus.md](menus.md) | 4 | 2 | 2 | 0 | 0 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
-| Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 13 | 0 | 0 | 0 | 13 | 0 |
+| Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 13 | 0 | 1 | 0 | 12 | 0 |
 | Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 0 | 3 | 0 | 15 | 0 |
 | Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 1 | 0 | 0 | 20 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 2 | 1 | 0 | 10 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 0 | 1 | 0 | 27 | 0 |
 | Other | [other.md](other.md) | 4 | 0 | 1 | 0 | 3 | 0 |
-| **Total** | | **130** | **9** | **26** | **1** | **94** | **0** |
+| **Total** | | **130** | **9** | **27** | **1** | **93** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -57,11 +58,11 @@
 | Mapping | Count |
 |---------|------:|
 | 1:1 (`direct`) | 8 |
-| merged | 1 |
+| merged | 2 |
 | split | 19 |
 | redesign | 0 |
 | deprecated (`dropped`) | 2 |
-| *(not yet assigned)* | 100 |
+| *(not yet assigned)* | 99 |
 
 ---
 
@@ -85,6 +86,7 @@
 | [`panel.workspace.ctxmenu.style`](panels.md#panelworkspacectxmenustyle) | `useSceneContextMenu` / `main/sceneContextMenu` (style) / `styleOps.service` / `styleFile.service` / `sceneClipboard.service` (style kind) / `sceneOps.deleteNode` (style branch) | New Style + Copy / Paste + Delete + Style file Load / Save / Save As (Reload stub) + Read-only toggle wired; `sceneTree.service` switched to `getStyleSetsJSON` so style nodes carry real C++ uids + `styleInfo`. Editor dialog (Phase 5a) pending. |
 | [`panel.workspace.ctxmenu.camera`](panels.md#panelworkspacectxmenucamera) | `useSceneContextMenu` / `main/sceneContextMenu` (camera) / `cameraOps.service` / `cameraFile.service` / `sceneClipboard.service` (camera kind) | New Camera + Rename (atomic destroy+setCamera) + Delete + Copy / Paste + Camera file Load / Reload / Save / Save As + Save/Apply from view + Save/Apply with vis flags + Clear vis flags wired; `sceneTree.service` synthesises `cameraInfo` from `getCameraInfoJSON`. Edit vis flags dialog (Phase 6c) + property dialog (Phase 5a) pending. |
 | [`overlay.propeditor-generic`](overlay.md#overlaypropeditor-generic) | `InspectorPanel` / `GenericTab` / `genericProps.service` / `useInspectorState` | Generic property editor as the Generic tab of the docked inspector pane (ADR-0015); `getPropsJSON` bridge, live-apply, undo-wrapped writes. First stage edits primitive types (string/int/real/bool/enum); color/vector/timeval/nested-object editing deferred. Replaces the retired read-only `NodePropertyDialog` modal. |
+| [`dialog.property.renderer`](prop_dlgs.md) | `inspector/RendererCommonSection` / `inspector/PropertiesTab` / `rendererPropSections` / `getMaterialNames.service` | renderer-common-page (Basic settings + Edge lines) as the structured Properties tab, default for renderer targets; live `getGenericProps`/`setGenericProp` (sel compiled via `makeSel`, egcolor/material as strings). Per-renderer-type sections deferred to the `rendererPropSections` registry — every type currently shows Common + a collapsed dummy placeholder. |
 | [`panel.coloring.shell`](panels.md#panelcoloringshell) | `ColorPane` / `usePaintCapableRenderers` / `rendererColoring.service` | Phase 1: renderer selector (paint-capable filter) + Coloring type dropdown (Paint / Solid / Reset enabled; CPK / Bfac / Rainbow / Elepot / Multi-gradient "coming soon"). |
 | [`panel.coloring.deck.paint`](panels.md#panelcoloringdeckpaint) | `ColorPane` / `useRendererColoringState` / `rendererColoring.service` (Paint CRUD) | Phase 1: inline-edit Paint table (no `paint-propdlg` dialog yet). Add / Delete / Move + cell-level commit on blur via `add/remove/update/movePaintEntry`. |
 | [`panel.coloring.deck.solid`](panels.md#panelcoloringdecksolid) | `ColorPane` / `useRendererColoringState` / `rendererColoring.service` (`setRendererDefaultColor`) | Phase 1: default-color text input + preview swatch; commits on blur via `setRendererDefaultColor`. |
@@ -99,4 +101,4 @@
 
 ## Unstarted
 
-**98 / 130** items are `todo` (not yet started).
+**97 / 130** items are `todo` (not yet started).
