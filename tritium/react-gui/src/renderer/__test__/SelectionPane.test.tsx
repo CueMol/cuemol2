@@ -30,7 +30,7 @@ vi.mock('../contexts/ThemeContext', () => ({
 const pushHistoryMock = vi.fn()
 const getHistoryMock = vi.fn<() => string[]>(() => [])
 
-vi.mock('../components/widgets/MolSelList/selHistory', () => ({
+vi.mock('../h3-kit/MolSelList/selHistory', () => ({
     pushHistory: (v: string) => pushHistoryMock(v),
     getHistory: () => getHistoryMock(),
     clearHistory: () => undefined,
@@ -122,7 +122,7 @@ describe('SelectionPane', () => {
         await flushPromises()
         // Scope to the molecule selector -- the inline builder also renders a
         // keyword <select>, so an unscoped `select option` query is ambiguous.
-        const opts = Array.from(container.querySelectorAll('.object-select select option'))
+        const opts = Array.from(container.querySelectorAll('.h3-object-select select option'))
         expect(opts.map((o) => o.textContent)).toEqual(['1CRN', '3J3Q'])
         expect(cm.invokeService).toHaveBeenCalledWith('listSceneObjects', { sceneId: 1 })
         unmount()

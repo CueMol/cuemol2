@@ -1,10 +1,76 @@
 /*
- * MolSelList -- atom-selection picker styling.
+ * MolSelList -- atom-selection picker styling (h3-kit generic widget).
  *
  * The control is a form-kit `TextField` plus a caret button that opens a
  * Named/History popover. Control sizing comes from the form-kit catalog
- * (`.fk-input`, see `_form-kit.css`); the popover trigger sizing lives in
- * `_selection-builder.css` (`.mol-sel-list-trigger`). No bespoke heights are
- * defined here -- the old native-`<select>` picker rules were removed when the
- * picker became a popover.
+ * (`.h3-form-input`, see `_form-kit.css`); only the popover trigger / chevron
+ * layout lives here. No bespoke control heights are defined -- the old
+ * native-`<select>` picker rules were removed when the picker became a popover.
  */
+
+/* MolSelList picker trigger: a chevron tucked inside the input's right edge
+   (InputGroup rightElement), styled to read like a native <select> caret
+   rather than a separate button. The Popover target wrapper carries this
+   class; its child Button carries .h3-mol-sel-list-caret. */
+.h3-mol-sel-list-trigger {
+  display: flex;
+  align-items: center;
+}
+
+/* Position the chevron exactly like a native <select> caret (.h3-form-select::after):
+   vertically centered and inset var(--space-3) from the input's right edge.
+   Blueprint anchors the input-action wrapper at top:0/right:0 (not centered),
+   which otherwise leaves the glyph in the top-right corner. Mirror the select's
+   own technique (top:50% + translateY) so centering does not depend on the
+   wrapper resolving the input height. Scoped via :has() since MolSelList renders
+   the bare TextField (no wrapper class to hang an ancestor selector on). */
+.bp5-input-group .bp5-input-action:has(.h3-mol-sel-list-caret) {
+  top: 50%;
+  right: var(--space-3);
+  height: auto;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+}
+
+/* Strip Blueprint's minimal-button padding / min-size / hover fill so the
+   trigger collapses to just the chevron glyph. The glyph (.h3-form-caret) is the
+   shared Blender chevron -- same size/color as the .h3-form-select caret. */
+.h3-mol-sel-list-caret.bp5-button.bp5-minimal {
+  min-width: auto;
+  min-height: auto;
+  padding: 0;
+  margin: 0;
+  background: none;
+}
+
+.h3-mol-sel-list-caret.bp5-button.bp5-minimal:hover,
+.h3-mol-sel-list-caret.bp5-button.bp5-minimal:active {
+  background: none;
+}
+
+/* The whole MolSelList reads as a single widget, so the chevron must not draw
+   its own highlight. Suppress Blueprint's default :focus outline (this app
+   does not run FocusStyleManager, so mouse-click focus would otherwise show
+   the raw 2px accent ring around just the caret). */
+.h3-mol-sel-list-caret.bp5-button:focus,
+.h3-mol-sel-list-caret.bp5-button:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+/* The chevron glyph is rendered as a bare .h3-form-caret span (Button passes the
+   custom icon node straight through, never wrapping it in .bp5-icon), so keep
+   it flush -- the right inset is owned by the input-action wrapper above. */
+.h3-mol-sel-list-caret.bp5-button .h3-form-caret {
+  margin: 0;
+}
+
+/* MolSelList picker popover: Named/History segmented control + a menu. */
+.h3-mol-sel-list-popover {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  min-width: 180px;
+}

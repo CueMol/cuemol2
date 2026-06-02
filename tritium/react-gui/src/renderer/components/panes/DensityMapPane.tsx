@@ -30,7 +30,7 @@ import {
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import { useDensityMapPanel } from '../../hooks/useDensityMapPanel'
 import { useRealtimeDragProp } from '../../hooks/useRealtimeDragProp'
-import { FieldGrid, FieldGridRow, DragNumericField } from '../widgets/form'
+import { FieldGrid, FieldGridRow, DragNumericField } from '../../h3-kit/form'
 import type {
     MapRendererEntry,
     MapRendererPropName,
@@ -42,8 +42,8 @@ import {
     SEM_ANY,
 } from '../../event'
 import { useCueMolEventListener } from '../../hooks/useCueMolEventListener'
-import { CueColorField } from '../widgets/colorpicker/CueColorField'
-import { ColorPickerProvider } from '../widgets/colorpicker/ColorPickerContext'
+import { CueColorField } from '../../h3-kit/colorpicker/CueColorField'
+import { ColorPickerProvider } from '../../h3-kit/colorpicker/ColorPickerContext'
 
 /** Stored-value write options threaded to `setMapRendererProp`. */
 interface MapPropWriteOpts {
@@ -335,7 +335,7 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
                             }}
                             fill
                             disabled={items.length === 0}
-                            className="selection-mol-select fk-select"
+                            className="selection-mol-select h3-form-select"
                         >
                             {items.length === 0 ? (
                                 <option value="">(no map renderers)</option>
@@ -352,8 +352,8 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
                         <Popover content={modeMenu} placement="bottom-end" disabled={disabled}>
                             <Button
                                 small
-                                className="fk-dropdown-caret"
-                                rightIcon={<span className="fk-caret" aria-hidden />}
+                                className="h3-form-dropdown-caret"
+                                rightIcon={<span className="h3-form-caret" aria-hidden />}
                                 disabled={disabled}
                                 aria-label="Level mode"
                             />

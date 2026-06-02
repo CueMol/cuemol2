@@ -45,7 +45,7 @@ import { MsmsOptionsPane } from './panes/MsmsOptionsPane';
 import { NamdCoorOptionsPane } from './panes/NamdCoorOptionsPane';
 import { AmberPrmtopOptionsPane } from './panes/AmberPrmtopOptionsPane';
 import { RendererOptionsPane } from './panes/RendererOptionsPane';
-import { pushHistory } from '../widgets/MolSelList';
+import { pushHistory } from '../../h3-kit/MolSelList';
 
 import type { PdbOptions, MtzOptions, Ccp4MapOptions, MsmsOptions, NamdCoorOptions, AmberPrmtopOptions } from './types';
 

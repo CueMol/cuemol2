@@ -271,7 +271,7 @@
    ═══════════════════════════════════════════════════════════ */
 
 /* ── Select ──
-   Look (height / border / chevron) comes from the form-kit `.fk-select` class
+   Look (height / border / chevron) comes from the form-kit `.h3-form-select` class
    (styles/_form-kit.css); this rule carries layout only. */
 .config-setting-select.bp5-html-select {
   max-width: 320px;

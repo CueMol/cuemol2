@@ -33,7 +33,7 @@ import { Icon, InputGroup } from '@blueprintjs/core'
 import { useTheme } from '../../contexts/ThemeContext'
 import { useRenderConfig } from '../../contexts/RenderConfigContext'
 import { useCueMol } from '../../hooks/useCueMol'
-import { ColorPickerProvider } from '../widgets/colorpicker/ColorPickerContext'
+import { ColorPickerProvider } from '../../h3-kit/colorpicker/ColorPickerContext'
 import {
   CATEGORY_TREE,
   ALL_LEAF_IDS,

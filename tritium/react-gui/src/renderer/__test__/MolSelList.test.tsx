@@ -34,8 +34,8 @@ vi.mock('../contexts/ThemeContext', () => ({
     useTheme: () => ({ theme: 'dark', toggleTheme: () => undefined, setTheme: () => undefined }),
 }))
 
-import { MolSelList } from '../components/widgets/MolSelList/MolSelList'
-import { STORAGE_KEY } from '../components/widgets/MolSelList/selHistory'
+import { MolSelList } from '../h3-kit/MolSelList/MolSelList'
+import { STORAGE_KEY } from '../h3-kit/MolSelList/selHistory'
 import { mountTree, flushPromises } from './helpers/testHarness'
 
 function setupCm(opts?: {
@@ -76,7 +76,7 @@ function clickByText(text: string): void {
 }
 
 function menuItemTexts(): string[] {
-    return Array.from(document.querySelectorAll('.mol-sel-list-popover .bp5-menu-item')).map(
+    return Array.from(document.querySelectorAll('.h3-mol-sel-list-popover .bp5-menu-item')).map(
         (el) => el.textContent?.trim() ?? '',
     )
 }
@@ -143,7 +143,7 @@ describe('MolSelList', () => {
         )
         await flushPromises()
         await openPicker()
-        const popover = document.querySelector('.mol-sel-list-popover')
+        const popover = document.querySelector('.h3-mol-sel-list-popover')
         expect(popover).not.toBeNull()
         const btnTexts = Array.from(popover!.querySelectorAll('button')).map((b) =>
             b.textContent?.trim(),
@@ -163,7 +163,7 @@ describe('MolSelList', () => {
         expect(menuItemTexts()).toEqual(expect.arrayContaining(['chain.A', 'mySceneSel', 'myGlobalSel']))
         // Dividers carry the scope titles.
         const dividers = Array.from(
-            document.querySelectorAll('.mol-sel-list-popover .bp5-menu-header'),
+            document.querySelectorAll('.h3-mol-sel-list-popover .bp5-menu-header'),
         ).map((el) => el.textContent?.trim())
         expect(dividers).toEqual(expect.arrayContaining(['Selected', 'Scene', 'Global']))
         unmount()
@@ -196,7 +196,7 @@ describe('MolSelList', () => {
         expect(onChange).toHaveBeenCalledWith('mySceneSel')
         // Popover dismissed on pick (wait out the Blueprint close transition).
         await act(async () => { await new Promise((r) => setTimeout(r, 350)) })
-        expect(document.querySelector('.mol-sel-list-popover')).toBeNull()
+        expect(document.querySelector('.h3-mol-sel-list-popover')).toBeNull()
         unmount()
     })
 

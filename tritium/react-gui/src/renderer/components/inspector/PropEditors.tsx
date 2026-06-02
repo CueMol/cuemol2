@@ -3,7 +3,7 @@
  * @description Individual editor widgets for each property type.
  *
  * Each editor maps a single `PropDef` onto a form-kit catalog component
- * (`components/widgets/form/`), so control sizing/layout is owned by the
+ * (`h3-kit/form/`), so control sizing/layout is owned by the
  * shared catalog -- the inspector never re-chooses sizes. The parent
  * `PropertiesTab` maps `PropDef.type` to the correct editor.
  */
@@ -17,14 +17,14 @@ import {
   NumericField,
   SwitchField,
   ColorField,
-} from "../widgets/form";
+} from "../../h3-kit/form";
 
 // ────────────────────────────────────────────────────────────
 // Shared row wrapper -- kept as a catalog alias for back-compat.
-// New code should import `Field` from components/widgets/form.
+// New code should import `Field` from h3-kit/form.
 // ────────────────────────────────────────────────────────────
 
-export { Field as PropRow } from "../widgets/form";
+export { Field as PropRow } from "../../h3-kit/form";
 
 // ────────────────────────────────────────────────────────────
 // String editor

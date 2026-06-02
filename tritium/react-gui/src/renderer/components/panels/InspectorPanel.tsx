@@ -25,7 +25,7 @@
 
 import React, { useState, useCallback, useEffect } from "react";
 import { Icon, Button, Tag } from "@blueprintjs/core";
-import { SegmentField } from "../widgets/form";
+import { SegmentField } from "../../h3-kit/form";
 
 import { PropertiesTab } from "../inspector/PropertiesTab";
 import { GenericTab } from "../inspector/GenericTab";
@@ -37,7 +37,7 @@ import type {
   PropWriteOpts,
 } from "../../worker/server/services/genericProps.service";
 import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
-import { ColorPickerProvider } from "../widgets/colorpicker/ColorPickerContext";
+import { ColorPickerProvider } from "../../h3-kit/colorpicker/ColorPickerContext";
 
 // ────────────────────────────────────────────────────────────
 // Types

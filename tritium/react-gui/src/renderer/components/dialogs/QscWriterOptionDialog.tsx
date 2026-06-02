@@ -93,7 +93,7 @@ export function QscWriterOptionDialog({ visible, onConfirm, onCancel }: Props): 
 
                     <FormGroup label="Compatibility" inline>
                         <HTMLSelect
-                            className="fk-select"
+                            className="h3-form-select"
                             value={version}
                             onChange={(e) => setVersion(e.currentTarget.value as QscVersion)}
                             options={VERSION_OPTIONS}
@@ -102,7 +102,7 @@ export function QscWriterOptionDialog({ visible, onConfirm, onCancel }: Props): 
 
                     <FormGroup label="Compression" inline disabled={advancedDisabled}>
                         <HTMLSelect
-                            className="fk-select"
+                            className="h3-form-select"
                             value={compress}
                             disabled={advancedDisabled}
                             onChange={(e) => setCompress(e.currentTarget.value as QscCompress)}

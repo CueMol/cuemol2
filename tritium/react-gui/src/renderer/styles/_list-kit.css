@@ -3,9 +3,9 @@
  * horizontal padding, icon gap) and state (hover / selected), shared by every
  * selectable list. Lists render three ways and cannot share one React
  * component, so they share these tokens + role classes:
- *   - flex rows (custom React lists)     -> .listbox / .list-row  (or <ListRow>)
- *   - HTML table rows (inspector, ...)   -> .list-table / .list-table-row
- *   - Blueprint <Tree> (scene/mol tree)  -> add `listbox-tree` to the Tree
+ *   - flex rows (custom React lists)     -> .h3-listbox / .h3-list-row  (or <ListRow>)
+ *   - HTML table rows (inspector, ...)   -> .h3-list-table / .h3-list-table-row
+ *   - Blueprint <Tree> (scene/mol tree)  -> add `h3-listbox-tree` to the Tree
  * All read --row-h / --list-* tokens + --bg-hover / --bg-active / --accent so
  * the rows look identical. Values live here only (lint ignoreFiles, like
  * _form-kit.css); consumers never re-choose row height / padding / state colour.
@@ -15,13 +15,13 @@
  */
 
 /* ── (1) flex rows (custom React lists / <ListRow>) ── */
-.listbox {
+.h3-listbox {
   display: flex;
   flex-direction: column;
   min-width: 0;
 }
 
-.list-row {
+.h3-list-row {
   display: flex;
   align-items: center;
   gap: var(--list-row-gap);
@@ -35,48 +35,48 @@
   transition: background 0.1s;
 }
 
-.list-row:hover {
+.h3-list-row:hover {
   background: var(--bg-hover);
 }
 
-.list-row.is-selected {
+.h3-list-row.is-selected {
   background: var(--bg-active);
   color: var(--accent);
 }
 
 /* ── (2) HTML table rows (inspector generic tab, ...) ── */
-.list-table {
+.h3-list-table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.list-table-row {
+.h3-list-table-row {
   height: var(--row-h);
   cursor: pointer;
   transition: background 0.1s;
 }
 
-.list-table-row:hover {
+.h3-list-table-row:hover {
   background: var(--bg-hover);
 }
 
-.list-table-row.is-selected {
+.h3-list-table-row.is-selected {
   background: var(--bg-active);
 }
 
-.list-table-row.is-selected > * {
+.h3-list-table-row.is-selected > * {
   color: var(--accent);
 }
 
 /* ── (3) Blueprint <Tree> rows (scene / mol tree) ──
    Blueprint injects `.bp5-tree-node-content`, so the row role is mapped here
-   via tokens (we cannot put .list-row on Blueprint's element). The left inset
+   via tokens (we cannot put .h3-list-row on Blueprint's element). The left inset
    stays on the tree container so Blueprint's depth padding still applies. */
-.listbox-tree .bp5-tree-node {
+.h3-listbox-tree .bp5-tree-node {
   min-height: 0;
 }
 
-.listbox-tree .bp5-tree-node-content {
+.h3-listbox-tree .bp5-tree-node-content {
   height: var(--row-h);
   padding-right: var(--list-row-pad-x);
   cursor: pointer;
@@ -86,44 +86,44 @@
   transition: background 0.1s;
 }
 
-.listbox-tree .bp5-tree-node-content:hover {
+.h3-listbox-tree .bp5-tree-node-content:hover {
   background: var(--bg-hover);
 }
 
-.listbox-tree .bp5-tree-node.bp5-tree-node-selected > .bp5-tree-node-content {
+.h3-listbox-tree .bp5-tree-node.bp5-tree-node-selected > .bp5-tree-node-content {
   background: var(--bg-active) !important;
   color: var(--accent);
 }
 
-.listbox-tree .bp5-tree-node-caret {
+.h3-listbox-tree .bp5-tree-node-caret {
   color: var(--text-muted) !important;
   min-width: 20px;
 }
 
-.listbox-tree .bp5-tree-node-caret:hover {
+.h3-listbox-tree .bp5-tree-node-caret:hover {
   color: var(--text-secondary) !important;
 }
 
-.listbox-tree .bp5-tree-node-caret-none {
+.h3-listbox-tree .bp5-tree-node-caret-none {
   min-width: 20px;
 }
 
-.listbox-tree .bp5-tree-node-icon {
+.h3-listbox-tree .bp5-tree-node-icon {
   color: var(--text-secondary);
 }
 
-.listbox-tree .bp5-tree-node.bp5-tree-node-selected > .bp5-tree-node-content .bp5-tree-node-icon {
+.h3-listbox-tree .bp5-tree-node.bp5-tree-node-selected > .bp5-tree-node-content .bp5-tree-node-icon {
   color: var(--accent);
 }
 
-.listbox-tree .bp5-tree-node-label {
+.h3-listbox-tree .bp5-tree-node-label {
   font-size: var(--type-row-fs);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.listbox-tree .bp5-tree-node-secondary-label {
+.h3-listbox-tree .bp5-tree-node-secondary-label {
   display: flex;
   align-items: center;
 }

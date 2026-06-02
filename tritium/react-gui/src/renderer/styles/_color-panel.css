@@ -90,7 +90,7 @@
 }
 
 /* The colour picker fills the table cell. */
-.color-cell-color .cp-widget {
+.color-cell-color .h3-color-widget {
   width: 100%;
 }
 
@@ -257,7 +257,7 @@
   flex-shrink: 0;
 }
 
-/* Select look (height / border / chevron) comes from the form-kit `.fk-select`
+/* Select look (height / border / chevron) comes from the form-kit `.h3-form-select`
  * class (styles/_form-kit.css). Here the wrapper carries layout only: it fills
  * its row and stays frameless so only the inner select's border shows --
  * neutralizing both Blueprint's default wrapper frame and the

@@ -38,7 +38,7 @@ import {
     Tooltip,
 } from '@blueprintjs/core'
 import { SectionHeader } from './SectionHeader'
-import { SliderNumericField } from '../widgets/SliderNumericField'
+import { SliderNumericField } from '../../h3-kit/SliderNumericField'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import type { RendColoringId } from '../../../shared/ipcTypes'
 import type {
@@ -51,8 +51,8 @@ import type {
     PaintEntryDto,
     RainbowParams,
 } from '../../worker/server/services/rendererColoring.service'
-import { CueColorField } from '../widgets/colorpicker/CueColorField'
-import { ColorPickerProvider } from '../widgets/colorpicker/ColorPickerContext'
+import { CueColorField } from '../../h3-kit/colorpicker/CueColorField'
+import { ColorPickerProvider } from '../../h3-kit/colorpicker/ColorPickerContext'
 import { usePaintCapableRenderers } from '../../hooks/usePaintCapableRenderers'
 import { useRendererColoringState } from '../../hooks/useRendererColoringState'
 import { useElePotMapObjects } from '../../hooks/useElePotMapObjects'
@@ -155,7 +155,7 @@ const RendererSelector: React.FC<RendererSelectorProps> = ({
                 fill
                 value=""
                 onChange={() => {}}
-                className="color-enum-select fk-select"
+                className="color-enum-select h3-form-select"
             >
                 <option value="">(no paint-capable renderers)</option>
             </HTMLSelect>
@@ -166,7 +166,7 @@ const RendererSelector: React.FC<RendererSelectorProps> = ({
         <HTMLSelect
             fill
             value={selectedKey ?? ''}
-            className="color-enum-select fk-select"
+            className="color-enum-select h3-form-select"
             onChange={(e) => {
                 const v = e.target.value
                 onChange(v === '' ? null : v)
@@ -467,7 +467,7 @@ const EnumField: React.FC<EnumFieldProps> = ({
             value={value}
             disabled={disabled}
             onChange={(e) => onCommit(e.target.value)}
-            className="color-field-input color-enum-select fk-select"
+            className="color-field-input color-enum-select h3-form-select"
         >
             {options.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -596,7 +596,7 @@ const ElepotDeck: React.FC<ElepotDeckProps> = ({ params, objects, onCommit }) =>
                 value={params.elepot}
                 disabled={objects.length === 0}
                 onChange={(e) => onCommit('elepot', e.target.value)}
-                className="color-field-input color-enum-select fk-select"
+                className="color-field-input color-enum-select h3-form-select"
             >
                 {/* When the renderer's elepot is unset or points to a now-deleted
                   * object, show a sentinel row so the dropdown is still
@@ -1037,8 +1037,8 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
                         >
                             <Button
                                 small
-                                className="fk-dropdown-caret"
-                                rightIcon={<span className="fk-caret" aria-hidden />}
+                                className="h3-form-dropdown-caret"
+                                rightIcon={<span className="h3-form-caret" aria-hidden />}
                                 text="Coloring"
                                 disabled={dropdownDisabled}
                             />

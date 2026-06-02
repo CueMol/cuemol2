@@ -10,8 +10,8 @@ import React from 'react'
 import { Button, HTMLSelect, NumericInput, Switch } from '@blueprintjs/core'
 import { IPC } from '../../../../shared/ipcChannels'
 import type { SettingDef } from './settingsConfig'
-import { CueColorField } from '../../widgets/colorpicker/CueColorField'
-import type { Mode } from '../../widgets/colorpicker/ColorPicker'
+import { CueColorField } from '../../../h3-kit/colorpicker/CueColorField'
+import type { Mode } from '../../../h3-kit/colorpicker/ColorPicker'
 
 /**
  * App settings colours are scene-independent plain colours, so the picker
@@ -34,7 +34,7 @@ export const SettingRow: React.FC<SettingRowProps> = ({ def, value, onChange }) 
       case 'select':
         return (
           <HTMLSelect
-            className="config-setting-select fk-select"
+            className="config-setting-select h3-form-select"
             value={value as string}
             onChange={(e) => onChange(key, e.target.value)}
             options={control.options}

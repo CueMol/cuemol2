@@ -115,7 +115,7 @@
 }
 
 /*
- * List / tree row roles (`.list-row` / `.list-table*` / `.listbox-tree`) live
+ * List / tree row roles (`.h3-list-row` / `.h3-list-table*` / `.h3-listbox-tree`) live
  * in `styles/_list-kit.css` -- the single source for list/tree row metrics.
  * Use the list-kit role classes or the <ListRow>/<Listbox> components.
  */

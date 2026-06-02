@@ -166,7 +166,7 @@
 
 /* ─── Scene & MolStruct trees ─── */
 /* Shared row metrics (height / hover / selected / caret / icon / label) live in
- * `_list-kit.css` keyed on `.listbox-tree`; both trees carry that class. Only
+ * `_list-kit.css` keyed on `.h3-listbox-tree`; both trees carry that class. Only
  * tree-SPECIFIC layout stays here.
  *
  * NOTE: the left inset lives on the container so Blueprint's depth-based
@@ -198,7 +198,7 @@
   animation: none !important;
 }
 
-/* (Shared tree row metrics moved to `_list-kit.css` `.listbox-tree`.) */
+/* (Shared tree row metrics moved to `_list-kit.css` `.h3-listbox-tree`.) */
 
 /* ─── Scene-tree DnD drop indicator ─── */
 /* The draggable label span fills the Blueprint label cell; the indicator
@@ -278,7 +278,7 @@
   gap: var(--space-2);
 }
 
-.selection-input-with-count .fk-input {
+.selection-input-with-count .h3-form-input {
   flex: 1 1 auto;
   min-width: 0;
 }

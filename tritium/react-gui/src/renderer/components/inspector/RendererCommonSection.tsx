@@ -25,8 +25,8 @@ import {
   DragNumericField,
   SwitchField,
   ColorField,
-} from "../widgets/form";
-import { MolSelList } from "../widgets/MolSelList/MolSelList";
+} from "../../h3-kit/form";
+import { MolSelList } from "../../h3-kit/MolSelList/MolSelList";
 import { useCueMol } from "../../hooks/useCueMol";
 import { useRealtimeDragProp } from "../../hooks/useRealtimeDragProp";
 import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";

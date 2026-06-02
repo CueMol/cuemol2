@@ -108,7 +108,7 @@ const DetailEditor: React.FC<DetailEditorProps> = ({ entry, atDefault, onSetValu
         value={String(entry.value)}
         disabled={disabled}
         onChange={(e) => onSetValue(entry.key, entry.type, e.target.value)}
-        className="insp-select fk-select"
+        className="insp-select h3-form-select"
       >
         {(entry.enumdef ?? [String(entry.value)]).map((opt) => (
           <option key={opt} value={opt}>
@@ -249,7 +249,7 @@ export const GenericTab: React.FC<GenericTabProps> = ({
 
       {/* Scrollable table */}
       <div className="insp-generic-table-wrap">
-        <table className="insp-generic-table list-table">
+        <table className="insp-generic-table h3-list-table">
           <colgroup>
             <col style={{ width: widths.name }} />
             <col style={{ width: widths.type }} />
@@ -284,7 +284,7 @@ export const GenericTab: React.FC<GenericTabProps> = ({
               <tr
                 key={entry.key}
                 className={
-                  "insp-gt-row list-table-row" +
+                  "insp-gt-row h3-list-table-row" +
                   (selectedKey === entry.key ? " is-selected" : "") +
                   (entry.readonly ? " readonly" : "")
                 }

@@ -8,13 +8,13 @@ UIスタイルは **デザイントークン** (CSS custom properties) に一元
 
 > **原則1 (生値を書かない)**: 生の値 (hex / px / pt / em) を直接書かない。必ずトークン経由で参照する。新しい値が要るときは、まず `_variables.css` にトークンを足してから参照する (1コンポーネントに直書きしない)。命名は why-based (`--text-error` 系。`--text-red` のような値ベース名を新設しない)。
 >
-> **原則2 (意味で選ぶ / MOST IMPORTANT)**: テキストやサイズは「目的の見た目 (11px に見せたい)」から逆算してトークンを選ばない。**UI 上の役割 (role) で選ぶ**。`--fs-base` を「11px が欲しいから」ではなく「これはフォームの label だから `.type-label`」と決める。これが本来の目的 ── 同じ役割の UI が常に同じ見た目になり統一感が出る。生値を書かないこと自体は手段にすぎない (数字を消すだけで role を無視すると、`size1..6` を px に当てはめるのと同じで無意味)。typography は §意味的 typography role、構造 (行・ヘッダ) は `.panel-header` / `.section-header` / `.list-row` を使う。
+> **原則2 (意味で選ぶ / MOST IMPORTANT)**: テキストやサイズは「目的の見た目 (11px に見せたい)」から逆算してトークンを選ばない。**UI 上の役割 (role) で選ぶ**。`--fs-base` を「11px が欲しいから」ではなく「これはフォームの label だから `.type-label`」と決める。これが本来の目的 ── 同じ役割の UI が常に同じ見た目になり統一感が出る。生値を書かないこと自体は手段にすぎない (数字を消すだけで role を無視すると、`size1..6` を px に当てはめるのと同じで無意味)。typography は §意味的 typography role、構造 (行・ヘッダ) は `.panel-header` / `.section-header` / `.h3-list-row` を使う。
 
 ---
 
 ## 0. 新規UIの組み方 — form-kit カタログ (MUST / まずこれ)
 
-label+control の UI (フォーム行・テキスト入力・select・numeric・switch・color・compact button・ツールバーのボタン/フィルタ入力) は、**必ず `components/widgets/form/` のカタログコンポーネントで組む**。生の Blueprint `Button`/`InputGroup`/`HTMLSelect` を独自 CSS で並べない。
+label+control の UI (フォーム行・テキスト入力・select・numeric・switch・color・compact button・ツールバーのボタン/フィルタ入力) は、**必ず `h3-kit/form/` のカタログコンポーネントで組む**。生の Blueprint `Button`/`InputGroup`/`HTMLSelect` を独自 CSS で並べない。
 
 | コンポーネント | 用途 | canonical サイズ (source) |
 |---|---|---|
@@ -28,7 +28,7 @@ label+control の UI (フォーム行・テキスト入力・select・numeric・
 | `SwitchField` | 真偽トグル (`inline` Field 内で使う) | Blueprint Switch |
 | `ColorField` | 色 (`CueColorField` の薄いラッパ) | - |
 | `ButtonRow` / `FormButton` | コンパクトボタンの行 / ボタン | 高 `--field-btn-h`, ラベル `--fs-base` |
-| `SegmentField` | モード/ソース切替 (`Named\|History` 等) | 高 `--field-btn-h`, ラベル `--fs-base` (= `FormButton` と同一, `.fk-segmented`) |
+| `SegmentField` | モード/ソース切替 (`Named\|History` 等) | 高 `--field-btn-h`, ラベル `--fs-base` (= `FormButton` と同一, `.h3-form-segmented`) |
 
 **なぜカタログか (最重要)**: トークン (`--space-*` / `--ctrl-h-*`) は「どの値か」を統一するが、**値を選ぶ行為自体がサイズ選び**になり強制力にならない (typography の `.type-*` role がテキストで解決したのと同じ問題が、コントロール高・行・余白の軸に残っていた)。カタログコンポーネントは **size props を公開しない** ので、**同じコンポーネントを使えば必ず同じサイズ**になる。これが「コンポーネント追加のたびにサイズがおかしくなる」再発を仕組みで防ぐ唯一の方法。
 
@@ -38,23 +38,23 @@ label+control の UI (フォーム行・テキスト入力・select・numeric・
 - コントロール高・行高・label gap・section spacing を **consumer の CSS や inline `style` で指定しない**。サイズの単一ソースは `styles/_form-kit.css` ＋ `_variables.css` の `--field-*` / `--form-*` トークンのみ。
 - 必要なコントロールがカタログに無ければ、**先にカタログへ 1 つ追加** (`_form-kit.css` にサイズを 1 定義) してから使う。consumer 側でサイズを決めない。
 - サイズを変えたい時は **トークンか `_form-kit.css`** を 1 箇所編集する。consumer の CSS は触らない。
-- フォーカスリング等の見た目もカタログ (`.fk-*`) が所有する。生 Blueprint コントロールを使うと大きいフォーカス枠や caret ズレが出る — `.fk-select`/`.fk-input` を付けて単一ソースを再利用する。
-- dense な専用 widget (例: `SelectionBuilder`) で component 化が難しい箇所のみ、**スコープした CSS から `--field-*` トークンと `.fk-*` クラスを参照** する (生 px 禁止)。
+- フォーカスリング等の見た目もカタログ (`.h3-form-*`) が所有する。生 Blueprint コントロールを使うと大きいフォーカス枠や caret ズレが出る — `.h3-form-select`/`.h3-form-input` を付けて単一ソースを再利用する。
+- dense な専用 widget (例: `SelectionBuilder`) で component 化が難しい箇所のみ、**スコープした CSS から `--field-*` トークンと `.h3-form-*` クラスを参照** する (生 px 禁止)。
 - `_form-kit.css` は lint の `ignoreFiles` (`_variables.css` と同じく primitive 置き場)。サイズ一貫性は lint ではなくカタログ component が担保する。
 
 ### 既存UIの対応 (インベントリ → canonical)
 
 | 論理コンポーネント | 旧・分裂実装 | canonical |
 |---|---|---|
-| labeled 行 | `.insp-prop-row` / `.selection-row` / `.snf-row` / `.config-setting` | `Field` |
+| labeled 行 | `.insp-prop-row` / `.selection-row` / `.h3-slider-row` / `.config-setting` | `Field` |
 | text input | `.insp-input`(22) / dialog `.bp5-input`(26) | `TextField` (22) |
 | select | `.insp-select`(22) / `.selection-mol-select`(28) | `SelectField` (22) |
-| numeric | `.insp-numeric-input`(20) / `.snf-number`(20) | `NumericField` (20) |
+| numeric | `.insp-numeric-input`(20) / `.h3-slider-number`(20) | `NumericField` (20) |
 | switch | `.insp-switch` | `SwitchField` |
 | compact button | 20/22/24/26px がファイル毎 | `FormButton` (`--field-btn-h`) |
-| segmented control | `.inspector-mode-bar` の直書き override / 各所の生 `SegmentedControl` | `SegmentField` (`--field-btn-h`, `.fk-segmented`) |
+| segmented control | `.inspector-mode-bar` の直書き override / 各所の生 `SegmentedControl` | `SegmentField` (`--field-btn-h`, `.h3-form-segmented`) |
 
-**済**: form-kit、Inspector `PropEditors`/モード切替 (`SegmentField`)、`ObjectSelect`、`SelectionPane`/`SelectionBuilder` (最上位グループは `FieldSection`, 下位は `Field`)、`MolSelList` (Named/History 切替も `SegmentField`)、`LogPanel`/`RenderPanel` ツールバー、catalog gallery (`DummyPane3` = activity bar の Component Catalog)。**残 (新規変更時にカタログへ寄せる)**: `RenderSettingsEditor` の直接 `.insp-*`、`SettingRow`(`.config-setting`)、`SliderNumericField`(`.snf-*`)、`_dialog.css` の 26px 入力 (高さは `--field-*` トークンに揃え済み)。
+**済**: form-kit、Inspector `PropEditors`/モード切替 (`SegmentField`)、`ObjectSelect`、`SelectionPane`/`SelectionBuilder` (最上位グループは `FieldSection`, 下位は `Field`)、`MolSelList` (Named/History 切替も `SegmentField`)、`LogPanel`/`RenderPanel` ツールバー、catalog gallery (`DummyPane3` = activity bar の Component Catalog)。**残 (新規変更時にカタログへ寄せる)**: `RenderSettingsEditor` の直接 `.insp-*`、`SettingRow`(`.config-setting`)、`SliderNumericField`(`.h3-slider-*`)、`_dialog.css` の 26px 入力 (高さは `--field-*` トークンに揃え済み)。
 
 ---
 
@@ -66,9 +66,9 @@ listbox はフォームと違い**描画基盤が3種**あり単一コンポー�
 
 | 基盤 | 使うもの | 備考 |
 |---|---|---|
-| flex (自前 React リスト) | `<Listbox>` + `<ListRow selected>` (`components/widgets/list/`) | size props 無し。`.list-row .type-row` を出す |
-| HTML `<table>` | `.list-table` + `<tr class="list-table-row">`、選択は `.is-selected` | 行高/hover/selected を list-kit が供給。zebra・セル境界等は consumer 固有 (例: `.insp-gt-row`) |
-| Blueprint `<Tree>` | Tree の `className` に **`listbox-tree`** を足す | Blueprint 注入要素 (`.bp5-tree-node-content`) に list-kit がトークンを当てる。indent は Blueprint の depth padding に委ねる (`.bp5-tree-node-content` の `padding-left` を直接上書きしない) |
+| flex (自前 React リスト) | `<Listbox>` + `<ListRow selected>` (`h3-kit/list/`) | size props 無し。`.h3-list-row .type-row` を出す |
+| HTML `<table>` | `.h3-list-table` + `<tr class="h3-list-table-row">`、選択は `.is-selected` | 行高/hover/selected を list-kit が供給。zebra・セル境界等は consumer 固有 (例: `.insp-gt-row`) |
+| Blueprint `<Tree>` | Tree の `className` に **`h3-listbox-tree`** を足す | Blueprint 注入要素 (`.bp5-tree-node-content`) に list-kit がトークンを当てる。indent は Blueprint の depth padding に委ねる (`.bp5-tree-node-content` の `padding-left` を直接上書きしない) |
 
 **例外**: color swatch テーブル (`_color-panel.css`) は、色見本セル上で背景ハイライトが読めないため hover/selected を **outline 方式**で残す (SoT 公認の例外)。
 
@@ -154,7 +154,7 @@ listbox はフォームと違い**描画基盤が3種**あり単一コンポー�
 | spacing (padding/margin/gap) | `--space-0`..`--space-6` | 0 / 2 / 4 / 6 / 8 / 12 / 16 px |
 | control 高さ | `--ctrl-h-sm` `--ctrl-h-md` `--ctrl-h-lg` | 20 / 24 / 30 px |
 | パネルヘッダー高さ | `--panel-header-h` | 30px (トップレベルのみ) |
-| リスト/ツリー行高さ | `--row-h` | 22px (`.list-row` / tree 行) |
+| リスト/ツリー行高さ | `--row-h` | 22px (`.h3-list-row` / tree 行) |
 | icon | `--icon-sm` `--icon-md` `--icon-lg` | 12 / 14 / 18 px |
 | 角丸 | `--radius-sm` `--radius-md` `--radius-lg` | 2 / 3 / 4 px |
 | form-kit (§0 カタログ専用) | `--field-h` `--field-h-sm` `--field-label-gap` `--field-row-pad` `--form-row-gap` `--form-section-gap` `--field-btn-h` | 22 / 20px ほか。**`_form-kit.css` だけが参照**。consumer は直接使わずカタログ component を使う |
@@ -201,13 +201,13 @@ color: 'var(--accent)'
 UXP機能を tritium に起こす / 新規コンポーネントを追加するときに確認:
 
 - [ ] **label+control の UI は §0 の form-kit カタログ (`Field`/`TextField`/`SelectField`/…) で組んだか** (生 Blueprint コントロール＋独自サイズ CSS を書いていないか)。コントロール高・行高・label gap・section spacing を consumer 側で指定していないか。無い部品は先にカタログへ追加したか
-- [ ] **list / tree 行は §0.5 の list-kit で揃えたか** (flex=`<ListRow>`、table=`.list-table-row`+`.is-selected`、Blueprint Tree=`listbox-tree` クラス)。行高・hover/selected を直書きしていないか
+- [ ] **list / tree 行は §0.5 の list-kit で揃えたか** (flex=`<ListRow>`、table=`.h3-list-table-row`+`.is-selected`、Blueprint Tree=`h3-listbox-tree` クラス)。行高・hover/selected を直書きしていないか
 - [ ] 色はすべて `var(--bg-*|--text-*|--accent*|--border*)` 経由か (生 hex / `Colors.*` / `--pt-*` を使っていないか)
 - [ ] 余白・gap は `var(--space-*)` か
 - [ ] 高さは `var(--ctrl-h-*)` / `--panel-header-h` / `--row-h` か (新しい高さを直書きしていないか)
 - [ ] 角丸は `var(--radius-*)` か
 - [ ] **各テキスト要素に意味的 role を当てたか** (`.type-*` クラス。Blueprint 注入要素は `--type-<role>-*` 変数)。生 `--fs-*`/`--lh-*` を直書き・px 逆算で選んでいないか。同じ役割の隣接 UI と同じ role か
-- [ ] panel/section header・リスト行は `.panel-header` / `.section-header` / `.list-row` を使い、box を重複定義していないか
+- [ ] panel/section header・リスト行は `.panel-header` / `.section-header` / `.h3-list-row` を使い、box を重複定義していないか
 - [ ] 既存 role に収まらない場合のみ、コンポーネントに直書きせず `_variables.css` + `_typography.css` に新 role を足したか
 - [ ] **dark / light 両テーマで確認したか** (`task run_tritium` 後にテーマ切替)
 - [ ] `npm run lint:style` を通したか (ベースライン件数を増やしていないか)

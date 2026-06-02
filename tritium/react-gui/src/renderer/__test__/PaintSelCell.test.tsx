@@ -42,7 +42,7 @@ vi.mock('../contexts/ThemeContext', () => ({
 }))
 
 import { PaintSelCell } from '../components/panes/PaintSelCell'
-import { STORAGE_KEY, getHistory } from '../components/widgets/MolSelList/selHistory'
+import { STORAGE_KEY, getHistory } from '../h3-kit/MolSelList/selHistory'
 import { mountTree, flushPromises } from './helpers/testHarness'
 
 function getInput(container: HTMLElement): HTMLInputElement {
@@ -136,7 +136,7 @@ describe('PaintSelCell', () => {
         // Simulate the popover portal: a menu item living under the picker's
         // portal class, which the cell wrapper does not contain.
         const portal = document.createElement('div')
-        portal.className = 'mol-sel-list-popover'
+        portal.className = 'h3-mol-sel-list-popover'
         const item = document.createElement('a')
         portal.appendChild(item)
         document.body.appendChild(portal)

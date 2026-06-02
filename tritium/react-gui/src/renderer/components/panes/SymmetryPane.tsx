@@ -28,7 +28,7 @@ import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import { useSymmetryPanel } from '../../hooks/useSymmetryPanel'
 import { useShowSymmetryChangeDialog } from '../dialogs/SymmetryChangeDialogProvider'
 import type { SymmRendererExtent } from '../../worker/server/services/symmetryPanelOps.service'
-import { ObjectSelect, objectFilters } from '../widgets/ObjectSelect'
+import { ObjectSelect, objectFilters } from '../../h3-kit/ObjectSelect'
 
 interface SymmetryPaneProps {
     cm: AsyncCueMol | null
@@ -229,8 +229,8 @@ export const SymmetryPane: React.FC<SymmetryPaneProps> = ({
                         <Popover content={symmMolMenu} placement="bottom-start" disabled={!symmEnabled}>
                             <Button
                                 small
-                                className="fk-dropdown-caret"
-                                rightIcon={<span className="fk-caret" aria-hidden />}
+                                className="h3-form-dropdown-caret"
+                                rightIcon={<span className="h3-form-caret" aria-hidden />}
                                 disabled={!symmEnabled}
                             >
                                 Symm mol

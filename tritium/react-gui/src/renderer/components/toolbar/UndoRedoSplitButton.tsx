@@ -41,8 +41,8 @@ export const UndoRedoSplitButton: React.FC<UndoRedoSplitButtonProps> = ({ kind }
       <Button icon={isUndo ? "undo" : "redo"} text={text} onClick={runStep} />
       <Popover content={historyMenu} placement="bottom-start">
         <Button
-          className="fk-dropdown-caret"
-          icon={<span className="fk-caret" aria-hidden />}
+          className="h3-form-dropdown-caret"
+          icon={<span className="h3-form-caret" aria-hidden />}
           aria-label={`${text} history`}
         />
       </Popover>

@@ -17,7 +17,7 @@ import React, { act } from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 
-import { DragNumericField } from '../components/widgets/form/DragNumericField'
+import { DragNumericField } from '../h3-kit/form/DragNumericField'
 
 void React
 
@@ -36,21 +36,21 @@ afterEach(() => {
 })
 
 function getRoot(): HTMLElement {
-    const el = container.querySelector('.fk-drag')
-    if (!el) throw new Error('.fk-drag not found')
+    const el = container.querySelector('.h3-form-drag')
+    if (!el) throw new Error('.h3-form-drag not found')
     return el as HTMLElement
 }
 
 function getValueText(): string {
-    return getRoot().querySelector('.fk-drag-value')?.textContent ?? ''
+    return getRoot().querySelector('.h3-form-drag-value')?.textContent ?? ''
 }
 
 function getEditInput(): HTMLInputElement | null {
-    return container.querySelector('input.fk-drag-input')
+    return container.querySelector('input.h3-form-drag-input')
 }
 
 function getFill(): HTMLElement | null {
-    return container.querySelector('.fk-drag-fill')
+    return container.querySelector('.h3-form-drag-fill')
 }
 
 function setInputValue(el: HTMLInputElement, value: string) {
@@ -240,7 +240,7 @@ describe('DragNumericField', () => {
         const onChange = vi.fn()
         const onRelease = vi.fn()
         render({ value: 1.0, step: 0.1, onChange, onRelease })
-        const [left, right] = container.querySelectorAll('.fk-drag-arrow')
+        const [left, right] = container.querySelectorAll('.h3-form-drag-arrow')
         act(() => { (right as HTMLButtonElement).click() })
         expect(onChange).toHaveBeenLastCalledWith(1.1)
         expect(onRelease).toHaveBeenLastCalledWith(1.1)

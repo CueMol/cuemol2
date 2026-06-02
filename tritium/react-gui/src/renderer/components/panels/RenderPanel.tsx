@@ -11,7 +11,7 @@
 
 import React from "react";
 import { ProgressBar, type Intent } from "@blueprintjs/core";
-import { SelectField, FormButton } from "../widgets/form";
+import { SelectField, FormButton } from "../../h3-kit/form";
 import { type RenderJob, isRenderJobActive } from "../../hooks/useRenderJob";
 import { RENDER_SIZE_PRESETS } from "../../data/renderSettings";
 

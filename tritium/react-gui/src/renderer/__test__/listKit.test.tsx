@@ -1,11 +1,11 @@
 /**
  * Degrade-detection tests for the list-kit catalog
- * (`components/widgets/list/`).
+ * (`h3-kit/list/`).
  *
  * list-kit is the single source of list/tree ROW sizing. These pin:
- *  - ListRow emits `.list-row` and toggles `.is-selected`
+ *  - ListRow emits `.h3-list-row` and toggles `.is-selected`
  *  - ListRow leaks no inline sizing (height/padding/margin come from CSS)
- *  - Listbox emits `.listbox`
+ *  - Listbox emits `.h3-listbox`
  *  - onClick fires
  */
 import React from 'react'
@@ -14,7 +14,7 @@ import { act } from 'react'
 
 void React
 
-import { Listbox, ListRow } from '../components/widgets/list'
+import { Listbox, ListRow } from '../h3-kit/list'
 import { mountTree } from './helpers/testHarness'
 
 function expectNoInlineSizing(root: HTMLElement): void {
@@ -26,14 +26,14 @@ function expectNoInlineSizing(root: HTMLElement): void {
 }
 
 describe('list-kit catalog', () => {
-    it('Listbox emits .listbox; ListRow emits .list-row with .type-row', () => {
+    it('Listbox emits .h3-listbox; ListRow emits .h3-list-row with .type-row', () => {
         const { container, unmount } = mountTree(
             <Listbox>
                 <ListRow>a</ListRow>
             </Listbox>,
         )
-        expect(container.querySelector('.listbox')).not.toBeNull()
-        const row = container.querySelector('.list-row') as HTMLElement
+        expect(container.querySelector('.h3-listbox')).not.toBeNull()
+        const row = container.querySelector('.h3-list-row') as HTMLElement
         expect(row).not.toBeNull()
         expect(row.textContent).toBe('a')
         expect(row.classList.contains('is-selected')).toBe(false)
@@ -46,7 +46,7 @@ describe('list-kit catalog', () => {
         const { container, unmount } = mountTree(
             <ListRow selected onClick={onClick}>row</ListRow>,
         )
-        const row = container.querySelector('.list-row') as HTMLElement
+        const row = container.querySelector('.h3-list-row') as HTMLElement
         expect(row.classList.contains('is-selected')).toBe(true)
         expect(row.getAttribute('aria-selected')).toBe('true')
         act(() => { row.click() })
@@ -56,7 +56,7 @@ describe('list-kit catalog', () => {
 
     it('ListRow without selected has no is-selected / aria-selected', () => {
         const { container, unmount } = mountTree(<ListRow>row</ListRow>)
-        const row = container.querySelector('.list-row') as HTMLElement
+        const row = container.querySelector('.h3-list-row') as HTMLElement
         expect(row.classList.contains('is-selected')).toBe(false)
         expect(row.getAttribute('aria-selected')).toBeNull()
         unmount()

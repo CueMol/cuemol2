@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { hsbToRgb, rgbToHsb, packToHex, packToHsbString } from '../components/widgets/colorpicker/colorMath'
+import { hsbToRgb, rgbToHsb, packToHex, packToHsbString } from '../h3-kit/colorpicker/colorMath'
 
 describe('hsbToRgb', () => {
     it('maps primary hues at full sat/bri', () => {

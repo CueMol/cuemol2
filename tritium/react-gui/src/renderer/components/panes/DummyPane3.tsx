@@ -1,7 +1,7 @@
 /**
  * @file DummyPane3.tsx
  * @description Live gallery of the form-kit component catalog
- * (`components/widgets/form/`). Renders every catalog component with sample
+ * (`h3-kit/form/`). Renders every catalog component with sample
  * state so the canonical sizes / designs are visible at a glance -- a visual
  * reference for "what a Field / TextField / SelectField / ... looks like".
  *
@@ -30,10 +30,10 @@ import {
   ButtonRow,
   FormButton,
   SegmentField,
-} from "../widgets/form";
-import { Listbox, ListRow } from "../widgets/list";
-import { MolSelList } from "../widgets/MolSelList";
-import { SliderNumericField } from "../widgets/SliderNumericField";
+} from "../../h3-kit/form";
+import { Listbox, ListRow } from "../../h3-kit/list";
+import { MolSelList } from "../../h3-kit/MolSelList";
+import { SliderNumericField } from "../../h3-kit/SliderNumericField";
 
 /** Sample rows for the Listbox showcase. */
 const LISTBOX_ITEMS = ["1CRN", "3J3Q", "Water", "Ligand"];

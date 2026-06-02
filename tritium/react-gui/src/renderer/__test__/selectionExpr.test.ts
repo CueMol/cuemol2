@@ -6,7 +6,7 @@ import {
     canApplyBinary,
     applyBinary,
     applyUnary,
-} from '../components/widgets/MolSelList/selectionExpr'
+} from '../components/panes/selection/selectionExpr'
 
 describe('parseNameList', () => {
     it('joins trimmed comma tokens', () => {

@@ -28,8 +28,8 @@ vi.mock('../contexts/ThemeContext', () => ({
     useTheme: () => ({ theme: 'dark', toggleTheme: () => undefined, setTheme: () => undefined }),
 }))
 
-import { SelectionBuilder } from '../components/widgets/MolSelList/SelectionBuilder'
-import type { SelectionBuilderProps } from '../components/widgets/MolSelList/SelectionBuilder'
+import { SelectionBuilder } from '../components/panes/selection/SelectionBuilder'
+import type { SelectionBuilderProps } from '../components/panes/selection/SelectionBuilder'
 import { mountTree, flushPromises } from './helpers/testHarness'
 
 type HarnessProps = Partial<Omit<SelectionBuilderProps, 'value' | 'onEmit'>> & { initial?: string }
@@ -85,7 +85,7 @@ describe('SelectionBuilder', () => {
     it('renders the three blocks inline', async () => {
         const { container, unmount } = mountTree(<Harness />)
         await flushPromises()
-        const heads = Array.from(container.querySelectorAll('.fk-field-section-title')).map((e) =>
+        const heads = Array.from(container.querySelectorAll('.h3-form-field-section-title')).map((e) =>
             e.textContent?.trim(),
         )
         // The action toolbar has no header (the selection text field is the

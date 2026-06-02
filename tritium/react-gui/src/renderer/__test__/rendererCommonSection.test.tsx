@@ -23,7 +23,7 @@ vi.mock('../hooks/useCueMol', () => ({
 
 // Stub MolSelList: expose its onCommit via a click so we can assert the
 // selection commit path without rendering the real picker (popover/contexts).
-vi.mock('../components/widgets/MolSelList/MolSelList', () => ({
+vi.mock('../h3-kit/MolSelList/MolSelList', () => ({
   MolSelList: ({ selectedSel, onCommit, disabled }: any) => (
     <button
       data-testid="molsel"
@@ -36,7 +36,7 @@ vi.mock('../components/widgets/MolSelList/MolSelList', () => ({
 }))
 
 // Stub the colour leaf so ColorField renders without the ColorPicker context.
-vi.mock('../components/widgets/colorpicker/CueColorField', () => ({
+vi.mock('../h3-kit/colorpicker/CueColorField', () => ({
   CueColorField: ({ value, onCommit, disabled }: any) => (
     <button
       data-testid="egcolor"
@@ -65,12 +65,12 @@ function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
   } as GenericPropEntry
 }
 
-/** Find the field row (.fk-field-row) whose label text matches. */
+/** Find the field row (.h3-form-field-row) whose label text matches. */
 function rowByLabel(container: HTMLElement, label: string): HTMLElement | null {
-  const lab = Array.from(container.querySelectorAll('.fk-field-label')).find(
+  const lab = Array.from(container.querySelectorAll('.h3-form-field-label')).find(
     (l) => l.textContent === label,
   )
-  return lab ? (lab.closest('.fk-field-row') as HTMLElement) : null
+  return lab ? (lab.closest('.h3-form-field-row') as HTMLElement) : null
 }
 
 /** Set a controlled <input> value so React's value tracker fires onChange. */
@@ -147,8 +147,8 @@ describe('RendererCommonSection', () => {
       entry({ key: 'eglinew', type: 'real', value: 0.1 }),
       entry({ key: 'egcolor', type: 'object<AbstractColor>', value: 'blue' }),
     ])
-    const widthDrag = rowByLabel(container, 'Width')!.querySelector('.fk-drag') as HTMLElement
-    expect(widthDrag.classList.contains('fk-drag-disabled')).toBe(true)
+    const widthDrag = rowByLabel(container, 'Width')!.querySelector('.h3-form-drag') as HTMLElement
+    expect(widthDrag.classList.contains('h3-form-drag-disabled')).toBe(true)
     expect(
       container.querySelector('[data-testid="egcolor"]')!.getAttribute('data-disabled'),
     ).toBe('true')
@@ -161,8 +161,8 @@ describe('RendererCommonSection', () => {
       entry({ key: 'eglinew', type: 'real', value: 0.1 }),
       entry({ key: 'egcolor', type: 'object<AbstractColor>', value: 'blue' }),
     ])
-    const widthDrag = rowByLabel(container, 'Width')!.querySelector('.fk-drag') as HTMLElement
-    expect(widthDrag.classList.contains('fk-drag-disabled')).toBe(false)
+    const widthDrag = rowByLabel(container, 'Width')!.querySelector('.h3-form-drag') as HTMLElement
+    expect(widthDrag.classList.contains('h3-form-drag-disabled')).toBe(false)
     expect(
       container.querySelector('[data-testid="egcolor"]')!.getAttribute('data-disabled'),
     ).toBe('false')

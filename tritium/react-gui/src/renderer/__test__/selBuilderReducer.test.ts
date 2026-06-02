@@ -7,7 +7,7 @@ import {
     canUndo,
     canRedo,
     type BuilderState,
-} from '../components/widgets/MolSelList/selBuilderReducer'
+} from '../components/panes/selection/selBuilderReducer'
 
 // The real default keyword is `hierarchical` (see initBuilderState); these
 // reducer-behaviour fixtures pin a single-value keyword (chain) so the term

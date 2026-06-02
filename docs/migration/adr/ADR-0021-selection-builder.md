@@ -14,14 +14,14 @@ guided popover query builder, but it was written against a hypothetical
 `SelectionPane` / `SelectionBuilder.tsx` structure and used an incorrect,
 dot-separated grammar (`chain.A`, `resname.ALA`, `aname.CA`, `water = resname.HOH or resname.WAT`).
 
-The real reusable selection editor is `widgets/MolSelList/MolSelList.tsx`,
+The real reusable selection editor is `h3-kit/MolSelList/MolSelList.tsx`,
 consumed by `PaintSelCell`, `RendererOptionsPane`, and (indirectly, via shared
 history) `SelectionPane`. The grammar had to be re-derived from the source of
 truth before any UI could emit valid expressions.
 
 ## Decision
 
-Add `widgets/MolSelList/SelectionBuilder.tsx`: a Blueprint `Popover` opened
+Add `panes/selection/SelectionBuilder.tsx`: a Blueprint `Popover` opened
 from a chevron button, gated behind a new opt-in `enableBuilder` prop (default
 false). When enabled it **replaces** MolSelList's OS-native `HTMLSelect` picker
 (they are mutually exclusive in the `ControlGroup`); when disabled the picker is
@@ -67,7 +67,7 @@ resolved by the C++ compiler.
 
 ## Notes
 
-- Implementation: `widgets/MolSelList/SelectionBuilder.tsx`,
+- Implementation: `panes/selection/SelectionBuilder.tsx`,
   `useSelectionValues.ts`, `MolSelList.tsx` (`enableBuilder`, `handleEmit`),
   `styles/_selection-builder.css`.
 - Grammar facts (verified): keywords `chain` / `resi`|`resid` / `resn` /

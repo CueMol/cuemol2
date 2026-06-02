@@ -36,7 +36,7 @@ vi.mock('../contexts/ThemeContext', () => ({
     useTheme: () => ({ theme: 'dark' }),
 }))
 
-import { ColorPicker } from '../components/widgets/colorpicker/ColorPicker'
+import { ColorPicker } from '../h3-kit/colorpicker/ColorPicker'
 
 interface CmStub {
     invokeService: ReturnType<typeof vi.fn>
@@ -133,18 +133,18 @@ describe('ColorPicker', () => {
             await flushPromises()
         })
         // Default mode renders the RGB slider panel.
-        expect(document.querySelector('.cp-slider-panel')).toBeTruthy()
+        expect(document.querySelector('.h3-color-slider-panel')).toBeTruthy()
         // The segmented switch offers all modes; clicking Palette swaps the body.
         const paletteSeg = Array.from(
-            document.querySelectorAll('.cp-modebar button'),
+            document.querySelectorAll('.h3-color-modebar button'),
         ).find((el) => el.textContent === 'Palette') as HTMLElement
         expect(paletteSeg).toBeTruthy()
         await act(async () => {
             paletteSeg.click()
             await flushPromises()
         })
-        expect(document.querySelector('.cp-slider-panel')).toBeNull()
-        expect(document.querySelector('.cp-palette')).toBeTruthy()
+        expect(document.querySelector('.h3-color-slider-panel')).toBeNull()
+        expect(document.querySelector('.h3-color-palette')).toBeTruthy()
         unmount()
     })
 
@@ -161,7 +161,7 @@ describe('ColorPicker', () => {
             caret.click()
             await flushPromises()
         })
-        const active = document.querySelector('.cp-modebar button.bp5-active')
+        const active = document.querySelector('.h3-color-modebar button.bp5-active')
         expect(active?.textContent).toBe('HSB')
         unmount()
     })
@@ -202,10 +202,10 @@ describe('ColorPicker', () => {
             await flushPromises()
         })
         // Named panel is shown...
-        expect(document.querySelector('.cp-named-list')).toBeTruthy()
+        expect(document.querySelector('.h3-color-named-list')).toBeTruthy()
         // ...with the current entry preselected (so re-picking is a no-op),
         // matched case-insensitively.
-        const selected = document.querySelectorAll('.cp-named-row--selected')
+        const selected = document.querySelectorAll('.h3-color-named-row--selected')
         expect(selected.length).toBe(1)
         expect(selected[0].textContent).toContain('red')
         // ...and scrolled into view (it can sit below the fold in the full list).
@@ -233,7 +233,7 @@ describe('ColorPicker', () => {
             await flushPromises()
         })
         const labels = Array.from(
-            document.querySelectorAll('.cp-modebar button'),
+            document.querySelectorAll('.h3-color-modebar button'),
         ).map((el) => el.textContent)
         expect(labels).toEqual(['RGB', 'HSB', 'Palette'])
         expect(labels).not.toContain('Named')
@@ -255,7 +255,7 @@ describe('ColorPicker', () => {
             caret.click()
             await flushPromises()
         })
-        const molSeg = Array.from(document.querySelectorAll('.cp-modebar button')).find(
+        const molSeg = Array.from(document.querySelectorAll('.h3-color-modebar button')).find(
             (el) => el.textContent === 'Mol',
         ) as HTMLElement
         await act(async () => {
