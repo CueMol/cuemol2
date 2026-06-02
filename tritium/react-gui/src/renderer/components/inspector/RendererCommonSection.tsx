@@ -90,8 +90,11 @@ interface NumRowProps extends RowProps {
  * Drag-to-snap numeric field committed on drag end / Enter (e.g. Opacity,
  * Width). With `realtime`, the renderer updates live during the drag (the
  * worker previews without undo and commits a single step on release).
+ *
+ * Exported so renderer-type-specific sections (e.g. `SimpleRendererSection`)
+ * reuse the same drag-numeric row contract instead of redefining it.
  */
-const NumRow: React.FC<NumRowProps> = ({
+export const NumRow: React.FC<NumRowProps> = ({
   entry,
   label,
   onSet,

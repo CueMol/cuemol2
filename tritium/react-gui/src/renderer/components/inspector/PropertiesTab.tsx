@@ -47,10 +47,11 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
   onReset,
   sceneId,
 }) => {
-  // TEMP: append a collapsed placeholder after the common page for every
-  // renderer type. Replace with `getRendererPropSections(rendererType)` once
-  // per-type sections exist.
-  const sections = [...getRendererPropSections(rendererType), DUMMY_SECTION];
+  // Show the renderer-type-specific sections when this type has been ported
+  // (e.g. `simple`). For not-yet-ported types fall back to a single collapsed
+  // placeholder so the "Common + specific" layout is still visible end-to-end.
+  const typeSections = getRendererPropSections(rendererType);
+  const sections = typeSections.length > 0 ? typeSections : [DUMMY_SECTION];
 
   return (
     <div className="insp-properties-tab">

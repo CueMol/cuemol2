@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-06-02 (`dialog.property.simple` done: UXP "Simple" タブの Line width を Inspector Properties タブの独立 accordion entry として実装。`rendererPropSections` registry に `type_name "simple"` で登録、DragNumericField (realtime preview) で `width` を編集。ported renderer-type は折りたたみ dummy ではなく実 section を表示)
 - Updated: 2026-06-01 (`dialog.property.renderer` wip: renderer-common-page (Basic settings + Edge lines) implemented as the Inspector Properties tab via live `getGenericProps`/`setGenericProp`; renderer-type-specific sections deferred to `rendererPropSections` registry — currently Common + collapsed dummy)
 - Updated: 2026-05-25 (`panel.densitymap` done: DensityMapPane wired with custom stepper (+ step-precision quantize) and typed-property-setter writes for color/center; multi-gradient mode dropped)
 - Updated: 2026-05-24 (`panel.symmetry` ported: SymmetryPane + Change modal + Symm-mol/Unit-cell renderer setup; activity bar group renamed Dummy → Crystal with cube icon)
@@ -23,7 +24,7 @@
 | Panel | [panels.md](panels.md) | 27 | 4 | 17 | 1 | 5 | 0 |
 | Menu | [menus.md](menus.md) | 4 | 2 | 2 | 0 | 0 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
-| Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 13 | 0 | 1 | 0 | 12 | 0 |
+| Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 13 | 1 | 1 | 0 | 11 | 0 |
 | Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 0 | 3 | 0 | 15 | 0 |
 | Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 1 | 0 | 0 | 20 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 2 | 1 | 0 | 10 | 0 |

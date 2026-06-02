@@ -21,6 +21,7 @@ import type {
   GenericPropEntry,
   PropWriteOpts,
 } from "../../worker/server/services/genericProps.service";
+import { SimpleRendererSection } from "./SimpleRendererSection";
 
 // ────────────────────────────────────────────────────────────
 // Types
@@ -64,11 +65,21 @@ export interface RendererPropSectionDef {
 // ────────────────────────────────────────────────────────────
 
 /**
- * Renderer-type-specific sections, keyed by renderer `type_name`. Empty until
- * the per-type pages (ribbon / cpk / tube / ...) are migrated; add an entry
- * here when porting one.
+ * Renderer-type-specific sections, keyed by renderer `type_name`. Add an entry
+ * here when porting a per-type page (ribbon / cpk / tube / ...). Unknown types
+ * resolve to an empty list (common page only).
  */
-export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]> = {};
+export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]> = {
+  // SimpleRenderer ("simple"): UXP simple-propdlg "Simple" tab -- line width only.
+  simple: [
+    {
+      key: "simple",
+      title: "Simple",
+      defaultExpanded: true,
+      Component: SimpleRendererSection,
+    },
+  ],
+};
 
 /**
  * Resolve the type-specific sections for a renderer type. Unknown types return
