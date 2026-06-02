@@ -34,6 +34,11 @@
  * exposed. The widget is controlled: the displayed value is always the `value`
  * prop, so a parent must update it from `onChange`.
  *
+ * When both `min` and `max` are finite (and `max > min`), the value's fraction
+ * of the range is painted as a translucent-accent fill bar behind the text
+ * (Blender number-button slider look), so the value's position is visible at a
+ * glance. The bar is hidden while text-editing.
+ *
  * Commit timing mirrors NumericField: `onChange` fires continuously (every drag
  * frame, every step click, on text commit) for a live draft; `onRelease` fires
  * once at the end of an interaction (drag end, step click, Enter/blur) so the
@@ -350,6 +355,13 @@ export const DragNumericField: React.FC<DragNumericFieldProps> = ({
         .filter(Boolean)
         .join(' ');
 
+    // Value-fill fraction (0-100), or null when the range is not finite so no
+    // meaningful position can be shown. Hidden while text-editing.
+    const fillPct =
+        Number.isFinite(min) && Number.isFinite(max) && max > min
+            ? Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100))
+            : null;
+
     return (
         <div
             ref={rootRef}
@@ -359,6 +371,13 @@ export const DragNumericField: React.FC<DragNumericFieldProps> = ({
             onMouseEnter={() => mode === 'idle' && setMode('hover')}
             onMouseLeave={() => mode === 'hover' && setMode('idle')}
         >
+            {fillPct !== null && mode !== 'editing' && (
+                <div
+                    className="fk-drag-fill"
+                    style={{ width: `${fillPct}%` }}
+                    aria-hidden="true"
+                />
+            )}
             <button
                 type="button"
                 className="fk-drag-arrow fk-drag-arrow-left"

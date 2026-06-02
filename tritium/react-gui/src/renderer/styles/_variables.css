@@ -62,6 +62,8 @@
   /* Accent glow / highlight variants (keyframe, placeholder, slider) */
   --accent-hover: #7cc4e4;
   --accent-glow: rgba(95, 175, 215, 0.5);
+  /* Translucent accent track for value-fill bars (DragNumericField). */
+  --accent-track: rgba(95, 175, 215, 0.35);
   --accent-selected: #ffc940;
   --accent-selected-glow: rgba(255, 201, 64, 0.5);
   --accent-placeholder-opacity: 0.4;
@@ -282,6 +284,8 @@
   /* Accent glow variants */
   --accent-hover: #3d9fd8;
   --accent-glow: rgba(41, 121, 181, 0.35);
+  /* Translucent accent track for value-fill bars (DragNumericField). */
+  --accent-track: rgba(41, 121, 181, 0.30);
   --accent-selected: #e6a800;
   --accent-selected-glow: rgba(230, 168, 0, 0.4);
   --accent-placeholder-opacity: 0.3;

@@ -324,6 +324,28 @@
   color: var(--text-primary);
   font-size: var(--fs-lg);
   user-select: none;
+  overflow: hidden; /* clip the value-fill bar to the rounded corners */
+}
+
+/* min/max value-fill bar: when both bounds are finite, the current value's
+   fraction of the range is painted behind the text (Blender number-button
+   slider look). Translucent accent keeps the text readable. width is set
+   inline at runtime by DragNumericField. */
+.fk-drag-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  background: var(--accent-track);
+  pointer-events: none; /* drag/click are still received by the root */
+  z-index: 0;
+}
+
+/* Keep the value text and step arrows above the fill bar. */
+.fk-drag-value,
+.fk-drag-arrow {
+  position: relative;
+  z-index: 1;
 }
 
 /* Blender-style hover affordance: <|> resize-like cursor over the body. */

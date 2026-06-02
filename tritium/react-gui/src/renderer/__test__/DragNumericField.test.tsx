@@ -49,6 +49,10 @@ function getEditInput(): HTMLInputElement | null {
     return container.querySelector('input.fk-drag-input')
 }
 
+function getFill(): HTMLElement | null {
+    return container.querySelector('.fk-drag-fill')
+}
+
 function setInputValue(el: HTMLInputElement, value: string) {
     const setter = Object.getOwnPropertyDescriptor(
         window.HTMLInputElement.prototype, 'value',
@@ -329,5 +333,33 @@ describe('DragNumericField', () => {
         moveBy(40)
         act(() => root.unmount())
         expect(onDragCancel).toHaveBeenCalledTimes(1)
+    })
+
+    // --- min/max value-fill bar ---
+
+    it('renders a fill bar at the value fraction when both bounds are finite', () => {
+        render({ value: 5, min: 0, max: 10 })
+        expect(getFill()?.style.width).toBe('50%')
+    })
+
+    it('clamps the fill bar to 0%/100% for out-of-range values', () => {
+        render({ value: 20, min: 0, max: 10 })
+        expect(getFill()?.style.width).toBe('100%')
+        render({ value: -5, min: 0, max: 10 })
+        expect(getFill()?.style.width).toBe('0%')
+    })
+
+    it('omits the fill bar when the range is not finite', () => {
+        render({ value: 5, min: 0, max: Infinity })
+        expect(getFill()).toBeNull()
+    })
+
+    it('hides the fill bar while text-editing', () => {
+        render({ value: 5, min: 0, max: 10 })
+        expect(getFill()).not.toBeNull()
+        mouseDownBody()
+        mouseUp() // click -> edit mode
+        expect(getEditInput()).not.toBeNull()
+        expect(getFill()).toBeNull()
     })
 })
