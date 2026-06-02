@@ -330,14 +330,17 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
                             if (e.key === 'Enter') e.currentTarget.blur()
                         }}
                         spellCheck={false}
-                    />
-                    <Button
-                        small
-                        minimal
-                        className="h3-form-dropdown-caret"
-                        rightIcon={<span className="h3-form-caret" aria-hidden />}
-                        disabled={disabled}
-                        onClick={() => (open ? handleClose() : handleOpen())}
+                        rightElement={
+                            <button
+                                type="button"
+                                className="h3-color-caret-btn"
+                                aria-label="Open color picker"
+                                disabled={disabled}
+                                onClick={() => (open ? handleClose() : handleOpen())}
+                            >
+                                <span className="h3-form-caret" aria-hidden />
+                            </button>
+                        }
                     />
                 </div>
             )}

@@ -21,7 +21,6 @@ import {
   NumericField,
   DragNumericField,
   SwitchField,
-  ColorField,
 } from "../../h3-kit/form";
 
 /* ─── Props ─── */
@@ -43,7 +42,6 @@ export const CatalogPane1: React.FC<CatalogPane1Props> = ({
   const [num2, setNum2] = useState(8);
   const [drag, setDrag] = useState(1.0);
   const [sw, setSw] = useState(true);
-  const [color, setColor] = useState("#3b82f6");
   const [filter, setFilter] = useState("");
 
   return (
@@ -98,7 +96,7 @@ export const CatalogPane1: React.FC<CatalogPane1Props> = ({
               </Field>
             </FieldGroup>
 
-            <FieldGroup title="Numeric, Switch & Color">
+            <FieldGroup title="Numeric & Switch">
               <Field label="NumericField (slider + unit)">
                 <NumericField value={num} onChange={setNum} min={0} max={100} unit="Å" />
               </Field>
@@ -123,9 +121,6 @@ export const CatalogPane1: React.FC<CatalogPane1Props> = ({
               </Field>
               <Field label="SwitchField" inline>
                 <SwitchField checked={sw} onChange={setSw} />
-              </Field>
-              <Field label="ColorField">
-                <ColorField value={color} onCommit={setColor} />
               </Field>
             </FieldGroup>
 

@@ -133,6 +133,7 @@ export const RgbHsbPanel: React.FC<RgbHsbPanelProps> = ({ mode, initialRgb, onCh
                         onChange={(v, completed) => edit(i, v, completed)}
                     />
                     <NumericInput
+                        small
                         className="h3-color-slider-spinner"
                         min={row.min}
                         max={row.max}

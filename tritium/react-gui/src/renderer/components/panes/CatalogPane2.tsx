@@ -22,6 +22,7 @@ import {
   ButtonRow,
   FormButton,
   SegmentField,
+  ColorField,
 } from "../../h3-kit/form";
 import { Listbox, ListRow } from "../../h3-kit/list";
 import { MolSelList } from "../../h3-kit/MolSelList";
@@ -53,6 +54,7 @@ export const CatalogPane2: React.FC<CatalogPane2Props> = ({
   const [opacity, setOpacity] = useState(80);
   const [listSel, setListSel] = useState("3J3Q");
   const [seg, setSeg] = useState("all");
+  const [color, setColor] = useState("#3b82f6");
 
   return (
     <div className="sp-pane">
@@ -86,6 +88,9 @@ export const CatalogPane2: React.FC<CatalogPane2Props> = ({
                   selectedSel={molSel}
                   onSelectedSelChange={setMolSel}
                 />
+              </Field>
+              <Field label="ColorField">
+                <ColorField value={color} onCommit={setColor} />
               </Field>
               <SliderNumericField
                 label="Opacity"

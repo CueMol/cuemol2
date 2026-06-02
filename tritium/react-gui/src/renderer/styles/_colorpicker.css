@@ -8,9 +8,11 @@
   min-width: 0;
 }
 
+/* Slightly horizontal rectangle, height matched to the field row (--field-h)
+   so the widget lines up with text / select / molsellist rows. */
 .h3-color-swatch {
-  width: var(--ctrl-h-md);
-  height: var(--ctrl-h-md);
+  width: calc(var(--field-h) + var(--space-3));
+  height: var(--field-h);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   flex-shrink: 0;
@@ -27,9 +29,11 @@ button.h3-color-swatch {
   box-shadow: 0 0 0 1px var(--accent-yellow);
 }
 
-/* "Use mol color" indicator: dashed border over the swatch background. */
+/* "Use mol color" indicator: thicker dashed border (1px reads too faint) over
+   the swatch background. */
 .h3-color-swatch--mol {
   border-style: dashed;
+  border-width: 2px;
   border-color: var(--accent);
 }
 
@@ -46,11 +50,42 @@ button.h3-color-swatch {
 .h3-color-textbox.bp5-input-group input {
   color: var(--text-primary) !important;
   font-size: var(--fs-lg);
+  /* Match the standard field height (text / select / molsellist) instead of
+     Blueprint's small-input height. */
+  height: var(--field-h) !important;
+  /* Reserve room for the in-box chevron (icon width + a margin each side) so
+     the value text never runs under it, matching .h3-form-select. */
+  padding-right: calc(var(--icon-sm) + var(--space-3) * 2) !important;
 }
 
 .h3-color-textbox.bp5-input-group .bp5-input:disabled,
 .h3-color-textbox.bp5-input-group input:disabled {
   color: var(--text-muted) !important;
+}
+
+/* In-box dropdown chevron: position the input-action slot so the chevron sits
+   at right: var(--space-3), identical to the .h3-form-select ::after caret. */
+.h3-color-textbox.bp5-input-group .bp5-input-action {
+  top: 0;
+  right: var(--space-3);
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  margin: 0;
+}
+
+.h3-color-caret-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.h3-color-caret-btn:disabled {
+  cursor: default;
 }
 
 /* ─── Popover panel shell ─── */
@@ -68,6 +103,23 @@ button.h3-color-swatch {
 /* Segmented mode switch (RGB / HSB / Named / Palette / Mol). */
 .h3-color-modebar {
   flex-shrink: 0;
+}
+
+/* Thin, inset focus ring on the mode buttons. Blueprint's default focus-visible
+   outline uses a positive outline-offset, so it is drawn outside the button and
+   spills onto the adjacent segment; pull it inside with a negative offset. */
+.h3-color-modebar .bp5-button:focus,
+.h3-color-modebar .bp5-button:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+
+/* A 1px hairline gap between segments. Blueprint's ButtonGroup merges adjacent
+   buttons with a -1px right margin; override it so the segments read as
+   separated rather than fused. !important beats Blueprint's higher-specificity
+   `:not(.bp5-minimal):not(.bp5-outlined)` rule. */
+.h3-color-modebar .bp5-button:not(:last-child) {
+  margin-right: 1px !important;
 }
 
 .h3-color-panel-body {
@@ -113,20 +165,23 @@ button.h3-color-swatch {
   text-align: center;
 }
 
+/* The gradient bar sits at the top; the triangular tick rides just under it.
+   Height = bar (10px) + tick (7px) + a little slack. */
 .h3-color-slider {
   position: relative;
   flex: 1;
   min-width: 0;
-  height: var(--ctrl-h-md);
+  height: 18px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .h3-color-slider-track {
   position: absolute;
   left: 0;
   right: 0;
-  height: 8px;
+  top: 0;
+  height: 10px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
 }
@@ -138,24 +193,28 @@ button.h3-color-swatch {
   background: transparent;
   -webkit-appearance: none;
   appearance: none;
-  height: var(--ctrl-h-md);
+  height: 18px;
   cursor: pointer;
 }
 
 .h3-color-slider-input::-webkit-slider-runnable-track {
   background: transparent;
-  height: var(--ctrl-h-md);
+  height: 18px;
 }
 
+/* Upward-pointing triangle tick. margin-top drops it just below the 10px bar
+   so its apex meets the bar's bottom edge and clearly marks the position. */
 .h3-color-slider-input::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: 12px;
-  height: 18px;
-  border-radius: var(--radius-sm);
-  background: var(--bg-surface);
-  border: 1px solid var(--text-secondary);
-  box-shadow: 0 1px 2px var(--slider-handle-shadow);
+  height: 7px;
+  margin-top: 10px;
+  background: var(--text-primary);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .h3-color-slider-input:focus {
@@ -163,10 +222,10 @@ button.h3-color-swatch {
 }
 
 .h3-color-slider-input:focus::-webkit-slider-thumb {
-  border-color: var(--accent);
+  background: var(--accent);
 }
 
-.h3-color-slider-spinner {
+.h3-color-slider-spinner.bp5-numeric-input {
   flex: 0 0 64px;
   width: 64px;
   /* min-width:auto (the flex default) would keep the NumericInput at its
@@ -180,10 +239,59 @@ button.h3-color-swatch {
   min-width: 0;
 }
 
+/* Match the canonical compact numeric input (.h3-form-numeric): same height,
+   font, border and right-aligned value, so the spinner box follows the form-kit
+   convention instead of Blueprint's default 30px size. */
 .h3-color-slider-spinner .bp5-input {
+  background: var(--bg-input) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-primary) !important;
+  font-size: var(--fs-lg);
+  height: var(--field-h-sm);
   width: 100%;
   min-width: 0;
-  padding-right: var(--space-2);
+  text-align: right;
+  /* Tight side padding so three digits (e.g. "255") fit comfortably without
+     widening the column. */
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-md);
+}
+
+.h3-color-slider-spinner .bp5-input:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 1px var(--accent) !important;
+}
+
+/* Compact stepper: two half-height arrows sized to the --field-h-sm input,
+   replacing Blueprint's oversized default stepper buttons. */
+.h3-color-slider-spinner .bp5-button-group.bp5-fixed {
+  height: var(--field-h-sm);
+  margin-left: var(--space-1);
+}
+
+.h3-color-slider-spinner .bp5-button-group .bp5-button {
+  min-height: 0;
+  /* Narrow stepper: a touch wider than the 12px chevron, no more. !important
+     beats Blueprint's `.bp5-numeric-input.bp5-small ... > .bp5-button` (which
+     pins width to 24px at higher specificity). */
+  min-width: 0 !important;
+  width: calc(var(--icon-sm) + var(--space-3)) !important;
+  height: calc(var(--field-h-sm) / 2);
+  padding: 0;
+}
+
+.h3-color-slider-spinner .bp5-button-group .bp5-button .bp5-icon svg {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+}
+
+/* Suppress the focus ring on the stepper buttons -- it overflows the compact
+   button bounds and looks ragged. The active-state background change is enough
+   feedback. */
+.h3-color-slider-spinner .bp5-button-group .bp5-button:focus,
+.h3-color-slider-spinner .bp5-button-group .bp5-button.bp5-active:focus {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 /* ─── Named colour list panel ─── */
@@ -217,6 +325,15 @@ button.h3-color-swatch {
 
 .h3-color-named-row:hover {
   background: var(--bg-hover);
+}
+
+/* Keep the focus ring but make it thin and inset (outline-offset: -1px) so it
+   hugs the row instead of the browser default, which is thicker and drawn
+   outside the full-width row and so spills past the list edges. */
+.h3-color-named-row:focus,
+.h3-color-named-row:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
 }
 
 /* Match the scene / mol tree selected-row convention: --bg-active fill with
@@ -272,5 +389,21 @@ button.h3-color-swatch {
 
 .h3-color-palette-cell:hover {
   outline: 2px solid var(--accent);
-  outline-offset: -1px;
+  /* Fully inset (matches the selected ring thickness and never spills onto
+     neighbours). */
+  outline-offset: -2px;
+}
+
+/* Selected cell keeps focus after a pick. A single accent (blue) ring blends
+   into blue / cyan swatches, so use a two-tone inset ring of the same 2px
+   thickness as hover: --text-primary on the outer edge (it flips light/dark per
+   theme, so it contrasts against dark and light cells alike) plus --accent
+   inside to read as the selection colour. box-shadow is inset, so it hugs the
+   cell and never overlaps neighbours. */
+.h3-color-palette-cell:focus,
+.h3-color-palette-cell:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 0 0 1px var(--text-primary),
+    inset 0 0 0 2px var(--accent);
 }
