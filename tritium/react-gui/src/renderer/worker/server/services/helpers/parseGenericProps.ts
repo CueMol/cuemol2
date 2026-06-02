@@ -33,6 +33,12 @@ export interface GenericPropEntry {
     hasdefault: boolean;
     /** True when the property is currently at its default value. */
     isdefault: boolean;
+    /**
+     * The value this property would be reset to (style-resolved default for
+     * renderers, else the class default). Present only for scalar / enum
+     * properties that expose a default; absent for object types.
+     */
+    defaultValue?: string | number | boolean;
     /** Allowed string IDs - present only for `enum` properties. */
     enumdef?: string[];
     /** True for a non-string-convertible nested object (not editable yet). */
@@ -47,6 +53,7 @@ interface RawPropItem {
     readonly: boolean;
     hasdefault: boolean;
     isdefault?: boolean;
+    default?: string | number | boolean;
     type: string;
     value: string | number | boolean | RawPropItem[];
     enumdef?: string[];
@@ -79,6 +86,13 @@ export function parseGenericProps(raw: unknown): GenericPropEntry[] {
             value = '';
         }
 
+        const defaultValue =
+            typeof item.default === 'string' ||
+            typeof item.default === 'number' ||
+            typeof item.default === 'boolean'
+                ? item.default
+                : undefined;
+
         out.push({
             key: item.name,
             type: item.type,
@@ -87,6 +101,7 @@ export function parseGenericProps(raw: unknown): GenericPropEntry[] {
             readonly: Boolean(item.readonly) || nested,
             hasdefault: Boolean(item.hasdefault),
             isdefault: item.hasdefault ? Boolean(item.isdefault) : false,
+            defaultValue,
             enumdef: item.type === 'enum' && Array.isArray(item.enumdef)
                 ? item.enumdef.map(String)
                 : undefined,

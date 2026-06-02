@@ -333,6 +333,7 @@ export function SymmetryChangeDialog({
 
                     <FormGroup label="Crystal system:" inline>
                         <HTMLSelect
+                            className="h3-form-select"
                             value={lattice}
                             disabled={submitting}
                             onChange={(e) => setLattice(e.currentTarget.value as CrystalSystem)}
@@ -342,6 +343,7 @@ export function SymmetryChangeDialog({
 
                     <FormGroup label="Space Group:" inline>
                         <HTMLSelect
+                            className="h3-form-select"
                             value={nsg}
                             disabled={submitting || sgItems.length === 0}
                             onChange={(e) => setNsg(Number(e.currentTarget.value))}

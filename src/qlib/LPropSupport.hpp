@@ -33,6 +33,13 @@ namespace qlib {
     virtual bool hasPropDefault(const LString &propnm) const =0;
     virtual bool isPropDefault(const LString &propnm) const =0;
     virtual bool resetProperty(const LString &propnm) =0;
+
+    /// Get the value this property would be reset to (its default), without
+    /// changing the current value. Returns false when no default is available.
+    /// Default impl: no default.
+    virtual bool getPropDefault(const LString &propnm, LVariant &value) {
+      return false;
+    }
     
     //
     // property support (implementation-level) interface

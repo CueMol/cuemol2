@@ -7,24 +7,10 @@
  *
  * Three stacked blocks (Current selection / Term / Apply term). Button rows
  * wrap/grid so they stay usable at the side panel's minimum width (~180px).
+ *
+ * The MolSelList picker trigger / popover styling lives in `_mol-sel-list.css`
+ * (it is a generic h3-kit widget, not part of this pane-local builder).
  */
-
-/* Keep the MolSelList picker trigger from stretching inside the fill
-   ControlGroup. The Popover target wrapper carries this class. */
-.mol-sel-list .mol-sel-list-trigger {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-}
-
-/* MolSelList picker popover: Named/History segmented control + a menu. */
-.mol-sel-list-popover {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-3);
-  min-width: 180px;
-}
 
 .selbuilder {
   display: flex;
@@ -44,12 +30,12 @@
 /* Builder controls take the form-kit canonical heights + focus treatment
    (single source: --field-* tokens / _form-kit.css). The builder owns only
    its bespoke LAYOUT (grids, preview boxes); it never re-chooses a control
-   height or focus ring. Selects carry the `.fk-select` class directly (so
+   height or focus ring. Selects carry the `.h3-form-select` class directly (so
    they get the shadow strip + recentred caret); inputs use a scoped compact
    inset focus ring here so the highlight never overflows the tight rows. */
 .selbuilder .bp5-input-group .bp5-input {
   height: var(--field-h);
-  /* Match the catalog TextField (.fk-input) label scale. Without this the
+  /* Match the catalog TextField (.h3-form-input) label scale. Without this the
      inputs inherit Blueprint's default 14px and read larger than the SoT. */
   font-size: var(--fs-lg);
 }
@@ -60,12 +46,12 @@
 
 .selbuilder .bp5-button {
   min-height: var(--field-btn-h);
-  /* Match the catalog FormButton (.fk-btn) label scale so builder buttons read
+  /* Match the catalog FormButton (.h3-form-btn) label scale so builder buttons read
      the same as the LogPanel / RenderPanel toolbar buttons. */
   font-size: var(--fs-base);
 }
 
-/* Inset focus ring, mirroring the catalog button (.fk-btn). Blueprint's default
+/* Inset focus ring, mirroring the catalog button (.h3-form-btn). Blueprint's default
    outset focus outline overflows the button box and overlaps neighbours in the
    tight modify / apply grids (--space-1 gap); an inset ring stays within bounds
    at any spacing. */

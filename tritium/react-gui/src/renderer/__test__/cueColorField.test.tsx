@@ -27,15 +27,15 @@ let captured: {
     onChange?: (value: string, completed: boolean) => void
 } = {}
 
-vi.mock('../components/widgets/colorpicker/ColorPicker', () => ({
+vi.mock('../h3-kit/colorpicker/ColorPicker', () => ({
     ColorPicker: (props: typeof captured) => {
         captured = props
-        return React.createElement('div', { className: 'cp-stub' })
+        return React.createElement('div', { className: 'h3-color-stub' })
     },
 }))
 
-import { CueColorField } from '../components/widgets/colorpicker/CueColorField'
-import { ColorPickerProvider } from '../components/widgets/colorpicker/ColorPickerContext'
+import { CueColorField } from '../h3-kit/colorpicker/CueColorField'
+import { ColorPickerProvider } from '../h3-kit/colorpicker/ColorPickerContext'
 
 describe('CueColorField', () => {
     it('forwards provider cm / sceneId and the modes allow-list', async () => {

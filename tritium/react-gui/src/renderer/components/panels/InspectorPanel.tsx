@@ -25,16 +25,21 @@
 
 import React, { useState, useCallback, useEffect } from "react";
 import { Icon, Button, Tag } from "@blueprintjs/core";
-import { SegmentField } from "../widgets/form";
+import { SegmentField } from "../../h3-kit/form";
 
 import { PropertiesTab } from "../inspector/PropertiesTab";
 import { GenericTab } from "../inspector/GenericTab";
 import { RenderSettingsEditor } from "../inspector/RenderSettingsEditor";
+import { InspectorResetAllButton } from "../inspector/InspectorResetAllButton";
+import { modifiedKeys } from "../inspector/propModel";
 import type { PropDef } from "../../data/rendererProperties";
 import type { RenderBackendId } from "../../data/renderSettings";
-import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
+import type {
+  GenericPropEntry,
+  PropWriteOpts,
+} from "../../worker/server/services/genericProps.service";
 import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
-import { ColorPickerProvider } from "../widgets/colorpicker/ColorPickerContext";
+import { ColorPickerProvider } from "../../h3-kit/colorpicker/ColorPickerContext";
 
 // ────────────────────────────────────────────────────────────
 // Types
@@ -66,20 +71,23 @@ interface InspectorPanelProps {
   nodeName: string;
   /** Type label shown in the header (renderer type / class name). */
   nodeType: string;
-  /** Structured property definitions for the Properties tab (sample data). */
-  properties: PropDef[];
-  /** Flat property entries for the Generic tab. */
+  /** Flat property entries shared by the Properties and Generic tabs. */
   genericEntries: GenericPropEntry[];
   /** True while the Generic property list is being (re)fetched. */
   genericLoading: boolean;
   /** Render Settings state, present only for the `renderSettings` target. */
   renderSettings: RenderSettingsView | null;
-  /** Called when a structured (sample) property value changes. */
-  onPropertyChange: (key: string, value: string | number | boolean) => void;
-  /** Called to write a Generic property value (live-apply). */
-  onGenericSet: (key: string, valueType: string, value: string | number | boolean) => void;
+  /** Called to write a Generic property value (live-apply). `opts` carries realtime-drag info. */
+  onGenericSet: (
+    key: string,
+    valueType: string,
+    value: string | number | boolean,
+    opts?: PropWriteOpts,
+  ) => void;
   /** Called to restore a Generic property to its C++ default. */
   onGenericReset: (key: string) => void;
+  /** Called to restore several properties to their defaults in one undo step. */
+  onResetMany: (keys: string[]) => void;
   /** Called when the user clicks the close button. */
   onClose: () => void;
   /** CueMol handle for colour resolution in property colour editors. */
@@ -98,28 +106,32 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
   targetCategory,
   nodeName,
   nodeType,
-  properties,
   genericEntries,
   genericLoading,
   renderSettings,
-  onPropertyChange,
   onGenericSet,
   onGenericReset,
+  onResetMany,
   onClose,
   cm,
   sceneId,
 }) => {
-  // Generic tab is the real, data-backed view - default to it.
-  const [mode, setMode] = useState<InspectorMode>("generic");
+  // Renderer targets have a migrated structured page, so default to it;
+  // other node kinds fall back to the data-backed Generic tab.
+  const isRenderer =
+    targetCategory === "Renderer" || targetCategory === "Renderer group";
+  const defaultMode: InspectorMode = isRenderer ? "properties" : "generic";
+
+  const [mode, setMode] = useState<InspectorMode>(defaultMode);
 
   const handleModeChange = useCallback((value: string) => {
     setMode(value as InspectorMode);
   }, []);
 
-  // A freshly selected node should land on the Generic tab.
+  // A freshly selected node should land on its default tab.
   useEffect(() => {
-    if (hasTarget) setMode("generic");
-  }, [hasTarget, nodeName]);
+    if (hasTarget) setMode(defaultMode);
+  }, [hasTarget, nodeName, defaultMode]);
 
   const isRenderSettings = targetKind === "renderSettings";
 
@@ -172,7 +184,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
       ) : (
         /* ── Node target (scene-tree node / View) ── */
         <>
-          {/* ── Mode switcher ── */}
+          {/* ── Mode switcher + reset all ── */}
           <div className="inspector-mode-bar">
             <SegmentField
               value={mode}
@@ -182,12 +194,24 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 { label: "Generic", value: "generic" },
               ]}
             />
+            {/* Reset all is available in both tabs (both edit the same
+                properties); it restores every modified property in one step. */}
+            <InspectorResetAllButton
+              canResetAll={modifiedKeys(genericEntries).length > 0}
+              onResetAll={() => onResetMany(modifiedKeys(genericEntries))}
+            />
           </div>
 
           {/* ── Tab content ── */}
           <div className="inspector-body">
             {mode === "properties" ? (
-              <PropertiesTab properties={properties} onChange={onPropertyChange} />
+              <PropertiesTab
+                entries={genericEntries}
+                rendererType={nodeType}
+                onSet={onGenericSet}
+                onReset={onGenericReset}
+                sceneId={sceneId}
+              />
             ) : (
               <GenericTab
                 entries={genericEntries}

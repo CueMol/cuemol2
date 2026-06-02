@@ -1,10 +1,10 @@
 /**
  * Degrade-detection tests for the form-kit catalog
- * (`components/widgets/form/`).
+ * (`h3-kit/form/`).
  *
  * The catalog is the single source of control/row SIZING. These tests pin the
  * contract that future changes must not break:
- *  - each component emits its canonical `.fk-*` class (so the one CSS source in
+ *  - each component emits its canonical `.h3-form-*` class (so the one CSS source in
  *    `_form-kit.css` actually applies)
  *  - components do NOT leak inline sizing (height/min-height/padding/margin) --
  *    sizing must come from CSS, never from per-instance style props
@@ -32,7 +32,7 @@ import {
     NumericField,
     ButtonRow,
     FormButton,
-} from '../components/widgets/form'
+} from '../h3-kit/form'
 import { mountTree } from './helpers/testHarness'
 
 /** Assert no element in the subtree carries inline sizing styles. */
@@ -51,21 +51,21 @@ describe('form-kit catalog', () => {
                 <span>ctrl</span>
             </Field>,
         )
-        expect(container.querySelector('.fk-field-row')).not.toBeNull()
-        expect(container.querySelector('.fk-field-label')?.textContent).toBe('Name')
-        expect(container.querySelector('.fk-field-control')?.textContent).toBe('ctrl')
-        expect(container.querySelector('.fk-field-row.fk-inline')).toBeNull()
+        expect(container.querySelector('.h3-form-field-row')).not.toBeNull()
+        expect(container.querySelector('.h3-form-field-label')?.textContent).toBe('Name')
+        expect(container.querySelector('.h3-form-field-control')?.textContent).toBe('ctrl')
+        expect(container.querySelector('.h3-form-field-row.h3-form-inline')).toBeNull()
         expectNoInlineSizing(container)
         unmount()
     })
 
-    it('Field inline adds the fk-inline modifier', () => {
+    it('Field inline adds the h3-form-inline modifier', () => {
         const { container, unmount } = mountTree(
             <Field label="On" inline>
                 <span>ctrl</span>
             </Field>,
         )
-        expect(container.querySelector('.fk-field-row.fk-inline')).not.toBeNull()
+        expect(container.querySelector('.h3-form-field-row.h3-form-inline')).not.toBeNull()
         unmount()
     })
 
@@ -75,7 +75,7 @@ describe('form-kit catalog', () => {
                 <Field label="A"><span>a</span></Field>
             </FieldGroup>,
         )
-        expect(container.querySelector('.fk-field-group')).not.toBeNull()
+        expect(container.querySelector('.h3-form-field-group')).not.toBeNull()
         expect(container.querySelector('.section-header')?.textContent).toBe('Section')
         unmount()
     })
@@ -86,8 +86,8 @@ describe('form-kit catalog', () => {
                 <span>body</span>
             </FieldSection>,
         )
-        expect(container.querySelector('.fk-field-section')).not.toBeNull()
-        const title = container.querySelector('.fk-field-section-title') as HTMLElement
+        expect(container.querySelector('.h3-form-field-section')).not.toBeNull()
+        const title = container.querySelector('.h3-form-field-section-title') as HTMLElement
         expect(title?.textContent).toBe('Term')
         // The title carries the group-label typography role (single source for
         // the top-level label look) -- not a bespoke per-pane style.
@@ -102,21 +102,21 @@ describe('form-kit catalog', () => {
                 <span>body</span>
             </FieldSection>,
         )
-        expect(container.querySelector('.fk-field-section')).not.toBeNull()
-        expect(container.querySelector('.fk-field-section-title')).toBeNull()
+        expect(container.querySelector('.h3-form-field-section')).not.toBeNull()
+        expect(container.querySelector('.h3-form-field-section-title')).toBeNull()
         unmount()
     })
 
-    it('TextField emits .fk-input, fires onChange, flags invalid, no inline sizing', () => {
+    it('TextField emits .h3-form-input, fires onChange, flags invalid, no inline sizing', () => {
         const onChange = vi.fn()
         const { container, unmount } = mountTree(
             <TextField value="abc" onChange={onChange} invalid />,
         )
-        const input = container.querySelector('.fk-input input') as HTMLInputElement
+        const input = container.querySelector('.h3-form-input input') as HTMLInputElement
         expect(input).not.toBeNull()
         expect(input.value).toBe('abc')
         // invalid -> danger intent on the wrapper
-        expect(container.querySelector('.fk-input.bp5-intent-danger')).not.toBeNull()
+        expect(container.querySelector('.h3-form-input.bp5-intent-danger')).not.toBeNull()
         const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
         act(() => {
             setter.call(input, 'xyz')
@@ -127,7 +127,7 @@ describe('form-kit catalog', () => {
         unmount()
     })
 
-    it('SelectField emits .fk-select and fires onChange', () => {
+    it('SelectField emits .h3-form-select and fires onChange', () => {
         const onChange = vi.fn()
         const { container, unmount } = mountTree(
             <SelectField value="a" onChange={onChange}>
@@ -135,7 +135,7 @@ describe('form-kit catalog', () => {
                 <option value="b">B</option>
             </SelectField>,
         )
-        const select = container.querySelector('.fk-select select') as HTMLSelectElement
+        const select = container.querySelector('.h3-form-select select') as HTMLSelectElement
         expect(select).not.toBeNull()
         const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')!.set!
         act(() => {
@@ -147,25 +147,25 @@ describe('form-kit catalog', () => {
         unmount()
     })
 
-    it('SwitchField emits .fk-switch and fires onChange(boolean)', () => {
+    it('SwitchField emits .h3-form-switch and fires onChange(boolean)', () => {
         const onChange = vi.fn()
         const { container, unmount } = mountTree(
             <SwitchField checked={false} onChange={onChange} />,
         )
-        const input = container.querySelector('.fk-switch input') as HTMLInputElement
+        const input = container.querySelector('.h3-form-switch input') as HTMLInputElement
         expect(input).not.toBeNull()
         act(() => { input.click() })
         expect(onChange).toHaveBeenCalledWith(true)
         unmount()
     })
 
-    it('NumericField emits .fk-numeric (+ slider by default)', () => {
+    it('NumericField emits .h3-form-numeric (+ slider by default)', () => {
         const { container, unmount } = mountTree(
             <NumericField value={5} onChange={() => undefined} min={0} max={10} />,
         )
-        expect(container.querySelector('.fk-numeric-row')).not.toBeNull()
-        expect(container.querySelector('.fk-numeric')).not.toBeNull()
-        expect(container.querySelector('.fk-slider')).not.toBeNull()
+        expect(container.querySelector('.h3-form-numeric-row')).not.toBeNull()
+        expect(container.querySelector('.h3-form-numeric')).not.toBeNull()
+        expect(container.querySelector('.h3-form-slider')).not.toBeNull()
         unmount()
     })
 
@@ -173,20 +173,20 @@ describe('form-kit catalog', () => {
         const { container, unmount } = mountTree(
             <NumericField value={5} onChange={() => undefined} slider={false} />,
         )
-        expect(container.querySelector('.fk-slider')).toBeNull()
-        expect(container.querySelector('.fk-numeric')).not.toBeNull()
+        expect(container.querySelector('.h3-form-slider')).toBeNull()
+        expect(container.querySelector('.h3-form-numeric')).not.toBeNull()
         unmount()
     })
 
-    it('FormButton locks the canonical .fk-btn class; ButtonRow wraps in .fk-btn-row', () => {
+    it('FormButton locks the canonical .h3-form-btn class; ButtonRow wraps in .h3-form-btn-row', () => {
         const onClick = vi.fn()
         const { container, unmount } = mountTree(
             <ButtonRow>
                 <FormButton text="Go" onClick={onClick} />
             </ButtonRow>,
         )
-        expect(container.querySelector('.fk-btn-row')).not.toBeNull()
-        const btn = container.querySelector('button.fk-btn') as HTMLButtonElement
+        expect(container.querySelector('.h3-form-btn-row')).not.toBeNull()
+        const btn = container.querySelector('button.h3-form-btn') as HTMLButtonElement
         expect(btn).not.toBeNull()
         act(() => { btn.click() })
         expect(onClick).toHaveBeenCalled()

@@ -29,7 +29,7 @@ import {
 } from "@blueprintjs/core";
 import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
 import { useMolStructure } from "../../hooks/useMolStructure";
-import { ObjectSelect, objectFilters } from "../widgets/ObjectSelect";
+import { ObjectSelect, objectFilters } from "../../h3-kit/ObjectSelect";
 import {
     encodeChainId,
     encodeResidueId,
@@ -466,7 +466,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
                             onNodeClick={handleNodeClick}
                             onNodeExpand={handleNodeExpand}
                             onNodeCollapse={handleNodeCollapse}
-                            className="mol-tree listbox-tree"
+                            className="mol-tree h3-listbox-tree"
                         />
                     </div>
                 </div>

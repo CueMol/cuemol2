@@ -111,7 +111,7 @@
 }
 
 /* ── Rows ──
- * Row height / hover / selected come from list-kit (`.list-table-row`,
+ * Row height / hover / selected come from list-kit (`.h3-list-table-row`,
  * applied alongside `.insp-gt-row` in GenericTab). Only generic-tab-specific
  * styling lives here. */
 

@@ -1,30 +1,71 @@
 /**
  * @file components/inspector/PropertiesTab.tsx
- * @description Properties tab for the inspector panel.
+ * @description Structured Properties tab for the inspector panel.
  *
- * Groups renderer properties into collapsible accordion sections via
- * `PropGroupedEditor`. The accordion ordering is driven by `PROPERTY_GROUPS`.
+ * Shows the renderer-common page (`RendererCommonSection`) followed by the
+ * renderer-type-specific sections resolved from `getRendererPropSections`.
+ * Both are backed by the live `getGenericProps` / `setGenericProp` bridge.
+ *
+ * This migration step has only the common page; per-type sections are still
+ * empty, so a single collapsed placeholder (`DUMMY_SECTION`) is appended for
+ * every renderer type. Once the per-type pages (ribbon / cpk / ...) are
+ * ported, drop the placeholder and render `getRendererPropSections(type)`
+ * directly -- unknown types then show the common page only.
  */
 
 import React from "react";
-import { PropGroupedEditor } from "./PropGroupedEditor";
-import type { PropDef } from "../../data/rendererProperties";
-import { PROPERTY_GROUPS } from "../../data/rendererProperties";
+import { AccordionSection } from "./AccordionSection";
+import { RendererCommonSection } from "./RendererCommonSection";
+import { DUMMY_SECTION, getRendererPropSections } from "./rendererPropSections";
+import type {
+  GenericPropEntry,
+  PropWriteOpts,
+} from "../../worker/server/services/genericProps.service";
 
 interface PropertiesTabProps {
-  properties: PropDef[];
-  onChange: (key: string, value: string | number | boolean) => void;
+  /** Live property list of the inspected node. */
+  entries: GenericPropEntry[];
+  /** Renderer `type_name` used to resolve type-specific sections. */
+  rendererType: string;
+  /** Write a property value (live-apply). `opts` carries realtime-drag info. */
+  onSet: (
+    key: string,
+    valueType: string,
+    value: string | number | boolean,
+    opts?: PropWriteOpts,
+  ) => void;
+  /** Restore a property to its C++ default. */
+  onReset: (key: string) => void;
+  /** Active scene id (for selection / material / colour lookups). */
+  sceneId: number | undefined;
 }
 
 export const PropertiesTab: React.FC<PropertiesTabProps> = ({
-  properties,
-  onChange,
-}) => (
-  <div className="insp-properties-tab">
-    <PropGroupedEditor
-      properties={properties}
-      groups={PROPERTY_GROUPS}
-      onChange={onChange}
-    />
-  </div>
-);
+  entries,
+  rendererType,
+  onSet,
+  onReset,
+  sceneId,
+}) => {
+  // Show the renderer-type-specific sections when this type has been ported
+  // (e.g. `simple`). For not-yet-ported types fall back to a single collapsed
+  // placeholder so the "Common + specific" layout is still visible end-to-end.
+  const typeSections = getRendererPropSections(rendererType);
+  const sections = typeSections.length > 0 ? typeSections : [DUMMY_SECTION];
+
+  return (
+    <div className="insp-properties-tab">
+      <RendererCommonSection
+        entries={entries}
+        onSet={onSet}
+        onReset={onReset}
+        sceneId={sceneId}
+      />
+      {sections.map(({ key, title, defaultExpanded, Component }) => (
+        <AccordionSection key={key} title={title} defaultExpanded={defaultExpanded}>
+          <Component entries={entries} onSet={onSet} onReset={onReset} sceneId={sceneId} />
+        </AccordionSection>
+      ))}
+    </div>
+  );
+};

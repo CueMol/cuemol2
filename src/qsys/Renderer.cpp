@@ -144,6 +144,15 @@ bool Renderer::resetProperty(const LString &propnm)
   return true;
 }
 
+bool Renderer::getPropDefault(const LString &propnm, qlib::LVariant &value)
+{
+  // Mirror resetProperty: the value a reset would restore is the style-sheet
+  // value when one is defined, else the class default. This is read-only.
+  if (StyleSheet::resolve3(propnm, this, value))
+    return true;
+  return super_t::getPropDefault(propnm, value);
+}
+
 StyleSheet *Renderer::getStyleSheet() const
 {
   return m_pStyles;

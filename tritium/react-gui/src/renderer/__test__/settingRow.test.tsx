@@ -94,9 +94,9 @@ describe('SettingRow', () => {
         )
         // Migrated to the unified ColorPicker -- no native input[type=color].
         expect(el.querySelector('input[type="color"]')).toBeNull()
-        const picker = el.querySelector('.cp-widget')
+        const picker = el.querySelector('.h3-color-widget')
         expect(picker).not.toBeNull()
-        const textbox = el.querySelector('.cp-textbox input') as HTMLInputElement
+        const textbox = el.querySelector('.h3-color-textbox input') as HTMLInputElement
         expect(textbox.value).toBe('#FF0000')
     })
 
@@ -109,7 +109,7 @@ describe('SettingRow', () => {
             caret.click()
         })
         const labels = Array.from(
-            document.querySelectorAll('.cp-modebar button'),
+            document.querySelectorAll('.h3-color-modebar button'),
         ).map((b) => b.textContent)
         expect(labels).toEqual(['RGB', 'HSB', 'Palette'])
     })

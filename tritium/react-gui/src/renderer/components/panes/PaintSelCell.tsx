@@ -16,7 +16,7 @@
  *     picker selection has updated it. We detect this by checking
  *     whether the blur's `relatedTarget` is contained in the cell.
  *   - The picker menu renders in a portal *outside* the cell, so focus
- *     moving into it (`.mol-sel-list-popover`) is also treated as staying
+ *     moving into it (`.h3-mol-sel-list-popover`) is also treated as staying
  *     inside the edit -- otherwise opening the picker would prematurely
  *     commit the draft.
  *   - Enter on the input commits and blurs (matches the other inline
@@ -26,7 +26,7 @@
  */
 
 import React, { useEffect, useState } from 'react'
-import { MolSelList, pushHistory } from '../widgets/MolSelList'
+import { MolSelList, pushHistory } from '../../h3-kit/MolSelList'
 
 export interface PaintSelCellProps {
     sceneID: number
@@ -72,7 +72,7 @@ export const PaintSelCell: React.FC<PaintSelCellProps> = ({
         if (e.currentTarget.contains(related)) return
         // The picker menu renders in a portal outside the cell; focus moving
         // into it is also "inside the edit", not a real exit.
-        if (related && related.closest('.mol-sel-list-popover')) return
+        if (related && related.closest('.h3-mol-sel-list-popover')) return
         if (draft === value) return
         onCommit(draft)
         pushHistory(draft)
@@ -99,6 +99,7 @@ export const PaintSelCell: React.FC<PaintSelCellProps> = ({
                 selectedSel={draft}
                 onSelectedSelChange={setDraft}
                 refreshKey={refreshKey}
+                showSelectionIcon={false}
                 fill
             />
         </div>

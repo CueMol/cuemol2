@@ -17,15 +17,11 @@ import type { SceneTreeNode } from "../worker/shared/sceneTreeTypes";
 import type {
   GenericPropEntry,
   PropTargetType,
+  PropWriteOpts,
 } from "../worker/server/services/genericProps.service";
 import { findTypedNode } from "./sceneTree/sceneTreeNodeUtils";
 import { useCueMolEventListener } from "./useCueMolEventListener";
 import { SEM_OBJECT, SEM_RENDERER, SEM_SCENE, SEM_PROPCHG } from "../event";
-
-import {
-  RIBBON_PROPERTIES,
-  type PropDef,
-} from "../data/rendererProperties";
 
 // ────────────────────────────────────────────────────────────
 // Types
@@ -94,9 +90,6 @@ export function useInspectorState({
   const [genericEntries, setGenericEntries] = useState<GenericPropEntry[]>([]);
   const [genericLoading, setGenericLoading] = useState(false);
   const [inspectorInfo, setInspectorInfo] = useState<InspectorInfo>({ name: "", type: "" });
-
-  // Structured Properties tab still uses sample data (own migration pending).
-  const [rendererProps, setRendererProps] = useState<PropDef[]>(RIBBON_PROPERTIES);
 
   // Latest target in a ref so the event handler stays identity-stable.
   const targetRef = useRef<InspectorTarget | null>(null);
@@ -249,7 +242,12 @@ export function useInspectorState({
 
   /** Write a single generic property value (live-apply). */
   const handleGenericSet = useCallback(
-    async (key: string, valueType: string, value: string | number | boolean) => {
+    async (
+      key: string,
+      valueType: string,
+      value: string | number | boolean,
+      opts?: PropWriteOpts,
+    ) => {
       const target = targetRef.current;
       if (!cm || !target || target.kind !== "node") return;
       try {
@@ -261,8 +259,12 @@ export function useInspectorState({
           op: "set",
           valueType,
           value,
+          mode: opts?.mode,
+          originalValue: opts?.originalValue,
         });
-        if (targetRef.current === target && res?.ok) {
+        // A preview write returns no entries (the field drives itself from its
+        // local draft during a drag); only refresh on a real commit.
+        if (targetRef.current === target && res?.ok && opts?.mode !== "preview") {
           setGenericEntries(res.entries);
         }
       } catch (err) {
@@ -296,14 +298,29 @@ export function useInspectorState({
     [cm],
   );
 
-  /** Update a single property value in the structured (sample) list. */
-  const handlePropertyChange = useCallback(
-    (key: string, value: string | number | boolean) => {
-      setRendererProps((prev) =>
-        prev.map((p) => (p.key === key ? { ...p, value } : p)),
-      );
+  /**
+   * Restore several generic properties to their C++ defaults in one undo step
+   * (used by "Reset all to default"). No-op when `keys` is empty.
+   */
+  const handleResetMany = useCallback(
+    async (keys: string[]) => {
+      const target = targetRef.current;
+      if (!cm || !target || target.kind !== "node" || keys.length === 0) return;
+      try {
+        const res = await cm.invokeService("resetGenericProps", {
+          sceneId: target.sceneId,
+          nodeId: target.nodeId,
+          nodeType: target.nodeType,
+          propNames: keys,
+        });
+        if (targetRef.current === target && res?.ok) {
+          setGenericEntries(res.entries);
+        }
+      } catch (err) {
+        console.warn("resetGenericProps failed:", err);
+      }
     },
-    [],
+    [cm],
   );
 
   // ── Live sync: refetch on external property changes ──────
@@ -332,7 +349,6 @@ export function useInspectorState({
     inspectorOpen,
     inspectorTarget,
     inspectorCategory,
-    rendererProps,
     genericEntries,
     genericLoading,
     inspectorInfo,
@@ -340,8 +356,8 @@ export function useInspectorState({
     handleShowViewProps,
     handleShowRenderSettings,
     handleCloseInspector,
-    handlePropertyChange,
     handleGenericSet,
     handleGenericReset,
+    handleResetMany,
   } as const;
 }

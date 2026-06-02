@@ -65,6 +65,7 @@ export const MtzOptionsPane: React.FC<MtzOptionsPaneProps> = ({ options, onChang
   ) => (
     <HTMLSelect
       id={id}
+      className="h3-form-select"
       value={value}
       disabled={disabled}
       onChange={(e) => onSelect(e.currentTarget.value)}
@@ -128,6 +129,7 @@ export const MtzOptionsPane: React.FC<MtzOptionsPaneProps> = ({ options, onChang
       <FormGroup label="Grid spacing (A)" labelFor="mtz-grid" className="fod-form-group">
         <HTMLSelect
           id="mtz-grid"
+          className="h3-form-select"
           value={options.gridSpacing}
           onChange={(e) => onChange({ ...options, gridSpacing: parseFloat(e.currentTarget.value) })}
           fill

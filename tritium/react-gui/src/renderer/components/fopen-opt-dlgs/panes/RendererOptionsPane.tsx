@@ -1,7 +1,7 @@
 import React from 'react';
 import { InputGroup, HTMLSelect, Switch, FormGroup, Divider, Checkbox } from '@blueprintjs/core';
 import type { RendererOptions } from '../types';
-import { MolSelList } from '../../widgets/MolSelList';
+import { MolSelList } from '../../../h3-kit/MolSelList';
 
 interface RendererOptionsPaneProps {
   options: RendererOptions;
@@ -44,6 +44,7 @@ export const RendererOptionsPane: React.FC<RendererOptionsPaneProps> = ({ option
       <FormGroup label="Renderer type" labelFor="rend-type" className="fod-form-group">
         <HTMLSelect
           id="rend-type"
+          className="h3-form-select"
           fill
           value={options.rendererType}
           onChange={(e) => set('rendererType')(e.target.value)}

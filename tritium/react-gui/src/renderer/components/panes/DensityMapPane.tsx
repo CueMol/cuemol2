@@ -29,7 +29,8 @@ import {
 } from '@blueprintjs/core'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import { useDensityMapPanel } from '../../hooks/useDensityMapPanel'
-import { SliderNumericField } from '../widgets/SliderNumericField'
+import { useRealtimeDragProp } from '../../hooks/useRealtimeDragProp'
+import { FieldGrid, FieldGridRow, DragNumericField } from '../../h3-kit/form'
 import type {
     MapRendererEntry,
     MapRendererPropName,
@@ -41,8 +42,65 @@ import {
     SEM_ANY,
 } from '../../event'
 import { useCueMolEventListener } from '../../hooks/useCueMolEventListener'
-import { CueColorField } from '../widgets/colorpicker/CueColorField'
-import { ColorPickerProvider } from '../widgets/colorpicker/ColorPickerContext'
+import { CueColorField } from '../../h3-kit/colorpicker/CueColorField'
+import { ColorPickerProvider } from '../../h3-kit/colorpicker/ColorPickerContext'
+
+/** Stored-value write options threaded to `setMapRendererProp`. */
+interface MapPropWriteOpts {
+    mode?: 'preview' | 'commit'
+    originalValue?: number
+}
+
+/**
+ * Labeled drag-to-snap numeric row for the density-map panel. Holds a local
+ * draft in displayed units (stored * scale) for live feedback and commits the
+ * stored value on drag end / Enter so a drag is one undo step (via
+ * `useRealtimeDragProp`).
+ *
+ * With `realtime`, the renderer updates live during the drag: the worker
+ * previews each frame without undo and commits a single step on release.
+ * `onWrite` mirrors `setMapRendererProp`'s contract (stored value + optional
+ * mode / originalValue).
+ */
+const DragRow: React.FC<{
+    label: string
+    value: number
+    min: number
+    max: number
+    step: number
+    unit?: string
+    scale?: number
+    disabled?: boolean
+    realtime?: boolean
+    onWrite: (stored: number, opts?: MapPropWriteOpts) => void
+}> = ({ label, value, min, max, step, unit, scale = 1, disabled, realtime, onWrite }) => {
+    const dragProps = useRealtimeDragProp({
+        committed: value * scale,
+        realtime,
+        onPreview: (v) => onWrite(v / scale, { mode: 'preview' }),
+        onCommit: (original, v) => {
+            const stored = v / scale
+            if (stored === original / scale) return
+            // Realtime: restore the pre-drag value before the single undo step.
+            // Non-realtime: plain commit (current behavior).
+            if (realtime) onWrite(stored, { mode: 'commit', originalValue: original / scale })
+            else onWrite(stored)
+        },
+        onAbort: (original) => onWrite(original / scale, { mode: 'preview' }),
+    })
+    return (
+        <FieldGridRow label={label}>
+            <DragNumericField
+                {...dragProps}
+                min={min}
+                max={max}
+                step={step}
+                unit={unit}
+                disabled={disabled}
+            />
+        </FieldGridRow>
+    )
+}
 
 interface DensityMapPaneProps {
     cm: AsyncCueMol | null
@@ -145,13 +203,19 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
 
     // --- Mutations ---
     const setProp = useCallback(
-        (propName: MapRendererPropName, value: number | boolean | string) => {
+        (
+            propName: MapRendererPropName,
+            value: number | boolean | string,
+            opts?: { mode?: 'preview' | 'commit'; originalValue?: number },
+        ) => {
             if (!cm || activeSceneId === undefined || selectedRendId === undefined) return
             cm.invokeService('setMapRendererProp', {
                 sceneId: activeSceneId,
                 rendId: selectedRendId,
                 propName,
                 value,
+                mode: opts?.mode,
+                originalValue: opts?.originalValue,
             }).catch((err: unknown) => {
                 console.warn('setMapRendererProp failed:', err)
             })
@@ -271,7 +335,7 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
                             }}
                             fill
                             disabled={items.length === 0}
-                            className="selection-mol-select"
+                            className="selection-mol-select h3-form-select"
                         >
                             {items.length === 0 ? (
                                 <option value="">(no map renderers)</option>
@@ -288,7 +352,8 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
                         <Popover content={modeMenu} placement="bottom-end" disabled={disabled}>
                             <Button
                                 small
-                                rightIcon="caret-down"
+                                className="h3-form-dropdown-caret"
+                                rightIcon={<span className="h3-form-caret" aria-hidden />}
                                 disabled={disabled}
                                 aria-label="Level mode"
                             />
@@ -310,37 +375,40 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
                         />
                     </div>
 
-                    {/* Sliders */}
-                    <SliderNumericField
-                        label="Transp:"
-                        value={state?.alpha ?? 0}
-                        min={0}
-                        max={1}
-                        step={0.1}
-                        onCommit={(v) => setProp('alpha', v)}
-                        disabled={disabled}
-                    />
-                    <SliderNumericField
-                        label="Level:"
-                        value={levelProps.value}
-                        min={levelProps.min}
-                        max={levelProps.max}
-                        step={levelProps.step}
-                        unit={levelProps.unit || undefined}
-                        scale={levelProps.scale}
-                        onCommit={(v) => setProp('siglevel', v)}
-                        disabled={disabled}
-                    />
-                    <SliderNumericField
-                        label="Extent:"
-                        value={state?.extent ?? 0}
-                        min={0}
-                        max={state?.maxExtent ?? 100}
-                        step={1}
-                        unit="Å"
-                        onCommit={(v) => setProp('extent', v)}
-                        disabled={disabled}
-                    />
+                    {/* Numeric rows */}
+                    <FieldGrid>
+                        <DragRow
+                            label="Transp"
+                            value={state?.alpha ?? 0}
+                            min={0}
+                            max={1}
+                            step={0.1}
+                            realtime
+                            onWrite={(v, opts) => setProp('alpha', v, opts)}
+                            disabled={disabled}
+                        />
+                        <DragRow
+                            label="Level"
+                            value={levelProps.value}
+                            min={levelProps.min}
+                            max={levelProps.max}
+                            step={levelProps.step}
+                            unit={levelProps.unit || undefined}
+                            scale={levelProps.scale}
+                            onWrite={(v, opts) => setProp('siglevel', v, opts)}
+                            disabled={disabled}
+                        />
+                        <DragRow
+                            label="Extent"
+                            value={state?.extent ?? 0}
+                            min={0}
+                            max={state?.maxExtent ?? 100}
+                            step={1}
+                            unit="Å"
+                            onWrite={(v, opts) => setProp('extent', v, opts)}
+                            disabled={disabled}
+                        />
+                    </FieldGrid>
                 </div>
             )}
         </div>

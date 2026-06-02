@@ -236,6 +236,17 @@ export interface SetMapRendererPropArgs {
     propName: MapRendererPropName;
     /** For `color` this is a CueMol color string; otherwise number/boolean. */
     value: number | boolean | string;
+    /**
+     * Write mode (default `commit`). `preview` writes a numeric prop without an
+     * undo txn for live drag feedback (not valid for `color`).
+     */
+    mode?: 'preview' | 'commit';
+    /**
+     * Pre-drag value, supplied with `mode: 'commit'` at the end of a realtime
+     * drag, so the single recorded undo step is `originalValue -> value` rather
+     * than `lastPreview -> value`. Numeric props only.
+     */
+    originalValue?: number;
 }
 
 export interface SetMapRendererPropResult {
@@ -252,7 +263,27 @@ function setMapRendererProp(
     const rend = scene.getRenderer(args.rendId) as Renderer | null;
     if (!rend) return { ok: false, error: 'renderer not found' };
 
+    // Live preview during a drag: numeric write without an undo txn (the view
+    // still redraws via the prop-change event). `color` never previews.
+    if (args.mode === 'preview' && args.propName !== 'color') {
+        try {
+            rend.setProp(args.propName, args.value);
+        } catch (e) {
+            return { ok: false, error: String(e) };
+        }
+        return { ok: true };
+    }
+
     let err: string | null = null;
+    // Realtime commit: restore the pre-drag value first (txn-free, not
+    // recorded) so the single undo step is `originalValue -> value`.
+    if (args.originalValue !== undefined && args.propName !== 'color') {
+        try {
+            rend.setProp(args.propName, args.originalValue);
+        } catch (e) {
+            return { ok: false, error: String(e) };
+        }
+    }
     withUndoTxn(scene as Scene, 'Change map renderer prop', () => {
         try {
             if (args.propName === 'color') {

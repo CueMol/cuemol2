@@ -14,7 +14,7 @@ import React, { act } from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 
-import { SliderNumericField } from '../components/widgets/SliderNumericField'
+import { SliderNumericField } from '../h3-kit/SliderNumericField'
 
 void React
 

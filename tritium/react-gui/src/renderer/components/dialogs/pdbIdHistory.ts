@@ -2,7 +2,7 @@
  * @file pdbIdHistory.ts
  * @description localStorage-backed PDB ID input history for the Get PDB
  * dialog. Mirrors UXP `util.History` semantics (LRU, deduplicated, capped),
- * and patterns selHistory.ts in components/widgets/MolSelList/.
+ * and patterns selHistory.ts in h3-kit/MolSelList/.
  *
  * IDs are normalized to lowercase. Reads validate against the PDB ID regex
  * so corrupted storage (or mixed entries from another app version) cannot

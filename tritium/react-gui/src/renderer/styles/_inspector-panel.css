@@ -82,13 +82,23 @@
 
 /* ── Mode switcher (SegmentField) ──
  * The switcher itself (background / border / segment height / label scale) is
- * the catalog SegmentField (`.fk-segmented` in `_form-kit.css`); only the bar
+ * the catalog SegmentField (`.h3-form-segmented` in `_form-kit.css`); only the bar
  * container lives here. */
 .inspector-mode-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   padding: var(--space-2) var(--space-4);
   flex-shrink: 0;
   background: var(--bg-panel-header);
   border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Reset all: icon-only, pushed to the right end of the mode bar (next to the
+   Properties/Generic switcher). */
+.inspector-reset-all.bp5-button {
+  margin-left: auto;
+  min-height: var(--field-btn-h);
 }
 
 /* ── Scrollable body ── */
@@ -218,27 +228,8 @@
   color: var(--text-muted);
 }
 
-/* ── Select overrides ── */
-.insp-select.bp5-html-select select {
-  background: var(--bg-input) !important;
-  border: 1px solid var(--border) !important;
-  color: var(--text-primary) !important;
-  font-size: var(--fs-lg);
-  height: var(--field-h);
-  border-radius: var(--radius-md);
-  /* Reserve room for the caret icon so the value text never runs under it. */
-  padding-right: 24px;
-  -webkit-appearance: none;
-  appearance: none;
-}
-
-/* Caret icon — Blueprint positions it for the default 30px select; recenter
-   it within the compact 22px select so it stays inside the rounded border. */
-.insp-select.bp5-html-select .bp5-icon {
-  top: 50%;
-  right: 6px;
-  transform: translateY(-50%);
-}
+/* Select look (height / border / chevron) comes from the form-kit `.h3-form-select`
+   class (styles/_form-kit.css); `.insp-select` carries layout only. */
 
 /* ── Numeric row (slider + input) ── */
 .insp-numeric-row {

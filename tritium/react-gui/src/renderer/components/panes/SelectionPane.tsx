@@ -24,16 +24,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '@blueprintjs/core';
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol';
-import { ObjectSelect, objectFilters } from '../widgets/ObjectSelect';
-import { FieldSection, TextField } from '../widgets/form';
-import {
-    getHistory,
-    pushHistory,
-} from '../widgets/MolSelList/selHistory';
-import { SelectionBuilder } from '../widgets/MolSelList';
-import { useSelectionValues } from '../widgets/MolSelList/useSelectionValues';
-import { useSelHitCount } from '../widgets/MolSelList/useSelHitCount';
-import { CountTag } from '../widgets/MolSelList/CountTag';
+import { ObjectSelect, objectFilters } from '../../h3-kit/ObjectSelect';
+import { FieldSection, TextField } from '../../h3-kit/form';
+import { getHistory, pushHistory } from '../../h3-kit/MolSelList/selHistory';
+import { useSelHitCount } from '../../h3-kit/MolSelList/useSelHitCount';
+import { CountTag } from '../../h3-kit/MolSelList/CountTag';
+import { SelectionBuilder } from './selection/SelectionBuilder';
+import { useSelectionValues } from './selection/useSelectionValues';
 
 /* --- Props --- */
 

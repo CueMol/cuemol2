@@ -764,7 +764,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                         onNodeExpand={handleNodeExpand}
                         onNodeCollapse={handleNodeCollapse}
                         onNodeContextMenu={handleNodeContextMenu}
-                        className="scene-tree listbox-tree"
+                        className="scene-tree h3-listbox-tree"
                     />
                 </div>
             )}

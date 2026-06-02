@@ -22,7 +22,7 @@ single popover with an inline mode switch (see Decision).
 ## Decision
 
 Ship a reusable React widget `ColorPicker`
-(`react-gui/src/renderer/components/widgets/colorpicker/`): swatch +
+(`react-gui/src/renderer/h3-kit/colorpicker/`): swatch +
 `InputGroup` + caret. The caret opens a SINGLE Blueprint `Popover` whose top
 row is a segmented `ButtonGroup` mode switch (RGB / HSB / Named / Palette /
 Mol) and whose body shows the active mode's panel. RGB and HSB stay separate
@@ -97,13 +97,13 @@ Extended the widget from the ColorPane decks to every remaining colour UI.
 
 ## Notes
 
-- Widget: `react-gui/src/renderer/components/widgets/colorpicker/ColorPicker.tsx`
+- Widget: `react-gui/src/renderer/h3-kit/colorpicker/ColorPicker.tsx`
   (+ `ColorSlider`, `RgbHsbPanel`, `NamedListPanel`, `PalettePanel`,
   `colorMath.ts`); styles in `react-gui/src/renderer/styles/_colorpicker.css`.
 - Worker service: `react-gui/src/renderer/worker/server/services/colorPicker.service.ts`;
   `ServiceMap` rows `compileColor` / `getNamedColors` in
   `worker/shared/WorkerCalls.ts`.
-- Shared adapter: `components/widgets/colorpicker/ColorPickerContext.tsx`
+- Shared adapter: `h3-kit/colorpicker/ColorPickerContext.tsx`
   (`ColorPickerProvider` / `useColorPickerCtx`) and `CueColorField.tsx`.
 - Integration: `components/panes/ColorPane.tsx` (decks + Paint cell),
   `DensityMapPane.tsx`, `components/inspector/PropEditors.tsx`,

@@ -270,23 +270,11 @@
    Control overrides
    ═══════════════════════════════════════════════════════════ */
 
-/* ── Select ── */
+/* ── Select ──
+   Look (height / border / chevron) comes from the form-kit `.h3-form-select` class
+   (styles/_form-kit.css); this rule carries layout only. */
 .config-setting-select.bp5-html-select {
   max-width: 320px;
-}
-
-.config-setting-select.bp5-html-select select {
-  background: var(--bg-input) !important;
-  border: 1px solid var(--border) !important;
-  color: var(--text-primary) !important;
-  font-size: var(--fs-lg);
-  height: 28px;
-  border-radius: var(--radius-md);
-}
-
-.config-setting-select.bp5-html-select select:focus {
-  border-color: var(--accent) !important;
-  box-shadow: 0 0 0 1px var(--accent) !important;
 }
 
 /* ── Numeric input ── */

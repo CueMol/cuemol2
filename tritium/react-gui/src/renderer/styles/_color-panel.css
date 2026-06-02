@@ -90,7 +90,7 @@
 }
 
 /* The colour picker fills the table cell. */
-.color-cell-color .cp-widget {
+.color-cell-color .h3-color-widget {
   width: 100%;
 }
 
@@ -257,45 +257,17 @@
   flex-shrink: 0;
 }
 
-/* Compact HTMLSelect so Mode / Change by visually match the slider rows.
- * Blueprint v5's default HTMLSelect height is ~30px and stacks two
- * frames (an outer wrapper background + an inner `select` box-shadow
- * that emulates a border). We collapse both into a single light border
- * so the row matches the textbox rows next to it. */
+/* Select look (height / border / chevron) comes from the form-kit `.h3-form-select`
+ * class (styles/_form-kit.css). Here the wrapper carries layout only: it fills
+ * its row and stays frameless so only the inner select's border shows --
+ * neutralizing both Blueprint's default wrapper frame and the
+ * `.color-field-input` border/background used by the sibling text inputs. */
 .color-enum-select.bp5-html-select {
   flex: 1;
-  height: 24px;
+  min-width: 0;
   background: transparent;
-  box-shadow: none;
   border: none;
-  border-radius: var(--radius-md);
   padding: 0;
-}
-
-.color-enum-select.bp5-html-select::before,
-.color-enum-select.bp5-html-select::after {
-  box-shadow: none;
-}
-
-.color-enum-select.bp5-html-select select,
-.color-enum-select.bp5-html-select select:focus,
-.color-enum-select.bp5-html-select select:hover {
-  height: 24px;
-  min-height: 24px;
-  padding: 0 22px 0 var(--space-3);
-  font-size: var(--fs-base);
-  border-radius: var(--radius-md);
-  /* Override Blueprint's inset-shadow border with a single explicit one. */
-  box-shadow: none;
-  border: 1px solid var(--border);
-  background: var(--bg-input);
-  color: var(--text-primary);
-  outline: none;
-}
-
-.color-enum-select.bp5-html-select .bp5-icon {
-  top: 4px;
-  right: 4px;
 }
 
 /* Elepot ramp row mirrors the UXP `coloring-deck-elepot` 3-column grid:
@@ -321,22 +293,16 @@
   text-align: right;
 }
 
-/* Paint table selection cell uses MolSelList (InputGroup + picker).
- * Override the widget's default 30px height to match the rest of the
- * table's compact rows, and strip the cell padding so the MolSelList
- * border sits flush with the cell edge. MolSelList's height is driven
- * by --mol-sel-list-height (see _mol-sel-list.css), so a single var
- * assignment cascades to both the InputGroup and the picker <select>. */
+/* Paint table selection cell uses MolSelList (InputGroup + in-input picker).
+ * Strip the cell padding so the MolSelList border sits flush with the cell
+ * edge; the InputGroup height is set by the rule below to match the table's
+ * compact rows. */
 .color-cell-selection:has(.color-paint-sel-cell) {
   padding: 0;
 }
 
 .color-paint-sel-cell {
   width: 100%;
-}
-
-.color-paint-sel-cell .mol-sel-list {
-  --mol-sel-list-height: 22px;
 }
 
 /* Make the InputGroup blend into the row: kill its rounded border + bg

@@ -62,6 +62,8 @@
   /* Accent glow / highlight variants (keyframe, placeholder, slider) */
   --accent-hover: #7cc4e4;
   --accent-glow: rgba(95, 175, 215, 0.5);
+  /* Translucent accent track for value-fill bars (DragNumericField). */
+  --accent-track: rgba(95, 175, 215, 0.35);
   --accent-selected: #ffc940;
   --accent-selected-glow: rgba(255, 201, 64, 0.5);
   --accent-placeholder-opacity: 0.4;
@@ -203,6 +205,13 @@
   --icon-md: 14px;
   --icon-lg: 18px;
 
+  /* Blender-style dropdown chevron. Single source for the glyph used by both
+     the native-select caret (CSS mask in _form-kit.css) and the
+     dropdown-trigger buttons (.h3-form-caret). Thin stroked V, drawn as a mask so
+     the color comes from the consumer's background-color token (theme-aware).
+     The stroke color here is irrelevant -- only the alpha is used. */
+  --chevron-down-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M4 6l4 4 4-4' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+
   /* Corner radii. The lone 8px usage stays inline. */
   --radius-sm: 2px;
   --radius-md: 3px;
@@ -220,6 +229,14 @@
   --form-row-gap: var(--space-1);      /* gap between rows in a FieldGroup */
   --form-section-gap: var(--space-3);  /* gap between form sections */
   --field-btn-h: var(--ctrl-h-sm);     /* compact form button height */
+
+  /* ── Per-property reset (PropertyField modified indicator) ──
+     The left bar's width is always reserved so a row never shifts when it
+     toggles modified; the bar's presence (not just its color) signals
+     "modified". Bar width / color are theme-shared. No row background tint --
+     it would lower text contrast. */
+  --field-prop-bar-w: 2px;             /* modified indicator bar width */
+  --prop-modified-bar: var(--accent);  /* modified indicator bar color */
 
   /* ── Listbox / list-tree rows (single source for styles/_list-kit.css) ──
      Row height reuses --row-h (22px). hover/selected reuse --bg-hover /
@@ -275,6 +292,8 @@
   /* Accent glow variants */
   --accent-hover: #3d9fd8;
   --accent-glow: rgba(41, 121, 181, 0.35);
+  /* Translucent accent track for value-fill bars (DragNumericField). */
+  --accent-track: rgba(41, 121, 181, 0.30);
   --accent-selected: #e6a800;
   --accent-selected-glow: rgba(230, 168, 0, 0.4);
   --accent-placeholder-opacity: 0.3;

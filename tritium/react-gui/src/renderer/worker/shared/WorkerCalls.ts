@@ -37,6 +37,7 @@ import type { GetReaderDefaultOptionsArgs, GetReaderDefaultOptionsResult } from 
 import type { GetOpenFiltersArgs } from '../server/services/getOpenFilters.service'
 import type { GetSceneCloseInfoArgs, GetSceneCloseInfoResult } from '../server/services/getSceneCloseInfo.service'
 import type { GetSelDefsArgs, GetSelDefsResult } from '../server/services/getSelDefs.service'
+import type { GetMaterialNamesArgs, GetMaterialNamesResult } from '../server/services/getMaterialNames.service'
 import type { GetSelHitCountArgs, GetSelHitCountResult } from '../server/services/getSelHitCount.service'
 import type { SaveSelDefArgs, SaveSelDefResult } from '../server/services/saveSelDef.service'
 import type { LoadObjectArgs } from '../server/services/loadObject.service'
@@ -106,6 +107,7 @@ import type {
   GetGenericPropsResult,
   SetGenericPropArgs,
   SetGenericPropResult,
+  ResetGenericPropsArgs,
 } from '../server/services/genericProps.service'
 import type {
   SelectObjectMolArgs,
@@ -360,6 +362,7 @@ export interface ServiceMap {
   getOpenFilters:             { args: GetOpenFiltersArgs;              result: ElectronFileFilter[] }
   getSceneCloseInfo:          { args: GetSceneCloseInfoArgs;           result: GetSceneCloseInfoResult }
   getSelDefs:                 { args: GetSelDefsArgs;                  result: GetSelDefsResult }
+  getMaterialNames:           { args: GetMaterialNamesArgs;            result: GetMaterialNamesResult }
   getSelHitCount:             { args: GetSelHitCountArgs;              result: GetSelHitCountResult }
   saveSelDef:                 { args: SaveSelDefArgs;                  result: SaveSelDefResult }
   loadObject:                 { args: LoadObjectArgs;                  result: { ok: boolean } }
@@ -389,6 +392,7 @@ export interface ServiceMap {
   getNodeInfo:                { args: GetNodeInfoArgs;                 result: GetNodeInfoResult }
   getGenericProps:            { args: GetGenericPropsArgs;             result: GetGenericPropsResult }
   setGenericProp:             { args: SetGenericPropArgs;              result: SetGenericPropResult }
+  resetGenericProps:          { args: ResetGenericPropsArgs;           result: SetGenericPropResult }
   renameNode:                 { args: RenameNodeArgs;                  result: RenameNodeResult }
   selectObjectMol:            { args: SelectObjectMolArgs;             result: SelectObjectMolResult }
   getMolChains:               { args: GetMolChainsArgs;                result: GetMolChainsResult }
