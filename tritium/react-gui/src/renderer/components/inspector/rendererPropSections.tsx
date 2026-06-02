@@ -22,6 +22,7 @@ import type {
   PropWriteOpts,
 } from "../../worker/server/services/genericProps.service";
 import { SimpleRendererSection } from "./SimpleRendererSection";
+import { BallStickRendererSection } from "./BallStickRendererSection";
 
 // ────────────────────────────────────────────────────────────
 // Types
@@ -77,6 +78,15 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
       title: "Simple",
       defaultExpanded: true,
       Component: SimpleRendererSection,
+    },
+  ],
+  // BallStickRenderer ("ballstick"): UXP ballstick-propdlg "Ball & Stick" tab.
+  ballstick: [
+    {
+      key: "ballstick",
+      title: "Ball and stick",
+      defaultExpanded: true,
+      Component: BallStickRendererSection,
     },
   ],
 };

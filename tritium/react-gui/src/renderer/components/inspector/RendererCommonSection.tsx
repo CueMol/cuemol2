@@ -40,7 +40,7 @@ type ResetFn = RendererPropSectionProps["onReset"];
 // Field rows -- one per editable property type
 // ────────────────────────────────────────────────────────────
 
-interface RowProps {
+export interface RowProps {
   entry: GenericPropEntry;
   label: string;
   onSet: SetFn;
@@ -84,8 +84,13 @@ const TextRow: React.FC<RowProps> = ({ entry, label, onSet, onReset }) => {
   );
 };
 
-/** Boolean toggle committed immediately (e.g. Visible / Locked). */
-const BoolRow: React.FC<RowProps> = ({ entry, label, onSet, onReset }) => (
+/**
+ * Boolean toggle committed immediately (e.g. Visible / Locked).
+ *
+ * Exported so renderer-type-specific sections (e.g. `BallStickRendererSection`)
+ * reuse the same toggle row contract instead of redefining it.
+ */
+export const BoolRow: React.FC<RowProps> = ({ entry, label, onSet, onReset }) => (
   <PropertyField label={label} inline {...resetProps(entry, onReset)}>
     <SwitchField
       checked={Boolean(entry.value)}
@@ -100,6 +105,12 @@ interface NumRowProps extends RowProps {
   max: number;
   step: number;
   unit?: string;
+  /**
+   * Decimals to display. Omit to derive from the fine snap (`step / 10`); set
+   * explicitly (e.g. `0`) for integer-valued properties so they do not show a
+   * spurious fractional digit.
+   */
+  decimals?: number;
   disabled?: boolean;
   /** Live-apply the value to the renderer during the drag (one undo step). */
   realtime?: boolean;
@@ -122,6 +133,7 @@ export const NumRow: React.FC<NumRowProps> = ({
   max,
   step,
   unit,
+  decimals,
   disabled,
   realtime,
 }) => {
@@ -148,6 +160,7 @@ export const NumRow: React.FC<NumRowProps> = ({
         max={max}
         step={step}
         unit={unit}
+        decimals={decimals}
         disabled={disabled || entry.readonly}
       />
     </PropertyField>
@@ -175,12 +188,17 @@ const EnumRow: React.FC<EnumRowProps> = ({ entry, label, onSet, onReset, disable
   </PropertyField>
 );
 
-interface ColorRowProps extends RowProps {
+export interface ColorRowProps extends RowProps {
   disabled?: boolean;
 }
 
-/** Colour editor committed on a completed change (e.g. Edge color). */
-const ColorRow: React.FC<ColorRowProps> = ({ entry, label, onSet, onReset, disabled }) => (
+/**
+ * Colour editor committed on a completed change (e.g. Edge color).
+ *
+ * Exported so renderer-type-specific sections (e.g. `BallStickRendererSection`)
+ * reuse the same colour row contract instead of redefining it.
+ */
+export const ColorRow: React.FC<ColorRowProps> = ({ entry, label, onSet, onReset, disabled }) => (
   <PropertyField label={label} {...resetProps(entry, onReset)}>
     <ColorField
       value={String(entry.value)}
