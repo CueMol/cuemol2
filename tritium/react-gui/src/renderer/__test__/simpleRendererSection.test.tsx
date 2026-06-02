@@ -67,7 +67,7 @@ describe('SimpleRenderer section registry', () => {
   })
 
   it('resolves an unknown / not-yet-ported renderer type to no sections', () => {
-    expect(getRendererPropSections('cpk')).toEqual([])
+    expect(getRendererPropSections('tube')).toEqual([])
   })
 })
 
@@ -162,7 +162,7 @@ describe('PropertiesTab type-specific section dispatch', () => {
     const { container, unmount } = mountTree(
       <PropertiesTab
         entries={[entry({ key: 'width', type: 'real', value: 1.2 })]}
-        rendererType="cpk"
+        rendererType="tube"
         {...commonProps}
       />,
     )

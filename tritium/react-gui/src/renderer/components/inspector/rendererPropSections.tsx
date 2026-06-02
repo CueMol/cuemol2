@@ -23,6 +23,7 @@ import type {
 } from "../../worker/server/services/genericProps.service";
 import { SimpleRendererSection } from "./SimpleRendererSection";
 import { BallStickRendererSection } from "./BallStickRendererSection";
+import { CPKRendererSection } from "./CPKRendererSection";
 
 // ────────────────────────────────────────────────────────────
 // Types
@@ -87,6 +88,15 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
       title: "Ball and stick",
       defaultExpanded: true,
       Component: BallStickRendererSection,
+    },
+  ],
+  // CPKRenderer ("cpk"): UXP cpk-propdlg "Atom radii" tab.
+  cpk: [
+    {
+      key: "cpk",
+      title: "Atom radii",
+      defaultExpanded: true,
+      Component: CPKRendererSection,
     },
   ],
 };

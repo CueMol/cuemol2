@@ -1,5 +1,7 @@
 # Migration Mapping — Index
 
+- Updated: 2026-06-03 (`dialog.property.ballstick` done: UXP "Ball & Stick" タブの detail/bondw/sphr/ring/thickness/ringcolor を Inspector Properties タブの独立 accordion entry ("Ball and stick") として実装済み。`rendererPropSections` registry に `type_name "ballstick"` で登録、`NumRow`/`BoolRow`/`ColorRow` を再利用、ring off 時に thickness/ringcolor を disable。mapping 行の更新漏れを是正)
+- Updated: 2026-06-03 (`dialog.property.cpk` done: UXP "Atom radii" タブの 7 元素 van der Waals 半径 + `detail` を Inspector Properties タブの独立 accordion entry ("Atom radii") として実装。`rendererPropSections` registry に `type_name "cpk"` で登録、`NumRow` (DragNumericField, realtime preview) を再利用)
 - Updated: 2026-06-02 (`dialog.property.simple` done: UXP "Simple" タブの Line width を Inspector Properties タブの独立 accordion entry として実装。`rendererPropSections` registry に `type_name "simple"` で登録、DragNumericField (realtime preview) で `width` を編集。ported renderer-type は折りたたみ dummy ではなく実 section を表示)
 - Updated: 2026-06-01 (`dialog.property.renderer` wip: renderer-common-page (Basic settings + Edge lines) implemented as the Inspector Properties tab via live `getGenericProps`/`setGenericProp`; renderer-type-specific sections deferred to `rendererPropSections` registry — currently Common + collapsed dummy)
 - Updated: 2026-05-25 (`panel.densitymap` done: DensityMapPane wired with custom stepper (+ step-precision quantize) and typed-property-setter writes for color/center; multi-gradient mode dropped)
@@ -24,7 +26,7 @@
 | Panel | [panels.md](panels.md) | 27 | 4 | 17 | 1 | 5 | 0 |
 | Menu | [menus.md](menus.md) | 4 | 2 | 2 | 0 | 0 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
-| Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 13 | 1 | 1 | 0 | 11 | 0 |
+| Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 13 | 3 | 1 | 0 | 9 | 0 |
 | Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 0 | 3 | 0 | 15 | 0 |
 | Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 1 | 0 | 0 | 20 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 2 | 1 | 0 | 10 | 0 |

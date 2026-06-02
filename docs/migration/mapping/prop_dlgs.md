@@ -22,10 +22,10 @@ Status values:
 
 | ID | React | Mapping | Status | PR | ADR | Notes |
 |----|-------|---------|--------|----|-----|-------|
-| [`dialog.property.ballstick`](../uxp-inventory/prop_dlgs.md#dialogpropertyballstick) | | | todo | | | |
+| [`dialog.property.ballstick`](../uxp-inventory/prop_dlgs.md#dialogpropertyballstick) | `inspector/BallStickRendererSection` | merged | done | | | UXP "Ball & Stick" タブの `detail` (int, min2/max20/step1) + `bondw` (Bond width) + `sphr` (Atom radius) + `ring` (Show ring) + `thickness` + `ringcolor` (Ring color、real は min0/max3/step0.01/unit Å) を Inspector Properties タブの独立 accordion entry ("Ball and stick") として実装。`rendererPropSections` registry に `type_name "ballstick"` で登録、`NumRow`/`BoolRow`/`ColorRow` (DragNumericField, realtime preview + 単一 undo) を `RendererCommonSection` から再利用。`ring` off 時に thickness/ringcolor を disable (UXP `updateEnabledState` parity)。 |
 | [`dialog.property.cartoon`](../uxp-inventory/prop_dlgs.md#dialogpropertycartoon) | | | todo | | | |
 | [`dialog.property.contour`](../uxp-inventory/prop_dlgs.md#dialogpropertycontour) | | | todo | | | |
-| [`dialog.property.cpk`](../uxp-inventory/prop_dlgs.md#dialogpropertycpk) | | | todo | | | |
+| [`dialog.property.cpk`](../uxp-inventory/prop_dlgs.md#dialogpropertycpk) | `inspector/CPKRendererSection` | merged | done | | | UXP "Atom radii" タブの 7 元素 van der Waals 半径 (`vdwr_C`…`vdwr_X`, real, min0/max3/step0.01/2桁/unit Å) + `detail` (int, min2/max20/step1) を Inspector Properties タブの独立 accordion entry ("Atom radii") として実装。`rendererPropSections` registry に `type_name "cpk"` で登録、`NumRow` (DragNumericField, realtime preview + 単一 undo) を `RendererCommonSection` から再利用。 |
 | [`dialog.property.disorder`](../uxp-inventory/prop_dlgs.md#dialogpropertydisorder) | | | todo | | | |
 | [`dialog.property.isosurf`](../uxp-inventory/prop_dlgs.md#dialogpropertyisosurf) | | | todo | | | |
 | [`dialog.property.molsurf`](../uxp-inventory/prop_dlgs.md#dialogpropertymolsurf) | | | todo | | | |
