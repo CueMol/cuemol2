@@ -51,7 +51,7 @@
   font-size: var(--type-label-fs);
   font-weight: var(--type-label-fw);
   line-height: var(--lh-snug);
-  color: var(--text-secondary);
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -65,7 +65,7 @@
   font-size: var(--type-label-fs);
   font-weight: var(--type-label-fw);
   line-height: var(--lh-snug);
-  color: var(--text-secondary);
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -180,7 +180,7 @@
 }
 
 .h3-form-field-section-title {
-  color: var(--text-secondary);
+  color: var(--text-primary);
 }
 
 /* ── Text input ── */
