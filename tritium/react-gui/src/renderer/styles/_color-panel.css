@@ -293,22 +293,16 @@
   text-align: right;
 }
 
-/* Paint table selection cell uses MolSelList (InputGroup + picker).
- * Override the widget's default 30px height to match the rest of the
- * table's compact rows, and strip the cell padding so the MolSelList
- * border sits flush with the cell edge. MolSelList's height is driven
- * by --mol-sel-list-height (see _mol-sel-list.css), so a single var
- * assignment cascades to both the InputGroup and the picker <select>. */
+/* Paint table selection cell uses MolSelList (InputGroup + in-input picker).
+ * Strip the cell padding so the MolSelList border sits flush with the cell
+ * edge; the InputGroup height is set by the rule below to match the table's
+ * compact rows. */
 .color-cell-selection:has(.color-paint-sel-cell) {
   padding: 0;
 }
 
 .color-paint-sel-cell {
   width: 100%;
-}
-
-.color-paint-sel-cell .mol-sel-list {
-  --mol-sel-list-height: 22px;
 }
 
 /* Make the InputGroup blend into the row: kill its rounded border + bg

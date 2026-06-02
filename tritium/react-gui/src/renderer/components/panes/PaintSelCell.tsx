@@ -99,6 +99,7 @@ export const PaintSelCell: React.FC<PaintSelCellProps> = ({
                 selectedSel={draft}
                 onSelectedSelChange={setDraft}
                 refreshKey={refreshKey}
+                showSelectionIcon={false}
                 fill
             />
         </div>

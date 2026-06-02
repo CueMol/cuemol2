@@ -1,8 +1,9 @@
 /**
  * @file MolSelList.tsx
  * @description Lightweight atom-selection picker: a free-text Blueprint
- * `InputGroup` paired with a caret button that opens a popover listing
- * ready-made selection expressions.
+ * `InputGroup` with a chevron trigger tucked inside its right edge (like a
+ * native `<select>`) that opens a popover listing ready-made selection
+ * expressions.
  *
  * The popover has a `Named | History` `SegmentedControl` at the top; choosing
  * a tab shows the corresponding list (see `SelMenus.tsx`). "Named" surfaces the
@@ -26,7 +27,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     Button,
-    ControlGroup,
+    Icon,
     Popover,
 } from '@blueprintjs/core';
 import { useCueMol } from '../../../hooks/useCueMol';
@@ -57,6 +58,12 @@ export interface MolSelListProps {
     placeholder?: string;
     fill?: boolean;
     /**
+     * Show the leading atom-selection glyph that marks the field as a selection
+     * picker (default true). Dense hosts (e.g. the color paint table cell) can
+     * disable it to keep the row visually plain.
+     */
+    showSelectionIcon?: boolean;
+    /**
      * Re-fetch trigger for the named-selection-defs list. Bumping this number
      * forces a refresh (e.g. when the parent knows the scene's defs changed).
      */
@@ -73,6 +80,7 @@ export const MolSelList: React.FC<MolSelListProps> = ({
     disabled,
     placeholder = '* (all atoms)',
     fill = true,
+    showSelectionIcon = true,
     refreshKey = 0,
 }) => {
     // `onMolIdChange` is part of the UXP-compatible API surface but is not
@@ -195,35 +203,48 @@ export const MolSelList: React.FC<MolSelListProps> = ({
         </div>
     );
 
-    return (
-        <ControlGroup fill={fill} className="mol-sel-list">
-            <TextField
-                value={selectedSel}
-                onChange={onSelectedSelChange}
-                onBlur={() => onCommit?.(selectedSel)}
-                placeholder={placeholder}
+    // The chevron trigger sits inside the input's right edge (InputGroup
+    // rightElement), mirroring a native <select> caret rather than a separate
+    // button beside the field.
+    const caretTrigger = (
+        <Popover
+            isOpen={isOpen}
+            onInteraction={handleInteraction}
+            placement="bottom-end"
+            portalClassName={portalClassName}
+            className="mol-sel-list-trigger"
+            disabled={disabled}
+            content={pickerContent}
+            // A mouse-driven dropdown needs no focus trap. Leaving Blueprint's
+            // default focus management on makes the overlay's focus-trap
+            // sentinel (a fixed, full-width div) take focus, which -- with no
+            // app-wide FocusStyleManager -- renders Blueprint's :focus outline
+            // as a stray cyan line across the window top.
+            enforceFocus={false}
+            autoFocus={false}
+        >
+            <Button
+                className="mol-sel-list-caret"
+                icon={<span className="fk-caret" aria-hidden />}
+                minimal
                 disabled={disabled}
-                invalid={!isValid}
-                fill={fill}
+                title="Pick selection"
+                aria-label="Pick selection"
             />
-            <Popover
-                isOpen={isOpen}
-                onInteraction={handleInteraction}
-                placement="bottom-end"
-                portalClassName={portalClassName}
-                className="mol-sel-list-trigger"
-                disabled={disabled}
-                content={pickerContent}
-            >
-                <Button
-                    className="fk-dropdown-caret"
-                    icon={<span className="fk-caret" aria-hidden />}
-                    minimal
-                    disabled={disabled}
-                    title="Pick selection"
-                    aria-label="Pick selection"
-                />
-            </Popover>
-        </ControlGroup>
+        </Popover>
+    );
+
+    return (
+        <TextField
+            value={selectedSel}
+            onChange={onSelectedSelChange}
+            onBlur={() => onCommit?.(selectedSel)}
+            placeholder={placeholder}
+            disabled={disabled}
+            invalid={!isValid}
+            fill={fill}
+            leftIcon={showSelectionIcon ? <Icon icon="select" size={14} /> : undefined}
+            rightElement={caretTrigger}
+        />
     );
 };
