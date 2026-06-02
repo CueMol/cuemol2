@@ -101,6 +101,7 @@ namespace qlib {
     virtual bool hasPropDefault(const LString &propnm) const;
     virtual bool isPropDefault(const LString &propnm) const;
     virtual bool resetProperty(const LString &propnm);
+    virtual bool getPropDefault(const LString &propnm, LVariant &value);
 
     ////
 

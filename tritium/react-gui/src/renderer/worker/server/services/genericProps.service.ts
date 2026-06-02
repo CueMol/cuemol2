@@ -79,6 +79,14 @@ export interface SetGenericPropResult {
     entries: GenericPropEntry[];
 }
 
+export interface ResetGenericPropsArgs {
+    sceneId: number;
+    nodeId: number;
+    nodeType: PropTargetType;
+    /** Property names to reset. Caller filters to the modified keys. */
+    propNames: string[];
+}
+
 // ─── helpers ──────────────────────────────────────────────────────────────
 
 function safeRead<T>(read: () => T): T | undefined {
@@ -207,4 +215,37 @@ function setGenericProp(
     return { ok: true, entries: safeRead(() => collectProps(target)) ?? [] };
 }
 
-export const services = { getGenericProps, setGenericProp };
+// ─── resetGenericProps ────────────────────────────────────────────────────
+
+/**
+ * Reset several properties to their C++ defaults inside a SINGLE undo
+ * transaction (used by "Reset all to default"). Looping `setGenericProp`
+ * op:'reset' from the renderer would record one undo step per property; this
+ * collapses them into one step (one Cmd+Z restores the whole reset).
+ */
+function resetGenericProps(
+    ctx: WorkerContext,
+    args: ResetGenericPropsArgs,
+): SetGenericPropResult {
+    const fail: SetGenericPropResult = { ok: false, entries: [] };
+    const { scene, target } = resolvePropTarget(ctx, args);
+    if (!scene || !target || args.propNames.length === 0) return fail;
+
+    const label =
+        args.propNames.length === 1
+            ? `Reset property: ${args.propNames[0]}`
+            : `Reset ${args.propNames.length} properties`;
+
+    try {
+        withUndoTxn(scene, label, () => {
+            for (const name of args.propNames) target.resetProp(name);
+        });
+    } catch (e) {
+        console.warn('resetGenericProps failed:', e);
+        return fail;
+    }
+
+    return { ok: true, entries: safeRead(() => collectProps(target)) ?? [] };
+}
+
+export const services = { getGenericProps, setGenericProp, resetGenericProps };

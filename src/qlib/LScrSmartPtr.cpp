@@ -216,6 +216,11 @@ bool LSupScrSp::resetPropertyImpl(const LString &propnm)
   return m_ptr->resetPropertyImpl(propnm);
 }
 
+bool LSupScrSp::getPropDefault(const LString &propnm, LVariant &value)
+{
+  return m_ptr->getPropDefault(propnm, value);
+}
+
 bool LSupScrSp::getPropSpecImpl(const LString &propnm, PropSpec *pspec) const
 {
   return m_ptr->getPropSpecImpl(propnm, pspec);

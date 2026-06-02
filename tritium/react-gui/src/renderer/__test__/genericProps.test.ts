@@ -50,6 +50,19 @@ describe('parseGenericProps', () => {
         expect(visible).toMatchObject({ type: 'boolean', value: true, hasdefault: false, isdefault: false });
     });
 
+    it('parses the emitted default value into defaultValue', () => {
+        const raw = [
+            { name: 'alpha', readonly: false, hasdefault: true, isdefault: false, default: 1, type: 'real', value: 0.5 },
+            { name: 'visible', readonly: false, hasdefault: true, isdefault: true, default: true, type: 'boolean', value: true },
+            { name: 'width', readonly: false, hasdefault: false, type: 'real', value: 2 },
+        ];
+        const [alpha, visible, width] = parseGenericProps(raw);
+        expect(alpha.defaultValue).toBe(1);
+        expect(visible.defaultValue).toBe(true);
+        // No emitted default -> undefined.
+        expect(width.defaultValue).toBeUndefined();
+    });
+
     it('retains enumdef and isdefault for enum properties', () => {
         const coil = parseGenericProps(RAW).find((e) => e.key === 'coil_type')!;
         expect(coil.enumdef).toEqual(['round', 'elliptical']);
@@ -194,6 +207,30 @@ describe('genericProps services', () => {
         expect(target.resetProp).toHaveBeenCalledWith('alpha');
         expect(target.setProp).not.toHaveBeenCalled();
         expect(res.ok).toBe(true);
+    });
+
+    it('resetGenericProps resets every key inside ONE undo transaction', () => {
+        const { ctx, scene, target } = makeEnv();
+        const res = services.resetGenericProps(ctx, {
+            ...ref, propNames: ['alpha', 'visible', 'width'],
+        });
+        // One transaction wraps all three resets (single undo step).
+        expect(scene.startUndoTxn).toHaveBeenCalledTimes(1);
+        expect(scene.commitUndoTxn).toHaveBeenCalledTimes(1);
+        expect(target.resetProp).toHaveBeenCalledTimes(3);
+        expect(target.resetProp).toHaveBeenNthCalledWith(1, 'alpha');
+        expect(target.resetProp).toHaveBeenNthCalledWith(2, 'visible');
+        expect(target.resetProp).toHaveBeenNthCalledWith(3, 'width');
+        expect(res.ok).toBe(true);
+        expect(res.entries.map((e) => e.key)).toEqual(['alpha']);
+    });
+
+    it('resetGenericProps is a no-op for an empty key list', () => {
+        const { ctx, scene, target } = makeEnv();
+        const res = services.resetGenericProps(ctx, { ...ref, propNames: [] });
+        expect(scene.startUndoTxn).not.toHaveBeenCalled();
+        expect(target.resetProp).not.toHaveBeenCalled();
+        expect(res.ok).toBe(false);
     });
 
     it('getGenericProps resolves a view and labels it View', () => {

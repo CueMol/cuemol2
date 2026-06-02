@@ -553,6 +553,9 @@ namespace qsys {
     /// Reset to the stylesheet values (impl)
     virtual bool resetProperty(const LString &propnm);
 
+    /// Get the style-resolved (or class) default value without changing the prop
+    virtual bool getPropDefault(const LString &propnm, qlib::LVariant &value);
+
     virtual StyleSheet *getStyleSheet() const;
     virtual void styleChanged(StyleEvent &);
     virtual qlib::uid_t getStyleCtxtID() const;

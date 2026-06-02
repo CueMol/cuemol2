@@ -291,8 +291,16 @@
   color: var(--accent-red);
 }
 
-/* ─── Component Catalog gallery (DummyPane3 showcase) ─── */
+/* ─── Component Catalog gallery (CatalogPane1-3 showcase) ─── */
 .catalog-note {
   margin-top: var(--form-section-gap);
   color: var(--text-muted);
+}
+
+/* Framed mock of the inspector property pane (toolbar + accordions) so the
+   assembled reset UI can be reviewed without opening the real inspector. */
+.catalog-inspector-mock {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }

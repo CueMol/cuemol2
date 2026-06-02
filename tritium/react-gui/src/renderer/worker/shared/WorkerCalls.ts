@@ -107,6 +107,7 @@ import type {
   GetGenericPropsResult,
   SetGenericPropArgs,
   SetGenericPropResult,
+  ResetGenericPropsArgs,
 } from '../server/services/genericProps.service'
 import type {
   SelectObjectMolArgs,
@@ -391,6 +392,7 @@ export interface ServiceMap {
   getNodeInfo:                { args: GetNodeInfoArgs;                 result: GetNodeInfoResult }
   getGenericProps:            { args: GetGenericPropsArgs;             result: GetGenericPropsResult }
   setGenericProp:             { args: SetGenericPropArgs;              result: SetGenericPropResult }
+  resetGenericProps:          { args: ResetGenericPropsArgs;           result: SetGenericPropResult }
   renameNode:                 { args: RenameNodeArgs;                  result: RenameNodeResult }
   selectObjectMol:            { args: SelectObjectMolArgs;             result: SelectObjectMolResult }
   getMolChains:               { args: GetMolChainsArgs;                result: GetMolChainsResult }

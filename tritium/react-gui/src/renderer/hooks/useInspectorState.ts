@@ -298,6 +298,31 @@ export function useInspectorState({
     [cm],
   );
 
+  /**
+   * Restore several generic properties to their C++ defaults in one undo step
+   * (used by "Reset all to default"). No-op when `keys` is empty.
+   */
+  const handleResetMany = useCallback(
+    async (keys: string[]) => {
+      const target = targetRef.current;
+      if (!cm || !target || target.kind !== "node" || keys.length === 0) return;
+      try {
+        const res = await cm.invokeService("resetGenericProps", {
+          sceneId: target.sceneId,
+          nodeId: target.nodeId,
+          nodeType: target.nodeType,
+          propNames: keys,
+        });
+        if (targetRef.current === target && res?.ok) {
+          setGenericEntries(res.entries);
+        }
+      } catch (err) {
+        console.warn("resetGenericProps failed:", err);
+      }
+    },
+    [cm],
+  );
+
   // ── Live sync: refetch on external property changes ──────
   // Catches undo/redo and script-driven mutations of the inspected node.
   useCueMolEventListener({
@@ -333,5 +358,6 @@ export function useInspectorState({
     handleCloseInspector,
     handleGenericSet,
     handleGenericReset,
+    handleResetMany,
   } as const;
 }

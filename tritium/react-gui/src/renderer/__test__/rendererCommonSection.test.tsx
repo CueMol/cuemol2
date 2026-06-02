@@ -65,12 +65,12 @@ function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
   } as GenericPropEntry
 }
 
-/** Find the field row (.h3-form-field-row) whose label text matches. */
+/** Find the property row (.h3-form-prop-row) whose label text matches. */
 function rowByLabel(container: HTMLElement, label: string): HTMLElement | null {
   const lab = Array.from(container.querySelectorAll('.h3-form-field-label')).find(
     (l) => l.textContent === label,
   )
-  return lab ? (lab.closest('.h3-form-field-row') as HTMLElement) : null
+  return lab ? (lab.closest('.h3-form-prop-row') as HTMLElement) : null
 }
 
 /** Set a controlled <input> value so React's value tracker fires onChange. */
@@ -83,16 +83,16 @@ function typeInto(input: HTMLInputElement, value: string): void {
   input.dispatchEvent(new Event('input', { bubbles: true }))
 }
 
-function render(entries: GenericPropEntry[], onSet = vi.fn()) {
+function render(entries: GenericPropEntry[], onSet = vi.fn(), onReset = vi.fn()) {
   const r = mountTree(
     <RendererCommonSection
       entries={entries}
       onSet={onSet}
-      onReset={vi.fn()}
+      onReset={onReset}
       sceneId={1}
     />,
   )
-  return { ...r, onSet }
+  return { ...r, onSet, onReset }
 }
 
 describe('RendererCommonSection', () => {
@@ -129,6 +129,55 @@ describe('RendererCommonSection', () => {
     ) as HTMLInputElement
     act(() => sw.click())
     expect(onSet).toHaveBeenCalledWith('visible', 'boolean', true)
+    unmount()
+  })
+
+  it('marks a non-default property modified and resets it on the reset button', () => {
+    const { container, onReset, unmount } = render([
+      // alpha has a default and is currently NOT at it -> modified.
+      entry({ key: 'alpha', type: 'real', value: 0.5, hasdefault: true, isdefault: false }),
+    ])
+    const row = rowByLabel(container, 'Opacity')!
+    expect(row.classList.contains('is-modified')).toBe(true)
+    const reset = row.querySelector(
+      '[aria-label="Reset to default"]',
+    ) as HTMLButtonElement
+    expect(reset).not.toBeNull()
+    expect(reset.disabled).toBe(false)
+    act(() => reset.click())
+    expect(onReset).toHaveBeenCalledWith('alpha')
+    unmount()
+  })
+
+  it('never offers reset for name even when it has a non-default value', () => {
+    const { container, unmount } = render([
+      entry({ key: 'name', type: 'string', value: 'rend1', hasdefault: true, isdefault: false }),
+    ])
+    const row = rowByLabel(container, 'Name')!
+    expect(row.classList.contains('is-modified')).toBe(false)
+    expect(row.querySelector('[aria-label="Reset to default"]')).toBeNull()
+    unmount()
+  })
+
+  it('surfaces the default value via the reset button (no inline label)', () => {
+    const { container, unmount } = render([
+      entry({ key: 'alpha', type: 'real', value: 0.5, hasdefault: true, isdefault: false, defaultValue: 1 }),
+    ])
+    const row = rowByLabel(container, 'Opacity')!
+    // The faint inline annotation is gone.
+    expect(row.querySelector('.h3-form-prop-default')).toBeNull()
+    // The default value is shown via the reset button (tooltip / aria-label).
+    const reset = row.querySelector('.h3-form-prop-reset') as HTMLElement
+    expect(reset.getAttribute('aria-label')).toContain('1.00')
+    unmount()
+  })
+
+  it('does not mark a property modified when it is at its default', () => {
+    const { container, unmount } = render([
+      entry({ key: 'alpha', type: 'real', value: 1, hasdefault: true, isdefault: true }),
+    ])
+    const row = rowByLabel(container, 'Opacity')!
+    expect(row.classList.contains('is-modified')).toBe(false)
     unmount()
   })
 

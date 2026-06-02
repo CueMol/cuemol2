@@ -85,10 +85,20 @@
  * the catalog SegmentField (`.h3-form-segmented` in `_form-kit.css`); only the bar
  * container lives here. */
 .inspector-mode-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   padding: var(--space-2) var(--space-4);
   flex-shrink: 0;
   background: var(--bg-panel-header);
   border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Reset all: icon-only, pushed to the right end of the mode bar (next to the
+   Properties/Generic switcher). */
+.inspector-reset-all.bp5-button {
+  margin-left: auto;
+  min-height: var(--field-btn-h);
 }
 
 /* ── Scrollable body ── */

@@ -230,6 +230,14 @@
   --form-section-gap: var(--space-3);  /* gap between form sections */
   --field-btn-h: var(--ctrl-h-sm);     /* compact form button height */
 
+  /* ── Per-property reset (PropertyField modified indicator) ──
+     The left bar's width is always reserved so a row never shifts when it
+     toggles modified; the bar's presence (not just its color) signals
+     "modified". Bar width / color are theme-shared. No row background tint --
+     it would lower text contrast. */
+  --field-prop-bar-w: 2px;             /* modified indicator bar width */
+  --prop-modified-bar: var(--accent);  /* modified indicator bar color */
+
   /* ── Listbox / list-tree rows (single source for styles/_list-kit.css) ──
      Row height reuses --row-h (22px). hover/selected reuse --bg-hover /
      --bg-active / --accent. Only _list-kit.css references the two below; list

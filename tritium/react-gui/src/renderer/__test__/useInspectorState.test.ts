@@ -167,6 +167,38 @@ describe('useInspectorState', () => {
         h.unmount();
     });
 
+    it('handleResetMany sends one resetGenericProps call with all keys', async () => {
+        const h = mountHook(cm, makeTree(1, 5));
+        act(() => {
+            h.result.handleShowGeneric('5');
+        });
+        await settle();
+        cm.invokeService.mockClear();
+        await act(async () => {
+            await h.result.handleResetMany(['alpha', 'visible']);
+        });
+        expect(cm.invokeService).toHaveBeenCalledTimes(1);
+        expect(cm.invokeService).toHaveBeenCalledWith('resetGenericProps', {
+            sceneId: 1, nodeId: 5, nodeType: 'renderer',
+            propNames: ['alpha', 'visible'],
+        });
+        h.unmount();
+    });
+
+    it('handleResetMany is a no-op for an empty key list', async () => {
+        const h = mountHook(cm, makeTree(1, 5));
+        act(() => {
+            h.result.handleShowGeneric('5');
+        });
+        await settle();
+        cm.invokeService.mockClear();
+        await act(async () => {
+            await h.result.handleResetMany([]);
+        });
+        expect(cm.invokeService).not.toHaveBeenCalled();
+        h.unmount();
+    });
+
     it('handleShowViewProps targets the active View by view id', async () => {
         const h = mountHook(cm, makeTree(1, 5));
         act(() => {

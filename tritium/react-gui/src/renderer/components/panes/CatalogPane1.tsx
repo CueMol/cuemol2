@@ -1,83 +1,55 @@
 /**
- * @file DummyPane3.tsx
- * @description Live gallery of the form-kit component catalog
- * (`h3-kit/form/`). Renders every catalog component with sample
- * state so the canonical sizes / designs are visible at a glance -- a visual
- * reference for "what a Field / TextField / SelectField / ... looks like".
+ * @file CatalogPane1.tsx
+ * @description Component catalog (1/3): label hierarchy and the basic
+ * label+control roles -- Field/FieldSection, Text & Select, Numeric/Switch/Color.
  *
- * This is a showcase, not a feature pane: it owns no app state and talks to no
- * worker. Sizing comes entirely from the catalog (`styles/_form-kit.css`); this
- * file intentionally sets no control sizes itself.
+ * A showcase, not a feature pane: it owns no app state and talks to no worker.
+ * Sizing comes entirely from the catalog (`styles/_form-kit.css`); this file
+ * intentionally sets no control sizes itself.
  *
- * @module DummyPane3
+ * @module CatalogPane1
  */
 
 import React, { useState } from "react";
-import { Icon } from "@blueprintjs/core";
 import { SectionHeader } from "./SectionHeader";
 import {
   Field,
   FieldGroup,
   FieldSection,
-  FieldGrid,
-  FieldGridRow,
   TextField,
   SelectField,
   NumericField,
   DragNumericField,
   SwitchField,
   ColorField,
-  ButtonRow,
-  FormButton,
-  SegmentField,
 } from "../../h3-kit/form";
-import { Listbox, ListRow } from "../../h3-kit/list";
-import { MolSelList } from "../../h3-kit/MolSelList";
-import { SliderNumericField } from "../../h3-kit/SliderNumericField";
-
-/** Sample rows for the Listbox showcase. */
-const LISTBOX_ITEMS = ["1CRN", "3J3Q", "Water", "Ligand"];
 
 /* ─── Props ─── */
 
-interface DummyPane3Props {
+interface CatalogPane1Props {
   collapsed?: boolean;
   onToggleCollapse?: () => void;
-  /** Active scene uid, forwarded to the MolSelList sample (picker defs). */
-  activeSceneId?: number;
 }
 
 /* ─── Component ─── */
 
-/**
- * Catalog gallery. Each `FieldGroup` is one section; each `Field` shows one
- * control role at its canonical size.
- */
-export const DummyPane3: React.FC<DummyPane3Props> = ({
+export const CatalogPane1: React.FC<CatalogPane1Props> = ({
   collapsed = false,
   onToggleCollapse,
-  activeSceneId,
 }) => {
   const [text, setText] = useState("aname CA");
   const [select, setSelect] = useState("ribbon");
   const [num, setNum] = useState(50);
   const [num2, setNum2] = useState(8);
   const [drag, setDrag] = useState(1.0);
-  const [gx, setGx] = useState(-0.52);
-  const [gy, setGy] = useState(-0.7);
-  const [gz, setGz] = useState(0.54612);
   const [sw, setSw] = useState(true);
   const [color, setColor] = useState("#3b82f6");
-  const [molSel, setMolSel] = useState("*");
-  const [opacity, setOpacity] = useState(80);
   const [filter, setFilter] = useState("");
-  const [listSel, setListSel] = useState("3J3Q");
-  const [seg, setSeg] = useState("all");
 
   return (
     <div className="sp-pane">
       <SectionHeader
-        title="Component Catalog"
+        title="Catalog 1"
         icon="widget"
         collapsed={collapsed}
         onToggleCollapse={onToggleCollapse}
@@ -155,75 +127,6 @@ export const DummyPane3: React.FC<DummyPane3Props> = ({
               <Field label="ColorField">
                 <ColorField value={color} onCommit={setColor} />
               </Field>
-            </FieldGroup>
-
-            <FieldGroup title="FieldGrid (aligned label column)">
-              <FieldGrid>
-                <FieldGridRow label="Location X">
-                  <DragNumericField value={gx} onChange={setGx} step={0.1} unit="m" />
-                </FieldGridRow>
-                <FieldGridRow label="Y">
-                  <DragNumericField value={gy} onChange={setGy} step={0.1} unit="m" />
-                </FieldGridRow>
-                <FieldGridRow label="Z">
-                  <DragNumericField value={gz} onChange={setGz} step={0.1} unit="m" />
-                </FieldGridRow>
-              </FieldGrid>
-            </FieldGroup>
-
-            <FieldGroup title="Shared widgets">
-              <Field label="MolSelList (selection picker)">
-                <MolSelList
-                  sceneID={activeSceneId ?? 0}
-                  selectedSel={molSel}
-                  onSelectedSelChange={setMolSel}
-                />
-              </Field>
-              <SliderNumericField
-                label="Opacity"
-                value={opacity}
-                onCommit={setOpacity}
-                min={0}
-                max={100}
-                unit="%"
-              />
-            </FieldGroup>
-
-            <FieldGroup title="Listbox (list / tree row)">
-              <Listbox>
-                {LISTBOX_ITEMS.map((item) => (
-                  <ListRow
-                    key={item}
-                    selected={listSel === item}
-                    onClick={() => setListSel(item)}
-                  >
-                    <Icon icon="cube" size={14} />
-                    <span>{item}</span>
-                  </ListRow>
-                ))}
-              </Listbox>
-            </FieldGroup>
-
-            <FieldGroup title="Segmented control">
-              <SegmentField
-                value={seg}
-                onValueChange={setSeg}
-                options={[
-                  { label: "All", value: "all" },
-                  { label: "Backbone", value: "backbone" },
-                  { label: "Sidechain", value: "sidechain" },
-                ]}
-              />
-            </FieldGroup>
-
-            <FieldGroup title="Buttons">
-              <ButtonRow>
-                <FormButton text="Default" />
-                <FormButton text="Primary" intent="primary" />
-                <FormButton text="Icon" icon="tick" />
-                <FormButton text="Minimal" minimal />
-                <FormButton text="Disabled" disabled />
-              </ButtonRow>
             </FieldGroup>
 
             <div className="catalog-note type-caption">

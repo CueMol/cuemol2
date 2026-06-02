@@ -43,6 +43,7 @@ namespace qlib {
     virtual bool resetProperty(const LString &propnm);
     virtual bool hasPropDefault(const LString &propnm) const;
     // virtual bool isPropDefault(const LString &propnm) const;
+    virtual bool getPropDefault(const LString &propnm, LVariant &value);
 
     // property event (implementation)
     virtual void nodePropChgImpl(LPropEvent &ev);

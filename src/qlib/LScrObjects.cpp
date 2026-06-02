@@ -11,6 +11,8 @@
 #include "PropSpec.hpp"
 // #include "ObjStream.hpp"
 #include "LDOM2Tree.hpp"
+#include "LWrapper.hpp"
+#include "LClass.hpp"
 
 
 using namespace qlib;
@@ -251,6 +253,18 @@ bool LScrObjBase::resetProperty(const LString &propnm)
   nodePropChgImpl(ev);
 
   return res;
+}
+
+bool LScrObjBase::getPropDefault(const LString &propnm, LVariant &value)
+{
+  // The class default value lives in the wrapper (FuncMap) reachable as the
+  // scriptable class object. Subclasses (e.g. Renderer) override this to first
+  // resolve a style-sheet value (what resetProperty would actually restore).
+  LClass *pCls = getScrClassObj();
+  FuncMap *pFM = dynamic_cast<FuncMap *>(pCls);
+  if (pFM == NULL)
+    return false;
+  return pFM->getDefVal(propnm, value);
 }
 
 ///////////////////////////////////////////////////////
@@ -663,6 +677,47 @@ namespace qlib {
       if (spec.bHasDefault) {
         bool bIsDef = pObj->isPropDefault(key);
         rval += LString("\"isdefault\": ") + LString::fromBool(bIsDef) + ",\n";
+
+        // Emit the value this property would be reset to (style-resolved
+        // default for renderers, else the class default). Plain scalar / enum
+        // types only; object defaults (color / selection) are not annotated.
+        //
+        // Style-resolved values come back as STRING variants (stylesheet values
+        // are stored as strings), so convert via toString() instead of the
+        // typed getters, which would throw an InvalidCastException. The whole
+        // block is also guarded so a single bad property never blanks the dump.
+        if (!tn.startsWith("object")) {
+          try {
+            qlib::LVariant dval;
+            if (pObj->getPropDefault(key, dval)) {
+              LString ds = dval.toString();
+              if (tn.equals("boolean")) {
+                bool bv = dval.isBool() ? dval.getBoolValue() : ds.equals("true");
+                rval += LString("\"default\": ") + LString::fromBool(bv) + ",\n";
+              }
+              else if (tn.equals("integer")) {
+                int iv = 0;
+                if (dval.isInt()) iv = dval.getIntValue();
+                else ds.toInt(&iv);
+                rval += LString::format("\"default\": %d,\n", iv);
+              }
+              else if (tn.equals("real")) {
+                double rv = 0.0;
+                bool ok = true;
+                if (dval.isReal() || dval.isInt()) rv = dval.getRealValue();
+                else ok = ds.toDouble(&rv);
+                if (ok)
+                  rval += LString::format("\"default\": %f,\n", rv);
+              }
+              else {
+                rval += "\"default\": \"" + ds.escapeQuots() + "\",\n";
+              }
+            }
+          }
+          catch (...) {
+            // No default annotation for this property; keep dumping the rest.
+          }
+        }
       }
 
       if (!tn.startsWith("object")) {

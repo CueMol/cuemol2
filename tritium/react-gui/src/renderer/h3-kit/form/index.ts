@@ -10,6 +10,8 @@
 
 export { Field } from './Field';
 export type { FieldProps } from './Field';
+export { PropertyField } from './PropertyField';
+export type { PropertyFieldProps } from './PropertyField';
 export { FieldGroup } from './FieldGroup';
 export type { FieldGroupProps } from './FieldGroup';
 export { FieldSection } from './FieldSection';

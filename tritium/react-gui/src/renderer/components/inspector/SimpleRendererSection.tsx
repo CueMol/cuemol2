@@ -25,6 +25,7 @@ import type { RendererPropSectionProps } from "./rendererPropSections";
 export const SimpleRendererSection: React.FC<RendererPropSectionProps> = ({
   entries,
   onSet,
+  onReset,
 }) => {
   const width = entries.find((e: GenericPropEntry) => e.key === "width");
   if (!width) return null;
@@ -33,6 +34,7 @@ export const SimpleRendererSection: React.FC<RendererPropSectionProps> = ({
       entry={width}
       label="Line width"
       onSet={onSet}
+      onReset={onReset}
       min={0}
       max={10}
       step={0.2}

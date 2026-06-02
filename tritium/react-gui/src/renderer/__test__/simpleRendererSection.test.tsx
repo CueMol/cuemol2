@@ -47,12 +47,12 @@ function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
   } as GenericPropEntry
 }
 
-/** Find the field row (.h3-form-field-row) whose label text matches. */
+/** Find the property row (.h3-form-prop-row) whose label text matches. */
 function rowByLabel(container: HTMLElement, label: string): HTMLElement | null {
   const lab = Array.from(container.querySelectorAll('.h3-form-field-label')).find(
     (l) => l.textContent === label,
   )
-  return lab ? (lab.closest('.h3-form-field-row') as HTMLElement) : null
+  return lab ? (lab.closest('.h3-form-prop-row') as HTMLElement) : null
 }
 
 describe('SimpleRenderer section registry', () => {

@@ -103,6 +103,7 @@ const App: React.FC = () => {
     handleCloseInspector,
     handleGenericSet,
     handleGenericReset,
+    handleResetMany,
   } = useInspectorState({
     layout,
     loaded,
@@ -476,6 +477,7 @@ const App: React.FC = () => {
                         }}
                         onGenericSet={handleGenericSet}
                         onGenericReset={handleGenericReset}
+                        onResetMany={handleResetMany}
                         onClose={handleCloseInspector}
                         cm={cm}
                         sceneId={activeSceneId}

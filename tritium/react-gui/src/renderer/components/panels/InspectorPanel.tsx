@@ -30,6 +30,8 @@ import { SegmentField } from "../../h3-kit/form";
 import { PropertiesTab } from "../inspector/PropertiesTab";
 import { GenericTab } from "../inspector/GenericTab";
 import { RenderSettingsEditor } from "../inspector/RenderSettingsEditor";
+import { InspectorResetAllButton } from "../inspector/InspectorResetAllButton";
+import { modifiedKeys } from "../inspector/propModel";
 import type { PropDef } from "../../data/rendererProperties";
 import type { RenderBackendId } from "../../data/renderSettings";
 import type {
@@ -84,6 +86,8 @@ interface InspectorPanelProps {
   ) => void;
   /** Called to restore a Generic property to its C++ default. */
   onGenericReset: (key: string) => void;
+  /** Called to restore several properties to their defaults in one undo step. */
+  onResetMany: (keys: string[]) => void;
   /** Called when the user clicks the close button. */
   onClose: () => void;
   /** CueMol handle for colour resolution in property colour editors. */
@@ -107,6 +111,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
   renderSettings,
   onGenericSet,
   onGenericReset,
+  onResetMany,
   onClose,
   cm,
   sceneId,
@@ -179,7 +184,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
       ) : (
         /* ── Node target (scene-tree node / View) ── */
         <>
-          {/* ── Mode switcher ── */}
+          {/* ── Mode switcher + reset all ── */}
           <div className="inspector-mode-bar">
             <SegmentField
               value={mode}
@@ -188,6 +193,12 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 { label: "Properties", value: "properties" },
                 { label: "Generic", value: "generic" },
               ]}
+            />
+            {/* Reset all is available in both tabs (both edit the same
+                properties); it restores every modified property in one step. */}
+            <InspectorResetAllButton
+              canResetAll={modifiedKeys(genericEntries).length > 0}
+              onResetAll={() => onResetMany(modifiedKeys(genericEntries))}
             />
           </div>
 

@@ -75,6 +75,79 @@
   min-width: 0;
 }
 
+/* ── Property row (Field + modified bar + hover reset; see PropertyField.tsx) ──
+ * Same stack/inline layout as a Field, plus a reserved-width left bar that
+ * signals "modified" by its mere presence (not color alone), and a hover-only
+ * reset button + default-value annotation on the label line. The bar width is
+ * always reserved (transparent when at default) so a row never shifts when it
+ * toggles modified. */
+.h3-form-prop-row {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--field-label-gap);
+  padding: var(--field-row-pad) 0 var(--field-row-pad)
+    calc(var(--field-prop-bar-w) + var(--space-2));
+  min-width: 0;
+}
+
+.h3-form-prop-row.h3-form-inline {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* The modified indicator bar: a standalone span (not a border-left) so it can
+   round its own corners without the asymmetric-corner artifact of a single-edge
+   border on a rounded box. Transparent at default; colored when modified. */
+.h3-form-prop-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--field-prop-bar-w);
+  background: transparent;
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+}
+
+.h3-form-prop-row.is-modified .h3-form-prop-bar {
+  background: var(--prop-modified-bar);
+}
+
+/* Label line: label + reset button. In inline mode it grows so the reset
+   button is pushed to the right edge of the label area (margin-left:auto),
+   just before the control. */
+.h3-form-prop-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.h3-form-prop-row.h3-form-inline .h3-form-prop-head {
+  flex: 1 1 auto;
+}
+
+.h3-form-prop-reset.bp5-button {
+  margin-left: auto;
+  min-height: var(--field-btn-h);
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+/* Reveal the reset button only when the row is modified (a property at its
+   default never shows a reset). The default value appears in its tooltip. */
+.h3-form-prop-row.is-modified:hover .h3-form-prop-reset.bp5-button {
+  opacity: 1;
+}
+
+/* Keep the reset button keyboard-reachable even without a pointer hover. */
+.h3-form-prop-row.is-modified .h3-form-prop-reset.bp5-button:focus-visible {
+  opacity: 1;
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
 /* ── Field group (vertical stack of rows / a section) ── */
 .h3-form-field-group {
   display: flex;

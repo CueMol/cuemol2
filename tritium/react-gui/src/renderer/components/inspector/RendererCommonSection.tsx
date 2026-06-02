@@ -19,7 +19,7 @@
 import React, { useEffect, useState } from "react";
 import { AccordionSection } from "./AccordionSection";
 import {
-  Field,
+  PropertyField,
   TextField,
   SelectField,
   DragNumericField,
@@ -29,10 +29,12 @@ import {
 import { MolSelList } from "../../h3-kit/MolSelList/MolSelList";
 import { useCueMol } from "../../hooks/useCueMol";
 import { useRealtimeDragProp } from "../../hooks/useRealtimeDragProp";
+import { isModified, isResettable, formatDefaultLabel } from "./propModel";
 import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
 import type { RendererPropSectionProps } from "./rendererPropSections";
 
 type SetFn = RendererPropSectionProps["onSet"];
+type ResetFn = RendererPropSectionProps["onReset"];
 
 // ────────────────────────────────────────────────────────────
 // Field rows -- one per editable property type
@@ -42,16 +44,33 @@ interface RowProps {
   entry: GenericPropEntry;
   label: string;
   onSet: SetFn;
+  onReset: ResetFn;
+}
+
+/**
+ * Shared PropertyField decorations for a property entry: the modified bar
+ * (flag-based, from the C++ default state), the per-property reset, and the
+ * hover default-value annotation. Never-reset keys (name / sel) get no bar and
+ * no reset, even when modified.
+ */
+function resetProps(entry: GenericPropEntry, onReset: ResetFn) {
+  const resettable = isResettable(entry);
+  return {
+    modified: resettable && isModified(entry),
+    resettable,
+    defaultValueLabel: resettable ? formatDefaultLabel(entry) : undefined,
+    onReset: () => onReset(entry.key),
+  };
 }
 
 /** Text input committed on blur / Enter (e.g. Name). */
-const TextRow: React.FC<RowProps> = ({ entry, label, onSet }) => {
+const TextRow: React.FC<RowProps> = ({ entry, label, onSet, onReset }) => {
   const [draft, setDraft] = useState(String(entry.value));
   const commit = () => {
     if (draft !== String(entry.value)) onSet(entry.key, entry.type, draft);
   };
   return (
-    <Field label={label}>
+    <PropertyField label={label} {...resetProps(entry, onReset)}>
       <TextField
         value={draft}
         onChange={setDraft}
@@ -61,19 +80,19 @@ const TextRow: React.FC<RowProps> = ({ entry, label, onSet }) => {
         }}
         readOnly={entry.readonly}
       />
-    </Field>
+    </PropertyField>
   );
 };
 
 /** Boolean toggle committed immediately (e.g. Visible / Locked). */
-const BoolRow: React.FC<RowProps> = ({ entry, label, onSet }) => (
-  <Field label={label} inline>
+const BoolRow: React.FC<RowProps> = ({ entry, label, onSet, onReset }) => (
+  <PropertyField label={label} inline {...resetProps(entry, onReset)}>
     <SwitchField
       checked={Boolean(entry.value)}
       disabled={entry.readonly}
       onChange={(c) => onSet(entry.key, entry.type, c)}
     />
-  </Field>
+  </PropertyField>
 );
 
 interface NumRowProps extends RowProps {
@@ -98,6 +117,7 @@ export const NumRow: React.FC<NumRowProps> = ({
   entry,
   label,
   onSet,
+  onReset,
   min,
   max,
   step,
@@ -121,7 +141,7 @@ export const NumRow: React.FC<NumRowProps> = ({
     onAbort: (original) => onSet(entry.key, entry.type, original, { mode: "preview" }),
   });
   return (
-    <Field label={label}>
+    <PropertyField label={label} {...resetProps(entry, onReset)}>
       <DragNumericField
         {...dragProps}
         min={min}
@@ -130,7 +150,7 @@ export const NumRow: React.FC<NumRowProps> = ({
         unit={unit}
         disabled={disabled || entry.readonly}
       />
-    </Field>
+    </PropertyField>
   );
 };
 
@@ -139,8 +159,8 @@ interface EnumRowProps extends RowProps {
 }
 
 /** Dropdown committed immediately (e.g. Edge type). */
-const EnumRow: React.FC<EnumRowProps> = ({ entry, label, onSet, disabled }) => (
-  <Field label={label}>
+const EnumRow: React.FC<EnumRowProps> = ({ entry, label, onSet, onReset, disabled }) => (
+  <PropertyField label={label} {...resetProps(entry, onReset)}>
     <SelectField
       value={String(entry.value)}
       disabled={disabled || entry.readonly}
@@ -152,7 +172,7 @@ const EnumRow: React.FC<EnumRowProps> = ({ entry, label, onSet, disabled }) => (
         </option>
       ))}
     </SelectField>
-  </Field>
+  </PropertyField>
 );
 
 interface ColorRowProps extends RowProps {
@@ -160,14 +180,14 @@ interface ColorRowProps extends RowProps {
 }
 
 /** Colour editor committed on a completed change (e.g. Edge color). */
-const ColorRow: React.FC<ColorRowProps> = ({ entry, label, onSet, disabled }) => (
-  <Field label={label}>
+const ColorRow: React.FC<ColorRowProps> = ({ entry, label, onSet, onReset, disabled }) => (
+  <PropertyField label={label} {...resetProps(entry, onReset)}>
     <ColorField
       value={String(entry.value)}
       onCommit={(v) => onSet(entry.key, entry.type, v)}
       disabled={disabled || entry.readonly}
     />
-  </Field>
+  </PropertyField>
 );
 
 interface SelRowProps extends RowProps {
@@ -175,10 +195,10 @@ interface SelRowProps extends RowProps {
 }
 
 /** Selection picker committed on pick / blur (compiled to a SelCommand). */
-const SelRow: React.FC<SelRowProps> = ({ entry, label, onSet, sceneId }) => {
+const SelRow: React.FC<SelRowProps> = ({ entry, label, onSet, onReset, sceneId }) => {
   const [draft, setDraft] = useState(String(entry.value));
   return (
-    <Field label={label}>
+    <PropertyField label={label} {...resetProps(entry, onReset)}>
       <MolSelList
         sceneID={sceneId ?? 0}
         selectedSel={draft}
@@ -188,12 +208,12 @@ const SelRow: React.FC<SelRowProps> = ({ entry, label, onSet, sceneId }) => {
         }}
         disabled={entry.readonly}
       />
-    </Field>
+    </PropertyField>
   );
 };
 
 /** Material selector; options fetched from the StyleManager via the worker. */
-const MaterialRow: React.FC<SelRowProps> = ({ entry, label, onSet, sceneId }) => {
+const MaterialRow: React.FC<SelRowProps> = ({ entry, label, onSet, onReset, sceneId }) => {
   const { cm } = useCueMol();
   const [names, setNames] = useState<string[]>([]);
   useEffect(() => {
@@ -216,7 +236,7 @@ const MaterialRow: React.FC<SelRowProps> = ({ entry, label, onSet, sceneId }) =>
 
   const current = String(entry.value ?? "");
   return (
-    <Field label={label}>
+    <PropertyField label={label} {...resetProps(entry, onReset)}>
       <SelectField
         value={current}
         disabled={entry.readonly}
@@ -233,7 +253,7 @@ const MaterialRow: React.FC<SelRowProps> = ({ entry, label, onSet, sceneId }) =>
           </option>
         ))}
       </SelectField>
-    </Field>
+    </PropertyField>
   );
 };
 
@@ -244,6 +264,7 @@ const MaterialRow: React.FC<SelRowProps> = ({ entry, label, onSet, sceneId }) =>
 export const RendererCommonSection: React.FC<RendererPropSectionProps> = ({
   entries,
   onSet,
+  onReset,
   sceneId,
 }) => {
   const byKey = new Map<string, GenericPropEntry>();
@@ -270,24 +291,38 @@ export const RendererCommonSection: React.FC<RendererPropSectionProps> = ({
     <>
       {hasBasic && (
         <AccordionSection title="Basic settings" defaultExpanded>
-          {name && <TextRow key={`name:${name.value}`} entry={name} label="Name" onSet={onSet} />}
+          {name && (
+            <TextRow
+              key={`name:${name.value}`}
+              entry={name}
+              label="Name"
+              onSet={onSet}
+              onReset={onReset}
+            />
+          )}
           {sel && (
             <SelRow
               key={`sel:${sel.value}`}
               entry={sel}
               label="Selection"
               onSet={onSet}
+              onReset={onReset}
               sceneId={sceneId}
             />
           )}
-          {visible && <BoolRow entry={visible} label="Visible" onSet={onSet} />}
-          {locked && <BoolRow entry={locked} label="Locked" onSet={onSet} />}
+          {visible && (
+            <BoolRow entry={visible} label="Visible" onSet={onSet} onReset={onReset} />
+          )}
+          {locked && (
+            <BoolRow entry={locked} label="Locked" onSet={onSet} onReset={onReset} />
+          )}
           {material && (
             <MaterialRow
               key={`material:${material.value}`}
               entry={material}
               label="Material"
               onSet={onSet}
+              onReset={onReset}
               sceneId={sceneId}
             />
           )}
@@ -297,6 +332,7 @@ export const RendererCommonSection: React.FC<RendererPropSectionProps> = ({
               entry={alpha}
               label="Opacity"
               onSet={onSet}
+              onReset={onReset}
               min={0}
               max={1}
               step={0.1}
@@ -308,13 +344,16 @@ export const RendererCommonSection: React.FC<RendererPropSectionProps> = ({
 
       {hasEdge && (
         <AccordionSection title="Edge lines" defaultExpanded>
-          {egtype && <EnumRow entry={egtype} label="Edge type" onSet={onSet} />}
+          {egtype && (
+            <EnumRow entry={egtype} label="Edge type" onSet={onSet} onReset={onReset} />
+          )}
           {eglinew && (
             <NumRow
               key="eglinew"
               entry={eglinew}
               label="Width"
               onSet={onSet}
+              onReset={onReset}
               min={0}
               max={0.5}
               step={0.01}
@@ -323,7 +362,13 @@ export const RendererCommonSection: React.FC<RendererPropSectionProps> = ({
             />
           )}
           {egcolor && (
-            <ColorRow entry={egcolor} label="Color" onSet={onSet} disabled={edgeOff} />
+            <ColorRow
+              entry={egcolor}
+              label="Color"
+              onSet={onSet}
+              onReset={onReset}
+              disabled={edgeOff}
+            />
           )}
         </AccordionSection>
       )}

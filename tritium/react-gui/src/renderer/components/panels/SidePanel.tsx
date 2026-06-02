@@ -16,7 +16,8 @@
  * |------------|---------------------------------------------|
  * | Explorer   | ScenePane, ColorPane, DummyPane4            |
  * | Selection  | MolStructPane, SelectionPane                |
- * | Crystal    | SymmetryPane, DensityMapPane, DummyPane3    |
+ * | Crystal    | SymmetryPane, DensityMapPane                |
+ * | Catalog    | CatalogPane1, CatalogPane2, CatalogPane3    |
  *
  * New views and panes can be added by editing `buildViewPaneConfigs()`
  * without touching the layout / persistence logic.
@@ -61,7 +62,9 @@ import {
   SelectionPane,
   SymmetryPane,
   DensityMapPane,
-  DummyPane3,
+  CatalogPane1,
+  CatalogPane2,
+  CatalogPane3,
   DummyPane4,
 } from "../panes";
 
@@ -357,10 +360,28 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     ],
     catalog: [
       {
-        id: "catalog",
-        defaultSize: 600,
+        id: "catalog1",
+        defaultSize: 280,
         render: (collapsed, onToggle) => (
-          <DummyPane3
+          <CatalogPane1 collapsed={collapsed} onToggleCollapse={onToggle} />
+        ),
+      },
+      {
+        id: "catalog2",
+        defaultSize: 280,
+        render: (collapsed, onToggle) => (
+          <CatalogPane2
+            collapsed={collapsed}
+            onToggleCollapse={onToggle}
+            activeSceneId={activeSceneId}
+          />
+        ),
+      },
+      {
+        id: "catalog3",
+        defaultSize: 280,
+        render: (collapsed, onToggle) => (
+          <CatalogPane3
             collapsed={collapsed}
             onToggleCollapse={onToggle}
             activeSceneId={activeSceneId}
