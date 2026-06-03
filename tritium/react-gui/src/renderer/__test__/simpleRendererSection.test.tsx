@@ -67,7 +67,7 @@ describe('SimpleRenderer section registry', () => {
   })
 
   it('resolves an unknown / not-yet-ported renderer type to no sections', () => {
-    expect(getRendererPropSections('tube')).toEqual([])
+    expect(getRendererPropSections('no_such_renderer')).toEqual([])
   })
 })
 
@@ -163,7 +163,7 @@ describe('PropertiesTab type-specific section dispatch', () => {
     const { container, unmount } = mountTree(
       <PropertiesTab
         entries={[entry({ key: 'width', type: 'real', value: 1.2 })]}
-        rendererType="tube"
+        rendererType="no_such_renderer"
         {...commonProps}
       />,
     )

@@ -21,10 +21,13 @@
  * Scope / parity notes:
  *   - The per-section SHAPE controls in the UXP dialog (helix / sheet / coil
  *     `type` / `width` / `tuber` / `sharp` / `detail`, and the sheet / ribbon
- *     head junction `type` / `gamma` / ... ) live on read-only nested sub-objects
- *     (`TubeSection` / `JctTable`). The generic property bridge cannot write
- *     dot-path nested properties yet (`LScrObjBase::setProperty` is flat), so
- *     those stay in the Generic tab until nested writes are supported.
+ *     head junction `type` / `gamma` / ... ) live on nested sub-objects
+ *     (`TubeSection` / `JctTable`, exposed as read-only object properties).
+ *     These are NOT surfaced on this curated page yet; they remain editable in
+ *     the Generic tab via their dot-path keys (`helix.width`, ...). Nested
+ *     writes ARE supported - `cuemol2::setProp` routes through
+ *     `LPropSupport::setNestedProperty`, and `parseGenericProps` expands the
+ *     children - so wiring them here is a follow-up, not a platform gap.
  *   - `axialdetail` ("Detail") uses a plain `NumericField` with the slider
  *     hidden (stepper input only), not the drag-numeric field, per request.
  *   - Drag-numeric rows commit on drag end / Enter (no realtime preview).
@@ -38,63 +41,14 @@ import {
   NumRow,
   NumInputRow,
   BoolRow,
-  resetProps,
+  MappedEnumRow,
+  CAP_LABELS,
 } from "./RendererCommonSection";
-import { PropertyField, SelectField } from "../../h3-kit/form";
 import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
 import type { RendererPropSectionProps } from "./rendererPropSections";
 
-type SetFn = RendererPropSectionProps["onSet"];
-type ResetFn = RendererPropSectionProps["onReset"];
+// --- Local labels -------------------------------------------------------------
 
-// --- Local rows ---------------------------------------------------------------
-
-interface MappedEnumRowProps {
-  entry: GenericPropEntry;
-  label: string;
-  /** Display text per raw enum ID (value stays the raw C++ string ID). */
-  labels: Record<string, string>;
-  onSet: SetFn;
-  onReset: ResetFn;
-  disabled?: boolean;
-}
-
-/**
- * Enum dropdown that shows a friendly label per option while committing the raw
- * C++ enum string ID. Falls back to the raw ID for any option missing from
- * `labels`.
- */
-const MappedEnumRow: React.FC<MappedEnumRowProps> = ({
-  entry,
-  label,
-  labels,
-  onSet,
-  onReset,
-  disabled,
-}) => {
-  const options = entry.enumdef ?? [String(entry.value)];
-  return (
-    <PropertyField label={label} {...resetProps(entry, onReset)}>
-      <SelectField
-        value={String(entry.value)}
-        disabled={disabled || entry.readonly}
-        onChange={(v) => onSet(entry.key, entry.type, v)}
-      >
-        {options.map((opt) => (
-          <option key={opt} value={opt}>
-            {labels[opt] ?? opt}
-          </option>
-        ))}
-      </SelectField>
-    </PropertyField>
-  );
-};
-
-const CAP_LABELS: Record<string, string> = {
-  sphere: "Round",
-  flat: "Flat",
-  none: "None",
-};
 const HELIX_WIDTH_MODE_LABELS: Record<string, string> = {
   const: "Constant",
   average: "Average",

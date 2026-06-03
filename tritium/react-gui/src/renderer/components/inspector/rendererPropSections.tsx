@@ -42,6 +42,11 @@ import {
   DSurfaceMainSection,
   DSurfaceRadiiSection,
 } from "./DSurfaceRendererSection";
+import {
+  TubeMainSection,
+  TubeSectionSection,
+  TubePuttySection,
+} from "./TubeRendererSection";
 
 // ────────────────────────────────────────────────────────────
 // Types
@@ -193,10 +198,11 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
       Component: AtomIntrLabelSection,
     },
   ],
-  // Ribbon2Renderer ("cartoon"): UXP cartoon-propdlg tabs. Only the editable
-  // top-level properties are surfaced; the per-section shape controls live on
-  // read-only nested sub-objects (TubeSection / JctTable) that the flat generic
-  // property bridge cannot write yet, so they stay in the Generic tab.
+  // Ribbon2Renderer ("cartoon"): UXP cartoon-propdlg tabs. Only the flat
+  // top-level properties are surfaced here; the per-section shape controls live
+  // on nested sub-objects (TubeSection / JctTable) and remain in the Generic tab
+  // for now. Those nested props ARE editable (dot-path writes route through
+  // setNestedProperty); wiring them onto this page is a follow-up, not a gap.
   cartoon: [
     {
       key: "cartoon-main",
@@ -251,6 +257,30 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
       title: "Atom radii",
       defaultExpanded: true,
       Component: DSurfaceRadiiSection,
+    },
+  ],
+  // TubeRenderer ("tube"): UXP tube-propdlg "Tube" tab. The loose controls form
+  // the "Tube" section; the nested TubeSection shape (edited via dot-path keys
+  // section.type / section.width / ...) forms the "Section" section; the putty
+  // radius-scaling controls form the "Putty" section.
+  tube: [
+    {
+      key: "tube-main",
+      title: "Tube",
+      defaultExpanded: true,
+      Component: TubeMainSection,
+    },
+    {
+      key: "tube-section",
+      title: "Section",
+      defaultExpanded: true,
+      Component: TubeSectionSection,
+    },
+    {
+      key: "tube-putty",
+      title: "Putty",
+      defaultExpanded: true,
+      Component: TubePuttySection,
     },
   ],
 };

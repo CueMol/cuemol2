@@ -290,7 +290,19 @@ export const GenericTab: React.FC<GenericTabProps> = ({
                 }
                 onClick={() => setSelectedKey(entry.key)}
               >
-                <td className="insp-gt-cell-name">{entry.key}</td>
+                <td className="insp-gt-cell-name">
+                  {/* Indent nested-object children by their dot-nesting depth
+                      so the `section` -> `section.width` hierarchy reads. */}
+                  <span
+                    style={
+                      entry.depth
+                        ? { marginLeft: `${entry.depth * 16}px` }
+                        : undefined
+                    }
+                  >
+                    {entry.key}
+                  </span>
+                </td>
                 <td className="insp-gt-cell-type">{entry.type}</td>
                 <td className="insp-gt-cell-value">{displayValue(entry)}</td>
               </tr>

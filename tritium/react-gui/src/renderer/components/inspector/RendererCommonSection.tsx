@@ -280,6 +280,54 @@ export const EnumRow: React.FC<EnumRowProps> = ({ entry, label, onSet, onReset, 
   </PropertyField>
 );
 
+export interface MappedEnumRowProps extends RowProps {
+  /** Display text per raw enum ID (value stays the raw C++ string ID). */
+  labels: Record<string, string>;
+  disabled?: boolean;
+}
+
+/**
+ * Enum dropdown that shows a friendly label per option while committing the raw
+ * C++ enum string ID. Falls back to the raw ID for any option missing from
+ * `labels`. Unlike `EnumRow`, the visible option text is decoupled from the
+ * committed value.
+ *
+ * Exported so renderer-type-specific sections (cartoon / tube cap-type, section
+ * type, putty mode) reuse the same mapped-enum row contract.
+ */
+export const MappedEnumRow: React.FC<MappedEnumRowProps> = ({
+  entry,
+  label,
+  labels,
+  onSet,
+  onReset,
+  disabled,
+}) => {
+  const options = entry.enumdef ?? [String(entry.value)];
+  return (
+    <PropertyField label={label} {...resetProps(entry, onReset)}>
+      <SelectField
+        value={String(entry.value)}
+        disabled={disabled || entry.readonly}
+        onChange={(v) => onSet(entry.key, entry.type, v)}
+      >
+        {options.map((opt) => (
+          <option key={opt} value={opt}>
+            {labels[opt] ?? opt}
+          </option>
+        ))}
+      </SelectField>
+    </PropertyField>
+  );
+};
+
+/** Cap-type enum labels shared by the spline-family renderers (cartoon / tube). */
+export const CAP_LABELS: Record<string, string> = {
+  sphere: "Round",
+  flat: "Flat",
+  none: "None",
+};
+
 export interface ColorRowProps extends RowProps {
   disabled?: boolean;
 }
