@@ -389,3 +389,25 @@
 .inspector-placeholder-text {
   font-size: var(--fs-lg);
 }
+
+/* ═══════════════════════════════════════════════════════════
+   AtomIntr dash/gap stipple pattern (six narrow cells in a row)
+   ═══════════════════════════════════════════════════════════ */
+
+.atomintr-stipple-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--field-row-pad) 0;
+}
+
+.atomintr-stipple-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.atomintr-stipple-caption {
+  color: var(--text-secondary);
+}

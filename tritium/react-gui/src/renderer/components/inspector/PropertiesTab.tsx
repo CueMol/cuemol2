@@ -16,7 +16,11 @@
 import React from "react";
 import { AccordionSection } from "./AccordionSection";
 import { RendererCommonSection } from "./RendererCommonSection";
-import { DUMMY_SECTION, getRendererPropSections } from "./rendererPropSections";
+import {
+  DUMMY_SECTION,
+  getRendererPropSections,
+  type PropMultiWrite,
+} from "./rendererPropSections";
 import type {
   GenericPropEntry,
   PropWriteOpts,
@@ -34,6 +38,8 @@ interface PropertiesTabProps {
     value: string | number | boolean,
     opts?: PropWriteOpts,
   ) => void;
+  /** Write several properties in one undo step (e.g. atomintr dashed toggle). */
+  onSetMany?: (writes: PropMultiWrite[]) => void;
   /** Restore a property to its C++ default. */
   onReset: (key: string) => void;
   /** Active scene id (for selection / material / colour lookups). */
@@ -44,6 +50,7 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
   entries,
   rendererType,
   onSet,
+  onSetMany,
   onReset,
   sceneId,
 }) => {
@@ -58,12 +65,19 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
       <RendererCommonSection
         entries={entries}
         onSet={onSet}
+        onSetMany={onSetMany}
         onReset={onReset}
         sceneId={sceneId}
       />
       {sections.map(({ key, title, defaultExpanded, Component }) => (
         <AccordionSection key={key} title={title} defaultExpanded={defaultExpanded}>
-          <Component entries={entries} onSet={onSet} onReset={onReset} sceneId={sceneId} />
+          <Component
+            entries={entries}
+            onSet={onSet}
+            onSetMany={onSetMany}
+            onReset={onReset}
+            sceneId={sceneId}
+          />
         </AccordionSection>
       ))}
     </div>

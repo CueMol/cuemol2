@@ -302,6 +302,40 @@ export function useInspectorState({
   );
 
   /**
+   * Write several generic property values in one undo step. Used when a single
+   * UI action changes several properties together yet must collapse to one undo
+   * step (e.g. the atomintr "Dashed" toggle rewriting all six stipple values).
+   * No-op when `writes` is empty.
+   */
+  const handleSetMany = useCallback(
+    async (
+      writes: { key: string; valueType: string; value: string | number | boolean }[],
+    ) => {
+      const target = targetRef.current;
+      if (!cm || !target || target.kind !== "node" || writes.length === 0) return;
+      try {
+        const res = await cm.invokeService("setGenericProps", {
+          sceneId: target.sceneId,
+          nodeId: target.nodeId,
+          nodeType: target.nodeType,
+          writes: writes.map((w) => ({
+            propName: w.key,
+            op: "set" as const,
+            valueType: w.valueType,
+            value: w.value,
+          })),
+        });
+        if (targetRef.current === target && res?.ok) {
+          setGenericEntries(res.entries);
+        }
+      } catch (err) {
+        console.warn("setGenericProps failed:", err);
+      }
+    },
+    [cm],
+  );
+
+  /**
    * Restore several generic properties to their C++ defaults in one undo step
    * (used by "Reset all to default"). No-op when `keys` is empty.
    */
@@ -361,6 +395,7 @@ export function useInspectorState({
     handleCloseInspector,
     handleGenericSet,
     handleGenericReset,
+    handleSetMany,
     handleResetMany,
   } as const;
 }

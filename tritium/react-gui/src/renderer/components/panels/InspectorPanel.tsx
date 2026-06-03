@@ -84,6 +84,10 @@ interface InspectorPanelProps {
     value: string | number | boolean,
     opts?: PropWriteOpts,
   ) => void;
+  /** Called to write several properties in one undo step (e.g. atomintr dashed toggle). */
+  onGenericSetMany: (
+    writes: { key: string; valueType: string; value: string | number | boolean }[],
+  ) => void;
   /** Called to restore a Generic property to its C++ default. */
   onGenericReset: (key: string) => void;
   /** Called to restore several properties to their defaults in one undo step. */
@@ -110,6 +114,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
   genericLoading,
   renderSettings,
   onGenericSet,
+  onGenericSetMany,
   onGenericReset,
   onResetMany,
   onClose,
@@ -209,6 +214,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 entries={genericEntries}
                 rendererType={nodeType}
                 onSet={onGenericSet}
+                onSetMany={onGenericSetMany}
                 onReset={onGenericReset}
                 sceneId={sceneId}
               />

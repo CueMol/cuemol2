@@ -53,7 +53,7 @@ export interface RowProps {
  * hover default-value annotation. Never-reset keys (name / sel) get no bar and
  * no reset, even when modified.
  */
-function resetProps(entry: GenericPropEntry, onReset: ResetFn) {
+export function resetProps(entry: GenericPropEntry, onReset: ResetFn) {
   const resettable = isResettable(entry);
   return {
     modified: resettable && isModified(entry),
@@ -63,8 +63,23 @@ function resetProps(entry: GenericPropEntry, onReset: ResetFn) {
   };
 }
 
-/** Text input committed on blur / Enter (e.g. Name). */
-const TextRow: React.FC<RowProps> = ({ entry, label, onSet, onReset }) => {
+interface TextRowProps extends RowProps {
+  disabled?: boolean;
+}
+
+/**
+ * Text input committed on blur / Enter (e.g. Name).
+ *
+ * Exported so renderer-type-specific sections (e.g. the atomintr label font
+ * name) reuse the same text row contract instead of redefining it.
+ */
+export const TextRow: React.FC<TextRowProps> = ({
+  entry,
+  label,
+  onSet,
+  onReset,
+  disabled,
+}) => {
   const [draft, setDraft] = useState(String(entry.value));
   const commit = () => {
     if (draft !== String(entry.value)) onSet(entry.key, entry.type, draft);
@@ -79,6 +94,7 @@ const TextRow: React.FC<RowProps> = ({ entry, label, onSet, onReset }) => {
           if (e.key === "Enter") commit();
         }}
         readOnly={entry.readonly}
+        disabled={disabled}
       />
     </PropertyField>
   );
@@ -185,12 +201,17 @@ export const NumRow: React.FC<NumRowProps> = ({
   );
 };
 
-interface EnumRowProps extends RowProps {
+export interface EnumRowProps extends RowProps {
   disabled?: boolean;
 }
 
-/** Dropdown committed immediately (e.g. Edge type). */
-const EnumRow: React.FC<EnumRowProps> = ({ entry, label, onSet, onReset, disabled }) => (
+/**
+ * Dropdown committed immediately (e.g. Edge type). Options come from the
+ * property's `enumdef` (raw C++ string IDs).
+ *
+ * Exported so renderer-type-specific sections reuse the same enum row contract.
+ */
+export const EnumRow: React.FC<EnumRowProps> = ({ entry, label, onSet, onReset, disabled }) => (
   <PropertyField label={label} {...resetProps(entry, onReset)}>
     <SelectField
       value={String(entry.value)}

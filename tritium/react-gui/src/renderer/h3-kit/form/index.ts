@@ -26,6 +26,8 @@ export { SelectField } from './SelectField';
 export type { SelectFieldProps } from './SelectField';
 export { NumericField } from './NumericField';
 export type { NumericFieldProps } from './NumericField';
+export { NumberCell } from './NumberCell';
+export type { NumberCellProps } from './NumberCell';
 export { DragNumericField } from './DragNumericField';
 export type { DragNumericFieldProps } from './DragNumericField';
 export { SwitchField } from './SwitchField';

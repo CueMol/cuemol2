@@ -25,10 +25,23 @@ import { SimpleRendererSection } from "./SimpleRendererSection";
 import { BallStickRendererSection } from "./BallStickRendererSection";
 import { CPKAtomRadiiSection, CPKDetailSection } from "./CPKRendererSection";
 import { AnIsoUDiscSection } from "./AnIsoURendererSection";
+import {
+  AtomIntrMainSection,
+  AtomIntrDashedSection,
+  AtomIntrTubeSection,
+  AtomIntrLabelSection,
+} from "./AtomIntrRendererSection";
 
 // ────────────────────────────────────────────────────────────
 // Types
 // ────────────────────────────────────────────────────────────
+
+/** One property write in a multi-write atomic commit. */
+export interface PropMultiWrite {
+  key: string;
+  valueType: string;
+  value: string | number | boolean;
+}
 
 /** Props passed to every renderer property section body. */
 export interface RendererPropSectionProps {
@@ -45,6 +58,13 @@ export interface RendererPropSectionProps {
     value: string | number | boolean,
     opts?: PropWriteOpts,
   ) => void;
+  /**
+   * Write several properties in ONE undo step. Used when a single control
+   * changes multiple properties together (e.g. the atomintr "Dashed" toggle
+   * rewriting all six stipple values). Optional because most sections only edit
+   * one property at a time; `PropertiesTab` always supplies it in production.
+   */
+  onSetMany?: (writes: PropMultiWrite[]) => void;
   /** Restore a property to its C++ default. */
   onReset: (key: string) => void;
   /** Active scene id (for selection / material / colour lookups). */
@@ -122,6 +142,36 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
       title: "Anisotropic displacement",
       defaultExpanded: true,
       Component: AnIsoUDiscSection,
+    },
+  ],
+  // AtomIntrRenderer ("atomintr"): UXP atomintr-propdlg "Interaction" tab.
+  // The line / dashed-pattern / 3D-tube / label-font groupboxes become four
+  // accordion sections; the dashed toggle writes all six stipple values in one
+  // undo step via `onSetMany`.
+  atomintr: [
+    {
+      key: "atomintr-main",
+      title: "Interaction",
+      defaultExpanded: true,
+      Component: AtomIntrMainSection,
+    },
+    {
+      key: "atomintr-dashed",
+      title: "Dashed line",
+      defaultExpanded: true,
+      Component: AtomIntrDashedSection,
+    },
+    {
+      key: "atomintr-tube",
+      title: "3D tube",
+      defaultExpanded: true,
+      Component: AtomIntrTubeSection,
+    },
+    {
+      key: "atomintr-label",
+      title: "Value label",
+      defaultExpanded: true,
+      Component: AtomIntrLabelSection,
     },
   ],
 };

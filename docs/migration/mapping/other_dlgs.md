@@ -22,7 +22,7 @@ Status values:
 | ID | React | Mapping | Status | PR | ADR | Notes |
 |----|-------|---------|--------|----|-----|-------|
 | [`dialog.about`](../uxp-inventory/other_dlgs.md#dialogabout) | `AboutDialog` / `useDialog` | direct | wip | | | GRE info・userAgent は省略 |
-| [`dialog.atomintr`](../uxp-inventory/other_dlgs.md#dialogatomintr) | | | todo | | | |
+| [`dialog.atomintr`](../uxp-inventory/other_dlgs.md#dialogatomintr) | `AtomIntr*Section` (inspector Properties tab) | split | review | | | Interaction/Dashed line/3D tube/Value label の 4 accordion section に分割。Dashed トグルは合成（stipple0..5 を `setGenericProps` で 1 undo step に原子書き込み）。arrow size・label font は UXP dialog 外だが追加。距離/角度定義の append/remove 編集 (Edit interaction list) は対象外 |
 | [`dialog.delete-object`](../uxp-inventory/other_dlgs.md#dialogdelete-object) | | | todo | | | |
 | [`dialog.dsurf`](../uxp-inventory/other_dlgs.md#dialogdsurf) | | | todo | | | |
 | [`dialog.exportlxs-opt`](../uxp-inventory/other_dlgs.md#dialogexportlxs-opt) | | | todo | | | |

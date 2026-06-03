@@ -104,6 +104,7 @@ const App: React.FC = () => {
     handleCloseInspector,
     handleGenericSet,
     handleGenericReset,
+    handleSetMany,
     handleResetMany,
   } = useInspectorState({
     layout,
@@ -482,6 +483,7 @@ const App: React.FC = () => {
                           onChange: renderSettings.handleChange,
                         }}
                         onGenericSet={handleGenericSet}
+                        onGenericSetMany={handleSetMany}
                         onGenericReset={handleGenericReset}
                         onResetMany={handleResetMany}
                         onClose={handleCloseInspector}

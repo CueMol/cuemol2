@@ -97,6 +97,26 @@ export interface ResetGenericPropsArgs {
     propNames: string[];
 }
 
+/** One property write in a multi-write batch. */
+export interface GenericPropWrite {
+    /** Property name to write. */
+    propName: string;
+    /** `set` writes `value`; `reset` restores the C++ default. */
+    op: 'set' | 'reset';
+    /** C++ type tag of the property (informational). */
+    valueType: string;
+    /** New value for `op: 'set'`. */
+    value?: string | number | boolean;
+}
+
+export interface SetGenericPropsArgs {
+    sceneId: number;
+    nodeId: number;
+    nodeType: PropTargetType;
+    /** Writes applied atomically inside one undo transaction. */
+    writes: GenericPropWrite[];
+}
+
 // ─── helpers ──────────────────────────────────────────────────────────────
 
 function safeRead<T>(read: () => T): T | undefined {
@@ -277,4 +297,56 @@ function resetGenericProps(
     return { ok: true, entries: safeRead(() => collectProps(target)) ?? [] };
 }
 
-export const services = { getGenericProps, setGenericProp, resetGenericProps };
+// ─── setGenericProps ──────────────────────────────────────────────────────
+
+/**
+ * Apply several property writes (set / reset) to a single node in ONE undo
+ * transaction. Used when one UI action must change several properties at once
+ * yet collapse to a single undo step (e.g. the atomintr "Dashed" toggle, which
+ * rewrites all six stipple pattern values together). Looping `setGenericProp`
+ * from the renderer would record one undo step per property.
+ *
+ * No drag/preview modes: every write is committed. Selection-typed properties
+ * follow the same compiled-SelCommand branch as `setGenericProp`.
+ */
+function setGenericProps(
+    ctx: WorkerContext,
+    args: SetGenericPropsArgs,
+): SetGenericPropResult {
+    const fail: SetGenericPropResult = { ok: false, entries: [] };
+    const { scene, target } = resolvePropTarget(ctx, args);
+    if (!scene || !target || args.writes.length === 0) return fail;
+
+    const label =
+        args.writes.length === 1
+            ? `Change property: ${args.writes[0].propName}`
+            : `Change ${args.writes.length} properties`;
+
+    try {
+        withUndoTxn(scene, label, () => {
+            for (const w of args.writes) {
+                if (w.op === 'reset') {
+                    target.resetProp(w.propName);
+                } else if (w.valueType.startsWith('object<MolSelection>')) {
+                    const sel = makeSel(ctx, String(w.value ?? ''), scene.uid);
+                    if (!sel) throw new Error(`bad selection: ${String(w.value)}`);
+                    target.setProp(w.propName, sel.wrapped);
+                } else {
+                    target.setProp(w.propName, w.value);
+                }
+            }
+        });
+    } catch (e) {
+        console.warn('setGenericProps failed:', e);
+        return fail;
+    }
+
+    return { ok: true, entries: safeRead(() => collectProps(target)) ?? [] };
+}
+
+export const services = {
+    getGenericProps,
+    setGenericProp,
+    setGenericProps,
+    resetGenericProps,
+};
