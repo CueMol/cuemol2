@@ -44,6 +44,8 @@ interface PropertiesTabProps {
   onReset: (key: string) => void;
   /** Active scene id (for selection / material / colour lookups). */
   sceneId: number | undefined;
+  /** UID of the inspected node (for sections querying the node itself). */
+  nodeId?: number;
 }
 
 export const PropertiesTab: React.FC<PropertiesTabProps> = ({
@@ -53,6 +55,7 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
   onSetMany,
   onReset,
   sceneId,
+  nodeId,
 }) => {
   // Show the renderer-type-specific sections when this type has been ported
   // (e.g. `simple`). For not-yet-ported types fall back to a single collapsed
@@ -68,6 +71,7 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
         onSetMany={onSetMany}
         onReset={onReset}
         sceneId={sceneId}
+        nodeId={nodeId}
       />
       {sections.map(({ key, title, defaultExpanded, Component }) => (
         <AccordionSection key={key} title={title} defaultExpanded={defaultExpanded}>
@@ -77,6 +81,7 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
             onSetMany={onSetMany}
             onReset={onReset}
             sceneId={sceneId}
+            nodeId={nodeId}
           />
         </AccordionSection>
       ))}

@@ -37,6 +37,7 @@ import {
   CartoonSheetSection,
   CartoonCoilSection,
 } from "./CartoonRendererSection";
+import { DisoMainSection } from "./DisoRendererSection";
 
 // ────────────────────────────────────────────────────────────
 // Types
@@ -75,6 +76,14 @@ export interface RendererPropSectionProps {
   onReset: (key: string) => void;
   /** Active scene id (for selection / material / colour lookups). */
   sceneId: number | undefined;
+  /**
+   * UID of the inspected node (renderer). Threaded for sections that must query
+   * the C++ side about the node itself rather than just its property list (e.g.
+   * the disorder renderer's "Target" selector enumerates sibling renderers).
+   * Optional because most sections only read the property list; `PropertiesTab`
+   * always supplies it in production.
+   */
+  nodeId?: number;
 }
 
 /** One accordion section in the Properties tab. */
@@ -208,6 +217,17 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
       title: "Coil",
       defaultExpanded: true,
       Component: CartoonCoilSection,
+    },
+  ],
+  // DisoRenderer ("disorder"): UXP disorder-propdlg "Disorder" tab. One section
+  // surfacing the target main-chain renderer, tessellation detail, dot size /
+  // separation, the two loop strengths and the default color.
+  disorder: [
+    {
+      key: "disorder-main",
+      title: "Disorder",
+      defaultExpanded: true,
+      Component: DisoMainSection,
     },
   ],
 };

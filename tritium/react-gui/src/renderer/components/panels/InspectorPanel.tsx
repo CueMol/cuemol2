@@ -98,6 +98,8 @@ interface InspectorPanelProps {
   cm: AsyncCueMol | null;
   /** Active scene id for colour resolution (named colours / gamut). */
   sceneId: number | undefined;
+  /** UID of the inspected node (for sections querying the node itself). */
+  nodeId: number | undefined;
 }
 
 // ────────────────────────────────────────────────────────────
@@ -120,6 +122,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
   onClose,
   cm,
   sceneId,
+  nodeId,
 }) => {
   // Renderer targets have a migrated structured page, so default to it;
   // other node kinds fall back to the data-backed Generic tab.
@@ -217,6 +220,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 onSetMany={onGenericSetMany}
                 onReset={onGenericReset}
                 sceneId={sceneId}
+                nodeId={nodeId}
               />
             ) : (
               <GenericTab

@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-06-03 (`dialog.property.disorder` done: UXP `disorder-propdlg` の Disorder タブを Inspector Properties タブの 1 accordion section (`DisoRendererSection`) として実装、`type_name "disorder"` で registry 登録。`target` は親 mol の tube/ribbon/cartoon/nucl 兄弟 renderer 名を新 worker service `getSiblingRendererNames` で列挙する `(none)` 付き select (section へ `nodeId` を thread)、`detail` は素の inline NumericField、dot size/dot sep/loop size/loop size 2 は `NumRow`(DragNumericField, realtime 無し)、`defaultcolor` は `ColorRow`。共有 `NumInputRow` を `RendererCommonSection` へ昇格し cartoon と共用。prop_dlgs done 5->6/todo 8->7)
 - Updated: 2026-06-03 (`dialog.property.cartoon` done: UXP `cartoon-propdlg` の Cartoon/Helix/Sheet/Coil タブを Inspector Properties タブの 4 accordion section (`CartoonRendererSection`) として実装、`type_name "cartoon"` で registry 登録。`axialdetail` Detail は素の NumericField スライダー、その他は `NumRow`(DragNumericField, realtime 無し)/`BoolRow`/`MappedEnumRow`。Helix width 系は `helix_width_mode` で enable 連動。section 形状 (helix/sheet/coil の type・width 等) は read-only nested sub-object で dot-path setProp 非対応のため Generic タブ残置。prop_dlgs count を実 status (total 14/done 5/wip 1/todo 8) に是正)
 - Updated: 2026-06-03 (`dialog.atomintr` review: AtomIntrRenderer property page を Inspector Properties タブの 4 accordion section (Interaction / Dashed line / 3D tube / Value label) として実装。`rendererPropSections` registry に `type_name "atomintr"` で登録。Dashed トグルは合成 (stipple0..5 を新 worker service `setGenericProps` で 1 undo step に原子書き込み、`onSetMany` を inspector 層に thread)。arrow size・label font は UXP dialog 外だが追加。距離/角度定義の append/remove 編集は対象外)
 - Updated: 2026-06-03 (`dialog.property.ballstick` done: UXP "Ball & Stick" タブの detail/bondw/sphr/ring/thickness/ringcolor を Inspector Properties タブの独立 accordion entry ("Ball and stick") として実装済み。`rendererPropSections` registry に `type_name "ballstick"` で登録、`NumRow`/`BoolRow`/`ColorRow` を再利用、ring off 時に thickness/ringcolor を disable。mapping 行の更新漏れを是正)
@@ -28,7 +29,7 @@
 | Panel | [panels.md](panels.md) | 27 | 4 | 17 | 1 | 5 | 0 |
 | Menu | [menus.md](menus.md) | 4 | 2 | 2 | 0 | 0 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
-| Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 14 | 5 | 1 | 0 | 8 | 0 |
+| Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 14 | 6 | 1 | 0 | 7 | 0 |
 | Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 0 | 3 | 1 | 14 | 0 |
 | Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 1 | 0 | 0 | 20 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 2 | 1 | 0 | 10 | 0 |

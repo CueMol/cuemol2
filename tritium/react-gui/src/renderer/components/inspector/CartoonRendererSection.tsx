@@ -33,14 +33,14 @@
  *     Generic tab.
  */
 
-import React, { useState } from "react";
+import React from "react";
 import {
   NumRow,
+  NumInputRow,
   BoolRow,
   resetProps,
-  type RowProps,
 } from "./RendererCommonSection";
-import { PropertyField, SelectField, NumericField } from "../../h3-kit/form";
+import { PropertyField, SelectField } from "../../h3-kit/form";
 import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
 import type { RendererPropSectionProps } from "./rendererPropSections";
 
@@ -48,55 +48,6 @@ type SetFn = RendererPropSectionProps["onSet"];
 type ResetFn = RendererPropSectionProps["onReset"];
 
 // --- Local rows ---------------------------------------------------------------
-
-interface NumInputRowProps extends RowProps {
-  min: number;
-  max: number;
-  step: number;
-  unit?: string;
-  disabled?: boolean;
-}
-
-/**
- * Numeric row backed by the plain `NumericField` with the slider hidden
- * (`slider={false}`), i.e. a stepper input only. Used for discrete count-like
- * "detail" properties where a slider is unwanted. The stepper does not stretch
- * horizontally, so the row is laid out inline (label beside the control), like
- * the switch rows. Commits a single undo step on blur / Enter; the local draft
- * tracks the value live and resyncs when the committed value changes (caller
- * passes a value-keyed `key` to remount).
- */
-const NumInputRow: React.FC<NumInputRowProps> = ({
-  entry,
-  label,
-  onSet,
-  onReset,
-  min,
-  max,
-  step,
-  unit,
-  disabled,
-}) => {
-  const [draft, setDraft] = useState(Number(entry.value));
-  const commit = (v: number) => {
-    if (v !== Number(entry.value)) onSet(entry.key, entry.type, v);
-  };
-  return (
-    <PropertyField label={label} inline {...resetProps(entry, onReset)}>
-      <NumericField
-        value={draft}
-        onChange={setDraft}
-        onRelease={commit}
-        slider={false}
-        min={min}
-        max={max}
-        step={step}
-        unit={unit}
-        disabled={disabled || entry.readonly}
-      />
-    </PropertyField>
-  );
-};
 
 interface MappedEnumRowProps {
   entry: GenericPropEntry;

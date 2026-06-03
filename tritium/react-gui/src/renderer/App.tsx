@@ -489,6 +489,11 @@ const App: React.FC = () => {
                         onClose={handleCloseInspector}
                         cm={cm}
                         sceneId={activeSceneId}
+                        nodeId={
+                          inspectorTarget?.kind === "node"
+                            ? inspectorTarget.nodeId
+                            : undefined
+                        }
                       />
                     </Allotment.Pane>
                   </Allotment>

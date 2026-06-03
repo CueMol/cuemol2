@@ -23,6 +23,7 @@ import {
   TextField,
   SelectField,
   DragNumericField,
+  NumericField,
   SwitchField,
   ColorField,
 } from "../../h3-kit/form";
@@ -195,6 +196,58 @@ export const NumRow: React.FC<NumRowProps> = ({
         coarseSnap={coarseSnap}
         unit={unit}
         decimals={decimals}
+        disabled={disabled || entry.readonly}
+      />
+    </PropertyField>
+  );
+};
+
+interface NumInputRowProps extends RowProps {
+  min: number;
+  max: number;
+  step: number;
+  unit?: string;
+  disabled?: boolean;
+}
+
+/**
+ * Numeric row backed by the plain `NumericField` with the slider hidden
+ * (`slider={false}`), i.e. a stepper input only. Used for discrete count-like
+ * "detail" properties where a slider is unwanted. The stepper does not stretch
+ * horizontally, so the row is laid out inline (label beside the control), like
+ * the switch rows. Commits a single undo step on blur / Enter; the local draft
+ * tracks the value live and resyncs when the committed value changes (caller
+ * passes a value-keyed `key` to remount).
+ *
+ * Exported so renderer-type-specific sections (cartoon `axialdetail`, disorder
+ * `detail`) reuse the same stepper-row contract instead of redefining it.
+ */
+export const NumInputRow: React.FC<NumInputRowProps> = ({
+  entry,
+  label,
+  onSet,
+  onReset,
+  min,
+  max,
+  step,
+  unit,
+  disabled,
+}) => {
+  const [draft, setDraft] = useState(Number(entry.value));
+  const commit = (v: number) => {
+    if (v !== Number(entry.value)) onSet(entry.key, entry.type, v);
+  };
+  return (
+    <PropertyField label={label} inline {...resetProps(entry, onReset)}>
+      <NumericField
+        value={draft}
+        onChange={setDraft}
+        onRelease={commit}
+        slider={false}
+        min={min}
+        max={max}
+        step={step}
+        unit={unit}
         disabled={disabled || entry.readonly}
       />
     </PropertyField>
