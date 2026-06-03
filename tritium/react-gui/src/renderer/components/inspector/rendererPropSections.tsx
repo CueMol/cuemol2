@@ -24,6 +24,7 @@ import type {
 import { SimpleRendererSection } from "./SimpleRendererSection";
 import { BallStickRendererSection } from "./BallStickRendererSection";
 import { CPKAtomRadiiSection, CPKDetailSection } from "./CPKRendererSection";
+import { AnIsoUDiscSection } from "./AnIsoURendererSection";
 
 // ────────────────────────────────────────────────────────────
 // Types
@@ -104,6 +105,23 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
       title: "Detail",
       defaultExpanded: true,
       Component: CPKDetailSection,
+    },
+  ],
+  // AnIsoURenderer ("anisou"): ORTEP-like anisotropic-displacement variant of
+  // ball-and-stick. The inherited base controls reuse the shared ball-and-stick
+  // section; the disc-only controls live in their own section.
+  anisou: [
+    {
+      key: "anisou-ballstick",
+      title: "Ball and stick",
+      defaultExpanded: true,
+      Component: BallStickRendererSection,
+    },
+    {
+      key: "anisou-disc",
+      title: "Anisotropic displacement",
+      defaultExpanded: true,
+      Component: AnIsoUDiscSection,
     },
   ],
 };
