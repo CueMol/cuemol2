@@ -22,7 +22,7 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
-import { mountTree } from './helpers/testHarness'
+import { mountTree, pressStepArrow } from './helpers/testHarness'
 import type { GenericPropEntry } from '../worker/server/services/genericProps.service'
 
 void React
@@ -195,7 +195,7 @@ describe('CartoonMainSection', () => {
       />,
     )
     const incr = dragArrow(rowByLabel(container, 'Anchor weight')!)!
-    act(() => incr.click())
+    pressStepArrow(incr)
     // step 0.5 from 10 -> 10.5, committed as a plain single step (no realtime opts).
     expect(onSet).toHaveBeenCalledWith('anchor_weight', 'real', 10.5)
     unmount()

@@ -21,7 +21,7 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
-import { mountTree } from './helpers/testHarness'
+import { mountTree, pressStepArrow } from './helpers/testHarness'
 import type { GenericPropEntry } from '../worker/server/services/genericProps.service'
 
 void React
@@ -210,7 +210,7 @@ describe('DSurfaceMainSection', () => {
       />,
     )
     const incr = dragArrow(rowByLabel(container, 'Line/Point size')!)!
-    act(() => incr.click())
+    pressStepArrow(incr)
     // step 0.1 from 1.2 -> 1.3, committed as a plain single step (no realtime opts).
     expect(onSet).toHaveBeenCalledWith('width', 'real', 1.3)
     unmount()

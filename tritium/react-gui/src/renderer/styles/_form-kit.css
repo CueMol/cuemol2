@@ -524,6 +524,11 @@
   color: var(--text-primary);
 }
 
+/* Held down (single click or auto-repeat hold): accent the active arrow. */
+.h3-form-drag-arrow:active:not(:disabled) {
+  color: var(--accent);
+}
+
 /* Parts never show their own focus ring -- focus belongs to the widget. */
 .h3-form-drag-arrow:focus,
 .h3-form-drag-arrow:focus-visible {

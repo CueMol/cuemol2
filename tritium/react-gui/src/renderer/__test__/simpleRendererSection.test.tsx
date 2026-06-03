@@ -16,7 +16,7 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
-import { mountTree } from './helpers/testHarness'
+import { mountTree, pressStepArrow } from './helpers/testHarness'
 import type { GenericPropEntry } from '../worker/server/services/genericProps.service'
 
 void React
@@ -115,7 +115,7 @@ describe('SimpleRendererSection', () => {
     const incr = rowByLabel(container, 'Line width')!.querySelector(
       '.h3-form-drag-arrow-right',
     ) as HTMLButtonElement
-    act(() => incr.click())
+    pressStepArrow(incr)
     // step 0.2 from 1.2 -> 1.4, committed live (preview restored to original first).
     expect(onSet).toHaveBeenCalledWith('width', 'real', 1.4, {
       mode: 'commit',

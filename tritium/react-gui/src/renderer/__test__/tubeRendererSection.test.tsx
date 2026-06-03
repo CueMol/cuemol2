@@ -19,7 +19,7 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
-import { mountTree } from './helpers/testHarness'
+import { mountTree, pressStepArrow } from './helpers/testHarness'
 import type { GenericPropEntry } from '../worker/server/services/genericProps.service'
 
 void React
@@ -180,7 +180,7 @@ describe('TubeSectionSection', () => {
     )
     // committed Width2 = tuber * width = 1.5 * 2 = 3; step 0.01 -> 3.01.
     const incr = dragArrow(rowByLabel(container, 'Width2')!)!
-    act(() => incr.click())
+    pressStepArrow(incr)
     // tuber = 3.01 / 2 = 1.505.
     expect(onSet).toHaveBeenCalledWith('section.tuber', 'real', expect.closeTo(1.505, 5))
     unmount()
@@ -199,7 +199,7 @@ describe('TubeSectionSection', () => {
     )
     // width=2, tuber=1.5 -> minor axis (Width2) = 3. Bump Width1 2 -> 2.01.
     const incr = dragArrow(rowByLabel(container, 'Width1')!)!
-    act(() => incr.click())
+    pressStepArrow(incr)
     expect(onSetMany).toHaveBeenCalledTimes(1)
     const writes = onSetMany.mock.calls[0][0]
     expect(writes[0]).toMatchObject({ key: 'section.width', valueType: 'real' })
@@ -224,7 +224,7 @@ describe('TubeSectionSection', () => {
       />,
     )
     const incr = dragArrow(rowByLabel(container, 'Width2')!)!
-    act(() => incr.click())
+    pressStepArrow(incr)
     // Only the ratio moves; the major axis (Width1) is never written.
     expect(onSet).toHaveBeenCalledWith('section.tuber', 'real', expect.closeTo(1.505, 5))
     expect(onSet).not.toHaveBeenCalledWith('section.width', expect.anything(), expect.anything())

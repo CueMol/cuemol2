@@ -19,7 +19,7 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
-import { mountTree } from './helpers/testHarness'
+import { mountTree, pressStepArrow } from './helpers/testHarness'
 import type { GenericPropEntry } from '../worker/server/services/genericProps.service'
 
 void React
@@ -208,7 +208,7 @@ describe('BallStickRendererSection', () => {
     const incr = rowByLabel(container, 'Bond width')!.querySelector(
       '.h3-form-drag-arrow-right',
     ) as HTMLButtonElement
-    act(() => incr.click())
+    pressStepArrow(incr)
     // step 0.01 from 0.2 -> 0.21, committed live (preview restored to original first).
     expect(onSet).toHaveBeenCalledWith('bondw', 'real', 0.21, {
       mode: 'commit',

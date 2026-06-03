@@ -17,7 +17,7 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
-import { mountTree } from './helpers/testHarness'
+import { mountTree, pressStepArrow } from './helpers/testHarness'
 import type { GenericPropEntry } from '../worker/server/services/genericProps.service'
 
 void React
@@ -156,7 +156,7 @@ describe('CPKAtomRadiiSection', () => {
     const incr = rowByLabel(container, 'Carbon')!.querySelector(
       '.h3-form-drag-arrow-right',
     ) as HTMLButtonElement
-    act(() => incr.click())
+    pressStepArrow(incr)
     // step 0.05 from 1.7 -> 1.75, committed live (preview restored to original first).
     expect(onSet).toHaveBeenCalledWith('vdwr_C', 'real', 1.75, {
       mode: 'commit',
@@ -181,7 +181,7 @@ describe('CPKAtomRadiiSection', () => {
     const incr = rowByLabel(container, 'Carbon')!.querySelector(
       '.h3-form-drag-arrow-right',
     ) as HTMLButtonElement
-    act(() => incr.click())
+    pressStepArrow(incr)
     // The prop was default before the edit; the commit carries that so undo
     // reverts the default state, not just the value.
     expect(onSet).toHaveBeenCalledWith('vdwr_C', 'real', 1.75, {

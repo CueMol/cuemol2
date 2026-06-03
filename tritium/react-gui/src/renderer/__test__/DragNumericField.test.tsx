@@ -3,8 +3,9 @@
  * @description Unit tests for the Blender-style DragNumericField. Pins the
  * observable interaction contract: single click -> text edit, body drag ->
  * value snapped to a multiple of `step` (Shift = finer `step/10`, Ctrl =
- * coarser `step*10`), the `<` `>` arrows increment by `step`, min/max clamping,
- * and that the widget holds focus as a unit. Pointer Lock is a best-effort
+ * coarser `step*10`), the `<` `>` arrows increment by `step` and auto-repeat
+ * while held (one undo step for the whole press), min/max clamping, and that the
+ * widget holds focus as a unit. Pointer Lock is a best-effort
  * enhancement absent in jsdom, so drags are exercised by dispatching
  * `mousemove` with explicit `movementX` -- exactly the input the widget
  * accumulates.
@@ -82,6 +83,17 @@ function moveBy(movementX: number, mods: { shiftKey?: boolean; ctrlKey?: boolean
 function mouseUp() {
     act(() => {
         document.dispatchEvent(new MouseEvent('mouseup'))
+    })
+}
+
+function getArrows(): [HTMLButtonElement, HTMLButtonElement] {
+    const arrows = getRoot().querySelectorAll('.h3-form-drag-arrow')
+    return [arrows[0] as HTMLButtonElement, arrows[1] as HTMLButtonElement]
+}
+
+function arrowMouseDown(el: HTMLButtonElement) {
+    act(() => {
+        el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }))
     })
 }
 
@@ -258,16 +270,109 @@ describe('DragNumericField', () => {
         mouseUp()
     })
 
-    it('steps by `step` via the arrow affordances and commits once', () => {
+    it('steps by `step` on a quick arrow press and commits once', () => {
         const onChange = vi.fn()
         const onRelease = vi.fn()
         render({ value: 1.0, step: 0.1, onChange, onRelease })
-        const [left, right] = container.querySelectorAll('.h3-form-drag-arrow')
-        act(() => { (right as HTMLButtonElement).click() })
+        const [left, right] = getArrows()
+        // press -> one immediate step; release -> single commit.
+        arrowMouseDown(right)
         expect(onChange).toHaveBeenLastCalledWith(1.1)
+        expect(onRelease).not.toHaveBeenCalled()
+        mouseUp()
+        expect(onRelease).toHaveBeenCalledTimes(1)
         expect(onRelease).toHaveBeenLastCalledWith(1.1)
-        act(() => { (left as HTMLButtonElement).click() })
+        // value is controlled (still 1.0), so the left arrow steps 1.0 -> 0.9.
+        arrowMouseDown(left)
         expect(onChange).toHaveBeenLastCalledWith(0.9)
+        mouseUp()
+        expect(onRelease).toHaveBeenLastCalledWith(0.9)
+    })
+
+    it('auto-repeats while an arrow is held and commits once on release', () => {
+        const onChange = vi.fn()
+        const onRelease = vi.fn()
+        const onDragStart = vi.fn()
+        // Spy timers AFTER mount so React's own scheduling uses real timers;
+        // the only setTimeout/setInterval after this point come from the press.
+        render({ value: 1.0, step: 0.1, realtime: true, onChange, onRelease, onDragStart })
+
+        let delayCb: (() => void) | null = null
+        let intervalCb: (() => void) | null = null
+        const setTimeoutSpy = vi
+            .spyOn(globalThis, 'setTimeout')
+            .mockImplementation(((cb: () => void) => {
+                delayCb = cb
+                return 1 as unknown as ReturnType<typeof setTimeout>
+            }) as typeof setTimeout)
+        const setIntervalSpy = vi
+            .spyOn(globalThis, 'setInterval')
+            .mockImplementation(((cb: () => void) => {
+                intervalCb = cb
+                return 2 as unknown as ReturnType<typeof setInterval>
+            }) as typeof setInterval)
+        const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout').mockImplementation(() => {})
+        const clearIntervalSpy = vi.spyOn(globalThis, 'clearInterval').mockImplementation(() => {})
+
+        try {
+            const [, right] = getArrows()
+            arrowMouseDown(right)
+            // onDragStart fires before the first onChange; immediate step -> 1.1.
+            expect(onDragStart).toHaveBeenCalledTimes(1)
+            expect(onChange).toHaveBeenLastCalledWith(1.1)
+            expect(onRelease).not.toHaveBeenCalled()
+
+            // Initial-delay timer elapses -> auto-repeat begins; each tick steps.
+            act(() => delayCb!())
+            act(() => intervalCb!())
+            expect(onChange).toHaveBeenLastCalledWith(1.2)
+            act(() => intervalCb!())
+            expect(onChange).toHaveBeenLastCalledWith(1.3)
+
+            // Release -> exactly one commit at the final held value.
+            mouseUp()
+            expect(onRelease).toHaveBeenCalledTimes(1)
+            expect(onRelease).toHaveBeenLastCalledWith(1.3)
+        } finally {
+            setTimeoutSpy.mockRestore()
+            setIntervalSpy.mockRestore()
+            clearTimeoutSpy.mockRestore()
+            clearIntervalSpy.mockRestore()
+        }
+    })
+
+    it('stops auto-repeat at a bound but still commits the final value', () => {
+        const onChange = vi.fn()
+        const onRelease = vi.fn()
+        render({ value: 9.9, min: 0, max: 10, step: 0.1, realtime: true, onChange, onRelease })
+
+        let delayCb: (() => void) | null = null
+        let intervalCb: (() => void) | null = null
+        vi.spyOn(globalThis, 'setTimeout').mockImplementation(((cb: () => void) => {
+            delayCb = cb
+            return 1 as unknown as ReturnType<typeof setTimeout>
+        }) as typeof setTimeout)
+        vi.spyOn(globalThis, 'setInterval').mockImplementation(((cb: () => void) => {
+            intervalCb = cb
+            return 2 as unknown as ReturnType<typeof setInterval>
+        }) as typeof setInterval)
+        vi.spyOn(globalThis, 'clearTimeout').mockImplementation(() => {})
+        vi.spyOn(globalThis, 'clearInterval').mockImplementation(() => {})
+
+        try {
+            const [, right] = getArrows()
+            arrowMouseDown(right) // 9.9 -> 10 (reaches max)
+            expect(onChange).toHaveBeenLastCalledWith(10)
+            act(() => delayCb!())
+            // Already at max: the tick is a no-op (no further onChange past 10).
+            act(() => intervalCb!())
+            expect(onChange).toHaveBeenLastCalledWith(10)
+            mouseUp()
+            expect(onRelease).toHaveBeenCalledTimes(1)
+            expect(onRelease).toHaveBeenLastCalledWith(10)
+        } finally {
+            vi.restoreAllMocks()
+        }
     })
 
     it('clamps to max on drag', () => {

@@ -23,7 +23,7 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
-import { mountTree } from './helpers/testHarness'
+import { mountTree, pressStepArrow } from './helpers/testHarness'
 import type { GenericPropEntry } from '../worker/server/services/genericProps.service'
 
 void React
@@ -176,7 +176,7 @@ describe('AnIsoUDiscSection', () => {
     const incr = rowByLabel(container, 'Disc scale')!.querySelector(
       '.h3-form-drag-arrow-right',
     ) as HTMLButtonElement
-    act(() => incr.click())
+    pressStepArrow(incr)
     // step 0.05 from 1.1 -> 1.15, committed as a plain single step (no realtime
     // preview opts).
     expect(onSet).toHaveBeenCalledWith('discscale', 'real', 1.15)

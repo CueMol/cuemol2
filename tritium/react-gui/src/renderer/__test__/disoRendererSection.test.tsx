@@ -18,7 +18,7 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
-import { mountTree } from './helpers/testHarness'
+import { mountTree, pressStepArrow } from './helpers/testHarness'
 import type { GenericPropEntry } from '../worker/server/services/genericProps.service'
 
 void React
@@ -192,7 +192,7 @@ describe('DisoMainSection', () => {
       />,
     )
     const incr = dragArrow(rowByLabel(container, 'Dot size')!)!
-    act(() => incr.click())
+    pressStepArrow(incr)
     // step 0.1 from 0.3 -> 0.4, committed as a plain single step (no realtime opts).
     expect(onSet).toHaveBeenCalledWith('width', 'real', 0.4)
     unmount()
