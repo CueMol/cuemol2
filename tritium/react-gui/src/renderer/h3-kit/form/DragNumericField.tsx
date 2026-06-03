@@ -17,8 +17,11 @@
  * `step` is a SNAP granularity (the value is forced to a multiple of it during
  * a drag), not an increment. Modifiers change the active snap:
  *   - no modifier -> snap to `step`        (normal)
- *   - Shift       -> snap to `step / 10`   (fine)
- *   - Ctrl / Cmd  -> snap to `step * 10`   (coarse)
+ *   - Shift       -> snap to the fine snap   (default `step / 10`)
+ *   - Ctrl / Cmd  -> snap to the coarse snap (default `step * 10`)
+ * The fine / coarse snaps default to `step / 10` and `step * 10` but can be set
+ * explicitly via `fineSnap` / `coarseSnap` when the desired granularity is not a
+ * 10th / 10x of `step` (e.g. step 0.05 with a fine snap of 0.01).
  * The drag sensitivity (value units per pixel) is constant; only the snap
  * granularity changes, so Shift gives finer resolution rather than slower
  * motion. The `<` / `>` arrows, by contrast, increment / decrement by `step`.
@@ -88,6 +91,15 @@ export interface DragNumericFieldProps {
      * (`step * 10`, Ctrl); see the file header.
      */
     step?: number;
+    /**
+     * Fine drag snap (Shift). Defaults to `step / 10`. Set explicitly when the
+     * fine granularity is not a 10th of `step` (e.g. `step` 0.05, `fineSnap`
+     * 0.01). Also drives the stored-value quantization and default display
+     * precision (the finest resolution the value can take).
+     */
+    fineSnap?: number;
+    /** Coarse drag snap (Ctrl / Cmd). Defaults to `step * 10`. */
+    coarseSnap?: number;
     /** Decimals to display; when omitted, derived from the fine snap (`step / 10`). */
     decimals?: number;
     /** Optional unit suffix, e.g. "deg", "A", "%". Rendered in a non-editable span. */
@@ -161,6 +173,8 @@ export const DragNumericField: React.FC<DragNumericFieldProps> = ({
     min = -Infinity,
     max = Infinity,
     step = 1,
+    fineSnap,
+    coarseSnap,
     decimals,
     unit,
     disabled,
@@ -176,8 +190,10 @@ export const DragNumericField: React.FC<DragNumericFieldProps> = ({
     const dragRef = useRef<DragState | null>(null);
 
     // Finest resolution the value can take (the Shift snap); drives both
-    // storage quantization and the default display precision.
-    const fineStep = step / SNAP_FACTOR;
+    // storage quantization and the default display precision. The coarse snap
+    // (Ctrl / Cmd) is the largest. Both default to a 10th / 10x of `step`.
+    const fineStep = fineSnap ?? step / SNAP_FACTOR;
+    const coarseStep = coarseSnap ?? step * SNAP_FACTOR;
     const dispDecimals = decimals ?? decimalsOf(fineStep);
     const format = useCallback(
         (v: number) => v.toFixed(dispDecimals),
@@ -191,15 +207,15 @@ export const DragNumericField: React.FC<DragNumericFieldProps> = ({
 
     // Stable refs to props the global listeners use, so the listeners attached
     // once at mousedown always reach current behavior.
-    const cbRef = useRef({ onChange, onRelease, min, max, step, realtime, onDragStart, onDragCancel });
-    cbRef.current = { onChange, onRelease, min, max, step, realtime, onDragStart, onDragCancel };
+    const cbRef = useRef({ onChange, onRelease, min, max, step, fineStep, coarseStep, realtime, onDragStart, onDragCancel });
+    cbRef.current = { onChange, onRelease, min, max, step, fineStep, coarseStep, realtime, onDragStart, onDragCancel };
 
     // --- Drag (global listeners + pointer lock) ---
 
     const handleMouseMove = useCallback((e: MouseEvent) => {
         const d = dragRef.current;
         if (!d) return;
-        const { onChange, min, max, step } = cbRef.current;
+        const { onChange, min, max, step, fineStep, coarseStep } = cbRef.current;
 
         d.accumPx += e.movementX;
 
@@ -222,11 +238,11 @@ export const DragNumericField: React.FC<DragNumericFieldProps> = ({
         // rate but is forced to a finer / coarser multiple.
         const raw = d.startValue + (d.accumPx / PX_PER_STEP) * step;
         const snap = e.shiftKey
-            ? step / SNAP_FACTOR
+            ? fineStep
             : e.ctrlKey || e.metaKey
-              ? step * SNAP_FACTOR
+              ? coarseStep
               : step;
-        const next = clampAndQuantize(snapTo(raw, snap), min, max, step / SNAP_FACTOR);
+        const next = clampAndQuantize(snapTo(raw, snap), min, max, fineStep);
         onChange(next);
     }, []);
 

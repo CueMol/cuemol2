@@ -167,6 +167,14 @@ describe('getMapRendererState', () => {
             minLevel: -5,
             maxExtent: 60,
             getClientObj: () => parent,
+            // getPropsJSON drives the per-prop default flags surfaced for the
+            // drag restore: alpha is still default, siglevel was modified,
+            // extent has no default flag (-> treated as non-default).
+            getPropsJSON: () => JSON.stringify([
+                { name: 'alpha', type: 'real', value: 0.8, hasdefault: true, isdefault: true },
+                { name: 'siglevel', type: 'real', value: 1.5, hasdefault: true, isdefault: false },
+                { name: 'extent', type: 'real', value: 25 },
+            ]),
         }
         const scene = makeUndoScene(100)
         scene.getRenderer = vi.fn(() => rend)
@@ -182,6 +190,7 @@ describe('getMapRendererState', () => {
             minLevel: -5,
             maxExtent: 60,
             denSigma: 0.42,
+            defaults: { alpha: true, siglevel: false, extent: false },
         })
     })
 
@@ -324,6 +333,65 @@ describe('setMapRendererProp', () => {
         expect(setProp.mock.invocationCallOrder[1]).toBeGreaterThan(
             scene.startUndoTxn.mock.invocationCallOrder[0],
         )
+    })
+
+    it('realtime commit of a default prop restores via resetProp before the txn', () => {
+        const setProp = vi.fn()
+        const resetProp = vi.fn()
+        const rend = { setProp, resetProp }
+        const scene = makeUndoScene(100)
+        scene.getRenderer = vi.fn(() => rend)
+        const ctx = makeCtx({ scene })
+
+        const res = setMapRendererProp(ctx, {
+            sceneId: 100, rendId: 11, propName: 'alpha', value: 0.7,
+            mode: 'commit', originalValue: 0.2, originalWasDefault: true,
+        })
+        expect(res).toEqual({ ok: true })
+        expect(resetProp).toHaveBeenCalledWith('alpha')
+        expect(setProp).toHaveBeenCalledWith('alpha', 0.7)
+        expect(resetProp.mock.invocationCallOrder[0]).toBeLessThan(
+            scene.startUndoTxn.mock.invocationCallOrder[0],
+        )
+        expect(setProp.mock.invocationCallOrder[0]).toBeGreaterThan(
+            scene.startUndoTxn.mock.invocationCallOrder[0],
+        )
+    })
+
+    it('aborts a default prop via resetProp without an undo txn', () => {
+        const setProp = vi.fn()
+        const resetProp = vi.fn()
+        const rend = { setProp, resetProp }
+        const scene = makeUndoScene(100)
+        scene.getRenderer = vi.fn(() => rend)
+        const ctx = makeCtx({ scene })
+
+        const res = setMapRendererProp(ctx, {
+            sceneId: 100, rendId: 11, propName: 'alpha', value: 0.2,
+            mode: 'abort', originalWasDefault: true,
+        })
+        expect(res).toEqual({ ok: true })
+        expect(resetProp).toHaveBeenCalledWith('alpha')
+        expect(setProp).not.toHaveBeenCalled()
+        expect(scene.startUndoTxn).not.toHaveBeenCalled()
+    })
+
+    it('aborts a non-default prop via setProp(original) without an undo txn', () => {
+        const setProp = vi.fn()
+        const resetProp = vi.fn()
+        const rend = { setProp, resetProp }
+        const scene = makeUndoScene(100)
+        scene.getRenderer = vi.fn(() => rend)
+        const ctx = makeCtx({ scene })
+
+        const res = setMapRendererProp(ctx, {
+            sceneId: 100, rendId: 11, propName: 'alpha', value: 0.2,
+            mode: 'abort', originalWasDefault: false,
+        })
+        expect(res).toEqual({ ok: true })
+        expect(setProp).toHaveBeenCalledWith('alpha', 0.2)
+        expect(resetProp).not.toHaveBeenCalled()
+        expect(scene.startUndoTxn).not.toHaveBeenCalled()
     })
 })
 

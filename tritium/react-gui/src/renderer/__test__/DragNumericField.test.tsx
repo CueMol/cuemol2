@@ -236,6 +236,28 @@ describe('DragNumericField', () => {
         mouseUp()
     })
 
+    it('honors an explicit fineSnap (Shift) that is not a 10th of step', () => {
+        const onChange = vi.fn()
+        // step 0.05, fineSnap 0.01: 7px * (0.05 / 8) = +0.04375 -> 1.74375,
+        // snapped to 0.01 -> 1.74 (the default fine 0.005 would give 1.745).
+        render({ value: 1.7, step: 0.05, fineSnap: 0.01, coarseSnap: 0.5, onChange })
+        mouseDownBody()
+        moveBy(7, { shiftKey: true })
+        expect(onChange).toHaveBeenLastCalledWith(1.74)
+        mouseUp()
+    })
+
+    it('honors an explicit coarseSnap (Ctrl) override', () => {
+        const onChange = vi.fn()
+        // step 0.05, coarseSnap 0.5: 40px * (0.05 / 8) = +0.25 -> 1.95,
+        // snapped to 0.5 -> 2 (nearest multiple of 0.5).
+        render({ value: 1.7, step: 0.05, fineSnap: 0.01, coarseSnap: 0.5, onChange })
+        mouseDownBody()
+        moveBy(40, { ctrlKey: true })
+        expect(onChange).toHaveBeenLastCalledWith(2)
+        mouseUp()
+    })
+
     it('steps by `step` via the arrow affordances and commits once', () => {
         const onChange = vi.fn()
         const onRelease = vi.fn()

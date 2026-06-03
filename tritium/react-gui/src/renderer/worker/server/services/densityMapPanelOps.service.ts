@@ -31,6 +31,7 @@ import {
 } from './helpers/sceneResolver';
 import { withUndoTxn } from './withUndoTxn';
 import { makeColor } from './helpers/makeColor';
+import { parseGenericProps } from './helpers/parseGenericProps';
 import { parseSceneTreeJSON } from '../../shared/sceneTreeTypes';
 
 /** Renderer type names the panel exposes (UXP ObjMenuList filter). */
@@ -159,6 +160,16 @@ export interface MapRendererState {
     maxExtent: number;
     /** Sigma scale factor from the parent ScalarObject; falls back to 1. */
     denSigma: number;
+    /**
+     * Per-prop default flags (flag-based, from the C++ default state) for the
+     * realtime-drag props. The panel freezes these at drag start so the commit /
+     * abort restore can revert the default flag, not just the value.
+     */
+    defaults: {
+        alpha: boolean;
+        siglevel: boolean;
+        extent: boolean;
+    };
 }
 
 export interface GetMapRendererStateResult {
@@ -205,6 +216,8 @@ function getMapRendererState(
         return c ? c.toString() : '';
     }, '');
 
+    const defaults = readDefaultFlags(rend);
+
     return {
         state: {
             alpha: safeRead(() => r.alpha, 1),
@@ -216,8 +229,30 @@ function getMapRendererState(
             minLevel: safeRead(() => r.minLevel, -10),
             maxExtent: safeRead(() => r.maxExtent, 100),
             denSigma,
+            defaults,
         },
     };
+}
+
+/**
+ * Read the default flags for the realtime-drag props (`alpha` / `siglevel` /
+ * `extent`) from the renderer's `getPropsJSON()` dump. The native addon does
+ * not expose `isPropDefault` directly, so the generic-inspector parse path is
+ * reused. Props without a default flag (or on parse failure) report `false`,
+ * which falls the restore back to a plain value write.
+ */
+function readDefaultFlags(rend: Renderer): MapRendererState['defaults'] {
+    const fallback = { alpha: false, siglevel: false, extent: false };
+    return safeRead(() => {
+        const entries = parseGenericProps(JSON.parse(rend.getPropsJSON()));
+        const isDefaultOf = (name: keyof MapRendererState['defaults']) =>
+            entries.find((e) => e.key === name)?.isdefault ?? false;
+        return {
+            alpha: isDefaultOf('alpha'),
+            siglevel: isDefaultOf('siglevel'),
+            extent: isDefaultOf('extent'),
+        };
+    }, fallback);
 }
 
 // --- setMapRendererProp ---
@@ -238,15 +273,22 @@ export interface SetMapRendererPropArgs {
     value: number | boolean | string;
     /**
      * Write mode (default `commit`). `preview` writes a numeric prop without an
-     * undo txn for live drag feedback (not valid for `color`).
+     * undo txn for live drag feedback (not valid for `color`). `abort` restores
+     * the pre-drag snapshot (value + default flag) without an undo txn.
      */
-    mode?: 'preview' | 'commit';
+    mode?: 'preview' | 'commit' | 'abort';
     /**
      * Pre-drag value, supplied with `mode: 'commit'` at the end of a realtime
      * drag, so the single recorded undo step is `originalValue -> value` rather
      * than `lastPreview -> value`. Numeric props only.
      */
     originalValue?: number;
+    /**
+     * Pre-drag default flag, supplied with `mode: 'commit'` / `'abort'`. When
+     * true, the restore uses `resetProp` (default flag + value) instead of a
+     * bare `setProp`, so undo reverts the default state too. Numeric props only.
+     */
+    originalWasDefault?: boolean;
 }
 
 export interface SetMapRendererPropResult {
@@ -274,12 +316,29 @@ function setMapRendererProp(
         return { ok: true };
     }
 
+    // Drag cancelled: restore the pre-drag snapshot, txn-free. `resetProp`
+    // reverts the default flag + value when the prop was default before the
+    // drag, undoing the one-way flag flip a preview frame leaves behind.
+    if (args.mode === 'abort' && args.propName !== 'color') {
+        try {
+            if (args.originalWasDefault) rend.resetProp(args.propName);
+            else rend.setProp(args.propName, args.value);
+        } catch (e) {
+            return { ok: false, error: String(e) };
+        }
+        return { ok: true };
+    }
+
     let err: string | null = null;
-    // Realtime commit: restore the pre-drag value first (txn-free, not
-    // recorded) so the single undo step is `originalValue -> value`.
+    // Realtime commit: restore the pre-drag state first (txn-free, not
+    // recorded) so the single undo step is `originalValue -> value`. When the
+    // prop was default, restore via `resetProp` (flag + value) so the in-txn
+    // `setProp` re-trips the default -> non-default transition and undo reverts
+    // the default state too.
     if (args.originalValue !== undefined && args.propName !== 'color') {
         try {
-            rend.setProp(args.propName, args.originalValue);
+            if (args.originalWasDefault) rend.resetProp(args.propName);
+            else rend.setProp(args.propName, args.originalValue);
         } catch (e) {
             return { ok: false, error: String(e) };
         }

@@ -261,10 +261,13 @@ export function useInspectorState({
           value,
           mode: opts?.mode,
           originalValue: opts?.originalValue,
+          originalWasDefault: opts?.originalWasDefault,
         });
-        // A preview write returns no entries (the field drives itself from its
-        // local draft during a drag); only refresh on a real commit.
-        if (targetRef.current === target && res?.ok && opts?.mode !== "preview") {
+        // A preview / abort write returns no entries (the field drives itself
+        // from its local draft during a drag, and an abort's flag/value refresh
+        // is delivered via the PROPCHG listener); only refresh on a real commit.
+        const isCommit = opts?.mode === undefined || opts?.mode === "commit";
+        if (targetRef.current === target && res?.ok && isCommit) {
           setGenericEntries(res.entries);
         }
       } catch (err) {

@@ -104,6 +104,10 @@ interface NumRowProps extends RowProps {
   min: number;
   max: number;
   step: number;
+  /** Fine drag snap (Shift). Defaults to `step / 10`; see DragNumericField. */
+  fineSnap?: number;
+  /** Coarse drag snap (Ctrl / Cmd). Defaults to `step * 10`. */
+  coarseSnap?: number;
   unit?: string;
   /**
    * Decimals to display. Omit to derive from the fine snap (`step / 10`); set
@@ -132,6 +136,8 @@ export const NumRow: React.FC<NumRowProps> = ({
   min,
   max,
   step,
+  fineSnap,
+  coarseSnap,
   unit,
   decimals,
   disabled,
@@ -140,17 +146,27 @@ export const NumRow: React.FC<NumRowProps> = ({
   const committed = Number(entry.value);
   const dragProps = useRealtimeDragProp({
     committed,
+    committedIsDefault: entry.isdefault,
     realtime,
     onPreview: (v) => onSet(entry.key, entry.type, v, { mode: "preview" }),
-    onCommit: (original, v) => {
+    onCommit: (original, v, wasDefault) => {
       if (v === original) return;
-      // Realtime: the renderer was previewed, so restore `original` before the
-      // single undo step. Non-realtime: plain commit (current behavior).
+      // Realtime: the renderer was previewed, so restore `original` (and its
+      // default flag) before the single undo step. Non-realtime: plain commit
+      // (current behavior).
       if (realtime)
-        onSet(entry.key, entry.type, v, { mode: "commit", originalValue: original });
+        onSet(entry.key, entry.type, v, {
+          mode: "commit",
+          originalValue: original,
+          originalWasDefault: wasDefault,
+        });
       else onSet(entry.key, entry.type, v);
     },
-    onAbort: (original) => onSet(entry.key, entry.type, original, { mode: "preview" }),
+    onAbort: (original, wasDefault) =>
+      onSet(entry.key, entry.type, original, {
+        mode: "abort",
+        originalWasDefault: wasDefault,
+      }),
   });
   return (
     <PropertyField label={label} {...resetProps(entry, onReset)}>
@@ -159,6 +175,8 @@ export const NumRow: React.FC<NumRowProps> = ({
         min={min}
         max={max}
         step={step}
+        fineSnap={fineSnap}
+        coarseSnap={coarseSnap}
         unit={unit}
         decimals={decimals}
         disabled={disabled || entry.readonly}

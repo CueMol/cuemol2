@@ -120,6 +120,7 @@ describe('SimpleRendererSection', () => {
     expect(onSet).toHaveBeenCalledWith('width', 'real', 1.4, {
       mode: 'commit',
       originalValue: 1.2,
+      originalWasDefault: false,
     })
     unmount()
   })

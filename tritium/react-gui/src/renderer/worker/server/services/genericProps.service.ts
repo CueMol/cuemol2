@@ -37,13 +37,16 @@ export interface GetGenericPropsResult {
  *   - `commit` (default): write inside an undo transaction (one undo step).
  *   - `preview`: write WITHOUT a transaction, so the 3D view redraws but the
  *     change is not recorded for undo (used every frame during a drag).
+ *   - `abort`: restore the pre-drag snapshot WITHOUT a transaction (used when a
+ *     drag is cancelled); restores the default flag too when `originalWasDefault`.
  */
-export type PropWriteMode = 'preview' | 'commit';
+export type PropWriteMode = 'preview' | 'commit' | 'abort';
 
 /** Optional per-write drag options threaded through the inspector `onSet`. */
 export interface PropWriteOpts {
     mode?: PropWriteMode;
     originalValue?: string | number | boolean;
+    originalWasDefault?: boolean;
 }
 
 export interface SetGenericPropArgs {
@@ -71,6 +74,13 @@ export interface SetGenericPropArgs {
      * `lastPreview -> value`.
      */
     originalValue?: string | number | boolean;
+    /**
+     * Pre-drag default flag, supplied with `mode: 'commit'` / `'abort'`. When
+     * true, the restore uses `resetProp` (default flag + value) instead of a
+     * bare `setProp`, so the committed undo step re-trips the C++
+     * default -> non-default transition (and undo reverts the default state).
+     */
+    originalWasDefault?: boolean;
 }
 
 export interface SetGenericPropResult {
@@ -178,6 +188,21 @@ function setGenericProp(
         return { ok: true, entries: [] };
     }
 
+    // Drag cancelled: restore the pre-drag snapshot, txn-free (nothing recorded
+    // for undo). `resetProp` restores the default flag + value when the prop was
+    // default before the drag; otherwise restore the original value. This undoes
+    // the one-way default-flag flip a preview frame leaves behind.
+    if (args.mode === 'abort' && args.op === 'set') {
+        try {
+            if (args.originalWasDefault) target.resetProp(args.propName);
+            else target.setProp(args.propName, args.value);
+        } catch (e) {
+            console.warn('setGenericProp (abort) failed:', e);
+            return fail;
+        }
+        return { ok: true, entries: [] };
+    }
+
     const label =
         args.op === 'reset'
             ? `Reset property: ${args.propName}`
@@ -185,11 +210,15 @@ function setGenericProp(
 
     try {
         // Realtime commit: a preview drag already moved the prop to its last
-        // frame value (txn-free). Restore the pre-drag value first (still
-        // txn-free, so not recorded) so the single undo step inside the txn is
-        // `originalValue -> value`.
+        // frame value (txn-free) and flipped its default flag to non-default.
+        // Restore the pre-drag state first (still txn-free, so not recorded) so
+        // the single undo step inside the txn is `originalValue -> value`. When
+        // the prop was default, restore via `resetProp` (flag + value) so the
+        // in-txn `setProp` re-trips the default -> non-default transition and
+        // undo reverts the default state too.
         if (args.op === 'set' && args.originalValue !== undefined) {
-            target.setProp(args.propName, args.originalValue);
+            if (args.originalWasDefault) target.resetProp(args.propName);
+            else target.setProp(args.propName, args.originalValue);
         }
         withUndoTxn(scene, label, () => {
             if (args.op === 'reset') {

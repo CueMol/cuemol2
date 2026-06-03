@@ -23,7 +23,7 @@ import type {
 } from "../../worker/server/services/genericProps.service";
 import { SimpleRendererSection } from "./SimpleRendererSection";
 import { BallStickRendererSection } from "./BallStickRendererSection";
-import { CPKRendererSection } from "./CPKRendererSection";
+import { CPKAtomRadiiSection, CPKDetailSection } from "./CPKRendererSection";
 
 // ────────────────────────────────────────────────────────────
 // Types
@@ -90,13 +90,20 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
       Component: BallStickRendererSection,
     },
   ],
-  // CPKRenderer ("cpk"): UXP cpk-propdlg "Atom radii" tab.
+  // CPKRenderer ("cpk"): UXP cpk-propdlg "Atom radii" tab. The seven per-element
+  // radii form the "Atom radii" groupbox; `detail` is a loose row outside it.
   cpk: [
     {
-      key: "cpk",
+      key: "cpk-radii",
       title: "Atom radii",
       defaultExpanded: true,
-      Component: CPKRendererSection,
+      Component: CPKAtomRadiiSection,
+    },
+    {
+      key: "cpk-detail",
+      title: "Detail",
+      defaultExpanded: true,
+      Component: CPKDetailSection,
     },
   ],
 };

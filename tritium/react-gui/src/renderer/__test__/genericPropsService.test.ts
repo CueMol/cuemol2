@@ -123,4 +123,73 @@ describe('setGenericProp', () => {
     expect(setProp).toHaveBeenCalledTimes(1)
     expect(setProp).toHaveBeenCalledWith('alpha', 0.7)
   })
+
+  // --- Default-flag-aware restore (undo reverts the default state too) ---
+
+  it('realtime commit of a default prop restores via resetProp before the txn', () => {
+    const res = call({
+      propName: 'alpha',
+      valueType: 'real',
+      value: 0.7,
+      mode: 'commit',
+      originalValue: 0.2,
+      originalWasDefault: true,
+    })
+    expect(res.ok).toBe(true)
+    // resetProp (flag + value) restores the pre-drag default state, txn-free,
+    // so the in-txn setProp re-trips the default -> non-default transition.
+    expect(resetProp).toHaveBeenCalledWith('alpha')
+    expect(setProp).toHaveBeenCalledWith('alpha', 0.7)
+    expect(withUndoTxnSpy).toHaveBeenCalledTimes(1)
+    expect(resetProp.mock.invocationCallOrder[0]).toBeLessThan(
+      withUndoTxnSpy.mock.invocationCallOrder[0],
+    )
+    expect(setProp.mock.invocationCallOrder[0]).toBeGreaterThan(
+      withUndoTxnSpy.mock.invocationCallOrder[0],
+    )
+  })
+
+  it('realtime commit of a non-default prop restores via setProp (no resetProp)', () => {
+    const res = call({
+      propName: 'alpha',
+      valueType: 'real',
+      value: 0.7,
+      mode: 'commit',
+      originalValue: 0.2,
+      originalWasDefault: false,
+    })
+    expect(res.ok).toBe(true)
+    expect(resetProp).not.toHaveBeenCalled()
+    expect(setProp).toHaveBeenNthCalledWith(1, 'alpha', 0.2)
+    expect(setProp).toHaveBeenNthCalledWith(2, 'alpha', 0.7)
+  })
+
+  it('aborts a default prop via resetProp, txn-free, with no entries', () => {
+    const res = call({
+      propName: 'alpha',
+      valueType: 'real',
+      value: 0.2,
+      mode: 'abort',
+      originalWasDefault: true,
+    })
+    expect(res.ok).toBe(true)
+    expect(res.entries).toEqual([])
+    expect(resetProp).toHaveBeenCalledWith('alpha')
+    expect(setProp).not.toHaveBeenCalled()
+    expect(withUndoTxnSpy).not.toHaveBeenCalled()
+  })
+
+  it('aborts a non-default prop via setProp(original), txn-free', () => {
+    const res = call({
+      propName: 'alpha',
+      valueType: 'real',
+      value: 0.2,
+      mode: 'abort',
+      originalWasDefault: false,
+    })
+    expect(res.ok).toBe(true)
+    expect(setProp).toHaveBeenCalledWith('alpha', 0.2)
+    expect(resetProp).not.toHaveBeenCalled()
+    expect(withUndoTxnSpy).not.toHaveBeenCalled()
+  })
 })

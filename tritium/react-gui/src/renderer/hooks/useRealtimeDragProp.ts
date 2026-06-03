@@ -30,14 +30,25 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 export interface UseRealtimeDragPropOptions {
     /** Committed object value in display units; the field resyncs to it when idle. */
     committed: number
+    /**
+     * The prop's default flag at drag start, frozen alongside `committed`. The
+     * commit / abort restore needs the pre-drag default state because a preview
+     * frame permanently flips the prop to non-default; passing it through lets
+     * the worker restore via `resetProp` (flag + value) instead of a bare value
+     * write, so undo correctly reverts the default state too.
+     */
+    committedIsDefault?: boolean
     /** Enable live preview during a drag (still one undo step on release). */
     realtime?: boolean
     /** Live-apply a value to the object without undo (called every drag frame). */
     onPreview: (value: number) => void | Promise<unknown>
-    /** Commit a single undo step. `original` is the pre-interaction value. */
-    onCommit: (original: number, value: number) => void
-    /** Restore the object to `original` after a cancelled drag. */
-    onAbort?: (original: number) => void
+    /**
+     * Commit a single undo step. `original` is the pre-interaction value and
+     * `wasDefault` its pre-interaction default flag.
+     */
+    onCommit: (original: number, value: number, wasDefault: boolean) => void
+    /** Restore the object to `original` (and its `wasDefault` state) on cancel. */
+    onAbort?: (original: number, wasDefault: boolean) => void
 }
 
 export interface RealtimeDragProps {
@@ -64,6 +75,8 @@ export function useRealtimeDragProp(
     // handlers stay stable and always reach current behavior.
     const committedRef = useRef(committed)
     committedRef.current = committed
+    const committedIsDefaultRef = useRef(opts.committedIsDefault ?? false)
+    committedIsDefaultRef.current = opts.committedIsDefault ?? false
     const realtimeRef = useRef(realtime)
     realtimeRef.current = realtime
     const cbRef = useRef(opts)
@@ -72,6 +85,8 @@ export function useRealtimeDragProp(
     const draggingRef = useRef(false)
     /** Pre-drag value, frozen on drag start; rollback / commit anchor. */
     const originalRef = useRef(committed)
+    /** Pre-drag default flag, frozen on drag start; paired with `originalRef`. */
+    const originalIsDefaultRef = useRef(committedIsDefaultRef.current)
 
     // Preview coalescing state.
     const inFlightRef = useRef(false)
@@ -108,6 +123,7 @@ export function useRealtimeDragProp(
     const onDragStart = useCallback(() => {
         draggingRef.current = true
         originalRef.current = committedRef.current
+        originalIsDefaultRef.current = committedIsDefaultRef.current
         pendingRef.current = null
     }, [])
 
@@ -115,10 +131,13 @@ export function useRealtimeDragProp(
         const wasDrag = draggingRef.current
         draggingRef.current = false
         pendingRef.current = null
-        // For a drag, anchor on the frozen pre-drag value; for an arrow / text
-        // commit (no drag), the object is still at the committed value.
+        // For a drag, anchor on the frozen pre-drag value / flag; for an arrow /
+        // text commit (no drag), the object is still at the committed value.
         const original = wasDrag ? originalRef.current : committedRef.current
-        cbRef.current.onCommit(original, v)
+        const wasDefault = wasDrag
+            ? originalIsDefaultRef.current
+            : committedIsDefaultRef.current
+        cbRef.current.onCommit(original, v, wasDefault)
     }, [])
 
     const onDragCancel = useCallback(() => {
@@ -126,7 +145,7 @@ export function useRealtimeDragProp(
         pendingRef.current = null
         const original = originalRef.current
         setDraft(original)
-        cbRef.current.onAbort?.(original)
+        cbRef.current.onAbort?.(original, originalIsDefaultRef.current)
     }, [])
 
     return { value: draft, realtime, onChange, onDragStart, onRelease, onDragCancel }

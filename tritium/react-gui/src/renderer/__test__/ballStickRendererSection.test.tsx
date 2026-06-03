@@ -213,6 +213,7 @@ describe('BallStickRendererSection', () => {
     expect(onSet).toHaveBeenCalledWith('bondw', 'real', 0.21, {
       mode: 'commit',
       originalValue: 0.2,
+      originalWasDefault: false,
     })
     unmount()
   })
