@@ -38,6 +38,10 @@ import {
   CartoonCoilSection,
 } from "./CartoonRendererSection";
 import { DisoMainSection } from "./DisoRendererSection";
+import {
+  DSurfaceMainSection,
+  DSurfaceRadiiSection,
+} from "./DSurfaceRendererSection";
 
 // ────────────────────────────────────────────────────────────
 // Types
@@ -228,6 +232,25 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
       title: "Disorder",
       defaultExpanded: true,
       Component: DisoMainSection,
+    },
+  ],
+  // DirectSurfRenderer ("dsurface"): UXP dsurf-propdlg "MolSurf" + "Atom radii"
+  // tabs. The MolSurf "Draw" groupbox (draw mode / line-point size / surface
+  // type / detail) becomes the "Surface" section; the per-element van der Waals
+  // radii form the "Atom radii" section. The MolSurf coloring controls (target /
+  // showsel / coloring mode) stay out (UXP Coloring panel, not migrated yet).
+  dsurface: [
+    {
+      key: "dsurface-main",
+      title: "Surface",
+      defaultExpanded: true,
+      Component: DSurfaceMainSection,
+    },
+    {
+      key: "dsurface-radii",
+      title: "Atom radii",
+      defaultExpanded: true,
+      Component: DSurfaceRadiiSection,
     },
   ],
 };
