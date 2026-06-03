@@ -113,7 +113,7 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
   anisou: [
     {
       key: "anisou-ballstick",
-      title: "Ball and stick",
+      title: "Atoms and bonds",
       defaultExpanded: true,
       Component: BallStickRendererSection,
     },

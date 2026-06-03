@@ -10,7 +10,7 @@
  *     discscale / discthick).
  *
  * The pins:
- *   - the registry resolves `type_name === "anisou"` to "Ball and stick" then
+ *   - the registry resolves `type_name === "anisou"` to "Atoms and bonds" then
  *     "Anisotropic displacement" sections, reusing the ball-and-stick component;
  *   - each disc row renders only when its property exists;
  *   - disc scale / thickness are disabled while `drawdisc` is off;
@@ -85,7 +85,7 @@ describe('AnIsoURenderer section registry', () => {
   it('resolves type_name "anisou" to ball-and-stick then disc sections', () => {
     const sections = getRendererPropSections('anisou')
     expect(sections.map((s) => s.title)).toEqual([
-      'Ball and stick',
+      'Atoms and bonds',
       'Anisotropic displacement',
     ])
     expect(sections.every((s) => s.defaultExpanded)).toBe(true)
@@ -212,12 +212,12 @@ describe('PropertiesTab anisou section dispatch', () => {
       : null
   }
 
-  it('shows the Ball and stick and disc sections (no placeholder) for anisou', () => {
+  it('shows the Atoms and bonds and disc sections (no placeholder) for anisou', () => {
     const { container, unmount } = mountTree(
       <PropertiesTab entries={fullEntries()} rendererType="anisou" {...commonProps} />,
     )
     const titles = accordionTitles(container)
-    expect(titles).toContain('Ball and stick')
+    expect(titles).toContain('Atoms and bonds')
     expect(titles).toContain('Anisotropic displacement')
     expect(titles).not.toContain('Renderer settings')
     unmount()
@@ -227,7 +227,7 @@ describe('PropertiesTab anisou section dispatch', () => {
     const { container, unmount } = mountTree(
       <PropertiesTab entries={fullEntries()} rendererType="anisou" {...commonProps} />,
     )
-    const baseBody = sectionBody(container, 'Ball and stick')!
+    const baseBody = sectionBody(container, 'Atoms and bonds')!
     const discBody = sectionBody(container, 'Anisotropic displacement')!
     expect(rowByLabel(baseBody, 'Atom radius')).not.toBeNull()
     expect(rowByLabel(baseBody, 'Draw disc')).toBeNull()
