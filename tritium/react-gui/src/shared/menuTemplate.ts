@@ -96,6 +96,20 @@ export const APP_MENU: AppMenuGroup[] = [
       { id: 'undo', label: 'Undo', accelerator: 'CmdOrCtrl+Z', acceleratorMac: 'CmdOrCtrl+Z', ipcChannel: 'menu:undo' },
       { id: 'redo', label: 'Redo', accelerator: 'CmdOrCtrl+Y', acceleratorMac: 'Shift+CmdOrCtrl+Z', ipcChannel: 'menu:redo' },
       { type: 'separator' },
+      // Standard clipboard items. Cut/Copy/Paste are pure roles (no ipcChannel)
+      // so the main-process menu delegates them entirely to Electron, which
+      // assigns the default Cmd/Ctrl accelerators and runs them natively against
+      // the focused element / webContents selection. Without these on macOS the
+      // keyboard shortcuts are not delivered and clipboard fails app-wide.
+      { id: 'cut',   label: 'Cut',   role: 'cut' },
+      { id: 'copy',  label: 'Copy',  role: 'copy' },
+      { id: 'paste', label: 'Paste', role: 'paste' },
+      // Select All is NOT a native role: Electron's selectAll selects the whole
+      // document (every GUI text node) when focus is not in an editable field.
+      // Route it through the renderer (selectAllInScope) so it targets only the
+      // focused field or the active selectable region (e.g. the log panel).
+      { id: 'select-all', label: 'Select All', accelerator: 'CmdOrCtrl+A', ipcChannel: 'menu:select-all' },
+      { type: 'separator' },
       { id: 'clear-undo', label: 'Clear undo data', ipcChannel: 'menu:clear-undo' },
       { type: 'separator' },
       { id: 'merge-mol',      label: 'Merge molecule...',       ipcChannel: 'menu:merge-mol' },

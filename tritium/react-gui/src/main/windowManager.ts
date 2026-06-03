@@ -7,6 +7,7 @@ import { join } from 'path'
 import { loadWindowBounds, saveWindowBounds, type WindowBounds } from './stateStore'
 import { registerIpcHandlers } from './ipcHandlers'
 import { createMenu } from './menu'
+import { registerTextContextMenu } from './textContextMenu'
 import { IPC } from '../shared/ipcChannels'
 import {
   clearCloseWatchdog,
@@ -176,6 +177,7 @@ export function createWindow(): void {
   })
 
   trackWindowState(win)
+  registerTextContextMenu(win)
   registerIpcHandlers(win)
   createMenu(win)
 

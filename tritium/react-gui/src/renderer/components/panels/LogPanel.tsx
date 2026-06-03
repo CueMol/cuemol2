@@ -92,7 +92,11 @@ export function LogPanel({
           aria-label="Save Output As"
         />
       </div>
-      <pre className={styles.logContainer} ref={preRef}>
+      {/* data-select-scope marks this as the target for scoped Select All
+          (Cmd+A / Edit > Select All / right-click), so it selects only the
+          log contents rather than the whole document. See
+          renderer/utils/selectAllScope.ts. */}
+      <pre className={styles.logContainer} ref={preRef} data-select-scope>
         {filteredContents}
       </pre>
     </div>

@@ -25,6 +25,7 @@ import { InspectorPanel } from "./components/panels/InspectorPanel";
 import type { AnimationData } from "./types";
 
 import { SAMPLE_ANIMATION } from "./data/alignmentData";
+import { installSelectAllScope } from "./utils/selectAllScope";
 
 import { useLayoutPersistence } from "./hooks/useLayoutPersistence";
 import { useActiveTool } from "./hooks/useActiveTool";
@@ -323,6 +324,11 @@ const App: React.FC = () => {
       document.documentElement.style.setProperty("--titlebar-inset", "78px");
     }
   }, []);
+
+  // --- Scoped Select All ---
+  // Track the active selectable region so Cmd+A / Edit > Select All target only
+  // the focused field or that region (e.g. the log panel), never the whole GUI.
+  useEffect(() => installSelectAllScope(), []);
 
   // --- Derived sidebar sub-panel state ---
 
