@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-06-03 (`dialog.property.cartoon` done: UXP `cartoon-propdlg` の Cartoon/Helix/Sheet/Coil タブを Inspector Properties タブの 4 accordion section (`CartoonRendererSection`) として実装、`type_name "cartoon"` で registry 登録。`axialdetail` Detail は素の NumericField スライダー、その他は `NumRow`(DragNumericField, realtime 無し)/`BoolRow`/`MappedEnumRow`。Helix width 系は `helix_width_mode` で enable 連動。section 形状 (helix/sheet/coil の type・width 等) は read-only nested sub-object で dot-path setProp 非対応のため Generic タブ残置。prop_dlgs count を実 status (total 14/done 5/wip 1/todo 8) に是正)
 - Updated: 2026-06-03 (`dialog.atomintr` review: AtomIntrRenderer property page を Inspector Properties タブの 4 accordion section (Interaction / Dashed line / 3D tube / Value label) として実装。`rendererPropSections` registry に `type_name "atomintr"` で登録。Dashed トグルは合成 (stipple0..5 を新 worker service `setGenericProps` で 1 undo step に原子書き込み、`onSetMany` を inspector 層に thread)。arrow size・label font は UXP dialog 外だが追加。距離/角度定義の append/remove 編集は対象外)
 - Updated: 2026-06-03 (`dialog.property.ballstick` done: UXP "Ball & Stick" タブの detail/bondw/sphr/ring/thickness/ringcolor を Inspector Properties タブの独立 accordion entry ("Ball and stick") として実装済み。`rendererPropSections` registry に `type_name "ballstick"` で登録、`NumRow`/`BoolRow`/`ColorRow` を再利用、ring off 時に thickness/ringcolor を disable。mapping 行の更新漏れを是正)
 - Updated: 2026-06-03 (`dialog.property.cpk` done: UXP "Atom radii" タブを Inspector Properties タブの 2 accordion ("Atom radii" 7 元素 van der Waals 半径 + "Detail" `detail`) に実装。UXP で groupbox 外だった detail を別 section に分離。`rendererPropSections` registry に `type_name "cpk"` で登録、`NumRow` (DragNumericField, realtime preview) を再利用)
@@ -27,7 +28,7 @@
 | Panel | [panels.md](panels.md) | 27 | 4 | 17 | 1 | 5 | 0 |
 | Menu | [menus.md](menus.md) | 4 | 2 | 2 | 0 | 0 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
-| Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 13 | 3 | 1 | 0 | 9 | 0 |
+| Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 14 | 5 | 1 | 0 | 8 | 0 |
 | Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 0 | 3 | 1 | 14 | 0 |
 | Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 1 | 0 | 0 | 20 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 2 | 1 | 0 | 10 | 0 |

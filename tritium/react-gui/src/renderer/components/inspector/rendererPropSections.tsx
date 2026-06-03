@@ -31,6 +31,12 @@ import {
   AtomIntrTubeSection,
   AtomIntrLabelSection,
 } from "./AtomIntrRendererSection";
+import {
+  CartoonMainSection,
+  CartoonHelixSection,
+  CartoonSheetSection,
+  CartoonCoilSection,
+} from "./CartoonRendererSection";
 
 // ────────────────────────────────────────────────────────────
 // Types
@@ -172,6 +178,36 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
       title: "Value label",
       defaultExpanded: true,
       Component: AtomIntrLabelSection,
+    },
+  ],
+  // Ribbon2Renderer ("cartoon"): UXP cartoon-propdlg tabs. Only the editable
+  // top-level properties are surfaced; the per-section shape controls live on
+  // read-only nested sub-objects (TubeSection / JctTable) that the flat generic
+  // property bridge cannot write yet, so they stay in the Generic tab.
+  cartoon: [
+    {
+      key: "cartoon-main",
+      title: "Cartoon",
+      defaultExpanded: true,
+      Component: CartoonMainSection,
+    },
+    {
+      key: "cartoon-helix",
+      title: "Helix",
+      defaultExpanded: true,
+      Component: CartoonHelixSection,
+    },
+    {
+      key: "cartoon-sheet",
+      title: "Sheet",
+      defaultExpanded: true,
+      Component: CartoonSheetSection,
+    },
+    {
+      key: "cartoon-coil",
+      title: "Coil",
+      defaultExpanded: true,
+      Component: CartoonCoilSection,
     },
   ],
 };
