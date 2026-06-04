@@ -298,7 +298,8 @@ char N[10];
 //  S[21] = residue->chain->chainID[0];
 //  if (!S[21])  S[21] = ' ';
   if (residue->seqNum>MinInt4)  {
-    if (-999<=residue->seqNum<=9999)
+    // if (-999<=residue->seqNum<=9999)
+    if (-999<=residue->seqNum && residue->seqNum<=9999)
       PutIntIns  ( &(S[22]),residue->seqNum,4,residue->insCode );
     else  {
       hy36encode ( 4,residue->seqNum,N );
