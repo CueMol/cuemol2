@@ -77,6 +77,9 @@ export function useMenuDispatch(activeTab: string | null): {
         case IPC.MENU_GET_PDB:
           dispatch(CmdId.UiGetPdbDialog).catch(logErr('get pdb dialog:'))
           break
+        case 'menu:change-chain-id':
+          dispatch(CmdId.UiChangeChainIdDialog).catch(logErr('change chain id dialog:'))
+          break
         case 'menu:clear-recent':
           window.electronAPI
             ?.invoke(IPC.RECENT_CLEAR)

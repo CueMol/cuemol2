@@ -309,6 +309,10 @@ import type {
   ShowUnitCellRendererResult,
 } from '../server/services/symmetryPanelOps.service'
 import type {
+  ChangeChainNameArgs,
+  ChangeChainNameResult,
+} from '../server/services/changeChainName.service'
+import type {
   ListMapRenderersArgs,
   ListMapRenderersResult,
   GetMapRendererStateArgs,
@@ -483,6 +487,7 @@ export interface ServiceMap {
   changeSymmetryInfo:         { args: ChangeSymmetryInfoArgs;          result: ChangeSymmetryInfoResult }
   showSymmRenderer:           { args: ShowSymmRendererArgs;            result: ShowSymmRendererResult }
   showUnitCellRenderer:       { args: ShowUnitCellRendererArgs;        result: ShowUnitCellRendererResult }
+  changeChainName:            { args: ChangeChainNameArgs;             result: ChangeChainNameResult }
   listMapRenderers:           { args: ListMapRenderersArgs;            result: ListMapRenderersResult }
   getMapRendererState:        { args: GetMapRendererStateArgs;         result: GetMapRendererStateResult }
   setMapRendererProp:         { args: SetMapRendererPropArgs;          result: SetMapRendererPropResult }

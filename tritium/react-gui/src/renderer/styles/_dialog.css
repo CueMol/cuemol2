@@ -92,3 +92,24 @@
   line-height: 1.4;
   min-height: 0;
 }
+
+/* form-kit dialog body: a vertical stack of FieldSections that shares one
+   section gap (the canonical place to own section spacing -- consumers never
+   set it per-section). Use for dialogs composed from h3-kit/form widgets. */
+.h3-dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--form-section-gap);
+}
+
+/* Inline secondary hint under a control (e.g. a non-blocking PDB-format note). */
+.h3-dialog-hint {
+  color: var(--text-secondary);
+  font-size: var(--fs-lg);
+}
+
+/* Inline error message (e.g. a failed commit). */
+.h3-dialog-error {
+  color: var(--accent-red);
+  font-size: var(--fs-lg);
+}

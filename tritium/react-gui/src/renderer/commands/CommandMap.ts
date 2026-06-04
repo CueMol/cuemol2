@@ -23,6 +23,7 @@ export interface CommandMap {
   [CmdId.UiOpenSceneDialog]:   { args: void;            result: void }
   [CmdId.UiAboutDialog]:       { args: void;            result: void }
   [CmdId.UiGetPdbDialog]:      { args: void;            result: void }
+  [CmdId.UiChangeChainIdDialog]: { args: void;          result: void }
 
   // Tabs
   [CmdId.TabNew]:              { args: void;            result: void }

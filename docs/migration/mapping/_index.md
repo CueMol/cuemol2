@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-06-04 (`dialog.tool.chg-chname` review: UXP "Change chain ID" tool dialog を Blueprint modal として実装。h3-kit/form (`FieldSection` + `ObjectSelect` molCoord filter + `MolSelList` + `TextField`) で構成。OK は新規 worker service `changeChainName` 経由で `MolAnlManager.changeChainName(mol, sel, name)` を "Change chain name" undo txn 内で実行。Edit メニューの既存 stub `menu:change-chain-id` を `useToolCommands` 経由で配線。tool_dlgs todo 20->19/review 0->1)
 - Updated: 2026-06-03 (`dialog.property.tube` done: UXP `tube-propdlg` の Tube タブを Inspector Properties タブの 3 accordion section (`TubeRendererSection`: Tube / Section / Putty) として実装、`type_name "tube"` で registry 登録。中核の `section.*` (TubeSection 断面形状) は nested object 上にあるため `parseGenericProps` をネスト再帰展開 (dotted key + depth) し、dot-path 書き込みは `cuemol2::setProp`→`LPropSupport::setNestedProperty` 経由で実現 — ADR-0015 の「nested 編集不可」前提を訂正 (誤りは `LScrObjects.cpp` 旧 inline 実装の誤読、binding 経路は対応済みで UXP xpcom と同一)。Width2 は `section.tuber`×width の派生表示。`MappedEnumRow`/`CAP_LABELS` を `RendererCommonSection` へ昇格し cartoon と共用。cartoon の section 形状も同手法で露出可能だが follow-up。prop_dlgs done 6->7/todo 7->6)
 - Updated: 2026-06-03 (`dialog.property.disorder` done: UXP `disorder-propdlg` の Disorder タブを Inspector Properties タブの 1 accordion section (`DisoRendererSection`) として実装、`type_name "disorder"` で registry 登録。`target` は親 mol の tube/ribbon/cartoon/nucl 兄弟 renderer 名を新 worker service `getSiblingRendererNames` で列挙する `(none)` 付き select (section へ `nodeId` を thread)、`detail` は素の inline NumericField、dot size/dot sep/loop size/loop size 2 は `NumRow`(DragNumericField, realtime 無し)、`defaultcolor` は `ColorRow`。共有 `NumInputRow` を `RendererCommonSection` へ昇格し cartoon と共用。prop_dlgs done 5->6/todo 8->7)
 - Updated: 2026-06-03 (`dialog.property.cartoon` done: UXP `cartoon-propdlg` の Cartoon/Helix/Sheet/Coil タブを Inspector Properties タブの 4 accordion section (`CartoonRendererSection`) として実装、`type_name "cartoon"` で registry 登録。`axialdetail` Detail は素の NumericField スライダー、その他は `NumRow`(DragNumericField, realtime 無し)/`BoolRow`/`MappedEnumRow`。Helix width 系は `helix_width_mode` で enable 連動。section 形状 (helix/sheet/coil の type・width 等) は read-only nested sub-object で dot-path setProp 非対応のため Generic タブ残置。prop_dlgs count を実 status (total 14/done 5/wip 1/todo 8) に是正)
@@ -32,11 +33,11 @@
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 14 | 7 | 1 | 0 | 6 | 0 |
 | Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 0 | 3 | 1 | 14 | 0 |
-| Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 1 | 0 | 0 | 20 | 0 |
+| Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 1 | 0 | 1 | 19 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 2 | 1 | 0 | 10 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 0 | 1 | 0 | 27 | 0 |
 | Other | [other.md](other.md) | 4 | 0 | 1 | 0 | 3 | 0 |
-| **Total** | | **130** | **10** | **27** | **1** | **92** | **0** |
+| **Total** | | **130** | **10** | **27** | **2** | **91** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -82,6 +83,7 @@
 | [`menu.cuemol2-macos`](menus.md#menucuemol2-macos) | `main/menu.ts` | macOS App menu added; item-level completion 6/7 |
 | [`dialog.about`](other_dlgs.md#dialogabout) | `AboutDialog` / `useDialog` | GRE info・userAgent は省略 |
 | [`dialog.atomintr`](other_dlgs.md#dialogatomintr) | `AtomIntr*Section` (inspector Properties tab) | Interaction/Dashed line/3D tube/Value label の 4 accordion。Dashed トグルは合成 (`setGenericProps` で stipple0..5 を 1 undo step 原子書き込み)。arrow size・label font 追加。append/remove 編集は対象外 |
+| [`dialog.tool.chg-chname`](tool_dlgs.md#dialogtoolchg-chname) | `ChangeChainIdDialog` / `useToolCommands` / `changeChainName.service` | h3-kit/form 製の Change chain ID modal。`MolAnlManager.changeChainName` を undo txn で実行。Edit メニューから起動。E2E sign-off 待ち |
 | [`other.cuemol2`](other.md#othercuemol2) | `App` / `ContentArea` / `TabBar` / `ConfirmCloseTabDialog` / `useQuitHandler` | Main window layout done; close-tab confirmation dialog (UXP `closeTabImpl`) implemented; UXP `onCloseEvent` quit chain wired (cmd-Q walks all tabs via `before-quit` → `APP_QUIT_REQUEST` → `APP_QUIT_PROCEED`) |
 | [`widget.molsellist`](custom_widgets.md) | `MolSelList` (`h3-kit/MolSelList/`) | First consumer wired in `RendererOptionsPane` (file-open dialog); editable `InputGroup` + chevron-only `HTMLSelect` (OS-native dropdown listbox with `<optgroup>` Preset / History / Scene / Global); history via `localStorage`; worker services `getSelDefs` / `validateSelection` added |
 | [`panel.workspace.tree`](panels.md#panelworkspacetree) | `ScenePane` (tree) / `useSceneTree` / `useSceneTreeController` / `sceneTreeDnd` / `InlineRenameInput` / `sceneTree.service` / `reorderSceneNode.service` | Live tree + visibility toggle + selection (single + multi via Cmd/Ctrl+click) + event-driven auto-refresh + drag-drop reorder (worker + in-app DnD OK; ADR-0001) + F2 inline rename; pending: Shift+range select |
@@ -109,4 +111,4 @@
 
 ## Unstarted
 
-**96 / 130** items are `todo` (not yet started).
+**95 / 130** items are `todo` (not yet started).
