@@ -1,0 +1,26 @@
+name: 'Test tritium/core addon'
+description: 'Test tritium/core addon'
+
+inputs:
+  basedir:
+     description: 'base dir'
+     required: true
+
+runs:
+  using: "composite"
+  steps:
+  - name: Test tritium/core addon (posix)
+    if: runner.os != 'Windows'
+    shell: bash
+    run: |
+      cd ${GITHUB_WORKSPACE}
+      bash build_scripts/test_tritium_core_posix/run.sh ${{ inputs.basedir }}
+
+  - name: Test tritium/core addon (windows)
+    if: runner.os == 'Windows'
+    shell: cmd
+    run: |
+      echo on
+      cd %GITHUB_WORKSPACE%
+      call build_scripts\test_tritium_core_posix\run_win.bat ${{ inputs.basedir }}
+      if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%

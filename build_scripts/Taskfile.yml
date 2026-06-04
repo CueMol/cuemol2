@@ -128,32 +128,32 @@ tasks:
 
 #####
 
-  build_nodejs:
-    desc: "Build and test tritium/core native addon"
+  build_tritium_core:
+    desc: "Build tritium/core native addon (test via test_tritium_core)"
     deps:
-      - task: build_nodejs:{{OS}}
+      - task: build_tritium_core:{{OS}}
 
-  build_nodejs:darwin:
+  build_tritium_core:darwin:
     platforms: [darwin]
     env:
       OUT_DIR: '{{.OUTDIR}}'
     cmds:
       - task: build_libcuemol2
-      - bash build_nodejs_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
+      - bash build_tritium_core_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
 
-  build_nodejs:linux:
+  build_tritium_core:linux:
     platforms: [linux]
     env:
       OUT_DIR: '{{.OUTDIR}}'
     cmds:
       - task: build_libcuemol2
-      - bash build_nodejs_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
+      - bash build_tritium_core_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
 
-  build_nodejs:windows:
+  build_tritium_core:windows:
     platforms: [windows]
     cmds:
       - task: build_libcuemol2
-      - cmd /c build_nodejs_posix\\run_win.bat "{{.WORKDIR}}"
+      - cmd /c build_tritium_core_posix\\run_win.bat "{{.WORKDIR}}"
 
 #####
 
@@ -236,9 +236,12 @@ tasks:
 
   test_tritium_core:
     desc: "Run tritium/core Jest tests (Node pinned via tritium/.nvmrc)"
-    dir: "{{.ROOT_DIR}}/../tritium/core"
+    env:
+      OUT_DIR: '{{.OUTDIR}}'
     cmds:
-      - bash -c 'set -e; export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; . "$NVM_DIR/nvm.sh"; nvm use; pnpm run test'
+      # Delegate to the same script CI uses (test_tritium_core_posix/run.sh); the
+      # Taskfile only layers the local Node pin (nvm) so there is one core-test source.
+      - bash -c 'set -e; export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; . "$NVM_DIR/nvm.sh"; cd "{{.ROOT_DIR}}/../tritium"; nvm use >/dev/null; bash "{{.ROOT_DIR}}/test_tritium_core_posix/run.sh" "{{.WORKDIR}}"'
 
   test_tritium_react_gui:
     desc: "Run tritium/react-gui Vitest tests (Node pinned via tritium/.nvmrc)"

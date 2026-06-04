@@ -36,6 +36,10 @@ jobs:
       with:
         node-version: '24'
 
+    - name: Enable pnpm via corepack
+      shell: bash
+      run: corepack enable
+
     - name: Show build env versions
       shell: bash
       run: |
@@ -69,7 +73,12 @@ jobs:
         basedir: ${{ github.workspace }}/target
 
     - name: Build tritium/core addon
-      uses: ./build_scripts/build_nodejs_posix
+      uses: ./build_scripts/build_tritium_core_posix
+      with:
+        basedir: ${{ github.workspace }}/target
+
+    - name: Test tritium/core addon
+      uses: ./build_scripts/test_tritium_core_posix
       with:
         basedir: ${{ github.workspace }}/target
 

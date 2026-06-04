@@ -12,6 +12,7 @@ CONFIG=${2:-Release}
 # OUT_DIR unset falls back to BASEDIR, preserving the original/CI behavior.
 OUTDIR="${OUT_DIR:-$BASEDIR}"
 
+SCRIPT_DIR=$(cd $(dirname $0); pwd)
 REPOS_DIR=$(cd $(dirname $0)/../..; pwd)
 WORKSPACE=${GITHUB_WORKSPACE:-$REPOS_DIR}
 
@@ -23,23 +24,15 @@ TRITIUM_DIR=$WORKSPACE/tritium
 export LIBCUEMOL2_ROOT=$INST_PATH
 export Boost_ROOT=$BOOST_DIR
 
-# Install dependencies without lifecycle scripts to avoid building core
-# twice (core's "install" script runs cmake-js build in Release only).
-cd $TRITIUM_DIR
-pnpm install --ignore-scripts
+# Install workspace deps and build the core native addon. Shared with CI via the
+# single core-build script, so the cmake-js invocation is not duplicated here.
+OUT_DIR="$OUTDIR" bash "$SCRIPT_DIR/../build_tritium_core_posix/run.sh" "$BASEDIR" "$CONFIG"
 
 # Ensure the electron binary is downloaded. `pnpm rebuild electron` is
 # unreliable across pnpm versions / platforms (no-op on pnpm v10 + Windows),
 # so invoke electron's install.js directly. electron is a react-gui dep.
 cd $TRITIUM_DIR/react-gui
 node "$(node -p "require.resolve('electron/install.js')")"
-
-# Build core native addon with the correct config
-cd $TRITIUM_DIR/core
-npx cmake-js build \
-    --CDLIBCUEMOL2_ROOT=$INST_PATH \
-    --CDBoost_ROOT=$BOOST_DIR \
-    --config $CONFIG
 
 # Build react-gui with electron-vite
 cd $TRITIUM_DIR/react-gui

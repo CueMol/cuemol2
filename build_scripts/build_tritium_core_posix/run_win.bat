@@ -26,21 +26,22 @@ SET BOOST_DIR=%BASEDIR%\boost_%BOOST_VER%
 REM Install location
 SET INSTPATH=%BASEDIR%\cuemol2
 
-pushd %TOP_DIR%\tritium\core
-REM Use --ignore-scripts to skip the cmake-js lifecycle hook (run it manually below with explicit flags)
-call npm install --ignore-scripts
+REM Install workspace deps without lifecycle scripts (core's "install" hook runs
+REM cmake-js build; we run it explicitly below).
+pushd %TOP_DIR%\tritium
+call pnpm install --ignore-scripts
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+popd
 
-call npx cmake-js compile --CDLIBCUEMOL2_ROOT=%INSTPATH% --CDBoost_ROOT=%BOOST_DIR%
+pushd %TOP_DIR%\tritium\core
+call npx cmake-js build --CDLIBCUEMOL2_ROOT=%INSTPATH% --CDBoost_ROOT=%BOOST_DIR% --config Release
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 echo on
+REM Windows build_libcuemol2 does not stage boost dlls, so copy them here.
 copy %BASEDIR%\boost_%BOOST_VER%\lib\*mt-x64*.dll %INSTPATH%\bin\
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
-set PATH=%PATH%;%INSTPATH%\bin\
-
-call npm test
-if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+REM Tests are run separately via test_tritium_core_posix\run_win.bat
 
 popd
