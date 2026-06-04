@@ -103,6 +103,9 @@ venv.bak/
 *_loader.cpp
 build/**
 
+# Per-checkout build/install output from build_scripts (Taskfile OUTDIR)
+/.build_out/
+
 /pymod/python/cuemol/wrappers/**
 /pymod/build/**
 

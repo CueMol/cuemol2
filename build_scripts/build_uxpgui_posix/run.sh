@@ -22,6 +22,9 @@ set -eux
 BASEDIR=$1
 RUNNER_OS=$2
 RUNNER_ARCH=$3
+# deps/extpkgs root (BASEDIR) is shared; libcuemol2 install root (OUTDIR) can be
+# per-checkout. OUT_DIR unset falls back to BASEDIR, preserving original behavior.
+OUTDIR="${OUT_DIR:-$BASEDIR}"
 
 SCRIPT_DIR=$(cd $(dirname $0); pwd)
 REPOS_DIR=$(cd $(dirname $0)/../..; pwd)
@@ -53,7 +56,7 @@ fi
 cd ${WORKSPACE}/uxp_gui
 
 BUNDLE_DIR=$BASEDIR
-CUEMOL_DIR=$BASEDIR/cuemol2
+CUEMOL_DIR=$OUTDIR/cuemol2
 BOOST_DIR=$BASEDIR/boost_1_84_0
 DEPLIBS_DIR=$BASEDIR/boost_1_84_0/lib
 
