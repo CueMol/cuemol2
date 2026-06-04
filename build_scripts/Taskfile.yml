@@ -198,6 +198,24 @@ tasks:
     cmds:
       - pnpm run lint:style
 
+  test_tritium:
+    desc: "Run tritium tests (core Jest + react-gui Vitest)"
+    cmds:
+      - task: test_tritium_core
+      - task: test_tritium_react_gui
+
+  test_tritium_core:
+    desc: "Run tritium/core Jest tests (Node pinned via tritium/.nvmrc)"
+    dir: "{{.ROOT_DIR}}/../tritium/core"
+    cmds:
+      - bash -c 'set -e; export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; . "$NVM_DIR/nvm.sh"; nvm use; pnpm run test'
+
+  test_tritium_react_gui:
+    desc: "Run tritium/react-gui Vitest tests (Node pinned via tritium/.nvmrc)"
+    dir: "{{.ROOT_DIR}}/../tritium/react-gui"
+    cmds:
+      - bash -c 'set -e; export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; . "$NVM_DIR/nvm.sh"; nvm use; pnpm test'
+
 #####
 
   rebuild_uxpgui:
