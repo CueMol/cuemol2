@@ -11,6 +11,7 @@ import { useCommands } from '../commands/CommandRegistry'
 import { CmdId } from '../commands/ids'
 import { IPC } from '../../shared/ipcChannels'
 import type { RecentFileEntry } from '../../shared/ipcTypes'
+import { selectAllInScope } from '../utils/selectAllScope'
 
 export function useMenuDispatch(activeTab: string | null): {
   dispatchMenuChannel: (channel: string) => void
@@ -76,6 +77,9 @@ export function useMenuDispatch(activeTab: string | null): {
         case IPC.MENU_GET_PDB:
           dispatch(CmdId.UiGetPdbDialog).catch(logErr('get pdb dialog:'))
           break
+        case 'menu:change-chain-id':
+          dispatch(CmdId.UiChangeChainIdDialog).catch(logErr('change chain id dialog:'))
+          break
         case 'menu:clear-recent':
           window.electronAPI
             ?.invoke(IPC.RECENT_CLEAR)
@@ -92,6 +96,11 @@ export function useMenuDispatch(activeTab: string | null): {
           break
         case 'menu:view-props':
           dispatch(CmdId.UiViewProperty).catch(logErr('ui.viewProperty:'))
+          break
+        case 'menu:select-all':
+          // Scoped Select All: focused field or active selectable region only,
+          // never the whole document. See utils/selectAllScope.ts.
+          selectAllInScope()
           break
         default:
           console.warn('menu action not yet implemented:', channel)

@@ -41,7 +41,7 @@ describe('useRealtimeDragProp', () => {
 
     act(() => handle.result.onRelease(0.6))
     expect(onCommit).toHaveBeenCalledTimes(1)
-    expect(onCommit).toHaveBeenCalledWith(0.2, 0.6)
+    expect(onCommit).toHaveBeenCalledWith(0.2, 0.6, false)
   })
 
   it('rolls the draft back to the original and aborts on cancel', () => {
@@ -60,7 +60,7 @@ describe('useRealtimeDragProp', () => {
     expect(handle.result.value).toBe(0.4)
 
     act(() => handle.result.onDragCancel())
-    expect(onAbort).toHaveBeenCalledWith(0.2)
+    expect(onAbort).toHaveBeenCalledWith(0.2, false)
     expect(handle.result.value).toBe(0.2)
   })
 
@@ -71,7 +71,7 @@ describe('useRealtimeDragProp', () => {
     )
     // No onDragStart: arrow click / text edit path.
     act(() => handle.result.onRelease(0.5))
-    expect(onCommit).toHaveBeenCalledWith(0.2, 0.5)
+    expect(onCommit).toHaveBeenCalledWith(0.2, 0.5, false)
   })
 
   it('tracks the committed value while idle but freezes the draft mid-drag', () => {
@@ -105,6 +105,37 @@ describe('useRealtimeDragProp', () => {
     act(() => captured.onChange(0.4))
     render(0.1)
     expect(captured.value).toBe(0.4)
+
+    act(() => root.unmount())
+  })
+
+  it('freezes the default flag at drag start so a mid-drag refetch cannot change it', () => {
+    // A preview frame flips the prop to non-default and a debounced refetch can
+    // report isdefault=false mid-drag; the commit must still see the pre-drag
+    // flag. Freeze it the same way the draft value is frozen.
+    const onCommit = vi.fn()
+    let captured!: RealtimeDragProps
+    const Probe: React.FC<{ committedIsDefault: boolean }> = ({ committedIsDefault }) => {
+      captured = useRealtimeDragProp({
+        committed: 0.2,
+        committedIsDefault,
+        realtime: true,
+        onPreview: vi.fn(),
+        onCommit,
+      })
+      return null
+    }
+    const container = document.createElement('div')
+    const root = createRoot(container)
+    const render = (committedIsDefault: boolean) =>
+      act(() => root.render(React.createElement(Probe, { committedIsDefault })))
+
+    render(true)
+    act(() => captured.onDragStart())
+    // Mid-drag refetch reports the flipped (non-default) flag.
+    render(false)
+    act(() => captured.onRelease(0.6))
+    expect(onCommit).toHaveBeenCalledWith(0.2, 0.6, true)
 
     act(() => root.unmount())
   })

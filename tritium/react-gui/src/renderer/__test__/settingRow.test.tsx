@@ -104,7 +104,7 @@ describe('SettingRow', () => {
         const el = mount(
             <SettingRow def={def({ kind: 'color' })} value="#FF0000" onChange={vi.fn()} />,
         )
-        const caret = el.querySelector('button.bp5-button') as HTMLButtonElement
+        const caret = el.querySelector('button.h3-color-caret-btn') as HTMLButtonElement
         act(() => {
             caret.click()
         })

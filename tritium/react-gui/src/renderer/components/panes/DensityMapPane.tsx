@@ -47,8 +47,9 @@ import { ColorPickerProvider } from '../../h3-kit/colorpicker/ColorPickerContext
 
 /** Stored-value write options threaded to `setMapRendererProp`. */
 interface MapPropWriteOpts {
-    mode?: 'preview' | 'commit'
+    mode?: 'preview' | 'commit' | 'abort'
     originalValue?: number
+    originalWasDefault?: boolean
 }
 
 /**
@@ -72,21 +73,42 @@ const DragRow: React.FC<{
     scale?: number
     disabled?: boolean
     realtime?: boolean
+    /** The prop's default flag (flag-based), frozen at drag start for restore. */
+    committedIsDefault?: boolean
     onWrite: (stored: number, opts?: MapPropWriteOpts) => void
-}> = ({ label, value, min, max, step, unit, scale = 1, disabled, realtime, onWrite }) => {
+}> = ({
+    label,
+    value,
+    min,
+    max,
+    step,
+    unit,
+    scale = 1,
+    disabled,
+    realtime,
+    committedIsDefault,
+    onWrite,
+}) => {
     const dragProps = useRealtimeDragProp({
         committed: value * scale,
+        committedIsDefault,
         realtime,
         onPreview: (v) => onWrite(v / scale, { mode: 'preview' }),
-        onCommit: (original, v) => {
+        onCommit: (original, v, wasDefault) => {
             const stored = v / scale
             if (stored === original / scale) return
-            // Realtime: restore the pre-drag value before the single undo step.
-            // Non-realtime: plain commit (current behavior).
-            if (realtime) onWrite(stored, { mode: 'commit', originalValue: original / scale })
+            // Realtime: restore the pre-drag value (and default flag) before the
+            // single undo step. Non-realtime: plain commit (current behavior).
+            if (realtime)
+                onWrite(stored, {
+                    mode: 'commit',
+                    originalValue: original / scale,
+                    originalWasDefault: wasDefault,
+                })
             else onWrite(stored)
         },
-        onAbort: (original) => onWrite(original / scale, { mode: 'preview' }),
+        onAbort: (original, wasDefault) =>
+            onWrite(original / scale, { mode: 'abort', originalWasDefault: wasDefault }),
     })
     return (
         <FieldGridRow label={label}>
@@ -206,7 +228,7 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
         (
             propName: MapRendererPropName,
             value: number | boolean | string,
-            opts?: { mode?: 'preview' | 'commit'; originalValue?: number },
+            opts?: MapPropWriteOpts,
         ) => {
             if (!cm || activeSceneId === undefined || selectedRendId === undefined) return
             cm.invokeService('setMapRendererProp', {
@@ -216,6 +238,7 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
                 value,
                 mode: opts?.mode,
                 originalValue: opts?.originalValue,
+                originalWasDefault: opts?.originalWasDefault,
             }).catch((err: unknown) => {
                 console.warn('setMapRendererProp failed:', err)
             })
@@ -384,6 +407,7 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
                             max={1}
                             step={0.1}
                             realtime
+                            committedIsDefault={state?.defaults.alpha}
                             onWrite={(v, opts) => setProp('alpha', v, opts)}
                             disabled={disabled}
                         />
@@ -395,6 +419,7 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
                             step={levelProps.step}
                             unit={levelProps.unit || undefined}
                             scale={levelProps.scale}
+                            committedIsDefault={state?.defaults.siglevel}
                             onWrite={(v, opts) => setProp('siglevel', v, opts)}
                             disabled={disabled}
                         />
@@ -405,6 +430,7 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
                             max={state?.maxExtent ?? 100}
                             step={1}
                             unit="Å"
+                            committedIsDefault={state?.defaults.extent}
                             onWrite={(v, opts) => setProp('extent', v, opts)}
                             disabled={disabled}
                         />

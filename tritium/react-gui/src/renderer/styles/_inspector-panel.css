@@ -133,18 +133,25 @@
   border-bottom: 1px solid var(--border-subtle);
 }
 
+/* Mirrors the left-panel `.sp-section-header` eyebrow design: same height /
+ * typography role / letter-spacing and a transparent fill over the panel
+ * surface (`--bg-surface`, identical to the side panel). The chevron-only
+ * layout (no accent icon) is the one intentional difference from the side
+ * panel. */
 .insp-accordion-header {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   padding: 0 var(--space-4);
-  height: 24px;
-  font-size: var(--fs-base);
-  font-weight: var(--fw-semibold);
+  height: var(--ctrl-h-md);
+  min-height: var(--ctrl-h-md);
+  font-size: var(--type-eyebrow-fs);
+  line-height: var(--type-eyebrow-lh);
+  font-weight: var(--type-eyebrow-fw);
   text-transform: uppercase;
-  letter-spacing: var(--ls-tight);
-  color: var(--text-secondary);
-  background: var(--bg-panel-header);
+  letter-spacing: var(--ls-wide);
+  color: var(--text-primary);
+  background: transparent;
   cursor: pointer;
   user-select: none;
   transition: background 0.12s;
@@ -381,4 +388,26 @@
 
 .inspector-placeholder-text {
   font-size: var(--fs-lg);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   AtomIntr dash/gap stipple pattern (six narrow cells in a row)
+   ═══════════════════════════════════════════════════════════ */
+
+.atomintr-stipple-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--field-row-pad) 0;
+}
+
+.atomintr-stipple-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.atomintr-stipple-caption {
+  color: var(--text-secondary);
 }

@@ -261,10 +261,13 @@ export function useInspectorState({
           value,
           mode: opts?.mode,
           originalValue: opts?.originalValue,
+          originalWasDefault: opts?.originalWasDefault,
         });
-        // A preview write returns no entries (the field drives itself from its
-        // local draft during a drag); only refresh on a real commit.
-        if (targetRef.current === target && res?.ok && opts?.mode !== "preview") {
+        // A preview / abort write returns no entries (the field drives itself
+        // from its local draft during a drag, and an abort's flag/value refresh
+        // is delivered via the PROPCHG listener); only refresh on a real commit.
+        const isCommit = opts?.mode === undefined || opts?.mode === "commit";
+        if (targetRef.current === target && res?.ok && isCommit) {
           setGenericEntries(res.entries);
         }
       } catch (err) {
@@ -293,6 +296,40 @@ export function useInspectorState({
         }
       } catch (err) {
         console.warn("setGenericProp (reset) failed:", err);
+      }
+    },
+    [cm],
+  );
+
+  /**
+   * Write several generic property values in one undo step. Used when a single
+   * UI action changes several properties together yet must collapse to one undo
+   * step (e.g. the atomintr "Dashed" toggle rewriting all six stipple values).
+   * No-op when `writes` is empty.
+   */
+  const handleSetMany = useCallback(
+    async (
+      writes: { key: string; valueType: string; value: string | number | boolean }[],
+    ) => {
+      const target = targetRef.current;
+      if (!cm || !target || target.kind !== "node" || writes.length === 0) return;
+      try {
+        const res = await cm.invokeService("setGenericProps", {
+          sceneId: target.sceneId,
+          nodeId: target.nodeId,
+          nodeType: target.nodeType,
+          writes: writes.map((w) => ({
+            propName: w.key,
+            op: "set" as const,
+            valueType: w.valueType,
+            value: w.value,
+          })),
+        });
+        if (targetRef.current === target && res?.ok) {
+          setGenericEntries(res.entries);
+        }
+      } catch (err) {
+        console.warn("setGenericProps failed:", err);
       }
     },
     [cm],
@@ -358,6 +395,7 @@ export function useInspectorState({
     handleCloseInspector,
     handleGenericSet,
     handleGenericReset,
+    handleSetMany,
     handleResetMany,
   } as const;
 }

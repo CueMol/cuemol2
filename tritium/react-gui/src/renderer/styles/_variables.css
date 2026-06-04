@@ -224,6 +224,7 @@
      these values, so a size is never re-chosen per component. */
   --field-h: 22px;                     /* standard control height (text / select) */
   --field-h-sm: var(--ctrl-h-sm);      /* compact control (numeric) -- 20px */
+  --field-cell-w: calc(34px * var(--ui-scale)); /* tiny numeric cell -- ~2 digits */
   --field-label-gap: var(--space-1);   /* label -> control gap (stack layout) */
   --field-row-pad: var(--space-1);     /* vertical padding around one field row */
   --form-row-gap: var(--space-1);      /* gap between rows in a FieldGroup */

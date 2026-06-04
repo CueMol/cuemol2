@@ -25,7 +25,7 @@ Status values:
 | [`dialog.tool.aintr-edit`](../uxp-inventory/tool_dlgs.md#dialogtoolaintr-edit) | | | todo | | | |
 | [`dialog.tool.apbs-calcpot`](../uxp-inventory/tool_dlgs.md#dialogtoolapbs-calcpot) | | | todo | | | |
 | [`dialog.tool.bond-edit`](../uxp-inventory/tool_dlgs.md#dialogtoolbond-edit) | | | todo | | | |
-| [`dialog.tool.chg-chname`](../uxp-inventory/tool_dlgs.md#dialogtoolchg-chname) | | | todo | | | |
+| [`dialog.tool.chg-chname`](../uxp-inventory/tool_dlgs.md#dialogtoolchg-chname) | `ChangeChainIdDialog` / `useToolCommands` / `changeChainName.service` | direct | review | | | Blueprint dialog built from h3-kit/form (FieldSection + `ObjectSelect` + `MolSelList` + `TextField`). OK commits via `changeChainName` worker service (`MolAnlManager.changeChainName` under a "Change chain name" undo txn). Reached from Edit > Change chain ID (`menu:change-chain-id`). Awaiting E2E sign-off. |
 | [`dialog.tool.chg-resindex`](../uxp-inventory/tool_dlgs.md#dialogtoolchg-resindex) | | | todo | | | |
 | [`dialog.tool.intr-tool`](../uxp-inventory/tool_dlgs.md#dialogtoolintr-tool) | | | todo | | | |
 | [`dialog.tool.makesurf`](../uxp-inventory/tool_dlgs.md#dialogtoolmakesurf) | | | todo | | | |

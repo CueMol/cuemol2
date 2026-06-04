@@ -84,6 +84,10 @@ interface InspectorPanelProps {
     value: string | number | boolean,
     opts?: PropWriteOpts,
   ) => void;
+  /** Called to write several properties in one undo step (e.g. atomintr dashed toggle). */
+  onGenericSetMany: (
+    writes: { key: string; valueType: string; value: string | number | boolean }[],
+  ) => void;
   /** Called to restore a Generic property to its C++ default. */
   onGenericReset: (key: string) => void;
   /** Called to restore several properties to their defaults in one undo step. */
@@ -94,6 +98,8 @@ interface InspectorPanelProps {
   cm: AsyncCueMol | null;
   /** Active scene id for colour resolution (named colours / gamut). */
   sceneId: number | undefined;
+  /** UID of the inspected node (for sections querying the node itself). */
+  nodeId: number | undefined;
 }
 
 // ────────────────────────────────────────────────────────────
@@ -110,11 +116,13 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
   genericLoading,
   renderSettings,
   onGenericSet,
+  onGenericSetMany,
   onGenericReset,
   onResetMany,
   onClose,
   cm,
   sceneId,
+  nodeId,
 }) => {
   // Renderer targets have a migrated structured page, so default to it;
   // other node kinds fall back to the data-backed Generic tab.
@@ -209,8 +217,10 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 entries={genericEntries}
                 rendererType={nodeType}
                 onSet={onGenericSet}
+                onSetMany={onGenericSetMany}
                 onReset={onGenericReset}
                 sceneId={sceneId}
+                nodeId={nodeId}
               />
             ) : (
               <GenericTab

@@ -382,6 +382,31 @@
   color: var(--text-secondary);
 }
 
+/* ── Number cell (bare compact numeric box, ~2 digits) ── */
+.h3-form-number-cell {
+  width: var(--field-cell-w);
+  height: var(--field-h-sm);
+  box-sizing: border-box;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: var(--fs-lg);
+  text-align: center;
+  padding: 0 var(--space-1);
+  caret-color: var(--accent);
+}
+
+.h3-form-number-cell:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.h3-form-number-cell:disabled {
+  opacity: 0.5;
+}
+
 /* ── Drag numeric (Blender number button) ── */
 /* A compact field dragged horizontally to change its value, clicked to
    text-edit, and stepped by the < > arrows shown on hover. Drag uses the
@@ -497,6 +522,11 @@
 
 .h3-form-drag-arrow:hover:not(:disabled) {
   color: var(--text-primary);
+}
+
+/* Held down (single click or auto-repeat hold): accent the active arrow. */
+.h3-form-drag-arrow:active:not(:disabled) {
+  color: var(--accent);
 }
 
 /* Parts never show their own focus ring -- focus belongs to the widget. */

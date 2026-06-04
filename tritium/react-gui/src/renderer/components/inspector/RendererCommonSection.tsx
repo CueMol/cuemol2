@@ -23,6 +23,7 @@ import {
   TextField,
   SelectField,
   DragNumericField,
+  NumericField,
   SwitchField,
   ColorField,
 } from "../../h3-kit/form";
@@ -53,7 +54,7 @@ export interface RowProps {
  * hover default-value annotation. Never-reset keys (name / sel) get no bar and
  * no reset, even when modified.
  */
-function resetProps(entry: GenericPropEntry, onReset: ResetFn) {
+export function resetProps(entry: GenericPropEntry, onReset: ResetFn) {
   const resettable = isResettable(entry);
   return {
     modified: resettable && isModified(entry),
@@ -63,8 +64,23 @@ function resetProps(entry: GenericPropEntry, onReset: ResetFn) {
   };
 }
 
-/** Text input committed on blur / Enter (e.g. Name). */
-const TextRow: React.FC<RowProps> = ({ entry, label, onSet, onReset }) => {
+interface TextRowProps extends RowProps {
+  disabled?: boolean;
+}
+
+/**
+ * Text input committed on blur / Enter (e.g. Name).
+ *
+ * Exported so renderer-type-specific sections (e.g. the atomintr label font
+ * name) reuse the same text row contract instead of redefining it.
+ */
+export const TextRow: React.FC<TextRowProps> = ({
+  entry,
+  label,
+  onSet,
+  onReset,
+  disabled,
+}) => {
   const [draft, setDraft] = useState(String(entry.value));
   const commit = () => {
     if (draft !== String(entry.value)) onSet(entry.key, entry.type, draft);
@@ -79,6 +95,7 @@ const TextRow: React.FC<RowProps> = ({ entry, label, onSet, onReset }) => {
           if (e.key === "Enter") commit();
         }}
         readOnly={entry.readonly}
+        disabled={disabled}
       />
     </PropertyField>
   );
@@ -104,6 +121,10 @@ interface NumRowProps extends RowProps {
   min: number;
   max: number;
   step: number;
+  /** Fine drag snap (Shift). Defaults to `step / 10`; see DragNumericField. */
+  fineSnap?: number;
+  /** Coarse drag snap (Ctrl / Cmd). Defaults to `step * 10`. */
+  coarseSnap?: number;
   unit?: string;
   /**
    * Decimals to display. Omit to derive from the fine snap (`step / 10`); set
@@ -132,6 +153,8 @@ export const NumRow: React.FC<NumRowProps> = ({
   min,
   max,
   step,
+  fineSnap,
+  coarseSnap,
   unit,
   decimals,
   disabled,
@@ -140,17 +163,27 @@ export const NumRow: React.FC<NumRowProps> = ({
   const committed = Number(entry.value);
   const dragProps = useRealtimeDragProp({
     committed,
+    committedIsDefault: entry.isdefault,
     realtime,
     onPreview: (v) => onSet(entry.key, entry.type, v, { mode: "preview" }),
-    onCommit: (original, v) => {
+    onCommit: (original, v, wasDefault) => {
       if (v === original) return;
-      // Realtime: the renderer was previewed, so restore `original` before the
-      // single undo step. Non-realtime: plain commit (current behavior).
+      // Realtime: the renderer was previewed, so restore `original` (and its
+      // default flag) before the single undo step. Non-realtime: plain commit
+      // (current behavior).
       if (realtime)
-        onSet(entry.key, entry.type, v, { mode: "commit", originalValue: original });
+        onSet(entry.key, entry.type, v, {
+          mode: "commit",
+          originalValue: original,
+          originalWasDefault: wasDefault,
+        });
       else onSet(entry.key, entry.type, v);
     },
-    onAbort: (original) => onSet(entry.key, entry.type, original, { mode: "preview" }),
+    onAbort: (original, wasDefault) =>
+      onSet(entry.key, entry.type, original, {
+        mode: "abort",
+        originalWasDefault: wasDefault,
+      }),
   });
   return (
     <PropertyField label={label} {...resetProps(entry, onReset)}>
@@ -159,6 +192,8 @@ export const NumRow: React.FC<NumRowProps> = ({
         min={min}
         max={max}
         step={step}
+        fineSnap={fineSnap}
+        coarseSnap={coarseSnap}
         unit={unit}
         decimals={decimals}
         disabled={disabled || entry.readonly}
@@ -167,12 +202,69 @@ export const NumRow: React.FC<NumRowProps> = ({
   );
 };
 
-interface EnumRowProps extends RowProps {
+interface NumInputRowProps extends RowProps {
+  min: number;
+  max: number;
+  step: number;
+  unit?: string;
   disabled?: boolean;
 }
 
-/** Dropdown committed immediately (e.g. Edge type). */
-const EnumRow: React.FC<EnumRowProps> = ({ entry, label, onSet, onReset, disabled }) => (
+/**
+ * Numeric row backed by the plain `NumericField` with the slider hidden
+ * (`slider={false}`), i.e. a stepper input only. Used for discrete count-like
+ * "detail" properties where a slider is unwanted. The stepper does not stretch
+ * horizontally, so the row is laid out inline (label beside the control), like
+ * the switch rows. Commits a single undo step on blur / Enter; the local draft
+ * tracks the value live and resyncs when the committed value changes (caller
+ * passes a value-keyed `key` to remount).
+ *
+ * Exported so renderer-type-specific sections (cartoon `axialdetail`, disorder
+ * `detail`) reuse the same stepper-row contract instead of redefining it.
+ */
+export const NumInputRow: React.FC<NumInputRowProps> = ({
+  entry,
+  label,
+  onSet,
+  onReset,
+  min,
+  max,
+  step,
+  unit,
+  disabled,
+}) => {
+  const [draft, setDraft] = useState(Number(entry.value));
+  const commit = (v: number) => {
+    if (v !== Number(entry.value)) onSet(entry.key, entry.type, v);
+  };
+  return (
+    <PropertyField label={label} inline {...resetProps(entry, onReset)}>
+      <NumericField
+        value={draft}
+        onChange={setDraft}
+        onRelease={commit}
+        slider={false}
+        min={min}
+        max={max}
+        step={step}
+        unit={unit}
+        disabled={disabled || entry.readonly}
+      />
+    </PropertyField>
+  );
+};
+
+export interface EnumRowProps extends RowProps {
+  disabled?: boolean;
+}
+
+/**
+ * Dropdown committed immediately (e.g. Edge type). Options come from the
+ * property's `enumdef` (raw C++ string IDs).
+ *
+ * Exported so renderer-type-specific sections reuse the same enum row contract.
+ */
+export const EnumRow: React.FC<EnumRowProps> = ({ entry, label, onSet, onReset, disabled }) => (
   <PropertyField label={label} {...resetProps(entry, onReset)}>
     <SelectField
       value={String(entry.value)}
@@ -187,6 +279,54 @@ const EnumRow: React.FC<EnumRowProps> = ({ entry, label, onSet, onReset, disable
     </SelectField>
   </PropertyField>
 );
+
+export interface MappedEnumRowProps extends RowProps {
+  /** Display text per raw enum ID (value stays the raw C++ string ID). */
+  labels: Record<string, string>;
+  disabled?: boolean;
+}
+
+/**
+ * Enum dropdown that shows a friendly label per option while committing the raw
+ * C++ enum string ID. Falls back to the raw ID for any option missing from
+ * `labels`. Unlike `EnumRow`, the visible option text is decoupled from the
+ * committed value.
+ *
+ * Exported so renderer-type-specific sections (cartoon / tube cap-type, section
+ * type, putty mode) reuse the same mapped-enum row contract.
+ */
+export const MappedEnumRow: React.FC<MappedEnumRowProps> = ({
+  entry,
+  label,
+  labels,
+  onSet,
+  onReset,
+  disabled,
+}) => {
+  const options = entry.enumdef ?? [String(entry.value)];
+  return (
+    <PropertyField label={label} {...resetProps(entry, onReset)}>
+      <SelectField
+        value={String(entry.value)}
+        disabled={disabled || entry.readonly}
+        onChange={(v) => onSet(entry.key, entry.type, v)}
+      >
+        {options.map((opt) => (
+          <option key={opt} value={opt}>
+            {labels[opt] ?? opt}
+          </option>
+        ))}
+      </SelectField>
+    </PropertyField>
+  );
+};
+
+/** Cap-type enum labels shared by the spline-family renderers (cartoon / tube). */
+export const CAP_LABELS: Record<string, string> = {
+  sphere: "Round",
+  flat: "Flat",
+  none: "None",
+};
 
 export interface ColorRowProps extends RowProps {
   disabled?: boolean;

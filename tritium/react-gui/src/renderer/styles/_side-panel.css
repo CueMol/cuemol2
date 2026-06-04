@@ -57,7 +57,7 @@
   font-weight: var(--type-eyebrow-fw);
   text-transform: uppercase;
   letter-spacing: var(--ls-wide);
-  color: var(--text-secondary);
+  color: var(--text-primary);
   background: transparent;
   user-select: none;
   flex-shrink: 0;

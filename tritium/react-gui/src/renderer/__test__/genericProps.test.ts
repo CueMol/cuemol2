@@ -36,9 +36,15 @@ describe('parseGenericProps', () => {
         },
     ];
 
-    it('flattens the JSON array into one entry per top-level property', () => {
+    it('flattens the JSON array, expanding a nested object after its container', () => {
         const entries = parseGenericProps(RAW);
+        // The nested `coloring` object emits its container row followed by its
+        // dot-path children.
         expect(entries.map((e) => e.key)).toEqual([
+            'alpha', 'visible', 'coil_type', 'center', 'coloring', 'coloring.x',
+        ]);
+        // Top-level rows keep depth 0.
+        expect(entries.filter((e) => e.depth === 0).map((e) => e.key)).toEqual([
             'alpha', 'visible', 'coil_type', 'center', 'coloring',
         ]);
     });
@@ -76,12 +82,55 @@ describe('parseGenericProps', () => {
         expect(center.readonly).toBe(true);
     });
 
-    it('emits a nested object as a single read-only container row', () => {
-        const coloring = parseGenericProps(RAW).find((e) => e.key === 'coloring')!;
+    it('emits a nested object as a read-only container row followed by its children', () => {
+        const entries = parseGenericProps(RAW);
+        const coloring = entries.find((e) => e.key === 'coloring')!;
         expect(coloring.isContainer).toBe(true);
         expect(coloring.value).toBe(CONTAINER_VALUE);
-        // A nested object cannot be written generically yet -> forced readonly.
+        expect(coloring.depth).toBe(0);
+        // The container object itself cannot be replaced wholesale.
         expect(coloring.readonly).toBe(true);
+
+        // Its child is surfaced with a dot-path key at depth 1 and stays
+        // editable (dot-path writes route through setNestedProperty).
+        const child = entries.find((e) => e.key === 'coloring.x')!;
+        expect(child).toMatchObject({
+            key: 'coloring.x',
+            type: 'real',
+            value: 0,
+            readonly: false,
+            isContainer: false,
+            depth: 1,
+        });
+    });
+
+    it('recurses into multi-level nesting, preserving enumdef on nested children', () => {
+        const raw = [
+            {
+                name: 'section', readonly: true, hasdefault: false, type: 'object<TubeSection>',
+                value: [
+                    {
+                        name: 'type', readonly: false, hasdefault: true, isdefault: true,
+                        type: 'enum', enumdef: ['elliptical', 'roundsquare'], value: 'elliptical',
+                    },
+                    { name: 'width', readonly: false, hasdefault: true, isdefault: false, default: 0.35, type: 'real', value: 0.5 },
+                    {
+                        name: 'inner', readonly: true, hasdefault: false, type: 'object<Foo>',
+                        value: [{ name: 'leaf', readonly: false, hasdefault: false, type: 'integer', value: 3 }],
+                    },
+                ],
+            },
+        ];
+        const entries = parseGenericProps(raw);
+        expect(entries.map((e) => e.key)).toEqual([
+            'section', 'section.type', 'section.width', 'section.inner', 'section.inner.leaf',
+        ]);
+        const type = entries.find((e) => e.key === 'section.type')!;
+        expect(type).toMatchObject({ enumdef: ['elliptical', 'roundsquare'], depth: 1, isdefault: true });
+        const width = entries.find((e) => e.key === 'section.width')!;
+        expect(width).toMatchObject({ value: 0.5, defaultValue: 0.35, depth: 1 });
+        // Two-level deep child gets a two-segment dot-path key at depth 2.
+        expect(entries.find((e) => e.key === 'section.inner.leaf')!.depth).toBe(2);
     });
 
     it('returns an empty list for non-array input', () => {
@@ -197,6 +246,16 @@ describe('genericProps services', () => {
         expect(res.ok).toBe(true);
         // Returns the freshly re-dumped property list.
         expect(res.entries.map((e) => e.key)).toEqual(['alpha']);
+    });
+
+    it('setGenericProp passes a dot-path propName straight through to setProp', () => {
+        // Nested-object sub-properties are written by their dot-path key; the
+        // service must not rewrite it (C++ setNestedProperty splits the path).
+        const { ctx, target } = makeEnv();
+        services.setGenericProp(ctx, {
+            ...ref, propName: 'section.type', op: 'set', valueType: 'enum', value: 'roundsquare',
+        });
+        expect(target.setProp).toHaveBeenCalledWith('section.type', 'roundsquare');
     });
 
     it('setGenericProp (reset) calls resetProp, not setProp', () => {

@@ -25,6 +25,7 @@ import { InspectorPanel } from "./components/panels/InspectorPanel";
 import type { AnimationData } from "./types";
 
 import { SAMPLE_ANIMATION } from "./data/alignmentData";
+import { installSelectAllScope } from "./utils/selectAllScope";
 
 import { useLayoutPersistence } from "./hooks/useLayoutPersistence";
 import { useActiveTool } from "./hooks/useActiveTool";
@@ -103,6 +104,7 @@ const App: React.FC = () => {
     handleCloseInspector,
     handleGenericSet,
     handleGenericReset,
+    handleSetMany,
     handleResetMany,
   } = useInspectorState({
     layout,
@@ -324,6 +326,11 @@ const App: React.FC = () => {
     }
   }, []);
 
+  // --- Scoped Select All ---
+  // Track the active selectable region so Cmd+A / Edit > Select All target only
+  // the focused field or that region (e.g. the log panel), never the whole GUI.
+  useEffect(() => installSelectAllScope(), []);
+
   // --- Derived sidebar sub-panel state ---
 
   const viewSizes = layout.viewSizes ?? {
@@ -476,11 +483,17 @@ const App: React.FC = () => {
                           onChange: renderSettings.handleChange,
                         }}
                         onGenericSet={handleGenericSet}
+                        onGenericSetMany={handleSetMany}
                         onGenericReset={handleGenericReset}
                         onResetMany={handleResetMany}
                         onClose={handleCloseInspector}
                         cm={cm}
                         sceneId={activeSceneId}
+                        nodeId={
+                          inspectorTarget?.kind === "node"
+                            ? inspectorTarget.nodeId
+                            : undefined
+                        }
                       />
                     </Allotment.Pane>
                   </Allotment>

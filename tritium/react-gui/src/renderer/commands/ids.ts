@@ -16,6 +16,7 @@ export const CmdId = {
   UiOpenSceneDialog:  'ui.openSceneDialog',  // no args
   UiAboutDialog:      'ui.aboutDialog',      // no args
   UiGetPdbDialog:     'ui.getPdbDialog',     // no args
+  UiChangeChainIdDialog: 'ui.changeChainIdDialog', // no args
 
   // Tab management
   TabNew:             'tab.new',             // no args

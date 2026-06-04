@@ -1,5 +1,12 @@
 # Migration Mapping — Index
 
+- Updated: 2026-06-04 (`dialog.tool.chg-chname` review: UXP "Change chain ID" tool dialog を Blueprint modal として実装。h3-kit/form (`FieldSection` + `ObjectSelect` molCoord filter + `MolSelList` + `TextField`) で構成。OK は新規 worker service `changeChainName` 経由で `MolAnlManager.changeChainName(mol, sel, name)` を "Change chain name" undo txn 内で実行。Edit メニューの既存 stub `menu:change-chain-id` を `useToolCommands` 経由で配線。tool_dlgs todo 20->19/review 0->1)
+- Updated: 2026-06-03 (`dialog.property.tube` done: UXP `tube-propdlg` の Tube タブを Inspector Properties タブの 3 accordion section (`TubeRendererSection`: Tube / Section / Putty) として実装、`type_name "tube"` で registry 登録。中核の `section.*` (TubeSection 断面形状) は nested object 上にあるため `parseGenericProps` をネスト再帰展開 (dotted key + depth) し、dot-path 書き込みは `cuemol2::setProp`→`LPropSupport::setNestedProperty` 経由で実現 — ADR-0015 の「nested 編集不可」前提を訂正 (誤りは `LScrObjects.cpp` 旧 inline 実装の誤読、binding 経路は対応済みで UXP xpcom と同一)。Width2 は `section.tuber`×width の派生表示。`MappedEnumRow`/`CAP_LABELS` を `RendererCommonSection` へ昇格し cartoon と共用。cartoon の section 形状も同手法で露出可能だが follow-up。prop_dlgs done 6->7/todo 7->6)
+- Updated: 2026-06-03 (`dialog.property.disorder` done: UXP `disorder-propdlg` の Disorder タブを Inspector Properties タブの 1 accordion section (`DisoRendererSection`) として実装、`type_name "disorder"` で registry 登録。`target` は親 mol の tube/ribbon/cartoon/nucl 兄弟 renderer 名を新 worker service `getSiblingRendererNames` で列挙する `(none)` 付き select (section へ `nodeId` を thread)、`detail` は素の inline NumericField、dot size/dot sep/loop size/loop size 2 は `NumRow`(DragNumericField, realtime 無し)、`defaultcolor` は `ColorRow`。共有 `NumInputRow` を `RendererCommonSection` へ昇格し cartoon と共用。prop_dlgs done 5->6/todo 8->7)
+- Updated: 2026-06-03 (`dialog.property.cartoon` done: UXP `cartoon-propdlg` の Cartoon/Helix/Sheet/Coil タブを Inspector Properties タブの 4 accordion section (`CartoonRendererSection`) として実装、`type_name "cartoon"` で registry 登録。`axialdetail` Detail は素の NumericField スライダー、その他は `NumRow`(DragNumericField, realtime 無し)/`BoolRow`/`MappedEnumRow`。Helix width 系は `helix_width_mode` で enable 連動。section 形状 (helix/sheet/coil の type・width 等) は read-only nested sub-object で dot-path setProp 非対応のため Generic タブ残置。prop_dlgs count を実 status (total 14/done 5/wip 1/todo 8) に是正)
+- Updated: 2026-06-03 (`dialog.atomintr` review: AtomIntrRenderer property page を Inspector Properties タブの 4 accordion section (Interaction / Dashed line / 3D tube / Value label) として実装。`rendererPropSections` registry に `type_name "atomintr"` で登録。Dashed トグルは合成 (stipple0..5 を新 worker service `setGenericProps` で 1 undo step に原子書き込み、`onSetMany` を inspector 層に thread)。arrow size・label font は UXP dialog 外だが追加。距離/角度定義の append/remove 編集は対象外)
+- Updated: 2026-06-03 (`dialog.property.ballstick` done: UXP "Ball & Stick" タブの detail/bondw/sphr/ring/thickness/ringcolor を Inspector Properties タブの独立 accordion entry ("Ball and stick") として実装済み。`rendererPropSections` registry に `type_name "ballstick"` で登録、`NumRow`/`BoolRow`/`ColorRow` を再利用、ring off 時に thickness/ringcolor を disable。mapping 行の更新漏れを是正)
+- Updated: 2026-06-03 (`dialog.property.cpk` done: UXP "Atom radii" タブを Inspector Properties タブの 2 accordion ("Atom radii" 7 元素 van der Waals 半径 + "Detail" `detail`) に実装。UXP で groupbox 外だった detail を別 section に分離。`rendererPropSections` registry に `type_name "cpk"` で登録、`NumRow` (DragNumericField, realtime preview) を再利用)
 - Updated: 2026-06-02 (`dialog.property.simple` done: UXP "Simple" タブの Line width を Inspector Properties タブの独立 accordion entry として実装。`rendererPropSections` registry に `type_name "simple"` で登録、DragNumericField (realtime preview) で `width` を編集。ported renderer-type は折りたたみ dummy ではなく実 section を表示)
 - Updated: 2026-06-01 (`dialog.property.renderer` wip: renderer-common-page (Basic settings + Edge lines) implemented as the Inspector Properties tab via live `getGenericProps`/`setGenericProp`; renderer-type-specific sections deferred to `rendererPropSections` registry — currently Common + collapsed dummy)
 - Updated: 2026-05-25 (`panel.densitymap` done: DensityMapPane wired with custom stepper (+ step-precision quantize) and typed-property-setter writes for color/center; multi-gradient mode dropped)
@@ -24,13 +31,13 @@
 | Panel | [panels.md](panels.md) | 27 | 4 | 17 | 1 | 5 | 0 |
 | Menu | [menus.md](menus.md) | 4 | 2 | 2 | 0 | 0 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
-| Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 13 | 1 | 1 | 0 | 11 | 0 |
-| Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 0 | 3 | 0 | 15 | 0 |
-| Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 1 | 0 | 0 | 20 | 0 |
+| Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 14 | 7 | 1 | 0 | 6 | 0 |
+| Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 0 | 3 | 1 | 14 | 0 |
+| Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 1 | 0 | 1 | 19 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 2 | 1 | 0 | 10 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 0 | 1 | 0 | 27 | 0 |
 | Other | [other.md](other.md) | 4 | 0 | 1 | 0 | 3 | 0 |
-| **Total** | | **130** | **9** | **27** | **1** | **93** | **0** |
+| **Total** | | **130** | **10** | **27** | **2** | **91** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -59,11 +66,11 @@
 | Mapping | Count |
 |---------|------:|
 | 1:1 (`direct`) | 8 |
-| merged | 2 |
+| merged | 3 |
 | split | 19 |
 | redesign | 0 |
 | deprecated (`dropped`) | 2 |
-| *(not yet assigned)* | 99 |
+| *(not yet assigned)* | 98 |
 
 ---
 
@@ -75,6 +82,8 @@
 | [`menu.cuemol2`](menus.md#menucuemol2) | `menuTemplate` / `MenuBar` / `useMenuDispatch` | Full 9-group structure added; View > Center mark wired; Scene > Background color wired; File > Get PDB wired (streaming via StreamManager); File > Open Recent wired (electron-store-backed MRU, app.addRecentDocument); Hardware stereo and Open web page dropped; File > Save File As / Save current view / Reload Scene wired; item-level completion 25/55; MenuBar suppressed on macOS |
 | [`menu.cuemol2-macos`](menus.md#menucuemol2-macos) | `main/menu.ts` | macOS App menu added; item-level completion 6/7 |
 | [`dialog.about`](other_dlgs.md#dialogabout) | `AboutDialog` / `useDialog` | GRE info・userAgent は省略 |
+| [`dialog.atomintr`](other_dlgs.md#dialogatomintr) | `AtomIntr*Section` (inspector Properties tab) | Interaction/Dashed line/3D tube/Value label の 4 accordion。Dashed トグルは合成 (`setGenericProps` で stipple0..5 を 1 undo step 原子書き込み)。arrow size・label font 追加。append/remove 編集は対象外 |
+| [`dialog.tool.chg-chname`](tool_dlgs.md#dialogtoolchg-chname) | `ChangeChainIdDialog` / `useToolCommands` / `changeChainName.service` | h3-kit/form 製の Change chain ID modal。`MolAnlManager.changeChainName` を undo txn で実行。Edit メニューから起動。E2E sign-off 待ち |
 | [`other.cuemol2`](other.md#othercuemol2) | `App` / `ContentArea` / `TabBar` / `ConfirmCloseTabDialog` / `useQuitHandler` | Main window layout done; close-tab confirmation dialog (UXP `closeTabImpl`) implemented; UXP `onCloseEvent` quit chain wired (cmd-Q walks all tabs via `before-quit` → `APP_QUIT_REQUEST` → `APP_QUIT_PROCEED`) |
 | [`widget.molsellist`](custom_widgets.md) | `MolSelList` (`h3-kit/MolSelList/`) | First consumer wired in `RendererOptionsPane` (file-open dialog); editable `InputGroup` + chevron-only `HTMLSelect` (OS-native dropdown listbox with `<optgroup>` Preset / History / Scene / Global); history via `localStorage`; worker services `getSelDefs` / `validateSelection` added |
 | [`panel.workspace.tree`](panels.md#panelworkspacetree) | `ScenePane` (tree) / `useSceneTree` / `useSceneTreeController` / `sceneTreeDnd` / `InlineRenameInput` / `sceneTree.service` / `reorderSceneNode.service` | Live tree + visibility toggle + selection (single + multi via Cmd/Ctrl+click) + event-driven auto-refresh + drag-drop reorder (worker + in-app DnD OK; ADR-0001) + F2 inline rename; pending: Shift+range select |
@@ -86,7 +95,7 @@
 | [`panel.workspace.ctxmenu.rendgroup`](panels.md#panelworkspacectxmenurendgroup) | `useSceneContextMenu` / `main/sceneContextMenu` (rendGroup) / `sceneClipboard.service` / `createRendererOnObject.service` / `getNewRendererOptions.service` | Common items + Copy + Paste Renderer into group + New Renderer (group-aware) wired |
 | [`panel.workspace.ctxmenu.style`](panels.md#panelworkspacectxmenustyle) | `useSceneContextMenu` / `main/sceneContextMenu` (style) / `styleOps.service` / `styleFile.service` / `sceneClipboard.service` (style kind) / `sceneOps.deleteNode` (style branch) | New Style + Copy / Paste + Delete + Style file Load / Save / Save As (Reload stub) + Read-only toggle wired; `sceneTree.service` switched to `getStyleSetsJSON` so style nodes carry real C++ uids + `styleInfo`. Editor dialog (Phase 5a) pending. |
 | [`panel.workspace.ctxmenu.camera`](panels.md#panelworkspacectxmenucamera) | `useSceneContextMenu` / `main/sceneContextMenu` (camera) / `cameraOps.service` / `cameraFile.service` / `sceneClipboard.service` (camera kind) | New Camera + Rename (atomic destroy+setCamera) + Delete + Copy / Paste + Camera file Load / Reload / Save / Save As + Save/Apply from view + Save/Apply with vis flags + Clear vis flags wired; `sceneTree.service` synthesises `cameraInfo` from `getCameraInfoJSON`. Edit vis flags dialog (Phase 6c) + property dialog (Phase 5a) pending. |
-| [`overlay.propeditor-generic`](overlay.md#overlaypropeditor-generic) | `InspectorPanel` / `GenericTab` / `genericProps.service` / `useInspectorState` | Generic property editor as the Generic tab of the docked inspector pane (ADR-0015); `getPropsJSON` bridge, live-apply, undo-wrapped writes. First stage edits primitive types (string/int/real/bool/enum); color/vector/timeval/nested-object editing deferred. Replaces the retired read-only `NodePropertyDialog` modal. |
+| [`overlay.propeditor-generic`](overlay.md#overlaypropeditor-generic) | `InspectorPanel` / `GenericTab` / `genericProps.service` / `useInspectorState` | Generic property editor as the Generic tab of the docked inspector pane (ADR-0015); `getPropsJSON` bridge, live-apply, undo-wrapped writes. First stage edits primitive types (string/int/real/bool/enum); nested-object sub-properties now editable via dot-path keys (`parseGenericProps` recurses, `setNestedProperty` writes — ADR-0015 Update); color/vector/timeval widgets deferred. Replaces the retired read-only `NodePropertyDialog` modal. |
 | [`dialog.property.renderer`](prop_dlgs.md) | `inspector/RendererCommonSection` / `inspector/PropertiesTab` / `rendererPropSections` / `getMaterialNames.service` | renderer-common-page (Basic settings + Edge lines) as the structured Properties tab, default for renderer targets; live `getGenericProps`/`setGenericProp` (sel compiled via `makeSel`, egcolor/material as strings). Per-renderer-type sections deferred to the `rendererPropSections` registry — every type currently shows Common + a collapsed dummy placeholder. |
 | [`panel.coloring.shell`](panels.md#panelcoloringshell) | `ColorPane` / `usePaintCapableRenderers` / `rendererColoring.service` | Phase 1: renderer selector (paint-capable filter) + Coloring type dropdown (Paint / Solid / Reset enabled; CPK / Bfac / Rainbow / Elepot / Multi-gradient "coming soon"). |
 | [`panel.coloring.deck.paint`](panels.md#panelcoloringdeckpaint) | `ColorPane` / `useRendererColoringState` / `rendererColoring.service` (Paint CRUD) | Phase 1: inline-edit Paint table (no `paint-propdlg` dialog yet). Add / Delete / Move + cell-level commit on blur via `add/remove/update/movePaintEntry`. |
@@ -102,4 +111,4 @@
 
 ## Unstarted
 
-**97 / 130** items are `todo` (not yet started).
+**95 / 130** items are `todo` (not yet started).

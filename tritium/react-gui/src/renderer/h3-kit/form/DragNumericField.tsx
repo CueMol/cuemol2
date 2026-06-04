@@ -17,11 +17,16 @@
  * `step` is a SNAP granularity (the value is forced to a multiple of it during
  * a drag), not an increment. Modifiers change the active snap:
  *   - no modifier -> snap to `step`        (normal)
- *   - Shift       -> snap to `step / 10`   (fine)
- *   - Ctrl / Cmd  -> snap to `step * 10`   (coarse)
+ *   - Shift       -> snap to the fine snap   (default `step / 10`)
+ *   - Ctrl / Cmd  -> snap to the coarse snap (default `step * 10`)
+ * The fine / coarse snaps default to `step / 10` and `step * 10` but can be set
+ * explicitly via `fineSnap` / `coarseSnap` when the desired granularity is not a
+ * 10th / 10x of `step` (e.g. step 0.05 with a fine snap of 0.01).
  * The drag sensitivity (value units per pixel) is constant; only the snap
  * granularity changes, so Shift gives finer resolution rather than slower
- * motion. The `<` / `>` arrows, by contrast, increment / decrement by `step`.
+ * motion. The `<` / `>` arrows, by contrast, increment / decrement by `step`,
+ * and auto-repeat while held down (one immediate step, then -- after a short
+ * delay -- a steady stream of steps until release).
  *
  * The widget is focusable as a single unit (`tabIndex=0` on the root); its
  * parts (arrows, edit input) never take a separate focus ring. Keyboard
@@ -40,18 +45,23 @@
  * glance. The bar is hidden while text-editing.
  *
  * Commit timing mirrors NumericField: `onChange` fires continuously (every drag
- * frame, every step click, on text commit) for a live draft; `onRelease` fires
- * once at the end of an interaction (drag end, step click, Enter/blur) so the
- * parent can push a single undo step.
+ * frame, every step tick during an arrow press, on text commit) for a live
+ * draft; `onRelease` fires once at the end of an interaction (drag end, arrow
+ * press release, Enter/blur) so the parent can push a single undo step. An
+ * entire arrow press -- including a long auto-repeat hold -- is one interaction
+ * and therefore one undo step, exactly like a drag.
+ *
+ * Both a drag and an arrow press drive the same lifecycle, so the realtime hooks
+ * below cover holds as well as drags.
  *
  * Realtime mode (`realtime`): for props that benefit from live object feedback,
- * the field also emits `onDragStart` when a drag begins and `onDragCancel` if a
- * drag is aborted (Esc mid-drag, or unmount mid-drag). This lets a parent run a
- * preview-while-dragging / single-commit-on-release lifecycle (apply the value
- * to the object every `onChange` without undo, then commit one undo step on
- * `onRelease`, or roll back on `onDragCancel`). Without `realtime` (the
- * default), behaviour is unchanged: no drag-lifecycle callbacks fire and Esc
- * mid-drag commits the current value like a normal release.
+ * the field also emits `onDragStart` when a drag / arrow press begins and
+ * `onDragCancel` if it is aborted (Esc mid-drag, or unmount mid-interaction).
+ * This lets a parent run a preview-while-interacting / single-commit-on-release
+ * lifecycle (apply the value to the object every `onChange` without undo, then
+ * commit one undo step on `onRelease`, or roll back on `onDragCancel`). Without
+ * `realtime` (the default), no live preview fires: a hold only updates the
+ * displayed number and the object is written once on `onRelease`.
  *
  * @module form/DragNumericField
  */
@@ -67,6 +77,10 @@ const DRAG_THRESHOLD_PX = 4;
 const PX_PER_STEP = 8;
 /** Factor between the normal snap and the fine (Shift) / coarse (Ctrl) snaps. */
 const SNAP_FACTOR = 10;
+/** Delay before a held arrow starts auto-repeating (after the first step). */
+const STEP_REPEAT_DELAY_MS = 400;
+/** Interval between auto-repeat steps while an arrow is held. */
+const STEP_REPEAT_INTERVAL_MS = 60;
 
 export interface DragNumericFieldProps {
     value: number;
@@ -88,6 +102,15 @@ export interface DragNumericFieldProps {
      * (`step * 10`, Ctrl); see the file header.
      */
     step?: number;
+    /**
+     * Fine drag snap (Shift). Defaults to `step / 10`. Set explicitly when the
+     * fine granularity is not a 10th of `step` (e.g. `step` 0.05, `fineSnap`
+     * 0.01). Also drives the stored-value quantization and default display
+     * precision (the finest resolution the value can take).
+     */
+    fineSnap?: number;
+    /** Coarse drag snap (Ctrl / Cmd). Defaults to `step * 10`. */
+    coarseSnap?: number;
     /** Decimals to display; when omitted, derived from the fine snap (`step / 10`). */
     decimals?: number;
     /** Optional unit suffix, e.g. "deg", "A", "%". Rendered in a non-editable span. */
@@ -148,6 +171,16 @@ interface DragState {
     crossed: boolean;
 }
 
+/** Transient arrow-press bookkeeping for the auto-repeat hold. */
+interface PressState {
+    sign: 1 | -1;
+    /** Accumulated value during the hold; advanced one `step` per tick. */
+    held: number;
+    /** Initial-delay timeout, then the repeat interval (cleared on release). */
+    delayTimer: ReturnType<typeof setTimeout> | null;
+    repeatTimer: ReturnType<typeof setInterval> | null;
+}
+
 type Mode = 'idle' | 'hover' | 'dragging' | 'editing';
 
 /**
@@ -161,6 +194,8 @@ export const DragNumericField: React.FC<DragNumericFieldProps> = ({
     min = -Infinity,
     max = Infinity,
     step = 1,
+    fineSnap,
+    coarseSnap,
     decimals,
     unit,
     disabled,
@@ -174,10 +209,13 @@ export const DragNumericField: React.FC<DragNumericFieldProps> = ({
     const rootRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const dragRef = useRef<DragState | null>(null);
+    const pressRef = useRef<PressState | null>(null);
 
     // Finest resolution the value can take (the Shift snap); drives both
-    // storage quantization and the default display precision.
-    const fineStep = step / SNAP_FACTOR;
+    // storage quantization and the default display precision. The coarse snap
+    // (Ctrl / Cmd) is the largest. Both default to a 10th / 10x of `step`.
+    const fineStep = fineSnap ?? step / SNAP_FACTOR;
+    const coarseStep = coarseSnap ?? step * SNAP_FACTOR;
     const dispDecimals = decimals ?? decimalsOf(fineStep);
     const format = useCallback(
         (v: number) => v.toFixed(dispDecimals),
@@ -191,15 +229,15 @@ export const DragNumericField: React.FC<DragNumericFieldProps> = ({
 
     // Stable refs to props the global listeners use, so the listeners attached
     // once at mousedown always reach current behavior.
-    const cbRef = useRef({ onChange, onRelease, min, max, step, realtime, onDragStart, onDragCancel });
-    cbRef.current = { onChange, onRelease, min, max, step, realtime, onDragStart, onDragCancel };
+    const cbRef = useRef({ onChange, onRelease, min, max, step, fineStep, coarseStep, realtime, onDragStart, onDragCancel });
+    cbRef.current = { onChange, onRelease, min, max, step, fineStep, coarseStep, realtime, onDragStart, onDragCancel };
 
     // --- Drag (global listeners + pointer lock) ---
 
     const handleMouseMove = useCallback((e: MouseEvent) => {
         const d = dragRef.current;
         if (!d) return;
-        const { onChange, min, max, step } = cbRef.current;
+        const { onChange, min, max, step, fineStep, coarseStep } = cbRef.current;
 
         d.accumPx += e.movementX;
 
@@ -222,11 +260,11 @@ export const DragNumericField: React.FC<DragNumericFieldProps> = ({
         // rate but is forced to a finer / coarser multiple.
         const raw = d.startValue + (d.accumPx / PX_PER_STEP) * step;
         const snap = e.shiftKey
-            ? step / SNAP_FACTOR
+            ? fineStep
             : e.ctrlKey || e.metaKey
-              ? step * SNAP_FACTOR
+              ? coarseStep
               : step;
-        const next = clampAndQuantize(snapTo(raw, snap), min, max, step / SNAP_FACTOR);
+        const next = clampAndQuantize(snapTo(raw, snap), min, max, fineStep);
         onChange(next);
     }, []);
 
@@ -291,30 +329,89 @@ export const DragNumericField: React.FC<DragNumericFieldProps> = ({
         [disabled, mode, value, handleMouseMove, handleMouseUp, handlePointerLockChange],
     );
 
-    // Clean up listeners + any pointer lock on unmount (mid-drag safety). If a
-    // realtime drag is still in progress, let the parent roll back so the
-    // object is not left at an uncommitted preview value.
+    // --- Step arrows (press-and-hold auto-repeat) ---
+
+    // Advance the held value by one `step`; stop repeating (but keep the press,
+    // so the value still commits on release) once a bound is reached. Reads the
+    // live accumulator + cbRef so the interval closure never goes stale.
+    const pressStep = useCallback(() => {
+        const p = pressRef.current;
+        if (!p) return;
+        const { min, max, step, fineStep, onChange } = cbRef.current;
+        const next = clampAndQuantize(p.held + p.sign * step, min, max, fineStep);
+        if (next === p.held) {
+            if (p.repeatTimer !== null) {
+                clearInterval(p.repeatTimer);
+                p.repeatTimer = null;
+            }
+            if (p.delayTimer !== null) {
+                clearTimeout(p.delayTimer);
+                p.delayTimer = null;
+            }
+            return;
+        }
+        p.held = next;
+        onChange(next);
+    }, []);
+
+    // End an arrow press: clear timers, drop the global listener, and commit the
+    // whole press as a single undo step (mirrors a drag's onRelease).
+    const endPress = useCallback(() => {
+        const p = pressRef.current;
+        if (!p) return;
+        pressRef.current = null;
+        if (p.delayTimer !== null) clearTimeout(p.delayTimer);
+        if (p.repeatTimer !== null) clearInterval(p.repeatTimer);
+        document.removeEventListener('mouseup', endPress);
+        cbRef.current.onRelease?.(p.held);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Begin an arrow press: take one immediate step, then -- after a short delay
+    // -- start a steady auto-repeat that runs until the button is released.
+    const startPress = useCallback(
+        (sign: 1 | -1) => {
+            if (disabled || mode === 'editing') return;
+            rootRef.current?.focus();
+            // Announce the interaction start before the first onChange so the
+            // parent can snapshot the pre-step value for a single undo step.
+            cbRef.current.onDragStart?.();
+            const p: PressState = {
+                sign,
+                held: valueRef.current,
+                delayTimer: null,
+                repeatTimer: null,
+            };
+            pressRef.current = p;
+            document.addEventListener('mouseup', endPress);
+            pressStep();
+            p.delayTimer = setTimeout(() => {
+                p.delayTimer = null;
+                if (pressRef.current !== p) return;
+                p.repeatTimer = setInterval(pressStep, STEP_REPEAT_INTERVAL_MS);
+            }, STEP_REPEAT_DELAY_MS);
+        },
+        [disabled, mode, pressStep, endPress],
+    );
+
+    // Clean up listeners + any pointer lock on unmount (mid-interaction safety).
+    // If a realtime drag or arrow press is still in progress, let the parent roll
+    // back so the object is not left at an uncommitted preview value.
     useEffect(() => {
         return () => {
-            if (cbRef.current.realtime && dragRef.current?.crossed) {
+            if (cbRef.current.realtime && (dragRef.current?.crossed || pressRef.current)) {
                 cbRef.current.onDragCancel?.();
             }
             teardown();
+            const p = pressRef.current;
+            if (p) {
+                if (p.delayTimer !== null) clearTimeout(p.delayTimer);
+                if (p.repeatTimer !== null) clearInterval(p.repeatTimer);
+                document.removeEventListener('mouseup', endPress);
+                pressRef.current = null;
+            }
         };
-    }, [teardown]);
-
-    // --- Step arrows ---
-
-    const stepBy = useCallback(
-        (sign: 1 | -1) => {
-            if (disabled) return;
-            const next = clampAndQuantize(value + sign * step, min, max, fineStep);
-            if (next === value) return;
-            onChange(next);
-            onRelease?.(next);
-        },
-        [disabled, value, step, fineStep, min, max, onChange, onRelease],
-    );
+    }, [teardown, endPress]);
 
     // --- Text edit ---
 
@@ -384,14 +481,13 @@ export const DragNumericField: React.FC<DragNumericFieldProps> = ({
                 tabIndex={-1}
                 disabled={disabled || value <= min}
                 aria-label="Decrement"
-                // preventDefault keeps focus on the whole widget, not the arrow.
+                // preventDefault keeps focus on the whole widget, not the arrow;
+                // stopPropagation keeps the root's body-drag handler from firing.
                 onMouseDown={(e) => {
+                    if (e.button !== 0) return;
                     e.preventDefault();
                     e.stopPropagation();
-                }}
-                onClick={(e) => {
-                    e.stopPropagation();
-                    stepBy(-1);
+                    startPress(-1);
                 }}
             >
                 <Icon icon="chevron-left" size={10} />
@@ -422,12 +518,10 @@ export const DragNumericField: React.FC<DragNumericFieldProps> = ({
                 disabled={disabled || value >= max}
                 aria-label="Increment"
                 onMouseDown={(e) => {
+                    if (e.button !== 0) return;
                     e.preventDefault();
                     e.stopPropagation();
-                }}
-                onClick={(e) => {
-                    e.stopPropagation();
-                    stepBy(1);
+                    startPress(1);
                 }}
             >
                 <Icon icon="chevron-right" size={10} />

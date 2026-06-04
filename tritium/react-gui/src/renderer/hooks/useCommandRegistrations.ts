@@ -15,6 +15,7 @@ import { useUiDialogCommands } from '../commands/useUiDialogCommands';
 import { useTabCommands } from '../commands/useTabCommands';
 import { useNewTabCommand } from '../commands/useNewTabCommand';
 import { useEditCommands } from '../commands/useEditCommands';
+import { useToolCommands } from '../commands/useToolCommands';
 import { useFileCommands } from '../commands/useFileCommands';
 import { useViewCommands } from '../commands/useViewCommands';
 import { useRenderCommands } from '../commands/useRenderCommands';
@@ -59,6 +60,7 @@ export function useCommandRegistrations({
   useTabCommands({ handleCloseTab });
   useNewTabCommand({ cm, addMolTab, addMolViewTab, getActiveSceneInfo, newScene });
   useEditCommands({ cm, getActiveSceneInfo });
+  useToolCommands({ cm, getActiveSceneInfo });
   useFileCommands({ cm, getActiveSceneInfo });
   useViewCommands({
     cm,

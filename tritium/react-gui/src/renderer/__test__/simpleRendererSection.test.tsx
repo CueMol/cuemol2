@@ -16,7 +16,7 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
-import { mountTree } from './helpers/testHarness'
+import { mountTree, pressStepArrow } from './helpers/testHarness'
 import type { GenericPropEntry } from '../worker/server/services/genericProps.service'
 
 void React
@@ -67,7 +67,7 @@ describe('SimpleRenderer section registry', () => {
   })
 
   it('resolves an unknown / not-yet-ported renderer type to no sections', () => {
-    expect(getRendererPropSections('cpk')).toEqual([])
+    expect(getRendererPropSections('no_such_renderer')).toEqual([])
   })
 })
 
@@ -115,11 +115,12 @@ describe('SimpleRendererSection', () => {
     const incr = rowByLabel(container, 'Line width')!.querySelector(
       '.h3-form-drag-arrow-right',
     ) as HTMLButtonElement
-    act(() => incr.click())
+    pressStepArrow(incr)
     // step 0.2 from 1.2 -> 1.4, committed live (preview restored to original first).
     expect(onSet).toHaveBeenCalledWith('width', 'real', 1.4, {
       mode: 'commit',
       originalValue: 1.2,
+      originalWasDefault: false,
     })
     unmount()
   })
@@ -162,7 +163,7 @@ describe('PropertiesTab type-specific section dispatch', () => {
     const { container, unmount } = mountTree(
       <PropertiesTab
         entries={[entry({ key: 'width', type: 'real', value: 1.2 })]}
-        rendererType="cpk"
+        rendererType="no_such_renderer"
         {...commonProps}
       />,
     )

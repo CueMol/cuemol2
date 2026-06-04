@@ -127,7 +127,7 @@ describe('ColorPicker', () => {
             await flushPromises()
         })
         // Open the popover (caret button).
-        const caret = container.querySelector('button.bp5-button') as HTMLButtonElement
+        const caret = container.querySelector('button.h3-color-caret-btn') as HTMLButtonElement
         await act(async () => {
             caret.click()
             await flushPromises()
@@ -156,7 +156,7 @@ describe('ColorPicker', () => {
         await act(async () => {
             await flushPromises()
         })
-        const caret = container.querySelector('button.bp5-button') as HTMLButtonElement
+        const caret = container.querySelector('button.h3-color-caret-btn') as HTMLButtonElement
         await act(async () => {
             caret.click()
             await flushPromises()
@@ -196,7 +196,7 @@ describe('ColorPicker', () => {
         await act(async () => {
             await flushPromises()
         })
-        const caret = container.querySelector('button.bp5-button') as HTMLButtonElement
+        const caret = container.querySelector('button.h3-color-caret-btn') as HTMLButtonElement
         await act(async () => {
             caret.click()
             await flushPromises()
@@ -227,7 +227,7 @@ describe('ColorPicker', () => {
         await act(async () => {
             await flushPromises()
         })
-        const caret = container.querySelector('button.bp5-button') as HTMLButtonElement
+        const caret = container.querySelector('button.h3-color-caret-btn') as HTMLButtonElement
         await act(async () => {
             caret.click()
             await flushPromises()
@@ -250,7 +250,7 @@ describe('ColorPicker', () => {
         await act(async () => {
             await flushPromises()
         })
-        const caret = container.querySelector('button.bp5-button') as HTMLButtonElement
+        const caret = container.querySelector('button.h3-color-caret-btn') as HTMLButtonElement
         await act(async () => {
             caret.click()
             await flushPromises()

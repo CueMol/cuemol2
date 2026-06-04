@@ -91,6 +91,22 @@ export function mountTree(node: React.ReactNode): {
 }
 
 /**
+ * Press-and-release a DragNumericField step arrow for a single step.
+ *
+ * The field steps on `mousedown` (starting a press) and commits on the global
+ * `mouseup` that ends it -- it no longer reacts to a bare `click`. This drives a
+ * quick single-step press: down then up, with no auto-repeat in between.
+ */
+export function pressStepArrow(button: HTMLElement): void {
+  act(() => {
+    button.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }))
+  })
+  act(() => {
+    document.dispatchEvent(new MouseEvent('mouseup'))
+  })
+}
+
+/**
  * Install a mock window.electronAPI matching the post-B generic surface
  * (`invoke` + `onPush`) and return it for assertion / further mock.
  *

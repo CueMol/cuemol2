@@ -1,6 +1,7 @@
 # ADR-0015: Generic property inspector — docked pane, live-apply, getPropsJSON bridge
 
-- Status: accepted (color / vector / timeval / nested-object editing pending)
+- Status: accepted (color / vector / timeval widgets pending; nested-object
+  editing enabled 2026-06-03 — see Update)
 - Date: 2026-05-16
 - Mapping rows: [`overlay.propeditor-generic`](../mapping/overlay.md#overlaypropeditor-generic)
 
@@ -39,11 +40,11 @@ inspector pane** (mapping = `merged`), not as a modal.
   the `getNodeInfo` service and the `fetchNodeInfo` helper are retired
   (unwired, `@deprecated`, scheduled for deletion).
 
-First stage edits primitive types only (`string` / `integer` / `real` /
-`boolean` / `enum`). C++ `LScrObjBase::setProperty` does not accept dot-paths
-(`handleNestedProp` is commented out), so a non-string-convertible
-`object<...>` property is shown as a single read-only `<node>` row rather
-than being recursed into.
+First stage edited primitive types only (`string` / `integer` / `real` /
+`boolean` / `enum`) and showed a non-string-convertible `object<...>` property
+as a single read-only `<node>` row, on the assumption that nested writes were
+unsupported. That assumption was wrong (corrected 2026-06-03 — see Update):
+nested dot-path writes route through `LPropSupport::setNestedProperty`.
 
 ## Consequences
 
@@ -52,12 +53,38 @@ than being recursed into.
   modals.
 - Live-apply removes the Apply/Cancel affordance; mis-edits are undone with
   Cmd+Z instead. Acceptable for a docked pane, and matches the guideline.
-- Nested object properties (`coil.detail`, colors, vectors, time values) are
-  not yet editable. Follow-up: per-child wrapper resolution for nested
-  objects, plus color-picker / vector / timeval / selection widgets, and
-  `camera` / `style` node support in `resolvePropTarget`.
+- Nested object properties are now editable via dot-path keys (see Update).
+  Still pending: color-picker / vector / timeval widgets, and `camera` /
+  `style` node support in `resolvePropTarget`.
 - `getNodeInfo` / `NodePropertyDialog` remain compiling but dead until a
   follow-up deletes them.
+
+## Update (2026-06-03): nested-object editing enabled
+
+The original "nested writes unsupported" rationale was a misreading of the C++.
+The N-API path tritium uses does support dot-path properties:
+
+- `tritium/core/cxx_src/wrapper.cpp` (`getProp` / `setProp` / `resetProp`) calls
+  the shared `cuemol2::getProp` / `setProp` / `resetProp`
+  (`src/libcuemol2_api/binding.cpp`), which call
+  `LPropSupport::getNestedProperty` / `setNestedProperty` /
+  `resetNestedProperty` (`src/qlib/LPropSupport.cpp`).
+- Those use `NestedPropHandler` (`src/qlib/NestedPropHandler.hpp`): split the
+  name on `.`, walk into each child object via `getProperty`, then get / set /
+  reset the leaf. The commented-out `//if (handleNestedProp...)` in
+  `LScrObjects.cpp` is a *different*, superseded inline path that the binding
+  does not use. The UXP xpcom binding (`XPCObjWrapper.cpp`) calls the very same
+  `cuemol2::*` functions, so both front-ends share one code path.
+- A top-level `object<...>` property declared `(readonly)` (e.g. tube `section`,
+  cartoon `helix` / `sheet` / `coil`) only blocks replacing the object
+  wholesale; its sub-properties stay writable through the dot-path.
+
+The only tritium-side gap was `parseGenericProps`, which now recurses into
+nested objects and emits each child as a `depth`-tagged dot-path entry
+(`section.type`, ...) after its read-only container row. `GenericTab` indents
+children by depth. First consumer: `inspector/TubeRendererSection` (the tube
+`section.*` cross-section shape). Cartoon's nested shape controls can be wired
+onto its curated page the same way (follow-up).
 
 ## Notes
 
@@ -79,7 +106,9 @@ than being recursed into.
   `components/panels/InspectorPanel.tsx`, `hooks/useInspectorState.ts`,
   `App.tsx` (`handleSceneShowProperty` → `handleShowGeneric`).
 - C++ source of truth: `src/qlib/LScrObjects.cpp` `getPropsJSONImpl`
-  (JSON shape) and `LScrObjBase::setProperty` / `resetProperty`.
+  (JSON shape, recurses into nested objects), `LPropSupport::setNestedProperty`
+  / `getNestedProperty` / `resetNestedProperty` (`src/qlib/LPropSupport.cpp`)
+  and `src/qlib/NestedPropHandler.hpp` (dot-path traversal).
 - UXP parity: `uxp_gui/cuemol2/base/content/propeditor-generic-page.{xul,js}`,
   `generic-propdlg.xul`.
 - Tests: `__test__/genericProps.test.ts` (parser + service undo-txn

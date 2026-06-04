@@ -38,6 +38,7 @@ import type { GetOpenFiltersArgs } from '../server/services/getOpenFilters.servi
 import type { GetSceneCloseInfoArgs, GetSceneCloseInfoResult } from '../server/services/getSceneCloseInfo.service'
 import type { GetSelDefsArgs, GetSelDefsResult } from '../server/services/getSelDefs.service'
 import type { GetMaterialNamesArgs, GetMaterialNamesResult } from '../server/services/getMaterialNames.service'
+import type { GetSiblingRendererNamesArgs, GetSiblingRendererNamesResult } from '../server/services/getSiblingRendererNames.service'
 import type { GetSelHitCountArgs, GetSelHitCountResult } from '../server/services/getSelHitCount.service'
 import type { SaveSelDefArgs, SaveSelDefResult } from '../server/services/saveSelDef.service'
 import type { LoadObjectArgs } from '../server/services/loadObject.service'
@@ -107,6 +108,7 @@ import type {
   GetGenericPropsResult,
   SetGenericPropArgs,
   SetGenericPropResult,
+  SetGenericPropsArgs,
   ResetGenericPropsArgs,
 } from '../server/services/genericProps.service'
 import type {
@@ -307,6 +309,10 @@ import type {
   ShowUnitCellRendererResult,
 } from '../server/services/symmetryPanelOps.service'
 import type {
+  ChangeChainNameArgs,
+  ChangeChainNameResult,
+} from '../server/services/changeChainName.service'
+import type {
   ListMapRenderersArgs,
   ListMapRenderersResult,
   GetMapRendererStateArgs,
@@ -363,6 +369,7 @@ export interface ServiceMap {
   getSceneCloseInfo:          { args: GetSceneCloseInfoArgs;           result: GetSceneCloseInfoResult }
   getSelDefs:                 { args: GetSelDefsArgs;                  result: GetSelDefsResult }
   getMaterialNames:           { args: GetMaterialNamesArgs;            result: GetMaterialNamesResult }
+  getSiblingRendererNames:    { args: GetSiblingRendererNamesArgs;     result: GetSiblingRendererNamesResult }
   getSelHitCount:             { args: GetSelHitCountArgs;              result: GetSelHitCountResult }
   saveSelDef:                 { args: SaveSelDefArgs;                  result: SaveSelDefResult }
   loadObject:                 { args: LoadObjectArgs;                  result: { ok: boolean } }
@@ -392,6 +399,7 @@ export interface ServiceMap {
   getNodeInfo:                { args: GetNodeInfoArgs;                 result: GetNodeInfoResult }
   getGenericProps:            { args: GetGenericPropsArgs;             result: GetGenericPropsResult }
   setGenericProp:             { args: SetGenericPropArgs;              result: SetGenericPropResult }
+  setGenericProps:            { args: SetGenericPropsArgs;             result: SetGenericPropResult }
   resetGenericProps:          { args: ResetGenericPropsArgs;           result: SetGenericPropResult }
   renameNode:                 { args: RenameNodeArgs;                  result: RenameNodeResult }
   selectObjectMol:            { args: SelectObjectMolArgs;             result: SelectObjectMolResult }
@@ -479,6 +487,7 @@ export interface ServiceMap {
   changeSymmetryInfo:         { args: ChangeSymmetryInfoArgs;          result: ChangeSymmetryInfoResult }
   showSymmRenderer:           { args: ShowSymmRendererArgs;            result: ShowSymmRendererResult }
   showUnitCellRenderer:       { args: ShowUnitCellRendererArgs;        result: ShowUnitCellRendererResult }
+  changeChainName:            { args: ChangeChainNameArgs;             result: ChangeChainNameResult }
   listMapRenderers:           { args: ListMapRenderersArgs;            result: ListMapRenderersResult }
   getMapRendererState:        { args: GetMapRendererStateArgs;         result: GetMapRendererStateResult }
   setMapRendererProp:         { args: SetMapRendererPropArgs;          result: SetMapRendererPropResult }
