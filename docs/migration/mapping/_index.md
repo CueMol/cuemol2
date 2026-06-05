@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-06-05 (`dialog.property.molsurf` done: UXP `molsurf-propdlg` "MolSurf" タブ (dsurf と共有の molsurf-page overlay) を Inspector Properties タブの 1 accordion section に実装 (`MolSurfRenderer` extends `Renderer`, `type_name "molsurf"`)。Drawing mode (MappedEnumRow Fill/Wireframe/Dots) / Line/Point size (NumRow realtime, `drawmode=="fill"` で disable) / Selection mol (`target`、汎用 `useMolObjectNames` で MolCoord 名列挙) / Selection (`showsel` SelRow) / Coloring mode (`colormode` solid/molecule/potential、UXP 忠実に含める)。molsurf-page.js の `mRendTypeName` 分岐により molsurf は surftype/detail 非適用・target 専用なので `DSurfaceRendererSection` とは別 section。cullface/defaultcolor は page に無く、elepot/ramp 系は Coloring パネル管轄なので非露出。worker 変更なし。**これで Dialog_property の renderer 固有 panel は全完了**。prop_dlgs done 12->13/todo 2->1、Total done 15->16/todo 87->86)
 - Updated: 2026-06-05 (`dialog.property.isosurf` done: UXP `isosurf-propdlg` "Map" タブを Inspector Properties タブの 1 accordion section に実装 (`MapSurfRenderer` extends `MapRenderer`, `type_name "isosurf"`)。Center update (派生 tristate) / Drawing mode (EnumRow fill/line/point) / Line/Point size (NumRow realtime, `drawmode=="fill"` で disable) / Max grid size (素の NumInputRow, real) / Back-face culling (BoolRow) / Use periodic boundary (BoolRow) / Limit display by ブロック。contour と完全同一の Center update / Limit display by を共有モジュール `inspector/MapRendererCommon` (`CenterUpdateRow`/`LimitDisplayRows`/`useMolObjectNames`) に抽出し contour も差し替え (単一 source、観測挙動不変=既存 contour テストで回帰ガード)。coloring/tuning は UXP Map タブ外なので非露出。worker 変更なし。prop_dlgs done 11->12/todo 3->2、Total done 14->15/todo 88->87)
 - Updated: 2026-06-05 (`dialog.property.contour` done: UXP `contour-propdlg` "Map" タブを Inspector Properties タブの 1 accordion section に実装 (`MapMeshRenderer`, `type_name "contour"`)。全プロパティ flat。Center update は `autoupdate`+`dragupdate` の派生 tristate (None/Automatic/Automatic (drag)) を `onSetMany` で 1 undo step 同時書込。Line width (NumRow, realtime preview) / Buffer size (素の NumInputRow) / Use periodic boundary (BoolRow)。Limit display by は UXP groupbox checkbox を忠実に再現した派生 switch (checked=`bndry_molname` 非空、ON で先頭 MolCoord を target にセット、OFF で `bndry_molname`+`bndry_sel` を onSetMany で同時クリア、OFF 中は Target/Selection/Distance を disable)。Target は `listSceneObjects`+`objectFilters.molCoord` で MolCoord オブジェクト名を列挙 (`(none)` 無し)、`bndry_sel` SelRow、`bndry_rng` Distance NumRow。coloring は UXP Map タブ外なので非露出 (dsurface と同方針)。worker 変更なし。prop_dlgs done 10->11/todo 4->3、Total done 13->14/todo 89->88)
 - Updated: 2026-06-05 (`dialog.property.ribbon` done: UXP `ribbon-propdlg` (Common/Helix/Sheet/Coil) を Inspector Properties タブの 4 accordion に実装 (`RibbonRenderer` extends `SplineRenderer`, `type_name "ribbon"`)。nested section (TubeSection) と head/tail junction (JctTable) を dotted key で露出。Section detail は coil/helix/sheet .detail を同時書込、Cap type は start/end_captype を同時書込、Helix/Sheet は section+Back(Side)color+独立 Head/Tail、Coil は section のみ (fancy1 無)。Arrow height/width は basw/arrow の % 派生、sharp は roundsquare/fancy1 で enable。UXP に無い base smooth/line_width は非露出。派生 %行・junction helper は cartoon と並行する ribbon-local 実装 (共有昇格は follow-up)。prop_dlgs done 9->10/todo 5->4)
@@ -37,13 +38,13 @@
 | Panel | [panels.md](panels.md) | 27 | 4 | 17 | 1 | 5 | 0 |
 | Menu | [menus.md](menus.md) | 4 | 2 | 2 | 0 | 0 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
-| Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 15 | 12 | 1 | 0 | 2 | 0 |
+| Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 15 | 13 | 1 | 0 | 1 | 0 |
 | Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 0 | 3 | 1 | 14 | 0 |
 | Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 1 | 0 | 1 | 19 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 2 | 1 | 0 | 10 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 0 | 1 | 0 | 27 | 0 |
 | Other | [other.md](other.md) | 4 | 0 | 1 | 0 | 3 | 0 |
-| **Total** | | **131** | **15** | **27** | **2** | **87** | **0** |
+| **Total** | | **131** | **16** | **27** | **2** | **86** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -72,11 +73,11 @@
 | Mapping | Count |
 |---------|------:|
 | 1:1 (`direct`) | 8 |
-| merged | 5 |
+| merged | 6 |
 | split | 19 |
 | redesign | 0 |
 | deprecated (`dropped`) | 2 |
-| *(not yet assigned)* | 96 |
+| *(not yet assigned)* | 95 |
 
 ---
 
@@ -117,4 +118,4 @@
 
 ## Unstarted
 
-**91 / 131** items are `todo` (not yet started).
+**90 / 131** items are `todo` (not yet started).

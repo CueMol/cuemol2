@@ -40,6 +40,7 @@ import {
 } from "./CartoonRendererSection";
 import { ContourMainSection } from "./ContourRendererSection";
 import { IsosurfMainSection } from "./IsosurfRendererSection";
+import { MolSurfMainSection } from "./MolSurfRendererSection";
 import { DisoMainSection } from "./DisoRendererSection";
 import {
   DSurfaceMainSection,
@@ -317,6 +318,19 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
       title: "Atom radii",
       defaultExpanded: true,
       Component: DSurfaceRadiiSection,
+    },
+  ],
+  // MolSurfRenderer ("molsurf"): UXP molsurf-propdlg "MolSurf" tab (shared
+  // molsurf-page with dsurface, but Surface type / Detail / Atom radii are
+  // dsurface-only while the "Selection mol" target is molsurf-only). One section:
+  // drawing mode, line/point size (off for fill), reference-molecule target,
+  // shown selection, and coloring mode.
+  molsurf: [
+    {
+      key: "molsurf-main",
+      title: "MolSurf",
+      defaultExpanded: true,
+      Component: MolSurfMainSection,
     },
   ],
   // TubeRenderer ("tube"): UXP tube-propdlg "Tube" tab. The loose controls form
