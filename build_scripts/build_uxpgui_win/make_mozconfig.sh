@@ -3,6 +3,8 @@
 set -eux
 
 cd $GITHUB_WORKSPACE
+# Dependency versions are defined in build_scripts/deplibs.env
+. "$GITHUB_WORKSPACE/build_scripts/deplibs.env"
 # WIN32_REDIST_DIR=$(echo "${VCToolsRedistDir}x64\\Microsoft.VC142.CRT" | sed 's/\\/\//g')
 # WIN32_REDIST_DIR=$(echo "${VCToolsRedistDir}x64\\Microsoft.VC143.CRT" | sed 's/\\/\//g')
 WIN32_REDIST_DIR=$(cygpath -m "${VCToolsRedistDir}x64\\Microsoft.VC143.CRT")
@@ -14,8 +16,8 @@ echo "$WIN_UCRT_REDIST_DIR"
 DEPLIBS_DIR=${MSYS_TOP_DIR2}/target
 BUNDLE_DIR=${MSYS_TOP_DIR2}/target
 
-BOOST_DIR=$DEPLIBS_DIR/boost_1_84_0/include/boost-1_84
-LIBDIR=$DEPLIBS_DIR/boost_1_84_0/lib
+BOOST_DIR=$DEPLIBS_DIR/boost_$BOOST_VER/include/boost-$BOOST_INC_VER
+LIBDIR=$DEPLIBS_DIR/boost_$BOOST_VER/lib
 CUEMOL_DIR=$DEPLIBS_DIR/cuemol2
 CUEMOL_DEBUG=""
 

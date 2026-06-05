@@ -1,7 +1,8 @@
 #!/bin/bash
 set -eux
 
-DEPLIBS_VERSION=v0.0.8
+# Dependency versions are defined in build_scripts/deplibs.env
+. "$(cd "$(dirname "$0")/.."; pwd)/deplibs.env"
 
 BASEDIR=$1
 RUNNER_OS=$2

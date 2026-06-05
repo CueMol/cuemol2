@@ -22,13 +22,13 @@ RUNNER_ARCH="X64"
 
 SCRIPT_DIR=$(cd $(dirname $0); pwd)
 WSDIR=$(cd $(dirname $0)/../..; pwd)
+# Dependency versions are defined in build_scripts/deplibs.env
+. "$SCRIPT_DIR/../deplibs.env"
 cd ${WSDIR}/uxp_gui
 
 # Retrieve UXP tarball
 if [ ! -d ${WSDIR}/uxp_gui/platform ]; then
-    # Retrieve UXP tarball
-    UXP_TGZ=RB_20231106.tar.gz
-    UXP_VERSION=v0.0.1
+    UXP_BASE=${UXP_TGZ%.tar.gz}
     wget --progress=dot:giga -c \
          https://github.com/CueMol/uxp_release/releases/download/$UXP_VERSION/$UXP_TGZ
     rm -rf uxp
@@ -42,10 +42,10 @@ if [ ! -d ${WSDIR}/uxp_gui/platform ]; then
 
     # Other-licenses
     wget --progress=dot:giga -c \
-         https://github.com/CueMol/uxp_release/releases/download/$UXP_VERSION/other-licenses_RB_20231106.tar.bz2
+         https://github.com/CueMol/uxp_release/releases/download/$UXP_VERSION/other-licenses_${UXP_BASE}.tar.bz2
 
     rm -rf other-licenses
-    tar xjf other-licenses_RB_20231106.tar.bz2
+    tar xjf other-licenses_${UXP_BASE}.tar.bz2
 fi
 
 ###########

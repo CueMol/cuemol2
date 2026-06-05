@@ -19,6 +19,9 @@ fi
 
 set -eux
 
+# Dependency versions are defined in build_scripts/deplibs.env
+. "$(cd "$(dirname "$0")/.."; pwd)/deplibs.env"
+
 BASEDIR=$1
 RUNNER_OS=$2
 RUNNER_ARCH=$3
@@ -29,8 +32,6 @@ cd $TMPDIR
 
 ##########
 # APBS/PDB2PQR
-
-APBSPKG_VER=v0.0.2
 
 # Retrieve apbs binary
 APBSPKG_TGZ=apbs_${RUNNER_OS}_${RUNNER_ARCH}.tar.bz2
@@ -50,7 +51,6 @@ mv apbs $BASEDIR/
 ##########
 # POVRAY
 
-POVRAYPKG_VER=v0.0.5
 # Retrieve povray binary
 POVRAYPKG_TGZ=povray_${RUNNER_OS}_${RUNNER_ARCH}.tar.bz2
 
@@ -75,9 +75,9 @@ fi
 
 # Retrieve ffmpeg bin
 if [ $RUNNER_ARCH = "ARM64" ]; then
-    FFMPEG_DIST=ffmpeg61arm
+    FFMPEG_DIST=$FFMPEG_DIST_ARM64
 elif [ $RUNNER_ARCH = "X64" ]; then
-    FFMPEG_DIST=ffmpeg61intel
+    FFMPEG_DIST=$FFMPEG_DIST_X64
 else
     echo "unknown runner arch: $RUNNER_ARCH"
     exit 1

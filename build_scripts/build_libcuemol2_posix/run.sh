@@ -4,14 +4,8 @@
 # usage: run.sh deplibs_dir [Debug]
 #
 
-# Dependency versions
-BOOST_VER=1_84_0
-FFTW_VER=3.3.10
-# LCMS2_VER=2.15
-LCMS2_VER=2.17
-GLEW_VER=2.1.0
-# CGAL_VER=4.14.3
-CGAL_VER=6.1
+# Dependency versions are defined in build_scripts/deplibs.env
+. "$(cd "$(dirname "$0")/.."; pwd)/deplibs.env"
 
 usage()
 {

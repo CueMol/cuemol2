@@ -34,8 +34,9 @@ if [ -d $VENV_DIR ]; then
     source $VENV_DIR/bin/activate
 fi
 
-BOOST_VER=boost_1_84_0
-BOOST_DIR=$BASEDIR/$BOOST_VER
+# Dependency versions are defined in build_scripts/deplibs.env
+. "$(cd "$(dirname "$0")/.."; pwd)/deplibs.env"
+BOOST_DIR=$BASEDIR/boost_$BOOST_VER
 
 # Install location
 INST_PATH=$OUTDIR/cuemol2

@@ -16,8 +16,9 @@ SCRIPT_DIR=$(cd $(dirname $0); pwd)
 REPOS_DIR=$(cd $(dirname $0)/../..; pwd)
 WORKSPACE=${GITHUB_WORKSPACE:-$REPOS_DIR}
 
-BOOST_VER=boost_1_84_0
-BOOST_DIR=$BASEDIR/$BOOST_VER
+# Dependency versions are defined in build_scripts/deplibs.env
+. "$(cd "$(dirname "$0")/.."; pwd)/deplibs.env"
+BOOST_DIR=$BASEDIR/boost_$BOOST_VER
 INST_PATH=$OUTDIR/cuemol2
 TRITIUM_DIR=$WORKSPACE/tritium
 

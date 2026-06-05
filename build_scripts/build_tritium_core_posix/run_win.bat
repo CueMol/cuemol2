@@ -20,7 +20,8 @@ if "%GITHUB_WORKSPACE%"=="" (
 )
 echo TOP_DIR: %TOP_DIR%
 
-SET BOOST_VER=1_84_0
+REM Dependency versions are defined in build_scripts/deplibs.env
+call %~dp0..\deplibs_env.bat
 SET BOOST_DIR=%BASEDIR%\boost_%BOOST_VER%
 
 REM Install location
