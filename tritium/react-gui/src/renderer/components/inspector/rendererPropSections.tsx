@@ -126,6 +126,16 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
       Component: SimpleRendererSection,
     },
   ],
+  // TraceRenderer ("trace"): shares the UXP simple-propdlg with SimpleRenderer
+  // (line width only), so the same SimpleRendererSection is reused here.
+  trace: [
+    {
+      key: "trace",
+      title: "Trace",
+      defaultExpanded: true,
+      Component: SimpleRendererSection,
+    },
+  ],
   // BallStickRenderer ("ballstick"): UXP ballstick-propdlg "Ball & Stick" tab.
   ballstick: [
     {
