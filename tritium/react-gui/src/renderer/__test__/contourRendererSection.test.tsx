@@ -8,30 +8,33 @@
  *   - the registry resolves `type_name === "contour"` to a single "Contour"
  *     section (default-expanded);
  *   - the curated rows render (Center update / Line width / Buffer size / Use
- *     periodic boundary / Target / Selection / Distance) and unrelated props
- *     (coloring) are ignored;
+ *     periodic boundary / Limit display by / Target / Selection / Distance) and
+ *     unrelated props (coloring) are ignored;
  *   - "Center update" writes the `autoupdate` / `dragupdate` boolean pair in one
  *     undo step (onSetMany) per tri-state choice;
- *   - "Line width" commits a plain single drag step; "Buffer size" commits a
+ *   - "Line width" commits a realtime single drag step; "Buffer size" commits a
  *     single-step integer;
- *   - the display-limit Selection / Distance are disabled until a Target
- *     molecule is chosen (empty `bndry_molname` = limiting off);
- *   - the Target selector always offers "(none)" and keeps the current value
- *     selectable.
+ *   - "Limit display by" is checked iff a target molecule is set; turning it off
+ *     clears `bndry_molname` + `bndry_sel` together, turning it on commits the
+ *     first available molecule; Target / Selection / Distance are disabled while
+ *     it is off; the Target selector lists molecules only (no "(none)" entry).
  */
 
 import React from 'react'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act } from 'react'
-import { mountTree, pressStepArrow } from './helpers/testHarness'
+import { mountTree, pressStepArrow, flushPromises } from './helpers/testHarness'
 import type { GenericPropEntry } from '../worker/server/services/genericProps.service'
 
 void React
 
-// ContourMainSection -> LimitTargetRow uses useCueMol; null cm keeps the name
-// list empty (the current value stays selectable).
+// Mutable cm holder: most tests run with cm=null (the name list stays empty);
+// the tests that exercise the molecule target set a stub cm that resolves
+// `listSceneObjects` to one MolCoord object.
+const state = vi.hoisted(() => ({ cm: null as unknown }))
+
 vi.mock('../hooks/useCueMol', () => ({
-  useCueMol: () => ({ cm: null, cueMolReady: false }),
+  useCueMol: () => ({ cm: state.cm, cueMolReady: !!state.cm }),
 }))
 
 // Stub MolSelList (used by the Selection SelRow) to avoid the real picker's
@@ -49,6 +52,24 @@ import {
   getRendererPropSections,
   RENDERER_SECTION_REGISTRY,
 } from '../components/inspector/rendererPropSections'
+
+beforeEach(() => {
+  state.cm = null
+})
+afterEach(() => {
+  state.cm = null
+})
+
+/** Stub cm whose `listSceneObjects` resolves to one MolCoord object. */
+function stubCmWithMol(name = 'molA') {
+  state.cm = {
+    invokeService: vi.fn((svc: string) =>
+      svc === 'listSceneObjects'
+        ? Promise.resolve({ objects: [{ uid: 1, name, className: 'MolCoord' }] })
+        : Promise.resolve(undefined),
+    ),
+  }
+}
 
 function entry(over: Partial<GenericPropEntry>): GenericPropEntry {
   return {
@@ -99,6 +120,11 @@ function dragArrow(row: HTMLElement): HTMLButtonElement | null {
   return row.querySelector('.h3-form-drag-arrow-right') as HTMLButtonElement | null
 }
 
+/** The switch checkbox inside a labelled row. */
+function switchIn(row: HTMLElement): HTMLInputElement {
+  return row.querySelector('input[type="checkbox"]') as HTMLInputElement
+}
+
 function contourEntries(over?: {
   autoupdate?: boolean
   dragupdate?: boolean
@@ -141,11 +167,12 @@ describe('ContourMainSection', () => {
     expect(rowByLabel(container, 'Line width')).not.toBeNull()
     expect(rowByLabel(container, 'Buffer size')).not.toBeNull()
     expect(rowByLabel(container, 'Use periodic boundary')).not.toBeNull()
+    expect(rowByLabel(container, 'Limit display by')).not.toBeNull()
     expect(rowByLabel(container, 'Target')).not.toBeNull()
     expect(rowByLabel(container, 'Selection')).not.toBeNull()
     expect(rowByLabel(container, 'Distance')).not.toBeNull()
-    // Exactly the seven curated rows -- coloring props produce no row.
-    expect(container.querySelectorAll('.h3-form-prop-row').length).toBe(7)
+    // Exactly the eight curated rows -- coloring props produce no row.
+    expect(container.querySelectorAll('.h3-form-prop-row').length).toBe(8)
     unmount()
   })
 
@@ -162,7 +189,6 @@ describe('ContourMainSection', () => {
       />,
     )
     const select = rowByLabel(container, 'Center update')!.querySelector('select') as HTMLSelectElement
-    // Default-derived display is "auto" (autoupdate=true, dragupdate=false).
     expect(select.value).toBe('auto')
 
     selectValue(select, 'drag')
@@ -195,14 +221,18 @@ describe('ContourMainSection', () => {
     unmount()
   })
 
-  it('commits Line width as a plain single drag step', () => {
+  it('commits Line width as a realtime single drag step', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
       <ContourMainSection entries={contourEntries()} onSet={onSet} onReset={vi.fn()} sceneId={1} nodeId={2} />,
     )
     pressStepArrow(dragArrow(rowByLabel(container, 'Line width')!)!)
-    // step 0.1 from 1.0 -> 1.1, plain single step (no realtime opts).
-    expect(onSet).toHaveBeenCalledWith('width', 'real', 1.1)
+    // step 0.1 from 1.0 -> 1.1, committed live (preview restored to original first).
+    expect(onSet).toHaveBeenCalledWith('width', 'real', 1.1, {
+      mode: 'commit',
+      originalValue: 1.0,
+      originalWasDefault: false,
+    })
     unmount()
   })
 
@@ -218,7 +248,61 @@ describe('ContourMainSection', () => {
     unmount()
   })
 
-  it('disables Selection / Distance when no Target molecule is set', () => {
+  it('checks "Limit display by" iff a target molecule is set', () => {
+    const off = mountTree(
+      <ContourMainSection entries={contourEntries({ bndryMol: '' })} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+    )
+    expect(switchIn(rowByLabel(off.container, 'Limit display by')!).checked).toBe(false)
+    off.unmount()
+
+    const on = mountTree(
+      <ContourMainSection entries={contourEntries({ bndryMol: 'molX' })} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+    )
+    expect(switchIn(rowByLabel(on.container, 'Limit display by')!).checked).toBe(true)
+    on.unmount()
+  })
+
+  it('clears target + selection in one step when "Limit display by" is turned off', () => {
+    const onSetMany = vi.fn()
+    const { container, unmount } = mountTree(
+      <ContourMainSection
+        entries={contourEntries({ bndryMol: 'molX' })}
+        onSet={vi.fn()}
+        onSetMany={onSetMany}
+        onReset={vi.fn()}
+        sceneId={1}
+        nodeId={2}
+      />,
+    )
+    act(() => switchIn(rowByLabel(container, 'Limit display by')!).click())
+    expect(onSetMany).toHaveBeenCalledWith([
+      { key: 'bndry_molname', valueType: 'string', value: '' },
+      { key: 'bndry_sel', valueType: 'object<MolSelection>', value: '' },
+    ])
+    unmount()
+  })
+
+  it('commits the first molecule as the target when "Limit display by" is turned on', async () => {
+    stubCmWithMol('molA')
+    const onSet = vi.fn()
+    const { container, unmount } = mountTree(
+      <ContourMainSection
+        entries={contourEntries({ bndryMol: '' })}
+        onSet={onSet}
+        onReset={vi.fn()}
+        sceneId={1}
+        nodeId={2}
+      />,
+    )
+    await act(async () => {
+      await flushPromises()
+    })
+    act(() => switchIn(rowByLabel(container, 'Limit display by')!).click())
+    expect(onSet).toHaveBeenCalledWith('bndry_molname', 'string', 'molA')
+    unmount()
+  })
+
+  it('disables Target / Selection / Distance when limiting is off', () => {
     const { container, unmount } = mountTree(
       <ContourMainSection
         entries={contourEntries({ bndryMol: '' })}
@@ -228,46 +312,50 @@ describe('ContourMainSection', () => {
         nodeId={2}
       />,
     )
-    const sel = rowByLabel(container, 'Selection')!.querySelector('[data-testid="sel"]') as HTMLElement
-    expect(sel.getAttribute('data-disabled')).toBe('true')
+    expect((rowByLabel(container, 'Target')!.querySelector('select') as HTMLSelectElement).disabled).toBe(true)
+    expect(
+      (rowByLabel(container, 'Selection')!.querySelector('[data-testid="sel"]') as HTMLElement).getAttribute('data-disabled'),
+    ).toBe('true')
     expect(rowByLabel(container, 'Distance')!.querySelector('.h3-form-drag-disabled')).not.toBeNull()
     unmount()
   })
 
-  it('enables Selection / Distance once a Target molecule is set', () => {
+  it('enables Target / Selection / Distance when a target is set', () => {
     const { container, unmount } = mountTree(
       <ContourMainSection
-        entries={contourEntries({ bndryMol: 'mol1' })}
+        entries={contourEntries({ bndryMol: 'molX' })}
         onSet={vi.fn()}
         onReset={vi.fn()}
         sceneId={1}
         nodeId={2}
       />,
     )
-    const sel = rowByLabel(container, 'Selection')!.querySelector('[data-testid="sel"]') as HTMLElement
-    expect(sel.getAttribute('data-disabled')).toBe('false')
+    expect((rowByLabel(container, 'Target')!.querySelector('select') as HTMLSelectElement).disabled).toBe(false)
+    expect(
+      (rowByLabel(container, 'Selection')!.querySelector('[data-testid="sel"]') as HTMLElement).getAttribute('data-disabled'),
+    ).toBe('false')
     expect(rowByLabel(container, 'Distance')!.querySelector('.h3-form-drag-disabled')).toBeNull()
     unmount()
   })
 
-  it('offers "(none)" and keeps the current Target value selectable', () => {
-    const onSet = vi.fn()
+  it('lists molecules in the Target selector with no "(none)" entry', async () => {
+    stubCmWithMol('molA')
     const { container, unmount } = mountTree(
       <ContourMainSection
-        entries={contourEntries({ bndryMol: 'mol1' })}
-        onSet={onSet}
+        entries={contourEntries({ bndryMol: 'molA' })}
+        onSet={vi.fn()}
         onReset={vi.fn()}
         sceneId={1}
         nodeId={2}
       />,
     )
+    await act(async () => {
+      await flushPromises()
+    })
     const select = rowByLabel(container, 'Target')!.querySelector('select') as HTMLSelectElement
     const values = Array.from(select.options).map((o) => o.value)
-    expect(values).toContain('')
-    expect(values).toContain('mol1')
-    expect(select.value).toBe('mol1')
-    selectValue(select, '')
-    expect(onSet).toHaveBeenCalledWith('bndry_molname', 'string', '')
+    expect(values).toEqual(['molA'])
+    expect(select.value).toBe('molA')
     unmount()
   })
 })

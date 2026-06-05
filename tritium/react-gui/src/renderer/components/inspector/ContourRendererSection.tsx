@@ -7,9 +7,10 @@
  * Faithful migration of the UXP `contour-propdlg` "Map" tab into one accordion
  * section registered in `rendererPropSections.tsx`:
  *   - Center update         : None / Automatic / Automatic (drag)
- *   - Line width            : `width` (drag-numeric, px)
+ *   - Line width            : `width` (drag-numeric, px, realtime preview)
  *   - Buffer size           : `bufsize` (stepper)
  *   - Use periodic boundary : `use_pbc` (switch)
+ *   - Limit display by       : groupbox-style enable toggle (derived state)
  *   - Target                : `bndry_molname` (limit-display molecule name)
  *   - Selection             : `bndry_sel` (selection within the target)
  *   - Distance              : `bndry_rng` (limit radius, A)
@@ -18,10 +19,12 @@
  *   - "Center update" is a tri-state menulist over two booleans: None =
  *     (autoupdate=false, dragupdate=false), Automatic = (true, false),
  *     Automatic (drag) = (true, true). Both are written in one undo step.
- *   - The UXP "Limit display by" groupbox checkbox is folded into the Target
- *     selector's "(none)" entry: an empty `bndry_molname` disables limiting,
- *     so Selection / Distance are disabled until a target molecule is chosen
- *     (the C++ side ignores `bndry_sel` / `bndry_rng` when the name is empty).
+ *   - "Limit display by" mirrors the UXP groupbox checkbox: its checked state is
+ *     derived from a non-empty `bndry_molname`. Turning it on commits the first
+ *     available molecule as the target (UXP commits the menulist's selected
+ *     object); turning it off clears `bndry_molname` and `bndry_sel` together
+ *     (UXP `validateWidgets` !bMapLim branch). Target / Selection / Distance are
+ *     disabled while it is off (UXP `updateDisabledState`).
  *   - Target lists the scene's molecule objects (UXP `ObjMenuList` filtering by
  *     the MolCoord interface), here via `listSceneObjects` + `objectFilters`.
  *   - Coloring (`colormode` / `color` / `siglevel` / `extent` / ...) is not on
@@ -41,12 +44,12 @@ import {
   SelRow,
   resetProps,
 } from "./RendererCommonSection";
-import { PropertyField, SelectField } from "../../h3-kit/form";
+import { PropertyField, SelectField, SwitchField } from "../../h3-kit/form";
 import { objectFilters } from "../../h3-kit/ObjectSelect";
 import { useCueMol } from "../../hooks/useCueMol";
 import type { SceneObjectEntry } from "../../worker/server/services/listSceneObjects.service";
 import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
-import type { RendererPropSectionProps } from "./rendererPropSections";
+import type { RendererPropSectionProps, PropMultiWrite } from "./rendererPropSections";
 
 type SetFn = RendererPropSectionProps["onSet"];
 type SetManyFn = RendererPropSectionProps["onSetMany"];
@@ -59,6 +62,39 @@ const CENTER_UPDATE_LABELS: Record<string, string> = {
   drag: "Automatic (drag)",
 };
 const CENTER_UPDATE_OPTIONS = ["none", "auto", "drag"];
+
+/**
+ * Fetch the scene's molecule (MolCoord) object names for the display-limit
+ * target selector, mirroring the UXP `ObjMenuList` MolCoord-interface filter.
+ */
+function useMolObjectNames(sceneId: number | undefined): string[] {
+  const { cm } = useCueMol();
+  const [names, setNames] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!cm || sceneId === undefined) {
+      setNames([]);
+      return;
+    }
+    let cancelled = false;
+    cm.invokeService("listSceneObjects", { sceneId })
+      .then((r) => {
+        if (cancelled) return;
+        const mols = (r?.objects ?? []).filter((o: SceneObjectEntry) =>
+          objectFilters.molCoord(o),
+        );
+        setNames(mols.map((o: SceneObjectEntry) => o.name).filter(Boolean));
+      })
+      .catch(() => {
+        if (!cancelled) setNames([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [cm, sceneId]);
+
+  return names;
+}
 
 interface CenterUpdateRowProps {
   autoEntry: GenericPropEntry;
@@ -124,58 +160,35 @@ const CenterUpdateRow: React.FC<CenterUpdateRowProps> = ({
 
 interface LimitTargetRowProps {
   entry: GenericPropEntry;
+  names: string[];
+  disabled: boolean;
   onSet: SetFn;
   onReset: ResetFn;
-  sceneId: number | undefined;
 }
 
 /**
  * "Target" selector for the display-limit feature: lists the scene's molecule
- * objects (MolCoord interface) by name plus a "(none)" entry, committing the raw
- * object-name string into `bndry_molname`. Selecting "(none)" turns limiting
- * off. The current value stays selectable even when the fetch is empty or
- * excludes it.
+ * objects (MolCoord interface) by name, committing the raw object-name string
+ * into `bndry_molname`. The current value stays selectable even when the fetch
+ * is empty or excludes it; an empty value shows a blank placeholder option (the
+ * row is disabled while limiting is off).
  */
 const LimitTargetRow: React.FC<LimitTargetRowProps> = ({
   entry,
+  names,
+  disabled,
   onSet,
   onReset,
-  sceneId,
 }) => {
-  const { cm } = useCueMol();
-  const [names, setNames] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (!cm || sceneId === undefined) {
-      setNames([]);
-      return;
-    }
-    let cancelled = false;
-    cm.invokeService("listSceneObjects", { sceneId })
-      .then((r) => {
-        if (cancelled) return;
-        const mols = (r?.objects ?? []).filter((o: SceneObjectEntry) =>
-          objectFilters.molCoord(o),
-        );
-        setNames(mols.map((o: SceneObjectEntry) => o.name).filter(Boolean));
-      })
-      .catch(() => {
-        if (!cancelled) setNames([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [cm, sceneId]);
-
   const current = String(entry.value ?? "");
   return (
     <PropertyField label="Target" {...resetProps(entry, onReset)}>
       <SelectField
         value={current}
-        disabled={entry.readonly}
+        disabled={disabled || entry.readonly}
         onChange={(v) => onSet(entry.key, entry.type, v)}
       >
-        <option value="">(none)</option>
+        {current === "" && <option value="" />}
         {/* Keep the current value selectable even if it is not in the list. */}
         {current !== "" && !names.includes(current) && (
           <option value={current}>{current}</option>
@@ -190,9 +203,25 @@ const LimitTargetRow: React.FC<LimitTargetRowProps> = ({
   );
 };
 
+interface LimitToggleRowProps {
+  checked: boolean;
+  onToggle: (on: boolean) => void;
+}
+
+/**
+ * "Limit display by" enable toggle (UXP groupbox caption checkbox). Its checked
+ * state is derived from a non-empty target; toggling routes through the parent's
+ * on/off commit (no dedicated backing property, so no reset affordance).
+ */
+const LimitToggleRow: React.FC<LimitToggleRowProps> = ({ checked, onToggle }) => (
+  <PropertyField label="Limit display by" inline>
+    <SwitchField checked={checked} onChange={onToggle} />
+  </PropertyField>
+);
+
 /**
  * "Contour" section: center update, line width, buffer size, periodic boundary,
- * and the limit-display target / selection / distance.
+ * and the limit-display toggle / target / selection / distance.
  */
 export const ContourMainSection: React.FC<RendererPropSectionProps> = ({
   entries,
@@ -212,8 +241,31 @@ export const ContourMainSection: React.FC<RendererPropSectionProps> = ({
   const bndrySel = get("bndry_sel");
   const bndryRng = get("bndry_rng");
 
-  // Limiting is off when no target molecule is set (UXP groupbox unchecked).
-  const limitOff = !bndryMol || String(bndryMol.value ?? "") === "";
+  const molNames = useMolObjectNames(sceneId);
+
+  // Limiting is on when a target molecule is set (UXP groupbox checked state).
+  const limitOn = !!bndryMol && String(bndryMol.value ?? "") !== "";
+
+  /**
+   * Toggle limiting on/off, mirroring UXP `validateWidgets`: on -> commit the
+   * first available molecule as the target; off -> clear target and selection
+   * together in one undo step.
+   */
+  const toggleLimit = (on: boolean) => {
+    if (on) {
+      if (molNames.length > 0 && bndryMol) {
+        onSet(bndryMol.key, bndryMol.type, molNames[0]);
+      }
+      return;
+    }
+    const writes: PropMultiWrite[] = [];
+    if (bndryMol) writes.push({ key: bndryMol.key, valueType: bndryMol.type, value: "" });
+    if (bndrySel) writes.push({ key: bndrySel.key, valueType: bndrySel.type, value: "" });
+    if (writes.length === 0) return;
+    if (writes.length === 1) onSet(writes[0].key, writes[0].valueType, writes[0].value);
+    else if (onSetMany) onSetMany(writes);
+    else writes.forEach((w) => onSet(w.key, w.valueType, w.value));
+  };
 
   return (
     <>
@@ -236,6 +288,7 @@ export const ContourMainSection: React.FC<RendererPropSectionProps> = ({
           max={10}
           step={0.1}
           unit="px"
+          realtime
         />
       )}
       {bufsize && (
@@ -258,12 +311,14 @@ export const ContourMainSection: React.FC<RendererPropSectionProps> = ({
           onReset={onReset}
         />
       )}
+      {bndryMol && <LimitToggleRow checked={limitOn} onToggle={toggleLimit} />}
       {bndryMol && (
         <LimitTargetRow
           entry={bndryMol}
+          names={molNames}
+          disabled={!limitOn}
           onSet={onSet}
           onReset={onReset}
-          sceneId={sceneId}
         />
       )}
       {bndrySel && (
@@ -273,7 +328,7 @@ export const ContourMainSection: React.FC<RendererPropSectionProps> = ({
           onSet={onSet}
           onReset={onReset}
           sceneId={sceneId}
-          disabled={limitOff}
+          disabled={!limitOn}
         />
       )}
       {bndryRng && (
@@ -286,7 +341,7 @@ export const ContourMainSection: React.FC<RendererPropSectionProps> = ({
           max={10}
           step={0.1}
           unit="Å"
-          disabled={limitOff}
+          disabled={!limitOn}
         />
       )}
     </>
