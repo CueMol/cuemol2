@@ -15,7 +15,9 @@
  *     enums) but are intentionally NOT exposed: caps only apply to tube
  *     cross-sections, not to spline's line geometry, so they are non-functional
  *     here.
- *   - `pivotatom` uses a plain text row (empty = default Calpha pivot).
+ *   - `pivotatom` uses a plain text row; empty falls back to the per-polymer
+ *     default pivot atom resolved by the C++ side, shown via a "(default)"
+ *     placeholder.
  *   - `line_width` and `smooth` use realtime drag (live preview + single undo
  *     step); `axialdetail` uses a plain stepper (`NumInputRow`).
  *
@@ -104,6 +106,7 @@ export const SplineMainSection: React.FC<RendererPropSectionProps> = ({
           key={`pivotatom:${pivotatom.value}`}
           entry={pivotatom}
           label="Pivot atom name"
+          placeholder="(default)"
           onSet={onSet}
           onReset={onReset}
         />

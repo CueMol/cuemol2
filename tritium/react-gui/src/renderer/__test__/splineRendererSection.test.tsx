@@ -102,6 +102,20 @@ describe('SplineMainSection', () => {
     unmount()
   })
 
+  it('shows a "(default)" placeholder on the empty pivot atom name field', () => {
+    const { container, unmount } = mountTree(
+      <SplineMainSection
+        entries={splineEntries()}
+        onSet={vi.fn()}
+        onReset={vi.fn()}
+        sceneId={1}
+      />,
+    )
+    const input = rowByLabel(container, 'Pivot atom name')!.querySelector('input')
+    expect(input?.getAttribute('placeholder')).toBe('(default)')
+    unmount()
+  })
+
   it('does not expose the tube cap-type properties even when present', () => {
     const { container, unmount } = mountTree(
       <SplineMainSection

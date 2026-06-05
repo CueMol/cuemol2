@@ -29,8 +29,10 @@
  *   - UXP uses a single "Cap type" control writing both start and end; here the
  *     two cap-type properties are exposed as separate rows, matching the sibling
  *     `CartoonRendererSection` and keeping per-property reset clean.
- *   - `pivotatom` uses a plain text row (empty = default Calpha pivot); the UXP
- *     checkbox + textbox combo is replaced by the standard modified bar / reset.
+ *   - `pivotatom` uses a plain text row; empty falls back to the per-polymer
+ *     default pivot atom resolved by the C++ side (shown via a "(default)"
+ *     placeholder). The UXP checkbox + textbox combo is replaced by the standard
+ *     modified bar / reset.
  *   - Drag-numeric rows commit on drag end / Enter (no realtime preview); the
  *     "detail" rows use a plain stepper (`NumInputRow`).
  */
@@ -268,6 +270,7 @@ export const TubeMainSection: React.FC<RendererPropSectionProps> = ({
           key={`pivotatom:${pivotatom.value}`}
           entry={pivotatom}
           label="Pivot atom name"
+          placeholder="(default)"
           onSet={onSet}
           onReset={onReset}
         />

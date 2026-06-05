@@ -66,6 +66,12 @@ export function resetProps(entry: GenericPropEntry, onReset: ResetFn) {
 
 interface TextRowProps extends RowProps {
   disabled?: boolean;
+  /**
+   * Placeholder shown when the field is empty. Use "(default)" for properties
+   * whose empty value falls back to a per-polymer / per-type default resolved
+   * by the C++ side (e.g. the pivot atom name).
+   */
+  placeholder?: string;
 }
 
 /**
@@ -80,6 +86,7 @@ export const TextRow: React.FC<TextRowProps> = ({
   onSet,
   onReset,
   disabled,
+  placeholder,
 }) => {
   const [draft, setDraft] = useState(String(entry.value));
   const commit = () => {
@@ -94,6 +101,7 @@ export const TextRow: React.FC<TextRowProps> = ({
         onKeyDown={(e) => {
           if (e.key === "Enter") commit();
         }}
+        placeholder={placeholder}
         readOnly={entry.readonly}
         disabled={disabled}
       />
