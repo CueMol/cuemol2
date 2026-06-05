@@ -301,6 +301,13 @@ export const EnumRow: React.FC<EnumRowProps> = ({ entry, label, onSet, onReset, 
 export interface MappedEnumRowProps extends RowProps {
   /** Display text per raw enum ID (value stays the raw C++ string ID). */
   labels: Record<string, string>;
+  /**
+   * Restrict the offered options to this subset of the property's `enumdef`
+   * (in this order). Use when the UXP dialog exposes fewer choices than the C++
+   * enum (e.g. the cartoon cylinder-helix / sheet / coil section type omits
+   * "fancy1"). Defaults to the full `enumdef`.
+   */
+  options?: string[];
   disabled?: boolean;
 }
 
@@ -317,11 +324,15 @@ export const MappedEnumRow: React.FC<MappedEnumRowProps> = ({
   entry,
   label,
   labels,
+  options,
   onSet,
   onReset,
   disabled,
 }) => {
-  const options = entry.enumdef ?? [String(entry.value)];
+  const allOptions = entry.enumdef ?? [String(entry.value)];
+  const shownOptions = options
+    ? allOptions.filter((o) => options.includes(o))
+    : allOptions;
   return (
     <PropertyField label={label} {...resetProps(entry, onReset)}>
       <SelectField
@@ -329,7 +340,7 @@ export const MappedEnumRow: React.FC<MappedEnumRowProps> = ({
         disabled={disabled || entry.readonly}
         onChange={(v) => onSet(entry.key, entry.type, v)}
       >
-        {options.map((opt) => (
+        {shownOptions.map((opt) => (
           <option key={opt} value={opt}>
             {labels[opt] ?? opt}
           </option>
@@ -366,12 +377,26 @@ export const ColorRow: React.FC<ColorRowProps> = ({ entry, label, onSet, onReset
   </PropertyField>
 );
 
-interface SelRowProps extends RowProps {
+export interface SelRowProps extends RowProps {
   sceneId: number | undefined;
+  disabled?: boolean;
 }
 
-/** Selection picker committed on pick / blur (compiled to a SelCommand). */
-const SelRow: React.FC<SelRowProps> = ({ entry, label, onSet, onReset, sceneId }) => {
+/**
+ * Selection picker committed on pick / blur (compiled to a SelCommand).
+ *
+ * Exported so renderer-type-specific sections (e.g. the cartoon spline anchor
+ * `anchor_sel`) reuse the same selection-row contract; the worker compiles any
+ * `object<MolSelection>` property via `makeSel`, not just the common `sel`.
+ */
+export const SelRow: React.FC<SelRowProps> = ({
+  entry,
+  label,
+  onSet,
+  onReset,
+  sceneId,
+  disabled,
+}) => {
   const [draft, setDraft] = useState(String(entry.value));
   return (
     <PropertyField label={label} {...resetProps(entry, onReset)}>
@@ -382,7 +407,7 @@ const SelRow: React.FC<SelRowProps> = ({ entry, label, onSet, onReset, sceneId }
         onCommit={(v) => {
           if (v !== String(entry.value)) onSet(entry.key, entry.type, v);
         }}
-        disabled={entry.readonly}
+        disabled={disabled || entry.readonly}
       />
     </PropertyField>
   );
