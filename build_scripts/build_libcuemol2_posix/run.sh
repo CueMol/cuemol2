@@ -4,14 +4,8 @@
 # usage: run.sh deplibs_dir [Debug]
 #
 
-# Dependency versions
-BOOST_VER=1_84_0
-FFTW_VER=3.3.10
-# LCMS2_VER=2.15
-LCMS2_VER=2.17
-GLEW_VER=2.1.0
-# CGAL_VER=4.14.3
-CGAL_VER=6.1
+# Dependency versions are defined in build_scripts/deplibs.env
+. "$(cd "$(dirname "$0")/.."; pwd)/deplibs.env"
 
 usage()
 {
@@ -26,6 +20,9 @@ fi
 set -eux
 
 BASEDIR=$1
+# deps root (BASEDIR) is shared; build/install root (OUTDIR) can be per-checkout.
+# OUT_DIR unset falls back to BASEDIR, preserving the original/CI behavior.
+OUTDIR="${OUT_DIR:-$BASEDIR}"
 
 REPOS_DIR=$(cd $(dirname $0)/../..; pwd)
 WORKSPACE=${GITHUB_WORKSPACE:-$REPOS_DIR}
@@ -40,7 +37,7 @@ else
 fi
 
 # Build
-BUILD_DIR=$BASEDIR/build_libcuemol2
+BUILD_DIR=$OUTDIR/build_libcuemol2
 mkdir -p $BUILD_DIR
 cd $BUILD_DIR
 
@@ -69,7 +66,7 @@ BUILD_NODEJS_BINDINGS=ON
 ENABLE_TYPESCRIPT=ON
 
 # Install location
-CMAKE_INSTALL_PREFIX=$BASEDIR/cuemol2
+CMAKE_INSTALL_PREFIX=$OUTDIR/cuemol2
 
 CMAKE_PREFIX_PATH="$BASEDIR"
 ls -la $BASEDIR
@@ -105,11 +102,11 @@ cmake --build $BUILD_DIR --parallel --config $BUILD_TYPE
 cmake --install $BUILD_DIR --config $BUILD_TYPE
 
 # Copy dependent shared libs
-cp $BASEDIR/boost_$BOOST_VER/lib/lib* $BASEDIR/cuemol2/lib/
+cp $BASEDIR/boost_$BOOST_VER/lib/lib* $OUTDIR/cuemol2/lib/
 
 # Python embed
 if [ -n "${EMBED_PYTHON_ROOT:-}" ]; then
-    cp -r $EMBED_PYTHON_ROOT $BASEDIR/cuemol2/lib/
+    cp -r $EMBED_PYTHON_ROOT $OUTDIR/cuemol2/lib/
 fi
 
-ls -la $BASEDIR/cuemol2/lib/
+ls -la $OUTDIR/cuemol2/lib/

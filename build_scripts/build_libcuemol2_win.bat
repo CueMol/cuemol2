@@ -1,14 +1,9 @@
 echo on
 
-REM Dependency versions
-SET BOOST_VER=1_84_0
-SET FFTW_VER=3.3.10
-SET LCMS2_VER=2.17
-SET GLEW_VER=2.2.0
-SET CGAL_VER=6.1
-REM SET CGAL_VER=4.14.3
-SET LZMA_VER=5.2.12
-
+REM Dependency versions are defined in build_scripts/deplibs.env
+call %~dp0deplibs_env.bat
+REM GLEW differs per-OS; use the Windows value from deplibs.env.
+SET GLEW_VER=%GLEW_VER_WINDOWS%
 
 REM Common Setup
 if "%1"=="" (

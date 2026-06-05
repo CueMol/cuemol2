@@ -22,10 +22,15 @@ set -eux
 BASEDIR=$1
 RUNNER_OS=$2
 RUNNER_ARCH=$3
+# deps/extpkgs root (BASEDIR) is shared; libcuemol2 install root (OUTDIR) can be
+# per-checkout. OUT_DIR unset falls back to BASEDIR, preserving original behavior.
+OUTDIR="${OUT_DIR:-$BASEDIR}"
 
 SCRIPT_DIR=$(cd $(dirname $0); pwd)
 REPOS_DIR=$(cd $(dirname $0)/../..; pwd)
 WORKSPACE=${GITHUB_WORKSPACE:-$REPOS_DIR}
+# Dependency versions are defined in build_scripts/deplibs.env
+. "$SCRIPT_DIR/../deplibs.env"
 # DEBUG Flag
 CUEMOL_DEBUG=""
 
@@ -36,8 +41,6 @@ cd $TMPDIR
 ###########
 # Retrieve UXP tarball
 if [ ! -d ${WORKSPACE}/uxp_gui/platform ]; then
-    UXP_TGZ=RB_20231106.tar.gz
-    UXP_VERSION=v0.0.1
     wget --progress=dot:giga -c \
          https://github.com/CueMol/uxp_release/releases/download/$UXP_VERSION/$UXP_TGZ
     tar xjf $UXP_TGZ
@@ -53,9 +56,9 @@ fi
 cd ${WORKSPACE}/uxp_gui
 
 BUNDLE_DIR=$BASEDIR
-CUEMOL_DIR=$BASEDIR/cuemol2
-BOOST_DIR=$BASEDIR/boost_1_84_0
-DEPLIBS_DIR=$BASEDIR/boost_1_84_0/lib
+CUEMOL_DIR=$OUTDIR/cuemol2
+BOOST_DIR=$BASEDIR/boost_$BOOST_VER
+DEPLIBS_DIR=$BASEDIR/boost_$BOOST_VER/lib
 
 ls -l $BUNDLE_DIR
 ls -l $BUNDLE_DIR/povray

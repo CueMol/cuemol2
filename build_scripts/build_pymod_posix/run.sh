@@ -17,6 +17,9 @@ fi
 set -eux
 
 BASEDIR=$1
+# deps root (BASEDIR) is shared; build/install root (OUTDIR) can be per-checkout.
+# OUT_DIR unset falls back to BASEDIR, preserving the original/CI behavior.
+OUTDIR="${OUT_DIR:-$BASEDIR}"
 
 # Use PYTHON env var if already set, otherwise default to python3
 PYTHON="${PYTHON:-python3}"
@@ -31,15 +34,16 @@ if [ -d $VENV_DIR ]; then
     source $VENV_DIR/bin/activate
 fi
 
-BOOST_VER=boost_1_84_0
-BOOST_DIR=$BASEDIR/$BOOST_VER
+# Dependency versions are defined in build_scripts/deplibs.env
+. "$(cd "$(dirname "$0")/.."; pwd)/deplibs.env"
+BOOST_DIR=$BASEDIR/boost_$BOOST_VER
 
 # Install location
-INST_PATH=$BASEDIR/cuemol2
+INST_PATH=$OUTDIR/cuemol2
 
 # Copy dependent libs (boost)
 # ls -la $BOOST_DIR/lib/lib*
-cp $BOOST_DIR/lib/lib* $BASEDIR/cuemol2/lib/
+cp $BOOST_DIR/lib/lib* $OUTDIR/cuemol2/lib/
 
 export CMAKE_GENERATOR="Unix Makefiles"
 export CMAKE_MAKE_PROGRAM="make"

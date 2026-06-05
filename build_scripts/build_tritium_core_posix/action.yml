@@ -9,21 +9,18 @@ inputs:
 runs:
   using: "composite"
   steps:
-  - name: Build, install, and test tritium/core addon (posix)
+  - name: Build tritium/core addon (posix)
     if: runner.os != 'Windows'
     shell: bash
-    # env:
-    #   SCCACHE_GHA_ENABLED: "true"
     run: |
       cd ${GITHUB_WORKSPACE}
-      bash build_scripts/build_nodejs_posix/run.sh ${{ inputs.basedir }}
+      bash build_scripts/build_tritium_core_posix/run.sh ${{ inputs.basedir }}
 
-  - name: Build, install, and test tritium/core addon (windows)
+  - name: Build tritium/core addon (windows)
     if: runner.os == 'Windows'
     shell: cmd
     run: |
       echo on
       cd %GITHUB_WORKSPACE%
-      REM set HOME=%HOMEDRIVE%%HOMEPATH%
-      call build_scripts\build_nodejs_posix\run_win.bat ${{ inputs.basedir }}
+      call build_scripts\build_tritium_core_posix\run_win.bat ${{ inputs.basedir }}
       if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%

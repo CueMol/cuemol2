@@ -3,9 +3,13 @@
 version: '3'
 
 vars:
+  # Shared, branch-independent downloaded deps (boost/CGAL/fftw/glew/lcms2/python).
   WORKDIR: '{{if eq OS "windows"}}c:\tmp\proj64_deplibs{{else}}$HOME/tmp/proj64_deplibs{{end}}'
-  LIBCUEMOL2_BUILDDIR: '{{if eq OS "windows"}}{{.WORKDIR}}/tmp/build_libcuemol2{{else}}{{.WORKDIR}}/build_libcuemol2{{end}}'
-  LIBCUEMOL2_INSTDIR: "{{.WORKDIR}}/cuemol2"
+  # Per-checkout build/install output, so multiple checkouts/worktrees on the same
+  # host do not clobber each other. Windows keeps the old behavior (= WORKDIR).
+  OUTDIR: '{{if eq OS "windows"}}{{.WORKDIR}}{{else}}{{.ROOT_DIR}}/../.build_out{{end}}'
+  LIBCUEMOL2_BUILDDIR: '{{if eq OS "windows"}}{{.WORKDIR}}/tmp/build_libcuemol2{{else}}{{.OUTDIR}}/build_libcuemol2{{end}}'
+  LIBCUEMOL2_INSTDIR: "{{.OUTDIR}}/cuemol2"
   CONFIG: '{{if eq OS "windows"}}Release{{else}}Debug{{end}}'
   PARALLEL: ""
   EMBED_PYTHON_ROOT:
@@ -49,6 +53,7 @@ tasks:
     platforms: [darwin]
     env:
       EMBED_PYTHON_ROOT: '{{.EMBED_PYTHON_ROOT | default (env "EMBED_PYTHON_ROOT")}}'
+      OUT_DIR: '{{.OUTDIR}}'
     cmds:
       - bash build_libcuemol2_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
 
@@ -56,6 +61,7 @@ tasks:
     platforms: [linux]
     env:
       EMBED_PYTHON_ROOT: '{{.EMBED_PYTHON_ROOT | default (env "EMBED_PYTHON_ROOT")}}'
+      OUT_DIR: '{{.OUTDIR}}'
     cmds:
       - bash build_libcuemol2_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
 
@@ -114,34 +120,40 @@ tasks:
 
   build_pytest:darwin:
     platforms: [darwin]
+    env:
+      OUT_DIR: '{{.OUTDIR}}'
     cmds:
       - task: build_libcuemol2
       - bash build_pymod_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
 
 #####
 
-  build_nodejs:
-    desc: "Build and test tritium/core native addon"
+  build_tritium_core:
+    desc: "Build tritium/core native addon (test via test_tritium_core)"
     deps:
-      - task: build_nodejs:{{OS}}
+      - task: build_tritium_core:{{OS}}
 
-  build_nodejs:darwin:
+  build_tritium_core:darwin:
     platforms: [darwin]
+    env:
+      OUT_DIR: '{{.OUTDIR}}'
     cmds:
       - task: build_libcuemol2
-      - bash build_nodejs_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
+      - bash build_tritium_core_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
 
-  build_nodejs:linux:
+  build_tritium_core:linux:
     platforms: [linux]
+    env:
+      OUT_DIR: '{{.OUTDIR}}'
     cmds:
       - task: build_libcuemol2
-      - bash build_nodejs_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
+      - bash build_tritium_core_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
 
-  build_nodejs:windows:
+  build_tritium_core:windows:
     platforms: [windows]
     cmds:
       - task: build_libcuemol2
-      - cmd /c build_nodejs_posix\\run_win.bat "{{.WORKDIR}}"
+      - cmd /c build_tritium_core_posix\\run_win.bat "{{.WORKDIR}}"
 
 #####
 
@@ -151,6 +163,8 @@ tasks:
 
   build_cli:darwin:
     platforms: [darwin]
+    env:
+      OUT_DIR: '{{.OUTDIR}}'
     cmds:
       - task: build_libcuemol2
       - bash build_cuetty_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
@@ -159,7 +173,7 @@ tasks:
     platforms: [darwin]
     cmds:
       # - task: build_cli
-      - env LD_LIBRARY_PATH="{{.WORKDIR}}/cuemol2/lib" "{{.WORKDIR}}/cuemol2/bin/cuetty" -i
+      - env LD_LIBRARY_PATH="{{.LIBCUEMOL2_INSTDIR}}/lib" "{{.LIBCUEMOL2_INSTDIR}}/bin/cuetty" -i
 
 #####
 
@@ -170,12 +184,16 @@ tasks:
 
   build_tritium:darwin:
     platforms: [darwin]
+    env:
+      OUT_DIR: '{{.OUTDIR}}'
     cmds:
       - task: build_libcuemol2
       - bash build_tritium_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
 
   build_tritium:linux:
     platforms: [linux]
+    env:
+      OUT_DIR: '{{.OUTDIR}}'
     cmds:
       - task: build_libcuemol2
       - bash build_tritium_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
@@ -185,6 +203,18 @@ tasks:
     cmds:
       - task: build_libcuemol2
       - '"C:/Program Files/Git/bin/bash.exe" build_tritium_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"'
+
+  clean_tritium:
+    desc: "Clean tritium build artifacts (core native addon + react-gui out)"
+    cmds:
+      - rm -rf "{{.ROOT_DIR}}/../tritium/core/build"
+      - rm -rf "{{.ROOT_DIR}}/../tritium/react-gui/out"
+
+  rebuild_tritium:
+    desc: "Clean tritium/core build artifacts and rebuild tritium from scratch"
+    cmds:
+      - task: clean_tritium
+      - task: build_tritium
 
   run_tritium:
     desc: "Run the built tritium Electron app"
@@ -198,11 +228,34 @@ tasks:
     cmds:
       - pnpm run lint:style
 
+  test_tritium:
+    desc: "Run tritium tests (core Jest + react-gui Vitest)"
+    cmds:
+      - task: test_tritium_core
+      - task: test_tritium_react_gui
+
+  test_tritium_core:
+    desc: "Run tritium/core Jest tests (Node pinned via tritium/.nvmrc)"
+    env:
+      OUT_DIR: '{{.OUTDIR}}'
+    cmds:
+      # Delegate to the same script CI uses (test_tritium_core_posix/run.sh); the
+      # Taskfile only layers the local Node pin (nvm) so there is one core-test source.
+      - bash -c 'set -e; export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; . "$NVM_DIR/nvm.sh"; cd "{{.ROOT_DIR}}/../tritium"; nvm use >/dev/null; bash "{{.ROOT_DIR}}/test_tritium_core_posix/run.sh" "{{.WORKDIR}}"'
+
+  test_tritium_react_gui:
+    desc: "Run tritium/react-gui Vitest tests (Node pinned via tritium/.nvmrc)"
+    dir: "{{.ROOT_DIR}}/../tritium/react-gui"
+    cmds:
+      - bash -c 'set -e; export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; . "$NVM_DIR/nvm.sh"; nvm use; pnpm test'
+
 #####
 
   rebuild_uxpgui:
     desc: "Setup, config, and build the uxpgui app"
     platforms: [darwin]
+    env:
+      OUT_DIR: '{{.OUTDIR}}'
     cmds:
       - bash build_uxpgui_posix/run.sh "{{.WORKDIR}}" macOS ARM64
 
