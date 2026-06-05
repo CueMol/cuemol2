@@ -38,6 +38,7 @@ import {
   CartoonSheetSection,
   CartoonCoilSection,
 } from "./CartoonRendererSection";
+import { ContourMainSection } from "./ContourRendererSection";
 import { DisoMainSection } from "./DisoRendererSection";
 import {
   DSurfaceMainSection,
@@ -261,6 +262,18 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
       title: "Coil",
       defaultExpanded: true,
       Component: CartoonCoilSection,
+    },
+  ],
+  // MapMeshRenderer ("contour"): UXP contour-propdlg "Map" tab. One section
+  // surfacing center-update mode, line width, buffer size, periodic boundary,
+  // and the limit-display target / selection / distance. Coloring stays out
+  // (not on the UXP Map tab).
+  contour: [
+    {
+      key: "contour-main",
+      title: "Contour",
+      defaultExpanded: true,
+      Component: ContourMainSection,
     },
   ],
   // DisoRenderer ("disorder"): UXP disorder-propdlg "Disorder" tab. One section
