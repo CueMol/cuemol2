@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-06-05 (`dialog.property.ribbon` done: UXP `ribbon-propdlg` (Common/Helix/Sheet/Coil) を Inspector Properties タブの 4 accordion に実装 (`RibbonRenderer` extends `SplineRenderer`, `type_name "ribbon"`)。nested section (TubeSection) と head/tail junction (JctTable) を dotted key で露出。Section detail は coil/helix/sheet .detail を同時書込、Cap type は start/end_captype を同時書込、Helix/Sheet は section+Back(Side)color+独立 Head/Tail、Coil は section のみ (fancy1 無)。Arrow height/width は basw/arrow の % 派生、sharp は roundsquare/fancy1 で enable。UXP に無い base smooth/line_width は非露出。派生 %行・junction helper は cartoon と並行する ribbon-local 実装 (共有昇格は follow-up)。prop_dlgs done 9->10/todo 5->4)
 - Updated: 2026-06-05 (`dialog.property.cartoon` 全項目移植: nested property の扱いの誤りで欠落していた helix/sheet/coil の section 形状 (TubeSection: type/detail/width/tuber/sharp) と head/tail (JctTable: type/gamma/basw/arrow) を dotted key で curated page に露出 (ADR-0015 の dot-path 機構)。Helix は Cylinder/Ribbon deck (`helix_ribbon`) 化、ribbon head/tail は ribhelix_head+tail を同時書込、Arrow height/width は basw/arrow の % 派生、sharp は roundsquare のみ enable。`pivotatom`/`anchor_sel`(SelRow)+`anchor_weight` を追加。UXP に無い `segend_fade`/`helix_width` を削除。`MappedEnumRow` に option 部分集合追加・`SelRow` 共有化。status は既に done のため count 変更なし)
 - Updated: 2026-06-05 (`dialog.property.nucl` done: UXP `nucl-propdlg` (Common/Nucleic acid/Tube) を Inspector Properties タブの 4 accordion に実装 (`NARenderer` extends `TubeRenderer`, `type_name "nucl"`)。Nucleic acid は新 `NuclBaseSection` (show_tube/show_basepair/base_type/base_detail/base_size/base_thick)、Tube/Section/Putty は共有 tube-page = tube renderer と同一のため `TubeMainSection`/`TubeSectionSection`/`TubePuttySection` を再利用。base_thick は % 派生表示 (`thick*100/base_size`、commit で `pct*size/100`、tube `Width2Row` と同型)。show_tube off で Tube/Section/Putty を disable (tube section に optional `disabled` 追加 + nucl wrapper 配線)。base_size/base_thick は DragNumericField、base_detail は素の NumericField。prop_dlgs done 8->9/todo 6->5)
 - Updated: 2026-06-05 (`dialog.property.spline` done: spline は専用 UXP dialog を持たないため (anisou と同様) 新規行を追加。C++ `SplineRenderer.qif` から curated した 1 accordion section (`SplineRendererSection`, `type_name "spline"`) を実装。axialdetail (NumInputRow) / smooth (NumRow realtime) / smoothcolor / line_width (NumRow realtime) / segend_fade / pivotatom。tube の `TubeMainSection` を template に cap 2 行除去 + line_width 追加。`start_captype`/`end_captype` は line 描画で機能しないため非露出 (回帰テストで pin)。prop_dlgs done 7->8/total 14->15)
@@ -34,13 +35,13 @@
 | Panel | [panels.md](panels.md) | 27 | 4 | 17 | 1 | 5 | 0 |
 | Menu | [menus.md](menus.md) | 4 | 2 | 2 | 0 | 0 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
-| Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 15 | 9 | 1 | 0 | 5 | 0 |
+| Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 15 | 10 | 1 | 0 | 4 | 0 |
 | Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 0 | 3 | 1 | 14 | 0 |
 | Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 1 | 0 | 1 | 19 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 2 | 1 | 0 | 10 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 0 | 1 | 0 | 27 | 0 |
 | Other | [other.md](other.md) | 4 | 0 | 1 | 0 | 3 | 0 |
-| **Total** | | **131** | **12** | **27** | **2** | **90** | **0** |
+| **Total** | | **131** | **13** | **27** | **2** | **89** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -114,4 +115,4 @@
 
 ## Unstarted
 
-**94 / 131** items are `todo` (not yet started).
+**93 / 131** items are `todo` (not yet started).

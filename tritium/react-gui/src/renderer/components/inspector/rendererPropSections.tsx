@@ -54,6 +54,12 @@ import {
   NuclSectionSection,
   NuclPuttySection,
 } from "./NuclRendererSection";
+import {
+  RibbonMainSection,
+  RibbonHelixSection,
+  RibbonSheetSection,
+  RibbonCoilSection,
+} from "./RibbonRendererSection";
 
 // ────────────────────────────────────────────────────────────
 // Types
@@ -309,6 +315,35 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
       title: "Putty",
       defaultExpanded: true,
       Component: TubePuttySection,
+    },
+  ],
+  // RibbonRenderer ("ribbon"): UXP ribbon-propdlg Common/Helix/Sheet/Coil tabs.
+  // Section shapes (TubeSection) and head/tail junctions (JctTable) are nested,
+  // edited by dotted keys.
+  ribbon: [
+    {
+      key: "ribbon-main",
+      title: "Ribbon",
+      defaultExpanded: true,
+      Component: RibbonMainSection,
+    },
+    {
+      key: "ribbon-helix",
+      title: "Helix",
+      defaultExpanded: true,
+      Component: RibbonHelixSection,
+    },
+    {
+      key: "ribbon-sheet",
+      title: "Sheet",
+      defaultExpanded: true,
+      Component: RibbonSheetSection,
+    },
+    {
+      key: "ribbon-coil",
+      title: "Coil",
+      defaultExpanded: true,
+      Component: RibbonCoilSection,
     },
   ],
   // NARenderer ("nucl"): extends TubeRenderer. UXP nucl-propdlg adds a
