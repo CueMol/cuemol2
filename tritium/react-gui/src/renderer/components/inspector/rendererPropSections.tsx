@@ -22,6 +22,7 @@ import type {
   PropWriteOpts,
 } from "../../worker/server/services/genericProps.service";
 import { SimpleRendererSection } from "./SimpleRendererSection";
+import { SplineMainSection } from "./SplineRendererSection";
 import { BallStickRendererSection } from "./BallStickRendererSection";
 import { CPKAtomRadiiSection, CPKDetailSection } from "./CPKRendererSection";
 import { AnIsoUDiscSection } from "./AnIsoURendererSection";
@@ -134,6 +135,17 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
       title: "Trace",
       defaultExpanded: true,
       Component: SimpleRendererSection,
+    },
+  ],
+  // SplineRenderer ("spline"): no dedicated UXP dialog; curated from the C++
+  // SplineRenderer.qif. A single section (no nested cross-section / putty), the
+  // tube cap-type props are omitted (non-functional on a line).
+  spline: [
+    {
+      key: "spline",
+      title: "Spline",
+      defaultExpanded: true,
+      Component: SplineMainSection,
     },
   ],
   // BallStickRenderer ("ballstick"): UXP ballstick-propdlg "Ball & Stick" tab.

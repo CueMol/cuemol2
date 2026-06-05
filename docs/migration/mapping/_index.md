@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-06-05 (`dialog.property.spline` done: spline は専用 UXP dialog を持たないため (anisou と同様) 新規行を追加。C++ `SplineRenderer.qif` から curated した 1 accordion section (`SplineRendererSection`, `type_name "spline"`) を実装。axialdetail (NumInputRow) / smooth (NumRow realtime) / smoothcolor / line_width (NumRow realtime) / segend_fade / pivotatom。tube の `TubeMainSection` を template に cap 2 行除去 + line_width 追加。`start_captype`/`end_captype` は line 描画で機能しないため非露出 (回帰テストで pin)。prop_dlgs done 7->8/total 14->15)
 - Updated: 2026-06-04 (`dialog.tool.chg-chname` review: UXP "Change chain ID" tool dialog を Blueprint modal として実装。h3-kit/form (`FieldSection` + `ObjectSelect` molCoord filter + `MolSelList` + `TextField`) で構成。OK は新規 worker service `changeChainName` 経由で `MolAnlManager.changeChainName(mol, sel, name)` を "Change chain name" undo txn 内で実行。Edit メニューの既存 stub `menu:change-chain-id` を `useToolCommands` 経由で配線。tool_dlgs todo 20->19/review 0->1)
 - Updated: 2026-06-03 (`dialog.property.tube` done: UXP `tube-propdlg` の Tube タブを Inspector Properties タブの 3 accordion section (`TubeRendererSection`: Tube / Section / Putty) として実装、`type_name "tube"` で registry 登録。中核の `section.*` (TubeSection 断面形状) は nested object 上にあるため `parseGenericProps` をネスト再帰展開 (dotted key + depth) し、dot-path 書き込みは `cuemol2::setProp`→`LPropSupport::setNestedProperty` 経由で実現 — ADR-0015 の「nested 編集不可」前提を訂正 (誤りは `LScrObjects.cpp` 旧 inline 実装の誤読、binding 経路は対応済みで UXP xpcom と同一)。Width2 は `section.tuber`×width の派生表示。`MappedEnumRow`/`CAP_LABELS` を `RendererCommonSection` へ昇格し cartoon と共用。cartoon の section 形状も同手法で露出可能だが follow-up。prop_dlgs done 6->7/todo 7->6)
 - Updated: 2026-06-03 (`dialog.property.disorder` done: UXP `disorder-propdlg` の Disorder タブを Inspector Properties タブの 1 accordion section (`DisoRendererSection`) として実装、`type_name "disorder"` で registry 登録。`target` は親 mol の tube/ribbon/cartoon/nucl 兄弟 renderer 名を新 worker service `getSiblingRendererNames` で列挙する `(none)` 付き select (section へ `nodeId` を thread)、`detail` は素の inline NumericField、dot size/dot sep/loop size/loop size 2 は `NumRow`(DragNumericField, realtime 無し)、`defaultcolor` は `ColorRow`。共有 `NumInputRow` を `RendererCommonSection` へ昇格し cartoon と共用。prop_dlgs done 5->6/todo 8->7)
@@ -31,13 +32,13 @@
 | Panel | [panels.md](panels.md) | 27 | 4 | 17 | 1 | 5 | 0 |
 | Menu | [menus.md](menus.md) | 4 | 2 | 2 | 0 | 0 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
-| Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 14 | 7 | 1 | 0 | 6 | 0 |
+| Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 15 | 8 | 1 | 0 | 6 | 0 |
 | Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 0 | 3 | 1 | 14 | 0 |
 | Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 1 | 0 | 1 | 19 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 2 | 1 | 0 | 10 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 0 | 1 | 0 | 27 | 0 |
 | Other | [other.md](other.md) | 4 | 0 | 1 | 0 | 3 | 0 |
-| **Total** | | **130** | **10** | **27** | **2** | **91** | **0** |
+| **Total** | | **131** | **11** | **27** | **2** | **91** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -111,4 +112,4 @@
 
 ## Unstarted
 
-**95 / 130** items are `todo` (not yet started).
+**95 / 131** items are `todo` (not yet started).
