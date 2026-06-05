@@ -190,10 +190,17 @@ interface LimitDisplayRowsProps {
 
 /**
  * The "Limit display by" block: enable toggle + Target + Selection + Distance.
- * Renders nothing when `bndry_molname` is absent. The toggle mirrors the UXP
- * groupbox checkbox (checked iff a target is set); turning it on commits the
- * first available molecule, off clears target and selection together in one
- * undo step; Target / Selection / Distance are disabled while off.
+ * Renders nothing when `bndry_molname` is absent.
+ *
+ * The group is "on" when a target molecule is set OR the user has switched the
+ * toggle on (`enabled` local state). Decoupling the on-state from a non-empty
+ * `bndry_molname` avoids a dead-lock: the only way to set the target is through
+ * this block, but if no molecule is in the scene yet (or the async molecule list
+ * has not loaded), `bndry_molname` stays empty and the toggle could never be
+ * turned on. With the local `enabled`, turning the toggle on enables the Target
+ * selector so the user can pick a molecule once it is available; if one is
+ * already known it is auto-picked (UXP `validateWidgets` parity). Turning it off
+ * clears target and selection together in one undo step.
  */
 export const LimitDisplayRows: React.FC<LimitDisplayRowsProps> = ({
   entries,
@@ -208,20 +215,20 @@ export const LimitDisplayRows: React.FC<LimitDisplayRowsProps> = ({
   const bndryRng = get("bndry_rng");
 
   const molNames = useMolObjectNames(sceneId);
+  const [enabled, setEnabled] = useState(false);
 
   if (!bndryMol) return null;
 
-  // Limiting is on when a target molecule is set (UXP groupbox checked state).
-  const limitOn = String(bndryMol.value ?? "") !== "";
+  const hasTarget = String(bndryMol.value ?? "") !== "";
+  const limitOn = enabled || hasTarget;
 
-  /**
-   * Toggle limiting on/off, mirroring UXP `validateWidgets`: on -> commit the
-   * first available molecule as the target; off -> clear target and selection
-   * together in one undo step.
-   */
   const toggleLimit = (on: boolean) => {
+    setEnabled(on);
     if (on) {
-      if (molNames.length > 0) onSet(bndryMol.key, bndryMol.type, molNames[0]);
+      // Auto-pick the first molecule for convenience (UXP parity). If none is
+      // available yet, the Target selector is now enabled so the user can pick
+      // one once the molecule list loads.
+      if (!hasTarget && molNames.length > 0) onSet(bndryMol.key, bndryMol.type, molNames[0]);
       return;
     }
     const writes: PropMultiWrite[] = [

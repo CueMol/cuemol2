@@ -222,6 +222,21 @@ describe('IsosurfMainSection', () => {
     unmount()
   })
 
+  it('lets the Limit toggle turn on even with no molecule available (no dead-lock)', () => {
+    // cm is null -> the molecule list is empty; the toggle must still turn on so
+    // the Target selector becomes usable once a molecule appears.
+    const { container, unmount } = mountTree(
+      <IsosurfMainSection entries={isosurfEntries({ bndryMol: '' })} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+    )
+    const toggle = switchIn(rowByLabel(container, 'Limit display by')!)
+    expect(toggle.checked).toBe(false)
+    expect((rowByLabel(container, 'Target')!.querySelector('select') as HTMLSelectElement).disabled).toBe(true)
+    act(() => toggle.click())
+    expect(switchIn(rowByLabel(container, 'Limit display by')!).checked).toBe(true)
+    expect((rowByLabel(container, 'Target')!.querySelector('select') as HTMLSelectElement).disabled).toBe(false)
+    unmount()
+  })
+
   it('disables Target / Selection / Distance when limiting is off', () => {
     const { container, unmount } = mountTree(
       <IsosurfMainSection entries={isosurfEntries({ bndryMol: '' })} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
