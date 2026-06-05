@@ -48,6 +48,12 @@ import {
   TubeSectionSection,
   TubePuttySection,
 } from "./TubeRendererSection";
+import {
+  NuclBaseSection,
+  NuclTubeMainSection,
+  NuclSectionSection,
+  NuclPuttySection,
+} from "./NuclRendererSection";
 
 // ────────────────────────────────────────────────────────────
 // Types
@@ -303,6 +309,36 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
       title: "Putty",
       defaultExpanded: true,
       Component: TubePuttySection,
+    },
+  ],
+  // NARenderer ("nucl"): extends TubeRenderer. UXP nucl-propdlg adds a
+  // "Nucleic acid" tab on top of the shared tube-page (Tube / Section / Putty),
+  // which are reused here. The reused tube sections are disabled when
+  // "Show tube" is off (UXP gTube.disableAll gate).
+  nucl: [
+    {
+      key: "nucl-base",
+      title: "Nucleic acid",
+      defaultExpanded: true,
+      Component: NuclBaseSection,
+    },
+    {
+      key: "nucl-tube-main",
+      title: "Tube",
+      defaultExpanded: true,
+      Component: NuclTubeMainSection,
+    },
+    {
+      key: "nucl-tube-section",
+      title: "Section",
+      defaultExpanded: true,
+      Component: NuclSectionSection,
+    },
+    {
+      key: "nucl-tube-putty",
+      title: "Putty",
+      defaultExpanded: true,
+      Component: NuclPuttySection,
     },
   ],
 };

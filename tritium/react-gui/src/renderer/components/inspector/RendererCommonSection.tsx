@@ -109,17 +109,27 @@ export const TextRow: React.FC<TextRowProps> = ({
   );
 };
 
+interface BoolRowProps extends RowProps {
+  disabled?: boolean;
+}
+
 /**
  * Boolean toggle committed immediately (e.g. Visible / Locked).
  *
  * Exported so renderer-type-specific sections (e.g. `BallStickRendererSection`)
  * reuse the same toggle row contract instead of redefining it.
  */
-export const BoolRow: React.FC<RowProps> = ({ entry, label, onSet, onReset }) => (
+export const BoolRow: React.FC<BoolRowProps> = ({
+  entry,
+  label,
+  onSet,
+  onReset,
+  disabled,
+}) => (
   <PropertyField label={label} inline {...resetProps(entry, onReset)}>
     <SwitchField
       checked={Boolean(entry.value)}
-      disabled={entry.readonly}
+      disabled={disabled || entry.readonly}
       onChange={(c) => onSet(entry.key, entry.type, c)}
     />
   </PropertyField>
