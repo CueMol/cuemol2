@@ -107,6 +107,22 @@ export function pressStepArrow(button: HTMLElement): void {
 }
 
 /**
+ * Click an inspector accordion header by its title text to toggle it open.
+ * Needed because the Properties tab accordions are an exclusive group (only one
+ * open at a time), so a section other than the initially-open one must be
+ * clicked before its body rows are in the DOM.
+ */
+export function openAccordion(container: HTMLElement, title: string): void {
+  const header = Array.from(
+    container.querySelectorAll('.insp-accordion-header'),
+  ).find((h) => h.querySelector('.insp-accordion-title')?.textContent === title)
+  if (!header) throw new Error(`accordion header not found: ${title}`)
+  act(() => {
+    header.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  })
+}
+
+/**
  * Install a mock window.electronAPI matching the post-B generic surface
  * (`invoke` + `onPush`) and return it for assertion / further mock.
  *

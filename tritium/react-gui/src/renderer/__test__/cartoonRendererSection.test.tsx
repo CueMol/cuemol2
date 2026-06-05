@@ -19,7 +19,7 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
-import { mountTree, pressStepArrow } from './helpers/testHarness'
+import { mountTree, pressStepArrow, openAccordion } from './helpers/testHarness'
 import type { GenericPropEntry } from '../worker/server/services/genericProps.service'
 
 void React
@@ -446,6 +446,24 @@ describe('PropertiesTab cartoon section dispatch', () => {
       <PropertiesTab entries={fullEntries()} rendererType="cartoon" {...commonProps} />,
     )
     expect(rowByLabel(container, 'helix')).toBeNull()
+    unmount()
+  })
+
+  it('keeps at most one accordion open at a time (exclusive group)', () => {
+    const { container, unmount } = mountTree(
+      <PropertiesTab entries={fullEntries()} rendererType="cartoon" {...commonProps} />,
+    )
+    const openCount = () => container.querySelectorAll('.insp-accordion-body').length
+    openAccordion(container, 'Cartoon')
+    expect(openCount()).toBe(1)
+    openAccordion(container, 'Helix')
+    // Opening Helix collapses Cartoon -> still only one body in the DOM.
+    expect(openCount()).toBe(1)
+    expect(
+      container
+        .querySelector('.insp-accordion.expanded .insp-accordion-title')!
+        .textContent,
+    ).toBe('Helix')
     unmount()
   })
 })

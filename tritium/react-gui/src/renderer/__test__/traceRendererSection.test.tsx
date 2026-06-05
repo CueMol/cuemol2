@@ -14,7 +14,7 @@
 
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
-import { mountTree, pressStepArrow } from './helpers/testHarness'
+import { mountTree, pressStepArrow, openAccordion } from './helpers/testHarness'
 import type { GenericPropEntry } from '../worker/server/services/genericProps.service'
 
 void React
@@ -89,6 +89,7 @@ describe('PropertiesTab trace dispatch', () => {
     const titles = accordionTitles(container)
     expect(titles).toContain('Trace')
     expect(titles).not.toContain('Renderer settings')
+    openAccordion(container, 'Trace')
     expect(rowByLabel(container, 'Line width')).not.toBeNull()
     unmount()
   })
@@ -104,6 +105,7 @@ describe('PropertiesTab trace dispatch', () => {
         sceneId={1}
       />,
     )
+    openAccordion(container, 'Trace')
     const incr = rowByLabel(container, 'Line width')!.querySelector(
       '.h3-form-drag-arrow-right',
     ) as HTMLButtonElement

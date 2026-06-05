@@ -15,7 +15,7 @@
 
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
-import { mountTree, pressStepArrow } from './helpers/testHarness'
+import { mountTree, pressStepArrow, openAccordion } from './helpers/testHarness'
 import type { GenericPropEntry } from '../worker/server/services/genericProps.service'
 
 void React
@@ -204,6 +204,7 @@ describe('PropertiesTab nucl dispatch + Show tube gate', () => {
 
   it('enables the Tube section rows when Show tube is on', () => {
     const { container, unmount } = mountTree(<PropertiesTab {...props(true)} />)
+    openAccordion(container, 'Tube')
     const drag = rowByLabel(container, 'Smoothness')!.querySelector('.h3-form-drag')
     expect(drag!.className).not.toContain('h3-form-drag-disabled')
     unmount()
@@ -211,6 +212,7 @@ describe('PropertiesTab nucl dispatch + Show tube gate', () => {
 
   it('disables the Tube section rows when Show tube is off', () => {
     const { container, unmount } = mountTree(<PropertiesTab {...props(false)} />)
+    openAccordion(container, 'Tube')
     const drag = rowByLabel(container, 'Smoothness')!.querySelector('.h3-form-drag')
     expect(drag!.className).toContain('h3-form-drag-disabled')
     unmount()

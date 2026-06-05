@@ -17,7 +17,7 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
-import { mountTree, pressStepArrow } from './helpers/testHarness'
+import { mountTree, pressStepArrow, openAccordion } from './helpers/testHarness'
 import type { GenericPropEntry } from '../worker/server/services/genericProps.service'
 
 void React
@@ -267,10 +267,13 @@ describe('PropertiesTab cpk section dispatch', () => {
     const { container, unmount } = mountTree(
       <PropertiesTab entries={fullEntries()} rendererType="cpk" {...commonProps} />,
     )
+    // Exclusive accordions: open each section in turn to inspect its body.
+    openAccordion(container, 'Atom radii')
     const radiiBody = sectionBody(container, 'Atom radii')!
-    const detailBody = sectionBody(container, 'Detail')!
     expect(rowByLabel(radiiBody, 'Detail')).toBeNull()
     expect(rowByLabel(radiiBody, 'Carbon')).not.toBeNull()
+    openAccordion(container, 'Detail')
+    const detailBody = sectionBody(container, 'Detail')!
     expect(rowByLabel(detailBody, 'Detail')).not.toBeNull()
     unmount()
   })

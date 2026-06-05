@@ -17,7 +17,7 @@
 
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
-import { mountTree, pressStepArrow } from './helpers/testHarness'
+import { mountTree, pressStepArrow, openAccordion } from './helpers/testHarness'
 import type { GenericPropEntry } from '../worker/server/services/genericProps.service'
 
 void React
@@ -226,6 +226,7 @@ describe('PropertiesTab spline dispatch', () => {
     const titles = accordionTitles(container)
     expect(titles).toContain('Spline')
     expect(titles).not.toContain('Renderer settings')
+    openAccordion(container, 'Spline')
     expect(rowByLabel(container, 'Line width')).not.toBeNull()
     unmount()
   })
