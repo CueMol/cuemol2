@@ -4162,7 +4162,7 @@ PCResidue crRes;
 
   // modify chain ID with the extension given
   if (chain_ext>0)
-        sprintf ( chainID,"%s_%i",m_chain->chainID,chain_ext );
+        snprintf ( chainID,sizeof(chainID),"%s_%i",m_chain->chainID,chain_ext );
   else  strcpy  ( chainID,m_chain->chainID );
 
   // Choose the chain ID. If a chain with such ID is
@@ -4180,9 +4180,9 @@ PCResidue crRes;
     if (!Ok)  {
       k++;
       if (chain_ext>0)
-            sprintf ( chainID,"%s_%i_%i",m_chain->chainID,
+            snprintf ( chainID,sizeof(chainID),"%s_%i_%i",m_chain->chainID,
                                          chain_ext,k );
-      else  sprintf ( chainID,"%s_%i",m_chain->chainID,k );
+      else  snprintf ( chainID,sizeof(chainID),"%s_%i",m_chain->chainID,k );
     }
   } while (!Ok);
 
