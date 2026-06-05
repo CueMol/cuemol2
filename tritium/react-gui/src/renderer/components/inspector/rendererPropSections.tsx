@@ -39,6 +39,7 @@ import {
   CartoonCoilSection,
 } from "./CartoonRendererSection";
 import { ContourMainSection } from "./ContourRendererSection";
+import { IsosurfMainSection } from "./IsosurfRendererSection";
 import { DisoMainSection } from "./DisoRendererSection";
 import {
   DSurfaceMainSection,
@@ -274,6 +275,18 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
       title: "Contour",
       defaultExpanded: true,
       Component: ContourMainSection,
+    },
+  ],
+  // MapSurfRenderer ("isosurf"): UXP isosurf-propdlg "Map" tab. One section --
+  // drawing mode, line/point size (off for fill), max grid size, back-face
+  // culling, plus the Center update / Limit display block shared with contour
+  // (both extend MapRenderer). Coloring / tuning props stay out.
+  isosurf: [
+    {
+      key: "isosurf-main",
+      title: "Isosurf",
+      defaultExpanded: true,
+      Component: IsosurfMainSection,
     },
   ],
   // DisoRenderer ("disorder"): UXP disorder-propdlg "Disorder" tab. One section

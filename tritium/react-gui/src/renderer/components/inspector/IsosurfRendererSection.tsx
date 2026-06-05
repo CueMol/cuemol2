@@ -1,0 +1,115 @@
+/**
+ * @file components/inspector/IsosurfRendererSection.tsx
+ * @description Type-specific property section for the isosurf renderer
+ * (C++ `xtal::MapSurfRenderer`, `type_name === "isosurf"`). It draws an
+ * isosurface of a scalar field (density map).
+ *
+ * Faithful migration of the UXP `isosurf-propdlg` "Map" tab into one accordion
+ * section registered in `rendererPropSections.tsx`:
+ *   - Center update         : None / Automatic / Automatic (drag)  (shared)
+ *   - Drawing Mode          : `drawmode` (fill / line / point)
+ *   - Line/Point size       : `width` (drag-numeric, px, realtime; off for fill)
+ *   - Max grid size         : `max_grids` (stepper)
+ *   - Back-face culling      : `cullface` (switch)
+ *   - Use periodic boundary : `use_pbc` (switch)
+ *   - Limit display by + Target / Selection / Distance              (shared)
+ *
+ * Parity note (`isosurf-propdlg.js` `updateDisabledState`): the Line/Point size
+ * is disabled while the drawing mode is "fill" (it only matters for line/point
+ * rendering). "Center update" and the "Limit display by" block are identical to
+ * the contour renderer (both extend C++ `MapRenderer`) and come from
+ * `MapRendererCommon`. Coloring and tuning props (`binning` / `glrender_mode` /
+ * ...) are not on the UXP Map tab and stay out.
+ *
+ * Backed by the same live getGenericProps / setGenericProp bridge as the common
+ * page; each property is looked up by key and its row renders nothing when the
+ * property is absent. All properties are flat (no nested objects / dot-paths).
+ */
+
+import React from "react";
+import { NumRow, NumInputRow, BoolRow, EnumRow } from "./RendererCommonSection";
+import { CenterUpdateRow, LimitDisplayRows } from "./MapRendererCommon";
+import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
+import type { RendererPropSectionProps } from "./rendererPropSections";
+
+/**
+ * "Isosurf" section: center update, drawing mode, line/point size, max grid
+ * size, back-face culling, periodic boundary, and the shared limit-display
+ * block.
+ */
+export const IsosurfMainSection: React.FC<RendererPropSectionProps> = ({
+  entries,
+  onSet,
+  onSetMany,
+  onReset,
+  sceneId,
+}) => {
+  const get = (key: string) => entries.find((e: GenericPropEntry) => e.key === key);
+
+  const drawmode = get("drawmode");
+  const width = get("width");
+  const maxGrids = get("max_grids");
+  const cullface = get("cullface");
+  const usePbc = get("use_pbc");
+
+  // Line/Point size only matters for line / point modes (UXP updateDisabledState).
+  const widthDisabled = drawmode ? String(drawmode.value) === "fill" : false;
+
+  return (
+    <>
+      <CenterUpdateRow
+        entries={entries}
+        onSet={onSet}
+        onSetMany={onSetMany}
+        onReset={onReset}
+      />
+      {drawmode && (
+        <EnumRow entry={drawmode} label="Drawing mode" onSet={onSet} onReset={onReset} />
+      )}
+      {width && (
+        <NumRow
+          entry={width}
+          label="Line/Point size"
+          onSet={onSet}
+          onReset={onReset}
+          min={0}
+          max={10}
+          step={0.1}
+          unit="px"
+          realtime
+          disabled={widthDisabled}
+        />
+      )}
+      {maxGrids && (
+        <NumInputRow
+          key={`max_grids:${maxGrids.value}`}
+          entry={maxGrids}
+          label="Max grid size"
+          onSet={onSet}
+          onReset={onReset}
+          min={50}
+          max={1000}
+          step={10}
+        />
+      )}
+      {cullface && (
+        <BoolRow entry={cullface} label="Back-face culling" onSet={onSet} onReset={onReset} />
+      )}
+      {usePbc && (
+        <BoolRow
+          entry={usePbc}
+          label="Use periodic boundary"
+          onSet={onSet}
+          onReset={onReset}
+        />
+      )}
+      <LimitDisplayRows
+        entries={entries}
+        onSet={onSet}
+        onSetMany={onSetMany}
+        onReset={onReset}
+        sceneId={sceneId}
+      />
+    </>
+  );
+};
