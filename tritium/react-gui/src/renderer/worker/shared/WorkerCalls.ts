@@ -75,6 +75,10 @@ import type {
   SaveSceneResult,
 } from '../server/services/saveScene.service'
 import type {
+  ExportImageArgs,
+  ExportImageResult,
+} from '../server/services/exportImage.service'
+import type {
   SceneBgColorArgs,
   SceneBgColorResult,
   SetSceneBgColorArgs,
@@ -389,6 +393,7 @@ export interface ServiceMap {
   undo:                       { args: UndoArgs;                        result: { ok: boolean } }
   getSceneSaveInfo:           { args: GetSceneSaveInfoArgs;            result: GetSceneSaveInfoResult }
   saveScene:                  { args: SaveSceneArgs;                   result: SaveSceneResult }
+  exportImage:                { args: ExportImageArgs;                 result: ExportImageResult }
   validateSelection:          { args: ValidateSelectionArgs;           result: ValidateSelectionResult }
   getSceneBgColor:            { args: SceneBgColorArgs;                result: SceneBgColorResult }
   setSceneBgColor:            { args: SetSceneBgColorArgs;             result: SceneBgColorResult }
