@@ -103,10 +103,13 @@ vec3 selectNormal(vec2 uv, vec3 pC, out bool isExcluded)
     if (u_hasNormal != 0) {
         vec3 n = texture(u_normalTex, uv).xyz;
         if (dot(n, n) > 0.5) {
-            vec3 N = normalize(vec3(n.x, n.y, -n.z));
-            vec3 V = normalize(-pC);
-            if (dot(N, V) < 0.0) N = -N;
-            return N;
+            // Stored eye-space normal: +Z faces the camera, so flip Z only to
+            // reach the GTAO space (vz > 0 forward). Do NOT force it toward the
+            // camera the way reconstructNormal does: the stored normal is
+            // already front facing, and near a silhouette the exact normal
+            // points almost sideways (dot(N, view) slightly negative), so the
+            // camera-facing flip would wrongly invert it and band the edge.
+            return normalize(vec3(n.x, n.y, -n.z));
         }
         isExcluded = true;
     }
