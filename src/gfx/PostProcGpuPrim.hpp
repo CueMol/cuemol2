@@ -32,6 +32,8 @@ struct AoConstants
     float effectRadius = 1.0f;
     /// Final occlusion contrast: occlusion = pow(occlusion, finalValuePower).
     float finalValuePower = 2.2f;
+    /// Number of horizon slices (quality vs. speed).
+    int sliceCount = 9;
 };
 
 /// Fullscreen post-processing primitive.

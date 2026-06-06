@@ -44,6 +44,18 @@ runtime_class Scene
   property boolean aoEnabled => redirect(isAOEnabled, setAOEnabled);
   default aoEnabled = false;
 
+  /// GTAO occlusion sphere radius (view-space / world units)
+  property real aoRadius => redirect(getAORadius, setAORadius);
+  default aoRadius = 4.0;
+
+  /// GTAO contrast (occlusion = pow(occlusion, aoIntensity))
+  property real aoIntensity => redirect(getAOIntensity, setAOIntensity);
+  default aoIntensity = 2.2;
+
+  /// GTAO quality = number of horizon slices (higher = smoother, slower)
+  property integer aoQuality => redirect(getAOQuality, setAOQuality);
+  default aoQuality = 9;
+
   property string onload => m_scrOnLoadEvent;
   default onload = "";
 

@@ -120,6 +120,9 @@ Scene::Scene()
   m_bUseColProof = false;
 
   m_bAOEnabled = false;
+  m_fAORadius = 4.0;
+  m_fAOIntensity = 2.2;
+  m_nAOQuality = 9;
 
   MB_DPRINTLN("Scene (%d) created.", m_nUID);
 }

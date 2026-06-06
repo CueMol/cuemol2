@@ -102,6 +102,15 @@ namespace qsys {
     /// Screen-space ambient occlusion (GTAO) enable flag
     bool m_bAOEnabled;
 
+    /// GTAO occlusion sphere radius in view-space (world) units
+    double m_fAORadius;
+
+    /// GTAO contrast: occlusion = pow(occlusion, aoIntensity)
+    double m_fAOIntensity;
+
+    /// GTAO quality = number of horizon slices (higher = smoother, slower)
+    int m_nAOQuality;
+
     /// UID of this scene
     qlib::uid_t m_nUID;
 
@@ -178,6 +187,27 @@ namespace qsys {
     void setAOEnabled(bool b) {
       setUpdateFlag();
       m_bAOEnabled = b;
+    }
+
+    /// GTAO occlusion sphere radius (view-space / world units)
+    double getAORadius() const { return m_fAORadius; }
+    void setAORadius(double v) {
+      setUpdateFlag();
+      m_fAORadius = v;
+    }
+
+    /// GTAO contrast (occlusion = pow(occlusion, aoIntensity))
+    double getAOIntensity() const { return m_fAOIntensity; }
+    void setAOIntensity(double v) {
+      setUpdateFlag();
+      m_fAOIntensity = v;
+    }
+
+    /// GTAO quality (number of horizon slices)
+    int getAOQuality() const { return m_nAOQuality; }
+    void setAOQuality(int v) {
+      setUpdateFlag();
+      m_nAOQuality = v;
     }
 
     /// get source path of this scene

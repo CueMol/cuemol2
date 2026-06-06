@@ -200,7 +200,10 @@ void GUIView::drawScene()
 
                 // 2. GTAO pass: read the scene depth, write AO + packed edges
                 // into the AO target (no depth attachment -> not depth-rejected).
-                const gfx::AoConstants aoc = computeAoConstants();
+                gfx::AoConstants aoc = computeAoConstants();
+                aoc.effectRadius = float(pScene->getAORadius());
+                aoc.finalValuePower = float(pScene->getAOIntensity());
+                aoc.sliceCount = pScene->getAOQuality();
                 m_pAoRT->bind();
                 m_pAoRT->clear(1.0f, 1.0f, 1.0f, 1.0f);
                 m_pAOPostProc->drawGtao(pdc, m_pAOSceneRT, aoc, /*debugMode=*/0);
@@ -644,10 +647,8 @@ gfx::AoConstants GUIView::computeAoConstants() const
     c.ndcToViewAdd[1] = float(-tanHalfFovY);
     c.viewportPixelSize[0] = (bcx > 0) ? 1.0f / float(bcx) : 0.0f;
     c.viewportPixelSize[1] = (bcy > 0) ? 1.0f / float(bcy) : 0.0f;
-    // AO tuning constants (view-space units). Hard-coded for now; promoted to
-    // Scene properties (aoRadius / aoIntensity) in a later step.
-    c.effectRadius = 4.0f;
-    c.finalValuePower = 2.2f;
+    // The AO tuning fields (effectRadius / finalValuePower / sliceCount) are
+    // filled by the caller from the Scene properties.
     return c;
 }
 
