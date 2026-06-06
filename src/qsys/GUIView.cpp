@@ -590,8 +590,10 @@ void GUIView::ensureAORTs(int w, int h)
     if (pdc == nullptr) return;
 
     if (m_pAOSceneRT == nullptr) {
-        m_pAOSceneRT =
-            pdc->createRenderTarget(w, h, gfx::RT_COLOR_RGBA8 | gfx::RT_DEPTH_TEX);
+        // The normal attachment (MRT) lets the GTAO pass use real geometry
+        // normals instead of depth-reconstructed ones.
+        m_pAOSceneRT = pdc->createRenderTarget(
+            w, h, gfx::RT_COLOR_RGBA8 | gfx::RT_DEPTH_TEX | gfx::RT_NORMAL_RGB16F);
     } else {
         m_pAOSceneRT->resize(w, h);
     }

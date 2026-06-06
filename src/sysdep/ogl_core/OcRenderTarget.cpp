@@ -169,8 +169,21 @@ void OcRenderTarget::unbind()
 
 void OcRenderTarget::clear(float r, float g, float b, float a)
 {
-    glClearColor(r, g, b, a);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    if (m_nNormalTex != 0) {
+        // With the MRT normal attachment present, clear color attachment 0 to
+        // the requested color but the normal attachment 1 to the sentinel
+        // (0,0,0). Pixels never covered by geometry keep the sentinel, so the
+        // GTAO pass treats them as having no stored normal.
+        const GLfloat color0[4] = {r, g, b, a};
+        const GLfloat normal1[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+        const GLfloat depth1 = 1.0f;
+        glClearBufferfv(GL_COLOR, 0, color0);
+        glClearBufferfv(GL_COLOR, 1, normal1);
+        glClearBufferfv(GL_DEPTH, 0, &depth1);
+    } else {
+        glClearColor(r, g, b, a);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    }
 }
 
 void OcRenderTarget::resize(int w, int h)

@@ -31,7 +31,8 @@ void main(void)
 {
     o_FragColor = fragFogColor(v_frontColor, frag_alpha, v_fogCoord);
 
-    o_Normal = (enable_lighting != 0 && dot(v_ecNormal, v_ecNormal) > 1e-12)
-                   ? normalize(v_ecNormal)
-                   : vec3(0.0);
+    // Write the real eye-space normal whenever one is available (lit or not), so
+    // only genuinely normal-less primitives fall back to the sentinel.
+    o_Normal = (dot(v_ecNormal, v_ecNormal) > 1e-12) ? normalize(v_ecNormal)
+                                                     : vec3(0.0);
 }

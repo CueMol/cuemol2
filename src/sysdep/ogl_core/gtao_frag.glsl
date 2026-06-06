@@ -92,8 +92,14 @@ vec3 reconstructNormal(vec2 uv, vec3 pC)
 // The stored eye-space normal has +Z toward the camera; the GTAO integration
 // space has vz > 0 forward, so flip Z only, then orient toward the camera the
 // same way reconstructNormal does (flipping all three would corrupt x/y).
-vec3 selectNormal(vec2 uv, vec3 pC)
+// Returns the view-space normal. Sets isExcluded when the pixel belongs to a
+// primitive that opted out of AO: a line / label / wireframe writes the
+// sentinel (0,0,0) into the normal buffer, and such pixels are left fully lit
+// (AO = 1) instead of being shaded. With no normal buffer (u_hasNormal == 0)
+// the depth-reconstructed normal is used and nothing is excluded.
+vec3 selectNormal(vec2 uv, vec3 pC, out bool isExcluded)
 {
+    isExcluded = false;
     if (u_hasNormal != 0) {
         vec3 n = texture(u_normalTex, uv).xyz;
         if (dot(n, n) > 0.5) {
@@ -102,6 +108,7 @@ vec3 selectNormal(vec2 uv, vec3 pC)
             if (dot(N, V) < 0.0) N = -N;
             return N;
         }
+        isExcluded = true;
     }
     return reconstructNormal(uv, pC);
 }
@@ -111,7 +118,8 @@ void main()
     float rawDepth = texture(u_depthTex, v_uv).r;
     float viewspaceZ = linearizeZ(rawDepth);
     vec3 pixCenterPos = viewPos(v_uv, viewspaceZ);
-    vec3 N = selectNormal(v_uv, pixCenterPos);
+    bool isExcluded;
+    vec3 N = selectNormal(v_uv, pixCenterPos, isExcluded);
 
     if (u_debugMode == 1) {
         o_FragColor = vec4(N * 0.5 + 0.5, 1.0);
@@ -127,6 +135,12 @@ void main()
 
     // Far plane / no geometry: fully unoccluded (and flat edges).
     if (rawDepth >= 1.0) {
+        o_FragColor = vec4(1.0);
+        return;
+    }
+
+    // Line / label / wireframe primitive: keep it fully lit (AO = 1, flat edges).
+    if (isExcluded) {
         o_FragColor = vec4(1.0);
         return;
     }
