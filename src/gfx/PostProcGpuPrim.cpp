@@ -129,8 +129,15 @@ void PostProcGpuPrim::drawGtao(DisplayContext *pDC, RenderTarget *sceneRT,
 
     sceneRT->bindDepthTex(RT_TU_DEPTH);
 
+    // Use the MRT geometry normal when the scene target carries one; otherwise
+    // the shader reconstructs the normal from depth (u_hasNormal == 0).
+    const bool hasNormal = sceneRT->hasNormal();
+    if (hasNormal) sceneRT->bindColorTex(1, RT_TU_NORMAL);
+
     m_pGtaoPO->enable();
     m_pGtaoPO->setUniform("u_depthTex", RT_TU_DEPTH);
+    m_pGtaoPO->setUniform("u_normalTex", RT_TU_NORMAL);
+    m_pGtaoPO->setUniform("u_hasNormal", hasNormal ? 1 : 0);
     m_pGtaoPO->setUniformF("u_depthUnpack", consts.depthLinearizeMul,
                            consts.depthLinearizeAdd);
     m_pGtaoPO->setUniformF("u_ndcToViewMul", consts.ndcToViewMul[0],

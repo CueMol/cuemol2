@@ -12,6 +12,7 @@
 // with viewZ a positive linear distance and a GL bottom-up [0,1] UV.
 
 uniform sampler2D u_depthTex;
+uniform sampler2D u_normalTex;          // MRT eye-space normal (when u_hasNormal)
 uniform vec2 u_depthUnpack;             // (depthLinearizeMul, depthLinearizeAdd)
 uniform vec2 u_ndcToViewMul;
 uniform vec2 u_ndcToViewAdd;
@@ -20,6 +21,7 @@ uniform float u_effectRadius;           // occlusion sphere radius (view units)
 uniform float u_finalValuePower;        // occlusion = pow(occlusion, power)
 uniform int u_sliceCount;               // number of horizon slices (quality)
 uniform int u_stepCount;                // number of steps marched per slice
+uniform int u_hasNormal;                // 1 = use the stored geometry normal
 uniform int u_debugMode;                // 0 = AO, 1 = normal, 2 = linear depth
 
 in vec2 v_uv;
@@ -84,12 +86,32 @@ vec3 reconstructNormal(vec2 uv, vec3 pC)
     return N;
 }
 
+// Pick the view-space normal: the MRT geometry normal when present (smooth on
+// tessellated meshes), otherwise the depth-reconstructed normal (fallback for
+// primitives that write the sentinel, and when no normal buffer is supplied).
+// The stored eye-space normal has +Z toward the camera; the GTAO integration
+// space has vz > 0 forward, so flip Z only, then orient toward the camera the
+// same way reconstructNormal does (flipping all three would corrupt x/y).
+vec3 selectNormal(vec2 uv, vec3 pC)
+{
+    if (u_hasNormal != 0) {
+        vec3 n = texture(u_normalTex, uv).xyz;
+        if (dot(n, n) > 0.5) {
+            vec3 N = normalize(vec3(n.x, n.y, -n.z));
+            vec3 V = normalize(-pC);
+            if (dot(N, V) < 0.0) N = -N;
+            return N;
+        }
+    }
+    return reconstructNormal(uv, pC);
+}
+
 void main()
 {
     float rawDepth = texture(u_depthTex, v_uv).r;
     float viewspaceZ = linearizeZ(rawDepth);
     vec3 pixCenterPos = viewPos(v_uv, viewspaceZ);
-    vec3 N = reconstructNormal(v_uv, pixCenterPos);
+    vec3 N = selectNormal(v_uv, pixCenterPos);
 
     if (u_debugMode == 1) {
         o_FragColor = vec4(N * 0.5 + 0.5, 1.0);
