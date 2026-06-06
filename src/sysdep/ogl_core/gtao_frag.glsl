@@ -51,6 +51,11 @@ void main()
         vec3 ddy = (abs(pT.z - pC.z) < abs(pC.z - pB.z)) ? (pT - pC) : (pC - pB);
 
         vec3 N = normalize(cross(ddx, ddy));
+        // Orient the normal toward the camera (all visible fragments are
+        // front-facing). The view vector from the surface to the camera is
+        // -pC (camera at the view-space origin).
+        vec3 V = normalize(-pC);
+        if (dot(N, V) < 0.0) N = -N;
         o_FragColor = vec4(N * 0.5 + 0.5, 1.0);
     } else {
         // Linear-depth grayscale (near = bright, far = dark). near/far are
