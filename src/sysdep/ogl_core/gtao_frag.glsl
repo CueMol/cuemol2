@@ -259,6 +259,17 @@ void main()
             float weight0 = clamp(sampleDist0 * falloffMul + falloffAdd, 0.0, 1.0);
             float weight1 = clamp(sampleDist1 * falloffMul + falloffAdd, 0.0, 1.0);
 
+            // Do not let line / label primitives (sentinel normal) occlude other
+            // surfaces: drop the occlusion weight of any sample that lands on
+            // one, so a wireframe / bond line casts no AO onto the geometry
+            // behind it.
+            if (u_hasNormal != 0) {
+                vec3 sn0 = texture(u_normalTex, sp0).xyz;
+                vec3 sn1 = texture(u_normalTex, sp1).xyz;
+                if (dot(sn0, sn0) < 0.5) weight0 = 0.0;
+                if (dot(sn1, sn1) < 0.5) weight1 = 0.0;
+            }
+
             float shc0 = dot(sampleHorizonVec0, viewVec);
             float shc1 = dot(sampleHorizonVec1, viewVec);
             shc0 = mix(lowHorizonCos0, shc0, weight0);
