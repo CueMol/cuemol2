@@ -593,7 +593,7 @@ void GUIView::ensureAORTs(int w, int h)
         // The normal attachment (MRT) lets the GTAO pass use real geometry
         // normals instead of depth-reconstructed ones.
         m_pAOSceneRT = pdc->createRenderTarget(
-            w, h, gfx::RT_COLOR_RGBA8 | gfx::RT_DEPTH_TEX | gfx::RT_NORMAL_RGB16F);
+            w, h, gfx::RT_COLOR_RGBA8 | gfx::RT_DEPTH_TEX | gfx::RT_NORMAL_RGBA16F);
     } else {
         m_pAOSceneRT->resize(w, h);
     }

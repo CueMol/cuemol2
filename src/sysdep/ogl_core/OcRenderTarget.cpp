@@ -48,7 +48,7 @@ bool OcRenderTarget::init(gfx::DisplayContext *pdc, int w, int h, int flags)
         m_nDepthTex = tex;
     }
 
-    if (m_nFlags & gfx::RT_NORMAL_RGB16F) {
+    if (m_nFlags & gfx::RT_NORMAL_RGBA16F) {
         tex = 0;
         glGenTextures(1, &tex);
         m_nNormalTex = tex;
