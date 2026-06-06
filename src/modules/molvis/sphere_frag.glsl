@@ -29,8 +29,10 @@ varying float v_radius;
 varying float v_edgeratio;
 
 layout(location = 0) out vec4 o_FragColor;
-// MRT eye-space normal for GTAO (sentinel vec3(0) -> reconstruct from depth).
-layout(location = 1) out vec3 o_Normal;
+// MRT eye-space normal for GTAO (sentinel (0,0,0) -> reconstruct from depth).
+// vec4 to match o_FragColor's component count (Apple Metal GL mishandles MRT
+// with mixed vec4/vec3 outputs and broadcasts output 0 to all targets).
+layout(location = 1) out vec4 o_Normal;
 
 void main()
 {
@@ -99,5 +101,5 @@ void main()
     // green so a normal-buffer (xyz->rgb) view should show green if the MRT
     // write lands in COLOR1.
     o_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
-    o_Normal = bEdge ? vec3(0.0) : vec3(0.0, 1.0, 0.0);
+    o_Normal = bEdge ? vec4(0.0, 0.0, 0.0, 1.0) : vec4(0.0, 1.0, 0.0, 1.0);
 }
