@@ -159,6 +159,12 @@ void OcRenderTarget::unbind()
     glViewport(m_savedVp[0], m_savedVp[1], m_savedVp[2], m_savedVp[3]);
 }
 
+void OcRenderTarget::clear(float r, float g, float b, float a)
+{
+    glClearColor(r, g, b, a);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
 void OcRenderTarget::resize(int w, int h)
 {
     if (w == m_nWidth && h == m_nHeight) return;

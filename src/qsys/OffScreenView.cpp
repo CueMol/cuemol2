@@ -62,7 +62,13 @@ void OffScreenView::drawScene()
     setUpProjMat(getWidth(), getHeight());
     setUpModelMat(MM_NORMAL);
 
-    pdc->clearBuffer(pScene->getBgColor());
+    // Clear with a transparent background (alpha = 0) so an RGBA export yields
+    // a transparent backdrop. For RGB export the alpha is dropped on read-back,
+    // so the visible result is unchanged. (DisplayContext::clearBuffer would
+    // force alpha = 1, leaving the background opaque.)
+    gfx::ColorPtr bgcol = pScene->getBgColor();
+    m_pRT->clear(float(bgcol->fr()), float(bgcol->fg()), float(bgcol->fb()), 0.0f);
+
     pScene->display(pdc);
 
     m_pRT->unbind();

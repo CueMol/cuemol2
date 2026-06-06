@@ -45,6 +45,11 @@ public:
     /// Restore the default framebuffer and the previously saved viewport.
     virtual void unbind() = 0;
 
+    /// Clear the color (RGBA) and depth buffers. Must be called while bound.
+    /// Unlike DisplayContext::clearBuffer, the alpha is explicit so off-screen
+    /// captures can produce a transparent background (a == 0).
+    virtual void clear(float r, float g, float b, float a) = 0;
+
     /// Re-allocate all attachments to the given size. No-op if unchanged.
     virtual void resize(int w, int h) = 0;
 

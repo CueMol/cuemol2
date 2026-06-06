@@ -47,6 +47,7 @@ public:
 
     void bind() override;
     void unbind() override;
+    void clear(float r, float g, float b, float a) override;
     void resize(int w, int h) override;
     void bindColorTex(int idx, int texUnit) override;
     void bindDepthTex(int texUnit) override;
