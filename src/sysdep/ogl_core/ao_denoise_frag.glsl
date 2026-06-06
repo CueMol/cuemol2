@@ -70,5 +70,7 @@ void main()
     sum += cBR.r * wBR; sumW += wBR;
 
     float ao = sum / sumW;
-    o_FragColor = vec4(ao, 0.0, 0.0, 1.0);
+    // Preserve the packed edges in G so further denoise passes (ping-pong) can
+    // still read them; the composite only uses R.
+    o_FragColor = vec4(ao, cC.g, 0.0, 1.0);
 }

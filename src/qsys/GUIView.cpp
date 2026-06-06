@@ -206,16 +206,23 @@ void GUIView::drawScene()
                 m_pAOPostProc->drawGtao(pdc, m_pAOSceneRT, aoc, /*debugMode=*/0);
                 m_pAoRT->unbind();
 
-                // 3. Edge-aware denoise of the AO term.
+                // 3. Edge-aware denoise of the AO term. Two ping-pong passes
+                // (XeGTAO "medium") give an effective 5x5 reach to suppress the
+                // structured per-pixel noise left without temporal accumulation.
+                // The packed edges are carried in G between passes; the final
+                // denoised AO ends up back in m_pAoRT.
                 m_pAoDenRT->bind();
-                m_pAoDenRT->clear(1.0f, 1.0f, 1.0f, 1.0f);
                 m_pAOPostProc->drawDenoise(pdc, m_pAoRT, aoc);
                 m_pAoDenRT->unbind();
+
+                m_pAoRT->bind();
+                m_pAOPostProc->drawDenoise(pdc, m_pAoDenRT, aoc);
+                m_pAoRT->unbind();
 
                 // 4. Composite scene color * denoised AO onto the default
                 // framebuffer. The fullscreen pass must not be depth-rejected.
                 pdc->setDepthTestEnabled(false);
-                m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, m_pAoDenRT);
+                m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, m_pAoRT);
                 pdc->setDepthTestEnabled(true);
 
                 // Restore the scene depth into the default framebuffer so the
