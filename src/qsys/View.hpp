@@ -445,6 +445,10 @@ namespace qsys {
     /// (on-screen views ignore it); honored by off-screen views.
     virtual void setBgTransparent(bool b) {}
 
+    /// When true, an off-screen view captures a depth visualization (grayscale)
+    /// instead of the rendered color. Default no-op; honored by off-screen views.
+    virtual void setDepthMode(bool b) {}
+
   private:
     
     /////////////////////////////////////////////////////////////

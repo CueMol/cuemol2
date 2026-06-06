@@ -12,6 +12,7 @@
 namespace gfx {
 class DisplayContext;
 class RenderTarget;
+class PostProcGpuPrim;
 }  // namespace gfx
 
 namespace qsys {
@@ -30,11 +31,23 @@ private:
     /// Borrowed parent display context (NOT owned).
     gfx::DisplayContext *m_pParentCtxt;
 
-    /// Owned off-screen render target.
+    /// Owned off-screen render target (scene color + depth).
     gfx::RenderTarget *m_pRT;
+
+    /// Owned color-only target for the depth visualization pass (depth mode).
+    gfx::RenderTarget *m_pDepthVisRT;
+
+    /// Owned fullscreen depth-visualization primitive (depth mode).
+    gfx::PostProcGpuPrim *m_pPostProc;
+
+    /// Target last rendered into; readPixels reads from this one.
+    gfx::RenderTarget *m_pReadRT;
 
     /// When true, clear the background transparent (alpha = 0).
     bool m_bBgTransparent;
+
+    /// When true, capture a depth visualization instead of the scene color.
+    bool m_bDepthMode;
 
 public:
     /// Construct an off-screen view of (w,h) sharing pParentCtxt. Allocates
@@ -63,12 +76,23 @@ public:
         m_bBgTransparent = b;
     }
 
+    /// Capture a depth visualization (grayscale) instead of the scene color.
+    virtual void setDepthMode(bool b) override
+    {
+        m_bDepthMode = b;
+    }
+
     /// Render the scene into the off-screen render target.
     virtual void drawScene() override;
 
     /// Read back a sub-rectangle of the color attachment (ncomp 3=RGB / 4=RGBA).
     virtual void readPixels(int x, int y, int width, int height, char *pbuf,
                             int nbufsize, int ncomp) override;
+
+private:
+    /// Run the fullscreen depth-visualization pass into m_pDepthVisRT and point
+    /// read-back at it. Called from drawScene when depth mode is enabled.
+    void drawDepthVis(gfx::DisplayContext *pdc);
 };
 
 }  // namespace qsys

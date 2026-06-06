@@ -27,6 +27,7 @@ CylinderGpuPrim.cpp
 TrigGpuPrim.cpp
 LineGpuPrim.cpp
 PixGpuPrim.cpp
+PostProcGpuPrim.cpp
 DisplayList.cpp
 ShaderObject.cpp
 )
@@ -52,6 +53,7 @@ CylinderGpuPrim.hpp
 TrigGpuPrim.hpp
 LineGpuPrim.hpp
 PixGpuPrim.hpp
+PostProcGpuPrim.hpp
 Hittest.hpp
 HittestContext.hpp
 LabelCacheImpl.hpp

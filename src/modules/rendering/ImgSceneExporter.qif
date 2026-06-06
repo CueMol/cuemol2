@@ -31,6 +31,10 @@ runtime_class ImgSceneExporter extends SceneExporter
   property boolean alpha => redirect(getUseAlpha, setUseAlpha);
   default alpha = false;
 
+  /// Export a depth visualization (grayscale) instead of the rendered color
+  property boolean depth => redirect(getUseDepth, setUseDepth);
+  default depth = false;
+
   ////////////////////
   // Method definition
 

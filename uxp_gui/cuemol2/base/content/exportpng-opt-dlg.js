@@ -32,6 +32,7 @@ onLoad: function ()
     this.mListUnit.disabled = true;
     //this.mChkReasp.disabled = true;
     document.getElementById("chk_alpha").hidden = true;
+    document.getElementById("chk_depth").hidden = true;
     document.getElementById("PNGOptDlg").setAttribute("title", "LuxRender options");
   }
 },
@@ -168,6 +169,8 @@ onAccept: function ()
       this.mDlgData.alpha = document.getElementById("chk_alpha").checked;
       //this.mDlgData.exporter.interlace = this.mDlgData.intrl;
       this.mDlgData.exporter.alpha = this.mDlgData.alpha;
+      this.mDlgData.depth = document.getElementById("chk_depth").checked;
+      this.mDlgData.exporter.depth = this.mDlgData.depth;
       this.mDlgData.exporter.resoln = this.mDlgData.fdpi;
     }
     return true;

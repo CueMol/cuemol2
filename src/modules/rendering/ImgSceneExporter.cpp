@@ -23,7 +23,7 @@ using qsys::ScenePtr;
 using qsys::CameraPtr;
 
 ImgSceneExporter::ImgSceneExporter()
-     : m_nWidth(500), m_nHeight(500), m_nIter(0), m_nAAOpt(0)
+     : m_nWidth(500), m_nHeight(500), m_nIter(0), m_nAAOpt(0), m_bUseDepth(false)
 {
 }
 
@@ -62,6 +62,9 @@ void ImgSceneExporter::write()
 
   // Transparent background only when RGBA (alpha) output is requested.
   pImgView->setBgTransparent(m_bUseAlpha);
+
+  // Capture a depth visualization instead of color when requested.
+  pImgView->setDepthMode(m_bUseDepth);
 
   // Draw the scene
   pImgView->drawScene();

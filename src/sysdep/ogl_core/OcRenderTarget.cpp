@@ -42,9 +42,11 @@ bool OcRenderTarget::init(gfx::DisplayContext *pdc, int w, int h, int flags)
     glGenTextures(1, &tex);
     m_nColorTex = tex;
 
-    tex = 0;
-    glGenTextures(1, &tex);
-    m_nDepthTex = tex;
+    if (m_nFlags & gfx::RT_DEPTH_TEX) {
+        tex = 0;
+        glGenTextures(1, &tex);
+        m_nDepthTex = tex;
+    }
 
     if (m_nFlags & gfx::RT_NORMAL_RGB16F) {
         tex = 0;
@@ -59,8 +61,10 @@ bool OcRenderTarget::init(gfx::DisplayContext *pdc, int w, int h, int flags)
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
                            m_nColorTex, 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
-                           m_nDepthTex, 0);
+    if (m_nDepthTex != 0) {
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
+                               m_nDepthTex, 0);
+    }
 
     if (m_nNormalTex != 0) {
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
@@ -98,13 +102,15 @@ void OcRenderTarget::allocAttachments(int w, int h)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     // Depth attachment (sampleable DEPTH_COMPONENT24)
-    glBindTexture(GL_TEXTURE_2D, m_nDepthTex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, w, h, 0, GL_DEPTH_COMPONENT,
-                 GL_UNSIGNED_INT, nullptr);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    if (m_nDepthTex != 0) {
+        glBindTexture(GL_TEXTURE_2D, m_nDepthTex);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, w, h, 0,
+                     GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, nullptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    }
 
     // Optional MRT normal attachment 1 (RGB16F)
     if (m_nNormalTex != 0) {
