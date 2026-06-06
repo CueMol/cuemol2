@@ -221,7 +221,9 @@ void GUIView::drawScene()
                 // 4. Composite scene color * denoised AO onto the default
                 // framebuffer. The fullscreen pass must not be depth-rejected.
                 pdc->setDepthTestEnabled(false);
-                m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, m_pAoDenRT);
+                // TEMP DEBUG: show the GTAO debug output (normal viz) directly
+                // instead of color*AO, so it is not mangled by denoise/multiply.
+                m_pAOPostProc->drawComposite(pdc, m_pAoRT, nullptr);
                 pdc->setDepthTestEnabled(true);
 
                 // Restore the scene depth into the default framebuffer so the
