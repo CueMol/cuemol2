@@ -93,6 +93,7 @@ void main()
     float fogz = ffog(ecpos.z);
     o_FragColor = fragFogColor(color, frag_alpha, fogz);
 
-    // Eye-space sphere normal (sentinel on the silhouette edge ring).
-    o_Normal = bEdge ? vec3(0.0) : normalize(normal);
+    // TEMP DEBUG: write a constant normal to verify the MRT COLOR1 write lands
+    // in the normal attachment (should show as light green in debug mode 4).
+    o_Normal = bEdge ? vec3(0.0) : vec3(0.0, 1.0, 0.0);
 }

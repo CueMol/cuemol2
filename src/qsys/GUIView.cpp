@@ -207,7 +207,7 @@ void GUIView::drawScene()
                 aoc.stepsPerSlice = pScene->getAOSteps();
                 m_pAoRT->bind();
                 m_pAoRT->clear(1.0f, 1.0f, 1.0f, 1.0f);
-                m_pAOPostProc->drawGtao(pdc, m_pAOSceneRT, aoc, /*debugMode=*/1);
+                m_pAOPostProc->drawGtao(pdc, m_pAOSceneRT, aoc, /*debugMode=*/4);
                 m_pAoRT->unbind();
 
                 // 3. Edge-aware denoise of the AO term (single pass). The base
