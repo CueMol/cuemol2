@@ -114,7 +114,9 @@ void main()
     float packedEdges = packEdges(calculateEdges(viewspaceZ, zL, zR, zT, zB));
 
     // ---- GTAO horizon integration (depth-only) ----
-    const int sliceCount = 3;
+    // High slice count keeps the per-pixel angular noise low so a single light
+    // denoise pass suffices (no TAA available for temporal averaging).
+    const int sliceCount = 9;
     const int stepsPerSlice = 3;
     const float sampleDistributionPower = 2.0;
     const float falloffRangeRatio = 0.615;
