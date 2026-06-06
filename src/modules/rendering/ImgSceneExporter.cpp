@@ -60,19 +60,11 @@ void ImgSceneExporter::write()
   qlib::ensureNotNull(pCam.get());
   pImgView->setCamera(pCam);
 
-  // TEMPORARY: force depth-image capture on, bypassing the UXP dialog
-  // plumbing (chrome JS cache staleness). Revert to m_bUseDepth once the
-  // dialog wiring is confirmed.
-  const bool force_depth = true;
-
-  MB_DPRINTLN("ImgSceneExporter::write> useAlpha=%d, useDepth=%d (force_depth=%d)",
-              m_bUseAlpha, m_bUseDepth, force_depth);
-
   // Transparent background only when RGBA (alpha) output is requested.
   pImgView->setBgTransparent(m_bUseAlpha);
 
   // Capture a depth visualization instead of color when requested.
-  pImgView->setDepthMode(m_bUseDepth || force_depth);
+  pImgView->setDepthMode(m_bUseDepth);
 
   // Draw the scene
   pImgView->drawScene();
