@@ -44,6 +44,14 @@ void OcDisplayContext::enableDepthTest(bool f)
         ::glDepthMask(GL_FALSE);
 }
 
+void OcDisplayContext::setDepthTestEnabled(bool f)
+{
+    if (f)
+        glEnable(GL_DEPTH_TEST);
+    else
+        glDisable(GL_DEPTH_TEST);
+}
+
 void OcDisplayContext::setFrontFace(bool bCCW)
 {
     glFrontFace(bCCW ? GL_CCW : GL_CW);

@@ -40,6 +40,10 @@ runtime_class Scene
   property object<AbstractColor$> bgcolor => redirect(getBgColor, setBgColor);
   default bgcolor = gfx::SolidColor::createRGB(0.0, 0.0, 0.0);
 
+  /// Screen-space ambient occlusion (GTAO) enable flag
+  property boolean aoEnabled => redirect(isAOEnabled, setAOEnabled);
+  default aoEnabled = false;
+
   property string onload => m_scrOnLoadEvent;
   default onload = "";
 

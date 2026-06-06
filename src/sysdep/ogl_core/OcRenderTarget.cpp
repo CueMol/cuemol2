@@ -208,4 +208,19 @@ void OcRenderTarget::readColor(int idx, int x, int y, int w, int h, int ncomp,
     CHK_GLERROR("OcRenderTarget::readColor");
 }
 
+void OcRenderTarget::blitDepthToDefault()
+{
+    // Copy the off-screen depth attachment into the default framebuffer so that
+    // UI overlays drawn afterwards depth-test against the scene as usual. The
+    // blit requires compatible depth formats (DEPTH_COMPONENT24 vs the window
+    // depth buffer); a mismatch is logged and degrades only overlay occlusion.
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, m_nFBO);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glBlitFramebuffer(0, 0, m_nWidth, m_nHeight, 0, 0, m_nWidth, m_nHeight,
+                      GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    CHK_GLERROR("OcRenderTarget::blitDepthToDefault");
+}
+
 }  // namespace sysdep

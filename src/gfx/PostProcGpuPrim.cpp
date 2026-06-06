@@ -26,8 +26,13 @@ bool PostProcGpuPrim::init(DisplayContext *pDC)
         return false;
     }
 
-    alloc(pDC);
-    return true;
+    return ensureDrawElem(pDC);
+}
+
+bool PostProcGpuPrim::ensureDrawElem(DisplayContext *pDC)
+{
+    if (m_pDrawElem == nullptr) alloc(pDC);
+    return m_pDrawElem != nullptr;
 }
 
 void PostProcGpuPrim::alloc(DisplayContext *pDC)
@@ -71,12 +76,46 @@ void PostProcGpuPrim::drawDepthVis(DisplayContext *pDC, RenderTarget *prt,
     prt->unbindTextures();
 }
 
+void PostProcGpuPrim::drawComposite(DisplayContext *pDC, RenderTarget *sceneRT,
+                                    RenderTarget *aoRT)
+{
+    if (sceneRT == nullptr) return;
+    if (!ensureDrawElem(pDC)) return;
+
+    if (m_pCompPO == nullptr) {
+        m_pCompPO =
+            pDC->loadShaderObject("ao_composite",
+                                  "%%CONFDIR%%/data/shaders/postproc_vert.glsl",
+                                  "%%CONFDIR%%/data/shaders/ao_composite_frag.glsl");
+        if (m_pCompPO == nullptr) {
+            LOG_DPRINTLN("PostProcGpuPrim> ERROR: cannot load ao_composite shader.");
+            return;
+        }
+    }
+
+    // aoRT is reserved for the AO multiply step; unused in the pass-through path.
+    (void)aoRT;
+
+    sceneRT->bindColorTex(0, RT_TU_COLOR);
+
+    m_pCompPO->enable();
+    m_pCompPO->setUniform("u_colorTex", RT_TU_COLOR);
+
+    pDC->drawElem(*m_pDrawElem);
+
+    m_pCompPO->disable();
+
+    sceneRT->unbindTextures();
+}
+
 void PostProcGpuPrim::invalidate()
 {
     if (m_pDrawElem != nullptr) {
         delete m_pDrawElem;
         m_pDrawElem = nullptr;
     }
-    // m_pPO is owned by the shader-object cache (loadShaderObject); not deleted here.
+    // Shader programs are owned by the shader-object cache (loadShaderObject);
+    // not deleted here.
     m_pPO = nullptr;
+    m_pCompPO = nullptr;
 }

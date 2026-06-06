@@ -119,6 +119,8 @@ Scene::Scene()
   gfx::ColProfMgr::sRegUID(m_nUID);
   m_bUseColProof = false;
 
+  m_bAOEnabled = false;
+
   MB_DPRINTLN("Scene (%d) created.", m_nUID);
 }
 

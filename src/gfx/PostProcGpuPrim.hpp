@@ -33,7 +33,10 @@ private:
     // Must match layout(location=N) in postproc_vert.glsl.
     static constexpr int ATTRLOC_VERTEX = 0;
 
+    /// Depth-visualization program (off-screen export depth mode).
     ShaderObject *m_pPO = nullptr;
+    /// AO composite program (live AO path): samples the scene color texture.
+    ShaderObject *m_pCompPO = nullptr;
     TriArray *m_pDrawElem = nullptr;
 
 public:
@@ -57,8 +60,18 @@ public:
     void drawDepthVis(DisplayContext *pDC, RenderTarget *prt, float vnear,
                       float vfar);
 
+    /// Sample sceneRT's color attachment and draw it into the currently bound
+    /// framebuffer (fullscreen). aoRT is reserved for the AO multiply step
+    /// added in a later step and is currently ignored. Self-initializes the
+    /// vertex buffer and composite program (no init() call required).
+    void drawComposite(DisplayContext *pDC, RenderTarget *sceneRT,
+                       RenderTarget *aoRT);
+
 private:
     void alloc(DisplayContext *pDC);
+
+    /// Allocate the fullscreen-triangle vertex buffer on first use.
+    bool ensureDrawElem(DisplayContext *pDC);
 };
 
 }  // namespace gfx

@@ -68,6 +68,12 @@ public:
     virtual void readColor(int idx, int x, int y, int w, int h, int ncomp,
                            void *pbuf) = 0;
 
+    /// Copy this target's depth attachment (1:1) into the default framebuffer's
+    /// depth buffer. Used by the live AO path so the UI overlays drawn into the
+    /// default framebuffer afterwards depth-test against the off-screen scene as
+    /// in the non-AO path. Default is a no-op.
+    virtual void blitDepthToDefault() {}
+
     /// True if an MRT normal attachment was allocated.
     virtual bool hasNormal() const = 0;
 

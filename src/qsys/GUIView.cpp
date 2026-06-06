@@ -11,6 +11,7 @@
 
 #include <gfx/HittestContext.hpp>
 #include <gfx/RenderTarget.hpp>
+#include <gfx/PostProcGpuPrim.hpp>
 #include <qlib/LPerfMeas.hpp>
 
 #include "CenterMarkDrawObj.hpp"
@@ -27,7 +28,10 @@ GUIView::GUIView() : View()
     addDrawObj("CenterMarkDrawObj", pMark);
 }
 
-GUIView::~GUIView() {}
+GUIView::~GUIView()
+{
+    cleanupAORTs();
+}
 
 void GUIView::setCenterMark(int nMode)
 {
@@ -162,15 +166,49 @@ void GUIView::drawScene()
 
     switch (getStereoMode()) {
         default:
-        case Camera::CSM_NONE:
-            setUpModelMat(MM_NORMAL);
-            // glDrawBuffer(GL_BACK);
-            // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            pdc->clearBuffer(pScene->getBgColor());
+        case Camera::CSM_NONE: {
+            // Screen-space ambient occlusion (GTAO) renders the 3D scene into
+            // an off-screen target so depth/color are available to a fullscreen
+            // pass, then composites the result onto the default framebuffer.
+            const bool useAO = pScene->isAOEnabled() && hasFBO() &&
+                               getStereoMode() == Camera::CSM_NONE;
 
-            // Draw main 3D objects
-            pScene->display(pdc);
+            if (useAO) {
+                ensureAORTs(convToBackingX(getWidth()),
+                            convToBackingY(getHeight()));
+            }
+
+            if (useAO && m_pAOSceneRT != nullptr && m_pAOPostProc != nullptr) {
+                // Render the 3D scene into the off-screen target.
+                m_pAOSceneRT->bind();
+                setUpModelMat(MM_NORMAL);
+                gfx::ColorPtr bg = pScene->getBgColor();
+                m_pAOSceneRT->clear(float(bg->fr()), float(bg->fg()),
+                                  float(bg->fb()), 1.0f);
+                pScene->display(pdc);
+                m_pAOSceneRT->unbind();
+
+                // Composite the scene color onto the default framebuffer. The
+                // fullscreen pass must not be depth-rejected, so disable the
+                // depth test for it.
+                pdc->setDepthTestEnabled(false);
+                m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, nullptr);
+                pdc->setDepthTestEnabled(true);
+
+                // Restore the scene depth into the default framebuffer so the
+                // UI overlays below depth-test against the scene as usual.
+                m_pAOSceneRT->blitDepthToDefault();
+            } else {
+                setUpModelMat(MM_NORMAL);
+                // glDrawBuffer(GL_BACK);
+                // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                pdc->clearBuffer(pScene->getBgColor());
+
+                // Draw main 3D objects
+                pScene->display(pdc);
+            }
             break;
+        }
 
             //     ////////////////////////////////////////////////
             //     // Quad-buffer stereo
@@ -512,6 +550,44 @@ void GUIView::setFogColorImpl(DisplayContext *pdc)
         pdc->setCurrent();
     }
     pdc->setFogColor(pBgCol);
+}
+
+//////////
+// Screen-space ambient occlusion (GTAO) live path
+
+void GUIView::ensureAORTs(int w, int h)
+{
+    DisplayContext *pdc = getDisplayContext();
+    if (pdc == nullptr) return;
+
+    if (m_pAOSceneRT == nullptr) {
+        m_pAOSceneRT =
+            pdc->createRenderTarget(w, h, gfx::RT_COLOR_RGBA8 | gfx::RT_DEPTH_TEX);
+    } else {
+        m_pAOSceneRT->resize(w, h);
+    }
+
+    if (m_pAOPostProc == nullptr) {
+        m_pAOPostProc = MB_NEW gfx::PostProcGpuPrim();
+    }
+}
+
+void GUIView::cleanupAORTs()
+{
+    if (m_pAOSceneRT == nullptr && m_pAOPostProc == nullptr) return;
+
+    DisplayContext *pdc = getDisplayContext();
+    if (pdc != nullptr) pdc->setCurrent();
+
+    if (m_pAOPostProc != nullptr) {
+        m_pAOPostProc->invalidate();
+        delete m_pAOPostProc;
+        m_pAOPostProc = nullptr;
+    }
+    if (m_pAOSceneRT != nullptr) {
+        delete m_pAOSceneRT;
+        m_pAOSceneRT = nullptr;
+    }
 }
 
 //////////

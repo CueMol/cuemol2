@@ -12,6 +12,11 @@
 #include "InDevEvent.hpp"
 #include <gfx/Hittest.hpp>
 
+namespace gfx {
+class RenderTarget;
+class PostProcGpuPrim;
+}  // namespace gfx
+
 namespace qsys {
 
 class QSYS_API GUIView : public qsys::View
@@ -110,6 +115,24 @@ public:
                             int nbufsize, int ncomp) override;
 
     void setFogColorImpl(DisplayContext *pdc);
+
+    ////////////////////////////////////////////////
+    // Screen-space ambient occlusion (GTAO) live path
+
+private:
+    /// Off-screen scene target (color + depth) for the AO path. Owned.
+    gfx::RenderTarget *m_pAOSceneRT = nullptr;
+
+    /// Fullscreen post-processing primitive (AO composite). Owned.
+    gfx::PostProcGpuPrim *m_pAOPostProc = nullptr;
+
+    /// Lazily create / resize the AO scene target and post-proc primitive to
+    /// the given backing-pixel size.
+    void ensureAORTs(int w, int h);
+
+    /// Release the AO render targets and post-proc primitive (on the current
+    /// display context).
+    void cleanupAORTs();
 };
 
 }  // namespace qsys

@@ -99,6 +99,9 @@ namespace qsys {
     /// Background color
     gfx::ColorPtr m_pBgColor;
 
+    /// Screen-space ambient occlusion (GTAO) enable flag
+    bool m_bAOEnabled;
+
     /// UID of this scene
     qlib::uid_t m_nUID;
 
@@ -166,8 +169,15 @@ namespace qsys {
 
     const gfx::ColorPtr &getBgColor() const { return m_pBgColor; }
     void setBgColor(const gfx::ColorPtr &r) {
-      setUpdateFlag();      
+      setUpdateFlag();
       m_pBgColor = r;
+    }
+
+    /// Screen-space ambient occlusion (GTAO) enable flag
+    bool isAOEnabled() const { return m_bAOEnabled; }
+    void setAOEnabled(bool b) {
+      setUpdateFlag();
+      m_bAOEnabled = b;
     }
 
     /// get source path of this scene
