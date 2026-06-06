@@ -19,6 +19,7 @@ uniform vec2 u_viewportPixelSize;       // (1/width, 1/height)
 uniform float u_effectRadius;           // occlusion sphere radius (view units)
 uniform float u_finalValuePower;        // occlusion = pow(occlusion, power)
 uniform int u_sliceCount;               // number of horizon slices (quality)
+uniform int u_stepCount;                // number of steps marched per slice
 uniform int u_debugMode;                // 0 = AO, 1 = normal, 2 = linear depth
 
 in vec2 v_uv;
@@ -122,7 +123,7 @@ void main()
     // occlusion reaches) is controlled separately by u_effectRadius. Clamped to
     // a sane range so a bad scene value cannot stall the GPU.
     int sliceCount = clamp(u_sliceCount, 1, 16);
-    const int stepsPerSlice = 3;
+    int stepsPerSlice = clamp(u_stepCount, 1, 16);
     const float sampleDistributionPower = 2.0;
     const float falloffRangeRatio = 0.615;
     const float pixelTooCloseThreshold = 1.3;

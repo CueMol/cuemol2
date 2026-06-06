@@ -52,9 +52,13 @@ runtime_class Scene
   property real aoIntensity => redirect(getAOIntensity, setAOIntensity);
   default aoIntensity = 2.2;
 
-  /// GTAO quality = number of horizon slices (higher = smoother, slower)
-  property integer aoQuality => redirect(getAOQuality, setAOQuality);
-  default aoQuality = 9;
+  /// GTAO number of horizon slices (higher = smoother, slower)
+  property integer aoSlices => redirect(getAOSlices, setAOSlices);
+  default aoSlices = 9;
+
+  /// GTAO number of steps marched per slice (radial samples)
+  property integer aoSteps => redirect(getAOSteps, setAOSteps);
+  default aoSteps = 3;
 
   property string onload => m_scrOnLoadEvent;
   default onload = "";

@@ -203,7 +203,8 @@ void GUIView::drawScene()
                 gfx::AoConstants aoc = computeAoConstants();
                 aoc.effectRadius = float(pScene->getAORadius());
                 aoc.finalValuePower = float(pScene->getAOIntensity());
-                aoc.sliceCount = pScene->getAOQuality();
+                aoc.sliceCount = pScene->getAOSlices();
+                aoc.stepsPerSlice = pScene->getAOSteps();
                 m_pAoRT->bind();
                 m_pAoRT->clear(1.0f, 1.0f, 1.0f, 1.0f);
                 m_pAOPostProc->drawGtao(pdc, m_pAOSceneRT, aoc, /*debugMode=*/0);

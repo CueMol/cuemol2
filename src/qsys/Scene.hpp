@@ -108,8 +108,11 @@ namespace qsys {
     /// GTAO contrast: occlusion = pow(occlusion, aoIntensity)
     double m_fAOIntensity;
 
-    /// GTAO quality = number of horizon slices (higher = smoother, slower)
-    int m_nAOQuality;
+    /// GTAO number of horizon slices (higher = smoother, slower)
+    int m_nAOSlices;
+
+    /// GTAO number of steps marched per slice (radial samples)
+    int m_nAOSteps;
 
     /// UID of this scene
     qlib::uid_t m_nUID;
@@ -203,11 +206,18 @@ namespace qsys {
       m_fAOIntensity = v;
     }
 
-    /// GTAO quality (number of horizon slices)
-    int getAOQuality() const { return m_nAOQuality; }
-    void setAOQuality(int v) {
+    /// GTAO number of horizon slices
+    int getAOSlices() const { return m_nAOSlices; }
+    void setAOSlices(int v) {
       setUpdateFlag();
-      m_nAOQuality = v;
+      m_nAOSlices = v;
+    }
+
+    /// GTAO number of steps marched per slice
+    int getAOSteps() const { return m_nAOSteps; }
+    void setAOSteps(int v) {
+      setUpdateFlag();
+      m_nAOSteps = v;
     }
 
     /// get source path of this scene

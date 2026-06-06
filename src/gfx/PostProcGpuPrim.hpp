@@ -34,6 +34,8 @@ struct AoConstants
     float finalValuePower = 2.2f;
     /// Number of horizon slices (quality vs. speed).
     int sliceCount = 9;
+    /// Number of steps marched per slice (radial samples).
+    int stepsPerSlice = 3;
 };
 
 /// Fullscreen post-processing primitive.

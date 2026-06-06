@@ -142,6 +142,7 @@ void PostProcGpuPrim::drawGtao(DisplayContext *pDC, RenderTarget *sceneRT,
     m_pGtaoPO->setUniformF("u_effectRadius", consts.effectRadius);
     m_pGtaoPO->setUniformF("u_finalValuePower", consts.finalValuePower);
     m_pGtaoPO->setUniform("u_sliceCount", consts.sliceCount);
+    m_pGtaoPO->setUniform("u_stepCount", consts.stepsPerSlice);
     m_pGtaoPO->setUniform("u_debugMode", debugMode);
 
     pDC->drawElem(*m_pDrawElem);

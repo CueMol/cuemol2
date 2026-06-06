@@ -122,7 +122,8 @@ Scene::Scene()
   m_bAOEnabled = false;
   m_fAORadius = 4.0;
   m_fAOIntensity = 2.2;
-  m_nAOQuality = 9;
+  m_nAOSlices = 9;
+  m_nAOSteps = 3;
 
   MB_DPRINTLN("Scene (%d) created.", m_nUID);
 }
