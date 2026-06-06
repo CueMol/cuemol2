@@ -132,6 +132,15 @@ void main()
     vec3 N = selectNormal(v_uv, pixCenterPos, isExcluded);
 
     if (u_debugMode == 1) {
+        // Raw stored eye-space normal straight from the buffer (diagnostic):
+        // shows exactly what the scene shaders wrote, before any processing.
+        vec3 dn = (u_hasNormal != 0) ? texture(u_normalTex, v_uv).xyz : N;
+        o_FragColor = vec4(dn * 0.5 + 0.5, 1.0);
+        return;
+    }
+    if (u_debugMode == 3) {
+        // Processed normal actually fed to the integration (after Z flip and
+        // hemisphere clamp).
         o_FragColor = vec4(N * 0.5 + 0.5, 1.0);
         return;
     }
