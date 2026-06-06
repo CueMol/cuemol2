@@ -13,7 +13,9 @@
 #include <sysdep/OglProgramObject.hpp>
 
 #include <gfx/PixelBuffer.hpp>
+#include <gfx/RenderTarget.hpp>
 #include "OcBufTexRep.hpp"
+#include "OcRenderTarget.hpp"
 #include <gfx/SolidColor.hpp>
 #include <gfx/Mesh.hpp>
 #include <gfx/AbstDrawAttrs.hpp>
@@ -90,6 +92,29 @@ gfx::BufTexRep *OcDisplayContext::createBufTexRep()
     OcBufTexRep *p = MB_NEW OcBufTexRep();
     p->init(this);
     return p;
+}
+
+gfx::RenderTarget *OcDisplayContext::createRenderTarget(int w, int h, int flags)
+{
+    OcRenderTarget *p = MB_NEW OcRenderTarget();
+    if (!p->init(this, w, h, flags)) {
+        delete p;
+        return nullptr;
+    }
+    return p;
+}
+
+void OcDisplayContext::bindRenderTarget(gfx::RenderTarget *prt)
+{
+    if (prt != nullptr)
+        prt->bind();
+    else
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void OcDisplayContext::bindDefaultFramebuffer()
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 //////////

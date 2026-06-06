@@ -9,6 +9,7 @@ SET(SYSDEP_SRCS
   ogl_core/OcDisplayContext.cpp
   ogl_core/OcView.cpp
   ogl_core/OcBufferRep.cpp
+  ogl_core/OcRenderTarget.cpp
 )
 
 SET(SYSDEP_HDRS
