@@ -76,6 +76,9 @@ private:
     float m_fFogEnd;
     ColorPtr m_fogColor;
 
+    /// Screen-space ambient occlusion (GTAO)
+    bool m_bAOEnabled;
+
     /// Proj mat
     Matrix4D m_projMat;
 
@@ -217,6 +220,13 @@ public:
         return m_fogColor;
     }
 
+    // Screen-space ambient occlusion (GTAO)
+    virtual void enableAO(bool b);
+    bool isAOEnabled() const
+    {
+        return m_bAOEnabled;
+    }
+
     LString getMaterial() const
     {
         return m_defMatName;
@@ -303,6 +313,13 @@ public:
     }
 
     virtual void enableDepthTest(bool) {}
+
+    /// Enable or disable the depth test itself (GL_DEPTH_TEST). Distinct from
+    /// enableDepthTest(), which toggles only the depth write mask in the
+    /// OpenGL backend. Used by fullscreen post-processing passes (AO composite)
+    /// that must not be depth-rejected. Default is a no-op.
+    virtual void setDepthTestEnabled(bool) {}
+
     virtual void setCullFace(bool f = true) {}
     virtual void setInvertColorBlend(bool bInv) {}
 

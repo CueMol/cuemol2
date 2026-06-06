@@ -12,6 +12,12 @@
 #include "InDevEvent.hpp"
 #include <gfx/Hittest.hpp>
 
+namespace gfx {
+class RenderTarget;
+class PostProcGpuPrim;
+struct AoConstants;
+}  // namespace gfx
+
 namespace qsys {
 
 class QSYS_API GUIView : public qsys::View
@@ -72,6 +78,10 @@ public:
 
     virtual void drawScene() override;
 
+    /// Release GPU resources (incl. AO render targets) while the GL context is
+    /// still alive, before the display context is torn down.
+    virtual void unloading() override;
+
     /// Clean-up the drawing display with the current bg color
     virtual void clear();
 
@@ -110,6 +120,34 @@ public:
                             int nbufsize, int ncomp) override;
 
     void setFogColorImpl(DisplayContext *pdc);
+
+    ////////////////////////////////////////////////
+    // Screen-space ambient occlusion (GTAO) live path
+
+private:
+    /// Off-screen scene target (color + depth) for the AO path. Owned.
+    gfx::RenderTarget *m_pAOSceneRT = nullptr;
+
+    /// Color-only target holding the AO term + packed edges (GTAO pass). Owned.
+    gfx::RenderTarget *m_pAoRT = nullptr;
+
+    /// Color-only target holding the denoised AO term. Owned.
+    gfx::RenderTarget *m_pAoDenRT = nullptr;
+
+    /// Fullscreen post-processing primitive (GTAO + denoise + composite). Owned.
+    gfx::PostProcGpuPrim *m_pAOPostProc = nullptr;
+
+    /// Lazily create / resize the AO scene target and post-proc primitive to
+    /// the given backing-pixel size.
+    void ensureAORTs(int w, int h);
+
+    /// Compute the view-space reconstruction constants for the GTAO passes from
+    /// the current camera (perspective). Mirrors setUpProjMat's slab derivation.
+    gfx::AoConstants computeAoConstants() const;
+
+    /// Release the AO render targets and post-proc primitive (on the current
+    /// display context).
+    void cleanupAORTs();
 };
 
 }  // namespace qsys

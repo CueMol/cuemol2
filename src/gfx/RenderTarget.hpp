@@ -16,6 +16,10 @@ enum RTFlags
     RT_COLOR_RGBA8 = 0x01,
     /// Sampleable depth texture attachment (DEPTH_COMPONENT24).
     RT_DEPTH_TEX = 0x02,
+    /// Use NEAREST (point) filtering for the color attachment instead of
+    /// LINEAR. Required for targets holding packed data (e.g. AO + packed
+    /// edges) that must not be interpolated.
+    RT_COLOR_NEAREST = 0x04,
     /// MRT normal color attachment 1 (RGB16F). Reserved for future AO use.
     RT_NORMAL_RGB16F = 0x08,
 };
@@ -67,6 +71,12 @@ public:
     /// (RGB) or 4 (RGBA). pbuf must hold at least the platform row-aligned size.
     virtual void readColor(int idx, int x, int y, int w, int h, int ncomp,
                            void *pbuf) = 0;
+
+    /// Copy this target's depth attachment (1:1) into the default framebuffer's
+    /// depth buffer. Used by the live AO path so the UI overlays drawn into the
+    /// default framebuffer afterwards depth-test against the off-screen scene as
+    /// in the non-AO path. Default is a no-op.
+    virtual void blitDepthToDefault() {}
 
     /// True if an MRT normal attachment was allocated.
     virtual bool hasNormal() const = 0;

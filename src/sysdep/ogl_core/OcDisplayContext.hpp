@@ -33,6 +33,8 @@ public:
 
     virtual void enableDepthTest(bool) override;
 
+    virtual void setDepthTestEnabled(bool) override;
+
     virtual void setCullFace(bool f = true) override;
 
     virtual void setInvertColorBlend(bool bInv) override;

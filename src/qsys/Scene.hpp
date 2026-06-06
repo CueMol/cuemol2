@@ -99,6 +99,21 @@ namespace qsys {
     /// Background color
     gfx::ColorPtr m_pBgColor;
 
+    /// Screen-space ambient occlusion (GTAO) enable flag
+    bool m_bAOEnabled;
+
+    /// GTAO occlusion sphere radius in view-space (world) units
+    double m_fAORadius;
+
+    /// GTAO contrast: occlusion = pow(occlusion, aoIntensity)
+    double m_fAOIntensity;
+
+    /// GTAO number of horizon slices (higher = smoother, slower)
+    int m_nAOSlices;
+
+    /// GTAO number of steps marched per slice (radial samples)
+    int m_nAOSteps;
+
     /// UID of this scene
     qlib::uid_t m_nUID;
 
@@ -166,8 +181,43 @@ namespace qsys {
 
     const gfx::ColorPtr &getBgColor() const { return m_pBgColor; }
     void setBgColor(const gfx::ColorPtr &r) {
-      setUpdateFlag();      
+      setUpdateFlag();
       m_pBgColor = r;
+    }
+
+    /// Screen-space ambient occlusion (GTAO) enable flag
+    bool isAOEnabled() const { return m_bAOEnabled; }
+    void setAOEnabled(bool b) {
+      setUpdateFlag();
+      m_bAOEnabled = b;
+    }
+
+    /// GTAO occlusion sphere radius (view-space / world units)
+    double getAORadius() const { return m_fAORadius; }
+    void setAORadius(double v) {
+      setUpdateFlag();
+      m_fAORadius = v;
+    }
+
+    /// GTAO contrast (occlusion = pow(occlusion, aoIntensity))
+    double getAOIntensity() const { return m_fAOIntensity; }
+    void setAOIntensity(double v) {
+      setUpdateFlag();
+      m_fAOIntensity = v;
+    }
+
+    /// GTAO number of horizon slices
+    int getAOSlices() const { return m_nAOSlices; }
+    void setAOSlices(int v) {
+      setUpdateFlag();
+      m_nAOSlices = v;
+    }
+
+    /// GTAO number of steps marched per slice
+    int getAOSteps() const { return m_nAOSteps; }
+    void setAOSteps(int v) {
+      setUpdateFlag();
+      m_nAOSteps = v;
     }
 
     /// get source path of this scene

@@ -40,6 +40,26 @@ runtime_class Scene
   property object<AbstractColor$> bgcolor => redirect(getBgColor, setBgColor);
   default bgcolor = gfx::SolidColor::createRGB(0.0, 0.0, 0.0);
 
+  /// Screen-space ambient occlusion (GTAO) enable flag
+  property boolean aoEnabled => redirect(isAOEnabled, setAOEnabled);
+  default aoEnabled = false;
+
+  /// GTAO occlusion sphere radius (view-space / world units)
+  property real aoRadius => redirect(getAORadius, setAORadius);
+  default aoRadius = 4.0;
+
+  /// GTAO contrast (occlusion = pow(occlusion, aoIntensity))
+  property real aoIntensity => redirect(getAOIntensity, setAOIntensity);
+  default aoIntensity = 2.2;
+
+  /// GTAO number of horizon slices (higher = smoother, slower)
+  property integer aoSlices => redirect(getAOSlices, setAOSlices);
+  default aoSlices = 9;
+
+  /// GTAO number of steps marched per slice (radial samples)
+  property integer aoSteps => redirect(getAOSteps, setAOSteps);
+  default aoSteps = 3;
+
   property string onload => m_scrOnLoadEvent;
   default onload = "";
 

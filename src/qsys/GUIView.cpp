@@ -11,6 +11,7 @@
 
 #include <gfx/HittestContext.hpp>
 #include <gfx/RenderTarget.hpp>
+#include <gfx/PostProcGpuPrim.hpp>
 #include <qlib/LPerfMeas.hpp>
 
 #include "CenterMarkDrawObj.hpp"
@@ -27,7 +28,19 @@ GUIView::GUIView() : View()
     addDrawObj("CenterMarkDrawObj", pMark);
 }
 
-GUIView::~GUIView() {}
+GUIView::~GUIView()
+{
+    cleanupAORTs();
+}
+
+void GUIView::unloading()
+{
+    // Release AO GPU resources while the GL context is still alive (the base
+    // unloading tears down the display context). The destructor also calls
+    // cleanupAORTs() as a fallback, but by then getDisplayContext() is gone.
+    cleanupAORTs();
+    super_t::unloading();
+}
 
 void GUIView::setCenterMark(int nMode)
 {
@@ -162,15 +175,69 @@ void GUIView::drawScene()
 
     switch (getStereoMode()) {
         default:
-        case Camera::CSM_NONE:
-            setUpModelMat(MM_NORMAL);
-            // glDrawBuffer(GL_BACK);
-            // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            pdc->clearBuffer(pScene->getBgColor());
+        case Camera::CSM_NONE: {
+            // Screen-space ambient occlusion (GTAO) renders the 3D scene into
+            // an off-screen target so depth/color are available to a fullscreen
+            // pass, then composites the result onto the default framebuffer.
+            const bool useAO = pScene->isAOEnabled() && hasFBO() &&
+                               getStereoMode() == Camera::CSM_NONE;
 
-            // Draw main 3D objects
-            pScene->display(pdc);
+            if (useAO) {
+                ensureAORTs(convToBackingX(getWidth()),
+                            convToBackingY(getHeight()));
+            }
+
+            if (useAO && m_pAOSceneRT != nullptr && m_pAoRT != nullptr &&
+                m_pAoDenRT != nullptr && m_pAOPostProc != nullptr) {
+                // 1. Render the 3D scene into the off-screen target.
+                m_pAOSceneRT->bind();
+                setUpModelMat(MM_NORMAL);
+                gfx::ColorPtr bg = pScene->getBgColor();
+                m_pAOSceneRT->clear(float(bg->fr()), float(bg->fg()),
+                                  float(bg->fb()), 1.0f);
+                pScene->display(pdc);
+                m_pAOSceneRT->unbind();
+
+                // 2. GTAO pass: read the scene depth, write AO + packed edges
+                // into the AO target (no depth attachment -> not depth-rejected).
+                gfx::AoConstants aoc = computeAoConstants();
+                aoc.effectRadius = float(pScene->getAORadius());
+                aoc.finalValuePower = float(pScene->getAOIntensity());
+                aoc.sliceCount = pScene->getAOSlices();
+                aoc.stepsPerSlice = pScene->getAOSteps();
+                m_pAoRT->bind();
+                m_pAoRT->clear(1.0f, 1.0f, 1.0f, 1.0f);
+                m_pAOPostProc->drawGtao(pdc, m_pAOSceneRT, aoc, /*debugMode=*/0);
+                m_pAoRT->unbind();
+
+                // 3. Edge-aware denoise of the AO term (single pass). The base
+                // noise is kept low by a high slice count instead of heavy
+                // blurring, which would dilute the broad soft AO on convex
+                // surfaces toward white.
+                m_pAoDenRT->bind();
+                m_pAOPostProc->drawDenoise(pdc, m_pAoRT, aoc);
+                m_pAoDenRT->unbind();
+
+                // 4. Composite scene color * denoised AO onto the default
+                // framebuffer. The fullscreen pass must not be depth-rejected.
+                pdc->setDepthTestEnabled(false);
+                m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, m_pAoDenRT);
+                pdc->setDepthTestEnabled(true);
+
+                // Restore the scene depth into the default framebuffer so the
+                // UI overlays below depth-test against the scene as usual.
+                m_pAOSceneRT->blitDepthToDefault();
+            } else {
+                setUpModelMat(MM_NORMAL);
+                // glDrawBuffer(GL_BACK);
+                // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                pdc->clearBuffer(pScene->getBgColor());
+
+                // Draw main 3D objects
+                pScene->display(pdc);
+            }
             break;
+        }
 
             //     ////////////////////////////////////////////////
             //     // Quad-buffer stereo
@@ -512,6 +579,103 @@ void GUIView::setFogColorImpl(DisplayContext *pdc)
         pdc->setCurrent();
     }
     pdc->setFogColor(pBgCol);
+}
+
+//////////
+// Screen-space ambient occlusion (GTAO) live path
+
+void GUIView::ensureAORTs(int w, int h)
+{
+    DisplayContext *pdc = getDisplayContext();
+    if (pdc == nullptr) return;
+
+    if (m_pAOSceneRT == nullptr) {
+        m_pAOSceneRT =
+            pdc->createRenderTarget(w, h, gfx::RT_COLOR_RGBA8 | gfx::RT_DEPTH_TEX);
+    } else {
+        m_pAOSceneRT->resize(w, h);
+    }
+
+    // AO targets hold packed data (AO + edges) and must use NEAREST filtering.
+    const int aoFlags = gfx::RT_COLOR_RGBA8 | gfx::RT_COLOR_NEAREST;
+    if (m_pAoRT == nullptr) {
+        m_pAoRT = pdc->createRenderTarget(w, h, aoFlags);
+    } else {
+        m_pAoRT->resize(w, h);
+    }
+
+    if (m_pAoDenRT == nullptr) {
+        m_pAoDenRT = pdc->createRenderTarget(w, h, aoFlags);
+    } else {
+        m_pAoDenRT->resize(w, h);
+    }
+
+    if (m_pAOPostProc == nullptr) {
+        m_pAOPostProc = MB_NEW gfx::PostProcGpuPrim();
+    }
+}
+
+gfx::AoConstants GUIView::computeAoConstants() const
+{
+    // Camera slab planes, matching setUpProjMat's near/far derivation.
+    const double dist = getViewDist();
+    double slabdepth = getSlabDepth();
+    if (slabdepth <= 0.1) slabdepth = 0.1;
+    double slabnear = dist - slabdepth / 2.0;
+    if (slabnear < 0.1) slabnear = 0.1;
+    const double slabfar = dist + slabdepth;
+
+    // Perspective half-FOV: makePersProjMat uses t = dist / (zoom/2), with
+    // P[1][1] = t (so tanHalfFOVY = 1/t = (zoom/2)/dist) and P[0][0] = t/aspect
+    // (so tanHalfFOVX = aspect * tanHalfFOVY).
+    const double width = double(getZoom()) / 2.0;
+    const double aspect = double(getWidth()) / double(getHeight());
+    const double tanHalfFovY = width / dist;
+    const double tanHalfFovX = tanHalfFovY * aspect;
+
+    const int bcx = convToBackingX(getWidth());
+    const int bcy = convToBackingY(getHeight());
+
+    gfx::AoConstants c;
+    // viewZ = mul / (add - rawDepth); matches XeGTAO with GL window depth [0,1].
+    c.depthLinearizeMul = float(slabfar * slabnear / (slabfar - slabnear));
+    c.depthLinearizeAdd = float(slabfar / (slabfar - slabnear));
+    // GL uses a bottom-up [0,1] UV (postproc_vert v_uv), so viewY keeps the
+    // same sign as the NDC mapping (unlike XeGTAO's top-down DX convention).
+    c.ndcToViewMul[0] = float(2.0 * tanHalfFovX);
+    c.ndcToViewMul[1] = float(2.0 * tanHalfFovY);
+    c.ndcToViewAdd[0] = float(-tanHalfFovX);
+    c.ndcToViewAdd[1] = float(-tanHalfFovY);
+    c.viewportPixelSize[0] = (bcx > 0) ? 1.0f / float(bcx) : 0.0f;
+    c.viewportPixelSize[1] = (bcy > 0) ? 1.0f / float(bcy) : 0.0f;
+    // The AO tuning fields (effectRadius / finalValuePower / sliceCount) are
+    // filled by the caller from the Scene properties.
+    return c;
+}
+
+void GUIView::cleanupAORTs()
+{
+    // The render target and the post-proc primitive's VBO both guard the GL
+    // context themselves (via the parent view looked up by ID in their
+    // destructors), so do NOT call getDisplayContext() here. cleanupAORTs runs
+    // from ~GUIView, after the concrete view subclass is already destroyed,
+    // where getDisplayContext() is a pure-virtual call (crash).
+    if (m_pAOPostProc != nullptr) {
+        delete m_pAOPostProc;
+        m_pAOPostProc = nullptr;
+    }
+    if (m_pAoDenRT != nullptr) {
+        delete m_pAoDenRT;
+        m_pAoDenRT = nullptr;
+    }
+    if (m_pAoRT != nullptr) {
+        delete m_pAoRT;
+        m_pAoRT = nullptr;
+    }
+    if (m_pAOSceneRT != nullptr) {
+        delete m_pAOSceneRT;
+        m_pAOSceneRT = nullptr;
+    }
 }
 
 //////////

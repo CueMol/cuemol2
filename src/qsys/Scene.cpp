@@ -119,6 +119,12 @@ Scene::Scene()
   gfx::ColProfMgr::sRegUID(m_nUID);
   m_bUseColProof = false;
 
+  m_bAOEnabled = false;
+  m_fAORadius = 4.0;
+  m_fAOIntensity = 2.2;
+  m_nAOSlices = 9;
+  m_nAOSteps = 3;
+
   MB_DPRINTLN("Scene (%d) created.", m_nUID);
 }
 

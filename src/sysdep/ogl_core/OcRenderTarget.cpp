@@ -93,11 +93,13 @@ bool OcRenderTarget::init(gfx::DisplayContext *pdc, int w, int h, int flags)
 void OcRenderTarget::allocAttachments(int w, int h)
 {
     // Color attachment 0 (RGBA8)
+    const GLint colorFilter =
+        (m_nFlags & gfx::RT_COLOR_NEAREST) ? GL_NEAREST : GL_LINEAR;
     glBindTexture(GL_TEXTURE_2D, m_nColorTex);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE,
                  nullptr);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, colorFilter);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, colorFilter);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
@@ -206,6 +208,21 @@ void OcRenderTarget::readColor(int idx, int x, int y, int w, int h, int ncomp,
     glReadPixels(x, y, w, h, fmt, GL_UNSIGNED_BYTE, pbuf);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     CHK_GLERROR("OcRenderTarget::readColor");
+}
+
+void OcRenderTarget::blitDepthToDefault()
+{
+    // Copy the off-screen depth attachment into the default framebuffer so that
+    // UI overlays drawn afterwards depth-test against the scene as usual. The
+    // blit requires compatible depth formats (DEPTH_COMPONENT24 vs the window
+    // depth buffer); a mismatch is logged and degrades only overlay occlusion.
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, m_nFBO);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glBlitFramebuffer(0, 0, m_nWidth, m_nHeight, 0, 0, m_nWidth, m_nHeight,
+                      GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    CHK_GLERROR("OcRenderTarget::blitDepthToDefault");
 }
 
 }  // namespace sysdep

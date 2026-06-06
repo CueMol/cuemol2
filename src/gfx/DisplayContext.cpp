@@ -28,6 +28,7 @@ DisplayContext::DisplayContext()
   m_lineWidth = -1.0;
   m_lineStipple = 0xFFFF;
   m_bLighting = false;
+  m_bAOEnabled = false;
 
   m_matstack.push_front(Matrix4D());
 }
@@ -101,6 +102,12 @@ void DisplayContext::setFogEnd(float val)
 void DisplayContext::setFogColor(const ColorPtr &val)
 {
     m_fogColor = val;
+}
+
+// Enable screen-space ambient occlusion (GTAO)
+void DisplayContext::enableAO(bool b)
+{
+    m_bAOEnabled = b;
 }
 
 void DisplayContext::setMaterial(const LString &name)

@@ -55,6 +55,8 @@ public:
     void readColor(int idx, int x, int y, int w, int h, int ncomp,
                    void *pbuf) override;
 
+    void blitDepthToDefault() override;
+
     bool hasNormal() const override
     {
         return (m_nFlags & gfx::RT_NORMAL_RGB16F) != 0;
