@@ -103,6 +103,17 @@ export class GfxManager {
     // for textures
     private _tex_data: { [key: string]: WebGLTexture } = {};
 
+    // for off-screen render targets (framebuffer objects), keyed by name
+    private _fbo_data: {
+        [key: string]: {
+            fbo: WebGLFramebuffer;
+            colorTex: WebGLTexture;
+            depthTex: WebGLTexture | null;
+            w: number;
+            h: number;
+        };
+    } = {};
+
     private cuemol: any;
     private _sceMgr: any;
     private _canvas: any = null;
@@ -815,6 +826,132 @@ export class GfxManager {
         if (!(name in this._tex_data)) return false;
         gl.deleteTexture(this._tex_data[name]);
         delete this._tex_data[name];
+        return true;
+    }
+
+    //////////
+    // Off-screen render target (framebuffer object)
+    //
+    // Peer API for the C++ gfx::RenderTarget abstraction (EcRenderTarget),
+    // used by off-screen rendering / image export. Mirrors the OpenGL
+    // OcRenderTarget implementation. `flags` bit 0x02 (RT_DEPTH_TEX) requests a
+    // sampleable depth attachment.
+
+    /// API: create an FBO with an RGBA8 color texture and (optionally) a
+    /// sampleable DEPTH_COMPONENT24 depth texture. Returns false if incomplete.
+    createFramebuffer(name: string, width: number, height: number, flags: number): boolean {
+        const gl = this._context;
+        if (name in this._fbo_data) {
+            console.log(`createFramebuffer: ${name} already exists --> reuse`);
+            return true;
+        }
+
+        const fbo = gl.createFramebuffer()!;
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+
+        // Color attachment 0 (RGBA8)
+        const colorTex = gl.createTexture()!;
+        gl.bindTexture(gl.TEXTURE_2D, colorTex);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, width, height, 0,
+                      gl.RGBA, gl.UNSIGNED_BYTE, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0,
+                                gl.TEXTURE_2D, colorTex, 0);
+
+        // Depth attachment (sampleable), only when RT_DEPTH_TEX (0x02) is set.
+        let depthTex: WebGLTexture | null = null;
+        if ((flags & 0x02) !== 0) {
+            depthTex = gl.createTexture()!;
+            gl.bindTexture(gl.TEXTURE_2D, depthTex);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT24, width, height, 0,
+                          gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, null);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT,
+                                    gl.TEXTURE_2D, depthTex, 0);
+        }
+
+        gl.drawBuffers([gl.COLOR_ATTACHMENT0]);
+
+        const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+
+        if (status !== gl.FRAMEBUFFER_COMPLETE) {
+            console.error(`createFramebuffer ${name} incomplete: 0x${status.toString(16)}`);
+            gl.deleteTexture(colorTex);
+            if (depthTex) gl.deleteTexture(depthTex);
+            gl.deleteFramebuffer(fbo);
+            return false;
+        }
+
+        this._fbo_data[name] = { fbo, colorTex, depthTex, w: width, h: height };
+        console.log(`createFramebuffer OK: ${name} ${width}x${height} depth=${depthTex !== null}`);
+        return true;
+    }
+
+    /// API: bind the named FBO as draw target and set the viewport to its size.
+    bindFramebuffer(name: string): void {
+        const gl = this._context;
+        const info = this._fbo_data[name];
+        if (!info) throw `framebuffer ${name} not found`;
+        gl.bindFramebuffer(gl.FRAMEBUFFER, info.fbo);
+        gl.viewport(0, 0, info.w, info.h);
+    }
+
+    /// API: restore the default framebuffer (canvas) as draw target.
+    bindDefaultFramebuffer(): void {
+        const gl = this._context;
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.viewport(0, 0, this._canvas.width, this._canvas.height);
+    }
+
+    /// API: clear the currently bound framebuffer's color + depth.
+    clearRenderTarget(r: number, g: number, b: number, a: number): void {
+        const gl = this._context;
+        gl.clearColor(r, g, b, a);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    }
+
+    /// API: bind an FBO attachment ('color' | 'depth') as a sampler texture.
+    bindFBOTexture(name: string, which: string, texUnit: number): void {
+        const gl = this._context;
+        const info = this._fbo_data[name];
+        if (!info) throw `framebuffer ${name} not found`;
+        const tex = which === 'depth' ? info.depthTex : info.colorTex;
+        if (!tex) return;
+        gl.activeTexture(gl.TEXTURE0 + texUnit);
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+    }
+
+    /// API: read back an RGBA sub-rectangle of the named FBO's color
+    /// attachment 0 (bottom-left origin). Returns w*h*4 bytes.
+    readPixels(name: string, x: number, y: number, w: number, h: number): Uint8Array {
+        const gl = this._context;
+        const info = this._fbo_data[name];
+        if (!info) return new Uint8Array(0);
+        const buf = new Uint8Array(w * h * 4);
+        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, info.fbo);
+        gl.readBuffer(gl.COLOR_ATTACHMENT0);
+        gl.readPixels(x, y, w, h, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+        return buf;
+    }
+
+    /// API: delete the named FBO and its attachments.
+    deleteFramebuffer(name: string): boolean {
+        const gl = this._context;
+        const info = this._fbo_data[name];
+        if (!info) return false;
+        gl.deleteTexture(info.colorTex);
+        if (info.depthTex) gl.deleteTexture(info.depthTex);
+        gl.deleteFramebuffer(info.fbo);
+        delete this._fbo_data[name];
         return true;
     }
 };

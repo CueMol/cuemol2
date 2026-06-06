@@ -123,6 +123,26 @@ export async function handleCameraSaveDialog(
   }
 }
 
+export async function handleImageSaveDialog(
+  mainWindow: BrowserWindow,
+  defaultName: string,
+): Promise<{ canceled: boolean; filePath: string }> {
+  const result = await withMenuBlocked('native', () =>
+    dialog.showSaveDialog(mainWindow, {
+      title: 'Export Image As',
+      defaultPath: defaultName,
+      filters: [
+        { name: 'PNG image', extensions: ['png'] },
+        { name: 'All Files', extensions: ['*'] },
+      ],
+    }),
+  )
+  return {
+    canceled: result.canceled,
+    filePath: result.filePath ?? '',
+  }
+}
+
 // The filter list is built worker-side from
 // `StreamManager.findCompatibleWriterNamesForObj` × the writer category
 // of `StreamManager.getInfoJSON2`; the renderer forwards it here. We

@@ -14,6 +14,7 @@ class BufTexRep;
 class VBORep;
 class PixRep;
 class PixelBuffer;
+class RenderTarget;
 }  // namespace gfx
 
 namespace sysdep {
@@ -55,6 +56,12 @@ public:
     virtual gfx::VBORep *createVBORep(const gfx::AbstDrawAttrs &ada) override;
 
     virtual gfx::PixRep *createPixRep(const gfx::PixelBuffer &pixbuf) override;
+
+    virtual gfx::RenderTarget *createRenderTarget(int w, int h, int flags) override;
+
+    virtual void bindRenderTarget(gfx::RenderTarget *prt) override;
+
+    virtual void bindDefaultFramebuffer() override;
 };
 
 }  // namespace sysdep

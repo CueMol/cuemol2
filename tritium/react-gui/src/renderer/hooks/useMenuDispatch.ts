@@ -94,6 +94,9 @@ export function useMenuDispatch(activeTab: string | null): {
         case 'menu:save-current-view':
           dispatch(CmdId.SaveCurrentView).catch(logErr('file.saveCurrentView:'))
           break
+        case 'menu:export-scene':
+          dispatch(CmdId.ExportImage).catch(logErr('file.exportImage:'))
+          break
         case 'menu:reload-scene':
           dispatch(CmdId.SceneReload).catch(logErr('scene.reload:'))
           break

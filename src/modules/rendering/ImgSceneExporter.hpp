@@ -40,6 +40,9 @@ namespace render {
     /// Use RGBA pixel format
     bool m_bUseAlpha;
 
+    /// Export a depth visualization (grayscale) instead of the rendered color
+    bool m_bUseDepth;
+
     /// Antialiasing option
     int m_nAAOpt;
 
@@ -80,6 +83,9 @@ namespace render {
 
     bool getUseAlpha() const { return m_bUseAlpha; }
     void setUseAlpha(bool val) { m_bUseAlpha = val; }
+
+    bool getUseDepth() const { return m_bUseDepth; }
+    void setUseDepth(bool val) { m_bUseDepth = val; }
 
     int getWidth() const { return m_nWidth; }
     int getHeight() const { return m_nHeight; }

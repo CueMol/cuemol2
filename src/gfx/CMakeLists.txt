@@ -27,6 +27,7 @@ CylinderGpuPrim.cpp
 TrigGpuPrim.cpp
 LineGpuPrim.cpp
 PixGpuPrim.cpp
+PostProcGpuPrim.cpp
 DisplayList.cpp
 ShaderObject.cpp
 )
@@ -45,6 +46,7 @@ DrawAttrElems.hpp
 DrawElem.hpp
 AbstDrawElem.hpp
 VBORep.hpp
+RenderTarget.hpp
 GradientColor.hpp
 GpuPrim.hpp
 SphereGpuPrim.hpp
@@ -52,6 +54,7 @@ CylinderGpuPrim.hpp
 TrigGpuPrim.hpp
 LineGpuPrim.hpp
 PixGpuPrim.hpp
+PostProcGpuPrim.hpp
 Hittest.hpp
 HittestContext.hpp
 LabelCacheImpl.hpp

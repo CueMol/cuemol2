@@ -28,6 +28,7 @@ export const CmdId = {
   FileSaveAs:         'file.saveAs',         // no args
   ObjectSaveAs:       'object.saveAs',       // no args -- object (not scene) save
   SaveCurrentView:    'file.saveCurrentView', // no args
+  ExportImage:        'file.exportImage',    // no args -- render scene to PNG
   SceneReload:        'scene.reload',        // no args
 
   // Undo/redo

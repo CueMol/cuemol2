@@ -86,6 +86,28 @@ export function useFileCommands({
         })
     })
 
+    // ExportImage — render the active scene off-screen to a PNG file (UXP
+    // `Export scene`). The C++ ImgSceneExporter renders through the WebGL FBO
+    // (gfx::RenderTarget) and reads the pixels back.
+    useRegisterCommand(CmdId.ExportImage, async () => {
+        if (!cm) return
+        const info = getActiveSceneInfo()
+        if (!info) return
+        const dlg = await window.electronAPI.invoke(IPC.DIALOG_IMAGE_SAVE, {
+            defaultName: 'image.png',
+        })
+        if (dlg.canceled || !dlg.filePath) return
+        await cm.invokeService('exportImage', {
+            sceneId: info.scene_uid,
+            viewId: info.view_id,
+            filePath: dlg.filePath,
+            width: 1024,
+            height: 768,
+            alpha: false,
+            depth: false,
+        })
+    })
+
     // SceneReload — UXP `onReloadScene`: re-read the scene from its source
     // file, confirming first when there are unsaved changes.
     useRegisterCommand(CmdId.SceneReload, async () => {

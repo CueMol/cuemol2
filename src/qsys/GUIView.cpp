@@ -7,8 +7,10 @@
 
 #include <common.h>
 #include "GUIView.hpp"
+#include "OffScreenView.hpp"
 
 #include <gfx/HittestContext.hpp>
+#include <gfx/RenderTarget.hpp>
 #include <qlib/LPerfMeas.hpp>
 
 #include "CenterMarkDrawObj.hpp"
@@ -481,8 +483,18 @@ bool GUIView::hitTestImpl(gfx::DisplayContext *pdc, const Vector4D &parm, bool f
 
 qsys::View *GUIView::createOffScreenView(int w, int h, int aa_depth)
 {
-    // not implemented yet
-    return nullptr;
+    // aa_depth (multisample) is not supported yet.
+    DisplayContext *pdc = getDisplayContext();
+    if (pdc == nullptr) return nullptr;
+
+    auto *pView = MB_NEW OffScreenView(pdc, w, h,
+                                       gfx::RT_COLOR_RGBA8 | gfx::RT_DEPTH_TEX);
+    if (!pView->isValid()) {
+        // Off-screen rendering not supported by this display context.
+        delete pView;
+        return nullptr;
+    }
+    return pView;
 }
 
 void GUIView::readPixels(int x, int y, int width, int height, char *pbuf, int nbufsize,

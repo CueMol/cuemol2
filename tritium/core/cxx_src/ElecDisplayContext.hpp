@@ -4,6 +4,7 @@
 
 namespace gfx {
 class ShaderObject;
+class RenderTarget;
 }  // namespace gfx
 
 namespace node_jsbr {
@@ -51,6 +52,12 @@ public:
     virtual gfx::VBORep *createVBORep(const gfx::AbstDrawAttrs &ada) override;
 
     virtual gfx::PixRep *createPixRep(const gfx::PixelBuffer &pixbuf) override;
+
+    virtual gfx::RenderTarget *createRenderTarget(int w, int h, int flags) override;
+
+    virtual void bindRenderTarget(gfx::RenderTarget *prt) override;
+
+    virtual void bindDefaultFramebuffer() override;
 
     /// Allocate vertex/index buffers in V8 cage memory so the C++ side
     /// can write directly into them via qlib::Array::refer(), and the

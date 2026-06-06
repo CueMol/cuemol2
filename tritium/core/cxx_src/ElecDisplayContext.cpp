@@ -5,8 +5,10 @@
 #include "ElecView.hpp"
 #include "EcBufferRep.hpp"
 #include "EcTexRep.hpp"
+#include "EcRenderTarget.hpp"
 
 #include <gfx/AbstDrawAttrs.hpp>
+#include <gfx/RenderTarget.hpp>
 
 namespace node_jsbr {
 
@@ -130,6 +132,35 @@ gfx::PixRep *ElecDisplayContext::createPixRep(const gfx::PixelBuffer &pb)
     auto pRep = MB_NEW EcTexRep();
     pRep->create(this, pb);
     return pRep;
+}
+
+gfx::RenderTarget *ElecDisplayContext::createRenderTarget(int w, int h, int flags)
+{
+    auto *pRT = MB_NEW EcRenderTarget();
+    if (!pRT->init(this, w, h, flags)) {
+        delete pRT;
+        return nullptr;
+    }
+    return pRT;
+}
+
+void ElecDisplayContext::bindRenderTarget(gfx::RenderTarget *prt)
+{
+    if (prt != nullptr)
+        prt->bind();
+    else
+        bindDefaultFramebuffer();
+}
+
+void ElecDisplayContext::bindDefaultFramebuffer()
+{
+    if (!m_pView || !m_pView->isBound()) return;
+    auto peer = m_pView->getPeerObj();
+    try {
+        peer.Get("bindDefaultFramebuffer").As<Napi::Function>().Call(peer, {});
+    } catch (const Napi::Error &e) {
+        MB_DPRINTLN("bindDefaultFramebuffer> Error: %s", e.Message().c_str());
+    }
 }
 
 void ElecDisplayContext::allocBuffer(gfx::AbstDrawAttrs &ada, int nvert, int nind)

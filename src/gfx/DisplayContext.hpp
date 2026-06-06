@@ -35,6 +35,7 @@ class ShaderObject;
 class PixGpuPrim;
 
 class BufTexRep;
+class RenderTarget;
 
 class GFX_API DisplayContext : public qlib::LObject
 {
@@ -510,6 +511,24 @@ public:
     /// Create a backend-specific PixRep for the given pixel buffer.
     /// Returns nullptr if this context does not support drawPixels.
     virtual PixRep *createPixRep(const PixelBuffer &pixbuf);
+
+    ///////////////////////////////
+    // Off-screen render target (FBO) support
+
+    /// Create a backend-specific off-screen render target of the given size
+    /// and attachment flags (see gfx::RTFlags). Returns nullptr if this
+    /// context does not support off-screen rendering (default).
+    virtual RenderTarget *createRenderTarget(int w, int h, int flags)
+    {
+        return nullptr;
+    }
+
+    /// Make the given render target the current draw target. Passing nullptr
+    /// restores the default framebuffer. Default is a no-op.
+    virtual void bindRenderTarget(RenderTarget *prt) {}
+
+    /// Restore the default framebuffer as the draw target. Default no-op.
+    virtual void bindDefaultFramebuffer() {}
 
     ///////////////////////////////
     // Buffer allocation

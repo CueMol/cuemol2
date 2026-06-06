@@ -9,6 +9,7 @@ SET(SYSDEP_SRCS
   ogl_core/OcDisplayContext.cpp
   ogl_core/OcView.cpp
   ogl_core/OcBufferRep.cpp
+  ogl_core/OcRenderTarget.cpp
 )
 
 SET(SYSDEP_HDRS
@@ -83,6 +84,8 @@ SET(SHADER_SOURCES
   ogl_core/linew_vert.glsl
   ogl_core/linew2_vert.glsl
   ogl_core/linew_frag.glsl
+  ogl_core/postproc_vert.glsl
+  ogl_core/depthvis_frag.glsl
 )
 SET(SHADER_DEPS
   ogl_core/lighting_inc.glsl
