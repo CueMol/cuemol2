@@ -262,12 +262,18 @@ void main()
             // Do not let line / label primitives (sentinel normal) occlude other
             // surfaces: drop the occlusion weight of any sample that lands on
             // one, so a wireframe / bond line casts no AO onto the geometry
-            // behind it.
+            // behind it. Only fetch the normal where the sample can still
+            // occlude (weight > 0); a zero-weight sample contributes nothing
+            // either way, so skipping it is exact and saves the texture read.
             if (u_hasNormal != 0) {
-                vec3 sn0 = texture(u_normalTex, sp0).xyz;
-                vec3 sn1 = texture(u_normalTex, sp1).xyz;
-                if (dot(sn0, sn0) < 0.5) weight0 = 0.0;
-                if (dot(sn1, sn1) < 0.5) weight1 = 0.0;
+                if (weight0 > 0.0) {
+                    vec3 sn0 = texture(u_normalTex, sp0).xyz;
+                    if (dot(sn0, sn0) < 0.5) weight0 = 0.0;
+                }
+                if (weight1 > 0.0) {
+                    vec3 sn1 = texture(u_normalTex, sp1).xyz;
+                    if (dot(sn1, sn1) < 0.5) weight1 = 0.0;
+                }
             }
 
             float shc0 = dot(sampleHorizonVec0, viewVec);
