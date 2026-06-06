@@ -150,6 +150,37 @@ void PostProcGpuPrim::drawGtao(DisplayContext *pDC, RenderTarget *sceneRT,
     sceneRT->unbindTextures();
 }
 
+void PostProcGpuPrim::drawDenoise(DisplayContext *pDC, RenderTarget *aoRT,
+                                 const AoConstants &consts)
+{
+    if (aoRT == nullptr) return;
+    if (!ensureDrawElem(pDC)) return;
+
+    if (m_pDenoisePO == nullptr) {
+        m_pDenoisePO =
+            pDC->loadShaderObject("ao_denoise",
+                                  "%%CONFDIR%%/data/shaders/postproc_vert.glsl",
+                                  "%%CONFDIR%%/data/shaders/ao_denoise_frag.glsl");
+        if (m_pDenoisePO == nullptr) {
+            LOG_DPRINTLN("PostProcGpuPrim> ERROR: cannot load ao_denoise shader.");
+            return;
+        }
+    }
+
+    aoRT->bindColorTex(0, RT_TU_COLOR);
+
+    m_pDenoisePO->enable();
+    m_pDenoisePO->setUniform("u_aoTex", RT_TU_COLOR);
+    m_pDenoisePO->setUniformF("u_viewportPixelSize", consts.viewportPixelSize[0],
+                              consts.viewportPixelSize[1]);
+
+    pDC->drawElem(*m_pDrawElem);
+
+    m_pDenoisePO->disable();
+
+    aoRT->unbindTextures();
+}
+
 void PostProcGpuPrim::invalidate()
 {
     if (m_pDrawElem != nullptr) {
@@ -161,4 +192,5 @@ void PostProcGpuPrim::invalidate()
     m_pPO = nullptr;
     m_pCompPO = nullptr;
     m_pGtaoPO = nullptr;
+    m_pDenoisePO = nullptr;
 }

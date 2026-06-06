@@ -16,6 +16,10 @@ enum RTFlags
     RT_COLOR_RGBA8 = 0x01,
     /// Sampleable depth texture attachment (DEPTH_COMPONENT24).
     RT_DEPTH_TEX = 0x02,
+    /// Use NEAREST (point) filtering for the color attachment instead of
+    /// LINEAR. Required for targets holding packed data (e.g. AO + packed
+    /// edges) that must not be interpolated.
+    RT_COLOR_NEAREST = 0x04,
     /// MRT normal color attachment 1 (RGB16F). Reserved for future AO use.
     RT_NORMAL_RGB16F = 0x08,
 };

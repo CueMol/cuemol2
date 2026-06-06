@@ -60,6 +60,8 @@ private:
     /// GTAO program (live AO path): reads scene depth, writes the AO term
     /// (currently a debug visualization of depth / reconstructed normal).
     ShaderObject *m_pGtaoPO = nullptr;
+    /// Edge-aware AO denoise program.
+    ShaderObject *m_pDenoisePO = nullptr;
     TriArray *m_pDrawElem = nullptr;
 
 public:
@@ -92,10 +94,14 @@ public:
 
     /// Read sceneRT's depth texture, reconstruct view-space depth/position with
     /// the given constants, and draw the GTAO term into the currently bound
-    /// framebuffer (fullscreen). debugMode selects a debug visualization while
-    /// the algorithm is brought up: 0 = linear depth, 1 = reconstructed normal.
+    /// framebuffer (fullscreen). debugMode: 0 = AO, 1 = normal, 2 = depth.
     void drawGtao(DisplayContext *pDC, RenderTarget *sceneRT,
                   const AoConstants &consts, int debugMode);
+
+    /// Edge-aware blur of aoRT (R = AO, G = packed edges) into the currently
+    /// bound framebuffer (fullscreen). consts supplies the viewport pixel size.
+    void drawDenoise(DisplayContext *pDC, RenderTarget *aoRT,
+                     const AoConstants &consts);
 
 private:
     void alloc(DisplayContext *pDC);

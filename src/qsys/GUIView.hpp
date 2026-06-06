@@ -128,10 +128,13 @@ private:
     /// Off-screen scene target (color + depth) for the AO path. Owned.
     gfx::RenderTarget *m_pAOSceneRT = nullptr;
 
-    /// Color-only target holding the AO term written by the GTAO pass. Owned.
+    /// Color-only target holding the AO term + packed edges (GTAO pass). Owned.
     gfx::RenderTarget *m_pAoRT = nullptr;
 
-    /// Fullscreen post-processing primitive (GTAO + composite). Owned.
+    /// Color-only target holding the denoised AO term. Owned.
+    gfx::RenderTarget *m_pAoDenRT = nullptr;
+
+    /// Fullscreen post-processing primitive (GTAO + denoise + composite). Owned.
     gfx::PostProcGpuPrim *m_pAOPostProc = nullptr;
 
     /// Lazily create / resize the AO scene target and post-proc primitive to

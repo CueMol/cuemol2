@@ -43,6 +43,25 @@ float ign(vec2 p)
     return fract(52.9829189 * fract(dot(p, vec2(0.06711056, 0.00583715))));
 }
 
+// Depth-discontinuity edges (1 = flat, 0 = strong edge), per XeGTAO. The
+// denoise pass reads these to avoid blurring AO across silhouettes.
+vec4 calculateEdges(float cZ, float lZ, float rZ, float tZ, float bZ)
+{
+    vec4 e = vec4(lZ, rZ, tZ, bZ) - cZ;
+    float slopeLR = (e.y - e.x) * 0.5;
+    float slopeTB = (e.w - e.z) * 0.5;
+    vec4 eAdj = e + vec4(slopeLR, -slopeLR, slopeTB, -slopeTB);
+    e = min(abs(e), abs(eAdj));
+    return clamp(1.25 - e / (cZ * 0.011), 0.0, 1.0);
+}
+
+// Pack the 4 edge values (2 bits each) into one 8-bit channel.
+float packEdges(vec4 e)
+{
+    e = round(clamp(e, 0.0, 1.0) * 2.9);
+    return dot(e, vec4(64.0 / 255.0, 16.0 / 255.0, 4.0 / 255.0, 1.0 / 255.0));
+}
+
 // Reconstruct the view-space normal from the closer horizontal / vertical
 // neighbours, oriented toward the camera (all visible fragments are front
 // facing).
@@ -80,11 +99,19 @@ void main()
         return;
     }
 
-    // Far plane / no geometry: fully unoccluded.
+    // Far plane / no geometry: fully unoccluded (and flat edges).
     if (rawDepth >= 1.0) {
         o_FragColor = vec4(1.0);
         return;
     }
+
+    // Depth-discontinuity edges for the denoise pass (uses un-nudged depth).
+    vec2 ep = u_viewportPixelSize;
+    float zL = linearizeZ(texture(u_depthTex, v_uv - vec2(ep.x, 0.0)).r);
+    float zR = linearizeZ(texture(u_depthTex, v_uv + vec2(ep.x, 0.0)).r);
+    float zT = linearizeZ(texture(u_depthTex, v_uv + vec2(0.0, ep.y)).r);
+    float zB = linearizeZ(texture(u_depthTex, v_uv - vec2(0.0, ep.y)).r);
+    float packedEdges = packEdges(calculateEdges(viewspaceZ, zL, zR, zT, zB));
 
     // ---- GTAO horizon integration (depth-only) ----
     const int sliceCount = 3;
@@ -186,5 +213,6 @@ void main()
     visibility = pow(max(visibility, 0.0), u_finalValuePower);
     visibility = max(0.03, visibility);
 
-    o_FragColor = vec4(vec3(visibility), 1.0);
+    // R = AO term, G = packed edges (consumed by the denoise pass).
+    o_FragColor = vec4(visibility, packedEdges, 0.0, 1.0);
 }

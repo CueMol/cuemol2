@@ -93,11 +93,13 @@ bool OcRenderTarget::init(gfx::DisplayContext *pdc, int w, int h, int flags)
 void OcRenderTarget::allocAttachments(int w, int h)
 {
     // Color attachment 0 (RGBA8)
+    const GLint colorFilter =
+        (m_nFlags & gfx::RT_COLOR_NEAREST) ? GL_NEAREST : GL_LINEAR;
     glBindTexture(GL_TEXTURE_2D, m_nColorTex);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE,
                  nullptr);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, colorFilter);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, colorFilter);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 

@@ -188,7 +188,7 @@ void GUIView::drawScene()
             }
 
             if (useAO && m_pAOSceneRT != nullptr && m_pAoRT != nullptr &&
-                m_pAOPostProc != nullptr) {
+                m_pAoDenRT != nullptr && m_pAOPostProc != nullptr) {
                 // 1. Render the 3D scene into the off-screen target.
                 m_pAOSceneRT->bind();
                 setUpModelMat(MM_NORMAL);
@@ -198,19 +198,24 @@ void GUIView::drawScene()
                 pScene->display(pdc);
                 m_pAOSceneRT->unbind();
 
-                // 2. GTAO pass: read the scene depth, write the AO term into the
-                // AO target. The AO target has no depth attachment, so the
-                // fullscreen pass is not depth-rejected.
+                // 2. GTAO pass: read the scene depth, write AO + packed edges
+                // into the AO target (no depth attachment -> not depth-rejected).
                 const gfx::AoConstants aoc = computeAoConstants();
                 m_pAoRT->bind();
                 m_pAoRT->clear(1.0f, 1.0f, 1.0f, 1.0f);
                 m_pAOPostProc->drawGtao(pdc, m_pAOSceneRT, aoc, /*debugMode=*/0);
                 m_pAoRT->unbind();
 
-                // 3. Composite scene color * AO onto the default framebuffer.
-                // The fullscreen pass must not be depth-rejected.
+                // 3. Edge-aware denoise of the AO term.
+                m_pAoDenRT->bind();
+                m_pAoDenRT->clear(1.0f, 1.0f, 1.0f, 1.0f);
+                m_pAOPostProc->drawDenoise(pdc, m_pAoRT, aoc);
+                m_pAoDenRT->unbind();
+
+                // 4. Composite scene color * denoised AO onto the default
+                // framebuffer. The fullscreen pass must not be depth-rejected.
                 pdc->setDepthTestEnabled(false);
-                m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, m_pAoRT);
+                m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, m_pAoDenRT);
                 pdc->setDepthTestEnabled(true);
 
                 // Restore the scene depth into the default framebuffer so the
@@ -585,10 +590,18 @@ void GUIView::ensureAORTs(int w, int h)
         m_pAOSceneRT->resize(w, h);
     }
 
+    // AO targets hold packed data (AO + edges) and must use NEAREST filtering.
+    const int aoFlags = gfx::RT_COLOR_RGBA8 | gfx::RT_COLOR_NEAREST;
     if (m_pAoRT == nullptr) {
-        m_pAoRT = pdc->createRenderTarget(w, h, gfx::RT_COLOR_RGBA8);
+        m_pAoRT = pdc->createRenderTarget(w, h, aoFlags);
     } else {
         m_pAoRT->resize(w, h);
+    }
+
+    if (m_pAoDenRT == nullptr) {
+        m_pAoDenRT = pdc->createRenderTarget(w, h, aoFlags);
+    } else {
+        m_pAoDenRT->resize(w, h);
     }
 
     if (m_pAOPostProc == nullptr) {
@@ -646,6 +659,10 @@ void GUIView::cleanupAORTs()
     if (m_pAOPostProc != nullptr) {
         delete m_pAOPostProc;
         m_pAOPostProc = nullptr;
+    }
+    if (m_pAoDenRT != nullptr) {
+        delete m_pAoDenRT;
+        m_pAoDenRT = nullptr;
     }
     if (m_pAoRT != nullptr) {
         delete m_pAoRT;
