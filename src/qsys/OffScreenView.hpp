@@ -33,6 +33,9 @@ private:
     /// Owned off-screen render target.
     gfx::RenderTarget *m_pRT;
 
+    /// When true, clear the background transparent (alpha = 0).
+    bool m_bBgTransparent;
+
 public:
     /// Construct an off-screen view of (w,h) sharing pParentCtxt. Allocates
     /// the render target with the given gfx::RTFlags; isValid() reports success.
@@ -53,6 +56,12 @@ public:
 
     /// No window to present to.
     virtual void swapBuffers() override {}
+
+    /// Select transparent (alpha=0) vs opaque background-color clear.
+    virtual void setBgTransparent(bool b) override
+    {
+        m_bBgTransparent = b;
+    }
 
     /// Render the scene into the off-screen render target.
     virtual void drawScene() override;

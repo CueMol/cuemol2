@@ -60,6 +60,9 @@ void ImgSceneExporter::write()
   qlib::ensureNotNull(pCam.get());
   pImgView->setCamera(pCam);
 
+  // Transparent background only when RGBA (alpha) output is requested.
+  pImgView->setBgTransparent(m_bUseAlpha);
+
   // Draw the scene
   pImgView->drawScene();
 

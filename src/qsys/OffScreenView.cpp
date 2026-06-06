@@ -14,7 +14,7 @@
 namespace qsys {
 
 OffScreenView::OffScreenView(gfx::DisplayContext *pParentCtxt, int w, int h, int flags)
-    : super_t(), m_pParentCtxt(pParentCtxt), m_pRT(nullptr)
+    : super_t(), m_pParentCtxt(pParentCtxt), m_pRT(nullptr), m_bBgTransparent(false)
 {
     // Off-screen pixels map 1:1 to the requested size (no HiDPI scaling).
     unsetSclFac();
@@ -62,12 +62,13 @@ void OffScreenView::drawScene()
     setUpProjMat(getWidth(), getHeight());
     setUpModelMat(MM_NORMAL);
 
-    // Clear with a transparent background (alpha = 0) so an RGBA export yields
-    // a transparent backdrop. For RGB export the alpha is dropped on read-back,
-    // so the visible result is unchanged. (DisplayContext::clearBuffer would
-    // force alpha = 1, leaving the background opaque.)
+    // Clear the background. When transparent capture is requested the alpha is
+    // 0 so an RGBA export yields a transparent backdrop; otherwise the opaque
+    // scene background color is used (alpha = 1). DisplayContext::clearBuffer
+    // cannot express this as it forces alpha = 1.
     gfx::ColorPtr bgcol = pScene->getBgColor();
-    m_pRT->clear(float(bgcol->fr()), float(bgcol->fg()), float(bgcol->fb()), 0.0f);
+    const float bg_a = m_bBgTransparent ? 0.0f : 1.0f;
+    m_pRT->clear(float(bgcol->fr()), float(bgcol->fg()), float(bgcol->fb()), bg_a);
 
     pScene->display(pdc);
 

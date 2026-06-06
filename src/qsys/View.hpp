@@ -440,6 +440,11 @@ namespace qsys {
     /// Create a new off-screen view compatible with this view
     virtual View *createOffScreenView(int w, int h, int aa_depth);
 
+    /// Select the off-screen background: transparent (alpha = 0) when true,
+    /// the opaque scene background color (alpha = 1) when false. Default no-op
+    /// (on-screen views ignore it); honored by off-screen views.
+    virtual void setBgTransparent(bool b) {}
+
   private:
     
     /////////////////////////////////////////////////////////////
