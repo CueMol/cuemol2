@@ -7,6 +7,8 @@
 #include <common.h>
 #include "MolAnlManager.hpp"
 
+#include <memory>
+
 #include <qlib/Vector4D.hpp>
 #include <qlib/Matrix4D.hpp>
 
@@ -54,8 +56,6 @@ namespace {
   char seq3to1(const LString &resn) {
     if (resn.equalsIgnoreCase("ALA"))
       return 'A';
-    else if (resn.equalsIgnoreCase("ARG"))
-      return 'R';
     else if (resn.equalsIgnoreCase("ARG"))
       return 'R';
     else if (resn.equalsIgnoreCase("ASN"))
@@ -174,21 +174,23 @@ void *MolAnlManager::superposeSSM_impl(const MolCoordPtr &pmol_ref, const Select
   int i;
   
   // mol1: reference molecule
-  CMMDBManager *pMol1 = new CMMDBManager;
+  // (unique_ptr ensures cleanup even when copySelected() or Align() throws)
+  std::unique_ptr<CMMDBManager> pMol1(new CMMDBManager);
   ResnList rlist1;
-  copySelected(pMol1, pmol_ref, psel_ref, rlist1);
+  copySelected(pMol1.get(), pmol_ref, psel_ref, rlist1);
 
   // mol2: moving molecule
-  CMMDBManager *pMol2 = new CMMDBManager;
+  std::unique_ptr<CMMDBManager> pMol2(new CMMDBManager);
   ResnList rlist2;
-  copySelected(pMol2, pmol_mov, psel_mov, rlist2);
+  copySelected(pMol2.get(), pmol_mov, psel_mov, rlist2);
 
   int precision = SSMP_Normal;
   int connectivity = CSSC_Flexible;
 
   CSSMAlign *pAln = new CSSMAlign();
-  int rc = pAln->Align(pMol2, pMol1, precision, connectivity);
+  int rc = pAln->Align(pMol2.get(), pMol1.get(), precision, connectivity);
   if (rc!=0) {
+    delete pAln;
     LString msg = LString::format("SSM-superpose is failed (error code=%d)", rc);
     MB_THROW(qlib::RuntimeException, msg);
     return NULL;
@@ -298,10 +300,9 @@ void *MolAnlManager::superposeSSM_impl(const MolCoordPtr &pmol_ref, const Select
     }
 
   }
-  
-  delete pMol1;
-  delete pMol2;
 
+  // pMol1/pMol2 are released here by unique_ptr; pAln does not reference
+  // them after Align() (matches the previous explicit delete order).
   return pAln;
 }
 
@@ -333,7 +334,11 @@ Matrix4D MolAnlManager::superposeSSM1(const MolCoordPtr &pmol_ref, const Selecti
   {
     const double e3 =  xfmat.aij(1,1) + xfmat.aij(2,2) + xfmat.aij(3,3) + 1.0;
     if (e3>0.0) {
-      const double phih = ::acos( sqrt(e3) * 0.5 );
+      // Clamp into acos() domain [-1,1] to avoid NaN from rounding/e3>4.
+      double cosv = sqrt(e3) * 0.5;
+      if (cosv > 1.0) cosv = 1.0;
+      else if (cosv < -1.0) cosv = -1.0;
+      const double phih = ::acos( cosv );
       LOG_DPRINTLN(" Rotation: %f degree", qlib::toDegree(phih*2.0));
     }
     else {
@@ -391,8 +396,10 @@ double MolAnlManager::superposeSSM_rmsd(const MolCoordPtr &pmol_ref, const Selec
     LOG_DPRINTLN(" Ngaps: %d", pAln->ngaps);
     LOG_DPRINTLN("========================");
   }
-  
-  return pAln->rmsd;
+
+  const double rmsd = pAln->rmsd;
+  delete pAln;
+  return rmsd;
 }
 
 //////////

@@ -173,3 +173,23 @@ if (BUILD_OPENGL_SYSDEP)
   target_link_libraries(test_importers PRIVATE sysdep)
 endif()
 gtest_discover_tests(test_importers PROPERTIES LABELS "test_importers")
+
+add_executable(test_molanl
+  modules/molanl/test_main.cpp
+  modules/molanl/test_ssm_superpose.cpp
+)
+target_include_directories(test_molanl PRIVATE
+  ${CMAKE_SOURCE_DIR}/src
+  ${CMAKE_SOURCE_DIR}/src/modules
+  ${CMAKE_BINARY_DIR}/src
+  ${Boost_INCLUDE_DIRS}
+)
+target_compile_definitions(test_molanl PRIVATE
+  CUEMOL2_SYSCONFIG_PATH="${CMAKE_SOURCE_DIR}/data/sysconfig.xml"
+  CUEMOL2_TEST_DATA_DIR="${CMAKE_SOURCE_DIR}/tests/test_data"
+)
+target_link_libraries(test_molanl PRIVATE molanl molstr qsys gfx qlib GTest::gtest)
+if (BUILD_OPENGL_SYSDEP)
+  target_link_libraries(test_molanl PRIVATE sysdep)
+endif()
+gtest_discover_tests(test_molanl PROPERTIES LABELS "test_molanl")
