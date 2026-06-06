@@ -97,6 +97,7 @@ void OffScreenView::drawScene()
     // By default read-back samples the scene color attachment.
     m_pReadRT = m_pRT;
 
+    MB_DPRINTLN("OffScreenView::drawScene> depthMode=%d", m_bDepthMode);
     if (m_bDepthMode) {
         drawDepthVis(pdc);
     }
@@ -104,6 +105,7 @@ void OffScreenView::drawScene()
 
 void OffScreenView::drawDepthVis(gfx::DisplayContext *pdc)
 {
+    MB_DPRINTLN("OffScreenView::drawDepthVis> begin");
     // Render a fullscreen pass that samples the scene depth texture into a
     // separate color-only target (avoids a feedback loop on the depth texture)
     // and read that target back instead of the scene color.
@@ -119,9 +121,12 @@ void OffScreenView::drawDepthVis(gfx::DisplayContext *pdc)
         }
     }
     if (m_pDepthVisRT == nullptr || m_pPostProc == nullptr) {
-        MB_DPRINTLN("OffScreenView::drawDepthVis: depth pass unavailable");
+        MB_DPRINTLN("OffScreenView::drawDepthVis> depth pass unavailable "
+                    "(rt=%p, postproc=%p) -- falling back to color",
+                    (void *)m_pDepthVisRT, (void *)m_pPostProc);
         return;
     }
+    MB_DPRINTLN("OffScreenView::drawDepthVis> rendering depth pass");
 
     // Camera slab planes, matching setUpProjMat's near/far derivation.
     double dist = getViewDist();
