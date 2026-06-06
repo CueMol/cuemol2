@@ -20,6 +20,10 @@
 #include <cmath>
 #include <vector>
 
+// Include last: ssm_align.h pulls in mmdb headers whose short macros (e.g. Eu)
+// would otherwise clash with molstr ElemSym enum identifiers.
+#include "molanl/ssmlib/ssm_align.h"
+
 using molstr::MolCoord;
 using molstr::MolCoordPtr;
 using molstr::SelectionPtr;
@@ -113,6 +117,28 @@ Matrix4D makeKnownXform()
     return m;
 }
 
+// Build a Matrix4D from the SSM transform stored in CSSMAlign.
+Matrix4D matFromTMatrix(const CSSMAlign *p)
+{
+    Matrix4D m;
+    for (int i = 0; i < 4; ++i)
+        for (int j = 0; j < 4; ++j)
+            m.aij(i + 1, j + 1) = p->TMatrix[i][j];
+    return m;
+}
+
+// Rotation angle (degrees) of a rigid-body transform. This mirrors the
+// trace-based quaternion formula used by MolAnlManager::superposeSSM1 so the
+// test pins the same value the implementation logs.
+double rotAngleDegFromMat(const Matrix4D &m)
+{
+    const double e3 = m.aij(1, 1) + m.aij(2, 2) + m.aij(3, 3) + 1.0;
+    double cosv = std::sqrt(e3) * 0.5;
+    if (cosv > 1.0) cosv = 1.0;
+    else if (cosv < -1.0) cosv = -1.0;
+    return qlib::toDegree(std::acos(cosv) * 2.0);
+}
+
 class SSMSuperposeTest : public ::testing::Test {
 protected:
     qsys::ScenePtr m_scene;
@@ -132,15 +158,45 @@ protected:
         }
     }
 
-    MolCoordPtr loadCrambin(const char *name)
+    MolCoordPtr loadPdb(const char *fname, const char *name)
     {
         qlib::FileInStream fis;
-        fis.open(LString(CUEMOL2_TEST_DATA_DIR "/1CRN.pdb"));
+        fis.open(LString(CUEMOL2_TEST_DATA_DIR "/") + fname);
         molstr::PDBFileReader reader;
         MolCoordPtr pMol(reader.load(fis));
         pMol->setName(name);
         m_scene->addObject(pMol);
         return pMol;
+    }
+
+    MolCoordPtr loadCrambin(const char *name)
+    {
+        return loadPdb("1CRN.pdb", name);
+    }
+
+    // Superpose 1CRN.pdb (ref) onto movFile (mov) and pin the SSM alignment
+    // statistics against the recorded baseline. Reads the stats directly from
+    // CSSMAlign (returned by superposeSSM_impl), which does not mutate the
+    // moving molecule.
+    void checkBaseline(const char *movFile, double expRmsd, int expNalgn,
+                       int expNgaps, double expRotDeg)
+    {
+        MolCoordPtr ref = loadCrambin("ref");
+        MolCoordPtr mov = loadPdb(movFile, "mov");
+        ASSERT_FALSE(ref.isnull());
+        ASSERT_FALSE(mov.isnull());
+
+        auto *mgr = molanl::MolAnlManager::getInstance();
+        CSSMAlign *pAln = static_cast<CSSMAlign *>(
+            mgr->superposeSSM_impl(ref, supSel(), mov, supSel(), false));
+        ASSERT_NE(pAln, nullptr);
+
+        EXPECT_NEAR(pAln->rmsd, expRmsd, 1.0e-3);
+        EXPECT_EQ(pAln->nalgn, expNalgn);
+        EXPECT_EQ(pAln->ngaps, expNgaps);
+        EXPECT_NEAR(rotAngleDegFromMat(matFromTMatrix(pAln)), expRotDeg, 1.0e-2);
+
+        delete pAln;
     }
 };
 
@@ -221,6 +277,20 @@ TEST_F(SSMSuperposeTest, UsePropSetsXformMatNotRawCoords)
     expectMatrixNear(mov->getXformMatrix(), x, 1.0e-9);
     // ... and the effective (rendered) position lands on the reference.
     expectCoordsNear(collectCAPos(mov), refCA, 1.0e-2);
+}
+
+// E2E baseline: 1CRN crystal structure vs its AlphaFold2 prediction with the
+// same sequence (no indels). Pins RMSD / Nalgn / Ngaps / rotation angle.
+TEST_F(SSMSuperposeTest, AF2SameSeqBaseline)
+{
+    checkBaseline("1crn_af2_1.pdb", 0.909658, 46, 0, 81.945779);
+}
+
+// E2E baseline: 1CRN vs an AlphaFold2 prediction with a different sequence
+// (insertions/deletions), exercising gapped SSM alignment.
+TEST_F(SSMSuperposeTest, AF2IndelSeqBaseline)
+{
+    checkBaseline("1crn_af2_2.pdb", 2.329339, 42, 3, 139.823014);
 }
 
 }  // namespace
