@@ -132,14 +132,25 @@ void main()
     vec3 viewVec = normalize(-pixCenterPos);
 
     float effectRadius = u_effectRadius;
-    float falloffRange = falloffRangeRatio * effectRadius;
-    float falloffFrom = effectRadius * (1.0 - falloffRangeRatio);
-    float falloffMul = -1.0 / falloffRange;
-    float falloffAdd = falloffFrom / falloffRange + 1.0;
 
     vec2 ndcToViewMul_x_pixelSize = u_ndcToViewMul * u_viewportPixelSize;
     float pixViewSize = viewspaceZ * ndcToViewMul_x_pixelSize.x;
     float screenspaceRadius = effectRadius / max(pixViewSize, 1e-6);
+
+    // Clamp the screen-space radius so the horizon samples stay cache-local
+    // when zoomed in. Without a depth MIP chain a world-space radius maps to a
+    // huge pixel radius at close range, scattering the 54 texture reads across
+    // the screen and causing frame drops. The effective world radius is derived
+    // back from the clamped value so the falloff stays consistent (no change
+    // when the radius is not clamped).
+    const float maxScreenspaceRadius = 256.0;
+    screenspaceRadius = min(screenspaceRadius, maxScreenspaceRadius);
+    float effectiveRadius = screenspaceRadius * pixViewSize;
+
+    float falloffRange = falloffRangeRatio * effectiveRadius;
+    float falloffFrom = effectiveRadius * (1.0 - falloffRangeRatio);
+    float falloffMul = -1.0 / falloffRange;
+    float falloffAdd = falloffFrom / falloffRange + 1.0;
 
     float noiseSlice = ign(gl_FragCoord.xy);
     float noiseSample =
