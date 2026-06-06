@@ -162,11 +162,20 @@ void OcRenderTarget::bind()
     glGetIntegerv(GL_VIEWPORT, m_savedVp);
     glBindFramebuffer(GL_FRAMEBUFFER, m_nFBO);
     glViewport(0, 0, m_nWidth, m_nHeight);
+
+    // Blending is enabled globally for the color pass, but it must not touch the
+    // MRT normal attachment: the eye-space normal is not an alpha-composited
+    // quantity, and blending it (the GL state applies to every draw buffer)
+    // corrupts COLOR1. Disable blending for draw buffer 1 while this target is
+    // bound; restore it on unbind.
+    if (m_nNormalTex != 0) glDisablei(GL_BLEND, 1);
+
     CHK_GLERROR("OcRenderTarget::bind");
 }
 
 void OcRenderTarget::unbind()
 {
+    if (m_nNormalTex != 0) glEnablei(GL_BLEND, 1);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(m_savedVp[0], m_savedVp[1], m_savedVp[2], m_savedVp[3]);
 }

@@ -263,14 +263,6 @@ bool OglProgramObject::link()
     bindBlock("MatricesBlock",   0);
     bindBlock("FogBlock",        1);
     bindBlock("DrawParamsBlock", 2);
-
-    // TEMP DEBUG: report the actual fragment-output locations so we can verify
-    // that o_Normal really maps to draw buffer 1 (MRT normal attachment).
-    {
-      GLint locC = glGetFragDataLocation(m_hPO, "o_FragColor");
-      GLint locN = glGetFragDataLocation(m_hPO, "o_Normal");
-      LOG_DPRINTLN("PO link fragdata> o_FragColor=%d o_Normal=%d", locC, locN);
-    }
   }
 
   return true;

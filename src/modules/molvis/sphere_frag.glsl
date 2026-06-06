@@ -95,11 +95,6 @@ void main()
     float fogz = ffog(ecpos.z);
     o_FragColor = fragFogColor(color, frag_alpha, fogz);
 
-    // TEMP DEBUG: force the sphere color to magenta. If the impostor spheres do
-    // NOT turn magenta in normal rendering, this edited sphere_frag is not the
-    // one running (stale shader on the device). o_Normal is set to constant
-    // green so a normal-buffer (xyz->rgb) view should show green if the MRT
-    // write lands in COLOR1.
-    o_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
-    o_Normal = bEdge ? vec4(0.0, 0.0, 0.0, 1.0) : vec4(0.0, 1.0, 0.0, 1.0);
+    // Eye-space sphere normal (sentinel on the silhouette edge ring).
+    o_Normal = bEdge ? vec4(0.0, 0.0, 0.0, 1.0) : vec4(normalize(normal), 1.0);
 }

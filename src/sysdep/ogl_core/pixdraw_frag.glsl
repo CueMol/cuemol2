@@ -31,9 +31,10 @@ varying vec2 v_texCoord;
 varying float v_fogCoord;
 
 layout(location = 0) out vec4 o_FragColor;
-// Billboard glyphs have no surface normal: write the sentinel so GTAO
-// reconstructs from depth for these pixels.
-layout(location = 1) out vec3 o_Normal;
+// Billboard glyphs have no surface normal: write the sentinel (0,0,0) so GTAO
+// leaves these pixels unshaded. vec4 to match o_FragColor (Apple Metal GL
+// mishandles mixed vec4/vec3 MRT).
+layout(location = 1) out vec4 o_Normal;
 
 void main()
 {
@@ -47,5 +48,5 @@ void main()
     }
 
     o_FragColor = fragFogColor(vec4(u_colorBias, alpha), frag_alpha, v_fogCoord);
-    o_Normal = vec3(0.0);
+    o_Normal = vec4(0.0, 0.0, 0.0, 1.0);
 }

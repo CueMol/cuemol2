@@ -207,7 +207,7 @@ void GUIView::drawScene()
                 aoc.stepsPerSlice = pScene->getAOSteps();
                 m_pAoRT->bind();
                 m_pAoRT->clear(1.0f, 1.0f, 1.0f, 1.0f);
-                m_pAOPostProc->drawGtao(pdc, m_pAOSceneRT, aoc, /*debugMode=*/4);
+                m_pAOPostProc->drawGtao(pdc, m_pAOSceneRT, aoc, /*debugMode=*/0);
                 m_pAoRT->unbind();
 
                 // 3. Edge-aware denoise of the AO term (single pass). The base
@@ -221,9 +221,7 @@ void GUIView::drawScene()
                 // 4. Composite scene color * denoised AO onto the default
                 // framebuffer. The fullscreen pass must not be depth-rejected.
                 pdc->setDepthTestEnabled(false);
-                // TEMP DEBUG: show the GTAO debug output (normal viz) directly
-                // instead of color*AO, so it is not mangled by denoise/multiply.
-                m_pAOPostProc->drawComposite(pdc, m_pAoRT, nullptr);
+                m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, m_pAoDenRT);
                 pdc->setDepthTestEnabled(true);
 
                 // Restore the scene depth into the default framebuffer so the

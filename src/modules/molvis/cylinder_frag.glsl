@@ -33,8 +33,9 @@ varying vec2 v_normadj;
 varying mat2 v_normmat;
 
 layout(location = 0) out vec4 o_FragColor;
-// MRT eye-space normal for GTAO (sentinel vec3(0) -> reconstruct from depth).
-layout(location = 1) out vec3 o_Normal;
+// MRT eye-space normal for GTAO (sentinel (0,0,0) -> reconstruct from depth).
+// vec4 to match o_FragColor (Apple Metal GL mishandles mixed vec4/vec3 MRT).
+layout(location = 1) out vec4 o_Normal;
 
 void main()
 {
@@ -75,14 +76,14 @@ void main()
 
     // color calculation
     vec4 color;
-    vec3 onrm = vec3(0.0);
+    vec4 onrm = vec4(0.0, 0.0, 0.0, 1.0);
     if (bEdge) {
         color = vec4(u_edgecolor.rgb, v_color.a);
     } else {
         vec3 normal = vec3(v_impos.x, v_normadj.x * adj_cen, v_normadj.y * adj_cen);
         normal.xy *= v_normmat;
 
-        onrm = normalize(normal);
+        onrm = vec4(normalize(normal), 1.0);
         color = flight2(normal, ecpos, v_color);
     }
 

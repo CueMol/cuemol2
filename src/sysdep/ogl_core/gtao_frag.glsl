@@ -132,21 +132,7 @@ void main()
     vec3 N = selectNormal(v_uv, pixCenterPos, isExcluded);
 
     if (u_debugMode == 1) {
-        // PIPELINE PROBE: pure UV gradient, independent of depth/normal. If the
-        // screen shows a clean red(x)-green(y) gradient, the fullscreen GTAO
-        // pass and the display path are live and this shader is the fresh one.
-        o_FragColor = vec4(v_uv, 0.0, 1.0);
-        return;
-    }
-    if (u_debugMode == 4) {
-        // Raw stored eye-space normal straight from the buffer (diagnostic).
-        vec3 dn = (u_hasNormal != 0) ? texture(u_normalTex, v_uv).xyz : N;
-        o_FragColor = vec4(dn * 0.5 + 0.5, 1.0);
-        return;
-    }
-    if (u_debugMode == 3) {
-        // Processed normal actually fed to the integration (after Z flip and
-        // hemisphere clamp).
+        // Normal fed to the integration, as RGB (debugging).
         o_FragColor = vec4(N * 0.5 + 0.5, 1.0);
         return;
     }
