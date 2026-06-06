@@ -1350,7 +1350,7 @@ int      i,j,k,nNCSOps,nChains,iGiven;
                 if (!iGiven)  {
                   chn = newCChain();
                   chn->Copy ( chain[j] );
-                  sprintf ( chainID,"%s_%i",
+                  snprintf ( chainID,sizeof(chainID),"%s_%i",
                             chain[j]->GetChainID(),k+1 );
                   chn->SetChainID     ( chainID );
                   chn->ApplyTransform ( ncs_m   );

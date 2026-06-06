@@ -186,7 +186,9 @@ int        i,nMatches,nm;
   if (!G1)  return i;
 
   G2 = GetSSGraph ( M2,selHnd2,i );
-  if (!G2)  return i+2;
+  // Map the 2nd-structure graph error explicitly (same values as i+2:
+  // SSM_noGraph(3)->SSM_noGraph2(5), SSM_noVertices(4)->SSM_noVertices2(6)).
+  if (!G2)  return (i==SSM_noGraph) ? SSM_noGraph2 : SSM_noVertices2;
 
   U.MatchGraphs ( G1,G2,1 );
 
