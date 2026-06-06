@@ -108,6 +108,44 @@ void PostProcGpuPrim::drawComposite(DisplayContext *pDC, RenderTarget *sceneRT,
     sceneRT->unbindTextures();
 }
 
+void PostProcGpuPrim::drawGtao(DisplayContext *pDC, RenderTarget *sceneRT,
+                              const AoConstants &consts, int debugMode)
+{
+    if (sceneRT == nullptr) return;
+    if (!ensureDrawElem(pDC)) return;
+
+    if (m_pGtaoPO == nullptr) {
+        m_pGtaoPO =
+            pDC->loadShaderObject("gtao",
+                                  "%%CONFDIR%%/data/shaders/postproc_vert.glsl",
+                                  "%%CONFDIR%%/data/shaders/gtao_frag.glsl");
+        if (m_pGtaoPO == nullptr) {
+            LOG_DPRINTLN("PostProcGpuPrim> ERROR: cannot load gtao shader.");
+            return;
+        }
+    }
+
+    sceneRT->bindDepthTex(RT_TU_DEPTH);
+
+    m_pGtaoPO->enable();
+    m_pGtaoPO->setUniform("u_depthTex", RT_TU_DEPTH);
+    m_pGtaoPO->setUniformF("u_depthUnpack", consts.depthLinearizeMul,
+                           consts.depthLinearizeAdd);
+    m_pGtaoPO->setUniformF("u_ndcToViewMul", consts.ndcToViewMul[0],
+                           consts.ndcToViewMul[1]);
+    m_pGtaoPO->setUniformF("u_ndcToViewAdd", consts.ndcToViewAdd[0],
+                           consts.ndcToViewAdd[1]);
+    m_pGtaoPO->setUniformF("u_viewportPixelSize", consts.viewportPixelSize[0],
+                           consts.viewportPixelSize[1]);
+    m_pGtaoPO->setUniform("u_debugMode", debugMode);
+
+    pDC->drawElem(*m_pDrawElem);
+
+    m_pGtaoPO->disable();
+
+    sceneRT->unbindTextures();
+}
+
 void PostProcGpuPrim::invalidate()
 {
     if (m_pDrawElem != nullptr) {
@@ -118,4 +156,5 @@ void PostProcGpuPrim::invalidate()
     // not deleted here.
     m_pPO = nullptr;
     m_pCompPO = nullptr;
+    m_pGtaoPO = nullptr;
 }

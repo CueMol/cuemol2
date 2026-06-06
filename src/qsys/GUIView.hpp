@@ -15,6 +15,7 @@
 namespace gfx {
 class RenderTarget;
 class PostProcGpuPrim;
+struct AoConstants;
 }  // namespace gfx
 
 namespace qsys {
@@ -133,6 +134,10 @@ private:
     /// Lazily create / resize the AO scene target and post-proc primitive to
     /// the given backing-pixel size.
     void ensureAORTs(int w, int h);
+
+    /// Compute the view-space reconstruction constants for the GTAO passes from
+    /// the current camera (perspective). Mirrors setUpProjMat's slab derivation.
+    gfx::AoConstants computeAoConstants() const;
 
     /// Release the AO render targets and post-proc primitive (on the current
     /// display context).

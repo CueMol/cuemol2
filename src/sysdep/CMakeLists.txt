@@ -87,6 +87,7 @@ SET(SHADER_SOURCES
   ogl_core/postproc_vert.glsl
   ogl_core/depthvis_frag.glsl
   ogl_core/ao_composite_frag.glsl
+  ogl_core/gtao_frag.glsl
 )
 SET(SHADER_DEPS
   ogl_core/lighting_inc.glsl

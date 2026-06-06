@@ -14,6 +14,22 @@ namespace gfx {
 class ShaderObject;
 class RenderTarget;
 
+/// View-space reconstruction constants for the GTAO passes, derived CPU-side
+/// from the projection matrix (see GUIView). All shader-facing math uses these
+/// instead of a near/far lerp so off-center / asymmetric frusta work and the
+/// GL window-depth [0,1] convention is handled.
+struct AoConstants
+{
+    /// (depthLinearizeMul, depthLinearizeAdd): viewZ = mul / (add - rawDepth).
+    float depthLinearizeMul = 0.0f;
+    float depthLinearizeAdd = 0.0f;
+    /// viewPos.xy = (ndcToViewMul * uv + ndcToViewAdd) * viewZ.
+    float ndcToViewMul[2] = {0.0f, 0.0f};
+    float ndcToViewAdd[2] = {0.0f, 0.0f};
+    /// (1/width, 1/height) in pixels.
+    float viewportPixelSize[2] = {0.0f, 0.0f};
+};
+
 /// Fullscreen post-processing primitive.
 ///
 /// Draws a single screen-covering triangle. The current pass samples a
@@ -37,6 +53,9 @@ private:
     ShaderObject *m_pPO = nullptr;
     /// AO composite program (live AO path): samples the scene color texture.
     ShaderObject *m_pCompPO = nullptr;
+    /// GTAO program (live AO path): reads scene depth, writes the AO term
+    /// (currently a debug visualization of depth / reconstructed normal).
+    ShaderObject *m_pGtaoPO = nullptr;
     TriArray *m_pDrawElem = nullptr;
 
 public:
@@ -66,6 +85,13 @@ public:
     /// vertex buffer and composite program (no init() call required).
     void drawComposite(DisplayContext *pDC, RenderTarget *sceneRT,
                        RenderTarget *aoRT);
+
+    /// Read sceneRT's depth texture, reconstruct view-space depth/position with
+    /// the given constants, and draw the GTAO term into the currently bound
+    /// framebuffer (fullscreen). debugMode selects a debug visualization while
+    /// the algorithm is brought up: 0 = linear depth, 1 = reconstructed normal.
+    void drawGtao(DisplayContext *pDC, RenderTarget *sceneRT,
+                  const AoConstants &consts, int debugMode);
 
 private:
     void alloc(DisplayContext *pDC);

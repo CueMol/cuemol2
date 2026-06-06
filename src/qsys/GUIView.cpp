@@ -197,11 +197,13 @@ void GUIView::drawScene()
                 pScene->display(pdc);
                 m_pAOSceneRT->unbind();
 
-                // Composite the scene color onto the default framebuffer. The
+                // GTAO pass: read the scene depth and draw the AO term (a debug
+                // visualization for now) onto the default framebuffer. The
                 // fullscreen pass must not be depth-rejected, so disable the
                 // depth test for it.
+                const gfx::AoConstants aoc = computeAoConstants();
                 pdc->setDepthTestEnabled(false);
-                m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, nullptr);
+                m_pAOPostProc->drawGtao(pdc, m_pAOSceneRT, aoc, /*debugMode=*/1);
                 pdc->setDepthTestEnabled(true);
 
                 // Restore the scene depth into the default framebuffer so the
@@ -579,6 +581,42 @@ void GUIView::ensureAORTs(int w, int h)
     if (m_pAOPostProc == nullptr) {
         m_pAOPostProc = MB_NEW gfx::PostProcGpuPrim();
     }
+}
+
+gfx::AoConstants GUIView::computeAoConstants() const
+{
+    // Camera slab planes, matching setUpProjMat's near/far derivation.
+    const double dist = getViewDist();
+    double slabdepth = getSlabDepth();
+    if (slabdepth <= 0.1) slabdepth = 0.1;
+    double slabnear = dist - slabdepth / 2.0;
+    if (slabnear < 0.1) slabnear = 0.1;
+    const double slabfar = dist + slabdepth;
+
+    // Perspective half-FOV: makePersProjMat uses t = dist / (zoom/2), with
+    // P[1][1] = t (so tanHalfFOVY = 1/t = (zoom/2)/dist) and P[0][0] = t/aspect
+    // (so tanHalfFOVX = aspect * tanHalfFOVY).
+    const double width = double(getZoom()) / 2.0;
+    const double aspect = double(getWidth()) / double(getHeight());
+    const double tanHalfFovY = width / dist;
+    const double tanHalfFovX = tanHalfFovY * aspect;
+
+    const int bcx = convToBackingX(getWidth());
+    const int bcy = convToBackingY(getHeight());
+
+    gfx::AoConstants c;
+    // viewZ = mul / (add - rawDepth); matches XeGTAO with GL window depth [0,1].
+    c.depthLinearizeMul = float(slabfar * slabnear / (slabfar - slabnear));
+    c.depthLinearizeAdd = float(slabfar / (slabfar - slabnear));
+    // GL uses a bottom-up [0,1] UV (postproc_vert v_uv), so viewY keeps the
+    // same sign as the NDC mapping (unlike XeGTAO's top-down DX convention).
+    c.ndcToViewMul[0] = float(2.0 * tanHalfFovX);
+    c.ndcToViewMul[1] = float(2.0 * tanHalfFovY);
+    c.ndcToViewAdd[0] = float(-tanHalfFovX);
+    c.ndcToViewAdd[1] = float(-tanHalfFovY);
+    c.viewportPixelSize[0] = (bcx > 0) ? 1.0f / float(bcx) : 0.0f;
+    c.viewportPixelSize[1] = (bcy > 0) ? 1.0f / float(bcy) : 0.0f;
+    return c;
 }
 
 void GUIView::cleanupAORTs()
