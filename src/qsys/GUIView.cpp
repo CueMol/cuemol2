@@ -646,7 +646,7 @@ gfx::AoConstants GUIView::computeAoConstants() const
     c.viewportPixelSize[1] = (bcy > 0) ? 1.0f / float(bcy) : 0.0f;
     // AO tuning constants (view-space units). Hard-coded for now; promoted to
     // Scene properties (aoRadius / aoIntensity) in a later step.
-    c.effectRadius = 3.0f;
+    c.effectRadius = 4.0f;
     c.finalValuePower = 2.2f;
     return c;
 }
