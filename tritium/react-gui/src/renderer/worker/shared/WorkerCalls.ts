@@ -313,6 +313,10 @@ import type {
   ChangeChainNameResult,
 } from '../server/services/changeChainName.service'
 import type {
+  SuperposeMolArgs,
+  SuperposeMolResult,
+} from '../server/services/superposeMol.service'
+import type {
   ListMapRenderersArgs,
   ListMapRenderersResult,
   GetMapRendererStateArgs,
@@ -488,6 +492,7 @@ export interface ServiceMap {
   showSymmRenderer:           { args: ShowSymmRendererArgs;            result: ShowSymmRendererResult }
   showUnitCellRenderer:       { args: ShowUnitCellRendererArgs;        result: ShowUnitCellRendererResult }
   changeChainName:            { args: ChangeChainNameArgs;             result: ChangeChainNameResult }
+  superposeMol:               { args: SuperposeMolArgs;                result: SuperposeMolResult }
   listMapRenderers:           { args: ListMapRenderersArgs;            result: ListMapRenderersResult }
   getMapRendererState:        { args: GetMapRendererStateArgs;         result: GetMapRendererStateResult }
   setMapRendererProp:         { args: SetMapRendererPropArgs;          result: SetMapRendererPropResult }

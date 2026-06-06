@@ -19,7 +19,7 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
-import { mountTree, pressStepArrow } from './helpers/testHarness'
+import { mountTree, pressStepArrow, openAccordion } from './helpers/testHarness'
 import type { GenericPropEntry } from '../worker/server/services/genericProps.service'
 
 void React
@@ -242,6 +242,7 @@ describe('PropertiesTab ballstick section dispatch', () => {
     const titles = accordionTitles(container)
     expect(titles).toContain('Ball and stick')
     expect(titles).not.toContain('Renderer settings')
+    openAccordion(container, 'Ball and stick')
     expect(rowByLabel(container, 'Bond width')).not.toBeNull()
     unmount()
   })

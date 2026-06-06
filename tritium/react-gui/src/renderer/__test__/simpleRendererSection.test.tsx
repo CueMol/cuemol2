@@ -16,7 +16,7 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
-import { mountTree, pressStepArrow } from './helpers/testHarness'
+import { mountTree, pressStepArrow, openAccordion } from './helpers/testHarness'
 import type { GenericPropEntry } from '../worker/server/services/genericProps.service'
 
 void React
@@ -154,7 +154,8 @@ describe('PropertiesTab type-specific section dispatch', () => {
     const titles = accordionTitles(container)
     expect(titles).toContain('Simple')
     expect(titles).not.toContain('Renderer settings')
-    // The Simple section starts expanded, so its row is in the DOM.
+    // Accordions are an exclusive group; open the Simple section to see its row.
+    openAccordion(container, 'Simple')
     expect(rowByLabel(container, 'Line width')).not.toBeNull()
     unmount()
   })

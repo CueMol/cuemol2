@@ -4,36 +4,34 @@
  * (C++ `Ribbon2Renderer`, `type_name === "cartoon"`). It draws ribbon / tube
  * secondary-structure cartoons (helix / sheet / coil) along the main chain.
  *
- * Migrated from the UXP `cartoon-propdlg` tabs. The editable top-level
- * properties map to four accordion sections registered in
- * `rendererPropSections.tsx`:
- *   - "Cartoon" : axial detail / smooth color / end caps / segment-end fade /
- *                 anchor weight
- *   - "Helix"   : ribbon style / width mode + width params / spline smoothing /
- *                 extend
- *   - "Sheet"   : spline + width smoothing
- *   - "Coil"    : spline smoothing
+ * Faithful migration of the UXP `cartoon-propdlg` tabs (Cartoon / Helix / Sheet
+ * / Coil), including the per-secondary-structure SHAPE controls that live on
+ * nested sub-objects: each of `helix` / `sheet` / `coil` / `ribhelix` is a
+ * `TubeSection` (type / detail / width / tuber / sharp) and each of `sheethead`
+ * / `ribhelix_head` / `ribhelix_tail` is a `JctTable` (type / gamma / basw /
+ * arrow). These are reached by dotted keys (`helix.width`, `sheethead.gamma`,
+ * ...); `parseGenericProps` expands the nested objects and `setProp` routes the
+ * dotted path through `LPropSupport::setNestedProperty` (ADR-0015, proven by the
+ * tube / nucl renderers).
  *
- * Backed by the same live getGenericProps / setGenericProp bridge as the common
- * page; each property is looked up by key and its row renders nothing when the
- * property is absent (mirroring the UXP `findPropData` null checks).
- *
- * Scope / parity notes:
- *   - The per-section SHAPE controls in the UXP dialog (helix / sheet / coil
- *     `type` / `width` / `tuber` / `sharp` / `detail`, and the sheet / ribbon
- *     head junction `type` / `gamma` / ... ) live on nested sub-objects
- *     (`TubeSection` / `JctTable`, exposed as read-only object properties).
- *     These are NOT surfaced on this curated page yet; they remain editable in
- *     the Generic tab via their dot-path keys (`helix.width`, ...). Nested
- *     writes ARE supported - `cuemol2::setProp` routes through
- *     `LPropSupport::setNestedProperty`, and `parseGenericProps` expands the
- *     children - so wiring them here is a follow-up, not a platform gap.
- *   - `axialdetail` ("Detail") uses a plain `NumericField` with the slider
- *     hidden (stepper input only), not the drag-numeric field, per request.
- *   - Drag-numeric rows commit on drag end / Enter (no realtime preview).
- *   - `helix_waver` (nopersist compatibility flag) and `dump_curvature` (debug)
- *     are intentionally not surfaced; `anchor_sel` (a selection) is left to the
- *     Generic tab.
+ * Parity notes (UXP `cartoon-hsc-page.js`):
+ *   - The Helix tab is a deck switched by `helix_ribbon` (Cylinder vs Ribbon);
+ *     only the active deck's controls are shown, matching the UXP `<deck>`.
+ *   - The ribbon head/tail controls write BOTH `ribhelix_head.*` and
+ *     `ribhelix_tail.*` in one undo step (UXP writes both); the sheet head
+ *     writes the single `sheethead.*`.
+ *   - "Arrow height" / "Arrow width" are percentage displays of the JctTable
+ *     `basw` / `arrow` values: height% = (1 - basw) * 100, width% = (arrow - 1)
+ *     * 50, inverted on commit.
+ *   - Section sharpness is enabled only when the section type is "roundsquare"
+ *     (the cylinder-helix / sheet / coil sections; the ribbon section is not
+ *     gated). The ribbon/sheet head arrow params are enabled only for the
+ *     "arrow" head type. Helix width smoothing is enabled only in "wavy" mode.
+ *   - `axialdetail` and the section `detail` use the plain stepper
+ *     (`NumInputRow`); other numeric sliders use the drag-numeric field (no
+ *     realtime preview, single undo step).
+ *   - `helix_waver` (nopersist) and `dump_curvature` (debug) are intentionally
+ *     not surfaced (they are not in the UXP dialog).
  */
 
 import React from "react";
@@ -42,10 +40,15 @@ import {
   NumInputRow,
   BoolRow,
   MappedEnumRow,
+  TextRow,
+  SelRow,
   CAP_LABELS,
+  resetProps,
 } from "./RendererCommonSection";
+import { PropertyField, DragNumericField, SelectField } from "../../h3-kit/form";
+import { useRealtimeDragProp } from "../../hooks/useRealtimeDragProp";
 import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
-import type { RendererPropSectionProps } from "./rendererPropSections";
+import type { RendererPropSectionProps, PropMultiWrite } from "./rendererPropSections";
 
 // --- Local labels -------------------------------------------------------------
 
@@ -54,26 +57,415 @@ const HELIX_WIDTH_MODE_LABELS: Record<string, string> = {
   average: "Average",
   wavy: "Wavy",
 };
+const SECTION_TYPE_LABELS: Record<string, string> = {
+  elliptical: "Elliptical",
+  roundsquare: "Round square",
+  rectangle: "Rectangle",
+  fancy1: "Fancy",
+};
+/** Section types offered when the UXP dialog omits "fancy1" (helix cyl/sheet/coil). */
+const SECTION_TYPES_NO_FANCY = ["elliptical", "roundsquare", "rectangle"];
+/** JctTable head type labels (UXP "Round" / "Flat" / "Arrow"). */
+const JCT_TYPE_LABELS: Record<string, string> = {
+  smooth: "Round",
+  flat: "Flat",
+  arrow: "Arrow",
+};
+const JCT_TYPE_OPTIONS = ["smooth", "flat", "arrow"];
+
+type SetFn = RendererPropSectionProps["onSet"];
+type SetManyFn = RendererPropSectionProps["onSetMany"];
+type ResetFn = RendererPropSectionProps["onReset"];
+
+// --- Multi-target helpers -----------------------------------------------------
+//
+// The ribbon head/tail controls write the SAME value to two nested objects
+// (`ribhelix_head` + `ribhelix_tail`) in one undo step; the sheet head writes a
+// single object (`sheethead`). These helpers take the list of target entries
+// (1 or 2) and write all of them; the first entry drives the displayed value,
+// modified bar and reset.
+
+/** Write one value to every target entry (single -> onSet, multiple -> onSetMany). */
+function writeMany(
+  targets: GenericPropEntry[],
+  value: string | number | boolean,
+  onSet: SetFn,
+  onSetMany: SetManyFn,
+) {
+  if (targets.length === 1) {
+    onSet(targets[0].key, targets[0].type, value);
+    return;
+  }
+  const writes: PropMultiWrite[] = targets.map((t) => ({
+    key: t.key,
+    valueType: t.type,
+    value,
+  }));
+  onSetMany?.(writes);
+}
+
+interface MultiEnumRowProps {
+  label: string;
+  targets: GenericPropEntry[];
+  labels: Record<string, string>;
+  options?: string[];
+  onSet: SetFn;
+  onSetMany: SetManyFn;
+  onReset: ResetFn;
+  disabled?: boolean;
+}
+
+/** Enum dropdown writing the same value to one or two nested objects. */
+const MultiEnumRow: React.FC<MultiEnumRowProps> = ({
+  label,
+  targets,
+  labels,
+  options,
+  onSet,
+  onSetMany,
+  onReset,
+  disabled,
+}) => {
+  const primary = targets[0];
+  const shown = options ?? primary.enumdef ?? [String(primary.value)];
+  return (
+    <PropertyField label={label} {...resetProps(primary, onReset)}>
+      <SelectField
+        value={String(primary.value)}
+        disabled={disabled || primary.readonly}
+        onChange={(v) => writeMany(targets, v, onSet, onSetMany)}
+      >
+        {shown.map((opt) => (
+          <option key={opt} value={opt}>
+            {labels[opt] ?? opt}
+          </option>
+        ))}
+      </SelectField>
+    </PropertyField>
+  );
+};
+
+interface MultiNumRowProps {
+  label: string;
+  targets: GenericPropEntry[];
+  min: number;
+  max: number;
+  step: number;
+  decimals?: number;
+  unit?: string;
+  /** Convert stored value -> displayed value (default identity). */
+  toDisplay?: (stored: number) => number;
+  /** Convert displayed value -> stored value (default identity). */
+  toStored?: (display: number) => number;
+  onSet: SetFn;
+  onSetMany: SetManyFn;
+  onReset: ResetFn;
+  disabled?: boolean;
+}
+
+/**
+ * Drag-numeric row writing one or two nested objects, with an optional
+ * display<->stored transform (used for the Arrow height / width percentages).
+ */
+const MultiNumRow: React.FC<MultiNumRowProps> = ({
+  label,
+  targets,
+  min,
+  max,
+  step,
+  decimals,
+  unit,
+  toDisplay = (s) => s,
+  toStored = (d) => d,
+  onSet,
+  onSetMany,
+  onReset,
+  disabled,
+}) => {
+  const primary = targets[0];
+  const dragProps = useRealtimeDragProp({
+    committed: toDisplay(Number(primary.value)),
+    committedIsDefault: primary.isdefault,
+    realtime: false,
+    onPreview: () => {},
+    onCommit: (original, v) => {
+      if (v === original) return;
+      writeMany(targets, toStored(v), onSet, onSetMany);
+    },
+  });
+  return (
+    <PropertyField label={label} {...resetProps(primary, onReset)}>
+      <DragNumericField
+        {...dragProps}
+        min={min}
+        max={max}
+        step={step}
+        decimals={decimals}
+        unit={unit}
+        disabled={disabled || primary.readonly}
+      />
+    </PropertyField>
+  );
+};
+
+// --- Reusable section-shape block ---------------------------------------------
+
+interface SectionShapeRowsProps {
+  entries: GenericPropEntry[];
+  onSet: SetFn;
+  onReset: ResetFn;
+  /** Nested object key prefix: "helix" | "sheet" | "coil" | "ribhelix". */
+  prefix: string;
+  /** Offer the "fancy1" section type (ribbon section only). */
+  allowFancy: boolean;
+  /** Expose the section width row (omitted for the cylinder-helix section). */
+  includeWidth: boolean;
+  /** Upper bound of the width slider (5 for ribbon, 3 for sheet / coil). */
+  widthMax: number;
+  detailMin: number;
+  detailMax: number;
+  /** Gate sharpness on the "roundsquare" type (off for the ribbon section). */
+  gateSharp: boolean;
+}
+
+/**
+ * The shared `TubeSection` shape rows (type / detail / [width] / tuber / sharp)
+ * for one secondary-structure section, read by dotted keys `${prefix}.*`.
+ */
+const SectionShapeRows: React.FC<SectionShapeRowsProps> = ({
+  entries,
+  onSet,
+  onReset,
+  prefix,
+  allowFancy,
+  includeWidth,
+  widthMax,
+  detailMin,
+  detailMax,
+  gateSharp,
+}) => {
+  const get = (key: string) => entries.find((e: GenericPropEntry) => e.key === key);
+  const type = get(`${prefix}.type`);
+  const detail = get(`${prefix}.detail`);
+  const width = get(`${prefix}.width`);
+  const tuber = get(`${prefix}.tuber`);
+  const sharp = get(`${prefix}.sharp`);
+
+  const sharpDisabled =
+    gateSharp && type ? String(type.value) !== "roundsquare" : false;
+
+  return (
+    <>
+      {type && (
+        <MappedEnumRow
+          entry={type}
+          label="Section type"
+          labels={SECTION_TYPE_LABELS}
+          options={allowFancy ? undefined : SECTION_TYPES_NO_FANCY}
+          onSet={onSet}
+          onReset={onReset}
+        />
+      )}
+      {detail && (
+        <NumInputRow
+          key={`${prefix}.detail:${detail.value}`}
+          entry={detail}
+          label="Section detail"
+          onSet={onSet}
+          onReset={onReset}
+          min={detailMin}
+          max={detailMax}
+          step={1}
+        />
+      )}
+      {includeWidth && width && (
+        <NumRow
+          entry={width}
+          label="Section width"
+          onSet={onSet}
+          onReset={onReset}
+          min={0}
+          max={widthMax}
+          step={0.05}
+          decimals={2}
+          unit="Å"
+        />
+      )}
+      {tuber && (
+        <NumRow
+          entry={tuber}
+          label="Tuber"
+          onSet={onSet}
+          onReset={onReset}
+          min={0.2}
+          max={10}
+          step={0.1}
+          decimals={1}
+        />
+      )}
+      {sharp && (
+        <NumRow
+          entry={sharp}
+          label="Sharpness"
+          onSet={onSet}
+          onReset={onReset}
+          min={0}
+          max={1}
+          step={0.05}
+          decimals={2}
+          disabled={sharpDisabled}
+        />
+      )}
+    </>
+  );
+};
+
+// --- Reusable head/tail (JctTable) block --------------------------------------
+
+interface HeadShapeRowsProps {
+  entries: GenericPropEntry[];
+  onSet: SetFn;
+  onSetMany: SetManyFn;
+  onReset: ResetFn;
+  /** JctTable object key prefixes: ["sheethead"] or ["ribhelix_head","ribhelix_tail"]. */
+  prefixes: string[];
+}
+
+/**
+ * The shared `JctTable` head/tail rows (type / power / arrow height% / arrow
+ * width%). Writes every prefix in `prefixes` so the ribbon helix updates head
+ * and tail together. Arrow height / width are disabled unless the type is
+ * "arrow".
+ */
+const HeadShapeRows: React.FC<HeadShapeRowsProps> = ({
+  entries,
+  onSet,
+  onSetMany,
+  onReset,
+  prefixes,
+}) => {
+  const get = (key: string) => entries.find((e: GenericPropEntry) => e.key === key);
+  const collect = (field: string) =>
+    prefixes.map((p) => get(`${p}.${field}`)).filter(Boolean) as GenericPropEntry[];
+
+  const type = collect("type");
+  const gamma = collect("gamma");
+  const basw = collect("basw");
+  const arrow = collect("arrow");
+
+  const notArrow = type.length ? String(type[0].value) !== "arrow" : true;
+
+  return (
+    <>
+      {type.length > 0 && (
+        <MultiEnumRow
+          label="Cap type"
+          targets={type}
+          labels={JCT_TYPE_LABELS}
+          options={JCT_TYPE_OPTIONS}
+          onSet={onSet}
+          onSetMany={onSetMany}
+          onReset={onReset}
+        />
+      )}
+      {gamma.length > 0 && (
+        <MultiNumRow
+          label="Cap power"
+          targets={gamma}
+          min={0.1}
+          max={10}
+          step={0.1}
+          decimals={2}
+          onSet={onSet}
+          onSetMany={onSetMany}
+          onReset={onReset}
+        />
+      )}
+      {basw.length > 0 && (
+        <MultiNumRow
+          label="Arrow height"
+          targets={basw}
+          min={0}
+          max={100}
+          step={10}
+          decimals={0}
+          unit="%"
+          toDisplay={(s) => (1 - s) * 100}
+          toStored={(d) => (100 - d) / 100}
+          onSet={onSet}
+          onSetMany={onSetMany}
+          onReset={onReset}
+          disabled={notArrow}
+        />
+      )}
+      {arrow.length > 0 && (
+        <MultiNumRow
+          label="Arrow width"
+          targets={arrow}
+          min={0}
+          max={100}
+          step={10}
+          decimals={0}
+          unit="%"
+          toDisplay={(s) => (s - 1) * 50}
+          toStored={(d) => d / 50 + 1}
+          onSet={onSet}
+          onSetMany={onSetMany}
+          onReset={onReset}
+          disabled={notArrow}
+        />
+      )}
+    </>
+  );
+};
+
+// --- Helix type (Cylinder / Ribbon) row ---------------------------------------
+
+interface HelixTypeRowProps {
+  entry: GenericPropEntry;
+  onSet: SetFn;
+  onReset: ResetFn;
+}
+
+/** "Type" selector mapping `helix_ribbon` (boolean) to Cylinder / Ribbon. */
+const HelixTypeRow: React.FC<HelixTypeRowProps> = ({ entry, onSet, onReset }) => (
+  <PropertyField label="Type" {...resetProps(entry, onReset)}>
+    <SelectField
+      value={entry.value ? "ribbon" : "cylinder"}
+      disabled={entry.readonly}
+      onChange={(v) => onSet(entry.key, entry.type, v === "ribbon")}
+    >
+      <option value="cylinder">Cylinder</option>
+      <option value="ribbon">Ribbon</option>
+    </SelectField>
+  </PropertyField>
+);
 
 // --- Sections -----------------------------------------------------------------
 
 /**
- * "Cartoon" section: axial tessellation detail, color smoothing, the two
- * end-cap types, segment-end fade and the Calpha anchor weight.
+ * "Cartoon" section: axial detail, color smoothing, pivot atom, the two end-cap
+ * types and the spline anchor (selection + weight).
  */
 export const CartoonMainSection: React.FC<RendererPropSectionProps> = ({
   entries,
   onSet,
   onReset,
+  sceneId,
 }) => {
   const get = (key: string) => entries.find((e: GenericPropEntry) => e.key === key);
 
   const axialdetail = get("axialdetail");
   const smoothcolor = get("smoothcolor");
+  const pivotatom = get("pivotatom");
   const startCap = get("start_captype");
   const endCap = get("end_captype");
-  const segendFade = get("segend_fade");
+  const anchorSel = get("anchor_sel");
   const anchorWeight = get("anchor_weight");
+
+  const anchorOff = anchorSel
+    ? String(anchorSel.value) === "" || String(anchorSel.value) === "none"
+    : true;
 
   return (
     <>
@@ -81,7 +473,7 @@ export const CartoonMainSection: React.FC<RendererPropSectionProps> = ({
         <NumInputRow
           key={`axialdetail:${axialdetail.value}`}
           entry={axialdetail}
-          label="Detail"
+          label="Axial detail"
           onSet={onSet}
           onReset={onReset}
           min={2}
@@ -91,6 +483,16 @@ export const CartoonMainSection: React.FC<RendererPropSectionProps> = ({
       )}
       {smoothcolor && (
         <BoolRow entry={smoothcolor} label="Smooth color" onSet={onSet} onReset={onReset} />
+      )}
+      {pivotatom && (
+        <TextRow
+          key={`pivotatom:${pivotatom.value}`}
+          entry={pivotatom}
+          label="Pivot atom name"
+          placeholder="(default)"
+          onSet={onSet}
+          onReset={onReset}
+        />
       )}
       {startCap && (
         <MappedEnumRow
@@ -110,12 +512,14 @@ export const CartoonMainSection: React.FC<RendererPropSectionProps> = ({
           onReset={onReset}
         />
       )}
-      {segendFade && (
-        <BoolRow
-          entry={segendFade}
-          label="Segment-end fade"
+      {anchorSel && (
+        <SelRow
+          key={`anchor_sel:${anchorSel.value}`}
+          entry={anchorSel}
+          label="Anchor selection"
           onSet={onSet}
           onReset={onReset}
+          sceneId={sceneId}
         />
       )}
       {anchorWeight && (
@@ -126,7 +530,9 @@ export const CartoonMainSection: React.FC<RendererPropSectionProps> = ({
           onReset={onReset}
           min={0}
           max={20}
-          step={0.5}
+          step={1}
+          decimals={1}
+          disabled={anchorOff}
         />
       )}
     </>
@@ -134,115 +540,144 @@ export const CartoonMainSection: React.FC<RendererPropSectionProps> = ({
 };
 
 /**
- * "Helix" section: helix rendering style (cylinder vs ribbon), width mode and
- * its dependent width parameters, spline smoothing and axial extend. The width
- * params are gated by the width mode (constant width only for "const";
- * width-plus only for non-const; width smoothing only for "wavy"), matching the
- * UXP helix page enabled-state logic.
+ * "Helix" section: a Cylinder / Ribbon deck (`helix_ribbon`). Ribbon mode shows
+ * the ribbon section shape (`ribhelix.*`) and the head/tail junction
+ * (`ribhelix_head` + `ribhelix_tail`). Cylinder mode shows spline smoothing /
+ * extend, the cylinder section shape (`helix.*`) and the width mode parameters.
  */
 export const CartoonHelixSection: React.FC<RendererPropSectionProps> = ({
   entries,
   onSet,
+  onSetMany,
   onReset,
 }) => {
   const get = (key: string) => entries.find((e: GenericPropEntry) => e.key === key);
 
   const ribbon = get("helix_ribbon");
   const widthMode = get("helix_width_mode");
-  const width = get("helix_width");
   const wplus = get("helix_wplus");
   const wsmooth = get("helix_wsmooth");
   const smooth = get("helix_smooth");
   const extend = get("helix_extend");
 
+  const isRibbon = ribbon ? Boolean(ribbon.value) : false;
   const mode = widthMode ? String(widthMode.value) : "average";
-  const widthOff = mode !== "const";
-  const wplusOff = mode === "const";
   const wsmoothOff = mode !== "wavy";
 
   return (
     <>
-      {ribbon && (
-        <BoolRow entry={ribbon} label="Ribbon style" onSet={onSet} onReset={onReset} />
-      )}
-      {widthMode && (
-        <MappedEnumRow
-          entry={widthMode}
-          label="Width mode"
-          labels={HELIX_WIDTH_MODE_LABELS}
-          onSet={onSet}
-          onReset={onReset}
-        />
-      )}
-      {width && (
-        <NumRow
-          entry={width}
-          label="Width (const)"
-          onSet={onSet}
-          onReset={onReset}
-          min={0}
-          max={5}
-          step={0.1}
-          unit="Å"
-          disabled={widthOff}
-        />
-      )}
-      {wplus && (
-        <NumRow
-          entry={wplus}
-          label="Width plus"
-          onSet={onSet}
-          onReset={onReset}
-          min={-2}
-          max={3}
-          step={0.1}
-          unit="Å"
-          disabled={wplusOff}
-        />
-      )}
-      {wsmooth && (
-        <NumRow
-          entry={wsmooth}
-          label="Width smoothing"
-          onSet={onSet}
-          onReset={onReset}
-          min={-5}
-          max={5}
-          step={0.5}
-          disabled={wsmoothOff}
-        />
-      )}
-      {smooth && (
-        <NumRow
-          entry={smooth}
-          label="Spline smoothing"
-          onSet={onSet}
-          onReset={onReset}
-          min={-5}
-          max={5}
-          step={0.5}
-        />
-      )}
-      {extend && (
-        <NumRow
-          entry={extend}
-          label="Extend"
-          onSet={onSet}
-          onReset={onReset}
-          min={0}
-          max={3}
-          step={0.1}
-          unit="Å"
-        />
+      {ribbon && <HelixTypeRow entry={ribbon} onSet={onSet} onReset={onReset} />}
+
+      {isRibbon ? (
+        <>
+          <SectionShapeRows
+            entries={entries}
+            onSet={onSet}
+            onReset={onReset}
+            prefix="ribhelix"
+            allowFancy
+            includeWidth
+            widthMax={5}
+            detailMin={4}
+            detailMax={20}
+            gateSharp={false}
+          />
+          <HeadShapeRows
+            entries={entries}
+            onSet={onSet}
+            onSetMany={onSetMany}
+            onReset={onReset}
+            prefixes={["ribhelix_head", "ribhelix_tail"]}
+          />
+        </>
+      ) : (
+        <>
+          {smooth && (
+            <NumRow
+              entry={smooth}
+              label="Smoothing"
+              onSet={onSet}
+              onReset={onReset}
+              min={-5}
+              max={5}
+              step={0.1}
+              decimals={1}
+            />
+          )}
+          {extend && (
+            <NumRow
+              entry={extend}
+              label="Extend"
+              onSet={onSet}
+              onReset={onReset}
+              min={0}
+              max={3}
+              step={0.05}
+              decimals={2}
+              unit="Å"
+            />
+          )}
+          <SectionShapeRows
+            entries={entries}
+            onSet={onSet}
+            onReset={onReset}
+            prefix="helix"
+            allowFancy={false}
+            includeWidth={false}
+            widthMax={5}
+            detailMin={4}
+            detailMax={50}
+            gateSharp
+          />
+          {widthMode && (
+            <MappedEnumRow
+              entry={widthMode}
+              label="Width mode"
+              labels={HELIX_WIDTH_MODE_LABELS}
+              onSet={onSet}
+              onReset={onReset}
+            />
+          )}
+          {wplus && (
+            <NumRow
+              entry={wplus}
+              label="Add width"
+              onSet={onSet}
+              onReset={onReset}
+              min={-2}
+              max={3}
+              step={0.05}
+              decimals={2}
+              unit="Å"
+            />
+          )}
+          {wsmooth && (
+            <NumRow
+              entry={wsmooth}
+              label="Width smooth"
+              onSet={onSet}
+              onReset={onReset}
+              min={-5}
+              max={5}
+              step={0.1}
+              decimals={1}
+              disabled={wsmoothOff}
+            />
+          )}
+        </>
       )}
     </>
   );
 };
 
-/** "Sheet" section: beta-strand spline and width smoothing. */
+/**
+ * "Sheet" section: spline smoothing, the sheet section shape (`sheet.*`), width
+ * smoothing and the sheet head junction (`sheethead.*`).
+ */
 export const CartoonSheetSection: React.FC<RendererPropSectionProps> = ({
   entries,
   onSet,
+  onSetMany,
   onReset,
 }) => {
   const get = (key: string) => entries.find((e: GenericPropEntry) => e.key === key);
@@ -255,30 +690,51 @@ export const CartoonSheetSection: React.FC<RendererPropSectionProps> = ({
       {smooth && (
         <NumRow
           entry={smooth}
-          label="Spline smoothing"
+          label="Smoothing"
           onSet={onSet}
           onReset={onReset}
           min={-5}
           max={5}
-          step={0.5}
+          step={0.1}
+          decimals={1}
         />
       )}
+      <SectionShapeRows
+        entries={entries}
+        onSet={onSet}
+        onReset={onReset}
+        prefix="sheet"
+        allowFancy={false}
+        includeWidth
+        widthMax={3}
+        detailMin={2}
+        detailMax={20}
+        gateSharp
+      />
       {wsmooth && (
         <NumRow
           entry={wsmooth}
-          label="Width smoothing"
+          label="Width smooth"
           onSet={onSet}
           onReset={onReset}
           min={-5}
           max={5}
-          step={0.5}
+          step={0.1}
+          decimals={1}
         />
       )}
+      <HeadShapeRows
+        entries={entries}
+        onSet={onSet}
+        onSetMany={onSetMany}
+        onReset={onReset}
+        prefixes={["sheethead"]}
+      />
     </>
   );
 };
 
-/** "Coil" section: coil spline smoothing. */
+/** "Coil" section: coil spline smoothing and the coil section shape (`coil.*`). */
 export const CartoonCoilSection: React.FC<RendererPropSectionProps> = ({
   entries,
   onSet,
@@ -293,14 +749,27 @@ export const CartoonCoilSection: React.FC<RendererPropSectionProps> = ({
       {smooth && (
         <NumRow
           entry={smooth}
-          label="Spline smoothing"
+          label="Smoothing"
           onSet={onSet}
           onReset={onReset}
           min={-5}
           max={5}
-          step={0.5}
+          step={0.1}
+          decimals={1}
         />
       )}
+      <SectionShapeRows
+        entries={entries}
+        onSet={onSet}
+        onReset={onReset}
+        prefix="coil"
+        allowFancy={false}
+        includeWidth
+        widthMax={3}
+        detailMin={4}
+        detailMax={20}
+        gateSharp
+      />
     </>
   );
 };

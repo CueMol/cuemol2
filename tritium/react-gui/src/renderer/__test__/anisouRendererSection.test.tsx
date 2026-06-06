@@ -23,7 +23,7 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
-import { mountTree, pressStepArrow } from './helpers/testHarness'
+import { mountTree, pressStepArrow, openAccordion } from './helpers/testHarness'
 import type { GenericPropEntry } from '../worker/server/services/genericProps.service'
 
 void React
@@ -227,10 +227,13 @@ describe('PropertiesTab anisou section dispatch', () => {
     const { container, unmount } = mountTree(
       <PropertiesTab entries={fullEntries()} rendererType="anisou" {...commonProps} />,
     )
+    // Exclusive accordions: open each section in turn to inspect its body.
+    openAccordion(container, 'Atoms and bonds')
     const baseBody = sectionBody(container, 'Atoms and bonds')!
-    const discBody = sectionBody(container, 'Anisotropic displacement')!
     expect(rowByLabel(baseBody, 'Atom radius')).not.toBeNull()
     expect(rowByLabel(baseBody, 'Draw disc')).toBeNull()
+    openAccordion(container, 'Anisotropic displacement')
+    const discBody = sectionBody(container, 'Anisotropic displacement')!
     expect(rowByLabel(discBody, 'Draw disc')).not.toBeNull()
     expect(rowByLabel(discBody, 'Atom radius')).toBeNull()
     unmount()

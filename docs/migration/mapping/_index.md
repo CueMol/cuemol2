@@ -1,5 +1,13 @@
 # Migration Mapping — Index
 
+- Updated: 2026-06-06 (`dialog.tool.ssm-sup` review: UXP "Molecular superposition" tool dialog (`tools/ssm_sup`) を Blueprint modal として実装。h3-kit/form (`SegmentField` LSQ/SSM + Reference/Moving の `ObjectSelect` molCoord filter + `MolSelList` + Auto-recenter / Use-xformMat `SwitchField`) で構成。OK は新規 worker service `superposeMol` 経由で `MolAnlManager.superposeSSM1`/`superposeLSQ1` を "Mol superpose" undo txn 内で実行 (例外時 rollback)、Auto-recenter で `MolCoord.fitView2(view, movSel)`。mol/algo/checkbox 履歴は localStorage (`molSuperposeHistory`)、selection 履歴は共有 `selHistory`。"Write RMSD info file" は native save dialog が必要なため deferred (ADR-0022)。Tools メニューの既存 stub `menu:mol-superpose` を `useToolCommands` 経由で配線。tool_dlgs todo 19->18/review 1->2)
+- Updated: 2026-06-05 (`dialog.property.molsurf` done: UXP `molsurf-propdlg` "MolSurf" タブ (dsurf と共有の molsurf-page overlay) を Inspector Properties タブの 1 accordion section に実装 (`MolSurfRenderer` extends `Renderer`, `type_name "molsurf"`)。Drawing mode (MappedEnumRow Fill/Wireframe/Dots) / Line/Point size (NumRow realtime, `drawmode=="fill"` で disable) / Selection mol (`target`、汎用 `useMolObjectNames` で MolCoord 名列挙) / Selection (`showsel` SelRow) / Coloring mode (`colormode` solid/molecule/potential、UXP 忠実に含める)。molsurf-page.js の `mRendTypeName` 分岐により molsurf は surftype/detail 非適用・target 専用なので `DSurfaceRendererSection` とは別 section。cullface/defaultcolor は page に無く、elepot/ramp 系は Coloring パネル管轄なので非露出。worker 変更なし。**これで Dialog_property の renderer 固有 panel は全完了**。prop_dlgs done 12->13/todo 2->1、Total done 15->16/todo 87->86)
+- Updated: 2026-06-05 (`dialog.property.isosurf` done: UXP `isosurf-propdlg` "Map" タブを Inspector Properties タブの 1 accordion section に実装 (`MapSurfRenderer` extends `MapRenderer`, `type_name "isosurf"`)。Center update (派生 tristate) / Drawing mode (EnumRow fill/line/point) / Line/Point size (NumRow realtime, `drawmode=="fill"` で disable) / Max grid size (素の NumInputRow, real) / Back-face culling (BoolRow) / Use periodic boundary (BoolRow) / Limit display by ブロック。contour と完全同一の Center update / Limit display by を共有モジュール `inspector/MapRendererCommon` (`CenterUpdateRow`/`LimitDisplayRows`/`useMolObjectNames`) に抽出し contour も差し替え (単一 source、観測挙動不変=既存 contour テストで回帰ガード)。coloring/tuning は UXP Map タブ外なので非露出。worker 変更なし。prop_dlgs done 11->12/todo 3->2、Total done 14->15/todo 88->87)
+- Updated: 2026-06-05 (`dialog.property.contour` done: UXP `contour-propdlg` "Map" タブを Inspector Properties タブの 1 accordion section に実装 (`MapMeshRenderer`, `type_name "contour"`)。全プロパティ flat。Center update は `autoupdate`+`dragupdate` の派生 tristate (None/Automatic/Automatic (drag)) を `onSetMany` で 1 undo step 同時書込。Line width (NumRow, realtime preview) / Buffer size (素の NumInputRow) / Use periodic boundary (BoolRow)。Limit display by は UXP groupbox checkbox を忠実に再現した派生 switch (checked=`bndry_molname` 非空、ON で先頭 MolCoord を target にセット、OFF で `bndry_molname`+`bndry_sel` を onSetMany で同時クリア、OFF 中は Target/Selection/Distance を disable)。Target は `listSceneObjects`+`objectFilters.molCoord` で MolCoord オブジェクト名を列挙 (`(none)` 無し)、`bndry_sel` SelRow、`bndry_rng` Distance NumRow。coloring は UXP Map タブ外なので非露出 (dsurface と同方針)。worker 変更なし。prop_dlgs done 10->11/todo 4->3、Total done 13->14/todo 89->88)
+- Updated: 2026-06-05 (`dialog.property.ribbon` done: UXP `ribbon-propdlg` (Common/Helix/Sheet/Coil) を Inspector Properties タブの 4 accordion に実装 (`RibbonRenderer` extends `SplineRenderer`, `type_name "ribbon"`)。nested section (TubeSection) と head/tail junction (JctTable) を dotted key で露出。Section detail は coil/helix/sheet .detail を同時書込、Cap type は start/end_captype を同時書込、Helix/Sheet は section+Back(Side)color+独立 Head/Tail、Coil は section のみ (fancy1 無)。Arrow height/width は basw/arrow の % 派生、sharp は roundsquare/fancy1 で enable。UXP に無い base smooth/line_width は非露出。派生 %行・junction helper は cartoon と並行する ribbon-local 実装 (共有昇格は follow-up)。prop_dlgs done 9->10/todo 5->4)
+- Updated: 2026-06-05 (`dialog.property.cartoon` 全項目移植: nested property の扱いの誤りで欠落していた helix/sheet/coil の section 形状 (TubeSection: type/detail/width/tuber/sharp) と head/tail (JctTable: type/gamma/basw/arrow) を dotted key で curated page に露出 (ADR-0015 の dot-path 機構)。Helix は Cylinder/Ribbon deck (`helix_ribbon`) 化、ribbon head/tail は ribhelix_head+tail を同時書込、Arrow height/width は basw/arrow の % 派生、sharp は roundsquare のみ enable。`pivotatom`/`anchor_sel`(SelRow)+`anchor_weight` を追加。UXP に無い `segend_fade`/`helix_width` を削除。`MappedEnumRow` に option 部分集合追加・`SelRow` 共有化。status は既に done のため count 変更なし)
+- Updated: 2026-06-05 (`dialog.property.nucl` done: UXP `nucl-propdlg` (Common/Nucleic acid/Tube) を Inspector Properties タブの 4 accordion に実装 (`NARenderer` extends `TubeRenderer`, `type_name "nucl"`)。Nucleic acid は新 `NuclBaseSection` (show_tube/show_basepair/base_type/base_detail/base_size/base_thick)、Tube/Section/Putty は共有 tube-page = tube renderer と同一のため `TubeMainSection`/`TubeSectionSection`/`TubePuttySection` を再利用。base_thick は % 派生表示 (`thick*100/base_size`、commit で `pct*size/100`、tube `Width2Row` と同型)。show_tube off で Tube/Section/Putty を disable (tube section に optional `disabled` 追加 + nucl wrapper 配線)。base_size/base_thick は DragNumericField、base_detail は素の NumericField。prop_dlgs done 8->9/todo 6->5)
+- Updated: 2026-06-05 (`dialog.property.spline` done: spline は専用 UXP dialog を持たないため (anisou と同様) 新規行を追加。C++ `SplineRenderer.qif` から curated した 1 accordion section (`SplineRendererSection`, `type_name "spline"`) を実装。axialdetail (NumInputRow) / smooth (NumRow realtime) / smoothcolor / line_width (NumRow realtime) / segend_fade / pivotatom。tube の `TubeMainSection` を template に cap 2 行除去 + line_width 追加。`start_captype`/`end_captype` は line 描画で機能しないため非露出 (回帰テストで pin)。prop_dlgs done 7->8/total 14->15)
 - Updated: 2026-06-04 (`dialog.tool.chg-chname` review: UXP "Change chain ID" tool dialog を Blueprint modal として実装。h3-kit/form (`FieldSection` + `ObjectSelect` molCoord filter + `MolSelList` + `TextField`) で構成。OK は新規 worker service `changeChainName` 経由で `MolAnlManager.changeChainName(mol, sel, name)` を "Change chain name" undo txn 内で実行。Edit メニューの既存 stub `menu:change-chain-id` を `useToolCommands` 経由で配線。tool_dlgs todo 20->19/review 0->1)
 - Updated: 2026-06-03 (`dialog.property.tube` done: UXP `tube-propdlg` の Tube タブを Inspector Properties タブの 3 accordion section (`TubeRendererSection`: Tube / Section / Putty) として実装、`type_name "tube"` で registry 登録。中核の `section.*` (TubeSection 断面形状) は nested object 上にあるため `parseGenericProps` をネスト再帰展開 (dotted key + depth) し、dot-path 書き込みは `cuemol2::setProp`→`LPropSupport::setNestedProperty` 経由で実現 — ADR-0015 の「nested 編集不可」前提を訂正 (誤りは `LScrObjects.cpp` 旧 inline 実装の誤読、binding 経路は対応済みで UXP xpcom と同一)。Width2 は `section.tuber`×width の派生表示。`MappedEnumRow`/`CAP_LABELS` を `RendererCommonSection` へ昇格し cartoon と共用。cartoon の section 形状も同手法で露出可能だが follow-up。prop_dlgs done 6->7/todo 7->6)
 - Updated: 2026-06-03 (`dialog.property.disorder` done: UXP `disorder-propdlg` の Disorder タブを Inspector Properties タブの 1 accordion section (`DisoRendererSection`) として実装、`type_name "disorder"` で registry 登録。`target` は親 mol の tube/ribbon/cartoon/nucl 兄弟 renderer 名を新 worker service `getSiblingRendererNames` で列挙する `(none)` 付き select (section へ `nodeId` を thread)、`detail` は素の inline NumericField、dot size/dot sep/loop size/loop size 2 は `NumRow`(DragNumericField, realtime 無し)、`defaultcolor` は `ColorRow`。共有 `NumInputRow` を `RendererCommonSection` へ昇格し cartoon と共用。prop_dlgs done 5->6/todo 8->7)
@@ -31,13 +39,13 @@
 | Panel | [panels.md](panels.md) | 27 | 4 | 17 | 1 | 5 | 0 |
 | Menu | [menus.md](menus.md) | 4 | 2 | 2 | 0 | 0 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
-| Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 14 | 7 | 1 | 0 | 6 | 0 |
+| Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 15 | 13 | 1 | 0 | 1 | 0 |
 | Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 0 | 3 | 1 | 14 | 0 |
-| Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 1 | 0 | 1 | 19 | 0 |
+| Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 1 | 0 | 2 | 18 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 2 | 1 | 0 | 10 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 0 | 1 | 0 | 27 | 0 |
 | Other | [other.md](other.md) | 4 | 0 | 1 | 0 | 3 | 0 |
-| **Total** | | **130** | **10** | **27** | **2** | **91** | **0** |
+| **Total** | | **131** | **16** | **27** | **3** | **85** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -66,11 +74,11 @@
 | Mapping | Count |
 |---------|------:|
 | 1:1 (`direct`) | 8 |
-| merged | 3 |
+| merged | 6 |
 | split | 19 |
 | redesign | 0 |
 | deprecated (`dropped`) | 2 |
-| *(not yet assigned)* | 98 |
+| *(not yet assigned)* | 95 |
 
 ---
 
@@ -79,11 +87,12 @@
 | ID | React | Notes |
 |----|-------|-------|
 | [`toolbar.cuemol2-ribbon`](toolbars.md#toolbarcuemol2-ribbon) | `ViewportToolPalette` / `useNaviClickHandler` / `NaviContextMenu` | Context menu actions (center/select/around/invert/sidechain) done; Create SYMM mol deferred; measurement tool, rect-select drag pending |
-| [`menu.cuemol2`](menus.md#menucuemol2) | `menuTemplate` / `MenuBar` / `useMenuDispatch` | Full 9-group structure added; View > Center mark wired; Scene > Background color wired; File > Get PDB wired (streaming via StreamManager); File > Open Recent wired (electron-store-backed MRU, app.addRecentDocument); Hardware stereo and Open web page dropped; File > Save File As / Save current view / Reload Scene wired; item-level completion 25/55; MenuBar suppressed on macOS |
+| [`menu.cuemol2`](menus.md#menucuemol2) | `menuTemplate` / `MenuBar` / `useMenuDispatch` | Full 9-group structure added; View > Center mark wired; Scene > Background color wired; File > Get PDB wired (streaming via StreamManager); File > Open Recent wired (electron-store-backed MRU, app.addRecentDocument); Hardware stereo and Open web page dropped; File > Save File As / Save current view / Reload Scene wired; item-level completion 26/55; MenuBar suppressed on macOS |
 | [`menu.cuemol2-macos`](menus.md#menucuemol2-macos) | `main/menu.ts` | macOS App menu added; item-level completion 6/7 |
 | [`dialog.about`](other_dlgs.md#dialogabout) | `AboutDialog` / `useDialog` | GRE info・userAgent は省略 |
 | [`dialog.atomintr`](other_dlgs.md#dialogatomintr) | `AtomIntr*Section` (inspector Properties tab) | Interaction/Dashed line/3D tube/Value label の 4 accordion。Dashed トグルは合成 (`setGenericProps` で stipple0..5 を 1 undo step 原子書き込み)。arrow size・label font 追加。append/remove 編集は対象外 |
 | [`dialog.tool.chg-chname`](tool_dlgs.md#dialogtoolchg-chname) | `ChangeChainIdDialog` / `useToolCommands` / `changeChainName.service` | h3-kit/form 製の Change chain ID modal。`MolAnlManager.changeChainName` を undo txn で実行。Edit メニューから起動。E2E sign-off 待ち |
+| [`dialog.tool.ssm-sup`](tool_dlgs.md#dialogtoolssm-sup) | `MolSuperposeDialog` / `useToolCommands` / `superposeMol.service` | h3-kit/form 製の Molecular superposition modal。LSQ/SSM を `MolAnlManager.superposeSSM1`/`superposeLSQ1` で undo txn 実行 (auto-recenter で `fitView2`)。mol/algo/checkbox 履歴は localStorage。RMSD-file 出力は deferred (ADR-0022)。Tools メニューから起動。E2E sign-off 待ち |
 | [`other.cuemol2`](other.md#othercuemol2) | `App` / `ContentArea` / `TabBar` / `ConfirmCloseTabDialog` / `useQuitHandler` | Main window layout done; close-tab confirmation dialog (UXP `closeTabImpl`) implemented; UXP `onCloseEvent` quit chain wired (cmd-Q walks all tabs via `before-quit` → `APP_QUIT_REQUEST` → `APP_QUIT_PROCEED`) |
 | [`widget.molsellist`](custom_widgets.md) | `MolSelList` (`h3-kit/MolSelList/`) | First consumer wired in `RendererOptionsPane` (file-open dialog); editable `InputGroup` + chevron-only `HTMLSelect` (OS-native dropdown listbox with `<optgroup>` Preset / History / Scene / Global); history via `localStorage`; worker services `getSelDefs` / `validateSelection` added |
 | [`panel.workspace.tree`](panels.md#panelworkspacetree) | `ScenePane` (tree) / `useSceneTree` / `useSceneTreeController` / `sceneTreeDnd` / `InlineRenameInput` / `sceneTree.service` / `reorderSceneNode.service` | Live tree + visibility toggle + selection (single + multi via Cmd/Ctrl+click) + event-driven auto-refresh + drag-drop reorder (worker + in-app DnD OK; ADR-0001) + F2 inline rename; pending: Shift+range select |
@@ -111,4 +120,4 @@
 
 ## Unstarted
 
-**95 / 130** items are `todo` (not yet started).
+**90 / 131** items are `todo` (not yet started).

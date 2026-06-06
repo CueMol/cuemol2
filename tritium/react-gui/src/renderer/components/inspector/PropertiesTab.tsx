@@ -14,7 +14,7 @@
  */
 
 import React from "react";
-import { AccordionSection } from "./AccordionSection";
+import { AccordionSection, AccordionGroup } from "./AccordionSection";
 import { RendererCommonSection } from "./RendererCommonSection";
 import {
   DUMMY_SECTION,
@@ -63,28 +63,33 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
   const typeSections = getRendererPropSections(rendererType);
   const sections = typeSections.length > 0 ? typeSections : [DUMMY_SECTION];
 
+  // All accordions in the Properties tab form one exclusive group: only one is
+  // open at a time, since the per-renderer pages can be long. "Basic settings"
+  // (the first common section) is open on first render.
   return (
     <div className="insp-properties-tab">
-      <RendererCommonSection
-        entries={entries}
-        onSet={onSet}
-        onSetMany={onSetMany}
-        onReset={onReset}
-        sceneId={sceneId}
-        nodeId={nodeId}
-      />
-      {sections.map(({ key, title, defaultExpanded, Component }) => (
-        <AccordionSection key={key} title={title} defaultExpanded={defaultExpanded}>
-          <Component
-            entries={entries}
-            onSet={onSet}
-            onSetMany={onSetMany}
-            onReset={onReset}
-            sceneId={sceneId}
-            nodeId={nodeId}
-          />
-        </AccordionSection>
-      ))}
+      <AccordionGroup initialOpen="Basic settings">
+        <RendererCommonSection
+          entries={entries}
+          onSet={onSet}
+          onSetMany={onSetMany}
+          onReset={onReset}
+          sceneId={sceneId}
+          nodeId={nodeId}
+        />
+        {sections.map(({ key, title, defaultExpanded, Component }) => (
+          <AccordionSection key={key} title={title} defaultExpanded={defaultExpanded}>
+            <Component
+              entries={entries}
+              onSet={onSet}
+              onSetMany={onSetMany}
+              onReset={onReset}
+              sceneId={sceneId}
+              nodeId={nodeId}
+            />
+          </AccordionSection>
+        ))}
+      </AccordionGroup>
     </div>
   );
 };

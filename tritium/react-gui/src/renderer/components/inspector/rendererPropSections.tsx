@@ -22,6 +22,7 @@ import type {
   PropWriteOpts,
 } from "../../worker/server/services/genericProps.service";
 import { SimpleRendererSection } from "./SimpleRendererSection";
+import { SplineMainSection } from "./SplineRendererSection";
 import { BallStickRendererSection } from "./BallStickRendererSection";
 import { CPKAtomRadiiSection, CPKDetailSection } from "./CPKRendererSection";
 import { AnIsoUDiscSection } from "./AnIsoURendererSection";
@@ -37,6 +38,9 @@ import {
   CartoonSheetSection,
   CartoonCoilSection,
 } from "./CartoonRendererSection";
+import { ContourMainSection } from "./ContourRendererSection";
+import { IsosurfMainSection } from "./IsosurfRendererSection";
+import { MolSurfMainSection } from "./MolSurfRendererSection";
 import { DisoMainSection } from "./DisoRendererSection";
 import {
   DSurfaceMainSection,
@@ -47,6 +51,18 @@ import {
   TubeSectionSection,
   TubePuttySection,
 } from "./TubeRendererSection";
+import {
+  NuclBaseSection,
+  NuclTubeMainSection,
+  NuclSectionSection,
+  NuclPuttySection,
+} from "./NuclRendererSection";
+import {
+  RibbonMainSection,
+  RibbonHelixSection,
+  RibbonSheetSection,
+  RibbonCoilSection,
+} from "./RibbonRendererSection";
 
 // ────────────────────────────────────────────────────────────
 // Types
@@ -124,6 +140,27 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
       title: "Simple",
       defaultExpanded: true,
       Component: SimpleRendererSection,
+    },
+  ],
+  // TraceRenderer ("trace"): shares the UXP simple-propdlg with SimpleRenderer
+  // (line width only), so the same SimpleRendererSection is reused here.
+  trace: [
+    {
+      key: "trace",
+      title: "Trace",
+      defaultExpanded: true,
+      Component: SimpleRendererSection,
+    },
+  ],
+  // SplineRenderer ("spline"): no dedicated UXP dialog; curated from the C++
+  // SplineRenderer.qif. A single section (no nested cross-section / putty), the
+  // tube cap-type props are omitted (non-functional on a line).
+  spline: [
+    {
+      key: "spline",
+      title: "Spline",
+      defaultExpanded: true,
+      Component: SplineMainSection,
     },
   ],
   // BallStickRenderer ("ballstick"): UXP ballstick-propdlg "Ball & Stick" tab.
@@ -229,6 +266,30 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
       Component: CartoonCoilSection,
     },
   ],
+  // MapMeshRenderer ("contour"): UXP contour-propdlg "Map" tab. One section
+  // surfacing center-update mode, line width, buffer size, periodic boundary,
+  // and the limit-display target / selection / distance. Coloring stays out
+  // (not on the UXP Map tab).
+  contour: [
+    {
+      key: "contour-main",
+      title: "Contour",
+      defaultExpanded: true,
+      Component: ContourMainSection,
+    },
+  ],
+  // MapSurfRenderer ("isosurf"): UXP isosurf-propdlg "Map" tab. One section --
+  // drawing mode, line/point size (off for fill), max grid size, back-face
+  // culling, plus the Center update / Limit display block shared with contour
+  // (both extend MapRenderer). Coloring / tuning props stay out.
+  isosurf: [
+    {
+      key: "isosurf-main",
+      title: "Isosurf",
+      defaultExpanded: true,
+      Component: IsosurfMainSection,
+    },
+  ],
   // DisoRenderer ("disorder"): UXP disorder-propdlg "Disorder" tab. One section
   // surfacing the target main-chain renderer, tessellation detail, dot size /
   // separation, the two loop strengths and the default color.
@@ -259,6 +320,19 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
       Component: DSurfaceRadiiSection,
     },
   ],
+  // MolSurfRenderer ("molsurf"): UXP molsurf-propdlg "MolSurf" tab (shared
+  // molsurf-page with dsurface, but Surface type / Detail / Atom radii are
+  // dsurface-only while the "Selection mol" target is molsurf-only). One section:
+  // drawing mode, line/point size (off for fill), reference-molecule target,
+  // shown selection, and coloring mode.
+  molsurf: [
+    {
+      key: "molsurf-main",
+      title: "MolSurf",
+      defaultExpanded: true,
+      Component: MolSurfMainSection,
+    },
+  ],
   // TubeRenderer ("tube"): UXP tube-propdlg "Tube" tab. The loose controls form
   // the "Tube" section; the nested TubeSection shape (edited via dot-path keys
   // section.type / section.width / ...) forms the "Section" section; the putty
@@ -281,6 +355,65 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
       title: "Putty",
       defaultExpanded: true,
       Component: TubePuttySection,
+    },
+  ],
+  // RibbonRenderer ("ribbon"): UXP ribbon-propdlg Common/Helix/Sheet/Coil tabs.
+  // Section shapes (TubeSection) and head/tail junctions (JctTable) are nested,
+  // edited by dotted keys.
+  ribbon: [
+    {
+      key: "ribbon-main",
+      title: "Ribbon",
+      defaultExpanded: true,
+      Component: RibbonMainSection,
+    },
+    {
+      key: "ribbon-helix",
+      title: "Helix",
+      defaultExpanded: true,
+      Component: RibbonHelixSection,
+    },
+    {
+      key: "ribbon-sheet",
+      title: "Sheet",
+      defaultExpanded: true,
+      Component: RibbonSheetSection,
+    },
+    {
+      key: "ribbon-coil",
+      title: "Coil",
+      defaultExpanded: true,
+      Component: RibbonCoilSection,
+    },
+  ],
+  // NARenderer ("nucl"): extends TubeRenderer. UXP nucl-propdlg adds a
+  // "Nucleic acid" tab on top of the shared tube-page (Tube / Section / Putty),
+  // which are reused here. The reused tube sections are disabled when
+  // "Show tube" is off (UXP gTube.disableAll gate).
+  nucl: [
+    {
+      key: "nucl-base",
+      title: "Nucleic acid",
+      defaultExpanded: true,
+      Component: NuclBaseSection,
+    },
+    {
+      key: "nucl-tube-main",
+      title: "Tube",
+      defaultExpanded: true,
+      Component: NuclTubeMainSection,
+    },
+    {
+      key: "nucl-tube-section",
+      title: "Section",
+      defaultExpanded: true,
+      Component: NuclSectionSection,
+    },
+    {
+      key: "nucl-tube-putty",
+      title: "Putty",
+      defaultExpanded: true,
+      Component: NuclPuttySection,
     },
   ],
 };
