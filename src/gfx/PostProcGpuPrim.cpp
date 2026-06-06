@@ -93,19 +93,21 @@ void PostProcGpuPrim::drawComposite(DisplayContext *pDC, RenderTarget *sceneRT,
         }
     }
 
-    // aoRT is reserved for the AO multiply step; unused in the pass-through path.
-    (void)aoRT;
-
     sceneRT->bindColorTex(0, RT_TU_COLOR);
+    if (aoRT != nullptr) aoRT->bindColorTex(0, RT_TU_NORMAL);  // AO term on unit 2
 
     m_pCompPO->enable();
     m_pCompPO->setUniform("u_colorTex", RT_TU_COLOR);
+    m_pCompPO->setUniform("u_aoTex", RT_TU_NORMAL);
+    // hasAO lets the shader fall back to a plain copy when no AO is supplied.
+    m_pCompPO->setUniform("u_hasAO", (aoRT != nullptr) ? 1 : 0);
 
     pDC->drawElem(*m_pDrawElem);
 
     m_pCompPO->disable();
 
     sceneRT->unbindTextures();
+    if (aoRT != nullptr) aoRT->unbindTextures();
 }
 
 void PostProcGpuPrim::drawGtao(DisplayContext *pDC, RenderTarget *sceneRT,
@@ -137,6 +139,8 @@ void PostProcGpuPrim::drawGtao(DisplayContext *pDC, RenderTarget *sceneRT,
                            consts.ndcToViewAdd[1]);
     m_pGtaoPO->setUniformF("u_viewportPixelSize", consts.viewportPixelSize[0],
                            consts.viewportPixelSize[1]);
+    m_pGtaoPO->setUniformF("u_effectRadius", consts.effectRadius);
+    m_pGtaoPO->setUniformF("u_finalValuePower", consts.finalValuePower);
     m_pGtaoPO->setUniform("u_debugMode", debugMode);
 
     pDC->drawElem(*m_pDrawElem);

@@ -1,9 +1,11 @@
 // AO composite fragment shader.
-// Samples the off-screen scene color texture and writes it to the bound
-// framebuffer. In this initial step it is a pass-through copy; a later step
-// multiplies the scene color by the ambient-occlusion term.
+// Multiplies the off-screen scene color by the ambient-occlusion term and
+// writes the result to the bound framebuffer. With u_hasAO == 0 it is a plain
+// pass-through copy (used before the AO term is available).
 
 uniform sampler2D u_colorTex;
+uniform sampler2D u_aoTex;
+uniform int u_hasAO;
 
 in vec2 v_uv;
 
@@ -11,5 +13,11 @@ out vec4 o_FragColor;
 
 void main()
 {
-    o_FragColor = texture(u_colorTex, v_uv);
+    vec4 c = texture(u_colorTex, v_uv);
+    if (u_hasAO != 0) {
+        float ao = texture(u_aoTex, v_uv).r;
+        o_FragColor = vec4(c.rgb * ao, c.a);
+    } else {
+        o_FragColor = c;
+    }
 }

@@ -187,8 +187,9 @@ void GUIView::drawScene()
                             convToBackingY(getHeight()));
             }
 
-            if (useAO && m_pAOSceneRT != nullptr && m_pAOPostProc != nullptr) {
-                // Render the 3D scene into the off-screen target.
+            if (useAO && m_pAOSceneRT != nullptr && m_pAoRT != nullptr &&
+                m_pAOPostProc != nullptr) {
+                // 1. Render the 3D scene into the off-screen target.
                 m_pAOSceneRT->bind();
                 setUpModelMat(MM_NORMAL);
                 gfx::ColorPtr bg = pScene->getBgColor();
@@ -197,13 +198,19 @@ void GUIView::drawScene()
                 pScene->display(pdc);
                 m_pAOSceneRT->unbind();
 
-                // GTAO pass: read the scene depth and draw the AO term (a debug
-                // visualization for now) onto the default framebuffer. The
-                // fullscreen pass must not be depth-rejected, so disable the
-                // depth test for it.
+                // 2. GTAO pass: read the scene depth, write the AO term into the
+                // AO target. The AO target has no depth attachment, so the
+                // fullscreen pass is not depth-rejected.
                 const gfx::AoConstants aoc = computeAoConstants();
+                m_pAoRT->bind();
+                m_pAoRT->clear(1.0f, 1.0f, 1.0f, 1.0f);
+                m_pAOPostProc->drawGtao(pdc, m_pAOSceneRT, aoc, /*debugMode=*/0);
+                m_pAoRT->unbind();
+
+                // 3. Composite scene color * AO onto the default framebuffer.
+                // The fullscreen pass must not be depth-rejected.
                 pdc->setDepthTestEnabled(false);
-                m_pAOPostProc->drawGtao(pdc, m_pAOSceneRT, aoc, /*debugMode=*/1);
+                m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, m_pAoRT);
                 pdc->setDepthTestEnabled(true);
 
                 // Restore the scene depth into the default framebuffer so the
@@ -578,6 +585,12 @@ void GUIView::ensureAORTs(int w, int h)
         m_pAOSceneRT->resize(w, h);
     }
 
+    if (m_pAoRT == nullptr) {
+        m_pAoRT = pdc->createRenderTarget(w, h, gfx::RT_COLOR_RGBA8);
+    } else {
+        m_pAoRT->resize(w, h);
+    }
+
     if (m_pAOPostProc == nullptr) {
         m_pAOPostProc = MB_NEW gfx::PostProcGpuPrim();
     }
@@ -616,6 +629,10 @@ gfx::AoConstants GUIView::computeAoConstants() const
     c.ndcToViewAdd[1] = float(-tanHalfFovY);
     c.viewportPixelSize[0] = (bcx > 0) ? 1.0f / float(bcx) : 0.0f;
     c.viewportPixelSize[1] = (bcy > 0) ? 1.0f / float(bcy) : 0.0f;
+    // AO tuning constants (view-space units). Hard-coded for now; promoted to
+    // Scene properties (aoRadius / aoIntensity) in a later step.
+    c.effectRadius = 3.0f;
+    c.finalValuePower = 2.2f;
     return c;
 }
 
@@ -629,6 +646,10 @@ void GUIView::cleanupAORTs()
     if (m_pAOPostProc != nullptr) {
         delete m_pAOPostProc;
         m_pAOPostProc = nullptr;
+    }
+    if (m_pAoRT != nullptr) {
+        delete m_pAoRT;
+        m_pAoRT = nullptr;
     }
     if (m_pAOSceneRT != nullptr) {
         delete m_pAOSceneRT;

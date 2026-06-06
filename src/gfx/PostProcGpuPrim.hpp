@@ -28,6 +28,10 @@ struct AoConstants
     float ndcToViewAdd[2] = {0.0f, 0.0f};
     /// (1/width, 1/height) in pixels.
     float viewportPixelSize[2] = {0.0f, 0.0f};
+    /// Occlusion sphere radius in view-space (world) units.
+    float effectRadius = 1.0f;
+    /// Final occlusion contrast: occlusion = pow(occlusion, finalValuePower).
+    float finalValuePower = 2.2f;
 };
 
 /// Fullscreen post-processing primitive.
