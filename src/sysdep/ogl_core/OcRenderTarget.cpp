@@ -114,10 +114,14 @@ void OcRenderTarget::allocAttachments(int w, int h)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     }
 
-    // Optional MRT normal attachment 1 (RGB16F)
+    // Optional MRT normal attachment 1. Use RGBA16F (not RGB16F): RGB16F is not
+    // a guaranteed color-renderable format, and on the Apple Metal-backed GL the
+    // MRT writes to an RGB16F attachment silently fail (COLOR1 ends up with the
+    // color buffer / garbage). RGBA16F is required to be color-renderable.
     if (m_nNormalTex != 0) {
         glBindTexture(GL_TEXTURE_2D, m_nNormalTex);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, w, h, 0, GL_RGB, GL_FLOAT, nullptr);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, w, h, 0, GL_RGBA, GL_FLOAT,
+                     nullptr);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
