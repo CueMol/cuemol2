@@ -104,12 +104,19 @@ vec3 selectNormal(vec2 uv, vec3 pC, out bool isExcluded)
         vec3 n = texture(u_normalTex, uv).xyz;
         if (dot(n, n) > 0.5) {
             // Stored eye-space normal: +Z faces the camera, so flip Z only to
-            // reach the GTAO space (vz > 0 forward). Do NOT force it toward the
-            // camera the way reconstructNormal does: the stored normal is
-            // already front facing, and near a silhouette the exact normal
-            // points almost sideways (dot(N, view) slightly negative), so the
-            // camera-facing flip would wrongly invert it and band the edge.
-            return normalize(vec3(n.x, n.y, -n.z));
+            // reach the GTAO space (vz > 0 forward).
+            vec3 N = normalize(vec3(n.x, n.y, -n.z));
+            vec3 V = normalize(-pC);
+            // Clamp to the visible hemisphere. The exact normal can point away
+            // from the camera at grazing silhouettes (sphere/cylinder edges) or
+            // on the back side of two-sided meshes (cartoon ribbons), where the
+            // horizon integral turns unstable and goes to near-black. Instead of
+            // a hard flip (which inverts the in-plane direction and bands the
+            // edge), fold it just inside the hemisphere toward the view vector.
+            // Continuous and well defined even head-on (d = -1 -> N = V).
+            float d = dot(N, V);
+            if (d < 0.0) N = normalize(N - 1.01 * d * V);
+            return N;
         }
         isExcluded = true;
     }
