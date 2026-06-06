@@ -77,6 +77,10 @@ public:
 
     virtual void drawScene() override;
 
+    /// Release GPU resources (incl. AO render targets) while the GL context is
+    /// still alive, before the display context is torn down.
+    virtual void unloading() override;
+
     /// Clean-up the drawing display with the current bg color
     virtual void clear();
 

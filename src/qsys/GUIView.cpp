@@ -33,6 +33,15 @@ GUIView::~GUIView()
     cleanupAORTs();
 }
 
+void GUIView::unloading()
+{
+    // Release AO GPU resources while the GL context is still alive (the base
+    // unloading tears down the display context). The destructor also calls
+    // cleanupAORTs() as a fallback, but by then getDisplayContext() is gone.
+    cleanupAORTs();
+    super_t::unloading();
+}
+
 void GUIView::setCenterMark(int nMode)
 {
     super_t::setCenterMark(nMode);
@@ -574,13 +583,12 @@ void GUIView::ensureAORTs(int w, int h)
 
 void GUIView::cleanupAORTs()
 {
-    if (m_pAOSceneRT == nullptr && m_pAOPostProc == nullptr) return;
-
-    DisplayContext *pdc = getDisplayContext();
-    if (pdc != nullptr) pdc->setCurrent();
-
+    // The render target and the post-proc primitive's VBO both guard the GL
+    // context themselves (via the parent view looked up by ID in their
+    // destructors), so do NOT call getDisplayContext() here. cleanupAORTs runs
+    // from ~GUIView, after the concrete view subclass is already destroyed,
+    // where getDisplayContext() is a pure-virtual call (crash).
     if (m_pAOPostProc != nullptr) {
-        m_pAOPostProc->invalidate();
         delete m_pAOPostProc;
         m_pAOPostProc = nullptr;
     }
