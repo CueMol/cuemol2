@@ -29,8 +29,10 @@
  *   - UXP uses a single "Cap type" control writing both start and end; here the
  *     two cap-type properties are exposed as separate rows, matching the sibling
  *     `CartoonRendererSection` and keeping per-property reset clean.
- *   - `pivotatom` uses a plain text row (empty = default Calpha pivot); the UXP
- *     checkbox + textbox combo is replaced by the standard modified bar / reset.
+ *   - `pivotatom` uses a plain text row; empty falls back to the per-polymer
+ *     default pivot atom resolved by the C++ side (shown via a "(default)"
+ *     placeholder). The UXP checkbox + textbox combo is replaced by the standard
+ *     modified bar / reset.
  *   - Drag-numeric rows commit on drag end / Enter (no realtime preview); the
  *     "detail" rows use a plain stepper (`NumInputRow`).
  */
@@ -92,6 +94,7 @@ interface Width1RowProps {
   tuberEntry: GenericPropEntry;
   onSetMany: RendererPropSectionProps["onSetMany"];
   onReset: RendererPropSectionProps["onReset"];
+  disabled?: boolean;
 }
 
 /**
@@ -105,6 +108,7 @@ const Width1Row: React.FC<Width1RowProps> = ({
   tuberEntry,
   onSetMany,
   onReset,
+  disabled,
 }) => {
   const width = Number(widthEntry.value);
   const tuber = Number(tuberEntry.value);
@@ -133,7 +137,7 @@ const Width1Row: React.FC<Width1RowProps> = ({
         step={0.01}
         decimals={2}
         unit="Å"
-        disabled={widthEntry.readonly || !onSetMany}
+        disabled={disabled || widthEntry.readonly || !onSetMany}
       />
     </PropertyField>
   );
@@ -146,6 +150,7 @@ interface Width2RowProps {
   tuberEntry: GenericPropEntry;
   onSet: RendererPropSectionProps["onSet"];
   onReset: RendererPropSectionProps["onReset"];
+  disabled?: boolean;
 }
 
 /**
@@ -159,6 +164,7 @@ const Width2Row: React.FC<Width2RowProps> = ({
   tuberEntry,
   onSet,
   onReset,
+  disabled,
 }) => {
   const width = Number(widthEntry.value);
   const tuber = Number(tuberEntry.value);
@@ -181,7 +187,7 @@ const Width2Row: React.FC<Width2RowProps> = ({
         step={0.01}
         decimals={2}
         unit="Å"
-        disabled={tuberEntry.readonly}
+        disabled={disabled || tuberEntry.readonly}
       />
     </PropertyField>
   );
@@ -190,13 +196,23 @@ const Width2Row: React.FC<Width2RowProps> = ({
 // --- Sections -----------------------------------------------------------------
 
 /**
+ * Props for the tube property sections. `disabled` lets a host (e.g. the nucl
+ * renderer's "Show tube" gate) disable the whole section at once; it is left
+ * undefined for the tube renderer itself, preserving the original behaviour.
+ */
+export type TubeSectionComponentProps = RendererPropSectionProps & {
+  disabled?: boolean;
+};
+
+/**
  * "Tube" section: axial tessellation detail, spline smoothness, color
  * smoothing, the two end-cap types, segment-end fade and the pivot atom name.
  */
-export const TubeMainSection: React.FC<RendererPropSectionProps> = ({
+export const TubeMainSection: React.FC<TubeSectionComponentProps> = ({
   entries,
   onSet,
   onReset,
+  disabled,
 }) => {
   const get = (key: string) => entries.find((e: GenericPropEntry) => e.key === key);
 
@@ -220,6 +236,7 @@ export const TubeMainSection: React.FC<RendererPropSectionProps> = ({
           min={2}
           max={20}
           step={1}
+          disabled={disabled}
         />
       )}
       {smooth && (
@@ -232,10 +249,17 @@ export const TubeMainSection: React.FC<RendererPropSectionProps> = ({
           max={0.5}
           step={0.01}
           decimals={2}
+          disabled={disabled}
         />
       )}
       {smoothcolor && (
-        <BoolRow entry={smoothcolor} label="Smooth color" onSet={onSet} onReset={onReset} />
+        <BoolRow
+          entry={smoothcolor}
+          label="Smooth color"
+          onSet={onSet}
+          onReset={onReset}
+          disabled={disabled}
+        />
       )}
       {startCap && (
         <MappedEnumRow
@@ -244,6 +268,7 @@ export const TubeMainSection: React.FC<RendererPropSectionProps> = ({
           labels={CAP_LABELS}
           onSet={onSet}
           onReset={onReset}
+          disabled={disabled}
         />
       )}
       {endCap && (
@@ -253,6 +278,7 @@ export const TubeMainSection: React.FC<RendererPropSectionProps> = ({
           labels={CAP_LABELS}
           onSet={onSet}
           onReset={onReset}
+          disabled={disabled}
         />
       )}
       {segendFade && (
@@ -261,6 +287,7 @@ export const TubeMainSection: React.FC<RendererPropSectionProps> = ({
           label="Segment-end fade out"
           onSet={onSet}
           onReset={onReset}
+          disabled={disabled}
         />
       )}
       {pivotatom && (
@@ -268,8 +295,10 @@ export const TubeMainSection: React.FC<RendererPropSectionProps> = ({
           key={`pivotatom:${pivotatom.value}`}
           entry={pivotatom}
           label="Pivot atom name"
+          placeholder="(default)"
           onSet={onSet}
           onReset={onReset}
+          disabled={disabled}
         />
       )}
     </>
@@ -284,11 +313,12 @@ export const TubeMainSection: React.FC<RendererPropSectionProps> = ({
  * enabled only for the square / fancy section types, matching the UXP
  * `updateDisabledState` logic.
  */
-export const TubeSectionSection: React.FC<RendererPropSectionProps> = ({
+export const TubeSectionSection: React.FC<TubeSectionComponentProps> = ({
   entries,
   onSet,
   onSetMany,
   onReset,
+  disabled,
 }) => {
   const get = (key: string) => entries.find((e: GenericPropEntry) => e.key === key);
 
@@ -309,6 +339,7 @@ export const TubeSectionSection: React.FC<RendererPropSectionProps> = ({
           labels={SECTION_TYPE_LABELS}
           onSet={onSet}
           onReset={onReset}
+          disabled={disabled}
         />
       )}
       {detail && (
@@ -321,6 +352,7 @@ export const TubeSectionSection: React.FC<RendererPropSectionProps> = ({
           min={2}
           max={20}
           step={1}
+          disabled={disabled}
         />
       )}
       {width && tuber && (
@@ -329,6 +361,7 @@ export const TubeSectionSection: React.FC<RendererPropSectionProps> = ({
           tuberEntry={tuber}
           onSetMany={onSetMany}
           onReset={onReset}
+          disabled={disabled}
         />
       )}
       {/* No tuber: edit the major axis directly (cannot preserve a minor axis). */}
@@ -343,6 +376,7 @@ export const TubeSectionSection: React.FC<RendererPropSectionProps> = ({
           step={0.01}
           decimals={2}
           unit="Å"
+          disabled={disabled}
         />
       )}
       {width && tuber && (
@@ -351,6 +385,7 @@ export const TubeSectionSection: React.FC<RendererPropSectionProps> = ({
           tuberEntry={tuber}
           onSet={onSet}
           onReset={onReset}
+          disabled={disabled}
         />
       )}
       {sharp && (
@@ -363,7 +398,7 @@ export const TubeSectionSection: React.FC<RendererPropSectionProps> = ({
           max={1}
           step={0.05}
           decimals={2}
-          disabled={sharpOff}
+          disabled={disabled || sharpOff}
         />
       )}
     </>
@@ -375,10 +410,11 @@ export const TubeSectionSection: React.FC<RendererPropSectionProps> = ({
  * occupancy). The target / scale rows are disabled when the mode is "none",
  * matching the UXP `updateDisabledState` logic.
  */
-export const TubePuttySection: React.FC<RendererPropSectionProps> = ({
+export const TubePuttySection: React.FC<TubeSectionComponentProps> = ({
   entries,
   onSet,
   onReset,
+  disabled,
 }) => {
   const get = (key: string) => entries.find((e: GenericPropEntry) => e.key === key);
 
@@ -398,6 +434,7 @@ export const TubePuttySection: React.FC<RendererPropSectionProps> = ({
           labels={PUTTY_MODE_LABELS}
           onSet={onSet}
           onReset={onReset}
+          disabled={disabled}
         />
       )}
       {tgt && (
@@ -407,7 +444,7 @@ export const TubePuttySection: React.FC<RendererPropSectionProps> = ({
           labels={PUTTY_TGT_LABELS}
           onSet={onSet}
           onReset={onReset}
-          disabled={puttyOff}
+          disabled={disabled || puttyOff}
         />
       )}
       {loscl && (
@@ -420,7 +457,7 @@ export const TubePuttySection: React.FC<RendererPropSectionProps> = ({
           max={10}
           step={0.1}
           decimals={1}
-          disabled={puttyOff}
+          disabled={disabled || puttyOff}
         />
       )}
       {hiscl && (
@@ -433,7 +470,7 @@ export const TubePuttySection: React.FC<RendererPropSectionProps> = ({
           max={10}
           step={0.1}
           decimals={1}
-          disabled={puttyOff}
+          disabled={disabled || puttyOff}
         />
       )}
     </>

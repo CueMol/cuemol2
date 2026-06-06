@@ -80,6 +80,9 @@ export function useMenuDispatch(activeTab: string | null): {
         case 'menu:change-chain-id':
           dispatch(CmdId.UiChangeChainIdDialog).catch(logErr('change chain id dialog:'))
           break
+        case 'menu:mol-superpose':
+          dispatch(CmdId.UiMolSuperpose).catch(logErr('mol superpose dialog:'))
+          break
         case 'menu:clear-recent':
           window.electronAPI
             ?.invoke(IPC.RECENT_CLEAR)

@@ -30,10 +30,10 @@ Completion counts treat `wired` and `native` as complete. `stub` means the menu 
 | Scope | Complete | Stub / todo | Completion | Notes |
 |-------|---------:|------------:|-----------:|-------|
 | `menu.color` | 1 | 0 | 100% | Presets merged into the color picker Palette panel (see ADR-0020) |
-| `menu.cuemol2` | 25 | 30 | 45% | Main menubar structure exists; 55 item-level migration points tracked (1 dropped counted as complete) |
+| `menu.cuemol2` | 26 | 29 | 47% | Main menubar structure exists; 55 item-level migration points tracked (1 dropped counted as complete) |
 | `menu.cuemol2-macos` | 6 | 1 | 86% | OS-native items complete; Preferences is stubbed |
 | `menu.cuemol2-scripts` | 1 | 0 | 100% | Dropped intentionally because Electron module loading replaces the XUL script overlay |
-| **Total** | **29** | **35** | **45%** | 64 inventory-derived menu migration points |
+| **Total** | **30** | **34** | **47%** | 64 inventory-derived menu migration points |
 
 ## Menu Item Implementation Status
 
@@ -99,7 +99,7 @@ View menu state notes:
 | View | Center mark > None | `center-mark-none` / `menu:center-mark-none` | `CmdId.ViewCenterMarkNone` + `AsyncCueMol.setViewCenterMark('none')` + `updateMenuState` | wired | Uses CueMol enum value `none`; menu state is updated from the successful command request |
 | View | Hardware stereo | — | removed from Tritium View menu | dropped | Removed by migration decision; hardware stereo menu is not carried forward |
 | View | View property... | `view-props` / `menu:view-props` | `MENU_GENERIC` -> `console.warn` | stub | View property dialog not connected |
-| Tools | Molecular superposition... | `mol-superpose` / `menu:mol-superpose` | `MENU_GENERIC` -> `console.warn` | stub | Tool dialog not connected |
+| Tools | Molecular superposition... | `mol-superpose` / `menu:mol-superpose` | `CmdId.UiMolSuperpose` → `MolSuperposeDialog` → `superposeMol` service | wired | LSQ/SSM superposition via `MolAnlManager` under undo txn; RMSD-file output deferred. See [ADR-0022](../adr/ADR-0022-mol-superpose.md). |
 | Tools | Mol bond editor... | `bond-editor` / `menu:bond-editor` | `MENU_GENERIC` -> `console.warn` | stub | Tool dialog not connected |
 | Tools | Interaction... | `interaction` / `menu:interaction` | `MENU_GENERIC` -> `console.warn` | stub | Tool dialog not connected |
 | Tools | Reassign secondary str... | `reassign-2ndry` / `menu:reassign-2ndry` | `MENU_GENERIC` -> `console.warn` | stub | Tool dialog not connected |

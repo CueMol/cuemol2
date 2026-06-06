@@ -83,8 +83,11 @@ The only tritium-side gap was `parseGenericProps`, which now recurses into
 nested objects and emits each child as a `depth`-tagged dot-path entry
 (`section.type`, ...) after its read-only container row. `GenericTab` indents
 children by depth. First consumer: `inspector/TubeRendererSection` (the tube
-`section.*` cross-section shape). Cartoon's nested shape controls can be wired
-onto its curated page the same way (follow-up).
+`section.*` cross-section shape); `inspector/NuclRendererSection` and
+`inspector/CartoonRendererSection` followed, the latter wiring the cartoon
+helix / sheet / coil section shapes (`helix.*` / `sheet.*` / `coil.*` /
+`ribhelix.*`) and head junctions (`sheethead.*` / `ribhelix_head.*` /
+`ribhelix_tail.*`) onto its curated page via the same dot-path mechanism.
 
 ## Notes
 

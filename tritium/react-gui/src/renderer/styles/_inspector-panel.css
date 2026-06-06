@@ -129,8 +129,11 @@
 }
 
 /* ── Accordion ── */
+/* A visible (not hairline) 1px divider between stacked sections: `--border`
+ * has more contrast against the panel surface than `--border-subtle`, so the
+ * boundaries are easy to spot in the long, one-open-at-a-time Properties tab. */
 .insp-accordion {
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border);
 }
 
 /* Mirrors the left-panel `.sp-section-header` eyebrow design: same height /
