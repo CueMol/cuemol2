@@ -37,10 +37,14 @@ vec3 viewPos(vec2 uv, float vz)
     return vec3((u_ndcToViewMul * uv + u_ndcToViewAdd) * vz, vz);
 }
 
-// Per-pixel interleaved gradient noise (spatial, no temporal component).
-float ign(vec2 p)
+// Per-pixel hash noise in [0,1). A randomised (white) per-pixel rotation makes
+// the residual low-slice-count noise unstructured, so the spatial denoise can
+// average it out (a regular interleaved-gradient pattern survives the blur).
+float hash12(vec2 p)
 {
-    return fract(52.9829189 * fract(dot(p, vec2(0.06711056, 0.00583715))));
+    vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
 }
 
 // Depth-discontinuity edges (1 = flat, 0 = strong edge), per XeGTAO. The
@@ -114,9 +118,10 @@ void main()
     float packedEdges = packEdges(calculateEdges(viewspaceZ, zL, zR, zT, zB));
 
     // ---- GTAO horizon integration (depth-only) ----
-    // High slice count keeps the per-pixel angular noise low so a single light
-    // denoise pass suffices (no TAA available for temporal averaging).
-    const int sliceCount = 9;
+    // A low slice count keeps the AO broad/soft (the spatial denoise spreads
+    // the interleaved per-pixel directions); the randomised noise below keeps
+    // the residual grain unstructured so the denoise can remove it.
+    const int sliceCount = 3;
     const int stepsPerSlice = 3;
     const float sampleDistributionPower = 2.0;
     const float falloffRangeRatio = 0.615;
@@ -138,9 +143,8 @@ void main()
     float pixViewSize = viewspaceZ * ndcToViewMul_x_pixelSize.x;
     float screenspaceRadius = effectRadius / max(pixViewSize, 1e-6);
 
-    float noiseSlice = ign(gl_FragCoord.xy);
-    float noiseSample =
-        fract(noiseSlice + dot(gl_FragCoord.xy, vec2(0.7548776662, 0.5698402909)));
+    float noiseSlice = hash12(gl_FragCoord.xy);
+    float noiseSample = hash12(gl_FragCoord.xy + vec2(13.7, 41.3));
 
     float minS = pixelTooCloseThreshold / screenspaceRadius;
 
