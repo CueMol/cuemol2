@@ -5,16 +5,21 @@
 
 warning("CUEMOL_DIR: <%s>" % CONFIG['CUEMOL_DIR'])
 
+# LOCAL_INCLUDES is a strictly-ordered list (mozbuild raises UnsortedError on
+# unsorted appends). The boost and libcuemol2 include dirs are configured via
+# --enable-cuemol-boostdir / --enable-cuemol, so their relative sort order
+# depends on the actual paths. Sort the pair at evaluation time so an in-tree
+# CUEMOL_DIR (e.g. <repo>/.build_out/cuemol2) does not break the build.
 if CONFIG['OS_ARCH'] == 'WINNT':
-    LOCAL_INCLUDES += [
+    LOCAL_INCLUDES += sorted([
         '%%%s' % CONFIG['CUEMOL_BOOST_DIR'],
         '%%%s/include' % CONFIG['CUEMOL_DIR'],
-    ]
+    ])
 else:
-    LOCAL_INCLUDES += [
+    LOCAL_INCLUDES += sorted([
         '%%%s/include' % CONFIG['CUEMOL_BOOST_DIR'],
         '%%%s/include' % CONFIG['CUEMOL_DIR'],
-    ]
+    ])
 
 
 DEFINES['HAVE_CONFIG_H'] = True
