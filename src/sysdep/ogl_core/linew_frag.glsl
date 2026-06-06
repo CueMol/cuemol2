@@ -27,7 +27,11 @@ varying float v_length;
 varying vec4 v_frontColor;
 varying float v_fogCoord;
 
-out vec4 o_FragColor;
+layout(location = 0) out vec4 o_FragColor;
+// Lines have no surface normal: write the sentinel so GTAO reconstructs from
+// depth for these pixels (MRT normal output is ignored when there is no
+// attachment).
+layout(location = 1) out vec3 o_Normal;
 
 void main(void)
 {
@@ -46,4 +50,5 @@ void main(void)
     }
 
     o_FragColor = fragFogColor(color, frag_alpha, v_fogCoord);
+    o_Normal = vec3(0.0);
 }

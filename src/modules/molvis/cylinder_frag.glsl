@@ -32,7 +32,9 @@ varying float v_depmx;
 varying vec2 v_normadj;
 varying mat2 v_normmat;
 
-out vec4 o_FragColor;
+layout(location = 0) out vec4 o_FragColor;
+// MRT eye-space normal for GTAO (sentinel vec3(0) -> reconstruct from depth).
+layout(location = 1) out vec3 o_Normal;
 
 void main()
 {
@@ -73,12 +75,14 @@ void main()
 
     // color calculation
     vec4 color;
+    vec3 onrm = vec3(0.0);
     if (bEdge) {
         color = vec4(u_edgecolor.rgb, v_color.a);
     } else {
         vec3 normal = vec3(v_impos.x, v_normadj.x * adj_cen, v_normadj.y * adj_cen);
         normal.xy *= v_normmat;
 
+        onrm = normalize(normal);
         color = flight2(normal, ecpos, v_color);
     }
 
@@ -87,4 +91,6 @@ void main()
     color = fragFogColor(color, frag_alpha, fogz);
 
     o_FragColor = color;
+    // Eye-space cylinder normal (sentinel on the silhouette edge).
+    o_Normal = onrm;
 }

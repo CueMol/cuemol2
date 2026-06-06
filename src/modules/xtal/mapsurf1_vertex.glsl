@@ -46,6 +46,8 @@ attribute float a_ivert;
 
 varying vec4 v_frontColor;
 varying float v_fogCoord;
+// Eye-space surface normal forwarded to the MRT normal output (GTAO).
+varying vec3 v_ecNormal;
 
 const int u_binfac = 1;
 
@@ -119,6 +121,7 @@ void main(void)
     vec3 norm = vec3(inorm0) * (1.0 - fOffset) + vec3(inorm1) * fOffset;
     norm = normalize(norm);
     norm = normalize(u_NormalMatrix * norm);
+    v_ecNormal = norm;
 
     ////
 

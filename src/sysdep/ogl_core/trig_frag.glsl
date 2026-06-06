@@ -21,10 +21,17 @@ layout(std140) uniform DrawParamsBlock {
 
 varying vec4 v_frontColor;
 varying float v_fogCoord;
+varying vec3 v_ecNormal;
 
-out vec4 o_FragColor;
+layout(location = 0) out vec4 o_FragColor;
+// MRT eye-space normal for GTAO (sentinel vec3(0) -> reconstruct from depth).
+layout(location = 1) out vec3 o_Normal;
 
 void main(void)
 {
     o_FragColor = fragFogColor(v_frontColor, frag_alpha, v_fogCoord);
+
+    o_Normal = (enable_lighting != 0 && dot(v_ecNormal, v_ecNormal) > 1e-12)
+                   ? normalize(v_ecNormal)
+                   : vec3(0.0);
 }

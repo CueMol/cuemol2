@@ -17,9 +17,13 @@ layout(std140) uniform DrawParamsBlock {
     vec4  u_color;     // offset 16
 };
 
-out vec4 o_FragColor;
+layout(location = 0) out vec4 o_FragColor;
+// Wireframe mesh has no usable surface normal: write the sentinel so GTAO
+// reconstructs from depth for these pixels.
+layout(location = 1) out vec3 o_Normal;
 
 void main (void)
 {
   o_FragColor = vec4(u_color.rgb, u_color.a * frag_alpha);
+  o_Normal = vec3(0.0);
 }

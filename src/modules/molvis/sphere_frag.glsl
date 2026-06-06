@@ -28,7 +28,9 @@ varying vec4 v_ecpos;
 varying float v_radius;
 varying float v_edgeratio;
 
-out vec4 o_FragColor;
+layout(location = 0) out vec4 o_FragColor;
+// MRT eye-space normal for GTAO (sentinel vec3(0) -> reconstruct from depth).
+layout(location = 1) out vec3 o_Normal;
 
 void main()
 {
@@ -90,4 +92,7 @@ void main()
     // fog calculation
     float fogz = ffog(ecpos.z);
     o_FragColor = fragFogColor(color, frag_alpha, fogz);
+
+    // Eye-space sphere normal (sentinel on the silhouette edge ring).
+    o_Normal = bEdge ? vec3(0.0) : normalize(normal);
 }

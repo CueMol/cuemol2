@@ -30,7 +30,10 @@ uniform sampler2D u_texture;
 varying vec2 v_texCoord;
 varying float v_fogCoord;
 
-out vec4 o_FragColor;
+layout(location = 0) out vec4 o_FragColor;
+// Billboard glyphs have no surface normal: write the sentinel so GTAO
+// reconstructs from depth for these pixels.
+layout(location = 1) out vec3 o_Normal;
 
 void main()
 {
@@ -44,4 +47,5 @@ void main()
     }
 
     o_FragColor = fragFogColor(vec4(u_colorBias, alpha), frag_alpha, v_fogCoord);
+    o_Normal = vec3(0.0);
 }
