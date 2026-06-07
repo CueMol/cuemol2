@@ -36,6 +36,7 @@ class PixGpuPrim;
 
 class BufTexRep;
 class RenderTarget;
+class DataTexture;
 
 class GFX_API DisplayContext : public qlib::LObject
 {
@@ -536,6 +537,24 @@ public:
     /// and attachment flags (see gfx::RTFlags). Returns nullptr if this
     /// context does not support off-screen rendering (default).
     virtual RenderTarget *createRenderTarget(int w, int h, int flags)
+    {
+        return nullptr;
+    }
+
+    /// Create a backend-specific immutable data texture from CPU bytes.
+    /// ncomp: 1 = R8, 2 = RG8. linear selects LINEAR vs NEAREST filtering.
+    /// Returns nullptr if unsupported (default).
+    virtual DataTexture *createDataTexture(int w, int h, int ncomp, bool linear,
+                                           const void *data)
+    {
+        return nullptr;
+    }
+
+    /// Create a data texture from a raw byte file (resolved like shader paths,
+    /// e.g. "%%CONFDIR%%/data/textures/foo.dat"). The file must hold exactly
+    /// w*h*ncomp bytes. Returns nullptr if unsupported or on read failure.
+    virtual DataTexture *createDataTextureFromFile(const LString &path, int w, int h,
+                                                   int ncomp, bool linear)
     {
         return nullptr;
     }

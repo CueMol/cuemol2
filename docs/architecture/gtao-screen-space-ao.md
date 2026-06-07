@@ -154,8 +154,7 @@ AO 経路は scene を **single-sample** off-screen FBO に描くため、MSAA �
 
 ### 設計: Mol* 流の 2 直交軸
 - **軸1 = 空間 AA メソッド**: `Scene.aa_method` enum (`none`/`fxaa`/`smaa`)。差し替え可能な
-  fragment ポストパスとして実装。現状 **FXAA のみ実装**、`smaa` は enum 予約で未実装
-  フォールバック (AA 無し + 初回警告ログ)。
+  fragment ポストパスとして実装。**FXAA と SMAA 1x を実装済み**。
 - **軸2 = temporal jitter SS** (未実装): projection を per-frame で subpixel jitter し、
   静止時のみ accumulation buffer に蓄積、カメラ変化でリセット (motion vector 不要)。idle
   再描画 + accumulation FBO という別サブシステムが要るため別 phase (§8)。
@@ -169,6 +168,22 @@ AO 経路は scene を **single-sample** off-screen FBO に描くため、MSAA �
 - **中間 RT は LINEAR 必須** (`RT_COLOR_RGBA8` のみ、NEAREST フラグ無し)。FXAA のサブテクセル
   sampling に不可欠。
 - AA は overlay/2D-UI の **前** に走るので UI 文字はぼけない。
+
+### SMAA 1x パス (`smaa_{edges,weights,blend}_frag.glsl`, `PostProcGpuPrim::drawSmaa*`)
+- `aa_method=smaa`: composite を `m_pCompRT` へ描いた後、3 パス:
+  edges (`m_pSmaaEdgeRT`, clear 必須) → weights (`m_pSmaaWeightRT`, clear 必須) →
+  blend (default FB)。GUIView が RT bind/unbind を編成。
+- **Mol* (three.js SMAA 2.8, MIT) からの移植**。Mol* は WebGL(bottom-up) 向けに Y 符号を
+  調整済みで、CueMol の GL も bottom-up のため**そのまま適用**。offset は専用 VS の代わりに
+  各 fragment shader 内で `v_uv`/`u_rcpFrame` から算出し `postproc_vert` を共用。
+- **lookup texture**: AreaTex (160x560 RG8, LINEAR) と SearchTex (66x33 R8, NEAREST) を
+  `share/data/textures/smaa_{area,search}.dat` として同梱。**Mol* の base64 PNG を offline
+  デコードして生成** (R/G チャンネル抽出。`UNPACK_FLIP_Y=false` の Mol* 挙動に合わせ flip 無し)。
+  PNG decoder は持たないため raw データ同梱とした。
+- **data-texture インフラ**: CPU バイト列→sampler を作る汎用 `gfx::DataTexture` /
+  `sysdep::OcDataTexture` を新設 (`DisplayContext::createDataTexture[FromFile]`)。FBO 専用の
+  `RenderTarget` とは別系統 (R8/RG8・LINEAR/NEAREST・CLAMP)。
+- FXAA より silhouette/色境界の品質が高い。コスト = 中間 RT 2 枚 + lookup 2 枚 + 3 パス。
 
 ### なぜ hardware MSAA (case B) を採らないか (重要)
 「scene FBO を MSAA 化し GTAO は sample0 を texelFetch、color は MSAA resolve」案は不採用:
@@ -277,9 +292,6 @@ shader 定数のまま (必要なら同様に Scene プロパティへ昇格で�
 - bent normals、TAA。
 
 ### AA ロードマップ (§4.5 の続き)
-- **SMAA 1x** (軸1 増分): edge detection / blending weight / neighborhood blend の 3 パス +
-  **AreaTex / SearchTex の precomputed lookup texture 同梱** (Mol* は base64 PNG 埋め込み) +
-  中間 RT 2 枚。WebGL2 ポータブル。FXAA より silhouette 品質が上。
 - **temporal jitter SS** (軸2): projection jitter + accumulation FBO + idle 再描画 + カメラ
   変化リセット (Mol* `mol-canvas3d/passes/multi-sample.ts` 相当)。どの空間メソッドとも合成可。
 - **全経路統一**: 非 AO 経路も offscreen+post-AA に通し AA を context MSAA 非依存にする

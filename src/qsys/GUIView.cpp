@@ -226,24 +226,36 @@ void GUIView::drawScene()
                 //   none: composite straight to the default framebuffer.
                 //   fxaa: composite to the LINEAR m_pCompRT, then FXAA to the
                 //         default framebuffer.
-                // smaa is reserved (falls back to no AA until implemented).
+                //   smaa: composite to m_pCompRT, then SMAA 1x (edges ->
+                //         weights -> blend) to the default framebuffer.
                 const int aaMethod = pScene->getAAMethod();
-                const bool useFxaa =
-                    (aaMethod == Scene::AA_FXAA) && m_pCompRT != nullptr;
-                if (aaMethod == Scene::AA_SMAA) {
-                    static bool warned = false;
-                    if (!warned) {
-                        LOG_DPRINTLN("GUIView> SMAA not implemented yet; "
-                                     "AO composite drawn without post-AA.");
-                        warned = true;
-                    }
-                }
+                const bool postAA = (aaMethod == Scene::AA_FXAA ||
+                                     aaMethod == Scene::AA_SMAA) &&
+                                    m_pCompRT != nullptr;
                 pdc->setDepthTestEnabled(false);
-                if (useFxaa) {
+                if (postAA) {
                     m_pCompRT->bind();
                     m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, m_pAoDenRT);
                     m_pCompRT->unbind();
-                    m_pAOPostProc->drawFxaa(pdc, m_pCompRT, aoc);
+
+                    if (aaMethod == Scene::AA_SMAA && m_pSmaaEdgeRT != nullptr &&
+                        m_pSmaaWeightRT != nullptr) {
+                        // 1. Edge detection (cleared so non-edge pixels read 0).
+                        m_pSmaaEdgeRT->bind();
+                        m_pSmaaEdgeRT->clear(0.0f, 0.0f, 0.0f, 0.0f);
+                        m_pAOPostProc->drawSmaaEdges(pdc, m_pCompRT, aoc);
+                        m_pSmaaEdgeRT->unbind();
+                        // 2. Blending weight calculation.
+                        m_pSmaaWeightRT->bind();
+                        m_pSmaaWeightRT->clear(0.0f, 0.0f, 0.0f, 0.0f);
+                        m_pAOPostProc->drawSmaaWeights(pdc, m_pSmaaEdgeRT, aoc);
+                        m_pSmaaWeightRT->unbind();
+                        // 3. Neighborhood blending -> default framebuffer.
+                        m_pAOPostProc->drawSmaaBlend(pdc, m_pCompRT, m_pSmaaWeightRT,
+                                                     aoc);
+                    } else {
+                        m_pAOPostProc->drawFxaa(pdc, m_pCompRT, aoc);
+                    }
                 } else {
                     m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, m_pAoDenRT);
                 }
@@ -645,6 +657,20 @@ void GUIView::ensureAORTs(int w, int h)
         m_pCompRT->resize(w, h);
     }
 
+    // SMAA intermediate targets (edges, weights). LINEAR (SMAA relies on
+    // bilinear sampling of both). Allocated regardless of the active method;
+    // they are cheap RGBA8 buffers and only sampled when aaMethod is smaa.
+    if (m_pSmaaEdgeRT == nullptr) {
+        m_pSmaaEdgeRT = pdc->createRenderTarget(w, h, gfx::RT_COLOR_RGBA8);
+    } else {
+        m_pSmaaEdgeRT->resize(w, h);
+    }
+    if (m_pSmaaWeightRT == nullptr) {
+        m_pSmaaWeightRT = pdc->createRenderTarget(w, h, gfx::RT_COLOR_RGBA8);
+    } else {
+        m_pSmaaWeightRT->resize(w, h);
+    }
+
     if (m_pAOPostProc == nullptr) {
         m_pAOPostProc = MB_NEW gfx::PostProcGpuPrim();
     }
@@ -698,6 +724,14 @@ void GUIView::cleanupAORTs()
     if (m_pAOPostProc != nullptr) {
         delete m_pAOPostProc;
         m_pAOPostProc = nullptr;
+    }
+    if (m_pSmaaWeightRT != nullptr) {
+        delete m_pSmaaWeightRT;
+        m_pSmaaWeightRT = nullptr;
+    }
+    if (m_pSmaaEdgeRT != nullptr) {
+        delete m_pSmaaEdgeRT;
+        m_pSmaaEdgeRT = nullptr;
     }
     if (m_pCompRT != nullptr) {
         delete m_pCompRT;

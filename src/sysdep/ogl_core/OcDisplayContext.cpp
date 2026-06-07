@@ -16,12 +16,17 @@
 #include <gfx/RenderTarget.hpp>
 #include "OcBufTexRep.hpp"
 #include "OcRenderTarget.hpp"
+#include "OcDataTexture.hpp"
 #include <gfx/SolidColor.hpp>
 #include <gfx/Mesh.hpp>
 #include <gfx/AbstDrawAttrs.hpp>
 #include <gfx/ColProfMgr.hpp>
 
 #include <sysdep/OglError.hpp>
+
+#include <qlib/FileStream.hpp>
+#include <qsys/SysConfig.hpp>
+#include <gfx/DataTexture.hpp>
 
 namespace sysdep {
 
@@ -110,6 +115,52 @@ gfx::RenderTarget *OcDisplayContext::createRenderTarget(int w, int h, int flags)
         return nullptr;
     }
     return p;
+}
+
+gfx::DataTexture *OcDisplayContext::createDataTexture(int w, int h, int ncomp,
+                                                     bool linear, const void *data)
+{
+    OcDataTexture *p = MB_NEW OcDataTexture();
+    if (!p->init(this, w, h, ncomp, linear, data)) {
+        delete p;
+        return nullptr;
+    }
+    return p;
+}
+
+gfx::DataTexture *OcDisplayContext::createDataTextureFromFile(const LString &path,
+                                                             int w, int h, int ncomp,
+                                                             bool linear)
+{
+    const size_t expect = size_t(w) * size_t(h) * size_t(ncomp);
+
+    // Resolve the %%CONFDIR%% path the same way shader files are loaded.
+    qsys::SysConfig *pconf = qsys::SysConfig::getInstance();
+    LString fnam = pconf->convPathName(path);
+
+    std::vector<quint8> buf;
+    buf.reserve(expect);
+    try {
+        qlib::FileInStream fis;
+        fis.open(fnam);
+        char tmp[4096];
+        while (fis.ready()) {
+            int n = fis.read(tmp, 0, sizeof tmp);
+            if (n <= 0) break;
+            buf.insert(buf.end(), tmp, tmp + n);
+        }
+    } catch (...) {
+        LOG_DPRINTLN("OcDisplayContext> cannot read data texture: %s", fnam.c_str());
+        return nullptr;
+    }
+
+    if (buf.size() != expect) {
+        LOG_DPRINTLN("OcDisplayContext> data texture %s size mismatch (%zu != %zu)",
+                     fnam.c_str(), buf.size(), expect);
+        return nullptr;
+    }
+
+    return createDataTexture(w, h, ncomp, linear, buf.data());
 }
 
 void OcDisplayContext::bindRenderTarget(gfx::RenderTarget *prt)

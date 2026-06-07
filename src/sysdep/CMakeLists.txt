@@ -10,6 +10,7 @@ SET(SYSDEP_SRCS
   ogl_core/OcView.cpp
   ogl_core/OcBufferRep.cpp
   ogl_core/OcRenderTarget.cpp
+  ogl_core/OcDataTexture.cpp
 )
 
 SET(SYSDEP_HDRS
@@ -90,6 +91,9 @@ SET(SHADER_SOURCES
   ogl_core/gtao_frag.glsl
   ogl_core/ao_denoise_frag.glsl
   ogl_core/fxaa_frag.glsl
+  ogl_core/smaa_edges_frag.glsl
+  ogl_core/smaa_weights_frag.glsl
+  ogl_core/smaa_blend_frag.glsl
 )
 SET(SHADER_DEPS
   ogl_core/lighting_inc.glsl

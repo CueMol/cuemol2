@@ -13,6 +13,7 @@ namespace gfx {
 
 class ShaderObject;
 class RenderTarget;
+class DataTexture;
 
 /// View-space reconstruction constants for the GTAO passes, derived CPU-side
 /// from the projection matrix (see GUIView). All shader-facing math uses these
@@ -68,6 +69,13 @@ private:
     ShaderObject *m_pDenoisePO = nullptr;
     /// FXAA post-process program (final AA stage of the live AO path).
     ShaderObject *m_pFxaaPO = nullptr;
+    /// SMAA 1x programs (edge detection / blending weights / neighborhood blend).
+    ShaderObject *m_pSmaaEdgePO = nullptr;
+    ShaderObject *m_pSmaaWeightPO = nullptr;
+    ShaderObject *m_pSmaaBlendPO = nullptr;
+    /// SMAA precomputed lookup textures (loaded once from share/data/textures).
+    DataTexture *m_pSmaaAreaTex = nullptr;
+    DataTexture *m_pSmaaSearchTex = nullptr;
     TriArray *m_pDrawElem = nullptr;
 
 public:
@@ -114,6 +122,23 @@ public:
     /// consts.viewportPixelSize supplies the reciprocal frame size.
     void drawFxaa(DisplayContext *pDC, RenderTarget *srcColorRT,
                   const AoConstants &consts);
+
+    /// SMAA 1x passes (consts.viewportPixelSize supplies 1/size). Each draws a
+    /// fullscreen quad into the currently bound framebuffer:
+    ///   edges:   color (LINEAR) -> edge texture (RG)
+    ///   weights: edges + AreaTex/SearchTex -> blending weights (RGBA)
+    ///   blend:   color + weights -> antialiased color
+    /// drawSmaaWeights lazily loads the lookup textures; if they fail to load it
+    /// draws nothing (the caller should fall back to no AA).
+    void drawSmaaEdges(DisplayContext *pDC, RenderTarget *srcColorRT,
+                       const AoConstants &consts);
+    void drawSmaaWeights(DisplayContext *pDC, RenderTarget *edgesRT,
+                         const AoConstants &consts);
+    void drawSmaaBlend(DisplayContext *pDC, RenderTarget *srcColorRT,
+                       RenderTarget *weightsRT, const AoConstants &consts);
+
+    /// True once both SMAA lookup textures are available (lazily loaded).
+    bool ensureSmaaTextures(DisplayContext *pDC);
 
 private:
     void alloc(DisplayContext *pDC);

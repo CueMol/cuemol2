@@ -139,6 +139,11 @@ private:
     /// framebuffer. Unused when aaMethod is none. Owned.
     gfx::RenderTarget *m_pCompRT = nullptr;
 
+    /// SMAA intermediate targets (edges and blending weights). Used only when
+    /// aaMethod is smaa. Owned.
+    gfx::RenderTarget *m_pSmaaEdgeRT = nullptr;
+    gfx::RenderTarget *m_pSmaaWeightRT = nullptr;
+
     /// Fullscreen post-processing primitive (GTAO + denoise + composite). Owned.
     gfx::PostProcGpuPrim *m_pAOPostProc = nullptr;
 

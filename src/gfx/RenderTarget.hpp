@@ -33,6 +33,9 @@ enum RTTexUnit
     RT_TU_DEPTH = 1,
     RT_TU_NORMAL = 2,
     RT_TU_NOISE = 3,
+    /// SMAA lookup textures (blending-weight pass).
+    RT_TU_SMAA_AREA = 4,
+    RT_TU_SMAA_SEARCH = 5,
 };
 
 /// Backend-independent off-screen render target (color + depth, optional

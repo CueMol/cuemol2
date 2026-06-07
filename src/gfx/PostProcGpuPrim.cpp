@@ -9,6 +9,7 @@
 #include "ShaderObject.hpp"
 #include "DisplayContext.hpp"
 #include "RenderTarget.hpp"
+#include "DataTexture.hpp"
 
 #include <qlib/LTypes.hpp>
 
@@ -221,6 +222,125 @@ void PostProcGpuPrim::drawFxaa(DisplayContext *pDC, RenderTarget *srcColorRT,
     srcColorRT->unbindTextures();
 }
 
+bool PostProcGpuPrim::ensureSmaaTextures(DisplayContext *pDC)
+{
+    if (m_pSmaaAreaTex != nullptr && m_pSmaaSearchTex != nullptr) return true;
+
+    // AreaTex: 160x560 RG8 LINEAR. SearchTex: 66x33 R8 NEAREST. Decoded from
+    // Mol*'s SMAA area/search PNGs (see docs / data/textures).
+    if (m_pSmaaAreaTex == nullptr) {
+        m_pSmaaAreaTex = pDC->createDataTextureFromFile(
+            "%%CONFDIR%%/data/textures/smaa_area.dat", 160, 560, 2, true);
+    }
+    if (m_pSmaaSearchTex == nullptr) {
+        m_pSmaaSearchTex = pDC->createDataTextureFromFile(
+            "%%CONFDIR%%/data/textures/smaa_search.dat", 66, 33, 1, false);
+    }
+    if (m_pSmaaAreaTex == nullptr || m_pSmaaSearchTex == nullptr) {
+        LOG_DPRINTLN("PostProcGpuPrim> ERROR: cannot load SMAA lookup textures.");
+        return false;
+    }
+    return true;
+}
+
+void PostProcGpuPrim::drawSmaaEdges(DisplayContext *pDC, RenderTarget *srcColorRT,
+                                   const AoConstants &consts)
+{
+    if (srcColorRT == nullptr) return;
+    if (!ensureDrawElem(pDC)) return;
+
+    if (m_pSmaaEdgePO == nullptr) {
+        m_pSmaaEdgePO =
+            pDC->loadShaderObject("smaa_edges",
+                                  "%%CONFDIR%%/data/shaders/postproc_vert.glsl",
+                                  "%%CONFDIR%%/data/shaders/smaa_edges_frag.glsl");
+        if (m_pSmaaEdgePO == nullptr) {
+            LOG_DPRINTLN("PostProcGpuPrim> ERROR: cannot load smaa_edges shader.");
+            return;
+        }
+    }
+
+    srcColorRT->bindColorTex(0, RT_TU_COLOR);
+
+    m_pSmaaEdgePO->enable();
+    m_pSmaaEdgePO->setUniform("u_colorTex", RT_TU_COLOR);
+    m_pSmaaEdgePO->setUniformF("u_rcpFrame", consts.viewportPixelSize[0],
+                               consts.viewportPixelSize[1]);
+
+    pDC->drawElem(*m_pDrawElem);
+
+    m_pSmaaEdgePO->disable();
+    srcColorRT->unbindTextures();
+}
+
+void PostProcGpuPrim::drawSmaaWeights(DisplayContext *pDC, RenderTarget *edgesRT,
+                                     const AoConstants &consts)
+{
+    if (edgesRT == nullptr) return;
+    if (!ensureDrawElem(pDC)) return;
+    if (!ensureSmaaTextures(pDC)) return;
+
+    if (m_pSmaaWeightPO == nullptr) {
+        m_pSmaaWeightPO =
+            pDC->loadShaderObject("smaa_weights",
+                                  "%%CONFDIR%%/data/shaders/postproc_vert.glsl",
+                                  "%%CONFDIR%%/data/shaders/smaa_weights_frag.glsl");
+        if (m_pSmaaWeightPO == nullptr) {
+            LOG_DPRINTLN("PostProcGpuPrim> ERROR: cannot load smaa_weights shader.");
+            return;
+        }
+    }
+
+    edgesRT->bindColorTex(0, RT_TU_COLOR);
+    m_pSmaaAreaTex->bind(RT_TU_SMAA_AREA);
+    m_pSmaaSearchTex->bind(RT_TU_SMAA_SEARCH);
+
+    m_pSmaaWeightPO->enable();
+    m_pSmaaWeightPO->setUniform("u_edgesTex", RT_TU_COLOR);
+    m_pSmaaWeightPO->setUniform("u_areaTex", RT_TU_SMAA_AREA);
+    m_pSmaaWeightPO->setUniform("u_searchTex", RT_TU_SMAA_SEARCH);
+    m_pSmaaWeightPO->setUniformF("u_rcpFrame", consts.viewportPixelSize[0],
+                                 consts.viewportPixelSize[1]);
+
+    pDC->drawElem(*m_pDrawElem);
+
+    m_pSmaaWeightPO->disable();
+    edgesRT->unbindTextures();
+}
+
+void PostProcGpuPrim::drawSmaaBlend(DisplayContext *pDC, RenderTarget *srcColorRT,
+                                   RenderTarget *weightsRT, const AoConstants &consts)
+{
+    if (srcColorRT == nullptr || weightsRT == nullptr) return;
+    if (!ensureDrawElem(pDC)) return;
+
+    if (m_pSmaaBlendPO == nullptr) {
+        m_pSmaaBlendPO =
+            pDC->loadShaderObject("smaa_blend",
+                                  "%%CONFDIR%%/data/shaders/postproc_vert.glsl",
+                                  "%%CONFDIR%%/data/shaders/smaa_blend_frag.glsl");
+        if (m_pSmaaBlendPO == nullptr) {
+            LOG_DPRINTLN("PostProcGpuPrim> ERROR: cannot load smaa_blend shader.");
+            return;
+        }
+    }
+
+    srcColorRT->bindColorTex(0, RT_TU_COLOR);
+    weightsRT->bindColorTex(0, RT_TU_NORMAL);  // weights on unit 2
+
+    m_pSmaaBlendPO->enable();
+    m_pSmaaBlendPO->setUniform("u_colorTex", RT_TU_COLOR);
+    m_pSmaaBlendPO->setUniform("u_weightsTex", RT_TU_NORMAL);
+    m_pSmaaBlendPO->setUniformF("u_rcpFrame", consts.viewportPixelSize[0],
+                                consts.viewportPixelSize[1]);
+
+    pDC->drawElem(*m_pDrawElem);
+
+    m_pSmaaBlendPO->disable();
+    srcColorRT->unbindTextures();
+    weightsRT->unbindTextures();
+}
+
 void PostProcGpuPrim::invalidate()
 {
     if (m_pDrawElem != nullptr) {
@@ -234,4 +354,17 @@ void PostProcGpuPrim::invalidate()
     m_pGtaoPO = nullptr;
     m_pDenoisePO = nullptr;
     m_pFxaaPO = nullptr;
+    m_pSmaaEdgePO = nullptr;
+    m_pSmaaWeightPO = nullptr;
+    m_pSmaaBlendPO = nullptr;
+
+    // SMAA lookup textures are owned here (unlike the cached shader programs).
+    if (m_pSmaaAreaTex != nullptr) {
+        delete m_pSmaaAreaTex;
+        m_pSmaaAreaTex = nullptr;
+    }
+    if (m_pSmaaSearchTex != nullptr) {
+        delete m_pSmaaSearchTex;
+        m_pSmaaSearchTex = nullptr;
+    }
 }
