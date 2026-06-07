@@ -23,17 +23,17 @@ Status values:
 |----|-------|---------|--------|----|-----|-------|
 | [`dialog.about`](../uxp-inventory/other_dlgs.md#dialogabout) | `AboutDialog` / `useDialog` | direct | wip | | | GRE info・userAgent は省略 |
 | [`dialog.atomintr`](../uxp-inventory/other_dlgs.md#dialogatomintr) | `AtomIntr*Section` (inspector Properties tab) | split | review | | | Interaction/Dashed line/3D tube/Value label の 4 accordion section に分割。Dashed トグルは合成（stipple0..5 を `setGenericProps` で 1 undo step に原子書き込み）。arrow size・label font は UXP dialog 外だが追加。距離/角度定義の append/remove 編集 (Edit interaction list) は対象外 |
-| [`dialog.delete-object`](../uxp-inventory/other_dlgs.md#dialogdelete-object) | | | todo | | | |
+| [`dialog.delete-object`](../uxp-inventory/other_dlgs.md#dialogdelete-object) | `ScenePane` (tree Delete) / `sceneOps.deleteNode` | dropped | done | | | 選択式の独立 dialog は廃止。Scene tree の Delete (`deleteNode` / `bulkDeleteNode`) に置換 (`panel.workspace.*` 参照) |
 | [`dialog.dsurf`](../uxp-inventory/other_dlgs.md#dialogdsurf) | | | todo | | | |
 | [`dialog.exportlxs-opt`](../uxp-inventory/other_dlgs.md#dialogexportlxs-opt) | | | todo | | | |
 | [`dialog.exportpng-opt`](../uxp-inventory/other_dlgs.md#dialogexportpng-opt) | | | todo | | | |
 | [`dialog.exportqsl-opt`](../uxp-inventory/other_dlgs.md#dialogexportqsl-opt) | | | todo | | | |
-| [`dialog.fopen-option`](../uxp-inventory/other_dlgs.md#dialogfopen-option) | | | todo | | | |
+| [`dialog.fopen-option`](../uxp-inventory/other_dlgs.md#dialogfopen-option) | `FileOpenOptionDialog` | direct | done | | | UXP の 7 format overlay を 1 dialog (renderer options 常時表示 + format 別 collapsible pane) に集約。format pane 自体は `overlay.md` 側で別管理。`DialogContext` 登録済 |
 | [`dialog.generic`](../uxp-inventory/other_dlgs.md#dialoggeneric) | | | todo | | | |
-| [`dialog.new-tabwnd`](../uxp-inventory/other_dlgs.md#dialognew-tabwnd) | | | todo | | | |
-| [`dialog.paint`](../uxp-inventory/other_dlgs.md#dialogpaint) | | | todo | | | |
-| [`dialog.qscwriter-option`](../uxp-inventory/other_dlgs.md#dialogqscwriter-option) | | | todo | | | |
-| [`dialog.setup-renderer`](../uxp-inventory/other_dlgs.md#dialogsetup-renderer) | | | todo | | | |
+| [`dialog.new-tabwnd`](../uxp-inventory/other_dlgs.md#dialognew-tabwnd) | `NewTabDialog` | direct | done | | | UXP `new-tabwnd-dlg` を Blueprint modal 化。New Scene / New View ラジオ + name + Inherit view props。`DialogContext` 登録済 |
+| [`dialog.paint`](../uxp-inventory/other_dlgs.md#dialogpaint) | `ColorPane` (`PaintTable` inline) | dropped | done | | | 独立 paint modal は廃止し ColorPane の inline Paint table に再設計 (`add`/`remove`/`update`/`movePaintEntry` をセル内編集で直接呼ぶ)。`panel.coloring.deck.paint` 参照 |
+| [`dialog.qscwriter-option`](../uxp-inventory/other_dlgs.md#dialogqscwriter-option) | `QscWriterOptionDialog` | direct | done | | | UXP `qscwriter-option-dlg` を Blueprint modal 化。embed / QDF0｜QDF1 / xz｜gzip｜none / base64。`DialogContext` 登録済 |
+| [`dialog.setup-renderer`](../uxp-inventory/other_dlgs.md#dialogsetup-renderer) | `NewRendererDialog` (`RendererOptionsPane` 共有) | merged | done | | | fopen-renderopt-page と renderer-options を共有する `NewRendererDialog` に統合 (UXP も setupRenderer と fopen で tab 共有)。既存 object への renderer setup を担当 |
 | [`dialog.anim-render`](../uxp-inventory/other_dlgs.md#dialoganim-render) | | | todo | | | |
 | [`dialog.animobj`](../uxp-inventory/other_dlgs.md#dialoganimobj) | | | todo | | | |
 | [`dialog.apply-rend-style`](../uxp-inventory/other_dlgs.md#dialogapply-rend-style) | `ApplyRendStyleDialog` / `getRendererStyleEditInfo` / `applyRendererStyleList` | direct | wip | | | Blueprint replacement for UXP `apply_rend_style.xul`. List view + Add popup (type/edge/coloring sections) + Delete/Up/Down operating on the working list; commit dispatches `applyRendererStyleList` to call `rend.applyStyles` under "Change style" txn. Pre-fetch via `getRendererStyleEditInfo` (parses `rend.style`, groups available styles by regex, excludes already-applied entries). |

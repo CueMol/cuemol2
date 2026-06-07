@@ -1,5 +1,7 @@
 # Migration Mapping — Index
 
+- Updated: 2026-06-07 (consistency audit fix: overlay.md の fopen-* 6 + property fragment 8 を merged/done、renderer-common を merged/wip に是正 (二重追跡を明示するヘッダ注記追加); panel.btmpanel-holder.log を done (LogPanel); widget.sidepanelholder を wip (SidePanel, drag-reorder 未移植)。全 mapping 行を ground truth 再集計し Category Summary / Total / Mapping Type Breakdown / Unstarted / In Progress を同期: Total **132**, done 43, wip 29, review 4, todo 56; Mapping direct 19 / merged 31 / split 22 / dropped 4 / unassigned 56。先行の Total 集計 (131/16/85 系) は元から誤りだったため是正)
+- Updated: 2026-06-07 (`other_dlgs` reconciliation: 実装済 4 件 (new-tabwnd / fopen-option / qscwriter-option / setup-renderer) を done、再設計済 2 件 (paint -> ColorPane inline / delete-object -> Scene tree Delete) を dropped に更新。Dialog_other done 0->6 / todo 14->8)
 - Updated: 2026-06-06 (`dialog.tool.ssm-sup` review: UXP "Molecular superposition" tool dialog (`tools/ssm_sup`) を Blueprint modal として実装。h3-kit/form (`SegmentField` LSQ/SSM + Reference/Moving の `ObjectSelect` molCoord filter + `MolSelList` + Auto-recenter / Use-xformMat `SwitchField`) で構成。OK は新規 worker service `superposeMol` 経由で `MolAnlManager.superposeSSM1`/`superposeLSQ1` を "Mol superpose" undo txn 内で実行 (例外時 rollback)、Auto-recenter で `MolCoord.fitView2(view, movSel)`。mol/algo/checkbox 履歴は localStorage (`molSuperposeHistory`)、selection 履歴は共有 `selHistory`。"Write RMSD info file" は native save dialog が必要なため deferred (ADR-0022)。Tools メニューの既存 stub `menu:mol-superpose` を `useToolCommands` 経由で配線。tool_dlgs todo 19->18/review 1->2)
 - Updated: 2026-06-05 (`dialog.property.molsurf` done: UXP `molsurf-propdlg` "MolSurf" タブ (dsurf と共有の molsurf-page overlay) を Inspector Properties タブの 1 accordion section に実装 (`MolSurfRenderer` extends `Renderer`, `type_name "molsurf"`)。Drawing mode (MappedEnumRow Fill/Wireframe/Dots) / Line/Point size (NumRow realtime, `drawmode=="fill"` で disable) / Selection mol (`target`、汎用 `useMolObjectNames` で MolCoord 名列挙) / Selection (`showsel` SelRow) / Coloring mode (`colormode` solid/molecule/potential、UXP 忠実に含める)。molsurf-page.js の `mRendTypeName` 分岐により molsurf は surftype/detail 非適用・target 専用なので `DSurfaceRendererSection` とは別 section。cullface/defaultcolor は page に無く、elepot/ramp 系は Coloring パネル管轄なので非露出。worker 変更なし。**これで Dialog_property の renderer 固有 panel は全完了**。prop_dlgs done 12->13/todo 2->1、Total done 15->16/todo 87->86)
 - Updated: 2026-06-05 (`dialog.property.isosurf` done: UXP `isosurf-propdlg` "Map" タブを Inspector Properties タブの 1 accordion section に実装 (`MapSurfRenderer` extends `MapRenderer`, `type_name "isosurf"`)。Center update (派生 tristate) / Drawing mode (EnumRow fill/line/point) / Line/Point size (NumRow realtime, `drawmode=="fill"` で disable) / Max grid size (素の NumInputRow, real) / Back-face culling (BoolRow) / Use periodic boundary (BoolRow) / Limit display by ブロック。contour と完全同一の Center update / Limit display by を共有モジュール `inspector/MapRendererCommon` (`CenterUpdateRow`/`LimitDisplayRows`/`useMolObjectNames`) に抽出し contour も差し替え (単一 source、観測挙動不変=既存 contour テストで回帰ガード)。coloring/tuning は UXP Map タブ外なので非露出。worker 変更なし。prop_dlgs done 11->12/todo 3->2、Total done 14->15/todo 88->87)
@@ -36,16 +38,16 @@
 
 | Category | File | Total | done | wip | review | todo | frozen |
 |----------|------|------:|-----:|----:|-------:|-----:|-------:|
-| Panel | [panels.md](panels.md) | 27 | 4 | 17 | 1 | 5 | 0 |
+| Panel | [panels.md](panels.md) | 27 | 5 | 17 | 1 | 4 | 0 |
 | Menu | [menus.md](menus.md) | 4 | 2 | 2 | 0 | 0 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 15 | 13 | 1 | 0 | 1 | 0 |
-| Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 0 | 3 | 1 | 14 | 0 |
+| Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 6 | 3 | 1 | 8 | 0 |
 | Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 1 | 0 | 2 | 18 | 0 |
-| Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 2 | 1 | 0 | 10 | 0 |
-| Overlay | [overlay.md](overlay.md) | 28 | 0 | 1 | 0 | 27 | 0 |
+| Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 2 | 2 | 0 | 9 | 0 |
+| Overlay | [overlay.md](overlay.md) | 28 | 14 | 2 | 0 | 12 | 0 |
 | Other | [other.md](other.md) | 4 | 0 | 1 | 0 | 3 | 0 |
-| **Total** | | **131** | **16** | **27** | **3** | **85** | **0** |
+| **Total** | | **132** | **43** | **29** | **4** | **56** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -73,12 +75,12 @@
 
 | Mapping | Count |
 |---------|------:|
-| 1:1 (`direct`) | 8 |
-| merged | 6 |
-| split | 19 |
+| 1:1 (`direct`) | 19 |
+| merged | 31 |
+| split | 22 |
 | redesign | 0 |
-| deprecated (`dropped`) | 2 |
-| *(not yet assigned)* | 95 |
+| deprecated (`dropped`) | 4 |
+| *(not yet assigned)* | 56 |
 
 ---
 
@@ -86,15 +88,18 @@
 
 | ID | React | Notes |
 |----|-------|-------|
-| [`toolbar.cuemol2-ribbon`](toolbars.md#toolbarcuemol2-ribbon) | `ViewportToolPalette` / `useNaviClickHandler` / `NaviContextMenu` | Context menu actions (center/select/around/invert/sidechain) done; Create SYMM mol deferred; measurement tool, rect-select drag pending |
+| [`toolbar.cuemol2-ribbon`](toolbars.md#toolbarcuemol2-ribbon) | `Toolbar` / `ViewportToolPalette` / `useNaviClickHandler` / `NaviContextMenu` | Context menu actions (center/select/around/invert/sidechain) done; Create SYMM mol deferred; measurement tool, rect-select drag pending |
 | [`menu.cuemol2`](menus.md#menucuemol2) | `menuTemplate` / `MenuBar` / `useMenuDispatch` | Full 9-group structure added; View > Center mark wired; Scene > Background color wired; File > Get PDB wired (streaming via StreamManager); File > Open Recent wired (electron-store-backed MRU, app.addRecentDocument); Hardware stereo and Open web page dropped; File > Save File As / Save current view / Reload Scene wired; item-level completion 26/55; MenuBar suppressed on macOS |
 | [`menu.cuemol2-macos`](menus.md#menucuemol2-macos) | `main/menu.ts` | macOS App menu added; item-level completion 6/7 |
 | [`dialog.about`](other_dlgs.md#dialogabout) | `AboutDialog` / `useDialog` | GRE info・userAgent は省略 |
+| [`dialog.apply-rend-style`](other_dlgs.md#dialogapply-rend-style) | `ApplyRendStyleDialog` / `getRendererStyleEditInfo` / `applyRendererStyleList` | List view + Add popup + Delete/Up/Down on the working style list; commit calls `rend.applyStyles` under "Change style" txn |
+| [`dialog.rendstyle-create`](other_dlgs.md#dialogrendstyle-create) | `CreateRendStyleDialog` / `getCreateRendStyleInfo` / `createStyleFromRenderer` | Writable style-set listbox + base-name input; commit calls `StyleManager.createStyleFromObj`. Same-name overwrite handled in C++ |
 | [`dialog.atomintr`](other_dlgs.md#dialogatomintr) | `AtomIntr*Section` (inspector Properties tab) | Interaction/Dashed line/3D tube/Value label の 4 accordion。Dashed トグルは合成 (`setGenericProps` で stipple0..5 を 1 undo step 原子書き込み)。arrow size・label font 追加。append/remove 編集は対象外 |
 | [`dialog.tool.chg-chname`](tool_dlgs.md#dialogtoolchg-chname) | `ChangeChainIdDialog` / `useToolCommands` / `changeChainName.service` | h3-kit/form 製の Change chain ID modal。`MolAnlManager.changeChainName` を undo txn で実行。Edit メニューから起動。E2E sign-off 待ち |
 | [`dialog.tool.ssm-sup`](tool_dlgs.md#dialogtoolssm-sup) | `MolSuperposeDialog` / `useToolCommands` / `superposeMol.service` | h3-kit/form 製の Molecular superposition modal。LSQ/SSM を `MolAnlManager.superposeSSM1`/`superposeLSQ1` で undo txn 実行 (auto-recenter で `fitView2`)。mol/algo/checkbox 履歴は localStorage。RMSD-file 出力は deferred (ADR-0022)。Tools メニューから起動。E2E sign-off 待ち |
-| [`other.cuemol2`](other.md#othercuemol2) | `App` / `ContentArea` / `TabBar` / `ConfirmCloseTabDialog` / `useQuitHandler` | Main window layout done; close-tab confirmation dialog (UXP `closeTabImpl`) implemented; UXP `onCloseEvent` quit chain wired (cmd-Q walks all tabs via `before-quit` → `APP_QUIT_REQUEST` → `APP_QUIT_PROCEED`) |
+| [`other.cuemol2`](other.md#othercuemol2) | `App` / `ContentArea` / `TabBar` / `SidePanel` / `BottomPanel` / `StatusBar` / `ConfirmCloseTabDialog` / `useWindowCloseHandler` | Main window layout (panels, tab view, status bar) + window-close/quit funnel wired (cmd-Q + close button share one confirm funnel, ADR-0016 supersedes ADR-0010). Canvas lifecycle: ADR-0011 |
 | [`widget.molsellist`](custom_widgets.md) | `MolSelList` (`h3-kit/MolSelList/`) | First consumer wired in `RendererOptionsPane` (file-open dialog); editable `InputGroup` + chevron-only `HTMLSelect` (OS-native dropdown listbox with `<optgroup>` Preset / History / Scene / Global); history via `localStorage`; worker services `getSelDefs` / `validateSelection` added |
+| [`widget.sidepanelholder`](custom_widgets.md) | `SidePanel` | Collapsible/resizable side-panel host (Allotment) + per-view pane sets + size persistence; UXP user drag-drop panel reorder not ported (config-driven via `buildViewPaneConfigs`) |
 | [`panel.workspace.tree`](panels.md#panelworkspacetree) | `ScenePane` (tree) / `useSceneTree` / `useSceneTreeController` / `sceneTreeDnd` / `InlineRenameInput` / `sceneTree.service` / `reorderSceneNode.service` | Live tree + visibility toggle + selection (single + multi via Cmd/Ctrl+click) + event-driven auto-refresh + drag-drop reorder (worker + in-app DnD OK; ADR-0001) + F2 inline rename; pending: Shift+range select |
 | [`panel.workspace.ctxmenu.multi`](panels.md#panelworkspacectxmenumulti) | `useSceneContextMenu` / `main/sceneContextMenu` (multi) / `bulkSceneNodeOps.service` | Right-clicking a multi-selected row opens a multi-only menu: Show / Hide / Delete via `bulkSetNodeVisible` / `bulkDeleteNode` (single undo txn per batch); worker + in-app multi-select OK; pending: Copy (clipboard is single-item) |
 | [`panel.workspace.toolbar`](panels.md#panelworkspacetoolbar) | `ScenePane` (toolbar) / `useSceneTreeController` / `sceneOps.service` / `createRendererOnObject.service` / `getNewRendererOptions.service` | Focus / Delete / Property / Add wired (Add shares the New Renderer flow with the ctxmenu); property dialog still a read-only stub |
@@ -104,6 +109,7 @@
 | [`panel.workspace.ctxmenu.rendgroup`](panels.md#panelworkspacectxmenurendgroup) | `useSceneContextMenu` / `main/sceneContextMenu` (rendGroup) / `sceneClipboard.service` / `createRendererOnObject.service` / `getNewRendererOptions.service` | Common items + Copy + Paste Renderer into group + New Renderer (group-aware) wired |
 | [`panel.workspace.ctxmenu.style`](panels.md#panelworkspacectxmenustyle) | `useSceneContextMenu` / `main/sceneContextMenu` (style) / `styleOps.service` / `styleFile.service` / `sceneClipboard.service` (style kind) / `sceneOps.deleteNode` (style branch) | New Style + Copy / Paste + Delete + Style file Load / Save / Save As (Reload stub) + Read-only toggle wired; `sceneTree.service` switched to `getStyleSetsJSON` so style nodes carry real C++ uids + `styleInfo`. Editor dialog (Phase 5a) pending. |
 | [`panel.workspace.ctxmenu.camera`](panels.md#panelworkspacectxmenucamera) | `useSceneContextMenu` / `main/sceneContextMenu` (camera) / `cameraOps.service` / `cameraFile.service` / `sceneClipboard.service` (camera kind) | New Camera + Rename (atomic destroy+setCamera) + Delete + Copy / Paste + Camera file Load / Reload / Save / Save As + Save/Apply from view + Save/Apply with vis flags + Clear vis flags wired; `sceneTree.service` synthesises `cameraInfo` from `getCameraInfoJSON`. Edit vis flags dialog (Phase 6c) + property dialog (Phase 5a) pending. |
+| [`overlay.property.renderer-common`](overlay.md#overlaypropertyrenderer-common) | `RendererCommonSection` | Common (Basic settings + Edge lines) section of the Inspector Properties tab; tracked under `dialog.property.renderer` (wip) |
 | [`overlay.propeditor-generic`](overlay.md#overlaypropeditor-generic) | `InspectorPanel` / `GenericTab` / `genericProps.service` / `useInspectorState` | Generic property editor as the Generic tab of the docked inspector pane (ADR-0015); `getPropsJSON` bridge, live-apply, undo-wrapped writes. First stage edits primitive types (string/int/real/bool/enum); nested-object sub-properties now editable via dot-path keys (`parseGenericProps` recurses, `setNestedProperty` writes — ADR-0015 Update); color/vector/timeval widgets deferred. Replaces the retired read-only `NodePropertyDialog` modal. |
 | [`dialog.property.renderer`](prop_dlgs.md) | `inspector/RendererCommonSection` / `inspector/PropertiesTab` / `rendererPropSections` / `getMaterialNames.service` | renderer-common-page (Basic settings + Edge lines) as the structured Properties tab, default for renderer targets; live `getGenericProps`/`setGenericProp` (sel compiled via `makeSel`, egcolor/material as strings). Per-renderer-type sections deferred to the `rendererPropSections` registry — every type currently shows Common + a collapsed dummy placeholder. |
 | [`panel.coloring.shell`](panels.md#panelcoloringshell) | `ColorPane` / `usePaintCapableRenderers` / `rendererColoring.service` | Phase 1: renderer selector (paint-capable filter) + Coloring type dropdown (Paint / Solid / Reset enabled; CPK / Bfac / Rainbow / Elepot / Multi-gradient "coming soon"). |
@@ -120,4 +126,4 @@
 
 ## Unstarted
 
-**90 / 131** items are `todo` (not yet started).
+**56 / 132** items are `todo` (not yet started).
