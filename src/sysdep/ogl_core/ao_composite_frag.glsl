@@ -26,42 +26,62 @@ float linearizeZ(float d)
     return u_depthUnpack.x / (u_depthUnpack.y - d);
 }
 
-// Joint bilateral upsample of the half-res AO term at uv, using the full-res
-// depth to reject taps across depth discontinuities.
+// Nearest-depth upsample of the half-res AO term at uv (NVIDIA-style). On a
+// flat surface the four AO taps have nearly equal depth and are blended
+// smoothly (bilinear); across a silhouette the depth spread is large, so the
+// AO of the single tap nearest the full-res depth is taken verbatim. Never
+// mixing taps from across a depth step is what prevents the bright AO halo a
+// soft bilateral weight leaves around edges.
 float upsampleAO(vec2 uv)
 {
     float zC = linearizeZ(texture(u_depthTex, uv).r);
 
-    // Bilinear footprint of uv over the AO texel grid.
+    // Bilinear footprint of uv over the AO texel grid (taps 00,10,01,11).
     vec2 t = uv / u_aoTexelSize - 0.5;
     vec2 base = floor(t);
     vec2 frac = t - base;
-    vec2 baseUV = (base + 0.5) * u_aoTexelSize;
+    vec2 b = (base + 0.5) * u_aoTexelSize;
+    vec2 px = vec2(u_aoTexelSize.x, 0.0);
+    vec2 py = vec2(0.0, u_aoTexelSize.y);
 
-    // Depth-similarity falloff relative to the centre depth (matches the
-    // denoise edge scale; larger surfaces keep their soft AO, sharp depth
-    // steps cut the tap).
-    float range = max(abs(zC), 1e-4) * 0.02;
+    vec2 uv00 = b;
+    vec2 uv10 = b + px;
+    vec2 uv01 = b + py;
+    vec2 uv11 = b + px + py;
 
-    float aoSum = 0.0;
-    float wSum = 0.0;
-    for (int j = 0; j < 2; ++j) {
-        for (int i = 0; i < 2; ++i) {
-            vec2 off = vec2(float(i), float(j));
-            vec2 suv = baseUV + off * u_aoTexelSize;
-            float bw = (i == 0 ? 1.0 - frac.x : frac.x) *
-                       (j == 0 ? 1.0 - frac.y : frac.y);
-            float zi = linearizeZ(texture(u_depthTex, suv).r);
-            float dw = exp(-abs(zC - zi) / range);
-            float w = bw * dw;
-            aoSum += texture(u_aoTex, suv).r * w;
-            wSum += w;
-        }
+    float a00 = texture(u_aoTex, uv00).r;
+    float a10 = texture(u_aoTex, uv10).r;
+    float a01 = texture(u_aoTex, uv01).r;
+    float a11 = texture(u_aoTex, uv11).r;
+
+    float z00 = linearizeZ(texture(u_depthTex, uv00).r);
+    float z10 = linearizeZ(texture(u_depthTex, uv10).r);
+    float z01 = linearizeZ(texture(u_depthTex, uv01).r);
+    float z11 = linearizeZ(texture(u_depthTex, uv11).r);
+
+    float w00 = (1.0 - frac.x) * (1.0 - frac.y);
+    float w10 = frac.x * (1.0 - frac.y);
+    float w01 = (1.0 - frac.x) * frac.y;
+    float w11 = frac.x * frac.y;
+
+    // Edge test: depth spread across the four taps relative to the centre depth.
+    float zmin = min(min(z00, z10), min(z01, z11));
+    float zmax = max(max(z00, z10), max(z01, z11));
+    float threshold = max(abs(zC), 1e-4) * 0.03;
+
+    if (zmax - zmin <= threshold) {
+        // Flat region: smooth bilinear blend.
+        return a00 * w00 + a10 * w10 + a01 * w01 + a11 * w11;
     }
 
-    // All taps rejected (isolated thin feature): fall back to a point sample.
-    if (wSum < 1e-5) return texture(u_aoTex, uv).r;
-    return aoSum / wSum;
+    // Silhouette: take the AO of the tap closest in depth (no cross-edge mix).
+    float ao = a00;
+    float best = abs(z00 - zC);
+    float d;
+    d = abs(z10 - zC); if (d < best) { best = d; ao = a10; }
+    d = abs(z01 - zC); if (d < best) { best = d; ao = a01; }
+    d = abs(z11 - zC); if (d < best) { best = d; ao = a11; }
+    return ao;
 }
 
 void main()

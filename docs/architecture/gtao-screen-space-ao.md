@@ -256,15 +256,20 @@ depth fetch + horizon march)。`aoHalfRes` を有効にすると GTAO + denoise 
   `u_upsample` は `aoTexelSize > viewportPixelSize*1.5` で判定 (フル解像度では false)。
 
 ### edge-aware upsample (halo 防止の肝, `ao_composite_frag.glsl`)
-naive bilinear だと深度不連続 (シルエット) で AO が滲んで halo が出る。joint bilateral
-upsample で防ぐ:
-- 各 full-res ピクセルで自身の線形 depth `zC` を full-res depth から求める。
-- 周囲 4 つの half-res texel について bilinear 重み `bw` と、その texel 中心 UV で読んだ full-res
-  depth `zi` の **depth 類似度 `dw = exp(-|zC-zi|/range)`** を掛けた `w = bw*dw` で加重平均。
-  `range = max(|zC|,eps)*0.02` (denoise の edge スケールと同思想)。
-- 全 tap が rejected された孤立細線では point sample にフォールバック。
+naive bilinear だと深度不連続 (シルエット) で AO が滲んで halo が出る。**nearest-depth
+upsample ハイブリッド** (NVIDIA 系の定番) で防ぐ:
+- 各 full-res ピクセルで自身の線形 depth `zC`、および周囲 4 つの half-res texel の AO 値 `a00..a11`
+  と線形 depth `z00..z11` を full-res depth から求める。
+- 4 tap の depth spread `zmax-zmin` を `threshold = max(|zC|,eps)*0.03` と比較:
+  - **spread ≤ threshold (平坦面)**: 通常の bilinear 加重平均 (滑らか)。
+  - **spread > threshold (シルエット)**: `zC` に **depth が最も近い 1 tap の AO をそのまま採用**。
+    跨ぎ tap を一切混ぜないので halo が原理的に出ない。
+- 初版は soft な joint bilateral (`exp(-|zC-zi|/range)`) だったが、指数重みは跨ぎ tap を完全に
+  ゼロにできず前景輪郭に背景の明るい AO が滲んで halo が残ったため、nearest-depth に変更した。
 - half-res texel の depth は別 RT に保存せず full-res depth を texel 中心で読み直して近似する
   (追加 RT 不要)。
+- トレードオフ: グレージング (斜め) で連続的な面でも spread が大きいと nearest-depth 側に倒れて
+  AO がややブロック状になりうるが、AO は低周波なので halo より目立たない。
 
 ### 相互作用
 - **jitter SS (§4.6)**: 半解像度 GTAO の粗いノイズも jitter 蓄積 + `aoNoiseOffset` 回転で平均化
