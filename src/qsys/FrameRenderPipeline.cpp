@@ -187,6 +187,15 @@ bool FrameRenderPipeline::render(gfx::DisplayContext *pdc, const ScenePtr &pScen
     // the composite reads both to know whether (and how) to upsample.
     aoc.aoTexelSize[0] = 1.0f / float(m_pAoRT->getWidth());
     aoc.aoTexelSize[1] = 1.0f / float(m_pAoRT->getHeight());
+    // Fog parameters for the composite's AO fade. These must match the scene's
+    // setupFog (ShaderObject::setupFog): fogScale = 1/(fogEnd - fogStart). The
+    // composite recomputes the same linear fog factor from the scene depth and
+    // fades the AO term out where fog has taken over, so fully-fogged pixels are
+    // not darkened by AO.
+    const double fogStart = pdc->getFogStart();
+    const double fogEnd = pdc->getFogEnd();
+    aoc.fogEnd = float(fogEnd);
+    aoc.fogScale = (fogEnd > fogStart) ? float(1.0 / (fogEnd - fogStart)) : 0.0f;
     gfx::AoConstants aocAO = aoc;
     aocAO.viewportPixelSize[0] = aoc.aoTexelSize[0];
     aocAO.viewportPixelSize[1] = aoc.aoTexelSize[1];

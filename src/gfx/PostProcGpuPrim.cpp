@@ -110,6 +110,10 @@ void PostProcGpuPrim::drawComposite(DisplayContext *pDC, RenderTarget *sceneRT,
                            consts.depthLinearizeAdd);
     m_pCompPO->setUniformF("u_aoTexelSize", consts.aoTexelSize[0],
                            consts.aoTexelSize[1]);
+    // Fog factor reconstruction: fade the AO term out where fog has taken over
+    // so a fully-fogged (background-color) pixel is not darkened by AO.
+    m_pCompPO->setUniformF("u_fogEnd", consts.fogEnd);
+    m_pCompPO->setUniformF("u_fogScale", consts.fogScale);
     // Upsample only when the AO buffer is coarser than the output (half res).
     const bool upsample = consts.aoTexelSize[0] > consts.viewportPixelSize[0] * 1.5f;
     m_pCompPO->setUniform("u_upsample", upsample ? 1 : 0);

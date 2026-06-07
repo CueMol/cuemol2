@@ -41,6 +41,13 @@ struct AoConstants
     /// caller scales it to a fixed full-resolution-equivalent radius so the
     /// half-resolution pass clamps at the same world radius (same occlusion).
     float maxScreenspaceRadius = 256.0f;
+    /// Linear fog parameters (depth cueing), mirrored from the scene's FogBlock
+    /// so the composite can recompute the same fog factor and fade the AO term
+    /// out where fog has taken over (otherwise AO darkens fully-fogged
+    /// background-color pixels). fogScale = 1/(fogEnd - fogStart); both in
+    /// view-space Z units.
+    float fogEnd = 0.0f;
+    float fogScale = 0.0f;
     /// Number of horizon slices (quality vs. speed).
     int sliceCount = 9;
     /// Number of steps marched per slice (radial samples).

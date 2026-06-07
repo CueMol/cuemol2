@@ -16,6 +16,8 @@ uniform vec2 u_depthUnpack;      // (depthLinearizeMul, depthLinearizeAdd)
 uniform vec2 u_aoTexelSize;      // (1/aoWidth, 1/aoHeight)
 uniform int u_hasAO;
 uniform int u_upsample;          // 1 = edge-aware upsample the AO term
+uniform float u_fogEnd;          // linear fog far limit (view-space Z)
+uniform float u_fogScale;        // 1/(fogEnd - fogStart)
 
 in vec2 v_uv;
 
@@ -90,6 +92,14 @@ void main()
     if (u_hasAO != 0) {
         float ao = (u_upsample != 0) ? upsampleAO(v_uv)
                                      : texture(u_aoTex, v_uv).r;
+        // Fade AO out where fog has taken over: the scene color is already fog-
+        // blended toward the background color, so a fully-fogged pixel must not
+        // be darkened by AO (otherwise its shadow shows through the fog). fogVis
+        // matches the scene's linear fog factor (fog_inc.glsl): 1 = near/clear,
+        // 0 = far/fully fogged.
+        float zlin = linearizeZ(texture(u_depthTex, v_uv).r);
+        float fogVis = clamp((u_fogEnd - zlin) * u_fogScale, 0.0, 1.0);
+        ao = mix(1.0, ao, fogVis);
         o_FragColor = vec4(c.rgb * ao, c.a);
     } else {
         o_FragColor = c;
