@@ -19,10 +19,16 @@ libcuemol2 の OpenGL (core profile) バックエンドに実装した、リア�
               COLOR0 = 色 (RGBA8) / DEPTH = 深度tex (DEPTH24) / COLOR1 = 法線 (RGBA16F, MRT)
 2. GTAO   -> AO RT (m_pAoRT, RGBA8)        R=遮蔽 G=packed edges
 3. denoise-> denoise RT (m_pAoDenRT)       edge-aware 3x3 blur (単一パス)
-4. composite (color * AO) -> default framebuffer
+4. composite (color * AO) + post-AA -> default framebuffer  (§4.5)
+     aa_method=none: composite を直接 default fb へ
+     aa_method=fxaa: composite -> m_pCompRT(LINEAR) -> FXAA -> default fb
 5. depth blit (scene depth -> default fb)  UI overlay の depth test 用
-6. UI overlay / 2D-UI / swapBuffers        AO の影響を受けない
+6. UI overlay / 2D-UI / swapBuffers        AO/AA の影響を受けない
 ```
+
+> **AA は AO 経路でのみ必要**: scene を single-sample off-screen FBO に描くため、AO 有効時は
+> default FB の MSAA が効かず edge AA が失われる (非 AO 経路は従来どおり MSAA)。これを後段の
+> post-process AA で補う (§4.5)。
 
 AO を使わない (無効・stereo・FBO 非対応) 場合は従来パス (clearBuffer + display) に
 フォールバックする。判定は `pScene->isAOEnabled() && hasFBO() && getStereoMode()==CSM_NONE`。
@@ -31,14 +37,15 @@ AO を使わない (無効・stereo・FBO 非対応) 場合は従来パス (clea
 
 | 区分 | パス | 役割 |
 |---|---|---|
-| Scene プロパティ | `src/qsys/Scene.{qif,hpp,cpp}` | `aoEnabled/aoRadius/aoIntensity/aoSlices/aoSteps` (.qsc にシリアライズ) |
+| Scene プロパティ | `src/qsys/Scene.{qif,hpp,cpp}` | `aoEnabled/aoRadius/aoIntensity/aoSlices/aoSteps` + `aa_method` (none/fxaa/smaa) (.qsc にシリアライズ) |
 | FBO 抽象 | `src/gfx/RenderTarget.hpp` | `RTFlags` / `RTTexUnit` / `RenderTarget` IF |
 | FBO 実装 | `src/sysdep/ogl_core/OcRenderTarget.{hpp,cpp}` | MRT (color+depth+normal)、clear、blit |
-| フルスクリーン描画 | `src/gfx/PostProcGpuPrim.{hpp,cpp}` | `drawGtao` / `drawDenoise` / `drawComposite` + `struct AoConstants` |
+| フルスクリーン描画 | `src/gfx/PostProcGpuPrim.{hpp,cpp}` | `drawGtao` / `drawDenoise` / `drawComposite` / `drawFxaa` + `struct AoConstants` |
 | ライブ経路 | `src/qsys/GUIView.cpp` | `drawScene` の AO 分岐 / `ensureAORTs` / `computeAoConstants` / `cleanupAORTs` / `unloading` |
 | GTAO 本体 | `src/sysdep/ogl_core/gtao_frag.glsl` | horizon 積分・法線選択・line 除外 |
 | denoise | `src/sysdep/ogl_core/ao_denoise_frag.glsl` | edge-aware blur |
 | composite | `src/sysdep/ogl_core/ao_composite_frag.glsl` | `color.rgb * AO` |
+| post-AA (FXAA) | `src/sysdep/ogl_core/fxaa_frag.glsl` | FXAA 3.11 (§4.5) |
 | 頂点 | `src/sysdep/ogl_core/postproc_vert.glsl` | 全画面トライアングル (v_uv) |
 | scene shader | `trig`/`trigedge`/`sphere`/`cylinder`/`mapsurf`/`linew`/`pixdraw`/`mapmesh` | MRT 法線出力 (後述) |
 
@@ -139,6 +146,41 @@ GTAO 積分空間は `vz>0` が前方 = カメラ方向 `V` は `z<0`。よっ�
 
 ---
 
+## 4.5 post-process AA (FXAA)
+
+AO 経路は scene を **single-sample** off-screen FBO に描くため、MSAA がバインド中の FBO の
+サンプル数で決まる以上、AO 有効時は edge AA が一切効かない (非 AO 経路は default FB の MSAA
+がそのまま効く)。失われた AA を **AO の後段で独立にかける** (AO と AA は直交)。
+
+### 設計: Mol* 流の 2 直交軸
+- **軸1 = 空間 AA メソッド**: `Scene.aa_method` enum (`none`/`fxaa`/`smaa`)。差し替え可能な
+  fragment ポストパスとして実装。現状 **FXAA のみ実装**、`smaa` は enum 予約で未実装
+  フォールバック (AA 無し + 初回警告ログ)。
+- **軸2 = temporal jitter SS** (未実装): projection を per-frame で subpixel jitter し、
+  静止時のみ accumulation buffer に蓄積、カメラ変化でリセット (motion vector 不要)。idle
+  再描画 + accumulation FBO という別サブシステムが要るため別 phase (§8)。
+
+### FXAA パス (`fxaa_frag.glsl`, `PostProcGpuPrim::drawFxaa`)
+- `aa_method=fxaa`: composite を **LINEAR の中間 RT** (`m_pCompRT`, RGBA8) へ描き、FXAA が
+  それを読んで default FB へ書く。`aa_method=none` は composite を default FB へ直書き (従来挙動)。
+- FXAA は Lottes FXAA 3.11 相当・**1 パス・lookup texture 不要**。luma は RGB から算出
+  (`sqrt(dot(rgb, vec3(0.299,0.587,0.114)))`)。`textureOffset` ベースで desktop GL core /
+  **WebGL2 GLSL ES 3.00 双方へ移植可**。
+- **中間 RT は LINEAR 必須** (`RT_COLOR_RGBA8` のみ、NEAREST フラグ無し)。FXAA のサブテクセル
+  sampling に不可欠。
+- AA は overlay/2D-UI の **前** に走るので UI 文字はぼけない。
+
+### なぜ hardware MSAA (case B) を採らないか (重要)
+「scene FBO を MSAA 化し GTAO は sample0 を texelFetch、color は MSAA resolve」案は不採用:
+- **XeGTAO 自体が MSAA depth 非対応** (`vaGTAO.cpp` で `SampleCount()==1` を assert)。
+- **WebGL2 は `sampler2DMS` / multisample texture / per-sample texelFetch を持たない**。
+  sampleable な MRT 法線 (§4) を MSAA で保持できず、desktop 専用シェーダ分岐になり「OpenGL と
+  WebGL2 で同一 fragment shader を 1 本維持」という方針 (§8) を崩す。
+- **Mol*** (WebGL ベース分子ビューア) も hardware MSAA を使わず post-AA を既定 (SMAA) に
+  している (`mol-canvas3d/passes/postprocessing.ts`)。tritium 行きの CueMol が取るべき道の傍証。
+
+---
+
 ## 5. 移植で必ず踏むハマりどころ (最重要)
 
 Apple M2 / Metal バックエンド OpenGL 4.1 + MSAA x4 の実機で、以下を順に踏んだ。WebGL2 /
@@ -233,6 +275,15 @@ shader 定数のまま (必要なら同様に Scene プロパティへ昇格で�
 - depth MIP チェーン (prefilter パス) によるワイド半径の高速化・低ノイズ化。
 - 半解像度 AO + edge-aware upsample (naive blur ではなく denoise と同じ重みで halo 防止)。
 - bent normals、TAA。
+
+### AA ロードマップ (§4.5 の続き)
+- **SMAA 1x** (軸1 増分): edge detection / blending weight / neighborhood blend の 3 パス +
+  **AreaTex / SearchTex の precomputed lookup texture 同梱** (Mol* は base64 PNG 埋め込み) +
+  中間 RT 2 枚。WebGL2 ポータブル。FXAA より silhouette 品質が上。
+- **temporal jitter SS** (軸2): projection jitter + accumulation FBO + idle 再描画 + カメラ
+  変化リセット (Mol* `mol-canvas3d/passes/multi-sample.ts` 相当)。どの空間メソッドとも合成可。
+- **全経路統一**: 非 AO 経路も offscreen+post-AA に通し AA を context MSAA 非依存にする
+  (tritium と整合)。現状は AO 経路のみ post-AA、非 AO は default FB MSAA。
 
 ---
 
