@@ -13,6 +13,7 @@ namespace gfx {
 
 class ShaderObject;
 class RenderTarget;
+class DataTexture;
 
 /// View-space reconstruction constants for the GTAO passes, derived CPU-side
 /// from the projection matrix (see GUIView). All shader-facing math uses these
@@ -28,14 +29,32 @@ struct AoConstants
     float ndcToViewAdd[2] = {0.0f, 0.0f};
     /// (1/width, 1/height) in pixels.
     float viewportPixelSize[2] = {0.0f, 0.0f};
+    /// (1/width, 1/height) of the AO term buffer. Equals viewportPixelSize at
+    /// full resolution; doubled when the GTAO term is computed at half
+    /// resolution. The composite uses it to edge-aware upsample the AO term.
+    float aoTexelSize[2] = {0.0f, 0.0f};
     /// Occlusion sphere radius in view-space (world) units.
     float effectRadius = 1.0f;
     /// Final occlusion contrast: occlusion = pow(occlusion, finalValuePower).
     float finalValuePower = 2.2f;
+    /// Horizon search radius cap, in the GTAO pass's own pixel units. The
+    /// caller scales it to a fixed full-resolution-equivalent radius so the
+    /// half-resolution pass clamps at the same world radius (same occlusion).
+    float maxScreenspaceRadius = 256.0f;
+    /// Linear fog parameters (depth cueing), mirrored from the scene's FogBlock
+    /// so the composite can recompute the same fog factor and fade the AO term
+    /// out where fog has taken over (otherwise AO darkens fully-fogged
+    /// background-color pixels). fogScale = 1/(fogEnd - fogStart); both in
+    /// view-space Z units.
+    float fogEnd = 0.0f;
+    float fogScale = 0.0f;
     /// Number of horizon slices (quality vs. speed).
     int sliceCount = 9;
     /// Number of steps marched per slice (radial samples).
     int stepsPerSlice = 3;
+    /// Per-sample noise rotation [0,1) for temporal supersampling (0 = single
+    /// frame). Decorrelates the GTAO noise across accumulated jitter samples.
+    float aoNoiseOffset = 0.0f;
 };
 
 /// Fullscreen post-processing primitive.
@@ -66,6 +85,17 @@ private:
     ShaderObject *m_pGtaoPO = nullptr;
     /// Edge-aware AO denoise program.
     ShaderObject *m_pDenoisePO = nullptr;
+    /// FXAA post-process program (final AA stage of the live AO path).
+    ShaderObject *m_pFxaaPO = nullptr;
+    /// SMAA 1x programs (edge detection / blending weights / neighborhood blend).
+    ShaderObject *m_pSmaaEdgePO = nullptr;
+    ShaderObject *m_pSmaaWeightPO = nullptr;
+    ShaderObject *m_pSmaaBlendPO = nullptr;
+    /// SMAA precomputed lookup textures (loaded once from share/data/textures).
+    DataTexture *m_pSmaaAreaTex = nullptr;
+    DataTexture *m_pSmaaSearchTex = nullptr;
+    /// Temporal-jitter compose program (sample*weight; accumulate + display).
+    ShaderObject *m_pJitterComposePO = nullptr;
     TriArray *m_pDrawElem = nullptr;
 
 public:
@@ -89,12 +119,15 @@ public:
     void drawDepthVis(DisplayContext *pDC, RenderTarget *prt, float vnear,
                       float vfar);
 
-    /// Sample sceneRT's color attachment and draw it into the currently bound
-    /// framebuffer (fullscreen). aoRT is reserved for the AO multiply step
-    /// added in a later step and is currently ignored. Self-initializes the
-    /// vertex buffer and composite program (no init() call required).
+    /// Sample sceneRT's color attachment, multiply by aoRT's AO term, and draw
+    /// the result into the currently bound framebuffer (fullscreen). When the AO
+    /// term is at a lower resolution than sceneRT (consts.aoTexelSize coarser
+    /// than consts.viewportPixelSize), it is joint-bilateral upsampled using the
+    /// scene depth so the AO does not bleed across silhouettes. Pass aoRT ==
+    /// nullptr for a plain copy. Self-initializes the vertex buffer and composite
+    /// program (no init() call required).
     void drawComposite(DisplayContext *pDC, RenderTarget *sceneRT,
-                       RenderTarget *aoRT);
+                       RenderTarget *aoRT, const AoConstants &consts);
 
     /// Read sceneRT's depth texture, reconstruct view-space depth/position with
     /// the given constants, and draw the GTAO term into the currently bound
@@ -106,6 +139,35 @@ public:
     /// bound framebuffer (fullscreen). consts supplies the viewport pixel size.
     void drawDenoise(DisplayContext *pDC, RenderTarget *aoRT,
                      const AoConstants &consts);
+
+    /// FXAA pass: sample srcColorRT's color attachment (must be LINEAR) and draw
+    /// the antialiased result into the currently bound framebuffer (fullscreen).
+    /// consts.viewportPixelSize supplies the reciprocal frame size.
+    void drawFxaa(DisplayContext *pDC, RenderTarget *srcColorRT,
+                  const AoConstants &consts);
+
+    /// SMAA 1x passes (consts.viewportPixelSize supplies 1/size). Each draws a
+    /// fullscreen quad into the currently bound framebuffer:
+    ///   edges:   color (LINEAR) -> edge texture (RG)
+    ///   weights: edges + AreaTex/SearchTex -> blending weights (RGBA)
+    ///   blend:   color + weights -> antialiased color
+    /// drawSmaaWeights lazily loads the lookup textures; if they fail to load it
+    /// draws nothing (the caller should fall back to no AA).
+    void drawSmaaEdges(DisplayContext *pDC, RenderTarget *srcColorRT,
+                       const AoConstants &consts);
+    void drawSmaaWeights(DisplayContext *pDC, RenderTarget *edgesRT,
+                         const AoConstants &consts);
+    void drawSmaaBlend(DisplayContext *pDC, RenderTarget *srcColorRT,
+                       RenderTarget *weightsRT, const AoConstants &consts);
+
+    /// True once both SMAA lookup textures are available (lazily loaded).
+    bool ensureSmaaTextures(DisplayContext *pDC);
+
+    /// Temporal-jitter compose: draw srcRT's color * weight into the currently
+    /// bound framebuffer (fullscreen). Used for both the additive accumulate
+    /// step (weight 1/N, with additive blend enabled by the caller) and the
+    /// normalized display step (weight N/count, no blend).
+    void drawJitterCompose(DisplayContext *pDC, RenderTarget *srcRT, float weight);
 
 private:
     void alloc(DisplayContext *pDC);

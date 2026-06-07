@@ -48,6 +48,7 @@ RendGroup.cpp
 MultiGradient.cpp
 TTYView.cpp
 GUIView.cpp
+FrameRenderPipeline.cpp
 OffScreenView.cpp
 GUIDisplayContext.cpp
 QdfAbsWriter.cpp
@@ -106,6 +107,7 @@ StreamManager.hpp
 SysConfig.hpp
 TTYView.hpp
 GUIView.hpp
+FrameRenderPipeline.hpp
 OffScreenView.hpp
 GUIDisplayContext.hpp
 TestRenderer.hpp

@@ -114,6 +114,15 @@ namespace qsys {
     /// GTAO number of steps marched per slice (radial samples)
     int m_nAOSteps;
 
+    /// Compute the GTAO term at half resolution (edge-aware upsample on composite)
+    bool m_bAOHalfRes;
+
+    /// Post-process anti-aliasing method (see AAMethod enum below)
+    int m_nAAMethod;
+
+    /// Temporal jitter supersampling level (0 = off, 1..5 = 2/4/8/16/32 samples)
+    int m_nAAJitterLevel;
+
     /// UID of this scene
     qlib::uid_t m_nUID;
 
@@ -218,6 +227,34 @@ namespace qsys {
     void setAOSteps(int v) {
       setUpdateFlag();
       m_nAOSteps = v;
+    }
+
+    /// Compute the GTAO term at half resolution (load reduction)
+    bool isAOHalfRes() const { return m_bAOHalfRes; }
+    void setAOHalfRes(bool v) {
+      setUpdateFlag();
+      m_bAOHalfRes = v;
+    }
+
+    /// Post-process anti-aliasing method values (match the aa_method enumdef).
+    enum AAMethod {
+      AA_NONE = 0,
+      AA_FXAA = 1,
+      AA_SMAA = 2,
+    };
+
+    /// Post-process anti-aliasing method applied after the AO composite.
+    int getAAMethod() const { return m_nAAMethod; }
+    void setAAMethod(int v) {
+      setUpdateFlag();
+      m_nAAMethod = v;
+    }
+
+    /// Temporal jitter supersampling level (0 = off, 1..5 = 2/4/8/16/32 samples).
+    int getAAJitterLevel() const { return m_nAAJitterLevel; }
+    void setAAJitterLevel(int v) {
+      setUpdateFlag();
+      m_nAAJitterLevel = v;
     }
 
     /// get source path of this scene

@@ -92,12 +92,18 @@ bool OcRenderTarget::init(gfx::DisplayContext *pdc, int w, int h, int flags)
 
 void OcRenderTarget::allocAttachments(int w, int h)
 {
-    // Color attachment 0 (RGBA8)
+    // Color attachment 0 (RGBA8, or RGBA16F float when RT_COLOR_RGBA16F).
     const GLint colorFilter =
         (m_nFlags & gfx::RT_COLOR_NEAREST) ? GL_NEAREST : GL_LINEAR;
+    const bool colorFloat = (m_nFlags & gfx::RT_COLOR_RGBA16F) != 0;
     glBindTexture(GL_TEXTURE_2D, m_nColorTex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE,
-                 nullptr);
+    if (colorFloat) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, w, h, 0, GL_RGBA, GL_FLOAT,
+                     nullptr);
+    } else {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                     nullptr);
+    }
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, colorFilter);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, colorFilter);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);

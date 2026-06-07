@@ -23,6 +23,8 @@ uniform int u_sliceCount;               // number of horizon slices (quality)
 uniform int u_stepCount;                // number of steps marched per slice
 uniform int u_hasNormal;                // 1 = use the stored geometry normal
 uniform int u_debugMode;                // 0 = AO, 1 = normal, 2 = linear depth
+uniform float u_aoNoiseOffset;          // per-sample noise rotation (temporal SS)
+uniform float u_maxScreenspaceRadius;   // horizon search radius cap (pass pixels)
 
 in vec2 v_uv;
 
@@ -192,9 +194,11 @@ void main()
     // huge pixel radius at close range, scattering the 54 texture reads across
     // the screen and causing frame drops. The effective world radius is derived
     // back from the clamped value so the falloff stays consistent (no change
-    // when the radius is not clamped).
-    const float maxScreenspaceRadius = 256.0;
-    screenspaceRadius = min(screenspaceRadius, maxScreenspaceRadius);
+    // when the radius is not clamped). The cap is supplied in this pass's pixel
+    // units (scaled by the caller to a fixed full-resolution-equivalent radius)
+    // so the half-resolution AO pass clamps at the same world radius and yields
+    // the same occlusion as the full-resolution pass.
+    screenspaceRadius = min(screenspaceRadius, u_maxScreenspaceRadius);
     float effectiveRadius = screenspaceRadius * pixViewSize;
 
     float falloffRange = falloffRangeRatio * effectiveRadius;
@@ -202,7 +206,10 @@ void main()
     float falloffMul = -1.0 / falloffRange;
     float falloffAdd = falloffFrom / falloffRange + 1.0;
 
-    float noiseSlice = ign(gl_FragCoord.xy);
+    // Per-pixel interleaved gradient noise, rotated per temporal-SS sample by
+    // u_aoNoiseOffset so that accumulating jittered frames averages the GTAO
+    // grain away (0 for a single, non-accumulated frame = original behavior).
+    float noiseSlice = fract(ign(gl_FragCoord.xy) + u_aoNoiseOffset);
     float noiseSample =
         fract(noiseSlice + dot(gl_FragCoord.xy, vec2(0.7548776662, 0.5698402909)));
 

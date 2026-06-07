@@ -8,10 +8,14 @@
 #include <common.h>
 #include "GUIView.hpp"
 #include "OffScreenView.hpp"
+#include "FrameRenderPipeline.hpp"
 
 #include <gfx/HittestContext.hpp>
 #include <gfx/RenderTarget.hpp>
 #include <gfx/PostProcGpuPrim.hpp>
+#include <gfx/JitterSamples.hpp>
+
+#include <cmath>
 #include <qlib/LPerfMeas.hpp>
 
 #include "CenterMarkDrawObj.hpp"
@@ -30,15 +34,23 @@ GUIView::GUIView() : View()
 
 GUIView::~GUIView()
 {
-    cleanupAORTs();
+    if (m_pPipeline != nullptr) {
+        m_pPipeline->dispose();
+        delete m_pPipeline;
+        m_pPipeline = nullptr;
+    }
 }
 
 void GUIView::unloading()
 {
     // Release AO GPU resources while the GL context is still alive (the base
-    // unloading tears down the display context). The destructor also calls
-    // cleanupAORTs() as a fallback, but by then getDisplayContext() is gone.
-    cleanupAORTs();
+    // unloading tears down the display context). The destructor also disposes the
+    // pipeline as a fallback, but by then getDisplayContext() is gone.
+    if (m_pPipeline != nullptr) {
+        m_pPipeline->dispose();
+        delete m_pPipeline;
+        m_pPipeline = nullptr;
+    }
     super_t::unloading();
 }
 
@@ -134,14 +146,43 @@ void GUIView::setUpProjMat(int cx, int cy)
     }
 
     // Setup projection matrix
+    Matrix4D projMat;
     if (isPerspec()) {
-        pdc->setProjMat(
-            DisplayContext::makePersProjMat(vw, fasp, slabnear, slabfar, dist));
+        projMat = DisplayContext::makePersProjMat(vw, fasp, slabnear, slabfar, dist);
     } else {
-        pdc->setProjMat(DisplayContext::makeOrthoProjMat(vw, fasp, slabnear, slabfar));
+        projMat = DisplayContext::makeOrthoProjMat(vw, fasp, slabnear, slabfar);
     }
 
+    // Temporal-jitter sub-pixel offset (no-op when m_jitterPxX/Y are 0). Shift
+    // the projection by a fraction of a pixel in NDC. For perspective this is a
+    // depth-independent screen shift via the z column (clip.x += j * clip.w);
+    // for ortho it is the translation column. Sign is irrelevant to the result
+    // (the offset set is symmetric and averaged).
+    if (m_jitterPxX != 0.0 || m_jitterPxY != 0.0) {
+        const double jx = (bcx > 0) ? (2.0 * m_jitterPxX / double(bcx)) : 0.0;
+        const double jy = (bcy > 0) ? (2.0 * m_jitterPxY / double(bcy)) : 0.0;
+        if (isPerspec()) {
+            projMat.aij(1, 3) += -jx;
+            projMat.aij(2, 3) += -jy;
+        } else {
+            projMat.aij(1, 4) += jx;
+            projMat.aij(2, 4) += jy;
+        }
+    }
+    pdc->setProjMat(projMat);
+
     resetProjChgFlag();
+}
+
+void GUIView::forceRedraw()
+{
+    // Scene-content changes reach views through the scene-level update flag and
+    // forceRedraw (not the per-view flag), so restart temporal-jitter
+    // accumulation here to avoid blending stale content. Camera changes are
+    // caught separately via getUpdateFlag() in drawScene.
+    m_jitterResetRequested = true;
+    drawScene();
+    clearUpdateFlag();
 }
 
 void GUIView::drawScene()
@@ -171,6 +212,13 @@ void GUIView::drawScene()
 
     ////////////////////////////////////////////////
 
+    // Temporal-jitter: assume no further accumulation this frame unless the AO
+    // path re-arms it below; keep the projection un-jittered for the default
+    // setUpProjMat call (the AO path re-applies the per-sample offset).
+    m_jitterMoreSamples = false;
+    m_jitterPxX = m_jitterPxY = 0.0;
+    m_aoHalfPending = false;
+
     if (isProjChange()) setUpProjMat(-1, -1);
 
     switch (getStereoMode()) {
@@ -182,51 +230,91 @@ void GUIView::drawScene()
             const bool useAO = pScene->isAOEnabled() && hasFBO() &&
                                getStereoMode() == Camera::CSM_NONE;
 
+            // Adaptive half-resolution AO: when aoHalfRes is enabled, the GTAO
+            // term is computed at half resolution only while the camera is
+            // moving (this frame was triggered by an update), then re-rendered
+            // at full resolution once the view settles. getUpdateFlag() is true
+            // for camera/scene-driven redraws and false for the idle continuous
+            // redraws, so it distinguishes "moving" from "still".
+            const bool aoHalfRes =
+                useAO && pScene->isAOHalfRes() && getUpdateFlag();
             if (useAO) {
-                ensureAORTs(convToBackingX(getWidth()),
-                            convToBackingY(getHeight()));
+                ensurePipeline(convToBackingX(getWidth()),
+                               convToBackingY(getHeight()), aoHalfRes);
             }
+            // Owe a full-resolution follow-up frame after a half-res one, so the
+            // idle loop keeps running until the still image is rendered at full
+            // resolution (needed when temporal jitter is off and would not
+            // otherwise re-arm the redraw).
+            m_aoHalfPending = aoHalfRes;
 
-            if (useAO && m_pAOSceneRT != nullptr && m_pAoRT != nullptr &&
-                m_pAoDenRT != nullptr && m_pAOPostProc != nullptr) {
-                // 1. Render the 3D scene into the off-screen target.
-                m_pAOSceneRT->bind();
-                setUpModelMat(MM_NORMAL);
-                gfx::ColorPtr bg = pScene->getBgColor();
-                m_pAOSceneRT->clear(float(bg->fr()), float(bg->fg()),
-                                  float(bg->fb()), 1.0f);
-                pScene->display(pdc);
-                m_pAOSceneRT->unbind();
+            if (useAO && m_pPipeline != nullptr && m_pPipeline->isReady()) {
+                // Temporal-jitter supersampling (camera still): the pipeline
+                // renders each jittered sample's final color, sums it into the
+                // float accumulation buffer, and displays the running average.
+                // Clamp to the supported range: levels above 5 have no jitter
+                // table (would degenerate to a zero-offset average) and the huge
+                // 1<<level sample count makes the per-sample weight so small that
+                // the RGBA16F accumulation bands on smooth gradients.
+                int jitterLevel = pScene->getAAJitterLevel();
+                if (jitterLevel < 0) jitterLevel = 0;
+                if (jitterLevel > 5) jitterLevel = 5;
+                const bool jitterActive = jitterLevel > 0;
+                const int jitterN = gfx::jitterSampleCount(jitterLevel);
+                if (jitterActive) {
+                    // Restart accumulation on any externally-requested redraw:
+                    // camera changes set the view update flag; scene-content
+                    // changes arrive via forceRedraw (-> m_jitterResetRequested).
+                    if (getUpdateFlag() || m_jitterResetRequested ||
+                        m_jitterSampleIndex >= jitterN) {
+                        m_jitterSampleIndex = 0;
+                        MB_DPRINTLN("GUIView> jitter SS start (level=%d, %d samples)",
+                                    jitterLevel, jitterN);
+                    }
+                    m_jitterResetRequested = false;
+                    gfx::jitterOffset(jitterLevel, m_jitterSampleIndex, m_jitterPxX,
+                                      m_jitterPxY);
+                    setUpProjMat(-1, -1);  // apply this sample's jittered frustum
+                }
 
-                // 2. GTAO pass: read the scene depth, write AO + packed edges
-                // into the AO target (no depth attachment -> not depth-rejected).
-                gfx::AoConstants aoc = computeAoConstants();
-                aoc.effectRadius = float(pScene->getAORadius());
-                aoc.finalValuePower = float(pScene->getAOIntensity());
-                aoc.sliceCount = pScene->getAOSlices();
-                aoc.stepsPerSlice = pScene->getAOSteps();
-                m_pAoRT->bind();
-                m_pAoRT->clear(1.0f, 1.0f, 1.0f, 1.0f);
-                m_pAOPostProc->drawGtao(pdc, m_pAOSceneRT, aoc, /*debugMode=*/0);
-                m_pAoRT->unbind();
+                // Drive the off-screen pass chain. The camera constants come from
+                // the View; the AO/AA/background settings are read from the Scene
+                // by the pipeline; the scene geometry is rendered via the callback.
+                FrameRenderParams params;
+                params.camAoc = computeAoConstants();
+                // Rotate the GTAO noise per accumulated jitter sample (R1
+                // sequence) so the grain averages out; 0 when not jittering.
+                if (jitterActive) {
+                    const double t = double(m_jitterSampleIndex) * 0.6180339887;
+                    params.aoNoiseOffset = float(t - std::floor(t));
+                }
+                params.enablePostAA = true;
+                params.jitterActive = jitterActive;
+                params.jitterIndex = m_jitterSampleIndex;
+                params.jitterCount = jitterN;
+                params.outRT = nullptr;  // live: default fb (or internal sample RT)
+                params.blitDepthToDefault = true;
 
-                // 3. Edge-aware denoise of the AO term (single pass). The base
-                // noise is kept low by a high slice count instead of heavy
-                // blurring, which would dilute the broad soft AO on convex
-                // surfaces toward white.
-                m_pAoDenRT->bind();
-                m_pAOPostProc->drawDenoise(pdc, m_pAoRT, aoc);
-                m_pAoDenRT->unbind();
+                m_pPipeline->render(pdc, pScene, params, [this, pdc, &pScene]() {
+                    setUpModelMat(MM_NORMAL);
+                    pScene->display(pdc);
+                });
 
-                // 4. Composite scene color * denoised AO onto the default
-                // framebuffer. The fullscreen pass must not be depth-rejected.
-                pdc->setDepthTestEnabled(false);
-                m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, m_pAoDenRT);
-                pdc->setDepthTestEnabled(true);
-
-                // Restore the scene depth into the default framebuffer so the
-                // UI overlays below depth-test against the scene as usual.
-                m_pAOSceneRT->blitDepthToDefault();
+                // Advance / converge the jitter accumulation. The pipeline ran
+                // this sample; the View owns the sample index and the idle redraw
+                // re-arm (needsContinuousRedraw reads m_jitterMoreSamples).
+                if (jitterActive) {
+                    MB_DPRINTLN("GUIView> jitter SS sample %d/%d",
+                                m_jitterSampleIndex + 1, jitterN);
+                    if (m_jitterSampleIndex + 1 < jitterN) {
+                        m_jitterSampleIndex += 1;
+                        m_jitterMoreSamples = true;  // keep redrawing on idle
+                    } else {
+                        m_jitterMoreSamples = false;  // converged
+                        MB_DPRINTLN("GUIView> jitter SS converged (%d samples)",
+                                    jitterN);
+                    }
+                }
             } else {
                 setUpModelMat(MM_NORMAL);
                 // glDrawBuffer(GL_BACK);
@@ -584,37 +672,15 @@ void GUIView::setFogColorImpl(DisplayContext *pdc)
 //////////
 // Screen-space ambient occlusion (GTAO) live path
 
-void GUIView::ensureAORTs(int w, int h)
+void GUIView::ensurePipeline(int w, int h, bool halfRes)
 {
     DisplayContext *pdc = getDisplayContext();
     if (pdc == nullptr) return;
 
-    if (m_pAOSceneRT == nullptr) {
-        // The normal attachment (MRT) lets the GTAO pass use real geometry
-        // normals instead of depth-reconstructed ones.
-        m_pAOSceneRT = pdc->createRenderTarget(
-            w, h, gfx::RT_COLOR_RGBA8 | gfx::RT_DEPTH_TEX | gfx::RT_NORMAL_RGBA16F);
-    } else {
-        m_pAOSceneRT->resize(w, h);
-    }
-
-    // AO targets hold packed data (AO + edges) and must use NEAREST filtering.
-    const int aoFlags = gfx::RT_COLOR_RGBA8 | gfx::RT_COLOR_NEAREST;
-    if (m_pAoRT == nullptr) {
-        m_pAoRT = pdc->createRenderTarget(w, h, aoFlags);
-    } else {
-        m_pAoRT->resize(w, h);
-    }
-
-    if (m_pAoDenRT == nullptr) {
-        m_pAoDenRT = pdc->createRenderTarget(w, h, aoFlags);
-    } else {
-        m_pAoDenRT->resize(w, h);
-    }
-
-    if (m_pAOPostProc == nullptr) {
-        m_pAOPostProc = MB_NEW gfx::PostProcGpuPrim();
-    }
+    // Lazily create the pipeline (the display context is not valid in the GUIView
+    // constructor, so this cannot be done there).
+    if (m_pPipeline == nullptr) m_pPipeline = MB_NEW FrameRenderPipeline();
+    m_pPipeline->setSize(pdc, w, h, halfRes);
 }
 
 gfx::AoConstants GUIView::computeAoConstants() const
@@ -655,29 +721,48 @@ gfx::AoConstants GUIView::computeAoConstants() const
     return c;
 }
 
-void GUIView::cleanupAORTs()
+bool GUIView::renderAOColorFrame(DisplayContext *pdc, const ScenePtr &pScene,
+                                 gfx::RenderTarget *outRT, bool bgTransparent,
+                                 float aoNoiseOffset)
 {
-    // The render target and the post-proc primitive's VBO both guard the GL
-    // context themselves (via the parent view looked up by ID in their
-    // destructors), so do NOT call getDisplayContext() here. cleanupAORTs runs
-    // from ~GUIView, after the concrete view subclass is already destroyed,
-    // where getDisplayContext() is a pure-virtual call (crash).
-    if (m_pAOPostProc != nullptr) {
-        delete m_pAOPostProc;
-        m_pAOPostProc = nullptr;
+    if (outRT == nullptr) return false;
+
+    const int bw = outRT->getWidth();
+    const int bh = outRT->getHeight();
+
+    const bool useAO = pScene->isAOEnabled() && hasFBO();
+    // The off-screen export always renders the AO term at full resolution: the
+    // half-res mode is a live-interaction optimization (see drawScene), not a
+    // quality setting, so an exported still must not inherit it.
+    if (useAO) ensurePipeline(bw, bh, /*halfRes=*/false);
+
+    if (useAO && m_pPipeline != nullptr && m_pPipeline->isReady()) {
+        // Composite-only chain (no spatial post-AA, no jitter, no UI depth blit),
+        // written to outRT. Shares FrameRenderPipeline::render with the live path.
+        FrameRenderParams params;
+        params.camAoc = computeAoConstants();
+        params.aoNoiseOffset = aoNoiseOffset;
+        params.bgTransparent = bgTransparent;
+        params.enablePostAA = false;
+        params.jitterActive = false;
+        params.outRT = outRT;
+        params.blitDepthToDefault = false;
+
+        return m_pPipeline->render(pdc, pScene, params, [this, pdc, &pScene]() {
+            setUpModelMat(MM_NORMAL);
+            pScene->display(pdc);
+        });
     }
-    if (m_pAoDenRT != nullptr) {
-        delete m_pAoDenRT;
-        m_pAoDenRT = nullptr;
-    }
-    if (m_pAoRT != nullptr) {
-        delete m_pAoRT;
-        m_pAoRT = nullptr;
-    }
-    if (m_pAOSceneRT != nullptr) {
-        delete m_pAOSceneRT;
-        m_pAOSceneRT = nullptr;
-    }
+
+    // Plain scene (AO off / unavailable) -> outRT.
+    gfx::ColorPtr bg = pScene->getBgColor();
+    const float bg_a = bgTransparent ? 0.0f : 1.0f;
+    outRT->bind();
+    setUpModelMat(MM_NORMAL);
+    outRT->clear(float(bg->fr()), float(bg->fg()), float(bg->fb()), bg_a);
+    pScene->display(pdc);
+    outRT->unbind();
+    return false;
 }
 
 //////////

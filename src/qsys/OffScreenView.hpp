@@ -43,11 +43,18 @@ private:
     /// Target last rendered into; readPixels reads from this one.
     gfx::RenderTarget *m_pReadRT;
 
+    /// Owned float accumulation target for jitter supersampling (RGBA16F).
+    gfx::RenderTarget *m_pAccumRT;
+
     /// When true, clear the background transparent (alpha = 0).
     bool m_bBgTransparent;
 
     /// When true, capture a depth visualization instead of the scene color.
     bool m_bDepthMode;
+
+    /// Jitter supersampling level for export (0 = off, 1..5 = 2/4/8/16/32
+    /// samples). Defaults to 5 (32 samples) for high-quality stills.
+    int m_nSuperSample;
 
 public:
     /// Construct an off-screen view of (w,h) sharing pParentCtxt. Allocates
@@ -80,6 +87,12 @@ public:
     virtual void setDepthMode(bool b) override
     {
         m_bDepthMode = b;
+    }
+
+    /// Set the jitter supersampling level for export (0 = off, 1..5).
+    virtual void setSuperSampleLevel(int n) override
+    {
+        m_nSuperSample = n;
     }
 
     /// Render the scene into the off-screen render target.

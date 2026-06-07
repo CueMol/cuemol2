@@ -15,14 +15,20 @@ libcuemol2 の OpenGL (core profile) バックエンドに実装した、リア�
 ライブ描画 1 フレームの流れ (`qsys::GUIView::drawScene`, CSM_NONE 分岐):
 
 ```
-1. scene  -> off-screen FBO (m_pAOSceneRT)
+1. scene  -> off-screen FBO (m_pAOSceneRT)  ※常にフル解像度
               COLOR0 = 色 (RGBA8) / DEPTH = 深度tex (DEPTH24) / COLOR1 = 法線 (RGBA16F, MRT)
-2. GTAO   -> AO RT (m_pAoRT, RGBA8)        R=遮蔽 G=packed edges
-3. denoise-> denoise RT (m_pAoDenRT)       edge-aware 3x3 blur (単一パス)
-4. composite (color * AO) -> default framebuffer
+2. GTAO   -> AO RT (m_pAoRT, RGBA8)        R=遮蔽 G=packed edges  ※aoHalfRes 時は半解像度 (§4.7)
+3. denoise-> denoise RT (m_pAoDenRT)       edge-aware 3x3 blur (単一パス)  ※AO RT と同解像度
+4. composite (color * AO, 半解像度時は edge-aware upsample) + post-AA -> default framebuffer  (§4.5/§4.7)
+     aa_method=none: composite を直接 default fb へ
+     aa_method=fxaa: composite -> m_pCompRT(LINEAR) -> FXAA -> default fb
 5. depth blit (scene depth -> default fb)  UI overlay の depth test 用
-6. UI overlay / 2D-UI / swapBuffers        AO の影響を受けない
+6. UI overlay / 2D-UI / swapBuffers        AO/AA の影響を受けない
 ```
+
+> **AA は AO 経路でのみ必要**: scene を single-sample off-screen FBO に描くため、AO 有効時は
+> default FB の MSAA が効かず edge AA が失われる (非 AO 経路は従来どおり MSAA)。これを後段の
+> post-process AA で補う (§4.5)。
 
 AO を使わない (無効・stereo・FBO 非対応) 場合は従来パス (clearBuffer + display) に
 フォールバックする。判定は `pScene->isAOEnabled() && hasFBO() && getStereoMode()==CSM_NONE`。
@@ -31,14 +37,15 @@ AO を使わない (無効・stereo・FBO 非対応) 場合は従来パス (clea
 
 | 区分 | パス | 役割 |
 |---|---|---|
-| Scene プロパティ | `src/qsys/Scene.{qif,hpp,cpp}` | `aoEnabled/aoRadius/aoIntensity/aoSlices/aoSteps` (.qsc にシリアライズ) |
+| Scene プロパティ | `src/qsys/Scene.{qif,hpp,cpp}` | `aoEnabled/aoRadius/aoIntensity/aoSlices/aoSteps/aoHalfRes` + `aa_method` (none/fxaa/smaa) + `aaJitterLevel` (.qsc にシリアライズ) |
 | FBO 抽象 | `src/gfx/RenderTarget.hpp` | `RTFlags` / `RTTexUnit` / `RenderTarget` IF |
 | FBO 実装 | `src/sysdep/ogl_core/OcRenderTarget.{hpp,cpp}` | MRT (color+depth+normal)、clear、blit |
-| フルスクリーン描画 | `src/gfx/PostProcGpuPrim.{hpp,cpp}` | `drawGtao` / `drawDenoise` / `drawComposite` + `struct AoConstants` |
+| フルスクリーン描画 | `src/gfx/PostProcGpuPrim.{hpp,cpp}` | `drawGtao` / `drawDenoise` / `drawComposite` / `drawFxaa` + `struct AoConstants` |
 | ライブ経路 | `src/qsys/GUIView.cpp` | `drawScene` の AO 分岐 / `ensureAORTs` / `computeAoConstants` / `cleanupAORTs` / `unloading` |
 | GTAO 本体 | `src/sysdep/ogl_core/gtao_frag.glsl` | horizon 積分・法線選択・line 除外 |
 | denoise | `src/sysdep/ogl_core/ao_denoise_frag.glsl` | edge-aware blur |
-| composite | `src/sysdep/ogl_core/ao_composite_frag.glsl` | `color.rgb * AO` |
+| composite | `src/sysdep/ogl_core/ao_composite_frag.glsl` | `color.rgb * AO` (+ 半解像度時 joint bilateral upsample) |
+| post-AA (FXAA) | `src/sysdep/ogl_core/fxaa_frag.glsl` | FXAA 3.11 (§4.5) |
 | 頂点 | `src/sysdep/ogl_core/postproc_vert.glsl` | 全画面トライアングル (v_uv) |
 | scene shader | `trig`/`trigedge`/`sphere`/`cylinder`/`mapsurf`/`linew`/`pixdraw`/`mapmesh` | MRT 法線出力 (後述) |
 
@@ -139,6 +146,160 @@ GTAO 積分空間は `vz>0` が前方 = カメラ方向 `V` は `z<0`。よっ�
 
 ---
 
+## 4.5 post-process AA (FXAA)
+
+AO 経路は scene を **single-sample** off-screen FBO に描くため、MSAA がバインド中の FBO の
+サンプル数で決まる以上、AO 有効時は edge AA が一切効かない (非 AO 経路は default FB の MSAA
+がそのまま効く)。失われた AA を **AO の後段で独立にかける** (AO と AA は直交)。
+
+### 設計: Mol* 流の 2 直交軸
+- **軸1 = 空間 AA メソッド**: `Scene.aa_method` enum (`none`/`fxaa`/`smaa`)。差し替え可能な
+  fragment ポストパスとして実装。**FXAA と SMAA 1x を実装済み**。
+- **軸2 = temporal jitter SS** (実装済み): projection を per-frame で subpixel jitter し、
+  静止時のみ accumulation buffer に蓄積、カメラ変化でリセット (motion vector 不要)。`§4.6`。
+
+### FXAA パス (`fxaa_frag.glsl`, `PostProcGpuPrim::drawFxaa`)
+- `aa_method=fxaa`: composite を **LINEAR の中間 RT** (`m_pCompRT`, RGBA8) へ描き、FXAA が
+  それを読んで default FB へ書く。`aa_method=none` は composite を default FB へ直書き (従来挙動)。
+- FXAA は Lottes FXAA 3.11 相当・**1 パス・lookup texture 不要**。luma は RGB から算出
+  (`sqrt(dot(rgb, vec3(0.299,0.587,0.114)))`)。`textureOffset` ベースで desktop GL core /
+  **WebGL2 GLSL ES 3.00 双方へ移植可**。
+- **中間 RT は LINEAR 必須** (`RT_COLOR_RGBA8` のみ、NEAREST フラグ無し)。FXAA のサブテクセル
+  sampling に不可欠。
+- AA は overlay/2D-UI の **前** に走るので UI 文字はぼけない。
+
+### SMAA 1x パス (`smaa_{edges,weights,blend}_frag.glsl`, `PostProcGpuPrim::drawSmaa*`)
+- `aa_method=smaa`: composite を `m_pCompRT` へ描いた後、3 パス:
+  edges (`m_pSmaaEdgeRT`, clear 必須) → weights (`m_pSmaaWeightRT`, clear 必須) →
+  blend (default FB)。GUIView が RT bind/unbind を編成。
+- **Mol* (three.js SMAA 2.8, MIT) からの移植**。Mol* は WebGL(bottom-up) 向けに Y 符号を
+  調整済みで、CueMol の GL も bottom-up のため**そのまま適用**。offset は専用 VS の代わりに
+  各 fragment shader 内で `v_uv`/`u_rcpFrame` から算出し `postproc_vert` を共用。
+- **lookup texture**: AreaTex (160x560 RG8, LINEAR) と SearchTex (66x33 R8, NEAREST) を
+  `share/data/textures/smaa_{area,search}.dat` として同梱。**Mol* の base64 PNG を offline
+  デコードして生成** (R/G チャンネル抽出。`UNPACK_FLIP_Y=false` の Mol* 挙動に合わせ flip 無し)。
+  PNG decoder は持たないため raw データ同梱とした。
+- **data-texture インフラ**: CPU バイト列→sampler を作る汎用 `gfx::DataTexture` /
+  `sysdep::OcDataTexture` を新設 (`DisplayContext::createDataTexture[FromFile]`)。FBO 専用の
+  `RenderTarget` とは別系統 (R8/RG8・LINEAR/NEAREST・CLAMP)。
+- FXAA より silhouette/色境界の品質が高い。コスト = 中間 RT 2 枚 + lookup 2 枚 + 3 パス。
+
+### なぜ hardware MSAA (case B) を採らないか (重要)
+「scene FBO を MSAA 化し GTAO は sample0 を texelFetch、color は MSAA resolve」案は不採用:
+- **XeGTAO 自体が MSAA depth 非対応** (`vaGTAO.cpp` で `SampleCount()==1` を assert)。
+- **WebGL2 は `sampler2DMS` / multisample texture / per-sample texelFetch を持たない**。
+  sampleable な MRT 法線 (§4) を MSAA で保持できず、desktop 専用シェーダ分岐になり「OpenGL と
+  WebGL2 で同一 fragment shader を 1 本維持」という方針 (§8) を崩す。
+- **Mol*** (WebGL ベース分子ビューア) も hardware MSAA を使わず post-AA を既定 (SMAA) に
+  している (`mol-canvas3d/passes/postprocessing.ts`)。tritium 行きの CueMol が取るべき道の傍証。
+
+## 4.6 temporal jitter supersampling (軸2)
+
+カメラ静止中に投影をサブピクセル jitter して複数フレームを蓄積する真の SS (Mol*
+`multi-sample.ts` の temporal 相当)。各サンプルは軸1 (none/fxaa/smaa) で描かれ、その最終色を
+平均する。フル TAA (motion vector 再投影) ではなく、動いたらリセットする「静止時 SS」。
+
+### 制御
+- `Scene.aaJitterLevel` (0=off, 1..5 → 2/4/8/16/32 サンプル)。AO 経路・CSM_NONE のみ。
+- jitter オフセット表は Mol* JitterVectors (1/16px 単位) を `GUIView.cpp` に複製。
+
+### 1 フレーム (jitterActive 時)
+```
+reset 判定 (getUpdateFlag()=カメラ変更 / forceRedraw override=シーン編集) → sampleIndex=0
+setUpProjMat に当該サンプルの subpixel offset を注入 (perspective=射影の z 列, ortho=平行移動列)
+scene→GTAO→denoise→composite→(none/fxaa/smaa) の最終色を m_pJitterSampleRT へ
+accumRT(RGBA16F) に additive blend で sample*(1/N) を加算 (sampleIndex==0 で clear)
+accumRT*(N/(sampleIndex+1)) を default FB へ表示 (部分和の正規化平均)
+sampleIndex++ / 収束で停止
+```
+
+### idle 駆動 (核心)
+- `View::needsContinuousRedraw()` (新規 virtual, 既定 false) を `GUIView` が override し、未収束の
+  間 true。`Scene::checkAndUpdate` else 分岐が `getUpdateFlag() || needsContinuousRedraw()` で
+  drawScene を駆動 → 静止中に N フレーム蓄積し、収束で停止 (恒常ループにならない)。
+  uxp_gui の idle (`SceneManager::doIdleTask`→`checkAndUpdateScenes`) / tritium の RAF 両対応。
+- **罠**: checkAndUpdate は drawScene 直後に update flag を必ずクリアするので、drawScene 内から
+  setUpdateFlag しても次フレームは来ない。継続は needsContinuousRedraw 経由で行う。
+- リセット: カメラ変更は view update flag → drawScene 内 `getUpdateFlag()` で検知。シーン編集は
+  scene flag → `GUIView::forceRedraw` override (`m_jitterResetRequested`) で検知。
+
+### 新規インフラ
+- `RT_COLOR_RGBA16F` (color0 を float 化; 8bit 蓄積のバンディング回避)。
+- `DataTexture` とは別に accum/sample RT。`DisplayContext::setBlendModeAdd` (加算 blend)。
+- `jitter_compose_frag.glsl` (`PostProcGpuPrim::drawJitterCompose`, sample*weight)。
+
+### 既知の制限 / 将来
+- AO は毎サンプル再計算 (Mol* reuseOcclusion 最適化は未実装 = 重いが正しい)。
+- フル TAA (動作中 AA)、hold バッファによるフリッカ低減、非 AO 経路統一、stereo は未対応。
+
+---
+
+## 4.7 半解像度 AO (負荷削減)
+
+GTAO の fragment コストは **AO バッファのピクセル数に比例**する (1 ピクセルあたり数十回の
+depth fetch + horizon march)。`aoHalfRes` を有効にすると GTAO + denoise を **半解像度
+(1/2×1/2 = 1/4 ピクセル)** で計算し、composite で **edge-aware upsample** してフル解像度へ
+戻す。GTAO + denoise のコストが約 1/4 になる。
+
+### adaptive (drag=half / idle=full / export=full)
+`aoHalfRes` は「常に半解像度」ではなく jitter SS (§4.6) と同じ idle 機構で **adaptive** に効く:
+- **カメラ移動中 (drag)** = `getUpdateFlag()` true のフレームだけ半解像度 → レスポンス優先。
+- **静止 (idle)** = 続く continuous-redraw フレーム (`getUpdateFlag()` false) でフル解像度に描き直す
+  → 静止画の品質を担保。
+- **off-screen export** (`renderAOColorFrame`) は `getUpdateFlag` を見ず **常にフル解像度**
+  (half-res はライブ操作の最適化であって品質設定ではない)。
+- off (既定) = 常にフル解像度 (従来挙動)。
+
+half フレームを描いた後にフル解像度の追い描きへ idle ループを継続させるため、
+`needsContinuousRedraw()` を `m_jitterMoreSamples || m_aoHalfPending` とする。`m_aoHalfPending`
+は「この frame は half で描いたので full の追い描きが要る」フラグで、jitter OFF でも idle 追い描き
+が 1 回発火する (jitter ON なら jitter 蓄積が同じ idle ループを既に回す)。
+
+### 何を半解像度にするか
+- **半解像度**: `m_pAoRT` / `m_pAoDenRT` (GTAO 項 + packed edges) のみ。`ensureAORTs(w,h,halfRes)`
+  が `(w+1)/2, (h+1)/2` で確保する。`resize()` は no-op 判定があるので runtime トグル追従可。
+- **フル解像度のまま**: `m_pAOSceneRT` (色・深度・法線)。composite と upsample に full-res depth が
+  要るため。`m_pCompRT` / SMAA 中間 RT もフル解像度。
+
+### ピクセルサイズの受け渡し (`AoConstants`)
+- `viewportPixelSize` = 出力 (フル) の 1/size。`aoTexelSize` = AO バッファの 1/size。
+- GTAO / denoise には `viewportPixelSize = aoTexelSize` にした **コピー (`aocAO`)** を渡す。GTAO の
+  `screenspaceRadius` / edge / サンプルオフセットは全て pixel size 基準なので、半解像度の pixel
+  size を渡すだけで world 半径のカバレッジは自動で保たれる (数式変更不要)。
+- composite には元の `aoc` (フル `viewportPixelSize` + 半解像度 `aoTexelSize`) を渡す。
+  `u_upsample` は `aoTexelSize > viewportPixelSize*1.5` で判定 (フル解像度では false)。
+- **horizon 半径 clamp の解像度非依存化 (重要)**: GTAO の `u_maxScreenspaceRadius` (近距離で
+  texture read を cache-local に保つ上限) は **pass のピクセル単位**。固定 256 のままだと half-res
+  では `screenspaceRadius` が半分になり、ズームイン時に full は clamp・half は未 clamp となって
+  **half の方が effectiveRadius が大きく AO が濃く出る** (drag↔idle で影量が変わる原因)。CPU で
+  `256 * (full viewportPixelSize / aoTexelSize)` (= full なら 256 / half なら 128) を渡し、両解像度
+  で同じ world 半径・同じ遮蔽量になるようにする (`aocAO.maxScreenspaceRadius`)。
+
+### edge-aware upsample (halo 防止の肝, `ao_composite_frag.glsl`)
+naive bilinear だと深度不連続 (シルエット) で AO が滲んで halo が出る。**nearest-depth
+upsample ハイブリッド** (NVIDIA 系の定番) で防ぐ:
+- 各 full-res ピクセルで自身の線形 depth `zC`、および周囲 4 つの half-res texel の AO 値 `a00..a11`
+  と線形 depth `z00..z11` を full-res depth から求める。
+- 4 tap の depth spread `zmax-zmin` を `threshold = max(|zC|,eps)*0.03` と比較:
+  - **spread ≤ threshold (平坦面)**: 通常の bilinear 加重平均 (滑らか)。
+  - **spread > threshold (シルエット)**: `zC` に **depth が最も近い 1 tap の AO をそのまま採用**。
+    跨ぎ tap を一切混ぜないので halo が原理的に出ない。
+- 初版は soft な joint bilateral (`exp(-|zC-zi|/range)`) だったが、指数重みは跨ぎ tap を完全に
+  ゼロにできず前景輪郭に背景の明るい AO が滲んで halo が残ったため、nearest-depth に変更した。
+- half-res texel の depth は別 RT に保存せず full-res depth を texel 中心で読み直して近似する
+  (追加 RT 不要)。
+- トレードオフ: グレージング (斜め) で連続的な面でも spread が大きいと nearest-depth 側に倒れて
+  AO がややブロック状になりうるが、AO は低周波なので halo より目立たない。
+
+### 相互作用
+- **jitter SS (§4.6)**: 半解像度 GTAO の粗いノイズも jitter 蓄積 + `aoNoiseOffset` 回転で平均化
+  されるので相性良。export 経路 (`renderAOColorFrame`) も同じ composite を通るので半解像度が効く。
+- **post-AA (§4.5)**: FXAA / SMAA はフル解像度の composite 出力に掛かるので影響なし。
+- **非回帰**: `aoHalfRes=false` で `aoTexelSize == viewportPixelSize`、`aocAO == aoc`、
+  `u_upsample=0` となり従来と完全同一。既定 false (opt-in)。
+
+---
+
 ## 5. 移植で必ず踏むハマりどころ (最重要)
 
 Apple M2 / Metal バックエンド OpenGL 4.1 + MSAA x4 の実機で、以下を順に踏んだ。WebGL2 /
@@ -190,6 +351,9 @@ output location も確認。これらで「location は正しい→書き込み�
 | `aoIntensity` | 2.2 | finalValuePower (コントラスト) |
 | `aoSlices` | 9 | 角度サンプル数 (= 基本ノイズ量) |
 | `aoSteps` | 3 | スライスあたり半径サンプル数 (大半径のバンディング) |
+| `aoHalfRes` | false | adaptive 半解像度 GTAO: drag 中 half / idle full / export 常に full (負荷削減, §4.7) |
+| `aa_method` | fxaa | post-process AA (none/fxaa/smaa, §4.5) |
+| `aaJitterLevel` | 0 | temporal jitter SS レベル (0=off, 1..5=2..32 枚, §4.6) |
 
 FalloffRange / SampleDistributionPower / RadiusMultiplier 等の XeGTAO ヒューリスティックは
 shader 定数のまま (必要なら同様に Scene プロパティへ昇格できる構造)。
@@ -231,8 +395,14 @@ shader 定数のまま (必要なら同様に Scene プロパティへ昇格で�
 
 ### 共通の未実装/将来最適化 (現状スコープ外)
 - depth MIP チェーン (prefilter パス) によるワイド半径の高速化・低ノイズ化。
-- 半解像度 AO + edge-aware upsample (naive blur ではなく denoise と同じ重みで halo 防止)。
 - bent normals、TAA。
+
+(半解像度 AO + edge-aware upsample は §4.7 で実装済み。)
+
+### AA ロードマップ (§4.5/§4.6 の続き)
+- **フル TAA**: motion vector 再投影で動作中も AA。reuseOcclusion 最適化、hold バッファ。
+- **全経路統一**: 非 AO 経路も offscreen+post-AA/jitter に通し AA を context MSAA 非依存にする
+  (tritium と整合)。現状は AO 経路のみ、非 AO は default FB MSAA。stereo 対応。
 
 ---
 

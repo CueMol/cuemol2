@@ -310,6 +310,13 @@ install(FILES ${DATA_FILES} DESTINATION share/data)
 install(FILES ${SYSCONFIG_FILE} DESTINATION share)
 install(FILES ${DATA_DIR}/icc_profiles/GenericCMYK.icm DESTINATION share/icc_profiles)
 
+# SMAA anti-aliasing lookup textures (raw, decoded from Mol*'s SMAA area/search
+# PNGs; see docs). area = 160x560 RG8, search = 66x33 R8.
+install(FILES
+  ${DATA_DIR}/textures/smaa_area.dat
+  ${DATA_DIR}/textures/smaa_search.dat
+  DESTINATION share/data/textures)
+
 #
 #
 #

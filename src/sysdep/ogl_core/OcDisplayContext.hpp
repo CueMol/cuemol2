@@ -15,6 +15,7 @@ class VBORep;
 class PixRep;
 class PixelBuffer;
 class RenderTarget;
+class DataTexture;
 }  // namespace gfx
 
 namespace sysdep {
@@ -39,6 +40,10 @@ public:
 
     virtual void setInvertColorBlend(bool bInv) override;
 
+    virtual void setBlendEnabled(bool b) override;
+
+    virtual void setBlendModeAdd(bool add) override;
+
     //////////
 
     /// Clear the target buffer with the specified color.
@@ -60,6 +65,13 @@ public:
     virtual gfx::PixRep *createPixRep(const gfx::PixelBuffer &pixbuf) override;
 
     virtual gfx::RenderTarget *createRenderTarget(int w, int h, int flags) override;
+
+    virtual gfx::DataTexture *createDataTexture(int w, int h, int ncomp, bool linear,
+                                                const void *data) override;
+
+    virtual gfx::DataTexture *createDataTextureFromFile(const LString &path, int w,
+                                                        int h, int ncomp,
+                                                        bool linear) override;
 
     virtual void bindRenderTarget(gfx::RenderTarget *prt) override;
 

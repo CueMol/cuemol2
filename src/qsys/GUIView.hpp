@@ -14,11 +14,12 @@
 
 namespace gfx {
 class RenderTarget;
-class PostProcGpuPrim;
 struct AoConstants;
 }  // namespace gfx
 
 namespace qsys {
+
+class FrameRenderPipeline;
 
 class QSYS_API GUIView : public qsys::View
 {
@@ -78,6 +79,18 @@ public:
 
     virtual void drawScene() override;
 
+    /// Keep redrawing on idle while temporal-jitter accumulation is unfinished,
+    /// or while a full-resolution AO follow-up is owed after a half-res
+    /// (camera-moving) frame (adaptive aoHalfRes).
+    virtual bool needsContinuousRedraw() const override
+    {
+        return m_jitterMoreSamples || m_aoHalfPending;
+    }
+
+    /// Force a redraw and restart any temporal-jitter accumulation (used when
+    /// the scene content changes via the scene-level update flag).
+    virtual void forceRedraw() override;
+
     /// Release GPU resources (incl. AO render targets) while the GL context is
     /// still alive, before the display context is torn down.
     virtual void unloading() override;
@@ -125,29 +138,56 @@ public:
     // Screen-space ambient occlusion (GTAO) live path
 
 private:
-    /// Off-screen scene target (color + depth) for the AO path. Owned.
-    gfx::RenderTarget *m_pAOSceneRT = nullptr;
+    /// Off-screen multi-pass pipeline (owns the AO/AA/jitter render targets +
+    /// the fullscreen post-process primitive). Lazily created on first use (the
+    /// display context is not valid in the GUIView constructor). Owned.
+    FrameRenderPipeline *m_pPipeline = nullptr;
 
-    /// Color-only target holding the AO term + packed edges (GTAO pass). Owned.
-    gfx::RenderTarget *m_pAoRT = nullptr;
+    /// Temporal-jitter state. sampleIndex counts accumulated samples; when
+    /// moreSamples is true the view keeps redrawing on idle (needsContinuousRedraw)
+    /// until converged. resetRequested forces a restart (set on forceRedraw, i.e.
+    /// scene-content changes; camera changes are caught via getUpdateFlag()).
+    int m_jitterSampleIndex = 0;
+    bool m_jitterMoreSamples = false;
+    bool m_jitterResetRequested = false;
+    /// Current sample's sub-pixel offset (backing pixels), applied in setUpProjMat.
+    double m_jitterPxX = 0.0;
+    double m_jitterPxY = 0.0;
 
-    /// Color-only target holding the denoised AO term. Owned.
-    gfx::RenderTarget *m_pAoDenRT = nullptr;
+    /// Adaptive aoHalfRes: set when the AO term was rendered at half resolution
+    /// this frame (camera moving). It keeps the idle loop alive for one more
+    /// frame so the still image is re-rendered at full resolution.
+    bool m_aoHalfPending = false;
 
-    /// Fullscreen post-processing primitive (GTAO + denoise + composite). Owned.
-    gfx::PostProcGpuPrim *m_pAOPostProc = nullptr;
-
-    /// Lazily create / resize the AO scene target and post-proc primitive to
-    /// the given backing-pixel size.
-    void ensureAORTs(int w, int h);
+    /// Lazily create the off-screen pipeline (needs a valid display context) and
+    /// (re)size its render targets to the given backing-pixel size. When halfRes
+    /// is true the GTAO term targets are allocated at half resolution.
+    void ensurePipeline(int w, int h, bool halfRes);
 
     /// Compute the view-space reconstruction constants for the GTAO passes from
     /// the current camera (perspective). Mirrors setUpProjMat's slab derivation.
     gfx::AoConstants computeAoConstants() const;
 
-    /// Release the AO render targets and post-proc primitive (on the current
-    /// display context).
-    void cleanupAORTs();
+  protected:
+    /// Set the sub-pixel jitter offset (in backing pixels) applied to the
+    /// projection by setUpProjMat. Used by the off-screen exporter per sample.
+    void setJitterOffsetPx(double px, double py)
+    {
+        m_jitterPxX = px;
+        m_jitterPxY = py;
+    }
+
+    /// Render one frame's final 3D color into outRT: the scene with the scene's
+    /// AO applied (GTAO -> denoise -> composite), or the plain scene when AO is
+    /// off/unavailable. No spatial post-AA (FXAA/SMAA) and no UI overlay. The
+    /// projection (including any jitter offset) and GL context must be set by the
+    /// caller; this sets the model matrix and manages the off-screen targets.
+    /// Used by the off-screen exporter, which wraps it with jitter accumulation.
+    /// Returns true if AO was applied. bgTransparent clears the background alpha
+    /// to 0 (for transparent capture).
+    bool renderAOColorFrame(gfx::DisplayContext *pdc, const ScenePtr &pScene,
+                            gfx::RenderTarget *outRT, bool bgTransparent,
+                            float aoNoiseOffset = 0.0f);
 };
 
 }  // namespace qsys
