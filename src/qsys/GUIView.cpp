@@ -269,7 +269,13 @@ void GUIView::drawScene()
                 // Temporal-jitter supersampling (camera still): render each
                 // jittered sample's final color into m_pJitterSampleRT, sum into
                 // the float accumulation buffer, and display the running average.
-                const int jitterLevel = pScene->getAAJitterLevel();
+                // Clamp to the supported range: levels above 5 have no jitter
+                // table (would degenerate to a zero-offset average) and the huge
+                // 1<<level sample count makes the per-sample weight so small that
+                // the RGBA16F accumulation bands on smooth gradients.
+                int jitterLevel = pScene->getAAJitterLevel();
+                if (jitterLevel < 0) jitterLevel = 0;
+                if (jitterLevel > 5) jitterLevel = 5;
                 const bool jitterActive = jitterLevel > 0 &&
                                           m_pJitterSampleRT != nullptr &&
                                           m_pJitterAccumRT != nullptr;
