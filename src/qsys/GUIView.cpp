@@ -208,6 +208,7 @@ void GUIView::drawScene()
     // setUpProjMat call (the AO path re-applies the per-sample offset).
     m_jitterMoreSamples = false;
     m_jitterPxX = m_jitterPxY = 0.0;
+    m_aoHalfPending = false;
 
     if (isProjChange()) setUpProjMat(-1, -1);
 
@@ -220,11 +221,23 @@ void GUIView::drawScene()
             const bool useAO = pScene->isAOEnabled() && hasFBO() &&
                                getStereoMode() == Camera::CSM_NONE;
 
-            const bool aoHalfRes = useAO && pScene->isAOHalfRes();
+            // Adaptive half-resolution AO: when aoHalfRes is enabled, the GTAO
+            // term is computed at half resolution only while the camera is
+            // moving (this frame was triggered by an update), then re-rendered
+            // at full resolution once the view settles. getUpdateFlag() is true
+            // for camera/scene-driven redraws and false for the idle continuous
+            // redraws, so it distinguishes "moving" from "still".
+            const bool aoHalfRes =
+                useAO && pScene->isAOHalfRes() && getUpdateFlag();
             if (useAO) {
                 ensureAORTs(convToBackingX(getWidth()),
                             convToBackingY(getHeight()), aoHalfRes);
             }
+            // Owe a full-resolution follow-up frame after a half-res one, so the
+            // idle loop keeps running until the still image is rendered at full
+            // resolution (needed when temporal jitter is off and would not
+            // otherwise re-arm the redraw).
+            m_aoHalfPending = aoHalfRes;
 
             if (useAO && m_pAOSceneRT != nullptr && m_pAoRT != nullptr &&
                 m_pAoDenRT != nullptr && m_pAOPostProc != nullptr) {
@@ -885,8 +898,10 @@ bool GUIView::renderAOColorFrame(DisplayContext *pdc, const ScenePtr &pScene,
     gfx::ColorPtr bg = pScene->getBgColor();
 
     const bool useAO = pScene->isAOEnabled() && hasFBO();
-    const bool aoHalfRes = useAO && pScene->isAOHalfRes();
-    if (useAO) ensureAORTs(bw, bh, aoHalfRes);
+    // The off-screen export always renders the AO term at full resolution: the
+    // half-res mode is a live-interaction optimization (see drawScene), not a
+    // quality setting, so an exported still must not inherit it.
+    if (useAO) ensureAORTs(bw, bh, /*halfRes=*/false);
 
     if (useAO && m_pAOSceneRT != nullptr && m_pAoRT != nullptr &&
         m_pAoDenRT != nullptr && m_pAOPostProc != nullptr) {

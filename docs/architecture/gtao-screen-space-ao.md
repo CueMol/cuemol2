@@ -241,6 +241,20 @@ depth fetch + horizon march)。`aoHalfRes` を有効にすると GTAO + denoise 
 (1/2×1/2 = 1/4 ピクセル)** で計算し、composite で **edge-aware upsample** してフル解像度へ
 戻す。GTAO + denoise のコストが約 1/4 になる。
 
+### adaptive (drag=half / idle=full / export=full)
+`aoHalfRes` は「常に半解像度」ではなく jitter SS (§4.6) と同じ idle 機構で **adaptive** に効く:
+- **カメラ移動中 (drag)** = `getUpdateFlag()` true のフレームだけ半解像度 → レスポンス優先。
+- **静止 (idle)** = 続く continuous-redraw フレーム (`getUpdateFlag()` false) でフル解像度に描き直す
+  → 静止画の品質を担保。
+- **off-screen export** (`renderAOColorFrame`) は `getUpdateFlag` を見ず **常にフル解像度**
+  (half-res はライブ操作の最適化であって品質設定ではない)。
+- off (既定) = 常にフル解像度 (従来挙動)。
+
+half フレームを描いた後にフル解像度の追い描きへ idle ループを継続させるため、
+`needsContinuousRedraw()` を `m_jitterMoreSamples || m_aoHalfPending` とする。`m_aoHalfPending`
+は「この frame は half で描いたので full の追い描きが要る」フラグで、jitter OFF でも idle 追い描き
+が 1 回発火する (jitter ON なら jitter 蓄積が同じ idle ループを既に回す)。
+
 ### 何を半解像度にするか
 - **半解像度**: `m_pAoRT` / `m_pAoDenRT` (GTAO 項 + packed edges) のみ。`ensureAORTs(w,h,halfRes)`
   が `(w+1)/2, (h+1)/2` で確保する。`resize()` は no-op 判定があるので runtime トグル追従可。
@@ -331,7 +345,7 @@ output location も確認。これらで「location は正しい→書き込み�
 | `aoIntensity` | 2.2 | finalValuePower (コントラスト) |
 | `aoSlices` | 9 | 角度サンプル数 (= 基本ノイズ量) |
 | `aoSteps` | 3 | スライスあたり半径サンプル数 (大半径のバンディング) |
-| `aoHalfRes` | false | GTAO を半解像度で計算し edge-aware upsample (負荷削減, §4.7) |
+| `aoHalfRes` | false | adaptive 半解像度 GTAO: drag 中 half / idle full / export 常に full (負荷削減, §4.7) |
 | `aa_method` | fxaa | post-process AA (none/fxaa/smaa, §4.5) |
 | `aaJitterLevel` | 0 | temporal jitter SS レベル (0=off, 1..5=2..32 枚, §4.6) |
 

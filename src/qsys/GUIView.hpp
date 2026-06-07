@@ -78,8 +78,13 @@ public:
 
     virtual void drawScene() override;
 
-    /// Keep redrawing on idle while temporal-jitter accumulation is unfinished.
-    virtual bool needsContinuousRedraw() const override { return m_jitterMoreSamples; }
+    /// Keep redrawing on idle while temporal-jitter accumulation is unfinished,
+    /// or while a full-resolution AO follow-up is owed after a half-res
+    /// (camera-moving) frame (adaptive aoHalfRes).
+    virtual bool needsContinuousRedraw() const override
+    {
+        return m_jitterMoreSamples || m_aoHalfPending;
+    }
 
     /// Force a redraw and restart any temporal-jitter accumulation (used when
     /// the scene content changes via the scene-level update flag).
@@ -166,6 +171,11 @@ private:
     /// Current sample's sub-pixel offset (backing pixels), applied in setUpProjMat.
     double m_jitterPxX = 0.0;
     double m_jitterPxY = 0.0;
+
+    /// Adaptive aoHalfRes: set when the AO term was rendered at half resolution
+    /// this frame (camera moving). It keeps the idle loop alive for one more
+    /// frame so the still image is re-rendered at full resolution.
+    bool m_aoHalfPending = false;
 
     /// Fullscreen post-processing primitive (GTAO + denoise + composite). Owned.
     gfx::PostProcGpuPrim *m_pAOPostProc = nullptr;

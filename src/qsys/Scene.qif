@@ -60,8 +60,10 @@ runtime_class Scene
   property integer aoSteps => redirect(getAOSteps, setAOSteps);
   default aoSteps = 3;
 
-  /// Compute the GTAO term at half resolution and edge-aware upsample it on
-  /// composite (load reduction; the GTAO pass cost is ~1/4).
+  /// Adaptive half-resolution GTAO: while the camera is moving, compute the AO
+  /// term at half resolution (edge-aware upsampled on composite) for
+  /// responsiveness, then re-render at full resolution once the view is still.
+  /// Off-screen export is always full resolution. Off = always full resolution.
   property boolean aoHalfRes => redirect(isAOHalfRes, setAOHalfRes);
   default aoHalfRes = false;
 
