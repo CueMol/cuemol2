@@ -33,9 +33,12 @@ void main(void)
 {
     o_FragColor = fragFogColor(v_frontColor, frag_alpha, v_fogCoord);
 
-    o_Normal = (dot(v_ecNormal, v_ecNormal) > 1e-12)
-                   ? vec4(normalize(v_ecNormal), 1.0)
-                   : vec4(0.0, 0.0, 0.0, 1.0);
+    // Edge-line (inverted-hull) fragments are decorative outlines: write the
+    // sentinel normal (0,0,0) so the GTAO pass excludes them as both occluder and
+    // receiver, matching the line / label / sphere / cylinder edge convention.
+    // Otherwise the offset hull is mistaken for real geometry and perturbs the AO
+    // around edges (e.g. crease mode darkening near the outline).
+    o_Normal = vec4(0.0, 0.0, 0.0, 1.0);
 
     if (u_silh == 1) {
         gl_FragDepth = 0.9999;
