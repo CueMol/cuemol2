@@ -13,10 +13,14 @@
  *   await window.__cm.invokeService('devRenderOpts', { viewId: <id>, aoEnabled: true })
  *   await window.__cm.invokeService('devRenderOpts', { viewId: <id>, aaMethod: 'none' })
  *   await window.__cm.invokeService('devRenderOpts', { viewId: <id>, jitterLevel: 4 })
+ *   await window.__cm.invokeService('devRenderOpts', { viewId: <id>, aoHalfRes: true })
  *   await window.__cm.invokeService('devRenderOpts', { viewId: <id> })  // toggles AO
  *
  * Temporal-jitter supersampling (jitterLevel 0=off, 1..5 = 2/4/8/16/32 samples)
  * accumulates only while the camera is still and requires the AO path to be on.
+ * Adaptive half-res AO (aoHalfRes) computes the GTAO term at half resolution
+ * while the camera is moving and re-renders at full resolution once still;
+ * requires the AO path to be on.
  *
  * Remove this file (and its ServiceMap row + the window.__cm hook) once the
  * pipeline ships with real UI controls.
@@ -34,6 +38,8 @@ export interface DevRenderOptsArgs {
     aaMethod?: AaMethodName;
     /** Temporal-jitter supersampling level (0 = off, 1..5 = 2/4/8/16/32 samples). */
     jitterLevel?: number;
+    /** Adaptive half-resolution AO (half while moving, full when still). */
+    aoHalfRes?: boolean;
 }
 
 export interface DevRenderOptsResult {
@@ -41,11 +47,14 @@ export interface DevRenderOptsResult {
     aoEnabled: boolean;
     aaMethod: string;
     jitterLevel: number;
+    aoHalfRes: boolean;
 }
 
 function devRenderOpts(ctx: WorkerContext, args: DevRenderOptsArgs): DevRenderOptsResult {
     const vs = getViewSceneOrNull(ctx, args.viewId);
-    if (!vs) return { ok: false, aoEnabled: false, aaMethod: 'none', jitterLevel: 0 };
+    if (!vs) {
+        return { ok: false, aoEnabled: false, aaMethod: 'none', jitterLevel: 0, aoHalfRes: false };
+    }
     const { scene } = vs;
 
     const nextAo = args.aoEnabled !== undefined ? args.aoEnabled : !scene.aoEnabled;
@@ -57,12 +66,16 @@ function devRenderOpts(ctx: WorkerContext, args: DevRenderOptsArgs): DevRenderOp
     if (args.jitterLevel !== undefined) {
         scene.aaJitterLevel = args.jitterLevel;
     }
+    if (args.aoHalfRes !== undefined) {
+        scene.aoHalfRes = args.aoHalfRes;
+    }
 
     return {
         ok: true,
         aoEnabled: scene.aoEnabled,
         aaMethod: scene.aa_method as unknown as string,
         jitterLevel: scene.aaJitterLevel,
+        aoHalfRes: scene.aoHalfRes,
     };
 }
 
