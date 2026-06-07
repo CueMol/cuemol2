@@ -280,19 +280,51 @@ shader 定数のまま (必要なら同様に Scene プロパティへ昇格で�
 (slice,step) も XeGTAO の Low(1,2)/Medium(2,2)/High(3,3)/Ultra(9,3) (vaGTAO:105-129) に対応し、
 CueMol の既定 `aoSlices=9, aoSteps=3` は **Ultra 相当**。
 
-### 意図的に落とした/変えた部分
-- **compute 3 パス → fragment 1 系列**: XeGTAO の `CSPrefilterDepths16x16` /
-  `CSGTAO*` / `CSDenoise*` (vaGTAO:95-146) を全画面 fragment パスへ。groupshared MIP 縮約・
-  fp16 (`lpfloat`)・RWTexture 出力は持たない。
-- **depth MIP チェーンを未実装**: `XeGTAO_PrefilterDepths16x16` / `XeGTAO_DepthMIPFilter`
-  (hlsli:579-680) と per-sample `mipLevel` を省略。代わりに screenspaceRadius を 256px に
-  クランプ。WebGPU 化で compute を使えば本来の MIP 版を載せられる (§8)。
-- **bent normals 未実装**: hlsli の `XE_GTAO_COMPUTE_BENT_NORMALS` ブロック
-  (Algorithm 2 拡張、hlsli:545-552) と `EncodeVisibilityBentNormal` を省略。
-- **TAA/時間ノイズ無し**: Hilbert+R2 の `SpatioTemporalNoise` ではなく IGN を使用し、
-  低 slice でも空間 denoise のみで実用域に。
-- **DX→GL 座標系**: `NDCToView` の Y 符号 (`XeGTAO.h:181-182` の `*-2/*1` → CueMol は
-  `*+2/*-1`) と horizon march の `sinPhi` 符号を反転 (§2)。
-- **bent-normal 用 16x16 タイル/pack を持たない**ため、AO 項は RGBA8 の R に直接出力。
-- **法線**: XeGTAO は通常 depth 復元 (`XeGTAO_CalculateNormal`) かエンジン法線を入力。CueMol は
-  **MRT geometry 法線を主**、sentinel で depth 復元へフォールバック、という独自構成 (§4)。
+### 意図的に落とした/変えた部分 (各々の意図・理由)
+
+- **compute 3 パス → fragment 1 系列** (`CSPrefilterDepths16x16`/`CSGTAO*`/`CSDenoise*`,
+  vaGTAO:95-146 → 全画面 fragment パス)。groupshared MIP 縮約・fp16 (`lpfloat`)・RWTexture
+  出力は持たない。
+  - **なぜ**: CueMol が対象とするバックエンドのうち **WebGL2 は compute shader を一切持たない**
+    (tritium の描画は WebGL2)。OpenGL と WebGL2 で**同一アルゴリズムを 1 つ**維持するには
+    fragment-only が必須。compute 固有最適化は fragment では表現できないので必然的に落ちる。
+    将来 WebGPU では compute が使えるので本来の 3 パス版に寄せられる (§8)。
+
+- **depth MIP チェーン未実装** (`XeGTAO_PrefilterDepths16x16` / `XeGTAO_DepthMIPFilter`,
+  hlsli:579-680、per-sample `mipLevel` を省略 → screenspaceRadius を 256px クランプで代替)。
+  - **なぜ**: MIP prefilter は groupshared を使う compute 前提 (または多パス) で、上記の
+    fragment-only 方針と相反する。本来は**広半径時のノイズ/帯域**を改善する最適化だが、
+    初版では複雑さに見合わないと判断。問題の実害は「ズームインで画面半径が巨大化し
+    キャッシュスラッシュ→コマ落ち」なので、より安価な **半径クランプ**で実用上の崖だけ
+    潰した。MIP は WebGPU/compute 化時の宿題 (§8)。
+
+- **bent normals 未実装** (`XE_GTAO_COMPUTE_BENT_NORMALS` ブロック = Algorithm 2 拡張,
+  hlsli:545-552、`EncodeVisibilityBentNormal` を省略)。
+  - **なぜ**: bent normal は**間接光/スペキュラ遮蔽の指向性**を上げる拡張で、エンコード/
+    デコードと格納が増える。CueMol の合成は「環境光に AO スカラを乗算」する単純なもので、
+    指向性情報を消費する経路が無い。コストだけ増えて得が無いためスコープ外。
+
+- **TAA/時間ノイズ無し** (Hilbert+R2 の `SpatioTemporalNoise`, vaGTAO:74 → IGN を使用)。
+  - **なぜ**: CueMol に**時間蓄積の基盤が無い** (motion vector も history buffer も無く、構造を
+    眺める間カメラ静止が多い対話描画)。XeGTAO のノイズは TAA で**フレーム間収束**させる前提で、
+    TAA 無しでは規則的な静止ノイズに見えてしまう。**IGN は青ノイズ寄り**で単一フレームの空間
+    denoise と相性が良く、slice 数を上げて補えば TAA 無しでも実用域になる。
+
+- **DX→GL 座標系** (`NDCToView` Y 符号 `XeGTAO.h:181-182` の `*-2/*1` → CueMol `*+2/*-1`、
+  horizon march の `sinPhi` 符号反転)。
+  - **なぜ**: これは選択ではなく**ターゲット API の必然**。XeGTAO は D3D (top-down FB Y) 前提、
+    CueMol の OpenGL は bottom-up UV。符号を合わせないと AO が上下反転/破綻する。WebGPU は
+    FB Y が top-down に戻るため、移植時にこの符号を**再反転**する点を明記してある (§8)。
+
+- **AO 項を RGBA8 の R に直接出力** (XeGTAO の visibility+bentNormal を uint へ pack する
+  `XeGTAO_EncodeVisibilityBentNormal` を使わない)。
+  - **なぜ**: bent normal を持たず compute scatter も無い (上記) ので、uint パッキングの必要が
+    無い。スカラ AO は素の R チャンネルで十分かつ移植が容易。pack は省くほどシンプルで安全。
+
+- **法線は MRT geometry 法線を主とし、sentinel で depth 復元へフォールバック** (XeGTAO は
+  通常 `XeGTAO_CalculateNormal` の depth 復元かエンジン G-buffer 法線, §4)。
+  - **なぜ**: これは CueMol 固有の**品質要件**。分子表示は impostor (球/円柱) が多く真の
+    per-pixel 法線を持ち、tessellation メッシュ (cartoon) では depth 復元法線が**ファセット**化
+    して境界が目立つ (Phase 3 を起こした動機そのもの)。実 geometry 法線を使うとこれが解消する。
+    一方、線・ラベルなど法線を持たない primitive は sentinel で除外でき、AO 的に "ghost" 化
+    (影を受けない/落とさない) も同じ仕組みで実現できる。
