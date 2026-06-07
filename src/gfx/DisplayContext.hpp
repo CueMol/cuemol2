@@ -36,6 +36,7 @@ class PixGpuPrim;
 
 class BufTexRep;
 class RenderTarget;
+class DataTexture;
 
 class GFX_API DisplayContext : public qlib::LObject
 {
@@ -323,6 +324,19 @@ public:
     virtual void setCullFace(bool f = true) {}
     virtual void setInvertColorBlend(bool bInv) {}
 
+    /// Enable or disable color blending (GL_BLEND). Blending is enabled globally
+    /// for the scene color pass, but data-only fullscreen passes that write
+    /// non-premultiplied values (e.g. SMAA edges/weights, whose alpha carries
+    /// data or is 0) must run with blending off or their output is discarded.
+    /// Default is a no-op.
+    virtual void setBlendEnabled(bool) {}
+
+    /// Select the blend function: additive (GL_ONE, GL_ONE) when add is true,
+    /// otherwise the default over-blend (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA).
+    /// Used by temporal-jitter accumulation. Caller must restore the default
+    /// before normal (UI/overlay) drawing. Default is a no-op.
+    virtual void setBlendModeAdd(bool) {}
+
     ////////////////
     // Geometry construction
 
@@ -536,6 +550,24 @@ public:
     /// and attachment flags (see gfx::RTFlags). Returns nullptr if this
     /// context does not support off-screen rendering (default).
     virtual RenderTarget *createRenderTarget(int w, int h, int flags)
+    {
+        return nullptr;
+    }
+
+    /// Create a backend-specific immutable data texture from CPU bytes.
+    /// ncomp: 1 = R8, 2 = RG8. linear selects LINEAR vs NEAREST filtering.
+    /// Returns nullptr if unsupported (default).
+    virtual DataTexture *createDataTexture(int w, int h, int ncomp, bool linear,
+                                           const void *data)
+    {
+        return nullptr;
+    }
+
+    /// Create a data texture from a raw byte file (resolved like shader paths,
+    /// e.g. "%%CONFDIR%%/data/textures/foo.dat"). The file must hold exactly
+    /// w*h*ncomp bytes. Returns nullptr if unsupported or on read failure.
+    virtual DataTexture *createDataTextureFromFile(const LString &path, int w, int h,
+                                                   int ncomp, bool linear)
     {
         return nullptr;
     }

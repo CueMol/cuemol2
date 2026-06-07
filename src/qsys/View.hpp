@@ -449,6 +449,10 @@ namespace qsys {
     /// instead of the rendered color. Default no-op; honored by off-screen views.
     virtual void setDepthMode(bool b) {}
 
+    /// Off-screen jitter supersampling level (0 = off, 1..5 = 2/4/8/16/32
+    /// samples). Default no-op; honored by off-screen views (default level 5).
+    virtual void setSuperSampleLevel(int n) {}
+
   private:
     
     /////////////////////////////////////////////////////////////
@@ -516,10 +520,17 @@ namespace qsys {
         clearUpdateFlag();
     }
 
-    void forceRedraw() {
+    virtual void forceRedraw() {
       drawScene();
       clearUpdateFlag();
     }
+
+    /// True when the view wants to be redrawn on the next idle tick even though
+    /// no update flag is set (e.g. temporal-jitter supersampling accumulating
+    /// more samples while the camera is still). Default false. checkAndUpdate
+    /// keeps driving drawScene while this is true; it must return to false once
+    /// converged so idle redraws stop.
+    virtual bool needsContinuousRedraw() const { return false; }
 
     //////////
     // for property event propagation

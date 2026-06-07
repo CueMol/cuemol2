@@ -9,6 +9,7 @@
 #include "ShaderObject.hpp"
 #include "DisplayContext.hpp"
 #include "RenderTarget.hpp"
+#include "DataTexture.hpp"
 
 #include <qlib/LTypes.hpp>
 
@@ -77,7 +78,7 @@ void PostProcGpuPrim::drawDepthVis(DisplayContext *pDC, RenderTarget *prt,
 }
 
 void PostProcGpuPrim::drawComposite(DisplayContext *pDC, RenderTarget *sceneRT,
-                                    RenderTarget *aoRT)
+                                    RenderTarget *aoRT, const AoConstants &consts)
 {
     if (sceneRT == nullptr) return;
     if (!ensureDrawElem(pDC)) return;
@@ -94,13 +95,28 @@ void PostProcGpuPrim::drawComposite(DisplayContext *pDC, RenderTarget *sceneRT,
     }
 
     sceneRT->bindColorTex(0, RT_TU_COLOR);
-    if (aoRT != nullptr) aoRT->bindColorTex(0, RT_TU_NORMAL);  // AO term on unit 2
+    if (aoRT != nullptr) {
+        aoRT->bindColorTex(0, RT_TU_NORMAL);   // AO term on unit 2
+        sceneRT->bindDepthTex(RT_TU_DEPTH);    // scene depth for the upsample
+    }
 
     m_pCompPO->enable();
     m_pCompPO->setUniform("u_colorTex", RT_TU_COLOR);
     m_pCompPO->setUniform("u_aoTex", RT_TU_NORMAL);
     // hasAO lets the shader fall back to a plain copy when no AO is supplied.
     m_pCompPO->setUniform("u_hasAO", (aoRT != nullptr) ? 1 : 0);
+    m_pCompPO->setUniform("u_depthTex", RT_TU_DEPTH);
+    m_pCompPO->setUniformF("u_depthUnpack", consts.depthLinearizeMul,
+                           consts.depthLinearizeAdd);
+    m_pCompPO->setUniformF("u_aoTexelSize", consts.aoTexelSize[0],
+                           consts.aoTexelSize[1]);
+    // Fog factor reconstruction: fade the AO term out where fog has taken over
+    // so a fully-fogged (background-color) pixel is not darkened by AO.
+    m_pCompPO->setUniformF("u_fogEnd", consts.fogEnd);
+    m_pCompPO->setUniformF("u_fogScale", consts.fogScale);
+    // Upsample only when the AO buffer is coarser than the output (half res).
+    const bool upsample = consts.aoTexelSize[0] > consts.viewportPixelSize[0] * 1.5f;
+    m_pCompPO->setUniform("u_upsample", upsample ? 1 : 0);
 
     pDC->drawElem(*m_pDrawElem);
 
@@ -151,6 +167,8 @@ void PostProcGpuPrim::drawGtao(DisplayContext *pDC, RenderTarget *sceneRT,
     m_pGtaoPO->setUniform("u_sliceCount", consts.sliceCount);
     m_pGtaoPO->setUniform("u_stepCount", consts.stepsPerSlice);
     m_pGtaoPO->setUniform("u_debugMode", debugMode);
+    m_pGtaoPO->setUniformF("u_aoNoiseOffset", consts.aoNoiseOffset);
+    m_pGtaoPO->setUniformF("u_maxScreenspaceRadius", consts.maxScreenspaceRadius);
 
     pDC->drawElem(*m_pDrawElem);
 
@@ -190,6 +208,185 @@ void PostProcGpuPrim::drawDenoise(DisplayContext *pDC, RenderTarget *aoRT,
     aoRT->unbindTextures();
 }
 
+void PostProcGpuPrim::drawFxaa(DisplayContext *pDC, RenderTarget *srcColorRT,
+                              const AoConstants &consts)
+{
+    if (srcColorRT == nullptr) return;
+    if (!ensureDrawElem(pDC)) return;
+
+    if (m_pFxaaPO == nullptr) {
+        m_pFxaaPO =
+            pDC->loadShaderObject("fxaa",
+                                  "%%CONFDIR%%/data/shaders/postproc_vert.glsl",
+                                  "%%CONFDIR%%/data/shaders/fxaa_frag.glsl");
+        if (m_pFxaaPO == nullptr) {
+            LOG_DPRINTLN("PostProcGpuPrim> ERROR: cannot load fxaa shader.");
+            return;
+        }
+    }
+
+    srcColorRT->bindColorTex(0, RT_TU_COLOR);
+
+    m_pFxaaPO->enable();
+    m_pFxaaPO->setUniform("u_colorTex", RT_TU_COLOR);
+    m_pFxaaPO->setUniformF("u_rcpFrame", consts.viewportPixelSize[0],
+                           consts.viewportPixelSize[1]);
+
+    pDC->drawElem(*m_pDrawElem);
+
+    m_pFxaaPO->disable();
+
+    srcColorRT->unbindTextures();
+}
+
+bool PostProcGpuPrim::ensureSmaaTextures(DisplayContext *pDC)
+{
+    if (m_pSmaaAreaTex != nullptr && m_pSmaaSearchTex != nullptr) return true;
+
+    // AreaTex: 160x560 RG8 LINEAR. SearchTex: 66x33 R8 NEAREST. Decoded from
+    // Mol*'s SMAA area/search PNGs (see docs / data/textures).
+    if (m_pSmaaAreaTex == nullptr) {
+        m_pSmaaAreaTex = pDC->createDataTextureFromFile(
+            "%%CONFDIR%%/data/textures/smaa_area.dat", 160, 560, 2, true);
+    }
+    if (m_pSmaaSearchTex == nullptr) {
+        m_pSmaaSearchTex = pDC->createDataTextureFromFile(
+            "%%CONFDIR%%/data/textures/smaa_search.dat", 66, 33, 1, false);
+    }
+    if (m_pSmaaAreaTex == nullptr || m_pSmaaSearchTex == nullptr) {
+        LOG_DPRINTLN("PostProcGpuPrim> ERROR: cannot load SMAA lookup textures.");
+        return false;
+    }
+    return true;
+}
+
+void PostProcGpuPrim::drawSmaaEdges(DisplayContext *pDC, RenderTarget *srcColorRT,
+                                   const AoConstants &consts)
+{
+    if (srcColorRT == nullptr) return;
+    if (!ensureDrawElem(pDC)) return;
+
+    if (m_pSmaaEdgePO == nullptr) {
+        m_pSmaaEdgePO =
+            pDC->loadShaderObject("smaa_edges",
+                                  "%%CONFDIR%%/data/shaders/postproc_vert.glsl",
+                                  "%%CONFDIR%%/data/shaders/smaa_edges_frag.glsl");
+        if (m_pSmaaEdgePO == nullptr) {
+            LOG_DPRINTLN("PostProcGpuPrim> ERROR: cannot load smaa_edges shader.");
+            return;
+        }
+    }
+
+    srcColorRT->bindColorTex(0, RT_TU_COLOR);
+
+    m_pSmaaEdgePO->enable();
+    m_pSmaaEdgePO->setUniform("u_colorTex", RT_TU_COLOR);
+    m_pSmaaEdgePO->setUniformF("u_rcpFrame", consts.viewportPixelSize[0],
+                               consts.viewportPixelSize[1]);
+
+    pDC->drawElem(*m_pDrawElem);
+
+    m_pSmaaEdgePO->disable();
+    srcColorRT->unbindTextures();
+}
+
+void PostProcGpuPrim::drawSmaaWeights(DisplayContext *pDC, RenderTarget *edgesRT,
+                                     const AoConstants &consts)
+{
+    if (edgesRT == nullptr) return;
+    if (!ensureDrawElem(pDC)) return;
+    if (!ensureSmaaTextures(pDC)) return;
+
+    if (m_pSmaaWeightPO == nullptr) {
+        m_pSmaaWeightPO =
+            pDC->loadShaderObject("smaa_weights",
+                                  "%%CONFDIR%%/data/shaders/postproc_vert.glsl",
+                                  "%%CONFDIR%%/data/shaders/smaa_weights_frag.glsl");
+        if (m_pSmaaWeightPO == nullptr) {
+            LOG_DPRINTLN("PostProcGpuPrim> ERROR: cannot load smaa_weights shader.");
+            return;
+        }
+    }
+
+    edgesRT->bindColorTex(0, RT_TU_COLOR);
+    m_pSmaaAreaTex->bind(RT_TU_SMAA_AREA);
+    m_pSmaaSearchTex->bind(RT_TU_SMAA_SEARCH);
+
+    m_pSmaaWeightPO->enable();
+    m_pSmaaWeightPO->setUniform("u_edgesTex", RT_TU_COLOR);
+    m_pSmaaWeightPO->setUniform("u_areaTex", RT_TU_SMAA_AREA);
+    m_pSmaaWeightPO->setUniform("u_searchTex", RT_TU_SMAA_SEARCH);
+    m_pSmaaWeightPO->setUniformF("u_rcpFrame", consts.viewportPixelSize[0],
+                                 consts.viewportPixelSize[1]);
+
+    pDC->drawElem(*m_pDrawElem);
+
+    m_pSmaaWeightPO->disable();
+    edgesRT->unbindTextures();
+}
+
+void PostProcGpuPrim::drawSmaaBlend(DisplayContext *pDC, RenderTarget *srcColorRT,
+                                   RenderTarget *weightsRT, const AoConstants &consts)
+{
+    if (srcColorRT == nullptr || weightsRT == nullptr) return;
+    if (!ensureDrawElem(pDC)) return;
+
+    if (m_pSmaaBlendPO == nullptr) {
+        m_pSmaaBlendPO =
+            pDC->loadShaderObject("smaa_blend",
+                                  "%%CONFDIR%%/data/shaders/postproc_vert.glsl",
+                                  "%%CONFDIR%%/data/shaders/smaa_blend_frag.glsl");
+        if (m_pSmaaBlendPO == nullptr) {
+            LOG_DPRINTLN("PostProcGpuPrim> ERROR: cannot load smaa_blend shader.");
+            return;
+        }
+    }
+
+    srcColorRT->bindColorTex(0, RT_TU_COLOR);
+    weightsRT->bindColorTex(0, RT_TU_NORMAL);  // weights on unit 2
+
+    m_pSmaaBlendPO->enable();
+    m_pSmaaBlendPO->setUniform("u_colorTex", RT_TU_COLOR);
+    m_pSmaaBlendPO->setUniform("u_weightsTex", RT_TU_NORMAL);
+    m_pSmaaBlendPO->setUniformF("u_rcpFrame", consts.viewportPixelSize[0],
+                                consts.viewportPixelSize[1]);
+
+    pDC->drawElem(*m_pDrawElem);
+
+    m_pSmaaBlendPO->disable();
+    srcColorRT->unbindTextures();
+    weightsRT->unbindTextures();
+}
+
+void PostProcGpuPrim::drawJitterCompose(DisplayContext *pDC, RenderTarget *srcRT,
+                                       float weight)
+{
+    if (srcRT == nullptr) return;
+    if (!ensureDrawElem(pDC)) return;
+
+    if (m_pJitterComposePO == nullptr) {
+        m_pJitterComposePO =
+            pDC->loadShaderObject("jitter_compose",
+                                  "%%CONFDIR%%/data/shaders/postproc_vert.glsl",
+                                  "%%CONFDIR%%/data/shaders/jitter_compose_frag.glsl");
+        if (m_pJitterComposePO == nullptr) {
+            LOG_DPRINTLN("PostProcGpuPrim> ERROR: cannot load jitter_compose shader.");
+            return;
+        }
+    }
+
+    srcRT->bindColorTex(0, RT_TU_COLOR);
+
+    m_pJitterComposePO->enable();
+    m_pJitterComposePO->setUniform("u_colorTex", RT_TU_COLOR);
+    m_pJitterComposePO->setUniformF("u_weight", weight);
+
+    pDC->drawElem(*m_pDrawElem);
+
+    m_pJitterComposePO->disable();
+    srcRT->unbindTextures();
+}
+
 void PostProcGpuPrim::invalidate()
 {
     if (m_pDrawElem != nullptr) {
@@ -202,4 +399,19 @@ void PostProcGpuPrim::invalidate()
     m_pCompPO = nullptr;
     m_pGtaoPO = nullptr;
     m_pDenoisePO = nullptr;
+    m_pFxaaPO = nullptr;
+    m_pSmaaEdgePO = nullptr;
+    m_pSmaaWeightPO = nullptr;
+    m_pSmaaBlendPO = nullptr;
+    m_pJitterComposePO = nullptr;
+
+    // SMAA lookup textures are owned here (unlike the cached shader programs).
+    if (m_pSmaaAreaTex != nullptr) {
+        delete m_pSmaaAreaTex;
+        m_pSmaaAreaTex = nullptr;
+    }
+    if (m_pSmaaSearchTex != nullptr) {
+        delete m_pSmaaSearchTex;
+        m_pSmaaSearchTex = nullptr;
+    }
 }
