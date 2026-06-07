@@ -268,6 +268,12 @@ half フレームを描いた後にフル解像度の追い描きへ idle ルー
   size を渡すだけで world 半径のカバレッジは自動で保たれる (数式変更不要)。
 - composite には元の `aoc` (フル `viewportPixelSize` + 半解像度 `aoTexelSize`) を渡す。
   `u_upsample` は `aoTexelSize > viewportPixelSize*1.5` で判定 (フル解像度では false)。
+- **horizon 半径 clamp の解像度非依存化 (重要)**: GTAO の `u_maxScreenspaceRadius` (近距離で
+  texture read を cache-local に保つ上限) は **pass のピクセル単位**。固定 256 のままだと half-res
+  では `screenspaceRadius` が半分になり、ズームイン時に full は clamp・half は未 clamp となって
+  **half の方が effectiveRadius が大きく AO が濃く出る** (drag↔idle で影量が変わる原因)。CPU で
+  `256 * (full viewportPixelSize / aoTexelSize)` (= full なら 256 / half なら 128) を渡し、両解像度
+  で同じ world 半径・同じ遮蔽量になるようにする (`aocAO.maxScreenspaceRadius`)。
 
 ### edge-aware upsample (halo 防止の肝, `ao_composite_frag.glsl`)
 naive bilinear だと深度不連続 (シルエット) で AO が滲んで halo が出る。**nearest-depth

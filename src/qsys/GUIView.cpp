@@ -305,6 +305,10 @@ void GUIView::drawScene()
                 gfx::AoConstants aocAO = aoc;
                 aocAO.viewportPixelSize[0] = aoc.aoTexelSize[0];
                 aocAO.viewportPixelSize[1] = aoc.aoTexelSize[1];
+                // Keep the horizon-radius cap at a fixed full-res-equivalent
+                // value so half res yields the same occlusion as full res.
+                aocAO.maxScreenspaceRadius =
+                    256.0f * (aoc.viewportPixelSize[0] / aoc.aoTexelSize[0]);
 
                 m_pAoRT->bind();
                 m_pAoRT->clear(1.0f, 1.0f, 1.0f, 1.0f);
@@ -924,6 +928,8 @@ bool GUIView::renderAOColorFrame(DisplayContext *pdc, const ScenePtr &pScene,
         gfx::AoConstants aocAO = aoc;
         aocAO.viewportPixelSize[0] = aoc.aoTexelSize[0];
         aocAO.viewportPixelSize[1] = aoc.aoTexelSize[1];
+        aocAO.maxScreenspaceRadius =
+            256.0f * (aoc.viewportPixelSize[0] / aoc.aoTexelSize[0]);
         m_pAoRT->bind();
         m_pAoRT->clear(1.0f, 1.0f, 1.0f, 1.0f);
         m_pAOPostProc->drawGtao(pdc, m_pAOSceneRT, aocAO, /*debugMode=*/0);

@@ -37,6 +37,10 @@ struct AoConstants
     float effectRadius = 1.0f;
     /// Final occlusion contrast: occlusion = pow(occlusion, finalValuePower).
     float finalValuePower = 2.2f;
+    /// Horizon search radius cap, in the GTAO pass's own pixel units. The
+    /// caller scales it to a fixed full-resolution-equivalent radius so the
+    /// half-resolution pass clamps at the same world radius (same occlusion).
+    float maxScreenspaceRadius = 256.0f;
     /// Number of horizon slices (quality vs. speed).
     int sliceCount = 9;
     /// Number of steps marched per slice (radial samples).
