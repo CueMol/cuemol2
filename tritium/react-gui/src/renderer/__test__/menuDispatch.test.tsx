@@ -30,8 +30,8 @@ function setupHarness(activeTab: string | null = 'molview-1') {
 
   const h = makeRenderHook(() => {
     const cmds = useCommands()
-    const { dispatchMenuChannel } = useMenuDispatch(activeTab)
-    return { cmds, dispatchMenuChannel }
+    const { dispatchMenuChannel, dispatchOpenRecent } = useMenuDispatch(activeTab)
+    return { cmds, dispatchMenuChannel, dispatchOpenRecent }
   }, Wrapper)
 
   // Register a wildcard catcher for every CmdId in use.
@@ -123,6 +123,42 @@ describe('useMenuDispatch -- channel to CmdId mapping', () => {
       expect.stringContaining('not yet implemented'),
       'menu:never-existed',
     )
+    h.unmount()
+  })
+})
+
+describe('useMenuDispatch -- dispatchOpenRecent (MRU reader reuse)', () => {
+  it('obj entry WITH readerName opens with that reader, contentFirst false', async () => {
+    const { h, captured } = setupHarness()
+    h.result.dispatchOpenRecent({ path: '/x/foo.pdb', ftype: 'obj', readerName: 'pdb' })
+    await Promise.resolve()
+    expect(captured.length).toBe(1)
+    expect(captured[0].id).toBe(CmdId.OpenObjByPath)
+    expect(captured[0].args).toEqual({
+      name: '/x/foo.pdb', path: '/x/foo.pdb', contentFirst: false, readerName: 'pdb',
+    })
+    h.unmount()
+  })
+
+  it('legacy obj entry WITHOUT readerName falls back to contentFirst sniff', async () => {
+    const { h, captured } = setupHarness()
+    h.result.dispatchOpenRecent({ path: '/x/foo.pdb', ftype: 'obj' })
+    await Promise.resolve()
+    expect(captured.length).toBe(1)
+    expect(captured[0].id).toBe(CmdId.OpenObjByPath)
+    expect(captured[0].args).toEqual({
+      name: '/x/foo.pdb', path: '/x/foo.pdb', contentFirst: true,
+    })
+    h.unmount()
+  })
+
+  it('scene entry routes to OpenSceneByPath', async () => {
+    const { h, captured } = setupHarness()
+    h.result.dispatchOpenRecent({ path: '/x/s.qsc', ftype: 'scene' })
+    await Promise.resolve()
+    expect(captured.length).toBe(1)
+    expect(captured[0].id).toBe(CmdId.OpenSceneByPath)
+    expect(captured[0].args).toBe('/x/s.qsc')
     h.unmount()
   })
 })

@@ -48,6 +48,7 @@ function buildRecentSubmenu(
       mainWindow.webContents.send(IPC.MENU_OPEN_RECENT, {
         path: entry.path,
         ftype: entry.ftype,
+        readerName: entry.readerName,
       }),
   }))
   items.push({ type: 'separator' })

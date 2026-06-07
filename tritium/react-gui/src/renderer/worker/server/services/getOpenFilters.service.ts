@@ -1,5 +1,6 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 import type { WorkerContext } from '../types/WorkerContext';
+import { isHiddenObjReader } from './helpers/readerFilter';
 
 export interface GetOpenFiltersArgs {
     catId: number;
@@ -24,7 +25,7 @@ function getOpenFilters(
     const infoJson = ctx.strMgr.getInfoJSON2();
     const info: Array<{ name: string; descr: string; fext: string; category: number }> =
         JSON.parse(infoJson);
-    const items = info.filter((e) => e.category === args.catId && e.name.indexOf('qdf') !== 0);
+    const items = info.filter((e) => e.category === args.catId && !isHiddenObjReader(e.name));
     const allExts = items.flatMap((e) => parseFext(e.fext));
     return [
         { name: 'All Supported', extensions: allExts },

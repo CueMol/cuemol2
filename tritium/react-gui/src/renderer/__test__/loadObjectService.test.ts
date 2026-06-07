@@ -167,6 +167,20 @@ describe('loadObject.service — reader-based path', () => {
         expect(pickReaderName).toHaveBeenCalledWith(ctx, '/data/file', true, undefined)
     })
 
+    it('explicit readerName bypasses pickReaderName and is used to create the reader', () => {
+        const { ctx, createHandler } = makeFixture()
+        const result = loadObject(ctx, {
+            filePath: '/data/1ubq.pdb',
+            sceneId: 1,
+            options: { format: unknownFormat, renderer: baseRendererOpts } as any,
+            contentFirst: false,
+            readerName: 'pdb',
+        })
+        expect(result).toEqual({ ok: true })
+        expect(pickReaderName).not.toHaveBeenCalled()
+        expect(createHandler).toHaveBeenCalledWith('pdb', 0)
+    })
+
     it('returns ok:false when no reader matches (pickReaderName -> "")', () => {
         const { ctx, createHandler } = makeFixture()
         ;(pickReaderName as ReturnType<typeof vi.fn>).mockReturnValue('')

@@ -168,9 +168,9 @@ export async function loadScene(
  */
 export async function loadObject(
     transport: WorkerTransport, filePath: string, scene_id: number, options: FileOpenOptions,
-    contentFirst = false, maxSniffBytes?: number,
+    contentFirst = false, maxSniffBytes?: number, readerName?: string,
 ): Promise<boolean> {
     log.info(`loading object file: ${filePath}`);
-    const result = await transport.invokeService('loadObject', { filePath, sceneId: scene_id, options, contentFirst, maxSniffBytes });
+    const result = await transport.invokeService('loadObject', { filePath, sceneId: scene_id, options, contentFirst, maxSniffBytes, readerName });
     return result?.ok ?? true;
 }

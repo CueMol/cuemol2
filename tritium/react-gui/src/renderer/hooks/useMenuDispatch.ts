@@ -129,10 +129,17 @@ export function useMenuDispatch(activeTab: string | null): {
       const logErr = (prefix: string) => (e: unknown) => console.error(prefix, e)
       if (entry.ftype === 'scene') {
         dispatch(CmdId.OpenSceneByPath, entry.path).catch(logErr('recent.scene:'))
+      } else if (entry.readerName) {
+        // Reader recorded at first open: reuse it directly (UXP MRU parity).
+        // contentFirst is irrelevant once readerName pins the reader.
+        dispatch(CmdId.OpenObjByPath, {
+          name: entry.path, path: entry.path,
+          contentFirst: false, readerName: entry.readerName,
+        }).catch(logErr('recent.obj:'))
       } else {
-        // No filter context for recent files: default to content-first
-        // so reopening a renamed / extension-spoofed file still resolves
-        // to the right reader.
+        // Legacy entry without a stored reader: no filter context, so
+        // default to content-first sniff (qdf* readers are excluded by
+        // pickReaderName) to resolve a renamed / extension-spoofed file.
         dispatch(CmdId.OpenObjByPath, { name: entry.path, path: entry.path, contentFirst: true })
           .catch(logErr('recent.obj:'))
       }

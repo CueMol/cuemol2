@@ -7,9 +7,13 @@
 import { IPC } from '../../shared/ipcChannels'
 import type { RecentFileType } from '../../shared/ipcTypes'
 
-export function addRecent(path: string, ftype: RecentFileType): void {
+export function addRecent(
+    path: string,
+    ftype: RecentFileType,
+    readerName?: string,
+): void {
     if (!path) return
     window.electronAPI
-        ?.invoke(IPC.RECENT_ADD, { path, ftype })
+        ?.invoke(IPC.RECENT_ADD, { path, ftype, readerName })
         .catch((e: unknown) => console.warn('recent add failed:', e))
 }

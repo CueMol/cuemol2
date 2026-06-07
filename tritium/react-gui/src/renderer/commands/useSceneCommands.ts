@@ -78,8 +78,11 @@ export function useSceneCommands({
                     // reader, otherwise (e.g.) the dialog offers density-map
                     // renderers for a coordinate CIF and the subsequent load
                     // crashes when the chosen renderer is applied to a MolCoord.
+                    // When reopening from the MRU, data.readerName pins the
+                    // reader the file was first opened with (skips sniff). For
+                    // a fresh open it is undefined and the reader is sniffed.
                     const { types, objType, readerName } = await cm.getCompatibleRendererNames(
-                        data.path, undefined, data.contentFirst,
+                        data.path, data.readerName, data.contentFirst,
                     )
                     // Empty types means the C++ side could not identify a
                     // compatible reader (or extracted no compatible renderer
@@ -101,8 +104,11 @@ export function useSceneCommands({
                         readerName,
                     })
                     if (options === null) return
-                    await cm.loadObject(data.path, info.scene_uid, options, data.contentFirst)
-                    addRecent(data.path, 'obj')
+                    // Pass the resolved readerName so the actual load uses the
+                    // exact reader the dialog previewed (no re-sniff drift), and
+                    // record it in the MRU so a future reopen reuses it.
+                    await cm.loadObject(data.path, info.scene_uid, options, data.contentFirst, undefined, readerName)
+                    addRecent(data.path, 'obj', readerName)
                 } catch (e) {
                     const msg = e instanceof Error ? e.message : String(e)
                     console.error('OpenObjByPath failed:', e)
