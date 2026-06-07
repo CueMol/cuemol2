@@ -324,6 +324,13 @@ public:
     virtual void setCullFace(bool f = true) {}
     virtual void setInvertColorBlend(bool bInv) {}
 
+    /// Enable or disable color blending (GL_BLEND). Blending is enabled globally
+    /// for the scene color pass, but data-only fullscreen passes that write
+    /// non-premultiplied values (e.g. SMAA edges/weights, whose alpha carries
+    /// data or is 0) must run with blending off or their output is discarded.
+    /// Default is a no-op.
+    virtual void setBlendEnabled(bool) {}
+
     ////////////////
     // Geometry construction
 

@@ -40,6 +40,8 @@ public:
 
     virtual void setInvertColorBlend(bool bInv) override;
 
+    virtual void setBlendEnabled(bool b) override;
+
     //////////
 
     /// Clear the target buffer with the specified color.

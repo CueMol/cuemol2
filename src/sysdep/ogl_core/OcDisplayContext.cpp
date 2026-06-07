@@ -80,6 +80,14 @@ void OcDisplayContext::setInvertColorBlend(bool bInv)
     }
 }
 
+void OcDisplayContext::setBlendEnabled(bool b)
+{
+    if (b)
+        glEnable(GL_BLEND);
+    else
+        glDisable(GL_BLEND);
+}
+
 void OcDisplayContext::clearBuffer(const gfx::ColorPtr &pcol)
 {
     glClearColor(float(pcol->fr()), float(pcol->fg()), float(pcol->fb()), 1.0f);

@@ -234,6 +234,12 @@ void GUIView::drawScene()
                                     m_pCompRT != nullptr;
                 pdc->setDepthTestEnabled(false);
                 if (postAA) {
+                    // Blending is enabled globally for the scene color pass, but
+                    // the post-AA passes write data (SMAA edges have alpha 0, the
+                    // weights' alpha carries data); with GL_BLEND on their output
+                    // would be discarded. Disable it for the off-screen AA passes.
+                    pdc->setBlendEnabled(false);
+
                     m_pCompRT->bind();
                     m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, m_pAoDenRT);
                     m_pCompRT->unbind();
@@ -256,6 +262,8 @@ void GUIView::drawScene()
                     } else {
                         m_pAOPostProc->drawFxaa(pdc, m_pCompRT, aoc);
                     }
+
+                    pdc->setBlendEnabled(true);
                 } else {
                     m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, m_pAoDenRT);
                 }
