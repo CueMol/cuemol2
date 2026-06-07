@@ -331,6 +331,12 @@ public:
     /// Default is a no-op.
     virtual void setBlendEnabled(bool) {}
 
+    /// Select the blend function: additive (GL_ONE, GL_ONE) when add is true,
+    /// otherwise the default over-blend (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA).
+    /// Used by temporal-jitter accumulation. Caller must restore the default
+    /// before normal (UI/overlay) drawing. Default is a no-op.
+    virtual void setBlendModeAdd(bool) {}
+
     ////////////////
     // Geometry construction
 

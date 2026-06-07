@@ -76,6 +76,8 @@ private:
     /// SMAA precomputed lookup textures (loaded once from share/data/textures).
     DataTexture *m_pSmaaAreaTex = nullptr;
     DataTexture *m_pSmaaSearchTex = nullptr;
+    /// Temporal-jitter compose program (sample*weight; accumulate + display).
+    ShaderObject *m_pJitterComposePO = nullptr;
     TriArray *m_pDrawElem = nullptr;
 
 public:
@@ -139,6 +141,12 @@ public:
 
     /// True once both SMAA lookup textures are available (lazily loaded).
     bool ensureSmaaTextures(DisplayContext *pDC);
+
+    /// Temporal-jitter compose: draw srcRT's color * weight into the currently
+    /// bound framebuffer (fullscreen). Used for both the additive accumulate
+    /// step (weight 1/N, with additive blend enabled by the caller) and the
+    /// normalized display step (weight N/count, no blend).
+    void drawJitterCompose(DisplayContext *pDC, RenderTarget *srcRT, float weight);
 
 private:
     void alloc(DisplayContext *pDC);

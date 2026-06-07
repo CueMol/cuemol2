@@ -42,6 +42,8 @@ public:
 
     virtual void setBlendEnabled(bool b) override;
 
+    virtual void setBlendModeAdd(bool add) override;
+
     //////////
 
     /// Clear the target buffer with the specified color.

@@ -70,6 +70,11 @@ runtime_class Scene
   property enum aa_method => redirect(getAAMethod, setAAMethod);
   default aa_method = "fxaa";
 
+  /// Temporal jitter supersampling level (0 = off, 1..5 = 2/4/8/16/32 samples).
+  /// Accumulated only while the camera is still (AO path); resets on change.
+  property integer aaJitterLevel => redirect(getAAJitterLevel, setAAJitterLevel);
+  default aaJitterLevel = 0;
+
   property string onload => m_scrOnLoadEvent;
   default onload = "";
 

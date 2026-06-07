@@ -155,9 +155,8 @@ AO 経路は scene を **single-sample** off-screen FBO に描くため、MSAA �
 ### 設計: Mol* 流の 2 直交軸
 - **軸1 = 空間 AA メソッド**: `Scene.aa_method` enum (`none`/`fxaa`/`smaa`)。差し替え可能な
   fragment ポストパスとして実装。**FXAA と SMAA 1x を実装済み**。
-- **軸2 = temporal jitter SS** (未実装): projection を per-frame で subpixel jitter し、
-  静止時のみ accumulation buffer に蓄積、カメラ変化でリセット (motion vector 不要)。idle
-  再描画 + accumulation FBO という別サブシステムが要るため別 phase (§8)。
+- **軸2 = temporal jitter SS** (実装済み): projection を per-frame で subpixel jitter し、
+  静止時のみ accumulation buffer に蓄積、カメラ変化でリセット (motion vector 不要)。`§4.6`。
 
 ### FXAA パス (`fxaa_frag.glsl`, `PostProcGpuPrim::drawFxaa`)
 - `aa_method=fxaa`: composite を **LINEAR の中間 RT** (`m_pCompRT`, RGBA8) へ描き、FXAA が
@@ -193,6 +192,45 @@ AO 経路は scene を **single-sample** off-screen FBO に描くため、MSAA �
   WebGL2 で同一 fragment shader を 1 本維持」という方針 (§8) を崩す。
 - **Mol*** (WebGL ベース分子ビューア) も hardware MSAA を使わず post-AA を既定 (SMAA) に
   している (`mol-canvas3d/passes/postprocessing.ts`)。tritium 行きの CueMol が取るべき道の傍証。
+
+## 4.6 temporal jitter supersampling (軸2)
+
+カメラ静止中に投影をサブピクセル jitter して複数フレームを蓄積する真の SS (Mol*
+`multi-sample.ts` の temporal 相当)。各サンプルは軸1 (none/fxaa/smaa) で描かれ、その最終色を
+平均する。フル TAA (motion vector 再投影) ではなく、動いたらリセットする「静止時 SS」。
+
+### 制御
+- `Scene.aaJitterLevel` (0=off, 1..5 → 2/4/8/16/32 サンプル)。AO 経路・CSM_NONE のみ。
+- jitter オフセット表は Mol* JitterVectors (1/16px 単位) を `GUIView.cpp` に複製。
+
+### 1 フレーム (jitterActive 時)
+```
+reset 判定 (getUpdateFlag()=カメラ変更 / forceRedraw override=シーン編集) → sampleIndex=0
+setUpProjMat に当該サンプルの subpixel offset を注入 (perspective=射影の z 列, ortho=平行移動列)
+scene→GTAO→denoise→composite→(none/fxaa/smaa) の最終色を m_pJitterSampleRT へ
+accumRT(RGBA16F) に additive blend で sample*(1/N) を加算 (sampleIndex==0 で clear)
+accumRT*(N/(sampleIndex+1)) を default FB へ表示 (部分和の正規化平均)
+sampleIndex++ / 収束で停止
+```
+
+### idle 駆動 (核心)
+- `View::needsContinuousRedraw()` (新規 virtual, 既定 false) を `GUIView` が override し、未収束の
+  間 true。`Scene::checkAndUpdate` else 分岐が `getUpdateFlag() || needsContinuousRedraw()` で
+  drawScene を駆動 → 静止中に N フレーム蓄積し、収束で停止 (恒常ループにならない)。
+  uxp_gui の idle (`SceneManager::doIdleTask`→`checkAndUpdateScenes`) / tritium の RAF 両対応。
+- **罠**: checkAndUpdate は drawScene 直後に update flag を必ずクリアするので、drawScene 内から
+  setUpdateFlag しても次フレームは来ない。継続は needsContinuousRedraw 経由で行う。
+- リセット: カメラ変更は view update flag → drawScene 内 `getUpdateFlag()` で検知。シーン編集は
+  scene flag → `GUIView::forceRedraw` override (`m_jitterResetRequested`) で検知。
+
+### 新規インフラ
+- `RT_COLOR_RGBA16F` (color0 を float 化; 8bit 蓄積のバンディング回避)。
+- `DataTexture` とは別に accum/sample RT。`DisplayContext::setBlendModeAdd` (加算 blend)。
+- `jitter_compose_frag.glsl` (`PostProcGpuPrim::drawJitterCompose`, sample*weight)。
+
+### 既知の制限 / 将来
+- AO は毎サンプル再計算 (Mol* reuseOcclusion 最適化は未実装 = 重いが正しい)。
+- フル TAA (動作中 AA)、hold バッファによるフリッカ低減、非 AO 経路統一、stereo は未対応。
 
 ---
 
@@ -291,11 +329,10 @@ shader 定数のまま (必要なら同様に Scene プロパティへ昇格で�
 - 半解像度 AO + edge-aware upsample (naive blur ではなく denoise と同じ重みで halo 防止)。
 - bent normals、TAA。
 
-### AA ロードマップ (§4.5 の続き)
-- **temporal jitter SS** (軸2): projection jitter + accumulation FBO + idle 再描画 + カメラ
-  変化リセット (Mol* `mol-canvas3d/passes/multi-sample.ts` 相当)。どの空間メソッドとも合成可。
-- **全経路統一**: 非 AO 経路も offscreen+post-AA に通し AA を context MSAA 非依存にする
-  (tritium と整合)。現状は AO 経路のみ post-AA、非 AO は default FB MSAA。
+### AA ロードマップ (§4.5/§4.6 の続き)
+- **フル TAA**: motion vector 再投影で動作中も AA。reuseOcclusion 最適化、hold バッファ。
+- **全経路統一**: 非 AO 経路も offscreen+post-AA/jitter に通し AA を context MSAA 非依存にする
+  (tritium と整合)。現状は AO 経路のみ、非 AO は default FB MSAA。stereo 対応。
 
 ---
 

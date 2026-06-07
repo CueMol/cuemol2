@@ -341,6 +341,35 @@ void PostProcGpuPrim::drawSmaaBlend(DisplayContext *pDC, RenderTarget *srcColorR
     weightsRT->unbindTextures();
 }
 
+void PostProcGpuPrim::drawJitterCompose(DisplayContext *pDC, RenderTarget *srcRT,
+                                       float weight)
+{
+    if (srcRT == nullptr) return;
+    if (!ensureDrawElem(pDC)) return;
+
+    if (m_pJitterComposePO == nullptr) {
+        m_pJitterComposePO =
+            pDC->loadShaderObject("jitter_compose",
+                                  "%%CONFDIR%%/data/shaders/postproc_vert.glsl",
+                                  "%%CONFDIR%%/data/shaders/jitter_compose_frag.glsl");
+        if (m_pJitterComposePO == nullptr) {
+            LOG_DPRINTLN("PostProcGpuPrim> ERROR: cannot load jitter_compose shader.");
+            return;
+        }
+    }
+
+    srcRT->bindColorTex(0, RT_TU_COLOR);
+
+    m_pJitterComposePO->enable();
+    m_pJitterComposePO->setUniform("u_colorTex", RT_TU_COLOR);
+    m_pJitterComposePO->setUniformF("u_weight", weight);
+
+    pDC->drawElem(*m_pDrawElem);
+
+    m_pJitterComposePO->disable();
+    srcRT->unbindTextures();
+}
+
 void PostProcGpuPrim::invalidate()
 {
     if (m_pDrawElem != nullptr) {
@@ -357,6 +386,7 @@ void PostProcGpuPrim::invalidate()
     m_pSmaaEdgePO = nullptr;
     m_pSmaaWeightPO = nullptr;
     m_pSmaaBlendPO = nullptr;
+    m_pJitterComposePO = nullptr;
 
     // SMAA lookup textures are owned here (unlike the cached shader programs).
     if (m_pSmaaAreaTex != nullptr) {

@@ -21,6 +21,48 @@
 
 namespace qsys {
 
+namespace {
+
+// Sub-pixel jitter offsets (in 1/16 pixel units) per supersampling level,
+// taken from Mol* (mol-canvas3d/passes/multi-sample.ts JitterVectors). Index by
+// aaJitterLevel 1..5 -> 2/4/8/16/32 samples. Level 0 is "off" (no jitter).
+const signed char JV2[2][2] = {{0, 0}, {-4, -4}};
+const signed char JV4[4][2] = {{0, 0}, {6, -2}, {-6, 2}, {2, 6}};
+const signed char JV8[8][2] = {{0, 0}, {-1, 3},  {5, 1},  {-3, -5},
+                               {-5, 5}, {-7, -1}, {3, 7},  {7, -7}};
+const signed char JV16[16][2] = {
+    {0, 0},  {-1, -3}, {-3, 2}, {4, -1}, {-5, -2}, {2, 5},  {5, 3},  {3, -5},
+    {-2, 6}, {0, -7},  {-4, -6}, {-6, 4}, {-8, 0},  {7, -4}, {6, 7},  {-7, -8}};
+const signed char JV32[32][2] = {
+    {0, 0},   {-7, -5}, {-3, -5}, {-5, -4}, {-1, -4}, {-2, -2}, {-6, -1}, {-4, 0},
+    {-7, 1},  {-1, 2},  {-6, 3},  {-3, 3},  {-7, 6},  {-3, 6},  {-5, 7},  {-1, 7},
+    {5, -7},  {1, -6},  {6, -5},  {4, -4},  {2, -3},  {7, -2},  {1, -1},  {4, -1},
+    {2, 1},   {6, 2},   {0, 4},   {4, 4},   {2, 5},   {7, 5},   {5, 6},   {3, 7}};
+
+// Number of samples for the given level (0 = off -> 1).
+int jitterSampleCount(int level)
+{
+    return (level <= 0) ? 1 : (1 << level);
+}
+
+// Sub-pixel offset (in pixels) for (level, sample index).
+void jitterOffset(int level, int idx, double &px, double &py)
+{
+    const signed char(*tbl)[2] = nullptr;
+    switch (level) {
+        case 1: tbl = JV2; break;
+        case 2: tbl = JV4; break;
+        case 3: tbl = JV8; break;
+        case 4: tbl = JV16; break;
+        case 5: tbl = JV32; break;
+        default: px = py = 0.0; return;
+    }
+    px = double(tbl[idx][0]) / 16.0;
+    py = double(tbl[idx][1]) / 16.0;
+}
+
+}  // anonymous namespace
+
 GUIView::GUIView() : View()
 {
     auto pMark = DrawObjPtr(new CenterMarkDrawObj());
@@ -134,14 +176,43 @@ void GUIView::setUpProjMat(int cx, int cy)
     }
 
     // Setup projection matrix
+    Matrix4D projMat;
     if (isPerspec()) {
-        pdc->setProjMat(
-            DisplayContext::makePersProjMat(vw, fasp, slabnear, slabfar, dist));
+        projMat = DisplayContext::makePersProjMat(vw, fasp, slabnear, slabfar, dist);
     } else {
-        pdc->setProjMat(DisplayContext::makeOrthoProjMat(vw, fasp, slabnear, slabfar));
+        projMat = DisplayContext::makeOrthoProjMat(vw, fasp, slabnear, slabfar);
     }
 
+    // Temporal-jitter sub-pixel offset (no-op when m_jitterPxX/Y are 0). Shift
+    // the projection by a fraction of a pixel in NDC. For perspective this is a
+    // depth-independent screen shift via the z column (clip.x += j * clip.w);
+    // for ortho it is the translation column. Sign is irrelevant to the result
+    // (the offset set is symmetric and averaged).
+    if (m_jitterPxX != 0.0 || m_jitterPxY != 0.0) {
+        const double jx = (bcx > 0) ? (2.0 * m_jitterPxX / double(bcx)) : 0.0;
+        const double jy = (bcy > 0) ? (2.0 * m_jitterPxY / double(bcy)) : 0.0;
+        if (isPerspec()) {
+            projMat.aij(1, 3) += -jx;
+            projMat.aij(2, 3) += -jy;
+        } else {
+            projMat.aij(1, 4) += jx;
+            projMat.aij(2, 4) += jy;
+        }
+    }
+    pdc->setProjMat(projMat);
+
     resetProjChgFlag();
+}
+
+void GUIView::forceRedraw()
+{
+    // Scene-content changes reach views through the scene-level update flag and
+    // forceRedraw (not the per-view flag), so restart temporal-jitter
+    // accumulation here to avoid blending stale content. Camera changes are
+    // caught separately via getUpdateFlag() in drawScene.
+    m_jitterResetRequested = true;
+    drawScene();
+    clearUpdateFlag();
 }
 
 void GUIView::drawScene()
@@ -171,6 +242,12 @@ void GUIView::drawScene()
 
     ////////////////////////////////////////////////
 
+    // Temporal-jitter: assume no further accumulation this frame unless the AO
+    // path re-arms it below; keep the projection un-jittered for the default
+    // setUpProjMat call (the AO path re-applies the per-sample offset).
+    m_jitterMoreSamples = false;
+    m_jitterPxX = m_jitterPxY = 0.0;
+
     if (isProjChange()) setUpProjMat(-1, -1);
 
     switch (getStereoMode()) {
@@ -189,6 +266,31 @@ void GUIView::drawScene()
 
             if (useAO && m_pAOSceneRT != nullptr && m_pAoRT != nullptr &&
                 m_pAoDenRT != nullptr && m_pAOPostProc != nullptr) {
+                // Temporal-jitter supersampling (camera still): render each
+                // jittered sample's final color into m_pJitterSampleRT, sum into
+                // the float accumulation buffer, and display the running average.
+                const int jitterLevel = pScene->getAAJitterLevel();
+                const bool jitterActive = jitterLevel > 0 &&
+                                          m_pJitterSampleRT != nullptr &&
+                                          m_pJitterAccumRT != nullptr;
+                const int jitterN = jitterSampleCount(jitterLevel);
+                if (jitterActive) {
+                    // Restart accumulation on any externally-requested redraw:
+                    // camera changes set the view update flag; scene-content
+                    // changes arrive via forceRedraw (-> m_jitterResetRequested).
+                    if (getUpdateFlag() || m_jitterResetRequested ||
+                        m_jitterSampleIndex >= jitterN) {
+                        m_jitterSampleIndex = 0;
+                    }
+                    m_jitterResetRequested = false;
+                    jitterOffset(jitterLevel, m_jitterSampleIndex, m_jitterPxX,
+                                 m_jitterPxY);
+                    setUpProjMat(-1, -1);  // apply this sample's jittered frustum
+                }
+                // Final 3D color goes to the sample target when jittering,
+                // otherwise straight to the default framebuffer (nullptr).
+                gfx::RenderTarget *outRT = jitterActive ? m_pJitterSampleRT : nullptr;
+
                 // 1. Render the 3D scene into the off-screen target.
                 m_pAOSceneRT->bind();
                 setUpModelMat(MM_NORMAL);
@@ -256,16 +358,55 @@ void GUIView::drawScene()
                         m_pSmaaWeightRT->clear(0.0f, 0.0f, 0.0f, 0.0f);
                         m_pAOPostProc->drawSmaaWeights(pdc, m_pSmaaEdgeRT, aoc);
                         m_pSmaaWeightRT->unbind();
-                        // 3. Neighborhood blending -> default framebuffer.
+                        // 3. Neighborhood blending -> outRT (sample) or default fb.
+                        if (outRT != nullptr) outRT->bind();
                         m_pAOPostProc->drawSmaaBlend(pdc, m_pCompRT, m_pSmaaWeightRT,
                                                      aoc);
+                        if (outRT != nullptr) outRT->unbind();
                     } else {
+                        if (outRT != nullptr) outRT->bind();
                         m_pAOPostProc->drawFxaa(pdc, m_pCompRT, aoc);
+                        if (outRT != nullptr) outRT->unbind();
                     }
 
                     pdc->setBlendEnabled(true);
                 } else {
+                    if (outRT != nullptr) outRT->bind();
                     m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, m_pAoDenRT);
+                    if (outRT != nullptr) outRT->unbind();
+                }
+
+                // Temporal-jitter accumulate + display (when active). The final
+                // color of this sample is in m_pJitterSampleRT.
+                if (jitterActive) {
+                    const float invN = 1.0f / float(jitterN);
+                    // Additive sum into the float accumulation buffer (cleared on
+                    // the first sample).
+                    m_pJitterAccumRT->bind();
+                    if (m_jitterSampleIndex == 0)
+                        m_pJitterAccumRT->clear(0.0f, 0.0f, 0.0f, 0.0f);
+                    pdc->setBlendEnabled(true);
+                    pdc->setBlendModeAdd(true);
+                    m_pAOPostProc->drawJitterCompose(pdc, m_pJitterSampleRT, invN);
+                    pdc->setBlendModeAdd(false);
+                    pdc->setBlendEnabled(false);
+                    m_pJitterAccumRT->unbind();
+
+                    // Display the normalized partial average to the default fb.
+                    const float disp =
+                        float(jitterN) / float(m_jitterSampleIndex + 1);
+                    m_pAOPostProc->drawJitterCompose(pdc, m_pJitterAccumRT, disp);
+
+                    // Restore over-blend for the UI overlay drawn afterwards.
+                    pdc->setBlendEnabled(true);
+
+                    // Advance / converge.
+                    if (m_jitterSampleIndex + 1 < jitterN) {
+                        m_jitterSampleIndex += 1;
+                        m_jitterMoreSamples = true;  // keep redrawing on idle
+                    } else {
+                        m_jitterMoreSamples = false;  // converged
+                    }
                 }
                 pdc->setDepthTestEnabled(true);
 
@@ -679,6 +820,19 @@ void GUIView::ensureAORTs(int w, int h)
         m_pSmaaWeightRT->resize(w, h);
     }
 
+    // Temporal-jitter targets: per-sample 3D color (RGBA8 LINEAR) and the float
+    // accumulation buffer (RGBA16F, to avoid 8-bit banding when summing samples).
+    if (m_pJitterSampleRT == nullptr) {
+        m_pJitterSampleRT = pdc->createRenderTarget(w, h, gfx::RT_COLOR_RGBA8);
+    } else {
+        m_pJitterSampleRT->resize(w, h);
+    }
+    if (m_pJitterAccumRT == nullptr) {
+        m_pJitterAccumRT = pdc->createRenderTarget(w, h, gfx::RT_COLOR_RGBA16F);
+    } else {
+        m_pJitterAccumRT->resize(w, h);
+    }
+
     if (m_pAOPostProc == nullptr) {
         m_pAOPostProc = MB_NEW gfx::PostProcGpuPrim();
     }
@@ -732,6 +886,14 @@ void GUIView::cleanupAORTs()
     if (m_pAOPostProc != nullptr) {
         delete m_pAOPostProc;
         m_pAOPostProc = nullptr;
+    }
+    if (m_pJitterAccumRT != nullptr) {
+        delete m_pJitterAccumRT;
+        m_pJitterAccumRT = nullptr;
+    }
+    if (m_pJitterSampleRT != nullptr) {
+        delete m_pJitterSampleRT;
+        m_pJitterSampleRT = nullptr;
     }
     if (m_pSmaaWeightRT != nullptr) {
         delete m_pSmaaWeightRT;

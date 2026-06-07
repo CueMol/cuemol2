@@ -125,6 +125,7 @@ Scene::Scene()
   m_nAOSlices = 9;
   m_nAOSteps = 3;
   m_nAAMethod = AA_FXAA;
+  m_nAAJitterLevel = 0;
 
   MB_DPRINTLN("Scene (%d) created.", m_nUID);
 }
@@ -898,7 +899,7 @@ void Scene::checkAndUpdate()
     viewtab_t::const_iterator viter = m_viewtab.begin();
     for (; viter!=m_viewtab.end(); ++viter) {
       View *pV = viter->second.get();
-      if (pV->getUpdateFlag() && pV->isActive()) {
+      if ((pV->getUpdateFlag() || pV->needsContinuousRedraw()) && pV->isActive()) {
         //MB_DPRINTLN("Scene::checkAndUpdate() drawScene");
         pV->drawScene();
         pV->clearUpdateFlag();

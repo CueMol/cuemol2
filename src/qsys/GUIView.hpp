@@ -78,6 +78,13 @@ public:
 
     virtual void drawScene() override;
 
+    /// Keep redrawing on idle while temporal-jitter accumulation is unfinished.
+    virtual bool needsContinuousRedraw() const override { return m_jitterMoreSamples; }
+
+    /// Force a redraw and restart any temporal-jitter accumulation (used when
+    /// the scene content changes via the scene-level update flag).
+    virtual void forceRedraw() override;
+
     /// Release GPU resources (incl. AO render targets) while the GL context is
     /// still alive, before the display context is torn down.
     virtual void unloading() override;
@@ -143,6 +150,22 @@ private:
     /// aaMethod is smaa. Owned.
     gfx::RenderTarget *m_pSmaaEdgeRT = nullptr;
     gfx::RenderTarget *m_pSmaaWeightRT = nullptr;
+
+    /// Temporal-jitter supersampling targets (AO path, camera still). Owned.
+    /// sample = one jittered 3D frame (RGBA8); accum = float running sum.
+    gfx::RenderTarget *m_pJitterSampleRT = nullptr;
+    gfx::RenderTarget *m_pJitterAccumRT = nullptr;
+
+    /// Temporal-jitter state. sampleIndex counts accumulated samples; when
+    /// moreSamples is true the view keeps redrawing on idle (needsContinuousRedraw)
+    /// until converged. resetRequested forces a restart (set on forceRedraw, i.e.
+    /// scene-content changes; camera changes are caught via getUpdateFlag()).
+    int m_jitterSampleIndex = 0;
+    bool m_jitterMoreSamples = false;
+    bool m_jitterResetRequested = false;
+    /// Current sample's sub-pixel offset (backing pixels), applied in setUpProjMat.
+    double m_jitterPxX = 0.0;
+    double m_jitterPxY = 0.0;
 
     /// Fullscreen post-processing primitive (GTAO + denoise + composite). Owned.
     gfx::PostProcGpuPrim *m_pAOPostProc = nullptr;

@@ -88,6 +88,14 @@ void OcDisplayContext::setBlendEnabled(bool b)
         glDisable(GL_BLEND);
 }
 
+void OcDisplayContext::setBlendModeAdd(bool add)
+{
+    if (add)
+        glBlendFunc(GL_ONE, GL_ONE);
+    else
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+}
+
 void OcDisplayContext::clearBuffer(const gfx::ColorPtr &pcol)
 {
     glClearColor(float(pcol->fr()), float(pcol->fg()), float(pcol->fb()), 1.0f);

@@ -24,6 +24,10 @@ enum RTFlags
     /// geometry normals. RGBA (not RGB) because RGB16F is not a guaranteed
     /// color-renderable format and is mishandled by some drivers (Apple GL).
     RT_NORMAL_RGBA16F = 0x08,
+    /// Make color attachment 0 RGBA16F (float) instead of RGBA8. Used by the
+    /// temporal-jitter accumulation target to avoid 8-bit banding when summing
+    /// many samples.
+    RT_COLOR_RGBA16F = 0x10,
 };
 
 /// Conventional texture-unit assignments shared by post-processing passes.

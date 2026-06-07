@@ -117,6 +117,9 @@ namespace qsys {
     /// Post-process anti-aliasing method (see AAMethod enum below)
     int m_nAAMethod;
 
+    /// Temporal jitter supersampling level (0 = off, 1..5 = 2/4/8/16/32 samples)
+    int m_nAAJitterLevel;
+
     /// UID of this scene
     qlib::uid_t m_nUID;
 
@@ -235,6 +238,13 @@ namespace qsys {
     void setAAMethod(int v) {
       setUpdateFlag();
       m_nAAMethod = v;
+    }
+
+    /// Temporal jitter supersampling level (0 = off, 1..5 = 2/4/8/16/32 samples).
+    int getAAJitterLevel() const { return m_nAAJitterLevel; }
+    void setAAJitterLevel(int v) {
+      setUpdateFlag();
+      m_nAAJitterLevel = v;
     }
 
     /// get source path of this scene
