@@ -4,6 +4,7 @@
  * `tools/*` dialogs reached from the Edit / Tools menus). Currently:
  *   - `UiChangeChainIdDialog` -> `ChangeChainIdDialog` (UXP `chg_chname`).
  *   - `UiDeleteMolDialog` -> `DeleteMolDialog` (UXP `tools/mol_delete`).
+ *   - `UiChangeResidueIndexDialog` -> `ChangeResidueIndexDialog` (UXP `tools/chg_resindex`).
  *   - `UiMolSuperpose` -> `MolSuperposeDialog` (UXP `tools/ssm_sup`).
  *
  * Each command resolves the active scene, opens the dialog (which owns its
@@ -16,6 +17,7 @@ import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
 import { useShowChangeChainIdDialog } from '../components/dialogs/ChangeChainIdDialogProvider'
 import { useShowDeleteMolDialog } from '../components/dialogs/DeleteMolDialogProvider'
+import { useShowChangeResidueIndexDialog } from '../components/dialogs/ChangeResidueIndexDialogProvider'
 import { useShowMolSuperposeDialog } from '../components/dialogs/MolSuperposeDialogProvider'
 
 interface UseToolCommandsOptions {
@@ -29,6 +31,7 @@ export function useToolCommands({
 }: UseToolCommandsOptions): void {
     const showChangeChainIdDialog = useShowChangeChainIdDialog()
     const showDeleteMolDialog = useShowDeleteMolDialog()
+    const showChangeResidueIndexDialog = useShowChangeResidueIndexDialog()
     const showMolSuperposeDialog = useShowMolSuperposeDialog()
 
     useRegisterCommand(CmdId.UiChangeChainIdDialog, () => {
@@ -43,6 +46,13 @@ export function useToolCommands({
         const info = getActiveSceneInfo()
         if (!info) return
         void showDeleteMolDialog({ sceneId: info.scene_uid })
+    })
+
+    useRegisterCommand(CmdId.UiChangeResidueIndexDialog, () => {
+        if (!cm) return
+        const info = getActiveSceneInfo()
+        if (!info) return
+        void showChangeResidueIndexDialog({ sceneId: info.scene_uid })
     })
 
     useRegisterCommand(CmdId.UiMolSuperpose, () => {

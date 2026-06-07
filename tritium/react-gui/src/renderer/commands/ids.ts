@@ -18,6 +18,7 @@ export const CmdId = {
   UiGetPdbDialog:     'ui.getPdbDialog',     // no args
   UiChangeChainIdDialog: 'ui.changeChainIdDialog', // no args
   UiDeleteMolDialog:  'ui.deleteMolDialog',  // no args
+  UiChangeResidueIndexDialog: 'ui.changeResidueIndexDialog', // no args
   UiMolSuperpose:     'ui.molSuperpose',     // no args
 
   // Tab management
