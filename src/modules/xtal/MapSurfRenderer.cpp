@@ -278,6 +278,13 @@ void MapSurfRenderer::render(DisplayContext *pdl)
 
   MB_DPRINTLN("MapSurfRenderer Rendereing...");
 
+  // Bake the base color into the display list. The cache builds the list by
+  // calling render() on the recording context, while preRender()'s color() is
+  // applied to the outer context only; without this the recorded vertices keep
+  // the display list's default gray. In non-simple color modes setVertexColor()
+  // overrides this per vertex.
+  pdl->color(getColor());
+
   pdl->startTriangles();
   renderImpl(pdl);
   pdl->end();
