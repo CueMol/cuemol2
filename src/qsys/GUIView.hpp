@@ -171,8 +171,10 @@ private:
     gfx::PostProcGpuPrim *m_pAOPostProc = nullptr;
 
     /// Lazily create / resize the AO scene target and post-proc primitive to
-    /// the given backing-pixel size.
-    void ensureAORTs(int w, int h);
+    /// the given backing-pixel size. When halfRes is true the GTAO term targets
+    /// (m_pAoRT / m_pAoDenRT) are allocated at half resolution; the scene and
+    /// composite targets stay full resolution.
+    void ensureAORTs(int w, int h, bool halfRes);
 
     /// Compute the view-space reconstruction constants for the GTAO passes from
     /// the current camera (perspective). Mirrors setUpProjMat's slab derivation.

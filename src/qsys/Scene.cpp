@@ -124,6 +124,7 @@ Scene::Scene()
   m_fAOIntensity = 2.2;
   m_nAOSlices = 9;
   m_nAOSteps = 3;
+  m_bAOHalfRes = false;
   m_nAAMethod = AA_FXAA;
   m_nAAJitterLevel = 0;
 

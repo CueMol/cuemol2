@@ -78,7 +78,7 @@ void PostProcGpuPrim::drawDepthVis(DisplayContext *pDC, RenderTarget *prt,
 }
 
 void PostProcGpuPrim::drawComposite(DisplayContext *pDC, RenderTarget *sceneRT,
-                                    RenderTarget *aoRT)
+                                    RenderTarget *aoRT, const AoConstants &consts)
 {
     if (sceneRT == nullptr) return;
     if (!ensureDrawElem(pDC)) return;
@@ -95,13 +95,24 @@ void PostProcGpuPrim::drawComposite(DisplayContext *pDC, RenderTarget *sceneRT,
     }
 
     sceneRT->bindColorTex(0, RT_TU_COLOR);
-    if (aoRT != nullptr) aoRT->bindColorTex(0, RT_TU_NORMAL);  // AO term on unit 2
+    if (aoRT != nullptr) {
+        aoRT->bindColorTex(0, RT_TU_NORMAL);   // AO term on unit 2
+        sceneRT->bindDepthTex(RT_TU_DEPTH);    // scene depth for the upsample
+    }
 
     m_pCompPO->enable();
     m_pCompPO->setUniform("u_colorTex", RT_TU_COLOR);
     m_pCompPO->setUniform("u_aoTex", RT_TU_NORMAL);
     // hasAO lets the shader fall back to a plain copy when no AO is supplied.
     m_pCompPO->setUniform("u_hasAO", (aoRT != nullptr) ? 1 : 0);
+    m_pCompPO->setUniform("u_depthTex", RT_TU_DEPTH);
+    m_pCompPO->setUniformF("u_depthUnpack", consts.depthLinearizeMul,
+                           consts.depthLinearizeAdd);
+    m_pCompPO->setUniformF("u_aoTexelSize", consts.aoTexelSize[0],
+                           consts.aoTexelSize[1]);
+    // Upsample only when the AO buffer is coarser than the output (half res).
+    const bool upsample = consts.aoTexelSize[0] > consts.viewportPixelSize[0] * 1.5f;
+    m_pCompPO->setUniform("u_upsample", upsample ? 1 : 0);
 
     pDC->drawElem(*m_pDrawElem);
 

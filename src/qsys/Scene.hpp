@@ -114,6 +114,9 @@ namespace qsys {
     /// GTAO number of steps marched per slice (radial samples)
     int m_nAOSteps;
 
+    /// Compute the GTAO term at half resolution (edge-aware upsample on composite)
+    bool m_bAOHalfRes;
+
     /// Post-process anti-aliasing method (see AAMethod enum below)
     int m_nAAMethod;
 
@@ -224,6 +227,13 @@ namespace qsys {
     void setAOSteps(int v) {
       setUpdateFlag();
       m_nAOSteps = v;
+    }
+
+    /// Compute the GTAO term at half resolution (load reduction)
+    bool isAOHalfRes() const { return m_bAOHalfRes; }
+    void setAOHalfRes(bool v) {
+      setUpdateFlag();
+      m_bAOHalfRes = v;
     }
 
     /// Post-process anti-aliasing method values (match the aa_method enumdef).

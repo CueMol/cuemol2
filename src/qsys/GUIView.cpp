@@ -220,9 +220,10 @@ void GUIView::drawScene()
             const bool useAO = pScene->isAOEnabled() && hasFBO() &&
                                getStereoMode() == Camera::CSM_NONE;
 
+            const bool aoHalfRes = useAO && pScene->isAOHalfRes();
             if (useAO) {
                 ensureAORTs(convToBackingX(getWidth()),
-                            convToBackingY(getHeight()));
+                            convToBackingY(getHeight()), aoHalfRes);
             }
 
             if (useAO && m_pAOSceneRT != nullptr && m_pAoRT != nullptr &&
@@ -282,9 +283,19 @@ void GUIView::drawScene()
                     const double t = double(m_jitterSampleIndex) * 0.6180339887;
                     aoc.aoNoiseOffset = float(t - std::floor(t));
                 }
+                // AO buffer texel size (= full res, or 2x coarser at half res).
+                // The GTAO / denoise passes run at this resolution, so they use
+                // it as their pixel size; the composite reads both to know
+                // whether (and how) to upsample.
+                aoc.aoTexelSize[0] = 1.0f / float(m_pAoRT->getWidth());
+                aoc.aoTexelSize[1] = 1.0f / float(m_pAoRT->getHeight());
+                gfx::AoConstants aocAO = aoc;
+                aocAO.viewportPixelSize[0] = aoc.aoTexelSize[0];
+                aocAO.viewportPixelSize[1] = aoc.aoTexelSize[1];
+
                 m_pAoRT->bind();
                 m_pAoRT->clear(1.0f, 1.0f, 1.0f, 1.0f);
-                m_pAOPostProc->drawGtao(pdc, m_pAOSceneRT, aoc, /*debugMode=*/0);
+                m_pAOPostProc->drawGtao(pdc, m_pAOSceneRT, aocAO, /*debugMode=*/0);
                 m_pAoRT->unbind();
 
                 // 3. Edge-aware denoise of the AO term (single pass). The base
@@ -292,7 +303,7 @@ void GUIView::drawScene()
                 // blurring, which would dilute the broad soft AO on convex
                 // surfaces toward white.
                 m_pAoDenRT->bind();
-                m_pAOPostProc->drawDenoise(pdc, m_pAoRT, aoc);
+                m_pAOPostProc->drawDenoise(pdc, m_pAoRT, aocAO);
                 m_pAoDenRT->unbind();
 
                 // 4. Composite scene color * denoised AO, then apply the
@@ -318,7 +329,7 @@ void GUIView::drawScene()
                     pdc->setBlendEnabled(false);
 
                     m_pCompRT->bind();
-                    m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, m_pAoDenRT);
+                    m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, m_pAoDenRT, aoc);
                     m_pCompRT->unbind();
 
                     if (aaMethod == Scene::AA_SMAA && m_pSmaaEdgeRT != nullptr &&
@@ -347,7 +358,7 @@ void GUIView::drawScene()
                     pdc->setBlendEnabled(true);
                 } else {
                     if (outRT != nullptr) outRT->bind();
-                    m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, m_pAoDenRT);
+                    m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, m_pAoDenRT, aoc);
                     if (outRT != nullptr) outRT->unbind();
                 }
 
@@ -750,7 +761,7 @@ void GUIView::setFogColorImpl(DisplayContext *pdc)
 //////////
 // Screen-space ambient occlusion (GTAO) live path
 
-void GUIView::ensureAORTs(int w, int h)
+void GUIView::ensureAORTs(int w, int h, bool halfRes)
 {
     DisplayContext *pdc = getDisplayContext();
     if (pdc == nullptr) return;
@@ -764,18 +775,24 @@ void GUIView::ensureAORTs(int w, int h)
         m_pAOSceneRT->resize(w, h);
     }
 
+    // AO term targets (GTAO + denoise). Half resolution when requested; the
+    // composite edge-aware upsamples them back to full res. resize() is a no-op
+    // when unchanged, so toggling halfRes at runtime re-allocates them.
+    const int aoW = halfRes ? (w + 1) / 2 : w;
+    const int aoH = halfRes ? (h + 1) / 2 : h;
+
     // AO targets hold packed data (AO + edges) and must use NEAREST filtering.
     const int aoFlags = gfx::RT_COLOR_RGBA8 | gfx::RT_COLOR_NEAREST;
     if (m_pAoRT == nullptr) {
-        m_pAoRT = pdc->createRenderTarget(w, h, aoFlags);
+        m_pAoRT = pdc->createRenderTarget(aoW, aoH, aoFlags);
     } else {
-        m_pAoRT->resize(w, h);
+        m_pAoRT->resize(aoW, aoH);
     }
 
     if (m_pAoDenRT == nullptr) {
-        m_pAoDenRT = pdc->createRenderTarget(w, h, aoFlags);
+        m_pAoDenRT = pdc->createRenderTarget(aoW, aoH, aoFlags);
     } else {
-        m_pAoDenRT->resize(w, h);
+        m_pAoDenRT->resize(aoW, aoH);
     }
 
     // Composite target for the post-process AA stage. LINEAR filtering (no
@@ -868,7 +885,8 @@ bool GUIView::renderAOColorFrame(DisplayContext *pdc, const ScenePtr &pScene,
     gfx::ColorPtr bg = pScene->getBgColor();
 
     const bool useAO = pScene->isAOEnabled() && hasFBO();
-    if (useAO) ensureAORTs(bw, bh);
+    const bool aoHalfRes = useAO && pScene->isAOHalfRes();
+    if (useAO) ensureAORTs(bw, bh, aoHalfRes);
 
     if (useAO && m_pAOSceneRT != nullptr && m_pAoRT != nullptr &&
         m_pAoDenRT != nullptr && m_pAOPostProc != nullptr) {
@@ -879,27 +897,33 @@ bool GUIView::renderAOColorFrame(DisplayContext *pdc, const ScenePtr &pScene,
         pScene->display(pdc);
         m_pAOSceneRT->unbind();
 
-        // 2. GTAO + 3. denoise.
+        // 2. GTAO + 3. denoise (at the AO buffer resolution).
         gfx::AoConstants aoc = computeAoConstants();
         aoc.effectRadius = float(pScene->getAORadius());
         aoc.finalValuePower = float(pScene->getAOIntensity());
         aoc.sliceCount = pScene->getAOSlices();
         aoc.stepsPerSlice = pScene->getAOSteps();
         aoc.aoNoiseOffset = aoNoiseOffset;
+        aoc.aoTexelSize[0] = 1.0f / float(m_pAoRT->getWidth());
+        aoc.aoTexelSize[1] = 1.0f / float(m_pAoRT->getHeight());
+        gfx::AoConstants aocAO = aoc;
+        aocAO.viewportPixelSize[0] = aoc.aoTexelSize[0];
+        aocAO.viewportPixelSize[1] = aoc.aoTexelSize[1];
         m_pAoRT->bind();
         m_pAoRT->clear(1.0f, 1.0f, 1.0f, 1.0f);
-        m_pAOPostProc->drawGtao(pdc, m_pAOSceneRT, aoc, /*debugMode=*/0);
+        m_pAOPostProc->drawGtao(pdc, m_pAOSceneRT, aocAO, /*debugMode=*/0);
         m_pAoRT->unbind();
         m_pAoDenRT->bind();
-        m_pAOPostProc->drawDenoise(pdc, m_pAoRT, aoc);
+        m_pAOPostProc->drawDenoise(pdc, m_pAoRT, aocAO);
         m_pAoDenRT->unbind();
 
-        // 4. Composite (color * AO) -> outRT. No spatial post-AA. Blend off so
-        // the fullscreen pass replaces (transparent-bg pixels keep alpha 0).
+        // 4. Composite (color * AO, edge-aware upsampled when half res) -> outRT.
+        // No spatial post-AA. Blend off so the fullscreen pass replaces
+        // (transparent-bg pixels keep alpha 0).
         pdc->setDepthTestEnabled(false);
         pdc->setBlendEnabled(false);
         outRT->bind();
-        m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, m_pAoDenRT);
+        m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, m_pAoDenRT, aoc);
         outRT->unbind();
         pdc->setBlendEnabled(true);
         pdc->setDepthTestEnabled(true);

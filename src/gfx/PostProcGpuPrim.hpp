@@ -29,6 +29,10 @@ struct AoConstants
     float ndcToViewAdd[2] = {0.0f, 0.0f};
     /// (1/width, 1/height) in pixels.
     float viewportPixelSize[2] = {0.0f, 0.0f};
+    /// (1/width, 1/height) of the AO term buffer. Equals viewportPixelSize at
+    /// full resolution; doubled when the GTAO term is computed at half
+    /// resolution. The composite uses it to edge-aware upsample the AO term.
+    float aoTexelSize[2] = {0.0f, 0.0f};
     /// Occlusion sphere radius in view-space (world) units.
     float effectRadius = 1.0f;
     /// Final occlusion contrast: occlusion = pow(occlusion, finalValuePower).
@@ -104,12 +108,15 @@ public:
     void drawDepthVis(DisplayContext *pDC, RenderTarget *prt, float vnear,
                       float vfar);
 
-    /// Sample sceneRT's color attachment and draw it into the currently bound
-    /// framebuffer (fullscreen). aoRT is reserved for the AO multiply step
-    /// added in a later step and is currently ignored. Self-initializes the
-    /// vertex buffer and composite program (no init() call required).
+    /// Sample sceneRT's color attachment, multiply by aoRT's AO term, and draw
+    /// the result into the currently bound framebuffer (fullscreen). When the AO
+    /// term is at a lower resolution than sceneRT (consts.aoTexelSize coarser
+    /// than consts.viewportPixelSize), it is joint-bilateral upsampled using the
+    /// scene depth so the AO does not bleed across silhouettes. Pass aoRT ==
+    /// nullptr for a plain copy. Self-initializes the vertex buffer and composite
+    /// program (no init() call required).
     void drawComposite(DisplayContext *pDC, RenderTarget *sceneRT,
-                       RenderTarget *aoRT);
+                       RenderTarget *aoRT, const AoConstants &consts);
 
     /// Read sceneRT's depth texture, reconstruct view-space depth/position with
     /// the given constants, and draw the GTAO term into the currently bound

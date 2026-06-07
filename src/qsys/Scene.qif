@@ -60,6 +60,11 @@ runtime_class Scene
   property integer aoSteps => redirect(getAOSteps, setAOSteps);
   default aoSteps = 3;
 
+  /// Compute the GTAO term at half resolution and edge-aware upsample it on
+  /// composite (load reduction; the GTAO pass cost is ~1/4).
+  property boolean aoHalfRes => redirect(isAOHalfRes, setAOHalfRes);
+  default aoHalfRes = false;
+
   /// Post-process anti-aliasing method applied after the AO composite.
   /// none = no post-AA (legacy behavior), fxaa = FXAA, smaa = SMAA (reserved).
   enumdef aa_method {

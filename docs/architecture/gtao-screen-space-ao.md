@@ -15,11 +15,11 @@ libcuemol2 の OpenGL (core profile) バックエンドに実装した、リア�
 ライブ描画 1 フレームの流れ (`qsys::GUIView::drawScene`, CSM_NONE 分岐):
 
 ```
-1. scene  -> off-screen FBO (m_pAOSceneRT)
+1. scene  -> off-screen FBO (m_pAOSceneRT)  ※常にフル解像度
               COLOR0 = 色 (RGBA8) / DEPTH = 深度tex (DEPTH24) / COLOR1 = 法線 (RGBA16F, MRT)
-2. GTAO   -> AO RT (m_pAoRT, RGBA8)        R=遮蔽 G=packed edges
-3. denoise-> denoise RT (m_pAoDenRT)       edge-aware 3x3 blur (単一パス)
-4. composite (color * AO) + post-AA -> default framebuffer  (§4.5)
+2. GTAO   -> AO RT (m_pAoRT, RGBA8)        R=遮蔽 G=packed edges  ※aoHalfRes 時は半解像度 (§4.7)
+3. denoise-> denoise RT (m_pAoDenRT)       edge-aware 3x3 blur (単一パス)  ※AO RT と同解像度
+4. composite (color * AO, 半解像度時は edge-aware upsample) + post-AA -> default framebuffer  (§4.5/§4.7)
      aa_method=none: composite を直接 default fb へ
      aa_method=fxaa: composite -> m_pCompRT(LINEAR) -> FXAA -> default fb
 5. depth blit (scene depth -> default fb)  UI overlay の depth test 用
@@ -37,14 +37,14 @@ AO を使わない (無効・stereo・FBO 非対応) 場合は従来パス (clea
 
 | 区分 | パス | 役割 |
 |---|---|---|
-| Scene プロパティ | `src/qsys/Scene.{qif,hpp,cpp}` | `aoEnabled/aoRadius/aoIntensity/aoSlices/aoSteps` + `aa_method` (none/fxaa/smaa) (.qsc にシリアライズ) |
+| Scene プロパティ | `src/qsys/Scene.{qif,hpp,cpp}` | `aoEnabled/aoRadius/aoIntensity/aoSlices/aoSteps/aoHalfRes` + `aa_method` (none/fxaa/smaa) + `aaJitterLevel` (.qsc にシリアライズ) |
 | FBO 抽象 | `src/gfx/RenderTarget.hpp` | `RTFlags` / `RTTexUnit` / `RenderTarget` IF |
 | FBO 実装 | `src/sysdep/ogl_core/OcRenderTarget.{hpp,cpp}` | MRT (color+depth+normal)、clear、blit |
 | フルスクリーン描画 | `src/gfx/PostProcGpuPrim.{hpp,cpp}` | `drawGtao` / `drawDenoise` / `drawComposite` / `drawFxaa` + `struct AoConstants` |
 | ライブ経路 | `src/qsys/GUIView.cpp` | `drawScene` の AO 分岐 / `ensureAORTs` / `computeAoConstants` / `cleanupAORTs` / `unloading` |
 | GTAO 本体 | `src/sysdep/ogl_core/gtao_frag.glsl` | horizon 積分・法線選択・line 除外 |
 | denoise | `src/sysdep/ogl_core/ao_denoise_frag.glsl` | edge-aware blur |
-| composite | `src/sysdep/ogl_core/ao_composite_frag.glsl` | `color.rgb * AO` |
+| composite | `src/sysdep/ogl_core/ao_composite_frag.glsl` | `color.rgb * AO` (+ 半解像度時 joint bilateral upsample) |
 | post-AA (FXAA) | `src/sysdep/ogl_core/fxaa_frag.glsl` | FXAA 3.11 (§4.5) |
 | 頂点 | `src/sysdep/ogl_core/postproc_vert.glsl` | 全画面トライアングル (v_uv) |
 | scene shader | `trig`/`trigedge`/`sphere`/`cylinder`/`mapsurf`/`linew`/`pixdraw`/`mapmesh` | MRT 法線出力 (後述) |
@@ -234,6 +234,47 @@ sampleIndex++ / 収束で停止
 
 ---
 
+## 4.7 半解像度 AO (負荷削減)
+
+GTAO の fragment コストは **AO バッファのピクセル数に比例**する (1 ピクセルあたり数十回の
+depth fetch + horizon march)。`aoHalfRes` を有効にすると GTAO + denoise を **半解像度
+(1/2×1/2 = 1/4 ピクセル)** で計算し、composite で **edge-aware upsample** してフル解像度へ
+戻す。GTAO + denoise のコストが約 1/4 になる。
+
+### 何を半解像度にするか
+- **半解像度**: `m_pAoRT` / `m_pAoDenRT` (GTAO 項 + packed edges) のみ。`ensureAORTs(w,h,halfRes)`
+  が `(w+1)/2, (h+1)/2` で確保する。`resize()` は no-op 判定があるので runtime トグル追従可。
+- **フル解像度のまま**: `m_pAOSceneRT` (色・深度・法線)。composite と upsample に full-res depth が
+  要るため。`m_pCompRT` / SMAA 中間 RT もフル解像度。
+
+### ピクセルサイズの受け渡し (`AoConstants`)
+- `viewportPixelSize` = 出力 (フル) の 1/size。`aoTexelSize` = AO バッファの 1/size。
+- GTAO / denoise には `viewportPixelSize = aoTexelSize` にした **コピー (`aocAO`)** を渡す。GTAO の
+  `screenspaceRadius` / edge / サンプルオフセットは全て pixel size 基準なので、半解像度の pixel
+  size を渡すだけで world 半径のカバレッジは自動で保たれる (数式変更不要)。
+- composite には元の `aoc` (フル `viewportPixelSize` + 半解像度 `aoTexelSize`) を渡す。
+  `u_upsample` は `aoTexelSize > viewportPixelSize*1.5` で判定 (フル解像度では false)。
+
+### edge-aware upsample (halo 防止の肝, `ao_composite_frag.glsl`)
+naive bilinear だと深度不連続 (シルエット) で AO が滲んで halo が出る。joint bilateral
+upsample で防ぐ:
+- 各 full-res ピクセルで自身の線形 depth `zC` を full-res depth から求める。
+- 周囲 4 つの half-res texel について bilinear 重み `bw` と、その texel 中心 UV で読んだ full-res
+  depth `zi` の **depth 類似度 `dw = exp(-|zC-zi|/range)`** を掛けた `w = bw*dw` で加重平均。
+  `range = max(|zC|,eps)*0.02` (denoise の edge スケールと同思想)。
+- 全 tap が rejected された孤立細線では point sample にフォールバック。
+- half-res texel の depth は別 RT に保存せず full-res depth を texel 中心で読み直して近似する
+  (追加 RT 不要)。
+
+### 相互作用
+- **jitter SS (§4.6)**: 半解像度 GTAO の粗いノイズも jitter 蓄積 + `aoNoiseOffset` 回転で平均化
+  されるので相性良。export 経路 (`renderAOColorFrame`) も同じ composite を通るので半解像度が効く。
+- **post-AA (§4.5)**: FXAA / SMAA はフル解像度の composite 出力に掛かるので影響なし。
+- **非回帰**: `aoHalfRes=false` で `aoTexelSize == viewportPixelSize`、`aocAO == aoc`、
+  `u_upsample=0` となり従来と完全同一。既定 false (opt-in)。
+
+---
+
 ## 5. 移植で必ず踏むハマりどころ (最重要)
 
 Apple M2 / Metal バックエンド OpenGL 4.1 + MSAA x4 の実機で、以下を順に踏んだ。WebGL2 /
@@ -285,6 +326,9 @@ output location も確認。これらで「location は正しい→書き込み�
 | `aoIntensity` | 2.2 | finalValuePower (コントラスト) |
 | `aoSlices` | 9 | 角度サンプル数 (= 基本ノイズ量) |
 | `aoSteps` | 3 | スライスあたり半径サンプル数 (大半径のバンディング) |
+| `aoHalfRes` | false | GTAO を半解像度で計算し edge-aware upsample (負荷削減, §4.7) |
+| `aa_method` | fxaa | post-process AA (none/fxaa/smaa, §4.5) |
+| `aaJitterLevel` | 0 | temporal jitter SS レベル (0=off, 1..5=2..32 枚, §4.6) |
 
 FalloffRange / SampleDistributionPower / RadiusMultiplier 等の XeGTAO ヒューリスティックは
 shader 定数のまま (必要なら同様に Scene プロパティへ昇格できる構造)。
@@ -326,8 +370,9 @@ shader 定数のまま (必要なら同様に Scene プロパティへ昇格で�
 
 ### 共通の未実装/将来最適化 (現状スコープ外)
 - depth MIP チェーン (prefilter パス) によるワイド半径の高速化・低ノイズ化。
-- 半解像度 AO + edge-aware upsample (naive blur ではなく denoise と同じ重みで halo 防止)。
 - bent normals、TAA。
+
+(半解像度 AO + edge-aware upsample は §4.7 で実装済み。)
 
 ### AA ロードマップ (§4.5/§4.6 の続き)
 - **フル TAA**: motion vector 再投影で動作中も AA。reuseOcclusion 最適化、hold バッファ。
