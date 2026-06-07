@@ -6,9 +6,14 @@
 #include "EcBufferRep.hpp"
 #include "EcTexRep.hpp"
 #include "EcRenderTarget.hpp"
+#include "EcDataTexture.hpp"
 
 #include <gfx/AbstDrawAttrs.hpp>
 #include <gfx/RenderTarget.hpp>
+#include <gfx/DataTexture.hpp>
+
+#include <qlib/FileStream.hpp>
+#include <qsys/SysConfig.hpp>
 
 namespace node_jsbr {
 
@@ -184,6 +189,52 @@ gfx::RenderTarget *ElecDisplayContext::createRenderTarget(int w, int h, int flag
         return nullptr;
     }
     return pRT;
+}
+
+gfx::DataTexture *ElecDisplayContext::createDataTexture(int w, int h, int ncomp,
+                                                        bool linear, const void *data)
+{
+    auto *pTex = MB_NEW EcDataTexture();
+    if (!pTex->create(this, w, h, ncomp, linear, data)) {
+        delete pTex;
+        return nullptr;
+    }
+    return pTex;
+}
+
+gfx::DataTexture *ElecDisplayContext::createDataTextureFromFile(const LString &path,
+                                                               int w, int h, int ncomp,
+                                                               bool linear)
+{
+    const size_t expect = size_t(w) * size_t(h) * size_t(ncomp);
+
+    // Resolve the %%CONFDIR%% path the same way shader files are loaded.
+    qsys::SysConfig *pconf = qsys::SysConfig::getInstance();
+    LString fnam = pconf->convPathName(path);
+
+    std::vector<quint8> buf;
+    buf.reserve(expect);
+    try {
+        qlib::FileInStream fis;
+        fis.open(fnam);
+        char tmp[4096];
+        while (fis.ready()) {
+            int n = fis.read(tmp, 0, sizeof tmp);
+            if (n <= 0) break;
+            buf.insert(buf.end(), tmp, tmp + n);
+        }
+    } catch (...) {
+        LOG_DPRINTLN("ElecDisplayContext> cannot read data texture: %s", fnam.c_str());
+        return nullptr;
+    }
+
+    if (buf.size() != expect) {
+        LOG_DPRINTLN("ElecDisplayContext> data texture %s size mismatch (%zu != %zu)",
+                     fnam.c_str(), buf.size(), expect);
+        return nullptr;
+    }
+
+    return createDataTexture(w, h, ncomp, linear, buf.data());
 }
 
 void ElecDisplayContext::bindRenderTarget(gfx::RenderTarget *prt)

@@ -5,6 +5,7 @@
 namespace gfx {
 class ShaderObject;
 class RenderTarget;
+class DataTexture;
 }  // namespace gfx
 
 namespace node_jsbr {
@@ -66,6 +67,15 @@ public:
     virtual gfx::PixRep *createPixRep(const gfx::PixelBuffer &pixbuf) override;
 
     virtual gfx::RenderTarget *createRenderTarget(int w, int h, int flags) override;
+
+    /// Create an immutable lookup texture from CPU bytes (SMAA AreaTex/SearchTex).
+    virtual gfx::DataTexture *createDataTexture(int w, int h, int ncomp, bool linear,
+                                                const void *data) override;
+
+    /// Load a lookup texture from a raw byte file (path resolved like shaders).
+    virtual gfx::DataTexture *createDataTextureFromFile(const LString &path, int w,
+                                                        int h, int ncomp,
+                                                        bool linear) override;
 
     virtual void bindRenderTarget(gfx::RenderTarget *prt) override;
 
