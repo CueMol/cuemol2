@@ -86,6 +86,7 @@ describe('useMenuDispatch -- channel to CmdId mapping', () => {
     ['menu:about',              CmdId.UiAboutDialog,       undefined],
     [IPC.MENU_GET_PDB,          CmdId.UiGetPdbDialog,      undefined],
     ['menu:change-chain-id',    CmdId.UiChangeChainIdDialog, undefined],
+    ['menu:delete-mol-atoms',   CmdId.UiDeleteMolDialog,    undefined],
     ['menu:save-file-as',       CmdId.ObjectSaveAs,        undefined],
     ['menu:save-current-view',  CmdId.SaveCurrentView,     undefined],
     ['menu:reload-scene',       CmdId.SceneReload,         undefined],

@@ -317,6 +317,10 @@ import type {
   ChangeChainNameResult,
 } from '../server/services/changeChainName.service'
 import type {
+  DeleteMolAtomsArgs,
+  DeleteMolAtomsResult,
+} from '../server/services/deleteMolAtoms.service'
+import type {
   SuperposeMolArgs,
   SuperposeMolResult,
 } from '../server/services/superposeMol.service'
@@ -497,6 +501,7 @@ export interface ServiceMap {
   showSymmRenderer:           { args: ShowSymmRendererArgs;            result: ShowSymmRendererResult }
   showUnitCellRenderer:       { args: ShowUnitCellRendererArgs;        result: ShowUnitCellRendererResult }
   changeChainName:            { args: ChangeChainNameArgs;             result: ChangeChainNameResult }
+  deleteMolAtoms:             { args: DeleteMolAtomsArgs;              result: DeleteMolAtomsResult }
   superposeMol:               { args: SuperposeMolArgs;                result: SuperposeMolResult }
   listMapRenderers:           { args: ListMapRenderersArgs;            result: ListMapRenderersResult }
   getMapRendererState:        { args: GetMapRendererStateArgs;         result: GetMapRendererStateResult }

@@ -3,6 +3,7 @@
  * @description Registers molecule-editing tool dialog triggers (UXP
  * `tools/*` dialogs reached from the Edit / Tools menus). Currently:
  *   - `UiChangeChainIdDialog` -> `ChangeChainIdDialog` (UXP `chg_chname`).
+ *   - `UiDeleteMolDialog` -> `DeleteMolDialog` (UXP `tools/mol_delete`).
  *   - `UiMolSuperpose` -> `MolSuperposeDialog` (UXP `tools/ssm_sup`).
  *
  * Each command resolves the active scene, opens the dialog (which owns its
@@ -14,6 +15,7 @@ import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
 import { useShowChangeChainIdDialog } from '../components/dialogs/ChangeChainIdDialogProvider'
+import { useShowDeleteMolDialog } from '../components/dialogs/DeleteMolDialogProvider'
 import { useShowMolSuperposeDialog } from '../components/dialogs/MolSuperposeDialogProvider'
 
 interface UseToolCommandsOptions {
@@ -26,6 +28,7 @@ export function useToolCommands({
     getActiveSceneInfo,
 }: UseToolCommandsOptions): void {
     const showChangeChainIdDialog = useShowChangeChainIdDialog()
+    const showDeleteMolDialog = useShowDeleteMolDialog()
     const showMolSuperposeDialog = useShowMolSuperposeDialog()
 
     useRegisterCommand(CmdId.UiChangeChainIdDialog, () => {
@@ -33,6 +36,13 @@ export function useToolCommands({
         const info = getActiveSceneInfo()
         if (!info) return
         void showChangeChainIdDialog({ sceneId: info.scene_uid })
+    })
+
+    useRegisterCommand(CmdId.UiDeleteMolDialog, () => {
+        if (!cm) return
+        const info = getActiveSceneInfo()
+        if (!info) return
+        void showDeleteMolDialog({ sceneId: info.scene_uid })
     })
 
     useRegisterCommand(CmdId.UiMolSuperpose, () => {

@@ -29,7 +29,7 @@ Status values:
 | [`dialog.tool.chg-resindex`](../uxp-inventory/tool_dlgs.md#dialogtoolchg-resindex) | | | todo | | | |
 | [`dialog.tool.intr-tool`](../uxp-inventory/tool_dlgs.md#dialogtoolintr-tool) | | | todo | | | |
 | [`dialog.tool.makesurf`](../uxp-inventory/tool_dlgs.md#dialogtoolmakesurf) | | | todo | | | |
-| [`dialog.tool.mol-delete`](../uxp-inventory/tool_dlgs.md#dialogtoolmol-delete) | | | todo | | | |
+| [`dialog.tool.mol-delete`](../uxp-inventory/tool_dlgs.md#dialogtoolmol-delete) | `DeleteMolDialog` / `useToolCommands` / `deleteMolAtoms.service` | direct | review | | | Blueprint dialog built from h3-kit/form (`FieldSection` + `ObjectSelect` molCoord + `MolSelList`). OK commits via `deleteMolAtoms` worker service (`MolAnlManager.deleteAtoms` under a "Delete atoms" undo txn). Reached from Edit > Delete mol atoms (`menu:delete-mol-atoms`). Empty selection disables OK (avoids deleting all atoms). Awaiting E2E sign-off. |
 | [`dialog.tool.mol-merge`](../uxp-inventory/tool_dlgs.md#dialogtoolmol-merge) | | | todo | | | |
 | [`dialog.tool.molclient-tools`](../uxp-inventory/tool_dlgs.md#dialogtoolmolclient-tools) | | | todo | | | |
 | [`dialog.tool.morphanim-tool`](../uxp-inventory/tool_dlgs.md#dialogtoolmorphanim-tool) | | | todo | | | |
