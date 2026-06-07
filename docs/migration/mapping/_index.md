@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-06-07 (`dialog.tool.ssm-sup` done + `dialog.tool.chg-chname` 残機能: ssm-sup は実機確認済み、唯一の欠落「Write RMSD info file」を ADR-0022 で **非対応 (dropped、RMSD は log で取得可)** と確定し done 化。chg-chname は UXP 残機能を実装 — 空白入力を blank chain "_" に変換 (confirm)、trim 後 1 文字超を PDB 非準拠 confirm (Blueprint `Alert`)、前回選択分子は component の in-session state で保持 (cross-session 永続化は uid が変わるため不採用)。正規化を純関数 `chainNameInput` 化しテスト追加。挙動変更のため chg-chname は review 据え置き。tool_dlgs review 3->2 / done 1->2、Total review 5->4 / done 43->44)
 - Updated: 2026-06-07 (`dialog.tool.mol-delete` review: UXP "Delete atoms" tool dialog (`tools/mol_delete`) を Blueprint modal として実装。h3-kit/form (`FieldSection` + `ObjectSelect` molCoord + `MolSelList`) で構成、空選択時は OK 無効 (全原子削除の誤操作防止)。OK は新規 worker service `deleteMolAtoms` 経由で `MolAnlManager.deleteAtoms(mol, sel)` を "Delete atoms" undo txn 内で実行。Edit メニューの既存 stub `menu:delete-mol-atoms` を `useToolCommands` 経由で配線。menuDispatch + service の degrade test 追加。tool_dlgs todo 18->17 / review 2->3、Total todo 56->55 / review 4->5、direct 19->20)
 - Updated: 2026-06-07 (consistency audit fix: overlay.md の fopen-* 6 + property fragment 8 を merged/done、renderer-common を merged/wip に是正 (二重追跡を明示するヘッダ注記追加); panel.btmpanel-holder.log を done (LogPanel); widget.sidepanelholder を wip (SidePanel, drag-reorder 未移植)。全 mapping 行を ground truth 再集計し Category Summary / Total / Mapping Type Breakdown / Unstarted / In Progress を同期: Total **132**, done 43, wip 29, review 4, todo 56; Mapping direct 19 / merged 31 / split 22 / dropped 4 / unassigned 56。先行の Total 集計 (131/16/85 系) は元から誤りだったため是正)
 - Updated: 2026-06-07 (`other_dlgs` reconciliation: 実装済 4 件 (new-tabwnd / fopen-option / qscwriter-option / setup-renderer) を done、再設計済 2 件 (paint -> ColorPane inline / delete-object -> Scene tree Delete) を dropped に更新。Dialog_other done 0->6 / todo 14->8)
@@ -44,11 +45,11 @@
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 15 | 13 | 1 | 0 | 1 | 0 |
 | Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 6 | 3 | 1 | 8 | 0 |
-| Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 1 | 0 | 3 | 17 | 0 |
+| Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 2 | 0 | 2 | 17 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 2 | 2 | 0 | 9 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 14 | 2 | 0 | 12 | 0 |
 | Other | [other.md](other.md) | 4 | 0 | 1 | 0 | 3 | 0 |
-| **Total** | | **132** | **43** | **29** | **5** | **55** | **0** |
+| **Total** | | **132** | **44** | **29** | **4** | **55** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -97,8 +98,7 @@
 | [`dialog.rendstyle-create`](other_dlgs.md#dialogrendstyle-create) | `CreateRendStyleDialog` / `getCreateRendStyleInfo` / `createStyleFromRenderer` | Writable style-set listbox + base-name input; commit calls `StyleManager.createStyleFromObj`. Same-name overwrite handled in C++ |
 | [`dialog.atomintr`](other_dlgs.md#dialogatomintr) | `AtomIntr*Section` (inspector Properties tab) | Interaction/Dashed line/3D tube/Value label の 4 accordion。Dashed トグルは合成 (`setGenericProps` で stipple0..5 を 1 undo step 原子書き込み)。arrow size・label font 追加。append/remove 編集は対象外 |
 | [`dialog.tool.mol-delete`](tool_dlgs.md#dialogtoolmol-delete) | `DeleteMolDialog` / `useToolCommands` / `deleteMolAtoms.service` | h3-kit/form modal (ObjectSelect + MolSelList). OK -> `MolAnlManager.deleteAtoms` under "Delete atoms" undo txn. Edit > Delete mol atoms. Empty selection disables OK. Awaiting E2E sign-off |
-| [`dialog.tool.chg-chname`](tool_dlgs.md#dialogtoolchg-chname) | `ChangeChainIdDialog` / `useToolCommands` / `changeChainName.service` | h3-kit/form 製の Change chain ID modal。`MolAnlManager.changeChainName` を undo txn で実行。Edit メニューから起動。E2E sign-off 待ち |
-| [`dialog.tool.ssm-sup`](tool_dlgs.md#dialogtoolssm-sup) | `MolSuperposeDialog` / `useToolCommands` / `superposeMol.service` | h3-kit/form 製の Molecular superposition modal。LSQ/SSM を `MolAnlManager.superposeSSM1`/`superposeLSQ1` で undo txn 実行 (auto-recenter で `fitView2`)。mol/algo/checkbox 履歴は localStorage。RMSD-file 出力は deferred (ADR-0022)。Tools メニューから起動。E2E sign-off 待ち |
+| [`dialog.tool.chg-chname`](tool_dlgs.md#dialogtoolchg-chname) | `ChangeChainIdDialog` / `chainNameInput` / `useToolCommands` / `changeChainName.service` | h3-kit/form 製の Change chain ID modal。`MolAnlManager.changeChainName` を undo txn で実行。Edit メニューから起動。空白入力 -> blank chain "_" (confirm)、1 文字超 -> PDB 非準拠 confirm (Blueprint `Alert`)、前回分子は in-session 保持。confirm/blank 追加分の re-verify 待ち |
 | [`other.cuemol2`](other.md#othercuemol2) | `App` / `ContentArea` / `TabBar` / `SidePanel` / `BottomPanel` / `StatusBar` / `ConfirmCloseTabDialog` / `useWindowCloseHandler` | Main window layout (panels, tab view, status bar) + window-close/quit funnel wired (cmd-Q + close button share one confirm funnel, ADR-0016 supersedes ADR-0010). Canvas lifecycle: ADR-0011 |
 | [`widget.molsellist`](custom_widgets.md) | `MolSelList` (`h3-kit/MolSelList/`) | First consumer wired in `RendererOptionsPane` (file-open dialog); editable `InputGroup` + chevron-only `HTMLSelect` (OS-native dropdown listbox with `<optgroup>` Preset / History / Scene / Global); history via `localStorage`; worker services `getSelDefs` / `validateSelection` added |
 | [`widget.sidepanelholder`](custom_widgets.md) | `SidePanel` | Collapsible/resizable side-panel host (Allotment) + per-view pane sets + size persistence; UXP user drag-drop panel reorder not ported (config-driven via `buildViewPaneConfigs`) |

@@ -14,13 +14,14 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react'
-import { Button, Dialog, DialogBody, DialogFooter } from '@blueprintjs/core'
+import { Alert, Button, Dialog, DialogBody, DialogFooter } from '@blueprintjs/core'
 import { useTheme } from '../../contexts/ThemeContext'
 import { useCueMol } from '../../hooks/useCueMol'
 import { FieldSection, TextField } from '../../h3-kit/form'
 import { ObjectSelect, objectFilters } from '../../h3-kit/ObjectSelect'
 import { MolSelList } from '../../h3-kit/MolSelList/MolSelList'
 import { pushHistory } from '../../h3-kit/MolSelList/selHistory'
+import { resolveChainNameInput } from './chainNameInput'
 
 export interface ChangeChainIdDialogResult {
     ok: boolean
@@ -47,15 +48,21 @@ export function ChangeChainIdDialog({
     const [chainName, setChainName] = useState<string>('')
     const [submitting, setSubmitting] = useState(false)
     const [errorMsg, setErrorMsg] = useState<string | null>(null)
+    // Pending confirm before commit (blank-chain / non-conforming length).
+    const [pendingCommit, setPendingCommit] =
+        useState<{ value: string; message: string } | null>(null)
 
     // Reset transient state on each open -- the provider keeps the component
     // mounted across show/hide cycles, so leftover flags would otherwise stick.
+    // `objId` is intentionally NOT reset so the last-picked molecule persists
+    // within the session (UXP `_frommol` history, but session-scoped).
     useEffect(() => {
         if (!visible) return
         setSelStr('')
         setChainName('')
         setSubmitting(false)
         setErrorMsg(null)
+        setPendingCommit(null)
     }, [visible])
 
     const trimmed = chainName.trim()
@@ -63,12 +70,10 @@ export function ChangeChainIdDialog({
     // layer allows them) but flagged as non-conforming -- UXP shows a confirm.
     const lengthWarning = trimmed.length > 1
 
-    const handleOk = useCallback(async () => {
+    // Commit the resolved chain ID via the worker service. `name` is the value
+    // produced by `resolveChainNameInput` (e.g. "_" for a blank chain).
+    const commit = useCallback(async (name: string) => {
         if (!cm || objId === undefined) return
-        if (trimmed === '') {
-            setErrorMsg('New chain ID is empty.')
-            return
-        }
         setSubmitting(true)
         setErrorMsg(null)
         try {
@@ -76,7 +81,7 @@ export function ChangeChainIdDialog({
                 sceneId,
                 objId,
                 selStr,
-                chainName: trimmed,
+                chainName: name,
             })
             setSubmitting(false)
             if (res?.ok) {
@@ -89,7 +94,32 @@ export function ChangeChainIdDialog({
             setErrorMsg(String(err))
             setSubmitting(false)
         }
-    }, [cm, sceneId, objId, selStr, trimmed, onConfirm])
+    }, [cm, sceneId, objId, selStr, onConfirm])
+
+    const handleOk = useCallback(() => {
+        if (!cm || objId === undefined) return
+        const res = resolveChainNameInput(chainName)
+        switch (res.kind) {
+            case 'empty':
+                setErrorMsg('New chain ID is empty.')
+                return
+            case 'blank':
+                setPendingCommit({
+                    value: res.value,
+                    message: 'Chain ID < > will be converted to <_>. Change the chain ID?',
+                })
+                return
+            case 'long':
+                setPendingCommit({
+                    value: res.value,
+                    message: 'Chain ID longer than 1 character does not conform to the PDB format. Change the chain ID?',
+                })
+                return
+            case 'ok':
+                void commit(res.value)
+                return
+        }
+    }, [cm, objId, chainName, commit])
 
     return (
         <Dialog
@@ -157,7 +187,7 @@ export function ChangeChainIdDialog({
                         <Button
                             intent="primary"
                             onClick={handleOk}
-                            disabled={submitting || objId === undefined || trimmed === ''}
+                            disabled={submitting || objId === undefined || chainName === ''}
                             loading={submitting}
                         >
                             OK
@@ -165,6 +195,21 @@ export function ChangeChainIdDialog({
                     </>
                 }
             />
+            <Alert
+                isOpen={pendingCommit !== null}
+                intent="primary"
+                confirmButtonText="Yes"
+                cancelButtonText="No"
+                className={isDark ? 'bp5-dark' : undefined}
+                onConfirm={() => {
+                    const p = pendingCommit
+                    setPendingCommit(null)
+                    if (p) void commit(p.value)
+                }}
+                onCancel={() => setPendingCommit(null)}
+            >
+                {pendingCommit?.message}
+            </Alert>
         </Dialog>
     )
 }
