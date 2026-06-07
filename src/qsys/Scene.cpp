@@ -124,6 +124,7 @@ Scene::Scene()
   m_fAOIntensity = 2.2;
   m_nAOSlices = 9;
   m_nAOSteps = 3;
+  m_nAAMethod = AA_FXAA;
 
   MB_DPRINTLN("Scene (%d) created.", m_nUID);
 }

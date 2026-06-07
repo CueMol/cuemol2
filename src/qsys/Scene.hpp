@@ -114,6 +114,9 @@ namespace qsys {
     /// GTAO number of steps marched per slice (radial samples)
     int m_nAOSteps;
 
+    /// Post-process anti-aliasing method (see AAMethod enum below)
+    int m_nAAMethod;
+
     /// UID of this scene
     qlib::uid_t m_nUID;
 
@@ -218,6 +221,20 @@ namespace qsys {
     void setAOSteps(int v) {
       setUpdateFlag();
       m_nAOSteps = v;
+    }
+
+    /// Post-process anti-aliasing method values (match the aa_method enumdef).
+    enum AAMethod {
+      AA_NONE = 0,
+      AA_FXAA = 1,
+      AA_SMAA = 2,
+    };
+
+    /// Post-process anti-aliasing method applied after the AO composite.
+    int getAAMethod() const { return m_nAAMethod; }
+    void setAAMethod(int v) {
+      setUpdateFlag();
+      m_nAAMethod = v;
     }
 
     /// get source path of this scene

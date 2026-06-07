@@ -60,6 +60,16 @@ runtime_class Scene
   property integer aoSteps => redirect(getAOSteps, setAOSteps);
   default aoSteps = 3;
 
+  /// Post-process anti-aliasing method applied after the AO composite.
+  /// none = no post-AA (legacy behavior), fxaa = FXAA, smaa = SMAA (reserved).
+  enumdef aa_method {
+    none = 0;
+    fxaa = 1;
+    smaa = 2;
+  }
+  property enum aa_method => redirect(getAAMethod, setAAMethod);
+  default aa_method = "fxaa";
+
   property string onload => m_scrOnLoadEvent;
   default onload = "";
 

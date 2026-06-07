@@ -66,6 +66,8 @@ private:
     ShaderObject *m_pGtaoPO = nullptr;
     /// Edge-aware AO denoise program.
     ShaderObject *m_pDenoisePO = nullptr;
+    /// FXAA post-process program (final AA stage of the live AO path).
+    ShaderObject *m_pFxaaPO = nullptr;
     TriArray *m_pDrawElem = nullptr;
 
 public:
@@ -106,6 +108,12 @@ public:
     /// bound framebuffer (fullscreen). consts supplies the viewport pixel size.
     void drawDenoise(DisplayContext *pDC, RenderTarget *aoRT,
                      const AoConstants &consts);
+
+    /// FXAA pass: sample srcColorRT's color attachment (must be LINEAR) and draw
+    /// the antialiased result into the currently bound framebuffer (fullscreen).
+    /// consts.viewportPixelSize supplies the reciprocal frame size.
+    void drawFxaa(DisplayContext *pDC, RenderTarget *srcColorRT,
+                  const AoConstants &consts);
 
 private:
     void alloc(DisplayContext *pDC);

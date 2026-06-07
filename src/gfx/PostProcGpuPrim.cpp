@@ -190,6 +190,37 @@ void PostProcGpuPrim::drawDenoise(DisplayContext *pDC, RenderTarget *aoRT,
     aoRT->unbindTextures();
 }
 
+void PostProcGpuPrim::drawFxaa(DisplayContext *pDC, RenderTarget *srcColorRT,
+                              const AoConstants &consts)
+{
+    if (srcColorRT == nullptr) return;
+    if (!ensureDrawElem(pDC)) return;
+
+    if (m_pFxaaPO == nullptr) {
+        m_pFxaaPO =
+            pDC->loadShaderObject("fxaa",
+                                  "%%CONFDIR%%/data/shaders/postproc_vert.glsl",
+                                  "%%CONFDIR%%/data/shaders/fxaa_frag.glsl");
+        if (m_pFxaaPO == nullptr) {
+            LOG_DPRINTLN("PostProcGpuPrim> ERROR: cannot load fxaa shader.");
+            return;
+        }
+    }
+
+    srcColorRT->bindColorTex(0, RT_TU_COLOR);
+
+    m_pFxaaPO->enable();
+    m_pFxaaPO->setUniform("u_colorTex", RT_TU_COLOR);
+    m_pFxaaPO->setUniformF("u_rcpFrame", consts.viewportPixelSize[0],
+                           consts.viewportPixelSize[1]);
+
+    pDC->drawElem(*m_pDrawElem);
+
+    m_pFxaaPO->disable();
+
+    srcColorRT->unbindTextures();
+}
+
 void PostProcGpuPrim::invalidate()
 {
     if (m_pDrawElem != nullptr) {
@@ -202,4 +233,5 @@ void PostProcGpuPrim::invalidate()
     m_pCompPO = nullptr;
     m_pGtaoPO = nullptr;
     m_pDenoisePO = nullptr;
+    m_pFxaaPO = nullptr;
 }

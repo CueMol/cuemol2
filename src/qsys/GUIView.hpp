@@ -134,6 +134,11 @@ private:
     /// Color-only target holding the denoised AO term. Owned.
     gfx::RenderTarget *m_pAoDenRT = nullptr;
 
+    /// LINEAR color target receiving the AO composite when a post-process AA
+    /// method is active; the AA pass reads it and writes the default
+    /// framebuffer. Unused when aaMethod is none. Owned.
+    gfx::RenderTarget *m_pCompRT = nullptr;
+
     /// Fullscreen post-processing primitive (GTAO + denoise + composite). Owned.
     gfx::PostProcGpuPrim *m_pAOPostProc = nullptr;
 

@@ -218,10 +218,35 @@ void GUIView::drawScene()
                 m_pAOPostProc->drawDenoise(pdc, m_pAoRT, aoc);
                 m_pAoDenRT->unbind();
 
-                // 4. Composite scene color * denoised AO onto the default
-                // framebuffer. The fullscreen pass must not be depth-rejected.
+                // 4. Composite scene color * denoised AO, then apply the
+                // selected post-process AA. The fullscreen passes must not be
+                // depth-rejected. The off-screen scene was rendered single-
+                // sample (no MSAA on the FBO), so an AA stage here restores the
+                // edge antialiasing lost in the AO path.
+                //   none: composite straight to the default framebuffer.
+                //   fxaa: composite to the LINEAR m_pCompRT, then FXAA to the
+                //         default framebuffer.
+                // smaa is reserved (falls back to no AA until implemented).
+                const int aaMethod = pScene->getAAMethod();
+                const bool useFxaa =
+                    (aaMethod == Scene::AA_FXAA) && m_pCompRT != nullptr;
+                if (aaMethod == Scene::AA_SMAA) {
+                    static bool warned = false;
+                    if (!warned) {
+                        LOG_DPRINTLN("GUIView> SMAA not implemented yet; "
+                                     "AO composite drawn without post-AA.");
+                        warned = true;
+                    }
+                }
                 pdc->setDepthTestEnabled(false);
-                m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, m_pAoDenRT);
+                if (useFxaa) {
+                    m_pCompRT->bind();
+                    m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, m_pAoDenRT);
+                    m_pCompRT->unbind();
+                    m_pAOPostProc->drawFxaa(pdc, m_pCompRT, aoc);
+                } else {
+                    m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, m_pAoDenRT);
+                }
                 pdc->setDepthTestEnabled(true);
 
                 // Restore the scene depth into the default framebuffer so the
@@ -612,6 +637,14 @@ void GUIView::ensureAORTs(int w, int h)
         m_pAoDenRT->resize(w, h);
     }
 
+    // Composite target for the post-process AA stage. LINEAR filtering (no
+    // RT_COLOR_NEAREST) is required for the FXAA sub-texel sampling.
+    if (m_pCompRT == nullptr) {
+        m_pCompRT = pdc->createRenderTarget(w, h, gfx::RT_COLOR_RGBA8);
+    } else {
+        m_pCompRT->resize(w, h);
+    }
+
     if (m_pAOPostProc == nullptr) {
         m_pAOPostProc = MB_NEW gfx::PostProcGpuPrim();
     }
@@ -665,6 +698,10 @@ void GUIView::cleanupAORTs()
     if (m_pAOPostProc != nullptr) {
         delete m_pAOPostProc;
         m_pAOPostProc = nullptr;
+    }
+    if (m_pCompRT != nullptr) {
+        delete m_pCompRT;
+        m_pCompRT = nullptr;
     }
     if (m_pAoDenRT != nullptr) {
         delete m_pAoDenRT;
