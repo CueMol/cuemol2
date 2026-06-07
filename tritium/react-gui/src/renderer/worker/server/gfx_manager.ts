@@ -132,6 +132,14 @@ export class GfxManager {
     // FBO completeness and the AO path degrades.
     private _floatColorExt: unknown = null;
 
+    // True when the default framebuffer (canvas) is multisampled (the WebGL2
+    // context was created with antialias: true, the browser default). A
+    // single-sample off-screen FBO cannot blit into a multisampled framebuffer,
+    // so blitDepthToDefault is skipped in that case -- this only degrades UI
+    // overlay depth occlusion, matching the desktop OcRenderTarget behavior when
+    // the depth formats are incompatible.
+    private _defaultFbMultisampled: boolean = false;
+
     private cuemol: any;
     private _sceMgr: any;
     private _canvas: any = null;
@@ -170,6 +178,10 @@ export class GfxManager {
         // off-screen AO float framebuffers are incomplete.
         this._floatColorExt = gl.getExtension('EXT_color_buffer_float');
         console.log('EXT_color_buffer_float =', this._floatColorExt !== null);
+        // antialias defaults to true; a multisampled default fb cannot be a blit
+        // destination from a single-sample fbo (see blitDepthToDefault).
+        this._defaultFbMultisampled = gl.getContextAttributes()?.antialias ?? false;
+        console.log('default framebuffer multisampled =', this._defaultFbMultisampled);
         gl.enable(gl.DEPTH_TEST);
         gl.depthFunc(gl.LEQUAL);
         gl.disable(gl.CULL_FACE);
@@ -1033,6 +1045,9 @@ export class GfxManager {
         const gl = this._context;
         const info = this._fbo_data[name];
         if (!info) return;
+        // Blitting a single-sample fbo into a multisampled default framebuffer is
+        // a GL_INVALID_OPERATION. Skip it (degrades only UI overlay occlusion).
+        if (this._defaultFbMultisampled) return;
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, info.fbo);
         gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
         gl.blitFramebuffer(
