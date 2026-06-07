@@ -12,6 +12,7 @@
 // with viewZ a positive linear distance and a GL bottom-up [0,1] UV.
 
 uniform sampler2D u_depthTex;
+uniform sampler2D u_normalTex;          // MRT eye-space normal (when u_hasNormal)
 uniform vec2 u_depthUnpack;             // (depthLinearizeMul, depthLinearizeAdd)
 uniform vec2 u_ndcToViewMul;
 uniform vec2 u_ndcToViewAdd;
@@ -20,6 +21,7 @@ uniform float u_effectRadius;           // occlusion sphere radius (view units)
 uniform float u_finalValuePower;        // occlusion = pow(occlusion, power)
 uniform int u_sliceCount;               // number of horizon slices (quality)
 uniform int u_stepCount;                // number of steps marched per slice
+uniform int u_hasNormal;                // 1 = use the stored geometry normal
 uniform int u_debugMode;                // 0 = AO, 1 = normal, 2 = linear depth
 
 in vec2 v_uv;
@@ -84,14 +86,53 @@ vec3 reconstructNormal(vec2 uv, vec3 pC)
     return N;
 }
 
+// Pick the view-space normal: the MRT geometry normal when present (smooth on
+// tessellated meshes), otherwise the depth-reconstructed normal (fallback for
+// primitives that write the sentinel, and when no normal buffer is supplied).
+// The stored eye-space normal has +Z toward the camera; the GTAO integration
+// space has vz > 0 forward, so flip Z only, then orient toward the camera the
+// same way reconstructNormal does (flipping all three would corrupt x/y).
+// Returns the view-space normal. Sets isExcluded when the pixel belongs to a
+// primitive that opted out of AO: a line / label / wireframe writes the
+// sentinel (0,0,0) into the normal buffer, and such pixels are left fully lit
+// (AO = 1) instead of being shaded. With no normal buffer (u_hasNormal == 0)
+// the depth-reconstructed normal is used and nothing is excluded.
+vec3 selectNormal(vec2 uv, vec3 pC, out bool isExcluded)
+{
+    isExcluded = false;
+    if (u_hasNormal != 0) {
+        vec3 n = texture(u_normalTex, uv).xyz;
+        if (dot(n, n) > 0.5) {
+            // Stored eye-space normal: +Z faces the camera, so flip Z only to
+            // reach the GTAO space (vz > 0 forward).
+            vec3 N = normalize(vec3(n.x, n.y, -n.z));
+            vec3 V = normalize(-pC);
+            // Clamp to the visible hemisphere. The exact normal can point away
+            // from the camera at grazing silhouettes (sphere/cylinder edges) or
+            // on the back side of two-sided meshes (cartoon ribbons), where the
+            // horizon integral turns unstable and goes to near-black. Instead of
+            // a hard flip (which inverts the in-plane direction and bands the
+            // edge), fold it just inside the hemisphere toward the view vector.
+            // Continuous and well defined even head-on (d = -1 -> N = V).
+            float d = dot(N, V);
+            if (d < 0.0) N = normalize(N - 1.01 * d * V);
+            return N;
+        }
+        isExcluded = true;
+    }
+    return reconstructNormal(uv, pC);
+}
+
 void main()
 {
     float rawDepth = texture(u_depthTex, v_uv).r;
     float viewspaceZ = linearizeZ(rawDepth);
     vec3 pixCenterPos = viewPos(v_uv, viewspaceZ);
-    vec3 N = reconstructNormal(v_uv, pixCenterPos);
+    bool isExcluded;
+    vec3 N = selectNormal(v_uv, pixCenterPos, isExcluded);
 
     if (u_debugMode == 1) {
+        // Normal fed to the integration, as RGB (debugging).
         o_FragColor = vec4(N * 0.5 + 0.5, 1.0);
         return;
     }
@@ -105,6 +146,12 @@ void main()
 
     // Far plane / no geometry: fully unoccluded (and flat edges).
     if (rawDepth >= 1.0) {
+        o_FragColor = vec4(1.0);
+        return;
+    }
+
+    // Line / label / wireframe primitive: keep it fully lit (AO = 1, flat edges).
+    if (isExcluded) {
         o_FragColor = vec4(1.0);
         return;
     }
@@ -211,6 +258,23 @@ void main()
 
             float weight0 = clamp(sampleDist0 * falloffMul + falloffAdd, 0.0, 1.0);
             float weight1 = clamp(sampleDist1 * falloffMul + falloffAdd, 0.0, 1.0);
+
+            // Do not let line / label primitives (sentinel normal) occlude other
+            // surfaces: drop the occlusion weight of any sample that lands on
+            // one, so a wireframe / bond line casts no AO onto the geometry
+            // behind it. Only fetch the normal where the sample can still
+            // occlude (weight > 0); a zero-weight sample contributes nothing
+            // either way, so skipping it is exact and saves the texture read.
+            if (u_hasNormal != 0) {
+                if (weight0 > 0.0) {
+                    vec3 sn0 = texture(u_normalTex, sp0).xyz;
+                    if (dot(sn0, sn0) < 0.5) weight0 = 0.0;
+                }
+                if (weight1 > 0.0) {
+                    vec3 sn1 = texture(u_normalTex, sp1).xyz;
+                    if (dot(sn1, sn1) < 0.5) weight1 = 0.0;
+                }
+            }
 
             float shc0 = dot(sampleHorizonVec0, viewVec);
             float shc1 = dot(sampleHorizonVec1, viewVec);

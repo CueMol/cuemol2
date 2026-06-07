@@ -29,6 +29,8 @@ layout(location = 1) in vec4 aNormal;
 
 varying vec4 v_frontColor;
 varying float v_fogCoord;
+// Eye-space geometry normal forwarded to the MRT normal output (GTAO).
+varying vec3 v_ecNormal;
 
 void main(void)
 {
@@ -36,6 +38,7 @@ void main(void)
     vec4 ecPosition = u_ModelViewMatrix * aVertex;
 
     vec3 normal = normalize(mat3(u_NormalMatrix) * aNormal.xyz);
+    v_ecNormal = normal;
 
     ecPosition += vec4(normal * edge_width, 0);
 

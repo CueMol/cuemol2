@@ -28,7 +28,11 @@ varying vec4 v_ecpos;
 varying float v_radius;
 varying float v_edgeratio;
 
-out vec4 o_FragColor;
+layout(location = 0) out vec4 o_FragColor;
+// MRT eye-space normal for GTAO (sentinel (0,0,0) -> reconstruct from depth).
+// vec4 to match o_FragColor's component count (Apple Metal GL mishandles MRT
+// with mixed vec4/vec3 outputs and broadcasts output 0 to all targets).
+layout(location = 1) out vec4 o_Normal;
 
 void main()
 {
@@ -90,4 +94,7 @@ void main()
     // fog calculation
     float fogz = ffog(ecpos.z);
     o_FragColor = fragFogColor(color, frag_alpha, fogz);
+
+    // Eye-space sphere normal (sentinel on the silhouette edge ring).
+    o_Normal = bEdge ? vec4(0.0, 0.0, 0.0, 1.0) : vec4(normalize(normal), 1.0);
 }

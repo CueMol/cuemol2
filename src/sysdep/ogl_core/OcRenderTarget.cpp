@@ -48,7 +48,7 @@ bool OcRenderTarget::init(gfx::DisplayContext *pdc, int w, int h, int flags)
         m_nDepthTex = tex;
     }
 
-    if (m_nFlags & gfx::RT_NORMAL_RGB16F) {
+    if (m_nFlags & gfx::RT_NORMAL_RGBA16F) {
         tex = 0;
         glGenTextures(1, &tex);
         m_nNormalTex = tex;
@@ -114,10 +114,14 @@ void OcRenderTarget::allocAttachments(int w, int h)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     }
 
-    // Optional MRT normal attachment 1 (RGB16F)
+    // Optional MRT normal attachment 1. Use RGBA16F (not RGB16F): RGB16F is not
+    // a guaranteed color-renderable format, and on the Apple Metal-backed GL the
+    // MRT writes to an RGB16F attachment silently fail (COLOR1 ends up with the
+    // color buffer / garbage). RGBA16F is required to be color-renderable.
     if (m_nNormalTex != 0) {
         glBindTexture(GL_TEXTURE_2D, m_nNormalTex);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, w, h, 0, GL_RGB, GL_FLOAT, nullptr);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, w, h, 0, GL_RGBA, GL_FLOAT,
+                     nullptr);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -158,19 +162,41 @@ void OcRenderTarget::bind()
     glGetIntegerv(GL_VIEWPORT, m_savedVp);
     glBindFramebuffer(GL_FRAMEBUFFER, m_nFBO);
     glViewport(0, 0, m_nWidth, m_nHeight);
+
+    // Blending is enabled globally for the color pass, but it must not touch the
+    // MRT normal attachment: the eye-space normal is not an alpha-composited
+    // quantity, and blending it (the GL state applies to every draw buffer)
+    // corrupts COLOR1. Disable blending for draw buffer 1 while this target is
+    // bound; restore it on unbind.
+    if (m_nNormalTex != 0) glDisablei(GL_BLEND, 1);
+
     CHK_GLERROR("OcRenderTarget::bind");
 }
 
 void OcRenderTarget::unbind()
 {
+    if (m_nNormalTex != 0) glEnablei(GL_BLEND, 1);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(m_savedVp[0], m_savedVp[1], m_savedVp[2], m_savedVp[3]);
 }
 
 void OcRenderTarget::clear(float r, float g, float b, float a)
 {
-    glClearColor(r, g, b, a);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    if (m_nNormalTex != 0) {
+        // With the MRT normal attachment present, clear color attachment 0 to
+        // the requested color but the normal attachment 1 to the sentinel
+        // (0,0,0). Pixels never covered by geometry keep the sentinel, so the
+        // GTAO pass treats them as having no stored normal.
+        const GLfloat color0[4] = {r, g, b, a};
+        const GLfloat normal1[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+        const GLfloat depth1 = 1.0f;
+        glClearBufferfv(GL_COLOR, 0, color0);
+        glClearBufferfv(GL_COLOR, 1, normal1);
+        glClearBufferfv(GL_DEPTH, 0, &depth1);
+    } else {
+        glClearColor(r, g, b, a);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    }
 }
 
 void OcRenderTarget::resize(int w, int h)

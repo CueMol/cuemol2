@@ -27,7 +27,11 @@ varying float v_length;
 varying vec4 v_frontColor;
 varying float v_fogCoord;
 
-out vec4 o_FragColor;
+layout(location = 0) out vec4 o_FragColor;
+// Lines have no surface normal: write the sentinel (0,0,0) so GTAO leaves these
+// pixels unshaded. vec4 to match o_FragColor (Apple Metal GL mishandles mixed
+// vec4/vec3 MRT).
+layout(location = 1) out vec4 o_Normal;
 
 void main(void)
 {
@@ -46,4 +50,5 @@ void main(void)
     }
 
     o_FragColor = fragFogColor(color, frag_alpha, v_fogCoord);
+    o_Normal = vec4(0.0, 0.0, 0.0, 1.0);
 }

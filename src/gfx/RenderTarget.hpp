@@ -20,8 +20,10 @@ enum RTFlags
     /// LINEAR. Required for targets holding packed data (e.g. AO + packed
     /// edges) that must not be interpolated.
     RT_COLOR_NEAREST = 0x04,
-    /// MRT normal color attachment 1 (RGB16F). Reserved for future AO use.
-    RT_NORMAL_RGB16F = 0x08,
+    /// MRT normal color attachment 1 (RGBA16F). Used by the GTAO pass for
+    /// geometry normals. RGBA (not RGB) because RGB16F is not a guaranteed
+    /// color-renderable format and is mishandled by some drivers (Apple GL).
+    RT_NORMAL_RGBA16F = 0x08,
 };
 
 /// Conventional texture-unit assignments shared by post-processing passes.

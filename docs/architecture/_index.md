@@ -11,3 +11,8 @@ modules and that are not obvious from any single header.
 - [Object Reader Content Sniff](objreader-content-sniff.md) -- the
   tri-state `canHandleContent` contract, the byte-cap mechanism, and
   the text / binary implementation patterns shared by every reader.
+- [GTAO Screen-Space AO](gtao-screen-space-ao.md) (日本語) -- リアルタイム
+  GTAO のパイプライン、projection 由来の view-space 復元と GL 座標系、MRT
+  geometry 法線、Apple Metal-GL の MRT/ブレンドのハマりどころ、tritium
+  (WebGL2) / WebGPU 移植時の注意点。
+

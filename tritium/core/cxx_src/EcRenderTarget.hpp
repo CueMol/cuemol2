@@ -51,7 +51,7 @@ public:
 
     bool hasNormal() const override
     {
-        return (m_nFlags & gfx::RT_NORMAL_RGB16F) != 0;
+        return (m_nFlags & gfx::RT_NORMAL_RGBA16F) != 0;
     }
     int getWidth() const override
     {

@@ -30,6 +30,9 @@ layout(location = 2) in vec4 aColor;
 
 varying vec4 v_frontColor;
 varying float v_fogCoord;
+// Eye-space geometry normal forwarded to the MRT normal output (GTAO). Raw
+// (un-normalized) here; the fragment shader normalizes with a zero guard.
+varying vec3 v_ecNormal;
 
 void main(void)
 {
@@ -38,9 +41,11 @@ void main(void)
 
     gl_Position = u_ProjectionMatrix * ecPosition;
 
+    vec3 ecNormal = mat3(u_NormalMatrix) * aNormal.xyz;
+    v_ecNormal = ecNormal;
+
     if (enable_lighting != 0) {
-        vec3 normal = normalize(mat3(u_NormalMatrix) * aNormal.xyz);
-        v_frontColor = flight2(normal, ecPosition, aColor);
+        v_frontColor = flight2(normalize(ecNormal), ecPosition, aColor);
     } else {
         v_frontColor = aColor;
     }

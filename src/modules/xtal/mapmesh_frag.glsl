@@ -17,9 +17,14 @@ layout(std140) uniform DrawParamsBlock {
     vec4  u_color;     // offset 16
 };
 
-out vec4 o_FragColor;
+layout(location = 0) out vec4 o_FragColor;
+// Wireframe mesh has no usable surface normal: write the sentinel (0,0,0) so
+// GTAO leaves these pixels unshaded. vec4 to match o_FragColor (Apple Metal GL
+// mishandles mixed vec4/vec3 MRT).
+layout(location = 1) out vec4 o_Normal;
 
 void main (void)
 {
   o_FragColor = vec4(u_color.rgb, u_color.a * frag_alpha);
+  o_Normal = vec4(0.0, 0.0, 0.0, 1.0);
 }
