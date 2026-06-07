@@ -562,6 +562,33 @@ export class GfxManager {
         }
     }
 
+    /// API: toggle the depth test (GL_DEPTH_TEST). The off-screen post-process
+    /// passes (AO composite / FXAA) draw a fullscreen triangle that must not be
+    /// depth-rejected, so they disable it and re-enable it afterwards.
+    setDepthTestEnabled(enabled: boolean): void {
+        const gl = this._context;
+        if (enabled) gl.enable(gl.DEPTH_TEST);
+        else gl.disable(gl.DEPTH_TEST);
+    }
+
+    /// API: toggle color blending (GL_BLEND). Data-only fullscreen passes whose
+    /// alpha carries data (SMAA edges/weights) must run with blending off.
+    setBlendEnabled(enabled: boolean): void {
+        const gl = this._context;
+        if (enabled) gl.enable(gl.BLEND);
+        else gl.disable(gl.BLEND);
+    }
+
+    /// API: select the blend function: additive (ONE, ONE) when add is true,
+    /// otherwise restore the default over-blend (SRC_ALPHA, ONE_MINUS_SRC_ALPHA).
+    /// Used by temporal-jitter accumulation; the caller restores the default
+    /// before normal UI/overlay drawing.
+    setBlendModeAdd(add: boolean): void {
+        const gl = this._context;
+        if (add) gl.blendFunc(gl.ONE, gl.ONE);
+        else gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    }
+
     //////////
     // Projection uniforms
 

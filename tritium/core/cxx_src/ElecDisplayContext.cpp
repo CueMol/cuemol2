@@ -22,6 +22,48 @@ void ElecDisplayContext::init(ElecView *pView)
 
 void ElecDisplayContext::enableDepthTest(bool) {}
 
+void ElecDisplayContext::setDepthTestEnabled(bool b)
+{
+    if (!m_pView || !m_pView->isBound()) return;
+    auto peer = m_pView->getPeerObj();
+    auto env = peer.Env();
+    auto method = peer.Get("setDepthTestEnabled").As<Napi::Function>();
+    try {
+        method.Call(peer, {Napi::Boolean::New(env, b)});
+    } catch (const Napi::Error &e) {
+        MB_DPRINTLN("ElecDisplayContext::setDepthTestEnabled> Error: %s",
+                    e.Message().c_str());
+    }
+}
+
+void ElecDisplayContext::setBlendEnabled(bool b)
+{
+    if (!m_pView || !m_pView->isBound()) return;
+    auto peer = m_pView->getPeerObj();
+    auto env = peer.Env();
+    auto method = peer.Get("setBlendEnabled").As<Napi::Function>();
+    try {
+        method.Call(peer, {Napi::Boolean::New(env, b)});
+    } catch (const Napi::Error &e) {
+        MB_DPRINTLN("ElecDisplayContext::setBlendEnabled> Error: %s",
+                    e.Message().c_str());
+    }
+}
+
+void ElecDisplayContext::setBlendModeAdd(bool b)
+{
+    if (!m_pView || !m_pView->isBound()) return;
+    auto peer = m_pView->getPeerObj();
+    auto env = peer.Env();
+    auto method = peer.Get("setBlendModeAdd").As<Napi::Function>();
+    try {
+        method.Call(peer, {Napi::Boolean::New(env, b)});
+    } catch (const Napi::Error &e) {
+        MB_DPRINTLN("ElecDisplayContext::setBlendModeAdd> Error: %s",
+                    e.Message().c_str());
+    }
+}
+
 void ElecDisplayContext::setCullFace(bool f)
 {
     if (!m_pView || !m_pView->isBound()) return;
