@@ -82,12 +82,24 @@ void OffScreenView::drawScene()
     // framebuffer differ.
     if (!pdc->setCurrent()) return;
 
+    // The off-screen passes below set the shared context's projection/viewport
+    // to the export size (DisplayContext::setViewport only stores m_viewport;
+    // the actual glViewport is applied per shader from getViewport()). The
+    // on-screen view re-applies its own only on projChange, so save and restore
+    // them here to avoid leaving the on-screen view mis-scaled after an export.
+    const Vector4D savedVp = pdc->getViewport();
+    const Matrix4D savedProj = pdc->getProjMat();
+
     setFogColorImpl(pdc);
     pdc->setLighting(false);
 
-    // Depth-visualization capture: render the plain scene into m_pRT (its depth
-    // attachment feeds the depth pass) without AO/jitter.
+    const int level = m_nSuperSample;
+    const int nSamp = gfx::jitterSampleCount(level);
+    const bool jitter = !m_bDepthMode && level > 0 && nSamp > 1;
+
     if (m_bDepthMode) {
+        // Depth-visualization capture: plain scene into m_pRT (its depth
+        // attachment feeds the depth pass), no AO/jitter.
         gfx::ColorPtr bgcol = pScene->getBgColor();
         const float bg_a = m_bBgTransparent ? 0.0f : 1.0f;
         setJitterOffsetPx(0.0, 0.0);
@@ -100,71 +112,64 @@ void OffScreenView::drawScene()
         m_pRT->unbind();
         m_pReadRT = m_pRT;
         drawDepthVis(pdc);
-        return;
-    }
-
-    const int level = m_nSuperSample;
-    const int nSamp = gfx::jitterSampleCount(level);
-
-    // No supersampling: a single un-jittered color frame (scene AO applied).
-    if (level <= 0 || nSamp <= 1) {
-        setJitterOffsetPx(0.0, 0.0);
-        setUpProjMat(getWidth(), getHeight());
-        renderAOColorFrame(pdc, pScene, m_pRT, m_bBgTransparent);
-        m_pReadRT = m_pRT;
-        return;
-    }
-
-    // Jitter supersampling: render nSamp sub-pixel-jittered color frames (each
-    // with the scene's AO) into m_pRT and average them into the float buffer.
-    if (m_pAccumRT == nullptr) {
-        m_pAccumRT = pdc->createRenderTarget(getWidth(), getHeight(),
-                                             gfx::RT_COLOR_RGBA16F);
-    }
-    if (m_pPostProc == nullptr) {
-        m_pPostProc = MB_NEW gfx::PostProcGpuPrim();
-        if (!m_pPostProc->init(pdc)) {
-            delete m_pPostProc;
-            m_pPostProc = nullptr;
+    } else if (jitter) {
+        // Ensure the float accumulation target and the compose primitive.
+        if (m_pAccumRT == nullptr) {
+            m_pAccumRT = pdc->createRenderTarget(getWidth(), getHeight(),
+                                                 gfx::RT_COLOR_RGBA16F);
+        }
+        if (m_pPostProc == nullptr) {
+            m_pPostProc = MB_NEW gfx::PostProcGpuPrim();
+            if (!m_pPostProc->init(pdc)) {
+                delete m_pPostProc;
+                m_pPostProc = nullptr;
+            }
         }
     }
-    if (m_pAccumRT == nullptr || m_pPostProc == nullptr) {
-        // Fallback: single frame.
-        setJitterOffsetPx(0.0, 0.0);
-        setUpProjMat(getWidth(), getHeight());
-        renderAOColorFrame(pdc, pScene, m_pRT, m_bBgTransparent);
-        m_pReadRT = m_pRT;
-        return;
+
+    if (!m_bDepthMode) {
+        if (jitter && m_pAccumRT != nullptr && m_pPostProc != nullptr) {
+            // Render nSamp sub-pixel-jittered color frames (each with the
+            // scene's AO) into m_pRT and average them into the float buffer.
+            const float invN = 1.0f / float(nSamp);
+            m_pAccumRT->bind();
+            m_pAccumRT->clear(0.0f, 0.0f, 0.0f, 0.0f);
+            m_pAccumRT->unbind();
+
+            for (int i = 0; i < nSamp; ++i) {
+                double jpx = 0.0, jpy = 0.0;
+                gfx::jitterOffset(level, i, jpx, jpy);
+                setJitterOffsetPx(jpx, jpy);
+                setUpProjMat(getWidth(), getHeight());  // jittered frustum
+                renderAOColorFrame(pdc, pScene, m_pRT, m_bBgTransparent);
+
+                // Additive accumulate m_pRT * (1/N) into the float buffer.
+                m_pAccumRT->bind();
+                pdc->setDepthTestEnabled(false);
+                pdc->setBlendEnabled(true);
+                pdc->setBlendModeAdd(true);
+                m_pPostProc->drawJitterCompose(pdc, m_pRT, invN);
+                pdc->setBlendModeAdd(false);
+                pdc->setBlendEnabled(true);
+                pdc->setDepthTestEnabled(true);
+                m_pAccumRT->unbind();
+            }
+            setJitterOffsetPx(0.0, 0.0);
+            MB_DPRINTLN("OffScreenView> jitter SS export (level=%d, %d samples)",
+                        level, nSamp);
+            m_pReadRT = m_pAccumRT;
+        } else {
+            // Single un-jittered color frame (scene AO applied).
+            setJitterOffsetPx(0.0, 0.0);
+            setUpProjMat(getWidth(), getHeight());
+            renderAOColorFrame(pdc, pScene, m_pRT, m_bBgTransparent);
+            m_pReadRT = m_pRT;
+        }
     }
 
-    const float invN = 1.0f / float(nSamp);
-    m_pAccumRT->bind();
-    m_pAccumRT->clear(0.0f, 0.0f, 0.0f, 0.0f);
-    m_pAccumRT->unbind();
-
-    for (int i = 0; i < nSamp; ++i) {
-        double jpx = 0.0, jpy = 0.0;
-        gfx::jitterOffset(level, i, jpx, jpy);
-        setJitterOffsetPx(jpx, jpy);
-        setUpProjMat(getWidth(), getHeight());  // jittered frustum
-        renderAOColorFrame(pdc, pScene, m_pRT, m_bBgTransparent);
-
-        // Additive accumulate m_pRT * (1/N) into the float buffer.
-        m_pAccumRT->bind();
-        pdc->setDepthTestEnabled(false);
-        pdc->setBlendEnabled(true);
-        pdc->setBlendModeAdd(true);
-        m_pPostProc->drawJitterCompose(pdc, m_pRT, invN);
-        pdc->setBlendModeAdd(false);
-        pdc->setBlendEnabled(true);
-        pdc->setDepthTestEnabled(true);
-        m_pAccumRT->unbind();
-    }
-    setJitterOffsetPx(0.0, 0.0);
-
-    MB_DPRINTLN("OffScreenView> jitter SS export (level=%d, %d samples)", level,
-                nSamp);
-    m_pReadRT = m_pAccumRT;
+    // Restore the on-screen projection/viewport clobbered above.
+    pdc->setViewport(savedVp);
+    pdc->setProjMat(savedProj);
 }
 
 void OffScreenView::drawDepthVis(gfx::DisplayContext *pdc)
