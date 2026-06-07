@@ -281,6 +281,8 @@ void GUIView::drawScene()
                     if (getUpdateFlag() || m_jitterResetRequested ||
                         m_jitterSampleIndex >= jitterN) {
                         m_jitterSampleIndex = 0;
+                        MB_DPRINTLN("GUIView> jitter SS start (level=%d, %d samples)",
+                                    jitterLevel, jitterN);
                     }
                     m_jitterResetRequested = false;
                     jitterOffset(jitterLevel, m_jitterSampleIndex, m_jitterPxX,
@@ -400,12 +402,17 @@ void GUIView::drawScene()
                     // Restore over-blend for the UI overlay drawn afterwards.
                     pdc->setBlendEnabled(true);
 
+                    MB_DPRINTLN("GUIView> jitter SS sample %d/%d",
+                                m_jitterSampleIndex + 1, jitterN);
+
                     // Advance / converge.
                     if (m_jitterSampleIndex + 1 < jitterN) {
                         m_jitterSampleIndex += 1;
                         m_jitterMoreSamples = true;  // keep redrawing on idle
                     } else {
                         m_jitterMoreSamples = false;  // converged
+                        MB_DPRINTLN("GUIView> jitter SS converged (%d samples)",
+                                    jitterN);
                     }
                 }
                 pdc->setDepthTestEnabled(true);
