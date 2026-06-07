@@ -233,3 +233,66 @@ shader 定数のまま (必要なら同様に Scene プロパティへ昇格で�
 - depth MIP チェーン (prefilter パス) によるワイド半径の高速化・低ノイズ化。
 - 半解像度 AO + edge-aware upsample (naive blur ではなく denoise と同じ重みで halo 防止)。
 - bent normals、TAA。
+
+---
+
+## 9. XeGTAO ソース / 原論文との対応
+
+移植元:
+- **XeGTAO** (Intel, MIT): <https://github.com/GameTechDev/XeGTAO>
+  - `Source/Rendering/Shaders/XeGTAO.hlsli` — core 数式 (本書では `hlsli` と略記)
+  - `Source/Rendering/Shaders/XeGTAO.h` — 定数導出・既定値 (`XeGTAO.h`)
+  - `Source/Rendering/Shaders/vaGTAO.hlsl` — エントリ / 法線生成 / ノイズ (`vaGTAO`)
+- **原論文** Jimenez, Wu, Pesce, Jarabo, *"Practical Real-Time Strategies for Accurate
+  Indirect Occlusion"*, SIGGRAPH 2016 (Activision):
+  <https://www.activision.com/cdn/research/Practical_Real_Time_Strategies_for_Accurate_Indirect_Occlusion_NEW%20VERSION_COLOR.pdf>
+
+> 行番号は本リポジトリに置いた XeGTAO スナップショット時点のもの。upstream の更新でずれ得る
+> ため、関数名で参照すること。CueMol は HLSL/compute → GLSL/fragment へ移したので、構造は
+> 対応するが API (RWTexture/groupshared 等) は持たない。
+
+### 対応表 (CueMol 実装 → XeGTAO → 論文)
+
+| CueMol (`gtao_frag.glsl` 等) | XeGTAO | 論文 |
+|---|---|---|
+| `linearizeZ()` (`viewZ = mul/(add - d)`) | `XeGTAO_ScreenSpaceToViewSpaceDepth` (hlsli:112)、定数は `XeGTAO.h:175` | Sec. 3「Algorithm overview」の depth→view 復元 |
+| `viewPos()` (`(ndcToViewMul*uv+add)*vz`) | `XeGTAO_ComputeViewspacePosition` (hlsli:104) | 同上 |
+| `computeAoConstants()` (`GUIView.cpp`) | `XeGTAO.h:175-195` (`DepthUnpackConsts`/`NDCToViewMul`/`Add`) | — (実装詳細) |
+| `reconstructNormal()` (depth 復元法線) | `XeGTAO_CalculateNormal` (hlsli:143)、`XeGTAO_ComputeViewspaceNormal` (vaGTAO:153) | HBAO 系の depth-from-normal 近似 |
+| stored 法線 (`selectNormal`, MRT) | `XeGTAO_MainPass` の `viewspaceNormal` 引数 = `LoadNormal` (vaGTAO:53,105) | Algorithm 1 の入力法線 n |
+| `calculateEdges()` | `XeGTAO_CalculateEdges` (hlsli:120) | Sec. 4「Spatial/temporal denoising」の edge 検出 |
+| `packEdges()` / denoise の `unpackEdges()` | `XeGTAO_PackEdges` (hlsli:132) / `XeGTAO_UnpackEdges` (hlsli:686) | 同上 |
+| **horizon 積分ループ** (slice/step) | `XeGTAO_MainPass` (hlsli:245-575)、slice ループ ~hlsli:380- | **Algorithm 1**「Horizon-based visibility」 |
+| `n = signNorm*acos(cosNorm)`、projectedNormalVec | hlsli:~400-406 | 法線をスライス平面へ射影し基準角 n を取る件 |
+| `s = pow((step+stepNoise)/steps, 2.0)+minS` | `sampleDistributionPower` 適用 (hlsli MainPass) | Sec.「小さな凹部を重視」= SampleDistributionPower |
+| `weight = saturate(dist*falloffMul+falloffAdd)` | `falloffMul`/`falloffAdd` (hlsli MainPass) | 距離フォールオフ |
+| **arc 積分** `iarc=(cosNorm+2h*sin(n)-cos(2h-n))/4` | hlsli:542-543 (`iarc0`/`iarc1`) | **視認性積分の閉形式解** (Sec. 3、cosine 重み付き弧の解析積分) |
+| `visibility/=sliceCount; pow(.,finalValuePower); max(0.03,.)` | hlsli:~558 + `FinalValuePower` | スライス平均と最終トーン補正 |
+| `ao_denoise_frag.glsl` (3x3 edge-aware blur) | `XeGTAO_Denoise` (hlsli:734) / `XeGTAO_AddSample` (hlsli:704) | Sec. 4「Spatial denoising」 |
+| denoise の `diagWeight=0.425` | `diagWeight = 0.85*0.5` (hlsli:737) | 同上 (対角サンプル重み) |
+| `omega=(cosPhi,+sinPhi)*r` (**+sinPhi**) | `lpfloat2(cosPhi,-sinPhi)` (hlsli:~378) | スライス方向。符号差は GL(bottom-up) vs DX |
+| IGN ノイズ + per-step golden ratio | `SpatioTemporalNoise` (Hilbert+R2, vaGTAO:74) | Sec. 4 のノイズ。CueMol は TAA 無しなので別ノイズ |
+
+### 既定値 (XeGTAO と一致)
+`RadiusMultiplier 1.457` / `FalloffRange 0.615` / `SampleDistributionPower 2.0` /
+`ThinOccluderCompensation 0.0` / `FinalValuePower 2.2` は `XeGTAO.h:107-112` の
+`XE_GTAO_DEFAULT_*` をそのまま採用 (一部は shader 定数に焼き込み)。品質プリセット
+(slice,step) も XeGTAO の Low(1,2)/Medium(2,2)/High(3,3)/Ultra(9,3) (vaGTAO:105-129) に対応し、
+CueMol の既定 `aoSlices=9, aoSteps=3` は **Ultra 相当**。
+
+### 意図的に落とした/変えた部分
+- **compute 3 パス → fragment 1 系列**: XeGTAO の `CSPrefilterDepths16x16` /
+  `CSGTAO*` / `CSDenoise*` (vaGTAO:95-146) を全画面 fragment パスへ。groupshared MIP 縮約・
+  fp16 (`lpfloat`)・RWTexture 出力は持たない。
+- **depth MIP チェーンを未実装**: `XeGTAO_PrefilterDepths16x16` / `XeGTAO_DepthMIPFilter`
+  (hlsli:579-680) と per-sample `mipLevel` を省略。代わりに screenspaceRadius を 256px に
+  クランプ。WebGPU 化で compute を使えば本来の MIP 版を載せられる (§8)。
+- **bent normals 未実装**: hlsli の `XE_GTAO_COMPUTE_BENT_NORMALS` ブロック
+  (Algorithm 2 拡張、hlsli:545-552) と `EncodeVisibilityBentNormal` を省略。
+- **TAA/時間ノイズ無し**: Hilbert+R2 の `SpatioTemporalNoise` ではなく IGN を使用し、
+  低 slice でも空間 denoise のみで実用域に。
+- **DX→GL 座標系**: `NDCToView` の Y 符号 (`XeGTAO.h:181-182` の `*-2/*1` → CueMol は
+  `*+2/*-1`) と horizon march の `sinPhi` 符号を反転 (§2)。
+- **bent-normal 用 16x16 タイル/pack を持たない**ため、AO 項は RGBA8 の R に直接出力。
+- **法線**: XeGTAO は通常 depth 復元 (`XeGTAO_CalculateNormal`) かエンジン法線を入力。CueMol は
+  **MRT geometry 法線を主**、sentinel で depth 復元へフォールバック、という独自構成 (§4)。
