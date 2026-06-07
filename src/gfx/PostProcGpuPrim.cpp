@@ -152,6 +152,7 @@ void PostProcGpuPrim::drawGtao(DisplayContext *pDC, RenderTarget *sceneRT,
     m_pGtaoPO->setUniform("u_sliceCount", consts.sliceCount);
     m_pGtaoPO->setUniform("u_stepCount", consts.stepsPerSlice);
     m_pGtaoPO->setUniform("u_debugMode", debugMode);
+    m_pGtaoPO->setUniformF("u_aoNoiseOffset", consts.aoNoiseOffset);
 
     pDC->drawElem(*m_pDrawElem);
 

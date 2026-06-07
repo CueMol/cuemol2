@@ -13,6 +13,8 @@
 #include <gfx/PostProcGpuPrim.hpp>
 #include <gfx/JitterSamples.hpp>
 
+#include <cmath>
+
 namespace qsys {
 
 OffScreenView::OffScreenView(gfx::DisplayContext *pParentCtxt, int w, int h, int flags)
@@ -141,7 +143,11 @@ void OffScreenView::drawScene()
                 gfx::jitterOffset(level, i, jpx, jpy);
                 setJitterOffsetPx(jpx, jpy);
                 setUpProjMat(getWidth(), getHeight());  // jittered frustum
-                renderAOColorFrame(pdc, pScene, m_pRT, m_bBgTransparent);
+                // Rotate the GTAO noise per sample (R1 sequence) so the grain
+                // averages out instead of repeating in every sample.
+                const double t = double(i) * 0.6180339887;
+                const float noiseOff = float(t - std::floor(t));
+                renderAOColorFrame(pdc, pScene, m_pRT, m_bBgTransparent, noiseOff);
 
                 // Additive accumulate m_pRT * (1/N) into the float buffer.
                 m_pAccumRT->bind();

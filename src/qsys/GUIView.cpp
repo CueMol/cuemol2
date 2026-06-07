@@ -13,6 +13,8 @@
 #include <gfx/RenderTarget.hpp>
 #include <gfx/PostProcGpuPrim.hpp>
 #include <gfx/JitterSamples.hpp>
+
+#include <cmath>
 #include <qlib/LPerfMeas.hpp>
 
 #include "CenterMarkDrawObj.hpp"
@@ -274,6 +276,12 @@ void GUIView::drawScene()
                 aoc.finalValuePower = float(pScene->getAOIntensity());
                 aoc.sliceCount = pScene->getAOSlices();
                 aoc.stepsPerSlice = pScene->getAOSteps();
+                // Rotate the GTAO noise per accumulated jitter sample (R1
+                // sequence) so the grain averages out; 0 when not jittering.
+                if (jitterActive) {
+                    const double t = double(m_jitterSampleIndex) * 0.6180339887;
+                    aoc.aoNoiseOffset = float(t - std::floor(t));
+                }
                 m_pAoRT->bind();
                 m_pAoRT->clear(1.0f, 1.0f, 1.0f, 1.0f);
                 m_pAOPostProc->drawGtao(pdc, m_pAOSceneRT, aoc, /*debugMode=*/0);
@@ -849,7 +857,8 @@ gfx::AoConstants GUIView::computeAoConstants() const
 }
 
 bool GUIView::renderAOColorFrame(DisplayContext *pdc, const ScenePtr &pScene,
-                                 gfx::RenderTarget *outRT, bool bgTransparent)
+                                 gfx::RenderTarget *outRT, bool bgTransparent,
+                                 float aoNoiseOffset)
 {
     if (outRT == nullptr) return false;
 
@@ -876,6 +885,7 @@ bool GUIView::renderAOColorFrame(DisplayContext *pdc, const ScenePtr &pScene,
         aoc.finalValuePower = float(pScene->getAOIntensity());
         aoc.sliceCount = pScene->getAOSlices();
         aoc.stepsPerSlice = pScene->getAOSteps();
+        aoc.aoNoiseOffset = aoNoiseOffset;
         m_pAoRT->bind();
         m_pAoRT->clear(1.0f, 1.0f, 1.0f, 1.0f);
         m_pAOPostProc->drawGtao(pdc, m_pAOSceneRT, aoc, /*debugMode=*/0);

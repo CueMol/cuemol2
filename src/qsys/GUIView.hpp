@@ -200,7 +200,8 @@ private:
     /// Returns true if AO was applied. bgTransparent clears the background alpha
     /// to 0 (for transparent capture).
     bool renderAOColorFrame(gfx::DisplayContext *pdc, const ScenePtr &pScene,
-                            gfx::RenderTarget *outRT, bool bgTransparent);
+                            gfx::RenderTarget *outRT, bool bgTransparent,
+                            float aoNoiseOffset = 0.0f);
 };
 
 }  // namespace qsys

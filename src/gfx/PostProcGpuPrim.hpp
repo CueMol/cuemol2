@@ -37,6 +37,9 @@ struct AoConstants
     int sliceCount = 9;
     /// Number of steps marched per slice (radial samples).
     int stepsPerSlice = 3;
+    /// Per-sample noise rotation [0,1) for temporal supersampling (0 = single
+    /// frame). Decorrelates the GTAO noise across accumulated jitter samples.
+    float aoNoiseOffset = 0.0f;
 };
 
 /// Fullscreen post-processing primitive.
