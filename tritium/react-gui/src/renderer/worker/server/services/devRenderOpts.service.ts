@@ -12,7 +12,11 @@
  * Usage from the renderer devtools console (cm is exposed on window in dev):
  *   await window.__cm.invokeService('devRenderOpts', { viewId: <id>, aoEnabled: true })
  *   await window.__cm.invokeService('devRenderOpts', { viewId: <id>, aaMethod: 'none' })
+ *   await window.__cm.invokeService('devRenderOpts', { viewId: <id>, jitterLevel: 4 })
  *   await window.__cm.invokeService('devRenderOpts', { viewId: <id> })  // toggles AO
+ *
+ * Temporal-jitter supersampling (jitterLevel 0=off, 1..5 = 2/4/8/16/32 samples)
+ * accumulates only while the camera is still and requires the AO path to be on.
  *
  * Remove this file (and its ServiceMap row + the window.__cm hook) once the
  * pipeline ships with real UI controls.
@@ -28,17 +32,20 @@ export interface DevRenderOptsArgs {
     aoEnabled?: boolean;
     /** Optional spatial AA method. */
     aaMethod?: AaMethodName;
+    /** Temporal-jitter supersampling level (0 = off, 1..5 = 2/4/8/16/32 samples). */
+    jitterLevel?: number;
 }
 
 export interface DevRenderOptsResult {
     ok: boolean;
     aoEnabled: boolean;
     aaMethod: string;
+    jitterLevel: number;
 }
 
 function devRenderOpts(ctx: WorkerContext, args: DevRenderOptsArgs): DevRenderOptsResult {
     const vs = getViewSceneOrNull(ctx, args.viewId);
-    if (!vs) return { ok: false, aoEnabled: false, aaMethod: 'none' };
+    if (!vs) return { ok: false, aoEnabled: false, aaMethod: 'none', jitterLevel: 0 };
     const { scene } = vs;
 
     const nextAo = args.aoEnabled !== undefined ? args.aoEnabled : !scene.aoEnabled;
@@ -47,11 +54,15 @@ function devRenderOpts(ctx: WorkerContext, args: DevRenderOptsArgs): DevRenderOp
         // enum properties accept their string id at runtime (typed as number).
         scene.aa_method = args.aaMethod as unknown as number;
     }
+    if (args.jitterLevel !== undefined) {
+        scene.aaJitterLevel = args.jitterLevel;
+    }
 
     return {
         ok: true,
         aoEnabled: scene.aoEnabled,
         aaMethod: scene.aa_method as unknown as string,
+        jitterLevel: scene.aaJitterLevel,
     };
 }
 
