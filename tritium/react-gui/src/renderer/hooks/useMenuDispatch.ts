@@ -86,6 +86,9 @@ export function useMenuDispatch(activeTab: string | null): {
         case 'menu:change-resid-num':
           dispatch(CmdId.UiChangeResidueIndexDialog).catch(logErr('change residue index dialog:'))
           break
+        case 'menu:merge-mol':
+          dispatch(CmdId.UiMergeMolDialog).catch(logErr('merge mol dialog:'))
+          break
         case 'menu:mol-superpose':
           dispatch(CmdId.UiMolSuperpose).catch(logErr('mol superpose dialog:'))
           break

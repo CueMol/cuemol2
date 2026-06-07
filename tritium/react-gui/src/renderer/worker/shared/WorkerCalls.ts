@@ -325,6 +325,10 @@ import type {
   ChangeResidueIndexResult,
 } from '../server/services/changeResidueIndex.service'
 import type {
+  MergeMolArgs,
+  MergeMolResult,
+} from '../server/services/mergeMol.service'
+import type {
   SuperposeMolArgs,
   SuperposeMolResult,
 } from '../server/services/superposeMol.service'
@@ -507,6 +511,7 @@ export interface ServiceMap {
   changeChainName:            { args: ChangeChainNameArgs;             result: ChangeChainNameResult }
   deleteMolAtoms:             { args: DeleteMolAtomsArgs;              result: DeleteMolAtomsResult }
   changeResidueIndex:         { args: ChangeResidueIndexArgs;          result: ChangeResidueIndexResult }
+  mergeMol:                   { args: MergeMolArgs;                    result: MergeMolResult }
   superposeMol:               { args: SuperposeMolArgs;                result: SuperposeMolResult }
   listMapRenderers:           { args: ListMapRenderersArgs;            result: ListMapRenderersResult }
   getMapRendererState:        { args: GetMapRendererStateArgs;         result: GetMapRendererStateResult }

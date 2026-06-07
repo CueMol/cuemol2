@@ -27,6 +27,7 @@ import { SymmetryChangeDialogProvider } from '../components/dialogs/SymmetryChan
 import { ChangeChainIdDialogProvider } from '../components/dialogs/ChangeChainIdDialogProvider'
 import { DeleteMolDialogProvider } from '../components/dialogs/DeleteMolDialogProvider'
 import { ChangeResidueIndexDialogProvider } from '../components/dialogs/ChangeResidueIndexDialogProvider'
+import { MergeMolDialogProvider } from '../components/dialogs/MergeMolDialogProvider'
 import { MolSuperposeDialogProvider } from '../components/dialogs/MolSuperposeDialogProvider'
 import { ErrorAlertDialogProvider } from '../components/dialogs/ErrorAlertDialogProvider'
 import { composeProviders } from './composeProviders'
@@ -49,6 +50,7 @@ export const DialogProvider = composeProviders([
   ChangeChainIdDialogProvider,
   DeleteMolDialogProvider,
   ChangeResidueIndexDialogProvider,
+  MergeMolDialogProvider,
   MolSuperposeDialogProvider,
   ErrorAlertDialogProvider,
 ])

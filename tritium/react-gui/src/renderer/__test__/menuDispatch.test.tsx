@@ -88,6 +88,7 @@ describe('useMenuDispatch -- channel to CmdId mapping', () => {
     ['menu:change-chain-id',    CmdId.UiChangeChainIdDialog, undefined],
     ['menu:delete-mol-atoms',   CmdId.UiDeleteMolDialog,    undefined],
     ['menu:change-resid-num',   CmdId.UiChangeResidueIndexDialog, undefined],
+    ['menu:merge-mol',          CmdId.UiMergeMolDialog,    undefined],
     ['menu:save-file-as',       CmdId.ObjectSaveAs,        undefined],
     ['menu:save-current-view',  CmdId.SaveCurrentView,     undefined],
     ['menu:reload-scene',       CmdId.SceneReload,         undefined],

@@ -30,7 +30,7 @@ Status values:
 | [`dialog.tool.intr-tool`](../uxp-inventory/tool_dlgs.md#dialogtoolintr-tool) | | | todo | | | |
 | [`dialog.tool.makesurf`](../uxp-inventory/tool_dlgs.md#dialogtoolmakesurf) | | | todo | | | |
 | [`dialog.tool.mol-delete`](../uxp-inventory/tool_dlgs.md#dialogtoolmol-delete) | `DeleteMolDialog` / `useToolCommands` / `deleteMolAtoms.service` | direct | review | | | Blueprint dialog built from h3-kit/form (`FieldSection` + `ObjectSelect` molCoord + `MolSelList`). OK commits via `deleteMolAtoms` worker service (`MolAnlManager.deleteAtoms` under a "Delete atoms" undo txn). Reached from Edit > Delete mol atoms (`menu:delete-mol-atoms`). Empty selection disables OK (avoids deleting all atoms). Awaiting E2E sign-off. |
-| [`dialog.tool.mol-merge`](../uxp-inventory/tool_dlgs.md#dialogtoolmol-merge) | | | todo | | | |
+| [`dialog.tool.mol-merge`](../uxp-inventory/tool_dlgs.md#dialogtoolmol-merge) | `MergeMolDialog` / `useToolCommands` / `mergeMol.service` | direct | review | | | Blueprint dialog from h3-kit/form (From `ObjectSelect`+`MolSelList` / To `ObjectSelect` / Copy `SwitchField`). OK commits via `mergeMol` worker service: `MolAnlManager.copyAtoms(toMol, fromMol, sel)`, and when Copy is off also `deleteAtoms(fromMol, sel)` (move) -- both in one "Merge molecule" undo txn with whole-txn rollback on failure. Self-merge blocked. Reached from Edit > Merge molecule (`menu:merge-mol`). Awaiting E2E sign-off. |
 | [`dialog.tool.molclient-tools`](../uxp-inventory/tool_dlgs.md#dialogtoolmolclient-tools) | | | todo | | | |
 | [`dialog.tool.morphanim-tool`](../uxp-inventory/tool_dlgs.md#dialogtoolmorphanim-tool) | | | todo | | | |
 | [`dialog.tool.msms-makesurf`](../uxp-inventory/tool_dlgs.md#dialogtoolmsms-makesurf) | | | todo | | | |

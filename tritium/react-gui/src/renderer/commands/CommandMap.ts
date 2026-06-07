@@ -26,6 +26,7 @@ export interface CommandMap {
   [CmdId.UiChangeChainIdDialog]: { args: void;          result: void }
   [CmdId.UiDeleteMolDialog]:   { args: void;            result: void }
   [CmdId.UiChangeResidueIndexDialog]: { args: void;     result: void }
+  [CmdId.UiMergeMolDialog]:    { args: void;            result: void }
   [CmdId.UiMolSuperpose]:      { args: void;            result: void }
 
   // Tabs
