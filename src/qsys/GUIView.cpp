@@ -12,6 +12,7 @@
 #include <gfx/HittestContext.hpp>
 #include <gfx/RenderTarget.hpp>
 #include <gfx/PostProcGpuPrim.hpp>
+#include <gfx/JitterSamples.hpp>
 #include <qlib/LPerfMeas.hpp>
 
 #include "CenterMarkDrawObj.hpp"
@@ -20,48 +21,6 @@
 #include "ViewInputConfig.hpp"
 
 namespace qsys {
-
-namespace {
-
-// Sub-pixel jitter offsets (in 1/16 pixel units) per supersampling level,
-// taken from Mol* (mol-canvas3d/passes/multi-sample.ts JitterVectors). Index by
-// aaJitterLevel 1..5 -> 2/4/8/16/32 samples. Level 0 is "off" (no jitter).
-const signed char JV2[2][2] = {{0, 0}, {-4, -4}};
-const signed char JV4[4][2] = {{0, 0}, {6, -2}, {-6, 2}, {2, 6}};
-const signed char JV8[8][2] = {{0, 0}, {-1, 3},  {5, 1},  {-3, -5},
-                               {-5, 5}, {-7, -1}, {3, 7},  {7, -7}};
-const signed char JV16[16][2] = {
-    {0, 0},  {-1, -3}, {-3, 2}, {4, -1}, {-5, -2}, {2, 5},  {5, 3},  {3, -5},
-    {-2, 6}, {0, -7},  {-4, -6}, {-6, 4}, {-8, 0},  {7, -4}, {6, 7},  {-7, -8}};
-const signed char JV32[32][2] = {
-    {0, 0},   {-7, -5}, {-3, -5}, {-5, -4}, {-1, -4}, {-2, -2}, {-6, -1}, {-4, 0},
-    {-7, 1},  {-1, 2},  {-6, 3},  {-3, 3},  {-7, 6},  {-3, 6},  {-5, 7},  {-1, 7},
-    {5, -7},  {1, -6},  {6, -5},  {4, -4},  {2, -3},  {7, -2},  {1, -1},  {4, -1},
-    {2, 1},   {6, 2},   {0, 4},   {4, 4},   {2, 5},   {7, 5},   {5, 6},   {3, 7}};
-
-// Number of samples for the given level (0 = off -> 1).
-int jitterSampleCount(int level)
-{
-    return (level <= 0) ? 1 : (1 << level);
-}
-
-// Sub-pixel offset (in pixels) for (level, sample index).
-void jitterOffset(int level, int idx, double &px, double &py)
-{
-    const signed char(*tbl)[2] = nullptr;
-    switch (level) {
-        case 1: tbl = JV2; break;
-        case 2: tbl = JV4; break;
-        case 3: tbl = JV8; break;
-        case 4: tbl = JV16; break;
-        case 5: tbl = JV32; break;
-        default: px = py = 0.0; return;
-    }
-    px = double(tbl[idx][0]) / 16.0;
-    py = double(tbl[idx][1]) / 16.0;
-}
-
-}  // anonymous namespace
 
 GUIView::GUIView() : View()
 {
@@ -279,7 +238,7 @@ void GUIView::drawScene()
                 const bool jitterActive = jitterLevel > 0 &&
                                           m_pJitterSampleRT != nullptr &&
                                           m_pJitterAccumRT != nullptr;
-                const int jitterN = jitterSampleCount(jitterLevel);
+                const int jitterN = gfx::jitterSampleCount(jitterLevel);
                 if (jitterActive) {
                     // Restart accumulation on any externally-requested redraw:
                     // camera changes set the view update flag; scene-content
@@ -291,8 +250,8 @@ void GUIView::drawScene()
                                     jitterLevel, jitterN);
                     }
                     m_jitterResetRequested = false;
-                    jitterOffset(jitterLevel, m_jitterSampleIndex, m_jitterPxX,
-                                 m_jitterPxY);
+                    gfx::jitterOffset(jitterLevel, m_jitterSampleIndex, m_jitterPxX,
+                                      m_jitterPxY);
                     setUpProjMat(-1, -1);  // apply this sample's jittered frustum
                 }
                 // Final 3D color goes to the sample target when jittering,
@@ -887,6 +846,63 @@ gfx::AoConstants GUIView::computeAoConstants() const
     // The AO tuning fields (effectRadius / finalValuePower / sliceCount) are
     // filled by the caller from the Scene properties.
     return c;
+}
+
+bool GUIView::renderAOColorFrame(DisplayContext *pdc, const ScenePtr &pScene,
+                                 gfx::RenderTarget *outRT, bool bgTransparent)
+{
+    if (outRT == nullptr) return false;
+
+    const int bw = outRT->getWidth();
+    const int bh = outRT->getHeight();
+    const float bg_a = bgTransparent ? 0.0f : 1.0f;
+    gfx::ColorPtr bg = pScene->getBgColor();
+
+    const bool useAO = pScene->isAOEnabled() && hasFBO();
+    if (useAO) ensureAORTs(bw, bh);
+
+    if (useAO && m_pAOSceneRT != nullptr && m_pAoRT != nullptr &&
+        m_pAoDenRT != nullptr && m_pAOPostProc != nullptr) {
+        // 1. Scene -> AO scene target (color + depth + MRT normal).
+        m_pAOSceneRT->bind();
+        setUpModelMat(MM_NORMAL);
+        m_pAOSceneRT->clear(float(bg->fr()), float(bg->fg()), float(bg->fb()), bg_a);
+        pScene->display(pdc);
+        m_pAOSceneRT->unbind();
+
+        // 2. GTAO + 3. denoise.
+        gfx::AoConstants aoc = computeAoConstants();
+        aoc.effectRadius = float(pScene->getAORadius());
+        aoc.finalValuePower = float(pScene->getAOIntensity());
+        aoc.sliceCount = pScene->getAOSlices();
+        aoc.stepsPerSlice = pScene->getAOSteps();
+        m_pAoRT->bind();
+        m_pAoRT->clear(1.0f, 1.0f, 1.0f, 1.0f);
+        m_pAOPostProc->drawGtao(pdc, m_pAOSceneRT, aoc, /*debugMode=*/0);
+        m_pAoRT->unbind();
+        m_pAoDenRT->bind();
+        m_pAOPostProc->drawDenoise(pdc, m_pAoRT, aoc);
+        m_pAoDenRT->unbind();
+
+        // 4. Composite (color * AO) -> outRT. No spatial post-AA. Blend off so
+        // the fullscreen pass replaces (transparent-bg pixels keep alpha 0).
+        pdc->setDepthTestEnabled(false);
+        pdc->setBlendEnabled(false);
+        outRT->bind();
+        m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, m_pAoDenRT);
+        outRT->unbind();
+        pdc->setBlendEnabled(true);
+        pdc->setDepthTestEnabled(true);
+        return true;
+    }
+
+    // Plain scene (AO off / unavailable) -> outRT.
+    outRT->bind();
+    setUpModelMat(MM_NORMAL);
+    outRT->clear(float(bg->fr()), float(bg->fg()), float(bg->fb()), bg_a);
+    pScene->display(pdc);
+    outRT->unbind();
+    return false;
 }
 
 void GUIView::cleanupAORTs()

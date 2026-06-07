@@ -449,6 +449,10 @@ namespace qsys {
     /// instead of the rendered color. Default no-op; honored by off-screen views.
     virtual void setDepthMode(bool b) {}
 
+    /// Off-screen jitter supersampling level (0 = off, 1..5 = 2/4/8/16/32
+    /// samples). Default no-op; honored by off-screen views (default level 5).
+    virtual void setSuperSampleLevel(int n) {}
+
   private:
     
     /////////////////////////////////////////////////////////////

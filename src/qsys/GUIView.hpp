@@ -181,6 +181,26 @@ private:
     /// Release the AO render targets and post-proc primitive (on the current
     /// display context).
     void cleanupAORTs();
+
+  protected:
+    /// Set the sub-pixel jitter offset (in backing pixels) applied to the
+    /// projection by setUpProjMat. Used by the off-screen exporter per sample.
+    void setJitterOffsetPx(double px, double py)
+    {
+        m_jitterPxX = px;
+        m_jitterPxY = py;
+    }
+
+    /// Render one frame's final 3D color into outRT: the scene with the scene's
+    /// AO applied (GTAO -> denoise -> composite), or the plain scene when AO is
+    /// off/unavailable. No spatial post-AA (FXAA/SMAA) and no UI overlay. The
+    /// projection (including any jitter offset) and GL context must be set by the
+    /// caller; this sets the model matrix and manages the off-screen targets.
+    /// Used by the off-screen exporter, which wraps it with jitter accumulation.
+    /// Returns true if AO was applied. bgTransparent clears the background alpha
+    /// to 0 (for transparent capture).
+    bool renderAOColorFrame(gfx::DisplayContext *pdc, const ScenePtr &pScene,
+                            gfx::RenderTarget *outRT, bool bgTransparent);
 };
 
 }  // namespace qsys
