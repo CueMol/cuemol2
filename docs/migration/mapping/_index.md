@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-06-07 (`dialog.tool.prot2ndry-tool` review: UXP "Protein secondary structure" tool dialog を Blueprint modal として実装。h3-kit/form (`ObjectSelect` molCoord + `SegmentField` Recalc/Assign + Recalc: Ignore-β-bulge / Helix gap-fill 角度 + Assign: `MolSelList` + type `SelectField`) で構成。OK は新規 worker service `reassignProt2ndry` 経由で `MolAnlManager.calcProt2ndry2`(Recalc)/`setProt2ndry`(Assign) を "Recalc/Assign protein secondary str" undo txn 内で実行。Edit メニューの既存 stub `menu:reassign-2ndry` を `useToolCommands` 経由で配線。tool_dlgs todo 15->14 / review 4->5、Total todo 53->52 / review 6->7、direct 22->23)
 - Updated: 2026-06-07 (`dialog.tool.mol-merge` review: UXP "Merge molecule" tool dialog (`tools/mol_merge`) を Blueprint modal として実装。h3-kit/form (From `ObjectSelect`+`MolSelList` / To `ObjectSelect` / Copy `SwitchField`) で構成。OK は新規 worker service `mergeMol` 経由で `MolAnlManager.copyAtoms(toMol, fromMol, sel)` を実行し、Copy OFF (move) 時のみ `deleteAtoms(fromMol, sel)` も実行 — 両者を 1 つの "Merge molecule" undo txn 内で行い、失敗時は txn 全体を rollback (copy+delete の原子性確保)。自己マージは OK 無効で防止。Edit メニューの既存 stub `menu:merge-mol` を `useToolCommands` 経由で配線。service の dispatch (copy/move) と引数順を test で pin。tool_dlgs todo 16->15 / review 3->4、Total todo 54->53 / review 5->6、direct 21->22)
 - Updated: 2026-06-07 (`dialog.tool.chg-resindex` review: UXP "Change residue index" tool dialog (`tools/chg_resindex`) を Blueprint modal として実装。h3-kit/form (`ObjectSelect` molCoord + `MolSelList` + `SegmentField` Shift/Start + `TextField` value + `SwitchField` Renumber) で構成。OK は新規 worker service `changeResidueIndex` 経由で `MolAnlManager.renumResIndex`(Renumber ON)/`shiftResIndex`(OFF) を "Change residue index" undo txn 内で実行 (両 API とも `(mol, sel, bshift, n)`)。shift モードは 0 を拒否、start モードは 4 桁超で PDB 非準拠 confirm (Blueprint `Alert`)。値検証は純関数 `resIndexInput` 化しテスト追加。Edit メニューの既存 stub `menu:change-resid-num` を `useToolCommands` 経由で配線。tool_dlgs todo 17->16 / review 2->3、Total todo 55->54 / review 4->5、direct 20->21)
 - Updated: 2026-06-07 (`dialog.tool.ssm-sup` done + `dialog.tool.chg-chname` 残機能: ssm-sup は実機確認済み、唯一の欠落「Write RMSD info file」を ADR-0022 で **非対応 (dropped、RMSD は log で取得可)** と確定し done 化。chg-chname は UXP 残機能を実装 — 空白入力を blank chain "_" に変換 (confirm)、trim 後 1 文字超を PDB 非準拠 confirm (Blueprint `Alert`)、前回選択分子は component の in-session state で保持 (cross-session 永続化は uid が変わるため不採用)。正規化を純関数 `chainNameInput` 化しテスト追加。挙動変更のため chg-chname は review 据え置き。tool_dlgs review 3->2 / done 1->2、Total review 5->4 / done 43->44)
@@ -47,11 +48,11 @@
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 15 | 13 | 1 | 0 | 1 | 0 |
 | Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 6 | 3 | 1 | 8 | 0 |
-| Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 2 | 0 | 4 | 15 | 0 |
+| Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 2 | 0 | 5 | 14 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 2 | 2 | 0 | 9 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 14 | 2 | 0 | 12 | 0 |
 | Other | [other.md](other.md) | 4 | 0 | 1 | 0 | 3 | 0 |
-| **Total** | | **132** | **44** | **29** | **6** | **53** | **0** |
+| **Total** | | **132** | **44** | **29** | **7** | **52** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -79,12 +80,12 @@
 
 | Mapping | Count |
 |---------|------:|
-| 1:1 (`direct`) | 22 |
+| 1:1 (`direct`) | 23 |
 | merged | 31 |
 | split | 22 |
 | redesign | 0 |
 | deprecated (`dropped`) | 4 |
-| *(not yet assigned)* | 53 |
+| *(not yet assigned)* | 52 |
 
 ---
 
@@ -100,6 +101,7 @@
 | [`dialog.rendstyle-create`](other_dlgs.md#dialogrendstyle-create) | `CreateRendStyleDialog` / `getCreateRendStyleInfo` / `createStyleFromRenderer` | Writable style-set listbox + base-name input; commit calls `StyleManager.createStyleFromObj`. Same-name overwrite handled in C++ |
 | [`dialog.atomintr`](other_dlgs.md#dialogatomintr) | `AtomIntr*Section` (inspector Properties tab) | Interaction/Dashed line/3D tube/Value label の 4 accordion。Dashed トグルは合成 (`setGenericProps` で stipple0..5 を 1 undo step 原子書き込み)。arrow size・label font 追加。append/remove 編集は対象外 |
 | [`dialog.tool.mol-delete`](tool_dlgs.md#dialogtoolmol-delete) | `DeleteMolDialog` / `useToolCommands` / `deleteMolAtoms.service` | h3-kit/form modal (ObjectSelect + MolSelList). OK -> `MolAnlManager.deleteAtoms` under "Delete atoms" undo txn. Edit > Delete mol atoms. Empty selection disables OK. Awaiting E2E sign-off |
+| [`dialog.tool.prot2ndry-tool`](tool_dlgs.md#dialogtoolprot2ndry-tool) | `ReassignProt2ndryDialog` / `useToolCommands` / `reassignProt2ndry.service` | h3-kit/form modal (ObjectSelect + Recalc/Assign segment + Ignore-β-bulge / Helix gap-fill / MolSelList + type select). OK -> `MolAnlManager.calcProt2ndry2` / `setProt2ndry` under undo txn. Edit > Reassign secondary str. Awaiting E2E sign-off |
 | [`dialog.tool.mol-merge`](tool_dlgs.md#dialogtoolmol-merge) | `MergeMolDialog` / `useToolCommands` / `mergeMol.service` | h3-kit/form modal (From ObjectSelect+MolSelList / To ObjectSelect / Copy switch). OK -> `MolAnlManager.copyAtoms` (+ `deleteAtoms` on move) under "Merge molecule" undo txn with whole-txn rollback. Self-merge blocked. Edit > Merge molecule. Awaiting E2E sign-off |
 | [`dialog.tool.chg-resindex`](tool_dlgs.md#dialogtoolchg-resindex) | `ChangeResidueIndexDialog` / `resIndexInput` / `useToolCommands` / `changeResidueIndex.service` | h3-kit/form modal (ObjectSelect + MolSelList + Shift/Start segment + value + Renumber switch). OK -> `MolAnlManager.renumResIndex`/`shiftResIndex` under "Change residue index" undo txn. Edit > Change residue number. Start > 4 digits -> PDB confirm. Awaiting E2E sign-off |
 | [`dialog.tool.chg-chname`](tool_dlgs.md#dialogtoolchg-chname) | `ChangeChainIdDialog` / `chainNameInput` / `useToolCommands` / `changeChainName.service` | h3-kit/form 製の Change chain ID modal。`MolAnlManager.changeChainName` を undo txn で実行。Edit メニューから起動。空白入力 -> blank chain "_" (confirm)、1 文字超 -> PDB 非準拠 confirm (Blueprint `Alert`)、前回分子は in-session 保持。confirm/blank 追加分の re-verify 待ち |
@@ -132,4 +134,4 @@
 
 ## Unstarted
 
-**53 / 132** items are `todo` (not yet started).
+**52 / 132** items are `todo` (not yet started).

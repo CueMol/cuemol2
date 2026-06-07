@@ -6,6 +6,7 @@
  *   - `UiDeleteMolDialog` -> `DeleteMolDialog` (UXP `tools/mol_delete`).
  *   - `UiChangeResidueIndexDialog` -> `ChangeResidueIndexDialog` (UXP `tools/chg_resindex`).
  *   - `UiMergeMolDialog` -> `MergeMolDialog` (UXP `tools/mol_merge`).
+ *   - `UiReassignProt2ndryDialog` -> `ReassignProt2ndryDialog` (UXP `tools/prot2ndry-tool`).
  *   - `UiMolSuperpose` -> `MolSuperposeDialog` (UXP `tools/ssm_sup`).
  *
  * Each command resolves the active scene, opens the dialog (which owns its
@@ -20,6 +21,7 @@ import { useShowChangeChainIdDialog } from '../components/dialogs/ChangeChainIdD
 import { useShowDeleteMolDialog } from '../components/dialogs/DeleteMolDialogProvider'
 import { useShowChangeResidueIndexDialog } from '../components/dialogs/ChangeResidueIndexDialogProvider'
 import { useShowMergeMolDialog } from '../components/dialogs/MergeMolDialogProvider'
+import { useShowReassignProt2ndryDialog } from '../components/dialogs/ReassignProt2ndryDialogProvider'
 import { useShowMolSuperposeDialog } from '../components/dialogs/MolSuperposeDialogProvider'
 
 interface UseToolCommandsOptions {
@@ -35,6 +37,7 @@ export function useToolCommands({
     const showDeleteMolDialog = useShowDeleteMolDialog()
     const showChangeResidueIndexDialog = useShowChangeResidueIndexDialog()
     const showMergeMolDialog = useShowMergeMolDialog()
+    const showReassignProt2ndryDialog = useShowReassignProt2ndryDialog()
     const showMolSuperposeDialog = useShowMolSuperposeDialog()
 
     useRegisterCommand(CmdId.UiChangeChainIdDialog, () => {
@@ -63,6 +66,13 @@ export function useToolCommands({
         const info = getActiveSceneInfo()
         if (!info) return
         void showMergeMolDialog({ sceneId: info.scene_uid })
+    })
+
+    useRegisterCommand(CmdId.UiReassignProt2ndryDialog, () => {
+        if (!cm) return
+        const info = getActiveSceneInfo()
+        if (!info) return
+        void showReassignProt2ndryDialog({ sceneId: info.scene_uid })
     })
 
     useRegisterCommand(CmdId.UiMolSuperpose, () => {

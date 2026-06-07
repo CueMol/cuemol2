@@ -20,6 +20,7 @@ export const CmdId = {
   UiDeleteMolDialog:  'ui.deleteMolDialog',  // no args
   UiChangeResidueIndexDialog: 'ui.changeResidueIndexDialog', // no args
   UiMergeMolDialog:   'ui.mergeMolDialog',   // no args
+  UiReassignProt2ndryDialog: 'ui.reassignProt2ndryDialog', // no args
   UiMolSuperpose:     'ui.molSuperpose',     // no args
 
   // Tab management

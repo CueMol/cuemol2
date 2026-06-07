@@ -89,6 +89,9 @@ export function useMenuDispatch(activeTab: string | null): {
         case 'menu:merge-mol':
           dispatch(CmdId.UiMergeMolDialog).catch(logErr('merge mol dialog:'))
           break
+        case 'menu:reassign-2ndry':
+          dispatch(CmdId.UiReassignProt2ndryDialog).catch(logErr('reassign 2ndry dialog:'))
+          break
         case 'menu:mol-superpose':
           dispatch(CmdId.UiMolSuperpose).catch(logErr('mol superpose dialog:'))
           break
