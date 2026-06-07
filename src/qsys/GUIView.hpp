@@ -14,11 +14,12 @@
 
 namespace gfx {
 class RenderTarget;
-class PostProcGpuPrim;
 struct AoConstants;
 }  // namespace gfx
 
 namespace qsys {
+
+class FrameRenderPipeline;
 
 class QSYS_API GUIView : public qsys::View
 {
@@ -137,29 +138,10 @@ public:
     // Screen-space ambient occlusion (GTAO) live path
 
 private:
-    /// Off-screen scene target (color + depth) for the AO path. Owned.
-    gfx::RenderTarget *m_pAOSceneRT = nullptr;
-
-    /// Color-only target holding the AO term + packed edges (GTAO pass). Owned.
-    gfx::RenderTarget *m_pAoRT = nullptr;
-
-    /// Color-only target holding the denoised AO term. Owned.
-    gfx::RenderTarget *m_pAoDenRT = nullptr;
-
-    /// LINEAR color target receiving the AO composite when a post-process AA
-    /// method is active; the AA pass reads it and writes the default
-    /// framebuffer. Unused when aaMethod is none. Owned.
-    gfx::RenderTarget *m_pCompRT = nullptr;
-
-    /// SMAA intermediate targets (edges and blending weights). Used only when
-    /// aaMethod is smaa. Owned.
-    gfx::RenderTarget *m_pSmaaEdgeRT = nullptr;
-    gfx::RenderTarget *m_pSmaaWeightRT = nullptr;
-
-    /// Temporal-jitter supersampling targets (AO path, camera still). Owned.
-    /// sample = one jittered 3D frame (RGBA8); accum = float running sum.
-    gfx::RenderTarget *m_pJitterSampleRT = nullptr;
-    gfx::RenderTarget *m_pJitterAccumRT = nullptr;
+    /// Off-screen multi-pass pipeline (owns the AO/AA/jitter render targets +
+    /// the fullscreen post-process primitive). Lazily created on first use (the
+    /// display context is not valid in the GUIView constructor). Owned.
+    FrameRenderPipeline *m_pPipeline = nullptr;
 
     /// Temporal-jitter state. sampleIndex counts accumulated samples; when
     /// moreSamples is true the view keeps redrawing on idle (needsContinuousRedraw)
@@ -177,22 +159,14 @@ private:
     /// frame so the still image is re-rendered at full resolution.
     bool m_aoHalfPending = false;
 
-    /// Fullscreen post-processing primitive (GTAO + denoise + composite). Owned.
-    gfx::PostProcGpuPrim *m_pAOPostProc = nullptr;
-
-    /// Lazily create / resize the AO scene target and post-proc primitive to
-    /// the given backing-pixel size. When halfRes is true the GTAO term targets
-    /// (m_pAoRT / m_pAoDenRT) are allocated at half resolution; the scene and
-    /// composite targets stay full resolution.
-    void ensureAORTs(int w, int h, bool halfRes);
+    /// Lazily create the off-screen pipeline (needs a valid display context) and
+    /// (re)size its render targets to the given backing-pixel size. When halfRes
+    /// is true the GTAO term targets are allocated at half resolution.
+    void ensurePipeline(int w, int h, bool halfRes);
 
     /// Compute the view-space reconstruction constants for the GTAO passes from
     /// the current camera (perspective). Mirrors setUpProjMat's slab derivation.
     gfx::AoConstants computeAoConstants() const;
-
-    /// Release the AO render targets and post-proc primitive (on the current
-    /// display context).
-    void cleanupAORTs();
 
   protected:
     /// Set the sub-pixel jitter offset (in backing pixels) applied to the
