@@ -34,7 +34,11 @@ fi
 
 # deps root (BASEDIR) is shared; build/install root (OUTDIR) can be per-checkout.
 # OUT_DIR unset falls back to BASEDIR, preserving the original/CI behavior.
-OUTDIR="${OUT_DIR:-$BASEDIR}"
+if $IS_WINDOWS && [ -n "${OUT_DIR:-}" ]; then
+    OUTDIR=$(cygpath -u "$OUT_DIR")
+else
+    OUTDIR="${OUT_DIR:-$BASEDIR}"
+fi
 
 REPOS_DIR=$(cd $(dirname $0)/../..; pwd)
 WORKSPACE=${GITHUB_WORKSPACE:-$REPOS_DIR}

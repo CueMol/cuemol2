@@ -6,8 +6,8 @@ vars:
   # Shared, branch-independent downloaded deps (boost/CGAL/fftw/glew/lcms2/python).
   WORKDIR: '{{if eq OS "windows"}}c:\tmp\proj64_deplibs{{else}}$HOME/tmp/proj64_deplibs{{end}}'
   # Per-checkout build/install output, so multiple checkouts/worktrees on the same
-  # host do not clobber each other. Windows keeps the old behavior (= WORKDIR).
-  OUTDIR: '{{if eq OS "windows"}}{{.WORKDIR}}{{else}}{{.ROOT_DIR}}/../.build_out{{end}}'
+  # host do not clobber each other.
+  OUTDIR: '{{.ROOT_DIR}}/../.build_out'
   LIBCUEMOL2_BUILDDIR: "{{.OUTDIR}}/build_libcuemol2"
   LIBCUEMOL2_INSTDIR: "{{.OUTDIR}}/cuemol2"
   CONFIG: '{{if eq OS "windows"}}Release{{else}}Debug{{end}}'
