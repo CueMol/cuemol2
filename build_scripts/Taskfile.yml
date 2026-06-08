@@ -68,7 +68,7 @@ tasks:
   rebuild_libcuemol2:windows:
     platforms: [windows]
     cmds:
-      - cmd /c build_libcuemol2_win.bat "{{.WORKDIR}}" "{{.CONFIG}}"
+      - cmd /c "{{.ROOT_DIR}}\build_libcuemol2_win.bat" "{{.WORKDIR}}" "{{.CONFIG}}"
 
   build_libcuemol2:
     desc: "Build libcuemol2 (using current config)"
