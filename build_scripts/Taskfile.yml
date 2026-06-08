@@ -8,7 +8,7 @@ vars:
   # Per-checkout build/install output, so multiple checkouts/worktrees on the same
   # host do not clobber each other. Windows keeps the old behavior (= WORKDIR).
   OUTDIR: '{{if eq OS "windows"}}{{.WORKDIR}}{{else}}{{.ROOT_DIR}}/../.build_out{{end}}'
-  LIBCUEMOL2_BUILDDIR: '{{if eq OS "windows"}}{{.WORKDIR}}/tmp/build_libcuemol2{{else}}{{.OUTDIR}}/build_libcuemol2{{end}}'
+  LIBCUEMOL2_BUILDDIR: "{{.OUTDIR}}/build_libcuemol2"
   LIBCUEMOL2_INSTDIR: "{{.OUTDIR}}/cuemol2"
   CONFIG: '{{if eq OS "windows"}}Release{{else}}Debug{{end}}'
   PARALLEL: ""
