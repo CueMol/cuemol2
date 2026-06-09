@@ -461,6 +461,11 @@ LString GUIView::hitTest(int ax, int ay)
 
 LString GUIView::hitTestRect(int ax, int ay, int aw, int ah, bool bNearest)
 {
+    // Reset accumulated hit data from previous hit tests; createAll() below
+    // appends to m_hitdata, so without this the result would include atoms
+    // from earlier rectangle / single-click hit tests (same as hitTest()).
+    m_hitdata.clear();
+
     int x = convToBackingX(ax);
     int y = convToBackingY(ay);
     int w = convToBackingX(aw);
