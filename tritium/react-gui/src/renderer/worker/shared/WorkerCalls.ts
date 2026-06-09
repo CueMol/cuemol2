@@ -65,6 +65,9 @@ import type {
   NaviHitTestArgs, NaviHitTestResult,
   NaviResidSelArgs, NaviResidSelResult,
 } from '../server/services/naviTool.service'
+import type {
+  RectSelectArgs, RectSelectResult,
+} from '../server/services/rectSelect.service'
 import type { ProposeNewTabNamesArgs, ProposeNewTabNamesResult } from '../server/services/proposeNewTabNames.service'
 import type { ProposeUniqNameArgs, ProposeUniqNameResult } from '../server/services/proposeUniqName.service'
 import type { RedoArgs } from '../server/services/redo.service'
@@ -486,6 +489,7 @@ export interface ServiceMap {
   naviHitTest:                { args: NaviHitTestArgs;                 result: NaviHitTestResult }
   naviClickAtom:              { args: NaviClickAtomArgs;               result: NaviClickAtomResult }
   naviResidSel:               { args: NaviResidSelArgs;                result: NaviResidSelResult }
+  rectSelect:                 { args: RectSelectArgs;                  result: RectSelectResult }
   naviCenterAt:               { args: NaviCenterAtArgs;                result: { ok: boolean } }
   naviCenterAtSymm:           { args: NaviCenterAtSymmArgs;            result: { ok: boolean } }
   naviCtxSelect:              { args: NaviCtxSelectArgs;               result: { ok: boolean } }

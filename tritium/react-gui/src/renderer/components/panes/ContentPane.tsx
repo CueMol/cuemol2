@@ -24,6 +24,7 @@ import { SettingsPane } from "./SettingsPane";
 import { MolViewPane } from "./MolViewPane";
 import { RenderResultPane } from "./RenderResultPane";
 import { ViewportToolPalette } from "../ViewportToolPalette";
+import { RectSelectOverlay } from "../RectSelectOverlay";
 import { useNaviClickHandler } from "../../hooks/useNaviClickHandler";
 import { useNaviContextMenu } from "../../hooks/useNaviContextMenu";
 import type { HitTestResult } from "../../types";
@@ -134,6 +135,9 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
         </div>
       )}
       {!molViewVisible && renderContent(activeTab, renderResultActions)}
+      {/* Rubber-band selection layer -- click-through unless a select tool
+          is active. Mounted only while the canvas is visible. */}
+      {molViewVisible && <RectSelectOverlay />}
       {showPalette && (
         <ViewportToolPalette activeTool={activeTool} onSelect={onSelectTool} />
       )}
