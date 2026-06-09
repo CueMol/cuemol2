@@ -1,16 +1,32 @@
-#!/bin/sh
+#!/bin/bash
 #
-# Build script for tritium (Electron + React GUI app) on POSIX
+# Build script for tritium (Electron + React GUI app) on POSIX and Windows Git Bash
 # Usage: run.sh deplibs_dir [Debug|Release]
 #
 
 set -eux
 
-BASEDIR=$1
+# Detect Windows (Git Bash / MSYS2)
+IS_WINDOWS=false
+if [[ -n "${MSYSTEM:-}" || "$OSTYPE" == msys* ]]; then
+    IS_WINDOWS=true
+fi
+
+# Normalize BASEDIR: convert Windows paths (c:\...) to POSIX (/c/...)
+if $IS_WINDOWS; then
+    BASEDIR=$(cygpath -u "$1")
+else
+    BASEDIR=$1
+fi
+
 CONFIG=${2:-Release}
 # deps root (BASEDIR) is shared; build/install root (OUTDIR) can be per-checkout.
 # OUT_DIR unset falls back to BASEDIR, preserving the original/CI behavior.
-OUTDIR="${OUT_DIR:-$BASEDIR}"
+if $IS_WINDOWS && [ -n "${OUT_DIR:-}" ]; then
+    OUTDIR=$(cygpath -u "$OUT_DIR")
+else
+    OUTDIR="${OUT_DIR:-$BASEDIR}"
+fi
 
 SCRIPT_DIR=$(cd $(dirname $0); pwd)
 REPOS_DIR=$(cd $(dirname $0)/../..; pwd)
