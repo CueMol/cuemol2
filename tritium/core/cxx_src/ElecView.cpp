@@ -2,12 +2,20 @@
 
 #include "ElecView.hpp"
 #include "ElecDisplayContext.hpp"
+#include "ElecViewCap.hpp"
 
 namespace node_jsbr {
 
 ElecView::ElecView()
 {
     MB_DPRINTLN("ElecView::ElecView() created %p", this);
+
+    // ViewCap is a process-wide static shared by all views; set it once so
+    // View::hasFBO() reports true and the off-screen AO/AA pipeline gate in
+    // GUIView::drawScene becomes reachable. ElecViewCap performs no GL calls.
+    if (qsys::View::getViewCap() == nullptr) {
+        qsys::View::setViewCap(MB_NEW ElecViewCap());
+    }
 
     m_bBound = false;
     setActive(false);

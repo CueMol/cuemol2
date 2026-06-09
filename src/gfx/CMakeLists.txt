@@ -47,6 +47,7 @@ DrawElem.hpp
 AbstDrawElem.hpp
 VBORep.hpp
 RenderTarget.hpp
+DataTexture.hpp
 GradientColor.hpp
 GpuPrim.hpp
 SphereGpuPrim.hpp
