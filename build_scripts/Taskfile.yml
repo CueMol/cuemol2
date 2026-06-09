@@ -202,9 +202,11 @@ tasks:
 
   build_tritium:windows:
     platforms: [windows]
+    env:
+      OUT_DIR: '{{.OUTDIR}}'
     cmds:
       - task: build_libcuemol2
-      - '"C:/Program Files/Git/bin/bash.exe" build_tritium_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"'
+      - bash build_tritium_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
 
   clean_tritium:
     desc: "Clean tritium build artifacts (core native addon + react-gui out)"
