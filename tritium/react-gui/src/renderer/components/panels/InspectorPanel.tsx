@@ -24,7 +24,8 @@
  */
 
 import React, { useState, useCallback, useEffect } from "react";
-import { Icon, Button, Tag } from "@blueprintjs/core";
+import { Button, Tag } from "@blueprintjs/core";
+import { AppIcon } from "../AppIcon";
 import { SegmentField } from "../../h3-kit/form";
 
 import { PropertiesTab } from "../inspector/PropertiesTab";
@@ -149,7 +150,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
       {/* ── Header ── */}
       <div className="inspector-header">
         <div className="inspector-header-left">
-          <Icon icon="properties" size={14} className="inspector-header-icon" />
+          <AppIcon name="ui.properties" size="md" className="inspector-header-icon" aria-hidden />
           <div className="inspector-header-info">
             {hasTarget && targetCategory && (
               <Tag minimal className="inspector-header-badge">
@@ -169,7 +170,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
         <Button
           minimal
           small
-          icon={<Icon icon="cross" size={14} />}
+          icon={<AppIcon name="ui.close" size="md" aria-hidden />}
           className="inspector-close-btn"
           onClick={onClose}
         />

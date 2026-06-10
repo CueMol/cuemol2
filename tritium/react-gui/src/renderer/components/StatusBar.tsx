@@ -1,5 +1,4 @@
 import React from "react";
-import { Icon } from "@blueprintjs/core";
 import { AppIcon } from "./AppIcon";
 import type { AppIconKey } from "../data/appIcons";
 
@@ -41,12 +40,12 @@ export const StatusBar: React.FC<StatusBarProps> = ({
       <div className="status-right">
         {busy ? (
           <span className="status-item status-busy" title="Worker is processing">
-            <Icon icon="refresh" size={10} className="status-spinner" />
+            <AppIcon name="ui.refresh" size={10} className="status-spinner" aria-hidden />
             Busy
           </span>
         ) : (
           <span className="status-item status-ok">
-            <Icon icon="full-circle" size={8} />
+            <AppIcon name="ui.statusDot" size={8} aria-hidden />
             Ready
           </span>
         )}

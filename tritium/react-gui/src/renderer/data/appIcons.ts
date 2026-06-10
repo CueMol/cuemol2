@@ -8,6 +8,8 @@
  *
  * Migration policy: prefer Phosphor for hand-picked / domain-specific icons
  * (molecular tools etc.); keep Blueprint entries for icons that already fit.
+ * Keys are added here as each consumer is migrated (so the bundle only carries
+ * icons that are actually used).
  *
  * @module data/appIcons
  */
@@ -18,9 +20,11 @@ import {
   ArrowClockwise,
   ArrowsClockwise,
   ArrowsOutCardinal,
+  Circle,
   CloudArrowDown,
   Cube,
   File,
+  FilmStrip,
   FloppyDisk,
   FloppyDiskBack,
   FolderOpen,
@@ -30,8 +34,12 @@ import {
   Plus,
   Ruler,
   Selection,
+  SlidersHorizontal,
   SquaresFour,
+  Terminal,
+  TextAlignLeft,
   TreeStructure,
+  X,
 } from "@phosphor-icons/react";
 import type { IconName } from "@blueprintjs/icons";
 
@@ -41,8 +49,9 @@ export type AppIconSpec =
   | { lib: "bp"; name: IconName };
 
 /**
- * Semantic icon registry. Keys are namespaced by area (e.g. `tool.*`).
- * Add an entry here, then reference it via `<AppIcon name="..." />`.
+ * Semantic icon registry. Keys are namespaced by area (`tool.*`, `activity.*`,
+ * `toolbar.*`, `panel.*`) or `ui.*` for generic reusable icons. Add an entry
+ * here, then reference it via `<AppIcon name="..." />`.
  */
 export const APP_ICONS = {
   // Viewport tools.
@@ -70,6 +79,18 @@ export const APP_ICONS = {
   "toolbar.saveScene": { lib: "phosphor", Comp: FloppyDisk },
   "toolbar.getPdb": { lib: "phosphor", Comp: CloudArrowDown },
   "toolbar.render": { lib: "phosphor", Comp: Image },
+
+  // Bottom panel tabs.
+  "panel.output": { lib: "phosphor", Comp: Terminal },
+  "panel.sequence": { lib: "phosphor", Comp: TextAlignLeft },
+  "panel.animation": { lib: "phosphor", Comp: FilmStrip },
+  "panel.render": { lib: "phosphor", Comp: Image },
+
+  // Generic reusable UI icons.
+  "ui.refresh": { lib: "phosphor", Comp: ArrowClockwise },
+  "ui.statusDot": { lib: "phosphor", Comp: Circle, weight: "fill" },
+  "ui.properties": { lib: "phosphor", Comp: SlidersHorizontal },
+  "ui.close": { lib: "phosphor", Comp: X },
 } as const satisfies Record<string, AppIconSpec>;
 
 export type AppIconKey = keyof typeof APP_ICONS;
