@@ -20,8 +20,10 @@
  */
 
 import React from "react";
-import { Tooltip } from "@blueprintjs/core";
+import { Popover, Tooltip } from "@blueprintjs/core";
 import { AppIcon } from "./AppIcon";
+import { MeasureOptionsPopover } from "./MeasureOptionsPopover";
+import { useTheme } from "../contexts/ThemeContext";
 import {
   TOOLS,
   CATEGORY_ORDER,
@@ -31,9 +33,19 @@ import {
 interface Props {
   activeTool: ToolId;
   onSelect: (id: ToolId) => void;
+  /** Current measure target label-set name ('' = Auto). */
+  measureTarget: string;
+  /** Set the measure target label-set name. */
+  onMeasureTargetChange: (name: string) => void;
 }
 
-export const ViewportToolPalette: React.FC<Props> = ({ activeTool, onSelect }) => {
+export const ViewportToolPalette: React.FC<Props> = ({
+  activeTool,
+  onSelect,
+  measureTarget,
+  onMeasureTargetChange,
+}) => {
+  const { theme } = useTheme();
   return (
     <div className="viewport-tool-palette" role="toolbar" aria-label="Viewport tools">
       {CATEGORY_ORDER.map((cat, idx) => {
@@ -42,6 +54,29 @@ export const ViewportToolPalette: React.FC<Props> = ({ activeTool, onSelect }) =
         return (
           <React.Fragment key={cat}>
             {idx > 0 && <div className="tool-palette-separator" aria-hidden="true" />}
+            {cat === "measure" && (
+              <Popover
+                placement="right-start"
+                portalClassName={theme === "dark" ? "bp5-dark" : ""}
+                content={
+                  <MeasureOptionsPopover
+                    target={measureTarget}
+                    onTargetChange={onMeasureTargetChange}
+                  />
+                }
+              >
+                <button
+                  type="button"
+                  className="tool-options-cap"
+                  aria-label="Measure options"
+                  aria-haspopup="dialog"
+                  title="Measure options"
+                >
+                  <AppIcon name="ui.properties" size="sm" aria-hidden />
+                  <AppIcon name="ui.caretDown" size="sm" className="cap-caret" aria-hidden />
+                </button>
+              </Popover>
+            )}
             {tools.map((t) => (
               <Tooltip
                 key={t.id}

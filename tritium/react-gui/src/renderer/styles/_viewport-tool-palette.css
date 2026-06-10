@@ -18,7 +18,93 @@
 .tool-palette-separator {
   height: 1px;
   margin: var(--space-2) var(--space-1);
-  background: var(--border-subtle);
+  /* The palette sits on an elevated surface where --border has too little
+     contrast to read; use the muted text tone for a clearly visible divider. */
+  background: var(--text-muted);
+}
+
+/* Measure group "options" cap: opens the target label-set popover.
+   Deliberately NOT a tool button -- shorter, muted, and carrying a caret -- so
+   it reads as group-level settings rather than a fourth measure tool. It sits
+   above the D/A/T buttons (top of the measure group). */
+.tool-options-cap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  width: 30px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+
+.tool-options-cap:hover {
+  background: var(--overlay-hover);
+  color: var(--text-secondary);
+}
+
+.tool-options-cap .cap-caret {
+  opacity: 0.7;
+}
+
+/* ----- Measure options popover (target label-set selector) ----- */
+.measure-options-popover {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 220px;
+  padding: var(--space-3);
+}
+
+.measure-options-title {
+  font-size: var(--type-eyebrow-fs);
+  line-height: var(--type-eyebrow-lh);
+  font-weight: var(--type-eyebrow-fw);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-wide);
+  color: var(--text-secondary);
+}
+
+.measure-options-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.measure-options-row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--space-1) var(--space-2);
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--fs-lg);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.measure-options-row:hover {
+  background: var(--bg-hover);
+}
+
+.measure-options-row.selected {
+  color: var(--accent);
+  background: var(--bg-active);
+}
+
+.measure-options-hint {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
 }
 
 .tool-btn {
@@ -51,6 +137,16 @@
 
 .tool-btn.active .bp5-icon {
   color: var(--accent);
+}
+
+/* Clicking a tool also focuses it; the user-agent focus outline is drawn
+   outside the button and stacks with the inner active ring, showing two blue
+   lines. Suppress the outer outline so only the inner active ring remains. */
+.tool-btn:focus,
+.tool-btn:focus-visible,
+.tool-options-cap:focus,
+.tool-options-cap:focus-visible {
+  outline: none;
 }
 
 .tool-shortcut {

@@ -15,7 +15,7 @@
  * tab is active (display-toggle strategy).
  */
 
-import React, { useCallback, useRef } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import type { TabData } from "../../types";
 import type { ToolId } from "../../data/viewportTools";
 import type { RenderResult } from "../../data/renderResult";
@@ -26,6 +26,7 @@ import { RenderResultPane } from "./RenderResultPane";
 import { ViewportToolPalette } from "../ViewportToolPalette";
 import { RectSelectOverlay } from "../RectSelectOverlay";
 import { useNaviClickHandler } from "../../hooks/useNaviClickHandler";
+import { useMeasureClickHandler } from "../../hooks/useMeasureClickHandler";
 import { useNaviContextMenu } from "../../hooks/useNaviContextMenu";
 import type { HitTestResult } from "../../types";
 
@@ -122,7 +123,12 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
     openNativeContextMenu(hit, viewId, x, y);
   }, [openNativeContextMenu]);
 
+  // Measure target label-set name (defaults to "measure"): chosen in the palette
+  // options popover, applied to each measure pick.
+  const [measureTarget, setMeasureTarget] = useState("measure");
+
   useNaviClickHandler({ setStatusMessage: onStatusMessage ?? (() => {}), openContextMenu });
+  useMeasureClickHandler({ setStatusMessage: onStatusMessage ?? (() => {}), target: measureTarget });
 
   return (
     <div className="content-pane" style={{ position: "relative" }} onMouseUp={handleMouseUp}>
@@ -139,7 +145,12 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
           is active. Mounted only while the canvas is visible. */}
       {molViewVisible && <RectSelectOverlay />}
       {showPalette && (
-        <ViewportToolPalette activeTool={activeTool} onSelect={onSelectTool} />
+        <ViewportToolPalette
+          activeTool={activeTool}
+          onSelect={onSelectTool}
+          measureTarget={measureTarget}
+          onMeasureTargetChange={setMeasureTarget}
+        />
       )}
     </div>
   );
