@@ -1,12 +1,16 @@
 /**
  * Degrade-detection tests for `RectSelectOverlay`.
  *
- * Pins the renderer-side drag-to-service contract:
+ * Pins the renderer-side drag-to-service contract and the navigate-tool
+ * fallback routing:
  *   - the overlay is click-through (no `active` class, no handlers) unless the
  *     `rectSelect` tool is active
- *   - a drag while active fires `cm.invokeService('rectSelect', bounds)` once,
- *     with top-left-normalized bounds in canvas-local coords
- *   - a zero-area click does not select
+ *   - a left-button drag while active fires `cm.invokeService('rectSelect',
+ *     bounds)` once, with top-left-normalized canvas-local bounds, and is NOT
+ *     forwarded to the C++ view (so the camera does not rotate)
+ *   - a left-button click (no drag) is replayed to the view via
+ *     `cm.onMouseEvent` (navigate-tool atom pick), not a rect select
+ *   - non-left buttons (camera / context menu) are forwarded to the view
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -20,10 +24,13 @@ import type { ToolId } from '../data/viewportTools'
 void React
 ;(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { invokeService } = vi.hoisted(() => ({ invokeService: vi.fn() }))
+const { invokeService, onMouseEvent } = vi.hoisted(() => ({
+    invokeService: vi.fn(),
+    onMouseEvent: vi.fn(),
+}))
 
 vi.mock('../hooks/useCueMol', () => ({
-    useCueMol: () => ({ cueMolReady: true, cm: { invokeService } }),
+    useCueMol: () => ({ cueMolReady: true, cm: { invokeService, onMouseEvent } }),
 }))
 vi.mock('../hooks/useMolTab', () => ({
     useMolTabState: () => ({ activeViewID: 7, molTabEntries: [] }),
@@ -56,6 +63,7 @@ function fire(el: HTMLElement, type: string, x: number, y: number, button = 0): 
 
 beforeEach(() => {
     invokeService.mockReset()
+    onMouseEvent.mockReset()
 })
 
 afterEach(() => {
@@ -66,16 +74,17 @@ afterEach(() => {
 })
 
 describe('RectSelectOverlay', () => {
-    it('is click-through and ignores drags when tool is not rectSelect', () => {
+    it('is click-through and ignores events when tool is not rectSelect', () => {
         const overlay = mount('navigate')
         expect(overlay.classList.contains('active')).toBe(false)
         fire(overlay, 'mousedown', 10, 20)
         fire(overlay, 'mousemove', 50, 60)
         fire(overlay, 'mouseup', 50, 60)
         expect(invokeService).not.toHaveBeenCalled()
+        expect(onMouseEvent).not.toHaveBeenCalled()
     })
 
-    it('invokes rectSelect once with normalized bounds on drag-release', () => {
+    it('invokes rectSelect once with normalized bounds on a left drag, no camera forward', () => {
         const overlay = mount('rectSelect')
         expect(overlay.classList.contains('active')).toBe(true)
         fire(overlay, 'mousedown', 10, 20)
@@ -89,6 +98,8 @@ describe('RectSelectOverlay', () => {
             width: 40,
             height: 40,
         })
+        // A rubber-band drag must not reach the C++ view (would rotate camera).
+        expect(onMouseEvent).not.toHaveBeenCalled()
     })
 
     it('normalizes a bottom-right -> top-left drag', () => {
@@ -105,10 +116,23 @@ describe('RectSelectOverlay', () => {
         })
     })
 
-    it('ignores a zero-area click (no drag)', () => {
+    it('forwards a left click (no drag) to the view instead of selecting', () => {
         const overlay = mount('rectSelect')
         fire(overlay, 'mousedown', 30, 30)
         fire(overlay, 'mouseup', 30, 30)
         expect(invokeService).not.toHaveBeenCalled()
+        // Replayed press + release so the navigate tool sees a click.
+        expect(onMouseEvent).toHaveBeenCalledTimes(2)
+        expect(onMouseEvent.mock.calls[0][0]).toBe(7)
+        expect(onMouseEvent.mock.calls[0][1]).toBe('mouseDown')
+        expect(onMouseEvent.mock.calls[1][1]).toBe('mouseUp')
+    })
+
+    it('forwards non-left buttons (context menu / camera) to the view', () => {
+        const overlay = mount('rectSelect')
+        fire(overlay, 'mousedown', 40, 40, 2) // right button
+        expect(invokeService).not.toHaveBeenCalled()
+        expect(onMouseEvent).toHaveBeenCalledTimes(1)
+        expect(onMouseEvent.mock.calls[0][1]).toBe('mouseDown')
     })
 })
