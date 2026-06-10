@@ -56,4 +56,12 @@ describe('shared/recentFilesLogic', () => {
         addToRecents(original, { path: '/b.qsc', ftype: 'scene' })
         expect(original).toEqual([{ path: '/a.pdb', ftype: 'obj' }])
     })
+
+    it('preserves and updates readerName across promote', () => {
+        let list = addToRecents([], { path: '/a.pdb', ftype: 'obj', readerName: 'pdb' })
+        expect(list[0].readerName).toBe('pdb')
+        // Re-adding the same path keeps the latest readerName.
+        list = addToRecents(list, { path: '/a.pdb', ftype: 'obj', readerName: 'mmcif' })
+        expect(list).toEqual([{ path: '/a.pdb', ftype: 'obj', readerName: 'mmcif' }])
+    })
 })

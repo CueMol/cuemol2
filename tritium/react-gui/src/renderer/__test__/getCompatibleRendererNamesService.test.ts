@@ -192,9 +192,10 @@ describe('getCompatibleRendererNames — .cif ambiguity (regression)', () => {
         expect(result).toEqual({ types: ['contour', 'isosurf'], objType: 'DensityMap', readerName: 'mmcifmap' })
     })
 
-    // Content-first mode: the extension is ignored entirely; the sniffer
-    // is called with an empty CSV ("all registered readers in category").
-    it('content-first mode: searchReaderByContent("") drives the choice', () => {
+    // Content-first mode: the extension is ignored entirely; the sniffer is
+    // called with the CSV of every user-facing reader in the category (qdf*
+    // internal readers excluded so they can never win the sniff).
+    it('content-first mode: sniff over all user-facing readers drives the choice', () => {
         const env = makeEnv({
             readerRendTypes: rendTypes,
             readerClassNames: classNames,
@@ -205,7 +206,7 @@ describe('getCompatibleRendererNames — .cif ambiguity (regression)', () => {
             filePath: '1mbn.cif',
             contentFirst: true,
         })
-        expect(env.searchReaderByContent).toHaveBeenCalledWith('1mbn.cif', '', 0, false, 65536)
+        expect(env.searchReaderByContent).toHaveBeenCalledWith('1mbn.cif', 'mmcifmap,mmcif', 0, false, 65536)
         expect(env.createHandler).toHaveBeenCalledWith('mmcif', 0)
         expect(result).toEqual({ types: ['simple', 'cartoon', 'tube', 'ribbon'], objType: 'MolCoord', readerName: 'mmcif' })
     })

@@ -3,6 +3,10 @@
  * @description Registers molecule-editing tool dialog triggers (UXP
  * `tools/*` dialogs reached from the Edit / Tools menus). Currently:
  *   - `UiChangeChainIdDialog` -> `ChangeChainIdDialog` (UXP `chg_chname`).
+ *   - `UiDeleteMolDialog` -> `DeleteMolDialog` (UXP `tools/mol_delete`).
+ *   - `UiChangeResidueIndexDialog` -> `ChangeResidueIndexDialog` (UXP `tools/chg_resindex`).
+ *   - `UiMergeMolDialog` -> `MergeMolDialog` (UXP `tools/mol_merge`).
+ *   - `UiReassignProt2ndryDialog` -> `ReassignProt2ndryDialog` (UXP `tools/prot2ndry-tool`).
  *   - `UiMolSuperpose` -> `MolSuperposeDialog` (UXP `tools/ssm_sup`).
  *
  * Each command resolves the active scene, opens the dialog (which owns its
@@ -14,6 +18,10 @@ import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
 import { useShowChangeChainIdDialog } from '../components/dialogs/ChangeChainIdDialogProvider'
+import { useShowDeleteMolDialog } from '../components/dialogs/DeleteMolDialogProvider'
+import { useShowChangeResidueIndexDialog } from '../components/dialogs/ChangeResidueIndexDialogProvider'
+import { useShowMergeMolDialog } from '../components/dialogs/MergeMolDialogProvider'
+import { useShowReassignProt2ndryDialog } from '../components/dialogs/ReassignProt2ndryDialogProvider'
 import { useShowMolSuperposeDialog } from '../components/dialogs/MolSuperposeDialogProvider'
 
 interface UseToolCommandsOptions {
@@ -26,6 +34,10 @@ export function useToolCommands({
     getActiveSceneInfo,
 }: UseToolCommandsOptions): void {
     const showChangeChainIdDialog = useShowChangeChainIdDialog()
+    const showDeleteMolDialog = useShowDeleteMolDialog()
+    const showChangeResidueIndexDialog = useShowChangeResidueIndexDialog()
+    const showMergeMolDialog = useShowMergeMolDialog()
+    const showReassignProt2ndryDialog = useShowReassignProt2ndryDialog()
     const showMolSuperposeDialog = useShowMolSuperposeDialog()
 
     useRegisterCommand(CmdId.UiChangeChainIdDialog, () => {
@@ -33,6 +45,34 @@ export function useToolCommands({
         const info = getActiveSceneInfo()
         if (!info) return
         void showChangeChainIdDialog({ sceneId: info.scene_uid })
+    })
+
+    useRegisterCommand(CmdId.UiDeleteMolDialog, () => {
+        if (!cm) return
+        const info = getActiveSceneInfo()
+        if (!info) return
+        void showDeleteMolDialog({ sceneId: info.scene_uid })
+    })
+
+    useRegisterCommand(CmdId.UiChangeResidueIndexDialog, () => {
+        if (!cm) return
+        const info = getActiveSceneInfo()
+        if (!info) return
+        void showChangeResidueIndexDialog({ sceneId: info.scene_uid })
+    })
+
+    useRegisterCommand(CmdId.UiMergeMolDialog, () => {
+        if (!cm) return
+        const info = getActiveSceneInfo()
+        if (!info) return
+        void showMergeMolDialog({ sceneId: info.scene_uid })
+    })
+
+    useRegisterCommand(CmdId.UiReassignProt2ndryDialog, () => {
+        if (!cm) return
+        const info = getActiveSceneInfo()
+        if (!info) return
+        void showReassignProt2ndryDialog({ sceneId: info.scene_uid })
     })
 
     useRegisterCommand(CmdId.UiMolSuperpose, () => {

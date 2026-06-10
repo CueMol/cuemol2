@@ -1,29 +1,31 @@
 /**
- * @file components/dialogs/ChangeChainIdDialog.tsx
- * @description Modal that reassigns the chain ID of a selected set of
- * residues. Ports the UXP `tools/chg_chname.xul` + `chg_chname.js` dialog:
+ * @file components/dialogs/ChangeResidueIndexDialog.tsx
+ * @description Modal that shifts or renumbers the residue index of a selected
+ * set of residues. Ports the UXP `tools/chg_resindex.xul` + `chg_resindex.js`
+ * dialog:
  *   - Molecule picker (`ObjectSelect`, MolCoord filter).
  *   - Atom-selection input (`MolSelList`).
- *   - New chain ID text field.
- *   - OK commits via the `changeChainName` worker service (which calls
- *     `MolAnlManager.changeChainName` under an undo txn).
+ *   - Mode: "Shift by" (relative) / "Start from" (absolute) -- `SegmentField`.
+ *   - Value (`TextField`, parsed as an integer -- mirrors UXP textbox+parseInt).
+ *   - "Renumber" switch: on -> `renumResIndex`, off -> `shiftResIndex`.
+ *   - OK commits via the `changeResidueIndex` worker service under an undo txn.
  *
- * The caller passes only `{ sceneId }`; the molecule is chosen inside the
- * dialog. Built entirely from h3-kit/form widgets so sizing/labels follow
- * the form-kit catalog (no per-dialog spacing tuning).
+ * The caller passes only `{ sceneId }`. The last-picked molecule persists
+ * within the session because `objId` is not reset on open (the provider keeps
+ * the component mounted).
  */
 
 import React, { useCallback, useEffect, useState } from 'react'
 import { Alert, Button, Dialog, DialogBody, DialogFooter } from '@blueprintjs/core'
 import { useTheme } from '../../contexts/ThemeContext'
 import { useCueMol } from '../../hooks/useCueMol'
-import { FieldSection, TextField } from '../../h3-kit/form'
+import { Field, FieldSection, SegmentField, SwitchField, TextField } from '../../h3-kit/form'
 import { ObjectSelect, objectFilters } from '../../h3-kit/ObjectSelect'
 import { MolSelList } from '../../h3-kit/MolSelList/MolSelList'
 import { pushHistory } from '../../h3-kit/MolSelList/selHistory'
-import { resolveChainNameInput } from './chainNameInput'
+import { resolveResIndexInput, type ResIndexMode } from './resIndexInput'
 
-export interface ChangeChainIdDialogResult {
+export interface ChangeResidueIndexDialogResult {
     ok: boolean
     /** Populated when ok=false. */
     error?: string
@@ -32,11 +34,16 @@ export interface ChangeChainIdDialogResult {
 interface Props {
     visible: boolean
     sceneId: number
-    onConfirm: (result: ChangeChainIdDialogResult) => void
+    onConfirm: (result: ChangeResidueIndexDialogResult) => void
     onCancel: () => void
 }
 
-export function ChangeChainIdDialog({
+const MODE_OPTIONS: { label: string; value: ResIndexMode }[] = [
+    { label: 'Shift by', value: 'shift' },
+    { label: 'Start from', value: 'start' },
+]
+
+export function ChangeResidueIndexDialog({
     visible, sceneId, onConfirm, onCancel,
 }: Props): React.JSX.Element {
     const { theme } = useTheme()
@@ -45,87 +52,74 @@ export function ChangeChainIdDialog({
 
     const [objId, setObjId] = useState<number | undefined>(undefined)
     const [selStr, setSelStr] = useState<string>('')
-    const [chainName, setChainName] = useState<string>('')
+    const [mode, setMode] = useState<ResIndexMode>('shift')
+    const [valueStr, setValueStr] = useState<string>('1')
+    const [renumber, setRenumber] = useState<boolean>(false)
     const [submitting, setSubmitting] = useState(false)
     const [errorMsg, setErrorMsg] = useState<string | null>(null)
-    // Pending confirm before commit (blank-chain / non-conforming length).
     const [pendingCommit, setPendingCommit] =
-        useState<{ value: string; message: string } | null>(null)
+        useState<{ value: number; message: string } | null>(null)
 
-    // Reset transient state on each open -- the provider keeps the component
-    // mounted across show/hide cycles, so leftover flags would otherwise stick.
-    // `objId` is intentionally NOT reset so the last-picked molecule persists
-    // within the session (UXP `_frommol` history, but session-scoped).
+    // Reset transient state on each open. `objId` is intentionally NOT reset so
+    // the last-picked molecule persists within the session.
     useEffect(() => {
         if (!visible) return
         setSelStr('')
-        setChainName('')
+        setMode('shift')
+        setValueStr('1')
+        setRenumber(false)
         setSubmitting(false)
         setErrorMsg(null)
         setPendingCommit(null)
     }, [visible])
 
-    const trimmed = chainName.trim()
-    // PDB chain IDs are a single character; longer values are accepted (the C++
-    // layer allows them) but flagged as non-conforming -- UXP shows a confirm.
-    const lengthWarning = trimmed.length > 1
-
-    // Commit the resolved chain ID via the worker service. `name` is the value
-    // produced by `resolveChainNameInput` (e.g. "_" for a blank chain).
-    const commit = useCallback(async (name: string) => {
+    const commit = useCallback(async (value: number) => {
         if (!cm || objId === undefined) return
         setSubmitting(true)
         setErrorMsg(null)
         try {
-            const res = await cm.invokeService('changeChainName', {
+            const res = await cm.invokeService('changeResidueIndex', {
                 sceneId,
                 objId,
                 selStr,
-                chainName: name,
+                bshift: mode === 'shift',
+                value,
+                renumber,
             })
             setSubmitting(false)
             if (res?.ok) {
                 if (selStr.trim() !== '') pushHistory(selStr.trim())
                 onConfirm({ ok: true })
             } else {
-                setErrorMsg(res?.error ?? 'Failed to change chain ID')
+                setErrorMsg(res?.error ?? 'Failed to change residue index')
             }
         } catch (err) {
             setErrorMsg(String(err))
             setSubmitting(false)
         }
-    }, [cm, sceneId, objId, selStr, onConfirm])
+    }, [cm, sceneId, objId, selStr, mode, renumber, onConfirm])
 
     const handleOk = useCallback(() => {
         if (!cm || objId === undefined) return
-        const res = resolveChainNameInput(chainName)
+        const res = resolveResIndexInput(mode, valueStr)
         switch (res.kind) {
-            case 'empty':
-                setErrorMsg('New chain ID is empty.')
+            case 'invalid':
+                setErrorMsg(res.message)
                 return
-            case 'blank':
-                setPendingCommit({
-                    value: res.value,
-                    message: 'Chain ID < > will be converted to <_>. Change the chain ID?',
-                })
-                return
-            case 'long':
-                setPendingCommit({
-                    value: res.value,
-                    message: 'Chain ID longer than 1 character does not conform to the PDB format. Change the chain ID?',
-                })
+            case 'pdb-warn':
+                setPendingCommit({ value: res.value, message: res.message })
                 return
             case 'ok':
                 void commit(res.value)
                 return
         }
-    }, [cm, objId, chainName, commit])
+    }, [cm, objId, mode, valueStr, commit])
 
     return (
         <Dialog
             isOpen={visible}
             onClose={onCancel}
-            title="Change chain ID"
+            title="Change residue index"
             style={{ width: 380 }}
             portalClassName={isDark ? 'bp5-dark' : ''}
             canOutsideClickClose={false}
@@ -157,22 +151,32 @@ export function ChangeChainIdDialog({
                         />
                     </FieldSection>
 
-                    <FieldSection title="New chain ID">
-                        <TextField
-                            value={chainName}
-                            onChange={(v) => {
-                                setChainName(v)
+                    <FieldSection title="Residue index">
+                        <SegmentField<ResIndexMode>
+                            value={mode}
+                            onValueChange={(v) => {
+                                setMode(v)
                                 if (errorMsg) setErrorMsg(null)
                             }}
-                            placeholder="e.g. A"
-                            disabled={submitting || objId === undefined}
-                            invalid={errorMsg !== null && trimmed === ''}
+                            options={MODE_OPTIONS}
                         />
-                        {lengthWarning && (
-                            <div className="h3-dialog-hint">
-                                Chain ID longer than 1 character does not conform to the PDB format.
-                            </div>
-                        )}
+                        <Field label={mode === 'shift' ? 'Shift by' : 'Start from'}>
+                            <TextField
+                                value={valueStr}
+                                onChange={(v) => {
+                                    setValueStr(v)
+                                    if (errorMsg) setErrorMsg(null)
+                                }}
+                                disabled={submitting || objId === undefined}
+                            />
+                        </Field>
+                        <Field label="Renumber" inline>
+                            <SwitchField
+                                checked={renumber}
+                                onChange={setRenumber}
+                                disabled={submitting || objId === undefined}
+                            />
+                        </Field>
                     </FieldSection>
 
                     {errorMsg !== null && (
@@ -187,7 +191,7 @@ export function ChangeChainIdDialog({
                         <Button
                             intent="primary"
                             onClick={handleOk}
-                            disabled={submitting || objId === undefined || chainName === ''}
+                            disabled={submitting || objId === undefined}
                             loading={submitting}
                         >
                             OK

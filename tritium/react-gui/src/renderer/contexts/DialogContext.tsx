@@ -25,6 +25,10 @@ import { ObjectPickerDialogProvider } from '../components/dialogs/ObjectPickerDi
 import { ConfirmReloadSceneDialogProvider } from '../components/dialogs/ConfirmReloadSceneDialogProvider'
 import { SymmetryChangeDialogProvider } from '../components/dialogs/SymmetryChangeDialogProvider'
 import { ChangeChainIdDialogProvider } from '../components/dialogs/ChangeChainIdDialogProvider'
+import { DeleteMolDialogProvider } from '../components/dialogs/DeleteMolDialogProvider'
+import { ChangeResidueIndexDialogProvider } from '../components/dialogs/ChangeResidueIndexDialogProvider'
+import { MergeMolDialogProvider } from '../components/dialogs/MergeMolDialogProvider'
+import { ReassignProt2ndryDialogProvider } from '../components/dialogs/ReassignProt2ndryDialogProvider'
 import { MolSuperposeDialogProvider } from '../components/dialogs/MolSuperposeDialogProvider'
 import { ErrorAlertDialogProvider } from '../components/dialogs/ErrorAlertDialogProvider'
 import { composeProviders } from './composeProviders'
@@ -45,6 +49,10 @@ export const DialogProvider = composeProviders([
   ConfirmReloadSceneDialogProvider,
   SymmetryChangeDialogProvider,
   ChangeChainIdDialogProvider,
+  DeleteMolDialogProvider,
+  ChangeResidueIndexDialogProvider,
+  MergeMolDialogProvider,
+  ReassignProt2ndryDialogProvider,
   MolSuperposeDialogProvider,
   ErrorAlertDialogProvider,
 ])
