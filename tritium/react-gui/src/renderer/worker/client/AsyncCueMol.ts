@@ -299,9 +299,9 @@ export class AsyncCueMol {
      * only when multiple readers share the extension.
      */
     loadObject(filePath: string, scene_id: number, options: FileOpenOptions,
-               contentFirst = false, maxSniffBytes?: number): Promise<boolean> {
+               contentFirst = false, maxSniffBytes?: number, readerName?: string): Promise<boolean> {
         return fileApi.loadObject(this._transport, filePath, scene_id, options,
-                                  contentFirst, maxSniffBytes);
+                                  contentFirst, maxSniffBytes, readerName);
     }
 
     // --- Edit ---

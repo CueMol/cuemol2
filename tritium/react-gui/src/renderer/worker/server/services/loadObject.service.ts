@@ -46,6 +46,12 @@ export interface LoadObjectArgs {
      * against pathological / very large inputs.
      */
     maxSniffBytes?: number;
+    /**
+     * Explicit reader nickname to use, bypassing sniff. Set when the caller
+     * already resolved the reader (dialog preview / MRU reopen) so the load
+     * uses the exact same reader.
+     */
+    readerName?: string;
 }
 
 /**
@@ -60,7 +66,7 @@ function fileStem(filePath: string): string {
 function loadObject(ctx: WorkerContext, args: LoadObjectArgs): { ok: boolean } {
     log.info(`[worker] loading object file: ${args.filePath} (contentFirst=${args.contentFirst})`);
 
-    const nickname = pickReaderName(ctx, args.filePath, args.contentFirst, args.maxSniffBytes);
+    const nickname = args.readerName ?? pickReaderName(ctx, args.filePath, args.contentFirst, args.maxSniffBytes);
     if (!nickname) {
         log.warn(`[worker] loadObject: no reader matched ${args.filePath}`);
         return { ok: false };

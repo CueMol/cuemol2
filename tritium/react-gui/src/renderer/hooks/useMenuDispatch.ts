@@ -80,6 +80,18 @@ export function useMenuDispatch(activeTab: string | null): {
         case 'menu:change-chain-id':
           dispatch(CmdId.UiChangeChainIdDialog).catch(logErr('change chain id dialog:'))
           break
+        case 'menu:delete-mol-atoms':
+          dispatch(CmdId.UiDeleteMolDialog).catch(logErr('delete mol dialog:'))
+          break
+        case 'menu:change-resid-num':
+          dispatch(CmdId.UiChangeResidueIndexDialog).catch(logErr('change residue index dialog:'))
+          break
+        case 'menu:merge-mol':
+          dispatch(CmdId.UiMergeMolDialog).catch(logErr('merge mol dialog:'))
+          break
+        case 'menu:reassign-2ndry':
+          dispatch(CmdId.UiReassignProt2ndryDialog).catch(logErr('reassign 2ndry dialog:'))
+          break
         case 'menu:mol-superpose':
           dispatch(CmdId.UiMolSuperpose).catch(logErr('mol superpose dialog:'))
           break
@@ -120,10 +132,17 @@ export function useMenuDispatch(activeTab: string | null): {
       const logErr = (prefix: string) => (e: unknown) => console.error(prefix, e)
       if (entry.ftype === 'scene') {
         dispatch(CmdId.OpenSceneByPath, entry.path).catch(logErr('recent.scene:'))
+      } else if (entry.readerName) {
+        // Reader recorded at first open: reuse it directly (UXP MRU parity).
+        // contentFirst is irrelevant once readerName pins the reader.
+        dispatch(CmdId.OpenObjByPath, {
+          name: entry.path, path: entry.path,
+          contentFirst: false, readerName: entry.readerName,
+        }).catch(logErr('recent.obj:'))
       } else {
-        // No filter context for recent files: default to content-first
-        // so reopening a renamed / extension-spoofed file still resolves
-        // to the right reader.
+        // Legacy entry without a stored reader: no filter context, so
+        // default to content-first sniff (qdf* readers are excluded by
+        // pickReaderName) to resolve a renamed / extension-spoofed file.
         dispatch(CmdId.OpenObjByPath, { name: entry.path, path: entry.path, contentFirst: true })
           .catch(logErr('recent.obj:'))
       }

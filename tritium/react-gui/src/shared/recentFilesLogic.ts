@@ -23,7 +23,7 @@ export function addToRecents(
 ): RecentFileEntry[] {
     if (!entry.path) return current.slice()
     const next = current.filter((e) => e.path !== entry.path)
-    next.unshift({ path: entry.path, ftype: entry.ftype })
+    next.unshift({ path: entry.path, ftype: entry.ftype, readerName: entry.readerName })
     if (next.length > max) next.length = max
     return next
 }

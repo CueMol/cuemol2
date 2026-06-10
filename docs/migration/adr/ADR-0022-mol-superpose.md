@@ -1,7 +1,7 @@
-# ADR-0022: Molecular superposition dialog — algorithm dispatch and deferred RMSD-file output
+# ADR-0022: Molecular superposition dialog — algorithm dispatch and dropped RMSD-file output
 
-- Status: accepted (in-app verification pending)
-- Date: 2026-06-06
+- Status: accepted (in-app verified). RMSD-file output: dropped (won't implement).
+- Date: 2026-06-06 (updated 2026-06-07: RMSD-file output decided out of scope)
 - Mapping rows: [`dialog.tool.ssm-sup`](../mapping/tool_dlgs.md#dialogtoolssm-sup)
 
 ## Context
@@ -40,21 +40,25 @@ shared `MolSelList` `selHistory` store. Initial molecule defaults: restored
 history when still present, else reference=first / moving=second MolCoord (UXP
 `onLoad`).
 
-The **"Write RMSD info file" option is deferred** — it needs a native save-file
-dialog (main-process round-trip) to obtain a path before calling
-`MolAnlManager.calcRMSD`. The checkbox is omitted from the ported dialog rather
-than shown disabled.
+The **"Write RMSD info file" option is dropped (won't implement)** — it needs a
+native save-file dialog (main-process round-trip) to obtain a path before calling
+`MolAnlManager.calcRMSD`. The decision is not to port it because: (a) the RMSD
+value is already obtainable from the log, and (b) introducing a main<->worker
+file-path contract for this low-frequency option is not worth the cost. If a
+shared native-save infrastructure lands later for other "compute -> write file"
+tools, this can be revisited. The checkbox is omitted from the ported dialog.
 
 ## Consequences
 
 - Core superposition (LSQ / SSM, both selections, auto-recenter, useprop, undo) is
   at full UXP parity and reuses the `chg-chname` tool-dialog scaffolding, so no new
   UI primitives were introduced.
-- RMSD-file output is unavailable until a save-dialog path is added; users who need
-  the RMSD value can still read it from the log (SSM logs RMSD; a future
-  `superposeSSM_rmsd` / `calcRMSD` surface can expose it inline).
-- The deferral keeps this change free of a new main↔worker file-path contract; that
-  contract can be designed once and shared with other "compute → write file" tools.
+- RMSD-file output is not provided; users who need the RMSD value read it from the
+  log (SSM logs RMSD; a future `superposeSSM_rmsd` / `calcRMSD` surface can expose
+  it inline if demand arises).
+- Dropping it keeps this change free of a new main↔worker file-path contract; that
+  contract can be designed once and shared with other "compute → write file" tools
+  if/when one is actually needed.
 
 ## Notes
 

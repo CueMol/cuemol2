@@ -321,6 +321,22 @@ import type {
   ChangeChainNameResult,
 } from '../server/services/changeChainName.service'
 import type {
+  DeleteMolAtomsArgs,
+  DeleteMolAtomsResult,
+} from '../server/services/deleteMolAtoms.service'
+import type {
+  ChangeResidueIndexArgs,
+  ChangeResidueIndexResult,
+} from '../server/services/changeResidueIndex.service'
+import type {
+  MergeMolArgs,
+  MergeMolResult,
+} from '../server/services/mergeMol.service'
+import type {
+  ReassignProt2ndryArgs,
+  ReassignProt2ndryResult,
+} from '../server/services/reassignProt2ndry.service'
+import type {
   SuperposeMolArgs,
   SuperposeMolResult,
 } from '../server/services/superposeMol.service'
@@ -501,6 +517,10 @@ export interface ServiceMap {
   showSymmRenderer:           { args: ShowSymmRendererArgs;            result: ShowSymmRendererResult }
   showUnitCellRenderer:       { args: ShowUnitCellRendererArgs;        result: ShowUnitCellRendererResult }
   changeChainName:            { args: ChangeChainNameArgs;             result: ChangeChainNameResult }
+  deleteMolAtoms:             { args: DeleteMolAtomsArgs;              result: DeleteMolAtomsResult }
+  changeResidueIndex:         { args: ChangeResidueIndexArgs;          result: ChangeResidueIndexResult }
+  mergeMol:                   { args: MergeMolArgs;                    result: MergeMolResult }
+  reassignProt2ndry:          { args: ReassignProt2ndryArgs;           result: ReassignProt2ndryResult }
   superposeMol:               { args: SuperposeMolArgs;                result: SuperposeMolResult }
   listMapRenderers:           { args: ListMapRenderersArgs;            result: ListMapRenderersResult }
   getMapRendererState:        { args: GetMapRendererStateArgs;         result: GetMapRendererStateResult }

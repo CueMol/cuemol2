@@ -76,6 +76,13 @@ export type RecentFileType = 'obj' | 'scene'
 export interface RecentFileEntry {
   path: string
   ftype: RecentFileType
+  /**
+   * Obj reader nickname this file was opened with (e.g. 'pdb', 'mmcif').
+   * Persisted so reopening from the MRU reuses the same reader instead of
+   * re-sniffing (UXP `mru-files` `ftype` parity). Undefined for scene files
+   * and for legacy entries saved before this field existed.
+   */
+  readerName?: string
 }
 
 // ── File events ─────────────────────────────────────────────────────────────
@@ -94,6 +101,12 @@ export interface FileOpenedData {
    * Always false for scene files (.qsc).
    */
   contentFirst: boolean
+  /**
+   * Explicit obj reader nickname to use, bypassing content/extension sniff.
+   * Set when reopening from the MRU (the reader the file was first opened
+   * with). Undefined for a fresh File > Open (reader resolved by sniff).
+   */
+  readerName?: string
 }
 
 export interface FileErrorData {

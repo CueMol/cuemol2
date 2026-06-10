@@ -9,6 +9,7 @@
  */
 import type { WorkerContext } from '../../types/WorkerContext';
 import { DEFAULT_SNIFF_CAP } from '../../../shared/sniffConfig';
+import { isHiddenObjReader } from './readerFilter';
 
 export const OBJREADER_CATEGORY = 0;
 
@@ -32,22 +33,32 @@ export function pickReaderName(
     maxSniffBytes: number = DEFAULT_SNIFF_CAP,
 ): string {
     const cap = maxSniffBytes > 0 ? maxSniffBytes : DEFAULT_SNIFF_CAP;
-    if (contentFirst) {
-        // Pure content-first: every registered reader's canHandleContent
-        // runs; the first YES wins. Returns '' when nothing claims it.
-        // The cap bounds each candidate's stream scan so pathological
-        // inputs can't stall the sniff loop.
-        return ctx.strMgr.searchReaderByContent(filePath, '', OBJREADER_CATEGORY, false, cap);
-    }
 
-    // Ext-first: collect every reader whose fext claims this extension.
+    // Every user-facing obj reader (internal qdf* readers are never chosen --
+    // they would otherwise win a content sniff over the intended reader, e.g.
+    // qdfpdb over pdb). Mirrors getOpenFilters' dialog-filter exclusion.
     const infoJson = ctx.strMgr.getInfoJSON2();
     const info: Array<{ name: string; fext: string; category: number }> = JSON.parse(infoJson);
+    const objReaders = info.filter(
+        (e) => e.category === OBJREADER_CATEGORY && !isHiddenObjReader(e.name),
+    );
+
+    if (contentFirst) {
+        // Content-first: sniff every user-facing reader's canHandleContent;
+        // the first YES wins. Restrict the candidate list to non-qdf readers
+        // (passing a CSV instead of '' so the C++ sniff never considers qdf*).
+        // The cap bounds each candidate's stream scan so pathological inputs
+        // can't stall the sniff loop.
+        const csv = objReaders.map((e) => e.name).join(',');
+        if (!csv) return '';
+        return ctx.strMgr.searchReaderByContent(filePath, csv, OBJREADER_CATEGORY, false, cap);
+    }
+
+    // Ext-first: collect every user-facing reader whose fext claims this extension.
     const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
-    const candidates = info
+    const candidates = objReaders
         .filter(
             (e) =>
-                e.category === OBJREADER_CATEGORY &&
                 e.fext.split(';').map((s) => s.trim().replace(/^\*\./, '').toLowerCase()).includes(ext),
         )
         .map((e) => e.name);

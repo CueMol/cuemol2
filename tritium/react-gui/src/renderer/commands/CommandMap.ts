@@ -24,6 +24,10 @@ export interface CommandMap {
   [CmdId.UiAboutDialog]:       { args: void;            result: void }
   [CmdId.UiGetPdbDialog]:      { args: void;            result: void }
   [CmdId.UiChangeChainIdDialog]: { args: void;          result: void }
+  [CmdId.UiDeleteMolDialog]:   { args: void;            result: void }
+  [CmdId.UiChangeResidueIndexDialog]: { args: void;     result: void }
+  [CmdId.UiMergeMolDialog]:    { args: void;            result: void }
+  [CmdId.UiReassignProt2ndryDialog]: { args: void;      result: void }
   [CmdId.UiMolSuperpose]:      { args: void;            result: void }
 
   // Tabs
