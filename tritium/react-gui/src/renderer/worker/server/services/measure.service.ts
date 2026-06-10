@@ -15,6 +15,7 @@
 import type { WorkerContext } from '../types/WorkerContext';
 import type { GUIView } from '@cuemol/core/src/wrappers/GUIView';
 import type { MsgLog } from '@cuemol/core/src/wrappers/MsgLog';
+import type { DistPickDrawObj } from '@cuemol/core/src/wrappers/DistPickDrawObj';
 import type { HitTestResult } from '../../../types';
 
 /**
@@ -41,9 +42,7 @@ const pickBuffers = new Map<number, PickBuffer>();
 
 // ---- internal helpers ----
 
-function runHitTest(ctx: WorkerContext, viewId: number, x: number, y: number): HitTestResult | null {
-    const view = ctx.sceMgr.getView(viewId) as GUIView;
-    if (!view) return null;
+function hitTestOnView(view: GUIView, x: number, y: number): HitTestResult | null {
     const sres = view.hitTest(x, y);
     if (!sres) return null;
     try {
@@ -57,6 +56,21 @@ function writeMsgLog(ctx: WorkerContext, message: string): void {
     const msgLog = ctx.svc.getService('MsgLog') as MsgLog;
     if (!msgLog) return;
     msgLog.writeln(message);
+}
+
+/**
+ * Show a crosshair marker at the picked atom via the view's DistPickDrawObj.
+ * The draw object stores 3D atom positions and re-projects every frame, so the
+ * markers stay anchored to the atoms when the camera rotates / translates
+ * between picks (unlike a 2D screen overlay). `getDrawObj` lazily creates and
+ * caches the draw object; setting `enabled` makes the view render it.
+ */
+function appendPickFeedback(view: GUIView, objId: number, atomId: number): void {
+    const dobj = view.getDrawObj('DistPickDrawObj') as DistPickDrawObj;
+    if (!dobj) return;
+    dobj.enabled = true;
+    dobj.append(objId, atomId);
+    view.invalidate();
 }
 
 // ---- service: measurePick (left click -- hittest + accumulate) ----
@@ -76,8 +90,6 @@ export interface MeasurePickResult {
 }
 
 function measurePick(ctx: WorkerContext, args: MeasurePickArgs): MeasurePickResult {
-    const raw = runHitTest(ctx, args.viewId, args.x, args.y);
-
     // Re-fetch (or start) the buffer; switching sub-mode restarts the sequence.
     let buf = pickBuffers.get(args.viewId);
     if (!buf || buf.mode !== args.mode) {
@@ -85,11 +97,16 @@ function measurePick(ctx: WorkerContext, args: MeasurePickArgs): MeasurePickResu
         pickBuffers.set(args.viewId, buf);
     }
 
+    const view = ctx.sceMgr.getView(args.viewId) as GUIView;
+    if (!view) return { handled: false, picked: buf.picks.length };
+
+    const raw = hitTestOnView(view, args.x, args.y);
     if (!raw || raw.objtype !== 'MolCoord') {
         return { handled: false, picked: buf.picks.length };
     }
 
     buf.picks.push({ objId: raw.obj_id, atomId: raw.atom_id });
+    appendPickFeedback(view, raw.obj_id, raw.atom_id);
 
     const msg = `${buf.picks.length} atom ([${raw.obj_name}] ${raw.message}) picked`;
     writeMsgLog(ctx, msg);
