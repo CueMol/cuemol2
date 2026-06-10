@@ -18,7 +18,9 @@
 .tool-palette-separator {
   height: 1px;
   margin: var(--space-2) var(--space-1);
-  background: var(--border);
+  /* The palette sits on an elevated surface where --border has too little
+     contrast to read; use the muted text tone for a clearly visible divider. */
+  background: var(--text-muted);
 }
 
 /* Measure group "options" cap: opens the target label-set popover.
@@ -80,6 +82,16 @@
 
 .tool-btn.active .bp5-icon {
   color: var(--accent);
+}
+
+/* Clicking a tool also focuses it; the user-agent focus outline is drawn
+   outside the button and stacks with the inner active ring, showing two blue
+   lines. Suppress the outer outline so only the inner active ring remains. */
+.tool-btn:focus,
+.tool-btn:focus-visible,
+.tool-options-cap:focus,
+.tool-options-cap:focus-visible {
+  outline: none;
 }
 
 .tool-shortcut {
