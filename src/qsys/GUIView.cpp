@@ -550,6 +550,50 @@ LString GUIView::hitTestRect(int ax, int ay, int aw, int ah, bool bNearest)
     return rval;
 }
 
+qlib::LScrVector4D GUIView::projToScreen(const qlib::Vector4D &wpos)
+{
+    double slabdepth = getSlabDepth();
+    if (slabdepth <= 0.1) slabdepth = 0.1;
+
+    const double zoom = getZoom();
+    const double dist = getViewDist();
+    const double slabnear = dist - slabdepth / 2.0;
+    const double slabfar = dist + slabdepth;
+    const double vw = zoom / 2.0;
+    const double width = getWidth();
+    const double height = getHeight();
+    const double fasp = (height > 0.0) ? (width / height) : 1.0;
+
+    // Projection + model-view, matching hitTestImpl (minus the pick matrix).
+    Matrix4D projmat;
+    if (isPerspec())
+        projmat = DisplayContext::makePersProjMat(vw, fasp, slabnear, slabfar, dist);
+    else
+        projmat = DisplayContext::makeOrthoProjMat(vw, fasp, slabnear, slabfar);
+
+    Matrix4D mvmat;
+    mvmat.translate(Vector4D(0, 0, -dist));
+    mvmat.rotate(getRotQuat());
+    const Vector4D cen = getViewCenter();
+    mvmat.translate(Vector4D(-cen.x(), -cen.y(), -cen.z()));
+
+    const Vector4D p(wpos.x(), wpos.y(), wpos.z(), 1.0);
+    const Vector4D clip = projmat.mulvec(mvmat.mulvec(p));
+
+    double w = clip.w();
+    if (std::fabs(w) < 1.0e-8) w = (w < 0.0) ? -1.0e-8 : 1.0e-8;
+
+    const double ndcx = clip.x() / w;
+    const double ndcy = clip.y() / w;
+    const double ndcz = clip.z() / w;
+
+    // NDC -> logical screen pixels (top-left origin, y down).
+    const double sx = (ndcx * 0.5 + 0.5) * width;
+    const double sy = (0.5 - ndcy * 0.5) * height;
+
+    return qlib::LScrVector4D(Vector4D(sx, sy, ndcz));
+}
+
 bool GUIView::hitTestImpl(gfx::DisplayContext *pdc, const Vector4D &parm, bool fGetAll,
                           double far_factor)
 {

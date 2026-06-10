@@ -68,6 +68,9 @@ import type {
 import type {
   RectSelectArgs, RectSelectResult,
 } from '../server/services/rectSelect.service'
+import type {
+  LassoSelectArgs, LassoSelectResult,
+} from '../server/services/lassoSelect.service'
 import type { ProposeNewTabNamesArgs, ProposeNewTabNamesResult } from '../server/services/proposeNewTabNames.service'
 import type { ProposeUniqNameArgs, ProposeUniqNameResult } from '../server/services/proposeUniqName.service'
 import type { RedoArgs } from '../server/services/redo.service'
@@ -490,6 +493,7 @@ export interface ServiceMap {
   naviClickAtom:              { args: NaviClickAtomArgs;               result: NaviClickAtomResult }
   naviResidSel:               { args: NaviResidSelArgs;                result: NaviResidSelResult }
   rectSelect:                 { args: RectSelectArgs;                  result: RectSelectResult }
+  lassoSelect:                { args: LassoSelectArgs;                 result: LassoSelectResult }
   naviCenterAt:               { args: NaviCenterAtArgs;                result: { ok: boolean } }
   naviCenterAtSymm:           { args: NaviCenterAtSymmArgs;            result: { ok: boolean } }
   naviCtxSelect:              { args: NaviCtxSelectArgs;               result: { ok: boolean } }

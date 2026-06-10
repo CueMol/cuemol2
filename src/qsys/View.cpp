@@ -1195,6 +1195,11 @@ LString View::hitTestRect(int x, int y, int w, int h, bool bNearest)
   return LString();
 }
 
+qlib::LScrVector4D View::projToScreen(const qlib::Vector4D &wpos)
+{
+  return qlib::LScrVector4D();
+}
+
 
 //static
 bool View::hasVS()

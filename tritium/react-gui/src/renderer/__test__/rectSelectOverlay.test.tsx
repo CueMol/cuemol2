@@ -145,6 +145,24 @@ describe('RectSelectOverlay', () => {
         })
     })
 
+    it('lasso tool: drag invokes lassoSelect with the sampled polygon', () => {
+        const overlay = mount('lassoSelect')
+        expect(overlay.classList.contains('active')).toBe(true)
+        expect(overlay.classList.contains('lasso')).toBe(true)
+        fire(overlay, 'mousedown', 0, 0)
+        fire(overlay, 'mousemove', 20, 0)
+        fire(overlay, 'mousemove', 20, 20)
+        fire(overlay, 'mousemove', 0, 20)
+        fire(overlay, 'mouseup', 0, 20)
+        expect(invokeService).toHaveBeenCalledTimes(1)
+        const [name, payload] = invokeService.mock.calls[0]
+        expect(name).toBe('lassoSelect')
+        expect(payload.viewId).toBe(7)
+        expect(payload.mode).toBe('replace')
+        expect(payload.points.length).toBeGreaterThanOrEqual(3)
+        expect(onMouseEvent).not.toHaveBeenCalled()
+    })
+
     it('forwards a left click (no drag) to the view instead of selecting', () => {
         const overlay = mount('rectSelect')
         fire(overlay, 'mousedown', 30, 30)

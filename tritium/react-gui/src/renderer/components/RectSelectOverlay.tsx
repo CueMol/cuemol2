@@ -1,43 +1,49 @@
 /**
  * @file components/RectSelectOverlay.tsx
  * @description Transparent overlay layered over the 3D viewport that handles
- * rubber-band (rectangle) atom selection for the `rectSelect` tool.
+ * the drag-selection tools: `rectSelect` (rubber-band rectangle) and
+ * `lassoSelect` (freeform polygon).
  *
- * Design: the overlay captures pointer events only while the `rectSelect`
- * tool is active (`pointer-events: auto`); otherwise it is click-through
+ * Design: the overlay captures pointer events only while a select tool is
+ * active (`pointer-events: auto`); otherwise it is click-through
  * (`pointer-events: none`) so the canvas keeps receiving camera-drag events.
  *
- * While `rectSelect` is active the overlay sits on top of the canvas, so the
+ * While a select tool is active the overlay sits on top of the canvas, so the
  * canvas no longer sees raw mouse events. To keep the navigate-tool
  * interactions usable (atom pick, double-click residue select, right-click
  * context menu, camera pan/rotate via other buttons), the overlay acts as a
  * router that mirrors UXP `navi-toolribbon.js`: it consumes only the
- * left-button *drag* (rubber-band select, which would otherwise rotate the
- * camera) and forwards every other interaction to the worker via
+ * left-button *drag* (rubber-band / lasso select, which would otherwise
+ * rotate the camera) and forwards every other interaction to the worker via
  * `cm.onMouseEvent`, exactly as `MolViewPane` does in navigate mode. A
  * left-button *click* (press without drag) is also forwarded so the C++ view
- * emits the usual click event and `useNaviClickHandler` (enabled while
- * rectSelect is active) handles it.
+ * emits the usual click event and `useNaviClickHandler` (enabled while a
+ * select tool is active) handles it.
  *
- * Shift+drag adds the rectangle hits to the existing selection (a tritium
- * extension); the cursor switches to `copy` while Shift is held to signal the
- * add mode.
+ * Shift+drag adds the hits to the existing selection (a tritium extension);
+ * the cursor switches to `copy` while Shift is held to signal the add mode.
  *
- * The rubber-band rectangle is drawn here in the renderer (HTML backend).
- * The drag-capture skeleton is independent of how the rectangle is rendered,
- * so a C++ `RectSelDrawObj` backend can replace `useHtmlRubberBand` later
- * without touching the drag/selection logic.
+ * The rectangle / lasso shapes are drawn here in the renderer (HTML / SVG).
  */
 
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useActiveToolContext } from '../contexts/ActiveToolContext'
 import { useMolTabState } from '../hooks/useMolTab'
 import { useCueMol } from '../hooks/useCueMol'
+import type { ToolId } from '../data/viewportTools'
 
 /** Drag distance (px) below which a left press is treated as a click, not a drag. */
 const DRAG_THRESHOLD = 3
+/** Minimum spacing (px) between sampled lasso points, to bound the path size. */
+const LASSO_MIN_DIST = 2
 
-/** Rectangle in canvas-local logical pixels. */
+type SelectKind = 'rect' | 'lasso'
+
+interface Point {
+    x: number
+    y: number
+}
+
 interface Rect {
     left: number
     top: number
@@ -45,28 +51,23 @@ interface Rect {
     height: number
 }
 
-/**
- * Render backend for the rubber-band rectangle. The overlay's drag handlers
- * call these regardless of how the rectangle is drawn, so the backend can be
- * swapped (HTML div now, C++ RectSelDrawObj later) without changing the
- * drag/selection code.
- */
-export interface RubberBandBackend {
-    /** Drag started at the given canvas-local point. */
-    begin(x0: number, y0: number): void
-    /** Drag updated -- draw the current rectangle. */
-    update(rect: Rect): void
-    /** Drag finished -- clear the rectangle. */
-    end(): void
-}
-
 /** Pending left-button interaction: a click until it crosses DRAG_THRESHOLD. */
 interface LeftDrag {
+    kind: SelectKind
     x0: number
     y0: number
     /** The original mousedown DOM event, replayed on a click (no-drag) release. */
     downEvent: MouseEvent
     dragging: boolean
+    /** Accumulated lasso path (kind === 'lasso'). */
+    points: Point[]
+}
+
+/** Which drag-select kind, if any, a tool maps to. */
+function selectKind(tool: ToolId): SelectKind | null {
+    if (tool === 'rectSelect') return 'rect'
+    if (tool === 'lassoSelect') return 'lasso'
+    return null
 }
 
 /** Normalize two drag points into a top-left-anchored rectangle. */
@@ -80,37 +81,23 @@ function normalizeRect(x0: number, y0: number, x1: number, y1: number): Rect {
 }
 
 /**
- * HTML rubber-band backend: keeps the current rectangle in React state and
- * exposes it for rendering as an absolutely-positioned div.
- */
-function useHtmlRubberBand(): { backend: RubberBandBackend; rect: Rect | null } {
-    const [rect, setRect] = useState<Rect | null>(null)
-    const backend = useMemo<RubberBandBackend>(
-        () => ({
-            begin: () => setRect(null),
-            update: (r) => setRect(r),
-            end: () => setRect(null),
-        }),
-        [],
-    )
-    return { backend, rect }
-}
-
-/**
- * Overlay that performs rubber-band atom selection while the `rectSelect`
+ * Overlay that performs rubber-band / lasso atom selection while a select
  * tool is active, and forwards all non-(left-drag) interactions to the
  * navigate-tool path. Mounted permanently over the viewport; it is
- * click-through unless that tool is active.
+ * click-through unless a select tool is active.
  */
 export const RectSelectOverlay: React.FC = () => {
     const activeTool = useActiveToolContext()
     const { activeViewID } = useMolTabState()
     const { cm } = useCueMol()
-    const active = activeTool === 'rectSelect'
+    const kind = selectKind(activeTool)
+    const active = kind !== null
 
     const rootRef = useRef<HTMLDivElement>(null)
     const leftRef = useRef<LeftDrag | null>(null)
-    const { backend, rect } = useHtmlRubberBand()
+    // Render state: rectangle (rect tool) or polygon path (lasso tool).
+    const [rect, setRect] = useState<Rect | null>(null)
+    const [lasso, setLasso] = useState<Point[] | null>(null)
 
     // Track Shift for live cursor feedback (add mode). The actual mode is read
     // from the mouseup event so it always matches the cursor at release.
@@ -130,7 +117,7 @@ export const RectSelectOverlay: React.FC = () => {
     }, [active])
 
     /** DOM clientX/Y -> canvas-local coords (overlay is flush with the canvas). */
-    const localCoords = (e: React.MouseEvent): { x: number; y: number } => {
+    const localCoords = (e: React.MouseEvent): Point => {
         const r = rootRef.current?.getBoundingClientRect()
         return { x: e.clientX - (r?.left ?? 0), y: e.clientY - (r?.top ?? 0) }
     }
@@ -141,11 +128,23 @@ export const RectSelectOverlay: React.FC = () => {
         cm.onMouseEvent(activeViewID, method, domEvent)
     }
 
+    const clearShapes = (): void => {
+        setRect(null)
+        setLasso(null)
+    }
+
     const onMouseDown = (e: React.MouseEvent): void => {
-        if (e.button === 0) {
+        if (e.button === 0 && kind) {
             // Left button: defer -- classified as click vs drag on move/up.
             const { x, y } = localCoords(e)
-            leftRef.current = { x0: x, y0: y, downEvent: e.nativeEvent, dragging: false }
+            leftRef.current = {
+                kind,
+                x0: x,
+                y0: y,
+                downEvent: e.nativeEvent,
+                dragging: false,
+                points: [{ x, y }],
+            }
             return
         }
         // Other buttons (camera pan, context menu) fall back to navigate.
@@ -161,9 +160,17 @@ export const RectSelectOverlay: React.FC = () => {
         const { x, y } = localCoords(e)
         if (!L.dragging && Math.hypot(x - L.x0, y - L.y0) > DRAG_THRESHOLD) {
             L.dragging = true
-            backend.begin(L.x0, L.y0)
         }
-        if (L.dragging) backend.update(normalizeRect(L.x0, L.y0, x, y))
+        if (!L.dragging) return
+        if (L.kind === 'rect') {
+            setRect(normalizeRect(L.x0, L.y0, x, y))
+        } else {
+            const last = L.points[L.points.length - 1]
+            if (Math.hypot(x - last.x, y - last.y) >= LASSO_MIN_DIST) {
+                L.points.push({ x, y })
+                setLasso([...L.points])
+            }
+        }
     }
 
     const onMouseUp = (e: React.MouseEvent): void => {
@@ -174,14 +181,22 @@ export const RectSelectOverlay: React.FC = () => {
         }
         leftRef.current = null
         if (L.dragging) {
-            // Rubber-band release -> rectangle selection. Shift = add to the
-            // existing selection (mode read at release to match the cursor).
-            backend.end()
-            const { x, y } = localCoords(e)
-            const r = normalizeRect(L.x0, L.y0, x, y)
-            if (r.width > 0 && r.height > 0 && activeViewID != null && cm) {
-                const mode = e.shiftKey ? 'add' : 'replace'
-                void cm.invokeService('rectSelect', { viewId: activeViewID, ...r, mode })
+            clearShapes()
+            if (activeViewID == null || !cm) return
+            // Shift = add to the existing selection (read at release).
+            const mode = e.shiftKey ? 'add' : 'replace'
+            if (L.kind === 'rect') {
+                const { x, y } = localCoords(e)
+                const r = normalizeRect(L.x0, L.y0, x, y)
+                if (r.width > 0 && r.height > 0) {
+                    void cm.invokeService('rectSelect', { viewId: activeViewID, ...r, mode })
+                }
+            } else if (L.points.length >= 3) {
+                void cm.invokeService('lassoSelect', {
+                    viewId: activeViewID,
+                    points: L.points,
+                    mode,
+                })
             }
             return
         }
@@ -194,7 +209,7 @@ export const RectSelectOverlay: React.FC = () => {
     // Leaving the viewport mid-left-interaction cancels it (no commit, no click).
     const onMouseLeave = (): void => {
         if (!leftRef.current) return
-        if (leftRef.current.dragging) backend.end()
+        if (leftRef.current.dragging) clearShapes()
         leftRef.current = null
     }
 
@@ -203,12 +218,15 @@ export const RectSelectOverlay: React.FC = () => {
         e.preventDefault()
     }
 
+    const cls =
+        `rectsel-overlay${active ? ' active' : ''}` +
+        `${active && shiftHeld ? ' add-mode' : ''}` +
+        `${kind === 'lasso' ? ' lasso' : ''}`
+
     return (
         <div
             ref={rootRef}
-            className={`rectsel-overlay${active ? ' active' : ''}${
-                active && shiftHeld ? ' add-mode' : ''
-            }`}
+            className={cls}
             onMouseDown={active ? onMouseDown : undefined}
             onMouseMove={active ? onMouseMove : undefined}
             onMouseUp={active ? onMouseUp : undefined}
@@ -225,6 +243,11 @@ export const RectSelectOverlay: React.FC = () => {
                         height: rect.height,
                     }}
                 />
+            )}
+            {lasso && lasso.length >= 2 && (
+                <svg className="rectsel-lasso" aria-hidden="true">
+                    <polygon points={lasso.map((p) => `${p.x},${p.y}`).join(' ')} />
+                </svg>
             )}
         </div>
     )

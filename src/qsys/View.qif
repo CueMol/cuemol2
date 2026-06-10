@@ -133,7 +133,11 @@ runtime_class View
 
   string hitTest(integer x, integer y);
   string hitTestRect(integer x, integer y, integer w, integer h, boolean bNr);
-  
+
+  // Project a 3D world position to screen coordinates (logical canvas pixels);
+  // result is (x, y, ndcZ). Used by the lasso selection tool.
+  object<Vector> projToScreen(object<Vector> wpos);
+
   // get parent scene
   object<Scene$> getScene();
 

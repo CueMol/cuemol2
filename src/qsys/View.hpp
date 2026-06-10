@@ -432,6 +432,10 @@ namespace qsys {
     /// @param bNearest only returns the hittest result for the nearest renderer
     virtual LString hitTestRect(int x, int y, int w, int h, bool bNearest);
 
+    /// Project a 3D world position to screen coordinates (logical canvas
+    /// pixels). Returns (x, y, ndcZ). Base impl returns the origin.
+    virtual qlib::LScrVector4D projToScreen(const qlib::Vector4D &wpos);
+
     ////////////////////////////////////////////////
     // Framebuffer operations
     
