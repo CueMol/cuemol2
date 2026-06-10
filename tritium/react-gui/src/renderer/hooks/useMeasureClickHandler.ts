@@ -12,6 +12,7 @@
  * drives the camera; `useNaviClickHandler` is gated off for measure tools so
  * the two handlers never both fire.
  */
+import { useEffect } from 'react';
 import { useCueMol } from './useCueMol';
 import { useMolTabState } from './useMolTab';
 import { useActiveToolContext } from '../contexts/ActiveToolContext';
@@ -59,4 +60,28 @@ export function useMeasureClickHandler({ setStatusMessage }: UseMeasureClickHand
             }
         },
     });
+
+    // Cancel any in-progress pick sequence when leaving a measure tool or
+    // switching the active view: the cleanup runs when `enabled`/`viewId`
+    // change, so a stale first pick can never combine with a later one (and the
+    // crosshairs are cleared). Worker is the source of truth for the buffer.
+    useEffect(() => {
+        if (!cm || !enabled) return;
+        return () => {
+            void cm.invokeService('measureReset', { viewId });
+        };
+    }, [cm, enabled, viewId]);
+
+    // Escape cancels the current pick sequence while a measure tool is active.
+    useEffect(() => {
+        if (!cm || !enabled) return;
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key !== 'Escape') return;
+            void cm.invokeService('measureReset', { viewId }).then((r) => {
+                if (r?.cleared) setStatusMessage('Measure: pick canceled');
+            });
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [cm, enabled, viewId, setStatusMessage]);
 }

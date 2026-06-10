@@ -83,16 +83,15 @@ function appendPickFeedback(view: GUIView, objId: number, atomId: number): void 
 }
 
 /**
- * Clear the pick crosshairs after a sequence completes. Disabling the draw
- * object clears its accumulated positions (C++ setEnabled(false) empties the
- * buffer); re-enabling keeps it ready for the next sequence. Mirrors the UXP
- * reset() toggle.
+ * Clear the pick crosshairs. Disabling the draw object clears its accumulated
+ * positions (C++ setEnabled(false) empties the buffer) and stops it rendering;
+ * the next pick re-enables it via appendPickFeedback. Used both when a sequence
+ * completes and when a sequence is reset/canceled.
  */
 function clearPickFeedback(view: GUIView): void {
     const dobj = view.getDrawObj('DistPickDrawObj') as DistPickDrawObj;
     if (!dobj) return;
     dobj.enabled = false;
-    dobj.enabled = true;
     view.invalidate();
 }
 
@@ -206,8 +205,32 @@ function measurePick(ctx: WorkerContext, args: MeasurePickArgs): MeasurePickResu
     return { handled: true, picked: buf.picks.length, statusMessage: msg };
 }
 
+// ---- service: measureReset (cancel an in-progress pick sequence) ----
+
+export interface MeasureResetArgs {
+    viewId: number;
+}
+
+export interface MeasureResetResult {
+    ok: boolean;
+    /** True if a sequence with at least one pick was actually cleared. */
+    cleared: boolean;
+}
+
+function measureReset(ctx: WorkerContext, args: MeasureResetArgs): MeasureResetResult {
+    const buf = pickBuffers.get(args.viewId);
+    const cleared = buf != null && buf.picks.length > 0;
+    pickBuffers.delete(args.viewId);
+
+    const view = ctx.sceMgr.getView(args.viewId) as GUIView;
+    if (view) clearPickFeedback(view);
+
+    return { ok: true, cleared };
+}
+
 // ---- registration ----
 
 export const services = {
     measurePick,
+    measureReset,
 };
