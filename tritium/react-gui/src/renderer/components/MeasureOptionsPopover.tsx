@@ -2,8 +2,8 @@
  * @file components/MeasureOptionsPopover.tsx
  * @description Popover content for the measure tool's "options cap". Lets the
  * user choose the target atomintr renderer (label set) that new distance /
- * angle / torsion labels are appended to: either an existing named set, a new
- * name typed into the field, or Auto (one set per molecule).
+ * angle / torsion labels are appended to: either an existing named set or a new
+ * name typed into the field. Defaults to "measure".
  *
  * Ports the UXP measure target-list dropdown. The existing renderer names are
  * fetched from the worker (`measureListTargets`) when the popover opens.
@@ -14,9 +14,9 @@ import { useMolTabState } from '../hooks/useMolTab';
 import { TextField } from '../h3-kit/form';
 
 interface Props {
-    /** Current target name ('' = Auto). */
+    /** Current target label-set name (defaults to "measure"). */
     target: string;
-    /** Set the current target name (''  = Auto). */
+    /** Set the current target label-set name. */
     onTargetChange: (name: string) => void;
 }
 
@@ -44,16 +44,9 @@ export const MeasureOptionsPopover: React.FC<Props> = ({ target, onTargetChange 
             <TextField
                 value={target}
                 onChange={onTargetChange}
-                placeholder="Auto (one set per molecule)"
+                placeholder="measure"
             />
             <div className="measure-options-list">
-                <button
-                    type="button"
-                    className={`measure-options-row${target === '' ? ' selected' : ''}`}
-                    onClick={() => onTargetChange('')}
-                >
-                    Auto (one set per molecule)
-                </button>
                 {names.map((n) => (
                     <button
                         key={n}

@@ -26,6 +26,8 @@ import { withUndoTxn } from './withUndoTxn';
 const ATOMINTR_TYPE = 'atomintr';
 /** Default styles applied to a freshly created atomintr renderer (UXP parity). */
 const ATOMINTR_STYLES = 'DefaultLabel,DefaultAtomIntr';
+/** Default label-set name used when no explicit target is chosen. */
+const DEFAULT_TARGET_NAME = 'measure';
 
 /**
  * Measure sub-mode. The required number of atom picks is 2 / 3 / 4 for
@@ -140,17 +142,14 @@ function defineMeasureLabel(view: GUIView, buf: PickBuffer, target: string | und
     if (!mol) return 'Measure: target molecule not found.';
 
     const noun = labelNounFor(buf.mode);
-    const name = (target ?? '').trim();
+    const name = (target ?? '').trim() || DEFAULT_TARGET_NAME;
     withUndoTxn(scene, `Define ${noun} Label`, () => {
-        // Reuse the named atomintr renderer on this molecule if present, else the
-        // first atomintr renderer (Auto); create one if none exists. A new named
-        // target keeps that name so later labels append to the same set.
-        let rend = (name
-            ? mol.getRendererByNameType(name, ATOMINTR_TYPE)
-            : mol.getRendererByType(ATOMINTR_TYPE)) as AtomIntrRenderer | null;
+        // Reuse the atomintr renderer with this name on the molecule, else create
+        // one and give it that name so later labels append to the same set.
+        let rend = mol.getRendererByNameType(name, ATOMINTR_TYPE) as AtomIntrRenderer | null;
         if (!rend) {
             rend = mol.createRenderer(ATOMINTR_TYPE) as AtomIntrRenderer;
-            if (name) rend.name = name;
+            rend.name = name;
             rend.applyStyles(ATOMINTR_STYLES);
         }
         // The first atom is implicitly from the renderer's molecule (picks[0]);
@@ -180,9 +179,9 @@ export interface MeasurePickArgs {
     y: number;
     mode: MeasureMode;
     /**
-     * Name of the atomintr renderer to append labels to. When set, labels reuse
-     * (or create) a renderer with this name on the target molecule; when empty
-     * the first atomintr renderer is reused (Auto). Mirrors the UXP target list.
+     * Name of the atomintr renderer to append labels to. Labels reuse (or
+     * create) a renderer with this name on the target molecule; when empty the
+     * default name ("measure") is used. Mirrors the UXP target list.
      */
     target?: string;
 }

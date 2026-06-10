@@ -123,9 +123,9 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
     openNativeContextMenu(hit, viewId, x, y);
   }, [openNativeContextMenu]);
 
-  // Measure target label-set name ('' = Auto): chosen in the palette options
-  // popover, applied to each measure pick.
-  const [measureTarget, setMeasureTarget] = useState("");
+  // Measure target label-set name (defaults to "measure"): chosen in the palette
+  // options popover, applied to each measure pick.
+  const [measureTarget, setMeasureTarget] = useState("measure");
 
   useNaviClickHandler({ setStatusMessage: onStatusMessage ?? (() => {}), openContextMenu });
   useMeasureClickHandler({ setStatusMessage: onStatusMessage ?? (() => {}), target: measureTarget });
