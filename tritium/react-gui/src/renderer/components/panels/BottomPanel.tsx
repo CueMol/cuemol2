@@ -9,8 +9,8 @@
  */
 
 import React, { useCallback, useState } from "react";
-import { Icon } from "@blueprintjs/core";
-import type { IconName } from "@blueprintjs/icons";
+import { AppIcon } from "../AppIcon";
+import type { AppIconKey } from "../../data/appIcons";
 import { LogPanel } from "./LogPanel";
 import { SequencePanel } from "./SequencePanel";
 import { AnimationPanel } from "./AnimationPanel";
@@ -30,7 +30,7 @@ type BottomTabType = "output" | "sequence" | "animation" | "render";
 interface TabButtonProps {
   tab: BottomTabType;
   activeTab: BottomTabType;
-  icon: IconName;
+  icon: AppIconKey;
   label: string;
   onClick: (tab: BottomTabType) => void;
 }
@@ -44,7 +44,7 @@ const TabButton: React.FC<TabButtonProps> = ({ tab, activeTab, icon, label, onCl
     className={`bottom-tab ${activeTab === tab ? "active" : ""}`}
     onClick={() => onClick(tab)}
   >
-    <Icon icon={icon} size={14} className="tab-icon" />
+    <AppIcon name={icon} size="md" className="tab-icon" aria-hidden />
     <span className="tab-label">{label}</span>
   </div>
 );
@@ -151,10 +151,10 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({
   return (
     <div className="bottom-panel">
       <div className="bottom-panel-tabs">
-        <TabButton tab="output" activeTab={activeTab} icon="console" label="Output" onClick={setActiveTab} />
-        <TabButton tab="sequence" activeTab={activeTab} icon="align-left" label="Sequence" onClick={setActiveTab} />
-        <TabButton tab="animation" activeTab={activeTab} icon="timeline-events" label="Animation" onClick={setActiveTab} />
-        <TabButton tab="render" activeTab={activeTab} icon="media" label="Render" onClick={setActiveTab} />
+        <TabButton tab="output" activeTab={activeTab} icon="panel.output" label="Output" onClick={setActiveTab} />
+        <TabButton tab="sequence" activeTab={activeTab} icon="panel.sequence" label="Sequence" onClick={setActiveTab} />
+        <TabButton tab="animation" activeTab={activeTab} icon="panel.animation" label="Animation" onClick={setActiveTab} />
+        <TabButton tab="render" activeTab={activeTab} icon="panel.render" label="Render" onClick={setActiveTab} />
       </div>
       <div className="bottom-panel-content">{renderContent()}</div>
     </div>

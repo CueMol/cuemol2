@@ -33,8 +33,8 @@ import React, {
   useEffect,
   useMemo,
 } from "react";
-import { Icon, Button, ButtonGroup, NumericInput } from "@blueprintjs/core";
-import type { IconName } from "@blueprintjs/icons";
+import { Button, ButtonGroup, NumericInput } from "@blueprintjs/core";
+import { AppIcon } from "../AppIcon";
 import type { AnimationData, AnimationTrack, Keyframe } from "../../types";
 
 // --- Constants ---
@@ -292,7 +292,7 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({ animation }) => 
     return (
       <div className="animation-panel">
         <div className="anim-placeholder">
-          <Icon icon="timeline-events" size={48} className="placeholder-icon" />
+          <AppIcon name="panel.animation" size={48} className="placeholder-icon" aria-hidden />
           <div>No animation data available</div>
         </div>
       </div>
@@ -306,38 +306,38 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({ animation }) => 
         <div className="anim-transport-controls">
           <ButtonGroup minimal>
             <Button
-              icon="step-backward"
+              icon={<AppIcon name="media.skipBack" aria-hidden />}
               small
               onClick={handleSkipStart}
               title="Skip to start"
             />
             <Button
-              icon="chevron-backward"
+              icon={<AppIcon name="ui.caretLeft" aria-hidden />}
               small
               onClick={handleStepBack}
               title="Step back"
             />
             <Button
-              icon={isPlaying ? "pause" : "play"}
+              icon={<AppIcon name={isPlaying ? "media.pause" : "media.play"} aria-hidden />}
               small
               intent={isPlaying ? "warning" : "success"}
               onClick={handlePlayPause}
               title={isPlaying ? "Pause" : "Play"}
             />
             <Button
-              icon="stop"
+              icon={<AppIcon name="media.stop" aria-hidden />}
               small
               onClick={handleStop}
               title="Stop"
             />
             <Button
-              icon="chevron-forward"
+              icon={<AppIcon name="ui.caretRight" aria-hidden />}
               small
               onClick={handleStepForward}
               title="Step forward"
             />
             <Button
-              icon="step-forward"
+              icon={<AppIcon name="media.skipForward" aria-hidden />}
               small
               onClick={handleSkipEnd}
               title="Skip to end"
@@ -388,7 +388,7 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({ animation }) => 
                   )
                 }
               >
-                <Icon icon={(track.icon ?? "key") as IconName} size={12} />
+                <AppIcon name={track.icon ?? "track.key"} size="sm" aria-hidden />
                 <span className="anim-label-text">{track.label}</span>
               </div>
             ))}

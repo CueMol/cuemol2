@@ -22,7 +22,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Icon } from '@blueprintjs/core';
+import { AppIcon } from '../AppIcon';
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol';
 import { ObjectSelect, objectFilters } from '../../h3-kit/ObjectSelect';
 import { FieldSection, TextField } from '../../h3-kit/form';
@@ -218,13 +218,14 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({
             >
                 <div className="sp-section-header-left">
                     {onToggleCollapse != null && (
-                        <Icon
-                            icon={collapsed ? 'chevron-right' : 'chevron-down'}
-                            size={12}
+                        <AppIcon
+                            name={collapsed ? 'ui.caretRight' : 'ui.caretDown'}
+                            size="sm"
                             className="section-chevron"
+                            aria-hidden
                         />
                     )}
-                    <Icon icon="select" size={14} className="section-icon" />
+                    <AppIcon name="ui.select" size="md" className="section-icon" aria-hidden />
                     <span className="section-title">Selection</span>
                 </div>
             </div>

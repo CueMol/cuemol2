@@ -8,7 +8,7 @@
  * @module data/viewportTools
  */
 
-import type { IconName } from "@blueprintjs/icons";
+import type { AppIconKey } from "./appIcons";
 
 /** Visual grouping category used by the tool palette. */
 export type ToolCategory = "navigate" | "select" | "measure" | "edit";
@@ -24,7 +24,7 @@ export type ToolId =
 
 export interface ToolDef {
   id: ToolId;
-  icon: IconName;
+  icon: AppIconKey;
   label: string;
   /** Single-letter keyboard shortcut (compared case-insensitively). */
   shortcut: string;
@@ -34,12 +34,12 @@ export interface ToolDef {
 }
 
 export const TOOLS: ToolDef[] = [
-  { id: "navigate",    icon: "move",            label: "Navigate",    shortcut: "N", category: "navigate", cursor: "grab" },
-  { id: "rectSelect",  icon: "widget",          label: "Rect Select", shortcut: "B", category: "select",   cursor: "crosshair" },
-  { id: "lassoSelect", icon: "polygon-filter",  label: "Lasso",       shortcut: "L", category: "select",   cursor: "crosshair" },
-  { id: "distance",    icon: "arrows-horizontal", label: "Distance",  shortcut: "D", category: "measure",  cursor: "crosshair" },
-  { id: "angle",       icon: "compass",         label: "Angle",       shortcut: "A", category: "measure",  cursor: "crosshair" },
-  { id: "torsion",     icon: "arrows-arc",      label: "Torsion",     shortcut: "T", category: "measure",  cursor: "crosshair" },
+  { id: "navigate",    icon: "tool.navigate",   label: "Navigate",    shortcut: "N", category: "navigate", cursor: "grab" },
+  { id: "rectSelect",  icon: "tool.rectSelect", label: "Rect Select", shortcut: "B", category: "select",   cursor: "crosshair" },
+  { id: "lassoSelect", icon: "tool.lasso",      label: "Lasso",       shortcut: "L", category: "select",   cursor: "crosshair" },
+  { id: "distance",    icon: "tool.distance",   label: "Distance",    shortcut: "D", category: "measure",  cursor: "crosshair" },
+  { id: "angle",       icon: "tool.angle",      label: "Angle",       shortcut: "A", category: "measure",  cursor: "crosshair" },
+  { id: "torsion",     icon: "tool.torsion",    label: "Torsion",     shortcut: "T", category: "measure",  cursor: "crosshair" },
 ];
 
 /** Order in which categories appear in the palette (top-to-bottom). */

@@ -6,7 +6,7 @@
  */
 
 import React, { useCallback } from 'react'
-import { Icon } from '@blueprintjs/core'
+import { AppIcon } from '../../AppIcon'
 import type { CategoryNode } from './settingsConfig'
 
 export interface ConfigTreeNodeProps {
@@ -52,12 +52,12 @@ export const ConfigTreeNode: React.FC<ConfigTreeNodeProps> = ({
       >
         <span className="cfg-tree-chevron">
           {hasChildren ? (
-            <Icon icon={isExpanded ? 'chevron-down' : 'chevron-right'} size={12} />
+            <AppIcon name={isExpanded ? 'ui.caretDown' : 'ui.caretRight'} size="sm" />
           ) : (
             <span style={{ width: 12 }} />
           )}
         </span>
-        <Icon icon={node.icon} size={14} className="cfg-tree-icon" />
+        <AppIcon name={node.icon} size="md" className="cfg-tree-icon" aria-hidden />
         <span className="cfg-tree-label">{node.label}</span>
         {!hasChildren && count > 0 && (
           <span className="cfg-tree-badge">{count}</span>

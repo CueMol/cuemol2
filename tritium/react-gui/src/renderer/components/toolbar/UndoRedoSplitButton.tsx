@@ -11,6 +11,7 @@
 
 import React from "react";
 import { Button, ButtonGroup, Menu, MenuItem, Popover } from "@blueprintjs/core";
+import { AppIcon } from "../AppIcon";
 import { useCommands } from "../../commands/CommandRegistry";
 import { CmdId } from "../../commands/ids";
 
@@ -38,7 +39,11 @@ export const UndoRedoSplitButton: React.FC<UndoRedoSplitButtonProps> = ({ kind }
 
   return (
     <ButtonGroup minimal>
-      <Button icon={isUndo ? "undo" : "redo"} text={text} onClick={runStep} />
+      <Button
+        icon={<AppIcon name={isUndo ? "ui.undo" : "ui.redo"} aria-hidden />}
+        text={text}
+        onClick={runStep}
+      />
       <Popover content={historyMenu} placement="bottom-start">
         <Button
           className="h3-form-dropdown-caret"

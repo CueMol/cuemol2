@@ -48,7 +48,8 @@
 
 import React, { useCallback, useRef, useMemo } from "react";
 import { Allotment } from "allotment";
-import { Icon } from "@blueprintjs/core";
+import { AppIcon } from "../AppIcon";
+import type { AppIconKey } from "../../data/appIcons";
 
 import type { ActivityView } from "../ActivityBar";
 import type { PaneCollapseState } from "../../hooks/useLayoutPersistence";
@@ -87,11 +88,11 @@ const VIEW_TITLES: Record<ActivityView, string> = {
   catalog: "Component Catalog",
 };
 
-const VIEW_ICONS: Record<ActivityView, string> = {
-  explorer: "panel-table",
-  selection: "search",
-  crystal: "cube",
-  catalog: "widget",
+const VIEW_ICONS: Record<ActivityView, AppIconKey> = {
+  explorer: "activity.explorer",
+  selection: "activity.selection",
+  crystal: "activity.crystal",
+  catalog: "activity.catalog",
 };
 
 /* --- Pane configuration type --- */
@@ -472,11 +473,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   return (
     <div className="side-panel">
       <div className="side-panel-header">
-        <Icon
-          icon={VIEW_ICONS[activeView] as any}
-          size={14}
-          style={{ marginRight: 6 }}
-        />
+        <AppIcon name={VIEW_ICONS[activeView]} size="md" aria-hidden />
         {VIEW_TITLES[activeView]}
       </div>
       <div className="side-panel-content">

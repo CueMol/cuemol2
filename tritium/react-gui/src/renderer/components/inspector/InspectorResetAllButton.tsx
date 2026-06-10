@@ -10,6 +10,7 @@
 
 import React from "react";
 import { Button, Tooltip } from "@blueprintjs/core";
+import { AppIcon } from "../AppIcon";
 
 export interface InspectorResetAllButtonProps {
     /** Whether any property is modified (enables the button). */
@@ -27,7 +28,7 @@ export const InspectorResetAllButton: React.FC<InspectorResetAllButtonProps> = (
             className="inspector-reset-all"
             minimal
             small
-            icon="undo"
+            icon={<AppIcon name="ui.undo" aria-hidden />}
             aria-label="Reset all to default"
             disabled={!canResetAll}
             onClick={onResetAll}

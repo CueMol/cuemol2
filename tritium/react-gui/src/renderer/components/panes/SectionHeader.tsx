@@ -1,9 +1,10 @@
 import React from "react";
-import { Icon, type IconName } from "@blueprintjs/core";
+import { AppIcon } from "../AppIcon";
+import type { AppIconKey } from "../../data/appIcons";
 
 interface SectionHeaderProps {
   title: string;
-  icon: IconName;
+  icon: AppIconKey;
   actions?: React.ReactNode;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
@@ -22,13 +23,14 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
   >
     <div className="sp-section-header-left">
       {onToggleCollapse != null && (
-        <Icon
-          icon={collapsed ? "chevron-right" : "chevron-down"}
-          size={12}
+        <AppIcon
+          name={collapsed ? "ui.caretRight" : "ui.caretDown"}
+          size="sm"
           className="section-chevron"
+          aria-hidden
         />
       )}
-      <Icon icon={icon} size={14} className="section-icon" />
+      <AppIcon name={icon} size="md" className="section-icon" aria-hidden />
       <span className="section-title">{title}</span>
     </div>
     {actions && (

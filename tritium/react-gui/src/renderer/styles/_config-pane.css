@@ -175,6 +175,21 @@
   color: var(--text-muted);
 }
 
+/* A JSX `leftIcon` (our <AppIcon>) is rendered by Blueprint without the
+   .bp5-icon class, so its left-slot positioning never applies and the bare SVG
+   overflows above this (default-size) search field. Re-apply absolute,
+   vertically-centered positioning. See the matching note in _form-kit.css. */
+.config-search-input.bp5-input-group > svg {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--space-4);
+  margin-block: auto;
+  z-index: 1;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
 .config-search-clear.bp5-button .bp5-icon {
   color: var(--text-muted);
 }

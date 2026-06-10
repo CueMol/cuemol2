@@ -17,6 +17,7 @@
 
 import React from 'react';
 import { Button, Tooltip } from '@blueprintjs/core';
+import { AppIcon } from '../../components/AppIcon';
 
 export interface PropertyFieldProps {
     /** Label shown above (stack) or beside (inline) the control. */
@@ -90,7 +91,7 @@ export const PropertyField: React.FC<PropertyFieldProps> = ({
                             className="h3-form-prop-reset"
                             minimal
                             small
-                            icon="undo"
+                            icon={<AppIcon name="ui.undo" aria-hidden />}
                             aria-label={
                                 defaultValueLabel !== undefined
                                     ? `Reset to default (${defaultValueLabel})`

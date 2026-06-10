@@ -20,7 +20,8 @@
  */
 
 import React from "react";
-import { Icon, Tooltip } from "@blueprintjs/core";
+import { Tooltip } from "@blueprintjs/core";
+import { AppIcon } from "./AppIcon";
 import {
   TOOLS,
   CATEGORY_ORDER,
@@ -59,7 +60,7 @@ export const ViewportToolPalette: React.FC<Props> = ({ activeTool, onSelect }) =
                   aria-pressed={activeTool === t.id}
                   aria-label={`${t.label} (${t.shortcut})`}
                 >
-                  <Icon icon={t.icon} size={18} />
+                  <AppIcon name={t.icon} size="lg" aria-hidden />
                 </button>
               </Tooltip>
             ))}

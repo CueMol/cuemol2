@@ -76,6 +76,33 @@ listbox はフォームと違い**描画基盤が3種**あり単一コンポー�
 
 ---
 
+## 0.7. アイコン — AppIcon (MUST)
+
+アイコンは **`components/AppIcon.tsx` の `<AppIcon name="..." size="sm|md|lg" />` 経由で描く**。consumer 側で
+`@blueprintjs/core` の `<Icon>` や Phosphor コンポーネントを直接 import したり、`size={18}` のような px を直書き
+したりしない。
+
+- **どのライブラリを使うかは `data/appIcons.ts` の1箇所で決める**。Blueprint(`@blueprintjs/icons`)と Phosphor
+  (`@phosphor-icons/react`)が共存し、各意味キー(例 `tool.lasso`)を Phosphor か Blueprint のどちらで描くかを
+  レジストリ `APP_ICONS` が集中管理する。新しいアイコンは **まずキーをレジストリに足してから** `<AppIcon>` で使う。
+  分子ツール等の domain 固有アイコンは Phosphor を優先、既存で十分なものは Blueprint エントリのまま。
+- **サイズはトークン**: `sm=12 / md=14 / lg=18`(`AppIcon` の `SIZE_PX`、CSS の `--icon-sm/md/lg` と一致)。
+  consumer は `size="sm|md|lg"` を渡す(px 直書き禁止、必要時のみ明示 px)。
+- **色は currentColor 継承**(dark/light 自動)。アイコンに固定色を当てない。Phosphor の既定 weight は
+  `regular`(一般ボタン)。activity bar など目立たせる領域は consumer 側で `weight="bold"` を渡す。個別の太さは
+  `<AppIcon weight=...>` か `appIcons.ts` の spec の `weight` で上書き可。色は root の `IconContext`(`App.tsx`)で
+  `currentColor`。
+- **データ駆動アイコンはキー(`AppIconKey`)を持たせる**: tree node / tab / settings カテゴリ / animation track
+  などデータ構造に icon を持たせる箇所は、Blueprint の `IconName` 文字列ではなく `AppIconKey`(`data/appIcons.ts`
+  の `node.*` / `file.*` / `settings.*` / `track.*` 等)を格納する。描画は `<AppIcon name={node.icon} />`。
+  Blueprint の `Tree` の `TreeNodeInfo.icon` や `MenuItem` の `icon` は JSX 要素(MaybeElement)を受けるので、
+  `icon: <AppIcon name="..." aria-hidden />` をそのまま渡せる。アイコン列の空きスペーサが要る箇所(placeholder
+  行・未チェックの radio)は 16px の空 `<span>` を使う。
+- Blueprint コンポーネント内蔵アイコン(input clear 等、CSS フォント由来)はそのまま。段階移行のため、まだ
+  `AppIcon` 化していない箇所で `<Icon>` 直書きが残るのは許容(移行時にキーを足して寄せる)。
+
+---
+
 ## トークン一覧
 
 ### 色 (theme-dependent — dark/light 両方で定義)

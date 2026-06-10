@@ -27,13 +27,13 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-    Icon,
     Menu,
     MenuDivider,
     MenuItem,
     showContextMenu,
 } from '@blueprintjs/core'
 import { Allotment } from 'allotment'
+import { AppIcon } from '../AppIcon'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import type { SelectMolKind } from '../../../shared/ipcTypes'
 import { useMolSequenceData, type SeqRow } from '../../hooks/useMolSequenceData'
@@ -703,7 +703,7 @@ export const SequencePanel: React.FC<SequencePanelProps> = ({
         return (
             <div className="sequence-panel">
                 <div className="sequence-placeholder">
-                    <Icon icon="widget" size={48} />
+                    <AppIcon name="ui.widget" size={48} aria-hidden />
                     <div>No molecule loaded</div>
                 </div>
             </div>

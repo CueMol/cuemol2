@@ -63,7 +63,7 @@ export const DummyPane4: React.FC<DummyPane4Props> = ({
     <div className="pane-container">
       <SectionHeader
         title="Dummy Pane 4"
-        icon="wrench"
+        icon="ui.wrench"
         collapsed={collapsed}
         onToggleCollapse={onToggleCollapse}
       />

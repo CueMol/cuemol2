@@ -12,6 +12,7 @@
 
 import React, { useState } from "react";
 import { SectionHeader } from "./SectionHeader";
+import { AppIcon } from "../AppIcon";
 import {
   Field,
   FieldGroup,
@@ -48,7 +49,7 @@ export const CatalogPane1: React.FC<CatalogPane1Props> = ({
     <div className="sp-pane">
       <SectionHeader
         title="Catalog 1"
-        icon="widget"
+        icon="ui.widget"
         collapsed={collapsed}
         onToggleCollapse={onToggleCollapse}
       />
@@ -84,7 +85,7 @@ export const CatalogPane1: React.FC<CatalogPane1Props> = ({
                   value={filter}
                   onChange={setFilter}
                   placeholder="Filter..."
-                  leftIcon="filter"
+                  leftIcon={<AppIcon name="ui.filter" aria-hidden />}
                 />
               </Field>
               <Field label="SelectField">

@@ -16,6 +16,7 @@
 import React, { useRef, useEffect, useMemo } from 'react'
 import styles from './LogPanel.module.css'
 import { TextField, FormButton } from '../../h3-kit/form'
+import { AppIcon } from '../AppIcon'
 import { applyLogFilter } from '../../utils/logFilter'
 
 interface LogPanelProps {
@@ -64,7 +65,7 @@ export function LogPanel({
       <div className={styles.toolbar}>
         <div className={styles.filterInput}>
           <TextField
-            leftIcon="filter"
+            leftIcon={<AppIcon name="ui.filter" aria-hidden />}
             placeholder="Filter (e.g. text, !excluded)"
             value={filter}
             onChange={onFilterChange}
@@ -72,21 +73,21 @@ export function LogPanel({
         </div>
         <FormButton
           minimal
-          icon="eraser"
+          icon={<AppIcon name="ui.eraser" aria-hidden />}
           text="Clear"
           onClick={onClear}
           aria-label="Clear Output"
         />
         <FormButton
           minimal
-          icon={autoScroll ? 'unlock' : 'lock'}
+          icon={<AppIcon name={autoScroll ? 'ui.unlock' : 'ui.lock'} aria-hidden />}
           text={autoScroll ? 'Unlock' : 'Lock'}
           onClick={onAutoScrollToggle}
           aria-label="Toggle Auto Scroll"
         />
         <FormButton
           minimal
-          icon="floppy-disk"
+          icon={<AppIcon name="ui.save" aria-hidden />}
           text="Save"
           onClick={onSaveAs}
           aria-label="Save Output As"

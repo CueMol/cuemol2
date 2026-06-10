@@ -19,14 +19,14 @@
 
 import React, { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import {
-    Icon,
     Tree,
     Button,
     ButtonGroup,
     Tooltip,
-    type IconName,
     type TreeNodeInfo,
 } from "@blueprintjs/core";
+import { AppIcon } from "../AppIcon";
+import type { AppIconKey } from "../../data/appIcons";
 
 import type { SceneNodeType, SceneTreeNode } from "../../worker/shared/sceneTreeTypes";
 import {
@@ -41,15 +41,15 @@ import { InlineRenameInput } from "./InlineRenameInput";
 
 /* --- Node-type to icon mapping --- */
 
-const TYPE_ICON: Record<SceneNodeType, IconName> = {
-    scene: "film",
-    object: "cube",
-    renderer: "style",
-    rendGroup: "folder-close",
-    cameraRoot: "camera",
-    styleRoot: "folder-close",
-    camera: "camera",
-    style: "tag",
+const TYPE_ICON: Record<SceneNodeType, AppIconKey> = {
+    scene: "node.scene",
+    object: "node.object",
+    renderer: "node.renderer",
+    rendGroup: "node.group",
+    cameraRoot: "node.camera",
+    styleRoot: "node.group",
+    camera: "node.camera",
+    style: "node.style",
 };
 
 /* --- Props --- */
@@ -537,7 +537,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
             ) {
                 return undefined;
             }
-            const eyeIcon: IconName = node.visible ? "eye-open" : "eye-off";
+            const eyeIcon = node.visible ? "ui.eyeOpen" : "ui.eyeClosed";
             const disabledByAncestor = node.visible && !node.effectiveVisible;
             const className =
                 "visibility-toggle " +
@@ -550,7 +550,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                 <Button
                     minimal
                     small
-                    icon={<Icon icon={eyeIcon} size={14} />}
+                    icon={<AppIcon name={eyeIcon} aria-hidden />}
                     className={className}
                     onClick={(e: React.MouseEvent) => {
                         e.stopPropagation();
@@ -648,7 +648,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
             return {
                 id: idStr,
                 label: wrapLabel(n),
-                icon: TYPE_ICON[n.type],
+                icon: <AppIcon name={TYPE_ICON[n.type]} aria-hidden />,
                 isExpanded: hasChildren && isExpanded(n, idStr),
                 isSelected: isRowSelected(idStr),
                 secondaryLabel: visibilityButton(idStr, n),
@@ -668,7 +668,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
         const sceneRow: TreeNodeInfo = {
             id: sceneIdStr,
             label: wrapLabel(tree),
-            icon: TYPE_ICON.scene,
+            icon: <AppIcon name={TYPE_ICON.scene} aria-hidden />,
             isSelected: isRowSelected(sceneIdStr),
             hasCaret: false,
         };
@@ -686,10 +686,11 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                 onClick={onToggleCollapse}
             >
                 <div className="sp-section-header-left">
-                    <Icon
-                        icon={collapsed ? "chevron-right" : "chevron-down"}
-                        size={12}
+                    <AppIcon
+                        name={collapsed ? "ui.caretRight" : "ui.caretDown"}
+                        size="sm"
                         className="section-chevron"
+                        aria-hidden
                     />
                     <span className="section-title scene-name-title">Scene</span>
                 </div>
@@ -702,7 +703,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                             <Button
                                 minimal
                                 small
-                                icon={<Icon icon="add" size={14} />}
+                                icon={<AppIcon name="ui.add" aria-hidden />}
                                 className="section-action-btn"
                                 disabled={!onAddRenderer || !canAdd}
                                 onClick={onAddRenderer}
@@ -712,7 +713,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                             <Button
                                 minimal
                                 small
-                                icon={<Icon icon="zoom-to-fit" size={14} />}
+                                icon={<AppIcon name="ui.zoomToFit" aria-hidden />}
                                 className="section-action-btn"
                                 disabled={!canFocus}
                                 onClick={() => onFocusSelected?.(selectedId)}
@@ -722,7 +723,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                             <Button
                                 minimal
                                 small
-                                icon={<Icon icon="trash" size={14} />}
+                                icon={<AppIcon name="ui.trash" aria-hidden />}
                                 className="section-action-btn"
                                 disabled={!canDelete}
                                 onClick={() => onDeleteSelected?.(selectedId)}
@@ -732,7 +733,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                             <Button
                                 minimal
                                 small
-                                icon={<Icon icon="properties" size={14} />}
+                                icon={<AppIcon name="ui.properties" aria-hidden />}
                                 className="section-action-btn"
                                 disabled={!canProperty}
                                 onClick={() => onShowProperty?.(selectedId)}

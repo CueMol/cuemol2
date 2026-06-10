@@ -21,12 +21,11 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
     Button,
     ButtonGroup,
-    Icon,
     Tooltip,
     Tree,
-    type IconName,
     type TreeNodeInfo,
 } from "@blueprintjs/core";
+import { AppIcon } from "../AppIcon";
 import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
 import { useMolStructure } from "../../hooks/useMolStructure";
 import { ObjectSelect, objectFilters } from "../../h3-kit/ObjectSelect";
@@ -37,6 +36,15 @@ import {
     selStrFromTree,
     type MolTreeId,
 } from "./molStruct/selStrFromTree";
+
+/* --- Constants --- */
+
+/**
+ * Empty icon-column spacer for placeholder rows ("Loading...", "(no atoms)")
+ * so their labels align with sibling rows that do carry an icon. Blueprint's
+ * `Tree` reserves no icon gutter when `icon` is omitted, hence the spacer.
+ */
+const BLANK_ICON = <span style={{ display: "inline-block", width: 16 }} aria-hidden />;
 
 /* --- Props --- */
 
@@ -251,7 +259,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
                     {
                         id: `loading-atom:${chainName}:${residueIndex}`,
                         label: "Loading...",
-                        icon: "blank" as IconName,
+                        icon: BLANK_ICON,
                         disabled: true,
                     },
                 ];
@@ -261,7 +269,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
                     {
                         id: `empty-atom:${chainName}:${residueIndex}`,
                         label: "(no atoms)",
-                        icon: "blank" as IconName,
+                        icon: BLANK_ICON,
                         disabled: true,
                     },
                 ];
@@ -272,7 +280,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
                 return {
                     id,
                     label,
-                    icon: "dot" as IconName,
+                    icon: <AppIcon name="node.atom" aria-hidden />,
                     isSelected: selectedIds.has(id),
                 };
             });
@@ -288,7 +296,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
                     {
                         id: `loading-resid:${chainName}`,
                         label: "Loading...",
-                        icon: "blank" as IconName,
+                        icon: BLANK_ICON,
                         disabled: true,
                     },
                 ];
@@ -298,7 +306,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
                     {
                         id: `empty-resid:${chainName}`,
                         label: "(no residues)",
-                        icon: "blank" as IconName,
+                        icon: BLANK_ICON,
                         disabled: true,
                     },
                 ];
@@ -310,7 +318,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
                 return {
                     id,
                     label,
-                    icon: "cube" as IconName,
+                    icon: <AppIcon name="node.residue" aria-hidden />,
                     isSelected: selectedIds.has(id),
                     hasCaret: true,
                     isExpanded: expanded,
@@ -330,7 +338,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
             return {
                 id,
                 label: `chain "${chain.name}"`,
-                icon: "git-branch" as IconName,
+                icon: <AppIcon name="node.chain" aria-hidden />,
                 isSelected: selectedIds.has(id),
                 hasCaret: true,
                 isExpanded: expanded,
@@ -392,13 +400,14 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
             >
                 <div className="sp-section-header-left">
                     {onToggleCollapse != null && (
-                        <Icon
-                            icon={collapsed ? "chevron-right" : "chevron-down"}
-                            size={12}
+                        <AppIcon
+                            name={collapsed ? "ui.caretRight" : "ui.caretDown"}
+                            size="sm"
                             className="section-chevron"
+                            aria-hidden
                         />
                     )}
-                    <Icon icon="git-branch" size={14} className="section-icon" />
+                    <AppIcon name="ui.git" size="md" className="section-icon" aria-hidden />
                     <span className="section-title">Mol Struct</span>
                 </div>
                 <div
@@ -410,7 +419,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
                             <Button
                                 minimal
                                 small
-                                icon={<Icon icon="select" size={14} />}
+                                icon={<AppIcon name="ui.select" aria-hidden />}
                                 className="section-action-btn"
                                 disabled={!canApply}
                                 onClick={onSelect}
@@ -420,7 +429,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
                             <Button
                                 minimal
                                 small
-                                icon={<Icon icon="locate" size={14} />}
+                                icon={<AppIcon name="ui.locate" aria-hidden />}
                                 className="section-action-btn"
                                 disabled={!canApply || !hasView}
                                 onClick={onCenter}
@@ -430,7 +439,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
                             <Button
                                 minimal
                                 small
-                                icon={<Icon icon="zoom-to-fit" size={14} />}
+                                icon={<AppIcon name="ui.zoomToFit" aria-hidden />}
                                 className="section-action-btn"
                                 disabled={!canApply || !hasView}
                                 onClick={onZoom}
@@ -440,7 +449,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
                             <Button
                                 minimal
                                 small
-                                icon={<Icon icon="properties" size={14} />}
+                                icon={<AppIcon name="ui.properties" aria-hidden />}
                                 className="section-action-btn"
                                 disabled
                             />

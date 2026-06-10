@@ -89,9 +89,9 @@ describe('useWindowCloseHandler (UXP-parity window-close chain)', () => {
 
   it('walks all tabs in order and calls WINDOW_CLOSE_PROCEED { proceed: true } when every close succeeds', async () => {
     const tabs: TabData[] = [
-      { id: 'molview-1', title: 'A', icon: 'cube', type: 'molview', viewId: 1 },
-      { id: 'molview-2', title: 'B', icon: 'cube', type: 'molview', viewId: 2 },
-      { id: 'welcome',    title: 'W', icon: 'home', type: 'welcome' },
+      { id: 'molview-1', title: 'A', icon: 'file.molview', type: 'molview', viewId: 1 },
+      { id: 'molview-2', title: 'B', icon: 'file.molview', type: 'molview', viewId: 2 },
+      { id: 'welcome',    title: 'W', icon: 'file.welcome', type: 'welcome' },
     ]
     const h = mount({ tabs, closeResults: [true, true, true] })
 
@@ -113,9 +113,9 @@ describe('useWindowCloseHandler (UXP-parity window-close chain)', () => {
 
   it('aborts the walk when any tab returns false and replies WINDOW_CLOSE_PROCEED { proceed: false }', async () => {
     const tabs: TabData[] = [
-      { id: 'molview-1', title: 'A', icon: 'cube', type: 'molview', viewId: 1 },
-      { id: 'molview-2', title: 'B', icon: 'cube', type: 'molview', viewId: 2 },
-      { id: 'molview-3', title: 'C', icon: 'cube', type: 'molview', viewId: 3 },
+      { id: 'molview-1', title: 'A', icon: 'file.molview', type: 'molview', viewId: 1 },
+      { id: 'molview-2', title: 'B', icon: 'file.molview', type: 'molview', viewId: 2 },
+      { id: 'molview-3', title: 'C', icon: 'file.molview', type: 'molview', viewId: 3 },
     ]
     // Second tab cancels (user clicked Cancel in confirm dialog).
     const h = mount({ tabs, closeResults: [true, false, true] })
@@ -133,7 +133,7 @@ describe('useWindowCloseHandler (UXP-parity window-close chain)', () => {
 
   it('is idempotent under re-entrancy (a second WINDOW_CLOSE_REQUEST while the first is in flight is ignored)', async () => {
     const tabs: TabData[] = [
-      { id: 'molview-1', title: 'A', icon: 'cube', type: 'molview', viewId: 1 },
+      { id: 'molview-1', title: 'A', icon: 'file.molview', type: 'molview', viewId: 1 },
     ]
     // Defer the close so we can fire the second request before it resolves.
     let release: (v: boolean) => void

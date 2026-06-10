@@ -6,12 +6,12 @@ import {
     DialogBody,
     DialogFooter,
     Divider,
-    Icon,
     Menu,
     MenuDivider,
     MenuItem,
     Popover,
 } from '@blueprintjs/core'
+import { AppIcon } from '../AppIcon'
 import { useTheme } from '../../contexts/ThemeContext'
 
 /**
@@ -261,25 +261,25 @@ export function ApplyRendStyleDialog({
                 <ButtonGroup>
                     <Popover content={addMenu} placement="bottom-start">
                         <Button
-                            icon={<Icon icon="add" size={14} />}
+                            icon={<AppIcon name="ui.add" aria-hidden />}
                             text="Add"
                             disabled={totalAvailable === 0}
                         />
                     </Popover>
                     <Button
-                        icon={<Icon icon="trash" size={14} />}
+                        icon={<AppIcon name="ui.trash" aria-hidden />}
                         text="Delete"
                         disabled={!canDelete}
                         onClick={handleDelete}
                     />
                     <Button
-                        icon={<Icon icon="chevron-up" size={14} />}
+                        icon={<AppIcon name="ui.caretUp" aria-hidden />}
                         text="Up"
                         disabled={!canMoveUp}
                         onClick={() => handleMove(-1)}
                     />
                     <Button
-                        icon={<Icon icon="chevron-down" size={14} />}
+                        icon={<AppIcon name="ui.caretDown" aria-hidden />}
                         text="Down"
                         disabled={!canMoveDown}
                         onClick={() => handleMove(1)}

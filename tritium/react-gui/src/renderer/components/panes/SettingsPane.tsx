@@ -29,7 +29,8 @@
  */
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
-import { Icon, InputGroup } from '@blueprintjs/core'
+import { InputGroup } from '@blueprintjs/core'
+import { AppIcon } from '../AppIcon'
 import { useTheme } from '../../contexts/ThemeContext'
 import { useRenderConfig } from '../../contexts/RenderConfigContext'
 import { useCueMol } from '../../hooks/useCueMol'
@@ -176,7 +177,7 @@ export const SettingsPane: React.FC = () => {
       {/* ── Left: category tree ── */}
       <div className="config-tree-panel">
         <div className="config-tree-header">
-          <Icon icon="cog" size={14} className="config-tree-header-icon" />
+          <AppIcon name="ui.settings" size="md" className="config-tree-header-icon" aria-hidden />
           <span className="config-tree-header-title">Settings</span>
         </div>
         <div className="config-tree-scroll">
@@ -201,7 +202,7 @@ export const SettingsPane: React.FC = () => {
         <div className="config-search-bar">
           <InputGroup
             className="config-search-input"
-            leftIcon={<Icon icon="search" size={14} />}
+            leftIcon={<AppIcon name="ui.search" aria-hidden />}
             placeholder="Search settings…"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
@@ -211,7 +212,7 @@ export const SettingsPane: React.FC = () => {
                   className="config-search-clear bp5-button bp5-minimal bp5-small"
                   onClick={() => setFilter('')}
                 >
-                  <Icon icon="cross" size={14} />
+                  <AppIcon name="ui.close" size="md" aria-hidden />
                 </button>
               ) : undefined
             }
@@ -252,7 +253,7 @@ export const SettingsPane: React.FC = () => {
 
           {displayLeaves.length === 0 && (
             <div className="config-no-results">
-              <Icon icon="search" size={32} className="config-no-results-icon" />
+              <AppIcon name="ui.search" size={32} className="config-no-results-icon" aria-hidden />
               <span>No settings match "{filter}"</span>
             </div>
           )}

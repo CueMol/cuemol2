@@ -31,6 +31,8 @@
 
 import React, { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 import { Button, ButtonGroup, HTMLSelect, InputGroup, Popover } from '@blueprintjs/core';
+import { AppIcon } from '../../AppIcon';
+import type { AppIconKey } from '../../../data/appIcons';
 import { SegmentField, FieldSection } from '../../../h3-kit/form';
 import { useTheme } from '../../../contexts/ThemeContext';
 import type { ResolveValues } from './useSelectionValues';
@@ -85,17 +87,14 @@ export interface SelectionBuilderProps {
 
 const VALUE_LIST_ID = 'selbuilder-value-list';
 
-/** Blueprint icon identifier (or element), as accepted by Button's `icon`. */
-type IconId = React.ComponentProps<typeof Button>['icon'];
-
 // Set-operation icons: import = load/overwrite the current with the term,
 // plus/minus = union/difference, intersection = the overlap. `full` is the
 // hover tooltip for an abbreviated label.
-const BINARY_OPS: { op: BinaryOp; label: string; full?: string; icon: IconId }[] = [
-    { op: 'set', label: 'Set', icon: 'import' },
-    { op: 'add', label: 'Add', icon: 'plus' },
-    { op: 'intersect', label: 'Isec', full: 'Intersect', icon: 'intersection' },
-    { op: 'sub', label: 'Sub', icon: 'minus' },
+const BINARY_OPS: { op: BinaryOp; label: string; full?: string; icon: AppIconKey }[] = [
+    { op: 'set', label: 'Set', icon: 'ui.import' },
+    { op: 'add', label: 'Add', icon: 'ui.add' },
+    { op: 'intersect', label: 'Isec', full: 'Intersect', icon: 'ui.intersect' },
+    { op: 'sub', label: 'Sub', icon: 'ui.remove' },
 ];
 
 const MODIFY_OPS: { op: UnaryOp; label: string; full?: string }[] = [
@@ -285,7 +284,7 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                         <Button
                             small
                             minimal
-                            icon="select"
+                            icon={<AppIcon name="ui.select" aria-hidden />}
                             title="Select atoms (apply to molecule)"
                             aria-label="Select atoms"
                             disabled={disabled || !canSelect}
@@ -294,7 +293,7 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                         <Button
                             small
                             minimal
-                            icon="locate"
+                            icon={<AppIcon name="ui.locate" aria-hidden />}
                             title="Center view on selection"
                             aria-label="Center view on selection"
                             disabled={disabled || !canCenter}
@@ -303,7 +302,7 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                         <Button
                             small
                             minimal
-                            icon="undo"
+                            icon={<AppIcon name="ui.undo" aria-hidden />}
                             title="Step back"
                             aria-label="Step back"
                             disabled={disabled || !canUndo(state)}
@@ -312,7 +311,7 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                         <Button
                             small
                             minimal
-                            icon="redo"
+                            icon={<AppIcon name="ui.redo" aria-hidden />}
                             title="Step forward"
                             aria-label="Step forward"
                             disabled={disabled || !canRedo(state)}
@@ -321,7 +320,7 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                         <Button
                             small
                             minimal
-                            icon="eraser"
+                            icon={<AppIcon name="ui.eraser" aria-hidden />}
                             text="Clear"
                             disabled={disabled || state.current === ''}
                             onClick={() => dispatch({ type: 'CLEAR' })}
@@ -346,7 +345,7 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                         <Button
                             small
                             minimal
-                            icon="tag"
+                            icon={<AppIcon name="ui.tag" aria-hidden />}
                             text="Define name..."
                             title="Define as a named selection (reusable in this scene)"
                             disabled={disabled || state.current.trim() === '' || !onSaveAs}
@@ -514,7 +513,7 @@ interface ApplyButtonProps {
     label: string;
     /** Hover tooltip (full label when abbreviated). */
     title?: string;
-    icon: IconId;
+    icon: AppIconKey;
     current: string;
     term: string | null;
     getHitCount?: GetHitCount;
@@ -544,7 +543,7 @@ const ApplyButton: React.FC<ApplyButtonProps> = ({
     return (
         <Button
             small
-            icon={icon}
+            icon={<AppIcon name={icon} aria-hidden />}
             title={title ?? label}
             className="selbuilder-apply-btn"
             disabled={!applicable}

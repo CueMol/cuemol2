@@ -18,7 +18,8 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Dialog, DialogBody, DialogFooter, Button, Collapse, Icon } from '@blueprintjs/core';
+import { Dialog, DialogBody, DialogFooter, Button, Collapse } from '@blueprintjs/core';
+import { AppIcon } from '../AppIcon';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useCueMol } from '../../hooks/useCueMol';
 
@@ -288,7 +289,7 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
       <DialogBody className="fod-body">
         {/* File info row */}
         <div className="fod-file-info">
-          <Icon icon="document" size={14} className="fod-file-icon" />
+          <AppIcon name="ui.document" size="md" className="fod-file-icon" aria-hidden />
           <span className="fod-file-name" title={filePath}>{basename(filePath)}</span>
           {formatName && (
             <span className="fod-file-format">{formatName}</span>
@@ -313,10 +314,11 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
               className="fod-collapsible-header"
               onClick={() => setIsFormatExpanded((v) => !v)}
             >
-              <Icon
-                icon={isFormatExpanded ? 'chevron-down' : 'chevron-right'}
-                size={12}
+              <AppIcon
+                name={isFormatExpanded ? 'ui.caretDown' : 'ui.caretRight'}
+                size="sm"
                 className="fod-collapsible-chevron"
+                aria-hidden
               />
               <span className="fod-collapsible-label">
                 {formatName}-specific options

@@ -22,11 +22,11 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
     Button,
     HTMLSelect,
-    Icon,
     Menu,
     MenuItem,
     Popover,
 } from '@blueprintjs/core'
+import { AppIcon } from '../AppIcon'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import { useDensityMapPanel } from '../../hooks/useDensityMapPanel'
 import { useRealtimeDragProp } from '../../hooks/useRealtimeDragProp'
@@ -44,6 +44,12 @@ import {
 import { useCueMolEventListener } from '../../hooks/useCueMolEventListener'
 import { CueColorField } from '../../h3-kit/colorpicker/CueColorField'
 import { ColorPickerProvider } from '../../h3-kit/colorpicker/ColorPickerContext'
+
+/**
+ * Empty icon-column spacer for the unchecked radio rows of the level-mode
+ * menu, so checked and unchecked labels align (the check icon is 16px).
+ */
+const CHECK_SPACER = <span style={{ display: 'inline-block', width: 16 }} aria-hidden />
 
 /** Stored-value write options threaded to `setMapRendererProp`. */
 interface MapPropWriteOpts {
@@ -315,12 +321,24 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
     const modeMenu = (
         <Menu>
             <MenuItem
-                icon={state?.useAbsLevel === false ? 'tick' : 'blank'}
+                icon={
+                    state?.useAbsLevel === false ? (
+                        <AppIcon name="ui.check" aria-hidden />
+                    ) : (
+                        CHECK_SPACER
+                    )
+                }
                 text="Use sigma contour level"
                 onClick={() => onPickLevelMode(false)}
             />
             <MenuItem
-                icon={state?.useAbsLevel === true ? 'tick' : 'blank'}
+                icon={
+                    state?.useAbsLevel === true ? (
+                        <AppIcon name="ui.check" aria-hidden />
+                    ) : (
+                        CHECK_SPACER
+                    )
+                }
                 text="Use absolute contour level"
                 onClick={() => onPickLevelMode(true)}
             />
@@ -336,13 +354,14 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
             >
                 <div className="sp-section-header-left">
                     {onToggleCollapse != null && (
-                        <Icon
-                            icon={collapsed ? 'chevron-right' : 'chevron-down'}
-                            size={12}
+                        <AppIcon
+                            name={collapsed ? 'ui.caretRight' : 'ui.caretDown'}
+                            size="sm"
                             className="section-chevron"
+                            aria-hidden
                         />
                     )}
-                    <Icon icon="layers" size={14} className="section-icon" />
+                    <AppIcon name="ui.layers" size="md" className="section-icon" aria-hidden />
                     <span className="section-title">Density map</span>
                 </div>
             </div>

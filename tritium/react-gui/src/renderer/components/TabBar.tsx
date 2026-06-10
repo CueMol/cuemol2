@@ -19,8 +19,7 @@
  */
 
 import React from "react";
-import { Icon } from "@blueprintjs/core";
-import type { IconName } from "@blueprintjs/icons";
+import { AppIcon } from "./AppIcon";
 import type { TabData } from "../types";
 import type { DropTarget, TabDragDropAPI } from "../hooks/useTabDragDrop";
 
@@ -128,12 +127,9 @@ export const TabBar: React.FC<TabBarProps> = ({
             onDrop={(e) => handleDrop(e, tab.id)}
             onDragEnd={handleDragEnd}
           >
-            {/* Per-type icon: home / cog / cube / media — one icon per tab. */}
-            <Icon
-              icon={tab.icon as IconName}
-              size={14}
-              className="tab-icon"
-            />
+            {/* Per-type icon: one icon per tab, keyed by tab/file type. */}
+            <AppIcon name={tab.icon} size="md" className="tab-icon" aria-hidden />
+
             <span className="tab-title">{tab.title}</span>
             <span
               className="tab-close"
@@ -142,7 +138,7 @@ export const TabBar: React.FC<TabBarProps> = ({
                 onCloseTab(tab.id);
               }}
             >
-              <Icon icon="small-cross" size={14} />
+              <AppIcon name="ui.close" size="md" aria-hidden />
             </span>
           </div>
         ))}

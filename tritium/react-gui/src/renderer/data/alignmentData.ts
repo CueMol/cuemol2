@@ -21,7 +21,7 @@ export const SAMPLE_ANIMATION: AnimationData = {
     {
       id: "trk-cam-pos",
       label: "Camera Position",
-      icon: "camera",
+      icon: "track.camera",
       keyframes: [
         { frame: 0, value: "(0, 0, 50)" },
         { frame: 60, value: "(10, 5, 45)" },
@@ -33,7 +33,7 @@ export const SAMPLE_ANIMATION: AnimationData = {
     {
       id: "trk-cam-rot",
       label: "Camera Rotation",
-      icon: "camera",
+      icon: "track.camera",
       keyframes: [
         { frame: 0, value: "(0, 0, 0)" },
         { frame: 90, value: "(0, 90, 0)" },
@@ -44,7 +44,7 @@ export const SAMPLE_ANIMATION: AnimationData = {
     {
       id: "trk-mol1-opacity",
       label: "1CRN Opacity",
-      icon: "style",
+      icon: "track.style",
       keyframes: [
         { frame: 0, value: "1.0" },
         { frame: 60, value: "0.3" },
@@ -54,7 +54,7 @@ export const SAMPLE_ANIMATION: AnimationData = {
     {
       id: "trk-mol2-opacity",
       label: "3J3Q Opacity",
-      icon: "style",
+      icon: "track.style",
       keyframes: [
         { frame: 60, value: "0.0" },
         { frame: 120, value: "1.0" },
@@ -65,7 +65,7 @@ export const SAMPLE_ANIMATION: AnimationData = {
     {
       id: "trk-light-int",
       label: "Light Intensity",
-      icon: "flash",
+      icon: "track.light",
       keyframes: [
         { frame: 0, value: "0.8" },
         { frame: 150, value: "1.2" },
@@ -75,7 +75,7 @@ export const SAMPLE_ANIMATION: AnimationData = {
     {
       id: "trk-ribbon-width",
       label: "Ribbon Width",
-      icon: "horizontal-distribution",
+      icon: "track.width",
       keyframes: [
         { frame: 0, value: "1.0" },
         { frame: 100, value: "2.5" },

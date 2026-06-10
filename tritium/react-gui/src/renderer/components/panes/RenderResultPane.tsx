@@ -9,6 +9,7 @@
 
 import React, { useCallback } from "react";
 import { Button, Divider, Popover } from "@blueprintjs/core";
+import { AppIcon } from "../AppIcon";
 
 import { RenderImageViewer } from "./RenderImageViewer";
 import type { RenderResult } from "../../data/renderResult";
@@ -86,35 +87,35 @@ export const RenderResultPane: React.FC<RenderResultPaneProps> = ({
       <div className="render-result-toolbar">
         <Button
           small
-          icon="floppy-disk"
+          icon={<AppIcon name="ui.save" aria-hidden />}
           title="Save image"
           onClick={handleSave}
         />
         <Button
           small
-          icon="duplicate"
+          icon={<AppIcon name="ui.duplicate" aria-hidden />}
           title="Copy image to clipboard"
           onClick={handleCopy}
         />
         <Popover content={settingsPopover} placement="bottom-start">
-          <Button small icon="properties" title="Settings used for this render" />
+          <Button small icon={<AppIcon name="ui.properties" aria-hidden />} title="Settings used for this render" />
         </Popover>
         <Divider />
         <Button
           small
-          icon="cog"
+          icon={<AppIcon name="ui.settings" aria-hidden />}
           title="Open Render Settings"
           onClick={onOpenSettings}
         />
         <Button
           small
-          icon="refresh"
+          icon={<AppIcon name="ui.refresh" aria-hidden />}
           title="Re-render"
           onClick={() => onReRender(result)}
         />
         <Button
           small
-          icon="cube"
+          icon={<AppIcon name="ui.cube" aria-hidden />}
           title="Show source scene"
           onClick={() => onShowSourceScene(result)}
         />

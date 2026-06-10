@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { Icon, type IconName } from "@blueprintjs/core";
+import { AppIcon } from "./AppIcon";
 import type { TreeNodeData } from "../types";
 
 interface TreeNodeProps {
@@ -28,16 +28,12 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, depth, selectedId, onSelect }
       >
         <span className="tree-chevron">
           {hasChildren ? (
-            <Icon icon={expanded ? "chevron-down" : "chevron-right"} size={12} />
+            <AppIcon name={expanded ? "ui.caretDown" : "ui.caretRight"} size="sm" />
           ) : (
             <span style={{ width: 12 }} />
           )}
         </span>
-        <Icon
-          icon={node.icon as IconName}
-          size={14}
-          className="tree-icon"
-        />
+        <AppIcon name={node.icon} size="md" className="tree-icon" aria-hidden />
         <span className="tree-label">{node.label}</span>
         {node.secondaryLabel && (
           <span className="tree-secondary">{node.secondaryLabel}</span>
