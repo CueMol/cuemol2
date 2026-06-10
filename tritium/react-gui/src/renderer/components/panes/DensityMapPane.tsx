@@ -22,11 +22,11 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
     Button,
     HTMLSelect,
-    Icon,
     Menu,
     MenuItem,
     Popover,
 } from '@blueprintjs/core'
+import { AppIcon } from '../AppIcon'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import { useDensityMapPanel } from '../../hooks/useDensityMapPanel'
 import { useRealtimeDragProp } from '../../hooks/useRealtimeDragProp'
@@ -336,13 +336,14 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
             >
                 <div className="sp-section-header-left">
                     {onToggleCollapse != null && (
-                        <Icon
-                            icon={collapsed ? 'chevron-right' : 'chevron-down'}
-                            size={12}
+                        <AppIcon
+                            name={collapsed ? 'ui.caretRight' : 'ui.caretDown'}
+                            size="sm"
                             className="section-chevron"
+                            aria-hidden
                         />
                     )}
-                    <Icon icon="layers" size={14} className="section-icon" />
+                    <AppIcon name="ui.layers" size="md" className="section-icon" aria-hidden />
                     <span className="section-title">Density map</span>
                 </div>
             </div>

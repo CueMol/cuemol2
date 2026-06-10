@@ -12,6 +12,7 @@
 import React from "react";
 import { ProgressBar, type Intent } from "@blueprintjs/core";
 import { SelectField, FormButton } from "../../h3-kit/form";
+import { AppIcon } from "../AppIcon";
 import { type RenderJob, isRenderJobActive } from "../../hooks/useRenderJob";
 import { RENDER_SIZE_PRESETS } from "../../data/renderSettings";
 
@@ -65,14 +66,14 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
         {active ? (
           <FormButton
             intent="danger"
-            icon="stop"
+            icon={<AppIcon name="media.stop" aria-hidden />}
             text="Stop"
             onClick={onCancel}
           />
         ) : (
           <FormButton
             intent="primary"
-            icon="play"
+            icon={<AppIcon name="media.play" aria-hidden />}
             text="Start Render"
             onClick={onStart}
           />
@@ -93,7 +94,7 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
 
         <FormButton
           minimal
-          icon="cog"
+          icon={<AppIcon name="ui.settings" aria-hidden />}
           text="Render Settings"
           onClick={onOpenSettings}
         />

@@ -22,8 +22,8 @@ import {
     Menu,
     MenuItem,
     Popover,
-    Icon,
 } from '@blueprintjs/core'
+import { AppIcon } from '../AppIcon'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import { useSymmetryPanel } from '../../hooks/useSymmetryPanel'
 import { useShowSymmetryChangeDialog } from '../dialogs/SymmetryChangeDialogProvider'
@@ -157,13 +157,14 @@ export const SymmetryPane: React.FC<SymmetryPaneProps> = ({
             >
                 <div className="sp-section-header-left">
                     {onToggleCollapse != null && (
-                        <Icon
-                            icon={collapsed ? 'chevron-right' : 'chevron-down'}
-                            size={12}
+                        <AppIcon
+                            name={collapsed ? 'ui.caretRight' : 'ui.caretDown'}
+                            size="sm"
                             className="section-chevron"
+                            aria-hidden
                         />
                     )}
-                    <Icon icon="cube" size={14} className="section-icon" />
+                    <AppIcon name="ui.cube" size="md" className="section-icon" aria-hidden />
                     <span className="section-title">Symmetry</span>
                 </div>
             </div>

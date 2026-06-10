@@ -21,12 +21,12 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
     Button,
     ButtonGroup,
-    Icon,
     Tooltip,
     Tree,
     type IconName,
     type TreeNodeInfo,
 } from "@blueprintjs/core";
+import { AppIcon } from "../AppIcon";
 import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
 import { useMolStructure } from "../../hooks/useMolStructure";
 import { ObjectSelect, objectFilters } from "../../h3-kit/ObjectSelect";
@@ -392,13 +392,14 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
             >
                 <div className="sp-section-header-left">
                     {onToggleCollapse != null && (
-                        <Icon
-                            icon={collapsed ? "chevron-right" : "chevron-down"}
-                            size={12}
+                        <AppIcon
+                            name={collapsed ? "ui.caretRight" : "ui.caretDown"}
+                            size="sm"
                             className="section-chevron"
+                            aria-hidden
                         />
                     )}
-                    <Icon icon="git-branch" size={14} className="section-icon" />
+                    <AppIcon name="ui.git" size="md" className="section-icon" aria-hidden />
                     <span className="section-title">Mol Struct</span>
                 </div>
                 <div
@@ -410,7 +411,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
                             <Button
                                 minimal
                                 small
-                                icon={<Icon icon="select" size={14} />}
+                                icon={<AppIcon name="ui.select" aria-hidden />}
                                 className="section-action-btn"
                                 disabled={!canApply}
                                 onClick={onSelect}
@@ -420,7 +421,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
                             <Button
                                 minimal
                                 small
-                                icon={<Icon icon="locate" size={14} />}
+                                icon={<AppIcon name="ui.locate" aria-hidden />}
                                 className="section-action-btn"
                                 disabled={!canApply || !hasView}
                                 onClick={onCenter}
@@ -430,7 +431,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
                             <Button
                                 minimal
                                 small
-                                icon={<Icon icon="zoom-to-fit" size={14} />}
+                                icon={<AppIcon name="ui.zoomToFit" aria-hidden />}
                                 className="section-action-btn"
                                 disabled={!canApply || !hasView}
                                 onClick={onZoom}
@@ -440,7 +441,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
                             <Button
                                 minimal
                                 small
-                                icon={<Icon icon="properties" size={14} />}
+                                icon={<AppIcon name="ui.properties" aria-hidden />}
                                 className="section-action-btn"
                                 disabled
                             />
