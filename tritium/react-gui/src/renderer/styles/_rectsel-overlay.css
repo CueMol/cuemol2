@@ -15,9 +15,14 @@
   cursor: crosshair;
 }
 
-/* Shift held -> add-to-selection mode; the copy cursor signals the add. */
+/* Shift held -> add-to-selection mode. Custom crosshair-with-plus cursor
+   (hotspot at the crosshair centre); falls back to a plain crosshair. The
+   inline SVG hex colours cannot use CSS tokens (data URIs are isolated). */
 .rectsel-overlay.active.add-mode {
-  cursor: copy;
+  cursor:
+    url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><g fill='none' stroke-linecap='round'><g stroke='%23ffffff' stroke-width='3'><path d='M12 0v9M12 15v9M0 12h9M15 12h9'/><path d='M16 19h7M19 16v7'/></g><g stroke='%23000000' stroke-width='1.4'><path d='M12 0v9M12 15v9M0 12h9M15 12h9'/></g><g stroke='%232ca02c' stroke-width='2'><path d='M16 19h7M19 16v7'/></g></g></svg>")
+      12 12,
+    crosshair;
 }
 
 .rectsel-rubber-band {
