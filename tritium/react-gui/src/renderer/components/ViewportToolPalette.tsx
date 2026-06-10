@@ -31,9 +31,19 @@ import {
 interface Props {
   activeTool: ToolId;
   onSelect: (id: ToolId) => void;
+  /**
+   * Open the measure group's options (target label-set) popover. Rendered as a
+   * distinct "options cap" above the measure tools. Optional: when omitted the
+   * cap is still shown but inert (used before the popover is wired).
+   */
+  onOpenMeasureOptions?: () => void;
 }
 
-export const ViewportToolPalette: React.FC<Props> = ({ activeTool, onSelect }) => {
+export const ViewportToolPalette: React.FC<Props> = ({
+  activeTool,
+  onSelect,
+  onOpenMeasureOptions,
+}) => {
   return (
     <div className="viewport-tool-palette" role="toolbar" aria-label="Viewport tools">
       {CATEGORY_ORDER.map((cat, idx) => {
@@ -42,6 +52,19 @@ export const ViewportToolPalette: React.FC<Props> = ({ activeTool, onSelect }) =
         return (
           <React.Fragment key={cat}>
             {idx > 0 && <div className="tool-palette-separator" aria-hidden="true" />}
+            {cat === "measure" && (
+              <button
+                type="button"
+                className="tool-options-cap"
+                onClick={onOpenMeasureOptions}
+                aria-label="Measure options"
+                aria-haspopup="dialog"
+                title="Measure options"
+              >
+                <AppIcon name="ui.properties" size="sm" aria-hidden />
+                <AppIcon name="ui.caretDown" size="sm" className="cap-caret" aria-hidden />
+              </button>
+            )}
             {tools.map((t) => (
               <Tooltip
                 key={t.id}

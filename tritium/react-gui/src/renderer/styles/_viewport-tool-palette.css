@@ -18,7 +18,36 @@
 .tool-palette-separator {
   height: 1px;
   margin: var(--space-2) var(--space-1);
-  background: var(--border-subtle);
+  background: var(--border);
+}
+
+/* Measure group "options" cap: opens the target label-set popover.
+   Deliberately NOT a tool button -- shorter, muted, and carrying a caret -- so
+   it reads as group-level settings rather than a fourth measure tool. It sits
+   above the D/A/T buttons (top of the measure group). */
+.tool-options-cap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  width: 30px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+
+.tool-options-cap:hover {
+  background: var(--overlay-hover);
+  color: var(--text-secondary);
+}
+
+.tool-options-cap .cap-caret {
+  opacity: 0.7;
 }
 
 .tool-btn {
