@@ -22,7 +22,7 @@ runtime_class DistPickDrawObj extends DrawObj
   default color = gfx::SolidColor::createRGB(1.0, 1.0, 1.0, 0.5);
 
   property real width => m_width;
-  default width = 3.0;
+  default width = 4.0;
 
   /// add new label for atoms
   void append(integer mol_id, integer atom_id) => append;

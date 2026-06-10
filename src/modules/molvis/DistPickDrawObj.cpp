@@ -15,9 +15,9 @@
 using namespace molvis;
 
 DistPickDrawObj::DistPickDrawObj()
-    : super_t(), m_color(gfx::SolidColor::createRGB(1.0, 1.0, 1.0))
+    : super_t(), m_color(gfx::SolidColor::createRGB(1.0, 1.0, 1.0, 0.5))
 {
-    m_width = 2.0f;
+    m_width = 4.0f;
 }
 
 DistPickDrawObj::~DistPickDrawObj() {}
@@ -30,7 +30,11 @@ bool DistPickDrawObj::init(DisplayContext* pdc)
     if (!m_linePrim.init(pdc))
         return false;
 
-    const qlib::quint32 ccode = 0xFFFFFF80;  // White color
+    // Drive the marker colour from the color property (ARGB, incl. alpha)
+    // rather than a hardcoded literal. The wide-line GpuPrim unpacks this as
+    // ARGB, so a raw literal here (formerly 0xFFFFFF80) silently lost the
+    // intended alpha into the blue byte and rendered opaque.
+    const qlib::quint32 ccode = m_color->getCode();
 
     m_linePrim.alloc(pdc, 3);
     const float dsize = 0.25f;
