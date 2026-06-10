@@ -30,7 +30,9 @@
   padding: 0;
   border: none;
   background: transparent;
-  color: var(--text-secondary);
+  /* Brighter than body text so the thin stroke icons keep clear contrast
+     against the dark panel; hover lifts one step further. */
+  color: var(--text-primary);
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: background 0.1s, color 0.1s;
@@ -38,7 +40,7 @@
 
 .tool-btn:hover {
   background: var(--overlay-hover);
-  color: var(--text-primary);
+  color: var(--text-strong);
 }
 
 .tool-btn.active {
