@@ -39,7 +39,6 @@ bool DistPickDrawObj::init(DisplayContext* pdc)
     m_linePrim.alloc(pdc, 3);
     const float dsize = 0.25f;
 
-    m_linePrim.setLineWidth(m_width);
     m_linePrim.setNoDepth(true);
     m_linePrim.setLine(0, Vector4D(-dsize, 0, 0), ccode, Vector4D(dsize, 0, 0), ccode);
     m_linePrim.setLine(1, Vector4D(0, -dsize, 0), ccode, Vector4D(0, dsize, 0), ccode);
@@ -52,6 +51,13 @@ void DistPickDrawObj::display(DisplayContext* pdc, qsys::ViewPtr pView)
 {
     if (!init(pdc))
         return;
+
+    // Set the line width every frame, just before drawing. LineGpuPrim caches
+    // the width in m_linew and only the value present at draw() time is
+    // uploaded, so setting it once in init() is fragile. The viewport is in
+    // device pixels, so scale by the pixel-scale factor for a DPI-independent
+    // on-screen width.
+    m_linePrim.setLineWidth(float(m_width) * float(pdc->getPixSclFac()));
 
     for (const auto& pos : m_data) {
         pdc->pushMatrix();
