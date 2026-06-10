@@ -19,7 +19,6 @@
 
 import React, { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import {
-    Icon,
     Tree,
     Button,
     ButtonGroup,
@@ -27,6 +26,7 @@ import {
     type IconName,
     type TreeNodeInfo,
 } from "@blueprintjs/core";
+import { AppIcon } from "../AppIcon";
 
 import type { SceneNodeType, SceneTreeNode } from "../../worker/shared/sceneTreeTypes";
 import {
@@ -537,7 +537,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
             ) {
                 return undefined;
             }
-            const eyeIcon: IconName = node.visible ? "eye-open" : "eye-off";
+            const eyeIcon = node.visible ? "ui.eyeOpen" : "ui.eyeClosed";
             const disabledByAncestor = node.visible && !node.effectiveVisible;
             const className =
                 "visibility-toggle " +
@@ -550,7 +550,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                 <Button
                     minimal
                     small
-                    icon={<Icon icon={eyeIcon} size={14} />}
+                    icon={<AppIcon name={eyeIcon} aria-hidden />}
                     className={className}
                     onClick={(e: React.MouseEvent) => {
                         e.stopPropagation();
@@ -686,10 +686,11 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                 onClick={onToggleCollapse}
             >
                 <div className="sp-section-header-left">
-                    <Icon
-                        icon={collapsed ? "chevron-right" : "chevron-down"}
-                        size={12}
+                    <AppIcon
+                        name={collapsed ? "ui.caretRight" : "ui.caretDown"}
+                        size="sm"
                         className="section-chevron"
+                        aria-hidden
                     />
                     <span className="section-title scene-name-title">Scene</span>
                 </div>
@@ -702,7 +703,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                             <Button
                                 minimal
                                 small
-                                icon={<Icon icon="add" size={14} />}
+                                icon={<AppIcon name="ui.add" aria-hidden />}
                                 className="section-action-btn"
                                 disabled={!onAddRenderer || !canAdd}
                                 onClick={onAddRenderer}
@@ -712,7 +713,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                             <Button
                                 minimal
                                 small
-                                icon={<Icon icon="zoom-to-fit" size={14} />}
+                                icon={<AppIcon name="ui.zoomToFit" aria-hidden />}
                                 className="section-action-btn"
                                 disabled={!canFocus}
                                 onClick={() => onFocusSelected?.(selectedId)}
@@ -722,7 +723,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                             <Button
                                 minimal
                                 small
-                                icon={<Icon icon="trash" size={14} />}
+                                icon={<AppIcon name="ui.trash" aria-hidden />}
                                 className="section-action-btn"
                                 disabled={!canDelete}
                                 onClick={() => onDeleteSelected?.(selectedId)}
@@ -732,7 +733,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                             <Button
                                 minimal
                                 small
-                                icon={<Icon icon="properties" size={14} />}
+                                icon={<AppIcon name="ui.properties" aria-hidden />}
                                 className="section-action-btn"
                                 disabled={!canProperty}
                                 onClick={() => onShowProperty?.(selectedId)}

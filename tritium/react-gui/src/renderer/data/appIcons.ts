@@ -38,6 +38,8 @@ import {
   Cursor,
   Drop,
   Eraser,
+  Eye,
+  EyeSlash,
   File,
   FilmStrip,
   FloppyDisk,
@@ -156,6 +158,8 @@ export const APP_ICONS = {
   "ui.document": { lib: "phosphor", Comp: File },
   "ui.lock": { lib: "phosphor", Comp: Lock },
   "ui.unlock": { lib: "phosphor", Comp: LockOpen },
+  "ui.eyeOpen": { lib: "phosphor", Comp: Eye },
+  "ui.eyeClosed": { lib: "phosphor", Comp: EyeSlash },
 
   // Media transport (render / animation controls).
   "media.play": { lib: "phosphor", Comp: Play },

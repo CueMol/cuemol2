@@ -30,7 +30,6 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
     Button,
     ButtonGroup,
-    Icon,
     Menu,
     MenuItem,
     Popover,
@@ -38,6 +37,7 @@ import {
     Tooltip,
 } from '@blueprintjs/core'
 import { SectionHeader } from './SectionHeader'
+import { AppIcon } from '../AppIcon'
 import { SliderNumericField } from '../../h3-kit/SliderNumericField'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import type { RendColoringId } from '../../../shared/ipcTypes'
@@ -282,7 +282,7 @@ const PaintTable: React.FC<PaintTableProps> = ({
                     <Tooltip content="Add row" placement="top" compact>
                         <Button
                             small
-                            icon={<Icon icon="plus" size={14} />}
+                            icon={<AppIcon name="ui.add" aria-hidden />}
                             className="color-action-btn"
                             onClick={onAdd}
                         />
@@ -290,7 +290,7 @@ const PaintTable: React.FC<PaintTableProps> = ({
                     <Tooltip content="Remove row" placement="top" compact>
                         <Button
                             small
-                            icon={<Icon icon="minus" size={14} />}
+                            icon={<AppIcon name="ui.remove" aria-hidden />}
                             className="color-action-btn"
                             onClick={onRemove}
                             disabled={!isRowSelected}
@@ -299,7 +299,7 @@ const PaintTable: React.FC<PaintTableProps> = ({
                     <Tooltip content="Move up" placement="top" compact>
                         <Button
                             small
-                            icon={<Icon icon="arrow-up" size={14} />}
+                            icon={<AppIcon name="ui.arrowUp" aria-hidden />}
                             className="color-action-btn"
                             onClick={onMoveUp}
                             disabled={!isRowSelected || selectedIdx === 0}
@@ -308,7 +308,7 @@ const PaintTable: React.FC<PaintTableProps> = ({
                     <Tooltip content="Move down" placement="top" compact>
                         <Button
                             small
-                            icon={<Icon icon="arrow-down" size={14} />}
+                            icon={<AppIcon name="ui.arrowDown" aria-hidden />}
                             className="color-action-btn"
                             onClick={onMoveDown}
                             disabled={
