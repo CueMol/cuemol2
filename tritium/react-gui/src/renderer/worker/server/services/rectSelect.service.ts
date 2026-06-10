@@ -18,6 +18,12 @@ export interface RectSelectArgs {
     top: number;
     width: number;
     height: number;
+    /**
+     * 'replace' (default) overwrites each molecule's selection with the
+     * rectangle hits; 'add' ORs the hits with the existing selection
+     * (Shift+drag -- a tritium extension not present in UXP).
+     */
+    mode?: 'replace' | 'add';
 }
 
 export interface RectSelectResult {
@@ -79,12 +85,20 @@ function rectSelect(ctx: WorkerContext, args: RectSelectArgs): RectSelectResult 
     }
     if (selByObj.size === 0) return { ok: false, selectedObjIds: [] };
 
+    const addMode = args.mode === 'add';
     const selectedObjIds: number[] = [];
-    withUndoTxn(scene, 'Select atom(s)', () => {
+    withUndoTxn(scene, addMode ? 'Add select atom(s)' : 'Select atom(s)', () => {
         for (const [objId, selStrs] of selByObj) {
             const mol = scene.getObject(objId) as MolCoord | null;
             if (!mol) continue;
-            if (assignMolSel(ctx, mol, selStrs.join('|'), scene.uid)) {
+            const newSelStr = selStrs.join('|');
+            let selStr = newSelStr;
+            if (addMode) {
+                // OR the rectangle hits with the molecule's current selection.
+                const prevSelStr = mol.sel.toString();
+                if (prevSelStr) selStr = `(${prevSelStr}) or (${newSelStr})`;
+            }
+            if (assignMolSel(ctx, mol, selStr, scene.uid)) {
                 selectedObjIds.push(objId);
             }
         }

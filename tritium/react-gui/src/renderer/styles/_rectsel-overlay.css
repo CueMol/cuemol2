@@ -15,6 +15,11 @@
   cursor: crosshair;
 }
 
+/* Shift held -> add-to-selection mode; the copy cursor signals the add. */
+.rectsel-overlay.active.add-mode {
+  cursor: copy;
+}
+
 .rectsel-rubber-band {
   position: absolute;
   border: 1px solid var(--accent);

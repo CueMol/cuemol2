@@ -31,14 +31,15 @@ interface MolFixture {
     createRenderer: ReturnType<typeof vi.fn>
 }
 
-function makeMol(opts: { hasSelRend?: boolean } = {}): MolFixture {
+function makeMol(opts: { hasSelRend?: boolean; currentSel?: string } = {}): MolFixture {
     const setSel = vi.fn()
     const createRenderer = vi.fn()
+    const cur = opts.currentSel ?? ''
     const mol: Record<string, unknown> = {
         getRendererByType: vi.fn((_t: string) => (opts.hasSelRend ? {} : null)),
         createRenderer,
         get sel() {
-            return undefined
+            return { toString: () => cur }
         },
         set sel(v: unknown) {
             setSel(v)
@@ -123,5 +124,29 @@ describe('rectSelect — UXP rectSel parity', () => {
         const result = rectSelect(ctx, ARGS)
         expect(m1.setSel).not.toHaveBeenCalled()
         expect(result).toEqual({ ok: false, selectedObjIds: [] })
+    })
+
+    it('mode=add ORs the rectangle hits with the existing selection', () => {
+        const m1 = makeMol({ hasSelRend: true, currentSel: 'chain A' })
+        const hits = JSON.stringify([{ obj_id: 1, sel: 'aid 5-7' }])
+        const { ctx } = makeCtx(hits, { 1: m1.mol })
+        rectSelect(ctx, { ...ARGS, mode: 'add' })
+        expect(makeSel).toHaveBeenCalledWith(ctx, '(chain A) or (aid 5-7)', 99)
+    })
+
+    it('mode=add with no existing selection uses the new selection alone', () => {
+        const m1 = makeMol({ hasSelRend: true, currentSel: '' })
+        const hits = JSON.stringify([{ obj_id: 1, sel: 'aid 5-7' }])
+        const { ctx } = makeCtx(hits, { 1: m1.mol })
+        rectSelect(ctx, { ...ARGS, mode: 'add' })
+        expect(makeSel).toHaveBeenCalledWith(ctx, 'aid 5-7', 99)
+    })
+
+    it('default mode replaces (does not read the existing selection)', () => {
+        const m1 = makeMol({ hasSelRend: true, currentSel: 'chain A' })
+        const hits = JSON.stringify([{ obj_id: 1, sel: 'aid 5-7' }])
+        const { ctx } = makeCtx(hits, { 1: m1.mol })
+        rectSelect(ctx, ARGS)
+        expect(makeSel).toHaveBeenCalledWith(ctx, 'aid 5-7', 99)
     })
 })

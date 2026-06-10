@@ -19,13 +19,17 @@
  * emits the usual click event and `useNaviClickHandler` (enabled while
  * rectSelect is active) handles it.
  *
+ * Shift+drag adds the rectangle hits to the existing selection (a tritium
+ * extension); the cursor switches to `copy` while Shift is held to signal the
+ * add mode.
+ *
  * The rubber-band rectangle is drawn here in the renderer (HTML backend).
  * The drag-capture skeleton is independent of how the rectangle is rendered,
  * so a C++ `RectSelDrawObj` backend can replace `useHtmlRubberBand` later
  * without touching the drag/selection logic.
  */
 
-import React, { useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useActiveToolContext } from '../contexts/ActiveToolContext'
 import { useMolTabState } from '../hooks/useMolTab'
 import { useCueMol } from '../hooks/useCueMol'
@@ -108,6 +112,23 @@ export const RectSelectOverlay: React.FC = () => {
     const leftRef = useRef<LeftDrag | null>(null)
     const { backend, rect } = useHtmlRubberBand()
 
+    // Track Shift for live cursor feedback (add mode). The actual mode is read
+    // from the mouseup event so it always matches the cursor at release.
+    const [shiftHeld, setShiftHeld] = useState(false)
+    useEffect(() => {
+        if (!active) {
+            setShiftHeld(false)
+            return
+        }
+        const onKey = (e: KeyboardEvent): void => setShiftHeld(e.shiftKey)
+        window.addEventListener('keydown', onKey)
+        window.addEventListener('keyup', onKey)
+        return () => {
+            window.removeEventListener('keydown', onKey)
+            window.removeEventListener('keyup', onKey)
+        }
+    }, [active])
+
     /** DOM clientX/Y -> canvas-local coords (overlay is flush with the canvas). */
     const localCoords = (e: React.MouseEvent): { x: number; y: number } => {
         const r = rootRef.current?.getBoundingClientRect()
@@ -153,12 +174,14 @@ export const RectSelectOverlay: React.FC = () => {
         }
         leftRef.current = null
         if (L.dragging) {
-            // Rubber-band release -> rectangle selection.
+            // Rubber-band release -> rectangle selection. Shift = add to the
+            // existing selection (mode read at release to match the cursor).
             backend.end()
             const { x, y } = localCoords(e)
             const r = normalizeRect(L.x0, L.y0, x, y)
             if (r.width > 0 && r.height > 0 && activeViewID != null && cm) {
-                void cm.invokeService('rectSelect', { viewId: activeViewID, ...r })
+                const mode = e.shiftKey ? 'add' : 'replace'
+                void cm.invokeService('rectSelect', { viewId: activeViewID, ...r, mode })
             }
             return
         }
@@ -183,7 +206,9 @@ export const RectSelectOverlay: React.FC = () => {
     return (
         <div
             ref={rootRef}
-            className={`rectsel-overlay${active ? ' active' : ''}`}
+            className={`rectsel-overlay${active ? ' active' : ''}${
+                active && shiftHeld ? ' add-mode' : ''
+            }`}
             onMouseDown={active ? onMouseDown : undefined}
             onMouseMove={active ? onMouseMove : undefined}
             onMouseUp={active ? onMouseUp : undefined}

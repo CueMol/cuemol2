@@ -53,10 +53,22 @@ function mount(tool: ToolId): HTMLDivElement {
     return container.querySelector('.rectsel-overlay') as HTMLDivElement
 }
 
-function fire(el: HTMLElement, type: string, x: number, y: number, button = 0): void {
+function fire(
+    el: HTMLElement,
+    type: string,
+    x: number,
+    y: number,
+    opts: { button?: number; shiftKey?: boolean } = {},
+): void {
     act(() => {
         el.dispatchEvent(
-            new MouseEvent(type, { bubbles: true, clientX: x, clientY: y, button }),
+            new MouseEvent(type, {
+                bubbles: true,
+                clientX: x,
+                clientY: y,
+                button: opts.button ?? 0,
+                shiftKey: opts.shiftKey ?? false,
+            }),
         )
     })
 }
@@ -97,6 +109,7 @@ describe('RectSelectOverlay', () => {
             top: 20,
             width: 40,
             height: 40,
+            mode: 'replace',
         })
         // A rubber-band drag must not reach the C++ view (would rotate camera).
         expect(onMouseEvent).not.toHaveBeenCalled()
@@ -113,6 +126,22 @@ describe('RectSelectOverlay', () => {
             top: 20,
             width: 40,
             height: 40,
+            mode: 'replace',
+        })
+    })
+
+    it('shift+drag selects in add mode', () => {
+        const overlay = mount('rectSelect')
+        fire(overlay, 'mousedown', 10, 20)
+        fire(overlay, 'mousemove', 50, 60)
+        fire(overlay, 'mouseup', 50, 60, { shiftKey: true })
+        expect(invokeService).toHaveBeenCalledWith('rectSelect', {
+            viewId: 7,
+            left: 10,
+            top: 20,
+            width: 40,
+            height: 40,
+            mode: 'add',
         })
     })
 
@@ -130,7 +159,7 @@ describe('RectSelectOverlay', () => {
 
     it('forwards non-left buttons (context menu / camera) to the view', () => {
         const overlay = mount('rectSelect')
-        fire(overlay, 'mousedown', 40, 40, 2) // right button
+        fire(overlay, 'mousedown', 40, 40, { button: 2 }) // right button
         expect(invokeService).not.toHaveBeenCalled()
         expect(onMouseEvent).toHaveBeenCalledTimes(1)
         expect(onMouseEvent.mock.calls[0][1]).toBe('mouseDown')
