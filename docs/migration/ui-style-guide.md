@@ -88,9 +88,10 @@ listbox はフォームと違い**描画基盤が3種**あり単一コンポー�
   分子ツール等の domain 固有アイコンは Phosphor を優先、既存で十分なものは Blueprint エントリのまま。
 - **サイズはトークン**: `sm=12 / md=14 / lg=18`(`AppIcon` の `SIZE_PX`、CSS の `--icon-sm/md/lg` と一致)。
   consumer は `size="sm|md|lg"` を渡す(px 直書き禁止、必要時のみ明示 px)。
-- **色は currentColor 継承**(dark/light 自動)。アイコンに固定色を当てない。Phosphor の既定 weight は root の
-  `IconContext`(`App.tsx`)と `AppIcon` で `bold`(小サイズUIでの視認性)、色は `currentColor`。個別の太さは
-  `appIcons.ts` の spec の `weight` で上書き可。
+- **色は currentColor 継承**(dark/light 自動)。アイコンに固定色を当てない。Phosphor の既定 weight は
+  `regular`(一般ボタン)。activity bar など目立たせる領域は consumer 側で `weight="bold"` を渡す。個別の太さは
+  `<AppIcon weight=...>` か `appIcons.ts` の spec の `weight` で上書き可。色は root の `IconContext`(`App.tsx`)で
+  `currentColor`。
 - Blueprint コンポーネント内蔵アイコン(Tree の chevron、input clear 等)はそのまま。段階移行のため、まだ
   `AppIcon` 化していない箇所で `<Icon>` 直書きが残るのは許容(移行時にキーを足して寄せる)。
 

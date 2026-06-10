@@ -15,11 +15,23 @@
 import type { Icon as PhosphorIcon, IconWeight } from "@phosphor-icons/react";
 import {
   Angle,
+  ArrowClockwise,
   ArrowsClockwise,
   ArrowsOutCardinal,
+  CloudArrowDown,
+  Cube,
+  File,
+  FloppyDisk,
+  FloppyDiskBack,
+  FolderOpen,
+  Gear,
+  Image,
   Lasso,
+  Plus,
   Ruler,
   Selection,
+  SquaresFour,
+  TreeStructure,
 } from "@phosphor-icons/react";
 import type { IconName } from "@blueprintjs/icons";
 
@@ -33,13 +45,31 @@ export type AppIconSpec =
  * Add an entry here, then reference it via `<AppIcon name="..." />`.
  */
 export const APP_ICONS = {
-  // Viewport tools (pilot migration to Phosphor).
+  // Viewport tools.
   "tool.navigate": { lib: "phosphor", Comp: ArrowsOutCardinal },
   "tool.rectSelect": { lib: "phosphor", Comp: Selection },
   "tool.lasso": { lib: "phosphor", Comp: Lasso },
   "tool.distance": { lib: "phosphor", Comp: Ruler },
   "tool.angle": { lib: "phosphor", Comp: Angle },
   "tool.torsion": { lib: "phosphor", Comp: ArrowsClockwise },
+
+  // Activity bar (rendered bold by the consumer).
+  "activity.explorer": { lib: "phosphor", Comp: TreeStructure },
+  "activity.selection": { lib: "phosphor", Comp: Selection },
+  "activity.crystal": { lib: "phosphor", Comp: Cube },
+  "activity.catalog": { lib: "phosphor", Comp: SquaresFour },
+  "activity.settings": { lib: "phosphor", Comp: Gear },
+
+  // Top toolbar.
+  "toolbar.newTab": { lib: "phosphor", Comp: Plus },
+  "toolbar.openFile": { lib: "phosphor", Comp: File },
+  "toolbar.save": { lib: "phosphor", Comp: FloppyDisk },
+  "toolbar.saveAs": { lib: "phosphor", Comp: FloppyDiskBack },
+  "toolbar.openScene": { lib: "phosphor", Comp: FolderOpen },
+  "toolbar.reloadScene": { lib: "phosphor", Comp: ArrowClockwise },
+  "toolbar.saveScene": { lib: "phosphor", Comp: FloppyDisk },
+  "toolbar.getPdb": { lib: "phosphor", Comp: CloudArrowDown },
+  "toolbar.render": { lib: "phosphor", Comp: Image },
 } as const satisfies Record<string, AppIconSpec>;
 
 export type AppIconKey = keyof typeof APP_ICONS;

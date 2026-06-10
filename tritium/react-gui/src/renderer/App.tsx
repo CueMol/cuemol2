@@ -373,8 +373,8 @@ const App: React.FC = () => {
 
   return (
     <ActiveToolProvider activeTool={activeTool}>
-    {/* Phosphor icon defaults: inherit text color (theme-aware), bold weight. */}
-    <IconContext.Provider value={{ color: "currentColor", weight: "bold" }}>
+    {/* Phosphor icon defaults: inherit text color (theme-aware), regular weight. */}
+    <IconContext.Provider value={{ color: "currentColor", weight: "regular" }}>
     <div className="app">
       {window.electronAPI?.platform !== 'darwin' && (
         <MenuBar activeTab={activeTab} viewProjection={viewProjection} viewCenterMark={viewCenterMark} sceneBgColor={sceneBgColor} recentFiles={recentFiles} />

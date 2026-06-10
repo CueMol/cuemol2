@@ -11,33 +11,34 @@
 
 import React from "react";
 import { Button, Divider, Navbar, Alignment } from "@blueprintjs/core";
-import type { IconName } from "@blueprintjs/icons";
 
 import { useCommands } from "../commands/CommandRegistry";
 import { CmdId } from "../commands/ids";
 import { UndoRedoSplitButton } from "./toolbar/UndoRedoSplitButton";
+import { AppIcon } from "./AppIcon";
+import type { AppIconKey } from "../data/appIcons";
 
 type ToolbarItem =
-  | { kind: "cmd"; id: string; icon: IconName; text: string; cmd: CmdId }
-  | { kind: "mock"; id: string; icon: IconName; text: string }
+  | { kind: "cmd"; id: string; icon: AppIconKey; text: string; cmd: CmdId }
+  | { kind: "mock"; id: string; icon: AppIconKey; text: string }
   | { kind: "divider"; id: string }
   | { kind: "undo"; id: string }
   | { kind: "redo"; id: string };
 
 const TOOLBAR_ITEMS: ToolbarItem[] = [
-  { kind: "cmd", id: "new-tab", icon: "add", text: "New Tab", cmd: CmdId.TabNew },
+  { kind: "cmd", id: "new-tab", icon: "toolbar.newTab", text: "New Tab", cmd: CmdId.TabNew },
   { kind: "divider", id: "d1" },
-  { kind: "cmd", id: "open-file", icon: "document-open", text: "Open File", cmd: CmdId.UiOpenObjDialog },
-  { kind: "mock", id: "save", icon: "floppy-disk", text: "Save" },
-  { kind: "cmd", id: "save-as", icon: "floppy-disk", text: "Save As", cmd: CmdId.ObjectSaveAs },
+  { kind: "cmd", id: "open-file", icon: "toolbar.openFile", text: "Open File", cmd: CmdId.UiOpenObjDialog },
+  { kind: "mock", id: "save", icon: "toolbar.save", text: "Save" },
+  { kind: "cmd", id: "save-as", icon: "toolbar.saveAs", text: "Save As", cmd: CmdId.ObjectSaveAs },
   { kind: "divider", id: "d2" },
-  { kind: "cmd", id: "open-scene", icon: "folder-open", text: "Open Scene", cmd: CmdId.UiOpenSceneDialog },
-  { kind: "cmd", id: "reload-scene", icon: "refresh", text: "Reload Scene", cmd: CmdId.SceneReload },
-  { kind: "cmd", id: "save-scene", icon: "saved", text: "Save Scene", cmd: CmdId.FileSave },
+  { kind: "cmd", id: "open-scene", icon: "toolbar.openScene", text: "Open Scene", cmd: CmdId.UiOpenSceneDialog },
+  { kind: "cmd", id: "reload-scene", icon: "toolbar.reloadScene", text: "Reload Scene", cmd: CmdId.SceneReload },
+  { kind: "cmd", id: "save-scene", icon: "toolbar.saveScene", text: "Save Scene", cmd: CmdId.FileSave },
   { kind: "divider", id: "d3" },
-  { kind: "cmd", id: "get-pdb", icon: "cloud-download", text: "Get PDB", cmd: CmdId.UiGetPdbDialog },
+  { kind: "cmd", id: "get-pdb", icon: "toolbar.getPdb", text: "Get PDB", cmd: CmdId.UiGetPdbDialog },
   { kind: "divider", id: "d4" },
-  { kind: "cmd", id: "render", icon: "media", text: "Render", cmd: CmdId.UiRenderSettings },
+  { kind: "cmd", id: "render", icon: "toolbar.render", text: "Render", cmd: CmdId.UiRenderSettings },
   { kind: "divider", id: "d5" },
   { kind: "undo", id: "undo" },
   { kind: "redo", id: "redo" },
@@ -58,7 +59,7 @@ export const Toolbar: React.FC = () => {
           <Button
             key={item.id}
             minimal
-            icon={item.icon}
+            icon={<AppIcon name={item.icon} size={16} aria-hidden />}
             text={item.text}
             onClick={() =>
               dispatch(item.cmd).catch((e: unknown) =>
@@ -73,7 +74,7 @@ export const Toolbar: React.FC = () => {
           <Button
             key={item.id}
             minimal
-            icon={item.icon}
+            icon={<AppIcon name={item.icon} size={16} aria-hidden />}
             text={item.text}
             onClick={() =>
               console.warn(`[Toolbar] "${item.text}" is not implemented yet`)

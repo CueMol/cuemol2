@@ -13,7 +13,9 @@
  */
 
 import React from "react";
-import { Icon, Tooltip, type IconName } from "@blueprintjs/core";
+import { Tooltip } from "@blueprintjs/core";
+import { AppIcon } from "./AppIcon";
+import type { AppIconKey } from "../data/appIcons";
 
 // ────────────────────────────────────────────────────────────
 // Types
@@ -24,16 +26,16 @@ export type ActivityView = "explorer" | "selection" | "crystal" | "catalog";
 
 interface ActivityItemDef {
   id: ActivityView;
-  icon: IconName;
+  icon: AppIconKey;
   label: string;
 }
 
 /** Ordered list of activity-bar buttons rendered top-to-bottom. */
 const ITEMS: ActivityItemDef[] = [
-  { id: "explorer", icon: "panel-table", label: "Explorer" },
-  { id: "selection", icon: "search", label: "Selection" },
-  { id: "crystal", icon: "cube", label: "Crystal" },
-  { id: "catalog", icon: "widget", label: "Component Catalog" },
+  { id: "explorer", icon: "activity.explorer", label: "Explorer" },
+  { id: "selection", icon: "activity.selection", label: "Selection" },
+  { id: "crystal", icon: "activity.crystal", label: "Crystal" },
+  { id: "catalog", icon: "activity.catalog", label: "Component Catalog" },
 ];
 
 // ────────────────────────────────────────────────────────────
@@ -66,7 +68,7 @@ export const ActivityBar: React.FC<ActivityBarProps> = ({
               className={`activity-bar-item ${activeView === item.id ? "active" : ""}`}
               onClick={() => onSelect(item.id)}
             >
-              <Icon icon={item.icon} size={22} />
+              <AppIcon name={item.icon} size={22} weight="bold" aria-hidden />
             </div>
           </Tooltip>
         ))}
@@ -77,7 +79,7 @@ export const ActivityBar: React.FC<ActivityBarProps> = ({
             className={`activity-bar-item ${settingsActive ? "active" : ""}`}
             onClick={onSettingsClick}
           >
-            <Icon icon="cog" size={20} />
+            <AppIcon name="activity.settings" size={20} weight="bold" aria-hidden />
           </div>
         </Tooltip>
       </div>
