@@ -45,6 +45,12 @@ import { useCueMolEventListener } from '../../hooks/useCueMolEventListener'
 import { CueColorField } from '../../h3-kit/colorpicker/CueColorField'
 import { ColorPickerProvider } from '../../h3-kit/colorpicker/ColorPickerContext'
 
+/**
+ * Empty icon-column spacer for the unchecked radio rows of the level-mode
+ * menu, so checked and unchecked labels align (the check icon is 16px).
+ */
+const CHECK_SPACER = <span style={{ display: 'inline-block', width: 16 }} aria-hidden />
+
 /** Stored-value write options threaded to `setMapRendererProp`. */
 interface MapPropWriteOpts {
     mode?: 'preview' | 'commit' | 'abort'
@@ -315,12 +321,24 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
     const modeMenu = (
         <Menu>
             <MenuItem
-                icon={state?.useAbsLevel === false ? 'tick' : 'blank'}
+                icon={
+                    state?.useAbsLevel === false ? (
+                        <AppIcon name="ui.check" aria-hidden />
+                    ) : (
+                        CHECK_SPACER
+                    )
+                }
                 text="Use sigma contour level"
                 onClick={() => onPickLevelMode(false)}
             />
             <MenuItem
-                icon={state?.useAbsLevel === true ? 'tick' : 'blank'}
+                icon={
+                    state?.useAbsLevel === true ? (
+                        <AppIcon name="ui.check" aria-hidden />
+                    ) : (
+                        CHECK_SPACER
+                    )
+                }
                 text="Use absolute contour level"
                 onClick={() => onPickLevelMode(true)}
             />

@@ -9,6 +9,8 @@
  * @module types
  */
 
+import type { AppIconKey } from "./data/appIcons";
+
 // ────────────────────────────────────────────────────────────
 // Scene / File-tree
 // ────────────────────────────────────────────────────────────
@@ -27,11 +29,8 @@ export interface TreeNodeData {
   /** Human-readable display name shown in the tree row. */
   label: string;
 
-  /**
-   * Blueprint icon name rendered to the left of the label.
-   * Must be a valid `IconName` from `@blueprintjs/icons`.
-   */
-  icon: string;
+  /** Semantic icon key rendered to the left of the label (see `AppIcon`). */
+  icon: AppIconKey;
 
   /** Ordered list of child nodes. Empty array indicates a leaf node. */
   children: TreeNodeData[];
@@ -71,10 +70,8 @@ export interface TabData {
   /** Label shown on the tab strip. */
   title: string;
 
-  /**
-   * Blueprint icon name for the tab label.
-   */
-  icon: string;
+  /** Semantic icon key for the tab label (see `AppIcon`). */
+  icon: AppIconKey;
 
   /**
    * Discriminator for tab type.
@@ -167,8 +164,8 @@ export interface AnimationTrack {
   /** Display label shown in the track list (e.g. "Camera Position"). */
   label: string;
 
-  /** Blueprint icon name for the track label. */
-  icon?: string;
+  /** Semantic icon key for the track label (see `AppIcon`). */
+  icon?: AppIconKey;
 
   /** Ordered list of keyframes in this track. */
   keyframes: Keyframe[];

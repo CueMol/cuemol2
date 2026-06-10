@@ -23,10 +23,10 @@ import {
     Button,
     ButtonGroup,
     Tooltip,
-    type IconName,
     type TreeNodeInfo,
 } from "@blueprintjs/core";
 import { AppIcon } from "../AppIcon";
+import type { AppIconKey } from "../../data/appIcons";
 
 import type { SceneNodeType, SceneTreeNode } from "../../worker/shared/sceneTreeTypes";
 import {
@@ -41,15 +41,15 @@ import { InlineRenameInput } from "./InlineRenameInput";
 
 /* --- Node-type to icon mapping --- */
 
-const TYPE_ICON: Record<SceneNodeType, IconName> = {
-    scene: "film",
-    object: "cube",
-    renderer: "style",
-    rendGroup: "folder-close",
-    cameraRoot: "camera",
-    styleRoot: "folder-close",
-    camera: "camera",
-    style: "tag",
+const TYPE_ICON: Record<SceneNodeType, AppIconKey> = {
+    scene: "node.scene",
+    object: "node.object",
+    renderer: "node.renderer",
+    rendGroup: "node.group",
+    cameraRoot: "node.camera",
+    styleRoot: "node.group",
+    camera: "node.camera",
+    style: "node.style",
 };
 
 /* --- Props --- */
@@ -648,7 +648,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
             return {
                 id: idStr,
                 label: wrapLabel(n),
-                icon: TYPE_ICON[n.type],
+                icon: <AppIcon name={TYPE_ICON[n.type]} aria-hidden />,
                 isExpanded: hasChildren && isExpanded(n, idStr),
                 isSelected: isRowSelected(idStr),
                 secondaryLabel: visibilityButton(idStr, n),
@@ -668,7 +668,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
         const sceneRow: TreeNodeInfo = {
             id: sceneIdStr,
             label: wrapLabel(tree),
-            icon: TYPE_ICON.scene,
+            icon: <AppIcon name={TYPE_ICON.scene} aria-hidden />,
             isSelected: isRowSelected(sceneIdStr),
             hasCaret: false,
         };

@@ -29,7 +29,7 @@ export function useTabManager(opts?: {
   confirmCloseTab?: (viewId: number) => Promise<boolean>;
 }) {
   const [tabs, setTabs] = useState<TabData[]>([
-    { id: "welcome", title: "Welcome", icon: "home", type: "welcome" },
+    { id: "welcome", title: "Welcome", icon: "file.welcome", type: "welcome" },
   ]);
   const [activeTab, setActiveTab] = useState("welcome");
 
@@ -50,7 +50,7 @@ export function useTabManager(opts?: {
       const settingsTab: TabData = {
         id: SETTINGS_TAB_ID,
         title: "Settings",
-        icon: "cog",
+        icon: "file.settings",
         type: "settings",
       };
       setActiveTab(SETTINGS_TAB_ID);
@@ -117,7 +117,7 @@ export function useTabManager(opts?: {
     const newTab: TabData = {
       id: `molview-${Date.now()}`,
       title,
-      icon: "cube",
+      icon: "file.molview",
       type: "molview",
       viewId,
     };
@@ -137,7 +137,7 @@ export function useTabManager(opts?: {
     const tab: TabData = {
       id: tabId,
       title: renderResultTabTitle(result),
-      icon: "media",
+      icon: "file.render",
       type: "renderResult",
       renderResult: result,
     };

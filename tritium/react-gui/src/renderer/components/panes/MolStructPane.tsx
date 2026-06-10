@@ -23,7 +23,6 @@ import {
     ButtonGroup,
     Tooltip,
     Tree,
-    type IconName,
     type TreeNodeInfo,
 } from "@blueprintjs/core";
 import { AppIcon } from "../AppIcon";
@@ -37,6 +36,15 @@ import {
     selStrFromTree,
     type MolTreeId,
 } from "./molStruct/selStrFromTree";
+
+/* --- Constants --- */
+
+/**
+ * Empty icon-column spacer for placeholder rows ("Loading...", "(no atoms)")
+ * so their labels align with sibling rows that do carry an icon. Blueprint's
+ * `Tree` reserves no icon gutter when `icon` is omitted, hence the spacer.
+ */
+const BLANK_ICON = <span style={{ display: "inline-block", width: 16 }} aria-hidden />;
 
 /* --- Props --- */
 
@@ -251,7 +259,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
                     {
                         id: `loading-atom:${chainName}:${residueIndex}`,
                         label: "Loading...",
-                        icon: "blank" as IconName,
+                        icon: BLANK_ICON,
                         disabled: true,
                     },
                 ];
@@ -261,7 +269,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
                     {
                         id: `empty-atom:${chainName}:${residueIndex}`,
                         label: "(no atoms)",
-                        icon: "blank" as IconName,
+                        icon: BLANK_ICON,
                         disabled: true,
                     },
                 ];
@@ -272,7 +280,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
                 return {
                     id,
                     label,
-                    icon: "dot" as IconName,
+                    icon: <AppIcon name="node.atom" aria-hidden />,
                     isSelected: selectedIds.has(id),
                 };
             });
@@ -288,7 +296,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
                     {
                         id: `loading-resid:${chainName}`,
                         label: "Loading...",
-                        icon: "blank" as IconName,
+                        icon: BLANK_ICON,
                         disabled: true,
                     },
                 ];
@@ -298,7 +306,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
                     {
                         id: `empty-resid:${chainName}`,
                         label: "(no residues)",
-                        icon: "blank" as IconName,
+                        icon: BLANK_ICON,
                         disabled: true,
                     },
                 ];
@@ -310,7 +318,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
                 return {
                     id,
                     label,
-                    icon: "cube" as IconName,
+                    icon: <AppIcon name="node.residue" aria-hidden />,
                     isSelected: selectedIds.has(id),
                     hasCaret: true,
                     isExpanded: expanded,
@@ -330,7 +338,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
             return {
                 id,
                 label: `chain "${chain.name}"`,
-                icon: "git-branch" as IconName,
+                icon: <AppIcon name="node.chain" aria-hidden />,
                 isSelected: selectedIds.has(id),
                 hasCaret: true,
                 isExpanded: expanded,

@@ -92,7 +92,13 @@ listbox はフォームと違い**描画基盤が3種**あり単一コンポー�
   `regular`(一般ボタン)。activity bar など目立たせる領域は consumer 側で `weight="bold"` を渡す。個別の太さは
   `<AppIcon weight=...>` か `appIcons.ts` の spec の `weight` で上書き可。色は root の `IconContext`(`App.tsx`)で
   `currentColor`。
-- Blueprint コンポーネント内蔵アイコン(Tree の chevron、input clear 等)はそのまま。段階移行のため、まだ
+- **データ駆動アイコンはキー(`AppIconKey`)を持たせる**: tree node / tab / settings カテゴリ / animation track
+  などデータ構造に icon を持たせる箇所は、Blueprint の `IconName` 文字列ではなく `AppIconKey`(`data/appIcons.ts`
+  の `node.*` / `file.*` / `settings.*` / `track.*` 等)を格納する。描画は `<AppIcon name={node.icon} />`。
+  Blueprint の `Tree` の `TreeNodeInfo.icon` や `MenuItem` の `icon` は JSX 要素(MaybeElement)を受けるので、
+  `icon: <AppIcon name="..." aria-hidden />` をそのまま渡せる。アイコン列の空きスペーサが要る箇所(placeholder
+  行・未チェックの radio)は 16px の空 `<span>` を使う。
+- Blueprint コンポーネント内蔵アイコン(input clear 等、CSS フォント由来)はそのまま。段階移行のため、まだ
   `AppIcon` 化していない箇所で `<Icon>` 直書きが残るのは許容(移行時にキーを足して寄せる)。
 
 ---

@@ -75,6 +75,29 @@ import {
   Wrench,
   X,
 } from "@phosphor-icons/react";
+// Data-layer icons (scene/struct tree nodes, tabs, settings tree, anim tracks).
+import {
+  ArrowSquareIn,
+  ArrowsHorizontal,
+  Atom,
+  BracketsCurly,
+  Camera,
+  CircleHalf,
+  Code,
+  Command,
+  FilmSlate,
+  Folder,
+  Globe,
+  Hand,
+  HandPointing,
+  House,
+  Intersect,
+  Key,
+  Lightning,
+  Palette,
+  Shield,
+  TextAa,
+} from "@phosphor-icons/react";
 import type { IconName } from "@blueprintjs/icons";
 
 /** A registry entry: either a Phosphor component or a Blueprint icon name. */
@@ -160,6 +183,8 @@ export const APP_ICONS = {
   "ui.unlock": { lib: "phosphor", Comp: LockOpen },
   "ui.eyeOpen": { lib: "phosphor", Comp: Eye },
   "ui.eyeClosed": { lib: "phosphor", Comp: EyeSlash },
+  "ui.import": { lib: "phosphor", Comp: ArrowSquareIn },
+  "ui.intersect": { lib: "phosphor", Comp: Intersect },
 
   // Media transport (render / animation controls).
   "media.play": { lib: "phosphor", Comp: Play },
@@ -167,6 +192,49 @@ export const APP_ICONS = {
   "media.stop": { lib: "phosphor", Comp: Stop },
   "media.skipBack": { lib: "phosphor", Comp: SkipBack },
   "media.skipForward": { lib: "phosphor", Comp: SkipForward },
+
+  // Scene / structure tree node types (data-driven).
+  "node.scene": { lib: "phosphor", Comp: FilmSlate },
+  "node.object": { lib: "phosphor", Comp: Cube },
+  "node.renderer": { lib: "phosphor", Comp: Palette },
+  "node.group": { lib: "phosphor", Comp: Folder },
+  "node.camera": { lib: "phosphor", Comp: Camera },
+  "node.style": { lib: "phosphor", Comp: Tag },
+  "node.chain": { lib: "phosphor", Comp: GitBranch },
+  "node.residue": { lib: "phosphor", Comp: Cube },
+  "node.atom": { lib: "phosphor", Comp: Circle, weight: "fill" },
+
+  // Editor tabs (tab-type and file-extension driven).
+  "file.welcome": { lib: "phosphor", Comp: House },
+  "file.settings": { lib: "phosphor", Comp: Gear },
+  "file.molview": { lib: "phosphor", Comp: Cube },
+  "file.render": { lib: "phosphor", Comp: Image },
+  "file.molData": { lib: "phosphor", Comp: Atom },
+  "file.code": { lib: "phosphor", Comp: Code },
+  "file.config": { lib: "phosphor", Comp: BracketsCurly },
+  "file.document": { lib: "phosphor", Comp: File },
+
+  // Settings category tree.
+  "settings.display": { lib: "phosphor", Comp: Eye },
+  "settings.theme": { lib: "phosphor", Comp: CircleHalf },
+  "settings.atomLabels": { lib: "phosphor", Comp: TextAa },
+  "settings.rendering": { lib: "phosphor", Comp: Cube },
+  "settings.colors": { lib: "phosphor", Comp: Drop },
+  "settings.input": { lib: "phosphor", Comp: Hand },
+  "settings.mouse": { lib: "phosphor", Comp: ArrowsOutCardinal },
+  "settings.keyboard": { lib: "phosphor", Comp: Command },
+  "settings.trackpad": { lib: "phosphor", Comp: HandPointing },
+  "settings.general": { lib: "phosphor", Comp: Gear },
+  "settings.language": { lib: "phosphor", Comp: Globe },
+  "settings.updates": { lib: "phosphor", Comp: CloudArrowDown },
+  "settings.privacy": { lib: "phosphor", Comp: Shield },
+
+  // Animation track labels.
+  "track.camera": { lib: "phosphor", Comp: Camera },
+  "track.style": { lib: "phosphor", Comp: Palette },
+  "track.light": { lib: "phosphor", Comp: Lightning },
+  "track.width": { lib: "phosphor", Comp: ArrowsHorizontal },
+  "track.key": { lib: "phosphor", Comp: Key },
 } as const satisfies Record<string, AppIconSpec>;
 
 export type AppIconKey = keyof typeof APP_ICONS;

@@ -33,8 +33,7 @@ import React, {
   useEffect,
   useMemo,
 } from "react";
-import { Icon, Button, ButtonGroup, NumericInput } from "@blueprintjs/core";
-import type { IconName } from "@blueprintjs/icons";
+import { Button, ButtonGroup, NumericInput } from "@blueprintjs/core";
 import { AppIcon } from "../AppIcon";
 import type { AnimationData, AnimationTrack, Keyframe } from "../../types";
 
@@ -389,7 +388,7 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({ animation }) => 
                   )
                 }
               >
-                <Icon icon={(track.icon ?? "key") as IconName} size={12} />
+                <AppIcon name={track.icon ?? "track.key"} size="sm" aria-hidden />
                 <span className="anim-label-text">{track.label}</span>
               </div>
             ))}

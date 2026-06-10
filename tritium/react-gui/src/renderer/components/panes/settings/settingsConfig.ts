@@ -9,7 +9,7 @@
  * swapped, while SettingsPane / ConfigTreeNode / SettingRow stay generic.
  */
 
-import type { IconName } from '@blueprintjs/icons'
+import type { AppIconKey } from '../../../data/appIcons'
 import type { RenderBinaries } from '../../../worker/shared/renderTypes'
 import { DEFAULT_RENDER_BINARIES } from '../../../worker/shared/renderTypes'
 
@@ -21,8 +21,8 @@ export interface CategoryNode {
   id: string
   /** Display label. */
   label: string
-  /** Blueprint icon name. */
-  icon: IconName
+  /** Semantic icon key (see `AppIcon`). */
+  icon: AppIconKey
   /** Child categories (empty for leaf nodes). */
   children: CategoryNode[]
 }
@@ -31,32 +31,32 @@ export const CATEGORY_TREE: CategoryNode[] = [
   {
     id: 'display',
     label: 'Display',
-    icon: 'eye-open',
+    icon: 'settings.display',
     children: [
-      { id: 'display.theme',      label: 'Theme',       icon: 'contrast',  children: [] },
-      { id: 'display.atomLabels', label: 'Atom Labels',  icon: 'font',      children: [] },
-      { id: 'display.rendering',  label: 'Rendering',    icon: 'cube',      children: [] },
-      { id: 'display.colors',     label: 'Colors',       icon: 'tint',      children: [] },
+      { id: 'display.theme',      label: 'Theme',       icon: 'settings.theme',      children: [] },
+      { id: 'display.atomLabels', label: 'Atom Labels',  icon: 'settings.atomLabels', children: [] },
+      { id: 'display.rendering',  label: 'Rendering',    icon: 'settings.rendering',  children: [] },
+      { id: 'display.colors',     label: 'Colors',       icon: 'settings.colors',     children: [] },
     ],
   },
   {
     id: 'input',
     label: 'Input',
-    icon: 'hand',
+    icon: 'settings.input',
     children: [
-      { id: 'input.mouse',    label: 'Mouse & Navigation', icon: 'move',        children: [] },
-      { id: 'input.keyboard', label: 'Keyboard Shortcuts',  icon: 'key-command', children: [] },
-      { id: 'input.trackpad', label: 'Trackpad',            icon: 'hand-up',     children: [] },
+      { id: 'input.mouse',    label: 'Mouse & Navigation', icon: 'settings.mouse',    children: [] },
+      { id: 'input.keyboard', label: 'Keyboard Shortcuts',  icon: 'settings.keyboard', children: [] },
+      { id: 'input.trackpad', label: 'Trackpad',            icon: 'settings.trackpad', children: [] },
     ],
   },
   {
     id: 'general',
     label: 'General',
-    icon: 'cog',
+    icon: 'settings.general',
     children: [
-      { id: 'general.language', label: 'Language & Region', icon: 'globe',          children: [] },
-      { id: 'general.updates',  label: 'Updates',           icon: 'cloud-download', children: [] },
-      { id: 'general.privacy',  label: 'Privacy',           icon: 'shield',         children: [] },
+      { id: 'general.language', label: 'Language & Region', icon: 'settings.language', children: [] },
+      { id: 'general.updates',  label: 'Updates',           icon: 'settings.updates',  children: [] },
+      { id: 'general.privacy',  label: 'Privacy',           icon: 'settings.privacy',  children: [] },
     ],
   },
 ]

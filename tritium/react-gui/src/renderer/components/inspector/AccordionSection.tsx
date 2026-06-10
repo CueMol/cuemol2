@@ -15,7 +15,7 @@
  */
 
 import React, { createContext, useContext, useMemo, useState } from "react";
-import { Icon } from "@blueprintjs/core";
+import { AppIcon } from "../AppIcon";
 
 interface AccordionGroupValue {
   /** Title of the currently open section, or null when all are collapsed. */
@@ -80,9 +80,9 @@ export const AccordionSection: React.FC<AccordionSectionProps> = ({
   return (
     <div className={`insp-accordion ${expanded ? "expanded" : ""}`}>
       <div className="insp-accordion-header" onClick={onToggle}>
-        <Icon
-          icon={expanded ? "chevron-down" : "chevron-right"}
-          size={12}
+        <AppIcon
+          name={expanded ? "ui.caretDown" : "ui.caretRight"}
+          size="sm"
           className="insp-accordion-chevron"
         />
         <span className="insp-accordion-title">{title}</span>
