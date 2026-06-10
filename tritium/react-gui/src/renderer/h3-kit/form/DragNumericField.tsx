@@ -67,7 +67,7 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Icon } from '@blueprintjs/core';
+import { AppIcon } from '../../components/AppIcon';
 
 void React; // classic JSX runtime (vitest)
 
@@ -490,7 +490,7 @@ export const DragNumericField: React.FC<DragNumericFieldProps> = ({
                     startPress(-1);
                 }}
             >
-                <Icon icon="chevron-left" size={10} />
+                <AppIcon name="ui.caretLeft" size={10} aria-hidden />
             </button>
 
             {mode === 'editing' ? (
@@ -524,7 +524,7 @@ export const DragNumericField: React.FC<DragNumericFieldProps> = ({
                     startPress(1);
                 }}
             >
-                <Icon icon="chevron-right" size={10} />
+                <AppIcon name="ui.caretRight" size={10} aria-hidden />
             </button>
         </div>
     );

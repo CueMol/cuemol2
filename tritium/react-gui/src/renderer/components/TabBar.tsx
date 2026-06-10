@@ -21,6 +21,7 @@
 import React from "react";
 import { Icon } from "@blueprintjs/core";
 import type { IconName } from "@blueprintjs/icons";
+import { AppIcon } from "./AppIcon";
 import type { TabData } from "../types";
 import type { DropTarget, TabDragDropAPI } from "../hooks/useTabDragDrop";
 
@@ -142,7 +143,7 @@ export const TabBar: React.FC<TabBarProps> = ({
                 onCloseTab(tab.id);
               }}
             >
-              <Icon icon="small-cross" size={14} />
+              <AppIcon name="ui.close" size="md" aria-hidden />
             </span>
           </div>
         ))}

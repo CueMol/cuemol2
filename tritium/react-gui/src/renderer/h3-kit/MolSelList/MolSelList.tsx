@@ -27,9 +27,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     Button,
-    Icon,
     Popover,
 } from '@blueprintjs/core';
+import { AppIcon } from '../../components/AppIcon';
 import { useCueMol } from '../../hooks/useCueMol';
 import { useTheme } from '../../contexts/ThemeContext';
 import { TextField, SegmentField } from '../form';
@@ -243,7 +243,7 @@ export const MolSelList: React.FC<MolSelListProps> = ({
             disabled={disabled}
             invalid={!isValid}
             fill={fill}
-            leftIcon={showSelectionIcon ? <Icon icon="select" size={14} /> : undefined}
+            leftIcon={showSelectionIcon ? <AppIcon name="ui.select" aria-hidden /> : undefined}
             rightElement={caretTrigger}
         />
     );

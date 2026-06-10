@@ -11,7 +11,7 @@
  */
 
 import React, { useState } from "react";
-import { Icon } from "@blueprintjs/core";
+import { AppIcon } from "../AppIcon";
 import { SectionHeader } from "./SectionHeader";
 import {
   Field,
@@ -110,7 +110,7 @@ export const CatalogPane2: React.FC<CatalogPane2Props> = ({
                     selected={listSel === item}
                     onClick={() => setListSel(item)}
                   >
-                    <Icon icon="cube" size={14} />
+                    <AppIcon name="ui.cube" size="md" aria-hidden />
                     <span>{item}</span>
                   </ListRow>
                 ))}
@@ -133,7 +133,7 @@ export const CatalogPane2: React.FC<CatalogPane2Props> = ({
               <ButtonRow>
                 <FormButton text="Default" />
                 <FormButton text="Primary" intent="primary" />
-                <FormButton text="Icon" icon="tick" />
+                <FormButton text="Icon" icon={<AppIcon name="ui.check" aria-hidden />} />
                 <FormButton text="Minimal" minimal />
                 <FormButton text="Disabled" disabled />
               </ButtonRow>

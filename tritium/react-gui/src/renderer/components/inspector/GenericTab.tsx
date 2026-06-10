@@ -13,6 +13,7 @@
 
 import React, { useState } from "react";
 import { InputGroup, NumericInput, Switch, HTMLSelect, Checkbox } from "@blueprintjs/core";
+import { AppIcon } from "../AppIcon";
 import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
 import { useColumnResize } from "../../hooks/useColumnResize";
 
@@ -239,7 +240,7 @@ export const GenericTab: React.FC<GenericTabProps> = ({
         <InputGroup
           small
           fill
-          leftIcon="search"
+          leftIcon={<AppIcon name="ui.search" aria-hidden />}
           placeholder="Filter properties…"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}

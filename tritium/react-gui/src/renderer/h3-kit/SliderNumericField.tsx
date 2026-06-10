@@ -24,7 +24,8 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react'
-import { Icon, Slider } from '@blueprintjs/core'
+import { Slider } from '@blueprintjs/core'
+import { AppIcon } from '../components/AppIcon'
 
 void React // classic JSX runtime (vitest)
 
@@ -208,7 +209,7 @@ export const SliderNumericField: React.FC<SliderNumericFieldProps> = ({
                     aria-label="Increment"
                     tabIndex={-1}
                 >
-                    <Icon icon="chevron-up" size={10} />
+                    <AppIcon name="ui.caretUp" size={10} aria-hidden />
                 </button>
                 <button
                     type="button"
@@ -218,7 +219,7 @@ export const SliderNumericField: React.FC<SliderNumericFieldProps> = ({
                     aria-label="Decrement"
                     tabIndex={-1}
                 >
-                    <Icon icon="chevron-down" size={10} />
+                    <AppIcon name="ui.caretDown" size={10} aria-hidden />
                 </button>
             </div>
             {unit && <span className="h3-slider-unit">{unit}</span>}
