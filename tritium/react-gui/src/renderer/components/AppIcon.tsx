@@ -24,8 +24,8 @@ import { APP_ICONS, type AppIconKey, type AppIconSpec } from "../data/appIcons";
 const SIZE_PX = { sm: 12, md: 14, lg: 18 } as const;
 type SizeToken = keyof typeof SIZE_PX;
 
-/** Default Phosphor weight, chosen to sit next to Blueprint icons. */
-const DEFAULT_WEIGHT = "regular" as const;
+/** Default Phosphor stroke weight (bold reads clearly at small UI sizes). */
+const DEFAULT_WEIGHT = "bold" as const;
 
 interface AppIconProps {
   /** Semantic key from {@link APP_ICONS}. */
