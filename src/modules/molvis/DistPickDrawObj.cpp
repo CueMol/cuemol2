@@ -37,7 +37,7 @@ bool DistPickDrawObj::init(DisplayContext* pdc)
     const qlib::quint32 ccode = m_color->getCode();
 
     m_linePrim.alloc(pdc, 3);
-    const float dsize = 0.25f;
+    const float dsize = 0.5f;
 
     m_linePrim.setNoDepth(true);
     m_linePrim.setLine(0, Vector4D(-dsize, 0, 0), ccode, Vector4D(dsize, 0, 0), ccode);
