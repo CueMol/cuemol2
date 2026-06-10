@@ -207,6 +207,26 @@
   color: var(--text-muted);
 }
 
+/* Blueprint renders a JSX `leftIcon` (our <AppIcon> SVG) as a passthrough
+   element WITHOUT the .bp5-icon class, so Blueprint's left-slot positioning
+   never applies and the bare SVG sits statically at the top edge (overflowing
+   above the field). Re-apply the absolute, vertically-centered positioning to
+   the direct-child SVG. The `> svg` selector matches only passthrough icons --
+   Blueprint's own string icons render as a wrapping <span class="bp5-icon">, so
+   their SVG is not a direct child of the group; action buttons / spinners are
+   wrapped in .bp5-input-action. Applies to every small input group regardless
+   of consumer class (h3-form-input, insp-input, ...). */
+.bp5-input-group.bp5-small > svg {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--space-2);
+  margin-block: auto;
+  z-index: 1;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
 /* Disabled controls dim their text clearly below the enabled --text-primary so
    the two states are distinguishable. The enabled `color` rules use
    `!important` (Blueprint specificity), which otherwise keeps disabled text at
