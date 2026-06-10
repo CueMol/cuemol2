@@ -130,7 +130,7 @@ function hasDegeneratePick(mode: MeasureMode, picks: PickedAtom[]): boolean {
  * own object uid explicitly, so cross-molecule measurements work (UXP parity).
  * The whole create-or-reuse + append runs in one undo transaction.
  */
-function defineMeasureLabel(view: GUIView, buf: PickBuffer): string {
+function defineMeasureLabel(view: GUIView, buf: PickBuffer, target: string | undefined): string {
     if (hasDegeneratePick(buf.mode, buf.picks)) {
         return 'Atom pick canceled (same atom).';
     }
@@ -140,10 +140,17 @@ function defineMeasureLabel(view: GUIView, buf: PickBuffer): string {
     if (!mol) return 'Measure: target molecule not found.';
 
     const noun = labelNounFor(buf.mode);
+    const name = (target ?? '').trim();
     withUndoTxn(scene, `Define ${noun} Label`, () => {
-        let rend = mol.getRendererByType(ATOMINTR_TYPE) as AtomIntrRenderer | null;
+        // Reuse the named atomintr renderer on this molecule if present, else the
+        // first atomintr renderer (Auto); create one if none exists. A new named
+        // target keeps that name so later labels append to the same set.
+        let rend = (name
+            ? mol.getRendererByNameType(name, ATOMINTR_TYPE)
+            : mol.getRendererByType(ATOMINTR_TYPE)) as AtomIntrRenderer | null;
         if (!rend) {
             rend = mol.createRenderer(ATOMINTR_TYPE) as AtomIntrRenderer;
+            if (name) rend.name = name;
             rend.applyStyles(ATOMINTR_STYLES);
         }
         // The first atom is implicitly from the renderer's molecule (picks[0]);
@@ -172,6 +179,12 @@ export interface MeasurePickArgs {
     x: number;
     y: number;
     mode: MeasureMode;
+    /**
+     * Name of the atomintr renderer to append labels to. When set, labels reuse
+     * (or create) a renderer with this name on the target molecule; when empty
+     * the first atomintr renderer is reused (Auto). Mirrors the UXP target list.
+     */
+    target?: string;
 }
 
 export interface MeasurePickResult {
@@ -204,7 +217,7 @@ function measurePick(ctx: WorkerContext, args: MeasurePickArgs): MeasurePickResu
 
     // Sequence complete: create the label, then reset picks and crosshairs.
     if (buf.picks.length >= pickCountFor(buf.mode)) {
-        const message = defineMeasureLabel(view, buf);
+        const message = defineMeasureLabel(view, buf, args.target);
         buf.picks = [];
         clearPickFeedback(view);
         writeMsgLog(ctx, message);
@@ -239,9 +252,58 @@ function measureReset(ctx: WorkerContext, args: MeasureResetArgs): MeasureResetR
     return { ok: true, cleared };
 }
 
+// ---- service: measureListTargets (existing atomintr renderer names) ----
+
+/** Minimal shape of a renderer entry in Scene.getSceneDataJSON(). */
+interface RawRend {
+    name?: string;
+    type?: string;
+    childNodes?: RawRend[];
+}
+
+function collectAtomIntrNames(rends: RawRend[] | undefined, out: Set<string>): void {
+    if (!rends) return;
+    for (const r of rends) {
+        if (r.type === ATOMINTR_TYPE && r.name) out.add(r.name);
+        if (r.childNodes) collectAtomIntrNames(r.childNodes, out);
+    }
+}
+
+export interface MeasureListTargetsArgs {
+    viewId: number;
+}
+
+export interface MeasureListTargetsResult {
+    /** Sorted, unique names of existing atomintr renderers in the scene. */
+    names: string[];
+}
+
+function measureListTargets(ctx: WorkerContext, args: MeasureListTargetsArgs): MeasureListTargetsResult {
+    const view = ctx.sceMgr.getView(args.viewId) as GUIView;
+    if (!view) return { names: [] };
+
+    const scene = view.getScene();
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(scene.getSceneDataJSON());
+    } catch {
+        return { names: [] };
+    }
+    if (!Array.isArray(parsed)) return { names: [] };
+
+    const names = new Set<string>();
+    // parsed[0] is the scene node; objects follow.
+    for (let i = 1; i < parsed.length; i++) {
+        const obj = parsed[i] as { rends?: RawRend[] };
+        collectAtomIntrNames(obj?.rends, names);
+    }
+    return { names: [...names].sort() };
+}
+
 // ---- registration ----
 
 export const services = {
     measurePick,
     measureReset,
+    measureListTargets,
 };

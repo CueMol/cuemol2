@@ -6,6 +6,16 @@ import { ViewportToolPalette } from "../components/ViewportToolPalette";
 import { TOOLS } from "../data/viewportTools";
 import type { ToolId } from "../data/viewportTools";
 
+// The palette reads the theme (for the options popover portal) and embeds the
+// measure options popover (which pulls in worker hooks). Stub both: this suite
+// only exercises the tool buttons, not the popover content.
+vi.mock("../contexts/ThemeContext", () => ({
+  useTheme: () => ({ theme: "dark" }),
+}));
+vi.mock("../components/MeasureOptionsPopover", () => ({
+  MeasureOptionsPopover: () => null,
+}));
+
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
 let container: HTMLDivElement;
@@ -25,7 +35,12 @@ afterEach(() => {
 function renderPalette(activeTool: ToolId, onSelect = vi.fn()) {
   act(() => {
     root.render(
-      React.createElement(ViewportToolPalette, { activeTool, onSelect }),
+      React.createElement(ViewportToolPalette, {
+        activeTool,
+        onSelect,
+        measureTarget: "",
+        onMeasureTargetChange: vi.fn(),
+      }),
     );
   });
   return { container, onSelect };
@@ -86,6 +101,8 @@ describe("ViewportToolPalette", () => {
         React.createElement(ViewportToolPalette, {
           activeTool: "rectSelect",
           onSelect: vi.fn(),
+          measureTarget: "",
+          onMeasureTargetChange: vi.fn(),
         }),
       );
     });

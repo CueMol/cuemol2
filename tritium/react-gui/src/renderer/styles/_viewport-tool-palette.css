@@ -52,6 +52,61 @@
   opacity: 0.7;
 }
 
+/* ----- Measure options popover (target label-set selector) ----- */
+.measure-options-popover {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 220px;
+  padding: var(--space-3);
+}
+
+.measure-options-title {
+  font-size: var(--type-eyebrow-fs);
+  line-height: var(--type-eyebrow-lh);
+  font-weight: var(--type-eyebrow-fw);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-wide);
+  color: var(--text-secondary);
+}
+
+.measure-options-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.measure-options-row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--space-1) var(--space-2);
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--fs-lg);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.measure-options-row:hover {
+  background: var(--bg-hover);
+}
+
+.measure-options-row.selected {
+  color: var(--accent);
+  background: var(--bg-active);
+}
+
+.measure-options-hint {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+
 .tool-btn {
   display: flex;
   align-items: center;

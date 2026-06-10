@@ -23,6 +23,8 @@ import type { MeasureMode } from '../worker/server/services/measure.service';
 
 export interface UseMeasureClickHandlerArgs {
     setStatusMessage: (msg: string | null) => void;
+    /** Current target label-set name ('' = Auto). Passed to each measurePick. */
+    target: string;
 }
 
 const LBTN = 1 << 3; // left button modifier bit (same as UXP)
@@ -34,7 +36,7 @@ function isMeasureTool(tool: ToolId): tool is MeasureMode {
     return MEASURE_TOOLS.has(tool);
 }
 
-export function useMeasureClickHandler({ setStatusMessage }: UseMeasureClickHandlerArgs): void {
+export function useMeasureClickHandler({ setStatusMessage, target }: UseMeasureClickHandlerArgs): void {
     const { cueMolReady, cm } = useCueMol();
     const { activeViewID } = useMolTabState();
     const activeTool = useActiveToolContext();
@@ -54,7 +56,7 @@ export function useMeasureClickHandler({ setStatusMessage }: UseMeasureClickHand
             const { x, y, mod } = (args as { obj?: { x?: number; y?: number; mod?: number } } | null)?.obj ?? {};
             if (x == null || y == null || mod == null) return;
             if (!(mod & LBTN)) return;
-            const result = await cm.invokeService('measurePick', { viewId, x, y, mode: activeTool });
+            const result = await cm.invokeService('measurePick', { viewId, x, y, mode: activeTool, target });
             if (result?.handled && result.statusMessage) {
                 setStatusMessage(result.statusMessage);
             }
