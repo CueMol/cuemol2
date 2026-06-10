@@ -30,6 +30,7 @@ import { installSelectAllScope } from "./utils/selectAllScope";
 import { useLayoutPersistence } from "./hooks/useLayoutPersistence";
 import { useActiveTool } from "./hooks/useActiveTool";
 import { ActiveToolProvider } from "./contexts/ActiveToolContext";
+import { IconContext } from "@phosphor-icons/react";
 import { useSceneTree } from "./hooks/useSceneTree";
 import { useSceneTreeController } from "./hooks/useSceneTreeController";
 import { useInspectorState } from "./hooks/useInspectorState";
@@ -372,6 +373,8 @@ const App: React.FC = () => {
 
   return (
     <ActiveToolProvider activeTool={activeTool}>
+    {/* Phosphor icon defaults: inherit text color (theme-aware), regular weight. */}
+    <IconContext.Provider value={{ color: "currentColor", weight: "regular" }}>
     <div className="app">
       {window.electronAPI?.platform !== 'darwin' && (
         <MenuBar activeTab={activeTab} viewProjection={viewProjection} viewCenterMark={viewCenterMark} sceneBgColor={sceneBgColor} recentFiles={recentFiles} />
@@ -523,6 +526,7 @@ const App: React.FC = () => {
         statusMessage={statusBarMessage}
       />
     </div>
+    </IconContext.Provider>
     </ActiveToolProvider>
   );
 };

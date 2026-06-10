@@ -1,11 +1,12 @@
 import React from "react";
 import { Icon } from "@blueprintjs/core";
-import type { IconName } from "@blueprintjs/icons";
+import { AppIcon } from "./AppIcon";
+import type { AppIconKey } from "../data/appIcons";
 
 interface StatusBarProps {
   activeToolLabel?: string;
   activeToolShortcut?: string;
-  activeToolIcon?: IconName;
+  activeToolIcon?: AppIconKey;
   busy?: boolean;
   statusMessage?: string | null;
 }
@@ -29,7 +30,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
       <div className="status-center">
         {activeToolLabel && (
           <span className="status-item status-tool" title="Active viewport tool">
-            {activeToolIcon && <Icon icon={activeToolIcon} size={12} />}
+            {activeToolIcon && <AppIcon name={activeToolIcon} size="sm" aria-hidden />}
             <span>{activeToolLabel}</span>
             {activeToolShortcut && (
               <span className="status-tool-shortcut">({activeToolShortcut})</span>
