@@ -110,15 +110,17 @@ function labelNounFor(mode: MeasureMode): string {
 }
 
 /**
- * Reject degenerate picks (the same atom picked twice in a pair). Mirrors the
- * UXP defineDistLabel guard so a zero-length measurement is not created.
+ * Reject degenerate picks so a zero-length / undefined measurement is not
+ * created (UXP defineDistLabel guard). Any two consecutive picks being the same
+ * atom is rejected; for an angle the two outer atoms must also differ.
  */
-function hasDegeneratePick(picks: PickedAtom[]): boolean {
+function hasDegeneratePick(mode: MeasureMode, picks: PickedAtom[]): boolean {
+    const same = (a: PickedAtom, b: PickedAtom): boolean =>
+        a.objId === b.objId && a.atomId === b.atomId;
     for (let i = 1; i < picks.length; i++) {
-        const a = picks[i - 1];
-        const b = picks[i];
-        if (a.objId === b.objId && a.atomId === b.atomId) return true;
+        if (same(picks[i - 1], picks[i])) return true;
     }
+    if (mode === 'angle' && same(picks[0], picks[2])) return true;
     return false;
 }
 
@@ -129,7 +131,7 @@ function hasDegeneratePick(picks: PickedAtom[]): boolean {
  * The whole create-or-reuse + append runs in one undo transaction.
  */
 function defineMeasureLabel(view: GUIView, buf: PickBuffer): string {
-    if (hasDegeneratePick(buf.picks)) {
+    if (hasDegeneratePick(buf.mode, buf.picks)) {
         return 'Atom pick canceled (same atom).';
     }
 
@@ -144,11 +146,20 @@ function defineMeasureLabel(view: GUIView, buf: PickBuffer): string {
             rend = mol.createRenderer(ATOMINTR_TYPE) as AtomIntrRenderer;
             rend.applyStyles(ATOMINTR_STYLES);
         }
+        // The first atom is implicitly from the renderer's molecule (picks[0]);
+        // every later atom passes its own object uid, so a measurement may span
+        // molecules (UXP parity).
         const p = buf.picks;
         if (buf.mode === 'distance') {
             rend.appendById(p[0].atomId, p[1].objId, p[1].atomId, true);
+        } else if (buf.mode === 'angle') {
+            rend.appendAngleById(p[0].atomId, p[1].objId, p[1].atomId, p[2].objId, p[2].atomId);
+        } else {
+            rend.appendTorsionById(
+                p[0].atomId, p[1].objId, p[1].atomId,
+                p[2].objId, p[2].atomId, p[3].objId, p[3].atomId,
+            );
         }
-        // angle / torsion are added in a later milestone.
     });
 
     return `${noun} label is defined.`;
