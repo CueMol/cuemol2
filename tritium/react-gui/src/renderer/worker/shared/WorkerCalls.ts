@@ -66,6 +66,9 @@ import type {
   NaviResidSelArgs, NaviResidSelResult,
 } from '../server/services/naviTool.service'
 import type {
+  MeasurePickArgs, MeasurePickResult,
+} from '../server/services/measure.service'
+import type {
   RectSelectArgs, RectSelectResult,
 } from '../server/services/rectSelect.service'
 import type {
@@ -508,6 +511,7 @@ export interface ServiceMap {
   naviHitTest:                { args: NaviHitTestArgs;                 result: NaviHitTestResult }
   naviClickAtom:              { args: NaviClickAtomArgs;               result: NaviClickAtomResult }
   naviResidSel:               { args: NaviResidSelArgs;                result: NaviResidSelResult }
+  measurePick:                { args: MeasurePickArgs;                 result: MeasurePickResult }
   rectSelect:                 { args: RectSelectArgs;                  result: RectSelectResult }
   lassoSelect:                { args: LassoSelectArgs;                 result: LassoSelectResult }
   naviCenterAt:               { args: NaviCenterAtArgs;                result: { ok: boolean } }

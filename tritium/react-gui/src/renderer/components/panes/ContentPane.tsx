@@ -26,6 +26,7 @@ import { RenderResultPane } from "./RenderResultPane";
 import { ViewportToolPalette } from "../ViewportToolPalette";
 import { RectSelectOverlay } from "../RectSelectOverlay";
 import { useNaviClickHandler } from "../../hooks/useNaviClickHandler";
+import { useMeasureClickHandler } from "../../hooks/useMeasureClickHandler";
 import { useNaviContextMenu } from "../../hooks/useNaviContextMenu";
 import type { HitTestResult } from "../../types";
 
@@ -123,6 +124,7 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
   }, [openNativeContextMenu]);
 
   useNaviClickHandler({ setStatusMessage: onStatusMessage ?? (() => {}), openContextMenu });
+  useMeasureClickHandler({ setStatusMessage: onStatusMessage ?? (() => {}) });
 
   return (
     <div className="content-pane" style={{ position: "relative" }} onMouseUp={handleMouseUp}>
