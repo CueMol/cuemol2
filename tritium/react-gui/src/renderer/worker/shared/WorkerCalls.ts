@@ -86,6 +86,10 @@ import type {
   SceneColorProofingResult,
 } from '../server/services/sceneBgColor.service'
 import type {
+  DevRenderOptsArgs,
+  DevRenderOptsResult,
+} from '../server/services/devRenderOpts.service'
+import type {
   CompileColorArgs,
   CompileColorResult,
   GetNamedColorsArgs,
@@ -522,6 +526,7 @@ export interface ServiceMap {
   getMapRendererState:        { args: GetMapRendererStateArgs;         result: GetMapRendererStateResult }
   setMapRendererProp:         { args: SetMapRendererPropArgs;          result: SetMapRendererPropResult }
   redrawMapCenter:            { args: RedrawMapCenterArgs;             result: RedrawMapCenterResult }
+  devRenderOpts:              { args: DevRenderOptsArgs;               result: DevRenderOptsResult }
 }
 
 export type ServiceKey = keyof ServiceMap

@@ -50,6 +50,9 @@ if %CONFIG%=="Debug" (
 )
 
 cmake -G Ninja -S %TOP_DIR% -B %BUILDDIR% ^
+ -DCMAKE_C_COMPILER=cl ^
+ -DCMAKE_CXX_COMPILER=cl ^
+ -DPERL_EXECUTABLE=C:\Strawberry\perl\bin\perl.exe ^
  -DCMAKE_INSTALL_PREFIX=%INSTPATH% ^
  -DBoost_ROOT=%BASEDIR%\boost_%BOOST_VER% ^
  -DCGAL_ROOT=%BASEDIR%\CGAL-%CGAL_VER%\lib\cmake\CGAL ^

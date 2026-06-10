@@ -5,6 +5,7 @@
 namespace gfx {
 class ShaderObject;
 class RenderTarget;
+class DataTexture;
 }  // namespace gfx
 
 namespace node_jsbr {
@@ -28,6 +29,18 @@ public:
     void init(ElecView *pView);
 
     virtual void enableDepthTest(bool) override;
+
+    /// Toggle the depth test (GL_DEPTH_TEST) itself. Used by the fullscreen
+    /// post-process passes (AO composite / FXAA) so they are not depth-rejected.
+    virtual void setDepthTestEnabled(bool b) override;
+
+    /// Toggle color blending (GL_BLEND). The off-screen post-AA passes write
+    /// data-carrying alpha and must run with blending off.
+    virtual void setBlendEnabled(bool b) override;
+
+    /// Select additive (GL_ONE, GL_ONE) vs the default over-blend. Used by the
+    /// temporal-jitter accumulation step.
+    virtual void setBlendModeAdd(bool b) override;
 
     virtual void setCullFace(bool f = true) override;
 
@@ -54,6 +67,15 @@ public:
     virtual gfx::PixRep *createPixRep(const gfx::PixelBuffer &pixbuf) override;
 
     virtual gfx::RenderTarget *createRenderTarget(int w, int h, int flags) override;
+
+    /// Create an immutable lookup texture from CPU bytes (SMAA AreaTex/SearchTex).
+    virtual gfx::DataTexture *createDataTexture(int w, int h, int ncomp, bool linear,
+                                                const void *data) override;
+
+    /// Load a lookup texture from a raw byte file (path resolved like shaders).
+    virtual gfx::DataTexture *createDataTextureFromFile(const LString &path, int w,
+                                                        int h, int ncomp,
+                                                        bool linear) override;
 
     virtual void bindRenderTarget(gfx::RenderTarget *prt) override;
 

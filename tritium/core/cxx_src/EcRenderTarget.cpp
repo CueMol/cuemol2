@@ -146,16 +146,34 @@ void EcRenderTarget::bindColorTex(int idx, int texUnit)
 {
     auto pView = getView();
     if (pView == nullptr) return;
+    // idx 1 selects the MRT normal attachment (when present), idx 0 the color
+    // attachment -- mirrors OcRenderTarget::bindColorTex.
+    const char *which = (idx == 1 && hasNormal()) ? "normal" : "color";
     auto peer = pView->getPeerObj();
     auto env = peer.Env();
     try {
         peer.Get("bindFBOTexture")
             .As<Napi::Function>()
             .Call(peer, {Napi::String::New(env, m_fboName.c_str()),
-                         Napi::String::New(env, "color"),
+                         Napi::String::New(env, which),
                          Napi::Number::New(env, texUnit)});
     } catch (const Napi::Error &e) {
-        MB_DPRINTLN("bindFBOTexture(color) failed: %s", e.Message().c_str());
+        MB_DPRINTLN("bindFBOTexture(%s) failed: %s", which, e.Message().c_str());
+    }
+}
+
+void EcRenderTarget::blitDepthToDefault()
+{
+    auto pView = getView();
+    if (pView == nullptr) return;
+    auto peer = pView->getPeerObj();
+    auto env = peer.Env();
+    try {
+        peer.Get("blitDepthToDefault")
+            .As<Napi::Function>()
+            .Call(peer, {Napi::String::New(env, m_fboName.c_str())});
+    } catch (const Napi::Error &e) {
+        MB_DPRINTLN("blitDepthToDefault failed: %s", e.Message().c_str());
     }
 }
 

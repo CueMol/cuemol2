@@ -81,7 +81,13 @@ void main()
         color = vec4(u_edgecolor.rgb, v_color.a);
     } else {
         vec3 normal = vec3(v_impos.x, v_normadj.x * adj_cen, v_normadj.y * adj_cen);
-        normal.xy *= v_normmat;
+        // Map the local (across-axis, along-axis) components into eye-space
+        // screen x/y. v_normmat[0] is the axis screen direction and v_normmat[1]
+        // the perpendicular (across) direction, so the across component follows
+        // [1] and the along component follows [0]. (A plain "normal.xy *=
+        // v_normmat" returns the x/y swapped, which is invisible to the headlight
+        // diffuse term but breaks the screen-space GTAO normal.)
+        normal.xy = normal.x * v_normmat[1] + normal.y * v_normmat[0];
 
         onrm = vec4(normalize(normal), 1.0);
         color = flight2(normal, ecpos, v_color);

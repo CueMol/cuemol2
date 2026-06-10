@@ -6,9 +6,9 @@ vars:
   # Shared, branch-independent downloaded deps (boost/CGAL/fftw/glew/lcms2/python).
   WORKDIR: '{{if eq OS "windows"}}c:\tmp\proj64_deplibs{{else}}$HOME/tmp/proj64_deplibs{{end}}'
   # Per-checkout build/install output, so multiple checkouts/worktrees on the same
-  # host do not clobber each other. Windows keeps the old behavior (= WORKDIR).
-  OUTDIR: '{{if eq OS "windows"}}{{.WORKDIR}}{{else}}{{.ROOT_DIR}}/../.build_out{{end}}'
-  LIBCUEMOL2_BUILDDIR: '{{if eq OS "windows"}}{{.WORKDIR}}/tmp/build_libcuemol2{{else}}{{.OUTDIR}}/build_libcuemol2{{end}}'
+  # host do not clobber each other.
+  OUTDIR: '{{.ROOT_DIR}}/../.build_out'
+  LIBCUEMOL2_BUILDDIR: "{{.OUTDIR}}/build_libcuemol2"
   LIBCUEMOL2_INSTDIR: "{{.OUTDIR}}/cuemol2"
   CONFIG: '{{if eq OS "windows"}}Release{{else}}Debug{{end}}'
   PARALLEL: ""
@@ -67,8 +67,10 @@ tasks:
 
   rebuild_libcuemol2:windows:
     platforms: [windows]
+    env:
+      OUT_DIR: '{{.OUTDIR}}'
     cmds:
-      - cmd /c build_libcuemol2_win.bat "{{.WORKDIR}}" "{{.CONFIG}}"
+      - bash build_libcuemol2_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
 
   build_libcuemol2:
     desc: "Build libcuemol2 (using current config)"
@@ -200,9 +202,11 @@ tasks:
 
   build_tritium:windows:
     platforms: [windows]
+    env:
+      OUT_DIR: '{{.OUTDIR}}'
     cmds:
       - task: build_libcuemol2
-      - '"C:/Program Files/Git/bin/bash.exe" build_tritium_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"'
+      - bash build_tritium_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
 
   clean_tritium:
     desc: "Clean tritium build artifacts (core native addon + react-gui out)"

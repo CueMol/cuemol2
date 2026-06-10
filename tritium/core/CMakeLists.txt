@@ -75,6 +75,7 @@ SET(NODEJS_SRCS
     cxx_src/EcShaderObject.cpp
     cxx_src/EcBufferRep.cpp
     cxx_src/EcTexRep.cpp
+    cxx_src/EcDataTexture.cpp
     cxx_src/EcRenderTarget.cpp
     cxx_src/EcTimerImpl.cpp
   )

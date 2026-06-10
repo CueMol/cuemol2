@@ -25,6 +25,17 @@ const NORM_MAT_SIZE = 4 * 4 * FLOAT_SIZE;
 
 const LIGHT_UBO_SIZE = 4 * FLOAT_SIZE + 4 * FLOAT_SIZE;
 
+/**
+ * RenderTarget flag bits, mirroring gfx::RTFlags (src/gfx/RenderTarget.hpp).
+ * Passed verbatim across N-API as the `flags` argument to createFramebuffer.
+ */
+// RT_COLOR_RGBA8 (0x01) is the implicit default color format (no flag check
+// needed -- it is the else branch of the RGBA16F test below).
+const RT_DEPTH_TEX = 0x02;
+const RT_COLOR_NEAREST = 0x04;
+const RT_NORMAL_RGBA16F = 0x08;
+const RT_COLOR_RGBA16F = 0x10;
+
 /** Map a CueMol element type id to its WebGL component type constant. */
 const convertType = (gl: any, itype: string): number => {
     switch (itype) {
@@ -109,10 +120,25 @@ export class GfxManager {
             fbo: WebGLFramebuffer;
             colorTex: WebGLTexture;
             depthTex: WebGLTexture | null;
+            normalTex: WebGLTexture | null;
             w: number;
             h: number;
         };
     } = {};
+
+    // EXT_color_buffer_float must be enabled to render to RGBA16F color/normal
+    // attachments (the GTAO MRT normal buffer and the float jitter accumulator).
+    // Null when the context does not support it; float framebuffers then fail
+    // FBO completeness and the AO path degrades.
+    private _floatColorExt: unknown = null;
+
+    // True when the default framebuffer (canvas) is multisampled (the WebGL2
+    // context was created with antialias: true, the browser default). A
+    // single-sample off-screen FBO cannot blit into a multisampled framebuffer,
+    // so blitDepthToDefault is skipped in that case -- this only degrades UI
+    // overlay depth occlusion, matching the desktop OcRenderTarget behavior when
+    // the depth formats are incompatible.
+    private _defaultFbMultisampled: boolean = false;
 
     private cuemol: any;
     private _sceMgr: any;
@@ -147,6 +173,15 @@ export class GfxManager {
         this._canvas = canvas;
         this._context = wrapGL(canvas.getContext('webgl2'));
         const gl = this._context;
+        // Required for rendering to RGBA16F color/normal attachments (GTAO MRT
+        // normal buffer, float jitter accumulator). Acquire once; without it the
+        // off-screen AO float framebuffers are incomplete.
+        this._floatColorExt = gl.getExtension('EXT_color_buffer_float');
+        console.log('EXT_color_buffer_float =', this._floatColorExt !== null);
+        // antialias defaults to true; a multisampled default fb cannot be a blit
+        // destination from a single-sample fbo (see blitDepthToDefault).
+        this._defaultFbMultisampled = gl.getContextAttributes()?.antialias ?? false;
+        console.log('default framebuffer multisampled =', this._defaultFbMultisampled);
         gl.enable(gl.DEPTH_TEST);
         gl.depthFunc(gl.LEQUAL);
         gl.disable(gl.CULL_FACE);
@@ -562,6 +597,33 @@ export class GfxManager {
         }
     }
 
+    /// API: toggle the depth test (GL_DEPTH_TEST). The off-screen post-process
+    /// passes (AO composite / FXAA) draw a fullscreen triangle that must not be
+    /// depth-rejected, so they disable it and re-enable it afterwards.
+    setDepthTestEnabled(enabled: boolean): void {
+        const gl = this._context;
+        if (enabled) gl.enable(gl.DEPTH_TEST);
+        else gl.disable(gl.DEPTH_TEST);
+    }
+
+    /// API: toggle color blending (GL_BLEND). Data-only fullscreen passes whose
+    /// alpha carries data (SMAA edges/weights) must run with blending off.
+    setBlendEnabled(enabled: boolean): void {
+        const gl = this._context;
+        if (enabled) gl.enable(gl.BLEND);
+        else gl.disable(gl.BLEND);
+    }
+
+    /// API: select the blend function: additive (ONE, ONE) when add is true,
+    /// otherwise restore the default over-blend (SRC_ALPHA, ONE_MINUS_SRC_ALPHA).
+    /// Used by temporal-jitter accumulation; the caller restores the default
+    /// before normal UI/overlay drawing.
+    setBlendModeAdd(add: boolean): void {
+        const gl = this._context;
+        if (add) gl.blendFunc(gl.ONE, gl.ONE);
+        else gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    }
+
     //////////
     // Projection uniforms
 
@@ -803,6 +865,44 @@ export class GfxManager {
         return true;
     }
 
+    /**
+     * API: create an immutable lookup texture (SMAA AreaTex/SearchTex).
+     * ncomp 1 -> R8/RED, ncomp 2 -> RG8/RG. linear selects LINEAR vs NEAREST
+     * filtering (NEAREST is mandatory for the SMAA search texture). Always
+     * clamp-to-edge. Returns false if `name` is already taken.
+     */
+    createDataTexture(name: string, width: number, height: number, ncomp: number,
+                      linear: boolean, array_buf: any): boolean {
+        if (name in this._tex_data) {
+            console.log(`texture name ${name} already exists`);
+            return false;
+        }
+
+        const gl = this._context;
+        const internalFmt = ncomp === 2 ? gl.RG8 : gl.R8;
+        const fmt = ncomp === 2 ? gl.RG : gl.RED;
+        const filt = linear ? gl.LINEAR : gl.NEAREST;
+
+        const tex = gl.createTexture()!;
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        // Tight packing: SMAA search texture rows are 66 bytes (not 4-aligned).
+        gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+        gl.texImage2D(gl.TEXTURE_2D, 0, internalFmt, width, height, 0,
+                      fmt, gl.UNSIGNED_BYTE, new Uint8Array(array_buf));
+        gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filt);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filt);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+
+        this._tex_data[name] = tex;
+        console.log('create data texture OK, name=', name, 'size=', width, 'x', height,
+                    'ncomp=', ncomp, 'linear=', linear);
+        return true;
+    }
+
     /// API
     bindTexture(name: string, texUnit: number): void {
         const gl = this._context;
@@ -837,8 +937,13 @@ export class GfxManager {
     // OcRenderTarget implementation. `flags` bit 0x02 (RT_DEPTH_TEX) requests a
     // sampleable depth attachment.
 
-    /// API: create an FBO with an RGBA8 color texture and (optionally) a
-    /// sampleable DEPTH_COMPONENT24 depth texture. Returns false if incomplete.
+    /// API: create an off-screen FBO. `flags` is a gfx::RTFlags bitmask:
+    ///   RT_COLOR_RGBA16F (0x10) -> RGBA16F color attachment 0 (else RGBA8)
+    ///   RT_COLOR_NEAREST (0x04) -> NEAREST color filtering (else LINEAR)
+    ///   RT_DEPTH_TEX     (0x02) -> sampleable DEPTH_COMPONENT24 depth texture
+    ///   RT_NORMAL_RGBA16F(0x08) -> RGBA16F MRT normal at color attachment 1
+    /// Float (RGBA16F) attachments require EXT_color_buffer_float. Returns false
+    /// if the framebuffer is incomplete.
     createFramebuffer(name: string, width: number, height: number, flags: number): boolean {
         const gl = this._context;
         if (name in this._fbo_data) {
@@ -846,24 +951,58 @@ export class GfxManager {
             return true;
         }
 
+        const colorFloat = (flags & RT_COLOR_RGBA16F) !== 0;
+        const nearest = (flags & RT_COLOR_NEAREST) !== 0;
+        const wantDepth = (flags & RT_DEPTH_TEX) !== 0;
+        const wantNormal = (flags & RT_NORMAL_RGBA16F) !== 0;
+        const colorFilter = nearest ? gl.NEAREST : gl.LINEAR;
+
+        if ((colorFloat || wantNormal) && this._floatColorExt === null) {
+            console.error(
+                `createFramebuffer ${name}: float attachment requested but ` +
+                `EXT_color_buffer_float is unavailable`);
+            return false;
+        }
+
         const fbo = gl.createFramebuffer()!;
         gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
 
-        // Color attachment 0 (RGBA8)
+        // Color attachment 0 (RGBA8 or RGBA16F).
         const colorTex = gl.createTexture()!;
         gl.bindTexture(gl.TEXTURE_2D, colorTex);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, width, height, 0,
-                      gl.RGBA, gl.UNSIGNED_BYTE, null);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        if (colorFloat) {
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, width, height, 0,
+                          gl.RGBA, gl.FLOAT, null);
+        } else {
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, width, height, 0,
+                          gl.RGBA, gl.UNSIGNED_BYTE, null);
+        }
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, colorFilter);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, colorFilter);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0,
                                 gl.TEXTURE_2D, colorTex, 0);
 
-        // Depth attachment (sampleable), only when RT_DEPTH_TEX (0x02) is set.
+        // MRT normal attachment 1 (RGBA16F), for the GTAO geometry normals.
+        // NEAREST: normals are packed data and must not be interpolated.
+        let normalTex: WebGLTexture | null = null;
+        if (wantNormal) {
+            normalTex = gl.createTexture()!;
+            gl.bindTexture(gl.TEXTURE_2D, normalTex);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, width, height, 0,
+                          gl.RGBA, gl.FLOAT, null);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1,
+                                    gl.TEXTURE_2D, normalTex, 0);
+        }
+
+        // Depth attachment (sampleable), only when RT_DEPTH_TEX is set.
         let depthTex: WebGLTexture | null = null;
-        if ((flags & 0x02) !== 0) {
+        if (wantDepth) {
             depthTex = gl.createTexture()!;
             gl.bindTexture(gl.TEXTURE_2D, depthTex);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT24, width, height, 0,
@@ -876,7 +1015,9 @@ export class GfxManager {
                                     gl.TEXTURE_2D, depthTex, 0);
         }
 
-        gl.drawBuffers([gl.COLOR_ATTACHMENT0]);
+        gl.drawBuffers(wantNormal
+            ? [gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1]
+            : [gl.COLOR_ATTACHMENT0]);
 
         const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -885,13 +1026,16 @@ export class GfxManager {
         if (status !== gl.FRAMEBUFFER_COMPLETE) {
             console.error(`createFramebuffer ${name} incomplete: 0x${status.toString(16)}`);
             gl.deleteTexture(colorTex);
+            if (normalTex) gl.deleteTexture(normalTex);
             if (depthTex) gl.deleteTexture(depthTex);
             gl.deleteFramebuffer(fbo);
             return false;
         }
 
-        this._fbo_data[name] = { fbo, colorTex, depthTex, w: width, h: height };
-        console.log(`createFramebuffer OK: ${name} ${width}x${height} depth=${depthTex !== null}`);
+        this._fbo_data[name] = { fbo, colorTex, depthTex, normalTex, w: width, h: height };
+        console.log(`createFramebuffer OK: ${name} ${width}x${height} ` +
+                    `color=${colorFloat ? 'RGBA16F' : 'RGBA8'} ` +
+                    `depth=${depthTex !== null} normal=${normalTex !== null}`);
         return true;
     }
 
@@ -918,15 +1062,38 @@ export class GfxManager {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     }
 
-    /// API: bind an FBO attachment ('color' | 'depth') as a sampler texture.
+    /// API: bind an FBO attachment ('color' | 'depth' | 'normal') as a sampler
+    /// texture on the given texture unit.
     bindFBOTexture(name: string, which: string, texUnit: number): void {
         const gl = this._context;
         const info = this._fbo_data[name];
         if (!info) throw `framebuffer ${name} not found`;
-        const tex = which === 'depth' ? info.depthTex : info.colorTex;
+        const tex = which === 'depth' ? info.depthTex
+                  : which === 'normal' ? info.normalTex
+                  : info.colorTex;
         if (!tex) return;
         gl.activeTexture(gl.TEXTURE0 + texUnit);
         gl.bindTexture(gl.TEXTURE_2D, tex);
+    }
+
+    /// API: blit the named FBO's depth buffer into the default framebuffer
+    /// (canvas) so on-screen UI overlays z-test against the off-screen scene
+    /// depth. Restores the previous draw target binding to the default fb.
+    blitDepthToDefault(name: string): void {
+        const gl = this._context;
+        const info = this._fbo_data[name];
+        if (!info) return;
+        // Blitting a single-sample fbo into a multisampled default framebuffer is
+        // a GL_INVALID_OPERATION. Skip it (degrades only UI overlay occlusion).
+        if (this._defaultFbMultisampled) return;
+        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, info.fbo);
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+        gl.blitFramebuffer(
+            0, 0, info.w, info.h,
+            0, 0, this._canvas.width, this._canvas.height,
+            gl.DEPTH_BUFFER_BIT, gl.NEAREST);
+        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     }
 
     /// API: read back an RGBA sub-rectangle of the named FBO's color
@@ -949,6 +1116,7 @@ export class GfxManager {
         const info = this._fbo_data[name];
         if (!info) return false;
         gl.deleteTexture(info.colorTex);
+        if (info.normalTex) gl.deleteTexture(info.normalTex);
         if (info.depthTex) gl.deleteTexture(info.depthTex);
         gl.deleteFramebuffer(info.fbo);
         delete this._fbo_data[name];
