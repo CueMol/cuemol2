@@ -9,6 +9,7 @@
 
 import React, { useRef, useState, useCallback } from "react";
 import { Button, ButtonGroup } from "@blueprintjs/core";
+import { AppIcon } from "../AppIcon";
 
 interface RenderImageViewerProps {
   /** Image data URL. */
@@ -81,10 +82,10 @@ export const RenderImageViewer: React.FC<RenderImageViewerProps> = ({
     <div className="riv">
       <div className="riv-toolbar">
         <ButtonGroup>
-          <Button small icon="zoom-out" title="Zoom out" onClick={() => zoom(0.8)} />
-          <Button small icon="zoom-in" title="Zoom in" onClick={() => zoom(1.25)} />
+          <Button small icon={<AppIcon name="ui.zoomOut" aria-hidden />} title="Zoom out" onClick={() => zoom(0.8)} />
+          <Button small icon={<AppIcon name="ui.zoomIn" aria-hidden />} title="Zoom in" onClick={() => zoom(1.25)} />
         </ButtonGroup>
-        <Button small icon="zoom-to-fit" text="Fit" onClick={fit} />
+        <Button small icon={<AppIcon name="ui.zoomToFit" aria-hidden />} text="Fit" onClick={fit} />
         <Button small text="100%" onClick={() => setScale(1)} />
         <span className="riv-zoom-label">{Math.round(scale * 100)}%</span>
       </div>

@@ -991,7 +991,7 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
         <div className="sp-pane">
             <SectionHeader
                 title="Color"
-                icon="tint"
+                icon="ui.tint"
                 collapsed={collapsed}
                 onToggleCollapse={onToggleCollapse}
             />

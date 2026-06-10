@@ -60,7 +60,7 @@ export const CatalogPane2: React.FC<CatalogPane2Props> = ({
     <div className="sp-pane">
       <SectionHeader
         title="Catalog 2"
-        icon="widget"
+        icon="ui.widget"
         collapsed={collapsed}
         onToggleCollapse={onToggleCollapse}
       />
