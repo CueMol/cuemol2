@@ -24,7 +24,14 @@ export function useNaviClickHandler({ setStatusMessage, openContextMenu }: UseNa
     const prevObjIdRef = useRef<number | undefined>(undefined);
     const prevAtomIdRef = useRef<number | undefined>(undefined);
 
-    const enabled = cueMolReady && activeViewID != null && activeTool === 'navigate';
+    // Active for the navigate tool, and also while rectSelect is active: the
+    // rubber-band overlay forwards every non-(left-drag) interaction to the C++
+    // view, so clicks / double-clicks / right-click context menu fall back to
+    // the navigate-tool behaviour (UXP navi-toolribbon parity).
+    const enabled =
+        cueMolReady &&
+        activeViewID != null &&
+        (activeTool === 'navigate' || activeTool === 'rectSelect');
     const viewId = activeViewID ?? -1;
 
     useCueMolEventListener({

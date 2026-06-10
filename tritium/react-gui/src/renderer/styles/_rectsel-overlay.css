@@ -1,0 +1,44 @@
+/* Rectangle-selection (rubber-band) overlay */
+.rectsel-overlay {
+  position: absolute;
+  inset: 0;
+  /* Above the WebGL canvas, below the tool palette (z-index: 10) so its
+     buttons stay clickable while a select tool is active. */
+  z-index: 5;
+  /* Click-through unless a select tool is active, so the canvas keeps
+     receiving camera-drag events. */
+  pointer-events: none;
+}
+
+.rectsel-overlay.active {
+  pointer-events: auto;
+  cursor: crosshair;
+}
+
+/* Shift held -> add-to-selection mode; the copy cursor signals the add. */
+.rectsel-overlay.active.add-mode {
+  cursor: copy;
+}
+
+.rectsel-rubber-band {
+  position: absolute;
+  border: 1px solid var(--accent);
+  background: var(--accent-track);
+  pointer-events: none;
+}
+
+/* Lasso (freeform polygon) path. */
+.rectsel-lasso {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.rectsel-lasso polygon {
+  fill: var(--accent-track);
+  stroke: var(--accent);
+  stroke-width: 1;
+}

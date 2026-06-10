@@ -106,6 +106,8 @@ public:
 
     virtual LString hitTestRect(int x, int y, int w, int h, bool bNr) override;
 
+    virtual qlib::LScrVector4D projToScreen(const qlib::Vector4D &wpos) override;
+
 protected:
     MouseEventHandler m_meh;
 
