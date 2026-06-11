@@ -22,6 +22,7 @@
 
 //#include "MS2TestRenderer.hpp"
 #include "DirectSurfRenderer.hpp"
+#include "DirectSurfRenderer2.hpp"
 
 #include <qsys/StreamManager.hpp>
 
@@ -44,6 +45,7 @@ bool init()
 
   //pRF->regist<MS2TestRenderer>();
   pRF->regist<DirectSurfRenderer>();
+  pRF->regist<DirectSurfRenderer2>();
 
   qsys::StreamManager *pSM = qsys::StreamManager::getInstance();
   pSM->registReader<MSMSFileReader>();

@@ -20,6 +20,7 @@ MolSurfRenderer.cpp
 OpenDXPotReader.cpp
 MolSurfBuilder.cpp
 DirectSurfRenderer.cpp
+DirectSurfRenderer2.cpp
 DistMapMarchingCubes.cpp
 DistFieldSurfBuilder.cpp
 CutByPlane.cpp
@@ -63,6 +64,7 @@ SET(SURFACE_MCWG_QIFS
   ElePotMap.qif
   OpenDXPotReader.qif
   DirectSurfRenderer.qif
+  DirectSurfRenderer2.qif
   XYZRFileWriter.qif
   PQRFileWriter.qif
   HoleSurfBuilder.qif
