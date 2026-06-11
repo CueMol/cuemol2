@@ -101,6 +101,9 @@ export function useMenuDispatch(activeTab: string | null): {
         case 'menu:interaction':
           dispatch(CmdId.UiInteractionAnalysisDialog).catch(logErr('interaction analysis dialog:'))
           break
+        case 'menu:surf-cutter':
+          dispatch(CmdId.UiCutSurfByPlaneDialog).catch(logErr('cut surface dialog:'))
+          break
         case 'menu:clear-recent':
           window.electronAPI
             ?.invoke(IPC.RECENT_CLEAR)

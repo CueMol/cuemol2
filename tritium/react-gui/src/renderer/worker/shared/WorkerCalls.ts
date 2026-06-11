@@ -354,6 +354,10 @@ import type {
   AnalyzeInteractionsResult,
 } from '../server/services/analyzeInteractions.service'
 import type {
+  CutSurfByPlaneArgs,
+  CutSurfByPlaneResult,
+} from '../server/services/cutSurfByPlane.service'
+import type {
   ReassignProt2ndryArgs,
   ReassignProt2ndryResult,
 } from '../server/services/reassignProt2ndry.service'
@@ -549,6 +553,7 @@ export interface ServiceMap {
   makeMolSurf:                { args: MakeMolSurfArgs;                 result: MakeMolSurfResult }
   proposeMolSurfName:         { args: ProposeMolSurfNameArgs;          result: ProposeMolSurfNameResult }
   analyzeInteractions:        { args: AnalyzeInteractionsArgs;         result: AnalyzeInteractionsResult }
+  cutSurfByPlane:             { args: CutSurfByPlaneArgs;              result: CutSurfByPlaneResult }
   reassignProt2ndry:          { args: ReassignProt2ndryArgs;           result: ReassignProt2ndryResult }
   superposeMol:               { args: SuperposeMolArgs;                result: SuperposeMolResult }
   listMapRenderers:           { args: ListMapRenderersArgs;            result: ListMapRenderersResult }

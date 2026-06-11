@@ -40,6 +40,9 @@ export const objectFilters = {
     /** DensityMap and subclasses. */
     densityMap: (it: SceneObjectEntry): boolean =>
         it.className === 'DensityMap' || it.className.endsWith('DensityMap'),
+    /** MolSurfObj (molecular surface objects). */
+    molSurf: (it: SceneObjectEntry): boolean =>
+        it.className === 'MolSurfObj',
     /** Union of molCoord + densityMap; the Symmetry panel uses this. */
     molCoordOrDensityMap: (it: SceneObjectEntry): boolean =>
         objectFilters.molCoord(it) || objectFilters.densityMap(it),
