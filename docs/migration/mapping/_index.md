@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-06-11 (reconciliation: `dialog.tool.netpdb-progress` は Get PDB のストリーミング進捗 UI `StreamProgressDialog` (title + 受信バイト数 + Cancel→`cancelStreamLoad`) として実装済みのため merged/done に是正 (新規実装なし)。tool_dlgs done 7->8 / todo 9->8、Total done 49->50 / todo 47->46、merged 33->34 / unassigned 47->46)
 - Updated: 2026-06-11 (`dialog.tool.surf-cutbyplane` done: E2E 確認済み。tool_dlgs review 6->5 / done 6->7、Total review 8->7 / done 48->49)
 - Updated: 2026-06-11 (`dialog.tool.surf-cutbyplane` review: UXP "MolSurf cutting tool" (`tools/surf-cutbyplane`) を Blueprint modal として実装。h3-kit/form (`ObjectSelect` MolSurfObj + `SelectField` cross-section type + `NumericField` mesh density)。OK は新規 worker service `cutSurfByPlane` 経由で active view から clip 平面を算出 (`rotation.conjugate().toMatrix().mulvec(+Z)`、center = `view.center + normal*(slab/2)`、normal 反転) し `MolSurfObj.cutByPlane2(density, normal, center, keepBody, keepSection)` を mode 別 flag で実行、全て "Cut surface by plane" undo txn 内 (失敗時 rollback)。separate mode は StreamManager (`toXML`/`fromXML`) で複製し `sect_<base>` 命名、body/section を 2 オブジェクトに分割。density は >=0.1 補正 (default 5.0)。`objectFilters.molSurf` 追加。Tools メニューの既存 stub `menu:surf-cutter` を `useToolCommands` 経由で配線。worker-service test 9 件追加。tool_dlgs todo 10->9 / review 5->6、Total todo 48->47 / review 7->8、direct 25->26)
 - Updated: 2026-06-11 (reconciliation: `dialog.tool.open-pdb` と `dialog.tool.symm-chg` は既に実装済みと判明。open-pdb は `GetPdbDialog` (File > Get PDB, density map 含む)、symm-chg は `SymmetryChangeDialog` (panel.symmetry の Change... modal) に統合済みのため両者を merged/done に是正 (新規実装なし)。tool_dlgs done 4->6 / todo 12->10、Total done 46->48 / todo 50->48、merged 31->33 / unassigned 50->48)
@@ -56,11 +57,11 @@
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 15 | 13 | 1 | 0 | 1 | 0 |
 | Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 6 | 3 | 1 | 8 | 0 |
-| Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 7 | 0 | 5 | 9 | 0 |
+| Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 8 | 0 | 5 | 8 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 2 | 2 | 0 | 9 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 14 | 2 | 0 | 12 | 0 |
 | Other | [other.md](other.md) | 4 | 0 | 1 | 0 | 3 | 0 |
-| **Total** | | **132** | **49** | **29** | **7** | **47** | **0** |
+| **Total** | | **132** | **50** | **29** | **7** | **46** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -89,11 +90,11 @@
 | Mapping | Count |
 |---------|------:|
 | 1:1 (`direct`) | 26 |
-| merged | 33 |
+| merged | 34 |
 | split | 22 |
 | redesign | 0 |
 | deprecated (`dropped`) | 4 |
-| *(not yet assigned)* | 47 |
+| *(not yet assigned)* | 46 |
 
 ---
 
@@ -142,4 +143,4 @@
 
 ## Unstarted
 
-**47 / 132** items are `todo` (not yet started).
+**46 / 132** items are `todo` (not yet started).
