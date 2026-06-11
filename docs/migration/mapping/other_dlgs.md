@@ -26,7 +26,7 @@ Status values:
 | [`dialog.delete-object`](../uxp-inventory/other_dlgs.md#dialogdelete-object) | `ScenePane` (tree Delete) / `sceneOps.deleteNode` | dropped | done | | | 選択式の独立 dialog は廃止。Scene tree の Delete (`deleteNode` / `bulkDeleteNode`) に置換 (`panel.workspace.*` 参照) |
 | [`dialog.dsurf`](../uxp-inventory/other_dlgs.md#dialogdsurf) | | | todo | | | |
 | [`dialog.exportlxs-opt`](../uxp-inventory/other_dlgs.md#dialogexportlxs-opt) | | | todo | | | |
-| [`dialog.exportpng-opt`](../uxp-inventory/other_dlgs.md#dialogexportpng-opt) | | | todo | | | |
+| [`dialog.exportpng-opt`](../uxp-inventory/other_dlgs.md#dialogexportpng-opt) | `ExportPngOptionsDialog` / `exportPngSize` / `useFileCommands` (ExportImage) | direct | review | | | Blueprint modal porting UXP `exportpng-opt-dlg` (PNG options). Resolution (DPI 72/150/300/600) + Width/Height with unit (mm/cm/inch/pixel) + Retain-aspect + Transparent PNG. Pixels are the source of truth; physical sizes derived via `exportPngSize` (toPixels/fromPixels), unit-tested. Inserted into the `ExportImage` flow (File menu) before the file-save dialog; the chosen pixel width/height + alpha are passed to the existing `exportImage` worker service. Initial size seeded at 1024x768 (live-view-size seeding deferred). |
 | [`dialog.exportqsl-opt`](../uxp-inventory/other_dlgs.md#dialogexportqsl-opt) | | | todo | | | |
 | [`dialog.fopen-option`](../uxp-inventory/other_dlgs.md#dialogfopen-option) | `FileOpenOptionDialog` | direct | done | | | UXP の 7 format overlay を 1 dialog (renderer options 常時表示 + format 別 collapsible pane) に集約。format pane 自体は `overlay.md` 側で別管理。`DialogContext` 登録済 |
 | [`dialog.generic`](../uxp-inventory/other_dlgs.md#dialoggeneric) | | | todo | | | |

@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-06-11 (`dialog.exportpng-opt` review: UXP "PNG options" (`exportpng-opt-dlg`) を Blueprint modal として実装。h3-kit/form (Resolution DPI `SelectField` + Width/Height `NumericField` + unit `SelectField` mm/cm/inch/pixel + Retain-aspect / Transparent `SwitchField`)。pixel を source of truth とし物理サイズは純関数 `exportPngSize` (toPixels/fromPixels) で換算 (unit test 6 件)。File メニューの `ExportImage` flow に挿入し、file-save dialog の前で options を取得して既存 `exportImage` worker service に width/height/alpha を渡す (従来は 1024x768 固定)。初期サイズは 1024x768 (live view size seeding は follow-up)。other_dlgs todo 8->7 / review 1->2、Total todo 35->34 / review 7->8、direct 26->27)
 - Updated: 2026-06-11 (cross-category reconciliation: 既実装/対象外の 9 行を是正。`overlay.fopen-mmcifopt` -> merged/done (FileOpenOptionDialog の mmCIF options)、`overlay.coloring-deck-{bfac,cpk,elepot,paint,rainbow}` -> merged/wip (ColorPane の各 deck = `panel.coloring.deck.*`)、`overlay.propeditor-radii-common` -> merged/done (CPK の Atom radii section)、`widget.numslider` -> merged/done (form-kit `NumericField`/`DragNumericField`)、`panel.anim` -> wip (`AnimationPanel.tsx`、BottomPanel に mount 済)、`other.hidden-window` / `other.mybrowser` -> dropped/done (XUL infra、Electron 等価なし)。Total done 50->55 / wip 29->35 / todo 46->35、merged 34->42 / split 22->23 / dropped 4->6 / unassigned 46->35。Overlay todo 12->5、Custom Widget todo 9->8、Panel todo 4->3、Other todo 3->1)
 - Updated: 2026-06-11 (reconciliation: `dialog.tool.netpdb-progress` は Get PDB のストリーミング進捗 UI `StreamProgressDialog` (title + 受信バイト数 + Cancel→`cancelStreamLoad`) として実装済みのため merged/done に是正 (新規実装なし)。tool_dlgs done 7->8 / todo 9->8、Total done 49->50 / todo 47->46、merged 33->34 / unassigned 47->46)
 - Updated: 2026-06-11 (`dialog.tool.surf-cutbyplane` done: E2E 確認済み。tool_dlgs review 6->5 / done 6->7、Total review 8->7 / done 48->49)
@@ -57,12 +58,12 @@
 | Menu | [menus.md](menus.md) | 4 | 2 | 2 | 0 | 0 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 15 | 13 | 1 | 0 | 1 | 0 |
-| Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 6 | 3 | 1 | 8 | 0 |
+| Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 6 | 3 | 2 | 7 | 0 |
 | Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 8 | 0 | 5 | 8 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 3 | 2 | 0 | 8 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 16 | 7 | 0 | 5 | 0 |
 | Other | [other.md](other.md) | 4 | 2 | 1 | 0 | 1 | 0 |
-| **Total** | | **132** | **55** | **35** | **7** | **35** | **0** |
+| **Total** | | **132** | **55** | **35** | **8** | **34** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -90,12 +91,12 @@
 
 | Mapping | Count |
 |---------|------:|
-| 1:1 (`direct`) | 26 |
+| 1:1 (`direct`) | 27 |
 | merged | 42 |
 | split | 23 |
 | redesign | 0 |
 | deprecated (`dropped`) | 6 |
-| *(not yet assigned)* | 35 |
+| *(not yet assigned)* | 34 |
 
 ---
 
@@ -109,6 +110,7 @@
 | [`dialog.about`](other_dlgs.md#dialogabout) | `AboutDialog` / `useDialog` | GRE info・userAgent は省略 |
 | [`dialog.apply-rend-style`](other_dlgs.md#dialogapply-rend-style) | `ApplyRendStyleDialog` / `getRendererStyleEditInfo` / `applyRendererStyleList` | List view + Add popup + Delete/Up/Down on the working style list; commit calls `rend.applyStyles` under "Change style" txn |
 | [`dialog.rendstyle-create`](other_dlgs.md#dialogrendstyle-create) | `CreateRendStyleDialog` / `getCreateRendStyleInfo` / `createStyleFromRenderer` | Writable style-set listbox + base-name input; commit calls `StyleManager.createStyleFromObj`. Same-name overwrite handled in C++ |
+| [`dialog.exportpng-opt`](other_dlgs.md#dialogexportpng-opt) | `ExportPngOptionsDialog` / `exportPngSize` / `useFileCommands` | PNG export options (DPI / size+unit / aspect / transparent) inserted into the File > Export image flow; pixel-truth conversions unit-tested. Initial size seeded 1024x768 (live-view-size seeding deferred). Awaiting E2E sign-off |
 | [`dialog.atomintr`](other_dlgs.md#dialogatomintr) | `AtomIntr*Section` (inspector Properties tab) | Interaction/Dashed line/3D tube/Value label の 4 accordion。Dashed トグルは合成 (`setGenericProps` で stipple0..5 を 1 undo step 原子書き込み)。arrow size・label font 追加。append/remove 編集は対象外 |
 | [`dialog.tool.mol-delete`](tool_dlgs.md#dialogtoolmol-delete) | `DeleteMolDialog` / `useToolCommands` / `deleteMolAtoms.service` | h3-kit/form modal (ObjectSelect + MolSelList). OK -> `MolAnlManager.deleteAtoms` under "Delete atoms" undo txn. Edit > Delete mol atoms. Empty selection disables OK. Awaiting E2E sign-off |
 | [`dialog.tool.prot2ndry-tool`](tool_dlgs.md#dialogtoolprot2ndry-tool) | `ReassignProt2ndryDialog` / `useToolCommands` / `reassignProt2ndry.service` | h3-kit/form modal (ObjectSelect + Recalc/Assign segment + Ignore-β-bulge / Helix gap-fill / MolSelList + type select). OK -> `MolAnlManager.calcProt2ndry2` / `setProt2ndry` under undo txn. Edit > Reassign secondary str. Awaiting E2E sign-off |
@@ -145,4 +147,4 @@
 
 ## Unstarted
 
-**35 / 132** items are `todo` (not yet started).
+**34 / 132** items are `todo` (not yet started).

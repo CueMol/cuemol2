@@ -18,11 +18,16 @@ import { makeRenderHook, setupElectronAPI, teardownElectronAPI, flushPromises } 
 // Dialog provider hooks are mocked so the test controls their resolved value.
 const showObjectPicker = vi.fn<(args: unknown) => Promise<number | null>>()
 const showConfirmReload = vi.fn<(args: unknown) => Promise<boolean>>()
+const showExportPngOptions =
+  vi.fn<(args: unknown) => Promise<{ width: number; height: number; alpha: boolean } | null>>()
 vi.mock('../components/dialogs/ObjectPickerDialogProvider', () => ({
   useShowObjectPicker: () => showObjectPicker,
 }))
 vi.mock('../components/dialogs/ConfirmReloadSceneDialogProvider', () => ({
   useShowConfirmReloadSceneDialog: () => showConfirmReload,
+}))
+vi.mock('../components/dialogs/ExportPngOptionsDialogProvider', () => ({
+  useShowExportPngOptionsDialog: () => showExportPngOptions,
 }))
 
 import { useFileCommands } from '../commands/useFileCommands'
@@ -62,6 +67,9 @@ describe('useFileCommands', () => {
     setupElectronAPI()
     showObjectPicker.mockReset()
     showConfirmReload.mockReset()
+    showExportPngOptions.mockReset()
+    // Default: user accepts the PNG options with a concrete pixel size.
+    showExportPngOptions.mockResolvedValue({ width: 1024, height: 768, alpha: false })
     warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     infoSpy = vi.spyOn(console, 'info').mockImplementation(() => undefined)
   })

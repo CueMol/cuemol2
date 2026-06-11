@@ -31,6 +31,7 @@ import { MergeMolDialogProvider } from '../components/dialogs/MergeMolDialogProv
 import { MakeMolSurfDialogProvider } from '../components/dialogs/MakeMolSurfDialogProvider'
 import { InteractionAnalysisDialogProvider } from '../components/dialogs/InteractionAnalysisDialogProvider'
 import { CutSurfByPlaneDialogProvider } from '../components/dialogs/CutSurfByPlaneDialogProvider'
+import { ExportPngOptionsDialogProvider } from '../components/dialogs/ExportPngOptionsDialogProvider'
 import { ReassignProt2ndryDialogProvider } from '../components/dialogs/ReassignProt2ndryDialogProvider'
 import { MolSuperposeDialogProvider } from '../components/dialogs/MolSuperposeDialogProvider'
 import { ErrorAlertDialogProvider } from '../components/dialogs/ErrorAlertDialogProvider'
@@ -58,6 +59,7 @@ export const DialogProvider = composeProviders([
   MakeMolSurfDialogProvider,
   InteractionAnalysisDialogProvider,
   CutSurfByPlaneDialogProvider,
+  ExportPngOptionsDialogProvider,
   ReassignProt2ndryDialogProvider,
   MolSuperposeDialogProvider,
   ErrorAlertDialogProvider,
