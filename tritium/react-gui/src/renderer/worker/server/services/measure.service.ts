@@ -21,13 +21,11 @@ import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { AtomIntrRenderer } from '@cuemol/core/src/wrappers/AtomIntrRenderer';
 import type { HitTestResult } from '../../../types';
 import { withUndoTxn } from './withUndoTxn';
-
-/** Renderer type name for distance / angle / torsion labels (UXP parity). */
-const ATOMINTR_TYPE = 'atomintr';
-/** Default styles applied to a freshly created atomintr renderer (UXP parity). */
-const ATOMINTR_STYLES = 'DefaultLabel,DefaultAtomIntr';
-/** Default label-set name used when no explicit target is chosen. */
-const DEFAULT_TARGET_NAME = 'measure';
+import {
+    ATOMINTR_TYPE,
+    ATOMINTR_STYLES,
+    ATOMINTR_DEFAULT_TARGET_NAME as DEFAULT_TARGET_NAME,
+} from './helpers/atomintr';
 
 /**
  * Measure sub-mode. The required number of atom picks is 2 / 3 / 4 for

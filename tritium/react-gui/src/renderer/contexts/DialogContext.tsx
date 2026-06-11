@@ -29,6 +29,7 @@ import { DeleteMolDialogProvider } from '../components/dialogs/DeleteMolDialogPr
 import { ChangeResidueIndexDialogProvider } from '../components/dialogs/ChangeResidueIndexDialogProvider'
 import { MergeMolDialogProvider } from '../components/dialogs/MergeMolDialogProvider'
 import { MakeMolSurfDialogProvider } from '../components/dialogs/MakeMolSurfDialogProvider'
+import { InteractionAnalysisDialogProvider } from '../components/dialogs/InteractionAnalysisDialogProvider'
 import { ReassignProt2ndryDialogProvider } from '../components/dialogs/ReassignProt2ndryDialogProvider'
 import { MolSuperposeDialogProvider } from '../components/dialogs/MolSuperposeDialogProvider'
 import { ErrorAlertDialogProvider } from '../components/dialogs/ErrorAlertDialogProvider'
@@ -54,6 +55,7 @@ export const DialogProvider = composeProviders([
   ChangeResidueIndexDialogProvider,
   MergeMolDialogProvider,
   MakeMolSurfDialogProvider,
+  InteractionAnalysisDialogProvider,
   ReassignProt2ndryDialogProvider,
   MolSuperposeDialogProvider,
   ErrorAlertDialogProvider,

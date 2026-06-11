@@ -98,6 +98,9 @@ export function useMenuDispatch(activeTab: string | null): {
         case 'menu:mol-surf':
           dispatch(CmdId.UiMakeMolSurfDialog).catch(logErr('make mol surf dialog:'))
           break
+        case 'menu:interaction':
+          dispatch(CmdId.UiInteractionAnalysisDialog).catch(logErr('interaction analysis dialog:'))
+          break
         case 'menu:clear-recent':
           window.electronAPI
             ?.invoke(IPC.RECENT_CLEAR)

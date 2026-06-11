@@ -350,6 +350,10 @@ import type {
   ProposeMolSurfNameResult,
 } from '../server/services/makeMolSurf.service'
 import type {
+  AnalyzeInteractionsArgs,
+  AnalyzeInteractionsResult,
+} from '../server/services/analyzeInteractions.service'
+import type {
   ReassignProt2ndryArgs,
   ReassignProt2ndryResult,
 } from '../server/services/reassignProt2ndry.service'
@@ -544,6 +548,7 @@ export interface ServiceMap {
   mergeMol:                   { args: MergeMolArgs;                    result: MergeMolResult }
   makeMolSurf:                { args: MakeMolSurfArgs;                 result: MakeMolSurfResult }
   proposeMolSurfName:         { args: ProposeMolSurfNameArgs;          result: ProposeMolSurfNameResult }
+  analyzeInteractions:        { args: AnalyzeInteractionsArgs;         result: AnalyzeInteractionsResult }
   reassignProt2ndry:          { args: ReassignProt2ndryArgs;           result: ReassignProt2ndryResult }
   superposeMol:               { args: SuperposeMolArgs;                result: SuperposeMolResult }
   listMapRenderers:           { args: ListMapRenderersArgs;            result: ListMapRenderersResult }

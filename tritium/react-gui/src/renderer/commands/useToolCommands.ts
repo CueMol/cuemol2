@@ -7,6 +7,7 @@
  *   - `UiChangeResidueIndexDialog` -> `ChangeResidueIndexDialog` (UXP `tools/chg_resindex`).
  *   - `UiMergeMolDialog` -> `MergeMolDialog` (UXP `tools/mol_merge`).
  *   - `UiMakeMolSurfDialog` -> `MakeMolSurfDialog` (UXP `tools/makesurf`).
+ *   - `UiInteractionAnalysisDialog` -> `InteractionAnalysisDialog` (UXP `tools/intr-tool`).
  *   - `UiReassignProt2ndryDialog` -> `ReassignProt2ndryDialog` (UXP `tools/prot2ndry-tool`).
  *   - `UiMolSuperpose` -> `MolSuperposeDialog` (UXP `tools/ssm_sup`).
  *
@@ -23,6 +24,7 @@ import { useShowDeleteMolDialog } from '../components/dialogs/DeleteMolDialogPro
 import { useShowChangeResidueIndexDialog } from '../components/dialogs/ChangeResidueIndexDialogProvider'
 import { useShowMergeMolDialog } from '../components/dialogs/MergeMolDialogProvider'
 import { useShowMakeMolSurfDialog } from '../components/dialogs/MakeMolSurfDialogProvider'
+import { useShowInteractionAnalysisDialog } from '../components/dialogs/InteractionAnalysisDialogProvider'
 import { useShowReassignProt2ndryDialog } from '../components/dialogs/ReassignProt2ndryDialogProvider'
 import { useShowMolSuperposeDialog } from '../components/dialogs/MolSuperposeDialogProvider'
 
@@ -40,6 +42,7 @@ export function useToolCommands({
     const showChangeResidueIndexDialog = useShowChangeResidueIndexDialog()
     const showMergeMolDialog = useShowMergeMolDialog()
     const showMakeMolSurfDialog = useShowMakeMolSurfDialog()
+    const showInteractionAnalysisDialog = useShowInteractionAnalysisDialog()
     const showReassignProt2ndryDialog = useShowReassignProt2ndryDialog()
     const showMolSuperposeDialog = useShowMolSuperposeDialog()
 
@@ -76,6 +79,13 @@ export function useToolCommands({
         const info = getActiveSceneInfo()
         if (!info) return
         void showMakeMolSurfDialog({ sceneId: info.scene_uid })
+    })
+
+    useRegisterCommand(CmdId.UiInteractionAnalysisDialog, () => {
+        if (!cm) return
+        const info = getActiveSceneInfo()
+        if (!info) return
+        void showInteractionAnalysisDialog({ sceneId: info.scene_uid })
     })
 
     useRegisterCommand(CmdId.UiReassignProt2ndryDialog, () => {

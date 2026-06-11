@@ -21,6 +21,7 @@ export const CmdId = {
   UiChangeResidueIndexDialog: 'ui.changeResidueIndexDialog', // no args
   UiMergeMolDialog:   'ui.mergeMolDialog',   // no args
   UiMakeMolSurfDialog: 'ui.makeMolSurfDialog', // no args
+  UiInteractionAnalysisDialog: 'ui.interactionAnalysisDialog', // no args
   UiReassignProt2ndryDialog: 'ui.reassignProt2ndryDialog', // no args
   UiMolSuperpose:     'ui.molSuperpose',     // no args
 

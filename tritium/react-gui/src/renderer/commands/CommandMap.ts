@@ -28,6 +28,7 @@ export interface CommandMap {
   [CmdId.UiChangeResidueIndexDialog]: { args: void;     result: void }
   [CmdId.UiMergeMolDialog]:    { args: void;            result: void }
   [CmdId.UiMakeMolSurfDialog]: { args: void;            result: void }
+  [CmdId.UiInteractionAnalysisDialog]: { args: void;    result: void }
   [CmdId.UiReassignProt2ndryDialog]: { args: void;      result: void }
   [CmdId.UiMolSuperpose]:      { args: void;            result: void }
 
