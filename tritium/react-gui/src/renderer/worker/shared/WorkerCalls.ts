@@ -344,6 +344,10 @@ import type {
   MergeMolResult,
 } from '../server/services/mergeMol.service'
 import type {
+  MakeMolSurfArgs,
+  MakeMolSurfResult,
+} from '../server/services/makeMolSurf.service'
+import type {
   ReassignProt2ndryArgs,
   ReassignProt2ndryResult,
 } from '../server/services/reassignProt2ndry.service'
@@ -536,6 +540,7 @@ export interface ServiceMap {
   deleteMolAtoms:             { args: DeleteMolAtomsArgs;              result: DeleteMolAtomsResult }
   changeResidueIndex:         { args: ChangeResidueIndexArgs;          result: ChangeResidueIndexResult }
   mergeMol:                   { args: MergeMolArgs;                    result: MergeMolResult }
+  makeMolSurf:                { args: MakeMolSurfArgs;                 result: MakeMolSurfResult }
   reassignProt2ndry:          { args: ReassignProt2ndryArgs;           result: ReassignProt2ndryResult }
   superposeMol:               { args: SuperposeMolArgs;                result: SuperposeMolResult }
   listMapRenderers:           { args: ListMapRenderersArgs;            result: ListMapRenderersResult }

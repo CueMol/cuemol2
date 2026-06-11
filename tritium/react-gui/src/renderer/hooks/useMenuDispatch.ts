@@ -95,6 +95,9 @@ export function useMenuDispatch(activeTab: string | null): {
         case 'menu:mol-superpose':
           dispatch(CmdId.UiMolSuperpose).catch(logErr('mol superpose dialog:'))
           break
+        case 'menu:mol-surf':
+          dispatch(CmdId.UiMakeMolSurfDialog).catch(logErr('make mol surf dialog:'))
+          break
         case 'menu:clear-recent':
           window.electronAPI
             ?.invoke(IPC.RECENT_CLEAR)
