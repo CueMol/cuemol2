@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-06-11 (`dialog.tool.surf-cutbyplane` done: E2E 確認済み。tool_dlgs review 6->5 / done 6->7、Total review 8->7 / done 48->49)
 - Updated: 2026-06-11 (`dialog.tool.surf-cutbyplane` review: UXP "MolSurf cutting tool" (`tools/surf-cutbyplane`) を Blueprint modal として実装。h3-kit/form (`ObjectSelect` MolSurfObj + `SelectField` cross-section type + `NumericField` mesh density)。OK は新規 worker service `cutSurfByPlane` 経由で active view から clip 平面を算出 (`rotation.conjugate().toMatrix().mulvec(+Z)`、center = `view.center + normal*(slab/2)`、normal 反転) し `MolSurfObj.cutByPlane2(density, normal, center, keepBody, keepSection)` を mode 別 flag で実行、全て "Cut surface by plane" undo txn 内 (失敗時 rollback)。separate mode は StreamManager (`toXML`/`fromXML`) で複製し `sect_<base>` 命名、body/section を 2 オブジェクトに分割。density は >=0.1 補正 (default 5.0)。`objectFilters.molSurf` 追加。Tools メニューの既存 stub `menu:surf-cutter` を `useToolCommands` 経由で配線。worker-service test 9 件追加。tool_dlgs todo 10->9 / review 5->6、Total todo 48->47 / review 7->8、direct 25->26)
 - Updated: 2026-06-11 (reconciliation: `dialog.tool.open-pdb` と `dialog.tool.symm-chg` は既に実装済みと判明。open-pdb は `GetPdbDialog` (File > Get PDB, density map 含む)、symm-chg は `SymmetryChangeDialog` (panel.symmetry の Change... modal) に統合済みのため両者を merged/done に是正 (新規実装なし)。tool_dlgs done 4->6 / todo 12->10、Total done 46->48 / todo 50->48、merged 31->33 / unassigned 50->48)
 - Updated: 2026-06-11 (`dialog.tool.intr-tool` done: E2E 確認済み。tool_dlgs review 6->5 / done 3->4、Total review 8->7 / done 45->46)
@@ -55,11 +56,11 @@
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 15 | 13 | 1 | 0 | 1 | 0 |
 | Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 6 | 3 | 1 | 8 | 0 |
-| Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 6 | 0 | 6 | 9 | 0 |
+| Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 7 | 0 | 5 | 9 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 2 | 2 | 0 | 9 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 14 | 2 | 0 | 12 | 0 |
 | Other | [other.md](other.md) | 4 | 0 | 1 | 0 | 3 | 0 |
-| **Total** | | **132** | **48** | **29** | **8** | **47** | **0** |
+| **Total** | | **132** | **49** | **29** | **7** | **47** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -110,7 +111,6 @@
 | [`dialog.tool.mol-delete`](tool_dlgs.md#dialogtoolmol-delete) | `DeleteMolDialog` / `useToolCommands` / `deleteMolAtoms.service` | h3-kit/form modal (ObjectSelect + MolSelList). OK -> `MolAnlManager.deleteAtoms` under "Delete atoms" undo txn. Edit > Delete mol atoms. Empty selection disables OK. Awaiting E2E sign-off |
 | [`dialog.tool.prot2ndry-tool`](tool_dlgs.md#dialogtoolprot2ndry-tool) | `ReassignProt2ndryDialog` / `useToolCommands` / `reassignProt2ndry.service` | h3-kit/form modal (ObjectSelect + Recalc/Assign segment + Ignore-β-bulge / Helix gap-fill / MolSelList + type select). OK -> `MolAnlManager.calcProt2ndry2` / `setProt2ndry` under undo txn. Edit > Reassign secondary str. Awaiting E2E sign-off |
 | [`dialog.tool.mol-merge`](tool_dlgs.md#dialogtoolmol-merge) | `MergeMolDialog` / `useToolCommands` / `mergeMol.service` | h3-kit/form modal (From ObjectSelect+MolSelList / To ObjectSelect / Copy switch). OK -> `MolAnlManager.copyAtoms` (+ `deleteAtoms` on move) under "Merge molecule" undo txn with whole-txn rollback. Self-merge blocked. Edit > Merge molecule. Awaiting E2E sign-off |
-| [`dialog.tool.surf-cutbyplane`](tool_dlgs.md#dialogtoolsurf-cutbyplane) | `CutSurfByPlaneDialog` / `useToolCommands` / `cutSurfByPlane.service` | h3-kit/form modal (MolSurfObj ObjectSelect / cross-section SelectField / mesh density). OK -> clip plane from active view + `MolSurfObj.cutByPlane2` (mode-mapped body/section flags; separate mode clones via StreamManager into `sect_<base>`) under "Cut surface by plane" undo txn. Tools > Mol surface cutter. Awaiting E2E sign-off |
 | [`dialog.tool.chg-resindex`](tool_dlgs.md#dialogtoolchg-resindex) | `ChangeResidueIndexDialog` / `resIndexInput` / `useToolCommands` / `changeResidueIndex.service` | h3-kit/form modal (ObjectSelect + MolSelList + Shift/Start segment + value + Renumber switch). OK -> `MolAnlManager.renumResIndex`/`shiftResIndex` under "Change residue index" undo txn. Edit > Change residue number. Start > 4 digits -> PDB confirm. Awaiting E2E sign-off |
 | [`dialog.tool.chg-chname`](tool_dlgs.md#dialogtoolchg-chname) | `ChangeChainIdDialog` / `chainNameInput` / `useToolCommands` / `changeChainName.service` | h3-kit/form 製の Change chain ID modal。`MolAnlManager.changeChainName` を undo txn で実行。Edit メニューから起動。空白入力 -> blank chain "_" (confirm)、1 文字超 -> PDB 非準拠 confirm (Blueprint `Alert`)、前回分子は in-session 保持。confirm/blank 追加分の re-verify 待ち |
 | [`other.cuemol2`](other.md#othercuemol2) | `App` / `ContentArea` / `TabBar` / `SidePanel` / `BottomPanel` / `StatusBar` / `ConfirmCloseTabDialog` / `useWindowCloseHandler` | Main window layout (panels, tab view, status bar) + window-close/quit funnel wired (cmd-Q + close button share one confirm funnel, ADR-0016 supersedes ADR-0010). Canvas lifecycle: ADR-0011 |
