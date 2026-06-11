@@ -20,6 +20,8 @@ MolSurfRenderer.cpp
 OpenDXPotReader.cpp
 MolSurfBuilder.cpp
 DirectSurfRenderer.cpp
+DistMapMarchingCubes.cpp
+DistFieldSurfBuilder.cpp
 CutByPlane.cpp
 CutByPlane2.cpp
 CutByPlane2Mesh.cpp
