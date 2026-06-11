@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-06-11 (cross-category reconciliation: 既実装/対象外の 9 行を是正。`overlay.fopen-mmcifopt` -> merged/done (FileOpenOptionDialog の mmCIF options)、`overlay.coloring-deck-{bfac,cpk,elepot,paint,rainbow}` -> merged/wip (ColorPane の各 deck = `panel.coloring.deck.*`)、`overlay.propeditor-radii-common` -> merged/done (CPK の Atom radii section)、`widget.numslider` -> merged/done (form-kit `NumericField`/`DragNumericField`)、`panel.anim` -> wip (`AnimationPanel.tsx`、BottomPanel に mount 済)、`other.hidden-window` / `other.mybrowser` -> dropped/done (XUL infra、Electron 等価なし)。Total done 50->55 / wip 29->35 / todo 46->35、merged 34->42 / split 22->23 / dropped 4->6 / unassigned 46->35。Overlay todo 12->5、Custom Widget todo 9->8、Panel todo 4->3、Other todo 3->1)
 - Updated: 2026-06-11 (reconciliation: `dialog.tool.netpdb-progress` は Get PDB のストリーミング進捗 UI `StreamProgressDialog` (title + 受信バイト数 + Cancel→`cancelStreamLoad`) として実装済みのため merged/done に是正 (新規実装なし)。tool_dlgs done 7->8 / todo 9->8、Total done 49->50 / todo 47->46、merged 33->34 / unassigned 47->46)
 - Updated: 2026-06-11 (`dialog.tool.surf-cutbyplane` done: E2E 確認済み。tool_dlgs review 6->5 / done 6->7、Total review 8->7 / done 48->49)
 - Updated: 2026-06-11 (`dialog.tool.surf-cutbyplane` review: UXP "MolSurf cutting tool" (`tools/surf-cutbyplane`) を Blueprint modal として実装。h3-kit/form (`ObjectSelect` MolSurfObj + `SelectField` cross-section type + `NumericField` mesh density)。OK は新規 worker service `cutSurfByPlane` 経由で active view から clip 平面を算出 (`rotation.conjugate().toMatrix().mulvec(+Z)`、center = `view.center + normal*(slab/2)`、normal 反転) し `MolSurfObj.cutByPlane2(density, normal, center, keepBody, keepSection)` を mode 別 flag で実行、全て "Cut surface by plane" undo txn 内 (失敗時 rollback)。separate mode は StreamManager (`toXML`/`fromXML`) で複製し `sect_<base>` 命名、body/section を 2 オブジェクトに分割。density は >=0.1 補正 (default 5.0)。`objectFilters.molSurf` 追加。Tools メニューの既存 stub `menu:surf-cutter` を `useToolCommands` 経由で配線。worker-service test 9 件追加。tool_dlgs todo 10->9 / review 5->6、Total todo 48->47 / review 7->8、direct 25->26)
@@ -52,16 +53,16 @@
 
 | Category | File | Total | done | wip | review | todo | frozen |
 |----------|------|------:|-----:|----:|-------:|-----:|-------:|
-| Panel | [panels.md](panels.md) | 27 | 5 | 17 | 1 | 4 | 0 |
+| Panel | [panels.md](panels.md) | 27 | 5 | 18 | 1 | 3 | 0 |
 | Menu | [menus.md](menus.md) | 4 | 2 | 2 | 0 | 0 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 15 | 13 | 1 | 0 | 1 | 0 |
 | Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 6 | 3 | 1 | 8 | 0 |
 | Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 8 | 0 | 5 | 8 | 0 |
-| Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 2 | 2 | 0 | 9 | 0 |
-| Overlay | [overlay.md](overlay.md) | 28 | 14 | 2 | 0 | 12 | 0 |
-| Other | [other.md](other.md) | 4 | 0 | 1 | 0 | 3 | 0 |
-| **Total** | | **132** | **50** | **29** | **7** | **46** | **0** |
+| Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 3 | 2 | 0 | 8 | 0 |
+| Overlay | [overlay.md](overlay.md) | 28 | 16 | 7 | 0 | 5 | 0 |
+| Other | [other.md](other.md) | 4 | 2 | 1 | 0 | 1 | 0 |
+| **Total** | | **132** | **55** | **35** | **7** | **35** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -90,11 +91,11 @@
 | Mapping | Count |
 |---------|------:|
 | 1:1 (`direct`) | 26 |
-| merged | 34 |
-| split | 22 |
+| merged | 42 |
+| split | 23 |
 | redesign | 0 |
-| deprecated (`dropped`) | 4 |
-| *(not yet assigned)* | 46 |
+| deprecated (`dropped`) | 6 |
+| *(not yet assigned)* | 35 |
 
 ---
 
@@ -136,6 +137,7 @@
 | [`panel.coloring.deck.rainbow`](panels.md#panelcoloringdeckrainbow) | `ColorPane` (RainbowDeck) / `rendererColoring.service` (`setColoringProp`) | Phase 2: Mode / Change-by + Start H / End H / Brightness / Saturation. UI scales bri/sat 0–100% ↔ stored 0–1. |
 | [`panel.coloring.deck.bfac`](panels.md#panelcoloringdeckbfac) | `ColorPane` (BfacDeck) / `rendererColoring.service` (`setColoringProp`) | Phase 2: Mode + Low/High colour + Auto/Manual + Low/High parameter (disabled outside Manual). |
 | [`panel.coloring.deck.elepot`](panels.md#panelcoloringdeckelepot) | `ColorPane` (ElepotDeck) / `useElePotMapObjects` / `rendererColoring.service` (`setRendererElepotProp`, `listElePotMapObjects`, `paint-type-elepot`) | Phase 3: ElePotMap selector + Color-by-SAS + Low/Mid/High (par, colour) ramp. Elepot props live on the surface renderer (not a ColoringScheme); deck appears when `colormode === "potential"` on `molsurf` / `dsurface`. Dropdown item is surface-gated. |
+| [`panel.anim`](panels.md#panelanim) | `AnimationPanel` | Animation panel implemented and mounted in `BottomPanel`; timeline / keyframe UI in progress. Related anim surfaces (anim-ribbon / anim-slider / timeedit / multiselect / anim-render / animobj) still todo |
 | [`panel.molstruct`](panels.md#panelmolstruct) | `MolStructPane` / `useMolStructure` / `selStrFromTree` / `getMolStructure.service` / `applyMolSelString.service` | Phase 1+2: molecule selector + lazy chain/residue/atom tree (per-chain & per-residue cache, self-heal on missing) + multi-select + Select / Center / Zoom (ADR-0018). Known issue: first-expand stagger from Blueprint `Tree` Collapse JS state machine (virtualization swap deferred). |
 | [`panel.symmetry`](panels.md#panelsymmetry) | `SymmetryPane` / `useSymmetryPanel` / `SymmetryChangeDialog` / `symmetryPanelOps.service` | UXP-parity port: object selector + crystal info readout + Change modal (Crystal system / Space Group with per-lattice cell constraints) + Symm mol popover (20/50/100/200 Å + Unit cell) + Unit cell renderer. Replaces DummyPane1; activity bar group renamed Dummy → Crystal (cube icon). 12 worker-side tests pin the service contract. Awaiting E2E sign-off. |
 
@@ -143,4 +145,4 @@
 
 ## Unstarted
 
-**46 / 132** items are `todo` (not yet started).
+**35 / 132** items are `todo` (not yet started).

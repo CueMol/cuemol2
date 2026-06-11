@@ -19,6 +19,6 @@ Status values:
 | ID | React | Mapping | Status | PR | ADR | Notes |
 |----|-------|---------|--------|----|-----|-------|
 | [`other.cuemol2`](../uxp-inventory/other.md#othercuemol2) | `App` / `ContentArea` / `TabBar` / `SidePanel` / `BottomPanel` / `StatusBar` / `ConfirmCloseTabDialog` / `useWindowCloseHandler` | split | wip | | [ADR-0016](../adr/ADR-0016-window-close-quit-funnel.md), [ADR-0011](../adr/ADR-0011-new-tab-canvas-lifecycle.md) | Main window layout (panels, tab view, status bar) and window-close/quit funnel wired. Window close button and Cmd+Q share one per-window confirm funnel: see ADR-0016 (supersedes ADR-0010). Canvas lifecycle (always-mounted MolViewPane, one-shot bind): see ADR-0011. ConfirmCloseTabDialog Save button uses `CmdId.FileSave`. |
-| [`other.hidden-window`](../uxp-inventory/other.md#otherhidden-window) | | | todo | | | |
-| [`other.mybrowser`](../uxp-inventory/other.md#othermybrowser) | | | todo | | | |
+| [`other.hidden-window`](../uxp-inventory/other.md#otherhidden-window) | | dropped | done | | | UXP/XUL background hidden window has no Electron equivalent; the Electron main process owns the app lifecycle (window management, IPC, menus) without a hidden window. Not migrated. |
+| [`other.mybrowser`](../uxp-inventory/other.md#othermybrowser) | | dropped | done | | | UXP embedded XUL web-browser window dropped; external links open in the system browser via `shell.openExternal` (consistent with the dropped "Open web page" menu item). Not migrated. |
 | [`other.config-dialog`](../uxp-inventory/other.md#otherconfig-dialog) | | | todo | | | |
