@@ -1,6 +1,6 @@
 // -*-Mode: C++;-*-
 //
-//  Distance-field molecular surface builder (ChimeraX gridsurf method)
+//  Distance-field molecular surface builder
 //
 
 #ifndef SURFACE_DIST_FIELD_SURF_BUILDER_HPP_INCLUDED
@@ -19,9 +19,9 @@ namespace surface {
   class DistMapMarchingCubes;
 
   /// Builds a molecular surface mesh from atom spheres using a signed
-  /// distance field contoured by marching cubes (the ChimeraX gridsurf
-  /// approach). Decoupled from qsys so the core geometry can be unit-tested
-  /// by feeding atom positions/radii directly.
+  /// distance field contoured by marching cubes. Decoupled from qsys so the
+  /// core geometry can be unit-tested by feeding atom positions/radii
+  /// directly.
   ///
   /// Phase 1: VDW and SAS (single distance-field pass). SES (the second
   /// probe-sphere pass) is added in a later phase; for now SES falls back to

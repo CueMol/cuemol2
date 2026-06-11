@@ -320,7 +320,7 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
       Component: DSurfaceRadiiSection,
     },
   ],
-  // DirectSurfRenderer2 ("dsurf2"): the distance-field / gridsurf surface.
+  // DirectSurfRenderer2 ("dsurf2"): the distance-field surface.
   // Temporary exposure alongside dsurface -- it shares the same property set
   // (surftype / detail / proberad / draw mode / per-element radii), so it
   // reuses the dsurface property sections verbatim.

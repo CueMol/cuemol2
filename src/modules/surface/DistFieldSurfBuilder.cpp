@@ -1,6 +1,6 @@
 // -*-Mode: C++;-*-
 //
-//  Distance-field molecular surface builder (ChimeraX gridsurf method)
+//  Distance-field molecular surface builder
 //
 
 #include <common.h>

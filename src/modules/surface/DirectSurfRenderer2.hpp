@@ -1,6 +1,6 @@
 // -*-Mode: C++;-*-
 //
-//  Direct molecular surface renderer v2 (distance-field / gridsurf method)
+//  Direct molecular surface renderer v2 (distance-field method)
 //
 
 #ifndef DIRECT_SURF_RENDERER2_HPP_INCLUDED
@@ -28,8 +28,8 @@ namespace surface {
   // Direct molecular surface renderer v2
   //
   // Generates VDW / SAS / SES surfaces from a signed distance field contoured
-  // by marching cubes (ChimeraX gridsurf method, see DistFieldSurfBuilder).
-  // Replaces the EDTSurf-based DirectSurfRenderer for higher mesh quality.
+  // by marching cubes (see DistFieldSurfBuilder). Replaces the EDTSurf-based
+  // DirectSurfRenderer for higher mesh quality.
 
   class DirectSurfRenderer2 : public molstr::MolRenderer
   {

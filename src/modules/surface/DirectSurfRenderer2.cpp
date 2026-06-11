@@ -1,6 +1,6 @@
 // -*-Mode: C++;-*-
 //
-//  Direct molecular surface renderer v2 (distance-field / gridsurf method)
+//  Direct molecular surface renderer v2 (distance-field method)
 //
 
 #include <common.h>
