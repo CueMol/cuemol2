@@ -25,7 +25,7 @@ vi.mock('../worker/server/services/helpers/makeSel', () => ({
 import { services } from '../worker/server/services/makeMolSurf.service'
 import { makeSel } from '../worker/server/services/helpers/makeSel'
 
-const { makeMolSurf } = services
+const { makeMolSurf, proposeMolSurfName } = services
 const SEL = { __sel: true }
 
 interface FakeRend {
@@ -179,5 +179,33 @@ describe('makeMolSurf', () => {
         })
         expect(res.ok).toBe(false)
         expect(res.error).toMatch(/molecule/)
+    })
+})
+
+describe('proposeMolSurfName', () => {
+    beforeEach(() => vi.clearAllMocks())
+
+    it('suggests sf_<molname> for the target molecule (UXP makeSugName)', () => {
+        const { ctx } = makeCtx({ mol: { name: '1crn' } })
+        expect(proposeMolSurfName(ctx, { sceneId: 100, objId: 1 })).toEqual({
+            name: 'sf_1crn',
+        })
+    })
+
+    it('appends a (N) suffix when the bare name is taken', () => {
+        const { ctx } = makeCtx({
+            mol: { name: '1crn' },
+            existingObjNames: ['sf_1crn', 'sf_1crn(1)'],
+        })
+        expect(proposeMolSurfName(ctx, { sceneId: 100, objId: 1 })).toEqual({
+            name: 'sf_1crn(2)',
+        })
+    })
+
+    it('returns an empty name when the molecule is missing', () => {
+        const { ctx } = makeCtx({ mol: null })
+        expect(proposeMolSurfName(ctx, { sceneId: 100, objId: 1 })).toEqual({
+            name: '',
+        })
     })
 })

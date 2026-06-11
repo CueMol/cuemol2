@@ -5,8 +5,11 @@
  * `makesurf.js` dialog (built-in surface algorithm, not external MSMS):
  *   - Target molecule (`ObjectSelect`).
  *   - Optional atom selection (`SwitchField` enable + `MolSelList`).
- *   - Surface object name (`TextField`; blank -> worker picks `sf_<molname>`).
- *   - Point density (/A) and probe radius (A) numeric inputs.
+ *   - Surface object name (`TextField`; prefilled with a unique `sf_<molname>`
+ *     via `proposeMolSurfName` and refreshed when the molecule changes, like
+ *     UXP `makeSugName`).
+ *   - Point density (/A) and probe radius (A) numeric inputs. Defaults match
+ *     the UXP XUL: density = 1 (min, no explicit value), probe radius = 1.4.
  *   - OK commits via the `makeMolSurf` worker service under one undo txn.
  *
  * The caller passes only `{ sceneId }`. The last-picked molecule persists
@@ -36,7 +39,9 @@ interface Props {
     onCancel: () => void
 }
 
-const DEFAULT_DENSITY = 10
+// UXP XUL defaults: density has min="1" and no explicit value (numberbox
+// initialises to its min), probe radius value="1.4".
+const DEFAULT_DENSITY = 1
 const DEFAULT_PROBE_RADIUS = 1.4
 
 export function MakeMolSurfDialog({
@@ -57,16 +62,39 @@ export function MakeMolSurfDialog({
 
     // Reset transient state on each open. The molecule id is intentionally
     // NOT reset so the last-picked molecule persists within the session.
+    // The surface name is owned by the prefill effect below.
     useEffect(() => {
         if (!visible) return
         setUseSel(false)
         setSelStr('')
-        setSurfName('')
         setDensity(DEFAULT_DENSITY)
         setProbeRadius(DEFAULT_PROBE_RADIUS)
         setSubmitting(false)
         setErrorMsg(null)
     }, [visible])
+
+    // Prefill the surface name with a unique `sf_<molname>` whenever the
+    // dialog opens or the target molecule changes (UXP `makeSugName` /
+    // `onObjBoxChanged`). User edits made afterwards are not clobbered because
+    // this effect only re-runs on open / molecule change, not on keystrokes.
+    useEffect(() => {
+        if (!visible || !cm || objId === undefined) return
+        let cancelled = false
+        void (async () => {
+            try {
+                const res = await cm.invokeService('proposeMolSurfName', {
+                    sceneId,
+                    objId,
+                })
+                if (!cancelled && res?.name) setSurfName(res.name)
+            } catch {
+                // Best-effort prefill; leave the field as-is on failure.
+            }
+        })()
+        return () => {
+            cancelled = true
+        }
+    }, [visible, cm, sceneId, objId])
 
     const handleOk = useCallback(async () => {
         if (!cm || objId === undefined) return

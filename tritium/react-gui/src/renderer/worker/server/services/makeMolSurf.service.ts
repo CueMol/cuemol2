@@ -12,8 +12,10 @@
  *
  * The molecule picker, selection editing, density and probe-radius inputs
  * live client-side in `MakeMolSurfDialog`; this service only performs the
- * C++ object creation so it can be wrapped in one undo step. The UXP
- * regeneration mode (`regenerateSES1`) is out of scope for this migration.
+ * C++ object creation so it can be wrapped in one undo step. The companion
+ * `proposeMolSurfName` action backs the dialog's `sf_<molname>` name prefill
+ * (UXP `makeSugName`). The UXP regeneration mode (`regenerateSES1`) is out of
+ * scope for this migration.
  */
 
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
@@ -51,6 +53,17 @@ export interface MakeMolSurfResult {
     newObjName?: string;
 }
 
+export interface ProposeMolSurfNameArgs {
+    sceneId: number;
+    /** Target MolCoord object uid. */
+    objId: number;
+}
+
+export interface ProposeMolSurfNameResult {
+    /** Suggested unique surface name, or '' when the molecule is missing. */
+    name: string;
+}
+
 /**
  * Pick the first available name from the sequence `${prefix}`, `${prefix}(1)`,
  * `${prefix}(2)`, ... -- matches UXP `util.makeUniqName2` used by `makeSugName`.
@@ -62,6 +75,23 @@ function uniqName(prefix: string, exists: (name: string) => boolean): string {
         if (!exists(candidate)) return candidate;
     }
     return prefix;
+}
+
+/**
+ * Suggest the default surface-object name for a molecule -- a unique
+ * `sf_<molname>`, mirroring UXP `makeSugName`. The dialog calls this to
+ * prefill the name field when the target molecule changes.
+ */
+function proposeMolSurfName(
+    ctx: WorkerContext,
+    args: ProposeMolSurfNameArgs,
+): ProposeMolSurfNameResult {
+    const scene = getSceneOrNull(ctx, args.sceneId);
+    if (!scene) return { name: '' };
+    const mol = scene.getObject(args.objId) as CueMolObject | null;
+    if (!mol) return { name: '' };
+    const molName = (mol as unknown as { name: string }).name ?? 'mol';
+    return { name: uniqName(`sf_${molName}`, (n) => !!scene.getObjectByName(n)) };
 }
 
 function makeMolSurf(
@@ -135,4 +165,5 @@ function makeMolSurf(
 
 export const services = {
     makeMolSurf,
+    proposeMolSurfName,
 };

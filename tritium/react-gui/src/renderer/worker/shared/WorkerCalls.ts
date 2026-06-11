@@ -346,6 +346,8 @@ import type {
 import type {
   MakeMolSurfArgs,
   MakeMolSurfResult,
+  ProposeMolSurfNameArgs,
+  ProposeMolSurfNameResult,
 } from '../server/services/makeMolSurf.service'
 import type {
   ReassignProt2ndryArgs,
@@ -541,6 +543,7 @@ export interface ServiceMap {
   changeResidueIndex:         { args: ChangeResidueIndexArgs;          result: ChangeResidueIndexResult }
   mergeMol:                   { args: MergeMolArgs;                    result: MergeMolResult }
   makeMolSurf:                { args: MakeMolSurfArgs;                 result: MakeMolSurfResult }
+  proposeMolSurfName:         { args: ProposeMolSurfNameArgs;          result: ProposeMolSurfNameResult }
   reassignProt2ndry:          { args: ReassignProt2ndryArgs;           result: ReassignProt2ndryResult }
   superposeMol:               { args: SuperposeMolArgs;                result: SuperposeMolResult }
   listMapRenderers:           { args: ListMapRenderersArgs;            result: ListMapRenderersResult }
