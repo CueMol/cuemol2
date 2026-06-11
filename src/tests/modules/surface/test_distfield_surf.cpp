@@ -132,6 +132,73 @@ TEST(DistFieldSurfTest, TwoAtomsUnionSurface)
   }
 }
 
+// SES of a single isolated atom equals its VDW sphere (radius R): the probe
+// cannot create any reentrant region, and the outer probe shell is pruned.
+TEST(DistFieldSurfTest, SingleSphereSES)
+{
+  const double R = 3.0;
+  const double probe = 1.4;
+  const double spacing = 0.25;
+
+  DistFieldSurfBuilder b;
+  b.setSurfType(DistFieldSurfBuilder::SURF_SES);
+  b.setProbeRadius(probe);
+  b.setGridSpacing(spacing);
+  b.addAtom(Vector4D(0, 0, 0), R, 0);
+  b.build();
+
+  const std::vector<MSVert> &verts = b.getVerts();
+  ASSERT_GT(verts.size(), 100u);
+
+  const double tol = 2.0 * spacing;
+  for (size_t i = 0; i < verts.size(); ++i) {
+    const Vector4D p = vertPos(verts[i]);
+    // Inner SES sheet sits on the VDW sphere; outer shell (R+2*probe) pruned.
+    EXPECT_NEAR(p.length(), R, tol);
+
+    // Outward normal points away from the molecule (here, away from center).
+    const Vector4D n(verts[i].nx, verts[i].ny, verts[i].nz);
+    EXPECT_GT(n.dot(p), 0.0);
+  }
+}
+
+// SES of two atoms: every vertex lies in the shell between the VDW surface and
+// the SAS surface (outer probe shell pruned, nothing inside the VDW volume).
+TEST(DistFieldSurfTest, TwoAtomsSES)
+{
+  const double R = 2.0;
+  const double probe = 1.4;
+  const double spacing = 0.25;
+
+  std::vector<Vector4D> centers;
+  centers.push_back(Vector4D(0, 0, 0));
+  centers.push_back(Vector4D(3.0, 0, 0));
+
+  DistFieldSurfBuilder b;
+  b.setSurfType(DistFieldSurfBuilder::SURF_SES);
+  b.setProbeRadius(probe);
+  b.setGridSpacing(spacing);
+  b.addAtom(centers[0], R, 0);
+  b.addAtom(centers[1], R, 1);
+  b.build();
+
+  const std::vector<MSVert> &verts = b.getVerts();
+  ASSERT_GT(verts.size(), 200u);
+
+  const double tol = 2.0 * spacing;
+  for (size_t i = 0; i < verts.size(); ++i) {
+    const Vector4D p = vertPos(verts[i]);
+    double dmin = 1.0e30;
+    for (size_t a = 0; a < centers.size(); ++a) {
+      const double d = (p - centers[a]).length();
+      if (d < dmin) dmin = d;
+    }
+    // Not inside the VDW volume, and within the SAS shell (outer shell pruned).
+    EXPECT_GT(dmin, R - tol);
+    EXPECT_LT(dmin, R + probe + tol);
+  }
+}
+
 // Marching cubes welds shared edge vertices: a closed surface has every face
 // index in range and (for a manifold) twice as many faces as vertices minus a
 // small Euler-characteristic offset. Here we just pin the welding/indexing.

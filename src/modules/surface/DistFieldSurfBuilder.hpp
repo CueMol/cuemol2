@@ -16,6 +16,8 @@ namespace surface {
 
   using qlib::Vector4D;
 
+  class DistMapMarchingCubes;
+
   /// Builds a molecular surface mesh from atom spheres using a signed
   /// distance field contoured by marching cubes (the ChimeraX gridsurf
   /// approach). Decoupled from qsys so the core geometry can be unit-tested
@@ -62,9 +64,26 @@ namespace surface {
     int getGridDimZ() const { return m_nz; }
 
   private:
-    /// Build a union-of-balls signed distance field for the given effective
-    /// sphere radii (atom radius + probe offset).
-    void buildSphereDistField(double probeOffset);
+    /// Establish the grid (origin and dimensions) covering all atoms, padded
+    /// for the largest sphere plus probe reach.
+    void setupGrid(double probeForPad);
+
+    /// Fill the (already-sized) distance field as a union-of-balls signed
+    /// distance field min(|p - center| - radius), tracking the source id.
+    void fillField(const std::vector<Vector4D> &centers,
+                   const std::vector<double> &radii,
+                   const std::vector<int> &ids);
+
+    /// Copy a marching-cubes result into the world-coordinate result arrays.
+    void emitMesh(const DistMapMarchingCubes &mc, bool negateNormals);
+
+    /// Drop connected components whose representative vertex is farther than
+    /// maxResidual from every atom surface (removes the SES outer shell and
+    /// spurious pieces).
+    void pruneComponents(double maxResidual);
+
+    /// min over atoms of (|p - center| - radius).
+    double nearestAtomResidual(const Vector4D &p) const;
 
     // params
     double m_probeRadius;
