@@ -15,6 +15,7 @@ XYZRFileWriter.cpp
 PQRFileWriter.cpp
 ElePotMap.cpp
 MSMSFileReader.cpp
+PLYFileReader.cpp
 MolSurfObj.cpp
 MolSurfRenderer.cpp
 OpenDXPotReader.cpp
@@ -61,6 +62,7 @@ SET(SURFACE_MCWG_QIFS
   MolSurfObj.qif
   MolSurfRenderer.qif
   MSMSFileReader.qif
+  PLYFileReader.qif
   ElePotMap.qif
   OpenDXPotReader.qif
   DirectSurfRenderer.qif

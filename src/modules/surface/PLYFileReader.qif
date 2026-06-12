@@ -1,0 +1,21 @@
+// -*-Mode: C++;-*-
+//
+// PLY file reader scripting interface
+//
+
+#ifndef PLY_FILE_READER_QIF_INCLUDED
+#define PLY_FILE_READER_QIF_INCLUDED
+
+#include <qsys/ObjReader.qif>
+
+runtime_class PLYFileReader extends ObjReader
+{
+  client_hdr "PLYFileReader.hpp";
+  client_name surface::PLYFileReader;
+
+  scriptable;
+  smartptr;
+
+};
+
+#endif
