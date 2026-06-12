@@ -143,7 +143,7 @@ function readTypeName(rend: Renderer): string {
 /** Surface-class renderers eligible for the Elepot deck. */
 function isElepotCapable(rend: Renderer): boolean {
     const t = readTypeName(rend);
-    return t === 'molsurf' || t === 'dsurface';
+    return t === 'molsurf' || t === 'dsurface' || t === 'dsurf2';
 }
 
 /**

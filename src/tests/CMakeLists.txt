@@ -139,6 +139,25 @@ if (BUILD_OPENGL_SYSDEP)
 endif()
 gtest_discover_tests(test_molvis PROPERTIES LABELS "test_molvis")
 
+add_executable(test_surface
+  modules/surface/test_main.cpp
+  modules/surface/test_distfield_surf.cpp
+)
+target_include_directories(test_surface PRIVATE
+  ${CMAKE_SOURCE_DIR}/src
+  ${CMAKE_SOURCE_DIR}/src/modules
+  ${CMAKE_BINARY_DIR}/src
+  ${Boost_INCLUDE_DIRS}
+)
+target_compile_definitions(test_surface PRIVATE
+  CUEMOL2_SYSCONFIG_PATH="${CMAKE_SOURCE_DIR}/data/sysconfig.xml"
+)
+target_link_libraries(test_surface PRIVATE surface symm xtal molstr qsys gfx qlib Boost::filesystem GTest::gtest)
+if (BUILD_OPENGL_SYSDEP)
+  target_link_libraries(test_surface PRIVATE sysdep)
+endif()
+gtest_discover_tests(test_surface PROPERTIES LABELS "test_surface")
+
 add_executable(test_xtal
   modules/xtal/test_main.cpp
   modules/xtal/test_maprenderer_color.cpp

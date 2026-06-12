@@ -745,7 +745,7 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
     const defaultColor = state?.defaultColor ?? ''
     const entries = state?.paintEntries ?? []
     const surfaceType = state?.surfaceType ?? ''
-    const isSurface = surfaceType === 'molsurf' || surfaceType === 'dsurface'
+    const isSurface = surfaceType === 'molsurf' || surfaceType === 'dsurface' || surfaceType === 'dsurf2'
     const isElepotActive = isSurface && state?.colormode === 'potential'
 
     // Fetch the ElePotMap object list only while the Elepot deck is active;
