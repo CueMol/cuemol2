@@ -25,11 +25,11 @@ Status values:
 
 | ID | React | Mapping | Status | PR | ADR | Notes |
 |----|-------|---------|--------|----|-----|-------|
-| [`overlay.coloring-deck-bfac`](../uxp-inventory/overlay.md#overlaycoloring-deck-bfac) | `ColorPane` (BfacDeck) | merged | wip | | | B-factor coloring deck of `ColorPane`; tracked under `panel.coloring.deck.bfac` ([panels.md](panels.md)) |
-| [`overlay.coloring-deck-cpk`](../uxp-inventory/overlay.md#overlaycoloring-deck-cpk) | `ColorPane` (CpkDeck) | merged | wip | | | CPK coloring deck of `ColorPane`; tracked under `panel.coloring.deck.cpk` ([panels.md](panels.md)) |
-| [`overlay.coloring-deck-elepot`](../uxp-inventory/overlay.md#overlaycoloring-deck-elepot) | `ColorPane` (ElepotDeck) | merged | wip | | | Electrostatic-potential coloring deck of `ColorPane`; tracked under `panel.coloring.deck.elepot` ([panels.md](panels.md)) |
-| [`overlay.coloring-deck-paint`](../uxp-inventory/overlay.md#overlaycoloring-deck-paint) | `ColorPane` (PaintTable) | merged | wip | | | Paint coloring deck of `ColorPane`; tracked under `panel.coloring.deck.paint` ([panels.md](panels.md)) |
-| [`overlay.coloring-deck-rainbow`](../uxp-inventory/overlay.md#overlaycoloring-deck-rainbow) | `ColorPane` (RainbowDeck) | merged | wip | | | Rainbow coloring deck of `ColorPane`; tracked under `panel.coloring.deck.rainbow` ([panels.md](panels.md)) |
+| [`overlay.coloring-deck-bfac`](../uxp-inventory/overlay.md#overlaycoloring-deck-bfac) | `ColorPane` (BfacDeck) | merged | done | | | B-factor coloring deck of `ColorPane`; tracked under `panel.coloring.deck.bfac` ([panels.md](panels.md)) |
+| [`overlay.coloring-deck-cpk`](../uxp-inventory/overlay.md#overlaycoloring-deck-cpk) | `ColorPane` (CpkDeck) | merged | done | | | CPK coloring deck of `ColorPane`; tracked under `panel.coloring.deck.cpk` ([panels.md](panels.md)) |
+| [`overlay.coloring-deck-elepot`](../uxp-inventory/overlay.md#overlaycoloring-deck-elepot) | `ColorPane` (ElepotDeck) | merged | done | | | Electrostatic-potential coloring deck of `ColorPane`; tracked under `panel.coloring.deck.elepot` ([panels.md](panels.md)) |
+| [`overlay.coloring-deck-paint`](../uxp-inventory/overlay.md#overlaycoloring-deck-paint) | `ColorPane` (PaintTable) | merged | done | | | Paint coloring deck of `ColorPane`; tracked under `panel.coloring.deck.paint` ([panels.md](panels.md)) |
+| [`overlay.coloring-deck-rainbow`](../uxp-inventory/overlay.md#overlaycoloring-deck-rainbow) | `ColorPane` (RainbowDeck) | merged | done | | | Rainbow coloring deck of `ColorPane`; tracked under `panel.coloring.deck.rainbow` ([panels.md](panels.md)) |
 | [`overlay.coloring-deck-script`](../uxp-inventory/overlay.md#overlaycoloring-deck-script) | | | todo | | | |
 | [`overlay.config-keybind`](../uxp-inventory/overlay.md#overlayconfig-keybind) | | | todo | | | |
 | [`overlay.config-misc`](../uxp-inventory/overlay.md#overlayconfig-misc) | | | todo | | | |
