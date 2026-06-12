@@ -53,3 +53,4 @@ Architecture Decision Records for the UXP → tritium migration.
 | [ADR-0022](ADR-0022-mol-superpose.md) | Molecular superposition dialog — algorithm dispatch and deferred RMSD-file output | accepted (in-app verification pending) | 2026-06-06 | `dialog.tool.ssm-sup` |
 | [ADR-0023](ADR-0023-measure-tool.md) | Measure tool — distance/angle/torsion pick port (worker state machine, 3D DistPickDrawObj feedback, target popover) | accepted (host E2E verified; PR pending) | 2026-06-10 | `toolbar.cuemol2-ribbon` |
 | [ADR-0024](ADR-0024-bond-editor.md) | Bond editor — viewport pick tool (not a modal): add by 2-atom pick, remove/list in the tool-options popover | accepted (host E2E verified) | 2026-06-12 | `dialog.tool.bond-edit` |
+| [ADR-0025](ADR-0025-view-panel.md) | View panel — unbounded DragNumericField fake-dial, relative rotation, command-reused projection | accepted (impl + unit-tested; build/E2E/PR pending) | 2026-06-12 | `panel.fakedial` |
