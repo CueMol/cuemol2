@@ -6,6 +6,9 @@
  *   - `UiDeleteMolDialog` -> `DeleteMolDialog` (UXP `tools/mol_delete`).
  *   - `UiChangeResidueIndexDialog` -> `ChangeResidueIndexDialog` (UXP `tools/chg_resindex`).
  *   - `UiMergeMolDialog` -> `MergeMolDialog` (UXP `tools/mol_merge`).
+ *   - `UiMakeMolSurfDialog` -> `MakeMolSurfDialog` (UXP `tools/makesurf`).
+ *   - `UiInteractionAnalysisDialog` -> `InteractionAnalysisDialog` (UXP `tools/intr-tool`).
+ *   - `UiCutSurfByPlaneDialog` -> `CutSurfByPlaneDialog` (UXP `tools/surf-cutbyplane`).
  *   - `UiReassignProt2ndryDialog` -> `ReassignProt2ndryDialog` (UXP `tools/prot2ndry-tool`).
  *   - `UiMolSuperpose` -> `MolSuperposeDialog` (UXP `tools/ssm_sup`).
  *
@@ -21,6 +24,9 @@ import { useShowChangeChainIdDialog } from '../components/dialogs/ChangeChainIdD
 import { useShowDeleteMolDialog } from '../components/dialogs/DeleteMolDialogProvider'
 import { useShowChangeResidueIndexDialog } from '../components/dialogs/ChangeResidueIndexDialogProvider'
 import { useShowMergeMolDialog } from '../components/dialogs/MergeMolDialogProvider'
+import { useShowMakeMolSurfDialog } from '../components/dialogs/MakeMolSurfDialogProvider'
+import { useShowInteractionAnalysisDialog } from '../components/dialogs/InteractionAnalysisDialogProvider'
+import { useShowCutSurfByPlaneDialog } from '../components/dialogs/CutSurfByPlaneDialogProvider'
 import { useShowReassignProt2ndryDialog } from '../components/dialogs/ReassignProt2ndryDialogProvider'
 import { useShowMolSuperposeDialog } from '../components/dialogs/MolSuperposeDialogProvider'
 
@@ -37,6 +43,9 @@ export function useToolCommands({
     const showDeleteMolDialog = useShowDeleteMolDialog()
     const showChangeResidueIndexDialog = useShowChangeResidueIndexDialog()
     const showMergeMolDialog = useShowMergeMolDialog()
+    const showMakeMolSurfDialog = useShowMakeMolSurfDialog()
+    const showInteractionAnalysisDialog = useShowInteractionAnalysisDialog()
+    const showCutSurfByPlaneDialog = useShowCutSurfByPlaneDialog()
     const showReassignProt2ndryDialog = useShowReassignProt2ndryDialog()
     const showMolSuperposeDialog = useShowMolSuperposeDialog()
 
@@ -66,6 +75,30 @@ export function useToolCommands({
         const info = getActiveSceneInfo()
         if (!info) return
         void showMergeMolDialog({ sceneId: info.scene_uid })
+    })
+
+    useRegisterCommand(CmdId.UiMakeMolSurfDialog, () => {
+        if (!cm) return
+        const info = getActiveSceneInfo()
+        if (!info) return
+        void showMakeMolSurfDialog({ sceneId: info.scene_uid })
+    })
+
+    useRegisterCommand(CmdId.UiInteractionAnalysisDialog, () => {
+        if (!cm) return
+        const info = getActiveSceneInfo()
+        if (!info) return
+        void showInteractionAnalysisDialog({ sceneId: info.scene_uid })
+    })
+
+    useRegisterCommand(CmdId.UiCutSurfByPlaneDialog, () => {
+        if (!cm) return
+        const info = getActiveSceneInfo()
+        if (!info) return
+        void showCutSurfByPlaneDialog({
+            sceneId: info.scene_uid,
+            viewId: info.view_id,
+        })
     })
 
     useRegisterCommand(CmdId.UiReassignProt2ndryDialog, () => {

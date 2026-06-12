@@ -71,6 +71,12 @@ import type {
   MeasureListTargetsArgs, MeasureListTargetsResult,
 } from '../server/services/measure.service'
 import type {
+  BondEditPickArgs, BondEditPickResult,
+  BondEditResetArgs, BondEditResetResult,
+  BondEditListBondsArgs, BondEditListBondsResult,
+  BondEditRemoveBondArgs, BondEditRemoveBondResult,
+} from '../server/services/bondEdit.service'
+import type {
   RectSelectArgs, RectSelectResult,
 } from '../server/services/rectSelect.service'
 import type {
@@ -88,6 +94,8 @@ import type {
 import type {
   ExportImageArgs,
   ExportImageResult,
+  GetExportImageInfoArgs,
+  GetExportImageInfoResult,
 } from '../server/services/exportImage.service'
 import type {
   SceneBgColorArgs,
@@ -344,6 +352,20 @@ import type {
   MergeMolResult,
 } from '../server/services/mergeMol.service'
 import type {
+  MakeMolSurfArgs,
+  MakeMolSurfResult,
+  ProposeMolSurfNameArgs,
+  ProposeMolSurfNameResult,
+} from '../server/services/makeMolSurf.service'
+import type {
+  AnalyzeInteractionsArgs,
+  AnalyzeInteractionsResult,
+} from '../server/services/analyzeInteractions.service'
+import type {
+  CutSurfByPlaneArgs,
+  CutSurfByPlaneResult,
+} from '../server/services/cutSurfByPlane.service'
+import type {
   ReassignProt2ndryArgs,
   ReassignProt2ndryResult,
 } from '../server/services/reassignProt2ndry.service'
@@ -425,6 +447,7 @@ export interface ServiceMap {
   getSceneSaveInfo:           { args: GetSceneSaveInfoArgs;            result: GetSceneSaveInfoResult }
   saveScene:                  { args: SaveSceneArgs;                   result: SaveSceneResult }
   exportImage:                { args: ExportImageArgs;                 result: ExportImageResult }
+  getExportImageInfo:         { args: GetExportImageInfoArgs;          result: GetExportImageInfoResult }
   validateSelection:          { args: ValidateSelectionArgs;           result: ValidateSelectionResult }
   getSceneBgColor:            { args: SceneBgColorArgs;                result: SceneBgColorResult }
   setSceneBgColor:            { args: SetSceneBgColorArgs;             result: SceneBgColorResult }
@@ -516,6 +539,10 @@ export interface ServiceMap {
   measurePick:                { args: MeasurePickArgs;                 result: MeasurePickResult }
   measureReset:               { args: MeasureResetArgs;                result: MeasureResetResult }
   measureListTargets:         { args: MeasureListTargetsArgs;          result: MeasureListTargetsResult }
+  bondEditPick:               { args: BondEditPickArgs;                result: BondEditPickResult }
+  bondEditReset:              { args: BondEditResetArgs;               result: BondEditResetResult }
+  bondEditListBonds:          { args: BondEditListBondsArgs;           result: BondEditListBondsResult }
+  bondEditRemoveBond:         { args: BondEditRemoveBondArgs;          result: BondEditRemoveBondResult }
   rectSelect:                 { args: RectSelectArgs;                  result: RectSelectResult }
   lassoSelect:                { args: LassoSelectArgs;                 result: LassoSelectResult }
   naviCenterAt:               { args: NaviCenterAtArgs;                result: { ok: boolean } }
@@ -536,6 +563,10 @@ export interface ServiceMap {
   deleteMolAtoms:             { args: DeleteMolAtomsArgs;              result: DeleteMolAtomsResult }
   changeResidueIndex:         { args: ChangeResidueIndexArgs;          result: ChangeResidueIndexResult }
   mergeMol:                   { args: MergeMolArgs;                    result: MergeMolResult }
+  makeMolSurf:                { args: MakeMolSurfArgs;                 result: MakeMolSurfResult }
+  proposeMolSurfName:         { args: ProposeMolSurfNameArgs;          result: ProposeMolSurfNameResult }
+  analyzeInteractions:        { args: AnalyzeInteractionsArgs;         result: AnalyzeInteractionsResult }
+  cutSurfByPlane:             { args: CutSurfByPlaneArgs;              result: CutSurfByPlaneResult }
   reassignProt2ndry:          { args: ReassignProt2ndryArgs;           result: ReassignProt2ndryResult }
   superposeMol:               { args: SuperposeMolArgs;                result: SuperposeMolResult }
   listMapRenderers:           { args: ListMapRenderersArgs;            result: ListMapRenderersResult }

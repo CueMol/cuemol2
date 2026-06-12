@@ -25,24 +25,24 @@ Status values:
 
 | ID | React | Mapping | Status | PR | ADR | Notes |
 |----|-------|---------|--------|----|-----|-------|
-| [`overlay.coloring-deck-bfac`](../uxp-inventory/overlay.md#overlaycoloring-deck-bfac) | | | todo | | | |
-| [`overlay.coloring-deck-cpk`](../uxp-inventory/overlay.md#overlaycoloring-deck-cpk) | | | todo | | | |
-| [`overlay.coloring-deck-elepot`](../uxp-inventory/overlay.md#overlaycoloring-deck-elepot) | | | todo | | | |
-| [`overlay.coloring-deck-paint`](../uxp-inventory/overlay.md#overlaycoloring-deck-paint) | | | todo | | | |
-| [`overlay.coloring-deck-rainbow`](../uxp-inventory/overlay.md#overlaycoloring-deck-rainbow) | | | todo | | | |
+| [`overlay.coloring-deck-bfac`](../uxp-inventory/overlay.md#overlaycoloring-deck-bfac) | `ColorPane` (BfacDeck) | merged | wip | | | B-factor coloring deck of `ColorPane`; tracked under `panel.coloring.deck.bfac` ([panels.md](panels.md)) |
+| [`overlay.coloring-deck-cpk`](../uxp-inventory/overlay.md#overlaycoloring-deck-cpk) | `ColorPane` (CpkDeck) | merged | wip | | | CPK coloring deck of `ColorPane`; tracked under `panel.coloring.deck.cpk` ([panels.md](panels.md)) |
+| [`overlay.coloring-deck-elepot`](../uxp-inventory/overlay.md#overlaycoloring-deck-elepot) | `ColorPane` (ElepotDeck) | merged | wip | | | Electrostatic-potential coloring deck of `ColorPane`; tracked under `panel.coloring.deck.elepot` ([panels.md](panels.md)) |
+| [`overlay.coloring-deck-paint`](../uxp-inventory/overlay.md#overlaycoloring-deck-paint) | `ColorPane` (PaintTable) | merged | wip | | | Paint coloring deck of `ColorPane`; tracked under `panel.coloring.deck.paint` ([panels.md](panels.md)) |
+| [`overlay.coloring-deck-rainbow`](../uxp-inventory/overlay.md#overlaycoloring-deck-rainbow) | `ColorPane` (RainbowDeck) | merged | wip | | | Rainbow coloring deck of `ColorPane`; tracked under `panel.coloring.deck.rainbow` ([panels.md](panels.md)) |
 | [`overlay.coloring-deck-script`](../uxp-inventory/overlay.md#overlaycoloring-deck-script) | | | todo | | | |
 | [`overlay.config-keybind`](../uxp-inventory/overlay.md#overlayconfig-keybind) | | | todo | | | |
 | [`overlay.config-misc`](../uxp-inventory/overlay.md#overlayconfig-misc) | | | todo | | | |
 | [`overlay.config-mouse`](../uxp-inventory/overlay.md#overlayconfig-mouse) | | | todo | | | |
 | [`overlay.fopen-ccp4map`](../uxp-inventory/overlay.md#overlayfopen-ccp4map) | `Ccp4MapOptionsPane` | merged | done | | | CCP4 map options pane of `FileOpenOptionDialog` (`dialog.fopen-option`) |
-| [`overlay.fopen-mmcifopt`](../uxp-inventory/overlay.md#overlayfopen-mmcifopt) | | | todo | | | |
+| [`overlay.fopen-mmcifopt`](../uxp-inventory/overlay.md#overlayfopen-mmcifopt) | `FileOpenOptionDialog` (mmCIF options) | merged | done | | | mmCIF format-specific options of `FileOpenOptionDialog` (`dialog.fopen-option`); rendered for `formatKind === 'mmcif'` with C++-sourced reader defaults |
 | [`overlay.fopen-msmsopt`](../uxp-inventory/overlay.md#overlayfopen-msmsopt) | `MsmsOptionsPane` | merged | done | | | MSMS surface options pane of `FileOpenOptionDialog` (`dialog.fopen-option`) |
 | [`overlay.fopen-mtzopt`](../uxp-inventory/overlay.md#overlayfopen-mtzopt) | `MtzOptionsPane` (`mtzColumns.ts`) | merged | done | | | MTZ reflection options pane of `FileOpenOptionDialog` (`dialog.fopen-option`) |
 | [`overlay.fopen-namdcooropt`](../uxp-inventory/overlay.md#overlayfopen-namdcooropt) | `NamdCoorOptionsPane` | merged | done | | | NAMD coordinate options pane of `FileOpenOptionDialog` (`dialog.fopen-option`) |
 | [`overlay.fopen-pdbopt`](../uxp-inventory/overlay.md#overlayfopen-pdbopt) | `PdbOptionsPane` | merged | done | | | PDB options pane of `FileOpenOptionDialog` (`dialog.fopen-option`) |
 | [`overlay.fopen-renderopt`](../uxp-inventory/overlay.md#overlayfopen-renderopt) | `RendererOptionsPane` | merged | done | | | Renderer options pane shared by `FileOpenOptionDialog` (`dialog.fopen-option`) and `NewRendererDialog` (`dialog.setup-renderer`) |
 | [`overlay.propeditor-generic`](../uxp-inventory/overlay.md#overlaypropeditor-generic) | InspectorPanel / GenericTab | merged | wip | | [ADR-0015](../adr/ADR-0015-generic-property-inspector.md) | Generic tab of the docked inspector pane; live-apply, no OK/Cancel. First stage edits primitive types (string/int/real/bool/enum); color/vector/timeval/nested-object deferred. Targets object/renderer/scene (ScenePane tree) and View (View menu > View property...); follows content-tab switches via per-scene memory. Replaces the retired `NodePropertyDialog` modal. |
-| [`overlay.propeditor-radii-common`](../uxp-inventory/overlay.md#overlaypropeditor-radii-common) | | | todo | | | |
+| [`overlay.propeditor-radii-common`](../uxp-inventory/overlay.md#overlaypropeditor-radii-common) | `CPKRendererSection` (Atom radii) | merged | done | | | Shared van der Waals radii sub-page; migrated as the "Atom radii" section of the CPK property page (`dialog.property.cpk`, [prop_dlgs.md](prop_dlgs.md)) |
 | [`overlay.property.cartoon-coil`](../uxp-inventory/overlay.md#overlaypropertycartoon-coil) | `CartoonRendererSection` | merged | done | | | Coil accordion of the Inspector section for `dialog.property.cartoon` (done) |
 | [`overlay.property.cartoon-helix`](../uxp-inventory/overlay.md#overlaypropertycartoon-helix) | `CartoonRendererSection` | merged | done | | | Helix accordion of the Inspector section for `dialog.property.cartoon` (done) |
 | [`overlay.property.cartoon-sheet`](../uxp-inventory/overlay.md#overlaypropertycartoon-sheet) | `CartoonRendererSection` | merged | done | | | Sheet accordion of the Inspector section for `dialog.property.cartoon` (done) |

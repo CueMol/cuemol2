@@ -27,6 +27,10 @@ OffScreenView::OffScreenView(gfx::DisplayContext *pParentCtxt, int w, int h, int
       m_pAccumRT(nullptr),
       m_bBgTransparent(false),
       m_bDepthMode(false),
+      // Always export at the highest jitter-supersample level (32 samples),
+      // independent of the scene's on-screen AA setting. drawScene() resolves
+      // the RGBA16F accumulation buffer into the RGBA8 target before read-back
+      // so the WebGL build can read it as UNSIGNED_BYTE.
       m_nSuperSample(5)
 {
     // Off-screen pixels map 1:1 to the requested size (no HiDPI scaling).
@@ -163,7 +167,22 @@ void OffScreenView::drawScene()
             setJitterOffsetPx(0.0, 0.0);
             MB_DPRINTLN("OffScreenView> jitter SS export (level=%d, %d samples)",
                         level, nSamp);
-            m_pReadRT = m_pAccumRT;
+
+            // Resolve the RGBA16F accumulation buffer into the RGBA8 target so
+            // it can be read back as UNSIGNED_BYTE (reading a float color
+            // attachment as bytes is GL_INVALID_OPERATION in the WebGL build,
+            // which produced an all-black export). The accumulation already
+            // averaged the samples (additive blend, weight 1/N), so this is a
+            // plain replace-copy (no blend, weight 1.0). RGBA is preserved, so
+            // a transparent background keeps its averaged alpha.
+            m_pRT->bind();
+            pdc->setDepthTestEnabled(false);
+            pdc->setBlendEnabled(false);
+            m_pPostProc->drawJitterCompose(pdc, m_pAccumRT, 1.0f);
+            pdc->setBlendEnabled(true);
+            pdc->setDepthTestEnabled(true);
+            m_pRT->unbind();
+            m_pReadRT = m_pRT;
         } else {
             // Single un-jittered color frame (scene AO applied).
             setJitterOffsetPx(0.0, 0.0);

@@ -20,7 +20,8 @@ export type ToolId =
   | "lassoSelect"
   | "distance"
   | "angle"
-  | "torsion";
+  | "torsion"
+  | "bondEdit";
 
 export interface ToolDef {
   id: ToolId;
@@ -40,6 +41,7 @@ export const TOOLS: ToolDef[] = [
   { id: "distance",    icon: "tool.distance",   label: "Distance",    shortcut: "D", category: "measure",  cursor: "crosshair" },
   { id: "angle",       icon: "tool.angle",      label: "Angle",       shortcut: "A", category: "measure",  cursor: "crosshair" },
   { id: "torsion",     icon: "tool.torsion",    label: "Torsion",     shortcut: "T", category: "measure",  cursor: "crosshair" },
+  { id: "bondEdit",    icon: "tool.bondEdit",   label: "Add Bond",    shortcut: "E", category: "edit",     cursor: "crosshair" },
 ];
 
 /** Order in which categories appear in the palette (top-to-bottom). */

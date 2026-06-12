@@ -23,10 +23,11 @@
   background: var(--text-muted);
 }
 
-/* Measure group "options" cap: opens the target label-set popover.
-   Deliberately NOT a tool button -- shorter, muted, and carrying a caret -- so
-   it reads as group-level settings rather than a fourth measure tool. It sits
-   above the D/A/T buttons (top of the measure group). */
+/* Group "options" cap: opens the group's options popover (measure target
+   label-set / bond editor). Shorter than a tool button and carrying a caret so
+   it reads as group-level settings rather than another tool, but the icon and
+   caret use the same contrast as the tool buttons. It sits above the group's
+   tool buttons. */
 .tool-options-cap {
   display: flex;
   align-items: center;
@@ -37,7 +38,7 @@
   padding: 0;
   border: none;
   background: transparent;
-  color: var(--text-muted);
+  color: var(--text-primary);
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background 0.1s, color 0.1s;
@@ -45,11 +46,7 @@
 
 .tool-options-cap:hover {
   background: var(--overlay-hover);
-  color: var(--text-secondary);
-}
-
-.tool-options-cap .cap-caret {
-  opacity: 0.7;
+  color: var(--text-strong);
 }
 
 /* ----- Measure options popover (target label-set selector) ----- */
@@ -104,6 +101,43 @@
 
 .measure-options-hint {
   font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+
+/* ----- Bond editor options popover (non-standard bond list / remove) ----- */
+.bondedit-options-popover {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 260px;
+  padding: var(--space-3);
+}
+
+.bondedit-bond-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.bondedit-bond-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.bondedit-bond-atoms {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-lg);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bondedit-bond-dash {
   color: var(--text-muted);
 }
 

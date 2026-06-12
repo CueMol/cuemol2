@@ -19,7 +19,7 @@ Status values:
 | ID | React | Mapping | Status | PR | ADR | Notes |
 |----|-------|---------|--------|----|-----|-------|
 | [`widget.wheelbtn`](../uxp-inventory/custom_widgets.md#widgetwheelbtn) | | | todo | | | |
-| [`widget.numslider`](../uxp-inventory/custom_widgets.md#widgetnumslider) | | | todo | | | |
+| [`widget.numslider`](../uxp-inventory/custom_widgets.md#widgetnumslider) | `h3-kit/form` `NumericField` / `DragNumericField` | merged | done | | | UXP numeric slider XBL binding superseded by the form-kit numeric controls (slider + compact input, drag-to-edit); sizing owned by `_form-kit.css`. Used throughout Inspector / ColorPane / dialogs. |
 | [`widget.colorslider`](../uxp-inventory/custom_widgets.md#widgetcolorslider) | `h3-kit/colorpicker/ColorSlider.tsx` | direct | done | | [ADR-0020](../adr/ADR-0020-color-picker-widget.md) | Gradient-track range slider; linear + hue gradients via CSS. Used by `RgbHsbPanel`. |
 | [`widget.colpicker`](../uxp-inventory/custom_widgets.md#widgetcolpicker) | `h3-kit/colorpicker/ColorPicker.tsx` | direct | done | | [ADR-0020](../adr/ADR-0020-color-picker-widget.md) | Single popover + segmented mode switch (RGB/HSB/Named/Palette/Mol) + out-of-gamut warning; `compileColor`/`getNamedColors` worker services. Now the single colour control app-wide via shared `ColorPickerProvider`/`CueColorField`: ColorPane decks + Paint cell, DensityMap, Inspector ColorEditor, App Settings (RGB/HSB/Palette only). |
 | [`widget.mainview`](../uxp-inventory/custom_widgets.md#widgetmainview) | | | todo | | | |

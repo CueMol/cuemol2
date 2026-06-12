@@ -7,6 +7,8 @@
  *                        (UXP `onSaveCurView`)
  *   - SceneReload      — reload the current scene from its source file
  *                        (UXP `onReloadScene`)
+ *   - ExportImage      — render the scene to a PNG, collecting resolution /
+ *                        size / transparency first (UXP `exportpng-opt-dlg`)
  *
  * The underlying worker services already exist; this hook only wires the
  * command layer (dialog flow + service invocation).
@@ -16,6 +18,7 @@ import { IPC } from '../../shared/ipcChannels'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import { useShowObjectPicker } from '../components/dialogs/ObjectPickerDialogProvider'
 import { useShowConfirmReloadSceneDialog } from '../components/dialogs/ConfirmReloadSceneDialogProvider'
+import { useShowExportPngOptionsDialog } from '../components/dialogs/ExportPngOptionsDialogProvider'
 import { runObjectSaveFlow } from '../hooks/sceneContextMenu/runObjectSaveFlow'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
@@ -32,6 +35,7 @@ export function useFileCommands({
 
     const showObjectPicker = useShowObjectPicker()
     const showConfirmReload = useShowConfirmReloadSceneDialog()
+    const showExportPngOptions = useShowExportPngOptionsDialog()
 
     // ObjectSaveAs — UXP `onFileSaveAs`. The File menu has no right-clicked
     // node, so the object to save is resolved from the active scene: save
@@ -93,17 +97,35 @@ export function useFileCommands({
         if (!cm) return
         const info = getActiveSceneInfo()
         if (!info) return
+        // Mirror UXP `exportScene`: default the file name to the scene name and
+        // seed the PNG options with the live view size.
+        const imgInfo = await cm.invokeService('getExportImageInfo', {
+            sceneId: info.scene_uid,
+            viewId: info.view_id,
+        })
+        const baseName = (imgInfo?.sceneName ?? '').trim() || 'scene'
+        const viewW = imgInfo && imgInfo.width > 0 ? imgInfo.width : 1024
+        const viewH = imgInfo && imgInfo.height > 0 ? imgInfo.height : 768
+        // 1) choose the file (default name = scene name).
         const dlg = await window.electronAPI.invoke(IPC.DIALOG_IMAGE_SAVE, {
-            defaultName: 'image.png',
+            defaultName: `${baseName}.png`,
         })
         if (dlg.canceled || !dlg.filePath) return
+        // 2) collect PNG options seeded with the live view size.
+        const opts = await showExportPngOptions({
+            initialWidth: viewW,
+            initialHeight: viewH,
+        })
+        if (!opts) return
+        // 3) render off-screen to the chosen file.
         await cm.invokeService('exportImage', {
             sceneId: info.scene_uid,
             viewId: info.view_id,
             filePath: dlg.filePath,
-            width: 1024,
-            height: 768,
-            alpha: false,
+            width: opts.width,
+            height: opts.height,
+            alpha: opts.alpha,
+            resoln: opts.dpi,
             depth: false,
         })
     })

@@ -687,7 +687,8 @@ bool GUIView::hitTestImpl(gfx::DisplayContext *pdc, const Vector4D &parm, bool f
 
 qsys::View *GUIView::createOffScreenView(int w, int h, int aa_depth)
 {
-    // aa_depth (multisample) is not supported yet.
+    // aa_depth (multisample) is not supported yet. The off-screen view always
+    // renders at its maximum jitter-supersample level (see OffScreenView ctor).
     DisplayContext *pdc = getDisplayContext();
     if (pdc == nullptr) return nullptr;
 
