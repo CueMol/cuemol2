@@ -255,6 +255,7 @@ export type SceneCtxAction =
   | { kind: 'toggleColorProofing' }
   | { kind: 'setRendSel'; selKind: ChangeRendSelKind }
   | { kind: 'generateSurfObj' }
+  | { kind: 'editInteractionList' }
   | { kind: 'newRendGroup' }
   | { kind: 'newRenderer' }
   | { kind: 'editRendStyle' }
@@ -356,6 +357,12 @@ export interface SceneCtxMenuPayload {
    * gate). Renderer ctx only.
    */
   canGenSurfObj?: boolean
+  /**
+   * Whether the "Edit interaction list…" item should appear on the renderer
+   * ctx menu. True iff the renderer is `atomintr` (UXP `aintr-edit` dialog).
+   * Renderer ctx only.
+   */
+  canEditInteractions?: boolean
   /**
    * Selectable type names for the "Change type" submenu on the renderer
    * ctx menu (Phase 6b). Pre-fetched via `getRendererChangeTypes` —

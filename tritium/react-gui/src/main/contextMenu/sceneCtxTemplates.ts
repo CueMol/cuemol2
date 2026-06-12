@@ -101,6 +101,9 @@ export function buildTemplate(
                 { label: 'Edit style…', click: action({ kind: 'editRendStyle' }) },
                 { label: 'Create style…', click: action({ kind: 'createRendStyle' }) },
                 ...generateSurfObjItem(payload, action),
+                ...(payload.canEditInteractions
+                    ? [{ label: 'Edit interaction list…', click: action({ kind: 'editInteractionList' as const }) }]
+                    : []),
                 { type: 'separator' },
                 renameItem(action),
                 copyItem(action),

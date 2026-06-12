@@ -305,6 +305,12 @@ import type {
   SetCameraVisFlagsResult,
 } from '../server/services/cameraVisFlags.service'
 import type {
+  ListAtomIntrDefsArgs,
+  ListAtomIntrDefsResult,
+  RemoveAtomIntrDefsArgs,
+  RemoveAtomIntrDefsResult,
+} from '../server/services/atomIntrEdit.service'
+import type {
   LoadCameraFromFileArgs,
   LoadCameraFromFileResult,
   SaveCameraToFileArgs,
@@ -541,6 +547,8 @@ export interface ServiceMap {
   clearCameraVisFlags:        { args: ClearCameraVisFlagsArgs;         result: ClearCameraVisFlagsResult }
   getCameraVisFlags:          { args: GetCameraVisFlagsArgs;           result: GetCameraVisFlagsResult }
   setCameraVisFlags:          { args: SetCameraVisFlagsArgs;           result: SetCameraVisFlagsResult }
+  listAtomIntrDefs:           { args: ListAtomIntrDefsArgs;            result: ListAtomIntrDefsResult }
+  removeAtomIntrDefs:         { args: RemoveAtomIntrDefsArgs;          result: RemoveAtomIntrDefsResult }
   loadCameraFromFile:         { args: LoadCameraFromFileArgs;          result: LoadCameraFromFileResult }
   saveCameraToFile:           { args: SaveCameraToFileArgs;            result: SaveCameraToFileResult }
   saveCameraToCurrentSrc:     { args: SaveCameraToCurrentSrcArgs;      result: SaveCameraToCurrentSrcResult }

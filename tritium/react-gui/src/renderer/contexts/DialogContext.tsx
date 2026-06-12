@@ -36,6 +36,7 @@ import { ReassignProt2ndryDialogProvider } from '../components/dialogs/ReassignP
 import { MolSuperposeDialogProvider } from '../components/dialogs/MolSuperposeDialogProvider'
 import { ErrorAlertDialogProvider } from '../components/dialogs/ErrorAlertDialogProvider'
 import { EditCameraVisFlagsDialogProvider } from '../components/dialogs/EditCameraVisFlagsDialogProvider'
+import { EditInteractionListDialogProvider } from '../components/dialogs/EditInteractionListDialogProvider'
 import { composeProviders } from './composeProviders'
 
 export const DialogProvider = composeProviders([
@@ -65,4 +66,5 @@ export const DialogProvider = composeProviders([
   MolSuperposeDialogProvider,
   ErrorAlertDialogProvider,
   EditCameraVisFlagsDialogProvider,
+  EditInteractionListDialogProvider,
 ])

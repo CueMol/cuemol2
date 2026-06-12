@@ -24,6 +24,8 @@ import type { ApplyRendStyleDialogResult } from '../../components/dialogs/ApplyR
 import type { CreateRendStyleDialogResult } from '../../components/dialogs/CreateRendStyleDialog'
 import type { EditCameraVisFlagsDialogArgs } from '../../components/dialogs/EditCameraVisFlagsDialogProvider'
 import type { EditCameraVisFlagsDialogResult } from '../../components/dialogs/EditCameraVisFlagsDialog'
+import type { EditInteractionListDialogArgs } from '../../components/dialogs/EditInteractionListDialogProvider'
+import type { EditInteractionListDialogResult } from '../../components/dialogs/EditInteractionListDialog'
 import { runObjectSaveFlow } from './runObjectSaveFlow'
 
 export interface DispatchSceneCtxActionCtx {
@@ -101,6 +103,9 @@ export interface DispatchSceneCtxActionCtx {
     showEditCameraVisFlags: (
         args: EditCameraVisFlagsDialogArgs,
     ) => Promise<EditCameraVisFlagsDialogResult | null>
+    showEditInteractionList: (
+        args: EditInteractionListDialogArgs,
+    ) => Promise<EditInteractionListDialogResult | null>
 
     // Shared sub-flows reused by toolbar Add button.
     openNewRendererFlow: (node: SceneTreeNode) => Promise<void>
@@ -247,6 +252,36 @@ export async function dispatchSceneCtxAction(
                 })
             } catch (err) {
                 console.warn('createStyleFromRenderer failed:', err)
+            }
+            return
+        }
+        case 'editInteractionList': {
+            if (node.type !== 'renderer') return
+            if (!ctx.cm || ctx.sceneId === undefined) return
+            let info
+            try {
+                info = await ctx.cm.invokeService('listAtomIntrDefs', {
+                    sceneId: ctx.sceneId,
+                    rendId: node.id,
+                })
+            } catch (err) {
+                console.warn('listAtomIntrDefs failed:', err)
+                return
+            }
+            if (!info?.ok) return
+            const result = await ctx.showEditInteractionList({
+                rendName: node.name,
+                entries: info.entries,
+            })
+            if (!result || result.removeIds.length === 0) return
+            try {
+                await ctx.cm.invokeService('removeAtomIntrDefs', {
+                    sceneId: ctx.sceneId,
+                    rendId: node.id,
+                    ids: result.removeIds,
+                })
+            } catch (err) {
+                console.warn('removeAtomIntrDefs failed:', err)
             }
             return
         }
