@@ -75,6 +75,11 @@ private:
     /// current color
     gfx::ColorPtr m_pColor;
 
+    /// True if color() was called at least once during the current recording.
+    /// Gates whether recorded line vertex colors are used (true) or the outer
+    /// DisplayContext's uniform color is applied at draw time (false). Reset per
+    /// recording in recordStart(), NOT per line block, so a color() issued
+    /// before startLines() is not discarded.
     bool m_bSetColor;
 
     /// current normal vec
@@ -189,6 +194,11 @@ public:
     virtual void recordEnd();
 
     void callDisplayListImpl(gfx::DisplayContext *pdc);
+
+    /// Line GpuPrim built from the recorded line segments, or null if no lines
+    /// were recorded / it has not been built yet. Exposed for inspection/testing
+    /// (e.g. verifying per-vertex vs uniform line color selection).
+    const gfx::LineGpuPrim *getLineObj() const { return m_pLineObj; }
 };
 
 }  // namespace gfx
