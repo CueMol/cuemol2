@@ -54,6 +54,7 @@ function makeCtx(overrides: Partial<DispatchSceneCtxActionCtx> = {}): DispatchSc
         showTextPrompt: vi.fn().mockResolvedValue('typed'),
         showApplyRendStyle: vi.fn().mockResolvedValue(null),
         showCreateRendStyle: vi.fn().mockResolvedValue(null),
+        showEditCameraVisFlags: vi.fn().mockResolvedValue(null),
         openNewRendererFlow: vi.fn().mockResolvedValue(undefined),
         openNewCameraFlow: vi.fn().mockResolvedValue(undefined),
         ...overrides,

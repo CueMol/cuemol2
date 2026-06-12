@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-06-12 (D-Phase2 `dialog.tool.visflagset-edit` wip: UXP "Edit visibility flags" を `EditCameraVisFlagsDialog`(modal、scene element ごとに Inc + Vis checkbox)として実装。`cameraVisFlags.service` の `getCameraVisFlags`(scene tree 列挙 + `Camera.getVisSetJSON` マージ)/ `setCameraVisFlags`(clear + 含む行のみ visAppend を 1 undo txn で再構築)。camera ctxmenu の "Edit vis flags…"(従来 disabled stub)を有効化し dispatch case を実装。service + dialog test 8 件、既存 dispatch test に showEditCameraVisFlags mock 追加。Dialog_tool wip 0->1 / todo 7->6、Total wip 39->40 / todo 27->26、split 25->26 / unassigned 27->26。host E2E で done。ADR-0026)
 - Updated: 2026-06-12 (D-Phase1 `dialog.property.object` wip: UXP `object-propdlg` "Common" タブを Inspector Properties タブの object ページ `ObjectCommonSection`(Name/Selection/Visible/Locked/Linked-readonly)として実装。object は generic prop bridge(`getGenericProps`/`setGenericProp`)で既に編集可能なため worker/C++ 変更なし。`PropertiesTab` に object 分岐、`InspectorPanel` で object を Properties タブ既定にルーティング、共有 `TextRow`/`SelRow`/`BoolRow` 再利用。pane test 7 件追加。prop_dlgs todo 1->0 / wip 1->2、Total wip 38->39 / todo 28->27、merged 46->47 / unassigned 28->27。host E2E sign-off で done(prop_dlgs 15/15)。ADR-0015 参照)
 - Updated: 2026-06-12 (A — review 7 件を done に (host E2E sign-off): tool dialogs `dialog.tool.mol-delete` / `mol-merge` / `chg-resindex` / `chg-chname` / `prot2ndry-tool` (5) + `panel.symmetry` + `dialog.atomintr`。Panel done 6->7 / Dialog_other done 7->8 / Dialog_tool done 9->14、review 7->0、Total done 58->66 / review 7->0。In Progress リストから 7 行除去)
 - Updated: 2026-06-12 (B — custom-widget reconciliation: 既存実装でカバー済みの 4 行を是正。`widget.wheelbtn` -> merged/done (今回 `DragNumericField`/`ViewPane` で fake-dial を置換、`panel.fakedial`)、`widget.mainview` -> merged/wip (`ContentArea`/`TabBar`/`MolViewPane`、`other.cuemol2`)、`widget.paintpanel` -> merged/wip (`ColorPane` Paint deck、`panel.coloring.deck.paint`)、`widget.selection-widget` -> merged/wip (`MolSelList`/`SelectionBuilder`、`widget.molsellist`)。Custom Widget todo 8->4 / done 3->4 / wip 2->5。Mapping: merged 42->46・unassigned 32->28 (4 widget 行を unassigned から merged へ; split 25 不変)、Total 132 不変。Unstarted カウントの stale 値 34->28 是正)
@@ -67,11 +68,11 @@
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 15 | 13 | 2 | 0 | 0 | 0 |
 | Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 8 | 3 | 0 | 7 | 0 |
-| Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 14 | 0 | 0 | 7 | 0 |
+| Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 14 | 1 | 0 | 6 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 4 | 5 | 0 | 4 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 16 | 7 | 0 | 5 | 0 |
 | Other | [other.md](other.md) | 4 | 2 | 1 | 0 | 1 | 0 |
-| **Total** | | **132** | **66** | **39** | **0** | **27** | **0** |
+| **Total** | | **132** | **66** | **40** | **0** | **26** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -101,10 +102,10 @@
 |---------|------:|
 | 1:1 (`direct`) | 27 |
 | merged | 47 |
-| split | 25 |
+| split | 26 |
 | redesign | 0 |
 | deprecated (`dropped`) | 6 |
-| *(not yet assigned)* | 27 |
+| *(not yet assigned)* | 26 |
 
 ---
 
@@ -137,6 +138,7 @@
 | [`overlay.propeditor-generic`](overlay.md#overlaypropeditor-generic) | `InspectorPanel` / `GenericTab` / `genericProps.service` / `useInspectorState` | Generic property editor as the Generic tab of the docked inspector pane (ADR-0015); `getPropsJSON` bridge, live-apply, undo-wrapped writes. First stage edits primitive types (string/int/real/bool/enum); nested-object sub-properties now editable via dot-path keys (`parseGenericProps` recurses, `setNestedProperty` writes — ADR-0015 Update); color/vector/timeval widgets deferred. Replaces the retired read-only `NodePropertyDialog` modal. |
 | [`dialog.property.renderer`](prop_dlgs.md) | `inspector/RendererCommonSection` / `inspector/PropertiesTab` / `rendererPropSections` / `getMaterialNames.service` | renderer-common-page (Basic settings + Edge lines) as the structured Properties tab, default for renderer targets; live `getGenericProps`/`setGenericProp` (sel compiled via `makeSel`, egcolor/material as strings). Per-renderer-type sections deferred to the `rendererPropSections` registry — every type currently shows Common + a collapsed dummy placeholder. |
 | [`dialog.property.object`](prop_dlgs.md) | `inspector/ObjectCommonSection` / `inspector/PropertiesTab` (object branch) / `genericProps.service` (reused) | UXP `object-propdlg` "Common" tab as the Inspector Properties-tab object page (Name / Selection / Visible / Locked / Linked-readonly), live generic bridge, no new worker/C++. Object targets default to the Properties tab. Pending host E2E (then prop_dlgs 15/15) |
+| [`dialog.tool.visflagset-edit`](tool_dlgs.md) | `EditCameraVisFlagsDialog` (+ Provider) / `cameraVisFlags.service` | UXP "Edit visibility flags" modal (per object/renderer Inc + Vis checkboxes). `getCameraVisFlags` enumerates the scene tree + merges `Camera.getVisSetJSON`; `setCameraVisFlags` clear+rebuilds under one undo txn. Camera ctxmenu "Edit vis flags…" wired (was a disabled stub). Pending host E2E (ADR-0026) |
 | [`panel.coloring.shell`](panels.md#panelcoloringshell) | `ColorPane` / `usePaintCapableRenderers` / `rendererColoring.service` | Phase 1: renderer selector (paint-capable filter) + Coloring type dropdown (Paint / Solid / Reset enabled; CPK / Bfac / Rainbow / Elepot / Multi-gradient "coming soon"). |
 | [`panel.coloring.deck.paint`](panels.md#panelcoloringdeckpaint) | `ColorPane` / `useRendererColoringState` / `rendererColoring.service` (Paint CRUD) | Phase 1: inline-edit Paint table (no `paint-propdlg` dialog yet). Add / Delete / Move + cell-level commit on blur via `add/remove/update/movePaintEntry`. |
 | [`panel.coloring.deck.solid`](panels.md#panelcoloringdecksolid) | `ColorPane` / `useRendererColoringState` / `rendererColoring.service` (`setRendererDefaultColor`) | Phase 1: default-color text input + preview swatch; commits on blur via `setRendererDefaultColor`. |
@@ -150,4 +152,4 @@
 
 ## Unstarted
 
-**28 / 132** items are `todo` (not yet started).
+**26 / 132** items are `todo` (not yet started).

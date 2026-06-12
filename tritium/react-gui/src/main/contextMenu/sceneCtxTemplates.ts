@@ -201,7 +201,6 @@ function buildCameraNodeMenu(
         },
         {
             label: 'Edit vis flags…',
-            enabled: false,
             click: action({ kind: 'cameraEditVisFlags' }),
         },
         {

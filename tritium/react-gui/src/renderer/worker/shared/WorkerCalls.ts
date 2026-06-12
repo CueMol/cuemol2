@@ -299,6 +299,12 @@ import type {
   ClearCameraVisFlagsResult,
 } from '../server/services/cameraOps.service'
 import type {
+  GetCameraVisFlagsArgs,
+  GetCameraVisFlagsResult,
+  SetCameraVisFlagsArgs,
+  SetCameraVisFlagsResult,
+} from '../server/services/cameraVisFlags.service'
+import type {
   LoadCameraFromFileArgs,
   LoadCameraFromFileResult,
   SaveCameraToFileArgs,
@@ -533,6 +539,8 @@ export interface ServiceMap {
   saveViewToCamera:           { args: SaveViewToCameraArgs;            result: SaveViewToCameraResult }
   applyCameraToView:          { args: ApplyCameraToViewArgs;           result: ApplyCameraToViewResult }
   clearCameraVisFlags:        { args: ClearCameraVisFlagsArgs;         result: ClearCameraVisFlagsResult }
+  getCameraVisFlags:          { args: GetCameraVisFlagsArgs;           result: GetCameraVisFlagsResult }
+  setCameraVisFlags:          { args: SetCameraVisFlagsArgs;           result: SetCameraVisFlagsResult }
   loadCameraFromFile:         { args: LoadCameraFromFileArgs;          result: LoadCameraFromFileResult }
   saveCameraToFile:           { args: SaveCameraToFileArgs;            result: SaveCameraToFileResult }
   saveCameraToCurrentSrc:     { args: SaveCameraToCurrentSrcArgs;      result: SaveCameraToCurrentSrcResult }
