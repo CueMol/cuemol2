@@ -1,6 +1,6 @@
 # ADR-0024: Bond editor — viewport pick tool, not a modal
 
-- Status: accepted (host E2E verification pending)
+- Status: accepted (host E2E verified)
 - Date: 2026-06-12
 - Mapping rows: [`dialog.tool.bond-edit`](../mapping/tool_dlgs.md#dialogtoolbond-edit)
 
