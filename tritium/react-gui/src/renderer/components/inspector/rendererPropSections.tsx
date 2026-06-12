@@ -320,6 +320,24 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
       Component: DSurfaceRadiiSection,
     },
   ],
+  // DirectSurfRenderer2 ("dsurf2"): the distance-field surface.
+  // Temporary exposure alongside dsurface -- it shares the same property set
+  // (surftype / detail / proberad / draw mode / per-element radii), so it
+  // reuses the dsurface property sections verbatim.
+  dsurf2: [
+    {
+      key: "dsurf2-main",
+      title: "Surface",
+      defaultExpanded: true,
+      Component: DSurfaceMainSection,
+    },
+    {
+      key: "dsurf2-radii",
+      title: "Atom radii",
+      defaultExpanded: true,
+      Component: DSurfaceRadiiSection,
+    },
+  ],
   // MolSurfRenderer ("molsurf"): UXP molsurf-propdlg "MolSurf" tab (shared
   // molsurf-page with dsurface, but Surface type / Detail / Atom radii are
   // dsurface-only while the "Selection mol" target is molsurf-only). One section:
