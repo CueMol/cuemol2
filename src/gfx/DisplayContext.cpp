@@ -22,6 +22,7 @@ DisplayContext::DisplayContext()
   m_dPixSclFac = 1.0;
   m_dEdgeLineWidth = -1.0;
   m_nEdgeLineType = ELT_NONE;
+  m_nPolygonMode = POLY_FILL;
   m_pTargView = NULL;
   m_nSceneID = qlib::invalid_uid;
   m_nViewID = qlib::invalid_uid;

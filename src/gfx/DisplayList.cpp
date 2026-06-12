@@ -164,7 +164,6 @@ void DisplayList::startLines()
     m_nDrawMode = DRAWMODE_LINES;
     m_vertLineWidth = -1.0;
     m_bVertStipple = false;
-    m_bSetColor = false;
 }
 
 void DisplayList::startLineStrip()
@@ -176,7 +175,6 @@ void DisplayList::startLineStrip()
     m_nDrawMode = DRAWMODE_LINESTRIP;
     m_vertLineWidth = -1.0;
     m_bVertStipple = false;
-    m_bSetColor = false;
 }
 
 void DisplayList::startTriangles()
@@ -269,6 +267,10 @@ bool DisplayList::recordStart()
     m_mesh.clear();
 
     m_fValid = false;
+    // Reset per-recording color tracking. Lines fall back to the outer
+    // DisplayContext uniform color unless render() calls color() (see
+    // createLineObj / m_bSetColor).
+    m_bSetColor = false;
 
     clearMatStack();
 
@@ -331,6 +333,9 @@ void DisplayList::createTrigObj(DisplayContext *pdc)
     MB_ASSERT(m_pTrigObj == nullptr);
     m_pTrigObj = MB_NEW gfx::TrigGpuPrim();
     m_pTrigObj->init(pdc);
+    // Propagate polygon mode before alloc() so the index buffer is built for
+    // fill (triangles) or wireframe (line edges) accordingly.
+    m_pTrigObj->setPolygonMode(pdc->getPolygonMode());
     m_pTrigObj->alloc(pdc, n, n / 3);
 
     for (size_t i = 0; i < n; ++i) {
@@ -357,6 +362,9 @@ void DisplayList::createTrigMeshObj(DisplayContext *pdc)
     MB_ASSERT(m_pTrigMeshObj == nullptr);
     m_pTrigMeshObj = MB_NEW gfx::TrigGpuPrim();
     m_pTrigMeshObj->init(pdc);
+    // Propagate polygon mode before alloc() so the index buffer is built for
+    // fill (triangles) or wireframe (line edges) accordingly.
+    m_pTrigMeshObj->setPolygonMode(pdc->getPolygonMode());
     m_pTrigMeshObj->alloc(pdc, nMeshVerts, nMeshFaces);
 
     size_t i = 0;

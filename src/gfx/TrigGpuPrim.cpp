@@ -21,6 +21,7 @@ TrigGpuPrim::TrigGpuPrim()
       m_pEdgePO(nullptr),
       m_pDrawElems(nullptr),
       m_nEdgeLineType(DisplayContext::ELT_NONE),
+      m_nPolygonMode(DisplayContext::POLY_FILL),
       m_bNoDepth(false)
 {
 }
@@ -61,8 +62,13 @@ void TrigGpuPrim::alloc(DisplayContext *pDC, int nverts, int nfaces)
 
     m_pDrawElems = MB_NEW TrigMesh();
     auto &data = *m_pDrawElems;
-    pDC->allocBuffer(data, nverts, nfaces * 3);
-    data.setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
+
+    // In wireframe (POLY_LINE) mode, render triangle edges as GL_LINES:
+    // each face contributes 3 edges (6 indices) instead of a filled triangle.
+    const bool bWire = (m_nPolygonMode == DisplayContext::POLY_LINE);
+    pDC->allocBuffer(data, nverts, bWire ? nfaces * 6 : nfaces * 3);
+    data.setDrawMode(bWire ? gfx::AbstDrawElem::DRAW_LINES
+                           : gfx::AbstDrawElem::DRAW_TRIANGLES);
 }
 
 void TrigGpuPrim::setupAttrs()
@@ -109,6 +115,16 @@ void TrigGpuPrim::setColor(int idx, quint32 devcode)
 void TrigGpuPrim::setFace(int idx, int v1, int v2, int v3)
 {
     auto &data = *m_pDrawElems;
+    if (m_nPolygonMode == DisplayContext::POLY_LINE) {
+        // Wireframe: 3 edges per face -> (v1,v2)(v2,v3)(v3,v1)
+        data.atind(idx * 6 + 0) = v1;
+        data.atind(idx * 6 + 1) = v2;
+        data.atind(idx * 6 + 2) = v2;
+        data.atind(idx * 6 + 3) = v3;
+        data.atind(idx * 6 + 4) = v3;
+        data.atind(idx * 6 + 5) = v1;
+        return;
+    }
     data.atind(idx * 3) = v1;
     data.atind(idx * 3 + 1) = v2;
     data.atind(idx * 3 + 2) = v3;
@@ -120,7 +136,10 @@ void TrigGpuPrim::draw(DisplayContext *pDC)
 
     setupAttrs();
 
-    if (m_nEdgeLineType != DisplayContext::ELT_NONE) {
+    // Edge/silhouette pass is meaningful only for filled triangles; skip it
+    // when the mesh is drawn as wireframe lines.
+    if (m_nPolygonMode != DisplayContext::POLY_LINE &&
+        m_nEdgeLineType != DisplayContext::ELT_NONE) {
         drawEdges(pDC);
     }
 

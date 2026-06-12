@@ -99,6 +99,15 @@ public:
     /** Return the current edge/silhouette rendering mode. */
     int getEdgeLineType() const { return m_nEdgeLineType; }
 
+    /**
+     * Set the polygon rendering mode (DisplayContext::POLY_FILL / POLY_LINE).
+     * Must be set before alloc(): in POLY_LINE mode the index buffer is built as
+     * triangle edges (GL_LINES) instead of filled triangles.
+     */
+    void setPolygonMode(int n) { m_nPolygonMode = n; }
+    /** Return the current polygon rendering mode. */
+    int getPolygonMode() const { return m_nPolygonMode; }
+
     /** When true, depth testing is disabled during drawing. */
     void setNoDepth(bool f) { m_bNoDepth = f; }
     /** Returns true if depth testing is disabled. */
@@ -138,7 +147,10 @@ public:
     /** Returns the number of triangles allocated. */
     int getFaceSize() const
     {
-        return (m_pDrawElems != nullptr) ? (m_pDrawElems->getIndSize() / 3) : 0;
+        if (m_pDrawElems == nullptr) return 0;
+        // Wireframe mode stores 6 indices per face (3 edges), fill mode stores 3.
+        const int nPerFace = (m_nPolygonMode == DisplayContext::POLY_LINE) ? 6 : 3;
+        return m_pDrawElems->getIndSize() / nPerFace;
     }
 
 private:
@@ -155,6 +167,7 @@ private:
     gfx::ShaderObject *m_pEdgePO;   ///< Edge/silhouette program
     TrigMesh *m_pDrawElems;
     int m_nEdgeLineType;
+    int m_nPolygonMode;
     bool m_bNoDepth;
 
     void setupAttrs();
