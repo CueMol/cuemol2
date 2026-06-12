@@ -73,7 +73,7 @@ export const ViewportToolPalette: React.FC<Props> = ({
                   aria-haspopup="dialog"
                   title="Measure options"
                 >
-                  <AppIcon name="ui.properties" size="sm" aria-hidden />
+                  <AppIcon name="ui.menu" size="sm" aria-hidden />
                   <AppIcon name="ui.caretDown" size="sm" className="cap-caret" aria-hidden />
                 </button>
               </Popover>
@@ -91,7 +91,7 @@ export const ViewportToolPalette: React.FC<Props> = ({
                   aria-haspopup="dialog"
                   title="Bond editor options"
                 >
-                  <AppIcon name="ui.properties" size="sm" aria-hidden />
+                  <AppIcon name="ui.menu" size="sm" aria-hidden />
                   <AppIcon name="ui.caretDown" size="sm" className="cap-caret" aria-hidden />
                 </button>
               </Popover>
