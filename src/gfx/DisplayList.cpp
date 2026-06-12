@@ -331,6 +331,9 @@ void DisplayList::createTrigObj(DisplayContext *pdc)
     MB_ASSERT(m_pTrigObj == nullptr);
     m_pTrigObj = MB_NEW gfx::TrigGpuPrim();
     m_pTrigObj->init(pdc);
+    // Propagate polygon mode before alloc() so the index buffer is built for
+    // fill (triangles) or wireframe (line edges) accordingly.
+    m_pTrigObj->setPolygonMode(pdc->getPolygonMode());
     m_pTrigObj->alloc(pdc, n, n / 3);
 
     for (size_t i = 0; i < n; ++i) {
@@ -357,6 +360,9 @@ void DisplayList::createTrigMeshObj(DisplayContext *pdc)
     MB_ASSERT(m_pTrigMeshObj == nullptr);
     m_pTrigMeshObj = MB_NEW gfx::TrigGpuPrim();
     m_pTrigMeshObj->init(pdc);
+    // Propagate polygon mode before alloc() so the index buffer is built for
+    // fill (triangles) or wireframe (line edges) accordingly.
+    m_pTrigMeshObj->setPolygonMode(pdc->getPolygonMode());
     m_pTrigMeshObj->alloc(pdc, nMeshVerts, nMeshFaces);
 
     size_t i = 0;

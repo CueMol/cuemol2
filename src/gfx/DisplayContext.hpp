@@ -98,6 +98,10 @@ private:
     /// UID of the target scene
     qlib::uid_t m_nSceneID;
 
+protected:
+    /// Polygon rendering mode (POLY_FILL/POLY_LINE/...)
+    int m_nPolygonMode;
+
 public:
     /// Polygon rendering mode
     enum {
@@ -192,6 +196,12 @@ public:
     /// Set edge (silhouette) line props
     virtual int getEdgeLineType() const;
     virtual void setEdgeLineType(int n);
+
+    /// Get the current polygon rendering mode (POLY_FILL/POLY_LINE/...)
+    int getPolygonMode() const
+    {
+        return m_nPolygonMode;
+    }
 
     virtual double getEdgeLineWidth() const;
     virtual void setEdgeLineWidth(double w);

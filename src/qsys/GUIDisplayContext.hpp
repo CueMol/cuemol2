@@ -52,7 +52,10 @@ public:
 
     ////////////////
 
-    virtual void setPolygonMode(int id) override {}
+    virtual void setPolygonMode(int id) override
+    {
+        m_nPolygonMode = id;
+    }
 
     virtual void startPoints() override
     {
