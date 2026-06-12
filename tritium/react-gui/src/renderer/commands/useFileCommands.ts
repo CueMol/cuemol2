@@ -97,17 +97,27 @@ export function useFileCommands({
         if (!cm) return
         const info = getActiveSceneInfo()
         if (!info) return
-        // Collect PNG options (resolution / size / transparency) before
-        // choosing the file, mirroring UXP `exportpng-opt-dlg`.
-        const opts = await showExportPngOptions({
-            initialWidth: 1024,
-            initialHeight: 768,
+        // Mirror UXP `exportScene`: default the file name to the scene name and
+        // seed the PNG options with the live view size.
+        const imgInfo = await cm.invokeService('getExportImageInfo', {
+            sceneId: info.scene_uid,
+            viewId: info.view_id,
         })
-        if (!opts) return
+        const baseName = (imgInfo?.sceneName ?? '').trim() || 'scene'
+        const viewW = imgInfo && imgInfo.width > 0 ? imgInfo.width : 1024
+        const viewH = imgInfo && imgInfo.height > 0 ? imgInfo.height : 768
+        // 1) choose the file (default name = scene name).
         const dlg = await window.electronAPI.invoke(IPC.DIALOG_IMAGE_SAVE, {
-            defaultName: 'image.png',
+            defaultName: `${baseName}.png`,
         })
         if (dlg.canceled || !dlg.filePath) return
+        // 2) collect PNG options seeded with the live view size.
+        const opts = await showExportPngOptions({
+            initialWidth: viewW,
+            initialHeight: viewH,
+        })
+        if (!opts) return
+        // 3) render off-screen to the chosen file.
         await cm.invokeService('exportImage', {
             sceneId: info.scene_uid,
             viewId: info.view_id,
@@ -115,6 +125,7 @@ export function useFileCommands({
             width: opts.width,
             height: opts.height,
             alpha: opts.alpha,
+            resoln: opts.dpi,
             depth: false,
         })
     })

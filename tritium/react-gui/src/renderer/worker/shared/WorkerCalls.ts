@@ -88,6 +88,8 @@ import type {
 import type {
   ExportImageArgs,
   ExportImageResult,
+  GetExportImageInfoArgs,
+  GetExportImageInfoResult,
 } from '../server/services/exportImage.service'
 import type {
   SceneBgColorArgs,
@@ -439,6 +441,7 @@ export interface ServiceMap {
   getSceneSaveInfo:           { args: GetSceneSaveInfoArgs;            result: GetSceneSaveInfoResult }
   saveScene:                  { args: SaveSceneArgs;                   result: SaveSceneResult }
   exportImage:                { args: ExportImageArgs;                 result: ExportImageResult }
+  getExportImageInfo:         { args: GetExportImageInfoArgs;          result: GetExportImageInfoResult }
   validateSelection:          { args: ValidateSelectionArgs;           result: ValidateSelectionResult }
   getSceneBgColor:            { args: SceneBgColorArgs;                result: SceneBgColorResult }
   setSceneBgColor:            { args: SetSceneBgColorArgs;             result: SceneBgColorResult }

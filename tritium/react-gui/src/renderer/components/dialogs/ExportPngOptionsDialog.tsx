@@ -11,7 +11,8 @@
  *
  * Pixels are the source of truth (`exportPngSize` helpers); the displayed
  * width/height are derived for the active unit + DPI. The caller seeds the
- * initial pixel size (and thus aspect ratio).
+ * initial pixel size from the live view (`getExportImageInfo`), which also
+ * sets the aspect ratio. OK returns the chosen pixel size, alpha, and DPI.
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
@@ -30,6 +31,8 @@ export interface ExportPngOptionsResult {
     width: number
     height: number
     alpha: boolean
+    /** Output resolution in DPI (PNG pHYs metadata; UXP `resoln`). */
+    dpi: number
 }
 
 interface Props {
@@ -101,8 +104,8 @@ export function ExportPngOptionsDialog({
 
     const handleOk = useCallback(() => {
         if (pxW <= 0 || pxH <= 0) return
-        onConfirm({ width: pxW, height: pxH, alpha })
-    }, [pxW, pxH, alpha, onConfirm])
+        onConfirm({ width: pxW, height: pxH, alpha, dpi })
+    }, [pxW, pxH, alpha, dpi, onConfirm])
 
     const stepForUnit = unit === 'px' ? 1 : 0.1
 
