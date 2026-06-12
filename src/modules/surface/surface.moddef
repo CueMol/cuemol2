@@ -5,6 +5,7 @@
 #include "MolSurfObj.qif"
 #include "MolSurfRenderer.qif"
 #include "MSMSFileReader.qif"
+#include "PLYFileReader.qif"
 #include "ElePotMap.qif"
 #include "OpenDXPotReader.qif"
 //#include "MS2TestRenderer.qif"
@@ -22,6 +23,7 @@ module surface
   MolSurfObj;
   MolSurfRenderer;
   MSMSFileReader;
+  PLYFileReader;
   ElePotMap;
   OpenDXPotReader;
   // MS2TestRenderer;
