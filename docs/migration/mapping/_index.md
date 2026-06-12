@@ -1,5 +1,7 @@
 # Migration Mapping — Index
 
+- Updated: 2026-06-12 (A — review 7 件を done に (host E2E sign-off): tool dialogs `dialog.tool.mol-delete` / `mol-merge` / `chg-resindex` / `chg-chname` / `prot2ndry-tool` (5) + `panel.symmetry` + `dialog.atomintr`。Panel done 6->7 / Dialog_other done 7->8 / Dialog_tool done 9->14、review 7->0、Total done 58->66 / review 7->0。In Progress リストから 7 行除去)
+- Updated: 2026-06-12 (B — custom-widget reconciliation: 既存実装でカバー済みの 4 行を是正。`widget.wheelbtn` -> merged/done (今回 `DragNumericField`/`ViewPane` で fake-dial を置換、`panel.fakedial`)、`widget.mainview` -> merged/wip (`ContentArea`/`TabBar`/`MolViewPane`、`other.cuemol2`)、`widget.paintpanel` -> merged/wip (`ColorPane` Paint deck、`panel.coloring.deck.paint`)、`widget.selection-widget` -> merged/wip (`MolSelList`/`SelectionBuilder`、`widget.molsellist`)。Custom Widget todo 8->4 / done 3->4 / wip 2->5。Mapping: merged 42->46・unassigned 32->28 (4 widget 行を unassigned から merged へ; split 25 不変)、Total 132 不変。Unstarted カウントの stale 値 34->28 是正)
 - Updated: 2026-06-12 (`panel.fakedial` done: 別ホストで実機確認済み (label+widget の同一行化 / section overflow 時のスクロール / 背景色除外 を反映した最終版を verify)。Panel done 5->6 / wip 19->18、Total done 57->58 / wip 36->35)
 - Updated: 2026-06-12 (`panel.fakedial` wip: UXP "View" side panel (`fakedial-panel`) を Explorer の `ViewPane` として実装 (DummyPane4 slot を置換)。fake-dial (`<wheelbtn>`) の無境界ロータリー UX を `DragNumericField` の min/max 省略 (= +/-Infinity、fill bar 非表示) で再現し、UXP の wheel+textbox の組を 1 field に集約。行は `FieldGrid`/`FieldGridRow` で label+widget を同一行 (整列 label 列 + control fill)、body は `sp-pane-scroll` でオーバーフロー時にスクロール。Rotation は相対 delta (`rotateView`、release で 0 に reset)、Translation/Zoom/Slab/Dist は絶対値で `viewXform.service` (`getViewXform`/`setViewXform`/`rotateView`) 経由 (worker で zoom>=0.01・slab/dist>=0 をクランプ)。view 変換は `setViewProjection` に倣い undo 非対象。Projection section は perspective/center mark のみを既存 `useViewCommands` コマンド経由で書き込み、`useActiveViewState` を single source of truth として native menu と同期 (背景色は Scene property のため非搭載)。`useViewXform` が SEM_VIEW PROPCHG を購読しライブ同期。worker-service + hook + pane test 19 件追加。Panel wip 18->19 / todo 3->2、Total wip 35->36 / todo 33->32、split 24->25 / unassigned 33->32。ADR-0025)
 - Updated: 2026-06-12 (`dialog.tool.bond-edit` done: E2E 確認済み。viewport 編集ツール (2 原子 pick で結合追加 + options popover の非標準ボンド一覧/削除) を実機確認。tool_dlgs review 6->5 / done 8->9、Total review 8->7 / done 56->57)
@@ -59,16 +61,16 @@
 
 | Category | File | Total | done | wip | review | todo | frozen |
 |----------|------|------:|-----:|----:|-------:|-----:|-------:|
-| Panel | [panels.md](panels.md) | 27 | 6 | 18 | 1 | 2 | 0 |
+| Panel | [panels.md](panels.md) | 27 | 7 | 18 | 0 | 2 | 0 |
 | Menu | [menus.md](menus.md) | 4 | 2 | 2 | 0 | 0 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 15 | 13 | 1 | 0 | 1 | 0 |
-| Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 7 | 3 | 1 | 7 | 0 |
-| Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 9 | 0 | 5 | 7 | 0 |
-| Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 3 | 2 | 0 | 8 | 0 |
+| Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 8 | 3 | 0 | 7 | 0 |
+| Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 14 | 0 | 0 | 7 | 0 |
+| Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 4 | 5 | 0 | 4 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 16 | 7 | 0 | 5 | 0 |
 | Other | [other.md](other.md) | 4 | 2 | 1 | 0 | 1 | 0 |
-| **Total** | | **132** | **58** | **35** | **7** | **32** | **0** |
+| **Total** | | **132** | **66** | **38** | **0** | **28** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -97,11 +99,11 @@
 | Mapping | Count |
 |---------|------:|
 | 1:1 (`direct`) | 27 |
-| merged | 42 |
+| merged | 46 |
 | split | 25 |
 | redesign | 0 |
 | deprecated (`dropped`) | 6 |
-| *(not yet assigned)* | 32 |
+| *(not yet assigned)* | 28 |
 
 ---
 
@@ -115,15 +117,12 @@
 | [`dialog.about`](other_dlgs.md#dialogabout) | `AboutDialog` / `useDialog` | GRE info・userAgent は省略 |
 | [`dialog.apply-rend-style`](other_dlgs.md#dialogapply-rend-style) | `ApplyRendStyleDialog` / `getRendererStyleEditInfo` / `applyRendererStyleList` | List view + Add popup + Delete/Up/Down on the working style list; commit calls `rend.applyStyles` under "Change style" txn |
 | [`dialog.rendstyle-create`](other_dlgs.md#dialogrendstyle-create) | `CreateRendStyleDialog` / `getCreateRendStyleInfo` / `createStyleFromRenderer` | Writable style-set listbox + base-name input; commit calls `StyleManager.createStyleFromObj`. Same-name overwrite handled in C++ |
-| [`dialog.atomintr`](other_dlgs.md#dialogatomintr) | `AtomIntr*Section` (inspector Properties tab) | Interaction/Dashed line/3D tube/Value label の 4 accordion。Dashed トグルは合成 (`setGenericProps` で stipple0..5 を 1 undo step 原子書き込み)。arrow size・label font 追加。append/remove 編集は対象外 |
-| [`dialog.tool.mol-delete`](tool_dlgs.md#dialogtoolmol-delete) | `DeleteMolDialog` / `useToolCommands` / `deleteMolAtoms.service` | h3-kit/form modal (ObjectSelect + MolSelList). OK -> `MolAnlManager.deleteAtoms` under "Delete atoms" undo txn. Edit > Delete mol atoms. Empty selection disables OK. Awaiting E2E sign-off |
-| [`dialog.tool.prot2ndry-tool`](tool_dlgs.md#dialogtoolprot2ndry-tool) | `ReassignProt2ndryDialog` / `useToolCommands` / `reassignProt2ndry.service` | h3-kit/form modal (ObjectSelect + Recalc/Assign segment + Ignore-β-bulge / Helix gap-fill / MolSelList + type select). OK -> `MolAnlManager.calcProt2ndry2` / `setProt2ndry` under undo txn. Edit > Reassign secondary str. Awaiting E2E sign-off |
-| [`dialog.tool.mol-merge`](tool_dlgs.md#dialogtoolmol-merge) | `MergeMolDialog` / `useToolCommands` / `mergeMol.service` | h3-kit/form modal (From ObjectSelect+MolSelList / To ObjectSelect / Copy switch). OK -> `MolAnlManager.copyAtoms` (+ `deleteAtoms` on move) under "Merge molecule" undo txn with whole-txn rollback. Self-merge blocked. Edit > Merge molecule. Awaiting E2E sign-off |
-| [`dialog.tool.chg-resindex`](tool_dlgs.md#dialogtoolchg-resindex) | `ChangeResidueIndexDialog` / `resIndexInput` / `useToolCommands` / `changeResidueIndex.service` | h3-kit/form modal (ObjectSelect + MolSelList + Shift/Start segment + value + Renumber switch). OK -> `MolAnlManager.renumResIndex`/`shiftResIndex` under "Change residue index" undo txn. Edit > Change residue number. Start > 4 digits -> PDB confirm. Awaiting E2E sign-off |
-| [`dialog.tool.chg-chname`](tool_dlgs.md#dialogtoolchg-chname) | `ChangeChainIdDialog` / `chainNameInput` / `useToolCommands` / `changeChainName.service` | h3-kit/form 製の Change chain ID modal。`MolAnlManager.changeChainName` を undo txn で実行。Edit メニューから起動。空白入力 -> blank chain "_" (confirm)、1 文字超 -> PDB 非準拠 confirm (Blueprint `Alert`)、前回分子は in-session 保持。confirm/blank 追加分の re-verify 待ち |
 | [`other.cuemol2`](other.md#othercuemol2) | `App` / `ContentArea` / `TabBar` / `SidePanel` / `BottomPanel` / `StatusBar` / `ConfirmCloseTabDialog` / `useWindowCloseHandler` | Main window layout (panels, tab view, status bar) + window-close/quit funnel wired (cmd-Q + close button share one confirm funnel, ADR-0016 supersedes ADR-0010). Canvas lifecycle: ADR-0011 |
 | [`widget.molsellist`](custom_widgets.md) | `MolSelList` (`h3-kit/MolSelList/`) | First consumer wired in `RendererOptionsPane` (file-open dialog); editable `InputGroup` + chevron-only `HTMLSelect` (OS-native dropdown listbox with `<optgroup>` Preset / History / Scene / Global); history via `localStorage`; worker services `getSelDefs` / `validateSelection` added |
 | [`widget.sidepanelholder`](custom_widgets.md) | `SidePanel` | Collapsible/resizable side-panel host (Allotment) + per-view pane sets + size persistence; UXP user drag-drop panel reorder not ported (config-driven via `buildViewPaneConfigs`) |
+| [`widget.mainview`](custom_widgets.md) | `ContentArea` / `TabBar` / `MolViewPane` | merged: UXP `tabmolview` multi-tab GL view (drag-reorderable tabs) realised by ContentArea + reorderable TabBar hosting the permanently-mounted MolViewPane canvas (ADR-0011). Tracked under `other.cuemol2` |
+| [`widget.paintpanel`](custom_widgets.md) | `ColorPane` (Paint deck) / `PaintSelCell` | merged: UXP paint-mode list-item bindings realised by the ColorPane inline Paint table + PaintSelCell. Tracked under `panel.coloring.deck.paint` |
+| [`widget.selection-widget`](custom_widgets.md) | `MolSelList` / `SelectionBuilder` | merged: UXP structured-selection list bindings (chain/residue hierarchy builder) realised by MolSelList + SelectionBuilder popover (ADR-0021). Tracked under `widget.molsellist` |
 | [`panel.workspace.tree`](panels.md#panelworkspacetree) | `ScenePane` (tree) / `useSceneTree` / `useSceneTreeController` / `sceneTreeDnd` / `InlineRenameInput` / `sceneTree.service` / `reorderSceneNode.service` | Live tree + visibility toggle + selection (single + multi via Cmd/Ctrl+click) + event-driven auto-refresh + drag-drop reorder (worker + in-app DnD OK; ADR-0001) + F2 inline rename; pending: Shift+range select |
 | [`panel.workspace.ctxmenu.multi`](panels.md#panelworkspacectxmenumulti) | `useSceneContextMenu` / `main/sceneContextMenu` (multi) / `bulkSceneNodeOps.service` | Right-clicking a multi-selected row opens a multi-only menu: Show / Hide / Delete via `bulkSetNodeVisible` / `bulkDeleteNode` (single undo txn per batch); worker + in-app multi-select OK; pending: Copy (clipboard is single-item) |
 | [`panel.workspace.toolbar`](panels.md#panelworkspacetoolbar) | `ScenePane` (toolbar) / `useSceneTreeController` / `sceneOps.service` / `createRendererOnObject.service` / `getNewRendererOptions.service` | Focus / Delete / Property / Add wired (Add shares the New Renderer flow with the ctxmenu); property dialog still a read-only stub |
@@ -145,10 +144,8 @@
 | [`panel.coloring.deck.elepot`](panels.md#panelcoloringdeckelepot) | `ColorPane` (ElepotDeck) / `useElePotMapObjects` / `rendererColoring.service` (`setRendererElepotProp`, `listElePotMapObjects`, `paint-type-elepot`) | Phase 3: ElePotMap selector + Color-by-SAS + Low/Mid/High (par, colour) ramp. Elepot props live on the surface renderer (not a ColoringScheme); deck appears when `colormode === "potential"` on `molsurf` / `dsurface`. Dropdown item is surface-gated. |
 | [`panel.anim`](panels.md#panelanim) | `AnimationPanel` | Animation panel implemented and mounted in `BottomPanel`; timeline / keyframe UI in progress. Related anim surfaces (anim-ribbon / anim-slider / timeedit / multiselect / anim-render / animobj) still todo |
 | [`panel.molstruct`](panels.md#panelmolstruct) | `MolStructPane` / `useMolStructure` / `selStrFromTree` / `getMolStructure.service` / `applyMolSelString.service` | Phase 1+2: molecule selector + lazy chain/residue/atom tree (per-chain & per-residue cache, self-heal on missing) + multi-select + Select / Center / Zoom (ADR-0018). Known issue: first-expand stagger from Blueprint `Tree` Collapse JS state machine (virtualization swap deferred). |
-| [`panel.symmetry`](panels.md#panelsymmetry) | `SymmetryPane` / `useSymmetryPanel` / `SymmetryChangeDialog` / `symmetryPanelOps.service` | UXP-parity port: object selector + crystal info readout + Change modal (Crystal system / Space Group with per-lattice cell constraints) + Symm mol popover (20/50/100/200 Å + Unit cell) + Unit cell renderer. Replaces DummyPane1; activity bar group renamed Dummy → Crystal (cube icon). 12 worker-side tests pin the service contract. Awaiting E2E sign-off. |
-
 ---
 
 ## Unstarted
 
-**34 / 132** items are `todo` (not yet started).
+**28 / 132** items are `todo` (not yet started).
