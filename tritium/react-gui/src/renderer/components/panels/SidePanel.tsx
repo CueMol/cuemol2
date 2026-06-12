@@ -68,7 +68,7 @@ import {
   CatalogPane2,
   CatalogPane3,
 } from "../panes";
-import type { ViewCenterMark, SceneBgColor } from "../../../shared/ipcTypes";
+import type { ViewCenterMark } from "../../../shared/ipcTypes";
 
 import type { SceneTreeNode } from "../../worker/shared/sceneTreeTypes";
 
@@ -130,10 +130,8 @@ interface SidePanelProps {
    * existing view/scene commands so that hook stays the single source of truth. */
   viewProjection: boolean | null;
   viewCenterMark: ViewCenterMark | null;
-  sceneBgColor: SceneBgColor | null;
   onSetPerspective: (perspective: boolean) => void;
   onSetCenterMark: (mark: ViewCenterMark) => void;
-  onSetBgColor: (color: "white" | "black") => void;
 
   /* Scene / Explorer props */
   sceneTree: SceneTreeNode | null;
@@ -214,10 +212,8 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   activeMolViewId,
   viewProjection,
   viewCenterMark,
-  sceneBgColor,
   onSetPerspective,
   onSetCenterMark,
-  onSetBgColor,
   sceneTree,
   sceneSelected,
   sceneSelectedIds,
@@ -322,10 +318,8 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             activeMolViewId={activeMolViewId}
             viewProjection={viewProjection}
             viewCenterMark={viewCenterMark}
-            sceneBgColor={sceneBgColor}
             onSetPerspective={onSetPerspective}
             onSetCenterMark={onSetCenterMark}
-            onSetBgColor={onSetBgColor}
             collapsed={collapsed}
             onToggleCollapse={onToggle}
           />
@@ -421,8 +415,8 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     ],
   }), [
     cm, activeSceneId, activeMolViewId,
-    viewProjection, viewCenterMark, sceneBgColor,
-    onSetPerspective, onSetCenterMark, onSetBgColor,
+    viewProjection, viewCenterMark,
+    onSetPerspective, onSetCenterMark,
     sceneTree, sceneSelected, sceneSelectedIds,
     onSceneSelect, onSceneToggleSelect,
     onToggleVisibility, onShowProperty,

@@ -159,6 +159,16 @@
   gap: var(--space-3);
 }
 
+/* View pane body: a scrollable form (sp-pane-scroll supplies the scroll) with
+ * the same form padding + inter-section gap as sp-pane-fill, so the View pane
+ * shows a scrollbar when its sections overflow the pane height. */
+.view-pane-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-4);
+}
+
 /* ─── Side-Panel Allotment sash ───
  * The resize handle stays transparent (inherits the base .sash rule); the
  * visible divider is the 1px Allotment separator above each pane. Colouring the

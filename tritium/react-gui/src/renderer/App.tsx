@@ -323,11 +323,6 @@ const App: React.FC = () => {
     dispatchCommand(cmd).catch((err: unknown) => console.warn("set center mark failed:", err));
   }, [dispatchCommand]);
 
-  const handleSetBgColor = useCallback((color: "white" | "black") => {
-    dispatchCommand(color === "white" ? CmdId.SceneBgWhite : CmdId.SceneBgBlack)
-      .catch((err: unknown) => console.warn("set bg color failed:", err));
-  }, [dispatchCommand]);
-
   // --- All command handlers + Electron IPC bridge ---
   useCommandRegistrations({
     cm,
@@ -436,10 +431,8 @@ const App: React.FC = () => {
                     activeMolViewId={activeMolViewId}
                     viewProjection={viewProjection}
                     viewCenterMark={viewCenterMark}
-                    sceneBgColor={sceneBgColor}
                     onSetPerspective={handleSetPerspective}
                     onSetCenterMark={handleSetCenterMark}
-                    onSetBgColor={handleSetBgColor}
                     {...sceneController}
                     viewSizes={viewSizes}
                     viewCollapsed={viewCollapsed}

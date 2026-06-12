@@ -15,12 +15,13 @@ horizontal drag pixels straight into a value delta with no min/max, paired with 
 numeric textbox. The wheel applies *relative* deltas (`rotateView`,
 `translateView`, `zoomView`, `slabView`); the textbox sets absolute values.
 
-Tritium already owns three view attributes the UXP panel does not surface
-(perspective, center mark, background colour) via menu commands
-(`useViewCommands` / `useSceneCommands`) whose state is cached in
-`useActiveViewState`, which also drives the native menu checkmarks. The user
-asked to consolidate those into the new pane, which raises a source-of-truth
-risk: a second writer for the same attributes could desync the native menu.
+Tritium already owns view display attributes the UXP panel does not surface
+(perspective, center mark) via menu commands (`useViewCommands`) whose state is
+cached in `useActiveViewState`, which also drives the native menu checkmarks.
+The user asked to consolidate those into the new pane, which raises a
+source-of-truth risk: a second writer for the same attributes could desync the
+native menu. Background colour is deliberately excluded -- it is a Scene
+property, not a View property, so it does not belong on a view-scoped pane.
 
 ## Decision
 
@@ -43,11 +44,12 @@ activity-bar group in place of the PoC `DummyPane4`.
 - **View transform is not undo-tracked.** `viewXform.service` setters do **not**
   wrap in `withUndoTxn`, matching `viewProjection.service` — camera manipulation
   is transient view state (like mouse navigation), not an undo step.
-- **Projection section reuses existing commands.** Perspective / center mark /
-  background are displayed from `useActiveViewState` values threaded as props and
-  written by dispatching the existing `CmdId.View*` / `CmdId.SceneBg*` commands.
-  Those commands already update `useActiveViewState` + the native menu, so that
-  hook stays the single source of truth and no second writer is introduced.
+- **Projection section reuses existing commands.** Perspective / center mark are
+  displayed from `useActiveViewState` values threaded as props and written by
+  dispatching the existing `CmdId.View*` commands. Those commands already update
+  `useActiveViewState` + the native menu, so that hook stays the single source of
+  truth and no second writer is introduced. Background colour is not included
+  (Scene property, kept on its existing Scene context-menu / menu surfaces).
 - **Live sync** via `useViewXform` subscribing to `SEM_VIEW` `SEM_PROPCHG` events
   (`useCueMolEventListener`, 30 ms debounce) so the absolute fields track mouse
   navigation / scripts; refetch is suppressed mid-drag and reconciled on release.
@@ -57,16 +59,17 @@ activity-bar group in place of the PoC `DummyPane4`.
 - New worker surface is minimal: one service file (`viewXform.service.ts`,
   3 methods) + 3 `ServiceMap` rows. The renderer calls them through the generic
   `cm.invokeService<K>` — no dedicated `AsyncCueMol` methods needed.
-- The integrated Projection controls cost prop threading (3 values + 3 callbacks)
+- The integrated Projection controls cost prop threading (2 values + 2 callbacks)
   through `SidePanel` from `App`, but buy a single source of truth and keep the
   native menu in sync for free.
 - Known issue: the rotation fields show a transient accumulator with no
   read-back (they reset to 0 on release). This is intentional UXP parity, but a
   future absolute-angle readout would need a different model (decomposing the
   view quaternion to Euler angles is ambiguous).
-- Background colour `SceneBgColor` can be `'other'`; the select only offers
-  white/black (UXP parity), so an `'other'` scene shows no matching option until
-  the user picks one. Acceptable for the dominant use case.
+- The pane body uses `sp-pane-scroll` (not `sp-pane-fill`, which clips) so the
+  sections scroll when they exceed the pane height; `.view-pane-body` supplies
+  the form padding + inter-section gap. Rows use `FieldGrid` / `FieldGridRow`
+  (aligned label column + filling control) so label and widget share one line.
 
 ## Notes
 
@@ -76,10 +79,12 @@ activity-bar group in place of the PoC `DummyPane4`.
     `worker/shared/WorkerCalls.ts` `ServiceMap`.
   - `tritium/react-gui/src/renderer/hooks/useViewXform.ts` (fetch + SEM_VIEW
     subscription + optimistic setters + `beginInteraction`/`endInteraction` gate).
-  - `tritium/react-gui/src/renderer/components/panes/ViewPane.tsx`.
+  - `tritium/react-gui/src/renderer/components/panes/ViewPane.tsx` (rows via
+    `FieldGrid` / `FieldGridRow`; body `sp-pane-scroll .view-pane-body` for scroll,
+    `.view-pane-body` in `styles/_side-panel.css`).
   - Wiring: `components/panes/index.ts`, `components/panels/SidePanel.tsx`
     (`buildViewPaneConfigs.explorer`), `App.tsx` (`handleSetPerspective` /
-    `handleSetCenterMark` / `handleSetBgColor`), `data/appIcons.ts` (`ui.camera`).
+    `handleSetCenterMark`), `data/appIcons.ts` (`ui.camera`).
   - Tests: `__test__/viewXformService.test.ts`, `__test__/useViewXform.test.ts`,
     `__test__/ViewPane.test.tsx`.
 - C++ contract: `src/qsys/View.qif` — `zoom` / `slab` / `distance` /
@@ -90,4 +95,5 @@ activity-bar group in place of the PoC `DummyPane4`.
   (`onWhChgR`/`onWhChgT`/`onWhChgZs`, `_attachView` SEM_VIEW listener),
   `wheelbtn-bindings.xml` (unbounded drag accumulator).
 - Reuses the source-of-truth pattern from `useActiveViewState` /
-  `useViewCommands` (see also `panel.workspace.ctxmenu.scene` background colour).
+  `useViewCommands`. Background colour stays on its existing Scene surfaces
+  (`panel.workspace.ctxmenu.scene`), intentionally not duplicated here.

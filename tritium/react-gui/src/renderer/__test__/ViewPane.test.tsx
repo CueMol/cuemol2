@@ -56,17 +56,15 @@ function makeProps(cm: ReturnType<typeof makeCm>) {
         collapsed: false,
         viewProjection: false as boolean | null,
         viewCenterMark: 'crosshair' as const,
-        sceneBgColor: 'white' as const,
         onSetPerspective: vi.fn(),
         onSetCenterMark: vi.fn(),
-        onSetBgColor: vi.fn(),
     }
 }
 
-/** Find a Field row by its label text. */
+/** Find a FieldGrid row by its label text. */
 function fieldRow(container: HTMLElement, label: string): HTMLElement {
-    const row = Array.from(container.querySelectorAll('.h3-form-field-row')).find(
-        (r) => r.querySelector('.h3-form-field-label')?.textContent === label,
+    const row = Array.from(container.querySelectorAll('.h3-form-grid-row')).find(
+        (r) => r.querySelector('.h3-form-grid-label')?.textContent === label,
     )
     if (!row) throw new Error(`field row not found: ${label}`)
     return row as HTMLElement
@@ -126,7 +124,7 @@ describe('ViewPane', () => {
         expect(props.onSetPerspective).toHaveBeenCalledWith(true)
     })
 
-    it('routes Center mark / Background selects through the threaded callbacks', () => {
+    it('routes the Center mark select through the threaded callback', () => {
         const cmSel = view.container.querySelector(
             'select[aria-label="Center mark"]',
         ) as HTMLSelectElement
@@ -135,14 +133,11 @@ describe('ViewPane', () => {
             cmSel.dispatchEvent(new Event('change', { bubbles: true }))
         })
         expect(props.onSetCenterMark).toHaveBeenCalledWith('axis')
+    })
 
-        const bgSel = view.container.querySelector(
-            'select[aria-label="Background colour"]',
-        ) as HTMLSelectElement
-        act(() => {
-            bgSel.value = 'black'
-            bgSel.dispatchEvent(new Event('change', { bubbles: true }))
-        })
-        expect(props.onSetBgColor).toHaveBeenCalledWith('black')
+    it('does not surface a Background control (Scene property, not View)', () => {
+        expect(
+            view.container.querySelector('select[aria-label="Background colour"]'),
+        ).toBeNull()
     })
 })
