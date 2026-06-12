@@ -164,7 +164,6 @@ void DisplayList::startLines()
     m_nDrawMode = DRAWMODE_LINES;
     m_vertLineWidth = -1.0;
     m_bVertStipple = false;
-    m_bSetColor = false;
 }
 
 void DisplayList::startLineStrip()
@@ -176,7 +175,6 @@ void DisplayList::startLineStrip()
     m_nDrawMode = DRAWMODE_LINESTRIP;
     m_vertLineWidth = -1.0;
     m_bVertStipple = false;
-    m_bSetColor = false;
 }
 
 void DisplayList::startTriangles()
@@ -269,6 +267,10 @@ bool DisplayList::recordStart()
     m_mesh.clear();
 
     m_fValid = false;
+    // Reset per-recording color tracking. Lines fall back to the outer
+    // DisplayContext uniform color unless render() calls color() (see
+    // createLineObj / m_bSetColor).
+    m_bSetColor = false;
 
     clearMatStack();
 

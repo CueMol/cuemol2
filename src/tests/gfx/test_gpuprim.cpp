@@ -6,7 +6,9 @@
 
 #include "gfx/GpuPrim.hpp"
 #include "gfx/DisplayContext.hpp"
+#include "gfx/DisplayList.hpp"
 #include "gfx/ShaderObject.hpp"
+#include "gfx/SolidColor.hpp"
 #include "gfx/AbstDrawAttrs.hpp"
 #include "gfx/DrawAttrArray.hpp"
 #include "gfx/DrawAttrElems.hpp"
@@ -533,4 +535,50 @@ TEST(DisplayContextAllocBuffer, ZeroIndSkipsIndAllocation)
     dc.allocBuffer(arr, 8, 0);
     EXPECT_EQ(arr.getSize(), 8);
     EXPECT_NE(arr.getData(), nullptr);
+}
+
+// ---- DisplayList line color tracking ----
+//
+// A renderer bakes a single line color by calling color() once before
+// startLines() (e.g. AtomIntrRenderer simple/dashed mode). startLines() must
+// NOT discard that color: the built LineGpuPrim has to use the recorded
+// per-vertex colors. If it falls back to uniform color, the line picks up the
+// outer context's current (unrelated) color and renders wrong on first draw.
+// The m_bSetColor flag is therefore reset per recording (recordStart), not per
+// line block (startLines).
+
+class DisplayListLineColorTest : public ::testing::Test
+{
+protected:
+    MockDisplayContext dc;
+    gfx::DisplayList dl;
+
+    // Record one line segment, then build the GpuPrim on the mock context.
+    void recordOneLine(bool bSetColor)
+    {
+        dl.recordStart();
+        if (bSetColor) dl.color(gfx::SolidColor::createRGB(1.0, 1.0, 0.0));
+        dl.startLines();
+        dl.vertex(qlib::Vector4D(0, 0, 0));
+        dl.vertex(qlib::Vector4D(1, 0, 0));
+        dl.end();
+        dl.recordEnd();
+        dl.callDisplayListImpl(&dc);
+    }
+};
+
+// color() before startLines() -> recorded vertex colors are used.
+TEST_F(DisplayListLineColorTest, ColorBeforeStartLinesUsesVertColor)
+{
+    recordOneLine(true);
+    ASSERT_NE(dl.getLineObj(), nullptr);
+    EXPECT_TRUE(dl.getLineObj()->isUseVertColor());
+}
+
+// No color() at all -> uniform (outer context) color path is preserved.
+TEST_F(DisplayListLineColorTest, NoColorUsesUniformColor)
+{
+    recordOneLine(false);
+    ASSERT_NE(dl.getLineObj(), nullptr);
+    EXPECT_FALSE(dl.getLineObj()->isUseVertColor());
 }
