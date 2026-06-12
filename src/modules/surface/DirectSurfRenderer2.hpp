@@ -12,6 +12,8 @@
 #include <gfx/TrigGpuPrim.hpp>
 #include <modules/molstr/MolRenderer.hpp>
 
+#include <vector>
+
 class DirectSurfRenderer2_wrap;
 
 namespace qsys { class ScalarObject; }
@@ -75,6 +77,19 @@ namespace surface {
     /// Build and upload the GPU triangle primitive directly from the mesh
     /// cache (bypasses the gfx::Mesh / display-list intermediates).
     void buildGpuMesh(DisplayContext *pdc);
+
+    /// Compute per-vertex device colours and the showsel visibility mask.
+    /// Fills vidmap (compacted index, or -1 if hidden) and vcol (device
+    /// colour), and returns the number of shown vertices. Shared by
+    /// buildGpuMesh and updateGpuColors so the vertex order stays identical.
+    int computeShownColors(std::vector<int> &vidmap, std::vector<quint32> &vcol);
+
+    /// Rewrite only the colours of the existing GPU primitive in place.
+    /// Returns false when a full rebuild is required (e.g. visibility changed).
+    bool updateGpuColors();
+
+    /// Drop the GPU primitive only (keeps the CPU mesh cache m_verts/m_faces).
+    void invalidateGpuMesh();
 
     /// VDW radius for an atom from the element-keyed radius properties.
     double getVdwRadius(MolAtomPtr pAtom) const;
@@ -224,7 +239,10 @@ namespace surface {
     SelectionPtr getShowSel() const { return m_pShowSel; }
     void setShowSel(SelectionPtr pNewSel) {
       m_pShowSel = pNewSel;
-      invalidateDisplayCache();
+      // Visibility (drawn subset) changes -> rebuild the GPU primitive, but
+      // keep the surface geometry cache (no distance-field recompute).
+      invalidateGpuMesh();
+      super_t::invalidateDisplayCache();
     }
 
     ////////////////////////////////
@@ -250,6 +268,8 @@ namespace surface {
     gfx::TrigGpuPrim m_trigGpuPrim;
     bool m_bCheckShaderOK;
     bool m_bUseShader;
+    /// True when only colours changed: refresh GPU colours in place, keep geom.
+    bool m_bColorDirty;
 
   private:
     MolCoordPtr resolveMolIDImpl(const LString &name);

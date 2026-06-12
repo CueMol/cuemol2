@@ -43,6 +43,7 @@ DirectSurfRenderer2::DirectSurfRenderer2()
 
   m_bCheckShaderOK = false;
   m_bUseShader = false;
+  m_bColorDirty = false;
 }
 
 DirectSurfRenderer2::~DirectSurfRenderer2()
@@ -63,8 +64,17 @@ const char *DirectSurfRenderer2::getTypeName() const
 
 void DirectSurfRenderer2::invalidateMeshCache()
 {
+  // Geometry changed: drop the GPU primitive and the CPU mesh cache so the
+  // surface is fully recomputed.
+  invalidateGpuMesh();
   m_verts.destroy();
   m_faces.destroy();
+}
+
+void DirectSurfRenderer2::invalidateGpuMesh()
+{
+  m_trigGpuPrim.invalidate();
+  m_bColorDirty = false;
 }
 
 double DirectSurfRenderer2::getVdwRadius(MolAtomPtr pAtom) const
@@ -166,9 +176,19 @@ void DirectSurfRenderer2::display(DisplayContext *pdc)
   }
 
   if (!m_trigGpuPrim.isValid()) {
+    // Full (re)build: geometry + colors.
     buildGpuMesh(pdc);
+    m_bColorDirty = false;
     if (!m_trigGpuPrim.isValid())
       return; // nothing to draw
+  }
+  else if (m_bColorDirty) {
+    // Color-only change: rewrite colors in place; rebuild if topology moved.
+    if (!updateGpuColors())
+      buildGpuMesh(pdc);
+    m_bColorDirty = false;
+    if (!m_trigGpuPrim.isValid())
+      return;
   }
 
   preRender(pdc);
@@ -179,8 +199,11 @@ void DirectSurfRenderer2::display(DisplayContext *pdc)
 
 void DirectSurfRenderer2::invalidateDisplayCache()
 {
+  // Color/appearance change: keep the GPU geometry and refresh only the
+  // vertex colors in place on the next draw. Geometry changes drop the
+  // primitive via invalidateMeshCache(); visibility via setShowSel().
+  m_bColorDirty = true;
   super_t::invalidateDisplayCache();
-  m_trigGpuPrim.invalidate();
 }
 
 void DirectSurfRenderer2::unloading()
@@ -189,19 +212,13 @@ void DirectSurfRenderer2::unloading()
   super_t::unloading();
 }
 
-void DirectSurfRenderer2::buildGpuMesh(DisplayContext *pdc)
+int DirectSurfRenderer2::computeShownColors(std::vector<int> &vidmap,
+                                            std::vector<quint32> &vcol)
 {
   MolCoordPtr pmol = getClientMol();
-
-  int nverts = m_verts.size();
-  int nfaces = m_faces.size();
-  if (nverts==0||nfaces==0) {
-    buildMeshCache();
-    nverts = m_verts.size();
-    nfaces = m_faces.size();
-  }
-  if (nverts==0||nfaces==0)
-    return;
+  const int nverts = m_verts.size();
+  vidmap.resize(nverts);
+  vcol.resize(nverts);
 
   const qlib::uid_t nSceneID = getSceneID();
 
@@ -220,11 +237,8 @@ void DirectSurfRenderer2::buildGpuMesh(DisplayContext *pdc)
       LOG_DPRINTLN("MolSurfRend> \"%s\" is not a scalar object.", m_sTgtElePot.c_str());
   }
 
-  // Pass 1: decide shown vertices (showsel mask), assign compact indices and
-  // resolve per-vertex device colors. Same logic/order as render().
-  std::vector<int> vidmap(nverts);
-  std::vector<quint32> vcol(nverts);
-
+  // Decide shown vertices (showsel mask), assign compact indices and resolve
+  // per-vertex device colors. Same logic/order as render().
   gfx::ColorPtr pcol = getDefaultColor();
   quint32 curDev = pcol->getDevCode(nSceneID);
 
@@ -265,7 +279,29 @@ void DirectSurfRenderer2::buildGpuMesh(DisplayContext *pdc)
     vcol[i] = curDev;
     ++j;
   }
-  const int nv2 = j;
+
+  // finalize the coloring scheme
+  getColSchm()->end();
+  pmol->getColSchm()->end();
+
+  return j;
+}
+
+void DirectSurfRenderer2::buildGpuMesh(DisplayContext *pdc)
+{
+  int nverts = m_verts.size();
+  int nfaces = m_faces.size();
+  if (nverts==0||nfaces==0) {
+    buildMeshCache();
+    nverts = m_verts.size();
+    nfaces = m_faces.size();
+  }
+  if (nverts==0||nfaces==0)
+    return;
+
+  std::vector<int> vidmap;
+  std::vector<quint32> vcol;
+  const int nv2 = computeShownColors(vidmap, vcol);
 
   // Count shown faces (all three vertices visible)
   int nf2 = 0;
@@ -276,11 +312,8 @@ void DirectSurfRenderer2::buildGpuMesh(DisplayContext *pdc)
       ++nf2;
   }
 
-  if (nv2==0||nf2==0) {
-    getColSchm()->end();
-    pmol->getColSchm()->end();
+  if (nv2==0||nf2==0)
     return;
-  }
 
   // Fill the GPU primitive directly (no gfx::Mesh / GrowMesh intermediates).
   m_trigGpuPrim.alloc(pdc, nv2, nf2);
@@ -304,10 +337,30 @@ void DirectSurfRenderer2::buildGpuMesh(DisplayContext *pdc)
   }
 
   m_trigGpuPrim.setUpdated(true);
+}
 
-  // finalize the coloring scheme
-  getColSchm()->end();
-  pmol->getColSchm()->end();
+bool DirectSurfRenderer2::updateGpuColors()
+{
+  if (!m_trigGpuPrim.isValid())
+    return false;
+
+  std::vector<int> vidmap;
+  std::vector<quint32> vcol;
+  const int nv2 = computeShownColors(vidmap, vcol);
+
+  // If the shown-vertex count no longer matches the allocated primitive, the
+  // visibility/topology changed --> caller falls back to a full rebuild.
+  if (nv2 != m_trigGpuPrim.getVertexSize())
+    return false;
+
+  const int nverts = (int) vidmap.size();
+  for (int i=0; i<nverts; ++i) {
+    const int vj = vidmap[i];
+    if (vj<0) continue;
+    m_trigGpuPrim.setColor(vj, vcol[i]);
+  }
+  m_trigGpuPrim.setUpdated(true);
+  return true;
 }
 
 void DirectSurfRenderer2::preRender(DisplayContext *pdc)
