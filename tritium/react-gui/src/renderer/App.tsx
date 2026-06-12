@@ -49,6 +49,7 @@ import { useCommandRegistrations } from "./hooks/useCommandRegistrations";
 import { useRecentFiles } from "./hooks/useRecentFiles";
 import { useCommands } from "./commands/CommandRegistry";
 import { CmdId } from "./commands/ids";
+import type { ViewCenterMark } from "../shared/ipcTypes";
 import { useCueMolBusy } from "./hooks/useCueMolBusy";
 import { useShowConfirmCloseTabDialog } from "./components/dialogs/ConfirmCloseTabDialogProvider";
 import { useRenderConfig } from "./contexts/RenderConfigContext";
@@ -306,6 +307,22 @@ const App: React.FC = () => {
     onBgColorChanged,
   } = useActiveViewState({ cm, activeMolViewId, getActiveSceneInfo });
 
+  // --- View pane (Projection section) writers ---
+  // Route through the existing view/scene commands so useActiveViewState (and
+  // the native menu) remain the single source of truth for these attributes.
+  const handleSetPerspective = useCallback((perspective: boolean) => {
+    dispatchCommand(perspective ? CmdId.ViewPerspective : CmdId.ViewOrthographic)
+      .catch((err: unknown) => console.warn("set perspective failed:", err));
+  }, [dispatchCommand]);
+
+  const handleSetCenterMark = useCallback((mark: ViewCenterMark) => {
+    const cmd =
+      mark === "crosshair" ? CmdId.ViewCenterMarkCross
+      : mark === "axis" ? CmdId.ViewCenterMarkAxis
+      : CmdId.ViewCenterMarkNone;
+    dispatchCommand(cmd).catch((err: unknown) => console.warn("set center mark failed:", err));
+  }, [dispatchCommand]);
+
   // --- All command handlers + Electron IPC bridge ---
   useCommandRegistrations({
     cm,
@@ -346,11 +363,11 @@ const App: React.FC = () => {
   // --- Derived sidebar sub-panel state ---
 
   const viewSizes = layout.viewSizes ?? {
-    explorer: [220, 240],
+    explorer: [220, 240, 260],
     selection: [260, 180],
   };
   const viewCollapsed = layout.viewCollapsed ?? {
-    explorer: { scene: false, color: false },
+    explorer: { scene: false, color: false, view: false },
     selection: { mol: false, selection: false },
   };
 
@@ -412,6 +429,10 @@ const App: React.FC = () => {
                     cm={cm}
                     activeSceneId={activeSceneId}
                     activeMolViewId={activeMolViewId}
+                    viewProjection={viewProjection}
+                    viewCenterMark={viewCenterMark}
+                    onSetPerspective={handleSetPerspective}
+                    onSetCenterMark={handleSetCenterMark}
                     {...sceneController}
                     viewSizes={viewSizes}
                     viewCollapsed={viewCollapsed}

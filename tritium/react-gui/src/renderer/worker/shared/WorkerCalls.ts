@@ -320,6 +320,14 @@ import type {
   ViewProjectionResult,
 } from '../server/services/viewProjection.service'
 import type {
+  GetViewXformArgs,
+  ViewXformResult,
+  SetViewXformArgs,
+  SetViewXformResult,
+  RotateViewArgs,
+  RotateViewResult,
+} from '../server/services/viewXform.service'
+import type {
   ListSceneObjectsArgs,
   ListSceneObjectsResult,
 } from '../server/services/listSceneObjects.service'
@@ -533,6 +541,9 @@ export interface ServiceMap {
   setViewProjection:          { args: ViewProjectionArgs;              result: ViewProjectionResult }
   getViewCenterMark:          { args: ViewCenterMarkArgs;              result: ViewCenterMarkResult }
   setViewCenterMark:          { args: ViewCenterMarkArgs;              result: ViewCenterMarkResult }
+  getViewXform:               { args: GetViewXformArgs;                result: ViewXformResult }
+  setViewXform:               { args: SetViewXformArgs;                result: SetViewXformResult }
+  rotateView:                 { args: RotateViewArgs;                  result: RotateViewResult }
   naviHitTest:                { args: NaviHitTestArgs;                 result: NaviHitTestResult }
   naviClickAtom:              { args: NaviClickAtomArgs;               result: NaviClickAtomResult }
   naviResidSel:               { args: NaviResidSelArgs;                result: NaviResidSelResult }

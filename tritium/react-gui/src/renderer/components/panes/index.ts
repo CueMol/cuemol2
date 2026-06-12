@@ -31,6 +31,7 @@
 
 export { ScenePane } from "./ScenePane";
 export { ColorPane } from "./ColorPane";
+export { ViewPane } from "./ViewPane";
 export { MolStructPane } from "./MolStructPane";
 export { SelectionPane } from "./SelectionPane";
 export { SymmetryPane } from "./SymmetryPane";
