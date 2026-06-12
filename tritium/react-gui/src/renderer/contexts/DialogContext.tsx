@@ -37,6 +37,7 @@ import { MolSuperposeDialogProvider } from '../components/dialogs/MolSuperposeDi
 import { ErrorAlertDialogProvider } from '../components/dialogs/ErrorAlertDialogProvider'
 import { EditCameraVisFlagsDialogProvider } from '../components/dialogs/EditCameraVisFlagsDialogProvider'
 import { EditInteractionListDialogProvider } from '../components/dialogs/EditInteractionListDialogProvider'
+import { StyleEditorDialogProvider } from '../components/dialogs/StyleEditorDialogProvider'
 import { composeProviders } from './composeProviders'
 
 export const DialogProvider = composeProviders([
@@ -67,4 +68,5 @@ export const DialogProvider = composeProviders([
   ErrorAlertDialogProvider,
   EditCameraVisFlagsDialogProvider,
   EditInteractionListDialogProvider,
+  StyleEditorDialogProvider,
 ])

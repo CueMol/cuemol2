@@ -14,6 +14,7 @@ import { useShowApplyRendStyleDialog } from '../components/dialogs/ApplyRendStyl
 import { useShowCreateRendStyleDialog } from '../components/dialogs/CreateRendStyleDialogProvider'
 import { useShowEditCameraVisFlagsDialog } from '../components/dialogs/EditCameraVisFlagsDialogProvider'
 import { useShowEditInteractionListDialog } from '../components/dialogs/EditInteractionListDialogProvider'
+import { useShowStyleEditorDialog } from '../components/dialogs/StyleEditorDialogProvider'
 import type { RendererOptions } from '../components/fopen-opt-dlgs/types'
 import { buildSceneCtxPayload, nodeMenuLabel } from './sceneContextMenu/buildSceneCtxPayload'
 import { dispatchSceneCtxAction } from './sceneContextMenu/dispatchSceneCtxAction'
@@ -123,6 +124,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
     const showCreateRendStyle = useShowCreateRendStyleDialog()
     const showEditCameraVisFlags = useShowEditCameraVisFlagsDialog()
     const showEditInteractionList = useShowEditInteractionListDialog()
+    const showStyleEditor = useShowStyleEditorDialog()
 
     // Shared "New Camera..." flow — also reused by the toolbar Add button.
     // Mirrors UXP `onNewCmd` dispatch (camera / cameraRoot branch).
@@ -225,7 +227,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                 if (!multiAction) return
                 await dispatchSceneCtxAction(node, multiAction, {
                     ...opts,
-                    showTextPrompt, showApplyRendStyle, showCreateRendStyle, showEditCameraVisFlags, showEditInteractionList,
+                    showTextPrompt, showApplyRendStyle, showCreateRendStyle, showEditCameraVisFlags, showEditInteractionList, showStyleEditor,
                     openNewRendererFlow, openNewCameraFlow,
                 })
                 return
@@ -239,13 +241,13 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
             if (!action) return
             await dispatchSceneCtxAction(node, action, {
                 ...opts,
-                showTextPrompt, showApplyRendStyle, showCreateRendStyle, showEditCameraVisFlags, showEditInteractionList,
+                showTextPrompt, showApplyRendStyle, showCreateRendStyle, showEditCameraVisFlags, showEditInteractionList, showStyleEditor,
                 openNewRendererFlow, openNewCameraFlow,
             })
         },
         [
             cm, sceneId, opts, selectedIds, bulkSetNodeVisible, bulkDeleteNodes,
-            showTextPrompt, showApplyRendStyle, showCreateRendStyle, showEditCameraVisFlags, showEditInteractionList,
+            showTextPrompt, showApplyRendStyle, showCreateRendStyle, showEditCameraVisFlags, showEditInteractionList, showStyleEditor,
             openNewRendererFlow, openNewCameraFlow,
         ],
     )

@@ -26,6 +26,7 @@ import type { EditCameraVisFlagsDialogArgs } from '../../components/dialogs/Edit
 import type { EditCameraVisFlagsDialogResult } from '../../components/dialogs/EditCameraVisFlagsDialog'
 import type { EditInteractionListDialogArgs } from '../../components/dialogs/EditInteractionListDialogProvider'
 import type { EditInteractionListDialogResult } from '../../components/dialogs/EditInteractionListDialog'
+import type { StyleEditorDialogArgs } from '../../components/dialogs/StyleEditorDialogProvider'
 import { runObjectSaveFlow } from './runObjectSaveFlow'
 
 export interface DispatchSceneCtxActionCtx {
@@ -106,6 +107,7 @@ export interface DispatchSceneCtxActionCtx {
     showEditInteractionList: (
         args: EditInteractionListDialogArgs,
     ) => Promise<EditInteractionListDialogResult | null>
+    showStyleEditor: (args: StyleEditorDialogArgs) => Promise<void>
 
     // Shared sub-flows reused by toolbar Add button.
     openNewRendererFlow: (node: SceneTreeNode) => Promise<void>
@@ -354,6 +356,17 @@ export async function dispatchSceneCtxAction(
             const scope = styleInfo?.scopeId
             if (scope === undefined) return
             await ctx.toggleStyleSetReadOnly(node.id, scope)
+            return
+        }
+        case 'editStyle': {
+            if (node.type !== 'style') return
+            if (ctx.sceneId === undefined) return
+            await ctx.showStyleEditor({
+                styleSetId: node.id,
+                scopeId: styleInfo?.scopeId ?? 0,
+                sceneId: ctx.sceneId,
+                styleName: node.name,
+            })
             return
         }
         case 'styleLoad': {

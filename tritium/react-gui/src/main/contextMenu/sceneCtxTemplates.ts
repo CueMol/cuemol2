@@ -297,6 +297,7 @@ function buildStyleNodeMenu(
             ],
         },
         { type: 'separator' },
+        { label: 'Edit…', click: action({ kind: 'editStyle' }) },
         {
             label: 'Read-only',
             type: 'checkbox',
