@@ -16,6 +16,7 @@
 import React from "react";
 import { AccordionSection, AccordionGroup } from "./AccordionSection";
 import { RendererCommonSection } from "./RendererCommonSection";
+import { ObjectCommonSection } from "./ObjectCommonSection";
 import {
   DUMMY_SECTION,
   getRendererPropSections,
@@ -31,6 +32,11 @@ interface PropertiesTabProps {
   entries: GenericPropEntry[];
   /** Renderer `type_name` used to resolve type-specific sections. */
   rendererType: string;
+  /**
+   * When the inspected node is an Object (not a renderer), show the
+   * object-common page (`ObjectCommonSection`) instead of the renderer page.
+   */
+  isObject?: boolean;
   /** Write a property value (live-apply). `opts` carries realtime-drag info. */
   onSet: (
     key: string,
@@ -51,12 +57,31 @@ interface PropertiesTabProps {
 export const PropertiesTab: React.FC<PropertiesTabProps> = ({
   entries,
   rendererType,
+  isObject,
   onSet,
   onSetMany,
   onReset,
   sceneId,
   nodeId,
 }) => {
+  // Object targets get the object-common page only (UXP object-propdlg
+  // "Common" tab); there are no object-type-specific sections.
+  if (isObject) {
+    return (
+      <div className="insp-properties-tab">
+        <AccordionGroup initialOpen="Basic settings">
+          <ObjectCommonSection
+            entries={entries}
+            onSet={onSet}
+            onReset={onReset}
+            sceneId={sceneId}
+            nodeId={nodeId}
+          />
+        </AccordionGroup>
+      </div>
+    );
+  }
+
   // Show the renderer-type-specific sections when this type has been ported
   // (e.g. `simple`). For not-yet-ported types fall back to a single collapsed
   // placeholder so the "Common + specific" layout is still visible end-to-end.
