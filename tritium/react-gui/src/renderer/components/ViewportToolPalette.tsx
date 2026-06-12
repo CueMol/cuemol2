@@ -23,6 +23,7 @@ import React from "react";
 import { Popover, Tooltip } from "@blueprintjs/core";
 import { AppIcon } from "./AppIcon";
 import { MeasureOptionsPopover } from "./MeasureOptionsPopover";
+import { BondEditOptionsPopover } from "./BondEditOptionsPopover";
 import { useTheme } from "../contexts/ThemeContext";
 import {
   TOOLS,
@@ -71,6 +72,24 @@ export const ViewportToolPalette: React.FC<Props> = ({
                   aria-label="Measure options"
                   aria-haspopup="dialog"
                   title="Measure options"
+                >
+                  <AppIcon name="ui.properties" size="sm" aria-hidden />
+                  <AppIcon name="ui.caretDown" size="sm" className="cap-caret" aria-hidden />
+                </button>
+              </Popover>
+            )}
+            {cat === "edit" && (
+              <Popover
+                placement="right-start"
+                portalClassName={theme === "dark" ? "bp5-dark" : ""}
+                content={<BondEditOptionsPopover />}
+              >
+                <button
+                  type="button"
+                  className="tool-options-cap"
+                  aria-label="Bond editor options"
+                  aria-haspopup="dialog"
+                  title="Bond editor options"
                 >
                   <AppIcon name="ui.properties" size="sm" aria-hidden />
                   <AppIcon name="ui.caretDown" size="sm" className="cap-caret" aria-hidden />

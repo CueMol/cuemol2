@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-06-12 (`dialog.tool.bond-edit` review: UXP "Mol bond editor" (`tools/bond-edit-dlg`) を **非モーダル**で実装 — モーダルの「ダイアログを横にどけて atom ID editbox に pick 結果を入れる」悪い UX を廃し、measure ツール (ADR-0023) を踏襲した viewport 編集ツールに置換。追加は palette の `edit` グループの "Add Bond" ツール: `useBondEditClickHandler` -> `bondEditPick` worker service が pick を蓄積し、2 原子目 (同一分子) で `MolAnlManager.makeBond` を "Add bond" undo txn 内で実行 (同一分子 + 自己結合ガードは worker 側で強制、C++ は両方非強制)。削除/一覧は tool-options popover (`BondEditOptionsPopover`) に measure cap を踏襲して配置 — `getNostdBondsJSON` 一覧 + 行 Delete -> `removeBond` (複数は 1 undo step)、topology イベント購読で同期。crosshair は `DistPickDrawObj` 流用 (新規 C++ なし)、単結合のみ (parity)。worker-service test 10 件追加。tool_dlgs todo 8->7 / review 5->6、Total todo 34->33 / review 7->8、split 23->24 / unassigned 34->33。ADR-0024)
 - Updated: 2026-06-12 (`dialog.exportpng-opt` done: E2E 確認済み。UXP-parity flow (シーン名 default / file-save 先行 / live view size seeding / DPI) + off-screen export の黒画像修正 (常に最高 jitter SS + RGBA16F->RGBA8 resolve、WebGL read-back 対応) を実機確認。other_dlgs review 2->1 / done 6->7、Total review 8->7 / done 55->56)
 - Updated: 2026-06-11 (`dialog.exportpng-opt` review: UXP "PNG options" (`exportpng-opt-dlg`) を Blueprint modal として実装。h3-kit/form (Resolution DPI `SelectField` + Width/Height `NumericField` + unit `SelectField` mm/cm/inch/pixel + Retain-aspect / Transparent `SwitchField`)。pixel を source of truth とし物理サイズは純関数 `exportPngSize` (toPixels/fromPixels) で換算 (unit test 6 件)。File メニューの `ExportImage` flow に挿入し、file-save dialog の前で options を取得して既存 `exportImage` worker service に width/height/alpha を渡す (従来は 1024x768 固定)。初期サイズは 1024x768 (live view size seeding は follow-up)。other_dlgs todo 8->7 / review 1->2、Total todo 35->34 / review 7->8、direct 26->27)
 - Updated: 2026-06-11 (cross-category reconciliation: 既実装/対象外の 9 行を是正。`overlay.fopen-mmcifopt` -> merged/done (FileOpenOptionDialog の mmCIF options)、`overlay.coloring-deck-{bfac,cpk,elepot,paint,rainbow}` -> merged/wip (ColorPane の各 deck = `panel.coloring.deck.*`)、`overlay.propeditor-radii-common` -> merged/done (CPK の Atom radii section)、`widget.numslider` -> merged/done (form-kit `NumericField`/`DragNumericField`)、`panel.anim` -> wip (`AnimationPanel.tsx`、BottomPanel に mount 済)、`other.hidden-window` / `other.mybrowser` -> dropped/done (XUL infra、Electron 等価なし)。Total done 50->55 / wip 29->35 / todo 46->35、merged 34->42 / split 22->23 / dropped 4->6 / unassigned 46->35。Overlay todo 12->5、Custom Widget todo 9->8、Panel todo 4->3、Other todo 3->1)
@@ -60,11 +61,11 @@
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 15 | 13 | 1 | 0 | 1 | 0 |
 | Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 7 | 3 | 1 | 7 | 0 |
-| Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 8 | 0 | 5 | 8 | 0 |
+| Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 8 | 0 | 6 | 7 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 3 | 2 | 0 | 8 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 16 | 7 | 0 | 5 | 0 |
 | Other | [other.md](other.md) | 4 | 2 | 1 | 0 | 1 | 0 |
-| **Total** | | **132** | **56** | **35** | **7** | **34** | **0** |
+| **Total** | | **132** | **56** | **35** | **8** | **33** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -94,10 +95,10 @@
 |---------|------:|
 | 1:1 (`direct`) | 27 |
 | merged | 42 |
-| split | 23 |
+| split | 24 |
 | redesign | 0 |
 | deprecated (`dropped`) | 6 |
-| *(not yet assigned)* | 34 |
+| *(not yet assigned)* | 33 |
 
 ---
 
@@ -117,6 +118,7 @@
 | [`dialog.tool.mol-merge`](tool_dlgs.md#dialogtoolmol-merge) | `MergeMolDialog` / `useToolCommands` / `mergeMol.service` | h3-kit/form modal (From ObjectSelect+MolSelList / To ObjectSelect / Copy switch). OK -> `MolAnlManager.copyAtoms` (+ `deleteAtoms` on move) under "Merge molecule" undo txn with whole-txn rollback. Self-merge blocked. Edit > Merge molecule. Awaiting E2E sign-off |
 | [`dialog.tool.chg-resindex`](tool_dlgs.md#dialogtoolchg-resindex) | `ChangeResidueIndexDialog` / `resIndexInput` / `useToolCommands` / `changeResidueIndex.service` | h3-kit/form modal (ObjectSelect + MolSelList + Shift/Start segment + value + Renumber switch). OK -> `MolAnlManager.renumResIndex`/`shiftResIndex` under "Change residue index" undo txn. Edit > Change residue number. Start > 4 digits -> PDB confirm. Awaiting E2E sign-off |
 | [`dialog.tool.chg-chname`](tool_dlgs.md#dialogtoolchg-chname) | `ChangeChainIdDialog` / `chainNameInput` / `useToolCommands` / `changeChainName.service` | h3-kit/form 製の Change chain ID modal。`MolAnlManager.changeChainName` を undo txn で実行。Edit メニューから起動。空白入力 -> blank chain "_" (confirm)、1 文字超 -> PDB 非準拠 confirm (Blueprint `Alert`)、前回分子は in-session 保持。confirm/blank 追加分の re-verify 待ち |
+| [`dialog.tool.bond-edit`](tool_dlgs.md#dialogtoolbond-edit) | `bondEdit` tool / `useBondEditClickHandler` / `BondEditOptionsPopover` / `bondEdit.service` | Viewport edit tool (not modal): add bond by in-viewport 2-atom pick -> `MolAnlManager.makeBond` under "Add bond" undo txn (same-molecule + self-bond guards in worker); non-standard bond list/remove in the tool-options popover (`getNostdBondsJSON` / `removeBond`, topology-event synced). Single-bond only. Crosshair reuses `DistPickDrawObj`. ADR-0024. Awaiting E2E sign-off |
 | [`other.cuemol2`](other.md#othercuemol2) | `App` / `ContentArea` / `TabBar` / `SidePanel` / `BottomPanel` / `StatusBar` / `ConfirmCloseTabDialog` / `useWindowCloseHandler` | Main window layout (panels, tab view, status bar) + window-close/quit funnel wired (cmd-Q + close button share one confirm funnel, ADR-0016 supersedes ADR-0010). Canvas lifecycle: ADR-0011 |
 | [`widget.molsellist`](custom_widgets.md) | `MolSelList` (`h3-kit/MolSelList/`) | First consumer wired in `RendererOptionsPane` (file-open dialog); editable `InputGroup` + chevron-only `HTMLSelect` (OS-native dropdown listbox with `<optgroup>` Preset / History / Scene / Global); history via `localStorage`; worker services `getSelDefs` / `validateSelection` added |
 | [`widget.sidepanelholder`](custom_widgets.md) | `SidePanel` | Collapsible/resizable side-panel host (Allotment) + per-view pane sets + size persistence; UXP user drag-drop panel reorder not ported (config-driven via `buildViewPaneConfigs`) |

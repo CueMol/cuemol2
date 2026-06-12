@@ -107,6 +107,43 @@
   color: var(--text-muted);
 }
 
+/* ----- Bond editor options popover (non-standard bond list / remove) ----- */
+.bondedit-options-popover {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 260px;
+  padding: var(--space-3);
+}
+
+.bondedit-bond-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.bondedit-bond-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.bondedit-bond-atoms {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-lg);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bondedit-bond-dash {
+  color: var(--text-muted);
+}
+
 .tool-btn {
   display: flex;
   align-items: center;

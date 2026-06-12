@@ -7,13 +7,16 @@ import { TOOLS } from "../data/viewportTools";
 import type { ToolId } from "../data/viewportTools";
 
 // The palette reads the theme (for the options popover portal) and embeds the
-// measure options popover (which pulls in worker hooks). Stub both: this suite
-// only exercises the tool buttons, not the popover content.
+// measure / bond-edit options popovers (which pull in worker hooks). Stub them
+// all: this suite only exercises the tool buttons, not the popover content.
 vi.mock("../contexts/ThemeContext", () => ({
   useTheme: () => ({ theme: "dark" }),
 }));
 vi.mock("../components/MeasureOptionsPopover", () => ({
   MeasureOptionsPopover: () => null,
+}));
+vi.mock("../components/BondEditOptionsPopover", () => ({
+  BondEditOptionsPopover: () => null,
 }));
 
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;

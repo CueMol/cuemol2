@@ -71,6 +71,12 @@ import type {
   MeasureListTargetsArgs, MeasureListTargetsResult,
 } from '../server/services/measure.service'
 import type {
+  BondEditPickArgs, BondEditPickResult,
+  BondEditResetArgs, BondEditResetResult,
+  BondEditListBondsArgs, BondEditListBondsResult,
+  BondEditRemoveBondArgs, BondEditRemoveBondResult,
+} from '../server/services/bondEdit.service'
+import type {
   RectSelectArgs, RectSelectResult,
 } from '../server/services/rectSelect.service'
 import type {
@@ -533,6 +539,10 @@ export interface ServiceMap {
   measurePick:                { args: MeasurePickArgs;                 result: MeasurePickResult }
   measureReset:               { args: MeasureResetArgs;                result: MeasureResetResult }
   measureListTargets:         { args: MeasureListTargetsArgs;          result: MeasureListTargetsResult }
+  bondEditPick:               { args: BondEditPickArgs;                result: BondEditPickResult }
+  bondEditReset:              { args: BondEditResetArgs;               result: BondEditResetResult }
+  bondEditListBonds:          { args: BondEditListBondsArgs;           result: BondEditListBondsResult }
+  bondEditRemoveBond:         { args: BondEditRemoveBondArgs;          result: BondEditRemoveBondResult }
   rectSelect:                 { args: RectSelectArgs;                  result: RectSelectResult }
   lassoSelect:                { args: LassoSelectArgs;                 result: LassoSelectResult }
   naviCenterAt:               { args: NaviCenterAtArgs;                result: { ok: boolean } }

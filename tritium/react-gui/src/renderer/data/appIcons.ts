@@ -50,6 +50,7 @@ import {
   GitBranch,
   Image,
   Lasso,
+  LineSegment,
   Lock,
   LockOpen,
   MagnifyingGlass,
@@ -118,6 +119,7 @@ export const APP_ICONS = {
   "tool.distance": { lib: "phosphor", Comp: Ruler },
   "tool.angle": { lib: "phosphor", Comp: Angle },
   "tool.torsion": { lib: "phosphor", Comp: ArrowsClockwise },
+  "tool.bondEdit": { lib: "phosphor", Comp: LineSegment },
 
   // Activity bar (rendered bold by the consumer).
   "activity.explorer": { lib: "phosphor", Comp: TreeStructure },
