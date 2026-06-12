@@ -1,6 +1,6 @@
 # ADR-0026: Camera visibility-flags editor — scene-tree enumerate + clear-rebuild apply
 
-- Status: accepted (implemented + unit-tested on branch; host E2E + PR pending)
+- Status: accepted (host E2E verified; PR pending)
 - Date: 2026-06-12
 - Mapping rows: [`dialog.tool.visflagset-edit`](../mapping/tool_dlgs.md#dialogtoolvisflagset-edit), [`panel.workspace.ctxmenu.camera`](../mapping/panels.md#panelworkspacectxmenucamera)
 

@@ -1,6 +1,6 @@
 # ADR-0027: Interaction-list editor — getDefsJSON contract and stable-index delete
 
-- Status: accepted (implemented + unit-tested on branch; host E2E + PR pending)
+- Status: accepted (host E2E verified; PR pending)
 - Date: 2026-06-12
 - Mapping rows: [`dialog.tool.aintr-edit`](../mapping/tool_dlgs.md#dialogtoolaintr-edit), [`panel.workspace.ctxmenu.renderer`](../mapping/panels.md#panelworkspacectxmenurenderer)
 

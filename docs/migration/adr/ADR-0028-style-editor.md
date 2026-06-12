@@ -1,6 +1,6 @@
 # ADR-0028: Style editor — 3-tab modal with live-applied style-set CRUD
 
-- Status: accepted (implemented + unit-tested on branch; host E2E + PR pending)
+- Status: accepted (host E2E verified; PR pending)
 - Date: 2026-06-12
 - Mapping rows: [`dialog.style-editor`](../mapping/other_dlgs.md#dialogstyle-editor), [`panel.workspace.ctxmenu.style`](../mapping/panels.md#panelworkspacectxmenustyle)
 
