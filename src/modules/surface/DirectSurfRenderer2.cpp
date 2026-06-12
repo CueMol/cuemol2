@@ -40,6 +40,9 @@ DirectSurfRenderer2::DirectSurfRenderer2()
 
   m_nMode = DS_MOLFANC;
   m_dRampVal = 1.4;
+
+  m_bCheckShaderOK = false;
+  m_bUseShader = false;
 }
 
 DirectSurfRenderer2::~DirectSurfRenderer2()
@@ -138,6 +141,173 @@ void DirectSurfRenderer2::buildMeshCache()
     m_verts.at(i) = bverts[i];
   for (int i=0; i<nfaces; ++i)
     m_faces.at(i) = bfaces[i];
+}
+
+void DirectSurfRenderer2::display(DisplayContext *pdc)
+{
+  // File (non-GL) export and non-fill draw modes (line/point) use the legacy
+  // display-list path (render() -> drawMesh).
+  if (pdc->isFile() || m_nDrawMode!=SFDRAW_FILL) {
+    super_t::display(pdc);
+    return;
+  }
+
+  if (!m_bCheckShaderOK) {
+    m_bUseShader = m_trigGpuPrim.init(pdc);
+    if (m_bUseShader)
+      MB_DPRINTLN("DirectSurfRend2> triangle shader OK");
+    m_bCheckShaderOK = true;
+  }
+
+  if (!m_bUseShader) {
+    // shader unavailable --> legacy path
+    super_t::display(pdc);
+    return;
+  }
+
+  if (!m_trigGpuPrim.isValid()) {
+    buildGpuMesh(pdc);
+    if (!m_trigGpuPrim.isValid())
+      return; // nothing to draw
+  }
+
+  preRender(pdc);
+  m_trigGpuPrim.setEdgeLineType(pdc->getEdgeLineType());
+  m_trigGpuPrim.draw(pdc);
+  postRender(pdc);
+}
+
+void DirectSurfRenderer2::invalidateDisplayCache()
+{
+  super_t::invalidateDisplayCache();
+  m_trigGpuPrim.invalidate();
+}
+
+void DirectSurfRenderer2::unloading()
+{
+  m_trigGpuPrim.invalidate();
+  super_t::unloading();
+}
+
+void DirectSurfRenderer2::buildGpuMesh(DisplayContext *pdc)
+{
+  MolCoordPtr pmol = getClientMol();
+
+  int nverts = m_verts.size();
+  int nfaces = m_faces.size();
+  if (nverts==0||nfaces==0) {
+    buildMeshCache();
+    nverts = m_verts.size();
+    nfaces = m_faces.size();
+  }
+  if (nverts==0||nfaces==0)
+    return;
+
+  const qlib::uid_t nSceneID = getSceneID();
+
+  // initialize the coloring scheme
+  getColSchm()->start(pmol, this);
+  pmol->getColSchm()->start(pmol, this);
+
+  // potential coloring mode: resolve scalar object (same as render())
+  qsys::ScalarObject *pScaObj = NULL;
+  if (m_nMode==DS_SCAPOT) {
+    if (!m_sTgtElePot.isEmpty()) {
+      qsys::ObjectPtr pobj = ensureNotNull(getScene())->getObjectByName(m_sTgtElePot);
+      pScaObj = dynamic_cast<qsys::ScalarObject*>(pobj.get());
+    }
+    if (pScaObj==NULL)
+      LOG_DPRINTLN("MolSurfRend> \"%s\" is not a scalar object.", m_sTgtElePot.c_str());
+  }
+
+  // Pass 1: decide shown vertices (showsel mask), assign compact indices and
+  // resolve per-vertex device colors. Same logic/order as render().
+  std::vector<int> vidmap(nverts);
+  std::vector<quint32> vcol(nverts);
+
+  gfx::ColorPtr pcol = getDefaultColor();
+  quint32 curDev = pcol->getDevCode(nSceneID);
+
+  int j = 0;
+  for (int i=0; i<nverts; ++i) {
+    MolAtomPtr pAtom;
+    int ind = m_verts[i].info;
+    if (ind>=0) {
+      pAtom = pmol->getAtom(ind);
+      if (!m_pShowSel->isEmpty() &&
+          !m_pShowSel->isSelected(pAtom)) {
+        vidmap[i] = -1;
+        continue; // not shown
+      }
+    }
+
+    if (m_nMode==DS_MOLFANC) {
+      if (!pAtom.isnull()) {
+        pcol = ColSchmHolder::getColor(pAtom);
+        curDev = pcol->getDevCode(nSceneID);
+      }
+    }
+    else if (m_nMode==DS_SCAPOT) {
+      bool res=false;
+      if (pScaObj!=NULL) {
+        Vector4D pos = m_verts[i].v3d();
+        Vector4D norm = m_verts[i].n3d();
+        if (m_bRampAbove)
+          res = getColorSca(pScaObj, pos + norm.scale(m_dRampVal), pcol);
+        else
+          res = getColorSca(pScaObj, pos, pcol);
+      }
+      if (res)
+        curDev = pcol->getDevCode(nSceneID);
+    }
+
+    vidmap[i] = j;
+    vcol[i] = curDev;
+    ++j;
+  }
+  const int nv2 = j;
+
+  // Count shown faces (all three vertices visible)
+  int nf2 = 0;
+  for (int i=0; i<nfaces; ++i) {
+    if (vidmap[m_faces[i].id1]>=0 &&
+        vidmap[m_faces[i].id2]>=0 &&
+        vidmap[m_faces[i].id3]>=0)
+      ++nf2;
+  }
+
+  if (nv2==0||nf2==0) {
+    getColSchm()->end();
+    pmol->getColSchm()->end();
+    return;
+  }
+
+  // Fill the GPU primitive directly (no gfx::Mesh / GrowMesh intermediates).
+  m_trigGpuPrim.alloc(pdc, nv2, nf2);
+
+  for (int i=0; i<nverts; ++i) {
+    const int vj = vidmap[i];
+    if (vj<0) continue;
+    m_trigGpuPrim.setVertex(vj, m_verts[i].v3d());
+    m_trigGpuPrim.setNormal(vj, m_verts[i].n3d());
+    m_trigGpuPrim.setColor(vj, vcol[i]);
+  }
+
+  int f = 0;
+  for (int i=0; i<nfaces; ++i) {
+    const int a = vidmap[m_faces[i].id1];
+    const int b = vidmap[m_faces[i].id2];
+    const int c = vidmap[m_faces[i].id3];
+    if (a<0||b<0||c<0) continue;
+    m_trigGpuPrim.setFace(f, a, b, c);
+    ++f;
+  }
+
+  m_trigGpuPrim.setUpdated(true);
+
+  // finalize the coloring scheme
+  getColSchm()->end();
+  pmol->getColSchm()->end();
 }
 
 void DirectSurfRenderer2::preRender(DisplayContext *pdc)

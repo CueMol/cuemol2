@@ -9,6 +9,7 @@
 #include "surface.hpp"
 #include "MSGeomTypes.hpp"
 
+#include <gfx/TrigGpuPrim.hpp>
 #include <modules/molstr/MolRenderer.hpp>
 
 class DirectSurfRenderer2_wrap;
@@ -55,6 +56,12 @@ namespace surface {
 
     virtual void render(DisplayContext *pdl);
 
+    virtual void display(DisplayContext *pdc);
+
+    virtual void invalidateDisplayCache();
+
+    virtual void unloading();
+
     virtual void propChanged(qlib::LPropEvent &ev);
 
     ///////////////////////////////////////////
@@ -64,6 +71,10 @@ namespace surface {
   private:
     /// Build the cached surface mesh using the distance-field builder.
     void buildMeshCache();
+
+    /// Build and upload the GPU triangle primitive directly from the mesh
+    /// cache (bypasses the gfx::Mesh / display-list intermediates).
+    void buildGpuMesh(DisplayContext *pdc);
 
     /// VDW radius for an atom from the element-keyed radius properties.
     double getVdwRadius(MolAtomPtr pAtom) const;
@@ -233,6 +244,12 @@ namespace surface {
     // cached surface mesh data
     MSVertArray m_verts;
     MSFaceArray m_faces;
+
+    ////////////////////////////////
+    // GPU triangle primitive (direct draw path, bypasses display-list cache)
+    gfx::TrigGpuPrim m_trigGpuPrim;
+    bool m_bCheckShaderOK;
+    bool m_bUseShader;
 
   private:
     MolCoordPtr resolveMolIDImpl(const LString &name);
