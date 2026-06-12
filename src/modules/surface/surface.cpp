@@ -12,6 +12,7 @@
 #include <qsys/RendererFactory.hpp>
 #include "MolSurfRenderer.hpp"
 #include "MSMSFileReader.hpp"
+#include "PLYFileReader.hpp"
 #include "OpenDXPotReader.hpp"
 #include "XYZRFileWriter.hpp"
 #include "PQRFileWriter.hpp"
@@ -49,6 +50,7 @@ bool init()
 
   qsys::StreamManager *pSM = qsys::StreamManager::getInstance();
   pSM->registReader<MSMSFileReader>();
+  pSM->registReader<PLYFileReader>();
   pSM->registReader<OpenDXPotReader>();
   pSM->registWriter<XYZRFileWriter>();
   pSM->registWriter<PQRFileWriter>();

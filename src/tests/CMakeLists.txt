@@ -142,6 +142,7 @@ gtest_discover_tests(test_molvis PROPERTIES LABELS "test_molvis")
 add_executable(test_surface
   modules/surface/test_main.cpp
   modules/surface/test_distfield_surf.cpp
+  modules/surface/test_ply_reader.cpp
 )
 target_include_directories(test_surface PRIVATE
   ${CMAKE_SOURCE_DIR}/src
