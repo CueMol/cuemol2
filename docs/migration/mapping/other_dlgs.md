@@ -21,7 +21,7 @@ Status values:
 
 | ID | React | Mapping | Status | PR | ADR | Notes |
 |----|-------|---------|--------|----|-----|-------|
-| [`dialog.about`](../uxp-inventory/other_dlgs.md#dialogabout) | `AboutDialog` / `useDialog` | direct | wip | | | GRE info・userAgent は省略 |
+| [`dialog.about`](../uxp-inventory/other_dlgs.md#dialogabout) | `AboutDialog` / `useDialog` | direct | done | | | GRE info・userAgent は省略 |
 | [`dialog.atomintr`](../uxp-inventory/other_dlgs.md#dialogatomintr) | `AtomIntr*Section` (inspector Properties tab) | split | done | | | Interaction/Dashed line/3D tube/Value label の 4 accordion section に分割。Dashed トグルは合成（stipple0..5 を `setGenericProps` で 1 undo step に原子書き込み）。arrow size・label font は UXP dialog 外だが追加。距離/角度定義の append/remove 編集 (Edit interaction list) は対象外 |
 | [`dialog.delete-object`](../uxp-inventory/other_dlgs.md#dialogdelete-object) | `ScenePane` (tree Delete) / `sceneOps.deleteNode` | dropped | done | | | 選択式の独立 dialog は廃止。Scene tree の Delete (`deleteNode` / `bulkDeleteNode`) に置換 (`panel.workspace.*` 参照) |
 | [`dialog.dsurf`](../uxp-inventory/other_dlgs.md#dialogdsurf) | | | todo | | | |
