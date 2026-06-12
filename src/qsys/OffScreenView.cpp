@@ -27,7 +27,11 @@ OffScreenView::OffScreenView(gfx::DisplayContext *pParentCtxt, int w, int h, int
       m_pAccumRT(nullptr),
       m_bBgTransparent(false),
       m_bDepthMode(false),
-      m_nSuperSample(5)
+      // Off by default: the jitter-supersample path accumulates into an
+      // RGBA16F float target, which the WebGL build cannot read back as
+      // UNSIGNED_BYTE (GL_INVALID_OPERATION -> black image). Callers opt in
+      // via setSuperSampleLevel() once a float->RGBA8 resolve is available.
+      m_nSuperSample(0)
 {
     // Off-screen pixels map 1:1 to the requested size (no HiDPI scaling).
     unsetSclFac();

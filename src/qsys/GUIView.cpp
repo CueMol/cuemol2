@@ -687,7 +687,6 @@ bool GUIView::hitTestImpl(gfx::DisplayContext *pdc, const Vector4D &parm, bool f
 
 qsys::View *GUIView::createOffScreenView(int w, int h, int aa_depth)
 {
-    // aa_depth (multisample) is not supported yet.
     DisplayContext *pdc = getDisplayContext();
     if (pdc == nullptr) return nullptr;
 
@@ -698,6 +697,10 @@ qsys::View *GUIView::createOffScreenView(int w, int h, int aa_depth)
         delete pView;
         return nullptr;
     }
+    // aa_depth selects the jitter-supersample level (0 = off). Kept off by
+    // default (the exporter's AAOpt defaults to 0) because the float
+    // accumulation target cannot be read back as bytes in the WebGL build.
+    pView->setSuperSampleLevel(aa_depth);
     return pView;
 }
 
