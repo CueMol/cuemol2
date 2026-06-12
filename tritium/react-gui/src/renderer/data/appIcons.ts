@@ -156,6 +156,7 @@ export const APP_ICONS = {
   "ui.caretDown": { lib: "phosphor", Comp: CaretDown },
   "ui.check": { lib: "phosphor", Comp: Check },
   "ui.cube": { lib: "phosphor", Comp: Cube },
+  "ui.camera": { lib: "phosphor", Comp: Camera },
   "ui.tint": { lib: "phosphor", Comp: Drop },
   "ui.widget": { lib: "phosphor", Comp: SquaresFour },
   "ui.wrench": { lib: "phosphor", Comp: Wrench },
