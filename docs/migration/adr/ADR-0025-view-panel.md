@@ -1,6 +1,6 @@
 # ADR-0025: View panel — unbounded DragNumericField fake-dial, relative rotation, command-reused projection
 
-- Status: accepted (implemented + unit-tested on branch; production build + in-app E2E + PR pending)
+- Status: accepted (host E2E verified; PR pending)
 - Date: 2026-06-12
 - Mapping rows: [`panel.fakedial`](../mapping/panels.md#panelfakedial)
 

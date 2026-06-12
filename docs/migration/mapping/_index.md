@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-06-12 (`panel.fakedial` done: 別ホストで実機確認済み (label+widget の同一行化 / section overflow 時のスクロール / 背景色除外 を反映した最終版を verify)。Panel done 5->6 / wip 19->18、Total done 57->58 / wip 36->35)
 - Updated: 2026-06-12 (`panel.fakedial` wip: UXP "View" side panel (`fakedial-panel`) を Explorer の `ViewPane` として実装 (DummyPane4 slot を置換)。fake-dial (`<wheelbtn>`) の無境界ロータリー UX を `DragNumericField` の min/max 省略 (= +/-Infinity、fill bar 非表示) で再現し、UXP の wheel+textbox の組を 1 field に集約。行は `FieldGrid`/`FieldGridRow` で label+widget を同一行 (整列 label 列 + control fill)、body は `sp-pane-scroll` でオーバーフロー時にスクロール。Rotation は相対 delta (`rotateView`、release で 0 に reset)、Translation/Zoom/Slab/Dist は絶対値で `viewXform.service` (`getViewXform`/`setViewXform`/`rotateView`) 経由 (worker で zoom>=0.01・slab/dist>=0 をクランプ)。view 変換は `setViewProjection` に倣い undo 非対象。Projection section は perspective/center mark のみを既存 `useViewCommands` コマンド経由で書き込み、`useActiveViewState` を single source of truth として native menu と同期 (背景色は Scene property のため非搭載)。`useViewXform` が SEM_VIEW PROPCHG を購読しライブ同期。worker-service + hook + pane test 19 件追加。Panel wip 18->19 / todo 3->2、Total wip 35->36 / todo 33->32、split 24->25 / unassigned 33->32。ADR-0025)
 - Updated: 2026-06-12 (`dialog.tool.bond-edit` done: E2E 確認済み。viewport 編集ツール (2 原子 pick で結合追加 + options popover の非標準ボンド一覧/削除) を実機確認。tool_dlgs review 6->5 / done 8->9、Total review 8->7 / done 56->57)
 - Updated: 2026-06-12 (`dialog.tool.bond-edit` review: UXP "Mol bond editor" (`tools/bond-edit-dlg`) を **非モーダル**で実装 — モーダルの「ダイアログを横にどけて atom ID editbox に pick 結果を入れる」悪い UX を廃し、measure ツール (ADR-0023) を踏襲した viewport 編集ツールに置換。追加は palette の `edit` グループの "Add Bond" ツール: `useBondEditClickHandler` -> `bondEditPick` worker service が pick を蓄積し、2 原子目 (同一分子) で `MolAnlManager.makeBond` を "Add bond" undo txn 内で実行 (同一分子 + 自己結合ガードは worker 側で強制、C++ は両方非強制)。削除/一覧は tool-options popover (`BondEditOptionsPopover`) に measure cap を踏襲して配置 — `getNostdBondsJSON` 一覧 + 行 Delete -> `removeBond` (複数は 1 undo step)、topology イベント購読で同期。crosshair は `DistPickDrawObj` 流用 (新規 C++ なし)、単結合のみ (parity)。worker-service test 10 件追加。tool_dlgs todo 8->7 / review 5->6、Total todo 34->33 / review 7->8、split 23->24 / unassigned 34->33。ADR-0024)
@@ -58,7 +59,7 @@
 
 | Category | File | Total | done | wip | review | todo | frozen |
 |----------|------|------:|-----:|----:|-------:|-----:|-------:|
-| Panel | [panels.md](panels.md) | 27 | 5 | 19 | 1 | 2 | 0 |
+| Panel | [panels.md](panels.md) | 27 | 6 | 18 | 1 | 2 | 0 |
 | Menu | [menus.md](menus.md) | 4 | 2 | 2 | 0 | 0 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 15 | 13 | 1 | 0 | 1 | 0 |
@@ -67,7 +68,7 @@
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 3 | 2 | 0 | 8 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 16 | 7 | 0 | 5 | 0 |
 | Other | [other.md](other.md) | 4 | 2 | 1 | 0 | 1 | 0 |
-| **Total** | | **132** | **57** | **36** | **7** | **32** | **0** |
+| **Total** | | **132** | **58** | **35** | **7** | **32** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -123,7 +124,6 @@
 | [`other.cuemol2`](other.md#othercuemol2) | `App` / `ContentArea` / `TabBar` / `SidePanel` / `BottomPanel` / `StatusBar` / `ConfirmCloseTabDialog` / `useWindowCloseHandler` | Main window layout (panels, tab view, status bar) + window-close/quit funnel wired (cmd-Q + close button share one confirm funnel, ADR-0016 supersedes ADR-0010). Canvas lifecycle: ADR-0011 |
 | [`widget.molsellist`](custom_widgets.md) | `MolSelList` (`h3-kit/MolSelList/`) | First consumer wired in `RendererOptionsPane` (file-open dialog); editable `InputGroup` + chevron-only `HTMLSelect` (OS-native dropdown listbox with `<optgroup>` Preset / History / Scene / Global); history via `localStorage`; worker services `getSelDefs` / `validateSelection` added |
 | [`widget.sidepanelholder`](custom_widgets.md) | `SidePanel` | Collapsible/resizable side-panel host (Allotment) + per-view pane sets + size persistence; UXP user drag-drop panel reorder not ported (config-driven via `buildViewPaneConfigs`) |
-| [`panel.fakedial`](panels.md#panelfakedial) | `ViewPane` / `useViewXform` / `viewXform.service` + reused `useViewCommands` / `useActiveViewState` | Rotation / Translation / Zoom-Slab transform via unbounded `DragNumericField` (fake-dial rotary UX; `FieldGrid` rows, scrollable body) + Projection section (perspective / center mark) routed through existing view commands. Background colour excluded (Scene property). Implemented + unit-tested on branch; pending in-app E2E + PR (ADR-0025). Replaces DummyPane4 in the Explorer group |
 | [`panel.workspace.tree`](panels.md#panelworkspacetree) | `ScenePane` (tree) / `useSceneTree` / `useSceneTreeController` / `sceneTreeDnd` / `InlineRenameInput` / `sceneTree.service` / `reorderSceneNode.service` | Live tree + visibility toggle + selection (single + multi via Cmd/Ctrl+click) + event-driven auto-refresh + drag-drop reorder (worker + in-app DnD OK; ADR-0001) + F2 inline rename; pending: Shift+range select |
 | [`panel.workspace.ctxmenu.multi`](panels.md#panelworkspacectxmenumulti) | `useSceneContextMenu` / `main/sceneContextMenu` (multi) / `bulkSceneNodeOps.service` | Right-clicking a multi-selected row opens a multi-only menu: Show / Hide / Delete via `bulkSetNodeVisible` / `bulkDeleteNode` (single undo txn per batch); worker + in-app multi-select OK; pending: Copy (clipboard is single-item) |
 | [`panel.workspace.toolbar`](panels.md#panelworkspacetoolbar) | `ScenePane` (toolbar) / `useSceneTreeController` / `sceneOps.service` / `createRendererOnObject.service` / `getNewRendererOptions.service` | Focus / Delete / Property / Add wired (Add shares the New Renderer flow with the ctxmenu); property dialog still a read-only stub |
