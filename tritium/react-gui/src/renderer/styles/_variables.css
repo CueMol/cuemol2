@@ -245,6 +245,27 @@
      UIs compose the list-kit role classes / <ListRow>, never re-choose these. */
   --list-row-pad-x: var(--space-3);    /* row horizontal padding */
   --list-row-gap: var(--space-2);      /* icon -> label gap in a row */
+
+  /* ── Animation timeline (Blender-style strip model) ──
+     Structural sizes are theme-independent. Per-type strip colors are a fixed
+     palette (like --statusbar-bg / --swatch-text) so a strip reads the same in
+     both themes; strip label text is a fixed light tone. Only
+     styles/_animation-panel.css references these. */
+  --anim-ruler-h: var(--ctrl-h-md);       /* time ruler height */
+  --anim-lane-h: var(--row-h);            /* one strip lane height */
+  --anim-label-col-w: 140px;              /* channel-list column width */
+  --anim-strip-radius: var(--radius-sm);  /* strip corner radius */
+  --anim-playhead-w: 2px;                 /* playhead line thickness */
+
+  --anim-strip-text: #f4f6fa;             /* fixed light label tone on strips */
+  --anim-type-spin: #2f7d8a;
+  --anim-type-cam: #3a63b0;
+  --anim-type-showhide: #b07d2a;
+  --anim-type-slide: #3f8a55;
+  --anim-type-mol: #7355a8;
+  --anim-type-realprop: #a84f68;
+  --anim-type-xform: #5a68b0;
+  --anim-type-noop: #4a5060;
 }
 
 /* ─── Light Theme ─── */

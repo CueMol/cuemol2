@@ -78,7 +78,6 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({
   cm,
   activeSceneId,
   activeMolViewId,
-  animation,
   renderJob,
   renderPreset,
   onRenderStart,
@@ -133,7 +132,13 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({
           />
         );
       case "animation":
-        return <AnimationPanel animation={animation} />;
+        return (
+          <AnimationPanel
+            cm={cm}
+            activeSceneId={activeSceneId}
+            activeMolViewId={activeMolViewId}
+          />
+        );
       case "render":
         return (
           <RenderPanel

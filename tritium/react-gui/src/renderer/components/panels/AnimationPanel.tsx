@@ -1,299 +1,124 @@
 /**
- * @file AnimationPanel.tsx
- * @description Blender-style animation timeline panel.
+ * @file components/panels/AnimationPanel.tsx
+ * @description Blender-style animation timeline panel (strip model).
+ *
+ * Renders the active scene's `AnimMgr` elements as time-ranged strips: one lane
+ * per `AnimObj`, each bar spanning `absStart`..`absEnd` on a shared millisecond
+ * time axis (left edge = start, width = duration). The channel list on the left
+ * names each element; the scrollable area on the right holds the time ruler,
+ * the strip lanes, and the playhead.
  *
  * ## Layout
  *
  * ```
- * +---------------+------------------------------------------+
- * |  [|< > >|]    |  Frame: [120] / 300   FPS: [30]          |  transport bar
- * +---------------+------------------------------------------+
- * |               |  0   30   60   90  120  150  ...         |  frame ruler
- * +---------------+------------------------------------------+
- * |  Camera       |  *------------*----------*               |  keyframe tracks
- * |  Mol1 Opacity |  *------*                                |
- * |  Light        |       *-----------------*                |
- * +---------------+------------------------------------------+
+ * +-----------------------------------------------------------------+
+ * | [|<][>][#][>|]   0:02.500 / 0:10.000   Elements 3  FPS 30  [Fit -+] |
+ * +----------------+------------------------------------------------+
+ * |  (channel list)|  0      1.0s     2.0s     3.0s   <- ruler      |
+ * |  (cam) Cam0    |  #====== Cam0 ======#                          |
+ * |  (spin) Spin1  |              #=== Spin1 ===#                   |
+ * +----------------+------------------------------------------------+
+ *                  ^ each lane = 1 AnimObj; bar = absStart..absEnd  |
  * ```
  *
- * Features:
- * - Transport controls (play/pause, step, skip to start/end)
- * - Frame ruler with tick marks
- * - Draggable playhead
- * - Named tracks with keyframe diamonds
- * - Playback animation via requestAnimationFrame
- *
- * @module AnimationPanel
+ * This phase is read-only: strips, ruler, and a static playhead at the
+ * manager's `elapsed` position. Playback transport and strip editing land in
+ * later phases.
  */
 
-import React, {
-  useState,
-  useRef,
-  useCallback,
-  useEffect,
-  useMemo,
-} from "react";
-import { Button, ButtonGroup, NumericInput } from "@blueprintjs/core";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import { AppIcon } from "../AppIcon";
-import type { AnimationData, AnimationTrack, Keyframe } from "../../types";
-
-// --- Constants ---
-
-/** Pixels per frame on the timeline. */
-const PX_PER_FRAME = 4;
-/** Height of each keyframe track row. */
-const TRACK_HEIGHT = 24;
-/** Height of the frame ruler. */
-const RULER_HEIGHT = 22;
-/** Width of the track label column. */
-const TRACK_LABEL_WIDTH = 140;
-
-// --- Sub-component: FrameRuler ---
-
-interface FrameRulerProps {
-  /** Total number of frames in the animation. */
-  totalFrames: number;
-  /** Frames per second (used to determine major tick interval). */
-  fps: number;
-}
-
-/**
- * Horizontal ruler showing frame numbers.
- * Major ticks appear at FPS intervals; minor ticks at half-FPS intervals.
- */
-const FrameRuler: React.FC<FrameRulerProps> = ({ totalFrames, fps }) => {
-  const ticks: JSX.Element[] = [];
-  const majorInterval = fps;
-  const minorInterval = Math.max(1, Math.round(fps / 2));
-
-  for (let f = 0; f <= totalFrames; f++) {
-    if (f % majorInterval === 0) {
-      ticks.push(
-        <div
-          key={`t-${f}`}
-          className="anim-ruler-tick anim-ruler-major"
-          style={{ left: f * PX_PER_FRAME }}
-        >
-          <span className="anim-ruler-label">{f}</span>
-          <span className="anim-ruler-mark" />
-        </div>
-      );
-    } else if (f % minorInterval === 0) {
-      ticks.push(
-        <div
-          key={`t-${f}`}
-          className="anim-ruler-tick anim-ruler-minor"
-          style={{ left: f * PX_PER_FRAME }}
-        />
-      );
-    }
-  }
-
-  return (
-    <div className="anim-ruler" style={{ height: RULER_HEIGHT }}>
-      <div
-        className="anim-ruler-track"
-        style={{ width: totalFrames * PX_PER_FRAME, position: "relative" }}
-      >
-        {ticks}
-      </div>
-    </div>
-  );
-};
-
-// --- Sub-component: KeyframeTrack ---
-
-interface KeyframeTrackRowProps {
-  /** Track data with keyframes. */
-  track: AnimationTrack;
-  /** Total frames for rendering the track bar. */
-  totalFrames: number;
-  /** Whether this track is selected. */
-  selected: boolean;
-  /** Called when a keyframe diamond is clicked. */
-  onKeyframeClick?: (trackId: string, frame: number) => void;
-}
-
-/**
- * A single row showing keyframe diamonds on a horizontal timeline.
- * Adjacent keyframes are connected by a thin bar to show interpolation range.
- */
-const KeyframeTrackRow: React.FC<KeyframeTrackRowProps> = ({
-  track,
-  totalFrames,
-  selected,
-  onKeyframeClick,
-}) => {
-  const sortedKeys = useMemo(
-    () => [...track.keyframes].sort((a, b) => a.frame - b.frame),
-    [track.keyframes]
-  );
-
-  return (
-    <div
-      className={`anim-track-row ${selected ? "anim-track-selected" : ""}`}
-      style={{ height: TRACK_HEIGHT }}
-    >
-      <div
-        className="anim-track-canvas"
-        style={{ width: totalFrames * PX_PER_FRAME }}
-      >
-        {/* Interpolation bars between consecutive keyframes */}
-        {sortedKeys.map((kf, i) => {
-          if (i === sortedKeys.length - 1) return null;
-          const next = sortedKeys[i + 1];
-          const left = kf.frame * PX_PER_FRAME;
-          const width = (next.frame - kf.frame) * PX_PER_FRAME;
-          return (
-            <div
-              key={`bar-${kf.frame}-${next.frame}`}
-              className="anim-interp-bar"
-              style={{ left, width }}
-            />
-          );
-        })}
-
-        {/* Keyframe diamonds */}
-        {sortedKeys.map((kf) => (
-          <div
-            key={`kf-${kf.frame}`}
-            className={`anim-keyframe ${kf.selected ? "anim-kf-selected" : ""}`}
-            style={{ left: kf.frame * PX_PER_FRAME }}
-            onClick={() => onKeyframeClick?.(track.id, kf.frame)}
-            title={`Frame ${kf.frame}: ${kf.value}`}
-          />
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// --- Main Component ---
+import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
+import type { AnimMgrState } from "../../types";
+import { useAnimTimeline } from "../../hooks/useAnimTimeline";
+import { AnimTransport } from "./anim/AnimTransport";
+import { AnimTimeRuler } from "./anim/AnimTimeRuler";
+import { AnimStrip } from "./anim/AnimStrip";
+import { typeIcon } from "./anim/animElementMeta";
+import {
+  DEFAULT_PX_PER_MS,
+  clampPxPerMs,
+  msToPx,
+  timelineWidthPx,
+  fitPxPerMs,
+} from "./anim/timelineGeometry";
 
 interface AnimationPanelProps {
-  /** Animation data including tracks, total frames, and FPS. */
-  animation: AnimationData | null;
+  cm: AsyncCueMol | null;
+  /** Active scene UID; undefined when no scene is active. */
+  activeSceneId: number | undefined;
+  /** Active mol-view UID (used by playback / scrub in later phases). */
+  activeMolViewId: number | undefined;
 }
 
+/** Step factor for the zoom in / out buttons. */
+const ZOOM_FACTOR = 1.4;
+
+/** Manager snapshot shown before the first fetch resolves. */
+const EMPTY_MGR: AnimMgrState = {
+  lengthMs: 0,
+  elapsedMs: 0,
+  playState: "stop",
+  loop: false,
+  startcam: "",
+};
+
 /**
- * Blender-style animation timeline panel.
- *
- * Manages playback state (current frame, playing/paused) locally.
- * Provides transport controls, a draggable playhead, frame ruler,
- * and keyframe tracks with diamond markers.
+ * Animation timeline panel. Reads live `AnimMgr` data for the active scene and
+ * draws each element as a strip.
  */
-export const AnimationPanel: React.FC<AnimationPanelProps> = ({ animation }) => {
-  const [currentFrame, setCurrentFrame] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [selectedTrack, setSelectedTrack] = useState<string | null>(null);
-  const timelineRef = useRef<HTMLDivElement>(null);
+export const AnimationPanel: React.FC<AnimationPanelProps> = ({
+  cm,
+  activeSceneId,
+}) => {
+  const { timeline } = useAnimTimeline({ cm, sceneId: activeSceneId });
+  const [pxPerMs, setPxPerMs] = useState(DEFAULT_PX_PER_MS);
+  const [selectedUid, setSelectedUid] = useState<number | null>(null);
+
+  const timelineScrollRef = useRef<HTMLDivElement>(null);
   const labelScrollRef = useRef<HTMLDivElement>(null);
-  const animFrameRef = useRef<number>(0);
-  const lastTimeRef = useRef<number>(0);
 
-  const totalFrames = animation?.totalFrames ?? 300;
-  const fps = animation?.fps ?? 30;
-  const tracks = animation?.tracks ?? [];
+  const elements = timeline?.elements ?? [];
+  const mgr = timeline?.mgr ?? null;
 
-  // --- Playback loop ---
+  // Time-axis extent: the manager length, but never less than the furthest
+  // element end (length auto-grows on the C++ side; guard regardless).
+  const contentMs = useMemo(() => {
+    const maxAbsEnd = elements.reduce((m, e) => Math.max(m, e.absEndMs), 0);
+    return Math.max(mgr?.lengthMs ?? 0, maxAbsEnd, 1000);
+  }, [elements, mgr]);
 
-  useEffect(() => {
-    if (!isPlaying) return;
+  const widthPx = timelineWidthPx(contentMs, pxPerMs);
+  const playheadLeft = msToPx(mgr?.elapsedMs ?? 0, pxPerMs);
 
-    lastTimeRef.current = performance.now();
-
-    const tick = (now: number) => {
-      const elapsed = now - lastTimeRef.current;
-      const frameDuration = 1000 / fps;
-
-      if (elapsed >= frameDuration) {
-        lastTimeRef.current = now - (elapsed % frameDuration);
-        setCurrentFrame((prev) => {
-          const next = prev + 1;
-          if (next > totalFrames) {
-            setIsPlaying(false);
-            return 0;
-          }
-          return next;
-        });
-      }
-
-      animFrameRef.current = requestAnimationFrame(tick);
-    };
-
-    animFrameRef.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(animFrameRef.current);
-  }, [isPlaying, fps, totalFrames]);
-
-  // --- Transport controls ---
-
-  const handlePlayPause = useCallback(() => {
-    setIsPlaying((prev) => !prev);
-  }, []);
-
-  const handleStop = useCallback(() => {
-    setIsPlaying(false);
-    setCurrentFrame(0);
-  }, []);
-
-  const handleStepBack = useCallback(() => {
-    setIsPlaying(false);
-    setCurrentFrame((prev) => Math.max(0, prev - 1));
-  }, []);
-
-  const handleStepForward = useCallback(() => {
-    setIsPlaying(false);
-    setCurrentFrame((prev) => Math.min(totalFrames, prev + 1));
-  }, [totalFrames]);
-
-  const handleSkipStart = useCallback(() => {
-    setIsPlaying(false);
-    setCurrentFrame(0);
-  }, []);
-
-  const handleSkipEnd = useCallback(() => {
-    setIsPlaying(false);
-    setCurrentFrame(totalFrames);
-  }, [totalFrames]);
-
-  // --- Playhead drag on ruler / timeline ---
-
-  const handleTimelineClick = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const scrollLeft = e.currentTarget.scrollLeft;
-      const x = e.clientX - rect.left + scrollLeft;
-      const frame = Math.round(x / PX_PER_FRAME);
-      setCurrentFrame(Math.max(0, Math.min(totalFrames, frame)));
-    },
-    [totalFrames]
+  const handleZoomIn = useCallback(
+    () => setPxPerMs((p) => clampPxPerMs(p * ZOOM_FACTOR)),
+    [],
   );
+  const handleZoomOut = useCallback(
+    () => setPxPerMs((p) => clampPxPerMs(p / ZOOM_FACTOR)),
+    [],
+  );
+  const handleFit = useCallback(() => {
+    const avail = timelineScrollRef.current?.clientWidth ?? 0;
+    setPxPerMs(fitPxPerMs(contentMs, avail));
+  }, [contentMs]);
 
-  /** Sync vertical scroll between labels and tracks. */
-  const handleTrackScroll = useCallback(() => {
-    if (timelineRef.current && labelScrollRef.current) {
-      labelScrollRef.current.scrollTop = timelineRef.current.scrollTop;
+  /** Mirror vertical scroll onto the (hidden-scroll) channel list. */
+  const handleTimelineScroll = useCallback(() => {
+    if (timelineScrollRef.current && labelScrollRef.current) {
+      labelScrollRef.current.scrollTop = timelineScrollRef.current.scrollTop;
     }
   }, []);
 
-  // --- Frame input handler ---
+  // --- Empty states ---
 
-  const handleFrameChange = useCallback(
-    (val: number) => {
-      const clamped = Math.max(0, Math.min(totalFrames, Math.round(val)));
-      setCurrentFrame(clamped);
-    },
-    [totalFrames]
-  );
-
-  // --- Empty state ---
-
-  if (!animation) {
+  if (!cm || activeSceneId === undefined) {
     return (
       <div className="animation-panel">
         <div className="anim-placeholder">
           <AppIcon name="panel.animation" size={48} className="placeholder-icon" aria-hidden />
-          <div>No animation data available</div>
+          <div>No active scene</div>
         </div>
       </div>
     );
@@ -301,140 +126,76 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({ animation }) => 
 
   return (
     <div className="animation-panel">
-      {/* Transport bar */}
-      <div className="anim-transport">
-        <div className="anim-transport-controls">
-          <ButtonGroup minimal>
-            <Button
-              icon={<AppIcon name="media.skipBack" aria-hidden />}
-              small
-              onClick={handleSkipStart}
-              title="Skip to start"
-            />
-            <Button
-              icon={<AppIcon name="ui.caretLeft" aria-hidden />}
-              small
-              onClick={handleStepBack}
-              title="Step back"
-            />
-            <Button
-              icon={<AppIcon name={isPlaying ? "media.pause" : "media.play"} aria-hidden />}
-              small
-              intent={isPlaying ? "warning" : "success"}
-              onClick={handlePlayPause}
-              title={isPlaying ? "Pause" : "Play"}
-            />
-            <Button
-              icon={<AppIcon name="media.stop" aria-hidden />}
-              small
-              onClick={handleStop}
-              title="Stop"
-            />
-            <Button
-              icon={<AppIcon name="ui.caretRight" aria-hidden />}
-              small
-              onClick={handleStepForward}
-              title="Step forward"
-            />
-            <Button
-              icon={<AppIcon name="media.skipForward" aria-hidden />}
-              small
-              onClick={handleSkipEnd}
-              title="Skip to end"
-            />
-          </ButtonGroup>
+      <AnimTransport
+        mgr={mgr ?? EMPTY_MGR}
+        fps={timeline?.fps ?? 30}
+        elementCount={elements.length}
+        onFit={handleFit}
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+      />
+
+      {elements.length === 0 ? (
+        <div className="anim-placeholder">
+          <AppIcon name="panel.animation" size={48} className="placeholder-icon" aria-hidden />
+          <div>No animation elements in this scene</div>
         </div>
-
-        <div className="anim-transport-info">
-          <span className="anim-info-label">Frame:</span>
-          <NumericInput
-            value={currentFrame}
-            onValueChange={handleFrameChange}
-            min={0}
-            max={totalFrames}
-            stepSize={1}
-            minorStepSize={1}
-            majorStepSize={fps}
-            small
-            fill={false}
-            className="anim-frame-input"
-          />
-          <span className="anim-info-total">/ {totalFrames}</span>
-          <span className="anim-info-separator" />
-          <span className="anim-info-label">FPS:</span>
-          <span className="anim-info-value">{fps}</span>
-          <span className="anim-info-separator" />
-          <span className="anim-info-label">Time:</span>
-          <span className="anim-info-value">
-            {(currentFrame / fps).toFixed(2)}s
-          </span>
-        </div>
-      </div>
-
-      {/* Timeline body */}
-      <div className="anim-body">
-        {/* Track labels */}
-        <div className="anim-label-column" style={{ width: TRACK_LABEL_WIDTH }}>
-          <div className="anim-label-spacer" style={{ height: RULER_HEIGHT }} />
-          <div className="anim-label-scroll" ref={labelScrollRef}>
-            {tracks.map((track) => (
-              <div
-                key={track.id}
-                className={`anim-label ${selectedTrack === track.id ? "anim-track-selected" : ""}`}
-                style={{ height: TRACK_HEIGHT }}
-                onClick={() =>
-                  setSelectedTrack((prev) =>
-                    prev === track.id ? null : track.id
-                  )
-                }
-              >
-                <AppIcon name={track.icon ?? "track.key"} size="sm" aria-hidden />
-                <span className="anim-label-text">{track.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Timeline tracks */}
-        <div
-          className="anim-timeline"
-          ref={timelineRef}
-          onScroll={handleTrackScroll}
-        >
-          {/* Ruler */}
-          <div className="anim-ruler-wrapper" onClick={handleTimelineClick}>
-            <FrameRuler totalFrames={totalFrames} fps={fps} />
-            {/* Playhead on ruler */}
-            <div
-              className="anim-playhead-marker"
-              style={{ left: currentFrame * PX_PER_FRAME }}
-            />
-          </div>
-
-          {/* Track rows */}
-          <div className="anim-tracks-scroll" onClick={handleTimelineClick}>
-            <div
-              className="anim-tracks-inner"
-              style={{ minWidth: totalFrames * PX_PER_FRAME }}
-            >
-              {tracks.map((track) => (
-                <KeyframeTrackRow
-                  key={track.id}
-                  track={track}
-                  totalFrames={totalFrames}
-                  selected={selectedTrack === track.id}
-                />
+      ) : (
+        <div className="anim-body">
+          {/* Channel list (left) */}
+          <div className="anim-label-col">
+            <div className="anim-ruler-corner" />
+            <div className="anim-label-scroll" ref={labelScrollRef}>
+              {elements.map((el) => (
+                <div
+                  key={el.uid}
+                  className={`anim-label-row${selectedUid === el.uid ? " is-selected" : ""}`}
+                  onClick={() =>
+                    setSelectedUid((u) => (u === el.uid ? null : el.uid))
+                  }
+                  title={`${el.name} (${el.type})`}
+                >
+                  <AppIcon
+                    name={typeIcon(el.type)}
+                    size="sm"
+                    className="anim-label-icon"
+                    aria-hidden
+                  />
+                  <span className="anim-label-text">{el.name}</span>
+                </div>
               ))}
             </div>
+          </div>
 
-            {/* Playhead line across all tracks */}
-            <div
-              className="anim-playhead"
-              style={{ left: currentFrame * PX_PER_FRAME }}
-            />
+          {/* Time ruler + strip lanes (scrollable) */}
+          <div
+            className="anim-timeline"
+            ref={timelineScrollRef}
+            onScroll={handleTimelineScroll}
+          >
+            <div className="anim-canvas" style={{ width: widthPx }}>
+              <AnimTimeRuler contentMs={contentMs} pxPerMs={pxPerMs} widthPx={widthPx} />
+              <div className="anim-lanes">
+                {elements.map((el) => (
+                  <div
+                    key={el.uid}
+                    className={`anim-lane${selectedUid === el.uid ? " is-selected" : ""}`}
+                    onClick={() => setSelectedUid(null)}
+                  >
+                    <AnimStrip
+                      el={el}
+                      pxPerMs={pxPerMs}
+                      selected={selectedUid === el.uid}
+                      onSelect={setSelectedUid}
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="anim-playhead" style={{ left: playheadLeft }} aria-hidden />
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
