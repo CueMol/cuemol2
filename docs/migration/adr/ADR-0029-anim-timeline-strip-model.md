@@ -1,6 +1,6 @@
 # ADR-0029: Animation panel — strip-timeline model and detail inspector
 
-- Status: accepted (host E2E verified through Phase 5; UXP-parity follow-ups tracked as future Phase 6)
+- Status: accepted (host E2E verified through Phase 6; only the timeedit mm:ss widget deferred)
 - Date: 2026-06-13
 - Mapping rows: [`panel.anim`](../mapping/panels.md#panelanim), [`dialog.animobj`](../mapping/other_dlgs.md#dialoganimobj)
 
@@ -60,11 +60,13 @@ scan** of `AnimMgr`'s current list (`findByUid`).
   (pre-clamped renderer-side); no position-change event during playback (the
   transport polls `elapsed` at ~15 Hz); element `type` has no getter (derived
   from the wrapper class name); offline movie render (POV-Ray + ffmpeg) is out of
-  scope. Inspector-specific deferrals: multi-renderer target picking is single-
-  select for now (UXP `multiselect`), `Start (ms)`/`Duration (ms)` use ms numeric
-  fields rather than the UXP `timeedit` mm:ss widget, numeric edits commit on
-  release only (no realtime drag preview), and a rename does not cascade to other
-  elements' bare `timeRefName` references (UXP parity).
+  scope. Inspector-specific notes: multi-renderer target picking and the rename
+  timeRefName cascade are implemented (Phase 6, below); numeric edits commit on
+  release only -- realtime drag preview is intentionally NOT used because an anim
+  element's prop does not live-update the 3D mid-drag (the 3D reflects only the
+  playhead-time application). The one remaining deferral is the UXP `timeedit`
+  mm:ss widget (`Start (ms)`/`Duration (ms)` keep ms numeric fields, which read
+  more clearly on a strip timeline).
 
 ## Notes
 
@@ -142,6 +144,21 @@ scan** of `AnimMgr`'s current list (`findByUid`).
   list, and `obj.setProp` / `obj.resetProp` inside a `withUndoTxn` for writes.
   The renderer reuses the `GenericTab` component and `modifiedKeys` /
   `InspectorResetAllButton` (same UI as the node inspector, ADR-0015).
+
+### Phase 6 -- multi-renderer targets, rename cascade, list sync
+- **multi-rend:** ShowHide/Slide `rend` is a comma-joined bare-name list that C++
+  `RendPropAnim` splits to target several renderers (`src/modules/anim/
+  RendPropAnim.cpp` `val.split(',', ...)`). The inspector renders a scrollable
+  checklist (one checkbox per renderer option); toggling re-joins the set and
+  commits the comma string. No worker/C++ change.
+- **timeRefName cascade:** `setAnimElementProp` "name" captures the old name,
+  writes the new one, then retargets every sibling whose `timeRefName` matched the
+  old name -- all in the one rename undo txn, so the relative-time chain is not
+  orphaned and undo reverts the rename + retargets together.
+- **Target-list sync:** the renderer / camera / mol options refetch on
+  `SEM_OBJECT | SEM_RENDERER | SEM_CAMERA` (any event, scene-scoped, 50ms
+  debounce), so an Explorer add / delete / rename keeps the checklist and the
+  camera / mol selects current (they previously fetched only on scene change).
 
 ### Known issues / scope
 - `AnimMgr.length` auto = `max(absEnd)`; `start>end` silent clamp; no per-frame
