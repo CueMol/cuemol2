@@ -1,6 +1,6 @@
 # ADR-0029: Animation panel — strip-timeline model and detail inspector
 
-- Status: accepted (host E2E verified through Phase 6; only the timeedit mm:ss widget deferred)
+- Status: accepted (anim panel migration complete; Phases 1-6 host E2E verified, Phase 7 timeedit verified locally)
 - Date: 2026-06-13
 - Mapping rows: [`panel.anim`](../mapping/panels.md#panelanim), [`dialog.animobj`](../mapping/other_dlgs.md#dialoganimobj)
 
@@ -64,9 +64,9 @@ scan** of `AnimMgr`'s current list (`findByUid`).
   timeRefName cascade are implemented (Phase 6, below); numeric edits commit on
   release only -- realtime drag preview is intentionally NOT used because an anim
   element's prop does not live-update the 3D mid-drag (the 3D reflects only the
-  playhead-time application). The one remaining deferral is the UXP `timeedit`
-  mm:ss widget (`Start (ms)`/`Duration (ms)` keep ms numeric fields, which read
-  more clearly on a strip timeline).
+  playhead-time application). The UXP `timeedit` widget is ported in Phase 7
+  (below) as the reusable h3-kit `TimeField`, so no UXP-parity gaps remain
+  (offline movie render stays a separate, out-of-scope workstream).
 
 ## Notes
 
@@ -145,7 +145,7 @@ scan** of `AnimMgr`'s current list (`findByUid`).
   The renderer reuses the `GenericTab` component and `modifiedKeys` /
   `InspectorResetAllButton` (same UI as the node inspector, ADR-0015).
 
-### Phase 6 -- multi-renderer targets, rename cascade, list sync
+### Phase 6 / 7 -- multi-renderer targets, rename cascade, list sync, timeedit
 - **multi-rend:** ShowHide/Slide `rend` is a comma-joined bare-name list that C++
   `RendPropAnim` splits to target several renderers (`src/modules/anim/
   RendPropAnim.cpp` `val.split(',', ...)`). The inspector renders a scrollable
@@ -159,6 +159,11 @@ scan** of `AnimMgr`'s current list (`findByUid`).
   `SEM_OBJECT | SEM_RENDERER | SEM_CAMERA` (any event, scene-scoped, 50ms
   debounce), so an Explorer add / delete / rename keeps the checklist and the
   camera / mol selects current (they previously fetched only on scene change).
+- **timeedit:** Start / Duration use the reusable h3-kit `TimeField`
+  (`h3-kit/form/TimeField.tsx`: ms <-> `M:SS.mmm` / `H:MM:SS.mmm`, commit on
+  blur/Enter; `formatMs` / `parseTime` exported) instead of raw-ms
+  DragNumericFields, mirroring the UXP `timeedit` widget. end = start + duration
+  commits one `timing` write; no worker change.
 
 ### Known issues / scope
 - `AnimMgr.length` auto = `max(absEnd)`; `start>end` silent clamp; no per-frame
