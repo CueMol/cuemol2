@@ -19,9 +19,10 @@ import type { AnimMgr } from "@cuemol/core/src/wrappers/AnimMgr";
 import type { AnimObj } from "@cuemol/core/src/wrappers/AnimObj";
 import type { TimeValue } from "@cuemol/core/src/wrappers/TimeValue";
 import type { WorkerContext } from "../types/WorkerContext";
-import type { AnimElement, AnimMgrState, AnimTimeline } from "../../../types";
+import type { AnimAddType, AnimElement, AnimMgrState, AnimTimeline } from "../../../types";
 import { getSceneOrNull, getViewOrNull } from "./helpers/sceneResolver";
 import { classNameToType } from "./helpers/animElementType";
+import { withUndoTxn } from "./withUndoTxn";
 
 /** Renderer-side default fps for the ms<->frame ruler readout. */
 const DEFAULT_FPS = 30;
@@ -64,6 +65,43 @@ export interface AnimSetLoopArgs {
 export interface AnimTransportResult {
   ok: boolean;
   mgr: AnimMgrState;
+}
+
+export interface AnimSetElementTimeArgs {
+  sceneId: number;
+  index: number;
+  /** RELATIVE start/end in ms (what AnimObj stores; abs is derived). */
+  startMs: number;
+  endMs: number;
+}
+
+export interface AnimAddElementArgs {
+  sceneId: number;
+  type: AnimAddType;
+  /** Insert before this index; append when omitted or >= size. */
+  insertIndex?: number;
+}
+
+export interface AnimRemoveElementArgs {
+  sceneId: number;
+  index: number;
+}
+
+export interface AnimMoveElementArgs {
+  sceneId: number;
+  from: number;
+  /** Raw target index (UXP convention: i-1 to move up, i+1 to move down). */
+  to: number;
+}
+
+export interface AnimEditResult {
+  ok: boolean;
+}
+
+export interface AnimAddResult {
+  ok: boolean;
+  uid?: number;
+  index?: number;
 }
 
 // --- safe wrapper reads (a getter may throw for missing-on-subclass cases) ---
@@ -303,6 +341,211 @@ function setLoop(ctx: WorkerContext, args: AnimSetLoopArgs): AnimTransportResult
   return { ok: true, mgr: readMgrState(mgr) };
 }
 
+// --- Editing (move / resize / add / remove / reorder) ---
+//
+// Unlike the transient transport ops above, these mutate persistent scene state
+// and are wrapped in `withUndoTxn` so the AnimMgr's internal UndoUtil records
+// (created only while a txn is active) are captured as one undoable unit. They
+// return only `{ ok }`; AnimMgr fires SEM_ADDED / SEM_REMOVING / SEM_PROPCHG, so
+// the renderer's SEM_ANIM listener refetches the timeline.
+
+/** Resolve scene + its AnimMgr together (editing needs the scene for undo). */
+function resolveSceneMgr(
+  ctx: WorkerContext,
+  sceneId: number,
+): { scene: Scene; mgr: AnimMgr } | null {
+  const scene = getSceneOrNull(ctx, sceneId);
+  if (!scene) return null;
+  const mgr = getAnimMgrOrNull(scene);
+  if (!mgr) return null;
+  return { scene, mgr };
+}
+
+/** Build a fresh TimeValue with the given millisec. */
+function makeTimeValue(ctx: WorkerContext, ms: number): TimeValue | null {
+  const tv = ctx.svc.createObj("TimeValue") as TimeValue | null;
+  if (!tv) return null;
+  tv.millisec = ms;
+  return tv;
+}
+
+/** Map an Add-menu type id to its concrete AnimObj class name. */
+function classForAddType(type: AnimAddType): string {
+  switch (type) {
+    case "ShowAnim":
+    case "HideAnim":
+      return "ShowHideAnim";
+    case "SlideInAnim":
+    case "SlideOutAnim":
+      return "SlideInOutAnim";
+    default:
+      return type; // SimpleSpin / CamMotion / MolAnim / NoopAnimObj
+  }
+}
+
+/** Generate a unique element name `<base><n>` not already in the manager. */
+function uniqueElementName(mgr: AnimMgr, base: string): string {
+  for (let n = 0; n < 100000; n++) {
+    const name = `${base}${n}`;
+    let exists = false;
+    try {
+      exists = !!mgr.getByName(name);
+    } catch {
+      exists = false;
+    }
+    if (!exists) return name;
+  }
+  return `${base}_new`;
+}
+
+/** Apply UXP-equivalent per-type default props to a freshly created element. */
+function applyAddTypeDefaults(obj: AnimObj, type: AnimAddType): void {
+  const w = obj as unknown as Record<string, unknown>;
+  switch (type) {
+    case "SimpleSpin":
+      w.angle = 360.0;
+      break;
+    case "ShowAnim":
+      w.hide = false;
+      break;
+    case "HideAnim":
+      w.hide = true;
+      break;
+    case "SlideInAnim":
+      w.hide = false;
+      break;
+    case "SlideOutAnim":
+      w.hide = true;
+      break;
+    case "MolAnim":
+      w.prop = "frame";
+      w.startValue = 0;
+      w.endValue = 1;
+      break;
+    default:
+      break; // CamMotion / NoopAnimObj: no scalar defaults (target set in inspector)
+  }
+}
+
+/** Set an element's relative start/end (ms) and re-resolve absolute times. */
+function setElementTime(
+  ctx: WorkerContext,
+  args: AnimSetElementTimeArgs,
+): AnimEditResult {
+  const sm = resolveSceneMgr(ctx, args.sceneId);
+  if (!sm) return { ok: false };
+  const { scene, mgr } = sm;
+  // Keep start <= end defensively (the renderer also pre-clamps).
+  const s = Math.min(args.startMs, args.endMs);
+  const e = Math.max(args.startMs, args.endMs);
+  try {
+    withUndoTxn(scene, "Move animation element", () => {
+      const obj = mgr.getAt(args.index) as AnimObj | null;
+      if (!obj) throw new Error("bad index");
+      const tvS = makeTimeValue(ctx, s);
+      const tvE = makeTimeValue(ctx, e);
+      if (!tvS || !tvE) throw new Error("TimeValue create failed");
+      obj.start = tvS;
+      obj.end = tvE;
+      mgr.resolveRelTime();
+    });
+  } catch {
+    return { ok: false };
+  }
+  return { ok: true };
+}
+
+/** Create a new element, auto-chained to the preceding one, and insert it. */
+function addElement(ctx: WorkerContext, args: AnimAddElementArgs): AnimAddResult {
+  const sm = resolveSceneMgr(ctx, args.sceneId);
+  if (!sm) return { ok: false };
+  const { scene, mgr } = sm;
+  const className = classForAddType(args.type);
+  let uid: number | undefined;
+  let index: number | undefined;
+  try {
+    withUndoTxn(scene, "Add animation element", () => {
+      const obj = ctx.svc.createObj(className) as AnimObj | null;
+      if (!obj) throw new Error("createObj failed");
+      obj.name = uniqueElementName(mgr, className);
+
+      const size = mgr.size;
+      const insertAt =
+        args.insertIndex !== undefined && args.insertIndex < size
+          ? args.insertIndex
+          : size;
+
+      // Auto-chain to the element preceding the insertion point (UXP parity).
+      const refIdx = insertAt - 1;
+      if (refIdx >= 0) {
+        const ref = mgr.getAt(refIdx) as AnimObj | null;
+        if (ref) obj.timeRefName = ref.name;
+      }
+
+      const tvS = makeTimeValue(ctx, 0);
+      const tvE = makeTimeValue(ctx, 1000);
+      if (!tvS || !tvE) throw new Error("TimeValue create failed");
+      obj.start = tvS;
+      obj.end = tvE;
+      applyAddTypeDefaults(obj, args.type);
+
+      if (insertAt < size) mgr.insertBefore(insertAt, obj);
+      else mgr.append(obj);
+      mgr.resolveRelTime();
+      uid = obj.uid;
+      index = insertAt;
+    });
+  } catch {
+    return { ok: false };
+  }
+  return { ok: true, uid, index };
+}
+
+/** Remove the element at `index`. */
+function removeElement(
+  ctx: WorkerContext,
+  args: AnimRemoveElementArgs,
+): AnimEditResult {
+  const sm = resolveSceneMgr(ctx, args.sceneId);
+  if (!sm) return { ok: false };
+  const { scene, mgr } = sm;
+  try {
+    withUndoTxn(scene, "Delete animation element", () => {
+      mgr.removeAt(args.index);
+    });
+  } catch {
+    return { ok: false };
+  }
+  return { ok: true };
+}
+
+/**
+ * Reorder: remove the element at `from`, then re-insert at the raw `to` index
+ * (UXP convention: removeAt(from) + insertBefore(to), append when to >= size).
+ */
+function moveElement(
+  ctx: WorkerContext,
+  args: AnimMoveElementArgs,
+): AnimEditResult {
+  if (args.from === args.to) return { ok: true };
+  const sm = resolveSceneMgr(ctx, args.sceneId);
+  if (!sm) return { ok: false };
+  const { scene, mgr } = sm;
+  try {
+    withUndoTxn(scene, "Reorder animation element", () => {
+      const obj = mgr.getAt(args.from) as AnimObj | null;
+      if (!obj) throw new Error("bad index");
+      mgr.removeAt(args.from);
+      if (args.to < mgr.size) mgr.insertBefore(args.to, obj);
+      else mgr.append(obj);
+      mgr.resolveRelTime();
+    });
+  } catch {
+    return { ok: false };
+  }
+  return { ok: true };
+}
+
 export const services = {
   animListTimeline: listTimeline,
   animGetMgrState: getMgrState,
@@ -311,4 +554,8 @@ export const services = {
   animStop: stop,
   animGoTime: goTime,
   animSetLoop: setLoop,
+  animSetElementTime: setElementTime,
+  animAddElement: addElement,
+  animRemoveElement: removeElement,
+  animMoveElement: moveElement,
 };

@@ -41,6 +41,26 @@ vi.mock("../hooks/useAnimTransport", () => ({
   useAnimTransport: () => mockTransport,
 }));
 
+interface MockEdit {
+  addElement: ReturnType<typeof vi.fn>;
+  removeElement: ReturnType<typeof vi.fn>;
+  moveElement: ReturnType<typeof vi.fn>;
+  setElementTime: ReturnType<typeof vi.fn>;
+}
+let mockEdit: MockEdit;
+vi.mock("../hooks/useAnimEdit", () => ({
+  useAnimEdit: () => mockEdit,
+}));
+
+function defaultEdit(): MockEdit {
+  return {
+    addElement: vi.fn(),
+    removeElement: vi.fn(),
+    moveElement: vi.fn(),
+    setElementTime: vi.fn(),
+  };
+}
+
 import { AnimationPanel } from "../components/panels/AnimationPanel";
 
 function el(over: Partial<AnimElement>): AnimElement {
@@ -89,6 +109,7 @@ describe("AnimationPanel (strip timeline)", () => {
   beforeEach(() => {
     mockTimeline = null;
     mockTransport = defaultTransport();
+    mockEdit = defaultEdit();
   });
 
   it("shows a placeholder when no scene is active", () => {
@@ -100,13 +121,15 @@ describe("AnimationPanel (strip timeline)", () => {
     unmount();
   });
 
-  it("shows the empty placeholder when the scene has no animation", () => {
+  it("shows an empty hint (and the edit toolbar) when the scene has no animation", () => {
     mockTimeline = timeline([]);
     const { container, unmount } = mountTree(
       <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} />,
     );
-    expect(container.querySelector(".anim-placeholder")).not.toBeNull();
+    expect(container.querySelector(".anim-empty-hint")).not.toBeNull();
     expect(container.querySelector(".anim-strip")).toBeNull();
+    // Add toolbar is available even with no elements (to add the first one).
+    expect(container.querySelector(".anim-label-toolbar")).not.toBeNull();
     unmount();
   });
 
@@ -143,6 +166,7 @@ describe("AnimationPanel transport + scrub", () => {
   beforeEach(() => {
     mockTimeline = timeline([el({ uid: 1 })]);
     mockTransport = defaultTransport();
+    mockEdit = defaultEdit();
   });
 
   it("commits exactly one seek on ruler mousedown+up, none during the drag", () => {
@@ -203,6 +227,86 @@ describe("AnimationPanel transport + scrub", () => {
       <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} />,
     );
     expect(container.querySelector(".anim-transport-playback .bp5-active")).not.toBeNull();
+    unmount();
+  });
+});
+
+describe("AnimationPanel editing", () => {
+  beforeEach(() => {
+    mockTimeline = timeline([
+      el({ uid: 1, name: "A", index: 0, startMs: 0, endMs: 1000, absStartMs: 0, absEndMs: 1000 }),
+      el({ uid: 2, name: "B", index: 1, startMs: 0, endMs: 1000, absStartMs: 1000, absEndMs: 2000 }),
+    ]);
+    mockTransport = defaultTransport();
+    mockEdit = defaultEdit();
+  });
+
+  function mount() {
+    return mountTree(<AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} />);
+  }
+
+  function selectFirst(container: HTMLElement) {
+    act(() => (container.querySelectorAll(".anim-label-row")[0] as HTMLElement).click());
+  }
+
+  it("commits one setElementTime on a strip body drag, none during the drag", () => {
+    const { container, unmount } = mount();
+    const strip = container.querySelector('.anim-strip[data-uid="1"]') as HTMLElement;
+    act(() => strip.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 100 })));
+    act(() => document.dispatchEvent(new MouseEvent("mousemove", { clientX: 200 })));
+    expect(mockEdit.setElementTime).not.toHaveBeenCalled();
+    act(() => document.dispatchEvent(new MouseEvent("mouseup", { clientX: 200 })));
+    expect(mockEdit.setElementTime).toHaveBeenCalledTimes(1);
+    expect(mockEdit.setElementTime.mock.calls[0][0]).toBe(0); // element index
+    unmount();
+  });
+
+  it("resize-right grip changes only the end (relative start unchanged)", () => {
+    const { container, unmount } = mount();
+    const grip = container.querySelector(
+      '.anim-strip[data-uid="1"] .anim-strip-grip-right',
+    ) as HTMLElement;
+    act(() => grip.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 100 })));
+    act(() => document.dispatchEvent(new MouseEvent("mousemove", { clientX: 160 })));
+    act(() => document.dispatchEvent(new MouseEvent("mouseup", { clientX: 160 })));
+    expect(mockEdit.setElementTime).toHaveBeenCalledTimes(1);
+    const [index, startMs] = mockEdit.setElementTime.mock.calls[0];
+    expect(index).toBe(0);
+    expect(startMs).toBe(0);
+    unmount();
+  });
+
+  it("Delete removes the selected element", () => {
+    const { container, unmount } = mount();
+    selectFirst(container);
+    const delBtn = container.querySelectorAll(".anim-label-toolbar button")[1] as HTMLButtonElement;
+    expect(delBtn.disabled).toBe(false);
+    act(() => delBtn.click());
+    expect(mockEdit.removeElement).toHaveBeenCalledWith(0);
+    unmount();
+  });
+
+  it("Move down reorders the selected element", () => {
+    const { container, unmount } = mount();
+    selectFirst(container);
+    const downBtn = container.querySelectorAll(".anim-label-toolbar button")[3] as HTMLButtonElement;
+    expect(downBtn.disabled).toBe(false);
+    act(() => downBtn.click());
+    expect(mockEdit.moveElement).toHaveBeenCalledWith(0, 1);
+    unmount();
+  });
+
+  it("Add menu adds the chosen type after the selection", () => {
+    const { container, unmount } = mount();
+    selectFirst(container);
+    const addBtn = container.querySelectorAll(".anim-label-toolbar button")[0] as HTMLButtonElement;
+    act(() => addBtn.click()); // open the popover
+    const item = Array.from(document.querySelectorAll(".bp5-menu-item")).find((i) =>
+      i.textContent?.includes("No operation"),
+    ) as HTMLElement | undefined;
+    expect(item).toBeTruthy();
+    act(() => item!.click());
+    expect(mockEdit.addElement).toHaveBeenCalledWith("NoopAnimObj", 1);
     unmount();
   });
 });

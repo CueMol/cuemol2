@@ -220,6 +220,22 @@ export type AnimElementType =
   | "NoopAnimObj"
   | "unknown";
 
+/**
+ * Add-menu element type id. Maps to a concrete `AnimObj` subclass worker-side
+ * (Show/Hide -> ShowHideAnim, SlideIn/Out -> SlideInOutAnim, each with a `hide`
+ * flag); the others map by name. Distinct from `AnimElementType` because the
+ * menu splits Show/Hide and SlideIn/Out that share one class.
+ */
+export type AnimAddType =
+  | "SimpleSpin"
+  | "CamMotion"
+  | "ShowAnim"
+  | "HideAnim"
+  | "SlideInAnim"
+  | "SlideOutAnim"
+  | "MolAnim"
+  | "NoopAnimObj";
+
 /** Playback state of the animation manager. */
 export type AnimPlayState = "stop" | "play" | "pause";
 

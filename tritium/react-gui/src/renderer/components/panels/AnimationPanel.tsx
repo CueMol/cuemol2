@@ -5,8 +5,9 @@
  * Renders the active scene's `AnimMgr` elements as time-ranged strips: one lane
  * per `AnimObj`, each bar spanning `absStart`..`absEnd` on a shared millisecond
  * time axis (left edge = start, width = duration). The channel list on the left
- * names each element; the scrollable area on the right holds the time ruler,
- * the strip lanes, and the playhead.
+ * names each element and carries the edit toolbar (add / delete / reorder); the
+ * scrollable area on the right holds the time ruler, the strip lanes, and the
+ * playhead.
  *
  * ## Layout
  *
@@ -17,24 +18,30 @@
  * |  (channel list)|  0      1.0s     2.0s     3.0s   <- ruler/scrub |
  * |  (cam) Cam0    |  #====== Cam0 ======#                          |
  * |  (spin) Spin1  |              #=== Spin1 ===#                   |
+ * | [+][x][^][v]   |                                                |
  * +----------------+------------------------------------------------+
- *                  ^ each lane = 1 AnimObj; bar = absStart..absEnd  |
+ *   ^ edit toolbar  ^ each lane = 1 AnimObj; bar = absStart..absEnd  |
  * ```
  *
- * Playback is driven in C++ (`AnimMgr.start(view)` + the worker's redraw loop);
- * the renderer issues transport ops and polls `elapsed` while playing (see
- * `useAnimTransport`). Clicking / dragging the ruler scrubs the playhead and
- * commits a single seek on release. Strip editing lands in a later phase.
+ * Playback is driven in C++; the renderer issues transport ops and polls
+ * `elapsed` while playing (see `useAnimTransport`). The ruler scrubs the
+ * playhead; a strip body drags to move the element and its edge grips resize it,
+ * each committing a single edit on release. Adds auto-chain to the previous
+ * element (`timeRefName`); detail (per-type target) editing lands in a later phase.
  */
 
 import React, { useCallback, useMemo, useRef, useState } from "react";
+import { Popover, Menu, MenuItem } from "@blueprintjs/core";
 import { AppIcon } from "../AppIcon";
+import { ButtonRow, FormButton } from "../../h3-kit/form/ButtonRow";
 import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
+import type { AnimAddType, AnimElement } from "../../types";
 import { useAnimTimeline } from "../../hooks/useAnimTimeline";
 import { useAnimTransport } from "../../hooks/useAnimTransport";
+import { useAnimEdit } from "../../hooks/useAnimEdit";
 import { AnimTransport } from "./anim/AnimTransport";
 import { AnimTimeRuler } from "./anim/AnimTimeRuler";
-import { AnimStrip } from "./anim/AnimStrip";
+import { AnimStrip, type AnimStripEditMode } from "./anim/AnimStrip";
 import { typeIcon } from "./anim/animElementMeta";
 import {
   DEFAULT_PX_PER_MS,
@@ -54,11 +61,32 @@ interface AnimationPanelProps {
 
 /** Step factor for the zoom in / out buttons. */
 const ZOOM_FACTOR = 1.4;
+/** Min pixel travel before a strip mousedown counts as a drag (vs a click). */
+const DRAG_THRESHOLD_PX = 3;
+
+/** Add-menu entries (UXP parity). Maps to AnimObj subclasses worker-side. */
+const ADD_TYPES: { id: AnimAddType; label: string }[] = [
+  { id: "SimpleSpin", label: "Simple spin" },
+  { id: "CamMotion", label: "Camera motion" },
+  { id: "ShowAnim", label: "Show" },
+  { id: "HideAnim", label: "Hide" },
+  { id: "SlideInAnim", label: "Slide in" },
+  { id: "SlideOutAnim", label: "Slide out" },
+  { id: "MolAnim", label: "Mol morphing" },
+  { id: "NoopAnimObj", label: "No operation" },
+];
+
+/** Live preview span of the strip currently being dragged. */
+interface DragPreview {
+  uid: number;
+  absStartMs: number;
+  absEndMs: number;
+}
 
 /**
  * Animation timeline panel. Reads live `AnimMgr` data for the active scene,
- * draws each element as a strip, and drives playback / scrub via the C++
- * animation manager.
+ * draws each element as a strip, drives playback / scrub, and edits the
+ * timeline (move / resize / add / delete / reorder).
  */
 export const AnimationPanel: React.FC<AnimationPanelProps> = ({
   cm,
@@ -72,12 +100,17 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
     viewId: activeMolViewId,
     baseMgr: timeline?.mgr ?? null,
   });
+  const { addElement, removeElement, moveElement, setElementTime } = useAnimEdit({
+    cm,
+    sceneId: activeSceneId,
+  });
 
   const [pxPerMs, setPxPerMs] = useState(DEFAULT_PX_PER_MS);
   const [selectedUid, setSelectedUid] = useState<number | null>(null);
-  // Non-null only while scrubbing -- shows the playhead at the drag position
-  // without committing a seek until release.
+  // Non-null only while scrubbing the ruler -- previews the playhead.
   const [scrubMs, setScrubMs] = useState<number | null>(null);
+  // Non-null only while dragging a strip -- previews its span.
+  const [dragPreview, setDragPreview] = useState<DragPreview | null>(null);
 
   const timelineScrollRef = useRef<HTMLDivElement>(null);
   const labelScrollRef = useRef<HTMLDivElement>(null);
@@ -98,6 +131,13 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
   const playheadLeft = msToPx(playheadMs, pxPerMs);
 
   const { seek, canControl } = transport;
+
+  // Index of the selected element (for the edit toolbar); null when none.
+  const selectedIndex = useMemo(() => {
+    if (selectedUid === null) return null;
+    const el = elements.find((e) => e.uid === selectedUid);
+    return el ? el.index : null;
+  }, [elements, selectedUid]);
 
   const handleZoomIn = useCallback(
     () => setPxPerMs((p) => clampPxPerMs(p * ZOOM_FACTOR)),
@@ -150,7 +190,69 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
     [canControl, contentMs, pxPerMs, seek],
   );
 
-  // --- Empty states ---
+  /**
+   * Begin a strip move / resize drag. Previews the new span locally (without a
+   * service call) and commits a single `setElementTime` on release. A bare
+   * click (no movement) is left to the strip's onClick to select. The relative
+   * delta equals the absolute delta because the chain reference is fixed during
+   * the drag; chained-after elements re-resolve only on commit (via refetch).
+   */
+  const handleStripEditDown = useCallback(
+    (el: AnimElement, mode: AnimStripEditMode, e: React.MouseEvent) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const startX = e.clientX;
+      const { startMs: relStart, endMs: relEnd, absStartMs: absStart, absEndMs: absEnd } = el;
+      let moved = false;
+
+      const deltaFor = (clientX: number): number => {
+        const raw = (clientX - startX) / pxPerMs;
+        if (mode === "move") return Math.max(raw, -absStart); // abs start stays >= 0
+        if (mode === "resize-left")
+          return Math.max(Math.min(raw, absEnd - absStart), -absStart); // start in [0, end]
+        return Math.max(raw, absStart - absEnd); // resize-right: end stays >= start
+      };
+
+      const onMove = (ev: MouseEvent) => {
+        if (!moved && Math.abs(ev.clientX - startX) > DRAG_THRESHOLD_PX) moved = true;
+        if (!moved) return;
+        const d = deltaFor(ev.clientX);
+        if (mode === "move")
+          setDragPreview({ uid: el.uid, absStartMs: absStart + d, absEndMs: absEnd + d });
+        else if (mode === "resize-left")
+          setDragPreview({ uid: el.uid, absStartMs: absStart + d, absEndMs: absEnd });
+        else setDragPreview({ uid: el.uid, absStartMs: absStart, absEndMs: absEnd + d });
+      };
+
+      const onUp = (ev: MouseEvent) => {
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+        setDragPreview(null);
+        if (!moved) return; // click selects via onClick
+        const d = deltaFor(ev.clientX);
+        let newStart = relStart;
+        let newEnd = relEnd;
+        if (mode === "move") {
+          newStart = relStart + d;
+          newEnd = relEnd + d;
+        } else if (mode === "resize-left") {
+          newStart = relStart + d;
+        } else {
+          newEnd = relEnd + d;
+        }
+        setElementTime(el.index, newStart, newEnd);
+      };
+
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    },
+    [pxPerMs, setElementTime],
+  );
+
+  const addInsertIndex = selectedIndex !== null ? selectedIndex + 1 : undefined;
+
+  // --- Empty (no scene) state ---
 
   if (!cm || activeSceneId === undefined) {
     return (
@@ -182,72 +284,117 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
         onZoomOut={handleZoomOut}
       />
 
-      {elements.length === 0 ? (
-        <div className="anim-placeholder">
-          <AppIcon name="panel.animation" size={48} className="placeholder-icon" aria-hidden />
-          <div>No animation elements in this scene</div>
+      <div className="anim-body">
+        {/* Channel list + edit toolbar (left) */}
+        <div className="anim-label-col">
+          <div className="anim-ruler-corner" />
+          <div className="anim-label-scroll" ref={labelScrollRef}>
+            {elements.map((el) => (
+              <div
+                key={el.uid}
+                className={`anim-label-row${selectedUid === el.uid ? " is-selected" : ""}`}
+                onClick={() => setSelectedUid((u) => (u === el.uid ? null : el.uid))}
+                title={`${el.name} (${el.type})`}
+              >
+                <AppIcon
+                  name={typeIcon(el.type)}
+                  size="sm"
+                  className="anim-label-icon"
+                  aria-hidden
+                />
+                <span className="anim-label-text">{el.name}</span>
+              </div>
+            ))}
+          </div>
+          <ButtonRow className="anim-label-toolbar">
+            <Popover
+              placement="top-start"
+              content={
+                <Menu>
+                  {ADD_TYPES.map((t) => (
+                    <MenuItem
+                      key={t.id}
+                      text={t.label}
+                      onClick={() => addElement(t.id, addInsertIndex)}
+                    />
+                  ))}
+                </Menu>
+              }
+            >
+              <FormButton icon={<AppIcon name="ui.add" aria-hidden />} title="Add element" />
+            </Popover>
+            <FormButton
+              icon={<AppIcon name="ui.trash" aria-hidden />}
+              disabled={selectedIndex === null}
+              onClick={() => selectedIndex !== null && removeElement(selectedIndex)}
+              title="Delete element"
+            />
+            <FormButton
+              icon={<AppIcon name="ui.caretUp" aria-hidden />}
+              disabled={selectedIndex === null || selectedIndex === 0}
+              onClick={() =>
+                selectedIndex !== null && selectedIndex > 0 &&
+                moveElement(selectedIndex, selectedIndex - 1)
+              }
+              title="Move up"
+            />
+            <FormButton
+              icon={<AppIcon name="ui.caretDown" aria-hidden />}
+              disabled={selectedIndex === null || selectedIndex >= elements.length - 1}
+              onClick={() =>
+                selectedIndex !== null && selectedIndex < elements.length - 1 &&
+                moveElement(selectedIndex, selectedIndex + 1)
+              }
+              title="Move down"
+            />
+          </ButtonRow>
         </div>
-      ) : (
-        <div className="anim-body">
-          {/* Channel list (left) */}
-          <div className="anim-label-col">
-            <div className="anim-ruler-corner" />
-            <div className="anim-label-scroll" ref={labelScrollRef}>
+
+        {/* Time ruler + strip lanes (scrollable) */}
+        <div
+          className="anim-timeline"
+          ref={timelineScrollRef}
+          onScroll={handleTimelineScroll}
+        >
+          <div className="anim-canvas" style={{ width: widthPx }}>
+            <AnimTimeRuler
+              contentMs={contentMs}
+              pxPerMs={pxPerMs}
+              widthPx={widthPx}
+              onMouseDown={handleRulerMouseDown}
+            />
+            <div className="anim-lanes">
               {elements.map((el) => (
                 <div
                   key={el.uid}
-                  className={`anim-label-row${selectedUid === el.uid ? " is-selected" : ""}`}
-                  onClick={() =>
-                    setSelectedUid((u) => (u === el.uid ? null : el.uid))
-                  }
-                  title={`${el.name} (${el.type})`}
+                  className={`anim-lane${selectedUid === el.uid ? " is-selected" : ""}`}
+                  onClick={() => setSelectedUid(null)}
                 >
-                  <AppIcon
-                    name={typeIcon(el.type)}
-                    size="sm"
-                    className="anim-label-icon"
-                    aria-hidden
+                  <AnimStrip
+                    el={el}
+                    pxPerMs={pxPerMs}
+                    selected={selectedUid === el.uid}
+                    previewAbsStartMs={
+                      dragPreview?.uid === el.uid ? dragPreview.absStartMs : undefined
+                    }
+                    previewAbsEndMs={
+                      dragPreview?.uid === el.uid ? dragPreview.absEndMs : undefined
+                    }
+                    onSelect={setSelectedUid}
+                    onEditMouseDown={handleStripEditDown}
                   />
-                  <span className="anim-label-text">{el.name}</span>
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* Time ruler + strip lanes (scrollable) */}
-          <div
-            className="anim-timeline"
-            ref={timelineScrollRef}
-            onScroll={handleTimelineScroll}
-          >
-            <div className="anim-canvas" style={{ width: widthPx }}>
-              <AnimTimeRuler
-                contentMs={contentMs}
-                pxPerMs={pxPerMs}
-                widthPx={widthPx}
-                onMouseDown={handleRulerMouseDown}
-              />
-              <div className="anim-lanes">
-                {elements.map((el) => (
-                  <div
-                    key={el.uid}
-                    className={`anim-lane${selectedUid === el.uid ? " is-selected" : ""}`}
-                    onClick={() => setSelectedUid(null)}
-                  >
-                    <AnimStrip
-                      el={el}
-                      pxPerMs={pxPerMs}
-                      selected={selectedUid === el.uid}
-                      onSelect={setSelectedUid}
-                    />
-                  </div>
-                ))}
+            {elements.length === 0 && (
+              <div className="anim-empty-hint type-caption">
+                No animation elements -- use + to add one
               </div>
-              <div className="anim-playhead" style={{ left: playheadLeft }} aria-hidden />
-            </div>
+            )}
+            <div className="anim-playhead" style={{ left: playheadLeft }} aria-hidden />
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };

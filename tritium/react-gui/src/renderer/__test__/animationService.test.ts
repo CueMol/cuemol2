@@ -67,6 +67,10 @@ function makeCtx(opts: {
   const pause = vi.fn();
   const stop = vi.fn();
   const goTime = vi.fn();
+  const append = vi.fn();
+  const insertBefore = vi.fn();
+  const removeAt = vi.fn();
+  const getByName = vi.fn(() => null);
   const mgr = {
     size: objs.length,
     length: tv(opts.lengthMs ?? 0),
@@ -80,11 +84,28 @@ function makeCtx(opts: {
     pause,
     stop,
     goTime,
+    append,
+    insertBefore,
+    removeAt,
+    getByName,
   };
-  const scene = { getAnimMgr: () => mgr };
+  const startUndoTxn = vi.fn();
+  const commitUndoTxn = vi.fn();
+  const rollbackUndoTxn = vi.fn();
+  const scene = { getAnimMgr: () => mgr, startUndoTxn, commitUndoTxn, rollbackUndoTxn };
   const view = { __view: true };
-  const timeValue = { millisec: 0 };
-  const createObj = vi.fn((cls: string) => (cls === "TimeValue" ? timeValue : null));
+  // Each createObj('TimeValue') yields a fresh value (recorded in order); any
+  // other class yields the shared `createdObj` (the new AnimObj under test).
+  const createdTimeValues: { millisec: number }[] = [];
+  const createdObj: Record<string, unknown> = { uid: 4242, name: "", timeRefName: "" };
+  const createObj = vi.fn((cls: string) => {
+    if (cls === "TimeValue") {
+      const t = { millisec: 0 };
+      createdTimeValues.push(t);
+      return t;
+    }
+    return createdObj;
+  });
   const ctx = {
     sceMgr: {
       getScene: () => (opts.noScene ? null : scene),
@@ -92,7 +113,12 @@ function makeCtx(opts: {
     },
     svc: { createObj },
   } as unknown as WorkerContext;
-  return { ctx, mgr, getAt, resolveRelTime, start, pause, stop, goTime, view, timeValue, createObj };
+  return {
+    ctx, mgr, getAt, resolveRelTime, start, pause, stop, goTime,
+    append, insertBefore, removeAt, getByName,
+    startUndoTxn, commitUndoTxn, rollbackUndoTxn,
+    view, createdTimeValues, createdObj, createObj,
+  };
 }
 
 describe("animation.service animListTimeline", () => {
@@ -201,18 +227,18 @@ describe("animation.service transport", () => {
   });
 
   it("animGoTime builds a TimeValue(ms) and calls goTime(tv, view)", () => {
-    const { ctx, goTime, view, timeValue, createObj } = makeCtx({});
+    const { ctx, goTime, view, createdTimeValues, createObj } = makeCtx({});
     const res = services.animGoTime(ctx, { sceneId: 1, viewId: 2, ms: 1500 });
     expect(createObj).toHaveBeenCalledWith("TimeValue");
-    expect(timeValue.millisec).toBe(1500);
-    expect(goTime).toHaveBeenCalledWith(timeValue, view);
+    expect(createdTimeValues[0].millisec).toBe(1500);
+    expect(goTime).toHaveBeenCalledWith(createdTimeValues[0], view);
     expect(res.ok).toBe(true);
   });
 
   it("animGoTime clamps negative ms to 0", () => {
-    const { ctx, timeValue } = makeCtx({});
+    const { ctx, createdTimeValues } = makeCtx({});
     services.animGoTime(ctx, { sceneId: 1, viewId: 2, ms: -500 });
-    expect(timeValue.millisec).toBe(0);
+    expect(createdTimeValues[0].millisec).toBe(0);
   });
 
   it("animSetLoop writes mgr.loop and returns it", () => {
@@ -226,5 +252,74 @@ describe("animation.service transport", () => {
     const { ctx } = makeCtx({ noScene: true });
     expect(services.animPlay(ctx, { sceneId: 9, viewId: 1 }).ok).toBe(false);
     expect(services.animStop(ctx, { sceneId: 9 }).ok).toBe(false);
+  });
+});
+
+describe("animation.service editing", () => {
+  it("animSetElementTime sets relative start<=end and resolves, in an undo txn", () => {
+    const objs = [makeObj({ uid: 1, name: "A", className: "SimpleSpin", start: 0, end: 1000, absStart: 0, absEnd: 1000 })];
+    const { ctx, resolveRelTime, startUndoTxn, commitUndoTxn, createdTimeValues } = makeCtx({ objs });
+    const res = services.animSetElementTime(ctx, { sceneId: 1, index: 0, startMs: 2000, endMs: 500 });
+    expect(startUndoTxn).toHaveBeenCalledWith("Move animation element");
+    expect(commitUndoTxn).toHaveBeenCalled();
+    expect(createdTimeValues[0].millisec).toBe(500); // start = min
+    expect(createdTimeValues[1].millisec).toBe(2000); // end = max
+    expect(objs[0].start).toBe(createdTimeValues[0]);
+    expect(objs[0].end).toBe(createdTimeValues[1]);
+    expect(resolveRelTime).toHaveBeenCalled();
+    expect(res.ok).toBe(true);
+  });
+
+  it("animAddElement creates the class, auto-chains to prev, appends, in an undo txn", () => {
+    const objs = [makeObj({ uid: 1, name: "Cam0", className: "CamMotion", start: 0, end: 1000, absStart: 0, absEnd: 1000 })];
+    const { ctx, createObj, createdObj, append, startUndoTxn } = makeCtx({ objs });
+    const res = services.animAddElement(ctx, { sceneId: 1, type: "SimpleSpin" });
+    expect(startUndoTxn).toHaveBeenCalledWith("Add animation element");
+    expect(createObj).toHaveBeenCalledWith("SimpleSpin");
+    expect(createdObj.name).toBe("SimpleSpin0"); // uniqueName
+    expect(createdObj.timeRefName).toBe("Cam0"); // auto-chain to previous
+    expect(createdObj.angle).toBe(360); // SimpleSpin default
+    expect(append).toHaveBeenCalledWith(createdObj);
+    expect(res.ok).toBe(true);
+    expect(res.uid).toBe(4242);
+  });
+
+  it("animAddElement maps Hide -> ShowHideAnim(hide=true) and inserts at insertIndex", () => {
+    const objs = [
+      makeObj({ uid: 1, name: "A", className: "SimpleSpin", start: 0, end: 1000, absStart: 0, absEnd: 1000 }),
+      makeObj({ uid: 2, name: "B", className: "SimpleSpin", start: 0, end: 1000, absStart: 0, absEnd: 1000 }),
+    ];
+    const { ctx, createObj, createdObj, insertBefore } = makeCtx({ objs });
+    services.animAddElement(ctx, { sceneId: 1, type: "HideAnim", insertIndex: 1 });
+    expect(createObj).toHaveBeenCalledWith("ShowHideAnim");
+    expect(createdObj.hide).toBe(true);
+    expect(insertBefore).toHaveBeenCalledWith(1, createdObj);
+  });
+
+  it("animRemoveElement calls removeAt in an undo txn", () => {
+    const objs = [makeObj({ uid: 1, name: "A", className: "SimpleSpin", start: 0, end: 1000, absStart: 0, absEnd: 1000 })];
+    const { ctx, removeAt, startUndoTxn } = makeCtx({ objs });
+    const res = services.animRemoveElement(ctx, { sceneId: 1, index: 0 });
+    expect(startUndoTxn).toHaveBeenCalledWith("Delete animation element");
+    expect(removeAt).toHaveBeenCalledWith(0);
+    expect(res.ok).toBe(true);
+  });
+
+  it("animMoveElement removes then re-inserts at the target index", () => {
+    const objs = [
+      makeObj({ uid: 1, name: "A", className: "SimpleSpin", start: 0, end: 1000, absStart: 0, absEnd: 1000 }),
+      makeObj({ uid: 2, name: "B", className: "SimpleSpin", start: 0, end: 1000, absStart: 0, absEnd: 1000 }),
+    ];
+    const { ctx, removeAt, insertBefore } = makeCtx({ objs });
+    const res = services.animMoveElement(ctx, { sceneId: 1, from: 1, to: 0 });
+    expect(removeAt).toHaveBeenCalledWith(1);
+    expect(insertBefore).toHaveBeenCalledWith(0, objs[1]);
+    expect(res.ok).toBe(true);
+  });
+
+  it("editing ops fail safely when the scene is missing", () => {
+    const { ctx } = makeCtx({ noScene: true });
+    expect(services.animRemoveElement(ctx, { sceneId: 9, index: 0 }).ok).toBe(false);
+    expect(services.animAddElement(ctx, { sceneId: 9, type: "NoopAnimObj" }).ok).toBe(false);
   });
 });
