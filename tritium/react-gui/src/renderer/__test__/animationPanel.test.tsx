@@ -13,15 +13,32 @@
  */
 
 import React from "react";
+import { act } from "react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { mountTree } from "./helpers/testHarness";
-import type { AnimTimeline, AnimElement } from "../types";
+import type { AnimTimeline, AnimElement, AnimMgrState } from "../types";
 
 void React;
 
 let mockTimeline: AnimTimeline | null = null;
 vi.mock("../hooks/useAnimTimeline", () => ({
   useAnimTimeline: () => ({ timeline: mockTimeline, loading: false, refetch: vi.fn() }),
+}));
+
+interface MockTransport {
+  mgr: AnimMgrState;
+  isPlaying: boolean;
+  canControl: boolean;
+  play: ReturnType<typeof vi.fn>;
+  pause: ReturnType<typeof vi.fn>;
+  togglePlay: ReturnType<typeof vi.fn>;
+  stop: ReturnType<typeof vi.fn>;
+  seek: ReturnType<typeof vi.fn>;
+  setLoop: ReturnType<typeof vi.fn>;
+}
+let mockTransport: MockTransport;
+vi.mock("../hooks/useAnimTransport", () => ({
+  useAnimTransport: () => mockTransport,
 }));
 
 import { AnimationPanel } from "../components/panels/AnimationPanel";
@@ -54,9 +71,24 @@ function timeline(elements: AnimElement[], lengthMs = 5000): AnimTimeline {
 
 const cm = {} as never;
 
+function defaultTransport(): MockTransport {
+  return {
+    mgr: { lengthMs: 5000, elapsedMs: 0, playState: "stop", loop: false, startcam: "" },
+    isPlaying: false,
+    canControl: true,
+    play: vi.fn(),
+    pause: vi.fn(),
+    togglePlay: vi.fn(),
+    stop: vi.fn(),
+    seek: vi.fn(),
+    setLoop: vi.fn(),
+  };
+}
+
 describe("AnimationPanel (strip timeline)", () => {
   beforeEach(() => {
     mockTimeline = null;
+    mockTransport = defaultTransport();
   });
 
   it("shows a placeholder when no scene is active", () => {
@@ -103,6 +135,74 @@ describe("AnimationPanel (strip timeline)", () => {
     );
     const strip = container.querySelector('.anim-strip[data-uid="5"]') as HTMLElement;
     expect(strip.className).toContain("is-disabled");
+    unmount();
+  });
+});
+
+describe("AnimationPanel transport + scrub", () => {
+  beforeEach(() => {
+    mockTimeline = timeline([el({ uid: 1 })]);
+    mockTransport = defaultTransport();
+  });
+
+  it("commits exactly one seek on ruler mousedown+up, none during the drag", () => {
+    const { container, unmount } = mountTree(
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} />,
+    );
+    const ruler = container.querySelector(".anim-ruler") as HTMLElement;
+    act(() =>
+      ruler.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 100 })),
+    );
+    act(() => document.dispatchEvent(new MouseEvent("mousemove", { clientX: 160 })));
+    expect(mockTransport.seek).not.toHaveBeenCalled();
+    act(() => document.dispatchEvent(new MouseEvent("mouseup", { clientX: 160 })));
+    expect(mockTransport.seek).toHaveBeenCalledTimes(1);
+    unmount();
+  });
+
+  it("does not scrub when there is no active view (canControl=false)", () => {
+    mockTransport.canControl = false;
+    const { container, unmount } = mountTree(
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={undefined} />,
+    );
+    const ruler = container.querySelector(".anim-ruler") as HTMLElement;
+    act(() =>
+      ruler.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 100 })),
+    );
+    act(() => document.dispatchEvent(new MouseEvent("mouseup", { clientX: 100 })));
+    expect(mockTransport.seek).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  it("disables the playback buttons when canControl is false", () => {
+    mockTransport.canControl = false;
+    const { container, unmount } = mountTree(
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={undefined} />,
+    );
+    const btns = container.querySelectorAll(".anim-transport-playback button");
+    expect(btns.length).toBeGreaterThan(0);
+    btns.forEach((b) => expect((b as HTMLButtonElement).disabled).toBe(true));
+    unmount();
+  });
+
+  it("clicking play/pause calls togglePlay", () => {
+    const { container, unmount } = mountTree(
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} />,
+    );
+    const playBtn = container.querySelector(
+      ".anim-transport-playback button:nth-child(2)",
+    ) as HTMLButtonElement;
+    act(() => playBtn.click());
+    expect(mockTransport.togglePlay).toHaveBeenCalledTimes(1);
+    unmount();
+  });
+
+  it("shows the active (playing) state on the play/pause button", () => {
+    mockTransport.isPlaying = true;
+    const { container, unmount } = mountTree(
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} />,
+    );
+    expect(container.querySelector(".anim-transport-playback .bp5-active")).not.toBeNull();
     unmount();
   });
 });

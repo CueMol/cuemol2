@@ -29,7 +29,7 @@ import type {
 } from './renderTypes'
 
 import type { AppInfoResult } from '../server/services/appInfo.service'
-import type { AnimListTimelineArgs, AnimGetMgrStateArgs } from '../server/services/animation.service'
+import type { AnimListTimelineArgs, AnimGetMgrStateArgs, AnimPlayArgs, AnimPauseArgs, AnimStopArgs, AnimGoTimeArgs, AnimSetLoopArgs, AnimTransportResult } from '../server/services/animation.service'
 import type { AnimTimeline, AnimMgrState } from '../../types'
 import type { CreateNewSceneAndViewArgs, CreateNewSceneAndViewResult } from '../server/services/createNewSceneAndView.service'
 import type { CreateViewInSceneArgs, CreateViewInSceneResult } from '../server/services/createViewInScene.service'
@@ -619,6 +619,11 @@ export interface ServiceMap {
   devRenderOpts:              { args: DevRenderOptsArgs;               result: DevRenderOptsResult }
   animListTimeline:           { args: AnimListTimelineArgs;            result: AnimTimeline }
   animGetMgrState:            { args: AnimGetMgrStateArgs;             result: AnimMgrState }
+  animPlay:                   { args: AnimPlayArgs;                    result: AnimTransportResult }
+  animPause:                  { args: AnimPauseArgs;                   result: AnimTransportResult }
+  animStop:                   { args: AnimStopArgs;                    result: AnimTransportResult }
+  animGoTime:                 { args: AnimGoTimeArgs;                  result: AnimTransportResult }
+  animSetLoop:                { args: AnimSetLoopArgs;                 result: AnimTransportResult }
 }
 
 export type ServiceKey = keyof ServiceMap

@@ -17,9 +17,10 @@
 import type { Scene } from "@cuemol/core/src/wrappers/Scene";
 import type { AnimMgr } from "@cuemol/core/src/wrappers/AnimMgr";
 import type { AnimObj } from "@cuemol/core/src/wrappers/AnimObj";
+import type { TimeValue } from "@cuemol/core/src/wrappers/TimeValue";
 import type { WorkerContext } from "../types/WorkerContext";
 import type { AnimElement, AnimMgrState, AnimTimeline } from "../../../types";
-import { getSceneOrNull } from "./helpers/sceneResolver";
+import { getSceneOrNull, getViewOrNull } from "./helpers/sceneResolver";
 import { classNameToType } from "./helpers/animElementType";
 
 /** Renderer-side default fps for the ms<->frame ruler readout. */
@@ -31,6 +32,38 @@ export interface AnimListTimelineArgs {
 
 export interface AnimGetMgrStateArgs {
   sceneId: number;
+}
+
+export interface AnimPlayArgs {
+  sceneId: number;
+  /** Target view the animation drives (start/goTime require a View). */
+  viewId: number;
+}
+
+export interface AnimPauseArgs {
+  sceneId: number;
+}
+
+export interface AnimStopArgs {
+  sceneId: number;
+}
+
+export interface AnimGoTimeArgs {
+  sceneId: number;
+  viewId: number;
+  /** Seek target in milliseconds (clamped to >= 0). */
+  ms: number;
+}
+
+export interface AnimSetLoopArgs {
+  sceneId: number;
+  loop: boolean;
+}
+
+/** Result of a transport op: the post-mutation manager snapshot. */
+export interface AnimTransportResult {
+  ok: boolean;
+  mgr: AnimMgrState;
 }
 
 // --- safe wrapper reads (a getter may throw for missing-on-subclass cases) ---
@@ -183,7 +216,99 @@ function getMgrState(ctx: WorkerContext, args: AnimGetMgrStateArgs): AnimMgrStat
   return readMgrState(mgr);
 }
 
+// --- Transport (playback / scrub) ---
+//
+// Playback ops are transient view-state (the same as mouse navigation) and are
+// intentionally NOT wrapped in an undo transaction. `start(view)` registers the
+// animation with the C++ event loop, which drives the view camera every tick;
+// the worker's existing per-frame redraw loop renders it -- no per-frame call
+// is needed here. Each op returns the post-mutation manager snapshot so the
+// renderer syncs play state / elapsed in a single round trip.
+
+/** Resolve the scene's AnimMgr, or null. */
+function resolveMgr(ctx: WorkerContext, sceneId: number): AnimMgr | null {
+  const scene = getSceneOrNull(ctx, sceneId);
+  if (!scene) return null;
+  return getAnimMgrOrNull(scene);
+}
+
+function fail(): AnimTransportResult {
+  return { ok: false, mgr: EMPTY_MGR_STATE };
+}
+
+/** Start (or resume) playback on the target view. */
+function play(ctx: WorkerContext, args: AnimPlayArgs): AnimTransportResult {
+  const mgr = resolveMgr(ctx, args.sceneId);
+  if (!mgr) return fail();
+  const view = getViewOrNull(ctx, args.viewId);
+  if (!view) return { ok: false, mgr: readMgrState(mgr) };
+  try {
+    mgr.start(view);
+  } catch {
+    return { ok: false, mgr: readMgrState(mgr) };
+  }
+  return { ok: true, mgr: readMgrState(mgr) };
+}
+
+/** Pause playback (keeps elapsed; resumable via play). */
+function pause(ctx: WorkerContext, args: AnimPauseArgs): AnimTransportResult {
+  const mgr = resolveMgr(ctx, args.sceneId);
+  if (!mgr) return fail();
+  try {
+    mgr.pause();
+  } catch {
+    return { ok: false, mgr: readMgrState(mgr) };
+  }
+  return { ok: true, mgr: readMgrState(mgr) };
+}
+
+/** Stop playback and rewind to 0. */
+function stop(ctx: WorkerContext, args: AnimStopArgs): AnimTransportResult {
+  const mgr = resolveMgr(ctx, args.sceneId);
+  if (!mgr) return fail();
+  try {
+    mgr.stop();
+  } catch {
+    return { ok: false, mgr: readMgrState(mgr) };
+  }
+  return { ok: true, mgr: readMgrState(mgr) };
+}
+
+/** Seek to a time (ms) and pause there; updates the view camera. */
+function goTime(ctx: WorkerContext, args: AnimGoTimeArgs): AnimTransportResult {
+  const mgr = resolveMgr(ctx, args.sceneId);
+  if (!mgr) return fail();
+  const view = getViewOrNull(ctx, args.viewId);
+  if (!view) return { ok: false, mgr: readMgrState(mgr) };
+  const tv = ctx.svc.createObj("TimeValue") as TimeValue | null;
+  if (!tv) return { ok: false, mgr: readMgrState(mgr) };
+  tv.millisec = Math.max(0, args.ms);
+  try {
+    mgr.goTime(tv, view);
+  } catch {
+    return { ok: false, mgr: readMgrState(mgr) };
+  }
+  return { ok: true, mgr: readMgrState(mgr) };
+}
+
+/** Toggle loop mode. */
+function setLoop(ctx: WorkerContext, args: AnimSetLoopArgs): AnimTransportResult {
+  const mgr = resolveMgr(ctx, args.sceneId);
+  if (!mgr) return fail();
+  try {
+    mgr.loop = args.loop;
+  } catch {
+    return { ok: false, mgr: readMgrState(mgr) };
+  }
+  return { ok: true, mgr: readMgrState(mgr) };
+}
+
 export const services = {
   animListTimeline: listTimeline,
   animGetMgrState: getMgrState,
+  animPlay: play,
+  animPause: pause,
+  animStop: stop,
+  animGoTime: goTime,
+  animSetLoop: setLoop,
 };

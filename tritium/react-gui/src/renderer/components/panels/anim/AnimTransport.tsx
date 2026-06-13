@@ -1,15 +1,16 @@
 /**
  * @file components/panels/anim/AnimTransport.tsx
- * @description Timeline header: playback transport, time readout, and zoom.
+ * @description Timeline header: playback transport, time readout, loop, and zoom.
  *
- * Playback controls (play / stop / skip) are wired to the C++ `AnimMgr` in a
- * later phase; here they are shown disabled. The zoom / fit controls are pure
- * view state and are functional now.
+ * Playback controls drive the C++ `AnimMgr` via the parent's transport hook.
+ * They are disabled when there is no active view (`canControl` false). The
+ * zoom / fit controls are pure view state and always functional.
  */
 
 import React from "react";
 import { AppIcon } from "../../AppIcon";
 import { ButtonRow, FormButton } from "../../../h3-kit/form/ButtonRow";
+import { SwitchField } from "../../../h3-kit/form/SwitchField";
 import type { AnimMgrState } from "../../../types";
 import { formatClock } from "./timelineGeometry";
 
@@ -17,18 +18,36 @@ interface AnimTransportProps {
   mgr: AnimMgrState;
   fps: number;
   elementCount: number;
+  /** Whether playback is currently running. */
+  isPlaying: boolean;
+  /** Whether transport can act (cm + scene + active view present). */
+  canControl: boolean;
+  loop: boolean;
+  onPlayPause: () => void;
+  onStop: () => void;
+  onSkipStart: () => void;
+  onSkipEnd: () => void;
+  onToggleLoop: (loop: boolean) => void;
   onFit: () => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
 }
 
 /**
- * Render the transport / readout / zoom header row.
+ * Render the transport / readout / loop / zoom header row.
  */
 export const AnimTransport: React.FC<AnimTransportProps> = ({
   mgr,
   fps,
   elementCount,
+  isPlaying,
+  canControl,
+  loop,
+  onPlayPause,
+  onStop,
+  onSkipStart,
+  onSkipEnd,
+  onToggleLoop,
   onFit,
   onZoomIn,
   onZoomOut,
@@ -37,23 +56,29 @@ export const AnimTransport: React.FC<AnimTransportProps> = ({
     <ButtonRow className="anim-transport-playback">
       <FormButton
         icon={<AppIcon name="media.skipBack" aria-hidden />}
-        disabled
-        title="Skip to start (playback wiring pending)"
+        onClick={onSkipStart}
+        disabled={!canControl}
+        title="Skip to start"
       />
       <FormButton
-        icon={<AppIcon name="media.play" aria-hidden />}
-        disabled
-        title="Play (playback wiring pending)"
+        icon={<AppIcon name={isPlaying ? "media.pause" : "media.play"} aria-hidden />}
+        onClick={onPlayPause}
+        active={isPlaying}
+        intent={isPlaying ? "warning" : "success"}
+        disabled={!canControl}
+        title={isPlaying ? "Pause" : "Play"}
       />
       <FormButton
         icon={<AppIcon name="media.stop" aria-hidden />}
-        disabled
-        title="Stop (playback wiring pending)"
+        onClick={onStop}
+        disabled={!canControl}
+        title="Stop"
       />
       <FormButton
         icon={<AppIcon name="media.skipForward" aria-hidden />}
-        disabled
-        title="Skip to end (playback wiring pending)"
+        onClick={onSkipEnd}
+        disabled={!canControl}
+        title="Skip to end"
       />
     </ButtonRow>
 
@@ -64,6 +89,8 @@ export const AnimTransport: React.FC<AnimTransportProps> = ({
     </div>
 
     <div className="anim-readout anim-readout-meta">
+      <span className="anim-readout-label type-caption">Loop</span>
+      <SwitchField checked={loop} onChange={onToggleLoop} disabled={!canControl} />
       <span className="anim-readout-label type-caption">Elements</span>
       <span className="anim-readout-value type-mono">{elementCount}</span>
       <span className="anim-readout-label type-caption">FPS</span>

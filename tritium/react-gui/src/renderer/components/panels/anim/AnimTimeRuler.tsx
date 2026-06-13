@@ -17,6 +17,8 @@ interface AnimTimeRulerProps {
   pxPerMs: number;
   /** Canvas width (px) -- ticks past this are not drawn. */
   widthPx: number;
+  /** Start a playhead scrub (mousedown on the ruler). */
+  onMouseDown?: (e: React.MouseEvent) => void;
 }
 
 /**
@@ -26,6 +28,7 @@ export const AnimTimeRuler: React.FC<AnimTimeRulerProps> = ({
   contentMs,
   pxPerMs,
   widthPx,
+  onMouseDown,
 }) => {
   const step = niceTickStepMs(pxPerMs);
   const ticks: React.ReactNode[] = [];
@@ -38,5 +41,9 @@ export const AnimTimeRuler: React.FC<AnimTimeRulerProps> = ({
       </div>,
     );
   }
-  return <div className="anim-ruler">{ticks}</div>;
+  return (
+    <div className="anim-ruler" onMouseDown={onMouseDown}>
+      {ticks}
+    </div>
+  );
 };

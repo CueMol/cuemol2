@@ -56,12 +56,17 @@ function makeCtx(opts: {
   startcam?: string;
   resolveThrows?: boolean;
   noScene?: boolean;
+  noView?: boolean;
 }) {
   const objs = opts.objs ?? [];
   const resolveRelTime = vi.fn(() => {
     if (opts.resolveThrows) throw new Error("cyclic timeRefName");
   });
   const getAt = vi.fn((i: number) => objs[i]);
+  const start = vi.fn();
+  const pause = vi.fn();
+  const stop = vi.fn();
+  const goTime = vi.fn();
   const mgr = {
     size: objs.length,
     length: tv(opts.lengthMs ?? 0),
@@ -71,12 +76,23 @@ function makeCtx(opts: {
     startcam: opts.startcam ?? "",
     resolveRelTime,
     getAt,
+    start,
+    pause,
+    stop,
+    goTime,
   };
   const scene = { getAnimMgr: () => mgr };
+  const view = { __view: true };
+  const timeValue = { millisec: 0 };
+  const createObj = vi.fn((cls: string) => (cls === "TimeValue" ? timeValue : null));
   const ctx = {
-    sceMgr: { getScene: () => (opts.noScene ? null : scene) },
+    sceMgr: {
+      getScene: () => (opts.noScene ? null : scene),
+      getView: () => (opts.noView ? null : view),
+    },
+    svc: { createObj },
   } as unknown as WorkerContext;
-  return { ctx, mgr, getAt, resolveRelTime };
+  return { ctx, mgr, getAt, resolveRelTime, start, pause, stop, goTime, view, timeValue, createObj };
 }
 
 describe("animation.service animListTimeline", () => {
@@ -156,5 +172,59 @@ describe("animation.service animGetMgrState", () => {
       loop: true,
       startcam: "cam1",
     });
+  });
+});
+
+describe("animation.service transport", () => {
+  it("animPlay resolves the view and calls mgr.start(view), returning the snapshot", () => {
+    const { ctx, start, view } = makeCtx({ playState: "play", lengthMs: 5000 });
+    const res = services.animPlay(ctx, { sceneId: 1, viewId: 2 });
+    expect(start).toHaveBeenCalledWith(view);
+    expect(res.ok).toBe(true);
+    expect(res.mgr.playState).toBe("play");
+  });
+
+  it("animPlay fails (ok:false) without an active view, never calling start", () => {
+    const { ctx, start } = makeCtx({ noView: true });
+    const res = services.animPlay(ctx, { sceneId: 1, viewId: 999 });
+    expect(start).not.toHaveBeenCalled();
+    expect(res.ok).toBe(false);
+  });
+
+  it("animPause / animStop call the matching AnimMgr method", () => {
+    const a = makeCtx({});
+    expect(services.animPause(a.ctx, { sceneId: 1 }).ok).toBe(true);
+    expect(a.pause).toHaveBeenCalledTimes(1);
+    const b = makeCtx({});
+    expect(services.animStop(b.ctx, { sceneId: 1 }).ok).toBe(true);
+    expect(b.stop).toHaveBeenCalledTimes(1);
+  });
+
+  it("animGoTime builds a TimeValue(ms) and calls goTime(tv, view)", () => {
+    const { ctx, goTime, view, timeValue, createObj } = makeCtx({});
+    const res = services.animGoTime(ctx, { sceneId: 1, viewId: 2, ms: 1500 });
+    expect(createObj).toHaveBeenCalledWith("TimeValue");
+    expect(timeValue.millisec).toBe(1500);
+    expect(goTime).toHaveBeenCalledWith(timeValue, view);
+    expect(res.ok).toBe(true);
+  });
+
+  it("animGoTime clamps negative ms to 0", () => {
+    const { ctx, timeValue } = makeCtx({});
+    services.animGoTime(ctx, { sceneId: 1, viewId: 2, ms: -500 });
+    expect(timeValue.millisec).toBe(0);
+  });
+
+  it("animSetLoop writes mgr.loop and returns it", () => {
+    const { ctx, mgr } = makeCtx({ loop: false });
+    const res = services.animSetLoop(ctx, { sceneId: 1, loop: true });
+    expect(mgr.loop).toBe(true);
+    expect(res.mgr.loop).toBe(true);
+  });
+
+  it("transport ops fail safely when the scene is missing", () => {
+    const { ctx } = makeCtx({ noScene: true });
+    expect(services.animPlay(ctx, { sceneId: 9, viewId: 1 }).ok).toBe(false);
+    expect(services.animStop(ctx, { sceneId: 9 }).ok).toBe(false);
   });
 });
