@@ -200,4 +200,64 @@ describe("AnimElementInspector", () => {
     expect(name8!.value).toBe("El8");
     unmount();
   });
+
+  it("switches to the Generic tab and lists the element's full property set", async () => {
+    const entries = [
+      { key: "name", type: "string", value: "Spin0", readonly: false, hasdefault: false, isdefault: false, isContainer: false, depth: 0 },
+      { key: "angle", type: "real", value: 90, readonly: false, hasdefault: true, isdefault: false, isContainer: false, depth: 0 },
+    ];
+    const invokeService = vi.fn((name: string) => {
+      if (name === "getAnimElementDetail")
+        return Promise.resolve({ ok: true, detail: detail({ type: "SimpleSpin", name: "Spin0" }) });
+      if (name === "getAnimTargetOptions")
+        return Promise.resolve({ ok: true, renderers: [], cameras: [], mols: [] });
+      if (name === "getAnimElementGenericProps") return Promise.resolve({ ok: true, entries });
+      return Promise.resolve({});
+    });
+    const cm = {
+      invokeService,
+      addEventListener: vi.fn().mockResolvedValue(1),
+      removeEventListener: vi.fn().mockResolvedValue(undefined),
+    };
+    const { container, unmount } = mountTree(
+      <AnimElementInspector cm={cm as never} sceneId={1} uid={7} onGone={vi.fn()} onHeaderChange={vi.fn()} />,
+    );
+    await flushPromises();
+
+    // Click the "Generic" segment in the mode bar.
+    const seg = Array.from(
+      container.querySelectorAll(".inspector-mode-bar button, .inspector-mode-bar label"),
+    ).find((el) => el.textContent === "Generic") as HTMLElement | undefined;
+    expect(seg).toBeTruthy();
+    await act(async () => {
+      seg!.click();
+      await flushPromises();
+    });
+
+    expect(invokeService).toHaveBeenCalledWith("getAnimElementGenericProps", { sceneId: 1, uid: 7 });
+    expect(container.querySelectorAll(".insp-gt-row").length).toBe(2);
+    unmount();
+  });
+
+  it("locks the spin-axis x/y/z boxes unless Cartesian is selected", async () => {
+    // A unit-axis vector derives the combobox to that axis -> boxes disabled.
+    const cm = makeCm(
+      detail({ type: "SimpleSpin", typeProps: { angle: 90, axisX: 0, axisY: 1, axisZ: 0 } }),
+    );
+    const { container, unmount } = mountTree(
+      <AnimElementInspector cm={cm as never} sceneId={1} uid={7} onGone={vi.fn()} onHeaderChange={vi.fn()} />,
+    );
+    await flushPromises();
+    const cellX = () => container.querySelector('input[aria-label="Axis X"]') as HTMLInputElement;
+    expect(cellX().disabled).toBe(true);
+
+    // Picking Cartesian enables manual editing.
+    const select = container.querySelector(".anim-axis-row select") as HTMLSelectElement;
+    act(() => {
+      select.value = "cart";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(cellX().disabled).toBe(false);
+    unmount();
+  });
 });

@@ -179,6 +179,67 @@ describe("animDetail.service setAnimElementProp", () => {
   });
 });
 
+describe("animDetail.service generic property tab", () => {
+  it("getAnimElementGenericProps parses the AnimObj getPropsJSON into entries", () => {
+    const propsJSON = JSON.stringify([
+      { name: "name", type: "string", value: "Spin0", readonly: false, hasdefault: false },
+      { name: "angle", type: "real", value: 90, readonly: false, hasdefault: true, isdefault: false },
+    ]);
+    const obj = { uid: 5, getPropsJSON: () => propsJSON } as unknown as Record<string, unknown>;
+    const { ctx } = makeCtx({ objs: [obj] });
+    const res = services.getAnimElementGenericProps(ctx, { sceneId: 1, uid: 5 });
+    expect(res.ok).toBe(true);
+    expect(res.entries.map((e) => e.key)).toEqual(["name", "angle"]);
+    expect(res.entries[1]).toMatchObject({ key: "angle", type: "real", value: 90 });
+  });
+
+  it("getAnimElementGenericProps returns gone:true for a vanished uid", () => {
+    const obj = { uid: 5, getPropsJSON: () => "[]" } as unknown as Record<string, unknown>;
+    const { ctx } = makeCtx({ objs: [obj] });
+    expect(services.getAnimElementGenericProps(ctx, { sceneId: 1, uid: 999 })).toMatchObject({
+      ok: false,
+      gone: true,
+    });
+  });
+
+  it("setAnimElementGenericProp writes via setProp inside an undo txn", () => {
+    const setProp = vi.fn();
+    const obj = { uid: 5, setProp, resetProp: vi.fn(), getPropsJSON: () => "[]" } as unknown as Record<string, unknown>;
+    const { ctx, startUndoTxn, commitUndoTxn } = makeCtx({ objs: [obj] });
+    const res = services.setAnimElementGenericProp(ctx, {
+      sceneId: 1,
+      uid: 5,
+      propName: "angle",
+      op: "set",
+      valueType: "real",
+      value: 45,
+    });
+    expect(startUndoTxn).toHaveBeenCalledWith("Change property: angle");
+    expect(setProp).toHaveBeenCalledWith("angle", 45);
+    expect(commitUndoTxn).toHaveBeenCalled();
+    expect(res.ok).toBe(true);
+  });
+
+  it("setAnimElementGenericProp op:reset calls resetProp", () => {
+    const resetProp = vi.fn();
+    const obj = { uid: 5, setProp: vi.fn(), resetProp, getPropsJSON: () => "[]" } as unknown as Record<string, unknown>;
+    const { ctx } = makeCtx({ objs: [obj] });
+    services.setAnimElementGenericProp(ctx, { sceneId: 1, uid: 5, propName: "angle", op: "reset", valueType: "" });
+    expect(resetProp).toHaveBeenCalledWith("angle");
+  });
+
+  it("resetAnimElementGenericProps resets every key in one txn", () => {
+    const resetProp = vi.fn();
+    const obj = { uid: 5, setProp: vi.fn(), resetProp, getPropsJSON: () => "[]" } as unknown as Record<string, unknown>;
+    const { ctx, startUndoTxn, commitUndoTxn } = makeCtx({ objs: [obj] });
+    services.resetAnimElementGenericProps(ctx, { sceneId: 1, uid: 5, propNames: ["angle", "axis"] });
+    expect(startUndoTxn).toHaveBeenCalledWith("Reset 2 properties");
+    expect(resetProp).toHaveBeenCalledWith("angle");
+    expect(resetProp).toHaveBeenCalledWith("axis");
+    expect(commitUndoTxn).toHaveBeenCalled();
+  });
+});
+
 describe("animDetail.service getAnimTargetOptions", () => {
   it("flattens renderers (incl groups), filters MorphMol mols, lists cameras", () => {
     mockTree = {

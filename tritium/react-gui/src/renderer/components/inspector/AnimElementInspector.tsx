@@ -30,7 +30,11 @@ import {
   DragNumericField,
   NumberCell,
   SwitchField,
+  SegmentField,
 } from "../../h3-kit/form";
+import { GenericTab } from "./GenericTab";
+import { InspectorResetAllButton } from "./InspectorResetAllButton";
+import { modifiedKeys } from "./propModel";
 import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
 import type {
   AnimElementDetail,
@@ -40,6 +44,7 @@ import type {
   AnimMolOption,
   SetAnimElementPropArgs,
 } from "../../worker/server/services/animDetail.service";
+import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
 import { SEM_ANIM, SEM_ANY } from "../../event";
 import { useCueMolEventListener } from "../../hooks/useCueMolEventListener";
 
@@ -134,6 +139,15 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
     cameras: AnimCameraOption[];
     mols: AnimMolOption[];
   }>({ renderers: [], cameras: [], mols: [] });
+  // Spin-axis combobox mode (null = derive from the current vector). A user's
+  // explicit pick persists until the element changes, so editing a Cartesian
+  // vector to a unit value does not snap the mode back to a locked axis.
+  const [axisMode, setAxisMode] = useState<string | null>(null);
+  // Active tab: the bespoke per-type editor ("properties") or the full generic
+  // property table ("generic"), mirroring the renderer node inspector.
+  const [mode, setMode] = useState<"properties" | "generic">("properties");
+  const [genericEntries, setGenericEntries] = useState<GenericPropEntry[]>([]);
+  const [genericLoading, setGenericLoading] = useState(false);
 
   const cmRef = useRef(cm);
   cmRef.current = cm;
@@ -149,6 +163,12 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
   const fetchToken = useRef(0);
   // True while a draft (numeric/text) field is mid-edit -- blocks re-seed.
   const editingRef = useRef(false);
+  // Generic-tab fetch token + live mirrors read inside event handlers.
+  const genericToken = useRef(0);
+  const modeRef = useRef(mode);
+  modeRef.current = mode;
+  const genericEntriesRef = useRef(genericEntries);
+  genericEntriesRef.current = genericEntries;
 
   const adopt = useCallback((d: AnimElementDetail) => {
     setDetail(d);
@@ -173,6 +193,36 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
       .catch((e: unknown) => console.warn("getAnimElementDetail failed:", e));
   }, [adopt]);
 
+  /** Refetch the full generic property list (generic tab). */
+  const refetchGeneric = useCallback(() => {
+    const c = cmRef.current;
+    const sid = sceneIdRef.current;
+    const u = uidRef.current;
+    if (!c) return;
+    setGenericLoading(true);
+    const token = ++genericToken.current;
+    c.invokeService("getAnimElementGenericProps", { sceneId: sid, uid: u })
+      .then((res) => {
+        if (token !== genericToken.current) return;
+        setGenericLoading(false);
+        if (!res || res.gone) {
+          onGoneRef.current(sid);
+          return;
+        }
+        setGenericEntries(res.entries ?? []);
+      })
+      .catch((e: unknown) => {
+        setGenericLoading(false);
+        console.warn("getAnimElementGenericProps failed:", e);
+      });
+  }, []);
+
+  // SEM_ANIM keeps both views in sync; refetch the generic table only when shown.
+  const handleAnimEvent = useCallback(() => {
+    refetch();
+    if (modeRef.current === "generic") refetchGeneric();
+  }, [refetch, refetchGeneric]);
+
   // Fetch on mount + element/scene change.
   useEffect(() => {
     // Clear any latched edit flag from the previously inspected element. If a
@@ -180,6 +230,7 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
     // a stale editingRef would block the re-seed effect below and strand the
     // newly selected element on "Loading..." forever.
     editingRef.current = false;
+    setAxisMode(null);
     setDetail(null);
     setForm(null);
     refetch();
@@ -193,7 +244,7 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
     srcMask: SEM_ANIM,
     evtMask: SEM_ANY,
     scopeId: sceneId,
-    handler: refetch,
+    handler: handleAnimEvent,
     debounceMs: 30,
   });
 
@@ -219,6 +270,12 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
       cancelled = true;
     };
   }, [cm, sceneId]);
+
+  // Lazily (re)fetch the generic list when that tab is shown or the element
+  // changes while it is shown.
+  useEffect(() => {
+    if (mode === "generic") refetchGeneric();
+  }, [mode, sceneId, uid, refetchGeneric]);
 
   /** Write one prop; adopt the returned (re-resolved) detail. */
   const commit = useCallback(
@@ -248,13 +305,122 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
     setForm((f) => (f ? { ...f, ...patch } : f));
   }, []);
 
+  /** Adopt the fresh generic list returned by a write (token-gated). */
+  const adoptGeneric = useCallback(
+    (
+      res: { ok: boolean; gone?: boolean; entries?: GenericPropEntry[] } | undefined,
+      token: number,
+    ) => {
+      if (token !== genericToken.current) return;
+      if (!res || res.gone) {
+        onGoneRef.current(sceneIdRef.current);
+        return;
+      }
+      setGenericEntries(res.entries ?? []);
+    },
+    [],
+  );
+  const handleGenericSet = useCallback(
+    (key: string, valueType: string, value: string | number | boolean) => {
+      const c = cmRef.current;
+      if (!c) return;
+      const token = ++genericToken.current;
+      c.invokeService("setAnimElementGenericProp", {
+        sceneId: sceneIdRef.current,
+        uid: uidRef.current,
+        propName: key,
+        op: "set",
+        valueType,
+        value,
+      })
+        .then((res) => adoptGeneric(res, token))
+        .catch((e: unknown) => console.warn("setAnimElementGenericProp failed:", e));
+    },
+    [adoptGeneric],
+  );
+  const handleGenericReset = useCallback(
+    (key: string) => {
+      const c = cmRef.current;
+      if (!c) return;
+      const token = ++genericToken.current;
+      c.invokeService("setAnimElementGenericProp", {
+        sceneId: sceneIdRef.current,
+        uid: uidRef.current,
+        propName: key,
+        op: "reset",
+        valueType: "",
+      })
+        .then((res) => adoptGeneric(res, token))
+        .catch((e: unknown) => console.warn("setAnimElementGenericProp (reset) failed:", e));
+    },
+    [adoptGeneric],
+  );
+  const handleResetAll = useCallback(() => {
+    const c = cmRef.current;
+    if (!c) return;
+    const keys = modifiedKeys(genericEntriesRef.current);
+    if (keys.length === 0) return;
+    const token = ++genericToken.current;
+    c.invokeService("resetAnimElementGenericProps", {
+      sceneId: sceneIdRef.current,
+      uid: uidRef.current,
+      propNames: keys,
+    })
+      .then((res) => adoptGeneric(res, token))
+      .catch((e: unknown) => console.warn("resetAnimElementGenericProps failed:", e));
+  }, [adoptGeneric]);
+
+  // Properties / Generic switcher, shown above the body in both modes.
+  const modeBar = (
+    <div className="inspector-mode-bar">
+      <SegmentField
+        value={mode}
+        onValueChange={(v) => setMode(v as "properties" | "generic")}
+        options={[
+          { label: "Properties", value: "properties" },
+          { label: "Generic", value: "generic" },
+        ]}
+      />
+      {mode === "generic" && (
+        <InspectorResetAllButton
+          canResetAll={modifiedKeys(genericEntries).length > 0}
+          onResetAll={handleResetAll}
+        />
+      )}
+    </div>
+  );
+
+  if (mode === "generic") {
+    return (
+      <>
+        {modeBar}
+        <div className="inspector-body">
+          <GenericTab
+            entries={genericEntries}
+            loading={genericLoading}
+            onSetValue={handleGenericSet}
+            onResetValue={handleGenericReset}
+          />
+        </div>
+      </>
+    );
+  }
+
   if (!detail || !form) {
-    return <div className="inspector-empty">Loading...</div>;
+    return (
+      <>
+        {modeBar}
+        <div className="inspector-empty">Loading...</div>
+      </>
+    );
   }
 
   const t = detail.typeProps;
   const type = detail.common.type;
   const axis = { x: t.axisX ?? 0, y: t.axisY ?? 0, z: t.axisZ ?? 0 };
+  // UXP parity: the x/y/z boxes are editable only in Cartesian mode.
+  const axisSel = axisMode ?? axisPreset(axis.x, axis.y, axis.z);
+  const axisEditable = axisSel === "cart";
 
   const commitTiming = () =>
     commit("timing", { startMs: Math.max(0, form.startMs), endMs: Math.max(0, form.startMs) + Math.max(0, form.durationMs) });
@@ -268,7 +434,8 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
     commit("axis", v);
   };
   const onAxisPreset = (p: string) => {
-    if (p === "cart") return;
+    setAxisMode(p);
+    if (p === "cart") return; // enable manual editing; keep the current vector
     const v = p === "x" ? { x: 1, y: 0, z: 0 } : p === "y" ? { x: 0, y: 1, z: 0 } : { x: 0, y: 0, z: 1 };
     commit("axis", v);
   };
@@ -277,7 +444,9 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
   const rendIsMulti = rendVal.includes(",");
 
   return (
-    <div className="inspector-body anim-inspector">
+    <>
+      {modeBar}
+      <div className="inspector-body anim-inspector">
       <FieldSection title="Common settings">
         <Field label="Name">
           <TextField
@@ -357,18 +526,18 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
           </Field>
           <Field label="Spin axis">
             <div className="anim-axis-row">
-              <SelectField fill={false} value={axisPreset(axis.x, axis.y, axis.z)} onChange={onAxisPreset}>
+              <SelectField fill={false} value={axisSel} onChange={onAxisPreset}>
                 <option value="x">X axis</option>
                 <option value="y">Y axis</option>
                 <option value="z">Z axis</option>
                 <option value="cart">Cartesian</option>
               </SelectField>
               <span className="anim-axis-paren">(</span>
-              <NumberCell value={fmtAxis(axis.x)} onCommit={(s) => commitAxisComp("x", s)} aria-label="Axis X" />
+              <NumberCell value={fmtAxis(axis.x)} onCommit={(s) => commitAxisComp("x", s)} disabled={!axisEditable} aria-label="Axis X" />
               <span className="anim-axis-paren">,</span>
-              <NumberCell value={fmtAxis(axis.y)} onCommit={(s) => commitAxisComp("y", s)} aria-label="Axis Y" />
+              <NumberCell value={fmtAxis(axis.y)} onCommit={(s) => commitAxisComp("y", s)} disabled={!axisEditable} aria-label="Axis Y" />
               <span className="anim-axis-paren">,</span>
-              <NumberCell value={fmtAxis(axis.z)} onCommit={(s) => commitAxisComp("z", s)} aria-label="Axis Z" />
+              <NumberCell value={fmtAxis(axis.z)} onCommit={(s) => commitAxisComp("z", s)} disabled={!axisEditable} aria-label="Axis Z" />
               <span className="anim-axis-paren">)</span>
             </div>
           </Field>
@@ -527,6 +696,7 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
           </Field>
         </FieldSection>
       )}
-    </div>
+      </div>
+    </>
   );
 };
