@@ -299,6 +299,26 @@ import type {
   ClearCameraVisFlagsResult,
 } from '../server/services/cameraOps.service'
 import type {
+  GetCameraVisFlagsArgs,
+  GetCameraVisFlagsResult,
+  SetCameraVisFlagsArgs,
+  SetCameraVisFlagsResult,
+} from '../server/services/cameraVisFlags.service'
+import type {
+  ListAtomIntrDefsArgs,
+  ListAtomIntrDefsResult,
+  RemoveAtomIntrDefsArgs,
+  RemoveAtomIntrDefsResult,
+} from '../server/services/atomIntrEdit.service'
+import type {
+  GetStyleSetContentsArgs,
+  GetStyleSetContentsResult,
+  SetStyleSetColorArgs,
+  RemoveStyleSetKeyArgs,
+  SetStyleSetSelectionArgs,
+  StyleSetEditResult,
+} from '../server/services/styleSetEdit.service'
+import type {
   LoadCameraFromFileArgs,
   LoadCameraFromFileResult,
   SaveCameraToFileArgs,
@@ -533,6 +553,16 @@ export interface ServiceMap {
   saveViewToCamera:           { args: SaveViewToCameraArgs;            result: SaveViewToCameraResult }
   applyCameraToView:          { args: ApplyCameraToViewArgs;           result: ApplyCameraToViewResult }
   clearCameraVisFlags:        { args: ClearCameraVisFlagsArgs;         result: ClearCameraVisFlagsResult }
+  getCameraVisFlags:          { args: GetCameraVisFlagsArgs;           result: GetCameraVisFlagsResult }
+  setCameraVisFlags:          { args: SetCameraVisFlagsArgs;           result: SetCameraVisFlagsResult }
+  listAtomIntrDefs:           { args: ListAtomIntrDefsArgs;            result: ListAtomIntrDefsResult }
+  removeAtomIntrDefs:         { args: RemoveAtomIntrDefsArgs;          result: RemoveAtomIntrDefsResult }
+  getStyleSetContents:        { args: GetStyleSetContentsArgs;         result: GetStyleSetContentsResult }
+  setStyleSetColor:           { args: SetStyleSetColorArgs;            result: StyleSetEditResult }
+  removeStyleSetColor:        { args: RemoveStyleSetKeyArgs;           result: StyleSetEditResult }
+  setStyleSetSelection:       { args: SetStyleSetSelectionArgs;        result: StyleSetEditResult }
+  removeStyleSetSelection:    { args: RemoveStyleSetKeyArgs;           result: StyleSetEditResult }
+  removeStyleSetStyle:        { args: RemoveStyleSetKeyArgs;           result: StyleSetEditResult }
   loadCameraFromFile:         { args: LoadCameraFromFileArgs;          result: LoadCameraFromFileResult }
   saveCameraToFile:           { args: SaveCameraToFileArgs;            result: SaveCameraToFileResult }
   saveCameraToCurrentSrc:     { args: SaveCameraToCurrentSrcArgs;      result: SaveCameraToCurrentSrcResult }

@@ -35,6 +35,9 @@ import { ExportPngOptionsDialogProvider } from '../components/dialogs/ExportPngO
 import { ReassignProt2ndryDialogProvider } from '../components/dialogs/ReassignProt2ndryDialogProvider'
 import { MolSuperposeDialogProvider } from '../components/dialogs/MolSuperposeDialogProvider'
 import { ErrorAlertDialogProvider } from '../components/dialogs/ErrorAlertDialogProvider'
+import { EditCameraVisFlagsDialogProvider } from '../components/dialogs/EditCameraVisFlagsDialogProvider'
+import { EditInteractionListDialogProvider } from '../components/dialogs/EditInteractionListDialogProvider'
+import { StyleEditorDialogProvider } from '../components/dialogs/StyleEditorDialogProvider'
 import { composeProviders } from './composeProviders'
 
 export const DialogProvider = composeProviders([
@@ -63,4 +66,7 @@ export const DialogProvider = composeProviders([
   ReassignProt2ndryDialogProvider,
   MolSuperposeDialogProvider,
   ErrorAlertDialogProvider,
+  EditCameraVisFlagsDialogProvider,
+  EditInteractionListDialogProvider,
+  StyleEditorDialogProvider,
 ])

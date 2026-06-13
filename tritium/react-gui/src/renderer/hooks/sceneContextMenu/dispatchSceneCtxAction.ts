@@ -22,6 +22,11 @@ import type { ApplyRendStyleDialogArgs } from '../../components/dialogs/ApplyRen
 import type { CreateRendStyleDialogArgs } from '../../components/dialogs/CreateRendStyleDialogProvider'
 import type { ApplyRendStyleDialogResult } from '../../components/dialogs/ApplyRendStyleDialog'
 import type { CreateRendStyleDialogResult } from '../../components/dialogs/CreateRendStyleDialog'
+import type { EditCameraVisFlagsDialogArgs } from '../../components/dialogs/EditCameraVisFlagsDialogProvider'
+import type { EditCameraVisFlagsDialogResult } from '../../components/dialogs/EditCameraVisFlagsDialog'
+import type { EditInteractionListDialogArgs } from '../../components/dialogs/EditInteractionListDialogProvider'
+import type { EditInteractionListDialogResult } from '../../components/dialogs/EditInteractionListDialog'
+import type { StyleEditorDialogArgs } from '../../components/dialogs/StyleEditorDialogProvider'
 import { runObjectSaveFlow } from './runObjectSaveFlow'
 
 export interface DispatchSceneCtxActionCtx {
@@ -96,6 +101,13 @@ export interface DispatchSceneCtxActionCtx {
     }) => Promise<string | null>
     showApplyRendStyle: (args: ApplyRendStyleDialogArgs) => Promise<ApplyRendStyleDialogResult | null>
     showCreateRendStyle: (args: CreateRendStyleDialogArgs) => Promise<CreateRendStyleDialogResult | null>
+    showEditCameraVisFlags: (
+        args: EditCameraVisFlagsDialogArgs,
+    ) => Promise<EditCameraVisFlagsDialogResult | null>
+    showEditInteractionList: (
+        args: EditInteractionListDialogArgs,
+    ) => Promise<EditInteractionListDialogResult | null>
+    showStyleEditor: (args: StyleEditorDialogArgs) => Promise<void>
 
     // Shared sub-flows reused by toolbar Add button.
     openNewRendererFlow: (node: SceneTreeNode) => Promise<void>
@@ -245,6 +257,36 @@ export async function dispatchSceneCtxAction(
             }
             return
         }
+        case 'editInteractionList': {
+            if (node.type !== 'renderer') return
+            if (!ctx.cm || ctx.sceneId === undefined) return
+            let info
+            try {
+                info = await ctx.cm.invokeService('listAtomIntrDefs', {
+                    sceneId: ctx.sceneId,
+                    rendId: node.id,
+                })
+            } catch (err) {
+                console.warn('listAtomIntrDefs failed:', err)
+                return
+            }
+            if (!info?.ok) return
+            const result = await ctx.showEditInteractionList({
+                rendName: node.name,
+                entries: info.entries,
+            })
+            if (!result || result.removeIds.length === 0) return
+            try {
+                await ctx.cm.invokeService('removeAtomIntrDefs', {
+                    sceneId: ctx.sceneId,
+                    rendId: node.id,
+                    ids: result.removeIds,
+                })
+            } catch (err) {
+                console.warn('removeAtomIntrDefs failed:', err)
+            }
+            return
+        }
         case 'newRenderer':
             await ctx.openNewRendererFlow(node)
             return
@@ -314,6 +356,17 @@ export async function dispatchSceneCtxAction(
             const scope = styleInfo?.scopeId
             if (scope === undefined) return
             await ctx.toggleStyleSetReadOnly(node.id, scope)
+            return
+        }
+        case 'editStyle': {
+            if (node.type !== 'style') return
+            if (ctx.sceneId === undefined) return
+            await ctx.showStyleEditor({
+                styleSetId: node.id,
+                scopeId: styleInfo?.scopeId ?? 0,
+                sceneId: ctx.sceneId,
+                styleName: node.name,
+            })
             return
         }
         case 'styleLoad': {
@@ -416,10 +469,33 @@ export async function dispatchSceneCtxAction(
             return
         }
         case 'cameraEditVisFlags': {
-            // The vis-flag editing dialog is not implemented yet; the menu
-            // item is disabled, so this branch should not normally fire.
-            // Log to surface unexpected dispatches in development.
-            console.info('cameraEditVisFlags: not implemented yet')
+            if (node.type !== 'camera') return
+            if (!ctx.cm || ctx.sceneId === undefined) return
+            let info
+            try {
+                info = await ctx.cm.invokeService('getCameraVisFlags', {
+                    sceneId: ctx.sceneId,
+                    cameraName: node.name,
+                })
+            } catch (err) {
+                console.warn('getCameraVisFlags failed:', err)
+                return
+            }
+            if (!info?.ok) return
+            const result = await ctx.showEditCameraVisFlags({
+                cameraName: node.name,
+                entries: info.entries,
+            })
+            if (!result) return
+            try {
+                await ctx.cm.invokeService('setCameraVisFlags', {
+                    sceneId: ctx.sceneId,
+                    cameraName: node.name,
+                    entries: result.entries,
+                })
+            } catch (err) {
+                console.warn('setCameraVisFlags failed:', err)
+            }
             return
         }
         case 'multiShow':

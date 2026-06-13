@@ -52,6 +52,7 @@ export interface SceneCtxPayload {
     colorProofingEnabled: boolean
     supportsChangeSel: boolean
     canGenSurfObj: boolean
+    canEditInteractions: boolean
     rendChangeTypes: string[]
     styleInfo?: SceneTreeNode extends { styleInfo?: infer S } ? S : undefined
     cameraInfo?: SceneTreeNode extends { cameraInfo?: infer C } ? C : undefined
@@ -80,6 +81,10 @@ export async function buildSceneCtxPayload(
     // Generate surface obj is isosurf-only.
     const canGenSurfObj =
         node.type === 'renderer' && node.className === 'isosurf'
+
+    // Edit interaction list is atomintr-only (UXP aintr-edit dialog).
+    const canEditInteractions =
+        node.type === 'renderer' && node.className === 'atomintr'
 
     // Pre-fetch clipboard state so main can enable Paste items correctly.
     let clipboardKind: 'object' | 'renderer' | 'style' | 'camera' | null = null
@@ -179,6 +184,7 @@ export async function buildSceneCtxPayload(
         colorProofingEnabled,
         supportsChangeSel,
         canGenSurfObj,
+        canEditInteractions,
         rendChangeTypes,
         styleInfo: styleInfo as SceneCtxPayload['styleInfo'],
         cameraInfo: cameraInfo as SceneCtxPayload['cameraInfo'],

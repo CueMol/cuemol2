@@ -101,6 +101,9 @@ export function buildTemplate(
                 { label: 'Edit style…', click: action({ kind: 'editRendStyle' }) },
                 { label: 'Create style…', click: action({ kind: 'createRendStyle' }) },
                 ...generateSurfObjItem(payload, action),
+                ...(payload.canEditInteractions
+                    ? [{ label: 'Edit interaction list…', click: action({ kind: 'editInteractionList' as const }) }]
+                    : []),
                 { type: 'separator' },
                 renameItem(action),
                 copyItem(action),
@@ -201,7 +204,6 @@ function buildCameraNodeMenu(
         },
         {
             label: 'Edit vis flags…',
-            enabled: false,
             click: action({ kind: 'cameraEditVisFlags' }),
         },
         {
@@ -295,6 +297,7 @@ function buildStyleNodeMenu(
             ],
         },
         { type: 'separator' },
+        { label: 'Edit…', click: action({ kind: 'editStyle' }) },
         {
             label: 'Read-only',
             type: 'checkbox',
