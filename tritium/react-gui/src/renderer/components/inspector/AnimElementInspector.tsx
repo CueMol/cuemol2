@@ -336,12 +336,7 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
             decimals={0}
             unit="%"
             onChange={(v) => setField({ quadricPct: v })}
-            onRelease={(v) => {
-              // End the edit even when out of range, so editingRef does not
-              // stay latched (which would block future re-seeds).
-              editingRef.current = false;
-              if (v > 0 && v <= 50) commit("quadric", v / 100);
-            }}
+            onRelease={(v) => commit("quadric", v / 100)}
           />
         </Field>
       </FieldSection>

@@ -185,7 +185,7 @@ if (!("AnimObjPropPage" in cuemolui)) {
 
       if (tgt_id=="comprop-quadric" || tgt_id==null) {
 	var new_val = parseFloat(this.mQuadSli.value);
-	if (!(isNaN(new_val) || new_val<=0.0 || new_val>50.0))
+	if (!(isNaN(new_val) || new_val<0.0 || new_val>50.0)) // allow 0 (linear); C++ handles val<0.01 without div-by-zero
 	  this.mMain.updateData("quadric", new_val/100.0);
       }
 
