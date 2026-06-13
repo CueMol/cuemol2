@@ -1,6 +1,6 @@
 # ADR-0029: Animation panel — strip-timeline model and detail inspector
 
-- Status: accepted (Phases 1-4 host E2E verified; later refinements + Phase 5 cleanup pending)
+- Status: accepted (host E2E verified through Phase 5; UXP-parity follow-ups tracked as future Phase 6)
 - Date: 2026-06-13
 - Mapping rows: [`panel.anim`](../mapping/panels.md#panelanim), [`dialog.animobj`](../mapping/other_dlgs.md#dialoganimobj)
 

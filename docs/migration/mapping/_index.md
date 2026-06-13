@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-06-13 (Phase 5 done: 旧 keyframe mock を完全撤去 (types.ts の `Keyframe`/`AnimationTrack`/`AnimationData`、`data/alignmentData.ts` 削除、App.tsx の animation state、BottomPanel の dead prop、appIcons.ts の dead `track.light`+`Lightning` import)。anim panel migration が構造的に完了したため `panel.anim` / `dialog.animobj` を wip->done。Panel wip 12->11 / done 13->14、Dialog_other wip 3->2 / done 10->11、Total wip 27->25 / done 82->84。In Progress から両行を除去。残 UXP-parity feature (multi-rend / timeRefName cascade / timeedit / realtime preview) + 関連 surface (anim-ribbon / anim-render) は任意 Phase 6。ADR-0029 を host E2E verified に更新)
 - Updated: 2026-06-13 (Phase 4 docs: anim inspector を [ADR-0029](../adr/ADR-0029-anim-timeline-strip-model.md) として起票。`panel.anim` の Notes/ADR を更新 (keyframe mock -> Blender 風 strip timeline + 実 3D 再生 (worker idle pump) + 右 InspectorPanel detail inspector: Properties per-type editor + 再利用 Generic tab、uid=findByUid、Quadric 0=linear で UI ガード除去、spin-axis Cartesian-only)。`dialog.animobj` todo->wip かつ merged (`AnimElementInspector` / `animDetail.service` / `GenericTab` に統合)。Dialog_other todo 6->5 / wip 2->3、Total todo 24->23 / wip 26->27、merged 47->48 / unassigned 24->23、Unstarted 24->23。In Progress の panel.anim 行を更新し dialog.animobj 行を追加。panel.anim は Phase 5 cleanup 残のため wip 据え置き)
 - Updated: 2026-06-12 (wip 棚卸し是正: host 確認済みで実質完了の行を done に。`dialog.about` + coloring decks `panel.coloring.deck.{solid,paint,cpk,rainbow,bfac,elepot}` (6) + mirror `overlay.coloring-deck-*` (5) を wip->done (計 12)。`panel.coloring.shell` の stale "coming soon" 注記を是正 (Paint/Solid/CPK/Bfac/Rainbow/Elepot は enabled、Multi-gradient のみ todo 据え置きで shell は wip 継続)。Panel done 7->13 / wip 18->12、Dialog_other done 9->10 / wip 3->2、Overlay done 16->21 / wip 7->2、Total done 70->82 / wip 38->26。In Progress から該当 7 行除去。menu(26/55, 6/7)・既知バグの style dialog・各種 Phase 残りは正当 wip として据え置き)
 - Updated: 2026-06-12 (D-Phase1-4 done: 別ホスト E2E sign-off 済み (各 Phase の「進めて」が確認 OK の意)。`dialog.property.object` / `dialog.tool.visflagset-edit` / `dialog.tool.aintr-edit` / `dialog.style-editor` を wip->done。Dialog_property done 13->14 (15/15 完成)、Dialog_other done 8->9、Dialog_tool done 14->16、Total done 66->70 / wip 42->38。In Progress から 4 行除去、ADR-0026/0027/0028 を host E2E verified に更新)
@@ -68,16 +69,16 @@
 
 | Category | File | Total | done | wip | review | todo | frozen |
 |----------|------|------:|-----:|----:|-------:|-----:|-------:|
-| Panel | [panels.md](panels.md) | 27 | 13 | 12 | 0 | 2 | 0 |
+| Panel | [panels.md](panels.md) | 27 | 14 | 11 | 0 | 2 | 0 |
 | Menu | [menus.md](menus.md) | 4 | 2 | 2 | 0 | 0 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 15 | 14 | 1 | 0 | 0 | 0 |
-| Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 10 | 3 | 0 | 5 | 0 |
+| Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 11 | 2 | 0 | 5 | 0 |
 | Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 16 | 0 | 0 | 5 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 4 | 5 | 0 | 4 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 21 | 2 | 0 | 5 | 0 |
 | Other | [other.md](other.md) | 4 | 2 | 1 | 0 | 1 | 0 |
-| **Total** | | **132** | **82** | **27** | **0** | **23** | **0** |
+| **Total** | | **132** | **84** | **25** | **0** | **23** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -142,8 +143,6 @@
 | [`overlay.propeditor-generic`](overlay.md#overlaypropeditor-generic) | `InspectorPanel` / `GenericTab` / `genericProps.service` / `useInspectorState` | Generic property editor as the Generic tab of the docked inspector pane (ADR-0015); `getPropsJSON` bridge, live-apply, undo-wrapped writes. First stage edits primitive types (string/int/real/bool/enum); nested-object sub-properties now editable via dot-path keys (`parseGenericProps` recurses, `setNestedProperty` writes — ADR-0015 Update); color/vector/timeval widgets deferred. Replaces the retired read-only `NodePropertyDialog` modal. |
 | [`dialog.property.renderer`](prop_dlgs.md) | `inspector/RendererCommonSection` / `inspector/PropertiesTab` / `rendererPropSections` / `getMaterialNames.service` | renderer-common-page (Basic settings + Edge lines) as the structured Properties tab, default for renderer targets; live `getGenericProps`/`setGenericProp` (sel compiled via `makeSel`, egcolor/material as strings). Per-renderer-type sections deferred to the `rendererPropSections` registry — every type currently shows Common + a collapsed dummy placeholder. |
 | [`panel.coloring.shell`](panels.md#panelcoloringshell) | `ColorPane` / `usePaintCapableRenderers` / `rendererColoring.service` | Phase 1: renderer selector (paint-capable filter) + Coloring type dropdown (Paint / Solid / Reset enabled; CPK / Bfac / Rainbow / Elepot / Multi-gradient "coming soon"). |
-| [`panel.anim`](panels.md#panelanim) | `AnimationPanel` / `AnimElementInspector` / `animation.service` / `animDetail.service` | Phases 1-4 done: Blender-style strip timeline (1 AnimObj = 1 lane bar) with real 3D playback (worker idle pump), strip move/resize/add/delete/reorder, and a right-InspectorPanel detail inspector (Properties per-type editor + reused Generic tab). Phase 5 cleanup (legacy keyframe removal, timeedit, multi-rend) + related surfaces (anim-ribbon / anim-render) pending. ADR-0029 |
-| [`dialog.animobj`](other_dlgs.md#dialoganimobj) | `AnimElementInspector` / `animDetail.service` / `GenericTab` | UXP animobj property dialog as the right InspectorPanel `animElement` target: bespoke per-type Properties editor (UXP labels) + reused Generic tab over `getPropsJSON`; uid-resolved via `findByUid`. Quadric 0=linear (UI guard removed), spin-axis Cartesian-only editable. ADR-0029 |
 | [`panel.molstruct`](panels.md#panelmolstruct) | `MolStructPane` / `useMolStructure` / `selStrFromTree` / `getMolStructure.service` / `applyMolSelString.service` | Phase 1+2: molecule selector + lazy chain/residue/atom tree (per-chain & per-residue cache, self-heal on missing) + multi-select + Select / Center / Zoom (ADR-0018). Known issue: first-expand stagger from Blueprint `Tree` Collapse JS state machine (virtualization swap deferred). |
 ---
 
