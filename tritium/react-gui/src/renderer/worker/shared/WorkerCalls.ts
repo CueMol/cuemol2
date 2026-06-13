@@ -30,6 +30,7 @@ import type {
 
 import type { AppInfoResult } from '../server/services/appInfo.service'
 import type { AnimListTimelineArgs, AnimGetMgrStateArgs, AnimPlayArgs, AnimPauseArgs, AnimStopArgs, AnimGoTimeArgs, AnimSetLoopArgs, AnimTransportResult, AnimSetElementTimeArgs, AnimAddElementArgs, AnimRemoveElementArgs, AnimMoveElementArgs, AnimEditResult, AnimAddResult } from '../server/services/animation.service'
+import type { GetAnimElementDetailArgs, GetAnimElementDetailResult, SetAnimElementPropArgs, SetAnimElementPropResult, GetAnimTargetOptionsArgs, GetAnimTargetOptionsResult } from '../server/services/animDetail.service'
 import type { AnimTimeline, AnimMgrState } from '../../types'
 import type { CreateNewSceneAndViewArgs, CreateNewSceneAndViewResult } from '../server/services/createNewSceneAndView.service'
 import type { CreateViewInSceneArgs, CreateViewInSceneResult } from '../server/services/createViewInScene.service'
@@ -628,6 +629,9 @@ export interface ServiceMap {
   animAddElement:             { args: AnimAddElementArgs;              result: AnimAddResult }
   animRemoveElement:          { args: AnimRemoveElementArgs;           result: AnimEditResult }
   animMoveElement:            { args: AnimMoveElementArgs;             result: AnimEditResult }
+  getAnimElementDetail:       { args: GetAnimElementDetailArgs;        result: GetAnimElementDetailResult }
+  setAnimElementProp:         { args: SetAnimElementPropArgs;          result: SetAnimElementPropResult }
+  getAnimTargetOptions:       { args: GetAnimTargetOptionsArgs;        result: GetAnimTargetOptionsResult }
 }
 
 export type ServiceKey = keyof ServiceMap

@@ -72,6 +72,8 @@ interface BottomPanelProps {
   onRenderApplyPreset: (label: string) => void;
   /** Open the Render Settings editor in the Inspector. */
   onOpenRenderSettings: () => void;
+  /** Show / clear the anim-element detail in the Inspector (uid null = clear). */
+  onInspectAnimElement?: (sceneId: number, uid: number | null) => void;
 }
 
 export const BottomPanel: React.FC<BottomPanelProps> = ({
@@ -84,6 +86,7 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({
   onRenderCancel,
   onRenderApplyPreset,
   onOpenRenderSettings,
+  onInspectAnimElement,
 }) => {
   const [activeTab, setActiveTab] = useState<BottomTabType>("output");
 
@@ -137,6 +140,7 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({
             cm={cm}
             activeSceneId={activeSceneId}
             activeMolViewId={activeMolViewId}
+            onInspectAnimElement={onInspectAnimElement}
           />
         );
       case "render":

@@ -31,6 +31,7 @@ import { SegmentField } from "../../h3-kit/form";
 import { PropertiesTab } from "../inspector/PropertiesTab";
 import { GenericTab } from "../inspector/GenericTab";
 import { RenderSettingsEditor } from "../inspector/RenderSettingsEditor";
+import { AnimElementInspector } from "../inspector/AnimElementInspector";
 import { InspectorResetAllButton } from "../inspector/InspectorResetAllButton";
 import { modifiedKeys } from "../inspector/propModel";
 import type { PropDef } from "../../data/rendererProperties";
@@ -49,7 +50,7 @@ import { ColorPickerProvider } from "../../h3-kit/colorpicker/ColorPickerContext
 type InspectorMode = "properties" | "generic";
 
 /** Kind of context the inspector is currently editing. */
-export type InspectorTargetKind = "node" | "renderSettings";
+export type InspectorTargetKind = "node" | "renderSettings" | "animElement";
 
 /** Props passed through to the Render Settings editor. */
 export interface RenderSettingsView {
@@ -101,6 +102,12 @@ interface InspectorPanelProps {
   sceneId: number | undefined;
   /** UID of the inspected node (for sections querying the node itself). */
   nodeId: number | undefined;
+  /** Anim-element target (sceneId + stable uid) when targetKind is animElement. */
+  animElement: { sceneId: number; uid: number } | null;
+  /** Called when the inspected anim element is deleted -- closes the inspector. */
+  onAnimElementGone: (sceneId: number) => void;
+  /** Called by AnimElementInspector to set the header name / type. */
+  onAnimHeaderChange: (name: string, type: string) => void;
 }
 
 // ────────────────────────────────────────────────────────────
@@ -124,6 +131,9 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
   cm,
   sceneId,
   nodeId,
+  animElement,
+  onAnimElementGone,
+  onAnimHeaderChange,
 }) => {
   // Renderer and Object targets have a migrated structured page, so default to
   // it; other node kinds fall back to the data-backed Generic tab.
@@ -144,6 +154,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
   }, [hasTarget, nodeName, defaultMode]);
 
   const isRenderSettings = targetKind === "renderSettings";
+  const isAnimElement = targetKind === "animElement";
 
   return (
     <ColorPickerProvider cm={cm} sceneId={sceneId}>
@@ -191,6 +202,19 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
             onChange={renderSettings.onChange}
           />
         </div>
+      ) : isAnimElement ? (
+        /* ── Animation element target (self-contained editor) ── */
+        animElement && cm ? (
+          <AnimElementInspector
+            cm={cm}
+            sceneId={animElement.sceneId}
+            uid={animElement.uid}
+            onGone={onAnimElementGone}
+            onHeaderChange={onAnimHeaderChange}
+          />
+        ) : (
+          <div className="inspector-empty">No animation element.</div>
+        )
       ) : (
         /* ── Node target (scene-tree node / View) ── */
         <>

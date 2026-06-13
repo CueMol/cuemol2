@@ -14,7 +14,6 @@
  * later phases.
  */
 
-import type { Scene } from "@cuemol/core/src/wrappers/Scene";
 import type { AnimMgr } from "@cuemol/core/src/wrappers/AnimMgr";
 import type { AnimObj } from "@cuemol/core/src/wrappers/AnimObj";
 import type { TimeValue } from "@cuemol/core/src/wrappers/TimeValue";
@@ -22,6 +21,15 @@ import type { WorkerContext } from "../types/WorkerContext";
 import type { AnimAddType, AnimElement, AnimMgrState, AnimTimeline } from "../../../types";
 import { getSceneOrNull, getViewOrNull } from "./helpers/sceneResolver";
 import { classNameToType } from "./helpers/animElementType";
+import {
+  safeNum,
+  safeBool,
+  safeStr,
+  getAnimMgrOrNull,
+  resolveMgr,
+  resolveSceneMgr,
+  makeTimeValue,
+} from "./helpers/animResolve";
 import { withUndoTxn } from "./withUndoTxn";
 
 /** Renderer-side default fps for the ms<->frame ruler readout. */
@@ -104,33 +112,6 @@ export interface AnimAddResult {
   index?: number;
 }
 
-// --- safe wrapper reads (a getter may throw for missing-on-subclass cases) ---
-
-function safeNum(read: () => number): number {
-  try {
-    const v = read();
-    return Number.isFinite(v) ? v : 0;
-  } catch {
-    return 0;
-  }
-}
-
-function safeBool(read: () => boolean): boolean {
-  try {
-    return read() === true;
-  } catch {
-    return false;
-  }
-}
-
-function safeStr(read: () => string): string {
-  try {
-    return read() ?? "";
-  } catch {
-    return "";
-  }
-}
-
 /**
  * Map the `playState` enum to a stable string union.
  *
@@ -178,14 +159,6 @@ function readElement(obj: AnimObj, index: number): AnimElement {
     absEndMs: safeNum(() => obj.absEnd.millisec),
     quadric: safeNum(() => obj.quadric),
   };
-}
-
-function getAnimMgrOrNull(scene: Scene): AnimMgr | null {
-  try {
-    return (scene.getAnimMgr() as AnimMgr | null) ?? null;
-  } catch {
-    return null;
-  }
 }
 
 const EMPTY_MGR_STATE: AnimMgrState = {
@@ -262,13 +235,6 @@ function getMgrState(ctx: WorkerContext, args: AnimGetMgrStateArgs): AnimMgrStat
 // the worker's existing per-frame redraw loop renders it -- no per-frame call
 // is needed here. Each op returns the post-mutation manager snapshot so the
 // renderer syncs play state / elapsed in a single round trip.
-
-/** Resolve the scene's AnimMgr, or null. */
-function resolveMgr(ctx: WorkerContext, sceneId: number): AnimMgr | null {
-  const scene = getSceneOrNull(ctx, sceneId);
-  if (!scene) return null;
-  return getAnimMgrOrNull(scene);
-}
 
 function fail(): AnimTransportResult {
   return { ok: false, mgr: EMPTY_MGR_STATE };
@@ -348,26 +314,6 @@ function setLoop(ctx: WorkerContext, args: AnimSetLoopArgs): AnimTransportResult
 // (created only while a txn is active) are captured as one undoable unit. They
 // return only `{ ok }`; AnimMgr fires SEM_ADDED / SEM_REMOVING / SEM_PROPCHG, so
 // the renderer's SEM_ANIM listener refetches the timeline.
-
-/** Resolve scene + its AnimMgr together (editing needs the scene for undo). */
-function resolveSceneMgr(
-  ctx: WorkerContext,
-  sceneId: number,
-): { scene: Scene; mgr: AnimMgr } | null {
-  const scene = getSceneOrNull(ctx, sceneId);
-  if (!scene) return null;
-  const mgr = getAnimMgrOrNull(scene);
-  if (!mgr) return null;
-  return { scene, mgr };
-}
-
-/** Build a fresh TimeValue with the given millisec. */
-function makeTimeValue(ctx: WorkerContext, ms: number): TimeValue | null {
-  const tv = ctx.svc.createObj("TimeValue") as TimeValue | null;
-  if (!tv) return null;
-  tv.millisec = ms;
-  return tv;
-}
 
 /** Map an Add-menu type id to its concrete AnimObj class name. */
 function classForAddType(type: AnimAddType): string {

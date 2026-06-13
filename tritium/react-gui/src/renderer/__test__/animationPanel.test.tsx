@@ -310,3 +310,60 @@ describe("AnimationPanel editing", () => {
     unmount();
   });
 });
+
+describe("AnimationPanel inspector wiring", () => {
+  beforeEach(() => {
+    mockTimeline = timeline([el({ uid: 1, index: 0 })]);
+    mockTransport = defaultTransport();
+    mockEdit = defaultEdit();
+  });
+
+  it("emits the selected element uid to the inspector, null on deselect", () => {
+    const onInspect = vi.fn();
+    const { container, unmount } = mountTree(
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} onInspectAnimElement={onInspect} />,
+    );
+    expect(onInspect).toHaveBeenCalledWith(1, null); // mount: nothing selected
+    onInspect.mockClear();
+    const row = container.querySelector(".anim-label-row") as HTMLElement;
+    act(() => row.click()); // select uid 1
+    expect(onInspect).toHaveBeenCalledWith(1, 1);
+    onInspect.mockClear();
+    act(() => row.click()); // toggle deselect
+    expect(onInspect).toHaveBeenCalledWith(1, null);
+    unmount();
+  });
+
+  it("clears the selection + inspector when the selected element vanishes", () => {
+    const onInspect = vi.fn();
+    const { container, root, unmount } = mountTree(
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} onInspectAnimElement={onInspect} />,
+    );
+    act(() => (container.querySelector(".anim-label-row") as HTMLElement).click());
+    onInspect.mockClear();
+    mockTimeline = timeline([]); // element removed (e.g. deleted via SEM_ANIM)
+    act(() =>
+      root.render(
+        <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} onInspectAnimElement={onInspect} />,
+      ),
+    );
+    expect(onInspect).toHaveBeenCalledWith(1, null);
+    unmount();
+  });
+
+  it("resets the selection on scene switch", () => {
+    const onInspect = vi.fn();
+    const { container, root, unmount } = mountTree(
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} onInspectAnimElement={onInspect} />,
+    );
+    act(() => (container.querySelector(".anim-label-row") as HTMLElement).click());
+    onInspect.mockClear();
+    act(() =>
+      root.render(
+        <AnimationPanel cm={cm} activeSceneId={9} activeMolViewId={2} onInspectAnimElement={onInspect} />,
+      ),
+    );
+    expect(onInspect).toHaveBeenCalledWith(9, null);
+    unmount();
+  });
+});

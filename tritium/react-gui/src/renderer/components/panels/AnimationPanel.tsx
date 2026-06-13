@@ -30,7 +30,7 @@
  * element (`timeRefName`); detail (per-type target) editing lands in a later phase.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Popover, Menu, MenuItem } from "@blueprintjs/core";
 import { AppIcon } from "../AppIcon";
 import { ButtonRow, FormButton } from "../../h3-kit/form/ButtonRow";
@@ -57,6 +57,8 @@ interface AnimationPanelProps {
   activeSceneId: number | undefined;
   /** Active mol-view UID; required for playback / scrub (transport disabled without it). */
   activeMolViewId: number | undefined;
+  /** Show / clear the selected element in the right Inspector (uid null = clear). */
+  onInspectAnimElement?: (sceneId: number, uid: number | null) => void;
 }
 
 /** Step factor for the zoom in / out buttons. */
@@ -92,6 +94,7 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
   cm,
   activeSceneId,
   activeMolViewId,
+  onInspectAnimElement,
 }) => {
   const { timeline } = useAnimTimeline({ cm, sceneId: activeSceneId });
   const transport = useAnimTransport({
@@ -251,6 +254,30 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
   );
 
   const addInsertIndex = selectedIndex !== null ? selectedIndex + 1 : undefined;
+
+  // Reset the selection on scene switch so a stale uid from the previous scene
+  // is never emitted against the new scene's inspector.
+  useEffect(() => {
+    setSelectedUid(null);
+  }, [activeSceneId]);
+
+  // Drive the right Inspector from the strip selection. When the selected
+  // element is gone (deleted via SEM_ANIM refetch), clear both the local
+  // selection and the inspector target.
+  useEffect(() => {
+    if (activeSceneId === undefined) return;
+    if (selectedUid === null) {
+      onInspectAnimElement?.(activeSceneId, null);
+      return;
+    }
+    const el = elements.find((e) => e.uid === selectedUid);
+    if (el) {
+      onInspectAnimElement?.(activeSceneId, el.uid);
+    } else {
+      setSelectedUid(null);
+      onInspectAnimElement?.(activeSceneId, null);
+    }
+  }, [selectedUid, activeSceneId, elements, onInspectAnimElement]);
 
   // --- Empty (no scene) state ---
 
