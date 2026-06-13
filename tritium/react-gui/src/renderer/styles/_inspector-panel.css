@@ -131,6 +131,42 @@
   padding: var(--space-3) var(--space-4) var(--space-4);
 }
 
+/* Spin "Spin axis" row: combobox + "(x, y, z)" vector of bare NumberCells.
+   Dense bespoke layout (style-guide-permitted); references form-kit controls
+   and spacing tokens only -- no control sizes are set here. */
+.anim-axis-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.anim-axis-row .h3-form-select {
+  flex: 0 0 auto;
+}
+
+.anim-axis-paren {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+}
+
+/* Slide "Direction angle" row: numeric (grows) + cardinal-preset combobox. */
+.anim-dir-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.anim-dir-row .h3-form-drag {
+  flex: 1 1 auto;
+}
+
+.anim-dir-row .h3-form-select {
+  flex: 0 0 auto;
+}
+
 /* ═══════════════════════════════════════════════════════════
    Properties Tab
    ═══════════════════════════════════════════════════════════ */

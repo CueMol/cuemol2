@@ -84,7 +84,8 @@ describe("AnimElementInspector", () => {
     await flushPromises();
     expect(fieldByLabel(container, "Name")).not.toBeNull();
     expect(fieldByLabel(container, "Relative to")).not.toBeNull();
-    expect(fieldByLabel(container, "Angle")).not.toBeNull(); // SimpleSpin section
+    expect(fieldByLabel(container, "Rotation angle")).not.toBeNull(); // SimpleSpin section
+    expect(fieldByLabel(container, "Spin axis")).not.toBeNull();
     expect(onHeaderChange).toHaveBeenCalledWith("Spin0", "Simple spin");
     unmount();
   });
@@ -106,10 +107,10 @@ describe("AnimElementInspector", () => {
       <AnimElementInspector cm={cm as never} sceneId={1} uid={7} onGone={vi.fn()} onHeaderChange={vi.fn()} />,
     );
     await flushPromises();
-    const checkbox = fieldByLabel(container, "Enabled")!.querySelector(
+    const checkbox = fieldByLabel(container, "Disabled")!.querySelector(
       'input[type="checkbox"]',
     ) as HTMLInputElement;
-    act(() => checkbox.click()); // checked (enabled) -> unchecked -> disabled=true
+    act(() => checkbox.click()); // unchecked (enabled) -> checked -> disabled=true
     await flushPromises();
     expect(cm.invokeService).toHaveBeenCalledWith("setAnimElementProp", {
       sceneId: 1,
@@ -130,7 +131,7 @@ describe("AnimElementInspector", () => {
     // in animDetailService.test.ts (prop:"timing" -> start/end + resolveRelTime).
     expect(fieldByLabel(container, "Start (ms)")).not.toBeNull();
     expect(fieldByLabel(container, "Duration (ms)")).not.toBeNull();
-    expect(fieldByLabel(container, "Easing")).not.toBeNull();
+    expect(fieldByLabel(container, "Quadric")).not.toBeNull();
     unmount();
   });
 

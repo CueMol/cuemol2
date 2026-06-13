@@ -5,12 +5,20 @@
  * `RenderSettingsEditor`: it self-fetches its data via the `animDetail`
  * services (the generic property bridge cannot target an `AnimObj`).
  *
+ * Labels and per-type layout mirror the UXP animobj property dialog
+ * (`uxp_gui/.../anim/animobj-common-proppage.xul`) so the migration is
+ * recognisable: Quadric, Rotation angle, the "Spin axis" combobox + "(x, y, z)"
+ * vector, Target camera / renderers / opacity / MorphMol, the combined
+ * "Direction angle", etc. The UXP numslider widgets map to `DragNumericField`;
+ * the spin-axis components (plain number boxes in UXP, not sliders) map to the
+ * catalog `NumberCell`.
+ *
  * Identity is the stable `uid`. The component refetches on every SEM_ANIM event
  * (the payload carries no uid, so it always re-resolves), reports the element
  * name/type up via `onHeaderChange`, and signals `onGone` when the element is
- * deleted. Numeric fields commit once on release (the write service has no
- * preview/abort mode); an `editingRef` gate keeps an in-progress drag from being
- * clobbered by a refetch.
+ * deleted. Drafted numeric/text fields commit once on release; an `editingRef`
+ * gate keeps an in-progress edit from being clobbered by a refetch and is
+ * cleared on element switch so a new element always re-seeds its form.
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -20,6 +28,7 @@ import {
   TextField,
   SelectField,
   DragNumericField,
+  NumberCell,
   SwitchField,
 } from "../../h3-kit/form";
 import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
@@ -61,9 +70,6 @@ interface FormState {
   startMs: number;
   durationMs: number;
   angle: number;
-  axisX: number;
-  axisY: number;
-  axisZ: number;
   tgtAlpha: number;
   direction: number;
   distance: number;
@@ -80,9 +86,6 @@ function detailToForm(d: AnimElementDetail): FormState {
     startMs: c.startMs,
     durationMs: c.endMs - c.startMs,
     angle: t.angle ?? 0,
-    axisX: t.axisX ?? 0,
-    axisY: t.axisY ?? 0,
-    axisZ: t.axisZ ?? 0,
     tgtAlpha: t.tgtAlpha ?? 1,
     direction: t.direction ?? 0,
     distance: t.distance ?? 1,
@@ -105,6 +108,11 @@ function axisPreset(x: number, y: number, z: number): string {
   if (x === 0 && y === 1 && z === 0) return "y";
   if (x === 0 && y === 0 && z === 1) return "z";
   return "cart";
+}
+
+/** Compact axis-component display: round to 4 dp and drop trailing zeros. */
+function fmtAxis(n: number): string {
+  return String(Math.round(n * 1e4) / 1e4);
 }
 
 const RENDER_MULTI = "__multiple__";
@@ -246,20 +254,22 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
 
   const t = detail.typeProps;
   const type = detail.common.type;
+  const axis = { x: t.axisX ?? 0, y: t.axisY ?? 0, z: t.axisZ ?? 0 };
 
   const commitTiming = () =>
     commit("timing", { startMs: Math.max(0, form.startMs), endMs: Math.max(0, form.startMs) + Math.max(0, form.durationMs) });
-  const commitAxis = () => {
-    // End the interaction even when we keep the old value, otherwise editingRef
-    // stays latched and blocks future re-seeds (-> stuck on "Loading...").
-    editingRef.current = false;
-    if (Math.hypot(form.axisX, form.axisY, form.axisZ) < 1e-6) return; // near-zero: keep old
-    commit("axis", { x: form.axisX, y: form.axisY, z: form.axisZ });
+
+  /** Write one axis component, keeping the other two; near-zero keeps the old vector. */
+  const commitAxisComp = (key: "x" | "y" | "z", s: string) => {
+    const n = parseFloat(s);
+    if (!Number.isFinite(n)) return;
+    const v = { ...axis, [key]: n };
+    if (Math.hypot(v.x, v.y, v.z) < 1e-6) return; // near-zero: keep old
+    commit("axis", v);
   };
   const onAxisPreset = (p: string) => {
     if (p === "cart") return;
     const v = p === "x" ? { x: 1, y: 0, z: 0 } : p === "y" ? { x: 0, y: 1, z: 0 } : { x: 0, y: 0, z: 1 };
-    setForm((f) => (f ? { ...f, axisX: v.x, axisY: v.y, axisZ: v.z } : f));
     commit("axis", v);
   };
 
@@ -268,7 +278,7 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
 
   return (
     <div className="inspector-body anim-inspector">
-      <FieldSection title="Common">
+      <FieldSection title="Common settings">
         <Field label="Name">
           <TextField
             value={form.name}
@@ -276,10 +286,10 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
             onBlur={() => commit("name", form.name)}
           />
         </Field>
-        <Field label="Enabled" inline>
+        <Field label="Disabled" inline>
           <SwitchField
-            checked={!detail.common.disabled}
-            onChange={(c) => commit("disabled", !c)}
+            checked={detail.common.disabled}
+            onChange={(c) => commit("disabled", c)}
           />
         </Field>
         <Field label="Relative to">
@@ -317,7 +327,7 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
             onRelease={commitTiming}
           />
         </Field>
-        <Field label="Easing">
+        <Field label="Quadric">
           <DragNumericField
             value={form.quadricPct}
             min={0}
@@ -337,8 +347,8 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
       </FieldSection>
 
       {type === "SimpleSpin" && (
-        <FieldSection title="Spin">
-          <Field label="Angle">
+        <FieldSection title="SimpleSpin settings">
+          <Field label="Rotation angle">
             <DragNumericField
               value={form.angle}
               min={0}
@@ -350,32 +360,29 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
               onRelease={(v) => commit("angle", wrapAngle(v))}
             />
           </Field>
-          <Field label="Axis">
-            <SelectField
-              value={axisPreset(form.axisX, form.axisY, form.axisZ)}
-              onChange={onAxisPreset}
-            >
-              <option value="x">X axis</option>
-              <option value="y">Y axis</option>
-              <option value="z">Z axis</option>
-              <option value="cart">Cartesian</option>
-            </SelectField>
-          </Field>
-          <Field label="Axis X">
-            <DragNumericField value={form.axisX} min={-1} max={1} step={0.1} decimals={2} onChange={(v) => setField({ axisX: v })} onRelease={commitAxis} />
-          </Field>
-          <Field label="Axis Y">
-            <DragNumericField value={form.axisY} min={-1} max={1} step={0.1} decimals={2} onChange={(v) => setField({ axisY: v })} onRelease={commitAxis} />
-          </Field>
-          <Field label="Axis Z">
-            <DragNumericField value={form.axisZ} min={-1} max={1} step={0.1} decimals={2} onChange={(v) => setField({ axisZ: v })} onRelease={commitAxis} />
+          <Field label="Spin axis">
+            <div className="anim-axis-row">
+              <SelectField fill={false} value={axisPreset(axis.x, axis.y, axis.z)} onChange={onAxisPreset}>
+                <option value="x">X axis</option>
+                <option value="y">Y axis</option>
+                <option value="z">Z axis</option>
+                <option value="cart">Cartesian</option>
+              </SelectField>
+              <span className="anim-axis-paren">(</span>
+              <NumberCell value={fmtAxis(axis.x)} onCommit={(s) => commitAxisComp("x", s)} aria-label="Axis X" />
+              <span className="anim-axis-paren">,</span>
+              <NumberCell value={fmtAxis(axis.y)} onCommit={(s) => commitAxisComp("y", s)} aria-label="Axis Y" />
+              <span className="anim-axis-paren">,</span>
+              <NumberCell value={fmtAxis(axis.z)} onCommit={(s) => commitAxisComp("z", s)} aria-label="Axis Z" />
+              <span className="anim-axis-paren">)</span>
+            </div>
           </Field>
         </FieldSection>
       )}
 
       {type === "CamMotion" && (
-        <FieldSection title="Camera motion">
-          <Field label="End camera">
+        <FieldSection title="CamMotion settings">
+          <Field label="Target camera">
             <SelectField value={t.endcam ?? ""} onChange={(v) => commit("endcam", v)}>
               <option value="">(none)</option>
               {options.cameras.map((c) => (
@@ -401,8 +408,8 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
       )}
 
       {(type === "ShowHideAnim" || type === "SlideInOutAnim") && (
-        <FieldSection title={type === "ShowHideAnim" ? "Show / Hide" : "Slide"}>
-          <Field label="Renderer">
+        <FieldSection title={type === "ShowHideAnim" ? "Show/Hide settings" : "Slide in/out settings"}>
+          <Field label="Target renderers">
             <SelectField
               value={rendIsMulti ? RENDER_MULTI : rendVal}
               onChange={(v) => {
@@ -418,31 +425,21 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
               ))}
             </SelectField>
           </Field>
-          <Field label="Hide" inline>
-            <SwitchField checked={!!t.hide} onChange={(c) => commit("hide", c)} />
-          </Field>
-          {type === "ShowHideAnim" && (
-            <>
-              <Field label="Fade" inline>
-                <SwitchField checked={!!t.fade} onChange={(c) => commit("fade", c)} />
-              </Field>
-              <Field label="Target alpha">
-                <DragNumericField
-                  value={form.tgtAlpha}
-                  min={0}
-                  max={1}
-                  step={0.1}
-                  decimals={2}
-                  onChange={(v) => setField({ tgtAlpha: v })}
-                  onRelease={(v) => commit("tgtAlpha", v)}
-                />
-              </Field>
-            </>
-          )}
           {type === "SlideInOutAnim" && (
-            <>
-              <Field label="Direction">
+            <Field label="Direction angle">
+              <div className="anim-dir-row">
+                <DragNumericField
+                  value={form.direction}
+                  min={0}
+                  max={360}
+                  step={5}
+                  decimals={0}
+                  unit="°"
+                  onChange={(v) => setField({ direction: v })}
+                  onRelease={(v) => commit("direction", v)}
+                />
                 <SelectField
+                  fill={false}
                   value={String(form.direction)}
                   onChange={(v) => {
                     const n = Number(v);
@@ -455,28 +452,43 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
                   <option value="180">Right</option>
                   <option value="270">Down</option>
                 </SelectField>
+              </div>
+            </Field>
+          )}
+          {type === "SlideInOutAnim" && (
+            <Field label="Distance">
+              <DragNumericField
+                value={form.distance}
+                min={0}
+                max={2}
+                step={0.1}
+                decimals={1}
+                unit="W/2"
+                onChange={(v) => setField({ distance: v })}
+                onRelease={(v) => commit("distance", v)}
+              />
+            </Field>
+          )}
+          <Field label="Show/Hide">
+            <SelectField value={t.hide ? "true" : "false"} onChange={(v) => commit("hide", v === "true")}>
+              <option value="false">Show</option>
+              <option value="true">Hide</option>
+            </SelectField>
+          </Field>
+          {type === "ShowHideAnim" && (
+            <>
+              <Field label="Fade" inline>
+                <SwitchField checked={!!t.fade} onChange={(c) => commit("fade", c)} />
               </Field>
-              <Field label="Angle">
+              <Field label="Target opacity">
                 <DragNumericField
-                  value={form.direction}
+                  value={form.tgtAlpha}
                   min={0}
-                  max={360}
-                  step={5}
-                  decimals={0}
-                  unit="°"
-                  onChange={(v) => setField({ direction: v })}
-                  onRelease={(v) => commit("direction", v)}
-                />
-              </Field>
-              <Field label="Distance">
-                <DragNumericField
-                  value={form.distance}
-                  min={0}
-                  max={2}
+                  max={1}
                   step={0.1}
-                  decimals={2}
-                  onChange={(v) => setField({ distance: v })}
-                  onRelease={(v) => commit("distance", v)}
+                  decimals={1}
+                  onChange={(v) => setField({ tgtAlpha: v })}
+                  onRelease={(v) => commit("tgtAlpha", v)}
                 />
               </Field>
             </>
@@ -485,8 +497,8 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
       )}
 
       {type === "MolAnim" && (
-        <FieldSection title="Mol morphing">
-          <Field label="Target mol">
+        <FieldSection title="MolAnim settings">
+          <Field label="Target MorphMol">
             <SelectField value={t.mol ?? ""} onChange={(v) => commit("mol", v)}>
               <option value="">(none)</option>
               {options.mols.map((m) => (
