@@ -19,7 +19,7 @@ import {
   Field,
   TextField,
   SelectField,
-  NumericField,
+  DragNumericField,
   SwitchField,
 } from "../../h3-kit/form";
 import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
@@ -167,6 +167,11 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
 
   // Fetch on mount + element/scene change.
   useEffect(() => {
+    // Clear any latched edit flag from the previously inspected element. If a
+    // prior interaction ended without committing (e.g. an out-of-range release),
+    // a stale editingRef would block the re-seed effect below and strand the
+    // newly selected element on "Loading..." forever.
+    editingRef.current = false;
     setDetail(null);
     setForm(null);
     refetch();
@@ -245,6 +250,9 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
   const commitTiming = () =>
     commit("timing", { startMs: Math.max(0, form.startMs), endMs: Math.max(0, form.startMs) + Math.max(0, form.durationMs) });
   const commitAxis = () => {
+    // End the interaction even when we keep the old value, otherwise editingRef
+    // stays latched and blocks future re-seeds (-> stuck on "Loading...").
+    editingRef.current = false;
     if (Math.hypot(form.axisX, form.axisY, form.axisZ) < 1e-6) return; // near-zero: keep old
     commit("axis", { x: form.axisX, y: form.axisY, z: form.axisZ });
   };
@@ -288,36 +296,40 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
           </SelectField>
         </Field>
         <Field label="Start (ms)">
-          <NumericField
+          <DragNumericField
             value={form.startMs}
             min={0}
             max={600000}
             step={100}
-            slider={false}
+            decimals={0}
             onChange={(v) => setField({ startMs: v })}
             onRelease={commitTiming}
           />
         </Field>
         <Field label="Duration (ms)">
-          <NumericField
+          <DragNumericField
             value={form.durationMs}
             min={0}
             max={600000}
             step={100}
-            slider={false}
+            decimals={0}
             onChange={(v) => setField({ durationMs: v })}
             onRelease={commitTiming}
           />
         </Field>
         <Field label="Easing">
-          <NumericField
+          <DragNumericField
             value={form.quadricPct}
             min={0}
             max={50}
             step={5}
+            decimals={0}
             unit="%"
             onChange={(v) => setField({ quadricPct: v })}
             onRelease={(v) => {
+              // End the edit even when out of range, so editingRef does not
+              // stay latched (which would block future re-seeds).
+              editingRef.current = false;
               if (v > 0 && v <= 50) commit("quadric", v / 100);
             }}
           />
@@ -327,11 +339,12 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
       {type === "SimpleSpin" && (
         <FieldSection title="Spin">
           <Field label="Angle">
-            <NumericField
+            <DragNumericField
               value={form.angle}
               min={0}
               max={360}
               step={5}
+              decimals={0}
               unit="°"
               onChange={(v) => setField({ angle: v })}
               onRelease={(v) => commit("angle", wrapAngle(v))}
@@ -349,13 +362,13 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
             </SelectField>
           </Field>
           <Field label="Axis X">
-            <NumericField value={form.axisX} min={-1} max={1} step={0.1} slider={false} onChange={(v) => setField({ axisX: v })} onRelease={commitAxis} />
+            <DragNumericField value={form.axisX} min={-1} max={1} step={0.1} decimals={2} onChange={(v) => setField({ axisX: v })} onRelease={commitAxis} />
           </Field>
           <Field label="Axis Y">
-            <NumericField value={form.axisY} min={-1} max={1} step={0.1} slider={false} onChange={(v) => setField({ axisY: v })} onRelease={commitAxis} />
+            <DragNumericField value={form.axisY} min={-1} max={1} step={0.1} decimals={2} onChange={(v) => setField({ axisY: v })} onRelease={commitAxis} />
           </Field>
           <Field label="Axis Z">
-            <NumericField value={form.axisZ} min={-1} max={1} step={0.1} slider={false} onChange={(v) => setField({ axisZ: v })} onRelease={commitAxis} />
+            <DragNumericField value={form.axisZ} min={-1} max={1} step={0.1} decimals={2} onChange={(v) => setField({ axisZ: v })} onRelease={commitAxis} />
           </Field>
         </FieldSection>
       )}
@@ -414,11 +427,12 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
                 <SwitchField checked={!!t.fade} onChange={(c) => commit("fade", c)} />
               </Field>
               <Field label="Target alpha">
-                <NumericField
+                <DragNumericField
                   value={form.tgtAlpha}
                   min={0}
                   max={1}
                   step={0.1}
+                  decimals={2}
                   onChange={(v) => setField({ tgtAlpha: v })}
                   onRelease={(v) => commit("tgtAlpha", v)}
                 />
@@ -443,22 +457,24 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
                 </SelectField>
               </Field>
               <Field label="Angle">
-                <NumericField
+                <DragNumericField
                   value={form.direction}
                   min={0}
                   max={360}
                   step={5}
+                  decimals={0}
                   unit="°"
                   onChange={(v) => setField({ direction: v })}
                   onRelease={(v) => commit("direction", v)}
                 />
               </Field>
               <Field label="Distance">
-                <NumericField
+                <DragNumericField
                   value={form.distance}
                   min={0}
                   max={2}
                   step={0.1}
+                  decimals={2}
                   onChange={(v) => setField({ distance: v })}
                   onRelease={(v) => commit("distance", v)}
                 />
@@ -481,21 +497,23 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
             </SelectField>
           </Field>
           <Field label="Start value">
-            <NumericField
+            <DragNumericField
               value={form.startValue}
               min={0}
               max={1}
               step={0.1}
+              decimals={2}
               onChange={(v) => setField({ startValue: v })}
               onRelease={(v) => commit("startValue", v)}
             />
           </Field>
           <Field label="End value">
-            <NumericField
+            <DragNumericField
               value={form.endValue}
               min={0}
               max={1}
               step={0.1}
+              decimals={2}
               onChange={(v) => setField({ endValue: v })}
               onRelease={(v) => commit("endValue", v)}
             />

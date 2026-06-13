@@ -133,4 +133,70 @@ describe("AnimElementInspector", () => {
     expect(fieldByLabel(container, "Easing")).not.toBeNull();
     unmount();
   });
+
+  it("re-seeds the form on element switch even with a prior uncommitted edit (no stuck Loading)", async () => {
+    // Regression: an interaction can end WITHOUT committing (e.g. an Easing
+    // release out of the 0..50 range, or an axis release near zero), leaving the
+    // internal "mid-edit" flag latched. Switching to another element must still
+    // re-seed its form -- otherwise the panel stays on "Loading..." forever.
+    // The latch is driven here through the Name field's onChange (typing without
+    // blurring), a stable path that does not depend on drag/release timing.
+    const detailFor = (uid: number) => detail({ type: "NoopAnimObj", name: `El${uid}` });
+    const invokeService = vi.fn((name: string, args: { uid?: number }) => {
+      if (name === "getAnimElementDetail")
+        return Promise.resolve({ ok: true, detail: detailFor(args.uid ?? 0) });
+      if (name === "getAnimTargetOptions")
+        return Promise.resolve({ ok: true, renderers: [], cameras: [], mols: [] });
+      return Promise.resolve({});
+    });
+    const cm = {
+      invokeService,
+      addEventListener: vi.fn().mockResolvedValue(1),
+      removeEventListener: vi.fn().mockResolvedValue(undefined),
+    };
+
+    let setUid!: (u: number) => void;
+    const Probe: React.FC = () => {
+      const [uid, set] = React.useState(7);
+      setUid = set;
+      return (
+        <AnimElementInspector
+          cm={cm as never}
+          sceneId={1}
+          uid={uid}
+          onGone={vi.fn()}
+          onHeaderChange={vi.fn()}
+        />
+      );
+    };
+
+    const { container, unmount } = mountTree(<Probe />);
+    await flushPromises();
+    const name7 = fieldByLabel(container, "Name")!.querySelector("input") as HTMLInputElement;
+    expect(name7.value).toBe("El7");
+
+    // Latch a mid-edit (uncommitted) draft via the Name input -- no blur/commit.
+    // Use the native value setter so React's controlled-input tracker registers
+    // the change and fires onChange (a plain `.value =` is swallowed by React).
+    const nativeSetter = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      "value",
+    )!.set!;
+    act(() => {
+      nativeSetter.call(name7, "draft");
+      name7.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    // Switch to a different element: the form must re-seed (not stay Loading).
+    await act(async () => {
+      setUid(8);
+      await flushPromises();
+    });
+    const name8 = fieldByLabel(container, "Name")?.querySelector("input") as
+      | HTMLInputElement
+      | undefined;
+    expect(name8).toBeTruthy();
+    expect(name8!.value).toBe("El8");
+    unmount();
+  });
 });
