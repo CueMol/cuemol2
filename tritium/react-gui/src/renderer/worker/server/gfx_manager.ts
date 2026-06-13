@@ -242,6 +242,16 @@ export class GfxManager {
         if (existing !== undefined) cancelAnimationFrame(existing);
         const render = (): void => {
             try {
+                // Pump the C++ event / timer queue before rendering so AnimMgr
+                // playback (and any other setTimer-based work) advances and its
+                // camera update is drawn this same frame. The Electron libuv
+                // timer that would normally call performIdleTasks is not driven
+                // inside the Worker, so the render loop services it here. Guarded
+                // so an older native addon (without the export) degrades to a
+                // no-op rather than throwing.
+                if (typeof this.cuemol.performIdleTasks === 'function') {
+                    this.cuemol.performIdleTasks();
+                }
                 if (PERF_MEASURE) {
                     const t0 = performance.now();
                     this._sceMgr.invokeMethod('checkAndUpdateScenes');
