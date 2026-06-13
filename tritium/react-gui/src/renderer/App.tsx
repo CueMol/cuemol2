@@ -22,9 +22,6 @@ import { BottomPanel } from "./components/panels/BottomPanel";
 import { StatusBar } from "./components/StatusBar";
 import { InspectorPanel } from "./components/panels/InspectorPanel";
 
-import type { AnimationData } from "./types";
-
-import { SAMPLE_ANIMATION } from "./data/alignmentData";
 import { installSelectAllScope } from "./utils/selectAllScope";
 
 import { useLayoutPersistence } from "./hooks/useLayoutPersistence";
@@ -373,9 +370,6 @@ const App: React.FC = () => {
     newScene,
   });
 
-  // --- Sample data ---
-  const [animation] = useState<AnimationData | null>(SAMPLE_ANIMATION);
-
   const cueMolBusy = useCueMolBusy();
 
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -515,7 +509,6 @@ const App: React.FC = () => {
                             cm={cm}
                             activeSceneId={activeSceneId}
                             activeMolViewId={activeMolViewId}
-                            animation={animation}
                             renderJob={renderJob.job}
                             renderPreset={renderSettings.preset}
                             onRenderStart={handleRenderStart}

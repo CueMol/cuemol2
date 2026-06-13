@@ -127,70 +127,6 @@ export interface LogEntry {
 }
 
 // ────────────────────────────────────────────────────────────
-// Animation Timeline
-// ────────────────────────────────────────────────────────────
-
-/**
- * A single keyframe in an animation track.
- *
- * Keyframes mark specific frames where a property value is explicitly
- * defined. Values between keyframes are interpolated.
- */
-export interface Keyframe {
-  /** Frame number (0-based). */
-  frame: number;
-
-  /**
-   * Property value at this frame.
-   * Stored as a string for display; actual interpolation is handled
-   * by the animation engine on the backend.
-   */
-  value: string;
-
-  /** Whether this keyframe is currently selected in the UI. */
-  selected?: boolean;
-}
-
-/**
- * A single animation track representing a property's change over time.
- *
- * Each track corresponds to one animatable property (e.g. camera position,
- * object opacity, light intensity) and contains an ordered set of keyframes.
- */
-export interface AnimationTrack {
-  /** Stable, unique identifier for this track. */
-  id: string;
-
-  /** Display label shown in the track list (e.g. "Camera Position"). */
-  label: string;
-
-  /** Semantic icon key for the track label (see `AppIcon`). */
-  icon?: AppIconKey;
-
-  /** Ordered list of keyframes in this track. */
-  keyframes: Keyframe[];
-}
-
-/**
- * Complete animation data for the timeline panel.
- *
- * Contains global timing parameters and an ordered list of property tracks.
- */
-export interface AnimationData {
-  /** Human-readable name of the animation (e.g. "rotation_anim"). */
-  name: string;
-
-  /** Total number of frames in the animation. */
-  totalFrames: number;
-
-  /** Playback frames per second. */
-  fps: number;
-
-  /** Ordered list of animation tracks. */
-  tracks: AnimationTrack[];
-}
-
-// ────────────────────────────────────────────────────────────
 // Animation Timeline (Blender-style strip model)
 // ────────────────────────────────────────────────────────────
 //
@@ -198,9 +134,7 @@ export interface AnimationData {
 // owned by the scene's `AnimMgr`; every time value is in milliseconds. Each
 // element becomes one horizontal strip on the timeline (left = absStart,
 // width = duration). These types are driven 1:1 by the C++ AnimMgr/AnimObj
-// API and replace the legacy keyframe model above (which does not match the
-// C++ data model). The old Keyframe / AnimationTrack / AnimationData
-// interfaces are retained only until the mock wiring is fully removed.
+// API.
 
 /**
  * Concrete `AnimObj` subtype.

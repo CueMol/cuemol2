@@ -95,7 +95,6 @@ import {
   House,
   Intersect,
   Key,
-  Lightning,
   Palette,
   Shield,
   TextAa,
@@ -237,7 +236,6 @@ export const APP_ICONS = {
   // Animation track labels.
   "track.camera": { lib: "phosphor", Comp: Camera },
   "track.style": { lib: "phosphor", Comp: Palette },
-  "track.light": { lib: "phosphor", Comp: Lightning },
   "track.width": { lib: "phosphor", Comp: ArrowsHorizontal },
   "track.key": { lib: "phosphor", Comp: Key },
 } as const satisfies Record<string, AppIconSpec>;
