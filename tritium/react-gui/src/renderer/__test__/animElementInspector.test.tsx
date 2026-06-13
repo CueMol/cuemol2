@@ -14,6 +14,7 @@ import { act } from "react";
 import { mountTree, flushPromises } from "./helpers/testHarness";
 import type { AnimElementDetail } from "../worker/server/services/animDetail.service";
 import type { AnimElementType } from "../types";
+import { SEM_OBJECT, SEM_RENDERER, SEM_CAMERA, SEM_ANY } from "../event";
 
 void React;
 
@@ -287,6 +288,21 @@ describe("AnimElementInspector", () => {
       prop: "rend",
       value: "rendA,rendB",
     });
+    unmount();
+  });
+
+  it("subscribes to scene-tree renderer/object/camera changes so target lists refetch", async () => {
+    const cm = makeCm(
+      detail({ type: "ShowHideAnim", typeProps: { rend: "", hide: false, fade: false, tgtAlpha: 1 } }),
+    );
+    const { unmount } = mountTree(
+      <AnimElementInspector cm={cm as never} sceneId={1} uid={7} onGone={vi.fn()} onHeaderChange={vi.fn()} />,
+    );
+    await flushPromises();
+    // Explorer add/delete fires SEM_OBJECT/RENDERER/CAMERA on the scene; the
+    // inspector listens so getAnimTargetOptions refetches and the lists update.
+    const mask = SEM_OBJECT | SEM_RENDERER | SEM_CAMERA;
+    expect(cm.addEventListener).toHaveBeenCalledWith("", mask, SEM_ANY, 1, expect.any(Function));
     unmount();
   });
 

@@ -45,7 +45,7 @@ import type {
   SetAnimElementPropArgs,
 } from "../../worker/server/services/animDetail.service";
 import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
-import { SEM_ANIM, SEM_ANY } from "../../event";
+import { SEM_ANIM, SEM_OBJECT, SEM_RENDERER, SEM_CAMERA, SEM_ANY } from "../../event";
 import { useCueMolEventListener } from "../../hooks/useCueMolEventListener";
 
 interface AnimElementInspectorProps {
@@ -159,6 +159,8 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
   onHeaderRef.current = onHeaderChange;
   // Drop a stale response that resolves after a newer fetch/commit.
   const fetchToken = useRef(0);
+  // Drop a stale target-options response (rapid scene / scene-tree changes).
+  const optionsToken = useRef(0);
   // True while a draft (numeric/text) field is mid-edit -- blocks re-seed.
   const editingRef = useRef(false);
   // Generic-tab fetch token + live mirrors read inside event handlers.
@@ -251,23 +253,40 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
     if (detail && !editingRef.current) setForm(detailToForm(detail));
   }, [detail]);
 
-  // Target dropdown options (per scene).
-  useEffect(() => {
-    if (!cm) return;
-    let cancelled = false;
-    cm.invokeService("getAnimTargetOptions", { sceneId })
+  // Target dropdown options (renderers / cameras / mols).
+  const refetchOptions = useCallback(() => {
+    const c = cmRef.current;
+    const sid = sceneIdRef.current;
+    if (!c) return;
+    const token = ++optionsToken.current;
+    c.invokeService("getAnimTargetOptions", { sceneId: sid })
       .then((res) => {
-        if (!cancelled && res?.ok) {
+        if (token !== optionsToken.current) return;
+        if (res?.ok) {
           setOptions({ renderers: res.renderers, cameras: res.cameras, mols: res.mols });
         }
       })
       .catch(() => {
         /* dropdowns stay empty */
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [cm, sceneId]);
+  }, []);
+  // Fetch on mount + scene change.
+  useEffect(() => {
+    refetchOptions();
+  }, [cm, sceneId, refetchOptions]);
+  // Keep the lists in sync when the scene's renderers / objects / cameras are
+  // added / removed / renamed in the Explorer (the multi-renderer checklist
+  // and the camera / mol selects all read from these options).
+  useCueMolEventListener({
+    cm,
+    enabled: !!cm,
+    category: "",
+    srcMask: SEM_OBJECT | SEM_RENDERER | SEM_CAMERA,
+    evtMask: SEM_ANY,
+    scopeId: sceneId,
+    handler: refetchOptions,
+    debounceMs: 50,
+  });
 
   // Lazily (re)fetch the generic list when that tab is shown or the element
   // changes while it is shown.
