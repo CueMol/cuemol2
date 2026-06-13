@@ -376,6 +376,33 @@ function getAnimElementDetail(
   return { ok: true, detail };
 }
 
+/**
+ * After an element is renamed, retarget every sibling that referenced the old
+ * name via `timeRefName` so the relative-time chain is not orphaned (UXP parity).
+ * Runs inside the rename's undo txn so undo reverts the rename + the retargets
+ * together.
+ */
+function cascadeTimeRefRename(mgr: AnimMgr, uid: number, oldName: string, newName: string): void {
+  const n = safeNum(() => mgr.size);
+  for (let i = 0; i < n; i++) {
+    let obj: AnimObj | null;
+    try {
+      obj = mgr.getAt(i) as AnimObj | null;
+    } catch {
+      continue;
+    }
+    if (!obj) continue;
+    if (safeNum(() => obj.uid) === uid) continue; // skip the renamed element itself
+    if (safeStr(() => obj.timeRefName) === oldName) {
+      try {
+        (obj as unknown as Record<string, unknown>).timeRefName = newName;
+      } catch {
+        /* ignore a sibling that rejects the write */
+      }
+    }
+  }
+}
+
 /** Write one property of the element (undoable; returns the refreshed detail). */
 function setAnimElementProp(
   ctx: WorkerContext,
@@ -392,7 +419,17 @@ function setAnimElementProp(
         gone = true;
         return;
       }
+      // Capture the old name before writing so a rename can cascade to the
+      // siblings that reference it by timeRefName.
+      const oldName = args.prop === "name" ? safeStr(() => found.obj.name) : "";
       applyProp(ctx, mgr, found.obj, args.prop, args.value);
+      if (args.prop === "name") {
+        const newName = String(args.value);
+        if (oldName && newName !== oldName) {
+          cascadeTimeRefRename(mgr, args.uid, oldName, newName);
+          tryResolveRel(mgr);
+        }
+      }
     });
   } catch {
     return { ok: false };

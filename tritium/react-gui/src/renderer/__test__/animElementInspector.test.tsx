@@ -239,6 +239,57 @@ describe("AnimElementInspector", () => {
     unmount();
   });
 
+  it("multi-selects target renderers via a checklist that commits a joined rend string", async () => {
+    const renderers = [
+      { name: "rendA", objName: "Mol1", type: "cartoon" },
+      { name: "rendB", objName: "Mol1", type: "tube" },
+    ];
+    const invokeService = vi.fn((name: string, args?: { value?: unknown }) => {
+      if (name === "getAnimElementDetail")
+        return Promise.resolve({
+          ok: true,
+          detail: detail({ type: "ShowHideAnim", typeProps: { rend: "rendA", hide: false, fade: false, tgtAlpha: 1 } }),
+        });
+      if (name === "getAnimTargetOptions")
+        return Promise.resolve({ ok: true, renderers, cameras: [], mols: [] });
+      if (name === "setAnimElementProp")
+        return Promise.resolve({
+          ok: true,
+          detail: detail({ type: "ShowHideAnim", typeProps: { rend: String(args?.value ?? ""), hide: false, fade: false, tgtAlpha: 1 } }),
+        });
+      return Promise.resolve({});
+    });
+    const cm = {
+      invokeService,
+      addEventListener: vi.fn().mockResolvedValue(1),
+      removeEventListener: vi.fn().mockResolvedValue(undefined),
+    };
+    const { container, unmount } = mountTree(
+      <AnimElementInspector cm={cm as never} sceneId={1} uid={7} onGone={vi.fn()} onHeaderChange={vi.fn()} />,
+    );
+    await flushPromises();
+
+    const checks = container.querySelectorAll(
+      ".anim-rend-list input[type='checkbox']",
+    ) as NodeListOf<HTMLInputElement>;
+    expect(checks.length).toBe(2);
+    expect(checks[0].checked).toBe(true); // rendA preselected
+    expect(checks[1].checked).toBe(false); // rendB not
+
+    // Toggle rendB on -> commit the joined list.
+    await act(async () => {
+      checks[1].click();
+      await flushPromises();
+    });
+    expect(invokeService).toHaveBeenCalledWith("setAnimElementProp", {
+      sceneId: 1,
+      uid: 7,
+      prop: "rend",
+      value: "rendA,rendB",
+    });
+    unmount();
+  });
+
   it("locks the spin-axis x/y/z boxes unless Cartesian is selected", async () => {
     // A unit-axis vector derives the combobox to that axis -> boxes disabled.
     const cm = makeCm(

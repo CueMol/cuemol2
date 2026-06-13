@@ -177,6 +177,22 @@ describe("animDetail.service setAnimElementProp", () => {
     const res = services.setAnimElementProp(ctx, { sceneId: 1, uid: 999, prop: "name", value: "X" });
     expect(res).toMatchObject({ ok: false, gone: true });
   });
+
+  it("rename cascades to siblings referencing the old name by timeRefName (one txn)", () => {
+    const objs = [
+      makeObj({ uid: 10, name: "A", className: "SimpleSpin" }),
+      makeObj({ uid: 20, name: "B", className: "CamMotion", timeRefName: "A" }),
+      makeObj({ uid: 30, name: "C", className: "NoopAnimObj", timeRefName: "other" }),
+    ];
+    const { ctx, startUndoTxn, commitUndoTxn } = makeCtx({ objs });
+    const res = services.setAnimElementProp(ctx, { sceneId: 1, uid: 10, prop: "name", value: "A2" });
+    expect(objs[0].name).toBe("A2"); // renamed
+    expect(objs[1].timeRefName).toBe("A2"); // sibling B follows the rename
+    expect(objs[2].timeRefName).toBe("other"); // C (different ref) untouched
+    expect(startUndoTxn).toHaveBeenCalledTimes(1); // rename + cascade in one txn
+    expect(commitUndoTxn).toHaveBeenCalled();
+    expect(res.ok).toBe(true);
+  });
 });
 
 describe("animDetail.service generic property tab", () => {

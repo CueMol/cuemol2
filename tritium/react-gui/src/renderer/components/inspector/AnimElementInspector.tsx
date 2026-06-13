@@ -120,8 +120,6 @@ function fmtAxis(n: number): string {
   return String(Math.round(n * 1e4) / 1e4);
 }
 
-const RENDER_MULTI = "__multiple__";
-
 /**
  * Per-element detail editor (right InspectorPanel `animElement` branch).
  */
@@ -440,8 +438,17 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
     commit("axis", v);
   };
 
-  const rendVal = t.rend ?? "";
-  const rendIsMulti = rendVal.includes(",");
+  // ShowHide/Slide can target several renderers; `rend` is a comma-joined list
+  // of bare names (C++ RendPropAnim splits on ',').
+  const rendSet = new Set(
+    (t.rend ?? "").split(",").map((s) => s.trim()).filter(Boolean),
+  );
+  const toggleRend = (name: string) => {
+    const next = new Set(rendSet);
+    if (next.has(name)) next.delete(name);
+    else next.add(name);
+    commit("rend", [...next].join(","));
+  };
 
   return (
     <>
@@ -574,20 +581,25 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
       {(type === "ShowHideAnim" || type === "SlideInOutAnim") && (
         <FieldSection title={type === "ShowHideAnim" ? "Show/Hide settings" : "Slide in/out settings"}>
           <Field label="Target renderers">
-            <SelectField
-              value={rendIsMulti ? RENDER_MULTI : rendVal}
-              onChange={(v) => {
-                if (v !== RENDER_MULTI) commit("rend", v);
-              }}
-            >
-              <option value="">(none)</option>
-              {rendIsMulti && <option value={RENDER_MULTI}>(multiple)</option>}
-              {options.renderers.map((r) => (
-                <option key={`${r.objName}/${r.name}`} value={r.name}>
-                  {r.objName}/{r.name}
-                </option>
-              ))}
-            </SelectField>
+            <div className="anim-rend-list">
+              {options.renderers.length === 0 ? (
+                <span className="anim-rend-empty type-row">(no renderers)</span>
+              ) : (
+                options.renderers.map((r) => (
+                  <label key={`${r.objName}/${r.name}`} className="anim-rend-row type-row">
+                    <input
+                      type="checkbox"
+                      className="anim-rend-check"
+                      checked={rendSet.has(r.name)}
+                      onChange={() => toggleRend(r.name)}
+                    />
+                    <span className="anim-rend-name">
+                      {r.objName}/{r.name}
+                    </span>
+                  </label>
+                ))
+              )}
+            </div>
           </Field>
           {type === "SlideInOutAnim" && (
             <Field label="Direction angle">
