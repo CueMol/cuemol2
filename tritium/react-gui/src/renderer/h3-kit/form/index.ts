@@ -22,6 +22,8 @@ export { SectionHeader } from './SectionHeader';
 export type { SectionHeaderProps } from './SectionHeader';
 export { TextField } from './TextField';
 export type { TextFieldProps } from './TextField';
+export { TimeField, formatMs, parseTime } from './TimeField';
+export type { TimeFieldProps } from './TimeField';
 export { SelectField } from './SelectField';
 export type { SelectFieldProps } from './SelectField';
 export { NumericField } from './NumericField';

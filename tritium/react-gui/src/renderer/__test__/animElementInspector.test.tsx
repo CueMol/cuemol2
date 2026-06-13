@@ -122,16 +122,22 @@ describe("AnimElementInspector", () => {
     unmount();
   });
 
-  it("renders the Common timing fields (Start / Duration) seeded from detail", async () => {
+  it("renders the Common timing fields as time strings (TimeField) seeded from detail", async () => {
     const cm = makeCm(detail({ type: "NoopAnimObj", startMs: 200, endMs: 1200 }));
     const { container, unmount } = mountTree(
       <AnimElementInspector cm={cm as never} sceneId={1} uid={7} onGone={vi.fn()} onHeaderChange={vi.fn()} />,
     );
     await flushPromises();
-    // Start + Duration are present; the timing write contract itself is pinned
-    // in animDetailService.test.ts (prop:"timing" -> start/end + resolveRelTime).
-    expect(fieldByLabel(container, "Start (ms)")).not.toBeNull();
-    expect(fieldByLabel(container, "Duration (ms)")).not.toBeNull();
+    // Start / Duration use the TimeField (ms -> M:SS.mmm); the timing write
+    // contract is pinned in animDetailService.test.ts.
+    const startInput = fieldByLabel(container, "Start time")!.querySelector(
+      "input.h3-form-time",
+    ) as HTMLInputElement;
+    const durInput = fieldByLabel(container, "Duration")!.querySelector(
+      "input.h3-form-time",
+    ) as HTMLInputElement;
+    expect(startInput.value).toBe("0:00.200"); // 200 ms
+    expect(durInput.value).toBe("0:01.000"); // 1200 - 200 = 1000 ms
     expect(fieldByLabel(container, "Quadric")).not.toBeNull();
     unmount();
   });

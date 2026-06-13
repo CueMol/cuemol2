@@ -26,6 +26,7 @@ import {
   FieldSection,
   Field,
   TextField,
+  TimeField,
   SelectField,
   DragNumericField,
   NumberCell,
@@ -439,8 +440,16 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
   const axisSel = axisMode ?? axisPreset(axis.x, axis.y, axis.z);
   const axisEditable = axisSel === "cart";
 
-  const commitTiming = () =>
-    commit("timing", { startMs: Math.max(0, form.startMs), endMs: Math.max(0, form.startMs) + Math.max(0, form.durationMs) });
+  // Start / Duration each commit one TimeValue; end = start + duration. The
+  // committed ms is explicit (the other field is read from the current form).
+  const commitStart = (ms: number) => {
+    setField({ startMs: ms });
+    commit("timing", { startMs: Math.max(0, ms), endMs: Math.max(0, ms) + Math.max(0, form.durationMs) });
+  };
+  const commitDuration = (ms: number) => {
+    setField({ durationMs: ms });
+    commit("timing", { startMs: Math.max(0, form.startMs), endMs: Math.max(0, form.startMs) + Math.max(0, ms) });
+  };
 
   /** Write one axis component, keeping the other two; near-zero keeps the old vector. */
   const commitAxisComp = (key: "x" | "y" | "z", s: string) => {
@@ -500,27 +509,11 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
             ))}
           </SelectField>
         </Field>
-        <Field label="Start (ms)">
-          <DragNumericField
-            value={form.startMs}
-            min={0}
-            max={600000}
-            step={100}
-            decimals={0}
-            onChange={(v) => setField({ startMs: v })}
-            onRelease={commitTiming}
-          />
+        <Field label="Start time">
+          <TimeField value={form.startMs} min={0} onCommit={commitStart} />
         </Field>
-        <Field label="Duration (ms)">
-          <DragNumericField
-            value={form.durationMs}
-            min={0}
-            max={600000}
-            step={100}
-            decimals={0}
-            onChange={(v) => setField({ durationMs: v })}
-            onRelease={commitTiming}
-          />
+        <Field label="Duration">
+          <TimeField value={form.durationMs} min={0} onCommit={commitDuration} />
         </Field>
         <Field label="Quadric">
           <DragNumericField

@@ -427,6 +427,32 @@
   opacity: 0.5;
 }
 
+/* -- Time field (M:SS.mmm text editor; UXP timeedit) -- */
+.h3-form-time {
+  width: calc(var(--field-cell-w) * 2.5);
+  height: var(--field-h-sm);
+  box-sizing: border-box;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: var(--fs-md);
+  text-align: center;
+  padding: 0 var(--space-1);
+  caret-color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.h3-form-time:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.h3-form-time:disabled {
+  opacity: 0.5;
+}
+
 /* ── Drag numeric (Blender number button) ── */
 /* A compact field dragged horizontally to change its value, clicked to
    text-edit, and stepped by the < > arrows shown on hover. Drag uses the
