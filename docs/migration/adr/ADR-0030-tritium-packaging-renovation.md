@@ -1,6 +1,6 @@
 # ADR-0030: tritium packaging / release-build renovation
 
-- Status: proposed
+- Status: accepted (Phase 0 + Phase 1 + Electron 33->42 upgrade implemented & host-verified on `pkg_0614`; Phase 2-4 pending)
 - Date: 2026-06-14
 - Mapping rows: (none -- build/packaging infrastructure; not a UXP inventory item)
 
