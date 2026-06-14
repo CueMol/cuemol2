@@ -4,6 +4,7 @@ on:
   push:
 #    branches-ignore:
 #      - '**'
+  workflow_dispatch:
 
 ###############################################
 
@@ -11,6 +12,10 @@ jobs:
   build_posix:
     name: '${{ matrix.name }}'
     runs-on: ${{ matrix.os }}
+    # Package tritium only on the release cadence (develop / tags / manual
+    # dispatch), not on every feature-branch push. Core build + tests run always.
+    env:
+      DO_PACKAGE: ${{ github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
     strategy:
       fail-fast: false
       matrix:
@@ -95,3 +100,46 @@ jobs:
         ls -la $BASEDIR/cuemol2/bin/cuetty
         ldd $BASEDIR/cuemol2/bin/cuetty
         env LD_LIBRARY_PATH=$BASEDIR/cuemol2/lib $BASEDIR/cuemol2/bin/cuetty
+
+    - name: Get version
+      id: version
+      if: env.DO_PACKAGE == 'true'
+      shell: bash
+      run: |
+        VERSION=$(grep '#define QM_VERSION' src/_version.h | sed 's/.*"\(.*\)".*/\1/')
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+    # Package the tritium Electron app (Linux x64 AppImage + deb, unsigned).
+    # Release cadence only (develop / workflow_dispatch / tags); see DO_PACKAGE.
+    - name: Install AppImage build deps
+      if: env.DO_PACKAGE == 'true'
+      shell: bash
+      run: sudo apt-get update && sudo apt-get install -y libfuse2
+
+    - name: Package tritium (Linux x64 AppImage + deb)
+      if: env.DO_PACKAGE == 'true'
+      shell: bash
+      run: |
+        set -eux
+        export LIBCUEMOL2_ROOT=${{ github.workspace }}/target/cuemol2
+        bash tritium/packaging/package.sh --linux --x64
+
+    - name: Upload tritium Linux artifacts
+      if: env.DO_PACKAGE == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: CueMol3_${{ steps.version.outputs.version }}_linux_x64
+        path: |
+          tritium/react-gui/release/*.AppImage
+          tritium/react-gui/release/*.deb
+        if-no-files-found: error
+
+    # On a tag, attach the Linux artifacts to the GitHub release (appends to the
+    # release that build2.yml's release_build creates for the same tag).
+    - name: Attach Linux artifacts to release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          tritium/react-gui/release/*.AppImage
+          tritium/react-gui/release/*.deb

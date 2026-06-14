@@ -134,6 +134,26 @@ jobs:
       with:
         basedir: ${{ github.workspace }}/target
 
+    # Package the tritium Electron app (macOS arm64 DMG, ad-hoc signed).
+    # Runs only on the arm64 non-embed-Python leg, in full mode (develop /
+    # workflow_dispatch / tags) -- not on every feature-branch push.
+    - name: Package tritium (macOS arm64 DMG)
+      if: matrix.os == 'macos-15' && matrix.embed-python == '' && env.BUILD_MODE == 'full'
+      shell: bash
+      run: |
+        set -eux
+        export LIBCUEMOL2_ROOT=${{ github.workspace }}/target/cuemol2
+        cd tritium/react-gui
+        pnpm run package:mac
+
+    - name: Upload tritium DMG
+      if: matrix.os == 'macos-15' && matrix.embed-python == '' && env.BUILD_MODE == 'full'
+      uses: actions/upload-artifact@v4
+      with:
+        name: CueMol3_${{ steps.version.outputs.version }}_mac_arm64
+        path: tritium/react-gui/release/*.dmg
+        if-no-files-found: error
+
     - name: Download external packages
       if: env.BUILD_MODE == 'full'
       uses: ./build_scripts/download_extpkgs
@@ -243,6 +263,25 @@ jobs:
       uses: ./build_scripts/test_tritium_core_posix
       with:
         basedir: ${{ github.workspace }}\target
+
+    # Package the tritium Electron app (Windows x64 NSIS installer, unsigned).
+    # Full mode only (develop / workflow_dispatch / tags).
+    - name: Package tritium (Windows x64 NSIS)
+      if: env.BUILD_MODE == 'full'
+      shell: bash
+      run: |
+        set -eux
+        cd "$(cygpath -u '${{ github.workspace }}')"
+        export LIBCUEMOL2_ROOT="$PWD/target/cuemol2"
+        bash tritium/packaging/package.sh --win --x64
+
+    - name: Upload tritium Windows installer
+      if: env.BUILD_MODE == 'full'
+      uses: actions/upload-artifact@v4
+      with:
+        name: CueMol3_${{ steps.version.outputs.version }}_win_x64
+        path: tritium/react-gui/release/*.exe
+        if-no-files-found: error
 
     - name: Build and check cuetty
       uses: ./build_scripts/build_cuetty_posix
