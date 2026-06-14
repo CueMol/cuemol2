@@ -18,7 +18,7 @@ import React, { act } from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 
-import { DragNumericField } from '../h3-kit/form/DragNumericField'
+import { DragNumericField, type DragNumericFieldHandle } from '../h3-kit/form/DragNumericField'
 
 void React
 
@@ -393,6 +393,74 @@ describe('DragNumericField', () => {
         mouseUp()
         expect(onChange).not.toHaveBeenCalled()
         expect(getEditInput()).toBeNull()
+    })
+
+    // --- pxPerStep sensitivity override ---
+
+    it('pxPerStep scales drag sensitivity (1 unit / pixel when pxPerStep=1)', () => {
+        const onChange = vi.fn()
+        // pxPerStep 1, step 1: 5px * (1 / 1) = +5 -> 6.
+        // (The default pxPerStep 8 would give 5 * (1/8) = 0.625 -> snap 1 -> 2.)
+        render({ value: 1, min: -100, max: 100, step: 1, pxPerStep: 1, onChange })
+        mouseDownBody()
+        moveBy(5)
+        expect(onChange).toHaveBeenLastCalledWith(6)
+        mouseUp()
+    })
+
+    // --- Keyboard field-to-field entry (onCommitNext / onCommitPrev / focusEdit) ---
+
+    it('calls onCommitNext after committing the edit with Enter', () => {
+        const onChange = vi.fn()
+        const onCommitNext = vi.fn()
+        render({ value: 1.0, onChange, onCommitNext })
+        mouseDownBody()
+        mouseUp() // -> edit mode
+        const input = getEditInput()!
+        act(() => { setInputValue(input, '2.5') })
+        act(() => {
+            input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+        })
+        expect(onChange).toHaveBeenCalledWith(2.5)
+        expect(onCommitNext).toHaveBeenCalledTimes(1)
+    })
+
+    it('routes Tab to onCommitNext and Shift+Tab to onCommitPrev', () => {
+        const onCommitNext = vi.fn()
+        const onCommitPrev = vi.fn()
+        render({ value: 1.0, onCommitNext, onCommitPrev })
+        mouseDownBody()
+        mouseUp()
+        act(() => {
+            getEditInput()!.dispatchEvent(
+                new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+            )
+        })
+        expect(onCommitNext).toHaveBeenCalledTimes(1)
+        expect(onCommitPrev).not.toHaveBeenCalled()
+
+        // Re-enter edit and Shift+Tab -> previous field.
+        mouseDownBody()
+        mouseUp()
+        act(() => {
+            getEditInput()!.dispatchEvent(
+                new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }),
+            )
+        })
+        expect(onCommitPrev).toHaveBeenCalledTimes(1)
+        expect(onCommitNext).toHaveBeenCalledTimes(1)
+    })
+
+    it('focusEdit() ref handle enters edit mode with the value selected', () => {
+        const ref = React.createRef<DragNumericFieldHandle>()
+        act(() => {
+            root.render(<DragNumericField {...base} value={3.0} ref={ref} />)
+        })
+        expect(getEditInput()).toBeNull()
+        act(() => ref.current!.focusEdit())
+        const input = getEditInput()
+        expect(input).not.toBeNull()
+        expect(Number(input!.value)).toBe(3)
     })
 
     // --- Realtime drag lifecycle ---

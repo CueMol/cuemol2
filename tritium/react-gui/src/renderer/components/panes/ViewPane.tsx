@@ -9,9 +9,14 @@
  *
  * The fake-dial rotary UX is reproduced with `DragNumericField` used WITHOUT
  * bounds (Blender-style unbounded horizontal drag, no fill bar): one field
- * replaces each UXP wheel + textbox pair. Transform values live in
- * `useViewXform`; rotation is relative (each drag delta is applied via
- * `rotateView` and the field accumulator resets on release). The Projection
+ * replaces each UXP wheel + textbox pair. Drag sensitivity is pinned to the
+ * UXP wheel's 1 unit / pixel via `pxPerStep={1}` (the kit default of 8 is for
+ * other panes). Transform values live in `useViewXform`; rotation is relative
+ * (each drag delta is applied via `rotateView`, the field accumulator resets on
+ * release). Translation is also relative on drag -- a camera-pan via
+ * `translateView` whose single-axis input couples all three world-center
+ * components -- but its field shows the absolute center and a text-edit commit
+ * sets the coordinate absolutely (see `TranslationField`). The Projection
  * controls are driven by props sourced from `useActiveViewState` and written
  * through the existing view commands, so that hook stays the single source of
  * truth and the native menu stays in sync. See ADR-0025.
@@ -22,6 +27,7 @@
 import React, { useRef, useState } from 'react'
 import { SectionHeader } from './SectionHeader'
 import { FieldSection, FieldGrid, FieldGridRow, DragNumericField, SwitchField, SelectField } from '../../h3-kit/form'
+import type { DragNumericFieldHandle } from '../../h3-kit/form'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import type { ViewCenterMark } from '../../../shared/ipcTypes'
 import { useViewXform, type CenterAxis } from '../../hooks/useViewXform'
@@ -64,6 +70,7 @@ const RotationField: React.FC<{
             value={val}
             unit="deg"
             step={1}
+            pxPerStep={1}
             decimals={0}
             disabled={disabled}
             realtime
@@ -79,6 +86,78 @@ const RotationField: React.FC<{
             }}
             onRelease={reset}
             onDragCancel={reset}
+        />
+    )
+}
+
+/**
+ * A single translation (view-center) axis control. The field shows the
+ * ABSOLUTE world-center coordinate, but its interactions are split to match
+ * UXP `fakedial`:
+ *   - a drag (and arrow press) is a camera-relative pan (`onPan`): each frame's
+ *     value delta is the pixel-equivalent pan amount, fed to the worker's
+ *     `translateView`. The displayed value is the live center mirrored back
+ *     from the worker; it is intentionally decoupled from the field's internal
+ *     drag accumulator (the `DragNumericField` captures its start value at
+ *     mousedown, so live `value` updates do not corrupt the per-frame delta).
+ *   - a text-edit commit sets the ABSOLUTE coordinate (`onSetAbsolute`), like
+ *     UXP `onValChgT` (`vec.x = val`), since the user typed a coordinate, not a
+ *     pan. The `draggingRef` flag distinguishes the two onChange sources (a drag
+ *     / arrow press fires onDragStart first; a text commit does not).
+ *
+ * `fieldRef` / `onCommitNext` / `onCommitPrev` wire the keyboard field-to-field
+ * entry so x -> y -> z can be typed in sequence (Enter / Tab / Shift+Tab).
+ */
+const TranslationField: React.FC<{
+    axis: CenterAxis
+    value: number
+    disabled: boolean
+    onPan: (axis: CenterAxis, delta: number) => void
+    onSetAbsolute: (axis: CenterAxis, v: number) => void
+    onBegin: () => void
+    onEnd: () => void
+    fieldRef?: React.Ref<DragNumericFieldHandle>
+    onCommitNext?: () => void
+    onCommitPrev?: () => void
+}> = ({ axis, value, disabled, onPan, onSetAbsolute, onBegin, onEnd, fieldRef, onCommitNext, onCommitPrev }) => {
+    const prevRef = useRef(value)
+    const draggingRef = useRef(false)
+    return (
+        <DragNumericField
+            ref={fieldRef}
+            value={value}
+            unit="A"
+            step={1}
+            pxPerStep={1}
+            fineSnap={0.01}
+            decimals={2}
+            disabled={disabled}
+            realtime
+            onDragStart={() => {
+                draggingRef.current = true
+                prevRef.current = value
+                onBegin()
+            }}
+            onChange={(v) => {
+                if (!draggingRef.current) {
+                    // Text-edit commit -> absolute coordinate (UXP onValChgT).
+                    onSetAbsolute(axis, v)
+                    return
+                }
+                const delta = v - prevRef.current
+                prevRef.current = v
+                if (delta !== 0) onPan(axis, delta)
+            }}
+            onRelease={() => {
+                draggingRef.current = false
+                onEnd()
+            }}
+            onDragCancel={() => {
+                draggingRef.current = false
+                onEnd()
+            }}
+            onCommitNext={onCommitNext}
+            onCommitPrev={onCommitPrev}
         />
     )
 }
@@ -99,6 +178,12 @@ export const ViewPane: React.FC<ViewPaneProps> = ({
     const noView = !st
     const begin = xform.beginInteraction
     const end = xform.endInteraction
+
+    // Refs to the TraX / TraY / TraZ fields so a text-edit commit can drop the
+    // next axis straight into edit mode (x -> y -> z chained entry).
+    const traXRef = useRef<DragNumericFieldHandle>(null)
+    const traYRef = useRef<DragNumericFieldHandle>(null)
+    const traZRef = useRef<DragNumericFieldHandle>(null)
 
     return (
         <div className="sp-pane view-pane">
@@ -127,45 +212,43 @@ export const ViewPane: React.FC<ViewPaneProps> = ({
                     <FieldSection title="Translation">
                         <FieldGrid>
                             <FieldGridRow label="TraX">
-                                <DragNumericField
+                                <TranslationField
+                                    axis="x"
                                     value={st?.centerX ?? 0}
-                                    unit="A"
-                                    step={0.1}
-                                    decimals={2}
                                     disabled={noView}
-                                    realtime
-                                    onDragStart={begin}
-                                    onChange={(v) => xform.setCenter('x', v)}
-                                    onRelease={end}
-                                    onDragCancel={end}
+                                    onPan={(axis, delta) => xform.translate(axis, delta, true)}
+                                    onSetAbsolute={xform.setCenter}
+                                    onBegin={begin}
+                                    onEnd={end}
+                                    fieldRef={traXRef}
+                                    onCommitNext={() => traYRef.current?.focusEdit()}
                                 />
                             </FieldGridRow>
                             <FieldGridRow label="TraY">
-                                <DragNumericField
+                                <TranslationField
+                                    axis="y"
                                     value={st?.centerY ?? 0}
-                                    unit="A"
-                                    step={0.1}
-                                    decimals={2}
                                     disabled={noView}
-                                    realtime
-                                    onDragStart={begin}
-                                    onChange={(v) => xform.setCenter('y', v)}
-                                    onRelease={end}
-                                    onDragCancel={end}
+                                    onPan={(axis, delta) => xform.translate(axis, delta, true)}
+                                    onSetAbsolute={xform.setCenter}
+                                    onBegin={begin}
+                                    onEnd={end}
+                                    fieldRef={traYRef}
+                                    onCommitNext={() => traZRef.current?.focusEdit()}
+                                    onCommitPrev={() => traXRef.current?.focusEdit()}
                                 />
                             </FieldGridRow>
                             <FieldGridRow label="TraZ">
-                                <DragNumericField
+                                <TranslationField
+                                    axis="z"
                                     value={st?.centerZ ?? 0}
-                                    unit="A"
-                                    step={0.1}
-                                    decimals={2}
                                     disabled={noView}
-                                    realtime
-                                    onDragStart={begin}
-                                    onChange={(v) => xform.setCenter('z', v)}
-                                    onRelease={end}
-                                    onDragCancel={end}
+                                    onPan={(axis, delta) => xform.translate(axis, delta, true)}
+                                    onSetAbsolute={xform.setCenter}
+                                    onBegin={begin}
+                                    onEnd={end}
+                                    fieldRef={traZRef}
+                                    onCommitPrev={() => traYRef.current?.focusEdit()}
                                 />
                             </FieldGridRow>
                         </FieldGrid>
@@ -178,6 +261,8 @@ export const ViewPane: React.FC<ViewPaneProps> = ({
                                     value={st?.zoom ?? 0}
                                     unit="A"
                                     step={1}
+                                    pxPerStep={1}
+                                    decimals={0}
                                     min={0.01}
                                     disabled={noView}
                                     realtime
@@ -192,6 +277,8 @@ export const ViewPane: React.FC<ViewPaneProps> = ({
                                     value={st?.slab ?? 0}
                                     unit="A"
                                     step={1}
+                                    pxPerStep={1}
+                                    decimals={0}
                                     min={0}
                                     disabled={noView}
                                     realtime
@@ -206,6 +293,8 @@ export const ViewPane: React.FC<ViewPaneProps> = ({
                                     value={st?.distance ?? 0}
                                     unit="A"
                                     step={1}
+                                    pxPerStep={1}
+                                    decimals={0}
                                     min={0}
                                     disabled={noView}
                                     realtime

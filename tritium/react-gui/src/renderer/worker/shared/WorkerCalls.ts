@@ -349,6 +349,8 @@ import type {
   SetViewXformResult,
   RotateViewArgs,
   RotateViewResult,
+  TranslateViewArgs,
+  TranslateViewResult,
 } from '../server/services/viewXform.service'
 import type {
   ListSceneObjectsArgs,
@@ -577,6 +579,7 @@ export interface ServiceMap {
   getViewXform:               { args: GetViewXformArgs;                result: ViewXformResult }
   setViewXform:               { args: SetViewXformArgs;                result: SetViewXformResult }
   rotateView:                 { args: RotateViewArgs;                  result: RotateViewResult }
+  translateView:              { args: TranslateViewArgs;               result: TranslateViewResult }
   naviHitTest:                { args: NaviHitTestArgs;                 result: NaviHitTestResult }
   naviClickAtom:              { args: NaviClickAtomArgs;               result: NaviClickAtomResult }
   naviResidSel:               { args: NaviResidSelArgs;                result: NaviResidSelResult }

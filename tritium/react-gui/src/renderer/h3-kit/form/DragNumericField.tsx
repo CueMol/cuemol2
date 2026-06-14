@@ -22,11 +22,12 @@
  * The fine / coarse snaps default to `step / 10` and `step * 10` but can be set
  * explicitly via `fineSnap` / `coarseSnap` when the desired granularity is not a
  * 10th / 10x of `step` (e.g. step 0.05 with a fine snap of 0.01).
- * The drag sensitivity (value units per pixel) is constant; only the snap
- * granularity changes, so Shift gives finer resolution rather than slower
- * motion. The `<` / `>` arrows, by contrast, increment / decrement by `step`,
- * and auto-repeat while held down (one immediate step, then -- after a short
- * delay -- a steady stream of steps until release).
+ * The drag sensitivity is `step / pxPerStep` value units per pixel (constant
+ * for a given field; `pxPerStep` defaults to 8). Only the snap granularity
+ * changes with a modifier, so Shift gives finer resolution rather than slower
+ * motion. The `<` / `>` arrows, by contrast, increment / decrement by `step`
+ * (independent of `pxPerStep`), and auto-repeat while held down (one immediate
+ * step, then -- after a short delay -- a steady stream of steps until release).
  *
  * The widget is focusable as a single unit (`tabIndex=0` on the root); its
  * parts (arrows, edit input) never take a separate focus ring. Keyboard
@@ -63,17 +64,36 @@
  * `realtime` (the default), no live preview fires: a hold only updates the
  * displayed number and the object is written once on `onRelease`.
  *
+ * Keyboard field-to-field entry (opt-in): a parent that lays several fields out
+ * in a column can wire `onCommitNext` / `onCommitPrev` to advance focus on
+ * commit -- Enter and Tab call `onCommitNext`, Shift+Tab calls `onCommitPrev`
+ * (each after committing the edit). Combined with the imperative `focusEdit()`
+ * handle (exposed via ref), the next field can be put straight into edit mode
+ * with its value selected, so x/y/z-style triples can be typed in sequence
+ * without reaching for the mouse. All three are no-ops when unset.
+ *
  * @module form/DragNumericField
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+    forwardRef,
+    useCallback,
+    useEffect,
+    useImperativeHandle,
+    useRef,
+    useState,
+} from 'react';
 import { AppIcon } from '../../components/AppIcon';
 
 void React; // classic JSX runtime (vitest)
 
 /** Pixels of horizontal travel before a press becomes a drag (vs a click). */
 const DRAG_THRESHOLD_PX = 4;
-/** Pixels of horizontal travel that move the raw value by one normal `step`. */
+/**
+ * Default pixels of horizontal travel that move the raw value by one normal
+ * `step`. Overridable per-field via the `pxPerStep` prop (smaller = more
+ * sensitive; e.g. 1 reproduces the UXP fakedial wheel's 1 unit / pixel).
+ */
 const PX_PER_STEP = 8;
 /** Factor between the normal snap and the fine (Shift) / coarse (Ctrl) snaps. */
 const SNAP_FACTOR = 10;
@@ -102,6 +122,13 @@ export interface DragNumericFieldProps {
      * (`step * 10`, Ctrl); see the file header.
      */
     step?: number;
+    /**
+     * Pixels of horizontal drag that move the raw value by one `step`. Default
+     * 8. Lower it to make the field more sensitive (e.g. 1 = 1 unit / pixel,
+     * matching the UXP fakedial wheel). Does not affect the snap granularity or
+     * the arrow increment, only the drag-speed.
+     */
+    pxPerStep?: number;
     /**
      * Fine drag snap (Shift). Defaults to `step / 10`. Set explicitly when the
      * fine granularity is not a 10th of `step` (e.g. `step` 0.05, `fineSnap`
@@ -136,6 +163,24 @@ export interface DragNumericFieldProps {
      * false.
      */
     onDragCancel?: () => void;
+    /**
+     * Called after a text edit is committed with Enter or Tab, so the parent
+     * can advance focus to the next field in a column (e.g. via the next
+     * field's `focusEdit()`). No-op when unset (Tab then falls through to the
+     * browser's native focus order). See the file header.
+     */
+    onCommitNext?: () => void;
+    /**
+     * Called after a text edit is committed with Shift+Tab, so the parent can
+     * move focus to the previous field in a column. No-op when unset.
+     */
+    onCommitPrev?: () => void;
+}
+
+/** Imperative handle exposed via ref (see `onCommitNext` / `onCommitPrev`). */
+export interface DragNumericFieldHandle {
+    /** Put the field into text-edit mode with its current value selected. */
+    focusEdit(): void;
 }
 
 /** Decimal places implied by `step` (0.1 -> 1, 0.01 -> 2, 1 -> 0). */
@@ -187,13 +232,14 @@ type Mode = 'idle' | 'hover' | 'dragging' | 'editing';
  * Blender-style draggable numeric field. See the file header for the drag /
  * click / step interaction model and commit timing.
  */
-export const DragNumericField: React.FC<DragNumericFieldProps> = ({
+export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFieldProps>(({
     value,
     onChange,
     onRelease,
     min = -Infinity,
     max = Infinity,
     step = 1,
+    pxPerStep = PX_PER_STEP,
     fineSnap,
     coarseSnap,
     decimals,
@@ -202,7 +248,9 @@ export const DragNumericField: React.FC<DragNumericFieldProps> = ({
     realtime = false,
     onDragStart,
     onDragCancel,
-}) => {
+    onCommitNext,
+    onCommitPrev,
+}, ref) => {
     const [mode, setMode] = useState<Mode>('idle');
     const [draft, setDraft] = useState('');
 
@@ -229,15 +277,29 @@ export const DragNumericField: React.FC<DragNumericFieldProps> = ({
 
     // Stable refs to props the global listeners use, so the listeners attached
     // once at mousedown always reach current behavior.
-    const cbRef = useRef({ onChange, onRelease, min, max, step, fineStep, coarseStep, realtime, onDragStart, onDragCancel });
-    cbRef.current = { onChange, onRelease, min, max, step, fineStep, coarseStep, realtime, onDragStart, onDragCancel };
+    const cbRef = useRef({ onChange, onRelease, min, max, step, pxPerStep, fineStep, coarseStep, realtime, onDragStart, onDragCancel });
+    cbRef.current = { onChange, onRelease, min, max, step, pxPerStep, fineStep, coarseStep, realtime, onDragStart, onDragCancel };
+
+    // Imperative handle: a parent can drop a sibling field straight into edit
+    // mode (value selected) to chain x/y/z-style entry. See the file header.
+    useImperativeHandle(
+        ref,
+        () => ({
+            focusEdit: () => {
+                if (disabled) return;
+                setDraft(format(valueRef.current));
+                setMode('editing');
+            },
+        }),
+        [disabled, format],
+    );
 
     // --- Drag (global listeners + pointer lock) ---
 
     const handleMouseMove = useCallback((e: MouseEvent) => {
         const d = dragRef.current;
         if (!d) return;
-        const { onChange, min, max, step, fineStep, coarseStep } = cbRef.current;
+        const { onChange, min, max, step, pxPerStep, fineStep, coarseStep } = cbRef.current;
 
         d.accumPx += e.movementX;
 
@@ -258,7 +320,7 @@ export const DragNumericField: React.FC<DragNumericFieldProps> = ({
         // Constant sensitivity (value units per pixel); the modifier only
         // changes the snap granularity, so the raw value moves at the same
         // rate but is forced to a finer / coarser multiple.
-        const raw = d.startValue + (d.accumPx / PX_PER_STEP) * step;
+        const raw = d.startValue + (d.accumPx / pxPerStep) * step;
         const snap = e.shiftKey
             ? fineStep
             : e.ctrlKey || e.metaKey
@@ -435,10 +497,23 @@ export const DragNumericField: React.FC<DragNumericFieldProps> = ({
 
     const handleEditKeyDown = useCallback(
         (e: React.KeyboardEvent<HTMLInputElement>) => {
-            if (e.key === 'Enter') commitEdit();
-            else if (e.key === 'Escape') setMode('idle');
+            if (e.key === 'Enter') {
+                commitEdit();
+                onCommitNext?.();
+            } else if (e.key === 'Tab') {
+                // Only intercept Tab when a sibling is wired; otherwise leave the
+                // browser's native focus order intact.
+                const target = e.shiftKey ? onCommitPrev : onCommitNext;
+                if (target) {
+                    e.preventDefault();
+                    commitEdit();
+                    target();
+                }
+            } else if (e.key === 'Escape') {
+                setMode('idle');
+            }
         },
-        [commitEdit],
+        [commitEdit, onCommitNext, onCommitPrev],
     );
 
     // --- Render ---
@@ -528,4 +603,6 @@ export const DragNumericField: React.FC<DragNumericFieldProps> = ({
             </button>
         </div>
     );
-};
+});
+
+DragNumericField.displayName = 'DragNumericField';
