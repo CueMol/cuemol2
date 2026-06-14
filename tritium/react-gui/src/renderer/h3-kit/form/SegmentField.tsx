@@ -27,6 +27,8 @@ export interface SegmentFieldProps<T extends string> {
     options: SegmentFieldOption<T>[];
     /** Stretch to fill the available width (default true). */
     fill?: boolean;
+    /** Disable the whole control. */
+    disabled?: boolean;
     className?: string;
 }
 
@@ -39,15 +41,19 @@ export function SegmentField<T extends string>({
     onValueChange,
     options,
     fill = true,
+    disabled,
     className,
 }: SegmentFieldProps<T>): React.JSX.Element {
+    // SegmentedControl has no whole-control disabled prop; disabling every
+    // option both blocks interaction and dims the control.
+    const opts = disabled ? options.map((o) => ({ ...o, disabled: true })) : options;
     return (
         <SegmentedControl
             small
             fill={fill}
             value={value}
             onValueChange={(v) => onValueChange(v as T)}
-            options={options}
+            options={opts}
             className={`h3-form-segmented${className ? ` ${className}` : ''}`}
         />
     );

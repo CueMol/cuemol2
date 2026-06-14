@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-06-14 (`panel.scene-rendering` wip: 新 curated scene rendering pane `RenderingPane`（Explorer、`ViewPane` の後）を追加。UXP が generic property dialog でしか出していなかった scene の AO/AA/背景色/色校正サブセットを専用 widget で編集。AO（`aoEnabled`+`aoRadius`/`aoIntensity`/`aoSlices`/`aoSteps` slider+`aoHalfRes`）/ Anti-aliasing（`aa_method` segment + `aaJitterLevel` select）/ Background（`bgcolor` ColorField）/ Color proofing（`use_colproof`+`icc_filename`+`icc_intent`）。`sceneRenderOpts.service`（get/set、undo txn mode single/begin/live/end/cancel）+ `useSceneRenderOpts` hook。C++ `setUpdateFlag()` で live preview、AO slider drag は begin/live/end で 1 drag=1 undo step。temporary `devRenderOpts` console service を置換（削除は follow-up）。`SegmentField` に `disabled` prop 追加。service/hook/pane test 18 件。Panel Total 27->28 / wip 11->12、Total 132->133 / wip 25->26、split 28->29。In Progress に追加。host E2E pending。ADR-0030)
 - Updated: 2026-06-14 (anim reconciliation: anim panel 実装で実現済の 4 inventory entry を todo->merged/done に是正。`widget.timeedit`->`h3-kit/form/TimeField`、`widget.multiselect`->anim inspector の Target renderers checklist、`widget.anim-slider`->`AnimTimeRuler`/`AnimTransport` scrub、`toolbar.anim-ribbon`->`AnimTransport`（tritium に別 toolbar 無し）。全て ADR-0029。Custom Widget done 4->7/todo 4->1、Toolbar done 0->1/todo 1->0、Total done 84->88/todo 23->19、merged 48->52/unassigned 23->19、Unstarted 23->19。残 anim 隣接 todo は `dialog.anim-render`（offline movie render）/ `dialog.tool.morphanim-tool`（morph 生成）で別 workstream)
 - Updated: 2026-06-14 (Phase 7 done: UXP timeedit を再利用可能な h3-kit `TimeField`（`h3-kit/form/TimeField.tsx`: ms <-> `M:SS.mmm`/`H:MM:SS.mmm`、blur/Enter commit、`formatMs`/`parseTime` export）として実装し、anim inspector の Start/Duration（旧 ms DragNumericField）を Start time/Duration の TimeField に置換（end=start+duration を 1 timing write、worker 不変）。これが最後の deferral だったため anim panel migration の UXP-parity gap は無し（offline render のみ別 workstream）。timeField test 6 + inspector timing test 更新。ADR-0029 / `panel.anim` Notes を更新。status counts 不変。native 変更なし)
 - Updated: 2026-06-14 (Phase 6 done: anim inspector の UXP-parity polish。multi-rend（ShowHide/Slide の Target renderers を scrollable checklist 複数選択、`rend` comma round-trip、C++ `RendPropAnim` が split）+ timeRefName cascade（rename で依存 sibling を同一 undo txn 追従）+ target-list sync（`SEM_OBJECT|RENDERER|CAMERA` で options 再 fetch = Explorer add/delete/rename 追従）。realtime drag preview は anim prop で 3D が drag 中 live 更新されないため intentionally 非採用に確定。残 deferred は timeedit (mm:ss) のみ。ADR-0029 / `panel.anim` Notes を更新。status counts 不変（`panel.anim`/`dialog.animobj` は既に done）)
@@ -72,7 +73,7 @@
 
 | Category | File | Total | done | wip | review | todo | frozen |
 |----------|------|------:|-----:|----:|-------:|-----:|-------:|
-| Panel | [panels.md](panels.md) | 27 | 14 | 11 | 0 | 2 | 0 |
+| Panel | [panels.md](panels.md) | 28 | 14 | 12 | 0 | 2 | 0 |
 | Menu | [menus.md](menus.md) | 4 | 2 | 2 | 0 | 0 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 1 | 1 | 0 | 0 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 15 | 14 | 1 | 0 | 0 | 0 |
@@ -81,7 +82,7 @@
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 7 | 5 | 0 | 1 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 21 | 2 | 0 | 5 | 0 |
 | Other | [other.md](other.md) | 4 | 2 | 1 | 0 | 1 | 0 |
-| **Total** | | **132** | **88** | **25** | **0** | **19** | **0** |
+| **Total** | | **133** | **88** | **26** | **0** | **19** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -111,7 +112,7 @@
 |---------|------:|
 | 1:1 (`direct`) | 27 |
 | merged | 52 |
-| split | 28 |
+| split | 29 |
 | redesign | 0 |
 | deprecated (`dropped`) | 6 |
 | *(not yet assigned)* | 19 |
@@ -122,6 +123,7 @@
 
 | ID | React | Notes |
 |----|-------|-------|
+| `panel.scene-rendering` | `RenderingPane` / `useSceneRenderOpts` / `sceneRenderOpts.service` | New curated scene rendering pane (AO/AA/background/colour-proofing). Live preview + drag-bracketed undo (begin/live/end). Supersedes the temporary `devRenderOpts` console service. Pending host E2E (ADR-0030) |
 | [`toolbar.cuemol2-ribbon`](toolbars.md#toolbarcuemol2-ribbon) | `Toolbar` / `ViewportToolPalette` / `useNaviClickHandler` / `useMeasureClickHandler` / `NaviContextMenu` / `MeasureOptionsPopover` | Context menu actions (center/select/around/invert/sidechain) done; measure tool distance/angle/torsion done (ADR-0023); Create SYMM mol deferred; rect-select drag pending |
 | [`menu.cuemol2`](menus.md#menucuemol2) | `menuTemplate` / `MenuBar` / `useMenuDispatch` | Full 9-group structure added; View > Center mark wired; Scene > Background color wired; File > Get PDB wired (streaming via StreamManager); File > Open Recent wired (electron-store-backed MRU, app.addRecentDocument); Hardware stereo and Open web page dropped; File > Save File As / Save current view / Reload Scene wired; item-level completion 26/55; MenuBar suppressed on macOS |
 | [`menu.cuemol2-macos`](menus.md#menucuemol2-macos) | `main/menu.ts` | macOS App menu added; item-level completion 6/7 |
