@@ -74,7 +74,7 @@ tag push 時のリリース成果物は旧 UXP GUI のみ。
 |---|---|---|
 | 1-1 | symlink rm/trap 廃止: `pnpm deploy --filter` または build 用 `.npmrc` の `node-linker=hoisted` で自己完結 node_modules を生成し、ライブの workspace symlink を一切触らない | staging-3, bp-7 |
 | 1-2 | 同梱 dep を導出 + smoke 検証: 手書き cp リストをやめ production deps を実 install から収集、staging 後に `node -e require(index.cjs)` と必須ファイルアサート | staging-4, staging-10 |
-| 1-3 | embedded python = 条件付き staging (optional 方針)。link 有無で `lib/python` 同梱を分岐。設計判断はこの ADR に追記 | nativepy-1 |
+| 1-3 | embedded python = 条件付き staging (optional 方針)。embed 構成を検出し python 未同梱なら即 fail (silent flash-crash 防止)、embed 配布時のみ `lib/python` 同梱。実地で nativepy-1 再現済み (Notes 参照) | nativepy-1 |
 | 1-4 | (任意) asar 再有効化検討: staging を node_modules 正規配置に直せたら `asar:true` + `asarUnpack` へ。効果測定の上で判断 (必須でない) | bp-6, staging-7, staging-8 |
 
 #### Phase 2 -- クロスプラットフォーム packaging (Windows + Linux)
@@ -154,6 +154,16 @@ About ダイアログの表示バージョンは C++ 側 (`getAppInfo` -> `Scene
 - 方針: embed build を配布する場合のみ `$LIBCUEMOL2_ROOT/lib/python` を staging する。
   `pybr.cpp` の `findPythonHome` (`<sysconfig_dir>/../lib/python`, `<sysconfig_dir>/python`)
   と dylib rpath の解決先が**異なるアンカー**を期待する点に注意し、同梱時は両者を整合させる。
+- **実地確認 (2026-06-14)**: nativepy-1 が実機で再現。embed-python 版 libcuemol2 を
+  同梱した DMG はインストール起動時に window が一瞬出て即終了 (worker が libpython 依存の
+  libcuemol2 ロードに失敗)。非 embed 版でリビルドすると正常起動 (非 embed DMG は別マシンで
+  ターミナル直接起動でも全 init 完走を確認済み)。当初 Gatekeeper/quarantine を疑ったが誤りで、
+  ローカルビルド DMG は quarantine 無しのため Gatekeeper は無関係 (notarization は配布時の
+  Phase 4 課題)。
+- **Phase 1 で入れるガード (task 1-3, 本 ADR 合意済み)**: collect-cuemol2-runtime.sh が
+  embed-python 構成 (`$LIBCUEMOL2_ROOT/lib/python` 有無 or `otool -l` の libpython 依存) を
+  検出し、python 未同梱なら**明確なエラーで即 fail** する (silent な flash-crash を防ぐ)。
+  将来的に python staging を実装して同梱対応。
 
 ### 主な実装ポインタ (現状)
 
