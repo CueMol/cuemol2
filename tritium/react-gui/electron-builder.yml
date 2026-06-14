@@ -48,6 +48,11 @@ asar: false
 nodeGypRebuild: false
 npmRebuild: false
 
+# Deterministic, scope-free artifact names across all targets. The package name
+# is scoped (@cuemol/react-gui); without this the deb target derives a filename
+# containing '/' and fpm fails. Uses productName instead.
+artifactName: ${productName}-${version}-${arch}.${ext}
+
 directories:
   output: release
 
