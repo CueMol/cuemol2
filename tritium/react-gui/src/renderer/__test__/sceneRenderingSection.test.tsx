@@ -91,8 +91,11 @@ function fullEntries(aoOn = true): GenericPropEntry[] {
 }
 
 describe('Scene section registry', () => {
-  it('resolves type_name "scene" to the four curated sections', () => {
-    const sections = getRendererPropSections('scene')
+  // The registry is keyed by the typeLabel PropertiesTab receives as
+  // `rendererType` -- genericProps `typeLabelOf` returns "Scene" for a scene
+  // node, NOT the lowercase tree node type.
+  it('resolves the scene typeLabel "Scene" to the four curated sections', () => {
+    const sections = getRendererPropSections('Scene')
     expect(sections.map((s) => s.title)).toEqual([
       'Ambient occlusion',
       'Anti-aliasing',
@@ -259,11 +262,11 @@ describe('PropertiesTab scene dispatch', () => {
     )
   }
 
-  it('shows the four scene sections (no placeholder) for scene', () => {
+  it('shows the four scene sections (no placeholder) for the Scene typeLabel', () => {
     const { container, unmount } = mountTree(
       <PropertiesTab
         entries={fullEntries()}
-        rendererType="scene"
+        rendererType="Scene"
         onSet={vi.fn()}
         onSetMany={vi.fn()}
         onReset={vi.fn()}

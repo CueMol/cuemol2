@@ -139,9 +139,12 @@ export interface RendererPropSectionDef {
  * resolve to an empty list (common page only).
  */
 export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]> = {
-  // Scene ("scene"): no dedicated UXP dialog (scene props were generic-tree only).
-  // Curated rendering/display sections backed by the same generic-props bridge.
-  scene: [
+  // Scene: no dedicated UXP dialog (scene props were generic-tree only). Curated
+  // rendering/display sections backed by the same generic-props bridge. Keyed by
+  // the scene's typeLabel ("Scene") -- the value PropertiesTab receives as
+  // `rendererType` (genericProps `typeLabelOf` returns "Scene" for nodeType
+  // "scene"), not the lowercase tree node type.
+  Scene: [
     {
       key: "scene-ao",
       title: "Ambient occlusion",

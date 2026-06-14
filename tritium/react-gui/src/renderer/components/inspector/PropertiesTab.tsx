@@ -94,7 +94,7 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
   // whose Basic settings holds only a read-only name, so its first real section
   // (Ambient occlusion) opens instead.
   const initialOpen =
-    rendererType === "scene" ? "Ambient occlusion" : "Basic settings";
+    rendererType === "Scene" ? "Ambient occlusion" : "Basic settings";
   return (
     <div className="insp-properties-tab">
       <AccordionGroup initialOpen={initialOpen}>
