@@ -132,6 +132,8 @@ linux:
   # x64 AppImage + deb. The native addon's shared libs are staged in
   # @cuemol/core/build/lib/ and resolved via the $ORIGIN/../lib rpath baked into
   # cuemol_internal.node (see tritium/core/CMakeLists.txt). Unsigned.
+  # maintainer is required by the deb target (placeholder; adjust for release).
+  maintainer: "CueMol Project <info@cuemol.org>"
   target:
     - target: AppImage
       arch: x64
