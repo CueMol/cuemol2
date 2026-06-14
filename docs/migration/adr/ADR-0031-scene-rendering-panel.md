@@ -1,4 +1,4 @@
-# ADR-0030: Scene rendering properties in the Inspector Property tab
+# ADR-0031: Scene rendering properties in the Inspector Property tab
 
 - Status: accepted (host E2E pending)
 - Date: 2026-06-14
