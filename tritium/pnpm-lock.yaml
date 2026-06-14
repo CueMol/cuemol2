@@ -71,9 +71,6 @@ importers:
       '@blueprintjs/icons':
         specifier: ^5.13.0
         version: 5.23.0(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@cuemol/core':
-        specifier: workspace:*
-        version: link:../core
       '@phosphor-icons/react':
         specifier: ^2.1.10
         version: 2.1.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -99,6 +96,9 @@ importers:
         specifier: ^6.0.2
         version: 6.1.1(react@18.3.1)
     devDependencies:
+      '@cuemol/core':
+        specifier: workspace:*
+        version: link:../core
       '@electron-toolkit/tsconfig':
         specifier: ^1.0.1
         version: 1.0.1(@types/node@20.19.37)

@@ -10,13 +10,14 @@
 # path (LIBCUEMOL2_ROOT). Three packaging challenges arise:
 #
 #   1. Native addon outside node_modules
-#      @cuemol/core lives at ../../core/ (monorepo). pnpm creates a symlink
-#      react-gui/node_modules/@cuemol/core -> ../../../core.
-#      electron-builder follows symlinks via fs.realpath and then rejects files
-#      whose real path is outside react-gui/ when building the asar.
-#      SOLUTION: packaging/package-mac.sh removes the symlink before running
-#      electron-builder, and restores it on exit via trap.  packaging/staging/
-#      holds a minimal copy of the files electron-builder actually needs.
+#      @cuemol/core lives at ../../core/ (monorepo); pnpm symlinks it into
+#      react-gui/node_modules/@cuemol/core -> ../../../core.  If it were a
+#      production dependency, electron-builder would follow that symlink via
+#      fs.realpath and reject files whose real path is outside react-gui/.
+#      SOLUTION: @cuemol/core is declared as a *devDependency*, so electron-builder
+#      does not walk it.  Its minimal runtime files are staged into
+#      packaging/staging/ (by collect-cuemol2-runtime.sh) and mapped to
+#      node_modules/ via the files FileSet below.
 #
 #   2. Relocatable LC_RPATH in cuemol_internal.node
 #      At C++ build time cmake sets INSTALL_RPATH "@loader_path/../lib" with

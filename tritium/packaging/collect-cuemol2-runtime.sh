@@ -100,6 +100,21 @@ cp "$NODE_SRC" "$STAGING_DEST/@cuemol/core/build/Release/cuemol_internal.node"
 cp "$CORE_DIR/build/lib/"*.dylib "$STAGING_DEST/@cuemol/core/build/lib/"
 echo "  dylibs staged: $(ls "$STAGING_DEST/@cuemol/core/build/lib/"*.dylib 2>/dev/null | wc -l | tr -d ' ') files"
 
+# Guard: an embedded-Python libcuemol2 (built with ENABLE_PYTHON_EMBED=ON) carries
+# a hard libpython load dependency and needs the Python runtime/stdlib at runtime,
+# which this script does not stage. Packaging such a build produces an app that
+# starts then immediately crashes (the worker fails to load libcuemol2). Detect
+# and fail loudly instead of shipping a silently-broken bundle. Rebuild libcuemol2
+# without ENABLE_PYTHON_EMBED, or implement Python staging (ADR-0030 task 1-3).
+STAGED_LIBCUEMOL2="$STAGING_DEST/@cuemol/core/build/lib/libcuemol2.dylib"
+if otool -L "$STAGED_LIBCUEMOL2" 2>/dev/null | grep -qiE 'libpython|Python\.framework'; then
+  echo "Error: libcuemol2.dylib links an embedded Python runtime (libpython)," >&2
+  echo "  but the Python runtime/stdlib is not staged into the bundle, so the" >&2
+  echo "  packaged app would start and immediately crash. Rebuild libcuemol2" >&2
+  echo "  without ENABLE_PYTHON_EMBED, or implement Python staging (ADR-0030 1-3)." >&2
+  exit 1
+fi
+
 # bindings + its sole dep file-uri-to-path. pnpm's layout varies (these may be
 # hoisted into core/node_modules/ or kept nested under .pnpm/), so resolve the
 # real package directories via Node instead of assuming a flat layout. Stage
@@ -127,5 +142,24 @@ cp -RL "$BINDINGS_DIR" "$STAGING_DEST/bindings"
 cp -RL "$FUP_DIR" "$STAGING_DEST/file-uri-to-path"
 echo "  bindings: $BINDINGS_DIR"
 echo "  file-uri-to-path: $FUP_DIR"
+
+# Assert the staged tree holds everything the runtime require graph + C++ core
+# need, so an incomplete stage fails here (before the slow electron-builder step)
+# rather than at app launch on a user's machine.
+assert_file() {
+  [ -f "$1" ] || { echo "Error: staging assertion failed -- missing $1" >&2; exit 1; }
+}
+assert_file "$RUNTIME_DEST/share/sysconfig.xml"
+assert_file "$STAGING_DEST/@cuemol/core/package.json"
+assert_file "$STAGING_DEST/@cuemol/core/src/index.cjs"
+assert_file "$STAGING_DEST/@cuemol/core/build/Release/cuemol_internal.node"
+assert_file "$STAGING_DEST/@cuemol/core/build/lib/libcuemol2.dylib"
+assert_file "$STAGING_DEST/bindings/package.json"
+assert_file "$STAGING_DEST/file-uri-to-path/package.json"
+DYLIB_COUNT="$(ls "$STAGING_DEST/@cuemol/core/build/lib/"*.dylib 2>/dev/null | wc -l | tr -d ' ')"
+if [ "$DYLIB_COUNT" -lt 2 ]; then
+  echo "Error: expected libcuemol2 + Boost dylibs in staging, found $DYLIB_COUNT" >&2
+  exit 1
+fi
 
 echo "Staging done."
