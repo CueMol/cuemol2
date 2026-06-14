@@ -127,3 +127,14 @@ win:
   target:
     - target: nsis
       arch: x64
+
+linux:
+  # x64 AppImage + deb. The native addon's shared libs are staged in
+  # @cuemol/core/build/lib/ and resolved via the $ORIGIN/../lib rpath baked into
+  # cuemol_internal.node (see tritium/core/CMakeLists.txt). Unsigned.
+  target:
+    - target: AppImage
+      arch: x64
+    - target: deb
+      arch: x64
+  category: Education

@@ -95,3 +95,33 @@ jobs:
         ls -la $BASEDIR/cuemol2/bin/cuetty
         ldd $BASEDIR/cuemol2/bin/cuetty
         env LD_LIBRARY_PATH=$BASEDIR/cuemol2/lib $BASEDIR/cuemol2/bin/cuetty
+
+    - name: Get version
+      id: version
+      shell: bash
+      run: |
+        VERSION=$(grep '#define QM_VERSION' src/_version.h | sed 's/.*"\(.*\)".*/\1/')
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+    # Package the tritium Electron app (Linux x64 AppImage + deb, unsigned).
+    # NOTE: not BUILD_MODE-gated yet so the packaging path is exercised on every
+    # branch during bring-up; tighten to full/tags before merging to develop.
+    - name: Install AppImage build deps
+      shell: bash
+      run: sudo apt-get update && sudo apt-get install -y libfuse2
+
+    - name: Package tritium (Linux x64 AppImage + deb)
+      shell: bash
+      run: |
+        set -eux
+        export LIBCUEMOL2_ROOT=${{ github.workspace }}/target/cuemol2
+        bash tritium/packaging/package.sh --linux --x64
+
+    - name: Upload tritium Linux artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: CueMol3_${{ steps.version.outputs.version }}_linux_x64
+        path: |
+          tritium/react-gui/release/*.AppImage
+          tritium/react-gui/release/*.deb
+        if-no-files-found: error
