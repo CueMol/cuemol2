@@ -1,8 +1,9 @@
 import { app, BrowserWindow } from 'electron'
 import { createWindow } from './windowManager'
 import { isAppQuitting, isForceQuit, setAppQuitting } from './quitState'
+import { APP_PRODUCT_NAME } from '../shared/appInfo'
 
-app.setName('CueMol3-tritium')
+app.setName(APP_PRODUCT_NAME)
 
 app.whenReady().then(createWindow)
 

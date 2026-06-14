@@ -3,9 +3,9 @@
 #
 # Does two things:
 #   (1) Collect cuemol2 runtime (dylibs + share tree) into
-#       react-gui/packaging/cuemol2-runtime/ — consumed by extraResources.
+#       react-gui/packaging/cuemol2-runtime/ -- consumed by extraResources.
 #   (2) Stage monorepo-linked deps (@cuemol/core, bindings, file-uri-to-path)
-#       into react-gui/packaging/staging/ — consumed by the files FileSet.
+#       into react-gui/packaging/staging/ -- consumed by the files FileSet.
 #       This is required because electron-builder refuses to unpack files
 #       whose source path is outside the app directory (react-gui/).
 #
@@ -18,14 +18,25 @@ RUNTIME_DEST="$REPO_ROOT/react-gui/packaging/cuemol2-runtime"
 STAGING_DEST="$REPO_ROOT/react-gui/packaging/staging"
 CORE_DIR="$REPO_ROOT/core"
 
+# Default to the per-checkout install prefix used by build_scripts/Taskfile.yml
+# (OUTDIR/cuemol2 = <topdir>/.build_out/cuemol2) when LIBCUEMOL2_ROOT is unset,
+# so packaging works after `task build_libcuemol2` without manual env setup.
 if [ -z "${LIBCUEMOL2_ROOT:-}" ]; then
-  echo "Error: LIBCUEMOL2_ROOT environment variable is not set." >&2
-  echo "  export LIBCUEMOL2_ROOT=/path/to/cuemol2" >&2
-  exit 1
+  LIBCUEMOL2_ROOT="$(cd "$REPO_ROOT/.." && pwd)/.build_out/cuemol2"
+  echo "LIBCUEMOL2_ROOT not set; defaulting to $LIBCUEMOL2_ROOT"
 fi
 
 if [ ! -d "$LIBCUEMOL2_ROOT" ]; then
   echo "Error: LIBCUEMOL2_ROOT does not exist: $LIBCUEMOL2_ROOT" >&2
+  echo "  Build libcuemol2 first (build_scripts: task build_libcuemol2)," >&2
+  echo "  or set LIBCUEMOL2_ROOT=/path/to/cuemol2 explicitly." >&2
+  exit 1
+fi
+
+# Validate the prefix really is a cuemol2 install (holds the runtime data tree).
+if [ ! -f "$LIBCUEMOL2_ROOT/share/sysconfig.xml" ]; then
+  echo "Error: $LIBCUEMOL2_ROOT/share/sysconfig.xml not found;" >&2
+  echo "  LIBCUEMOL2_ROOT does not look like a cuemol2 install prefix." >&2
   exit 1
 fi
 
@@ -56,8 +67,32 @@ mkdir -p "$STAGING_DEST/@cuemol/core/build/lib"
 # @cuemol/core: only the files needed at runtime by the CJS entry.
 cp "$CORE_DIR/package.json" "$STAGING_DEST/@cuemol/core/package.json"
 cp "$CORE_DIR/src/index.cjs" "$STAGING_DEST/@cuemol/core/src/index.cjs"
-cp "$CORE_DIR/build/Release/cuemol_internal.node" \
-   "$STAGING_DEST/@cuemol/core/build/Release/cuemol_internal.node"
+# Detect which config the core addon was built into. The Taskfile default on
+# POSIX is Debug; Release is preferred for distribution. Override with
+# CORE_CONFIG=Release|Debug. The staged file always lands in build/Release/
+# (where the packaged bundle and the `bindings` lookup expect it).
+CORE_CONFIG="${CORE_CONFIG:-}"
+if [ -z "$CORE_CONFIG" ]; then
+  if [ -f "$CORE_DIR/build/Release/cuemol_internal.node" ]; then
+    CORE_CONFIG=Release
+  elif [ -f "$CORE_DIR/build/Debug/cuemol_internal.node" ]; then
+    CORE_CONFIG=Debug
+  else
+    echo "Error: cuemol_internal.node not found in $CORE_DIR/build/{Release,Debug}." >&2
+    echo "  Build the core addon first (build_scripts: task build_tritium_core)." >&2
+    exit 1
+  fi
+fi
+NODE_SRC="$CORE_DIR/build/$CORE_CONFIG/cuemol_internal.node"
+if [ ! -f "$NODE_SRC" ]; then
+  echo "Error: $NODE_SRC not found (CORE_CONFIG=$CORE_CONFIG)." >&2
+  exit 1
+fi
+if [ "$CORE_CONFIG" != "Release" ]; then
+  echo "Warning: staging a $CORE_CONFIG core build; Release is recommended for distribution." >&2
+fi
+echo "  cuemol_internal.node: $NODE_SRC ($CORE_CONFIG)"
+cp "$NODE_SRC" "$STAGING_DEST/@cuemol/core/build/Release/cuemol_internal.node"
 
 # dylibs: copied by cmake post-build to core/build/lib/; stage them next to
 # cuemol_internal.node so the @loader_path/../lib rpath resolves correctly

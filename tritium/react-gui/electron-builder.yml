@@ -18,19 +18,20 @@
 #      electron-builder, and restores it on exit via trap.  packaging/staging/
 #      holds a minimal copy of the files electron-builder actually needs.
 #
-#   2. Machine-specific LC_RPATH in cuemol_internal.node
-#      At C++ build time, cmake-js bakes an absolute LC_RPATH
-#      (e.g. /Users/user1/tmp/proj64_deplibs/cuemol2/lib) into the .node file.
-#      SOLUTION: the afterPack hook (build/afterPack.cjs) rewrites that rpath
-#      to @loader_path-relative after the .app is assembled, then re-signs the
-#      .node and the whole .app with an ad-hoc signature.
+#   2. Relocatable LC_RPATH in cuemol_internal.node
+#      At C++ build time cmake sets INSTALL_RPATH "@loader_path/../lib" with
+#      BUILD_WITH_INSTALL_RPATH (tritium/core/CMakeLists.txt), so the .node
+#      already carries a relocatable rpath that resolves to the dylibs staged
+#      beside it -- no post-pack rpath rewrite is needed.  electron-builder
+#      applies the deep ad-hoc signature.
 #
 #   3. sysconfig.xml path baked into cuemol_internal.node
 #      DEFAULT_CONFIG is compiled in as an absolute path.  In the packaged app
 #      the cuemol2 data tree is copied to Contents/Resources/cuemol2/share/.
-#      SOLUTION: main/index.ts detects app.isPackaged and computes the correct
-#      runtime path from process.resourcesPath, then forwards it to the Web
-#      Worker via the 'apppath' IPC channel.
+#      SOLUTION: main/ipcHandlers.ts (getSysConfigPath, APP_PATH handler)
+#      detects app.isPackaged and computes the correct runtime path from
+#      process.resourcesPath, then forwards it to the Web Worker via the
+#      'apppath' IPC channel.
 #
 # asar: false
 # -----------
@@ -40,7 +41,7 @@
 # With asar=false all files are laid out directly under Contents/Resources/app/,
 # which also makes it easy to inspect the bundle contents for debugging.
 
-appId: org.cuemol.cuemol3-poc2
+appId: org.cuemol.cuemol3
 productName: CueMol3
 asar: false
 nodeGypRebuild: false
@@ -60,12 +61,12 @@ directories:
 # Staged layout:
 #   packaging/staging/
 #     @cuemol/core/
-#       package.json          ← needed by `bindings` to locate the .node file
-#       src/index.cjs         ← CJS entry; loaded by require("@cuemol/core")
+#       package.json          <- needed by `bindings` to locate the .node file
+#       src/index.cjs         <- CJS entry; loaded by require("@cuemol/core")
 #       build/Release/
 #         cuemol_internal.node
-#     bindings/               ← runtime dep of @cuemol/core
-#     file-uri-to-path/       ← runtime dep of bindings
+#     bindings/               <- runtime dep of @cuemol/core
+#     file-uri-to-path/       <- runtime dep of bindings
 files:
   - out/**/*
   - package.json
@@ -83,7 +84,7 @@ files:
 # exactly where the @loader_path/../lib rpath in cuemol_internal.node resolves.
 #
 # Only sysconfig.xml and the data tree need to be in cuemol2/share/;
-# main/index.ts computes this path via process.resourcesPath when packaged.
+# main/ipcHandlers.ts computes this path via process.resourcesPath when packaged.
 #
 # .app bundle layout (relevant parts):
 #   Contents/
@@ -109,7 +110,7 @@ mac:
     - target: dmg
       arch: arm64
   category: public.app-category.education
-  # identity: "-" → ad-hoc signing (codesign --sign -).
+  # identity: "-" -> ad-hoc signing (codesign --sign -).
   # The rpath in cuemol_internal.node is already correct (@loader_path/../lib)
   # because cmake sets it at build time, so no afterPack rpath manipulation is
   # needed.  electron-builder handles the deep ad-hoc signature here.

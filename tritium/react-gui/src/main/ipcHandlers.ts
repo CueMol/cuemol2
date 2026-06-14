@@ -42,9 +42,7 @@ import {
   handleSaveTextAsDialog,
 } from './handlers/fileDialogs'
 
-// ─────────────────────────────────────────────
-// Typed handle wrapper
-// ─────────────────────────────────────────────
+// --- Typed handle wrapper ---
 
 /**
  * Type-safe wrapper for `ipcMain.handle`. Picks request / response types from
@@ -61,9 +59,7 @@ function handleInvoke<C extends InvokeChannel>(
   ipcMain.handle(channel, handler as Parameters<typeof ipcMain.handle>[1])
 }
 
-// ─────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────
+// --- Helpers ---
 
 function getSysConfigPath(): string {
   if (app.isPackaged) {
@@ -76,9 +72,7 @@ function getUserStylePath(): string {
   return path.join(app.getPath('userData'), 'user_styles.xml')
 }
 
-// ─────────────────────────────────────────────
-// File open
-// ─────────────────────────────────────────────
+// --- File open ---
 
 
 export async function handleOpenFile(mainWindow: BrowserWindow, options: FileDialogOptions): Promise<void> {
@@ -118,9 +112,7 @@ export async function handleOpenFile(mainWindow: BrowserWindow, options: FileDia
   }
 }
 
-// ─────────────────────────────────────────────
-// File-system ops
-// ─────────────────────────────────────────────
+// --- File-system ops ---
 
 function handleFileExists(target: string): { exists: boolean } {
   try {
@@ -144,9 +136,7 @@ function handleBackupRename(target: string): { ok: boolean; backed: boolean; err
   }
 }
 
-// ─────────────────────────────────────────────
-// Handler registration
-// ─────────────────────────────────────────────
+// --- Handler registration ---
 
 export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   handleInvoke(IPC.APP_PATH, async () => {

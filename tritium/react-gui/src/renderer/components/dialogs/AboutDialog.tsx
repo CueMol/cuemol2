@@ -3,6 +3,7 @@ import { Dialog, DialogBody, DialogFooter, Button } from '@blueprintjs/core';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useCueMol } from '../../hooks/useCueMol';
 import aboutPng from '../../assets/about.png';
+import { APP_PRODUCT_NAME } from '../../../shared/appInfo';
 
 interface Props {
   visible: boolean;
@@ -29,7 +30,7 @@ export function AboutDialog({ visible, onClose }: Props): React.JSX.Element {
     <Dialog
       isOpen={visible}
       onClose={onClose}
-      title="About CueMol3-tritium"
+      title={`About ${APP_PRODUCT_NAME}`}
       style={{ width: 300, paddingBottom: 0 }}
       portalClassName={isDark ? 'bp5-dark' : ''}
       canOutsideClickClose={false}
@@ -51,7 +52,7 @@ export function AboutDialog({ visible, onClose }: Props): React.JSX.Element {
             marginLeft: 17,
             marginBottom: 4,
           }}>
-            CueMol3-tritium
+            {APP_PRODUCT_NAME}
           </div>
 
           <div style={{

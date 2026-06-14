@@ -41,7 +41,21 @@ if [ -L "$SYMLINK" ]; then
 fi
 
 # --- 4. electron-builder ----------------------------------------------------
-pnpm exec electron-builder --mac --arm64
+# Derive the bundle version from the master QM_VERSION (single source of truth:
+# src/_version.h, maintained by bump-my-version). electron-builder requires
+# valid semver, so map the 4-part QM_VERSION (major.minor.patch.build) to a
+# 3-part version + a separate buildVersion (-> CFBundleVersion).
+VERSION_FILE="$REPO_ROOT/../src/_version.h"
+QM_VERSION="$(grep '#define QM_VERSION' "$VERSION_FILE" | sed 's/.*"\(.*\)".*/\1/')"
+SEMVER="$(printf '%s' "$QM_VERSION" | cut -d. -f1-3)"
+BUILD_NO="$(printf '%s' "$QM_VERSION" | cut -d. -f4)"
+echo "package-mac: QM_VERSION=$QM_VERSION -> version=$SEMVER buildVersion=${BUILD_NO:-<none>}"
+
+EB_ARGS=(--mac --arm64 --config.extraMetadata.version="$SEMVER")
+if [ -n "$BUILD_NO" ]; then
+  EB_ARGS+=(--config.buildVersion="$BUILD_NO")
+fi
+pnpm exec electron-builder "${EB_ARGS[@]}"
 
 # --- 5. restore_symlink runs via EXIT trap ----------------------------------
 echo "package-mac: done."
