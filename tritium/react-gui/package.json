@@ -11,6 +11,7 @@
     "test": "vitest run",
     "lint:style": "stylelint 'src/**/*.css'",
     "package:mac": "bash ../packaging/package-mac.sh",
+    "package:win": "bash ../packaging/package.sh --win --x64",
     "package:dir": "electron-vite build && electron-builder --dir --arm64"
   },
   "dependencies": {

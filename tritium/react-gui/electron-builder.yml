@@ -118,3 +118,12 @@ mac:
   identity: "-"
   hardenedRuntime: false
   gatekeeperAssess: false
+
+win:
+  # x64 NSIS installer. The native addon's dependent DLLs (cuemol2.dll + Boost)
+  # are staged next to cuemol_internal.node in build/Release/ (no rpath on
+  # Windows; the loader resolves DLLs from the module's own directory).
+  # Unsigned for now (Authenticode signing is future work, ADR-0030 Phase 4).
+  target:
+    - target: nsis
+      arch: x64
