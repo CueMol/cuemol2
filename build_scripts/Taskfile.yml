@@ -226,6 +226,21 @@ tasks:
     cmds:
       - pnpm run start
 
+  package_tritium:
+    desc: "Package the tritium app into a distributable (macOS arm64 DMG)"
+    deps:
+      - task: package_tritium:{{OS}}
+
+  package_tritium:darwin:
+    platforms: [darwin]
+    dir: "{{.ROOT_DIR}}/../tritium/react-gui"
+    env:
+      # Default install prefix used by the build tasks; collect-cuemol2-runtime.sh
+      # also defaults to this, but set it explicitly so the env contract is clear.
+      LIBCUEMOL2_ROOT: "{{.LIBCUEMOL2_INSTDIR}}"
+    cmds:
+      - pnpm run package:mac
+
   lint_tritium_style:
     desc: "Lint react-gui CSS for raw hex/px outside the design tokens (warn-only; not wired into build_tritium)"
     dir: "{{.ROOT_DIR}}/../tritium/react-gui"

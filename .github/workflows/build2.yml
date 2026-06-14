@@ -134,6 +134,27 @@ jobs:
       with:
         basedir: ${{ github.workspace }}/target
 
+    # Package the tritium Electron app (macOS arm64 DMG, ad-hoc signed).
+    # Runs only on the arm64 non-embed-Python leg. NOTE: not BUILD_MODE-gated yet
+    # so the packaging path is exercised on every branch during bring-up; tighten
+    # to full/tags before merging to develop.
+    - name: Package tritium (macOS arm64 DMG)
+      if: matrix.os == 'macos-15' && matrix.embed-python == ''
+      shell: bash
+      run: |
+        set -eux
+        export LIBCUEMOL2_ROOT=${{ github.workspace }}/target/cuemol2
+        cd tritium/react-gui
+        pnpm run package:mac
+
+    - name: Upload tritium DMG
+      if: matrix.os == 'macos-15' && matrix.embed-python == ''
+      uses: actions/upload-artifact@v4
+      with:
+        name: CueMol3_${{ steps.version.outputs.version }}_mac_arm64
+        path: tritium/react-gui/release/*.dmg
+        if-no-files-found: error
+
     - name: Download external packages
       if: env.BUILD_MODE == 'full'
       uses: ./build_scripts/download_extpkgs
