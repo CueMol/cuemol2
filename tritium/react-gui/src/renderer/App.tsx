@@ -22,9 +22,6 @@ import { BottomPanel } from "./components/panels/BottomPanel";
 import { StatusBar } from "./components/StatusBar";
 import { InspectorPanel } from "./components/panels/InspectorPanel";
 
-import type { AnimationData } from "./types";
-
-import { SAMPLE_ANIMATION } from "./data/alignmentData";
 import { installSelectAllScope } from "./utils/selectAllScope";
 
 import { useLayoutPersistence } from "./hooks/useLayoutPersistence";
@@ -103,6 +100,8 @@ const App: React.FC = () => {
     handleShowGeneric,
     handleShowViewProps,
     handleShowRenderSettings,
+    handleShowAnimElement,
+    handleClearAnimElement,
     handleCloseInspector,
     handleGenericSet,
     handleGenericReset,
@@ -115,6 +114,37 @@ const App: React.FC = () => {
     cm,
     sceneTree: scene.tree,
   });
+
+  // Animation-element inspector header (name/type). App owns it because
+  // tab-switch restore rewrites inspectorTarget without going through the
+  // AnimationPanel, so the inspector's own fetch is the single source.
+  const [animHeader, setAnimHeader] = useState<{ name: string; type: string } | null>(null);
+
+  const handleInspectAnimElement = useCallback(
+    (sceneId: number, uid: number | null) => {
+      if (uid === null) {
+        handleClearAnimElement(sceneId);
+        setAnimHeader(null);
+        return;
+      }
+      handleShowAnimElement(sceneId, uid);
+    },
+    [handleClearAnimElement, handleShowAnimElement],
+  );
+  const handleAnimHeaderChange = useCallback((name: string, type: string) => {
+    setAnimHeader({ name, type });
+  }, []);
+  const handleAnimElementGone = useCallback(
+    (sceneId: number) => {
+      handleClearAnimElement(sceneId);
+      setAnimHeader(null);
+    },
+    [handleClearAnimElement],
+  );
+  const handleCloseInspectorWithAnim = useCallback(() => {
+    handleCloseInspector();
+    setAnimHeader(null);
+  }, [handleCloseInspector]);
 
   // Render Settings editing state (non-persistent) for the inspector
   // `renderSettings` target.
@@ -340,9 +370,6 @@ const App: React.FC = () => {
     newScene,
   });
 
-  // --- Sample data ---
-  const [animation] = useState<AnimationData | null>(SAMPLE_ANIMATION);
-
   const cueMolBusy = useCueMolBusy();
 
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -482,13 +509,13 @@ const App: React.FC = () => {
                             cm={cm}
                             activeSceneId={activeSceneId}
                             activeMolViewId={activeMolViewId}
-                            animation={animation}
                             renderJob={renderJob.job}
                             renderPreset={renderSettings.preset}
                             onRenderStart={handleRenderStart}
                             onRenderCancel={renderJob.cancel}
                             onRenderApplyPreset={handleApplyRenderPreset}
                             onOpenRenderSettings={handleShowRenderSettings}
+                            onInspectAnimElement={handleInspectAnimElement}
                           />
                         </Allotment.Pane>
                       </Allotment>
@@ -505,8 +532,16 @@ const App: React.FC = () => {
                         hasTarget={inspectorTarget !== null}
                         targetKind={inspectorTarget?.kind ?? null}
                         targetCategory={inspectorCategory}
-                        nodeName={inspectorInfo.name}
-                        nodeType={inspectorInfo.type}
+                        nodeName={
+                          inspectorTarget?.kind === "animElement"
+                            ? (animHeader?.name ?? "")
+                            : inspectorInfo.name
+                        }
+                        nodeType={
+                          inspectorTarget?.kind === "animElement"
+                            ? (animHeader?.type ?? "")
+                            : inspectorInfo.type
+                        }
                         genericEntries={genericEntries}
                         genericLoading={genericLoading}
                         renderSettings={{
@@ -521,7 +556,7 @@ const App: React.FC = () => {
                         onGenericSetMany={handleSetMany}
                         onGenericReset={handleGenericReset}
                         onResetMany={handleResetMany}
-                        onClose={handleCloseInspector}
+                        onClose={handleCloseInspectorWithAnim}
                         cm={cm}
                         sceneId={activeSceneId}
                         nodeId={
@@ -529,6 +564,13 @@ const App: React.FC = () => {
                             ? inspectorTarget.nodeId
                             : undefined
                         }
+                        animElement={
+                          inspectorTarget?.kind === "animElement"
+                            ? { sceneId: inspectorTarget.sceneId, uid: inspectorTarget.uid }
+                            : null
+                        }
+                        onAnimElementGone={handleAnimElementGone}
+                        onAnimHeaderChange={handleAnimHeaderChange}
                       />
                     </Allotment.Pane>
                   </Allotment>

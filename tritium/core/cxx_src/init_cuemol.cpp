@@ -8,6 +8,7 @@
 #include <napi.h>
 
 #include <qlib/ClassRegistry.hpp>
+#include <qlib/EventManager.hpp>
 #include <qlib/LExceptions.hpp>
 #include <qlib/LScriptable.hpp>
 #include <qlib/qlib.hpp>
@@ -43,6 +44,27 @@ Napi::Value isInitialized(const Napi::CallbackInfo& info)
         return Napi::Boolean::New(env, true);
     else
         return Napi::Boolean::New(env, false);
+}
+
+/// Service one idle cycle of the C++ event / timer queue.
+///
+/// AnimMgr playback (and any other setTimer-based work) advances via
+/// EventManager::performIdleTasks(). The Electron libuv timer that would
+/// normally drive this is not pumped inside the Worker thread, so the Worker's
+/// per-frame render loop calls this each frame. A no-op before init or when
+/// the queue is empty. Exceptions are swallowed so a transient animation fault
+/// cannot tear down the render loop.
+Napi::Value performIdleTasks(const Napi::CallbackInfo& info)
+{
+    Napi::Env env = info.Env();
+    if (!g_bInitOK) return env.Null();
+    try {
+        qlib::EventManager::getInstance()->performIdleTasks();
+    }
+    catch (...) {
+        MB_DPRINTLN("performIdleTasks: exception caught and ignored");
+    }
+    return env.Null();
 }
 
 /// CueMol main initialization
@@ -147,6 +169,9 @@ Napi::Object Init(Napi::Env env, Napi::Object exports)
                 Napi::Function::New(env, node_jsbr::hasClass));
     exports.Set(Napi::String::New(env, "getAllClassNamesJSON"),
                 Napi::Function::New(env, node_jsbr::getAllClassNamesJSON));
+
+    exports.Set(Napi::String::New(env, "performIdleTasks"),
+                Napi::Function::New(env, node_jsbr::performIdleTasks));
 
     // exports.Set(Napi::String::New(env, "getClassName"),
     //             Napi::Function::New(env, node_jsbr::getClassName));

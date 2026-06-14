@@ -29,6 +29,9 @@ import type {
 } from './renderTypes'
 
 import type { AppInfoResult } from '../server/services/appInfo.service'
+import type { AnimListTimelineArgs, AnimGetMgrStateArgs, AnimPlayArgs, AnimPauseArgs, AnimStopArgs, AnimGoTimeArgs, AnimSetLoopArgs, AnimTransportResult, AnimSetElementTimeArgs, AnimAddElementArgs, AnimRemoveElementArgs, AnimMoveElementArgs, AnimEditResult, AnimAddResult } from '../server/services/animation.service'
+import type { GetAnimElementDetailArgs, GetAnimElementDetailResult, SetAnimElementPropArgs, SetAnimElementPropResult, GetAnimTargetOptionsArgs, GetAnimTargetOptionsResult, GetAnimElementGenericPropsArgs, SetAnimElementGenericPropArgs, ResetAnimElementGenericPropsArgs, AnimGenericPropsResult } from '../server/services/animDetail.service'
+import type { AnimTimeline, AnimMgrState } from '../../types'
 import type { CreateNewSceneAndViewArgs, CreateNewSceneAndViewResult } from '../server/services/createNewSceneAndView.service'
 import type { CreateViewInSceneArgs, CreateViewInSceneResult } from '../server/services/createViewInScene.service'
 import type { GetCompatibleRendererNamesArgs, GetCompatibleRendererNamesResult } from '../server/services/getCompatibleRendererNames.service'
@@ -615,6 +618,23 @@ export interface ServiceMap {
   setMapRendererProp:         { args: SetMapRendererPropArgs;          result: SetMapRendererPropResult }
   redrawMapCenter:            { args: RedrawMapCenterArgs;             result: RedrawMapCenterResult }
   devRenderOpts:              { args: DevRenderOptsArgs;               result: DevRenderOptsResult }
+  animListTimeline:           { args: AnimListTimelineArgs;            result: AnimTimeline }
+  animGetMgrState:            { args: AnimGetMgrStateArgs;             result: AnimMgrState }
+  animPlay:                   { args: AnimPlayArgs;                    result: AnimTransportResult }
+  animPause:                  { args: AnimPauseArgs;                   result: AnimTransportResult }
+  animStop:                   { args: AnimStopArgs;                    result: AnimTransportResult }
+  animGoTime:                 { args: AnimGoTimeArgs;                  result: AnimTransportResult }
+  animSetLoop:                { args: AnimSetLoopArgs;                 result: AnimTransportResult }
+  animSetElementTime:         { args: AnimSetElementTimeArgs;          result: AnimEditResult }
+  animAddElement:             { args: AnimAddElementArgs;              result: AnimAddResult }
+  animRemoveElement:          { args: AnimRemoveElementArgs;           result: AnimEditResult }
+  animMoveElement:            { args: AnimMoveElementArgs;             result: AnimEditResult }
+  getAnimElementDetail:       { args: GetAnimElementDetailArgs;        result: GetAnimElementDetailResult }
+  setAnimElementProp:         { args: SetAnimElementPropArgs;          result: SetAnimElementPropResult }
+  getAnimTargetOptions:       { args: GetAnimTargetOptionsArgs;        result: GetAnimTargetOptionsResult }
+  getAnimElementGenericProps: { args: GetAnimElementGenericPropsArgs;  result: AnimGenericPropsResult }
+  setAnimElementGenericProp:  { args: SetAnimElementGenericPropArgs;   result: AnimGenericPropsResult }
+  resetAnimElementGenericProps: { args: ResetAnimElementGenericPropsArgs; result: AnimGenericPropsResult }
 }
 
 export type ServiceKey = keyof ServiceMap

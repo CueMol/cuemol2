@@ -284,3 +284,29 @@ describe('useInspectorState', () => {
         h.unmount();
     });
 });
+
+describe('useInspectorState - animElement target', () => {
+    it('handleShowAnimElement sets an animElement target (Animation) without a generic fetch', async () => {
+        const cm = makeCm();
+        const h = mountHook(cm, makeTree(1, 5));
+        act(() => h.result.handleShowAnimElement(1, 42));
+        await flushPromises();
+        expect(h.result.inspectorTarget).toEqual({ kind: 'animElement', sceneId: 1, uid: 42 });
+        expect(h.result.inspectorCategory).toBe('Animation');
+        // Self-fetching branch: the hook must not call getGenericProps for anim.
+        const calls = (cm.invokeService as ReturnType<typeof vi.fn>).mock.calls;
+        expect(calls.every((c: unknown[]) => c[0] !== 'getGenericProps')).toBe(true);
+        h.unmount();
+    });
+
+    it('handleClearAnimElement(scene) leaves a coexisting node target untouched', async () => {
+        const cm = makeCm();
+        const h = mountHook(cm, makeTree(1, 5));
+        act(() => h.result.handleShowGeneric('5')); // node target (renderer uid 5)
+        await flushPromises();
+        expect(h.result.inspectorTarget?.kind).toBe('node');
+        act(() => h.result.handleClearAnimElement(1)); // stale anim clear, same scene
+        expect(h.result.inspectorTarget?.kind).toBe('node');
+        h.unmount();
+    });
+});

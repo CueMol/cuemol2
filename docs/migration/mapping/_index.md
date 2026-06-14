@@ -1,5 +1,10 @@
 # Migration Mapping — Index
 
+- Updated: 2026-06-14 (anim reconciliation: anim panel 実装で実現済の 4 inventory entry を todo->merged/done に是正。`widget.timeedit`->`h3-kit/form/TimeField`、`widget.multiselect`->anim inspector の Target renderers checklist、`widget.anim-slider`->`AnimTimeRuler`/`AnimTransport` scrub、`toolbar.anim-ribbon`->`AnimTransport`（tritium に別 toolbar 無し）。全て ADR-0029。Custom Widget done 4->7/todo 4->1、Toolbar done 0->1/todo 1->0、Total done 84->88/todo 23->19、merged 48->52/unassigned 23->19、Unstarted 23->19。残 anim 隣接 todo は `dialog.anim-render`（offline movie render）/ `dialog.tool.morphanim-tool`（morph 生成）で別 workstream)
+- Updated: 2026-06-14 (Phase 7 done: UXP timeedit を再利用可能な h3-kit `TimeField`（`h3-kit/form/TimeField.tsx`: ms <-> `M:SS.mmm`/`H:MM:SS.mmm`、blur/Enter commit、`formatMs`/`parseTime` export）として実装し、anim inspector の Start/Duration（旧 ms DragNumericField）を Start time/Duration の TimeField に置換（end=start+duration を 1 timing write、worker 不変）。これが最後の deferral だったため anim panel migration の UXP-parity gap は無し（offline render のみ別 workstream）。timeField test 6 + inspector timing test 更新。ADR-0029 / `panel.anim` Notes を更新。status counts 不変。native 変更なし)
+- Updated: 2026-06-14 (Phase 6 done: anim inspector の UXP-parity polish。multi-rend（ShowHide/Slide の Target renderers を scrollable checklist 複数選択、`rend` comma round-trip、C++ `RendPropAnim` が split）+ timeRefName cascade（rename で依存 sibling を同一 undo txn 追従）+ target-list sync（`SEM_OBJECT|RENDERER|CAMERA` で options 再 fetch = Explorer add/delete/rename 追従）。realtime drag preview は anim prop で 3D が drag 中 live 更新されないため intentionally 非採用に確定。残 deferred は timeedit (mm:ss) のみ。ADR-0029 / `panel.anim` Notes を更新。status counts 不変（`panel.anim`/`dialog.animobj` は既に done）)
+- Updated: 2026-06-13 (Phase 5 done: 旧 keyframe mock を完全撤去 (types.ts の `Keyframe`/`AnimationTrack`/`AnimationData`、`data/alignmentData.ts` 削除、App.tsx の animation state、BottomPanel の dead prop、appIcons.ts の dead `track.light`+`Lightning` import)。anim panel migration が構造的に完了したため `panel.anim` / `dialog.animobj` を wip->done。Panel wip 12->11 / done 13->14、Dialog_other wip 3->2 / done 10->11、Total wip 27->25 / done 82->84。In Progress から両行を除去。残 UXP-parity feature (multi-rend / timeRefName cascade / timeedit / realtime preview) + 関連 surface (anim-ribbon / anim-render) は任意 Phase 6。ADR-0029 を host E2E verified に更新)
+- Updated: 2026-06-13 (Phase 4 docs: anim inspector を [ADR-0029](../adr/ADR-0029-anim-timeline-strip-model.md) として起票。`panel.anim` の Notes/ADR を更新 (keyframe mock -> Blender 風 strip timeline + 実 3D 再生 (worker idle pump) + 右 InspectorPanel detail inspector: Properties per-type editor + 再利用 Generic tab、uid=findByUid、Quadric 0=linear で UI ガード除去、spin-axis Cartesian-only)。`dialog.animobj` todo->wip かつ merged (`AnimElementInspector` / `animDetail.service` / `GenericTab` に統合)。Dialog_other todo 6->5 / wip 2->3、Total todo 24->23 / wip 26->27、merged 47->48 / unassigned 24->23、Unstarted 24->23。In Progress の panel.anim 行を更新し dialog.animobj 行を追加。panel.anim は Phase 5 cleanup 残のため wip 据え置き)
 - Updated: 2026-06-12 (wip 棚卸し是正: host 確認済みで実質完了の行を done に。`dialog.about` + coloring decks `panel.coloring.deck.{solid,paint,cpk,rainbow,bfac,elepot}` (6) + mirror `overlay.coloring-deck-*` (5) を wip->done (計 12)。`panel.coloring.shell` の stale "coming soon" 注記を是正 (Paint/Solid/CPK/Bfac/Rainbow/Elepot は enabled、Multi-gradient のみ todo 据え置きで shell は wip 継続)。Panel done 7->13 / wip 18->12、Dialog_other done 9->10 / wip 3->2、Overlay done 16->21 / wip 7->2、Total done 70->82 / wip 38->26。In Progress から該当 7 行除去。menu(26/55, 6/7)・既知バグの style dialog・各種 Phase 残りは正当 wip として据え置き)
 - Updated: 2026-06-12 (D-Phase1-4 done: 別ホスト E2E sign-off 済み (各 Phase の「進めて」が確認 OK の意)。`dialog.property.object` / `dialog.tool.visflagset-edit` / `dialog.tool.aintr-edit` / `dialog.style-editor` を wip->done。Dialog_property done 13->14 (15/15 完成)、Dialog_other done 8->9、Dialog_tool done 14->16、Total done 66->70 / wip 42->38。In Progress から 4 行除去、ADR-0026/0027/0028 を host E2E verified に更新)
 - Updated: 2026-06-12 (D-Phase4 `dialog.style-editor` wip: UXP "Style editor" を `StyleEditorDialog`(3 タブ modal: Color / Selection / Styles)として実装。`styleSetEdit.service`(`getStyleSetContents` + `setStyleSetColor`/`removeStyleSetColor`/`setStyleSetSelection`/`removeStyleSetSelection`/`removeStyleSetStyle`)で StyleSet スコープ CRUD。編集は live-apply(各 1 undo step + `firePendingEvents`、毎回 refetch)= ColorPane deck 流で、per-edit undo が UXP の OK/Cancel を代替。Color タブは `ColorField`/`ColorPickerProvider`、Selection は `sel` str-data category、Styles は削除のみ。style ctxmenu に "Edit…" 追加(action `editStyle`、dispatch case、dialog hook 配線)。read-only set は閲覧のみ。`ApplyRendStyleDialog`/`CreateRendStyleDialog` の既知バグは `panel.workspace.ctxmenu.renderer` で別追跡(本フェーズ対象外)。service + dialog test 9 件。Dialog_other wip 3->4 / todo 7->6、Total wip 41->42 / todo 25->24、split 27->28 / unassigned 25->24、Unstarted 24。host E2E で done。ADR-0028)
@@ -67,16 +72,16 @@
 
 | Category | File | Total | done | wip | review | todo | frozen |
 |----------|------|------:|-----:|----:|-------:|-----:|-------:|
-| Panel | [panels.md](panels.md) | 27 | 13 | 12 | 0 | 2 | 0 |
+| Panel | [panels.md](panels.md) | 27 | 14 | 11 | 0 | 2 | 0 |
 | Menu | [menus.md](menus.md) | 4 | 2 | 2 | 0 | 0 | 0 |
-| Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
+| Toolbar | [toolbars.md](toolbars.md) | 2 | 1 | 1 | 0 | 0 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 15 | 14 | 1 | 0 | 0 | 0 |
-| Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 10 | 2 | 0 | 6 | 0 |
+| Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 11 | 2 | 0 | 5 | 0 |
 | Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 16 | 0 | 0 | 5 | 0 |
-| Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 4 | 5 | 0 | 4 | 0 |
+| Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 7 | 5 | 0 | 1 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 21 | 2 | 0 | 5 | 0 |
 | Other | [other.md](other.md) | 4 | 2 | 1 | 0 | 1 | 0 |
-| **Total** | | **132** | **82** | **26** | **0** | **24** | **0** |
+| **Total** | | **132** | **88** | **25** | **0** | **19** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -105,11 +110,11 @@
 | Mapping | Count |
 |---------|------:|
 | 1:1 (`direct`) | 27 |
-| merged | 47 |
+| merged | 52 |
 | split | 28 |
 | redesign | 0 |
 | deprecated (`dropped`) | 6 |
-| *(not yet assigned)* | 24 |
+| *(not yet assigned)* | 19 |
 
 ---
 
@@ -141,10 +146,9 @@
 | [`overlay.propeditor-generic`](overlay.md#overlaypropeditor-generic) | `InspectorPanel` / `GenericTab` / `genericProps.service` / `useInspectorState` | Generic property editor as the Generic tab of the docked inspector pane (ADR-0015); `getPropsJSON` bridge, live-apply, undo-wrapped writes. First stage edits primitive types (string/int/real/bool/enum); nested-object sub-properties now editable via dot-path keys (`parseGenericProps` recurses, `setNestedProperty` writes — ADR-0015 Update); color/vector/timeval widgets deferred. Replaces the retired read-only `NodePropertyDialog` modal. |
 | [`dialog.property.renderer`](prop_dlgs.md) | `inspector/RendererCommonSection` / `inspector/PropertiesTab` / `rendererPropSections` / `getMaterialNames.service` | renderer-common-page (Basic settings + Edge lines) as the structured Properties tab, default for renderer targets; live `getGenericProps`/`setGenericProp` (sel compiled via `makeSel`, egcolor/material as strings). Per-renderer-type sections deferred to the `rendererPropSections` registry — every type currently shows Common + a collapsed dummy placeholder. |
 | [`panel.coloring.shell`](panels.md#panelcoloringshell) | `ColorPane` / `usePaintCapableRenderers` / `rendererColoring.service` | Phase 1: renderer selector (paint-capable filter) + Coloring type dropdown (Paint / Solid / Reset enabled; CPK / Bfac / Rainbow / Elepot / Multi-gradient "coming soon"). |
-| [`panel.anim`](panels.md#panelanim) | `AnimationPanel` | Animation panel implemented and mounted in `BottomPanel`; timeline / keyframe UI in progress. Related anim surfaces (anim-ribbon / anim-slider / timeedit / multiselect / anim-render / animobj) still todo |
 | [`panel.molstruct`](panels.md#panelmolstruct) | `MolStructPane` / `useMolStructure` / `selStrFromTree` / `getMolStructure.service` / `applyMolSelString.service` | Phase 1+2: molecule selector + lazy chain/residue/atom tree (per-chain & per-residue cache, self-heal on missing) + multi-select + Select / Center / Zoom (ADR-0018). Known issue: first-expand stagger from Blueprint `Tree` Collapse JS state machine (virtualization swap deferred). |
 ---
 
 ## Unstarted
 
-**24 / 132** items are `todo` (not yet started).
+**19 / 132** items are `todo` (not yet started).

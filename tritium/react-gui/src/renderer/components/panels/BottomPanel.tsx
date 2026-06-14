@@ -18,7 +18,6 @@ import { RenderPanel } from "./RenderPanel";
 import { useLogEvent } from "../../hooks/useLogEvent";
 import { IPC } from "../../../shared/ipcChannels";
 import type { RenderJob } from "../../hooks/useRenderJob";
-import type { AnimationData } from "../../types";
 import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
 
 // ─────────────────────────────────────────────
@@ -59,7 +58,6 @@ interface BottomPanelProps {
   activeSceneId: number | undefined;
   /** Active mol-view UID; required by SequencePanel "Center here". */
   activeMolViewId: number | undefined;
-  animation: AnimationData | null;
   /** Current render job (Render tab). */
   renderJob: RenderJob | null;
   /** Selected image-size preset label. */
@@ -72,19 +70,21 @@ interface BottomPanelProps {
   onRenderApplyPreset: (label: string) => void;
   /** Open the Render Settings editor in the Inspector. */
   onOpenRenderSettings: () => void;
+  /** Show / clear the anim-element detail in the Inspector (uid null = clear). */
+  onInspectAnimElement?: (sceneId: number, uid: number | null) => void;
 }
 
 export const BottomPanel: React.FC<BottomPanelProps> = ({
   cm,
   activeSceneId,
   activeMolViewId,
-  animation,
   renderJob,
   renderPreset,
   onRenderStart,
   onRenderCancel,
   onRenderApplyPreset,
   onOpenRenderSettings,
+  onInspectAnimElement,
 }) => {
   const [activeTab, setActiveTab] = useState<BottomTabType>("output");
 
@@ -133,7 +133,14 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({
           />
         );
       case "animation":
-        return <AnimationPanel animation={animation} />;
+        return (
+          <AnimationPanel
+            cm={cm}
+            activeSceneId={activeSceneId}
+            activeMolViewId={activeMolViewId}
+            onInspectAnimElement={onInspectAnimElement}
+          />
+        );
       case "render":
         return (
           <RenderPanel

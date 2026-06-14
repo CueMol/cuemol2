@@ -40,10 +40,14 @@ export interface InspectorInfo {
  *   C++ property bridge (`getGenericProps` / `setGenericProp`).
  * - `renderSettings` — the scene's render output settings; not a scene-tree
  *   node and not backed by the property bridge (see `RenderSettingsEditor`).
+ * - `animElement` — an animation element selected in the AnimationPanel; keyed
+ *   by stable `uid` and edited by `AnimElementInspector` via its own services
+ *   (not the property bridge), the same bespoke-branch pattern as renderSettings.
  */
 export type InspectorTarget =
   | { kind: "node"; sceneId: number; nodeId: number; nodeType: PropTargetType }
-  | { kind: "renderSettings"; sceneId: number };
+  | { kind: "renderSettings"; sceneId: number }
+  | { kind: "animElement"; sceneId: number; uid: number };
 
 /** Header category label for each scene-tree node type. */
 const NODE_CATEGORY_LABELS: Record<string, string> = {
@@ -138,9 +142,10 @@ export function useInspectorState({
       setInspectorInfo({ name: "", type: "" });
       return;
     }
-    // Render Settings is not a property-bridge node — it has its own editor.
-    // The header category badge already names it, so leave name/type blank.
-    if (target.kind === "renderSettings") {
+    // Render Settings / anim element are not property-bridge nodes — each has
+    // its own editor that self-fetches. Blank the generic state here (the anim
+    // header name/type is supplied separately by AnimElementInspector).
+    if (target.kind === "renderSettings" || target.kind === "animElement") {
       setGenericEntries([]);
       setInspectorInfo({ name: "", type: "" });
       return;
@@ -215,6 +220,30 @@ export function useInspectorState({
     if (sid === undefined) return;
     applyTarget({ kind: "renderSettings", sceneId: sid });
   }, [sceneTree, applyTarget]);
+
+  /**
+   * Open the inspector for an animation element selected in the AnimationPanel.
+   * Keyed by stable `uid`; the AnimElementInspector self-fetches its data.
+   */
+  const handleShowAnimElement = useCallback(
+    (sceneId: number, uid: number) => {
+      applyTarget({ kind: "animElement", sceneId, uid });
+    },
+    [applyTarget],
+  );
+
+  /**
+   * Clear an animElement target for a specific scene (deselect / element gone).
+   * Scene-scoped + kind-guarded so a stale anim clear never drops a coexisting
+   * node / renderSettings target (or another scene's target).
+   */
+  const handleClearAnimElement = useCallback((sceneId: number) => {
+    setInspectorTarget((t) =>
+      t?.kind === "animElement" && t.sceneId === sceneId ? null : t,
+    );
+    const mem = targetsBySceneRef.current.get(sceneId);
+    if (mem?.kind === "animElement") targetsBySceneRef.current.delete(sceneId);
+  }, []);
 
   // Refetch whenever the target changes.
   useEffect(() => {
@@ -364,7 +393,9 @@ export function useInspectorState({
   // Catches undo/redo and script-driven mutations of the inspected node.
   useCueMolEventListener({
     cm,
-    enabled: inspectorOpen && inspectorTarget !== null,
+    // Only node targets sync via SEM_PROPCHG; anim targets own their SEM_ANIM
+    // subscription (in AnimElementInspector), and renderSettings has no bridge.
+    enabled: inspectorOpen && inspectorTarget?.kind === "node",
     category: "",
     srcMask: PROPCHG_SRC_MASK,
     evtMask: SEM_PROPCHG,
@@ -379,6 +410,7 @@ export function useInspectorState({
   const inspectorCategory = useMemo(() => {
     if (!inspectorTarget) return "";
     if (inspectorTarget.kind === "renderSettings") return "Render Settings";
+    if (inspectorTarget.kind === "animElement") return "Animation";
     return NODE_CATEGORY_LABELS[inspectorTarget.nodeType] ?? "Node";
   }, [inspectorTarget]);
 
@@ -392,6 +424,8 @@ export function useInspectorState({
     handleShowGeneric,
     handleShowViewProps,
     handleShowRenderSettings,
+    handleShowAnimElement,
+    handleClearAnimElement,
     handleCloseInspector,
     handleGenericSet,
     handleGenericReset,

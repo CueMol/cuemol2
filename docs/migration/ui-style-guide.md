@@ -24,7 +24,8 @@ label+control の UI (フォーム行・テキスト入力・select・numeric・
 | `SectionHeader` | サブセクション見出し**バー** (背景tint+下線, 大文字) | `.section-header` role (高 `--ctrl-h-md`) |
 | `TextField` | 単一行テキスト入力 (任意 `leftIcon` = フィルタ/検索) | 高 `--field-h` (22px) |
 | `SelectField` | ドロップダウン (`<option>` を children に) | 高 `--field-h` (22px) |
-| `NumericField` | 数値 (任意で slider・`unit`) | 入力高 `--field-h-sm` (20px) |
+| `NumericField` | 数値 stepper / 明示 slider (discrete count 等)。任意で `unit` | 入力高 `--field-h-sm` (20px) |
+| `DragNumericField` | 数値 (Blender風 drag number button)。**UXP の numslider の移植先**。renderer property 等のドラッグ可能な数値はこれを使う (`NumericField` ではない) | サイズは `.h3-form-drag*` (`_form-kit.css`) |
 | `SwitchField` | 真偽トグル (`inline` Field 内で使う) | Blueprint Switch |
 | `ColorField` | 色 (`CueColorField` の薄いラッパ) | - |
 | `ButtonRow` / `FormButton` | コンパクトボタンの行 / ボタン | 高 `--field-btn-h`, ラベル `--fs-base` |
@@ -49,7 +50,8 @@ label+control の UI (フォーム行・テキスト入力・select・numeric・
 | labeled 行 | `.insp-prop-row` / `.selection-row` / `.h3-slider-row` / `.config-setting` | `Field` |
 | text input | `.insp-input`(22) / dialog `.bp5-input`(26) | `TextField` (22) |
 | select | `.insp-select`(22) / `.selection-mol-select`(28) | `SelectField` (22) |
-| numeric | `.insp-numeric-input`(20) / `.h3-slider-number`(20) | `NumericField` (20) |
+| numeric (stepper / discrete) | `.insp-numeric-input`(20) | `NumericField` (20) |
+| numeric (UXP numslider / ドラッグ可能) | `.h3-slider-number`(20) | `DragNumericField` |
 | switch | `.insp-switch` | `SwitchField` |
 | compact button | 20/22/24/26px がファイル毎 | `FormButton` (`--field-btn-h`) |
 | segmented control | `.inspector-mode-bar` の直書き override / 各所の生 `SegmentedControl` | `SegmentField` (`--field-btn-h`, `.h3-form-segmented`) |
