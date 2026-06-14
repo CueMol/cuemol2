@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-06-14 (anim reconciliation: anim panel 実装で実現済の 4 inventory entry を todo->merged/done に是正。`widget.timeedit`->`h3-kit/form/TimeField`、`widget.multiselect`->anim inspector の Target renderers checklist、`widget.anim-slider`->`AnimTimeRuler`/`AnimTransport` scrub、`toolbar.anim-ribbon`->`AnimTransport`（tritium に別 toolbar 無し）。全て ADR-0029。Custom Widget done 4->7/todo 4->1、Toolbar done 0->1/todo 1->0、Total done 84->88/todo 23->19、merged 48->52/unassigned 23->19、Unstarted 23->19。残 anim 隣接 todo は `dialog.anim-render`（offline movie render）/ `dialog.tool.morphanim-tool`（morph 生成）で別 workstream)
 - Updated: 2026-06-14 (Phase 7 done: UXP timeedit を再利用可能な h3-kit `TimeField`（`h3-kit/form/TimeField.tsx`: ms <-> `M:SS.mmm`/`H:MM:SS.mmm`、blur/Enter commit、`formatMs`/`parseTime` export）として実装し、anim inspector の Start/Duration（旧 ms DragNumericField）を Start time/Duration の TimeField に置換（end=start+duration を 1 timing write、worker 不変）。これが最後の deferral だったため anim panel migration の UXP-parity gap は無し（offline render のみ別 workstream）。timeField test 6 + inspector timing test 更新。ADR-0029 / `panel.anim` Notes を更新。status counts 不変。native 変更なし)
 - Updated: 2026-06-14 (Phase 6 done: anim inspector の UXP-parity polish。multi-rend（ShowHide/Slide の Target renderers を scrollable checklist 複数選択、`rend` comma round-trip、C++ `RendPropAnim` が split）+ timeRefName cascade（rename で依存 sibling を同一 undo txn 追従）+ target-list sync（`SEM_OBJECT|RENDERER|CAMERA` で options 再 fetch = Explorer add/delete/rename 追従）。realtime drag preview は anim prop で 3D が drag 中 live 更新されないため intentionally 非採用に確定。残 deferred は timeedit (mm:ss) のみ。ADR-0029 / `panel.anim` Notes を更新。status counts 不変（`panel.anim`/`dialog.animobj` は既に done）)
 - Updated: 2026-06-13 (Phase 5 done: 旧 keyframe mock を完全撤去 (types.ts の `Keyframe`/`AnimationTrack`/`AnimationData`、`data/alignmentData.ts` 削除、App.tsx の animation state、BottomPanel の dead prop、appIcons.ts の dead `track.light`+`Lightning` import)。anim panel migration が構造的に完了したため `panel.anim` / `dialog.animobj` を wip->done。Panel wip 12->11 / done 13->14、Dialog_other wip 3->2 / done 10->11、Total wip 27->25 / done 82->84。In Progress から両行を除去。残 UXP-parity feature (multi-rend / timeRefName cascade / timeedit / realtime preview) + 関連 surface (anim-ribbon / anim-render) は任意 Phase 6。ADR-0029 を host E2E verified に更新)
@@ -73,14 +74,14 @@
 |----------|------|------:|-----:|----:|-------:|-----:|-------:|
 | Panel | [panels.md](panels.md) | 27 | 14 | 11 | 0 | 2 | 0 |
 | Menu | [menus.md](menus.md) | 4 | 2 | 2 | 0 | 0 | 0 |
-| Toolbar | [toolbars.md](toolbars.md) | 2 | 0 | 1 | 0 | 1 | 0 |
+| Toolbar | [toolbars.md](toolbars.md) | 2 | 1 | 1 | 0 | 0 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 15 | 14 | 1 | 0 | 0 | 0 |
 | Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 11 | 2 | 0 | 5 | 0 |
 | Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 16 | 0 | 0 | 5 | 0 |
-| Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 4 | 5 | 0 | 4 | 0 |
+| Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 7 | 5 | 0 | 1 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 21 | 2 | 0 | 5 | 0 |
 | Other | [other.md](other.md) | 4 | 2 | 1 | 0 | 1 | 0 |
-| **Total** | | **132** | **84** | **25** | **0** | **23** | **0** |
+| **Total** | | **132** | **88** | **25** | **0** | **19** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -109,11 +110,11 @@
 | Mapping | Count |
 |---------|------:|
 | 1:1 (`direct`) | 27 |
-| merged | 48 |
+| merged | 52 |
 | split | 28 |
 | redesign | 0 |
 | deprecated (`dropped`) | 6 |
-| *(not yet assigned)* | 23 |
+| *(not yet assigned)* | 19 |
 
 ---
 
@@ -150,4 +151,4 @@
 
 ## Unstarted
 
-**23 / 132** items are `todo` (not yet started).
+**19 / 132** items are `todo` (not yet started).
