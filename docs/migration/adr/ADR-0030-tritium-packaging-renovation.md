@@ -1,6 +1,6 @@
 # ADR-0030: tritium packaging / release-build renovation
 
-- Status: accepted (Phase 0-2 + Electron 33->42 done; mac DMG / win NSIS / linux AppImage+deb all build in CI on `pkg_0614`; Phase 3 finalize [release wiring / gating / icon] + Phase 4 [signing] pending)
+- Status: accepted (Phase 0-3 + Electron 33->42 done on `pkg_0614`; 3-OS packaging builds in CI, release-cadence gating + tag->GitHub Release wiring + app icon in place; tag->release flow awaits the first tag to verify; per-OS runtime launch verified on mac only; Phase 4 [signing/notarization] pending)
 - Date: 2026-06-14
 - Mapping rows: (none -- build/packaging infrastructure; not a UXP inventory item)
 
