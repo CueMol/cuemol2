@@ -60,7 +60,6 @@ import {
   ScenePane,
   ColorPane,
   ViewPane,
-  RenderingPane,
   MolStructPane,
   SelectionPane,
   SymmetryPane,
@@ -321,18 +320,6 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             viewCenterMark={viewCenterMark}
             onSetPerspective={onSetPerspective}
             onSetCenterMark={onSetCenterMark}
-            collapsed={collapsed}
-            onToggleCollapse={onToggle}
-          />
-        ),
-      },
-      {
-        id: "rendering",
-        defaultSize: 280,
-        render: (collapsed, onToggle) => (
-          <RenderingPane
-            cm={cm}
-            activeSceneId={activeSceneId}
             collapsed={collapsed}
             onToggleCollapse={onToggle}
           />

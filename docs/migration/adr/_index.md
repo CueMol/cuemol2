@@ -58,4 +58,4 @@ Architecture Decision Records for the UXP → tritium migration.
 | [ADR-0027](ADR-0027-interaction-list-editor.md) | Interaction-list editor — getDefsJSON contract and stable-index delete | accepted (host E2E verified; PR pending) | 2026-06-12 | `dialog.tool.aintr-edit`, `panel.workspace.ctxmenu.renderer` |
 | [ADR-0028](ADR-0028-style-editor.md) | Style editor — 3-tab modal with live-applied style-set CRUD | accepted (host E2E verified; PR pending) | 2026-06-12 | `dialog.style-editor`, `panel.workspace.ctxmenu.style` |
 | [ADR-0029](ADR-0029-anim-timeline-strip-model.md) | Animation panel — strip-timeline model and detail inspector | accepted (migration complete) | 2026-06-13 | `panel.anim`, `dialog.animobj` |
-| [ADR-0030](ADR-0030-scene-rendering-panel.md) | Scene rendering panel — curated AO/AA/display pane with drag-bracketed undo | accepted (host E2E pending) | 2026-06-14 | `panel.scene-rendering` |
+| [ADR-0030](ADR-0030-scene-rendering-panel.md) | Scene rendering properties in the Inspector Property tab — curated AO/AA/bg/proofing sections via the generic-props bridge | accepted (host E2E pending) | 2026-06-14 | `dialog.property.scene` |

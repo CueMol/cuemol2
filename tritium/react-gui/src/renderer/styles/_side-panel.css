@@ -159,11 +159,10 @@
   gap: var(--space-3);
 }
 
-/* View / Rendering pane body: a scrollable form (sp-pane-scroll supplies the
- * scroll) with the same form padding + inter-section gap as sp-pane-fill, so the
- * pane shows a scrollbar when its sections overflow the pane height. */
-.view-pane-body,
-.rendering-pane-body {
+/* View pane body: a scrollable form (sp-pane-scroll supplies the scroll) with
+ * the same form padding + inter-section gap as sp-pane-fill, so the View pane
+ * shows a scrollbar when its sections overflow the pane height. */
+.view-pane-body {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
