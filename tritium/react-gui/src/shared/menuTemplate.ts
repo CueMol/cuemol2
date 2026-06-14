@@ -4,6 +4,7 @@
  */
 
 import { IPC } from './ipcChannels'
+import { APP_PRODUCT_NAME } from './appInfo'
 
 export type AppMenuRole =
   | 'cut' | 'copy' | 'paste' | 'selectAll'
@@ -45,7 +46,7 @@ export const APP_MENU: AppMenuGroup[] = [
     label: 'CueMol2',
     darwinOnly: true,
     submenu: [
-      { id: 'about-mac', label: 'About CueMol3-tritium', ipcChannel: IPC.MENU_ABOUT, darwinOnly: true },
+      { id: 'about-mac', label: `About ${APP_PRODUCT_NAME}`, ipcChannel: IPC.MENU_ABOUT, darwinOnly: true },
       { type: 'separator' },
       { id: 'mac-prefs', label: 'Preferences...', accelerator: 'Cmd+,', ipcChannel: 'menu:options', darwinOnly: true },
       { type: 'separator' },
@@ -204,7 +205,7 @@ export const APP_MENU: AppMenuGroup[] = [
   {
     label: 'Help',
     submenu: [
-      { id: 'about', label: 'About CueMol3-tritium', ipcChannel: IPC.MENU_ABOUT, othersOnly: true },
+      { id: 'about', label: `About ${APP_PRODUCT_NAME}`, ipcChannel: IPC.MENU_ABOUT, othersOnly: true },
       { type: 'separator' },
       { id: 'about-plugins',  label: 'About plugins...',  ipcChannel: 'menu:about-plugins' },
       { id: 'about-config',   label: 'About config...',   ipcChannel: 'menu:about-config' },

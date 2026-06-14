@@ -107,14 +107,22 @@ STRING(REPLACE "\\" "\\\\" DEFAULT_SYSCONFIG_PATH ${DEFAULT_SYSCONFIG_PATH})
 message(STATUS "DEFAULT_SYSCONFIG_PATH: ${DEFAULT_SYSCONFIG_PATH}")
 target_compile_definitions(cuemol_internal PUBLIC DEFAULT_CONFIG=\"${DEFAULT_SYSCONFIG_PATH}\")
 
-# .node extension, and @loader_path-relative rpath so dyld finds the bundled
-# dylibs at both dev time (build/lib/) and in the packaged .app
-# (app/node_modules/@cuemol/core/build/lib/).
+# .node extension, and a relocatable rpath so the loader finds the bundled
+# shared libs at both dev time (build/lib/) and in the packaged app
+# (app/node_modules/@cuemol/core/build/lib/). macOS uses @loader_path (dyld),
+# Linux uses $ORIGIN (ld.so); Windows has no rpath (DLLs sit next to the .node).
 # BUILD_WITH_INSTALL_RPATH TRUE makes cmake-js in-place builds use INSTALL_RPATH
 # directly, avoiding the absolute LIBCUEMOL2_LIBDIR being baked in.
+if(APPLE)
+  set(CUEMOL_NODE_RPATH "@loader_path/../lib")
+elseif(UNIX)
+  set(CUEMOL_NODE_RPATH "$ORIGIN/../lib")
+else()
+  set(CUEMOL_NODE_RPATH "")
+endif()
 set_target_properties(cuemol_internal PROPERTIES
   PREFIX "" SUFFIX ".node"
-  INSTALL_RPATH "@loader_path/../lib"
+  INSTALL_RPATH "${CUEMOL_NODE_RPATH}"
   BUILD_WITH_INSTALL_RPATH TRUE
 )
 

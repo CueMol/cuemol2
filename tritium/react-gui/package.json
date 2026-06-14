@@ -1,6 +1,9 @@
 {
   "name": "@cuemol/react-gui",
-  "productName": "CueMol3-tritium",
+  "productName": "CueMol3",
+  "description": "CueMol: macromolecular structure visualization",
+  "homepage": "https://www.cuemol.org/",
+  "author": "CueMol Project <info@cuemol.org>",
   "version": "0.1.0",
   "private": true,
   "main": "./out/main/index.js",
@@ -11,12 +14,12 @@
     "test": "vitest run",
     "lint:style": "stylelint 'src/**/*.css'",
     "package:mac": "bash ../packaging/package-mac.sh",
+    "package:win": "bash ../packaging/package.sh --win --x64",
     "package:dir": "electron-vite build && electron-builder --dir --arm64"
   },
   "dependencies": {
     "@blueprintjs/core": "^5.13.0",
     "@blueprintjs/icons": "^5.13.0",
-    "@cuemol/core": "workspace:*",
     "@phosphor-icons/react": "^2.1.10",
     "@use-gesture/react": "^10.3.1",
     "allotment": "^1.20.2",
@@ -27,12 +30,13 @@
     "react-tabs": "^6.0.2"
   },
   "devDependencies": {
+    "@cuemol/core": "workspace:*",
     "@electron-toolkit/tsconfig": "^1.0.1",
     "@types/node": "^20.17.6",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
-    "electron": "^33.3.1",
+    "electron": "^42.4.0",
     "electron-builder": "^25.1.8",
     "electron-vite": "^2.3.0",
     "jsdom": "^26.1.0",
