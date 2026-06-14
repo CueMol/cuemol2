@@ -100,8 +100,32 @@ cp "$NODE_SRC" "$STAGING_DEST/@cuemol/core/build/Release/cuemol_internal.node"
 cp "$CORE_DIR/build/lib/"*.dylib "$STAGING_DEST/@cuemol/core/build/lib/"
 echo "  dylibs staged: $(ls "$STAGING_DEST/@cuemol/core/build/lib/"*.dylib 2>/dev/null | wc -l | tr -d ' ') files"
 
-# bindings + its sole dep file-uri-to-path (both live under core/node_modules/)
-cp -r "$CORE_DIR/node_modules/bindings" "$STAGING_DEST/bindings"
-cp -r "$CORE_DIR/node_modules/file-uri-to-path" "$STAGING_DEST/file-uri-to-path"
+# bindings + its sole dep file-uri-to-path. pnpm's layout varies (these may be
+# hoisted into core/node_modules/ or kept nested under .pnpm/), so resolve the
+# real package directories via Node instead of assuming a flat layout. Stage
+# them flat (siblings) so Node's require resolution finds file-uri-to-path next
+# to bindings at runtime.
+RESOLVED="$(node -e '
+const path = require("path");
+const core = process.argv[1];
+const bdir = path.dirname(require.resolve("bindings/package.json", { paths: [core] }));
+const fdir = path.dirname(require.resolve("file-uri-to-path/package.json", { paths: [bdir] }));
+console.log(bdir);
+console.log(fdir);
+' "$CORE_DIR" 2>/dev/null)" || {
+  echo "Error: failed to resolve bindings / file-uri-to-path from $CORE_DIR" >&2
+  exit 1
+}
+BINDINGS_DIR="$(printf '%s\n' "$RESOLVED" | sed -n 1p)"
+FUP_DIR="$(printf '%s\n' "$RESOLVED" | sed -n 2p)"
+if [ -z "$BINDINGS_DIR" ] || [ -z "$FUP_DIR" ]; then
+  echo "Error: could not resolve bindings ($BINDINGS_DIR) / file-uri-to-path ($FUP_DIR)" >&2
+  exit 1
+fi
+rm -rf "$STAGING_DEST/bindings" "$STAGING_DEST/file-uri-to-path"
+cp -RL "$BINDINGS_DIR" "$STAGING_DEST/bindings"
+cp -RL "$FUP_DIR" "$STAGING_DEST/file-uri-to-path"
+echo "  bindings: $BINDINGS_DIR"
+echo "  file-uri-to-path: $FUP_DIR"
 
 echo "Staging done."
