@@ -9,10 +9,10 @@
     conf_rotx = "LBUTTON|MOUSE_X"
     conf_roty = "LBUTTON|MOUSE_Y"
     conf_rotz = "LBUTTON|RBUTTON|MOUSE_Y,GES_ROTATE"
-    conf_trax = "RBUTTON|MOUSE_X,WHEEL1"
-    conf_tray = "RBUTTON|MOUSE_Y,WHEEL2"
+    conf_trax = "RBUTTON|MOUSE_X"
+    conf_tray = "RBUTTON|MOUSE_Y"
     conf_traz = "LBUTTON|RBUTTON|MOUSE_X"
-    conf_zoom = "LBUTTON|SHIFT|MOUSE_Y,GES_PINCH"
+    conf_zoom = "LBUTTON|SHIFT|MOUSE_Y,WHEEL1,WHEEL2,GES_PINCH"
     conf_slab = "LBUTTON|SHIFT|MOUSE_X"
     />
 
