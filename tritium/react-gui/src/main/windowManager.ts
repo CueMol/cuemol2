@@ -192,6 +192,19 @@ export function createWindow(): void {
     win.webContents.send(IPC.ROTATE_GESTURE, rotation)
   })
 
+  // TEMP spike (remove after verification): confirm Electron's input-event
+  // exposes hasPreciseScrollingDeltas so a trackpad (true) can be told apart
+  // from a physical mouse wheel (false). Logs to the main-process console.
+  win.webContents.on('input-event', (_event, input) => {
+    if (input.type === 'mouseWheel') {
+      const w = input as Electron.MouseWheelInputEvent
+      console.log(
+        `[input-spike] mouseWheel precise=${w.hasPreciseScrollingDeltas} ` +
+          `deltaY=${w.deltaY} ticksY=${w.wheelTicksY} accelY=${w.accelerationRatioY}`,
+      )
+    }
+  })
+
   if (process.env['ELECTRON_RENDERER_URL']) {
     win.loadURL(process.env['ELECTRON_RENDERER_URL'])
     win.webContents.openDevTools({ mode: 'undocked' })
