@@ -6,23 +6,15 @@
  * restrt file.
  *
  * Reads are defensive: a missing / corrupt / non-string payload returns
- * `undefined` rather than throwing.
+ * `undefined` rather than throwing. Built on the shared `createStringPref`
+ * factory.
  */
 
-import { loadJSON, saveJSON } from '../../utils/localStorageJSON';
+import { createStringPref } from '../../utils/createStringPref';
 
 export const STORAGE_KEY = 'cuemol.fopenOptions.amberCoordPath';
 
-function asString(raw: unknown): string | null {
-    return typeof raw === 'string' ? raw : null;
-}
+const store = createStringPref({ key: STORAGE_KEY });
 
-export function getLastCoordPath(): string | undefined {
-    const v = loadJSON<string | null>(STORAGE_KEY, asString, null);
-    return v && v.length > 0 ? v : undefined;
-}
-
-export function setLastCoordPath(path: string): void {
-    if (!path) return;
-    saveJSON(STORAGE_KEY, path);
-}
+export const getLastCoordPath = store.get;
+export const setLastCoordPath = store.set;
