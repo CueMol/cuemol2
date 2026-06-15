@@ -30,7 +30,7 @@ platform axis. macOS native (UXP) trackpad is unaffected because its
 scroll/pinch gestures call `CglView` directly and bypass `ViewInputConfig`.
 
 **Phase 2** is tritium-only: a second view style `TrackpadViewInConf` (wheel
-pans, `CTRL|WHEEL2` pinch zooms) plus a user-selectable "Pointing device"
+pans, `GES_PINCH` pinch zooms) plus a user-selectable "Pointing device"
 preset (Mouse / Mac trackpad). The choice persists as `UiState.inputDeviceMode`
 (electron-store), is applied at startup in `createAndInitCueMol.ts` via
 `viewInputStyleName(mode)`, and is re-applied live by
@@ -65,5 +65,13 @@ preset (Mouse / Mac trackpad). The choice persists as `UiState.inputDeviceMode`
 - Known issue: a physical wheel and a trackpad two-finger vertical scroll are
   indistinguishable at the `ViewInputConfig` layer in Chromium, hence the
   manual preset rather than auto-detection.
+- Pinch binding uses `GES_PINCH`, not `CTRL|WHEEL2`: Chromium signals a
+  trackpad pinch as a wheel event with `ctrlKey=true`, but `MolViewPane`
+  intercepts that and re-emits it as a `GES_PINCH` gesture (ctrl stripped), so
+  a `CTRL|WHEEL2` wheel binding would never match. `DefaultViewInConf` already
+  binds `GES_PINCH` for the same reason.
+- Trackpad rotation is unavailable in tritium: Chromium delivers no two-finger
+  rotate event, so `GES_ROTATE` never fires (the binding is kept only for
+  parity / UXP-native). Rotation is left-drag, or UXP-native trackpad only.
 - Tests: `react-gui/src/renderer/__test__/viewInputConfig.test.ts`,
   `viewInputConfigContext.test.tsx`.
