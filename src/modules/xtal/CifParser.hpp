@@ -61,10 +61,11 @@ public:
 
     int findDataItem(const char *key) const
     {
+        // CIF data names are case-insensitive (PDBx uses canonical case).
         std::deque<LString>::const_iterator i = m_loopDefs.begin();
         std::deque<LString>::const_iterator iend = m_loopDefs.end();
         for (int j = 0; i != iend; ++i, ++j) {
-            if (i->equals(key)) return j;
+            if (i->equalsIgnoreCase(key)) return j;
         }
         return -1;
     }

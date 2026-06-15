@@ -244,8 +244,61 @@ LString ElemSym::symID2Str(int id)
 {
   if (id<H || id>XX)
     return "";
-  
+
   std::vector<LString> &i2s = *m_pID2Str;
   return i2s[id];
+}
+
+int ElemSym::guessFromAtomName(const LString &atomname)
+{
+  // Guess the element from an atom name (for files lacking an explicit
+  // element/type_symbol). Scans for the first recognizable element letter.
+  LString uname = atomname.toUpperCase();
+  int i, nsize = uname.length();
+  const char *panam = uname.c_str();
+
+  for (i=0; i<nsize; i++) {
+    switch (panam[i]) {
+    case 'H':
+      return H;
+
+    case 'C':
+      if (i+1<nsize) {
+        if (panam[i+1]=='L') return Cl;
+        if (panam[i+1]=='A') return Ca;
+        if (panam[i+1]=='O') return Co;
+        if (panam[i+1]=='U') return Cu;
+        if (panam[i+1]=='R') return Cr;
+      }
+      return C;
+
+    case 'N':
+      if (i+1<nsize) {
+        if (panam[i+1]=='A') return Na;
+        if (panam[i+1]=='I') return Ni;
+      }
+      return N;
+
+    case 'O':
+      return O;
+
+    case 'F':
+      if (i+1<nsize) {
+        if (panam[i+1]=='E') return Fe;
+      }
+      return F;
+
+    case 'P':
+      return P;
+
+    case 'S':
+      return S;
+
+    default:
+      continue;
+    }
+  }
+
+  return XX;
 }
 
