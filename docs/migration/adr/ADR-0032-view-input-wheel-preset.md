@@ -70,8 +70,12 @@ preset (Mouse / Mac trackpad). The choice persists as `UiState.inputDeviceMode`
   intercepts that and re-emits it as a `GES_PINCH` gesture (ctrl stripped), so
   a `CTRL|WHEEL2` wheel binding would never match. `DefaultViewInConf` already
   binds `GES_PINCH` for the same reason.
-- Trackpad rotation is unavailable in tritium: Chromium delivers no two-finger
-  rotate event, so `GES_ROTATE` never fires (the binding is kept only for
-  parity / UXP-native). Rotation is left-drag, or UXP-native trackpad only.
+- Trackpad rotation works on macOS via `GES_ROTATE`: Chromium emits no DOM
+  event for a two-finger rotate, but Electron main's BrowserWindow
+  `rotate-gesture` event (`main/windowManager.ts`) forwards it over
+  `IPC.ROTATE_GESTURE` to `MolViewPane`, which dispatches `GES_ROTATE`. So
+  `TrackpadViewInConf` must bind `GES_ROTATE` on `conf_rotz` (as
+  `DefaultViewInConf` does) for rotation to route. On non-macOS that event
+  never fires, so rotation is left-drag there.
 - Tests: `react-gui/src/renderer/__test__/viewInputConfig.test.ts`,
   `viewInputConfigContext.test.tsx`.

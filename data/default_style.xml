@@ -52,8 +52,9 @@
   <!-- tritium/Electron trackpad: Chromium delivers a 2-finger scroll as a
        plain wheel event (WHEEL1/WHEEL2 -> pan). A pinch arrives as ctrl+wheel,
        which MolViewPane converts into a GES_PINCH gesture (-> zoom), so the
-       binding uses GES_PINCH, not CTRL|WHEEL2. Two-finger rotate is not
-       delivered by Chromium, so GES_ROTATE never fires here. -->
+       binding uses GES_PINCH, not CTRL|WHEEL2. A 2-finger rotate has no DOM
+       event but is captured by the Electron main 'rotate-gesture' event and
+       forwarded as GES_ROTATE (-> rotz) on macOS. -->
   <style id="TrackpadViewInConf" type="view" desc="Trackpad"
     conf_rotx = "LBUTTON|MOUSE_X"
     conf_roty = "LBUTTON|MOUSE_Y"
