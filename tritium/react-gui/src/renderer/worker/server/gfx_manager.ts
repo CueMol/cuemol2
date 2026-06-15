@@ -21,7 +21,6 @@ import {
 const FLOAT_SIZE = 4
 const MODEL_MAT_SIZE = 4 * 4 * FLOAT_SIZE;
 const PROJ_MAT_SIZE = 4 * 4 * FLOAT_SIZE;
-const NORM_MAT_SIZE = 4 * 4 * FLOAT_SIZE;
 
 const LIGHT_UBO_SIZE = 4 * FLOAT_SIZE + 4 * FLOAT_SIZE;
 
@@ -153,8 +152,6 @@ export class GfxManager {
 
     private _context!: WebGL2RenderingContext;
 
-    private _enable_lighting_loc: number = 0;
-
     constructor(cuemol: any) {
         this.cuemol = cuemol;
         this._sceMgr = this.cuemol.getService('SceneManager');
@@ -189,7 +186,6 @@ export class GfxManager {
         gl.enable(gl.BLEND);
 
         this.createUBO();
-        // this.setUpLight();
 
         const view = this._sceMgr.invokeMethod('getView', view_id);
 
@@ -473,8 +469,6 @@ export class GfxManager {
             throw `shader ${shader_name} not found`;
         }
         gl.useProgram(prog);
-        // this._enable_lighting_loc = gl.getUniformLocation(this._prog_data[shader_name],
-        //                                                   "enable_lighting");
     }
 
     /// API
@@ -635,39 +629,6 @@ export class GfxManager {
     }
 
     //////////
-    // Projection uniforms
-
-    // /// API
-    // setUpModelMat(array_buf: any): void {
-    //     // transfer UBO
-    //     const gl = this._context;
-    //     gl.bindBuffer(gl.UNIFORM_BUFFER, this._mat_ubo);
-    //     gl.bufferSubData(gl.UNIFORM_BUFFER, 0, array_buf);
-    //     gl.bindBuffer(gl.UNIFORM_BUFFER, null);
-    // }
-
-    // /// API
-    // setUpProjMat(cx: number, cy: number, array_buf: any): void {
-    //     // transfer UBO
-    //     const gl = this._context;
-    //     gl.viewport(0, 0, cx, cy);
-    //     gl.bindBuffer(gl.UNIFORM_BUFFER, this._mat_ubo);
-    //     gl.bufferSubData(gl.UNIFORM_BUFFER, MODEL_MAT_SIZE + 12 * FLOAT_SIZE, array_buf);
-    //     gl.bindBuffer(gl.UNIFORM_BUFFER, null);
-    // }
-
-    // // lighting uniforms
-    // setUpLight(array_buf: any): void {
-    //     // console.log("light array buf: "+new Float32Array(array_buf));
-    //     const gl = this._context;
-    //     // let buf = new Float32Array([0.2, 0.8, 0.4, 32.0,
-    //     //                             1.0, 1.0, 1.5, 0.0]);
-    //     gl.bindBuffer(gl.UNIFORM_BUFFER, this._light_ubo);
-    //     gl.bufferSubData(gl.UNIFORM_BUFFER, 0, array_buf);
-    //     gl.bindBuffer(gl.UNIFORM_BUFFER, null);
-    // }
-
-    //////////
     // Buffer
 
     /**
@@ -803,7 +764,6 @@ export class GfxManager {
         } else if (nmode == 5) {
             nglmode = gl.TRIANGLE_STRIP;
         }
-        // gl.uniform1i(this._enable_lighting_loc, enable_lighting);
         gl.bindVertexArray(obj[0]);
         if (index_buf === null) {
             if (ninst <= 0) {

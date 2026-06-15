@@ -40,26 +40,12 @@ export interface AppMenuGroup {
   submenu: AppMenuItem[]
 }
 
+// The canonical macOS Application menu lives in src/main/menu.ts
+// ('macOnlyGroups'); it needs main-process-only role items and app.name, so it
+// is not declared here. The group-level 'darwinOnly?' field and the
+// '.filter(g => !g.darwinOnly)' guards in the two readers remain as harmless
+// no-ops. Item-level darwinOnly / othersOnly are still live.
 export const APP_MENU: AppMenuGroup[] = [
-  // macOS Application menu (shown only on darwin)
-  {
-    label: 'CueMol2',
-    darwinOnly: true,
-    submenu: [
-      { id: 'about-mac', label: `About ${APP_PRODUCT_NAME}`, ipcChannel: IPC.MENU_ABOUT, darwinOnly: true },
-      { type: 'separator' },
-      { id: 'mac-prefs', label: 'Preferences...', accelerator: 'Cmd+,', ipcChannel: 'menu:options', darwinOnly: true },
-      { type: 'separator' },
-      { role: 'services', darwinOnly: true },
-      { type: 'separator' },
-      { role: 'hide', darwinOnly: true },
-      { role: 'hideOthers', darwinOnly: true },
-      { role: 'unhide', darwinOnly: true },
-      { type: 'separator' },
-      { role: 'quit' },
-    ],
-  },
-
   // File menu
   {
     label: 'File',
@@ -237,44 +223,4 @@ const ROLE_LABELS: Partial<Record<AppMenuRole, string>> = {
 
 export function getRoleLabel(role: AppMenuRole): string {
   return ROLE_LABELS[role] ?? role
-}
-
-/**
- * Convert APP_MENU to an Electron MenuItemConstructorOptions array.
- * Import only in the main process (requires 'electron').
- * @deprecated Use the recursive buildItem helper in main/menu.ts instead.
- */
-export function toElectronTemplate(
-  menu: AppMenuGroup[],
-  isMac: boolean,
-): unknown[] {
-  function convertItem(item: AppMenuItem): unknown | null {
-    if (item.darwinOnly && !isMac) return null
-    if (item.othersOnly && isMac) return null
-    if (item.type === 'separator') return { type: 'separator' }
-    if (item.role && !item.ipcChannel) {
-      return { role: item.role }
-    }
-    const result: Record<string, unknown> = {}
-    if (item.label) result['label'] = item.label
-    if (item.role) result['role'] = item.role
-    const acc = isMac ? (item.acceleratorMac ?? item.accelerator) : item.accelerator
-    if (acc) result['accelerator'] = acc
-    if (item.submenu) {
-      result['submenu'] = item.submenu.flatMap((i) => {
-        const c = convertItem(i)
-        return c ? [c] : []
-      })
-    }
-    return result
-  }
-
-  return menu.flatMap((group) => {
-    if (group.darwinOnly && !isMac) return []
-    const submenu = group.submenu.flatMap((item) => {
-      const c = convertItem(item)
-      return c ? [c] : []
-    })
-    return [{ label: group.label, submenu }]
-  })
 }

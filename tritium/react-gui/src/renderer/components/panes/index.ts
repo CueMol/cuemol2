@@ -43,10 +43,6 @@ export { CatalogPane1 } from "./CatalogPane1";
 export { CatalogPane2 } from "./CatalogPane2";
 export { CatalogPane3 } from "./CatalogPane3";
 
-/* ─── PoC Dummy Panes ─── */
-
-export { DummyPane4 } from "./DummyPane4";
-
 /* ─── Shared Components ─── */
 
 export { SectionHeader } from "./SectionHeader";

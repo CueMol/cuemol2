@@ -14,7 +14,7 @@
  *
  * | View       | Panes                                       |
  * |------------|---------------------------------------------|
- * | Explorer   | ScenePane, ColorPane, DummyPane4            |
+ * | Explorer   | ScenePane, ColorPane                        |
  * | Selection  | MolStructPane, SelectionPane                |
  * | Crystal    | SymmetryPane, DensityMapPane                |
  * | Catalog    | CatalogPane1, CatalogPane2, CatalogPane3    |

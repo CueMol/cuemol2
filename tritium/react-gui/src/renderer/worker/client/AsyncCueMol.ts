@@ -51,7 +51,7 @@ const log = console;
 
 /**
  * Renderer-thread facade. One instance per renderer process; constructed
- * via `createCueMol()` in `client/index.ts`.
+ * via `new AsyncCueMol()` in `createAndInitCueMol.ts`.
  */
 export class AsyncCueMol {
     private _transport: WorkerTransport;
