@@ -1,5 +1,8 @@
 # Migration Mapping — Index
 
+- Updated: 2026-06-15 (`overlay.config-mouse` Phase 3 = Auto-detect 入力デバイス。Electron 42 では OS シグナルで mouse/trackpad を判別不可（スパイクで確認: 観測 `input-event` は `type`/`modifiers` のみ、trackpad plain scroll も `mouseWheel`、`scroll-touch-*` は v23 削除）。→ renderer 側 DOM WheelEvent ヒューリスティック（`input/wheelDeviceClassifier`: 横/小数 delta→trackpad、大整数縦→mouse）+ state machine（`input/inputDeviceDetector`: hysteresis + pinch/rotate latch）で判定し `setViewInputConfigStyle` 切替。preference を 3 値化（`mouse|trackpad|auto`、既定 auto、`UiState.inputDeviceMode`）+ `inputDeviceDetected` seed。`ViewInputConfigContext` が detector を駆動、`MolViewPane` が wheel/pinch/rotate を feed。Settings に Auto-detect 追加（Detected 表示）。main 変更なし。test 4 ファイル 25 件。status 不変（wip 継続、counts 変化なし）。host E2E pending。ADR-0032 Phase 3)
+- Updated: 2026-06-15 (`overlay.config-mouse` todo->wip / split: マウスホイールが view 並進に割り当たっていた回帰を zoom に戻す。Phase 1 = `data/default_style.xml` `DefaultViewInConf` + `ViewInputConfig.qif` default の `conf_zoom` に WHEEL1/WHEEL2（UXP は deltaX=WHEEL1、Chromium は deltaY=WHEEL2 のため両軸）。Phase 2 = tritium に `TrackpadViewInConf`（2 本指スクロール=pan、pinch=ctrl+wheel zoom）+ Settings の Mouse/Mac-trackpad プリセット選択（`UiState.inputDeviceMode` 永続、起動時 `createAndInitCueMol`、実行時 `ViewInputConfigContext` で `setViewInputConfigStyle` re-apply）。新 IPC/worker 無し。test 2 ファイル（helper + context）。Overlay wip 2->3/todo 5->4、Total wip 26->27/todo 19->18、split 28->29/unassigned 19->18。UXP host E2E 済（Phase 1）、tritium host E2E pending。ADR-0032)
+- Updated: 2026-06-14 (`dialog.property.scene` wip: scene の rendering 設定 UI を **Inspector Property タブ**へ実装し直し。前案の left-panel `RenderingPane`（`sceneRenderOpts.service`/`useSceneRenderOpts`/`SegmentField disabled`）は依頼の誤解だったため**撤回**。正しくは Scene 選択時の Property タブが Name+`DUMMY_SECTION` だったのを、`RENDERER_SECTION_REGISTRY` の `scene` キーに curated section（Ambient occlusion / Anti-aliasing / Background / Color proofing）を登録して置換。新 worker/hook 無し — 既存 generic-props bridge（`resolvePropTarget` の `case 'scene'`）+ Row ヘルパー（`NumRow` の realtime drag preview + 単一 undo）を再利用。`onSetMany` で color-proof 有効化時に既定 ICC profile を 1 step seed。`InspectorPanel` で scene を Property タブ既定に、`PropertiesTab` は Ambient occlusion を初期展開。section test 9 件。mapping 行を `panels.md` の `panel.scene-rendering`(split) 削除 → `prop_dlgs.md` の `dialog.property.scene`(merged) 追加。Panel Total 28->27 / wip 12->11、Dialog_property 15->16 / wip 1->2、Total 133 不変、split 29->28 / merged 52->53。In Progress を差し替え。host E2E pending。ADR-0031（develop が packaging で ADR-0030 を取得したため 0031 に採番）)
 - Updated: 2026-06-14 (anim reconciliation: anim panel 実装で実現済の 4 inventory entry を todo->merged/done に是正。`widget.timeedit`->`h3-kit/form/TimeField`、`widget.multiselect`->anim inspector の Target renderers checklist、`widget.anim-slider`->`AnimTimeRuler`/`AnimTransport` scrub、`toolbar.anim-ribbon`->`AnimTransport`（tritium に別 toolbar 無し）。全て ADR-0029。Custom Widget done 4->7/todo 4->1、Toolbar done 0->1/todo 1->0、Total done 84->88/todo 23->19、merged 48->52/unassigned 23->19、Unstarted 23->19。残 anim 隣接 todo は `dialog.anim-render`（offline movie render）/ `dialog.tool.morphanim-tool`（morph 生成）で別 workstream)
 - Updated: 2026-06-14 (Phase 7 done: UXP timeedit を再利用可能な h3-kit `TimeField`（`h3-kit/form/TimeField.tsx`: ms <-> `M:SS.mmm`/`H:MM:SS.mmm`、blur/Enter commit、`formatMs`/`parseTime` export）として実装し、anim inspector の Start/Duration（旧 ms DragNumericField）を Start time/Duration の TimeField に置換（end=start+duration を 1 timing write、worker 不変）。これが最後の deferral だったため anim panel migration の UXP-parity gap は無し（offline render のみ別 workstream）。timeField test 6 + inspector timing test 更新。ADR-0029 / `panel.anim` Notes を更新。status counts 不変。native 変更なし)
 - Updated: 2026-06-14 (Phase 6 done: anim inspector の UXP-parity polish。multi-rend（ShowHide/Slide の Target renderers を scrollable checklist 複数選択、`rend` comma round-trip、C++ `RendPropAnim` が split）+ timeRefName cascade（rename で依存 sibling を同一 undo txn 追従）+ target-list sync（`SEM_OBJECT|RENDERER|CAMERA` で options 再 fetch = Explorer add/delete/rename 追従）。realtime drag preview は anim prop で 3D が drag 中 live 更新されないため intentionally 非採用に確定。残 deferred は timeedit (mm:ss) のみ。ADR-0029 / `panel.anim` Notes を更新。status counts 不変（`panel.anim`/`dialog.animobj` は既に done）)
@@ -75,13 +78,13 @@
 | Panel | [panels.md](panels.md) | 27 | 14 | 11 | 0 | 2 | 0 |
 | Menu | [menus.md](menus.md) | 4 | 2 | 2 | 0 | 0 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 1 | 1 | 0 | 0 | 0 |
-| Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 15 | 14 | 1 | 0 | 0 | 0 |
+| Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 16 | 14 | 2 | 0 | 0 | 0 |
 | Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 11 | 2 | 0 | 5 | 0 |
 | Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 16 | 0 | 0 | 5 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 7 | 5 | 0 | 1 | 0 |
-| Overlay | [overlay.md](overlay.md) | 28 | 21 | 2 | 0 | 5 | 0 |
+| Overlay | [overlay.md](overlay.md) | 28 | 21 | 3 | 0 | 4 | 0 |
 | Other | [other.md](other.md) | 4 | 2 | 1 | 0 | 1 | 0 |
-| **Total** | | **132** | **88** | **25** | **0** | **19** | **0** |
+| **Total** | | **133** | **88** | **27** | **0** | **18** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -110,11 +113,11 @@
 | Mapping | Count |
 |---------|------:|
 | 1:1 (`direct`) | 27 |
-| merged | 52 |
-| split | 28 |
+| merged | 53 |
+| split | 29 |
 | redesign | 0 |
 | deprecated (`dropped`) | 6 |
-| *(not yet assigned)* | 19 |
+| *(not yet assigned)* | 18 |
 
 ---
 
@@ -122,6 +125,8 @@
 
 | ID | React | Notes |
 |----|-------|-------|
+| `dialog.property.scene` | `inspector/SceneRenderingSection` / `rendererPropSections` (`scene`) / `PropertiesTab` / `genericProps.service` (reused) | Scene rendering/display (AO/AA/background/colour-proofing) as curated Inspector Property-tab sections under `type_name "scene"`, reusing the generic-props bridge + Row helpers (realtime drag + single undo). No new worker/hook. Pending host E2E (ADR-0031) |
+| [`overlay.config-mouse`](overlay.md#overlayconfig-mouse) | `SettingsPane` / `ViewInputConfigContext` / `input/wheelDeviceClassifier`+`inputDeviceDetector` | Wheel zooms by default; tritium adds a Mouse / Mac-trackpad / Auto-detect device preset (auto default; renderer DOM-wheel heuristic + pinch/rotate latch -- no OS signal exists in Electron 42). Persisted in `UiState.inputDeviceMode`, re-applied live via `setViewInputConfigStyle`. Full UXP key-binding editor deferred. Phase 1/2 host E2E done; Phase 3 (auto) pending (ADR-0032) |
 | [`toolbar.cuemol2-ribbon`](toolbars.md#toolbarcuemol2-ribbon) | `Toolbar` / `ViewportToolPalette` / `useNaviClickHandler` / `useMeasureClickHandler` / `NaviContextMenu` / `MeasureOptionsPopover` | Context menu actions (center/select/around/invert/sidechain) done; measure tool distance/angle/torsion done (ADR-0023); Create SYMM mol deferred; rect-select drag pending |
 | [`menu.cuemol2`](menus.md#menucuemol2) | `menuTemplate` / `MenuBar` / `useMenuDispatch` | Full 9-group structure added; View > Center mark wired; Scene > Background color wired; File > Get PDB wired (streaming via StreamManager); File > Open Recent wired (electron-store-backed MRU, app.addRecentDocument); Hardware stereo and Open web page dropped; File > Save File As / Save current view / Reload Scene wired; item-level completion 26/55; MenuBar suppressed on macOS |
 | [`menu.cuemol2-macos`](menus.md#menucuemol2-macos) | `main/menu.ts` | macOS App menu added; item-level completion 6/7 |

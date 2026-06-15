@@ -12,14 +12,16 @@ import { PERF_MEASURE, perfCounters } from './perf';
 
 /**
  * Translate a DOM mouse event's button / modifier state into the CueMol
- * modifier bitmask. Button bits: left=1, middle=2, right=4 (DOM's middle=4
- * / right=2 are swapped). Modifiers: ctrl=+32, shift=+64.
+ * modifier bitmask. CueMol button bits left=1 / right=2 / middle=4 match the
+ * C++ decode in `GUIView::setupInDevEvent` (2 -> INDEV_RBTN, 4 -> INDEV_MBTN),
+ * so `RBUTTON|...` ViewInputConfig bindings match a real right drag. Modifiers:
+ * ctrl=+32, shift=+64.
  */
 export function makeModif(event: any): number {
     let modif = 0;
     if (event.buttons & 1) modif |= 1; // left button
-    if (event.buttons & 4) modif |= 2; // middle button (DOM:4 → CueMol:2)
-    if (event.buttons & 2) modif |= 4; // right button  (DOM:2 → CueMol:4)
+    if (event.buttons & 2) modif |= 2; // right button (DOM buttons bit 1)
+    if (event.buttons & 4) modif |= 4; // middle button (DOM buttons bit 2)
     if (event.ctrlKey) {
         modif += 32;
     }
@@ -39,10 +41,11 @@ export function handleMouseDown(view: GUIView, event: any): void {
  * Forward a pointer-up event to `View::onMouseUp`.
  *
  * @remarks On mouseup `event.buttons` is already 0, so the button modifier
- * is derived from `event.button` (0=left, 1=middle, 2=right) instead.
+ * is derived from `event.button` (0=left, 1=middle, 2=right) instead. The map
+ * matches `makeModif` / the C++ decode: left=1, middle=4, right=2.
  */
 export function handleMouseUp(view: GUIView, event: any): void {
-    const buttonMap: number[] = [1, 2, 4];
+    const buttonMap: number[] = [1, 4, 2];
     let modif = buttonMap[event.button] ?? 0;
     if (event.ctrlKey) modif += 32;
     if (event.shiftKey) modif += 64;

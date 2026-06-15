@@ -27,6 +27,10 @@ interface ViewXformAccess {
     distance: number;
     center: Vector;
     rotateView(rotX: number, rotY: number, rotZ: number): void;
+    /** Camera-relative pan, committing a normal (non-drag) property event. */
+    translateView(x: number, y: number, z: number): void;
+    /** Camera-relative pan, firing a transient drag event (mid-drag frames). */
+    translateViewDrag(x: number, y: number, z: number): void;
 }
 
 export interface GetViewXformArgs {
@@ -68,6 +72,27 @@ export interface RotateViewArgs {
 
 export interface RotateViewResult {
     ok: boolean;
+}
+
+export interface TranslateViewArgs {
+    viewId: number;
+    /** Camera-relative pan deltas (screen-space units, as the UXP wheel passes). */
+    dx: number;
+    dy: number;
+    dz: number;
+    /**
+     * Mid-drag frame: use the drag variant (transient event). On the final
+     * commit pass `false` for a normal property-change event. Defaults true.
+     */
+    dragging?: boolean;
+}
+
+export interface TranslateViewResult {
+    ok: boolean;
+    /** Resulting absolute world-space view center after the pan (live display). */
+    centerX: number;
+    centerY: number;
+    centerZ: number;
 }
 
 /** Minimum allowed zoom (matches the UXP fakedial-panel lower bound). */
@@ -127,8 +152,25 @@ function rotateView(ctx: WorkerContext, args: RotateViewArgs): RotateViewResult 
     return { ok: true };
 }
 
+/**
+ * Camera-relative pan of the view center (UXP fakedial `translateView` parity).
+ * The deltas are screen-space pan units that `qsys::View::convXYTrans` scales by
+ * `zoom / height` and rotates into world space, so a single-axis pan moves all
+ * three world-center components -- the resulting absolute center is returned so
+ * the caller can keep its (x, y, z) fields in sync.
+ */
+function translateView(ctx: WorkerContext, args: TranslateViewArgs): TranslateViewResult {
+    const view = getViewAccess(ctx, args.viewId);
+    if (!view) return { ok: false, centerX: 0, centerY: 0, centerZ: 0 };
+    if (args.dragging ?? true) view.translateViewDrag(args.dx, args.dy, args.dz);
+    else view.translateView(args.dx, args.dy, args.dz);
+    const center = view.center;
+    return { ok: true, centerX: center.x, centerY: center.y, centerZ: center.z };
+}
+
 export const services = {
     getViewXform,
     setViewXform,
     rotateView,
+    translateView,
 };

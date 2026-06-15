@@ -8,6 +8,8 @@
  *   - zoom is clamped to >= 0.01, slab / distance to >= 0
  *   - center builds a fresh Vector (via svc.createObj) and assigns view.center
  *   - rotateView forwards (rotX, rotY, rotZ) to view.rotateView (relative)
+ *   - translateView forwards (dx, dy, dz) to view.translateViewDrag (dragging)
+ *     or view.translateView (commit) and returns the resulting center
  *   - missing view -> { ok: false }
  */
 
@@ -15,7 +17,7 @@ import { describe, it, expect, vi } from 'vitest'
 import type { WorkerContext } from '../worker/server/types/WorkerContext'
 import { services } from '../worker/server/services/viewXform.service'
 
-const { getViewXform, setViewXform, rotateView } = services
+const { getViewXform, setViewXform, rotateView, translateView } = services
 
 function makeView() {
     const setZoom = vi.fn()
@@ -23,6 +25,8 @@ function makeView() {
     const setDistance = vi.fn()
     const setCenter = vi.fn()
     const rotateViewSpy = vi.fn()
+    const translateViewSpy = vi.fn()
+    const translateViewDragSpy = vi.fn()
     const center = { x: 1, y: 2, z: 3 }
     const view = {
         get zoom() {
@@ -50,8 +54,19 @@ function makeView() {
             setCenter(v)
         },
         rotateView: rotateViewSpy,
+        translateView: translateViewSpy,
+        translateViewDrag: translateViewDragSpy,
     }
-    return { view, setZoom, setSlab, setDistance, setCenter, rotateViewSpy }
+    return {
+        view,
+        setZoom,
+        setSlab,
+        setDistance,
+        setCenter,
+        rotateViewSpy,
+        translateViewSpy,
+        translateViewDragSpy,
+    }
 }
 
 function makeCtx(view: unknown, createdVec?: unknown): WorkerContext {
@@ -134,5 +149,40 @@ describe('viewXform.rotateView', () => {
 
     it('returns ok:false when the view is missing', () => {
         expect(rotateView(makeCtx(null), { viewId: 7, rotX: 1, rotY: 0, rotZ: 0 }).ok).toBe(false)
+    })
+})
+
+describe('viewXform.translateView', () => {
+    it('uses translateViewDrag mid-drag and returns the resulting center', () => {
+        const { view, translateViewSpy, translateViewDragSpy } = makeView()
+        const res = translateView(makeCtx(view), {
+            viewId: 7,
+            dx: 5,
+            dy: 0,
+            dz: 0,
+            dragging: true,
+        })
+        expect(translateViewDragSpy).toHaveBeenCalledWith(5, 0, 0)
+        expect(translateViewSpy).not.toHaveBeenCalled()
+        expect(res).toEqual({ ok: true, centerX: 1, centerY: 2, centerZ: 3 })
+    })
+
+    it('uses the committing translateView when dragging is false', () => {
+        const { view, translateViewSpy, translateViewDragSpy } = makeView()
+        translateView(makeCtx(view), { viewId: 7, dx: 0, dy: -3, dz: 0, dragging: false })
+        expect(translateViewSpy).toHaveBeenCalledWith(0, -3, 0)
+        expect(translateViewDragSpy).not.toHaveBeenCalled()
+    })
+
+    it('defaults to the drag variant when dragging is omitted', () => {
+        const { view, translateViewDragSpy } = makeView()
+        translateView(makeCtx(view), { viewId: 7, dx: 0, dy: 0, dz: 2 })
+        expect(translateViewDragSpy).toHaveBeenCalledWith(0, 0, 2)
+    })
+
+    it('returns ok:false when the view is missing', () => {
+        expect(
+            translateView(makeCtx(null), { viewId: 7, dx: 1, dy: 0, dz: 0, dragging: true }).ok,
+        ).toBe(false)
     })
 })

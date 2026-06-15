@@ -51,6 +51,7 @@ const DEFAULTS: StoreSchema = {
   ui: {
     sidebarActiveView: 'explorer',
     theme: 'dark',
+    inputDeviceMode: 'auto',
   },
   recentFiles: [],
 }

@@ -3,6 +3,7 @@ import { useWheel } from '@use-gesture/react'
 import styles from './MolViewPane.module.css'
 import { useMolTabDispatch } from '../../hooks/useMolTab'
 import { useCueMol } from '../../hooks/useCueMol'
+import { useViewInputConfig } from '../../contexts/ViewInputConfigContext'
 import { GES_PINCH, GES_ROTATE } from '../../worker/shared/gestureAxes'
 import { IPC } from '../../../shared/ipcChannels'
 
@@ -34,6 +35,14 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
   // Ref to the latest cm instance for stable callbacks
   const cmRef = useRef(cm)
   useEffect(() => { cmRef.current = cm }, [cm])
+
+  // Auto device-detect: feed the wheel / gesture stream to the detector via the
+  // ViewInputConfig context (these no-op unless the preference is 'auto').
+  const { feedWheelSample, noteTrackpadGesture } = useViewInputConfig()
+  const feedWheelRef = useRef(feedWheelSample)
+  useEffect(() => { feedWheelRef.current = feedWheelSample }, [feedWheelSample])
+  const noteGestureRef = useRef(noteTrackpadGesture)
+  useEffect(() => { noteGestureRef.current = noteTrackpadGesture }, [noteTrackpadGesture])
 
   // Guard against double-initialization (React StrictMode remounts effects)
   const initStartedRef = useRef(false)
@@ -135,8 +144,16 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
           ctrlKey: false, shiftKey: event.shiftKey, altKey: event.altKey,
         }
         cmRef.current.onGestureEvent(viewID, GES_PINCH, event.deltaY, synth)
+        // Pinch is a definitive trackpad signal for the auto detector.
+        noteGestureRef.current()
       } else {
         cmRef.current.onWheelEvent(viewID, event)
+        // Feed the plain wheel to the auto device detector.
+        feedWheelRef.current({
+          deltaMode: event.deltaMode,
+          deltaX: event.deltaX,
+          deltaY: event.deltaY,
+        })
       }
     },
     {
@@ -154,6 +171,8 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
       const viewID = getActiveViewIDRef.current()
       if (viewID === undefined || !cmRef.current) return
       cmRef.current.onGestureEvent(viewID, GES_ROTATE, rotation)
+      // Rotate is a definitive trackpad signal for the auto detector.
+      noteGestureRef.current()
     })
     return unsubscribe
   }, [])

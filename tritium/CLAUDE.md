@@ -299,7 +299,7 @@ Wrap scene-mutating services with `withUndoTxn` from `server/services/withUndoTx
 return withUndoTxn(scene, 'Label', () => { /* mutations */ return result; });
 ```
 
-- **Don't wrap**: read-only services, `createNewSceneAndView` (no UndoManager yet).
+- **Don't wrap**: read-only services, `createNewSceneAndView` (no UndoManager yet), `loadScene` (a whole-scene load is not an edit -- wrapping it captures the object-registration records and leaves a bogus undo entry; UXP `qsc-io.readSceneFile` / C++ `LoadSceneCommand::run()` run outside any txn so the records are discarded and the stack stays empty).
 - **Nested txns are safe**: inner `startUndoTxn` inside an active outer txn is silently absorbed.
 - **Never call from renderer**: undo txn APIs must only run inside worker services.
 - **Executing undo/redo**: Cmd+Z / Shift+Cmd+Z → `IPC.MENU_UNDO` / `IPC.MENU_REDO` → `CmdId.Undo` / `CmdId.Redo`.

@@ -11,8 +11,11 @@
  *     scene.view_uids (mirrors `m_bSetCamera=true` block of
  *     LoadSceneCommand::run)
  *   - reader.detach is called even when reader.read throws (try/finally)
- *   - the whole flow runs inside startUndoTxn("Open scene") /
- *     commitUndoTxn (rollback on throw)
+ *   - the whole flow runs OUTSIDE any undo txn (UXP parity): scene load is
+ *     not an edit, so startUndoTxn / commitUndoTxn / rollbackUndoTxn are
+ *     never called and the undo stack stays empty after load. (Wrapping the
+ *     read in withUndoTxn was the bug -- it captured the object-registration
+ *     records and committed a bogus undo entry.)
  *   - `ctx.cmdMgr.getCmd('load_scene')` MUST NOT be invoked -- the
  *     regression tripwire for re-introducing the cmd.target_scene = scene
  *     setter that corrupted scene.m_thisname and broke undo.
@@ -72,20 +75,22 @@ function makeFixture(opts: {
 }
 
 describe('loadScene.service — direct API', () => {
-    it('runs reader.setPath -> attach -> read -> detach -> loadViewFromCam, inside undo txn', () => {
-        const { ctx, calls } = makeFixture({ viewUids: '10, 11' })
+    it('runs reader.setPath -> attach -> read -> detach -> loadViewFromCam, with NO undo txn', () => {
+        const { ctx, scene, calls } = makeFixture({ viewUids: '10, 11' })
         const result = loadScene(ctx, { filePath: '/test.qsc', sceneId: 1 })
         expect(result).toEqual({ ok: true })
         expect(calls).toEqual([
-            'start:Open scene',
             'setPath(/test.qsc)',
             'attach(scene)',
             'read',
             'detach',
             'loadViewFromCam(10,__current)',
             'loadViewFromCam(11,__current)',
-            'commit',
         ])
+        // Tripwire: scene load must never open an undo txn (UXP parity).
+        expect(scene.startUndoTxn).not.toHaveBeenCalled()
+        expect(scene.commitUndoTxn).not.toHaveBeenCalled()
+        expect(scene.rollbackUndoTxn).not.toHaveBeenCalled()
     })
 
     it('never calls ctx.cmdMgr.getCmd("load_scene") (no LoadSceneCommand path)', () => {
@@ -94,18 +99,16 @@ describe('loadScene.service — direct API', () => {
         expect(getCmd).not.toHaveBeenCalled()
     })
 
-    it('returns ok:false and rolls back when no SCEREADER matches the extension', () => {
-        const { ctx, calls } = makeFixture({
+    it('returns ok:false when no SCEREADER matches the extension (no undo txn)', () => {
+        const { ctx, scene } = makeFixture({
             infoJson: JSON.stringify([
                 { name: 'qsc_xml', fext: '*.qsc', category: SCEREADER_CATEGORY },
             ]),
         })
         const result = loadScene(ctx, { filePath: '/test.txt', sceneId: 1 })
         expect(result).toEqual({ ok: false })
-        // Undo txn still commits with ok:false (we only roll back on throw,
-        // which matches the existing withUndoTxn semantics).
-        expect(calls).toContain('start:Open scene')
-        expect(calls).toContain('commit')
+        expect(scene.startUndoTxn).not.toHaveBeenCalled()
+        expect(scene.commitUndoTxn).not.toHaveBeenCalled()
     })
 
     it('returns ok:false when createHandler returns null', () => {
@@ -114,16 +117,17 @@ describe('loadScene.service — direct API', () => {
         expect(result).toEqual({ ok: false })
     })
 
-    it('still calls detach when read throws, and propagates via rollback', () => {
-        const { ctx, reader, calls } = makeFixture({
+    it('still calls detach when read throws, and propagates the error (no undo txn)', () => {
+        const { ctx, scene, reader, calls } = makeFixture({
             viewUids: '10',
             readFn: () => { calls.push('read'); throw new Error('parse fail') },
         })
         expect(() => loadScene(ctx, { filePath: '/test.qsc', sceneId: 1 })).toThrow('parse fail')
         expect(reader.detach).toHaveBeenCalled()
-        // Undo txn must roll back, not commit.
-        expect(calls).toContain('rollback')
-        expect(calls).not.toContain('commit')
+        // No txn was opened, so there is nothing to commit or roll back.
+        expect(scene.startUndoTxn).not.toHaveBeenCalled()
+        expect(scene.commitUndoTxn).not.toHaveBeenCalled()
+        expect(scene.rollbackUndoTxn).not.toHaveBeenCalled()
     })
 
     it('skips loadViewFromCam when view_uids is empty', () => {

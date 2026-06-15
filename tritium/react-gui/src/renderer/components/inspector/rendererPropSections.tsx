@@ -25,6 +25,12 @@ import { SimpleRendererSection } from "./SimpleRendererSection";
 import { SplineMainSection } from "./SplineRendererSection";
 import { BallStickRendererSection } from "./BallStickRendererSection";
 import { CPKAtomRadiiSection, CPKDetailSection } from "./CPKRendererSection";
+import {
+  SceneAmbientOcclusionSection,
+  SceneAntialiasingSection,
+  SceneBackgroundSection,
+  SceneColorProofingSection,
+} from "./SceneRenderingSection";
 import { AnIsoUDiscSection } from "./AnIsoURendererSection";
 import {
   AtomIntrMainSection,
@@ -133,6 +139,37 @@ export interface RendererPropSectionDef {
  * resolve to an empty list (common page only).
  */
 export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]> = {
+  // Scene: no dedicated UXP dialog (scene props were generic-tree only). Curated
+  // rendering/display sections backed by the same generic-props bridge. Keyed by
+  // the scene's typeLabel ("Scene") -- the value PropertiesTab receives as
+  // `rendererType` (genericProps `typeLabelOf` returns "Scene" for nodeType
+  // "scene"), not the lowercase tree node type.
+  Scene: [
+    {
+      key: "scene-ao",
+      title: "Ambient occlusion",
+      defaultExpanded: true,
+      Component: SceneAmbientOcclusionSection,
+    },
+    {
+      key: "scene-aa",
+      title: "Anti-aliasing",
+      defaultExpanded: false,
+      Component: SceneAntialiasingSection,
+    },
+    {
+      key: "scene-bg",
+      title: "Background",
+      defaultExpanded: false,
+      Component: SceneBackgroundSection,
+    },
+    {
+      key: "scene-proof",
+      title: "Color proofing",
+      defaultExpanded: false,
+      Component: SceneColorProofingSection,
+    },
+  ],
   // SimpleRenderer ("simple"): UXP simple-propdlg "Simple" tab -- line width only.
   simple: [
     {

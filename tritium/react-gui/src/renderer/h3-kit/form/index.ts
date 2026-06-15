@@ -31,7 +31,7 @@ export type { NumericFieldProps } from './NumericField';
 export { NumberCell } from './NumberCell';
 export type { NumberCellProps } from './NumberCell';
 export { DragNumericField } from './DragNumericField';
-export type { DragNumericFieldProps } from './DragNumericField';
+export type { DragNumericFieldProps, DragNumericFieldHandle } from './DragNumericField';
 export { SwitchField } from './SwitchField';
 export type { SwitchFieldProps } from './SwitchField';
 export { ColorField } from './ColorField';

@@ -90,10 +90,14 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
 
   // All accordions in the Properties tab form one exclusive group: only one is
   // open at a time, since the per-renderer pages can be long. "Basic settings"
-  // (the first common section) is open on first render.
+  // (the first common section) is open on first render -- except for the Scene,
+  // whose Basic settings holds only a read-only name, so its first real section
+  // (Ambient occlusion) opens instead.
+  const initialOpen =
+    rendererType === "Scene" ? "Ambient occlusion" : "Basic settings";
   return (
     <div className="insp-properties-tab">
-      <AccordionGroup initialOpen="Basic settings">
+      <AccordionGroup initialOpen={initialOpen}>
         <RendererCommonSection
           entries={entries}
           onSet={onSet}

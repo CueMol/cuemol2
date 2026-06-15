@@ -12,6 +12,7 @@
 import type { AppIconKey } from '../../../data/appIcons'
 import type { RenderBinaries } from '../../../worker/shared/renderTypes'
 import { DEFAULT_RENDER_BINARIES } from '../../../worker/shared/renderTypes'
+import { INPUT_DEVICE_PREF_OPTIONS, INPUT_DEVICE_PREF_LABELS } from '../../../viewInputConfig'
 
 // --- Category tree ---
 
@@ -216,6 +217,16 @@ export const SETTINGS: SettingDef[] = [
 
   // --- Input > Mouse & Navigation ---
   {
+    key: 'input.device',
+    label: 'Pointing device',
+    description:
+      'How scroll input maps to navigation. Mouse: wheel zooms. ' +
+      'Mac trackpad: two-finger scroll pans, pinch zooms. ' +
+      'Auto-detect: pick from the scroll stream (pinch/rotate force trackpad).',
+    category: 'input.mouse',
+    control: { kind: 'select', options: INPUT_DEVICE_PREF_OPTIONS },
+  },
+  {
     key: 'mouse.preset',
     label: 'View Operation Preset',
     description: 'Pre-configured mouse button mapping for 3D navigation.',
@@ -352,6 +363,7 @@ export const DEFAULTS: Record<string, string | number | boolean> = {
   'colors.background': '#1E2028',
   'colors.selectionHighlight': '#5FAFD7',
   'colors.labelBackground': '#000000',
+  'input.device': INPUT_DEVICE_PREF_LABELS.auto,
   'mouse.preset': 'Default',
   'mouse.xyRotSensitivity': 0.8,
   'mouse.pickPrecision': 10.0,
@@ -394,3 +406,9 @@ export const RENDER_BINARY_SETTING_KEYS: Record<string, keyof RenderBinaries> = 
   'rendering.povrayInc': 'povrayInc',
   'rendering.blendpng': 'blendpng',
 }
+
+// --- Pointing-device preset setting ---
+// Backed by ViewInputConfigContext (persistent + live re-apply), not the mock
+// `values` state. SettingsPane routes this key to the context.
+
+export const INPUT_DEVICE_SETTING_KEY = 'input.device'

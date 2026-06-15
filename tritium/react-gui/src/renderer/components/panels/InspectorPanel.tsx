@@ -135,12 +135,14 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
   onAnimElementGone,
   onAnimHeaderChange,
 }) => {
-  // Renderer and Object targets have a migrated structured page, so default to
-  // it; other node kinds fall back to the data-backed Generic tab.
+  // Renderer, Object and Scene targets have a migrated structured page, so
+  // default to it; other node kinds fall back to the data-backed Generic tab.
   const isRenderer =
     targetCategory === "Renderer" || targetCategory === "Renderer group";
   const isObject = targetCategory === "Object";
-  const defaultMode: InspectorMode = isRenderer || isObject ? "properties" : "generic";
+  const isScene = targetCategory === "Scene";
+  const defaultMode: InspectorMode =
+    isRenderer || isObject || isScene ? "properties" : "generic";
 
   const [mode, setMode] = useState<InspectorMode>(defaultMode);
 

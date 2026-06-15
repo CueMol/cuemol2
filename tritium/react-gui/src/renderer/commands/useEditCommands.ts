@@ -1,7 +1,8 @@
 /**
  * @file commands/useEditCommands.ts
- * @description Registers edit-layer commands (save, save-as, undo, redo)
- * targeting the active scene.
+ * @description Registers edit-layer commands (save, save-as) targeting the
+ * active scene. Undo / Redo are owned by `hooks/useUndoRedoState.ts`, which
+ * also tracks their availability and the history dropdown.
  *
  * Save / Save As mirror UXP `Qm2Main.onSaveScene` / `onSaveSceneAs`
  * (uxp_gui/cuemol2/base/content/fileopen.js:518-642). The Save command
@@ -95,19 +96,5 @@ export function useEditCommands({
 
     useRegisterCommand(CmdId.FileSaveAs, async () => {
         return runSaveAs()
-    })
-
-    useRegisterCommand(CmdId.Undo, async () => {
-        if (!cm) return
-        const info = getActiveSceneInfo()
-        if (!info) return
-        await cm.undo(info.scene_uid)
-    })
-
-    useRegisterCommand(CmdId.Redo, async () => {
-        if (!cm) return
-        const info = getActiveSceneInfo()
-        if (!info) return
-        await cm.redo(info.scene_uid)
     })
 }

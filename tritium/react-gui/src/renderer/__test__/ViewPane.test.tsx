@@ -6,7 +6,9 @@
  *   2. fetches the view transform on mount (getViewXform)
  *   3. a Zoom step commits an ABSOLUTE value via setViewXform
  *   4. a RotX step commits a RELATIVE rotation via rotateView (delta from 0)
- *   5. the Projection controls write through the threaded callbacks (which the
+ *   5. a TraX step applies a RELATIVE camera-pan via translateView (UXP wheel
+ *      parity), not an absolute setViewXform center
+ *   6. the Projection controls write through the threaded callbacks (which the
  *      app routes to the existing view/scene commands -- single source of truth)
  */
 
@@ -116,6 +118,21 @@ describe('ViewPane', () => {
             rotY: 0,
             rotZ: 0,
         })
+    })
+
+    it('applies a relative TraX camera-pan via translateView (not setViewXform)', () => {
+        pressStepArrow(rightArrow(view.container, 'TraX'))
+        expect(cm.invokeService).toHaveBeenCalledWith('translateView', {
+            viewId: 7,
+            dx: 1,
+            dy: 0,
+            dz: 0,
+            dragging: true,
+        })
+        expect(cm.invokeService).not.toHaveBeenCalledWith(
+            'setViewXform',
+            expect.objectContaining({ center: expect.anything() }),
+        )
     })
 
     it('routes Perspective toggle through the threaded callback', () => {

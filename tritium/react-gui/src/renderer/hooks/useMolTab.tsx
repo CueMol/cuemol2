@@ -101,7 +101,10 @@ export function MolTabProvider({ children }: { children: React.ReactNode }): Rea
 
   const setActiveTab = useCallback((ind: number): void => {
     setMolTabEntries((entries) => {
-      if (entries.length <= ind) throw Error(`tab index ${entries.length} <= ${ind}`)
+      // Guard a stale index: a concurrent removeMolTab (e.g. the window-close
+      // tab sweep) can shrink `entries` between the caller computing `ind` and
+      // this updater running. Ignore rather than crash.
+      if (ind < 0 || ind >= entries.length) return entries
       const view_id = entries[ind].view_id
       setActiveViewID(view_id)
       return entries.map((x, i) => ({ ...x, active: i === ind }))
@@ -124,13 +127,20 @@ export function MolTabProvider({ children }: { children: React.ReactNode }): Rea
   }, [])
 
   /**
-   * Activate the tab whose view_id matches. No-op if not found.
-   * Identity is stable — reads from entriesRef, no dependency on state.
+   * Activate the tab whose view_id matches. No-op if not found (e.g. the tab
+   * was removed concurrently during the window-close sweep). The lookup runs
+   * inside the state updater so it is validated against the current entries --
+   * this avoids a stale-index crash and keeps the callback identity stable
+   * (no dependency on the entries state).
    */
   const setActiveViewByID = useCallback((view_id: number): void => {
-    const ind = entriesRef.current.findIndex((x) => x.view_id === view_id)
-    if (ind !== -1) setActiveTab(ind)
-  }, [setActiveTab])
+    setMolTabEntries((entries) => {
+      const ind = entries.findIndex((x) => x.view_id === view_id)
+      if (ind === -1) return entries
+      setActiveViewID(view_id)
+      return entries.map((x, i) => ({ ...x, active: i === ind }))
+    })
+  }, [])
 
   // Dispatch context value is stable (all callbacks have empty deps)
   const dispatch = useMemo<MolTabDispatch>(

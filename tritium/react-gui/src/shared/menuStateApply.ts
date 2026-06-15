@@ -42,6 +42,8 @@ export function mergeMenuState(
         viewProjection: update.viewProjection ?? current?.viewProjection,
         viewCenterMark: update.viewCenterMark ?? current?.viewCenterMark,
         sceneBgColor: update.sceneBgColor ?? current?.sceneBgColor,
+        undo: update.undo ?? current?.undo,
+        redo: update.redo ?? current?.redo,
     }
 }
 
@@ -95,5 +97,15 @@ export function applyMenuStateTo(menu: MenuLike, state: MenuState): void {
                 item.checked = enabled && bgColor === value
             }
         }
+    }
+
+    if (state.undo) {
+        const item = menu.getMenuItemById('undo')
+        if (item) item.enabled = state.undo.enabled
+    }
+
+    if (state.redo) {
+        const item = menu.getMenuItemById('redo')
+        if (item) item.enabled = state.redo.enabled
     }
 }

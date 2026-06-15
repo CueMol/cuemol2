@@ -9,10 +9,10 @@
     conf_rotx = "LBUTTON|MOUSE_X"
     conf_roty = "LBUTTON|MOUSE_Y"
     conf_rotz = "LBUTTON|RBUTTON|MOUSE_Y,GES_ROTATE"
-    conf_trax = "RBUTTON|MOUSE_X,WHEEL1"
-    conf_tray = "RBUTTON|MOUSE_Y,WHEEL2"
+    conf_trax = "RBUTTON|MOUSE_X"
+    conf_tray = "RBUTTON|MOUSE_Y"
     conf_traz = "LBUTTON|RBUTTON|MOUSE_X"
-    conf_zoom = "LBUTTON|SHIFT|MOUSE_Y,GES_PINCH"
+    conf_zoom = "LBUTTON|SHIFT|MOUSE_Y,WHEEL1,WHEEL2,GES_PINCH"
     conf_slab = "LBUTTON|SHIFT|MOUSE_X"
     />
 
@@ -47,6 +47,23 @@
     conf_traz = ""
     conf_zoom = ""
     conf_slab = "LBUTTON|SHIFT|MOUSE_X,LBUTTON|SHIFT|MOUSE_Y"
+    />
+
+  <!-- tritium/Electron trackpad: Chromium delivers a 2-finger scroll as a
+       plain wheel event (WHEEL1/WHEEL2 -> pan). A pinch arrives as ctrl+wheel,
+       which MolViewPane converts into a GES_PINCH gesture (-> zoom), so the
+       binding uses GES_PINCH, not CTRL|WHEEL2. A 2-finger rotate has no DOM
+       event but is captured by the Electron main 'rotate-gesture' event and
+       forwarded as GES_ROTATE (-> rotz) on macOS. -->
+  <style id="TrackpadViewInConf" type="view" desc="Trackpad"
+    conf_rotx = "LBUTTON|MOUSE_X"
+    conf_roty = "LBUTTON|MOUSE_Y"
+    conf_rotz = "LBUTTON|RBUTTON|MOUSE_Y,GES_ROTATE"
+    conf_trax = "RBUTTON|MOUSE_X,WHEEL1"
+    conf_tray = "RBUTTON|MOUSE_Y,WHEEL2"
+    conf_traz = "LBUTTON|RBUTTON|MOUSE_X"
+    conf_zoom = "LBUTTON|SHIFT|MOUSE_Y,GES_PINCH"
+    conf_slab = "LBUTTON|SHIFT|MOUSE_X"
     />
 
   <!--

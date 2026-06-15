@@ -12,7 +12,11 @@
  *
  * Rotation has no absolute scalar -- `rotate(axis, deltaDeg)` applies a
  * relative `rotateView`; the accumulator shown in the field is owned by the
- * caller (see ADR-0025).
+ * caller (see ADR-0025). Translation likewise has a relative path:
+ * `translate(axis, delta, dragging)` applies a camera-relative pan
+ * (`translateView`) and mirrors the returned absolute center back into all
+ * three center fields (a single-axis pan couples x/y/z), matching the UXP
+ * fakedial wheel while the displayed values stay the absolute center.
  *
  * `beginInteraction` / `endInteraction` gate the event-driven refetch: while a
  * field drag is in progress the local optimistic value is authoritative, so
@@ -54,6 +58,14 @@ export interface UseViewXformResult {
     setCenter: (axis: CenterAxis, v: number) => void
     /** Apply a relative rotation (degrees) about a single view axis. */
     rotate: (axis: CenterAxis, deltaDeg: number) => void
+    /**
+     * Apply a camera-relative pan along a single screen axis (UXP fakedial
+     * `translateView`). `delta` is the screen-space pan amount; the worker
+     * returns the resulting absolute center (which couples all three axes), so
+     * every center field stays live. `dragging` selects the transient drag
+     * event vs the committing one.
+     */
+    translate: (axis: CenterAxis, delta: number, dragging: boolean) => void
     /** Suppress event-driven refetch while a field drag is in progress. */
     beginInteraction: () => void
     /** Re-enable refetch and reconcile against the (clamped) worker truth. */
@@ -174,6 +186,39 @@ export function useViewXform(opts: UseViewXformOptions): UseViewXformResult {
         [cm],
     )
 
+    const translate = useCallback(
+        (axis: CenterAxis, delta: number, dragging: boolean) => {
+            const vid = viewIdRef.current
+            if (!cm || vid === undefined || delta === 0) return
+            cm.invokeService('translateView', {
+                viewId: vid,
+                dx: axis === 'x' ? delta : 0,
+                dy: axis === 'y' ? delta : 0,
+                dz: axis === 'z' ? delta : 0,
+                dragging,
+            })
+                .then((res) => {
+                    // A single-axis pan moves all three world-center components;
+                    // mirror the worker truth so every field display follows.
+                    // Ignore late responses after the drag ended -- the
+                    // endInteraction refetch is authoritative there.
+                    if (!res?.ok || !draggingRef.current) return
+                    const cur = stateRef.current
+                    if (cur)
+                        setState({
+                            ...cur,
+                            centerX: res.centerX,
+                            centerY: res.centerY,
+                            centerZ: res.centerZ,
+                        })
+                })
+                .catch((err: unknown) => {
+                    console.warn('translateView failed:', err)
+                })
+        },
+        [cm],
+    )
+
     const beginInteraction = useCallback(() => {
         draggingRef.current = true
     }, [])
@@ -189,6 +234,7 @@ export function useViewXform(opts: UseViewXformOptions): UseViewXformResult {
         setDistance,
         setCenter,
         rotate,
+        translate,
         beginInteraction,
         endInteraction,
     }

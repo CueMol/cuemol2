@@ -331,7 +331,7 @@ import type {
   ReloadCameraFromSrcArgs,
   ReloadCameraFromSrcResult,
 } from '../server/services/cameraFile.service'
-import type { UndoArgs } from '../server/services/undo.service'
+import type { UndoArgs, GetUndoStateArgs, UndoState } from '../server/services/undo.service'
 import type {
   ValidateSelectionArgs,
   ValidateSelectionResult,
@@ -349,6 +349,8 @@ import type {
   SetViewXformResult,
   RotateViewArgs,
   RotateViewResult,
+  TranslateViewArgs,
+  TranslateViewResult,
 } from '../server/services/viewXform.service'
 import type {
   ListSceneObjectsArgs,
@@ -475,6 +477,7 @@ export interface ServiceMap {
   proposeUniqName:            { args: ProposeUniqNameArgs;             result: ProposeUniqNameResult }
   redo:                       { args: RedoArgs;                        result: { ok: boolean } }
   undo:                       { args: UndoArgs;                        result: { ok: boolean } }
+  getUndoState:               { args: GetUndoStateArgs;                result: UndoState }
   getSceneSaveInfo:           { args: GetSceneSaveInfoArgs;            result: GetSceneSaveInfoResult }
   saveScene:                  { args: SaveSceneArgs;                   result: SaveSceneResult }
   exportImage:                { args: ExportImageArgs;                 result: ExportImageResult }
@@ -577,6 +580,7 @@ export interface ServiceMap {
   getViewXform:               { args: GetViewXformArgs;                result: ViewXformResult }
   setViewXform:               { args: SetViewXformArgs;                result: SetViewXformResult }
   rotateView:                 { args: RotateViewArgs;                  result: RotateViewResult }
+  translateView:              { args: TranslateViewArgs;               result: TranslateViewResult }
   naviHitTest:                { args: NaviHitTestArgs;                 result: NaviHitTestResult }
   naviClickAtom:              { args: NaviClickAtomArgs;               result: NaviClickAtomResult }
   naviResidSel:               { args: NaviResidSelArgs;                result: NaviResidSelResult }

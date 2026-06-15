@@ -12,7 +12,7 @@ export interface UseNaviClickHandlerArgs {
 }
 
 const LBTN = 1 << 3;  // left button modifier bit (same as UXP)
-const MBTN = 1 << 4;  // middle button modifier bit
+const RBTN = 1 << 5;  // right button modifier bit (same as UXP)
 const SHIFT = 1 << 0; // shift modifier bit
 
 export function useNaviClickHandler({ setStatusMessage, openContextMenu }: UseNaviClickHandlerArgs): void {
@@ -45,7 +45,7 @@ export function useNaviClickHandler({ setStatusMessage, openContextMenu }: UseNa
             if (!cm) return;
             const { x, y, mod } = (args as { obj?: { x?: number; y?: number; mod?: number } } | null)?.obj ?? {};
             if (x == null || y == null || mod == null) return;
-            if (mod & MBTN) {
+            if (mod & RBTN) {
                 const result = await cm.naviHitTest({ viewId, x, y });
                 if (result?.hit && result.raw && result.raw.objtype === 'MolCoord') {
                     openContextMenu(result.raw as HitTestResult, viewId);

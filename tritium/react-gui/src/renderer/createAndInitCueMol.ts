@@ -1,5 +1,11 @@
 import { AsyncCueMol } from './worker/client/AsyncCueMol'
 import { IPC } from '../shared/ipcChannels'
+import {
+    DEFAULT_INPUT_DEVICE_MODE,
+    normalizeInputDeviceMode,
+    normalizeInputDevicePreference,
+    viewInputStyleName,
+} from './viewInputConfig'
 
 // Create a CueMol instance and initialize the underlying C++ library.
 //
@@ -20,11 +26,19 @@ export async function createAndInitCueMol(): Promise<AsyncCueMol> {
     // createStyleSet("user", 0).
     await cm.loadUserStyle(userStyleExists ? userStylePath : undefined)
 
-    // Set ViewInputConfig.style (uxp_gui cuemol2.js L57-61 equivalent).
-    // The "cuemol2.ui.viewinconf" preference is not yet wired up in tritium;
-    // use the default name here. When preferences land, read from UiState.
-    const inconf = 'DefaultViewInConf'
-    await cm.setViewInputConfigStyle(`${inconf},UserViewConf`)
+    // Set ViewInputConfig.style (uxp_gui cuemol2.js L57-61 equivalent),
+    // choosing the startup preset from the persisted preference. For 'auto',
+    // seed with the last detected device (the renderer detector corrects it
+    // live on the first wheel); mouse/trackpad pin the preset directly.
+    let seed = DEFAULT_INPUT_DEVICE_MODE
+    try {
+        const ui = await window.electronAPI.invoke(IPC.UI_LOAD)
+        const pref = normalizeInputDevicePreference(ui?.inputDeviceMode)
+        seed = pref === 'auto' ? normalizeInputDeviceMode(ui?.inputDeviceDetected) : pref
+    } catch {
+        // UI state unavailable (e.g. Vite dev server) -- keep the default.
+    }
+    await cm.setViewInputConfigStyle(viewInputStyleName(seed))
 
     return cm
 }
