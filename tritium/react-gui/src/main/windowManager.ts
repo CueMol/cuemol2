@@ -192,16 +192,21 @@ export function createWindow(): void {
     win.webContents.send(IPC.ROTATE_GESTURE, rotation)
   })
 
-  // TEMP spike (remove after verification): confirm Electron's input-event
-  // exposes hasPreciseScrollingDeltas so a trackpad (true) can be told apart
-  // from a physical mouse wheel (false). Logs to the main-process console.
+  // TEMP spike (remove after verification): the observed input-event only
+  // carries the base InputEvent (type + modifiers); the MouseWheelInputEvent
+  // delta/precise fields are not populated. So characterise what IS available:
+  // dump the keys of a wheel event once, and log the sequence of wheel /
+  // gesture / touch event types to see whether a trackpad produces distinct
+  // gesture types (pinch / fling / scroll) that a mouse wheel does not.
+  let keysDumped = false
   win.webContents.on('input-event', (_event, input) => {
-    if (input.type === 'mouseWheel') {
-      const w = input as Electron.MouseWheelInputEvent
-      console.log(
-        `[input-spike] mouseWheel precise=${w.hasPreciseScrollingDeltas} ` +
-          `deltaY=${w.deltaY} ticksY=${w.wheelTicksY} accelY=${w.accelerationRatioY}`,
-      )
+    const t = input.type
+    if (t === 'mouseWheel' && !keysDumped) {
+      keysDumped = true
+      console.log('[input-spike] mouseWheel keys=', Object.keys(input))
+    }
+    if (t === 'mouseWheel' || t.startsWith('gesture') || t.startsWith('touch')) {
+      console.log(`[input-spike] type=${t} modifiers=${JSON.stringify(input.modifiers)}`)
     }
   })
 
