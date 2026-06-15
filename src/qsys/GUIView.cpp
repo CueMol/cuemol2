@@ -735,40 +735,16 @@ void GUIView::ensurePipeline(int w, int h, bool halfRes)
 
 gfx::AoConstants GUIView::computeAoConstants() const
 {
-    // Camera slab planes, matching setUpProjMat's near/far derivation.
-    const double dist = getViewDist();
-    double slabdepth = getSlabDepth();
-    if (slabdepth <= 0.1) slabdepth = 0.1;
-    double slabnear = dist - slabdepth / 2.0;
-    if (slabnear < 0.1) slabnear = 0.1;
-    const double slabfar = dist + slabdepth;
-
-    // Perspective half-FOV: makePersProjMat uses t = dist / (zoom/2), with
-    // P[1][1] = t (so tanHalfFOVY = 1/t = (zoom/2)/dist) and P[0][0] = t/aspect
-    // (so tanHalfFOVX = aspect * tanHalfFOVY).
-    const double width = double(getZoom()) / 2.0;
+    // Geometric (camera-derived) part only. The AO tuning fields (effectRadius /
+    // finalValuePower / slice & step counts / fog) are filled by the caller from
+    // the Scene properties. Perspective and orthographic projections reconstruct
+    // view space differently, so fromCamera branches on the projection mode.
     const double aspect = double(getWidth()) / double(getHeight());
-    const double tanHalfFovY = width / dist;
-    const double tanHalfFovX = tanHalfFovY * aspect;
-
     const int bcx = convToBackingX(getWidth());
     const int bcy = convToBackingY(getHeight());
-
-    gfx::AoConstants c;
-    // viewZ = mul / (add - rawDepth); matches XeGTAO with GL window depth [0,1].
-    c.depthLinearizeMul = float(slabfar * slabnear / (slabfar - slabnear));
-    c.depthLinearizeAdd = float(slabfar / (slabfar - slabnear));
-    // GL uses a bottom-up [0,1] UV (postproc_vert v_uv), so viewY keeps the
-    // same sign as the NDC mapping (unlike XeGTAO's top-down DX convention).
-    c.ndcToViewMul[0] = float(2.0 * tanHalfFovX);
-    c.ndcToViewMul[1] = float(2.0 * tanHalfFovY);
-    c.ndcToViewAdd[0] = float(-tanHalfFovX);
-    c.ndcToViewAdd[1] = float(-tanHalfFovY);
-    c.viewportPixelSize[0] = (bcx > 0) ? 1.0f / float(bcx) : 0.0f;
-    c.viewportPixelSize[1] = (bcy > 0) ? 1.0f / float(bcy) : 0.0f;
-    // The AO tuning fields (effectRadius / finalValuePower / sliceCount) are
-    // filled by the caller from the Scene properties.
-    return c;
+    return gfx::AoConstants::fromCamera(getViewDist(), double(getZoom()),
+                                        getSlabDepth(), aspect, bcx, bcy,
+                                        isPerspec());
 }
 
 bool GUIView::renderAOColorFrame(DisplayContext *pdc, const ScenePtr &pScene,

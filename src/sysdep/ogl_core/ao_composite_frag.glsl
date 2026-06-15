@@ -18,6 +18,7 @@ uniform int u_hasAO;
 uniform int u_upsample;          // 1 = edge-aware upsample the AO term
 uniform float u_fogEnd;          // linear fog far limit (view-space Z)
 uniform float u_fogScale;        // 1/(fogEnd - fogStart)
+uniform int u_isOrtho;           // 1 = orthographic projection, 0 = perspective
 
 in vec2 v_uv;
 
@@ -25,6 +26,10 @@ out vec4 o_FragColor;
 
 float linearizeZ(float d)
 {
+    // Must match gtao_frag.glsl: orthographic depth is linear in viewZ,
+    // perspective is hyperbolic.
+    if (u_isOrtho != 0)
+        return u_depthUnpack.x + d * u_depthUnpack.y;
     return u_depthUnpack.x / (u_depthUnpack.y - d);
 }
 

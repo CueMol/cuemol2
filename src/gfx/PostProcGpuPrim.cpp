@@ -15,6 +15,48 @@
 
 using namespace gfx;
 
+// static
+AoConstants AoConstants::fromCamera(double camDist, double zoom, double slabDepth,
+                                    double aspect, int bcx, int bcy, bool perspec)
+{
+    // Camera slab planes, matching GUIView::setUpProjMat's near/far derivation.
+    if (slabDepth <= 0.1) slabDepth = 0.1;
+    double slabNear = camDist - slabDepth / 2.0;
+    if (slabNear < 0.1) slabNear = 0.1;
+    const double slabFar = camDist + slabDepth;
+
+    // makePersProjMat uses t = camDist / (zoom/2), so tanHalfFOVY = (zoom/2)/camDist
+    // and the orthographic half-extents are width = zoom/2 (see makeOrthoProjMat).
+    const double width = zoom / 2.0;
+
+    AoConstants c;
+    c.isOrtho = perspec ? 0 : 1;
+    if (perspec) {
+        // Perspective: hyperbolic window depth, XY unprojected by viewZ.
+        c.depthLinearizeMul = float(slabFar * slabNear / (slabFar - slabNear));
+        c.depthLinearizeAdd = float(slabFar / (slabFar - slabNear));
+        const double tanHalfFovY = width / camDist;
+        const double tanHalfFovX = tanHalfFovY * aspect;
+        c.ndcToViewMul[0] = float(2.0 * tanHalfFovX);
+        c.ndcToViewMul[1] = float(2.0 * tanHalfFovY);
+        c.ndcToViewAdd[0] = float(-tanHalfFovX);
+        c.ndcToViewAdd[1] = float(-tanHalfFovY);
+    } else {
+        // Orthographic: window depth is linear, viewZ = near + d*(far - near),
+        // so store (near, far - near). XY is depth-independent and spans
+        // makeOrthoProjMat's extents ([-width*aspect, width*aspect] x [-width, width]).
+        c.depthLinearizeMul = float(slabNear);
+        c.depthLinearizeAdd = float(slabFar - slabNear);
+        c.ndcToViewMul[0] = float(2.0 * width * aspect);
+        c.ndcToViewMul[1] = float(2.0 * width);
+        c.ndcToViewAdd[0] = float(-width * aspect);
+        c.ndcToViewAdd[1] = float(-width);
+    }
+    c.viewportPixelSize[0] = (bcx > 0) ? 1.0f / float(bcx) : 0.0f;
+    c.viewportPixelSize[1] = (bcy > 0) ? 1.0f / float(bcy) : 0.0f;
+    return c;
+}
+
 bool PostProcGpuPrim::init(DisplayContext *pDC)
 {
     if (m_pPO != nullptr) return true;
@@ -114,6 +156,7 @@ void PostProcGpuPrim::drawComposite(DisplayContext *pDC, RenderTarget *sceneRT,
     // so a fully-fogged (background-color) pixel is not darkened by AO.
     m_pCompPO->setUniformF("u_fogEnd", consts.fogEnd);
     m_pCompPO->setUniformF("u_fogScale", consts.fogScale);
+    m_pCompPO->setUniform("u_isOrtho", consts.isOrtho);
     // Upsample only when the AO buffer is coarser than the output (half res).
     const bool upsample = consts.aoTexelSize[0] > consts.viewportPixelSize[0] * 1.5f;
     m_pCompPO->setUniform("u_upsample", upsample ? 1 : 0);
@@ -169,6 +212,7 @@ void PostProcGpuPrim::drawGtao(DisplayContext *pDC, RenderTarget *sceneRT,
     m_pGtaoPO->setUniform("u_debugMode", debugMode);
     m_pGtaoPO->setUniformF("u_aoNoiseOffset", consts.aoNoiseOffset);
     m_pGtaoPO->setUniformF("u_maxScreenspaceRadius", consts.maxScreenspaceRadius);
+    m_pGtaoPO->setUniform("u_isOrtho", consts.isOrtho);
 
     pDC->drawElem(*m_pDrawElem);
 
