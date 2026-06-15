@@ -15,7 +15,6 @@ import type { WorkerContext } from '../types/WorkerContext';
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { SceneXMLReader } from '@cuemol/core/src/wrappers/SceneXMLReader';
 import type { View } from '@cuemol/core/src/wrappers/View';
-import { withUndoTxn } from './withUndoTxn';
 
 const log = console;
 
@@ -63,45 +62,51 @@ export interface LoadSceneArgs {
 function loadScene(ctx: WorkerContext, args: LoadSceneArgs): { ok: boolean } {
     log.info(`[worker] loading QSC scene: ${args.filePath}`);
     const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
-    return withUndoTxn(scene, 'Open scene', () => {
-        const readerName = guessReaderName(ctx, args.filePath);
-        if (!readerName) {
-            log.warn(`[worker] loadScene: cannot guess reader for ${args.filePath}`);
-            return { ok: false };
-        }
-        const reader = ctx.strMgr.createHandler(
-            readerName,
-            SCEREADER_CATEGORY,
-        ) as unknown as SceneXMLReader | null;
-        if (!reader) {
-            log.warn(`[worker] loadScene: createHandler('${readerName}') failed`);
-            return { ok: false };
-        }
-        reader.setPath(args.filePath);
-        reader.attach(scene);
-        try {
-            reader.read();
-        } finally {
-            reader.detach();
-        }
 
-        // Apply the saved "__current" camera to every view, mirroring the
-        // `m_bSetCamera == true` block in LoadSceneCommand::run().
-        const uidStr = scene.view_uids;
-        if (uidStr) {
-            for (const tok of uidStr.split(',')) {
-                const uid = Number(tok.trim());
-                if (!Number.isFinite(uid)) continue;
-                try {
-                    const view = scene.getView(uid) as View | null;
-                    if (view) scene.loadViewFromCam(uid, '__current');
-                } catch (e) {
-                    log.warn(`loadViewFromCam failed for view ${uid}:`, e);
-                }
+    // No undo transaction here, by design. A whole-scene load is not an edit:
+    // it mirrors UXP `qsc-io.readSceneFile` / C++ `LoadSceneCommand::run()`,
+    // both of which run outside any txn. The C++ UndoManager only keeps an edit
+    // record while a txn is active, so reading a scene outside a txn lets the
+    // object-registration records be discarded -- the undo stack stays empty
+    // after load (matching UXP). Wrapping it in withUndoTxn was the bug: it
+    // captured those records and committed them, leaving a bogus undo entry.
+    const readerName = guessReaderName(ctx, args.filePath);
+    if (!readerName) {
+        log.warn(`[worker] loadScene: cannot guess reader for ${args.filePath}`);
+        return { ok: false };
+    }
+    const reader = ctx.strMgr.createHandler(
+        readerName,
+        SCEREADER_CATEGORY,
+    ) as unknown as SceneXMLReader | null;
+    if (!reader) {
+        log.warn(`[worker] loadScene: createHandler('${readerName}') failed`);
+        return { ok: false };
+    }
+    reader.setPath(args.filePath);
+    reader.attach(scene);
+    try {
+        reader.read();
+    } finally {
+        reader.detach();
+    }
+
+    // Apply the saved "__current" camera to every view, mirroring the
+    // `m_bSetCamera == true` block in LoadSceneCommand::run().
+    const uidStr = scene.view_uids;
+    if (uidStr) {
+        for (const tok of uidStr.split(',')) {
+            const uid = Number(tok.trim());
+            if (!Number.isFinite(uid)) continue;
+            try {
+                const view = scene.getView(uid) as View | null;
+                if (view) scene.loadViewFromCam(uid, '__current');
+            } catch (e) {
+                log.warn(`loadViewFromCam failed for view ${uid}:`, e);
             }
         }
-        return { ok: true };
-    });
+    }
+    return { ok: true };
 }
 
 export const services = { loadScene };
