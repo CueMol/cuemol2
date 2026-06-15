@@ -12,7 +12,7 @@
 import type { AppIconKey } from '../../../data/appIcons'
 import type { RenderBinaries } from '../../../worker/shared/renderTypes'
 import { DEFAULT_RENDER_BINARIES } from '../../../worker/shared/renderTypes'
-import { INPUT_DEVICE_OPTIONS, INPUT_DEVICE_LABELS } from '../../../viewInputConfig'
+import { INPUT_DEVICE_PREF_OPTIONS, INPUT_DEVICE_PREF_LABELS } from '../../../viewInputConfig'
 
 // --- Category tree ---
 
@@ -221,9 +221,10 @@ export const SETTINGS: SettingDef[] = [
     label: 'Pointing device',
     description:
       'How scroll input maps to navigation. Mouse: wheel zooms. ' +
-      'Mac trackpad: two-finger scroll pans, pinch zooms.',
+      'Mac trackpad: two-finger scroll pans, pinch zooms. ' +
+      'Auto-detect: pick from the scroll stream (pinch/rotate force trackpad).',
     category: 'input.mouse',
-    control: { kind: 'select', options: INPUT_DEVICE_OPTIONS },
+    control: { kind: 'select', options: INPUT_DEVICE_PREF_OPTIONS },
   },
   {
     key: 'mouse.preset',
@@ -362,7 +363,7 @@ export const DEFAULTS: Record<string, string | number | boolean> = {
   'colors.background': '#1E2028',
   'colors.selectionHighlight': '#5FAFD7',
   'colors.labelBackground': '#000000',
-  'input.device': INPUT_DEVICE_LABELS.mouse,
+  'input.device': INPUT_DEVICE_PREF_LABELS.auto,
   'mouse.preset': 'Default',
   'mouse.xyRotSensitivity': 0.8,
   'mouse.pickPrecision': 10.0,

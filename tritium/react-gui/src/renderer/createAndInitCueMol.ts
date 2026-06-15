@@ -3,6 +3,7 @@ import { IPC } from '../shared/ipcChannels'
 import {
     DEFAULT_INPUT_DEVICE_MODE,
     normalizeInputDeviceMode,
+    normalizeInputDevicePreference,
     viewInputStyleName,
 } from './viewInputConfig'
 
@@ -26,16 +27,18 @@ export async function createAndInitCueMol(): Promise<AsyncCueMol> {
     await cm.loadUserStyle(userStyleExists ? userStylePath : undefined)
 
     // Set ViewInputConfig.style (uxp_gui cuemol2.js L57-61 equivalent),
-    // choosing the mouse/trackpad preset from the persisted preference. The
-    // SettingsPane re-applies live on change (ViewInputConfigContext).
-    let inputMode = DEFAULT_INPUT_DEVICE_MODE
+    // choosing the startup preset from the persisted preference. For 'auto',
+    // seed with the last detected device (the renderer detector corrects it
+    // live on the first wheel); mouse/trackpad pin the preset directly.
+    let seed = DEFAULT_INPUT_DEVICE_MODE
     try {
         const ui = await window.electronAPI.invoke(IPC.UI_LOAD)
-        inputMode = normalizeInputDeviceMode(ui?.inputDeviceMode)
+        const pref = normalizeInputDevicePreference(ui?.inputDeviceMode)
+        seed = pref === 'auto' ? normalizeInputDeviceMode(ui?.inputDeviceDetected) : pref
     } catch {
         // UI state unavailable (e.g. Vite dev server) -- keep the default.
     }
-    await cm.setViewInputConfigStyle(viewInputStyleName(inputMode))
+    await cm.setViewInputConfigStyle(viewInputStyleName(seed))
 
     return cm
 }

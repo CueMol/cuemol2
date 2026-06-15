@@ -14,6 +14,11 @@ import {
   INPUT_DEVICE_LABELS,
   INPUT_DEVICE_OPTIONS,
   DEFAULT_INPUT_DEVICE_MODE,
+  normalizeInputDevicePreference,
+  inputDevicePreferenceFromLabel,
+  INPUT_DEVICE_PREF_LABELS,
+  INPUT_DEVICE_PREF_OPTIONS,
+  DEFAULT_INPUT_DEVICE_PREFERENCE,
 } from '../viewInputConfig'
 
 describe('viewInputConfig', () => {
@@ -41,5 +46,31 @@ describe('viewInputConfig', () => {
     expect(inputDeviceModeFromLabel(INPUT_DEVICE_LABELS.trackpad)).toBe('trackpad')
     expect(inputDeviceModeFromLabel(INPUT_DEVICE_LABELS.mouse)).toBe('mouse')
     expect(inputDeviceModeFromLabel('anything else')).toBe('mouse')
+  })
+})
+
+describe('viewInputConfig preference layer', () => {
+  it('defaults to auto', () => {
+    expect(DEFAULT_INPUT_DEVICE_PREFERENCE).toBe('auto')
+  })
+
+  it('normalizes a persisted preference (default auto)', () => {
+    expect(normalizeInputDevicePreference('mouse')).toBe('mouse')
+    expect(normalizeInputDevicePreference('trackpad')).toBe('trackpad')
+    expect(normalizeInputDevicePreference('auto')).toBe('auto')
+    expect(normalizeInputDevicePreference(undefined)).toBe('auto')
+    expect(normalizeInputDevicePreference('bogus')).toBe('auto')
+  })
+
+  it('round-trips the three preference labels (auto last)', () => {
+    expect(INPUT_DEVICE_PREF_OPTIONS).toEqual([
+      INPUT_DEVICE_PREF_LABELS.mouse,
+      INPUT_DEVICE_PREF_LABELS.trackpad,
+      INPUT_DEVICE_PREF_LABELS.auto,
+    ])
+    expect(inputDevicePreferenceFromLabel(INPUT_DEVICE_PREF_LABELS.mouse)).toBe('mouse')
+    expect(inputDevicePreferenceFromLabel(INPUT_DEVICE_PREF_LABELS.trackpad)).toBe('trackpad')
+    expect(inputDevicePreferenceFromLabel(INPUT_DEVICE_PREF_LABELS.auto)).toBe('auto')
+    expect(inputDevicePreferenceFromLabel('anything else')).toBe('auto')
   })
 })

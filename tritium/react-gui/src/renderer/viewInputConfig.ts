@@ -5,8 +5,14 @@
  *
  * tritium runs in Chromium, where a trackpad two-finger scroll and a physical
  * mouse wheel both arrive as wheel events but want opposite bindings (a mouse
- * wheel zooms; a two-finger scroll pans). The user picks a device mode and the
- * matching style preset -- defined in data/default_style.xml -- is applied.
+ * wheel zooms; a two-finger scroll pans). The user picks a device preference
+ * (mouse / trackpad / auto) and the matching style preset -- defined in
+ * data/default_style.xml -- is applied. 'auto' detects the device from the
+ * wheel-event stream (see input/inputDeviceDetector.ts).
+ *
+ * Two type layers: the persisted PREFERENCE is 3-valued (InputDevicePreference,
+ * includes 'auto'); the applied/effective device is 2-valued (InputDeviceMode)
+ * and is the only thing that maps to a C++ preset.
  */
 
 export type InputDeviceMode = 'mouse' | 'trackpad'
@@ -50,4 +56,41 @@ export function inputDeviceModeFromLabel(label: string): InputDeviceMode {
 /** Normalize an unknown persisted value to a valid device mode. */
 export function normalizeInputDeviceMode(value: unknown): InputDeviceMode {
   return value === 'trackpad' ? 'trackpad' : 'mouse'
+}
+
+// --- Preference layer (persisted): the 3-value choice exposed in Settings ---
+
+/**
+ * Persisted pointing-device preference. 'auto' detects mouse vs trackpad from
+ * the wheel-event stream; 'mouse'/'trackpad' pin a preset manually. The applied
+ * preset is always an `InputDeviceMode` (the 2-value effective device).
+ */
+export type InputDevicePreference = InputDeviceMode | 'auto'
+
+export const DEFAULT_INPUT_DEVICE_PREFERENCE: InputDevicePreference = 'auto'
+
+/** Human-facing labels for the three preference options. */
+export const INPUT_DEVICE_PREF_LABELS: Record<InputDevicePreference, string> = {
+  mouse: INPUT_DEVICE_LABELS.mouse,
+  trackpad: INPUT_DEVICE_LABELS.trackpad,
+  auto: 'Auto-detect',
+}
+
+/** Select options, in preference order (auto last). */
+export const INPUT_DEVICE_PREF_OPTIONS: string[] = [
+  INPUT_DEVICE_PREF_LABELS.mouse,
+  INPUT_DEVICE_PREF_LABELS.trackpad,
+  INPUT_DEVICE_PREF_LABELS.auto,
+]
+
+/** Reverse-map a select label back to a preference (default: auto). */
+export function inputDevicePreferenceFromLabel(label: string): InputDevicePreference {
+  if (label === INPUT_DEVICE_PREF_LABELS.mouse) return 'mouse'
+  if (label === INPUT_DEVICE_PREF_LABELS.trackpad) return 'trackpad'
+  return 'auto'
+}
+
+/** Normalize an unknown persisted value to a valid preference (default: auto). */
+export function normalizeInputDevicePreference(value: unknown): InputDevicePreference {
+  return value === 'mouse' || value === 'trackpad' ? value : 'auto'
 }

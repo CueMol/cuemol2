@@ -192,24 +192,6 @@ export function createWindow(): void {
     win.webContents.send(IPC.ROTATE_GESTURE, rotation)
   })
 
-  // TEMP spike (remove after verification): the observed input-event only
-  // carries the base InputEvent (type + modifiers); the MouseWheelInputEvent
-  // delta/precise fields are not populated. So characterise what IS available:
-  // dump the keys of a wheel event once, and log the sequence of wheel /
-  // gesture / touch event types to see whether a trackpad produces distinct
-  // gesture types (pinch / fling / scroll) that a mouse wheel does not.
-  let keysDumped = false
-  win.webContents.on('input-event', (_event, input) => {
-    const t = input.type
-    if (t === 'mouseWheel' && !keysDumped) {
-      keysDumped = true
-      console.log('[input-spike] mouseWheel keys=', Object.keys(input))
-    }
-    if (t === 'mouseWheel' || t.startsWith('gesture') || t.startsWith('touch')) {
-      console.log(`[input-spike] type=${t} modifiers=${JSON.stringify(input.modifiers)}`)
-    }
-  })
-
   if (process.env['ELECTRON_RENDERER_URL']) {
     win.loadURL(process.env['ELECTRON_RENDERER_URL'])
     win.webContents.openDevTools({ mode: 'undocked' })

@@ -1,6 +1,6 @@
 # ADR-0032: View-input wheel binding and tritium mouse/trackpad preset switch
 
-- Status: accepted (Phase 1 host E2E verified on UXP; tritium Phase 2 host E2E pending)
+- Status: accepted (Phase 1/2 host E2E verified; Phase 3 auto-detect host E2E pending)
 - Date: 2026-06-15
 - Mapping rows: [`overlay.config-mouse`](../mapping/overlay.md#overlayconfig-mouse)
 
@@ -38,15 +38,30 @@ preset (Mouse / Mac trackpad). The choice persists as `UiState.inputDeviceMode`
 `setViewInputConfigStyle` worker method. The selector lives in `SettingsPane`
 (Input > Pointing device). UXP always uses `DefaultViewInConf` (mouse).
 
+**Phase 3** adds an "Auto-detect" preference (now the tritium default). No
+reliable OS signal exists: a spike confirmed Electron 42's observed
+`input-event` carries only `type` + `modifiers` (no wheel deltas / precise
+flag), and a trackpad two-finger scroll is delivered as a plain `mouseWheel`
+identical to a real wheel. So detection is a renderer-side heuristic on the DOM
+`WheelEvent` (`input/wheelDeviceClassifier.ts`: horizontal or fractional delta
+-> trackpad; large integer vertical -> mouse) fed into a small state machine
+(`input/inputDeviceDetector.ts`) with hysteresis and a pinch/rotate "definitely
+trackpad" latch. The detected device drives the same `setViewInputConfigStyle`
+switch. The preference becomes 3-valued (`mouse|trackpad|auto`); the applied
+device stays 2-valued.
+
 ## Consequences
 
 - Positive: the physical mouse wheel zooms on every platform; trackpad users
   restore two-finger pan by picking the preset; no new IPC channel or worker
   service was needed (reuses `UiState` and `setViewInputConfigStyle`).
-- Negative: tritium cannot auto-detect mouse vs trackpad, so the user must
-  pick the preset. The full UXP `config-mouse` key-binding editor
-  (`pane-mouseconf`) is not migrated -- only the device preset is. The `.qif`
-  edit requires a libcuemol2 rebuild; the XML edit only a data re-install.
+- Auto-detect is heuristic, not exact: there is no OS signal in Electron 42, so
+  a high-resolution / free-spin mouse may read as a trackpad and a perfectly
+  vertical integer trackpad scroll may read as a mouse. The manual presets are
+  the safety net; the classifier thresholds are exported constants for tuning.
+- The full UXP `config-mouse` key-binding editor (`pane-mouseconf`) is not
+  migrated -- only the device preset. The `.qif` edit requires a libcuemol2
+  rebuild; the XML edit only a data re-install.
 
 ## Notes
 
@@ -62,9 +77,17 @@ preset (Mouse / Mac trackpad). The choice persists as `UiState.inputDeviceMode`
   `View::handleMouseDragImpl` (`VIEW_ZOOM`/`VIEW_TRAX`/...).
 - UXP parity: `uxp_gui/cuemol2/base/content/cuemol2.js` L57-61 sets
   `vic.style`; the `config-mouse` preference pane is not ported.
-- Known issue: a physical wheel and a trackpad two-finger vertical scroll are
-  indistinguishable at the `ViewInputConfig` layer in Chromium, hence the
-  manual preset rather than auto-detection.
+- A physical wheel and a trackpad two-finger scroll are indistinguishable at
+  the `ViewInputConfig` layer; the renderer device detector (Phase 3) resolves
+  this above that layer, heuristically.
+- Auto-detect rejected OS-level detection after a spike: Electron removed
+  `scroll-touch-*` (v23, replaced by `webContents.on('input-event')`), but the
+  observed `input-event` exposes no wheel deltas (only `type`/`modifiers`) and
+  reports a trackpad plain scroll as `mouseWheel`. Detection is therefore
+  renderer-side (`input/wheelDeviceClassifier.ts`, `input/inputDeviceDetector.ts`,
+  driven from `MolViewPane` wheel + pinch + the rotate IPC, applied via
+  `ViewInputConfigContext`). Preference persists as `UiState.inputDeviceMode`
+  (now `mouse|trackpad|auto`, default auto) + `UiState.inputDeviceDetected` seed.
 - Pinch binding uses `GES_PINCH`, not `CTRL|WHEEL2`: Chromium signals a
   trackpad pinch as a wheel event with `ctrlKey=true`, but `MolViewPane`
   intercepts that and re-emits it as a `GES_PINCH` gesture (ctrl stripped), so
@@ -78,4 +101,5 @@ preset (Mouse / Mac trackpad). The choice persists as `UiState.inputDeviceMode`
   `DefaultViewInConf` does) for rotation to route. On non-macOS that event
   never fires, so rotation is left-drag there.
 - Tests: `react-gui/src/renderer/__test__/viewInputConfig.test.ts`,
-  `viewInputConfigContext.test.tsx`.
+  `viewInputConfigContext.test.tsx`, `wheelDeviceClassifier.test.ts`,
+  `inputDeviceDetector.test.ts`.

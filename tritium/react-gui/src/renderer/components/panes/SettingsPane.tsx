@@ -38,7 +38,8 @@ import { useCueMol } from '../../hooks/useCueMol'
 import { ColorPickerProvider } from '../../h3-kit/colorpicker/ColorPickerContext'
 import {
   INPUT_DEVICE_LABELS,
-  inputDeviceModeFromLabel,
+  INPUT_DEVICE_PREF_LABELS,
+  inputDevicePreferenceFromLabel,
 } from '../../viewInputConfig'
 import {
   CATEGORY_TREE,
@@ -57,9 +58,10 @@ export const SettingsPane: React.FC = () => {
   // Render binary paths are backed by RenderConfigContext (persistent),
   // not the mock `values` state.
   const { binaries, setBinary } = useRenderConfig()
-  // The pointing-device preset is backed by ViewInputConfigContext
-  // (persistent + live re-apply of the ViewInputConfig style).
-  const { inputDeviceMode, setInputDeviceMode } = useViewInputConfig()
+  // The pointing-device preference is backed by ViewInputConfigContext
+  // (persistent + live re-apply; 'auto' detects the device from the stream).
+  const { inputDevicePreference, setInputDevicePreference, effectiveDeviceMode } =
+    useViewInputConfig()
   // App settings colours are scene-independent; `sceneId` is left undefined
   // so the colour picker resolves against the global StyleManager scope.
   const { cm } = useCueMol()
@@ -82,9 +84,9 @@ export const SettingsPane: React.FC = () => {
 
   const handleChange = useCallback(
     (key: string, value: string | number | boolean) => {
-      // Pointing-device preset persists + re-applies via ViewInputConfigContext.
+      // Pointing-device preference persists + re-applies via ViewInputConfigContext.
       if (key === INPUT_DEVICE_SETTING_KEY) {
-        setInputDeviceMode(inputDeviceModeFromLabel(String(value)))
+        setInputDevicePreference(inputDevicePreferenceFromLabel(String(value)))
         return
       }
 
@@ -102,7 +104,7 @@ export const SettingsPane: React.FC = () => {
         setTheme(value ? 'dark' : 'light')
       }
     },
-    [setTheme, setBinary, setInputDeviceMode],
+    [setTheme, setBinary, setInputDevicePreference],
   )
 
   // Keep the toggle in sync if theme changes externally.
@@ -254,16 +256,24 @@ export const SettingsPane: React.FC = () => {
                 .filter((s) => s.category === catId)
                 .map((s) => {
                   const binaryKey = RENDER_BINARY_SETTING_KEYS[s.key]
-                  const value =
-                    s.key === INPUT_DEVICE_SETTING_KEY
-                      ? INPUT_DEVICE_LABELS[inputDeviceMode]
-                      : binaryKey
-                        ? binaries[binaryKey]
-                        : values[s.key]
+                  let def = s
+                  let value: string | number | boolean
+                  if (s.key === INPUT_DEVICE_SETTING_KEY) {
+                    value = INPUT_DEVICE_PREF_LABELS[inputDevicePreference]
+                    // In auto mode, surface the currently-detected device.
+                    if (inputDevicePreference === 'auto') {
+                      def = {
+                        ...s,
+                        description: `${s.description} Detected: ${INPUT_DEVICE_LABELS[effectiveDeviceMode]}.`,
+                      }
+                    }
+                  } else {
+                    value = binaryKey ? binaries[binaryKey] : values[s.key]
+                  }
                   return (
                     <SettingRow
                       key={s.key}
-                      def={s}
+                      def={def}
                       value={value}
                       onChange={handleChange}
                     />

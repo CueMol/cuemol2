@@ -42,11 +42,17 @@ export interface UiState {
   selectionMolId?: string
   theme?: 'dark' | 'light'
   /**
-   * Pointing-device preset for 3D navigation. Selects which ViewInputConfig
+   * Pointing-device preference for 3D navigation. Selects which ViewInputConfig
    * style is applied (mouse: wheel zooms; trackpad: two-finger scroll pans,
-   * pinch zooms). Defaults to 'mouse'.
+   * pinch zooms). 'auto' detects the device from the wheel-event stream.
+   * Defaults to 'auto'.
    */
-  inputDeviceMode?: 'mouse' | 'trackpad'
+  inputDeviceMode?: 'mouse' | 'trackpad' | 'auto'
+  /**
+   * Last device the 'auto' preference resolved to. Persisted so an auto session
+   * starts with the previously-detected preset instead of always seeding mouse.
+   */
+  inputDeviceDetected?: 'mouse' | 'trackpad'
   /** POV-Ray executable path (Rendering settings). */
   povrayExe?: string
   /** POV-Ray include directory path (Rendering settings). */
