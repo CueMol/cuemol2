@@ -192,6 +192,14 @@ export function createWindow(): void {
     win.webContents.send(IPC.ROTATE_GESTURE, rotation)
   })
 
+  // TEMP diagnostic (remove after calibration): forward renderer [wheel-spike]
+  // console logs to the main terminal, so raw wheel deltas are visible without
+  // DevTools (the production run does not auto-open it).
+  win.webContents.on('console-message', (details) => {
+    const msg = (details as { message?: string })?.message
+    if (typeof msg === 'string' && msg.startsWith('[wheel-spike]')) console.log(msg)
+  })
+
   if (process.env['ELECTRON_RENDERER_URL']) {
     win.loadURL(process.env['ELECTRON_RENDERER_URL'])
     win.webContents.openDevTools({ mode: 'undocked' })
