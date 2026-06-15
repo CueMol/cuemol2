@@ -371,67 +371,7 @@ bool PDBFileReader::checkAtomRecord(LString &chain, LString &resname, LString &a
 /** get element name from atomname (for illegal PDB files) */
 int PDBFileReader::convFromAname(const LString &atomname)
 {
-  int i, nsize = atomname.length();
-  const char *panam = atomname.c_str();
-
-  for (i=0; i<nsize; i++) {
-    switch (panam[i]) {
-    case 'H':
-      return ElemSym::H;
-      break;
-
-    case 'C':
-      if (i+1<nsize) {
-        if (panam[i+1]=='L')
-          return ElemSym::Cl;
-        if (panam[i+1]=='A')
-          return ElemSym::Ca;
-        if (panam[i+1]=='O')
-          return ElemSym::Co;
-        if (panam[i+1]=='U')
-          return ElemSym::Cu;
-        if (panam[i+1]=='R')
-          return ElemSym::Cr;
-      }      
-      return ElemSym::C;
-      break;
-
-    case 'N':
-      if (i+1<nsize) {
-        if (panam[i+1]=='A')
-          return ElemSym::Na;
-        if (panam[i+1]=='I')
-          return ElemSym::Ni;
-      }      
-      return ElemSym::N;
-      break;
-
-    case 'O':
-      return ElemSym::O;
-      break;
-
-    case 'F':
-      if (i+1<nsize) {
-        if (panam[i+1]=='E')
-          return ElemSym::Fe;
-      }      
-      return ElemSym::F;
-      break;
-
-    case 'P':
-      return ElemSym::P;
-      break;
-
-    case 'S':
-      return ElemSym::S;
-      break;
-
-    default:
-      continue;
-    }
-  }
-
-  return ElemSym::XX;
+  return ElemSym::guessFromAtomName(atomname);
 }
 
 bool PDBFileReader::readAtom()
