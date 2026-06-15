@@ -11,13 +11,6 @@ import type {
     SceneNodeType,
     SceneTreeNode,
 } from '../../worker/shared/sceneTreeTypes'
-import type { NodeInfoEntry } from '../../worker/server/services/sceneOps.service'
-
-/** Resolved property info for the property dialog. */
-export interface NodeInfo {
-    title: string
-    entries: NodeInfoEntry[]
-}
 
 /** Depth-first lookup of a node by its C++ uid. */
 export function findNode(

@@ -128,8 +128,6 @@ import type {
   FocusOnNodeResult,
   DeleteNodeArgs,
   DeleteNodeResult,
-  GetNodeInfoArgs,
-  GetNodeInfoResult,
   RenameNodeArgs,
   RenameNodeResult,
 } from '../server/services/sceneOps.service'
@@ -493,7 +491,6 @@ export interface ServiceMap {
   setNodeVisible:             { args: SetNodeVisibleArgs;              result: SetNodeVisibleResult }
   focusOnNode:                { args: FocusOnNodeArgs;                 result: FocusOnNodeResult }
   deleteNode:                 { args: DeleteNodeArgs;                  result: DeleteNodeResult }
-  getNodeInfo:                { args: GetNodeInfoArgs;                 result: GetNodeInfoResult }
   getGenericProps:            { args: GetGenericPropsArgs;             result: GetGenericPropsResult }
   setGenericProp:             { args: SetGenericPropArgs;              result: SetGenericPropResult }
   setGenericProps:            { args: SetGenericPropsArgs;             result: SetGenericPropResult }

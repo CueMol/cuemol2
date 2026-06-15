@@ -74,8 +74,6 @@ function makeCm(overrides: Record<string, unknown> = {}): any {
         switch (channel) {
             case 'getSceneTree':
                 return Promise.resolve({ tree: MOCK_TREE })
-            case 'getNodeInfo':
-                return Promise.resolve({ ok: true, displayName: 'Disp', entries: [] })
             case 'createStyleSet':
                 return Promise.resolve({ ok: true, newId: 99 })
             case 'toggleStyleSetReadOnly':
@@ -423,12 +421,6 @@ const WIRE_CASES: WireCase[] = [
         channel: 'reloadCameraFromSrc',
         payload: { sceneId: SCENE_ID, name: 'cam' },
     },
-    {
-        name: 'fetchNodeInfo',
-        run: (r) => r.fetchNodeInfo('42'),
-        channel: 'getNodeInfo',
-        payload: { sceneId: SCENE_ID, nodeId: 42, nodeType: 'object' },
-    },
 ]
 
 describe('useSceneTree — action callback wire contracts', () => {
@@ -475,15 +467,6 @@ describe('useSceneTree — return-value mapping', () => {
         let res: unknown
         await act(async () => { res = await h.result.saveCameraToCurrentSrc('cam') })
         expect(res).toEqual({ ok: true, saved: true })
-        h.unmount()
-    })
-
-    it('fetchNodeInfo maps to { title, entries }', async () => {
-        const cm = makeCm()
-        const h = await mountReady(cm)
-        let res: unknown
-        await act(async () => { res = await h.result.fetchNodeInfo('42') })
-        expect(res).toEqual({ title: 'Disp', entries: [] })
         h.unmount()
     })
 

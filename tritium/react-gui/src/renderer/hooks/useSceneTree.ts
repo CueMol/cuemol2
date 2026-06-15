@@ -49,8 +49,6 @@ import {
     type SceneTreeStyleOps,
 } from './sceneTree/useSceneTreeStyleOps'
 
-export type { NodeInfo } from './sceneTree/sceneTreeNodeUtils'
-
 interface UseSceneTreeOptions {
     cm: AsyncCueMol | null
     /** Active scene UID, or undefined if no scene is active. */
