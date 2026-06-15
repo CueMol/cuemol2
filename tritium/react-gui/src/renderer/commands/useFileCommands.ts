@@ -16,6 +16,7 @@
 
 import { IPC } from '../../shared/ipcChannels'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
+import type { ActiveSceneCommandDeps } from './commandTypes'
 import { useShowObjectPicker } from '../components/dialogs/ObjectPickerDialogProvider'
 import { useShowConfirmReloadSceneDialog } from '../components/dialogs/ConfirmReloadSceneDialogProvider'
 import { useShowExportPngOptionsDialog } from '../components/dialogs/ExportPngOptionsDialogProvider'
@@ -25,7 +26,7 @@ import { CmdId } from './ids'
 
 interface UseFileCommandsOptions {
     cm: AsyncCueMol | null
-    getActiveSceneInfo: () => { scene_uid: number; view_id: number } | null | undefined
+    getActiveSceneInfo: ActiveSceneCommandDeps
 }
 
 export function useFileCommands({

@@ -7,6 +7,7 @@
 
 import { useCallback } from 'react'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
+import type { ActiveSceneCommandDeps } from './commandTypes'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
 import { useShowNewTabDialog } from '../components/dialogs/NewTabDialogProvider'
@@ -16,7 +17,7 @@ interface UseNewTabCommandOptions {
     cm: AsyncCueMol | null
     addMolTab: (title: string, viewId: number, sceneId: number) => void
     addMolViewTab: (title: string, viewId: number) => void
-    getActiveSceneInfo: () => { scene_uid: number; view_id: number } | null | undefined
+    getActiveSceneInfo: ActiveSceneCommandDeps
     newScene: NewSceneAction
 }
 

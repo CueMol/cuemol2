@@ -11,29 +11,68 @@
  */
 
 import { dialog } from 'electron'
-import type { BrowserWindow } from 'electron'
+import type { BrowserWindow, FileFilter } from 'electron'
 import path from 'path'
 import { promises as fsp } from 'fs'
 import { withMenuBlocked } from '../menu'
 
-export async function handleSaveSceneDialog(
+/**
+ * Show a native save dialog (menu blocked while it is up) and normalize the
+ * result to `{ canceled, filePath }` with an empty string when no path was
+ * chosen. Shared by the save-family handlers, which differ only by title and
+ * filters.
+ */
+async function saveDialog(
   mainWindow: BrowserWindow,
+  title: string,
   defaultName: string,
+  filters: FileFilter[],
 ): Promise<{ canceled: boolean; filePath: string }> {
   const result = await withMenuBlocked('native', () =>
     dialog.showSaveDialog(mainWindow, {
-      title: 'Save Scene As',
+      title,
       defaultPath: defaultName,
-      filters: [
-        { name: 'CueMol Scene', extensions: ['qsc'] },
-        { name: 'All Files', extensions: ['*'] },
-      ],
+      filters,
     }),
   )
   return {
     canceled: result.canceled,
     filePath: result.filePath ?? '',
   }
+}
+
+/**
+ * Show a native single-file open dialog (menu blocked while it is up) and
+ * normalize the result to `{ canceled, filePath }`, treating an empty
+ * selection as canceled. Shared by the open-family handlers, which differ
+ * only by title and filters.
+ */
+async function openDialog(
+  mainWindow: BrowserWindow,
+  title: string,
+  filters: FileFilter[],
+): Promise<{ canceled: boolean; filePath: string }> {
+  const result = await withMenuBlocked('native', () =>
+    dialog.showOpenDialog(mainWindow, {
+      title,
+      filters,
+      properties: ['openFile'],
+    }),
+  )
+  if (result.canceled || result.filePaths.length === 0) {
+    return { canceled: true, filePath: '' }
+  }
+  return { canceled: false, filePath: result.filePaths[0] }
+}
+
+export async function handleSaveSceneDialog(
+  mainWindow: BrowserWindow,
+  defaultName: string,
+): Promise<{ canceled: boolean; filePath: string }> {
+  return saveDialog(mainWindow, 'Save Scene As', defaultName, [
+    { name: 'CueMol Scene', extensions: ['qsc'] },
+    { name: 'All Files', extensions: ['*'] },
+  ])
 }
 
 // UXP uses `fp.appendFilter("Style file (*.xml)", "*.xml")` on the
@@ -44,40 +83,20 @@ export async function handleSaveSceneDialog(
 export async function handleStyleOpenDialog(
   mainWindow: BrowserWindow,
 ): Promise<{ canceled: boolean; filePath: string }> {
-  const result = await withMenuBlocked('native', () =>
-    dialog.showOpenDialog(mainWindow, {
-      title: 'Open Style File',
-      filters: [
-        { name: 'Style file', extensions: ['xml'] },
-        { name: 'All Files', extensions: ['*'] },
-      ],
-      properties: ['openFile'],
-    }),
-  )
-  if (result.canceled || result.filePaths.length === 0) {
-    return { canceled: true, filePath: '' }
-  }
-  return { canceled: false, filePath: result.filePaths[0] }
+  return openDialog(mainWindow, 'Open Style File', [
+    { name: 'Style file', extensions: ['xml'] },
+    { name: 'All Files', extensions: ['*'] },
+  ])
 }
 
 export async function handleStyleSaveDialog(
   mainWindow: BrowserWindow,
   defaultName: string,
 ): Promise<{ canceled: boolean; filePath: string }> {
-  const result = await withMenuBlocked('native', () =>
-    dialog.showSaveDialog(mainWindow, {
-      title: 'Save Style As',
-      defaultPath: defaultName,
-      filters: [
-        { name: 'Style file', extensions: ['xml'] },
-        { name: 'All Files', extensions: ['*'] },
-      ],
-    }),
-  )
-  return {
-    canceled: result.canceled,
-    filePath: result.filePath ?? '',
-  }
+  return saveDialog(mainWindow, 'Save Style As', defaultName, [
+    { name: 'Style file', extensions: ['xml'] },
+    { name: 'All Files', extensions: ['*'] },
+  ])
 }
 
 // UXP uses an unfiltered nsIFilePicker for camera files (the on-disk
@@ -87,60 +106,30 @@ export async function handleStyleSaveDialog(
 export async function handleCameraOpenDialog(
   mainWindow: BrowserWindow,
 ): Promise<{ canceled: boolean; filePath: string }> {
-  const result = await withMenuBlocked('native', () =>
-    dialog.showOpenDialog(mainWindow, {
-      title: 'Open Camera File',
-      filters: [
-        { name: 'Camera file', extensions: ['xml'] },
-        { name: 'All Files', extensions: ['*'] },
-      ],
-      properties: ['openFile'],
-    }),
-  )
-  if (result.canceled || result.filePaths.length === 0) {
-    return { canceled: true, filePath: '' }
-  }
-  return { canceled: false, filePath: result.filePaths[0] }
+  return openDialog(mainWindow, 'Open Camera File', [
+    { name: 'Camera file', extensions: ['xml'] },
+    { name: 'All Files', extensions: ['*'] },
+  ])
 }
 
 export async function handleCameraSaveDialog(
   mainWindow: BrowserWindow,
   defaultName: string,
 ): Promise<{ canceled: boolean; filePath: string }> {
-  const result = await withMenuBlocked('native', () =>
-    dialog.showSaveDialog(mainWindow, {
-      title: 'Save Camera As',
-      defaultPath: defaultName,
-      filters: [
-        { name: 'Camera file', extensions: ['xml'] },
-        { name: 'All Files', extensions: ['*'] },
-      ],
-    }),
-  )
-  return {
-    canceled: result.canceled,
-    filePath: result.filePath ?? '',
-  }
+  return saveDialog(mainWindow, 'Save Camera As', defaultName, [
+    { name: 'Camera file', extensions: ['xml'] },
+    { name: 'All Files', extensions: ['*'] },
+  ])
 }
 
 export async function handleImageSaveDialog(
   mainWindow: BrowserWindow,
   defaultName: string,
 ): Promise<{ canceled: boolean; filePath: string }> {
-  const result = await withMenuBlocked('native', () =>
-    dialog.showSaveDialog(mainWindow, {
-      title: 'Export Image As',
-      defaultPath: defaultName,
-      filters: [
-        { name: 'PNG image', extensions: ['png'] },
-        { name: 'All Files', extensions: ['*'] },
-      ],
-    }),
-  )
-  return {
-    canceled: result.canceled,
-    filePath: result.filePath ?? '',
-  }
+  return saveDialog(mainWindow, 'Export Image As', defaultName, [
+    { name: 'PNG image', extensions: ['png'] },
+    { name: 'All Files', extensions: ['*'] },
+  ])
 }
 
 // The filter list is built worker-side from

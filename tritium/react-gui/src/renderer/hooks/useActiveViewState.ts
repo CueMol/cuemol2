@@ -18,12 +18,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { IPC } from '../../shared/ipcChannels';
 import type { SceneBgColor, ViewCenterMark } from '../../shared/ipcTypes';
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol';
+import type { ActiveSceneCommandDeps } from '../commands/commandTypes';
 
 interface UseActiveViewStateOptions {
   cm: AsyncCueMol | null;
   activeMolViewId: number | undefined;
   /** Returns the active scene/view ids, used to fetch sceneBgColor. */
-  getActiveSceneInfo: () => { scene_uid: number; view_id: number } | null | undefined;
+  getActiveSceneInfo: ActiveSceneCommandDeps;
 }
 
 export interface ActiveViewState {

@@ -10,6 +10,7 @@
 import { useCallback } from 'react'
 import type { SceneBgColor } from '../../shared/ipcTypes'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
+import type { ActiveSceneCommandDeps } from './commandTypes'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
 import { addRecent } from './addRecent'
@@ -23,7 +24,7 @@ import type { NewSceneAction } from '../hooks/useNewSceneAction'
 
 interface UseSceneCommandsOptions {
     cm: AsyncCueMol | null
-    getActiveSceneInfo: () => { scene_uid: number; view_id: number } | null | undefined
+    getActiveSceneInfo: ActiveSceneCommandDeps
     onBgColorChanged?: (bgColor: SceneBgColor) => void
     newScene: NewSceneAction
 }

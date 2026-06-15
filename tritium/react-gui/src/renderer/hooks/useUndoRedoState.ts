@@ -21,6 +21,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { IPC } from '../../shared/ipcChannels'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
+import type { ActiveSceneCommandDeps } from '../commands/commandTypes'
 import { CmdId } from '../commands/ids'
 import { useRegisterCommand } from '../commands/CommandRegistry'
 import { useCueMolEventListener } from './useCueMolEventListener'
@@ -30,7 +31,7 @@ interface UseUndoRedoStateOptions {
   cm: AsyncCueMol | null
   activeMolViewId: number | undefined
   /** Returns the active scene/view ids; scene_uid drives all undo calls. */
-  getActiveSceneInfo: () => { scene_uid: number; view_id: number } | null | undefined
+  getActiveSceneInfo: ActiveSceneCommandDeps
 }
 
 export interface UndoRedoState {

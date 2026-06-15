@@ -14,6 +14,7 @@ import { useCallback } from 'react'
 import { IPC } from '../../shared/ipcChannels'
 import type { SaveSceneOptions } from '../worker/server/services/saveScene.service'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
+import type { ActiveSceneCommandDeps } from './commandTypes'
 import { useShowQscWriterOptionDialog } from '../components/dialogs/QscWriterOptionDialogProvider'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
@@ -21,7 +22,7 @@ import { addRecent } from './addRecent'
 
 interface UseEditCommandsOptions {
     cm: AsyncCueMol | null
-    getActiveSceneInfo: () => { scene_uid: number; view_id: number } | null | undefined
+    getActiveSceneInfo: ActiveSceneCommandDeps
 }
 
 export function useEditCommands({

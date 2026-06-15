@@ -1,4 +1,5 @@
 import React, { useState, useContext, useCallback, useMemo, useRef } from 'react'
+import type { ActiveSceneCommandDeps } from '../commands/commandTypes'
 
 /** A single tab entry representing one CueMol view panel. */
 interface MolTabEntry {
@@ -22,7 +23,7 @@ interface MolTabDispatch {
   setActiveTab: (ind: number) => void
   setActiveViewByID: (view_id: number) => void
   getActiveViewID: () => number | undefined
-  getActiveSceneInfo: () => { scene_uid: number; view_id: number } | undefined
+  getActiveSceneInfo: ActiveSceneCommandDeps
 }
 
 /**

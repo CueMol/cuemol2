@@ -18,6 +18,8 @@
  */
 
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
+import type { ActiveSceneCommandDeps } from './commandTypes'
+import type { CommandKey } from './CommandMap'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
 import { useShowChangeChainIdDialog } from '../components/dialogs/ChangeChainIdDialogProvider'
@@ -32,7 +34,7 @@ import { useShowMolSuperposeDialog } from '../components/dialogs/MolSuperposeDia
 
 interface UseToolCommandsOptions {
     cm: AsyncCueMol | null
-    getActiveSceneInfo: () => { scene_uid: number; view_id: number } | null | undefined
+    getActiveSceneInfo: ActiveSceneCommandDeps
 }
 
 export function useToolCommands({
@@ -49,69 +51,63 @@ export function useToolCommands({
     const showReassignProt2ndryDialog = useShowReassignProt2ndryDialog()
     const showMolSuperposeDialog = useShowMolSuperposeDialog()
 
-    useRegisterCommand(CmdId.UiChangeChainIdDialog, () => {
-        if (!cm) return
-        const info = getActiveSceneInfo()
-        if (!info) return
+    /**
+     * Register a command that resolves the active scene/view before running
+     * `run(info)`. No-op when there is no CueMol instance or no active scene,
+     * matching the per-command `if (!cm) ... if (!info) ...` preamble.
+     *
+     * Named with a `use` prefix because it calls `useRegisterCommand`; it is
+     * invoked unconditionally in a fixed order so the hook-call order stays
+     * stable across renders.
+     */
+    const useActiveSceneCommand = (
+        id: CommandKey,
+        run: (info: { scene_uid: number; view_id: number }) => void,
+    ): void => {
+        useRegisterCommand(id, () => {
+            if (!cm) return
+            const info = getActiveSceneInfo()
+            if (!info) return
+            run(info)
+        })
+    }
+
+    useActiveSceneCommand(CmdId.UiChangeChainIdDialog, (info) => {
         void showChangeChainIdDialog({ sceneId: info.scene_uid })
     })
 
-    useRegisterCommand(CmdId.UiDeleteMolDialog, () => {
-        if (!cm) return
-        const info = getActiveSceneInfo()
-        if (!info) return
+    useActiveSceneCommand(CmdId.UiDeleteMolDialog, (info) => {
         void showDeleteMolDialog({ sceneId: info.scene_uid })
     })
 
-    useRegisterCommand(CmdId.UiChangeResidueIndexDialog, () => {
-        if (!cm) return
-        const info = getActiveSceneInfo()
-        if (!info) return
+    useActiveSceneCommand(CmdId.UiChangeResidueIndexDialog, (info) => {
         void showChangeResidueIndexDialog({ sceneId: info.scene_uid })
     })
 
-    useRegisterCommand(CmdId.UiMergeMolDialog, () => {
-        if (!cm) return
-        const info = getActiveSceneInfo()
-        if (!info) return
+    useActiveSceneCommand(CmdId.UiMergeMolDialog, (info) => {
         void showMergeMolDialog({ sceneId: info.scene_uid })
     })
 
-    useRegisterCommand(CmdId.UiMakeMolSurfDialog, () => {
-        if (!cm) return
-        const info = getActiveSceneInfo()
-        if (!info) return
+    useActiveSceneCommand(CmdId.UiMakeMolSurfDialog, (info) => {
         void showMakeMolSurfDialog({ sceneId: info.scene_uid })
     })
 
-    useRegisterCommand(CmdId.UiInteractionAnalysisDialog, () => {
-        if (!cm) return
-        const info = getActiveSceneInfo()
-        if (!info) return
+    useActiveSceneCommand(CmdId.UiInteractionAnalysisDialog, (info) => {
         void showInteractionAnalysisDialog({ sceneId: info.scene_uid })
     })
 
-    useRegisterCommand(CmdId.UiCutSurfByPlaneDialog, () => {
-        if (!cm) return
-        const info = getActiveSceneInfo()
-        if (!info) return
+    useActiveSceneCommand(CmdId.UiCutSurfByPlaneDialog, (info) => {
         void showCutSurfByPlaneDialog({
             sceneId: info.scene_uid,
             viewId: info.view_id,
         })
     })
 
-    useRegisterCommand(CmdId.UiReassignProt2ndryDialog, () => {
-        if (!cm) return
-        const info = getActiveSceneInfo()
-        if (!info) return
+    useActiveSceneCommand(CmdId.UiReassignProt2ndryDialog, (info) => {
         void showReassignProt2ndryDialog({ sceneId: info.scene_uid })
     })
 
-    useRegisterCommand(CmdId.UiMolSuperpose, () => {
-        if (!cm) return
-        const info = getActiveSceneInfo()
-        if (!info) return
+    useActiveSceneCommand(CmdId.UiMolSuperpose, (info) => {
         void showMolSuperposeDialog({ sceneId: info.scene_uid, viewId: info.view_id })
     })
 }
