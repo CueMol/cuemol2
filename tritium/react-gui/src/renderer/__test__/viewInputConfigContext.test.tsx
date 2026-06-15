@@ -42,6 +42,7 @@ function Consumer(): React.ReactElement {
     inputDevicePreference,
     setInputDevicePreference,
     effectiveDeviceMode,
+    deviceSwitch,
     feedWheelSample,
     noteTrackpadGesture,
   } = useViewInputConfig()
@@ -49,6 +50,7 @@ function Consumer(): React.ReactElement {
     <div>
       <span data-testid="pref">{inputDevicePreference}</span>
       <span data-testid="eff">{effectiveDeviceMode}</span>
+      <span data-testid="switch">{`${deviceSwitch.mode}:${deviceSwitch.seq}`}</span>
       <button data-testid="set-trackpad" onClick={() => setInputDevicePreference('trackpad')} />
       <button data-testid="set-mouse" onClick={() => setInputDevicePreference('mouse')} />
       <button data-testid="set-auto" onClick={() => setInputDevicePreference('auto')} />
@@ -147,6 +149,21 @@ describe('ViewInputConfigContext', () => {
     click(container, 'feed-trackpad')
     await flushPromises()
     expect(setStyle).toHaveBeenCalledTimes(1)
+    unmount()
+  })
+
+  it('bumps deviceSwitch on a real switch, not on the startup seed', async () => {
+    const { container, unmount } = mountWith({
+      inputDeviceMode: 'auto',
+      inputDeviceDetected: 'trackpad',
+    })
+    await flushPromises()
+    // Seed load applies trackpad but must NOT bump the switch signal (silent launch).
+    expect(text(container, 'switch')).toBe('mouse:0')
+
+    click(container, 'set-mouse')
+    await flushPromises()
+    expect(text(container, 'switch')).toBe('mouse:1')
     unmount()
   })
 

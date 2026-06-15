@@ -25,6 +25,7 @@ import { InspectorPanel } from "./components/panels/InspectorPanel";
 import { installSelectAllScope } from "./utils/selectAllScope";
 
 import { useLayoutPersistence } from "./hooks/useLayoutPersistence";
+import { useInputDeviceStatus } from "./hooks/useInputDeviceStatus";
 import { useActiveTool } from "./hooks/useActiveTool";
 import { ActiveToolProvider } from "./contexts/ActiveToolContext";
 import { IconContext } from "@phosphor-icons/react";
@@ -373,6 +374,9 @@ const App: React.FC = () => {
   const cueMolBusy = useCueMolBusy();
 
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  // Announce pointing-device switches (auto-detected or manual) in the status bar.
+  useInputDeviceStatus(setStatusMessage);
 
   // --- macOS traffic-light inset ---
 

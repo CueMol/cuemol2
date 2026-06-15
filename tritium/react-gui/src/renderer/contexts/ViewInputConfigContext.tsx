@@ -45,6 +45,11 @@ interface ViewInputConfigContextValue {
   setInputDevicePreference: (p: InputDevicePreference) => void
   /** The device actually applied (mouse / trackpad) -- for the auto hint. */
   effectiveDeviceMode: InputDeviceMode
+  /**
+   * Bumps on each applied device change (manual or auto detection), but not on
+   * the startup seed load -- drives a transient "input device switched" status.
+   */
+  deviceSwitch: { mode: InputDeviceMode; seq: number }
   /** Feed one wheel sample to the auto detector (no-op unless preference=auto). */
   feedWheelSample: (sample: WheelSample) => void
   /** Note a definitive trackpad gesture (pinch / rotate) for the auto detector. */
@@ -63,6 +68,12 @@ export const ViewInputConfigProvider: React.FC<{ children: React.ReactNode }> = 
   const [effectiveDeviceMode, setEffective] = useState<InputDeviceMode>(
     DEFAULT_INPUT_DEVICE_MODE,
   )
+  // Change signal for the status toast: only bumped by applyEffective (a real
+  // switch), never by the mount seed load, so startup does not announce.
+  const [deviceSwitch, setDeviceSwitch] = useState<{ mode: InputDeviceMode; seq: number }>({
+    mode: DEFAULT_INPUT_DEVICE_MODE,
+    seq: 0,
+  })
 
   // Mutable refs so the wheel/gesture callbacks stay stable across renders.
   const preferenceRef = useRef(inputDevicePreference)
@@ -81,6 +92,7 @@ export const ViewInputConfigProvider: React.FC<{ children: React.ReactNode }> = 
       if (mode === lastAppliedRef.current) return
       lastAppliedRef.current = mode
       setEffective(mode)
+      setDeviceSwitch((p) => ({ mode, seq: p.seq + 1 }))
       cm?.setViewInputConfigStyle(viewInputStyleName(mode)).catch(() => {})
     },
     [cm],
@@ -153,6 +165,7 @@ export const ViewInputConfigProvider: React.FC<{ children: React.ReactNode }> = 
       inputDevicePreference,
       setInputDevicePreference,
       effectiveDeviceMode,
+      deviceSwitch,
       feedWheelSample,
       noteTrackpadGesture,
     }),
@@ -160,6 +173,7 @@ export const ViewInputConfigProvider: React.FC<{ children: React.ReactNode }> = 
       inputDevicePreference,
       setInputDevicePreference,
       effectiveDeviceMode,
+      deviceSwitch,
       feedWheelSample,
       noteTrackpadGesture,
     ],
