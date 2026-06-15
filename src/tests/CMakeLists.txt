@@ -181,6 +181,7 @@ gtest_discover_tests(test_xtal PROPERTIES LABELS "test_xtal")
 add_executable(test_importers
   modules/importers/test_main.cpp
   modules/importers/test_sdfmolreader.cpp
+  modules/importers/test_mmcifmolreader.cpp
   modules/importers/test_mmcif_sniff.cpp
   modules/importers/test_ccp4map_sniff.cpp
   modules/importers/test_xplormap_sniff.cpp

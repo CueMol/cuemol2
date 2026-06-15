@@ -144,10 +144,7 @@ class IMPORTERS_API MmcifMolReader : public qsys::ObjReader, CifParserClient
         else
             return "";
 
-        // remove double-quotations
-        if (atom_id.getAt(0)=='"')
-            atom_id = atom_id.substr(1, atom_id.length()-2);
-
+        // Note: CifParser::getToken() already strips surrounding quotes.
         return atom_id;
     }
 

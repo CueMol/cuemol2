@@ -35,6 +35,10 @@ namespace molstr {
     /** Convert ID to element name string */
     static LString symID2Str(int id);
 
+    /** Guess element ID from an atom name (for files lacking an explicit
+        element/type_symbol). Scans for the first recognizable element letter. */
+    static int guessFromAtomName(const LString &atomname);
+
     enum {
       // Period 1
       H  =1,

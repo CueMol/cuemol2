@@ -139,11 +139,11 @@ void MmcifMapReader::warning(const LString &msg) const
 
 void MmcifMapReader::readDataItem(CifParser &parser)
 {
-    if (parser.getCatName().equals("_cell"))
+    if (parser.getCatName().equalsIgnoreCase("_cell"))
         readCellLine(parser);
-    else if (parser.getCatName().equals("_symmetry"))
+    else if (parser.getCatName().equalsIgnoreCase("_symmetry"))
         readSymmLine(parser);
-    else if (parser.getCatName().equals("_refln"))
+    else if (parser.getCatName().equalsIgnoreCase("_refln"))
         readReflnLine(parser);
 }
 

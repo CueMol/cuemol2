@@ -49,6 +49,20 @@ bool CifParser::read(qlib::LineStream &lin)
 
         if (m_recbuf.startsWith("#")) continue;
 
+        if (m_recbuf.startsWith(";")) {
+            // Multi-line semicolon-delimited text value: consume the whole
+            // block (from the opening ';' line to the closing ';' line). No
+            // mmCIF category consumed by these readers uses text-block values,
+            // so the content is skipped; consuming it here prevents its inner
+            // lines (which may start with '_', 'loop_' or 'data_') from
+            // corrupting the parser state machine.
+            for (;;) {
+                if (!readRecord(lin)) break;
+                if (m_recbuf.startsWith(";")) break;
+            }
+            continue;
+        }
+
         switch (m_nState) {
             case CIF_INIT:
                 if (m_recbuf.startsWith("data_")) {
@@ -57,7 +71,13 @@ bool CifParser::read(qlib::LineStream &lin)
                 break;
 
             case CIF_DATA:
-                if (m_recbuf.startsWith("_")) {
+                if (m_recbuf.startsWith("data_")) {
+                    // a new data block begins; flush any pending single-line
+                    // category and reset (content accumulates into one object)
+                    if (!m_strCatName.isEmpty())
+                        emulateSingleDataLoop();
+                    resetLoopDef();
+                } else if (m_recbuf.startsWith("_")) {
                     readDataLine();
                 } else if (m_recbuf.startsWith("loop_")) {
                     // new data table begins (end of data line)
@@ -77,7 +97,11 @@ bool CifParser::read(qlib::LineStream &lin)
                 break;
 
             case CIF_LOOPDATA:
-                if (m_recbuf.startsWith("_")) {
+                if (m_recbuf.startsWith("data_")) {
+                    // a new data block ends the current loop
+                    m_nState = CIF_DATA;
+                    resetLoopDef();
+                } else if (m_recbuf.startsWith("_")) {
                     // new data line begins (end of loop)
                     m_nState = CIF_DATA;
                     resetLoopDef();
@@ -134,7 +158,7 @@ void CifParser::readDataLine()
     LString catname = name.substr(0, dotpos);
     LString item = name.substr(dotpos + 1);
 
-    if (m_strCatName.equals(catname)) {
+    if (m_strCatName.equalsIgnoreCase(catname)) {
         // the same category name as the previous line
         m_loopDefs.push_back(item.trim());
         m_values.push_back(value);
@@ -178,7 +202,7 @@ void CifParser::appendDataItem()
     LString catname = m_recbuf.substr(0, dotpos);
     if (m_strCatName.isEmpty()) {
         m_strCatName = catname;
-    } else if (!m_strCatName.equals(catname)) {
+    } else if (!m_strCatName.equalsIgnoreCase(catname)) {
         // ERROR!!
         LString msg = LString::format(
             "invalid mmCIF format, catname mismatch (%s!=%s) in loopdef",
@@ -202,6 +226,9 @@ bool CifParser::tokenizeLine(bool bChk)
     for (i = 0, j = 0; i < nsize && j < nmaxtok; ++i) {
         char c = m_recbuf.getAt(i);
         if (nState == TOK_FIND_START) {
+            // An unquoted '#' at a token boundary starts a comment that
+            // runs to the end of the line (CIF spec).
+            if (c == '#') break;
             if (c != ' ') {
                 if (c == '\'') {
                     m_recStPos[j] = i;

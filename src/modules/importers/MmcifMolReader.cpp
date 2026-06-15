@@ -133,19 +133,19 @@ void MmcifMolReader::warning(const LString &msg) const
 
 void MmcifMolReader::readDataItem(CifParser &parser)
 {
-    if (parser.getCatName().equals("_atom_site"))
+    if (parser.getCatName().equalsIgnoreCase("_atom_site"))
         readAtomLine(parser);
-    else if (m_bLoadAnisoU && parser.getCatName().equals("_atom_site_anisotrop"))
+    else if (m_bLoadAnisoU && parser.getCatName().equalsIgnoreCase("_atom_site_anisotrop"))
         readAnisoULine(parser);
-    else if (parser.getCatName().equals("_struct_conf"))
+    else if (parser.getCatName().equalsIgnoreCase("_struct_conf"))
         readHelixLine(parser);
-    else if (parser.getCatName().equals("_struct_sheet_range"))
+    else if (parser.getCatName().equalsIgnoreCase("_struct_sheet_range"))
         readSheetLine(parser);
-    else if (parser.getCatName().equals("_struct_conn"))
+    else if (parser.getCatName().equalsIgnoreCase("_struct_conn"))
         readConnLine(parser);
-    else if (parser.getCatName().equals("_cell"))
+    else if (parser.getCatName().equalsIgnoreCase("_cell"))
         readCellLine(parser);
-    else if (parser.getCatName().equals("_symmetry"))
+    else if (parser.getCatName().equalsIgnoreCase("_symmetry"))
         readSymmLine(parser);
 }
 
@@ -269,20 +269,19 @@ void MmcifMolReader::readAtomLine(CifParser &parser)
     return;
   }
 
-  int nSeqID;
-  if (!parser.getToken(m_nLabelSeqID).toInt(&nSeqID)) {
-    //error("invalid mmCIF format");
-    //return;
-    nSeqID = -1;
-  }
-
-  ElemID eleid = ElemSym::str2SymID(parser.getToken(m_nTypeSymbol));
-
   LString atomname = getAtomID(parser, m_nAuthAtomID, m_nLabelAtomID);
   if (atomname.isEmpty()) {
       error("invalid mmCIF format, cannot get atom name (_atom_site.label_atom_id)");
       return;
   }
+
+  // type_symbol is mandatory in PDBx, but minimal/predicted files may omit
+  // it; fall back to guessing the element from the atom name.
+  ElemID eleid;
+  if (m_nTypeSymbol >= 0)
+    eleid = ElemSym::str2SymID(parser.getToken(m_nTypeSymbol));
+  else
+    eleid = ElemSym::guessFromAtomName(atomname);
 
   LString resname1 = getCompID(parser, m_nAuthCompID, m_nLabelCompID);
   if (resname1.isEmpty()) {
@@ -298,7 +297,9 @@ void MmcifMolReader::readAtomLine(CifParser &parser)
       return;
   }
 
-  ResidIndex residx = getResidIndex(parser, m_nAuthSeqID, m_nInsCode);
+  // auth_seq_id is non-mandatory; fall back to the mandatory label_seq_id
+  // so residues do not collapse to index 0 when auth_seq_id is absent.
+  ResidIndex residx = getResidIndex(parser, m_nAuthSeqID, m_nLabelSeqID, m_nInsCode);
 
   Vector4D pos;
   double dbuf;
@@ -321,21 +322,26 @@ void MmcifMolReader::readAtomLine(CifParser &parser)
   }
   pos.z() = dbuf;
 
-  double occ;
-  if (!parser.getToken(m_nOcc).toDouble(&occ)) {
-    error("invalid mmCIF format, cannot get atom site occpancy");
-    return;
+  // _atom_site.occupancy / B_iso_or_equiv are non-mandatory (PDBx mandatory:no).
+  // Default when the column is absent or the value is unknown('?')/inapplicable('.').
+  double occ = 1.0;
+  if (m_nOcc >= 0) {
+    double v;
+    if (parser.getToken(m_nOcc).toDouble(&v)) occ = v;
   }
 
-  double bfac;
-  if (!parser.getToken(m_nBfac).toDouble(&bfac)) {
-    error("invalid mmCIF format, cannot get atom site bfac");
-    return;
+  double bfac = 0.0;
+  if (m_nBfac >= 0) {
+    double v;
+    if (parser.getToken(m_nBfac).toDouble(&v)) bfac = v;
   }
   
-  int nModel;
-  if (!parser.getToken(m_nModelID).toInt(&nModel))
-    nModel = 1;
+  // pdbx_PDB_model_num is non-mandatory; default to model 1 when absent.
+  int nModel = 1;
+  if (m_nModelID >= 0) {
+    int v;
+    if (parser.getToken(m_nModelID).toInt(&v)) nModel = v;
+  }
   if (nModel>1) {
     if (!m_bLoadMultiModel)
       return;
@@ -361,7 +367,7 @@ void MmcifMolReader::readAtomLine(CifParser &parser)
     }
     else {
       // ignore atoms with conf id other than "A"
-      if (confid=='A') {
+      if (confid!='A') {
         return;
       }
     }
