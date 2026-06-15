@@ -22,9 +22,11 @@ export class InputDeviceDetector {
   private effective: InputDeviceMode
   private mouseStreak = 0
   private lastTrackpadTs = -Infinity
+  private readonly isMac: boolean
 
-  constructor(seed: InputDeviceMode = 'mouse') {
+  constructor(seed: InputDeviceMode = 'mouse', isMac = true) {
     this.effective = seed
+    this.isMac = isMac
   }
 
   getEffective(): InputDeviceMode {
@@ -51,7 +53,7 @@ export class InputDeviceDetector {
 
   /** Feed one wheel sample; returns the (possibly updated) effective device. */
   feedWheel(sample: WheelSample, now: number): InputDeviceMode {
-    const cls = classifyWheelSample(sample)
+    const cls = classifyWheelSample(sample, this.isMac)
     if (cls === 'trackpad') {
       this.lastTrackpadTs = now
       this.mouseStreak = 0

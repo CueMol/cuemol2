@@ -148,12 +148,6 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
         noteGestureRef.current()
       } else {
         cmRef.current.onWheelEvent(viewID, event)
-        // TEMP diagnostic (remove after calibration): raw wheel deltas + timing,
-        // forwarded to the main terminal via console-message in windowManager.
-        console.log(
-          `[wheel-spike] t=${Math.round(event.timeStamp)} mode=${event.deltaMode}` +
-            ` dx=${event.deltaX} dy=${event.deltaY} int=${Number.isInteger(event.deltaY)}`,
-        )
         // Feed the plain wheel to the auto device detector.
         feedWheelRef.current({
           deltaMode: event.deltaMode,

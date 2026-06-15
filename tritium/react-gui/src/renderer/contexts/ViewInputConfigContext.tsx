@@ -69,7 +69,8 @@ export const ViewInputConfigProvider: React.FC<{ children: React.ReactNode }> = 
   preferenceRef.current = inputDevicePreference
   const detectorRef = useRef<InputDeviceDetector | null>(null)
   if (detectorRef.current === null) {
-    detectorRef.current = new InputDeviceDetector(DEFAULT_INPUT_DEVICE_MODE)
+    const isMac = window.electronAPI?.platform === 'darwin'
+    detectorRef.current = new InputDeviceDetector(DEFAULT_INPUT_DEVICE_MODE, isMac)
   }
   // Last device pushed to the C++ preset; createAndInitCueMol applied the seed.
   const lastAppliedRef = useRef<InputDeviceMode>(DEFAULT_INPUT_DEVICE_MODE)

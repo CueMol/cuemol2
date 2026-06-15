@@ -12,8 +12,10 @@ import {
 } from '../input/inputDeviceDetector'
 import type { WheelSample } from '../input/wheelDeviceClassifier'
 
-const MOUSE: WheelSample = { deltaMode: 0, deltaX: 0, deltaY: 120 } // large integer vertical
-const TRACKPAD: WheelSample = { deltaMode: 0, deltaX: 3, deltaY: 8 } // has horizontal
+// macOS polarity (detector defaults isMac=true): mouse = fractional dy,
+// trackpad = integer dy.
+const MOUSE: WheelSample = { deltaMode: 0, deltaX: 0, deltaY: 4.5 }
+const TRACKPAD: WheelSample = { deltaMode: 0, deltaX: 0, deltaY: 8 }
 const AMBIGUOUS: WheelSample = { deltaMode: 0, deltaX: 0, deltaY: 0 } // zero delta
 
 describe('InputDeviceDetector', () => {

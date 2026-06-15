@@ -43,8 +43,7 @@ reliable OS signal exists: a spike confirmed Electron 42's observed
 `input-event` carries only `type` + `modifiers` (no wheel deltas / precise
 flag), and a trackpad two-finger scroll is delivered as a plain `mouseWheel`
 identical to a real wheel. So detection is a renderer-side heuristic on the DOM
-`WheelEvent` (`input/wheelDeviceClassifier.ts`: horizontal or fractional delta
--> trackpad; large integer vertical -> mouse) fed into a small state machine
+`WheelEvent` (`input/wheelDeviceClassifier.ts`) fed into a small state machine
 (`input/inputDeviceDetector.ts`) with hysteresis and a pinch/rotate "definitely
 trackpad" latch. The detected device drives the same `setViewInputConfigStyle`
 switch. The preference becomes 3-valued (`mouse|trackpad|auto`); the applied
@@ -88,6 +87,12 @@ device stays 2-valued.
   driven from `MolViewPane` wheel + pinch + the rotate IPC, applied via
   `ViewInputConfigContext`). Preference persists as `UiState.inputDeviceMode`
   (now `mouse|trackpad|auto`, default auto) + `UiState.inputDeviceDetected` seed.
+- Classifier polarity is platform-specific and counter-intuitive (verified on
+  hardware): on macOS a physical mouse wheel arrives as a FRACTIONAL deltaY
+  (Chromium scales it) and a trackpad as INTEGER precise-pixel deltas, so
+  fractional -> mouse, integer -> trackpad; a horizontal deltaX is trackpad on
+  any platform. Off macOS the split is unvalidated (clean vertical -> mouse);
+  the detector receives `isMac` from `electronAPI.platform`.
 - Pinch binding uses `GES_PINCH`, not `CTRL|WHEEL2`: Chromium signals a
   trackpad pinch as a wheel event with `ctrlKey=true`, but `MolViewPane`
   intercepts that and re-emits it as a `GES_PINCH` gesture (ctrl stripped), so
