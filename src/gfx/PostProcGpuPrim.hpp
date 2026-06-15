@@ -16,15 +16,26 @@ class RenderTarget;
 class DataTexture;
 
 /// View-space reconstruction constants for the GTAO passes, derived CPU-side
-/// from the projection matrix (see GUIView). All shader-facing math uses these
-/// instead of a near/far lerp so off-center / asymmetric frusta work and the
-/// GL window-depth [0,1] convention is handled.
+/// from the projection matrix (see fromCamera). All shader-facing math uses
+/// these instead of a near/far lerp so off-center / asymmetric frusta work and
+/// the GL window-depth [0,1] convention is handled.
+///
+/// Perspective and orthographic projections reconstruct view space differently,
+/// so the depth/xy fields below are interpreted according to isOrtho.
 struct AoConstants
 {
-    /// (depthLinearizeMul, depthLinearizeAdd): viewZ = mul / (add - rawDepth).
+    /// 1 = orthographic projection, 0 = perspective. Selects how the shaders
+    /// reconstruct view-space Z and XY (see the two fields below).
+    int isOrtho = 0;
+    /// View-space Z from the [0,1] window depth d:
+    ///   perspective:  viewZ = depthLinearizeMul / (depthLinearizeAdd - d)
+    ///   orthographic: viewZ = depthLinearizeMul + d * depthLinearizeAdd
+    ///                 (= slabNear, slabFar - slabNear; depth is linear in viewZ)
     float depthLinearizeMul = 0.0f;
     float depthLinearizeAdd = 0.0f;
-    /// viewPos.xy = (ndcToViewMul * uv + ndcToViewAdd) * viewZ.
+    /// View-space XY from the bottom-up [0,1] uv:
+    ///   perspective:  xy = (ndcToViewMul * uv + ndcToViewAdd) * viewZ
+    ///   orthographic: xy = (ndcToViewMul * uv + ndcToViewAdd)  (depth-independent)
     float ndcToViewMul[2] = {0.0f, 0.0f};
     float ndcToViewAdd[2] = {0.0f, 0.0f};
     /// (1/width, 1/height) in pixels.
@@ -55,6 +66,16 @@ struct AoConstants
     /// Per-sample noise rotation [0,1) for temporal supersampling (0 = single
     /// frame). Decorrelates the GTAO noise across accumulated jitter samples.
     float aoNoiseOffset = 0.0f;
+
+    /// Fill the camera-derived geometric fields (isOrtho, depthLinearize*,
+    /// ndcToView*, viewportPixelSize) from the camera parameters. The AO tuning
+    /// fields (effectRadius / finalValuePower / slice & step counts / fog) are
+    /// filled by the caller from the Scene. `aspect` = width/height; `bcx`/`bcy`
+    /// = backing-store pixel size. The near/far derivation MUST match
+    /// GUIView::setUpProjMat, and the depth/xy formulas MUST match the matrices
+    /// from DisplayContext::makePersProjMat / makeOrthoProjMat.
+    static AoConstants fromCamera(double camDist, double zoom, double slabDepth,
+                                  double aspect, int bcx, int bcy, bool perspec);
 };
 
 /// Fullscreen post-processing primitive.

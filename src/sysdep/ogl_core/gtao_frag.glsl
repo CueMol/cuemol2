@@ -25,6 +25,7 @@ uniform int u_hasNormal;                // 1 = use the stored geometry normal
 uniform int u_debugMode;                // 0 = AO, 1 = normal, 2 = linear depth
 uniform float u_aoNoiseOffset;          // per-sample noise rotation (temporal SS)
 uniform float u_maxScreenspaceRadius;   // horizon search radius cap (pass pixels)
+uniform int u_isOrtho;                  // 1 = orthographic projection, 0 = perspective
 
 in vec2 v_uv;
 
@@ -35,12 +36,28 @@ const float HALF_PI = 1.57079632679;
 
 float linearizeZ(float d)
 {
+    // Orthographic window depth is linear in viewZ (near + d * (far - near));
+    // perspective is hyperbolic (mul / (add - d)).
+    if (u_isOrtho != 0)
+        return u_depthUnpack.x + d * u_depthUnpack.y;
     return u_depthUnpack.x / (u_depthUnpack.y - d);
 }
 
 vec3 viewPos(vec2 uv, float vz)
 {
-    return vec3((u_ndcToViewMul * uv + u_ndcToViewAdd) * vz, vz);
+    // Perspective unprojects the in-plane coords by viewZ; orthographic XY is
+    // depth-independent.
+    vec2 xy = u_ndcToViewMul * uv + u_ndcToViewAdd;
+    if (u_isOrtho == 0) xy *= vz;
+    return vec3(xy, vz);
+}
+
+// View vector (fragment -> camera). Perspective rays diverge from the eye at the
+// origin; orthographic rays are all parallel to the view axis (-Z here, since
+// viewZ > 0 is forward).
+vec3 camDir(vec3 p)
+{
+    return (u_isOrtho != 0) ? vec3(0.0, 0.0, -1.0) : normalize(-p);
 }
 
 // Per-pixel interleaved gradient noise in [0,1). Spectrally blue-ish, so the
@@ -83,7 +100,7 @@ vec3 reconstructNormal(vec2 uv, vec3 pC)
     vec3 ddx = (abs(pR.z - pC.z) < abs(pC.z - pL.z)) ? (pR - pC) : (pC - pL);
     vec3 ddy = (abs(pT.z - pC.z) < abs(pC.z - pB.z)) ? (pT - pC) : (pC - pB);
     vec3 N = normalize(cross(ddx, ddy));
-    vec3 V = normalize(-pC);
+    vec3 V = camDir(pC);
     if (dot(N, V) < 0.0) N = -N;
     return N;
 }
@@ -108,7 +125,7 @@ vec3 selectNormal(vec2 uv, vec3 pC, out bool isExcluded)
             // Stored eye-space normal: +Z faces the camera, so flip Z only to
             // reach the GTAO space (vz > 0 forward).
             vec3 N = normalize(vec3(n.x, n.y, -n.z));
-            vec3 V = normalize(-pC);
+            vec3 V = camDir(pC);
             // Clamp to the visible hemisphere. The exact normal can point away
             // from the camera at grazing silhouettes (sphere/cylinder edges) or
             // on the back side of two-sided meshes (cartoon ribbons), where the
@@ -181,12 +198,15 @@ void main()
     // artifacts.
     viewspaceZ *= 0.99999;
     pixCenterPos = viewPos(v_uv, viewspaceZ);
-    vec3 viewVec = normalize(-pixCenterPos);
+    vec3 viewVec = camDir(pixCenterPos);
 
     float effectRadius = u_effectRadius;
 
     vec2 ndcToViewMul_x_pixelSize = u_ndcToViewMul * u_viewportPixelSize;
-    float pixViewSize = viewspaceZ * ndcToViewMul_x_pixelSize.x;
+    // Orthographic: a pixel's world size is constant; perspective: it scales
+    // with viewZ.
+    float pixViewSize = ndcToViewMul_x_pixelSize.x;
+    if (u_isOrtho == 0) pixViewSize *= viewspaceZ;
     float screenspaceRadius = effectRadius / max(pixViewSize, 1e-6);
 
     // Clamp the screen-space radius so the horizon samples stay cache-local
