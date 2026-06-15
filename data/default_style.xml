@@ -49,6 +49,20 @@
     conf_slab = "LBUTTON|SHIFT|MOUSE_X,LBUTTON|SHIFT|MOUSE_Y"
     />
 
+  <!-- tritium/Electron trackpad: Chromium delivers a 2-finger scroll as a
+       wheel event (WHEEL1/WHEEL2) and a pinch as ctrl+wheel (CTRL|WHEEL2),
+       so scroll pans and pinch zooms. -->
+  <style id="TrackpadViewInConf" type="view" desc="Trackpad"
+    conf_rotx = "LBUTTON|MOUSE_X"
+    conf_roty = "LBUTTON|MOUSE_Y"
+    conf_rotz = "LBUTTON|RBUTTON|MOUSE_Y"
+    conf_trax = "RBUTTON|MOUSE_X,WHEEL1"
+    conf_tray = "RBUTTON|MOUSE_Y,WHEEL2"
+    conf_traz = "LBUTTON|RBUTTON|MOUSE_X"
+    conf_zoom = "LBUTTON|SHIFT|MOUSE_Y,CTRL|WHEEL2"
+    conf_slab = "LBUTTON|SHIFT|MOUSE_X"
+    />
+
   <!--
     ===== Renderer Styles =====
     -->

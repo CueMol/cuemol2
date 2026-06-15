@@ -33,8 +33,13 @@ import { InputGroup } from '@blueprintjs/core'
 import { AppIcon } from '../AppIcon'
 import { useTheme } from '../../contexts/ThemeContext'
 import { useRenderConfig } from '../../contexts/RenderConfigContext'
+import { useViewInputConfig } from '../../contexts/ViewInputConfigContext'
 import { useCueMol } from '../../hooks/useCueMol'
 import { ColorPickerProvider } from '../../h3-kit/colorpicker/ColorPickerContext'
+import {
+  INPUT_DEVICE_LABELS,
+  inputDeviceModeFromLabel,
+} from '../../viewInputConfig'
 import {
   CATEGORY_TREE,
   ALL_LEAF_IDS,
@@ -42,6 +47,7 @@ import {
   DEFAULTS,
   CATEGORY_LABELS,
   RENDER_BINARY_SETTING_KEYS,
+  INPUT_DEVICE_SETTING_KEY,
 } from './settings/settingsConfig'
 import { ConfigTreeNode } from './settings/ConfigTreeNode'
 import { SettingRow } from './settings/SettingRow'
@@ -51,6 +57,9 @@ export const SettingsPane: React.FC = () => {
   // Render binary paths are backed by RenderConfigContext (persistent),
   // not the mock `values` state.
   const { binaries, setBinary } = useRenderConfig()
+  // The pointing-device preset is backed by ViewInputConfigContext
+  // (persistent + live re-apply of the ViewInputConfig style).
+  const { inputDeviceMode, setInputDeviceMode } = useViewInputConfig()
   // App settings colours are scene-independent; `sceneId` is left undefined
   // so the colour picker resolves against the global StyleManager scope.
   const { cm } = useCueMol()
@@ -73,6 +82,12 @@ export const SettingsPane: React.FC = () => {
 
   const handleChange = useCallback(
     (key: string, value: string | number | boolean) => {
+      // Pointing-device preset persists + re-applies via ViewInputConfigContext.
+      if (key === INPUT_DEVICE_SETTING_KEY) {
+        setInputDeviceMode(inputDeviceModeFromLabel(String(value)))
+        return
+      }
+
       // Render binary paths persist via RenderConfigContext.
       const binaryKey = RENDER_BINARY_SETTING_KEYS[key]
       if (binaryKey) {
@@ -87,7 +102,7 @@ export const SettingsPane: React.FC = () => {
         setTheme(value ? 'dark' : 'light')
       }
     },
-    [setTheme, setBinary],
+    [setTheme, setBinary, setInputDeviceMode],
   )
 
   // Keep the toggle in sync if theme changes externally.
@@ -239,11 +254,17 @@ export const SettingsPane: React.FC = () => {
                 .filter((s) => s.category === catId)
                 .map((s) => {
                   const binaryKey = RENDER_BINARY_SETTING_KEYS[s.key]
+                  const value =
+                    s.key === INPUT_DEVICE_SETTING_KEY
+                      ? INPUT_DEVICE_LABELS[inputDeviceMode]
+                      : binaryKey
+                        ? binaries[binaryKey]
+                        : values[s.key]
                   return (
                     <SettingRow
                       key={s.key}
                       def={s}
-                      value={binaryKey ? binaries[binaryKey] : values[s.key]}
+                      value={value}
                       onChange={handleChange}
                     />
                   )

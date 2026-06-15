@@ -15,6 +15,7 @@ import { CommandProvider } from './commands/CommandRegistry'
 import { DialogProvider } from './contexts/DialogContext'
 import { ModalOpenCounterProvider } from './contexts/ModalOpenCounterContext'
 import { RenderConfigProvider } from './contexts/RenderConfigContext'
+import { ViewInputConfigProvider } from './contexts/ViewInputConfigContext'
 import { ErrorBoundary } from './crash/ErrorBoundary'
 import { installGlobalCrashHandlers } from './crash/installGlobalCrashHandlers'
 
@@ -32,7 +33,9 @@ createRoot(container).render(
             <ModalOpenCounterProvider>
               <DialogProvider>
                 <RenderConfigProvider>
-                  <App />
+                  <ViewInputConfigProvider>
+                    <App />
+                  </ViewInputConfigProvider>
                 </RenderConfigProvider>
               </DialogProvider>
             </ModalOpenCounterProvider>

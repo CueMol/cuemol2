@@ -41,6 +41,12 @@ export interface UiState {
   sidebarActiveView?: string
   selectionMolId?: string
   theme?: 'dark' | 'light'
+  /**
+   * Pointing-device preset for 3D navigation. Selects which ViewInputConfig
+   * style is applied (mouse: wheel zooms; trackpad: two-finger scroll pans,
+   * pinch zooms). Defaults to 'mouse'.
+   */
+  inputDeviceMode?: 'mouse' | 'trackpad'
   /** POV-Ray executable path (Rendering settings). */
   povrayExe?: string
   /** POV-Ray include directory path (Rendering settings). */
