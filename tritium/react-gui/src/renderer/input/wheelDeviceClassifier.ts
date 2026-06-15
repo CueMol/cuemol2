@@ -11,9 +11,10 @@
  * (`inputDeviceDetector.ts`) adds hysteresis and a pinch/rotate "definitely
  * trackpad" latch on top, and a manual override always exists.
  *
- * Tuned for macOS Chromium, where a physical mouse wheel emits large integer
- * vertical deltas (deltaX 0) and a trackpad emits small / fractional deltas,
- * usually with a horizontal component.
+ * Tuned for macOS Chromium, where a physical mouse wheel emits integer
+ * vertical-only deltas and a trackpad emits fractional and/or horizontal
+ * deltas. The integer-vs-fractional split is the discriminator; magnitude is
+ * not reliable (a real mouse notch can be small).
  */
 
 export type WheelClassification = 'mouse' | 'trackpad' | 'unknown'
@@ -26,17 +27,8 @@ export interface WheelSample {
 }
 
 /**
- * |deltaY| at or above which a vertical integer pixel delta is taken to be a
- * mouse wheel notch. Below this an integer delta is ambiguous ('unknown').
- */
-export const MOUSE_COARSE_DELTA = 50
-
-/**
- * Classify one wheel sample.
- *
- * Order matters: line/page deltas and a fractional or horizontal delta are
- * decisive; a large integer vertical-only pixel delta is a mouse notch;
- * everything else is 'unknown' so the detector keeps its current state.
+ * Classify one wheel sample. A zero delta stays 'unknown' so the detector keeps
+ * its current state; otherwise the integer-vs-fractional split decides.
  */
 export function classifyWheelSample(s: WheelSample): WheelClassification {
   // Line / page deltas come from a classic mouse wheel; trackpads always report
@@ -45,11 +37,9 @@ export function classifyWheelSample(s: WheelSample): WheelClassification {
   // Horizontal component: a wheel mouse does not scroll sideways; a trackpad
   // two-finger scroll routinely does.
   if (s.deltaX !== 0) return 'trackpad'
-  // Fractional vertical delta: trackpads emit sub-pixel precise deltas; a wheel
-  // notch is an integer.
-  if (s.deltaY !== 0 && !Number.isInteger(s.deltaY)) return 'trackpad'
-  // Large integer vertical-only delta: a mouse wheel notch.
-  if (Number.isInteger(s.deltaY) && Math.abs(s.deltaY) >= MOUSE_COARSE_DELTA) return 'mouse'
-  // Small integer vertical delta (or zero): ambiguous.
-  return 'unknown'
+  if (s.deltaY === 0) return 'unknown'
+  // Fractional vertical delta: a trackpad's sub-pixel precise scroll.
+  if (!Number.isInteger(s.deltaY)) return 'trackpad'
+  // Integer vertical-only delta: a mouse wheel notch.
+  return 'mouse'
 }

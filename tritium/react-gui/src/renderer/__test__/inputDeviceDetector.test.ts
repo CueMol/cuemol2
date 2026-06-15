@@ -14,7 +14,7 @@ import type { WheelSample } from '../input/wheelDeviceClassifier'
 
 const MOUSE: WheelSample = { deltaMode: 0, deltaX: 0, deltaY: 120 } // large integer vertical
 const TRACKPAD: WheelSample = { deltaMode: 0, deltaX: 3, deltaY: 8 } // has horizontal
-const AMBIGUOUS: WheelSample = { deltaMode: 0, deltaX: 0, deltaY: 4 } // small integer
+const AMBIGUOUS: WheelSample = { deltaMode: 0, deltaX: 0, deltaY: 0 } // zero delta
 
 describe('InputDeviceDetector', () => {
   it('seeds to the given device', () => {
