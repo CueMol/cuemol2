@@ -57,6 +57,7 @@ import { usePaintCapableRenderers } from '../../hooks/usePaintCapableRenderers'
 import { useRendererColoringState } from '../../hooks/useRendererColoringState'
 import { useElePotMapObjects } from '../../hooks/useElePotMapObjects'
 import { PaintSelCell } from './PaintSelCell'
+import { fireService } from '../../utils/fireService'
 
 // ────────────────────────────────────────────────────────────
 // Coloring type dropdown items
@@ -778,11 +779,9 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
         (coloringId: RendColoringId) => {
             const t = requireTarget()
             if (!t || !cm) return
-            cm.invokeService('setRendererColoring', {
+            fireService(cm, 'setRendererColoring', {
                 ...t,
                 coloringId,
-            }).catch((err: unknown) => {
-                console.warn('setRendererColoring failed:', err)
             })
         },
         [cm, requireTarget],
@@ -802,13 +801,11 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
         const ref = selectedRow !== null ? entries[selectedRow] : undefined
         const selStr = ref?.selStr ?? '*'
         const colorValue = ref?.colorValue ?? '#FFFFFF'
-        cm.invokeService('addPaintEntry', {
+        fireService(cm, 'addPaintEntry', {
             ...t,
             idx,
             selStr,
             colorValue,
-        }).catch((err: unknown) => {
-            console.warn('addPaintEntry failed:', err)
         })
         // The new entry occupies the insert position; track it so the
         // toolbar buttons act on the freshly-added row.
@@ -818,10 +815,7 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
     const onRemoveRow = useCallback(() => {
         const t = requireTarget()
         if (!t || !cm || selectedRow === null) return
-        cm.invokeService('removePaintEntry', { ...t, idx: selectedRow })
-            .catch((err: unknown) => {
-                console.warn('removePaintEntry failed:', err)
-            })
+        fireService(cm, 'removePaintEntry', { ...t, idx: selectedRow })
         setSelectedRow(null)
     }, [cm, requireTarget, selectedRow])
 
@@ -831,12 +825,10 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
             if (!t || !cm || selectedRow === null) return
             const toIdx = dir === 'up' ? selectedRow - 1 : selectedRow + 1
             if (toIdx < 0 || toIdx >= entries.length) return
-            cm.invokeService('movePaintEntry', {
+            fireService(cm, 'movePaintEntry', {
                 ...t,
                 fromIdx: selectedRow,
                 toIdx,
-            }).catch((err: unknown) => {
-                console.warn('movePaintEntry failed:', err)
             })
             setSelectedRow(toIdx)
         },
@@ -848,13 +840,11 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
             const t = requireTarget()
             const cur = entries[idx]
             if (!t || !cm || !cur) return
-            cm.invokeService('updatePaintEntry', {
+            fireService(cm, 'updatePaintEntry', {
                 ...t,
                 idx,
                 selStr: field === 'selStr' ? value : cur.selStr,
                 colorValue: field === 'colorValue' ? value : cur.colorValue,
-            }).catch((err: unknown) => {
-                console.warn('updatePaintEntry failed:', err)
             })
         },
         [cm, requireTarget, entries],
@@ -864,11 +854,9 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
         (color: string) => {
             const t = requireTarget()
             if (!t || !cm) return
-            cm.invokeService('setRendererDefaultColor', {
+            fireService(cm, 'setRendererDefaultColor', {
                 ...t,
                 colorValue: color,
-            }).catch((err: unknown) => {
-                console.warn('setRendererDefaultColor failed:', err)
             })
         },
         [cm, requireTarget],
@@ -883,12 +871,10 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
         (propName: string, value: string | number) => {
             const t = requireTarget()
             if (!t || !cm) return
-            cm.invokeService('setColoringProp', {
+            fireService(cm, 'setColoringProp', {
                 ...t,
                 propName,
                 propValue: value,
-            }).catch((err: unknown) => {
-                console.warn('setColoringProp failed:', err)
             })
         },
         [cm, requireTarget],
@@ -903,12 +889,10 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
         (propName: string, value: string | number | boolean) => {
             const t = requireTarget()
             if (!t || !cm) return
-            cm.invokeService('setRendererElepotProp', {
+            fireService(cm, 'setRendererElepotProp', {
                 ...t,
                 propName,
                 propValue: value,
-            }).catch((err: unknown) => {
-                console.warn('setRendererElepotProp failed:', err)
             })
         },
         [cm, requireTarget],

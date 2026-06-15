@@ -38,6 +38,7 @@ import {
     type MoveSceneNodeArgs,
 } from "./sceneTreeDnd";
 import { InlineRenameInput } from "./InlineRenameInput";
+import { SectionHeader } from "./SectionHeader";
 
 /* --- Node-type to icon mapping --- */
 
@@ -681,23 +682,13 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
 
     return (
         <div className="sp-pane">
-            <div
-                className={`sp-section-header ${onToggleCollapse ? "collapsible" : ""}`}
-                onClick={onToggleCollapse}
-            >
-                <div className="sp-section-header-left">
-                    <AppIcon
-                        name={collapsed ? "ui.caretRight" : "ui.caretDown"}
-                        size="sm"
-                        className="section-chevron"
-                        aria-hidden
-                    />
-                    <span className="section-title scene-name-title">Scene</span>
-                </div>
-                <div
-                    className="sp-section-header-actions"
-                    onClick={(e) => e.stopPropagation()}
-                >
+            <SectionHeader
+                title="Scene"
+                titleClassName="scene-name-title"
+                alwaysShowChevron
+                collapsed={collapsed}
+                onToggleCollapse={onToggleCollapse}
+                actions={
                     <ButtonGroup minimal>
                         <Tooltip content="Add" placement="bottom" compact>
                             <Button
@@ -740,8 +731,8 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                             />
                         </Tooltip>
                     </ButtonGroup>
-                </div>
-            </div>
+                }
+            />
             {!collapsed && tree && treeContents.length > 0 && (
                 // tabIndex=-1 keeps the wrapper focusable for the F2
                 // keydown shortcut (Blueprint Tree rows are not natively

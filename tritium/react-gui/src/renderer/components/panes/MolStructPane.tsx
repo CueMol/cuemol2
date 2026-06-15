@@ -26,9 +26,11 @@ import {
     type TreeNodeInfo,
 } from "@blueprintjs/core";
 import { AppIcon } from "../AppIcon";
+import { SectionHeader } from "./SectionHeader";
 import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
 import { useMolStructure } from "../../hooks/useMolStructure";
 import { ObjectSelect, objectFilters } from "../../h3-kit/ObjectSelect";
+import { fireService } from "../../utils/fireService";
 import {
     encodeChainId,
     encodeResidueId,
@@ -355,12 +357,10 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
         if (!cm || !canApply) return;
         const selStr = selStrFromTree(selectedIds, residueOrder);
         if (!selStr) return;
-        cm.invokeService("applyMolSelString", {
+        fireService(cm, "applyMolSelString", {
             sceneId: activeSceneId!,
             molId: selectedMolId!,
             selStr,
-        }).catch((err: unknown) => {
-            console.warn("applyMolSelString failed:", err);
         });
     }, [cm, canApply, selectedIds, residueOrder, activeSceneId, selectedMolId]);
 
@@ -368,13 +368,11 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
         if (!cm || !canApply || !hasView) return;
         const selStr = selStrFromTree(selectedIds, residueOrder);
         if (!selStr) return;
-        cm.invokeService("centerMolSelection", {
+        fireService(cm, "centerMolSelection", {
             sceneId: activeSceneId!,
             viewId: activeMolViewId!,
             molId: selectedMolId!,
             selStr,
-        }).catch((err: unknown) => {
-            console.warn("centerMolSelection failed:", err);
         });
     }, [cm, canApply, hasView, selectedIds, residueOrder, activeSceneId, activeMolViewId, selectedMolId]);
 
@@ -382,38 +380,22 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
         if (!cm || !canApply || !hasView) return;
         const selStr = selStrFromTree(selectedIds, residueOrder);
         if (!selStr) return;
-        cm.invokeService("zoomMolSelection", {
+        fireService(cm, "zoomMolSelection", {
             sceneId: activeSceneId!,
             viewId: activeMolViewId!,
             molId: selectedMolId!,
             selStr,
-        }).catch((err: unknown) => {
-            console.warn("zoomMolSelection failed:", err);
         });
     }, [cm, canApply, hasView, selectedIds, residueOrder, activeSceneId, activeMolViewId, selectedMolId]);
 
     return (
         <div className="sp-pane">
-            <div
-                className={`sp-section-header ${onToggleCollapse ? "collapsible" : ""}`}
-                onClick={onToggleCollapse}
-            >
-                <div className="sp-section-header-left">
-                    {onToggleCollapse != null && (
-                        <AppIcon
-                            name={collapsed ? "ui.caretRight" : "ui.caretDown"}
-                            size="sm"
-                            className="section-chevron"
-                            aria-hidden
-                        />
-                    )}
-                    <AppIcon name="ui.git" size="md" className="section-icon" aria-hidden />
-                    <span className="section-title">Mol Struct</span>
-                </div>
-                <div
-                    className="sp-section-header-actions"
-                    onClick={(e) => e.stopPropagation()}
-                >
+            <SectionHeader
+                title="Mol Struct"
+                icon="ui.git"
+                collapsed={collapsed}
+                onToggleCollapse={onToggleCollapse}
+                actions={
                     <ButtonGroup minimal>
                         <Tooltip content="Select atoms" placement="bottom" compact>
                             <Button
@@ -455,8 +437,8 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
                             />
                         </Tooltip>
                     </ButtonGroup>
-                </div>
-            </div>
+                }
+            />
             {!collapsed && (
                 <div className="sp-pane-fill">
                     <ObjectSelect

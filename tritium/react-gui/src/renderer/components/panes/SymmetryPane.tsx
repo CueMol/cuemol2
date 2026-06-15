@@ -23,12 +23,13 @@ import {
     MenuItem,
     Popover,
 } from '@blueprintjs/core'
-import { AppIcon } from '../AppIcon'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
+import { SectionHeader } from './SectionHeader'
 import { useSymmetryPanel } from '../../hooks/useSymmetryPanel'
 import { useShowSymmetryChangeDialog } from '../dialogs/SymmetryChangeDialogProvider'
 import type { SymmRendererExtent } from '../../worker/server/services/symmetryPanelOps.service'
 import { ObjectSelect, objectFilters } from '../../h3-kit/ObjectSelect'
+import { fireService } from '../../utils/fireService'
 
 interface SymmetryPaneProps {
     cm: AsyncCueMol | null
@@ -108,13 +109,11 @@ export const SymmetryPane: React.FC<SymmetryPaneProps> = ({
                 || activeSceneId === undefined
                 || activeMolViewId === undefined
                 || selectedObjId === undefined) return
-            cm.invokeService('showSymmRenderer', {
+            fireService(cm, 'showSymmRenderer', {
                 sceneId: activeSceneId,
                 objId: selectedObjId,
                 viewId: activeMolViewId,
                 extent,
-            }).catch((err: unknown) => {
-                console.warn('showSymmRenderer failed:', err)
             })
         },
         [cm, activeSceneId, activeMolViewId, selectedObjId],
@@ -122,11 +121,9 @@ export const SymmetryPane: React.FC<SymmetryPaneProps> = ({
 
     const onShowUnitCell = useCallback(() => {
         if (!cm || activeSceneId === undefined || selectedObjId === undefined) return
-        cm.invokeService('showUnitCellRenderer', {
+        fireService(cm, 'showUnitCellRenderer', {
             sceneId: activeSceneId,
             objId: selectedObjId,
-        }).catch((err: unknown) => {
-            console.warn('showUnitCellRenderer failed:', err)
         })
     }, [cm, activeSceneId, selectedObjId])
 
@@ -151,23 +148,12 @@ export const SymmetryPane: React.FC<SymmetryPaneProps> = ({
 
     return (
         <div className="sp-pane">
-            <div
-                className={`sp-section-header ${onToggleCollapse ? 'collapsible' : ''}`}
-                onClick={onToggleCollapse}
-            >
-                <div className="sp-section-header-left">
-                    {onToggleCollapse != null && (
-                        <AppIcon
-                            name={collapsed ? 'ui.caretRight' : 'ui.caretDown'}
-                            size="sm"
-                            className="section-chevron"
-                            aria-hidden
-                        />
-                    )}
-                    <AppIcon name="ui.cube" size="md" className="section-icon" aria-hidden />
-                    <span className="section-title">Symmetry</span>
-                </div>
-            </div>
+            <SectionHeader
+                title="Symmetry"
+                icon="ui.cube"
+                collapsed={collapsed}
+                onToggleCollapse={onToggleCollapse}
+            />
             {!collapsed && (
                 <div className="sp-pane-fill">
                     <ObjectSelect
