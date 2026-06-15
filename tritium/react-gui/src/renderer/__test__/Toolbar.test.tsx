@@ -21,8 +21,22 @@ vi.mock('../commands/CommandRegistry', () => ({
 }))
 
 import { Toolbar } from '../components/Toolbar'
+import type { UndoRedoState } from '../hooks/useUndoRedoState'
 
 void React
+
+/** A ready-to-undo/redo state stub so the body buttons are enabled. */
+function makeUndoRedo(over: Partial<UndoRedoState> = {}): UndoRedoState {
+  return {
+    canUndo: true,
+    canRedo: true,
+    undoDescs: ['e1'],
+    redoDescs: ['e2'],
+    pickUndo: vi.fn(),
+    pickRedo: vi.fn(),
+    ...over,
+  }
+}
 
 /** Click a Blueprint button by its visible text. */
 function clickButton(container: HTMLElement, text: string): void {
@@ -47,7 +61,7 @@ describe('Toolbar', () => {
   })
 
   it('real buttons dispatch their CmdId', () => {
-    const t = mountTree(<Toolbar />)
+    const t = mountTree(<Toolbar undoRedo={makeUndoRedo()} />)
     const cases: [string, CmdId][] = [
       ['New Tab', CmdId.TabNew],
       ['Open File', CmdId.UiOpenObjDialog],
@@ -65,8 +79,8 @@ describe('Toolbar', () => {
     t.unmount()
   })
 
-  it('Undo / Redo body buttons dispatch edit commands', () => {
-    const t = mountTree(<Toolbar />)
+  it('Undo / Redo body buttons dispatch edit commands when enabled', () => {
+    const t = mountTree(<Toolbar undoRedo={makeUndoRedo()} />)
 
     clickButton(t.container, 'Undo')
     expect(dispatch).toHaveBeenCalledWith(CmdId.Undo)
@@ -78,8 +92,23 @@ describe('Toolbar', () => {
     t.unmount()
   })
 
+  it('disables the Undo / Redo body buttons when nothing can be undone/redone', () => {
+    const t = mountTree(
+      <Toolbar undoRedo={makeUndoRedo({ canUndo: false, canRedo: false, undoDescs: [], redoDescs: [] })} />,
+    )
+    const undoBtn = Array.from(t.container.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Undo',
+    )
+    const redoBtn = Array.from(t.container.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Redo',
+    )
+    expect(undoBtn?.disabled).toBe(true)
+    expect(redoBtn?.disabled).toBe(true)
+    t.unmount()
+  })
+
   it('mock buttons do not dispatch any command', () => {
-    const t = mountTree(<Toolbar />)
+    const t = mountTree(<Toolbar undoRedo={makeUndoRedo()} />)
     // Object overwrite-save ("Save") has no command yet -- stays mock.
     dispatch.mockClear()
     clickButton(t.container, 'Save')

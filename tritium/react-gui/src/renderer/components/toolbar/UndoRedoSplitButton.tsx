@@ -2,11 +2,14 @@
  * @file components/toolbar/UndoRedoSplitButton.tsx
  * @description Undo / Redo split-button for the top Toolbar.
  *
- * The main button performs a single-step undo/redo via the command registry.
- * The caret button opens a history dropdown -- but the worker-side service
- * that enumerates undo/redo history (getUndoSize / getUndoDesc) is not wired
- * yet, so the dropdown is a placeholder mock for now (UXP `populateUndoMenu`
- * parity is a future task).
+ * The main button performs a single-step undo/redo via the command registry
+ * (so it shares the Cmd+Z / Cmd+Shift+Z path). It is disabled when there is
+ * nothing to undo/redo. The caret button opens a history dropdown listing the
+ * transaction descriptions (index 0 = most recent); picking entry `i` jumps
+ * `i+1` steps via `onPick(i)`. Mirrors UXP `populateUndoMenu` / `popupUndo`.
+ *
+ * State (availability + descriptions) is owned by `hooks/useUndoRedoState.ts`
+ * and threaded down through `Toolbar`.
  */
 
 import React from "react";
@@ -17,9 +20,20 @@ import { CmdId } from "../../commands/ids";
 
 interface UndoRedoSplitButtonProps {
   kind: "undo" | "redo";
+  /** Whether a single-step undo/redo is currently possible. */
+  canExecute: boolean;
+  /** Transaction descriptions, index 0 = most recent. */
+  descs: string[];
+  /** Jump `depth+1` steps (depth = the picked entry's index). */
+  onPick: (depth: number) => void;
 }
 
-export const UndoRedoSplitButton: React.FC<UndoRedoSplitButtonProps> = ({ kind }) => {
+export const UndoRedoSplitButton: React.FC<UndoRedoSplitButtonProps> = ({
+  kind,
+  canExecute,
+  descs,
+  onPick,
+}) => {
   const { dispatch } = useCommands();
   const isUndo = kind === "undo";
   const cmd = isUndo ? CmdId.Undo : CmdId.Redo;
@@ -29,11 +43,11 @@ export const UndoRedoSplitButton: React.FC<UndoRedoSplitButtonProps> = ({ kind }
     dispatch(cmd).catch((e: unknown) => console.error(`${cmd} failed:`, e));
   };
 
-  // Mock dropdown: history enumeration needs a worker service that is not
-  // implemented yet. Show a single disabled placeholder item.
   const historyMenu = (
     <Menu>
-      <MenuItem disabled text="History (not implemented)" />
+      {descs.map((d, i) => (
+        <MenuItem key={i} text={d} onClick={() => onPick(i)} />
+      ))}
     </Menu>
   );
 
@@ -42,13 +56,16 @@ export const UndoRedoSplitButton: React.FC<UndoRedoSplitButtonProps> = ({ kind }
       <Button
         icon={<AppIcon name={isUndo ? "ui.undo" : "ui.redo"} aria-hidden />}
         text={text}
+        title={canExecute && descs.length > 0 ? `${text}: ${descs[0]}` : text}
+        disabled={!canExecute}
         onClick={runStep}
       />
-      <Popover content={historyMenu} placement="bottom-start">
+      <Popover content={historyMenu} placement="bottom-start" disabled={descs.length === 0}>
         <Button
           className="h3-form-dropdown-caret"
           icon={<span className="h3-form-caret" aria-hidden />}
           aria-label={`${text} history`}
+          disabled={descs.length === 0}
         />
       </Popover>
     </ButtonGroup>

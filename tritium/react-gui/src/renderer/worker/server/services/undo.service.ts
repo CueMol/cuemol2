@@ -11,4 +11,42 @@ function undo(ctx: WorkerContext, args: UndoArgs): { ok: boolean } {
     return { ok: scene.undo(args.depth ?? 0) };
 }
 
-export const services = { undo };
+export interface GetUndoStateArgs {
+    sceneId: number;
+}
+
+export interface UndoState {
+    canUndo: boolean;
+    canRedo: boolean;
+    /** Transaction descriptions, index 0 = most recent (next single undo). */
+    undoDescs: string[];
+    /** Transaction descriptions, index 0 = next single redo. */
+    redoDescs: string[];
+}
+
+/**
+ * Snapshot the undo/redo stack for a scene: availability flags plus the
+ * ordered transaction descriptions. Mirrors UXP `populateUndoMenu` /
+ * `updateCmdUndoState` (getUndoSize + getUndoDesc(i) loop). Index i maps to
+ * `scene.undo(i)` (undoes i+1 transactions) on the consumer side.
+ */
+function getUndoState(ctx: WorkerContext, args: GetUndoStateArgs): UndoState {
+    const scene = ctx.sceMgr.getScene(args.sceneId);
+    if (!scene) {
+        return { canUndo: false, canRedo: false, undoDescs: [], redoDescs: [] };
+    }
+    const undoDescs: string[] = [];
+    const nu = scene.getUndoSize();
+    for (let i = 0; i < nu; ++i) undoDescs.push(scene.getUndoDesc(i));
+    const redoDescs: string[] = [];
+    const nr = scene.getRedoSize();
+    for (let i = 0; i < nr; ++i) redoDescs.push(scene.getRedoDesc(i));
+    return {
+        canUndo: scene.isUndoable(),
+        canRedo: scene.isRedoable(),
+        undoDescs,
+        redoDescs,
+    };
+}
+
+export const services = { undo, getUndoState };

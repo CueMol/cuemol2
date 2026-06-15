@@ -43,6 +43,7 @@ import { useMolTabDispatch, useMolTabState } from "./hooks/useMolTab";
 import { useAppInitialization } from "./hooks/useAppInitialization";
 import { useNewSceneAction } from "./hooks/useNewSceneAction";
 import { useActiveViewState } from "./hooks/useActiveViewState";
+import { useUndoRedoState } from "./hooks/useUndoRedoState";
 import { useCommandRegistrations } from "./hooks/useCommandRegistrations";
 import { useRecentFiles } from "./hooks/useRecentFiles";
 import { useCommands } from "./commands/CommandRegistry";
@@ -338,6 +339,9 @@ const App: React.FC = () => {
     onBgColorChanged,
   } = useActiveViewState({ cm, activeMolViewId, getActiveSceneInfo });
 
+  // --- Undo/redo availability + history dropdown (owns CmdId.Undo/Redo) ---
+  const undoRedo = useUndoRedoState({ cm, activeMolViewId, getActiveSceneInfo });
+
   // --- View pane (Projection section) writers ---
   // Route through the existing view/scene commands so useActiveViewState (and
   // the native menu) remain the single source of truth for these attributes.
@@ -427,7 +431,7 @@ const App: React.FC = () => {
       {window.electronAPI?.platform !== 'darwin' && (
         <MenuBar activeTab={activeTab} viewProjection={viewProjection} viewCenterMark={viewCenterMark} sceneBgColor={sceneBgColor} recentFiles={recentFiles} />
       )}
-      <Toolbar />
+      <Toolbar undoRedo={undoRedo} />
 
       <div className="main-layout">
         <div className="main-layout-inner">

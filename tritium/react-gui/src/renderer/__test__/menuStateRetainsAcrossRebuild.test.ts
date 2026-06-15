@@ -43,6 +43,8 @@ function makeFakeMenu(): MenuLike & { items: Map<string, FakeMenuItem> } {
         'center-mark-axis',
         'bg-white',
         'bg-black',
+        'undo',
+        'redo',
     ]) {
         items.set(id, new FakeMenuItem(id))
     }
@@ -85,6 +87,20 @@ describe('mergeMenuState', () => {
         expect(merged.viewProjection).toEqual({ enabled: true, perspective: true })
         expect(merged.viewCenterMark).toBeUndefined()
         expect(merged.sceneBgColor).toBeUndefined()
+        expect(merged.undo).toBeUndefined()
+        expect(merged.redo).toBeUndefined()
+    })
+
+    it('carries undo/redo slices across an unrelated update', () => {
+        const cache: MenuState = {
+            undo: { enabled: true },
+            redo: { enabled: false },
+        }
+        const merged = mergeMenuState(cache, {
+            viewProjection: { enabled: true, perspective: true },
+        })
+        expect(merged.undo).toEqual({ enabled: true })
+        expect(merged.redo).toEqual({ enabled: false })
     })
 })
 
@@ -133,6 +149,16 @@ describe('applyMenuStateTo — sets enabled/checked correctly', () => {
         expect(menu.items.get('bg-black')!.checked).toBe(false)
         expect(menu.items.get('bg-white')!.enabled).toBe(true)
         expect(menu.items.get('bg-black')!.enabled).toBe(true)
+    })
+
+    it('undo/redo: writes the enabled flag to the undo/redo items', () => {
+        const menu = makeFakeMenu()
+        applyMenuStateTo(menu, {
+            undo: { enabled: true },
+            redo: { enabled: false },
+        })
+        expect(menu.items.get('undo')!.enabled).toBe(true)
+        expect(menu.items.get('redo')!.enabled).toBe(false)
     })
 
     it('does not touch items belonging to unset slices', () => {

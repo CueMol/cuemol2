@@ -430,6 +430,12 @@ export interface MenuState {
     enabled: boolean
     bgColor: SceneBgColor | null
   }
+  undo?: {
+    enabled: boolean
+  }
+  redo?: {
+    enabled: boolean
+  }
 }
 
 // ── Crash report ────────────────────────────────────────────────────────────

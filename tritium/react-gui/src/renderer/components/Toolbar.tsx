@@ -17,6 +17,7 @@ import { CmdId } from "../commands/ids";
 import { UndoRedoSplitButton } from "./toolbar/UndoRedoSplitButton";
 import { AppIcon } from "./AppIcon";
 import type { AppIconKey } from "../data/appIcons";
+import type { UndoRedoState } from "../hooks/useUndoRedoState";
 
 type ToolbarItem =
   | { kind: "cmd"; id: string; icon: AppIconKey; text: string; cmd: CmdId }
@@ -44,7 +45,11 @@ const TOOLBAR_ITEMS: ToolbarItem[] = [
   { kind: "redo", id: "redo" },
 ];
 
-export const Toolbar: React.FC = () => {
+interface ToolbarProps {
+  undoRedo: UndoRedoState;
+}
+
+export const Toolbar: React.FC<ToolbarProps> = ({ undoRedo }) => {
   const { dispatch } = useCommands();
 
   const renderItem = (item: ToolbarItem): React.ReactNode => {
@@ -52,8 +57,25 @@ export const Toolbar: React.FC = () => {
       case "divider":
         return <Divider key={item.id} />;
       case "undo":
+        return (
+          <UndoRedoSplitButton
+            key={item.id}
+            kind="undo"
+            canExecute={undoRedo.canUndo}
+            descs={undoRedo.undoDescs}
+            onPick={undoRedo.pickUndo}
+          />
+        );
       case "redo":
-        return <UndoRedoSplitButton key={item.id} kind={item.kind} />;
+        return (
+          <UndoRedoSplitButton
+            key={item.id}
+            kind="redo"
+            canExecute={undoRedo.canRedo}
+            descs={undoRedo.redoDescs}
+            onPick={undoRedo.pickRedo}
+          />
+        );
       case "cmd":
         return (
           <Button

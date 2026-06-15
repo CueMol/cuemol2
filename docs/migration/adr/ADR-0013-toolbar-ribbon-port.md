@@ -1,6 +1,6 @@
 # ADR-0013: Top Toolbar — UXP ribbon port as a tab-less Navbar
 
-- Status: accepted (object Save / Reload Scene / undo history pending)
+- Status: accepted (object Save pending; Reload Scene and undo/redo history done)
 - Date: 2026-05-16
 - Mapping rows: [`toolbar.cuemol2-ribbon`](../mapping/toolbars.md)
 
@@ -50,6 +50,16 @@ out of scope for this change.
 > Toolbar `Save As` and `Reload Scene` buttons are now real-wired. Only the
 > object `Save` (overwrite-in-place) button and the Undo/Redo history dropdown
 > remain mock.
+>
+> **Update (2026-06-15):** the Undo/Redo history dropdown and the
+> enable/disable behaviour are now implemented (UXP `populateUndoMenu` /
+> `updateCmdUndoState` parity). A `getUndoState` worker service exposes
+> `isUndoable` / `isRedoable` + the `getUndoDesc(i)` / `getRedoDesc(i)` lists;
+> `hooks/useUndoRedoState.ts` owns the state, registers `CmdId.Undo`/`Redo`,
+> refreshes on `SCE_SCENE_UNDOINFO` (and after each undo/redo, which fires no
+> event) + tab switch, and pushes the enabled flags to the native Edit menu via
+> `MENU_UPDATE_STATE`. Picking history entry `i` calls `scene.undo(i)` (undoes
+> `i+1` txns). Only the object `Save` button remains mock.
 
 ## Consequences
 
@@ -65,10 +75,11 @@ out of scope for this change.
   `ObjectSave` / `ObjectSaveAs` commands plus an object-picker UI. Reload Scene
   stays mock because no `SceneReload` command or worker service exists. These
   are tracked as follow-up work.
-- The Undo/Redo split button shows a caret dropdown, but enumerating undo/redo
-  history needs a worker service exposing `Scene.getUndoSize` / `getUndoDesc`;
-  until then the dropdown is a disabled placeholder and only single-step
-  undo/redo works.
+- The Undo/Redo split button shows a caret dropdown listing the transaction
+  descriptions; picking an entry jumps multiple steps. The body buttons disable
+  at the ends of the stack. State is enumerated by the `getUndoState` worker
+  service (`Scene.getUndoSize` / `getUndoDesc`) and owned by `useUndoRedoState`
+  (see the 2026-06-15 update above).
 
 ## Notes
 

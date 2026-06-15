@@ -77,8 +77,8 @@ View menu state notes:
 | File | Save Scene As... | `save-scene-as` / `menu:save-scene-as` | `CmdId.FileSaveAs` → `IPC.DIALOG_SAVE_SCENE` + `QscWriterOptionDialog` + `saveScene` service | wired | Native save dialog → Blueprint option dialog (Embed / Compatibility / Compression / Encoding; QDF0 constraint) → backup + write. Accelerator `CmdOrCtrl+Shift+S`. See [ADR-0012](../adr/ADR-0012-save-scene-parity.md). |
 | File | Open web page... | — | — | dropped | UXP entry removed from both `cuemol2-menus.xul` and `menuTemplate.ts`; not migrated |
 | File | Quit/Exit | `role: quit` | Electron role + `before-quit` → per-window `win.on('close')` confirm funnel (see macOS App > Quit CueMol) | wired | Non-macOS File menu item — same window-close confirm funnel as macOS; the X button also routes through it. See [ADR-0016](../adr/ADR-0016-window-close-quit-funnel.md). |
-| Edit | Undo | `undo` / `menu:undo` | `CmdId.Undo` | wired | Native menu has a specific push channel |
-| Edit | Redo | `redo` / `menu:redo` | `CmdId.Redo` | wired | Uses macOS accelerator override |
+| Edit | Undo | `undo` / `menu:undo` | `CmdId.Undo` | wired | Owned by `useUndoRedoState`; disabled at stack bottom via `MENU_UPDATE_STATE` (UXP `updateCmdUndoState` parity). Toolbar has a multi-step history dropdown ([ADR-0013](../adr/ADR-0013-toolbar-ribbon-port.md)) |
+| Edit | Redo | `redo` / `menu:redo` | `CmdId.Redo` | wired | Owned by `useUndoRedoState`; disabled when redo stack empty. macOS accelerator override |
 | Edit | Clear undo data | `clear-undo` / `menu:clear-undo` | `MENU_GENERIC` -> `console.warn` | stub | Command not connected |
 | Edit | Merge molecule... | `merge-mol` / `menu:merge-mol` | `MENU_GENERIC` -> `console.warn` | stub | Tool dialog not connected from menu |
 | Edit | Delete mol atoms... | `delete-mol-atoms` / `menu:delete-mol-atoms` | `MENU_GENERIC` -> `console.warn` | stub | Tool dialog not connected from menu |
