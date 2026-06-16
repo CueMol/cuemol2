@@ -12,15 +12,14 @@
  *                   `WorkerService._methods`. Wire form:
  *                   `invokeMethod(name, ...positional)`. Worker side:
  *                   `fn.apply(this, args)` (variadic).
- *   - RpcMap      -> ObjProxy bridge handlers (createObj, getProp, ...). Same
- *                   variadic dispatch as MethodMap, kept separate to
- *                   document the proxy intent.
+ *   - RpcMap      -> class-registry query handlers (hasClass,
+ *                   getAllClassNamesJSON). Same variadic dispatch as
+ *                   MethodMap, kept separate to document the query intent.
  *
  * Adding a service / method / RPC: add an entry here, then implement on the
  * worker side. Type-checking flows from this file outward.
  */
 
-import type { ObjTuple } from './ObjTuple'
 import type {
   RenderStartArgs,
   RenderStartResult,
@@ -29,6 +28,7 @@ import type {
 } from './renderTypes'
 
 import type { AppInfoResult } from '../server/services/appInfo.service'
+import type { DrainLogMessagesResult } from '../server/services/drainLogMessages.service'
 import type { AnimListTimelineArgs, AnimGetMgrStateArgs, AnimPlayArgs, AnimPauseArgs, AnimStopArgs, AnimGoTimeArgs, AnimSetLoopArgs, AnimTransportResult, AnimSetElementTimeArgs, AnimAddElementArgs, AnimRemoveElementArgs, AnimMoveElementArgs, AnimEditResult, AnimAddResult } from '../server/services/animation.service'
 import type { GetAnimElementDetailArgs, GetAnimElementDetailResult, SetAnimElementPropArgs, SetAnimElementPropResult, GetAnimTargetOptionsArgs, GetAnimTargetOptionsResult, GetAnimElementGenericPropsArgs, SetAnimElementGenericPropArgs, ResetAnimElementGenericPropsArgs, AnimGenericPropsResult } from '../server/services/animDetail.service'
 import type { AnimTimeline, AnimMgrState } from '../../types'
@@ -452,6 +452,7 @@ export interface SerializedGestureEvent {
 
 export interface ServiceMap {
   appInfo:                    { args: Record<string, never>;          result: AppInfoResult }
+  drainLogMessages:           { args: Record<string, never>;          result: DrainLogMessagesResult }
   createNewSceneAndView:      { args: CreateNewSceneAndViewArgs;       result: CreateNewSceneAndViewResult }
   createViewInScene:          { args: CreateViewInSceneArgs;           result: CreateViewInSceneResult }
   getCompatibleRendererNames: { args: GetCompatibleRendererNamesArgs;  result: GetCompatibleRendererNamesResult }
@@ -681,17 +682,12 @@ export type MethodFn<K extends MethodKey> = (
 ) => MethodResult<K> | Promise<MethodResult<K>>
 
 // -
-// RpcMap (ObjProxy bridge -- `_methods` table, dispatched as RPCs)
+// RpcMap (class-registry queries -- `_methods` table, dispatched as RPCs)
 // -
 
 export interface RpcMap {
-  createObj:            { args: [className: string];                                                  result: ObjTuple | null }
-  getService:           { args: [className: string];                                                  result: ObjTuple | null }
   hasClass:             { args: [className: string];                                                  result: boolean }
   getAllClassNamesJSON: { args: [];                                                                    result: string }
-  getProp:              { args: [thisobj: ObjTuple, propName: string];                                result: unknown }
-  setProp:              { args: [thisobj: ObjTuple, propName: string, value: unknown];                result: boolean }
-  invokeMethod:         { args: [methodName: string, thisobj: ObjTuple, args: unknown[]];             result: unknown }
 }
 
 export type RpcKey = keyof RpcMap

@@ -28,9 +28,8 @@ export function useLogEvent(callback: (msg: string) => void): void {
         if (!cueMolReady || !cm) return
         let cancelled = false
         ;(async () => {
-            const logMgr = await cm.getService('MsgLog') as any
-            const accumMsg = await logMgr.getAccumMsg()
-            logMgr.removeAccumMsg()
+            const res = await cm.invokeService('drainLogMessages', {})
+            const accumMsg = res.msg
             if (!cancelled && accumMsg) callback(accumMsg)
         })()
         return () => { cancelled = true }
