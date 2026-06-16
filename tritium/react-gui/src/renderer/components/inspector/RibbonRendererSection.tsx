@@ -32,7 +32,7 @@
  * avoid refactoring the freshly-landed cartoon page in the same change).
  */
 
-import React, { useState } from "react";
+import React from "react";
 import {
   NumRow,
   NumInputRow,
@@ -41,192 +41,27 @@ import {
   MappedEnumRow,
   TextRow,
   CAP_LABELS,
-  resetProps,
 } from "./RendererCommonSection";
-import { PropertyField, DragNumericField, SelectField, NumericField } from "../../h3-kit/form";
-import { useRealtimeDragProp } from "../../hooks/useRealtimeDragProp";
+import {
+  MultiEnumRow,
+  MultiNumInputRow,
+  PctRow,
+  SECTION_TYPE_LABELS,
+  SECTION_TYPES_NO_FANCY,
+  SHARP_TYPES,
+  JCT_TYPE_LABELS,
+  JCT_TYPE_OPTIONS,
+} from "./rowHelpers";
 import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
-import type { RendererPropSectionProps, PropMultiWrite } from "./rendererPropSections";
+import type { RendererPropSectionProps } from "./rendererPropSections";
 
 // --- Labels -------------------------------------------------------------------
 
-const SECTION_TYPE_LABELS: Record<string, string> = {
-  elliptical: "Elliptical",
-  roundsquare: "Round square",
-  rectangle: "Rectangle",
-  fancy1: "Fancy",
-};
-/** Section types offered when the UXP dialog omits "fancy1" (the coil section). */
-const SECTION_TYPES_NO_FANCY = ["elliptical", "roundsquare", "rectangle"];
-/** Section types whose corners expose a meaningful sharpness (UXP gate). */
-const SHARP_TYPES = new Set(["roundsquare", "fancy1"]);
-/** JctTable head/tail type labels (UXP "Round" / "Flat" / "Arrow"). */
-const JCT_TYPE_LABELS: Record<string, string> = {
-  smooth: "Round",
-  flat: "Flat",
-  arrow: "Arrow",
-};
-const JCT_TYPE_OPTIONS = ["smooth", "flat", "arrow"];
 /** Cap type option order matching the UXP single menulist. */
 const CAP_TYPE_OPTIONS = ["flat", "sphere", "none"];
 
 type SetFn = RendererPropSectionProps["onSet"];
-type SetManyFn = RendererPropSectionProps["onSetMany"];
 type ResetFn = RendererPropSectionProps["onReset"];
-
-// --- Multi-target helpers -----------------------------------------------------
-
-/** Write one value to every target entry (single -> onSet, multiple -> onSetMany). */
-function writeMany(
-  targets: GenericPropEntry[],
-  value: string | number | boolean,
-  onSet: SetFn,
-  onSetMany: SetManyFn,
-) {
-  if (targets.length === 1) {
-    onSet(targets[0].key, targets[0].type, value);
-    return;
-  }
-  const writes: PropMultiWrite[] = targets.map((t) => ({
-    key: t.key,
-    valueType: t.type,
-    value,
-  }));
-  onSetMany?.(writes);
-}
-
-interface MultiNumInputRowProps {
-  label: string;
-  targets: GenericPropEntry[];
-  min: number;
-  max: number;
-  step: number;
-  onSet: SetFn;
-  onSetMany: SetManyFn;
-  onReset: ResetFn;
-}
-
-/** Plain stepper writing the same integer to one or more targets (Section detail). */
-const MultiNumInputRow: React.FC<MultiNumInputRowProps> = ({
-  label,
-  targets,
-  min,
-  max,
-  step,
-  onSet,
-  onSetMany,
-  onReset,
-}) => {
-  const primary = targets[0];
-  const [draft, setDraft] = useState(Number(primary.value));
-  const commit = (v: number) => {
-    if (v !== Number(primary.value)) writeMany(targets, v, onSet, onSetMany);
-  };
-  return (
-    <PropertyField label={label} inline {...resetProps(primary, onReset)}>
-      <NumericField
-        value={draft}
-        onChange={setDraft}
-        onRelease={commit}
-        slider={false}
-        min={min}
-        max={max}
-        step={step}
-        disabled={primary.readonly}
-      />
-    </PropertyField>
-  );
-};
-
-interface MultiMappedEnumRowProps {
-  label: string;
-  targets: GenericPropEntry[];
-  labels: Record<string, string>;
-  options?: string[];
-  onSet: SetFn;
-  onSetMany: SetManyFn;
-  onReset: ResetFn;
-}
-
-/** Enum dropdown writing the same value to one or more targets (Cap type). */
-const MultiMappedEnumRow: React.FC<MultiMappedEnumRowProps> = ({
-  label,
-  targets,
-  labels,
-  options,
-  onSet,
-  onSetMany,
-  onReset,
-}) => {
-  const primary = targets[0];
-  const shown = options ?? primary.enumdef ?? [String(primary.value)];
-  return (
-    <PropertyField label={label} {...resetProps(primary, onReset)}>
-      <SelectField
-        value={String(primary.value)}
-        disabled={primary.readonly}
-        onChange={(v) => writeMany(targets, v, onSet, onSetMany)}
-      >
-        {shown.map((opt) => (
-          <option key={opt} value={opt}>
-            {labels[opt] ?? opt}
-          </option>
-        ))}
-      </SelectField>
-    </PropertyField>
-  );
-};
-
-interface PctRowProps {
-  label: string;
-  entry: GenericPropEntry;
-  min: number;
-  max: number;
-  step: number;
-  toDisplay: (stored: number) => number;
-  toStored: (display: number) => number;
-  onSet: SetFn;
-  onReset: ResetFn;
-  disabled?: boolean;
-}
-
-/** Drag-numeric row showing a percentage derived from a stored JctTable value. */
-const PctRow: React.FC<PctRowProps> = ({
-  label,
-  entry,
-  min,
-  max,
-  step,
-  toDisplay,
-  toStored,
-  onSet,
-  onReset,
-  disabled,
-}) => {
-  const dragProps = useRealtimeDragProp({
-    committed: toDisplay(Number(entry.value)),
-    committedIsDefault: entry.isdefault,
-    realtime: false,
-    onPreview: () => {},
-    onCommit: (original, v) => {
-      if (v === original) return;
-      onSet(entry.key, entry.type, toStored(v));
-    },
-  });
-  return (
-    <PropertyField label={label} {...resetProps(entry, onReset)}>
-      <DragNumericField
-        {...dragProps}
-        min={min}
-        max={max}
-        step={step}
-        decimals={0}
-        unit="%"
-        disabled={disabled || entry.readonly}
-      />
-    </PropertyField>
-  );
-};
 
 // --- Reusable blocks ----------------------------------------------------------
 
@@ -506,7 +341,7 @@ export const RibbonMainSection: React.FC<RendererPropSectionProps> = ({
         />
       )}
       {capTargets.length > 0 && (
-        <MultiMappedEnumRow
+        <MultiEnumRow
           label="Cap type"
           targets={capTargets}
           labels={CAP_LABELS}
