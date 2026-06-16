@@ -6,7 +6,7 @@
  */
 
 import { app, Menu } from 'electron'
-import type { BrowserWindow, MenuItem, MenuItemConstructorOptions } from 'electron'
+import type { BrowserWindow, MenuItemConstructorOptions } from 'electron'
 import path from 'path'
 import { IPC } from '../shared/ipcChannels'
 import { APP_MENU } from '../shared/menuTemplate'
@@ -19,8 +19,24 @@ import {
 import type { MenuState, RecentFileEntry } from '../shared/ipcTypes'
 import { applyMenuStateTo, mergeMenuState } from '../shared/menuStateApply'
 import { getExistingRecents } from './recentFiles'
+import {
+  isBlocked,
+  setDeferredRebuild,
+  _resetMenuBlockForTest as _resetMenuBlockStateForTest,
+} from './menuBlock'
 
-export type MenuBlockReason = 'blueprint' | 'native'
+// Re-export the modal-aware block machinery from its dedicated module so
+// existing importers (`handlers/fileDialogs.ts`, `ipcHandlers.ts`) keep
+// importing the block API from `./menu` unchanged.
+export {
+  setMenuBlocked,
+  withMenuBlocked,
+  walkMenuItems,
+  applyBlock,
+  applyUnblock,
+  isBlocked,
+} from './menuBlock'
+export type { MenuBlockReason } from './menuBlock'
 
 const isMac = process.platform === 'darwin'
 
@@ -223,124 +239,53 @@ function buildAndSetMenu(mainWindow: BrowserWindow): void {
   }
 }
 
-/** Build and install the application menu for the given window (first run). */
-export function createMenu(mainWindow: BrowserWindow): void {
-  mainWindowRef = mainWindow
-  buildAndSetMenu(mainWindow)
-}
-
 /**
- * Rebuild the entire application menu. Call after recent files change so
- * the dynamic `open-recent` submenu refreshes. When a modal block is
- * active the rebuild is deferred — replacing the menu mid-block would
- * lose the enabled-state snapshot. The deferred rebuild fires from
- * `applyUnblock()`.
+ * Flush a rebuild deferred while the menu was blocked. Registered with
+ * `menuBlock.setDeferredRebuild()` and invoked from `applyUnblock()` once
+ * the block snapshot has been restored.
  */
-export function rebuildApplicationMenu(): void {
-  if (!mainWindowRef) return
-  if (snapshot) {
-    pendingRebuild = true
-    return
-  }
-  buildAndSetMenu(mainWindowRef)
-}
-
-// --- Modal-aware menu accelerator block ---
-//
-// When a Blueprint Dialog (or message box) is open in the renderer, or when
-// a native OS dialog is being shown from main, all application-menu items
-// are temporarily disabled so accelerators like Cmd+Q stop firing — matching
-// UXP's XUL `openDialog(..., 'modal')` behaviour.
-//
-// Multiple block sources are reference-counted via `blockReasons`. The
-// snapshot captures each item's `enabled` value at the moment we enter the
-// blocked state and restores it on exit, so prior `updateMenuState()` checks
-// (perspective / center-mark / bg-color) survive a block cycle.
-
-const blockReasons: Map<MenuBlockReason, number> = new Map()
-let snapshot: Map<MenuItem, boolean> | null = null
-
-/** Recursively visit every MenuItem in the tree (root submenu first). */
-export function walkMenuItems(menu: Menu, fn: (item: MenuItem) => void): void {
-  for (const item of menu.items) {
-    fn(item)
-    if (item.submenu) walkMenuItems(item.submenu, fn)
-  }
-}
-
-function totalBlockCount(): number {
-  let total = 0
-  for (const n of blockReasons.values()) total += n
-  return total
-}
-
-/** Disable every menu item, snapshotting their current `enabled` values. */
-function applyBlock(): void {
-  const menu = Menu.getApplicationMenu()
-  if (!menu) return
-  if (snapshot) return // already blocked
-  const snap = new Map<MenuItem, boolean>()
-  walkMenuItems(menu, (item) => {
-    if (item.type === 'separator') return
-    snap.set(item, item.enabled)
-    item.enabled = false
-  })
-  snapshot = snap
-}
-
-/** Restore the menu items' `enabled` values from the block snapshot, then run any deferred rebuild. */
-function applyUnblock(): void {
-  if (!snapshot) return
-  for (const [item, prev] of snapshot) {
-    item.enabled = prev
-  }
-  snapshot = null
+function flushPendingRebuild(): void {
   if (pendingRebuild && mainWindowRef) {
     pendingRebuild = false
     buildAndSetMenu(mainWindowRef)
   }
 }
 
-/**
- * Increment / decrement the block counter for a given reason. Crossing the
- * total 0 -> >=1 boundary disables every menu item; crossing >=1 -> 0
- * restores them. Calls are idempotent against the same reason being toggled
- * twice in the same direction (the counter still tracks correctly).
- */
-export function setMenuBlocked(reason: MenuBlockReason, blocked: boolean): void {
-  const prev = blockReasons.get(reason) ?? 0
-  const next = blocked ? prev + 1 : Math.max(0, prev - 1)
-  blockReasons.set(reason, next)
-  const total = totalBlockCount()
-  if (total > 0 && !snapshot) applyBlock()
-  else if (total === 0 && snapshot) applyUnblock()
+/** Build and install the application menu for the given window (first run). */
+export function createMenu(mainWindow: BrowserWindow): void {
+  mainWindowRef = mainWindow
+  // Wire the deferred-rebuild callback so a rebuild requested while the menu
+  // is blocked fires once on unblock (see menuBlock.applyUnblock).
+  setDeferredRebuild(flushPendingRebuild)
+  buildAndSetMenu(mainWindow)
 }
 
-/** Test-only: reset block state between tests. */
+/**
+ * Rebuild the entire application menu. Call after recent files change so
+ * the dynamic `open-recent` submenu refreshes. When a modal block is
+ * active the rebuild is deferred -- replacing the menu mid-block would
+ * lose the enabled-state snapshot. The deferred rebuild fires from
+ * `menuBlock.applyUnblock()` via `flushPendingRebuild`.
+ */
+export function rebuildApplicationMenu(): void {
+  if (!mainWindowRef) return
+  if (isBlocked()) {
+    pendingRebuild = true
+    return
+  }
+  buildAndSetMenu(mainWindowRef)
+}
+
+/**
+ * Test-only: reset both the menu-block state (in `menuBlock.ts`) and this
+ * module's rebuild / cache state. Kept as the single reset entry point so
+ * callers do not have to know the state is split across two modules.
+ */
 export function _resetMenuBlockForTest(): void {
-  blockReasons.clear()
-  snapshot = null
+  _resetMenuBlockStateForTest()
   mainWindowRef = null
   pendingRebuild = false
   lastMenuState = null
-}
-
-/**
- * Run an async operation with the menu blocked under the given reason.
- * Used by handlers that open native OS dialogs (showOpenDialog,
- * showSaveDialog, showMessageBox) so the parent window's menu accelerators
- * are suppressed for the duration of the dialog.
- */
-export async function withMenuBlocked<T>(
-  reason: MenuBlockReason,
-  op: () => Promise<T>,
-): Promise<T> {
-  setMenuBlocked(reason, true)
-  try {
-    return await op()
-  } finally {
-    setMenuBlocked(reason, false)
-  }
 }
 
 /**
@@ -354,7 +299,7 @@ export function updateMenuState(state: MenuState): void {
   // unblock; the snapshot itself preserves whatever enabled values were
   // current at block entry, so on unblock the menu returns to its last
   // known-good state.
-  if (snapshot) return
+  if (isBlocked()) return
 
   // Merge into the persistent cache so a later menu rebuild can replay
   // the full view/scene state onto the freshly built MenuItem instances.

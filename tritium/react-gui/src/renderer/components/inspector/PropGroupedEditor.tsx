@@ -42,7 +42,19 @@ interface PropGroupedEditorProps {
 // Editor dispatcher
 // ────────────────────────────────────────────────────────────
 
-/** Render the editor widget matching a property's `type`. */
+/**
+ * Render the editor widget matching a property's `type`.
+ *
+ * Only the scalar `PropType` values are reachable here: the sole consumer
+ * (`RenderSettingsEditor` via `data/renderSettings.ts`) emits string /
+ * integer / real / boolean / enum / color props. The `"object"` member of
+ * `PropType` has no data path into this editor, so the default branch is
+ * an unreachable fallback that simply renders nothing.
+ *
+ * @param prop - The property descriptor to render an editor for.
+ * @param onChange - Invoked with (key, value) when the user edits the value.
+ * @returns The editor element for the property's type, or undefined.
+ */
 export const renderPropEditor = (
   prop: PropDef,
   onChange: (key: string, value: string | number | boolean) => void,
@@ -60,14 +72,7 @@ export const renderPropEditor = (
     case "color":
       return <ColorEditor key={prop.key} prop={prop} onChange={onChange} />;
     default:
-      return (
-        <div key={prop.key} className="insp-prop-row">
-          <span className="insp-prop-label">{prop.label}</span>
-          <span className="insp-prop-control insp-prop-readonly">
-            {String(prop.value)}
-          </span>
-        </div>
-      );
+      return null;
   }
 };
 
