@@ -24,7 +24,7 @@ export interface GetNewRendererOptionsArgs {
 
 export interface GetNewRendererOptionsResult {
     ok: boolean;
-    /** Uid of the resolved target object — the new renderer attaches here. */
+    /** Uid of the resolved target object -- the new renderer attaches here. */
     targetObjId: number;
     /** Group name to assign to the new renderer (empty when not in a group). */
     groupName: string;
@@ -87,7 +87,7 @@ function getNewRendererOptions(
 
     let objName = '';
     try { objName = obj.name ?? ''; } catch { /* ignore */ }
-    // Use the getClassName() METHOD, not a `className` property — the
+    // Use the getClassName() METHOD, not a `className` property -- the
     // worker-side C++ wrapper exposes the former (the latter reads back
     // undefined). This must match getCompatibleRendererNames.service so the
     // renderer-type history key is shared between the file-open and

@@ -42,7 +42,7 @@ export function renderText(cm: CueMol, trNative: any): void {
     tr.resize(size);
 
     // Wrap img.data (Uint8ClampedArray, RGBA) as a Uint8Array view (zero-copy),
-    // then pass to C++ as a ByteArray for bulk alpha extraction — avoids N JS→C++ calls.
+    // then pass to C++ as a ByteArray for bulk alpha extraction -- avoids N JS->C++ calls.
     const rgbaView = new Uint8Array(img.data.buffer, img.data.byteOffset, img.data.byteLength);
     const ba = cm.fromTypedArray(rgbaView) as ByteArray;
     tr.setDataFromRGBA(ba);

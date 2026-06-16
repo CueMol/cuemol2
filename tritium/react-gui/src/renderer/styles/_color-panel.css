@@ -94,24 +94,6 @@
   width: 100%;
 }
 
-/* Inline input for editing cell values directly */
-.color-inline-input {
-  width: 100%;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: inherit;
-  font-family: inherit;
-  font-size: var(--fs-lg);
-  padding: var(--space-1) var(--space-2);
-  cursor: text;
-}
-
-.color-inline-input:focus {
-  background: var(--overlay-focus);
-  border-radius: var(--radius-sm);
-}
-
 /* Bottom action buttons */
 .color-actions {
   flex-shrink: 0;
@@ -187,20 +169,13 @@
   flex-shrink: 0;
 }
 
-.color-solid-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
 
-.color-solid-label {
-  font-size: var(--fs-base);
-  color: var(--text-primary);
-  flex-shrink: 0;
-}
-
-
-/* CPK / Rainbow / Bfac deck shared field rows */
+/* CPK / Rainbow / Bfac deck shared field rows.
+ * The labeled control rows themselves are now built with the form-kit catalog
+ * (Field + ColorField / SelectField / SliderField / RejectNumberInput), which
+ * owns control height / row padding / label gap. Only the deck scroll wrapper
+ * and the genuine 3-column elepot ramp layout remain here -- those are layout,
+ * not control sizing. */
 .color-deck-scroll {
   flex: 1;
   min-height: 0;
@@ -228,26 +203,6 @@
   flex-shrink: 0;
 }
 
-.color-field-input {
-  flex: 1;
-  border: 1px solid var(--border);
-  background: var(--bg-input);
-  border-radius: var(--radius-md);
-  padding: var(--space-1) var(--space-3);
-  font-size: var(--fs-base);
-}
-
-.color-field-input:disabled {
-  opacity: 0.5;
-}
-
-.color-field-unit {
-  font-size: var(--fs-sm2);
-  color: var(--text-secondary);
-  flex-shrink: 0;
-  width: 16px;
-}
-
 .color-section-sublabel {
   font-size: var(--fs-sm2);
   color: var(--text-secondary);
@@ -259,9 +214,8 @@
 
 /* Select look (height / border / chevron) comes from the form-kit `.h3-form-select`
  * class (styles/_form-kit.css). Here the wrapper carries layout only: it fills
- * its row and stays frameless so only the inner select's border shows --
- * neutralizing both Blueprint's default wrapper frame and the
- * `.color-field-input` border/background used by the sibling text inputs. */
+ * the panel shell row (renderer picker) and stays frameless so only the inner
+ * select's border shows -- neutralizing Blueprint's default wrapper frame. */
 .color-enum-select.bp5-html-select {
   flex: 1;
   min-width: 0;

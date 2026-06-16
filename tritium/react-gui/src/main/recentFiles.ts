@@ -26,7 +26,7 @@ export function getRecents(): RecentFileEntry[] {
  *
  * Dedup uses the path string only (UXP behavior). Re-opening a file as
  * `obj` after a previous `scene` entry, or vice versa, replaces the
- * existing ftype — last write wins. Returns the new list.
+ * existing ftype -- last write wins. Returns the new list.
  */
 export function addRecent(entry: RecentFileEntry): RecentFileEntry[] {
   const next = addToRecents(getRecents(), entry)
@@ -42,7 +42,7 @@ export function clearRecents(): RecentFileEntry[] {
 /**
  * MRU filtered to entries whose file still exists on disk. Used at menu
  * build time so we don't show stale items, but the stored list itself is
- * not pruned — a transiently unmounted volume must not cause permanent
+ * not pruned -- a transiently unmounted volume must not cause permanent
  * loss of history.
  */
 export function getExistingRecents(): RecentFileEntry[] {

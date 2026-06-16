@@ -17,20 +17,20 @@ import { useEffect } from 'react'
 import { useCommands } from '../commands/CommandRegistry'
 import { CmdId } from '../commands/ids'
 import { IPC } from '../../shared/ipcChannels'
+import { MENU_PASS_THROUGH_CHANNELS } from '../../shared/menuActionMap'
+import type { PushChannel } from '../../shared/ipcContract'
 import { useMenuDispatch } from './useMenuDispatch'
 import { useShowErrorAlert } from '../components/dialogs/ErrorAlertDialogProvider'
 
-/** Push channels whose only effect is to forward themselves to dispatchMenuChannel. */
-const MENU_PASS_THROUGH = [
-  IPC.MENU_NEW_TAB,
-  IPC.MENU_CLOSE_TAB,
-  IPC.MENU_SAVE,
-  IPC.MENU_NEW_SCENE,
-  IPC.MENU_OPEN_FILE,
-  IPC.MENU_OPEN_SCENE,
-  IPC.MENU_UNDO,
-  IPC.MENU_REDO,
-] as const
+/**
+ * Push channels whose only effect is to forward themselves to
+ * dispatchMenuChannel. Derived from menuActionMap (the 'dedicated-direct'
+ * delivery set) so it can never drift from the main-process send choice.
+ *
+ * Each dedicated-direct channel is a void-payload push channel; the cast
+ * narrows the menu-action key union to the PushChannel union it is a subset of.
+ */
+const MENU_PASS_THROUGH = MENU_PASS_THROUGH_CHANNELS as readonly PushChannel[]
 
 export function useElectronIpc(activeTab: string | null): void {
   const { dispatch } = useCommands()

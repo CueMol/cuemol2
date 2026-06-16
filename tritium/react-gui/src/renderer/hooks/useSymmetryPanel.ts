@@ -15,7 +15,7 @@
  * the selected object.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useRef } from 'react'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import type {
     SymmetryInfo,
@@ -26,7 +26,7 @@ import {
     SEM_SCENE,
     SEM_ANY,
 } from '../event'
-import { useCueMolEventListener } from './useCueMolEventListener'
+import { useLiveFetch } from './useLiveFetch'
 
 export interface UseSymmetryPanelOptions {
     cm: AsyncCueMol | null
@@ -58,7 +58,6 @@ const EMPTY_INFO_RESULT: GetSymmetryPanelInfoResult = {
 
 export function useSymmetryPanel(opts: UseSymmetryPanelOptions): UseSymmetryPanelResult {
     const { cm, sceneId, objId } = opts
-    const [infoResult, setInfoResult] = useState<GetSymmetryPanelInfoResult>(EMPTY_INFO_RESULT)
 
     // Keep latest sceneId / objId in refs so event-driven refetches
     // don't force resubscribe.
@@ -67,55 +66,41 @@ export function useSymmetryPanel(opts: UseSymmetryPanelOptions): UseSymmetryPane
     const objIdRef = useRef(objId)
     objIdRef.current = objId
 
-    const infoToken = useRef(0)
-
-    const fetchInfo = useCallback((): void => {
-        const sid = sceneIdRef.current
-        const oid = objIdRef.current
-        if (!cm || sid === undefined || oid === undefined) {
-            setInfoResult(EMPTY_INFO_RESULT)
-            return
-        }
-        const token = ++infoToken.current
-        cm.invokeService('getSymmetryPanelInfo', { sceneId: sid, objId: oid })
-            .then((res) => {
-                if (token !== infoToken.current) return
-                setInfoResult(res ?? EMPTY_INFO_RESULT)
-            })
-            .catch((err: unknown) => {
-                if (token !== infoToken.current) return
-                console.warn('getSymmetryPanelInfo failed:', err)
-                setInfoResult(EMPTY_INFO_RESULT)
-            })
-    }, [cm])
-
-    // Re-fetch when the active object (or scene) changes.
-    useEffect(() => {
-        fetchInfo()
-    }, [cm, sceneId, objId, fetchInfo])
-
-    // Refetch on SEM_OBJECT events (CrystalInfo / property changes).
-    useCueMolEventListener({
+    const { state: infoResult, refetch: fetchInfo } = useLiveFetch<GetSymmetryPanelInfoResult>({
         cm,
-        enabled: sceneId !== undefined && objId !== undefined,
-        category: '',
-        srcMask: SEM_OBJECT,
-        evtMask: SEM_ANY,
-        scopeId: sceneId ?? -1,
-        handler: fetchInfo,
-        debounceMs: 30,
-    })
-
-    // Scene-wide events (load / clear) -- the object may have churned.
-    useCueMolEventListener({
-        cm,
-        enabled: sceneId !== undefined,
-        category: '',
-        srcMask: SEM_SCENE,
-        evtMask: SEM_ANY,
-        scopeId: sceneId ?? -1,
-        handler: fetchInfo,
-        debounceMs: 30,
+        initial: EMPTY_INFO_RESULT,
+        fallback: EMPTY_INFO_RESULT,
+        fetch: () => {
+            const sid = sceneIdRef.current
+            const oid = objIdRef.current
+            if (!cm || sid === undefined || oid === undefined) return null
+            return cm
+                .invokeService('getSymmetryPanelInfo', { sceneId: sid, objId: oid })
+                .then((res) => res ?? EMPTY_INFO_RESULT)
+                .catch((err: unknown) => {
+                    console.warn('getSymmetryPanelInfo failed:', err)
+                    return EMPTY_INFO_RESULT
+                })
+        },
+        fetchDeps: [sceneId, objId],
+        listeners: [
+            // SEM_OBJECT events (CrystalInfo / property changes).
+            {
+                enabled: sceneId !== undefined && objId !== undefined,
+                srcMask: SEM_OBJECT,
+                evtMask: SEM_ANY,
+                scopeId: sceneId ?? -1,
+                debounceMs: 30,
+            },
+            // Scene-wide events (load / clear) -- the object may have churned.
+            {
+                enabled: sceneId !== undefined,
+                srcMask: SEM_SCENE,
+                evtMask: SEM_ANY,
+                scopeId: sceneId ?? -1,
+                debounceMs: 30,
+            },
+        ],
     })
 
     return {

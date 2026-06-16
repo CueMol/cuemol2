@@ -1,26 +1,25 @@
 /**
- * Typed contract for the renderer ↔ Web Worker boundary.
+ * Typed contract for the renderer <-> Web Worker boundary.
  *
  * Three categories of calls flow over the same wire (`postMessage` with
  * `[method, seqno, ...args]`) but have distinct dispatch semantics on the
  * worker side; we mirror that split with three maps:
  *
- *   - ServiceMap  → business-logic services registered via `register(name, fn)`.
+ *   - ServiceMap  -> business-logic services registered via `register(name, fn)`.
  *                   Wire form: `invokeService(name, args)`. Worker side:
  *                   `fn(ctx, args[0])` (single-arg).
- *   - MethodMap   → infrastructure / hot-path methods declared in
+ *   - MethodMap   -> infrastructure / hot-path methods declared in
  *                   `WorkerService._methods`. Wire form:
  *                   `invokeMethod(name, ...positional)`. Worker side:
  *                   `fn.apply(this, args)` (variadic).
- *   - RpcMap      → ObjProxy bridge handlers (createObj, getProp, …). Same
- *                   variadic dispatch as MethodMap, kept separate to
- *                   document the proxy intent.
+ *   - RpcMap      -> class-registry query handlers (hasClass,
+ *                   getAllClassNamesJSON). Same variadic dispatch as
+ *                   MethodMap, kept separate to document the query intent.
  *
  * Adding a service / method / RPC: add an entry here, then implement on the
  * worker side. Type-checking flows from this file outward.
  */
 
-import type { ObjTuple } from './ObjTuple'
 import type {
   RenderStartArgs,
   RenderStartResult,
@@ -29,6 +28,7 @@ import type {
 } from './renderTypes'
 
 import type { AppInfoResult } from '../server/services/appInfo.service'
+import type { DrainLogMessagesResult } from '../server/services/drainLogMessages.service'
 import type { AnimListTimelineArgs, AnimGetMgrStateArgs, AnimPlayArgs, AnimPauseArgs, AnimStopArgs, AnimGoTimeArgs, AnimSetLoopArgs, AnimTransportResult, AnimSetElementTimeArgs, AnimAddElementArgs, AnimRemoveElementArgs, AnimMoveElementArgs, AnimEditResult, AnimAddResult } from '../server/services/animation.service'
 import type { GetAnimElementDetailArgs, GetAnimElementDetailResult, SetAnimElementPropArgs, SetAnimElementPropResult, GetAnimTargetOptionsArgs, GetAnimTargetOptionsResult, GetAnimElementGenericPropsArgs, SetAnimElementGenericPropArgs, ResetAnimElementGenericPropsArgs, AnimGenericPropsResult } from '../server/services/animDetail.service'
 import type { AnimTimeline, AnimMgrState } from '../../types'
@@ -128,8 +128,6 @@ import type {
   FocusOnNodeResult,
   DeleteNodeArgs,
   DeleteNodeResult,
-  GetNodeInfoArgs,
-  GetNodeInfoResult,
   RenameNodeArgs,
   RenameNodeResult,
 } from '../server/services/sceneOps.service'
@@ -419,9 +417,9 @@ import type {
 import type { ElectronFileFilter } from '../../../shared/ipcTypes'
 import type { WorkerContext } from '../server/types/WorkerContext'
 
-// ────────────────────────────────────────────────────────────
+// -
 // Serialized DOM events (worker side cannot read live DOM events)
-// ────────────────────────────────────────────────────────────
+// -
 
 /** Mouse event fields that inputApi forwards to the worker. */
 export interface SerializedMouseEvent {
@@ -448,12 +446,13 @@ export interface SerializedGestureEvent {
   axisID: number; delta: number
 }
 
-// ────────────────────────────────────────────────────────────
-// ServiceMap (registered services — `_registered` table)
-// ────────────────────────────────────────────────────────────
+// -
+// ServiceMap (registered services -- `_registered` table)
+// -
 
 export interface ServiceMap {
   appInfo:                    { args: Record<string, never>;          result: AppInfoResult }
+  drainLogMessages:           { args: Record<string, never>;          result: DrainLogMessagesResult }
   createNewSceneAndView:      { args: CreateNewSceneAndViewArgs;       result: CreateNewSceneAndViewResult }
   createViewInScene:          { args: CreateViewInSceneArgs;           result: CreateViewInSceneResult }
   getCompatibleRendererNames: { args: GetCompatibleRendererNamesArgs;  result: GetCompatibleRendererNamesResult }
@@ -493,7 +492,6 @@ export interface ServiceMap {
   setNodeVisible:             { args: SetNodeVisibleArgs;              result: SetNodeVisibleResult }
   focusOnNode:                { args: FocusOnNodeArgs;                 result: FocusOnNodeResult }
   deleteNode:                 { args: DeleteNodeArgs;                  result: DeleteNodeResult }
-  getNodeInfo:                { args: GetNodeInfoArgs;                 result: GetNodeInfoResult }
   getGenericProps:            { args: GetGenericPropsArgs;             result: GetGenericPropsResult }
   setGenericProp:             { args: SetGenericPropArgs;              result: SetGenericPropResult }
   setGenericProps:            { args: SetGenericPropsArgs;             result: SetGenericPropResult }
@@ -651,9 +649,9 @@ export type ServiceFn<K extends ServiceKey> = (
   args: ServiceArgs<K>,
 ) => ServiceResult<K> | Promise<ServiceResult<K>>
 
-// ────────────────────────────────────────────────────────────
-// MethodMap (infrastructure / hot-path — `_methods` table)
-// ────────────────────────────────────────────────────────────
+// -
+// MethodMap (infrastructure / hot-path -- `_methods` table)
+// -
 
 export interface MethodMap {
   initCueMol:              { args: [loadPath?: string];                                                    result: boolean }
@@ -683,18 +681,13 @@ export type MethodFn<K extends MethodKey> = (
   ...args: MethodArgs<K>
 ) => MethodResult<K> | Promise<MethodResult<K>>
 
-// ────────────────────────────────────────────────────────────
-// RpcMap (ObjProxy bridge — `_methods` table, dispatched as RPCs)
-// ────────────────────────────────────────────────────────────
+// -
+// RpcMap (class-registry queries -- `_methods` table, dispatched as RPCs)
+// -
 
 export interface RpcMap {
-  createObj:            { args: [className: string];                                                  result: ObjTuple | null }
-  getService:           { args: [className: string];                                                  result: ObjTuple | null }
   hasClass:             { args: [className: string];                                                  result: boolean }
   getAllClassNamesJSON: { args: [];                                                                    result: string }
-  getProp:              { args: [thisobj: ObjTuple, propName: string];                                result: unknown }
-  setProp:              { args: [thisobj: ObjTuple, propName: string, value: unknown];                result: boolean }
-  invokeMethod:         { args: [methodName: string, thisobj: ObjTuple, args: unknown[]];             result: unknown }
 }
 
 export type RpcKey = keyof RpcMap

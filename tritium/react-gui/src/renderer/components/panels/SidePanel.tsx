@@ -14,7 +14,7 @@
  *
  * | View       | Panes                                       |
  * |------------|---------------------------------------------|
- * | Explorer   | ScenePane, ColorPane, DummyPane4            |
+ * | Explorer   | ScenePane, ColorPane                        |
  * | Selection  | MolStructPane, SelectionPane                |
  * | Crystal    | SymmetryPane, DensityMapPane                |
  * | Catalog    | CatalogPane1, CatalogPane2, CatalogPane3    |
@@ -101,7 +101,7 @@ const VIEW_ICONS: Record<ActivityView, AppIconKey> = {
 /**
  * Describes a single pane within a view's Allotment.
  * New panes can be added to a view by appending entries to the config
- * array — no structural code changes required.
+ * array -- no structural code changes required.
  */
 interface PaneConfig {
   /** Unique key within the view (used for collapse-state lookup). */

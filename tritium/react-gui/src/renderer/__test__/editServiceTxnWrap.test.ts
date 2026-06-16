@@ -122,20 +122,32 @@ describe('loadObject service — undo txn wrapping', () => {
     })
 })
 
-describe('loadScene service — undo txn wrapping', () => {
+describe('loadScene service — NOT undo-txn-wrapped (by design)', () => {
     let calls: string[]
     let ctx: WorkerContext
+    let mockScene: ReturnType<typeof makeCtx>['mockScene']
 
     beforeEach(() => {
         const m = makeCtx()
         calls = m.calls
         ctx = m.ctx
+        mockScene = m.mockScene
     })
 
-    it('wraps body with startUndoTxn("Open scene") and commitUndoTxn', () => {
+    // A whole-scene load is not an edit: loadScene mirrors UXP
+    // `qsc-io.readSceneFile` / C++ `LoadSceneCommand::run()`, both of which run
+    // OUTSIDE any undo txn so the object-registration records are discarded and
+    // the undo stack stays empty. Wrapping it was the bug. This test pins the
+    // current (correct) contract: loadScene runs its body with NO startUndoTxn /
+    // commitUndoTxn / rollbackUndoTxn at all.
+    it('runs reader.read without any startUndoTxn / commit / rollback', () => {
         loadScene(ctx, { filePath: '/test.qsc', sceneId: 1 })
-        expect(calls[0]).toBe('start:Open scene')
-        expect(calls).toContain('commit')
+        expect(calls).toContain('reader.read')
+        expect(calls.some((c) => c.startsWith('start:'))).toBe(false)
+        expect(calls).not.toContain('commit')
         expect(calls).not.toContain('rollback')
+        expect(mockScene.startUndoTxn).not.toHaveBeenCalled()
+        expect(mockScene.commitUndoTxn).not.toHaveBeenCalled()
+        expect(mockScene.rollbackUndoTxn).not.toHaveBeenCalled()
     })
 })

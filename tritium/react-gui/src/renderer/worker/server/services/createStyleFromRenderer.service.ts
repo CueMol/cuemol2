@@ -1,19 +1,19 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 //
-// Phase 6c — Create Renderer Style dialog support.
+// Phase 6c -- Create Renderer Style dialog support.
 //
 // UXP source:
-//   - `style/rendstyle_create.xul` / `rendstyle_create.js` — dialog UI
-//   - `workspace_panel_ctxtmenu.js` `onCreateStyle` — caller that opens
+//   - `style/rendstyle_create.xul` / `rendstyle_create.js` -- dialog UI
+//   - `workspace_panel_ctxtmenu.js` `onCreateStyle` -- caller that opens
 //     the dialog and then calls
 //     `StyleManager.createStyleFromObj(scene.uid, ssetid, name+typeName, rend)`
 //
 // Two worker services:
-//   - `getCreateRendStyleInfo` — pre-fetches renderer + writable style-set
+//   - `getCreateRendStyleInfo` -- pre-fetches renderer + writable style-set
 //     list (filters out readonly + the global "system" set, matching
 //     `populateStyleSetList`). Defaults the selection to the scene-local
 //     set when one exists.
-//   - `createStyleFromRenderer` — calls `StyleManager.createStyleFromObj`.
+//   - `createStyleFromRenderer` -- calls `StyleManager.createStyleFromObj`.
 //     C++ overwrites a same-name node internally (UXP's confirm prompt is
 //     a UI nicety; we drop it in favour of the same auto-handle pattern
 //     used by object / renderer / style paste paths).
@@ -23,7 +23,7 @@ import type { LScrObject } from '@cuemol/core/src/wrappers/LScrObject';
 import type { WorkerContext } from '../types/WorkerContext';
 import { getSceneOrNull } from './helpers/sceneResolver';
 
-// ─── getCreateRendStyleInfo ───────────────────────────────────────────────
+// --- getCreateRendStyleInfo ---
 
 export interface GetCreateRendStyleInfoArgs {
     sceneId: number;
@@ -43,7 +43,7 @@ export interface GetCreateRendStyleInfoResult {
     ok: boolean;
     rendName: string;
     rendTypeName: string;
-    /** Writable style sets — readonly sets + the global "system" set are filtered out. */
+    /** Writable style sets -- readonly sets + the global "system" set are filtered out. */
     styleSets: WritableStyleSetEntry[];
     /**
      * Pre-selected uid: scene-local set when one is writable, otherwise
@@ -134,7 +134,7 @@ function getCreateRendStyleInfo(
     };
 }
 
-// ─── createStyleFromRenderer ──────────────────────────────────────────────
+// --- createStyleFromRenderer ---
 
 export interface CreateStyleFromRendererArgs {
     sceneId: number;
@@ -142,7 +142,7 @@ export interface CreateStyleFromRendererArgs {
     /** Target StyleSet uid (from `getCreateRendStyleInfo.styleSets`). */
     setUid: number;
     /**
-     * User-entered base name — the worker appends the renderer's
+     * User-entered base name -- the worker appends the renderer's
      * `type_name` to form the final style name, matching UXP's
      * `args.style_name = res_name + this.mRendTypeName`.
      */
@@ -194,7 +194,7 @@ function createStyleFromRenderer(
     } catch {
         return empty;
     }
-    // UXP does not wrap createStyleFromObj in an undo txn — the
+    // UXP does not wrap createStyleFromObj in an undo txn -- the
     // StyleManager fires its own pending events. Match that behaviour.
     return { ok: true, styleName };
 }

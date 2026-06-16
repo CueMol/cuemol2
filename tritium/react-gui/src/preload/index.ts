@@ -1,9 +1,9 @@
 /**
- * Electron preload script — bridges the sandboxed renderer to the privileged
+ * Electron preload script -- bridges the sandboxed renderer to the privileged
  * main process via IPC.
  *
- * The renderer-facing API is two generic helpers (`invoke` for renderer→main
- * request/reply and `onPush` for main→renderer notifications) backed by the
+ * The renderer-facing API is two generic helpers (`invoke` for renderer->main
+ * request/reply and `onPush` for main->renderer notifications) backed by the
  * typed channel maps in `shared/ipcContract.ts`. There is no per-channel
  * method; every new channel is one entry in the map.
  */

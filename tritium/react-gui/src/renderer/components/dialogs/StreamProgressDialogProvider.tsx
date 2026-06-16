@@ -66,7 +66,7 @@ export const StreamProgressDialogProvider: React.FC<{ children: React.ReactNode 
     }), []);
 
     const handleCancel = useCallback(() => {
-        // Flip UI to "Canceling…" first, then run the user-supplied cancel handler.
+        // Flip UI to "Canceling..." first, then run the user-supplied cancel handler.
         setState((s) => (s.visible ? { ...s, status: 'canceling' } : s));
         try {
             onCancelRef.current();

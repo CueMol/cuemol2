@@ -2,9 +2,9 @@
  * Persistent application state powered by electron-store.
  *
  * The store is organised into top-level namespaces:
- *   - `windowBounds` – window geometry and maximised flag
- *   - `layout`       – splitter positions and panel open/close state
- *   - `ui`           – miscellaneous UI preferences
+ *   - `windowBounds` -- window geometry and maximised flag
+ *   - `layout`       -- splitter positions and panel open/close state
+ *   - `ui`           -- miscellaneous UI preferences
  */
 
 import Store from 'electron-store'
@@ -12,9 +12,7 @@ import type { LayoutState, RecentFileEntry, UiState } from '../shared/ipcTypes'
 
 export type { LayoutState, UiState, PaneCollapseState } from '../shared/ipcTypes'
 
-// ─────────────────────────────────────────────
-// Types
-// ─────────────────────────────────────────────
+// --- Types ---
 
 export interface WindowBounds {
   x: number
@@ -31,9 +29,7 @@ interface StoreSchema {
   recentFiles: RecentFileEntry[]
 }
 
-// ─────────────────────────────────────────────
-// Defaults
-// ─────────────────────────────────────────────
+// --- Defaults ---
 
 const DEFAULTS: StoreSchema = {
   windowBounds: { x: 0, y: 0, width: 1400, height: 900, isMaximized: false },
@@ -56,9 +52,7 @@ const DEFAULTS: StoreSchema = {
   recentFiles: [],
 }
 
-// ─────────────────────────────────────────────
-// Store instance (lazy singleton)
-// ─────────────────────────────────────────────
+// --- Store instance (lazy singleton) ---
 
 let _store: Store<StoreSchema> | null = null
 
@@ -69,9 +63,7 @@ function getStore(): Store<StoreSchema> {
   return _store
 }
 
-// ─────────────────────────────────────────────
-// Public API
-// ─────────────────────────────────────────────
+// --- Public API ---
 
 export function loadWindowBounds(): WindowBounds {
   return getStore().get('windowBounds')

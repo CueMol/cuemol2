@@ -1,9 +1,9 @@
 import React from 'react'
 import { MakeMolSurfDialog, type MakeMolSurfDialogResult } from './MakeMolSurfDialog'
+import { createConfirmCancelDialog } from '../../hooks/useDialogFactory'
 
 // React import is required by the JSX runtime used at test time; do not remove.
 void React
-import { createDialogHook } from '../../hooks/useDialogFactory'
 
 export interface MakeMolSurfDialogArgs {
     sceneId: number
@@ -12,14 +12,7 @@ export interface MakeMolSurfDialogArgs {
 export const {
     Provider: MakeMolSurfDialogProvider,
     useShow: useShowMakeMolSurfDialog,
-} = createDialogHook<MakeMolSurfDialogArgs, MakeMolSurfDialogResult | null>({
+} = createConfirmCancelDialog<MakeMolSurfDialogArgs, MakeMolSurfDialogResult>({
     name: 'MakeMolSurfDialog',
-    render: ({ visible, args, resolve }) => (
-        <MakeMolSurfDialog
-            visible={visible}
-            sceneId={args?.sceneId ?? 0}
-            onConfirm={(result) => resolve(result)}
-            onCancel={() => resolve(null)}
-        />
-    ),
+    component: MakeMolSurfDialog,
 })

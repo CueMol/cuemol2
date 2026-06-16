@@ -31,9 +31,9 @@ import { useBondEditClickHandler } from "../../hooks/useBondEditClickHandler";
 import { useNaviContextMenu } from "../../hooks/useNaviContextMenu";
 import type { HitTestResult } from "../../types";
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // Types
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 
 /** Render-result tab callbacks routed down from App. */
 interface RenderResultActions {
@@ -43,7 +43,7 @@ interface RenderResultActions {
 }
 
 interface ContentPaneProps {
-  /** All open tabs — used to detect whether a MolViewPane tab exists. */
+  /** All open tabs -- used to detect whether a MolViewPane tab exists. */
   tabs: TabData[];
   /** The currently active tab, or `undefined` if no tab is selected. */
   activeTab: TabData | undefined;
@@ -57,9 +57,9 @@ interface ContentPaneProps {
   renderResultActions: RenderResultActions;
 }
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // Helpers
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 
 /** Map a tab to its content node. Returns null for molview (handled separately). */
 const renderContent = (
@@ -85,9 +85,9 @@ const renderContent = (
   }
 };
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // Component
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 
 export const ContentPane: React.FC<ContentPaneProps> = ({
   tabs,

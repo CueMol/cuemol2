@@ -1,19 +1,19 @@
 /**
  * @file components/InspectorPanel.tsx
- * @description Right-side inspector panel — the property editor for whatever
+ * @description Right-side inspector panel -- the property editor for whatever
  * context currently has focus.
  *
  * ## Layout
  *
  * ```
- * ┌──────────────────────────┐
- * │ [Renderer] ribbon1   [×] │  ← header (category badge + name + close)
- * ├──────────────────────────┤
- * │ [ Properties │ Generic ] │  ← SegmentedControl (node targets only)
- * ├──────────────────────────┤
- * │  body: Generic table OR  │
- * │   Render Settings editor │
- * └──────────────────────────┘
+ * ----------------------------
+ * | [Renderer] ribbon1   [×] |  <- header (category badge + name + close)
+ * |--------------------------|
+ * | [ Properties | Generic ] |  <- SegmentedControl (node targets only)
+ * |--------------------------|
+ * |  body: Generic table OR  |
+ * |   Render Settings editor |
+ * ----------------------------
  * ```
  *
  * The inspector targets one of several context kinds. `node` targets (a
@@ -43,9 +43,9 @@ import type {
 import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
 import { ColorPickerProvider } from "../../h3-kit/colorpicker/ColorPickerContext";
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Types
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 type InspectorMode = "properties" | "generic";
 
@@ -110,9 +110,9 @@ interface InspectorPanelProps {
   onAnimHeaderChange: (name: string, type: string) => void;
 }
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Component
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 export const InspectorPanel: React.FC<InspectorPanelProps> = ({
   hasTarget,
@@ -161,7 +161,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
   return (
     <ColorPickerProvider cm={cm} sceneId={sceneId}>
     <div className="inspector-panel">
-      {/* ── Header ── */}
+      {/* -- Header -- */}
       <div className="inspector-header">
         <div className="inspector-header-left">
           <AppIcon name="ui.properties" size="md" className="inspector-header-icon" aria-hidden />
@@ -193,7 +193,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
       {!hasTarget ? (
         <div className="inspector-empty">No node selected.</div>
       ) : isRenderSettings && renderSettings ? (
-        /* ── Render Settings target ── */
+        /* -- Render Settings target -- */
         <div className="inspector-body">
           <RenderSettingsEditor
             backend={renderSettings.backend}
@@ -205,7 +205,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
           />
         </div>
       ) : isAnimElement ? (
-        /* ── Animation element target (self-contained editor) ── */
+        /* -- Animation element target (self-contained editor) -- */
         animElement && cm ? (
           <AnimElementInspector
             cm={cm}
@@ -218,9 +218,9 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
           <div className="inspector-empty">No animation element.</div>
         )
       ) : (
-        /* ── Node target (scene-tree node / View) ── */
+        /* -- Node target (scene-tree node / View) -- */
         <>
-          {/* ── Mode switcher + reset all ── */}
+          {/* -- Mode switcher + reset all -- */}
           <div className="inspector-mode-bar">
             <SegmentField
               value={mode}
@@ -238,7 +238,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
             />
           </div>
 
-          {/* ── Tab content ── */}
+          {/* -- Tab content -- */}
           <div className="inspector-body">
             {mode === "properties" ? (
               <PropertiesTab

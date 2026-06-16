@@ -12,7 +12,6 @@ import type { ScrEventManager } from '@cuemol/core/src/wrappers/ScrEventManager'
 import type { GUIView } from '@cuemol/core/src/wrappers/GUIView';
 import type { StyleManager } from '@cuemol/core/src/wrappers/StyleManager';
 import type { WorkerContext } from './types/WorkerContext';
-import { ObjProxyBridge } from './objProxyBridge';
 import {
     handleMouseDown,
     handleMouseUp,
@@ -46,10 +45,9 @@ type AnyServiceFn = (ctx: WorkerContext, args: any) => any | Promise<any>;
  *
  * Owns the two dispatch tables and the `invoke()` entry point. The actual
  * method implementations live in sibling modules:
- *   - `objProxyBridge.ts`   — ObjProxy create / get / set / invoke bridge
- *   - `inputEvents.ts`      — pointer / wheel / gesture handling
- *   - `workerLifecycle.ts`  — user-style / input-config / event wiring
- *   - `textRender.ts`       — OffscreenCanvas text rasterisation
+ *   - `inputEvents.ts`      -- pointer / wheel / gesture handling
+ *   - `workerLifecycle.ts`  -- user-style / input-config / event wiring
+ *   - `textRender.ts`       -- OffscreenCanvas text rasterisation
  * The `ctx.svc` facade (`createObj` / `getService` / `pushMessage` /
  * `fromTypedArray` / `addView`) and the canvas/view delegation stay here.
  */
@@ -59,7 +57,6 @@ export class WorkerService {
     private _registered: { [K in ServiceKey]?: AnyServiceFn } = {};
     private _internal: CueMolInternal;
     private _cm: CueMol;
-    private _bridge: ObjProxyBridge;
     private _gfx_mgr: GfxManager | null = null;
     private _postMessage: (data: any[]) => void;
     private _close: () => void;
@@ -75,7 +72,6 @@ export class WorkerService {
     ) {
         this._internal = getModule();
         this._cm = new CueMol({ internal: this._internal });
-        this._bridge = new ObjProxyBridge(this._internal, this._cm);
         this._postMessage = postMessage;
         this._close = close;
         log.info('_internal:', this._internal);
@@ -85,13 +81,8 @@ export class WorkerService {
             'loadUserStyle': this.loadUserStyle,
             'setViewInputConfigStyle': this.setViewInputConfigStyle,
             'terminateWorker': this.terminateWorker,
-            'createObj': this._rpcCreateObj,
-            'getService': this._rpcGetService,
             'hasClass': this._rpcHasClass,
             'getAllClassNamesJSON': this._rpcGetAllClassNamesJSON,
-            'getProp': this._rpcGetProp,
-            'setProp': this._rpcSetProp,
-            'invokeMethod': this._rpcInvokeMethod,
             //
             'addEventListener': this.addEventListener,
             'removeEventListener': this.removeEventListener,
@@ -208,35 +199,16 @@ export class WorkerService {
     }
 
     //////////
-    // ObjProxy bridge — thin forwarders to ObjProxyBridge. Kept as methods
-    // so the `_methods` dispatch table binds stable references at construction.
+    // Class-registry RPC handlers. Forward straight to the CueMol facade
+    // (no slot table / ObjProxy involved). Kept as methods so the
+    // `_methods` dispatch table binds stable references at construction.
 
-    private _rpcCreateObj(className: string) {
-        return this._bridge.createObj(className);
+    private _rpcHasClass(className: string): boolean {
+        return this._cm.hasClass(className);
     }
 
-    private _rpcGetService(className: string) {
-        return this._bridge.getService(className);
-    }
-
-    private _rpcHasClass(className: string) {
-        return this._bridge.hasClass(className);
-    }
-
-    private _rpcGetAllClassNamesJSON() {
-        return this._bridge.getAllClassNamesJSON();
-    }
-
-    private _rpcGetProp(thisobj: any, propName: string) {
-        return this._bridge.getProp(thisobj, propName);
-    }
-
-    private _rpcSetProp(thisobj: any, propName: string, value: any) {
-        return this._bridge.setProp(thisobj, propName, value);
-    }
-
-    private _rpcInvokeMethod(methodName: string, thisobj: any, args: any[]) {
-        return this._bridge.invokeMethod(methodName, thisobj, args);
+    private _rpcGetAllClassNamesJSON(): string {
+        return this._cm.getAllClassNamesJSON();
     }
 
     //////////
@@ -357,7 +329,7 @@ export class WorkerService {
      * Setting `canvas.width` or `canvas.height` on an OffscreenCanvas clears
      * the WebGL drawing buffer immediately (WebGL spec behaviour).  The render
      * loop driven by `requestAnimationFrame` in `setUpdateView` would normally
-     * redraw on the *next* frame, leaving one blank frame visible — that is the
+     * redraw on the *next* frame, leaving one blank frame visible -- that is the
      * flicker the user would see during window resize.
      *
      * To prevent the blank frame, `checkAndUpdate` is called synchronously
@@ -368,7 +340,7 @@ export class WorkerService {
      * @param view_id - CueMol view UID
      * @param w  - new CSS (logical) width in pixels
      * @param h  - new CSS (logical) height in pixels
-     * @param dpr - device pixel ratio; the backing store is sized to w*dpr × h*dpr
+     * @param dpr - device pixel ratio; the backing store is sized to w*dpr x h*dpr
      */
     resized(view_id: number, w: number, h: number, dpr: number): void {
         if (this._sceMgr === null || this._gfx_mgr === null) {
@@ -386,7 +358,7 @@ export class WorkerService {
     }
 
     //////////
-    // Input events — resolve `view_id → GUIView` then delegate to inputEvents.
+    // Input events -- resolve `view_id -> GUIView` then delegate to inputEvents.
 
     mouseDown(view_id: number, event: any): void {
         handleMouseDown(this._sceMgr!.getView(view_id) as GUIView, event);

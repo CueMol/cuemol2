@@ -14,6 +14,7 @@ import { useCallback } from 'react'
 import { IPC } from '../../shared/ipcChannels'
 import type { SaveSceneOptions } from '../worker/server/services/saveScene.service'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
+import type { ActiveSceneCommandDeps } from './commandTypes'
 import { useShowQscWriterOptionDialog } from '../components/dialogs/QscWriterOptionDialogProvider'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
@@ -21,7 +22,7 @@ import { addRecent } from './addRecent'
 
 interface UseEditCommandsOptions {
     cm: AsyncCueMol | null
-    getActiveSceneInfo: () => { scene_uid: number; view_id: number } | null | undefined
+    getActiveSceneInfo: ActiveSceneCommandDeps
 }
 
 export function useEditCommands({
@@ -37,7 +38,7 @@ export function useEditCommands({
             const info = getActiveSceneInfo()
             if (!info) return false
             // UXP parity (qsc_io.backupSceneFile): rename the existing file
-            // to "<path>.bak" before overwrite. Best-effort — log and proceed
+            // to "<path>.bak" before overwrite. Best-effort -- log and proceed
             // if backup fails (UXP also continues with a putLogMsg warning).
             const bk = await window.electronAPI.invoke(IPC.FILE_BACKUP_RENAME, { path: filePath })
             if (!bk.ok && bk.error) {
@@ -85,11 +86,11 @@ export function useEditCommands({
         }
         const fileExists = await window.electronAPI.invoke(IPC.FILE_EXISTS, { path: src })
         if (!fileExists.exists) {
-            // UXP parity: util.isFile defence — fall through to Save As if
+            // UXP parity: util.isFile defence -- fall through to Save As if
             // the previously associated file has disappeared.
             return runSaveAs()
         }
-        // UXP `onSaveScene` writes with the writer's current default opts —
+        // UXP `onSaveScene` writes with the writer's current default opts --
         // no option dialog on the plain Save path.
         return runWrite(src, undefined)
     })

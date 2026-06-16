@@ -45,10 +45,17 @@ import {
   CAP_LABELS,
   resetProps,
 } from "./RendererCommonSection";
-import { PropertyField, DragNumericField, SelectField } from "../../h3-kit/form";
-import { useRealtimeDragProp } from "../../hooks/useRealtimeDragProp";
+import {
+  MultiEnumRow,
+  MultiNumRow,
+  SECTION_TYPE_LABELS,
+  SECTION_TYPES_NO_FANCY,
+  JCT_TYPE_LABELS,
+  JCT_TYPE_OPTIONS,
+} from "./rowHelpers";
+import { PropertyField, SelectField } from "../../h3-kit/form";
 import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
-import type { RendererPropSectionProps, PropMultiWrite } from "./rendererPropSections";
+import type { RendererPropSectionProps } from "./rendererPropSections";
 
 // --- Local labels -------------------------------------------------------------
 
@@ -57,156 +64,10 @@ const HELIX_WIDTH_MODE_LABELS: Record<string, string> = {
   average: "Average",
   wavy: "Wavy",
 };
-const SECTION_TYPE_LABELS: Record<string, string> = {
-  elliptical: "Elliptical",
-  roundsquare: "Round square",
-  rectangle: "Rectangle",
-  fancy1: "Fancy",
-};
-/** Section types offered when the UXP dialog omits "fancy1" (helix cyl/sheet/coil). */
-const SECTION_TYPES_NO_FANCY = ["elliptical", "roundsquare", "rectangle"];
-/** JctTable head type labels (UXP "Round" / "Flat" / "Arrow"). */
-const JCT_TYPE_LABELS: Record<string, string> = {
-  smooth: "Round",
-  flat: "Flat",
-  arrow: "Arrow",
-};
-const JCT_TYPE_OPTIONS = ["smooth", "flat", "arrow"];
 
 type SetFn = RendererPropSectionProps["onSet"];
 type SetManyFn = RendererPropSectionProps["onSetMany"];
 type ResetFn = RendererPropSectionProps["onReset"];
-
-// --- Multi-target helpers -----------------------------------------------------
-//
-// The ribbon head/tail controls write the SAME value to two nested objects
-// (`ribhelix_head` + `ribhelix_tail`) in one undo step; the sheet head writes a
-// single object (`sheethead`). These helpers take the list of target entries
-// (1 or 2) and write all of them; the first entry drives the displayed value,
-// modified bar and reset.
-
-/** Write one value to every target entry (single -> onSet, multiple -> onSetMany). */
-function writeMany(
-  targets: GenericPropEntry[],
-  value: string | number | boolean,
-  onSet: SetFn,
-  onSetMany: SetManyFn,
-) {
-  if (targets.length === 1) {
-    onSet(targets[0].key, targets[0].type, value);
-    return;
-  }
-  const writes: PropMultiWrite[] = targets.map((t) => ({
-    key: t.key,
-    valueType: t.type,
-    value,
-  }));
-  onSetMany?.(writes);
-}
-
-interface MultiEnumRowProps {
-  label: string;
-  targets: GenericPropEntry[];
-  labels: Record<string, string>;
-  options?: string[];
-  onSet: SetFn;
-  onSetMany: SetManyFn;
-  onReset: ResetFn;
-  disabled?: boolean;
-}
-
-/** Enum dropdown writing the same value to one or two nested objects. */
-const MultiEnumRow: React.FC<MultiEnumRowProps> = ({
-  label,
-  targets,
-  labels,
-  options,
-  onSet,
-  onSetMany,
-  onReset,
-  disabled,
-}) => {
-  const primary = targets[0];
-  const shown = options ?? primary.enumdef ?? [String(primary.value)];
-  return (
-    <PropertyField label={label} {...resetProps(primary, onReset)}>
-      <SelectField
-        value={String(primary.value)}
-        disabled={disabled || primary.readonly}
-        onChange={(v) => writeMany(targets, v, onSet, onSetMany)}
-      >
-        {shown.map((opt) => (
-          <option key={opt} value={opt}>
-            {labels[opt] ?? opt}
-          </option>
-        ))}
-      </SelectField>
-    </PropertyField>
-  );
-};
-
-interface MultiNumRowProps {
-  label: string;
-  targets: GenericPropEntry[];
-  min: number;
-  max: number;
-  step: number;
-  decimals?: number;
-  unit?: string;
-  /** Convert stored value -> displayed value (default identity). */
-  toDisplay?: (stored: number) => number;
-  /** Convert displayed value -> stored value (default identity). */
-  toStored?: (display: number) => number;
-  onSet: SetFn;
-  onSetMany: SetManyFn;
-  onReset: ResetFn;
-  disabled?: boolean;
-}
-
-/**
- * Drag-numeric row writing one or two nested objects, with an optional
- * display<->stored transform (used for the Arrow height / width percentages).
- */
-const MultiNumRow: React.FC<MultiNumRowProps> = ({
-  label,
-  targets,
-  min,
-  max,
-  step,
-  decimals,
-  unit,
-  toDisplay = (s) => s,
-  toStored = (d) => d,
-  onSet,
-  onSetMany,
-  onReset,
-  disabled,
-}) => {
-  const primary = targets[0];
-  const dragProps = useRealtimeDragProp({
-    committed: toDisplay(Number(primary.value)),
-    committedIsDefault: primary.isdefault,
-    realtime: false,
-    onPreview: () => {},
-    onCommit: (original, v) => {
-      if (v === original) return;
-      writeMany(targets, toStored(v), onSet, onSetMany);
-    },
-  });
-  return (
-    <PropertyField label={label} {...resetProps(primary, onReset)}>
-      <DragNumericField
-        {...dragProps}
-        min={min}
-        max={max}
-        step={step}
-        decimals={decimals}
-        unit={unit}
-        disabled={disabled || primary.readonly}
-      />
-    </PropertyField>
-  );
-};
 
 // --- Reusable section-shape block ---------------------------------------------
 

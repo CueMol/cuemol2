@@ -27,6 +27,7 @@ import {
     Popover,
 } from '@blueprintjs/core'
 import { AppIcon } from '../AppIcon'
+import { SectionHeader } from './SectionHeader'
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import { useDensityMapPanel } from '../../hooks/useDensityMapPanel'
 import { useRealtimeDragProp } from '../../hooks/useRealtimeDragProp'
@@ -44,6 +45,7 @@ import {
 import { useCueMolEventListener } from '../../hooks/useCueMolEventListener'
 import { CueColorField } from '../../h3-kit/colorpicker/CueColorField'
 import { ColorPickerProvider } from '../../h3-kit/colorpicker/ColorPickerContext'
+import { fireService } from '../../utils/fireService'
 
 /**
  * Empty icon-column spacer for the unchecked radio rows of the level-mode
@@ -237,7 +239,7 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
             opts?: MapPropWriteOpts,
         ) => {
             if (!cm || activeSceneId === undefined || selectedRendId === undefined) return
-            cm.invokeService('setMapRendererProp', {
+            fireService(cm, 'setMapRendererProp', {
                 sceneId: activeSceneId,
                 rendId: selectedRendId,
                 propName,
@@ -245,8 +247,6 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
                 mode: opts?.mode,
                 originalValue: opts?.originalValue,
                 originalWasDefault: opts?.originalWasDefault,
-            }).catch((err: unknown) => {
-                console.warn('setMapRendererProp failed:', err)
             })
         },
         [cm, activeSceneId, selectedRendId],
@@ -257,22 +257,18 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
             || activeSceneId === undefined
             || activeMolViewId === undefined
             || selectedRendId === undefined) return
-        cm.invokeService('redrawMapCenter', {
+        fireService(cm, 'redrawMapCenter', {
             sceneId: activeSceneId,
             rendId: selectedRendId,
             viewId: activeMolViewId,
-        }).catch((err: unknown) => {
-            console.warn('redrawMapCenter failed:', err)
         })
     }, [cm, activeSceneId, activeMolViewId, selectedRendId])
 
     const onShowCell = useCallback(() => {
         if (!cm || activeSceneId === undefined || !selectedEntry) return
-        cm.invokeService('showUnitCellRenderer', {
+        fireService(cm, 'showUnitCellRenderer', {
             sceneId: activeSceneId,
             objId: selectedEntry.objId,
-        }).catch((err: unknown) => {
-            console.warn('showUnitCellRenderer failed:', err)
         })
     }, [cm, activeSceneId, selectedEntry])
 
@@ -348,23 +344,12 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
     return (
         <ColorPickerProvider cm={cm} sceneId={activeSceneId}>
         <div className="sp-pane">
-            <div
-                className={`sp-section-header ${onToggleCollapse ? 'collapsible' : ''}`}
-                onClick={onToggleCollapse}
-            >
-                <div className="sp-section-header-left">
-                    {onToggleCollapse != null && (
-                        <AppIcon
-                            name={collapsed ? 'ui.caretRight' : 'ui.caretDown'}
-                            size="sm"
-                            className="section-chevron"
-                            aria-hidden
-                        />
-                    )}
-                    <AppIcon name="ui.layers" size="md" className="section-icon" aria-hidden />
-                    <span className="section-title">Density map</span>
-                </div>
-            </div>
+            <SectionHeader
+                title="Density map"
+                icon="ui.layers"
+                collapsed={collapsed}
+                onToggleCollapse={onToggleCollapse}
+            />
             {!collapsed && (
                 <div className="sp-pane-fill">
                     {/* Renderer selector + mode menu */}

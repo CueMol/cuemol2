@@ -15,9 +15,9 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Tag } from "@blueprintjs/core";
 import type { LogEntry } from "../../types";
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Constants
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 /**
  * Maps each log level to a Blueprint `Tag` intent so entries are
@@ -37,9 +37,9 @@ const LEVEL_INTENT: Record<LogEntry["level"], "none" | "warning" | "danger" | "p
   DEBUG: "primary",
 };
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Sub-components
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 interface LogLineProps {
   /** The log entry to render. */
@@ -66,9 +66,9 @@ const LogLine: React.FC<LogLineProps> = ({ entry }) => (
   </div>
 );
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Main Component
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 interface LogReplDraftProps {
   /** Ordered list of log entries to display, newest last. */
@@ -91,7 +91,7 @@ interface LogReplDraftProps {
  * to this component because it has no meaning outside the panel.
  */
 export const LogReplDraft: React.FC<LogReplDraftProps> = ({ logs, onCommand }) => {
-  // ── REPL state ─────────────────────────────────────────────
+  // -- REPL state ---------------------------------------------
 
   /** Current value of the command input field. */
   const [cmd, setCmd] = useState("");
@@ -99,17 +99,17 @@ export const LogReplDraft: React.FC<LogReplDraftProps> = ({ logs, onCommand }) =
   /**
    * Ring buffer of previously submitted commands.
    * Stored newest-first so index 0 is always the most recent entry,
-   * matching the expected ↑-key behaviour.
+   * matching the expected Up-key behaviour.
    */
   const [history, setHistory] = useState<string[]>([]);
 
   /**
    * Cursor into `history`; `-1` means the user is on a fresh (unsaved) input.
-   * Incremented on ↑, decremented on ↓, reset to `-1` after each submission.
+   * Incremented on Up, decremented on Down, reset to `-1` after each submission.
    */
   const [historyIdx, setHistoryIdx] = useState(-1);
 
-  // ── Refs ────────────────────────────────────────────────────
+  // -- Refs ----------------------------------------------------
 
   /** Sentinel element placed after the last log line for scroll-into-view. */
   const logEndRef = useRef<HTMLDivElement>(null);
@@ -117,7 +117,7 @@ export const LogReplDraft: React.FC<LogReplDraftProps> = ({ logs, onCommand }) =
   /** Direct reference to the `<input>` so we can `focus()` it on click. */
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // ── Effects ─────────────────────────────────────────────────
+  // -- Effects -------------------------------------------------
 
   /**
    * Auto-scroll to the bottom of the log output whenever new entries arrive.
@@ -128,7 +128,7 @@ export const LogReplDraft: React.FC<LogReplDraftProps> = ({ logs, onCommand }) =
     logEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs]);
 
-  // ── Handlers ────────────────────────────────────────────────
+  // -- Handlers ------------------------------------------------
 
   /**
    * Submit the current command string.
@@ -152,10 +152,10 @@ export const LogReplDraft: React.FC<LogReplDraftProps> = ({ logs, onCommand }) =
   );
 
   /**
-   * Handle ↑ / ↓ key presses to navigate command history.
+   * Handle Up / Down key presses to navigate command history.
    *
-   * - `↑` moves the cursor toward older commands (higher index).
-   * - `↓` moves the cursor toward newer commands (lower index); reaching
+   * - Up moves the cursor toward older commands (higher index).
+   * - Down moves the cursor toward newer commands (lower index); reaching
    *   `-1` restores an empty input so the user can type a fresh command.
    *
    * Both keys call `preventDefault` to prevent the caret from jumping to
@@ -183,7 +183,7 @@ export const LogReplDraft: React.FC<LogReplDraftProps> = ({ logs, onCommand }) =
     [history, historyIdx]
   );
 
-  // ── Render ──────────────────────────────────────────────────
+  // -- Render --------------------------------------------------
 
   return (
     <div className="log-panel" onClick={() => inputRef.current?.focus()}>
@@ -202,7 +202,7 @@ export const LogReplDraft: React.FC<LogReplDraftProps> = ({ logs, onCommand }) =
         {logs.map((log, i) => (
           <LogLine key={i} entry={log} />
         ))}
-        {/* Scroll anchor — kept invisible at the bottom of the list */}
+        {/* Scroll anchor -- kept invisible at the bottom of the list */}
         <div ref={logEndRef} />
       </div>
 

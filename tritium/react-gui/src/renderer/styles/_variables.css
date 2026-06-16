@@ -239,6 +239,23 @@
   --field-prop-bar-w: 2px;             /* modified indicator bar width */
   --prop-modified-bar: var(--accent);  /* modified indicator bar color */
 
+  /* -- Modal dialog frame widths (single source for DialogShell width prop) --
+     A modal's overall frame width is a dialog-frame concern (NOT control
+     height / row gap -- those stay owned by the form-kit tokens above). The
+     inline `style={{ width: NNN }}` values that used to sprawl across the
+     dialog components map onto this fixed ladder; DialogShell resolves a
+     `width` prop name to one of these so a new dialog picks a rung, never a
+     raw px value. Theme-independent (sizes do not change with the theme). */
+  --dialog-w-xs: 300px;   /* compact info/confirm dialogs (About) */
+  --dialog-w-sm: 320px;   /* narrow progress dialog */
+  --dialog-w-md: 360px;   /* small forms (NewTab / TextPrompt / Qsc / ExportPng) */
+  --dialog-w-lg: 380px;   /* default molecule-edit form width */
+  --dialog-w-xl: 400px;   /* wider molecule-edit form (InteractionAnalysis...) */
+  --dialog-w-2xl: 420px;  /* multi-section form (MolSuperpose / EditCameraVisFlags) */
+  --dialog-w-3xl: 440px;  /* symmetry editor */
+  --dialog-w-4xl: 460px;  /* interaction list editor */
+  --dialog-w-5xl: 500px;  /* style editor */
+
   /* ── Listbox / list-tree rows (single source for styles/_list-kit.css) ──
      Row height reuses --row-h (22px). hover/selected reuse --bg-hover /
      --bg-active / --accent. Only _list-kit.css references the two below; list

@@ -1,6 +1,6 @@
 /**
  * @file ActivityBar.tsx
- * @description VS Code–style vertical activity bar that sits at the far left
+ * @description VS Code-style vertical activity bar that sits at the far left
  * of the application window.  Each icon toggles a different sidebar view.
  *
  * The bar supports collapsing: clicking the already-active icon will hide
@@ -17,9 +17,9 @@ import { Tooltip } from "@blueprintjs/core";
 import { AppIcon } from "./AppIcon";
 import type { AppIconKey } from "../data/appIcons";
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Types
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 /** Identifiers for the sidebar views toggled by the activity bar. */
 export type ActivityView = "explorer" | "selection" | "crystal" | "catalog";
@@ -38,9 +38,9 @@ const ITEMS: ActivityItemDef[] = [
   { id: "catalog", icon: "activity.catalog", label: "Component Catalog" },
 ];
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Component
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 interface ActivityBarProps {
   /** Currently active sidebar view, or `null` when the sidebar is hidden. */

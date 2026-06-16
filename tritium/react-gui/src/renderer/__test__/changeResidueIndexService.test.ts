@@ -140,5 +140,22 @@ describe('changeResidueIndex', () => {
 
         expect(res.ok).toBe(false)
         expect(res.error).toMatch(/boom/)
+        // A throwing mutation must roll the txn back and must NOT commit a
+        // bogus undo entry.
+        expect(scene.rollbackUndoTxn).toHaveBeenCalled()
+        expect(scene.commitUndoTxn).not.toHaveBeenCalled()
+    })
+
+    it('rolls back without committing when the underlying call returns false', () => {
+        const scene = makeUndoScene(100)
+        scene.getObject = vi.fn(() => ({ __mol: true }))
+        const shiftResIndex = vi.fn(() => false)
+        const ctx = makeCtx({ scene, molAnlMgr: { shiftResIndex, renumResIndex: vi.fn() } })
+
+        const res = changeResidueIndex(ctx, { ...BASE, bshift: true, value: 1, renumber: false })
+
+        expect(res.ok).toBe(false)
+        expect(scene.rollbackUndoTxn).toHaveBeenCalled()
+        expect(scene.commitUndoTxn).not.toHaveBeenCalled()
     })
 })

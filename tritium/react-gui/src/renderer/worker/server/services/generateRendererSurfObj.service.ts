@@ -1,6 +1,6 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 //
-// Phase: panel.workspace.ctxmenu.renderer — "Generate surface obj" item
+// Phase: panel.workspace.ctxmenu.renderer -- "Generate surface obj" item
 // (isosurf renderer only).
 //
 // Mirrors UXP `ws.onGenSurfObj` in `workspace_panel_ctxtmenu.js`.
@@ -43,7 +43,7 @@ function getTypeName(rend: Renderer): string {
 
 /**
  * Pick the first available name from the sequence `${prefix}`, `${prefix}1`,
- * `${prefix}2`, ... — matches UXP `util.makeUniqName2` start-from-empty
+ * `${prefix}2`, ... -- matches UXP `util.makeUniqName2` start-from-empty
  * convention used by `onGenSurfObj`.
  */
 function uniqName(prefix: string, exists: (name: string) => boolean): string {
@@ -74,7 +74,7 @@ function transferColorSetup(src: Renderer, dst: Renderer): void {
         try {
             dstAny.multi_grad.copyFrom(srcAny.multi_grad);
         } catch {
-            // multi_grad may not be readable on some configurations — skip.
+            // multi_grad may not be readable on some configurations -- skip.
         }
         try {
             dstAny.elepot = srcAny.color_mapname ?? '';

@@ -213,7 +213,7 @@ describe('zoomMolSelection', () => {
         expect(result).toEqual({ ok: true })
         expect(setSel).toHaveBeenCalledWith({ __sel: true })
         expect(fitView).toHaveBeenCalledTimes(1)
-        // fitView(view, true) — second arg is bSelOnly
+        // fitView(view, true) -- second arg is bSelOnly
         expect(fitView.mock.calls[0][1]).toBe(true)
         expect(scene.startUndoTxn).toHaveBeenCalledWith('Zoom to mol selection')
     })

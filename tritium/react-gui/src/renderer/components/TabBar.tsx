@@ -23,9 +23,9 @@ import { AppIcon } from "./AppIcon";
 import type { TabData } from "../types";
 import type { DropTarget, TabDragDropAPI } from "../hooks/useTabDragDrop";
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Types
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 interface TabBarProps {
   /** Ordered list of open tabs. */
@@ -56,9 +56,9 @@ interface TabBarProps {
   >;
 }
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Helpers
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 /**
  * Build the CSS class string for a single tab element.
@@ -82,9 +82,9 @@ function tabClassName(
   return parts.join(" ");
 }
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Component
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 export const TabBar: React.FC<TabBarProps> = ({
   tabs,
@@ -116,7 +116,7 @@ export const TabBar: React.FC<TabBarProps> = ({
             key={tab.id}
             className={tabClassName(tab, activeTab, dropTarget)}
             onClick={() => onSelectTab(tab.id)}
-            /* ── Drag & Drop attributes ── */
+            /* -- Drag & Drop attributes -- */
             draggable
             onDragStart={(e) => {
               onSelectTab(tab.id); // Activate on drag start (VS Code behavior)

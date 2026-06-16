@@ -1,6 +1,6 @@
 /**
  * @file components/panels/RenderPanel.tsx
- * @description BottomPanel "Render" tab — render execution controls,
+ * @description BottomPanel "Render" tab -- render execution controls,
  * progress and log.
  *
  * Detailed settings live in the Inspector (`renderSettings` target); this
@@ -61,7 +61,7 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
 
   return (
     <div className="render-panel">
-      {/* ── Action bar ── */}
+      {/* -- Action bar -- */}
       <div className="render-panel-bar">
         {active ? (
           <FormButton
@@ -106,7 +106,7 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
         )}
       </div>
 
-      {/* ── Progress ── */}
+      {/* -- Progress -- */}
       {job && (
         <div className="render-panel-progress">
           <ProgressBar
@@ -118,7 +118,7 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
         </div>
       )}
 
-      {/* ── Log ── */}
+      {/* -- Log -- */}
       <div className="render-panel-log">
         {job && job.log.length > 0 ? (
           job.log.map((line, i) => (

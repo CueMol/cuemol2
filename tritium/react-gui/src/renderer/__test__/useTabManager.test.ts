@@ -1,7 +1,7 @@
 /**
  * @file __test__/useTabManager.test.ts
  * @description Contract tests for render-result tab creation: a completed
- * render opens at most one tab per source scene — re-rendering the same
+ * render opens at most one tab per source scene -- re-rendering the same
  * scene overwrites that tab rather than spawning a new one.
  */
 
@@ -32,7 +32,7 @@ describe('useTabManager — render result tabs', () => {
         const tab = h.result.tabs.find((t) => t.id === 'render-result-scene-1');
         expect(tab?.type).toBe('renderResult');
         expect(tab?.renderResult?.id).toBe('rr-1');
-        // Title follows the `🎬 Scene — W×H (Ns)` convention.
+        // Title follows the `Scene -- W×H (Ns)` convention.
         expect(tab?.title).toContain('Scene1');
         expect(tab?.title).toContain('1200×900');
         expect(h.result.activeTab).toBe('render-result-scene-1');

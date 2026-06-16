@@ -425,6 +425,41 @@ describe('AtomIntrTubeSection', () => {
     unmount()
   })
 
+  // Degrade guard for the shared-MappedEnumRow extraction (theme T4 Step 1):
+  // the atomintr cap selects use a LOCAL CAP_LABELS (flat/sphere/arrow ->
+  // Flat/Round/Arrow) that diverges from the exported CAP_LABELS
+  // (sphere/flat/none). Pin the option text+order so the row swap does not
+  // accidentally pull in the exported labels.
+  it('shows the local CAP_LABELS option text on Start/End cap', () => {
+    const { container, unmount } = mountTree(
+      <AtomIntrTubeSection
+        entries={fullEntries()}
+        onSet={vi.fn()}
+        onSetMany={vi.fn()}
+        onReset={vi.fn()}
+        sceneId={1}
+      />,
+    )
+    const startSelect = rowByLabel(container, 'Start cap')!.querySelector(
+      'select',
+    ) as HTMLSelectElement
+    expect(Array.from(startSelect.options).map((o) => o.text)).toEqual([
+      'Flat',
+      'Round',
+      'Arrow',
+    ])
+    expect(startSelect.value).toBe('sphere')
+    const endSelect = rowByLabel(container, 'End cap')!.querySelector(
+      'select',
+    ) as HTMLSelectElement
+    expect(Array.from(endSelect.options).map((o) => o.text)).toEqual([
+      'Flat',
+      'Round',
+      'Arrow',
+    ])
+    unmount()
+  })
+
   it('enables arrow size once a cap is set to arrow', () => {
     const { container, unmount } = mountTree(
       <AtomIntrTubeSection

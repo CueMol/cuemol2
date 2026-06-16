@@ -6,7 +6,7 @@
  * ## Design decisions
  *
  * - The dragged-tab id is stored in a **ref** (not state) so that the
- *   `onDragStart` handler does not trigger a re-render — which would
+ *   `onDragStart` handler does not trigger a re-render -- which would
  *   cancel the browser's native drag initialisation in Chromium/Electron.
  *
  * - The visual drop indicator (`dropTarget`) is the only piece of React
@@ -23,9 +23,7 @@
 import { useCallback, useRef, useState } from "react";
 import type { TabData } from "../types";
 
-// ────────────────────────────────────────────────────────────
-// Types
-// ────────────────────────────────────────────────────────────
+// --- Types ---
 
 /** Which side of a tab the drop indicator should appear on. */
 export type DropSide = "left" | "right";
@@ -70,9 +68,7 @@ export interface TabDragDropAPI {
   handleContainerDrop: (e: React.DragEvent<HTMLDivElement>) => void;
 }
 
-// ────────────────────────────────────────────────────────────
-// Hook
-// ────────────────────────────────────────────────────────────
+// --- Hook ---
 
 /**
  * Encapsulates all HTML5 Drag and Drop state and event handlers needed
@@ -94,7 +90,7 @@ export function useTabDragDrop(
 
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
 
-  // ── Per-tab handlers ─────────────────────────────────────
+  // --- Per-tab handlers ---
 
   const handleDragStart = useCallback(
     (e: React.DragEvent<HTMLDivElement>, tabId: string) => {
@@ -139,7 +135,7 @@ export function useTabDragDrop(
 
   const handleDragLeave = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
-      // Only clear when leaving the tab entirely — ignore moves between
+      // Only clear when leaving the tab entirely -- ignore moves between
       // child elements (icon, title, close button) within the same tab.
       const related = e.relatedTarget as Node | null;
       if (
@@ -183,7 +179,7 @@ export function useTabDragDrop(
     setDropTarget(null);
   }, []);
 
-  // ── Container-level handlers ─────────────────────────────
+  // --- Container-level handlers ---
 
   const handleContainerDragOver = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {

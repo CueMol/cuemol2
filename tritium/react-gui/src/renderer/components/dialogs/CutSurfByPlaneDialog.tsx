@@ -14,11 +14,11 @@
  * view). The last-picked surface persists within the session.
  */
 
-import React, { useCallback, useEffect, useState } from 'react'
-import { Button, Dialog, DialogBody, DialogFooter } from '@blueprintjs/core'
-import { useTheme } from '../../contexts/ThemeContext'
+import React, { useState } from 'react'
 import { useCueMol } from '../../hooks/useCueMol'
+import { useMolEditCommit } from '../../hooks/useMolEditCommit'
 import { Field, FieldSection, NumericField, SelectField } from '../../h3-kit/form'
+import { DialogShell } from './DialogShell'
 import { ObjectSelect, objectFilters } from '../../h3-kit/ObjectSelect'
 import type { CutSurfMode } from '../../worker/server/services/cutSurfByPlane.service'
 
@@ -48,62 +48,49 @@ const MODE_OPTIONS: { value: CutSurfMode; label: string }[] = [
 export function CutSurfByPlaneDialog({
     visible, sceneId, viewId, onConfirm, onCancel,
 }: Props): React.JSX.Element {
-    const { theme } = useTheme()
-    const isDark = theme === 'dark'
     const { cm } = useCueMol()
 
     const [objId, setObjId] = useState<number | undefined>(undefined)
     const [mode, setMode] = useState<CutSurfMode>('full')
     const [density, setDensity] = useState<number>(DEFAULT_DENSITY)
-    const [submitting, setSubmitting] = useState(false)
-    const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-    // Reset transient state on each open. The surface id is intentionally NOT
-    // reset so the last-picked surface persists within the session.
-    useEffect(() => {
-        if (!visible) return
-        setMode('full')
-        setDensity(DEFAULT_DENSITY)
-        setSubmitting(false)
-        setErrorMsg(null)
-    }, [visible])
-
-    const handleOk = useCallback(async () => {
-        if (!cm || objId === undefined) return
-        setSubmitting(true)
-        setErrorMsg(null)
-        try {
-            const res = await cm.invokeService('cutSurfByPlane', {
-                sceneId,
-                viewId,
-                objId,
-                mode,
-                density,
-            })
-            setSubmitting(false)
-            if (res?.ok) {
-                onConfirm({ ok: true })
-            } else {
-                setErrorMsg(res?.error ?? 'Failed to cut surface')
-            }
-        } catch (err) {
-            setErrorMsg(String(err))
-            setSubmitting(false)
-        }
-    }, [cm, sceneId, viewId, objId, mode, density, onConfirm])
+    // Commit handler + submitting/errorMsg state + reset-on-open. The surface
+    // id is intentionally NOT reset (last-picked surface persists in-session).
+    const { submitting, errorMsg, run: handleOk } =
+        useMolEditCommit({
+            cm,
+            visible,
+            onReset: () => {
+                setMode('full')
+                setDensity(DEFAULT_DENSITY)
+            },
+            buildCommit: () => {
+                if (objId === undefined) return null
+                return {
+                    invoke: () => cm!.invokeService('cutSurfByPlane', {
+                        sceneId,
+                        viewId,
+                        objId,
+                        mode,
+                        density,
+                    }),
+                    onSuccess: () => onConfirm({ ok: true }),
+                    fallbackError: 'Failed to cut surface',
+                }
+            },
+        })
 
     return (
-        <Dialog
-            isOpen={visible}
-            onClose={onCancel}
+        <DialogShell
+            visible={visible}
             title="Mol surface cutter"
-            style={{ width: 380 }}
-            portalClassName={isDark ? 'bp5-dark' : ''}
-            canOutsideClickClose={false}
-            isCloseButtonShown={false}
+            width="lg"
+            onCancel={onCancel}
+            onOk={handleOk}
+            okDisabled={objId === undefined}
+            submitting={submitting}
+            errorMsg={errorMsg}
         >
-            <DialogBody>
-                <div className="h3-dialog-form">
                     <FieldSection title="Surface">
                         <Field label="Target surface">
                             <ObjectSelect
@@ -143,27 +130,6 @@ export function CutSurfByPlaneDialog({
                             />
                         </Field>
                     </FieldSection>
-
-                    {errorMsg !== null && (
-                        <div className="h3-dialog-error">{errorMsg}</div>
-                    )}
-                </div>
-            </DialogBody>
-            <DialogFooter
-                actions={
-                    <>
-                        <Button onClick={onCancel} disabled={submitting}>Cancel</Button>
-                        <Button
-                            intent="primary"
-                            onClick={handleOk}
-                            disabled={submitting || objId === undefined}
-                            loading={submitting}
-                        >
-                            OK
-                        </Button>
-                    </>
-                }
-            />
-        </Dialog>
+        </DialogShell>
     )
 }

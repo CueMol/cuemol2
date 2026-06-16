@@ -10,7 +10,7 @@ import {
 import { useTheme } from '../../contexts/ThemeContext'
 
 /**
- * Single-line text input dialog — replacement for Electron's disabled
+ * Single-line text input dialog -- replacement for Electron's disabled
  * `window.prompt`. Used by ScenePane context-menu Rename / New Group
  * flows; intentionally generic so other "ask for a name" callsites
  * can reuse it.

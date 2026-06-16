@@ -19,7 +19,7 @@ import { resolvePropTarget } from '../worker/server/services/helpers/resolveProp
 import { services } from '../worker/server/services/genericProps.service';
 import type { WorkerContext } from '../worker/server/types/WorkerContext';
 
-// ── parseGenericProps ──────────────────────────────────────────────────────
+// --- parseGenericProps ---
 
 describe('parseGenericProps', () => {
     const RAW = [
@@ -139,7 +139,7 @@ describe('parseGenericProps', () => {
     });
 });
 
-// ── resolvePropTarget ──────────────────────────────────────────────────────
+// --- resolvePropTarget ---
 
 describe('resolvePropTarget', () => {
     function makeCtx() {
@@ -191,7 +191,7 @@ describe('resolvePropTarget', () => {
     });
 });
 
-// ── genericProps services ──────────────────────────────────────────────────
+// --- genericProps services ---
 
 describe('genericProps services', () => {
     const PROPS_JSON = JSON.stringify([

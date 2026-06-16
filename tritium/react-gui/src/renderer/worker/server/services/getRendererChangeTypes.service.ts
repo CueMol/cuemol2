@@ -46,7 +46,7 @@ function getRendererChangeTypes(
     if (currentType.startsWith('*') && currentType !== '*selection') return empty;
     if (currentType === 'atomintr' || currentType === 'disorder') return empty;
     // *selection has its own conversion path (UXP setupRend dialog)
-    // that we don't migrate in Phase 6b — gate it out too.
+    // that we don't migrate in Phase 6b -- gate it out too.
     if (currentType === '*selection') return empty;
 
     const obj = rend.getClientObj() as CueMolObject | null;

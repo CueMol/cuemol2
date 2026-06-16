@@ -1,4 +1,5 @@
 import React, { useState, useContext, useCallback, useMemo, useRef } from 'react'
+import type { ActiveSceneCommandDeps } from '../commands/commandTypes'
 
 /** A single tab entry representing one CueMol view panel. */
 interface MolTabEntry {
@@ -22,7 +23,7 @@ interface MolTabDispatch {
   setActiveTab: (ind: number) => void
   setActiveViewByID: (view_id: number) => void
   getActiveViewID: () => number | undefined
-  getActiveSceneInfo: () => { scene_uid: number; view_id: number } | undefined
+  getActiveSceneInfo: ActiveSceneCommandDeps
 }
 
 /**
@@ -39,8 +40,8 @@ interface MolTabState {
 /**
  * Two separate React contexts are used instead of one to allow fine-grained
  * subscription:
- *   - MolTabDispatchContext — stable; never triggers re-renders on its own
- *   - MolTabStateContext    — changes with tab list / active view
+ *   - MolTabDispatchContext -- stable; never triggers re-renders on its own
+ *   - MolTabStateContext    -- changes with tab list / active view
  *
  * This prevents the WebGL canvas (MolView) from re-rendering every time the
  * tab list is updated, which would cause visual artifacts.
@@ -114,7 +115,7 @@ export function MolTabProvider({ children }: { children: React.ReactNode }): Rea
   /**
    * Returns the view_id of the currently active tab.
    * Reads from `entriesRef` (not the state variable) so that the callback
-   * identity is stable — no dependency on `molTabEntries`.
+   * identity is stable -- no dependency on `molTabEntries`.
    */
   const getActiveViewID = useCallback((): number | undefined => {
     return entriesRef.current.find((x) => x.active)?.view_id

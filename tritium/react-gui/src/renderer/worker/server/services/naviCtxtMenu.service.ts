@@ -9,7 +9,12 @@ import { invertSelStr, rewriteAround, toggleSidechainStr } from './helpers/selSt
 import { getViewSceneOrNull, getViewSceneObjOrNull } from './helpers/sceneResolver';
 import { withUndoTxn } from './withUndoTxn';
 
-type SelectMode = 'atom' | 'residue' | 'chain' | 'mol';
+/**
+ * Granularity of an atom context-menu selection. Canonical source for the
+ * `mode` field carried by the `naviCtxSelect` / `naviCtxAddSelect` services
+ * (used to be inline-duplicated across the renderer-side facade).
+ */
+export type SelectMode = 'atom' | 'residue' | 'chain' | 'mol';
 
 // ---- internal helpers ----
 

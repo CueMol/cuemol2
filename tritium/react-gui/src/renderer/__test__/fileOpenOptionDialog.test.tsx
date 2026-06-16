@@ -26,9 +26,19 @@ vi.mock('../contexts/ThemeContext', () => ({
 }))
 
 const mockCm = {
-    proposeUniqName: vi.fn(),
     invokeService: vi.fn(),
     getReaderDefaultOptions: vi.fn(),
+}
+
+/**
+ * `proposeUniqName` args recorded via `invokeService` (after the apis/*
+ * facade collapse the dialog calls `cm.invokeService('proposeUniqName',
+ * args)`). Returns the args object for each call.
+ */
+function proposeArgs(): any[] {
+    return mockCm.invokeService.mock.calls
+        .filter((c) => c[0] === 'proposeUniqName')
+        .map((c) => c[1])
 }
 
 vi.mock('../hooks/useCueMol', () => ({
@@ -98,7 +108,6 @@ function mount(props: Partial<React.ComponentProps<typeof FileOpenOptionDialog>>
 describe('FileOpenOptionDialog (UXP parity)', () => {
     beforeEach(() => {
         globalThis.localStorage.clear()
-        mockCm.proposeUniqName.mockReset()
         mockCm.invokeService.mockReset()
         mockCm.getReaderDefaultOptions.mockReset()
         // Seed the PDB pane from the C++ reader defaults (the real source of
@@ -110,20 +119,18 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
                 loadsegid: false, build2ndry: true, autoTopoGen: true,
             },
         })
-        mockCm.invokeService.mockImplementation((name: string) => {
+        // `proposeUniqName` now arrives via invokeService too; return
+        // { name: prefix + (suffix style applied) } based on its args.
+        mockCm.invokeService.mockImplementation((name: string, args: any) => {
             if (name === 'getSelDefs') return Promise.resolve({ scene: [], global: [] })
             if (name === 'validateSelection') return Promise.resolve({ ok: true })
-            return Promise.resolve(null)
-        })
-        // Default: return { name: prefix + (suffix style applied) } based on args
-        mockCm.proposeUniqName.mockImplementation((args: any) => {
-            if (args.kind === 'sceneRenderer') {
+            if (name === 'proposeUniqName') {
+                if (args.kind === 'object') {
+                    return Promise.resolve({ name: args.tryBare ? args.prefix : args.prefix + '1' })
+                }
                 return Promise.resolve({ name: args.prefix + '1' })
             }
-            if (args.kind === 'object') {
-                return Promise.resolve({ name: args.tryBare ? args.prefix : args.prefix + '1' })
-            }
-            return Promise.resolve({ name: args.prefix + '1' })
+            return Promise.resolve(null)
         })
     })
 
@@ -134,11 +141,9 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
     it('on mount: requests scene-wide unique renderer name for the default type', async () => {
         const handle = mount()
         await flushPromises()
-        const sceneRendCalls = mockCm.proposeUniqName.mock.calls.filter(
-            (c) => c[0].kind === 'sceneRenderer',
-        )
+        const sceneRendCalls = proposeArgs().filter((a) => a.kind === 'sceneRenderer')
         expect(sceneRendCalls.length).toBeGreaterThanOrEqual(1)
-        expect(sceneRendCalls[0][0]).toMatchObject({
+        expect(sceneRendCalls[0]).toMatchObject({
             kind: 'sceneRenderer',
             prefix: 'simple',
             sceneId: 7,
@@ -151,11 +156,9 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
     it('on mount: requests unique object name with tryBare + suffix:parens', async () => {
         const handle = mount()
         await flushPromises()
-        const objCalls = mockCm.proposeUniqName.mock.calls.filter(
-            (c) => c[0].kind === 'object',
-        )
+        const objCalls = proposeArgs().filter((a) => a.kind === 'object')
         expect(objCalls.length).toBeGreaterThanOrEqual(1)
-        expect(objCalls[0][0]).toMatchObject({
+        expect(objCalls[0]).toMatchObject({
             kind: 'object',
             prefix: '1mbn',
             sceneId: 7,
@@ -170,17 +173,15 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
     it('renderer name auto-updates on type change while flag=true', async () => {
         const handle = mount()
         await flushPromises()
-        mockCm.proposeUniqName.mockClear()
+        mockCm.invokeService.mockClear()
 
         const select = getById<HTMLSelectElement>('rend-type')
         await act(async () => { setSelectValue(select, 'ribbon') })
         await flushPromises()
 
-        const sceneRendCalls = mockCm.proposeUniqName.mock.calls.filter(
-            (c) => c[0].kind === 'sceneRenderer',
-        )
+        const sceneRendCalls = proposeArgs().filter((a) => a.kind === 'sceneRenderer')
         expect(sceneRendCalls.length).toBeGreaterThanOrEqual(1)
-        expect(sceneRendCalls[sceneRendCalls.length - 1][0]).toMatchObject({
+        expect(sceneRendCalls[sceneRendCalls.length - 1]).toMatchObject({
             kind: 'sceneRenderer', prefix: 'ribbon', sceneId: 7,
         })
         const rendNameInput = getById<HTMLInputElement>('rend-name')
@@ -197,14 +198,12 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
         await flushPromises()
         expect(rendNameInput.value).toBe('myrend')
 
-        mockCm.proposeUniqName.mockClear()
+        mockCm.invokeService.mockClear()
         const select = getById<HTMLSelectElement>('rend-type')
         await act(async () => { setSelectValue(select, 'ribbon') })
         await flushPromises()
 
-        const sceneRendCalls = mockCm.proposeUniqName.mock.calls.filter(
-            (c) => c[0].kind === 'sceneRenderer',
-        )
+        const sceneRendCalls = proposeArgs().filter((a) => a.kind === 'sceneRenderer')
         expect(sceneRendCalls.length).toBe(0)
         expect(rendNameInput.value).toBe('myrend')
         handle.unmount()
@@ -222,14 +221,12 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
         await act(async () => { setInputValue(rendNameInput, '') })
         await flushPromises()
 
-        mockCm.proposeUniqName.mockClear()
+        mockCm.invokeService.mockClear()
         const select = getById<HTMLSelectElement>('rend-type')
         await act(async () => { setSelectValue(select, 'cartoon') })
         await flushPromises()
 
-        const sceneRendCalls = mockCm.proposeUniqName.mock.calls.filter(
-            (c) => c[0].kind === 'sceneRenderer',
-        )
+        const sceneRendCalls = proposeArgs().filter((a) => a.kind === 'sceneRenderer')
         expect(sceneRendCalls.length).toBeGreaterThanOrEqual(1)
         expect(rendNameInput.value).toBe('cartoon1')
         handle.unmount()
@@ -238,7 +235,7 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
     // Regression: emptying the field mid-edit must NOT trigger a re-fetch.
     // UXP's XUL <textbox> only fires "change" on commit, so users never see
     // an in-progress empty state replaced. React onChange fires per keystroke,
-    // so the auto-fill effect must not depend on the "is default" flag —
+    // so the auto-fill effect must not depend on the "is default" flag --
     // otherwise the field gets reset while the user is mid-edit.
     it('clearing the renderer name does NOT trigger immediate auto-fill', async () => {
         const handle = mount()
@@ -248,18 +245,16 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
         expect(rendNameInput.value).toBe('simple1')
 
         // Ignore the initial mount fetches.
-        mockCm.proposeUniqName.mockClear()
+        mockCm.invokeService.mockClear()
 
-        // User clears the field (e.g. Ctrl-A, Delete) — purely a mid-edit
+        // User clears the field (e.g. Ctrl-A, Delete) -- purely a mid-edit
         // step before typing a custom name.
         await act(async () => { setInputValue(rendNameInput, '') })
         await flushPromises()
 
         // Critically: no sceneRenderer fetch should fire from the empty
         // transition alone. The field must stay empty so the user can type.
-        const sceneRendCalls = mockCm.proposeUniqName.mock.calls.filter(
-            (c) => c[0].kind === 'sceneRenderer',
-        )
+        const sceneRendCalls = proposeArgs().filter((a) => a.kind === 'sceneRenderer')
         expect(sceneRendCalls.length).toBe(0)
         expect(rendNameInput.value).toBe('')
 
@@ -274,7 +269,7 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
         await flushPromises()
 
         const rendNameInput = getById<HTMLInputElement>('rend-name')
-        mockCm.proposeUniqName.mockClear()
+        mockCm.invokeService.mockClear()
 
         // Simulate three keystrokes: 'a', 'ab', 'abc'.
         await act(async () => { setInputValue(rendNameInput, 'a') })
@@ -282,9 +277,7 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
         await act(async () => { setInputValue(rendNameInput, 'abc') })
         await flushPromises()
 
-        const sceneRendCalls = mockCm.proposeUniqName.mock.calls.filter(
-            (c) => c[0].kind === 'sceneRenderer',
-        )
+        const sceneRendCalls = proposeArgs().filter((a) => a.kind === 'sceneRenderer')
         expect(sceneRendCalls.length).toBe(0)
         expect(rendNameInput.value).toBe('abc')
 
@@ -297,10 +290,8 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
         await flushPromises()
         const select = getById<HTMLSelectElement>('rend-type')
         expect(select.value).toBe('ribbon')
-        const sceneRendCalls = mockCm.proposeUniqName.mock.calls.filter(
-            (c) => c[0].kind === 'sceneRenderer',
-        )
-        expect(sceneRendCalls[0][0]).toMatchObject({
+        const sceneRendCalls = proposeArgs().filter((a) => a.kind === 'sceneRenderer')
+        expect(sceneRendCalls[0]).toMatchObject({
             kind: 'sceneRenderer', prefix: 'ribbon',
         })
         handle.unmount()
@@ -347,7 +338,10 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
     it('discards stale proposeUniqName responses (older type-change wins by seq)', async () => {
         // Manual-controlled promise resolvers per call so we can decide the order.
         const resolvers: Array<(v: { name: string }) => void> = []
-        mockCm.proposeUniqName.mockImplementation((args: any) => {
+        mockCm.invokeService.mockImplementation((name: string, args: any) => {
+            if (name === 'getSelDefs') return Promise.resolve({ scene: [], global: [] })
+            if (name === 'validateSelection') return Promise.resolve({ ok: true })
+            if (name !== 'proposeUniqName') return Promise.resolve(null)
             return new Promise((resolve) => {
                 if (args.kind === 'sceneRenderer') {
                     resolvers.push(resolve as (v: { name: string }) => void)
@@ -359,8 +353,8 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
         })
 
         const handle = mount()
-        // Don't flush yet — initial sceneRenderer probe is pending.
-        // Switch type A → B without resolving A first.
+        // Don't flush yet -- initial sceneRenderer probe is pending.
+        // Switch type A -> B without resolving A first.
         const select = getById<HTMLSelectElement>('rend-type')
         await act(async () => { setSelectValue(select, 'ribbon') })
         await act(async () => { setSelectValue(select, 'cartoon') })

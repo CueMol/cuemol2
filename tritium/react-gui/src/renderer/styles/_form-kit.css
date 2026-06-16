@@ -595,6 +595,194 @@
   cursor: default;
 }
 
+/* ── Slider field (label + Blueprint Slider + numeric input + stepper) ── */
+/* Folded in from the former standalone `_slider-numeric-field.css`; it
+   duplicated the Blueprint slider skin above (.h3-form-slider). Used by the
+   coloring panel's Rainbow deck and the density-map panel via the form-kit
+   `SliderField` (and its back-compat alias `SliderNumericField`). */
+.h3-form-sliderfield-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+/* Slider-group labels are kept shorter than the surrounding enum-group labels
+   so the slider can stretch wider in the row; siblings still column-align. */
+.h3-form-sliderfield-label {
+  min-width: 56px;
+  font-size: var(--type-label-fs);
+  font-weight: var(--type-label-fw);
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.h3-form-sliderfield-slider {
+  flex: 1;
+  min-width: 0;
+}
+
+.h3-form-sliderfield-slider.bp5-slider {
+  min-height: 16px;
+  height: 16px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.h3-form-sliderfield-slider .bp5-slider-track {
+  height: 4px;
+  top: 6px;
+}
+
+.h3-form-sliderfield-slider .bp5-slider-progress {
+  background: var(--accent);
+  border-radius: var(--radius-sm);
+}
+
+.h3-form-sliderfield-slider .bp5-slider-progress.bp5-intent-primary {
+  background: var(--accent);
+}
+
+.h3-form-sliderfield-slider .bp5-slider-handle {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--slider-handle);
+  border: none;
+  box-shadow: 0 1px 3px var(--slider-handle-shadow);
+}
+
+.h3-form-sliderfield-slider .bp5-slider-handle:hover {
+  background: var(--slider-handle-hover);
+}
+
+.h3-form-sliderfield-slider .bp5-slider-handle:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent), 0 1px 3px var(--slider-handle-shadow);
+}
+
+/* Plain numeric textbox -- fixed-width column to the right of the slider.
+   Native browser stepper controls are hidden; the row carries a separate
+   `.h3-form-sliderfield-stepper` with explicit +/- buttons that commit on
+   click (see SliderField.tsx). */
+.h3-form-sliderfield-number {
+  flex: 0 0 52px;
+  width: 52px;
+  min-width: 52px;
+  height: var(--field-h-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: var(--fs-base);
+  padding: 0 var(--space-2);
+  text-align: right;
+  outline: none;
+  -moz-appearance: textfield;
+}
+
+.h3-form-sliderfield-number::-webkit-outer-spin-button,
+.h3-form-sliderfield-number::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+.h3-form-sliderfield-number:focus {
+  border-color: var(--accent);
+}
+
+.h3-form-sliderfield-number:disabled {
+  opacity: 0.5;
+}
+
+/* Custom stepper: vertical pair of small +/- buttons flush to the right of the
+   numeric input. The negative left-margin tightens the input <-> stepper gap
+   from the row's 8px gap default down to 1px. */
+.h3-form-sliderfield-stepper {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: 1px;
+  margin-left: -7px;
+}
+
+.h3-form-sliderfield-stepper-btn {
+  width: 16px;
+  height: 10px;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  outline: none;
+}
+
+.h3-form-sliderfield-stepper-btn:hover:not(:disabled) {
+  background: var(--overlay-hover);
+  color: var(--text-primary);
+}
+
+.h3-form-sliderfield-stepper-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Negative side-margins tighten the gaps around the unit suffix from the row's
+   8px gap default down to 1px on each side. */
+.h3-form-sliderfield-unit {
+  font-size: var(--type-caption-fs);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  width: 14px;
+  text-align: left;
+  margin-left: -7px;
+  margin-right: -7px;
+}
+
+/* ── Reject numeric input (bare, reject-and-revert validation) ── */
+/* See RejectNumberInput.tsx: out-of-range / NaN entries revert silently rather
+   than clamp. Skin matches the compact numeric controls. */
+.h3-form-reject-num {
+  width: 100%;
+  min-width: 0;
+  height: var(--field-h-sm);
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: var(--fs-base);
+  padding: 0 var(--space-2);
+  text-align: right;
+  outline: none;
+  caret-color: var(--accent);
+  -moz-appearance: textfield;
+}
+
+.h3-form-reject-num::-webkit-outer-spin-button,
+.h3-form-reject-num::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+.h3-form-reject-num:focus {
+  border-color: var(--accent);
+}
+
+.h3-form-reject-num:disabled {
+  opacity: 0.5;
+}
+
 /* ── Switch ── */
 .h3-form-switch.bp5-switch {
   margin-bottom: 0;

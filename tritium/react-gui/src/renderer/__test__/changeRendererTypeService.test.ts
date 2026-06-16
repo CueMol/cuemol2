@@ -9,7 +9,7 @@ interface ChangeFixtureOpts {
     sceneExists?: boolean
     rendExists?: boolean
     objExists?: boolean
-    /** Mock the XML round-trip — set to null to simulate toXML2 failure. */
+    /** Mock the XML round-trip -- set to null to simulate toXML2 failure. */
     fromXMLReturns?: unknown
     toXML2Returns?: unknown
 }

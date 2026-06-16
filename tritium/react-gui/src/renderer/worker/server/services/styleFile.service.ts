@@ -1,10 +1,10 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 //
-// Phase 5c — style file I/O.
+// Phase 5c -- style file I/O.
 // Mirrors UXP `workspace_panel.js` handlers:
-//   - loadStyleSetFromFile      → onStyLoadFile  (always loads as read-only)
-//   - saveStyleSetToFile        → onStySaveFileAs (path-explicit save)
-//   - saveStyleSetToCurrentSrc  → onStySaveFile   (uses current StyleSet.src;
+//   - loadStyleSetFromFile      -> onStyLoadFile  (always loads as read-only)
+//   - saveStyleSetToFile        -> onStySaveFileAs (path-explicit save)
+//   - saveStyleSetToCurrentSrc  -> onStySaveFile   (uses current StyleSet.src;
 //                                 caller falls back to save-as when there is
 //                                 no src by checking `getStyleSet().src`
 //                                 from the pre-fetched styleInfo)
@@ -28,7 +28,7 @@ function getStyleMgr(ctx: WorkerContext): StyleManagerLike | null {
     return (ctx.svc.getService('StyleManager') as unknown as StyleManagerLike | null) ?? null;
 }
 
-// ─── loadStyleSetFromFile ────────────────────────────────────────────────
+// --- loadStyleSetFromFile ---
 
 export interface LoadStyleSetFromFileArgs {
     sceneId: number;
@@ -56,7 +56,7 @@ function loadStyleSetFromFile(
     let newId = -1;
     withUndoTxn(scene, 'Load style file', () => {
         // UXP `onStyLoadFile` always passes bReadOnly=true for the
-        // file-load entry point — external styles arrive read-only by
+        // file-load entry point -- external styles arrive read-only by
         // default. The user can toggle off later via the ctxmenu item.
         newId = mgr.loadStyleSetFromFile(args.sceneId, args.path, true);
     });
@@ -65,7 +65,7 @@ function loadStyleSetFromFile(
     return { ok: true, newId };
 }
 
-// ─── saveStyleSetToFile (Save As) ────────────────────────────────────────
+// --- saveStyleSetToFile (Save As) ---
 
 export interface SaveStyleSetToFileArgs {
     sceneId: number;
@@ -99,7 +99,7 @@ function saveStyleSetToFile(
     return { ok };
 }
 
-// ─── saveStyleSetToCurrentSrc (overwrite) ────────────────────────────────
+// --- saveStyleSetToCurrentSrc (overwrite) ---
 
 export interface SaveStyleSetToCurrentSrcArgs {
     sceneId: number;
@@ -111,7 +111,7 @@ export interface SaveStyleSetToCurrentSrcResult {
     ok: boolean;
     /**
      * True when the style had a `src` and we performed the save in place.
-     * False when there was no src — the renderer should fall back to the
+     * False when there was no src -- the renderer should fall back to the
      * Save As flow (matches UXP `onStySaveFile`'s "perform save-as" branch).
      */
     saved: boolean;
@@ -129,7 +129,7 @@ function saveStyleSetToCurrentSrc(
 
     const src = mgr.getStyleSetSource(args.styleSetId);
     if (!src) {
-        // No src — caller should run save-as instead. Reported as ok+saved:false
+        // No src -- caller should run save-as instead. Reported as ok+saved:false
         // so the renderer can distinguish "service failed" from "empty src".
         return { ok: true, saved: false };
     }

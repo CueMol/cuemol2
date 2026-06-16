@@ -42,7 +42,7 @@ function setSceneBgColor(ctx: WorkerContext, args: SetSceneBgColorArgs): SceneBg
     return { ok: true, bgColor: args.colorName };
 }
 
-// ─── Color proofing (Phase: ctxmenu.scene) ────────────────────────────────
+// --- Color proofing (Phase: ctxmenu.scene) ---
 //
 // Mirrors UXP `Qm2Main.onToggleColProof` / `onSceneMenuShowing`. The
 // "checked" state for the menu item is the combined gate of both flags:

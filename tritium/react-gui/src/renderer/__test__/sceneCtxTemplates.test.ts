@@ -6,7 +6,7 @@
  * each `click` carries, and the enabled/checked gates) so future edits to
  * the template can be checked against a fixed contract.
  *
- * buildTemplate is a pure function — no Electron APIs, no module state —
+ * buildTemplate is a pure function -- no Electron APIs, no module state --
  * so it runs directly under Vitest without mocking `electron`.
  */
 

@@ -17,12 +17,12 @@
  * regeneration mode is intentionally out of scope.
  */
 
-import React, { useCallback, useEffect, useState } from 'react'
-import { Button, Dialog, DialogBody, DialogFooter } from '@blueprintjs/core'
-import { useTheme } from '../../contexts/ThemeContext'
+import React, { useEffect, useState } from 'react'
 import { useCueMol } from '../../hooks/useCueMol'
+import { useMolEditCommit } from '../../hooks/useMolEditCommit'
 import { Field, FieldSection, NumericField, SwitchField, TextField } from '../../h3-kit/form'
-import { ObjectSelect, objectFilters } from '../../h3-kit/ObjectSelect'
+import { DialogShell } from './DialogShell'
+import { MolPicker } from './MolPicker'
 import { MolSelList } from '../../h3-kit/MolSelList/MolSelList'
 import { pushHistory } from '../../h3-kit/MolSelList/selHistory'
 
@@ -47,8 +47,6 @@ const DEFAULT_PROBE_RADIUS = 1.4
 export function MakeMolSurfDialog({
     visible, sceneId, onConfirm, onCancel,
 }: Props): React.JSX.Element {
-    const { theme } = useTheme()
-    const isDark = theme === 'dark'
     const { cm } = useCueMol()
 
     const [objId, setObjId] = useState<number | undefined>(undefined)
@@ -57,21 +55,40 @@ export function MakeMolSurfDialog({
     const [surfName, setSurfName] = useState<string>('')
     const [density, setDensity] = useState<number>(DEFAULT_DENSITY)
     const [probeRadius, setProbeRadius] = useState<number>(DEFAULT_PROBE_RADIUS)
-    const [submitting, setSubmitting] = useState(false)
-    const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-    // Reset transient state on each open. The molecule id is intentionally
-    // NOT reset so the last-picked molecule persists within the session.
-    // The surface name is owned by the prefill effect below.
-    useEffect(() => {
-        if (!visible) return
-        setUseSel(false)
-        setSelStr('')
-        setDensity(DEFAULT_DENSITY)
-        setProbeRadius(DEFAULT_PROBE_RADIUS)
-        setSubmitting(false)
-        setErrorMsg(null)
-    }, [visible])
+    // Commit handler + submitting/errorMsg state + reset-on-open. The molecule
+    // id is intentionally NOT reset (last-picked persists); the surface name is
+    // owned by the prefill effect below, so neither is cleared here.
+    const { submitting, errorMsg, run: handleOk } =
+        useMolEditCommit({
+            cm,
+            visible,
+            onReset: () => {
+                setUseSel(false)
+                setSelStr('')
+                setDensity(DEFAULT_DENSITY)
+                setProbeRadius(DEFAULT_PROBE_RADIUS)
+            },
+            buildCommit: () => {
+                if (objId === undefined) return null
+                const effSelStr = useSel ? selStr : ''
+                return {
+                    invoke: () => cm!.invokeService('makeMolSurf', {
+                        sceneId,
+                        objId,
+                        selStr: effSelStr,
+                        surfName,
+                        density,
+                        probeRadius,
+                    }),
+                    onSuccess: () => {
+                        if (effSelStr.trim() !== '') pushHistory(effSelStr.trim())
+                        onConfirm({ ok: true })
+                    },
+                    fallbackError: 'Failed to generate molecular surface',
+                }
+            },
+        })
 
     // Prefill the surface name with a unique `sf_<molname>` whenever the
     // dialog opens or the target molecule changes (UXP `makeSugName` /
@@ -96,56 +113,24 @@ export function MakeMolSurfDialog({
         }
     }, [visible, cm, sceneId, objId])
 
-    const handleOk = useCallback(async () => {
-        if (!cm || objId === undefined) return
-        setSubmitting(true)
-        setErrorMsg(null)
-        const effSelStr = useSel ? selStr : ''
-        try {
-            const res = await cm.invokeService('makeMolSurf', {
-                sceneId,
-                objId,
-                selStr: effSelStr,
-                surfName,
-                density,
-                probeRadius,
-            })
-            setSubmitting(false)
-            if (res?.ok) {
-                if (effSelStr.trim() !== '') pushHistory(effSelStr.trim())
-                onConfirm({ ok: true })
-            } else {
-                setErrorMsg(res?.error ?? 'Failed to generate molecular surface')
-            }
-        } catch (err) {
-            setErrorMsg(String(err))
-            setSubmitting(false)
-        }
-    }, [cm, sceneId, objId, useSel, selStr, surfName, density, probeRadius, onConfirm])
-
     return (
-        <Dialog
-            isOpen={visible}
-            onClose={onCancel}
+        <DialogShell
+            visible={visible}
             title="Mol surface generation"
-            style={{ width: 380 }}
-            portalClassName={isDark ? 'bp5-dark' : ''}
-            canOutsideClickClose={false}
-            isCloseButtonShown={false}
+            width="lg"
+            onCancel={onCancel}
+            onOk={handleOk}
+            okDisabled={objId === undefined}
+            submitting={submitting}
+            errorMsg={errorMsg}
         >
-            <DialogBody>
-                <div className="h3-dialog-form">
                     <FieldSection title="Target">
-                        <ObjectSelect
+                        <MolPicker
                             cm={cm}
                             sceneId={sceneId}
                             label="Molecule"
-                            filter={objectFilters.molCoord}
                             selectedId={objId}
                             onChange={setObjId}
-                            emptyText="(no molecules)"
-                            fallbackName={(m) => `Mol ${m.uid}`}
-                            hideLabel
                         />
                         <Field label="Use selection" inline>
                             <SwitchField
@@ -195,27 +180,6 @@ export function MakeMolSurfDialog({
                             />
                         </Field>
                     </FieldSection>
-
-                    {errorMsg !== null && (
-                        <div className="h3-dialog-error">{errorMsg}</div>
-                    )}
-                </div>
-            </DialogBody>
-            <DialogFooter
-                actions={
-                    <>
-                        <Button onClick={onCancel} disabled={submitting}>Cancel</Button>
-                        <Button
-                            intent="primary"
-                            onClick={handleOk}
-                            disabled={submitting || objId === undefined}
-                            loading={submitting}
-                        >
-                            OK
-                        </Button>
-                    </>
-                }
-            />
-        </Dialog>
+        </DialogShell>
     )
 }

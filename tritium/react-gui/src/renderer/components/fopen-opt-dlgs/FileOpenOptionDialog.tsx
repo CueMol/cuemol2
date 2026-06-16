@@ -4,8 +4,8 @@
  *
  * Layout (top to bottom):
  *   1. File info bar (filename + format badge)
- *   2. Renderer options — always visible (object name, type, selection, etc.)
- *   3. Format-specific options — collapsed by default, revealed on demand
+ *   2. Renderer options -- always visible (object name, type, selection, etc.)
+ *   3. Format-specific options -- collapsed by default, revealed on demand
  *
  * UXP parity (uxp_gui/cuemol2/base/content/fopen-renderopt-page.js):
  *   - Renderer name auto-tracks the selected renderer type until the user
@@ -171,7 +171,7 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
     const prefix = baseNameNoExt(filePath);
     const seq = ++objNameSeqRef.current;
     (async () => {
-      const res = await cm.proposeUniqName({
+      const res = await cm.invokeService('proposeUniqName', {
         kind: 'object',
         prefix,
         sceneId,
@@ -296,7 +296,7 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
           )}
         </div>
 
-        {/* Renderer options — always visible, at the top */}
+        {/* Renderer options -- always visible, at the top */}
         <RendererOptionsPane
           options={rendererOptions}
           onChange={setRendererOptions}
@@ -306,7 +306,7 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
           onRendererNameUserEdit={onRendererNameUserEdit}
         />
 
-        {/* Format-specific options — progressive disclosure */}
+        {/* Format-specific options -- progressive disclosure */}
         {hasFormatOptions && (
           <div className="fod-collapsible">
             <button

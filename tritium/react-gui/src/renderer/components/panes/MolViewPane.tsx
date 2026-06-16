@@ -8,7 +8,7 @@ import { GES_PINCH, GES_ROTATE } from '../../worker/shared/gestureAxes'
 import { IPC } from '../../../shared/ipcChannels'
 
 /**
- * Tab content pane for "molview" tabs — WebGL canvas for molecular visualization.
+ * Tab content pane for "molview" tabs -- WebGL canvas for molecular visualization.
  *
  * Design notes:
  * - Wrapped in React.memo and subscribes only to `useMolTabDispatch` (stable
@@ -27,7 +27,7 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
   const { getActiveViewID } = useMolTabDispatch()
   const { cueMolReady, cm } = useCueMol()
 
-  // Ref to the stable getActiveViewID callback — lets ResizeObserver and
+  // Ref to the stable getActiveViewID callback -- lets ResizeObserver and
   // mouse handlers always query the active view without re-registration.
   const getActiveViewIDRef = useRef(getActiveViewID)
   useEffect(() => { getActiveViewIDRef.current = getActiveViewID }, [getActiveViewID])
@@ -58,7 +58,7 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
    *   The ResizeObserver may have already fired once at that point, but
    *   `getActiveViewID()` was null so the event was ignored.
    *   After this effect completes, the size no longer changes and the
-   *   ResizeObserver will not re-fire — so we must push the correct
+   *   ResizeObserver will not re-fire -- so we must push the correct
    *   dimensions to the worker explicitly here.
    */
   useEffect(() => {
@@ -121,12 +121,12 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
     return () => {
       resizeObserver.disconnect()
     }
-  }, []) // stable — reads state via refs
+  }, []) // stable -- reads state via refs
 
   // Trackpad wheel handler:
-  //   - ctrl+wheel: Chromium's encoding of a trackpad pinch gesture → dispatch as
+  //   - ctrl+wheel: Chromium's encoding of a trackpad pinch gesture -> dispatch as
   //     GES_PINCH so ViewInputConfig bindings route it (e.g. to VIEW_ZOOM).
-  //   - plain wheel: 2-finger swipe or physical mouse wheel → INDEV_WHEEL path
+  //   - plain wheel: 2-finger swipe or physical mouse wheel -> INDEV_WHEEL path
   //     (MOUSE_WHEEL1/2 bindings for translate). Registered with passive:false so
   //     preventDefault() suppresses browser page-scroll / OS page-zoom.
   useWheel(
@@ -162,7 +162,7 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
     },
   )
 
-  // macOS trackpad 2-finger rotate gesture — sourced from Electron main's
+  // macOS trackpad 2-finger rotate gesture -- sourced from Electron main's
   // BrowserWindow 'rotate-gesture' event (Chromium has no DOM event for this).
   // Forwarded via GES_ROTATE axis so ViewInputConfig bindings can route it
   // (e.g. conf_rotz = "...,GES_ROTATE" in default_style.xml).
@@ -200,7 +200,7 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
       canvas.removeEventListener('mousemove', onMouseMove)
       canvas.removeEventListener('contextmenu', onContextMenu)
     }
-  }, []) // stable — reads state via refs
+  }, []) // stable -- reads state via refs
 
   return <canvas className={styles.molView} ref={canvasRef} />
 })

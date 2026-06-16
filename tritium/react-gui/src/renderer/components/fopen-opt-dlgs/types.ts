@@ -207,7 +207,7 @@ export function getDefaultRendererOptions(filePath: string, defaultRendType?: st
 
 // Returns true for formats that produce MolCoord-like objects, where atom
 // selection is meaningful. False for scalar/surface objects (mtz, ccp4map,
-// msms) — see NON_MOL_CLASSES in setupRenderer.service.ts.
+// msms) -- see NON_MOL_CLASSES in setupRenderer.service.ts.
 export function isMolFormat(kind: FormatKind): boolean {
   switch (kind) {
     case 'mtz':

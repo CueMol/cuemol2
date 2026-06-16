@@ -1,6 +1,6 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 //
-// Phase 4c: panel.workspace.ctxmenu.multi — bulk Show / Hide / Delete
+// Phase 4c: panel.workspace.ctxmenu.multi -- bulk Show / Hide / Delete
 // for multi-selected tree nodes. Mirrors UXP `onShowHideCmd` and the
 // per-element loop in `onDeleteCmd` (multi branch).
 //

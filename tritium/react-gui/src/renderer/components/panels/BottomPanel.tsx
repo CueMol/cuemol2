@@ -20,9 +20,9 @@ import { IPC } from "../../../shared/ipcChannels";
 import type { RenderJob } from "../../hooks/useRenderJob";
 import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // Types
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 
 type BottomTabType = "output" | "sequence" | "animation" | "render";
 
@@ -34,9 +34,9 @@ interface TabButtonProps {
   onClick: (tab: BottomTabType) => void;
 }
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // Sub-component: TabButton
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 
 const TabButton: React.FC<TabButtonProps> = ({ tab, activeTab, icon, label, onClick }) => (
   <div
@@ -48,9 +48,9 @@ const TabButton: React.FC<TabButtonProps> = ({ tab, activeTab, icon, label, onCl
   </div>
 );
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // Main Component
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 
 interface BottomPanelProps {
   cm: AsyncCueMol | null;

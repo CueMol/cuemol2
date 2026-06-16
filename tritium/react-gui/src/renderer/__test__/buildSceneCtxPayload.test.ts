@@ -1,7 +1,7 @@
 /**
  * Pre-fetch payload builder for the scene-tree right-click menu. The unit
  * tests verify the per-node-type gating that drives which submenus the
- * main process renders — the gates double as the visibility filter.
+ * main process renders -- the gates double as the visibility filter.
  */
 
 import { describe, it, expect, vi } from 'vitest'

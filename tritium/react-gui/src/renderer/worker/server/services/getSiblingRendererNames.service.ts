@@ -10,6 +10,7 @@ import type { BaseWrapper } from '@cuemol/core/src/BaseWrapper';
 import type { Object as CueObject } from '@cuemol/core/src/wrappers/Object';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { WorkerContext } from '../types/WorkerContext';
+import { safeRead } from './helpers/safeRead';
 
 export interface GetSiblingRendererNamesArgs {
     /** Scene scope. */
@@ -25,13 +26,6 @@ export interface GetSiblingRendererNamesResult {
     names: string[];
 }
 
-function safeRead<T>(read: () => T): T | undefined {
-    try {
-        return read();
-    } catch {
-        return undefined;
-    }
-}
 
 function getSiblingRendererNames(
     ctx: WorkerContext,

@@ -31,7 +31,7 @@ import { SliderNumericField } from "../../h3-kit/SliderNumericField";
 /** Sample rows for the Listbox showcase. */
 const LISTBOX_ITEMS = ["1CRN", "3J3Q", "Water", "Ligand"];
 
-/* ─── Props ─── */
+/* --- Props --- */
 
 interface CatalogPane2Props {
   collapsed?: boolean;
@@ -40,7 +40,7 @@ interface CatalogPane2Props {
   activeSceneId?: number;
 }
 
-/* ─── Component ─── */
+/* --- Component --- */
 
 export const CatalogPane2: React.FC<CatalogPane2Props> = ({
   collapsed = false,

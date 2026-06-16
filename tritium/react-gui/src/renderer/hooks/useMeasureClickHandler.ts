@@ -12,12 +12,10 @@
  * drives the camera; `useNaviClickHandler` is gated off for measure tools so
  * the two handlers never both fire.
  */
-import { useEffect } from 'react';
 import { useCueMol } from './useCueMol';
 import { useMolTabState } from './useMolTab';
 import { useActiveToolContext } from '../contexts/ActiveToolContext';
-import { useCueMolEventListener } from './useCueMolEventListener';
-import * as event from '../event';
+import { usePickClickHandler } from './usePickClickHandler';
 import type { ToolId } from '../data/viewportTools';
 import type { MeasureMode } from '../worker/server/services/measure.service';
 
@@ -26,8 +24,6 @@ export interface UseMeasureClickHandlerArgs {
     /** Current target label-set name ('' = Auto). Passed to each measurePick. */
     target: string;
 }
-
-const LBTN = 1 << 3; // left button modifier bit (same as UXP)
 
 /** Tools handled by the measure pick sequence. */
 const MEASURE_TOOLS = new Set<ToolId>(['distance', 'angle', 'torsion']);
@@ -44,46 +40,19 @@ export function useMeasureClickHandler({ setStatusMessage, target }: UseMeasureC
     const enabled = cueMolReady && activeViewID != null && isMeasureTool(activeTool);
     const viewId = activeViewID ?? -1;
 
-    useCueMolEventListener({
+    usePickClickHandler({
         cm,
         enabled,
-        category: 'mouseClicked',
-        srcMask: event.SEM_INDEV,
-        evtMask: event.SEM_ANY,
-        scopeId: viewId,
-        handler: async (args) => {
-            if (!cm || !isMeasureTool(activeTool)) return;
-            const { x, y, mod } = (args as { obj?: { x?: number; y?: number; mod?: number } } | null)?.obj ?? {};
-            if (x == null || y == null || mod == null) return;
-            if (!(mod & LBTN)) return;
-            const result = await cm.invokeService('measurePick', { viewId, x, y, mode: activeTool, target });
-            if (result?.handled && result.statusMessage) {
-                setStatusMessage(result.statusMessage);
-            }
+        viewId,
+        setStatusMessage,
+        pick: async (x, y) => {
+            // Re-validate the active tool: the closure may outlive a tool
+            // switch by one event before the subscription is torn down.
+            if (!isMeasureTool(activeTool)) return null;
+            const result = await cm!.invokeService('measurePick', { viewId, x, y, mode: activeTool, target });
+            return result?.handled ? result : null;
         },
+        reset: () => cm!.invokeService('measureReset', { viewId }),
+        escapeMessage: 'Measure: pick canceled',
     });
-
-    // Cancel any in-progress pick sequence when leaving a measure tool or
-    // switching the active view: the cleanup runs when `enabled`/`viewId`
-    // change, so a stale first pick can never combine with a later one (and the
-    // crosshairs are cleared). Worker is the source of truth for the buffer.
-    useEffect(() => {
-        if (!cm || !enabled) return;
-        return () => {
-            void cm.invokeService('measureReset', { viewId });
-        };
-    }, [cm, enabled, viewId]);
-
-    // Escape cancels the current pick sequence while a measure tool is active.
-    useEffect(() => {
-        if (!cm || !enabled) return;
-        const onKeyDown = (e: KeyboardEvent) => {
-            if (e.key !== 'Escape') return;
-            void cm.invokeService('measureReset', { viewId }).then((r) => {
-                if (r?.cleared) setStatusMessage('Measure: pick canceled');
-            });
-        };
-        window.addEventListener('keydown', onKeyDown);
-        return () => window.removeEventListener('keydown', onKeyDown);
-    }, [cm, enabled, viewId, setStatusMessage]);
 }

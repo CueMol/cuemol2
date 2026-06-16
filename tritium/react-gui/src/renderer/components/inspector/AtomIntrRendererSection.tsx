@@ -37,6 +37,7 @@ import {
   BoolRow,
   ColorRow,
   TextRow,
+  MappedEnumRow,
   resetProps,
 } from "./RendererCommonSection";
 import {
@@ -55,50 +56,9 @@ import type {
 type SetFn = RendererPropSectionProps["onSet"];
 type ResetFn = RendererPropSectionProps["onReset"];
 
-// ────────────────────────────────────────────────────────────
-// Local rows -- friendly-label / fixed-option selects
-// ────────────────────────────────────────────────────────────
-
-interface MappedEnumRowProps {
-  entry: GenericPropEntry;
-  label: string;
-  /** Display text per raw enum ID (value stays the raw C++ string ID). */
-  labels: Record<string, string>;
-  onSet: SetFn;
-  onReset: ResetFn;
-  disabled?: boolean;
-}
-
-/**
- * Enum dropdown that shows a friendly label per option while committing the raw
- * C++ enum string ID (e.g. mode `fancy` shown as "3D tube"). Falls back to the
- * raw ID for any option missing from `labels`.
- */
-const MappedEnumRow: React.FC<MappedEnumRowProps> = ({
-  entry,
-  label,
-  labels,
-  onSet,
-  onReset,
-  disabled,
-}) => {
-  const options = entry.enumdef ?? [String(entry.value)];
-  return (
-    <PropertyField label={label} {...resetProps(entry, onReset)}>
-      <SelectField
-        value={String(entry.value)}
-        disabled={disabled || entry.readonly}
-        onChange={(v) => onSet(entry.key, entry.type, v)}
-      >
-        {options.map((opt) => (
-          <option key={opt} value={opt}>
-            {labels[opt] ?? opt}
-          </option>
-        ))}
-      </SelectField>
-    </PropertyField>
-  );
-};
+// ------------------------------------------------------------
+// Local rows -- fixed-option string selects
+// ------------------------------------------------------------
 
 interface StringSelectRowProps {
   entry: GenericPropEntry;
@@ -143,9 +103,9 @@ const StringSelectRow: React.FC<StringSelectRowProps> = ({
   );
 };
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Sections
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 const MODE_LABELS: Record<string, string> = {
   simple: "Simple line",

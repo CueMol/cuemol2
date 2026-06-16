@@ -130,5 +130,21 @@ describe('deleteMolAtoms', () => {
 
         expect(res.ok).toBe(false)
         expect(res.error).toMatch(/boom/)
+        // A throwing mutation must roll the txn back and must NOT commit a
+        // bogus undo entry.
+        expect(scene.rollbackUndoTxn).toHaveBeenCalled()
+        expect(scene.commitUndoTxn).not.toHaveBeenCalled()
+    })
+
+    it('rolls back without committing when deleteAtoms returns false', () => {
+        const scene = makeUndoScene(100)
+        scene.getObject = vi.fn(() => ({ __mol: true }))
+        const ctx = makeCtx({ scene, molAnlMgr: { deleteAtoms: vi.fn(() => false) } })
+
+        const res = deleteMolAtoms(ctx, { sceneId: 100, objId: 1, selStr: 'chain A' })
+
+        expect(res.ok).toBe(false)
+        expect(scene.rollbackUndoTxn).toHaveBeenCalled()
+        expect(scene.commitUndoTxn).not.toHaveBeenCalled()
     })
 })

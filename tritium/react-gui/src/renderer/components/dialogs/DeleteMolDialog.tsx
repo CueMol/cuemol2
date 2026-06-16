@@ -16,12 +16,12 @@
  * until something is selected.
  */
 
-import React, { useCallback, useEffect, useState } from 'react'
-import { Button, Dialog, DialogBody, DialogFooter } from '@blueprintjs/core'
-import { useTheme } from '../../contexts/ThemeContext'
+import React, { useState } from 'react'
 import { useCueMol } from '../../hooks/useCueMol'
+import { useMolEditCommit } from '../../hooks/useMolEditCommit'
 import { FieldSection } from '../../h3-kit/form'
-import { ObjectSelect, objectFilters } from '../../h3-kit/ObjectSelect'
+import { DialogShell } from './DialogShell'
+import { MolPicker } from './MolPicker'
 import { MolSelList } from '../../h3-kit/MolSelList/MolSelList'
 import { pushHistory } from '../../h3-kit/MolSelList/selHistory'
 
@@ -41,72 +41,57 @@ interface Props {
 export function DeleteMolDialog({
     visible, sceneId, onConfirm, onCancel,
 }: Props): React.JSX.Element {
-    const { theme } = useTheme()
-    const isDark = theme === 'dark'
     const { cm } = useCueMol()
 
     const [objId, setObjId] = useState<number | undefined>(undefined)
     const [selStr, setSelStr] = useState<string>('')
-    const [submitting, setSubmitting] = useState(false)
-    const [errorMsg, setErrorMsg] = useState<string | null>(null)
-
-    // Reset transient state on each open -- the provider keeps the component
-    // mounted across show/hide cycles, so leftover flags would otherwise stick.
-    useEffect(() => {
-        if (!visible) return
-        setSelStr('')
-        setSubmitting(false)
-        setErrorMsg(null)
-    }, [visible])
 
     const trimmedSel = selStr.trim()
 
-    const handleOk = useCallback(async () => {
-        if (!cm || objId === undefined || trimmedSel === '') return
-        setSubmitting(true)
-        setErrorMsg(null)
-        try {
-            const res = await cm.invokeService('deleteMolAtoms', {
-                sceneId,
-                objId,
-                selStr,
-            })
-            setSubmitting(false)
-            if (res?.ok) {
-                pushHistory(trimmedSel)
-                onConfirm({ ok: true })
-            } else {
-                setErrorMsg(res?.error ?? 'Failed to delete atoms')
-            }
-        } catch (err) {
-            setErrorMsg(String(err))
-            setSubmitting(false)
-        }
-    }, [cm, sceneId, objId, selStr, trimmedSel, onConfirm])
+    // Commit handler + submitting/errorMsg state + reset-on-open. objId is
+    // intentionally NOT reset (last-picked molecule persists in-session).
+    const { submitting, errorMsg, setErrorMsg, run: handleOk } =
+        useMolEditCommit({
+            cm,
+            visible,
+            onReset: () => setSelStr(''),
+            buildCommit: () => {
+                if (objId === undefined || trimmedSel === '') return null
+                return {
+                    invoke: () => cm!.invokeService('deleteMolAtoms', {
+                        sceneId,
+                        objId,
+                        selStr,
+                    }),
+                    onSuccess: () => {
+                        pushHistory(trimmedSel)
+                        onConfirm({ ok: true })
+                    },
+                    fallbackError: 'Failed to delete atoms',
+                }
+            },
+        })
 
     return (
-        <Dialog
-            isOpen={visible}
-            onClose={onCancel}
+        <DialogShell
+            visible={visible}
             title="Delete atoms"
-            style={{ width: 380 }}
-            portalClassName={isDark ? 'bp5-dark' : ''}
-            canOutsideClickClose={false}
-            isCloseButtonShown={false}
+            width="lg"
+            onCancel={onCancel}
+            onOk={handleOk}
+            okLabel="Delete"
+            okIntent="danger"
+            okDisabled={objId === undefined || trimmedSel === ''}
+            submitting={submitting}
+            errorMsg={errorMsg}
         >
-            <DialogBody>
-                <div className="h3-dialog-form">
                     <FieldSection title="Molecule">
-                        <ObjectSelect
+                        <MolPicker
                             cm={cm}
                             sceneId={sceneId}
                             label="Molecule"
-                            filter={objectFilters.molCoord}
                             selectedId={objId}
                             onChange={setObjId}
-                            emptyText="(no molecules)"
-                            fallbackName={(m) => `Mol ${m.uid}`}
-                            hideLabel
                         />
                     </FieldSection>
 
@@ -122,27 +107,6 @@ export function DeleteMolDialog({
                             disabled={submitting || objId === undefined}
                         />
                     </FieldSection>
-
-                    {errorMsg !== null && (
-                        <div className="h3-dialog-error">{errorMsg}</div>
-                    )}
-                </div>
-            </DialogBody>
-            <DialogFooter
-                actions={
-                    <>
-                        <Button onClick={onCancel} disabled={submitting}>Cancel</Button>
-                        <Button
-                            intent="danger"
-                            onClick={handleOk}
-                            disabled={submitting || objId === undefined || trimmedSel === ''}
-                            loading={submitting}
-                        >
-                            Delete
-                        </Button>
-                    </>
-                }
-            />
-        </Dialog>
+        </DialogShell>
     )
 }

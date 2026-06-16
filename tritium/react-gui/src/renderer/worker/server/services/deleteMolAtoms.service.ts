@@ -13,12 +13,9 @@
 
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { MolSelection } from '@cuemol/core/src/wrappers/MolSelection';
-import type { MolAnlManager } from '@cuemol/core/src/wrappers/MolAnlManager';
-import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { WorkerContext } from '../types/WorkerContext';
-import { getSceneOrNull } from './helpers/sceneResolver';
-import { makeSel } from './helpers/makeSel';
-import { withUndoTxn } from './withUndoTxn';
+import { resolveMolTool } from './helpers/molAnlTool';
+import { tryUndoTxn } from './withUndoTxn';
 
 export interface DeleteMolAtomsArgs {
     sceneId: number;
@@ -38,33 +35,17 @@ function deleteMolAtoms(
     ctx: WorkerContext,
     args: DeleteMolAtomsArgs,
 ): DeleteMolAtomsResult {
-    const scene = getSceneOrNull(ctx, args.sceneId);
-    if (!scene) return { ok: false, error: 'scene not found' };
+    const t = resolveMolTool(ctx, args.sceneId, args.objId, args.selStr);
+    if ('ok' in t) return t;
+    const { scene, mol, sel, mgr } = t;
 
-    const mol = scene.getObject(args.objId) as CueMolObject | null;
-    if (!mol) return { ok: false, error: 'molecule not found' };
-
-    const sel = makeSel(ctx, args.selStr, scene.uid);
-    if (!sel) return { ok: false, error: 'invalid selection' };
-
-    const mgr = ctx.svc.getService('MolAnlManager') as MolAnlManager | null;
-    if (!mgr) return { ok: false, error: 'MolAnlManager unavailable' };
-
-    let err: string | null = null;
-    let ok = false;
-    withUndoTxn(scene, 'Delete atoms', () => {
-        try {
-            ok = mgr.deleteAtoms(
-                mol as unknown as MolCoord,
-                sel as unknown as MolSelection,
-            );
-        } catch (e) {
-            err = String(e);
-        }
-    });
-    if (err !== null) return { ok: false, error: err };
-    if (!ok) return { ok: false, error: 'deleteAtoms failed' };
-    return { ok: true };
+    // deleteAtoms returns a boolean success flag: false -> rollback (no commit).
+    return tryUndoTxn(scene, 'Delete atoms', () =>
+        mgr.deleteAtoms(
+            mol as unknown as MolCoord,
+            sel as unknown as MolSelection,
+        ),
+    );
 }
 
 export const services = {

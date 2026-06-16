@@ -192,9 +192,10 @@ describe('changeSymmetryInfo', () => {
         })
         expect(res.ok).toBe(false)
         expect(res.error).toMatch(/bad sg/)
-        // withUndoTxn currently commits even when the inner callback
-        // swallows the error; the contract pinned here is only that
-        // ok=false carries the underlying message.
+        // A throwing mutation must roll the txn back and must NOT commit a
+        // bogus undo entry (the error message is also carried through).
+        expect(scene.rollbackUndoTxn).toHaveBeenCalled()
+        expect(scene.commitUndoTxn).not.toHaveBeenCalled()
     })
 })
 
@@ -238,6 +239,24 @@ describe('showUnitCellRenderer', () => {
         expect(scene.startUndoTxn).toHaveBeenCalledWith('Show unitcell')
         expect(scene.commitUndoTxn).toHaveBeenCalled()
         expect(nameSet).toBe('unitcell')
+    })
+
+    it('rolls back without committing when createRenderer throws (preserving created=false)', () => {
+        const obj = {
+            getRendererByType: vi.fn(() => null),
+            createRenderer: vi.fn(() => { throw new Error('cannot create') }),
+            getExtData: vi.fn(),
+            getClassName: vi.fn(() => 'MolCoord'),
+        }
+        const scene = makeUndoScene(100)
+        scene.getObject = vi.fn(() => obj)
+        const ctx = makeCtx({ scene })
+        const res = showUnitCellRenderer(ctx, { sceneId: 100, objId: 1 })
+        expect(res.ok).toBe(false)
+        expect(res.created).toBe(false)
+        expect(res.error).toMatch(/cannot create/)
+        expect(scene.rollbackUndoTxn).toHaveBeenCalled()
+        expect(scene.commitUndoTxn).not.toHaveBeenCalled()
     })
 })
 
@@ -300,5 +319,24 @@ describe('showSymmRenderer', () => {
         // center is unwrapped from the Vector wrapper to its native handle.
         expect(props.center).toEqual({ __vec: 'native' })
         expect(view.getViewCenter).toHaveBeenCalled()
+    })
+
+    it('rolls back without committing when setupSymmRenderer throws', () => {
+        const obj = {
+            getRendererByType: vi.fn(() => null),
+            createRenderer: vi.fn(() => { throw new Error('symm create failed') }),
+            getExtData: vi.fn(),
+            getClassName: vi.fn(() => 'MolCoord'),
+        }
+        const scene = makeUndoScene(100)
+        scene.getObject = vi.fn(() => obj)
+        const ctx = makeCtx({ scene })
+        const res = showSymmRenderer(ctx, {
+            sceneId: 100, objId: 1, viewId: 1, extent: 'unitcell',
+        })
+        expect(res.ok).toBe(false)
+        expect(res.error).toMatch(/symm create failed/)
+        expect(scene.rollbackUndoTxn).toHaveBeenCalled()
+        expect(scene.commitUndoTxn).not.toHaveBeenCalled()
     })
 })

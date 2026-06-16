@@ -10,6 +10,7 @@
 
 import type { SceneBgColor, ViewCenterMark } from '../../shared/ipcTypes';
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol';
+import type { ActiveSceneCommandDeps } from '../commands/commandTypes';
 import { useSceneCommands } from '../commands/useSceneCommands';
 import { useUiDialogCommands } from '../commands/useUiDialogCommands';
 import { useTabCommands } from '../commands/useTabCommands';
@@ -26,7 +27,7 @@ interface UseCommandRegistrationsOptions {
   cm: AsyncCueMol | null;
   addMolTab: (title: string, viewId: number, sceneId: number) => void;
   addMolViewTab: (title: string, viewId: number) => void;
-  getActiveSceneInfo: () => { scene_uid: number; view_id: number } | null | undefined;
+  getActiveSceneInfo: ActiveSceneCommandDeps;
   handleCloseTab: (id: string) => Promise<boolean>;
   activeTab: string | null;
   activeMolViewId: number | undefined;

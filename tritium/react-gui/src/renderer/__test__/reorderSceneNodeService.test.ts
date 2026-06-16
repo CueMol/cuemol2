@@ -45,7 +45,7 @@ interface SceneFixtureOpts {
     rendOrders?: number[]
     /** Objects in scene (idx 0..n with ui_order = idx). */
     objOrders?: number[]
-    /** uid → entity overrides used by scene.getRenderer / scene.getObject. */
+    /** uid -> entity overrides used by scene.getRenderer / scene.getObject. */
     extraObjs?: Record<number, unknown>
 }
 
@@ -109,7 +109,7 @@ describe('reorderSceneNode.service — renderer move within same parent', () => 
             ori: 1,
         })
         expect(res.ok).toBe(true)
-        // Single swap: rend0.ui_order ↔ rend1.ui_order
+        // Single swap: rend0.ui_order <-> rend1.ui_order
         expect(f.rendRecs[0].rend.ui_order).toBe(1)
         expect(f.rendRecs[1].rend.ui_order).toBe(0)
         expect(f.rendRecs[2].rend.ui_order).toBe(2)
@@ -131,7 +131,7 @@ describe('reorderSceneNode.service — renderer move within same parent', () => 
         expect(res.ok).toBe(true)
         // After bubble: source lands at ui_order=0, others shifted down.
         const orders = f.rendRecs.map((r) => r.rend.ui_order)
-        // [3]→0, [0]→1, [1]→2, [2]→3
+        // [3]->0, [0]->1, [1]->2, [2]->3
         expect(orders).toEqual([1, 2, 3, 0])
     })
 
@@ -167,7 +167,7 @@ describe('reorderSceneNode.service — renderer cross-group move', () => {
         })
         expect(res.ok).toBe(true)
         expect(f.rendRecs[0].rend.group).toBe('grpA')
-        // Bubble down: 0 → 2 swapping with 1 then 2.
+        // Bubble down: 0 -> 2 swapping with 1 then 2.
         const orders = f.rendRecs.map((r) => r.rend.ui_order)
         expect(orders).toEqual([2, 0, 1])
     })

@@ -17,9 +17,9 @@ import { AppIcon } from "../AppIcon";
 import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
 import { useColumnResize } from "../../hooks/useColumnResize";
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Constants
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 /** Default column widths in px (Name & Type are resizable, Value fills remainder). */
 const DEFAULT_WIDTHS = { name: 120, type: 80 };
@@ -27,9 +27,9 @@ const DEFAULT_WIDTHS = { name: 120, type: 80 };
 /** localStorage key for the persisted Name / Type column widths. */
 const GENERIC_COL_WIDTHS_KEY = "cuemol.inspector.genericTab.colWidths";
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Types
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 interface GenericTabProps {
   entries: GenericPropEntry[];
@@ -41,9 +41,9 @@ interface GenericTabProps {
   loading?: boolean;
 }
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Display helpers
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 /** Render a value for the read-only table cell. */
 function displayValue(entry: GenericPropEntry): string {
@@ -52,9 +52,9 @@ function displayValue(entry: GenericPropEntry): string {
   return String(entry.value);
 }
 
-// ────────────────────────────────────────────────────────────
-// Detail editor — type-aware widget for the selected property
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
+// Detail editor -- type-aware widget for the selected property
+// ------------------------------------------------------------
 
 interface DetailEditorProps {
   entry: GenericPropEntry;
@@ -157,9 +157,9 @@ const DetailEditor: React.FC<DetailEditorProps> = ({ entry, atDefault, onSetValu
   );
 };
 
-// ────────────────────────────────────────────────────────────
-// Detail panel — "default" checkbox + type-aware editor
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
+// Detail panel -- "default" checkbox + type-aware editor
+// ------------------------------------------------------------
 
 interface DetailPanelProps {
   entry: GenericPropEntry;
@@ -208,9 +208,9 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ entry, onSetValue, onResetVal
   );
 };
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Component
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 export const GenericTab: React.FC<GenericTabProps> = ({
   entries,

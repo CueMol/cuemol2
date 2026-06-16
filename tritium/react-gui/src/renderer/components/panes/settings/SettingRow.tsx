@@ -82,7 +82,7 @@ export const SettingRow: React.FC<SettingRowProps> = ({ def, value, onChange }) 
             })
             if (res && !res.canceled && res.filePath) onChange(key, res.filePath)
           } catch {
-            /* dialog unavailable (e.g. Vite dev server) — ignore */
+            /* dialog unavailable (e.g. Vite dev server) -- ignore */
           }
         }
         return (

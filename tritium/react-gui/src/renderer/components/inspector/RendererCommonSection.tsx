@@ -37,9 +37,9 @@ import type { RendererPropSectionProps } from "./rendererPropSections";
 type SetFn = RendererPropSectionProps["onSet"];
 type ResetFn = RendererPropSectionProps["onReset"];
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Field rows -- one per editable property type
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 export interface RowProps {
   entry: GenericPropEntry;
@@ -458,9 +458,9 @@ const MaterialRow: React.FC<SelRowProps> = ({ entry, label, onSet, onReset, scen
   );
 };
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Component
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 export const RendererCommonSection: React.FC<RendererPropSectionProps> = ({
   entries,

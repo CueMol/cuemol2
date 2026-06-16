@@ -79,11 +79,11 @@ export type CommandHandler<K extends CommandKey> = (
   args: CommandArgs<K>,
 ) => CommandResult<K> | Promise<CommandResult<K>>
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Type-level assertion: every CmdId has a CommandMap row.
 // If a new CmdId is added without a row here, `_CommandMapMatchesCmdId`
 // becomes `false`, producing a compile error on the line below.
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 type _ExactKeys<A extends string, B extends string> = [A, B] extends [B, A] ? true : false
 type _CommandMapMatchesCmdId = _ExactKeys<CommandKey, CmdId>

@@ -4,9 +4,9 @@
  * Layout: Toolbar / [ActivityBar | SidePanel | [ContentArea / BottomPanel] | InspectorPanel] / StatusBar
  *
  * Most domain wiring lives in extracted hooks:
- *   - useAppInitialization      — first scene/view on launch (StrictMode guarded)
- *   - useActiveViewState        — viewProjection / centerMark / bgColor cache + menu sync
- *   - useCommandRegistrations   — registers all CmdId handlers + Electron IPC bridge
+ *   - useAppInitialization      -- first scene/view on launch (StrictMode guarded)
+ *   - useActiveViewState        -- viewProjection / centerMark / bgColor cache + menu sync
+ *   - useCommandRegistrations   -- registers all CmdId handlers + Electron IPC bridge
  */
 
 import React, { useState, useCallback, useEffect } from "react";
@@ -176,14 +176,14 @@ const App: React.FC = () => {
    */
   const confirmCloseTab = useCallback(async (viewId: number): Promise<boolean> => {
     if (!cm) return true;
-    const info = await cm.getSceneCloseInfo(viewId);
+    const info = await cm.invokeService('getSceneCloseInfo', { viewId });
     if (!info?.ok) return true;
     if (!info.modified || info.viewCount !== 1) return true;
     const result = await showConfirmCloseTabDialog({ sceneName: info.sceneName });
     if (result === 'cancel') return false;
     if (result === 'discard') return true;
     // 'save': run the FileSave command; if save succeeds, proceed with close.
-    // If the user cancels the save dialog (or save fails), abort the close —
+    // If the user cancels the save dialog (or save fails), abort the close --
     // matches UXP onSaveScene behaviour.
     const saved = await dispatchCommand(CmdId.FileSave);
     return saved === true;
@@ -241,7 +241,7 @@ const App: React.FC = () => {
 
   /**
    * Start a render from the current Render Settings (Start button / F12).
-   * Uses the active molview's scene/view from `getActiveSceneInfo` — this
+   * Uses the active molview's scene/view from `getActiveSceneInfo` -- this
    * stays correct even when a Render Result tab is the active content tab
    * (so the render captures the latest camera via `saveViewToCam`).
    */

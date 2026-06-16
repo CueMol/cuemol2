@@ -11,7 +11,7 @@ import {
 //
 // sysConfigPath is resolved by the main process (main/index.ts getSysConfigPath):
 //   - packaged build: Contents/Resources/cuemol2/share/sysconfig.xml
-//   - dev build:      '' → cuemol_internal.node falls back to its compiled-in DEFAULT_CONFIG
+//   - dev build:      '' -> cuemol_internal.node falls back to its compiled-in DEFAULT_CONFIG
 //
 // The path is forwarded to the Web Worker, which passes it to
 // cuemol_internal.initCueMol(path) before any scene operations are performed.

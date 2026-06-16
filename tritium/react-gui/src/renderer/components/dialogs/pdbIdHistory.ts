@@ -6,35 +6,26 @@
  *
  * IDs are normalized to lowercase. Reads validate against the PDB ID regex
  * so corrupted storage (or mixed entries from another app version) cannot
- * surface garbage in the picker.
+ * surface garbage in the picker. Built on the shared
+ * `createLruStringHistory` factory.
  */
 
-import { loadJSON, removeKey, saveJSON } from '../../utils/localStorageJSON';
+import { createLruStringHistory } from '../../utils/createLruStringHistory';
 
 export const STORAGE_KEY = 'cuemol.getPdbDialog.history';
 export const MAX_ENTRIES = 20;
 
-// Same shape as UXP openPDB.js:104-111 — first char digit, remaining alnum.
+// Same shape as UXP openPDB.js:104-111 -- first char digit, remaining alnum.
 const PDBID_RE = /^[0-9][0-9a-z]{3}$/i;
 
-function asPdbIdArray(raw: unknown): string[] | null {
-    if (!Array.isArray(raw)) return null;
-    return raw.filter((v): v is string => typeof v === 'string' && PDBID_RE.test(v));
-}
+const store = createLruStringHistory({
+    key: STORAGE_KEY,
+    max: MAX_ENTRIES,
+    normalize: (v) => v.trim().toLowerCase(),
+    guard: (v) => PDBID_RE.test(v),
+    readGuard: (v) => PDBID_RE.test(v),
+});
 
-export function getHistory(): string[] {
-    return loadJSON(STORAGE_KEY, asPdbIdArray, []);
-}
-
-export function pushHistory(value: string): void {
-    const trimmed = value.trim().toLowerCase();
-    if (!PDBID_RE.test(trimmed)) return;
-    const current = getHistory().filter((v) => v !== trimmed);
-    current.unshift(trimmed);
-    if (current.length > MAX_ENTRIES) current.length = MAX_ENTRIES;
-    saveJSON(STORAGE_KEY, current);
-}
-
-export function clearHistory(): void {
-    removeKey(STORAGE_KEY);
-}
+export const getHistory = store.getHistory;
+export const pushHistory = store.pushHistory;
+export const clearHistory = store.clearHistory;

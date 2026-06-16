@@ -10,7 +10,7 @@ import type { Object as CObject } from '@cuemol/core/src/wrappers/Object';
 
 const log = console;
 
-// reqId → AbortController for in-flight streams. Worker module-local;
+// reqId -> AbortController for in-flight streams. Worker module-local;
 // concurrent downloads identify themselves by reqId. Shared between every
 // stream*-style service so that one cancelStream(reqId) call works
 // regardless of which service started the request.
@@ -32,7 +32,7 @@ export interface StreamFetchToReaderResult {
  * Stream-fetch `args.url` and feed each chunk into `args.reader` via
  * StreamManager.supplyDataAsync. Posts a 'stream-progress' message per chunk
  * with the cumulative byte count. Always calls waitLoadAsync to drain the
- * IOThread on every exit path (success / cancel / error) — matches UXP
+ * IOThread on every exit path (success / cancel / error) -- matches UXP
  * forceCancel (netpdbopen.js:107). Throws on HTTP error; returns
  * `{ canceled: true, obj: null }` when the request was aborted.
  */

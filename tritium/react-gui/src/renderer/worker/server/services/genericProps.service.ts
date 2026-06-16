@@ -11,11 +11,12 @@ import { withUndoTxn } from './withUndoTxn';
 import { resolvePropTarget, type PropTargetType } from './helpers/resolvePropTarget';
 import { parseGenericProps, type GenericPropEntry } from './helpers/parseGenericProps';
 import { makeSel } from './helpers/makeSel';
+import { safeRead } from './helpers/safeRead';
 
 export type { GenericPropEntry } from './helpers/parseGenericProps';
 export type { PropTargetType } from './helpers/resolvePropTarget';
 
-// ─── types ────────────────────────────────────────────────────────────────
+// --- types ---
 
 export interface GetGenericPropsArgs {
     sceneId: number;
@@ -117,15 +118,7 @@ export interface SetGenericPropsArgs {
     writes: GenericPropWrite[];
 }
 
-// ─── helpers ──────────────────────────────────────────────────────────────
-
-function safeRead<T>(read: () => T): T | undefined {
-    try {
-        return read();
-    } catch {
-        return undefined;
-    }
-}
+// --- helpers ---
 
 /** Read + parse a target's full property list. */
 function collectProps(target: BaseWrapper): GenericPropEntry[] {
@@ -151,7 +144,7 @@ function typeLabelOf(target: BaseWrapper, nodeType: PropTargetType): string {
     return (safeRead(() => rec.className) as string | undefined) ?? 'Object';
 }
 
-// ─── getGenericProps ──────────────────────────────────────────────────────
+// --- getGenericProps ---
 
 function getGenericProps(
     ctx: WorkerContext,
@@ -183,7 +176,7 @@ function getGenericProps(
     };
 }
 
-// ─── setGenericProp ───────────────────────────────────────────────────────
+// --- setGenericProp ---
 
 function setGenericProp(
     ctx: WorkerContext,
@@ -264,7 +257,7 @@ function setGenericProp(
     return { ok: true, entries: safeRead(() => collectProps(target)) ?? [] };
 }
 
-// ─── resetGenericProps ────────────────────────────────────────────────────
+// --- resetGenericProps ---
 
 /**
  * Reset several properties to their C++ defaults inside a SINGLE undo
@@ -297,7 +290,7 @@ function resetGenericProps(
     return { ok: true, entries: safeRead(() => collectProps(target)) ?? [] };
 }
 
-// ─── setGenericProps ──────────────────────────────────────────────────────
+// --- setGenericProps ---
 
 /**
  * Apply several property writes (set / reset) to a single node in ONE undo

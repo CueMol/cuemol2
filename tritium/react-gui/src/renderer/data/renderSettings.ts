@@ -15,7 +15,7 @@ export type RenderBackendId = "povray";
 
 /** Accordion group descriptor for the render-settings editor. */
 export interface RenderGroupDef {
-  /** Group key — also the value of each member `PropDef.group`. */
+  /** Group key -- also the value of each member `PropDef.group`. */
   key: string;
   /** Whether the accordion section starts expanded. */
   defaultExpanded?: boolean;
@@ -63,25 +63,25 @@ export const DEFAULT_RENDER_PRESET = "Custom";
 
 /** Backend-independent render-setting definitions (mock defaults). */
 export const RENDER_COMMON_PROPS: PropDef[] = [
-  // ── Image ────────────────────────────────────────────────
+  // --- Image ---
   { key: "width",  label: "Width (px)",  type: "integer", value: 1200, group: "Image", min: 1, max: 10000, step: 1 },
   { key: "height", label: "Height (px)", type: "integer", value: 900,  group: "Image", min: 1, max: 10000, step: 1 },
   { key: "unit",   label: "Size unit",   type: "enum",    value: "px",  group: "Image", options: ["px", "in", "mm", "cm"] },
   { key: "dpi",    label: "DPI",         type: "integer", value: 600,   group: "Image", min: 72, max: 1200, step: 1 },
   { key: "scale",  label: "Scale",       type: "real",    value: 1.0,   group: "Image", min: 0.1, max: 4, step: 0.1 },
 
-  // ── Camera ───────────────────────────────────────────────
+  // --- Camera ---
   { key: "projection",  label: "Projection",   type: "enum", value: "perspective", group: "Camera",
     options: ["perspective", "orthographic"] },
   { key: "stereoMode",  label: "Stereo mode",  type: "enum", value: "none", group: "Camera",
     options: ["none", "left", "right"] },
   { key: "stereoDepth", label: "Stereo depth", type: "real", value: 0.03, group: "Camera", min: 0, max: 1, step: 0.01 },
 
-  // ── Quality ──────────────────────────────────────────────
+  // --- Quality ---
   { key: "numThreads", label: "CPU threads", type: "integer", value: 2,    group: "Quality", min: 1, max: 32, step: 1 },
   { key: "edgeLines",  label: "Edge lines",  type: "boolean", value: true, group: "Quality" },
 
-  // ── Output ───────────────────────────────────────────────
+  // --- Output ---
   { key: "fileFormat",    label: "File format",                type: "enum",    value: "png", group: "Output", options: ["png"] },
   { key: "transparentBg", label: "Transparent background",     type: "boolean", value: false, group: "Output" },
   { key: "clipPlane",     label: "Enable clip plane",          type: "boolean", value: true,  group: "Output" },

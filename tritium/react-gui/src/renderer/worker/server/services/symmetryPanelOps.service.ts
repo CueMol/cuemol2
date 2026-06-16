@@ -31,7 +31,7 @@ import type { Vector } from '@cuemol/core/src/wrappers/Vector';
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { WorkerContext } from '../types/WorkerContext';
 import { getSceneOrNull, getViewSceneOrNull } from './helpers/sceneResolver';
-import { withUndoTxn } from './withUndoTxn';
+import { tryUndoTxn } from './withUndoTxn';
 
 const MOL_CLASSES = new Set(['MolCoord', 'PDBMol', 'MmCifMol']);
 
@@ -224,21 +224,15 @@ function changeSymmetryInfo(
     const symmMgr = ctx.svc.getService('SymmOpManager') as SymmOpManager | null;
     if (!symmMgr) return { ok: false, error: 'SymmOpManager unavailable' };
 
-    let err: string | null = null;
-    withUndoTxn(scene, 'Change symminfo', () => {
-        try {
-            symmMgr.changeXtalInfo(
-                args.objId,
-                args.a, args.b, args.c,
-                args.alpha, args.beta, args.gamma,
-                args.nsg,
-            );
-        } catch (e) {
-            err = String(e);
-        }
+    // changeXtalInfo is a void mutation: success commits, a throw rolls back.
+    return tryUndoTxn(scene, 'Change symminfo', () => {
+        symmMgr.changeXtalInfo(
+            args.objId,
+            args.a, args.b, args.c,
+            args.alpha, args.beta, args.gamma,
+            args.nsg,
+        );
     });
-    if (err !== null) return { ok: false, error: err };
-    return { ok: true };
 }
 
 // --- showSymmRenderer ---
@@ -300,21 +294,15 @@ function showSymmRenderer(
         }
     }
 
-    let err: string | null = null;
-    withUndoTxn(scene as Scene, 'Show sym mol', () => {
+    // Renderer create + prop setup are void mutations: a throw rolls back.
+    return tryUndoTxn(scene as Scene, 'Show sym mol', () => {
         let rend = obj.getRendererByType('*symm') as Renderer | null;
-        try {
-            if (!rend) {
-                rend = obj.createRenderer('*symm') as Renderer;
-                rend.name = 'symm';
-            }
-            setupSymmRendererProps(rend, args.extent, viewCenter);
-        } catch (e) {
-            err = String(e);
+        if (!rend) {
+            rend = obj.createRenderer('*symm') as Renderer;
+            rend.name = 'symm';
         }
+        setupSymmRendererProps(rend, args.extent, viewCenter);
     });
-    if (err !== null) return { ok: false, error: err };
-    return { ok: true };
 }
 
 // --- showUnitCellRenderer ---
@@ -344,17 +332,13 @@ function showUnitCellRenderer(
         return { ok: true, created: false };
     }
 
-    let err: string | null = null;
-    withUndoTxn(scene as Scene, 'Show unitcell', () => {
-        try {
-            const rend = obj.createRenderer('*unitcell') as Renderer;
-            rend.name = 'unitcell';
-        } catch (e) {
-            err = String(e);
-        }
+    // Renderer creation is a void mutation: a throw rolls back. `created`
+    // mirrors ok -- true only when the new renderer was committed.
+    const res = tryUndoTxn(scene as Scene, 'Show unitcell', () => {
+        const rend = obj.createRenderer('*unitcell') as Renderer;
+        rend.name = 'unitcell';
     });
-    if (err !== null) return { ok: false, created: false, error: err };
-    return { ok: true, created: true };
+    return { ...res, created: res.ok };
 }
 
 export const services = {

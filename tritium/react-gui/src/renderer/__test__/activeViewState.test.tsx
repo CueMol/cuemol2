@@ -3,9 +3,9 @@
  * App.tsx's inline view-state polling).
  *
  * Pins the contract that App.tsx and MenuBar rely on:
- *   1. No active molview tab → all three values are null and the native menu
+ *   1. No active molview tab -> all three values are null and the native menu
  *      is told all three controls are disabled (`enabled: false`).
- *   2. Active molview tab → cm.getView{Projection,CenterMark} and
+ *   2. Active molview tab -> cm.getView{Projection,CenterMark} and
  *      cm.getSceneBgColor are called, results update the cache and a single
  *      `MENU_UPDATE_STATE` invoke is issued with the fetched values.
  *   3. onProjectionChanged / onCenterMarkChanged / onBgColorChanged callbacks
@@ -25,18 +25,33 @@ import { IPC } from '../../shared/ipcChannels'
 import { makeRenderHook, flushPromises, setupElectronAPI, teardownElectronAPI } from './helpers/testHarness'
 
 interface MockCm {
-  getViewProjection: ReturnType<typeof vi.fn>
-  getViewCenterMark: ReturnType<typeof vi.fn>
-  getSceneBgColor: ReturnType<typeof vi.fn>
+  invokeService: ReturnType<typeof vi.fn>
 }
 
-function makeMockCm(overrides: Partial<MockCm> = {}): MockCm {
+// After the apis/* facade collapse the hook calls
+// `cm.invokeService('getViewProjection', { viewId })` etc. instead of the
+// per-method facade. `makeMockCm` lets a test override the resolved value
+// (or throw) per service name; per-service calls are asserted via
+// `callsFor(cm, name)`.
+type ServiceResolver = () => unknown
+const defaultResolvers: Record<string, ServiceResolver> = {
+  getViewProjection: () => ({ ok: true, perspective: true }),
+  getViewCenterMark: () => ({ ok: true, centerMark: 'crosshair' }),
+  getSceneBgColor: () => ({ ok: true, bgColor: 'white' }),
+}
+
+function makeMockCm(overrides: Record<string, ServiceResolver> = {}): MockCm {
+  const resolvers = { ...defaultResolvers, ...overrides }
   return {
-    getViewProjection: vi.fn().mockResolvedValue({ ok: true, perspective: true }),
-    getViewCenterMark: vi.fn().mockResolvedValue({ ok: true, centerMark: 'crosshair' }),
-    getSceneBgColor: vi.fn().mockResolvedValue({ ok: true, bgColor: 'white' }),
-    ...overrides,
+    invokeService: vi.fn(async (name: string, _args: unknown) => resolvers[name]?.()),
   }
+}
+
+/** Recorded `invokeService` payloads for a given service name. */
+function callsFor(cm: MockCm, name: string): unknown[] {
+  return cm.invokeService.mock.calls
+    .filter((c) => c[0] === name)
+    .map((c) => c[1])
 }
 
 describe('useActiveViewState', () => {
@@ -66,7 +81,7 @@ describe('useActiveViewState', () => {
     expect(h.result.viewProjection).toBeNull()
     expect(h.result.viewCenterMark).toBeNull()
     expect(h.result.sceneBgColor).toBeNull()
-    expect(cm.getViewProjection).not.toHaveBeenCalled()
+    expect(callsFor(cm, 'getViewProjection')).toHaveLength(0)
 
     const lastInvoke = api.invoke.mock.calls.at(-1)
     expect(lastInvoke?.[0]).toBe(IPC.MENU_UPDATE_STATE)
@@ -80,9 +95,9 @@ describe('useActiveViewState', () => {
 
   it('active molview tab → fetches all three, updates cache, syncs menu', async () => {
     const cm = makeMockCm({
-      getViewProjection: vi.fn().mockResolvedValue({ ok: true, perspective: false }),
-      getViewCenterMark: vi.fn().mockResolvedValue({ ok: true, centerMark: 'axis' }),
-      getSceneBgColor: vi.fn().mockResolvedValue({ ok: true, bgColor: 'black' }),
+      getViewProjection: () => ({ ok: true, perspective: false }),
+      getViewCenterMark: () => ({ ok: true, centerMark: 'axis' }),
+      getSceneBgColor: () => ({ ok: true, bgColor: 'black' }),
     })
     const h = makeRenderHook(() =>
       useActiveViewState({
@@ -94,9 +109,9 @@ describe('useActiveViewState', () => {
 
     await flushPromises()
 
-    expect(cm.getViewProjection).toHaveBeenCalledWith(5)
-    expect(cm.getViewCenterMark).toHaveBeenCalledWith(5)
-    expect(cm.getSceneBgColor).toHaveBeenCalledWith(1)
+    expect(callsFor(cm, 'getViewProjection')).toContainEqual({ viewId: 5 })
+    expect(callsFor(cm, 'getViewCenterMark')).toContainEqual({ viewId: 5 })
+    expect(callsFor(cm, 'getSceneBgColor')).toContainEqual({ sceneId: 1 })
 
     expect(h.result.viewProjection).toBe(false)
     expect(h.result.viewCenterMark).toBe('axis')
@@ -118,7 +133,7 @@ describe('useActiveViewState', () => {
   it('failed fetch (rejection) → all nulls + disabled menu', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     const cm = makeMockCm({
-      getViewProjection: vi.fn().mockRejectedValue(new Error('boom')),
+      getViewProjection: () => { throw new Error('boom') },
     })
     const h = makeRenderHook(() =>
       useActiveViewState({
@@ -197,7 +212,7 @@ describe('useActiveViewState', () => {
 
   it('failed `ok: false` projection → null without throwing', async () => {
     const cm = makeMockCm({
-      getViewProjection: vi.fn().mockResolvedValue({ ok: false, perspective: false }),
+      getViewProjection: () => ({ ok: false, perspective: false }),
     })
     const h = makeRenderHook(() =>
       useActiveViewState({

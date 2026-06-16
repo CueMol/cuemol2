@@ -4,7 +4,7 @@
  * (`viewProjection`, `viewCenterMark`, `sceneBgColor`) for the currently
  * active molview tab, and keeps the native menu in sync via IPC.
  *
- * Update flow (one direction: write → read-back → cache):
+ * Update flow (one direction: write -> read-back -> cache):
  *   - Tab switch (`activeMolViewId` change): pull all three from worker.
  *   - User action via command: corresponding `onXxxChanged` callback writes
  *     the new value into the cache and syncs the native menu.
@@ -18,12 +18,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { IPC } from '../../shared/ipcChannels';
 import type { SceneBgColor, ViewCenterMark } from '../../shared/ipcTypes';
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol';
+import type { ActiveSceneCommandDeps } from '../commands/commandTypes';
 
 interface UseActiveViewStateOptions {
   cm: AsyncCueMol | null;
   activeMolViewId: number | undefined;
   /** Returns the active scene/view ids, used to fetch sceneBgColor. */
-  getActiveSceneInfo: () => { scene_uid: number; view_id: number } | null | undefined;
+  getActiveSceneInfo: ActiveSceneCommandDeps;
 }
 
 export interface ActiveViewState {
@@ -102,9 +103,9 @@ export function useActiveViewState({
 
     let cancelled = false;
     Promise.all([
-      cm.getViewProjection(activeMolViewId),
-      cm.getViewCenterMark(activeMolViewId),
-      sceneId !== undefined ? cm.getSceneBgColor(sceneId) : Promise.resolve(null),
+      cm.invokeService('getViewProjection', { viewId: activeMolViewId }),
+      cm.invokeService('getViewCenterMark', { viewId: activeMolViewId }),
+      sceneId !== undefined ? cm.invokeService('getSceneBgColor', { sceneId }) : Promise.resolve(null),
     ]).then(([projectionResult, centerMarkResult, bgColorResult]) => {
       if (cancelled) return;
       const perspective = projectionResult?.ok ? projectionResult.perspective : null;

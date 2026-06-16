@@ -51,7 +51,7 @@ export interface RenderResult {
   settingsSnapshot: RenderSettingsSnapshot;
 }
 
-/** Tab title for a render result: `Scene1 — 1216×612 (15.2s)`. */
+/** Tab title for a render result: `Scene1 -- 1216×612 (15.2s)`. */
 export const renderResultTabTitle = (r: RenderResult): string =>
   `${r.sourceSceneName} — ${r.width}×${r.height} (${r.elapsedSec.toFixed(1)}s)`;
 

@@ -70,9 +70,9 @@ import {
   RibbonCoilSection,
 } from "./RibbonRendererSection";
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Types
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 /** One property write in a multi-write atomic commit. */
 export interface PropMultiWrite {
@@ -129,9 +129,9 @@ export interface RendererPropSectionDef {
   Component: React.FC<RendererPropSectionProps>;
 }
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Registry
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 /**
  * Renderer-type-specific sections, keyed by renderer `type_name`. Add an entry
@@ -481,9 +481,9 @@ export function getRendererPropSections(rendererType: string): RendererPropSecti
   return RENDERER_SECTION_REGISTRY[rendererType] ?? [];
 }
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Temporary placeholder
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 /**
  * Placeholder section appended after the common page for every renderer type

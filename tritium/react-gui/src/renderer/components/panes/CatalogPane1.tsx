@@ -24,14 +24,14 @@ import {
   SwitchField,
 } from "../../h3-kit/form";
 
-/* ─── Props ─── */
+/* --- Props --- */
 
 interface CatalogPane1Props {
   collapsed?: boolean;
   onToggleCollapse?: () => void;
 }
 
-/* ─── Component ─── */
+/* --- Component --- */
 
 export const CatalogPane1: React.FC<CatalogPane1Props> = ({
   collapsed = false,

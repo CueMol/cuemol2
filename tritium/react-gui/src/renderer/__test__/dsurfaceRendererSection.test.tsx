@@ -274,6 +274,39 @@ describe('DSurfaceMainSection', () => {
     expect(onSet).toHaveBeenCalledWith('surftype', 'enum', 'vdw')
     unmount()
   })
+
+  // Degrade guard for the shared-MappedEnumRow extraction (theme T4 Step 1):
+  // the Drawing-mode dropdown must keep its friendly DRAWMODE_LABELS while
+  // committing the raw enum ID. Pinned before the local row is swapped for the
+  // exported one so the option text contract is held byte-identical.
+  it('shows friendly DRAWMODE_LABELS but commits the raw enum ID (Drawing mode)', () => {
+    const onSet = vi.fn()
+    const { container, unmount } = mountTree(
+      <DSurfaceMainSection
+        entries={mainEntries()}
+        onSet={onSet}
+        onReset={vi.fn()}
+        sceneId={1}
+        nodeId={2}
+      />,
+    )
+    const select = rowByLabel(container, 'Drawing mode')!.querySelector(
+      'select',
+    ) as HTMLSelectElement
+    const labels = Array.from(select.options).map((o) => o.textContent)
+    expect(labels).toEqual(['Fill', 'Wireframe', 'Dots'])
+    expect(select.value).toBe('line')
+    act(() => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLSelectElement.prototype,
+        'value',
+      )!.set!
+      setter.call(select, 'point')
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    expect(onSet).toHaveBeenCalledWith('drawmode', 'enum', 'point')
+    unmount()
+  })
 })
 
 describe('DSurfaceRadiiSection', () => {

@@ -52,7 +52,7 @@ export function useNewSceneAction({
 
     let resolvedName = opts?.name;
     if (!resolvedName) {
-      const names = await cm.proposeNewTabNames({});
+      const names = await cm.invokeService('proposeNewTabNames', {});
       if (!names) return null;
       resolvedName = names.defaultSceneName;
     }

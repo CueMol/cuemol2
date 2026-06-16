@@ -3,8 +3,8 @@
  * preload, and renderer.
  *
  * Two channel kinds are tracked:
- *   - InvokeChannels: renderer → main, with reply (Promise)
- *   - PushChannels:   main → renderer, no reply
+ *   - InvokeChannels: renderer -> main, with reply (Promise)
+ *   - PushChannels:   main -> renderer, no reply
  *
  * Adding a channel: extend either map below; the preload `invoke`/`onPush`
  * helpers and the main `handleInvoke` wrapper pick up the new entry through
@@ -12,6 +12,7 @@
  */
 
 import { IPC } from './ipcChannels'
+import type { MenuActionChannel } from './menuActionMap'
 import type {
   AppPathInfo,
   CrashReport,
@@ -94,7 +95,9 @@ export interface PushChannels {
   [IPC.MENU_OPEN_SCENE]:   void
   [IPC.MENU_UNDO]:         void
   [IPC.MENU_REDO]:         void
-  [IPC.MENU_GENERIC]:      string
+  // Payload is a known menu-action channel key (typed against menuActionMap)
+  // so a typo'd channel becomes a compile error at every send / receive site.
+  [IPC.MENU_GENERIC]:      MenuActionChannel
   [IPC.ROTATE_GESTURE]:    number
   [IPC.WINDOW_CLOSE_REQUEST]: void
   [IPC.MENU_OPEN_RECENT]:  RecentFileEntry

@@ -11,7 +11,7 @@
  *
  * The context is intentionally separated from `useLayoutPersistence` because
  * theme state needs to be available very early (before the layout hook has
- * finished loading) — the wrapper `<div>` in `main.tsx` must know the
+ * finished loading) -- the wrapper `<div>` in `main.tsx` must know the
  * Blueprint class name at first render to avoid a flash of wrong colours.
  *
  * ## Usage
@@ -37,9 +37,9 @@ import React, {
 } from "react";
 import { IPC } from "../../shared/ipcChannels";
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Types
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 /** Supported colour themes. */
 export type Theme = "dark" | "light";
@@ -53,15 +53,15 @@ interface ThemeContextValue {
   setTheme: (t: Theme) => void;
 }
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Context
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // DOM side-effects
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 /**
  * Apply the theme to the document root element.
@@ -69,13 +69,13 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
  * - Removes or adds the `bp5-dark` class on the theme wrapper for Blueprint.
  */
 function applyThemeToDOM(theme: Theme): void {
-  // CSS custom properties: :root[data-theme="light"] { … }
+  // CSS custom properties: :root[data-theme="light"] { ... }
   document.documentElement.setAttribute("data-theme", theme);
 }
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Provider
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 interface ThemeProviderProps {
   children: React.ReactNode;
@@ -84,7 +84,7 @@ interface ThemeProviderProps {
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>("dark");
 
-  // ── Load persisted theme on mount ───────────────────────
+  // -- Load persisted theme on mount -----------------------
   useEffect(() => {
     let cancelled = false;
 
@@ -96,7 +96,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
           applyThemeToDOM(ui.theme);
         }
       } catch {
-        // Electron not available (Vite dev server) — keep default.
+        // Electron not available (Vite dev server) -- keep default.
       }
     })();
 
@@ -105,15 +105,15 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     };
   }, []);
 
-  // ── Keep DOM in sync whenever theme changes ─────────────
+  // -- Keep DOM in sync whenever theme changes -------------
   useEffect(() => {
     applyThemeToDOM(theme);
   }, [theme]);
 
-  // ── Public setters ──────────────────────────────────────
+  // -- Public setters --------------------------------------
   const setTheme = useCallback((t: Theme) => {
     setThemeState(t);
-    // Persist immediately — theme changes are infrequent; no debounce needed.
+    // Persist immediately -- theme changes are infrequent; no debounce needed.
     window.electronAPI?.invoke(IPC.UI_SAVE, { theme: t });
   }, []);
 
@@ -132,9 +132,9 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   /*
    * The wrapper div serves two purposes:
-   *   1. `className` — Blueprint.js reads `bp5-dark` to style its own
+   *   1. `className` -- Blueprint.js reads `bp5-dark` to style its own
    *      components; omitting the class means Blueprint renders in light mode.
-   *   2. Sizing — fills the root container.
+   *   2. Sizing -- fills the root container.
    */
   return (
     <ThemeContext.Provider value={value}>
@@ -148,9 +148,9 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   );
 };
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Hook
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 /**
  * Access the current theme and toggle/set functions.

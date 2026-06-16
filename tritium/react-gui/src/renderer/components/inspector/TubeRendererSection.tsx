@@ -47,6 +47,7 @@ import {
   CAP_LABELS,
   resetProps,
 } from "./RendererCommonSection";
+import { SECTION_TYPE_LABELS, SHARP_TYPES } from "./rowHelpers";
 import { PropertyField, DragNumericField } from "../../h3-kit/form";
 import { useRealtimeDragProp } from "../../hooks/useRealtimeDragProp";
 import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
@@ -54,12 +55,6 @@ import type { RendererPropSectionProps, PropMultiWrite } from "./rendererPropSec
 
 // --- Local labels -------------------------------------------------------------
 
-const SECTION_TYPE_LABELS: Record<string, string> = {
-  elliptical: "Elliptical",
-  roundsquare: "Round square",
-  rectangle: "Rectangle",
-  fancy1: "Fancy",
-};
 const PUTTY_MODE_LABELS: Record<string, string> = {
   none: "None",
   linear1: "Linear",
@@ -69,9 +64,6 @@ const PUTTY_TGT_LABELS: Record<string, string> = {
   bfac: "B-factor",
   occ: "Occupancy",
 };
-
-/** Section cross-section types whose corners expose a meaningful sharpness. */
-const SHARP_TYPES = new Set(["roundsquare", "fancy1"]);
 
 // --- Local rows ---------------------------------------------------------------
 //

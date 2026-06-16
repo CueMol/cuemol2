@@ -5,7 +5,7 @@ import type { WorkerContext } from '../worker/server/types/WorkerContext'
 interface FixtureOpts {
     /** obj.name */
     objName?: string
-    /** obj.src — empty by default. */
+    /** obj.src -- empty by default. */
     objSrc?: string
     /** What StreamManager.findCompatibleWriterNamesForObj should return (CSV). */
     compatibleNames?: string
@@ -31,9 +31,9 @@ function makeFixture(opts: FixtureOpts = {}) {
         infoJSON = JSON.stringify([
             { name: 'pdb', descr: 'PDB file', fext: '*.pdb;*.ent', category: 1 },
             { name: 'xyz', descr: 'XYZ file', fext: '*.xyz', category: 1 },
-            // Reader category (not 1) — should be filtered out.
+            // Reader category (not 1) -- should be filtered out.
             { name: 'pdb-reader', descr: 'PDB reader', fext: '*.pdb', category: 0 },
-            // Unknown writer not in candidates — should be filtered out.
+            // Unknown writer not in candidates -- should be filtered out.
             { name: 'mmcif', descr: 'mmCIF file', fext: '*.cif', category: 1 },
         ]),
         sceneExists = true,

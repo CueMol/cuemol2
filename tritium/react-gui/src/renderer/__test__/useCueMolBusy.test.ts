@@ -92,8 +92,8 @@ describe("useCueMolBusy", () => {
         const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
 
         mockIsBusy = true;
-        act(() => { registeredCallback!(true); }); // first call — schedules
-        act(() => { registeredCallback!(true); }); // second call — should be ignored
+        act(() => { registeredCallback!(true); }); // first call -- schedules
+        act(() => { registeredCallback!(true); }); // second call -- should be ignored
 
         expect(setTimeoutSpy).toHaveBeenCalledTimes(1);
 

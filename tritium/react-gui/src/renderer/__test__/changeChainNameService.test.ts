@@ -119,6 +119,10 @@ describe('changeChainName', () => {
 
         expect(res.ok).toBe(false)
         expect(res.error).toMatch(/dup resid/)
+        // A throwing mutation must roll the txn back and must NOT commit a
+        // bogus undo entry.
+        expect(scene.rollbackUndoTxn).toHaveBeenCalled()
+        expect(scene.commitUndoTxn).not.toHaveBeenCalled()
     })
 
     it('returns ok=false when the molecule is missing', () => {

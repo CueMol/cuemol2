@@ -13,6 +13,7 @@ import type { WorkerContext } from '../types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
 import { getSceneOrNull } from './helpers/sceneResolver';
 import { remove as styleRemove, push as stylePush } from './helpers/styleutil';
+import { fetchStyleEntries, type RawStyleEntry } from './helpers/styleEntries';
 
 export interface GetRendererStyleEntriesArgs {
     sceneId: number;
@@ -22,7 +23,7 @@ export interface GetRendererStyleEntriesArgs {
 export interface RendererStyleEntry {
     /** Raw style name (e.g. "DefaultCartoon"). Action dispatches `style-${name}`. */
     name: string;
-    /** Human-friendly label — StyleSet `desc` when present, otherwise the raw name. */
+    /** Human-friendly label -- StyleSet `desc` when present, otherwise the raw name. */
     label: string;
     /** Regex source used to strip existing entries before pushing the new one. */
     pattern: string;
@@ -38,12 +39,6 @@ export interface GetRendererStyleEntriesResult {
     edgeStyles: RendererStyleEntry[];
 }
 
-interface RawStyleEntry {
-    name?: string;
-    desc?: string;
-    type?: string;
-}
-
 /**
  * Renderer types that don't get the edge-style group. Mirrors UXP
  * `onStyleShowing`'s explicit blocklist (`coutour` is a typo in UXP, kept
@@ -53,19 +48,6 @@ interface RawStyleEntry {
 const EDGE_BLOCKLIST = new Set<string>([
     'simple', 'trace', 'spline', '*namelabel', '*selection', 'coutour',
 ]);
-
-/** Parse `StyleManager.getStyleNamesJSON` for a scope; `[]` on any error. */
-function fetchStyleEntries(ctx: WorkerContext, sceneId: number): RawStyleEntry[] {
-    try {
-        const json = ctx.styleMgr.getStyleNamesJSON(sceneId);
-        if (!json) return [];
-        const parsed = JSON.parse(json) as unknown;
-        if (!Array.isArray(parsed)) return [];
-        return parsed as RawStyleEntry[];
-    } catch {
-        return [];
-    }
-}
 
 /** Filter raw style entries by `re`, carrying `pattern`/`flags` for the strip step. */
 function entriesMatching(

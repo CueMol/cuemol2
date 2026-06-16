@@ -13,16 +13,16 @@
  * | `ContentPane`     | Active tab content / Welcome screen fallback |
  *
  * ```
- * ┌─────────────────────────────────────────────┐
- * │  TabBar  (draggable tabs)                   │  ← useTabDragDrop
- * ├─────────────────────────────────────────────┤
- * │  ContentPane                                │
- * │  (code view / ConfigPane / WelcomeScreen)   │
- * └─────────────────────────────────────────────┘
+ * +---------------------------------------------+
+ * |  TabBar  (draggable tabs)                   |  <- useTabDragDrop
+ * +---------------------------------------------+
+ * |  ContentPane                                |
+ * |  (code view / ConfigPane / WelcomeScreen)   |
+ * +---------------------------------------------+
  * ```
  *
  * All domain state (tab list, active tab, reorder logic) is owned by
- * the parent via props — `ContentArea` holds no tab-management state of
+ * the parent via props -- `ContentArea` holds no tab-management state of
  * its own.
  *
  * @module ContentArea
@@ -36,9 +36,9 @@ import { useTabDragDrop } from "../hooks/useTabDragDrop";
 import { TabBar } from "./TabBar";
 import { ContentPane } from "./panes/ContentPane";
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Types
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 interface ContentAreaProps {
   tabs: TabData[];
@@ -64,9 +64,9 @@ interface ContentAreaProps {
   onOpenRenderSettings: () => void;
 }
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Component
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 export const ContentArea: React.FC<ContentAreaProps> = ({
   tabs,

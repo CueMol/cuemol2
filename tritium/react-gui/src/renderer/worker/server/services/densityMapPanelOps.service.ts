@@ -29,7 +29,7 @@ import {
     getSceneOrNull,
     getViewSceneOrNull,
 } from './helpers/sceneResolver';
-import { withUndoTxn } from './withUndoTxn';
+import { tryUndoTxn } from './withUndoTxn';
 import { makeColor } from './helpers/makeColor';
 import { parseGenericProps } from './helpers/parseGenericProps';
 import { parseSceneTreeJSON } from '../../shared/sceneTreeTypes';
@@ -329,7 +329,6 @@ function setMapRendererProp(
         return { ok: true };
     }
 
-    let err: string | null = null;
     // Realtime commit: restore the pre-drag state first (txn-free, not
     // recorded) so the single undo step is `originalValue -> value`. When the
     // prop was default, restore via `resetProp` (flag + value) so the in-txn
@@ -343,24 +342,19 @@ function setMapRendererProp(
             return { ok: false, error: String(e) };
         }
     }
-    withUndoTxn(scene as Scene, 'Change map renderer prop', () => {
-        try {
-            if (args.propName === 'color') {
-                // Use the typed property setter (same path as
-                // `setRendererDefaultColor`): the wrapper layer
-                // unwraps the AbstractColor for the C++ side, which is
-                // what triggers the renderer's PROPCHG -> redraw path.
-                const color = makeColor(ctx, String(args.value), scene.uid);
-                (rend as unknown as { color: AbstractColor }).color = color;
-            } else {
-                rend.setProp(args.propName, args.value);
-            }
-        } catch (e) {
-            err = String(e);
+    // The in-txn write is a void mutation: a throw rolls back (no commit).
+    return tryUndoTxn(scene as Scene, 'Change map renderer prop', () => {
+        if (args.propName === 'color') {
+            // Use the typed property setter (same path as
+            // `setRendererDefaultColor`): the wrapper layer
+            // unwraps the AbstractColor for the C++ side, which is
+            // what triggers the renderer's PROPCHG -> redraw path.
+            const color = makeColor(ctx, String(args.value), scene.uid);
+            (rend as unknown as { color: AbstractColor }).color = color;
+        } else {
+            rend.setProp(args.propName, args.value);
         }
     });
-    if (err !== null) return { ok: false, error: err };
-    return { ok: true };
 }
 
 // --- redrawMapCenter ---
@@ -412,19 +406,15 @@ function redrawMapCenter(
         return { ok: true, moved: false };
     }
 
-    let err: string | null = null;
-    withUndoTxn(scene as Scene, 'Change map renderer center', () => {
-        try {
-            // Typed setter: pass the wrapper itself (wrapper layer
-            // unwraps for the C++ side and fires the PROPCHG that
-            // triggers map redraw).
-            r.center = viewCenter as Vector;
-        } catch (e) {
-            err = String(e);
-        }
+    // Center assignment is a void mutation: a throw rolls back (no commit).
+    // `moved` mirrors ok -- true only when the new center was committed.
+    const res = tryUndoTxn(scene as Scene, 'Change map renderer center', () => {
+        // Typed setter: pass the wrapper itself (wrapper layer
+        // unwraps for the C++ side and fires the PROPCHG that
+        // triggers map redraw).
+        r.center = viewCenter as Vector;
     });
-    if (err !== null) return { ok: false, moved: false, error: err };
-    return { ok: true, moved: true };
+    return { ...res, moved: res.ok };
 }
 
 export const services = {

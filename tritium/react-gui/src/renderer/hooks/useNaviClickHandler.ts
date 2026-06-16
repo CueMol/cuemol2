@@ -4,16 +4,13 @@ import { useCueMol } from './useCueMol';
 import { useMolTabState } from './useMolTab';
 import { useActiveToolContext } from '../contexts/ActiveToolContext';
 import { useCueMolEventListener } from './useCueMolEventListener';
+import { decodeClick, INDEV_LBTN, INDEV_RBTN, INDEV_SHIFT } from '../worker/shared/inDevModif';
 import type { HitTestResult } from '../types';
 
 export interface UseNaviClickHandlerArgs {
     setStatusMessage: (msg: string | null) => void;
     openContextMenu: (hit: HitTestResult, viewId: number) => void;
 }
-
-const LBTN = 1 << 3;  // left button modifier bit (same as UXP)
-const RBTN = 1 << 5;  // right button modifier bit (same as UXP)
-const SHIFT = 1 << 0; // shift modifier bit
 
 export function useNaviClickHandler({ setStatusMessage, openContextMenu }: UseNaviClickHandlerArgs): void {
     const { cueMolReady, cm } = useCueMol();
@@ -43,15 +40,16 @@ export function useNaviClickHandler({ setStatusMessage, openContextMenu }: UseNa
         scopeId: viewId,
         handler: async (args) => {
             if (!cm) return;
-            const { x, y, mod } = (args as { obj?: { x?: number; y?: number; mod?: number } } | null)?.obj ?? {};
-            if (x == null || y == null || mod == null) return;
-            if (mod & RBTN) {
-                const result = await cm.naviHitTest({ viewId, x, y });
+            const click = decodeClick(args);
+            if (!click) return;
+            const { x, y, mod } = click;
+            if (mod & INDEV_RBTN) {
+                const result = await cm.invokeService('naviHitTest', { viewId, x, y });
                 if (result?.hit && result.raw && result.raw.objtype === 'MolCoord') {
                     openContextMenu(result.raw as HitTestResult, viewId);
                 }
-            } else if (mod & LBTN) {
-                const result = await cm.naviClickAtom({ viewId, x, y });
+            } else if (mod & INDEV_LBTN) {
+                const result = await cm.invokeService('naviClickAtom', { viewId, x, y });
                 if (result?.handled && result.statusMessage) {
                     setStatusMessage(result.statusMessage);
                 }
@@ -68,11 +66,12 @@ export function useNaviClickHandler({ setStatusMessage, openContextMenu }: UseNa
         scopeId: viewId,
         handler: async (args) => {
             if (!cm) return;
-            const { x, y, mod } = (args as { obj?: { x?: number; y?: number; mod?: number } } | null)?.obj ?? {};
-            if (x == null || y == null || mod == null) return;
-            if (!(mod & LBTN)) return;
-            const mode = (mod & SHIFT) ? 'extend' : 'toggle';
-            const result = await cm.naviResidSel({
+            const click = decodeClick(args);
+            if (!click) return;
+            const { x, y, mod } = click;
+            if (!(mod & INDEV_LBTN)) return;
+            const mode = (mod & INDEV_SHIFT) ? 'extend' : 'toggle';
+            const result = await cm.invokeService('naviResidSel', {
                 viewId,
                 x,
                 y,

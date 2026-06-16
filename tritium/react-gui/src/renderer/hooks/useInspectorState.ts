@@ -23,9 +23,7 @@ import { findTypedNode } from "./sceneTree/sceneTreeNodeUtils";
 import { useCueMolEventListener } from "./useCueMolEventListener";
 import { SEM_OBJECT, SEM_RENDERER, SEM_SCENE, SEM_PROPCHG } from "../event";
 
-// ────────────────────────────────────────────────────────────
-// Types
-// ────────────────────────────────────────────────────────────
+// --- Types ---
 
 /** Display information shown in the inspector header. */
 export interface InspectorInfo {
@@ -36,11 +34,11 @@ export interface InspectorInfo {
 /**
  * Identity of whatever is currently shown in the inspector.
  *
- * - `node` — a scene-tree node or the View, edited through the generic
+ * - `node` -- a scene-tree node or the View, edited through the generic
  *   C++ property bridge (`getGenericProps` / `setGenericProp`).
- * - `renderSettings` — the scene's render output settings; not a scene-tree
+ * - `renderSettings` -- the scene's render output settings; not a scene-tree
  *   node and not backed by the property bridge (see `RenderSettingsEditor`).
- * - `animElement` — an animation element selected in the AnimationPanel; keyed
+ * - `animElement` -- an animation element selected in the AnimationPanel; keyed
  *   by stable `uid` and edited by `AnimElementInspector` via its own services
  *   (not the property bridge), the same bespoke-branch pattern as renderSettings.
  */
@@ -76,9 +74,7 @@ const PROPCHG_SRC_MASK = SEM_OBJECT | SEM_RENDERER | SEM_SCENE;
 /** Coalesce event bursts (one high-level op fires many PROPCHG events). */
 const REFETCH_DEBOUNCE_MS = 30;
 
-// ────────────────────────────────────────────────────────────
-// Hook
-// ────────────────────────────────────────────────────────────
+// --- Hook ---
 
 export function useInspectorState({
   layout,
@@ -87,7 +83,7 @@ export function useInspectorState({
   cm,
   sceneTree,
 }: UseInspectorStateOptions) {
-  // ── Local state ──────────────────────────────────────────
+  // --- Local state ---
 
   const [inspectorOpen, setInspectorOpenLocal] = useState(false);
   const [inspectorTarget, setInspectorTarget] = useState<InspectorTarget | null>(null);
@@ -113,7 +109,7 @@ export function useInspectorState({
     }
   }, [loaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Helpers ──────────────────────────────────────────────
+  // --- Helpers ---
 
   /** Update both the local state and the persisted flag. */
   const setInspectorOpen = useCallback(
@@ -142,7 +138,7 @@ export function useInspectorState({
       setInspectorInfo({ name: "", type: "" });
       return;
     }
-    // Render Settings / anim element are not property-bridge nodes — each has
+    // Render Settings / anim element are not property-bridge nodes -- each has
     // its own editor that self-fetches. Blank the generic state here (the anim
     // header name/type is supplied separately by AnimElementInspector).
     if (target.kind === "renderSettings" || target.kind === "animElement") {
@@ -174,7 +170,7 @@ export function useInspectorState({
     }
   }, [cm]);
 
-  // ── Public handlers ──────────────────────────────────────
+  // --- Public handlers ---
 
   /**
    * Open the inspector for the given scene-tree node id. Unsupported node
@@ -389,7 +385,7 @@ export function useInspectorState({
     [cm],
   );
 
-  // ── Live sync: refetch on external property changes ──────
+  // --- Live sync: refetch on external property changes ---
   // Catches undo/redo and script-driven mutations of the inspected node.
   useCueMolEventListener({
     cm,

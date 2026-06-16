@@ -1,11 +1,11 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 //
-// Phase 4b: panel.workspace.tree — drag-drop reorder. Mirrors UXP
+// Phase 4b: panel.workspace.tree -- drag-drop reorder. Mirrors UXP
 // `workspace_panel_dnd.js` `moveObjTo` / `moveRendTo` / `_moveToImpl`.
 //
 // Reorder semantics: ui_order is a unique-per-parent integer property.
 // UXP performs a bubble-sort swap of ui_order values down the range
-// between the source's slot and the target's slot — only the affected
+// between the source's slot and the target's slot -- only the affected
 // siblings get touched, and ui_order values remain dense. This file
 // ports that algorithm verbatim so the post-drag tree matches UXP.
 //
@@ -62,7 +62,7 @@ interface OrderedItem {
 
 /**
  * Port of UXP `_moveToImpl`. Bubble-swap ui_order along the
- * source→target slot range. `items` MUST contain both `src` and `dst`
+ * source->target slot range. `items` MUST contain both `src` and `dst`
  * and be ordered by current ui_order ascending.
  */
 function bubbleSwapOrder(
@@ -196,7 +196,7 @@ function reorderSceneNode(
     const destObj = scene.getObject(args.destObjId) as CueMolObject | null;
     if (!destObj) return { ok: false };
 
-    // Assign / clear rend.group BEFORE re-collecting siblings — UXP does
+    // Assign / clear rend.group BEFORE re-collecting siblings -- UXP does
     // the same; the group string is part of the rend, not of the obj.
     withUndoTxn(scene, 'Reorder renderers', () => {
         let currentGroup = '';
@@ -206,7 +206,7 @@ function reorderSceneNode(
         }
 
         // For "drop INTO rendGroup" with the group itself as target,
-        // there is no ordering change — UXP just updates rend.group and
+        // there is no ordering change -- UXP just updates rend.group and
         // returns. Match that.
         if (args.sourceId === args.targetId) return;
 

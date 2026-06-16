@@ -2,7 +2,7 @@
  * @file hooks/sceneTree/useSceneTreeNodeOps.ts
  * @description Scene-tree node lifecycle operations for `useSceneTree`:
  * visibility, focus, delete, rename, mol-selection, clipboard, drag-drop
- * reorder, bulk multi-select ops, and property-info fetch.
+ * reorder, and bulk multi-select ops.
  */
 
 import { useCallback, type MutableRefObject } from 'react'
@@ -12,7 +12,7 @@ import type {
     SceneTreeNode,
 } from '../../worker/shared/sceneTreeTypes'
 import type { SelectMolKind } from '../../../shared/ipcTypes'
-import { findNode, findTypedNode, type NodeInfo } from './sceneTreeNodeUtils'
+import { findNode, findTypedNode } from './sceneTreeNodeUtils'
 
 export interface SceneTreeNodeOps {
     toggleVisibility: (id: string) => void
@@ -53,8 +53,6 @@ export interface SceneTreeNodeOps {
      */
     bulkSetNodeVisible: (ids: Iterable<string>, visible: boolean) => Promise<boolean>
     bulkDeleteNodes: (ids: Iterable<string>) => Promise<boolean>
-    /** Fetch property info for the property dialog. */
-    fetchNodeInfo: (id: string) => Promise<NodeInfo | null>
     resolveNodeName: (id: string) => string
 }
 
@@ -205,7 +203,7 @@ export function useSceneTreeNodeOps(
             if (!cm || sid === undefined) return false
             // Scene row accepts object pastes (no target id). Object row
             // accepts renderer pastes via targetObjId. RendGroup row
-            // accepts renderer pastes via targetGroupId — worker resolves
+            // accepts renderer pastes via targetGroupId -- worker resolves
             // the group's parent mol and sets rend.group on attach. Other
             // node types are rejected by the worker.
             let args: {
@@ -303,31 +301,6 @@ export function useSceneTreeNodeOps(
         [cm, sceneIdRef, resolveBulkItems],
     )
 
-    // @deprecated Fed the retired read-only `NodePropertyDialog` modal via
-    // the `getNodeInfo` service. The scene-tree Property action now opens
-    // the generic property inspector (`useInspectorState.handleShowGeneric`).
-    // No live caller remains; scheduled for deletion with `getNodeInfo`.
-    const fetchNodeInfo = useCallback(
-        async (id: string): Promise<NodeInfo | null> => {
-            const sid = sceneIdRef.current
-            if (!cm || sid === undefined) return null
-            const found = findTypedNode(tree, id)
-            if (!found) return null
-            const { numId, node } = found
-            const res = await cm.invokeService('getNodeInfo', {
-                sceneId: sid,
-                nodeId: numId,
-                nodeType: node.type as SceneNodeType,
-            })
-            if (!res?.ok) return null
-            return {
-                title: res.displayName || node.name || 'Properties',
-                entries: res.entries,
-            }
-        },
-        [cm, sceneIdRef, tree],
-    )
-
     const resolveNodeName = useCallback(
         (id: string): string => {
             const numId = Number(id)
@@ -349,7 +322,6 @@ export function useSceneTreeNodeOps(
         moveSceneNode,
         bulkSetNodeVisible,
         bulkDeleteNodes,
-        fetchNodeInfo,
         resolveNodeName,
     }
 }

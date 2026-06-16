@@ -32,7 +32,7 @@ import { dispatchSceneCtxAction } from './sceneContextMenu/dispatchSceneCtxActio
  */
 export interface UseSceneContextMenuOptions {
     cm: AsyncCueMol | null
-    /** Active scene UID — required to pre-fetch dynamic Paint(SS) styles. */
+    /** Active scene UID -- required to pre-fetch dynamic Paint(SS) styles. */
     sceneId: number | undefined
     toggleVisibility: (id: string) => void
     deleteNode: (id: string) => Promise<boolean>
@@ -116,7 +116,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
     const { cm, sceneId, activeViewId, createCamera, createRendererOnObject,
             selectedIds, bulkSetNodeVisible, bulkDeleteNodes } = opts
 
-    // Electron disables window.prompt — use the in-app Blueprint dialog
+    // Electron disables window.prompt -- use the in-app Blueprint dialog
     // for Rename / New Group text input flows instead.
     const showTextPrompt = useShowTextPromptDialog()
     const showNewRenderer = useShowNewRendererDialog()
@@ -126,7 +126,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
     const showEditInteractionList = useShowEditInteractionListDialog()
     const showStyleEditor = useShowStyleEditorDialog()
 
-    // Shared "New Camera..." flow — also reused by the toolbar Add button.
+    // Shared "New Camera..." flow -- also reused by the toolbar Add button.
     // Mirrors UXP `onNewCmd` dispatch (camera / cameraRoot branch).
     const openNewCameraFlow = useCallback(
         async (): Promise<void> => {
@@ -157,7 +157,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
         [cm, sceneId, activeViewId, showTextPrompt, createCamera],
     )
 
-    // Shared "New Renderer..." flow — also reused by the toolbar Add button.
+    // Shared "New Renderer..." flow -- also reused by the toolbar Add button.
     // Mirrors UXP `onNewCmd`, which calls the same `setupRendByObjID` from
     // both the ctxmenu item and the toolbar.
     const openNewRendererFlow = useCallback(
@@ -206,7 +206,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
 
             // Multi-select right-click: when the targeted node is part of a
             // multi-select set, send the multi payload and short-circuit the
-            // per-type pre-fetch — the main process renders the multi-only
+            // per-type pre-fetch -- the main process renders the multi-only
             // menu (Show / Hide / Delete).
             const isMulti =
                 !!selectedIds && selectedIds.size > 1 && selectedIds.has(idStr)

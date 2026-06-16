@@ -7,10 +7,10 @@
  * Two UXP-parity behaviours live here so neither dialog has to reimplement
  * them:
  *
- *   1. Renderer-type history — the initially selected type is restored from
+ *   1. Renderer-type history -- the initially selected type is restored from
  *      per-objClassName localStorage history (`rendTypeHistory`), and
  *      `commitHistory()` writes the chosen type back on confirm.
- *   2. Default renderer name follow — while the renderer name is still the
+ *   2. Default renderer name follow -- while the renderer name is still the
  *      auto-generated default, changing the renderer type re-derives a
  *      scene-wide unique name via the worker `proposeUniqName` service.
  *      Once the user edits the name, the follow stops (UXP mRendNameDefault).
@@ -33,7 +33,7 @@ import type { RendererOptions } from './types';
 import { getDefaultRendType, setDefaultRendType } from './rendTypeHistory';
 
 export interface UseRendererOptionsArgs {
-    /** Dialog visibility — a false->true transition resets the state. */
+    /** Dialog visibility -- a false->true transition resets the state. */
     visible: boolean;
     sceneId: number;
     /** C++ object class name; the renderer-type history key. '' disables history. */
@@ -52,7 +52,7 @@ export interface UseRendererOptionsResult {
     setOptions: Dispatch<SetStateAction<RendererOptions>>;
     /** Routes renderer-name keystrokes; clears the auto-follow flag on edit. */
     onRendererNameUserEdit: (newName: string) => void;
-    /** Persists the selected renderer type to history — call on confirm. */
+    /** Persists the selected renderer type to history -- call on confirm. */
     commitHistory: () => void;
 }
 
@@ -120,7 +120,7 @@ export function useRendererOptions(
         if (!rendererNameIsDefaultRef.current) return;
         const seq = ++rendNameSeqRef.current;
         (async () => {
-            const res = await cm.proposeUniqName({
+            const res = await cm.invokeService('proposeUniqName', {
                 kind: 'sceneRenderer',
                 prefix: rType,
                 sceneId,

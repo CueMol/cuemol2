@@ -1,13 +1,13 @@
 /**
  * Pins the wire contract of File > Save Scene / Save Scene As.
  *
- *   - empty `src` → CmdId.FileSave dispatches the Save As branch
+ *   - empty `src` -> CmdId.FileSave dispatches the Save As branch
  *     (DIALOG_SAVE_SCENE invoke). FILE_EXISTS is NOT consulted because
  *     the writer has no path candidate.
- *   - non-empty `src` + FILE_EXISTS → exists:true → no Save dialog;
+ *   - non-empty `src` + FILE_EXISTS -> exists:true -> no Save dialog;
  *     FILE_BACKUP_RENAME runs first, then the worker `saveScene` service
  *     is invoked with `options: undefined` (UXP plain Save path: no option dialog).
- *   - non-empty `src` + FILE_EXISTS → exists:false → falls through to Save As
+ *   - non-empty `src` + FILE_EXISTS -> exists:false -> falls through to Save As
  *     (UXP `util.isFile` defence).
  *   - CmdId.FileSaveAs always shows the Save dialog regardless of `src`.
  *

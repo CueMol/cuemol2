@@ -1,12 +1,12 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 //
-// Phase 6b: panel.workspace.ctxmenu.renderer — "Change type" submenu.
+// Phase 6b: panel.workspace.ctxmenu.renderer -- "Change type" submenu.
 // Mirrors UXP `ws.chgRendType` (non-selection branch) in
 // `workspace_panel.js`.
 //
 // The UXP *selection branch (converting a selection renderer into a
 // real renderer via the new-renderer setup dialog) is deliberately
-// out of scope here — the submenu is hidden for synthetic renderers
+// out of scope here -- the submenu is hidden for synthetic renderers
 // at gate time, so the worker only handles concrete-type conversions.
 
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';

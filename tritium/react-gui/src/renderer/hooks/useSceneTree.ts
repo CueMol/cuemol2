@@ -5,7 +5,7 @@
  * Fetches the tree from the worker via `cm.invokeService('getSceneTree', ...)`
  * and subscribes to the CueMol event manager so the tree refreshes whenever
  * scene contents change (object/renderer/camera/style added, removed, or
- * a watched property — name/visible/locked — is mutated).
+ * a watched property -- name/visible/locked -- is mutated).
  *
  * The listener follows the same shape used by `useLogEvent.ts` and the
  * UXP `workspace_panel.js` reference implementation
@@ -48,8 +48,6 @@ import {
     useSceneTreeStyleOps,
     type SceneTreeStyleOps,
 } from './sceneTree/useSceneTreeStyleOps'
-
-export type { NodeInfo } from './sceneTree/sceneTreeNodeUtils'
 
 interface UseSceneTreeOptions {
     cm: AsyncCueMol | null
@@ -177,7 +175,7 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         debounceMs: REFETCH_DEBOUNCE_MS,
     })
 
-    // ── Domain action callbacks ──────────────────────────────────────
+    // --- Domain action callbacks ---
     const nodeOps = useSceneTreeNodeOps(cm, sceneIdRef, tree)
     const rendererOps = useSceneTreeRendererOps(cm, sceneIdRef, tree)
     const cameraOps = useSceneTreeCameraOps(cm, sceneIdRef)
@@ -220,8 +218,8 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
  *   - delete: object / renderer / rendGroup / camera (cameraRoot Delete is
  *     disabled in UXP via `wspcCamCtxt-disable` keyed to elem.type=="camera")
  *   - property: everything except the synthesised cameraRoot / styleRoot
- *   - add: object / renderer / rendGroup → New Renderer;
- *          camera / cameraRoot → New Camera
+ *   - add: object / renderer / rendGroup -> New Renderer;
+ *          camera / cameraRoot -> New Camera
  *          (style is handled via its own ctxmenu path for now)
  */
 function computeOps(node: SceneTreeNode | null): SceneTreeSelectionOps {

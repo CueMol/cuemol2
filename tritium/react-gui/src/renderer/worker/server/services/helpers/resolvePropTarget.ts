@@ -1,9 +1,10 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 //
 // Resolves a scene-tree node identity into the C++ wrapper whose properties
-// the generic property inspector edits. Mirrors the per-type lookup in
-// `getNodeInfo` (sceneOps.service.ts) but returns the wrapper itself so the
-// caller can invoke `getPropsJSON` / `setProp` / `resetProp` on it.
+// the generic property inspector edits. Uses the same per-type lookup
+// (object / renderer / style / scene) as the scene-tree node services, but
+// returns the wrapper itself so the caller can invoke
+// `getPropsJSON` / `setProp` / `resetProp` on it.
 
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { BaseWrapper } from '@cuemol/core/src/BaseWrapper';

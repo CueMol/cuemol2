@@ -41,7 +41,7 @@ function configureMtzColumns(
     reader: ObjReader,
     mapType: DensityMapType,
 ): void {
-    // 2Fo-Fc → FWT/PHWT, Fo-Fc → DELFWT/PHDELWT (UXP openMapImpl L350-359).
+    // 2Fo-Fc -> FWT/PHWT, Fo-Fc -> DELFWT/PHDELWT (UXP openMapImpl L350-359).
     // The wrapper types these as numbers (enum) but the C++ runtime expects
     // strings; cast through unknown per CLAUDE.md "Auto-generated wrapper
     // enum properties" rule.

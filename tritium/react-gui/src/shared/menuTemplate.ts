@@ -40,49 +40,35 @@ export interface AppMenuGroup {
   submenu: AppMenuItem[]
 }
 
+// The canonical macOS Application menu lives in src/main/menu.ts
+// ('macOnlyGroups'); it needs main-process-only role items and app.name, so it
+// is not declared here. The group-level 'darwinOnly?' field and the
+// '.filter(g => !g.darwinOnly)' guards in the two readers remain as harmless
+// no-ops. Item-level darwinOnly / othersOnly are still live.
 export const APP_MENU: AppMenuGroup[] = [
-  // macOS Application menu (shown only on darwin)
-  {
-    label: 'CueMol2',
-    darwinOnly: true,
-    submenu: [
-      { id: 'about-mac', label: `About ${APP_PRODUCT_NAME}`, ipcChannel: IPC.MENU_ABOUT, darwinOnly: true },
-      { type: 'separator' },
-      { id: 'mac-prefs', label: 'Preferences...', accelerator: 'Cmd+,', ipcChannel: 'menu:options', darwinOnly: true },
-      { type: 'separator' },
-      { role: 'services', darwinOnly: true },
-      { type: 'separator' },
-      { role: 'hide', darwinOnly: true },
-      { role: 'hideOthers', darwinOnly: true },
-      { role: 'unhide', darwinOnly: true },
-      { type: 'separator' },
-      { role: 'quit' },
-    ],
-  },
-
   // File menu
   {
     label: 'File',
     submenu: [
-      { id: 'new-window',  label: 'New Window',       accelerator: 'CmdOrCtrl+Shift+N', ipcChannel: 'menu:new-window' },
-      { id: 'new-tab',     label: 'New Tab',           accelerator: 'CmdOrCtrl+T',       ipcChannel: 'menu:new-tab' },
+      { id: 'new-window',  label: 'New Window',       accelerator: 'CmdOrCtrl+Shift+N', ipcChannel: IPC.MENU_NEW_WINDOW },
+      { id: 'new-tab',     label: 'New Tab',           accelerator: 'CmdOrCtrl+T',       ipcChannel: IPC.MENU_NEW_TAB },
       { type: 'separator' },
-      { id: 'open-file',   label: 'Open File...',      accelerator: 'CmdOrCtrl+O',       ipcChannel: 'menu:open-file' },
-      { id: 'get-pdb',     label: 'Get PDB...',        ipcChannel: 'menu:get-pdb' },
+      { id: 'open-file',   label: 'Open File...',      accelerator: 'CmdOrCtrl+O',       ipcChannel: IPC.MENU_OPEN_FILE },
+      { id: 'get-pdb',     label: 'Get PDB...',        ipcChannel: IPC.MENU_GET_PDB },
       {
         id: 'open-recent', label: 'Open Recent',
         submenu: [
-          { id: 'clear-recent', label: 'Clear Menu', ipcChannel: 'menu:clear-recent' },
+          { id: 'clear-recent', label: 'Clear Menu', ipcChannel: IPC.MENU_CLEAR_RECENT },
         ],
       },
       { type: 'separator' },
-      { id: 'save-file-as',     label: 'Save File As...',      ipcChannel: 'menu:save-file-as' },
-      { id: 'save-current-view', label: 'Save current view...', ipcChannel: 'menu:save-current-view' },
+      { id: 'save-file-as',     label: 'Save File As...',      ipcChannel: IPC.MENU_SAVE_FILE_AS },
+      { id: 'save-current-view', label: 'Save current view...', ipcChannel: IPC.MENU_SAVE_CURRENT_VIEW },
       { type: 'separator' },
-      { id: 'close-tab',   label: 'Close Tab',         accelerator: 'CmdOrCtrl+W',       ipcChannel: 'menu:close-tab' },
+      { id: 'close-tab',   label: 'Close Tab',         accelerator: 'CmdOrCtrl+W',       ipcChannel: IPC.MENU_CLOSE_TAB },
       { type: 'separator' },
-      { id: 'open-scene',  label: 'Open Scene...',     accelerator: 'CmdOrCtrl+Shift+O', ipcChannel: 'menu:open-scene' },
-      { id: 'reload-scene', label: 'Reload Scene',     accelerator: 'CmdOrCtrl+R',       ipcChannel: 'menu:reload-scene' },
+      { id: 'open-scene',  label: 'Open Scene...',     accelerator: 'CmdOrCtrl+Shift+O', ipcChannel: IPC.MENU_OPEN_SCENE },
+      { id: 'reload-scene', label: 'Reload Scene',     accelerator: 'CmdOrCtrl+R',       ipcChannel: IPC.MENU_RELOAD_SCENE },
       { id: 'save-scene',  label: 'Save Scene',        accelerator: 'CmdOrCtrl+S',       ipcChannel: IPC.MENU_SAVE },
       { id: 'save-scene-as', label: 'Save Scene As...', accelerator: 'CmdOrCtrl+Shift+S', ipcChannel: IPC.MENU_SAVE_SCENE_AS },
       { type: 'separator' },
@@ -94,8 +80,8 @@ export const APP_MENU: AppMenuGroup[] = [
   {
     label: 'Edit',
     submenu: [
-      { id: 'undo', label: 'Undo', accelerator: 'CmdOrCtrl+Z', acceleratorMac: 'CmdOrCtrl+Z', ipcChannel: 'menu:undo' },
-      { id: 'redo', label: 'Redo', accelerator: 'CmdOrCtrl+Y', acceleratorMac: 'Shift+CmdOrCtrl+Z', ipcChannel: 'menu:redo' },
+      { id: 'undo', label: 'Undo', accelerator: 'CmdOrCtrl+Z', acceleratorMac: 'CmdOrCtrl+Z', ipcChannel: IPC.MENU_UNDO },
+      { id: 'redo', label: 'Redo', accelerator: 'CmdOrCtrl+Y', acceleratorMac: 'Shift+CmdOrCtrl+Z', ipcChannel: IPC.MENU_REDO },
       { type: 'separator' },
       // Standard clipboard items. Cut/Copy/Paste are pure roles (no ipcChannel)
       // so the main-process menu delegates them entirely to Electron, which
@@ -109,16 +95,16 @@ export const APP_MENU: AppMenuGroup[] = [
       // document (every GUI text node) when focus is not in an editable field.
       // Route it through the renderer (selectAllInScope) so it targets only the
       // focused field or the active selectable region (e.g. the log panel).
-      { id: 'select-all', label: 'Select All', accelerator: 'CmdOrCtrl+A', ipcChannel: 'menu:select-all' },
+      { id: 'select-all', label: 'Select All', accelerator: 'CmdOrCtrl+A', ipcChannel: IPC.MENU_SELECT_ALL },
       { type: 'separator' },
-      { id: 'clear-undo', label: 'Clear undo data', ipcChannel: 'menu:clear-undo' },
+      { id: 'clear-undo', label: 'Clear undo data', ipcChannel: IPC.MENU_CLEAR_UNDO },
       { type: 'separator' },
-      { id: 'merge-mol',      label: 'Merge molecule...',       ipcChannel: 'menu:merge-mol' },
-      { id: 'delete-mol-atoms', label: 'Delete mol atoms...',   ipcChannel: 'menu:delete-mol-atoms' },
-      { id: 'change-chain-id', label: 'Change chain ID...',     ipcChannel: 'menu:change-chain-id' },
-      { id: 'change-resid-num', label: 'Change residue number...', ipcChannel: 'menu:change-resid-num' },
+      { id: 'merge-mol',      label: 'Merge molecule...',       ipcChannel: IPC.MENU_MERGE_MOL },
+      { id: 'delete-mol-atoms', label: 'Delete mol atoms...',   ipcChannel: IPC.MENU_DELETE_MOL_ATOMS },
+      { id: 'change-chain-id', label: 'Change chain ID...',     ipcChannel: IPC.MENU_CHANGE_CHAIN_ID },
+      { id: 'change-resid-num', label: 'Change residue number...', ipcChannel: IPC.MENU_CHANGE_RESID_NUM },
       { type: 'separator' },
-      { id: 'options', label: 'Options', accelerator: 'CmdOrCtrl+K', ipcChannel: 'menu:options', othersOnly: true },
+      { id: 'options', label: 'Options', accelerator: 'CmdOrCtrl+K', ipcChannel: IPC.MENU_OPTIONS, othersOnly: true },
     ],
   },
 
@@ -126,9 +112,9 @@ export const APP_MENU: AppMenuGroup[] = [
   {
     label: 'Rendering',
     submenu: [
-      { id: 'pov-render',    label: 'POV-Ray rendering...',   ipcChannel: 'menu:pov-render' },
-      { id: 'anim-render',   label: 'Animation rendering...', ipcChannel: 'menu:anim-render' },
-      { id: 'export-scene',  label: 'Export scene...',        ipcChannel: 'menu:export-scene' },
+      { id: 'pov-render',    label: 'POV-Ray rendering...',   ipcChannel: IPC.MENU_POV_RENDER },
+      { id: 'anim-render',   label: 'Animation rendering...', ipcChannel: IPC.MENU_ANIM_RENDER },
+      { id: 'export-scene',  label: 'Export scene...',        ipcChannel: IPC.MENU_EXPORT_SCENE },
     ],
   },
 
@@ -144,8 +130,8 @@ export const APP_MENU: AppMenuGroup[] = [
         ],
       },
       { type: 'separator' },
-      { id: 'color-proof', label: 'Use color proofing', ipcChannel: 'menu:color-proof' },
-      { id: 'scene-props', label: 'Properties...', ipcChannel: 'menu:scene-props' },
+      { id: 'color-proof', label: 'Use color proofing', ipcChannel: IPC.MENU_COLOR_PROOF },
+      { id: 'scene-props', label: 'Properties...', ipcChannel: IPC.MENU_SCENE_PROPS },
     ],
   },
 
@@ -153,8 +139,8 @@ export const APP_MENU: AppMenuGroup[] = [
   {
     label: 'View',
     submenu: [
-      { id: 'view-perspective',   label: 'Perspective',   type: 'checkbox', enabled: false, ipcChannel: 'menu:view-perspective' },
-      { id: 'view-orthographic',  label: 'Orthographic',  type: 'checkbox', enabled: false, ipcChannel: 'menu:view-orthographic' },
+      { id: 'view-perspective',   label: 'Perspective',   type: 'checkbox', enabled: false, ipcChannel: IPC.MENU_VIEW_PERSPECTIVE },
+      { id: 'view-orthographic',  label: 'Orthographic',  type: 'checkbox', enabled: false, ipcChannel: IPC.MENU_VIEW_ORTHOGRAPHIC },
       { type: 'separator' },
       {
         id: 'center-mark', label: 'Center mark',
@@ -165,7 +151,7 @@ export const APP_MENU: AppMenuGroup[] = [
         ],
       },
       { type: 'separator' },
-      { id: 'view-props', label: 'View property...', ipcChannel: 'menu:view-props' },
+      { id: 'view-props', label: 'View property...', ipcChannel: IPC.MENU_VIEW_PROPS },
       { type: 'separator' },
       { role: 'toggleDevTools' },
     ],
@@ -175,18 +161,18 @@ export const APP_MENU: AppMenuGroup[] = [
   {
     label: 'Tools',
     submenu: [
-      { id: 'mol-superpose',  label: 'Molecular superposition...',  ipcChannel: 'menu:mol-superpose' },
-      { id: 'bond-editor',    label: 'Mol bond editor...',           ipcChannel: 'menu:bond-editor' },
-      { id: 'interaction',    label: 'Interaction...',               ipcChannel: 'menu:interaction' },
-      { id: 'reassign-2ndry', label: 'Reassign secondary str...',    ipcChannel: 'menu:reassign-2ndry' },
-      { id: 'morph-anim',     label: 'Mol morphing animation...',    ipcChannel: 'menu:morph-anim' },
-      { id: 'mol-surf',       label: 'Mol surface generation...',    ipcChannel: 'menu:mol-surf' },
-      { id: 'surf-cutter',    label: 'Mol surface cutter...',        ipcChannel: 'menu:surf-cutter' },
-      { id: 'apbs',           label: 'APBS elepot calculation...',   ipcChannel: 'menu:apbs' },
+      { id: 'mol-superpose',  label: 'Molecular superposition...',  ipcChannel: IPC.MENU_MOL_SUPERPOSE },
+      { id: 'bond-editor',    label: 'Mol bond editor...',           ipcChannel: IPC.MENU_BOND_EDITOR },
+      { id: 'interaction',    label: 'Interaction...',               ipcChannel: IPC.MENU_INTERACTION },
+      { id: 'reassign-2ndry', label: 'Reassign secondary str...',    ipcChannel: IPC.MENU_REASSIGN_2NDRY },
+      { id: 'morph-anim',     label: 'Mol morphing animation...',    ipcChannel: IPC.MENU_MORPH_ANIM },
+      { id: 'mol-surf',       label: 'Mol surface generation...',    ipcChannel: IPC.MENU_MOL_SURF },
+      { id: 'surf-cutter',    label: 'Mol surface cutter...',        ipcChannel: IPC.MENU_SURF_CUTTER },
+      { id: 'apbs',           label: 'APBS elepot calculation...',   ipcChannel: IPC.MENU_APBS },
       { type: 'separator' },
-      { id: 'exec-script',    label: 'Execute script...',            ipcChannel: 'menu:exec-script' },
+      { id: 'exec-script',    label: 'Execute script...',            ipcChannel: IPC.MENU_EXEC_SCRIPT },
       { type: 'separator' },
-      { id: 'perf-meas',      label: 'Performance measure',         ipcChannel: 'menu:perf-meas' },
+      { id: 'perf-meas',      label: 'Performance measure',         ipcChannel: IPC.MENU_PERF_MEAS },
     ],
   },
 
@@ -194,10 +180,10 @@ export const APP_MENU: AppMenuGroup[] = [
   {
     label: 'Window',
     submenu: [
-      { id: 'toggle-topbar',    label: 'Show/Hide Topbar',             ipcChannel: 'menu:toggle-topbar' },
+      { id: 'toggle-topbar',    label: 'Show/Hide Topbar',             ipcChannel: IPC.MENU_TOGGLE_TOPBAR },
       { type: 'separator' },
-      { id: 'clear-log',        label: 'Clear log contents',           ipcChannel: 'menu:clear-log' },
-      { id: 'restore-panels',   label: 'Restore default panel location', ipcChannel: 'menu:restore-panels' },
+      { id: 'clear-log',        label: 'Clear log contents',           ipcChannel: IPC.MENU_CLEAR_LOG },
+      { id: 'restore-panels',   label: 'Restore default panel location', ipcChannel: IPC.MENU_RESTORE_PANELS },
     ],
   },
 
@@ -207,12 +193,12 @@ export const APP_MENU: AppMenuGroup[] = [
     submenu: [
       { id: 'about', label: `About ${APP_PRODUCT_NAME}`, ipcChannel: IPC.MENU_ABOUT, othersOnly: true },
       { type: 'separator' },
-      { id: 'about-plugins',  label: 'About plugins...',  ipcChannel: 'menu:about-plugins' },
-      { id: 'about-config',   label: 'About config...',   ipcChannel: 'menu:about-config' },
-      { id: 'addon-mgr',      label: 'Addon manager...',  ipcChannel: 'menu:addon-mgr' },
+      { id: 'about-plugins',  label: 'About plugins...',  ipcChannel: IPC.MENU_ABOUT_PLUGINS },
+      { id: 'about-config',   label: 'About config...',   ipcChannel: IPC.MENU_ABOUT_CONFIG },
+      { id: 'addon-mgr',      label: 'Addon manager...',  ipcChannel: IPC.MENU_ADDON_MGR },
       { type: 'separator' },
-      { id: 'console',        label: 'Console',           ipcChannel: 'menu:console' },
-      { id: 'check-updates',  label: 'Check for updates', ipcChannel: 'menu:check-updates' },
+      { id: 'console',        label: 'Console',           ipcChannel: IPC.MENU_CONSOLE },
+      { id: 'check-updates',  label: 'Check for updates', ipcChannel: IPC.MENU_CHECK_UPDATES },
     ],
   },
 ]
@@ -237,44 +223,4 @@ const ROLE_LABELS: Partial<Record<AppMenuRole, string>> = {
 
 export function getRoleLabel(role: AppMenuRole): string {
   return ROLE_LABELS[role] ?? role
-}
-
-/**
- * Convert APP_MENU to an Electron MenuItemConstructorOptions array.
- * Import only in the main process (requires 'electron').
- * @deprecated Use the recursive buildItem helper in main/menu.ts instead.
- */
-export function toElectronTemplate(
-  menu: AppMenuGroup[],
-  isMac: boolean,
-): unknown[] {
-  function convertItem(item: AppMenuItem): unknown | null {
-    if (item.darwinOnly && !isMac) return null
-    if (item.othersOnly && isMac) return null
-    if (item.type === 'separator') return { type: 'separator' }
-    if (item.role && !item.ipcChannel) {
-      return { role: item.role }
-    }
-    const result: Record<string, unknown> = {}
-    if (item.label) result['label'] = item.label
-    if (item.role) result['role'] = item.role
-    const acc = isMac ? (item.acceleratorMac ?? item.accelerator) : item.accelerator
-    if (acc) result['accelerator'] = acc
-    if (item.submenu) {
-      result['submenu'] = item.submenu.flatMap((i) => {
-        const c = convertItem(i)
-        return c ? [c] : []
-      })
-    }
-    return result
-  }
-
-  return menu.flatMap((group) => {
-    if (group.darwinOnly && !isMac) return []
-    const submenu = group.submenu.flatMap((item) => {
-      const c = convertItem(item)
-      return c ? [c] : []
-    })
-    return [{ label: group.label, submenu }]
-  })
 }

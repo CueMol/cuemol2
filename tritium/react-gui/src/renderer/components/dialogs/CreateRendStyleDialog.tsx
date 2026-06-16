@@ -10,7 +10,7 @@ import {
 import { useTheme } from '../../contexts/ThemeContext'
 
 /**
- * "Create Renderer Style" dialog — UXP `rendstyle_create.xul` /
+ * "Create Renderer Style" dialog -- UXP `rendstyle_create.xul` /
  * `rendstyle_create.js`. The dialog collects two inputs:
  *   - target style set (listbox of writable sets, pre-selected to the
  *     scene-local set when one exists)

@@ -16,14 +16,14 @@ export function useViewCommands(opts: {
   const setProjection = async (perspective: boolean): Promise<void> => {
     const viewId = getActiveViewId()
     if (!cm || viewId === undefined) return
-    const result = await cm.setViewProjection(viewId, perspective)
+    const result = await cm.invokeService('setViewProjection', { viewId, perspective })
     if (result?.ok) onProjectionChanged?.(result.perspective)
   }
 
   const setCenterMark = async (centerMark: ViewCenterMark): Promise<void> => {
     const viewId = getActiveViewId()
     if (!cm || viewId === undefined) return
-    const result = await cm.setViewCenterMark(viewId, centerMark)
+    const result = await cm.invokeService('setViewCenterMark', { viewId, centerMark })
     if (result?.ok) onCenterMarkChanged?.(centerMark)
   }
 

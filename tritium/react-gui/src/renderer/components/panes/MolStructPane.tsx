@@ -11,7 +11,7 @@
  * Residue / atom rows are lazy-loaded on expand via `useMolStructure`;
  * the worker round-trip only happens the first time a node opens.
  * Center / Zoom drive `centerMolSelection` / `zoomMolSelection` using
- * the active mol-view's id. Properties stays a stub — UXP's
+ * the active mol-view's id. Properties stays a stub -- UXP's
  * `onBtnPropCmd` is empty.
  *
  * @module MolStructPane
@@ -26,9 +26,11 @@ import {
     type TreeNodeInfo,
 } from "@blueprintjs/core";
 import { AppIcon } from "../AppIcon";
+import { SectionHeader } from "./SectionHeader";
 import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
 import { useMolStructure } from "../../hooks/useMolStructure";
 import { ObjectSelect, objectFilters } from "../../h3-kit/ObjectSelect";
+import { fireService } from "../../utils/fireService";
 import {
     encodeChainId,
     encodeResidueId,
@@ -52,7 +54,7 @@ interface MolStructPaneProps {
     cm: AsyncCueMol | null;
     /** Active scene UID, or undefined when no scene is active. */
     activeSceneId: number | undefined;
-    /** Active mol-view UID — required for Center / Zoom. */
+    /** Active mol-view UID -- required for Center / Zoom. */
     activeMolViewId: number | undefined;
     collapsed?: boolean;
     onToggleCollapse?: () => void;
@@ -87,7 +89,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
     // Anchor for Shift+click range select; null until the first single /
     // Cmd-click. Stays put on plain Shift+click extensions.
     const [anchorId, setAnchorId] = useState<MolTreeId | null>(null);
-    // Expansion state lives in React, not Blueprint — Tree is a stateless
+    // Expansion state lives in React, not Blueprint -- Tree is a stateless
     // controlled component when we set `isExpanded` explicitly.
     const [expandedIds, setExpandedIds] = useState<Set<MolTreeId>>(() => new Set());
 
@@ -102,7 +104,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
     // Self-heal: any expanded chain/residue whose lazy cache is missing
     // should re-fetch. This covers (a) the brief window after mol switch
     // and (b) a future case where caches get invalidated by a topology
-    // event — without forcing the user to collapse-and-re-expand. The
+    // event -- without forcing the user to collapse-and-re-expand. The
     // hook dedupes inflight requests by key so this effect is safe to
     // fire on every render.
     useEffect(() => {
@@ -132,7 +134,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
 
     // Flat list of visible row ids in render order. Used by Shift+click
     // range selection. Placeholder rows ("Loading..." / "(no atoms)" /
-    // "(no residues)") are excluded — they're not selectable.
+    // "(no residues)") are excluded -- they're not selectable.
     const visibleRowIds = useMemo(() => {
         const ids: MolTreeId[] = [];
         for (const chain of chains) {
@@ -158,7 +160,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
     const handleNodeClick = useCallback(
         (node: TreeNodeInfo, _path: number[], e: React.MouseEvent<HTMLElement>) => {
             const id = String(node.id);
-            // Ignore the disabled placeholder rows entirely — they have no
+            // Ignore the disabled placeholder rows entirely -- they have no
             // selectable semantics. They are flagged via `disabled: true`
             // and their ids start with "loading-" or "empty-".
             if (node.disabled) return;
@@ -181,7 +183,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
                     // Anchor sticks across Shift extensions (Finder parity).
                     return;
                 }
-                // anchor or clicked id not in the visible set (rare —
+                // anchor or clicked id not in the visible set (rare --
                 // e.g. anchor row got collapsed); fall through to a plain
                 // click below.
             }
@@ -212,7 +214,7 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
                 next.add(id);
                 return next;
             });
-            // Kick the lazy fetch — useMolStructure dedupes inflight by key.
+            // Kick the lazy fetch -- useMolStructure dedupes inflight by key.
             if (id.startsWith("chain:")) {
                 const chainName = id.slice("chain:".length);
                 if (chainName) void loadResidues(chainName);
@@ -355,12 +357,10 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
         if (!cm || !canApply) return;
         const selStr = selStrFromTree(selectedIds, residueOrder);
         if (!selStr) return;
-        cm.invokeService("applyMolSelString", {
+        fireService(cm, "applyMolSelString", {
             sceneId: activeSceneId!,
             molId: selectedMolId!,
             selStr,
-        }).catch((err: unknown) => {
-            console.warn("applyMolSelString failed:", err);
         });
     }, [cm, canApply, selectedIds, residueOrder, activeSceneId, selectedMolId]);
 
@@ -368,13 +368,11 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
         if (!cm || !canApply || !hasView) return;
         const selStr = selStrFromTree(selectedIds, residueOrder);
         if (!selStr) return;
-        cm.invokeService("centerMolSelection", {
+        fireService(cm, "centerMolSelection", {
             sceneId: activeSceneId!,
             viewId: activeMolViewId!,
             molId: selectedMolId!,
             selStr,
-        }).catch((err: unknown) => {
-            console.warn("centerMolSelection failed:", err);
         });
     }, [cm, canApply, hasView, selectedIds, residueOrder, activeSceneId, activeMolViewId, selectedMolId]);
 
@@ -382,38 +380,22 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
         if (!cm || !canApply || !hasView) return;
         const selStr = selStrFromTree(selectedIds, residueOrder);
         if (!selStr) return;
-        cm.invokeService("zoomMolSelection", {
+        fireService(cm, "zoomMolSelection", {
             sceneId: activeSceneId!,
             viewId: activeMolViewId!,
             molId: selectedMolId!,
             selStr,
-        }).catch((err: unknown) => {
-            console.warn("zoomMolSelection failed:", err);
         });
     }, [cm, canApply, hasView, selectedIds, residueOrder, activeSceneId, activeMolViewId, selectedMolId]);
 
     return (
         <div className="sp-pane">
-            <div
-                className={`sp-section-header ${onToggleCollapse ? "collapsible" : ""}`}
-                onClick={onToggleCollapse}
-            >
-                <div className="sp-section-header-left">
-                    {onToggleCollapse != null && (
-                        <AppIcon
-                            name={collapsed ? "ui.caretRight" : "ui.caretDown"}
-                            size="sm"
-                            className="section-chevron"
-                            aria-hidden
-                        />
-                    )}
-                    <AppIcon name="ui.git" size="md" className="section-icon" aria-hidden />
-                    <span className="section-title">Mol Struct</span>
-                </div>
-                <div
-                    className="sp-section-header-actions"
-                    onClick={(e) => e.stopPropagation()}
-                >
+            <SectionHeader
+                title="Mol Struct"
+                icon="ui.git"
+                collapsed={collapsed}
+                onToggleCollapse={onToggleCollapse}
+                actions={
                     <ButtonGroup minimal>
                         <Tooltip content="Select atoms" placement="bottom" compact>
                             <Button
@@ -455,8 +437,8 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({
                             />
                         </Tooltip>
                     </ButtonGroup>
-                </div>
-            </div>
+                }
+            />
             {!collapsed && (
                 <div className="sp-pane-fill">
                     <ObjectSelect

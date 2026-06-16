@@ -12,7 +12,7 @@ export interface NewRendererDialogArgs {
     rendererTypes: string[]
     defaultName: string
     isMol: boolean
-    /** Target molecule uid — forwarded to MolSelList for `current (<sel>)`. */
+    /** Target molecule uid -- forwarded to MolSelList for `current (<sel>)`. */
     molID?: number
     groupName?: string
 }

@@ -12,12 +12,12 @@
  * (objId is not reset on open).
  */
 
-import React, { useCallback, useEffect, useState } from 'react'
-import { Button, Dialog, DialogBody, DialogFooter } from '@blueprintjs/core'
-import { useTheme } from '../../contexts/ThemeContext'
+import React, { useState } from 'react'
 import { useCueMol } from '../../hooks/useCueMol'
+import { useMolEditCommit } from '../../hooks/useMolEditCommit'
 import { Field, FieldSection, NumericField, SegmentField, SelectField, SwitchField } from '../../h3-kit/form'
-import { ObjectSelect, objectFilters } from '../../h3-kit/ObjectSelect'
+import { DialogShell } from './DialogShell'
+import { MolPicker } from './MolPicker'
 import { MolSelList } from '../../h3-kit/MolSelList/MolSelList'
 import { pushHistory } from '../../h3-kit/MolSelList/selHistory'
 
@@ -44,8 +44,6 @@ const MODE_OPTIONS: { label: string; value: Mode }[] = [
 export function ReassignProt2ndryDialog({
     visible, sceneId, onConfirm, onCancel,
 }: Props): React.JSX.Element {
-    const { theme } = useTheme()
-    const isDark = theme === 'dark'
     const { cm } = useCueMol()
 
     const [objId, setObjId] = useState<number | undefined>(undefined)
@@ -55,79 +53,67 @@ export function ReassignProt2ndryDialog({
     const [helixAngle, setHelixAngle] = useState(120)
     const [selStr, setSelStr] = useState('')
     const [secType, setSecType] = useState('0')
-    const [submitting, setSubmitting] = useState(false)
-    const [errorMsg, setErrorMsg] = useState<string | null>(null)
-
-    // Reset transient state on each open. objId persists in-session.
-    useEffect(() => {
-        if (!visible) return
-        setMode('recalc')
-        setIgnBulge(false)
-        setHelixGapFill(false)
-        setHelixAngle(120)
-        setSelStr('')
-        setSecType('0')
-        setSubmitting(false)
-        setErrorMsg(null)
-    }, [visible])
 
     const recalcDisabled = mode !== 'recalc'
     const assignDisabled = mode !== 'assign'
 
-    const handleOk = useCallback(async () => {
-        if (!cm || objId === undefined) return
-        setSubmitting(true)
-        setErrorMsg(null)
-        try {
-            const res = await cm.invokeService('reassignProt2ndry',
-                mode === 'recalc'
-                    ? {
-                        sceneId, objId, mode,
-                        ignBulge,
-                        helixGapAngle: helixGapFill ? helixAngle : 0,
-                    }
-                    : {
-                        sceneId, objId, mode,
-                        selStr,
-                        secType: Number(secType),
+    // Commit handler + submitting/errorMsg state + reset-on-open. objId is
+    // intentionally NOT reset (last-picked persists in-session).
+    const { submitting, errorMsg, run: handleOk } =
+        useMolEditCommit({
+            cm,
+            visible,
+            onReset: () => {
+                setMode('recalc')
+                setIgnBulge(false)
+                setHelixGapFill(false)
+                setHelixAngle(120)
+                setSelStr('')
+                setSecType('0')
+            },
+            buildCommit: () => {
+                if (objId === undefined) return null
+                return {
+                    invoke: () => cm!.invokeService('reassignProt2ndry',
+                        mode === 'recalc'
+                            ? {
+                                sceneId, objId, mode,
+                                ignBulge,
+                                helixGapAngle: helixGapFill ? helixAngle : 0,
+                            }
+                            : {
+                                sceneId, objId, mode,
+                                selStr,
+                                secType: Number(secType),
+                            },
+                    ),
+                    onSuccess: () => {
+                        if (mode === 'assign' && selStr.trim() !== '') pushHistory(selStr.trim())
+                        onConfirm({ ok: true })
                     },
-            )
-            setSubmitting(false)
-            if (res?.ok) {
-                if (mode === 'assign' && selStr.trim() !== '') pushHistory(selStr.trim())
-                onConfirm({ ok: true })
-            } else {
-                setErrorMsg(res?.error ?? 'Failed to reassign secondary structure')
-            }
-        } catch (err) {
-            setErrorMsg(String(err))
-            setSubmitting(false)
-        }
-    }, [cm, sceneId, objId, mode, ignBulge, helixGapFill, helixAngle, selStr, secType, onConfirm])
+                    fallbackError: 'Failed to reassign secondary structure',
+                }
+            },
+        })
 
     return (
-        <Dialog
-            isOpen={visible}
-            onClose={onCancel}
+        <DialogShell
+            visible={visible}
             title="Reassign secondary structure"
-            style={{ width: 400 }}
-            portalClassName={isDark ? 'bp5-dark' : ''}
-            canOutsideClickClose={false}
-            isCloseButtonShown={false}
+            width="xl"
+            onCancel={onCancel}
+            onOk={handleOk}
+            okDisabled={objId === undefined}
+            submitting={submitting}
+            errorMsg={errorMsg}
         >
-            <DialogBody>
-                <div className="h3-dialog-form">
                     <FieldSection title="Molecule">
-                        <ObjectSelect
+                        <MolPicker
                             cm={cm}
                             sceneId={sceneId}
                             label="Molecule"
-                            filter={objectFilters.molCoord}
                             selectedId={objId}
                             onChange={setObjId}
-                            emptyText="(no molecules)"
-                            fallbackName={(m) => `Mol ${m.uid}`}
-                            hideLabel
                         />
                     </FieldSection>
 
@@ -187,27 +173,6 @@ export function ReassignProt2ndryDialog({
                             </SelectField>
                         </Field>
                     </FieldSection>
-
-                    {errorMsg !== null && (
-                        <div className="h3-dialog-error">{errorMsg}</div>
-                    )}
-                </div>
-            </DialogBody>
-            <DialogFooter
-                actions={
-                    <>
-                        <Button onClick={onCancel} disabled={submitting}>Cancel</Button>
-                        <Button
-                            intent="primary"
-                            onClick={handleOk}
-                            disabled={submitting || objId === undefined}
-                            loading={submitting}
-                        >
-                            OK
-                        </Button>
-                    </>
-                }
-            />
-        </Dialog>
+        </DialogShell>
     )
 }

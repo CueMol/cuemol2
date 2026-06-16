@@ -11,14 +11,15 @@
  * property).
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useRef } from 'react'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import type { PaintCapableRendererEntry } from '../worker/server/services/rendererColoring.service'
 import { SEM_OBJECT, SEM_RENDERER, SEM_ANY } from '../event'
-import { useCueMolEventListener } from './useCueMolEventListener'
+import { useLiveFetch } from './useLiveFetch'
 
 const SCENE_EVENT_MASK = SEM_OBJECT | SEM_RENDERER
 const REFETCH_DEBOUNCE_MS = 30
+const EMPTY: PaintCapableRendererEntry[] = []
 
 export interface UsePaintCapableRenderersOptions {
     cm: AsyncCueMol | null
@@ -40,40 +41,34 @@ export function usePaintCapableRenderers({
     cm,
     sceneId,
 }: UsePaintCapableRenderersOptions): UsePaintCapableRenderersResult {
-    const [renderers, setRenderers] = useState<PaintCapableRendererEntry[]>([])
-
     const sceneIdRef = useRef<number | undefined>(sceneId)
     sceneIdRef.current = sceneId
 
-    const refetch = useCallback(() => {
-        const sid = sceneIdRef.current
-        if (!cm || sid === undefined) {
-            setRenderers([])
-            return
-        }
-        cm.invokeService('listPaintCapableRenderers', { sceneId: sid })
-            .then((res) => {
-                setRenderers(res?.ok ? res.renderers : [])
-            })
-            .catch((err: unknown) => {
-                console.warn('listPaintCapableRenderers failed:', err)
-                setRenderers([])
-            })
-    }, [cm])
-
-    useEffect(() => {
-        refetch()
-    }, [cm, sceneId, refetch])
-
-    useCueMolEventListener({
+    const { state: renderers, refetch } = useLiveFetch<PaintCapableRendererEntry[]>({
         cm,
-        enabled: sceneId !== undefined,
-        category: '',
-        srcMask: SCENE_EVENT_MASK,
-        evtMask: SEM_ANY,
-        scopeId: sceneId ?? -1,
-        handler: refetch,
-        debounceMs: REFETCH_DEBOUNCE_MS,
+        initial: EMPTY,
+        fallback: EMPTY,
+        fetch: () => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return null
+            return cm
+                .invokeService('listPaintCapableRenderers', { sceneId: sid })
+                .then((res) => (res?.ok ? res.renderers : EMPTY))
+                .catch((err: unknown) => {
+                    console.warn('listPaintCapableRenderers failed:', err)
+                    return EMPTY
+                })
+        },
+        fetchDeps: [sceneId],
+        listeners: [
+            {
+                enabled: sceneId !== undefined,
+                srcMask: SCENE_EVENT_MASK,
+                evtMask: SEM_ANY,
+                scopeId: sceneId ?? -1,
+                debounceMs: REFETCH_DEBOUNCE_MS,
+            },
+        ],
     })
 
     return { renderers, refetch }

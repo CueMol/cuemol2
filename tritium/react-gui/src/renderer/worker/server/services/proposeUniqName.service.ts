@@ -45,7 +45,7 @@ function proposeUniqName(ctx: WorkerContext, args: ProposeUniqNameArgs): Propose
             tryBare = args.tryBare === true;
             suffix = args.suffix ?? 'numeric';
             if (!scene) {
-                // Without a scene we can't probe — return the most user-friendly
+                // Without a scene we can't probe -- return the most user-friendly
                 // candidate the caller asked for: bare prefix when tryBare,
                 // otherwise prefix+1 (legacy fallback).
                 return { name: tryBare ? prefix : prefix + '1' };

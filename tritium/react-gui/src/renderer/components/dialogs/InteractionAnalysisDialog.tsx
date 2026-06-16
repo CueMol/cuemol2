@@ -15,12 +15,12 @@
  * within the session because the ids are not reset on open.
  */
 
-import React, { useCallback, useEffect, useState } from 'react'
-import { Button, Dialog, DialogBody, DialogFooter } from '@blueprintjs/core'
-import { useTheme } from '../../contexts/ThemeContext'
+import React, { useState } from 'react'
 import { useCueMol } from '../../hooks/useCueMol'
+import { useMolEditCommit } from '../../hooks/useMolEditCommit'
 import { Field, FieldSection, NumericField, SwitchField, TextField } from '../../h3-kit/form'
-import { ObjectSelect, objectFilters } from '../../h3-kit/ObjectSelect'
+import { DialogShell } from './DialogShell'
+import { MolPicker } from './MolPicker'
 import { MolSelList } from '../../h3-kit/MolSelList/MolSelList'
 import { pushHistory } from '../../h3-kit/MolSelList/selHistory'
 
@@ -47,8 +47,6 @@ const DEFAULT_REND_NAME = 'measure'
 export function InteractionAnalysisDialog({
     visible, sceneId, onConfirm, onCancel,
 }: Props): React.JSX.Element {
-    const { theme } = useTheme()
-    const isDark = theme === 'dark'
     const { cm } = useCueMol()
 
     const [objId, setObjId] = useState<number | undefined>(undefined)
@@ -62,27 +60,55 @@ export function InteractionAnalysisDialog({
     const [maxLabels, setMaxLabels] = useState<number>(DEFAULT_MAX_LABELS)
     const [hbondOnly, setHbondOnly] = useState<boolean>(false)
     const [rendName, setRendName] = useState<string>(DEFAULT_REND_NAME)
-    const [submitting, setSubmitting] = useState(false)
-    const [errorMsg, setErrorMsg] = useState<string | null>(null)
-
-    // Reset transient state on each open. Molecule ids are intentionally NOT
-    // reset so the last-picked molecules persist within the session.
-    useEffect(() => {
-        if (!visible) return
-        setSelStr('')
-        setUseMol2(false)
-        setUseSel2(false)
-        setSelStr2('')
-        setMinDist(DEFAULT_MIN_DIST)
-        setMaxDist(DEFAULT_MAX_DIST)
-        setMaxLabels(DEFAULT_MAX_LABELS)
-        setHbondOnly(false)
-        setRendName(DEFAULT_REND_NAME)
-        setSubmitting(false)
-        setErrorMsg(null)
-    }, [visible])
 
     const distInvalid = minDist >= maxDist
+
+    // Commit handler + submitting/errorMsg state + reset-on-open. Molecule ids
+    // are intentionally NOT reset (last-picked persists in-session).
+    const { submitting, errorMsg, run: handleOk } =
+        useMolEditCommit({
+            cm,
+            visible,
+            onReset: () => {
+                setSelStr('')
+                setUseMol2(false)
+                setUseSel2(false)
+                setSelStr2('')
+                setMinDist(DEFAULT_MIN_DIST)
+                setMaxDist(DEFAULT_MAX_DIST)
+                setMaxLabels(DEFAULT_MAX_LABELS)
+                setHbondOnly(false)
+                setRendName(DEFAULT_REND_NAME)
+            },
+            buildCommit: () => {
+                if (objId === undefined) return null
+                return {
+                    invoke: () => cm!.invokeService('analyzeInteractions', {
+                        sceneId,
+                        objId,
+                        selStr,
+                        useMol2,
+                        objId2,
+                        useSel2,
+                        selStr2,
+                        minDist,
+                        maxDist,
+                        maxLabels,
+                        hbondOnly,
+                        rendName,
+                    }),
+                    onSuccess: (res) => {
+                        if (selStr.trim() !== '') pushHistory(selStr.trim())
+                        if ((useMol2 || useSel2) && selStr2.trim() !== '') {
+                            pushHistory(selStr2.trim())
+                        }
+                        onConfirm({ ok: true, count: res.count })
+                    },
+                    fallbackError: 'Failed to analyze interactions',
+                }
+            },
+        })
+
     const okDisabled =
         submitting ||
         objId === undefined ||
@@ -90,67 +116,24 @@ export function InteractionAnalysisDialog({
         maxLabels <= 0 ||
         (useMol2 && objId2 === undefined)
 
-    const handleOk = useCallback(async () => {
-        if (!cm || objId === undefined) return
-        setSubmitting(true)
-        setErrorMsg(null)
-        try {
-            const res = await cm.invokeService('analyzeInteractions', {
-                sceneId,
-                objId,
-                selStr,
-                useMol2,
-                objId2,
-                useSel2,
-                selStr2,
-                minDist,
-                maxDist,
-                maxLabels,
-                hbondOnly,
-                rendName,
-            })
-            setSubmitting(false)
-            if (res?.ok) {
-                if (selStr.trim() !== '') pushHistory(selStr.trim())
-                if ((useMol2 || useSel2) && selStr2.trim() !== '') {
-                    pushHistory(selStr2.trim())
-                }
-                onConfirm({ ok: true, count: res.count })
-            } else {
-                setErrorMsg(res?.error ?? 'Failed to analyze interactions')
-            }
-        } catch (err) {
-            setErrorMsg(String(err))
-            setSubmitting(false)
-        }
-    }, [
-        cm, sceneId, objId, selStr, useMol2, objId2, useSel2, selStr2,
-        minDist, maxDist, maxLabels, hbondOnly, rendName, onConfirm,
-    ])
-
     return (
-        <Dialog
-            isOpen={visible}
-            onClose={onCancel}
+        <DialogShell
+            visible={visible}
             title="Interaction analysis"
-            style={{ width: 400 }}
-            portalClassName={isDark ? 'bp5-dark' : ''}
-            canOutsideClickClose={false}
-            isCloseButtonShown={false}
+            width="xl"
+            onCancel={onCancel}
+            onOk={handleOk}
+            okDisabled={okDisabled}
+            submitting={submitting}
+            errorMsg={errorMsg}
         >
-            <DialogBody>
-                <div className="h3-dialog-form">
                     <FieldSection title="Molecule">
-                        <ObjectSelect
+                        <MolPicker
                             cm={cm}
                             sceneId={sceneId}
                             label="Molecule"
-                            filter={objectFilters.molCoord}
                             selectedId={objId}
                             onChange={setObjId}
-                            emptyText="(no molecules)"
-                            fallbackName={(m) => `Mol ${m.uid}`}
-                            hideLabel
                         />
                         <MolSelList
                             sceneID={sceneId}
@@ -167,16 +150,12 @@ export function InteractionAnalysisDialog({
                             />
                         </Field>
                         {useMol2 && (
-                            <ObjectSelect
+                            <MolPicker
                                 cm={cm}
                                 sceneId={sceneId}
                                 label="Second molecule"
-                                filter={objectFilters.molCoord}
                                 selectedId={objId2}
                                 onChange={setObjId2}
-                                emptyText="(no molecules)"
-                                fallbackName={(m) => `Mol ${m.uid}`}
-                                hideLabel
                             />
                         )}
                         <Field label="Second selection" inline>
@@ -253,26 +232,6 @@ export function InteractionAnalysisDialog({
                             Min distance must be smaller than max distance.
                         </div>
                     )}
-                    {errorMsg !== null && (
-                        <div className="h3-dialog-error">{errorMsg}</div>
-                    )}
-                </div>
-            </DialogBody>
-            <DialogFooter
-                actions={
-                    <>
-                        <Button onClick={onCancel} disabled={submitting}>Cancel</Button>
-                        <Button
-                            intent="primary"
-                            onClick={handleOk}
-                            disabled={okDisabled}
-                            loading={submitting}
-                        >
-                            OK
-                        </Button>
-                    </>
-                }
-            />
-        </Dialog>
+        </DialogShell>
     )
 }

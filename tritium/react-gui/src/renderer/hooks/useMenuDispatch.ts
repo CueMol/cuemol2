@@ -9,9 +9,50 @@
 import { useCallback } from 'react'
 import { useCommands } from '../commands/CommandRegistry'
 import { CmdId } from '../commands/ids'
+import type { CommandKey } from '../commands/CommandMap'
 import { IPC } from '../../shared/ipcChannels'
 import type { RecentFileEntry } from '../../shared/ipcTypes'
+import {
+  MENU_ACTION_MAP,
+  MENU_DISPATCH_RECENT_CLEAR,
+  MENU_DISPATCH_SELECT_ALL,
+  MENU_DISPATCH_UNIMPLEMENTED,
+  isMenuActionChannel,
+  type MenuActionChannel,
+} from '../../shared/menuActionMap'
 import { selectAllInScope } from '../utils/selectAllScope'
+
+/** Dependencies a per-channel menu handler needs from the hook closure. */
+interface MenuDispatchCtx {
+  dispatch: ReturnType<typeof useCommands>['dispatch']
+  activeTab: string | null
+  logErr: (prefix: string) => (e: unknown) => void
+}
+
+/**
+ * Special-cased menu channels that do NOT dispatch a plain no-arg command:
+ *   - MENU_CLOSE_TAB    : dispatches with the active tab id, guarded on it
+ *   - MENU_SELECT_ALL   : runs selectAllInScope() directly (no command bus)
+ *   - MENU_CLEAR_RECENT : invokes IPC.RECENT_CLEAR directly
+ * Every other channel uses the generic path: dispatch(map.dispatch) with no
+ * args. Genuinely-unimplemented channels are caught before lookup and warn.
+ *
+ * The `satisfies Partial<Record<...>>` keeps the keys typed against the action
+ * map so a renamed channel is a compile error.
+ */
+const SPECIAL_HANDLERS = {
+  [IPC.MENU_CLOSE_TAB]: ({ dispatch, activeTab, logErr }: MenuDispatchCtx) => {
+    if (activeTab) dispatch('tab.close', activeTab).catch(logErr('tab.close:'))
+  },
+  [IPC.MENU_SELECT_ALL]: () => {
+    // Scoped Select All: focused field or active selectable region only,
+    // never the whole document. See utils/selectAllScope.ts.
+    selectAllInScope()
+  },
+  [IPC.MENU_CLEAR_RECENT]: ({ logErr }: MenuDispatchCtx) => {
+    window.electronAPI?.invoke(IPC.RECENT_CLEAR).catch(logErr('recent.clear:'))
+  },
+} satisfies Partial<Record<MenuActionChannel, (ctx: MenuDispatchCtx) => void>>
 
 export function useMenuDispatch(activeTab: string | null): {
   dispatchMenuChannel: (channel: string) => void
@@ -22,116 +63,39 @@ export function useMenuDispatch(activeTab: string | null): {
   const dispatchMenuChannel = useCallback(
     (channel: string) => {
       const logErr = (prefix: string) => (e: unknown) => console.error(prefix, e)
-      switch (channel) {
-        case IPC.MENU_OPEN_FILE:
-          dispatch(CmdId.UiOpenObjDialog).catch(logErr('open obj dialog:'))
-          break
-        case IPC.MENU_SAVE:
-          dispatch(CmdId.FileSave).catch(logErr('file.save:'))
-          break
-        case IPC.MENU_SAVE_SCENE_AS:
-          dispatch(CmdId.FileSaveAs).catch(logErr('file.saveAs:'))
-          break
-        case IPC.MENU_NEW_TAB:
-          dispatch(CmdId.TabNew).catch(logErr('tab.new:'))
-          break
-        case IPC.MENU_CLOSE_TAB:
-          if (activeTab) dispatch(CmdId.TabClose, activeTab).catch(logErr('tab.close:'))
-          break
-        case IPC.MENU_UNDO:
-          dispatch(CmdId.Undo).catch(logErr('undo:'))
-          break
-        case IPC.MENU_REDO:
-          dispatch(CmdId.Redo).catch(logErr('redo:'))
-          break
-        case IPC.MENU_NEW_SCENE:
-          dispatch(CmdId.SceneNew).catch(logErr('scene.new:'))
-          break
-        case IPC.MENU_OPEN_SCENE:
-          dispatch(CmdId.UiOpenSceneDialog).catch(logErr('open scene dialog:'))
-          break
-        case IPC.MENU_VIEW_PERSPECTIVE:
-          dispatch(CmdId.ViewPerspective).catch(logErr('view.perspective:'))
-          break
-        case IPC.MENU_VIEW_ORTHOGRAPHIC:
-          dispatch(CmdId.ViewOrthographic).catch(logErr('view.orthographic:'))
-          break
-        case IPC.MENU_CENTER_MARK_CROSS:
-          dispatch(CmdId.ViewCenterMarkCross).catch(logErr('view.centerMark.cross:'))
-          break
-        case IPC.MENU_CENTER_MARK_AXIS:
-          dispatch(CmdId.ViewCenterMarkAxis).catch(logErr('view.centerMark.axis:'))
-          break
-        case IPC.MENU_CENTER_MARK_NONE:
-          dispatch(CmdId.ViewCenterMarkNone).catch(logErr('view.centerMark.none:'))
-          break
-        case IPC.MENU_BG_WHITE:
-          dispatch(CmdId.SceneBgWhite).catch(logErr('scene.bg.white:'))
-          break
-        case IPC.MENU_BG_BLACK:
-          dispatch(CmdId.SceneBgBlack).catch(logErr('scene.bg.black:'))
-          break
-        case IPC.MENU_ABOUT:
-          dispatch(CmdId.UiAboutDialog).catch(logErr('about dialog:'))
-          break
-        case IPC.MENU_GET_PDB:
-          dispatch(CmdId.UiGetPdbDialog).catch(logErr('get pdb dialog:'))
-          break
-        case 'menu:change-chain-id':
-          dispatch(CmdId.UiChangeChainIdDialog).catch(logErr('change chain id dialog:'))
-          break
-        case 'menu:delete-mol-atoms':
-          dispatch(CmdId.UiDeleteMolDialog).catch(logErr('delete mol dialog:'))
-          break
-        case 'menu:change-resid-num':
-          dispatch(CmdId.UiChangeResidueIndexDialog).catch(logErr('change residue index dialog:'))
-          break
-        case 'menu:merge-mol':
-          dispatch(CmdId.UiMergeMolDialog).catch(logErr('merge mol dialog:'))
-          break
-        case 'menu:reassign-2ndry':
-          dispatch(CmdId.UiReassignProt2ndryDialog).catch(logErr('reassign 2ndry dialog:'))
-          break
-        case 'menu:mol-superpose':
-          dispatch(CmdId.UiMolSuperpose).catch(logErr('mol superpose dialog:'))
-          break
-        case 'menu:mol-surf':
-          dispatch(CmdId.UiMakeMolSurfDialog).catch(logErr('make mol surf dialog:'))
-          break
-        case 'menu:interaction':
-          dispatch(CmdId.UiInteractionAnalysisDialog).catch(logErr('interaction analysis dialog:'))
-          break
-        case 'menu:surf-cutter':
-          dispatch(CmdId.UiCutSurfByPlaneDialog).catch(logErr('cut surface dialog:'))
-          break
-        case 'menu:clear-recent':
-          window.electronAPI
-            ?.invoke(IPC.RECENT_CLEAR)
-            .catch(logErr('recent.clear:'))
-          break
-        case 'menu:save-file-as':
-          dispatch(CmdId.ObjectSaveAs).catch(logErr('object.saveAs:'))
-          break
-        case 'menu:save-current-view':
-          dispatch(CmdId.SaveCurrentView).catch(logErr('file.saveCurrentView:'))
-          break
-        case 'menu:export-scene':
-          dispatch(CmdId.ExportImage).catch(logErr('file.exportImage:'))
-          break
-        case 'menu:reload-scene':
-          dispatch(CmdId.SceneReload).catch(logErr('scene.reload:'))
-          break
-        case 'menu:view-props':
-          dispatch(CmdId.UiViewProperty).catch(logErr('ui.viewProperty:'))
-          break
-        case 'menu:select-all':
-          // Scoped Select All: focused field or active selectable region only,
-          // never the whole document. See utils/selectAllScope.ts.
-          selectAllInScope()
-          break
-        default:
-          console.warn('menu action not yet implemented:', channel)
+
+      if (!isMenuActionChannel(channel)) {
+        console.warn('menu action not yet implemented:', channel)
+        return
       }
+
+      const entry = MENU_ACTION_MAP[channel]
+      if (entry.dispatch === MENU_DISPATCH_UNIMPLEMENTED) {
+        console.warn('menu action not yet implemented:', channel)
+        return
+      }
+
+      const special = (SPECIAL_HANDLERS as Record<string, (ctx: MenuDispatchCtx) => void>)[channel]
+      if (special) {
+        special({ dispatch, activeTab, logErr })
+        return
+      }
+
+      // Generic path: the dispatch field is a no-arg command-id string. The
+      // action map mirrors CmdId values. The only arg-taking menu command
+      // (tab.close) is in SPECIAL_HANDLERS, so this path is always no-arg; the
+      // cast sidesteps the variadic-tuple union without weakening that contract.
+      if (
+        entry.dispatch === MENU_DISPATCH_SELECT_ALL ||
+        entry.dispatch === MENU_DISPATCH_RECENT_CLEAR
+      ) {
+        // These markers must be handled by SPECIAL_HANDLERS above; reaching
+        // here means the table and the markers drifted.
+        console.warn('menu action marker has no handler:', channel)
+        return
+      }
+      const dispatchNoArg = dispatch as (id: CommandKey) => Promise<unknown>
+      dispatchNoArg(entry.dispatch as CommandKey).catch(logErr(`${channel}:`))
     },
     [dispatch, activeTab],
   )

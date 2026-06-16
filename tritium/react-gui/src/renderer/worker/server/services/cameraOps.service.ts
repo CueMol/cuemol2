@@ -1,24 +1,24 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 //
-// Phase 5b — camera ctxmenu operations.
+// Phase 5b -- camera ctxmenu operations.
 //
 // Cameras are keyed by **name** at the Scene API level (`scene.{get,set,
 // has,destroy}Camera(name)`), not by uid. The tree-row id for synthesised
 // camera nodes is a small negative integer with no relation to the Camera
-// object — every worker service here takes `cameraName: string` from the
+// object -- every worker service here takes `cameraName: string` from the
 // renderer side instead of `nodeId: number`.
 //
 // UXP source for each handler:
-//   - createCamera           → workspace_panel.js  ws.createCamera
-//   - destroyCamera          → workspace_panel.js  ws.destroyCamera
-//   - renameCamera           → workspace_panel.js  ws.onRenameCamera
+//   - createCamera           -> workspace_panel.js  ws.createCamera
+//   - destroyCamera          -> workspace_panel.js  ws.destroyCamera
+//   - renameCamera           -> workspace_panel.js  ws.onRenameCamera
 //                              (atomic destroyCamera + setCamera since
 //                               there is no name setter on a registered cam)
-//   - applyCameraToView      → workspace_panel.js  ws.loadCamImpl (visflags=false)
-//   - saveViewToCamera       → workspace_panel.js  ws.saveCamImpl (visflags=false)
-//   - applyCameraWithVis     → workspace_panel.js  ws.loadCamImpl (visflags=true)
-//   - saveCameraWithVis      → workspace_panel.js  ws.saveCamImpl (visflags=true)
-//   - clearCameraVisFlags    → workspace_panel.js  ws.onClearVisFlags
+//   - applyCameraToView      -> workspace_panel.js  ws.loadCamImpl (visflags=false)
+//   - saveViewToCamera       -> workspace_panel.js  ws.saveCamImpl (visflags=false)
+//   - applyCameraWithVis     -> workspace_panel.js  ws.loadCamImpl (visflags=true)
+//   - saveCameraWithVis      -> workspace_panel.js  ws.saveCamImpl (visflags=true)
+//   - clearCameraVisFlags    -> workspace_panel.js  ws.onClearVisFlags
 
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Camera } from '@cuemol/core/src/wrappers/Camera';
@@ -26,14 +26,14 @@ import type { WorkerContext } from '../types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
 import { getSceneOrNull } from './helpers/sceneResolver';
 
-// ─── helpers ──────────────────────────────────────────────────────────────
+// --- helpers ---
 
 function getCameraRef(scene: Scene, name: string): Camera | null {
     try { return (scene.getCameraRef(name) as Camera | null) ?? null; }
     catch { return null; }
 }
 
-// ─── createCamera ─────────────────────────────────────────────────────────
+// --- createCamera ---
 
 export interface CreateCameraArgs {
     sceneId: number;
@@ -60,7 +60,7 @@ function createCamera(ctx: WorkerContext, args: CreateCameraArgs): CreateCameraR
     return { ok };
 }
 
-// ─── destroyCamera ────────────────────────────────────────────────────────
+// --- destroyCamera ---
 
 export interface DestroyCameraArgs {
     sceneId: number;
@@ -83,7 +83,7 @@ function destroyCamera(ctx: WorkerContext, args: DestroyCameraArgs): DestroyCame
     return { ok };
 }
 
-// ─── renameCamera ─────────────────────────────────────────────────────────
+// --- renameCamera ---
 //
 // UXP `onRenameCamera`: cameras have no in-place name setter once
 // registered. The rename runs `destroyCamera(old) + setCamera(new, cam)`
@@ -120,7 +120,7 @@ function renameCamera(ctx: WorkerContext, args: RenameCameraArgs): RenameCameraR
     return { ok };
 }
 
-// ─── saveViewToCamera (Save from view) ────────────────────────────────────
+// --- saveViewToCamera (Save from view) ---
 
 export interface SaveViewToCameraArgs {
     sceneId: number;
@@ -153,10 +153,10 @@ function saveViewToCamera(
     return { ok };
 }
 
-// ─── applyCameraToView (Apply to view) ────────────────────────────────────
+// --- applyCameraToView (Apply to view) ---
 //
 // UXP `loadCamImpl`. With visflags=true, the load-vis-settings step is
-// wrapped in its own undo txn — we mirror that even though it nests under
+// wrapped in its own undo txn -- we mirror that even though it nests under
 // the implicit outer "navigation" no-txn for symmetry with UXP.
 
 export interface ApplyCameraToViewArgs {
@@ -194,7 +194,7 @@ function applyCameraToView(
     return { ok: true };
 }
 
-// ─── clearCameraVisFlags ──────────────────────────────────────────────────
+// --- clearCameraVisFlags ---
 
 export interface ClearCameraVisFlagsArgs {
     sceneId: number;

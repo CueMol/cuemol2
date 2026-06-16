@@ -70,7 +70,7 @@ function naviHitTest(ctx: WorkerContext, args: NaviHitTestArgs): NaviHitTestResu
     return { hit: true, raw };
 }
 
-// ---- service: naviClickAtom (left click — hittest + log + atom label toggle) ----
+// ---- service: naviClickAtom (left click -- hittest + log + atom label toggle) ----
 
 export interface NaviClickAtomArgs {
     viewId: number;
@@ -115,7 +115,7 @@ function naviClickAtom(ctx: WorkerContext, args: NaviClickAtomArgs): NaviClickAt
     return { handled: true, statusMessage, hitres: raw };
 }
 
-// ---- service: naviResidSel (double click — residue selection toggle/extend) ----
+// ---- service: naviResidSel (double click -- residue selection toggle/extend) ----
 
 export interface NaviResidSelArgs {
     viewId: number;

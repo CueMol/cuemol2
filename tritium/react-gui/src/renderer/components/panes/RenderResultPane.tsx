@@ -83,7 +83,7 @@ export const RenderResultPane: React.FC<RenderResultPaneProps> = ({
 
   return (
     <div className="render-result-pane">
-      {/* ── Toolbar — icon-only buttons, label on hover (title) ── */}
+      {/* -- Toolbar -- icon-only buttons, label on hover (title) -- */}
       <div className="render-result-toolbar">
         <Button
           small
@@ -125,7 +125,7 @@ export const RenderResultPane: React.FC<RenderResultPaneProps> = ({
         </div>
       </div>
 
-      {/* ── Image viewer ── */}
+      {/* -- Image viewer -- */}
       <RenderImageViewer
         src={result.imageDataUrl}
         imgWidth={result.width}

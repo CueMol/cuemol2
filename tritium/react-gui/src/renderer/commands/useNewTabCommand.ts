@@ -7,6 +7,7 @@
 
 import { useCallback } from 'react'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
+import type { ActiveSceneCommandDeps } from './commandTypes'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
 import { useShowNewTabDialog } from '../components/dialogs/NewTabDialogProvider'
@@ -16,7 +17,7 @@ interface UseNewTabCommandOptions {
     cm: AsyncCueMol | null
     addMolTab: (title: string, viewId: number, sceneId: number) => void
     addMolViewTab: (title: string, viewId: number) => void
-    getActiveSceneInfo: () => { scene_uid: number; view_id: number } | null | undefined
+    getActiveSceneInfo: ActiveSceneCommandDeps
     newScene: NewSceneAction
 }
 
@@ -35,7 +36,7 @@ export function useNewTabCommand({
         const dpr = window.devicePixelRatio || 1
         const active = getActiveSceneInfo()
 
-        const names = await cm.proposeNewTabNames({ sceneId: active?.scene_uid })
+        const names = await cm.invokeService('proposeNewTabNames', { sceneId: active?.scene_uid })
         if (!names) return
 
         const result = await showNewTabDialog({
@@ -51,7 +52,7 @@ export function useNewTabCommand({
         } else {
             // new-view: add view to existing scene
             if (!active) return
-            const res = await cm.createViewInScene({
+            const res = await cm.invokeService('createViewInScene', {
                 sceneId: active.scene_uid,
                 name: result.name,
                 inheritFromViewId: result.inheritViewProps ? active.view_id : undefined,

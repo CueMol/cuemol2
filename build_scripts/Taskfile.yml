@@ -247,6 +247,12 @@ tasks:
     cmds:
       - pnpm run lint:style
 
+  lint_tritium_comments:
+    desc: "Lint react-gui TS comments for disallowed non-ASCII glyphs (box-drawing/arrows/etc); fails on reintroduction"
+    dir: "{{.ROOT_DIR}}/../tritium/react-gui"
+    cmds:
+      - pnpm run lint:comments
+
   test_tritium:
     desc: "Run tritium tests (core Jest + react-gui Vitest)"
     cmds:

@@ -129,7 +129,7 @@ describe('MenuBar', () => {
   it('does not render on macOS', async () => {
     setupElectronAPI('darwin')
     // On macOS the MenuBar is conditionally rendered by App.tsx, not by MenuBar itself.
-    // MenuBar always renders its content — the platform guard lives in App.tsx.
+    // MenuBar always renders its content -- the platform guard lives in App.tsx.
     // This test verifies that the MenuBar component itself renders regardless of
     // platform (the guard is tested at the App level).
     const { container, unmount } = render(null)

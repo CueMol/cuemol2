@@ -13,6 +13,7 @@
     "start": "electron-vite preview",
     "test": "vitest run",
     "lint:style": "stylelint 'src/**/*.css'",
+    "lint:comments": "node scripts/check-comment-ascii.mjs",
     "package:mac": "bash ../packaging/package-mac.sh",
     "package:win": "bash ../packaging/package.sh --win --x64",
     "package:dir": "electron-vite build && electron-builder --dir --arm64"

@@ -19,16 +19,16 @@ import {
   ColorField,
 } from "../../h3-kit/form";
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Shared row wrapper -- kept as a catalog alias for back-compat.
 // New code should import `Field` from h3-kit/form.
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 export { Field as PropRow } from "../../h3-kit/form";
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // String editor
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 interface StringEditorProps {
   prop: PropDef;
@@ -45,9 +45,9 @@ export const StringEditor: React.FC<StringEditorProps> = ({ prop, onChange }) =>
   </Field>
 );
 
-// ────────────────────────────────────────────────────────────
-// Numeric editor (integer & real) — slider + numeric input
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
+// Numeric editor (integer & real) -- slider + numeric input
+// ------------------------------------------------------------
 
 interface NumericEditorProps {
   prop: PropDef;
@@ -69,9 +69,9 @@ export const NumericEditor: React.FC<NumericEditorProps> = ({ prop, onChange }) 
   );
 };
 
-// ────────────────────────────────────────────────────────────
-// Boolean editor — switch toggle
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
+// Boolean editor -- switch toggle
+// ------------------------------------------------------------
 
 interface BooleanEditorProps {
   prop: PropDef;
@@ -87,9 +87,9 @@ export const BooleanEditor: React.FC<BooleanEditorProps> = ({ prop, onChange }) 
   </Field>
 );
 
-// ────────────────────────────────────────────────────────────
-// Enum editor — dropdown select
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
+// Enum editor -- dropdown select
+// ------------------------------------------------------------
 
 interface EnumEditorProps {
   prop: PropDef;
@@ -108,9 +108,9 @@ export const EnumEditor: React.FC<EnumEditorProps> = ({ prop, onChange }) => (
   </Field>
 );
 
-// ────────────────────────────────────────────────────────────
-// Color editor — swatch + text input
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
+// Color editor -- swatch + text input
+// ------------------------------------------------------------
 
 interface ColorEditorProps {
   prop: PropDef;

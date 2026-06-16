@@ -5,7 +5,7 @@
  * Each backend contributes its own accordion groups and property
  * definitions to the Inspector `renderSettings` editor. Adding a backend is
  * a matter of appending a `RenderBackendDescriptor` here (and, later, a
- * matching worker-side executor) — the Inspector UI is backend-agnostic.
+ * matching worker-side executor) -- the Inspector UI is backend-agnostic.
  */
 
 import type { PropDef } from "./rendererProperties";

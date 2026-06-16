@@ -172,10 +172,10 @@ describe('getRendererPaintInfo', () => {
     })
 })
 
-// ─── paintObjectSelection / getObjectPaintInfo (Phase 5d) ────────────────
+// --- paintObjectSelection / getObjectPaintInfo (Phase 5d) ---
 //
 // Mirrors `paintRendererSelection` but operates on a MolCoord directly
-// rather than walking from renderer → parent mol. UXP `ws.onPaintMol`
+// rather than walking from renderer -> parent mol. UXP `ws.onPaintMol`
 // object branch.
 
 interface ObjFixtureOpts {
@@ -271,7 +271,7 @@ describe('getObjectPaintInfo', () => {
     it('canPaint:true when sel is non-empty (regardless of coloring class)', () => {
         // UXP shows wspcPnlObjPaintMenu unconditionally; selection emptiness
         // is the only menu-level gate. Default coloring is SolidColoring
-        // which won't accept insertBefore — the worker rejects safely.
+        // which won't accept insertBefore -- the worker rejects safely.
         const { ctx } = makeObjFixture()
         expect(services.getObjectPaintInfo(ctx, { sceneId: 1, objId: 10 }))
             .toEqual({ canPaint: true })

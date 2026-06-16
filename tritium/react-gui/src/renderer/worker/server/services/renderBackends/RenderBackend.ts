@@ -21,7 +21,7 @@ export interface ExportedScene {
   /** Working directory for all intermediate files. */
   workDir: string;
   /**
-   * Post-blend layer table parsed from the exporter (alpha-key → comma-
+   * Post-blend layer table parsed from the exporter (alpha-key -> comma-
    * separated object names). Empty when the scene needs no layering.
    */
   blendTable: Record<string, string>;
@@ -64,7 +64,7 @@ export interface RenderBackend {
   outputImagePath(exported: ExportedScene): string;
 }
 
-// ── PropDef value readers ────────────────────────────────────
+// - PropDef value readers -
 
 /** Read a numeric setting value by key. */
 export function numVal(props: PropDef[], key: string, fallback: number): number {

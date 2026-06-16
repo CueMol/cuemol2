@@ -20,12 +20,13 @@
  * catalog (no per-dialog spacing tuning).
  */
 
-import React, { useCallback, useEffect, useState } from 'react'
-import { Button, Dialog, DialogBody, DialogFooter } from '@blueprintjs/core'
-import { useTheme } from '../../contexts/ThemeContext'
+import React, { useEffect, useState } from 'react'
 import { useCueMol } from '../../hooks/useCueMol'
+import { useMolEditCommit } from '../../hooks/useMolEditCommit'
 import { Field, FieldSection, SegmentField, SwitchField } from '../../h3-kit/form'
-import { ObjectSelect, objectFilters } from '../../h3-kit/ObjectSelect'
+import { DialogShell } from './DialogShell'
+import { objectFilters } from '../../h3-kit/ObjectSelect'
+import { MolPicker } from './MolPicker'
 import { MolSelList } from '../../h3-kit/MolSelList/MolSelList'
 import { pushHistory } from '../../h3-kit/MolSelList/selHistory'
 import type { SceneObjectEntry } from '../../worker/server/services/listSceneObjects.service'
@@ -57,8 +58,6 @@ const ALGO_OPTIONS = [
 export function MolSuperposeDialog({
     visible, sceneId, viewId, onConfirm, onCancel,
 }: Props): React.JSX.Element {
-    const { theme } = useTheme()
-    const isDark = theme === 'dark'
     const { cm } = useCueMol()
 
     const [algo, setAlgo] = useState<SuperposeAlgo>('LSQ')
@@ -68,19 +67,18 @@ export function MolSuperposeDialog({
     const [movSel, setMovSel] = useState<string>('')
     const [autoRecenter, setAutoRecenter] = useState<boolean>(true)
     const [useprop, setUseprop] = useState<boolean>(false)
-    const [submitting, setSubmitting] = useState(false)
-    const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
     // On each open: restore history (algorithm / checkboxes) and compute the
     // initial molecule selection -- last-used uids when still present, else
     // ref=first / mov=second (UXP `onLoad` default). Selection strings start
-    // empty; the user picks from the MolSelList history dropdown.
+    // empty; the user picks from the MolSelList history dropdown. This effect
+    // owns its own field resets (and the async cancelled-flag fetch), so the
+    // commit hook below is given no onReset -- it only clears submitting /
+    // errorMsg on open.
     useEffect(() => {
         if (!visible) return
         setRefSel('')
         setMovSel('')
-        setSubmitting(false)
-        setErrorMsg(null)
 
         const hist = loadMolSuperposeHistory()
         setAlgo(hist.algo)
@@ -119,51 +117,48 @@ export function MolSuperposeDialog({
         }
     }, [visible, cm, sceneId])
 
-    const handleOk = useCallback(async () => {
-        if (!cm || refObjId === undefined || movObjId === undefined) return
-        setSubmitting(true)
-        setErrorMsg(null)
-        try {
-            const res = await cm.invokeService('superposeMol', {
-                sceneId,
-                viewId,
-                algo,
-                refObjId,
-                refSel,
-                movObjId,
-                movSel,
-                useprop,
-                autoRecenter,
-            })
-            setSubmitting(false)
-            if (res?.ok) {
-                if (refSel.trim() !== '') pushHistory(refSel.trim())
-                if (movSel.trim() !== '') pushHistory(movSel.trim())
-                saveMolSuperposeHistory({ refObjId, movObjId, algo, autoRecenter, useprop })
-                onConfirm({ ok: true })
-            } else {
-                setErrorMsg(res?.error ?? 'Superposition failed')
-            }
-        } catch (err) {
-            setErrorMsg(String(err))
-            setSubmitting(false)
-        }
-    }, [cm, sceneId, viewId, algo, refObjId, refSel, movObjId, movSel, useprop, autoRecenter, onConfirm])
+    const { submitting, errorMsg, run: handleOk } =
+        useMolEditCommit({
+            cm,
+            visible,
+            buildCommit: () => {
+                if (refObjId === undefined || movObjId === undefined) return null
+                return {
+                    invoke: () => cm!.invokeService('superposeMol', {
+                        sceneId,
+                        viewId,
+                        algo,
+                        refObjId,
+                        refSel,
+                        movObjId,
+                        movSel,
+                        useprop,
+                        autoRecenter,
+                    }),
+                    onSuccess: () => {
+                        if (refSel.trim() !== '') pushHistory(refSel.trim())
+                        if (movSel.trim() !== '') pushHistory(movSel.trim())
+                        saveMolSuperposeHistory({ refObjId, movObjId, algo, autoRecenter, useprop })
+                        onConfirm({ ok: true })
+                    },
+                    fallbackError: 'Superposition failed',
+                }
+            },
+        })
 
     const noMols = refObjId === undefined || movObjId === undefined
 
     return (
-        <Dialog
-            isOpen={visible}
-            onClose={onCancel}
+        <DialogShell
+            visible={visible}
             title="Molecular superposition"
-            style={{ width: 420 }}
-            portalClassName={isDark ? 'bp5-dark' : ''}
-            canOutsideClickClose={false}
-            isCloseButtonShown={false}
+            width="2xl"
+            onCancel={onCancel}
+            onOk={handleOk}
+            okDisabled={noMols}
+            submitting={submitting}
+            errorMsg={errorMsg}
         >
-            <DialogBody>
-                <div className="h3-dialog-form">
                     <FieldSection title="Algorithm">
                         <SegmentField<SuperposeAlgo>
                             value={algo}
@@ -173,16 +168,12 @@ export function MolSuperposeDialog({
                     </FieldSection>
 
                     <FieldSection title="Reference">
-                        <ObjectSelect
+                        <MolPicker
                             cm={cm}
                             sceneId={sceneId}
                             label="Molecule"
-                            filter={objectFilters.molCoord}
                             selectedId={refObjId}
                             onChange={setRefObjId}
-                            emptyText="(no molecules)"
-                            fallbackName={(m) => `Mol ${m.uid}`}
-                            hideLabel
                         />
                         <MolSelList
                             sceneID={sceneId}
@@ -194,16 +185,12 @@ export function MolSuperposeDialog({
                     </FieldSection>
 
                     <FieldSection title="Moving">
-                        <ObjectSelect
+                        <MolPicker
                             cm={cm}
                             sceneId={sceneId}
                             label="Molecule"
-                            filter={objectFilters.molCoord}
                             selectedId={movObjId}
                             onChange={setMovObjId}
-                            emptyText="(no molecules)"
-                            fallbackName={(m) => `Mol ${m.uid}`}
-                            hideLabel
                         />
                         <MolSelList
                             sceneID={sceneId}
@@ -228,27 +215,6 @@ export function MolSuperposeDialog({
                             disabled={submitting}
                         />
                     </Field>
-
-                    {errorMsg !== null && (
-                        <div className="h3-dialog-error">{errorMsg}</div>
-                    )}
-                </div>
-            </DialogBody>
-            <DialogFooter
-                actions={
-                    <>
-                        <Button onClick={onCancel} disabled={submitting}>Cancel</Button>
-                        <Button
-                            intent="primary"
-                            onClick={handleOk}
-                            disabled={submitting || noMols}
-                            loading={submitting}
-                        >
-                            OK
-                        </Button>
-                    </>
-                }
-            />
-        </Dialog>
+        </DialogShell>
     )
 }

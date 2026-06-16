@@ -13,7 +13,7 @@
  *   atom id 123                     -> "aid 123"
  *
  * Range merging requires the residue order for the chain (so we can
- * decide whether two indices are positionally adjacent — insertion codes
+ * decide whether two indices are positionally adjacent -- insertion codes
  * like "10A" mean we cannot rely on numeric distance). When the caller
  * supplies a `residueOrder` map, contiguous-in-position residues collapse
  * into ranges; without it, each residue emits its own segment.
@@ -23,7 +23,7 @@
  * Tree-node id encoding:
  *   chain:<name>                       -> chain row
  *   resid:<chain>:<index>              -> residue row
- *                                          (<index> is a string —
+ *                                          (<index> is a string --
  *                                          ResidIndex::toString() may
  *                                          include an insertion code)
  *   atom:<chain>:<index>:<atomId>      -> atom row
@@ -149,7 +149,7 @@ function bucketSelection(selectedIds: ReadonlySet<MolTreeId>): ChainBucket[] {
  * order, not numeric values.
  *
  * If no order is supplied (or the chain is not in the map), each residue
- * emits its own segment — same wire format, just no merging.
+ * emits its own segment -- same wire format, just no merging.
  */
 function mergeResidueRanges(
     indices: string[],

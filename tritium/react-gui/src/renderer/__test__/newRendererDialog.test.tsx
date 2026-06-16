@@ -24,8 +24,18 @@ vi.mock('../contexts/ThemeContext', () => ({
 }))
 
 const mockCm = {
-    proposeUniqName: vi.fn(),
     invokeService: vi.fn(),
+}
+
+/**
+ * `proposeUniqName` args recorded via `invokeService` (after the apis/*
+ * facade collapse the dialog calls `cm.invokeService('proposeUniqName',
+ * args)`). Returns the args object for each call.
+ */
+function proposeArgs(): any[] {
+    return mockCm.invokeService.mock.calls
+        .filter((c) => c[0] === 'proposeUniqName')
+        .map((c) => c[1])
 }
 
 vi.mock('../hooks/useCueMol', () => ({
@@ -91,9 +101,11 @@ function mount(props: Partial<React.ComponentProps<typeof NewRendererDialog>> = 
 describe('NewRendererDialog (renderer-add parity)', () => {
     beforeEach(() => {
         globalThis.localStorage.clear()
-        mockCm.proposeUniqName.mockReset()
-        mockCm.proposeUniqName.mockImplementation((args: { prefix: string }) =>
-            Promise.resolve({ name: args.prefix + '1' }),
+        mockCm.invokeService.mockReset()
+        mockCm.invokeService.mockImplementation((name: string, args: { prefix: string }) =>
+            name === 'proposeUniqName'
+                ? Promise.resolve({ name: args.prefix + '1' })
+                : Promise.resolve(null),
         )
     })
 
@@ -117,16 +129,14 @@ describe('NewRendererDialog (renderer-add parity)', () => {
         await flushPromises()
         expect(getById<HTMLInputElement>('rend-name').value).toBe('simple1')
 
-        mockCm.proposeUniqName.mockClear()
+        mockCm.invokeService.mockClear()
         await act(async () => {
             setSelectValue(getById<HTMLSelectElement>('rend-type'), 'cartoon')
         })
         await flushPromises()
 
-        const calls = mockCm.proposeUniqName.mock.calls.filter(
-            (c) => c[0].kind === 'sceneRenderer',
-        )
-        expect(calls[calls.length - 1][0]).toMatchObject({
+        const calls = proposeArgs().filter((a) => a.kind === 'sceneRenderer')
+        expect(calls[calls.length - 1]).toMatchObject({
             kind: 'sceneRenderer', prefix: 'cartoon', sceneId: 7,
         })
         expect(getById<HTMLInputElement>('rend-name').value).toBe('cartoon1')
@@ -141,13 +151,13 @@ describe('NewRendererDialog (renderer-add parity)', () => {
         await act(async () => { setInputValue(nameInput, 'myrend') })
         await flushPromises()
 
-        mockCm.proposeUniqName.mockClear()
+        mockCm.invokeService.mockClear()
         await act(async () => {
             setSelectValue(getById<HTMLSelectElement>('rend-type'), 'ribbon')
         })
         await flushPromises()
 
-        expect(mockCm.proposeUniqName.mock.calls.length).toBe(0)
+        expect(proposeArgs().length).toBe(0)
         expect(nameInput.value).toBe('myrend')
         handle.unmount()
     })

@@ -38,7 +38,7 @@ export type MoveSceneNodeArgs =
 
 /**
  * Decide whether a (source, target, ori) combo represents a valid drop.
- * Mirrors UXP `workspace_panel_dnd.js` `canDrop` (subset — multi-select
+ * Mirrors UXP `workspace_panel_dnd.js` `canDrop` (subset -- multi-select
  * deferred). Caller passes both nodes plus an `ori`.
  *
  * Returns the resolved `MoveSceneNodeArgs` on accept, or null on reject.
@@ -54,14 +54,14 @@ export function planSceneNodeMove(
 ): MoveSceneNodeArgs | null {
     if (src.id === tgt.id) return null;
 
-    // Object → object reorder.
+    // Object -> object reorder.
     if (src.type === "object") {
         if (tgt.type !== "object") return null;
         if (ori === 0) return null;  // dropping "into" object not supported
         return { kind: "object", sourceId: src.id, targetId: tgt.id, ori };
     }
 
-    // Renderer / rendGroup → renderer / rendGroup.
+    // Renderer / rendGroup -> renderer / rendGroup.
     if (src.type === "renderer" || src.type === "rendGroup") {
         if (tgt.type !== "renderer" && tgt.type !== "rendGroup") return null;
 
@@ -73,7 +73,7 @@ export function planSceneNodeMove(
         let destObj: SceneTreeNode | null = null;
         let destGroupName = "";
 
-        // "Drop INTO rendGroup" — only valid for source=renderer (rendgrps
+        // "Drop INTO rendGroup" -- only valid for source=renderer (rendgrps
         // cannot nest). UXP: `if elem.type=="rendGroup" && ori==0`.
         if (tgt.type === "rendGroup" && ori === 0) {
             if (src.type !== "renderer") return null;
@@ -116,9 +116,9 @@ export function planSceneNodeMove(
         if (src.type === "rendGroup") return null;
 
         // Allowed transitions (UXP):
-        //   srcPar=object,    tgtPar=rendGroup (same obj): obj → group
-        //   srcPar=rendGroup, tgtPar=object   (same obj): group → root
-        //   srcPar=rendGroup, tgtPar=rendGroup(same obj): group → group
+        //   srcPar=object,    tgtPar=rendGroup (same obj): obj -> group
+        //   srcPar=rendGroup, tgtPar=object   (same obj): group -> root
+        //   srcPar=rendGroup, tgtPar=rendGroup(same obj): group -> group
         if (srcPar.type === "object" && tgtPar.type === "rendGroup") {
             // tgtPar's parent must equal srcPar (same object).
             const grpParent = parentLookup(tgtPar.id);
@@ -161,7 +161,7 @@ export function planSceneNodeMove(
     return null;
 }
 
-/** Y-position → orientation. Top 1/3 = -1, middle = 0, bottom 1/3 = +1. */
+/** Y-position -> orientation. Top 1/3 = -1, middle = 0, bottom 1/3 = +1. */
 export function computeOri(rect: DOMRect, clientY: number): DragOri {
     const rel = clientY - rect.top;
     const t = rect.height / 3;

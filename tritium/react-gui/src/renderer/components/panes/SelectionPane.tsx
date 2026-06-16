@@ -22,9 +22,10 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AppIcon } from '../AppIcon';
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol';
+import { SectionHeader } from './SectionHeader';
 import { ObjectSelect, objectFilters } from '../../h3-kit/ObjectSelect';
+import { fireService } from '../../utils/fireService';
 import { FieldSection, TextField } from '../../h3-kit/form';
 import { getHistory, pushHistory } from '../../h3-kit/MolSelList/selHistory';
 import { useSelHitCount } from '../../h3-kit/MolSelList/useSelHitCount';
@@ -200,35 +201,22 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({
     const canCenter = canApply && activeMolViewId !== undefined;
     const onCenter = useCallback(() => {
         if (!cm || !canCenter) return;
-        cm.invokeService('centerMolSelection', {
+        fireService(cm, 'centerMolSelection', {
             sceneId: activeSceneId!,
             viewId: activeMolViewId!,
             molId: selectedMolId!,
             selStr,
-        }).catch((err: unknown) => {
-            console.warn('centerMolSelection failed:', err);
         });
     }, [cm, canCenter, activeSceneId, activeMolViewId, selectedMolId, selStr]);
 
     return (
         <div className="sp-pane selection-pane">
-            <div
-                className={`sp-section-header ${onToggleCollapse ? 'collapsible' : ''}`}
-                onClick={onToggleCollapse}
-            >
-                <div className="sp-section-header-left">
-                    {onToggleCollapse != null && (
-                        <AppIcon
-                            name={collapsed ? 'ui.caretRight' : 'ui.caretDown'}
-                            size="sm"
-                            className="section-chevron"
-                            aria-hidden
-                        />
-                    )}
-                    <AppIcon name="ui.select" size="md" className="section-icon" aria-hidden />
-                    <span className="section-title">Selection</span>
-                </div>
-            </div>
+            <SectionHeader
+                title="Selection"
+                icon="ui.select"
+                collapsed={collapsed}
+                onToggleCollapse={onToggleCollapse}
+            />
             {!collapsed && (
                 <div className="sp-pane-fill">
                     <FieldSection title="Molecule" className="object-select-section">
