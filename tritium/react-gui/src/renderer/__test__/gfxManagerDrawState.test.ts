@@ -5,16 +5,20 @@ import { GfxManager } from '../worker/server/gfx_manager'
  * Degrade-detection test for GfxManager draw-state methods.
  *
  * These methods back ElecDisplayContext::setCullFace / setFrontFace /
- * setInvertColorBlend.  Edge (silhouette) rendering relies on face culling and
- * the center mark relies on the inverted-color blend; if these regress to
- * no-ops the WebGL state never changes and rendering breaks (black model /
- * invisible center mark).  This test pins the exact GL calls each method emits.
+ * setInvertColorBlend / setDepthTestEnabled / setBlendEnabled /
+ * setBlendModeAdd.  Edge (silhouette) rendering relies on face culling, the
+ * center mark relies on the inverted-color blend, and the post-process passes
+ * (AO composite / FXAA / SMAA / temporal-jitter accumulation) toggle the depth
+ * test and blend state; if these regress to no-ops the WebGL state never
+ * changes and rendering breaks.  This test pins the exact GL calls each method
+ * emits.
  */
 
 // Distinct sentinel values so a wrong constant is caught.
 const GL = {
     CULL_FACE: 0xb44,
     BLEND: 0xbe2,
+    DEPTH_TEST: 0xb71,
     CCW: 0x901,
     CW: 0x900,
     ZERO: 0,
@@ -87,6 +91,41 @@ describe('GfxManager draw-state methods', () => {
 
     it('setInvertColorBlend(false) restores standard alpha blending', () => {
         gfx.setInvertColorBlend(false)
+        expect(gl.blendFunc).toHaveBeenCalledWith(GL.SRC_ALPHA, GL.ONE_MINUS_SRC_ALPHA)
+    })
+
+    it('setDepthTestEnabled toggles DEPTH_TEST', () => {
+        gfx.setDepthTestEnabled(true)
+        expect(gl.enable).toHaveBeenCalledWith(GL.DEPTH_TEST)
+        expect(gl.disable).not.toHaveBeenCalled()
+
+        gl.enable.mockClear()
+        gfx.setDepthTestEnabled(false)
+        expect(gl.disable).toHaveBeenCalledWith(GL.DEPTH_TEST)
+        expect(gl.enable).not.toHaveBeenCalled()
+    })
+
+    it('setBlendEnabled toggles BLEND', () => {
+        gfx.setBlendEnabled(true)
+        expect(gl.enable).toHaveBeenCalledWith(GL.BLEND)
+        expect(gl.disable).not.toHaveBeenCalled()
+
+        gl.enable.mockClear()
+        gfx.setBlendEnabled(false)
+        expect(gl.disable).toHaveBeenCalledWith(GL.BLEND)
+        expect(gl.enable).not.toHaveBeenCalled()
+    })
+
+    // Additive accumulation (temporal jitter) must use blendFunc(ONE, ONE);
+    // restoring uses the standard over-blend. A regression that swaps these
+    // breaks temporal AA accumulation.
+    it('setBlendModeAdd(true) selects additive blending', () => {
+        gfx.setBlendModeAdd(true)
+        expect(gl.blendFunc).toHaveBeenCalledWith(GL.ONE, GL.ONE)
+    })
+
+    it('setBlendModeAdd(false) restores standard alpha blending', () => {
+        gfx.setBlendModeAdd(false)
         expect(gl.blendFunc).toHaveBeenCalledWith(GL.SRC_ALPHA, GL.ONE_MINUS_SRC_ALPHA)
     })
 })

@@ -388,6 +388,7 @@ export class GfxManager {
      * failure. Also wires the MatricesBlock / FogBlock / DrawParamsBlock
      * uniform blocks to their binding points.
      */
+    /// API
     createShader(name: string, data: { [key: string]: string }): boolean {
         const gl = this._context;
         if (name in this._prog_data) {
@@ -637,6 +638,7 @@ export class GfxManager {
      * `elem_info_str` (per-attribute location / type / size / divisor).
      * Returns false if `name` is already taken.
      */
+    /// API
     createBuffer(name: string, nsize: number, num_elems: number,
                  nsize_index: number, elem_info_str: string,
                  array_buf: any | null = null,
@@ -711,6 +713,7 @@ export class GfxManager {
      * @remarks Re-upload is gated by `isUpdated` only when `RESPECT_ISUPDATED`
      * is set; otherwise data is re-uploaded every frame.
      */
+    /// API
     drawBuffer(id: number, nmode: number, nelems: number,
         array_buf: any, index_buf: any, isUpdated: boolean, ninst: number): void {
         const gl = this._context;
@@ -812,6 +815,7 @@ export class GfxManager {
      * `array_buf`, with clamp-to-edge wrapping and nearest filtering.
      * Returns false if `name` is already taken.
      */
+    /// API
     createTexture(name: string, width: number, height: number, array_buf: any): boolean {
         if (name in this._tex_data) {
             console.log(`texture name ${name} already exists`);
@@ -841,6 +845,7 @@ export class GfxManager {
      * filtering (NEAREST is mandatory for the SMAA search texture). Always
      * clamp-to-edge. Returns false if `name` is already taken.
      */
+    /// API
     createDataTexture(name: string, width: number, height: number, ncomp: number,
                       linear: boolean, array_buf: any): boolean {
         if (name in this._tex_data) {
