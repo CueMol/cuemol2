@@ -20,7 +20,7 @@ import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { WorkerContext } from '../types/WorkerContext';
 import { getSceneOrNull } from './helpers/sceneResolver';
 import { makeSel } from './helpers/makeSel';
-import { withUndoTxn } from './withUndoTxn';
+import { tryUndoTxn } from './withUndoTxn';
 
 export interface ChangeResidueIndexArgs {
     sceneId: number;
@@ -58,22 +58,15 @@ function changeResidueIndex(
     const mgr = ctx.svc.getService('MolAnlManager') as MolAnlManager | null;
     if (!mgr) return { ok: false, error: 'MolAnlManager unavailable' };
 
-    let err: string | null = null;
-    let ok = false;
-    withUndoTxn(scene, 'Change residue index', () => {
-        try {
-            const m = mol as unknown as MolCoord;
-            const s = sel as unknown as MolSelection;
-            ok = args.renumber
-                ? mgr.renumResIndex(m, s, args.bshift, args.value)
-                : mgr.shiftResIndex(m, s, args.bshift, args.value);
-        } catch (e) {
-            err = String(e);
-        }
+    // renumResIndex / shiftResIndex return a boolean success flag:
+    // false -> rollback (no commit).
+    return tryUndoTxn(scene, 'Change residue index', () => {
+        const m = mol as unknown as MolCoord;
+        const s = sel as unknown as MolSelection;
+        return args.renumber
+            ? mgr.renumResIndex(m, s, args.bshift, args.value)
+            : mgr.shiftResIndex(m, s, args.bshift, args.value);
     });
-    if (err !== null) return { ok: false, error: err };
-    if (!ok) return { ok: false, error: 'changeResidueIndex failed' };
-    return { ok: true };
 }
 
 export const services = {

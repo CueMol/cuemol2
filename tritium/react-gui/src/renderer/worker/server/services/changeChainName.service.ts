@@ -18,7 +18,7 @@ import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { WorkerContext } from '../types/WorkerContext';
 import { getSceneOrNull } from './helpers/sceneResolver';
 import { makeSel } from './helpers/makeSel';
-import { withUndoTxn } from './withUndoTxn';
+import { tryUndoTxn } from './withUndoTxn';
 
 export interface ChangeChainNameArgs {
     sceneId: number;
@@ -52,20 +52,14 @@ function changeChainName(
     const mgr = ctx.svc.getService('MolAnlManager') as MolAnlManager | null;
     if (!mgr) return { ok: false, error: 'MolAnlManager unavailable' };
 
-    let err: string | null = null;
-    withUndoTxn(scene, 'Change chain name', () => {
-        try {
-            mgr.changeChainName(
-                mol as unknown as MolCoord,
-                sel as unknown as MolSelection,
-                args.chainName,
-            );
-        } catch (e) {
-            err = String(e);
-        }
+    // changeChainName is a void mutation: success commits, a throw rolls back.
+    return tryUndoTxn(scene, 'Change chain name', () => {
+        mgr.changeChainName(
+            mol as unknown as MolCoord,
+            sel as unknown as MolSelection,
+            args.chainName,
+        );
     });
-    if (err !== null) return { ok: false, error: err };
-    return { ok: true };
 }
 
 export const services = {

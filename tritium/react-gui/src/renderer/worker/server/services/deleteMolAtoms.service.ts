@@ -18,7 +18,7 @@ import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { WorkerContext } from '../types/WorkerContext';
 import { getSceneOrNull } from './helpers/sceneResolver';
 import { makeSel } from './helpers/makeSel';
-import { withUndoTxn } from './withUndoTxn';
+import { tryUndoTxn } from './withUndoTxn';
 
 export interface DeleteMolAtomsArgs {
     sceneId: number;
@@ -50,21 +50,13 @@ function deleteMolAtoms(
     const mgr = ctx.svc.getService('MolAnlManager') as MolAnlManager | null;
     if (!mgr) return { ok: false, error: 'MolAnlManager unavailable' };
 
-    let err: string | null = null;
-    let ok = false;
-    withUndoTxn(scene, 'Delete atoms', () => {
-        try {
-            ok = mgr.deleteAtoms(
-                mol as unknown as MolCoord,
-                sel as unknown as MolSelection,
-            );
-        } catch (e) {
-            err = String(e);
-        }
-    });
-    if (err !== null) return { ok: false, error: err };
-    if (!ok) return { ok: false, error: 'deleteAtoms failed' };
-    return { ok: true };
+    // deleteAtoms returns a boolean success flag: false -> rollback (no commit).
+    return tryUndoTxn(scene, 'Delete atoms', () =>
+        mgr.deleteAtoms(
+            mol as unknown as MolCoord,
+            sel as unknown as MolSelection,
+        ),
+    );
 }
 
 export const services = {

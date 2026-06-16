@@ -294,6 +294,9 @@ describe('setMapRendererProp', () => {
         })
         expect(res.ok).toBe(false)
         expect(res.error).toMatch(/rejected/)
+        // The in-txn write threw: roll back, do NOT commit a bogus undo entry.
+        expect(scene.rollbackUndoTxn).toHaveBeenCalled()
+        expect(scene.commitUndoTxn).not.toHaveBeenCalled()
     })
 
     it('preview writes a numeric prop without an undo txn', () => {
@@ -459,5 +462,33 @@ describe('redrawMapCenter', () => {
         const res = redrawMapCenter(ctx, { sceneId: 100, rendId: 11, viewId: 999 })
         expect(res.ok).toBe(false)
         expect(res.error).toMatch(/view/)
+    })
+
+    it('rolls back without committing when the center setter throws (preserving moved=false)', () => {
+        let threw = false
+        const rend = {
+            get center() {
+                return { sub: () => ({ length: () => 5 }) }
+            },
+            set center(_v: unknown) {
+                threw = true
+                throw new Error('center rejected')
+            },
+        }
+        void threw
+        const scene = makeUndoScene(100)
+        scene.getRenderer = vi.fn(() => rend)
+        const view = {
+            getViewCenter: vi.fn(() => ({ wrapped: { __vec: 'native' } })),
+            getScene: vi.fn(() => scene),
+        }
+        const ctx = makeCtx({ scene, view, viewId: 7 })
+
+        const res = redrawMapCenter(ctx, { sceneId: 100, rendId: 11, viewId: 7 })
+        expect(res.ok).toBe(false)
+        expect(res.moved).toBe(false)
+        expect(res.error).toMatch(/center rejected/)
+        expect(scene.rollbackUndoTxn).toHaveBeenCalled()
+        expect(scene.commitUndoTxn).not.toHaveBeenCalled()
     })
 })
