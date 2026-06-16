@@ -1,0 +1,443 @@
+/**
+ * Degrade-detection wire tests for ColorPane (UXP coloring panel port).
+ *
+ * ColorPane has had 0 component tests. It updates the open deck via an
+ * event-driven refetch, so a broken mutation wire is a SILENT non-update
+ * (no crash). These tests pin the OBSERVABLE renderer-side wire only:
+ *
+ *   control -> which `invokeService(name, payload)` fires (fire-and-forget),
+ *   with what prop name + value transform, and under what gating.
+ *
+ * They deliberately do NOT assert deck JSX / class names / React state --
+ * T2 will rewrite the deck markup onto form-kit and T7 will rework the
+ * renderer-switch fetch race; those internals must stay free to change.
+ *
+ * Worker-side service logic is already covered by
+ * rendererColoringService.test.ts; the fetch hook by
+ * useRendererColoringState.test.tsx. This file only pins the component wire.
+ *
+ * The two leaf widgets that need picker/popover infra (CueColorField,
+ * PaintSelCell) are replaced with tiny test seams that expose their
+ * `onCommit` as a plain DOM control, so we drive ColorPane's mutation
+ * handlers without coupling to those widgets' internals. SliderNumericField
+ * is kept REAL so the value*scale / value/scale transform is pinned
+ * end-to-end through to the service payload.
+ */
+
+import React from 'react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { act } from 'react'
+
+void React
+
+vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
+vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
+
+// Event-driven refetch is exercised by useRendererColoringState.test.tsx;
+// stub it so these tests are driven purely by mount + explicit user action.
+vi.mock('../hooks/useCueMolEventListener', () => ({
+    useCueMolEventListener: () => undefined,
+}))
+
+// Replace the colour field with a seam: a button that fires onCommit with a
+// fixed colour. Pins "this control commits a colour" without the picker JSX.
+vi.mock('../h3-kit/colorpicker/CueColorField', () => ({
+    CueColorField: ({
+        value,
+        onCommit,
+    }: {
+        value: string
+        onCommit: (v: string) => void
+    }) => (
+        <button
+            type="button"
+            data-testid="color-commit"
+            data-value={value}
+            onClick={() => onCommit('#112233')}
+        />
+    ),
+}))
+
+// Keep the provider as a passthrough (it only supplies cm/sceneId to the
+// real CueColorField, which we have mocked away).
+vi.mock('../h3-kit/colorpicker/ColorPickerContext', () => ({
+    ColorPickerProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+    useColorPickerCtx: () => ({ cm: null, sceneId: undefined }),
+}))
+
+// Replace the paint selection cell with a seam exposing onCommit.
+vi.mock('../components/panes/PaintSelCell', () => ({
+    PaintSelCell: ({
+        value,
+        onCommit,
+        onFocus,
+    }: {
+        value: string
+        onCommit: (v: string) => void
+        onFocus?: () => void
+    }) => (
+        <input
+            data-testid="paint-sel-cell"
+            value={value}
+            onFocus={onFocus}
+            onChange={() => {}}
+            onBlur={() => onCommit('aname CA')}
+        />
+    ),
+}))
+
+import { ColorPane } from '../components/panes/ColorPane'
+import { mountTree, flushPromises } from './helpers/testHarness'
+
+/** Set a controlled input's value so React's onChange fires (native setter). */
+function setInputValue(el: HTMLInputElement, value: string): void {
+    const setter = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype, 'value',
+    )!.set!
+    setter.call(el, value)
+    el.dispatchEvent(new Event('input', { bubbles: true }))
+}
+
+// React 18 maps onBlur to the delegated focusout event; the element must be
+// focused first for focusout to reach the handler.
+function blurInput(el: HTMLInputElement): void {
+    el.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+}
+
+const SCENE_ID = 7
+const REND_ID = 100
+
+interface ColoringState {
+    ok: boolean
+    className: string
+    defaultColor?: string
+    paintEntries?: Array<{ idx: number; selStr: string; colorValue: string }>
+    surfaceType?: string
+    colormode?: string
+    cpkColors?: Record<string, string>
+    rainbowParams?: Record<string, unknown>
+    bfacParams?: Record<string, unknown>
+    elepotParams?: Record<string, unknown>
+}
+
+interface MockCm {
+    invokeService: ReturnType<typeof vi.fn>
+}
+
+/**
+ * Build a cm mock whose fetch services route the pane to a chosen deck, and
+ * whose mutation services resolve ok. `coloringState` controls the deck.
+ */
+function makeCm(coloringState: ColoringState): MockCm {
+    return {
+        invokeService: vi.fn((name: string) => {
+            if (name === 'listPaintCapableRenderers') {
+                return Promise.resolve({
+                    ok: true,
+                    renderers: [
+                        {
+                            objId: 11,
+                            objName: '1CRN',
+                            rendId: REND_ID,
+                            targetKind: 'renderer',
+                            name: 'rend1',
+                            typeName: 'simple',
+                        },
+                    ],
+                })
+            }
+            if (name === 'getRendererColoringState') {
+                return Promise.resolve(coloringState)
+            }
+            if (name === 'listElePotMapObjects') {
+                return Promise.resolve({ ok: true, objects: [] })
+            }
+            // All mutation services resolve ok (fire-and-forget).
+            return Promise.resolve({ ok: true })
+        }),
+    }
+}
+
+/** Mount ColorPane with a single auto-selected renderer + given deck state. */
+async function mountWith(state: ColoringState) {
+    const cm = makeCm(state)
+    const handle = mountTree(
+        <ColorPane cm={cm as never} sceneId={SCENE_ID} />,
+    )
+    await flushPromises()
+    return { cm, ...handle }
+}
+
+/** All invokeService calls whose name is NOT a fetch/read service. */
+function mutationCalls(cm: MockCm): Array<[string, unknown]> {
+    const reads = new Set([
+        'listPaintCapableRenderers',
+        'getRendererColoringState',
+        'listElePotMapObjects',
+    ])
+    return cm.invokeService.mock.calls.filter(
+        (c) => !reads.has(c[0] as string),
+    ) as Array<[string, unknown]>
+}
+
+const TARGET = { sceneId: SCENE_ID, rendId: REND_ID, targetKind: 'renderer' }
+
+describe('ColorPane wire', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    // --- Color control kind: Solid deck default-color picker ---
+    it('Solid deck default-color commit fires setRendererDefaultColor', async () => {
+        const { cm, container, unmount } = await mountWith({
+            ok: true,
+            className: 'SolidColoring',
+            defaultColor: '#000000',
+        })
+        const swatch = container.querySelector(
+            '[data-testid="color-commit"]',
+        ) as HTMLElement
+        await act(async () => { swatch.click() })
+        await flushPromises()
+        expect(cm.invokeService).toHaveBeenCalledWith('setRendererDefaultColor', {
+            ...TARGET,
+            colorValue: '#112233',
+        })
+        unmount()
+    })
+
+    // --- Color control kind: CPK per-element color -> setColoringProp ---
+    it('CPK Carbon color commit fires setColoringProp with propName col_C', async () => {
+        const { cm, container, unmount } = await mountWith({
+            ok: true,
+            className: 'CPKColoring',
+            cpkColors: {
+                colC: '#aaaaaa', colN: '#0000ff', colO: '#ff0000',
+                colS: '#ffff00', colP: '#ff8000', colH: '#ffffff', colX: '#888888',
+            },
+        })
+        // First ColorField in the CPK deck is Carbon (col_C).
+        const swatch = container.querySelector(
+            '[data-testid="color-commit"]',
+        ) as HTMLElement
+        await act(async () => { swatch.click() })
+        await flushPromises()
+        expect(cm.invokeService).toHaveBeenCalledWith('setColoringProp', {
+            ...TARGET,
+            propName: 'col_C',
+            propValue: '#112233',
+        })
+        unmount()
+    })
+
+    // --- Enum control kind: Rainbow Mode -> setColoringProp string value ---
+    it('Rainbow Mode enum commit fires setColoringProp with propName mode', async () => {
+        const { cm, container, unmount } = await mountWith({
+            ok: true,
+            className: 'RainbowColoring',
+            rainbowParams: {
+                mode: 'mol', incrMode: 'chain',
+                startHue: 0, endHue: 240, brightness: 1, saturation: 1,
+            },
+        })
+        // The Mode EnumField is the <select> whose options are the rainbow
+        // modes (mol/chain). Pin it by its option values (the WIRE-relevant
+        // control), not by the bespoke `.color-deck-scroll` wrapper class --
+        // T2's form-kit reunification may rename the deck wrapper or swap
+        // EnumField for SelectField, but both still render a native <select>
+        // carrying these option values. (A bare `select` would also match the
+        // top renderer-picker select, which is why we disambiguate by content.)
+        const select = Array.from(
+            container.querySelectorAll('select'),
+        ).find((s) =>
+            s.querySelector('option[value="mol"]'),
+        ) as HTMLSelectElement
+        await act(async () => {
+            const setter = Object.getOwnPropertyDescriptor(
+                HTMLSelectElement.prototype, 'value',
+            )!.set!
+            setter.call(select, 'chain')
+            select.dispatchEvent(new Event('change', { bubbles: true }))
+        })
+        await flushPromises()
+        expect(cm.invokeService).toHaveBeenCalledWith('setColoringProp', {
+            ...TARGET,
+            propName: 'mode',
+            propValue: 'chain',
+        })
+        unmount()
+    })
+
+    // --- Scale transform: Brightness shows value*100, commits value/100 ---
+    // params.brightness stored as 0.5 -> SliderNumericField shows 50 (scale=100).
+    // Typing 80 must commit 0.8 (80/100) through setColoringProp('bri', ...).
+    it('Rainbow Brightness scale field shows value*100 and commits value/100', async () => {
+        const { cm, container, unmount } = await mountWith({
+            ok: true,
+            className: 'RainbowColoring',
+            rainbowParams: {
+                mode: 'mol', incrMode: 'chain',
+                startHue: 0, endHue: 240, brightness: 0.5, saturation: 1,
+            },
+        })
+        // Pin the four numeric spinboxes by input type, not the slider's
+        // `h3-slider-number` class. The Rainbow deck's only numeric <input>s
+        // are these four sliders (Mode / Change-by are <select>s), so the
+        // index is stable even if the slider widget class is renamed by T2.
+        const numberInputs = Array.from(
+            container.querySelectorAll('input[type="number"]'),
+        ) as HTMLInputElement[]
+        // Deck order: Start H, End H, Brightness, Saturation.
+        const brightness = numberInputs[2]
+        // Stored 0.5 is shown as 50 (value*scale, scale=100).
+        expect(brightness.value).toBe('50')
+
+        await act(async () => { brightness.focus() })
+        await act(async () => { setInputValue(brightness, '80') })
+        await act(async () => { blurInput(brightness) })
+        await flushPromises()
+
+        // 80 shown -> 0.8 stored (value/scale).
+        expect(cm.invokeService).toHaveBeenCalledWith('setColoringProp', {
+            ...TARGET,
+            propName: 'bri',
+            propValue: 0.8,
+        })
+        unmount()
+    })
+
+    // --- Silent out-of-range reject: Bfac local NumberField, no service call ---
+    // ColorPane's local NumberField DROPS out-of-range / NaN input (UXP parity)
+    // rather than clamping. Pin that an over-range commit fires NO service.
+    it('Bfac lowpar number field silently rejects an out-of-range value (no service call)', async () => {
+        const { cm, container, unmount } = await mountWith({
+            ok: true,
+            className: 'BfacColoring',
+            bfacParams: {
+                mode: 'bfac', autoMode: 'none',
+                lowColor: '#0000ff', highColor: '#ff0000',
+                lowParam: 10, highParam: 50,
+            },
+        })
+        // The Bfac deck's plain numeric inputs are the local NumberField
+        // (class color-inline-input today). Match either that bespoke class or
+        // the form-kit NumericField class (`h3-form-numeric`) so the test
+        // survives T2 swapping the local NumberField for the canonical
+        // NumericField without changing the observable reject/commit wire.
+        const numInputs = Array.from(
+            container.querySelectorAll(
+                'input.color-inline-input, input.h3-form-numeric',
+            ),
+        ) as HTMLInputElement[]
+        // Order: Low (lowpar), High (highpar). lowpar has no min/max in the
+        // deck, so to exercise the reject path we use NaN (non-numeric).
+        const low = numInputs[0]
+        expect(low).toBeTruthy()
+
+        await act(async () => { low.focus() })
+        await act(async () => { setInputValue(low, 'not-a-number') })
+        await act(async () => { blurInput(low) })
+        await flushPromises()
+
+        // No mutation fired: invalid input is silently reverted.
+        expect(mutationCalls(cm)).toEqual([])
+        unmount()
+    })
+
+    // --- Bfac valid number commits setColoringProp with the raw value ---
+    it('Bfac lowpar number field commits setColoringProp with propName lowpar on valid input', async () => {
+        const { cm, container, unmount } = await mountWith({
+            ok: true,
+            className: 'BfacColoring',
+            bfacParams: {
+                mode: 'bfac', autoMode: 'none',
+                lowColor: '#0000ff', highColor: '#ff0000',
+                lowParam: 10, highParam: 50,
+            },
+        })
+        const low = container.querySelector(
+            'input.color-inline-input, input.h3-form-numeric',
+        ) as HTMLInputElement
+        await act(async () => { low.focus() })
+        await act(async () => { setInputValue(low, '25') })
+        await act(async () => { blurInput(low) })
+        await flushPromises()
+        expect(cm.invokeService).toHaveBeenCalledWith('setColoringProp', {
+            ...TARGET,
+            propName: 'lowpar',
+            propValue: 25,
+        })
+        unmount()
+    })
+
+    // --- Paint table Add row -> addPaintEntry with defaults ---
+    it('Paint Add fires addPaintEntry at idx 0 with fallback sel "*" / color #FFFFFF', async () => {
+        const { cm, container, unmount } = await mountWith({
+            ok: true,
+            className: 'PaintColoring',
+            paintEntries: [],
+        })
+        // The Add button is the first action button in the paint toolbar.
+        const addBtn = container.querySelector(
+            '.color-actions button',
+        ) as HTMLButtonElement
+        await act(async () => { addBtn.click() })
+        await flushPromises()
+        expect(cm.invokeService).toHaveBeenCalledWith('addPaintEntry', {
+            ...TARGET,
+            idx: 0,
+            selStr: '*',
+            colorValue: '#FFFFFF',
+        })
+        unmount()
+    })
+
+    // --- Paint cell color edit -> updatePaintEntry (merge keeps selStr) ---
+    it('Paint row color commit fires updatePaintEntry merging the existing selStr', async () => {
+        const { cm, container, unmount } = await mountWith({
+            ok: true,
+            className: 'PaintColoring',
+            paintEntries: [{ idx: 0, selStr: 'aname N', colorValue: '#ff0000' }],
+        })
+        const swatch = container.querySelector(
+            '[data-testid="color-commit"]',
+        ) as HTMLElement
+        await act(async () => { swatch.click() })
+        await flushPromises()
+        expect(cm.invokeService).toHaveBeenCalledWith('updatePaintEntry', {
+            ...TARGET,
+            idx: 0,
+            selStr: 'aname N',
+            colorValue: '#112233',
+        })
+        unmount()
+    })
+
+    // --- Coloring-mode dropdown -> setRendererColoring with coloringId ---
+    it('selecting a coloring mode fires setRendererColoring with the coloringId', async () => {
+        const { cm, container, unmount } = await mountWith({
+            ok: true,
+            className: 'SolidColoring',
+            defaultColor: '#000000',
+        })
+        // Open the "Coloring" dropdown.
+        const caret = container.querySelector(
+            '.h3-form-dropdown-caret',
+        ) as HTMLButtonElement
+        await act(async () => { caret.click() })
+        await flushPromises()
+        // Blueprint renders the Menu in a portal on document.body.
+        const items = Array.from(
+            document.querySelectorAll('.bp5-menu-item'),
+        ) as HTMLElement[]
+        const cpkItem = items.find((el) => el.textContent?.includes('CPK coloring'))
+        expect(cpkItem).toBeTruthy()
+        await act(async () => { cpkItem!.click() })
+        await flushPromises()
+        expect(cm.invokeService).toHaveBeenCalledWith('setRendererColoring', {
+            ...TARGET,
+            coloringId: 'paint-type-cpk',
+        })
+        unmount()
+    })
+})
