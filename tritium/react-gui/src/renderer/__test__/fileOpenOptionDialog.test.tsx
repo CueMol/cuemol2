@@ -238,7 +238,7 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
     // Regression: emptying the field mid-edit must NOT trigger a re-fetch.
     // UXP's XUL <textbox> only fires "change" on commit, so users never see
     // an in-progress empty state replaced. React onChange fires per keystroke,
-    // so the auto-fill effect must not depend on the "is default" flag —
+    // so the auto-fill effect must not depend on the "is default" flag --
     // otherwise the field gets reset while the user is mid-edit.
     it('clearing the renderer name does NOT trigger immediate auto-fill', async () => {
         const handle = mount()
@@ -250,7 +250,7 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
         // Ignore the initial mount fetches.
         mockCm.proposeUniqName.mockClear()
 
-        // User clears the field (e.g. Ctrl-A, Delete) — purely a mid-edit
+        // User clears the field (e.g. Ctrl-A, Delete) -- purely a mid-edit
         // step before typing a custom name.
         await act(async () => { setInputValue(rendNameInput, '') })
         await flushPromises()
@@ -359,8 +359,8 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
         })
 
         const handle = mount()
-        // Don't flush yet — initial sceneRenderer probe is pending.
-        // Switch type A → B without resolving A first.
+        // Don't flush yet -- initial sceneRenderer probe is pending.
+        // Switch type A -> B without resolving A first.
         const select = getById<HTMLSelectElement>('rend-type')
         await act(async () => { setSelectValue(select, 'ribbon') })
         await act(async () => { setSelectValue(select, 'cartoon') })

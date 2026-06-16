@@ -57,9 +57,7 @@ const UI_DEFAULTS: UiState = {
 /** Debounce interval for persisting layout changes (ms). */
 const SAVE_DEBOUNCE_MS = 400;
 
-// ────────────────────────────────────────────────────────────
-// Hook
-// ────────────────────────────────────────────────────────────
+// --- Hook ---
 
 export function useLayoutPersistence() {
   const [layout, setLayout] = useState<LayoutState>(LAYOUT_DEFAULTS);
@@ -76,7 +74,7 @@ export function useLayoutPersistence() {
   const layoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const uiTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ── Load on mount ────────────────────────────────────────
+  // --- Load on mount ---
   useEffect(() => {
     const api = window.electronAPI;
     if (!api) {
@@ -91,7 +89,7 @@ export function useLayoutPersistence() {
     });
   }, []);
 
-  // ── Debounced save helpers ───────────────────────────────
+  // --- Debounced save helpers ---
   const scheduleLayoutSave = useCallback(() => {
     const api = window.electronAPI;
     if (!api) return;
@@ -110,7 +108,7 @@ export function useLayoutPersistence() {
     }, SAVE_DEBOUNCE_MS);
   }, []);
 
-  // ── Layout updaters (each triggers a debounced persist) ──
+  // --- Layout updaters (each triggers a debounced persist) ---
 
   const setMainSizes = useCallback(
     (sizes: number[]) => {
@@ -153,7 +151,7 @@ export function useLayoutPersistence() {
     [scheduleLayoutSave],
   );
 
-  // ── Generic per-view updaters ────────────────────────────
+  // --- Generic per-view updaters ---
 
   /**
    * Update the splitter sizes for a single view.
@@ -185,7 +183,7 @@ export function useLayoutPersistence() {
     [scheduleLayoutSave],
   );
 
-  // ── UI preference updaters ───────────────────────────────
+  // --- UI preference updaters ---
 
   const setSidebarActiveView = useCallback(
     (view: string) => {
@@ -203,7 +201,7 @@ export function useLayoutPersistence() {
     [scheduleUiSave],
   );
 
-  // ── Flush pending saves on unmount ───────────────────────
+  // --- Flush pending saves on unmount ---
   useEffect(() => {
     return () => {
       if (layoutTimerRef.current) {

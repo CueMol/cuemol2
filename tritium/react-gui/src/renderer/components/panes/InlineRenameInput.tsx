@@ -4,13 +4,13 @@ import { InputGroup } from "@blueprintjs/core";
 /**
  * Inline rename text input embedded inside a Blueprint Tree row label.
  *
- *   - Enter / blur with a non-empty edit → commit
- *   - Escape → cancel (label is restored)
+ *   - Enter / blur with a non-empty edit -> commit
+ *   - Escape -> cancel (label is restored)
  *   - clicks inside the input do NOT toggle the parent tree row
  *     (stopPropagation in mousedown/click)
  *
  * Kept as a module-level component so the rendered label has stable
- * identity between renders — Blueprint Tree compares label props
+ * identity between renders -- Blueprint Tree compares label props
  * shallowly when deciding whether to reapply selection styles.
  */
 export const InlineRenameInput: React.FC<{

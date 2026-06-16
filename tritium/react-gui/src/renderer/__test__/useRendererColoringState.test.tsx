@@ -1,7 +1,7 @@
 /**
  * Degrade-detection test for hooks/useRendererColoringState.ts.
  *
- * Pins the observable wire contract: mount → invokeService fetch, event
+ * Pins the observable wire contract: mount -> invokeService fetch, event
  * subscription with the right filter/mask, refetch on coloring /
  * defaultcolor PROPCHG, and unmount cleanup. Internals can be refactored
  * without touching this file as long as those contracts hold.

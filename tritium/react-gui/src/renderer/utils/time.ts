@@ -8,7 +8,7 @@
  *
  * @example
  * // At 09:04:07 local time:
- * nowTimestamp(); // → "09:04:07"
+ * nowTimestamp(); // -> "09:04:07"
  *
  * @returns A string in the format "HH:MM:SS".
  */

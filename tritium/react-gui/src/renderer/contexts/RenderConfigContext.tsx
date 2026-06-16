@@ -1,6 +1,6 @@
 /**
  * @file contexts/RenderConfigContext.tsx
- * @description React context for the (persistent) render binary paths —
+ * @description React context for the (persistent) render binary paths --
  * the POV-Ray executable, its include directory, and blendpng.
  *
  * The paths are app configuration: edited in the SettingsPane and consumed
@@ -54,7 +54,7 @@ export const RenderConfigProvider: React.FC<RenderConfigProviderProps> = ({
           blendpng: ui.blendpng || DEFAULT_RENDER_BINARIES.blendpng,
         });
       } catch {
-        // Electron not available (Vite dev server) — keep defaults.
+        // Electron not available (Vite dev server) -- keep defaults.
       }
     })();
     return () => {
@@ -64,7 +64,7 @@ export const RenderConfigProvider: React.FC<RenderConfigProviderProps> = ({
 
   const setBinary = useCallback((key: keyof RenderBinaries, value: string) => {
     setBinaries((prev) => ({ ...prev, [key]: value }));
-    // Persist immediately — path changes are infrequent; no debounce needed.
+    // Persist immediately -- path changes are infrequent; no debounce needed.
     window.electronAPI?.invoke(IPC.UI_SAVE, { [key]: value });
   }, []);
 

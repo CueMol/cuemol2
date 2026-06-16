@@ -5,7 +5,7 @@
  * process boundaries. Import from here instead of defining locally.
  */
 
-// ── Layout ─────────────────────────────────────────────────────────────────
+// - Layout -
 
 /** Collapse state for sidebar sub-panels, keyed by pane id. */
 export type PaneCollapseState = Record<string, boolean>
@@ -34,7 +34,7 @@ export interface LayoutState {
   viewCollapsed?: Record<string, PaneCollapseState>
 }
 
-// ── UI preferences ──────────────────────────────────────────────────────────
+// - UI preferences -
 
 /** Miscellaneous UI preferences exchanged with the main process. */
 export interface UiState {
@@ -61,7 +61,7 @@ export interface UiState {
   blendpng?: string
 }
 
-// ── File dialog ─────────────────────────────────────────────────────────────
+// - File dialog -
 
 export interface ElectronFileFilter {
   name: string
@@ -73,7 +73,7 @@ export interface FileDialogOptions {
   filters: ElectronFileFilter[]
 }
 
-// ── Recent files (MRU) ──────────────────────────────────────────────────────
+// - Recent files (MRU) -
 
 /**
  * Whether a MRU entry should be re-opened as a coordinate / object file
@@ -97,7 +97,7 @@ export interface RecentFileEntry {
   readerName?: string
 }
 
-// ── File events ─────────────────────────────────────────────────────────────
+// - File events -
 
 export interface FileOpenedData {
   name: string
@@ -126,7 +126,7 @@ export interface FileErrorData {
   error: string
 }
 
-// ── App path ────────────────────────────────────────────────────────────────
+// - App path -
 
 export interface AppPathInfo {
   appPath: string
@@ -140,7 +140,7 @@ export interface AppPathInfo {
   userStyleExists: boolean
 }
 
-// ── Native viewport context menu ────────────────────────────────────────────
+// - Native viewport context menu -
 
 export type NaviCtxAction =
   | 'centerAt'
@@ -173,7 +173,7 @@ export interface NaviCtxMenuPayload {
   symmLabel?: string
 }
 
-// ── Scene-tree context menu (ScenePane right-click) ─────────────────────────
+// - Scene-tree context menu (ScenePane right-click) -
 
 /**
  * Selection-submenu items applicable to object nodes (Phase 3b).
@@ -190,7 +190,7 @@ export type SelectMolKind =
   | 'hydrogen'
   | 'sidechain'
   // Around (atom-level) and Around by-residue (`byres` expansion) of the
-  // current mol selection — UXP `ws.aroundMolSel(dist, byres)` /
+  // current mol selection -- UXP `ws.aroundMolSel(dist, byres)` /
   // `cuemolui.molSelAround`. No-op when the current selection is empty.
   | 'around3'
   | 'around5'
@@ -249,7 +249,7 @@ export type ChangeRendSelKind =
  * Phase 3a covers the common items shared across node types; later phases
  * add type-specific actions (selection ops, paint, camera/style file I/O).
  * Object-payload union (rather than a flat string union) keeps room to add
- * action arguments — `selectMol` carries the chosen submenu item.
+ * action arguments -- `selectMol` carries the chosen submenu item.
  */
 export type SceneCtxAction =
   | { kind: 'show' }
@@ -332,7 +332,7 @@ export interface SceneCtxMenuPayload {
   /**
    * Whether the Paint color-picker submenu (Phase 3c-3a) should appear.
    * True iff the renderer's current coloring is `PaintColoring` and the
-   * parent mol has a non-empty selection — matches UXP `checkPaintColoring`.
+   * parent mol has a non-empty selection -- matches UXP `checkPaintColoring`.
    * Pre-fetched via `getRendererPaintInfo` and gated client-side.
    */
   canPaint?: boolean
@@ -352,7 +352,7 @@ export interface SceneCtxMenuPayload {
    */
   bgColor?: SceneBgColor
   /**
-   * Current "Use color proofing" toggle state — true iff the scene has
+   * Current "Use color proofing" toggle state -- true iff the scene has
    * `use_colproof === true` AND `icc_filename !== ""` (matches UXP
    * `onSceneMenuShowing` gate). Pre-fetched via `getSceneColorProofing`.
    * Scene ctx only.
@@ -360,7 +360,7 @@ export interface SceneCtxMenuPayload {
   colorProofingEnabled?: boolean
   /**
    * Whether the "Change sel" submenu should appear on the renderer ctx
-   * menu — false for the `*selection` synthetic renderer (matches UXP
+   * menu -- false for the `*selection` synthetic renderer (matches UXP
    * `onRendCtxtMenuShowing` `selitem.hidden` gate). Renderer ctx only.
    */
   supportsChangeSel?: boolean
@@ -371,14 +371,14 @@ export interface SceneCtxMenuPayload {
    */
   canGenSurfObj?: boolean
   /**
-   * Whether the "Edit interaction list…" item should appear on the renderer
+   * Whether the "Edit interaction list..." item should appear on the renderer
    * ctx menu. True iff the renderer is `atomintr` (UXP `aintr-edit` dialog).
    * Renderer ctx only.
    */
   canEditInteractions?: boolean
   /**
    * Selectable type names for the "Change type" submenu on the renderer
-   * ctx menu (Phase 6b). Pre-fetched via `getRendererChangeTypes` —
+   * ctx menu (Phase 6b). Pre-fetched via `getRendererChangeTypes` --
    * an empty list hides the submenu and is the only signal the main
    * process uses (it does not re-evaluate gates).
    */
@@ -395,7 +395,7 @@ export interface SceneCtxMenuPayload {
    * gates in the style ctxmenu. Style ctx only.
    */
   styleInfo?: {
-    /** Scope id — 0 for global, scene.uid for scene-local. */
+    /** Scope id -- 0 for global, scene.uid for scene-local. */
     scopeId: number
     src: string
     readonly: boolean
@@ -411,7 +411,7 @@ export interface SceneCtxMenuPayload {
   }
 }
 
-// ── Native menu state ───────────────────────────────────────────────────────
+// - Native menu state -
 
 export type ViewCenterMark = 'none' | 'crosshair' | 'axis'
 
@@ -438,7 +438,7 @@ export interface MenuState {
   }
 }
 
-// ── Crash report ────────────────────────────────────────────────────────────
+// - Crash report -
 
 /**
  * Where a crash originated. Names a concrete crash source so the main
@@ -471,7 +471,7 @@ export interface CrashReport {
   timestamp: number
 }
 
-// ── ElectronAPI ─────────────────────────────────────────────────────────────
+// - ElectronAPI -
 // The ElectronAPI interface lives in ./ipcContract (it's defined in terms of
 // the InvokeChannels / PushChannels maps). Re-exported here for convenience.
 

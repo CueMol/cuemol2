@@ -3,8 +3,8 @@
  * preload, and renderer.
  *
  * Two channel kinds are tracked:
- *   - InvokeChannels: renderer → main, with reply (Promise)
- *   - PushChannels:   main → renderer, no reply
+ *   - InvokeChannels: renderer -> main, with reply (Promise)
+ *   - PushChannels:   main -> renderer, no reply
  *
  * Adding a channel: extend either map below; the preload `invoke`/`onPush`
  * helpers and the main `handleInvoke` wrapper pick up the new entry through

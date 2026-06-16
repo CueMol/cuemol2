@@ -10,8 +10,8 @@ import {
 
 /**
  * Degrade-detection test for the Worker input-event handlers extracted
- * from WorkerService in Phase 2. Pins the DOM→CueMol modifier-bit mapping
- * and the gesture scale constants — both are easy to silently regress.
+ * from WorkerService in Phase 2. Pins the DOM->CueMol modifier-bit mapping
+ * and the gesture scale constants -- both are easy to silently regress.
  */
 
 /** Fake GUIView capturing the `on*` drive calls. */
@@ -32,8 +32,8 @@ const asView = (v: View): Parameters<typeof handleMouseDown>[0] =>
 describe('inputEvents.makeModif', () => {
     it('maps DOM button bits to CueMol bits (middle/right swapped)', () => {
         expect(makeModif({ buttons: 1 })).toBe(1); // left
-        expect(makeModif({ buttons: 4 })).toBe(2); // DOM middle(4) → CueMol 2
-        expect(makeModif({ buttons: 2 })).toBe(4); // DOM right(2)  → CueMol 4
+        expect(makeModif({ buttons: 4 })).toBe(2); // DOM middle(4) -> CueMol 2
+        expect(makeModif({ buttons: 2 })).toBe(4); // DOM right(2)  -> CueMol 4
         expect(makeModif({ buttons: 7 })).toBe(7); // all three
     });
     it('adds ctrl(+32) and shift(+64)', () => {
@@ -54,7 +54,7 @@ describe('inputEvents pointer handlers', () => {
 
     it('handleMouseUp uses event.button (not buttons) for the button bit', () => {
         const v = makeView();
-        // button index 2 → CueMol bit 4; + ctrl(32) → 36
+        // button index 2 -> CueMol bit 4; + ctrl(32) -> 36
         handleMouseUp(asView(v), {
             button: 2, ctrlKey: true,
             offsetX: 1, offsetY: 2, screenX: 3, screenY: 4,

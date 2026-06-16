@@ -1,19 +1,19 @@
 /**
  * Tab content pane for "settings" tabs.
  *
- * VS Code–style settings pane with a left-side category tree
+ * VS Code-style settings pane with a left-side category tree
  * and a right-side scrollable settings list.
  *
  * ```
- * ┌─────────────────┬────────────────────────────────────────┐
- * │  🔍 Search...   │  🔍 Search...                          │
- * ├─────────────────┼────────────────────────────────────────┤
- * │ ▾ Display       │  THEME                                 │
- * │   Theme       ● │  Dark Mode                             │
- * │   Atom Labels   │  Switch between dark and light...  [⊙] │
- * │ ▾ Input         │                                        │
- * │ ▾ General       │                                        │
- * └─────────────────┴────────────────────────────────────────┘
+ * ------------------------------------------------------------
+ * |  [Search...]    |  [Search...]                           |
+ * |----------------------------------------------------------|
+ * | v Display       |  THEME                                 |
+ * |   Theme       o |  Dark Mode                             |
+ * |   Atom Labels   |  Switch between dark and light...  [o] |
+ * | v Input         |                                        |
+ * | v General       |                                        |
+ * ------------------------------------------------------------
  * ```
  *
  * Clicking a leaf node in the tree scrolls-to / filters the settings
@@ -191,7 +191,7 @@ export const SettingsPane: React.FC = () => {
   return (
     <ColorPickerProvider cm={cm} sceneId={undefined}>
     <div className="config-pane">
-      {/* ── Left: category tree ── */}
+      {/* -- Left: category tree -- */}
       <div className="config-tree-panel">
         <div className="config-tree-header">
           <AppIcon name="ui.settings" size="md" className="config-tree-header-icon" aria-hidden />
@@ -213,7 +213,7 @@ export const SettingsPane: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Right: settings list ── */}
+      {/* -- Right: settings list -- */}
       <div className="config-content-panel">
         {/* Search bar */}
         <div className="config-search-bar">

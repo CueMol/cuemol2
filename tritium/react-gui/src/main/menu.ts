@@ -184,7 +184,7 @@ let pendingRebuild = false
 // Most recent MenuState seen by updateMenuState. Re-applied after
 // every menu rebuild because Menu.setApplicationMenu(buildFromTemplate)
 // throws away the previous MenuItem instances that updateMenuState
-// had been mutating directly — otherwise the View > Perspective /
+// had been mutating directly -- otherwise the View > Perspective /
 // Center mark / Scene > Background entries silently return to their
 // static `enabled: false` template defaults after any RECENT_ADD.
 let lastMenuState: MenuState | null = null

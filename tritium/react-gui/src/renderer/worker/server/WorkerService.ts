@@ -46,10 +46,10 @@ type AnyServiceFn = (ctx: WorkerContext, args: any) => any | Promise<any>;
  *
  * Owns the two dispatch tables and the `invoke()` entry point. The actual
  * method implementations live in sibling modules:
- *   - `objProxyBridge.ts`   — ObjProxy create / get / set / invoke bridge
- *   - `inputEvents.ts`      — pointer / wheel / gesture handling
- *   - `workerLifecycle.ts`  — user-style / input-config / event wiring
- *   - `textRender.ts`       — OffscreenCanvas text rasterisation
+ *   - `objProxyBridge.ts`   -- ObjProxy create / get / set / invoke bridge
+ *   - `inputEvents.ts`      -- pointer / wheel / gesture handling
+ *   - `workerLifecycle.ts`  -- user-style / input-config / event wiring
+ *   - `textRender.ts`       -- OffscreenCanvas text rasterisation
  * The `ctx.svc` facade (`createObj` / `getService` / `pushMessage` /
  * `fromTypedArray` / `addView`) and the canvas/view delegation stay here.
  */
@@ -208,7 +208,7 @@ export class WorkerService {
     }
 
     //////////
-    // ObjProxy bridge — thin forwarders to ObjProxyBridge. Kept as methods
+    // ObjProxy bridge -- thin forwarders to ObjProxyBridge. Kept as methods
     // so the `_methods` dispatch table binds stable references at construction.
 
     private _rpcCreateObj(className: string) {
@@ -357,7 +357,7 @@ export class WorkerService {
      * Setting `canvas.width` or `canvas.height` on an OffscreenCanvas clears
      * the WebGL drawing buffer immediately (WebGL spec behaviour).  The render
      * loop driven by `requestAnimationFrame` in `setUpdateView` would normally
-     * redraw on the *next* frame, leaving one blank frame visible — that is the
+     * redraw on the *next* frame, leaving one blank frame visible -- that is the
      * flicker the user would see during window resize.
      *
      * To prevent the blank frame, `checkAndUpdate` is called synchronously
@@ -368,7 +368,7 @@ export class WorkerService {
      * @param view_id - CueMol view UID
      * @param w  - new CSS (logical) width in pixels
      * @param h  - new CSS (logical) height in pixels
-     * @param dpr - device pixel ratio; the backing store is sized to w*dpr × h*dpr
+     * @param dpr - device pixel ratio; the backing store is sized to w*dpr x h*dpr
      */
     resized(view_id: number, w: number, h: number, dpr: number): void {
         if (this._sceMgr === null || this._gfx_mgr === null) {
@@ -386,7 +386,7 @@ export class WorkerService {
     }
 
     //////////
-    // Input events — resolve `view_id → GUIView` then delegate to inputEvents.
+    // Input events -- resolve `view_id -> GUIView` then delegate to inputEvents.
 
     mouseDown(view_id: number, event: any): void {
         handleMouseDown(this._sceMgr!.getView(view_id) as GUIView, event);

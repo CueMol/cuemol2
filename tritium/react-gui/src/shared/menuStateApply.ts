@@ -3,14 +3,14 @@
  *
  * main/menu.ts holds a `lastMenuState` cache because the native menu
  * is rebuilt after every MRU change (RECENT_ADD / RECENT_CLEAR), which
- * replaces every MenuItem instance — the `enabled` / `checked` flags
+ * replaces every MenuItem instance -- the `enabled` / `checked` flags
  * that `updateMenuState()` wrote to the previous MenuItems are
  * therefore lost unless we reapply them to the new ones.
  *
  * `mergeMenuState` keeps the cache up-to-date when partial updates
  * arrive (the renderer sends only the slices that changed, e.g.
  * `viewProjection` alone after a UI toggle). `applyMenuStateTo` then
- * writes the merged cache onto whichever menu we have at hand — old
+ * writes the merged cache onto whichever menu we have at hand -- old
  * one in the steady-state path, freshly built one in the post-rebuild
  * path.
  */
@@ -31,7 +31,7 @@ export interface MenuLike {
 /**
  * Merge a new partial state into an existing cache. Each top-level
  * slice (`viewProjection` / `viewCenterMark` / `sceneBgColor`) is
- * replaced atomically — that mirrors how the renderer sends them
+ * replaced atomically -- that mirrors how the renderer sends them
  * (always a complete slice, never field-level patches).
  */
 export function mergeMenuState(
@@ -49,7 +49,7 @@ export function mergeMenuState(
 
 /**
  * Write a (possibly merged) state onto a menu by id-based lookup.
- * Items that the menu doesn't have are skipped silently — callers
+ * Items that the menu doesn't have are skipped silently -- callers
  * may pass a state slice for a menu that was just rebuilt and is
  * still missing the right ids.
  */

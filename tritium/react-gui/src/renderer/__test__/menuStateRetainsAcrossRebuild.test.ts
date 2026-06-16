@@ -3,7 +3,7 @@
  * survives an MRU-triggered menu rebuild.
  *
  * History: when File > Open Recent was first wired (RECENT_ADD /
- * RECENT_CLEAR → `rebuildApplicationMenu()`), opening a file silently
+ * RECENT_CLEAR -> `rebuildApplicationMenu()`), opening a file silently
  * reset View > Perspective / Orthographic / Center mark / Scene >
  * Background to the static template defaults (`enabled: false`). The
  * fix is to cache the last MenuState in main/menu.ts and reapply it
@@ -13,7 +13,7 @@
  *
  * The integration "buildAndSetMenu calls applyMenuStateTo when
  * lastMenuState is non-null" is a single-line invocation in main code
- * that depends on the Electron Menu surface — checked manually + by
+ * that depends on the Electron Menu surface -- checked manually + by
  * type-check. The retention pattern itself (cache hold-over and re-
  * applied to a brand new menu instance) is what was missed before; we
  * pin it here.
@@ -189,14 +189,14 @@ describe('retention across rebuild (cache + apply pattern)', () => {
             viewProjection: { enabled: true, perspective: false },
         })
 
-        // First (pre-rebuild) menu — apply the latest cache.
+        // First (pre-rebuild) menu -- apply the latest cache.
         const before = makeFakeMenu()
         applyMenuStateTo(before, cache)
         expect(before.items.get('view-orthographic')!.checked).toBe(true)
         expect(before.items.get('center-mark-axis')!.checked).toBe(true)
         expect(before.items.get('bg-white')!.checked).toBe(true)
 
-        // MRU change triggers a full rebuild — a fresh menu instance
+        // MRU change triggers a full rebuild -- a fresh menu instance
         // appears with template defaults (enabled: false everywhere).
         const after = makeFakeMenu()
         for (const item of after.items.values()) {
@@ -222,7 +222,7 @@ describe('retention across rebuild (cache + apply pattern)', () => {
         const cache: MenuState | null = null
         const after = makeFakeMenu()
         // Mirrors `if (lastMenuState) applyMenuStateTo(...)` in
-        // buildAndSetMenu — when no state has arrived yet, we must not
+        // buildAndSetMenu -- when no state has arrived yet, we must not
         // accidentally apply an empty MenuState (which would still
         // enter the three if-blocks if the helper were sloppy).
         if (cache) applyMenuStateTo(after, cache)

@@ -6,17 +6,17 @@ import { useRendererOptions } from '../fopen-opt-dlgs/useRendererOptions'
 import type { RendererOptions } from '../fopen-opt-dlgs/types'
 
 /**
- * "New Renderer" dialog — reuses the same `RendererOptionsPane` the file-
+ * "New Renderer" dialog -- reuses the same `RendererOptionsPane` the file-
  * open flow uses. Mirrors the UXP `setupRenderer.xul` dialog, which also
  * shares its renderer-options tab with the file-open dialog
  * (`fopen-renderopt-page.xul`).
  *
  * Renderer-type history and default-renderer-name follow are provided by
- * the shared `useRendererOptions` hook — the same behaviour layer the
+ * the shared `useRendererOptions` hook -- the same behaviour layer the
  * file-open dialog uses.
  *
  * The object-name field is not editable here because we are attaching to
- * an existing object — UXP's same dialog sets `bEditObjName=false` when
+ * an existing object -- UXP's same dialog sets `bEditObjName=false` when
  * called from `setupRendByObjID`.
  */
 export interface NewRendererDialogResult {
@@ -31,7 +31,7 @@ interface Props {
     rendererTypes: string[]
     defaultName: string
     sceneId: number
-    /** Target molecule uid — forwarded to MolSelList for `current (<sel>)`. */
+    /** Target molecule uid -- forwarded to MolSelList for `current (<sel>)`. */
     molID?: number
     isMol: boolean
     /** Optional group label appended to the dialog title for context. */

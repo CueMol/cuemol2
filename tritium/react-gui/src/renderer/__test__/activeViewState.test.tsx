@@ -3,9 +3,9 @@
  * App.tsx's inline view-state polling).
  *
  * Pins the contract that App.tsx and MenuBar rely on:
- *   1. No active molview tab → all three values are null and the native menu
+ *   1. No active molview tab -> all three values are null and the native menu
  *      is told all three controls are disabled (`enabled: false`).
- *   2. Active molview tab → cm.getView{Projection,CenterMark} and
+ *   2. Active molview tab -> cm.getView{Projection,CenterMark} and
  *      cm.getSceneBgColor are called, results update the cache and a single
  *      `MENU_UPDATE_STATE` invoke is issued with the fetched values.
  *   3. onProjectionChanged / onCenterMarkChanged / onBgColorChanged callbacks

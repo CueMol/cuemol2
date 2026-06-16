@@ -3,7 +3,7 @@
  *
  * Displays the CueMol2 branding and a list of keyboard shortcuts to
  * help the user get started. This component is stateless and receives
- * no props — it renders the same content every time.
+ * no props -- it renders the same content every time.
  */
 
 import React from "react";

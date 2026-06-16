@@ -7,9 +7,7 @@
  * editor to render the correct widget automatically.
  */
 
-// ────────────────────────────────────────────────────────────
-// Property descriptor types
-// ────────────────────────────────────────────────────────────
+// --- Property descriptor types ---
 
 export type PropType = "string" | "integer" | "real" | "boolean" | "enum" | "color" | "object";
 
@@ -19,7 +17,7 @@ export interface PropDef {
   key: string;
   /** Human-readable label shown in the UI. */
   label: string;
-  /** Data type — determines which editor widget is rendered. */
+  /** Data type -- determines which editor widget is rendered. */
   type: PropType;
   /** Current value (runtime state). */
   value: string | number | boolean;

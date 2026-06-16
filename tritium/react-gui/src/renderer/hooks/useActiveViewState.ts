@@ -4,7 +4,7 @@
  * (`viewProjection`, `viewCenterMark`, `sceneBgColor`) for the currently
  * active molview tab, and keeps the native menu in sync via IPC.
  *
- * Update flow (one direction: write → read-back → cache):
+ * Update flow (one direction: write -> read-back -> cache):
  *   - Tab switch (`activeMolViewId` change): pull all three from worker.
  *   - User action via command: corresponding `onXxxChanged` callback writes
  *     the new value into the cache and syncs the native menu.

@@ -4,7 +4,7 @@
  * Pins the wire contract that ADR-0001's hitbox fix restored: a drag
  * starting on one row's label span and dropping on another must reach
  * `onMoveNode` with a resolved `MoveSceneNodeArgs`. Also guards the
- * geometry fix itself — the label span must be a full-cell draggable
+ * geometry fix itself -- the label span must be a full-cell draggable
  * `block`, not a text-width `inline-block` (the latter left most of the
  * visible row a dead zone, so DnD never fired in-app).
  */

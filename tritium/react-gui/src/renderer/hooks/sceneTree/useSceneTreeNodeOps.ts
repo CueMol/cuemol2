@@ -203,7 +203,7 @@ export function useSceneTreeNodeOps(
             if (!cm || sid === undefined) return false
             // Scene row accepts object pastes (no target id). Object row
             // accepts renderer pastes via targetObjId. RendGroup row
-            // accepts renderer pastes via targetGroupId — worker resolves
+            // accepts renderer pastes via targetGroupId -- worker resolves
             // the group's parent mol and sets rend.group on attach. Other
             // node types are rejected by the worker.
             let args: {

@@ -3,7 +3,7 @@
 // Phase 4d: panel.workspace ctxmenu "New Renderer..." (object / renderer /
 // rendGroup entry points). Mirrors UXP `Qm2Main.setupRendByObjID`
 // (`renderer.js`). The actual renderer-creation work is shared with the
-// file-open flow via `setupRenderer.service.ts` — UXP also reuses the
+// file-open flow via `setupRenderer.service.ts` -- UXP also reuses the
 // same setup logic between file-open and new-renderer.
 
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
@@ -18,7 +18,7 @@ export interface CreateRendererOnObjectArgs {
     sceneId: number;
     objId: number;
     rendOpts: RendererOptions;
-    /** Optional group name — when set, the new renderer's `group` is
+    /** Optional group name -- when set, the new renderer's `group` is
      *  assigned right after creation (UXP `setupRendByObjID` 2nd arg). */
     groupName?: string;
 }

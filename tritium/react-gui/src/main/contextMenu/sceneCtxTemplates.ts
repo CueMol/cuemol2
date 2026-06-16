@@ -7,7 +7,7 @@
  * `./sceneCtxItems.ts`.
  *
  * Every function here is a pure mapping from `SceneCtxMenuPayload` to
- * Electron `MenuItemConstructorOptions[]` — no module state, no Electron
+ * Electron `MenuItemConstructorOptions[]` -- no module state, no Electron
  * APIs. `sceneContextMenu.ts` keeps the popup entry point.
  */
 
@@ -146,13 +146,13 @@ export function buildTemplate(
 }
 
 /**
- * Camera row context menu (Phase 5b) — UXP `wspcPanelCameraCtxtMenu` with
+ * Camera row context menu (Phase 5b) -- UXP `wspcPanelCameraCtxtMenu` with
  * `onCamCtxtShowing` gating:
- *   - Copy / Paste — Copy enabled for cameras; Paste enabled when the
+ *   - Copy / Paste -- Copy enabled for cameras; Paste enabled when the
  *     worker clipboard holds a 'camera' entry
- *   - Camera file submenu — Reload only when src is non-empty
- *   - Edit vis flags... — dialog dep (Phase 6c); item is rendered disabled
- *   - Clear vis flags — enabled only when vis_size > 0
+ *   - Camera file submenu -- Reload only when src is non-empty
+ *   - Edit vis flags... -- dialog dep (Phase 6c); item is rendered disabled
+ *   - Clear vis flags -- enabled only when vis_size > 0
  */
 function buildCameraNodeMenu(
     payload: SceneCtxMenuPayload,
@@ -241,12 +241,12 @@ function buildCameraRootMenu(
 }
 
 /**
- * Style row context menu (Phase 5c) — UXP `wspcStyleCtxtMenu` with
+ * Style row context menu (Phase 5c) -- UXP `wspcStyleCtxtMenu` with
  * `onStyCtxtShowing` gating:
- *   - Copy / Delete / Save / Save As — disabled on global rows (scope==0)
- *   - Style file submenu — Reload only when src is non-empty (external)
- *   - Read-only checkbox — disabled on global rows OR when modified
- *   - Rename — UXP has no JS implementation; omitted
+ *   - Copy / Delete / Save / Save As -- disabled on global rows (scope==0)
+ *   - Style file submenu -- Reload only when src is non-empty (external)
+ *   - Read-only checkbox -- disabled on global rows OR when modified
+ *   - Rename -- UXP has no JS implementation; omitted
  */
 function buildStyleNodeMenu(
     payload: SceneCtxMenuPayload,

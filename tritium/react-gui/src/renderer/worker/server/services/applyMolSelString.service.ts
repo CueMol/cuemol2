@@ -1,11 +1,11 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 //
 // MolStructPane toolbar backends:
-//   - applyMolSelString: Select button — assign a free-form selection
+//   - applyMolSelString: Select button -- assign a free-form selection
 //     string to mol.sel under an undo txn.
-//   - centerMolSelection: Center button — apply selection, then move the
+//   - centerMolSelection: Center button -- apply selection, then move the
 //     view center to the selection centroid.
-//   - zoomMolSelection: Zoom button — apply selection, then fit the view
+//   - zoomMolSelection: Zoom button -- apply selection, then fit the view
 //     to it.
 //
 // Mirrors UXP `onBtnSelCmd(nMode)` in
@@ -92,7 +92,7 @@ function applyMolSelString(
 }
 
 /**
- * Probe `mol.getCenterPos(true)` defensively — it can throw on objects
+ * Probe `mol.getCenterPos(true)` defensively -- it can throw on objects
  * with no atoms / unrecognised selection, in which case we skip the
  * view-center update rather than letting the exception escape.
  */

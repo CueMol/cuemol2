@@ -1,16 +1,16 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 //
-// Phase 5b — camera file I/O.
+// Phase 5b -- camera file I/O.
 //
 // UXP source:
-//   - loadCameraFromFile       → workspace_panel.js  onCamLoadFile +
+//   - loadCameraFromFile       -> workspace_panel.js  onCamLoadFile +
 //                                  loadCamImpl (apply-to-view after load)
-//   - saveCameraToFile (As)    → workspace_panel.js  onCamSaveFileAs via
-//                                  qm2_main.onSaveCamera → scene.saveCameraTo
-//   - saveCameraToCurrentSrc   → workspace_panel.js  onCamSaveFile (uses
+//   - saveCameraToFile (As)    -> workspace_panel.js  onCamSaveFileAs via
+//                                  qm2_main.onSaveCamera -> scene.saveCameraTo
+//   - saveCameraToCurrentSrc   -> workspace_panel.js  onCamSaveFile (uses
 //                                  cam.src; caller falls back to save-as
 //                                  when src is empty)
-//   - reloadCameraFromSrc      → workspace_panel.js  onCamReloadFile
+//   - reloadCameraFromSrc      -> workspace_panel.js  onCamReloadFile
 //
 // The renderer side owns the native file picker via the new
 // DIALOG_CAMERA_OPEN / DIALOG_CAMERA_SAVE IPCs. The worker takes a
@@ -36,11 +36,11 @@ function uniqueCameraName(scene: Scene, base: string): string {
     return `${base}_${Date.now()}`;
 }
 
-// ─── loadCameraFromFile ───────────────────────────────────────────────────
+// --- loadCameraFromFile ---
 
 export interface LoadCameraFromFileArgs {
     sceneId: number;
-    /** Active view uid — UXP also calls loadViewFromCam after load. */
+    /** Active view uid -- UXP also calls loadViewFromCam after load. */
     viewId: number;
     path: string;
 }
@@ -91,11 +91,11 @@ function loadCameraFromFile(
     return { ok: true, name: finalName };
 }
 
-// ─── saveCameraToFile (Save As) ───────────────────────────────────────────
+// --- saveCameraToFile (Save As) ---
 
 export interface SaveCameraToFileArgs {
     sceneId: number;
-    /** Camera name — cameras are keyed by name, not uid. */
+    /** Camera name -- cameras are keyed by name, not uid. */
     name: string;
     path: string;
 }
@@ -121,7 +121,7 @@ function saveCameraToFile(
     return { ok };
 }
 
-// ─── saveCameraToCurrentSrc ───────────────────────────────────────────────
+// --- saveCameraToCurrentSrc ---
 
 export interface SaveCameraToCurrentSrcArgs {
     sceneId: number;
@@ -130,7 +130,7 @@ export interface SaveCameraToCurrentSrcArgs {
 
 export interface SaveCameraToCurrentSrcResult {
     ok: boolean;
-    /** True if there was a src and we wrote to it; false → caller does Save As. */
+    /** True if there was a src and we wrote to it; false -> caller does Save As. */
     saved: boolean;
 }
 
@@ -153,10 +153,10 @@ function saveCameraToCurrentSrc(
     return { ok, saved: ok };
 }
 
-// ─── reloadCameraFromSrc ──────────────────────────────────────────────────
+// --- reloadCameraFromSrc ---
 //
 // UXP `onCamReloadFile`. Loads from cam.src and re-registers under the
-// existing name (no uniquification — we are overwriting).
+// existing name (no uniquification -- we are overwriting).
 
 export interface ReloadCameraFromSrcArgs {
     sceneId: number;

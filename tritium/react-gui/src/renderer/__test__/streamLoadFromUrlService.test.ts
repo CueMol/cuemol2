@@ -2,11 +2,11 @@
  * Degrade-detection tests for streamLoadFromUrl / cancelStreamLoad services.
  *
  * Pins the chunk-feed contract that mirrors UXP netpdbopen.js:
- *   - createHandler(readerName, 0) → ObjReader
- *   - loadObjectAsync(reader) → tid
- *   - per chunk: fromTypedArray → supplyDataAsync(tid, ba, len) + 'stream-progress' postMessage
+ *   - createHandler(readerName, 0) -> ObjReader
+ *   - loadObjectAsync(reader) -> tid
+ *   - per chunk: fromTypedArray -> supplyDataAsync(tid, ba, len) + 'stream-progress' postMessage
  *   - waitLoadAsync(tid) called on EVERY exit path (success / cancel / error)
- *     [matches UXP forceCancel (netpdbopen.js:107) — leaving IOThread blocked is a leak]
+ *     [matches UXP forceCancel (netpdbopen.js:107) -- leaving IOThread blocked is a leak]
  *   - cancel: scene.addObject NOT called, setupRenderer NOT called, result.canceled=true
  */
 

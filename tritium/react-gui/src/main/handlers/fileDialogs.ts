@@ -133,7 +133,7 @@ export async function handleImageSaveDialog(
 }
 
 // The filter list is built worker-side from
-// `StreamManager.findCompatibleWriterNamesForObj` × the writer category
+// `StreamManager.findCompatibleWriterNamesForObj` x the writer category
 // of `StreamManager.getInfoJSON2`; the renderer forwards it here. We
 // surface the selected filter index back to the caller so the worker can
 // pass the matching writer name to `createHandler`.
@@ -229,7 +229,7 @@ export async function handleObjectSaveDialog(
   }
   // Electron does not return the chosen filter index. Best-effort recover
   // it from the file extension. Falls back to defaultFilterIndex (or 0)
-  // when no match — the worker will use that writer name.
+  // when no match -- the worker will use that writer name.
   const ext = (result.filePath.split('.').pop() ?? '').toLowerCase()
   let filterIndex = payload.defaultFilterIndex ?? 0
   for (let i = 0; i < payload.filters.length; i++) {

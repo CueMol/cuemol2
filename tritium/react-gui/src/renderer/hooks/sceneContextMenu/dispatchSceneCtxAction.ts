@@ -163,7 +163,7 @@ export async function dispatchSceneCtxAction(
             return
         case 'paintRend':
             // UXP `ws.onPaintMol` is shared between the object and renderer
-            // Paint menus — branch on node type.
+            // Paint menus -- branch on node type.
             if (node.type === 'object') {
                 await ctx.paintObjectSelection(idStr, action.colorValue)
             } else if (node.type === 'renderer') {
@@ -376,7 +376,7 @@ export async function dispatchSceneCtxAction(
             return
         }
         case 'styleReload': {
-            // Worker-side equivalent of UXP `onStyReloadFile` — UXP itself
+            // Worker-side equivalent of UXP `onStyReloadFile` -- UXP itself
             // reports "Not implemented" here, so we mirror that.
             console.info(
                 'styleReload not implemented yet (matches UXP onStyReloadFile)',

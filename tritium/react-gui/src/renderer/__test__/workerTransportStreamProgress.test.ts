@@ -1,5 +1,5 @@
 /**
- * Pin: WorkerTransport routes 'stream-progress' worker→renderer push events
+ * Pin: WorkerTransport routes 'stream-progress' worker->renderer push events
  * to subscribed listeners with the (reqId, bytes) payload, and that
  * unsubscribing stops further calls. Ensures other channels (event-notify,
  * regular RPC reply) are not collateral damage.

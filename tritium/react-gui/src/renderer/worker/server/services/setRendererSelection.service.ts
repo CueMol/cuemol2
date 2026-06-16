@@ -1,6 +1,6 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 //
-// Phase: panel.workspace.ctxmenu.renderer — "Change sel" submenu.
+// Phase: panel.workspace.ctxmenu.renderer -- "Change sel" submenu.
 //
 // Mirrors UXP `ws.setRendSel` in `workspace_panel_molsel.js`. The renderer
 // keeps its own `sel` (used to restrict display) which is independent of

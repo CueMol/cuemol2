@@ -71,7 +71,7 @@ export interface SceneTreeNode {
  * Per-style-node metadata mirroring the fields produced by
  * `StyleMgr::getStyleSetsJSON`. `scopeId` is the StyleManager scope under
  * which this style set was registered (0 for global, scene.uid for
- * scene-local) — the operation services key on it for create / destroy /
+ * scene-local) -- the operation services key on it for create / destroy /
  * register / saveToFile.
  */
 export interface StyleNodeInfo {
@@ -89,7 +89,7 @@ export interface CameraNodeInfo {
     visSize: number;
 }
 
-// ─── Raw JSON shapes from C++ (internal to the parser) ────────────────────
+// - Raw JSON shapes from C++ (internal to the parser) -
 
 interface RawSceneItem {
     name?: string;
@@ -169,9 +169,9 @@ export function parseSceneTreeJSON(json: string): SceneTreeNode | null {
     };
 }
 
-/** Input shape for `buildCameraRoot` — one entry per Camera. */
+/** Input shape for `buildCameraRoot` -- one entry per Camera. */
 export interface CameraRootEntry {
-    /** Camera name — the lookup key in `Scene.{get,set,destroy}Camera`. */
+    /** Camera name -- the lookup key in `Scene.{get,set,destroy}Camera`. */
     name: string;
     /** Source file path; empty for cameras saved from a live view. */
     src: string;
@@ -185,7 +185,7 @@ export interface CameraRootEntry {
  * `scene.getCameraInfoJSON()` and synthesises this branch so the tree
  * matches the UXP layout.
  *
- * Cameras have no C++ uid — they're keyed by **name** at the Scene API
+ * Cameras have no C++ uid -- they're keyed by **name** at the Scene API
  * level. We expose the name through the existing `name` field; for the
  * synthesised tree `id` we hash a small negative integer per row so
  * unique-id callers still get distinct values, but worker services on
@@ -221,11 +221,11 @@ export function buildCameraRoot(entries: CameraRootEntry[]): SceneTreeNode {
     };
 }
 
-/** Input shape for `buildStyleRoot` — one entry per StyleSet. */
+/** Input shape for `buildStyleRoot` -- one entry per StyleSet. */
 export interface StyleRootEntry {
     /** Display name (UXP renders "" as "(anonymous)"). */
     name: string;
-    /** Real C++ UID of the StyleSet — used as `id` on the tree node. */
+    /** Real C++ UID of the StyleSet -- used as `id` on the tree node. */
     uid: number;
     /** Scope id (0 for global, scene.uid for scene-local). */
     scopeId: number;
@@ -256,7 +256,7 @@ export function buildStyleRoot(entries: StyleRootEntry[]): SceneTreeNode {
             id: e.uid,
             // UXP renders the empty-name case as "(anonymous)" so the row
             // is selectable; preserve that here. The real name on the
-            // StyleSet is "" — we don't write it back.
+            // StyleSet is "" -- we don't write it back.
             name: e.name === '' ? '(anonymous)' : e.name,
             type: 'style' as SceneNodeType,
             // Surface readonly/global state as className-like hint so the

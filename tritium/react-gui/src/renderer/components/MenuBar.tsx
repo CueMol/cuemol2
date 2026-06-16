@@ -35,7 +35,7 @@ function basename(p: string): string {
  * with dynamic MRU items + separator + Clear Menu. Mirrors the native
  * menu build in main/menu.ts so both UI paths render the same structure.
  *
- * The dynamic recent items themselves do not use `ipcChannel` — DropdownItem
+ * The dynamic recent items themselves do not use `ipcChannel` -- DropdownItem
  * routes their clicks through `onRecentOpen` so the file path is passed by
  * reference instead of being encoded into a channel string (Windows paths
  * contain `:`).

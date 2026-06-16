@@ -14,7 +14,7 @@ vi.mock('@cuemol/core/src/cuemol', () => ({
 import { WorkerService } from '../worker/server/WorkerService';
 
 /**
- * Degrade-detection test for `WorkerService.invoke` — the worker-side RPC
+ * Degrade-detection test for `WorkerService.invoke` -- the worker-side RPC
  * dispatcher.
  *
  * Phase 2 of the react-gui refactor extracts the method implementations
@@ -30,7 +30,7 @@ import { WorkerService } from '../worker/server/WorkerService';
 
 type AnyFn = (...args: unknown[]) => unknown;
 
-/** Resolve pending microtasks — the `_registered` path chains two `.then`. */
+/** Resolve pending microtasks -- the `_registered` path chains two `.then`. */
 const flush = (): Promise<void> => new Promise((r) => setTimeout(r, 0));
 
 function makeSvc(): { svc: WorkerService; posted: unknown[][] } {
@@ -93,7 +93,7 @@ describe('WorkerService.invoke dispatch contract', () => {
         const spy = vi.fn((_ctx: unknown, arg: unknown) => ({ ok: true, echo: arg }));
         registerService(svc, 'testSvc', spy as unknown as AnyFn);
         svc.invoke('testSvc', 3, [{ x: 1 }]);
-        // Service dispatch is async — nothing is posted synchronously.
+        // Service dispatch is async -- nothing is posted synchronously.
         expect(posted).toEqual([]);
         await flush();
         expect(spy).toHaveBeenCalledTimes(1);

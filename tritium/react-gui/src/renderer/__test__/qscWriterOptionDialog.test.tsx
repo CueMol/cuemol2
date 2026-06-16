@@ -1,5 +1,5 @@
 /**
- * Pins the QDF0 disable rule from UXP qscwriter-option-dlg.js:34-49 — when
+ * Pins the QDF0 disable rule from UXP qscwriter-option-dlg.js:34-49 -- when
  * the user picks "Ver 2.2 or later" (QDF0), the OK action MUST coerce
  * `compress` to "none" and `base64` to false regardless of the (disabled)
  * UI state. This guarantees a downstream SceneXMLWriter is never asked to

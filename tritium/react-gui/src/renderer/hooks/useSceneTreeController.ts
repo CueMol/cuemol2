@@ -9,7 +9,7 @@
  * the inline-rename controller, defines the scene-tree handlers, drives
  * `useSceneContextMenu`, and returns one bundle ready to spread onto
  * `<SidePanel>`. New ctxmenu actions now only touch `useSceneTree` /
- * `useSceneContextMenu` — they no longer ripple through `App`.
+ * `useSceneContextMenu` -- they no longer ripple through `App`.
  *
  * `showGeneric` (open the property inspector) is passed in rather than
  * resolved here: it comes from `useInspectorState`, which itself depends
@@ -26,9 +26,9 @@ export interface UseSceneTreeControllerArgs {
   /** The `useSceneTree` result, owned by `App` and passed in whole. */
   scene: UseSceneTreeResult;
   cm: AsyncCueMol | null;
-  /** Active scene UID — drives the ctxmenu pre-fetch. */
+  /** Active scene UID -- drives the ctxmenu pre-fetch. */
   activeSceneId: number | undefined;
-  /** Active molview UID — drives focus / camera-apply / new-camera flows. */
+  /** Active molview UID -- drives focus / camera-apply / new-camera flows. */
   activeMolViewId: number | undefined;
   /** Open the generic property inspector for a scene-tree node id. */
   showGeneric: (id: string) => void;
@@ -130,7 +130,7 @@ export function useSceneTreeController({
     [openContextMenu],
   );
 
-  // Tree row double-click — UXP `onTreeItemClick` detail==2: camera rows
+  // Tree row double-click -- UXP `onTreeItemClick` detail==2: camera rows
   // apply the camera to the active view (with vis flags); other rows open
   // the generic property inspector. cameraRoot / styleRoot are no-ops.
   const handleNodeDoubleClick = useCallback(
@@ -150,9 +150,9 @@ export function useSceneTreeController({
     [activeMolViewId, applyCameraToView, showGeneric],
   );
 
-  // Toolbar Add button — UXP `onNewCmd` dispatches by selected row type:
-  // object / renderer / rendGroup → New Renderer flow;
-  // camera / cameraRoot → New Camera flow. Other selections are no-ops.
+  // Toolbar Add button -- UXP `onNewCmd` dispatches by selected row type:
+  // object / renderer / rendGroup -> New Renderer flow;
+  // camera / cameraRoot -> New Camera flow. Other selections are no-ops.
   const handleAdd = useCallback(() => {
     const numId = Number(selectedId);
     if (!Number.isFinite(numId)) return;

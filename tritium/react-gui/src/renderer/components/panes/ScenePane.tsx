@@ -67,7 +67,7 @@ interface ScenePaneProps {
     selectedIds?: Set<string>;
     onSelect: (id: string) => void;
     /**
-     * Cmd/Ctrl+click handler — toggles membership of `id` in selectedIds.
+     * Cmd/Ctrl+click handler -- toggles membership of `id` in selectedIds.
      * When omitted, modifier-clicks fall back to single-select.
      */
     onToggleSelect?: (id: string) => void;
@@ -78,7 +78,7 @@ interface ScenePaneProps {
     onFocusSelected?: (id: string) => void;
     onShowProperty?: (id: string) => void;
     /**
-     * Double-click handler — UXP `onTreeItemClick` `aEvent.detail==2`
+     * Double-click handler -- UXP `onTreeItemClick` `aEvent.detail==2`
      * branch: camera rows run `loadCamImpl(name, true)` (Apply to view
      * with vis flags); other rows run `onPropCmd` (Properties dialog).
      */
@@ -107,7 +107,7 @@ interface ScenePaneProps {
      * clears `editingNodeId` afterwards.
      */
     onCommitInlineRename?: (node: SceneTreeNode, newName: string) => void;
-    /** Right-click handler — opens native context menu for the targeted node. */
+    /** Right-click handler -- opens native context menu for the targeted node. */
     onShowContextMenu?: (node: SceneTreeNode, x: number, y: number) => void;
     /**
      * Drag-drop reorder callback. Receives a fully-resolved
@@ -168,13 +168,13 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     // comes from the SceneTreeNode's `uiCollapsed` hint (C++ for real
     // nodes, true for the synthesised cameraRoot / styleRoot containers
     // so they start closed). A boolean override here wins:
-    //   true  → user explicitly expanded
-    //   false → user explicitly collapsed
-    //   missing → use uiCollapsed default
+    //   true  -> user explicitly expanded
+    //   false -> user explicitly collapsed
+    //   missing -> use uiCollapsed default
     // The previous "collapsedIds set" form could not distinguish
     // "default-collapsed" from "user-collapsed", which meant a single
     // expand click on a default-collapsed row (e.g. Styles root) was
-    // a no-op — the id was never in the set, so deleting it changed
+    // a no-op -- the id was never in the set, so deleting it changed
     // nothing.
     const [expandOverrides, setExpandOverrides] = useState<Map<string, boolean>>(
         () => new Map(),
@@ -200,7 +200,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     const cancelRenameRef = useRef(onCancelInlineRename);
     cancelRenameRef.current = onCancelInlineRename;
 
-    // id → SceneTreeNode lookup so click / dblclick / ctxmenu handlers
+    // id -> SceneTreeNode lookup so click / dblclick / ctxmenu handlers
     // can resolve a Blueprint TreeNodeInfo back to the typed node. Kept
     // close to the rename logic because both rely on it.
     const nodeLookup = useMemo<Map<string, SceneTreeNode>>(() => {
@@ -379,7 +379,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
         cancelRenameRef.current?.();
     }, []);
 
-    // id → parent lookup, used by DnD to resolve same-parent / cross-group
+    // id -> parent lookup, used by DnD to resolve same-parent / cross-group
     // moves. Parent is null for the scene root.
     const parentMap = useMemo<Map<number, SceneTreeNode>>(() => {
         const map = new Map<number, SceneTreeNode>();
@@ -515,7 +515,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
 
     // Blueprint Tree's `onNodeDoubleClick` fires after the second mouse-up
     // of a click pair. Resolve back to the typed SceneTreeNode and forward
-    // to the caller — UXP `onTreeItemClick` `aEvent.detail==2` path.
+    // to the caller -- UXP `onTreeItemClick` `aEvent.detail==2` path.
     // Also cancel any click-pause rename schedule the second click would
     // have armed: a real double-click takes precedence over rename.
     const handleNodeDoubleClick = useCallback(
@@ -739,7 +739,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                 // focusable, so the click-target's focus bubbles up here),
                 // but removes it from the Tab order so keyboard nav skips
                 // it. `outline: none` suppresses the browser default
-                // focus ring — the selected-row background already
+                // focus ring -- the selected-row background already
                 // conveys selection, and the ring rendered around an
                 // inner row label looked like a glitch (issue 2026-05-13).
                 <div

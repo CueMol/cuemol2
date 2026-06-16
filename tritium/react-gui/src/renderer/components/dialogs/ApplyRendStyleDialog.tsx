@@ -15,7 +15,7 @@ import { AppIcon } from '../AppIcon'
 import { useTheme } from '../../contexts/ThemeContext'
 
 /**
- * "Edit Renderer Style" dialog — UXP `apply_rend_style.xul` /
+ * "Edit Renderer Style" dialog -- UXP `apply_rend_style.xul` /
  * `apply_rend_style.js`. The dialog lets the user edit the renderer's
  * ordered style list:
  *   - Listbox shows the current applied styles, "(low priority)" at the
@@ -45,7 +45,7 @@ interface Props {
     /** Renderer display info shown at the top of the dialog. */
     rendName: string
     rendTypeName: string
-    /** Initial style list (will be copied — caller's array is not mutated). */
+    /** Initial style list (will be copied -- caller's array is not mutated). */
     initialStyles: string[]
     /** Add-popup sections. Already filtered to exclude `initialStyles` entries. */
     typeMatch: ApplyRendStyleAvailableEntry[]
@@ -83,7 +83,7 @@ export function ApplyRendStyleDialog({
         setSelectedIdx(initialStyles.length > 0 ? 0 : -1)
     }, [visible, initialStyles])
 
-    // Names already in the working list — used to dim Add popup items
+    // Names already in the working list -- used to dim Add popup items
     // the user has already inserted during this dialog session.
     const usedNames = useMemo(() => new Set(styles), [styles])
 

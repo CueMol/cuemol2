@@ -1,6 +1,6 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 //
-// Phase: panel.workspace.ctxmenu.object — "New Group..." item.
+// Phase: panel.workspace.ctxmenu.object -- "New Group..." item.
 // Mirrors UXP `ws.onNewRendGrp` in `workspace_panel.js`: pick a unique
 // `groupN` name (scene-wide), `obj.createRenderer('*group')`, assign the
 // chosen name, all inside a "Create renderer group: <name>" undo txn.
@@ -31,7 +31,7 @@ export interface CreateRendererGroupResult {
     newName?: string;
 }
 
-/** Pick `group1`, `group2`, ... — UXP `makeUniqName2` starts at i=1. */
+/** Pick `group1`, `group2`, ... -- UXP `makeUniqName2` starts at i=1. */
 function uniqDefaultGroupName(exists: (name: string) => boolean): string {
     for (let i = 1; i < 10000; i++) {
         const candidate = `group${i}`;

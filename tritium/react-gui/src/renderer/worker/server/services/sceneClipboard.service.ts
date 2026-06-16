@@ -177,7 +177,7 @@ function pasteNode(ctx: WorkerContext, args: PasteNodeArgs): PasteNodeResult {
 
     if (entry.kind === 'camera') {
         // Paste a Camera under the destination scene (UXP `onCameraPaste`).
-        // Cameras are keyed by name — uniquify via UXP's "copy<i>_<orig>"
+        // Cameras are keyed by name -- uniquify via UXP's "copy<i>_<orig>"
         // pattern when the destination already has one with that name.
         let newName = '';
         let ok = false;
@@ -265,7 +265,7 @@ function pasteNode(ctx: WorkerContext, args: PasteNodeArgs): PasteNodeResult {
         return { ok: true, newId, newName };
     }
 
-    // renderer paste — resolve the destination mol + group label from
+    // renderer paste -- resolve the destination mol + group label from
     // whichever target the caller supplied.
     let target: CueMolObject | null = null;
     let destGroupName = '';
@@ -297,7 +297,7 @@ function pasteNode(ctx: WorkerContext, args: PasteNodeArgs): PasteNodeResult {
         try { rend.name = finalName; } catch { /* ignore */ }
         // Set the group string before attaching so the parent mol places
         // the new renderer under the right branch. For object paste
-        // destGroupName is "" — explicit clear matches UXP pasteRendImpl.
+        // destGroupName is "" -- explicit clear matches UXP pasteRendImpl.
         try { rend.group = destGroupName; } catch { /* ignore */ }
         target!.attachRenderer(rend);
         newName = finalName;

@@ -67,7 +67,7 @@ describe('getCreateRendStyleInfo', () => {
                     { name: 'my-global', uid: 3, scene_id: 0, readonly: false },
                 ]),
                 7: JSON.stringify([
-                    // Scene-local writable — should be preselected.
+                    // Scene-local writable -- should be preselected.
                     { name: 'user', uid: 11, scene_id: 7, readonly: false },
                 ]),
             },

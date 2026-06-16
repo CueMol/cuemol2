@@ -7,9 +7,9 @@ const log = console;
 /**
  * Bridges the renderer-side `ObjProxy` to native C++ objects.
  *
- * The renderer never holds a native object directly — it holds an
+ * The renderer never holds a native object directly -- it holds an
  * `ObjTuple` (slot id + class name). This class owns the slot table and
- * translates `ObjTuple` ⇄ native object for every proxied create / get /
+ * translates `ObjTuple` <-> native object for every proxied create / get /
  * set / invoke. Extracted from `WorkerService` so the transport-bridge
  * concern is isolated from the RPC dispatch table; `WorkerService` keeps
  * thin `_rpc*` forwarders that delegate here.
@@ -103,7 +103,7 @@ export class ObjProxyBridge {
      */
     private toObjTuple(obj: any, clsName?: string): ObjTuple | any {
         if (!(obj && typeof obj === 'object' && 'toObjID' in obj)) {
-            // primitive value — return directly
+            // primitive value -- return directly
             return obj;
         }
 

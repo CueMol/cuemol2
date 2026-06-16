@@ -31,7 +31,7 @@ export type ObjectFilter = (item: SceneObjectEntry) => boolean
 
 /**
  * Pre-built predicates for common filter shapes. Each consumer is free
- * to compose their own — these are just the recurring cases.
+ * to compose their own -- these are just the recurring cases.
  */
 export const objectFilters = {
     /** MolCoord and its conventional subclasses (e.g. PDBMol, QdfMol). */
@@ -55,7 +55,7 @@ interface Props {
     label: string
     /** Pick a subset of scene objects; omit to show every object. */
     filter?: ObjectFilter
-    /** Controlled selection — pass `useState`-managed value. */
+    /** Controlled selection -- pass `useState`-managed value. */
     selectedId: number | undefined
     /**
      * Called with the new uid when the user picks an item, and with

@@ -65,7 +65,7 @@ function makeCtx(opts: {
     } as unknown as WorkerContext
 }
 
-// ─── listMapRenderers ─────────────────────────────────────────────
+// --- listMapRenderers ---
 
 describe('listMapRenderers', () => {
     beforeEach(() => vi.clearAllMocks())
@@ -138,7 +138,7 @@ describe('listMapRenderers', () => {
     })
 })
 
-// ─── getMapRendererState ──────────────────────────────────────────
+// --- getMapRendererState ---
 
 describe('getMapRendererState', () => {
     beforeEach(() => vi.clearAllMocks())
@@ -223,7 +223,7 @@ describe('getMapRendererState', () => {
     })
 })
 
-// ─── setMapRendererProp ───────────────────────────────────────────
+// --- setMapRendererProp ---
 
 describe('setMapRendererProp', () => {
     beforeEach(() => vi.clearAllMocks())
@@ -398,7 +398,7 @@ describe('setMapRendererProp', () => {
     })
 })
 
-// ─── redrawMapCenter ─────────────────────────────────────────────
+// --- redrawMapCenter ---
 
 describe('redrawMapCenter', () => {
     beforeEach(() => vi.clearAllMocks())

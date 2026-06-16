@@ -14,7 +14,7 @@
  * idle-task pump is not driven inside the worker). So instead of queuing the
  * blendpng finalize task up-front with a dependency, the pipeline runs in
  * two phases: all render tasks are queued first, and the finalize task is
- * queued by the poll loop once every render task has finished — that
+ * queued by the poll loop once every render task has finished -- that
  * `queueTask` call is what starts it.
  */
 
@@ -179,7 +179,7 @@ function pollJob(
       });
       return;
     }
-    // All render tasks finished — queue the finalize task(s) now. The
+    // All render tasks finished -- queue the finalize task(s) now. The
     // queueTask call is what advances the ProcessManager queue.
     emit(ctx, {
       type: "progress",

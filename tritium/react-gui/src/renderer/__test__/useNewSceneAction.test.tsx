@@ -3,10 +3,10 @@
  * "create scene + view + register tab" entry shared by useAppInitialization
  * and useNewTabCommand). Mirrors the contract that UXP's onNewScene held:
  *
- *   1. Without a name → asks the worker for the default ("Untitled N") via
+ *   1. Without a name -> asks the worker for the default ("Untitled N") via
  *      proposeNewTabNames, then forwards that name to createNewSceneAndView
  *      and registers the tab using the same name (no "Scene <uid>" string).
- *   2. With an explicit name → skips proposeNewTabNames and forwards the name
+ *   2. With an explicit name -> skips proposeNewTabNames and forwards the name
  *      directly.
  *   3. The bindView option flows through to createNewSceneAndView so the
  *      launch path can opt out (canvas not yet bound).

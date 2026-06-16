@@ -8,7 +8,7 @@ function makeCtx(
     opts: {
         cameraInfoJSON?: string
         /**
-         * Map of scopeId → JSON string for StyleManager.getStyleSetsJSON.
+         * Map of scopeId -> JSON string for StyleManager.getStyleSetsJSON.
          * Default: `0` and any scene id both return `'[]'`.
          */
         styleSetsJSON?: Record<number, string>
@@ -150,7 +150,7 @@ describe('parseSceneTreeJSON', () => {
         const obj = tree!.children[0]
         expect(obj.visible).toBe(false)
         expect(obj.effectiveVisible).toBe(false)
-        // own visible=true but ancestor invisible → effectiveVisible=false
+        // own visible=true but ancestor invisible -> effectiveVisible=false
         expect(obj.children[0].visible).toBe(true)
         expect(obj.children[0].effectiveVisible).toBe(false)
     })

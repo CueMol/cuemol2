@@ -29,14 +29,14 @@ void React
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
 
-// ── Mock scene tree ──────────────────────────────────────────────────
+// --- Mock scene tree ---
 //   scene 0
-//   ├── object 42 "mol1"
-//   │   ├── renderer 100 "simple1"
-//   │   └── rendGroup 200 "group1"
-//   │        └── renderer 201 "child1"
-//   ├── camera 900 "cam1"
-//   └── style  910 "style1" (scopeId 5)
+//   |-- object 42 "mol1"
+//   |   |-- renderer 100 "simple1"
+//   |   |-- rendGroup 200 "group1"
+//   |        |-- renderer 201 "child1"
+//   |-- camera 900 "cam1"
+//   |-- style  910 "style1" (scopeId 5)
 
 const node = (o: Partial<SceneTreeNode>): SceneTreeNode => ({
     id: 0, name: '', type: 'object', className: '', visible: true,
@@ -67,7 +67,7 @@ const objectNode = (): SceneTreeNode => MOCK_TREE.children[0]
 const cameraNode = (): SceneTreeNode => MOCK_TREE.children[1]
 const styleNode = (): SceneTreeNode => MOCK_TREE.children[2]
 
-// ── Mock cm ──────────────────────────────────────────────────────────
+// --- Mock cm ---
 
 function makeCm(overrides: Record<string, unknown> = {}): any {
     const invokeService = vi.fn((channel: string) => {
@@ -95,7 +95,7 @@ function makeCm(overrides: Record<string, unknown> = {}): any {
 
 const SCENE_ID = 7
 
-// ── Mount helper ─────────────────────────────────────────────────────
+// --- Mount helper ---
 
 function mountHook(cm: any, sceneId: number | undefined = SCENE_ID): {
     result: ReturnType<typeof useSceneTree>
@@ -137,7 +137,7 @@ async function mountReady(cm: any): Promise<ReturnType<typeof mountHook>> {
 
 afterEach(() => { vi.clearAllMocks() })
 
-// ── Fetch / subscribe ────────────────────────────────────────────────
+// --- Fetch / subscribe ---
 
 describe('useSceneTree — fetch & subscribe', () => {
     it('fetches the tree on mount via getSceneTree', async () => {
@@ -171,7 +171,7 @@ describe('useSceneTree — fetch & subscribe', () => {
     })
 })
 
-// ── Action callback wire contracts ───────────────────────────────────
+// --- Action callback wire contracts ---
 
 interface WireCase {
     name: string
@@ -440,7 +440,7 @@ describe('useSceneTree — action callback wire contracts', () => {
     }
 })
 
-// ── Return-value mapping ─────────────────────────────────────────────
+// --- Return-value mapping ---
 
 describe('useSceneTree — return-value mapping', () => {
     it('boolean callbacks resolve to res.ok', async () => {
@@ -479,7 +479,7 @@ describe('useSceneTree — return-value mapping', () => {
     })
 })
 
-// ── Selection state ──────────────────────────────────────────────────
+// --- Selection state ---
 
 describe('useSceneTree — selection state', () => {
     it('setSelectedId sets the primary id and a singleton set', async () => {

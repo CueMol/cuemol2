@@ -3,8 +3,8 @@ import { services } from '../worker/server/services/validateSelection.service'
 import type { WorkerContext } from '../worker/server/types/WorkerContext'
 
 function makeCtx(compileResult: boolean | null) {
-    // compileResult === null → createObj returns null
-    // compileResult === true/false → createObj returns a SelCommand stub whose compile() returns that
+    // compileResult === null -> createObj returns null
+    // compileResult === true/false -> createObj returns a SelCommand stub whose compile() returns that
     const sel = compileResult === null ? null : { compile: vi.fn(() => compileResult) }
     return {
         svc: { createObj: vi.fn(() => sel) },

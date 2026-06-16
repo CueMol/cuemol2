@@ -6,7 +6,7 @@
  */
 
 export const IPC = {
-  // invoke channels (renderer → main, with reply)
+  // invoke channels (renderer -> main, with reply)
   APP_PATH:       'apppath',
   DIALOG_OPEN:    'dialog:openFile',
   DIALOG_SAVE_SCENE: 'dialog:saveScene',
@@ -27,12 +27,12 @@ export const IPC = {
   MENU_UPDATE_STATE: 'menu:update-state',
   MENU_SET_MODAL_BLOCKED: 'menu:set-modal-blocked',
 
-  // File > Open Recent (MRU) — renderer ↔ main
+  // File > Open Recent (MRU) -- renderer <-> main
   RECENT_LOAD:  'recent:load',
   RECENT_ADD:   'recent:add',
   RECENT_CLEAR: 'recent:clear',
 
-  // push channels (main → renderer, no reply)
+  // push channels (main -> renderer, no reply)
   OBJ_FILE_OPENED:   'file:obj-opened',
   SCENE_FILE_OPENED: 'file:scene-opened',
   FILE_ERROR:        'file:error',
@@ -97,7 +97,7 @@ export const IPC = {
   MENU_CONSOLE:       'menu:console',
   MENU_CHECK_UPDATES: 'menu:check-updates',
 
-  // invoke channels (renderer → main, with reply) — menu role actions
+  // invoke channels (renderer -> main, with reply) -- menu role actions
   MENU_INVOKE_ROLE: 'menu:invoke-role',
 
   // Window close / app quit lifecycle (red-button and Cmd+Q both funnel
@@ -115,10 +115,10 @@ export const IPC = {
   // invoke channel for native scene-tree context menu (ScenePane right-click)
   SCENE_CTX_SHOW: 'scene-ctx:show',
 
-  // gesture push channels (main → renderer)
+  // gesture push channels (main -> renderer)
   ROTATE_GESTURE: 'gesture:rotate',
 
-  // generic push channel for menu items without specific handlers (main → renderer)
+  // generic push channel for menu items without specific handlers (main -> renderer)
   MENU_GENERIC: 'menu:generic',
 } as const
 

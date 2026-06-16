@@ -3,9 +3,9 @@ import { services } from '../worker/server/services/bulkSceneNodeOps.service'
 import type { WorkerContext } from '../worker/server/types/WorkerContext'
 
 interface FixtureOpts {
-    /** uid → initial visible state for objects. */
+    /** uid -> initial visible state for objects. */
     objs?: Record<number, { visible: boolean }>
-    /** uid → initial visible state for renderers (or rendGroups). */
+    /** uid -> initial visible state for renderers (or rendGroups). */
     rends?: Record<number, { visible: boolean }>
     sceneExists?: boolean
 }
@@ -105,7 +105,7 @@ describe('bulkSceneNodeOps.bulkSetNodeVisible', () => {
         expect(f.commitUndoTxn).toHaveBeenCalledTimes(1)
         expect(f.objRecs[10].setVisible).toHaveBeenCalledWith(true)
         expect(f.rendRecs[100].setVisible).toHaveBeenCalledWith(true)
-        // Already visible → skip the property write per UXP onShowHideCmd.
+        // Already visible -> skip the property write per UXP onShowHideCmd.
         expect(f.rendRecs[101].setVisible).not.toHaveBeenCalled()
     })
 

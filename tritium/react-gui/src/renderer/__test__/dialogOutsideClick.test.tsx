@@ -2,10 +2,10 @@
  * Pins the project-wide visual / dismissal contract for every Blueprint
  * Dialog:
  *
- *   - canOutsideClickClose={false}  — backdrop click is a no-op; only
+ *   - canOutsideClickClose={false}  -- backdrop click is a no-op; only
  *     ESC, explicit Cancel buttons, or onConfirm dismiss the dialog
  *     (matches UXP and native file-open dialog UX).
- *   - isCloseButtonShown={false}    — no window-chrome (X) button in
+ *   - isCloseButtonShown={false}    -- no window-chrome (X) button in
  *     the header, since the dialog is not draggable and the title is
  *     rendered as an inline section heading rather than a title bar.
  *

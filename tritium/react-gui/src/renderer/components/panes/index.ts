@@ -27,7 +27,7 @@
  * @module panes (barrel)
  */
 
-/* ─── Existing Panes ─── */
+/* --- Existing Panes --- */
 
 export { ScenePane } from "./ScenePane";
 export { ColorPane } from "./ColorPane";
@@ -37,12 +37,12 @@ export { SelectionPane } from "./SelectionPane";
 export { SymmetryPane } from "./SymmetryPane";
 export { DensityMapPane } from "./DensityMapPane";
 
-/* ─── Component Catalog Panes ─── */
+/* --- Component Catalog Panes --- */
 
 export { CatalogPane1 } from "./CatalogPane1";
 export { CatalogPane2 } from "./CatalogPane2";
 export { CatalogPane3 } from "./CatalogPane3";
 
-/* ─── Shared Components ─── */
+/* --- Shared Components --- */
 
 export { SectionHeader } from "./SectionHeader";

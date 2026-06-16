@@ -79,7 +79,7 @@ describe('useFileCommands', () => {
     infoSpy.mockRestore()
   })
 
-  // ─── SaveCurrentView ────────────────────────────────────────────────────
+  // --- SaveCurrentView ---
 
   it('SaveCurrentView: view -> __current camera -> dialog -> saveCameraToFile', async () => {
     const cm = makeCm({
@@ -124,7 +124,7 @@ describe('useFileCommands', () => {
     h.unmount()
   })
 
-  // ─── ExportImage ────────────────────────────────────────────────────────
+  // --- ExportImage ---
 
   it('ExportImage: scene-name default, view-size-seeded options, then export', async () => {
     const cm = makeCm({
@@ -172,7 +172,7 @@ describe('useFileCommands', () => {
     h.unmount()
   })
 
-  // ─── SceneReload ────────────────────────────────────────────────────────
+  // --- SceneReload ---
 
   it('SceneReload: scene with no source file does not reload', async () => {
     const cm = makeCm({ getSceneSaveInfo: () => ({ ok: true, src: '' }) })
@@ -221,7 +221,7 @@ describe('useFileCommands', () => {
     h.unmount()
   })
 
-  // ─── ObjectSaveAs ───────────────────────────────────────────────────────
+  // --- ObjectSaveAs ---
 
   it('ObjectSaveAs: empty scene does not enter the object-save flow', async () => {
     const cm = makeCm({

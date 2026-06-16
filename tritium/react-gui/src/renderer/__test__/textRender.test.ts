@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { renderText } from '../worker/server/textRender';
 
 /**
- * Degrade-detection test for renderText — the OffscreenCanvas text
+ * Degrade-detection test for renderText -- the OffscreenCanvas text
  * rasteriser extracted from WorkerService in Phase 2. Pins the 4-byte
  * width alignment and the write-back contract (tr.width / tr.resize /
  * tr.setDataFromRGBA).
@@ -60,7 +60,7 @@ afterEach(() => {
 
 describe('renderText', () => {
     it('rounds the bitmap width up to a 4-byte boundary', () => {
-        stubOffscreenCanvas(10); // ceil(10)=10, 10%4=2 → width 12
+        stubOffscreenCanvas(10); // ceil(10)=10, 10%4=2 -> width 12
         const tr = makeTr();
         const ba = { __byteArray: true };
         const cm = { createWrapper: vi.fn(() => tr), fromTypedArray: vi.fn(() => ba) };
@@ -73,7 +73,7 @@ describe('renderText', () => {
     });
 
     it('leaves an already-aligned width unchanged', () => {
-        stubOffscreenCanvas(8); // 8%4=0 → width stays 8
+        stubOffscreenCanvas(8); // 8%4=0 -> width stays 8
         const tr = makeTr();
         const cm = { createWrapper: vi.fn(() => tr), fromTypedArray: vi.fn(() => ({})) };
 
@@ -84,7 +84,7 @@ describe('renderText', () => {
     });
 
     it('feeds the rasterised RGBA buffer through cm.fromTypedArray', () => {
-        stubOffscreenCanvas(12); // already aligned → width 12
+        stubOffscreenCanvas(12); // already aligned -> width 12
         const tr = makeTr();
         const cm = {
             createWrapper: vi.fn(() => tr),
@@ -93,7 +93,7 @@ describe('renderText', () => {
 
         callRenderText(cm, {});
 
-        // 12 (width) × 5 (height) × 4 (RGBA) bytes.
+        // 12 (width) x 5 (height) x 4 (RGBA) bytes.
         const fed = cm.fromTypedArray.mock.calls[0][0] as Uint8Array;
         expect(fed).toBeInstanceOf(Uint8Array);
         expect(fed.byteLength).toBe(12 * 5 * 4);

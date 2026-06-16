@@ -11,16 +11,14 @@
 
 import type { AppIconKey } from "./data/appIcons";
 
-// ────────────────────────────────────────────────────────────
-// Scene / File-tree
-// ────────────────────────────────────────────────────────────
+// --- Scene / File-tree ---
 
 /**
  * A single node in a generic tree displayed by `TreeView`.
  *
  * The tree is recursive: each node may contain an arbitrary number of
- * child nodes, enabling multi-level hierarchies (e.g. Scene → Object →
- * Renderer, or Chain → Residue → Atom).
+ * child nodes, enabling multi-level hierarchies (e.g. Scene -> Object ->
+ * Renderer, or Chain -> Residue -> Atom).
  */
 export interface TreeNodeData {
   /** Stable, unique identifier for the node within its tree. */
@@ -42,9 +40,7 @@ export interface TreeNodeData {
   secondaryLabel?: string;
 }
 
-// ────────────────────────────────────────────────────────────
-// Editor tabs
-// ────────────────────────────────────────────────────────────
+// --- Editor tabs ---
 
 import type { RenderResult } from "./data/renderResult";
 
@@ -91,9 +87,7 @@ export interface TabData {
   renderResult?: RenderResult;
 }
 
-// ────────────────────────────────────────────────────────────
-// Logging
-// ────────────────────────────────────────────────────────────
+// --- Logging ---
 
 /**
  * A single structured log entry displayed in `LogReplDraft` (a draft
@@ -126,9 +120,7 @@ export interface LogEntry {
   msg: string;
 }
 
-// ────────────────────────────────────────────────────────────
-// Animation Timeline (Blender-style strip model)
-// ────────────────────────────────────────────────────────────
+// --- Animation Timeline (Blender-style strip model) ---
 //
 // CueMol's animation is an ordered list of time-ranged `AnimObj` elements
 // owned by the scene's `AnimMgr`; every time value is in milliseconds. Each

@@ -19,9 +19,9 @@ import {
 } from "./PropEditors";
 import type { PropDef } from "../../data/rendererProperties";
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Types
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 /** An accordion group: display key plus default expanded state. */
 export interface PropGroupDef {
@@ -38,9 +38,9 @@ interface PropGroupedEditorProps {
   onChange: (key: string, value: string | number | boolean) => void;
 }
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Editor dispatcher
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 /**
  * Render the editor widget matching a property's `type`.
@@ -76,9 +76,9 @@ export const renderPropEditor = (
   }
 };
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Component
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 export const PropGroupedEditor: React.FC<PropGroupedEditorProps> = ({
   properties,

@@ -5,7 +5,7 @@
  *
  * Specifically pins the ".cif ambiguity" case: mmcifmap (structure factor)
  * and mmcif (coord) both register .cif. Without an explicit readerName,
- * extension lookup picks the first JSON entry — when that entry is mmcifmap,
+ * extension lookup picks the first JSON entry -- when that entry is mmcifmap,
  * a coord PDB is mis-typed as a density map. Get PDB passes readerName to
  * defeat this.
  */
@@ -26,11 +26,11 @@ interface FakeReaderHandle {
 }
 
 function makeEnv(opts: {
-    /** Reader name to renderer-types mapping. mmcif → coord renderers, mmcifmap → density. */
+    /** Reader name to renderer-types mapping. mmcif -> coord renderers, mmcifmap -> density. */
     readerRendTypes: Record<string, string>;
     /** Reader info JSON used by ext fallback. Order matters (first hit wins). */
     info: Array<{ name: string; fext: string; category: number }>;
-    /** Optional reader name → object class name (returned by tmpObj.getClassName()). */
+    /** Optional reader name -> object class name (returned by tmpObj.getClassName()). */
     readerClassNames?: Record<string, string | undefined>;
 }) {
     const createHandler = vi.fn((name: string, _cat: number): FakeReaderHandle => ({
@@ -146,7 +146,7 @@ describe('getCompatibleRendererNames — extension fallback branch', () => {
 describe('getCompatibleRendererNames — .cif ambiguity (regression)', () => {
     beforeEach(() => { vi.clearAllMocks() })
 
-    // Set up the JSON so mmcifmap (structure factor → density map) appears
+    // Set up the JSON so mmcifmap (structure factor -> density map) appears
     // BEFORE mmcif (coord). Under the old extension-only logic this
     // produced the contour-renderer-for-coordinate-CIF bug.
     const ambiguousInfo = [

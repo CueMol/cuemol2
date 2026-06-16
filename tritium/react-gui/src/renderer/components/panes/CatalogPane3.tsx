@@ -31,14 +31,14 @@ import { MolSelList } from "../../h3-kit/MolSelList";
 import { AccordionSection } from "../inspector/AccordionSection";
 import { InspectorResetAllButton } from "../inspector/InspectorResetAllButton";
 
-/* ─── Sample default values (restored on reset) ─── */
+/* --- Sample default values (restored on reset) --- */
 const DEF_LABEL = "chain A";
 const DEF_VISIBLE = true;
 const DEF_OPACITY = 1.0;
 const DEF_WIDTH = 1.0;
 const DEF_SEL = "*";
 
-/* ─── Props ─── */
+/* --- Props --- */
 
 interface CatalogPane3Props {
   collapsed?: boolean;
@@ -47,7 +47,7 @@ interface CatalogPane3Props {
   activeSceneId?: number;
 }
 
-/* ─── Component ─── */
+/* --- Component --- */
 
 export const CatalogPane3: React.FC<CatalogPane3Props> = ({
   collapsed = false,

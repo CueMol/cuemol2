@@ -3,7 +3,7 @@ import { ObjProxyBridge } from '../worker/server/objProxyBridge';
 import { ObjTuple } from '../worker/shared/ObjTuple';
 
 /**
- * Degrade-detection test for ObjProxyBridge — the ObjProxy ⇄ native-object
+ * Degrade-detection test for ObjProxyBridge -- the ObjProxy <-> native-object
  * transport bridge extracted from WorkerService in Phase 2. Pins the slot
  * round-trip: a native object created through the bridge becomes an
  * ObjTuple, and a later call carrying that ObjTuple resolves back to the

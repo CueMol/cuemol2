@@ -1,12 +1,12 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 //
-// Phase 5c — style ctxmenu CRUD + read-only toggle. Mirrors the UXP
+// Phase 5c -- style ctxmenu CRUD + read-only toggle. Mirrors the UXP
 // handlers in `workspace_panel.js`:
-//   - createStyleSet      → `createStyle` (NB UXP uses a window.prompt
+//   - createStyleSet      -> `createStyle` (NB UXP uses a window.prompt
 //                            here; the renderer handles the name input
 //                            via TextPromptDialog before dispatch)
-//   - destroyStyleSet     → `destroyStyle`
-//   - toggleStyleSetReadOnly → `onStyToggleRo`
+//   - destroyStyleSet     -> `destroyStyle`
+//   - toggleStyleSetReadOnly -> `onStyToggleRo`
 //
 // Style nodes have no name setter and global styles (`scopeId === 0`) are
 // not editable, matching UXP `onStyToggleRo` early-return.
@@ -35,7 +35,7 @@ function getStyleMgr(ctx: WorkerContext): StyleManagerLike | null {
     return mgr ?? null;
 }
 
-// ─── createStyleSet ───────────────────────────────────────────────────────
+// --- createStyleSet ---
 
 export interface CreateStyleSetArgs {
     sceneId: number;
@@ -70,7 +70,7 @@ function createStyleSet(
     return { ok: true, newId };
 }
 
-// ─── destroyStyleSet ──────────────────────────────────────────────────────
+// --- destroyStyleSet ---
 
 export interface DestroyStyleSetArgs {
     sceneId: number;
@@ -99,10 +99,10 @@ function destroyStyleSet(
     return { ok };
 }
 
-// ─── toggleStyleSetReadOnly ───────────────────────────────────────────────
+// --- toggleStyleSetReadOnly ---
 //
 // UXP `onStyToggleRo`: global styles (`scope==0`) are not toggleable, and
-// modified scene-local styles cannot move read-only → read-write fails
+// modified scene-local styles cannot move read-only -> read-write fails
 // silently (the menu item is disabled in that case via pre-fetch).
 // Returns the new readonly state on success.
 
@@ -135,7 +135,7 @@ function toggleStyleSetReadOnly(
     if (set.readonly) {
         next = false;
     } else {
-        // RW → RO refused when modified (UXP's alert is dropped; the
+        // RW -> RO refused when modified (UXP's alert is dropped; the
         // menu item is already disabled by the pre-fetch gate).
         if (set.modified) return empty;
         next = true;

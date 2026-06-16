@@ -23,7 +23,7 @@ export interface GetRendererStyleEntriesArgs {
 export interface RendererStyleEntry {
     /** Raw style name (e.g. "DefaultCartoon"). Action dispatches `style-${name}`. */
     name: string;
-    /** Human-friendly label — StyleSet `desc` when present, otherwise the raw name. */
+    /** Human-friendly label -- StyleSet `desc` when present, otherwise the raw name. */
     label: string;
     /** Regex source used to strip existing entries before pushing the new one. */
     pattern: string;

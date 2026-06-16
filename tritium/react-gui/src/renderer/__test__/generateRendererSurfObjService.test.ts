@@ -33,7 +33,7 @@ function makeFixture(opts: FixtureOpts = {}) {
         rendExists = true,
     } = opts
 
-    // ── source isosurf renderer ──
+    // --- source isosurf renderer ---
     const srcMultiGrad = { __srcGrad: true }
     const srcDefaultColor = { __srcColor: true }
     const srcMol = molName === null ? null : { name: molName }
@@ -48,7 +48,7 @@ function makeFixture(opts: FixtureOpts = {}) {
         generateSurfObj: vi.fn(() => newObj),
     }
 
-    // ── new MolSurfObj returned by generateSurfObj ──
+    // --- new MolSurfObj returned by generateSurfObj ---
     const setNewObjName = vi.fn()
     const newObj: Record<string, unknown> = {
         uid: 555,
@@ -58,7 +58,7 @@ function makeFixture(opts: FixtureOpts = {}) {
     }
     let _newObjName = ''
 
-    // ── molsurf renderer attached to the new object ──
+    // --- molsurf renderer attached to the new object ---
     const setNewRendName = vi.fn()
     const setNewRendColormode = vi.fn()
     const setNewRendElepot = vi.fn()

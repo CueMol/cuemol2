@@ -12,16 +12,12 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import type { TabData } from "../types";
 import { type RenderResult, renderResultTabTitle } from "../data/renderResult";
 
-// ────────────────────────────────────────────────────────────
-// Constants
-// ────────────────────────────────────────────────────────────
+// --- Constants ---
 
 /** Well-known tab id for the Settings pane (singleton). */
 const SETTINGS_TAB_ID = "__settings__";
 
-// ────────────────────────────────────────────────────────────
-// Hook
-// ────────────────────────────────────────────────────────────
+// --- Hook ---
 
 export function useTabManager(opts?: {
   onMolViewClose?: (viewId: number) => void;
@@ -37,7 +33,7 @@ export function useTabManager(opts?: {
   const tabsRef = useRef<TabData[]>(tabs);
   useEffect(() => { tabsRef.current = tabs; }, [tabs]);
 
-  // ── Settings tab (singleton) ─────────────────────────────
+  // --- Settings tab (singleton) ---
 
   const openSettingsTab = useCallback(() => {
     setTabs((prev) => {
@@ -58,7 +54,7 @@ export function useTabManager(opts?: {
     });
   }, []);
 
-  // ── Close / Reorder ──────────────────────────────────────
+  // --- Close / Reorder ---
 
   const handleCloseTab = useCallback(
     async (id: string): Promise<boolean> => {
@@ -111,7 +107,7 @@ export function useTabManager(opts?: {
     [],
   );
 
-  // ── MolView tabs ─────────────────────────────────────────
+  // --- MolView tabs ---
 
   const addMolViewTab = useCallback((title: string, viewId: number) => {
     const newTab: TabData = {
@@ -125,7 +121,7 @@ export function useTabManager(opts?: {
     setActiveTab(newTab.id);
   }, []);
 
-  // ── Render Result tabs ───────────────────────────────────
+  // --- Render Result tabs ---
 
   /**
    * Open a completed render. There is at most one result tab per source

@@ -8,7 +8,7 @@
  * camera / style node builders.
  *
  * The shared `SceneCtxActionFn` records the chosen `SceneCtxAction` in a
- * closure slot — see `sceneContextMenu.ts` for the popup-callback
+ * closure slot -- see `sceneContextMenu.ts` for the popup-callback
  * contract.
  */
 
@@ -55,7 +55,7 @@ export function copyItem(action: SceneCtxActionFn): MenuItemConstructorOptions {
 }
 
 /**
- * Paste menu item — only shown when the worker clipboard holds the
+ * Paste menu item -- only shown when the worker clipboard holds the
  * matching kind. Scene rows accept object pastes; object rows accept
  * renderer pastes.
  */
@@ -340,7 +340,7 @@ export function generateSurfObjItem(
 }
 
 /**
- * Object-row "New Group..." item — creates an empty `*group` renderer
+ * Object-row "New Group..." item -- creates an empty `*group` renderer
  * under the targeted mol. Mirrors UXP `wspcPanelObjCtxtMenu` New Group.
  */
 export function newRendGroupItem(action: SceneCtxActionFn): MenuItemConstructorOptions {

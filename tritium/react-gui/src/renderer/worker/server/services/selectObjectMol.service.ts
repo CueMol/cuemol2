@@ -111,7 +111,7 @@ function selectObjectMol(
     const mol = scene.getObject(args.objId) as MolCoord | null;
     if (!mol) return { ok: false };
 
-    // sel may not exist on non-molecular objects — bail safely.
+    // sel may not exist on non-molecular objects -- bail safely.
     const prevSelStr = safeRead(() => (mol.sel ? mol.sel.toString() : '')) ?? '';
     const resolved = resolveSelStr(args.kind, prevSelStr);
     if (!resolved) return { ok: false };

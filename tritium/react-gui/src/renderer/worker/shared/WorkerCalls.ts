@@ -1,18 +1,18 @@
 /**
- * Typed contract for the renderer ↔ Web Worker boundary.
+ * Typed contract for the renderer <-> Web Worker boundary.
  *
  * Three categories of calls flow over the same wire (`postMessage` with
  * `[method, seqno, ...args]`) but have distinct dispatch semantics on the
  * worker side; we mirror that split with three maps:
  *
- *   - ServiceMap  → business-logic services registered via `register(name, fn)`.
+ *   - ServiceMap  -> business-logic services registered via `register(name, fn)`.
  *                   Wire form: `invokeService(name, args)`. Worker side:
  *                   `fn(ctx, args[0])` (single-arg).
- *   - MethodMap   → infrastructure / hot-path methods declared in
+ *   - MethodMap   -> infrastructure / hot-path methods declared in
  *                   `WorkerService._methods`. Wire form:
  *                   `invokeMethod(name, ...positional)`. Worker side:
  *                   `fn.apply(this, args)` (variadic).
- *   - RpcMap      → ObjProxy bridge handlers (createObj, getProp, …). Same
+ *   - RpcMap      -> ObjProxy bridge handlers (createObj, getProp, ...). Same
  *                   variadic dispatch as MethodMap, kept separate to
  *                   document the proxy intent.
  *
@@ -417,9 +417,9 @@ import type {
 import type { ElectronFileFilter } from '../../../shared/ipcTypes'
 import type { WorkerContext } from '../server/types/WorkerContext'
 
-// ────────────────────────────────────────────────────────────
+// -
 // Serialized DOM events (worker side cannot read live DOM events)
-// ────────────────────────────────────────────────────────────
+// -
 
 /** Mouse event fields that inputApi forwards to the worker. */
 export interface SerializedMouseEvent {
@@ -446,9 +446,9 @@ export interface SerializedGestureEvent {
   axisID: number; delta: number
 }
 
-// ────────────────────────────────────────────────────────────
-// ServiceMap (registered services — `_registered` table)
-// ────────────────────────────────────────────────────────────
+// -
+// ServiceMap (registered services -- `_registered` table)
+// -
 
 export interface ServiceMap {
   appInfo:                    { args: Record<string, never>;          result: AppInfoResult }
@@ -648,9 +648,9 @@ export type ServiceFn<K extends ServiceKey> = (
   args: ServiceArgs<K>,
 ) => ServiceResult<K> | Promise<ServiceResult<K>>
 
-// ────────────────────────────────────────────────────────────
-// MethodMap (infrastructure / hot-path — `_methods` table)
-// ────────────────────────────────────────────────────────────
+// -
+// MethodMap (infrastructure / hot-path -- `_methods` table)
+// -
 
 export interface MethodMap {
   initCueMol:              { args: [loadPath?: string];                                                    result: boolean }
@@ -680,9 +680,9 @@ export type MethodFn<K extends MethodKey> = (
   ...args: MethodArgs<K>
 ) => MethodResult<K> | Promise<MethodResult<K>>
 
-// ────────────────────────────────────────────────────────────
-// RpcMap (ObjProxy bridge — `_methods` table, dispatched as RPCs)
-// ────────────────────────────────────────────────────────────
+// -
+// RpcMap (ObjProxy bridge -- `_methods` table, dispatched as RPCs)
+// -
 
 export interface RpcMap {
   createObj:            { args: [className: string];                                                  result: ObjTuple | null }

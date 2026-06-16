@@ -18,7 +18,7 @@ import { INPUT_DEVICE_PREF_OPTIONS, INPUT_DEVICE_PREF_LABELS } from '../../../vi
 
 /** A node in the settings category tree. */
 export interface CategoryNode {
-  /** Unique identifier — also used as the settings category key. */
+  /** Unique identifier -- also used as the settings category key. */
   id: string
   /** Display label. */
   label: string

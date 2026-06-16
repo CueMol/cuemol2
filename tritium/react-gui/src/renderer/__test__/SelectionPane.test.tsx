@@ -111,7 +111,7 @@ describe('SelectionPane', () => {
     })
 
     afterEach(() => {
-        // Nothing — each test uses its own mount/unmount.
+        // Nothing -- each test uses its own mount/unmount.
     })
 
     it('populates the molecule selector from listSceneObjects', async () => {

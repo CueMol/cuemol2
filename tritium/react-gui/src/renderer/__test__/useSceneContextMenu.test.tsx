@@ -1,7 +1,7 @@
 /**
  * Pins the dispatch contract of useSceneContextMenu's right-click flow.
  * Refactor target: the 800-line hook is being split into a buildSceneCtxPayload
- * pre-fetch and a dispatchSceneCtxAction switch — these tests survive the
+ * pre-fetch and a dispatchSceneCtxAction switch -- these tests survive the
  * extraction unchanged because they assert the public dispatch behaviour.
  */
 

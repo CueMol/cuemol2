@@ -5,7 +5,7 @@
  * `useShowXxxDialog()` hook (`createDialogHook` factory). The composite
  * `<DialogProvider>` mounts all four. The observable contract pinned here:
  *   - `showXxx(args)` opens the dialog (Blueprint Dialog visible in the DOM)
- *   - User clicks Confirm/Cancel/etc → Promise resolves with the right value
+ *   - User clicks Confirm/Cancel/etc -> Promise resolves with the right value
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'

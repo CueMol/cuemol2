@@ -2,12 +2,12 @@
  * @file commands/useFileCommands.ts
  * @description Registers File-menu commands not covered by the scene-save
  * path in `useEditCommands`:
- *   - ObjectSaveAs     — save a scene object to a file (UXP `onFileSaveAs`)
- *   - SaveCurrentView  — save the live view's camera to a .cam file
+ *   - ObjectSaveAs     -- save a scene object to a file (UXP `onFileSaveAs`)
+ *   - SaveCurrentView  -- save the live view's camera to a .cam file
  *                        (UXP `onSaveCurView`)
- *   - SceneReload      — reload the current scene from its source file
+ *   - SceneReload      -- reload the current scene from its source file
  *                        (UXP `onReloadScene`)
- *   - ExportImage      — render the scene to a PNG, collecting resolution /
+ *   - ExportImage      -- render the scene to a PNG, collecting resolution /
  *                        size / transparency first (UXP `exportpng-opt-dlg`)
  *
  * The underlying worker services already exist; this hook only wires the
@@ -38,7 +38,7 @@ export function useFileCommands({
     const showConfirmReload = useShowConfirmReloadSceneDialog()
     const showExportPngOptions = useShowExportPngOptionsDialog()
 
-    // ObjectSaveAs — UXP `onFileSaveAs`. The File menu has no right-clicked
+    // ObjectSaveAs -- UXP `onFileSaveAs`. The File menu has no right-clicked
     // node, so the object to save is resolved from the active scene: save
     // directly when there is exactly one, otherwise show a picker.
     useRegisterCommand(CmdId.ObjectSaveAs, async () => {
@@ -64,7 +64,7 @@ export function useFileCommands({
         await runObjectSaveFlow(cm, info.scene_uid, objId)
     })
 
-    // SaveCurrentView — UXP `onSaveCurView`: store the live view in the
+    // SaveCurrentView -- UXP `onSaveCurView`: store the live view in the
     // transient '__current' camera, then write that camera to a file.
     useRegisterCommand(CmdId.SaveCurrentView, async () => {
         if (!cm) return
@@ -91,7 +91,7 @@ export function useFileCommands({
         })
     })
 
-    // ExportImage — render the active scene off-screen to a PNG file (UXP
+    // ExportImage -- render the active scene off-screen to a PNG file (UXP
     // `Export scene`). The C++ ImgSceneExporter renders through the WebGL FBO
     // (gfx::RenderTarget) and reads the pixels back.
     useRegisterCommand(CmdId.ExportImage, async () => {
@@ -131,7 +131,7 @@ export function useFileCommands({
         })
     })
 
-    // SceneReload — UXP `onReloadScene`: re-read the scene from its source
+    // SceneReload -- UXP `onReloadScene`: re-read the scene from its source
     // file, confirming first when there are unsaved changes.
     useRegisterCommand(CmdId.SceneReload, async () => {
         if (!cm) return

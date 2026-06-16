@@ -260,10 +260,10 @@ describe('setRendererColoring — failure modes', () => {
     })
 })
 
-// ─────────────────────────────────────────────────────────────
-// Phase 1 (Coloring panel) — new paint-type-* cases + listing,
+// -------------------------------------------------------------
+// Phase 1 (Coloring panel) -- new paint-type-* cases + listing,
 // state fetch, Paint CRUD, default-color write.
-// ─────────────────────────────────────────────────────────────
+// -------------------------------------------------------------
 
 vi.mock('../worker/server/services/helpers/makeSel', () => ({
     makeSel: vi.fn((_ctx: unknown, selStr: string, uid: number) => {
@@ -817,9 +817,9 @@ describe('setRendererDefaultColor', () => {
     })
 })
 
-// ─────────────────────────────────────────────────────────────
+// -------------------------------------------------------------
 // Object-level coloring (targetKind: 'object')
-// ─────────────────────────────────────────────────────────────
+// -------------------------------------------------------------
 
 describe('targetKind: "object" routes to scene.getObject', () => {
     beforeEach(() => vi.clearAllMocks())
@@ -890,9 +890,9 @@ describe('targetKind: "object" routes to scene.getObject', () => {
     })
 })
 
-// ─────────────────────────────────────────────────────────────
+// -------------------------------------------------------------
 // Phase 2 -- CPK / Rainbow / Bfac decks
-// ─────────────────────────────────────────────────────────────
+// -------------------------------------------------------------
 
 describe('setRendererColoring -- paint-type-cpk', () => {
     beforeEach(() => vi.clearAllMocks())

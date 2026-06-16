@@ -2,12 +2,12 @@
  * @file worker/shared/renderTypes.ts
  * @description Types shared by both threads for the render pipeline:
  * the `renderStart` / `renderCancel` service contracts and the
- * worker → renderer `render-progress` push payload.
+ * worker -> renderer `render-progress` push payload.
  */
 
 import type { RenderSettingsSnapshot } from "../../data/renderResult";
 
-/** Push-channel name for worker → renderer render updates. */
+/** Push-channel name for worker -> renderer render updates. */
 export const RENDER_PROGRESS_CHANNEL = "render-progress";
 
 /**
@@ -59,7 +59,7 @@ export interface RenderCancelResult {
 export type RenderUpdatePhase = "exporting" | "running" | "blending";
 
 /**
- * Worker → renderer push payload (channel `render-progress`).
+ * Worker -> renderer push payload (channel `render-progress`).
  * One discriminated union covers progress, completion and failure.
  */
 export type RenderUpdate =

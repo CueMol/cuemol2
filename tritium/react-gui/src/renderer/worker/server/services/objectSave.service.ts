@@ -1,6 +1,6 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 //
-// Phase: panel.workspace.ctxmenu.object — Save As.
+// Phase: panel.workspace.ctxmenu.object -- Save As.
 //
 // Mirrors UXP `Qm2Main.onSaveAsObj` (`fileopen.js`). Two worker services:
 //   - `getObjectSaveInfo`: enumerates compatible writers for the object,
@@ -9,15 +9,15 @@
 //     `<obj.name>`). The renderer side then shows a native save dialog
 //     via `DIALOG_OBJECT_SAVE` and forwards the resolved path back here.
 //   - `saveObjectToFile`: runs the
-//     `createHandler` → `setPath` → `convToLink=true` → `attach` →
-//     `write` → `detach` dance UXP performs after the dialog.
+//     `createHandler` -> `setPath` -> `convToLink=true` -> `attach` ->
+//     `write` -> `detach` dance UXP performs after the dialog.
 
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { WorkerContext } from '../types/WorkerContext';
 import { getSceneOrNull } from './helpers/sceneResolver';
 import { safeRead } from './helpers/safeRead';
 
-// ─── helpers ──────────────────────────────────────────────────────────────
+// --- helpers ---
 
 interface InfoEntry {
     name: string;
@@ -56,7 +56,7 @@ function dirnameOf(p: string): string {
     return idx >= 0 ? p.slice(0, idx) : '';
 }
 
-// ─── getObjectSaveInfo ────────────────────────────────────────────────────
+// --- getObjectSaveInfo ---
 
 export interface GetObjectSaveInfoArgs {
     sceneId: number;
@@ -79,7 +79,7 @@ export interface GetObjectSaveInfoResult {
     filters: SaveWriterFilter[];
     /** Default file name with extension. Empty when no filters apply. */
     defaultFileName: string;
-    /** Default directory (absolute path) — empty when the object has no `src`. */
+    /** Default directory (absolute path) -- empty when the object has no `src`. */
     defaultDir: string;
 }
 
@@ -137,8 +137,8 @@ function getObjectSaveInfo(
     if (filters.length === 0) return empty;
 
     // Default file name + directory. UXP `onSaveAsObj`:
-    //   - obj.src non-empty → `copy_of_<leafName>` in the obj.src directory
-    //   - obj.src empty → `<obj.name>` (no directory, picker uses cwd)
+    //   - obj.src non-empty -> `copy_of_<leafName>` in the obj.src directory
+    //   - obj.src empty -> `<obj.name>` (no directory, picker uses cwd)
     let defaultFileName: string;
     let defaultDir = '';
     if (objSrc) {
@@ -152,7 +152,7 @@ function getObjectSaveInfo(
     return { ok: true, filters, defaultFileName, defaultDir };
 }
 
-// ─── saveObjectToFile ─────────────────────────────────────────────────────
+// --- saveObjectToFile ---
 
 export interface SaveObjectToFileArgs {
     sceneId: number;

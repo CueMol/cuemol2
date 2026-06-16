@@ -50,7 +50,7 @@ export const RenderSettingsEditor: React.FC<RenderSettingsEditorProps> = ({
 
   return (
     <div className="insp-properties-tab">
-      {/* ── Backend selector ── */}
+      {/* -- Backend selector -- */}
       <div className="insp-render-backend-bar">
         <span className="insp-prop-label">Backend</span>
         <HTMLSelect
@@ -67,14 +67,14 @@ export const RenderSettingsEditor: React.FC<RenderSettingsEditorProps> = ({
         </HTMLSelect>
       </div>
 
-      {/* ── Backend-independent groups ── */}
+      {/* -- Backend-independent groups -- */}
       <PropGroupedEditor
         properties={commonProps}
         groups={RENDER_COMMON_GROUPS}
         onChange={onChange}
       />
 
-      {/* ── Backend-specific groups ── */}
+      {/* -- Backend-specific groups -- */}
       <PropGroupedEditor
         properties={backendProps}
         groups={backendGroups}

@@ -7,14 +7,14 @@
  * Per-node-type gating (supportsColoring, canPaint, canGenSurfObj, ...)
  * mirrors the UXP `wsp*CtxtMenuShowing` filter logic and is keyed on
  * the node's `className` and `type`. Each pre-fetch failure is logged
- * and falls back to the safe default — the menu degrades gracefully.
+ * and falls back to the safe default -- the menu degrades gracefully.
  */
 
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import type { SceneTreeNode } from '../../worker/shared/sceneTreeTypes'
 
 /**
- * Renderer type names that don't support a `coloring` property — matches
+ * Renderer type names that don't support a `coloring` property -- matches
  * UXP `checkColoring` in `workspace_panel_ctxtmenu.js`. The Coloring
  * submenu is hidden for these types.
  */
@@ -135,7 +135,7 @@ export async function buildSceneCtxPayload(
         }
     }
 
-    // Object-row paint pre-fetch — drives the Paint color-picker submenu
+    // Object-row paint pre-fetch -- drives the Paint color-picker submenu
     // gate (UXP `onPaintMol` object branch, hidden when sel is empty or
     // coloring is not PaintColoring).
     if (cm && node.type === 'object' && sceneId !== undefined) {
@@ -166,7 +166,7 @@ export async function buildSceneCtxPayload(
     }
 
     // Style + Camera node payload data is just property reads on the
-    // tree node — getSceneTree already populated both.
+    // tree node -- getSceneTree already populated both.
     const styleInfo = node.type === 'style' ? node.styleInfo : undefined
     const cameraInfo = node.type === 'camera' ? node.cameraInfo : undefined
 

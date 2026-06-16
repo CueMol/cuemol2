@@ -56,9 +56,9 @@ import type {
 type SetFn = RendererPropSectionProps["onSet"];
 type ResetFn = RendererPropSectionProps["onReset"];
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Local rows -- fixed-option string selects
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 interface StringSelectRowProps {
   entry: GenericPropEntry;
@@ -103,9 +103,9 @@ const StringSelectRow: React.FC<StringSelectRowProps> = ({
   );
 };
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Sections
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 const MODE_LABELS: Record<string, string> = {
   simple: "Simple line",

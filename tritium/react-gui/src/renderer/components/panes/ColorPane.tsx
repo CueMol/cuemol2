@@ -5,13 +5,13 @@
  * Mirrors the UXP coloring panel (`coloring-panel.xul`) at the per-deck
  * granularity tracked in `docs/migration/uxp-inventory/panels.md`:
  *
- *   - `panel.coloring.shell`        — renderer selector + coloring-type
+ *   - `panel.coloring.shell`        -- renderer selector + coloring-type
  *                                     dropdown chrome (this component)
- *   - `panel.coloring.deck.paint`   — Paint table (inline editor)
- *   - `panel.coloring.deck.solid`   — defaultcolor picker
- *   - `panel.coloring.deck.undef`   — "select a renderer" placeholder
+ *   - `panel.coloring.deck.paint`   -- Paint table (inline editor)
+ *   - `panel.coloring.deck.solid`   -- defaultcolor picker
+ *   - `panel.coloring.deck.undef`   -- "select a renderer" placeholder
  *   - `panel.coloring.deck.{cpk,rainbow,bfac,elepot,multigrad,script}`
- *                                   — Phase 2+ placeholders
+ *                                   -- Phase 2+ placeholders
  *
  * State flow:
  *   1. `usePaintCapableRenderers` lists candidate renderers for the active
@@ -65,13 +65,13 @@ import { useElePotMapObjects } from '../../hooks/useElePotMapObjects'
 import { PaintSelCell } from './PaintSelCell'
 import { fireService } from '../../utils/fireService'
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Coloring type dropdown items
 //
 // The deck colour editors below use the reusable `CueColorField`, which
 // reads `cm` / `sceneId` from the `ColorPickerProvider` wrapped around this
 // pane's body (so they need no prop threading).
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 interface ColoringModeItem {
     label: string
@@ -98,9 +98,9 @@ const COLORING_MODE_ITEMS: ColoringModeItem[] = [
     { label: 'Reset to default style',  coloringId: 'paint-type-resetdef', enabled: true  },
 ]
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Component props
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 interface ColorPaneProps {
     cm: AsyncCueMol | null
@@ -109,9 +109,9 @@ interface ColorPaneProps {
     onToggleCollapse?: () => void
 }
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Sub-rendering helpers
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 /**
  * Encode a target row as a string the `<select>` element can carry. Format:
@@ -611,9 +611,9 @@ const ElepotDeck: React.FC<ElepotDeckProps> = ({ params, objects, onCommit }) =>
     </div>
 )
 
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 // Main component
-// ────────────────────────────────────────────────────────────
+// ------------------------------------------------------------
 
 const PAINT_DECK_CLASS = 'PaintColoring'
 const SOLID_DECK_CLASSES = new Set(['', 'SolidColoring'])
@@ -689,7 +689,7 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
         enabled: isElepotActive,
     })
 
-    // ── Mutation handlers ──
+    // -- Mutation handlers --
     const requireTarget = useCallback(
         (): {
             sceneId: number
@@ -829,7 +829,7 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
         [cm, requireTarget],
     )
 
-    // ── Deck routing ──
+    // -- Deck routing --
     const renderDeck = (): React.ReactNode => {
         if (sceneId === undefined || target === null) {
             return (
