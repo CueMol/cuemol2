@@ -10,11 +10,11 @@
  * read-only.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import type { AsyncCueMol } from "../worker/client/AsyncCueMol";
 import type { AnimTimeline } from "../types";
 import { SEM_ANIM, SEM_ANY } from "../event";
-import { useCueMolEventListener } from "./useCueMolEventListener";
+import { useLiveFetch } from "./useLiveFetch";
 
 interface UseAnimTimelineOptions {
   cm: AsyncCueMol | null;
@@ -45,53 +45,41 @@ export function useAnimTimeline({
   cm,
   sceneId,
 }: UseAnimTimelineOptions): UseAnimTimelineResult {
-  const [timeline, setTimeline] = useState<AnimTimeline | null>(null);
-  const [loading, setLoading] = useState(false);
-
   // Latest sceneId in a ref so `refetch` identity stays stable.
   const sceneIdRef = useRef<number | undefined>(sceneId);
   sceneIdRef.current = sceneId;
-  // Drop a stale fetch that resolves after a newer scene switch.
-  const fetchTokenRef = useRef(0);
 
-  const refetch = useCallback(() => {
-    const sid = sceneIdRef.current;
-    if (!cm || sid === undefined) {
-      setTimeline(null);
-      return;
-    }
-    const token = ++fetchTokenRef.current;
-    setLoading(true);
-    cm.invokeService("animListTimeline", { sceneId: sid })
-      .then((res) => {
-        if (token !== fetchTokenRef.current) return;
-        setTimeline(res ?? null);
-      })
-      .catch((err: unknown) => {
-        if (token !== fetchTokenRef.current) return;
-        console.warn("animListTimeline failed:", err);
-        setTimeline(null);
-      })
-      .finally(() => {
-        if (token === fetchTokenRef.current) setLoading(false);
-      });
-  }, [cm]);
-
-  // Initial fetch + re-fetch on scene switch.
-  useEffect(() => {
-    refetch();
-  }, [cm, sceneId, refetch]);
-
-  // Keep in sync with C++-side mutations (undo/redo, scripts, other tabs).
-  useCueMolEventListener({
+  const {
+    state: timeline,
+    loading,
+    refetch,
+  } = useLiveFetch<AnimTimeline | null>({
     cm,
-    enabled: sceneId !== undefined,
-    category: "",
-    srcMask: SEM_ANIM,
-    evtMask: SEM_ANY,
-    scopeId: sceneId ?? -1,
-    handler: refetch,
-    debounceMs: REFETCH_DEBOUNCE_MS,
+    initial: null,
+    fallback: null,
+    exposeLoading: true,
+    fetch: () => {
+      const sid = sceneIdRef.current;
+      if (!cm || sid === undefined) return null;
+      return cm
+        .invokeService("animListTimeline", { sceneId: sid })
+        .then((res) => res ?? null)
+        .catch((err: unknown) => {
+          console.warn("animListTimeline failed:", err);
+          return null;
+        });
+    },
+    fetchDeps: [sceneId],
+    // Keep in sync with C++-side mutations (undo/redo, scripts, other tabs).
+    listeners: [
+      {
+        enabled: sceneId !== undefined,
+        srcMask: SEM_ANIM,
+        evtMask: SEM_ANY,
+        scopeId: sceneId ?? -1,
+        debounceMs: REFETCH_DEBOUNCE_MS,
+      },
+    ],
   });
 
   return { timeline, loading, refetch };

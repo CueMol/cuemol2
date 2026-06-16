@@ -7,11 +7,13 @@
  * the dropdown stays in sync when a map object is added or removed.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useRef } from 'react'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import type { ElePotMapObjectEntry } from '../worker/server/services/rendererColoring.service'
 import { SEM_OBJECT, SEM_ANY } from '../event'
-import { useCueMolEventListener } from './useCueMolEventListener'
+import { useLiveFetch } from './useLiveFetch'
+
+const EMPTY: ElePotMapObjectEntry[] = []
 
 const REFETCH_DEBOUNCE_MS = 30
 
@@ -39,40 +41,36 @@ export function useElePotMapObjects({
     sceneId,
     enabled,
 }: UseElePotMapObjectsOptions): UseElePotMapObjectsResult {
-    const [objects, setObjects] = useState<ElePotMapObjectEntry[]>([])
-
     const sceneIdRef = useRef<number | undefined>(sceneId)
     sceneIdRef.current = sceneId
+    const enabledRef = useRef(enabled)
+    enabledRef.current = enabled
 
-    const refetch = useCallback(() => {
-        const sid = sceneIdRef.current
-        if (!cm || sid === undefined || !enabled) {
-            setObjects([])
-            return
-        }
-        cm.invokeService('listElePotMapObjects', { sceneId: sid })
-            .then((res) => {
-                setObjects(res?.ok ? res.objects : [])
-            })
-            .catch((err: unknown) => {
-                console.warn('listElePotMapObjects failed:', err)
-                setObjects([])
-            })
-    }, [cm, enabled])
-
-    useEffect(() => {
-        refetch()
-    }, [cm, sceneId, enabled, refetch])
-
-    useCueMolEventListener({
+    const { state: objects, refetch } = useLiveFetch<ElePotMapObjectEntry[]>({
         cm,
-        enabled: enabled && sceneId !== undefined,
-        category: '',
-        srcMask: SEM_OBJECT,
-        evtMask: SEM_ANY,
-        scopeId: sceneId ?? -1,
-        handler: refetch,
-        debounceMs: REFETCH_DEBOUNCE_MS,
+        initial: EMPTY,
+        fallback: EMPTY,
+        fetch: () => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined || !enabledRef.current) return null
+            return cm
+                .invokeService('listElePotMapObjects', { sceneId: sid })
+                .then((res) => (res?.ok ? res.objects : EMPTY))
+                .catch((err: unknown) => {
+                    console.warn('listElePotMapObjects failed:', err)
+                    return EMPTY
+                })
+        },
+        fetchDeps: [sceneId, enabled],
+        listeners: [
+            {
+                enabled: enabled && sceneId !== undefined,
+                srcMask: SEM_OBJECT,
+                evtMask: SEM_ANY,
+                scopeId: sceneId ?? -1,
+                debounceMs: REFETCH_DEBOUNCE_MS,
+            },
+        ],
     })
 
     return { objects, refetch }
