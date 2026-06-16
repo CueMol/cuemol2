@@ -1,8 +1,32 @@
 # ADR-0033: ObjProxyBridge `_objSlot` ownership and lifetime
 
-- Status: proposed
+- Status: accepted (design-out -- bridge removed; leak no longer reachable)
 - Date: 2026-06-16
 - Mapping rows: (none -- worker-bridge infra; tracked by refactoring plan T15 / PR-A)
+
+## Decision (2026-06-16)
+
+**The leak was designed out, not bounded.** Neither Option A
+(`FinalizationRegistry` + `releaseObj` RPC) nor Option B (scene-scoped
+eviction) was implemented. Instead the renderer-side `ObjProxy` bridge was
+removed outright: the only renderer holder of an `ObjProxy` was converted to a
+numeric-id `drainLogMessages` service, and the `ObjProxy` bridge plus the
+`ObjProxyBridge._objSlot` translation table were deleted.
+
+Rationale: an audit of renderer-side `ObjProxy` usage found **exactly one
+callsite** (`useLogEvent`) and **zero service contracts that require holding a
+native object** across the worker boundary. With no remaining consumer that
+needs an `ObjProxy`, the entire bridge -- and therefore the unbounded
+`_objSlot` table that was the leak site -- has no reason to exist. Removing it
+eliminates the leak at the source rather than capping a table that should not
+be there at all.
+
+Consequently Option A's `FinalizationRegistry` machinery (and its slot_id-reuse
+generation stamp, non-deterministic GC timing, and aliasing-fan-out caveats)
+was unnecessary: there is nothing left to register, release, or generation-
+stamp. The analysis below is retained as the record of *why* the slot model was
+unsound and why removing it (rather than patching its lifetime) was the correct
+resolution.
 
 ## Context
 
@@ -70,14 +94,16 @@ address it**. There is no per-object refcount on the renderer side today:
 JS GC with **no disposal hook**. Nothing on the renderer signals "this tuple
 is dead". This is the gap the leak fix must close.
 
-## Decision
+## Analysis (candidate models considered, then superseded)
 
-Status **proposed** -- this ADR records the analysis and two candidate
-ownership models so the lead can choose one with the user. PR-A (the actual
-leak fix) is **not** implemented in this run. The facade-collapse work
-(PR-B) is mechanical and independent of this decision.
+> **Outcome:** Neither option below was adopted. See **Decision (2026-06-16)**
+> at the top -- the bridge was removed outright, so no ownership model was
+> needed. The two candidates are retained as the record of what was evaluated
+> and why a lifetime patch was avoided.
 
-Two candidate models from the T15 plan:
+This section originally recorded the analysis and two candidate ownership
+models so the lead could choose one with the user. The two candidate models
+from the T15 plan were:
 
 ### Option A -- `FinalizationRegistry` + `releaseObj(slotId)` RPC
 
@@ -213,10 +239,10 @@ no-op or must not run on tab close.
 - **Singleton / long-lived exclusion.** Services and `View`/`Scene` must be
   excluded from release or their no-op / deferred `destruct` semantics break.
 
-### Open question for the lead/user
+### Open question for the lead/user (RESOLVED 2026-06-16)
 
-Choose the ownership model: Option A (FinalizationRegistry + generation-
-stamped `releaseObj` RPC -- recommended) vs Option B (scene-scoped eviction).
-This decision needs an ownership sign-off before PR-A is implemented, because
-it determines when the C++ `destruct` (and thus `delete`) of native objects
-is allowed to run relative to the intentionally long-lived View/Scene.
+Originally: choose the ownership model (Option A vs Option B). **Resolved by
+removing the bridge** -- the audit showed a single renderer `ObjProxy`
+callsite (`useLogEvent`) and no object-essential service contract, so neither
+ownership model was needed. With the `ObjProxy` bridge and `_objSlot` deleted,
+there is no native `destruct`/`delete` timing question left to sign off on.
