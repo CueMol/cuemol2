@@ -1,0 +1,334 @@
+/**
+ * @file worker/server/services/coloring/types.ts
+ * @description Shared DTO / args / result types for the renderer- and
+ * object-level Coloring / Paint services.
+ *
+ * These types are split out of `rendererColoring.service.ts` for locality;
+ * the service file re-exports them verbatim, so external importers
+ * (`WorkerCalls.ts`, `ColorPane.tsx`, the coloring hooks) are unchanged.
+ */
+import type { RendColoringId } from '../../../../../shared/ipcTypes';
+
+/**
+ * Discriminator for the Coloring panel's selector: both top-level objects
+ * (`MolCoord`) and renderers (`MolRenderer`, `MolSurfRenderer`) expose the
+ * same `coloring` / `defaultcolor` / `resetProp` interface; UXP's
+ * `paint_coloring_filter` accepts both. We default `targetKind` to
+ * `'renderer'` so existing renderer-ctxmenu callers stay unchanged.
+ */
+export type ColoringTargetKind = 'object' | 'renderer';
+
+export interface GetPaintColoringStylesArgs {
+    sceneId: number;
+}
+
+export interface PaintColoringStyleEntry {
+    /** Raw style name; the action dispatches `style-<name>`. */
+    name: string;
+    /** Human-friendly label - `desc` when present, otherwise the raw name. */
+    label: string;
+}
+
+export interface GetPaintColoringStylesResult {
+    ok: boolean;
+    entries: PaintColoringStyleEntry[];
+}
+
+export interface SetRendererColoringArgs {
+    sceneId: number;
+    rendId: number;
+    coloringId: RendColoringId;
+    /** Default 'renderer' for back-compat with the renderer ctxmenu callers. */
+    targetKind?: ColoringTargetKind;
+}
+
+export interface SetRendererColoringResult {
+    ok: boolean;
+}
+
+export interface PaintRendererSelectionArgs {
+    sceneId: number;
+    rendId: number;
+    /** CueMol color value string, e.g. "#FFF", "hsb(0, 1.0, 1.0)". */
+    colorValue: string;
+}
+
+export interface PaintRendererSelectionResult {
+    ok: boolean;
+}
+
+export interface GetRendererPaintInfoArgs {
+    sceneId: number;
+    rendId: number;
+}
+
+export interface GetRendererPaintInfoResult {
+    /** True iff coloring is PaintColoring AND the parent mol has a non-empty sel. */
+    canPaint: boolean;
+}
+
+export interface PaintObjectSelectionArgs {
+    sceneId: number;
+    objId: number;
+    /** CueMol color value string, e.g. "#FFF", "hsb(0, 1.0, 1.0)". */
+    colorValue: string;
+}
+
+export interface PaintObjectSelectionResult {
+    ok: boolean;
+}
+
+export interface GetObjectPaintInfoArgs {
+    sceneId: number;
+    objId: number;
+}
+
+export interface GetObjectPaintInfoResult {
+    /** True iff sel is non-empty. Coloring class is not gated here. */
+    canPaint: boolean;
+}
+
+export interface ListPaintCapableRenderersArgs {
+    sceneId: number;
+}
+
+/**
+ * One row in the Coloring panel's selector. Mirrors UXP
+ * `paint_coloring_filter`, which accepts both top-level objects
+ * (`elem.cat === 'obj'`) and renderers (`elem.cat === 'rend'`) that expose
+ * a `coloring` property. For objects the panel edits `mol.coloring`
+ * directly; for renderers it edits `rend.coloring` (or `rend.defaultcolor`
+ * for the Solid deck).
+ */
+export interface PaintCapableRendererEntry {
+    /** 'object' for MolCoord rows, 'renderer' for child renderer rows. */
+    targetKind: ColoringTargetKind;
+    /** C++ uid of the object or renderer this row represents. */
+    rendId: number;
+    /** Display name of the target. */
+    name: string;
+    /**
+     * For renderer rows this is `type_name` (e.g. "cartoon"); for object
+     * rows it is the object's class name (e.g. "MolCoord"). Used purely
+     * for the secondary label in the selector.
+     */
+    typeName: string;
+    /** Parent object id; equal to `rendId` for object rows. */
+    objId: number;
+    /** Parent object name; equal to `name` for object rows. */
+    objName: string;
+}
+
+export interface ListPaintCapableRenderersResult {
+    ok: boolean;
+    renderers: PaintCapableRendererEntry[];
+}
+
+export interface GetRendererColoringStateArgs {
+    sceneId: number;
+    rendId: number;
+    /** Default 'renderer' for back-compat. */
+    targetKind?: ColoringTargetKind;
+}
+
+export interface PaintEntryDto {
+    /** Zero-based index in PaintColoring. */
+    idx: number;
+    /** Compiled MolSelection re-stringified for display. */
+    selStr: string;
+    /** Color value formatted by `AbstractColor.toString()`. */
+    colorValue: string;
+}
+
+/** Per-element colour palette for `CPKColoring`. */
+export interface CpkColors {
+    colC: string; colN: string; colO: string; colS: string;
+    colP: string; colH: string; colX: string;
+}
+
+/** Editor params for `RainbowColoring`. */
+export interface RainbowParams {
+    /** "mol" | "chain" - mirrors UXP `coloring.mode`. */
+    mode: string;
+    /** "chain" | "resid" | "protss" - UXP `coloring.incr_mode`. */
+    incrMode: string;
+    /** Hue range start, 0-360 degrees. UXP `coloring.start_hue`. */
+    startHue: number;
+    /** Hue range end, 0-360 degrees. UXP `coloring.end_hue`. */
+    endHue: number;
+    /** 0..1; UXP `coloring.sat` (panel widget shows 0..100). */
+    saturation: number;
+    /** 0..1; UXP `coloring.bri`. */
+    brightness: number;
+}
+
+/**
+ * Editor params for the Elepot deck. Unlike CPK/Rainbow/Bfac these properties
+ * live on the **renderer** itself (lowpar/midpar/highpar/lowcol/midcol/highcol/
+ * elepot/ramp_above), not on a ColoringScheme; the deck appears when a
+ * surface renderer has `colormode === "potential"`.
+ */
+export interface ElepotParams {
+    /** Currently selected ElePotMap object name (empty when none). */
+    elepot: string;
+    /** UXP `ramp_above` -- "Color by SAS" checkbox. */
+    rampAbove: boolean;
+    lowColor: string;
+    midColor: string;
+    highColor: string;
+    lowParam: number;
+    midParam: number;
+    highParam: number;
+}
+
+/** Editor params for `BfacColoring`. */
+export interface BfacParams {
+    /** "bfac" | "occ" | "center"; UXP `coloring.mode`. */
+    mode: string;
+    /** Low-side colour as a CueMol colour string. */
+    lowColor: string;
+    /** High-side colour. */
+    highColor: string;
+    /** "none" | "mol" | "rend"; UXP `coloring.auto`. */
+    autoMode: string;
+    /** Low parameter value; UXP `coloring.lowpar` (manual mode only). */
+    lowParam: number;
+    /** High parameter value; UXP `coloring.highpar`. */
+    highParam: number;
+}
+
+export interface GetRendererColoringStateResult {
+    ok: boolean;
+    /** Coloring class name (e.g. "PaintColoring"), or "" when coloring is null. */
+    className: string;
+    /** Stringified renderer.defaultcolor (falls back to "" if unreadable). */
+    defaultColor: string;
+    /** Populated only when className === "PaintColoring". */
+    paintEntries: PaintEntryDto[];
+    /** Populated only when className === "CPKColoring". */
+    cpkColors?: CpkColors;
+    /** Populated only when className === "RainbowColoring". */
+    rainbowParams?: RainbowParams;
+    /** Populated only when className === "BfacColoring". */
+    bfacParams?: BfacParams;
+    /**
+     * Renderer type name (e.g. "molsurf", "dsurface", "cartoon"). Empty for
+     * objects and groups. Used by the renderer-side dropdown to gate the
+     * "Electrostatic potential" item.
+     */
+    surfaceType: string;
+    /**
+     * MolSurfRenderer colormode (e.g. "molecule", "potential", "solid").
+     * Empty for renderers without the colormode property.
+     */
+    colormode: string;
+    /** Populated only when the renderer is a surface AND colormode === "potential". */
+    elepotParams?: ElepotParams;
+}
+
+export interface AddPaintEntryArgs {
+    sceneId: number;
+    rendId: number;
+    /** Default 'renderer'. */
+    targetKind?: ColoringTargetKind;
+    /** Insert position; pass `size` to append. */
+    idx: number;
+    selStr: string;
+    colorValue: string;
+}
+
+export interface PaintMutationResult {
+    ok: boolean;
+}
+
+export interface RemovePaintEntryArgs {
+    sceneId: number;
+    rendId: number;
+    targetKind?: ColoringTargetKind;
+    idx: number;
+}
+
+export interface UpdatePaintEntryArgs {
+    sceneId: number;
+    rendId: number;
+    targetKind?: ColoringTargetKind;
+    idx: number;
+    selStr: string;
+    colorValue: string;
+}
+
+export interface MovePaintEntryArgs {
+    sceneId: number;
+    rendId: number;
+    targetKind?: ColoringTargetKind;
+    fromIdx: number;
+    toIdx: number;
+}
+
+export interface SetRendererDefaultColorArgs {
+    sceneId: number;
+    rendId: number;
+    targetKind?: ColoringTargetKind;
+    colorValue: string;
+}
+
+export interface SetRendererDefaultColorResult {
+    ok: boolean;
+}
+
+export interface SetColoringPropArgs {
+    sceneId: number;
+    rendId: number;
+    targetKind?: ColoringTargetKind;
+    /** Property name on the ColoringScheme (e.g. "col_C", "mode", "bri"). */
+    propName: string;
+    /**
+     * Value to write. Strings whose `propName` is in the colour whitelist
+     * are compiled via `makeColor` first; otherwise the value is passed
+     * through (mode/incr_mode/auto are string enums, hue / params are
+     * numbers).
+     */
+    propValue: string | number;
+}
+
+export interface SetColoringPropResult {
+    ok: boolean;
+}
+
+export interface ListElePotMapObjectsArgs {
+    sceneId: number;
+}
+
+export interface ElePotMapObjectEntry {
+    /** C++ uid of the ElePotMap object. */
+    objId: number;
+    /** Object name shown in the selector. */
+    name: string;
+}
+
+export interface ListElePotMapObjectsResult {
+    ok: boolean;
+    objects: ElePotMapObjectEntry[];
+}
+
+export interface SetRendererElepotPropArgs {
+    sceneId: number;
+    rendId: number;
+    targetKind?: ColoringTargetKind;
+    /**
+     * Property name on the surface renderer
+     * (`elepot` | `ramp_above` | `lowcol` | `midcol` | `highcol` |
+     *  `lowpar` | `midpar` | `highpar`).
+     */
+    propName: string;
+    /**
+     * Value to write. Colour-valued props compile to `AbstractColor.wrapped`;
+     * `ramp_above` is a boolean; numeric params come through as numbers;
+     * `elepot` is the target ElePotMap object name (string).
+     */
+    propValue: string | number | boolean;
+}
+
+export interface SetRendererElepotPropResult {
+    ok: boolean;
+}
