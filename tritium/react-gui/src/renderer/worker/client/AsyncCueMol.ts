@@ -9,11 +9,8 @@
  * does the work in one round-trip rather than calling many methods here
  * in sequence.
  */
-import { BaseWrapper } from '@cuemol/core/src/BaseWrapper';
 import type { ElectronFileFilter } from '../../../shared/ipcTypes';
 import type { FileOpenOptions } from '../../components/fopen-opt-dlgs/types';
-import { ObjTuple } from '../shared/ObjTuple';
-import { ObjProxy } from './ObjProxy';
 import {
     WorkerTransport,
     type StreamProgressListener,
@@ -58,10 +55,10 @@ export class AsyncCueMol {
         this._transport = new WorkerTransport({
             onEventNotify: (args) => this._slots.notify(...args),
         });
-        this._factory = new ObjectFactory(this._transport, this);
+        this._factory = new ObjectFactory(this._transport);
     }
 
-    // --- Transport facade (preserves test surface + ObjProxy contract) ---
+    // --- Transport facade ---
 
     /** Whether the worker has been launched and not yet terminated. */
     isReady(): boolean { return this._transport.isReady(); }
@@ -107,7 +104,7 @@ export class AsyncCueMol {
         return this._transport.invokeMethod(name, ...args);
     }
 
-    /** Call a worker RPC handler (`RpcMap` entry -- used by `ObjProxy`). */
+    /** Call a worker RPC handler (`RpcMap` entry -- class-registry queries). */
     invokeRpc<K extends RpcKey>(name: K, ...args: RpcArgs<K>): Promise<RpcResult<K>> {
         return this._transport.invokeRpc(name, ...args);
     }
@@ -125,22 +122,7 @@ export class AsyncCueMol {
         this._transport.addListener(method, seqno, handler);
     }
 
-    // --- Factory facade (preserves BaseWrapper._utils contract) ---
-
-    /** Construct a `BaseWrapper` for an already-resolved `ObjProxy`. */
-    createWrapperImpl(obj: ObjProxy): BaseWrapper { return this._factory.createWrapperImpl(obj); }
-
-    /** Resolve a Promise of `ObjProxy` and wrap the result. */
-    createWrapper(prom: Promise<ObjProxy>): Promise<BaseWrapper | null> { return this._factory.createWrapper(prom); }
-
-    /** Return the `ObjTuple` underlying a proxy. */
-    getWrapped(obj: ObjProxy): ObjTuple { return this._factory.getWrapped(obj); }
-
-    /** Create a new C++ object of `className` on the worker side. */
-    createObj(className: string): Promise<BaseWrapper | null> { return this._factory.createObj(className); }
-
-    /** Look up a registered singleton service (`StyleManager`, ...). */
-    getService(className: string): Promise<BaseWrapper | null> { return this._factory.getService(className); }
+    // --- Class-registry query facade ---
 
     /** Check whether `className` is registered with the C++ class registry. */
     hasClass(className: string): Promise<boolean | null> { return this._factory.hasClass(className); }

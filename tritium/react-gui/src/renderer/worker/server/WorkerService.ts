@@ -12,7 +12,6 @@ import type { ScrEventManager } from '@cuemol/core/src/wrappers/ScrEventManager'
 import type { GUIView } from '@cuemol/core/src/wrappers/GUIView';
 import type { StyleManager } from '@cuemol/core/src/wrappers/StyleManager';
 import type { WorkerContext } from './types/WorkerContext';
-import { ObjProxyBridge } from './objProxyBridge';
 import {
     handleMouseDown,
     handleMouseUp,
@@ -46,7 +45,6 @@ type AnyServiceFn = (ctx: WorkerContext, args: any) => any | Promise<any>;
  *
  * Owns the two dispatch tables and the `invoke()` entry point. The actual
  * method implementations live in sibling modules:
- *   - `objProxyBridge.ts`   -- ObjProxy create / get / set / invoke bridge
  *   - `inputEvents.ts`      -- pointer / wheel / gesture handling
  *   - `workerLifecycle.ts`  -- user-style / input-config / event wiring
  *   - `textRender.ts`       -- OffscreenCanvas text rasterisation
@@ -59,7 +57,6 @@ export class WorkerService {
     private _registered: { [K in ServiceKey]?: AnyServiceFn } = {};
     private _internal: CueMolInternal;
     private _cm: CueMol;
-    private _bridge: ObjProxyBridge;
     private _gfx_mgr: GfxManager | null = null;
     private _postMessage: (data: any[]) => void;
     private _close: () => void;
@@ -75,7 +72,6 @@ export class WorkerService {
     ) {
         this._internal = getModule();
         this._cm = new CueMol({ internal: this._internal });
-        this._bridge = new ObjProxyBridge(this._internal, this._cm);
         this._postMessage = postMessage;
         this._close = close;
         log.info('_internal:', this._internal);
@@ -85,13 +81,8 @@ export class WorkerService {
             'loadUserStyle': this.loadUserStyle,
             'setViewInputConfigStyle': this.setViewInputConfigStyle,
             'terminateWorker': this.terminateWorker,
-            'createObj': this._rpcCreateObj,
-            'getService': this._rpcGetService,
             'hasClass': this._rpcHasClass,
             'getAllClassNamesJSON': this._rpcGetAllClassNamesJSON,
-            'getProp': this._rpcGetProp,
-            'setProp': this._rpcSetProp,
-            'invokeMethod': this._rpcInvokeMethod,
             //
             'addEventListener': this.addEventListener,
             'removeEventListener': this.removeEventListener,
@@ -208,35 +199,16 @@ export class WorkerService {
     }
 
     //////////
-    // ObjProxy bridge -- thin forwarders to ObjProxyBridge. Kept as methods
-    // so the `_methods` dispatch table binds stable references at construction.
+    // Class-registry RPC handlers. Forward straight to the CueMol facade
+    // (no slot table / ObjProxy involved). Kept as methods so the
+    // `_methods` dispatch table binds stable references at construction.
 
-    private _rpcCreateObj(className: string) {
-        return this._bridge.createObj(className);
+    private _rpcHasClass(className: string): boolean {
+        return this._cm.hasClass(className);
     }
 
-    private _rpcGetService(className: string) {
-        return this._bridge.getService(className);
-    }
-
-    private _rpcHasClass(className: string) {
-        return this._bridge.hasClass(className);
-    }
-
-    private _rpcGetAllClassNamesJSON() {
-        return this._bridge.getAllClassNamesJSON();
-    }
-
-    private _rpcGetProp(thisobj: any, propName: string) {
-        return this._bridge.getProp(thisobj, propName);
-    }
-
-    private _rpcSetProp(thisobj: any, propName: string, value: any) {
-        return this._bridge.setProp(thisobj, propName, value);
-    }
-
-    private _rpcInvokeMethod(methodName: string, thisobj: any, args: any[]) {
-        return this._bridge.invokeMethod(methodName, thisobj, args);
+    private _rpcGetAllClassNamesJSON(): string {
+        return this._cm.getAllClassNamesJSON();
     }
 
     //////////

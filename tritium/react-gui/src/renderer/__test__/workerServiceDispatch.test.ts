@@ -17,8 +17,8 @@ import { WorkerService } from '../worker/server/WorkerService';
  * Degrade-detection test for `WorkerService.invoke` -- the worker-side RPC
  * dispatcher.
  *
- * Phase 2 of the react-gui refactor extracts the method implementations
- * (input events, ObjProxy bridge, lifecycle, text render) into separate
+ * The react-gui refactor extracts the method implementations
+ * (input events, lifecycle, text render) into separate
  * modules while `WorkerService` stays as the dispatch-table owner. This
  * test pins the *observable wire contract* of `invoke()` so the extraction
  * is provably behaviour-preserving:
@@ -134,8 +134,7 @@ describe('WorkerService.invoke dispatch contract', () => {
         const expected = [
             'initCueMol', 'loadUserStyle', 'setViewInputConfigStyle',
             'terminateWorker',
-            'createObj', 'getService', 'hasClass', 'getAllClassNamesJSON',
-            'getProp', 'setProp', 'invokeMethod',
+            'hasClass', 'getAllClassNamesJSON',
             'addEventListener', 'removeEventListener',
             'bindCanvas', 'addView', 'activateView', 'removeView', 'resized',
             'mouseDown', 'mouseUp', 'mouseMove', 'wheel', 'gesture',

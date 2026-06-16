@@ -386,8 +386,8 @@ export class WorkerTransport {
     }
 
     /**
-     * Call a worker RPC handler (`RpcMap` entry -- used by `ObjProxy` for
-     * `createObj`, `getProp`, `invokeMethod`, ...).
+     * Call a worker RPC handler (`RpcMap` entry -- class-registry queries
+     * `hasClass` / `getAllClassNamesJSON`).
      *
      * @param name - RPC key.
      * @param args - Variadic argument tuple.
