@@ -3,10 +3,10 @@ import {
     ReassignProt2ndryDialog,
     type ReassignProt2ndryDialogResult,
 } from './ReassignProt2ndryDialog'
+import { createConfirmCancelDialog } from '../../hooks/useDialogFactory'
 
 // React import is required by the JSX runtime used at test time; do not remove.
 void React
-import { createDialogHook } from '../../hooks/useDialogFactory'
 
 export interface ReassignProt2ndryDialogArgs {
     sceneId: number
@@ -15,14 +15,7 @@ export interface ReassignProt2ndryDialogArgs {
 export const {
     Provider: ReassignProt2ndryDialogProvider,
     useShow: useShowReassignProt2ndryDialog,
-} = createDialogHook<ReassignProt2ndryDialogArgs, ReassignProt2ndryDialogResult | null>({
+} = createConfirmCancelDialog<ReassignProt2ndryDialogArgs, ReassignProt2ndryDialogResult>({
     name: 'ReassignProt2ndryDialog',
-    render: ({ visible, args, resolve }) => (
-        <ReassignProt2ndryDialog
-            visible={visible}
-            sceneId={args?.sceneId ?? 0}
-            onConfirm={(result) => resolve(result)}
-            onCancel={() => resolve(null)}
-        />
-    ),
+    component: ReassignProt2ndryDialog,
 })

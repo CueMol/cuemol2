@@ -44,6 +44,15 @@ import { NewTabDialog } from '../components/dialogs/NewTabDialog'
 import { QscWriterOptionDialog } from '../components/dialogs/QscWriterOptionDialog'
 import { StreamProgressDialog } from '../components/dialogs/StreamProgressDialog'
 import { FileOpenOptionDialog } from '../components/fopen-opt-dlgs/FileOpenOptionDialog'
+import { ChangeChainIdDialog } from '../components/dialogs/ChangeChainIdDialog'
+import { ChangeResidueIndexDialog } from '../components/dialogs/ChangeResidueIndexDialog'
+import { CutSurfByPlaneDialog } from '../components/dialogs/CutSurfByPlaneDialog'
+import { DeleteMolDialog } from '../components/dialogs/DeleteMolDialog'
+import { MakeMolSurfDialog } from '../components/dialogs/MakeMolSurfDialog'
+import { MergeMolDialog } from '../components/dialogs/MergeMolDialog'
+import { MolSuperposeDialog } from '../components/dialogs/MolSuperposeDialog'
+import { ReassignProt2ndryDialog } from '../components/dialogs/ReassignProt2ndryDialog'
+import { InteractionAnalysisDialog } from '../components/dialogs/InteractionAnalysisDialog'
 import { mountTree } from './helpers/testHarness'
 
 void React
@@ -157,4 +166,104 @@ describe('Modal dialog: backdrop click + close button are disabled', () => {
     expect(lastDialogProps().isCloseButtonShown).toBe(false)
     handle.unmount()
   })
+})
+
+/**
+ * The 9 molecule-edit dialogs render their frame through the shared
+ * `DialogShell`. This block pins the DialogShell-owned frame contract on
+ * each of them (not just the two boolean props above, but also the
+ * light-theme `portalClassName === ''` value -- NOT `undefined` -- the
+ * title, and a token-driven `style.width`). It guards the shell extraction:
+ * if DialogShell stops forwarding any of these, every dialog regresses here.
+ */
+describe('Molecule-edit dialogs: DialogShell frame contract', () => {
+  beforeEach(() => {
+    dialogPropsList.length = 0
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  const cases: Array<{ name: string; render: () => React.ReactElement; title: string }> = [
+    {
+      name: 'ChangeChainIdDialog',
+      title: 'Change chain ID',
+      render: () => React.createElement(ChangeChainIdDialog, {
+        visible: true, sceneId: 0, onConfirm: () => {}, onCancel: () => {},
+      }),
+    },
+    {
+      name: 'ChangeResidueIndexDialog',
+      title: 'Change residue index',
+      render: () => React.createElement(ChangeResidueIndexDialog, {
+        visible: true, sceneId: 0, onConfirm: () => {}, onCancel: () => {},
+      }),
+    },
+    {
+      name: 'CutSurfByPlaneDialog',
+      title: 'Mol surface cutter',
+      render: () => React.createElement(CutSurfByPlaneDialog, {
+        visible: true, sceneId: 0, viewId: 0, onConfirm: () => {}, onCancel: () => {},
+      }),
+    },
+    {
+      name: 'DeleteMolDialog',
+      title: 'Delete atoms',
+      render: () => React.createElement(DeleteMolDialog, {
+        visible: true, sceneId: 0, onConfirm: () => {}, onCancel: () => {},
+      }),
+    },
+    {
+      name: 'MakeMolSurfDialog',
+      title: 'Mol surface generation',
+      render: () => React.createElement(MakeMolSurfDialog, {
+        visible: true, sceneId: 0, onConfirm: () => {}, onCancel: () => {},
+      }),
+    },
+    {
+      name: 'MergeMolDialog',
+      title: 'Merge molecule',
+      render: () => React.createElement(MergeMolDialog, {
+        visible: true, sceneId: 0, onConfirm: () => {}, onCancel: () => {},
+      }),
+    },
+    {
+      name: 'MolSuperposeDialog',
+      title: 'Molecular superposition',
+      render: () => React.createElement(MolSuperposeDialog, {
+        visible: true, sceneId: 0, viewId: 0, onConfirm: () => {}, onCancel: () => {},
+      }),
+    },
+    {
+      name: 'ReassignProt2ndryDialog',
+      title: 'Reassign secondary structure',
+      render: () => React.createElement(ReassignProt2ndryDialog, {
+        visible: true, sceneId: 0, onConfirm: () => {}, onCancel: () => {},
+      }),
+    },
+    {
+      name: 'InteractionAnalysisDialog',
+      title: 'Interaction analysis',
+      render: () => React.createElement(InteractionAnalysisDialog, {
+        visible: true, sceneId: 0, onConfirm: () => {}, onCancel: () => {},
+      }),
+    },
+  ]
+
+  for (const c of cases) {
+    it(`${c.name} forwards the DialogShell frame props`, () => {
+      const handle = mountTree(c.render())
+      const props = lastDialogProps()
+      expect(props.canOutsideClickClose).toBe(false)
+      expect(props.isCloseButtonShown).toBe(false)
+      // Light theme: portalClassName is the empty string, NOT undefined.
+      expect(props.portalClassName).toBe('')
+      expect(props.title).toBe(c.title)
+      // Width is a token rung (CSS custom property), never a raw px number.
+      const width = (props.style as { width?: unknown } | undefined)?.width
+      expect(typeof width).toBe('string')
+      expect(String(width)).toMatch(/^var\(--dialog-w-/)
+      handle.unmount()
+    })
+  }
 })

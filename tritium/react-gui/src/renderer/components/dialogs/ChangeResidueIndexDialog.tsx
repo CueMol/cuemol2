@@ -15,12 +15,14 @@
  * the component mounted).
  */
 
-import React, { useCallback, useEffect, useState } from 'react'
-import { Alert, Button, Dialog, DialogBody, DialogFooter } from '@blueprintjs/core'
+import React, { useCallback, useRef, useState } from 'react'
+import { Alert } from '@blueprintjs/core'
 import { useTheme } from '../../contexts/ThemeContext'
 import { useCueMol } from '../../hooks/useCueMol'
+import { useMolEditCommit } from '../../hooks/useMolEditCommit'
 import { Field, FieldSection, SegmentField, SwitchField, TextField } from '../../h3-kit/form'
-import { ObjectSelect, objectFilters } from '../../h3-kit/ObjectSelect'
+import { DialogShell } from './DialogShell'
+import { MolPicker } from './MolPicker'
 import { MolSelList } from '../../h3-kit/MolSelList/MolSelList'
 import { pushHistory } from '../../h3-kit/MolSelList/selHistory'
 import { resolveResIndexInput, type ResIndexMode } from './resIndexInput'
@@ -55,49 +57,52 @@ export function ChangeResidueIndexDialog({
     const [mode, setMode] = useState<ResIndexMode>('shift')
     const [valueStr, setValueStr] = useState<string>('1')
     const [renumber, setRenumber] = useState<boolean>(false)
-    const [submitting, setSubmitting] = useState(false)
-    const [errorMsg, setErrorMsg] = useState<string | null>(null)
     const [pendingCommit, setPendingCommit] =
         useState<{ value: number; message: string } | null>(null)
+    // Resolved residue-index value for the next commit (set just before run()).
+    const commitValueRef = useRef<number>(0)
 
-    // Reset transient state on each open. `objId` is intentionally NOT reset so
-    // the last-picked molecule persists within the session.
-    useEffect(() => {
-        if (!visible) return
-        setSelStr('')
-        setMode('shift')
-        setValueStr('1')
-        setRenumber(false)
-        setSubmitting(false)
-        setErrorMsg(null)
-        setPendingCommit(null)
-    }, [visible])
+    // Commit handler + submitting/errorMsg state + reset-on-open. `objId` is
+    // intentionally NOT reset so the last-picked molecule persists in-session.
+    // `run()` is multi-site callable: both handleOk (kind 'ok') and the confirm
+    // Alert invoke it.
+    const { submitting, errorMsg, setErrorMsg, run } =
+        useMolEditCommit({
+            cm,
+            visible,
+            onReset: () => {
+                setSelStr('')
+                setMode('shift')
+                setValueStr('1')
+                setRenumber(false)
+                setPendingCommit(null)
+            },
+            buildCommit: () => {
+                if (objId === undefined) return null
+                const value = commitValueRef.current
+                return {
+                    invoke: () => cm!.invokeService('changeResidueIndex', {
+                        sceneId,
+                        objId,
+                        selStr,
+                        bshift: mode === 'shift',
+                        value,
+                        renumber,
+                    }),
+                    onSuccess: () => {
+                        if (selStr.trim() !== '') pushHistory(selStr.trim())
+                        onConfirm({ ok: true })
+                    },
+                    fallbackError: 'Failed to change residue index',
+                }
+            },
+        })
 
-    const commit = useCallback(async (value: number) => {
-        if (!cm || objId === undefined) return
-        setSubmitting(true)
-        setErrorMsg(null)
-        try {
-            const res = await cm.invokeService('changeResidueIndex', {
-                sceneId,
-                objId,
-                selStr,
-                bshift: mode === 'shift',
-                value,
-                renumber,
-            })
-            setSubmitting(false)
-            if (res?.ok) {
-                if (selStr.trim() !== '') pushHistory(selStr.trim())
-                onConfirm({ ok: true })
-            } else {
-                setErrorMsg(res?.error ?? 'Failed to change residue index')
-            }
-        } catch (err) {
-            setErrorMsg(String(err))
-            setSubmitting(false)
-        }
-    }, [cm, sceneId, objId, selStr, mode, renumber, onConfirm])
+    // Run a commit for the resolved residue-index value (sets the ref first).
+    const commit = useCallback((value: number) => {
+        commitValueRef.current = value
+        void run()
+    }, [run])
 
     const handleOk = useCallback(() => {
         if (!cm || objId === undefined) return
@@ -110,34 +115,46 @@ export function ChangeResidueIndexDialog({
                 setPendingCommit({ value: res.value, message: res.message })
                 return
             case 'ok':
-                void commit(res.value)
+                commit(res.value)
                 return
         }
-    }, [cm, objId, mode, valueStr, commit])
+    }, [cm, objId, mode, valueStr, commit, setErrorMsg])
 
     return (
-        <Dialog
-            isOpen={visible}
-            onClose={onCancel}
+        <DialogShell
+            visible={visible}
             title="Change residue index"
-            style={{ width: 380 }}
-            portalClassName={isDark ? 'bp5-dark' : ''}
-            canOutsideClickClose={false}
-            isCloseButtonShown={false}
+            width="lg"
+            onCancel={onCancel}
+            onOk={handleOk}
+            okDisabled={objId === undefined}
+            submitting={submitting}
+            errorMsg={errorMsg}
+            extra={
+                <Alert
+                    isOpen={pendingCommit !== null}
+                    intent="primary"
+                    confirmButtonText="Yes"
+                    cancelButtonText="No"
+                    className={isDark ? 'bp5-dark' : undefined}
+                    onConfirm={() => {
+                        const p = pendingCommit
+                        setPendingCommit(null)
+                        if (p) void commit(p.value)
+                    }}
+                    onCancel={() => setPendingCommit(null)}
+                >
+                    {pendingCommit?.message}
+                </Alert>
+            }
         >
-            <DialogBody>
-                <div className="h3-dialog-form">
                     <FieldSection title="Molecule">
-                        <ObjectSelect
+                        <MolPicker
                             cm={cm}
                             sceneId={sceneId}
                             label="Molecule"
-                            filter={objectFilters.molCoord}
                             selectedId={objId}
                             onChange={setObjId}
-                            emptyText="(no molecules)"
-                            fallbackName={(m) => `Mol ${m.uid}`}
-                            hideLabel
                         />
                     </FieldSection>
 
@@ -178,42 +195,6 @@ export function ChangeResidueIndexDialog({
                             />
                         </Field>
                     </FieldSection>
-
-                    {errorMsg !== null && (
-                        <div className="h3-dialog-error">{errorMsg}</div>
-                    )}
-                </div>
-            </DialogBody>
-            <DialogFooter
-                actions={
-                    <>
-                        <Button onClick={onCancel} disabled={submitting}>Cancel</Button>
-                        <Button
-                            intent="primary"
-                            onClick={handleOk}
-                            disabled={submitting || objId === undefined}
-                            loading={submitting}
-                        >
-                            OK
-                        </Button>
-                    </>
-                }
-            />
-            <Alert
-                isOpen={pendingCommit !== null}
-                intent="primary"
-                confirmButtonText="Yes"
-                cancelButtonText="No"
-                className={isDark ? 'bp5-dark' : undefined}
-                onConfirm={() => {
-                    const p = pendingCommit
-                    setPendingCommit(null)
-                    if (p) void commit(p.value)
-                }}
-                onCancel={() => setPendingCommit(null)}
-            >
-                {pendingCommit?.message}
-            </Alert>
-        </Dialog>
+        </DialogShell>
     )
 }

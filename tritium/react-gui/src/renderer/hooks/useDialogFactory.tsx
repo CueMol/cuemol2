@@ -97,3 +97,54 @@ export function createDialogHook<TArgs, TResult>(
 
   return { Provider, useShow }
 }
+
+/**
+ * Minimal props a confirm/cancel dialog component must accept for
+ * {@link createConfirmCancelDialog}: `visible`, plus an `onConfirm(result)` and
+ * `onCancel()` pair. The remaining props come from the dialog's `TArgs`.
+ */
+export type ConfirmCancelDialogProps<TArgs, TResult> = TArgs & {
+  visible: boolean
+  onConfirm: (result: TResult) => void
+  onCancel: () => void
+}
+
+export interface CreateConfirmCancelDialogOptions<TArgs, TResult> {
+  /**
+   * The dialog component. It receives `visible`, the spread `TArgs`, and the
+   * mapped `onConfirm` / `onCancel` handlers.
+   */
+  component: React.ComponentType<ConfirmCancelDialogProps<TArgs, TResult>>
+  /** Human label used in the provider display name + error message. */
+  name: string
+}
+
+/**
+ * Convenience wrapper over {@link createDialogHook} for the common
+ * confirm/cancel dialog shape: the show-args are spread onto the dialog
+ * component as props, `onConfirm(result)` resolves the Promise with the result,
+ * and `onCancel()` resolves it with `null`.
+ *
+ * Removes the boilerplate render-prop that every such provider repeated, while
+ * keeping the one-file-per-dialog convention (each provider file still calls
+ * this and re-exports its own `Provider` / `useShow`).
+ *
+ * @typeParam TArgs - the show-args object, spread as props onto the component.
+ * @typeParam TResult - the dialog's confirm result; the hook resolves
+ *   `TResult | null` (`null` on cancel).
+ */
+export function createConfirmCancelDialog<TArgs, TResult>(
+  options: CreateConfirmCancelDialogOptions<TArgs, TResult>,
+): DialogHookHandle<TArgs, TResult | null> {
+  const { component: Component, name } = options
+  return createDialogHook<TArgs, TResult | null>({
+    name,
+    render: ({ visible, args, resolve }) =>
+      React.createElement(Component, {
+        ...((args ?? {}) as TArgs),
+        visible,
+        onConfirm: (result: TResult) => resolve(result),
+        onCancel: () => resolve(null),
+      }),
+  })
+}
