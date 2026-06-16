@@ -35,66 +35,66 @@ export function useNaviContextMenu(): {
 
         switch (action) {
             case 'centerAt':
-                await cm.naviCenterAt({ viewId, x: hit.x, y: hit.y, z: hit.z });
+                await cm.invokeService('naviCenterAt', { viewId, x: hit.x, y: hit.y, z: hit.z });
                 break;
             case 'centerAtSymm':
                 if (hit.symm_id != null) {
-                    await cm.naviCenterAtSymm({ viewId, objId, rendId: hit.rend_id, atomId, symmId: hit.symm_id });
+                    await cm.invokeService('naviCenterAtSymm', { viewId, objId, rendId: hit.rend_id, atomId, symmId: hit.symm_id });
                 }
                 break;
             case 'selectAtom':
-                await cm.naviCtxSelect({ viewId, objId, atomId, mode: 'atom' });
+                await cm.invokeService('naviCtxSelect', { viewId, objId, atomId, mode: 'atom' });
                 break;
             case 'selectResid':
-                await cm.naviCtxSelect({ viewId, objId, atomId, mode: 'residue' });
+                await cm.invokeService('naviCtxSelect', { viewId, objId, atomId, mode: 'residue' });
                 break;
             case 'selectChain':
-                await cm.naviCtxSelect({ viewId, objId, atomId, mode: 'chain' });
+                await cm.invokeService('naviCtxSelect', { viewId, objId, atomId, mode: 'chain' });
                 break;
             case 'selectMol':
-                await cm.naviCtxSelect({ viewId, objId, atomId, mode: 'mol' });
+                await cm.invokeService('naviCtxSelect', { viewId, objId, atomId, mode: 'mol' });
                 break;
             case 'addSelectAtom':
-                await cm.naviCtxAddSelect({ viewId, objId, atomId, mode: 'atom' });
+                await cm.invokeService('naviCtxAddSelect', { viewId, objId, atomId, mode: 'atom' });
                 break;
             case 'addSelectResid':
-                await cm.naviCtxAddSelect({ viewId, objId, atomId, mode: 'residue' });
+                await cm.invokeService('naviCtxAddSelect', { viewId, objId, atomId, mode: 'residue' });
                 break;
             case 'addSelectChain':
-                await cm.naviCtxAddSelect({ viewId, objId, atomId, mode: 'chain' });
+                await cm.invokeService('naviCtxAddSelect', { viewId, objId, atomId, mode: 'chain' });
                 break;
             case 'unselect':
-                await cm.naviCtxUnselect({ viewId, objId });
+                await cm.invokeService('naviCtxUnselect', { viewId, objId });
                 break;
             case 'invertSel':
-                await cm.naviCtxInvertSel({ viewId, objId });
+                await cm.invokeService('naviCtxInvertSel', { viewId, objId });
                 break;
             case 'toggleSidechain':
-                await cm.naviCtxToggleSidechain({ viewId, objId });
+                await cm.invokeService('naviCtxToggleSidechain', { viewId, objId });
                 break;
             case 'arByres3':
-                await cm.naviCtxAround({ viewId, objId, distance: 3, byres: true });
+                await cm.invokeService('naviCtxAround', { viewId, objId, distance: 3, byres: true });
                 break;
             case 'arByres5':
-                await cm.naviCtxAround({ viewId, objId, distance: 5, byres: true });
+                await cm.invokeService('naviCtxAround', { viewId, objId, distance: 5, byres: true });
                 break;
             case 'arByres7':
-                await cm.naviCtxAround({ viewId, objId, distance: 7, byres: true });
+                await cm.invokeService('naviCtxAround', { viewId, objId, distance: 7, byres: true });
                 break;
             case 'arByres10':
-                await cm.naviCtxAround({ viewId, objId, distance: 10, byres: true });
+                await cm.invokeService('naviCtxAround', { viewId, objId, distance: 10, byres: true });
                 break;
             case 'around3':
-                await cm.naviCtxAround({ viewId, objId, distance: 3, byres: false });
+                await cm.invokeService('naviCtxAround', { viewId, objId, distance: 3, byres: false });
                 break;
             case 'around5':
-                await cm.naviCtxAround({ viewId, objId, distance: 5, byres: false });
+                await cm.invokeService('naviCtxAround', { viewId, objId, distance: 5, byres: false });
                 break;
             case 'around7':
-                await cm.naviCtxAround({ viewId, objId, distance: 7, byres: false });
+                await cm.invokeService('naviCtxAround', { viewId, objId, distance: 7, byres: false });
                 break;
             case 'around10':
-                await cm.naviCtxAround({ viewId, objId, distance: 10, byres: false });
+                await cm.invokeService('naviCtxAround', { viewId, objId, distance: 10, byres: false });
                 break;
         }
     }, [cm]);

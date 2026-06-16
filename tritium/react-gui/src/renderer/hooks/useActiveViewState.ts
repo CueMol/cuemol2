@@ -103,9 +103,9 @@ export function useActiveViewState({
 
     let cancelled = false;
     Promise.all([
-      cm.getViewProjection(activeMolViewId),
-      cm.getViewCenterMark(activeMolViewId),
-      sceneId !== undefined ? cm.getSceneBgColor(sceneId) : Promise.resolve(null),
+      cm.invokeService('getViewProjection', { viewId: activeMolViewId }),
+      cm.invokeService('getViewCenterMark', { viewId: activeMolViewId }),
+      sceneId !== undefined ? cm.invokeService('getSceneBgColor', { sceneId }) : Promise.resolve(null),
     ]).then(([projectionResult, centerMarkResult, bgColorResult]) => {
       if (cancelled) return;
       const perspective = projectionResult?.ok ? projectionResult.perspective : null;

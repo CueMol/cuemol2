@@ -58,7 +58,7 @@ export function useSceneCommands({
         if (!cm) return
         const info = getActiveSceneInfo()
         if (!info) return
-        const result = await cm.setSceneBgColor(info.scene_uid, colorName)
+        const result = await cm.invokeService('setSceneBgColor', { sceneId: info.scene_uid, colorName })
         if (result?.ok) onBgColorChanged?.(colorName)
     }, [cm, getActiveSceneInfo, onBgColorChanged])
 

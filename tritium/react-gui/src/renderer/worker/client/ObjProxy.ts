@@ -9,6 +9,11 @@
 import { ObjTuple, isObjTuple } from '../shared/ObjTuple';
 import type { AsyncCueMol } from './AsyncCueMol';
 
+// Renderer-thread logger. This module deliberately uses `console` rather
+// than the pino-based `createLogger` helper, matching the sibling
+// `WorkerService.ts` (where createLogger is intentionally kept commented
+// out): pino + pino-pretty are not wired into the renderer/worker bundle,
+// and these calls sit on the hot per-property RPC path.
 const log = console;
 
 /**
@@ -55,14 +60,14 @@ export class ObjProxy {
     async getProp(propName: string): Promise<unknown> {
         try {
             const result = await this._acm.invokeRpc('getProp', this._obj, propName);
-            log.info('NativeObj.getProp(', propName, ') OK, result:', result);
+            log.info({ propName, result }, 'NativeObj.getProp OK');
             if (isObjTuple(result)) {
                 const objTup = result as ObjTuple;
                 return new ObjProxy(objTup._obj_id, objTup._class_name, this._acm);
             }
             return result;
         } catch (e) {
-            log.error(`getProp failed: ${propName},`, e);
+            log.error({ propName, err: e }, 'NativeObj.getProp failed');
             throw e;
         }
     }
@@ -77,9 +82,9 @@ export class ObjProxy {
     async setProp(propName: string, value: unknown): Promise<void> {
         try {
             await this._acm.invokeRpc('setProp', this._obj, propName, value);
-            log.info('NativeObj.setProp(', propName, ') OK');
+            log.info({ propName }, 'NativeObj.setProp OK');
         } catch (e) {
-            log.error(`setProp failed: ${propName},`, e);
+            log.error({ propName, err: e }, 'NativeObj.setProp failed');
             throw e;
         }
     }
@@ -95,14 +100,14 @@ export class ObjProxy {
     async invokeMethod(method: string, ...args: unknown[]): Promise<unknown> {
         try {
             const result = await this._acm.invokeRpc('invokeMethod', method, this._obj, args);
-            log.info('NativeObj.invokeMethod(', method, ') OK, result:', result);
+            log.info({ method, result }, 'NativeObj.invokeMethod OK');
             if (isObjTuple(result)) {
                 const objTup = result as ObjTuple;
                 return new ObjProxy(objTup._obj_id, objTup._class_name, this._acm);
             }
             return result;
         } catch (e) {
-            log.error(`invokeMethod failed: ${method},`, e);
+            log.error({ method, err: e }, 'NativeObj.invokeMethod failed');
             throw e;
         }
     }

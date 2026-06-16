@@ -38,11 +38,15 @@ const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 type Routes = Record<string, (args: unknown) => unknown>
 
 function makeCm(routes: Routes, closeInfo?: unknown) {
-  const invokeService = vi.fn((name: string, args: unknown) =>
-    Promise.resolve(routes[name] ? routes[name](args) : undefined),
-  )
-  const getSceneCloseInfo = vi.fn(() => Promise.resolve(closeInfo))
-  return { invokeService, getSceneCloseInfo }
+  // After the apis/* facade collapse, `getSceneCloseInfo` is reached via
+  // `cm.invokeService('getSceneCloseInfo', { viewId })`. Route it through
+  // the same invokeService spy, falling back to the `closeInfo` fixture.
+  const invokeService = vi.fn((name: string, args: unknown) => {
+    if (routes[name]) return Promise.resolve(routes[name](args))
+    if (name === 'getSceneCloseInfo') return Promise.resolve(closeInfo)
+    return Promise.resolve(undefined)
+  })
+  return { invokeService }
 }
 
 const SCENE_INFO = { scene_uid: 1, view_id: 2 }

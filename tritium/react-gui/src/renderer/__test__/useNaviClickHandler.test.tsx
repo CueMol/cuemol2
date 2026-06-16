@@ -58,14 +58,25 @@ function makeCm(opts: {
 } = {}) {
     const subs: Subscription[] = [];
     let nextId = 1;
+    // After the apis/* facade collapse, the hook calls
+    // `cm.invokeService('naviHitTest', args)` etc. instead of the old
+    // per-method facade. The mock dispatches by service name; per-service
+    // calls are asserted via `callsFor(cm, name)`.
+    const invokeService = vi.fn(async (name: string, _payload: unknown) => {
+        switch (name) {
+            case 'naviHitTest':
+                return { hit: opts.hitRaw != null, raw: opts.hitRaw };
+            case 'naviClickAtom':
+                return opts.clickAtomResult ?? { handled: true, statusMessage: 'atom' };
+            case 'naviResidSel':
+                return opts.residSelResult ?? { handled: true, objId: 5, atomId: 9 };
+            default:
+                return undefined;
+        }
+    });
     const cm = {
         subs,
-        naviHitTest: vi.fn(async (_payload: unknown) => ({
-            hit: opts.hitRaw != null,
-            raw: opts.hitRaw,
-        })),
-        naviClickAtom: vi.fn(async (_payload: unknown) => opts.clickAtomResult ?? { handled: true, statusMessage: 'atom' }),
-        naviResidSel: vi.fn(async (_payload: unknown) => opts.residSelResult ?? { handled: true, objId: 5, atomId: 9 }),
+        invokeService,
         addEventListener: vi.fn(
             async (category: string, srcMask: number, evtMask: number, scopeId: number, fire: (a: unknown) => void) => {
                 subs.push({ category, srcMask, evtMask, scopeId, fire });
@@ -75,6 +86,13 @@ function makeCm(opts: {
         removeEventListener: vi.fn(async () => {}),
     };
     return cm;
+}
+
+/** Recorded `invokeService` payloads for a given service name. */
+function callsFor(cm: ReturnType<typeof makeCm>, name: string): unknown[] {
+    return cm.invokeService.mock.calls
+        .filter((c) => c[0] === name)
+        .map((c) => c[1]);
 }
 
 function fireFor(cm: ReturnType<typeof makeCm>, category: string, payload: unknown) {
@@ -141,9 +159,9 @@ describe('useNaviClickHandler -- wire contract', () => {
         injectedCm = cm;
         mount();
         await fireFor(cm, 'mouseClicked', { obj: { x: 11, y: 22, mod: LBTN } });
-        expect(cm.naviClickAtom).toHaveBeenCalledTimes(1);
-        expect(cm.naviClickAtom.mock.calls[0][0]).toEqual({ viewId: 7, x: 11, y: 22 });
-        expect(cm.naviHitTest).not.toHaveBeenCalled();
+        expect(callsFor(cm, 'naviClickAtom')).toHaveLength(1);
+        expect(callsFor(cm, 'naviClickAtom')[0]).toEqual({ viewId: 7, x: 11, y: 22 });
+        expect(callsFor(cm, 'naviHitTest')).toHaveLength(0);
         expect(openContextMenu).not.toHaveBeenCalled();
         unmount();
     });
@@ -154,9 +172,9 @@ describe('useNaviClickHandler -- wire contract', () => {
         injectedCm = cm;
         mount();
         await fireFor(cm, 'mouseClicked', { obj: { x: 5, y: 6, mod: RBTN } });
-        expect(cm.naviHitTest).toHaveBeenCalledTimes(1);
-        expect(cm.naviHitTest.mock.calls[0][0]).toEqual({ viewId: 7, x: 5, y: 6 });
-        expect(cm.naviClickAtom).not.toHaveBeenCalled();
+        expect(callsFor(cm, 'naviHitTest')).toHaveLength(1);
+        expect(callsFor(cm, 'naviHitTest')[0]).toEqual({ viewId: 7, x: 5, y: 6 });
+        expect(callsFor(cm, 'naviClickAtom')).toHaveLength(0);
         expect(openContextMenu).toHaveBeenCalledTimes(1);
         expect(openContextMenu.mock.calls[0]).toEqual([raw, 7]);
         unmount();
@@ -167,7 +185,7 @@ describe('useNaviClickHandler -- wire contract', () => {
         injectedCm = cm;
         mount();
         await fireFor(cm, 'mouseClicked', { obj: { x: 5, y: 6, mod: RBTN } });
-        expect(cm.naviHitTest).toHaveBeenCalledTimes(1);
+        expect(callsFor(cm, 'naviHitTest')).toHaveLength(1);
         expect(openContextMenu).not.toHaveBeenCalled();
         unmount();
     });
@@ -177,8 +195,8 @@ describe('useNaviClickHandler -- wire contract', () => {
         injectedCm = cm;
         mount();
         await fireFor(cm, 'mouseClicked', { obj: { x: 1, y: 2, mod: 0 } });
-        expect(cm.naviClickAtom).not.toHaveBeenCalled();
-        expect(cm.naviHitTest).not.toHaveBeenCalled();
+        expect(callsFor(cm, 'naviClickAtom')).toHaveLength(0);
+        expect(callsFor(cm, 'naviHitTest')).toHaveLength(0);
         unmount();
     });
 
@@ -187,8 +205,8 @@ describe('useNaviClickHandler -- wire contract', () => {
         injectedCm = cm;
         mount();
         await fireFor(cm, 'mouseDoubleClicked', { obj: { x: 4, y: 8, mod: LBTN } });
-        expect(cm.naviResidSel).toHaveBeenCalledTimes(1);
-        expect(cm.naviResidSel.mock.calls[0][0]).toMatchObject({
+        expect(callsFor(cm, 'naviResidSel')).toHaveLength(1);
+        expect(callsFor(cm, 'naviResidSel')[0]).toMatchObject({
             viewId: 7,
             x: 4,
             y: 8,
@@ -202,8 +220,8 @@ describe('useNaviClickHandler -- wire contract', () => {
         injectedCm = cm;
         mount();
         await fireFor(cm, 'mouseDoubleClicked', { obj: { x: 4, y: 8, mod: LBTN | SHIFT } });
-        expect(cm.naviResidSel).toHaveBeenCalledTimes(1);
-        expect(cm.naviResidSel.mock.calls[0][0]).toMatchObject({ mode: 'extend' });
+        expect(callsFor(cm, 'naviResidSel')).toHaveLength(1);
+        expect(callsFor(cm, 'naviResidSel')[0]).toMatchObject({ mode: 'extend' });
         unmount();
     });
 
@@ -212,7 +230,7 @@ describe('useNaviClickHandler -- wire contract', () => {
         injectedCm = cm;
         mount();
         await fireFor(cm, 'mouseDoubleClicked', { obj: { x: 4, y: 8, mod: 0 } });
-        expect(cm.naviResidSel).not.toHaveBeenCalled();
+        expect(callsFor(cm, 'naviResidSel')).toHaveLength(0);
         unmount();
     });
 });

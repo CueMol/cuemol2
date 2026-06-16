@@ -36,7 +36,7 @@ export function useNewTabCommand({
         const dpr = window.devicePixelRatio || 1
         const active = getActiveSceneInfo()
 
-        const names = await cm.proposeNewTabNames({ sceneId: active?.scene_uid })
+        const names = await cm.invokeService('proposeNewTabNames', { sceneId: active?.scene_uid })
         if (!names) return
 
         const result = await showNewTabDialog({
@@ -52,7 +52,7 @@ export function useNewTabCommand({
         } else {
             // new-view: add view to existing scene
             if (!active) return
-            const res = await cm.createViewInScene({
+            const res = await cm.invokeService('createViewInScene', {
                 sceneId: active.scene_uid,
                 name: result.name,
                 inheritFromViewId: result.inheritViewProps ? active.view_id : undefined,

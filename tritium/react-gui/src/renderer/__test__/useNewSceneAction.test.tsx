@@ -24,25 +24,38 @@ vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
 
 interface MockCm {
-  proposeNewTabNames: ReturnType<typeof vi.fn>
+  // After the apis/* facade collapse, `proposeNewTabNames` is reached via
+  // `cm.invokeService('proposeNewTabNames', {})`. `createNewSceneAndView`
+  // keeps its dedicated facade method (default-on-failure unwrap).
+  invokeService: ReturnType<typeof vi.fn>
   createNewSceneAndView: ReturnType<typeof vi.fn>
 }
 
-function makeMockCm(overrides: Partial<MockCm> = {}): MockCm {
+const defaultTabNames = {
+  currentSceneName: null,
+  defaultSceneName: 'Untitled 1',
+  defaultViewName: '1',
+}
+
+function makeMockCm(overrides: { tabNames?: unknown } = {}): MockCm {
   return {
-    proposeNewTabNames: vi.fn().mockResolvedValue({
-      currentSceneName: null,
-      defaultSceneName: 'Untitled 1',
-      defaultViewName: '1',
-    }),
+    invokeService: vi.fn(async (name: string, _args: unknown) =>
+      name === 'proposeNewTabNames' ? (overrides.tabNames ?? defaultTabNames) : undefined,
+    ),
     createNewSceneAndView: vi.fn().mockImplementation(async (_dpr: number, name?: string) => ({
       scene_uid: 10,
       view_uid: 20,
       scene_name: name ?? '',
       view_name: '0',
     })),
-    ...overrides,
   }
+}
+
+/** Recorded `invokeService` payloads for a given service name. */
+function callsFor(cm: MockCm, name: string): unknown[] {
+  return cm.invokeService.mock.calls
+    .filter((c) => c[0] === name)
+    .map((c) => c[1])
 }
 
 describe('useNewSceneAction', () => {
@@ -65,7 +78,7 @@ describe('useNewSceneAction', () => {
       result = await h.result()
     })()
 
-    expect(cm.proposeNewTabNames).toHaveBeenCalledWith({})
+    expect(callsFor(cm, 'proposeNewTabNames')).toContainEqual({})
     expect(cm.createNewSceneAndView).toHaveBeenCalledWith(expect.any(Number), 'Untitled 1', undefined)
     expect(addMolTab).toHaveBeenCalledWith('Untitled 1:0', 20, 10)
     expect(addMolViewTab).toHaveBeenCalledWith('Untitled 1:0', 20)
@@ -96,7 +109,7 @@ describe('useNewSceneAction', () => {
     await flushPromises()
     await h.result({ name: 'MyScene' })
 
-    expect(cm.proposeNewTabNames).not.toHaveBeenCalled()
+    expect(callsFor(cm, 'proposeNewTabNames')).toHaveLength(0)
     expect(cm.createNewSceneAndView).toHaveBeenCalledWith(expect.any(Number), 'MyScene', undefined)
     expect(addMolTab).toHaveBeenCalledWith('MyScene:0', 20, 10)
     expect(addMolViewTab).toHaveBeenCalledWith('MyScene:0', 20)

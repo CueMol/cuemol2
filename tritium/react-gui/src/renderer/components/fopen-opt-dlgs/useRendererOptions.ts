@@ -120,7 +120,7 @@ export function useRendererOptions(
         if (!rendererNameIsDefaultRef.current) return;
         const seq = ++rendNameSeqRef.current;
         (async () => {
-            const res = await cm.proposeUniqName({
+            const res = await cm.invokeService('proposeUniqName', {
                 kind: 'sceneRenderer',
                 prefix: rType,
                 sceneId,

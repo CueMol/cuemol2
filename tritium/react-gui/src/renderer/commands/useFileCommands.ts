@@ -145,7 +145,7 @@ export function useFileCommands({
             console.info('Reload Scene: scene has no source file')
             return
         }
-        const closeInfo = await cm.getSceneCloseInfo(info.view_id)
+        const closeInfo = await cm.invokeService('getSceneCloseInfo', { viewId: info.view_id })
         if (closeInfo?.ok && closeInfo.modified) {
             const proceed = await showConfirmReload({ sceneName: closeInfo.sceneName })
             if (!proceed) return

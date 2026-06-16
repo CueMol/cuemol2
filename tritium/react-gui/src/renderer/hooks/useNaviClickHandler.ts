@@ -44,12 +44,12 @@ export function useNaviClickHandler({ setStatusMessage, openContextMenu }: UseNa
             if (!click) return;
             const { x, y, mod } = click;
             if (mod & INDEV_RBTN) {
-                const result = await cm.naviHitTest({ viewId, x, y });
+                const result = await cm.invokeService('naviHitTest', { viewId, x, y });
                 if (result?.hit && result.raw && result.raw.objtype === 'MolCoord') {
                     openContextMenu(result.raw as HitTestResult, viewId);
                 }
             } else if (mod & INDEV_LBTN) {
-                const result = await cm.naviClickAtom({ viewId, x, y });
+                const result = await cm.invokeService('naviClickAtom', { viewId, x, y });
                 if (result?.handled && result.statusMessage) {
                     setStatusMessage(result.statusMessage);
                 }
@@ -71,7 +71,7 @@ export function useNaviClickHandler({ setStatusMessage, openContextMenu }: UseNa
             const { x, y, mod } = click;
             if (!(mod & INDEV_LBTN)) return;
             const mode = (mod & INDEV_SHIFT) ? 'extend' : 'toggle';
-            const result = await cm.naviResidSel({
+            const result = await cm.invokeService('naviResidSel', {
                 viewId,
                 x,
                 y,

@@ -176,7 +176,7 @@ const App: React.FC = () => {
    */
   const confirmCloseTab = useCallback(async (viewId: number): Promise<boolean> => {
     if (!cm) return true;
-    const info = await cm.getSceneCloseInfo(viewId);
+    const info = await cm.invokeService('getSceneCloseInfo', { viewId });
     if (!info?.ok) return true;
     if (!info.modified || info.viewCount !== 1) return true;
     const result = await showConfirmCloseTabDialog({ sceneName: info.sceneName });

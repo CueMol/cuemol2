@@ -171,7 +171,7 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
     const prefix = baseNameNoExt(filePath);
     const seq = ++objNameSeqRef.current;
     (async () => {
-      const res = await cm.proposeUniqName({
+      const res = await cm.invokeService('proposeUniqName', {
         kind: 'object',
         prefix,
         sceneId,

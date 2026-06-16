@@ -8,16 +8,20 @@ import { IPC } from '../../shared/ipcChannels';
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }));
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }));
 
+// After the apis/* facade collapse the context-menu hook calls
+// `cm.invokeService('naviCtxSelect', args)` etc. instead of per-method
+// facade functions. The mock dispatches every navi service through a single
+// `invokeService` spy; per-service payloads are asserted via `callsFor`.
 const mockCm = {
-    naviCenterAt: vi.fn().mockResolvedValue({ ok: true }),
-    naviCenterAtSymm: vi.fn().mockResolvedValue({ ok: true }),
-    naviCtxSelect: vi.fn().mockResolvedValue({ ok: true }),
-    naviCtxAddSelect: vi.fn().mockResolvedValue({ ok: true }),
-    naviCtxUnselect: vi.fn().mockResolvedValue({ ok: true }),
-    naviCtxInvertSel: vi.fn().mockResolvedValue({ ok: true }),
-    naviCtxToggleSidechain: vi.fn().mockResolvedValue({ ok: true }),
-    naviCtxAround: vi.fn().mockResolvedValue({ ok: true }),
+    invokeService: vi.fn().mockResolvedValue({ ok: true }),
 };
+
+/** Recorded `invokeService` payloads for a given service name. */
+function callsFor(name: string): unknown[] {
+    return mockCm.invokeService.mock.calls
+        .filter((c) => c[0] === name)
+        .map((c) => c[1]);
+}
 
 vi.mock('../hooks/useCueMol', () => ({
     useCueMol: () => ({ cueMolReady: true, cm: mockCm }),
@@ -113,7 +117,7 @@ describe('useNaviContextMenu', () => {
         await act(async () => {
             await hookHandle.result.openContextMenu(makeHit(), 1, 0, 0);
         });
-        expect(mockCm.naviCenterAt).not.toHaveBeenCalled();
+        expect(callsFor('naviCenterAt')).toHaveLength(0);
     });
 
     it('dispatches centerAt', async () => {
@@ -122,7 +126,7 @@ describe('useNaviContextMenu', () => {
         await act(async () => {
             await hookHandle.result.openContextMenu(hit, 1, 0, 0);
         });
-        expect(mockCm.naviCenterAt).toHaveBeenCalledWith({ viewId: 1, x: hit.x, y: hit.y, z: hit.z });
+        expect(callsFor('naviCenterAt')).toContainEqual({ viewId: 1, x: hit.x, y: hit.y, z: hit.z });
     });
 
     it('dispatches centerAtSymm', async () => {
@@ -131,7 +135,7 @@ describe('useNaviContextMenu', () => {
         await act(async () => {
             await hookHandle.result.openContextMenu(hit, 1, 0, 0);
         });
-        expect(mockCm.naviCenterAtSymm).toHaveBeenCalledWith({
+        expect(callsFor('naviCenterAtSymm')).toContainEqual({
             viewId: 1, objId: hit.obj_id, rendId: hit.rend_id, atomId: hit.atom_id, symmId: 3,
         });
     });
@@ -141,7 +145,7 @@ describe('useNaviContextMenu', () => {
         await act(async () => {
             await hookHandle.result.openContextMenu(makeHit(), 1, 0, 0);
         });
-        expect(mockCm.naviCenterAtSymm).not.toHaveBeenCalled();
+        expect(callsFor('naviCenterAtSymm')).toHaveLength(0);
     });
 
     it.each([
@@ -155,7 +159,7 @@ describe('useNaviContextMenu', () => {
         await act(async () => {
             await hookHandle.result.openContextMenu(hit, 1, 0, 0);
         });
-        expect(mockCm.naviCtxSelect).toHaveBeenCalledWith({ viewId: 1, objId: hit.obj_id, atomId: hit.atom_id, mode });
+        expect(callsFor('naviCtxSelect')).toContainEqual({ viewId: 1, objId: hit.obj_id, atomId: hit.atom_id, mode });
     });
 
     it.each([
@@ -168,7 +172,7 @@ describe('useNaviContextMenu', () => {
         await act(async () => {
             await hookHandle.result.openContextMenu(hit, 1, 0, 0);
         });
-        expect(mockCm.naviCtxAddSelect).toHaveBeenCalledWith({ viewId: 1, objId: hit.obj_id, atomId: hit.atom_id, mode });
+        expect(callsFor('naviCtxAddSelect')).toContainEqual({ viewId: 1, objId: hit.obj_id, atomId: hit.atom_id, mode });
     });
 
     it('dispatches unselect', async () => {
@@ -177,7 +181,7 @@ describe('useNaviContextMenu', () => {
         await act(async () => {
             await hookHandle.result.openContextMenu(hit, 1, 0, 0);
         });
-        expect(mockCm.naviCtxUnselect).toHaveBeenCalledWith({ viewId: 1, objId: hit.obj_id });
+        expect(callsFor('naviCtxUnselect')).toContainEqual({ viewId: 1, objId: hit.obj_id });
     });
 
     it('dispatches invertSel', async () => {
@@ -186,7 +190,7 @@ describe('useNaviContextMenu', () => {
         await act(async () => {
             await hookHandle.result.openContextMenu(hit, 1, 0, 0);
         });
-        expect(mockCm.naviCtxInvertSel).toHaveBeenCalledWith({ viewId: 1, objId: hit.obj_id });
+        expect(callsFor('naviCtxInvertSel')).toContainEqual({ viewId: 1, objId: hit.obj_id });
     });
 
     it('dispatches toggleSidechain', async () => {
@@ -195,7 +199,7 @@ describe('useNaviContextMenu', () => {
         await act(async () => {
             await hookHandle.result.openContextMenu(hit, 1, 0, 0);
         });
-        expect(mockCm.naviCtxToggleSidechain).toHaveBeenCalledWith({ viewId: 1, objId: hit.obj_id });
+        expect(callsFor('naviCtxToggleSidechain')).toContainEqual({ viewId: 1, objId: hit.obj_id });
     });
 
     it.each([
@@ -213,6 +217,6 @@ describe('useNaviContextMenu', () => {
         await act(async () => {
             await hookHandle.result.openContextMenu(hit, 1, 0, 0);
         });
-        expect(mockCm.naviCtxAround).toHaveBeenCalledWith({ viewId: 1, objId: hit.obj_id, distance, byres });
+        expect(callsFor('naviCtxAround')).toContainEqual({ viewId: 1, objId: hit.obj_id, distance, byres });
     });
 });
