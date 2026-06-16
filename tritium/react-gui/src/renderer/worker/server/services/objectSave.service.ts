@@ -15,6 +15,7 @@
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { WorkerContext } from '../types/WorkerContext';
 import { getSceneOrNull } from './helpers/sceneResolver';
+import { safeRead } from './helpers/safeRead';
 
 // ─── helpers ──────────────────────────────────────────────────────────────
 
@@ -37,9 +38,6 @@ function parseFext(fext: string): string[] {
         .filter((e) => e !== '' && e !== '*');
 }
 
-function safeRead<T>(read: () => T): T | undefined {
-    try { return read(); } catch { return undefined; }
-}
 
 /**
  * Extract the basename portion of a path. Handles both POSIX and Windows

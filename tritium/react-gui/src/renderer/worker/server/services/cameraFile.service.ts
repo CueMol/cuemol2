@@ -21,10 +21,7 @@ import type { Camera } from '@cuemol/core/src/wrappers/Camera';
 import type { WorkerContext } from '../types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
 import { getSceneOrNull } from './helpers/sceneResolver';
-
-function safeRead<T>(read: () => T): T | undefined {
-    try { return read(); } catch { return undefined; }
-}
+import { safeRead } from './helpers/safeRead';
 
 function getCameraRef(scene: Scene, name: string): Camera | null {
     return (safeRead(() => scene.getCameraRef(name) as Camera | null)) ?? null;

@@ -16,6 +16,7 @@ import type { Vector } from '@cuemol/core/src/wrappers/Vector';
 import type { WorkerContext } from '../types/WorkerContext';
 import type { SceneNodeType } from '../../shared/sceneTreeTypes';
 import { withUndoTxn } from './withUndoTxn';
+import { safeRead } from './helpers/safeRead';
 
 export interface FocusOnNodeArgs {
     sceneId: number;
@@ -70,14 +71,6 @@ function hasProp<T>(obj: T, name: string): boolean {
     return obj != null && name in (obj as unknown as Record<string, unknown>);
 }
 
-/** Run a getter, returning `undefined` if it throws. */
-function safeRead<T>(read: () => T): T | undefined {
-    try {
-        return read();
-    } catch {
-        return undefined;
-    }
-}
 
 /**
  * Zoom the view to fit a scene-tree node.

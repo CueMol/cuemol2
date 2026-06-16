@@ -11,6 +11,7 @@ import { withUndoTxn } from './withUndoTxn';
 import { resolvePropTarget, type PropTargetType } from './helpers/resolvePropTarget';
 import { parseGenericProps, type GenericPropEntry } from './helpers/parseGenericProps';
 import { makeSel } from './helpers/makeSel';
+import { safeRead } from './helpers/safeRead';
 
 export type { GenericPropEntry } from './helpers/parseGenericProps';
 export type { PropTargetType } from './helpers/resolvePropTarget';
@@ -118,14 +119,6 @@ export interface SetGenericPropsArgs {
 }
 
 // ─── helpers ──────────────────────────────────────────────────────────────
-
-function safeRead<T>(read: () => T): T | undefined {
-    try {
-        return read();
-    } catch {
-        return undefined;
-    }
-}
 
 /** Read + parse a target's full property list. */
 function collectProps(target: BaseWrapper): GenericPropEntry[] {

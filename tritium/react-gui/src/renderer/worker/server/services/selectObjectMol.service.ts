@@ -15,6 +15,7 @@ import { makeSel } from './helpers/makeSel';
 import { invertSelStr, rewriteAround, toggleSidechainStr } from './helpers/selStrTransforms';
 import { withUndoTxn } from './withUndoTxn';
 import { getSceneOrNull } from './helpers/sceneResolver';
+import { safeRead } from './helpers/safeRead';
 
 export interface SelectObjectMolArgs {
     sceneId: number;
@@ -26,13 +27,6 @@ export interface SelectObjectMolResult {
     ok: boolean;
 }
 
-function safeRead<T>(read: () => T): T | undefined {
-    try {
-        return read();
-    } catch {
-        return undefined;
-    }
-}
 
 function autoCreateSelRend(mol: MolCoord): void {
     if (!mol.getRendererByType('*selection')) {

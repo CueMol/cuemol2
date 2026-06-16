@@ -29,6 +29,7 @@ import {
   resolveMgr,
   resolveSceneMgr,
   makeTimeValue,
+  forEachAnimObj,
 } from "./helpers/animResolve";
 import { classNameToType } from "./helpers/animElementType";
 import { withUndoTxn } from "./withUndoTxn";
@@ -167,18 +168,11 @@ export interface GetAnimTargetOptionsResult {
  * manager's list. The ONLY liveness-correct accessor (see file header).
  */
 function findByUid(mgr: AnimMgr, uid: number): { obj: AnimObj; index: number } | null {
-  const n = safeNum(() => mgr.size);
-  for (let i = 0; i < n; i++) {
-    let obj: AnimObj | null;
-    try {
-      obj = mgr.getAt(i) as AnimObj | null;
-    } catch {
-      continue;
-    }
-    if (!obj) continue;
-    if (safeNum(() => obj.uid) === uid) return { obj, index: i };
-  }
-  return null;
+  return (
+    forEachAnimObj(mgr, (obj, i) =>
+      safeNum(() => obj.uid) === uid ? { obj, index: i } : undefined,
+    ) ?? null
+  );
 }
 
 /** Resolve relative->absolute, swallowing a cyclic/missing-ref throw so a bad
@@ -242,18 +236,11 @@ function readTypeProps(obj: AnimObj, type: AnimElementType): AnimElementTypeProp
 /** Collect other elements' names for the Relative-to dropdown. */
 function readSiblings(mgr: AnimMgr, uid: number): AnimElementSibling[] {
   const out: AnimElementSibling[] = [];
-  const n = safeNum(() => mgr.size);
-  for (let i = 0; i < n; i++) {
-    let obj: AnimObj | null;
-    try {
-      obj = mgr.getAt(i) as AnimObj | null;
-    } catch {
-      continue;
-    }
-    if (!obj) continue;
-    if (safeNum(() => obj.uid) === uid) continue;
+  forEachAnimObj(mgr, (obj) => {
+    if (safeNum(() => obj.uid) === uid) return undefined;
     out.push({ name: safeStr(() => obj.name) });
-  }
+    return undefined;
+  });
   return out;
 }
 
@@ -383,16 +370,8 @@ function getAnimElementDetail(
  * together.
  */
 function cascadeTimeRefRename(mgr: AnimMgr, uid: number, oldName: string, newName: string): void {
-  const n = safeNum(() => mgr.size);
-  for (let i = 0; i < n; i++) {
-    let obj: AnimObj | null;
-    try {
-      obj = mgr.getAt(i) as AnimObj | null;
-    } catch {
-      continue;
-    }
-    if (!obj) continue;
-    if (safeNum(() => obj.uid) === uid) continue; // skip the renamed element itself
+  forEachAnimObj(mgr, (obj) => {
+    if (safeNum(() => obj.uid) === uid) return undefined; // skip the renamed element itself
     if (safeStr(() => obj.timeRefName) === oldName) {
       try {
         (obj as unknown as Record<string, unknown>).timeRefName = newName;
@@ -400,7 +379,8 @@ function cascadeTimeRefRename(mgr: AnimMgr, uid: number, oldName: string, newNam
         /* ignore a sibling that rejects the write */
       }
     }
-  }
+    return undefined;
+  });
 }
 
 /** Write one property of the element (undoable; returns the refreshed detail). */

@@ -29,6 +29,7 @@ import {
   resolveMgr,
   resolveSceneMgr,
   makeTimeValue,
+  forEachAnimObj,
 } from "./helpers/animResolve";
 import { withUndoTxn } from "./withUndoTxn";
 
@@ -198,17 +199,10 @@ function listTimeline(ctx: WorkerContext, args: AnimListTimelineArgs): AnimTimel
   }
 
   const elements: AnimElement[] = [];
-  const size = safeNum(() => mgr.size);
-  for (let i = 0; i < size; i++) {
-    let obj: AnimObj | null;
-    try {
-      obj = mgr.getAt(i) as AnimObj | null;
-    } catch {
-      continue;
-    }
-    if (!obj) continue;
+  forEachAnimObj(mgr, (obj, i) => {
     elements.push(readElement(obj, i));
-  }
+    return undefined;
+  });
 
   return {
     sceneId: args.sceneId,

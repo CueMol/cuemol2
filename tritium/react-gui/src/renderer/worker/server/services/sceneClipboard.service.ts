@@ -17,6 +17,7 @@ import type { LScrObject } from '@cuemol/core/src/wrappers/LScrObject';
 import type { WorkerContext } from '../types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
 import { getSceneOrNull } from './helpers/sceneResolver';
+import { safeRead } from './helpers/safeRead';
 
 export type ClipboardKind = 'object' | 'renderer' | 'style' | 'camera';
 
@@ -328,10 +329,6 @@ function getClipboardKind(
 
 // --- helpers ---
 
-/** Run a getter, returning `undefined` if it throws. */
-function safeRead<T>(read: () => T): T | undefined {
-    try { return read(); } catch { return undefined; }
-}
 
 /** Return `prefix`, or `prefix_<i>` if the scene already has that object. */
 function uniqueObjectName(scene: Scene, prefix: string): string {

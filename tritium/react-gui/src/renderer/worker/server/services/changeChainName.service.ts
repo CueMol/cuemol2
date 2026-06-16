@@ -13,11 +13,8 @@
 
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { MolSelection } from '@cuemol/core/src/wrappers/MolSelection';
-import type { MolAnlManager } from '@cuemol/core/src/wrappers/MolAnlManager';
-import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { WorkerContext } from '../types/WorkerContext';
-import { getSceneOrNull } from './helpers/sceneResolver';
-import { makeSel } from './helpers/makeSel';
+import { resolveMolTool } from './helpers/molAnlTool';
 import { tryUndoTxn } from './withUndoTxn';
 
 export interface ChangeChainNameArgs {
@@ -40,17 +37,9 @@ function changeChainName(
     ctx: WorkerContext,
     args: ChangeChainNameArgs,
 ): ChangeChainNameResult {
-    const scene = getSceneOrNull(ctx, args.sceneId);
-    if (!scene) return { ok: false, error: 'scene not found' };
-
-    const mol = scene.getObject(args.objId) as CueMolObject | null;
-    if (!mol) return { ok: false, error: 'molecule not found' };
-
-    const sel = makeSel(ctx, args.selStr, scene.uid);
-    if (!sel) return { ok: false, error: 'invalid selection' };
-
-    const mgr = ctx.svc.getService('MolAnlManager') as MolAnlManager | null;
-    if (!mgr) return { ok: false, error: 'MolAnlManager unavailable' };
+    const t = resolveMolTool(ctx, args.sceneId, args.objId, args.selStr);
+    if ('ok' in t) return t;
+    const { scene, mol, sel, mgr } = t;
 
     // changeChainName is a void mutation: success commits, a throw rolls back.
     return tryUndoTxn(scene, 'Change chain name', () => {

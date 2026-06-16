@@ -22,6 +22,7 @@ import { getSceneOrNull } from './helpers/sceneResolver';
 import { remove as styleRemove, push as stylePush } from './helpers/styleutil';
 import { makeColor } from './helpers/makeColor';
 import { makeSel } from './helpers/makeSel';
+import { fetchStyleEntries } from './helpers/styleEntries';
 
 /**
  * Discriminator for the Coloring panel's selector: both top-level objects
@@ -63,25 +64,7 @@ export interface GetPaintColoringStylesResult {
     entries: PaintColoringStyleEntry[];
 }
 
-interface RawStyleEntry {
-    name?: string;
-    desc?: string;
-    type?: string;
-}
-
 const PAINT_RE = /Paint$/;
-
-function fetchStyleEntries(ctx: WorkerContext, sceneId: number): RawStyleEntry[] {
-    try {
-        const json = ctx.styleMgr.getStyleNamesJSON(sceneId);
-        if (!json) return [];
-        const parsed = JSON.parse(json) as unknown;
-        if (!Array.isArray(parsed)) return [];
-        return parsed as RawStyleEntry[];
-    } catch {
-        return [];
-    }
-}
 
 /**
  * Collect style names ending in `Paint` for the renderer Coloring submenu's
