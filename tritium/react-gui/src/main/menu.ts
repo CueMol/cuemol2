@@ -11,6 +11,11 @@ import path from 'path'
 import { IPC } from '../shared/ipcChannels'
 import { APP_MENU } from '../shared/menuTemplate'
 import type { AppMenuItem, AppMenuGroup } from '../shared/menuTemplate'
+import {
+  DEDICATED_DIRECT_CHANNELS,
+  GENERIC_RELAY_CHANNELS,
+  isMenuActionChannel,
+} from '../shared/menuActionMap'
 import type { MenuState, RecentFileEntry } from '../shared/ipcTypes'
 import { applyMenuStateTo, mergeMenuState } from '../shared/menuStateApply'
 import { getExistingRecents } from './recentFiles'
@@ -32,7 +37,7 @@ function buildRecentSubmenu(
     id: 'clear-recent',
     label: 'Clear Menu',
     enabled: recents.length > 0,
-    click: () => mainWindow.webContents.send(IPC.MENU_GENERIC, 'menu:clear-recent'),
+    click: () => mainWindow.webContents.send(IPC.MENU_GENERIC, IPC.MENU_CLEAR_RECENT),
   }
   if (recents.length === 0) {
     return [
@@ -56,22 +61,26 @@ function buildRecentSubmenu(
   return items
 }
 
-/** Specific click handlers for menu items that have real implementations. */
+/**
+ * Specific click handlers for menu items that have a dedicated delivery path,
+ * derived from menuActionMap:
+ *   - 'dedicated-direct' channels send themselves on their own push channel
+ *     (the renderer subscribes via MENU_PASS_THROUGH).
+ *   - 'dedicated-relay' channels (Perspective / Orthographic) relay through
+ *     MENU_GENERIC carrying the channel as payload.
+ * All other channels fall back to MENU_GENERIC in `buildItem`.
+ */
 function buildSpecificHandlers(
   mainWindow: BrowserWindow,
 ): Record<string, () => void> {
-  return {
-    [IPC.MENU_OPEN_FILE]:  () => mainWindow.webContents.send(IPC.MENU_OPEN_FILE),
-    [IPC.MENU_SAVE]:       () => mainWindow.webContents.send(IPC.MENU_SAVE),
-    [IPC.MENU_NEW_TAB]:    () => mainWindow.webContents.send(IPC.MENU_NEW_TAB),
-    [IPC.MENU_CLOSE_TAB]:  () => mainWindow.webContents.send(IPC.MENU_CLOSE_TAB),
-    [IPC.MENU_UNDO]:       () => mainWindow.webContents.send(IPC.MENU_UNDO),
-    [IPC.MENU_REDO]:       () => mainWindow.webContents.send(IPC.MENU_REDO),
-    [IPC.MENU_NEW_SCENE]:  () => mainWindow.webContents.send(IPC.MENU_NEW_SCENE),
-    [IPC.MENU_OPEN_SCENE]: () => mainWindow.webContents.send(IPC.MENU_OPEN_SCENE),
-    [IPC.MENU_VIEW_PERSPECTIVE]:  () => mainWindow.webContents.send(IPC.MENU_GENERIC, IPC.MENU_VIEW_PERSPECTIVE),
-    [IPC.MENU_VIEW_ORTHOGRAPHIC]: () => mainWindow.webContents.send(IPC.MENU_GENERIC, IPC.MENU_VIEW_ORTHOGRAPHIC),
+  const handlers: Record<string, () => void> = {}
+  for (const ch of DEDICATED_DIRECT_CHANNELS) {
+    handlers[ch] = () => mainWindow.webContents.send(ch)
   }
+  for (const ch of GENERIC_RELAY_CHANNELS) {
+    handlers[ch] = () => mainWindow.webContents.send(IPC.MENU_GENERIC, ch)
+  }
+  return handlers
 }
 
 /**
@@ -110,9 +119,14 @@ function buildItem(
   if (item.ipcChannel) {
     if (specificHandlers[item.ipcChannel]) {
       result.click = specificHandlers[item.ipcChannel]
-    } else {
+    } else if (isMenuActionChannel(item.ipcChannel)) {
       const ch = item.ipcChannel
       result.click = () => mainWindow.webContents.send(IPC.MENU_GENERIC, ch)
+    } else {
+      // An ipcChannel that is neither a dedicated handler nor a known menu
+      // action means the template and menuActionMap drifted -- the
+      // exhaustiveness test guards against this, but warn defensively.
+      console.warn('menu item has unknown ipcChannel:', item.ipcChannel)
     }
   }
 
@@ -175,7 +189,7 @@ function buildAndSetMenu(mainWindow: BrowserWindow): void {
           submenu: [
             { id: 'about-mac', label: `About ${app.name}`, ipcChannel: IPC.MENU_ABOUT },
             { type: 'separator' },
-            { id: 'mac-prefs', label: 'Preferences...', accelerator: 'Cmd+,', ipcChannel: 'menu:options' },
+            { id: 'mac-prefs', label: 'Preferences...', accelerator: 'Cmd+,', ipcChannel: IPC.MENU_OPTIONS },
             { type: 'separator' },
             { role: 'services' },
             { type: 'separator' },

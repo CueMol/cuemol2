@@ -105,7 +105,7 @@ describe('macOS App menu', () => {
     const macStart = menuSrc.indexOf('macOnlyGroups')
     expect(macStart).toBeGreaterThan(0)
     // Restrict to the macOnlyGroups literal block to avoid matching APP_MENU.
-    const macBlock = menuSrc.slice(macStart, macStart + 600)
+    const macBlock = menuSrc.slice(macStart, macStart + 700)
     expect(macBlock).toContain("id: 'about-mac'")
     expect(macBlock).toContain('About ${app.name}')
     expect(macBlock).toContain("id: 'mac-prefs'")
