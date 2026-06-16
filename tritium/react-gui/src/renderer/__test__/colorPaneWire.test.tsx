@@ -319,14 +319,16 @@ describe('ColorPane wire', () => {
                 lowParam: 10, highParam: 50,
             },
         })
-        // The Bfac deck's plain numeric inputs are the local NumberField
-        // (class color-inline-input today). Match either that bespoke class or
-        // the form-kit NumericField class (`h3-form-numeric`) so the test
-        // survives T2 swapping the local NumberField for the canonical
-        // NumericField without changing the observable reject/commit wire.
+        // The Bfac deck's plain numeric inputs carry reject-and-revert
+        // validation. Match the legacy bespoke class (color-inline-input), the
+        // clamp NumericField class (h3-form-numeric), OR the reject catalog
+        // primitive (h3-form-reject-num) -- T2 moved ColorPane's local
+        // reject NumberField onto the catalog RejectNumberInput, which keeps
+        // the same silent-reject wire but emits the new class. Wire assertions
+        // below are unchanged; only this anchor is re-pointed.
         const numInputs = Array.from(
             container.querySelectorAll(
-                'input.color-inline-input, input.h3-form-numeric',
+                'input.color-inline-input, input.h3-form-numeric, input.h3-form-reject-num',
             ),
         ) as HTMLInputElement[]
         // Order: Low (lowpar), High (highpar). lowpar has no min/max in the
@@ -356,7 +358,7 @@ describe('ColorPane wire', () => {
             },
         })
         const low = container.querySelector(
-            'input.color-inline-input, input.h3-form-numeric',
+            'input.color-inline-input, input.h3-form-numeric, input.h3-form-reject-num',
         ) as HTMLInputElement
         await act(async () => { low.focus() })
         await act(async () => { setInputValue(low, '25') })

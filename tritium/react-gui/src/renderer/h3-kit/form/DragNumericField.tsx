@@ -84,6 +84,7 @@ import React, {
     useState,
 } from 'react';
 import { AppIcon } from '../../components/AppIcon';
+import { clampAndQuantize, decimalsOf, snapTo } from './numericMath';
 
 void React; // classic JSX runtime (vitest)
 
@@ -181,32 +182,6 @@ export interface DragNumericFieldProps {
 export interface DragNumericFieldHandle {
     /** Put the field into text-edit mode with its current value selected. */
     focusEdit(): void;
-}
-
-/** Decimal places implied by `step` (0.1 -> 1, 0.01 -> 2, 1 -> 0). */
-function decimalsOf(step: number): number {
-    if (!Number.isFinite(step) || step <= 0) return 0;
-    return Math.max(0, -Math.floor(Math.log10(step)));
-}
-
-/**
- * Round `v` to the precision implied by `step`, stripping IEEE-754 drift from
- * accumulating across drag frames / step clicks.
- */
-function quantize(v: number, step: number): number {
-    if (!Number.isFinite(step) || step <= 0) return v;
-    return Number(v.toFixed(decimalsOf(step)));
-}
-
-/** Clamp to [min, max] then quantize to `step`. */
-function clampAndQuantize(v: number, min: number, max: number, step: number): number {
-    return quantize(Math.min(max, Math.max(min, v)), step);
-}
-
-/** Snap `v` to the nearest multiple of `snap` (absolute multiples from 0). */
-function snapTo(v: number, snap: number): number {
-    if (!Number.isFinite(snap) || snap <= 0) return v;
-    return Math.round(v / snap) * snap;
 }
 
 /** Transient drag bookkeeping, read by the global mousemove closure. */
