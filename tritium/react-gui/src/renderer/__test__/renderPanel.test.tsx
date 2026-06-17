@@ -2,10 +2,11 @@
  * @file __test__/renderPanel.test.tsx
  * @description Degrade-detection tests for the RenderPanel Start-button gate.
  *
- * Pins the contract that the "Start Render" button is disabled (and cannot
- * fire onStart) when `canStart` is false -- the fix for a non-molview tab
- * leaving a pressable button that silently does nothing. While a job is active
- * the panel shows Stop instead, which is never gated by canStart.
+ * Pins the contract that the render controls (Start button, image-size preset,
+ * Render Settings shortcut) are disabled -- and Start cannot fire onStart --
+ * when `renderable` is false: the fix for a non-molview tab leaving pressable
+ * controls that silently do nothing. While a job is active the panel shows Stop
+ * instead, which is never gated.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -31,7 +32,7 @@ function mount(props: Partial<React.ComponentProps<typeof RenderPanel>>): void {
     root.render(
       <RenderPanel
         job={null}
-        canStart={true}
+        renderable={true}
         preset="Current size"
         onStart={noop}
         onCancel={noop}
@@ -69,30 +70,37 @@ describe('RenderPanel -- Start button gating', () => {
     document.body.innerHTML = '';
   });
 
-  it('disables Start and does not fire onStart when canStart is false', () => {
+  it('disables every render control when not renderable', () => {
     const onStart = vi.fn();
-    mount({ canStart: false, onStart });
+    mount({ renderable: false, onStart });
     const start = button('Start Render');
     expect(start).toBeDefined();
     expect(start!.disabled).toBe(true);
     act(() => start!.click());
     expect(onStart).not.toHaveBeenCalled();
+    // The image-size preset and the Render Settings shortcut are gated too.
+    const presetSelect = container.querySelector('select') as HTMLSelectElement | null;
+    expect(presetSelect?.disabled).toBe(true);
+    expect(button('Render Settings')!.disabled).toBe(true);
   });
 
-  it('enables Start and fires onStart when canStart is true', () => {
+  it('enables every render control and fires onStart when renderable', () => {
     const onStart = vi.fn();
-    mount({ canStart: true, onStart });
+    mount({ renderable: true, onStart });
     const start = button('Start Render');
     expect(start).toBeDefined();
     expect(start!.disabled).toBe(false);
     act(() => start!.click());
     expect(onStart).toHaveBeenCalledTimes(1);
+    const presetSelect = container.querySelector('select') as HTMLSelectElement | null;
+    expect(presetSelect?.disabled).toBe(false);
+    expect(button('Render Settings')!.disabled).toBe(false);
   });
 
-  it('shows Stop (not gated by canStart) while a job is active', () => {
+  it('shows Stop (never gated by renderable) while a job is active', () => {
     const onCancel = vi.fn();
-    // canStart false, but an active job must still be stoppable.
-    mount({ canStart: false, job: RUNNING_JOB, onCancel });
+    // renderable false, but an active job must still be stoppable.
+    mount({ renderable: false, job: RUNNING_JOB, onCancel });
     expect(button('Start Render')).toBeUndefined();
     const stop = button('Stop');
     expect(stop).toBeDefined();

@@ -148,7 +148,7 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({
         return (
           <RenderPanel
             job={renderJob}
-            canStart={renderCanStart}
+            renderable={renderCanStart}
             preset={renderPreset}
             onStart={onRenderStart}
             onCancel={onRenderCancel}
