@@ -310,6 +310,25 @@ const App: React.FC = () => {
     return activeMolViewId !== undefined;
   }, [tabs, activeTab, activeMolViewId]);
 
+  /**
+   * Scene id whose Render Settings the gear should open: a molview tab's own
+   * scene, or a render-result tab's source scene. On a render-result tab
+   * activeSceneId is undefined (no active molview), so handleShowRenderSettings
+   * needs this explicit id -- otherwise the gear silently does nothing.
+   */
+  const renderSourceSceneId = useMemo(() => {
+    const activeTabData = tabs.find((t) => t.id === activeTab);
+    if (activeTabData?.type === 'renderResult') {
+      return activeTabData.renderResult?.sourceSceneId;
+    }
+    return activeSceneId;
+  }, [tabs, activeTab, activeSceneId]);
+
+  const handleOpenRenderSettings = useCallback(
+    () => handleShowRenderSettings(renderSourceSceneId),
+    [handleShowRenderSettings, renderSourceSceneId],
+  );
+
   /** Re-render from a result tab's snapshot (also restores it into the editor). */
   const handleReRender = useCallback(
     (result: RenderResult) => {
@@ -557,7 +576,7 @@ const App: React.FC = () => {
                             onStatusMessage={setStatusMessage}
                             onReRender={handleReRender}
                             onShowSourceScene={handleShowSourceScene}
-                            onOpenRenderSettings={handleShowRenderSettings}
+                            onOpenRenderSettings={handleOpenRenderSettings}
                           />
                         </Allotment.Pane>
                         <Allotment.Pane minSize={100} preferredSize={200} snap>
@@ -571,7 +590,7 @@ const App: React.FC = () => {
                             onRenderStart={handleRenderStart}
                             onRenderCancel={renderJob.cancel}
                             onRenderApplyPreset={handleApplyRenderPreset}
-                            onOpenRenderSettings={handleShowRenderSettings}
+                            onOpenRenderSettings={handleOpenRenderSettings}
                             onInspectAnimElement={handleInspectAnimElement}
                           />
                         </Allotment.Pane>

@@ -312,6 +312,23 @@ describe('useInspectorState', () => {
         });
         h.unmount();
     });
+
+    it('handleShowRenderSettings(sceneId) targets render settings with no active scene tree', async () => {
+        // Render-result tab: no molview is active, so sceneTree / activeSceneId
+        // are undefined. The gear must still open the result's source scene's
+        // render settings by passing the id explicitly (regression: it used to
+        // resolve only from sceneTree and silently no-op here).
+        const h = mountHook(cm, makeTree(1, 5));
+        await h.closeScene();
+        expect(h.result.inspectorTarget).toBeNull();
+        act(() => {
+            h.result.handleShowRenderSettings(7);
+        });
+        await settle();
+        expect(h.result.inspectorTarget).toEqual({ kind: 'renderSettings', sceneId: 7 });
+        expect(h.result.inspectorOpen).toBe(true);
+        h.unmount();
+    });
 });
 
 describe('useInspectorState - animElement target', () => {

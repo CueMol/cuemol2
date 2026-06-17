@@ -215,15 +215,28 @@ export function useInspectorState({
   );
 
   /**
-   * Open the inspector on the active scene's Render Settings (Toolbar
-   * Render button / F12). Render Settings belongs to the scene as a whole
-   * and has no scene-tree node.
+   * Open the inspector on a scene's Render Settings (Toolbar Render button /
+   * F12, or the Render panel / Render Result gear). Render Settings belongs to
+   * the scene as a whole and has no scene-tree node.
+   *
+   * @param sceneId - Explicit scene to target. Required on a render-result tab,
+   *   where no molview is active so `sceneTree` is null: the caller passes the
+   *   result's source scene id. Falls back to the active scene tree's id when
+   *   omitted (Toolbar / F12 on a molview tab).
    */
-  const handleShowRenderSettings = useCallback(() => {
-    const sid = sceneTree ? Number(sceneTree.id) : undefined;
-    if (sid === undefined) return;
-    applyTarget({ kind: "renderSettings", sceneId: sid });
-  }, [sceneTree, applyTarget]);
+  const handleShowRenderSettings = useCallback(
+    (sceneId?: number) => {
+      const sid =
+        typeof sceneId === "number"
+          ? sceneId
+          : sceneTree
+            ? Number(sceneTree.id)
+            : undefined;
+      if (sid === undefined) return;
+      applyTarget({ kind: "renderSettings", sceneId: sid });
+    },
+    [sceneTree, applyTarget],
+  );
 
   /**
    * Open the inspector for an animation element selected in the AnimationPanel.
