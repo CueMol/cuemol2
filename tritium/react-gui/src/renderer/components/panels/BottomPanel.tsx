@@ -60,6 +60,8 @@ interface BottomPanelProps {
   activeMolViewId: number | undefined;
   /** Current render job (Render tab). */
   renderJob: RenderJob | null;
+  /** Whether the active content tab has a scene to render (gates Start). */
+  renderCanStart: boolean;
   /** Selected image-size preset label. */
   renderPreset: string;
   /** Start a render. */
@@ -79,6 +81,7 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({
   activeSceneId,
   activeMolViewId,
   renderJob,
+  renderCanStart,
   renderPreset,
   onRenderStart,
   onRenderCancel,
@@ -145,6 +148,7 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({
         return (
           <RenderPanel
             job={renderJob}
+            canStart={renderCanStart}
             preset={renderPreset}
             onStart={onRenderStart}
             onCancel={onRenderCancel}

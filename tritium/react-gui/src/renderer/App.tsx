@@ -9,7 +9,7 @@
  *   - useCommandRegistrations   -- registers all CmdId handlers + Electron IPC bridge
  */
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { Allotment } from "allotment";
 import "allotment/dist/style.css";
 
@@ -295,6 +295,21 @@ const App: React.FC = () => {
     });
   }, [tabs, activeTab, getActiveSceneInfo, scene.tree, renderJob, renderSettings, renderBinaries]);
 
+  /**
+   * Whether the active tab can be rendered now. Mirrors the source resolution
+   * in handleRenderStart so the Render tab's Start button is enabled exactly
+   * when a render would actually run: a molview tab, or a Render Result tab that
+   * still knows its source view. Settings / welcome tabs have no scene, so the
+   * button is disabled rather than silently doing nothing.
+   */
+  const canRender = useMemo(() => {
+    const activeTabData = tabs.find((t) => t.id === activeTab);
+    if (activeTabData?.type === 'renderResult') {
+      return activeTabData.renderResult?.sourceViewId !== undefined;
+    }
+    return activeMolViewId !== undefined;
+  }, [tabs, activeTab, activeMolViewId]);
+
   /** Re-render from a result tab's snapshot (also restores it into the editor). */
   const handleReRender = useCallback(
     (result: RenderResult) => {
@@ -551,6 +566,7 @@ const App: React.FC = () => {
                             activeSceneId={activeSceneId}
                             activeMolViewId={activeMolViewId}
                             renderJob={renderJob.job}
+                            renderCanStart={canRender}
                             renderPreset={renderSettings.preset}
                             onRenderStart={handleRenderStart}
                             onRenderCancel={renderJob.cancel}

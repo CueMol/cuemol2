@@ -19,6 +19,12 @@ import { RENDER_SIZE_PRESETS } from "../../data/renderSettings";
 interface RenderPanelProps {
   /** Current render job, or null when none has run yet. */
   job: RenderJob | null;
+  /**
+   * Whether the active content tab has a scene to render. Gates the Start
+   * button: a non-renderable tab (Settings / welcome) disables it instead of
+   * leaving a button that silently does nothing.
+   */
+  canStart: boolean;
   /** Selected image-size preset label. */
   preset: string;
   /** Start a new render. */
@@ -51,6 +57,7 @@ const elapsedSec = (job: RenderJob): string =>
 
 export const RenderPanel: React.FC<RenderPanelProps> = ({
   job,
+  canStart,
   preset,
   onStart,
   onCancel,
@@ -76,6 +83,7 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
             icon={<AppIcon name="media.play" aria-hidden />}
             text="Start Render"
             onClick={onStart}
+            disabled={!canStart}
           />
         )}
 
