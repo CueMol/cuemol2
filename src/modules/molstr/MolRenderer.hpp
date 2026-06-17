@@ -60,6 +60,11 @@ namespace molstr {
 
     LString interpHit(const gfx::RawHitData &rhit);
 
+    /// Collect (atom_id, world_pos) for each hit atom, for polygon selection.
+    virtual void getHitPositions(const gfx::RawHitData &rhit,
+                                 std::vector<int> &ids,
+                                 std::vector<qlib::Vector4D> &poss) const override;
+
     //////////////////////////////////////////////////////
     // MolRenderer interface (selection)
 

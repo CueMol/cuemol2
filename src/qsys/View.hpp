@@ -436,6 +436,14 @@ namespace qsys {
     /// pixels). Returns (x, y, ndcZ). Base impl returns the origin.
     virtual qlib::LScrVector4D projToScreen(const qlib::Vector4D &wpos);
 
+    /// Perform hittest by an arbitrary polygon region (freeform lasso). `pts`
+    /// is a FLOAT32 ByteArray of interleaved vertices [x0,y0,x1,y1,...] in
+    /// logical canvas pixels (the same space as hitTestRect input). Returns the
+    /// same JSON shape as hitTestRect, restricted to elements whose screen
+    /// projection falls inside the polygon. Base impl returns empty.
+    /// @param bNearest only returns the result for the nearest renderer.
+    virtual LString hitTestPolygon(qlib::LByteArrayPtr pts, bool bNearest);
+
     ////////////////////////////////////////////////
     // Framebuffer operations
     

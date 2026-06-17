@@ -108,6 +108,8 @@ public:
 
     virtual qlib::LScrVector4D projToScreen(const qlib::Vector4D &wpos) override;
 
+    virtual LString hitTestPolygon(qlib::LByteArrayPtr pts, bool bNearest) override;
+
 protected:
     MouseEventHandler m_meh;
 

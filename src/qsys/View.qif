@@ -138,6 +138,11 @@ runtime_class View
   // result is (x, y, ndcZ). Used by the lasso selection tool.
   object<Vector> projToScreen(object<Vector> wpos);
 
+  // Hittest by a freeform polygon region (lasso). pts is a FLOAT32 ByteArray
+  // of interleaved vertices [x0,y0,x1,y1,...] in logical canvas pixels. Returns
+  // the same JSON shape as hitTestRect, restricted to the polygon interior.
+  string hitTestPolygon(object<ByteArray$> pts, boolean bNr);
+
   // get parent scene
   object<Scene$> getScene();
 

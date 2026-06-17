@@ -343,6 +343,14 @@ LString Renderer::interpHit(const gfx::RawHitData &)
   return NULL;
 }
 
+void Renderer::getHitPositions(const gfx::RawHitData &,
+                               std::vector<int> &,
+                               std::vector<qlib::Vector4D> &) const
+{
+  // Default: this renderer type has no per-hit 3D position, so it does not
+  // participate in polygon selection. MolRenderer overrides this.
+}
+
 ////////////////////////////////////////////
 
 void Renderer::writeTo2(qlib::LDom2Node *pNode) const
