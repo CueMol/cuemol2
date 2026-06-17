@@ -244,32 +244,6 @@
   overflow: hidden;
 }
 
-.render-result-toolbar {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  background: var(--bg-panel-header);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-
-/* Icon-only buttons (label shown via the native title tooltip) keep a
-   fixed compact width so the bar never wraps or needs a scrollbar. */
-.render-result-toolbar .bp5-button,
-.render-result-toolbar .bp5-popover-target,
-.render-result-toolbar .bp5-divider {
-  flex-shrink: 0;
-}
-
-.render-result-info {
-  margin-left: auto;
-  padding-left: var(--space-3);
-  font-size: var(--fs-base);
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
 /* ── Image viewer ── */
 .riv {
   display: flex;
@@ -281,17 +255,29 @@
 .riv-toolbar {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-2);
   padding: var(--space-2) var(--space-4);
   background: var(--bg-panel-header);
   border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
 }
 
-.riv-zoom-label {
+/* Icon-only buttons (label shown via the native title tooltip) keep a fixed
+   compact width so the single toolbar never wraps or needs a scrollbar. */
+.riv-toolbar .bp5-button,
+.riv-toolbar .bp5-popover-target,
+.riv-toolbar .bp5-divider {
+  flex-shrink: 0;
+}
+
+/* Scene name / image size / zoom, pushed to the end of the toolbar. Uses the
+   readable secondary label colour (not the muted/disabled tone). */
+.riv-info {
+  margin-left: auto;
+  padding-left: var(--space-3);
   font-size: var(--fs-base);
-  color: var(--text-muted);
-  min-width: 42px;
+  color: var(--text-secondary);
+  white-space: nowrap;
 }
 
 .riv-scroll {

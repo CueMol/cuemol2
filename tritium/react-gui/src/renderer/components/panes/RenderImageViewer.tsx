@@ -8,6 +8,11 @@
  * paints -- so switching to the tab never flashes the image at 100% before it
  * shrinks to fit. The fit needs only the container size and the image
  * dimensions (props), so it does not wait for the <img> to load.
+ *
+ * The viewer owns the single toolbar for the Render Result tab: the parent's
+ * result actions are passed in via `actions` and rendered alongside the zoom
+ * controls, and the info text (scene name / size / zoom) sits at the end. This
+ * keeps the tab to one toolbar row rather than stacking a separate action bar.
  */
 
 import React, { useRef, useState, useCallback, useLayoutEffect } from "react";
@@ -21,6 +26,10 @@ interface RenderImageViewerProps {
   imgWidth: number;
   /** Logical image height in pixels. */
   imgHeight: number;
+  /** Source scene name, shown in the toolbar info text. */
+  name: string;
+  /** Result action buttons, rendered at the start of the single toolbar. */
+  actions?: React.ReactNode;
 }
 
 const MIN_SCALE = 0.05;
@@ -32,6 +41,8 @@ export const RenderImageViewer: React.FC<RenderImageViewerProps> = ({
   src,
   imgWidth,
   imgHeight,
+  name,
+  actions,
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -108,13 +119,16 @@ export const RenderImageViewer: React.FC<RenderImageViewerProps> = ({
   return (
     <div className="riv">
       <div className="riv-toolbar">
+        {actions}
         <ButtonGroup>
           <Button small icon={<AppIcon name="ui.zoomOut" aria-hidden />} title="Zoom out" onClick={() => zoom(0.8)} />
           <Button small icon={<AppIcon name="ui.zoomIn" aria-hidden />} title="Zoom in" onClick={() => zoom(1.25)} />
         </ButtonGroup>
         <Button small icon={<AppIcon name="ui.zoomToFit" aria-hidden />} text="Fit" onClick={fit} />
         <Button small text="100%" onClick={() => setScale(1)} />
-        <span className="riv-zoom-label">{Math.round(scale * 100)}%</span>
+        <span className="riv-info">
+          {name} · {imgWidth}×{imgHeight} · {Math.round(scale * 100)}%
+        </span>
       </div>
       <div
         className="riv-scroll"

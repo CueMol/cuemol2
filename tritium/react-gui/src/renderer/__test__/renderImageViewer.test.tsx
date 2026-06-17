@@ -43,15 +43,18 @@ function mount(imgWidth: number, imgHeight: number): void {
   document.body.appendChild(container);
   act(() => {
     root = createRoot(container);
-    root.render(<RenderImageViewer src="data:," imgWidth={imgWidth} imgHeight={imgHeight} />);
+    root.render(<RenderImageViewer src="data:," imgWidth={imgWidth} imgHeight={imgHeight} name="scene1" />);
   });
 }
 
 describe('RenderImageViewer -- fit before paint', () => {
-  it('fits on mount via the layout effect, not at 100%, without an img load', () => {
+  it('fits on mount via the layout effect (not 100%) and shows scene/size/zoom info', () => {
     // 400/800 = 0.5 and 300/600 = 0.5 -> fit 50%. onLoad is never fired.
     mount(800, 600);
-    expect(container.querySelector('.riv-zoom-label')?.textContent).toBe('50%');
+    const info = container.querySelector('.riv-info')?.textContent ?? '';
+    expect(info).toContain('scene1');
+    expect(info).toContain('800×600');
+    expect(info).toContain('50%'); // fitted before paint, not the initial 100%
     // The stage is laid out at the fitted size (800x0.5, 600x0.5), not 100%.
     const stage = container.querySelector('.riv-stage') as HTMLElement;
     expect(stage.style.width).toBe('400px');
