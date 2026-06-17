@@ -116,6 +116,7 @@ const App: React.FC = () => {
     persistInspectorOpen,
     cm,
     sceneTree: scene.tree,
+    activeSceneId,
   });
 
   // Animation-element inspector header (name/type). App owns it because

@@ -67,6 +67,13 @@ export interface UseInspectorStateOptions {
   cm: AsyncCueMol | null;
   /** Live scene tree; its root id is the active scene uid. */
   sceneTree: SceneTreeNode | null;
+  /**
+   * The active scene uid (from the active molview tab), or undefined when no
+   * molview tab is open. This is the authoritative active-scene signal: unlike
+   * `sceneTree?.id` it never goes transiently null during a tree refetch, so it
+   * is the safe trigger for clearing the inspector when its scene closes.
+   */
+  activeSceneId: number | undefined;
 }
 
 /** Source-type mask for the property-change event subscription. */
@@ -82,6 +89,7 @@ export function useInspectorState({
   persistInspectorOpen,
   cm,
   sceneTree,
+  activeSceneId,
 }: UseInspectorStateOptions) {
   // --- Local state ---
 
@@ -246,14 +254,19 @@ export function useInspectorState({
     void fetchGenericProps();
   }, [inspectorTarget, fetchGenericProps]);
 
-  // Tab switch = active scene change. Restore that scene's remembered
-  // target (or clear) so the inspector follows the visible scene.
-  const activeSceneId = sceneTree?.id;
+  // Tab switch = active scene change. Restore that scene's remembered target,
+  // or clear when the active scene goes away (all molview tabs closed) so the
+  // inspector never keeps editing a closed scene. Driven by the authoritative
+  // `activeSceneId` (not `sceneTree?.id`, which goes transiently null during a
+  // refetch and would wrongly drop the target).
   useEffect(() => {
-    if (activeSceneId === undefined) return; // transient null during refetch
     if (activeSceneId === appliedSceneIdRef.current) return;
     appliedSceneIdRef.current = activeSceneId;
-    setInspectorTarget(targetsBySceneRef.current.get(activeSceneId) ?? null);
+    setInspectorTarget(
+      activeSceneId === undefined
+        ? null
+        : (targetsBySceneRef.current.get(activeSceneId) ?? null),
+    );
   }, [activeSceneId]);
 
   /** Close the inspector, clear the target, and forget per-scene memory. */

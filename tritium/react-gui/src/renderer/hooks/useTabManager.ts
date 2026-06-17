@@ -59,25 +59,34 @@ export function useTabManager(opts?: {
   const handleCloseTab = useCallback(
     async (id: string): Promise<boolean> => {
       const closing = tabsRef.current.find((t) => t.id === id);
-      if (closing?.type === "molview" && closing.viewId !== undefined && opts?.confirmCloseTab) {
+      if (!closing) return false;
+      if (closing.type === "molview" && closing.viewId !== undefined && opts?.confirmCloseTab) {
         const proceed = await opts.confirmCloseTab(closing.viewId);
         if (!proceed) return false;
       }
 
-      setTabs((prev) => {
-        const closingTab = prev.find((t) => t.id === id);
-        const next = prev.filter((t) => t.id !== id);
-        if (closingTab?.type === "molview" && closingTab.viewId !== undefined) {
-          opts?.onMolViewClose?.(closingTab.viewId);
-        }
-        setActiveTab((currentActive) => {
-          if (currentActive === id && next.length > 0) {
-            return next[next.length - 1].id;
-          }
-          return next.length === 0 ? "" : currentActive;
-        });
-        return next;
-      });
+      // Re-read after the (possibly slow) confirm/save -- the tab list is the
+      // source of truth and may have shifted while awaiting. All state updates
+      // and side effects run at the top level, NOT inside a setTabs updater:
+      // an updater must be pure, and calling removeMolTab (onMolViewClose) /
+      // setActiveTab from within it made the molview teardown nondeterministic
+      // on the save-then-close path -- the parallel molTabEntries removal could
+      // be dropped, leaving the Explorer / Inspector pointed at the closed scene.
+      const closingTab = tabsRef.current.find((t) => t.id === id);
+      if (!closingTab) return false;
+      const next = tabsRef.current.filter((t) => t.id !== id);
+
+      setTabs(next);
+      setActiveTab((currentActive) =>
+        currentActive === id
+          ? next.length > 0
+            ? next[next.length - 1].id
+            : ""
+          : currentActive,
+      );
+      if (closingTab.type === "molview" && closingTab.viewId !== undefined) {
+        opts?.onMolViewClose?.(closingTab.viewId);
+      }
       return true;
     },
     [opts],
