@@ -121,6 +121,26 @@ export function useTabManager(opts?: {
     setActiveTab(newTab.id);
   }, []);
 
+  /**
+   * Rewrite the title of the molview tab(s) bound to `viewId`. Used by the
+   * scene-rename event sync so the tab strip reflects a rename made from the
+   * Explorer (or any other UI). No-op if the title is unchanged or no
+   * matching molview tab exists.
+   */
+  const updateMolViewTabTitle = useCallback((viewId: number, title: string) => {
+    setTabs((prev) => {
+      let changed = false;
+      const next = prev.map((t) => {
+        if (t.type === "molview" && t.viewId === viewId && t.title !== title) {
+          changed = true;
+          return { ...t, title };
+        }
+        return t;
+      });
+      return changed ? next : prev;
+    });
+  }, []);
+
   // --- Render Result tabs ---
 
   /**
@@ -154,6 +174,7 @@ export function useTabManager(opts?: {
     setActiveTab,
     openSettingsTab,
     addMolViewTab,
+    updateMolViewTabTitle,
     addRenderResultTab,
     handleCloseTab,
     handleReorderTabs,

@@ -12,6 +12,7 @@ import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
 import { useShowNewTabDialog } from '../components/dialogs/NewTabDialogProvider'
 import type { NewSceneAction } from '../hooks/useNewSceneAction'
+import { makeTabLabel } from '../worker/shared/tabLabel'
 
 interface UseNewTabCommandOptions {
     cm: AsyncCueMol | null
@@ -60,7 +61,7 @@ export function useNewTabCommand({
             })
             if (!res?.ok || res.view_uid === undefined) return
             // UXP makeTabLabel format: `<scene name>:<view name>`.
-            const title = `${names.currentSceneName ?? ''}:${result.name}`
+            const title = makeTabLabel(names.currentSceneName ?? '', result.name)
             addMolTab(title, res.view_uid, active.scene_uid)
             addMolViewTab(title, res.view_uid)
         }

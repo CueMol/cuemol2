@@ -42,6 +42,7 @@ import { useCueMol } from "./hooks/useCueMol";
 import { useMolTabDispatch, useMolTabState } from "./hooks/useMolTab";
 import { useAppInitialization } from "./hooks/useAppInitialization";
 import { useNewSceneAction } from "./hooks/useNewSceneAction";
+import { useMolViewTabTitleSync } from "./hooks/useMolViewTabTitleSync";
 import { useActiveViewState } from "./hooks/useActiveViewState";
 import { useUndoRedoState } from "./hooks/useUndoRedoState";
 import { useCommandRegistrations } from "./hooks/useCommandRegistrations";
@@ -196,12 +197,17 @@ const App: React.FC = () => {
     setActiveTab,
     openSettingsTab,
     addMolViewTab,
+    updateMolViewTabTitle,
     addRenderResultTab,
     handleCloseTab,
     handleReorderTabs,
   } = useTabManager({ onMolViewClose: handleMolViewClose, confirmCloseTab });
 
   useWindowCloseHandler({ tabsRef, handleCloseTab, setActiveTab });
+
+  // Keep molview tab titles in sync with their scene name (Explorer rename,
+  // scripts, undo, etc.) -- UXP TabMolView.onScenePropChanged equivalent.
+  useMolViewTabTitleSync({ cm, molTabEntries, updateMolViewTabTitle });
 
   // Shared "create scene + view + register tab" action used by both the
   // launch path and the New Tab dialog (UXP onNewScene equivalent).
