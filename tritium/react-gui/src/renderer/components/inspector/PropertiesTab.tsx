@@ -13,7 +13,7 @@
  * directly -- unknown types then show the common page only.
  */
 
-import React from "react";
+import React, { useMemo } from "react";
 import { AccordionSection, AccordionGroup } from "./AccordionSection";
 import { RendererCommonSection } from "./RendererCommonSection";
 import { ObjectCommonSection } from "./ObjectCommonSection";
@@ -64,6 +64,18 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
   sceneId,
   nodeId,
 }) => {
+  // Scene.name is a read-only C++ property, but a scene can be renamed via
+  // setName() (setGenericProp routes the write). The Properties tab presents the
+  // (shared) Basic-settings Name field as editable for a Scene; the Generic tab
+  // consumes the raw entries and keeps it read-only.
+  const displayEntries = useMemo(
+    () =>
+      rendererType === "Scene"
+        ? entries.map((e) => (e.key === "name" ? { ...e, readonly: false } : e))
+        : entries,
+    [entries, rendererType],
+  );
+
   // Object targets get the object-common page only (UXP object-propdlg
   // "Common" tab); there are no object-type-specific sections.
   if (isObject) {
@@ -71,7 +83,7 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
       <div className="insp-properties-tab">
         <AccordionGroup initialOpen="Basic settings">
           <ObjectCommonSection
-            entries={entries}
+            entries={displayEntries}
             onSet={onSet}
             onReset={onReset}
             sceneId={sceneId}
@@ -91,7 +103,7 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
   // All accordions in the Properties tab form one exclusive group: only one is
   // open at a time, since the per-renderer pages can be long. "Basic settings"
   // (the first common section) is open on first render -- except for the Scene,
-  // whose Basic settings holds only a read-only name, so its first real section
+  // whose Basic settings holds only the name, so its first real section
   // (Ambient occlusion) opens instead.
   const initialOpen =
     rendererType === "Scene" ? "Ambient occlusion" : "Basic settings";
@@ -99,7 +111,7 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
     <div className="insp-properties-tab">
       <AccordionGroup initialOpen={initialOpen}>
         <RendererCommonSection
-          entries={entries}
+          entries={displayEntries}
           onSet={onSet}
           onSetMany={onSetMany}
           onReset={onReset}
@@ -109,7 +121,7 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
         {sections.map(({ key, title, defaultExpanded, Component }) => (
           <AccordionSection key={key} title={title} defaultExpanded={defaultExpanded}>
             <Component
-              entries={entries}
+              entries={displayEntries}
               onSet={onSet}
               onSetMany={onSetMany}
               onReset={onReset}

@@ -133,31 +133,14 @@ function collectProps(target: BaseWrapper): GenericPropEntry[] {
 }
 
 /**
- * Dump a node's properties for the inspector, applying the scene-name
- * editability override.
- *
- * `Scene.name` is reflected as a read-only property -- its `.qif` declares
- * `redirect(getName, XXX) (readonly)`, so there is no `setProp` setter -- yet a
+ * Scene.name is a read-only property -- its `.qif` declares
+ * `redirect(getName, XXX) (readonly)`, so there is no `setProp` setter -- but a
  * scene CAN be renamed via `Scene::setName()`, which also fires the
- * `propChanged("name")` event the scene tree and tab strip rely on. Expose the
- * scene's Name field as writable here; `setGenericProp` routes the write back
- * through `setName()` (the same path the scene-tree `renameNode` uses). Every
- * entry-returning service runs through this so the field stays editable after a
- * re-dump, not just on the first load.
+ * `propChanged("name")` event the scene tree and tab strip rely on. So a scene
+ * name write coming from the inspector is routed through `setName()` here. The
+ * entries keep their honest `readonly: true`; only the Properties tab presents
+ * the Name field as editable (the Generic tab stays read-only).
  */
-function collectPropsForNode(
-    target: BaseWrapper,
-    nodeType: PropTargetType,
-): GenericPropEntry[] {
-    const entries = collectProps(target);
-    if (nodeType === 'scene') {
-        const nameEntry = entries.find((e) => e.key === 'name');
-        if (nameEntry) nameEntry.readonly = false;
-    }
-    return entries;
-}
-
-/** Scene.name has no property setter; it is renamed via `Scene::setName()`. */
 function isSceneNameWrite(nodeType: PropTargetType, propName: string): boolean {
     return nodeType === 'scene' && propName === 'name';
 }
@@ -189,7 +172,7 @@ function getGenericProps(
     const { target } = resolvePropTarget(ctx, args);
     if (!target) return empty;
 
-    const entries = safeRead(() => collectPropsForNode(target, args.nodeType)) ?? [];
+    const entries = safeRead(() => collectProps(target)) ?? [];
     // A View has no `name` property - label it generically.
     const displayName =
         args.nodeType === 'view'
@@ -268,7 +251,7 @@ function setGenericProp(
                 target.resetProp(args.propName);
             } else if (isSceneNameWrite(args.nodeType, args.propName)) {
                 // Scene.name has no property setter; rename via setName(), which
-                // also fires propChanged("name") (see collectPropsForNode).
+                // also fires propChanged("name") (see isSceneNameWrite).
                 scene.setName(String(args.value ?? ''));
             } else if (args.valueType.startsWith('object<MolSelection>')) {
                 // Selection properties need a compiled SelCommand, not a raw
@@ -288,7 +271,7 @@ function setGenericProp(
 
     // Re-dump so the renderer sees normalised values (C++ may clamp /
     // round) and updated isdefault flags.
-    return { ok: true, entries: safeRead(() => collectPropsForNode(target, args.nodeType)) ?? [] };
+    return { ok: true, entries: safeRead(() => collectProps(target)) ?? [] };
 }
 
 // --- resetGenericProps ---
@@ -321,7 +304,7 @@ function resetGenericProps(
         return fail;
     }
 
-    return { ok: true, entries: safeRead(() => collectPropsForNode(target, args.nodeType)) ?? [] };
+    return { ok: true, entries: safeRead(() => collectProps(target)) ?? [] };
 }
 
 // --- setGenericProps ---
@@ -371,7 +354,7 @@ function setGenericProps(
         return fail;
     }
 
-    return { ok: true, entries: safeRead(() => collectPropsForNode(target, args.nodeType)) ?? [] };
+    return { ok: true, entries: safeRead(() => collectProps(target)) ?? [] };
 }
 
 export const services = {

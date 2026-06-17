@@ -292,10 +292,10 @@ describe('genericProps services', () => {
         expect(res.ok).toBe(false);
     });
 
-    it('getGenericProps exposes the scene Name as editable while keeping other readonly props', () => {
-        // Scene.name is reflected readonly (no setProp setter) but is editable
-        // via setName(); the service flips its readonly flag off so the inspector
-        // renders an editable field. Other readonly props (e.g. src) are intact.
+    it('getGenericProps reports the scene props verbatim (Name stays readonly)', () => {
+        // The worker is honest: Scene.name is a read-only C++ property, so it is
+        // reported readonly. The Properties tab makes it editable on its own; the
+        // Generic tab (which uses these entries) keeps it read-only.
         const SCENE_PROPS = JSON.stringify([
             { name: 'name', readonly: true, hasdefault: false, type: 'string', value: 'Scene 1' },
             { name: 'src', readonly: true, hasdefault: false, type: 'string', value: '/x.qsc' },
@@ -308,22 +308,8 @@ describe('genericProps services', () => {
         const res = services.getGenericProps(ctx, { sceneId: 1, nodeId: 1, nodeType: 'scene' });
         expect(res.ok).toBe(true);
         expect(res.typeLabel).toBe('Scene');
-        expect(res.entries.find((e) => e.key === 'name')!.readonly).toBe(false);
+        expect(res.entries.find((e) => e.key === 'name')!.readonly).toBe(true);
         expect(res.entries.find((e) => e.key === 'src')!.readonly).toBe(true);
-    });
-
-    it('getGenericProps leaves a renderer readonly prop untouched (scene-only flip)', () => {
-        const RENDERER_PROPS = JSON.stringify([
-            { name: 'center', readonly: true, hasdefault: false, type: 'object<Vector>', value: '(0,0,0)' },
-        ]);
-        const target = { name: 'r', type_name: 'simple', getPropsJSON: vi.fn(() => RENDERER_PROPS) };
-        const scene = { getRenderer: vi.fn(() => target) };
-        const ctx = {
-            sceMgr: { getScene: vi.fn(() => scene), getView: vi.fn() },
-        } as unknown as WorkerContext;
-
-        const res = services.getGenericProps(ctx, { sceneId: 1, nodeId: 5, nodeType: 'renderer' });
-        expect(res.entries.find((e) => e.key === 'center')!.readonly).toBe(true);
     });
 
     it('getGenericProps resolves a view and labels it View', () => {
