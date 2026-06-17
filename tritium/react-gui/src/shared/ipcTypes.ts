@@ -436,6 +436,14 @@ export interface MenuState {
   redo?: {
     enabled: boolean
   }
+  /**
+   * Enablement of menu items that act on an existing scene (Save / Save As /
+   * Export / Reload / molecule tools, ...). Disabled when no molview tab is
+   * active so they read as unavailable instead of silently doing nothing.
+   */
+  sceneOps?: {
+    enabled: boolean
+  }
 }
 
 // - Crash report -

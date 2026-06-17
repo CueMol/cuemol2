@@ -49,6 +49,8 @@ export function useActiveViewState({
     perspective?: boolean | null;
     centerMark?: ViewCenterMark | null;
     bgColor?: SceneBgColor | null;
+    /** Enable/disable scene-operation menu items (Save / Export / tools, ...). */
+    sceneEnabled?: boolean;
   }) => {
     window.electronAPI?.invoke(IPC.MENU_UPDATE_STATE, {
       ...(state.perspective !== undefined
@@ -59,6 +61,9 @@ export function useActiveViewState({
         : {}),
       ...(state.bgColor !== undefined
         ? { sceneBgColor: { enabled: state.bgColor !== null, bgColor: state.bgColor } }
+        : {}),
+      ...(state.sceneEnabled !== undefined
+        ? { sceneOps: { enabled: state.sceneEnabled } }
         : {}),
     }).catch((err: unknown) => {
       console.warn('update menu state failed:', err);
@@ -94,7 +99,9 @@ export function useActiveViewState({
       setViewProjection(null);
       setViewCenterMark(null);
       setSceneBgColor(null);
-      syncNativeViewMenu({ perspective: null, centerMark: null, bgColor: null });
+      // No active molview tab -> disable both the view-property items and the
+      // scene-operation items (Save / Export / tools, ...).
+      syncNativeViewMenu({ perspective: null, centerMark: null, bgColor: null, sceneEnabled: false });
       return;
     }
 
@@ -114,14 +121,16 @@ export function useActiveViewState({
       setViewProjection(perspective);
       setViewCenterMark(centerMark);
       setSceneBgColor(bgColor);
-      syncNativeViewMenu({ perspective, centerMark, bgColor });
+      syncNativeViewMenu({ perspective, centerMark, bgColor, sceneEnabled: true });
     }).catch((err: unknown) => {
       if (!cancelled) {
         console.warn('get view state failed:', err);
         setViewProjection(null);
         setViewCenterMark(null);
         setSceneBgColor(null);
-        syncNativeViewMenu({ perspective: null, centerMark: null, bgColor: null });
+        // A molview tab is still active (only the property fetch failed), so
+        // scene-operation items stay enabled.
+        syncNativeViewMenu({ perspective: null, centerMark: null, bgColor: null, sceneEnabled: true });
       }
     });
 

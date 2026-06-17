@@ -89,6 +89,8 @@ describe('useActiveViewState', () => {
     expect(state.viewProjection.enabled).toBe(false)
     expect(state.viewCenterMark.enabled).toBe(false)
     expect(state.sceneBgColor.enabled).toBe(false)
+    // Scene-operation menu items disabled too (no active scene).
+    expect(state.sceneOps.enabled).toBe(false)
 
     h.unmount()
   })
@@ -126,6 +128,8 @@ describe('useActiveViewState', () => {
     expect(state.viewProjection).toEqual({ enabled: true, perspective: false })
     expect(state.viewCenterMark).toEqual({ enabled: true, centerMark: 'axis' })
     expect(state.sceneBgColor).toEqual({ enabled: true, bgColor: 'black' })
+    // Scene-operation menu items enabled (a scene is active).
+    expect(state.sceneOps).toEqual({ enabled: true })
 
     h.unmount()
   })

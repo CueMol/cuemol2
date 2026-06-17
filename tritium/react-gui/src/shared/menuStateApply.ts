@@ -17,6 +17,40 @@
 
 import type { MenuState } from './ipcTypes'
 
+/**
+ * Menu item ids (from `menuTemplate.ts`) of implemented actions that operate on
+ * an existing scene and therefore must be disabled when no molview tab is
+ * active. Kept here (shared) so main and renderer agree on the set.
+ *
+ * Excludes items already gated by their own state slice (background colour,
+ * perspective / orthographic, center mark) and the not-yet-ported placeholders
+ * (scene-props, color-proof, pov-render, ...), whose disabled-ness is a separate
+ * concern.
+ */
+export const SCENE_REQUIRING_MENU_IDS: readonly string[] = [
+    // File
+    'save-file-as',
+    'save-current-view',
+    'reload-scene',
+    'save-scene',
+    'save-scene-as',
+    // Edit (molecule operations)
+    'merge-mol',
+    'delete-mol-atoms',
+    'change-chain-id',
+    'change-resid-num',
+    // Rendering
+    'export-scene',
+    // View
+    'view-props',
+    // Tools (molecule operations)
+    'mol-superpose',
+    'interaction',
+    'reassign-2ndry',
+    'mol-surf',
+    'surf-cutter',
+]
+
 /** Minimal MenuItem surface that the apply helper mutates. */
 export interface MenuItemLike {
     enabled: boolean
@@ -44,6 +78,7 @@ export function mergeMenuState(
         sceneBgColor: update.sceneBgColor ?? current?.sceneBgColor,
         undo: update.undo ?? current?.undo,
         redo: update.redo ?? current?.redo,
+        sceneOps: update.sceneOps ?? current?.sceneOps,
     }
 }
 
@@ -107,5 +142,12 @@ export function applyMenuStateTo(menu: MenuLike, state: MenuState): void {
     if (state.redo) {
         const item = menu.getMenuItemById('redo')
         if (item) item.enabled = state.redo.enabled
+    }
+
+    if (state.sceneOps) {
+        for (const id of SCENE_REQUIRING_MENU_IDS) {
+            const item = menu.getMenuItemById(id)
+            if (item) item.enabled = state.sceneOps.enabled
+        }
     }
 }
