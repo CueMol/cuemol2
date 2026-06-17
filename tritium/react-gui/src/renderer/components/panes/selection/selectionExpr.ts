@@ -50,9 +50,31 @@ function isLiteralToken(tok: string): boolean {
 }
 
 /**
- * Normalize a comma-separated name list. Plain tokens are single-quoted when
- * `quote` is set (e.g. chain names); regex / quoted / `null` tokens pass
- * through untouched. Empty tokens are dropped.
+ * Should a plain name-list token be single-quoted (when the keyword opts into
+ * quoting, e.g. chain)? Single-quoting a token switches its match to
+ * CASE-SENSITIVE: the grammar matches unquoted plain tokens
+ * case-INsensitively (scanner STRMATCH_ICASE) and quoted tokens with
+ * `nam.equals` (see SelNodes.cpp SelNamesNode::matches). So quoting is only
+ * meaningful for tokens that carry an upper/lower-case distinction -- those
+ * containing an ASCII letter.
+ *
+ * A bare metacharacter token such as the `*` wildcard must therefore stay
+ * unquoted: `'*'` matches a chain literally named "*" instead of standing for
+ * "all" (parser SELTK_ALL in the hierarchical chain position). Pure-numeric
+ * tokens (e.g. a numeric chain id) need no quoting either -- digits have no
+ * case. Tokens that already carry their own quoting/regex/null syntax are
+ * never re-quoted.
+ */
+function needsQuote(tok: string): boolean {
+    return !isLiteralToken(tok) && /[A-Za-z]/.test(tok);
+}
+
+/**
+ * Normalize a comma-separated name list. When `quote` is set, plain tokens
+ * that carry a case distinction (contain an ASCII letter, e.g. chain names)
+ * are single-quoted for case-sensitive matching; metacharacters (`*`),
+ * numerics, and regex / quoted / `null` tokens pass through untouched so they
+ * keep their grammar meaning. Empty tokens are dropped.
  *
  * @returns the joined list, or `''` when no tokens remain.
  */
@@ -61,7 +83,7 @@ export function parseNameList(input: string, quote: boolean): string {
         .split(',')
         .map((t) => t.trim())
         .filter((t) => t.length > 0)
-        .map((t) => (quote && !isLiteralToken(t) ? `'${t}'` : t));
+        .map((t) => (quote && needsQuote(t) ? `'${t}'` : t));
     return tokens.join(',');
 }
 
@@ -111,8 +133,9 @@ export function buildTerm(keyword: Keyword, fields: TermFields): string | null {
         }
         case 'hierarchical': {
             // Native positional dot form `chain.resid.atom` (e.g. 'A'.10.CA).
-            // Unspecified positions become the `*` wildcard. Chain values are
-            // single-quoted, matching selStrFromTree's convention.
+            // Unspecified positions become the `*` wildcard. Alphabetic chain
+            // values are single-quoted for case-sensitive matching; a typed
+            // `*` passes through as the all-chains wildcard (see needsQuote).
             const chain = parseNameList(fields.chain ?? '', true);
             const resid = parseNumList(fields.resid ?? '');
             const aname = parseNameList(fields.aname ?? '', false);
