@@ -116,8 +116,12 @@ describe('useRenderSettings', () => {
         // 1200px / 600dpi = 2 in; 900 / 600 = 1.5 in.
         expect(valueOf(h.result.commonProps, 'width')).toBe(2);
         expect(valueOf(h.result.commonProps, 'height')).toBe(1.5);
-        // The field becomes a fractional control, not an integer pixel one.
-        expect(propOf(h.result.commonProps, 'width')?.type).toBe('real');
+        // The field becomes a fractional control, not an integer pixel one,
+        // and carries the new unit as its in-field suffix.
+        const width = propOf(h.result.commonProps, 'width') as { type: string; unit?: string; decimals?: number };
+        expect(width.type).toBe('real');
+        expect(width.unit).toBe('in');
+        expect(width.decimals).toBe(3);
         h.unmount();
     });
 
@@ -127,7 +131,9 @@ describe('useRenderSettings', () => {
         act(() => h.result.handleChange('unit', 'px'));
         expect(valueOf(h.result.commonProps, 'width')).toBe(1200);
         expect(valueOf(h.result.commonProps, 'height')).toBe(900);
-        expect(propOf(h.result.commonProps, 'width')?.type).toBe('integer');
+        const width = propOf(h.result.commonProps, 'width') as { type: string; unit?: string };
+        expect(width.type).toBe('integer');
+        expect(width.unit).toBe('px');
         h.unmount();
     });
 

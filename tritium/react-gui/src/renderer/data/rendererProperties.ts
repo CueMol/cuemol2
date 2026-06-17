@@ -29,6 +29,10 @@ export interface PropDef {
   max?: number;
   /** For numeric types: slider / spinner step size. */
   step?: number;
+  /** For numeric types: unit suffix shown inside the field (e.g. "px", "in"). */
+  unit?: string;
+  /** For numeric types: decimal places to display (omit to derive from step). */
+  decimals?: number;
   /** For enum types: list of valid options. */
   options?: string[];
   /** Accordion group this property belongs to in the editor. */

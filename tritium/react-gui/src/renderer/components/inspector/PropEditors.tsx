@@ -14,7 +14,7 @@ import {
   Field,
   TextField,
   SelectField,
-  NumericField,
+  DragNumericField,
   SwitchField,
   ColorField,
 } from "../../h3-kit/form";
@@ -46,7 +46,7 @@ export const StringEditor: React.FC<StringEditorProps> = ({ prop, onChange }) =>
 );
 
 // ------------------------------------------------------------
-// Numeric editor (integer & real) -- slider + numeric input
+// Numeric editor (integer & real) -- Blender-style drag field
 // ------------------------------------------------------------
 
 interface NumericEditorProps {
@@ -54,16 +54,26 @@ interface NumericEditorProps {
   onChange: (key: string, value: number) => void;
 }
 
+/**
+ * Drag-to-edit numeric field, matching the renderer property sections
+ * (`NumRow`). The value lives in React state and updates synchronously, so a
+ * plain controlled `value` / `onChange` is enough -- no draft/commit hook is
+ * needed. The unit suffix (`prop.unit`, e.g. "px" / "in") is shown inside the
+ * field; integer props render with no decimal digits.
+ */
 export const NumericEditor: React.FC<NumericEditorProps> = ({ prop, onChange }) => {
   const step = prop.step ?? (prop.type === "integer" ? 1 : 0.01);
+  const decimals = prop.decimals ?? (prop.type === "integer" ? 0 : undefined);
   return (
     <Field label={prop.label}>
-      <NumericField
+      <DragNumericField
         value={Number(prop.value)}
         onChange={(v) => onChange(prop.key, v)}
         min={prop.min ?? 0}
         max={prop.max ?? 100}
         step={step}
+        decimals={decimals}
+        unit={prop.unit}
       />
     </Field>
   );

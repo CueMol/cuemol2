@@ -50,11 +50,12 @@ const roundTo = (v: number, decimals: number): number => {
 
 /**
  * Set a width / height prop to `value` in `unit`, swapping in that unit's
- * editor metadata (type / range / step) so the control tracks the unit.
+ * editor metadata (type / range / step / decimals) and the unit suffix so the
+ * control tracks the unit.
  */
 const setSizeProp = (prop: PropDef, value: number, unit: string): PropDef => {
   const m = SIZE_UNIT_FIELD_META[unit as keyof typeof SIZE_UNIT_FIELD_META] ?? SIZE_UNIT_FIELD_META.px;
-  return { ...prop, value, type: m.type, min: m.min, max: m.max, step: m.step };
+  return { ...prop, value, type: m.type, min: m.min, max: m.max, step: m.step, unit, decimals: m.decimals };
 };
 
 /**

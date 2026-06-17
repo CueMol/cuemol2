@@ -120,9 +120,9 @@ export function pxToSizeUnit(px: number, dpi: number, unit: string): number {
 
 /** Backend-independent render-setting definitions (mock defaults). */
 export const RENDER_COMMON_PROPS: PropDef[] = [
-  // --- Image ---
-  { key: "width",  label: "Width",     type: "integer", value: 1200, group: "Image", min: 1, max: 10000, step: 1 },
-  { key: "height", label: "Height",    type: "integer", value: 900,  group: "Image", min: 1, max: 10000, step: 1 },
+  // --- Image (width/height carry the active unit as a field suffix) ---
+  { key: "width",  label: "Width",     type: "integer", value: 1200, group: "Image", min: 1, max: 10000, step: 1, unit: "px", decimals: 0 },
+  { key: "height", label: "Height",    type: "integer", value: 900,  group: "Image", min: 1, max: 10000, step: 1, unit: "px", decimals: 0 },
   { key: "unit",   label: "Size unit", type: "enum",    value: "px",  group: "Image", options: ["px", "in", "mm", "cm"] },
   { key: "dpi",    label: "DPI",       type: "integer", value: 600,   group: "Image", min: 72, max: 1200, step: 1 },
 
