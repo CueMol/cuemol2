@@ -13,6 +13,9 @@ import { useRenderSettings } from '../hooks/useRenderSettings';
 const valueOf = (props: { key: string; value: unknown }[], key: string) =>
     props.find((p) => p.key === key)?.value;
 
+const propOf = (props: { key: string; type?: unknown }[], key: string) =>
+    props.find((p) => p.key === key);
+
 describe('useRenderSettings', () => {
     it('starts on the default backend with common + backend props', () => {
         const h = makeRenderHook(() => useRenderSettings());
@@ -100,6 +103,50 @@ describe('useRenderSettings', () => {
         act(() => h.result.applyPreset('600×600 (300dpi)'));
         act(() => h.result.handleChange('width', 1024));
         expect(h.result.preset).toBe('Custom');
+        h.unmount();
+    });
+
+    // --- Size-unit conversion (UXP render-pov-dlg onImgSzUnitSel parity) ---
+
+    it('changing the unit reprojects width/height via DPI and switches the control to real', () => {
+        const h = makeRenderHook(() => useRenderSettings());
+        // defaults: 1200 x 900 px at 600 DPI.
+        act(() => h.result.handleChange('unit', 'in'));
+        expect(valueOf(h.result.commonProps, 'unit')).toBe('in');
+        // 1200px / 600dpi = 2 in; 900 / 600 = 1.5 in.
+        expect(valueOf(h.result.commonProps, 'width')).toBe(2);
+        expect(valueOf(h.result.commonProps, 'height')).toBe(1.5);
+        // The field becomes a fractional control, not an integer pixel one.
+        expect(propOf(h.result.commonProps, 'width')?.type).toBe('real');
+        h.unmount();
+    });
+
+    it('switching the unit back to px restores the original pixel size and integer control', () => {
+        const h = makeRenderHook(() => useRenderSettings());
+        act(() => h.result.handleChange('unit', 'in'));
+        act(() => h.result.handleChange('unit', 'px'));
+        expect(valueOf(h.result.commonProps, 'width')).toBe(1200);
+        expect(valueOf(h.result.commonProps, 'height')).toBe(900);
+        expect(propOf(h.result.commonProps, 'width')?.type).toBe('integer');
+        h.unmount();
+    });
+
+    it('unit conversion uses the current DPI', () => {
+        const h = makeRenderHook(() => useRenderSettings());
+        act(() => h.result.handleChange('dpi', 300));
+        act(() => h.result.handleChange('unit', 'in'));
+        // 1200px / 300dpi = 4 in.
+        expect(valueOf(h.result.commonProps, 'width')).toBe(4);
+        h.unmount();
+    });
+
+    it('applyPreset resets the unit to px (presets are pixel sizes)', () => {
+        const h = makeRenderHook(() => useRenderSettings());
+        act(() => h.result.handleChange('unit', 'in'));
+        act(() => h.result.applyPreset('600×600 (300dpi)'));
+        expect(valueOf(h.result.commonProps, 'unit')).toBe('px');
+        expect(valueOf(h.result.commonProps, 'width')).toBe(600);
+        expect(propOf(h.result.commonProps, 'width')?.type).toBe('integer');
         h.unmount();
     });
 });

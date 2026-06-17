@@ -24,6 +24,7 @@ import {
   numVal,
   strVal,
   boolVal,
+  pixelImageSize,
 } from "./RenderBackend";
 
 /** Expand a leading `~` to the user's home directory. */
@@ -96,6 +97,7 @@ function buildPovArgs(
   const common = snapshot.commonProps;
   const pov = snapshot.backendProps;
   const perspective = strVal(common, "projection", "perspective") === "perspective";
+  const { width, height } = pixelImageSize(common);
 
   const args: string[] = [
     `"Input_File_Name='${exported.inputPath}'"`,
@@ -112,8 +114,8 @@ function buildPovArgs(
     "File_Gamma=1",
     "-D",
     `+WT${numVal(common, "numThreads", 2)}`,
-    `+W${numVal(common, "width", 640)}`,
-    `+H${numVal(common, "height", 480)}`,
+    `+W${width}`,
+    `+H${height}`,
     "+FN8",
     "Quality=11",
     "Antialias=On",
@@ -157,8 +159,9 @@ export const povrayBackend: RenderBackend = {
     exporter.usePixImgs = false;
     exporter.makeRelIncPath = false;
     exporter.camera = "__current";
-    exporter.width = numVal(common, "width", 640);
-    exporter.height = numVal(common, "height", 480);
+    const { width, height } = pixelImageSize(common);
+    exporter.width = width;
+    exporter.height = height;
 
     const povPath = path.join(workDir, "render.pov");
     const incPath = path.join(workDir, "render.inc");

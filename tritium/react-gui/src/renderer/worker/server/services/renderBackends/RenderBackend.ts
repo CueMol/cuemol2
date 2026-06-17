@@ -13,6 +13,7 @@ import type { WorkerContext } from "../../types/WorkerContext";
 import type { PropDef } from "../../../../data/rendererProperties";
 import type { RenderSettingsSnapshot } from "../../../../data/renderResult";
 import type { RenderBinaries } from "../../../shared/renderTypes";
+import { sizeUnitToPx } from "../../../../data/renderSettings";
 
 /** Paths produced by a backend's `exportScene`. */
 export interface ExportedScene {
@@ -82,4 +83,20 @@ export function strVal(props: PropDef[], key: string, fallback: string): string 
 export function boolVal(props: PropDef[], key: string, fallback: boolean): boolean {
   const v = props.find((p) => p.key === key)?.value;
   return typeof v === "boolean" ? v : fallback;
+}
+
+/**
+ * Resolve the output image size in whole pixels from the common props.
+ *
+ * The width / height props hold the value in the selected size unit (px / in
+ * / mm / cm); this applies the unit + DPI conversion so the backend always
+ * works in pixels. Mirrors UXP `render-pov-dlg.js` which feeds
+ * `round(convImgSizeUnit(value, dpi, unit))` to the renderer.
+ */
+export function pixelImageSize(common: PropDef[]): { width: number; height: number } {
+  const unit = strVal(common, "unit", "px");
+  const dpi = numVal(common, "dpi", 600);
+  const toPx = (key: string, fallback: number): number =>
+    Math.max(1, Math.round(sizeUnitToPx(numVal(common, key, fallback), dpi, unit)));
+  return { width: toPx("width", 640), height: toPx("height", 480) };
 }

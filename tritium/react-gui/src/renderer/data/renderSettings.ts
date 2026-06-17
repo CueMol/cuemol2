@@ -61,14 +61,70 @@ export const RENDER_SIZE_PRESETS: RenderSizePreset[] = [
 /** Default preset label (no enforced size). */
 export const DEFAULT_RENDER_PRESET = "Custom";
 
+// --- Image-size units ---
+
+/** Physical / pixel unit the image size is expressed in. */
+export type ImageSizeUnit = "px" | "in" | "mm" | "cm";
+
+/**
+ * Per-unit editor metadata for the width / height fields. Switching the unit
+ * swaps these in so the control type and range track the unit: integers with
+ * a 1px step for "px", fractional values for the physical units. `decimals`
+ * is the rounding applied to a converted display value (UXP used 3 decimal
+ * places for every non-px unit).
+ */
+export const SIZE_UNIT_FIELD_META: Record<
+  ImageSizeUnit,
+  { type: "integer" | "real"; min: number; max: number; step: number; decimals: number }
+> = {
+  px: { type: "integer", min: 1, max: 10000, step: 1, decimals: 0 },
+  in: { type: "real", min: 0.1, max: 60, step: 0.1, decimals: 3 },
+  mm: { type: "real", min: 1, max: 1500, step: 1, decimals: 3 },
+  cm: { type: "real", min: 0.1, max: 150, step: 0.1, decimals: 3 },
+};
+
+/**
+ * Convert an image-size value expressed in `unit` to pixels at `dpi`.
+ * Ports UXP `render-pov-dlg.js` `convImgSizeUnit` (1in = 25.4mm = 2.54cm);
+ * "px" passes through unchanged.
+ */
+export function sizeUnitToPx(value: number, dpi: number, unit: string): number {
+  switch (unit) {
+    case "in":
+      return value * dpi;
+    case "mm":
+      return (value / 25.4) * dpi;
+    case "cm":
+      return (value / 2.54) * dpi;
+    default:
+      return value; // px
+  }
+}
+
+/**
+ * Convert a pixel value to `unit` at `dpi`. Ports UXP `convPixToUnit`;
+ * "px" is rounded to a whole pixel, physical units keep their fraction.
+ */
+export function pxToSizeUnit(px: number, dpi: number, unit: string): number {
+  switch (unit) {
+    case "in":
+      return px / dpi;
+    case "mm":
+      return (px / dpi) * 25.4;
+    case "cm":
+      return (px / dpi) * 2.54;
+    default:
+      return Math.round(px); // px
+  }
+}
+
 /** Backend-independent render-setting definitions (mock defaults). */
 export const RENDER_COMMON_PROPS: PropDef[] = [
   // --- Image ---
-  { key: "width",  label: "Width (px)",  type: "integer", value: 1200, group: "Image", min: 1, max: 10000, step: 1 },
-  { key: "height", label: "Height (px)", type: "integer", value: 900,  group: "Image", min: 1, max: 10000, step: 1 },
-  { key: "unit",   label: "Size unit",   type: "enum",    value: "px",  group: "Image", options: ["px", "in", "mm", "cm"] },
-  { key: "dpi",    label: "DPI",         type: "integer", value: 600,   group: "Image", min: 72, max: 1200, step: 1 },
-  { key: "scale",  label: "Scale",       type: "real",    value: 1.0,   group: "Image", min: 0.1, max: 4, step: 0.1 },
+  { key: "width",  label: "Width",     type: "integer", value: 1200, group: "Image", min: 1, max: 10000, step: 1 },
+  { key: "height", label: "Height",    type: "integer", value: 900,  group: "Image", min: 1, max: 10000, step: 1 },
+  { key: "unit",   label: "Size unit", type: "enum",    value: "px",  group: "Image", options: ["px", "in", "mm", "cm"] },
+  { key: "dpi",    label: "DPI",       type: "integer", value: 600,   group: "Image", min: 72, max: 1200, step: 1 },
 
   // --- Camera ---
   { key: "projection",  label: "Projection",   type: "enum", value: "perspective", group: "Camera",
