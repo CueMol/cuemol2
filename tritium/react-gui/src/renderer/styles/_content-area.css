@@ -298,6 +298,16 @@
 .riv-stage {
   margin: auto;
   flex-shrink: 0;
+  /* Checkerboard backdrop so a transparent-background render reads as
+     transparent (mirrors UXP's checker8.png preview). The stage is the exact
+     image bounds, so it shows only through the image's transparent pixels; an
+     opaque render covers it entirely. */
+  background-color: var(--checker-a);
+  background-image: repeating-conic-gradient(
+    var(--checker-b) 0% 25%,
+    var(--checker-a) 0% 50%
+  );
+  background-size: 16px 16px;
 }
 
 .riv-img {
