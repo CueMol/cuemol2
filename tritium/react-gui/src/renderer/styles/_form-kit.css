@@ -316,6 +316,67 @@
   margin-left: var(--space-1);
 }
 
+/* ── Combobox (editable text + click-to-open dropdown) ──
+ * Single source for combobox sizing. The chevron trigger covers the reserved
+ * right zone and centers a `.h3-form-caret` glyph in it, so the glyph lands at
+ * exactly the same point as the native-select caret (`.h3-form-select::after`:
+ * `right: var(--space-3)`, vertically centered). A chevron-equipped textbox
+ * therefore never needs per-use position tweaking. */
+.h3-form-combobox {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.h3-form-combobox-fill {
+  display: flex;
+  width: 100%;
+}
+
+.h3-form-combobox > .h3-form-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Reserve room for the chevron so the value text never runs under it
+   (mirrors .h3-form-select select's padding-right). */
+.h3-form-combobox > .h3-form-input .bp5-input,
+.h3-form-combobox > .h3-form-input input {
+  padding-right: calc(var(--icon-sm) + var(--space-3) * 2);
+}
+
+/* Bare chevron trigger spanning the reserved right zone (a comfortable hit
+   target); the glyph centers in that zone, matching the select caret. */
+.h3-form-combobox-caret {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: calc(var(--icon-sm) + var(--space-3) * 2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.h3-form-combobox-caret:disabled {
+  cursor: default;
+}
+
+.h3-form-combobox-caret:disabled .h3-form-caret {
+  opacity: 0.5;
+}
+
+/* Cap the dropdown height so a long history scrolls instead of overflowing. */
+.h3-form-combobox-menu {
+  max-height: 240px;
+  overflow-y: auto;
+}
+
 /* ── Numeric (slider + compact input) ── */
 .h3-form-numeric-row {
   display: flex;

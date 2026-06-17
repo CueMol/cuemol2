@@ -6,13 +6,11 @@ import {
     DialogBody,
     DialogFooter,
     FormGroup,
-    InputGroup,
-    Popover,
     Radio,
     RadioGroup,
 } from '@blueprintjs/core';
 import { useTheme } from '../../contexts/ThemeContext';
-import { HistoryMenu } from '../../h3-kit/MolSelList/SelMenus';
+import { ComboBoxField } from '../../h3-kit/form';
 import { getHistory } from './pdbIdHistory';
 
 export type CoordServerType = 'RCSB_CIF' | 'RCSB_PDB';
@@ -48,7 +46,6 @@ export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX
     const [mapServer, setMapServer] = useState<MapServerType>('RCSB_CIF');
 
     const [historyItems, setHistoryItems] = useState<string[]>(() => getHistory());
-    const [historyOpen, setHistoryOpen] = useState(false);
 
     useEffect(() => {
         if (visible) {
@@ -59,7 +56,6 @@ export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX
             setMapFofcEnabled(false);
             setMapServer('RCSB_CIF');
             setHistoryItems(getHistory());
-            setHistoryOpen(false);
         }
     }, [visible]);
 
@@ -102,52 +98,24 @@ export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX
         >
             <DialogBody>
                 <FormGroup label="PDB Accession Code:" labelFor="get-pdb-id">
-                    <InputGroup
+                    {/* Editable combobox: text + themed, click-to-open history
+                        dropdown. The chevron and dark-mode popover are handled
+                        by ComboBoxField (h3-kit), so this dialog adds none of
+                        that styling. */}
+                    <ComboBoxField
                         id="get-pdb-id"
                         value={pdbid}
-                        onChange={(e) => setPdbid(e.target.value)}
-                        onKeyDown={handleKeyDown}
+                        onChange={setPdbid}
+                        options={historyItems}
+                        onOpen={refreshHistory}
                         placeholder="e.g., 1mbn"
                         autoFocus
-                        fill
-                        intent={pdbid.length > 0 && !idValid ? 'danger' : 'none'}
-                        // No native <datalist> / browser autocomplete: those
-                        // render an OS popup that ignores the app theme and can
-                        // open on focus/typing. History is shown only via the
-                        // chevron popover below (themed, click-to-open).
-                        autoComplete="off"
-                        rightElement={
-                            <Popover
-                                isOpen={historyOpen}
-                                // Refresh on open so newly stored ids appear;
-                                // controlled so the list never opens by itself.
-                                onInteraction={(next) => {
-                                    if (next) refreshHistory();
-                                    setHistoryOpen(next);
-                                }}
-                                placement="bottom-end"
-                                portalClassName={isDark ? 'bp5-dark' : ''}
-                                content={
-                                    <HistoryMenu
-                                        history={historyItems}
-                                        activeValue={pdbid.trim().toLowerCase()}
-                                        onPick={(v) => {
-                                            setPdbid(v);
-                                            setHistoryOpen(false);
-                                        }}
-                                        dismissOnPick
-                                    />
-                                }
-                            >
-                                <Button
-                                    minimal
-                                    icon={historyOpen ? 'chevron-up' : 'chevron-down'}
-                                    disabled={historyItems.length === 0}
-                                    aria-label="Show PDB ID history"
-                                    title="Recent PDB IDs"
-                                />
-                            </Popover>
-                        }
+                        invalid={pdbid.length > 0 && !idValid}
+                        onKeyDown={handleKeyDown}
+                        emptyText="No history"
+                        triggerLabel="Show PDB ID history"
+                        triggerTitle="Recent PDB IDs"
+                        aria-label="PDB Accession Code"
                     />
                 </FormGroup>
 
