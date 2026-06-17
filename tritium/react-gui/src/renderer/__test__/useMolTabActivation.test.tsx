@@ -21,16 +21,18 @@ import { MolTabProvider, useMolTab } from '../hooks/useMolTab'
 void React
 
 function Consumer(): React.ReactElement {
-  const { addMolTab, removeMolTab, setActiveViewByID, molTabEntries } = useMolTab()
+  const { addMolTab, removeMolTab, setActiveViewByID, clearActiveView, getActiveSceneInfo, molTabEntries } = useMolTab()
   const active = molTabEntries.find((e) => e.active)
   return (
     <div>
       <span data-testid="count">{molTabEntries.length}</span>
       <span data-testid="active">{active ? active.view_id : 'none'}</span>
+      <span data-testid="scene">{getActiveSceneInfo()?.scene_uid ?? 'none'}</span>
       <button data-testid="add-a" onClick={() => addMolTab('A', 10, 100)} />
       <button data-testid="add-b" onClick={() => addMolTab('B', 20, 100)} />
       <button data-testid="activate-a" onClick={() => setActiveViewByID(10)} />
       <button data-testid="activate-unknown" onClick={() => setActiveViewByID(999)} />
+      <button data-testid="clear" onClick={() => clearActiveView()} />
       {/* Same-tick removal + reactivation -- reproduces the close-sweep race. */}
       <button data-testid="race" onClick={() => { removeMolTab(20); setActiveViewByID(20) }} />
     </div>
@@ -70,6 +72,27 @@ describe('MolTab activation', () => {
     click(container, 'add-a')
     expect(() => click(container, 'activate-unknown')).not.toThrow()
     expect(text(container, 'active')).toBe('10') // unchanged
+    unmount()
+  })
+
+  it('clearActiveView deactivates every entry so no scene is active', () => {
+    const { container, unmount } = mount()
+    click(container, 'add-a')
+    click(container, 'add-b')
+    expect(text(container, 'active')).toBe('20')
+    expect(text(container, 'scene')).toBe('100')
+
+    // Switching to a non-molview tab clears the active molview: entries remain
+    // but none is active, so the derived active scene is undefined.
+    click(container, 'clear')
+    expect(text(container, 'count')).toBe('2') // entries kept
+    expect(text(container, 'active')).toBe('none')
+    expect(text(container, 'scene')).toBe('none')
+
+    // Returning to a molview re-activates it.
+    click(container, 'activate-a')
+    expect(text(container, 'active')).toBe('10')
+    expect(text(container, 'scene')).toBe('100')
     unmount()
   })
 

@@ -72,7 +72,7 @@ describe('useActiveViewState', () => {
       useActiveViewState({
         cm: cm as unknown as AsyncCueMol,
         activeMolViewId: undefined,
-        getActiveSceneInfo: () => null,
+        activeSceneId: undefined,
       }),
     )
 
@@ -105,7 +105,7 @@ describe('useActiveViewState', () => {
       useActiveViewState({
         cm: cm as unknown as AsyncCueMol,
         activeMolViewId: 5,
-        getActiveSceneInfo: () => ({ scene_uid: 1, view_id: 5 }),
+        activeSceneId: 1,
       }),
     )
 
@@ -143,7 +143,7 @@ describe('useActiveViewState', () => {
       useActiveViewState({
         cm: cm as unknown as AsyncCueMol,
         activeMolViewId: 5,
-        getActiveSceneInfo: () => ({ scene_uid: 1, view_id: 5 }),
+        activeSceneId: 1,
       }),
     )
 
@@ -162,7 +162,7 @@ describe('useActiveViewState', () => {
       useActiveViewState({
         cm: cm as unknown as AsyncCueMol,
         activeMolViewId: 5,
-        getActiveSceneInfo: () => ({ scene_uid: 1, view_id: 5 }),
+        activeSceneId: 1,
       }),
     )
 
@@ -192,7 +192,7 @@ describe('useActiveViewState', () => {
       useActiveViewState({
         cm: cm as unknown as AsyncCueMol,
         activeMolViewId: 5,
-        getActiveSceneInfo: () => ({ scene_uid: 1, view_id: 5 }),
+        activeSceneId: 1,
       }),
     )
 
@@ -222,7 +222,7 @@ describe('useActiveViewState', () => {
       useActiveViewState({
         cm: cm as unknown as AsyncCueMol,
         activeMolViewId: 5,
-        getActiveSceneInfo: () => ({ scene_uid: 1, view_id: 5 }),
+        activeSceneId: 1,
       }),
     )
 

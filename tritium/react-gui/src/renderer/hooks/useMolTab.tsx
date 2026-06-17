@@ -22,6 +22,12 @@ interface MolTabDispatch {
   removeMolTab: (view_id: number) => void
   setActiveTab: (ind: number) => void
   setActiveViewByID: (view_id: number) => void
+  /**
+   * Clear the active molview (no entry active). Used when a non-molview content
+   * tab (Settings / render result / welcome) becomes active, so the derived
+   * "active scene" follows the visible tab and is undefined while none is shown.
+   */
+  clearActiveView: () => void
   getActiveViewID: () => number | undefined
   getActiveSceneInfo: ActiveSceneCommandDeps
 }
@@ -100,6 +106,13 @@ export function MolTabProvider({ children }: { children: React.ReactNode }): Rea
     setMolTabEntries((entries) => entries.filter((x) => x.view_id !== view_id))
   }, [])
 
+  const clearActiveView = useCallback((): void => {
+    setActiveViewID(null)
+    setMolTabEntries((entries) =>
+      entries.some((x) => x.active) ? entries.map((x) => ({ ...x, active: false })) : entries,
+    )
+  }, [])
+
   const setActiveTab = useCallback((ind: number): void => {
     setMolTabEntries((entries) => {
       // Guard a stale index: a concurrent removeMolTab (e.g. the window-close
@@ -145,8 +158,8 @@ export function MolTabProvider({ children }: { children: React.ReactNode }): Rea
 
   // Dispatch context value is stable (all callbacks have empty deps)
   const dispatch = useMemo<MolTabDispatch>(
-    () => ({ addMolTab, removeMolTab, setActiveTab, setActiveViewByID, getActiveViewID, getActiveSceneInfo }),
-    [addMolTab, removeMolTab, setActiveTab, setActiveViewByID, getActiveViewID, getActiveSceneInfo]
+    () => ({ addMolTab, removeMolTab, setActiveTab, setActiveViewByID, clearActiveView, getActiveViewID, getActiveSceneInfo }),
+    [addMolTab, removeMolTab, setActiveTab, setActiveViewByID, clearActiveView, getActiveViewID, getActiveSceneInfo]
   )
 
   // State context value changes only when state actually changes

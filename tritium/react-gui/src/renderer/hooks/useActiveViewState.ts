@@ -14,17 +14,16 @@
  * `cm.addEventListener` and drop the Promise.all fetch.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { IPC } from '../../shared/ipcChannels';
 import type { SceneBgColor, ViewCenterMark } from '../../shared/ipcTypes';
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol';
-import type { ActiveSceneCommandDeps } from '../commands/commandTypes';
 
 interface UseActiveViewStateOptions {
   cm: AsyncCueMol | null;
   activeMolViewId: number | undefined;
-  /** Returns the active scene/view ids, used to fetch sceneBgColor. */
-  getActiveSceneInfo: ActiveSceneCommandDeps;
+  /** Active scene uid (of the active molview tab), used to fetch sceneBgColor. */
+  activeSceneId: number | undefined;
 }
 
 export interface ActiveViewState {
@@ -39,7 +38,7 @@ export interface ActiveViewState {
 export function useActiveViewState({
   cm,
   activeMolViewId,
-  getActiveSceneInfo,
+  activeSceneId,
 }: UseActiveViewStateOptions): ActiveViewState {
   const [viewProjection, setViewProjection] = useState<boolean | null>(null);
   const [viewCenterMark, setViewCenterMark] = useState<ViewCenterMark | null>(null);
@@ -85,15 +84,11 @@ export function useActiveViewState({
     syncNativeViewMenu({ bgColor });
   }, [syncNativeViewMenu]);
 
-  // Stabilize getActiveSceneInfo via a ref so a fresh function reference on
-  // every render does not retrigger the polling effect (which would re-fetch
-  // and overwrite state set by `onXxxChanged` callbacks).
-  const getActiveSceneInfoRef = useRef(getActiveSceneInfo);
-  getActiveSceneInfoRef.current = getActiveSceneInfo;
-
-  // Tab-switch fetch: when the active view changes, pull all three values
-  // from the worker. On cancellation or error, reset to nulls (disables the
-  // related menu items via `enabled: false`).
+  // Tab-switch fetch: when the active view (or its scene) changes, pull all
+  // three values from the worker. `activeSceneId` is in the dep list so the
+  // effect re-runs once it resolves on a tab switch (it can briefly lag
+  // `activeMolViewId` by a render), keeping the bgColor fetch correct. On
+  // cancellation or error, reset to nulls (disables the related menu items).
   useEffect(() => {
     if (!cm || activeMolViewId === undefined) {
       setViewProjection(null);
@@ -105,14 +100,11 @@ export function useActiveViewState({
       return;
     }
 
-    const sceneInfo = getActiveSceneInfoRef.current();
-    const sceneId = sceneInfo?.scene_uid;
-
     let cancelled = false;
     Promise.all([
       cm.invokeService('getViewProjection', { viewId: activeMolViewId }),
       cm.invokeService('getViewCenterMark', { viewId: activeMolViewId }),
-      sceneId !== undefined ? cm.invokeService('getSceneBgColor', { sceneId }) : Promise.resolve(null),
+      activeSceneId !== undefined ? cm.invokeService('getSceneBgColor', { sceneId: activeSceneId }) : Promise.resolve(null),
     ]).then(([projectionResult, centerMarkResult, bgColorResult]) => {
       if (cancelled) return;
       const perspective = projectionResult?.ok ? projectionResult.perspective : null;
@@ -135,7 +127,7 @@ export function useActiveViewState({
     });
 
     return () => { cancelled = true; };
-  }, [activeMolViewId, cm, syncNativeViewMenu]);
+  }, [activeMolViewId, activeSceneId, cm, syncNativeViewMenu]);
 
   return {
     viewProjection,

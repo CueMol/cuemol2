@@ -85,7 +85,7 @@ const App: React.FC = () => {
   // --- CueMol core / tabs (cm needed early for useSceneTree) ---
 
   const { cueMolReady, cm } = useCueMol();
-  const { addMolTab, removeMolTab, getActiveSceneInfo, setActiveViewByID } = useMolTabDispatch();
+  const { addMolTab, removeMolTab, getActiveSceneInfo, setActiveViewByID, clearActiveView } = useMolTabDispatch();
   const { molTabEntries } = useMolTabState();
   const activeSceneId = molTabEntries.find((t) => t.active)?.scene_uid;
 
@@ -217,14 +217,22 @@ const App: React.FC = () => {
   // First scene/view on launch (StrictMode guarded)
   useAppInitialization({ cueMolReady, newScene });
 
-  // Activate worker view when a molview tab becomes active.
+  // Keep the active scene/view bound to the active CONTENT tab: activate the
+  // worker view for a molview tab, or clear the active molview when a
+  // non-molview tab (Settings / render result / welcome) is shown, so the
+  // Explorer / Inspector / File Open all follow the visible tab and treat a
+  // non-molview tab as "no active scene".
   useEffect(() => {
     const tab = tabs.find((t) => t.id === activeTab);
-    if (tab?.type === 'molview' && tab.viewId !== undefined && cm && cueMolReady) {
-      setActiveViewByID(tab.viewId);
-      cm.activateView(tab.viewId);
+    if (tab?.type === 'molview' && tab.viewId !== undefined) {
+      if (cm && cueMolReady) {
+        setActiveViewByID(tab.viewId);
+        cm.activateView(tab.viewId);
+      }
+    } else {
+      clearActiveView();
     }
-  }, [activeTab, tabs, cm, cueMolReady, setActiveViewByID]);
+  }, [activeTab, tabs, cm, cueMolReady, setActiveViewByID, clearActiveView]);
 
   const activeMolViewId = tabs.find((t) => t.id === activeTab && t.type === 'molview')?.viewId;
 
@@ -248,26 +256,44 @@ const App: React.FC = () => {
 
   /**
    * Start a render from the current Render Settings (Start button / F12).
-   * Uses the active molview's scene/view from `getActiveSceneInfo` -- this
-   * stays correct even when a Render Result tab is the active content tab
-   * (so the render captures the latest camera via `saveViewToCam`).
+   * Resolves the target from the active content tab: a molview tab renders its
+   * own scene/view; a Render Result tab renders the scene it depicts (its
+   * source), so re-rendering from a result tab still works now that the active
+   * scene follows the visible tab. Other tabs (Settings / welcome) have no
+   * scene to render.
    */
   const handleRenderStart = useCallback(() => {
-    const info = getActiveSceneInfo();
-    if (!info) return;
-    const source: RenderSource = {
-      sceneId: info.scene_uid,
-      sceneName: scene.tree?.name ?? `Scene ${info.scene_uid}`,
-      viewId: info.view_id,
-    };
+    const activeTabData = tabs.find((t) => t.id === activeTab);
+    let source: RenderSource | null = null;
+    if (
+      activeTabData?.type === 'renderResult' &&
+      activeTabData.renderResult?.sourceViewId !== undefined
+    ) {
+      const rr = activeTabData.renderResult;
+      source = {
+        sceneId: rr.sourceSceneId,
+        sceneName: rr.sourceSceneName,
+        viewId: rr.sourceViewId,
+      };
+    } else {
+      const info = getActiveSceneInfo();
+      if (info) {
+        source = {
+          sceneId: info.scene_uid,
+          sceneName: scene.tree?.name ?? `Scene ${info.scene_uid}`,
+          viewId: info.view_id,
+        };
+      }
+    }
+    if (!source) return;
     void renderJob.start({
-      sceneId: info.scene_uid,
-      viewId: info.view_id,
+      sceneId: source.sceneId,
+      viewId: source.viewId,
       snapshot: renderSettings.getSnapshot(),
       source,
       binaries: renderBinaries,
     });
-  }, [getActiveSceneInfo, scene.tree, renderJob, renderSettings, renderBinaries]);
+  }, [tabs, activeTab, getActiveSceneInfo, scene.tree, renderJob, renderSettings, renderBinaries]);
 
   /** Re-render from a result tab's snapshot (also restores it into the editor). */
   const handleReRender = useCallback(
@@ -344,7 +370,7 @@ const App: React.FC = () => {
     onProjectionChanged,
     onCenterMarkChanged,
     onBgColorChanged,
-  } = useActiveViewState({ cm, activeMolViewId, getActiveSceneInfo });
+  } = useActiveViewState({ cm, activeMolViewId, activeSceneId });
 
   // --- Undo/redo availability + history dropdown (owns CmdId.Undo/Redo) ---
   const undoRedo = useUndoRedoState({ cm, activeMolViewId, getActiveSceneInfo });
