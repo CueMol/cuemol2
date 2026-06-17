@@ -138,6 +138,19 @@ export interface AppPathInfo {
   userStylePath: string
   /** Whether userStylePath exists on disk (evaluated in Main where fs is available). */
   userStyleExists: boolean
+  /**
+   * Default external render-binary paths resolved by Main (getRenderBinaries).
+   * Packaged builds resolve from the install tree (process.resourcesPath); dev
+   * builds resolve from the LIBCUEMOL2_ROOT / BUNDLE_APPS env vars the Taskfile
+   * run task exports. A field is the empty string when its source is unset, so
+   * the renderer falls back to the compiled-in DEFAULT_RENDER_BINARIES. Mirrors
+   * the RenderBinaries shape (renderer/worker/shared/renderTypes).
+   */
+  defaultRenderBinaries: {
+    povrayExe: string
+    povrayInc: string
+    blendpng: string
+  }
 }
 
 // - Native viewport context menu -

@@ -1,9 +1,29 @@
 import { app, BrowserWindow } from 'electron'
+import os from 'os'
+import path from 'path'
+import fs from 'fs'
 import { createWindow } from './windowManager'
 import { isAppQuitting, isForceQuit, setAppQuitting } from './quitState'
 import { APP_PRODUCT_NAME } from '../shared/appInfo'
 
 app.setName(APP_PRODUCT_NAME)
+
+// Dev-only clean-profile launch: when CUEMOL_FRESH_PREFS is set, point userData
+// at a throwaway dir (wiped first) so no previously persisted preference
+// (electron-store app-state.json) or localStorage carries over. The real user
+// profile is untouched. Gated by env so a packaged/production run never trips
+// it. Must run before the app is ready -- ahead of any electron-store / session
+// access -- for the new path to take effect.
+if (process.env.CUEMOL_FRESH_PREFS && process.env.CUEMOL_FRESH_PREFS !== '0') {
+  const freshDir = path.join(os.tmpdir(), 'cuemol-dev-userdata')
+  try {
+    fs.rmSync(freshDir, { recursive: true, force: true })
+  } catch {
+    // First run (dir absent) or a transient FS error -- a fresh dir is created below.
+  }
+  app.setPath('userData', freshDir)
+  console.log('[Main] CUEMOL_FRESH_PREFS set -- clean profile at ' + freshDir)
+}
 
 app.whenReady().then(createWindow)
 

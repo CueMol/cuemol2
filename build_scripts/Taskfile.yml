@@ -223,6 +223,20 @@ tasks:
   run_tritium:
     desc: "Run the built tritium Electron app"
     dir: "{{.ROOT_DIR}}/../tritium/react-gui"
+    env:
+      # Dev default render-binary roots, read by main/ipcHandlers.ts
+      # getRenderBinaries(): LIBCUEMOL2_ROOT -> <root>/bin/blendpng;
+      # BUNDLE_APPS -> <bundle>/povray/bin/povray (downloaded by download_extpkgs).
+      # LIBCUEMOL2_INSTDIR is ROOT_DIR-based (absolute), so a plain template is
+      # fine; WORKDIR contains $HOME, which go-task does NOT expand in a plain
+      # env value -- run it through `sh: echo` so the shell expands it.
+      LIBCUEMOL2_ROOT: "{{.LIBCUEMOL2_INSTDIR}}"
+      BUNDLE_APPS:
+        sh: echo "{{.WORKDIR}}"
+      # Clean-profile launch (dev): `task run_tritium FRESH=1` makes main wipe a
+      # throwaway userData dir, so no previously persisted preference (electron-
+      # store) or localStorage is read. Empty (default) -> normal profile.
+      CUEMOL_FRESH_PREFS: "{{.FRESH}}"
     cmds:
       - pnpm run start
 

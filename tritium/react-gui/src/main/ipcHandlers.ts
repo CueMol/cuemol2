@@ -16,7 +16,7 @@ import type {
   InvokeReq,
   InvokeRes,
 } from '../shared/ipcContract'
-import type { FileDialogOptions } from '../shared/ipcTypes'
+import type { AppPathInfo, FileDialogOptions } from '../shared/ipcTypes'
 import { loadLayout, saveLayout, loadUi, saveUi } from './stateStore'
 import { showNaviContextMenu } from './naviContextMenu'
 import { showSceneContextMenu } from './sceneContextMenu'
@@ -70,6 +70,39 @@ function getSysConfigPath(): string {
 
 function getUserStylePath(): string {
   return path.join(app.getPath('userData'), 'user_styles.xml')
+}
+
+/**
+ * Resolve the default external render-binary paths (POV-Ray executable +
+ * include dir, blendpng). The renderer (RenderConfigContext) uses these as the
+ * fallback when the user has not set an explicit path in Settings.
+ *
+ * - Packaged: resolved from the app install tree under process.resourcesPath,
+ *   mirroring getSysConfigPath. NOTE: staging these binaries into the bundle is
+ *   not implemented yet (see ADR-0030); the paths describe the intended layout.
+ * - Dev: resolved from the build-output env vars the Taskfile run task exports
+ *   -- LIBCUEMOL2_ROOT (cuemol2 install prefix, holds bin/blendpng) and
+ *   BUNDLE_APPS (parent of the downloaded povray/ tree). A field is the empty
+ *   string when its env var is unset, so the renderer keeps its compiled-in
+ *   default.
+ */
+function getRenderBinaries(): AppPathInfo['defaultRenderBinaries'] {
+  const exe = process.platform === 'win32' ? '.exe' : ''
+  if (app.isPackaged) {
+    const res = process.resourcesPath
+    return {
+      povrayExe: path.join(res, 'bundle_apps', 'povray', 'bin', `povray${exe}`),
+      povrayInc: path.join(res, 'bundle_apps', 'povray', 'include'),
+      blendpng: path.join(res, 'cuemol2', 'bin', `blendpng${exe}`),
+    }
+  }
+  const root = process.env.LIBCUEMOL2_ROOT
+  const bundle = process.env.BUNDLE_APPS
+  return {
+    povrayExe: bundle ? path.join(bundle, 'povray', 'bin', `povray${exe}`) : '',
+    povrayInc: bundle ? path.join(bundle, 'povray', 'include') : '',
+    blendpng: root ? path.join(root, 'bin', `blendpng${exe}`) : '',
+  }
 }
 
 // --- File open ---
@@ -155,6 +188,7 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
       sysConfigPath: getSysConfigPath(),
       userStylePath,
       userStyleExists,
+      defaultRenderBinaries: getRenderBinaries(),
     }
   })
 
