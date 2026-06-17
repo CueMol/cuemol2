@@ -132,6 +132,36 @@ function collectProps(target: BaseWrapper): GenericPropEntry[] {
     return parseGenericProps(raw);
 }
 
+/**
+ * Dump a node's properties for the inspector, applying the scene-name
+ * editability override.
+ *
+ * `Scene.name` is reflected as a read-only property -- its `.qif` declares
+ * `redirect(getName, XXX) (readonly)`, so there is no `setProp` setter -- yet a
+ * scene CAN be renamed via `Scene::setName()`, which also fires the
+ * `propChanged("name")` event the scene tree and tab strip rely on. Expose the
+ * scene's Name field as writable here; `setGenericProp` routes the write back
+ * through `setName()` (the same path the scene-tree `renameNode` uses). Every
+ * entry-returning service runs through this so the field stays editable after a
+ * re-dump, not just on the first load.
+ */
+function collectPropsForNode(
+    target: BaseWrapper,
+    nodeType: PropTargetType,
+): GenericPropEntry[] {
+    const entries = collectProps(target);
+    if (nodeType === 'scene') {
+        const nameEntry = entries.find((e) => e.key === 'name');
+        if (nameEntry) nameEntry.readonly = false;
+    }
+    return entries;
+}
+
+/** Scene.name has no property setter; it is renamed via `Scene::setName()`. */
+function isSceneNameWrite(nodeType: PropTargetType, propName: string): boolean {
+    return nodeType === 'scene' && propName === 'name';
+}
+
 /** Derive the header type label for a node. */
 function typeLabelOf(target: BaseWrapper, nodeType: PropTargetType): string {
     const rec = target as unknown as Record<string, unknown>;
@@ -159,7 +189,7 @@ function getGenericProps(
     const { target } = resolvePropTarget(ctx, args);
     if (!target) return empty;
 
-    const entries = safeRead(() => collectProps(target)) ?? [];
+    const entries = safeRead(() => collectPropsForNode(target, args.nodeType)) ?? [];
     // A View has no `name` property - label it generically.
     const displayName =
         args.nodeType === 'view'
@@ -236,6 +266,10 @@ function setGenericProp(
         withUndoTxn(scene, label, () => {
             if (args.op === 'reset') {
                 target.resetProp(args.propName);
+            } else if (isSceneNameWrite(args.nodeType, args.propName)) {
+                // Scene.name has no property setter; rename via setName(), which
+                // also fires propChanged("name") (see collectPropsForNode).
+                scene.setName(String(args.value ?? ''));
             } else if (args.valueType.startsWith('object<MolSelection>')) {
                 // Selection properties need a compiled SelCommand, not a raw
                 // string (UXP `commitPropChange` MolSelection branch). An empty
@@ -254,7 +288,7 @@ function setGenericProp(
 
     // Re-dump so the renderer sees normalised values (C++ may clamp /
     // round) and updated isdefault flags.
-    return { ok: true, entries: safeRead(() => collectProps(target)) ?? [] };
+    return { ok: true, entries: safeRead(() => collectPropsForNode(target, args.nodeType)) ?? [] };
 }
 
 // --- resetGenericProps ---
@@ -287,7 +321,7 @@ function resetGenericProps(
         return fail;
     }
 
-    return { ok: true, entries: safeRead(() => collectProps(target)) ?? [] };
+    return { ok: true, entries: safeRead(() => collectPropsForNode(target, args.nodeType)) ?? [] };
 }
 
 // --- setGenericProps ---
@@ -320,6 +354,9 @@ function setGenericProps(
             for (const w of args.writes) {
                 if (w.op === 'reset') {
                     target.resetProp(w.propName);
+                } else if (isSceneNameWrite(args.nodeType, w.propName)) {
+                    // Scene.name has no property setter; rename via setName().
+                    scene.setName(String(w.value ?? ''));
                 } else if (w.valueType.startsWith('object<MolSelection>')) {
                     const sel = makeSel(ctx, String(w.value ?? ''), scene.uid);
                     if (!sel) throw new Error(`bad selection: ${String(w.value)}`);
@@ -334,7 +371,7 @@ function setGenericProps(
         return fail;
     }
 
-    return { ok: true, entries: safeRead(() => collectProps(target)) ?? [] };
+    return { ok: true, entries: safeRead(() => collectPropsForNode(target, args.nodeType)) ?? [] };
 }
 
 export const services = {
