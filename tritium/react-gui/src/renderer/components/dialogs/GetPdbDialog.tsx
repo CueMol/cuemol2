@@ -7,10 +7,12 @@ import {
     DialogFooter,
     FormGroup,
     InputGroup,
+    Popover,
     Radio,
     RadioGroup,
 } from '@blueprintjs/core';
 import { useTheme } from '../../contexts/ThemeContext';
+import { HistoryMenu } from '../../h3-kit/MolSelList/SelMenus';
 import { getHistory } from './pdbIdHistory';
 
 export type CoordServerType = 'RCSB_CIF' | 'RCSB_PDB';
@@ -32,11 +34,6 @@ interface Props {
 // Same shape as UXP openPDB.js:104-111: first char digit, remaining alnum.
 const PDBID_RE = /^[0-9][0-9a-z]{3}$/i;
 
-// Native HTML5 <datalist> id. Chromium (Electron) renders the dropdown as
-// an OS-native popup with type-to-filter and click-the-arrow-for-full-list
-// behavior. Best fit for short fixed-format inputs like PDB accession codes.
-const HISTORY_DATALIST_ID = 'get-pdb-history-list';
-
 export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX.Element {
     const { theme } = useTheme();
     const isDark = theme === 'dark';
@@ -51,6 +48,7 @@ export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX
     const [mapServer, setMapServer] = useState<MapServerType>('RCSB_CIF');
 
     const [historyItems, setHistoryItems] = useState<string[]>(() => getHistory());
+    const [historyOpen, setHistoryOpen] = useState(false);
 
     useEffect(() => {
         if (visible) {
@@ -61,6 +59,7 @@ export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX
             setMapFofcEnabled(false);
             setMapServer('RCSB_CIF');
             setHistoryItems(getHistory());
+            setHistoryOpen(false);
         }
     }, [visible]);
 
@@ -108,22 +107,48 @@ export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX
                         value={pdbid}
                         onChange={(e) => setPdbid(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        onFocus={refreshHistory}
                         placeholder="e.g., 1mbn"
                         autoFocus
                         fill
                         intent={pdbid.length > 0 && !idValid ? 'danger' : 'none'}
-                        // Wire the native <datalist> autocomplete. Blueprint v5
-                        // InputGroup extends HTMLInputProps so native input
-                        // attrs pass through directly.
-                        list={HISTORY_DATALIST_ID}
+                        // No native <datalist> / browser autocomplete: those
+                        // render an OS popup that ignores the app theme and can
+                        // open on focus/typing. History is shown only via the
+                        // chevron popover below (themed, click-to-open).
                         autoComplete="off"
+                        rightElement={
+                            <Popover
+                                isOpen={historyOpen}
+                                // Refresh on open so newly stored ids appear;
+                                // controlled so the list never opens by itself.
+                                onInteraction={(next) => {
+                                    if (next) refreshHistory();
+                                    setHistoryOpen(next);
+                                }}
+                                placement="bottom-end"
+                                portalClassName={isDark ? 'bp5-dark' : ''}
+                                content={
+                                    <HistoryMenu
+                                        history={historyItems}
+                                        activeValue={pdbid.trim().toLowerCase()}
+                                        onPick={(v) => {
+                                            setPdbid(v);
+                                            setHistoryOpen(false);
+                                        }}
+                                        dismissOnPick
+                                    />
+                                }
+                            >
+                                <Button
+                                    minimal
+                                    icon={historyOpen ? 'chevron-up' : 'chevron-down'}
+                                    disabled={historyItems.length === 0}
+                                    aria-label="Show PDB ID history"
+                                    title="Recent PDB IDs"
+                                />
+                            </Popover>
+                        }
                     />
-                    <datalist id={HISTORY_DATALIST_ID}>
-                        {historyItems.map((v) => (
-                            <option key={v} value={v} />
-                        ))}
-                    </datalist>
                 </FormGroup>
 
                 <fieldset style={{ marginTop: 12, padding: '8px 12px' }}>
