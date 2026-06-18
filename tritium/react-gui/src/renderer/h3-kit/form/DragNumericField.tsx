@@ -252,6 +252,15 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
     const valueRef = useRef(value);
     valueRef.current = value;
 
+    // The global mouseup closure reads the formatter through a ref so that a
+    // changing `format` (e.g. when the active unit's decimal places change)
+    // does NOT recreate `handleMouseUp`. If it did, the reference-stable
+    // `teardown` would keep removing a stale `handleMouseUp` and leak the
+    // document mouseup listener -- a later stray mouseup would then re-enter
+    // edit mode and swallow clicks meant for other widgets.
+    const formatRef = useRef(format);
+    formatRef.current = format;
+
     // Stable refs to props the global listeners use, so the listeners attached
     // once at mousedown always reach current behavior.
     const cbRef = useRef({ onChange, onRelease, min, max, step, pxPerStep, fineStep, coarseStep, realtime, onDragStart, onDragCancel });
@@ -323,17 +332,21 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
         const d = dragRef.current;
         dragRef.current = null;
         teardown();
-        if (d?.crossed) {
+        // No active press for this field -> a stray / leaked mouseup; do not
+        // fall through to the edit-mode branch below (which would re-open the
+        // field whenever another widget is clicked).
+        if (!d) return;
+        if (d.crossed) {
             // Drag end -> single commit of the latest value.
             cbRef.current.onRelease?.(valueRef.current);
             setMode('hover');
         } else {
             // Press without crossing the threshold -> treat as a click: edit.
-            setDraft(format(valueRef.current));
+            setDraft(formatRef.current(valueRef.current));
             setMode('editing');
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [teardown, format]);
+    }, [teardown]);
 
     // If pointer lock is lost mid-drag (e.g. user pressed Esc): in realtime mode
     // treat it as a cancel (roll back the live preview); otherwise end the drag

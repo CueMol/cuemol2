@@ -226,6 +226,32 @@ describe('DragNumericField', () => {
         expect(getEditInput()).not.toBeNull()
     })
 
+    it('a stray document mouseup does not enter edit mode (no leaked listener)', () => {
+        // Regression: changing `decimals` (e.g. a render-settings unit switch
+        // toggling px<->in precision) used to recreate handleMouseUp, so the
+        // stable teardown removed a stale reference and leaked the document
+        // mouseup listener. A later stray mouseup -- fired by clicking another
+        // widget after the field was edited and dismissed -- then dropped the
+        // field back into edit mode, swallowing the click. Editing must only be
+        // entered by a press that began on this field.
+        render({ value: 1.0, decimals: 0 })
+        render({ value: 1.0, decimals: 3 }) // precision change (no remount)
+        // Click to edit, then dismiss with Escape (focus leaves the field).
+        mouseDownBody()
+        mouseUp()
+        expect(getEditInput()).not.toBeNull()
+        act(() => {
+            getEditInput()!.dispatchEvent(
+                new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+            )
+        })
+        expect(getEditInput()).toBeNull()
+        // Simulate clicking elsewhere: a document mouseup with no preceding
+        // mousedown on this field must be ignored.
+        mouseUp()
+        expect(getEditInput()).toBeNull()
+    })
+
     it('Shift snaps to the fine granularity (step / 10)', () => {
         const onChange = vi.fn()
         // 7px * (0.1 / 8) = +0.0875 -> 1.0875, snapped to 0.01 -> 1.09
