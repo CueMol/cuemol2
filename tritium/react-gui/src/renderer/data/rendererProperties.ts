@@ -9,7 +9,15 @@
 
 // --- Property descriptor types ---
 
-export type PropType = "string" | "integer" | "real" | "boolean" | "enum" | "color" | "object";
+export type PropType =
+  | "string"
+  | "integer"
+  | "real"
+  | "boolean"
+  | "enum"
+  | "combo"
+  | "color"
+  | "object";
 
 /** A single property definition consumed by the inspector. */
 export interface PropDef {
@@ -33,7 +41,7 @@ export interface PropDef {
   unit?: string;
   /** For numeric types: decimal places to display (omit to derive from step). */
   decimals?: number;
-  /** For enum types: list of valid options. */
+  /** For enum types: valid options. For combo types: preset suggestions. */
   options?: string[];
   /** Accordion group this property belongs to in the editor. */
   group: string;

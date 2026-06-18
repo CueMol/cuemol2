@@ -21,6 +21,9 @@ vi.mock('../hooks/useCueMol', () => ({
   useCueMol: () => ({ cm: null, cueMolReady: false }),
 }));
 
+// The DPI ComboBoxField reads the theme; provide it without a ThemeProvider.
+vi.mock('../contexts/ThemeContext', () => ({ useTheme: () => ({ theme: 'dark' }) }));
+
 import { RenderSettingsEditor } from '../components/inspector/RenderSettingsEditor';
 import { RENDER_COMMON_PROPS } from '../data/renderSettings';
 import { RENDER_BACKENDS, RENDER_BACKEND_IDS } from '../data/renderBackends';
@@ -55,6 +58,15 @@ describe('RenderSettingsEditor numeric fields', () => {
     );
     // width + height both carry the unit suffix; default unit is px.
     expect(units.filter((u) => u === 'px').length).toBe(2);
+    unmount();
+  });
+
+  it('renders DPI as an editable combobox showing the current value', () => {
+    const { container, unmount } = mountEditor();
+    const combo = container.querySelector('.h3-form-combobox');
+    expect(combo).not.toBeNull();
+    const input = combo!.querySelector('input') as HTMLInputElement;
+    expect(input.value).toBe('600');
     unmount();
   });
 });

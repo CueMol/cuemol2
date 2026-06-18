@@ -124,7 +124,9 @@ export const RENDER_COMMON_PROPS: PropDef[] = [
   { key: "width",  label: "Width",     type: "integer", value: 1200, group: "Image", min: 1, max: 10000, step: 1, unit: "px", decimals: 0 },
   { key: "height", label: "Height",    type: "integer", value: 900,  group: "Image", min: 1, max: 10000, step: 1, unit: "px", decimals: 0 },
   { key: "unit",   label: "Size unit", type: "enum",    value: "px",  group: "Image", options: ["px", "in", "mm", "cm"] },
-  { key: "dpi",    label: "DPI",       type: "integer", value: 600,   group: "Image", min: 72, max: 1200, step: 1 },
+  // Editable combobox with the UXP render-pov-dlg DPI presets (plus high-DPI
+  // options); custom values allowed.
+  { key: "dpi",    label: "DPI",       type: "combo",   value: 600,   group: "Image", options: ["72", "150", "300", "600", "1200", "2400"] },
 
   // --- Camera ---
   { key: "projection",  label: "Projection",   type: "enum", value: "perspective", group: "Camera",

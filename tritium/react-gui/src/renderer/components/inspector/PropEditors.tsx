@@ -8,13 +8,14 @@
  * `PropertiesTab` maps `PropDef.type` to the correct editor.
  */
 
-import React from "react";
+import React, { useCallback, useRef, useState } from "react";
 import type { PropDef } from "../../data/rendererProperties";
 import {
   Field,
   TextField,
   SelectField,
   DragNumericField,
+  ComboBoxField,
   SwitchField,
   ColorField,
 } from "../../h3-kit/form";
@@ -74,6 +75,56 @@ export const NumericEditor: React.FC<NumericEditorProps> = ({ prop, onChange }) 
         step={step}
         decimals={decimals}
         unit={prop.unit}
+      />
+    </Field>
+  );
+};
+
+// ------------------------------------------------------------
+// Combo editor (numeric value with preset suggestions)
+// ------------------------------------------------------------
+
+interface ComboEditorProps {
+  prop: PropDef;
+  onChange: (key: string, value: number) => void;
+}
+
+/**
+ * Editable numeric combobox (e.g. DPI), matching UXP's editable DPI menulist:
+ * a text input plus a dropdown of preset values (`prop.options`). Free numeric
+ * entry is allowed and only a valid number is committed. A local draft holds
+ * the in-progress text so the field can be cleared and retyped; it is re-seeded
+ * when the committed value changes from outside (e.g. a size preset sets DPI).
+ */
+export const ComboEditor: React.FC<ComboEditorProps> = ({ prop, onChange }) => {
+  const committed = Number(prop.value);
+  const [draft, setDraft] = useState(() => String(prop.value));
+  // Adopt an external value change (preset / restore) without fighting typing:
+  // only re-seed when the committed value moved to something the draft does not
+  // already represent.
+  const lastCommittedRef = useRef(committed);
+  if (committed !== lastCommittedRef.current) {
+    lastCommittedRef.current = committed;
+    if (Number(draft) !== committed) setDraft(String(committed));
+  }
+  const commit = useCallback(
+    (s: string) => {
+      const n = Number(s);
+      if (s.trim() !== "" && Number.isFinite(n)) onChange(prop.key, n);
+    },
+    [onChange, prop.key],
+  );
+  return (
+    <Field label={prop.label}>
+      <ComboBoxField
+        value={draft}
+        options={prop.options ?? []}
+        onChange={(v) => {
+          setDraft(v);
+          commit(v);
+        }}
+        triggerLabel={`Show ${prop.label} presets`}
+        triggerTitle={`${prop.label} presets`}
       />
     </Field>
   );
