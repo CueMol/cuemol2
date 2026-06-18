@@ -11,7 +11,12 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { sizeUnitToPx, pxToSizeUnit } from '../data/renderSettings';
+import {
+    sizeUnitToPx,
+    pxToSizeUnit,
+    SIZE_UNIT_FIELD_META,
+    type ImageSizeUnit,
+} from '../data/renderSettings';
 import { pixelImageSize } from '../worker/server/services/renderBackends/RenderBackend';
 import type { PropDef } from '../data/rendererProperties';
 
@@ -73,5 +78,24 @@ describe('pixelImageSize', () => {
     it('clamps to at least 1 pixel', () => {
         expect(pixelImageSize(imageProps({ width: 0.0001, height: 0.0001, unit: 'in', dpi: 1 })))
             .toEqual({ width: 1, height: 1 });
+    });
+});
+
+describe('SIZE_UNIT_FIELD_META drag range', () => {
+    it('keeps px ranging 100..10000', () => {
+        expect(SIZE_UNIT_FIELD_META.px.min).toBe(100);
+        expect(SIZE_UNIT_FIELD_META.px.max).toBe(10000);
+    });
+
+    it('sizes every unit step so one drag spans min..max (~150 steps or fewer)', () => {
+        // The drag moves ~1 step / ~8px, so an edge-to-edge swipe covers
+        // ~130-150 steps. A range that needs many more steps than that is not
+        // draggable (the original 1px step needed ~9900 steps for px).
+        for (const unit of Object.keys(SIZE_UNIT_FIELD_META) as ImageSizeUnit[]) {
+            const m = SIZE_UNIT_FIELD_META[unit];
+            const steps = (m.max - m.min) / m.step;
+            expect(steps, `${unit} steps`).toBeGreaterThan(0);
+            expect(steps, `${unit} steps`).toBeLessThanOrEqual(160);
+        }
     });
 });
