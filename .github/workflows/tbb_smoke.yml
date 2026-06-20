@@ -63,6 +63,27 @@ jobs:
       with:
         arch: x64
 
+    # Match build2.yml's Windows job: build_libcuemol2_posix sets the sccache GHA
+    # backend env only on posix, so on Windows the workflow must set it.
+    # Otherwise sccache runs in local-disk mode and the final `sccache -s` in
+    # build_libcuemol2_win.bat exits non-zero, failing the step after a
+    # successful build.
+    - name: Enable sccache GHA backend (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        echo "SCCACHE_GHA_ENABLED=true" >> $env:GITHUB_ENV
+        echo "SCCACHE_GHA_VERSION=${{ runner.os }}_${{ runner.arch }}" >> $env:GITHUB_ENV
+
+    - name: Find and set sccache path (Windows)
+      if: runner.os == 'Windows'
+      shell: cmd
+      run: |
+        for /f "tokens=*" %%i in ('where sccache') do set SCCACHE_PATH=%%i & goto :done
+        :done
+        echo SCCACHE_PATH=%SCCACHE_PATH%
+        echo SCCACHE_PATH=%SCCACHE_PATH%>> %GITHUB_ENV%
+
     - name: Record runner type
       shell: bash
       run: echo "RUNNER_TYPE=${{ matrix.os }}" >> $GITHUB_ENV
