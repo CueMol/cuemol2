@@ -89,6 +89,9 @@
 /* Define to 1 if you have the <lzma.h> header file. */
 #cmakedefine HAVE_LZMA_H
 
+/* Define if Intel oneTBB is available */
+#cmakedefine HAVE_TBB
+
 /* Use OpenGL */
 #cmakedefine BUILD_OPENGL_SYSDEP
 #cmakedefine USE_OPENGL

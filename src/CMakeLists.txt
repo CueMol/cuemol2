@@ -40,6 +40,13 @@ if (${LIBLZMA_FOUND})
   SET(HAVE_LZMA_H "1")
 endif()
 
+# Intel oneTBB (optional; gated by ENABLE_TBB, default OFF). Provides the
+# TBB::tbb target consumed by qlib's parallel abstraction.
+if (ENABLE_TBB)
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/tbb.cmake)
+  SET(HAVE_TBB "1")
+endif ()
+
 #####
 
 # OpenGL/GUI
