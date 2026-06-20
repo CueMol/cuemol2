@@ -30,7 +30,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       # Inject ENABLE_TBB into the existing build scripts (run.sh / win.bat).
-      ENABLE_TBB: ON
+      # Quoted so YAML does not coerce it to the boolean true.
+      ENABLE_TBB: "ON"
     strategy:
       fail-fast: false
       matrix:
@@ -54,6 +55,13 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.12'
+
+    # Windows libcuemol2 builds with MSVC (cl) via build_libcuemol2_win.bat;
+    # this puts cl on PATH, mirroring build2.yml's Windows job.
+    - uses: ilammy/msvc-dev-cmd@v1
+      if: runner.os == 'Windows'
+      with:
+        arch: x64
 
     - name: Record runner type
       shell: bash
