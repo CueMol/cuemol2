@@ -16,9 +16,9 @@ REM SET RUNNER_OS=Windows
 REM SET RUNNER_ARCH=X64
 SET CONFIG=%2
 
-REM oneTBB is optional (default OFF). When ON, build oneTBB with the dynamic CRT
-REM (/MD) to match the rest of the build.
-if "%ENABLE_TBB%"=="" SET ENABLE_TBB=OFF
+REM oneTBB is on by default (override by setting ENABLE_TBB=OFF). When ON, build
+REM oneTBB with the dynamic CRT (/MD) to match the rest of the build.
+if "%ENABLE_TBB%"=="" SET ENABLE_TBB=ON
 if /I "%ENABLE_TBB%"=="ON" (
   SET TBB_OPT=-DENABLE_TBB=ON -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL
 ) ELSE (

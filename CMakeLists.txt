@@ -17,7 +17,7 @@ option(BUILD_XPCJS_BINDINGS "Build XPCOM-js bindings")
 option(BUILD_NODEJS_BINDINGS "Build node.js bindings")
 option(ENABLE_TYPESCRIPT "Build TypeScript code for node.js bindings")
 
-option(ENABLE_TBB "Use Intel oneTBB for CPU parallelism" OFF)
+option(ENABLE_TBB "Use Intel oneTBB for CPU parallelism" ON)
 
 option(ENABLE_PYTHON_EMBED "Enable Python embedding")
 option(BUILD_TESTS "Build C++ unit tests" OFF)

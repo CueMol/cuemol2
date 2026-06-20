@@ -11,13 +11,10 @@ name: oneTBB smoke (ENABLE_TBB=ON)
 #   MSVC static-oneTBB build links, which is the main de-risking target.
 
 on:
-  # During the staged rollout this also runs on pushes to oneTBB branches, so
-  # the smoke build can be validated before the file reaches the default branch
-  # (workflow_dispatch only becomes available once it is on the default branch).
-  # Drop the push trigger once ENABLE_TBB is the default everywhere.
-  push:
-    branches:
-      - '*tbb*'
+  # ENABLE_TBB is on by default now, so the regular build2.yml / build_linux.yml
+  # pipelines already exercise oneTBB on every push. This workflow stays as an
+  # on-demand isolated libcuemol2-only smoke build (e.g. to bisect a oneTBB
+  # issue without the rest of the pipeline).
   workflow_dispatch:
 
 concurrency:
