@@ -18,9 +18,32 @@
 #if defined(HAVE_TBB)
 #  include <tbb/blocked_range.h>
 #  include <tbb/parallel_for.h>
+#  include <tbb/info.h>
 #endif
 
 namespace qlib {
+
+/// True when CPU parallelism (oneTBB) is compiled in. When false, parallel_for
+/// falls back to a serial loop.
+inline bool parallel_enabled()
+{
+#if defined(HAVE_TBB)
+    return true;
+#else
+    return false;
+#endif
+}
+
+/// Maximum number of worker threads parallel_for may use (1 when serial). This
+/// is oneTBB's default concurrency, i.e. how many threads it will try to use.
+inline int parallel_max_concurrency()
+{
+#if defined(HAVE_TBB)
+    return tbb::info::default_concurrency();
+#else
+    return 1;
+#endif
+}
 
 /// Apply fn(i) for every index i in the half-open range [begin, end).
 ///

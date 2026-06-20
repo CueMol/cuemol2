@@ -8,6 +8,8 @@
 #include "DirectSurfRenderer2.hpp"
 #include "DistFieldSurfBuilder.hpp"
 
+#include <qlib/parallel.hpp>
+
 #include <gfx/DisplayContext.hpp>
 #include <gfx/Mesh.hpp>
 #include <gfx/GradientColor.hpp>
@@ -134,7 +136,14 @@ void DirectSurfRenderer2::buildMeshCache()
     return;
   }
 
-  MB_DPRINTLN("DirectSurfRend2> building surface for %d atoms", builder.getAtomCount());
+  // Always-on log (visible in the GUI log, release builds included) reporting
+  // whether the distance-field/marching-cubes build runs on oneTBB and how many
+  // worker threads it will try to use.
+  LOG_DPRINTLN("DirectSurfRend2> building dsurf2 surface: atoms=%d, "
+               "CPU parallel backend=%s, threads=%d",
+               builder.getAtomCount(),
+               qlib::parallel_enabled() ? "oneTBB" : "serial",
+               qlib::parallel_max_concurrency());
   builder.build();
 
   const std::vector<MSVert> &bverts = builder.getVerts();
