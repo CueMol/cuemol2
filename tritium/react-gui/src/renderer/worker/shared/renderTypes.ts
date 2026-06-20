@@ -23,10 +23,17 @@ export interface RenderBinaries {
   blendpng: string;
 }
 
-/** Default binary locations (app-bundle packaging is a later concern). */
+/**
+ * Last-resort default binary locations, used only when Main resolves no path
+ * (APP_PATH defaultRenderBinaries empty) and the user has set none in Settings.
+ * The primary dev/packaged resolution lives in main/ipcHandlers.ts
+ * getRenderBinaries() (dev: LIBCUEMOL2_ROOT / BUNDLE_APPS env; packaged: install
+ * tree). A leading `~` is expanded by the worker. These placeholders assume the
+ * standard download_extpkgs / WORKDIR layout.
+ */
 export const DEFAULT_RENDER_BINARIES: RenderBinaries = {
-  povrayExe: "~/tmp/proj64_deplibs/cuemol2_bundle_apps/povray/bin/povray",
-  povrayInc: "~/tmp/proj64_deplibs/cuemol2_bundle_apps/povray/include",
+  povrayExe: "~/tmp/proj64_deplibs/povray/bin/povray",
+  povrayInc: "~/tmp/proj64_deplibs/povray/include",
   blendpng: "~/tmp/proj64_deplibs/cuemol2/bin/blendpng",
 };
 

@@ -1200,6 +1200,11 @@ qlib::LScrVector4D View::projToScreen(const qlib::Vector4D &wpos)
   return qlib::LScrVector4D();
 }
 
+LString View::hitTestPolygon(qlib::LByteArrayPtr pts, bool bNearest)
+{
+  return LString();
+}
+
 
 //static
 bool View::hasVS()

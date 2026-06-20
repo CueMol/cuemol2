@@ -132,6 +132,19 @@ function collectProps(target: BaseWrapper): GenericPropEntry[] {
     return parseGenericProps(raw);
 }
 
+/**
+ * Scene.name is a read-only property -- its `.qif` declares
+ * `redirect(getName, XXX) (readonly)`, so there is no `setProp` setter -- but a
+ * scene CAN be renamed via `Scene::setName()`, which also fires the
+ * `propChanged("name")` event the scene tree and tab strip rely on. So a scene
+ * name write coming from the inspector is routed through `setName()` here. The
+ * entries keep their honest `readonly: true`; only the Properties tab presents
+ * the Name field as editable (the Generic tab stays read-only).
+ */
+function isSceneNameWrite(nodeType: PropTargetType, propName: string): boolean {
+    return nodeType === 'scene' && propName === 'name';
+}
+
 /** Derive the header type label for a node. */
 function typeLabelOf(target: BaseWrapper, nodeType: PropTargetType): string {
     const rec = target as unknown as Record<string, unknown>;
@@ -236,6 +249,10 @@ function setGenericProp(
         withUndoTxn(scene, label, () => {
             if (args.op === 'reset') {
                 target.resetProp(args.propName);
+            } else if (isSceneNameWrite(args.nodeType, args.propName)) {
+                // Scene.name has no property setter; rename via setName(), which
+                // also fires propChanged("name") (see isSceneNameWrite).
+                scene.setName(String(args.value ?? ''));
             } else if (args.valueType.startsWith('object<MolSelection>')) {
                 // Selection properties need a compiled SelCommand, not a raw
                 // string (UXP `commitPropChange` MolSelection branch). An empty
@@ -320,6 +337,9 @@ function setGenericProps(
             for (const w of args.writes) {
                 if (w.op === 'reset') {
                     target.resetProp(w.propName);
+                } else if (isSceneNameWrite(args.nodeType, w.propName)) {
+                    // Scene.name has no property setter; rename via setName().
+                    scene.setName(String(w.value ?? ''));
                 } else if (w.valueType.startsWith('object<MolSelection>')) {
                     const sel = makeSel(ctx, String(w.value ?? ''), scene.uid);
                     if (!sel) throw new Error(`bad selection: ${String(w.value)}`);

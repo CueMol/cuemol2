@@ -54,6 +54,21 @@ export function useSceneCommands({
 
     useRegisterCommand(CmdId.SceneNew, () => openNewScene())
 
+    // Resolve the active scene/view, creating a fresh scene + view (a new tab)
+    // when none is active (welcome tab, or every molview tab closed). UXP always
+    // kept an active view, so a load always had somewhere to go; tritium has no
+    // implicit scene, so the load commands below create one on demand instead of
+    // silently doing nothing.
+    const ensureActiveScene = useCallback(async (): Promise<
+        { scene_uid: number; view_id: number } | undefined
+    > => {
+        const info = getActiveSceneInfo()
+        if (info) return info
+        const created = await newScene()
+        if (!created) return undefined
+        return { scene_uid: created.scene_uid, view_id: created.view_uid }
+    }, [getActiveSceneInfo, newScene])
+
     const setSceneBgColor = useCallback(async (colorName: 'white' | 'black'): Promise<void> => {
         if (!cm) return
         const info = getActiveSceneInfo()
@@ -70,8 +85,6 @@ export function useSceneCommands({
         (data: FileOpenedData | undefined) => {
             if (!data) return
             if (!cm) return
-            const info = getActiveSceneInfo()
-            if (!info) return
             ;(async () => {
                 try {
                     // Pass `data.contentFirst` here too -- the renderer-list
@@ -97,6 +110,11 @@ export function useSceneCommands({
                         })
                         return
                     }
+                    // Resolve the target scene only after the file is known to be
+                    // loadable, so an unsupported file does not leave a stray new
+                    // tab. Creates a new scene + view when none is active.
+                    const info = await ensureActiveScene()
+                    if (!info) return
                     const options = await showFileOpenOptionDialog({
                         filePath: data.path,
                         sceneId: info.scene_uid,
@@ -136,11 +154,15 @@ export function useSceneCommands({
         CmdId.UiGetPdbDialog,
         () => {
             if (!cm) return
-            const info = getActiveSceneInfo()
-            if (!info) return
             ;(async () => {
                 const inputs = await showGetPdbDialog()
                 if (!inputs) return
+
+                // Resolve the target scene after the dialog is confirmed (so a
+                // cancel never leaves a stray new tab), creating a new scene +
+                // view when none is active.
+                const info = await ensureActiveScene()
+                if (!info) return
 
                 // Persist the accepted PDB ID to the dropdown history (LRU,
                 // dedup, capped) so future invocations can quickly recall it.

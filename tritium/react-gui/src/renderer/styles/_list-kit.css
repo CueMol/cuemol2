@@ -108,6 +108,11 @@
   min-width: 20px;
 }
 
+/* Our panes pass a custom element (<AppIcon>) as the Tree node `icon`, and
+   Blueprint's <Icon> returns element icons verbatim -- it drops the
+   `.bp5-tree-node-icon` class (and the default margin-right that normally
+   separates icon from label). So this color rule only applies to string
+   icons, and the icon -> label gap is set on `.bp5-tree-node-label` below. */
 .h3-listbox-tree .bp5-tree-node-icon {
   color: var(--text-secondary);
 }
@@ -117,6 +122,10 @@
 }
 
 .h3-listbox-tree .bp5-tree-node-label {
+  /* icon -> label gap (same token as the flex-row `gap`), since Blueprint
+     drops the icon class for element icons -- see note above. The label
+     always follows the icon (or its blank spacer), so the gap is consistent. */
+  margin-left: var(--list-row-gap);
   font-size: var(--type-row-fs);
   overflow: hidden;
   text-overflow: ellipsis;

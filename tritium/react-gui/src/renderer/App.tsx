@@ -9,7 +9,7 @@
  *   - useCommandRegistrations   -- registers all CmdId handlers + Electron IPC bridge
  */
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { Allotment } from "allotment";
 import "allotment/dist/style.css";
 
@@ -42,6 +42,7 @@ import { useCueMol } from "./hooks/useCueMol";
 import { useMolTabDispatch, useMolTabState } from "./hooks/useMolTab";
 import { useAppInitialization } from "./hooks/useAppInitialization";
 import { useNewSceneAction } from "./hooks/useNewSceneAction";
+import { useMolViewTabTitleSync } from "./hooks/useMolViewTabTitleSync";
 import { useActiveViewState } from "./hooks/useActiveViewState";
 import { useUndoRedoState } from "./hooks/useUndoRedoState";
 import { useCommandRegistrations } from "./hooks/useCommandRegistrations";
@@ -84,7 +85,7 @@ const App: React.FC = () => {
   // --- CueMol core / tabs (cm needed early for useSceneTree) ---
 
   const { cueMolReady, cm } = useCueMol();
-  const { addMolTab, removeMolTab, getActiveSceneInfo, setActiveViewByID } = useMolTabDispatch();
+  const { addMolTab, removeMolTab, getActiveSceneInfo, setActiveViewByID, clearActiveView } = useMolTabDispatch();
   const { molTabEntries } = useMolTabState();
   const activeSceneId = molTabEntries.find((t) => t.active)?.scene_uid;
 
@@ -115,6 +116,7 @@ const App: React.FC = () => {
     persistInspectorOpen,
     cm,
     sceneTree: scene.tree,
+    activeSceneId,
   });
 
   // Animation-element inspector header (name/type). App owns it because
@@ -196,12 +198,17 @@ const App: React.FC = () => {
     setActiveTab,
     openSettingsTab,
     addMolViewTab,
+    updateMolViewTabTitle,
     addRenderResultTab,
     handleCloseTab,
     handleReorderTabs,
   } = useTabManager({ onMolViewClose: handleMolViewClose, confirmCloseTab });
 
   useWindowCloseHandler({ tabsRef, handleCloseTab, setActiveTab });
+
+  // Keep molview tab titles in sync with their scene name (Explorer rename,
+  // scripts, undo, etc.) -- UXP TabMolView.onScenePropChanged equivalent.
+  useMolViewTabTitleSync({ cm, molTabEntries, updateMolViewTabTitle });
 
   // Shared "create scene + view + register tab" action used by both the
   // launch path and the New Tab dialog (UXP onNewScene equivalent).
@@ -210,14 +217,22 @@ const App: React.FC = () => {
   // First scene/view on launch (StrictMode guarded)
   useAppInitialization({ cueMolReady, newScene });
 
-  // Activate worker view when a molview tab becomes active.
+  // Keep the active scene/view bound to the active CONTENT tab: activate the
+  // worker view for a molview tab, or clear the active molview when a
+  // non-molview tab (Settings / render result / welcome) is shown, so the
+  // Explorer / Inspector / File Open all follow the visible tab and treat a
+  // non-molview tab as "no active scene".
   useEffect(() => {
     const tab = tabs.find((t) => t.id === activeTab);
-    if (tab?.type === 'molview' && tab.viewId !== undefined && cm && cueMolReady) {
-      setActiveViewByID(tab.viewId);
-      cm.activateView(tab.viewId);
+    if (tab?.type === 'molview' && tab.viewId !== undefined) {
+      if (cm && cueMolReady) {
+        setActiveViewByID(tab.viewId);
+        cm.activateView(tab.viewId);
+      }
+    } else {
+      clearActiveView();
     }
-  }, [activeTab, tabs, cm, cueMolReady, setActiveViewByID]);
+  }, [activeTab, tabs, cm, cueMolReady, setActiveViewByID, clearActiveView]);
 
   const activeMolViewId = tabs.find((t) => t.id === activeTab && t.type === 'molview')?.viewId;
 
@@ -241,26 +256,78 @@ const App: React.FC = () => {
 
   /**
    * Start a render from the current Render Settings (Start button / F12).
-   * Uses the active molview's scene/view from `getActiveSceneInfo` -- this
-   * stays correct even when a Render Result tab is the active content tab
-   * (so the render captures the latest camera via `saveViewToCam`).
+   * Resolves the target from the active content tab: a molview tab renders its
+   * own scene/view; a Render Result tab renders the scene it depicts (its
+   * source), so re-rendering from a result tab still works now that the active
+   * scene follows the visible tab. Other tabs (Settings / welcome) have no
+   * scene to render.
    */
   const handleRenderStart = useCallback(() => {
-    const info = getActiveSceneInfo();
-    if (!info) return;
-    const source: RenderSource = {
-      sceneId: info.scene_uid,
-      sceneName: scene.tree?.name ?? `Scene ${info.scene_uid}`,
-      viewId: info.view_id,
-    };
+    const activeTabData = tabs.find((t) => t.id === activeTab);
+    let source: RenderSource | null = null;
+    if (
+      activeTabData?.type === 'renderResult' &&
+      activeTabData.renderResult?.sourceViewId !== undefined
+    ) {
+      const rr = activeTabData.renderResult;
+      source = {
+        sceneId: rr.sourceSceneId,
+        sceneName: rr.sourceSceneName,
+        viewId: rr.sourceViewId,
+      };
+    } else {
+      const info = getActiveSceneInfo();
+      if (info) {
+        source = {
+          sceneId: info.scene_uid,
+          sceneName: scene.tree?.name ?? `Scene ${info.scene_uid}`,
+          viewId: info.view_id,
+        };
+      }
+    }
+    if (!source) return;
     void renderJob.start({
-      sceneId: info.scene_uid,
-      viewId: info.view_id,
+      sceneId: source.sceneId,
+      viewId: source.viewId,
       snapshot: renderSettings.getSnapshot(),
       source,
       binaries: renderBinaries,
     });
-  }, [getActiveSceneInfo, scene.tree, renderJob, renderSettings, renderBinaries]);
+  }, [tabs, activeTab, getActiveSceneInfo, scene.tree, renderJob, renderSettings, renderBinaries]);
+
+  /**
+   * Whether the active tab can be rendered now. Mirrors the source resolution
+   * in handleRenderStart so the Render tab's Start button is enabled exactly
+   * when a render would actually run: a molview tab, or a Render Result tab that
+   * still knows its source view. Settings / welcome tabs have no scene, so the
+   * button is disabled rather than silently doing nothing.
+   */
+  const canRender = useMemo(() => {
+    const activeTabData = tabs.find((t) => t.id === activeTab);
+    if (activeTabData?.type === 'renderResult') {
+      return activeTabData.renderResult?.sourceViewId !== undefined;
+    }
+    return activeMolViewId !== undefined;
+  }, [tabs, activeTab, activeMolViewId]);
+
+  /**
+   * Scene id whose Render Settings the gear should open: a molview tab's own
+   * scene, or a render-result tab's source scene. On a render-result tab
+   * activeSceneId is undefined (no active molview), so handleShowRenderSettings
+   * needs this explicit id -- otherwise the gear silently does nothing.
+   */
+  const renderSourceSceneId = useMemo(() => {
+    const activeTabData = tabs.find((t) => t.id === activeTab);
+    if (activeTabData?.type === 'renderResult') {
+      return activeTabData.renderResult?.sourceSceneId;
+    }
+    return activeSceneId;
+  }, [tabs, activeTab, activeSceneId]);
+
+  const handleOpenRenderSettings = useCallback(
+    () => handleShowRenderSettings(renderSourceSceneId),
+    [handleShowRenderSettings, renderSourceSceneId],
+  );
 
   /** Re-render from a result tab's snapshot (also restores it into the editor). */
   const handleReRender = useCallback(
@@ -337,7 +404,7 @@ const App: React.FC = () => {
     onProjectionChanged,
     onCenterMarkChanged,
     onBgColorChanged,
-  } = useActiveViewState({ cm, activeMolViewId, getActiveSceneInfo });
+  } = useActiveViewState({ cm, activeMolViewId, activeSceneId });
 
   // --- Undo/redo availability + history dropdown (owns CmdId.Undo/Redo) ---
   const undoRedo = useUndoRedoState({ cm, activeMolViewId, getActiveSceneInfo });
@@ -429,9 +496,9 @@ const App: React.FC = () => {
     <IconContext.Provider value={{ color: "currentColor", weight: "regular" }}>
     <div className="app">
       {window.electronAPI?.platform !== 'darwin' && (
-        <MenuBar activeTab={activeTab} viewProjection={viewProjection} viewCenterMark={viewCenterMark} sceneBgColor={sceneBgColor} recentFiles={recentFiles} />
+        <MenuBar activeTab={activeTab} viewProjection={viewProjection} viewCenterMark={viewCenterMark} sceneBgColor={sceneBgColor} hasScene={activeMolViewId !== undefined} recentFiles={recentFiles} />
       )}
-      <Toolbar undoRedo={undoRedo} />
+      <Toolbar undoRedo={undoRedo} hasScene={activeMolViewId !== undefined} />
 
       <div className="main-layout">
         <div className="main-layout-inner">
@@ -509,7 +576,7 @@ const App: React.FC = () => {
                             onStatusMessage={setStatusMessage}
                             onReRender={handleReRender}
                             onShowSourceScene={handleShowSourceScene}
-                            onOpenRenderSettings={handleShowRenderSettings}
+                            onOpenRenderSettings={handleOpenRenderSettings}
                           />
                         </Allotment.Pane>
                         <Allotment.Pane minSize={100} preferredSize={200} snap>
@@ -518,11 +585,12 @@ const App: React.FC = () => {
                             activeSceneId={activeSceneId}
                             activeMolViewId={activeMolViewId}
                             renderJob={renderJob.job}
+                            renderCanStart={canRender}
                             renderPreset={renderSettings.preset}
                             onRenderStart={handleRenderStart}
                             onRenderCancel={renderJob.cancel}
                             onRenderApplyPreset={handleApplyRenderPreset}
-                            onOpenRenderSettings={handleShowRenderSettings}
+                            onOpenRenderSettings={handleOpenRenderSettings}
                             onInspectAnimElement={handleInspectAnimElement}
                           />
                         </Allotment.Pane>

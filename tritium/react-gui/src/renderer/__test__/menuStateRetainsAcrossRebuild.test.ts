@@ -23,6 +23,7 @@ import type { MenuState } from '../../shared/ipcTypes'
 import {
     applyMenuStateTo,
     mergeMenuState,
+    SCENE_REQUIRING_MENU_IDS,
     type MenuItemLike,
     type MenuLike,
 } from '../../shared/menuStateApply'
@@ -45,6 +46,7 @@ function makeFakeMenu(): MenuLike & { items: Map<string, FakeMenuItem> } {
         'bg-black',
         'undo',
         'redo',
+        ...SCENE_REQUIRING_MENU_IDS,
     ]) {
         items.set(id, new FakeMenuItem(id))
     }
@@ -101,6 +103,14 @@ describe('mergeMenuState', () => {
         })
         expect(merged.undo).toEqual({ enabled: true })
         expect(merged.redo).toEqual({ enabled: false })
+    })
+
+    it('carries the sceneOps slice across an unrelated update', () => {
+        const cache: MenuState = { sceneOps: { enabled: false } }
+        const merged = mergeMenuState(cache, {
+            viewProjection: { enabled: true, perspective: true },
+        })
+        expect(merged.sceneOps).toEqual({ enabled: false })
     })
 })
 
@@ -159,6 +169,26 @@ describe('applyMenuStateTo — sets enabled/checked correctly', () => {
         })
         expect(menu.items.get('undo')!.enabled).toBe(true)
         expect(menu.items.get('redo')!.enabled).toBe(false)
+    })
+
+    it('sceneOps: disables every scene-requiring item when enabled=false', () => {
+        const menu = makeFakeMenu()
+        // Pre-enable them to prove the apply turns them off.
+        for (const id of SCENE_REQUIRING_MENU_IDS) menu.items.get(id)!.enabled = true
+        applyMenuStateTo(menu, { sceneOps: { enabled: false } })
+        for (const id of SCENE_REQUIRING_MENU_IDS) {
+            expect(menu.items.get(id)!.enabled).toBe(false)
+        }
+    })
+
+    it('sceneOps: enables every scene-requiring item when enabled=true', () => {
+        const menu = makeFakeMenu()
+        applyMenuStateTo(menu, { sceneOps: { enabled: true } })
+        for (const id of SCENE_REQUIRING_MENU_IDS) {
+            expect(menu.items.get(id)!.enabled).toBe(true)
+        }
+        // An unrelated item (no sceneOps gate) is untouched.
+        expect(menu.items.get('bg-white')!.enabled).toBe(false)
     })
 
     it('does not touch items belonging to unset slices', () => {

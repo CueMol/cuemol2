@@ -14,6 +14,7 @@ import { APP_MENU, getRoleLabel } from '../../shared/menuTemplate'
 import type { AppMenuItem, AppMenuRole } from '../../shared/menuTemplate'
 import type { RecentFileEntry, SceneBgColor, ViewCenterMark } from '../../shared/ipcTypes'
 import { IPC } from '../../shared/ipcChannels'
+import { SCENE_REQUIRING_MENU_IDS } from '../../shared/menuStateApply'
 import { useMenuDispatch } from '../hooks/useMenuDispatch'
 
 interface MenuBarProps {
@@ -21,6 +22,8 @@ interface MenuBarProps {
   viewProjection?: boolean | null
   viewCenterMark?: ViewCenterMark | null
   sceneBgColor?: SceneBgColor | null
+  /** Whether a molview tab is active; gates scene-operation items. */
+  hasScene?: boolean
   recentFiles?: RecentFileEntry[]
 }
 
@@ -83,8 +86,22 @@ interface DropdownItemProps {
   viewProjection?: boolean | null
   viewCenterMark?: ViewCenterMark | null
   sceneBgColor?: SceneBgColor | null
+  hasScene?: boolean
   recentFiles?: RecentFileEntry[]
   onRecentOpen?: (entry: RecentFileEntry) => void
+}
+
+/**
+ * Enabled state for a scene-operation item (Save / Export / tools, ...), or
+ * null if `item` is not one. Disabled when no molview tab is active, mirroring
+ * the native menu's `sceneOps` gate.
+ */
+const getSceneOpsState = (
+  item: AppMenuItem,
+  hasScene: boolean | undefined,
+): { enabled: boolean } | null => {
+  if (!item.id || !SCENE_REQUIRING_MENU_IDS.includes(item.id)) return null
+  return { enabled: hasScene === true }
 }
 
 /**
@@ -149,7 +166,7 @@ const getSceneBgColorState = (
  * routes a click to `onAction`, or to `onRecentOpen` for a dynamic
  * recent-file entry.
  */
-const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProjection, viewCenterMark, sceneBgColor, recentFiles, onRecentOpen }) => {
+const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProjection, viewCenterMark, sceneBgColor, hasScene, recentFiles, onRecentOpen }) => {
   const [submenuOpen, setSubmenuOpen] = useState(false)
   const itemRef = useRef<HTMLDivElement>(null)
 
@@ -173,7 +190,8 @@ const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProject
   const projectionState = getViewProjectionState(item, viewProjection)
   const centerMarkState = getViewCenterMarkState(item, viewCenterMark)
   const bgColorState = getSceneBgColorState(item, sceneBgColor)
-  const enabled = projectionState?.enabled ?? centerMarkState?.enabled ?? bgColorState?.enabled ?? item.enabled ?? true
+  const sceneOpsState = getSceneOpsState(item, hasScene)
+  const enabled = projectionState?.enabled ?? centerMarkState?.enabled ?? bgColorState?.enabled ?? sceneOpsState?.enabled ?? item.enabled ?? true
   const checked = projectionState?.checked ?? centerMarkState?.checked ?? bgColorState?.checked ?? item.checked ?? false
   const isCheckable = item.type === 'checkbox' || item.type === 'radio'
   const className = `menubar__dropdown-item${enabled ? '' : ' menubar__dropdown-item--disabled'}`
@@ -207,6 +225,7 @@ const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProject
                 viewProjection={viewProjection}
                 viewCenterMark={viewCenterMark}
                 sceneBgColor={sceneBgColor}
+                hasScene={hasScene}
                 recentFiles={recentFiles}
                 onRecentOpen={onRecentOpen}
               />
@@ -249,7 +268,7 @@ const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProject
  * plus the click-away / Escape close handlers, and renders each non-darwin
  * `APP_MENU` group as a dropdown.
  */
-export const MenuBar: React.FC<MenuBarProps> = ({ activeTab, viewProjection = null, viewCenterMark = null, sceneBgColor = null, recentFiles = [] }) => {
+export const MenuBar: React.FC<MenuBarProps> = ({ activeTab, viewProjection = null, viewCenterMark = null, sceneBgColor = null, hasScene = false, recentFiles = [] }) => {
   const { dispatchMenuChannel, dispatchOpenRecent } = useMenuDispatch(activeTab)
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [dropdownPos, setDropdownPos] = useState<{ left: number }>({ left: 0 })
@@ -342,6 +361,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ activeTab, viewProjection = nu
                     viewProjection={viewProjection}
                     viewCenterMark={viewCenterMark}
                     sceneBgColor={sceneBgColor}
+                    hasScene={hasScene}
                     recentFiles={recentFiles}
                     onRecentOpen={dispatchOpenRecent}
                   />

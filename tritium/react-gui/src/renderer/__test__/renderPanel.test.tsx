@@ -1,0 +1,111 @@
+/**
+ * @file __test__/renderPanel.test.tsx
+ * @description Degrade-detection tests for the RenderPanel Start-button gate.
+ *
+ * Pins the contract that the render controls (Start button, image-size preset,
+ * Render Settings shortcut) are disabled -- and Start cannot fire onStart --
+ * when `renderable` is false: the fix for a non-molview tab leaving pressable
+ * controls that silently do nothing. While a job is active the panel shows Stop
+ * instead, which is never gated.
+ */
+
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import React from 'react';
+import { createRoot, type Root } from 'react-dom/client';
+import { act } from 'react';
+import { RenderPanel } from '../components/panels/RenderPanel';
+import type { RenderJob } from '../hooks/useRenderJob';
+
+void React;
+;(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+let root: Root;
+let container: HTMLDivElement;
+
+const noop = (): void => {};
+
+function mount(props: Partial<React.ComponentProps<typeof RenderPanel>>): void {
+  container = document.createElement('div');
+  document.body.appendChild(container);
+  act(() => {
+    root = createRoot(container);
+    root.render(
+      <RenderPanel
+        job={null}
+        renderable={true}
+        preset="Current size"
+        onStart={noop}
+        onCancel={noop}
+        onApplyPreset={noop}
+        onOpenSettings={noop}
+        {...props}
+      />,
+    );
+  });
+}
+
+/** Find a <button> whose label contains the given text. */
+function button(label: string): HTMLButtonElement | undefined {
+  return Array.from(container.querySelectorAll('button')).find((b) =>
+    (b.textContent ?? '').includes(label),
+  ) as HTMLButtonElement | undefined;
+}
+
+const RUNNING_JOB: RenderJob = {
+  jobId: 'j1',
+  status: 'running',
+  progress: 50,
+  phase: 'Rendering',
+  log: [],
+  startedAt: 0,
+};
+
+afterEach(() => {
+  act(() => root.unmount());
+  document.body.removeChild(container);
+});
+
+describe('RenderPanel -- Start button gating', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('disables every render control when not renderable', () => {
+    const onStart = vi.fn();
+    mount({ renderable: false, onStart });
+    const start = button('Start Render');
+    expect(start).toBeDefined();
+    expect(start!.disabled).toBe(true);
+    act(() => start!.click());
+    expect(onStart).not.toHaveBeenCalled();
+    // The image-size preset and the Render Settings shortcut are gated too.
+    const presetSelect = container.querySelector('select') as HTMLSelectElement | null;
+    expect(presetSelect?.disabled).toBe(true);
+    expect(button('Render Settings')!.disabled).toBe(true);
+  });
+
+  it('enables every render control and fires onStart when renderable', () => {
+    const onStart = vi.fn();
+    mount({ renderable: true, onStart });
+    const start = button('Start Render');
+    expect(start).toBeDefined();
+    expect(start!.disabled).toBe(false);
+    act(() => start!.click());
+    expect(onStart).toHaveBeenCalledTimes(1);
+    const presetSelect = container.querySelector('select') as HTMLSelectElement | null;
+    expect(presetSelect?.disabled).toBe(false);
+    expect(button('Render Settings')!.disabled).toBe(false);
+  });
+
+  it('shows Stop (never gated by renderable) while a job is active', () => {
+    const onCancel = vi.fn();
+    // renderable false, but an active job must still be stoppable.
+    mount({ renderable: false, job: RUNNING_JOB, onCancel });
+    expect(button('Start Render')).toBeUndefined();
+    const stop = button('Stop');
+    expect(stop).toBeDefined();
+    expect(stop!.disabled).toBe(false);
+    act(() => stop!.click());
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+});

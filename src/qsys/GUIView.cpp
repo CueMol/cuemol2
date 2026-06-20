@@ -16,7 +16,10 @@
 #include <gfx/JitterSamples.hpp>
 
 #include <cmath>
+#include <vector>
 #include <qlib/LPerfMeas.hpp>
+#include <qlib/LByteArray.hpp>
+#include <qlib/RangeSet.hpp>
 
 #include "CenterMarkDrawObj.hpp"
 #include "SceneManager.hpp"
@@ -546,6 +549,128 @@ LString GUIView::hitTestRect(int ax, int ay, int aw, int ah, bool bNearest)
         // MB_DPRINTLN("Hittest OK: sc=%d, rend=%d, obj=%d", sceneid, rend_id, objid);
     }
     rval += "]";
+
+    return rval;
+}
+
+/// Ray-casting point-in-polygon test (logical-pixel screen space). Mirrors the
+/// former TypeScript lasso implementation.
+static bool pointInPolygon(double x, double y, const std::vector<double> &px,
+                           const std::vector<double> &py)
+{
+    const size_t n = px.size();
+    if (n < 3) return false;
+    bool inside = false;
+    for (size_t i = 0, j = n - 1; i < n; j = i++) {
+        const bool cross = ((py[i] > y) != (py[j] > y)) &&
+                           (x < (px[j] - px[i]) * (y - py[i]) / (py[j] - py[i]) + px[i]);
+        if (cross) inside = !inside;
+    }
+    return inside;
+}
+
+LString GUIView::hitTestPolygon(qlib::LByteArrayPtr pPts, bool bNearest)
+{
+    // Vertices arrive as a FLOAT32 ByteArray [x0,y0,x1,y1,...] in logical
+    // canvas pixels -- the same space as hitTestRect's input and projToScreen's
+    // output.
+    if (pPts.isnull()) return LString();
+    const int npts = pPts->getElemCount() / 2;
+    if (npts < 3) return LString();
+
+    std::vector<double> polyx(npts), polyy(npts);
+    double minX = 1e30, minY = 1e30, maxX = -1e30, maxY = -1e30;
+    for (int i = 0; i < npts; ++i) {
+        const double x = pPts->getAtF(i * 2);
+        const double y = pPts->getAtF(i * 2 + 1);
+        polyx[i] = x;
+        polyy[i] = y;
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+    }
+
+    const int bx = int(std::floor(minX));
+    const int by = int(std::floor(minY));
+    const int bw = int(std::ceil(maxX)) - bx;
+    const int bh = int(std::ceil(maxY)) - by;
+    if (bw <= 0 || bh <= 0) return LString();
+
+    // Gather candidate elements in the polygon's bounding box. This is the
+    // identical pick setup to hitTestRect, so candidates match the rubber-band
+    // rectangle tool exactly (and inherit its DPR-robust projection).
+    m_hitdata.clear();
+    {
+        const int x = convToBackingX(bx);
+        const int y = convToBackingY(by);
+        const int w = convToBackingX(bw);
+        const int h = convToBackingY(bh);
+        const double cnx = double(x) + double(w) / 2.0;
+        const double cny = double(y) + double(h) / 2.0;
+        HittestContext hc;
+        if (!hitTestImpl(&hc, Vector4D(cnx, cny, w, h), true, 1.0)) return LString();
+        m_hitdata.createAll(&hc);
+    }
+
+    int nrend = m_hitdata.getRendSize();
+    if (nrend == 0) return LString();
+
+    std::vector<qlib::uid_t> rend_ids;
+    if (bNearest) {
+        nrend = 1;
+        rend_ids.resize(1);
+        rend_ids[0] = m_hitdata.getNearestRendID();
+    } else {
+        rend_ids.resize(nrend);
+        m_hitdata.getRendArray(rend_ids.data(), nrend);
+    }
+
+    std::set<qlib::uid_t> objids;
+    LString rval = "[";
+    bool first = true;
+
+    for (int ii = 0; ii < nrend; ++ii) {
+        const qlib::uid_t rend_id = rend_ids[ii];
+        if (rend_id == qlib::invalid_uid) continue;
+
+        qsys::RendererPtr pRend = SceneManager::getRendererS(rend_id);
+        if (pRend.isnull()) continue;
+
+        const qlib::uid_t objid = pRend->getClientObjID();
+        if (objids.find(objid) != objids.end()) continue;
+        objids.insert(objid);
+
+        // Per-hit world positions (only MolCoord-type renderers supply them).
+        std::vector<int> ids;
+        std::vector<Vector4D> poss;
+        pRend->getHitPositions(m_hitdata, ids, poss);
+        if (ids.empty()) continue;
+
+        // Keep the elements whose screen projection falls inside the polygon.
+        // projToScreen uses the same camera that gathered the bounding-box
+        // candidates, so this filter never diverges from the rectangle tool.
+        qlib::RangeSet<int> range;
+        for (size_t k = 0; k < ids.size(); ++k) {
+            const qlib::LScrVector4D scr = projToScreen(poss[k]);
+            if (pointInPolygon(scr.x(), scr.y(), polyx, polyy))
+                range.append(ids[k], ids[k] + 1);
+        }
+        if (range.isEmpty()) continue;
+
+        if (!first) rval += ",";
+        first = false;
+        rval += "{";
+        rval += LString::format("\"rend_id\": %d,\n", rend_id);
+        rval += "\"objtype\": \"MolCoord\",\n";
+        rval += "\"sel\": \"aid " + qlib::rangeToString(range) + "\", ";
+        rval += LString::format("\"obj_id\": %d", objid);
+        rval += "}";
+    }
+    rval += "]";
+
+    // No renderer contributed an in-polygon element.
+    if (first) return LString();
 
     return rval;
 }

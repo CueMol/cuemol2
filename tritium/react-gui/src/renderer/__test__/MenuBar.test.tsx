@@ -32,6 +32,7 @@ function render(
   viewProjection: boolean | null = null,
   viewCenterMark: ViewCenterMark | null = null,
   recentFiles: RecentFileEntry[] = [],
+  hasScene: boolean = false,
 ): { container: HTMLElement; root: Root; unmount: () => void } {
   const container = document.createElement('div')
   document.body.appendChild(container)
@@ -42,7 +43,7 @@ function render(
       React.createElement(
         CommandProvider,
         null,
-        React.createElement(MenuBar, { activeTab, viewProjection, viewCenterMark, recentFiles }),
+        React.createElement(MenuBar, { activeTab, viewProjection, viewCenterMark, recentFiles, hasScene }),
       ),
     )
   })
@@ -183,6 +184,40 @@ describe('MenuBar', () => {
     expect(items.length).toBeGreaterThanOrEqual(2)
     expect(items.every((el) => el.getAttribute('aria-disabled') === 'true')).toBe(true)
     expect(items.every((el) => el.getAttribute('aria-checked') === 'false')).toBe(true)
+    unmount()
+  })
+
+  it('disables scene-operation File items when no scene is active', () => {
+    const { container, unmount } = render(null, null, null, [], false)
+    const fileItem = Array.from(container.querySelectorAll('.menubar__item')).find(
+      (el) => el.textContent?.includes('File'),
+    ) as HTMLElement
+    act(() => { fileItem.click() })
+
+    const byLabel = (label: string) =>
+      Array.from(container.querySelectorAll('.menubar__dropdown-item')).find((el) =>
+        Array.from(el.querySelectorAll('span')).some((s) => s.textContent === label),
+      ) as HTMLElement | undefined
+
+    // Scene-operation items are disabled...
+    expect(byLabel('Save Scene')?.getAttribute('aria-disabled')).toBe('true')
+    expect(byLabel('Reload Scene')?.getAttribute('aria-disabled')).toBe('true')
+    // ...but scene-independent ones (Open File / Get PDB) stay enabled.
+    expect(byLabel('Open File...')?.getAttribute('aria-disabled')).toBe('false')
+    unmount()
+  })
+
+  it('enables scene-operation File items when a scene is active', () => {
+    const { container, unmount } = render('molview-1', null, null, [], true)
+    const fileItem = Array.from(container.querySelectorAll('.menubar__item')).find(
+      (el) => el.textContent?.includes('File'),
+    ) as HTMLElement
+    act(() => { fileItem.click() })
+
+    const saveScene = Array.from(container.querySelectorAll('.menubar__dropdown-item')).find((el) =>
+      Array.from(el.querySelectorAll('span')).some((s) => s.textContent === 'Save Scene'),
+    ) as HTMLElement
+    expect(saveScene.getAttribute('aria-disabled')).toBe('false')
     unmount()
   })
 

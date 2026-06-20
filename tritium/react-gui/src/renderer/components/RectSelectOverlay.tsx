@@ -20,6 +20,12 @@
  * emits the usual click event and `useNaviClickHandler` (enabled while a
  * select tool is active) handles it.
  *
+ * Wheel / trackpad-pinch zoom is likewise forwarded: while active the overlay
+ * covers the canvas, so its own `wheel` listener routes events to the worker
+ * with the same split as MolViewPane (ctrl+wheel = Chromium trackpad pinch ->
+ * GES_PINCH, plain wheel -> onWheelEvent). The macOS rotate gesture needs no
+ * forwarding -- it arrives via a main-process IPC push, not a DOM event.
+ *
  * Shift+drag adds the hits to the existing selection (a tritium extension);
  * the cursor switches to `copy` while Shift is held to signal the add mode.
  *
@@ -30,6 +36,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useActiveToolContext } from '../contexts/ActiveToolContext'
 import { useMolTabState } from '../hooks/useMolTab'
 import { useCueMol } from '../hooks/useCueMol'
+import { GES_PINCH } from '../worker/shared/gestureAxes'
 import type { ToolId } from '../data/viewportTools'
 
 /** Drag distance (px) below which a left press is treated as a click, not a drag. */
@@ -115,6 +122,35 @@ export const RectSelectOverlay: React.FC = () => {
             window.removeEventListener('keyup', onKey)
         }
     }, [active])
+
+    // Forward wheel / trackpad-pinch zoom to the worker while a select tool is
+    // active (the overlay then covers the canvas, so MolViewPane's own wheel
+    // listener never fires). Same routing as MolViewPane; registered
+    // non-passive so preventDefault() suppresses browser page scroll / zoom.
+    // When inactive the overlay is click-through, so the canvas handles wheel
+    // and this listener is intentionally not attached.
+    useEffect(() => {
+        const el = rootRef.current
+        if (!el || !active || activeViewID == null || !cm) return
+        const onWheel = (e: WheelEvent): void => {
+            e.preventDefault()
+            if (e.ctrlKey) {
+                // Chromium encodes a trackpad pinch as wheel + synthetic
+                // ctrlKey=true; strip it so the GES_PINCH binding (modifier
+                // bits = 0) matches in ViewInputConfig.
+                const synth = {
+                    offsetX: e.offsetX, offsetY: e.offsetY,
+                    screenX: e.screenX, screenY: e.screenY,
+                    ctrlKey: false, shiftKey: e.shiftKey, altKey: e.altKey,
+                }
+                cm.onGestureEvent(activeViewID, GES_PINCH, e.deltaY, synth)
+            } else {
+                cm.onWheelEvent(activeViewID, e)
+            }
+        }
+        el.addEventListener('wheel', onWheel, { passive: false })
+        return () => el.removeEventListener('wheel', onWheel)
+    }, [active, activeViewID, cm])
 
     /** DOM clientX/Y -> canvas-local coords (overlay is flush with the canvas). */
     const localCoords = (e: React.MouseEvent): Point => {

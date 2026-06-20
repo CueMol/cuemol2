@@ -17,8 +17,19 @@ describe('parseNameList', () => {
         expect(parseNameList('CA,,CB,', false)).toBe('CA,CB')
     })
 
-    it('single-quotes plain tokens when quote is set', () => {
+    it('single-quotes alphabetic tokens when quote is set (case-sensitive)', () => {
         expect(parseNameList('A,B', true)).toBe("'A','B'")
+        // Alphanumeric chain ids keep their case-sensitive quoting too.
+        expect(parseNameList('A1,H2', true)).toBe("'A1','H2'")
+    })
+
+    it('passes the * wildcard through unquoted so it stays a metacharacter', () => {
+        // `'*'` would match a chain literally named "*"; `*` means all chains.
+        expect(parseNameList('*', true)).toBe('*')
+    })
+
+    it('does not quote pure-numeric tokens (digits have no case)', () => {
+        expect(parseNameList('1,2', true)).toBe('1,2')
     })
 
     it('passes through regex / quoted / null tokens unquoted', () => {
@@ -85,6 +96,11 @@ describe('buildTerm', () => {
             "'A'.1:10.*",
         )
         expect(buildTerm('hierarchical', { chain: '', resid: '10', aname: 'CA' })).toBe('*.10.CA')
+    })
+
+    it('keeps a typed "*" chain as the all-chains wildcard (not quoted)', () => {
+        // Regression: quoting it to '*' made it match a chain named "*".
+        expect(buildTerm('hierarchical', { chain: '*', resid: '10', aname: 'CA' })).toBe('*.10.CA')
     })
 
     it('returns null on incomplete input', () => {

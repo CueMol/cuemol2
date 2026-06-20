@@ -17,6 +17,10 @@
   --bg-tab-active: #2c2f3a;
   --bg-tab-inactive: #21232b;
 
+  /* Image-viewer transparency checkerboard (two close tones, ~8px cells). */
+  --checker-a: #2b2e37;
+  --checker-b: #383b45;
+
   /* Borders */
   --border: #333746;
   --border-subtle: #2a2d38;
@@ -298,6 +302,10 @@
   --bg-active: #d8dae0;
   --bg-tab-active: #ffffff;
   --bg-tab-inactive: #ebebed;
+
+  /* Image-viewer transparency checkerboard (two close tones, ~8px cells). */
+  --checker-a: #ffffff;
+  --checker-b: #cfd1d7;
 
   /* Borders */
   --border: #d0d1d6;

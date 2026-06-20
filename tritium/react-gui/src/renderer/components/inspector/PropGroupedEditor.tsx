@@ -15,6 +15,7 @@ import {
   NumericEditor,
   BooleanEditor,
   EnumEditor,
+  ComboEditor,
   ColorEditor,
 } from "./PropEditors";
 import type { PropDef } from "../../data/rendererProperties";
@@ -47,9 +48,9 @@ interface PropGroupedEditorProps {
  *
  * Only the scalar `PropType` values are reachable here: the sole consumer
  * (`RenderSettingsEditor` via `data/renderSettings.ts`) emits string /
- * integer / real / boolean / enum / color props. The `"object"` member of
- * `PropType` has no data path into this editor, so the default branch is
- * an unreachable fallback that simply renders nothing.
+ * integer / real / boolean / enum / combo / color props. The `"object"`
+ * member of `PropType` has no data path into this editor, so the default
+ * branch is an unreachable fallback that simply renders nothing.
  *
  * @param prop - The property descriptor to render an editor for.
  * @param onChange - Invoked with (key, value) when the user edits the value.
@@ -69,6 +70,8 @@ export const renderPropEditor = (
       return <BooleanEditor key={prop.key} prop={prop} onChange={onChange} />;
     case "enum":
       return <EnumEditor key={prop.key} prop={prop} onChange={onChange} />;
+    case "combo":
+      return <ComboEditor key={prop.key} prop={prop} onChange={onChange} />;
     case "color":
       return <ColorEditor key={prop.key} prop={prop} onChange={onChange} />;
     default:

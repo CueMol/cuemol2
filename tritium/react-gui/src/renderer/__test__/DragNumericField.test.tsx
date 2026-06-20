@@ -226,6 +226,32 @@ describe('DragNumericField', () => {
         expect(getEditInput()).not.toBeNull()
     })
 
+    it('a stray document mouseup does not enter edit mode (no leaked listener)', () => {
+        // Regression: changing `decimals` (e.g. a render-settings unit switch
+        // toggling px<->in precision) used to recreate handleMouseUp, so the
+        // stable teardown removed a stale reference and leaked the document
+        // mouseup listener. A later stray mouseup -- fired by clicking another
+        // widget after the field was edited and dismissed -- then dropped the
+        // field back into edit mode, swallowing the click. Editing must only be
+        // entered by a press that began on this field.
+        render({ value: 1.0, decimals: 0 })
+        render({ value: 1.0, decimals: 3 }) // precision change (no remount)
+        // Click to edit, then dismiss with Escape (focus leaves the field).
+        mouseDownBody()
+        mouseUp()
+        expect(getEditInput()).not.toBeNull()
+        act(() => {
+            getEditInput()!.dispatchEvent(
+                new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+            )
+        })
+        expect(getEditInput()).toBeNull()
+        // Simulate clicking elsewhere: a document mouseup with no preceding
+        // mousedown on this field must be ignored.
+        mouseUp()
+        expect(getEditInput()).toBeNull()
+    })
+
     it('Shift snaps to the fine granularity (step / 10)', () => {
         const onChange = vi.fn()
         // 7px * (0.1 / 8) = +0.0875 -> 1.0875, snapped to 0.01 -> 1.09
@@ -287,6 +313,49 @@ describe('DragNumericField', () => {
         expect(onChange).toHaveBeenLastCalledWith(0.9)
         mouseUp()
         expect(onRelease).toHaveBeenLastCalledWith(0.9)
+    })
+
+    it('steps out of edit mode when an arrow is pressed while editing', () => {
+        const onChange = vi.fn()
+        const onRelease = vi.fn()
+        render({ value: 1.0, step: 0.1, onChange, onRelease })
+        mouseDownBody()
+        mouseUp() // -> edit mode (draft initialized to the current value)
+        expect(getEditInput()).not.toBeNull()
+
+        const [, right] = getArrows()
+        arrowMouseDown(right)
+        // The press leaves edit mode and steps once from the current value;
+        // the draft is not committed as its own change (single onChange).
+        expect(getEditInput()).toBeNull()
+        expect(onChange).toHaveBeenCalledTimes(1)
+        expect(onChange).toHaveBeenLastCalledWith(1.1)
+        expect(onRelease).not.toHaveBeenCalled()
+        mouseUp()
+        expect(onRelease).toHaveBeenCalledTimes(1)
+        expect(onRelease).toHaveBeenLastCalledWith(1.1)
+    })
+
+    it('steps relative to the typed draft when an arrow is pressed mid-edit', () => {
+        const onChange = vi.fn()
+        const onRelease = vi.fn()
+        // Committed value is 1.0, but the user typed 5 before clicking the arrow.
+        render({ value: 1.0, step: 0.1, onChange, onRelease })
+        mouseDownBody()
+        mouseUp()
+        const input = getEditInput()!
+        act(() => { setInputValue(input, '5') })
+
+        const [, right] = getArrows()
+        arrowMouseDown(right)
+        // The step is relative to the typed 5, not the committed 1.0, and the
+        // raw draft is never committed separately (exactly one commit at 5.1).
+        expect(getEditInput()).toBeNull()
+        expect(onChange).toHaveBeenCalledTimes(1)
+        expect(onChange).toHaveBeenLastCalledWith(5.1)
+        mouseUp()
+        expect(onRelease).toHaveBeenCalledTimes(1)
+        expect(onRelease).toHaveBeenLastCalledWith(5.1)
     })
 
     it('auto-repeats while an arrow is held and commits once on release', () => {

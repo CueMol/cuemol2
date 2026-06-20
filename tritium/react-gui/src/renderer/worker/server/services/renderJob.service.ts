@@ -33,7 +33,7 @@ import type {
 } from "../../shared/renderTypes";
 import { RENDER_PROGRESS_CHANNEL } from "../../shared/renderTypes";
 import { getRenderBackend, type RenderBackend } from "./renderBackends";
-import { numVal, type RenderTaskSpec } from "./renderBackends/RenderBackend";
+import { pixelImageSize, type RenderTaskSpec } from "./renderBackends/RenderBackend";
 import { getSceneOrNull } from "./helpers/sceneResolver";
 
 /** Poll interval for process status / stdout. */
@@ -100,12 +100,14 @@ function finishJob(
   // Phase 5 keeps the working dir (render.pov / .inc / .png) for inspection.
   try {
     const buf = fs.readFileSync(entry.outputPath);
+    // Report the actual pixel size (unit + DPI applied), not the raw value.
+    const { width, height } = pixelImageSize(args.snapshot.commonProps);
     emit(ctx, {
       type: "complete",
       jobId: entry.jobId,
       imageDataUrl: `data:image/png;base64,${buf.toString("base64")}`,
-      width: numVal(args.snapshot.commonProps, "width", 0),
-      height: numVal(args.snapshot.commonProps, "height", 0),
+      width,
+      height,
       elapsedSec: (Date.now() - entry.startedAt) / 1000,
     });
   } catch (e) {

@@ -67,6 +67,13 @@ export interface UseInspectorStateOptions {
   cm: AsyncCueMol | null;
   /** Live scene tree; its root id is the active scene uid. */
   sceneTree: SceneTreeNode | null;
+  /**
+   * The active scene uid (from the active molview tab), or undefined when no
+   * molview tab is open. This is the authoritative active-scene signal: unlike
+   * `sceneTree?.id` it never goes transiently null during a tree refetch, so it
+   * is the safe trigger for clearing the inspector when its scene closes.
+   */
+  activeSceneId: number | undefined;
 }
 
 /** Source-type mask for the property-change event subscription. */
@@ -82,6 +89,7 @@ export function useInspectorState({
   persistInspectorOpen,
   cm,
   sceneTree,
+  activeSceneId,
 }: UseInspectorStateOptions) {
   // --- Local state ---
 
@@ -207,15 +215,28 @@ export function useInspectorState({
   );
 
   /**
-   * Open the inspector on the active scene's Render Settings (Toolbar
-   * Render button / F12). Render Settings belongs to the scene as a whole
-   * and has no scene-tree node.
+   * Open the inspector on a scene's Render Settings (Toolbar Render button /
+   * F12, or the Render panel / Render Result gear). Render Settings belongs to
+   * the scene as a whole and has no scene-tree node.
+   *
+   * @param sceneId - Explicit scene to target. Required on a render-result tab,
+   *   where no molview is active so `sceneTree` is null: the caller passes the
+   *   result's source scene id. Falls back to the active scene tree's id when
+   *   omitted (Toolbar / F12 on a molview tab).
    */
-  const handleShowRenderSettings = useCallback(() => {
-    const sid = sceneTree ? Number(sceneTree.id) : undefined;
-    if (sid === undefined) return;
-    applyTarget({ kind: "renderSettings", sceneId: sid });
-  }, [sceneTree, applyTarget]);
+  const handleShowRenderSettings = useCallback(
+    (sceneId?: number) => {
+      const sid =
+        typeof sceneId === "number"
+          ? sceneId
+          : sceneTree
+            ? Number(sceneTree.id)
+            : undefined;
+      if (sid === undefined) return;
+      applyTarget({ kind: "renderSettings", sceneId: sid });
+    },
+    [sceneTree, applyTarget],
+  );
 
   /**
    * Open the inspector for an animation element selected in the AnimationPanel.
@@ -246,14 +267,19 @@ export function useInspectorState({
     void fetchGenericProps();
   }, [inspectorTarget, fetchGenericProps]);
 
-  // Tab switch = active scene change. Restore that scene's remembered
-  // target (or clear) so the inspector follows the visible scene.
-  const activeSceneId = sceneTree?.id;
+  // Tab switch = active scene change. Restore that scene's remembered target,
+  // or clear when the active scene goes away (all molview tabs closed) so the
+  // inspector never keeps editing a closed scene. Driven by the authoritative
+  // `activeSceneId` (not `sceneTree?.id`, which goes transiently null during a
+  // refetch and would wrongly drop the target).
   useEffect(() => {
-    if (activeSceneId === undefined) return; // transient null during refetch
     if (activeSceneId === appliedSceneIdRef.current) return;
     appliedSceneIdRef.current = activeSceneId;
-    setInspectorTarget(targetsBySceneRef.current.get(activeSceneId) ?? null);
+    setInspectorTarget(
+      activeSceneId === undefined
+        ? null
+        : (targetsBySceneRef.current.get(activeSceneId) ?? null),
+    );
   }, [activeSceneId]);
 
   /** Close the inspector, clear the target, and forget per-scene memory. */

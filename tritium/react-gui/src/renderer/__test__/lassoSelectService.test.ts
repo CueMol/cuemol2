@@ -1,13 +1,11 @@
 /**
  * Degrade-detection tests for `lassoSelect` (worker service).
  *
- * Pins the lasso contract:
- *   - the polygon's bounding box drives `view.hitTestRect` for candidates
- *   - candidates are kept only when their projected screen position
- *     (`view.projToScreen`) falls inside the polygon (point-in-polygon)
- *   - kept atom ids are assigned as `aid a,b,...`; Shift (`mode:'add'`) ORs
- *     with the existing selection
- *   - `aid 1:3` ranges are expanded to individual ids
+ * The polygon math now lives in C++ (View.hitTestPolygon); the service only
+ * marshals: interleave the vertices into a FLOAT32 ByteArray, call
+ * hitTestPolygon, then run the shared selection tail (group by obj_id, assign
+ * sel, single undo txn). These tests pin that wiring. The point-in-polygon
+ * filtering itself is covered by the C++ gtest + host E2E.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -33,14 +31,13 @@ const SQUARE = [
     { x: 0, y: 10 },
 ]
 
-function makeMol(opts: { currentSel?: string } = {}) {
+function makeMol(opts: { hasSelRend?: boolean; currentSel?: string } = {}) {
     const setSel = vi.fn()
+    const createRenderer = vi.fn()
     const cur = opts.currentSel ?? ''
     const mol: Record<string, unknown> = {
-        getRendererByType: vi.fn(() => ({})),
-        createRenderer: vi.fn(),
-        // Atom pos just carries the aid so projToScreen can map it.
-        getAtomByID: vi.fn((aid: number) => ({ pos: { _aid: aid } })),
+        getRendererByType: vi.fn(() => (opts.hasSelRend ? {} : null)),
+        createRenderer,
         get sel() {
             return { toString: () => cur }
         },
@@ -48,83 +45,92 @@ function makeMol(opts: { currentSel?: string } = {}) {
             setSel(v)
         },
     }
-    return { mol, setSel }
+    return { mol, setSel, createRenderer }
 }
 
-/** projMap: aid -> screen point returned by view.projToScreen. */
-function makeCtx(hitJson: string, mol: Record<string, unknown>, projMap: Record<number, { x: number; y: number }>) {
-    const scene = { uid: 7, getObject: vi.fn(() => mol) }
+// Sentinel returned by fromTypedArray, so we can assert it reaches hitTestPolygon.
+const BYTE_ARRAY = { __byteArray: true }
+
+function makeCtx(hitJson: string, mols: Record<number, Record<string, unknown>>) {
+    const scene = { uid: 7, getObject: vi.fn((id: number) => mols[id] ?? null) }
     const view = {
-        hitTestRect: vi.fn(() => hitJson),
+        hitTestPolygon: vi.fn((_ba: unknown, _nr: boolean) => hitJson),
         getScene: () => scene,
-        projToScreen: vi.fn((pos: { _aid: number }) => projMap[pos._aid] ?? { x: -1, y: -1 }),
     }
-    const ctx = { sceMgr: { getView: vi.fn(() => view) } } as unknown as WorkerContext
-    return { ctx, view, scene }
+    const fromTypedArray = vi.fn((_a: unknown) => BYTE_ARRAY)
+    const ctx = {
+        sceMgr: { getView: vi.fn(() => view) },
+        svc: { fromTypedArray },
+    } as unknown as WorkerContext
+    return { ctx, view, scene, fromTypedArray }
 }
 
 const ARGS = { viewId: 1, points: SQUARE }
 
-describe('lassoSelect — polygon filtering', () => {
+describe('lassoSelect — polygon hit test wiring', () => {
     beforeEach(() => {
         vi.clearAllMocks()
     })
 
-    it('hit-tests the polygon bounding box', () => {
+    it('passes the interleaved FLOAT32 vertices to hitTestPolygon as a ByteArray', () => {
         const { mol } = makeMol()
-        const { ctx, view } = makeCtx('[]', mol, {})
+        const { ctx, view, fromTypedArray } = makeCtx('[]', { 1: mol })
         lassoSelect(ctx, ARGS)
-        expect(view.hitTestRect).toHaveBeenCalledWith(0, 0, 10, 10, false)
+        expect(fromTypedArray).toHaveBeenCalledTimes(1)
+        const passed = fromTypedArray.mock.calls[0][0]
+        expect(passed).toBeInstanceOf(Float32Array)
+        expect(Array.from(passed as Float32Array)).toEqual([0, 0, 10, 0, 10, 10, 0, 10])
+        expect(view.hitTestPolygon).toHaveBeenCalledWith(BYTE_ARRAY, false)
     })
 
-    it('keeps only candidates whose projection is inside the polygon', () => {
-        const { mol, setSel } = makeMol()
-        const hits = JSON.stringify([{ obj_id: 1, sel: 'aid 1,2,3' }])
-        const proj = {
-            1: { x: 5, y: 5 }, // inside
-            2: { x: 50, y: 50 }, // outside
-            3: { x: 2, y: 8 }, // inside
-        }
-        const { ctx } = makeCtx(hits, mol, proj)
+    it('groups hits by obj_id and assigns each mol.sel', () => {
+        const m1 = makeMol({ hasSelRend: true })
+        const hits = JSON.stringify([{ obj_id: 1, sel: 'aid 1,3' }])
+        const { ctx } = makeCtx(hits, { 1: m1.mol })
         const result = lassoSelect(ctx, ARGS)
         expect(makeSel).toHaveBeenCalledWith(ctx, 'aid 1,3', 7)
-        expect(setSel).toHaveBeenCalledWith({ __sel: 'aid 1,3' })
+        expect(m1.setSel).toHaveBeenCalledWith({ __sel: 'aid 1,3' })
         expect(result).toEqual({ ok: true, selectedObjIds: [1] })
     })
 
-    it('expands aid ranges (a:b) before projecting', () => {
-        const { mol } = makeMol()
-        const hits = JSON.stringify([{ obj_id: 1, sel: 'aid 1:3' }])
-        const proj = { 1: { x: 1, y: 1 }, 2: { x: 5, y: 5 }, 3: { x: 9, y: 9 } }
-        const { ctx } = makeCtx(hits, mol, proj)
+    it('auto-creates the *selection renderer when missing', () => {
+        const without = makeMol({ hasSelRend: false })
+        const hits = JSON.stringify([{ obj_id: 1, sel: 'aid 1' }])
+        const { ctx } = makeCtx(hits, { 1: without.mol })
         lassoSelect(ctx, ARGS)
-        expect(makeSel).toHaveBeenCalledWith(ctx, 'aid 1,2,3', 7)
+        expect(without.createRenderer).toHaveBeenCalledWith('*selection')
     })
 
-    it('returns ok=false when no candidate projects inside', () => {
+    it('mode=add ORs the polygon hits with the existing selection', () => {
+        const m1 = makeMol({ hasSelRend: true, currentSel: 'chain A' })
+        const hits = JSON.stringify([{ obj_id: 1, sel: 'aid 1' }])
+        const { ctx } = makeCtx(hits, { 1: m1.mol })
+        lassoSelect(ctx, { ...ARGS, mode: 'add' })
+        expect(makeSel).toHaveBeenCalledWith(ctx, '(chain A) or (aid 1)', 7)
+    })
+
+    it('rejects a degenerate polygon (< 3 points) before any hit test', () => {
+        const { mol } = makeMol()
+        const { ctx, view, fromTypedArray } = makeCtx('[]', { 1: mol })
+        const result = lassoSelect(ctx, { viewId: 1, points: [{ x: 0, y: 0 }, { x: 5, y: 5 }] })
+        expect(fromTypedArray).not.toHaveBeenCalled()
+        expect(view.hitTestPolygon).not.toHaveBeenCalled()
+        expect(result).toEqual({ ok: false, selectedObjIds: [] })
+    })
+
+    it('returns ok=false on empty hit results', () => {
         const { mol, setSel } = makeMol()
-        const hits = JSON.stringify([{ obj_id: 1, sel: 'aid 1,2' }])
-        const proj = { 1: { x: 99, y: 99 }, 2: { x: -5, y: -5 } }
-        const { ctx } = makeCtx(hits, mol, proj)
+        const { ctx } = makeCtx('[]', { 1: mol })
         const result = lassoSelect(ctx, ARGS)
         expect(setSel).not.toHaveBeenCalled()
         expect(result).toEqual({ ok: false, selectedObjIds: [] })
     })
 
-    it('mode=add ORs kept atoms with the existing selection', () => {
-        const { mol } = makeMol({ currentSel: 'chain A' })
-        const hits = JSON.stringify([{ obj_id: 1, sel: 'aid 1' }])
-        const proj = { 1: { x: 5, y: 5 } }
-        const { ctx } = makeCtx(hits, mol, proj)
-        lassoSelect(ctx, { ...ARGS, mode: 'add' })
-        expect(makeSel).toHaveBeenCalledWith(ctx, '(chain A) or (aid 1)', 7)
-    })
-
-    it('rejects a degenerate polygon (< 3 points)', () => {
-        const { mol } = makeMol()
-        const { ctx, view } = makeCtx('[]', mol, {})
-        const result = lassoSelect(ctx, { viewId: 1, points: [{ x: 0, y: 0 }, { x: 5, y: 5 }] })
-        expect(view.hitTestRect).not.toHaveBeenCalled()
+    it('returns ok=false on unparsable hit JSON', () => {
+        const { mol, setSel } = makeMol()
+        const { ctx } = makeCtx('not-json', { 1: mol })
+        const result = lassoSelect(ctx, ARGS)
+        expect(setSel).not.toHaveBeenCalled()
         expect(result).toEqual({ ok: false, selectedObjIds: [] })
     })
 })

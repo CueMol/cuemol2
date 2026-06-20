@@ -20,7 +20,7 @@ import type { AppIconKey } from "../data/appIcons";
 import type { UndoRedoState } from "../hooks/useUndoRedoState";
 
 type ToolbarItem =
-  | { kind: "cmd"; id: string; icon: AppIconKey; text: string; cmd: CmdId }
+  | { kind: "cmd"; id: string; icon: AppIconKey; text: string; cmd: CmdId; requiresScene?: boolean }
   | { kind: "mock"; id: string; icon: AppIconKey; text: string }
   | { kind: "divider"; id: string }
   | { kind: "undo"; id: string }
@@ -31,15 +31,15 @@ const TOOLBAR_ITEMS: ToolbarItem[] = [
   { kind: "divider", id: "d1" },
   { kind: "cmd", id: "open-file", icon: "toolbar.openFile", text: "Open File", cmd: CmdId.UiOpenObjDialog },
   { kind: "mock", id: "save", icon: "toolbar.save", text: "Save" },
-  { kind: "cmd", id: "save-as", icon: "toolbar.saveAs", text: "Save As", cmd: CmdId.ObjectSaveAs },
+  { kind: "cmd", id: "save-as", icon: "toolbar.saveAs", text: "Save As", cmd: CmdId.ObjectSaveAs, requiresScene: true },
   { kind: "divider", id: "d2" },
   { kind: "cmd", id: "open-scene", icon: "toolbar.openScene", text: "Open Scene", cmd: CmdId.UiOpenSceneDialog },
-  { kind: "cmd", id: "reload-scene", icon: "toolbar.reloadScene", text: "Reload Scene", cmd: CmdId.SceneReload },
-  { kind: "cmd", id: "save-scene", icon: "toolbar.saveScene", text: "Save Scene", cmd: CmdId.FileSave },
+  { kind: "cmd", id: "reload-scene", icon: "toolbar.reloadScene", text: "Reload Scene", cmd: CmdId.SceneReload, requiresScene: true },
+  { kind: "cmd", id: "save-scene", icon: "toolbar.saveScene", text: "Save Scene", cmd: CmdId.FileSave, requiresScene: true },
   { kind: "divider", id: "d3" },
   { kind: "cmd", id: "get-pdb", icon: "toolbar.getPdb", text: "Get PDB", cmd: CmdId.UiGetPdbDialog },
   { kind: "divider", id: "d4" },
-  { kind: "cmd", id: "render", icon: "toolbar.render", text: "Render", cmd: CmdId.UiRenderSettings },
+  { kind: "cmd", id: "render", icon: "toolbar.render", text: "Render", cmd: CmdId.UiRenderSettings, requiresScene: true },
   { kind: "divider", id: "d5" },
   { kind: "undo", id: "undo" },
   { kind: "redo", id: "redo" },
@@ -47,9 +47,11 @@ const TOOLBAR_ITEMS: ToolbarItem[] = [
 
 interface ToolbarProps {
   undoRedo: UndoRedoState;
+  /** Whether a molview tab is active. Scene-only buttons are disabled when not. */
+  hasScene: boolean;
 }
 
-export const Toolbar: React.FC<ToolbarProps> = ({ undoRedo }) => {
+export const Toolbar: React.FC<ToolbarProps> = ({ undoRedo, hasScene }) => {
   const { dispatch } = useCommands();
 
   const renderItem = (item: ToolbarItem): React.ReactNode => {
@@ -81,6 +83,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ undoRedo }) => {
           <Button
             key={item.id}
             minimal
+            disabled={item.requiresScene === true && !hasScene}
             icon={<AppIcon name={item.icon} size={16} aria-hidden />}
             text={item.text}
             onClick={() =>

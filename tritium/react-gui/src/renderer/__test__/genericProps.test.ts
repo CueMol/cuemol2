@@ -292,6 +292,26 @@ describe('genericProps services', () => {
         expect(res.ok).toBe(false);
     });
 
+    it('getGenericProps reports the scene props verbatim (Name stays readonly)', () => {
+        // The worker is honest: Scene.name is a read-only C++ property, so it is
+        // reported readonly. The Properties tab makes it editable on its own; the
+        // Generic tab (which uses these entries) keeps it read-only.
+        const SCENE_PROPS = JSON.stringify([
+            { name: 'name', readonly: true, hasdefault: false, type: 'string', value: 'Scene 1' },
+            { name: 'src', readonly: true, hasdefault: false, type: 'string', value: '/x.qsc' },
+        ]);
+        const scene = { name: 'Scene 1', getPropsJSON: vi.fn(() => SCENE_PROPS) };
+        const ctx = {
+            sceMgr: { getScene: vi.fn(() => scene), getView: vi.fn() },
+        } as unknown as WorkerContext;
+
+        const res = services.getGenericProps(ctx, { sceneId: 1, nodeId: 1, nodeType: 'scene' });
+        expect(res.ok).toBe(true);
+        expect(res.typeLabel).toBe('Scene');
+        expect(res.entries.find((e) => e.key === 'name')!.readonly).toBe(true);
+        expect(res.entries.find((e) => e.key === 'src')!.readonly).toBe(true);
+    });
+
     it('getGenericProps resolves a view and labels it View', () => {
         const { ctx, viewTarget } = makeEnv();
         const res = services.getGenericProps(ctx, { sceneId: 1, nodeId: 8, nodeType: 'view' });

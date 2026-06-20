@@ -85,6 +85,25 @@ describe('setGenericProp', () => {
     expect(setProp).not.toHaveBeenCalled()
   })
 
+  it('routes a scene name write through Scene.setName(), not setProp', () => {
+    // Scene.name is a readonly C++ property; renaming goes via setName() so the
+    // propChanged("name") event fires (tree + tab strip stay in sync).
+    const setName = vi.fn()
+    const sceneTarget = { setName, setProp, resetProp, getPropsJSON: () => '[]', uid: 42 }
+    ;(resolvePropTarget as Mock).mockReturnValue({ scene: sceneTarget, target: sceneTarget })
+    const res = call({ nodeType: 'scene', propName: 'name', valueType: 'string', value: 'NewScene' })
+    expect(res.ok).toBe(true)
+    expect(setName).toHaveBeenCalledWith('NewScene')
+    expect(setProp).not.toHaveBeenCalled()
+    expect(withUndoTxnSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('still writes a renderer name via setProp (scene-name routing is scene-only)', () => {
+    const res = call({ nodeType: 'renderer', propName: 'name', valueType: 'string', value: 'rib2' })
+    expect(res.ok).toBe(true)
+    expect(setProp).toHaveBeenCalledWith('name', 'rib2')
+  })
+
   // --- Realtime drag write modes ---
 
   it('previews a write without an undo transaction and returns no entries', () => {

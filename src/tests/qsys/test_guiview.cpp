@@ -7,6 +7,9 @@
 #include <common.h>
 #include "qsys/GUIView.hpp"
 #include <gfx/DisplayContext.hpp>
+#include <qlib/LByteArray.hpp>
+
+#include <initializer_list>
 
 using qlib::LString;
 using qlib::Vector4D;
@@ -150,6 +153,61 @@ TEST(GUIViewTest, HitTestRectWithSclFacNoSceneReturnsEmpty)
     v.setViewSize(800, 600);
     v.setSclFac(2.0, 2.0);
     LString result = v.hitTestRect(50, 50, 10, 10, false);
+    EXPECT_TRUE(result.isEmpty());
+}
+
+// --- Polygon (lasso) hit test ---
+// hitTestPolygon takes a FLOAT32 ByteArray of interleaved [x0,y0,x1,y1,...]
+// logical-pixel vertices. Like hitTestRect, with no scene attached it returns
+// an empty string. The guards (null array / <3 vertices) also short-circuit.
+
+namespace {
+// Build a FLOAT32 ByteArray of polygon vertices for hitTestPolygon.
+qlib::LByteArrayPtr makePolyF32(std::initializer_list<float> coords)
+{
+    auto *p = new qlib::LByteArray();
+    p->init(qlib::LByteArray::enumFLOAT32, static_cast<int>(coords.size()));
+    int i = 0;
+    for (float v : coords) p->setAtF(i++, v);
+    return qlib::LByteArrayPtr(p);
+}
+}  // namespace
+
+TEST(GUIViewTest, HitTestPolygonWithNoSceneReturnsEmpty)
+{
+    TestGUIView v;
+    v.setViewSize(800, 600);
+    // A valid triangle (>=3 vertices); no scene -> empty.
+    auto pts = makePolyF32({100.f, 100.f, 140.f, 100.f, 120.f, 140.f});
+    LString result = v.hitTestPolygon(pts, false);
+    EXPECT_TRUE(result.isEmpty());
+}
+
+TEST(GUIViewTest, HitTestPolygonTooFewVerticesReturnsEmpty)
+{
+    TestGUIView v;
+    v.setViewSize(800, 600);
+    // Only two vertices -> cannot form a polygon -> empty (guard).
+    auto pts = makePolyF32({100.f, 100.f, 140.f, 120.f});
+    LString result = v.hitTestPolygon(pts, false);
+    EXPECT_TRUE(result.isEmpty());
+}
+
+TEST(GUIViewTest, HitTestPolygonNullArrayReturnsEmpty)
+{
+    TestGUIView v;
+    v.setViewSize(800, 600);
+    LString result = v.hitTestPolygon(qlib::LByteArrayPtr(), false);
+    EXPECT_TRUE(result.isEmpty());
+}
+
+TEST(GUIViewTest, HitTestPolygonWithSclFacNoSceneReturnsEmpty)
+{
+    TestGUIView v;
+    v.setViewSize(800, 600);
+    v.setSclFac(2.0, 2.0);
+    auto pts = makePolyF32({50.f, 50.f, 70.f, 50.f, 60.f, 70.f});
+    LString result = v.hitTestPolygon(pts, false);
     EXPECT_TRUE(result.isEmpty());
 }
 

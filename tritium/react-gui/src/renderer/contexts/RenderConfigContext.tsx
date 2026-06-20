@@ -7,6 +7,12 @@
  * by `App` when starting a render. They are persisted to electron-store via
  * the existing `UI_SAVE` / `UI_LOAD` IPC channels (same mechanism as the
  * colour theme).
+ *
+ * When the user has not set a path, the default is resolved by Main and
+ * delivered via the `APP_PATH` IPC channel (`defaultRenderBinaries`): from the
+ * LIBCUEMOL2_ROOT / BUNDLE_APPS env vars in a dev run, or from the install tree
+ * in a packaged build. The compiled-in `DEFAULT_RENDER_BINARIES` is the final
+ * fallback when Main resolves nothing (e.g. a dev run without those env vars).
  */
 
 import React, {
@@ -41,17 +47,26 @@ export const RenderConfigProvider: React.FC<RenderConfigProviderProps> = ({
 }) => {
   const [binaries, setBinaries] = useState<RenderBinaries>(DEFAULT_RENDER_BINARIES);
 
-  // Load persisted paths on mount; absent fields fall back to defaults.
+  // Resolve binary paths on mount with a three-level fallback:
+  //   persisted user setting (UI_LOAD)
+  //     -> Main-resolved default (APP_PATH: dev env vars / packaged install tree)
+  //       -> compiled-in DEFAULT_RENDER_BINARIES.
+  // Do not early-return when UI_LOAD is empty: a fresh profile with no persisted
+  // paths is exactly when the Main-resolved default must take effect.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const ui = await window.electronAPI?.invoke(IPC.UI_LOAD);
-        if (cancelled || !ui) return;
+        const [ui, appInfo] = await Promise.all([
+          window.electronAPI?.invoke(IPC.UI_LOAD),
+          window.electronAPI?.invoke(IPC.APP_PATH),
+        ]);
+        if (cancelled) return;
+        const def = appInfo?.defaultRenderBinaries;
         setBinaries({
-          povrayExe: ui.povrayExe || DEFAULT_RENDER_BINARIES.povrayExe,
-          povrayInc: ui.povrayInc || DEFAULT_RENDER_BINARIES.povrayInc,
-          blendpng: ui.blendpng || DEFAULT_RENDER_BINARIES.blendpng,
+          povrayExe: ui?.povrayExe || def?.povrayExe || DEFAULT_RENDER_BINARIES.povrayExe,
+          povrayInc: ui?.povrayInc || def?.povrayInc || DEFAULT_RENDER_BINARIES.povrayInc,
+          blendpng: ui?.blendpng || def?.blendpng || DEFAULT_RENDER_BINARIES.blendpng,
         });
       } catch {
         // Electron not available (Vite dev server) -- keep defaults.

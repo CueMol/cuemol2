@@ -52,15 +52,17 @@ const LAYOUT = { inspectorOpen: false } as unknown as LayoutState;
 interface HookHandle {
     readonly result: ReturnType<typeof useInspectorState>;
     setSceneTree(tree: SceneTreeNode): Promise<void>;
+    /** Simulate closing the last molview tab: tree gone, no active scene. */
+    closeScene(): Promise<void>;
     unmount(): void;
 }
 
 function mountHook(cm: unknown, initialTree: SceneTreeNode): HookHandle {
     let result!: ReturnType<typeof useInspectorState>;
-    let setTree!: (t: SceneTreeNode) => void;
+    let setTree!: (t: SceneTreeNode | null) => void;
 
     const Probe: React.FC = () => {
-        const [tree, setTreeState] = useState(initialTree);
+        const [tree, setTreeState] = useState<SceneTreeNode | null>(initialTree);
         setTree = setTreeState;
         result = useInspectorState({
             layout: LAYOUT,
@@ -68,6 +70,9 @@ function mountHook(cm: unknown, initialTree: SceneTreeNode): HookHandle {
             persistInspectorOpen: vi.fn(),
             cm: cm as never,
             sceneTree: tree,
+            // Authoritative active scene tracks the tree's scene in production;
+            // undefined once no molview tab is open (scene closed).
+            activeSceneId: tree ? Number(tree.id) : undefined,
         });
         return null;
     };
@@ -87,6 +92,12 @@ function mountHook(cm: unknown, initialTree: SceneTreeNode): HookHandle {
         async setSceneTree(tree: SceneTreeNode) {
             await act(async () => {
                 setTree(tree);
+                await flushPromises();
+            });
+        },
+        async closeScene() {
+            await act(async () => {
+                setTree(null);
                 await flushPromises();
             });
         },
@@ -234,6 +245,24 @@ describe('useInspectorState', () => {
         h.unmount();
     });
 
+    it('clears the inspected target when the active scene closes', async () => {
+        const h = mountHook(cm, makeTree(1, 5));
+        act(() => {
+            h.result.handleShowGeneric('5');
+        });
+        await settle();
+        expect(h.result.inspectorTarget).toMatchObject({ sceneId: 1, nodeId: 5 });
+
+        // Close the last molview tab: activeSceneId becomes undefined, so the
+        // inspector must drop its target (no editing a closed scene) and blank
+        // the generic state.
+        await h.closeScene();
+        expect(h.result.inspectorTarget).toBeNull();
+        expect(h.result.genericEntries).toEqual([]);
+        expect(h.result.inspectorInfo).toEqual({ name: '', type: '' });
+        h.unmount();
+    });
+
     it('per-scene memory restores a View target too', async () => {
         const h = mountHook(cm, makeTree(1, 5));
         act(() => {
@@ -281,6 +310,23 @@ describe('useInspectorState', () => {
         expect(h.result.inspectorTarget).toEqual({
             kind: 'renderSettings', sceneId: 1,
         });
+        h.unmount();
+    });
+
+    it('handleShowRenderSettings(sceneId) targets render settings with no active scene tree', async () => {
+        // Render-result tab: no molview is active, so sceneTree / activeSceneId
+        // are undefined. The gear must still open the result's source scene's
+        // render settings by passing the id explicitly (regression: it used to
+        // resolve only from sceneTree and silently no-op here).
+        const h = mountHook(cm, makeTree(1, 5));
+        await h.closeScene();
+        expect(h.result.inspectorTarget).toBeNull();
+        act(() => {
+            h.result.handleShowRenderSettings(7);
+        });
+        await settle();
+        expect(h.result.inspectorTarget).toEqual({ kind: 'renderSettings', sceneId: 7 });
+        expect(h.result.inspectorOpen).toBe(true);
         h.unmount();
     });
 });

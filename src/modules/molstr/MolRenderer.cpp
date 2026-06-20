@@ -171,9 +171,34 @@ LString MolRenderer::interpHit(const gfx::RawHitData &rhit)
 
     return rval;
   }
-  
+
   return rval;
 
+}
+
+void MolRenderer::getHitPositions(const gfx::RawHitData &rhit,
+                                  std::vector<int> &ids,
+                                  std::vector<qlib::Vector4D> &poss) const
+{
+  const qlib::uid_t rend_id = getUID();
+  const int nsize = rhit.getDataSize(rend_id);
+  if (nsize <= 0)
+    return;
+
+  MolCoordPtr pMol = getClientMol();
+  if (pMol.isnull())
+    return;
+
+  for (int ii = 0; ii < nsize; ++ii) {
+    const int aid = rhit.getDataAt(rend_id, ii, 0);
+    if (aid < 0)
+      continue;
+    MolAtomPtr pAtom = pMol->getAtom(aid);
+    if (pAtom.isnull())
+      continue;
+    ids.push_back(aid);
+    poss.push_back(pAtom->getPos());
+  }
 }
 
 Vector4D MolRenderer::getCenter() const

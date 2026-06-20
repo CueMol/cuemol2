@@ -17,6 +17,9 @@ import {
   RENDER_COMMON_PROPS,
   RENDER_SIZE_PRESETS,
   DEFAULT_RENDER_PRESET,
+  SIZE_UNIT_FIELD_META,
+  sizeUnitToPx,
+  pxToSizeUnit,
   type RenderBackendId,
 } from "../data/renderSettings";
 import { RENDER_BACKENDS, DEFAULT_RENDER_BACKEND } from "../data/renderBackends";
@@ -24,6 +27,10 @@ import type { RenderSettingsSnapshot } from "../data/renderResult";
 
 /** Deep-copy a PropDef list so edits never mutate the shared defaults. */
 const cloneProps = (props: PropDef[]): PropDef[] => props.map((p) => ({ ...p }));
+
+/** Read a prop value by key (typed via the caller). */
+const readVal = (props: PropDef[], key: string): string | number | boolean | undefined =>
+  props.find((p) => p.key === key)?.value;
 
 /** Apply a value change to whichever list owns `key` (returns a new list). */
 const applyChange = (
@@ -33,6 +40,42 @@ const applyChange = (
 ): PropDef[] => {
   if (!props.some((p) => p.key === key)) return props;
   return props.map((p) => (p.key === key ? { ...p, value } : p));
+};
+
+/** Round to a number of decimal places. */
+const roundTo = (v: number, decimals: number): number => {
+  const f = Math.pow(10, decimals);
+  return Math.round(v * f) / f;
+};
+
+/**
+ * Set a width / height prop to `value` in `unit`, swapping in that unit's
+ * editor metadata (type / range / step / decimals) and the unit suffix so the
+ * control tracks the unit.
+ */
+const setSizeProp = (prop: PropDef, value: number, unit: string): PropDef => {
+  const m = SIZE_UNIT_FIELD_META[unit as keyof typeof SIZE_UNIT_FIELD_META] ?? SIZE_UNIT_FIELD_META.px;
+  return { ...prop, value, type: m.type, min: m.min, max: m.max, step: m.step, unit, decimals: m.decimals };
+};
+
+/**
+ * Reproject the width / height values into `newUnit` and switch the unit prop.
+ * Each value is converted old-unit -> px -> new-unit using the current DPI,
+ * mirroring UXP `render-pov-dlg.js` `onImgSzUnitSel`.
+ */
+const convertSizeUnit = (props: PropDef[], newUnit: string): PropDef[] => {
+  const oldUnit = String(readVal(props, "unit") ?? "px");
+  if (newUnit === oldUnit) return props;
+  const dpi = Number(readVal(props, "dpi") ?? 600);
+  const m = SIZE_UNIT_FIELD_META[newUnit as keyof typeof SIZE_UNIT_FIELD_META] ?? SIZE_UNIT_FIELD_META.px;
+  return props.map((p) => {
+    if (p.key === "unit") return { ...p, value: newUnit };
+    if (p.key === "width" || p.key === "height") {
+      const px = sizeUnitToPx(Number(p.value), dpi, oldUnit);
+      return setSizeProp(p, roundTo(pxToSizeUnit(px, dpi, newUnit), m.decimals), newUnit);
+    }
+    return p;
+  });
 };
 
 export function useRenderSettings() {
@@ -54,6 +97,12 @@ export function useRenderSettings() {
   /** Update a single setting value by key (common or backend-specific). */
   const handleChange = useCallback(
     (key: string, value: string | number | boolean) => {
+      // Changing the unit reprojects the width / height values (and swaps in
+      // the new unit's control metadata); it never matches a px-based preset.
+      if (key === "unit") {
+        setCommonProps((prev) => convertSizeUnit(prev, String(value)));
+        return;
+      }
       setCommonProps((prev) => applyChange(prev, key, value));
       setBackendProps((prev) => applyChange(prev, key, value));
       // A manual size edit no longer matches any preset.
@@ -82,9 +131,18 @@ export function useRenderSettings() {
       }
       if (!size) return;
 
+      // Presets are defined in pixels, so reset the unit to "px" and lay the
+      // width / height fields out with the px metadata (UXP `onPresetSel`).
       setCommonProps((prev) => {
-        let next = applyChange(prev, "width", size.width);
-        next = applyChange(next, "height", size.height);
+        let next = prev.map((p) =>
+          p.key === "unit"
+            ? { ...p, value: "px" }
+            : p.key === "width"
+              ? setSizeProp(p, size.width, "px")
+              : p.key === "height"
+                ? setSizeProp(p, size.height, "px")
+                : p,
+        );
         if (sized.dpi !== undefined) {
           next = applyChange(next, "dpi", sized.dpi);
         }

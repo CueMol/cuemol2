@@ -19,6 +19,7 @@
 
 import { useCallback } from 'react';
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol';
+import { makeTabLabel } from '../worker/shared/tabLabel';
 
 export interface NewSceneActionOptions {
   name?: string;
@@ -63,7 +64,7 @@ export function useNewSceneAction({
 
     const { scene_uid, view_uid, scene_name, view_name } = ids;
     // Mirror UXP TabMolView.makeTabLabel: `<scene name>:<view name>`.
-    const tab_title = `${scene_name}:${view_name}`;
+    const tab_title = makeTabLabel(scene_name, view_name);
     addMolTab(tab_title, view_uid, scene_uid);
     addMolViewTab(tab_title, view_uid);
 

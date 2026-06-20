@@ -98,9 +98,9 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
   renderResultActions,
 }) => {
   const hasMolViewTab = tabs.some((t) => t.type === "molview");
+  // The molview canvas is visible -- and thus the viewport tools apply -- only
+  // when a molview tab is active, never on welcome / settings / renderResult.
   const molViewVisible = activeTab?.type === "molview";
-  const showPalette =
-    activeTab?.type !== "settings" && activeTab?.type !== "renderResult";
 
   // Once a molview tab has existed, keep MolViewPane mounted permanently.
   // Unmounting the canvas destroys the WebGL context and the already-transferred
@@ -146,7 +146,7 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
       {/* Rubber-band selection layer -- click-through unless a select tool
           is active. Mounted only while the canvas is visible. */}
       {molViewVisible && <RectSelectOverlay />}
-      {showPalette && (
+      {molViewVisible && (
         <ViewportToolPalette
           activeTool={activeTool}
           onSelect={onSelectTool}

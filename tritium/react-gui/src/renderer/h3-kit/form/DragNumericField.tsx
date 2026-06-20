@@ -28,6 +28,8 @@
  * motion. The `<` / `>` arrows, by contrast, increment / decrement by `step`
  * (independent of `pxPerStep`), and auto-repeat while held down (one immediate
  * step, then -- after a short delay -- a steady stream of steps until release).
+ * Pressing an arrow while text-editing leaves edit mode and steps relative to
+ * the typed draft (or the current value when nothing valid was typed).
  *
  * The widget is focusable as a single unit (`tabIndex=0` on the root); its
  * parts (arrows, edit input) never take a separate focus ring. Keyboard
@@ -250,6 +252,15 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
     const valueRef = useRef(value);
     valueRef.current = value;
 
+    // The global mouseup closure reads the formatter through a ref so that a
+    // changing `format` (e.g. when the active unit's decimal places change)
+    // does NOT recreate `handleMouseUp`. If it did, the reference-stable
+    // `teardown` would keep removing a stale `handleMouseUp` and leak the
+    // document mouseup listener -- a later stray mouseup would then re-enter
+    // edit mode and swallow clicks meant for other widgets.
+    const formatRef = useRef(format);
+    formatRef.current = format;
+
     // Stable refs to props the global listeners use, so the listeners attached
     // once at mousedown always reach current behavior.
     const cbRef = useRef({ onChange, onRelease, min, max, step, pxPerStep, fineStep, coarseStep, realtime, onDragStart, onDragCancel });
@@ -321,17 +332,21 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
         const d = dragRef.current;
         dragRef.current = null;
         teardown();
-        if (d?.crossed) {
+        // No active press for this field -> a stray / leaked mouseup; do not
+        // fall through to the edit-mode branch below (which would re-open the
+        // field whenever another widget is clicked).
+        if (!d) return;
+        if (d.crossed) {
             // Drag end -> single commit of the latest value.
             cbRef.current.onRelease?.(valueRef.current);
             setMode('hover');
         } else {
             // Press without crossing the threshold -> treat as a click: edit.
-            setDraft(format(valueRef.current));
+            setDraft(formatRef.current(valueRef.current));
             setMode('editing');
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [teardown, format]);
+    }, [teardown]);
 
     // If pointer lock is lost mid-drag (e.g. user pressed Esc): in realtime mode
     // treat it as a cancel (roll back the live preview); otherwise end the drag
@@ -406,20 +421,29 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
 
     // Begin an arrow press: take one immediate step, then -- after a short delay
     // -- start a steady auto-repeat that runs until the button is released.
+    // `baseValue` overrides the starting value (used when stepping out of
+    // text-edit mode, where the step is relative to the typed draft).
     const startPress = useCallback(
-        (sign: 1 | -1) => {
-            if (disabled || mode === 'editing') return;
+        (sign: 1 | -1, baseValue?: number) => {
+            if (disabled) return;
+            const p: PressState = {
+                sign,
+                held: baseValue ?? valueRef.current,
+                delayTimer: null,
+                repeatTimer: null,
+            };
+            // Set the press before any focus change: leaving edit mode below
+            // moves focus to the root, blurring the input and firing
+            // commitEdit, which bails out when a press is active (so the press
+            // commits the stepped value instead of the draft).
+            pressRef.current = p;
+            // A press started from text-edit mode leaves editing first; the
+            // caller passes the typed draft (when valid) as baseValue.
+            if (mode === 'editing') setMode('hover');
             rootRef.current?.focus();
             // Announce the interaction start before the first onChange so the
             // parent can snapshot the pre-step value for a single undo step.
             cbRef.current.onDragStart?.();
-            const p: PressState = {
-                sign,
-                held: valueRef.current,
-                delayTimer: null,
-                repeatTimer: null,
-            };
-            pressRef.current = p;
             document.addEventListener('mouseup', endPress);
             pressStep();
             p.delayTimer = setTimeout(() => {
@@ -429,6 +453,30 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
             }, STEP_REPEAT_DELAY_MS);
         },
         [disabled, mode, pressStep, endPress],
+    );
+
+    // Mousedown on a step arrow. From text-edit mode it leaves editing and
+    // steps from the typed draft (when a valid number) or else the current
+    // value; from idle / hover it steps the current value. preventDefault keeps
+    // focus on the whole widget (not the arrow) and lets us move focus
+    // explicitly; stopPropagation keeps the root's body-drag handler from firing.
+    const handleStepButtonDown = useCallback(
+        (e: React.MouseEvent, sign: 1 | -1) => {
+            if (e.button !== 0) return;
+            e.preventDefault();
+            e.stopPropagation();
+            if (mode === 'editing') {
+                const parsed = Number(draft);
+                const base =
+                    draft.trim() !== '' && Number.isFinite(parsed)
+                        ? clampAndQuantize(parsed, min, max, fineStep)
+                        : valueRef.current;
+                startPress(sign, base);
+            } else {
+                startPress(sign);
+            }
+        },
+        [mode, draft, min, max, fineStep, startPress],
     );
 
     // Clean up listeners + any pointer lock on unmount (mid-interaction safety).
@@ -461,6 +509,11 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
     }, [mode]);
 
     const commitEdit = useCallback(() => {
+        // Starting an arrow press from edit mode moves focus to the root, which
+        // blurs the input and fires this. Skip while a press is active: the
+        // press commits the stepped value, and committing the draft here would
+        // both overwrite that step and push a spurious extra undo step.
+        if (pressRef.current) return;
         const parsed = Number(draft);
         if (draft.trim() !== '' && Number.isFinite(parsed)) {
             const next = clampAndQuantize(parsed, min, max, fineStep);
@@ -531,14 +584,7 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
                 tabIndex={-1}
                 disabled={disabled || value <= min}
                 aria-label="Decrement"
-                // preventDefault keeps focus on the whole widget, not the arrow;
-                // stopPropagation keeps the root's body-drag handler from firing.
-                onMouseDown={(e) => {
-                    if (e.button !== 0) return;
-                    e.preventDefault();
-                    e.stopPropagation();
-                    startPress(-1);
-                }}
+                onMouseDown={(e) => handleStepButtonDown(e, -1)}
             >
                 <AppIcon name="ui.caretLeft" size={10} aria-hidden />
             </button>
@@ -567,12 +613,7 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
                 tabIndex={-1}
                 disabled={disabled || value >= max}
                 aria-label="Increment"
-                onMouseDown={(e) => {
-                    if (e.button !== 0) return;
-                    e.preventDefault();
-                    e.stopPropagation();
-                    startPress(1);
-                }}
+                onMouseDown={(e) => handleStepButtonDown(e, 1)}
             >
                 <AppIcon name="ui.caretRight" size={10} aria-hidden />
             </button>

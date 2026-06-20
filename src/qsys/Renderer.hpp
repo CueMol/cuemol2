@@ -138,7 +138,16 @@ namespace qsys {
 
     /// Hittest result interpretation
     virtual LString interpHit(const gfx::RawHitData &);
-    
+
+    /// Collect (element_id, world_pos) for each of this renderer's hits, for
+    /// polygon/region selection (the View projects + polygon-tests the
+    /// positions). Appends to the output vectors. Default: append nothing --
+    /// the renderer type has no per-hit 3D position, so it cannot participate
+    /// in polygon selection.
+    virtual void getHitPositions(const gfx::RawHitData &rhit,
+                                 std::vector<int> &ids,
+                                 std::vector<qlib::Vector4D> &poss) const;
+
     //////////
 
     virtual void setSceneID(qlib::uid_t nid);

@@ -19,18 +19,24 @@ import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 import { ActiveToolProvider } from '../contexts/ActiveToolContext'
 import { RectSelectOverlay } from '../components/RectSelectOverlay'
+import { GES_PINCH } from '../worker/shared/gestureAxes'
 import type { ToolId } from '../data/viewportTools'
 
 void React
 ;(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { invokeService, onMouseEvent } = vi.hoisted(() => ({
+const { invokeService, onMouseEvent, onWheelEvent, onGestureEvent } = vi.hoisted(() => ({
     invokeService: vi.fn(),
     onMouseEvent: vi.fn(),
+    onWheelEvent: vi.fn(),
+    onGestureEvent: vi.fn(),
 }))
 
 vi.mock('../hooks/useCueMol', () => ({
-    useCueMol: () => ({ cueMolReady: true, cm: { invokeService, onMouseEvent } }),
+    useCueMol: () => ({
+        cueMolReady: true,
+        cm: { invokeService, onMouseEvent, onWheelEvent, onGestureEvent },
+    }),
 }))
 vi.mock('../hooks/useMolTab', () => ({
     useMolTabState: () => ({ activeViewID: 7, molTabEntries: [] }),
@@ -73,9 +79,27 @@ function fire(
     })
 }
 
+function fireWheel(
+    el: HTMLElement,
+    opts: { deltaY?: number; ctrlKey?: boolean } = {},
+): void {
+    act(() => {
+        el.dispatchEvent(
+            new WheelEvent('wheel', {
+                bubbles: true,
+                cancelable: true,
+                deltaY: opts.deltaY ?? 100,
+                ctrlKey: opts.ctrlKey ?? false,
+            }),
+        )
+    })
+}
+
 beforeEach(() => {
     invokeService.mockReset()
     onMouseEvent.mockReset()
+    onWheelEvent.mockReset()
+    onGestureEvent.mockReset()
 })
 
 afterEach(() => {
@@ -181,5 +205,29 @@ describe('RectSelectOverlay', () => {
         expect(invokeService).not.toHaveBeenCalled()
         expect(onMouseEvent).toHaveBeenCalledTimes(1)
         expect(onMouseEvent.mock.calls[0][1]).toBe('mouseDown')
+    })
+
+    it('forwards a plain wheel to the view (navigation zoom) while a select tool is active', () => {
+        const overlay = mount('rectSelect')
+        fireWheel(overlay, { deltaY: 120 })
+        expect(onWheelEvent).toHaveBeenCalledTimes(1)
+        expect(onWheelEvent.mock.calls[0][0]).toBe(7)
+        expect(onGestureEvent).not.toHaveBeenCalled()
+    })
+
+    it('forwards ctrl+wheel (trackpad pinch) as a GES_PINCH gesture', () => {
+        const overlay = mount('lassoSelect')
+        fireWheel(overlay, { deltaY: -40, ctrlKey: true })
+        expect(onGestureEvent).toHaveBeenCalledTimes(1)
+        expect(onGestureEvent.mock.calls[0][0]).toBe(7)
+        expect(onGestureEvent.mock.calls[0][1]).toBe(GES_PINCH)
+        expect(onWheelEvent).not.toHaveBeenCalled()
+    })
+
+    it('does not forward wheel when no select tool is active (canvas handles it)', () => {
+        const overlay = mount('navigate')
+        fireWheel(overlay, { deltaY: 100 })
+        expect(onWheelEvent).not.toHaveBeenCalled()
+        expect(onGestureEvent).not.toHaveBeenCalled()
     })
 })

@@ -81,55 +81,55 @@ export const RenderResultPane: React.FC<RenderResultPaneProps> = ({
     </div>
   );
 
+  // Result actions, rendered at the start of the viewer's single toolbar
+  // (icon-only buttons; label shown via the native title tooltip).
+  const actions = (
+    <>
+      <Button
+        small
+        icon={<AppIcon name="ui.save" aria-hidden />}
+        title="Save image"
+        onClick={handleSave}
+      />
+      <Button
+        small
+        icon={<AppIcon name="ui.duplicate" aria-hidden />}
+        title="Copy image to clipboard"
+        onClick={handleCopy}
+      />
+      <Popover content={settingsPopover} placement="bottom-start">
+        <Button small icon={<AppIcon name="ui.properties" aria-hidden />} title="Settings used for this render" />
+      </Popover>
+      <Divider />
+      <Button
+        small
+        icon={<AppIcon name="ui.settings" aria-hidden />}
+        title="Open Render Settings"
+        onClick={onOpenSettings}
+      />
+      <Button
+        small
+        icon={<AppIcon name="ui.refresh" aria-hidden />}
+        title="Re-render"
+        onClick={() => onReRender(result)}
+      />
+      <Button
+        small
+        icon={<AppIcon name="ui.cube" aria-hidden />}
+        title="Show source scene"
+        onClick={() => onShowSourceScene(result)}
+      />
+    </>
+  );
+
   return (
     <div className="render-result-pane">
-      {/* -- Toolbar -- icon-only buttons, label on hover (title) -- */}
-      <div className="render-result-toolbar">
-        <Button
-          small
-          icon={<AppIcon name="ui.save" aria-hidden />}
-          title="Save image"
-          onClick={handleSave}
-        />
-        <Button
-          small
-          icon={<AppIcon name="ui.duplicate" aria-hidden />}
-          title="Copy image to clipboard"
-          onClick={handleCopy}
-        />
-        <Popover content={settingsPopover} placement="bottom-start">
-          <Button small icon={<AppIcon name="ui.properties" aria-hidden />} title="Settings used for this render" />
-        </Popover>
-        <Divider />
-        <Button
-          small
-          icon={<AppIcon name="ui.settings" aria-hidden />}
-          title="Open Render Settings"
-          onClick={onOpenSettings}
-        />
-        <Button
-          small
-          icon={<AppIcon name="ui.refresh" aria-hidden />}
-          title="Re-render"
-          onClick={() => onReRender(result)}
-        />
-        <Button
-          small
-          icon={<AppIcon name="ui.cube" aria-hidden />}
-          title="Show source scene"
-          onClick={() => onShowSourceScene(result)}
-        />
-        <div className="render-result-info">
-          {result.sourceSceneName} · {result.width}×{result.height} ·{" "}
-          {result.elapsedSec.toFixed(1)}s
-        </div>
-      </div>
-
-      {/* -- Image viewer -- */}
       <RenderImageViewer
         src={result.imageDataUrl}
         imgWidth={result.width}
         imgHeight={result.height}
+        name={result.sourceSceneName}
+        actions={actions}
       />
     </div>
   );

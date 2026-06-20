@@ -6,11 +6,11 @@ import {
     DialogBody,
     DialogFooter,
     FormGroup,
-    InputGroup,
     Radio,
     RadioGroup,
 } from '@blueprintjs/core';
 import { useTheme } from '../../contexts/ThemeContext';
+import { ComboBoxField } from '../../h3-kit/form';
 import { getHistory } from './pdbIdHistory';
 
 export type CoordServerType = 'RCSB_CIF' | 'RCSB_PDB';
@@ -31,11 +31,6 @@ interface Props {
 
 // Same shape as UXP openPDB.js:104-111: first char digit, remaining alnum.
 const PDBID_RE = /^[0-9][0-9a-z]{3}$/i;
-
-// Native HTML5 <datalist> id. Chromium (Electron) renders the dropdown as
-// an OS-native popup with type-to-filter and click-the-arrow-for-full-list
-// behavior. Best fit for short fixed-format inputs like PDB accession codes.
-const HISTORY_DATALIST_ID = 'get-pdb-history-list';
 
 export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX.Element {
     const { theme } = useTheme();
@@ -103,27 +98,25 @@ export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX
         >
             <DialogBody>
                 <FormGroup label="PDB Accession Code:" labelFor="get-pdb-id">
-                    <InputGroup
+                    {/* Editable combobox: text + themed, click-to-open history
+                        dropdown. The chevron and dark-mode popover are handled
+                        by ComboBoxField (h3-kit), so this dialog adds none of
+                        that styling. */}
+                    <ComboBoxField
                         id="get-pdb-id"
                         value={pdbid}
-                        onChange={(e) => setPdbid(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        onFocus={refreshHistory}
+                        onChange={setPdbid}
+                        options={historyItems}
+                        onOpen={refreshHistory}
                         placeholder="e.g., 1mbn"
                         autoFocus
-                        fill
-                        intent={pdbid.length > 0 && !idValid ? 'danger' : 'none'}
-                        // Wire the native <datalist> autocomplete. Blueprint v5
-                        // InputGroup extends HTMLInputProps so native input
-                        // attrs pass through directly.
-                        list={HISTORY_DATALIST_ID}
-                        autoComplete="off"
+                        invalid={pdbid.length > 0 && !idValid}
+                        onKeyDown={handleKeyDown}
+                        emptyText="No history"
+                        triggerLabel="Show PDB ID history"
+                        triggerTitle="Recent PDB IDs"
+                        aria-label="PDB Accession Code"
                     />
-                    <datalist id={HISTORY_DATALIST_ID}>
-                        {historyItems.map((v) => (
-                            <option key={v} value={v} />
-                        ))}
-                    </datalist>
                 </FormGroup>
 
                 <fieldset style={{ marginTop: 12, padding: '8px 12px' }}>

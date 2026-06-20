@@ -61,7 +61,7 @@ describe('Toolbar', () => {
   })
 
   it('real buttons dispatch their CmdId', () => {
-    const t = mountTree(<Toolbar undoRedo={makeUndoRedo()} />)
+    const t = mountTree(<Toolbar undoRedo={makeUndoRedo()} hasScene={true} />)
     const cases: [string, CmdId][] = [
       ['New Tab', CmdId.TabNew],
       ['Open File', CmdId.UiOpenObjDialog],
@@ -80,7 +80,7 @@ describe('Toolbar', () => {
   })
 
   it('Undo / Redo body buttons dispatch edit commands when enabled', () => {
-    const t = mountTree(<Toolbar undoRedo={makeUndoRedo()} />)
+    const t = mountTree(<Toolbar undoRedo={makeUndoRedo()} hasScene={true} />)
 
     clickButton(t.container, 'Undo')
     expect(dispatch).toHaveBeenCalledWith(CmdId.Undo)
@@ -94,7 +94,7 @@ describe('Toolbar', () => {
 
   it('disables the Undo / Redo body buttons when nothing can be undone/redone', () => {
     const t = mountTree(
-      <Toolbar undoRedo={makeUndoRedo({ canUndo: false, canRedo: false, undoDescs: [], redoDescs: [] })} />,
+      <Toolbar undoRedo={makeUndoRedo({ canUndo: false, canRedo: false, undoDescs: [], redoDescs: [] })} hasScene={true} />,
     )
     const undoBtn = Array.from(t.container.querySelectorAll('button')).find(
       (b) => b.textContent?.trim() === 'Undo',
@@ -108,11 +108,38 @@ describe('Toolbar', () => {
   })
 
   it('mock buttons do not dispatch any command', () => {
-    const t = mountTree(<Toolbar undoRedo={makeUndoRedo()} />)
+    const t = mountTree(<Toolbar undoRedo={makeUndoRedo()} hasScene={true} />)
     // Object overwrite-save ("Save") has no command yet -- stays mock.
     dispatch.mockClear()
     clickButton(t.container, 'Save')
     expect(dispatch).not.toHaveBeenCalled()
+    t.unmount()
+  })
+
+  // --- Scene-operation gating (no active molview tab) ---
+
+  const findButton = (container: HTMLElement, text: string): HTMLButtonElement | undefined =>
+    Array.from(container.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === text,
+    )
+
+  it('disables scene-only buttons when no molview tab is active', () => {
+    const t = mountTree(<Toolbar undoRedo={makeUndoRedo()} hasScene={false} />)
+    for (const text of ['Save As', 'Reload Scene', 'Save Scene', 'Render']) {
+      expect(findButton(t.container, text)?.disabled).toBe(true)
+    }
+    // Scene-independent buttons stay enabled.
+    for (const text of ['New Tab', 'Open File', 'Open Scene', 'Get PDB']) {
+      expect(findButton(t.container, text)?.disabled).toBe(false)
+    }
+    t.unmount()
+  })
+
+  it('enables scene-only buttons when a molview tab is active', () => {
+    const t = mountTree(<Toolbar undoRedo={makeUndoRedo()} hasScene={true} />)
+    for (const text of ['Save As', 'Reload Scene', 'Save Scene', 'Render']) {
+      expect(findButton(t.container, text)?.disabled).toBe(false)
+    }
     t.unmount()
   })
 })

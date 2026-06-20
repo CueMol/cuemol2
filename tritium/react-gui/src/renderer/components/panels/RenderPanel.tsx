@@ -19,6 +19,14 @@ import { RENDER_SIZE_PRESETS } from "../../data/renderSettings";
 interface RenderPanelProps {
   /** Current render job, or null when none has run yet. */
   job: RenderJob | null;
+  /**
+   * Whether the active content tab has a scene to render. Gates the panel's
+   * render controls (Start button, image-size preset, Render Settings
+   * shortcut): a non-renderable tab (Settings / welcome) disables them instead
+   * of leaving controls that silently do nothing. Stop is never gated -- an
+   * in-flight job stays cancellable regardless of the active tab.
+   */
+  renderable: boolean;
   /** Selected image-size preset label. */
   preset: string;
   /** Start a new render. */
@@ -51,6 +59,7 @@ const elapsedSec = (job: RenderJob): string =>
 
 export const RenderPanel: React.FC<RenderPanelProps> = ({
   job,
+  renderable,
   preset,
   onStart,
   onCancel,
@@ -76,13 +85,14 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
             icon={<AppIcon name="media.play" aria-hidden />}
             text="Start Render"
             onClick={onStart}
+            disabled={!renderable}
           />
         )}
 
         <span className="render-panel-preset">
           <span className="render-panel-preset-label type-label">Image size</span>
           <span className="render-panel-preset-select">
-            <SelectField value={preset} onChange={onApplyPreset} fill>
+            <SelectField value={preset} onChange={onApplyPreset} fill disabled={!renderable}>
               {RENDER_SIZE_PRESETS.map((p) => (
                 <option key={p.label} value={p.label}>
                   {p.label}
@@ -97,6 +107,7 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
           icon={<AppIcon name="ui.settings" aria-hidden />}
           text="Render Settings"
           onClick={onOpenSettings}
+          disabled={!renderable}
         />
 
         {job && (

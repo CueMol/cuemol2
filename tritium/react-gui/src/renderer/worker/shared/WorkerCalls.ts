@@ -39,6 +39,7 @@ import type { GetMtzColumnInfoArgs, GetMtzColumnInfoResult } from '../server/ser
 import type { GetReaderDefaultOptionsArgs, GetReaderDefaultOptionsResult } from '../server/services/getReaderDefaultOptions.service'
 import type { GetOpenFiltersArgs } from '../server/services/getOpenFilters.service'
 import type { GetSceneCloseInfoArgs, GetSceneCloseInfoResult } from '../server/services/getSceneCloseInfo.service'
+import type { GetViewTabLabelArgs, GetViewTabLabelResult } from '../server/services/getViewTabLabel.service'
 import type { GetSelDefsArgs, GetSelDefsResult } from '../server/services/getSelDefs.service'
 import type { GetMaterialNamesArgs, GetMaterialNamesResult } from '../server/services/getMaterialNames.service'
 import type { GetSiblingRendererNamesArgs, GetSiblingRendererNamesResult } from '../server/services/getSiblingRendererNames.service'
@@ -460,6 +461,7 @@ export interface ServiceMap {
   getReaderDefaultOptions:    { args: GetReaderDefaultOptionsArgs;     result: GetReaderDefaultOptionsResult }
   getOpenFilters:             { args: GetOpenFiltersArgs;              result: ElectronFileFilter[] }
   getSceneCloseInfo:          { args: GetSceneCloseInfoArgs;           result: GetSceneCloseInfoResult }
+  getViewTabLabel:            { args: GetViewTabLabelArgs;             result: GetViewTabLabelResult }
   getSelDefs:                 { args: GetSelDefsArgs;                  result: GetSelDefsResult }
   getMaterialNames:           { args: GetMaterialNamesArgs;            result: GetMaterialNamesResult }
   getSiblingRendererNames:    { args: GetSiblingRendererNamesArgs;     result: GetSiblingRendererNamesResult }
