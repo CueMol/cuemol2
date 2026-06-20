@@ -8,6 +8,8 @@
 #include "DistFieldSurfBuilder.hpp"
 #include "DistMapMarchingCubes.hpp"
 
+#include <qlib/parallel.hpp>
+
 #include <cmath>
 
 using namespace surface;
@@ -84,33 +86,51 @@ void DistFieldSurfBuilder::fillField(const std::vector<Vector4D> &centers,
   const double margin = 2.0 * s;
   const int nc = (int) centers.size();
 
+  // Precompute each sphere's clamped grid bounding box once.
+  struct GridBox {
+    int loi, hii, loj, hij, lok, hik;
+  };
+  std::vector<GridBox> boxes((size_t) nc);
   for (int a = 0; a < nc; ++a) {
     const Vector4D &c = centers[a];
-    const double R = radii[a];
-    const int id = ids[a];
-
-    const double reach = R + margin;
+    const double reach = radii[a] + margin;
     int loi = (int) std::floor((c.x() - reach - m_origin.x()) / s);
     int hii = (int) std::ceil((c.x() + reach - m_origin.x()) / s);
     int loj = (int) std::floor((c.y() - reach - m_origin.y()) / s);
     int hij = (int) std::ceil((c.y() + reach - m_origin.y()) / s);
     int lok = (int) std::floor((c.z() - reach - m_origin.z()) / s);
     int hik = (int) std::ceil((c.z() + reach - m_origin.z()) / s);
-
     if (loi < 0) loi = 0;
     if (loj < 0) loj = 0;
     if (lok < 0) lok = 0;
     if (hii > m_nx - 1) hii = m_nx - 1;
     if (hij > m_ny - 1) hij = m_ny - 1;
     if (hik > m_nz - 1) hik = m_nz - 1;
+    boxes[a].loi = loi; boxes[a].hii = hii;
+    boxes[a].loj = loj; boxes[a].hij = hij;
+    boxes[a].lok = lok; boxes[a].hik = hik;
+  }
 
-    for (int i = loi; i <= hii; ++i) {
-      const double dx = m_origin.x() + i * s - c.x();
-      for (int j = loj; j <= hij; ++j) {
+  // Parallelize over the x-axis: each i-slab is written by exactly one worker,
+  // so the per-voxel min-reductions never race. Every voxel still sees the
+  // spheres in index order, so the result is identical to a serial fill.
+  qlib::parallel_for(0, (size_t) m_nx, [&](size_t ii) {
+    const int i = (int) ii;
+    const double xi = m_origin.x() + i * s;
+    for (int a = 0; a < nc; ++a) {
+      const GridBox &b = boxes[a];
+      if (i < b.loi || i > b.hii)
+        continue;
+      const Vector4D &c = centers[a];
+      const double R = radii[a];
+      const int id = ids[a];
+      const double dx = xi - c.x();
+      const double dx2 = dx * dx;
+      for (int j = b.loj; j <= b.hij; ++j) {
         const double dy = m_origin.y() + j * s - c.y();
-        const double dxy2 = dx * dx + dy * dy;
+        const double dxy2 = dx2 + dy * dy;
         const int ijbase = (i * m_ny + j) * m_nz;
-        for (int k = lok; k <= hik; ++k) {
+        for (int k = b.lok; k <= b.hik; ++k) {
           const double dz = m_origin.z() + k * s - c.z();
           const double dist = std::sqrt(dxy2 + dz * dz);
           const float val = (float) (dist - R);
@@ -122,7 +142,7 @@ void DistFieldSurfBuilder::fillField(const std::vector<Vector4D> &centers,
         }
       }
     }
-  }
+  });
 }
 
 void DistFieldSurfBuilder::emitMesh(const DistMapMarchingCubes &mc,
