@@ -35,13 +35,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # `sep` is the path separator for the deplibs basedir: build_libcuemol2_win.bat
+        # does `pushd %BASEDIR%\tmp`, and cmd's pushd rejects a forward slash in the
+        # path, so Windows must get a backslash (matching build2.yml's `\target`).
         include:
           - os: ubuntu-22.04
             name: "Ubuntu 22 x64 (TBB)"
+            sep: '/'
           - os: macos-15
             name: "macOS 15 arm64 (TBB)"
+            sep: '/'
           - os: windows-2022
             name: "Windows 2022 x64 (TBB)"
+            sep: '\'
 
     steps:
     - uses: actions/checkout@v4
@@ -91,12 +97,12 @@ jobs:
     - name: Download deplibs
       uses: ./build_scripts/download_deplibs
       with:
-        basedir: ${{ github.workspace }}/target
+        basedir: ${{ github.workspace }}${{ matrix.sep }}target
 
     - name: Build libcuemol2 (ENABLE_TBB=ON)
       uses: ./build_scripts/build_libcuemol2_posix
       with:
-        basedir: ${{ github.workspace }}/target
+        basedir: ${{ github.workspace }}${{ matrix.sep }}target
 
     # Behaviour of the parallel abstraction is validated here (Windows builds
     # with BUILD_TESTS=OFF, so its job is purely build + link).
