@@ -9,6 +9,7 @@
 #include "StlSceneExporter.qif"
 #include "LuxRendSceneExporter.qif"
 #include "LuxCoreSceneExporter.qif"
+#include "UmbreonSceneExporter.qif"
 
 module render
 {
@@ -23,6 +24,7 @@ module render
   StlSceneExporter;
   LuxRendSceneExporter;
   LuxCoreSceneExporter;
+  UmbreonSceneExporter;
 
 };
 

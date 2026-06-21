@@ -1,0 +1,34 @@
+// -*-Mode: C++;-*-
+//
+
+#ifndef UMBREON_SCENE_EXPORTER_QIF_INCLUDED
+#define UMBREON_SCENE_EXPORTER_QIF_INCLUDED
+
+#include <qsys/SceneExporter.qif>
+
+runtime_class UmbreonSceneExporter extends SceneExporter
+{
+  client_hdr "UmbreonSceneExporter.hpp";
+  client_name render::UmbreonSceneExporter;
+
+  scriptable;
+  smartptr;
+
+  ////////////////////
+  // Property definition
+  //   (camera / width / height are inherited from SceneExporter)
+
+  property boolean perspective => m_bPerspective;
+
+  /// supersampling (antialiasing) factor; 1 = off
+  property integer supersample => m_nSupersample;
+
+  /// ambient-occlusion ray count per mesh hit; 0 = off
+  property integer aoSamples => m_nAoSamples;
+
+  /// cast shadows from the lights
+  property boolean shadows => m_bShadows;
+
+};
+
+#endif

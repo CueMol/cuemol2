@@ -236,17 +236,24 @@ if (BUILD_OPENGL_SYSDEP)
 endif()
 gtest_discover_tests(test_molanl PROPERTIES LABELS "test_molanl")
 
-# umbreon (Embree) backend integration smoke. Only built when ENABLE_UMBREON is
-# on; links the raytrace module, which pulls in umbreon + the bundled Embree/TBB.
+# umbreon (Embree) backend integration. Only built when ENABLE_UMBREON is on;
+# links the raytrace module (build smoke) and the render module (the umbreon
+# DisplayContext / SceneExporter), which pull in umbreon + bundled Embree/TBB.
 if (ENABLE_UMBREON)
   add_executable(test_raytrace
+    modules/raytrace/test_main.cpp
     modules/raytrace/test_umbreon_smoke.cpp
+    modules/rendering/test_umbreon_export.cpp
   )
   target_include_directories(test_raytrace PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/src/modules
     ${CMAKE_BINARY_DIR}/src
+    ${Boost_INCLUDE_DIRS}
   )
-  target_link_libraries(test_raytrace PRIVATE raytrace GTest::gtest GTest::gtest_main)
+  target_compile_definitions(test_raytrace PRIVATE
+    CUEMOL2_SYSCONFIG_PATH="${CMAKE_SOURCE_DIR}/data/sysconfig.xml"
+  )
+  target_link_libraries(test_raytrace PRIVATE raytrace render qsys gfx qlib Boost::filesystem GTest::gtest)
   gtest_discover_tests(test_raytrace PROPERTIES LABELS "test_raytrace")
 endif()
