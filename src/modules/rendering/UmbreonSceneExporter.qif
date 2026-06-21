@@ -29,6 +29,15 @@ runtime_class UmbreonSceneExporter extends SceneExporter
   /// cast shadows from the lights
   property boolean shadows => m_bShadows;
 
+  //////////
+  // edge / silhouette outline lines (CueMol toon edges)
+
+  property boolean showEdgeLines => m_bEnableEdgeLines;
+
+  property real creaseLimit => m_dCreaseLimit;
+
+  property real edgeRise => m_dEdgeRise;
+
 };
 
 #endif

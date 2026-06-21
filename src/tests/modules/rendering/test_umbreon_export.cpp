@@ -76,3 +76,53 @@ TEST(UmbreonExport, RendersPrimitivesIntoNonEmptyFrame)
     }
     EXPECT_GT(nNonBg, 200u);
 }
+
+// Exercises the silhouette/edge path: with edge lines enabled, a sphere is
+// folded into a tessellated mesh, its silhouette is extracted (convSpheres +
+// calcSilEdgeLines + AABB-tree visibility), and outline cylinders/corner
+// spheres are emitted via writeEdgeLineImpl/writePointImpl. Pins that this
+// pipeline runs without crashing and yields a non-empty frame.
+TEST(UmbreonExport, RendersSilhouetteEdgesWithoutCrashing)
+{
+    UmbreonDisplayContext ctx;
+    ctx.init();
+
+    ctx.setPerspective(false);
+    ctx.setViewDist(100.0);
+    ctx.setZoom(6.0);
+    ctx.loadIdent();
+
+    ctx.enableEdgeLines(true);
+    ctx.setEdgeLineType(gfx::DisplayContext::ELT_SILHOUETTE);
+    ctx.setEdgeLineWidth(0.06);
+    ctx.setEdgeLineColor(gfx::SolidColor::createRGB(0.0, 0.0, 0.0));
+
+    ctx.startRender();
+    ctx.startSection("edges");
+
+    // a sphere: folded into a tessellated mesh, then silhouette-outlined
+    ctx.color(gfx::SolidColor::createRGB(0.8, 0.8, 0.8));
+    ctx.sphere(1.6, Vector4D(0.0, 0.0, 0.0));
+
+    ctx.endSection();
+
+    UmbreonRenderParams prm;
+    prm.width = 64;
+    prm.height = 64;
+    prm.supersample = 1;
+
+    int ow = 0, oh = 0, ncomp = 0;
+    std::vector<unsigned char> pix;
+    ctx.render(prm, ow, oh, ncomp, pix);
+
+    EXPECT_EQ(ow, 64);
+    EXPECT_EQ(oh, 64);
+    ASSERT_EQ(pix.size(), static_cast<std::size_t>(64 * 64 * 3));
+
+    std::size_t nNonBg = 0;
+    for (std::size_t i = 0; i + 2 < pix.size(); i += 3) {
+        if (pix[i] > 8 || pix[i + 1] > 8 || pix[i + 2] > 8)
+            ++nNonBg;
+    }
+    EXPECT_GT(nNonBg, 200u);
+}

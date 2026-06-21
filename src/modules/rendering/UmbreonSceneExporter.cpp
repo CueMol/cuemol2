@@ -98,7 +98,8 @@ namespace {
 
 UmbreonSceneExporter::UmbreonSceneExporter()
      : m_bPerspective(true), m_nSupersample(1), m_nAoSamples(0),
-       m_bShadows(false)
+       m_bShadows(false), m_bEnableEdgeLines(true), m_dCreaseLimit(-1.0),
+       m_dEdgeRise(0.5)
 {
 }
 
@@ -119,6 +120,10 @@ void UmbreonSceneExporter::write()
 
   ctx.setPerspective(m_bPerspective);
   ctx.setBgColor(pScene->getBgColor());
+
+  ctx.enableEdgeLines(m_bEnableEdgeLines);
+  ctx.setCreaseLimit(m_dCreaseLimit);
+  ctx.setEdgeRise(m_dEdgeRise);
 
   const double zoom = pCam->getZoom();
   ctx.setZoom(zoom);

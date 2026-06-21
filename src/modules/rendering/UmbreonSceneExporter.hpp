@@ -38,6 +38,15 @@ namespace render {
     /// cast shadows from the lights
     bool m_bShadows;
 
+    /// draw silhouette/edge outline lines (CueMol toon edges)
+    bool m_bEnableEdgeLines;
+
+    /// crease detection angle limit (radian); negative = no crease limit
+    double m_dCreaseLimit;
+
+    /// edge line rise from the surface
+    double m_dEdgeRise;
+
   public:
     UmbreonSceneExporter();
     virtual ~UmbreonSceneExporter();
