@@ -1,0 +1,32 @@
+name: 'Build+install umbreon (posix)'
+description: 'Checkout CueMol/umbreon and install libumbreon into the deplibs prefix'
+
+inputs:
+  basedir:
+    description: 'deplibs base dir'
+    required: true
+  ref:
+    description: 'CueMol/umbreon git ref to build'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+
+  - name: Checkout umbreon
+    uses: actions/checkout@v4
+    with:
+      repository: CueMol/umbreon
+      ref: ${{ inputs.ref }}
+      path: umbreon-src
+
+  - name: Build+install umbreon into the deplibs prefix
+    shell: bash
+    run: |
+      if [[ "$RUNNER_OS" == "Windows" ]]; then
+        WS=$(cygpath -u "$GITHUB_WORKSPACE")
+      else
+        WS="$GITHUB_WORKSPACE"
+      fi
+      cd "$WS"
+      bash build_scripts/build_umbreon_posix/run.sh "${{ inputs.basedir }}" "$WS/umbreon-src"

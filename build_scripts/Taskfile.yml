@@ -42,6 +42,13 @@ tasks:
     cmds:
       - bash download_extpkgs/run.sh "{{.WORKDIR}}" macOS ARM64
 
+  install_umbreon:
+    desc: "Build+install umbreon into the deplibs prefix (override source dir with UMBREON_SRC=...)"
+    vars:
+      UMBREON_SRC: '{{.UMBREON_SRC | default (printf "%s/proj64/umbreon" (env "HOME"))}}'
+    cmds:
+      - bash build_umbreon_posix/run.sh "{{.WORKDIR}}" "{{.UMBREON_SRC}}"
+
   #####
 
   rebuild_libcuemol2:

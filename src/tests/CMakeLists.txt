@@ -235,3 +235,18 @@ if (BUILD_OPENGL_SYSDEP)
   target_link_libraries(test_molanl PRIVATE sysdep)
 endif()
 gtest_discover_tests(test_molanl PROPERTIES LABELS "test_molanl")
+
+# umbreon (Embree) backend integration smoke. Only built when ENABLE_UMBREON is
+# on; links the raytrace module, which pulls in umbreon + the bundled Embree/TBB.
+if (ENABLE_UMBREON)
+  add_executable(test_raytrace
+    modules/raytrace/test_umbreon_smoke.cpp
+  )
+  target_include_directories(test_raytrace PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/modules
+    ${CMAKE_BINARY_DIR}/src
+  )
+  target_link_libraries(test_raytrace PRIVATE raytrace GTest::gtest GTest::gtest_main)
+  gtest_discover_tests(test_raytrace PROPERTIES LABELS "test_raytrace")
+endif()

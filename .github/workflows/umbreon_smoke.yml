@@ -1,0 +1,117 @@
+name: umbreon smoke (ENABLE_UMBREON=ON)
+
+# Isolated, manually-triggered build of libcuemol2 with ENABLE_UMBREON=ON across
+# the release platforms. Kept separate from build2.yml / build_linux.yml so a
+# failing umbreon (Embree) build can never block the shared pipeline; the regular
+# pipelines build with ENABLE_UMBREON=OFF and are unaffected.
+#
+# Each job: download the deplibs bundle (prebuilt static Embree/TBB), build and
+# install libumbreon from CueMol/umbreon into that prefix, then build libcuemol2
+# with ENABLE_UMBREON=ON so it links umbreon via find_package(umbreon).
+# - Linux / macOS: also run the C++ gtest suite, which includes the umbreon
+#   render smoke (UmbreonSmoke.RendersTrivialSceneIntoNonEmptyFrame).
+# - Windows: build + link only (BUILD_TESTS=OFF on Windows); proves the MSVC
+#   static Embree/TBB/umbreon build links.
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: umbreon-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: '${{ matrix.name }}'
+    runs-on: ${{ matrix.os }}
+    env:
+      # Inject ENABLE_UMBREON into the existing build scripts (run.sh / win.bat).
+      # Quoted so YAML does not coerce it to the boolean true.
+      ENABLE_UMBREON: "ON"
+    strategy:
+      fail-fast: false
+      matrix:
+        # `sep` is the path separator for the deplibs basedir (Windows cmd's pushd
+        # rejects a forward slash), matching tbb_smoke.yml / build2.yml.
+        include:
+          - os: ubuntu-22.04
+            name: "Ubuntu 22 x64 (umbreon)"
+            sep: '/'
+          - os: macos-15
+            name: "macOS 15 arm64 (umbreon)"
+            sep: '/'
+          - os: macos-15-intel
+            name: "macOS 15 x64 (umbreon)"
+            sep: '/'
+          - os: windows-2022
+            name: "Windows 2022 x64 (umbreon)"
+            sep: '\'
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        lfs: true
+
+    - name: Run sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.9
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - uses: ilammy/msvc-dev-cmd@v1
+      if: runner.os == 'Windows'
+      with:
+        arch: x64
+
+    - name: Enable sccache GHA backend (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        echo "SCCACHE_GHA_ENABLED=true" >> $env:GITHUB_ENV
+        echo "SCCACHE_GHA_VERSION=${{ runner.os }}_${{ runner.arch }}" >> $env:GITHUB_ENV
+
+    - name: Find and set sccache path (Windows)
+      if: runner.os == 'Windows'
+      shell: cmd
+      run: |
+        for /f "tokens=*" %%i in ('where sccache') do set SCCACHE_PATH=%%i & goto :done
+        :done
+        echo SCCACHE_PATH=%SCCACHE_PATH%
+        echo SCCACHE_PATH=%SCCACHE_PATH%>> %GITHUB_ENV%
+
+    - name: Record runner type
+      shell: bash
+      run: echo "RUNNER_TYPE=${{ matrix.os }}" >> $GITHUB_ENV
+
+    - name: Read umbreon git ref
+      shell: bash
+      run: |
+        . build_scripts/deplibs.env
+        echo "UMBREON_GIT_REF=$UMBREON_GIT_REF" >> $GITHUB_ENV
+
+    - name: Download deplibs
+      uses: ./build_scripts/download_deplibs
+      with:
+        basedir: ${{ github.workspace }}${{ matrix.sep }}target
+
+    - name: Build+install umbreon
+      uses: ./build_scripts/build_umbreon_posix
+      with:
+        basedir: ${{ github.workspace }}${{ matrix.sep }}target
+        ref: ${{ env.UMBREON_GIT_REF }}
+
+    - name: Build libcuemol2 (ENABLE_UMBREON=ON)
+      uses: ./build_scripts/build_libcuemol2_posix
+      with:
+        basedir: ${{ github.workspace }}${{ matrix.sep }}target
+
+    # Runs the umbreon render smoke plus the rest of the suite (Windows builds
+    # with BUILD_TESTS=OFF, so its job is purely build + link).
+    - name: Run gtest
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        set -eux
+        ctest --test-dir ${{ github.workspace }}/target/build_libcuemol2 --output-on-failure
