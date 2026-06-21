@@ -22,6 +22,19 @@ URL=https://github.com/CueMol/build_scripts/releases/download/$DEPLIBS_VERSION/$
 curl -sS -L -O $URL
      
 # xattr -cr $DEPLIBS_TGZ
+
+# Extract into a clean staging dir, then move each top-level entry into BASEDIR,
+# replacing any pre-existing copy. Keeps re-downloads idempotent (e.g. after a
+# DEPLIBS_VERSION bump) instead of failing the move on an existing same-named dir
+# that an older bundle already placed. nullglob guards against an empty staging
+# dir so the rm never expands to "$BASEDIR/*".
+rm -rf target
 tar xjf $DEPLIBS_TGZ
 
-mv target/* $BASEDIR/
+shopt -s nullglob
+for entry in target/*; do
+  rm -rf "$BASEDIR/$(basename "$entry")"
+  mv "$entry" "$BASEDIR/"
+done
+shopt -u nullglob
+rmdir target 2>/dev/null || true
