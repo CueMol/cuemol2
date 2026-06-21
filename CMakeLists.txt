@@ -18,6 +18,7 @@ option(BUILD_NODEJS_BINDINGS "Build node.js bindings")
 option(ENABLE_TYPESCRIPT "Build TypeScript code for node.js bindings")
 
 option(ENABLE_TBB "Use Intel oneTBB for CPU parallelism" ON)
+option(ENABLE_UMBREON "Use umbreon (Embree) offscreen ray-tracing backend" OFF)
 
 option(ENABLE_PYTHON_EMBED "Enable Python embedding")
 option(BUILD_TESTS "Build C++ unit tests" OFF)

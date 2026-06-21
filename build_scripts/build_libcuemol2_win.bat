@@ -16,14 +16,20 @@ REM SET RUNNER_OS=Windows
 REM SET RUNNER_ARCH=X64
 SET CONFIG=%2
 
-REM oneTBB is on by default (override by setting ENABLE_TBB=OFF). When ON, build
-REM oneTBB with the dynamic CRT (/MD) to match the rest of the build.
+REM oneTBB is on by default (override by setting ENABLE_TBB=OFF). The prebuilt
+REM static oneTBB ships in the deplibs bundle (tbb-%TBB_VER%); point find_package
+REM at its config package and use the dynamic CRT (/MD) to match the bundle.
 if "%ENABLE_TBB%"=="" SET ENABLE_TBB=ON
 if /I "%ENABLE_TBB%"=="ON" (
-  SET TBB_OPT=-DENABLE_TBB=ON -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL
+  SET TBB_OPT=-DENABLE_TBB=ON -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL -DTBB_DIR=%BASEDIR%\tbb-%TBB_VER%\lib\cmake\TBB
 ) ELSE (
   SET TBB_OPT=-DENABLE_TBB=OFF
 )
+
+REM umbreon (Embree) backend is off by default. When on, libcuemol2 finds it (and
+REM the bundled Embree) from the deplibs prefix; install it first (install_umbreon).
+if "%ENABLE_UMBREON%"=="" SET ENABLE_UMBREON=OFF
+SET UMBREON_OPT=-DENABLE_UMBREON=%ENABLE_UMBREON% -Dembree_DIR=%BASEDIR%\embree-%EMBREE_VER%\lib\cmake\embree-%EMBREE_VER% -Dumbreon_DIR=%BASEDIR%\umbreon\lib\cmake\umbreon
 
 SET SCRIPT_DIR=%~dp0
 echo SCRIPT_DIR: %SCRIPT_DIR%
@@ -75,6 +81,7 @@ cmake -G Ninja -S %TOP_DIR% -B %BUILDDIR% ^
  -DBUILD_NODEJS_BINDINGS=ON ^
  -DENABLE_TYPESCRIPT=ON ^
  %TBB_OPT% ^
+ %UMBREON_OPT% ^
  -DCGAL_DO_NOT_WARN_ABOUT_CMAKE_BUILD_TYPE=TRUE ^
  -DCGAL_DISABLE_GMP=TRUE ^
  -DCGAL_HEADER_ONLY=TRUE ^

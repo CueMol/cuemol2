@@ -47,6 +47,15 @@ if (ENABLE_TBB)
   SET(HAVE_TBB "1")
 endif ()
 
+# umbreon (Embree) ray-tracing backend (optional; gated by ENABLE_UMBREON).
+# Consumed from the deplibs prefix via find_package(umbreon CONFIG), which pulls
+# in the same bundled Embree/TBB (single oneTBB). Install it first with
+# build_scripts `task install_umbreon`.
+if (ENABLE_UMBREON)
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/umbreon.cmake)
+  SET(HAVE_UMBREON "1")
+endif ()
+
 #####
 
 # OpenGL/GUI
@@ -201,6 +210,10 @@ if (NOT BUILD_MINIMUM_MODULES)
   add_subdirectory(modules/mdtools)
   add_subdirectory(modules/importers)
 
+  if (ENABLE_UMBREON)
+    add_subdirectory(modules/raytrace)
+  endif ()
+
   if (ENABLE_PYTHON_EMBED)
     add_subdirectory(pybr)
   endif ()
@@ -254,6 +267,10 @@ endif ()
 
 if (ENABLE_PYTHON_EMBED)
   list(APPEND CUEMOL2_LINK_LIBRARIES pybr)
+endif ()
+
+if (ENABLE_UMBREON)
+  list(APPEND CUEMOL2_LINK_LIBRARIES raytrace)
 endif ()
 
 if (${XMLRPC_FOUND})

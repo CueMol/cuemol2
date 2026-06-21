@@ -92,6 +92,9 @@
 /* Define if Intel oneTBB is available */
 #cmakedefine HAVE_TBB
 
+/* Define if the umbreon (Embree) ray-tracing backend is available */
+#cmakedefine HAVE_UMBREON
+
 /* Use OpenGL */
 #cmakedefine BUILD_OPENGL_SYSDEP
 #cmakedefine USE_OPENGL
