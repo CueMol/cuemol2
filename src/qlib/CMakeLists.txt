@@ -236,6 +236,13 @@ target_include_directories(
 
 target_link_libraries(qlib PRIVATE ${QLIB_LINK_LIBRARIES})
 
+# oneTBB (optional). PUBLIC so the TBB::tbb usage requirements (include dirs)
+# and the static archive propagate to every module that includes parallel.hpp;
+# the archive is pulled into the cuemol2 shared library exactly once.
+if (ENABLE_TBB)
+  target_link_libraries(qlib PUBLIC TBB::tbb)
+endif ()
+
 MCWRAPGEN_SCR_WRAPPERS(qlib)
 
 install(TARGETS qlib

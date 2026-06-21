@@ -8,6 +8,10 @@
 #include "DistMapMarchingCubes.hpp"
 
 #include <gfx/MarchingCubesTables.hpp>
+#include <qlib/parallel.hpp>
+
+#include <unordered_map>
+#include <vector>
 
 using namespace surface;
 using qlib::Vector4D;
@@ -47,7 +51,7 @@ Vector4D DistMapMarchingCubes::gradientAt(int i, int j, int k) const
   return Vector4D(gx, gy, gz);
 }
 
-int DistMapMarchingCubes::getEdgeVertex(int ci, int cj, int ck, int iEdge)
+qint64 DistMapMarchingCubes::edgeKey(int ci, int cj, int ck, int iEdge) const
 {
   const int c0 = gfx::mctables::cubeEdgeConnection[iEdge][0];
   const int c1 = gfx::mctables::cubeEdgeConnection[iEdge][1];
@@ -67,13 +71,25 @@ int DistMapMarchingCubes::getEdgeVertex(int ci, int cj, int ck, int iEdge)
   const int lo[3] = { (g0[0] < g1[0]) ? g0[0] : g1[0],
                       (g0[1] < g1[1]) ? g0[1] : g1[1],
                       (g0[2] < g1[2]) ? g0[2] : g1[2] };
-  const qint64 key =
-      (((qint64) lo[0] * m_ny + lo[1]) * (qint64) m_nz + lo[2]) * 3 + axis;
+  return (((qint64) lo[0] * m_ny + lo[1]) * (qint64) m_nz + lo[2]) * 3 + axis;
+}
 
-  std::unordered_map<qint64, int>::const_iterator it = m_edgeCache.find(key);
-  if (it != m_edgeCache.end())
-    return it->second;
+void DistMapMarchingCubes::decodeEdgeKey(qint64 key, int g0[3], int g1[3]) const
+{
+  const int axis = (int) (key % 3);
+  qint64 rem = key / 3;
+  const int lo2 = (int) (rem % m_nz);
+  rem /= m_nz;
+  const int lo1 = (int) (rem % m_ny);
+  rem /= m_ny;
+  const int lo0 = (int) rem;
+  g0[0] = lo0; g0[1] = lo1; g0[2] = lo2;
+  g1[0] = lo0; g1[1] = lo1; g1[2] = lo2;
+  g1[axis] += 1;
+}
 
+MSVert DistMapMarchingCubes::makeVertex(const int g0[3], const int g1[3]) const
+{
   const float v0 = valueAt(g0[0], g0[1], g0[2]);
   const float v1 = valueAt(g1[0], g1[1], g1[2]);
   float t = 0.5f;
@@ -100,35 +116,39 @@ int DistMapMarchingCubes::getEdgeVertex(int ci, int cj, int ck, int iEdge)
     const int *g = (v0 <= v1) ? g0 : g1;
     vert.info = (quint32) m_idfield[index(g[0], g[1], g[2])];
   }
-
-  const int vidx = (int) m_verts.size();
-  m_verts.push_back(vert);
-  m_edgeCache[key] = vidx;
-  return vidx;
+  return vert;
 }
 
 void DistMapMarchingCubes::build()
 {
   m_verts.clear();
   m_faces.clear();
-  m_edgeCache.clear();
 
   if (m_data == NULL || m_nx < 2 || m_ny < 2 || m_nz < 2)
     return;
 
-  float cval[8];
-  int edgeVerts[12];
+  const int ncellI = m_nx - 1;
 
-  for (int i = 0; i < m_nx - 1; ++i) {
+  // Phase 1 (parallel over the x-axis): classify every cube and record, per
+  // i-slab, the marching-cubes triangles as triples of canonical edge keys.
+  // This phase only reads the field and writes its own row bucket, so it is
+  // race-free; welding is deferred to the serial merge below.
+  std::vector<std::vector<qint64>> rowKeys((size_t) ncellI);
+
+  qlib::parallel_for(0, (size_t) ncellI, [&](size_t ii) {
+    const int i = (int) ii;
+    std::vector<qint64> &keys = rowKeys[ii];
+    qint64 ekey[12];
     for (int j = 0; j < m_ny - 1; ++j) {
       for (int k = 0; k < m_nz - 1; ++k) {
 
         int flag = 0;
         for (int c = 0; c < 8; ++c) {
-          cval[c] = valueAt(i + gfx::mctables::cubeVertexOffset[c][0],
-                            j + gfx::mctables::cubeVertexOffset[c][1],
-                            k + gfx::mctables::cubeVertexOffset[c][2]);
-          if (cval[c] <= m_level)
+          const float cval =
+              valueAt(i + gfx::mctables::cubeVertexOffset[c][0],
+                      j + gfx::mctables::cubeVertexOffset[c][1],
+                      k + gfx::mctables::cubeVertexOffset[c][2]);
+          if (cval <= m_level)
             flag |= (1 << c);
         }
 
@@ -142,16 +162,46 @@ void DistMapMarchingCubes::build()
 
         for (int e = 0; e < 12; ++e) {
           if (eflags & (1 << e))
-            edgeVerts[e] = getEdgeVertex(i, j, k, e);
+            ekey[e] = edgeKey(i, j, k, e);
         }
 
         const int *tri = gfx::mctables::triangleConnectionTable[flag];
         for (int t = 0; tri[t] != -1; t += 3) {
-          m_faces.push_back(MSFace((quint32) edgeVerts[tri[t]],
-                                   (quint32) edgeVerts[tri[t + 1]],
-                                   (quint32) edgeVerts[tri[t + 2]]));
+          keys.push_back(ekey[tri[t]]);
+          keys.push_back(ekey[tri[t + 1]]);
+          keys.push_back(ekey[tri[t + 2]]);
         }
       }
+    }
+  });
+
+  // Phase 2 (serial merge): weld shared edges by their canonical key into the
+  // indexed vertex/face arrays. A vertex is created the first time its edge is
+  // referenced, so the welding is identical to the serial build (only the
+  // vertex ordering differs).
+  std::unordered_map<qint64, int> edgeCache;
+  int g0[3], g1[3];
+  for (int i = 0; i < ncellI; ++i) {
+    const std::vector<qint64> &keys = rowKeys[(size_t) i];
+    for (size_t t = 0; t + 2 < keys.size(); t += 3) {
+      int idx[3];
+      for (int c = 0; c < 3; ++c) {
+        const qint64 key = keys[t + c];
+        std::unordered_map<qint64, int>::const_iterator it =
+            edgeCache.find(key);
+        if (it != edgeCache.end()) {
+          idx[c] = it->second;
+        }
+        else {
+          decodeEdgeKey(key, g0, g1);
+          const int vidx = (int) m_verts.size();
+          m_verts.push_back(makeVertex(g0, g1));
+          edgeCache[key] = vidx;
+          idx[c] = vidx;
+        }
+      }
+      m_faces.push_back(
+          MSFace((quint32) idx[0], (quint32) idx[1], (quint32) idx[2]));
     }
   }
 }

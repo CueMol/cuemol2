@@ -10,7 +10,6 @@
 #include "MSGeomTypes.hpp"
 
 #include <qlib/Vector4D.hpp>
-#include <unordered_map>
 #include <vector>
 
 namespace surface {
@@ -55,7 +54,19 @@ namespace surface {
       return m_data[index(i, j, k)];
     }
     Vector4D gradientAt(int i, int j, int k) const;
-    int getEdgeVertex(int ci, int cj, int ck, int iEdge);
+
+    /// Canonical key for the grid edge that cube edge iEdge of cell
+    /// (ci,cj,ck) crosses. Pure (depends only on geometry), so it is safe to
+    /// call from worker threads during the parallel classification pass.
+    qint64 edgeKey(int ci, int cj, int ck, int iEdge) const;
+
+    /// Decode an edge key into its two endpoint grid coordinates (g0 = lower
+    /// corner, g1 = g0 + 1 along the edge axis).
+    void decodeEdgeKey(qint64 key, int g0[3], int g1[3]) const;
+
+    /// Interpolate the iso-crossing vertex (position, normal, id) on the edge
+    /// between grid points g0 and g1. Order of g0/g1 does not matter.
+    MSVert makeVertex(const int g0[3], const int g1[3]) const;
 
     const float *m_data;
     const int *m_idfield;
@@ -64,9 +75,6 @@ namespace surface {
 
     std::vector<MSVert> m_verts;
     std::vector<MSFace> m_faces;
-
-    /// Maps a canonical grid-edge key to an emitted vertex index (welding).
-    std::unordered_map<qint64, int> m_edgeCache;
   };
 
 }  // namespace surface

@@ -8,6 +8,10 @@
 #include "DirectSurfRenderer2.hpp"
 #include "DistFieldSurfBuilder.hpp"
 
+#include <qlib/parallel.hpp>
+
+#include <chrono>
+
 #include <gfx/DisplayContext.hpp>
 #include <gfx/Mesh.hpp>
 #include <gfx/GradientColor.hpp>
@@ -134,15 +138,32 @@ void DirectSurfRenderer2::buildMeshCache()
     return;
   }
 
-  MB_DPRINTLN("DirectSurfRend2> building surface for %d atoms", builder.getAtomCount());
+  // Always-on log (visible in the GUI log, release builds included) reporting
+  // whether the distance-field/marching-cubes build runs on oneTBB and how many
+  // worker threads it will try to use.
+  LOG_DPRINTLN("DirectSurfRend2> building dsurf2 surface: atoms=%d, "
+               "CPU parallel backend=%s, threads=%d",
+               builder.getAtomCount(),
+               qlib::parallel_enabled() ? "oneTBB" : "serial",
+               qlib::parallel_max_concurrency());
+
+  // Time the distance-field + marching-cubes build so the parallel speedup can
+  // be compared against a serial run (CUEMOL_TBB_THREADS=1).
+  const std::chrono::steady_clock::time_point t0 =
+      std::chrono::steady_clock::now();
   builder.build();
+  const double build_ms = std::chrono::duration<double, std::milli>(
+                              std::chrono::steady_clock::now() - t0)
+                              .count();
 
   const std::vector<MSVert> &bverts = builder.getVerts();
   const std::vector<MSFace> &bfaces = builder.getFaces();
   const int nverts = (int) bverts.size();
   const int nfaces = (int) bfaces.size();
 
-  MB_DPRINTLN("DirectSurfRend2> No. vertices %d, No. triangles %d", nverts, nfaces);
+  LOG_DPRINTLN("DirectSurfRend2> dsurf2 surface built in %.1f ms: "
+               "verts=%d, faces=%d",
+               build_ms, nverts, nfaces);
 
   m_verts.resize(nverts);
   m_faces.resize(nfaces);
