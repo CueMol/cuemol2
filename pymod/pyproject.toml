@@ -13,6 +13,10 @@ wheel.py-api = "cp37"
 build-dir = "build/{wheel_tag}"
 # cmake.args = ["-G", "Unix Makefiles"]
 cmake.args = ["-G", "Ninja"]
+# Pin the C++ optimization level explicitly (scikit-build-core defaults to
+# Release, but make it bulletproof against future default changes). Override
+# with: pip install --config-settings=cmake.build-type=Debug .
+cmake.build-type = "Release"
 wheel.packages = ["python/cuemol", "cuemol_internal"]
 # cmake.install-dir = "mypackage"
 wheel.install-dir = "cuemol_internal"
