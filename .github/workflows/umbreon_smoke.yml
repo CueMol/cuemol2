@@ -15,6 +15,13 @@ name: umbreon smoke (ENABLE_UMBREON=ON)
 
 on:
   workflow_dispatch:
+  # TEMPORARY (integration only): also run on pushes to dep_tbb_0620 so the
+  # umbreon path can be CI-verified before it lands on develop. workflow_dispatch
+  # alone cannot be triggered while the file lives only on a feature branch (it
+  # must be on the default branch). Remove this push trigger before merging to
+  # develop, leaving workflow_dispatch only (cf. tbb_smoke.yml).
+  push:
+    branches: [dep_tbb_0620]
 
 concurrency:
   group: umbreon-smoke-${{ github.ref }}
