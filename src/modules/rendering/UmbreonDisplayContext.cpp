@@ -340,18 +340,29 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
                                      srgb2linear(m_bgcolor->fb()));
   }
 
-  // Default lighting: a single distant key light from the upper-front-right
-  // plus a constant ambient fill. This approximates CueMol's default
-  // SpecLighting; faithful light mapping is a later phase.
+  // Default lighting matching CueMol's POV output (the same scene the umbreon
+  // CLI builds from a .pov): two shadowless fill lights plus a constant
+  // ambient. The intensities are CueMol's defaults _light_inten=1.3 and
+  // _flash_frac=0.6 (povGain=1.0); both are fill lights (no specular).
   if (scene.lights.empty()) {
-    umbreon::DistantLight key;
-    key.direction = umbreon::normalize(umbreon::Vec3(-1.0f, -1.0f, -1.0f));
-    key.color = umbreon::Vec3(1.0f, 1.0f, 1.0f);
-    key.intensity = 0.8f;
-    key.castsHighlight = true;
-    scene.lights.push_back(key);
+    // SpecLighting: directional key light from the upper-front-right
+    // (positioned at normalize(1,1,1), pointing at the origin).
+    umbreon::DistantLight spec;
+    spec.direction = umbreon::normalize(umbreon::Vec3(-1.0f, -1.0f, -1.0f));
+    spec.color = umbreon::Vec3(1.0f, 1.0f, 1.0f);
+    spec.intensity = 1.3f;
+    spec.castsHighlight = false;
+    scene.lights.push_back(spec);
+
+    // FlashLighting: headlight along the view direction (from the camera).
+    umbreon::DistantLight flash;
+    flash.direction = umbreon::Vec3(0.0f, 0.0f, -1.0f);
+    flash.color = umbreon::Vec3(1.0f, 1.0f, 1.0f);
+    flash.intensity = 0.6f;
+    flash.castsHighlight = false;
+    scene.lights.push_back(flash);
   }
-  scene.ambientIntensity = 0.4f;
+  scene.ambientIntensity = 1.0f;
   scene.ambientColor = umbreon::Vec3(1.0f, 1.0f, 1.0f);
 
   umbreon::RenderOptions opt;
