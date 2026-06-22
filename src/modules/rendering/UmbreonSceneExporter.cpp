@@ -84,9 +84,13 @@ namespace {
                  PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE,
                  PNG_FILTER_TYPE_BASE);
 
-    // The pixels are sRGB-encoded (umbreon::srgbEncode8). Tag the file as sRGB
-    // and emit the matching gAMA/cHRM chunks so viewers display the colors
-    // correctly instead of treating an untagged file as linear (too dark).
+    // Tag the file as sRGB (+ matching gAMA/cHRM). This is paired with the
+    // exporter's default assumedGamma=2.2: applyAssumedGamma(.,2.2) ~ an sRGB
+    // DECODE that cancels srgbEncode8, so the file bytes are ~linear, and the
+    // sRGB tag makes a color-managed viewer apply exactly one sRGB transfer for
+    // display (the correct look). Without the tag those ~linear bytes show too
+    // dark; with assumedGamma=1.0 the bytes are already sRGB and the tag would
+    // double-encode (too bright).
     png_set_sRGB_gAMA_and_cHRM(pPNG, pInfo, PNG_sRGB_INTENT_PERCEPTUAL);
 
     png_write_info(pPNG, pInfo);
