@@ -338,15 +338,19 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
 
   // Default lighting matching CueMol's POV output (the same scene the umbreon
   // CLI builds from a .pov): two shadowless fill lights plus a constant
-  // ambient. The intensities are CueMol's defaults _light_inten=1.3 and
-  // _flash_frac=0.6 (povGain=1.0); both are fill lights (no specular).
+  // ambient. CueMol's defaults are _light_inten=1.3, _flash_frac=0.8/1.3,
+  // _amb_frac=0, and the macro intensities are the evaluated expressions
+  // (NOT the raw _light_inten):
+  //   SpecLighting  = _light_inten*(1-_amb_frac)*(1-_flash_frac) = 0.5
+  //   FlashLighting = _light_inten*(1-_amb_frac)*_flash_frac     = 0.8
+  // Both are fill lights (no specular).
   if (scene.lights.empty()) {
     // SpecLighting: directional key light from the upper-front-right
     // (positioned at normalize(1,1,1), pointing at the origin).
     umbreon::DistantLight spec;
     spec.direction = umbreon::normalize(umbreon::Vec3(-1.0f, -1.0f, -1.0f));
     spec.color = umbreon::Vec3(1.0f, 1.0f, 1.0f);
-    spec.intensity = 1.3f;
+    spec.intensity = 0.5f;
     spec.castsHighlight = false;
     scene.lights.push_back(spec);
 
@@ -354,7 +358,7 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
     umbreon::DistantLight flash;
     flash.direction = umbreon::Vec3(0.0f, 0.0f, -1.0f);
     flash.color = umbreon::Vec3(1.0f, 1.0f, 1.0f);
-    flash.intensity = 0.6f;
+    flash.intensity = 0.8f;
     flash.castsHighlight = false;
     scene.lights.push_back(flash);
   }
