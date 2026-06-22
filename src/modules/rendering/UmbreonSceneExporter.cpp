@@ -51,9 +51,11 @@ namespace {
 
   /// Write an interleaved 8-bit image (top-left origin, ncomp = 3 or 4) to the
   /// output stream as a PNG. Mirrors PngSceneExporter's libpng setup but emits
-  /// the whole framebuffer in one pass.
+  /// the whole framebuffer in one pass. srgbTag controls whether the file is
+  /// tagged as sRGB (true for the default sRGB-encoded path; false for the raw
+  /// linear path, whose bytes are not sRGB).
   void writePngToStream(qlib::OutStream *pOut, int width, int height,
-                        const unsigned char *pBytes, int ncomp)
+                        const unsigned char *pBytes, int ncomp, bool srgbTag)
   {
     png_structp pPNG = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL,
                                                umb_png_error_fn,
@@ -90,8 +92,11 @@ namespace {
     // sRGB tag makes a color-managed viewer apply exactly one sRGB transfer for
     // display (the correct look). Without the tag those ~linear bytes show too
     // dark; with assumedGamma=1.0 the bytes are already sRGB and the tag would
-    // double-encode (too bright).
-    png_set_sRGB_gAMA_and_cHRM(pPNG, pInfo, PNG_sRGB_INTENT_PERCEPTUAL);
+    // double-encode (too bright). The raw linear path skips the tag: its bytes
+    // are linear, not sRGB.
+    if (srgbTag) {
+      png_set_sRGB_gAMA_and_cHRM(pPNG, pInfo, PNG_sRGB_INTENT_PERCEPTUAL);
+    }
 
     png_write_info(pPNG, pInfo);
 
@@ -109,7 +114,8 @@ namespace {
 UmbreonSceneExporter::UmbreonSceneExporter()
      : m_bPerspective(true), m_bUseClipZ(true), m_nSupersample(3),
        m_nAoSamples(0), m_bShadows(false), m_bEnableEdgeLines(true),
-       m_dCreaseLimit(-1.0), m_dEdgeRise(0.5), m_dAssumedGamma(2.2)
+       m_dCreaseLimit(-1.0), m_dEdgeRise(0.5), m_dAssumedGamma(2.2),
+       m_bLinearOutput(false)
 {
 }
 
@@ -179,6 +185,7 @@ void UmbreonSceneExporter::write()
   prm.aoSamples = m_nAoSamples;
   prm.shadows = m_bShadows;
   prm.assumedGamma = m_dAssumedGamma;
+  prm.linearOutput = m_bLinearOutput;
 
   int ow = 0, oh = 0, ncomp = 0;
   std::vector<unsigned char> pix;
@@ -190,7 +197,9 @@ void UmbreonSceneExporter::write()
   }
 
   qlib::OutStream *pOut = createOutStream();
-  writePngToStream(pOut, ow, oh, &pix[0], ncomp);
+  // The raw linear path writes untagged (non-sRGB) bytes; the default path
+  // writes sRGB-encoded bytes tagged as sRGB.
+  writePngToStream(pOut, ow, oh, &pix[0], ncomp, !m_bLinearOutput);
   pOut->close();
   delete pOut;
 }

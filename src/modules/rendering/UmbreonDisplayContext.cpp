@@ -431,7 +431,9 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
   scene.ambientColor = umbreon::Vec3(1.0f, 1.0f, 1.0f);
 
   // POV assumed_gamma: raises the final image to this power (1.0 = no-op).
-  scene.assumedGamma = float(prm.assumedGamma);
+  // The linear-output mode forces it off (assumedGamma = 1.0) so the bytes are
+  // a direct linear mapping of the HDR framebuffer.
+  scene.assumedGamma = prm.linearOutput ? 1.0f : float(prm.assumedGamma);
 
   umbreon::RenderOptions opt;
   opt.width = (prm.width > 0) ? prm.width : 640;
@@ -449,8 +451,26 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
   outWidth = frame.width;
   outHeight = frame.height;
   outNcomp = 3;
-  std::vector<std::uint8_t> bytes = umbreon::srgbEncode8(frame, outNcomp);
-  outRGBA.assign(bytes.begin(), bytes.end());
+  if (prm.linearOutput) {
+    // Direct linear mapping: clamp each HDR channel to [0,1] and scale to 8-bit
+    // (no sRGB OETF). Bypasses srgbEncode8 entirely.
+    const std::size_t npix =
+        std::size_t(frame.width) * std::size_t(frame.height);
+    outRGBA.resize(npix * std::size_t(outNcomp));
+    for (std::size_t i = 0; i < npix; ++i) {
+      for (int c = 0; c < outNcomp; ++c) {
+        float v = frame.color[i * 4 + c];
+        if (v < 0.0f) v = 0.0f;
+        if (v > 1.0f) v = 1.0f;
+        outRGBA[i * outNcomp + c] =
+            static_cast<unsigned char>(v * 255.0f + 0.5f);
+      }
+    }
+  }
+  else {
+    std::vector<std::uint8_t> bytes = umbreon::srgbEncode8(frame, outNcomp);
+    outRGBA.assign(bytes.begin(), bytes.end());
+  }
 
   MB_DPRINTLN("Umbreon> render done: %.3f sec",
               frame.renderSeconds);

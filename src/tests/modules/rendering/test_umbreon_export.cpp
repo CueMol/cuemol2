@@ -250,3 +250,55 @@ TEST(UmbreonExport, ClipsGeometryInFrontOfSlabPlane)
     EXPECT_GT(pix[c + 1], 30);  // green (inside the slab) is visible
     EXPECT_LT(pix[c + 0], 30);  // red (in front of the clip plane) is gone
 }
+
+// Pins the raw-linear output toggle: the same mid-gray triangle rendered with
+// linearOutput=false (assumedGamma 2.2 + sRGB encode) and linearOutput=true
+// (assumedGamma forced to 1, linear 8-bit map) must both be lit but produce
+// different bytes, proving the toggle changes the output encoding.
+TEST(UmbreonExport, LinearOutputDiffersFromSrgbEncoded)
+{
+    auto renderGrayTriangle = [](bool linearOutput) {
+        UmbreonDisplayContext ctx;
+        ctx.init();
+        ctx.setPerspective(false);
+        ctx.setViewDist(100.0);
+        ctx.setZoom(6.0);
+        ctx.loadIdent();
+
+        ctx.startRender();
+        ctx.startSection("gray");
+        ctx.color(gfx::SolidColor::createRGB(0.5, 0.5, 0.5));
+        ctx.startTriangles();
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(-2.0, -2.0, 0.0));
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(2.0, -2.0, 0.0));
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(0.0, 2.0, 0.0));
+        ctx.end();
+        ctx.endSection();
+
+        UmbreonRenderParams prm;
+        prm.width = 64;
+        prm.height = 64;
+        prm.supersample = 1;
+        prm.assumedGamma = 2.2;
+        prm.linearOutput = linearOutput;
+
+        int ow = 0, oh = 0, ncomp = 0;
+        std::vector<unsigned char> pix;
+        ctx.render(prm, ow, oh, ncomp, pix);
+        return pix;
+    };
+
+    std::vector<unsigned char> srgb = renderGrayTriangle(false);
+    std::vector<unsigned char> lin = renderGrayTriangle(true);
+
+    ASSERT_EQ(srgb.size(), static_cast<std::size_t>(64 * 64 * 3));
+    ASSERT_EQ(srgb.size(), lin.size());
+
+    const std::size_t c = (static_cast<std::size_t>(32) * 64 + 32) * 3;
+    EXPECT_GT(srgb[c], 8);  // triangle is lit in both encodings
+    EXPECT_GT(lin[c], 8);
+    EXPECT_NE(srgb, lin);   // the toggle actually changes the output bytes
+}

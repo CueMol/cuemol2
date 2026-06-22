@@ -46,6 +46,12 @@ runtime_class UmbreonSceneExporter extends SceneExporter
 
   property real assumedGamma => m_dAssumedGamma;
 
+  //////////
+  // raw linear output: force assumedGamma=1 and map the linear HDR buffer
+  // straight to 8-bit (no sRGB encode), writing an untagged PNG
+
+  property boolean linearOutput => m_bLinearOutput;
+
 };
 
 #endif

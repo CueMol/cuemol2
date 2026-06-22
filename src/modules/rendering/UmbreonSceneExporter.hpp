@@ -58,6 +58,12 @@ namespace render {
     /// default CueMol .pov (which writes assumed_gamma 1.0).
     double m_dAssumedGamma;
 
+    /// Raw linear output: force assumedGamma = 1.0 and map umbreon's linear HDR
+    /// framebuffer straight to 8-bit (no sRGB OETF), writing an untagged PNG.
+    /// Default false (the sRGB-encoded, sRGB-tagged path). For comparing the
+    /// raw linear look against the default.
+    bool m_bLinearOutput;
+
   public:
     UmbreonSceneExporter();
     virtual ~UmbreonSceneExporter();

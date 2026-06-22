@@ -36,6 +36,11 @@ namespace render {
     /// POV assumed_gamma applied to the final image (1.0 = no-op). CueMol's
     /// POV exporter writes 1.0, but a .pov may override it (e.g. 2.2).
     double assumedGamma = 1.0;
+    /// When true, bypass the sRGB output pipeline: force assumedGamma = 1.0 and
+    /// map umbreon's linear HDR framebuffer straight to 8-bit (clamp [0,1] *
+    /// 255, no sRGB OETF). For comparing the raw linear look against the
+    /// default assumedGamma + sRGB-encoded output.
+    bool linearOutput = false;
   };
 
   /// DisplayContext backend that renders a scene with umbreon (Embree).
