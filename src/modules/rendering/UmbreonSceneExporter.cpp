@@ -51,11 +51,10 @@ namespace {
 
   /// Write an interleaved 8-bit image (top-left origin, ncomp = 3 or 4) to the
   /// output stream as a PNG. Mirrors PngSceneExporter's libpng setup but emits
-  /// the whole framebuffer in one pass. srgbTag controls whether the file is
-  /// tagged as sRGB (true for the default sRGB-encoded path; false for the raw
-  /// linear path, whose bytes are not sRGB).
+  /// the whole framebuffer in one pass. Always tags the file as sRGB (see the
+  /// note at the png_set_sRGB_gAMA_and_cHRM call).
   void writePngToStream(qlib::OutStream *pOut, int width, int height,
-                        const unsigned char *pBytes, int ncomp, bool srgbTag)
+                        const unsigned char *pBytes, int ncomp)
   {
     png_structp pPNG = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL,
                                                umb_png_error_fn,
@@ -86,17 +85,14 @@ namespace {
                  PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE,
                  PNG_FILTER_TYPE_BASE);
 
-    // Tag the file as sRGB (+ matching gAMA/cHRM). This is paired with the
-    // exporter's default assumedGamma=2.2: applyAssumedGamma(.,2.2) ~ an sRGB
-    // DECODE that cancels srgbEncode8, so the file bytes are ~linear, and the
-    // sRGB tag makes a color-managed viewer apply exactly one sRGB transfer for
-    // display (the correct look). Without the tag those ~linear bytes show too
-    // dark; with assumedGamma=1.0 the bytes are already sRGB and the tag would
-    // double-encode (too bright). The raw linear path skips the tag: its bytes
-    // are linear, not sRGB.
-    if (srgbTag) {
-      png_set_sRGB_gAMA_and_cHRM(pPNG, pInfo, PNG_sRGB_INTENT_PERCEPTUAL);
-    }
+    // Tag the file as sRGB (+ matching gAMA/cHRM), for BOTH output paths. The
+    // default path (assumedGamma=2.2 + srgbEncode8) produces ~linear file bytes,
+    // because applyAssumedGamma(.,2.2) [pow 2.2] and srgbEncode8 [~pow 1/2.2]
+    // roughly cancel. The raw-linear path produces exactly-linear bytes. Both
+    // are therefore ~linear, so tagging both as sRGB makes a color-managed
+    // viewer display them nearly identically (the intended look). The tag is
+    // kept on regardless of linearOutput.
+    png_set_sRGB_gAMA_and_cHRM(pPNG, pInfo, PNG_sRGB_INTENT_PERCEPTUAL);
 
     png_write_info(pPNG, pInfo);
 
@@ -197,9 +193,7 @@ void UmbreonSceneExporter::write()
   }
 
   qlib::OutStream *pOut = createOutStream();
-  // The raw linear path writes untagged (non-sRGB) bytes; the default path
-  // writes sRGB-encoded bytes tagged as sRGB.
-  writePngToStream(pOut, ow, oh, &pix[0], ncomp, !m_bLinearOutput);
+  writePngToStream(pOut, ow, oh, &pix[0], ncomp);
   pOut->close();
   delete pOut;
 }

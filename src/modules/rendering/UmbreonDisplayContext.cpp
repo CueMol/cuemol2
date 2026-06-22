@@ -448,6 +448,27 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
 
   umbreon::FrameResult frame = umbreon::render(scene, opt);
 
+  // Count saturated pixels: any RGB channel > 1.0 in the final framebuffer will
+  // clamp to white on output (the encode step clips to [0,1]). Since
+  // applyAssumedGamma is monotonic with g > 0, "frame.color > 1" is the same
+  // set whether measured before or after gamma. Logged to help judge whether
+  // the lighting/exposure is blowing out highlights.
+  {
+    const std::size_t npix =
+        std::size_t(frame.width) * std::size_t(frame.height);
+    std::size_t nsat = 0;
+    for (std::size_t i = 0; i < npix; ++i) {
+      if (frame.color[i * 4 + 0] > 1.0f ||
+          frame.color[i * 4 + 1] > 1.0f ||
+          frame.color[i * 4 + 2] > 1.0f)
+        ++nsat;
+    }
+    const double pct =
+        (npix > 0) ? (100.0 * double(nsat) / double(npix)) : 0.0;
+    LOG_DPRINTLN("Umbreon> saturated pixels: %d / %d (%.2f%%)",
+                 int(nsat), int(npix), pct);
+  }
+
   outWidth = frame.width;
   outHeight = frame.height;
   outNcomp = 3;

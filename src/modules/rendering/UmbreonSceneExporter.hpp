@@ -59,9 +59,10 @@ namespace render {
     double m_dAssumedGamma;
 
     /// Raw linear output: force assumedGamma = 1.0 and map umbreon's linear HDR
-    /// framebuffer straight to 8-bit (no sRGB OETF), writing an untagged PNG.
-    /// Default false (the sRGB-encoded, sRGB-tagged path). For comparing the
-    /// raw linear look against the default.
+    /// framebuffer straight to 8-bit (no sRGB OETF). The PNG is still tagged as
+    /// sRGB: the default path's bytes are also ~linear (the pow 2.2 and the sRGB
+    /// encode cancel), so both look nearly the same in a color-managed viewer.
+    /// Default false (the sRGB-encoded path). For comparison.
     bool m_bLinearOutput;
 
   public:

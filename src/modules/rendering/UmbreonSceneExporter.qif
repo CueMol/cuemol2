@@ -48,7 +48,7 @@ runtime_class UmbreonSceneExporter extends SceneExporter
 
   //////////
   // raw linear output: force assumedGamma=1 and map the linear HDR buffer
-  // straight to 8-bit (no sRGB encode), writing an untagged PNG
+  // straight to 8-bit (no sRGB encode); the PNG is still tagged as sRGB
 
   property boolean linearOutput => m_bLinearOutput;
 
