@@ -126,3 +126,66 @@ TEST(UmbreonExport, RendersSilhouetteEdgesWithoutCrashing)
     }
     EXPECT_GT(nNonBg, 200u);
 }
+
+// Pins the section-alpha (setAlpha) transparency path: an opaque RED triangle
+// sits at z=0, and a translucent BLUE triangle (its section drawn with
+// alpha 0.5) covers it at z=1, closer to the camera. With the section default
+// alpha applied to the front's opacity, umbreon composites front-over-back, so
+// the center pixel carries BOTH the back's red and the front's blue. If the
+// section alpha were dropped (the bug this guards), the opaque blue front would
+// hide the red entirely (center red ~ 0).
+TEST(UmbreonExport, BlendsTranslucentSectionOverOpaqueGeometry)
+{
+    UmbreonDisplayContext ctx;
+    ctx.init();
+
+    ctx.setPerspective(false);
+    ctx.setViewDist(100.0);
+    ctx.setZoom(6.0);
+    ctx.loadIdent();
+
+    ctx.startRender();
+
+    // back: opaque RED triangle (default section alpha 1.0) at z=0
+    ctx.startSection("back");
+    ctx.color(gfx::SolidColor::createRGB(1.0, 0.0, 0.0));
+    ctx.startTriangles();
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(-2.0, -2.0, 0.0));
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(2.0, -2.0, 0.0));
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(0.0, 2.0, 0.0));
+    ctx.end();
+    ctx.endSection();
+
+    // front: translucent BLUE triangle (section alpha 0.5) at z=1
+    ctx.setAlpha(0.5);
+    ctx.startSection("front");
+    ctx.color(gfx::SolidColor::createRGB(0.0, 0.0, 1.0));
+    ctx.startTriangles();
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(-2.0, -2.0, 1.0));
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(2.0, -2.0, 1.0));
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(0.0, 2.0, 1.0));
+    ctx.end();
+    ctx.endSection();
+
+    UmbreonRenderParams prm;
+    prm.width = 64;
+    prm.height = 64;
+    prm.supersample = 1;
+
+    int ow = 0, oh = 0, ncomp = 0;
+    std::vector<unsigned char> pix;
+    ctx.render(prm, ow, oh, ncomp, pix);
+
+    ASSERT_EQ(pix.size(), static_cast<std::size_t>(64 * 64 * 3));
+
+    // Center pixel (both triangles cover it): translucent blue over opaque red.
+    const std::size_t c = (static_cast<std::size_t>(32) * 64 + 32) * 3;
+    EXPECT_GT(pix[c + 0], 30);  // red shows through the translucent front
+    EXPECT_GT(pix[c + 2], 30);  // blue from the front
+}

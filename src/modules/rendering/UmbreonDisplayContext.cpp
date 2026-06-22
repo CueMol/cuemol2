@@ -51,16 +51,20 @@ namespace {
     return m;
   }
 
-  // Resolve a CLUT color index to an umbreon RGBA, passing the CueMol color
-  // through as the linear working color. Falls back to opaque white on failure.
+  // Resolve a CLUT color index to an umbreon RGBA. The RGB is passed through as
+  // the linear working color (see note above); the opacity is the per-color
+  // alpha scaled by alphaScale, the section's default alpha (the renderer's
+  // setAlpha()). This mirrors POV, which writes transmit = 1 - colorAlpha *
+  // defAlpha (PovDisplayContext::dumpClut). Falls back to white on failure.
   inline umbreon::Vec4 resolveColor(gfx::ColorTable &clut,
-                                    const gfx::ColorTable::elem_t &ci)
+                                    const gfx::ColorTable::elem_t &ci,
+                                    float alphaScale)
   {
     Vector4D rgba;
     if (!clut.getRGBAVecColor(ci, rgba))
-      return umbreon::Vec4(1.0f, 1.0f, 1.0f, 1.0f);
-    return umbreon::Vec4(float(rgba.x()), float(rgba.y()),
-                         float(rgba.z()), float(rgba.w()));
+      return umbreon::Vec4(1.0f, 1.0f, 1.0f, alphaScale);
+    return umbreon::Vec4(float(rgba.x()), float(rgba.y()), float(rgba.z()),
+                         float(rgba.w()) * alphaScale);
   }
 
   // Position raised off the surface along its normal (POV edge_line uses
@@ -126,6 +130,13 @@ void UmbreonDisplayContext::appendIntData()
   umbreon::Scene &scene = m_pImpl->scene;
   gfx::ColorTable &clut = pdat->m_clut;
 
+  // Section default alpha (the renderer's setAlpha()); multiplies each color's
+  // own opacity so a translucent renderer (e.g. a surface drawn with alpha 0.5)
+  // becomes see-through, matching POV's transmit = 1 - colorAlpha * defAlpha.
+  // Applied unconditionally (defAlpha == 1 is opaque); POV's post-blend mode is
+  // not relevant to umbreon's single-pass front-to-back compositing.
+  const float defAlpha = float(getAlpha());
+
   // Normalize thin primitives: dots -> spheres, lines -> cylinders.
   pdat->convDots();
   pdat->convLines(true);
@@ -155,7 +166,7 @@ void UmbreonDisplayContext::appendIntData()
       for (int k = 0; k < 3; ++k) {
         um.positions.push_back(toVec3(pv[k]->v));
         um.normals.push_back(toVec3(pv[k]->n));
-        um.colors.push_back(resolveColor(clut, pv[k]->c));
+        um.colors.push_back(resolveColor(clut, pv[k]->c, defAlpha));
       }
     }
   }
@@ -173,7 +184,7 @@ void UmbreonDisplayContext::appendIntData()
     umbreon::Sphere s;
     s.center = toVec3(p->v1);
     s.radius = float(p->r);
-    s.color = resolveColor(clut, p->col);
+    s.color = resolveColor(clut, p->col, defAlpha);
     s.material = surfaceFinish();
     scene.spheres.push_back(s);
   }
@@ -195,7 +206,7 @@ void UmbreonDisplayContext::appendIntData()
     c.p1 = toVec3(v2);
     // umbreon cylinders are single-radius; approximate cones by the mean.
     c.radius = float((p->w1 + p->w2) * 0.5);
-    c.color = resolveColor(clut, p->col);
+    c.color = resolveColor(clut, p->col, defAlpha);
     c.material = surfaceFinish();
     c.open = !p->bcap;
     scene.cylinders.push_back(c);
