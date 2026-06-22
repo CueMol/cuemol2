@@ -347,11 +347,24 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
   scene.mesh.material = surfaceFinish();
 
   // background color (passed through as the linear working color); default black
-  if (!m_bgcolor.isnull()) {
-    scene.background = umbreon::Vec3(float(m_bgcolor->fr()),
-                                     float(m_bgcolor->fg()),
-                                     float(m_bgcolor->fb()));
-  }
+  umbreon::Vec3 bg(0.0f, 0.0f, 0.0f);
+  if (!m_bgcolor.isnull())
+    bg = umbreon::Vec3(float(m_bgcolor->fr()), float(m_bgcolor->fg()),
+                       float(m_bgcolor->fb()));
+  scene.background = bg;
+
+  // POV fog (depth cue): CueMol writes, for an opaque background,
+  //   fog { distance slab/3, color bg, fog_type 2 (ground), fog_offset 0,
+  //         fog_alt 1e-10, up <0,0,1> }
+  // and the umbreon CLI applies it as a depth post-process. Without it the
+  // far geometry is not sunk toward the background, so shading looks flat.
+  scene.fog.enabled = true;
+  scene.fog.color = bg;
+  scene.fog.distance = float(m_dSlabDepth / 3.0);
+  scene.fog.type = 2;
+  scene.fog.offset = 0.0f;
+  scene.fog.alt = 1.0e-10f;
+  scene.fog.up = umbreon::Vec3(0.0f, 0.0f, 1.0f);
 
   // Default lighting matching CueMol's POV output (the scene the umbreon CLI
   // builds from a .pov). The umbreon CLI predefines _light_inten=1.3,
