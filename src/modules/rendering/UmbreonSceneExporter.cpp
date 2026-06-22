@@ -103,7 +103,7 @@ namespace {
 }  // anonymous namespace
 
 UmbreonSceneExporter::UmbreonSceneExporter()
-     : m_bPerspective(true), m_nSupersample(1), m_nAoSamples(0),
+     : m_bPerspective(true), m_nSupersample(3), m_nAoSamples(0),
        m_bShadows(false), m_bEnableEdgeLines(true), m_dCreaseLimit(-1.0),
        m_dEdgeRise(0.5), m_dAssumedGamma(2.2)
 {
