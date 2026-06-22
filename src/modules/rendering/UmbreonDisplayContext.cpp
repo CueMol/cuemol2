@@ -154,21 +154,33 @@ void UmbreonDisplayContext::appendIntData()
   }
 
   // --- triangle mesh (de-indexed: 3 corners per triangle) ---
+  // With slab clipping on (m_dClipZ >= 0), render the near-clipped mesh:
+  // calcMeshClip() cuts triangles at z == m_dClipZ, interpolating position /
+  // normal / color, exactly as the GL view and the Lux exporter do. It returns
+  // NULL when nothing is clipped, in which case the original mesh is used.
   {
-    Mesh &mesh = pdat->m_mesh;
-    const int nface = mesh.getFaceSize();
+    Mesh *pClipped = NULL;
+    Mesh *pmesh = &pdat->m_mesh;
+    if (pdat->m_dClipZ >= 0.0) {
+      pClipped = pdat->calcMeshClip();
+      if (pClipped != NULL)
+        pmesh = pClipped;
+    }
+    const int nface = pmesh->getFaceSize();
     umbreon::Mesh &um = scene.mesh;
     for (int i = 0; i < nface; ++i) {
-      const MeshFace &f = mesh.getFace(i);
-      const MeshVert *pv[3] = { mesh.getVertex(f.iv1),
-                                mesh.getVertex(f.iv2),
-                                mesh.getVertex(f.iv3) };
+      const MeshFace &f = pmesh->getFace(i);
+      const MeshVert *pv[3] = { pmesh->getVertex(f.iv1),
+                                pmesh->getVertex(f.iv2),
+                                pmesh->getVertex(f.iv3) };
       for (int k = 0; k < 3; ++k) {
         um.positions.push_back(toVec3(pv[k]->v));
         um.normals.push_back(toVec3(pv[k]->n));
         um.colors.push_back(resolveColor(clut, pv[k]->c, defAlpha));
       }
     }
+    if (pClipped != NULL)
+      delete pClipped;
   }
 
   if (bEdges) {
@@ -178,9 +190,13 @@ void UmbreonDisplayContext::appendIntData()
   }
 
   // --- analytic spheres (shaded, not flat outline) ---
+  // umbreon cannot cut a quadric at the clip plane, so (like the Lux exporter)
+  // drop spheres that lie entirely in front of it and draw the rest whole.
   for (RendIntData::SphList::const_iterator i = pdat->m_spheres.begin();
        i != pdat->m_spheres.end(); ++i) {
     const RendIntData::Sph *p = *i;
+    if (pdat->m_dClipZ >= 0.0 && p->v1.z() - p->r >= pdat->m_dClipZ)
+      continue;
     umbreon::Sphere s;
     s.center = toVec3(p->v1);
     s.radius = float(p->r);
@@ -200,6 +216,14 @@ void UmbreonDisplayContext::appendIntData()
       p->pTransf->xform4D(v1);
       v2.w() = 1.0;
       p->pTransf->xform4D(v2);
+    }
+    // drop cylinders entirely in front of the near clip plane (umbreon cannot
+    // cut a quadric there); the Lux exporter does the same.
+    if (pdat->m_dClipZ >= 0.0) {
+      const double zfar = (v1.z() < v2.z()) ? v1.z() : v2.z();
+      const double delw = (p->w1 > p->w2) ? p->w1 : p->w2;
+      if (zfar - delw >= pdat->m_dClipZ)
+        continue;
     }
     umbreon::Cylinder c;
     c.p0 = toVec3(v1);

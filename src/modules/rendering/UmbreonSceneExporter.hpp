@@ -29,6 +29,12 @@ namespace render {
     /// perspective (true) vs orthographic (false) projection
     bool m_bPerspective;
 
+    /// clip geometry to the camera slab's near cutaway plane (z = slab/2),
+    /// matching the GL view and the Lux exporter. Defaults to true so the image
+    /// reproduces the live view; false renders the full unclipped scene (like
+    /// the POV exporter's default).
+    bool m_bUseClipZ;
+
     /// supersampling (antialiasing) factor; 1 = off
     int m_nSupersample;
 

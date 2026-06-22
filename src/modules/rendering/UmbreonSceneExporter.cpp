@@ -107,9 +107,9 @@ namespace {
 }  // anonymous namespace
 
 UmbreonSceneExporter::UmbreonSceneExporter()
-     : m_bPerspective(true), m_nSupersample(3), m_nAoSamples(0),
-       m_bShadows(false), m_bEnableEdgeLines(true), m_dCreaseLimit(-1.0),
-       m_dEdgeRise(0.5), m_dAssumedGamma(2.2)
+     : m_bPerspective(true), m_bUseClipZ(true), m_nSupersample(3),
+       m_nAoSamples(0), m_bShadows(false), m_bEnableEdgeLines(true),
+       m_dCreaseLimit(-1.0), m_dEdgeRise(0.5), m_dAssumedGamma(2.2)
 {
 }
 
@@ -130,6 +130,11 @@ void UmbreonSceneExporter::write()
 
   ctx.setPerspective(m_bPerspective);
   ctx.setBgColor(pScene->getBgColor());
+
+  // Clip geometry to the camera slab (near cutaway plane); the actual plane
+  // (z = slab/2) is computed in FileDisplayContext::startSection from the slab
+  // depth set below.
+  ctx.setClipZ(m_bUseClipZ);
 
   ctx.enableEdgeLines(m_bEnableEdgeLines);
   ctx.setCreaseLimit(m_dCreaseLimit);

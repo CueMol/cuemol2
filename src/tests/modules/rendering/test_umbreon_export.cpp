@@ -189,3 +189,64 @@ TEST(UmbreonExport, BlendsTranslucentSectionOverOpaqueGeometry)
     EXPECT_GT(pix[c + 0], 30);  // red shows through the translucent front
     EXPECT_GT(pix[c + 2], 30);  // blue from the front
 }
+
+// Pins the slab near-clip path (setClipZ): with the slab depth set so the clip
+// plane is z = 1, a GREEN triangle at z=0 is inside the slab and a RED triangle
+// at z=2 is in front of the clip plane (closer to the camera). calcMeshClip
+// removes the red triangle entirely, so the center pixel shows the green behind
+// it. Without clipping the closer red would occlude the green (center red).
+TEST(UmbreonExport, ClipsGeometryInFrontOfSlabPlane)
+{
+    UmbreonDisplayContext ctx;
+    ctx.init();
+
+    ctx.setPerspective(false);
+    ctx.setViewDist(100.0);
+    ctx.setZoom(6.0);
+    ctx.setSlabDepth(2.0);  // near clip plane at z = slab/2 = 1.0
+    ctx.setClipZ(true);
+    ctx.loadIdent();
+
+    ctx.startRender();
+    ctx.startSection("clip");
+
+    // GREEN triangle at z=0 (inside the slab, z < 1) -- kept
+    ctx.color(gfx::SolidColor::createRGB(0.0, 1.0, 0.0));
+    ctx.startTriangles();
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(-2.0, -2.0, 0.0));
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(2.0, -2.0, 0.0));
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(0.0, 2.0, 0.0));
+    ctx.end();
+
+    // RED triangle at z=2 (in front of the near clip plane, z >= 1) -- clipped
+    ctx.color(gfx::SolidColor::createRGB(1.0, 0.0, 0.0));
+    ctx.startTriangles();
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(-2.0, -2.0, 2.0));
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(2.0, -2.0, 2.0));
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(0.0, 2.0, 2.0));
+    ctx.end();
+
+    ctx.endSection();
+
+    UmbreonRenderParams prm;
+    prm.width = 64;
+    prm.height = 64;
+    prm.supersample = 1;
+
+    int ow = 0, oh = 0, ncomp = 0;
+    std::vector<unsigned char> pix;
+    ctx.render(prm, ow, oh, ncomp, pix);
+
+    ASSERT_EQ(pix.size(), static_cast<std::size_t>(64 * 64 * 3));
+
+    // Center pixel: the closer red triangle was clipped, so green shows.
+    const std::size_t c = (static_cast<std::size_t>(32) * 64 + 32) * 3;
+    EXPECT_GT(pix[c + 1], 30);  // green (inside the slab) is visible
+    EXPECT_LT(pix[c + 0], 30);  // red (in front of the clip plane) is gone
+}

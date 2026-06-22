@@ -20,6 +20,9 @@ runtime_class UmbreonSceneExporter extends SceneExporter
 
   property boolean perspective => m_bPerspective;
 
+  /// clip geometry to the camera slab near cutaway plane (z = slab/2)
+  property boolean useClipZ => m_bUseClipZ;
+
   /// supersampling (antialiasing) factor; 1 = off
   property integer supersample => m_nSupersample;
 
