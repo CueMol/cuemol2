@@ -83,6 +83,12 @@ namespace {
     png_set_IHDR(pPNG, pInfo, width, height, 8, color_type,
                  PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE,
                  PNG_FILTER_TYPE_BASE);
+
+    // The pixels are sRGB-encoded (umbreon::srgbEncode8). Tag the file as sRGB
+    // and emit the matching gAMA/cHRM chunks so viewers display the colors
+    // correctly instead of treating an untagged file as linear (too dark).
+    png_set_sRGB_gAMA_and_cHRM(pPNG, pInfo, PNG_sRGB_INTENT_PERCEPTUAL);
+
     png_write_info(pPNG, pInfo);
 
     const int rowbytes = width * ncomp;
