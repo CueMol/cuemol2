@@ -27,31 +27,27 @@ using qlib::Matrix4D;
 #ifdef HAVE_UMBREON
 namespace {
 
-  // sRGB (display) -> linear. CueMol colors are sRGB display values; umbreon
-  // shades in linear space and re-encodes to sRGB on output (srgbEncode8), so
-  // the geometry colors must be linearized on the way in.
-  inline float srgb2linear(double c)
-  {
-    if (c <= 0.04045)
-      return float(c / 12.92);
-    return float(std::pow((c + 0.055) / 1.055, 2.4));
-  }
+  // CueMol stores colors as display (sRGB-ish) values and writes them to POV as
+  // plain `color rgb`, which POV-Ray (assumed_gamma 1.0) and the umbreon CLI's
+  // mesh2_reader both use AS-IS as the linear working color (only POV `srgb`
+  // literals are sRGB-decoded). To match that reference, pass the CueMol color
+  // through unchanged -- do NOT sRGB-decode it.
 
   inline umbreon::Vec3 toVec3(const Vector4D &v)
   {
     return umbreon::Vec3(float(v.x()), float(v.y()), float(v.z()));
   }
 
-  // Resolve a CLUT color index to a linear-space umbreon RGBA (rgb linearized,
-  // alpha kept as-is). Falls back to opaque white on lookup failure.
+  // Resolve a CLUT color index to an umbreon RGBA, passing the CueMol color
+  // through as the linear working color. Falls back to opaque white on failure.
   inline umbreon::Vec4 resolveColor(gfx::ColorTable &clut,
                                     const gfx::ColorTable::elem_t &ci)
   {
     Vector4D rgba;
     if (!clut.getRGBAVecColor(ci, rgba))
       return umbreon::Vec4(1.0f, 1.0f, 1.0f, 1.0f);
-    return umbreon::Vec4(srgb2linear(rgba.x()), srgb2linear(rgba.y()),
-                         srgb2linear(rgba.z()), float(rgba.w()));
+    return umbreon::Vec4(float(rgba.x()), float(rgba.y()),
+                         float(rgba.z()), float(rgba.w()));
   }
 
   // Position raised off the surface along its normal (POV edge_line uses
@@ -242,7 +238,7 @@ void UmbreonDisplayContext::writeEdgeLineImpl(PrintStream &, int xa1, int xa2,
   const double w = getEdgeLineWidth();
   const double raise = m_dEdgeRise * (w * 0.5);
 
-  // edge line color (sRGB -> linear); default black
+  // edge line color (passed through as the linear working color); default black
   double er = 0.0, eg = 0.0, eb = 0.0;
   gfx::ColorPtr pcol = getEdgeLineColor();
   if (!pcol.isnull()) {
@@ -250,7 +246,7 @@ void UmbreonDisplayContext::writeEdgeLineImpl(PrintStream &, int xa1, int xa2,
     eg = pcol->fg();
     eb = pcol->fb();
   }
-  const float lr = srgb2linear(er), lg = srgb2linear(eg), lb = srgb2linear(eb);
+  const float lr = float(er), lg = float(eg), lb = float(eb);
 
   umbreon::Cylinder c;
   c.p0 = riseToVec3(x1, n1, raise);
@@ -294,7 +290,7 @@ void UmbreonDisplayContext::writePointImpl(PrintStream &, const Vector4D &v1,
   s.center = riseToVec3(v1, n1, raise);
   s.radius = float(w);
   s.material = umbreon::Material::flatOutline();
-  s.color = umbreon::Vec4(srgb2linear(er), srgb2linear(eg), srgb2linear(eb), 1.0f);
+  s.color = umbreon::Vec4(float(er), float(eg), float(eb), 1.0f);
   m_pImpl->scene.spheres.push_back(s);
 #endif  // HAVE_UMBREON
 }
@@ -333,11 +329,11 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
 
   umbreon::Scene &scene = m_pImpl->scene;
 
-  // background color (sRGB -> linear); default black
+  // background color (passed through as the linear working color); default black
   if (!m_bgcolor.isnull()) {
-    scene.background = umbreon::Vec3(srgb2linear(m_bgcolor->fr()),
-                                     srgb2linear(m_bgcolor->fg()),
-                                     srgb2linear(m_bgcolor->fb()));
+    scene.background = umbreon::Vec3(float(m_bgcolor->fr()),
+                                     float(m_bgcolor->fg()),
+                                     float(m_bgcolor->fb()));
   }
 
   // Default lighting matching CueMol's POV output (the same scene the umbreon
