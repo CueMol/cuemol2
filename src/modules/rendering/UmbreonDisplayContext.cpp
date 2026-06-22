@@ -38,6 +38,19 @@ namespace {
     return umbreon::Vec3(float(v.x()), float(v.y()), float(v.z()));
   }
 
+  // CueMol's default POV material finish (default_style.xml): ambient 0.2,
+  // diffuse 0.8, brilliance 1.0 (== umbreon Material() defaults) plus
+  // specular 0.4 and roughness 0.01 (umbreon defaults are specular 0,
+  // roughness 0.02). The SpecLighting key light casts highlights, so this
+  // specular is what produces the reference's highlights.
+  inline umbreon::Material surfaceFinish()
+  {
+    umbreon::Material m;
+    m.specular = 0.4f;
+    m.roughness = 0.01f;
+    return m;
+  }
+
   // Resolve a CLUT color index to an umbreon RGBA, passing the CueMol color
   // through as the linear working color. Falls back to opaque white on failure.
   inline umbreon::Vec4 resolveColor(gfx::ColorTable &clut,
@@ -161,7 +174,7 @@ void UmbreonDisplayContext::appendIntData()
     s.center = toVec3(p->v1);
     s.radius = float(p->r);
     s.color = resolveColor(clut, p->col);
-    s.material = umbreon::Material();
+    s.material = surfaceFinish();
     scene.spheres.push_back(s);
   }
 
@@ -183,7 +196,7 @@ void UmbreonDisplayContext::appendIntData()
     // umbreon cylinders are single-radius; approximate cones by the mean.
     c.radius = float((p->w1 + p->w2) * 0.5);
     c.color = resolveColor(clut, p->col);
-    c.material = umbreon::Material();
+    c.material = surfaceFinish();
     c.open = !p->bcap;
     scene.cylinders.push_back(c);
   }
@@ -329,6 +342,10 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
 
   umbreon::Scene &scene = m_pImpl->scene;
 
+  // CueMol's default material finish for the accumulated triangle mesh
+  // (surfaces, cartoons, folded spheres/cylinders).
+  scene.mesh.material = surfaceFinish();
+
   // background color (passed through as the linear working color); default black
   if (!m_bgcolor.isnull()) {
     scene.background = umbreon::Vec3(float(m_bgcolor->fr()),
@@ -336,29 +353,29 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
                                      float(m_bgcolor->fb()));
   }
 
-  // Default lighting matching CueMol's POV output (the same scene the umbreon
-  // CLI builds from a .pov): two shadowless fill lights plus a constant
-  // ambient. CueMol's defaults are _light_inten=1.3, _flash_frac=0.8/1.3,
-  // _amb_frac=0, and the macro intensities are the evaluated expressions
-  // (NOT the raw _light_inten):
-  //   SpecLighting  = _light_inten*(1-_amb_frac)*(1-_flash_frac) = 0.5
-  //   FlashLighting = _light_inten*(1-_amb_frac)*_flash_frac     = 0.8
-  // Both are fill lights (no specular).
+  // Default lighting matching CueMol's POV output (the scene the umbreon CLI
+  // builds from a .pov). The umbreon CLI predefines _light_inten=1.3,
+  // _flash_frac=0.6, _amb_frac=0, and the .pov's `#ifndef(_light_inten)`
+  // override is skipped, so the evaluated macro intensities are:
+  //   SpecLighting  = _light_inten*(1-_amb_frac)*(1-_flash_frac) = 0.52
+  //   FlashLighting = _light_inten*(1-_amb_frac)*_flash_frac     = 0.78
   if (scene.lights.empty()) {
     // SpecLighting: directional key light from the upper-front-right
-    // (positioned at normalize(1,1,1), pointing at the origin).
+    // (positioned at normalize(1,1,1), pointing at the origin). CueMol calls it
+    // with aShadow=1, so it is NOT shadowless -> it casts highlights (specular).
     umbreon::DistantLight spec;
     spec.direction = umbreon::normalize(umbreon::Vec3(-1.0f, -1.0f, -1.0f));
     spec.color = umbreon::Vec3(1.0f, 1.0f, 1.0f);
-    spec.intensity = 0.5f;
-    spec.castsHighlight = false;
+    spec.intensity = 0.52f;
+    spec.castsHighlight = true;
     scene.lights.push_back(spec);
 
-    // FlashLighting: headlight along the view direction (from the camera).
+    // FlashLighting: headlight along the view direction (from the camera);
+    // always shadowless -> a fill light (diffuse only, no specular).
     umbreon::DistantLight flash;
     flash.direction = umbreon::Vec3(0.0f, 0.0f, -1.0f);
     flash.color = umbreon::Vec3(1.0f, 1.0f, 1.0f);
-    flash.intensity = 0.8f;
+    flash.intensity = 0.78f;
     flash.castsHighlight = false;
     scene.lights.push_back(flash);
   }
