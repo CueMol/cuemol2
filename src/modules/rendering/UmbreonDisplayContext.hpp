@@ -33,6 +33,9 @@ namespace render {
     int supersample = 1;
     int aoSamples = 0;
     bool shadows = false;
+    /// POV assumed_gamma applied to the final image (1.0 = no-op). CueMol's
+    /// POV exporter writes 1.0, but a .pov may override it (e.g. 2.2).
+    double assumedGamma = 1.0;
   };
 
   /// DisplayContext backend that renders a scene with umbreon (Embree).

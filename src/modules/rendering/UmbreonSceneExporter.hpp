@@ -47,6 +47,11 @@ namespace render {
     /// edge line rise from the surface
     double m_dEdgeRise;
 
+    /// POV assumed_gamma applied to the final image (1.0 = no-op). Defaults to
+    /// 2.2 to match the .pov + umbreon_cli reference workflow; set to 1.0 for a
+    /// default CueMol .pov (which writes assumed_gamma 1.0).
+    double m_dAssumedGamma;
+
   public:
     UmbreonSceneExporter();
     virtual ~UmbreonSceneExporter();

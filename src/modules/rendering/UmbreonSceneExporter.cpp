@@ -105,7 +105,7 @@ namespace {
 UmbreonSceneExporter::UmbreonSceneExporter()
      : m_bPerspective(true), m_nSupersample(1), m_nAoSamples(0),
        m_bShadows(false), m_bEnableEdgeLines(true), m_dCreaseLimit(-1.0),
-       m_dEdgeRise(0.5)
+       m_dEdgeRise(0.5), m_dAssumedGamma(2.2)
 {
 }
 
@@ -169,6 +169,7 @@ void UmbreonSceneExporter::write()
   prm.supersample = m_nSupersample;
   prm.aoSamples = m_nAoSamples;
   prm.shadows = m_bShadows;
+  prm.assumedGamma = m_dAssumedGamma;
 
   int ow = 0, oh = 0, ncomp = 0;
   std::vector<unsigned char> pix;

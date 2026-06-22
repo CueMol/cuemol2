@@ -365,6 +365,9 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
   scene.ambientIntensity = 1.0f;
   scene.ambientColor = umbreon::Vec3(1.0f, 1.0f, 1.0f);
 
+  // POV assumed_gamma: raises the final image to this power (1.0 = no-op).
+  scene.assumedGamma = float(prm.assumedGamma);
+
   umbreon::RenderOptions opt;
   opt.width = (prm.width > 0) ? prm.width : 640;
   opt.height = (prm.height > 0) ? prm.height : 480;

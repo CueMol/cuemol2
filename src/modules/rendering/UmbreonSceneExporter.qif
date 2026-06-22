@@ -38,6 +38,11 @@ runtime_class UmbreonSceneExporter extends SceneExporter
 
   property real edgeRise => m_dEdgeRise;
 
+  //////////
+  // POV assumed_gamma applied to the final image (1.0 = no-op)
+
+  property real assumedGamma => m_dAssumedGamma;
+
 };
 
 #endif
