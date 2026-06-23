@@ -41,8 +41,20 @@ namespace render {
     /// ambient-occlusion ray count per mesh hit; 0 = off
     int m_nAoSamples;
 
+    /// ambient-occlusion occluder search radius (world units)
+    double m_dAoDistance;
+
+    /// ambient-occlusion strength (0 = none, 1 = full)
+    double m_dAoIntensity;
+
     /// cast shadows from the lights
     bool m_bShadows;
+
+    /// shadow rays per light (>1 = soft area light)
+    int m_nShadowSamples;
+
+    /// light angular radius in degrees (>0 = soft shadows)
+    double m_dLightRadius;
 
     /// draw silhouette/edge outline lines (CueMol toon edges)
     bool m_bEnableEdgeLines;

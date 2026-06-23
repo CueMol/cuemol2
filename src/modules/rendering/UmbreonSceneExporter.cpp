@@ -109,9 +109,11 @@ namespace {
 
 UmbreonSceneExporter::UmbreonSceneExporter()
      : m_bPerspective(true), m_bUseClipZ(true), m_nSupersample(3),
-       m_nAoSamples(0), m_bShadows(false), m_bEnableEdgeLines(true),
-       m_dCreaseLimit(-1.0), m_dEdgeRise(0.5), m_dAssumedGamma(2.2),
-       m_bLinearOutput(false), m_bTransparentBackground(false)
+       m_nAoSamples(0), m_dAoDistance(1.0e20), m_dAoIntensity(1.0),
+       m_bShadows(false), m_nShadowSamples(1), m_dLightRadius(0.0),
+       m_bEnableEdgeLines(true), m_dCreaseLimit(-1.0), m_dEdgeRise(0.5),
+       m_dAssumedGamma(2.2), m_bLinearOutput(false),
+       m_bTransparentBackground(false)
 {
 }
 
@@ -179,7 +181,11 @@ void UmbreonSceneExporter::write()
   prm.height = height;
   prm.supersample = m_nSupersample;
   prm.aoSamples = m_nAoSamples;
+  prm.aoDistance = m_dAoDistance;
+  prm.aoIntensity = m_dAoIntensity;
   prm.shadows = m_bShadows;
+  prm.shadowSamples = m_nShadowSamples;
+  prm.lightRadius = m_dLightRadius;
   prm.assumedGamma = m_dAssumedGamma;
   prm.linearOutput = m_bLinearOutput;
   prm.transparentBackground = m_bTransparentBackground;

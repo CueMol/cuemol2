@@ -31,8 +31,16 @@ namespace render {
     int width = 0;
     int height = 0;
     int supersample = 1;
+    /// ambient occlusion: rays per mesh hit (0 = off), occluder search radius
+    /// (world units), and strength (0 = none, 1 = full).
     int aoSamples = 0;
+    double aoDistance = 1.0e20;
+    double aoIntensity = 1.0;
+    /// shadows: cast from the lights; samples per light (>1 = soft area light)
+    /// and light angular radius in degrees (>0 = soft shadows).
     bool shadows = false;
+    int shadowSamples = 1;
+    double lightRadius = 0.0;
     /// POV assumed_gamma applied to the final image (1.0 = no-op). CueMol's
     /// POV exporter writes 1.0, but a .pov may override it (e.g. 2.2).
     double assumedGamma = 1.0;

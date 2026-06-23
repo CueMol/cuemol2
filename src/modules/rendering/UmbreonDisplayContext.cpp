@@ -638,7 +638,11 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
   opt.height = (prm.height > 0) ? prm.height : 480;
   opt.supersample = (prm.supersample > 0) ? prm.supersample : 1;
   opt.aoSamples = (prm.aoSamples > 0) ? prm.aoSamples : 0;
+  opt.aoDistance = float(prm.aoDistance);
+  opt.aoIntensity = float(prm.aoIntensity);
   opt.shadows = prm.shadows;
+  opt.shadowSamples = (prm.shadowSamples > 0) ? prm.shadowSamples : 1;
+  opt.lightRadius = float(prm.lightRadius);
   opt.transparentBackground = prm.transparentBackground;
 
   MB_DPRINTLN("Umbreon> render %dx%d ss=%d ao=%d tris=%d",

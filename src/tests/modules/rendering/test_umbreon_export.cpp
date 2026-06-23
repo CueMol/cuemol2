@@ -412,3 +412,74 @@ TEST(UmbreonExport, RendersTransparentBackground)
     EXPECT_EQ(pix[corner + 1], 0);
     EXPECT_EQ(pix[corner + 2], 0);
 }
+
+// Pins that the ambient-occlusion and shadow options reach umbreon and change
+// the result. A mesh plane (AO applies to mesh hits) is occluded by a sphere in
+// front of it, so enabling AO + shadows darkens the plane around the sphere
+// (AO) and casts the sphere's shadow onto it. The enhanced render must differ
+// from the baseline; if the options were dropped the two would be identical.
+TEST(UmbreonExport, AmbientOcclusionAndShadowsAffectOutput)
+{
+    auto renderOccludedPlane = [](int aoSamples, bool shadows) {
+        UmbreonDisplayContext ctx;
+        ctx.init();
+        ctx.setPerspective(false);
+        ctx.setViewDist(100.0);
+        ctx.setZoom(8.0);
+        ctx.loadIdent();
+
+        ctx.startRender();
+        ctx.startSection("s");
+        ctx.color(gfx::SolidColor::createRGB(0.8, 0.8, 0.8));
+        // a mesh plane at z=0 facing the camera (two triangles)
+        ctx.startTriangles();
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(-3.0, -3.0, 0.0));
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(3.0, -3.0, 0.0));
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(3.0, 3.0, 0.0));
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(-3.0, -3.0, 0.0));
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(3.0, 3.0, 0.0));
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(-3.0, 3.0, 0.0));
+        ctx.end();
+        // a sphere in front of the plane (between it and the camera/lights)
+        ctx.sphere(1.2, Vector4D(0.0, 0.0, 1.5));
+        ctx.endSection();
+
+        UmbreonRenderParams prm;
+        prm.width = 64;
+        prm.height = 64;
+        prm.supersample = 1;
+        prm.aoSamples = aoSamples;
+        prm.aoDistance = 10.0;
+        prm.aoIntensity = 1.0;
+        prm.shadows = shadows;
+        prm.shadowSamples = 4;
+        prm.lightRadius = 2.0;
+
+        int ow = 0, oh = 0, ncomp = 0;
+        std::vector<unsigned char> pix;
+        ctx.render(prm, ow, oh, ncomp, pix);
+        return pix;
+    };
+
+    std::vector<unsigned char> base = renderOccludedPlane(0, false);
+    std::vector<unsigned char> enh = renderOccludedPlane(16, true);
+
+    ASSERT_EQ(base.size(), static_cast<std::size_t>(64 * 64 * 3));
+    ASSERT_EQ(base.size(), enh.size());
+
+    // the scene is lit in the baseline
+    std::size_t nNonBg = 0;
+    for (std::size_t i = 0; i + 2 < base.size(); i += 3) {
+        if (base[i] > 8 || base[i + 1] > 8 || base[i + 2] > 8)
+            ++nNonBg;
+    }
+    EXPECT_GT(nNonBg, 200u);
+    // AO + shadows change the shaded result
+    EXPECT_NE(base, enh);
+}

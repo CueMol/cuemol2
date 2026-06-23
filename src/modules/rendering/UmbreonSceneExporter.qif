@@ -29,8 +29,20 @@ runtime_class UmbreonSceneExporter extends SceneExporter
   /// ambient-occlusion ray count per mesh hit; 0 = off
   property integer aoSamples => m_nAoSamples;
 
+  /// ambient-occlusion occluder search radius (world units)
+  property real aoDistance => m_dAoDistance;
+
+  /// ambient-occlusion strength (0 = none, 1 = full)
+  property real aoIntensity => m_dAoIntensity;
+
   /// cast shadows from the lights
   property boolean shadows => m_bShadows;
+
+  /// shadow rays per light (>1 = soft area light)
+  property integer shadowSamples => m_nShadowSamples;
+
+  /// light angular radius in degrees (>0 = soft shadows)
+  property real lightRadius => m_dLightRadius;
 
   //////////
   // edge / silhouette outline lines (CueMol toon edges)
