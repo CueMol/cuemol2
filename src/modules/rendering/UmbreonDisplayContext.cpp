@@ -229,6 +229,17 @@ struct UmbreonDisplayContext::Impl
   /// sections; indices are stored per triangle in scene.mesh.triMaterialId.
   std::vector<umbreon::Material> matTable;
   std::map<LString, int> matIndex;
+
+  /// Per-section transparency group (= one CueMol renderer). Assigned per
+  /// section and stored on every primitive (Sphere/Cylinder.group,
+  /// Mesh.triGroupId). Semi-transparent sections are added to veilGroups so the
+  /// renderer composites as a single-layer "veil" (only the frontmost surface
+  /// per group), instead of blending each overlapping sphere/triangle over the
+  /// next (which double-darkens overlaps). Mirrors CueMol's per-section
+  /// transparency (PovDisplayContext::startSection / blendTab).
+  int nextGroup = 0;
+  int curGroup = 0;
+  std::vector<std::uint16_t> veilGroups;
 #endif
 };
 
@@ -251,6 +262,9 @@ void UmbreonDisplayContext::startRender()
   m_pImpl->scene = umbreon::Scene();
   m_pImpl->matTable.clear();
   m_pImpl->matIndex.clear();
+  m_pImpl->nextGroup = 0;
+  m_pImpl->curGroup = 0;
+  m_pImpl->veilGroups.clear();
 #endif
 }
 
@@ -318,6 +332,17 @@ void UmbreonDisplayContext::appendIntData()
   // not relevant to umbreon's single-pass front-to-back compositing.
   const float defAlpha = float(getAlpha());
 
+  // Assign this section (= one CueMol renderer) a transparency group. A
+  // semi-transparent renderer is registered as a veil so umbreon composites it
+  // as a single layer (the frontmost surface per group) instead of blending
+  // each overlapping sphere/triangle over the next (which double-darkens the
+  // overlaps). This matches CueMol's per-section transparency (the renderer
+  // alpha, getAlpha(), is what PovDisplayContext groups by in its blendTab).
+  m_pImpl->curGroup = m_pImpl->nextGroup++;
+  const std::uint16_t group = static_cast<std::uint16_t>(m_pImpl->curGroup);
+  if (defAlpha < 1.0f - 1.0e-4f)
+    m_pImpl->veilGroups.push_back(group);
+
   // Normalize thin primitives: dots -> spheres, lines -> cylinders.
   pdat->convDots();
   pdat->convLines(true);
@@ -361,6 +386,7 @@ void UmbreonDisplayContext::appendIntData()
       clut.getMaterial(pv[0]->c, triMat);
       um.triMaterialId.push_back(
           static_cast<std::uint8_t>(materialIndexFor(triMat)));
+      um.triGroupId.push_back(group);
       for (int k = 0; k < 3; ++k) {
         um.positions.push_back(toVec3(pv[k]->v));
         um.normals.push_back(toVec3(pv[k]->n));
@@ -393,6 +419,7 @@ void UmbreonDisplayContext::appendIntData()
     clut.getMaterial(p->col, smat);
     const int smatIdx = materialIndexFor(smat);
     s.material = m_pImpl->matTable[smatIdx];
+    s.group = group;
     scene.spheres.push_back(s);
   }
 
@@ -426,6 +453,7 @@ void UmbreonDisplayContext::appendIntData()
     clut.getMaterial(p->col, cmat);
     const int cmatIdx = materialIndexFor(cmat);
     c.material = m_pImpl->matTable[cmatIdx];
+    c.group = group;
     c.open = !p->bcap;
     scene.cylinders.push_back(c);
   }
@@ -505,6 +533,7 @@ void UmbreonDisplayContext::writeEdgeLineImpl(PrintStream &, int xa1, int xa2,
     c.color = umbreon::Vec4(lr, lg, lb, float(1.0 - xa1 / 255.0));
     c.opacity1 = float(1.0 - xa2 / 255.0);
   }
+  c.group = static_cast<std::uint16_t>(m_pImpl->curGroup);
   m_pImpl->scene.cylinders.push_back(c);
 #endif  // HAVE_UMBREON
 }
@@ -533,6 +562,7 @@ void UmbreonDisplayContext::writePointImpl(PrintStream &, const Vector4D &v1,
   s.radius = float(w);
   s.material = umbreon::Material::flatOutline();
   s.color = umbreon::Vec4(float(er), float(eg), float(eb), 1.0f);
+  s.group = static_cast<std::uint16_t>(m_pImpl->curGroup);
   m_pImpl->scene.spheres.push_back(s);
 #endif  // HAVE_UMBREON
 }
@@ -578,6 +608,10 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
   scene.mesh.materials = m_pImpl->matTable;
   scene.mesh.material =
       m_pImpl->matTable.empty() ? surfaceFinish() : m_pImpl->matTable[0];
+
+  // Semi-transparent sections (one per renderer) are composited as single-layer
+  // veils so overlapping primitives within a renderer do not double-blend.
+  scene.veilGroups = m_pImpl->veilGroups;
 
   // background color (passed through as the linear working color); default black
   umbreon::Vec3 bg(0.0f, 0.0f, 0.0f);

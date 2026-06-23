@@ -483,3 +483,52 @@ TEST(UmbreonExport, AmbientOcclusionAndShadowsAffectOutput)
     // AO + shadows change the shaded result
     EXPECT_NE(base, enh);
 }
+
+// Pins per-renderer veil compositing: a semi-transparent section (renderer) is
+// laid down as ONE single-layer veil, so several overlapping spheres in it look
+// identical to a single sphere -- the overlaps do not double-blend. Without the
+// veil (plain front-to-back "over"), N stacked translucent spheres would
+// accumulate and look brighter/more opaque than one.
+TEST(UmbreonExport, VeilsTranslucentRendererAsSingleLayer)
+{
+    auto renderStackedSpheres = [](int nSpheres) {
+        UmbreonDisplayContext ctx;
+        ctx.init();
+        ctx.setPerspective(false);
+        ctx.setViewDist(100.0);
+        ctx.setZoom(6.0);
+        ctx.loadIdent();
+
+        ctx.startRender();
+        ctx.setAlpha(0.5);  // the renderer is semi-transparent -> a veil
+        ctx.startSection("veil");
+        ctx.color(gfx::SolidColor::createRGB(0.2, 0.4, 1.0));
+        // coincident in screen space (same x,y, stacked slightly in z), so they
+        // fully overlap; only the frontmost should contribute under the veil
+        for (int i = 0; i < nSpheres; ++i)
+            ctx.sphere(1.5, Vector4D(0.0, 0.0, -0.02 * i));
+        ctx.endSection();
+
+        UmbreonRenderParams prm;
+        prm.width = 64;
+        prm.height = 64;
+        prm.supersample = 1;
+
+        int ow = 0, oh = 0, ncomp = 0;
+        std::vector<unsigned char> pix;
+        ctx.render(prm, ow, oh, ncomp, pix);
+        return pix;
+    };
+
+    std::vector<unsigned char> one = renderStackedSpheres(1);
+    std::vector<unsigned char> three = renderStackedSpheres(3);
+
+    ASSERT_EQ(one.size(), static_cast<std::size_t>(64 * 64 * 3));
+    ASSERT_EQ(one.size(), three.size());
+
+    // the sphere is visible (lit, semi-transparent over the black background)
+    const std::size_t c = (static_cast<std::size_t>(32) * 64 + 32) * 3;
+    EXPECT_GT(one[c + 2], 8);
+    // veil = single layer: three coincident spheres == one (no accumulation)
+    EXPECT_EQ(one, three);
+}
