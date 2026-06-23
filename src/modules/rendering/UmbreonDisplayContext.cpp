@@ -13,10 +13,17 @@
 #include <qlib/PrintStream.hpp>
 #include <qlib/StringStream.hpp>
 #include <gfx/AbstractColor.hpp>
+#include <qsys/style/StyleMgr.hpp>
 
 #ifdef HAVE_UMBREON
 #  include <umbreon/umbreon.hpp>
 #  include <cmath>
+#  include <cstdint>
+#  include <cstdlib>
+#  include <map>
+#  include <sstream>
+#  include <string>
+#  include <vector>
 #endif
 
 using namespace render;
@@ -48,6 +55,138 @@ namespace {
     umbreon::Material m;
     m.specular = 0.4f;
     m.roughness = 0.01f;
+    return m;
+  }
+
+  // POV named metal finishes (metals.inc presets) resolved by name. Mirrors
+  // umbreon's mesh2_reader::lookupNamedFinish exactly so the in-process render
+  // matches umbreon_cli reading the same .pov. Fields: ambient, brilliance,
+  // diffuse, specular, roughness, reflection; all metallic with phong 0.
+  bool lookupNamedFinish(const std::string &name, umbreon::Material &out)
+  {
+    struct Entry
+    {
+      const char *name;
+      float ambient, brilliance, diffuse, specular, roughness, reflection;
+    };
+    static const Entry kTable[] = {
+        {"F_MetalA", 0.35f, 2.0f, 0.3f, 0.80f, 1.0f / 20.0f, 0.10f},
+        {"F_MetalB", 0.30f, 3.0f, 0.4f, 0.70f, 1.0f / 60.0f, 0.25f},
+        {"F_MetalC", 0.25f, 4.0f, 0.5f, 0.80f, 1.0f / 80.0f, 0.50f},
+        {"F_MetalD", 0.15f, 5.0f, 0.6f, 0.80f, 1.0f / 100.0f, 0.65f},
+        {"F_MetalE", 0.10f, 6.0f, 0.7f, 0.80f, 1.0f / 120.0f, 0.80f},
+    };
+    for (const Entry &e : kTable) {
+      if (name == e.name) {
+        out = umbreon::Material();
+        out.ambient = e.ambient;
+        out.brilliance = e.brilliance;
+        out.diffuse = e.diffuse;
+        out.specular = e.specular;
+        out.roughness = e.roughness;
+        out.reflection = e.reflection;
+        out.metallic = true;
+        out.phong = 0.0f;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Translate a CueMol POV material definition (StyleMgr::getMaterial(name,
+  // "pov"), e.g. `texture { finish { ambient .2 diffuse .8 ... } pigment {..} }`)
+  // into an umbreon::Material by parsing its `finish { ... }` block. Mirrors
+  // umbreon's mesh2_reader::parseFinish (same keyword set + F_Metal presets,
+  // starting from umbreon Material() defaults), so the result equals what
+  // umbreon_cli derives from the equivalent .pov. A def with no finish block
+  // (e.g. a procedural `texture { T_Wood31 }`, which umbreon cannot reproduce)
+  // falls back to the default finish.
+  umbreon::Material parsePovFinish(const LString &povDef)
+  {
+    const std::string s(povDef.c_str());
+
+    const std::size_t fp = s.find("finish");
+    if (fp == std::string::npos)
+      return surfaceFinish();
+    const std::size_t open = s.find('{', fp);
+    if (open == std::string::npos)
+      return surfaceFinish();
+    int depth = 0;
+    std::size_t close = std::string::npos;
+    for (std::size_t k = open; k < s.size(); ++k) {
+      if (s[k] == '{')
+        ++depth;
+      else if (s[k] == '}' && --depth == 0) {
+        close = k;
+        break;
+      }
+    }
+    if (close == std::string::npos)
+      return surfaceFinish();
+
+    // Tokenize the finish body on whitespace (CueMol emits literal numbers).
+    std::vector<std::string> toks;
+    {
+      std::istringstream iss(s.substr(open + 1, close - open - 1));
+      for (std::string t; iss >> t;)
+        toks.push_back(t);
+    }
+
+    static const char *kKeys[] = {"ambient",    "diffuse",   "specular",
+                                  "roughness",  "brilliance", "phong",
+                                  "phong_size", "reflection", "emission"};
+
+    umbreon::Material m;  // umbreon defaults (specular 0, roughness 0.02)
+    for (std::size_t k = 0; k < toks.size(); ++k) {
+      const std::string &tk = toks[k];
+
+      bool isKey = false;
+      for (const char *key : kKeys) {
+        if (tk == key) {
+          isKey = true;
+          break;
+        }
+      }
+      if (isKey) {
+        float f = 0.0f;
+        if (k + 1 < toks.size()) {
+          char *endp = NULL;
+          const double d = std::strtod(toks[k + 1].c_str(), &endp);
+          if (endp != toks[k + 1].c_str()) {
+            f = float(d);
+            ++k;
+          }
+        }
+        if (tk == "ambient") m.ambient = f;
+        else if (tk == "diffuse") m.diffuse = f;
+        else if (tk == "specular") m.specular = f;
+        else if (tk == "roughness") m.roughness = f;
+        else if (tk == "brilliance") m.brilliance = f;
+        else if (tk == "phong") m.phong = f;
+        else if (tk == "phong_size") m.phongSize = f;
+        else if (tk == "reflection") m.reflection = f;
+        else m.emission = f;
+        continue;
+      }
+      if (tk == "metallic") {
+        m.metallic = true;
+        // optional amount: a value at or below 0 disables it
+        if (k + 1 < toks.size()) {
+          char *endp = NULL;
+          const double d = std::strtod(toks[k + 1].c_str(), &endp);
+          if (endp != toks[k + 1].c_str()) {
+            m.metallic = d > 0.0;
+            ++k;
+          }
+        }
+        continue;
+      }
+      // a bare identifier may be a named finish (e.g. F_MetalA); later keywords
+      // can still override
+      umbreon::Material named;
+      if (lookupNamedFinish(tk, named))
+        m = named;
+    }
     return m;
   }
 
@@ -84,6 +223,12 @@ struct UmbreonDisplayContext::Impl
 {
 #ifdef HAVE_UMBREON
   umbreon::Scene scene;
+
+  /// Per-material finish table handed to umbreon as scene.mesh.materials, with
+  /// a name->index cache (doubles as the parse cache). Accumulated across
+  /// sections; indices are stored per triangle in scene.mesh.triMaterialId.
+  std::vector<umbreon::Material> matTable;
+  std::map<LString, int> matIndex;
 #endif
 };
 
@@ -104,6 +249,42 @@ void UmbreonDisplayContext::startRender()
   // on the base context and is seeded by the exporter before display().
 #ifdef HAVE_UMBREON
   m_pImpl->scene = umbreon::Scene();
+  m_pImpl->matTable.clear();
+  m_pImpl->matIndex.clear();
+#endif
+}
+
+int UmbreonDisplayContext::materialIndexFor(const LString &matName)
+{
+#ifdef HAVE_UMBREON
+  // empty material name -> "default" (matches PovDisplayContext::dumpClut)
+  const LString name = matName.isEmpty() ? LString("default") : matName;
+
+  std::map<LString, int>::const_iterator it = m_pImpl->matIndex.find(name);
+  if (it != m_pImpl->matIndex.end())
+    return it->second;
+
+  // Resolve via the same StyleMgr POV definition the POV exporter uses, then
+  // translate its finish into an umbreon::Material. Fall back to the default
+  // finish when there is no style manager or no POV def for this material.
+  umbreon::Material mat = surfaceFinish();
+  qsys::StyleMgr *pSM = qsys::StyleMgr::getInstance();
+  if (pSM != NULL) {
+    const LString povDef = pSM->getMaterial(name, LString("pov"));
+    if (!povDef.isEmpty())
+      mat = parsePovFinish(povDef);
+  }
+
+  // triMaterialId is a uint8_t index; with ~13 named materials this ceiling is
+  // never reached, but fall back to the default slot (0) if it ever is.
+  if (m_pImpl->matTable.size() >= 255)
+    return 0;
+  const int idx = int(m_pImpl->matTable.size());
+  m_pImpl->matTable.push_back(mat);
+  m_pImpl->matIndex[name] = idx;
+  return idx;
+#else
+  return 0;
 #endif
 }
 
@@ -173,6 +354,13 @@ void UmbreonDisplayContext::appendIntData()
       const MeshVert *pv[3] = { pmesh->getVertex(f.iv1),
                                 pmesh->getVertex(f.iv2),
                                 pmesh->getVertex(f.iv3) };
+      // per-triangle finish from the first corner's color: the CLUT carries the
+      // material name the renderer set, exactly as PovDisplayContext::dumpClut
+      // reads it (m_clut.getMaterial)
+      LString triMat;
+      clut.getMaterial(pv[0]->c, triMat);
+      um.triMaterialId.push_back(
+          static_cast<std::uint8_t>(materialIndexFor(triMat)));
       for (int k = 0; k < 3; ++k) {
         um.positions.push_back(toVec3(pv[k]->v));
         um.normals.push_back(toVec3(pv[k]->n));
@@ -201,7 +389,10 @@ void UmbreonDisplayContext::appendIntData()
     s.center = toVec3(p->v1);
     s.radius = float(p->r);
     s.color = resolveColor(clut, p->col, defAlpha);
-    s.material = surfaceFinish();
+    LString smat;
+    clut.getMaterial(p->col, smat);
+    const int smatIdx = materialIndexFor(smat);
+    s.material = m_pImpl->matTable[smatIdx];
     scene.spheres.push_back(s);
   }
 
@@ -231,7 +422,10 @@ void UmbreonDisplayContext::appendIntData()
     // umbreon cylinders are single-radius; approximate cones by the mean.
     c.radius = float((p->w1 + p->w2) * 0.5);
     c.color = resolveColor(clut, p->col, defAlpha);
-    c.material = surfaceFinish();
+    LString cmat;
+    clut.getMaterial(p->col, cmat);
+    const int cmatIdx = materialIndexFor(cmat);
+    c.material = m_pImpl->matTable[cmatIdx];
     c.open = !p->bcap;
     scene.cylinders.push_back(c);
   }
@@ -377,9 +571,13 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
 
   umbreon::Scene &scene = m_pImpl->scene;
 
-  // CueMol's default material finish for the accumulated triangle mesh
-  // (surfaces, cartoons, folded spheres/cylinders).
-  scene.mesh.material = surfaceFinish();
+  // Per-material finishes: the accumulated mesh carries one finish per triangle
+  // in triMaterialId (filled in appendIntData from each color's CLUT material
+  // name). Hand umbreon the material table; mesh.material stays as the fallback
+  // used when a triangle has no id (empty triMaterialId).
+  scene.mesh.materials = m_pImpl->matTable;
+  scene.mesh.material =
+      m_pImpl->matTable.empty() ? surfaceFinish() : m_pImpl->matTable[0];
 
   // background color (passed through as the linear working color); default black
   umbreon::Vec3 bg(0.0f, 0.0f, 0.0f);

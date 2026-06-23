@@ -302,3 +302,59 @@ TEST(UmbreonExport, LinearOutputDiffersFromSrgbEncoded)
     EXPECT_GT(lin[c], 8);
     EXPECT_NE(srgb, lin);   // the toggle actually changes the output bytes
 }
+
+// Pins per-material finish resolution (setMaterial -> CLUT -> StyleMgr POV def
+// -> umbreon::Material). "nolighting" (ambient 1.0) and "shadow" (ambient 0.75)
+// are both ambient-only flat finishes (diffuse 0, specular 0), so they are
+// independent of lighting/normals and differ ONLY by their ambient term. The
+// same gray triangle therefore renders brighter under nolighting than shadow.
+// If the exporter ignored per-material finishes (one shared surfaceFinish for
+// everything, as before), the two would be identical and this would fail.
+TEST(UmbreonExport, AppliesPerMaterialFinish)
+{
+    auto renderWithMaterial = [](const char *matName) {
+        UmbreonDisplayContext ctx;
+        ctx.init();
+        ctx.setPerspective(false);
+        ctx.setViewDist(100.0);
+        ctx.setZoom(6.0);
+        ctx.setSlabDepth(1.0e6);  // push the depth fog far away (negligible)
+        ctx.loadIdent();
+
+        ctx.startRender();
+        ctx.startSection("m");
+        ctx.setMaterial(matName);  // before color(): the CLUT captures the name
+        ctx.color(gfx::SolidColor::createRGB(0.5, 0.5, 0.5));
+        ctx.startTriangles();
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(-2.0, -2.0, 0.0));
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(2.0, -2.0, 0.0));
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(0.0, 2.0, 0.0));
+        ctx.end();
+        ctx.endSection();
+
+        UmbreonRenderParams prm;
+        prm.width = 64;
+        prm.height = 64;
+        prm.supersample = 1;
+        prm.assumedGamma = 2.2;
+
+        int ow = 0, oh = 0, ncomp = 0;
+        std::vector<unsigned char> pix;
+        ctx.render(prm, ow, oh, ncomp, pix);
+        return pix;
+    };
+
+    std::vector<unsigned char> noli = renderWithMaterial("nolighting");
+    std::vector<unsigned char> shad = renderWithMaterial("shadow");
+
+    ASSERT_EQ(noli.size(), static_cast<std::size_t>(64 * 64 * 3));
+    ASSERT_EQ(noli.size(), shad.size());
+
+    const std::size_t c = (static_cast<std::size_t>(32) * 64 + 32) * 3;
+    EXPECT_GT(noli[c], 8);  // the flat ambient surface is visible
+    // ambient 1.0 (nolighting) is clearly brighter than 0.75 (shadow)
+    EXPECT_GT(static_cast<int>(noli[c]), static_cast<int>(shad[c]) + 15);
+}

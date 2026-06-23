@@ -111,6 +111,12 @@ namespace render {
     /// Append the current section buffer (m_pIntData) to the umbreon scene.
     void appendIntData();
 
+    /// Resolve a CueMol material name to an index into the per-mesh material
+    /// table (Impl::matTable), parsing its POV finish (StyleMgr) on first use
+    /// and caching the result. Empty name maps to "default". Returns 0 when
+    /// built without umbreon.
+    int materialIndexFor(const LString &matName);
+
     /// Run the silhouette/edge extraction over the current section mesh and
     /// emit outline primitives via writeEdgeLineImpl/writePointImpl. Mirrors
     /// PovDisplayContext::writeSilEdges2 without the POV-SDL declares.
