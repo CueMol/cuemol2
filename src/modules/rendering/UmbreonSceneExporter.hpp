@@ -65,6 +65,11 @@ namespace render {
     /// Default false (the sRGB-encoded path). For comparison.
     bool m_bLinearOutput;
 
+    /// Transparent background: emit an RGBA PNG with alpha = coverage (0 where
+    /// no geometry is hit) so it can be composited over another image (POV
+    /// "_transpbg"). Default false (opaque RGB over the scene background color).
+    bool m_bTransparentBackground;
+
   public:
     UmbreonSceneExporter();
     virtual ~UmbreonSceneExporter();

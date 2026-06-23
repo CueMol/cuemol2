@@ -111,7 +111,7 @@ UmbreonSceneExporter::UmbreonSceneExporter()
      : m_bPerspective(true), m_bUseClipZ(true), m_nSupersample(3),
        m_nAoSamples(0), m_bShadows(false), m_bEnableEdgeLines(true),
        m_dCreaseLimit(-1.0), m_dEdgeRise(0.5), m_dAssumedGamma(2.2),
-       m_bLinearOutput(false)
+       m_bLinearOutput(false), m_bTransparentBackground(false)
 {
 }
 
@@ -182,6 +182,7 @@ void UmbreonSceneExporter::write()
   prm.shadows = m_bShadows;
   prm.assumedGamma = m_dAssumedGamma;
   prm.linearOutput = m_bLinearOutput;
+  prm.transparentBackground = m_bTransparentBackground;
 
   int ow = 0, oh = 0, ncomp = 0;
   std::vector<unsigned char> pix;

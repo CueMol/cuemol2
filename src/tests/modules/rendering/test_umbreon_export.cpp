@@ -358,3 +358,57 @@ TEST(UmbreonExport, AppliesPerMaterialFinish)
     // ambient 1.0 (nolighting) is clearly brighter than 0.75 (shadow)
     EXPECT_GT(static_cast<int>(noli[c]), static_cast<int>(shad[c]) + 15);
 }
+
+// Pins the transparent-background path (transparentBackground -> RGBA output
+// with alpha = coverage). An opaque triangle covers the center; a corner has no
+// geometry. The output must be 4-component, with the covered center fully
+// opaque (alpha 255) and the empty corner fully transparent (alpha 0, and RGB
+// zeroed by the un-premultiply).
+TEST(UmbreonExport, RendersTransparentBackground)
+{
+    UmbreonDisplayContext ctx;
+    ctx.init();
+
+    ctx.setPerspective(false);
+    ctx.setViewDist(100.0);
+    ctx.setZoom(6.0);
+    ctx.loadIdent();
+
+    ctx.startRender();
+    ctx.startSection("t");
+    ctx.color(gfx::SolidColor::createRGB(0.2, 0.8, 0.2));
+    ctx.startTriangles();
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(-2.0, -2.0, 0.0));
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(2.0, -2.0, 0.0));
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(0.0, 2.0, 0.0));
+    ctx.end();
+    ctx.endSection();
+
+    UmbreonRenderParams prm;
+    prm.width = 64;
+    prm.height = 64;
+    prm.supersample = 1;
+    prm.transparentBackground = true;
+
+    int ow = 0, oh = 0, ncomp = 0;
+    std::vector<unsigned char> pix;
+    ctx.render(prm, ow, oh, ncomp, pix);
+
+    EXPECT_EQ(ncomp, 4);
+    ASSERT_EQ(pix.size(), static_cast<std::size_t>(64 * 64 * 4));
+
+    // center: covered by the opaque triangle -> fully opaque
+    const std::size_t center = (static_cast<std::size_t>(32) * 64 + 32) * 4;
+    EXPECT_EQ(pix[center + 3], 255);
+    EXPECT_GT(pix[center + 1], 8);  // the green surface shows through
+
+    // top-left corner: no geometry -> fully transparent, RGB un-premultiplied to 0
+    const std::size_t corner = 0;
+    EXPECT_EQ(pix[corner + 3], 0);
+    EXPECT_EQ(pix[corner + 0], 0);
+    EXPECT_EQ(pix[corner + 1], 0);
+    EXPECT_EQ(pix[corner + 2], 0);
+}

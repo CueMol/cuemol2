@@ -52,6 +52,12 @@ runtime_class UmbreonSceneExporter extends SceneExporter
 
   property boolean linearOutput => m_bLinearOutput;
 
+  //////////
+  // transparent background: emit an RGBA PNG with alpha = coverage (POV
+  // "_transpbg") so it can be composited over another image
+
+  property boolean transparentBackground => m_bTransparentBackground;
+
 };
 
 #endif

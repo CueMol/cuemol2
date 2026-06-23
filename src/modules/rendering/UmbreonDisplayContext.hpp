@@ -41,6 +41,10 @@ namespace render {
     /// 255, no sRGB OETF). For comparing the raw linear look against the
     /// default assumedGamma + sRGB-encoded output.
     bool linearOutput = false;
+    /// When true, render a transparent background: the output is RGBA (4
+    /// components) with alpha = coverage (0 where no geometry is hit), so the
+    /// PNG can be composited over another image (POV "_transpbg").
+    bool transparentBackground = false;
   };
 
   /// DisplayContext backend that renders a scene with umbreon (Embree).

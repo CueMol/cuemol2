@@ -639,6 +639,7 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
   opt.supersample = (prm.supersample > 0) ? prm.supersample : 1;
   opt.aoSamples = (prm.aoSamples > 0) ? prm.aoSamples : 0;
   opt.shadows = prm.shadows;
+  opt.transparentBackground = prm.transparentBackground;
 
   MB_DPRINTLN("Umbreon> render %dx%d ss=%d ao=%d tris=%d",
               opt.width, opt.height, opt.supersample, opt.aoSamples,
@@ -669,7 +670,28 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
 
   outWidth = frame.width;
   outHeight = frame.height;
-  outNcomp = 3;
+  outNcomp = prm.transparentBackground ? 4 : 3;
+
+  // For a transparent background umbreon returns premultiplied RGB (color
+  // weighted by coverage) with alpha = coverage. PNG expects straight alpha, so
+  // un-premultiply in linear space before encoding; the encode paths below then
+  // emit the 4th (alpha) channel via outNcomp. The opaque path (outNcomp = 3)
+  // is left byte-for-byte unchanged.
+  if (prm.transparentBackground) {
+    const std::size_t npix =
+        std::size_t(frame.width) * std::size_t(frame.height);
+    for (std::size_t i = 0; i < npix; ++i) {
+      float a = frame.color[i * 4 + 3];
+      if (a < 0.0f) a = 0.0f;
+      if (a > 1.0f) a = 1.0f;
+      const float inv = (a > 1.0e-6f) ? 1.0f / a : 0.0f;
+      frame.color[i * 4 + 0] *= inv;
+      frame.color[i * 4 + 1] *= inv;
+      frame.color[i * 4 + 2] *= inv;
+      frame.color[i * 4 + 3] = a;
+    }
+  }
+
   if (prm.linearOutput) {
     // Direct linear mapping: clamp each HDR channel to [0,1] and scale to 8-bit
     // (no sRGB OETF). Bypasses srgbEncode8 entirely.
