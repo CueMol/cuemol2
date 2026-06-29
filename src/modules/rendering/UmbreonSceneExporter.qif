@@ -1,0 +1,64 @@
+// -*-Mode: C++;-*-
+//
+
+#ifndef UMBREON_SCENE_EXPORTER_QIF_INCLUDED
+#define UMBREON_SCENE_EXPORTER_QIF_INCLUDED
+
+#include <qsys/SceneExporter.qif>
+
+runtime_class UmbreonSceneExporter extends SceneExporter
+{
+  client_hdr "UmbreonSceneExporter.hpp";
+  client_name render::UmbreonSceneExporter;
+
+  scriptable;
+  smartptr;
+
+  ////////////////////
+  // Property definition
+  //   (camera / width / height are inherited from SceneExporter)
+
+  property boolean perspective => m_bPerspective;
+
+  /// clip geometry to the camera slab near cutaway plane (z = slab/2)
+  property boolean useClipZ => m_bUseClipZ;
+
+  /// supersampling (antialiasing) factor; 1 = off
+  property integer supersample => m_nSupersample;
+
+  /// ambient-occlusion ray count per mesh hit; 0 = off
+  property integer aoSamples => m_nAoSamples;
+
+  /// ambient-occlusion occluder search radius (world units)
+  property real aoDistance => m_dAoDistance;
+
+  /// ambient-occlusion strength (0 = none, 1 = full)
+  property real aoIntensity => m_dAoIntensity;
+
+  /// cast shadows from the lights
+  property boolean shadows => m_bShadows;
+
+  /// shadow rays per light (>1 = soft area light)
+  property integer shadowSamples => m_nShadowSamples;
+
+  /// light angular radius in degrees (>0 = soft shadows)
+  property real lightRadius => m_dLightRadius;
+
+  //////////
+  // edge / silhouette outline lines (CueMol toon edges)
+
+  property boolean showEdgeLines => m_bEnableEdgeLines;
+
+  property real creaseLimit => m_dCreaseLimit;
+
+  property real edgeRise => m_dEdgeRise;
+
+  //////////
+  // transparent background: emit an RGBA PNG with alpha = coverage (POV
+  // "_transpbg") so it can be composited over another image
+
+  property boolean transparentBackground => m_bTransparentBackground;
+
+};
+
+#endif

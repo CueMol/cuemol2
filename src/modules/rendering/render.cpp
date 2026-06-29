@@ -14,6 +14,9 @@
 #include "StlSceneExporter.hpp"
 #include "LuxRendSceneExporter.hpp"
 #include "LuxCoreSceneExporter.hpp"
+#ifdef HAVE_UMBREON
+#include "UmbreonSceneExporter.hpp"
+#endif
 
 #include <qsys/StreamManager.hpp>
 
@@ -43,6 +46,12 @@ namespace render {
     pSM->registWriter<StlSceneExporter>();
     pSM->registWriter<LuxRendSceneExporter>();
     pSM->registWriter<LuxCoreSceneExporter>();
+#ifdef HAVE_UMBREON
+    // The umbreon (Embree ray-tracer) image writer is only offered when the
+    // backend is compiled in (ENABLE_UMBREON). The class itself is always
+    // registered by the module loader, but without umbreon its write() throws.
+    pSM->registWriter<UmbreonSceneExporter>();
+#endif
 
 #ifndef QM_BUILD_LW
 #endif
