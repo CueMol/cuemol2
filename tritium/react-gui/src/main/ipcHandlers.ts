@@ -36,7 +36,7 @@ import {
   handleStyleSaveDialog,
   handleCameraOpenDialog,
   handleCameraSaveDialog,
-  handleImageSaveDialog,
+  handleSceneExportDialog,
   handleObjectSaveDialog,
   handlePickPathDialog,
   handleSaveTextAsDialog,
@@ -212,8 +212,8 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
     handleCameraSaveDialog(mainWindow, payload.defaultName),
   )
 
-  handleInvoke(IPC.DIALOG_IMAGE_SAVE, async (_event, payload) =>
-    handleImageSaveDialog(mainWindow, payload.defaultName),
+  handleInvoke(IPC.DIALOG_SCENE_EXPORT, async (_event, payload) =>
+    handleSceneExportDialog(mainWindow, payload),
   )
 
   handleInvoke(IPC.DIALOG_OBJECT_SAVE, async (_event, payload) =>

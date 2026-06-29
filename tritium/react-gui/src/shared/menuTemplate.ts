@@ -114,7 +114,16 @@ export const APP_MENU: AppMenuGroup[] = [
     submenu: [
       { id: 'pov-render',    label: 'POV-Ray rendering...',   ipcChannel: IPC.MENU_POV_RENDER },
       { id: 'anim-render',   label: 'Animation rendering...', ipcChannel: IPC.MENU_ANIM_RENDER },
-      { id: 'export-scene',  label: 'Export scene...',        ipcChannel: IPC.MENU_EXPORT_SCENE },
+      {
+        id: 'export-scene', label: 'Export scene',
+        submenu: [
+          { id: 'export-png',     label: 'PNG image...',                ipcChannel: IPC.MENU_EXPORT_PNG },
+          { id: 'export-umbreon', label: 'Umbreon ray-traced image...', ipcChannel: IPC.MENU_EXPORT_UMBREON },
+          { id: 'export-pov',     label: 'POV-Ray SDL...',              ipcChannel: IPC.MENU_EXPORT_POV },
+          { id: 'export-stl',     label: 'STL...',                      ipcChannel: IPC.MENU_EXPORT_STL },
+          { id: 'export-mqo',     label: 'Metasequoia (MQO)...',        ipcChannel: IPC.MENU_EXPORT_MQO },
+        ],
+      },
     ],
   },
 

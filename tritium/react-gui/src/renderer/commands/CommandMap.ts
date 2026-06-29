@@ -42,7 +42,11 @@ export interface CommandMap {
   [CmdId.FileSaveAs]:          { args: void;            result: boolean }
   [CmdId.ObjectSaveAs]:        { args: void;            result: void }
   [CmdId.SaveCurrentView]:     { args: void;            result: void }
-  [CmdId.ExportImage]:         { args: void;            result: void }
+  [CmdId.ExportPng]:           { args: void;            result: void }
+  [CmdId.ExportUmbreon]:       { args: void;            result: void }
+  [CmdId.ExportPov]:           { args: void;            result: void }
+  [CmdId.ExportStl]:           { args: void;            result: void }
+  [CmdId.ExportMqo]:           { args: void;            result: void }
   [CmdId.SceneReload]:         { args: void;            result: void }
 
   // Edit

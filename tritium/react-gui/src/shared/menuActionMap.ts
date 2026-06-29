@@ -112,7 +112,11 @@ export const MENU_ACTION_MAP = {
   // --- Rendering ---
   [IPC.MENU_POV_RENDER]:       { dispatch: MENU_DISPATCH_UNIMPLEMENTED, deliver: 'generic' },
   [IPC.MENU_ANIM_RENDER]:      { dispatch: MENU_DISPATCH_UNIMPLEMENTED, deliver: 'generic' },
-  [IPC.MENU_EXPORT_SCENE]:     { dispatch: 'file.exportImage',   deliver: 'generic' },
+  [IPC.MENU_EXPORT_PNG]:       { dispatch: 'scene.export.png',     deliver: 'generic' },
+  [IPC.MENU_EXPORT_UMBREON]:   { dispatch: 'scene.export.umbreon', deliver: 'generic' },
+  [IPC.MENU_EXPORT_POV]:       { dispatch: 'scene.export.pov',     deliver: 'generic' },
+  [IPC.MENU_EXPORT_STL]:       { dispatch: 'scene.export.stl',     deliver: 'generic' },
+  [IPC.MENU_EXPORT_MQO]:       { dispatch: 'scene.export.mqo',     deliver: 'generic' },
 
   // --- Scene ---
   [IPC.MENU_COLOR_PROOF]:      { dispatch: MENU_DISPATCH_UNIMPLEMENTED, deliver: 'generic' },

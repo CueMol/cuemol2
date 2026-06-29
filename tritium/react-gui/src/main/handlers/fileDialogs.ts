@@ -122,12 +122,19 @@ export async function handleCameraSaveDialog(
   ])
 }
 
-export async function handleImageSaveDialog(
+// The exporter (file type) is chosen by the menu item the user clicked, so
+// the renderer passes the single matching filter; we only append "All Files".
+// No filter-index recovery is needed (unlike `handleObjectSaveDialog`).
+
+export async function handleSceneExportDialog(
   mainWindow: BrowserWindow,
-  defaultName: string,
+  payload: {
+    defaultName: string
+    filters: { name: string; extensions: string[] }[]
+  },
 ): Promise<{ canceled: boolean; filePath: string }> {
-  return saveDialog(mainWindow, 'Export Image As', defaultName, [
-    { name: 'PNG image', extensions: ['png'] },
+  return saveDialog(mainWindow, 'Export Scene As', payload.defaultName, [
+    ...payload.filters,
     { name: 'All Files', extensions: ['*'] },
   ])
 }
