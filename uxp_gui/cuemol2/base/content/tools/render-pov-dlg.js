@@ -58,7 +58,19 @@
   {
     var that = this;
     var elem;
-    
+
+    // Show the render target (scene:view) like the main tab label
+    {
+      let label = "";
+      try {
+        let scene = cuemol.getScene(dlg.mTgtSceID);
+        let view = cuemol.getView(dlg.mTgtVwID);
+        label = scene.name + ":" + view.name;
+      } catch (e) { debug.exception(e); }
+      let tgtElem = document.getElementById("target-scene-label");
+      if (tgtElem) tgtElem.value = label;
+    }
+
     this.mPovExePathBox = document.getElementById("povray-exe-path");
     this.mPovIncPathBox = document.getElementById("povray-inc-path");
     
