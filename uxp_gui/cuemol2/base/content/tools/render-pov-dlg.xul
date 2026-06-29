@@ -41,8 +41,10 @@
   <script type="application/javascript" src="render-pov-dlg.js"/>
 
   <hbox align="center" style="margin: 4px 4px 0px 4px;">
-    <label value="Target: " control="target-scene-label"/>
-    <label id="target-scene-label" crop="end" flex="1" style="font-weight: bold;"/>
+    <label value="Target: " control="target-view-list"/>
+    <menulist id="target-view-list" class="disable-target" flex="1" crop="end">
+      <menupopup/>
+    </menulist>
   </hbox>
 
   <tabbox selectedIndex="0" flex="0">

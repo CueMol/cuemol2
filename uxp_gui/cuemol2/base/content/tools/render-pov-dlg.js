@@ -59,16 +59,47 @@
     var that = this;
     var elem;
 
-    // Show the render target (scene:view) like the main tab label
+    // Render target (scene:view) dropdown, listing all open scene:view pairs
+    this.mTgtViewList = document.getElementById("target-view-list");
+    this.rebuildTargetList();
+    this.mTgtViewList.addEventListener(
+      "command", function (a) { that.onTargetSel(a); }, false);
+
+    // Rebuild on dropdown open as well (belt-and-suspenders against missed events)
     {
-      let label = "";
-      try {
-        let scene = cuemol.getScene(dlg.mTgtSceID);
-        let view = cuemol.getView(dlg.mTgtVwID);
-        label = scene.name + ":" + view.name;
-      } catch (e) { debug.exception(e); }
-      let tgtElem = document.getElementById("target-scene-label");
-      if (tgtElem) tgtElem.value = label;
+      let popup = this.mTgtViewList.menupopup ||
+                  this.mTgtViewList.getElementsByTagName("menupopup")[0];
+      popup.addEventListener(
+        "popupshowing",
+        function (a) { try { that.rebuildTargetList(); } catch (e) { debug.exception(e); } },
+        false);
+    }
+
+    // Watch scene/view add/remove/rename to keep the dropdown in sync.
+    // NOTE: ScrEventManager matches srcType by bit-AND but evtType by EXACT
+    // equality, so SEM_ADDED|SEM_REMOVING would not match ADDED/REMOVING.
+    // Register one listener per event type. REMOVING fires before the view is
+    // actually removed, so defer the rebuild to read post-change state.
+    {
+      let deferRebuild = function () {
+        setTimeout(function () {
+          try { that.rebuildTargetList(); } catch (e) { debug.exception(e); }
+        }, 0);
+      };
+      this.mTgtEvtAddID = cuemol.evtMgr.addListener(
+        "", cuemol.evtMgr.SEM_SCENE | cuemol.evtMgr.SEM_VIEW,
+        cuemol.evtMgr.SEM_ADDED, 0, deferRebuild);
+      this.mTgtEvtRemID = cuemol.evtMgr.addListener(
+        "", cuemol.evtMgr.SEM_SCENE | cuemol.evtMgr.SEM_VIEW,
+        cuemol.evtMgr.SEM_REMOVING, 0, deferRebuild);
+      // Rename: PROPCHG fires for many props, so rebuild only on "name" change.
+      this.mTgtEvtChgID = cuemol.evtMgr.addListener(
+        "", cuemol.evtMgr.SEM_SCENE | cuemol.evtMgr.SEM_VIEW,
+        cuemol.evtMgr.SEM_PROPCHG, 0,
+        function (args) {
+          if (args && args.obj && args.obj.propname == "name")
+            deferRebuild();
+        });
     }
 
     this.mPovExePathBox = document.getElementById("povray-exe-path");
@@ -194,9 +225,76 @@
     this.setupLightDefault();
     this.setupDisableState();
   };
-  
+
+  // Rebuild the target dropdown from all currently open scene:view pairs,
+  // then re-select the current target (or fall back to the first item).
+  dlg.rebuildTargetList = function ()
+  {
+    let popup = this.mTgtViewList.menupopup ||
+                this.mTgtViewList.getElementsByTagName("menupopup")[0];
+    util.clearMenu(popup);
+
+    let sceUIDs = cuemol.sceMgr.getSceneUIDList().split(",");
+    sceUIDs.forEach( function (s) {
+      if (!s) return;
+      let scene = cuemol.getScene(parseInt(s));
+      if (!scene) return;
+      let vwUIDs = scene.view_uids.split(",");
+      vwUIDs.forEach( function (v) {
+        if (!v) return;
+        let view = cuemol.getView(parseInt(v));
+        if (!view) return;
+        // value encodes "sceID,vwID"; label is scene:view (same as makeTabLabel)
+        util.appendMenu(document, popup,
+                        scene.uid + "," + view.uid,
+                        scene.name + ":" + view.name);
+      });
+    });
+
+    // Re-select the current target; fall back to first item if it disappeared
+    let cur = this.mTgtSceID + "," + this.mTgtVwID;
+    if (!util.selectMenuListByValue(this.mTgtViewList, cur)) {
+      if (this.mTgtViewList.itemCount > 0) {
+        this.mTgtViewList.selectedIndex = 0;
+        this.applyTargetSelection();
+      }
+    }
+  };
+
+  dlg.onTargetSel = function (aEvent)
+  {
+    this.applyTargetSelection();
+  };
+
+  // Apply the currently selected dropdown item as the render target.
+  // Only updates the dialog's target (and Save-image default name); the main
+  // tabmolview and the output image size are intentionally left untouched.
+  dlg.applyTargetSelection = function ()
+  {
+    let item = this.mTgtViewList.selectedItem;
+    if (!item || !item.value) return;
+    let pair = item.value.split(",");
+    let sceID = parseInt(pair[0]);
+    let vwID = parseInt(pair[1]);
+    if (isNaN(sceID) || isNaN(vwID)) return;
+    this.mTgtSceID = sceID;
+    this.mTgtVwID = vwID;
+    try {
+      let scene = cuemol.getScene(sceID);
+      if (scene) this.mSceName = scene.name; // keep Save-image default name in sync
+    } catch (e) { debug.exception(e); }
+  };
+
   dlg.onUnload = function ()
   {
+    // remove scene/view add/remove/rename listeners to avoid leaks
+    if (this.mTgtEvtAddID)
+      cuemol.evtMgr.removeListener(this.mTgtEvtAddID);
+    if (this.mTgtEvtRemID)
+      cuemol.evtMgr.removeListener(this.mTgtEvtRemID);
+    if (this.mTgtEvtChgID)
+      cuemol.evtMgr.removeListener(this.mTgtEvtChgID);
+
     // util.persistChkBox("use-transp-bg", document);
     //util.persistChkBox("enable-post-blend", document);
 
