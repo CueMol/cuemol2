@@ -83,6 +83,39 @@
 
     this.mProgBar = document.getElementById("progress");
 
+    // Render target (scene) dropdown
+    var that = this;
+    this.mTgtSceList = document.getElementById("target-scene-list");
+    this.rebuildTargetList();
+    this.mTgtSceList.addEventListener(
+      "command", function (a) { that.onTargetSel(a); }, false);
+    {
+      let popup = this.mTgtSceList.menupopup ||
+                  this.mTgtSceList.getElementsByTagName("menupopup")[0];
+      popup.addEventListener(
+        "popupshowing",
+        function (a) { try { that.rebuildTargetList(); } catch (e) { debug.exception(e); } },
+        false);
+    }
+    // Watch scene add/remove/rename. evtType is matched by EXACT equality, so
+    // register one listener per type. REMOVING fires before actual removal -> defer.
+    {
+      let deferRebuild = function () {
+        setTimeout(function () {
+          try { that.rebuildTargetList(); } catch (e) { debug.exception(e); }
+        }, 0);
+      };
+      this.mTgtEvtAddID = cuemol.evtMgr.addListener(
+        "", cuemol.evtMgr.SEM_SCENE, cuemol.evtMgr.SEM_ADDED, 0, deferRebuild);
+      this.mTgtEvtRemID = cuemol.evtMgr.addListener(
+        "", cuemol.evtMgr.SEM_SCENE, cuemol.evtMgr.SEM_REMOVING, 0, deferRebuild);
+      this.mTgtEvtChgID = cuemol.evtMgr.addListener(
+        "", cuemol.evtMgr.SEM_SCENE, cuemol.evtMgr.SEM_PROPCHG, 0,
+        function (args) {
+          if (args && args.obj && args.obj.propname == "name") deferRebuild();
+        });
+    }
+
     // setup povray settings page
     this.onLoadPovRender();
 
@@ -101,6 +134,50 @@
 
     this.mPovExePathBox.value = this.mPovRender.mPovExePath;
     this.mPovIncPathBox.value = this.mPovRender.mPovIncPath;
+  };
+
+  // Rebuild the target dropdown from all currently open scenes,
+  // then re-select the current target (or fall back to the first item).
+  dlg.rebuildTargetList = function ()
+  {
+    let popup = this.mTgtSceList.menupopup ||
+                this.mTgtSceList.getElementsByTagName("menupopup")[0];
+    util.clearMenu(popup);
+
+    let sceUIDs = cuemol.sceMgr.getSceneUIDList().split(",");
+    sceUIDs.forEach( function (s) {
+      if (!s) return;
+      let scene = cuemol.getScene(parseInt(s));
+      if (!scene) return;
+      util.appendMenu(document, popup, scene.uid, scene.name);
+    });
+
+    // Re-select the current target; fall back to first item if it disappeared
+    if (!util.selectMenuListByValue(this.mTgtSceList, "" + this.mTgtSceID)) {
+      if (this.mTgtSceList.itemCount > 0) {
+        this.mTgtSceList.selectedIndex = 0;
+        this.applyTargetSelection();
+      }
+    }
+  };
+
+  dlg.onTargetSel = function (aEvent)
+  {
+    this.applyTargetSelection();
+  };
+
+  // Apply the currently selected dropdown item as the render target scene.
+  dlg.applyTargetSelection = function ()
+  {
+    let item = this.mTgtSceList.selectedItem;
+    if (!item || item.value === "") return;
+    let sceID = parseInt(item.value);
+    if (isNaN(sceID)) return;
+    this.mTgtSceID = sceID;
+    try {
+      let scene = cuemol.getScene(sceID);
+      if (scene) this.mSceName = scene.name;
+    } catch (e) { debug.exception(e); }
   };
 
   dlg.scrollToBottom = function ()
@@ -973,6 +1050,11 @@
   // perform cleanup
   dlg.onUnload = function ()
   {
+    // remove scene add/remove/rename listeners to avoid leaks
+    if (this.mTgtEvtAddID) cuemol.evtMgr.removeListener(this.mTgtEvtAddID);
+    if (this.mTgtEvtRemID) cuemol.evtMgr.removeListener(this.mTgtEvtRemID);
+    if (this.mTgtEvtChgID) cuemol.evtMgr.removeListener(this.mTgtEvtChgID);
+
     // for the checkbox status to be correctly saved
     util.persistChkBox("pov-enable-clip-plane", document);
     util.persistChkBox("pov-enable-post-blend", document);
