@@ -85,13 +85,11 @@ namespace {
                  PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE,
                  PNG_FILTER_TYPE_BASE);
 
-    // Tag the file as sRGB (+ matching gAMA/cHRM), for BOTH output paths. The
-    // default path (assumedGamma=2.2 + srgbEncode8) produces ~linear file bytes,
-    // because applyAssumedGamma(.,2.2) [pow 2.2] and srgbEncode8 [~pow 1/2.2]
-    // roughly cancel. The raw-linear path produces exactly-linear bytes. Both
-    // are therefore ~linear, so tagging both as sRGB makes a color-managed
-    // viewer display them nearly identically (the intended look). The tag is
-    // kept on regardless of linearOutput.
+    // Tag the file as sRGB (+ matching gAMA/cHRM). The renderer applies no
+    // assumed_gamma and no sRGB OETF: the umbreon linear HDR framebuffer is
+    // mapped straight to 8-bit (clamp [0,1] * 255). So the file bytes are
+    // exactly linear, and the sRGB tag tells a color-managed viewer to apply
+    // the sRGB transfer curve at display time (the intended gamma look).
     png_set_sRGB_gAMA_and_cHRM(pPNG, pInfo, PNG_sRGB_INTENT_PERCEPTUAL);
 
     png_write_info(pPNG, pInfo);
@@ -112,7 +110,6 @@ UmbreonSceneExporter::UmbreonSceneExporter()
        m_nAoSamples(0), m_dAoDistance(1.0e20), m_dAoIntensity(1.0),
        m_bShadows(false), m_nShadowSamples(1), m_dLightRadius(0.0),
        m_bEnableEdgeLines(true), m_dCreaseLimit(-1.0), m_dEdgeRise(0.5),
-       m_dAssumedGamma(2.2), m_bLinearOutput(false),
        m_bTransparentBackground(false)
 {
 }
@@ -186,8 +183,6 @@ void UmbreonSceneExporter::write()
   prm.shadows = m_bShadows;
   prm.shadowSamples = m_nShadowSamples;
   prm.lightRadius = m_dLightRadius;
-  prm.assumedGamma = m_dAssumedGamma;
-  prm.linearOutput = m_bLinearOutput;
   prm.transparentBackground = m_bTransparentBackground;
 
   int ow = 0, oh = 0, ncomp = 0;

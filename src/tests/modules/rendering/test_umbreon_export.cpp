@@ -251,23 +251,28 @@ TEST(UmbreonExport, ClipsGeometryInFrontOfSlabPlane)
     EXPECT_LT(pix[c + 0], 30);  // red (in front of the clip plane) is gone
 }
 
-// Pins the raw-linear output toggle: the same mid-gray triangle rendered with
-// linearOutput=false (assumedGamma 2.2 + sRGB encode) and linearOutput=true
-// (assumedGamma forced to 1, linear 8-bit map) must both be lit but produce
-// different bytes, proving the toggle changes the output encoding.
-TEST(UmbreonExport, LinearOutputDiffersFromSrgbEncoded)
+// Pins the output encoding contract: the umbreon linear HDR framebuffer is
+// mapped STRAIGHT to 8-bit (clamp [0,1] * 255) with NO assumed_gamma and NO
+// sRGB OETF -- the PNG sRGB tag carries the display transfer curve instead.
+// Verified through linearity: a flat ambient ("nolighting") surface shades to
+// out = k * pigment, so doubling the pigment (0.25 -> 0.5) must double the
+// output byte. A sRGB OETF would compress that ratio to ~1.37 and an
+// assumed_gamma 2.2 would expand it to ~4.6; only the direct linear map gives 2.
+TEST(UmbreonExport, OutputIsDirectLinearMap)
 {
-    auto renderGrayTriangle = [](bool linearOutput) {
+    auto renderGray = [](double gray) {
         UmbreonDisplayContext ctx;
         ctx.init();
         ctx.setPerspective(false);
         ctx.setViewDist(100.0);
         ctx.setZoom(6.0);
+        ctx.setSlabDepth(1.0e6);  // push depth fog far away (negligible)
         ctx.loadIdent();
 
         ctx.startRender();
         ctx.startSection("gray");
-        ctx.color(gfx::SolidColor::createRGB(0.5, 0.5, 0.5));
+        ctx.setMaterial("nolighting");  // flat ambient: out = k * pigment
+        ctx.color(gfx::SolidColor::createRGB(gray, gray, gray));
         ctx.startTriangles();
         ctx.normal(Vector4D(0.0, 0.0, 1.0));
         ctx.vertex(Vector4D(-2.0, -2.0, 0.0));
@@ -282,8 +287,6 @@ TEST(UmbreonExport, LinearOutputDiffersFromSrgbEncoded)
         prm.width = 64;
         prm.height = 64;
         prm.supersample = 1;
-        prm.assumedGamma = 2.2;
-        prm.linearOutput = linearOutput;
 
         int ow = 0, oh = 0, ncomp = 0;
         std::vector<unsigned char> pix;
@@ -291,16 +294,21 @@ TEST(UmbreonExport, LinearOutputDiffersFromSrgbEncoded)
         return pix;
     };
 
-    std::vector<unsigned char> srgb = renderGrayTriangle(false);
-    std::vector<unsigned char> lin = renderGrayTriangle(true);
+    std::vector<unsigned char> quarter = renderGray(0.25);
+    std::vector<unsigned char> half = renderGray(0.5);
 
-    ASSERT_EQ(srgb.size(), static_cast<std::size_t>(64 * 64 * 3));
-    ASSERT_EQ(srgb.size(), lin.size());
+    ASSERT_EQ(quarter.size(), static_cast<std::size_t>(64 * 64 * 3));
+    ASSERT_EQ(quarter.size(), half.size());
 
     const std::size_t c = (static_cast<std::size_t>(32) * 64 + 32) * 3;
-    EXPECT_GT(srgb[c], 8);  // triangle is lit in both encodings
-    EXPECT_GT(lin[c], 8);
-    EXPECT_NE(srgb, lin);   // the toggle actually changes the output bytes
+    ASSERT_GT(quarter[c], 8);  // both grays are visible
+    ASSERT_GT(half[c], 8);
+
+    // Linear map (no gamma, no sRGB): half / quarter == 2. Rounding keeps it
+    // well inside [1.75, 2.25]; sRGB (~1.37) and gamma-2.2 (~4.6) are far out.
+    const double ratio =
+        static_cast<double>(half[c]) / static_cast<double>(quarter[c]);
+    EXPECT_NEAR(ratio, 2.0, 0.25);
 }
 
 // Pins per-material finish resolution (setMaterial -> CLUT -> StyleMgr POV def
@@ -339,7 +347,6 @@ TEST(UmbreonExport, AppliesPerMaterialFinish)
         prm.width = 64;
         prm.height = 64;
         prm.supersample = 1;
-        prm.assumedGamma = 2.2;
 
         int ow = 0, oh = 0, ncomp = 0;
         std::vector<unsigned char> pix;

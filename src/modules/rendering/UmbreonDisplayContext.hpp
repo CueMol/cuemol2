@@ -41,14 +41,6 @@ namespace render {
     bool shadows = false;
     int shadowSamples = 1;
     double lightRadius = 0.0;
-    /// POV assumed_gamma applied to the final image (1.0 = no-op). CueMol's
-    /// POV exporter writes 1.0, but a .pov may override it (e.g. 2.2).
-    double assumedGamma = 1.0;
-    /// When true, bypass the sRGB output pipeline: force assumedGamma = 1.0 and
-    /// map umbreon's linear HDR framebuffer straight to 8-bit (clamp [0,1] *
-    /// 255, no sRGB OETF). For comparing the raw linear look against the
-    /// default assumedGamma + sRGB-encoded output.
-    bool linearOutput = false;
     /// When true, render a transparent background: the output is RGBA (4
     /// components) with alpha = coverage (0 where no geometry is hit), so the
     /// PNG can be composited over another image (POV "_transpbg").
@@ -74,7 +66,10 @@ namespace render {
     virtual void endSection();
 
     /// Render the accumulated scene with umbreon and return interleaved 8-bit
-    /// sRGB pixels (top-left origin, outNcomp components per pixel). Throws
+    /// pixels (top-left origin, outNcomp components per pixel). The umbreon
+    /// linear HDR framebuffer is mapped straight to 8-bit (clamp [0,1] * 255,
+    /// no assumed_gamma and no sRGB OETF); the exporter tags the PNG as sRGB so
+    /// a color-managed viewer applies the transfer curve at display time. Throws
     /// qlib::RuntimeException when built without umbreon (HAVE_UMBREON).
     void render(const UmbreonRenderParams &prm,
                 int &outWidth, int &outHeight, int &outNcomp,

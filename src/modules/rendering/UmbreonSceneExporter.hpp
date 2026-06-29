@@ -65,18 +65,6 @@ namespace render {
     /// edge line rise from the surface
     double m_dEdgeRise;
 
-    /// POV assumed_gamma applied to the final image (1.0 = no-op). Defaults to
-    /// 2.2 to match the .pov + umbreon_cli reference workflow; set to 1.0 for a
-    /// default CueMol .pov (which writes assumed_gamma 1.0).
-    double m_dAssumedGamma;
-
-    /// Raw linear output: force assumedGamma = 1.0 and map umbreon's linear HDR
-    /// framebuffer straight to 8-bit (no sRGB OETF). The PNG is still tagged as
-    /// sRGB: the default path's bytes are also ~linear (the pow 2.2 and the sRGB
-    /// encode cancel), so both look nearly the same in a color-managed viewer.
-    /// Default false (the sRGB-encoded path). For comparison.
-    bool m_bLinearOutput;
-
     /// Transparent background: emit an RGBA PNG with alpha = coverage (0 where
     /// no geometry is hit) so it can be composited over another image (POV
     /// "_transpbg"). Default false (opaque RGB over the scene background color).

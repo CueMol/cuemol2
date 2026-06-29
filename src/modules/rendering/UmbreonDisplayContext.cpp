@@ -45,6 +45,16 @@ namespace {
     return umbreon::Vec3(float(v.x()), float(v.y()), float(v.z()));
   }
 
+  // Map one umbreon linear HDR channel straight to 8-bit: clamp to [0,1] and
+  // scale by 255 (no assumed_gamma, no sRGB OETF). The PNG is tagged sRGB by the
+  // exporter, so a color-managed viewer applies the transfer curve at display.
+  inline unsigned char toUnorm8(float v)
+  {
+    if (v < 0.0f) v = 0.0f;
+    if (v > 1.0f) v = 1.0f;
+    return static_cast<unsigned char>(v * 255.0f + 0.5f);
+  }
+
   // CueMol's default POV material finish (default_style.xml): ambient 0.2,
   // diffuse 0.8, brilliance 1.0 (== umbreon Material() defaults) plus
   // specular 0.4 and roughness 0.01 (umbreon defaults are specular 0,
@@ -620,18 +630,20 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
                        float(m_bgcolor->fb()));
   scene.background = bg;
 
-  // POV fog (depth cue): CueMol writes, for an opaque background,
-  //   fog { distance slab/3, color bg, fog_type 2 (ground), fog_offset 0,
-  //         fog_alt 1e-10, up <0,0,1> }
-  // and the umbreon CLI applies it as a depth post-process. Without it the
-  // far geometry is not sunk toward the background, so shading looks flat.
-  scene.fog.enabled = true;
+  // OpenGL linear depth fog (depth cue): the umbreon renderer consumes only
+  // fog.start/end (plane eye-z) + color; the legacy POV fog_type/offset/alt/up
+  // fields are no longer applied. Match the umbreon CLI's POV-reader
+  // restoration of CueMol's ground-fog hack (pov_scene_reader): start = view
+  // distance (clamped to >= 1), end = start + 1.5 * (slabDepth/3) = start +
+  // slabDepth/2. Without it far geometry is not sunk toward the background.
+  const double fogStart = (m_dViewDist < 1.0) ? 1.0 : m_dViewDist;
+  const double fogEnd = fogStart + 0.5 * m_dSlabDepth;
   scene.fog.color = bg;
-  scene.fog.distance = float(m_dSlabDepth / 3.0);
-  scene.fog.type = 2;
-  scene.fog.offset = 0.0f;
-  scene.fog.alt = 1.0e-10f;
-  scene.fog.up = umbreon::Vec3(0.0f, 0.0f, 1.0f);
+  scene.fog.start = float(fogStart);
+  scene.fog.end = float(fogEnd);
+  // A degenerate slab (end <= start) would make the fog factor blow the whole
+  // frame to the background color; skip fog entirely in that case.
+  scene.fog.enabled = (fogEnd > fogStart);
 
   // Default lighting matching CueMol's POV output (the scene the umbreon CLI
   // builds from a .pov). The umbreon CLI predefines _light_inten=1.3,
@@ -662,10 +674,10 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
   scene.ambientIntensity = 1.0f;
   scene.ambientColor = umbreon::Vec3(1.0f, 1.0f, 1.0f);
 
-  // POV assumed_gamma: raises the final image to this power (1.0 = no-op).
-  // The linear-output mode forces it off (assumedGamma = 1.0) so the bytes are
-  // a direct linear mapping of the HDR framebuffer.
-  scene.assumedGamma = prm.linearOutput ? 1.0f : float(prm.assumedGamma);
+  // No assumed_gamma: keep umbreon's framebuffer linear (assumedGamma = 1.0 is
+  // a no-op in the pipeline). The output is then a direct linear mapping of the
+  // HDR framebuffer (see the encode below) and the PNG is tagged sRGB.
+  scene.assumedGamma = 1.0f;
 
   umbreon::RenderOptions opt;
   opt.width = (prm.width > 0) ? prm.width : 640;
@@ -686,10 +698,8 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
   umbreon::FrameResult frame = umbreon::render(scene, opt);
 
   // Count saturated pixels: any RGB channel > 1.0 in the final framebuffer will
-  // clamp to white on output (the encode step clips to [0,1]). Since
-  // applyAssumedGamma is monotonic with g > 0, "frame.color > 1" is the same
-  // set whether measured before or after gamma. Logged to help judge whether
-  // the lighting/exposure is blowing out highlights.
+  // clamp to white on output (the encode step clips to [0,1]). Logged to help
+  // judge whether the lighting/exposure is blowing out highlights.
   {
     const std::size_t npix =
         std::size_t(frame.width) * std::size_t(frame.height);
@@ -730,25 +740,17 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
     }
   }
 
-  if (prm.linearOutput) {
-    // Direct linear mapping: clamp each HDR channel to [0,1] and scale to 8-bit
-    // (no sRGB OETF). Bypasses srgbEncode8 entirely.
+  // Direct linear mapping: clamp each HDR channel to [0,1] and scale to 8-bit
+  // (no assumed_gamma, no sRGB OETF). The PNG is tagged sRGB by the exporter so
+  // a color-managed viewer applies the transfer curve at display time.
+  {
     const std::size_t npix =
         std::size_t(frame.width) * std::size_t(frame.height);
     outRGBA.resize(npix * std::size_t(outNcomp));
     for (std::size_t i = 0; i < npix; ++i) {
-      for (int c = 0; c < outNcomp; ++c) {
-        float v = frame.color[i * 4 + c];
-        if (v < 0.0f) v = 0.0f;
-        if (v > 1.0f) v = 1.0f;
-        outRGBA[i * outNcomp + c] =
-            static_cast<unsigned char>(v * 255.0f + 0.5f);
-      }
+      for (int c = 0; c < outNcomp; ++c)
+        outRGBA[i * outNcomp + c] = toUnorm8(frame.color[i * 4 + c]);
     }
-  }
-  else {
-    std::vector<std::uint8_t> bytes = umbreon::srgbEncode8(frame, outNcomp);
-    outRGBA.assign(bytes.begin(), bytes.end());
   }
 
   MB_DPRINTLN("Umbreon> render done: %.3f sec",
