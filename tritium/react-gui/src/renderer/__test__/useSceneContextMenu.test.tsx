@@ -29,6 +29,15 @@ vi.mock('../components/dialogs/ApplyRendStyleDialogProvider', () => ({
 vi.mock('../components/dialogs/CreateRendStyleDialogProvider', () => ({
     useShowCreateRendStyleDialog: () => vi.fn().mockResolvedValue(null),
 }))
+vi.mock('../components/dialogs/EditCameraVisFlagsDialogProvider', () => ({
+    useShowEditCameraVisFlagsDialog: () => vi.fn().mockResolvedValue(null),
+}))
+vi.mock('../components/dialogs/EditInteractionListDialogProvider', () => ({
+    useShowEditInteractionListDialog: () => vi.fn().mockResolvedValue(null),
+}))
+vi.mock('../components/dialogs/StyleEditorDialogProvider', () => ({
+    useShowStyleEditorDialog: () => vi.fn().mockResolvedValue(null),
+}))
 
 function makeMockCm() {
     return {
