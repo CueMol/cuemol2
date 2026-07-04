@@ -233,7 +233,75 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
-   Render Result tab
+   Render preview pane (docked right of ContentArea)
+   ═══════════════════════════════════════════════════════════ */
+
+.render-preview {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-surface);
+  overflow: hidden;
+}
+
+.render-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-4) 0 var(--space-5);
+  height: var(--panel-header-h);
+  min-height: var(--panel-header-h);
+  background: var(--toolbar-bg);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.render-preview-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.render-preview-header-icon {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.render-preview-header-name {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.render-preview-close-btn.bp5-button {
+  min-height: 22px !important;
+  min-width: 22px !important;
+  padding: 0 !important;
+  border-radius: var(--radius-md);
+}
+
+.render-preview-close-btn.bp5-button .bp5-icon {
+  color: var(--text-muted);
+}
+
+.render-preview-close-btn.bp5-button:hover {
+  background: var(--overlay-hover) !important;
+}
+
+.render-preview-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Render result viewer (render preview pane body)
    ═══════════════════════════════════════════════════════════ */
 
 .render-result-pane {

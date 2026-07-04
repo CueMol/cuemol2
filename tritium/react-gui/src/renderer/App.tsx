@@ -9,7 +9,7 @@
  *   - useCommandRegistrations   -- registers all CmdId handlers + Electron IPC bridge
  */
 
-import React, { useState, useCallback, useEffect, useMemo } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Allotment } from "allotment";
 import "allotment/dist/style.css";
 
@@ -34,6 +34,8 @@ import { useSceneTreeController } from "./hooks/useSceneTreeController";
 import { useInspectorState } from "./hooks/useInspectorState";
 import { useRenderSettings } from "./hooks/useRenderSettings";
 import { useRenderJob, isRenderJobActive } from "./hooks/useRenderJob";
+import { useRenderPreview } from "./hooks/useRenderPreview";
+import { RenderPreviewPane } from "./components/panes/RenderPreviewPane";
 import { RENDER_BACKEND_IDS } from "./data/renderBackends";
 import { RENDER_SIZE_PRESETS } from "./data/renderSettings";
 import type { RenderResult, RenderSource } from "./data/renderResult";
@@ -69,7 +71,9 @@ const App: React.FC = () => {
     setMainSizes,
     setRightPanelSizes,
     setCenterSizes,
+    setPreviewSplitSizes,
     setInspectorOpen: persistInspectorOpen,
+    setRenderPreviewOpen: persistRenderPreviewOpen,
     setViewSizes,
     setViewCollapsed,
   } = useLayoutPersistence();
@@ -199,7 +203,6 @@ const App: React.FC = () => {
     openSettingsTab,
     addMolViewTab,
     updateMolViewTabTitle,
-    addRenderResultTab,
     handleCloseTab,
     handleReorderTabs,
   } = useTabManager({ onMolViewClose: handleMolViewClose, confirmCloseTab });
@@ -219,8 +222,8 @@ const App: React.FC = () => {
 
   // Keep the active scene/view bound to the active CONTENT tab: activate the
   // worker view for a molview tab, or clear the active molview when a
-  // non-molview tab (Settings / render result / welcome) is shown, so the
-  // Explorer / Inspector / File Open all follow the visible tab and treat a
+  // non-molview tab (Settings / welcome) is shown, so the Explorer /
+  // Inspector / File Open all follow the visible tab and treat a
   // non-molview tab as "no active scene".
   useEffect(() => {
     const tab = tabs.find((t) => t.id === activeTab);
@@ -247,45 +250,29 @@ const App: React.FC = () => {
     (window as unknown as Record<string, unknown>).__activeViewId = activeMolViewId;
   }, [cm, activeMolViewId]);
 
-  // --- Render: job lifecycle + Render Result tab ---
+  // --- Render: job lifecycle + docked preview pane ---
 
-  // Render job for the BottomPanel Render tab. On completion the worker
-  // sends the rendered image; `addRenderResultTab` opens (or overwrites)
-  // the source scene's result tab.
-  const renderJob = useRenderJob({ cm, onComplete: addRenderResultTab });
+  // Docked render preview pane state (right of ContentArea). On completion
+  // the worker sends the rendered image; `showResult` stores it and opens
+  // the pane without changing the active tab.
+  const { previewOpen, previewResult, showResult, closePreview } =
+    useRenderPreview({ layout, loaded, persistRenderPreviewOpen });
+
+  const renderJob = useRenderJob({ cm, onComplete: showResult });
 
   /**
    * Start a render from the current Render Settings (Start button / F12).
-   * Resolves the target from the active content tab: a molview tab renders its
-   * own scene/view; a Render Result tab renders the scene it depicts (its
-   * source), so re-rendering from a result tab still works now that the active
-   * scene follows the visible tab. Other tabs (Settings / welcome) have no
-   * scene to render.
+   * Renders the active molview tab's scene/view; other tabs (Settings /
+   * welcome) have no scene to render.
    */
   const handleRenderStart = useCallback(() => {
-    const activeTabData = tabs.find((t) => t.id === activeTab);
-    let source: RenderSource | null = null;
-    if (
-      activeTabData?.type === 'renderResult' &&
-      activeTabData.renderResult?.sourceViewId !== undefined
-    ) {
-      const rr = activeTabData.renderResult;
-      source = {
-        sceneId: rr.sourceSceneId,
-        sceneName: rr.sourceSceneName,
-        viewId: rr.sourceViewId,
-      };
-    } else {
-      const info = getActiveSceneInfo();
-      if (info) {
-        source = {
-          sceneId: info.scene_uid,
-          sceneName: scene.tree?.name ?? `Scene ${info.scene_uid}`,
-          viewId: info.view_id,
-        };
-      }
-    }
-    if (!source) return;
+    const info = getActiveSceneInfo();
+    if (!info) return;
+    const source: RenderSource = {
+      sceneId: info.scene_uid,
+      sceneName: scene.tree?.name ?? `Scene ${info.scene_uid}`,
+      viewId: info.view_id,
+    };
     void renderJob.start({
       sceneId: source.sceneId,
       viewId: source.viewId,
@@ -293,43 +280,34 @@ const App: React.FC = () => {
       source,
       binaries: renderBinaries,
     });
-  }, [tabs, activeTab, getActiveSceneInfo, scene.tree, renderJob, renderSettings, renderBinaries]);
+  }, [getActiveSceneInfo, scene.tree, renderJob, renderSettings, renderBinaries]);
 
   /**
-   * Whether the active tab can be rendered now. Mirrors the source resolution
-   * in handleRenderStart so the Render tab's Start button is enabled exactly
-   * when a render would actually run: a molview tab, or a Render Result tab that
-   * still knows its source view. Settings / welcome tabs have no scene, so the
-   * button is disabled rather than silently doing nothing.
+   * Whether the active tab can be rendered now: only a molview tab has a
+   * scene. Settings / welcome tabs disable the Start button rather than
+   * silently doing nothing.
    */
-  const canRender = useMemo(() => {
-    const activeTabData = tabs.find((t) => t.id === activeTab);
-    if (activeTabData?.type === 'renderResult') {
-      return activeTabData.renderResult?.sourceViewId !== undefined;
-    }
-    return activeMolViewId !== undefined;
-  }, [tabs, activeTab, activeMolViewId]);
-
-  /**
-   * Scene id whose Render Settings the gear should open: a molview tab's own
-   * scene, or a render-result tab's source scene. On a render-result tab
-   * activeSceneId is undefined (no active molview), so handleShowRenderSettings
-   * needs this explicit id -- otherwise the gear silently does nothing.
-   */
-  const renderSourceSceneId = useMemo(() => {
-    const activeTabData = tabs.find((t) => t.id === activeTab);
-    if (activeTabData?.type === 'renderResult') {
-      return activeTabData.renderResult?.sourceSceneId;
-    }
-    return activeSceneId;
-  }, [tabs, activeTab, activeSceneId]);
+  const canRender = activeMolViewId !== undefined;
 
   const handleOpenRenderSettings = useCallback(
-    () => handleShowRenderSettings(renderSourceSceneId),
-    [handleShowRenderSettings, renderSourceSceneId],
+    () => handleShowRenderSettings(activeSceneId),
+    [handleShowRenderSettings, activeSceneId],
   );
 
-  /** Re-render from a result tab's snapshot (also restores it into the editor). */
+  /**
+   * Persist the ContentArea / preview split. Allotment reports [width, 0]
+   * while the preview pane is hidden (visible=false); persisting that would
+   * restore a zero-width preview after restart, so skip those updates.
+   */
+  const handlePreviewSplitChange = useCallback(
+    (sizes: number[]) => {
+      if (sizes.length > 1 && sizes[1] === 0) return;
+      setPreviewSplitSizes(sizes);
+    },
+    [setPreviewSplitSizes],
+  );
+
+  /** Re-render from the preview's snapshot (also restores it into the editor). */
   const handleReRender = useCallback(
     (result: RenderResult) => {
       renderSettings.restore(result.settingsSnapshot);
@@ -348,7 +326,7 @@ const App: React.FC = () => {
     [renderSettings, renderJob, renderBinaries],
   );
 
-  /** Switch to a result tab's source scene (its molview tab). */
+  /** Switch to the previewed result's source scene (its molview tab). */
   const handleShowSourceScene = useCallback(
     (result: RenderResult) => {
       if (result.sourceViewId === undefined) return;
@@ -565,19 +543,43 @@ const App: React.FC = () => {
                         }
                       >
                         <Allotment.Pane>
-                          <ContentArea
-                            tabs={tabs}
-                            activeTab={activeTab}
-                            onSelectTab={setActiveTab}
-                            onCloseTab={handleCloseTab}
-                            onReorderTabs={handleReorderTabs}
-                            activeTool={activeTool}
-                            onSelectTool={setActiveTool}
-                            onStatusMessage={setStatusMessage}
-                            onReRender={handleReRender}
-                            onShowSourceScene={handleShowSourceScene}
-                            onOpenRenderSettings={handleOpenRenderSettings}
-                          />
+                          {/* Top cell: ContentArea + render preview (horizontal split) */}
+                          <Allotment
+                            onChange={handlePreviewSplitChange}
+                            defaultSizes={
+                              layout.previewSplitSizes &&
+                              layout.previewSplitSizes.length > 0
+                                ? layout.previewSplitSizes
+                                : undefined
+                            }
+                          >
+                            <Allotment.Pane minSize={200}>
+                              <ContentArea
+                                tabs={tabs}
+                                activeTab={activeTab}
+                                onSelectTab={setActiveTab}
+                                onCloseTab={handleCloseTab}
+                                onReorderTabs={handleReorderTabs}
+                                activeTool={activeTool}
+                                onSelectTool={setActiveTool}
+                                onStatusMessage={setStatusMessage}
+                              />
+                            </Allotment.Pane>
+                            <Allotment.Pane
+                              minSize={240}
+                              preferredSize={380}
+                              visible={previewOpen && previewResult !== null}
+                              snap
+                            >
+                              <RenderPreviewPane
+                                result={previewResult}
+                                onClose={closePreview}
+                                onReRender={handleReRender}
+                                onShowSourceScene={handleShowSourceScene}
+                                onOpenSettings={handleOpenRenderSettings}
+                              />
+                            </Allotment.Pane>
+                          </Allotment>
                         </Allotment.Pane>
                         <Allotment.Pane minSize={100} preferredSize={200} snap>
                           <BottomPanel

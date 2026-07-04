@@ -12,15 +12,17 @@
  *
  * ## Persisted layout keys
  *
- * | Key                | Description                                    |
- * |--------------------|------------------------------------------------|
- * | `mainSizes`        | Outer horizontal split: [sidebar, rightArea]   |
- * | `rightPanelSizes`  | Inner horizontal split: [center, inspector]    |
- * | `centerSizes`      | Vertical split: [editor, logPanel]             |
- * | `sidebarOpen`      | Whether the left sidebar is visible            |
- * | `inspectorOpen`    | Whether the right inspector panel is visible   |
- * | `viewSizes`        | Per-view splitter sizes (N panes per view)     |
- * | `viewCollapsed`    | Per-view collapse state (N panes per view)     |
+ * | Key                 | Description                                     |
+ * |---------------------|-------------------------------------------------|
+ * | `mainSizes`         | Outer horizontal split: [sidebar, rightArea]    |
+ * | `rightPanelSizes`   | Inner horizontal split: [center, inspector]     |
+ * | `centerSizes`       | Vertical split: [editor, logPanel]              |
+ * | `previewSplitSizes` | Editor horizontal split: [content, preview]     |
+ * | `sidebarOpen`       | Whether the left sidebar is visible             |
+ * | `inspectorOpen`     | Whether the right inspector panel is visible    |
+ * | `renderPreviewOpen` | Whether the render preview pane is visible      |
+ * | `viewSizes`         | Per-view splitter sizes (N panes per view)      |
+ * | `viewCollapsed`     | Per-view collapse state (N panes per view)      |
  *
  * Note: The activity-bar active view is intentionally NOT persisted;
  * the app always starts with the Explorer view open.
@@ -37,8 +39,10 @@ const LAYOUT_DEFAULTS: LayoutState = {
   mainSizes: [],
   rightPanelSizes: [],
   centerSizes: [],
+  previewSplitSizes: [],
   sidebarOpen: true,
   inspectorOpen: false,
+  renderPreviewOpen: false,
   viewSizes: {
     explorer: [220, 240],
     selection: [260, 180],
@@ -135,6 +139,15 @@ export function useLayoutPersistence() {
     [scheduleLayoutSave],
   );
 
+  /** Persist the editor horizontal split (content area + render preview). */
+  const setPreviewSplitSizes = useCallback(
+    (sizes: number[]) => {
+      setLayout((prev) => ({ ...prev, previewSplitSizes: sizes }));
+      scheduleLayoutSave();
+    },
+    [scheduleLayoutSave],
+  );
+
   const setSidebarOpen = useCallback(
     (open: boolean) => {
       setLayout((prev) => ({ ...prev, sidebarOpen: open }));
@@ -146,6 +159,14 @@ export function useLayoutPersistence() {
   const setInspectorOpen = useCallback(
     (open: boolean) => {
       setLayout((prev) => ({ ...prev, inspectorOpen: open }));
+      scheduleLayoutSave();
+    },
+    [scheduleLayoutSave],
+  );
+
+  const setRenderPreviewOpen = useCallback(
+    (open: boolean) => {
+      setLayout((prev) => ({ ...prev, renderPreviewOpen: open }));
       scheduleLayoutSave();
     },
     [scheduleLayoutSave],
@@ -224,8 +245,10 @@ export function useLayoutPersistence() {
     setMainSizes,
     setRightPanelSizes,
     setCenterSizes,
+    setPreviewSplitSizes,
     setSidebarOpen,
     setInspectorOpen,
+    setRenderPreviewOpen,
     // Generic per-view setters
     setViewSizes,
     setViewCollapsed,

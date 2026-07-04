@@ -1,6 +1,6 @@
 /**
  * @file components/panes/RenderResultPane.tsx
- * @description ContentArea tab body for a completed render.
+ * @description Render preview pane body for a completed render.
  *
  * Top toolbar carries the result actions (Save / Copy / Show Settings /
  * Re-render / Show Source Scene); below it a `RenderImageViewer` shows the

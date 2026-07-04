@@ -15,7 +15,7 @@
  * keeps the tab to one toolbar row rather than stacking a separate action bar.
  */
 
-import React, { useRef, useState, useCallback, useLayoutEffect } from "react";
+import React, { useRef, useState, useCallback, useEffect, useLayoutEffect } from "react";
 import { Button, ButtonGroup } from "@blueprintjs/core";
 import { AppIcon } from "../AppIcon";
 
@@ -94,6 +94,32 @@ export const RenderImageViewer: React.FC<RenderImageViewerProps> = ({
       fittedRef.current = true;
       setScale(f);
     }
+  }, [computeFit]);
+
+  // Last-resort fit: in the docked preview pane the viewer can mount while
+  // the Allotment pane is still zero-width (visibility toggling in the same
+  // commit), so both the layout-effect and img-onload fits can miss. Observe
+  // the container until it first becomes measurable, fit once, disconnect.
+  // Guarded because jsdom has no ResizeObserver.
+  useEffect(() => {
+    if (fittedRef.current) return;
+    if (typeof ResizeObserver === "undefined") return;
+    const el = scrollRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      if (fittedRef.current) {
+        ro.disconnect();
+        return;
+      }
+      const f = computeFit();
+      if (f !== null) {
+        fittedRef.current = true;
+        setScale(f);
+        ro.disconnect();
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
   }, [computeFit]);
 
   // Drag-to-pan via scroll offset.

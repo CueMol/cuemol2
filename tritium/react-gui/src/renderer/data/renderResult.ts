@@ -1,14 +1,11 @@
 /**
  * @file data/renderResult.ts
- * @description Types and mock helpers for a completed render result.
+ * @description Types and helpers for a completed render result.
  *
- * A render result is opened as its own ContentArea tab. It carries the
- * rendered image, the source-scene reference and a frozen snapshot of the
- * settings used, so the result tab can be inspected and re-rendered.
- *
- * Phase 3 is mock-only: `makeMockRenderImage` synthesises a placeholder
- * image so the result tab and viewer can be exercised before the real
- * worker-side pipeline (phase 4) exists.
+ * A render result is shown in the docked render preview pane right of
+ * ContentArea (see useRenderPreview). It carries the rendered image, the
+ * source-scene reference and a frozen snapshot of the settings used, so
+ * the previewed result can be inspected and re-rendered.
  */
 
 import type { PropDef } from "./rendererProperties";
@@ -29,9 +26,9 @@ export interface RenderSettingsSnapshot {
   backendProps: PropDef[];
 }
 
-/** A completed render, displayed in its own ContentArea tab. */
+/** A completed render, displayed in the render preview pane. */
 export interface RenderResult {
-  /** Unique id (also used as the tab id). */
+  /** Unique id (used as a remount key by the preview pane). */
   id: string;
   /** Rendered image as a data URL. */
   imageDataUrl: string;
@@ -50,10 +47,6 @@ export interface RenderResult {
   /** Settings used for this render. */
   settingsSnapshot: RenderSettingsSnapshot;
 }
-
-/** Tab title for a render result: `Scene1 -- 1216×612 (15.2s)`. */
-export const renderResultTabTitle = (r: RenderResult): string =>
-  `${r.sourceSceneName} — ${r.width}×${r.height} (${r.elapsedSec.toFixed(1)}s)`;
 
 /** Build a render result from the rendered image and the job's context. */
 export function buildRenderResult(args: {

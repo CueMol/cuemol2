@@ -22,8 +22,12 @@ export interface LayoutState {
   mainSizes?: number[]
   rightPanelSizes?: number[]
   centerSizes?: number[]
+  /** Horizontal split inside the center top cell: [contentArea, renderPreview]. */
+  previewSplitSizes?: number[]
   sidebarOpen?: boolean
   inspectorOpen?: boolean
+  /** Whether the docked render preview pane is visible. */
+  renderPreviewOpen?: boolean
   // legacy flat keys (on-disk compatibility)
   explorerSizes?: number[]
   explorerCollapsed?: Record<string, boolean>
