@@ -89,7 +89,9 @@ NamedColor::NamedColor(const LString &name, qlib::uid_t nCtxtID)
 
 NamedColor::~NamedColor()
 {
-  if (m_nCacheID!=qlib::invalid_uid)
+  // m_pResolver becomes NULL after StyleMgr::fini();
+  // colors destructed after that point must not touch the resolver
+  if (m_nCacheID!=qlib::invalid_uid && m_pResolver!=NULL)
     m_pResolver->setCached(m_nCacheID, false);
 
   //if (!m_name.isEmpty())

@@ -195,11 +195,16 @@ void fini()
 
   ShaderObjMgr::fini();
 
+  // SceneManager must be finalized before StyleMgr, because destruction of
+  // scenes (and their renderers/colors) requires the style manager
+  // (e.g. Scene::~Scene calls StyleMgr::destroyContext, and
+  //  NamedColor::~NamedColor accesses the color resolver in StyleMgr).
+  SceneManager::fini();
+
   StyleMgr::fini();
 
   RendererFactory::fini();
   StreamManager::fini();
-  SceneManager::fini();
 
   ViewInputConfig::fini();
   SysConfig::fini();
