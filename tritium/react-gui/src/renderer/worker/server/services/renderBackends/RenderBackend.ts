@@ -63,6 +63,20 @@ export interface RenderBackend {
   parseProgress(stdout: string): number | null;
   /** Final output image path, read once all tasks complete. */
   outputImagePath(exported: ExportedScene): string;
+  /**
+   * Optional: render the scene fully in-process (a synchronous C++ ray trace),
+   * writing the final PNG directly to `outputPath`. When a backend defines this,
+   * the render-job pipeline calls it INSTEAD of the external-process path --
+   * `buildTasks` / `parseProgress` are never invoked, and no ProcessManager task
+   * is queued. The call blocks the worker thread for the whole render (no
+   * progress is reported); see UmbreonBackend for the sole in-process backend.
+   */
+  renderInProcess?(
+    ctx: WorkerContext,
+    scene: Scene,
+    snapshot: RenderSettingsSnapshot,
+    outputPath: string,
+  ): void;
 }
 
 // - PropDef value readers -

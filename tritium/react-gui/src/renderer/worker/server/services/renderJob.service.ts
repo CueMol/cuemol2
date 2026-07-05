@@ -23,6 +23,7 @@ import * as os from "os";
 import * as path from "path";
 
 import type { ProcessManager } from "@cuemol/core/src/wrappers/ProcessManager";
+import type { Scene } from "@cuemol/core/src/wrappers/Scene";
 import type { WorkerContext } from "../types/WorkerContext";
 import type {
   RenderStartArgs,
@@ -217,6 +218,68 @@ function pollJob(
   if (allDone) finishJob(ctx, entry, args);
 }
 
+/**
+ * Register and drive an in-process (synchronous C++) render job -- e.g. umbreon,
+ * which renders straight to `outputPath` in one blocking `write()` call rather
+ * than spawning external processes. No ProcessManager task is queued.
+ *
+ * The render has already happened (synchronously, blocking the worker) by the
+ * time this returns, so completion is deferred to the next macrotask via
+ * `setTimeout(0)`: `useRenderJob` stores the pending jobId only after
+ * `renderStart` resolves and drops any push whose jobId doesn't match, so a
+ * synchronous "complete" would be lost. The deferred callback runs after the
+ * renderer has stored the jobId.
+ */
+function startInProcessJob(
+  ctx: WorkerContext,
+  backend: RenderBackend,
+  scene: Scene,
+  args: RenderStartArgs,
+  workDir: string,
+  outputPath: string,
+): RenderStartResult {
+  const startedAt = Date.now();
+  try {
+    // Blocks the worker thread for the full ray trace; no progress is reported.
+    backend.renderInProcess!(ctx, scene, args.snapshot, outputPath);
+  } catch (e) {
+    cleanupDir(workDir);
+    return { ok: false, jobId: "", error: String(e) };
+  }
+
+  const jobId = `render-${Date.now()}`;
+  const entry: RenderJobEntry = {
+    jobId,
+    workDir,
+    outputPath,
+    startedAt,
+    timer: null,
+    cancelled: false,
+    announcedDir: true,
+    phase: "render",
+    finalizeSpecs: [],
+    taskIds: [],
+    taskProgress: [],
+  };
+  jobs.set(jobId, entry);
+
+  // Image is already on disk; emit completion on the next macrotask (see the
+  // jobId-race note above). `stopTimer` uses clearInterval, which also clears a
+  // setTimeout handle in Node.
+  entry.timer = setTimeout(() => {
+    if (entry.cancelled) return;
+    try {
+      finishJob(ctx, entry, args);
+    } catch (e) {
+      stopTimer(entry);
+      jobs.delete(jobId);
+      emit(ctx, { type: "error", jobId, error: String(e) });
+    }
+  }, 0);
+
+  return { ok: true, jobId };
+}
+
 /** Start a render job. */
 function renderStart(ctx: WorkerContext, args: RenderStartArgs): RenderStartResult {
   const scene = getSceneOrNull(ctx, args.sceneId);
@@ -248,6 +311,13 @@ function renderStart(ctx: WorkerContext, args: RenderStartArgs): RenderStartResu
   try {
     const exported = backend.exportScene(ctx, scene, args.snapshot, workDir);
     outputPath = backend.outputImagePath(exported);
+
+    // In-process backend (umbreon): render synchronously to outputPath now and
+    // skip the external-process (buildTasks / ProcessManager) path entirely.
+    if (backend.renderInProcess) {
+      return startInProcessJob(ctx, backend, scene, args, workDir, outputPath);
+    }
+
     const tasks = backend.buildTasks(exported, args.snapshot, args.binaries);
     renderSpecs = tasks.filter((t) => t.kind === "render");
     finalizeSpecs = tasks.filter((t) => t.kind === "finalize");
