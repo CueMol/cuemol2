@@ -37,6 +37,7 @@ interface Harness {
 function mount(opts: {
   tabs: TabData[]
   closeResults: Array<boolean | Error>
+  onBeforeProceed?: () => Promise<void>
 }): Harness {
   let captured: (() => void) | null = null
   const onPush = vi.fn((channel: string, cb: () => void) => {
@@ -58,7 +59,12 @@ function mount(opts: {
   const handle = makeRenderHook(() => {
     const ref = useRef<TabData[]>(opts.tabs)
     tabsRef = ref
-    useWindowCloseHandler({ tabsRef: ref, handleCloseTab, setActiveTab })
+    useWindowCloseHandler({
+      tabsRef: ref,
+      handleCloseTab,
+      setActiveTab,
+      onBeforeProceed: opts.onBeforeProceed,
+    })
   })
 
   if (!captured) throw new Error('WINDOW_CLOSE_REQUEST listener was not registered')
@@ -127,6 +133,56 @@ describe('useWindowCloseHandler (UXP-parity window-close chain)', () => {
     ])
     expect(h.api.invoke).toHaveBeenCalledTimes(1)
     expect(h.api.invoke).toHaveBeenCalledWith(IPC.WINDOW_CLOSE_PROCEED, { proceed: false })
+
+    h.unmount()
+  })
+
+  it('runs onBeforeProceed (user-style save) before proceed:true when every tab confirms', async () => {
+    const order: string[] = []
+    const onBeforeProceed = vi.fn(async () => { order.push('save') })
+    const tabs: TabData[] = [
+      { id: 'molview-1', title: 'A', icon: 'file.molview', type: 'molview', viewId: 1 },
+    ]
+    const h = mount({ tabs, closeResults: [true], onBeforeProceed })
+    h.api.invoke.mockImplementation(async (ch: string) => { order.push(`invoke:${ch}`); return undefined })
+
+    await h.triggerCloseRequest()
+
+    expect(onBeforeProceed).toHaveBeenCalledTimes(1)
+    // Save runs before the proceed reply.
+    expect(order).toEqual(['save', `invoke:${IPC.WINDOW_CLOSE_PROCEED}`])
+    expect(h.api.invoke).toHaveBeenCalledWith(IPC.WINDOW_CLOSE_PROCEED, { proceed: true })
+
+    h.unmount()
+  })
+
+  it('does NOT run onBeforeProceed when the user cancels (proceed:false)', async () => {
+    const onBeforeProceed = vi.fn(async () => undefined)
+    const tabs: TabData[] = [
+      { id: 'molview-1', title: 'A', icon: 'file.molview', type: 'molview', viewId: 1 },
+      { id: 'molview-2', title: 'B', icon: 'file.molview', type: 'molview', viewId: 2 },
+    ]
+    const h = mount({ tabs, closeResults: [false], onBeforeProceed })
+
+    await h.triggerCloseRequest()
+
+    expect(onBeforeProceed).not.toHaveBeenCalled()
+    expect(h.api.invoke).toHaveBeenCalledWith(IPC.WINDOW_CLOSE_PROCEED, { proceed: false })
+
+    h.unmount()
+  })
+
+  it('still proceeds to close when onBeforeProceed throws (save failure must not wedge close)', async () => {
+    const onBeforeProceed = vi.fn(async () => { throw new Error('save failed') })
+    const tabs: TabData[] = [
+      { id: 'molview-1', title: 'A', icon: 'file.molview', type: 'molview', viewId: 1 },
+    ]
+    const h = mount({ tabs, closeResults: [true], onBeforeProceed })
+
+    await h.triggerCloseRequest()
+
+    expect(onBeforeProceed).toHaveBeenCalledTimes(1)
+    expect(h.api.invoke).toHaveBeenCalledWith(IPC.WINDOW_CLOSE_PROCEED, { proceed: true })
 
     h.unmount()
   })

@@ -3,16 +3,26 @@
  * @description Declarative catalogue for the SettingsPane: the category
  * tree, the setting definitions, and their default values.
  *
- * Mock data: only `display.darkMode` is wired to a real backing
- * (ThemeContext). Real persistence lands when the backend config API is
- * ready; at that point this file is the single place the catalogue is
- * swapped, while SettingsPane / ConfigTreeNode / SettingRow stay generic.
+ * Every setting here is wired to a real backend (there are no mock entries):
+ * - `display.darkMode` -> ThemeContext (electron-store)
+ * - `atomLabel.*` -> StyleManager `DefaultLabel.*` via AppSettingsContext
+ * - `rendering.povray*` / `blendpng` -> RenderConfigContext (electron-store)
+ * - `input.device` -> ViewInputConfigContext (electron-store + C++)
+ * - `mouse.xyRotSensitivity` / `mouse.pickPrecision` -> ViewInputConfig
+ *   `tbrad` / `hitprec` via AppSettingsContext
+ *
+ * The atom-label and view-input values are user-defined STYLE values,
+ * persisted to the user style file on window close (UXP parity), not to
+ * electron-store.
  */
 
 import type { AppIconKey } from '../../../data/appIcons'
 import type { RenderBinaries } from '../../../worker/shared/renderTypes'
 import { DEFAULT_RENDER_BINARIES } from '../../../worker/shared/renderTypes'
 import { INPUT_DEVICE_PREF_OPTIONS, INPUT_DEVICE_PREF_LABELS } from '../../../viewInputConfig'
+import type { LabelDefaults } from '../../../worker/server/services/labelDefaults.service'
+import type { ViewInputParams } from '../../../worker/server/services/viewInputParams.service'
+import { FALLBACK_FONT_LIST } from './labelFont'
 
 // --- Category tree ---
 
@@ -37,7 +47,6 @@ export const CATEGORY_TREE: CategoryNode[] = [
       { id: 'display.theme',      label: 'Theme',       icon: 'settings.theme',      children: [] },
       { id: 'display.atomLabels', label: 'Atom Labels',  icon: 'settings.atomLabels', children: [] },
       { id: 'display.rendering',  label: 'Rendering',    icon: 'settings.rendering',  children: [] },
-      { id: 'display.colors',     label: 'Colors',       icon: 'settings.colors',     children: [] },
     ],
   },
   {
@@ -45,19 +54,7 @@ export const CATEGORY_TREE: CategoryNode[] = [
     label: 'Input',
     icon: 'settings.input',
     children: [
-      { id: 'input.mouse',    label: 'Mouse & Navigation', icon: 'settings.mouse',    children: [] },
-      { id: 'input.keyboard', label: 'Keyboard Shortcuts',  icon: 'settings.keyboard', children: [] },
-      { id: 'input.trackpad', label: 'Trackpad',            icon: 'settings.trackpad', children: [] },
-    ],
-  },
-  {
-    id: 'general',
-    label: 'General',
-    icon: 'settings.general',
-    children: [
-      { id: 'general.language', label: 'Language & Region', icon: 'settings.language', children: [] },
-      { id: 'general.updates',  label: 'Updates',           icon: 'settings.updates',  children: [] },
-      { id: 'general.privacy',  label: 'Privacy',           icon: 'settings.privacy',  children: [] },
+      { id: 'input.mouse', label: 'Mouse & Navigation', icon: 'settings.mouse', children: [] },
     ],
   },
 ]
@@ -72,8 +69,8 @@ export const ALL_LEAF_IDS: string[] = CATEGORY_TREE.flatMap((parent) =>
 // --- Setting definitions ---
 
 export type SettingControl =
-  | { kind: 'select'; options: string[] }
-  | { kind: 'number'; min: number; max: number; step: number; minorStep?: number }
+  | { kind: 'select'; options: string[]; renderInOwnFont?: boolean }
+  | { kind: 'number'; min: number; max: number; step: number; unit?: string }
   | { kind: 'toggle' }
   | { kind: 'color' }
   | { kind: 'path'; directory?: boolean }
@@ -103,14 +100,16 @@ export const SETTINGS: SettingDef[] = [
     label: 'Atom Label Font',
     description: 'Font family used for atom labels in the 3D viewport.',
     category: 'display.atomLabels',
-    control: { kind: 'select', options: ['Osaka', 'Helvetica', 'Arial', 'Monaco', 'Menlo', 'Courier New'] },
+    // Options are replaced at runtime with the installed system fonts
+    // (SettingsPane + useSystemFonts); this list is only the pre-load fallback.
+    control: { kind: 'select', options: FALLBACK_FONT_LIST, renderInOwnFont: true },
   },
   {
     key: 'atomLabel.size',
     label: 'Atom Label Size',
-    description: 'Font size in points for atom labels.',
+    description: 'Font size in pixels for atom labels.',
     category: 'display.atomLabels',
-    control: { kind: 'number', min: 6, max: 72, step: 1 },
+    control: { kind: 'number', min: 6, max: 72, step: 1, unit: 'px' },
   },
   {
     key: 'atomLabel.color',
@@ -136,41 +135,6 @@ export const SETTINGS: SettingDef[] = [
 
   // --- Display > Rendering ---
   {
-    key: 'rendering.hiDpi',
-    label: 'Enable HiDPI (Retina) Display',
-    description: 'Use high-resolution rendering on HiDPI screens. Requires restart.',
-    category: 'display.rendering',
-    control: { kind: 'toggle' },
-  },
-  {
-    key: 'rendering.antiAlias',
-    label: 'Anti-aliasing',
-    description: 'Enable multi-sample anti-aliasing for smoother edges.',
-    category: 'display.rendering',
-    control: { kind: 'toggle' },
-  },
-  {
-    key: 'rendering.shadows',
-    label: 'Shadows',
-    description: 'Render shadows cast by molecular objects.',
-    category: 'display.rendering',
-    control: { kind: 'toggle' },
-  },
-  {
-    key: 'rendering.ambientOcclusion',
-    label: 'Ambient Occlusion',
-    description: 'Apply screen-space ambient occlusion for depth perception.',
-    category: 'display.rendering',
-    control: { kind: 'toggle' },
-  },
-  {
-    key: 'rendering.fogDensity',
-    label: 'Fog Density',
-    description: 'Depth-cue fog intensity applied to distant objects.',
-    category: 'display.rendering',
-    control: { kind: 'number', min: 0, max: 1.0, step: 0.05, minorStep: 0.01 },
-  },
-  {
     key: 'rendering.povrayExe',
     label: 'POV-Ray Executable',
     description: 'Path to the POV-Ray binary used for ray-traced rendering.',
@@ -192,29 +156,6 @@ export const SETTINGS: SettingDef[] = [
     control: { kind: 'path' },
   },
 
-  // --- Display > Colors ---
-  {
-    key: 'colors.background',
-    label: 'Background Color',
-    description: 'Viewport background color.',
-    category: 'display.colors',
-    control: { kind: 'color' },
-  },
-  {
-    key: 'colors.selectionHighlight',
-    label: 'Selection Highlight',
-    description: 'Color used to highlight selected atoms and residues.',
-    category: 'display.colors',
-    control: { kind: 'color' },
-  },
-  {
-    key: 'colors.labelBackground',
-    label: 'Label Background',
-    description: 'Background color behind atom labels for readability.',
-    category: 'display.colors',
-    control: { kind: 'color' },
-  },
-
   // --- Input > Mouse & Navigation ---
   {
     key: 'input.device',
@@ -227,158 +168,39 @@ export const SETTINGS: SettingDef[] = [
     control: { kind: 'select', options: INPUT_DEVICE_PREF_OPTIONS },
   },
   {
-    key: 'mouse.preset',
-    label: 'View Operation Preset',
-    description: 'Pre-configured mouse button mapping for 3D navigation.',
-    category: 'input.mouse',
-    control: { kind: 'select', options: ['Default', 'Maya-like', 'PyMOL-like', 'Custom'] },
-  },
-  {
     key: 'mouse.xyRotSensitivity',
     label: 'XY Rotation Sensitivity',
     description: 'Mouse sensitivity for rotating the view around X/Y axes.',
     category: 'input.mouse',
-    control: { kind: 'number', min: 0.1, max: 5.0, step: 0.1, minorStep: 0.01 },
+    control: { kind: 'number', min: 0.1, max: 5.0, step: 0.1 },
   },
   {
     key: 'mouse.pickPrecision',
     label: 'Pick Precision',
     description: 'Pixel radius for atom/object picking in the viewport.',
     category: 'input.mouse',
-    control: { kind: 'number', min: 1, max: 50, step: 1, minorStep: 0.1 },
-  },
-  {
-    key: 'mouse.momentumScroll',
-    label: 'Momentum Scroll',
-    description: 'Enable inertial scrolling for trackpad zoom gestures.',
-    category: 'input.mouse',
-    control: { kind: 'toggle' },
-  },
-
-  // --- Input > Keyboard Shortcuts ---
-  {
-    key: 'keyboard.enableVimMode',
-    label: 'Vim-style Navigation',
-    description: 'Use Vim-like key bindings for viewport navigation (H/J/K/L).',
-    category: 'input.keyboard',
-    control: { kind: 'toggle' },
-  },
-  {
-    key: 'keyboard.enableQuickCommand',
-    label: 'Quick Command Palette',
-    description: 'Enable Ctrl+Shift+P command palette for quick access to actions.',
-    category: 'input.keyboard',
-    control: { kind: 'toggle' },
-  },
-
-  // --- Input > Trackpad ---
-  {
-    key: 'trackpad.multiTouch',
-    label: 'Enable Multi-touch Trackpad',
-    description: 'Use pinch-to-zoom and two-finger rotate on supported trackpads.',
-    category: 'input.trackpad',
-    control: { kind: 'toggle' },
-  },
-  {
-    key: 'trackpad.emulateRightButton',
-    label: 'Emulate Mouse Right Button',
-    description: 'Treat Ctrl+Click as a right-click for single-button mice.',
-    category: 'input.trackpad',
-    control: { kind: 'toggle' },
-  },
-  {
-    key: 'trackpad.scrollDirection',
-    label: 'Scroll Direction',
-    description: 'Scroll direction for zoom operations.',
-    category: 'input.trackpad',
-    control: { kind: 'select', options: ['Natural', 'Inverted'] },
-  },
-
-  // --- General > Language & Region ---
-  {
-    key: 'general.language',
-    label: 'Language',
-    description: 'User interface language. Requires restart.',
-    category: 'general.language',
-    control: { kind: 'select', options: ['English', 'Japanese'] },
-  },
-  {
-    key: 'general.dateFormat',
-    label: 'Date Format',
-    description: 'Format used for dates in the log panel and file metadata.',
-    category: 'general.language',
-    control: { kind: 'select', options: ['YYYY-MM-DD', 'MM/DD/YYYY', 'DD/MM/YYYY'] },
-  },
-
-  // --- General > Updates ---
-  {
-    key: 'updates.autoCheck',
-    label: 'Check for Updates Automatically',
-    description: 'Periodically check for new application versions.',
-    category: 'general.updates',
-    control: { kind: 'toggle' },
-  },
-  {
-    key: 'updates.channel',
-    label: 'Update Channel',
-    description: 'Which release channel to follow for updates.',
-    category: 'general.updates',
-    control: { kind: 'select', options: ['Stable', 'Beta', 'Nightly'] },
-  },
-
-  // --- General > Privacy ---
-  {
-    key: 'privacy.telemetry',
-    label: 'Send Usage Statistics',
-    description: 'Help improve CueMol by sending anonymous usage data.',
-    category: 'general.privacy',
-    control: { kind: 'toggle' },
-  },
-  {
-    key: 'privacy.crashReports',
-    label: 'Send Crash Reports',
-    description: 'Automatically send crash reports when the application encounters an error.',
-    category: 'general.privacy',
-    control: { kind: 'toggle' },
+    control: { kind: 'number', min: 1, max: 50, step: 1, unit: 'px' },
   },
 ]
 
-// --- Default values (mock state) ---
+// --- Default values ---
+// Pre-load fallbacks shown before the live backend value resolves. The
+// atom-label and mouse values are seeded from C++ on mount (AppSettingsContext);
+// the render paths from RenderConfigContext; theme from ThemeContext.
 
 export const DEFAULTS: Record<string, string | number | boolean> = {
   'display.darkMode': true,
-  'atomLabel.font': 'Osaka',
+  'atomLabel.font': 'sans-serif',
   'atomLabel.size': 12,
   'atomLabel.color': '#FFFF00',
   'atomLabel.bold': false,
   'atomLabel.italic': false,
-  'rendering.hiDpi': true,
-  'rendering.antiAlias': true,
-  'rendering.shadows': false,
-  'rendering.ambientOcclusion': false,
-  'rendering.fogDensity': 0.3,
   'rendering.povrayExe': DEFAULT_RENDER_BINARIES.povrayExe,
   'rendering.povrayInc': DEFAULT_RENDER_BINARIES.povrayInc,
   'rendering.blendpng': DEFAULT_RENDER_BINARIES.blendpng,
-  'colors.background': '#1E2028',
-  'colors.selectionHighlight': '#5FAFD7',
-  'colors.labelBackground': '#000000',
   'input.device': INPUT_DEVICE_PREF_LABELS.auto,
-  'mouse.preset': 'Default',
   'mouse.xyRotSensitivity': 0.8,
   'mouse.pickPrecision': 10.0,
-  'mouse.momentumScroll': true,
-  'keyboard.enableVimMode': false,
-  'keyboard.enableQuickCommand': true,
-  'trackpad.multiTouch': true,
-  'trackpad.emulateRightButton': true,
-  'trackpad.scrollDirection': 'Natural',
-  'general.language': 'English',
-  'general.dateFormat': 'YYYY-MM-DD',
-  'updates.autoCheck': true,
-  'updates.channel': 'Stable',
-  'privacy.telemetry': false,
-  'privacy.crashReports': true,
 }
 
 // --- Label lookup: maps leaf category ids to their display titles ---
@@ -399,7 +221,7 @@ export const CATEGORY_LABELS = buildLabelMap(CATEGORY_TREE)
 
 // --- Render-binary settings ---
 // These setting keys are backed by RenderConfigContext (persistent paths),
-// not the mock `values` state. SettingsPane routes them accordingly.
+// not the local `values` state. SettingsPane routes them accordingly.
 
 export const RENDER_BINARY_SETTING_KEYS: Record<string, keyof RenderBinaries> = {
   'rendering.povrayExe': 'povrayExe',
@@ -408,7 +230,27 @@ export const RENDER_BINARY_SETTING_KEYS: Record<string, keyof RenderBinaries> = 
 }
 
 // --- Pointing-device preset setting ---
-// Backed by ViewInputConfigContext (persistent + live re-apply), not the mock
+// Backed by ViewInputConfigContext (persistent + live re-apply), not the local
 // `values` state. SettingsPane routes this key to the context.
 
 export const INPUT_DEVICE_SETTING_KEY = 'input.device'
+
+// --- Atom-label default settings ---
+// Backed by StyleManager `DefaultLabel.*` via AppSettingsContext. Maps the
+// catalogue key to the LabelDefaults field.
+
+export const LABEL_DEFAULT_SETTING_KEYS: Record<string, keyof LabelDefaults> = {
+  'atomLabel.font': 'fontName',
+  'atomLabel.size': 'fontSize',
+  'atomLabel.color': 'color',
+  'atomLabel.bold': 'bold',
+  'atomLabel.italic': 'italic',
+}
+
+// --- View-input scalar settings ---
+// Backed by ViewInputConfig `tbrad` / `hitprec` via AppSettingsContext.
+
+export const VIEW_INPUT_PARAM_SETTING_KEYS: Record<string, keyof ViewInputParams> = {
+  'mouse.xyRotSensitivity': 'tbrad',
+  'mouse.pickPrecision': 'hitprec',
+}

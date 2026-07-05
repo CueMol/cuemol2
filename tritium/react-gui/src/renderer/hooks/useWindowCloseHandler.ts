@@ -21,12 +21,20 @@ interface UseWindowCloseHandlerOptions {
   tabsRef: React.RefObject<TabData[]>;
   handleCloseTab: (id: string) => Promise<boolean>;
   setActiveTab: (id: string) => void;
+  /**
+   * Runs once, after every tab is confirmed and just before the window is
+   * allowed to close (proceed: true). UXP `Qm2Main.onUnLoad` parity hook --
+   * used to persist the user style set. Never runs on the cancel path.
+   * Errors are swallowed so a failed save can never wedge the close.
+   */
+  onBeforeProceed?: () => Promise<void>;
 }
 
 export function useWindowCloseHandler({
   tabsRef,
   handleCloseTab,
   setActiveTab,
+  onBeforeProceed,
 }: UseWindowCloseHandlerOptions): void {
   // Refs keep the latest function identities without retriggering the
   // onPush subscription on every render.
@@ -34,6 +42,8 @@ export function useWindowCloseHandler({
   handleCloseTabRef.current = handleCloseTab;
   const setActiveTabRef = useRef(setActiveTab);
   setActiveTabRef.current = setActiveTab;
+  const onBeforeProceedRef = useRef(onBeforeProceed);
+  onBeforeProceedRef.current = onBeforeProceed;
 
   // Re-entrancy guard: if a second WINDOW_CLOSE_REQUEST arrives while a
   // confirm dialog is already open, ignore the new request.
@@ -58,6 +68,15 @@ export function useWindowCloseHandler({
           if (!ok) {
             await api.invoke(IPC.WINDOW_CLOSE_PROCEED, { proceed: false });
             return;
+          }
+        }
+        // All tabs confirmed: persist user-defined defaults before closing
+        // (UXP onUnLoad). Failure must not block the close.
+        if (onBeforeProceedRef.current) {
+          try {
+            await onBeforeProceedRef.current();
+          } catch {
+            /* save failed -- proceed with close anyway */
           }
         }
         await api.invoke(IPC.WINDOW_CLOSE_PROCEED, { proceed: true });

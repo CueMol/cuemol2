@@ -34,6 +34,7 @@ import { AppIcon } from '../AppIcon'
 import { useTheme } from '../../contexts/ThemeContext'
 import { useRenderConfig } from '../../contexts/RenderConfigContext'
 import { useViewInputConfig } from '../../contexts/ViewInputConfigContext'
+import { useAppSettings } from '../../contexts/AppSettingsContext'
 import { useCueMol } from '../../hooks/useCueMol'
 import { ColorPickerProvider } from '../../h3-kit/colorpicker/ColorPickerContext'
 import {
@@ -49,9 +50,14 @@ import {
   CATEGORY_LABELS,
   RENDER_BINARY_SETTING_KEYS,
   INPUT_DEVICE_SETTING_KEY,
+  LABEL_DEFAULT_SETTING_KEYS,
+  VIEW_INPUT_PARAM_SETTING_KEYS,
 } from './settings/settingsConfig'
 import { ConfigTreeNode } from './settings/ConfigTreeNode'
 import { SettingRow } from './settings/SettingRow'
+import { AtomLabelPreview } from './settings/AtomLabelPreview'
+import { useSettingsPaneNav } from './settings/useSettingsPaneNav'
+import { useSystemFonts } from '../../hooks/useSystemFonts'
 
 export const SettingsPane: React.FC = () => {
   const { theme, setTheme } = useTheme()
@@ -62,22 +68,40 @@ export const SettingsPane: React.FC = () => {
   // (persistent + live re-apply; 'auto' detects the device from the stream).
   const { inputDevicePreference, setInputDevicePreference, effectiveDeviceMode } =
     useViewInputConfig()
+  // Atom-label defaults (DefaultLabel.*) and view-input scalars (tbrad/hitprec)
+  // are user-defined style values applied live to C++ and persisted on close.
+  const { labelDefaults, setLabelDefault, viewInputParams, setViewInputParam } =
+    useAppSettings()
+  // Installed system fonts for the atom-label font picker (falls back to a
+  // curated list until `queryLocalFonts` resolves). Ensure the current value is
+  // always selectable even if that family is not installed / not enumerated.
+  const systemFonts = useSystemFonts()
+  const fontOptions = useMemo(
+    () =>
+      systemFonts.includes(labelDefaults.fontName)
+        ? systemFonts
+        : [labelDefaults.fontName, ...systemFonts],
+    [systemFonts, labelDefaults.fontName],
+  )
   // App settings colours are scene-independent; `sceneId` is left undefined
   // so the colour picker resolves against the global StyleManager scope.
   const { cm } = useCueMol()
 
-  const [filter, setFilter] = useState('')
+  // Navigation state (selected category / filter / expanded groups) is kept in
+  // an in-session store so it survives the pane's unmount on a tab switch.
+  const {
+    selectedCategory,
+    setSelectedCategory,
+    filter,
+    setFilter,
+    expandedIds,
+    toggleExpand: handleToggleExpand,
+  } = useSettingsPaneNav()
   const [values, setValues] = useState<Record<string, string | number | boolean>>(() => ({
     ...DEFAULTS,
     // Initialise from the live theme context so the toggle matches reality.
     'display.darkMode': theme === 'dark',
   }))
-  const [selectedCategory, setSelectedCategory] = useState(ALL_LEAF_IDS[0])
-
-  /* All parent nodes start expanded. */
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(
-    () => new Set(CATEGORY_TREE.map((n) => n.id)),
-  )
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({})
@@ -97,6 +121,20 @@ export const SettingsPane: React.FC = () => {
         return
       }
 
+      // Atom-label defaults apply live to C++ (persisted on close).
+      const labelKey = LABEL_DEFAULT_SETTING_KEYS[key]
+      if (labelKey) {
+        setLabelDefault(labelKey, value)
+        return
+      }
+
+      // View-input scalars (tbrad / hitprec) apply live to C++.
+      const viewParamKey = VIEW_INPUT_PARAM_SETTING_KEYS[key]
+      if (viewParamKey) {
+        setViewInputParam(viewParamKey, Number(value))
+        return
+      }
+
       setValues((prev) => ({ ...prev, [key]: value }))
 
       // Sync theme toggle with the ThemeContext.
@@ -104,7 +142,7 @@ export const SettingsPane: React.FC = () => {
         setTheme(value ? 'dark' : 'light')
       }
     },
-    [setTheme, setBinary, setInputDevicePreference],
+    [setTheme, setBinary, setInputDevicePreference, setLabelDefault, setViewInputParam],
   )
 
   // Keep the toggle in sync if theme changes externally.
@@ -115,15 +153,6 @@ export const SettingsPane: React.FC = () => {
       return { ...prev, 'display.darkMode': isDark }
     })
   }, [theme])
-
-  const handleToggleExpand = useCallback((id: string) => {
-    setExpandedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }, [])
 
   /** Settings filtered by the search query. */
   const filtered = useMemo(() => {
@@ -252,12 +281,18 @@ export const SettingsPane: React.FC = () => {
               <div className="config-category-header">
                 {CATEGORY_LABELS[catId] ?? catId}
               </div>
+              {catId === 'display.atomLabels' && <AtomLabelPreview />}
               {filtered
                 .filter((s) => s.category === catId)
                 .map((s) => {
                   const binaryKey = RENDER_BINARY_SETTING_KEYS[s.key]
                   let def = s
                   let value: string | number | boolean
+                  // Font picker: swap the fallback options for the live system
+                  // font list (rendered each in its own typeface).
+                  if (s.key === 'atomLabel.font' && s.control.kind === 'select') {
+                    def = { ...s, control: { ...s.control, options: fontOptions } }
+                  }
                   if (s.key === INPUT_DEVICE_SETTING_KEY) {
                     value = INPUT_DEVICE_PREF_LABELS[inputDevicePreference]
                     // In auto mode, surface the currently-detected device.
@@ -268,7 +303,15 @@ export const SettingsPane: React.FC = () => {
                       }
                     }
                   } else {
-                    value = binaryKey ? binaries[binaryKey] : values[s.key]
+                    const labelKey = LABEL_DEFAULT_SETTING_KEYS[s.key]
+                    const viewParamKey = VIEW_INPUT_PARAM_SETTING_KEYS[s.key]
+                    value = labelKey
+                      ? labelDefaults[labelKey]
+                      : viewParamKey
+                        ? viewInputParams[viewParamKey]
+                        : binaryKey
+                          ? binaries[binaryKey]
+                          : values[s.key]
                   }
                   return (
                     <SettingRow

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, nativeTheme } from 'electron'
+import { app, BrowserWindow, nativeTheme, session } from 'electron'
 import os from 'os'
 import path from 'path'
 import fs from 'fs'
@@ -32,6 +32,16 @@ app.whenReady().then(() => {
   // a light 1px titlebar hairline across the top of dark hidden-titlebar
   // windows. Kept in sync on theme changes by the UI_SAVE handler.
   nativeTheme.themeSource = loadUi().theme ?? 'dark'
+
+  // Enable the Local Font Access API (`window.queryLocalFonts()`), used by the
+  // settings font picker to list installed system fonts. Without a handler
+  // Electron's default is to grant permission requests; we set an explicit
+  // pass-through so `local-fonts` is granted deterministically. This is a local,
+  // trusted app that loads only bundled content and requests no other web
+  // permissions, so an allow-all handler preserves the existing default.
+  session.defaultSession.setPermissionRequestHandler((_wc, _permission, callback) => callback(true))
+  session.defaultSession.setPermissionCheckHandler(() => true)
+
   createWindow()
 })
 

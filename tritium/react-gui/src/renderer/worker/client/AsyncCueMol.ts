@@ -191,6 +191,9 @@ export class AsyncCueMol {
     /** Apply a user style sheet to the running scene manager. */
     loadUserStyle(userStylePath?: string): Promise<boolean> { return lifecycleApi.loadUserStyle(this._transport, userStylePath); }
 
+    /** Persist the "user" style set to disk (called on window close). */
+    saveUserStyle(userStylePath: string): Promise<boolean> { return lifecycleApi.saveUserStyle(this._transport, userStylePath); }
+
     /** Switch the renderer's view-input style (mouse-button bindings). */
     setViewInputConfigStyle(styleName: string): Promise<boolean> { return lifecycleApi.setViewInputConfigStyle(this._transport, styleName); }
 

@@ -34,6 +34,10 @@
      Theme-independent: the swatch background is user data, not the theme, so
      this must stay dark for contrast against typically light colours. */
   --swatch-text: #1a1a2e;
+  /* Fixed dark surface for the atom-label typography preview. Theme-independent:
+     it represents the 3D viewport (dark by default), not the settings pane, so
+     label colours preview against the same background they render on. */
+  --bg-label-preview: #1e2028;
 
   /* Accent */
   --accent: #5fafd7;

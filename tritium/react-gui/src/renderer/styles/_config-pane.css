@@ -275,10 +275,46 @@
   min-width: 0;
 }
 
-.config-setting-toggle .config-setting-switch.bp5-switch {
-  margin: 0;
+.config-setting-toggle .h3-form-switch.bp5-switch {
   flex-shrink: 0;
   padding-top: var(--space-1);
+}
+
+/* ── Atom-label typography preview ──
+   Live WYSIWYG sample; font shorthand + colour are set inline (dynamic). The
+   surface is a fixed dark viewport stand-in so label colours read as they do
+   in the 3D view. */
+.config-label-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 var(--space-4);
+}
+
+.config-label-preview-caption {
+  font-size: var(--fs-base);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-wide);
+  color: var(--text-muted);
+}
+
+.config-label-preview-surface {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 64px;
+  max-height: 140px;
+  padding: var(--space-4);
+  overflow: auto;
+  background: var(--bg-label-preview);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.config-label-preview-text {
+  white-space: nowrap;
+  line-height: var(--lh-tight);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -286,42 +322,13 @@
    ═══════════════════════════════════════════════════════════ */
 
 /* ── Select ──
-   Look (height / border / chevron) comes from the form-kit `.h3-form-select` class
-   (styles/_form-kit.css); this rule carries layout only. */
-.config-setting-select.bp5-html-select {
-  max-width: 320px;
-}
+   The select is the h3-kit `SelectField` (`.h3-form-select`, fill); it fills the
+   control column (`.config-setting-control` caps the width). No override here. */
 
-/* ── Numeric input ── */
-.config-setting-numeric.bp5-numeric-input {
-  max-width: 160px;
-}
-
-.config-setting-numeric .bp5-input-group .bp5-input {
-  background: var(--bg-input) !important;
-  border: 1px solid var(--border) !important;
-  color: var(--text-primary) !important;
-  font-size: var(--fs-lg);
-  height: 28px;
-  border-radius: var(--radius-md);
-  caret-color: var(--accent);
-}
-
-.config-setting-numeric .bp5-input-group .bp5-input:focus {
-  border-color: var(--accent) !important;
-  box-shadow: 0 0 0 1px var(--accent) !important;
-}
-
-.config-setting-numeric .bp5-button-group .bp5-button {
-  background: var(--bg-elevated) !important;
-  border: 1px solid var(--border) !important;
-  color: var(--text-muted) !important;
-}
-
-.config-setting-numeric .bp5-button-group .bp5-button:hover {
-  background: var(--bg-hover) !important;
-  color: var(--text-primary) !important;
-}
+/* ── Numeric ──
+   The numeric control is the h3-kit `NumericField` (slider + compact input);
+   its look and sizing come from `.h3-form-*` (styles/_form-kit.css). No
+   consumer override here -- the row simply fills the control column. */
 
 /* ── Color picker ── */
 .config-setting-color-field {
@@ -338,35 +345,15 @@
   max-width: 520px;
 }
 
-.config-setting-path-input {
+/* The path input is the h3-kit `TextField` (`.h3-form-input`); it owns its own
+   look/height. Layout only: fill the row so the Browse button sits at the end. */
+.config-setting-path-row .h3-form-input {
   flex: 1;
   min-width: 0;
-  height: 28px;
-  padding: 0 var(--space-4);
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: var(--fs-md);
-  caret-color: var(--accent);
-}
-
-.config-setting-path-input:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent);
 }
 
 .config-setting-path-row .bp5-button {
   flex-shrink: 0;
-}
-
-/* ── Switch overrides ── */
-.config-setting-switch.bp5-switch {
-  margin-bottom: 0;
-  font-size: var(--fs-lg);
-  color: var(--text-primary);
 }
 
 /* ═══════════════════════════════════════════════════════════

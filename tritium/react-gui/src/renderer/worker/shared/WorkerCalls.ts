@@ -109,6 +109,14 @@ import type {
   SceneColorProofingResult,
 } from '../server/services/sceneBgColor.service'
 import type {
+  LabelDefaultsResult,
+  SetLabelDefaultsArgs,
+} from '../server/services/labelDefaults.service'
+import type {
+  ViewInputParamsResult,
+  SetViewInputParamsArgs,
+} from '../server/services/viewInputParams.service'
+import type {
   DevRenderOptsArgs,
   DevRenderOptsResult,
 } from '../server/services/devRenderOpts.service'
@@ -486,6 +494,10 @@ export interface ServiceMap {
   validateSelection:          { args: ValidateSelectionArgs;           result: ValidateSelectionResult }
   getSceneBgColor:            { args: SceneBgColorArgs;                result: SceneBgColorResult }
   setSceneBgColor:            { args: SetSceneBgColorArgs;             result: SceneBgColorResult }
+  getLabelDefaults:           { args: Record<string, never>;          result: LabelDefaultsResult }
+  setLabelDefaults:           { args: SetLabelDefaultsArgs;            result: { ok: boolean } }
+  getViewInputParams:         { args: Record<string, never>;          result: ViewInputParamsResult }
+  setViewInputParams:         { args: SetViewInputParamsArgs;          result: { ok: boolean } }
   getSceneColorProofing:      { args: SceneColorProofingArgs;          result: SceneColorProofingResult }
   toggleSceneColorProofing:   { args: SceneColorProofingArgs;          result: SceneColorProofingResult }
   compileColor:               { args: CompileColorArgs;                result: CompileColorResult }
@@ -658,6 +670,7 @@ export type ServiceFn<K extends ServiceKey> = (
 export interface MethodMap {
   initCueMol:              { args: [loadPath?: string];                                                    result: boolean }
   loadUserStyle:           { args: [userStylePath?: string];                                               result: boolean }
+  saveUserStyle:           { args: [userStylePath: string];                                                result: boolean }
   setViewInputConfigStyle: { args: [styleName: string];                                                    result: boolean }
   terminateWorker:         { args: [];                                                                      result: void }
   addEventListener:        { args: [aCatStr: string, aSrcType: number, aEvtType: number, aSrcID: number]; result: number }

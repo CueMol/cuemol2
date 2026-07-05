@@ -1,16 +1,23 @@
 /**
  * @file components/panes/settings/SettingRow.tsx
- * @description Renders one setting row, picking the control widget
- * (select / number / toggle / color) from the SettingDef's `control`
- * discriminant. Toggle rows put the switch inline with the label;
- * the other kinds stack the control below the description.
+ * @description Renders one setting row, picking the control widget from the
+ * SettingDef's `control` discriminant. All controls are h3-kit form widgets
+ * (`SelectField` / `NumericField` / `SwitchField` / `ColorField` / `TextField`
+ * + `FormButton`). Toggle rows put the switch inline with the label; the other
+ * kinds stack the control below the description.
  */
 
 import React from 'react'
-import { Button, HTMLSelect, NumericInput, Switch } from '@blueprintjs/core'
+import {
+  SelectField,
+  NumericField,
+  SwitchField,
+  ColorField,
+  TextField,
+  FormButton,
+} from '../../../h3-kit/form'
 import { IPC } from '../../../../shared/ipcChannels'
 import type { SettingDef } from './settingsConfig'
-import { CueColorField } from '../../../h3-kit/colorpicker/CueColorField'
 import type { Mode } from '../../../h3-kit/colorpicker/ColorPicker'
 
 /**
@@ -32,40 +39,43 @@ export const SettingRow: React.FC<SettingRowProps> = ({ def, value, onChange }) 
   const renderControl = () => {
     switch (control.kind) {
       case 'select':
+        // `renderInOwnFont` (font picker) draws each option in its own
+        // typeface -- Chromium renders per-option `font-family` in the native
+        // dropdown, so the user previews each face inline.
         return (
-          <HTMLSelect
-            className="config-setting-select h3-form-select"
-            value={value as string}
-            onChange={(e) => onChange(key, e.target.value)}
-            options={control.options}
-          />
+          <SelectField value={value as string} onChange={(v) => onChange(key, v)}>
+            {control.options.map((o) => (
+              <option
+                key={o}
+                value={o}
+                style={control.renderInOwnFont ? { fontFamily: o } : undefined}
+              >
+                {o}
+              </option>
+            ))}
+          </SelectField>
         )
       case 'number':
         return (
-          <NumericInput
-            className="config-setting-numeric"
+          <NumericField
             value={value as number}
-            onValueChange={(val) => onChange(key, val)}
+            onChange={(val) => onChange(key, val)}
             min={control.min}
             max={control.max}
-            stepSize={control.step}
-            minorStepSize={control.minorStep}
+            step={control.step}
+            unit={control.unit}
           />
         )
       case 'toggle':
         return (
-          <Switch
-            className="config-setting-switch"
+          <SwitchField
             checked={value as boolean}
-            onChange={(e) =>
-              onChange(key, (e.target as HTMLInputElement).checked)
-            }
-            alignIndicator="right"
+            onChange={(checked) => onChange(key, checked)}
           />
         )
       case 'color':
         return (
-          <CueColorField
+          <ColorField
             value={value as string}
             onCommit={(v) => onChange(key, v)}
             modes={SETTING_COLOR_MODES}
@@ -87,14 +97,8 @@ export const SettingRow: React.FC<SettingRowProps> = ({ def, value, onChange }) 
         }
         return (
           <div className="config-setting-path-row">
-            <input
-              type="text"
-              className="config-setting-path-input"
-              value={value as string}
-              spellCheck={false}
-              onChange={(e) => onChange(key, e.target.value)}
-            />
-            <Button small text="Browse…" onClick={handleBrowse} />
+            <TextField value={value as string} onChange={(v) => onChange(key, v)} />
+            <FormButton text="Browse…" onClick={handleBrowse} />
           </div>
         )
       }
