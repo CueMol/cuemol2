@@ -1,6 +1,9 @@
+import pytest
+
 import cuemol
 
 
+@pytest.mark.requires_lfs_data("2ydo_test.cif.gz")
 def test_cifmap_reader(test_data_path):
     svc = cuemol.getService("StreamManager")
     reader = svc.createHandler("mmcifmap", 0)

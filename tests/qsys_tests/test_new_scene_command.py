@@ -1,3 +1,5 @@
+import pytest
+
 import cuemol
 
 
@@ -17,6 +19,7 @@ def test_new_scene_command():
     assert cuemol.isview(result["result_view"])
 
 
+@pytest.mark.requires_lfs_data("1crn_test1.qsc")
 def test_load_scene_command(test_data_path, create_scene):
     mgr = cuemol.svc("CmdMgr")
 
