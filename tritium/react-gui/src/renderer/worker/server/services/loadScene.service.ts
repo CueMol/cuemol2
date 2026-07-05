@@ -20,6 +20,15 @@ const log = console;
 
 const SCEREADER_CATEGORY = 3; // InOutHandler::IOH_CAT_SCEREADER
 
+/**
+ * Extract the leaf (basename) of a path, handling both POSIX and Windows
+ * separators. Mirrors UXP `util.getFileLeafName` (`nsIFile.leafName`), which
+ * keeps the extension (e.g. "mystruct.qsc"). Same helper as saveScene.
+ */
+function basename(p: string): string {
+    return p.split(/[\\/]/).pop() ?? p;
+}
+
 interface StreamHandlerInfo {
     name: string;
     fext: string;
@@ -90,6 +99,13 @@ function loadScene(ctx: WorkerContext, args: LoadSceneArgs): { ok: boolean } {
     } finally {
         reader.detach();
     }
+
+    // UXP parity (qsc-io.readSceneFile): after reading, set the scene name to
+    // the file's leaf name (with extension). The native LoadSceneCommand does
+    // not touch the name, so without this the scene keeps the placeholder
+    // "Untitled N" assigned at creation. setName fires a "name" PROPCHG event
+    // that useMolViewTabTitleSync / scene tree already listen for.
+    scene.setName(basename(args.filePath));
 
     // Apply the saved "__current" camera to every view, mirroring the
     // `m_bSetCamera == true` block in LoadSceneCommand::run().

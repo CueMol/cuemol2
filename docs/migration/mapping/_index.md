@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-07-05 (`overlay.config-misc` todo->wip / split + `overlay.config-mouse` 拡充: SettingsPane の mock を実配線し整理。atom-label 既定 (font/size/color/bold/italic) を StyleManager `DefaultLabel.*` へ (`labelDefaults.service`、read `getStyleValue(0,"",..)` / write `setStyleValue(0,"user",..)` + `firePendingEvents`)、mouse の XY-rot 感度 (`tbrad`) と pick 精度 (`hitprec`) を ViewInputConfig singleton + `UserViewConf.*` へ (`viewInputParams.service`) 配線。**user-defined style は electron-store でなく uxp_gui 同様に `user_styles.xml` へ save-style 配線**: tritium に欠けていた `saveUserStyle` (worker lifecycle → `saveStyleSetToFile(0,hasStyleSet('user',0),path)`) を追加し、`useWindowCloseHandler` の `onBeforeProceed` から window close 時に保存 (UXP `Qm2Main.onUnLoad` 相当)。全て `AppSettingsContext` 経由。backend/consumer 無しの mock (rendering AA/shadow/AO/fog/HiDPI・extra colors・keyboard・trackpad・general/updates/privacy・language・momentum・mouse-preset) を削除し空 category を剪定 (32->13 設定)。test 3 新規 + windowCloseFlow/dispatch 更新 (計 +18)。Overlay wip 3->4/todo 4->3、Total wip 27->28/todo 18->17、split 29->30/unassigned 18->17。host E2E pending。ADR-0036)
 - Updated: 2026-06-29 (`menu.cuemol2` Rendering > Export scene wired: PNG 固定だった単一項目を **ファイルタイプ別サブメニュー**に分割 (PNG / Umbreon ray-traced PNG / POV-Ray SDL / STL / MQO)。各項目が exporter を固定するため png/umbreon (共に `*.png`) が Electron の失われる filter index に依存せず区別可能。共通フロー `runSceneExportFlow`(静的 `SCENE_EXPORTERS` テーブル) が `getSceneExportInfo`(scene 名+view size)→保存ダイアログ(`DIALOG_SCENE_EXPORT`)→(画像系のみ)`ExportPngOptionsDialog`→`exportScene` worker(`StreamManager.createHandler(name,2)`、POV は `.inc` サブパス自動) を実行。旧 `exportImage`/`getExportImageInfo`/`DIALOG_IMAGE_SAVE`/`handleImageSaveDialog`/`CmdId.ExportImage` を `exportScene`/`getSceneExportInfo`/`DIALOG_SCENE_EXPORT`/`handleSceneExportDialog`/`CmdId.Export{Png,Umbreon,Pov,Stl,Mqo}` に一般化。LuxRender/Warabi/raw/qsl は当面除外。fileCommands test を新フローに更新(PNG/POV/キャンセル 4 ケース)、vitest/tsc(node 0 err) pass。menu item-level 26/55 -> 27/55 (`menu.cuemol2` complete 26->27 / stub 29->28、Menu Total 30->31 / stub 34->33)。Category Summary は inventory-entry 単位のため不変。native(C++)変更なし)
 - Updated: 2026-06-15 (`overlay.config-mouse` Phase 3 = Auto-detect 入力デバイス。Electron 42 では OS シグナルで mouse/trackpad を判別不可（スパイクで確認: 観測 `input-event` は `type`/`modifiers` のみ、trackpad plain scroll も `mouseWheel`、`scroll-touch-*` は v23 削除）。→ renderer 側 DOM WheelEvent ヒューリスティック（`input/wheelDeviceClassifier`: 横/小数 delta→trackpad、大整数縦→mouse）+ state machine（`input/inputDeviceDetector`: hysteresis + pinch/rotate latch）で判定し `setViewInputConfigStyle` 切替。preference を 3 値化（`mouse|trackpad|auto`、既定 auto、`UiState.inputDeviceMode`）+ `inputDeviceDetected` seed。`ViewInputConfigContext` が detector を駆動、`MolViewPane` が wheel/pinch/rotate を feed。Settings に Auto-detect 追加（Detected 表示）。main 変更なし。test 4 ファイル 25 件。status 不変（wip 継続、counts 変化なし）。host E2E pending。ADR-0032 Phase 3)
 - Updated: 2026-06-15 (`overlay.config-mouse` todo->wip / split: マウスホイールが view 並進に割り当たっていた回帰を zoom に戻す。Phase 1 = `data/default_style.xml` `DefaultViewInConf` + `ViewInputConfig.qif` default の `conf_zoom` に WHEEL1/WHEEL2（UXP は deltaX=WHEEL1、Chromium は deltaY=WHEEL2 のため両軸）。Phase 2 = tritium に `TrackpadViewInConf`（2 本指スクロール=pan、pinch=ctrl+wheel zoom）+ Settings の Mouse/Mac-trackpad プリセット選択（`UiState.inputDeviceMode` 永続、起動時 `createAndInitCueMol`、実行時 `ViewInputConfigContext` で `setViewInputConfigStyle` re-apply）。新 IPC/worker 無し。test 2 ファイル（helper + context）。Overlay wip 2->3/todo 5->4、Total wip 26->27/todo 19->18、split 28->29/unassigned 19->18。UXP host E2E 済（Phase 1）、tritium host E2E pending。ADR-0032)
@@ -83,9 +84,9 @@
 | Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 11 | 2 | 0 | 5 | 0 |
 | Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 16 | 0 | 0 | 5 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 7 | 5 | 0 | 1 | 0 |
-| Overlay | [overlay.md](overlay.md) | 28 | 21 | 3 | 0 | 4 | 0 |
+| Overlay | [overlay.md](overlay.md) | 28 | 21 | 4 | 0 | 3 | 0 |
 | Other | [other.md](other.md) | 4 | 2 | 1 | 0 | 1 | 0 |
-| **Total** | | **133** | **88** | **27** | **0** | **18** | **0** |
+| **Total** | | **133** | **88** | **28** | **0** | **17** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -115,10 +116,10 @@
 |---------|------:|
 | 1:1 (`direct`) | 27 |
 | merged | 53 |
-| split | 29 |
+| split | 30 |
 | redesign | 0 |
 | deprecated (`dropped`) | 6 |
-| *(not yet assigned)* | 18 |
+| *(not yet assigned)* | 17 |
 
 ---
 
@@ -127,7 +128,8 @@
 | ID | React | Notes |
 |----|-------|-------|
 | `dialog.property.scene` | `inspector/SceneRenderingSection` / `rendererPropSections` (`scene`) / `PropertiesTab` / `genericProps.service` (reused) | Scene rendering/display (AO/AA/background/colour-proofing) as curated Inspector Property-tab sections under `type_name "scene"`, reusing the generic-props bridge + Row helpers (realtime drag + single undo). No new worker/hook. Pending host E2E (ADR-0031) |
-| [`overlay.config-mouse`](overlay.md#overlayconfig-mouse) | `SettingsPane` / `ViewInputConfigContext` / `input/wheelDeviceClassifier`+`inputDeviceDetector` | Wheel zooms by default; tritium adds a Mouse / Mac-trackpad / Auto-detect device preset (auto default; renderer DOM-wheel heuristic + pinch/rotate latch -- no OS signal exists in Electron 42). Persisted in `UiState.inputDeviceMode`, re-applied live via `setViewInputConfigStyle`. Full UXP key-binding editor deferred. Phase 1/2 host E2E done; Phase 3 (auto) pending (ADR-0032) |
+| [`overlay.config-misc`](overlay.md#overlayconfig-misc) | `SettingsPane` / `AppSettingsContext` | Atom-label defaults (font/size/color/bold/italic) wired to StyleManager `DefaultLabel.*`; live-applied via `labelDefaults.service` + `firePendingEvents`, persisted to `user_styles.xml` on window close (new `saveUserStyle`, UXP `onUnLoad` parity). HiDPI/language dropped (no consumer); key-binding editor separate. Host E2E pending (ADR-0036) |
+| [`overlay.config-mouse`](overlay.md#overlayconfig-mouse) | `SettingsPane` / `ViewInputConfigContext` / `AppSettingsContext` / `input/wheelDeviceClassifier`+`inputDeviceDetector` | Wheel zooms by default; tritium adds a Mouse / Mac-trackpad / Auto-detect device preset (auto default; renderer DOM-wheel heuristic + pinch/rotate latch -- no OS signal exists in Electron 42). Persisted in `UiState.inputDeviceMode`, re-applied live via `setViewInputConfigStyle`. XY-rot sensitivity (`tbrad`) + pick precision (`hitprec`) wired to the ViewInputConfig singleton + persisted via `UserViewConf.*` (ADR-0036); mouse-preset picker dropped. Full UXP key-binding editor deferred. Phase 1/2 host E2E done; Phase 3 (auto) pending (ADR-0032) |
 | [`toolbar.cuemol2-ribbon`](toolbars.md#toolbarcuemol2-ribbon) | `Toolbar` / `ViewportToolPalette` / `useNaviClickHandler` / `useMeasureClickHandler` / `NaviContextMenu` / `MeasureOptionsPopover` | Context menu actions (center/select/around/invert/sidechain) done; measure tool distance/angle/torsion done (ADR-0023); Create SYMM mol deferred; rect-select drag pending |
 | [`menu.cuemol2`](menus.md#menucuemol2) | `menuTemplate` / `MenuBar` / `useMenuDispatch` | Full 9-group structure added; View > Center mark wired; Scene > Background color wired; File > Get PDB wired (streaming via StreamManager); File > Open Recent wired (electron-store-backed MRU, app.addRecentDocument); Hardware stereo and Open web page dropped; File > Save File As / Save current view / Reload Scene wired; Rendering > Export scene wired (per-file-type submenu: PNG/Umbreon/POV/STL/MQO); item-level completion 27/55; MenuBar suppressed on macOS |
 | [`menu.cuemol2-macos`](menus.md#menucuemol2-macos) | `main/menu.ts` | macOS App menu added; item-level completion 6/7 |

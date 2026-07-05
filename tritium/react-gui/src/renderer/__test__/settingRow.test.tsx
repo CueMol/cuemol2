@@ -55,6 +55,8 @@ describe('SettingRow', () => {
         )
         const select = el.querySelector('select')
         expect(select).not.toBeNull()
+        // Uses the h3-kit SelectField, not a raw Blueprint HTMLSelect.
+        expect(el.querySelector('.h3-form-select')).not.toBeNull()
         act(() => {
             select!.value = 'B'
             select!.dispatchEvent(new Event('change', { bubbles: true }))
@@ -62,15 +64,36 @@ describe('SettingRow', () => {
         expect(onChange).toHaveBeenCalledWith('k', 'B')
     })
 
-    it('renders a numeric control', () => {
+    it('renders each option in its own typeface when renderInOwnFont is set (font picker)', () => {
         const el = mount(
             <SettingRow
-                def={def({ kind: 'number', min: 0, max: 10, step: 1 })}
+                def={def({ kind: 'select', options: ['Helvetica', 'Menlo'], renderInOwnFont: true })}
+                value="Helvetica"
+                onChange={vi.fn()}
+            />,
+        )
+        const options = Array.from(el.querySelectorAll('option')) as HTMLOptionElement[]
+        expect(options.map((o) => o.value)).toEqual(['Helvetica', 'Menlo'])
+        // Each option previews its own family.
+        expect(options[0].style.fontFamily).toBe('Helvetica')
+        expect(options[1].style.fontFamily).toBe('Menlo')
+    })
+
+    it('renders the h3-kit NumericField (slider + compact input), not a raw Blueprint control', () => {
+        const el = mount(
+            <SettingRow
+                def={def({ kind: 'number', min: 0, max: 10, step: 1, unit: 'px' })}
                 value={5}
                 onChange={vi.fn()}
             />,
         )
-        expect(el.querySelector('.config-setting-numeric')).not.toBeNull()
+        // h3-kit NumericField renders `.h3-form-numeric-row` with a slider + input.
+        expect(el.querySelector('.h3-form-numeric-row')).not.toBeNull()
+        expect(el.querySelector('.h3-form-numeric')).not.toBeNull()
+        // Legacy Blueprint-specific class must be gone.
+        expect(el.querySelector('.config-setting-numeric')).toBeNull()
+        // Unit suffix is shown.
+        expect(el.querySelector('.h3-form-unit')?.textContent).toBe('px')
     })
 
     it('renders a toggle inline with the label and forwards the checked state', () => {
@@ -78,8 +101,9 @@ describe('SettingRow', () => {
         const el = mount(
             <SettingRow def={def({ kind: 'toggle' })} value={false} onChange={onChange} />,
         )
-        // Toggle rows use the inline layout variant.
+        // Toggle rows use the inline layout variant with the h3-kit SwitchField.
         expect(el.querySelector('.config-setting-toggle')).not.toBeNull()
+        expect(el.querySelector('.h3-form-switch')).not.toBeNull()
         const checkbox = el.querySelector('input[type="checkbox"]') as HTMLInputElement
         expect(checkbox).not.toBeNull()
         // click() toggles `checked` and fires React's onChange through its
@@ -112,5 +136,30 @@ describe('SettingRow', () => {
             document.querySelectorAll('.h3-color-modebar button'),
         ).map((b) => b.textContent)
         expect(labels).toEqual(['RGB', 'HSB', 'Palette'])
+    })
+
+    it('renders a path row with the h3-kit TextField + FormButton and forwards edits', () => {
+        const onChange = vi.fn()
+        const el = mount(
+            <SettingRow def={def({ kind: 'path' })} value="/usr/bin/povray" onChange={onChange} />,
+        )
+        // h3-kit TextField (`.h3-form-input`) + FormButton (`.h3-form-btn`),
+        // not the retired raw input.
+        expect(el.querySelector('.config-setting-path-input')).toBeNull()
+        const input = el.querySelector('.h3-form-input input') as HTMLInputElement
+        expect(input).not.toBeNull()
+        expect(input.value).toBe('/usr/bin/povray')
+        expect(el.querySelector('.h3-form-btn')).not.toBeNull()
+        // Drive the controlled input through React's value tracker (a plain
+        // `input.value = ...` + dispatch is swallowed, like the checkbox case).
+        const setter = Object.getOwnPropertyDescriptor(
+            window.HTMLInputElement.prototype,
+            'value',
+        )!.set!
+        act(() => {
+            setter.call(input, '/opt/povray')
+            input.dispatchEvent(new Event('input', { bubbles: true }))
+        })
+        expect(onChange).toHaveBeenCalledWith('k', '/opt/povray')
     })
 })

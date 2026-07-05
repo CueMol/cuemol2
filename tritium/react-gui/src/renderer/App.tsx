@@ -46,6 +46,7 @@ import { useRecentFiles } from "./hooks/useRecentFiles";
 import { useCommands } from "./commands/CommandRegistry";
 import { CmdId } from "./commands/ids";
 import type { ViewCenterMark } from "../shared/ipcTypes";
+import { IPC } from "../shared/ipcChannels";
 import { useCueMolBusy } from "./hooks/useCueMolBusy";
 import { useShowConfirmCloseTabDialog } from "./components/dialogs/ConfirmCloseTabDialogProvider";
 import { useRenderConfig } from "./contexts/RenderConfigContext";
@@ -195,7 +196,22 @@ const App: React.FC = () => {
     handleReorderTabs,
   } = useTabManager({ onMolViewClose: handleMolViewClose, confirmCloseTab });
 
-  useWindowCloseHandler({ tabsRef, handleCloseTab, setActiveTab });
+  // Persist user-defined style defaults (atom labels, view-input scalars) to
+  // the user style file when the window closes -- UXP `Qm2Main.onUnLoad`
+  // parity. The path is resolved by Main via APP_PATH.
+  const saveUserStyleOnClose = useCallback(async (): Promise<void> => {
+    if (!cm) return;
+    const info = await window.electronAPI?.invoke(IPC.APP_PATH);
+    const path = info?.userStylePath;
+    if (path) await cm.saveUserStyle(path);
+  }, [cm]);
+
+  useWindowCloseHandler({
+    tabsRef,
+    handleCloseTab,
+    setActiveTab,
+    onBeforeProceed: saveUserStyleOnClose,
+  });
 
   // Keep molview tab titles in sync with their scene name (Explorer rename,
   // scripts, undo, etc.) -- UXP TabMolView.onScenePropChanged equivalent.

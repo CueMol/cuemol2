@@ -21,6 +21,7 @@ import {
 } from './inputEvents';
 import {
     loadUserStyle as loadUserStyleImpl,
+    saveUserStyle as saveUserStyleImpl,
     setViewInputConfigStyle as setViewInputConfigStyleImpl,
     registerWorkerEventListener,
 } from './workerLifecycle';
@@ -79,6 +80,7 @@ export class WorkerService {
         this._methods = {
             'initCueMol': this.initCueMol,
             'loadUserStyle': this.loadUserStyle,
+            'saveUserStyle': this.saveUserStyle,
             'setViewInputConfigStyle': this.setViewInputConfigStyle,
             'terminateWorker': this.terminateWorker,
             'hasClass': this._rpcHasClass,
@@ -239,6 +241,11 @@ export class WorkerService {
     /** Load the user style set (see `workerLifecycle.loadUserStyle`). */
     loadUserStyle(userStylePath?: string): boolean {
         return loadUserStyleImpl(this._cm, userStylePath);
+    }
+
+    /** Save the user style set (see `workerLifecycle.saveUserStyle`). */
+    saveUserStyle(userStylePath: string): boolean {
+        return saveUserStyleImpl(this._cm, userStylePath);
     }
 
     /** Select the active mouse/gesture input-config preset. */

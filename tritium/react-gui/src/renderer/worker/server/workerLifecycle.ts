@@ -45,6 +45,34 @@ export function loadUserStyle(cm: CueMol, userStylePath?: string): boolean {
     }
 }
 
+/**
+ * Save the "user" style set to `userStylePath`. Mirrors UXP
+ * `Qm2Main.onUnLoad` (cuemol2.js:297-304): resolve the user style set uid via
+ * `hasStyleSet("user", 0)` and write it out with `saveStyleSetToFile`. Backs
+ * the `saveUserStyle` worker entry point; called on window close so
+ * user-defined defaults (DefaultLabel.*, UserViewConf.*) persist across
+ * sessions. Returns false when no user set exists or the write fails.
+ */
+export function saveUserStyle(cm: CueMol, userStylePath: string): boolean {
+    const stylem = cm.getService('StyleManager') as StyleManager;
+    if (stylem === null) {
+        log.error('Worker> StyleManager unavailable; skip user style save');
+        return false;
+    }
+    try {
+        const uid = stylem.hasStyleSet('user', 0);
+        if (uid < 0) {
+            log.info('Worker> no "user" style set; nothing to save');
+            return false;
+        }
+        log.info(`Worker> saving user style file: ${userStylePath}`);
+        return stylem.saveStyleSetToFile(0, uid, userStylePath);
+    } catch (e) {
+        log.error('Worker> user style save failed:', e);
+        return false;
+    }
+}
+
 /** Set the active ViewInputConfig style (mouse / gesture binding preset). */
 export function setViewInputConfigStyle(cm: CueMol, styleName: string): boolean {
     const vic = cm.getService('ViewInputConfig') as ViewInputConfig;

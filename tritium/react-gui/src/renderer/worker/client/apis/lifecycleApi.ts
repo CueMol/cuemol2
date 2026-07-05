@@ -44,6 +44,23 @@ export async function loadUserStyle(transport: WorkerTransport, userStylePath?: 
 }
 
 /**
+ * Persist the "user" style set to `userStylePath`. Called on window close so
+ * user-defined defaults survive across sessions (UXP `Qm2Main.onUnLoad`).
+ *
+ * @param transport - Worker transport.
+ * @param userStylePath - Absolute path to the user style XML.
+ * @returns `true` on success, `false` on transport failure.
+ */
+export async function saveUserStyle(transport: WorkerTransport, userStylePath: string): Promise<boolean> {
+    try {
+        return await transport.invokeMethod('saveUserStyle', userStylePath);
+    } catch (e) {
+        log.error('saveUserStyle failed:', e);
+        return false;
+    }
+}
+
+/**
  * Switch the renderer's view-input style (e.g. mouse-button bindings).
  *
  * @param transport - Worker transport.
