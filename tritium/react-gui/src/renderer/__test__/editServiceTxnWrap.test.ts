@@ -52,6 +52,7 @@ function makeCtx(opts: {
     const mockScene = {
         view_uids: '',
         getView: vi.fn(),
+        setName: vi.fn(),
         loadViewFromCam: vi.fn(),
         addObject: vi.fn(),
         startUndoTxn: vi.fn((label: string) => calls.push(`start:${label}`)),

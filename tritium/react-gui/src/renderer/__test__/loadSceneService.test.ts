@@ -50,6 +50,7 @@ function makeFixture(opts: {
     const scene = {
         view_uids: opts.viewUids ?? '',
         getView: vi.fn((uid: number) => ({ _uid: uid })),
+        setName: vi.fn((n: string) => calls.push(`setName(${n})`)),
         loadViewFromCam: vi.fn((uid: number, name: string) =>
             calls.push(`loadViewFromCam(${uid},${name})`)),
         startUndoTxn: vi.fn((label: string) => calls.push(`start:${label}`)),
@@ -75,15 +76,16 @@ function makeFixture(opts: {
 }
 
 describe('loadScene.service — direct API', () => {
-    it('runs reader.setPath -> attach -> read -> detach -> loadViewFromCam, with NO undo txn', () => {
+    it('runs reader.setPath -> attach -> read -> detach -> setName -> loadViewFromCam, with NO undo txn', () => {
         const { ctx, scene, calls } = makeFixture({ viewUids: '10, 11' })
-        const result = loadScene(ctx, { filePath: '/test.qsc', sceneId: 1 })
+        const result = loadScene(ctx, { filePath: '/dir/test.qsc', sceneId: 1 })
         expect(result).toEqual({ ok: true })
         expect(calls).toEqual([
-            'setPath(/test.qsc)',
+            'setPath(/dir/test.qsc)',
             'attach(scene)',
             'read',
             'detach',
+            'setName(test.qsc)',
             'loadViewFromCam(10,__current)',
             'loadViewFromCam(11,__current)',
         ])
@@ -91,6 +93,26 @@ describe('loadScene.service — direct API', () => {
         expect(scene.startUndoTxn).not.toHaveBeenCalled()
         expect(scene.commitUndoTxn).not.toHaveBeenCalled()
         expect(scene.rollbackUndoTxn).not.toHaveBeenCalled()
+    })
+
+    it('sets scene name to the file leaf name WITH extension (UXP getFileLeafName parity)', () => {
+        // POSIX path with directories.
+        const posix = makeFixture()
+        loadScene(posix.ctx, { filePath: '/home/me/proteins/mystruct.qsc', sceneId: 1 })
+        expect(posix.scene.setName).toHaveBeenCalledWith('mystruct.qsc')
+
+        // Windows-style separators must also resolve to the leaf.
+        const win = makeFixture()
+        loadScene(win.ctx, { filePath: 'C:\\Users\\me\\mystruct.qsc', sceneId: 1 })
+        expect(win.scene.setName).toHaveBeenCalledWith('mystruct.qsc')
+    })
+
+    it('does NOT set the scene name when read throws (name stays the placeholder)', () => {
+        const { ctx, scene, calls } = makeFixture({
+            readFn: () => { calls.push('read'); throw new Error('parse fail') },
+        })
+        expect(() => loadScene(ctx, { filePath: '/test.qsc', sceneId: 1 })).toThrow('parse fail')
+        expect(scene.setName).not.toHaveBeenCalled()
     })
 
     it('never calls ctx.cmdMgr.getCmd("load_scene") (no LoadSceneCommand path)', () => {
