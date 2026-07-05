@@ -222,6 +222,13 @@
   flex: 0 0 auto;
 }
 
+/* Target-view dropdown (Rendering window; same row styling as the preset). */
+.render-panel-target-select {
+  display: flex;
+  width: 168px;
+  flex: 0 0 auto;
+}
+
 .render-panel-status {
   margin-left: auto;
   font-size: var(--fs-base);

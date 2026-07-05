@@ -556,10 +556,20 @@ export interface RenderResultWire {
   settingsSnapshot: RenderSettingsSnapshotWire
 }
 
+/** A renderable target (an open molview) offered in the target dropdown. */
+export interface RenderTargetViewWire {
+  viewId: number
+  sceneId: number
+  /** Scene display name (tab title with the view suffix stripped). */
+  sceneName: string
+  /** Dropdown label (the molview tab title, e.g. "1CRN:0"). */
+  title: string
+}
+
 /** Command sent by the render window; forwarded verbatim to the main window. */
 export type RenderWindowCommand =
-  /** Start a render. `source` set = re-render of that source; otherwise the
-   * main window resolves its active molview scene/view. */
+  /** Start a render. `source` set = the render window's selected target (or
+   * a re-render); otherwise the main window falls back to its active view. */
   | { type: 'start'; snapshot: RenderSettingsSnapshotWire; source?: RenderSourceWire }
   | { type: 'cancel' }
   /** Switch the main window to the latest result's source molview tab. */
@@ -572,7 +582,14 @@ export type RenderWindowCommand =
  * result image is sent once per completed render, never per progress tick.
  */
 export type RenderWindowStateUpdate =
-  | { kind: 'context'; job: RenderJobWire | null; canRender: boolean; sceneName: string | null }
+  | {
+      kind: 'context'
+      job: RenderJobWire | null
+      /** Open molviews selectable as render targets. */
+      views: RenderTargetViewWire[]
+      /** The main window's active molview, or null when none is active. */
+      activeViewId: number | null
+    }
   | { kind: 'result'; result: RenderResultWire | null }
 
 /** Pixel size of the main window's molview canvas ("Current view" preset). */

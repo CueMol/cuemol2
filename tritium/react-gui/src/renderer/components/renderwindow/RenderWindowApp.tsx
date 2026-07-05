@@ -79,7 +79,8 @@ export const RenderWindowApp: React.FC = () => {
     [client, settings],
   );
 
-  const { job, result, canRender, sceneName } = client.state;
+  const { job, result, views } = client.state;
+  const canRender = client.target !== null;
 
   return (
     <div className="render-window">
@@ -106,7 +107,7 @@ export const RenderWindowApp: React.FC = () => {
                   <div className="render-window-empty type-body">
                     {canRender
                       ? `No render result yet. Press Start Render to render ${
-                          sceneName ?? "the active scene"
+                          client.target?.sceneName ?? "the target scene"
                         }.`
                       : "Open a scene in the main window to render."}
                   </div>
@@ -121,6 +122,9 @@ export const RenderWindowApp: React.FC = () => {
                 onStart={handleStart}
                 onCancel={client.cancel}
                 onApplyPreset={handleApplyPreset}
+                targetViews={views}
+                targetViewId={client.targetViewId}
+                onTargetChange={client.setTargetViewId}
               />
             </Allotment.Pane>
           </Allotment>

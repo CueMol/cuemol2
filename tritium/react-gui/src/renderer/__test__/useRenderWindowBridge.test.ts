@@ -2,8 +2,8 @@
  * @file __test__/useRenderWindowBridge.test.ts
  * @description Contract tests for the main-window side of the Rendering-window
  * relay: forwarded commands drive the render job (renderStart / renderCancel /
- * tab switch), job and result state are pushed via RENDER_WINDOW_STATE, and
- * the view-size round trip replies with the canvas pixel size.
+ * tab switch), job and target-view state are pushed via RENDER_WINDOW_STATE,
+ * and the view-size round trip replies with the canvas pixel size.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -16,7 +16,10 @@ import {
 } from './helpers/testHarness';
 import { useRenderWindowBridge } from '../hooks/useRenderWindowBridge';
 import { IPC } from '../../shared/ipcChannels';
-import type { RenderWindowStateUpdate } from '../../shared/ipcTypes';
+import type {
+    RenderTargetViewWire,
+    RenderWindowStateUpdate,
+} from '../../shared/ipcTypes';
 import type { RenderUpdate, RenderStartResult } from '../worker/shared/renderTypes';
 import { DEFAULT_RENDER_BINARIES } from '../worker/shared/renderTypes';
 import type { RenderSettingsSnapshot } from '../data/renderResult';
@@ -38,6 +41,10 @@ const molviewTab: TabData = {
     type: 'molview',
     viewId: 7,
 };
+
+const views: RenderTargetViewWire[] = [
+    { viewId: 7, sceneId: 1, sceneName: 'Scene1', title: 'Scene1:0' },
+];
 
 /** Fake AsyncCueMol exposing an `emit` to push render-progress updates. */
 function makeCm(startResult: RenderStartResult = { ok: true, jobId: 'job-1' }) {
@@ -81,9 +88,8 @@ function mountBridge(cm: unknown, setActiveTab = vi.fn()) {
     const h = makeRenderHook(() =>
         useRenderWindowBridge({
             cm: cm as never,
-            activeMolViewId: 7,
-            sceneName: 'Scene1',
-            getActiveSceneInfo: () => ({ scene_uid: 1, view_id: 7 }),
+            views,
+            activeViewId: 7,
             tabs: [molviewTab],
             setActiveTab,
             binaries: DEFAULT_RENDER_BINARIES,
@@ -103,25 +109,7 @@ afterEach(() => {
 });
 
 describe('useRenderWindowBridge', () => {
-    it('EXEC start resolves the active scene and calls renderStart with binaries', async () => {
-        const { cm } = makeCm();
-        const h = mountBridge(cm);
-
-        await act(async () => {
-            harness.exec({ type: 'start', snapshot });
-            await flushPromises();
-        });
-
-        expect(cm.invokeService).toHaveBeenCalledWith('renderStart', {
-            sceneId: 1,
-            viewId: 7,
-            snapshot,
-            binaries: DEFAULT_RENDER_BINARIES,
-        });
-        h.unmount();
-    });
-
-    it('EXEC start with an explicit source (re-render) uses that source', async () => {
+    it('EXEC start uses the explicit source sent by the render window', async () => {
         const { cm } = makeCm();
         const h = mountBridge(cm);
 
@@ -137,6 +125,24 @@ describe('useRenderWindowBridge', () => {
         expect(cm.invokeService).toHaveBeenCalledWith('renderStart', {
             sceneId: 3,
             viewId: 9,
+            snapshot,
+            binaries: DEFAULT_RENDER_BINARIES,
+        });
+        h.unmount();
+    });
+
+    it('EXEC start without a source falls back to the active view', async () => {
+        const { cm } = makeCm();
+        const h = mountBridge(cm);
+
+        await act(async () => {
+            harness.exec({ type: 'start', snapshot });
+            await flushPromises();
+        });
+
+        expect(cm.invokeService).toHaveBeenCalledWith('renderStart', {
+            sceneId: 1,
+            viewId: 7,
             snapshot,
             binaries: DEFAULT_RENDER_BINARIES,
         });
@@ -163,8 +169,8 @@ describe('useRenderWindowBridge', () => {
         // At least: initial context, job-started context, job-done context.
         expect(context.length).toBeGreaterThanOrEqual(2);
         expect(context[context.length - 1]).toMatchObject({
-            canRender: true,
-            sceneName: 'Scene1',
+            views,
+            activeViewId: 7,
         });
         // The image is sent exactly once, in its own result update.
         expect(results.length).toBe(1);

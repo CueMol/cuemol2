@@ -5,9 +5,13 @@
  * The modeless Rendering window has no CueMol worker, so this hook -- mounted
  * once in App -- owns the render job lifecycle (useRenderJob) and the latest
  * RenderResult, executes commands forwarded from the render window
- * (RENDER_WINDOW_EXEC), and pushes job/result state back
+ * (RENDER_WINDOW_EXEC), and pushes job / target-view state back
  * (RENDER_WINDOW_STATE). It also answers the "Current view" canvas-size
  * round trip (RENDER_VIEW_SIZE_REQUEST/REPLY).
+ *
+ * The render window picks its render target from the pushed `views` list
+ * (auto-following the main window's active view) and sends it as the start
+ * command's explicit `source`; the active view here is only a fallback.
  *
  * State forwards are dropped by main while the render window is closed; the
  * window re-syncs via the 'sync' command on mount, which re-pushes both the
@@ -17,6 +21,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { IPC } from "../../shared/ipcChannels";
 import type {
+  RenderTargetViewWire,
   RenderWindowCommand,
   RenderWindowStateUpdate,
   ViewSizePx,
@@ -28,17 +33,15 @@ import type {
   RenderSettingsSnapshot,
   RenderSource,
 } from "../data/renderResult";
-import { useRenderJob, type RenderJob } from "./useRenderJob";
+import { useRenderJob } from "./useRenderJob";
 import type { TabData } from "../types";
 
 interface UseRenderWindowBridgeArgs {
   cm: AsyncCueMol | null;
+  /** Open molviews selectable as render targets (from molTabEntries). */
+  views: RenderTargetViewWire[];
   /** Active molview tab's view id (undefined when a non-molview tab is active). */
-  activeMolViewId: number | undefined;
-  /** Active scene display name (scene.tree?.name), or null. */
-  sceneName: string | null;
-  /** Resolve the active scene/view ids (from useMolTabDispatch). */
-  getActiveSceneInfo: () => { scene_uid: number; view_id: number } | null | undefined;
+  activeViewId: number | undefined;
   /** Open tabs -- used to locate the source molview tab for 'show-source'. */
   tabs: TabData[];
   setActiveTab: (id: string) => void;
@@ -51,10 +54,7 @@ function pushState(update: RenderWindowStateUpdate): void {
   window.electronAPI?.invoke(IPC.RENDER_WINDOW_STATE, update).catch(() => {});
 }
 
-export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): {
-  /** Current render job (for the main-window StatusBar progress line). */
-  job: RenderJob | null;
-} {
+export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): void {
   const { cm } = args;
 
   // Latest completed render; survives render-window close/reopen.
@@ -67,41 +67,39 @@ export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): {
 
   const renderJob = useRenderJob({ cm, onComplete: handleComplete });
 
-  const canRender = args.activeMolViewId !== undefined;
-
-  // Push the context (job + renderability) whenever it changes. This also
-  // covers progress ticks: useRenderJob replaces the job object per update.
+  // Push the context (job + targets) whenever it changes. This also covers
+  // progress ticks: useRenderJob replaces the job object per update.
   useEffect(() => {
     pushState({
       kind: "context",
       job: renderJob.job,
-      canRender,
-      sceneName: args.sceneName,
+      views: args.views,
+      activeViewId: args.activeViewId ?? null,
     });
-  }, [renderJob.job, canRender, args.sceneName]);
+  }, [renderJob.job, args.views, args.activeViewId]);
 
   // --- Command execution (EXEC push from main) ---
   //
   // Subscribed once; reads fresh state through refs (ref-capture pattern) so
   // the IPC subscription is not torn down on every render.
 
-  const stateRef = useRef({ args, renderJob, canRender });
-  stateRef.current = { args, renderJob, canRender };
+  const stateRef = useRef({ args, renderJob });
+  stateRef.current = { args, renderJob };
 
   const execCommand = useCallback((cmd: RenderWindowCommand) => {
-    const { args: a, renderJob: rj, canRender: cr } = stateRef.current;
+    const { args: a, renderJob: rj } = stateRef.current;
     switch (cmd.type) {
       case "start": {
-        // Explicit source = re-render of a previous result; otherwise render
-        // the active molview scene/view.
+        // The render window sends its selected target as `source`; fall back
+        // to the active molview if it is missing.
         let source: RenderSource | null = (cmd.source as RenderSource) ?? null;
         if (!source) {
-          const info = a.getActiveSceneInfo();
-          if (info) {
+          const active = a.views.find((v) => v.viewId === a.activeViewId);
+          if (active) {
             source = {
-              sceneId: info.scene_uid,
-              sceneName: a.sceneName ?? `Scene ${info.scene_uid}`,
-              viewId: info.view_id,
+              sceneId: active.sceneId,
+              sceneName: active.sceneName,
+              viewId: active.viewId,
             };
           }
         }
@@ -131,8 +129,8 @@ export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): {
         pushState({
           kind: "context",
           job: rj.job,
-          canRender: cr,
-          sceneName: a.sceneName,
+          views: a.views,
+          activeViewId: a.activeViewId ?? null,
         });
         pushState({ kind: "result", result: latestResultRef.current });
         break;
@@ -161,6 +159,4 @@ export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): {
       offSize();
     };
   }, [execCommand]);
-
-  return { job: renderJob.job };
 }

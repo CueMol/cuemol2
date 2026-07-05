@@ -9,7 +9,7 @@
  *   - useCommandRegistrations   -- registers all CmdId handlers + Electron IPC bridge
  */
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { Allotment } from "allotment";
 import "allotment/dist/style.css";
 
@@ -32,7 +32,6 @@ import { IconContext } from "@phosphor-icons/react";
 import { useSceneTree } from "./hooks/useSceneTree";
 import { useSceneTreeController } from "./hooks/useSceneTreeController";
 import { useInspectorState } from "./hooks/useInspectorState";
-import { isRenderJobActive } from "./hooks/useRenderJob";
 import { useRenderWindowBridge } from "./hooks/useRenderWindowBridge";
 import { useTabManager } from "./hooks/useTabManager";
 import { useCueMol } from "./hooks/useCueMol";
@@ -243,13 +242,26 @@ const App: React.FC = () => {
 
   // All render UI lives in the modeless Rendering window; this bridge owns
   // the job lifecycle (the CueMol worker exists only in this renderer),
-  // executes commands relayed from that window, and pushes job/result
-  // state back. The returned job feeds the StatusBar progress line.
-  const renderBridge = useRenderWindowBridge({
+  // executes commands relayed from that window, and pushes job / target
+  // state back.
+
+  // Renderable targets offered in the render window's Target dropdown.
+  // The scene name is the tab title minus its ":<viewIdx>" suffix.
+  const renderTargetViews = useMemo(
+    () =>
+      molTabEntries.map((e) => ({
+        viewId: e.view_id,
+        sceneId: e.scene_uid,
+        sceneName: e.title.replace(/:\d+$/, ""),
+        title: e.title,
+      })),
+    [molTabEntries],
+  );
+
+  useRenderWindowBridge({
     cm,
-    activeMolViewId,
-    sceneName: scene.tree?.name ?? null,
-    getActiveSceneInfo,
+    views: renderTargetViews,
+    activeViewId: activeMolViewId,
     tabs,
     setActiveTab,
     binaries: renderBinaries,
@@ -350,13 +362,6 @@ const App: React.FC = () => {
 
   const sidebarVisible = activeView !== null;
   const settingsActive = tabs.find((t) => t.id === activeTab)?.type === "settings";
-
-  // StatusBar: a running render takes precedence over tool-hover messages.
-  // The job runs in this window even while the Rendering window is closed.
-  const activeRenderJob = isRenderJobActive(renderBridge.job) ? renderBridge.job : null;
-  const statusBarMessage = activeRenderJob
-    ? `Rendering… ${activeRenderJob.progress}%`
-    : statusMessage;
 
   // --- Render ---
 
@@ -513,8 +518,8 @@ const App: React.FC = () => {
         activeToolLabel={activeDef.label}
         activeToolShortcut={activeDef.shortcut}
         activeToolIcon={activeDef.icon}
-        busy={cueMolBusy || activeRenderJob !== null}
-        statusMessage={statusBarMessage}
+        busy={cueMolBusy}
+        statusMessage={statusMessage}
       />
     </div>
     </IconContext.Provider>
