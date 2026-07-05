@@ -202,18 +202,19 @@ namespace {
 
   // Resolve a CLUT color index to an umbreon RGBA. The RGB is passed through as
   // the linear working color (see note above); the opacity is the per-color
-  // alpha scaled by alphaScale, the section's default alpha (the renderer's
-  // setAlpha()). This mirrors POV, which writes transmit = 1 - colorAlpha *
-  // defAlpha (PovDisplayContext::dumpClut). Falls back to white on failure.
+  // (native) alpha, left untouched. The section's default alpha (getAlpha()) is
+  // NOT folded in here: in umbreon's blendpng-equivalent model the section alpha
+  // is a post-blend weight carried by Scene::groupBlend, and the section renders
+  // with colors untouched (see the note at the groupBlend push). Folding it in
+  // here as well would double-apply the transparency. Falls back to white.
   inline umbreon::Vec4 resolveColor(gfx::ColorTable &clut,
-                                    const gfx::ColorTable::elem_t &ci,
-                                    float alphaScale)
+                                    const gfx::ColorTable::elem_t &ci)
   {
     Vector4D rgba;
     if (!clut.getRGBAVecColor(ci, rgba))
-      return umbreon::Vec4(1.0f, 1.0f, 1.0f, alphaScale);
+      return umbreon::Vec4(1.0f, 1.0f, 1.0f, 1.0f);
     return umbreon::Vec4(float(rgba.x()), float(rgba.y()), float(rgba.z()),
-                         float(rgba.w()) * alphaScale);
+                         float(rgba.w()));
   }
 
   // Position raised off the surface along its normal (POV edge_line uses
@@ -242,14 +243,15 @@ struct UmbreonDisplayContext::Impl
 
   /// Per-section transparency group (= one CueMol renderer). Assigned per
   /// section and stored on every primitive (Sphere/Cylinder.group,
-  /// Mesh.triGroupId). Semi-transparent sections are added to veilGroups so the
-  /// renderer composites as a single-layer "veil" (only the frontmost surface
-  /// per group), instead of blending each overlapping sphere/triangle over the
-  /// next (which double-darkens overlaps). Mirrors CueMol's per-section
-  /// transparency (PovDisplayContext::startSection / blendTab).
+  /// Mesh.triGroupId). A semi-transparent section is added to groupBlend as a
+  /// {group, alpha} entry so umbreon post-blends the whole section (its
+  /// blendpng-equivalent multi-pass group alpha), instead of blending each
+  /// overlapping sphere/triangle over the next (which double-darkens overlaps).
+  /// The alpha is the renderer's getAlpha(), matching CueMol's per-section
+  /// transparency (PovDisplayContext::startSection / blendTab beta).
   int nextGroup = 0;
   int curGroup = 0;
-  std::vector<std::uint16_t> veilGroups;
+  std::vector<umbreon::GroupBlend> groupBlend;
 #endif
 };
 
@@ -274,7 +276,7 @@ void UmbreonDisplayContext::startRender()
   m_pImpl->matIndex.clear();
   m_pImpl->nextGroup = 0;
   m_pImpl->curGroup = 0;
-  m_pImpl->veilGroups.clear();
+  m_pImpl->groupBlend.clear();
 #endif
 }
 
@@ -335,23 +337,22 @@ void UmbreonDisplayContext::appendIntData()
   umbreon::Scene &scene = m_pImpl->scene;
   gfx::ColorTable &clut = pdat->m_clut;
 
-  // Section default alpha (the renderer's setAlpha()); multiplies each color's
-  // own opacity so a translucent renderer (e.g. a surface drawn with alpha 0.5)
-  // becomes see-through, matching POV's transmit = 1 - colorAlpha * defAlpha.
-  // Applied unconditionally (defAlpha == 1 is opaque); POV's post-blend mode is
-  // not relevant to umbreon's single-pass front-to-back compositing.
+  // Section default alpha (the renderer's setAlpha()) = CueMol's per-section
+  // group alpha. In umbreon's blendpng-equivalent post-blend model this is the
+  // group blend weight (beta), not a per-color multiplier: the section's colors
+  // stay untouched (see resolveColor) and umbreon composites the whole section
+  // at this alpha. getAlpha() is what PovDisplayContext groups by in its blendTab.
   const float defAlpha = float(getAlpha());
 
   // Assign this section (= one CueMol renderer) a transparency group. A
-  // semi-transparent renderer is registered as a veil so umbreon composites it
-  // as a single layer (the frontmost surface per group) instead of blending
-  // each overlapping sphere/triangle over the next (which double-darkens the
-  // overlaps). This matches CueMol's per-section transparency (the renderer
-  // alpha, getAlpha(), is what PovDisplayContext groups by in its blendTab).
+  // semi-transparent section is registered as a groupBlend {group, alpha} entry
+  // so umbreon post-blends the whole section (one extra render pass per group)
+  // instead of blending each overlapping sphere/triangle over the next (which
+  // double-darkens the overlaps). This matches CueMol's per-section transparency.
   m_pImpl->curGroup = m_pImpl->nextGroup++;
   const std::uint16_t group = static_cast<std::uint16_t>(m_pImpl->curGroup);
   if (defAlpha < 1.0f - 1.0e-4f)
-    m_pImpl->veilGroups.push_back(group);
+    m_pImpl->groupBlend.push_back(umbreon::GroupBlend{group, defAlpha});
 
   // Normalize thin primitives: dots -> spheres, lines -> cylinders.
   pdat->convDots();
@@ -400,7 +401,7 @@ void UmbreonDisplayContext::appendIntData()
       for (int k = 0; k < 3; ++k) {
         um.positions.push_back(toVec3(pv[k]->v));
         um.normals.push_back(toVec3(pv[k]->n));
-        um.colors.push_back(resolveColor(clut, pv[k]->c, defAlpha));
+        um.colors.push_back(resolveColor(clut, pv[k]->c));
       }
     }
     if (pClipped != NULL)
@@ -424,7 +425,7 @@ void UmbreonDisplayContext::appendIntData()
     umbreon::Sphere s;
     s.center = toVec3(p->v1);
     s.radius = float(p->r);
-    s.color = resolveColor(clut, p->col, defAlpha);
+    s.color = resolveColor(clut, p->col);
     LString smat;
     clut.getMaterial(p->col, smat);
     const int smatIdx = materialIndexFor(smat);
@@ -458,7 +459,7 @@ void UmbreonDisplayContext::appendIntData()
     c.p1 = toVec3(v2);
     // umbreon cylinders are single-radius; approximate cones by the mean.
     c.radius = float((p->w1 + p->w2) * 0.5);
-    c.color = resolveColor(clut, p->col, defAlpha);
+    c.color = resolveColor(clut, p->col);
     LString cmat;
     clut.getMaterial(p->col, cmat);
     const int cmatIdx = materialIndexFor(cmat);
@@ -619,9 +620,10 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
   scene.mesh.material =
       m_pImpl->matTable.empty() ? surfaceFinish() : m_pImpl->matTable[0];
 
-  // Semi-transparent sections (one per renderer) are composited as single-layer
-  // veils so overlapping primitives within a renderer do not double-blend.
-  scene.veilGroups = m_pImpl->veilGroups;
+  // Semi-transparent sections (one per renderer) are post-blended per group so
+  // overlapping primitives within a renderer do not double-blend (umbreon's
+  // blendpng-equivalent multi-pass group alpha).
+  scene.groupBlend = m_pImpl->groupBlend;
 
   // background color (passed through as the linear working color); default black
   umbreon::Vec3 bg(0.0f, 0.0f, 0.0f);

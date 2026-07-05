@@ -496,7 +496,7 @@ TEST(UmbreonExport, AmbientOcclusionAndShadowsAffectOutput)
 // identical to a single sphere -- the overlaps do not double-blend. Without the
 // veil (plain front-to-back "over"), N stacked translucent spheres would
 // accumulate and look brighter/more opaque than one.
-TEST(UmbreonExport, VeilsTranslucentRendererAsSingleLayer)
+TEST(UmbreonExport, PostBlendsTranslucentSectionWithoutDoubleBlend)
 {
     auto renderStackedSpheres = [](int nSpheres) {
         UmbreonDisplayContext ctx;
@@ -507,11 +507,11 @@ TEST(UmbreonExport, VeilsTranslucentRendererAsSingleLayer)
         ctx.loadIdent();
 
         ctx.startRender();
-        ctx.setAlpha(0.5);  // the renderer is semi-transparent -> a veil
-        ctx.startSection("veil");
+        ctx.setAlpha(0.5);  // semi-transparent section -> a post-blended group
+        ctx.startSection("group");
         ctx.color(gfx::SolidColor::createRGB(0.2, 0.4, 1.0));
         // coincident in screen space (same x,y, stacked slightly in z), so they
-        // fully overlap; only the frontmost should contribute under the veil
+        // fully overlap; only the frontmost contributes within the group's pass
         for (int i = 0; i < nSpheres; ++i)
             ctx.sphere(1.5, Vector4D(0.0, 0.0, -0.02 * i));
         ctx.endSection();
@@ -536,6 +536,6 @@ TEST(UmbreonExport, VeilsTranslucentRendererAsSingleLayer)
     // the sphere is visible (lit, semi-transparent over the black background)
     const std::size_t c = (static_cast<std::size_t>(32) * 64 + 32) * 3;
     EXPECT_GT(one[c + 2], 8);
-    // veil = single layer: three coincident spheres == one (no accumulation)
+    // post-blend group: three coincident spheres == one (no double-blend)
     EXPECT_EQ(one, three);
 }
