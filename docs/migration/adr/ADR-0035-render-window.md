@@ -1,6 +1,7 @@
 # ADR-0035: Rendering window — modeless child BrowserWindow hosting all render UI
 
-- Status: accepted (host E2E pending; competing alternative to PR #416 / ADR-0034)
+- Status: accepted (merged in PR #418; host E2E pending). The competing
+  docked-pane alternative (PR #416 / ADR-0034) was closed unmerged.
 - Date: 2026-07-05
 - Mapping rows: [`dialog.tool.render-pov`](../mapping/tool_dlgs.md)
 - Supersedes: the three-surface split of
@@ -17,12 +18,15 @@ a tab switch per cycle. The UXP `render-pov-dlg` was a modeless window with
 none of these problems, and its all-in-one-window shape also keeps the main
 window free of render chrome.
 
-Two competing redesigns exist:
+Two redesigns were prototyped as competing PRs and evaluated side by side:
 
 - **PR #416 (ADR-0034)**: docked preview pane right of ContentArea, keeping
   settings in the Inspector and Start/Stop in the BottomPanel.
-- **This ADR**: a modeless child window consolidating all three surfaces —
-  the closest UXP-parity shape. Whichever merges first supersedes the other.
+- **This ADR (PR #418)**: a modeless child window consolidating all three
+  surfaces — the closest UXP-parity shape.
+
+The modeless-window approach was adopted (PR #418 merged); PR #416 was
+closed unmerged and ADR-0034's number is retired (see the ADR index).
 
 ## Decision
 
