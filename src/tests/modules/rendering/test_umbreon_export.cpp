@@ -491,12 +491,75 @@ TEST(UmbreonExport, AmbientOcclusionAndShadowsAffectOutput)
     EXPECT_NE(base, enh);
 }
 
+// Smoke test for the pt1 path-traced GI integrator + Intel OIDN denoiser:
+// enabling GI must run without crashing, produce a lit frame, and (via the
+// radiosity lighting rebalance) differ from the local-shading render.
+TEST(UmbreonExport, GlobalIlluminationAffectsOutput)
+{
+    auto renderBox = [](bool useGi) {
+        UmbreonDisplayContext ctx;
+        ctx.init();
+        ctx.setPerspective(false);
+        ctx.setViewDist(100.0);
+        ctx.setZoom(8.0);
+        ctx.loadIdent();
+
+        ctx.startRender();
+        ctx.startSection("s");
+        ctx.color(gfx::SolidColor::createRGB(0.8, 0.8, 0.8));
+        // a backdrop plane plus a sphere in front to receive indirect bounce
+        ctx.startTriangles();
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(-3.0, -3.0, 0.0));
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(3.0, -3.0, 0.0));
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(3.0, 3.0, 0.0));
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(-3.0, -3.0, 0.0));
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(3.0, 3.0, 0.0));
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(-3.0, 3.0, 0.0));
+        ctx.end();
+        ctx.sphere(1.2, Vector4D(0.0, 0.0, 1.5));
+        ctx.endSection();
+
+        UmbreonRenderParams prm;
+        prm.width = 48;
+        prm.height = 48;
+        prm.supersample = 1;
+        prm.giEnabled = useGi;
+        prm.giSamples = 8;  // low count -- this is a smoke test, not a quality one
+        prm.giDenoise = useGi;
+
+        int ow = 0, oh = 0, ncomp = 0;
+        std::vector<unsigned char> pix;
+        ctx.render(prm, ow, oh, ncomp, pix);
+        return pix;
+    };
+
+    std::vector<unsigned char> base = renderBox(false);
+    std::vector<unsigned char> giFrame = renderBox(true);
+
+    ASSERT_EQ(base.size(), static_cast<std::size_t>(48 * 48 * 3));
+    ASSERT_EQ(base.size(), giFrame.size());
+
+    std::size_t nNonBg = 0;
+    for (std::size_t i = 0; i + 2 < giFrame.size(); i += 3) {
+        if (giFrame[i] > 8 || giFrame[i + 1] > 8 || giFrame[i + 2] > 8)
+            ++nNonBg;
+    }
+    EXPECT_GT(nNonBg, 100u);
+    EXPECT_NE(base, giFrame);
+}
+
 // Pins per-renderer veil compositing: a semi-transparent section (renderer) is
 // laid down as ONE single-layer veil, so several overlapping spheres in it look
 // identical to a single sphere -- the overlaps do not double-blend. Without the
 // veil (plain front-to-back "over"), N stacked translucent spheres would
 // accumulate and look brighter/more opaque than one.
-TEST(UmbreonExport, VeilsTranslucentRendererAsSingleLayer)
+TEST(UmbreonExport, PostBlendsTranslucentSectionWithoutDoubleBlend)
 {
     auto renderStackedSpheres = [](int nSpheres) {
         UmbreonDisplayContext ctx;
@@ -507,11 +570,11 @@ TEST(UmbreonExport, VeilsTranslucentRendererAsSingleLayer)
         ctx.loadIdent();
 
         ctx.startRender();
-        ctx.setAlpha(0.5);  // the renderer is semi-transparent -> a veil
-        ctx.startSection("veil");
+        ctx.setAlpha(0.5);  // semi-transparent section -> a post-blended group
+        ctx.startSection("group");
         ctx.color(gfx::SolidColor::createRGB(0.2, 0.4, 1.0));
         // coincident in screen space (same x,y, stacked slightly in z), so they
-        // fully overlap; only the frontmost should contribute under the veil
+        // fully overlap; only the frontmost contributes within the group's pass
         for (int i = 0; i < nSpheres; ++i)
             ctx.sphere(1.5, Vector4D(0.0, 0.0, -0.02 * i));
         ctx.endSection();
@@ -536,6 +599,6 @@ TEST(UmbreonExport, VeilsTranslucentRendererAsSingleLayer)
     // the sphere is visible (lit, semi-transparent over the black background)
     const std::size_t c = (static_cast<std::size_t>(32) * 64 + 32) * 3;
     EXPECT_GT(one[c + 2], 8);
-    // veil = single layer: three coincident spheres == one (no accumulation)
+    // post-blend group: three coincident spheres == one (no double-blend)
     EXPECT_EQ(one, three);
 }

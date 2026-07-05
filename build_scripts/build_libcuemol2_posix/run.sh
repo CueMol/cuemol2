@@ -127,6 +127,7 @@ cmake -G "$GENERATOR" \
       -DTBB_DIR=$BASEDIR/tbb-$TBB_VER/lib/cmake/TBB \
       -Dembree_DIR=$BASEDIR/embree-$EMBREE_VER/lib/cmake/embree-$EMBREE_VER \
       -Dumbreon_DIR=$BASEDIR/umbreon/lib/cmake/umbreon \
+      -DOpenImageDenoise_DIR=$BASEDIR/oidn-$OIDN_VER/lib/cmake/OpenImageDenoise-$OIDN_VER \
       $PYTHON_OPT \
       -DBUILD_NODEJS_BINDINGS=$BUILD_NODEJS_BINDINGS \
       -DENABLE_TYPESCRIPT=$ENABLE_TYPESCRIPT \

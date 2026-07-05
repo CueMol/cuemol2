@@ -40,6 +40,19 @@ namespace {
   // literals are sRGB-decoded). To match that reference, pass the CueMol color
   // through unchanged -- do NOT sRGB-decode it.
 
+  /// Native stroke-edge line width, in final-resolution pixels (umbreon
+  /// StrokeEdgeOptions::thickness / EdgeClassStyle::width).
+  const int EDGE_THICKNESS_PX = 2;
+
+  /// GI denoise picks OIDN only when the internal (supersampled) render area
+  /// stays under this; larger renders fall back to the a-trous denoiser. OIDN's
+  /// U-Net scratch is a single contiguous arena that grows with the render area
+  /// and, in the tritium/Electron renderer, PartitionAlloc hard-crashes (SIGTRAP)
+  /// on a single allocation past ~2 GiB. Empirically 800x800 @ ss3 (this bound)
+  /// denoises but 900x900 @ ss3 crashes. Tunable; see
+  /// docs/architecture/umbreon-process-isolation.md.
+  const long OIDN_MAX_RENDER_AREA = 6000000L;  // ~2450x2450 internal px
+
   inline umbreon::Vec3 toVec3(const Vector4D &v)
   {
     return umbreon::Vec3(float(v.x()), float(v.y()), float(v.z()));
@@ -202,28 +215,19 @@ namespace {
 
   // Resolve a CLUT color index to an umbreon RGBA. The RGB is passed through as
   // the linear working color (see note above); the opacity is the per-color
-  // alpha scaled by alphaScale, the section's default alpha (the renderer's
-  // setAlpha()). This mirrors POV, which writes transmit = 1 - colorAlpha *
-  // defAlpha (PovDisplayContext::dumpClut). Falls back to white on failure.
+  // (native) alpha, left untouched. The section's default alpha (getAlpha()) is
+  // NOT folded in here: in umbreon's blendpng-equivalent model the section alpha
+  // is a post-blend weight carried by Scene::groupBlend, and the section renders
+  // with colors untouched (see the note at the groupBlend push). Folding it in
+  // here as well would double-apply the transparency. Falls back to white.
   inline umbreon::Vec4 resolveColor(gfx::ColorTable &clut,
-                                    const gfx::ColorTable::elem_t &ci,
-                                    float alphaScale)
+                                    const gfx::ColorTable::elem_t &ci)
   {
     Vector4D rgba;
     if (!clut.getRGBAVecColor(ci, rgba))
-      return umbreon::Vec4(1.0f, 1.0f, 1.0f, alphaScale);
+      return umbreon::Vec4(1.0f, 1.0f, 1.0f, 1.0f);
     return umbreon::Vec4(float(rgba.x()), float(rgba.y()), float(rgba.z()),
-                         float(rgba.w()) * alphaScale);
-  }
-
-  // Position raised off the surface along its normal (POV edge_line uses
-  // `v + raise*n` to lift the outline cylinder/sphere off the geometry).
-  inline umbreon::Vec3 riseToVec3(const Vector4D &v, const Vector4D &n,
-                                  double raise)
-  {
-    return umbreon::Vec3(float(v.x() + n.x() * raise),
-                         float(v.y() + n.y() * raise),
-                         float(v.z() + n.z() * raise));
+                         float(rgba.w()));
   }
 
 }  // anonymous namespace
@@ -242,21 +246,33 @@ struct UmbreonDisplayContext::Impl
 
   /// Per-section transparency group (= one CueMol renderer). Assigned per
   /// section and stored on every primitive (Sphere/Cylinder.group,
-  /// Mesh.triGroupId). Semi-transparent sections are added to veilGroups so the
-  /// renderer composites as a single-layer "veil" (only the frontmost surface
-  /// per group), instead of blending each overlapping sphere/triangle over the
-  /// next (which double-darkens overlaps). Mirrors CueMol's per-section
-  /// transparency (PovDisplayContext::startSection / blendTab).
+  /// Mesh.triGroupId). A semi-transparent section is added to groupBlend as a
+  /// {group, alpha} entry so umbreon post-blends the whole section (its
+  /// blendpng-equivalent multi-pass group alpha), instead of blending each
+  /// overlapping sphere/triangle over the next (which double-darkens overlaps).
+  /// The alpha is the renderer's getAlpha(), matching CueMol's per-section
+  /// transparency (PovDisplayContext::startSection / blendTab beta).
   int nextGroup = 0;
   int curGroup = 0;
-  std::vector<std::uint16_t> veilGroups;
+  std::vector<umbreon::GroupBlend> groupBlend;
+
+  /// Per-section (per group) native stroke-edge style for umbreon's screen-space
+  /// edge pass (RenderOptions::strokeEdges + Scene::groupEdgeStyle). Indexed by
+  /// group id; a section without edge lines gets an all-disabled EdgeStyle.
+  std::vector<umbreon::EdgeStyle> groupEdgeStyle;
+  /// Whether any section enabled edge lines (gates strokeEdges.enable) and
+  /// whether any section requested creases (gates the global crease extraction).
+  bool anyEdges = false;
+  bool anyCrease = false;
+  /// Representative stroke width (final px) for the global strokeEdges.thickness;
+  /// per-section widths live in groupEdgeStyle[*].cls[*].width.
+  float edgeThicknessPx = float(EDGE_THICKNESS_PX);
 #endif
 };
 
 UmbreonDisplayContext::UmbreonDisplayContext()
      : super_t(), m_pImpl(new Impl()),
-       m_bEnableEdgeLines(true), m_dCreaseLimit(-1.0), m_dEdgeRise(0.5),
-       m_nEdgeCornerType(ECT_ALL)
+       m_bEnableEdgeLines(true), m_dCreaseLimit(-1.0), m_dEdgeRise(0.5)
 {
 }
 
@@ -274,7 +290,11 @@ void UmbreonDisplayContext::startRender()
   m_pImpl->matIndex.clear();
   m_pImpl->nextGroup = 0;
   m_pImpl->curGroup = 0;
-  m_pImpl->veilGroups.clear();
+  m_pImpl->groupBlend.clear();
+  m_pImpl->groupEdgeStyle.clear();
+  m_pImpl->anyEdges = false;
+  m_pImpl->anyCrease = false;
+  m_pImpl->edgeThicknessPx = float(EDGE_THICKNESS_PX);
 #endif
 }
 
@@ -335,38 +355,85 @@ void UmbreonDisplayContext::appendIntData()
   umbreon::Scene &scene = m_pImpl->scene;
   gfx::ColorTable &clut = pdat->m_clut;
 
-  // Section default alpha (the renderer's setAlpha()); multiplies each color's
-  // own opacity so a translucent renderer (e.g. a surface drawn with alpha 0.5)
-  // becomes see-through, matching POV's transmit = 1 - colorAlpha * defAlpha.
-  // Applied unconditionally (defAlpha == 1 is opaque); POV's post-blend mode is
-  // not relevant to umbreon's single-pass front-to-back compositing.
+  // Section default alpha (the renderer's setAlpha()) = CueMol's per-section
+  // group alpha. In umbreon's blendpng-equivalent post-blend model this is the
+  // group blend weight (beta), not a per-color multiplier: the section's colors
+  // stay untouched (see resolveColor) and umbreon composites the whole section
+  // at this alpha. getAlpha() is what PovDisplayContext groups by in its blendTab.
   const float defAlpha = float(getAlpha());
 
   // Assign this section (= one CueMol renderer) a transparency group. A
-  // semi-transparent renderer is registered as a veil so umbreon composites it
-  // as a single layer (the frontmost surface per group) instead of blending
-  // each overlapping sphere/triangle over the next (which double-darkens the
-  // overlaps). This matches CueMol's per-section transparency (the renderer
-  // alpha, getAlpha(), is what PovDisplayContext groups by in its blendTab).
+  // semi-transparent section is registered as a groupBlend {group, alpha} entry
+  // so umbreon post-blends the whole section (one extra render pass per group)
+  // instead of blending each overlapping sphere/triangle over the next (which
+  // double-darkens the overlaps). This matches CueMol's per-section transparency.
   m_pImpl->curGroup = m_pImpl->nextGroup++;
   const std::uint16_t group = static_cast<std::uint16_t>(m_pImpl->curGroup);
   if (defAlpha < 1.0f - 1.0e-4f)
-    m_pImpl->veilGroups.push_back(group);
+    m_pImpl->groupBlend.push_back(umbreon::GroupBlend{group, defAlpha});
 
   // Normalize thin primitives: dots -> spheres, lines -> cylinders.
   pdat->convDots();
   pdat->convLines(true);
 
-  const int elt = getEdgeLineType();
-  const bool bEdges = m_bEnableEdgeLines &&
-                      (elt == ELT_EDGES || elt == ELT_SILHOUETTE);
+  // Native screen-space edge lines (umbreon strokeEdges). Record which edge
+  // natures this section draws (silhouette / border / crease) and its edge
+  // color into this group's EdgeStyle; the strokeEdges pass configured in
+  // render() rasterizes them in screen space. Analytic spheres/cylinders are
+  // kept (emitted below, not folded into the mesh) so umbreon outlines
+  // ball-and-stick natively -- no CueMol-side outline geometry is built.
+  {
+    const int elt = getEdgeLineType();
+    const bool bSil = m_bEnableEdgeLines &&
+                      (elt == ELT_SILHOUETTE || elt == ELT_EDGES);
+    const bool bBorder = m_bEnableEdgeLines && (elt == ELT_EDGES);
+    const bool bCrease = bBorder && (m_dCreaseLimit > 0.0);
 
-  if (bEdges) {
-    // POV-style: fold spheres/cylinders into the mesh, so both the shaded
-    // surface and the derived silhouette cover them. (Analytic quadrics are
-    // not kept while edge lines are on.)
-    pdat->convSpheres();
-    pdat->convCylinders();
+    umbreon::EdgeStyle es;  // every edge class disabled by default
+    if (bSil || bBorder || bCrease) {
+      float er = 0.0f, eg = 0.0f, eb = 0.0f;
+      gfx::ColorPtr pcol = getEdgeLineColor();
+      if (!pcol.isnull()) {
+        er = float(pcol->fr());
+        eg = float(pcol->fg());
+        eb = float(pcol->fb());
+      }
+      // Edge line width: getEdgeLineWidth() is a world-space radius (as POV /
+      // Lux use it); convert to the native stroke width in FINAL pixels via the
+      // line scale (world units per pixel, seeded by the exporter). Fall back to
+      // the default when the width is unset (< 0).
+      const double elw = getEdgeLineWidth();
+      const double lscale = getLineScale();
+      float widthPx = float(EDGE_THICKNESS_PX);
+      if (elw > 0.0 && lscale > 0.0)
+        widthPx = float(2.0 * elw / lscale);
+      if (widthPx < 1.0f)
+        widthPx = 1.0f;
+      // The stroke pass maps silhouette -> Silhouette, border -> Object,
+      // crease -> Crease styling slots (umbreon scene_setup parity).
+      const int slots[3] = { int(umbreon::EdgeClass::Silhouette),
+                             int(umbreon::EdgeClass::Object),
+                             int(umbreon::EdgeClass::Crease) };
+      const bool on[3] = { bSil, bBorder, bCrease };
+      for (int k = 0; k < 3; ++k) {
+        umbreon::EdgeClassStyle &cs = es.cls[slots[k]];
+        cs.enabled = on[k];
+        cs.color[0] = er;
+        cs.color[1] = eg;
+        cs.color[2] = eb;
+        cs.opacity = 1.0f;
+        cs.width = widthPx;
+      }
+      // Representative width for the global stroke thickness (last edge section
+      // wins); per-section cls.width above is what styles each group.
+      m_pImpl->edgeThicknessPx = widthPx;
+      m_pImpl->anyEdges = true;
+      if (bCrease)
+        m_pImpl->anyCrease = true;
+    }
+    if (m_pImpl->groupEdgeStyle.size() <= group)
+      m_pImpl->groupEdgeStyle.resize(std::size_t(group) + 1);
+    m_pImpl->groupEdgeStyle[group] = es;
   }
 
   // --- triangle mesh (de-indexed: 3 corners per triangle) ---
@@ -400,17 +467,11 @@ void UmbreonDisplayContext::appendIntData()
       for (int k = 0; k < 3; ++k) {
         um.positions.push_back(toVec3(pv[k]->v));
         um.normals.push_back(toVec3(pv[k]->n));
-        um.colors.push_back(resolveColor(clut, pv[k]->c, defAlpha));
+        um.colors.push_back(resolveColor(clut, pv[k]->c));
       }
     }
     if (pClipped != NULL)
       delete pClipped;
-  }
-
-  if (bEdges) {
-    // Derive and emit silhouette/edge outline primitives from the mesh.
-    appendEdges();
-    return;
   }
 
   // --- analytic spheres (shaded, not flat outline) ---
@@ -424,7 +485,7 @@ void UmbreonDisplayContext::appendIntData()
     umbreon::Sphere s;
     s.center = toVec3(p->v1);
     s.radius = float(p->r);
-    s.color = resolveColor(clut, p->col, defAlpha);
+    s.color = resolveColor(clut, p->col);
     LString smat;
     clut.getMaterial(p->col, smat);
     const int smatIdx = materialIndexFor(smat);
@@ -458,7 +519,7 @@ void UmbreonDisplayContext::appendIntData()
     c.p1 = toVec3(v2);
     // umbreon cylinders are single-radius; approximate cones by the mean.
     c.radius = float((p->w1 + p->w2) * 0.5);
-    c.color = resolveColor(clut, p->col, defAlpha);
+    c.color = resolveColor(clut, p->col);
     LString cmat;
     clut.getMaterial(p->col, cmat);
     const int cmatIdx = materialIndexFor(cmat);
@@ -467,113 +528,6 @@ void UmbreonDisplayContext::appendIntData()
     c.open = !p->bcap;
     scene.cylinders.push_back(c);
   }
-#endif  // HAVE_UMBREON
-}
-
-void UmbreonDisplayContext::appendEdges()
-{
-#ifdef HAVE_UMBREON
-  RendIntData *pdat = getIntData();
-  if (pdat == NULL)
-    return;
-  if (pdat->m_mesh.getVertexSize() <= 0 || pdat->m_mesh.getFaceSize() <= 0)
-    return;
-
-  // The edge-emission hooks (writeEdgeLineImpl/writePointImpl) push umbreon
-  // outline primitives and ignore the stream, so a discard stream is fine.
-  qlib::StrOutStream nullout;
-  qlib::PrintStream ips(nullout);
-
-  const int elt = getEdgeLineType();
-  pdat->setSilhMode(elt == ELT_SILHOUETTE);
-
-  pdat->calcSilEdgeLines(m_dViewDist, m_dCreaseLimit);
-
-  if (elt == ELT_SILHOUETTE) {
-    pdat->buildAABBTree(-1);
-    pdat->calcSilhIntrsec(getEdgeLineWidth() / 2.0);
-    pdat->writeSilhLines(ips);
-  }
-  else {
-    // edge mode: intersections only for cyl/sph meshes
-    pdat->buildAABBTree(MFMOD_MESH);
-    pdat->calcEdgeIntrsec();
-    pdat->writeEdgeLines(ips);
-  }
-
-  if (m_nEdgeCornerType != ECT_NONE)
-    pdat->writeCornerPoints(ips);
-
-  pdat->cleanupSilEdgeLines();
-#endif  // HAVE_UMBREON
-}
-
-void UmbreonDisplayContext::writeEdgeLineImpl(PrintStream &, int xa1, int xa2,
-                                              const Vector4D &x1,
-                                              const Vector4D &n1,
-                                              const Vector4D &x2,
-                                              const Vector4D &n2)
-{
-#ifdef HAVE_UMBREON
-  const double w = getEdgeLineWidth();
-  const double raise = m_dEdgeRise * (w * 0.5);
-
-  // edge line color (passed through as the linear working color); default black
-  double er = 0.0, eg = 0.0, eb = 0.0;
-  gfx::ColorPtr pcol = getEdgeLineColor();
-  if (!pcol.isnull()) {
-    er = pcol->fr();
-    eg = pcol->fg();
-    eb = pcol->fb();
-  }
-  const float lr = float(er), lg = float(eg), lb = float(eb);
-
-  umbreon::Cylinder c;
-  c.p0 = riseToVec3(x1, n1, raise);
-  c.p1 = riseToVec3(x2, n2, raise);
-  c.radius = float(w);
-  c.material = umbreon::Material::flatOutline();
-  c.open = true;
-  if (xa1 == 255 && xa2 == 255) {
-    c.color = umbreon::Vec4(lr, lg, lb, 1.0f);
-    c.opacity1 = -1.0f;
-  }
-  else {
-    // edge_line2: per-endpoint opacity gradient
-    c.color = umbreon::Vec4(lr, lg, lb, float(1.0 - xa1 / 255.0));
-    c.opacity1 = float(1.0 - xa2 / 255.0);
-  }
-  c.group = static_cast<std::uint16_t>(m_pImpl->curGroup);
-  m_pImpl->scene.cylinders.push_back(c);
-#endif  // HAVE_UMBREON
-}
-
-void UmbreonDisplayContext::writePointImpl(PrintStream &, const Vector4D &v1,
-                                           const Vector4D &n1, int alpha)
-{
-#ifdef HAVE_UMBREON
-  // POV omits junction dots for semi-transparent edges (avoids spotty seams).
-  if (alpha != 255)
-    return;
-
-  const double w = getEdgeLineWidth();
-  const double raise = m_dEdgeRise * (w * 0.5);
-
-  double er = 0.0, eg = 0.0, eb = 0.0;
-  gfx::ColorPtr pcol = getEdgeLineColor();
-  if (!pcol.isnull()) {
-    er = pcol->fr();
-    eg = pcol->fg();
-    eb = pcol->fb();
-  }
-
-  umbreon::Sphere s;
-  s.center = riseToVec3(v1, n1, raise);
-  s.radius = float(w);
-  s.material = umbreon::Material::flatOutline();
-  s.color = umbreon::Vec4(float(er), float(eg), float(eb), 1.0f);
-  s.group = static_cast<std::uint16_t>(m_pImpl->curGroup);
-  m_pImpl->scene.spheres.push_back(s);
 #endif  // HAVE_UMBREON
 }
 
@@ -619,9 +573,10 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
   scene.mesh.material =
       m_pImpl->matTable.empty() ? surfaceFinish() : m_pImpl->matTable[0];
 
-  // Semi-transparent sections (one per renderer) are composited as single-layer
-  // veils so overlapping primitives within a renderer do not double-blend.
-  scene.veilGroups = m_pImpl->veilGroups;
+  // Semi-transparent sections (one per renderer) are post-blended per group so
+  // overlapping primitives within a renderer do not double-blend (umbreon's
+  // blendpng-equivalent multi-pass group alpha).
+  scene.groupBlend = m_pImpl->groupBlend;
 
   // background color (passed through as the linear working color); default black
   umbreon::Vec3 bg(0.0f, 0.0f, 0.0f);
@@ -646,11 +601,14 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
   scene.fog.enabled = (fogEnd > fogStart);
 
   // Default lighting matching CueMol's POV output (the scene the umbreon CLI
-  // builds from a .pov). The umbreon CLI predefines _light_inten=1.3,
-  // _flash_frac=0.6, _amb_frac=0, and the .pov's `#ifndef(_light_inten)`
-  // override is skipped, so the evaluated macro intensities are:
-  //   SpecLighting  = _light_inten*(1-_amb_frac)*(1-_flash_frac) = 0.52
-  //   FlashLighting = _light_inten*(1-_amb_frac)*_flash_frac     = 0.78
+  // builds from a .pov). Without GI the POV defaults are _light_inten=1.3,
+  // _amb_frac=0, _flash_frac=0.6, giving SpecLighting=0.52 / FlashLighting=0.78.
+  // With GI on, adopt the POV radiosity balance (_light_inten=1.6, _amb_frac=0.5,
+  // _flash_frac=0.5): move half the energy into the ambient the GI gathers and
+  // dim the direct lights, matching the umbreon CLI's scene_setup.
+  const double li = prm.giEnabled ? 1.6 : 1.3;
+  const double af = prm.giEnabled ? 0.5 : 0.0;
+  const double ff = prm.giEnabled ? 0.5 : 0.6;
   if (scene.lights.empty()) {
     // SpecLighting: directional key light from the upper-front-right
     // (positioned at normalize(1,1,1), pointing at the origin). CueMol calls it
@@ -658,7 +616,7 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
     umbreon::DistantLight spec;
     spec.direction = umbreon::normalize(umbreon::Vec3(-1.0f, -1.0f, -1.0f));
     spec.color = umbreon::Vec3(1.0f, 1.0f, 1.0f);
-    spec.intensity = 0.52f;
+    spec.intensity = float(li * (1.0 - af) * (1.0 - ff));
     spec.castsHighlight = true;
     scene.lights.push_back(spec);
 
@@ -667,12 +625,15 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
     umbreon::DistantLight flash;
     flash.direction = umbreon::Vec3(0.0f, 0.0f, -1.0f);
     flash.color = umbreon::Vec3(1.0f, 1.0f, 1.0f);
-    flash.intensity = 0.78f;
+    flash.intensity = float(li * (1.0 - af) * ff);
     flash.castsHighlight = false;
     scene.lights.push_back(flash);
   }
   scene.ambientIntensity = 1.0f;
-  scene.ambientColor = umbreon::Vec3(1.0f, 1.0f, 1.0f);
+  // The GI gathers this ambient occlusion-aware; carry the ambient light energy
+  // (light_inten * amb_frac) when GI is on, else a flat white ambient.
+  const float amb = prm.giEnabled ? float(li * af) : 1.0f;
+  scene.ambientColor = umbreon::Vec3(amb, amb, amb);
 
   // No assumed_gamma: keep umbreon's framebuffer linear (assumedGamma = 1.0 is
   // a no-op in the pipeline). The output is then a direct linear mapping of the
@@ -690,6 +651,63 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
   opt.shadowSamples = (prm.shadowSamples > 0) ? prm.shadowSamples : 1;
   opt.lightRadius = float(prm.lightRadius);
   opt.transparentBackground = prm.transparentBackground;
+
+  // Diffuse global illumination (pt1 path-traced integrator). Enabling GI sets
+  // gi + giIntegrator=1 (the composited path; the irradiance-cache integrator
+  // does not composite yet). pt1Denoise runs Intel OIDN on the indirect
+  // irradiance (E) buffer BEFORE the albedo multiply -- direct lighting and
+  // albedo stay noise-free -- which needs umbreon built with UMBREON_WITH_OIDN
+  // (linked from the deplibs OIDN bundle; see src/cmake/umbreon.cmake).
+  if (prm.giEnabled) {
+    opt.gi = true;
+    opt.giIntegrator = 1;
+    opt.pt1Spp = (prm.giSamples > 0) ? prm.giSamples : 32;
+    opt.giIntensity = float(prm.giIntensity);
+    opt.giEnvIntensity = float(prm.giEnvIntensity);
+    if (prm.giDenoise) {
+      // OIDN's UNet scratch arena grows with the internal (supersampled) render
+      // area; above OIDN_MAX_RENDER_AREA the single allocation crosses the
+      // Electron renderer's ~2 GiB PartitionAlloc limit and hard-crashes. Use
+      // OIDN up to that size and fall back to the dependency-free, bounded-memory
+      // a-trous denoiser (full-frame) above it.
+      const long renderArea = long(prm.width) * long(prm.height) *
+                              long(prm.supersample) * long(prm.supersample);
+      if (renderArea <= OIDN_MAX_RENDER_AREA) {
+        opt.pt1Denoise = true;  // OIDN on the indirect irradiance (E) buffer
+      } else {
+        opt.pt1Denoise = false;
+        opt.denoiser = 1;  // DenoiserBackend::AtrousBilateral (full-frame)
+        LOG_DPRINTLN("Umbreon> GI denoise: render %dx%d (ss=%d) too large for "
+                     "OIDN; using a-trous denoiser",
+                     prm.width, prm.height, prm.supersample);
+      }
+    }
+  }
+
+  // Native screen-space (Freestyle-style) edge lines. Enabled when any section
+  // requested edge lines; each section's natures + edge color live in
+  // scene.groupEdgeStyle (captured in appendIntData). The analytic silhouettes
+  // of spheres/cylinders are outlined too (strokeEdges.analytic defaults on), so
+  // ball-and-stick is edged without folding it into the mesh.
+  if (m_pImpl->anyEdges) {
+    opt.strokeEdges.enable = true;
+    opt.strokeEdges.silhouette = true;
+    opt.strokeEdges.border = true;
+    opt.strokeEdges.crease = m_pImpl->anyCrease;
+    opt.strokeEdges.thickness = int(m_pImpl->edgeThicknessPx + 0.5f);
+    if (opt.strokeEdges.thickness < 1)
+      opt.strokeEdges.thickness = 1;
+    // Outward contour offset (world units); CueMol's edge-rise knob.
+    opt.strokeEdges.raise = float(m_dEdgeRise);
+    opt.strokeEdges.color[0] = 0.0f;
+    opt.strokeEdges.color[1] = 0.0f;
+    opt.strokeEdges.color[2] = 0.0f;
+    // Cover every group id; sections with no edge lines keep an all-disabled
+    // EdgeStyle, so the stroke pass draws nothing for them.
+    if (m_pImpl->groupEdgeStyle.size() < std::size_t(m_pImpl->nextGroup))
+      m_pImpl->groupEdgeStyle.resize(std::size_t(m_pImpl->nextGroup));
+    scene.groupEdgeStyle = m_pImpl->groupEdgeStyle;
+  }
 
   MB_DPRINTLN("Umbreon> render %dx%d ss=%d ao=%d tris=%d",
               opt.width, opt.height, opt.supersample, opt.aoSamples,

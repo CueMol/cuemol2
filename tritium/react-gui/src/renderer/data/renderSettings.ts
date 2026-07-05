@@ -11,7 +11,7 @@
 import type { PropDef } from "./rendererProperties";
 
 /** Identifier of a rendering backend. Extended as backends are added. */
-export type RenderBackendId = "povray";
+export type RenderBackendId = "povray" | "umbreon";
 
 /** Accordion group descriptor for the render-settings editor. */
 export interface RenderGroupDef {

@@ -36,6 +36,38 @@ const POVRAY_PROPS: PropDef[] = [
   { key: "ambientFraction", label: "Ambient fraction",    type: "real",    value: 0.0, group: "POV-Ray", min: 0, max: 1, step: 0.1 },
 ];
 
+/**
+ * Umbreon (in-process ray tracer) backend-specific options. These are the
+ * UmbreonSceneExporter qif props NOT already covered by the common props;
+ * `perspective` / `useClipZ` / `showEdgeLines` / `transparentBackground` are
+ * driven from the common projection / clipPlane / edgeLines / transparentBg,
+ * exactly as POV-Ray does (see UmbreonBackend). Keys must not collide with the
+ * common keys.
+ */
+const UMBREON_PROPS: PropDef[] = [
+  // --- Umbreon Quality ---
+  { key: "supersample",   label: "Supersampling",      type: "integer", value: 3,    group: "Umbreon Quality", min: 1, max: 8,    step: 1 },
+  // --- Ambient Occlusion (off by default: aoSamples 0) ---
+  { key: "aoSamples",     label: "AO samples",         type: "integer", value: 0,    group: "Ambient Occlusion", min: 0, max: 64,  step: 1 },
+  // C++ ctor default is 1e20 (unbounded); a finite default keeps the drag field
+  // usable once AO is enabled (the backend falls back to 1e20 if absent).
+  { key: "aoDistance",    label: "AO distance",        type: "real",    value: 100,  group: "Ambient Occlusion", min: 1, max: 1000, step: 10 },
+  { key: "aoIntensity",   label: "AO intensity",       type: "real",    value: 1.0,  group: "Ambient Occlusion", min: 0, max: 1,    step: 0.1 },
+  // --- Shadows ---
+  { key: "shadows",       label: "Cast shadows",       type: "boolean", value: false, group: "Shadows" },
+  { key: "shadowSamples", label: "Shadow samples",     type: "integer", value: 1,    group: "Shadows", min: 1, max: 64, step: 1 },
+  { key: "lightRadius",   label: "Light radius (deg)", type: "real",    value: 0.0,  group: "Shadows", min: 0, max: 30, step: 0.5 },
+  // --- Edges (creaseLimit -1 = disabled/auto sentinel) ---
+  { key: "creaseLimit",   label: "Crease limit",       type: "real",    value: -1.0, group: "Edges", min: -1, max: 180, step: 1 },
+  { key: "edgeRise",      label: "Edge rise",          type: "real",    value: 0.5,  group: "Edges", min: 0, max: 5, step: 0.1 },
+  // --- Global Illumination (pt1 path-traced integrator; off by default) ---
+  { key: "useGI",         label: "Enable GI",          type: "boolean", value: false, group: "Global Illumination" },
+  { key: "giSamples",     label: "GI samples",         type: "integer", value: 32,   group: "Global Illumination", min: 1, max: 256, step: 1 },
+  { key: "giIntensity",   label: "GI intensity",       type: "real",    value: 1.0,  group: "Global Illumination", min: 0, max: 3, step: 0.1 },
+  { key: "giEnvIntensity", label: "GI environment",    type: "real",    value: 1.0,  group: "Global Illumination", min: 0, max: 3, step: 0.1 },
+  { key: "giDenoise",     label: "GI denoise",         type: "boolean", value: true, group: "Global Illumination" },
+];
+
 /** All registered rendering backends, keyed by id. */
 export const RENDER_BACKENDS: Record<RenderBackendId, RenderBackendDescriptor> = {
   povray: {
@@ -43,6 +75,18 @@ export const RENDER_BACKENDS: Record<RenderBackendId, RenderBackendDescriptor> =
     label: "POV-Ray",
     groups: [{ key: "POV-Ray", defaultExpanded: false }],
     props: POVRAY_PROPS,
+  },
+  umbreon: {
+    id: "umbreon",
+    label: "Umbreon",
+    groups: [
+      { key: "Umbreon Quality", defaultExpanded: true },
+      { key: "Ambient Occlusion", defaultExpanded: false },
+      { key: "Shadows", defaultExpanded: false },
+      { key: "Edges", defaultExpanded: false },
+      { key: "Global Illumination", defaultExpanded: false },
+    ],
+    props: UMBREON_PROPS,
   },
 };
 
