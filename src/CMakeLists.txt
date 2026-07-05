@@ -210,10 +210,6 @@ if (NOT BUILD_MINIMUM_MODULES)
   add_subdirectory(modules/mdtools)
   add_subdirectory(modules/importers)
 
-  if (ENABLE_UMBREON)
-    add_subdirectory(modules/raytrace)
-  endif ()
-
   if (ENABLE_PYTHON_EMBED)
     add_subdirectory(pybr)
   endif ()
@@ -267,10 +263,6 @@ endif ()
 
 if (ENABLE_PYTHON_EMBED)
   list(APPEND CUEMOL2_LINK_LIBRARIES pybr)
-endif ()
-
-if (ENABLE_UMBREON)
-  list(APPEND CUEMOL2_LINK_LIBRARIES raytrace)
 endif ()
 
 if (${XMLRPC_FOUND})

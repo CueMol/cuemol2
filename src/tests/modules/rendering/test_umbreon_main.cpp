@@ -6,9 +6,8 @@
 
 // The umbreon export test drives a DisplayContext -> RendIntData, whose color
 // resolution touches qsys::StyleMgr, so qsys must be initialized with the
-// sysconfig path (an empty path makes qsys::init() return early). The build
-// smoke test does not need it but is unaffected.
-class RaytraceEnvironment : public ::testing::Environment {
+// sysconfig path (an empty path makes qsys::init() return early).
+class UmbreonExportEnvironment : public ::testing::Environment {
 public:
     void SetUp() override {
         qlib::init();
@@ -38,6 +37,6 @@ public:
 
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
-    ::testing::AddGlobalTestEnvironment(new RaytraceEnvironment());
+    ::testing::AddGlobalTestEnvironment(new UmbreonExportEnvironment());
     return RUN_ALL_TESTS();
 }
