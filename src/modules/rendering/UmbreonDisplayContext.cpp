@@ -255,6 +255,9 @@ struct UmbreonDisplayContext::Impl
   /// whether any section requested creases (gates the global crease extraction).
   bool anyEdges = false;
   bool anyCrease = false;
+  /// Representative stroke width (final px) for the global strokeEdges.thickness;
+  /// per-section widths live in groupEdgeStyle[*].cls[*].width.
+  float edgeThicknessPx = float(EDGE_THICKNESS_PX);
 #endif
 };
 
@@ -282,6 +285,7 @@ void UmbreonDisplayContext::startRender()
   m_pImpl->groupEdgeStyle.clear();
   m_pImpl->anyEdges = false;
   m_pImpl->anyCrease = false;
+  m_pImpl->edgeThicknessPx = float(EDGE_THICKNESS_PX);
 #endif
 }
 
@@ -385,6 +389,17 @@ void UmbreonDisplayContext::appendIntData()
         eg = float(pcol->fg());
         eb = float(pcol->fb());
       }
+      // Edge line width: getEdgeLineWidth() is a world-space radius (as POV /
+      // Lux use it); convert to the native stroke width in FINAL pixels via the
+      // line scale (world units per pixel, seeded by the exporter). Fall back to
+      // the default when the width is unset (< 0).
+      const double elw = getEdgeLineWidth();
+      const double lscale = getLineScale();
+      float widthPx = float(EDGE_THICKNESS_PX);
+      if (elw > 0.0 && lscale > 0.0)
+        widthPx = float(2.0 * elw / lscale);
+      if (widthPx < 1.0f)
+        widthPx = 1.0f;
       // The stroke pass maps silhouette -> Silhouette, border -> Object,
       // crease -> Crease styling slots (umbreon scene_setup parity).
       const int slots[3] = { int(umbreon::EdgeClass::Silhouette),
@@ -398,8 +413,11 @@ void UmbreonDisplayContext::appendIntData()
         cs.color[1] = eg;
         cs.color[2] = eb;
         cs.opacity = 1.0f;
-        cs.width = float(EDGE_THICKNESS_PX);
+        cs.width = widthPx;
       }
+      // Representative width for the global stroke thickness (last edge section
+      // wins); per-section cls.width above is what styles each group.
+      m_pImpl->edgeThicknessPx = widthPx;
       m_pImpl->anyEdges = true;
       if (bCrease)
         m_pImpl->anyCrease = true;
@@ -629,7 +647,9 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
     opt.strokeEdges.silhouette = true;
     opt.strokeEdges.border = true;
     opt.strokeEdges.crease = m_pImpl->anyCrease;
-    opt.strokeEdges.thickness = EDGE_THICKNESS_PX;
+    opt.strokeEdges.thickness = int(m_pImpl->edgeThicknessPx + 0.5f);
+    if (opt.strokeEdges.thickness < 1)
+      opt.strokeEdges.thickness = 1;
     // Outward contour offset (world units); CueMol's edge-rise knob.
     opt.strokeEdges.raise = float(m_dEdgeRise);
     opt.strokeEdges.color[0] = 0.0f;
