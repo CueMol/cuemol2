@@ -9,7 +9,7 @@
  *   - useCommandRegistrations   -- registers all CmdId handlers + Electron IPC bridge
  */
 
-import React, { useState, useCallback, useEffect, useMemo } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Allotment } from "allotment";
 import "allotment/dist/style.css";
 
@@ -32,11 +32,8 @@ import { IconContext } from "@phosphor-icons/react";
 import { useSceneTree } from "./hooks/useSceneTree";
 import { useSceneTreeController } from "./hooks/useSceneTreeController";
 import { useInspectorState } from "./hooks/useInspectorState";
-import { useRenderSettings } from "./hooks/useRenderSettings";
-import { useRenderJob, isRenderJobActive } from "./hooks/useRenderJob";
-import { RENDER_BACKEND_IDS } from "./data/renderBackends";
-import { RENDER_SIZE_PRESETS } from "./data/renderSettings";
-import type { RenderResult, RenderSource } from "./data/renderResult";
+import { isRenderJobActive } from "./hooks/useRenderJob";
+import { useRenderWindowBridge } from "./hooks/useRenderWindowBridge";
 import { useTabManager } from "./hooks/useTabManager";
 import { useCueMol } from "./hooks/useCueMol";
 import { useMolTabDispatch, useMolTabState } from "./hooks/useMolTab";
@@ -102,7 +99,6 @@ const App: React.FC = () => {
     inspectorInfo,
     handleShowGeneric,
     handleShowViewProps,
-    handleShowRenderSettings,
     handleShowAnimElement,
     handleClearAnimElement,
     handleCloseInspector,
@@ -150,11 +146,8 @@ const App: React.FC = () => {
     setAnimHeader(null);
   }, [handleCloseInspector]);
 
-  // Render Settings editing state (non-persistent) for the inspector
-  // `renderSettings` target.
-  const renderSettings = useRenderSettings();
-
   // Persistent render binary paths (POV-Ray / blendpng) from SettingsPane.
+  // Attached to render jobs started via the Rendering-window bridge.
   const { binaries: renderBinaries } = useRenderConfig();
 
   // --- CueMol core / tabs ---
@@ -199,7 +192,6 @@ const App: React.FC = () => {
     openSettingsTab,
     addMolViewTab,
     updateMolViewTabTitle,
-    addRenderResultTab,
     handleCloseTab,
     handleReorderTabs,
   } = useTabManager({ onMolViewClose: handleMolViewClose, confirmCloseTab });
@@ -219,8 +211,8 @@ const App: React.FC = () => {
 
   // Keep the active scene/view bound to the active CONTENT tab: activate the
   // worker view for a molview tab, or clear the active molview when a
-  // non-molview tab (Settings / render result / welcome) is shown, so the
-  // Explorer / Inspector / File Open all follow the visible tab and treat a
+  // non-molview tab (Settings / welcome) is shown, so the Explorer /
+  // Inspector / File Open all follow the visible tab and treat a
   // non-molview tab as "no active scene".
   useEffect(() => {
     const tab = tabs.find((t) => t.id === activeTab);
@@ -247,143 +239,21 @@ const App: React.FC = () => {
     (window as unknown as Record<string, unknown>).__activeViewId = activeMolViewId;
   }, [cm, activeMolViewId]);
 
-  // --- Render: job lifecycle + Render Result tab ---
+  // --- Render: Rendering-window bridge ---
 
-  // Render job for the BottomPanel Render tab. On completion the worker
-  // sends the rendered image; `addRenderResultTab` opens (or overwrites)
-  // the source scene's result tab.
-  const renderJob = useRenderJob({ cm, onComplete: addRenderResultTab });
-
-  /**
-   * Start a render from the current Render Settings (Start button / F12).
-   * Resolves the target from the active content tab: a molview tab renders its
-   * own scene/view; a Render Result tab renders the scene it depicts (its
-   * source), so re-rendering from a result tab still works now that the active
-   * scene follows the visible tab. Other tabs (Settings / welcome) have no
-   * scene to render.
-   */
-  const handleRenderStart = useCallback(() => {
-    const activeTabData = tabs.find((t) => t.id === activeTab);
-    let source: RenderSource | null = null;
-    if (
-      activeTabData?.type === 'renderResult' &&
-      activeTabData.renderResult?.sourceViewId !== undefined
-    ) {
-      const rr = activeTabData.renderResult;
-      source = {
-        sceneId: rr.sourceSceneId,
-        sceneName: rr.sourceSceneName,
-        viewId: rr.sourceViewId,
-      };
-    } else {
-      const info = getActiveSceneInfo();
-      if (info) {
-        source = {
-          sceneId: info.scene_uid,
-          sceneName: scene.tree?.name ?? `Scene ${info.scene_uid}`,
-          viewId: info.view_id,
-        };
-      }
-    }
-    if (!source) return;
-    void renderJob.start({
-      sceneId: source.sceneId,
-      viewId: source.viewId,
-      snapshot: renderSettings.getSnapshot(),
-      source,
-      binaries: renderBinaries,
-    });
-  }, [tabs, activeTab, getActiveSceneInfo, scene.tree, renderJob, renderSettings, renderBinaries]);
-
-  /**
-   * Whether the active tab can be rendered now. Mirrors the source resolution
-   * in handleRenderStart so the Render tab's Start button is enabled exactly
-   * when a render would actually run: a molview tab, or a Render Result tab that
-   * still knows its source view. Settings / welcome tabs have no scene, so the
-   * button is disabled rather than silently doing nothing.
-   */
-  const canRender = useMemo(() => {
-    const activeTabData = tabs.find((t) => t.id === activeTab);
-    if (activeTabData?.type === 'renderResult') {
-      return activeTabData.renderResult?.sourceViewId !== undefined;
-    }
-    return activeMolViewId !== undefined;
-  }, [tabs, activeTab, activeMolViewId]);
-
-  /**
-   * Scene id whose Render Settings the gear should open: a molview tab's own
-   * scene, or a render-result tab's source scene. On a render-result tab
-   * activeSceneId is undefined (no active molview), so handleShowRenderSettings
-   * needs this explicit id -- otherwise the gear silently does nothing.
-   */
-  const renderSourceSceneId = useMemo(() => {
-    const activeTabData = tabs.find((t) => t.id === activeTab);
-    if (activeTabData?.type === 'renderResult') {
-      return activeTabData.renderResult?.sourceSceneId;
-    }
-    return activeSceneId;
-  }, [tabs, activeTab, activeSceneId]);
-
-  const handleOpenRenderSettings = useCallback(
-    () => handleShowRenderSettings(renderSourceSceneId),
-    [handleShowRenderSettings, renderSourceSceneId],
-  );
-
-  /** Re-render from a result tab's snapshot (also restores it into the editor). */
-  const handleReRender = useCallback(
-    (result: RenderResult) => {
-      renderSettings.restore(result.settingsSnapshot);
-      void renderJob.start({
-        sceneId: result.sourceSceneId,
-        viewId: result.sourceViewId,
-        snapshot: result.settingsSnapshot,
-        source: {
-          sceneId: result.sourceSceneId,
-          sceneName: result.sourceSceneName,
-          viewId: result.sourceViewId,
-        },
-        binaries: renderBinaries,
-      });
-    },
-    [renderSettings, renderJob, renderBinaries],
-  );
-
-  /** Switch to a result tab's source scene (its molview tab). */
-  const handleShowSourceScene = useCallback(
-    (result: RenderResult) => {
-      if (result.sourceViewId === undefined) return;
-      const tab = tabs.find(
-        (t) => t.type === "molview" && t.viewId === result.sourceViewId,
-      );
-      if (tab) setActiveTab(tab.id);
-    },
-    [tabs, setActiveTab],
-  );
-
-  /**
-   * Apply an image-size preset from the Render tab. The "Current view"
-   * preset is resolved from the live molview canvas pixel size.
-   */
-  const handleApplyRenderPreset = useCallback(
-    (label: string) => {
-      const preset = RENDER_SIZE_PRESETS.find((p) => p.label === label);
-      if (preset?.dynamic) {
-        const canvas = document.querySelector("canvas");
-        if (canvas) {
-          const rect = canvas.getBoundingClientRect();
-          const dpr = window.devicePixelRatio || 1;
-          const width = Math.round(rect.width * dpr);
-          const height = Math.round(rect.height * dpr);
-          if (width > 0 && height > 0) {
-            renderSettings.applyPreset(label, { width, height });
-            return;
-          }
-        }
-      }
-      renderSettings.applyPreset(label);
-    },
-    [renderSettings],
-  );
+  // All render UI lives in the modeless Rendering window; this bridge owns
+  // the job lifecycle (the CueMol worker exists only in this renderer),
+  // executes commands relayed from that window, and pushes job/result
+  // state back. The returned job feeds the StatusBar progress line.
+  const renderBridge = useRenderWindowBridge({
+    cm,
+    activeMolViewId,
+    sceneName: scene.tree?.name ?? null,
+    getActiveSceneInfo,
+    tabs,
+    setActiveTab,
+    binaries: renderBinaries,
+  });
 
   // --- Scene-tree wiring (selection, handlers, ctxmenu, inline rename) ---
   // Aggregated into useSceneTreeController so App no longer destructures
@@ -438,7 +308,6 @@ const App: React.FC = () => {
     onCenterMarkChanged,
     onBgColorChanged,
     showViewProperty: handleShowViewProps,
-    showRenderSettings: handleShowRenderSettings,
     newScene,
   });
 
@@ -483,7 +352,8 @@ const App: React.FC = () => {
   const settingsActive = tabs.find((t) => t.id === activeTab)?.type === "settings";
 
   // StatusBar: a running render takes precedence over tool-hover messages.
-  const activeRenderJob = isRenderJobActive(renderJob.job) ? renderJob.job : null;
+  // The job runs in this window even while the Rendering window is closed.
+  const activeRenderJob = isRenderJobActive(renderBridge.job) ? renderBridge.job : null;
   const statusBarMessage = activeRenderJob
     ? `Rendering… ${activeRenderJob.progress}%`
     : statusMessage;
@@ -574,9 +444,6 @@ const App: React.FC = () => {
                             activeTool={activeTool}
                             onSelectTool={setActiveTool}
                             onStatusMessage={setStatusMessage}
-                            onReRender={handleReRender}
-                            onShowSourceScene={handleShowSourceScene}
-                            onOpenRenderSettings={handleOpenRenderSettings}
                           />
                         </Allotment.Pane>
                         <Allotment.Pane minSize={100} preferredSize={200} snap>
@@ -584,13 +451,6 @@ const App: React.FC = () => {
                             cm={cm}
                             activeSceneId={activeSceneId}
                             activeMolViewId={activeMolViewId}
-                            renderJob={renderJob.job}
-                            renderCanStart={canRender}
-                            renderPreset={renderSettings.preset}
-                            onRenderStart={handleRenderStart}
-                            onRenderCancel={renderJob.cancel}
-                            onRenderApplyPreset={handleApplyRenderPreset}
-                            onOpenRenderSettings={handleOpenRenderSettings}
                             onInspectAnimElement={handleInspectAnimElement}
                           />
                         </Allotment.Pane>
@@ -620,14 +480,6 @@ const App: React.FC = () => {
                         }
                         genericEntries={genericEntries}
                         genericLoading={genericLoading}
-                        renderSettings={{
-                          backend: renderSettings.backend,
-                          backendIds: RENDER_BACKEND_IDS,
-                          commonProps: renderSettings.commonProps,
-                          backendProps: renderSettings.backendProps,
-                          onBackendChange: renderSettings.setBackend,
-                          onChange: renderSettings.handleChange,
-                        }}
                         onGenericSet={handleGenericSet}
                         onGenericSetMany={handleSetMany}
                         onGenericReset={handleGenericReset}

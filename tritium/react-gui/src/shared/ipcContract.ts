@@ -24,9 +24,12 @@ import type {
   NaviCtxAction,
   NaviCtxMenuPayload,
   RecentFileEntry,
+  RenderWindowCommand,
+  RenderWindowStateUpdate,
   SceneCtxAction,
   SceneCtxMenuPayload,
   UiState,
+  ViewSizePx,
 } from './ipcTypes'
 
 export interface InvokeChannels {
@@ -76,6 +79,12 @@ export interface InvokeChannels {
   [IPC.RECENT_CLEAR]:      { req: void;                  res: void }
   [IPC.MENU_INVOKE_ROLE]:  { req: string;                res: void }
   [IPC.WINDOW_CLOSE_PROCEED]: { req: { proceed: boolean }; res: void }
+  // Rendering window relay (see ipcChannels.ts for direction of each leg)
+  [IPC.RENDER_WINDOW_OPEN]:    { req: void;                    res: void }
+  [IPC.RENDER_WINDOW_COMMAND]: { req: RenderWindowCommand;     res: void }
+  [IPC.RENDER_WINDOW_STATE]:   { req: RenderWindowStateUpdate; res: void }
+  [IPC.RENDER_VIEW_SIZE_GET]:  { req: void;                    res: ViewSizePx | null }
+  [IPC.RENDER_VIEW_SIZE_REPLY]: { req: { reqId: number; size: ViewSizePx | null }; res: void }
   [IPC.NAVI_CTX_SHOW]:     { req: NaviCtxMenuPayload;    res: NaviCtxAction | null }
   [IPC.SCENE_CTX_SHOW]:    { req: SceneCtxMenuPayload;   res: SceneCtxAction | null }
   [IPC.CRASH_REPORT]:      { req: CrashReport;           res: void }
@@ -102,6 +111,10 @@ export interface PushChannels {
   [IPC.WINDOW_CLOSE_REQUEST]: void
   [IPC.MENU_OPEN_RECENT]:  RecentFileEntry
   [IPC.RECENT_UPDATED]:    RecentFileEntry[]
+  // Rendering window relay
+  [IPC.RENDER_WINDOW_EXEC]:       RenderWindowCommand
+  [IPC.RENDER_WINDOW_STATE_PUSH]: RenderWindowStateUpdate
+  [IPC.RENDER_VIEW_SIZE_REQUEST]: { reqId: number }
 }
 
 export type InvokeChannel = keyof InvokeChannels

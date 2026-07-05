@@ -17,6 +17,7 @@
 @import "./styles/_config-pane.css";
 @import "./styles/_content-area.css";
 @import "./styles/_log-panel.css";
+@import "./styles/_render-window.css";
 @import "./styles/_sequence-panel.css";
 @import "./styles/_animation-panel.css";
 @import "./styles/_status-bar.css";

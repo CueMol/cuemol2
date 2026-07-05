@@ -1,12 +1,13 @@
 /**
  * @file components/panels/RenderPanel.tsx
- * @description BottomPanel "Render" tab -- render execution controls,
- * progress and log.
+ * @description Render execution controls, progress and log (hosted in the
+ * Rendering window's bottom pane).
  *
- * Detailed settings live in the Inspector (`renderSettings` target); this
- * panel owns the state-changing operations (Start / Stop), a quick
- * image-size preset, a shortcut to the Inspector settings, the progress
- * bar and the render log. Phase 2/3 is mock-driven (see `useRenderJob`).
+ * Detailed settings live in the adjacent Render Settings pane; this panel
+ * owns the state-changing operations (Start / Stop), a quick image-size
+ * preset, the progress bar and the render log. The optional
+ * `onOpenSettings` shortcut is for hosts where the settings editor is not
+ * permanently visible.
  */
 
 import React from "react";
@@ -35,8 +36,11 @@ interface RenderPanelProps {
   onCancel: () => void;
   /** Apply an image-size preset. */
   onApplyPreset: (label: string) => void;
-  /** Open the Render Settings editor in the Inspector. */
-  onOpenSettings: () => void;
+  /**
+   * Open the Render Settings editor. Omit when the settings editor is
+   * permanently visible next to this panel -- the button is then hidden.
+   */
+  onOpenSettings?: () => void;
 }
 
 /** Progress-bar intent for the job's status. */
@@ -102,13 +106,15 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
           </span>
         </span>
 
-        <FormButton
-          minimal
-          icon={<AppIcon name="ui.settings" aria-hidden />}
-          text="Render Settings"
-          onClick={onOpenSettings}
-          disabled={!renderable}
-        />
+        {onOpenSettings && (
+          <FormButton
+            minimal
+            icon={<AppIcon name="ui.settings" aria-hidden />}
+            text="Render Settings"
+            onClick={onOpenSettings}
+            disabled={!renderable}
+          />
+        )}
 
         {job && (
           <span className="render-panel-status">

@@ -280,55 +280,6 @@ describe('useInspectorState', () => {
         h.unmount();
     });
 
-    it('handleShowRenderSettings targets render settings without a worker call', async () => {
-        const h = mountHook(cm, makeTree(1, 5));
-        act(() => {
-            h.result.handleShowRenderSettings();
-        });
-        await settle();
-        expect(h.result.inspectorTarget).toEqual({
-            kind: 'renderSettings', sceneId: 1,
-        });
-        expect(h.result.inspectorOpen).toBe(true);
-        expect(h.result.inspectorCategory).toBe('Render Settings');
-        // Render Settings is not backed by the C++ property bridge.
-        expect(cm.invokeService).not.toHaveBeenCalled();
-        h.unmount();
-    });
-
-    it('per-scene memory restores a render-settings target too', async () => {
-        const h = mountHook(cm, makeTree(1, 5));
-        act(() => {
-            h.result.handleShowRenderSettings();
-        });
-        await settle();
-
-        await h.setSceneTree(makeTree(2, 9));
-        expect(h.result.inspectorTarget).toBeNull();
-
-        await h.setSceneTree(makeTree(1, 5));
-        expect(h.result.inspectorTarget).toEqual({
-            kind: 'renderSettings', sceneId: 1,
-        });
-        h.unmount();
-    });
-
-    it('handleShowRenderSettings(sceneId) targets render settings with no active scene tree', async () => {
-        // Render-result tab: no molview is active, so sceneTree / activeSceneId
-        // are undefined. The gear must still open the result's source scene's
-        // render settings by passing the id explicitly (regression: it used to
-        // resolve only from sceneTree and silently no-op here).
-        const h = mountHook(cm, makeTree(1, 5));
-        await h.closeScene();
-        expect(h.result.inspectorTarget).toBeNull();
-        act(() => {
-            h.result.handleShowRenderSettings(7);
-        });
-        await settle();
-        expect(h.result.inspectorTarget).toEqual({ kind: 'renderSettings', sceneId: 7 });
-        expect(h.result.inspectorOpen).toBe(true);
-        h.unmount();
-    });
 });
 
 describe('useInspectorState - animElement target', () => {

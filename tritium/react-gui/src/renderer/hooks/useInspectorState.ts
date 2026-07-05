@@ -36,15 +36,12 @@ export interface InspectorInfo {
  *
  * - `node` -- a scene-tree node or the View, edited through the generic
  *   C++ property bridge (`getGenericProps` / `setGenericProp`).
- * - `renderSettings` -- the scene's render output settings; not a scene-tree
- *   node and not backed by the property bridge (see `RenderSettingsEditor`).
  * - `animElement` -- an animation element selected in the AnimationPanel; keyed
  *   by stable `uid` and edited by `AnimElementInspector` via its own services
- *   (not the property bridge), the same bespoke-branch pattern as renderSettings.
+ *   (not the property bridge).
  */
 export type InspectorTarget =
   | { kind: "node"; sceneId: number; nodeId: number; nodeType: PropTargetType }
-  | { kind: "renderSettings"; sceneId: number }
   | { kind: "animElement"; sceneId: number; uid: number };
 
 /** Header category label for each scene-tree node type. */
@@ -146,10 +143,10 @@ export function useInspectorState({
       setInspectorInfo({ name: "", type: "" });
       return;
     }
-    // Render Settings / anim element are not property-bridge nodes -- each has
-    // its own editor that self-fetches. Blank the generic state here (the anim
-    // header name/type is supplied separately by AnimElementInspector).
-    if (target.kind === "renderSettings" || target.kind === "animElement") {
+    // Anim elements are not property-bridge nodes -- the AnimElementInspector
+    // self-fetches. Blank the generic state here (the anim header name/type
+    // is supplied separately by AnimElementInspector).
+    if (target.kind === "animElement") {
       setGenericEntries([]);
       setInspectorInfo({ name: "", type: "" });
       return;
@@ -215,30 +212,6 @@ export function useInspectorState({
   );
 
   /**
-   * Open the inspector on a scene's Render Settings (Toolbar Render button /
-   * F12, or the Render panel / Render Result gear). Render Settings belongs to
-   * the scene as a whole and has no scene-tree node.
-   *
-   * @param sceneId - Explicit scene to target. Required on a render-result tab,
-   *   where no molview is active so `sceneTree` is null: the caller passes the
-   *   result's source scene id. Falls back to the active scene tree's id when
-   *   omitted (Toolbar / F12 on a molview tab).
-   */
-  const handleShowRenderSettings = useCallback(
-    (sceneId?: number) => {
-      const sid =
-        typeof sceneId === "number"
-          ? sceneId
-          : sceneTree
-            ? Number(sceneTree.id)
-            : undefined;
-      if (sid === undefined) return;
-      applyTarget({ kind: "renderSettings", sceneId: sid });
-    },
-    [sceneTree, applyTarget],
-  );
-
-  /**
    * Open the inspector for an animation element selected in the AnimationPanel.
    * Keyed by stable `uid`; the AnimElementInspector self-fetches its data.
    */
@@ -252,7 +225,7 @@ export function useInspectorState({
   /**
    * Clear an animElement target for a specific scene (deselect / element gone).
    * Scene-scoped + kind-guarded so a stale anim clear never drops a coexisting
-   * node / renderSettings target (or another scene's target).
+   * node target (or another scene's target).
    */
   const handleClearAnimElement = useCallback((sceneId: number) => {
     setInspectorTarget((t) =>
@@ -416,7 +389,7 @@ export function useInspectorState({
   useCueMolEventListener({
     cm,
     // Only node targets sync via SEM_PROPCHG; anim targets own their SEM_ANIM
-    // subscription (in AnimElementInspector), and renderSettings has no bridge.
+    // subscription (in AnimElementInspector).
     enabled: inspectorOpen && inspectorTarget?.kind === "node",
     category: "",
     srcMask: PROPCHG_SRC_MASK,
@@ -431,7 +404,6 @@ export function useInspectorState({
   // Conceptual category of the current target, shown as a header badge.
   const inspectorCategory = useMemo(() => {
     if (!inspectorTarget) return "";
-    if (inspectorTarget.kind === "renderSettings") return "Render Settings";
     if (inspectorTarget.kind === "animElement") return "Animation";
     return NODE_CATEGORY_LABELS[inspectorTarget.nodeType] ?? "Node";
   }, [inspectorTarget]);
@@ -445,7 +417,6 @@ export function useInspectorState({
     inspectorInfo,
     handleShowGeneric,
     handleShowViewProps,
-    handleShowRenderSettings,
     handleShowAnimElement,
     handleClearAnimElement,
     handleCloseInspector,

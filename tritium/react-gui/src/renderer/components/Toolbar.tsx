@@ -39,7 +39,7 @@ const TOOLBAR_ITEMS: ToolbarItem[] = [
   { kind: "divider", id: "d3" },
   { kind: "cmd", id: "get-pdb", icon: "toolbar.getPdb", text: "Get PDB", cmd: CmdId.UiGetPdbDialog },
   { kind: "divider", id: "d4" },
-  { kind: "cmd", id: "render", icon: "toolbar.render", text: "Render", cmd: CmdId.UiRenderSettings, requiresScene: true },
+  { kind: "cmd", id: "render", icon: "toolbar.render", text: "Render", cmd: CmdId.UiRenderWindow, requiresScene: true },
   { kind: "divider", id: "d5" },
   { kind: "undo", id: "undo" },
   { kind: "redo", id: "redo" },
