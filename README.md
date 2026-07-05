@@ -1,4 +1,5 @@
-![Build](https://github.com/CueMol/cuemol2/workflows/Build/badge.svg)
+[![Build and release](https://github.com/CueMol/cuemol2/actions/workflows/build2.yml/badge.svg)](https://github.com/CueMol/cuemol2/actions/workflows/build2.yml)
+[![Build (Linux)](https://github.com/CueMol/cuemol2/actions/workflows/build_linux.yml/badge.svg)](https://github.com/CueMol/cuemol2/actions/workflows/build_linux.yml)
 
 [CueMol](http://www.cuemol.org/) - Molecular Visualization Framework
 ====================================================================
