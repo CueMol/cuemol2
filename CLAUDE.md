@@ -44,7 +44,8 @@ src/
 
 ### C++ Rules
 
-- Follow `.clang-format`; use C++17; replace Boost where possible
+- Follow `.clang-format`; use C++17
+- Migrate Boost -> `std` **only when `std` has standardized the equivalent** (e.g. `boost::filesystem`->`std::filesystem`, `boost::optional`->`std::optional`). Where `std` has no equivalent (e.g. Boost.Process, Boost.Interprocess), Boost is the right tool -- do not hand-roll or avoid it
 - Headers in `src/qsys/` must use `""` not `<>` for intra-module includes
 - gtest: write tests before refactoring; `SetUp()` must call `qsys::init(...)` with `sysconfig.xml` path (pre-install: `<topdir>/data/sysconfig.xml`)
 
