@@ -76,27 +76,14 @@ namespace render {
                 std::vector<unsigned char> &outRGBA);
 
     ////////////////////////////////////////////////////////////
-    // Edge / silhouette line configuration (mirrors PovDisplayContext)
-
-    /// Edge corner types
-    enum {
-      ECT_NONE = 0,
-      ECT_JOINT = 1,
-      ECT_ALL = 2
-    };
+    // Edge / silhouette line configuration (mirrors PovDisplayContext).
+    // Edge lines are rendered by umbreon's native screen-space stroke pass
+    // (RenderOptions::strokeEdges), configured from these settings in
+    // appendIntData / render() -- no CueMol-side outline geometry is built.
 
     void enableEdgeLines(bool b) { m_bEnableEdgeLines = b; }
     void setCreaseLimit(double d) { m_dCreaseLimit = d; }
     void setEdgeRise(double d) { m_dEdgeRise = d; }
-
-    /// Edge-emission hooks driven by RendIntData's silhouette extraction.
-    /// They translate edges/corners into umbreon outline primitives; the
-    /// PrintStream argument (used by the POV backend) is ignored here.
-    virtual void writeEdgeLineImpl(PrintStream &ips, int xa1, int xa2,
-                                   const Vector4D &x1, const Vector4D &n1,
-                                   const Vector4D &x2, const Vector4D &n2);
-    virtual void writePointImpl(PrintStream &ips, const Vector4D &v1,
-                                const Vector4D &n1, int alpha);
 
   private:
     struct Impl;
@@ -108,8 +95,6 @@ namespace render {
     double m_dCreaseLimit;
     /// Edge line rise from the surface (along the vertex normal)
     double m_dEdgeRise;
-    /// Edge corner type (ECT_*)
-    int m_nEdgeCornerType;
 
     /// Build the umbreon camera from the seeded view state (eye-space:
     /// camera at (0,0,viewDist) looking down -Z).
@@ -123,11 +108,6 @@ namespace render {
     /// and caching the result. Empty name maps to "default". Returns 0 when
     /// built without umbreon.
     int materialIndexFor(const LString &matName);
-
-    /// Run the silhouette/edge extraction over the current section mesh and
-    /// emit outline primitives via writeEdgeLineImpl/writePointImpl. Mirrors
-    /// PovDisplayContext::writeSilEdges2 without the POV-SDL declares.
-    void appendEdges();
   };
 
 }

@@ -40,6 +40,10 @@ namespace {
   // literals are sRGB-decoded). To match that reference, pass the CueMol color
   // through unchanged -- do NOT sRGB-decode it.
 
+  /// Native stroke-edge line width, in final-resolution pixels (umbreon
+  /// StrokeEdgeOptions::thickness / EdgeClassStyle::width).
+  const int EDGE_THICKNESS_PX = 2;
+
   inline umbreon::Vec3 toVec3(const Vector4D &v)
   {
     return umbreon::Vec3(float(v.x()), float(v.y()), float(v.z()));
@@ -217,16 +221,6 @@ namespace {
                          float(rgba.w()));
   }
 
-  // Position raised off the surface along its normal (POV edge_line uses
-  // `v + raise*n` to lift the outline cylinder/sphere off the geometry).
-  inline umbreon::Vec3 riseToVec3(const Vector4D &v, const Vector4D &n,
-                                  double raise)
-  {
-    return umbreon::Vec3(float(v.x() + n.x() * raise),
-                         float(v.y() + n.y() * raise),
-                         float(v.z() + n.z() * raise));
-  }
-
 }  // anonymous namespace
 #endif  // HAVE_UMBREON
 
@@ -252,13 +246,21 @@ struct UmbreonDisplayContext::Impl
   int nextGroup = 0;
   int curGroup = 0;
   std::vector<umbreon::GroupBlend> groupBlend;
+
+  /// Per-section (per group) native stroke-edge style for umbreon's screen-space
+  /// edge pass (RenderOptions::strokeEdges + Scene::groupEdgeStyle). Indexed by
+  /// group id; a section without edge lines gets an all-disabled EdgeStyle.
+  std::vector<umbreon::EdgeStyle> groupEdgeStyle;
+  /// Whether any section enabled edge lines (gates strokeEdges.enable) and
+  /// whether any section requested creases (gates the global crease extraction).
+  bool anyEdges = false;
+  bool anyCrease = false;
 #endif
 };
 
 UmbreonDisplayContext::UmbreonDisplayContext()
      : super_t(), m_pImpl(new Impl()),
-       m_bEnableEdgeLines(true), m_dCreaseLimit(-1.0), m_dEdgeRise(0.5),
-       m_nEdgeCornerType(ECT_ALL)
+       m_bEnableEdgeLines(true), m_dCreaseLimit(-1.0), m_dEdgeRise(0.5)
 {
 }
 
@@ -277,6 +279,9 @@ void UmbreonDisplayContext::startRender()
   m_pImpl->nextGroup = 0;
   m_pImpl->curGroup = 0;
   m_pImpl->groupBlend.clear();
+  m_pImpl->groupEdgeStyle.clear();
+  m_pImpl->anyEdges = false;
+  m_pImpl->anyCrease = false;
 #endif
 }
 
@@ -358,16 +363,50 @@ void UmbreonDisplayContext::appendIntData()
   pdat->convDots();
   pdat->convLines(true);
 
-  const int elt = getEdgeLineType();
-  const bool bEdges = m_bEnableEdgeLines &&
-                      (elt == ELT_EDGES || elt == ELT_SILHOUETTE);
+  // Native screen-space edge lines (umbreon strokeEdges). Record which edge
+  // natures this section draws (silhouette / border / crease) and its edge
+  // color into this group's EdgeStyle; the strokeEdges pass configured in
+  // render() rasterizes them in screen space. Analytic spheres/cylinders are
+  // kept (emitted below, not folded into the mesh) so umbreon outlines
+  // ball-and-stick natively -- no CueMol-side outline geometry is built.
+  {
+    const int elt = getEdgeLineType();
+    const bool bSil = m_bEnableEdgeLines &&
+                      (elt == ELT_SILHOUETTE || elt == ELT_EDGES);
+    const bool bBorder = m_bEnableEdgeLines && (elt == ELT_EDGES);
+    const bool bCrease = bBorder && (m_dCreaseLimit > 0.0);
 
-  if (bEdges) {
-    // POV-style: fold spheres/cylinders into the mesh, so both the shaded
-    // surface and the derived silhouette cover them. (Analytic quadrics are
-    // not kept while edge lines are on.)
-    pdat->convSpheres();
-    pdat->convCylinders();
+    umbreon::EdgeStyle es;  // every edge class disabled by default
+    if (bSil || bBorder || bCrease) {
+      float er = 0.0f, eg = 0.0f, eb = 0.0f;
+      gfx::ColorPtr pcol = getEdgeLineColor();
+      if (!pcol.isnull()) {
+        er = float(pcol->fr());
+        eg = float(pcol->fg());
+        eb = float(pcol->fb());
+      }
+      // The stroke pass maps silhouette -> Silhouette, border -> Object,
+      // crease -> Crease styling slots (umbreon scene_setup parity).
+      const int slots[3] = { int(umbreon::EdgeClass::Silhouette),
+                             int(umbreon::EdgeClass::Object),
+                             int(umbreon::EdgeClass::Crease) };
+      const bool on[3] = { bSil, bBorder, bCrease };
+      for (int k = 0; k < 3; ++k) {
+        umbreon::EdgeClassStyle &cs = es.cls[slots[k]];
+        cs.enabled = on[k];
+        cs.color[0] = er;
+        cs.color[1] = eg;
+        cs.color[2] = eb;
+        cs.opacity = 1.0f;
+        cs.width = float(EDGE_THICKNESS_PX);
+      }
+      m_pImpl->anyEdges = true;
+      if (bCrease)
+        m_pImpl->anyCrease = true;
+    }
+    if (m_pImpl->groupEdgeStyle.size() <= group)
+      m_pImpl->groupEdgeStyle.resize(std::size_t(group) + 1);
+    m_pImpl->groupEdgeStyle[group] = es;
   }
 
   // --- triangle mesh (de-indexed: 3 corners per triangle) ---
@@ -406,12 +445,6 @@ void UmbreonDisplayContext::appendIntData()
     }
     if (pClipped != NULL)
       delete pClipped;
-  }
-
-  if (bEdges) {
-    // Derive and emit silhouette/edge outline primitives from the mesh.
-    appendEdges();
-    return;
   }
 
   // --- analytic spheres (shaded, not flat outline) ---
@@ -468,113 +501,6 @@ void UmbreonDisplayContext::appendIntData()
     c.open = !p->bcap;
     scene.cylinders.push_back(c);
   }
-#endif  // HAVE_UMBREON
-}
-
-void UmbreonDisplayContext::appendEdges()
-{
-#ifdef HAVE_UMBREON
-  RendIntData *pdat = getIntData();
-  if (pdat == NULL)
-    return;
-  if (pdat->m_mesh.getVertexSize() <= 0 || pdat->m_mesh.getFaceSize() <= 0)
-    return;
-
-  // The edge-emission hooks (writeEdgeLineImpl/writePointImpl) push umbreon
-  // outline primitives and ignore the stream, so a discard stream is fine.
-  qlib::StrOutStream nullout;
-  qlib::PrintStream ips(nullout);
-
-  const int elt = getEdgeLineType();
-  pdat->setSilhMode(elt == ELT_SILHOUETTE);
-
-  pdat->calcSilEdgeLines(m_dViewDist, m_dCreaseLimit);
-
-  if (elt == ELT_SILHOUETTE) {
-    pdat->buildAABBTree(-1);
-    pdat->calcSilhIntrsec(getEdgeLineWidth() / 2.0);
-    pdat->writeSilhLines(ips);
-  }
-  else {
-    // edge mode: intersections only for cyl/sph meshes
-    pdat->buildAABBTree(MFMOD_MESH);
-    pdat->calcEdgeIntrsec();
-    pdat->writeEdgeLines(ips);
-  }
-
-  if (m_nEdgeCornerType != ECT_NONE)
-    pdat->writeCornerPoints(ips);
-
-  pdat->cleanupSilEdgeLines();
-#endif  // HAVE_UMBREON
-}
-
-void UmbreonDisplayContext::writeEdgeLineImpl(PrintStream &, int xa1, int xa2,
-                                              const Vector4D &x1,
-                                              const Vector4D &n1,
-                                              const Vector4D &x2,
-                                              const Vector4D &n2)
-{
-#ifdef HAVE_UMBREON
-  const double w = getEdgeLineWidth();
-  const double raise = m_dEdgeRise * (w * 0.5);
-
-  // edge line color (passed through as the linear working color); default black
-  double er = 0.0, eg = 0.0, eb = 0.0;
-  gfx::ColorPtr pcol = getEdgeLineColor();
-  if (!pcol.isnull()) {
-    er = pcol->fr();
-    eg = pcol->fg();
-    eb = pcol->fb();
-  }
-  const float lr = float(er), lg = float(eg), lb = float(eb);
-
-  umbreon::Cylinder c;
-  c.p0 = riseToVec3(x1, n1, raise);
-  c.p1 = riseToVec3(x2, n2, raise);
-  c.radius = float(w);
-  c.material = umbreon::Material::flatOutline();
-  c.open = true;
-  if (xa1 == 255 && xa2 == 255) {
-    c.color = umbreon::Vec4(lr, lg, lb, 1.0f);
-    c.opacity1 = -1.0f;
-  }
-  else {
-    // edge_line2: per-endpoint opacity gradient
-    c.color = umbreon::Vec4(lr, lg, lb, float(1.0 - xa1 / 255.0));
-    c.opacity1 = float(1.0 - xa2 / 255.0);
-  }
-  c.group = static_cast<std::uint16_t>(m_pImpl->curGroup);
-  m_pImpl->scene.cylinders.push_back(c);
-#endif  // HAVE_UMBREON
-}
-
-void UmbreonDisplayContext::writePointImpl(PrintStream &, const Vector4D &v1,
-                                           const Vector4D &n1, int alpha)
-{
-#ifdef HAVE_UMBREON
-  // POV omits junction dots for semi-transparent edges (avoids spotty seams).
-  if (alpha != 255)
-    return;
-
-  const double w = getEdgeLineWidth();
-  const double raise = m_dEdgeRise * (w * 0.5);
-
-  double er = 0.0, eg = 0.0, eb = 0.0;
-  gfx::ColorPtr pcol = getEdgeLineColor();
-  if (!pcol.isnull()) {
-    er = pcol->fr();
-    eg = pcol->fg();
-    eb = pcol->fb();
-  }
-
-  umbreon::Sphere s;
-  s.center = riseToVec3(v1, n1, raise);
-  s.radius = float(w);
-  s.material = umbreon::Material::flatOutline();
-  s.color = umbreon::Vec4(float(er), float(eg), float(eb), 1.0f);
-  s.group = static_cast<std::uint16_t>(m_pImpl->curGroup);
-  m_pImpl->scene.spheres.push_back(s);
 #endif  // HAVE_UMBREON
 }
 
@@ -692,6 +618,29 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
   opt.shadowSamples = (prm.shadowSamples > 0) ? prm.shadowSamples : 1;
   opt.lightRadius = float(prm.lightRadius);
   opt.transparentBackground = prm.transparentBackground;
+
+  // Native screen-space (Freestyle-style) edge lines. Enabled when any section
+  // requested edge lines; each section's natures + edge color live in
+  // scene.groupEdgeStyle (captured in appendIntData). The analytic silhouettes
+  // of spheres/cylinders are outlined too (strokeEdges.analytic defaults on), so
+  // ball-and-stick is edged without folding it into the mesh.
+  if (m_pImpl->anyEdges) {
+    opt.strokeEdges.enable = true;
+    opt.strokeEdges.silhouette = true;
+    opt.strokeEdges.border = true;
+    opt.strokeEdges.crease = m_pImpl->anyCrease;
+    opt.strokeEdges.thickness = EDGE_THICKNESS_PX;
+    // Outward contour offset (world units); CueMol's edge-rise knob.
+    opt.strokeEdges.raise = float(m_dEdgeRise);
+    opt.strokeEdges.color[0] = 0.0f;
+    opt.strokeEdges.color[1] = 0.0f;
+    opt.strokeEdges.color[2] = 0.0f;
+    // Cover every group id; sections with no edge lines keep an all-disabled
+    // EdgeStyle, so the stroke pass draws nothing for them.
+    if (m_pImpl->groupEdgeStyle.size() < std::size_t(m_pImpl->nextGroup))
+      m_pImpl->groupEdgeStyle.resize(std::size_t(m_pImpl->nextGroup));
+    scene.groupEdgeStyle = m_pImpl->groupEdgeStyle;
+  }
 
   MB_DPRINTLN("Umbreon> render %dx%d ss=%d ao=%d tris=%d",
               opt.width, opt.height, opt.supersample, opt.aoSamples,
