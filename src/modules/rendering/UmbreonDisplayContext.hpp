@@ -45,7 +45,7 @@ namespace render {
     /// on, the lighting is rebalanced to the POV radiosity split (energy moved
     /// into the GI-gathered ambient). giSamples = gather rays per pixel;
     /// giIntensity = indirect gain; giEnvIntensity = environment (sky)
-    /// multiplier; giDenoise runs the built-in a-trous denoiser on the result.
+    /// multiplier; giDenoise runs Intel OIDN on the indirect irradiance.
     bool giEnabled = false;
     int giSamples = 32;
     double giIntensity = 1.0;

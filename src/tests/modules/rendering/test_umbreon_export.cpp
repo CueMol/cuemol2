@@ -491,7 +491,7 @@ TEST(UmbreonExport, AmbientOcclusionAndShadowsAffectOutput)
     EXPECT_NE(base, enh);
 }
 
-// Smoke test for the pt1 path-traced GI integrator + built-in a-trous denoiser:
+// Smoke test for the pt1 path-traced GI integrator + Intel OIDN denoiser:
 // enabling GI must run without crashing, produce a lit frame, and (via the
 // radiosity lighting rebalance) differ from the local-shading render.
 TEST(UmbreonExport, GlobalIlluminationAffectsOutput)

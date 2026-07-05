@@ -82,7 +82,7 @@ namespace render {
     /// GI environment (sky) intensity multiplier
     double m_dGiEnvIntensity;
 
-    /// denoise the GI result with the built-in a-trous denoiser
+    /// denoise the GI indirect irradiance with the Intel OIDN denoiser
     bool m_bGiDenoise;
 
   public:

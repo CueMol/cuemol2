@@ -7,7 +7,9 @@
 # usage: run.sh <deplibs_dir> <umbreon_src_dir>
 #
 
-# Dependency versions (TBB_VER / EMBREE_VER) are defined in deplibs.env.
+# Dependency versions (TBB_VER / EMBREE_VER / OIDN_VER) are defined in deplibs.env.
+# OIDN comes from the deplibs bundle (static, CPU-only); UMBREON_WITH_OIDN=ON links
+# it PUBLIC into libumbreon so the OIDN denoiser backend is available to consumers.
 . "$(cd "$(dirname "$0")/.."; pwd)/deplibs.env"
 
 if [ -z "${1:-}" ] || [ -z "${2:-}" ]; then
@@ -39,6 +41,8 @@ cmake -G Ninja -S "$UMBREON_SRC" -B "$BUILD_DIR" \
       -DCMAKE_PREFIX_PATH="$BASEDIR" \
       -DTBB_DIR="$BASEDIR/tbb-$TBB_VER/lib/cmake/TBB" \
       -Dembree_DIR="$BASEDIR/embree-$EMBREE_VER/lib/cmake/embree-$EMBREE_VER" \
+      -DUMBREON_WITH_OIDN=ON \
+      -DOpenImageDenoise_DIR="$BASEDIR/oidn-$OIDN_VER/lib/cmake/OpenImageDenoise-$OIDN_VER" \
       -DCMAKE_INSTALL_PREFIX="$BASEDIR/umbreon" \
       $MSVC_OPT
 

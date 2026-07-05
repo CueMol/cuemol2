@@ -645,17 +645,17 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
 
   // Diffuse global illumination (pt1 path-traced integrator). Enabling GI sets
   // gi + giIntegrator=1 (the composited path; the irradiance-cache integrator
-  // does not composite yet). OIDN is optional and off in this umbreon build, so
-  // the built-in a-trous denoiser cleans the Monte-Carlo noise instead.
+  // does not composite yet). pt1Denoise runs Intel OIDN on the indirect
+  // irradiance (E) buffer BEFORE the albedo multiply -- direct lighting and
+  // albedo stay noise-free -- which needs umbreon built with UMBREON_WITH_OIDN
+  // (linked from the deplibs OIDN bundle; see src/cmake/umbreon.cmake).
   if (prm.giEnabled) {
     opt.gi = true;
     opt.giIntegrator = 1;
     opt.pt1Spp = (prm.giSamples > 0) ? prm.giSamples : 32;
     opt.giIntensity = float(prm.giIntensity);
     opt.giEnvIntensity = float(prm.giEnvIntensity);
-    opt.pt1Denoise = false;
-    if (prm.giDenoise)
-      opt.denoiser = 1;  // DenoiserBackend::AtrousBilateral (zero-dependency)
+    opt.pt1Denoise = prm.giDenoise;
   }
 
   // Native screen-space (Freestyle-style) edge lines. Enabled when any section
