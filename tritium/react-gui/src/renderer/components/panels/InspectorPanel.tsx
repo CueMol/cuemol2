@@ -18,7 +18,7 @@
  *
  * The inspector targets one of several context kinds. `node` targets (a
  * scene-tree node or the View) use the migrated UXP `generic-propdlg`
- * editor; the `renderSettings` target uses `RenderSettingsEditor`.
+ * editor; `animElement` targets use `AnimElementInspector`.
  *
  * @module InspectorPanel
  */
@@ -30,12 +30,9 @@ import { SegmentField } from "../../h3-kit/form";
 
 import { PropertiesTab } from "../inspector/PropertiesTab";
 import { GenericTab } from "../inspector/GenericTab";
-import { RenderSettingsEditor } from "../inspector/RenderSettingsEditor";
 import { AnimElementInspector } from "../inspector/AnimElementInspector";
 import { InspectorResetAllButton } from "../inspector/InspectorResetAllButton";
 import { modifiedKeys } from "../inspector/propModel";
-import type { PropDef } from "../../data/rendererProperties";
-import type { RenderBackendId } from "../../data/renderSettings";
 import type {
   GenericPropEntry,
   PropWriteOpts,
@@ -50,17 +47,7 @@ import { ColorPickerProvider } from "../../h3-kit/colorpicker/ColorPickerContext
 type InspectorMode = "properties" | "generic";
 
 /** Kind of context the inspector is currently editing. */
-export type InspectorTargetKind = "node" | "renderSettings" | "animElement";
-
-/** Props passed through to the Render Settings editor. */
-export interface RenderSettingsView {
-  backend: RenderBackendId;
-  backendIds: RenderBackendId[];
-  commonProps: PropDef[];
-  backendProps: PropDef[];
-  onBackendChange: (id: RenderBackendId) => void;
-  onChange: (key: string, value: string | number | boolean) => void;
-}
+export type InspectorTargetKind = "node" | "animElement";
 
 interface InspectorPanelProps {
   /** Whether something is currently being inspected. */
@@ -77,8 +64,6 @@ interface InspectorPanelProps {
   genericEntries: GenericPropEntry[];
   /** True while the Generic property list is being (re)fetched. */
   genericLoading: boolean;
-  /** Render Settings state, present only for the `renderSettings` target. */
-  renderSettings: RenderSettingsView | null;
   /** Called to write a Generic property value (live-apply). `opts` carries realtime-drag info. */
   onGenericSet: (
     key: string,
@@ -122,7 +107,6 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
   nodeType,
   genericEntries,
   genericLoading,
-  renderSettings,
   onGenericSet,
   onGenericSetMany,
   onGenericReset,
@@ -155,7 +139,6 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
     if (hasTarget) setMode(defaultMode);
   }, [hasTarget, nodeName, defaultMode]);
 
-  const isRenderSettings = targetKind === "renderSettings";
   const isAnimElement = targetKind === "animElement";
 
   return (
@@ -192,18 +175,6 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
 
       {!hasTarget ? (
         <div className="inspector-empty">No node selected.</div>
-      ) : isRenderSettings && renderSettings ? (
-        /* -- Render Settings target -- */
-        <div className="inspector-body">
-          <RenderSettingsEditor
-            backend={renderSettings.backend}
-            backendIds={renderSettings.backendIds}
-            commonProps={renderSettings.commonProps}
-            backendProps={renderSettings.backendProps}
-            onBackendChange={renderSettings.onBackendChange}
-            onChange={renderSettings.onChange}
-          />
-        </div>
       ) : isAnimElement ? (
         /* -- Animation element target (self-contained editor) -- */
         animElement && cm ? (

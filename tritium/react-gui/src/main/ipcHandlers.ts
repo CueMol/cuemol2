@@ -6,7 +6,7 @@
  * response shapes from `shared/ipcContract`.
  */
 
-import { ipcMain, app, dialog } from 'electron'
+import { ipcMain, app, dialog, nativeTheme } from 'electron'
 import type { BrowserWindow } from 'electron'
 import path from 'path'
 import fs from 'fs'
@@ -49,7 +49,7 @@ import {
  * `InvokeChannels` so adding a channel only requires adding a map entry plus a
  * handler call.
  */
-function handleInvoke<C extends InvokeChannel>(
+export function handleInvoke<C extends InvokeChannel>(
   channel: C,
   handler: (
     event: Electron.IpcMainInvokeEvent,
@@ -239,7 +239,12 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   })
 
   handleInvoke(IPC.UI_LOAD, () => loadUi())
-  handleInvoke(IPC.UI_SAVE, (_e, state) => saveUi(state))
+  handleInvoke(IPC.UI_SAVE, (_e, state) => {
+    saveUi(state)
+    // Keep the native window chrome (macOS titlebar hairline, overlay
+    // controls) aligned with the UI theme.
+    if (state.theme) nativeTheme.themeSource = state.theme
+  })
   handleInvoke(IPC.MENU_UPDATE_STATE, (_e, state) => updateMenuState(state))
   handleInvoke(IPC.MENU_SET_MODAL_BLOCKED, (_e, blocked) =>
     setMenuBlocked('blueprint', blocked),

@@ -1,20 +1,22 @@
 /**
  * @file components/panels/RenderPanel.tsx
- * @description BottomPanel "Render" tab -- render execution controls,
- * progress and log.
+ * @description Render execution controls, progress and log (hosted in the
+ * Rendering window's bottom pane).
  *
- * Detailed settings live in the Inspector (`renderSettings` target); this
- * panel owns the state-changing operations (Start / Stop), a quick
- * image-size preset, a shortcut to the Inspector settings, the progress
- * bar and the render log. Phase 2/3 is mock-driven (see `useRenderJob`).
+ * Detailed settings live in the adjacent Render Settings pane; this panel
+ * owns the state-changing operations (Start / Stop), a quick image-size
+ * preset, the progress bar and the render log. The optional
+ * `onOpenSettings` shortcut is for hosts where the settings editor is not
+ * permanently visible.
  */
 
-import React from "react";
+import React, { useCallback } from "react";
 import { ProgressBar, type Intent } from "@blueprintjs/core";
 import { SelectField, FormButton } from "../../h3-kit/form";
 import { AppIcon } from "../AppIcon";
 import { type RenderJob, isRenderJobActive } from "../../hooks/useRenderJob";
 import { RENDER_SIZE_PRESETS } from "../../data/renderSettings";
+import type { RenderTargetViewWire } from "../../../shared/ipcTypes";
 
 interface RenderPanelProps {
   /** Current render job, or null when none has run yet. */
@@ -35,8 +37,20 @@ interface RenderPanelProps {
   onCancel: () => void;
   /** Apply an image-size preset. */
   onApplyPreset: (label: string) => void;
-  /** Open the Render Settings editor in the Inspector. */
-  onOpenSettings: () => void;
+  /**
+   * Open the Render Settings editor. Omit when the settings editor is
+   * permanently visible next to this panel -- the button is then hidden.
+   */
+  onOpenSettings?: () => void;
+  /**
+   * Render targets for the Target dropdown (open molviews pushed by the
+   * main window). Omit to hide the dropdown.
+   */
+  targetViews?: RenderTargetViewWire[];
+  /** Selected render target (viewId), or null when no molview is open. */
+  targetViewId?: number | null;
+  /** Explicitly select a render target. */
+  onTargetChange?: (viewId: number) => void;
 }
 
 /** Progress-bar intent for the job's status. */
@@ -65,8 +79,19 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
   onCancel,
   onApplyPreset,
   onOpenSettings,
+  targetViews,
+  targetViewId,
+  onTargetChange,
 }) => {
   const active = isRenderJobActive(job);
+
+  const handleTargetChange = useCallback(
+    (value: string) => {
+      const id = Number(value);
+      if (Number.isFinite(id)) onTargetChange?.(id);
+    },
+    [onTargetChange],
+  );
 
   return (
     <div className="render-panel">
@@ -89,6 +114,27 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
           />
         )}
 
+        {targetViews && (
+          <span className="render-panel-preset">
+            <span className="render-panel-preset-label type-label">Target</span>
+            <span className="render-panel-target-select">
+              <SelectField
+                value={targetViewId != null ? String(targetViewId) : ""}
+                onChange={handleTargetChange}
+                fill
+                disabled={targetViews.length === 0}
+              >
+                {targetViews.length === 0 && <option value="">(no scene)</option>}
+                {targetViews.map((v) => (
+                  <option key={v.viewId} value={String(v.viewId)}>
+                    {v.title}
+                  </option>
+                ))}
+              </SelectField>
+            </span>
+          </span>
+        )}
+
         <span className="render-panel-preset">
           <span className="render-panel-preset-label type-label">Image size</span>
           <span className="render-panel-preset-select">
@@ -102,13 +148,15 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
           </span>
         </span>
 
-        <FormButton
-          minimal
-          icon={<AppIcon name="ui.settings" aria-hidden />}
-          text="Render Settings"
-          onClick={onOpenSettings}
-          disabled={!renderable}
-        />
+        {onOpenSettings && (
+          <FormButton
+            minimal
+            icon={<AppIcon name="ui.settings" aria-hidden />}
+            text="Render Settings"
+            onClick={onOpenSettings}
+            disabled={!renderable}
+          />
+        )}
 
         {job && (
           <span className="render-panel-status">

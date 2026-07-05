@@ -1,11 +1,12 @@
 /**
  * @file components/inspector/RenderSettingsEditor.tsx
- * @description Inspector body for the `renderSettings` target.
+ * @description Render Settings editor, hosted in the Rendering window's
+ * right pane (RenderWindowApp).
  *
  * Shows a backend selector followed by the backend-independent setting
  * groups (Image / Camera / Quality / Output) and the active backend's own
- * groups. Phase 1 is mock-only: edits update local state but no rendering
- * is performed yet.
+ * groups. Edits update the window-local useRenderSettings state; the
+ * frozen snapshot is sent to the main window when a render starts.
  */
 
 import React, { useCallback } from "react";

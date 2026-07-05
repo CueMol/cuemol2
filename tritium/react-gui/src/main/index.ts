@@ -1,8 +1,9 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, nativeTheme } from 'electron'
 import os from 'os'
 import path from 'path'
 import fs from 'fs'
 import { createWindow } from './windowManager'
+import { loadUi } from './stateStore'
 import { isAppQuitting, isForceQuit, setAppQuitting } from './quitState'
 import { APP_PRODUCT_NAME } from '../shared/appInfo'
 
@@ -25,7 +26,14 @@ if (process.env.CUEMOL_FRESH_PREFS && process.env.CUEMOL_FRESH_PREFS !== '0') {
   console.log('[Main] CUEMOL_FRESH_PREFS set -- clean profile at ' + freshDir)
 }
 
-app.whenReady().then(createWindow)
+app.whenReady().then(() => {
+  // Align the native window chrome with the persisted UI theme. Without
+  // this, macOS keeps the system appearance for its window frame and draws
+  // a light 1px titlebar hairline across the top of dark hidden-titlebar
+  // windows. Kept in sync on theme changes by the UI_SAVE handler.
+  nativeTheme.themeSource = loadUi().theme ?? 'dark'
+  createWindow()
+})
 
 app.on('window-all-closed', () => {
   // Single-window app: closing the window quits on every OS, so no

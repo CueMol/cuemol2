@@ -15,6 +15,12 @@ body,
   overflow: hidden;
 }
 
+/* Paint the root element too: with a hidden title bar a sub-pixel rounding
+   gap at the window top would otherwise show the UA's white html canvas. */
+html {
+  background: var(--bg-base);
+}
+
 body {
   font-family: var(--font-ui);
   font-size: var(--fs-xl);

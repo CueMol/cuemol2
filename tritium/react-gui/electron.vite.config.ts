@@ -1,3 +1,4 @@
+import { resolve } from 'path'
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import react from '@vitejs/plugin-react'
 import tsconfigPaths from 'vite-tsconfig-paths'
@@ -65,6 +66,13 @@ export default defineConfig({
     plugins: [react(), tsconfigPaths()],
     build: {
       rollupOptions: {
+        // Two HTML entries: the main window (index.html) and the modeless
+        // Rendering window (render.html). Listing an explicit input map
+        // replaces electron-vite's single-page default.
+        input: {
+          index: resolve(__dirname, 'src/renderer/index.html'),
+          render: resolve(__dirname, 'src/renderer/render.html'),
+        },
         external: [
           'worker_threads',
           'bindings',

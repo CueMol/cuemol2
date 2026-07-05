@@ -1,6 +1,6 @@
 /**
  * @file components/panes/RenderResultPane.tsx
- * @description ContentArea tab body for a completed render.
+ * @description Rendering-window image area for a completed render.
  *
  * Top toolbar carries the result actions (Save / Copy / Show Settings /
  * Re-render / Show Source Scene); below it a `RenderImageViewer` shows the
@@ -17,14 +17,17 @@ import type { PropDef } from "../../data/rendererProperties";
 import { RENDER_BACKENDS } from "../../data/renderBackends";
 
 interface RenderResultPaneProps {
-  /** The render result shown in this tab. */
+  /** The render result shown in this pane. */
   result: RenderResult;
   /** Re-render using this result's settings snapshot. */
   onReRender: (result: RenderResult) => void;
   /** Switch to the source scene's molview tab. */
   onShowSourceScene: (result: RenderResult) => void;
-  /** Open the live Render Settings editor in the Inspector. */
-  onOpenSettings: () => void;
+  /**
+   * Open the live Render Settings editor. Omit when the editor is
+   * permanently visible next to this pane -- the button is then hidden.
+   */
+  onOpenSettings?: () => void;
 }
 
 /** Read-only list of a snapshot's property values, shown in the popover. */
@@ -101,12 +104,14 @@ export const RenderResultPane: React.FC<RenderResultPaneProps> = ({
         <Button small icon={<AppIcon name="ui.properties" aria-hidden />} title="Settings used for this render" />
       </Popover>
       <Divider />
-      <Button
-        small
-        icon={<AppIcon name="ui.settings" aria-hidden />}
-        title="Open Render Settings"
-        onClick={onOpenSettings}
-      />
+      {onOpenSettings && (
+        <Button
+          small
+          icon={<AppIcon name="ui.settings" aria-hidden />}
+          title="Open Render Settings"
+          onClick={onOpenSettings}
+        />
+      )}
       <Button
         small
         icon={<AppIcon name="ui.refresh" aria-hidden />}

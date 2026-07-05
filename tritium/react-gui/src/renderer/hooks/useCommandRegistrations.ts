@@ -36,8 +36,6 @@ interface UseCommandRegistrationsOptions {
   onBgColorChanged: (bgColor: SceneBgColor) => void;
   /** Open the active View in the generic property inspector. */
   showViewProperty: (viewId: number) => void;
-  /** Open the active scene's Render Settings in the inspector. */
-  showRenderSettings: () => void;
   newScene: NewSceneAction;
 }
 
@@ -53,7 +51,6 @@ export function useCommandRegistrations({
   onCenterMarkChanged,
   onBgColorChanged,
   showViewProperty,
-  showRenderSettings,
   newScene,
 }: UseCommandRegistrationsOptions): void {
   useSceneCommands({ cm, getActiveSceneInfo, onBgColorChanged, newScene });
@@ -70,6 +67,6 @@ export function useCommandRegistrations({
     onCenterMarkChanged,
     showViewProperty,
   });
-  useRenderCommands({ showRenderSettings });
+  useRenderCommands();
   useElectronIpc(activeTab);
 }
