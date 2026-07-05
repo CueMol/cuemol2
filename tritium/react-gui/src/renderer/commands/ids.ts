@@ -35,7 +35,12 @@ export const CmdId = {
   FileSaveAs:         'file.saveAs',         // no args
   ObjectSaveAs:       'object.saveAs',       // no args -- object (not scene) save
   SaveCurrentView:    'file.saveCurrentView', // no args
-  ExportImage:        'file.exportImage',    // no args -- render scene to PNG
+  // Export scene -- one command per file type (exporter). UXP `exportScene`.
+  ExportPng:          'scene.export.png',     // no args -- export scene as PNG
+  ExportUmbreon:      'scene.export.umbreon', // no args -- Umbreon ray-traced PNG
+  ExportPov:          'scene.export.pov',     // no args -- POV-Ray SDL
+  ExportStl:          'scene.export.stl',     // no args -- StereoLithography
+  ExportMqo:          'scene.export.mqo',     // no args -- Metasequoia object
   SceneReload:        'scene.reload',        // no args
 
   // Undo/redo

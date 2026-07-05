@@ -183,7 +183,7 @@ vi.mock('../../main/handlers/fileDialogs', () => ({
   handleStyleSaveDialog: vi.fn(),
   handleCameraOpenDialog: vi.fn(),
   handleCameraSaveDialog: vi.fn(),
-  handleImageSaveDialog: vi.fn(),
+  handleSceneExportDialog: vi.fn(),
   handleObjectSaveDialog: vi.fn(),
   handlePickPathDialog: vi.fn(),
   handleSaveTextAsDialog: vi.fn(),

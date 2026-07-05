@@ -30,10 +30,10 @@ Completion counts treat `wired` and `native` as complete. `stub` means the menu 
 | Scope | Complete | Stub / todo | Completion | Notes |
 |-------|---------:|------------:|-----------:|-------|
 | `menu.color` | 1 | 0 | 100% | Presets merged into the color picker Palette panel (see ADR-0020) |
-| `menu.cuemol2` | 26 | 29 | 47% | Main menubar structure exists; 55 item-level migration points tracked (1 dropped counted as complete) |
+| `menu.cuemol2` | 27 | 28 | 49% | Main menubar structure exists; 55 item-level migration points tracked (1 dropped counted as complete) |
 | `menu.cuemol2-macos` | 6 | 1 | 86% | OS-native items complete; Preferences is stubbed |
 | `menu.cuemol2-scripts` | 1 | 0 | 100% | Dropped intentionally because Electron module loading replaces the XUL script overlay |
-| **Total** | **30** | **34** | **47%** | 64 inventory-derived menu migration points |
+| **Total** | **31** | **33** | **48%** | 64 inventory-derived menu migration points |
 
 ## Menu Item Implementation Status
 
@@ -87,7 +87,7 @@ View menu state notes:
 | Edit | Options | `options` / `menu:options` | `MENU_GENERIC` -> `console.warn` | stub | Non-macOS Edit menu item; macOS Preferences uses same channel |
 | Rendering | POV-Ray rendering... | `pov-render` / `menu:pov-render` | `MENU_GENERIC` -> `console.warn` | stub | Render dialog not connected |
 | Rendering | Animation rendering... | `anim-render` / `menu:anim-render` | `MENU_GENERIC` -> `console.warn` | stub | Animation render dialog not connected |
-| Rendering | Export scene... | `export-scene` / `menu:export-scene` | `MENU_GENERIC` -> `console.warn` | stub | Export scene behavior not connected |
+| Rendering | Export scene | `export-scene` submenu (`menu:export-{png,umbreon,pov,stl,mqo}`) | `CmdId.Export{Png,Umbreon,Pov,Stl,Mqo}` -> `runSceneExportFlow` -> `exportScene` worker (StreamManager `createHandler(name, 2)`) | wired | Split into a per-file-type submenu (PNG / Umbreon ray-traced PNG / POV-Ray SDL / STL / MQO). One item per exporter so png vs umbreon (both `*.png`) stay distinct without relying on Electron's lost filter index. Image types reuse `ExportPngOptionsDialog` (size/alpha/DPI); POV writes a sibling `.inc`. Curated subset of UXP's category-2 exporters (LuxRender/Warabi/raw/qsl deferred). |
 | Scene | Background > White | `bg-white` / `menu:bg-white` | `CmdId.SceneBgWhite` + `AsyncCueMol.setSceneBgColor('white')` + `updateMenuState` | wired | Radio state derived from scene.bgcolor RGB; uses StyleManager.compileColor('white') via makeColor helper |
 | Scene | Background > Black | `bg-black` / `menu:bg-black` | `CmdId.SceneBgBlack` + `AsyncCueMol.setSceneBgColor('black')` + `updateMenuState` | wired | Radio state derived from scene.bgcolor RGB; uses StyleManager.compileColor('black') via makeColor helper |
 | Scene | Use color proofing | `color-proof` / `menu:color-proof` | `MENU_GENERIC` -> `console.warn` | stub | Checkbox behavior not connected |

@@ -41,7 +41,10 @@ interface FileDialogsModule {
   handleSaveSceneDialog(win: object, defaultName: string): Promise<{ canceled: boolean; filePath: string }>
   handleStyleSaveDialog(win: object, defaultName: string): Promise<{ canceled: boolean; filePath: string }>
   handleCameraSaveDialog(win: object, defaultName: string): Promise<{ canceled: boolean; filePath: string }>
-  handleImageSaveDialog(win: object, defaultName: string): Promise<{ canceled: boolean; filePath: string }>
+  handleSceneExportDialog(
+    win: object,
+    payload: { defaultName: string; filters: FileFilter[] },
+  ): Promise<{ canceled: boolean; filePath: string }>
   handleStyleOpenDialog(win: object): Promise<{ canceled: boolean; filePath: string }>
   handleCameraOpenDialog(win: object): Promise<{ canceled: boolean; filePath: string }>
 }
@@ -91,9 +94,13 @@ const saveCases: SaveCase[] = [
     ],
   },
   {
-    name: 'handleImageSaveDialog',
-    run: (m) => m.handleImageSaveDialog(win, 'img.png'),
-    title: 'Export Image As',
+    name: 'handleSceneExportDialog',
+    run: (m) =>
+      m.handleSceneExportDialog(win, {
+        defaultName: 'img.png',
+        filters: [{ name: 'PNG image', extensions: ['png'] }],
+      }),
+    title: 'Export Scene As',
     filters: [
       { name: 'PNG image', extensions: ['png'] },
       { name: 'All Files', extensions: ['*'] },

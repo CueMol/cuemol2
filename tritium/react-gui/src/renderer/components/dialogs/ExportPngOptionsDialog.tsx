@@ -11,7 +11,7 @@
  *
  * Pixels are the source of truth (`exportPngSize` helpers); the displayed
  * width/height are derived for the active unit + DPI. The caller seeds the
- * initial pixel size from the live view (`getExportImageInfo`), which also
+ * initial pixel size from the live view (`getSceneExportInfo`), which also
  * sets the aspect ratio. OK returns the chosen pixel size, alpha, and DPI.
  */
 

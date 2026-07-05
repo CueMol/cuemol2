@@ -96,10 +96,10 @@ import type {
   SaveSceneResult,
 } from '../server/services/saveScene.service'
 import type {
-  ExportImageArgs,
-  ExportImageResult,
-  GetExportImageInfoArgs,
-  GetExportImageInfoResult,
+  ExportSceneArgs,
+  ExportSceneResult,
+  GetSceneExportInfoArgs,
+  GetSceneExportInfoResult,
 } from '../server/services/exportImage.service'
 import type {
   SceneBgColorArgs,
@@ -481,8 +481,8 @@ export interface ServiceMap {
   getUndoState:               { args: GetUndoStateArgs;                result: UndoState }
   getSceneSaveInfo:           { args: GetSceneSaveInfoArgs;            result: GetSceneSaveInfoResult }
   saveScene:                  { args: SaveSceneArgs;                   result: SaveSceneResult }
-  exportImage:                { args: ExportImageArgs;                 result: ExportImageResult }
-  getExportImageInfo:         { args: GetExportImageInfoArgs;          result: GetExportImageInfoResult }
+  exportScene:                { args: ExportSceneArgs;                 result: ExportSceneResult }
+  getSceneExportInfo:         { args: GetSceneExportInfoArgs;          result: GetSceneExportInfoResult }
   validateSelection:          { args: ValidateSelectionArgs;           result: ValidateSelectionResult }
   getSceneBgColor:            { args: SceneBgColorArgs;                result: SceneBgColorResult }
   setSceneBgColor:            { args: SetSceneBgColorArgs;             result: SceneBgColorResult }

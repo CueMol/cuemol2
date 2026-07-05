@@ -128,12 +128,12 @@ describe('useFileCommands', () => {
     h.unmount()
   })
 
-  // --- ExportImage ---
+  // --- Export scene (per-file-type commands) ---
 
-  it('ExportImage: scene-name default, view-size-seeded options, then export', async () => {
+  it('ExportPng: scene-name default, view-size-seeded options, then export', async () => {
     const cm = makeCm({
-      getExportImageInfo: () => ({ ok: true, sceneName: '1crn', width: 1600, height: 900 }),
-      exportImage: () => ({ ok: true }),
+      getSceneExportInfo: () => ({ ok: true, sceneName: '1crn', width: 1600, height: 900 }),
+      exportScene: () => ({ ok: true }),
     })
     ;(window.electronAPI.invoke as ReturnType<typeof vi.fn>).mockResolvedValue({
       canceled: false,
@@ -142,26 +142,53 @@ describe('useFileCommands', () => {
     showExportPngOptions.mockResolvedValue({ width: 800, height: 450, alpha: true, dpi: 300 })
     const h = await mountWith(cm)
 
-    await h.result.dispatch(CmdId.ExportImage)
+    await h.result.dispatch(CmdId.ExportPng)
 
-    // default file name comes from the scene name
-    expect(window.electronAPI.invoke).toHaveBeenCalledWith(
-      IPC.DIALOG_IMAGE_SAVE, { defaultName: '1crn.png' },
-    )
-    // options dialog seeded with the live view size
+    // default file name comes from the scene name; filter scoped to png
+    expect(window.electronAPI.invoke).toHaveBeenCalledWith(IPC.DIALOG_SCENE_EXPORT, {
+      defaultName: '1crn.png',
+      filters: [{ name: 'PNG image', extensions: ['png'] }],
+    })
+    // image-type exporter -> options dialog seeded with the live view size
     expect(showExportPngOptions).toHaveBeenCalledWith({ initialWidth: 1600, initialHeight: 900 })
-    // export uses the chosen size / alpha / dpi
-    expect(cm.invokeService).toHaveBeenCalledWith('exportImage', {
-      sceneId: 1, viewId: 2, filePath: '/tmp/1crn.png',
+    // export uses the chosen size / alpha / dpi and the png exporter name
+    expect(cm.invokeService).toHaveBeenCalledWith('exportScene', {
+      sceneId: 1, viewId: 2, filePath: '/tmp/1crn.png', exporterName: 'png',
       width: 800, height: 450, alpha: true, resoln: 300, depth: false,
     })
     h.unmount()
   })
 
-  it('ExportImage: cancelling the options dialog does not export', async () => {
+  it('ExportPov: geometry exporter skips the options dialog and uses view size', async () => {
     const cm = makeCm({
-      getExportImageInfo: () => ({ ok: true, sceneName: 's', width: 1024, height: 768 }),
-      exportImage: () => ({ ok: true }),
+      getSceneExportInfo: () => ({ ok: true, sceneName: '1crn', width: 1600, height: 900 }),
+      exportScene: () => ({ ok: true }),
+    })
+    ;(window.electronAPI.invoke as ReturnType<typeof vi.fn>).mockResolvedValue({
+      canceled: false,
+      filePath: '/tmp/1crn.pov',
+    })
+    const h = await mountWith(cm)
+
+    await h.result.dispatch(CmdId.ExportPov)
+
+    expect(window.electronAPI.invoke).toHaveBeenCalledWith(IPC.DIALOG_SCENE_EXPORT, {
+      defaultName: '1crn.pov',
+      filters: [{ name: 'POV-Ray SDL', extensions: ['pov'] }],
+    })
+    // no image-options dialog for geometry/SDL exporters
+    expect(showExportPngOptions).not.toHaveBeenCalled()
+    expect(cm.invokeService).toHaveBeenCalledWith('exportScene', {
+      sceneId: 1, viewId: 2, filePath: '/tmp/1crn.pov', exporterName: 'pov',
+      width: 1600, height: 900, alpha: false, resoln: undefined, depth: false,
+    })
+    h.unmount()
+  })
+
+  it('ExportPng: cancelling the options dialog does not export', async () => {
+    const cm = makeCm({
+      getSceneExportInfo: () => ({ ok: true, sceneName: 's', width: 1024, height: 768 }),
+      exportScene: () => ({ ok: true }),
     })
     ;(window.electronAPI.invoke as ReturnType<typeof vi.fn>).mockResolvedValue({
       canceled: false,
@@ -170,9 +197,27 @@ describe('useFileCommands', () => {
     showExportPngOptions.mockResolvedValue(null)
     const h = await mountWith(cm)
 
-    await h.result.dispatch(CmdId.ExportImage)
+    await h.result.dispatch(CmdId.ExportPng)
 
-    expect(cm.invokeService).not.toHaveBeenCalledWith('exportImage', expect.anything())
+    expect(cm.invokeService).not.toHaveBeenCalledWith('exportScene', expect.anything())
+    h.unmount()
+  })
+
+  it('ExportPng: cancelling the save dialog does not export', async () => {
+    const cm = makeCm({
+      getSceneExportInfo: () => ({ ok: true, sceneName: 's', width: 1024, height: 768 }),
+      exportScene: () => ({ ok: true }),
+    })
+    ;(window.electronAPI.invoke as ReturnType<typeof vi.fn>).mockResolvedValue({
+      canceled: true,
+      filePath: '',
+    })
+    const h = await mountWith(cm)
+
+    await h.result.dispatch(CmdId.ExportPng)
+
+    expect(showExportPngOptions).not.toHaveBeenCalled()
+    expect(cm.invokeService).not.toHaveBeenCalledWith('exportScene', expect.anything())
     h.unmount()
   })
 

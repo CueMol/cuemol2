@@ -7,8 +7,8 @@
  *                        (UXP `onSaveCurView`)
  *   - SceneReload      -- reload the current scene from its source file
  *                        (UXP `onReloadScene`)
- *   - ExportImage      -- render the scene to a PNG, collecting resolution /
- *                        size / transparency first (UXP `exportpng-opt-dlg`)
+ *   - ExportPng/Umbreon/Pov/Stl/Mqo -- export the scene via a chosen exporter
+ *                        (one command per file type; UXP `exportScene`)
  *
  * The underlying worker services already exist; this hook only wires the
  * command layer (dialog flow + service invocation).
@@ -21,6 +21,7 @@ import { useShowObjectPicker } from '../components/dialogs/ObjectPickerDialogPro
 import { useShowConfirmReloadSceneDialog } from '../components/dialogs/ConfirmReloadSceneDialogProvider'
 import { useShowExportPngOptionsDialog } from '../components/dialogs/ExportPngOptionsDialogProvider'
 import { runObjectSaveFlow } from '../hooks/sceneContextMenu/runObjectSaveFlow'
+import { runSceneExportFlow } from '../hooks/sceneContextMenu/runSceneExportFlow'
 import { useRegisterCommand } from './CommandRegistry'
 import { CmdId } from './ids'
 
@@ -91,45 +92,23 @@ export function useFileCommands({
         })
     })
 
-    // ExportImage -- render the active scene off-screen to a PNG file (UXP
-    // `Export scene`). The C++ ImgSceneExporter renders through the WebGL FBO
-    // (gfx::RenderTarget) and reads the pixels back.
-    useRegisterCommand(CmdId.ExportImage, async () => {
+    // Export scene -- one command per file type (UXP `exportScene`). Each
+    // resolves the active scene/view and runs the shared export flow with a
+    // fixed exporter name; image-type exporters (png/umbreon) reuse the image
+    // options dialog. Routed from the Rendering > Export scene submenu.
+    const makeExportHandler = (exporterName: string) => async () => {
         if (!cm) return
         const info = getActiveSceneInfo()
         if (!info) return
-        // Mirror UXP `exportScene`: default the file name to the scene name and
-        // seed the PNG options with the live view size.
-        const imgInfo = await cm.invokeService('getExportImageInfo', {
-            sceneId: info.scene_uid,
-            viewId: info.view_id,
-        })
-        const baseName = (imgInfo?.sceneName ?? '').trim() || 'scene'
-        const viewW = imgInfo && imgInfo.width > 0 ? imgInfo.width : 1024
-        const viewH = imgInfo && imgInfo.height > 0 ? imgInfo.height : 768
-        // 1) choose the file (default name = scene name).
-        const dlg = await window.electronAPI.invoke(IPC.DIALOG_IMAGE_SAVE, {
-            defaultName: `${baseName}.png`,
-        })
-        if (dlg.canceled || !dlg.filePath) return
-        // 2) collect PNG options seeded with the live view size.
-        const opts = await showExportPngOptions({
-            initialWidth: viewW,
-            initialHeight: viewH,
-        })
-        if (!opts) return
-        // 3) render off-screen to the chosen file.
-        await cm.invokeService('exportImage', {
-            sceneId: info.scene_uid,
-            viewId: info.view_id,
-            filePath: dlg.filePath,
-            width: opts.width,
-            height: opts.height,
-            alpha: opts.alpha,
-            resoln: opts.dpi,
-            depth: false,
-        })
-    })
+        await runSceneExportFlow(
+            cm, info.scene_uid, info.view_id, exporterName, showExportPngOptions,
+        )
+    }
+    useRegisterCommand(CmdId.ExportPng, makeExportHandler('png'))
+    useRegisterCommand(CmdId.ExportUmbreon, makeExportHandler('umbreon'))
+    useRegisterCommand(CmdId.ExportPov, makeExportHandler('pov'))
+    useRegisterCommand(CmdId.ExportStl, makeExportHandler('stl'))
+    useRegisterCommand(CmdId.ExportMqo, makeExportHandler('mqo'))
 
     // SceneReload -- UXP `onReloadScene`: re-read the scene from its source
     // file, confirming first when there are unsaved changes.
