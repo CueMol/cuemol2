@@ -70,6 +70,21 @@ namespace render {
     /// "_transpbg"). Default false (opaque RGB over the scene background color).
     bool m_bTransparentBackground;
 
+    /// diffuse global illumination (pt1 path-traced integrator); default off
+    bool m_bGI;
+
+    /// GI gather samples per pixel (higher = less noise)
+    int m_nGiSamples;
+
+    /// GI indirect intensity (indirect light gain)
+    double m_dGiIntensity;
+
+    /// GI environment (sky) intensity multiplier
+    double m_dGiEnvIntensity;
+
+    /// denoise the GI result with the built-in a-trous denoiser
+    bool m_bGiDenoise;
+
   public:
     UmbreonSceneExporter();
     virtual ~UmbreonSceneExporter();

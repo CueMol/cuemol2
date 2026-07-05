@@ -53,6 +53,11 @@ describe('umbreonBackend.renderInProcess', () => {
                 p('lightRadius', 2),
                 p('creaseLimit', 30),
                 p('edgeRise', 1),
+                p('useGI', true),
+                p('giSamples', 64),
+                p('giIntensity', 1.5),
+                p('giEnvIntensity', 0.5),
+                p('giDenoise', false),
             ],
         }
 
@@ -79,6 +84,12 @@ describe('umbreonBackend.renderInProcess', () => {
         expect(exporter.lightRadius).toBe(2)
         expect(exporter.creaseLimit).toBe(30)
         expect(exporter.edgeRise).toBe(1)
+        // GI (pt1) props.
+        expect(exporter.useGI).toBe(true)
+        expect(exporter.giSamples).toBe(64)
+        expect(exporter.giIntensity).toBe(1.5)
+        expect(exporter.giEnvIntensity).toBe(0.5)
+        expect(exporter.giDenoise).toBe(false)
 
         // I/O sequence.
         expect(attach).toHaveBeenCalledWith(scene)

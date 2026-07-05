@@ -59,6 +59,24 @@ runtime_class UmbreonSceneExporter extends SceneExporter
 
   property boolean transparentBackground => m_bTransparentBackground;
 
+  //////////
+  // diffuse global illumination (umbreon pt1 path-traced integrator)
+
+  /// enable diffuse global illumination
+  property boolean useGI => m_bGI;
+
+  /// GI gather samples per pixel (higher = less noise)
+  property integer giSamples => m_nGiSamples;
+
+  /// GI indirect intensity (indirect light gain)
+  property real giIntensity => m_dGiIntensity;
+
+  /// GI environment (sky) intensity multiplier
+  property real giEnvIntensity => m_dGiEnvIntensity;
+
+  /// denoise the GI result (built-in a-trous)
+  property boolean giDenoise => m_bGiDenoise;
+
 };
 
 #endif

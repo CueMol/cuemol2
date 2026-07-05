@@ -592,11 +592,14 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
   scene.fog.enabled = (fogEnd > fogStart);
 
   // Default lighting matching CueMol's POV output (the scene the umbreon CLI
-  // builds from a .pov). The umbreon CLI predefines _light_inten=1.3,
-  // _flash_frac=0.6, _amb_frac=0, and the .pov's `#ifndef(_light_inten)`
-  // override is skipped, so the evaluated macro intensities are:
-  //   SpecLighting  = _light_inten*(1-_amb_frac)*(1-_flash_frac) = 0.52
-  //   FlashLighting = _light_inten*(1-_amb_frac)*_flash_frac     = 0.78
+  // builds from a .pov). Without GI the POV defaults are _light_inten=1.3,
+  // _amb_frac=0, _flash_frac=0.6, giving SpecLighting=0.52 / FlashLighting=0.78.
+  // With GI on, adopt the POV radiosity balance (_light_inten=1.6, _amb_frac=0.5,
+  // _flash_frac=0.5): move half the energy into the ambient the GI gathers and
+  // dim the direct lights, matching the umbreon CLI's scene_setup.
+  const double li = prm.giEnabled ? 1.6 : 1.3;
+  const double af = prm.giEnabled ? 0.5 : 0.0;
+  const double ff = prm.giEnabled ? 0.5 : 0.6;
   if (scene.lights.empty()) {
     // SpecLighting: directional key light from the upper-front-right
     // (positioned at normalize(1,1,1), pointing at the origin). CueMol calls it
@@ -604,7 +607,7 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
     umbreon::DistantLight spec;
     spec.direction = umbreon::normalize(umbreon::Vec3(-1.0f, -1.0f, -1.0f));
     spec.color = umbreon::Vec3(1.0f, 1.0f, 1.0f);
-    spec.intensity = 0.52f;
+    spec.intensity = float(li * (1.0 - af) * (1.0 - ff));
     spec.castsHighlight = true;
     scene.lights.push_back(spec);
 
@@ -613,12 +616,15 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
     umbreon::DistantLight flash;
     flash.direction = umbreon::Vec3(0.0f, 0.0f, -1.0f);
     flash.color = umbreon::Vec3(1.0f, 1.0f, 1.0f);
-    flash.intensity = 0.78f;
+    flash.intensity = float(li * (1.0 - af) * ff);
     flash.castsHighlight = false;
     scene.lights.push_back(flash);
   }
   scene.ambientIntensity = 1.0f;
-  scene.ambientColor = umbreon::Vec3(1.0f, 1.0f, 1.0f);
+  // The GI gathers this ambient occlusion-aware; carry the ambient light energy
+  // (light_inten * amb_frac) when GI is on, else a flat white ambient.
+  const float amb = prm.giEnabled ? float(li * af) : 1.0f;
+  scene.ambientColor = umbreon::Vec3(amb, amb, amb);
 
   // No assumed_gamma: keep umbreon's framebuffer linear (assumedGamma = 1.0 is
   // a no-op in the pipeline). The output is then a direct linear mapping of the
@@ -636,6 +642,21 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
   opt.shadowSamples = (prm.shadowSamples > 0) ? prm.shadowSamples : 1;
   opt.lightRadius = float(prm.lightRadius);
   opt.transparentBackground = prm.transparentBackground;
+
+  // Diffuse global illumination (pt1 path-traced integrator). Enabling GI sets
+  // gi + giIntegrator=1 (the composited path; the irradiance-cache integrator
+  // does not composite yet). OIDN is optional and off in this umbreon build, so
+  // the built-in a-trous denoiser cleans the Monte-Carlo noise instead.
+  if (prm.giEnabled) {
+    opt.gi = true;
+    opt.giIntegrator = 1;
+    opt.pt1Spp = (prm.giSamples > 0) ? prm.giSamples : 32;
+    opt.giIntensity = float(prm.giIntensity);
+    opt.giEnvIntensity = float(prm.giEnvIntensity);
+    opt.pt1Denoise = false;
+    if (prm.giDenoise)
+      opt.denoiser = 1;  // DenoiserBackend::AtrousBilateral (zero-dependency)
+  }
 
   // Native screen-space (Freestyle-style) edge lines. Enabled when any section
   // requested edge lines; each section's natures + edge color live in

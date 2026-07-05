@@ -41,6 +41,16 @@ namespace render {
     bool shadows = false;
     int shadowSamples = 1;
     double lightRadius = 0.0;
+    /// diffuse global illumination (umbreon pt1 path-traced integrator). When
+    /// on, the lighting is rebalanced to the POV radiosity split (energy moved
+    /// into the GI-gathered ambient). giSamples = gather rays per pixel;
+    /// giIntensity = indirect gain; giEnvIntensity = environment (sky)
+    /// multiplier; giDenoise runs the built-in a-trous denoiser on the result.
+    bool giEnabled = false;
+    int giSamples = 32;
+    double giIntensity = 1.0;
+    double giEnvIntensity = 1.0;
+    bool giDenoise = true;
     /// When true, render a transparent background: the output is RGBA (4
     /// components) with alpha = coverage (0 where no geometry is hit), so the
     /// PNG can be composited over another image (POV "_transpbg").

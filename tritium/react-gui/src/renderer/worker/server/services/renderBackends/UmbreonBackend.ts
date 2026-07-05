@@ -79,6 +79,13 @@ export const umbreonBackend: RenderBackend = {
     exporter.creaseLimit = numVal(ub, "creaseLimit", -1.0);
     exporter.edgeRise = numVal(ub, "edgeRise", 0.5);
 
+    // Diffuse global illumination (pt1 path-traced integrator).
+    exporter.useGI = boolVal(ub, "useGI", false);
+    exporter.giSamples = numVal(ub, "giSamples", 32);
+    exporter.giIntensity = numVal(ub, "giIntensity", 1.0);
+    exporter.giEnvIntensity = numVal(ub, "giEnvIntensity", 1.0);
+    exporter.giDenoise = boolVal(ub, "giDenoise", true);
+
     exporter.attach(scene);
     exporter.setPath(outputPath);
     exporter.write(); // synchronous ray trace + libpng write to outputPath

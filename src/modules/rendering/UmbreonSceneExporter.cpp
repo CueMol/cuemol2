@@ -110,7 +110,9 @@ UmbreonSceneExporter::UmbreonSceneExporter()
        m_nAoSamples(0), m_dAoDistance(1.0e20), m_dAoIntensity(1.0),
        m_bShadows(false), m_nShadowSamples(1), m_dLightRadius(0.0),
        m_bEnableEdgeLines(true), m_dCreaseLimit(-1.0), m_dEdgeRise(0.5),
-       m_bTransparentBackground(false)
+       m_bTransparentBackground(false),
+       m_bGI(false), m_nGiSamples(32), m_dGiIntensity(1.0),
+       m_dGiEnvIntensity(1.0), m_bGiDenoise(true)
 {
 }
 
@@ -184,6 +186,11 @@ void UmbreonSceneExporter::write()
   prm.shadowSamples = m_nShadowSamples;
   prm.lightRadius = m_dLightRadius;
   prm.transparentBackground = m_bTransparentBackground;
+  prm.giEnabled = m_bGI;
+  prm.giSamples = m_nGiSamples;
+  prm.giIntensity = m_dGiIntensity;
+  prm.giEnvIntensity = m_dGiEnvIntensity;
+  prm.giDenoise = m_bGiDenoise;
 
   int ow = 0, oh = 0, ncomp = 0;
   std::vector<unsigned char> pix;
