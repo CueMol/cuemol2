@@ -1,6 +1,6 @@
 # ADR-0017: POV-Ray rendering UI — Inspector settings, BottomPanel tab, Render Result tab
 
-- Status: accepted (single-frame; animation rendering deferred)
+- Status: accepted (single-frame; animation rendering deferred); UI surfaces superseded by [ADR-0035](ADR-0035-render-window.md) (modeless Rendering window; competing alternative: PR #416 docked preview pane)
 - Date: 2026-05-18
 - Mapping rows: [`dialog.tool.render-pov`](../mapping/tool_dlgs.md)
 

@@ -492,6 +492,112 @@ export interface CrashReport {
   timestamp: number
 }
 
+// - Render window (modeless child) relay -
+//
+// The Rendering window is a separate renderer process with no CueMol worker;
+// it talks to the main window (which owns the worker) through the main
+// process. These wire types mirror the renderer-side shapes in
+// data/renderResult.ts / data/rendererProperties.ts / hooks/useRenderJob.ts
+// structurally (string unions widened where convenient); the main process
+// only relays them opaquely and the renderer casts at the hook boundary.
+
+/** Property definition snapshot carried over the render-window wire. */
+export interface RenderPropDefWire {
+  key: string
+  label: string
+  type: string
+  value: string | number | boolean
+  readonly?: boolean
+  min?: number
+  max?: number
+  step?: number
+  unit?: string
+  decimals?: number
+  options?: string[]
+  group: string
+}
+
+/** Frozen render-settings snapshot (mirrors RenderSettingsSnapshot). */
+export interface RenderSettingsSnapshotWire {
+  backend: string
+  commonProps: RenderPropDefWire[]
+  backendProps: RenderPropDefWire[]
+}
+
+/** Scene/view a render was started from (mirrors RenderSource). */
+export interface RenderSourceWire {
+  sceneId: number
+  sceneName: string
+  viewId?: number
+}
+
+/** Render job state pushed to the render window (mirrors RenderJob). */
+export interface RenderJobWire {
+  jobId: string
+  status: string
+  progress: number
+  phase: string
+  log: string[]
+  startedAt: number
+  finishedAt?: number
+  source?: RenderSourceWire
+}
+
+/** Completed render pushed to the render window (mirrors RenderResult). */
+export interface RenderResultWire {
+  id: string
+  imageDataUrl: string
+  width: number
+  height: number
+  elapsedSec: number
+  sourceSceneId: number
+  sourceSceneName: string
+  sourceViewId?: number
+  settingsSnapshot: RenderSettingsSnapshotWire
+}
+
+/** A renderable target (an open molview) offered in the target dropdown. */
+export interface RenderTargetViewWire {
+  viewId: number
+  sceneId: number
+  /** Scene display name (tab title with the view suffix stripped). */
+  sceneName: string
+  /** Dropdown label (the molview tab title, e.g. "1CRN:0"). */
+  title: string
+}
+
+/** Command sent by the render window; forwarded verbatim to the main window. */
+export type RenderWindowCommand =
+  /** Start a render. `source` set = the render window's selected target (or
+   * a re-render); otherwise the main window falls back to its active view. */
+  | { type: 'start'; snapshot: RenderSettingsSnapshotWire; source?: RenderSourceWire }
+  | { type: 'cancel' }
+  /** Switch the main window to the latest result's source molview tab. */
+  | { type: 'show-source' }
+  /** Request a full state re-push (sent by the render window on mount). */
+  | { type: 'sync' }
+
+/**
+ * State pushed to the render window. Split into variants so the multi-MB
+ * result image is sent once per completed render, never per progress tick.
+ */
+export type RenderWindowStateUpdate =
+  | {
+      kind: 'context'
+      job: RenderJobWire | null
+      /** Open molviews selectable as render targets. */
+      views: RenderTargetViewWire[]
+      /** The main window's active molview, or null when none is active. */
+      activeViewId: number | null
+    }
+  | { kind: 'result'; result: RenderResultWire | null }
+
+/** Pixel size of the main window's molview canvas ("Current view" preset). */
+export interface ViewSizePx {
+  width: number
+  height: number
+}
+
 // - ElectronAPI -
 // The ElectronAPI interface lives in ./ipcContract (it's defined in terms of
 // the InvokeChannels / PushChannels maps). Re-exported here for convenience.

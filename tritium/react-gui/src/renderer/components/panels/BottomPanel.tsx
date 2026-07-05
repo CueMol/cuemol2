@@ -1,6 +1,7 @@
 /**
  * Bottom panel with VSCode-style tabbed switching between Output,
- * Sequence alignment, Animation timeline and Render views.
+ * Sequence alignment and Animation timeline views. (Render execution
+ * lives in the modeless Rendering window -- see RenderWindowApp.)
  *
  * The Output tab renders `LogPanel` (pre-element based). The log
  * subscription (`useLogEvent`) and accumulated buffer live here, not
@@ -14,17 +15,15 @@ import type { AppIconKey } from "../../data/appIcons";
 import { LogPanel } from "./LogPanel";
 import { SequencePanel } from "./SequencePanel";
 import { AnimationPanel } from "./AnimationPanel";
-import { RenderPanel } from "./RenderPanel";
 import { useLogEvent } from "../../hooks/useLogEvent";
 import { IPC } from "../../../shared/ipcChannels";
-import type { RenderJob } from "../../hooks/useRenderJob";
 import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
 
 // ---------------------------------------------
 // Types
 // ---------------------------------------------
 
-type BottomTabType = "output" | "sequence" | "animation" | "render";
+type BottomTabType = "output" | "sequence" | "animation";
 
 interface TabButtonProps {
   tab: BottomTabType;
@@ -58,20 +57,6 @@ interface BottomPanelProps {
   activeSceneId: number | undefined;
   /** Active mol-view UID; required by SequencePanel "Center here". */
   activeMolViewId: number | undefined;
-  /** Current render job (Render tab). */
-  renderJob: RenderJob | null;
-  /** Whether the active content tab has a scene to render (gates Start). */
-  renderCanStart: boolean;
-  /** Selected image-size preset label. */
-  renderPreset: string;
-  /** Start a render. */
-  onRenderStart: () => void;
-  /** Cancel the active render. */
-  onRenderCancel: () => void;
-  /** Apply an image-size preset. */
-  onRenderApplyPreset: (label: string) => void;
-  /** Open the Render Settings editor in the Inspector. */
-  onOpenRenderSettings: () => void;
   /** Show / clear the anim-element detail in the Inspector (uid null = clear). */
   onInspectAnimElement?: (sceneId: number, uid: number | null) => void;
 }
@@ -80,13 +65,6 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({
   cm,
   activeSceneId,
   activeMolViewId,
-  renderJob,
-  renderCanStart,
-  renderPreset,
-  onRenderStart,
-  onRenderCancel,
-  onRenderApplyPreset,
-  onOpenRenderSettings,
   onInspectAnimElement,
 }) => {
   const [activeTab, setActiveTab] = useState<BottomTabType>("output");
@@ -144,18 +122,6 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({
             onInspectAnimElement={onInspectAnimElement}
           />
         );
-      case "render":
-        return (
-          <RenderPanel
-            job={renderJob}
-            renderable={renderCanStart}
-            preset={renderPreset}
-            onStart={onRenderStart}
-            onCancel={onRenderCancel}
-            onApplyPreset={onRenderApplyPreset}
-            onOpenSettings={onOpenRenderSettings}
-          />
-        );
     }
   };
 
@@ -165,7 +131,6 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({
         <TabButton tab="output" activeTab={activeTab} icon="panel.output" label="Output" onClick={setActiveTab} />
         <TabButton tab="sequence" activeTab={activeTab} icon="panel.sequence" label="Sequence" onClick={setActiveTab} />
         <TabButton tab="animation" activeTab={activeTab} icon="panel.animation" label="Animation" onClick={setActiveTab} />
-        <TabButton tab="render" activeTab={activeTab} icon="panel.render" label="Render" onClick={setActiveTab} />
       </div>
       <div className="bottom-panel-content">{renderContent()}</div>
     </div>

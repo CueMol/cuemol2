@@ -113,6 +113,18 @@ export const IPC = {
   CRASH_REPORT: 'app:crash-report',
   FORCE_QUIT:   'app:force-quit',
 
+  // --- Rendering window (modeless child) relay ---
+  // The render window has no CueMol worker; commands and state are relayed
+  // between it and the main window through the main process.
+  RENDER_WINDOW_OPEN:       'render-window:open',              // invoke: any renderer -> main
+  RENDER_WINDOW_COMMAND:    'render-window:command',           // invoke: render window -> main
+  RENDER_WINDOW_EXEC:       'render-window:exec',              // push:   main -> main window
+  RENDER_WINDOW_STATE:      'render-window:state',             // invoke: main window -> main
+  RENDER_WINDOW_STATE_PUSH: 'render-window:state-push',        // push:   main -> render window
+  RENDER_VIEW_SIZE_GET:     'render-window:view-size-get',     // invoke: render window -> main
+  RENDER_VIEW_SIZE_REQUEST: 'render-window:view-size-request', // push:   main -> main window
+  RENDER_VIEW_SIZE_REPLY:   'render-window:view-size-reply',   // invoke: main window -> main
+
   // invoke channel for native viewport context menu
   NAVI_CTX_SHOW: 'navi-ctx:show',
 

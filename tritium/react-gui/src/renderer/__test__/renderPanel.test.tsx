@@ -108,4 +108,13 @@ describe('RenderPanel -- Start button gating', () => {
     act(() => stop!.click());
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
+
+  it('hides the Render Settings shortcut when onOpenSettings is omitted', () => {
+    // In the Rendering window the settings editor is permanently visible,
+    // so the shortcut button is dropped by omitting the callback.
+    mount({ onOpenSettings: undefined });
+    expect(button('Render Settings')).toBeUndefined();
+    // The other controls are unaffected.
+    expect(button('Start Render')).toBeDefined();
+  });
 });

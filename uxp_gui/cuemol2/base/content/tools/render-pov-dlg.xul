@@ -40,6 +40,13 @@
   <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
   <script type="application/javascript" src="render-pov-dlg.js"/>
 
+  <hbox align="center" style="margin: 4px 4px 0px 4px;">
+    <label value="Target: " control="target-view-list"/>
+    <menulist id="target-view-list" class="disable-target" flex="1" crop="end">
+      <menupopup/>
+    </menulist>
+  </hbox>
+
   <tabbox selectedIndex="0" flex="0">
     <tabs id="tabs-overlay-target">
       <tab label="Main options" id="main_tab"/>

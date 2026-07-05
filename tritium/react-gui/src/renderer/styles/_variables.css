@@ -200,6 +200,9 @@
      title bars are all 30px). Sub-section headers within a panel are
      intentionally smaller and use --ctrl-h-md. */
   --panel-header-h: 30px;
+  /* Space reserved for the native window controls drawn over a custom
+     title bar (Windows 11 titleBarOverlay uses ~138px; safe default). */
+  --titlebar-controls-inset: 140px;
   /* List / tree row height -- the box that .type-row text sits in
      (scene/mol tree rows, named-colour rows, inspector rows). */
   --row-h: 22px;

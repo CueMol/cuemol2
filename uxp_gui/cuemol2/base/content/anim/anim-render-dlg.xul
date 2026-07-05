@@ -27,6 +27,13 @@
 }
 ]]></style>
 
+  <hbox align="center" style="margin: 4px 4px 0px 4px;">
+    <label value="Target scene: " control="target-scene-list"/>
+    <menulist id="target-scene-list" class="disable-target" flex="1" crop="end">
+      <menupopup/>
+    </menulist>
+  </hbox>
+
   <tabbox selectedIndex="0" flex="1">
     <tabs id="tabs-overlay-target">
       <tab label="Main options" id="main_tab"/>

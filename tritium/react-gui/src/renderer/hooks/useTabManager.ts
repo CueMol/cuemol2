@@ -10,7 +10,6 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { TabData } from "../types";
-import { type RenderResult, renderResultTabTitle } from "../data/renderResult";
 
 // --- Constants ---
 
@@ -150,32 +149,6 @@ export function useTabManager(opts?: {
     });
   }, []);
 
-  // --- Render Result tabs ---
-
-  /**
-   * Open a completed render. There is at most one result tab per source
-   * scene: re-rendering the same scene overwrites that tab's image in
-   * place rather than spawning a new tab.
-   */
-  const addRenderResultTab = useCallback((result: RenderResult) => {
-    const tabId = `render-result-scene-${result.sourceSceneId}`;
-    const tab: TabData = {
-      id: tabId,
-      title: renderResultTabTitle(result),
-      icon: "file.render",
-      type: "renderResult",
-      renderResult: result,
-    };
-    setTabs((prev) => {
-      const idx = prev.findIndex((t) => t.id === tabId);
-      if (idx === -1) return [...prev, tab];
-      const next = [...prev];
-      next[idx] = tab;
-      return next;
-    });
-    setActiveTab(tabId);
-  }, []);
-
   return {
     tabs,
     tabsRef,
@@ -184,7 +157,6 @@ export function useTabManager(opts?: {
     openSettingsTab,
     addMolViewTab,
     updateMolViewTabTitle,
-    addRenderResultTab,
     handleCloseTab,
     handleReorderTabs,
   } as const;

@@ -24,6 +24,8 @@ export interface WindowBounds {
 
 interface StoreSchema {
   windowBounds: WindowBounds
+  /** Rendering-window geometry; absent until the user first moves/resizes it. */
+  renderWindowBounds?: WindowBounds
   layout: LayoutState
   ui: UiState
   recentFiles: RecentFileEntry[]
@@ -71,6 +73,23 @@ export function loadWindowBounds(): WindowBounds {
 
 export function saveWindowBounds(bounds: WindowBounds): void {
   getStore().set('windowBounds', bounds)
+}
+
+/**
+ * Load the Rendering-window geometry, or undefined when it has never been
+ * saved. A `{0,0}`-positioned entry is also treated as never-saved: earlier
+ * builds persisted that as a schema default, and restoring it puts the
+ * title bar under the macOS menu bar where it cannot be gripped.
+ */
+export function loadRenderWindowBounds(): WindowBounds | undefined {
+  const b = getStore().get('renderWindowBounds')
+  if (!b) return undefined
+  if (b.x === 0 && b.y === 0) return undefined
+  return b
+}
+
+export function saveRenderWindowBounds(bounds: WindowBounds): void {
+  getStore().set('renderWindowBounds', bounds)
 }
 
 export function loadLayout(): LayoutState {

@@ -1,0 +1,70 @@
+/* ─── Rendering window (modeless child window, render.html) ─── */
+
+.render-window {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+/* Custom title bar (frame is hiddenInset / hidden+overlay, like the main
+   window). The strip is the drag region; --titlebar-inset reserves the
+   macOS traffic lights, the right padding the Windows overlay controls. */
+.render-window-titlebar {
+  -webkit-app-region: drag;
+  display: flex;
+  align-items: center;
+  height: 36px;
+  flex-shrink: 0;
+  padding-left: var(--titlebar-inset, var(--space-5));
+  padding-right: var(--titlebar-controls-inset);
+  background: var(--bg-base);
+  border-bottom: 1px solid var(--border-subtle);
+  user-select: none;
+}
+
+.render-window-titlebar-label {
+  color: var(--text-secondary);
+}
+
+.render-window-body {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Image area cell (left-top); hosts .render-result-pane or the empty state */
+.render-window-image {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.render-window-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  padding: var(--space-6);
+  text-align: center;
+}
+
+/* Right pane: Render Settings editor (scrolls independently) */
+.render-window-settings {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border);
+}
+
+.render-window-settings-header {
+  padding: var(--space-3) var(--space-5);
+  background: var(--toolbar-bg);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}

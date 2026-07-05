@@ -66,7 +66,7 @@ export interface CommandMap {
   [CmdId.SceneBgBlack]:        { args: void;            result: void }
 
   // Rendering
-  [CmdId.UiRenderSettings]:    { args: void;            result: void }
+  [CmdId.UiRenderWindow]:      { args: void;            result: void }
 }
 
 export type CommandKey = keyof CommandMap
