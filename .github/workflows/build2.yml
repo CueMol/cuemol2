@@ -279,6 +279,24 @@ jobs:
       with:
         basedir: ${{ github.workspace }}\target
 
+    # Run the C++ gtest suite on Windows too (posix runs it in build_linux.yml).
+    # Windows builds with BUILD_TESTS=ON (build_libcuemol2_win.bat) and PRE_TEST
+    # discovery (src/tests/CMakeLists.txt), so tests are enumerated and executed
+    # here rather than at build time. The build dir is <basedir>/tmp/build_libcuemol2
+    # because win.bat runs cmake from %BASEDIR%\tmp. The cuemol2 module DLLs must
+    # be on PATH for the test executables to load (Windows has no rpath). The find
+    # listing is a debugging aid to locate the DLLs if a test fails to load.
+    - name: Run gtest (Windows)
+      shell: bash
+      run: |
+        set -eux
+        WS="$(cygpath -u '${{ github.workspace }}')"
+        BUILD_DIR="$WS/target/tmp/build_libcuemol2"
+        echo "--- built DLLs under build dir ---"
+        find "$BUILD_DIR" -name '*.dll' 2>/dev/null | head -50 || true
+        export PATH="$BUILD_DIR:$WS/target/cuemol2/bin:$WS/target/cuemol2/lib:$PATH"
+        ctest --test-dir "$BUILD_DIR" --output-on-failure
+
     - name: Build tritium/core addon
       uses: ./build_scripts/build_tritium_core_posix
       with:
