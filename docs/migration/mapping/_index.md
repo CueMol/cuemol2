@@ -1,5 +1,7 @@
 # Migration Mapping — Index
 
+- Updated: 2026-07-11 (menu 実装の整理 + item 明細の実態是正。**コード変更**: New Window を削除 (Electron は単一 backend で複数 OS window 不可、`menuTemplate`/`menuActionMap`/`ipcChannels` から除去)、Window メニュー全削除 (UI 構造変更で非対応)、Help を About のみに縮小 (mozilla 特異の plugins/config/addon-mgr/console/check-updates を dropped)、Tools > Mol bond editor を削除 (viewport tool `activeTool 'bondEdit'` で実装済み = merged)、Rendering > Animation rendering を削除 (render window の Still/Animation モードへ統合予定 = deferred)。`main/menu.ts` に空 submenu group の drop を追加 (macOS の About-only Help が空になるため)。exhaustiveness test の UNIMPLEMENTED_ALLOWLIST を 19->8 に。vitest 2219 / tsc node 0err pass。**docs 是正**: item 明細表が stale で、実際は menuActionMap 上 wired だった Edit の merge/delete/change-chain/change-resid、Tools の interaction/reassign-2ndry/mol-surf/surf-cutter、View の view-props、Rendering の pov-render(=render window) を wired に是正。これにより menu.cuemol2.{file,view,help,window} が done 化 (window は dropped/done)。Menu category done 2->6 / wip 8->5 / todo 1->0、Total done 88->92 / wip 34->31 / todo 18->17、split 37->36 / dropped 6->7。inventory は UXP 側の棚卸しなので不変 (migration 判断は mapping 側)。POV-Ray は既に modeless window で実装済みだった)
+- Updated: 2026-07-11 (`menu.cuemol2` を per-menu の 8 行 (`menu.cuemol2.{file,edit,rendering,scene,view,tools,window,help}`) に split。単一行では 55 item の per-item status が粗すぎたため、`panel.workspace`/`panel.coloring` split の先例に倣い inventory (`uxp-inventory/menus.md`: 4->11 entries、header を hand-maintained 化) と mapping 主表を group 単位に分割。各 group 行は既存 item 明細表の `X/Y wired` を集計 (file 13/14, edit 2/8, rendering 1/3, scene 2/4, view 6/7, tools 1/10, window 0/3, help 1/6)。Completion Summary を per-group 化し、cuemol2 subtotal の旧 27/28 誤集計を 26/29 に、menu Total を 34/30 に是正。Menu category 4->11 (done 2 / wip 8 / todo 1)、Total 133->140 / wip 28->34 / todo 17->18、split 30->37。In Progress に 7 group 行を追加 (window は todo)。native/React コード変更なし — tracking 粒度のみの変更)
 - Updated: 2026-07-05 (`overlay.config-misc` todo->wip / split + `overlay.config-mouse` 拡充: SettingsPane の mock を実配線し整理。atom-label 既定 (font/size/color/bold/italic) を StyleManager `DefaultLabel.*` へ (`labelDefaults.service`、read `getStyleValue(0,"",..)` / write `setStyleValue(0,"user",..)` + `firePendingEvents`)、mouse の XY-rot 感度 (`tbrad`) と pick 精度 (`hitprec`) を ViewInputConfig singleton + `UserViewConf.*` へ (`viewInputParams.service`) 配線。**user-defined style は electron-store でなく uxp_gui 同様に `user_styles.xml` へ save-style 配線**: tritium に欠けていた `saveUserStyle` (worker lifecycle → `saveStyleSetToFile(0,hasStyleSet('user',0),path)`) を追加し、`useWindowCloseHandler` の `onBeforeProceed` から window close 時に保存 (UXP `Qm2Main.onUnLoad` 相当)。全て `AppSettingsContext` 経由。backend/consumer 無しの mock (rendering AA/shadow/AO/fog/HiDPI・extra colors・keyboard・trackpad・general/updates/privacy・language・momentum・mouse-preset) を削除し空 category を剪定 (32->13 設定)。test 3 新規 + windowCloseFlow/dispatch 更新 (計 +18)。Overlay wip 3->4/todo 4->3、Total wip 27->28/todo 18->17、split 29->30/unassigned 18->17。host E2E pending。ADR-0036)
 - Updated: 2026-06-29 (`menu.cuemol2` Rendering > Export scene wired: PNG 固定だった単一項目を **ファイルタイプ別サブメニュー**に分割 (PNG / Umbreon ray-traced PNG / POV-Ray SDL / STL / MQO)。各項目が exporter を固定するため png/umbreon (共に `*.png`) が Electron の失われる filter index に依存せず区別可能。共通フロー `runSceneExportFlow`(静的 `SCENE_EXPORTERS` テーブル) が `getSceneExportInfo`(scene 名+view size)→保存ダイアログ(`DIALOG_SCENE_EXPORT`)→(画像系のみ)`ExportPngOptionsDialog`→`exportScene` worker(`StreamManager.createHandler(name,2)`、POV は `.inc` サブパス自動) を実行。旧 `exportImage`/`getExportImageInfo`/`DIALOG_IMAGE_SAVE`/`handleImageSaveDialog`/`CmdId.ExportImage` を `exportScene`/`getSceneExportInfo`/`DIALOG_SCENE_EXPORT`/`handleSceneExportDialog`/`CmdId.Export{Png,Umbreon,Pov,Stl,Mqo}` に一般化。LuxRender/Warabi/raw/qsl は当面除外。fileCommands test を新フローに更新(PNG/POV/キャンセル 4 ケース)、vitest/tsc(node 0 err) pass。menu item-level 26/55 -> 27/55 (`menu.cuemol2` complete 26->27 / stub 29->28、Menu Total 30->31 / stub 34->33)。Category Summary は inventory-entry 単位のため不変。native(C++)変更なし)
 - Updated: 2026-06-15 (`overlay.config-mouse` Phase 3 = Auto-detect 入力デバイス。Electron 42 では OS シグナルで mouse/trackpad を判別不可（スパイクで確認: 観測 `input-event` は `type`/`modifiers` のみ、trackpad plain scroll も `mouseWheel`、`scroll-touch-*` は v23 削除）。→ renderer 側 DOM WheelEvent ヒューリスティック（`input/wheelDeviceClassifier`: 横/小数 delta→trackpad、大整数縦→mouse）+ state machine（`input/inputDeviceDetector`: hysteresis + pinch/rotate latch）で判定し `setViewInputConfigStyle` 切替。preference を 3 値化（`mouse|trackpad|auto`、既定 auto、`UiState.inputDeviceMode`）+ `inputDeviceDetected` seed。`ViewInputConfigContext` が detector を駆動、`MolViewPane` が wheel/pinch/rotate を feed。Settings に Auto-detect 追加（Detected 表示）。main 変更なし。test 4 ファイル 25 件。status 不変（wip 継続、counts 変化なし）。host E2E pending。ADR-0032 Phase 3)
@@ -78,7 +80,7 @@
 | Category | File | Total | done | wip | review | todo | frozen |
 |----------|------|------:|-----:|----:|-------:|-----:|-------:|
 | Panel | [panels.md](panels.md) | 27 | 14 | 11 | 0 | 2 | 0 |
-| Menu | [menus.md](menus.md) | 4 | 2 | 2 | 0 | 0 | 0 |
+| Menu | [menus.md](menus.md) | 11 | 6 | 5 | 0 | 0 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 1 | 1 | 0 | 0 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 16 | 14 | 2 | 0 | 0 | 0 |
 | Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 11 | 2 | 0 | 5 | 0 |
@@ -86,7 +88,7 @@
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 7 | 5 | 0 | 1 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 21 | 4 | 0 | 3 | 0 |
 | Other | [other.md](other.md) | 4 | 2 | 1 | 0 | 1 | 0 |
-| **Total** | | **133** | **88** | **28** | **0** | **17** | **0** |
+| **Total** | | **140** | **92** | **31** | **0** | **17** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -108,6 +110,15 @@
 > rows (Output tab vs Sequence tab) per the spec's "one user-visible
 > surface per entry" rule.
 
+> Menu category grew from 4 → 11 on 2026-07-11: `menu.cuemol2` (the single
+> main-menubar overlay) was split into 8 per-menu rows
+> (`menu.cuemol2.{file,edit,rendering,scene,view,tools,window,help}`), one
+> per `<menupopup>` surface, because a single row's 55 item-level points
+> were too coarse to track per-phase progress. See `mapping/menus.md` for
+> the header note (each group's `X/Y wired` is aggregated from the
+> item-level detail table) and `uxp-inventory/menus.md` for the inventory
+> split. The macOS Application menu stays its own row (`menu.cuemol2-macos`).
+
 ---
 
 ## Mapping Type Breakdown
@@ -116,9 +127,9 @@
 |---------|------:|
 | 1:1 (`direct`) | 27 |
 | merged | 53 |
-| split | 30 |
+| split | 36 |
 | redesign | 0 |
-| deprecated (`dropped`) | 6 |
+| deprecated (`dropped`) | 7 |
 | *(not yet assigned)* | 17 |
 
 ---
@@ -131,8 +142,11 @@
 | [`overlay.config-misc`](overlay.md#overlayconfig-misc) | `SettingsPane` / `AppSettingsContext` | Atom-label defaults (font/size/color/bold/italic) wired to StyleManager `DefaultLabel.*`; live-applied via `labelDefaults.service` + `firePendingEvents`, persisted to `user_styles.xml` on window close (new `saveUserStyle`, UXP `onUnLoad` parity). HiDPI/language dropped (no consumer); key-binding editor separate. Host E2E pending (ADR-0036) |
 | [`overlay.config-mouse`](overlay.md#overlayconfig-mouse) | `SettingsPane` / `ViewInputConfigContext` / `AppSettingsContext` / `input/wheelDeviceClassifier`+`inputDeviceDetector` | Wheel zooms by default; tritium adds a Mouse / Mac-trackpad / Auto-detect device preset (auto default; renderer DOM-wheel heuristic + pinch/rotate latch -- no OS signal exists in Electron 42). Persisted in `UiState.inputDeviceMode`, re-applied live via `setViewInputConfigStyle`. XY-rot sensitivity (`tbrad`) + pick precision (`hitprec`) wired to the ViewInputConfig singleton + persisted via `UserViewConf.*` (ADR-0036); mouse-preset picker dropped. Full UXP key-binding editor deferred. Phase 1/2 host E2E done; Phase 3 (auto) pending (ADR-0032) |
 | [`toolbar.cuemol2-ribbon`](toolbars.md#toolbarcuemol2-ribbon) | `Toolbar` / `ViewportToolPalette` / `useNaviClickHandler` / `useMeasureClickHandler` / `NaviContextMenu` / `MeasureOptionsPopover` | Context menu actions (center/select/around/invert/sidechain) done; measure tool distance/angle/torsion done (ADR-0023); Create SYMM mol deferred; rect-select drag pending |
-| [`menu.cuemol2`](menus.md#menucuemol2) | `menuTemplate` / `MenuBar` / `useMenuDispatch` | Full 9-group structure added; View > Center mark wired; Scene > Background color wired; File > Get PDB wired (streaming via StreamManager); File > Open Recent wired (electron-store-backed MRU, app.addRecentDocument); Hardware stereo and Open web page dropped; File > Save File As / Save current view / Reload Scene wired; Rendering > Export scene wired (per-file-type submenu: PNG/Umbreon/POV/STL/MQO); item-level completion 27/55; MenuBar suppressed on macOS |
-| [`menu.cuemol2-macos`](menus.md#menucuemol2-macos) | `main/menu.ts` | macOS App menu added; item-level completion 6/7 |
+| [`menu.cuemol2.edit`](menus.md#menucuemol2edit) | `menuTemplate` / `MenuBar` / `useMenuDispatch` | 6/8 wired (Undo / Redo + Merge / Delete / Change chain / Change resid open their tool dialogs). Clear undo + Options stub |
+| [`menu.cuemol2.rendering`](menus.md#menucuemol2rendering) | `menuTemplate` / `runSceneExportFlow` / `RenderWindowApp` | 2/3 wired (POV-Ray = modeless Rendering window; Export scene submenu). Animation rendering deferred to render-window Still/Animation mode |
+| [`menu.cuemol2.scene`](menus.md#menucuemol2scene) | `menuTemplate` / `sceneBgColor.service` | 2/4 wired (Background White / Black). Use color proofing + Properties stubbed |
+| [`menu.cuemol2.tools`](menus.md#menucuemol2tools) | `menuTemplate` / `useToolCommands` | 6/10 resolved (Superpose / Interaction / Reassign-2ndry / Mol-surf / Surf-cutter wired + Bond editor merged to viewport tool). Morph anim / APBS / Exec script / Perf measure stub |
+| [`menu.cuemol2-macos`](menus.md#menucuemol2-macos) | `main/menu.ts` | macOS App menu added; item-level completion 6/7 (Preferences stubbed) |
 | [`dialog.apply-rend-style`](other_dlgs.md#dialogapply-rend-style) | `ApplyRendStyleDialog` / `getRendererStyleEditInfo` / `applyRendererStyleList` | List view + Add popup + Delete/Up/Down on the working style list; commit calls `rend.applyStyles` under "Change style" txn |
 | [`dialog.rendstyle-create`](other_dlgs.md#dialogrendstyle-create) | `CreateRendStyleDialog` / `getCreateRendStyleInfo` / `createStyleFromRenderer` | Writable style-set listbox + base-name input; commit calls `StyleManager.createStyleFromObj`. Same-name overwrite handled in C++ |
 | [`other.cuemol2`](other.md#othercuemol2) | `App` / `ContentArea` / `TabBar` / `SidePanel` / `BottomPanel` / `StatusBar` / `ConfirmCloseTabDialog` / `useWindowCloseHandler` | Main window layout (panels, tab view, status bar) + window-close/quit funnel wired (cmd-Q + close button share one confirm funnel, ADR-0016 supersedes ADR-0010). Canvas lifecycle: ADR-0011 |
@@ -159,4 +173,4 @@
 
 ## Unstarted
 
-**19 / 132** items are `todo` (not yet started).
+**17 / 140** items are `todo` (not yet started).

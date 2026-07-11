@@ -60,7 +60,6 @@ export const IPC = {
   // --- Menu action channels (carried as the payload of MENU_GENERIC, or
   // sent on their own dedicated push channel). Single source of truth for the
   // menu-action strings so menuTemplate / menu.ts / useMenuDispatch agree. ---
-  MENU_NEW_WINDOW:    'menu:new-window',
   MENU_CLEAR_RECENT:  'menu:clear-recent',
   MENU_SAVE_FILE_AS:  'menu:save-file-as',
   MENU_SAVE_CURRENT_VIEW: 'menu:save-current-view',
@@ -73,7 +72,6 @@ export const IPC = {
   MENU_CHANGE_RESID_NUM: 'menu:change-resid-num',
   MENU_OPTIONS:       'menu:options',
   MENU_POV_RENDER:    'menu:pov-render',
-  MENU_ANIM_RENDER:   'menu:anim-render',
   MENU_EXPORT_PNG:     'menu:export-png',
   MENU_EXPORT_UMBREON: 'menu:export-umbreon',
   MENU_EXPORT_POV:     'menu:export-pov',
@@ -83,7 +81,6 @@ export const IPC = {
   MENU_SCENE_PROPS:   'menu:scene-props',
   MENU_VIEW_PROPS:    'menu:view-props',
   MENU_MOL_SUPERPOSE: 'menu:mol-superpose',
-  MENU_BOND_EDITOR:   'menu:bond-editor',
   MENU_INTERACTION:   'menu:interaction',
   MENU_REASSIGN_2NDRY: 'menu:reassign-2ndry',
   MENU_MORPH_ANIM:    'menu:morph-anim',
@@ -92,14 +89,6 @@ export const IPC = {
   MENU_APBS:          'menu:apbs',
   MENU_EXEC_SCRIPT:   'menu:exec-script',
   MENU_PERF_MEAS:     'menu:perf-meas',
-  MENU_TOGGLE_TOPBAR: 'menu:toggle-topbar',
-  MENU_CLEAR_LOG:     'menu:clear-log',
-  MENU_RESTORE_PANELS: 'menu:restore-panels',
-  MENU_ABOUT_PLUGINS: 'menu:about-plugins',
-  MENU_ABOUT_CONFIG:  'menu:about-config',
-  MENU_ADDON_MGR:     'menu:addon-mgr',
-  MENU_CONSOLE:       'menu:console',
-  MENU_CHECK_UPDATES: 'menu:check-updates',
 
   // invoke channels (renderer -> main, with reply) -- menu role actions
   MENU_INVOKE_ROLE: 'menu:invoke-role',

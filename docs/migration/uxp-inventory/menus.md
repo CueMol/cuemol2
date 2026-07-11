@@ -1,19 +1,31 @@
-<!-- AUTO-GENERATED — DO NOT EDIT MANUALLY. See specs/260420_uxpgui_step1_menu.md for generation instructions. -->
-
 # UXP Inventory — Menu
 
-> ⚠️ このファイルは Claude Code による自動生成です。手修正しないでください。
-> 再生成する場合は `_spec.md` に従ってください。
+> Hand-maintained. See [`_spec.md`](./_spec.md) for entry format and
+> editing guidance.
+>
+> `menu.cuemol2` (the main menubar overlay) was split into 8 per-menu
+> surface entries (File / Edit / Rendering / Scene / View / Tools /
+> Window / Help) on 2026-07-11 — each menubar dropdown is a distinct
+> `<menupopup>` surface that migrates on its own phase. All eight share
+> the source file `base/content/cuemol2-menus.xul` and the inline
+> `gQm2Main` controller. The macOS Application-menu block in the same
+> file is tracked separately as `menu.cuemol2-macos`.
 
-- Generated: 2026-04-20
-- Source: `uxp_gui/cuemol2/`
+- Origin: one-time scan of `uxp_gui/cuemol2/` (2026-04-20)
 - Spec: [_spec.md](./_spec.md)
-- Entries: 4
+- Entries: 11
 
 ## Index
 
 - [`menu.color`](#menucolor)
-- [`menu.cuemol2`](#menucuemol2)
+- [`menu.cuemol2.file`](#menucuemol2file)
+- [`menu.cuemol2.edit`](#menucuemol2edit)
+- [`menu.cuemol2.rendering`](#menucuemol2rendering)
+- [`menu.cuemol2.scene`](#menucuemol2scene)
+- [`menu.cuemol2.view`](#menucuemol2view)
+- [`menu.cuemol2.tools`](#menucuemol2tools)
+- [`menu.cuemol2.window`](#menucuemol2window)
+- [`menu.cuemol2.help`](#menucuemol2help)
 - [`menu.cuemol2-macos`](#menucuemol2-macos)
 - [`menu.cuemol2-scripts`](#menucuemol2-scripts)
 
@@ -49,27 +61,17 @@
 
 ---
 
-### `menu.cuemol2`
+### `menu.cuemol2.file`
 
 - **File**: `uxp_gui/cuemol2/base/content/cuemol2-menus.xul`
-- **Root element**: `<overlay>`
-- **Title**: unknown (overlay has no title; it injects a full `<menubar>` into the main window)
+- **Root element**: `<menu>` / `<menupopup>` (File dropdown of the injected `<menubar>`)
+- **Title**: "File" (`&menu_file.label;` in `cuemol2.dtd`)
 - **Chrome URL**: `chrome://cuemol2/content/cuemol2-menus.xul`
-- **Associated JS**: inline `<script>` CDATA block only; no external same-name `.js` file
+- **Associated JS**: inline `<script>` CDATA block only; handlers on `gQm2Main`
 - **Overlays applied**: none
 
 #### User-visible features
-- **File menu**: New Window, New Tab, Open File…, Get PDB (accession code), Open Recent (MRU list), Save File As…, Save current view…, Close Tab, Open Scene…, Reload Scene, Save Scene, Save Scene As…, Open web page…, Quit/Exit
-- **Edit menu**: Undo, Redo, Clear undo data, Merge molecule…, Delete mol atoms…, Change chain ID…, Change residue number…, Options (non-macOS)
-- **Rendering menu**: POV-Ray rendering…, Animation rendering…, Export scene…
-- **Scene menu**: Background color (White/Black), Use color proofing (checkbox), Properties…
-- **View menu**: Perspective / Orthographic projection (checkboxes), Center mark sub-menu (Cross/Axis/None radio), Hardware stereo (checkbox), View property…
-- **Tools menu**: Molecular superposition…, Mol bond editor…, Interaction…, Reassign secondary str…, Mol morphing animation…, Mol surface generation…, Mol surface cutter…, APBS elepot calculation…, Execute script…, Performance measure (checkbox), Mol client tools (hidden)
-- **Window menu**: Show/Hide Topbar, Clear log contents, Restore default panel location, Panels sub-menu, Windows sub-menu
-- **Help menu**: About plugins…, About config…, Addon manager…, About CueMol2, Console, Test crash reporter, Check for updates
-- **macOS Application menu** (`#ifdef XP_MACOSX`): Preferences…, Services, Hide CueMol2, Hide Others, Show All, Quit CueMol2
-- **Update alert popup** (`update-alert-popup`): dismissible panel showing update message, "Don't check for updates" checkbox, "Check!!" button
-- **Global keybindings**: Ctrl/Cmd+N (new tab), Ctrl/Cmd+Shift+N (new window), Ctrl/Cmd+O (open file), Ctrl/Cmd+Shift+O (open scene), Ctrl/Cmd+R (reload scene), Ctrl/Cmd+S (save scene), Ctrl/Cmd+Z (undo), Ctrl/Cmd+Y (redo), Ctrl/Cmd+K (options), F1 (hardware stereo), F2 (perf measure)
+- New Window, New Tab, Open File…, Get PDB… (accession code), Open Recent (MRU list), Save File As…, Save current view…, Close Tab, Open Scene…, Reload Scene, Save Scene, Save Scene As…, Open web page…, Quit/Exit
 
 #### Commands / Handlers
 | Trigger | Handler | Description |
@@ -89,6 +91,34 @@
 | File > Save Scene As… | `gQm2Main.onSaveSceneAs()` | Opens save-scene-as dialog |
 | File > Open web page… | `gQm2Main.onOpenURL()` | Opens a URL |
 | File > Quit (non-macOS) | `gQm2Main.onCloseEvent()` | Exits the application |
+
+#### i18n keys used
+- `&menu_file.label;`, `&menu_file.accesskey;` (dtd: `cuemol2.dtd`)
+- `&new_window.*;`, `&new_tab.*;`, `&open_file.*;`, `&save_file_as.*;`, `&open_PDB.label;`, `&saveCurrCam.label;`, `&close_tab.label;`, `&open_scene.*;`, `&reload_scene.*;`, `&save_scene.*;` (dtd: `cuemol2.dtd`)
+- `&quitApplicationCmd.*;` (non-Windows non-macOS), `&quitApplicationCmdWin.*;` (`#ifdef XP_WIN`) (dtd: `cuemol2.dtd`)
+
+#### Notes
+- Open Recent is populated dynamically via `populateFileMRUMenu` on `onpopupshowing`.
+- Keybindings: Ctrl/Cmd+N (new tab), Ctrl/Cmd+Shift+N (new window), Ctrl/Cmd+O (open file), Ctrl/Cmd+Shift+O (open scene), Ctrl/Cmd+R (reload scene), Ctrl/Cmd+S (save scene).
+- Shares the source file `cuemol2-menus.xul` and the inline `gQm2Main` controller (loaded by `cuemol2-scripts.xul`) with the other seven `menu.cuemol2.*` groups.
+
+---
+
+### `menu.cuemol2.edit`
+
+- **File**: `uxp_gui/cuemol2/base/content/cuemol2-menus.xul`
+- **Root element**: `<menu>` / `<menupopup>` (Edit dropdown of the injected `<menubar>`)
+- **Title**: "Edit" (`&menu_edit.label;` in `cuemol2.dtd`)
+- **Chrome URL**: `chrome://cuemol2/content/cuemol2-menus.xul`
+- **Associated JS**: inline `<script>` CDATA block only; handlers on `gQm2Main`
+- **Overlays applied**: none
+
+#### User-visible features
+- Undo, Redo, Clear undo data, Merge molecule…, Delete mol atoms…, Change chain ID…, Change residue number…, Options (non-macOS)
+
+#### Commands / Handlers
+| Trigger | Handler | Description |
+|---------|---------|-------------|
 | Edit > Undo | `gQm2Main.undo()` | Undoes last action |
 | Edit > Redo | `gQm2Main.redo()` | Redoes last undone action |
 | Edit > Clear undo data | `gQm2Main.clearUndoData()` | Clears all undo history |
@@ -97,14 +127,92 @@
 | Edit > Change chain ID… | `gQm2Main.onChgChName1()` | Opens chain ID change dialog |
 | Edit > Change residue number… | `gQm2Main.onShiftResIndex1()` | Opens residue index shift dialog |
 | Edit > Options (non-macOS) | `gQm2Main.showConfigDlg()` | Opens preferences dialog |
+
+#### i18n keys used
+- `&menu_edit.label;`, `&menu_edit.accesskey;` (dtd: `cuemol2.dtd`)
+- `&edit_undo.*;`, `&edit_redo.*;`, `&edit_config.*;` (dtd: `cuemol2.dtd`)
+
+#### Notes
+- Keybindings: Ctrl/Cmd+Z (undo), Ctrl/Cmd+Y (redo), Ctrl/Cmd+K (options).
+- On macOS, Options is presented as Preferences… in the Application menu (`menu.cuemol2-macos`), same `showConfigDlg()` handler.
+- Shares the source file and `gQm2Main` controller with the other `menu.cuemol2.*` groups.
+
+---
+
+### `menu.cuemol2.rendering`
+
+- **File**: `uxp_gui/cuemol2/base/content/cuemol2-menus.xul`
+- **Root element**: `<menu>` / `<menupopup>` (Rendering dropdown of the injected `<menubar>`)
+- **Title**: "Rendering" (`&menu_render.label;` in `cuemol2.dtd`)
+- **Chrome URL**: `chrome://cuemol2/content/cuemol2-menus.xul`
+- **Associated JS**: inline `<script>` CDATA block only; handlers on `gQm2Main` / `cuemolui`
+- **Overlays applied**: none
+
+#### User-visible features
+- POV-Ray rendering…, Animation rendering…, Export scene…
+
+#### Commands / Handlers
+| Trigger | Handler | Description |
+|---------|---------|-------------|
 | Rendering > POV-Ray rendering… | `gQm2Main.showPovRenderDlg()` | Opens POV-Ray render dialog |
 | Rendering > Animation rendering… | `cuemolui.onAnimRender()` | Opens animation render dialog |
 | Rendering > Export scene… | `gQm2Main.exportScene()` | Exports the current scene |
+
+#### i18n keys used
+- `&menu_render.label;`, `&menu_render.accesskey;` (dtd: `cuemol2.dtd`)
+- `&render_exportscene.label;`, `&render_exportscene.accesskey;` (dtd: `cuemol2.dtd`)
+
+#### Notes
+- `cuemolui.onAnimRender` is defined in `anim/anim-ribbon.js:214` (window-global `cuemolui` namespace).
+- Shares the source file and `gQm2Main` controller with the other `menu.cuemol2.*` groups.
+
+---
+
+### `menu.cuemol2.scene`
+
+- **File**: `uxp_gui/cuemol2/base/content/cuemol2-menus.xul`
+- **Root element**: `<menu>` / `<menupopup>` (Scene dropdown of the injected `<menubar>`)
+- **Title**: "Scene" (`&menu_scene.label;` in `cuemol2.dtd`)
+- **Chrome URL**: `chrome://cuemol2/content/cuemol2-menus.xul`
+- **Associated JS**: inline `<script>` CDATA block only; handlers on `gQm2Main`
+- **Overlays applied**: none
+
+#### User-visible features
+- Background color (White / Black), Use color proofing (checkbox), Properties…
+
+#### Commands / Handlers
+| Trigger | Handler | Description |
+|---------|---------|-------------|
 | Scene > onpopupshowing | `gQm2Main.onSceneMenuShowing(event)` | Updates checkbox/radio state for scene menu |
 | Scene > Background > White | `gQm2Main.setBgColor('white')` | Sets scene background to white |
 | Scene > Background > Black | `gQm2Main.setBgColor('black')` | Sets scene background to black |
 | Scene > Use color proofing | `gQm2Main.onToggleColProof(event)` | Toggles color proofing mode |
 | Scene > Properties… | `gQm2Main.showScenePropDlg(event)` | Opens scene properties dialog |
+
+#### i18n keys used
+- `&menu_scene.label;`, `&menu_scene.accesskey;` (dtd: `cuemol2.dtd`)
+
+#### Notes
+- `onSceneMenuShowing` syncs the Background radio and Use-color-proofing checkbox before display.
+- Shares the source file and `gQm2Main` controller with the other `menu.cuemol2.*` groups.
+
+---
+
+### `menu.cuemol2.view`
+
+- **File**: `uxp_gui/cuemol2/base/content/cuemol2-menus.xul`
+- **Root element**: `<menu>` / `<menupopup>` (View dropdown of the injected `<menubar>`)
+- **Title**: "View" (`&menu_view.label;` in `cuemol2.dtd` — label defined in the DTD but not individually enumerated in the original scan)
+- **Chrome URL**: `chrome://cuemol2/content/cuemol2-menus.xul`
+- **Associated JS**: inline `<script>` CDATA block only; handlers on `gQm2Main`
+- **Overlays applied**: none
+
+#### User-visible features
+- Perspective / Orthographic projection (checkboxes), Center mark sub-menu (Cross / Axis / None radio), Hardware stereo (checkbox), View property…
+
+#### Commands / Handlers
+| Trigger | Handler | Description |
+|---------|---------|-------------|
 | View > onpopupshowing | `gQm2Main.onViewMenuShowing(event)` | Syncs projection checkboxes |
 | View > Perspective | `gQm2Main.onViewProjChg(event)` | Switches to perspective projection |
 | View > Orthographic | `gQm2Main.onViewProjChg(event)` | Switches to orthographic projection |
@@ -112,6 +220,32 @@
 | View > Center mark items | `gQm2Main.onViewMarkChg(event)` | Changes center mark style |
 | View > Hardware stereo | `gQm2Main.toggleHWStereo()` | Toggles hardware stereo mode |
 | View > View property… | `gQm2Main.showViewPropDlg()` | Opens view property dialog |
+
+#### i18n keys used
+- View menu label + item entities are defined in `cuemol2.dtd`; the original scan did not enumerate them individually (guessing prohibited).
+
+#### Notes
+- The `view-menu-stereo-type` attribute on the Hardware stereo checkbox is used as a radio-group name (non-standard XUL) — migration concern.
+- Keybinding: F1 (hardware stereo).
+- Shares the source file and `gQm2Main` controller with the other `menu.cuemol2.*` groups.
+
+---
+
+### `menu.cuemol2.tools`
+
+- **File**: `uxp_gui/cuemol2/base/content/cuemol2-menus.xul`
+- **Root element**: `<menu>` / `<menupopup>` (Tools dropdown of the injected `<menubar>`)
+- **Title**: "Tools" (`&menu_tools.label;` in `cuemol2.dtd`)
+- **Chrome URL**: `chrome://cuemol2/content/cuemol2-menus.xul`
+- **Associated JS**: inline `<script>` CDATA block only; handlers on `gQm2Main` / `cuemolui`
+- **Overlays applied**: none
+
+#### User-visible features
+- Molecular superposition…, Mol bond editor…, Interaction…, Reassign secondary str…, Mol morphing animation…, Mol surface generation…, Mol surface cutter…, APBS elepot calculation…, Execute script…, Performance measure (checkbox), Mol client tools (hidden)
+
+#### Commands / Handlers
+| Trigger | Handler | Description |
+|---------|---------|-------------|
 | Tools > Molecular superposition… | `gQm2Main.onSSMSup1()` | Opens SSM superposition dialog |
 | Tools > Mol bond editor… | `gQm2Main.onMolBondEditor()` | Opens bond editor dialog |
 | Tools > Interaction… | `cuemolui.onIntrTool()` | Opens interaction tool dialog |
@@ -122,10 +256,63 @@
 | Tools > APBS elepot calculation… | `gQm2Main.calcApbsPot()` | Runs APBS electrostatic potential |
 | Tools > Execute script… | `gQm2Main.onExecScr()` | Opens script execution dialog |
 | Tools > Performance measure | `gQm2Main.togglePerfMeas(event)` | Toggles performance measurement mode |
+
+#### i18n keys used
+- `&menu_tools.label;`, `&menu_tools.accesskey;` (dtd: `cuemol2.dtd`)
+
+#### Notes
+- `cuemolui.onIntrTool` → `tools/intr-tool.js:5`, `cuemolui.onProt2ndry` → `tools/prot2ndry-tool.js:5`, `cuemolui.onMorphAnimSetup` → `tools/morphanim-tool.js:5`.
+- The `tools-menu-perf-meas` attribute on the Performance measure checkbox is used as a radio-group name (non-standard XUL) — migration concern. Keybinding: F2 (perf measure).
+- Mol client tools is hidden by default.
+- Shares the source file and `gQm2Main` controller with the other `menu.cuemol2.*` groups.
+
+---
+
+### `menu.cuemol2.window`
+
+- **File**: `uxp_gui/cuemol2/base/content/cuemol2-menus.xul`
+- **Root element**: `<menu>` / `<menupopup>` (Window dropdown of the injected `<menubar>`)
+- **Title**: "Window" (`&menu_window.label;` in `cuemol2.dtd`)
+- **Chrome URL**: `chrome://cuemol2/content/cuemol2-menus.xul`
+- **Associated JS**: inline `<script>` CDATA block only; handlers on `gQm2Main` / window globals
+- **Overlays applied**: none
+
+#### User-visible features
+- Show/Hide Topbar, Clear log contents, Restore default panel location, Panels sub-menu, Windows sub-menu
+
+#### Commands / Handlers
+| Trigger | Handler | Description |
+|---------|---------|-------------|
 | Window > Show/Hide Topbar | `window.gToolRibbon.toggleCollapse()` | Collapses or expands the ribbon toolbar |
 | Window > Clear log contents | `gQm2Main.clearLogContents()` | Clears the log panel |
 | Window > Restore default panel location | `restoreDefaultPanels()` | Restores side panel to default layout |
 | Window > Windows > onpopupshowing | `gQm2Main.onWinListPopupShowing(event)` | Populates open-windows list |
+
+#### i18n keys used
+- `&menu_window.label;`, `&menu_window.accesskey;` (dtd: `cuemol2.dtd`)
+
+#### Notes
+- The Panels sub-menu toggles individual side panels; the Windows sub-menu is populated dynamically via `onWinListPopupShowing`.
+- Shares the source file and `gQm2Main` controller with the other `menu.cuemol2.*` groups.
+
+---
+
+### `menu.cuemol2.help`
+
+- **File**: `uxp_gui/cuemol2/base/content/cuemol2-menus.xul`
+- **Root element**: `<menu>` / `<menupopup>` (Help dropdown of the injected `<menubar>`)
+- **Title**: "Help" (`&menu_help.label;` in `cuemol2.dtd`)
+- **Chrome URL**: `chrome://cuemol2/content/cuemol2-menus.xul`
+- **Associated JS**: inline `<script>` CDATA block only; handlers on `gQm2Main` + inline helpers
+- **Overlays applied**: none
+
+#### User-visible features
+- About plugins…, About config…, Addon manager…, About CueMol2, Console, Test crash reporter, Check for updates
+- Update alert popup (`update-alert-popup`): dismissible panel showing update message, "Don't check for updates" checkbox, "Check!!" button
+
+#### Commands / Handlers
+| Trigger | Handler | Description |
+|---------|---------|-------------|
 | Help > About plugins… | `window.open('about:plugins', ...)` | Opens plugins info page |
 | Help > About config… | `showConfig()` (inline) | Opens `about:config` page |
 | Help > Addon manager… | `showAddonMgr()` (inline) | Opens addon manager |
@@ -135,50 +322,16 @@
 | Help > Check for updates | `gQm2Main.checkForUpdates()` | Initiates update check |
 | Update popup > Check!! | `gQm2Main.goDownloadSite()` | Opens download site |
 | Update popup > close button | `gQm2Main.closeUpdatePopup()` | Dismisses update popup |
-| macOS > Preferences… | `gQm2Main.showConfigDlg()` | Opens preferences dialog (macOS) |
-| macOS > Quit CueMol2 | `gQm2Main.onCloseEvent()` | Exits application (macOS) |
 
 #### i18n keys used
-- `&menu_file.label;`, `&menu_file.accesskey;` (dtd: `cuemol2.dtd`)
-- `&new_window.label;`, `&new_window.accesskey;`, `&new_window.commandkey;` (dtd: `cuemol2.dtd`)
-- `&new_tab.label;`, `&new_tab.accesskey;`, `&new_tab.commandkey;` (dtd: `cuemol2.dtd`)
-- `&open_file.label;`, `&open_file.accesskey;`, `&open_file.commandkey;` (dtd: `cuemol2.dtd`)
-- `&save_file_as.label;`, `&save_file_as.accesskey;`, `&save_file_as.commandkey;` (dtd: `cuemol2.dtd`)
-- `&open_PDB.label;` (dtd: `cuemol2.dtd`)
-- `&saveCurrCam.label;` (dtd: `cuemol2.dtd`)
-- `&close_tab.label;` (dtd: `cuemol2.dtd`)
-- `&open_scene.label;`, `&open_scene.accesskey;` (dtd: `cuemol2.dtd`)
-- `&reload_scene.label;`, `&reload_scene.accesskey;`, `&reload_scene.commandkey;` (dtd: `cuemol2.dtd`)
-- `&save_scene.label;`, `&save_scene.accesskey;`, `&save_scene.commandkey;` (dtd: `cuemol2.dtd`)
-- `&menu_edit.label;`, `&menu_edit.accesskey;` (dtd: `cuemol2.dtd`)
-- `&edit_undo.label;`, `&edit_undo.accesskey;`, `&edit_undo.commandkey;` (dtd: `cuemol2.dtd`)
-- `&edit_redo.label;`, `&edit_redo.accesskey;`, `&edit_redo.commandkey;` (dtd: `cuemol2.dtd`)
-- `&edit_config.label;`, `&edit_config.accesskey;`, `&edit_config.commandkey;` (dtd: `cuemol2.dtd`)
-- `&menu_render.label;`, `&menu_render.accesskey;` (dtd: `cuemol2.dtd`)
-- `&render_exportscene.label;`, `&render_exportscene.accesskey;` (dtd: `cuemol2.dtd`)
-- `&menu_scene.label;`, `&menu_scene.accesskey;` (dtd: `cuemol2.dtd`)
-- `&menu_tools.label;`, `&menu_tools.accesskey;` (dtd: `cuemol2.dtd`)
-- `&menu_window.label;`, `&menu_window.accesskey;` (dtd: `cuemol2.dtd`)
 - `&menu_help.label;`, `&menu_help.accesskey;` (dtd: `cuemol2.dtd`)
 - `&help_about.label;`, `&help_about.accesskey;` (dtd: `cuemol2.dtd`)
 - `&help_aboutCmdMac.label;` (dtd: `cuemol2.dtd`, `#ifdef XP_MACOSX` only)
-- `&quitApplicationCmd.label;`, `&quitApplicationCmd.accesskey;` (dtd: `cuemol2.dtd`, non-Windows non-macOS)
-- `&quitApplicationCmdWin.label;`, `&quitApplicationCmdWin.accesskey;` (dtd: `cuemol2.dtd`, `#ifdef XP_WIN` only)
-- `&quitApplicationCmdMac.label;`, `&quitApplicationCmdMac.key;` (dtd: `cuemol2.dtd`, `#ifdef XP_MACOSX` only)
-- `&configCmdMac.label;`, `&configCmdMac.commandkey;` (dtd: `cuemol2.dtd`, `#ifdef XP_MACOSX` only)
-- `&servicesMenuMac.label;` (dtd: `cuemol2.dtd`, `#ifdef XP_MACOSX` only)
-- `&hideThisAppCmdMac.label;`, `&hideThisAppCmdMac.commandkey;` (dtd: `cuemol2.dtd`, `#ifdef XP_MACOSX` only)
-- `&hideOtherAppsCmdMac.label;`, `&hideOtherAppsCmdMac.commandkey;` (dtd: `cuemol2.dtd`, `#ifdef XP_MACOSX` only)
-- `&showAllAppsCmdMac.label;` (dtd: `cuemol2.dtd`, `#ifdef XP_MACOSX` only)
-- Inherits `%brandDTD;` (`chrome://global/locale/brand.dtd`) — `&brandShortName;` etc. used indirectly via the above entities
-- Inherits `%updateDTD;` (`chrome://mozapps/locale/update/updates.dtd`) — referenced in DOCTYPE but no update entities appear directly in this file's markup
+- Inherits `%updateDTD;` (`chrome://mozapps/locale/update/updates.dtd`) for the update-alert popup
 
 #### Notes
-- This is the primary menu overlay; it targets `menus-overlay-target` in `cuemol2.xul`.
-- Contains preprocessor directives (`#ifdef XP_MACOSX`, `#ifdef XP_WIN`) — the macOS Application menu block duplicates logic also found in `cuemol2-macos-menus.xul`; the relationship between the two files should be clarified during migration.
-- `gQm2Main` is an instance of `Qm2Main` class loaded by `cuemol2-scripts.xul`; all `gQm2Main.*` handlers depend on that overlay being applied first.
-- `cuemolui` is a window-global namespace object declared at `base/content/cuemol2-utils.js:30` (`var cuemolui = new Object()`). Methods called from this menu are defined in specific content JS files: `cuemolui.onAnimRender` → `anim/anim-ribbon.js:214`, `cuemolui.onIntrTool` → `tools/intr-tool.js:5`, `cuemolui.onProt2ndry` → `tools/prot2ndry-tool.js:5`, `cuemolui.onMorphAnimSetup` → `tools/morphanim-tool.js:5`. Underlying implementation modules live in `components/jsmods/cuemol2ui-lib/` and are loaded via CommonJS `require()`.
-- The `tools-menu-perf-meas` and `view-menu-stereo-type` attributes on checkboxes are used as radio-group names, not standard XUL behavior — migration concern.
+- Several handlers are inline helpers (`showConfig` / `showAddonMgr` / `showConsole` / `showCrashReporter`) defined in the overlay's script block rather than on `gQm2Main`.
+- Shares the source file and `gQm2Main` controller with the other `menu.cuemol2.*` groups.
 
 ---
 
@@ -256,7 +409,7 @@
 
 ## Statistics
 
-- Total entries: 4
+- Total entries: 11
 - With JS handler: 3
 - With i18n keys: 2
 - Unresolved: 0

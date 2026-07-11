@@ -83,7 +83,6 @@ export const MENU_DISPATCH_UNIMPLEMENTED = 'unimplemented'
  */
 export const MENU_ACTION_MAP = {
   // --- File ---
-  [IPC.MENU_NEW_WINDOW]:       { dispatch: MENU_DISPATCH_UNIMPLEMENTED, deliver: 'generic' },
   [IPC.MENU_NEW_TAB]:          { dispatch: 'tab.new',            deliver: 'dedicated-direct' },
   [IPC.MENU_OPEN_FILE]:        { dispatch: 'ui.openObjDialog',   deliver: 'dedicated-direct' },
   [IPC.MENU_GET_PDB]:          { dispatch: 'ui.getPdbDialog',    deliver: 'generic' },
@@ -111,7 +110,6 @@ export const MENU_ACTION_MAP = {
 
   // --- Rendering ---
   [IPC.MENU_POV_RENDER]:       { dispatch: 'ui.renderWindow',    deliver: 'generic' },
-  [IPC.MENU_ANIM_RENDER]:      { dispatch: MENU_DISPATCH_UNIMPLEMENTED, deliver: 'generic' },
   [IPC.MENU_EXPORT_PNG]:       { dispatch: 'scene.export.png',     deliver: 'generic' },
   [IPC.MENU_EXPORT_UMBREON]:   { dispatch: 'scene.export.umbreon', deliver: 'generic' },
   [IPC.MENU_EXPORT_POV]:       { dispatch: 'scene.export.pov',     deliver: 'generic' },
@@ -134,7 +132,6 @@ export const MENU_ACTION_MAP = {
 
   // --- Tools ---
   [IPC.MENU_MOL_SUPERPOSE]:    { dispatch: 'ui.molSuperpose',    deliver: 'generic' },
-  [IPC.MENU_BOND_EDITOR]:      { dispatch: MENU_DISPATCH_UNIMPLEMENTED, deliver: 'generic' },
   [IPC.MENU_INTERACTION]:      { dispatch: 'ui.interactionAnalysisDialog', deliver: 'generic' },
   [IPC.MENU_REASSIGN_2NDRY]:   { dispatch: 'ui.reassignProt2ndryDialog', deliver: 'generic' },
   [IPC.MENU_MORPH_ANIM]:       { dispatch: MENU_DISPATCH_UNIMPLEMENTED, deliver: 'generic' },
@@ -144,18 +141,11 @@ export const MENU_ACTION_MAP = {
   [IPC.MENU_EXEC_SCRIPT]:      { dispatch: MENU_DISPATCH_UNIMPLEMENTED, deliver: 'generic' },
   [IPC.MENU_PERF_MEAS]:        { dispatch: MENU_DISPATCH_UNIMPLEMENTED, deliver: 'generic' },
 
-  // --- Window ---
-  [IPC.MENU_TOGGLE_TOPBAR]:    { dispatch: MENU_DISPATCH_UNIMPLEMENTED, deliver: 'generic' },
-  [IPC.MENU_CLEAR_LOG]:        { dispatch: MENU_DISPATCH_UNIMPLEMENTED, deliver: 'generic' },
-  [IPC.MENU_RESTORE_PANELS]:   { dispatch: MENU_DISPATCH_UNIMPLEMENTED, deliver: 'generic' },
-
   // --- Help ---
+  // Only About is carried forward (see menuTemplate.ts). The Window menu and
+  // the Mozilla-specific Help items (plugins / config / addon-mgr / console /
+  // check-updates) were dropped, so they no longer appear here.
   [IPC.MENU_ABOUT]:            { dispatch: 'ui.aboutDialog',     deliver: 'generic' },
-  [IPC.MENU_ABOUT_PLUGINS]:    { dispatch: MENU_DISPATCH_UNIMPLEMENTED, deliver: 'generic' },
-  [IPC.MENU_ABOUT_CONFIG]:     { dispatch: MENU_DISPATCH_UNIMPLEMENTED, deliver: 'generic' },
-  [IPC.MENU_ADDON_MGR]:        { dispatch: MENU_DISPATCH_UNIMPLEMENTED, deliver: 'generic' },
-  [IPC.MENU_CONSOLE]:          { dispatch: MENU_DISPATCH_UNIMPLEMENTED, deliver: 'generic' },
-  [IPC.MENU_CHECK_UPDATES]:    { dispatch: MENU_DISPATCH_UNIMPLEMENTED, deliver: 'generic' },
 } as const satisfies Record<string, MenuActionEntry>
 
 /** Union of all valid menu-action channel keys. */
