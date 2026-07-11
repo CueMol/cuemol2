@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Date: 2026-05-16
-- Mapping rows: [`menu.cuemol2`](../mapping/menus.md#menucuemol2) (File > Save File As, Save current view, Reload Scene)
+- Mapping rows: [`menu.cuemol2.file`](../mapping/menus.md#menucuemol2file) (File > Save File As, Save current view, Reload Scene)
 
 ## Context
 

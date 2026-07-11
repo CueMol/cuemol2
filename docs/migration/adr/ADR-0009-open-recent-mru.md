@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Date: 2026-05-13
-- Mapping rows: [`menu.cuemol2`](../mapping/menus.md#menucuemol2) — File > Open Recent
+- Mapping rows: [`menu.cuemol2.file`](../mapping/menus.md#menucuemol2file) — File > Open Recent
 
 ## Context
 

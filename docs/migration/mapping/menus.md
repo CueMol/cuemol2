@@ -16,24 +16,49 @@ Status values:
 
 # Mapping — Menu
 
+> `menu.cuemol2` (the single main-menubar overlay) was split into 8
+> per-menu rows (File / Edit / Rendering / Scene / View / Tools / Window /
+> Help) on 2026-07-11 — each menubar dropdown is a distinct `<menupopup>`
+> surface and progresses on its own phase, so a single row's per-item
+> status was too coarse. See `uxp-inventory/menus.md` for the inventory
+> split. The item-level detail table further down is the source of truth
+> for each group's completion count (`X/Y wired`); the `MenuBar` (React)
+> is suppressed on macOS — native Electron menu only. The macOS
+> Application menu is tracked in its own row (`menu.cuemol2-macos`).
+
 | ID | React | Mapping | Status | PR | ADR | Notes |
 |----|-------|---------|--------|----|-----|-------|
 | [`menu.color`](../uxp-inventory/menus.md#menucolor) | `h3-kit/colorpicker/PalettePanel.tsx` | merged | done | | [ADR-0020](../adr/ADR-0020-color-picker-widget.md) | UXP color-menu presets merged into the color picker Palette panel (grayscale + 7 hue rows x 7 sat/bri variations). |
-| [`menu.cuemol2`](../uxp-inventory/menus.md#menucuemol2) | `menuTemplate` / `MenuBar` / `useMenuDispatch` | split | wip | | | Full 9-group menu structure added (File/Edit/Rendering/Scene/View/Tools/Window/Help); per-item implementation status is tracked below; `MenuBar` (React) is suppressed on macOS -- native Electron menu only |
-| [`menu.cuemol2-macos`](../uxp-inventory/menus.md#menucuemol2-macos) | `main/menu.ts` (`macOnlyGroups`) | direct | wip | | | macOS App menu added; per-item implementation status is tracked below |
+| [`menu.cuemol2.file`](../uxp-inventory/menus.md#menucuemol2file) | `menuTemplate` / `MenuBar` / `useMenuDispatch` / `useFileCommands` | split | done | | [ADR-0008](../adr/ADR-0008-get-pdb-streaming.md), [ADR-0009](../adr/ADR-0009-open-recent-mru.md), [ADR-0012](../adr/ADR-0012-save-scene-parity.md), [ADR-0014](../adr/ADR-0014-file-menu-save-reload.md), [ADR-0016](../adr/ADR-0016-window-close-quit-funnel.md) | 14/14 resolved. All items wired; New Window dropped (Electron cannot host multiple OS windows on one shared backend, 2026-07-11) and Open web page dropped. |
+| [`menu.cuemol2.edit`](../uxp-inventory/menus.md#menucuemol2edit) | `menuTemplate` / `MenuBar` / `useMenuDispatch` | split | wip | | | 6/8 wired (Undo / Redo + Merge molecule / Delete mol atoms / Change chain ID / Change residue number, each opening its tool dialog via `ui.*Dialog`). Clear undo data + Options remain stubbed. |
+| [`menu.cuemol2.rendering`](../uxp-inventory/menus.md#menucuemol2rendering) | `menuTemplate` / `MenuBar` / `useMenuDispatch` / `runSceneExportFlow` / `RenderWindowApp` | split | wip | | | 2/3 wired: POV-Ray rendering opens the modeless Rendering window (`ui.renderWindow`), Export scene submenu (PNG / Umbreon / POV / STL / MQO) wired. Animation rendering deferred -- to be folded into the Rendering window as a Still/Animation mode (menu item removed 2026-07-11). |
+| [`menu.cuemol2.scene`](../uxp-inventory/menus.md#menucuemol2scene) | `menuTemplate` / `MenuBar` / `useMenuDispatch` / `sceneBgColor.service` | split | wip | | | 2/4 wired (Background White / Black). Use color proofing + Properties… stubbed (scene ctxmenu has color-proofing wired; menu path + scene property editor still pending). |
+| [`menu.cuemol2.view`](../uxp-inventory/menus.md#menucuemol2view) | `menuTemplate` / `MenuBar` / `useMenuDispatch` / `useViewCommands` / `viewProjection.service` | split | done | | | 7/7 resolved. Perspective / Orthographic + Center mark Cross / Axis / None + View property (`ui.viewProperty` -> docked Generic inspector) wired; Hardware stereo dropped. |
+| [`menu.cuemol2.tools`](../uxp-inventory/menus.md#menucuemol2tools) | `menuTemplate` / `MenuBar` / `useMenuDispatch` / `useToolCommands` | split | wip | | [ADR-0022](../adr/ADR-0022-mol-superpose.md) | 6/10 resolved: Molecular superposition / Interaction / Reassign secondary str / Mol surface generation / Mol surface cutter wired to their dialogs; Mol bond editor merged into the viewport "Add Bond" tool (menu item removed 2026-07-11). Morph animation / APBS / Execute script / Performance measure remain stubbed. |
+| [`menu.cuemol2.window`](../uxp-inventory/menus.md#menucuemol2window) | (removed) | dropped | done | | | Whole Window menu dropped 2026-07-11: Show/Hide Topbar + Clear log contents + Restore default panel location no longer map onto the tritium UI structure. |
+| [`menu.cuemol2.help`](../uxp-inventory/menus.md#menucuemol2help) | `menuTemplate` / `MenuBar` / `useMenuDispatch` | split | done | | | 6/6 resolved. About CueMol3-tritium wired (`ui.aboutDialog`); the Mozilla-specific About plugins / About config / Addon manager / Console / Check for updates were dropped 2026-07-11. On macOS the single-item Help group is empty (About lives in the App menu) and is filtered out. |
+| [`menu.cuemol2-macos`](../uxp-inventory/menus.md#menucuemol2-macos) | `main/menu.ts` (`macOnlyGroups`) | direct | wip | | | macOS App menu added; per-item implementation status is tracked below (6/7; Preferences stubbed) |
 | [`menu.cuemol2-scripts`](../uxp-inventory/menus.md#menucuemol2-scripts) | — | dropped | done | | | XUL script loader overlay; Electron app handles module loading natively — no migration needed |
 
 ## Completion Summary
 
-Completion counts treat `wired` and `native` as complete. `stub` means the menu item exists in Tritium but still falls through to the generic unimplemented menu warning.
+Completion counts treat `wired` / `native` as complete and `dropped` / `merged` as resolved (intentional migration decisions). Only `stub` (falls through to the generic unimplemented warning) and `deferred` (planned follow-up) count against completion. Counts are derived from the source-of-truth `menuActionMap.ts`.
 
 | Scope | Complete | Stub / todo | Completion | Notes |
 |-------|---------:|------------:|-----------:|-------|
 | `menu.color` | 1 | 0 | 100% | Presets merged into the color picker Palette panel (see ADR-0020) |
-| `menu.cuemol2` | 27 | 28 | 49% | Main menubar structure exists; 55 item-level migration points tracked (1 dropped counted as complete) |
+| `menu.cuemol2.file` | 14 | 0 | 100% | All wired; New Window + Open web page dropped (both count resolved) |
+| `menu.cuemol2.edit` | 6 | 2 | 75% | Undo / Redo + Merge / Delete / Change chain / Change resid all wired; Clear undo + Options stub |
+| `menu.cuemol2.rendering` | 2 | 1 | 67% | POV-Ray (render window) + Export scene wired; Animation rendering deferred (render-window integration) |
+| `menu.cuemol2.scene` | 2 | 2 | 50% | Background White / Black wired; Use color proofing + Properties stubbed |
+| `menu.cuemol2.view` | 7 | 0 | 100% | Projection + Center mark + View property wired; Hardware stereo dropped |
+| `menu.cuemol2.tools` | 6 | 4 | 60% | Superpose / Interaction / Reassign-2ndry / Mol-surf / Surf-cutter wired + Bond editor merged (viewport tool); Morph anim / APBS / Exec script / Perf measure stub |
+| `menu.cuemol2.window` | 3 | 0 | 100% | Whole Window menu dropped (topbar / log / panel-layout no longer map onto tritium) |
+| `menu.cuemol2.help` | 6 | 0 | 100% | About wired; plugins / config / addon-mgr / console / updates dropped (Mozilla-specific) |
 | `menu.cuemol2-macos` | 6 | 1 | 86% | OS-native items complete; Preferences is stubbed |
 | `menu.cuemol2-scripts` | 1 | 0 | 100% | Dropped intentionally because Electron module loading replaces the XUL script overlay |
-| **Total** | **31** | **33** | **48%** | 64 inventory-derived menu migration points |
+| **`menu.cuemol2` subtotal** | **46** | **9** | **84%** | Sum of the 8 `menu.cuemol2.*` group rows (55 item-level points; 6 dropped + 1 merged count resolved, 1 deferred + 8 stub outstanding) |
+| **Total** | **54** | **10** | **84%** | 64 inventory-derived menu migration points (color 1 + cuemol2 55 + macos 7 + scripts 1) |
 
 ## Menu Item Implementation Status
 
@@ -46,7 +71,7 @@ Implementation status values:
 - `deferred` -- intentionally left for later
 - `dropped` -- not migrated
 
-Current source of truth: `tritium/react-gui/src/shared/menuTemplate.ts`, `tritium/react-gui/src/main/menu.ts`, `tritium/react-gui/src/renderer/hooks/useMenuDispatch.ts`, `tritium/react-gui/src/renderer/commands/useViewCommands.ts`, and `tritium/react-gui/src/renderer/worker/services/viewProjection.service.ts`.
+Current source of truth: `tritium/react-gui/src/shared/menuActionMap.ts` (the channel -> dispatch map that drives wired-vs-stub), `tritium/react-gui/src/shared/menuTemplate.ts`, `tritium/react-gui/src/main/menu.ts`, `tritium/react-gui/src/renderer/hooks/useMenuDispatch.ts`, `tritium/react-gui/src/renderer/commands/useViewCommands.ts`, and `tritium/react-gui/src/renderer/worker/services/viewProjection.service.ts`.
 
 View menu state notes:
 
@@ -63,7 +88,7 @@ View menu state notes:
 | macOS App | Hide Others | `role: hideOthers` | Electron role | native | OS-level item |
 | macOS App | Show All | `role: unhide` | Electron role | native | OS-level item |
 | macOS App | Quit CueMol | `role: quit` | Electron role + `before-quit` closes every window → `win.on('close')` funnel → `IPC.WINDOW_CLOSE_REQUEST` → `useWindowCloseHandler` walks all tabs through `handleCloseTab` → `IPC.WINDOW_CLOSE_PROCEED` | wired | Window close button and Cmd+Q share one per-window confirm funnel; cancel aborts. See [ADR-0016](../adr/ADR-0016-window-close-quit-funnel.md). |
-| File | New Window | `new-window` / `menu:new-window` | `MENU_GENERIC` -> `console.warn` | stub | Entry exists in native menu and React `MenuBar` |
+| File | New Window | (removed) | -- | dropped | Electron cannot host multiple OS windows against one shared libcuemol2 backend, so the UXP multi-window model is not carried forward (use New Tab). Menu item + channel removed 2026-07-11. |
 | File | New Tab | `new-tab` / `menu:new-tab` | `CmdId.TabNew` → `useNewTabCommand` → `NewTabDialog` | done | UXP parity dialog (New Scene / New View + inherit camera); New Scene → `createNewSceneAndView`, New View → `createViewInScene`. Canvas one-shot bind / `addView` lifecycle and constraints recorded in [ADR-0011](../adr/ADR-0011-new-tab-canvas-lifecycle.md). |
 | File | Open File... | `open-file` / `menu:open-file` | `CmdId.UiOpenObjDialog` | wired | Opens object-file dialog path |
 | File | Get PDB... | `get-pdb` / `menu:get-pdb` | `CmdId.UiGetPdbDialog` → `GetPdbDialog` → `streamLoadFromUrl` / `streamLoadDensityMap` / `cancelStreamLoad` services | wired | Streaming via `StreamManager.supplyDataAsync` (no temp file); cancel drains IOThread. Coord (RCSB CIF / PDB) + density map (RCSB cif.gz / EBI MTZ) supported. Streaming path, .cif disambiguation, and PDB-ID history recorded in [ADR-0008](../adr/ADR-0008-get-pdb-streaming.md). |
@@ -80,13 +105,13 @@ View menu state notes:
 | Edit | Undo | `undo` / `menu:undo` | `CmdId.Undo` | wired | Owned by `useUndoRedoState`; disabled at stack bottom via `MENU_UPDATE_STATE` (UXP `updateCmdUndoState` parity). Toolbar has a multi-step history dropdown ([ADR-0013](../adr/ADR-0013-toolbar-ribbon-port.md)) |
 | Edit | Redo | `redo` / `menu:redo` | `CmdId.Redo` | wired | Owned by `useUndoRedoState`; disabled when redo stack empty. macOS accelerator override |
 | Edit | Clear undo data | `clear-undo` / `menu:clear-undo` | `MENU_GENERIC` -> `console.warn` | stub | Command not connected |
-| Edit | Merge molecule... | `merge-mol` / `menu:merge-mol` | `MENU_GENERIC` -> `console.warn` | stub | Tool dialog not connected from menu |
-| Edit | Delete mol atoms... | `delete-mol-atoms` / `menu:delete-mol-atoms` | `MENU_GENERIC` -> `console.warn` | stub | Tool dialog not connected from menu |
-| Edit | Change chain ID... | `change-chain-id` / `menu:change-chain-id` | `MENU_GENERIC` -> `console.warn` | stub | Tool dialog not connected from menu |
-| Edit | Change residue number... | `change-resid-num` / `menu:change-resid-num` | `MENU_GENERIC` -> `console.warn` | stub | Tool dialog not connected from menu |
+| Edit | Merge molecule... | `merge-mol` / `menu:merge-mol` | `ui.mergeMolDialog` command -> merge-molecule dialog | wired | Opens the merge-molecule tool dialog (`dialog.tool.mol-merge`) |
+| Edit | Delete mol atoms... | `delete-mol-atoms` / `menu:delete-mol-atoms` | `ui.deleteMolDialog` command -> delete-atoms dialog | wired | Opens the delete-atoms tool dialog (`dialog.tool.mol-delete`) |
+| Edit | Change chain ID... | `change-chain-id` / `menu:change-chain-id` | `ui.changeChainIdDialog` command -> change-chain dialog | wired | Opens the change-chain-ID tool dialog (`dialog.tool.chg-chname`) |
+| Edit | Change residue number... | `change-resid-num` / `menu:change-resid-num` | `ui.changeResidueIndexDialog` command -> change-residue-index dialog | wired | Opens the change-residue-index tool dialog (`dialog.tool.chg-resindex`) |
 | Edit | Options | `options` / `menu:options` | `MENU_GENERIC` -> `console.warn` | stub | Non-macOS Edit menu item; macOS Preferences uses same channel |
-| Rendering | POV-Ray rendering... | `pov-render` / `menu:pov-render` | `MENU_GENERIC` -> `console.warn` | stub | Render dialog not connected |
-| Rendering | Animation rendering... | `anim-render` / `menu:anim-render` | `MENU_GENERIC` -> `console.warn` | stub | Animation render dialog not connected |
+| Rendering | POV-Ray rendering... | `pov-render` / `menu:pov-render` | `ui.renderWindow` command -> modeless Rendering window (`RenderWindowApp`) | wired | Opens the modeless Rendering window (target-view picker + backend settings + Start/progress/result); also on the Toolbar "Render" button. Backends include POV-Ray (`PovrayBackend`). |
+| Rendering | Animation rendering... | (removed) | to be folded into the Rendering window as a Still/Animation mode | deferred | UXP had a separate animation-render window; tritium will add an Animation mode to the existing modeless Rendering window (follow-up). Menu item + channel removed 2026-07-11. |
 | Rendering | Export scene | `export-scene` submenu (`menu:export-{png,umbreon,pov,stl,mqo}`) | `CmdId.Export{Png,Umbreon,Pov,Stl,Mqo}` -> `runSceneExportFlow` -> `exportScene` worker (StreamManager `createHandler(name, 2)`) | wired | Split into a per-file-type submenu (PNG / Umbreon ray-traced PNG / POV-Ray SDL / STL / MQO). One item per exporter so png vs umbreon (both `*.png`) stay distinct without relying on Electron's lost filter index. Image types reuse `ExportPngOptionsDialog` (size/alpha/DPI); POV writes a sibling `.inc`. Curated subset of UXP's category-2 exporters (LuxRender/Warabi/raw/qsl deferred). |
 | Scene | Background > White | `bg-white` / `menu:bg-white` | `CmdId.SceneBgWhite` + `AsyncCueMol.setSceneBgColor('white')` + `updateMenuState` | wired | Radio state derived from scene.bgcolor RGB; uses StyleManager.compileColor('white') via makeColor helper |
 | Scene | Background > Black | `bg-black` / `menu:bg-black` | `CmdId.SceneBgBlack` + `AsyncCueMol.setSceneBgColor('black')` + `updateMenuState` | wired | Radio state derived from scene.bgcolor RGB; uses StyleManager.compileColor('black') via makeColor helper |
@@ -98,23 +123,23 @@ View menu state notes:
 | View | Center mark > Axis | `center-mark-axis` / `menu:center-mark-axis` | `CmdId.ViewCenterMarkAxis` + `AsyncCueMol.setViewCenterMark('axis')` + `updateMenuState` | wired | Uses CueMol enum value `axis`; menu state is updated from the successful command request |
 | View | Center mark > None | `center-mark-none` / `menu:center-mark-none` | `CmdId.ViewCenterMarkNone` + `AsyncCueMol.setViewCenterMark('none')` + `updateMenuState` | wired | Uses CueMol enum value `none`; menu state is updated from the successful command request |
 | View | Hardware stereo | — | removed from Tritium View menu | dropped | Removed by migration decision; hardware stereo menu is not carried forward |
-| View | View property... | `view-props` / `menu:view-props` | `MENU_GENERIC` -> `console.warn` | stub | View property dialog not connected |
+| View | View property... | `view-props` / `menu:view-props` | `ui.viewProperty` command -> docked Generic inspector (View target) | wired | Routes the active view into the docked property inspector's Generic tab (`overlay.propeditor-generic`). |
 | Tools | Molecular superposition... | `mol-superpose` / `menu:mol-superpose` | `CmdId.UiMolSuperpose` → `MolSuperposeDialog` → `superposeMol` service | wired | LSQ/SSM superposition via `MolAnlManager` under undo txn; RMSD-file output deferred. See [ADR-0022](../adr/ADR-0022-mol-superpose.md). |
-| Tools | Mol bond editor... | `bond-editor` / `menu:bond-editor` | `MENU_GENERIC` -> `console.warn` | stub | Tool dialog not connected |
-| Tools | Interaction... | `interaction` / `menu:interaction` | `MENU_GENERIC` -> `console.warn` | stub | Tool dialog not connected |
-| Tools | Reassign secondary str... | `reassign-2ndry` / `menu:reassign-2ndry` | `MENU_GENERIC` -> `console.warn` | stub | Tool dialog not connected |
-| Tools | Mol morphing animation... | `morph-anim` / `menu:morph-anim` | `MENU_GENERIC` -> `console.warn` | stub | Tool dialog not connected |
-| Tools | Mol surface generation... | `mol-surf` / `menu:mol-surf` | `MENU_GENERIC` -> `console.warn` | stub | Tool dialog not connected |
-| Tools | Mol surface cutter... | `surf-cutter` / `menu:surf-cutter` | `MENU_GENERIC` -> `console.warn` | stub | Tool dialog not connected |
+| Tools | Mol bond editor... | (removed) | viewport tool: `ViewportToolPalette` "Add Bond" (`activeTool 'bondEdit'`, `useBondEditClickHandler` + `bondEdit.service`) | merged | UXP modal replaced by a viewport pick-to-add tool (`dialog.tool.bond-edit`); no menu entry needed. Menu item + channel removed 2026-07-11. |
+| Tools | Interaction... | `interaction` / `menu:interaction` | `ui.interactionAnalysisDialog` command -> interaction dialog | wired | Opens the interaction-analysis dialog (`dialog.tool.intr-tool`) |
+| Tools | Reassign secondary str... | `reassign-2ndry` / `menu:reassign-2ndry` | `ui.reassignProt2ndryDialog` command -> reassign-2ndry dialog | wired | Opens the secondary-structure reassign dialog (`dialog.tool.prot2ndry-tool`) |
+| Tools | Mol morphing animation... | `morph-anim` / `menu:morph-anim` | `MENU_GENERIC` -> `console.warn` | stub | Tool dialog not connected (`dialog.tool.morphanim-tool` todo) |
+| Tools | Mol surface generation... | `mol-surf` / `menu:mol-surf` | `ui.makeMolSurfDialog` command -> make-surface dialog | wired | Opens the mol-surface dialog (`dialog.tool.makesurf`) |
+| Tools | Mol surface cutter... | `surf-cutter` / `menu:surf-cutter` | `ui.cutSurfByPlaneDialog` command -> cut-surface dialog | wired | Opens the surface cut-by-plane dialog (`dialog.tool.surf-cutbyplane`) |
 | Tools | APBS elepot calculation... | `apbs` / `menu:apbs` | `MENU_GENERIC` -> `console.warn` | stub | Tool dialog not connected |
 | Tools | Execute script... | `exec-script` / `menu:exec-script` | `MENU_GENERIC` -> `console.warn` | stub | Script execution dialog not connected |
 | Tools | Performance measure | `perf-meas` / `menu:perf-meas` | `MENU_GENERIC` -> `console.warn` | stub | Checkbox behavior not connected |
-| Window | Show/Hide Topbar | `toggle-topbar` / `menu:toggle-topbar` | `MENU_GENERIC` -> `console.warn` | stub | Window layout action not connected |
-| Window | Clear log contents | `clear-log` / `menu:clear-log` | `MENU_GENERIC` -> `console.warn` | stub | Log action not connected |
-| Window | Restore default panel location | `restore-panels` / `menu:restore-panels` | `MENU_GENERIC` -> `console.warn` | stub | Layout reset action not connected |
-| Help | About CueMol3-tritium | `about` / `menu:about` | `CmdId.UiAboutDialog` | wired | Non-macOS Help menu item; macOS uses App menu |
-| Help | About plugins... | `about-plugins` / `menu:about-plugins` | `MENU_GENERIC` -> `console.warn` | stub | Dialog not connected |
-| Help | About config... | `about-config` / `menu:about-config` | `MENU_GENERIC` -> `console.warn` | stub | Dialog not connected |
-| Help | Addon manager... | `addon-mgr` / `menu:addon-mgr` | `MENU_GENERIC` -> `console.warn` | stub | Dialog not connected |
-| Help | Console | `console` / `menu:console` | `MENU_GENERIC` -> `console.warn` | stub | Console action not connected |
-| Help | Check for updates | `check-updates` / `menu:check-updates` | `MENU_GENERIC` -> `console.warn` | stub | Update check not connected |
+| Window | Show/Hide Topbar | (removed) | -- | dropped | Window menu dropped 2026-07-11: the topbar / log / panel-layout actions no longer map onto the tritium UI structure. |
+| Window | Clear log contents | (removed) | -- | dropped | Window menu dropped 2026-07-11 (see above). |
+| Window | Restore default panel location | (removed) | -- | dropped | Window menu dropped 2026-07-11 (see above). |
+| Help | About CueMol3-tritium | `about` / `menu:about` | `ui.aboutDialog` command -> `AboutDialog` | wired | The only carried-forward Help item; non-macOS Help menu (macOS shows it in the App menu, so the Help group is empty and dropped there). |
+| Help | About plugins... | (removed) | -- | dropped | Mozilla-platform specific (`about:plugins`); dropped 2026-07-11. |
+| Help | About config... | (removed) | -- | dropped | Mozilla-platform specific (`about:config`); dropped 2026-07-11. |
+| Help | Addon manager... | (removed) | -- | dropped | Mozilla add-on manager; dropped 2026-07-11. |
+| Help | Console | (removed) | -- | dropped | Mozilla error console; dropped 2026-07-11. |
+| Help | Check for updates | (removed) | -- | dropped | Mozilla update system; dropped 2026-07-11. |

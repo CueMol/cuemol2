@@ -2,7 +2,7 @@
 
 - Status: accepted (supersedes [ADR-0010](ADR-0010-quit-chain.md))
 - Date: 2026-05-17
-- Mapping rows: [`menu.cuemol2`](../mapping/menus.md#menucuemol2) — Quit/Exit,
+- Mapping rows: [`menu.cuemol2.file`](../mapping/menus.md#menucuemol2file) — Quit/Exit,
   [`menu.cuemol2-macos`](../mapping/menus.md#menucuemol2-macos) — Quit CueMol,
   [`other.cuemol2`](../mapping/other.md#othercuemol2)
 
