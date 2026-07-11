@@ -225,7 +225,9 @@ function buildAndSetMenu(mainWindow: BrowserWindow): void {
   const template: MenuItemConstructorOptions[] = [
     ...macOnlyGroups.map((g) => buildGroup(g, specificHandlers, mainWindow)),
     ...appMenuGroups.map((g) => buildGroup(g, specificHandlers, mainWindow)),
-  ]
+    // Drop groups that build to an empty submenu (e.g. Help on macOS, whose
+    // only item -- About -- is othersOnly and lives in the App menu instead).
+  ].filter((g) => !Array.isArray(g.submenu) || g.submenu.length > 0)
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 

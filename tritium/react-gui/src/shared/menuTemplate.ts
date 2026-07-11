@@ -50,7 +50,9 @@ export const APP_MENU: AppMenuGroup[] = [
   {
     label: 'File',
     submenu: [
-      { id: 'new-window',  label: 'New Window',       accelerator: 'CmdOrCtrl+Shift+N', ipcChannel: IPC.MENU_NEW_WINDOW },
+      // New Window intentionally omitted: Electron cannot host multiple OS
+      // windows against a single shared libcuemol2 backend, so the UXP
+      // multi-window model is not carried forward (use New Tab instead).
       { id: 'new-tab',     label: 'New Tab',           accelerator: 'CmdOrCtrl+T',       ipcChannel: IPC.MENU_NEW_TAB },
       { type: 'separator' },
       { id: 'open-file',   label: 'Open File...',      accelerator: 'CmdOrCtrl+O',       ipcChannel: IPC.MENU_OPEN_FILE },
@@ -112,8 +114,10 @@ export const APP_MENU: AppMenuGroup[] = [
   {
     label: 'Rendering',
     submenu: [
+      // POV-Ray rendering opens the modeless Rendering window (ui.renderWindow).
+      // Animation rendering will be folded into that same window as a
+      // Still / Animation mode (follow-up), so it has no separate menu item.
       { id: 'pov-render',    label: 'POV-Ray rendering...',   ipcChannel: IPC.MENU_POV_RENDER },
-      { id: 'anim-render',   label: 'Animation rendering...', ipcChannel: IPC.MENU_ANIM_RENDER },
       {
         id: 'export-scene', label: 'Export scene',
         submenu: [
@@ -171,7 +175,8 @@ export const APP_MENU: AppMenuGroup[] = [
     label: 'Tools',
     submenu: [
       { id: 'mol-superpose',  label: 'Molecular superposition...',  ipcChannel: IPC.MENU_MOL_SUPERPOSE },
-      { id: 'bond-editor',    label: 'Mol bond editor...',           ipcChannel: IPC.MENU_BOND_EDITOR },
+      // Bond editing is a viewport tool (ViewportToolPalette "Add Bond",
+      // activeTool 'bondEdit'), not a modal dialog -- no menu entry needed.
       { id: 'interaction',    label: 'Interaction...',               ipcChannel: IPC.MENU_INTERACTION },
       { id: 'reassign-2ndry', label: 'Reassign secondary str...',    ipcChannel: IPC.MENU_REASSIGN_2NDRY },
       { id: 'morph-anim',     label: 'Mol morphing animation...',    ipcChannel: IPC.MENU_MORPH_ANIM },
@@ -185,29 +190,18 @@ export const APP_MENU: AppMenuGroup[] = [
     ],
   },
 
-  // Window menu
-  {
-    label: 'Window',
-    submenu: [
-      { id: 'toggle-topbar',    label: 'Show/Hide Topbar',             ipcChannel: IPC.MENU_TOGGLE_TOPBAR },
-      { type: 'separator' },
-      { id: 'clear-log',        label: 'Clear log contents',           ipcChannel: IPC.MENU_CLEAR_LOG },
-      { id: 'restore-panels',   label: 'Restore default panel location', ipcChannel: IPC.MENU_RESTORE_PANELS },
-    ],
-  },
+  // Window menu intentionally omitted: the topbar / log / panel-layout actions
+  // it hosted in UXP no longer map onto the tritium UI structure.
 
   // Help menu
+  // Only About is carried forward; the UXP plugins / config / addon-manager /
+  // console / update-check items were Mozilla-platform specific. On macOS About
+  // lives in the Application menu, so this single-item group is empty there and
+  // is dropped by buildAndSetMenu (empty-submenu groups are filtered out).
   {
     label: 'Help',
     submenu: [
       { id: 'about', label: `About ${APP_PRODUCT_NAME}`, ipcChannel: IPC.MENU_ABOUT, othersOnly: true },
-      { type: 'separator' },
-      { id: 'about-plugins',  label: 'About plugins...',  ipcChannel: IPC.MENU_ABOUT_PLUGINS },
-      { id: 'about-config',   label: 'About config...',   ipcChannel: IPC.MENU_ABOUT_CONFIG },
-      { id: 'addon-mgr',      label: 'Addon manager...',  ipcChannel: IPC.MENU_ADDON_MGR },
-      { type: 'separator' },
-      { id: 'console',        label: 'Console',           ipcChannel: IPC.MENU_CONSOLE },
-      { id: 'check-updates',  label: 'Check for updates', ipcChannel: IPC.MENU_CHECK_UPDATES },
     ],
   },
 ]
