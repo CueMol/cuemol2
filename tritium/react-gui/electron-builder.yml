@@ -125,13 +125,32 @@ mac:
   gatekeeperAssess: false
 
 win:
-  # x64 NSIS installer. The native addon's dependent DLLs (cuemol2.dll + Boost)
-  # are staged next to cuemol_internal.node in build/Release/ (no rpath on
-  # Windows; the loader resolves DLLs from the module's own directory).
-  # Unsigned for now (Authenticode signing is future work, ADR-0030 Phase 4).
+  # x64 NSIS installer (assisted wizard; see the nsis: block below). The native
+  # addon's dependent DLLs (cuemol2.dll + Boost) are staged next to
+  # cuemol_internal.node in build/Release/ (no rpath on Windows; the loader
+  # resolves DLLs from the module's own directory).
+  # Unsigned for now (Authenticode signing is future work, ADR-0030 Phase 4:
+  # drop in win.certificateFile or win.azureSignOptions + CSC_* CI secrets).
   target:
     - target: nsis
       arch: x64
+
+# NSIS options apply to the win nsis target above.
+# Assisted (wizard) installer, not the silent one-click default:
+# welcome -> choose install dir -> install -> finish. perMachine installs to
+# Program Files for all users (UAC elevation), the conventional layout scientific
+# desktop apps ship. installerIcon / uninstallerIcon are auto-detected from
+# build/icon.ico. The addon resolves cuemol2.dll from its own directory and
+# sysconfig.xml via process.resourcesPath (both install-dir relative), so a
+# Program Files install works unchanged; runtime writes go to per-user
+# electron userData (%APPDATA%), never into the install dir.
+nsis:
+  oneClick: false
+  perMachine: true
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  # deleteAppDataOnUninstall: false  # default -- keep user settings on uninstall
 
 linux:
   # x64 AppImage + deb. The native addon's shared libs are staged in
