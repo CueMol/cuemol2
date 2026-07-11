@@ -12,6 +12,15 @@ on:
 #    branches-ignore:
 #      - '**'
 
+# Cancel a superseded in-progress run when a newer one starts for the same ref
+# and event, so a push train (repeated pushes to a branch) does not pile up
+# parallel runs. event_name is part of the key so a manual workflow_dispatch
+# (release) run is not cancelled by a later push to the same branch, and tag
+# runs (distinct ref) are never cancelled.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
 env:
   mozbuild-cache-version: v1
 

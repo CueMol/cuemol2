@@ -6,6 +6,12 @@ on:
 #      - '**'
   workflow_dispatch:
 
+# Cancel a superseded in-progress run on the same ref and event (see build2.yml
+# for the rationale behind including event_name in the key).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
 ###############################################
 
 jobs:
