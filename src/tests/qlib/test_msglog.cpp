@@ -2,6 +2,7 @@
 #include <common.h>
 #include "qlib/LMsgLog.hpp"
 #include <cstdio>
+#include <filesystem>
 #include <string>
 
 using qlib::LMsgLog;
@@ -98,23 +99,26 @@ TEST(LMsgLog, FileRedirPath)
 {
     LMsgLog *log = getLog();
 
-    char tmppath[256];
-    std::snprintf(tmppath, sizeof(tmppath), "/tmp/cuemol_msglog_test_%d.txt",
-                  (int)getpid());
+    // Use the platform temp directory so the test works on Windows too
+    // (there is no /tmp there).
+    std::filesystem::path tmppath =
+        std::filesystem::temp_directory_path() / "cuemol_msglog_test.txt";
+    std::string tmpstr = tmppath.string();
+    std::remove(tmpstr.c_str());
 
-    log->setFileRedirPath(tmppath);
-    EXPECT_TRUE(log->getFileRedirPath().equals(tmppath));
+    log->setFileRedirPath(tmpstr.c_str());
+    EXPECT_TRUE(log->getFileRedirPath().equals(tmpstr.c_str()));
 
     log->writeLog(LMsgLog::DL_NOTIFY, "redir test", true);
     log->setFileRedirPath("");
     EXPECT_TRUE(log->getFileRedirPath().equals(""));
 
-    FILE *fp = std::fopen(tmppath, "r");
+    FILE *fp = std::fopen(tmpstr.c_str(), "r");
     ASSERT_NE(fp, nullptr);
     char buf[256] = {};
     std::fread(buf, 1, sizeof(buf) - 1, fp);
     std::fclose(fp);
-    std::remove(tmppath);
+    std::remove(tmpstr.c_str());
 
     EXPECT_NE(std::string(buf).find("redir test"), std::string::npos);
 }

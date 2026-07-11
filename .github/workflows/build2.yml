@@ -12,6 +12,15 @@ on:
 #    branches-ignore:
 #      - '**'
 
+# Cancel a superseded in-progress run when a newer one starts for the same ref
+# and event, so a push train (repeated pushes to a branch) does not pile up
+# parallel runs. event_name is part of the key so a manual workflow_dispatch
+# (release) run is not cancelled by a later push to the same branch, and tag
+# runs (distinct ref) are never cancelled.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
 env:
   mozbuild-cache-version: v1
 
@@ -25,25 +34,35 @@ env:
 ###############################################
 
 jobs:
+  # Compute the build_posix matrix. The non-embed legs (arm64 + Intel) run on
+  # every push; the py312 (embed-python) leg is added only on the release
+  # cadence (develop / tag / manual dispatch), so feature-branch pushes do not
+  # rebuild the embed-python variant every time. A dynamic matrix is used
+  # because a job-level if cannot reference the matrix context.
+  setup_matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      posix-matrix: ${{ steps.gen.outputs.matrix }}
+    steps:
+      - name: Compute build_posix matrix
+        id: gen
+        shell: bash
+        run: |
+          base='{"os":"macos-15","name":"MacOS 15 arm64 clang","embed-python":"","postfix":""},{"os":"macos-15-intel","name":"MacOS 15 x64 clang","embed-python":"","postfix":""}'
+          py312='{"os":"macos-15","name":"MacOS 15 arm64 clang py312","embed-python":"3.12","postfix":"_py312"}'
+          if [ "${{ env.BUILD_MODE }}" = "full" ]; then
+            echo "matrix={\"include\":[$base,$py312]}" >> "$GITHUB_OUTPUT"
+          else
+            echo "matrix={\"include\":[$base]}" >> "$GITHUB_OUTPUT"
+          fi
+
   build_posix:
     name: '${{ matrix.name }}'
+    needs: setup_matrix
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - os: macos-15
-            name: "MacOS 15 arm64 clang"
-            embed-python: ""
-            postfix: ""
-          - os: macos-15
-            name: "MacOS 15 arm64 clang py312"
-            embed-python: "3.12"
-            postfix: "_py312"
-          - os: macos-15-intel
-            name: "MacOS 15 x64 clang"
-            embed-python: ""
-            postfix: ""
+      matrix: ${{ fromJSON(needs.setup_matrix.outputs.posix-matrix) }}
 
     env:
       MACOSX_DEPLOYMENT_TARGET: "10.15"
@@ -259,6 +278,26 @@ jobs:
       uses: ./build_scripts/build_libcuemol2_posix
       with:
         basedir: ${{ github.workspace }}\target
+
+    # Run the C++ gtest suite on Windows too (posix runs it in build_linux.yml).
+    # Windows builds with BUILD_TESTS=ON (build_libcuemol2_win.bat) and PRE_TEST
+    # discovery (src/tests/CMakeLists.txt), so tests are enumerated and executed
+    # here rather than at build time. The build dir is <basedir>/tmp/build_libcuemol2
+    # because win.bat runs cmake from %BASEDIR%\tmp. The test exes sit in Release/
+    # next to cuemol2.dll, but their transitive deps (Boost etc.) live in the
+    # deplibs prefixes under target/. Windows has no rpath, so put every directory
+    # that contains a DLL under target/ on PATH; otherwise the loader fails with
+    # 0xc0000135 (DLL not found).
+    - name: Run gtest (Windows)
+      shell: bash
+      run: |
+        set -eux
+        WS="$(cygpath -u '${{ github.workspace }}')"
+        BUILD_DIR="$WS/target/tmp/build_libcuemol2"
+        DLL_DIRS=$(find "$WS/target" -name '*.dll' -exec dirname {} \; | sort -u | tr '\n' ':')
+        echo "--- DLL directories added to PATH ---"; echo "$DLL_DIRS" | tr ':' '\n'
+        export PATH="${DLL_DIRS}${PATH}"
+        ctest --test-dir "$BUILD_DIR" --output-on-failure
 
     - name: Build tritium/core addon
       uses: ./build_scripts/build_tritium_core_posix

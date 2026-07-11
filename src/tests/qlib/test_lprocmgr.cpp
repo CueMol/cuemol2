@@ -9,6 +9,28 @@ using qlib::LProcMgr;
 using qlib::LString;
 
 // -----------------------------------------------------------------------
+// Platform-portable stand-ins for the shell commands the tests drive.
+//
+// LProcMgr launches a real executable (CreateProcess on Windows,
+// posix_spawn on Unix), so the tests must reference commands that exist on
+// the host OS.  On POSIX we use /bin/echo and /bin/sleep directly; on
+// Windows we drive the cmd.exe "echo" builtin and use "ping" as a portable
+// sleep (ping -n N+1 targets 127.0.0.1 and waits about N seconds).
+// -----------------------------------------------------------------------
+
+#ifdef _WIN32
+static const char *ECHO_PATH = "cmd.exe";
+static const char *SLEEP_PATH = "ping";
+static LString echoArgs(const LString &text) { return LString("/c echo ") + text; }
+static LString sleepArgs(int sec) { return LString::format("-n %d 127.0.0.1", sec + 1); }
+#else
+static const char *ECHO_PATH = "/bin/echo";
+static const char *SLEEP_PATH = "/bin/sleep";
+static LString echoArgs(const LString &text) { return text; }
+static LString sleepArgs(int sec) { return LString::format("%d", sec); }
+#endif
+
+// -----------------------------------------------------------------------
 // Helpers
 // -----------------------------------------------------------------------
 
@@ -78,7 +100,7 @@ TEST_F(LProcMgrTest, SetSlotSize)
 
 TEST_F(LProcMgrTest, EchoTask)
 {
-    int id = pMgr->queueTask("/bin/echo", "hello_cuemol", "");
+    int id = pMgr->queueTask(ECHO_PATH, echoArgs("hello_cuemol"), "");
     EXPECT_GE(id, 0);
 
     // State should be queued or running (may already be done on a fast machine).
@@ -97,7 +119,7 @@ TEST_F(LProcMgrTest, EchoTask)
 
 TEST_F(LProcMgrTest, EmptyAfterResultRetrieved)
 {
-    int id = pMgr->queueTask("/bin/echo", "test", "");
+    int id = pMgr->queueTask(ECHO_PATH, echoArgs("test"), "");
     pMgr->waitForExit(id);
     pMgr->getResultOutput(id);
 
@@ -110,8 +132,8 @@ TEST_F(LProcMgrTest, GetStateQueued)
     // Saturate the slot with a long-running task so the next task will queue.
     pMgr->setSlotSize(1);
 
-    int id1 = pMgr->queueTask("/bin/sleep", "3", "");
-    int id2 = pMgr->queueTask("/bin/echo", "queued", "");
+    int id1 = pMgr->queueTask(SLEEP_PATH, sleepArgs(3), "");
+    int id2 = pMgr->queueTask(ECHO_PATH, echoArgs("queued"), "");
 
     // id2 should be queued (waiting for a free slot).
     int st2 = pMgr->getState(id2);
@@ -125,7 +147,7 @@ TEST_F(LProcMgrTest, GetStateQueued)
 
 TEST_F(LProcMgrTest, GetStateRunning)
 {
-    int id = pMgr->queueTask("/bin/sleep", "3", "");
+    int id = pMgr->queueTask(SLEEP_PATH, sleepArgs(3), "");
 
     // Give the process a moment to start.
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -146,9 +168,9 @@ TEST_F(LProcMgrTest, GetStateUnknownForBadId)
 
 TEST_F(LProcMgrTest, MultipleConcurrentTasks)
 {
-    int id1 = pMgr->queueTask("/bin/echo", "task1", "");
-    int id2 = pMgr->queueTask("/bin/echo", "task2", "");
-    int id3 = pMgr->queueTask("/bin/echo", "task3", "");
+    int id1 = pMgr->queueTask(ECHO_PATH, echoArgs("task1"), "");
+    int id2 = pMgr->queueTask(ECHO_PATH, echoArgs("task2"), "");
+    int id3 = pMgr->queueTask(ECHO_PATH, echoArgs("task3"), "");
 
     pMgr->waitForExit(id1);
     pMgr->waitForExit(id2);
@@ -172,8 +194,8 @@ TEST_F(LProcMgrTest, WaitIDDependency)
     pMgr->setSlotSize(4);
 
     // Queue a short "producer" task and a "consumer" task that waits for it.
-    int id1 = pMgr->queueTask("/bin/echo", "producer", "");
-    int id2 = pMgr->queueTask("/bin/echo", "consumer",
+    int id1 = pMgr->queueTask(ECHO_PATH, echoArgs("producer"), "");
+    int id2 = pMgr->queueTask(ECHO_PATH, echoArgs("consumer"),
                               LString::format("%d", id1));
 
     // id2 must not start before id1 finishes.
@@ -198,7 +220,7 @@ TEST_F(LProcMgrTest, WaitIDDependency)
 
 TEST_F(LProcMgrTest, KillRunningTask)
 {
-    int id = pMgr->queueTask("/bin/sleep", "10", "");
+    int id = pMgr->queueTask(SLEEP_PATH, sleepArgs(10), "");
 
     // Wait for it to start.
     int st = waitForState(pMgr, id, LProcMgr::PM_RUNNING);
@@ -217,9 +239,9 @@ TEST_F(LProcMgrTest, KillQueuedTask)
     pMgr->setSlotSize(1);
 
     // Fill the slot.
-    int id1 = pMgr->queueTask("/bin/sleep", "5", "");
+    int id1 = pMgr->queueTask(SLEEP_PATH, sleepArgs(5), "");
     // This one will be queued.
-    int id2 = pMgr->queueTask("/bin/echo", "should_not_run", "");
+    int id2 = pMgr->queueTask(ECHO_PATH, echoArgs("should_not_run"), "");
 
     EXPECT_EQ(pMgr->getState(id2), LProcMgr::PM_QUEUED);
 
@@ -232,8 +254,8 @@ TEST_F(LProcMgrTest, KillQueuedTask)
 
 TEST_F(LProcMgrTest, KillAll)
 {
-    pMgr->queueTask("/bin/sleep", "5", "");
-    pMgr->queueTask("/bin/sleep", "5", "");
+    pMgr->queueTask(SLEEP_PATH, sleepArgs(5), "");
+    pMgr->queueTask(SLEEP_PATH, sleepArgs(5), "");
 
     pMgr->killAll();
     EXPECT_TRUE(pMgr->isEmpty());
@@ -250,14 +272,14 @@ TEST_F(LProcMgrTest, GetResultOutputTriggersDependentTask)
 {
     pMgr->setSlotSize(4);
 
-    int id1 = pMgr->queueTask("/bin/echo", "first", "");
+    int id1 = pMgr->queueTask(ECHO_PATH, echoArgs("first"), "");
     // Let id1 complete and consume its result.
     pMgr->waitForExit(id1);
     pMgr->getResultOutput(id1);
 
     // Queue a task that would have waited for id1 (already done).
     // Since id1 is now PM_UNKNOWN, updateWaitIDs will clear the dependency.
-    int id2 = pMgr->queueTask("/bin/echo", "second",
+    int id2 = pMgr->queueTask(ECHO_PATH, echoArgs("second"),
                               LString::format("%d", id1));
     pMgr->waitForExit(id2);
     EXPECT_EQ(pMgr->getState(id2), LProcMgr::PM_ENDED);
@@ -280,7 +302,7 @@ TEST_F(LProcMgrTest, DoneTaskListJSONEmpty)
 
 TEST_F(LProcMgrTest, DoneTaskListJSONAfterCompletion)
 {
-    int id = pMgr->queueTask("/bin/echo", "json_test", "");
+    int id = pMgr->queueTask(ECHO_PATH, echoArgs("json_test"), "");
     // Wait for it to complete.
     int st = waitForState(pMgr, id, LProcMgr::PM_ENDED);
     ASSERT_EQ(st, LProcMgr::PM_ENDED);

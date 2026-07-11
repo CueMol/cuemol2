@@ -26,7 +26,7 @@ namespace qsys {
     */
 
     /// collapsed state (for GUI impl)
-    bool m_bUICollapsed;
+    bool m_bUICollapsed = false;
 
   public:
     RendGroup();
