@@ -19,6 +19,12 @@
 import type { AppIconKey } from '../../../data/appIcons'
 import type { RenderBinaries } from '../../../worker/shared/renderTypes'
 import { DEFAULT_RENDER_BINARIES } from '../../../worker/shared/renderTypes'
+import {
+  PDB2PQR_FORCE_FIELDS,
+  DEFAULT_PDB2PQR_FF,
+  DEFAULT_APBS_BINARIES,
+} from '../../../worker/shared/apbsTypes'
+import type { ApbsConfigKey } from '../../../contexts/ApbsConfigContext'
 import { INPUT_DEVICE_PREF_OPTIONS, INPUT_DEVICE_PREF_LABELS } from '../../../viewInputConfig'
 import type { LabelDefaults } from '../../../worker/server/services/labelDefaults.service'
 import type { ViewInputParams } from '../../../worker/server/services/viewInputParams.service'
@@ -55,6 +61,14 @@ export const CATEGORY_TREE: CategoryNode[] = [
     icon: 'settings.input',
     children: [
       { id: 'input.mouse', label: 'Mouse & Navigation', icon: 'settings.mouse', children: [] },
+    ],
+  },
+  {
+    id: 'tools',
+    label: 'Tools',
+    icon: 'settings.rendering',
+    children: [
+      { id: 'tools.apbs', label: 'APBS / PDB2PQR', icon: 'settings.rendering', children: [] },
     ],
   },
 ]
@@ -156,6 +170,29 @@ export const SETTINGS: SettingDef[] = [
     control: { kind: 'path' },
   },
 
+  // --- Tools > APBS / PDB2PQR ---
+  {
+    key: 'tools.apbsExe',
+    label: 'APBS Executable',
+    description: 'Path to the APBS binary used to compute electrostatic potential maps.',
+    category: 'tools.apbs',
+    control: { kind: 'path' },
+  },
+  {
+    key: 'tools.pdb2pqrExe',
+    label: 'pdb2pqr Executable',
+    description: 'Path to the pdb2pqr tool that assigns atomic charges and radii.',
+    category: 'tools.apbs',
+    control: { kind: 'path' },
+  },
+  {
+    key: 'tools.pdb2pqrFF',
+    label: 'pdb2pqr Force Field',
+    description: 'Default force field used by pdb2pqr for charge assignment.',
+    category: 'tools.apbs',
+    control: { kind: 'select', options: [...PDB2PQR_FORCE_FIELDS] },
+  },
+
   // --- Input > Mouse & Navigation ---
   {
     key: 'input.device',
@@ -198,6 +235,9 @@ export const DEFAULTS: Record<string, string | number | boolean> = {
   'rendering.povrayExe': DEFAULT_RENDER_BINARIES.povrayExe,
   'rendering.povrayInc': DEFAULT_RENDER_BINARIES.povrayInc,
   'rendering.blendpng': DEFAULT_RENDER_BINARIES.blendpng,
+  'tools.apbsExe': DEFAULT_APBS_BINARIES.apbsExe,
+  'tools.pdb2pqrExe': DEFAULT_APBS_BINARIES.pdb2pqrExe,
+  'tools.pdb2pqrFF': DEFAULT_PDB2PQR_FF,
   'input.device': INPUT_DEVICE_PREF_LABELS.auto,
   'mouse.xyRotSensitivity': 0.8,
   'mouse.pickPrecision': 10.0,
@@ -227,6 +267,16 @@ export const RENDER_BINARY_SETTING_KEYS: Record<string, keyof RenderBinaries> = 
   'rendering.povrayExe': 'povrayExe',
   'rendering.povrayInc': 'povrayInc',
   'rendering.blendpng': 'blendpng',
+}
+
+// --- APBS tool settings ---
+// Backed by ApbsConfigContext (persistent paths + default force field), not the
+// local `values` state. SettingsPane routes these keys to the context.
+
+export const APBS_SETTING_KEYS: Record<string, ApbsConfigKey> = {
+  'tools.apbsExe': 'apbsExe',
+  'tools.pdb2pqrExe': 'pdb2pqrExe',
+  'tools.pdb2pqrFF': 'pdb2pqrFF',
 }
 
 // --- Pointing-device preset setting ---

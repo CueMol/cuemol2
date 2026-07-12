@@ -59,6 +59,12 @@ export interface UiState {
   povrayInc?: string
   /** blendpng executable path (Rendering settings). */
   blendpng?: string
+  /** APBS executable path (External Tools settings). */
+  apbsExe?: string
+  /** pdb2pqr executable path (External Tools settings). */
+  pdb2pqrExe?: string
+  /** Default pdb2pqr force field (External Tools settings). */
+  pdb2pqrFF?: string
 }
 
 // - File dialog -
@@ -150,6 +156,19 @@ export interface AppPathInfo {
     povrayExe: string
     povrayInc: string
     blendpng: string
+  }
+  /**
+   * Default APBS / pdb2pqr executable paths resolved by Main (getApbsBinaries).
+   * Same resolution strategy as defaultRenderBinaries: packaged builds resolve
+   * from the bundled `bundle_apps/apbs` tree under process.resourcesPath (staged
+   * by tritium/packaging/collect-cuemol2-runtime.sh), dev builds from the
+   * BUNDLE_APPS env var. A field is the empty string when its source is unset,
+   * so the renderer falls back to the compiled-in DEFAULT_APBS_BINARIES. Mirrors
+   * the ApbsBinaries shape (renderer/worker/shared/apbsTypes).
+   */
+  defaultApbsBinaries: {
+    apbsExe: string
+    pdb2pqrExe: string
   }
 }
 

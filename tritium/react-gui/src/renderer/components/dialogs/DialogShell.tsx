@@ -53,8 +53,8 @@ export interface DialogShellProps {
     width?: DialogWidth
     /** Cancel handler (forwarded to `Dialog.onClose` and the Cancel button). */
     onCancel: () => void
-    /** OK handler. */
-    onOk: () => void
+    /** OK handler. Optional when {@link footerActions} replaces the footer. */
+    onOk?: () => void
     /** OK button label. Default `'OK'`. */
     okLabel?: string
     /** OK button intent. Default `'primary'` (DeleteMol uses `'danger'`). */
@@ -70,6 +70,13 @@ export interface DialogShellProps {
     errorMsg?: string | null
     /** Dialog body content (FieldSections / fields). */
     children: React.ReactNode
+    /**
+     * Replaces the default Cancel / OK footer buttons entirely (e.g. a
+     * Start / Stop / Close set for a long-running job dialog). When provided,
+     * `onOk` / `okLabel` / `okIntent` / `okDisabled` are ignored. The dialog
+     * frame, body wrapper and error line stay shared.
+     */
+    footerActions?: React.ReactNode
     /**
      * Extra portal sibling rendered after the footer inside the Dialog (e.g. a
      * confirm `Alert` for the two Alert-gated molecule-edit dialogs).
@@ -96,6 +103,7 @@ export function DialogShell({
     submitting = false,
     errorMsg = null,
     children,
+    footerActions,
     extra,
 }: DialogShellProps): React.JSX.Element {
     const { theme } = useTheme()
@@ -121,17 +129,19 @@ export function DialogShell({
             </DialogBody>
             <DialogFooter
                 actions={
-                    <>
-                        <Button onClick={onCancel} disabled={submitting}>Cancel</Button>
-                        <Button
-                            intent={okIntent}
-                            onClick={onOk}
-                            disabled={submitting || okDisabled}
-                            loading={submitting}
-                        >
-                            {okLabel}
-                        </Button>
-                    </>
+                    footerActions ?? (
+                        <>
+                            <Button onClick={onCancel} disabled={submitting}>Cancel</Button>
+                            <Button
+                                intent={okIntent}
+                                onClick={onOk}
+                                disabled={submitting || okDisabled}
+                                loading={submitting}
+                            >
+                                {okLabel}
+                            </Button>
+                        </>
+                    )
                 }
             />
             {extra}

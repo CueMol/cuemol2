@@ -400,6 +400,14 @@ import type {
   ProposeMolSurfNameResult,
 } from '../server/services/makeMolSurf.service'
 import type {
+  CalcApbsStartArgs,
+  CalcApbsStartResult,
+  CalcApbsCancelArgs,
+  CalcApbsCancelResult,
+  ProposeElepotNameArgs,
+  ProposeElepotNameResult,
+} from './apbsTypes'
+import type {
   AnalyzeInteractionsArgs,
   AnalyzeInteractionsResult,
 } from '../server/services/analyzeInteractions.service'
@@ -629,6 +637,9 @@ export interface ServiceMap {
   mergeMol:                   { args: MergeMolArgs;                    result: MergeMolResult }
   makeMolSurf:                { args: MakeMolSurfArgs;                 result: MakeMolSurfResult }
   proposeMolSurfName:         { args: ProposeMolSurfNameArgs;          result: ProposeMolSurfNameResult }
+  calcApbsStart:              { args: CalcApbsStartArgs;               result: CalcApbsStartResult }
+  calcApbsCancel:             { args: CalcApbsCancelArgs;              result: CalcApbsCancelResult }
+  proposeElepotName:          { args: ProposeElepotNameArgs;           result: ProposeElepotNameResult }
   analyzeInteractions:        { args: AnalyzeInteractionsArgs;         result: AnalyzeInteractionsResult }
   cutSurfByPlane:             { args: CutSurfByPlaneArgs;              result: CutSurfByPlaneResult }
   reassignProt2ndry:          { args: ReassignProt2ndryArgs;           result: ReassignProt2ndryResult }

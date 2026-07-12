@@ -33,6 +33,7 @@ import { InputGroup } from '@blueprintjs/core'
 import { AppIcon } from '../AppIcon'
 import { useTheme } from '../../contexts/ThemeContext'
 import { useRenderConfig } from '../../contexts/RenderConfigContext'
+import { useApbsConfig } from '../../contexts/ApbsConfigContext'
 import { useViewInputConfig } from '../../contexts/ViewInputConfigContext'
 import { useAppSettings } from '../../contexts/AppSettingsContext'
 import { useCueMol } from '../../hooks/useCueMol'
@@ -49,6 +50,7 @@ import {
   DEFAULTS,
   CATEGORY_LABELS,
   RENDER_BINARY_SETTING_KEYS,
+  APBS_SETTING_KEYS,
   INPUT_DEVICE_SETTING_KEY,
   LABEL_DEFAULT_SETTING_KEYS,
   VIEW_INPUT_PARAM_SETTING_KEYS,
@@ -64,6 +66,9 @@ export const SettingsPane: React.FC = () => {
   // Render binary paths are backed by RenderConfigContext (persistent),
   // not the mock `values` state.
   const { binaries, setBinary } = useRenderConfig()
+  // APBS / pdb2pqr paths + default force field are backed by ApbsConfigContext
+  // (persistent), not the mock `values` state.
+  const { config: apbsConfig, setValue: setApbsValue } = useApbsConfig()
   // The pointing-device preference is backed by ViewInputConfigContext
   // (persistent + live re-apply; 'auto' detects the device from the stream).
   const { inputDevicePreference, setInputDevicePreference, effectiveDeviceMode } =
@@ -121,6 +126,13 @@ export const SettingsPane: React.FC = () => {
         return
       }
 
+      // APBS / pdb2pqr paths + force field persist via ApbsConfigContext.
+      const apbsKey = APBS_SETTING_KEYS[key]
+      if (apbsKey) {
+        setApbsValue(apbsKey, String(value))
+        return
+      }
+
       // Atom-label defaults apply live to C++ (persisted on close).
       const labelKey = LABEL_DEFAULT_SETTING_KEYS[key]
       if (labelKey) {
@@ -142,7 +154,7 @@ export const SettingsPane: React.FC = () => {
         setTheme(value ? 'dark' : 'light')
       }
     },
-    [setTheme, setBinary, setInputDevicePreference, setLabelDefault, setViewInputParam],
+    [setTheme, setBinary, setApbsValue, setInputDevicePreference, setLabelDefault, setViewInputParam],
   )
 
   // Keep the toggle in sync if theme changes externally.
@@ -286,6 +298,7 @@ export const SettingsPane: React.FC = () => {
                 .filter((s) => s.category === catId)
                 .map((s) => {
                   const binaryKey = RENDER_BINARY_SETTING_KEYS[s.key]
+                  const apbsKey = APBS_SETTING_KEYS[s.key]
                   let def = s
                   let value: string | number | boolean
                   // Font picker: swap the fallback options for the live system
@@ -311,7 +324,9 @@ export const SettingsPane: React.FC = () => {
                         ? viewInputParams[viewParamKey]
                         : binaryKey
                           ? binaries[binaryKey]
-                          : values[s.key]
+                          : apbsKey
+                            ? apbsConfig[apbsKey]
+                            : values[s.key]
                   }
                   return (
                     <SettingRow
