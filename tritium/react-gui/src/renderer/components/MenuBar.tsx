@@ -10,7 +10,7 @@
  * `sceneBgColor` props.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { APP_MENU, getRoleLabel } from '../../shared/menuTemplate'
+import { APP_MENU, getRoleLabel, isExportItemUnavailable } from '../../shared/menuTemplate'
 import type { AppMenuItem, AppMenuRole } from '../../shared/menuTemplate'
 import type { RecentFileEntry, SceneBgColor, ViewCenterMark } from '../../shared/ipcTypes'
 import { IPC } from '../../shared/ipcChannels'
@@ -24,6 +24,11 @@ interface MenuBarProps {
   sceneBgColor?: SceneBgColor | null
   /** Whether a molview tab is active; gates scene-operation items. */
   hasScene?: boolean
+  /**
+   * Scene-exporter nicknames available in this libcuemol2 build; export items
+   * whose exporter is absent are hidden. `null` = unknown (show all).
+   */
+  exportAvailable?: string[] | null
   recentFiles?: RecentFileEntry[]
 }
 
@@ -87,6 +92,7 @@ interface DropdownItemProps {
   viewCenterMark?: ViewCenterMark | null
   sceneBgColor?: SceneBgColor | null
   hasScene?: boolean
+  exportAvailable?: string[] | null
   recentFiles?: RecentFileEntry[]
   onRecentOpen?: (entry: RecentFileEntry) => void
 }
@@ -166,19 +172,21 @@ const getSceneBgColorState = (
  * routes a click to `onAction`, or to `onRecentOpen` for a dynamic
  * recent-file entry.
  */
-const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProjection, viewCenterMark, sceneBgColor, hasScene, recentFiles, onRecentOpen }) => {
+const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProjection, viewCenterMark, sceneBgColor, hasScene, exportAvailable, recentFiles, onRecentOpen }) => {
   const [submenuOpen, setSubmenuOpen] = useState(false)
   const itemRef = useRef<HTMLDivElement>(null)
 
   // Expand the static placeholder for "Open Recent" with the live MRU list.
   // The recent entries are rendered as plain DropdownItems that capture
-  // their entry payload through a per-item onClick closure.
+  // their entry payload through a per-item onClick closure. Scene-export items
+  // whose exporter is not built into this libcuemol2 (e.g. Umbreon) are dropped.
   const submenu: AppMenuItem[] | undefined = useMemo(() => {
     if (item.id === 'open-recent') {
       return buildRecentSubmenuItems(recentFiles ?? [])
     }
-    return item.submenu
-  }, [item.id, item.submenu, recentFiles])
+    if (!item.submenu) return item.submenu
+    return item.submenu.filter((sub) => !isExportItemUnavailable(sub, exportAvailable))
+  }, [item.id, item.submenu, recentFiles, exportAvailable])
 
   if (item.type === 'separator') {
     return <div className="menubar__dropdown-separator" role="separator" />
@@ -226,6 +234,7 @@ const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProject
                 viewCenterMark={viewCenterMark}
                 sceneBgColor={sceneBgColor}
                 hasScene={hasScene}
+                exportAvailable={exportAvailable}
                 recentFiles={recentFiles}
                 onRecentOpen={onRecentOpen}
               />
@@ -268,7 +277,7 @@ const DropdownItem: React.FC<DropdownItemProps> = ({ item, onAction, viewProject
  * plus the click-away / Escape close handlers, and renders each non-darwin
  * `APP_MENU` group as a dropdown.
  */
-export const MenuBar: React.FC<MenuBarProps> = ({ activeTab, viewProjection = null, viewCenterMark = null, sceneBgColor = null, hasScene = false, recentFiles = [] }) => {
+export const MenuBar: React.FC<MenuBarProps> = ({ activeTab, viewProjection = null, viewCenterMark = null, sceneBgColor = null, hasScene = false, exportAvailable = null, recentFiles = [] }) => {
   const { dispatchMenuChannel, dispatchOpenRecent } = useMenuDispatch(activeTab)
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [dropdownPos, setDropdownPos] = useState<{ left: number }>({ left: 0 })
@@ -362,6 +371,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ activeTab, viewProjection = nu
                     viewCenterMark={viewCenterMark}
                     sceneBgColor={sceneBgColor}
                     hasScene={hasScene}
+                    exportAvailable={exportAvailable}
                     recentFiles={recentFiles}
                     onRecentOpen={dispatchOpenRecent}
                   />

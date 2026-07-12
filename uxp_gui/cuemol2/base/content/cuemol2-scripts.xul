@@ -17,7 +17,6 @@
     <script type="application/x-javascript;version=1.8" src="renderer.js"/>
     <script type="application/x-javascript;version=1.8" src="fileopen.js"/>
     <script type="application/x-javascript;version=1.8" src="dragdropopen.js"/>
-    <script type="application/x-javascript;version=1.8" src="export-qsl.js"/>
 
     <!-- tool definitions -->
     <script type="application/x-javascript;version=1.8" src="tools/netpdbopen.js"/>

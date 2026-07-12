@@ -18,6 +18,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
+## Common tasks (`build_scripts/`)
+
+Recurring operations are [Task](https://taskfile.dev) targets run from
+`build_scripts/`. Prefer these over re-discovering commands; full list: `task --list`.
+
+| Command | Purpose |
+|---------|---------|
+| `task build_libcuemol2` / `rebuild_libcuemol2` | Build / clean-rebuild libcuemol2 |
+| `task run_gtest` | C++ unit tests (ctest) |
+| `task build_tritium` / `run_tritium` | Build / run the tritium app |
+| `task test_tritium` | tritium tests (core Jest + react-gui Vitest) |
+| `task bump_version_build` | Bump build number `x.y.z.BUILD` (edits all 3 version files) |
+| `task bump_version_rev` | Bump revision number `x.y.REV.build` |
+
+Version bump wraps `bump_version_{build,rev}.sh` (bump-my-version) and edits
+`.bumpversion.cfg`, `src/_version.h`, `uxp_gui/cuemol2/config/version.txt`. Commit
+message convention: `chore(version): bump build number to <x.y.z.b>`.
+
+---
+
 ## libcuemol2 Build
 
 ```sh

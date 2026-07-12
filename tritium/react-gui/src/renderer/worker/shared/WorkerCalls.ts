@@ -100,6 +100,7 @@ import type {
   ExportSceneResult,
   GetSceneExportInfoArgs,
   GetSceneExportInfoResult,
+  GetAvailableSceneExportersResult,
 } from '../server/services/exportImage.service'
 import type {
   SceneBgColorArgs,
@@ -491,6 +492,7 @@ export interface ServiceMap {
   saveScene:                  { args: SaveSceneArgs;                   result: SaveSceneResult }
   exportScene:                { args: ExportSceneArgs;                 result: ExportSceneResult }
   getSceneExportInfo:         { args: GetSceneExportInfoArgs;          result: GetSceneExportInfoResult }
+  getAvailableSceneExporters: { args: void;                            result: GetAvailableSceneExportersResult }
   validateSelection:          { args: ValidateSelectionArgs;           result: ValidateSelectionResult }
   getSceneBgColor:            { args: SceneBgColorArgs;                result: SceneBgColorResult }
   setSceneBgColor:            { args: SetSceneBgColorArgs;             result: SceneBgColorResult }

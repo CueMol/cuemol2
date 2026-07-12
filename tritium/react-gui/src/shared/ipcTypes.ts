@@ -457,6 +457,15 @@ export interface MenuState {
   sceneOps?: {
     enabled: boolean
   }
+  /**
+   * Scene-exporter availability for the running libcuemol2 build: the set of
+   * exporter nicknames registered in category 2. Export menu items whose
+   * exporter is absent are hidden. An empty array is treated as "unknown" and
+   * hides nothing (fail-open); pushed once at startup after the worker probe.
+   */
+  exportCaps?: {
+    available: string[]
+  }
 }
 
 // - Crash report -

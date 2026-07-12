@@ -51,6 +51,18 @@ tasks:
 
   #####
 
+  bump_version_build:
+    desc: "Bump the build number (x.y.z.BUILD) via bump-my-version"
+    cmds:
+      - bash bump_version_build.sh
+
+  bump_version_rev:
+    desc: "Bump the revision number (x.y.REV.build) via bump-my-version"
+    cmds:
+      - bash bump_version_rev.sh
+
+  #####
+
   rebuild_libcuemol2:
     desc: "Config & Rebuild libcuemol2"
     deps:
