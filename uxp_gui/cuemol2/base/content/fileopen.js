@@ -775,11 +775,6 @@ Qm2Main.prototype.exportScene = function()
   try {
     // 2 is category ID for scene exporters
     names = this.makeFilter(fp, 2);
-
-    // add LWO writer
-    let elem = {name: "qslwrite", fext: "*.qsl", descr: "CueMol light-weight scene (*.qsl)"}
-    fp.appendFilter(elem.descr, elem.fext);
-    names.push(elem);
   }
   catch (e) {
     dd("Make filter is failed");
@@ -834,14 +829,6 @@ Qm2Main.prototype.exportScene = function()
   // save the current view setting
   if (!sc.saveViewToCam(view.uid, "__current")) {
     dd("****** saveViewToCam FAILED!!");
-  }
-
-  // check the case of lw scene writer
-  if (names[fp.filterIndex].name=="qslwrite") {
-    this.writeLwScene(sc, view, path);
-    // save the selected filter name
-    pref.set(histry_name, "qslwrite");
-    return;
   }
 
   let exporter = this.mStrMgr.createHandler(names[fp.filterIndex].name,

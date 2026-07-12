@@ -160,8 +160,6 @@ cuemol2.jar:
 * content/cuemol2/dragdropopen.js (content/dragdropopen.js)
   content/cuemol2/setupRenderer.xul (content/setupRenderer.xul)
   content/cuemol2/renderer.js (content/renderer.js)
-  content/cuemol2/export-qsl.js (content/export-qsl.js)
-  content/cuemol2/exportqsl-opt-dlg.xul (content/exportqsl-opt-dlg.xul)
 #
 # Dialog for creating new tab (or window)
   content/cuemol2/new-tabwnd-dlg.xul (content/new-tabwnd-dlg.xul)
