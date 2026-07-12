@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-07-12 (`overlay.coloring-deck-script` を todo -> dropped/done。script coloring は UXP でもユーザーが選択・作成できる配線が無かった (type セレクタに Script 項目なし、`onChgColoring` に ScriptColoring 生成 case なし。deck/`onLoadColoringScript` は既存 ScriptColoring の script 文字列編集のみで、ScriptColoring は qsc/scripting 経由でしか作れない)。UXP parity として移植不要と判断し drop。Overlay done 22->23 / todo 2->1、Total done 99->100 / todo 10->9、dropped 9->10 / unassigned 10->9、Unstarted 10->9。code 変更なし)
 - Updated: 2026-07-12 (reconciliation: 既存実装でカバー済みの 5 行を todo -> done に是正 (code 変更なし、実コードで確認済)。`panel.coloring.deck.undef` -> direct/done (`ColorPane` の `color-undef-deck` placeholder)、`dialog.dsurf` -> merged/done (`DSurfaceRendererSection` type_name "dsurface"、test 有)、`overlay.anim.animobj-common-proppage` -> merged/done (`AnimElementInspector` の common設定 + 全5 per-type editor、ADR-0029)、`dialog.generic` -> merged/done (`GenericTab` docked tab、ADR-0015、color/vector/timeval widget は `overlay.propeditor-generic` wip で別追跡)、`widget.camerasel` -> merged/done (CamMotion `endcam` の `SelectField`、ADR-0029)。Panel done 14->15 / todo 2->1、Dialog_other done 13->15 / todo 3->1、Overlay done 21->22 / todo 3->2、Custom Widget done 7->8 / todo 1->0。Total done 94->99 / todo 15->10、direct 27->28 / merged 53->57 / unassigned 15->10、Unstarted 15->10)
 - Updated: 2026-07-12 (`dialog.exportlxs-opt` を todo -> dropped/done。LuxRender/LuxCore の export options dialog を tritium に移植しない判断 (migration-scope drop)。tritium の Export scene は既に lxs を除外済み。QSL と異なり C++ の luxrend/luxcore exporter (`src/modules/rendering`、ビルド対象) と UXP dialog は現役なので残置し、tritium 移植のみ drop。Dialog_other done 12->13 / todo 4->3、Total done 93->94 / todo 16->15、dropped 8->9 / unassigned 16->15、Unstarted 16->15。code 変更なし)
 - Updated: 2026-07-12 (scene export の 2 変更。(1) **QSL export 廃止**: CueMol から QSL (light-weight scene) export を削除。UXP の scene-export パスは `qslwrite` フィルタ + `writeLwScene` をハードコードしていたが、その block と `export-qsl.js` / `exportqsl-opt-dlg.xul` を削除 (`fileopen.js` / `cuemol2-scripts.xul` / `jar.mn`)。tritium 未移植。`dialog.exportqsl-opt` を todo -> dropped/done に是正 (Dialog_other done 11->12 / todo 5->4、Total done 92->93 / todo 17->16、dropped 7->8 / unassigned 17->16、Unstarted 17->16)。UXP inventory は source file 削除で stale だが auto-generated 扱いのため未編集。(2) **Umbreon 等 exporter の capability gate** (ADR-0037): libcuemol2 に組み込まれていない exporter (例 HAVE_UMBREON 無しビルドの Umbreon) を Export scene submenu から非表示化。起動時 `getAvailableSceneExporters` プローブ (category 2) -> `useSceneExportCaps` -> native は `MenuState.exportCaps` -> `MenuItem.visible`、React MenuBar は prop で除外 (fail-open)。従来は menu 項目常時表示で選択すると無言失敗していたのを是正 (render window の error 報告と挙動を統一)。`menu.cuemol2.rendering` (wip 継続) の Notes/ADR 列に追記。vitest 2225 pass (新規 6)、tsc node 0err、production build OK。host E2E pending)
@@ -89,9 +90,9 @@
 | Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 15 | 2 | 0 | 1 | 0 |
 | Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 16 | 0 | 0 | 5 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 8 | 5 | 0 | 0 | 0 |
-| Overlay | [overlay.md](overlay.md) | 28 | 22 | 4 | 0 | 2 | 0 |
+| Overlay | [overlay.md](overlay.md) | 28 | 23 | 4 | 0 | 1 | 0 |
 | Other | [other.md](other.md) | 4 | 2 | 1 | 0 | 1 | 0 |
-| **Total** | | **140** | **99** | **31** | **0** | **10** | **0** |
+| **Total** | | **140** | **100** | **31** | **0** | **9** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -132,8 +133,8 @@
 | merged | 57 |
 | split | 36 |
 | redesign | 0 |
-| deprecated (`dropped`) | 9 |
-| *(not yet assigned)* | 10 |
+| deprecated (`dropped`) | 10 |
+| *(not yet assigned)* | 9 |
 
 ---
 
@@ -176,4 +177,4 @@
 
 ## Unstarted
 
-**10 / 140** items are `todo` (not yet started).
+**9 / 140** items are `todo` (not yet started).
