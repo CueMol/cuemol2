@@ -161,9 +161,40 @@ About ダイアログの表示バージョンは C++ 側 (`getAppInfo` -> `Scene
   ローカルビルド DMG は quarantine 無しのため Gatekeeper は無関係 (notarization は配布時の
   Phase 4 課題)。
 - **Phase 1 で入れるガード (task 1-3, 本 ADR 合意済み)**: collect-cuemol2-runtime.sh が
-  embed-python 構成 (`$LIBCUEMOL2_ROOT/lib/python` 有無 or `otool -l` の libpython 依存) を
-  検出し、python 未同梱なら**明確なエラーで即 fail** する (silent な flash-crash を防ぐ)。
-  将来的に python staging を実装して同梱対応。
+  embed-python 構成を検出し、python 未同梱なら**明確なエラーで即 fail** する (silent な
+  flash-crash を防ぐ)。判定は **libcuemol2 共有ライブラリの実 load 依存**
+  (`otool -L` / `readelf -d` / `objdump -p` で libpython への load command を検査) で行う。
+  `$LIBCUEMOL2_ROOT/lib/python` ディレクトリの有無や `@loader_path/../lib/python` rpath は
+  **非 embed でも常に baked/残存し得る**ため signal として使わない (embed ON→OFF 再ビルドで
+  dir が残る false positive を回避 ; 2026-07-12 に dir 判定から link 依存判定へ変更)。addon は
+  libpython を dlopen せず load 依存でリンクするので (`pybr` STATIC が `Python3::Python` を
+  取り込み `cuemol2` SHARED に伝播) この検査は確定的。inspection ツールも共有 lib も無い場合のみ
+  dir 有無へ conservative fallback。将来的に python staging を実装して同梱対応。
+
+### 外部 bundle apps の同梱 (POV-Ray / ffmpeg / apbs-pdb2pqr, macOS + Windows)
+
+2026-07-12 に uxp_gui (`src/osxbuild/add_povray.pl.in`) と同じ範囲の外部ソフトを
+tritium の macOS DMG / Windows NSIS へ同梱する経路を実装。配置は uxp の
+`Resources/{povray,ffmpeg,apbs-pdb2pqr}` ではなく、`getRenderBinaries()` が既に期待する
+Electron 流レイアウトに合わせる (Windows は `povray/bin/povray.exe`, `blendpng.exe` 等):
+
+- `Resources/bundle_apps/povray/{bin/povray, include}` -- `BUNDLE_APPS` (task download_extpkgs) 由来
+- `Resources/bundle_apps/apbs/{apbs, pdb2pqr, dat}`, `Resources/bundle_apps/ffmpeg/bin/ffmpeg` -- 先置きのみ (tritium 側の実行時 resolver/UI は未配線)
+- `Resources/cuemol2/bin/blendpng` -- libcuemol2 install (`<prefix>/bin`) 由来
+
+実装点: `collect-cuemol2-runtime.sh` の section (1b) が blendpng (必須) と extpkgs
+(best-effort ; 未取得は警告 skip) を `packaging/cuemol2-runtime/{bin,bundle_apps}` へ
+staging し、`electron-builder.yml` の extraResources 2 エントリが `cuemol2/bin` /
+`bundle_apps` へマップ。ローカルは `Taskfile.yml` の `package_tritium:darwin` が
+`BUNDLE_APPS` を渡す。CI は `build2.yml` の macOS / Windows 両 job で `download_extpkgs` を
+tritium package の前へ移動し、package step に `BUNDLE_APPS=<workspace>/target` を export
+(同 download は後続の UXP build も兼ねる) して配布物に同梱する。extpkgs のコピーは package
+ディレクトリ単位 (`cp -R`) なので OS ごとの実行ファイル名差 (povray vs povray.exe 等) を
+自動で吸収する。macOS は ad-hoc `codesign --deep` が同梱バイナリも自動署名する。**Phase 4
+(Developer ID + notarization + hardenedRuntime) では各バイナリの個別署名と、spawn 用の
+`com.apple.security.cs.disable-library-validation` entitlement が必要**になる点に注意。
+Windows の `blendpng.exe` は依存 DLL (lcms2 等) の同ディレクトリ配置が別途必要になり得る
+(現状は contract どおりのパスへ配置のみ)。Linux packaging への extpkgs 展開は follow-up。
 
 ### 主な実装ポインタ (現状)
 

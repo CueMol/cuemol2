@@ -78,8 +78,10 @@ function getUserStylePath(): string {
  * fallback when the user has not set an explicit path in Settings.
  *
  * - Packaged: resolved from the app install tree under process.resourcesPath,
- *   mirroring getSysConfigPath. NOTE: staging these binaries into the bundle is
- *   not implemented yet (see ADR-0030); the paths describe the intended layout.
+ *   mirroring getSysConfigPath. On macOS and Windows these are staged into the
+ *   bundle by tritium/packaging/collect-cuemol2-runtime.sh + electron-builder.yml
+ *   extraResources (povray/ffmpeg/apbs from BUNDLE_APPS, blendpng from the
+ *   libcuemol2 install tree). Linux staging is a follow-up (see ADR-0030).
  * - Dev: resolved from the build-output env vars the Taskfile run task exports
  *   -- LIBCUEMOL2_ROOT (cuemol2 install prefix, holds bin/blendpng) and
  *   BUNDLE_APPS (parent of the downloaded povray/ tree). A field is the empty

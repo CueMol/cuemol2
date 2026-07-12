@@ -271,6 +271,12 @@ tasks:
       # Default install prefix used by the build tasks; collect-cuemol2-runtime.sh
       # also defaults to this, but set it explicitly so the env contract is clear.
       LIBCUEMOL2_ROOT: "{{.LIBCUEMOL2_INSTDIR}}"
+      # Root of the downloaded external packages (povray/apbs/ffmpeg), staged into
+      # the DMG by collect-cuemol2-runtime.sh. Same root as run_tritium; populate
+      # it first with `task download_extpkgs`. WORKDIR contains $HOME, which
+      # go-task does NOT expand in a plain env value -- run it through `sh: echo`.
+      BUNDLE_APPS:
+        sh: echo "{{.WORKDIR}}"
     cmds:
       - pnpm run package:mac
 

@@ -7,6 +7,12 @@ electron-vite + electron-builder による配布物のビルド手順と、**未
 
 - libcuemol2 (`src/`) と tritium/core の native addon (`cuemol_internal.node`) を事前にビルドし、
   `LIBCUEMOL2_ROOT`（既定: `<repo>/.build_out/cuemol2`）に install しておくこと。
+- （macOS / Windows, 任意）外部 bundle ソフト（POV-Ray / ffmpeg / apbs-pdb2pqr）を
+  配布物に同梱するには、`cd build_scripts && task download_extpkgs` を先に実行して
+  `BUNDLE_APPS`（既定: `$HOME/tmp/proj64_deplibs`）に配置しておくこと。未配置でも
+  パッケージングは通るが、警告が出て当該バイナリは同梱されない（POV-Ray レンダリングは
+  Settings でパスを手入力すれば動く）。CI（`build2.yml`）は macOS/Windows とも package
+  前に `download_extpkgs` を実行し `BUNDLE_APPS` を渡すので自動で同梱される。
 - パッケージングは各スクリプトが staging（`collect-cuemol2-runtime.sh`）→ `electron-vite build`
   → `electron-builder` を順に実行する。バージョンは `src/_version.h` の `QM_VERSION` から導出される。
 

@@ -156,6 +156,15 @@ jobs:
       with:
         basedir: ${{ github.workspace }}/target
 
+    # Fetch the external bundle apps (POV-Ray / apbs-pdb2pqr / ffmpeg) before
+    # packaging so collect-cuemol2-runtime.sh can stage them into the DMG (via
+    # BUNDLE_APPS below). The same download also feeds the UXP GUI build later.
+    - name: Download external packages
+      if: env.BUILD_MODE == 'full'
+      uses: ./build_scripts/download_extpkgs
+      with:
+        basedir: ${{ github.workspace }}/target
+
     # Package the tritium Electron app (macOS arm64 DMG, ad-hoc signed).
     # Runs only on the arm64 non-embed-Python leg, in full mode (develop /
     # workflow_dispatch / tags) -- not on every feature-branch push.
@@ -165,6 +174,7 @@ jobs:
       run: |
         set -eux
         export LIBCUEMOL2_ROOT=${{ github.workspace }}/target/cuemol2
+        export BUNDLE_APPS=${{ github.workspace }}/target
         cd tritium/react-gui
         pnpm run package:mac
 
@@ -175,12 +185,6 @@ jobs:
         name: CueMol3_${{ steps.version.outputs.version }}_mac_arm64
         path: tritium/react-gui/release/*.dmg
         if-no-files-found: error
-
-    - name: Download external packages
-      if: env.BUILD_MODE == 'full'
-      uses: ./build_scripts/download_extpkgs
-      with:
-        basedir: ${{ github.workspace }}/target
 
     - name: Build UXP GUI
       if: env.BUILD_MODE == 'full'
@@ -309,6 +313,15 @@ jobs:
       with:
         basedir: ${{ github.workspace }}\target
 
+    # Fetch the external bundle apps (POV-Ray / apbs-pdb2pqr / ffmpeg) before
+    # packaging so collect-cuemol2-runtime.sh can stage them into the installer
+    # (via BUNDLE_APPS below). The same download also feeds the UXP GUI build later.
+    - name: Download external packages
+      if: env.BUILD_MODE == 'full'
+      uses: ./build_scripts/download_extpkgs
+      with:
+        basedir: ${{ github.workspace }}/target
+
     # Package the tritium Electron app (Windows x64 NSIS installer, unsigned).
     # Full mode only (develop / workflow_dispatch / tags).
     - name: Package tritium (Windows x64 NSIS)
@@ -318,6 +331,7 @@ jobs:
         set -eux
         cd "$(cygpath -u '${{ github.workspace }}')"
         export LIBCUEMOL2_ROOT="$PWD/target/cuemol2"
+        export BUNDLE_APPS="$PWD/target"
         bash tritium/packaging/package.sh --win --x64
 
     - name: Upload tritium Windows installer
@@ -337,12 +351,6 @@ jobs:
       if: env.BUILD_MODE == 'full'
       shell: bash
       run: bash ${MSYS_TOP_DIR}/build_scripts/build_uxpgui_win/make_mozconfig.sh
-
-    - name: Download external packages
-      if: env.BUILD_MODE == 'full'
-      uses: ./build_scripts/download_extpkgs
-      with:
-        basedir: ${{ github.workspace }}/target
 
     - name: Run mozilla build and build UXP
       if: env.BUILD_MODE == 'full'
