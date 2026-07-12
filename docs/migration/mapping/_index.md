@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-07-12 (scene export の 2 変更。(1) **QSL export 廃止**: CueMol から QSL (light-weight scene) export を削除。UXP の scene-export パスは `qslwrite` フィルタ + `writeLwScene` をハードコードしていたが、その block と `export-qsl.js` / `exportqsl-opt-dlg.xul` を削除 (`fileopen.js` / `cuemol2-scripts.xul` / `jar.mn`)。tritium 未移植。`dialog.exportqsl-opt` を todo -> dropped/done に是正 (Dialog_other done 11->12 / todo 5->4、Total done 92->93 / todo 17->16、dropped 7->8 / unassigned 17->16、Unstarted 17->16)。UXP inventory は source file 削除で stale だが auto-generated 扱いのため未編集。(2) **Umbreon 等 exporter の capability gate** (ADR-0037): libcuemol2 に組み込まれていない exporter (例 HAVE_UMBREON 無しビルドの Umbreon) を Export scene submenu から非表示化。起動時 `getAvailableSceneExporters` プローブ (category 2) -> `useSceneExportCaps` -> native は `MenuState.exportCaps` -> `MenuItem.visible`、React MenuBar は prop で除外 (fail-open)。従来は menu 項目常時表示で選択すると無言失敗していたのを是正 (render window の error 報告と挙動を統一)。`menu.cuemol2.rendering` (wip 継続) の Notes/ADR 列に追記。vitest 2225 pass (新規 6)、tsc node 0err、production build OK。host E2E pending)
 - Updated: 2026-07-11 (menu 実装の整理 + item 明細の実態是正。**コード変更**: New Window を削除 (Electron は単一 backend で複数 OS window 不可、`menuTemplate`/`menuActionMap`/`ipcChannels` から除去)、Window メニュー全削除 (UI 構造変更で非対応)、Help を About のみに縮小 (mozilla 特異の plugins/config/addon-mgr/console/check-updates を dropped)、Tools > Mol bond editor を削除 (viewport tool `activeTool 'bondEdit'` で実装済み = merged)、Rendering > Animation rendering を削除 (render window の Still/Animation モードへ統合予定 = deferred)。`main/menu.ts` に空 submenu group の drop を追加 (macOS の About-only Help が空になるため)。exhaustiveness test の UNIMPLEMENTED_ALLOWLIST を 19->8 に。vitest 2219 / tsc node 0err pass。**docs 是正**: item 明細表が stale で、実際は menuActionMap 上 wired だった Edit の merge/delete/change-chain/change-resid、Tools の interaction/reassign-2ndry/mol-surf/surf-cutter、View の view-props、Rendering の pov-render(=render window) を wired に是正。これにより menu.cuemol2.{file,view,help,window} が done 化 (window は dropped/done)。Menu category done 2->6 / wip 8->5 / todo 1->0、Total done 88->92 / wip 34->31 / todo 18->17、split 37->36 / dropped 6->7。inventory は UXP 側の棚卸しなので不変 (migration 判断は mapping 側)。POV-Ray は既に modeless window で実装済みだった)
 - Updated: 2026-07-11 (`menu.cuemol2` を per-menu の 8 行 (`menu.cuemol2.{file,edit,rendering,scene,view,tools,window,help}`) に split。単一行では 55 item の per-item status が粗すぎたため、`panel.workspace`/`panel.coloring` split の先例に倣い inventory (`uxp-inventory/menus.md`: 4->11 entries、header を hand-maintained 化) と mapping 主表を group 単位に分割。各 group 行は既存 item 明細表の `X/Y wired` を集計 (file 13/14, edit 2/8, rendering 1/3, scene 2/4, view 6/7, tools 1/10, window 0/3, help 1/6)。Completion Summary を per-group 化し、cuemol2 subtotal の旧 27/28 誤集計を 26/29 に、menu Total を 34/30 に是正。Menu category 4->11 (done 2 / wip 8 / todo 1)、Total 133->140 / wip 28->34 / todo 17->18、split 30->37。In Progress に 7 group 行を追加 (window は todo)。native/React コード変更なし — tracking 粒度のみの変更)
 - Updated: 2026-07-05 (`overlay.config-misc` todo->wip / split + `overlay.config-mouse` 拡充: SettingsPane の mock を実配線し整理。atom-label 既定 (font/size/color/bold/italic) を StyleManager `DefaultLabel.*` へ (`labelDefaults.service`、read `getStyleValue(0,"",..)` / write `setStyleValue(0,"user",..)` + `firePendingEvents`)、mouse の XY-rot 感度 (`tbrad`) と pick 精度 (`hitprec`) を ViewInputConfig singleton + `UserViewConf.*` へ (`viewInputParams.service`) 配線。**user-defined style は electron-store でなく uxp_gui 同様に `user_styles.xml` へ save-style 配線**: tritium に欠けていた `saveUserStyle` (worker lifecycle → `saveStyleSetToFile(0,hasStyleSet('user',0),path)`) を追加し、`useWindowCloseHandler` の `onBeforeProceed` から window close 時に保存 (UXP `Qm2Main.onUnLoad` 相当)。全て `AppSettingsContext` 経由。backend/consumer 無しの mock (rendering AA/shadow/AO/fog/HiDPI・extra colors・keyboard・trackpad・general/updates/privacy・language・momentum・mouse-preset) を削除し空 category を剪定 (32->13 設定)。test 3 新規 + windowCloseFlow/dispatch 更新 (計 +18)。Overlay wip 3->4/todo 4->3、Total wip 27->28/todo 18->17、split 29->30/unassigned 18->17。host E2E pending。ADR-0036)
@@ -83,12 +84,12 @@
 | Menu | [menus.md](menus.md) | 11 | 6 | 5 | 0 | 0 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 1 | 1 | 0 | 0 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 16 | 14 | 2 | 0 | 0 | 0 |
-| Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 11 | 2 | 0 | 5 | 0 |
+| Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 12 | 2 | 0 | 4 | 0 |
 | Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 16 | 0 | 0 | 5 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 7 | 5 | 0 | 1 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 21 | 4 | 0 | 3 | 0 |
 | Other | [other.md](other.md) | 4 | 2 | 1 | 0 | 1 | 0 |
-| **Total** | | **140** | **92** | **31** | **0** | **17** | **0** |
+| **Total** | | **140** | **93** | **31** | **0** | **16** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -129,8 +130,8 @@
 | merged | 53 |
 | split | 36 |
 | redesign | 0 |
-| deprecated (`dropped`) | 7 |
-| *(not yet assigned)* | 17 |
+| deprecated (`dropped`) | 8 |
+| *(not yet assigned)* | 16 |
 
 ---
 
@@ -173,4 +174,4 @@
 
 ## Unstarted
 
-**17 / 140** items are `todo` (not yet started).
+**16 / 140** items are `todo` (not yet started).
