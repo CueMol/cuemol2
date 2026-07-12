@@ -45,7 +45,7 @@ function makeCm() {
       Promise.resolve({ types: ['simple'], objType: 'MolCoord', readerName: 'pdb' }),
     ),
     loadObject: vi.fn((..._args: unknown[]) => Promise.resolve()),
-    loadScene: vi.fn(() => Promise.resolve()),
+    loadScene: vi.fn((..._args: unknown[]) => Promise.resolve()),
     invokeService: vi.fn(() => Promise.resolve(undefined)),
   }
 }
@@ -156,6 +156,81 @@ describe('useSceneCommands - auto-create scene on load', () => {
     await drain()
 
     expect(newScene).not.toHaveBeenCalled()
+    h.unmount()
+  })
+})
+
+/**
+ * UXP openSceneImpl parity: opening a .qsc into a "just created" (empty &
+ * unmodified) current scene loads in place without a new tab; a non-empty /
+ * modified scene (or no active scene) makes a fresh scene + tab instead.
+ */
+describe('useSceneCommands - open scene into just-created scene', () => {
+  beforeEach(() => {
+    setupElectronAPI()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+  })
+  afterEach(() => {
+    teardownElectronAPI()
+    vi.restoreAllMocks()
+  })
+
+  /** cm whose isSceneJustCreated query resolves to the given verdict. */
+  function makeSceneCm(justCreated: boolean) {
+    const cm = makeCm()
+    cm.invokeService = vi.fn((name: string) =>
+      name === 'isSceneJustCreated'
+        ? Promise.resolve({ justCreated })
+        : Promise.resolve(undefined),
+    ) as unknown as typeof cm.invokeService
+    return cm
+  }
+
+  it('reuses the active scene in place when it is just created', async () => {
+    const cm = makeSceneCm(true)
+    const newScene = vi.fn(() => Promise.resolve(NEW_SCENE))
+    const h = mountWith(cm, () => ({ scene_uid: 7, view_id: 8 }), newScene)
+    await flushPromises()
+
+    await h.result.dispatch(CmdId.OpenSceneByPath, '/tmp/a.qsc' as never)
+    await drain()
+
+    expect(cm.invokeService).toHaveBeenCalledWith('isSceneJustCreated', { sceneId: 7 })
+    expect(newScene).not.toHaveBeenCalled()
+    expect(cm.loadScene).toHaveBeenCalledTimes(1)
+    // loadScene(path, sceneId) -> loads into the existing active scene (7).
+    expect(cm.loadScene.mock.calls[0][1]).toBe(7)
+    h.unmount()
+  })
+
+  it('creates a new scene when the active scene is not just created', async () => {
+    const cm = makeSceneCm(false)
+    const newScene = vi.fn(() => Promise.resolve(NEW_SCENE))
+    const h = mountWith(cm, () => ({ scene_uid: 7, view_id: 8 }), newScene)
+    await flushPromises()
+
+    await h.result.dispatch(CmdId.OpenSceneByPath, '/tmp/a.qsc' as never)
+    await drain()
+
+    expect(newScene).toHaveBeenCalledTimes(1)
+    expect(cm.loadScene).toHaveBeenCalledTimes(1)
+    // Loads into the freshly created scene, not the active one.
+    expect(cm.loadScene.mock.calls[0][1]).toBe(NEW_SCENE.scene_uid)
+    h.unmount()
+  })
+
+  it('creates a new scene (no empty-check) when no scene is active', async () => {
+    const cm = makeSceneCm(true)
+    const newScene = vi.fn(() => Promise.resolve(NEW_SCENE))
+    const h = mountWith(cm, () => undefined, newScene)
+    await flushPromises()
+
+    await h.result.dispatch(CmdId.OpenSceneByPath, '/tmp/a.qsc' as never)
+    await drain()
+
+    expect(cm.invokeService).not.toHaveBeenCalled()
+    expect(newScene).toHaveBeenCalledTimes(1)
+    expect(cm.loadScene.mock.calls[0][1]).toBe(NEW_SCENE.scene_uid)
     h.unmount()
   })
 })
