@@ -1891,16 +1891,12 @@ panel.loadMultigradWidgets = function ()
 
 panel.updateMultigradWidgets = function (aRend)
 {
-  if ('elepot' in aRend)
+  // multigrad target is color_mapname; fall back to elepot for renderers
+  // that only expose elepot (potential-only renderers).
+  if ('color_mapname' in aRend)
+    this.mColMapSel.selectObjectByName(aRend.color_mapname);
+  else if ('elepot' in aRend)
     this.mColMapSel.selectObjectByName(aRend.elepot);
-  else if ('color_mapname' in aRend) {
-    let res = this.mColMapSel.selectObjectByName(aRend.color_mapname);
-    //dd("this.mColMapSel._data = "+debug.dumpObjectTree(this.mColMapSel._data));
-    debug.trace();
-    dd("this.mColMapSel._data = "+this.mColMapSel._data);
-    dd("this.mColMapSel._data.length = "+this.mColMapSel._data.length);
-    //alert("update color_mapname to: "+aRend.color_mapname+" res="+res);
-  }
 };
 
 /// elepot selector change event listener
@@ -1912,16 +1908,17 @@ panel.onColMapSelChanged = function (aEvent)
 
   var rend = cuemol.getUIDObj(this.mTgtRendID);
 
-  if ('elepot' in rend) {
+  // multigrad target is color_mapname; fall back to elepot for renderers
+  // that only expose elepot (potential-only renderers).
+  if ('color_mapname' in rend) {
+    if (rend.color_mapname==obj.name)
+      return;
+    this.commitElepotPropChange("color_mapname", obj.name);
+  }
+  else if ('elepot' in rend) {
     if (rend.elepot==obj.name)
       return;
     this.commitElepotPropChange("elepot", obj.name);
-  }
-  else if ('color_mapname' in rend) {
-    if (rend.color_mapname==obj.name)
-      return;
-    //alert("change color_mapname to: "+obj.name);
-    this.commitElepotPropChange("color_mapname", obj.name);
   }
 };
 
