@@ -108,9 +108,26 @@ files:
 #           sysconfig.xml
 #           data/
 #           ...
+#         bin/
+#           blendpng
+#       bundle_apps/
+#         povray/bin/povray, povray/include/
+#         apbs/{apbs,pdb2pqr,dat/}   (staged for uxp parity; not yet wired)
+#         ffmpeg/bin/ffmpeg          (staged for uxp parity; not yet wired)
 extraResources:
   - from: packaging/cuemol2-runtime/share
     to: cuemol2/share
+    filter:
+      - "**/*"
+  # blendpng (libcuemol2 utility) -> Resources/cuemol2/bin/blendpng
+  - from: packaging/cuemol2-runtime/bin
+    to: cuemol2/bin
+    filter:
+      - "**/*"
+  # external bundle apps (POV-Ray / apbs-pdb2pqr / ffmpeg) -> Resources/bundle_apps/
+  # collect-cuemol2-runtime.sh stages these from BUNDLE_APPS (task download_extpkgs).
+  - from: packaging/cuemol2-runtime/bundle_apps
+    to: bundle_apps
     filter:
       - "**/*"
 

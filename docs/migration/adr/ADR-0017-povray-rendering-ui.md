@@ -80,6 +80,9 @@ renderers. Binary paths are configured in the SettingsPane
 - UXP parity reference: `uxp_gui/cuemol2/components/jsmods/cuemol2ui-lib/povrender.js`,
   `uxp_gui/cuemol2/base/content/tools/render-pov-dlg.{xul,js}`.
 - Plan document: `docs/plans/raytrace-rendering-ui-plan.md` (phases 1–5).
-- Deferred: animation/sequential rendering; app-bundle packaging of the
-  POV-Ray / blendpng binaries (paths currently default to a dev location and
-  are user-overridable in Settings).
+- Deferred: animation/sequential rendering.
+- App-bundle packaging of the POV-Ray / blendpng binaries: **done on macOS**
+  (staged into the DMG under `Resources/bundle_apps/povray` + `Resources/cuemol2/bin/blendpng`
+  by `collect-cuemol2-runtime.sh` + `electron-builder.yml` extraResources; see
+  ADR-0030). Paths are still user-overridable in Settings; Windows/Linux staging
+  is a follow-up.

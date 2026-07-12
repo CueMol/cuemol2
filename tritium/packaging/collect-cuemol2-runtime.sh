@@ -52,19 +52,65 @@ if [ ! -f "$LIBCUEMOL2_ROOT/share/sysconfig.xml" ]; then
   exit 1
 fi
 
-# Guard: an embedded-Python libcuemol2 (built with ENABLE_PYTHON_EMBED=ON) installs
-# a Python runtime under <prefix>/lib/python and the native addon depends on it at
-# load time. This script does not stage that runtime, so packaging such a build
-# yields an app that starts then immediately crashes (the worker fails to load
-# libcuemol2). Detect via the install layout (cross-platform) and fail loudly.
-# Rebuild libcuemol2 without ENABLE_PYTHON_EMBED, or implement Python staging
-# (ADR-0030 task 1-3).
-if [ -d "$LIBCUEMOL2_ROOT/lib/python" ]; then
-  echo "Error: libcuemol2 looks like an embedded-Python build" >&2
-  echo "  ($LIBCUEMOL2_ROOT/lib/python exists), but the Python runtime is not" >&2
-  echo "  staged into the bundle, so the packaged app would start and crash." >&2
-  echo "  Rebuild libcuemol2 without ENABLE_PYTHON_EMBED, or implement Python" >&2
-  echo "  staging (ADR-0030 task 1-3)." >&2
+# Guard: an embedded-Python libcuemol2 (built with ENABLE_PYTHON_EMBED=ON) links
+# libpython into its shared library and needs a Python runtime at load time. This
+# script does not stage that runtime, so packaging such a build yields an app that
+# starts then immediately crashes (the worker fails to load libcuemol2).
+#
+# Detect via the *actual link dependency*, not the install layout: cmake bakes the
+# @loader_path/../lib/python rpath and (a prior embed build) leaves <prefix>/lib/python
+# behind even after rebuilding with ENABLE_PYTHON_EMBED=OFF, so neither the rpath nor
+# that directory is a reliable signal. The addon links libpython (it does not dlopen),
+# so a hard load dependency on libpython in libcuemol2's shared library is definitive.
+#
+# libcuemol2_links_python(): 0 = links libpython (embed), 1 = does not, 2 = could not
+# determine (shared lib or an inspection tool -- otool/readelf/objdump -- not found).
+libcuemol2_links_python() {
+  local lib=""
+  case "$PLATFORM" in
+    mac)   lib="$LIBCUEMOL2_ROOT/lib/libcuemol2.dylib" ;;
+    linux) lib="$(ls "$LIBCUEMOL2_ROOT/lib/"libcuemol2.so* 2>/dev/null | head -n1 || true)" ;;
+    win)   lib="$(ls "$LIBCUEMOL2_ROOT/bin/"cuemol2.dll "$LIBCUEMOL2_ROOT/lib/"cuemol2.dll 2>/dev/null | head -n1 || true)" ;;
+  esac
+  [ -n "$lib" ] && [ -f "$lib" ] || return 2
+
+  local deps=""
+  case "$PLATFORM" in
+    mac)
+      command -v otool >/dev/null 2>&1 || return 2
+      deps="$(otool -L "$lib" 2>/dev/null)" || return 2
+      ;;
+    linux)
+      if command -v readelf >/dev/null 2>&1; then
+        deps="$(readelf -d "$lib" 2>/dev/null | grep NEEDED || true)"
+      elif command -v objdump >/dev/null 2>&1; then
+        deps="$(objdump -p "$lib" 2>/dev/null | grep NEEDED || true)"
+      else
+        return 2
+      fi
+      ;;
+    win)
+      command -v objdump >/dev/null 2>&1 || return 2
+      deps="$(objdump -p "$lib" 2>/dev/null | grep -i 'DLL Name' || true)"
+      ;;
+  esac
+
+  printf '%s\n' "$deps" | grep -iq 'python'
+}
+
+if libcuemol2_links_python; then
+  echo "Error: libcuemol2 is an embedded-Python build (its shared library links" >&2
+  echo "  libpython), but this script does not stage the Python runtime, so the" >&2
+  echo "  packaged app would start then immediately crash (worker fails to load" >&2
+  echo "  libcuemol2). Rebuild libcuemol2 without ENABLE_PYTHON_EMBED, or implement" >&2
+  echo "  Python staging (ADR-0030 task 1-3)." >&2
+  exit 1
+elif [ $? -eq 2 ] && [ -d "$LIBCUEMOL2_ROOT/lib/python" ]; then
+  echo "Error: could not inspect libcuemol2's link dependencies (shared library or" >&2
+  echo "  an inspection tool -- otool/readelf/objdump -- not found), and" >&2
+  echo "  $LIBCUEMOL2_ROOT/lib/python exists. Treating as an embedded-Python build" >&2
+  echo "  to be safe. If this is a non-embed build with a stale lib/python dir," >&2
+  echo "  remove that dir or install a binary-inspection tool. (ADR-0030 task 1-3.)" >&2
   exit 1
 fi
 
@@ -77,6 +123,73 @@ rm -rf "$RUNTIME_DEST"
 mkdir -p "$RUNTIME_DEST/share"
 cp -r "$LIBCUEMOL2_ROOT/share/." "$RUNTIME_DEST/share/"
 echo "  share/: $(find "$RUNTIME_DEST/share" -type f | wc -l | tr -d ' ') files"
+
+# --- (1b) external bundle apps (POV-Ray / ffmpeg / apbs-pdb2pqr) + blendpng --
+# The packaged app resolves these from process.resourcesPath (see
+# main/ipcHandlers.ts getRenderBinaries): bundle_apps/povray/{bin,include},
+# bundle_apps/{apbs,ffmpeg}, and cuemol2/bin/blendpng. blendpng ships from the
+# libcuemol2 install tree; the extpkgs come from BUNDLE_APPS (populated by
+# build_scripts: task download_extpkgs). Only POV-Ray + blendpng are wired into
+# tritium today; apbs/pdb2pqr/ffmpeg are staged for uxp_gui parity (future wiring).
+echo "Staging external bundle apps + blendpng"
+
+# Always create the target dirs so electron-builder's extraResources `from`
+# paths exist even when no extpkgs were downloaded (empty -> nothing copied).
+mkdir -p "$RUNTIME_DEST/bin"
+mkdir -p "$RUNTIME_DEST/bundle_apps"
+
+# blendpng (required): built and installed by libcuemol2 into <prefix>/bin.
+BLENDPNG_EXE="blendpng"
+[ "$PLATFORM" = "win" ] && BLENDPNG_EXE="blendpng.exe"
+BLENDPNG_SRC="$LIBCUEMOL2_ROOT/bin/$BLENDPNG_EXE"
+if [ ! -f "$BLENDPNG_SRC" ]; then
+  echo "Error: blendpng not found: $BLENDPNG_SRC" >&2
+  echo "  Build/install libcuemol2 first (build_scripts: task build_libcuemol2)." >&2
+  exit 1
+fi
+cp "$BLENDPNG_SRC" "$RUNTIME_DEST/bin/"
+echo "  blendpng: $BLENDPNG_SRC"
+
+# extpkgs (best-effort): povray / apbs / ffmpeg from BUNDLE_APPS. A missing
+# package is a loud warning, not a failure -- these back optional features and
+# the user can set explicit paths in Settings. Default BUNDLE_APPS to the dev
+# WORKDIR used by build_scripts/Taskfile.yml (run_tritium / download_extpkgs).
+if [ -z "${BUNDLE_APPS:-}" ]; then
+  BUNDLE_APPS="$HOME/tmp/proj64_deplibs"
+  echo "  BUNDLE_APPS not set; defaulting to $BUNDLE_APPS"
+fi
+
+# Copy each package as a whole tree so the per-OS executable names (povray vs
+# povray.exe, apbs vs apbs.exe, pdb2pqr vs pdb2pqr_wrap.bat) are staged without
+# special-casing. The download layout is identical on all OSes:
+# BUNDLE_APPS/{povray/{bin,include}, apbs/{<exe>,pdb2pqr*,dat}, ffmpeg/bin/<exe>}.
+#
+# POV-Ray: bin/{povray[.exe]} + include/ (both consumed by the render pipeline).
+if [ -d "$BUNDLE_APPS/povray" ]; then
+  cp -R "$BUNDLE_APPS/povray" "$RUNTIME_DEST/bundle_apps/"
+  echo "  povray: $BUNDLE_APPS/povray"
+else
+  echo "  Warning: povray not found under $BUNDLE_APPS/povray -- skipping." >&2
+  echo "    Run 'task download_extpkgs'; POV-Ray rendering will otherwise need a" >&2
+  echo "    manual path in Settings." >&2
+fi
+
+# APBS + pdb2pqr (executables + dat/).
+if [ -d "$BUNDLE_APPS/apbs" ]; then
+  cp -R "$BUNDLE_APPS/apbs" "$RUNTIME_DEST/bundle_apps/"
+  echo "  apbs/pdb2pqr: $BUNDLE_APPS/apbs"
+else
+  echo "  Warning: apbs not found under $BUNDLE_APPS/apbs -- skipping (run 'task download_extpkgs')." >&2
+fi
+
+# ffmpeg: bin/{ffmpeg[.exe]}. Strip the macOS-zip-derived __MACOSX junk if present.
+if [ -d "$BUNDLE_APPS/ffmpeg" ]; then
+  cp -R "$BUNDLE_APPS/ffmpeg" "$RUNTIME_DEST/bundle_apps/"
+  rm -rf "$RUNTIME_DEST/bundle_apps/ffmpeg/bin/__MACOSX"
+  echo "  ffmpeg: $BUNDLE_APPS/ffmpeg"
+else
+  echo "  Warning: ffmpeg not found under $BUNDLE_APPS/ffmpeg -- skipping (run 'task download_extpkgs')." >&2
+fi
 
 # --- (2) monorepo deps staging ----------------------------------------------
 echo "Staging monorepo deps"
@@ -180,6 +293,7 @@ assert_file() {
   [ -f "$1" ] || { echo "Error: staging assertion failed -- missing $1" >&2; exit 1; }
 }
 assert_file "$RUNTIME_DEST/share/sysconfig.xml"
+assert_file "$RUNTIME_DEST/bin/$BLENDPNG_EXE"
 assert_file "$STAGING_DEST/@cuemol/core/package.json"
 assert_file "$STAGING_DEST/@cuemol/core/src/index.cjs"
 assert_file "$STAGING_DEST/@cuemol/core/build/Release/cuemol_internal.node"
