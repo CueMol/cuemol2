@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-07-12 (`other.config-dialog` を todo -> merged/done。UXP Options prefwindow (Misc/Key/Mouse pane host) は左パネルの `SettingsPane` (`useSettingsPaneNav` + `settingsConfig` の nav tree、modal でない) として実装済。3 pane の扱いが確定 (Misc=`config-misc` wip / Mouse=`config-mouse` wip / Key=`config-keybind` deferred) したためシェルを done 化。Other done 2->3 / todo 1->0、Total done 102->103 / todo 7->6、merged 57->58 / unassigned 7->6、Unstarted 7->6。code 変更なし)
 - Updated: 2026-07-12 (2 行の todo 解消。`overlay.config-keybind` -> deferred/done (UXP key-binding editor は 1:1 移植せず、将来 tritium ネイティブで別方式にする方針。config-misc/mouse で既に deferred 扱い) — 初の `deferred` mapping 行で Breakdown に deferred 行を追加。`dialog.tool.msms-makesurf` -> dropped/done (外部 MSMS は不使用、built-in `makesurf` が surface 生成を担当)。Overlay done 23->24 / todo 1->0、Dialog_tool done 16->17 / todo 5->4。Total done 100->102 / todo 9->7、deferred 0->1 / dropped 10->11 / unassigned 9->7、Unstarted 9->7。code 変更なし)
 - Updated: 2026-07-12 (`overlay.coloring-deck-script` を todo -> dropped/done。script coloring は UXP でもユーザーが選択・作成できる配線が無かった (type セレクタに Script 項目なし、`onChgColoring` に ScriptColoring 生成 case なし。deck/`onLoadColoringScript` は既存 ScriptColoring の script 文字列編集のみで、ScriptColoring は qsc/scripting 経由でしか作れない)。UXP parity として移植不要と判断し drop。Overlay done 22->23 / todo 2->1、Total done 99->100 / todo 10->9、dropped 9->10 / unassigned 10->9、Unstarted 10->9。code 変更なし)
 - Updated: 2026-07-12 (reconciliation: 既存実装でカバー済みの 5 行を todo -> done に是正 (code 変更なし、実コードで確認済)。`panel.coloring.deck.undef` -> direct/done (`ColorPane` の `color-undef-deck` placeholder)、`dialog.dsurf` -> merged/done (`DSurfaceRendererSection` type_name "dsurface"、test 有)、`overlay.anim.animobj-common-proppage` -> merged/done (`AnimElementInspector` の common設定 + 全5 per-type editor、ADR-0029)、`dialog.generic` -> merged/done (`GenericTab` docked tab、ADR-0015、color/vector/timeval widget は `overlay.propeditor-generic` wip で別追跡)、`widget.camerasel` -> merged/done (CamMotion `endcam` の `SelectField`、ADR-0029)。Panel done 14->15 / todo 2->1、Dialog_other done 13->15 / todo 3->1、Overlay done 21->22 / todo 3->2、Custom Widget done 7->8 / todo 1->0。Total done 94->99 / todo 15->10、direct 27->28 / merged 53->57 / unassigned 15->10、Unstarted 15->10)
@@ -92,8 +93,8 @@
 | Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 17 | 0 | 0 | 4 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 8 | 5 | 0 | 0 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 24 | 4 | 0 | 0 | 0 |
-| Other | [other.md](other.md) | 4 | 2 | 1 | 0 | 1 | 0 |
-| **Total** | | **140** | **102** | **31** | **0** | **7** | **0** |
+| Other | [other.md](other.md) | 4 | 3 | 1 | 0 | 0 | 0 |
+| **Total** | | **140** | **103** | **31** | **0** | **6** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -131,12 +132,12 @@
 | Mapping | Count |
 |---------|------:|
 | 1:1 (`direct`) | 28 |
-| merged | 57 |
+| merged | 58 |
 | split | 36 |
 | redesign | 0 |
 | deferred | 1 |
 | deprecated (`dropped`) | 11 |
-| *(not yet assigned)* | 7 |
+| *(not yet assigned)* | 6 |
 
 ---
 
@@ -179,4 +180,4 @@
 
 ## Unstarted
 
-**7 / 140** items are `todo` (not yet started).
+**6 / 140** items are `todo` (not yet started).
