@@ -41,6 +41,10 @@ ac_add_options --with-macos-sdk=@SDK_PATH@
 ac_add_options --target=@BUILD_ARCH@
 ac_add_options --host=@BUILD_ARCH@
 
+# Ad-hoc codesign the .app inside the DMG (local/CI builds; not Developer ID / notarized).
+# "-" selects the ad-hoc branch in mozpack/dmg.py (see uxp_diff.patch).
+ac_add_options --with-macbundle-identity=-
+
 mk_add_options MOZ_MAKE_FLAGS="-j8"
 
 ac_add_options --enable-cuemol=@CUEMOL_DIR@
