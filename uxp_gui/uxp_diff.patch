@@ -96,3 +96,19 @@ diff -x *.pyc -x *~ -x __pycache__ -r -u /Users/user1/tmp/proj64_deplibs/tmp/uxp
      {
          MOZ_ASSERT(&rhs != this, "self-move disallowed!");
          new (value_.addr()) T(mozilla::Move(*rhs.value_.addr()));
+diff -x *.pyc -x *~ -r -u uxp/python/mozbuild/mozpack/dmg.py platform/python/mozbuild/mozpack/dmg.py
+--- uxp/python/mozbuild/mozpack/dmg.py	2023-11-04 15:47:00
++++ platform/python/mozbuild/mozpack/dmg.py	2026-07-12 00:00:00
+@@ -152,5 +152,11 @@
+                     if os.path.isfile(entitlement):
+                         entitlements = ['--entitlements', entitlement]
+                 # Call the codesign tool
+-                subprocess.check_call(['codesign', '--deep', '--timestamp', '--options', 'runtime'] + entitlements + [ '-s', identity] + dylibs + [appbundle])
++                if identity == '-':
++                    # Ad-hoc signature (local/CI builds): no secure timestamp,
++                    # no hardened runtime, no entitlements. Mirrors the tritium
++                    # electron-builder ad-hoc recipe.
++                    subprocess.check_call(['codesign', '--force', '--deep', '-s', '-'] + dylibs + [appbundle])
++                else:
++                    subprocess.check_call(['codesign', '--deep', '--timestamp', '--options', 'runtime'] + entitlements + [ '-s', identity] + dylibs + [appbundle])
+         create_dmg_from_staged(stagedir, output_dmg, tmpdir, volume_name)
