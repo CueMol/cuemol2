@@ -81,6 +81,8 @@ Electron filter-index constraint above).
 - UXP parity reference: `uxp_gui/cuemol2/base/content/fileopen.js`
   `makeFilter(fp, 2)` / `onExportScene` -- dynamic enumeration, used there for
   the filter list.
-- Related: the QSL exporter was removed from CueMol entirely as part of the
-  same change (`dialog.exportqsl-opt` -> dropped); it is not one of the gated
-  items.
+- Related: QSL was retired from CueMol entirely as part of the same work --
+  both the exporter (`dialog.exportqsl-opt` -> dropped) and the `.qsl`
+  scene-reader extension in `src/qsys/SceneXMLReader.cpp` were removed. The
+  lwview module that produced `.qsl` (LWObject / lwrend) is no longer built, so
+  such files could not be read back anyway. QSL is not one of the gated items.

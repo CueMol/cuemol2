@@ -81,13 +81,16 @@ const char *SceneXMLReader::getName() const
 /// Get file-type description
 const char *SceneXMLReader::getTypeDescr() const
 {
-  return "CueMol Scene (*.qsc;*.qsl)";
+  // .qsl (light-weight scene) support removed: the lwview module
+  // (LWObject/lwrend) is no longer built, so .qsl files can no longer be read.
+  return "CueMol Scene (*.qsc)";
 }
 
 /// Get file extension
 const char *SceneXMLReader::getFileExt() const
 {
-  return "*.qsc; *.qsl";
+  // .qsl removed (lwview no longer built) -- see getTypeDescr above.
+  return "*.qsc";
 }
 
 //////////////////////////////////////////////////
