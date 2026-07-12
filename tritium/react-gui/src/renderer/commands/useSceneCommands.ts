@@ -43,6 +43,22 @@ export function useSceneCommands({
 
     const openNewScene = useCallback(async (filePath?: string): Promise<void> => {
         if (!cm) return
+        // UXP openSceneImpl parity: opening a scene file into a "just created"
+        // (empty & unmodified) current scene loads into it in place, without
+        // spawning a new tab. New Scene (no filePath) always makes a fresh tab.
+        if (filePath) {
+            const active = getActiveSceneInfo()
+            if (active) {
+                const { justCreated } = await cm.invokeService(
+                    'isSceneJustCreated', { sceneId: active.scene_uid },
+                )
+                if (justCreated) {
+                    await cm.loadScene(filePath, active.scene_uid)
+                    addRecent(filePath, 'scene')
+                    return
+                }
+            }
+        }
         // Same path as app launch and File > New Tab (UXP onNewScene).
         const created = await newScene()
         if (!created) return
@@ -50,7 +66,7 @@ export function useSceneCommands({
             await cm.loadScene(filePath, created.scene_uid)
             addRecent(filePath, 'scene')
         }
-    }, [cm, newScene])
+    }, [cm, newScene, getActiveSceneInfo])
 
     useRegisterCommand(CmdId.SceneNew, () => openNewScene())
 
