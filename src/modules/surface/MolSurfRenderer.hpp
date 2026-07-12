@@ -188,11 +188,19 @@ namespace surface {
       m_pGrad = val;
     }
 
+  private:
+
+    /// Scalar field object name for MULTIGRAD mode (independent from elepot)
+    LString m_sColorMap;
+
   public:
 
     /// reference coloring map target (used in MULTIGRAD mode)
-    LString getColorMapName() const { return getTgtElePotName(); }
-    void setColorMapName(const LString &n) { setTgtElePotName(n); }
+    LString getColorMapName() const { return m_sColorMap; }
+    void setColorMapName(const LString &n) {
+      m_sColorMap = n;
+      invalidateDisplayCache();
+    }
 
     /// get color-map object (valid in MULTIGRAD mode)
     qsys::ObjectPtr getColorMapObj() const;

@@ -244,12 +244,17 @@ void MolSurfRenderer::render(DisplayContext *pdl)
   else if (m_nMode==SFREND_SCAPOT||
            m_nMode==SFREND_MULTIGRAD) {
     //
-    // ELEPOT mode --> resolve target name
+    // ELEPOT/MULTIGRAD mode --> resolve target scalar object name.
+    // The target name is stored separately per mode:
+    //   SCAPOT (potential) --> elepot (m_sTgtElePot)
+    //   MULTIGRAD          --> color_mapname (m_sColorMap)
     //
+    LString tgtName = (m_nMode==SFREND_MULTIGRAD) ? getColorMapName() : m_sTgtElePot;
+
     qsys::ObjectPtr pobj;
     m_pScaObj = NULL;
-    if (!m_sTgtElePot.isEmpty()) {
-      pobj = ensureNotNull(getScene())->getObjectByName(m_sTgtElePot);
+    if (!tgtName.isEmpty()) {
+      pobj = ensureNotNull(getScene())->getObjectByName(tgtName);
       m_pScaObj = dynamic_cast<qsys::ScalarObject*>(pobj.get());
     }
     if (m_pScaObj==NULL) {
@@ -260,9 +265,9 @@ void MolSurfRenderer::render(DisplayContext *pdl)
         m_pScaObj = dynamic_cast<qsys::ScalarObject*>(pobj.get());
       }
     }
-    
+
     if (m_pScaObj==NULL) {
-      LOG_DPRINTLN("MolSurfRend> \"%s\" is not a scalar object.", m_sTgtElePot.c_str());
+      LOG_DPRINTLN("MolSurfRend> \"%s\" is not a scalar object.", tgtName.c_str());
     }
   }
   else if (m_nMode==SFREND_MOLFANC) {

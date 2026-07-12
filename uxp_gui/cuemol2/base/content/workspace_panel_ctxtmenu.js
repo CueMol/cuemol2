@@ -307,7 +307,7 @@ ws.onGenSurfObj = function ()
     if (rend.colormode=="multigrad") {
       newrend.colormode = "multigrad";
       newrend.multi_grad.copyFrom(rend.multi_grad);
-      newrend.elepot = rend.color_mapname;
+      newrend.color_mapname = rend.color_mapname;
     }
     else {
       //newrend.colormode = "solid";
