@@ -15,6 +15,7 @@ import { CommandProvider } from './commands/CommandRegistry'
 import { DialogProvider } from './contexts/DialogContext'
 import { ModalOpenCounterProvider } from './contexts/ModalOpenCounterContext'
 import { RenderConfigProvider } from './contexts/RenderConfigContext'
+import { ApbsConfigProvider } from './contexts/ApbsConfigContext'
 import { ViewInputConfigProvider } from './contexts/ViewInputConfigContext'
 import { AppSettingsProvider } from './contexts/AppSettingsContext'
 import { ErrorBoundary } from './crash/ErrorBoundary'
@@ -32,15 +33,22 @@ createRoot(container).render(
         <ThemeProvider>
           <CommandProvider>
             <ModalOpenCounterProvider>
-              <DialogProvider>
-                <RenderConfigProvider>
-                  <ViewInputConfigProvider>
-                    <AppSettingsProvider>
-                      <App />
-                    </AppSettingsProvider>
-                  </ViewInputConfigProvider>
-                </RenderConfigProvider>
-              </DialogProvider>
+              {/* ApbsConfigProvider sits ABOVE DialogProvider so the
+                  APBS tool dialog (rendered by DialogProvider) can read the
+                  persisted exe paths live; SettingsPane (in <App/>) is below
+                  it too. Other config providers stay below DialogProvider
+                  because no dialog consumes them. */}
+              <ApbsConfigProvider>
+                <DialogProvider>
+                  <RenderConfigProvider>
+                    <ViewInputConfigProvider>
+                      <AppSettingsProvider>
+                        <App />
+                      </AppSettingsProvider>
+                    </ViewInputConfigProvider>
+                  </RenderConfigProvider>
+                </DialogProvider>
+              </ApbsConfigProvider>
             </ModalOpenCounterProvider>
           </CommandProvider>
         </ThemeProvider>

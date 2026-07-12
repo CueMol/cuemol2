@@ -21,6 +21,15 @@ vi.mock('../contexts/ThemeContext', () => ({
 vi.mock('../hooks/useCueMol', () => ({
   useCueMol: () => ({ cueMolReady: false, cm: null }),
 }))
+// ApbsConfigProvider is mounted above DialogProvider in the app (like
+// CueMolProvider); the composite's CalcApbsPotDialog reads it via useApbsConfig,
+// so stub it here the same way useCueMol is stubbed.
+vi.mock('../contexts/ApbsConfigContext', () => ({
+  useApbsConfig: () => ({
+    config: { apbsExe: '', pdb2pqrExe: '', pdb2pqrFF: 'charmm' },
+    setValue: () => {},
+  }),
+}))
 
 const { DialogProvider } = await import('../contexts/DialogContext')
 const { useShowAboutDialog } = await import('../components/dialogs/AboutDialogProvider')

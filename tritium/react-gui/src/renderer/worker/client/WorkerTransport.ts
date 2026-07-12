@@ -21,6 +21,8 @@ import type {
 } from '../shared/WorkerCalls';
 import type { RenderUpdate } from '../shared/renderTypes';
 import { RENDER_PROGRESS_CHANNEL } from '../shared/renderTypes';
+import type { ApbsUpdate } from '../shared/apbsTypes';
+import { APBS_PROGRESS_CHANNEL } from '../shared/apbsTypes';
 import type { CrashSource } from '../../../shared/ipcTypes';
 import { report as reportCrash } from '../../crash/CrashReporter';
 
@@ -48,6 +50,9 @@ export type StreamProgressListener = (reqId: string, bytes: number) => void;
 /** Listener for `render-progress` push messages from `renderJob`. */
 export type RenderProgressListener = (update: RenderUpdate) => void;
 
+/** Listener for `apbs-progress` push messages from `calcApbsPot`. */
+export type ApbsProgressListener = (update: ApbsUpdate) => void;
+
 /** Construction options for {@link WorkerTransport}. */
 export interface WorkerTransportOptions {
     /** Forwarder for `event-notify` payloads (typically routes to `EventSlots.notify`). */
@@ -69,6 +74,7 @@ export class WorkerTransport {
     private _onEventNotify: (args: EventNotifyArgs) => void;
     private _streamProgressListeners: Set<StreamProgressListener> = new Set();
     private _renderProgressListeners: Set<RenderProgressListener> = new Set();
+    private _apbsProgressListeners: Set<ApbsProgressListener> = new Set();
 
     /**
      * Spawn the Web Worker (entry: `../server/worker_launcher.ts`) and
@@ -157,6 +163,15 @@ export class WorkerTransport {
                 return;
             }
 
+            if (method === APBS_PROGRESS_CHANNEL) {
+                // event.data shape: ['apbs-progress', ApbsUpdate]
+                const [update] = event.data.slice(1) as [ApbsUpdate];
+                for (const cb of this._apbsProgressListeners) {
+                    try { cb(update); } catch (e) { log.warn('apbs-progress listener:', e); }
+                }
+                return;
+            }
+
             const method_seq = makeMethodSeq(method, seqno);
             if (method_seq in this._worker_onmessage_dict) {
                 this._worker_onmessage_dict[method_seq].apply(this, args);
@@ -185,6 +200,16 @@ export class WorkerTransport {
     subscribeRenderProgress(cb: RenderProgressListener): () => void {
         this._renderProgressListeners.add(cb);
         return () => { this._renderProgressListeners.delete(cb); };
+    }
+
+    /**
+     * Subscribe to `apbs-progress` push messages from `calcApbsPot`.
+     *
+     * @returns An unsubscribe function.
+     */
+    subscribeApbsProgress(cb: ApbsProgressListener): () => void {
+        this._apbsProgressListeners.add(cb);
+        return () => { this._apbsProgressListeners.delete(cb); };
     }
 
     /** Whether the worker has been launched and not yet terminated. */
