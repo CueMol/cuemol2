@@ -49,6 +49,17 @@ export interface GetSceneExportInfoResult {
     height: number;
 }
 
+export interface GetAvailableSceneExportersResult {
+    ok: boolean;
+    /**
+     * StreamManager exporter nicknames registered in category
+     * IOH_CAT_RENDTOFILE for the running libcuemol2 build. Optional exporters
+     * (notably 'umbreon', gated by HAVE_UMBREON at compile time) are absent
+     * when not built in, letting the UI hide the corresponding menu item.
+     */
+    names: string[];
+}
+
 /**
  * Read the scene name and live view pixel size so the renderer can seed the
  * export file name (scene name, UXP `removeFileExt(sc.name)`) and the image
@@ -149,4 +160,30 @@ function exportScene(ctx: WorkerContext, args: ExportSceneArgs): ExportSceneResu
     return { ok: true };
 }
 
-export const services = { exportScene, getSceneExportInfo };
+/**
+ * Enumerate the scene exporters (category IOH_CAT_RENDTOFILE) registered in the
+ * running libcuemol2 build. Used purely as a capability probe so the UI can
+ * hide export menu items whose exporter is not compiled in (e.g. 'umbreon'
+ * without HAVE_UMBREON) instead of offering an export that silently fails.
+ *
+ * Mirrors the enumeration behind UXP `makeFilter(fp, 2)` (`fileopen.js`), but
+ * unlike UXP it is NOT used to drive the file-dialog filter list -- Electron
+ * cannot report which filter the user picked, so the renderer routes one fixed
+ * exporter per menu item instead (see `runSceneExportFlow`).
+ */
+function getAvailableSceneExporters(ctx: WorkerContext): GetAvailableSceneExportersResult {
+    try {
+        const info = JSON.parse(ctx.strMgr.getInfoJSON2()) as Array<{
+            name: string;
+            category: number;
+        }>;
+        const names = info
+            .filter((e) => e.category === IOH_CAT_RENDTOFILE)
+            .map((e) => e.name);
+        return { ok: true, names };
+    } catch {
+        return { ok: false, names: [] };
+    }
+}
+
+export const services = { exportScene, getSceneExportInfo, getAvailableSceneExporters };

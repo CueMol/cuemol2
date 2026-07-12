@@ -40,6 +40,7 @@ import { useAppInitialization } from "./hooks/useAppInitialization";
 import { useNewSceneAction } from "./hooks/useNewSceneAction";
 import { useMolViewTabTitleSync } from "./hooks/useMolViewTabTitleSync";
 import { useActiveViewState } from "./hooks/useActiveViewState";
+import { useSceneExportCaps } from "./hooks/useSceneExportCaps";
 import { useUndoRedoState } from "./hooks/useUndoRedoState";
 import { useCommandRegistrations } from "./hooks/useCommandRegistrations";
 import { useRecentFiles } from "./hooks/useRecentFiles";
@@ -304,6 +305,9 @@ const App: React.FC = () => {
     onBgColorChanged,
   } = useActiveViewState({ cm, activeMolViewId, activeSceneId });
 
+  // --- Scene-exporter availability (hides Umbreon etc. on builds lacking it) ---
+  const exportAvailable = useSceneExportCaps({ cm, cueMolReady });
+
   // --- Undo/redo availability + history dropdown (owns CmdId.Undo/Redo) ---
   const undoRedo = useUndoRedoState({ cm, activeMolViewId, getActiveSceneInfo });
 
@@ -387,7 +391,7 @@ const App: React.FC = () => {
     <IconContext.Provider value={{ color: "currentColor", weight: "regular" }}>
     <div className="app">
       {window.electronAPI?.platform !== 'darwin' && (
-        <MenuBar activeTab={activeTab} viewProjection={viewProjection} viewCenterMark={viewCenterMark} sceneBgColor={sceneBgColor} hasScene={activeMolViewId !== undefined} recentFiles={recentFiles} />
+        <MenuBar activeTab={activeTab} viewProjection={viewProjection} viewCenterMark={viewCenterMark} sceneBgColor={sceneBgColor} hasScene={activeMolViewId !== undefined} exportAvailable={exportAvailable} recentFiles={recentFiles} />
       )}
       <Toolbar undoRedo={undoRedo} hasScene={activeMolViewId !== undefined} />
 

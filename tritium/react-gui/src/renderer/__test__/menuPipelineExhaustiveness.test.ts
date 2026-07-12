@@ -137,8 +137,9 @@ describe('menu pipeline -- exhaustiveness', () => {
 
 describe('menu pipeline -- menuStateApply id subset', () => {
   /**
-   * The 9 menu-item ids that applyMenuStateTo writes to. Kept in sync with
-   * shared/menuStateApply.ts by inspection (those ids are not exported).
+   * The 14 menu-item ids that applyMenuStateTo writes to. Kept in sync with
+   * shared/menuStateApply.ts by inspection (the view/scene ids are not exported;
+   * the export ids come from SCENE_EXPORT_MENU_EXPORTERS, gated via `visible`).
    */
   const STATE_IDS: readonly string[] = [
     'view-perspective',
@@ -150,6 +151,11 @@ describe('menu pipeline -- menuStateApply id subset', () => {
     'bg-black',
     'undo',
     'redo',
+    'export-png',
+    'export-umbreon',
+    'export-pov',
+    'export-stl',
+    'export-mqo',
   ]
 
   it('every state-applied id exists as a menu item id in the template', () => {

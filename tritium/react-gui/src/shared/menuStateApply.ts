@@ -16,6 +16,7 @@
  */
 
 import type { MenuState } from './ipcTypes'
+import { SCENE_EXPORT_MENU_EXPORTERS } from './menuTemplate'
 
 /**
  * Menu item ids (from `menuTemplate.ts`) of implemented actions that operate on
@@ -55,6 +56,8 @@ export const SCENE_REQUIRING_MENU_IDS: readonly string[] = [
 export interface MenuItemLike {
     enabled: boolean
     checked: boolean
+    /** Electron MenuItem visibility; toggled for capability-gated export items. */
+    visible?: boolean
 }
 
 /** Minimal Menu surface used by the apply helper. */
@@ -79,6 +82,7 @@ export function mergeMenuState(
         undo: update.undo ?? current?.undo,
         redo: update.redo ?? current?.redo,
         sceneOps: update.sceneOps ?? current?.sceneOps,
+        exportCaps: update.exportCaps ?? current?.exportCaps,
     }
 }
 
@@ -148,6 +152,18 @@ export function applyMenuStateTo(menu: MenuLike, state: MenuState): void {
         for (const id of SCENE_REQUIRING_MENU_IDS) {
             const item = menu.getMenuItemById(id)
             if (item) item.enabled = state.sceneOps.enabled
+        }
+    }
+
+    // Hide scene-export menu items whose exporter is not registered in this
+    // libcuemol2 build (e.g. Umbreon without HAVE_UMBREON). Gating is fail-open:
+    // an empty availability set (unknown / probe failed) leaves every item
+    // visible, since a successful probe always includes the always-built 'png'.
+    if (state.exportCaps && state.exportCaps.available.length > 0) {
+        const available = new Set(state.exportCaps.available)
+        for (const [id, exporter] of Object.entries(SCENE_EXPORT_MENU_EXPORTERS)) {
+            const item = menu.getMenuItemById(id)
+            if (item) item.visible = available.has(exporter)
         }
     }
 }

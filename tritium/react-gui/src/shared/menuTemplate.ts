@@ -206,6 +206,36 @@ export const APP_MENU: AppMenuGroup[] = [
   },
 ]
 
+/**
+ * Scene-export submenu item id -> StreamManager exporter nickname (category 2).
+ * Used to hide an export menu item when its exporter is not compiled into the
+ * running libcuemol2 build (e.g. 'umbreon' without HAVE_UMBREON). Availability
+ * is probed at startup via the `getAvailableSceneExporters` worker service;
+ * gating is fail-open (an empty/unknown availability set shows every item).
+ */
+export const SCENE_EXPORT_MENU_EXPORTERS: Readonly<Record<string, string>> = {
+  'export-png': 'png',
+  'export-umbreon': 'umbreon',
+  'export-pov': 'pov',
+  'export-stl': 'stl',
+  'export-mqo': 'mqo',
+}
+
+/**
+ * True when `item` is a scene-export menu item whose exporter is absent from
+ * the probed availability set. `available === null` means the probe has not
+ * resolved yet (or failed) -- treated as "show everything" (fail-open).
+ */
+export function isExportItemUnavailable(
+  item: AppMenuItem,
+  available: readonly string[] | null | undefined,
+): boolean {
+  if (!item.id || !available || available.length === 0) return false
+  const exporter = SCENE_EXPORT_MENU_EXPORTERS[item.id]
+  if (!exporter) return false
+  return !available.includes(exporter)
+}
+
 /** Labels shown in the React custom menu bar for role-based items. */
 const ROLE_LABELS: Partial<Record<AppMenuRole, string>> = {
   cut: 'Cut',
