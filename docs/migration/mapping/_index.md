@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-07-12 (`dialog.tool.molclient-tools` を todo -> dropped/done。MolClient (SMILES -> molecule) は外部 MolServer XMLRPC backend 必須で移植しない判断。Dialog_tool done 17->18 / todo 4->3、Total done 103->104 / todo 6->5、dropped 11->12 / unassigned 6->5、Unstarted 6->5。code 変更なし)
 - Updated: 2026-07-12 (`other.config-dialog` を todo -> merged/done。UXP Options prefwindow (Misc/Key/Mouse pane host) は左パネルの `SettingsPane` (`useSettingsPaneNav` + `settingsConfig` の nav tree、modal でない) として実装済。3 pane の扱いが確定 (Misc=`config-misc` wip / Mouse=`config-mouse` wip / Key=`config-keybind` deferred) したためシェルを done 化。Other done 2->3 / todo 1->0、Total done 102->103 / todo 7->6、merged 57->58 / unassigned 7->6、Unstarted 7->6。code 変更なし)
 - Updated: 2026-07-12 (2 行の todo 解消。`overlay.config-keybind` -> deferred/done (UXP key-binding editor は 1:1 移植せず、将来 tritium ネイティブで別方式にする方針。config-misc/mouse で既に deferred 扱い) — 初の `deferred` mapping 行で Breakdown に deferred 行を追加。`dialog.tool.msms-makesurf` -> dropped/done (外部 MSMS は不使用、built-in `makesurf` が surface 生成を担当)。Overlay done 23->24 / todo 1->0、Dialog_tool done 16->17 / todo 5->4。Total done 100->102 / todo 9->7、deferred 0->1 / dropped 10->11 / unassigned 9->7、Unstarted 9->7。code 変更なし)
 - Updated: 2026-07-12 (`overlay.coloring-deck-script` を todo -> dropped/done。script coloring は UXP でもユーザーが選択・作成できる配線が無かった (type セレクタに Script 項目なし、`onChgColoring` に ScriptColoring 生成 case なし。deck/`onLoadColoringScript` は既存 ScriptColoring の script 文字列編集のみで、ScriptColoring は qsc/scripting 経由でしか作れない)。UXP parity として移植不要と判断し drop。Overlay done 22->23 / todo 2->1、Total done 99->100 / todo 10->9、dropped 9->10 / unassigned 10->9、Unstarted 10->9。code 変更なし)
@@ -90,11 +91,11 @@
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 1 | 1 | 0 | 0 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 16 | 14 | 2 | 0 | 0 | 0 |
 | Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 15 | 2 | 0 | 1 | 0 |
-| Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 17 | 0 | 0 | 4 | 0 |
+| Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 18 | 0 | 0 | 3 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 8 | 5 | 0 | 0 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 24 | 4 | 0 | 0 | 0 |
 | Other | [other.md](other.md) | 4 | 3 | 1 | 0 | 0 | 0 |
-| **Total** | | **140** | **103** | **31** | **0** | **6** | **0** |
+| **Total** | | **140** | **104** | **31** | **0** | **5** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -136,8 +137,8 @@
 | split | 36 |
 | redesign | 0 |
 | deferred | 1 |
-| deprecated (`dropped`) | 11 |
-| *(not yet assigned)* | 6 |
+| deprecated (`dropped`) | 12 |
+| *(not yet assigned)* | 5 |
 
 ---
 
@@ -180,4 +181,4 @@
 
 ## Unstarted
 
-**6 / 140** items are `todo` (not yet started).
+**5 / 140** items are `todo` (not yet started).
