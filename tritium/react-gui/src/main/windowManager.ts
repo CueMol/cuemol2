@@ -110,8 +110,8 @@ export function createWindow(): void {
     width: boundsOnScreen ? saved!.width : 1400,
     height: boundsOnScreen ? saved!.height : 900,
     ...(boundsOnScreen ? { x: saved!.x, y: saved!.y } : {}),
-    minWidth: 800,
-    minHeight: 600,
+    minWidth: 400,
+    minHeight: 300,
     title: 'CueMol',
     backgroundColor: '#1e2028',
     // macOS: let a click on this window while it is inactive activate it AND
