@@ -9,11 +9,12 @@
  * (object Save / Save As / Reload Scene -- see ADR-0013).
  */
 
-import React from "react";
+import React, { useRef } from "react";
 import { Button, Divider, Navbar, Alignment } from "@blueprintjs/core";
 
 import { useCommands } from "../commands/CommandRegistry";
 import { CmdId } from "../commands/ids";
+import { useCollapsibleLabels } from "../hooks/useCollapsibleLabels";
 import { UndoRedoSplitButton } from "./toolbar/UndoRedoSplitButton";
 import { AppIcon } from "./AppIcon";
 import type { AppIconKey } from "../data/appIcons";
@@ -53,6 +54,10 @@ interface ToolbarProps {
 
 export const Toolbar: React.FC<ToolbarProps> = ({ undoRedo, hasScene }) => {
   const { dispatch } = useCommands();
+  const barRef = useRef<HTMLDivElement>(null);
+  // Collapse each label to icon-only when the toolbar is too narrow to show
+  // even its ellipsis (truncation itself is CSS; see _toolbar.css).
+  useCollapsibleLabels(barRef);
 
   const renderItem = (item: ToolbarItem): React.ReactNode => {
     switch (item.kind) {
@@ -110,10 +115,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({ undoRedo, hasScene }) => {
   };
 
   return (
-    <Navbar className="app-toolbar" fixedToTop={false}>
-      <Navbar.Group align={Alignment.LEFT}>
-        {TOOLBAR_ITEMS.map(renderItem)}
-      </Navbar.Group>
-    </Navbar>
+    <div ref={barRef} className="app-toolbar-wrap">
+      <Navbar className="app-toolbar" fixedToTop={false}>
+        <Navbar.Group align={Alignment.LEFT}>
+          {TOOLBAR_ITEMS.map(renderItem)}
+        </Navbar.Group>
+      </Navbar>
+    </div>
   );
 };
