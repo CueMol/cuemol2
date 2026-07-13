@@ -36,6 +36,16 @@ tasks:
     cmds:
       - bash download_deplibs/run.sh "{{.WORKDIR}}" Linux X64
 
+  download_deplibs:windows:
+    platforms: [windows]
+    # Mirrors the build_win_x64 job in .github/workflows/build2.yml, which uses the
+    # same download_deplibs composite action as posix: it calls run.sh with
+    # "Windows X64" and cygpath-normalizes basedir first. run.sh does not normalize
+    # its BASEDIR arg, and WORKDIR is a native "c:\..." path on Windows, so pass it
+    # through cygpath -u here.
+    cmds:
+      - bash -c 'bash download_deplibs/run.sh "$(cygpath -u "{{.WORKDIR}}")" Windows X64'
+
   #####
 
   download_extpkgs:
