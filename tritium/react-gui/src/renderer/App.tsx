@@ -383,6 +383,8 @@ const App: React.FC = () => {
     onCenterMarkChanged,
     onBgColorChanged,
     showViewProperty: handleShowViewProps,
+    // Scene's tree-node id equals its scene uid; handleShowGeneric resolves it.
+    showSceneProperty: (sceneId: number) => handleShowGeneric(String(sceneId)),
     newScene,
   });
 

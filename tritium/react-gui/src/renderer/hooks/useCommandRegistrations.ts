@@ -36,6 +36,8 @@ interface UseCommandRegistrationsOptions {
   onBgColorChanged: (bgColor: SceneBgColor) => void;
   /** Open the active View in the generic property inspector. */
   showViewProperty: (viewId: number) => void;
+  /** Open the active scene in the generic property inspector (Scene > Properties...). */
+  showSceneProperty: (sceneId: number) => void;
   newScene: NewSceneAction;
 }
 
@@ -51,9 +53,10 @@ export function useCommandRegistrations({
   onCenterMarkChanged,
   onBgColorChanged,
   showViewProperty,
+  showSceneProperty,
   newScene,
 }: UseCommandRegistrationsOptions): void {
-  useSceneCommands({ cm, getActiveSceneInfo, onBgColorChanged, newScene });
+  useSceneCommands({ cm, getActiveSceneInfo, onBgColorChanged, showSceneProperty, newScene });
   useUiDialogCommands({ cm });
   useTabCommands({ handleCloseTab });
   useNewTabCommand({ cm, addMolTab, addMolViewTab, getActiveSceneInfo, newScene });

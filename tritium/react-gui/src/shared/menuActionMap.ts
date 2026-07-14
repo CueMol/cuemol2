@@ -117,8 +117,8 @@ export const MENU_ACTION_MAP = {
   [IPC.MENU_EXPORT_MQO]:       { dispatch: 'scene.export.mqo',     deliver: 'generic' },
 
   // --- Scene ---
-  [IPC.MENU_COLOR_PROOF]:      { dispatch: MENU_DISPATCH_UNIMPLEMENTED, deliver: 'generic' },
-  [IPC.MENU_SCENE_PROPS]:      { dispatch: MENU_DISPATCH_UNIMPLEMENTED, deliver: 'generic' },
+  [IPC.MENU_COLOR_PROOF]:      { dispatch: 'scene.colorProof',  deliver: 'generic' },
+  [IPC.MENU_SCENE_PROPS]:      { dispatch: 'scene.properties',  deliver: 'generic' },
   [IPC.MENU_BG_WHITE]:         { dispatch: 'scene.bg.white',     deliver: 'generic' },
   [IPC.MENU_BG_BLACK]:         { dispatch: 'scene.bg.black',     deliver: 'generic' },
 
