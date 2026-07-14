@@ -203,36 +203,54 @@
   flex-shrink: 0;
 }
 
-/* Image-size preset (quick dropdown; full size controls live in Inspector). */
+/* Image-size preset (quick dropdown; full size controls live in Inspector).
+   display: contents -- the label and select lay out as direct flex items of
+   the bar. Kept as a nested flex container instead, the pair's automatic
+   minimum would be pinned at the select's preferred width (a definite width
+   wins over min-width in a flex item's min-content contribution), so the
+   select below could never actually shrink. */
 .render-panel-preset {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
+  display: contents;
 }
 
 /* Standard form label (typography from the .type-label role; not muted). */
 .render-panel-preset-label {
   color: var(--text-secondary);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
+/* The dropdowns prefer 168px but give that width back when the bar gets
+   tight: the selected text is usually much shorter than the box, so the
+   slack inside the dropdown is the first thing to go, before the buttons'
+   labels collapse to icon-only (useCollapsibleLabels). */
 .render-panel-preset-select {
   display: flex;
   width: 168px;
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  min-width: 72px;
 }
 
 /* Target-view dropdown (Rendering window; same row styling as the preset). */
 .render-panel-target-select {
   display: flex;
   width: 168px;
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  min-width: 72px;
+}
+
+/* A flex item's default minimum is its content width, which for a native
+   select is its widest option; lift that so the wrapper's min-width above
+   is the real floor and long options just clip inside the closed box. */
+.render-panel-preset-select .bp5-html-select,
+.render-panel-target-select .bp5-html-select {
+  min-width: 0;
 }
 
 .render-panel-status {
   margin-left: auto;
   font-size: var(--fs-base);
-  color: var(--text-muted);
+  color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

@@ -273,7 +273,7 @@ export function createOrFocusRenderWindow(mainWindow: BrowserWindow): void {
     height,
     x,
     y,
-    minWidth: 640,
+    minWidth: 480,
     minHeight: 480,
     title: 'Rendering',
     backgroundColor: '#1e2028',

@@ -863,11 +863,13 @@
    fit the full labels -- hidden entirely (icon-only, via useCollapsibleLabels);
    it is never truncated to a fragment. A text-only button keeps its label: with
    no icon to fall back to it must never be hidden, so the collapse is gated on
-   the presence of an icon (the button does not shrink). */
+   the presence of an icon (the button does not shrink). The icon test matches
+   both a Blueprint named icon (.bp5-icon) and a custom icon element (AppIcon
+   renders a bare Phosphor svg) -- same rule as useCollapsibleLabels. */
 .h3-form-btn .bp5-button-text {
   white-space: nowrap;
 }
-.h3-form-btn:has(.bp5-icon) {
+.h3-form-btn:has(.bp5-icon, svg) {
   flex-shrink: 0;
 }
 
