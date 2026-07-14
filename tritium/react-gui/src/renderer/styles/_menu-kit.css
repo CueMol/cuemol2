@@ -68,7 +68,10 @@
 
 .menu-separator {
   height: 1px;
-  background: var(--border-subtle);
+  /* Use --border, not --border-subtle: in dark mode --border-subtle is darker
+     than --bg-elevated (the panel bg) so the rule is invisible; --border sits
+     above the bg in both themes. */
+  background: var(--border);
   margin: var(--space-2) var(--space-4);
 }
 
