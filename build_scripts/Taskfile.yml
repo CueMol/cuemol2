@@ -36,6 +36,16 @@ tasks:
     cmds:
       - bash download_deplibs/run.sh "{{.WORKDIR}}" Linux X64
 
+  download_deplibs:windows:
+    platforms: [windows]
+    # Mirrors the build_win_x64 job in .github/workflows/build2.yml, which uses the
+    # same download_deplibs composite action as posix: it calls run.sh with
+    # "Windows X64" and cygpath-normalizes basedir first. run.sh does not normalize
+    # its BASEDIR arg, and WORKDIR is a native "c:\..." path on Windows, so pass it
+    # through cygpath -u here.
+    cmds:
+      - bash -c 'bash download_deplibs/run.sh "$(cygpath -u "{{.WORKDIR}}")" Windows X64'
+
   #####
 
   download_extpkgs:
@@ -45,7 +55,12 @@ tasks:
   install_umbreon:
     desc: "Build+install umbreon into the deplibs prefix (override source dir with UMBREON_SRC=...)"
     vars:
-      UMBREON_SRC: '{{.UMBREON_SRC | default (printf "%s/proj64/umbreon" (env "HOME"))}}'
+      # umbreon is checked out parallel to the cuemol2 repo, so derive the default
+      # from ROOT_DIR (<repo>/build_scripts) instead of $HOME: $HOME does not locate
+      # the checkout on Windows, where the repo is not under the home dir. run.sh
+      # cygpath-normalizes this arg, so a mixed "c:\...\build_scripts/../../umbreon"
+      # path resolves fine.
+      UMBREON_SRC: '{{.UMBREON_SRC | default (printf "%s/../../umbreon" .ROOT_DIR)}}'
     cmds:
       - bash build_umbreon_posix/run.sh "{{.WORKDIR}}" "{{.UMBREON_SRC}}"
 
