@@ -80,6 +80,30 @@ const App: React.FC = () => {
     setActiveView((prev) => (prev === view ? null : view));
   }, []);
 
+  /**
+   * Mirror a snap-driven collapse/reopen of the sidebar pane into
+   * `activeView`, the source of truth for its controlled `visible` prop.
+   *
+   * Allotment's onVisibleChange cannot be used for this: it is only
+   * emitted on drag end, but onChange re-renders the parent during the
+   * drag and allotment's controlled-visible sync effect restores the pane
+   * to the stale prop value first, so the drag-collapse never sticks and
+   * onVisibleChange never fires (verified against allotment 1.20.2).
+   * Instead detect the collapse from the sizes onChange reports: a
+   * snapped-hidden pane has size 0, and a hidden pane can never report a
+   * non-zero size (its maximumSize is 0 while hidden).
+   */
+  const handleMainSizesChange = useCallback(
+    (sizes: number[]) => {
+      setMainSizes(sizes);
+      // All-zero sizes mean the container itself has no layout yet; that
+      // must not be mistaken for a collapsed sidebar.
+      if (sizes[0] === undefined || !sizes.some((s) => s > 0)) return;
+      setActiveView((prev) => (sizes[0] > 0 ? (prev ?? "explorer") : null));
+    },
+    [setMainSizes],
+  );
+
   // --- CueMol core / tabs (cm needed early for useSceneTree) ---
 
   const { cueMolReady, cm } = useCueMol();
@@ -103,6 +127,7 @@ const App: React.FC = () => {
     handleShowAnimElement,
     handleClearAnimElement,
     handleCloseInspector,
+    setInspectorOpen,
     handleGenericSet,
     handleGenericReset,
     handleSetMany,
@@ -146,6 +171,23 @@ const App: React.FC = () => {
     handleCloseInspector();
     setAnimHeader(null);
   }, [handleCloseInspector]);
+
+  /**
+   * Same snap-collapse mirroring as the sidebar (see
+   * `handleMainSizesChange`) for the inspector pane. Only the open flag is
+   * mirrored; the inspector target is kept so a drag-hide / drag-show
+   * round trip restores the same content. The equality guard keeps the
+   * per-drag-event onChange stream from re-persisting an unchanged flag.
+   */
+  const handleRightPanelSizesChange = useCallback(
+    (sizes: number[]) => {
+      setRightPanelSizes(sizes);
+      if (sizes[1] === undefined || !sizes.some((s) => s > 0)) return;
+      const wantOpen = sizes[1] > 0;
+      if (wantOpen !== inspectorOpen) setInspectorOpen(wantOpen);
+    },
+    [setRightPanelSizes, inspectorOpen, setInspectorOpen],
+  );
 
   // Persistent render binary paths (POV-Ray / blendpng) from SettingsPane.
   // Attached to render jobs started via the Rendering-window bridge.
@@ -407,7 +449,7 @@ const App: React.FC = () => {
           <div className="main-content-area">
             {loaded && (
               <Allotment
-                onChange={setMainSizes}
+                onChange={handleMainSizesChange}
                 defaultSizes={
                   layout.mainSizes && layout.mainSizes.length > 0
                     ? layout.mainSizes
@@ -441,7 +483,7 @@ const App: React.FC = () => {
                 {/* Right section: center + inspector */}
                 <Allotment.Pane>
                   <Allotment
-                    onChange={setRightPanelSizes}
+                    onChange={handleRightPanelSizesChange}
                     defaultSizes={
                       layout.rightPanelSizes && layout.rightPanelSizes.length > 0
                         ? layout.rightPanelSizes

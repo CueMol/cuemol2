@@ -11,9 +11,14 @@
 #include <qsys/SceneExporter.hpp>
 #include <qlib/mcutils.hpp>
 
+#include <memory>
+
 class UmbreonSceneExporter_wrap;
 
 namespace render {
+
+  class UmbreonDisplayContext;
+  struct UmbreonRenderParams;
 
   /// Scene exporter that renders the scene with umbreon (the Embree ray
   /// tracer) and writes the result as a PNG image. Parallel to
@@ -85,12 +90,56 @@ namespace render {
     /// denoise the GI indirect irradiance with the Intel OIDN denoiser
     bool m_bGiDenoise;
 
+    /// Asynchronous render context, created by beginRender() and released by
+    /// endRender(). Held across the poll phase so the scene walk + background
+    /// ray trace outlive a single scriptable call. Null when no render is in
+    /// progress.
+    std::unique_ptr<UmbreonDisplayContext> m_pCtx;
+
+    /// Whether the last endRender() returned because the render was cancelled
+    /// (so no image file was written).
+    bool m_bWasCancelled;
+
+    /// Shared setup for write() and beginRender(): init the display context,
+    /// apply the exporter properties, walk the scene, and fill the render
+    /// params. Runs on the calling thread (touches the CueMol scene graph).
+    void setupContext(UmbreonDisplayContext &ctx, UmbreonRenderParams &prm);
+
   public:
     UmbreonSceneExporter();
     virtual ~UmbreonSceneExporter();
 
-    /// render the scene and write the image
+    /// render the scene and write the image (synchronous; blocks until done)
     virtual void write();
+
+    /////////////////////////////////
+    // Asynchronous render: drive with beginRender() -> poll -> endRender().
+    // The synchronous write() above is preserved for scripts/UXP; these are an
+    // additive, non-blocking alternative for a responsive UI (see the .qif).
+
+    /// Build the scene and start the ray trace on a background thread, returning
+    /// immediately. Throws if a render is already in progress, or if built
+    /// without umbreon.
+    void beginRender();
+
+    /// Overall completion of the in-flight render in [0, 1] (0 when none).
+    double getRenderProgress() const;
+
+    /// Current render phase name ("Idle" when no render is in flight).
+    LString getRenderPhaseName() const;
+
+    /// True once the render has finished (or when none is in flight).
+    bool isRenderDone() const;
+
+    /// Request cooperative cancellation of the in-flight render (no-op if none).
+    void cancelRender();
+
+    /// Join the render and write the PNG to the output path (unless cancelled),
+    /// then release the render state. Throws if no render is in progress.
+    void endRender();
+
+    /// Whether the last endRender() ended in cancellation (no image written).
+    bool wasRenderCancelled() const;
 
     /////////////////////////////////
 

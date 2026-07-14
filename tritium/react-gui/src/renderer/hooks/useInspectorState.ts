@@ -420,6 +420,7 @@ export function useInspectorState({
     handleShowAnimElement,
     handleClearAnimElement,
     handleCloseInspector,
+    setInspectorOpen,
     handleGenericSet,
     handleGenericReset,
     handleSetMany,

@@ -602,3 +602,165 @@ TEST(UmbreonExport, PostBlendsTranslucentSectionWithoutDoubleBlend)
     // post-blend group: three coincident spheres == one (no double-blend)
     EXPECT_EQ(one, three);
 }
+
+// Pins the asynchronous render path (startAsyncRender -> finishAsyncRender)
+// against the synchronous render(): rendering the SAME scene on a background
+// thread must produce a byte-identical frame (umbreon guarantees deterministic
+// pixels; only the threading differs). This is the core regression guard for
+// the async split -- if buildSceneAndOptions/encodeFrame or the move-into-
+// renderAsync drops or reorders anything, the two frames diverge.
+TEST(UmbreonExport, AsyncRenderMatchesSyncRender)
+{
+    auto buildScene = [](UmbreonDisplayContext &ctx) {
+        ctx.init();
+        ctx.setPerspective(false);
+        ctx.setViewDist(100.0);
+        ctx.setZoom(6.0);
+        ctx.loadIdent();
+
+        ctx.startRender();
+        ctx.startSection("test");
+
+        ctx.color(gfx::SolidColor::createRGB(1.0, 0.2, 0.2));
+        ctx.startTriangles();
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(-1.5, -1.5, 0.0));
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(1.5, -1.5, 0.0));
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(0.0, 1.5, 0.0));
+        ctx.end();
+
+        ctx.color(gfx::SolidColor::createRGB(0.2, 0.6, 1.0));
+        ctx.sphere(0.8, Vector4D(-1.0, 1.0, 0.5));
+
+        ctx.color(gfx::SolidColor::createRGB(0.2, 1.0, 0.2));
+        ctx.cylinder(0.3, Vector4D(1.0, 1.0, 0.0), Vector4D(1.8, -1.0, 0.0));
+
+        ctx.endSection();
+    };
+
+    UmbreonRenderParams prm;
+    prm.width = 64;
+    prm.height = 64;
+    prm.supersample = 1;
+
+    // synchronous baseline
+    UmbreonDisplayContext ctxSync;
+    buildScene(ctxSync);
+    int sw = 0, sh = 0, sncomp = 0;
+    std::vector<unsigned char> syncPix;
+    ctxSync.render(prm, sw, sh, sncomp, syncPix);
+
+    // asynchronous: same scene, background thread + finish (which joins).
+    UmbreonDisplayContext ctxAsync;
+    buildScene(ctxAsync);
+    ctxAsync.startAsyncRender(prm);
+    int aw = 0, ah = 0, ancomp = 0;
+    std::vector<unsigned char> asyncPix;
+    bool cancelled = true;
+    ctxAsync.finishAsyncRender(aw, ah, ancomp, asyncPix, cancelled);
+
+    EXPECT_FALSE(cancelled);
+    EXPECT_EQ(aw, sw);
+    EXPECT_EQ(ah, sh);
+    EXPECT_EQ(ancomp, sncomp);
+    EXPECT_EQ(asyncPix, syncPix);
+}
+
+// Pins the progress plumbing: while an async render is in flight getProgress()
+// always returns a fraction in [0, 1], the render completes (isDone() turns
+// true), and finishAsyncRender() yields a full, non-cancelled frame. Cross-
+// thread reads of the lock-free progress atomics are only asserted for their
+// invariant range, not exact values (no synchronization point exists until the
+// join inside finishAsyncRender).
+TEST(UmbreonExport, AsyncRenderReportsProgressAndCompletes)
+{
+    UmbreonDisplayContext ctx;
+    ctx.init();
+    ctx.setPerspective(false);
+    ctx.setViewDist(100.0);
+    ctx.setZoom(6.0);
+    ctx.loadIdent();
+
+    ctx.startRender();
+    ctx.startSection("p");
+    ctx.color(gfx::SolidColor::createRGB(0.8, 0.8, 0.8));
+    ctx.sphere(1.6, Vector4D(0.0, 0.0, 0.0));
+    ctx.endSection();
+
+    UmbreonRenderParams prm;
+    prm.width = 96;
+    prm.height = 96;
+    prm.supersample = 2;  // a bit heavier so progress is observable
+
+    ctx.startAsyncRender(prm);
+
+    // Poll the lock-free progress; every reading must stay within [0, 1]. The
+    // cap is a safety net -- a finite render always finishes first.
+    bool inRange = true;
+    long iters = 0;
+    const long kMaxIters = 50000000L;
+    for (; iters < kMaxIters && !ctx.isDone(); ++iters) {
+        const double p = ctx.getProgress();
+        if (p < 0.0 || p > 1.0)
+            inRange = false;
+    }
+
+    ASSERT_TRUE(ctx.isDone()) << "async render did not finish within the poll cap";
+    EXPECT_TRUE(inRange) << "progress went outside [0, 1]";
+
+    int ow = 0, oh = 0, ncomp = 0;
+    std::vector<unsigned char> pix;
+    bool cancelled = true;
+    ctx.finishAsyncRender(ow, oh, ncomp, pix, cancelled);
+
+    EXPECT_FALSE(cancelled);
+    EXPECT_EQ(ow, 96);
+    EXPECT_EQ(oh, 96);
+    ASSERT_EQ(pix.size(), static_cast<std::size_t>(96 * 96 * 3));
+}
+
+// Pins the cancellation contract: cancelRender() requests a cooperative stop and
+// finishAsyncRender() must report it. Cancellation is checked at row/pass
+// boundaries, so a fast render MAY complete before the first check -- the test
+// accepts either outcome, but pins the invariant that a CANCELLED result yields
+// no pixels (empty buffer, zero dimensions).
+TEST(UmbreonExport, AsyncRenderCanBeCancelled)
+{
+    UmbreonDisplayContext ctx;
+    ctx.init();
+    ctx.setPerspective(false);
+    ctx.setViewDist(100.0);
+    ctx.setZoom(6.0);
+    ctx.loadIdent();
+
+    ctx.startRender();
+    ctx.startSection("c");
+    ctx.color(gfx::SolidColor::createRGB(0.8, 0.8, 0.8));
+    ctx.sphere(1.6, Vector4D(0.0, 0.0, 0.0));
+    ctx.endSection();
+
+    UmbreonRenderParams prm;
+    prm.width = 256;
+    prm.height = 256;
+    prm.supersample = 3;  // heavy enough that an immediate cancel usually lands
+
+    ctx.startAsyncRender(prm);
+    ctx.cancelRender();
+
+    int ow = 99, oh = 99, ncomp = 99;
+    std::vector<unsigned char> pix(123, 7);  // pre-filled to verify it is cleared
+    bool cancelled = false;
+    ctx.finishAsyncRender(ow, oh, ncomp, pix, cancelled);
+
+    if (cancelled) {
+        EXPECT_TRUE(pix.empty());
+        EXPECT_EQ(ow, 0);
+        EXPECT_EQ(oh, 0);
+        EXPECT_EQ(ncomp, 0);
+    } else {
+        // Finished before the first cancel check: a normal complete frame.
+        ASSERT_EQ(pix.size(), static_cast<std::size_t>(256 * 256 * 3));
+    }
+}

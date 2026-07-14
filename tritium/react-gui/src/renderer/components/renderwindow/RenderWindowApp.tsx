@@ -130,8 +130,12 @@ export const RenderWindowApp: React.FC = () => {
           </Allotment>
         </Allotment.Pane>
 
-        {/* Right: Render Settings editor (always visible) */}
-        <Allotment.Pane minSize={240} preferredSize={300}>
+        {/* Right: Render Settings editor (always visible). The min widths
+            must satisfy leftMin + settingsMin + sash <= window minWidth
+            (480, windowManager.ts) so the window can actually reach its
+            minimum and the render bar can get narrow enough to collapse
+            its button labels. */}
+        <Allotment.Pane minSize={150} preferredSize={300}>
           <div className="render-window-settings">
             <div className="render-window-settings-header type-group-label">
               Render Settings

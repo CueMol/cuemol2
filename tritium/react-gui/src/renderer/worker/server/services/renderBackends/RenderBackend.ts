@@ -64,19 +64,43 @@ export interface RenderBackend {
   /** Final output image path, read once all tasks complete. */
   outputImagePath(exported: ExportedScene): string;
   /**
-   * Optional: render the scene fully in-process (a synchronous C++ ray trace),
-   * writing the final PNG directly to `outputPath`. When a backend defines this,
-   * the render-job pipeline calls it INSTEAD of the external-process path --
-   * `buildTasks` / `parseProgress` are never invoked, and no ProcessManager task
-   * is queued. The call blocks the worker thread for the whole render (no
-   * progress is reported); see UmbreonBackend for the sole in-process backend.
+   * Optional: start an in-process (C++) render on a background thread and return
+   * a handle to poll. When a backend defines this, the render-job pipeline calls
+   * it INSTEAD of the external-process path -- `buildTasks` / `parseProgress` are
+   * never invoked, and no ProcessManager task is queued. The ray trace runs on a
+   * C++ worker thread, so the worker JS stays responsive: the pipeline polls the
+   * handle between ticks, pushes progress, and calls `finish()` on completion.
+   * See UmbreonBackend for the sole in-process backend.
    */
-  renderInProcess?(
+  beginInProcess?(
     ctx: WorkerContext,
     scene: Scene,
     snapshot: RenderSettingsSnapshot,
     outputPath: string,
-  ): void;
+  ): InProcessRender;
+}
+
+/**
+ * A running in-process (C++) render, polled by the render-job pipeline between
+ * worker ticks. The heavy ray trace runs on a background C++ thread; these calls
+ * only read lock-free progress state or request cancellation, so they return at
+ * once and never block the worker.
+ */
+export interface InProcessRender {
+  /** Overall completion in [0, 1]. */
+  progress(): number;
+  /** Human-readable current phase (backend-specific, e.g. umbreon RenderPhase). */
+  phase(): string;
+  /** True once the background render has finished (completed or cancelled). */
+  isDone(): boolean;
+  /**
+   * Join the render and write the output image, unless it was cancelled. Returns
+   * true if the render was cancelled (no image written). Releases backend
+   * resources. Call once, after isDone() is true (or to force completion).
+   */
+  finish(): boolean;
+  /** Request cooperative cancellation (the render stops at the next boundary). */
+  cancel(): void;
 }
 
 // - PropDef value readers -

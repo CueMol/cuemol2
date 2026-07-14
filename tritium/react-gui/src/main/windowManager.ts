@@ -110,10 +110,16 @@ export function createWindow(): void {
     width: boundsOnScreen ? saved!.width : 1400,
     height: boundsOnScreen ? saved!.height : 900,
     ...(boundsOnScreen ? { x: saved!.x, y: saved!.y } : {}),
-    minWidth: 800,
-    minHeight: 600,
+    minWidth: 400,
+    minHeight: 300,
     title: 'CueMol',
     backgroundColor: '#1e2028',
+    // macOS: let a click on this window while it is inactive activate it AND
+    // hit the clicked control in the same click (the default requires a separate
+    // activating click first). Matters because the modeless Rendering window
+    // floats above this one (it is a child window), so the main window is often
+    // clicked while inactive. Ignored on other platforms.
+    acceptFirstMouse: true,
     ...(isMac
       ? {
           titleBarStyle: 'hiddenInset' as const,
@@ -267,10 +273,13 @@ export function createOrFocusRenderWindow(mainWindow: BrowserWindow): void {
     height,
     x,
     y,
-    minWidth: 640,
+    minWidth: 480,
     minHeight: 480,
     title: 'Rendering',
     backgroundColor: '#1e2028',
+    // Single-click activate-and-act on macOS (see createWindow). Symmetric, so
+    // whichever window is inactive can still be operated in one click.
+    acceptFirstMouse: true,
     // Same custom title-bar chrome as the main window; the in-window drag
     // strip is RenderWindowApp's .render-window-titlebar.
     ...(isMac

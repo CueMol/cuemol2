@@ -34,11 +34,22 @@ import type {
 } from "../../shared/renderTypes";
 import { RENDER_PROGRESS_CHANNEL } from "../../shared/renderTypes";
 import { getRenderBackend, type RenderBackend } from "./renderBackends";
-import { pixelImageSize, type RenderTaskSpec } from "./renderBackends/RenderBackend";
+import {
+  pixelImageSize,
+  type RenderTaskSpec,
+  type InProcessRender,
+} from "./renderBackends/RenderBackend";
 import { getSceneOrNull } from "./helpers/sceneResolver";
 
-/** Poll interval for process status / stdout. */
+/** Poll interval for external process status / stdout. */
 const POLL_MS = 700;
+
+/**
+ * Poll interval for an in-process (umbreon) render. Shorter than POLL_MS: the
+ * local ray tracer's progress advances continuously, so a tighter poll drives a
+ * smoother bar. Each tick is a handful of lock-free C++ reads, so it is cheap.
+ */
+const IN_PROCESS_POLL_MS = 250;
 
 /** ProcessManager task states. */
 const TASK_QUEUED = 0;
@@ -65,6 +76,10 @@ interface RenderJobEntry {
   taskIds: number[];
   /** Per-task progress 0..100, parallel to `taskIds`. */
   taskProgress: number[];
+  /** In-process render handle (umbreon); null for external-process jobs. */
+  inProcess: InProcessRender | null;
+  /** Last in-process phase name pushed to the log (so it is logged on change). */
+  lastPhaseName: string;
 }
 
 const jobs = new Map<string, RenderJobEntry>();
@@ -219,16 +234,16 @@ function pollJob(
 }
 
 /**
- * Register and drive an in-process (synchronous C++) render job -- e.g. umbreon,
- * which renders straight to `outputPath` in one blocking `write()` call rather
- * than spawning external processes. No ProcessManager task is queued.
+ * Register and drive an in-process (C++) render job -- e.g. umbreon, which
+ * renders on a background thread rather than spawning external processes. No
+ * ProcessManager task is queued.
  *
- * The render has already happened (synchronously, blocking the worker) by the
- * time this returns, so completion is deferred to the next macrotask via
- * `setTimeout(0)`: `useRenderJob` stores the pending jobId only after
- * `renderStart` resolves and drops any push whose jobId doesn't match, so a
- * synchronous "complete" would be lost. The deferred callback runs after the
- * renderer has stored the jobId.
+ * `beginInProcess` builds the scene (on this worker thread) and kicks the ray
+ * trace onto a background C++ thread, returning a handle at once. A poll timer
+ * then pushes `render-progress` updates and, once the render finishes, joins the
+ * worker and writes the image via the handle's `finish()`. Because the first
+ * push lands on a later timer tick (never synchronously inside renderStart),
+ * `useRenderJob` has already stored the jobId -- no jobId race.
  */
 function startInProcessJob(
   ctx: WorkerContext,
@@ -238,10 +253,10 @@ function startInProcessJob(
   workDir: string,
   outputPath: string,
 ): RenderStartResult {
-  const startedAt = Date.now();
+  let handle: InProcessRender;
   try {
-    // Blocks the worker thread for the full ray trace; no progress is reported.
-    backend.renderInProcess!(ctx, scene, args.snapshot, outputPath);
+    // Non-blocking: builds the scene, then starts the ray trace on a bg thread.
+    handle = backend.beginInProcess!(ctx, scene, args.snapshot, outputPath);
   } catch (e) {
     cleanupDir(workDir);
     return { ok: false, jobId: "", error: String(e) };
@@ -252,32 +267,91 @@ function startInProcessJob(
     jobId,
     workDir,
     outputPath,
-    startedAt,
+    startedAt: Date.now(),
     timer: null,
     cancelled: false,
-    announcedDir: true,
+    announcedDir: false,
     phase: "render",
     finalizeSpecs: [],
     taskIds: [],
     taskProgress: [],
+    inProcess: handle,
+    lastPhaseName: "",
   };
   jobs.set(jobId, entry);
 
-  // Image is already on disk; emit completion on the next macrotask (see the
-  // jobId-race note above). `stopTimer` uses clearInterval, which also clears a
-  // setTimeout handle in Node.
-  entry.timer = setTimeout(() => {
-    if (entry.cancelled) return;
+  entry.timer = setInterval(() => {
     try {
-      finishJob(ctx, entry, args);
+      pollInProcessJob(ctx, entry, args);
     } catch (e) {
       stopTimer(entry);
       jobs.delete(jobId);
+      cleanupDir(workDir);
       emit(ctx, { type: "error", jobId, error: String(e) });
     }
-  }, 0);
+  }, IN_PROCESS_POLL_MS);
 
   return { ok: true, jobId };
+}
+
+/**
+ * One poll tick for an in-process render: push a progress update while it runs,
+ * or -- once the background render reports done -- join the worker and write the
+ * image via the handle's `finish()`, then emit completion (or drop it on a user
+ * cancel).
+ */
+function pollInProcessJob(
+  ctx: WorkerContext,
+  entry: RenderJobEntry,
+  args: RenderStartArgs,
+): void {
+  const handle = entry.inProcess;
+  if (!handle) return;
+
+  if (!handle.isDone()) {
+    const frac = handle.progress(); // 0..1
+    const phaseName = handle.phase();
+
+    let logChunk = "";
+    if (!entry.announcedDir) {
+      logChunk += `Working dir: ${entry.workDir}\n`;
+      entry.announcedDir = true;
+    }
+    // Log each phase transition once (umbreon Setup -> Primary -> ...).
+    if (phaseName && phaseName !== entry.lastPhaseName) {
+      entry.lastPhaseName = phaseName;
+      logChunk += `${phaseName}\n`;
+    }
+
+    emit(ctx, {
+      type: "progress",
+      jobId: entry.jobId,
+      progress: Math.max(0, Math.min(100, Math.round(frac * 100))),
+      phase: "running",
+      logChunk: logChunk || undefined,
+    });
+    return;
+  }
+
+  // Done (completed or cancelled): join the worker + write the PNG via finish().
+  stopTimer(entry);
+  let cancelled: boolean;
+  try {
+    cancelled = handle.finish();
+  } catch (e) {
+    jobs.delete(entry.jobId);
+    cleanupDir(entry.workDir);
+    emit(ctx, { type: "error", jobId: entry.jobId, error: String(e) });
+    return;
+  }
+
+  if (cancelled || entry.cancelled) {
+    // User cancellation: no complete push (matches the external cancel path).
+    jobs.delete(entry.jobId);
+    cleanupDir(entry.workDir);
+    return;
+  }
+  finishJob(ctx, entry, args); // reads the PNG, emits `complete`
 }
 
 /** Start a render job. */
@@ -312,9 +386,9 @@ function renderStart(ctx: WorkerContext, args: RenderStartArgs): RenderStartResu
     const exported = backend.exportScene(ctx, scene, args.snapshot, workDir);
     outputPath = backend.outputImagePath(exported);
 
-    // In-process backend (umbreon): render synchronously to outputPath now and
-    // skip the external-process (buildTasks / ProcessManager) path entirely.
-    if (backend.renderInProcess) {
+    // In-process backend (umbreon): start the background render and poll it,
+    // skipping the external-process (buildTasks / ProcessManager) path entirely.
+    if (backend.beginInProcess) {
       return startInProcessJob(ctx, backend, scene, args, workDir, outputPath);
     }
 
@@ -357,6 +431,8 @@ function renderStart(ctx: WorkerContext, args: RenderStartArgs): RenderStartResu
     finalizeSpecs,
     taskIds,
     taskProgress: taskIds.map(() => 0),
+    inProcess: null,
+    lastPhaseName: "",
   };
   jobs.set(jobId, entry);
   entry.timer = setInterval(() => {
@@ -377,6 +453,20 @@ function renderCancel(ctx: WorkerContext, args: RenderCancelArgs): RenderCancelR
   const entry = jobs.get(args.jobId);
   if (!entry) return { ok: false };
   entry.cancelled = true;
+
+  // In-process (umbreon): request cooperative cancellation and let the poll loop
+  // observe isDone() and finish() (which joins the C++ worker cleanly). Killing
+  // the timer here would leave the render thread running detached.
+  if (entry.inProcess) {
+    try {
+      entry.inProcess.cancel();
+    } catch {
+      /* ignore */
+    }
+    return { ok: true };
+  }
+
+  // External-process (POV-Ray): stop polling and kill the render processes now.
   stopTimer(entry);
   jobs.delete(entry.jobId);
 

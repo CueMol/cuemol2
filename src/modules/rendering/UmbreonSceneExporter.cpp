@@ -112,7 +112,8 @@ UmbreonSceneExporter::UmbreonSceneExporter()
        m_bEnableEdgeLines(true), m_dCreaseLimit(-1.0), m_dEdgeRise(0.5),
        m_bTransparentBackground(false),
        m_bGI(false), m_nGiSamples(32), m_dGiIntensity(1.0),
-       m_dGiEnvIntensity(1.0), m_bGiDenoise(true)
+       m_dGiEnvIntensity(1.0), m_bGiDenoise(true),
+       m_bWasCancelled(false)
 {
 }
 
@@ -120,7 +121,8 @@ UmbreonSceneExporter::~UmbreonSceneExporter()
 {
 }
 
-void UmbreonSceneExporter::write()
+void UmbreonSceneExporter::setupContext(UmbreonDisplayContext &ctx,
+                                        UmbreonRenderParams &prm)
 {
   ScenePtr pScene = getClient();
   qlib::ensureNotNull(pScene.get());
@@ -128,7 +130,6 @@ void UmbreonSceneExporter::write()
   CameraPtr pCam = getCamera();
   qlib::ensureNotNull(pCam.get());
 
-  UmbreonDisplayContext ctx;
   ctx.init();
 
   ctx.setPerspective(m_bPerspective);
@@ -175,7 +176,6 @@ void UmbreonSceneExporter::write()
   // Walk the scene, accumulating umbreon geometry per renderer section.
   pScene->display(&ctx);
 
-  UmbreonRenderParams prm;
   prm.width = width;
   prm.height = height;
   prm.supersample = m_nSupersample;
@@ -191,6 +191,13 @@ void UmbreonSceneExporter::write()
   prm.giIntensity = m_dGiIntensity;
   prm.giEnvIntensity = m_dGiEnvIntensity;
   prm.giDenoise = m_bGiDenoise;
+}
+
+void UmbreonSceneExporter::write()
+{
+  UmbreonDisplayContext ctx;
+  UmbreonRenderParams prm;
+  setupContext(ctx, prm);
 
   int ow = 0, oh = 0, ncomp = 0;
   std::vector<unsigned char> pix;
@@ -205,6 +212,92 @@ void UmbreonSceneExporter::write()
   writePngToStream(pOut, ow, oh, &pix[0], ncomp);
   pOut->close();
   delete pOut;
+}
+
+//////////////////////////////////////////////////////////////
+// Asynchronous render: beginRender() -> poll -> endRender().
+
+void UmbreonSceneExporter::beginRender()
+{
+  if (m_pCtx) {
+    MB_THROW(qlib::RuntimeException, "umbreon: render already in progress");
+    return;
+  }
+  m_bWasCancelled = false;
+  m_pCtx.reset(new UmbreonDisplayContext());
+
+  // setupContext (scene walk) and startAsyncRender both run on the calling
+  // thread; only the ray trace it kicks off runs on a background thread.
+  UmbreonRenderParams prm;
+  try {
+    setupContext(*m_pCtx, prm);
+    m_pCtx->startAsyncRender(prm);
+  } catch (...) {
+    m_pCtx.reset();
+    throw;
+  }
+}
+
+double UmbreonSceneExporter::getRenderProgress() const
+{
+  return m_pCtx ? m_pCtx->getProgress() : 0.0;
+}
+
+LString UmbreonSceneExporter::getRenderPhaseName() const
+{
+  return m_pCtx ? m_pCtx->getPhaseName() : LString("Idle");
+}
+
+bool UmbreonSceneExporter::isRenderDone() const
+{
+  // No render in flight -> report done so a polling loop terminates safely.
+  return m_pCtx ? m_pCtx->isDone() : true;
+}
+
+void UmbreonSceneExporter::cancelRender()
+{
+  if (m_pCtx)
+    m_pCtx->cancelRender();
+}
+
+void UmbreonSceneExporter::endRender()
+{
+  if (!m_pCtx) {
+    MB_THROW(qlib::RuntimeException, "umbreon: no render in progress");
+    return;
+  }
+
+  int ow = 0, oh = 0, ncomp = 0;
+  std::vector<unsigned char> pix;
+  bool cancelled = false;
+  // Release the context on every path (the worker join happens inside
+  // finishAsyncRender) so a later beginRender() is never blocked.
+  try {
+    m_pCtx->finishAsyncRender(ow, oh, ncomp, pix, cancelled);
+  } catch (...) {
+    m_pCtx.reset();
+    throw;
+  }
+  m_pCtx.reset();
+
+  m_bWasCancelled = cancelled;
+  if (cancelled)
+    return;  // cancelled render: no image is written
+
+  if (pix.empty() || ow <= 0 || oh <= 0) {
+    MB_THROW(qlib::RuntimeException, "umbreon render produced no image");
+    return;
+  }
+
+  qlib::OutStream *pOut = createOutStream();
+  writePngToStream(pOut, ow, oh, &pix[0], ncomp);
+  pOut->close();
+  delete pOut;
+}
+
+bool UmbreonSceneExporter::wasRenderCancelled() const
+{
+  return m_bWasCancelled;
 }
 
 /// name of the writer
