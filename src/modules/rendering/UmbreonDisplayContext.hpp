@@ -86,6 +86,43 @@ namespace render {
                 std::vector<unsigned char> &outRGBA);
 
     ////////////////////////////////////////////////////////////
+    // Asynchronous render (umbreon RenderTask).
+    //
+    // The heavy ray trace runs on a background thread so the caller (a single-
+    // threaded worker) can poll progress and keep its UI/view responsive.
+    // Usage: startAsyncRender() -> poll getProgress()/isDone() (optionally
+    // cancelRender()) -> finishAsyncRender() once done. The scene build itself
+    // (buildSceneAndOptions, driven from startAsyncRender) still runs on the
+    // calling thread, which must own the CueMol scene graph.
+
+    /// Build the umbreon scene + options and start rendering on a background
+    /// thread, returning immediately. Throws when built without umbreon.
+    void startAsyncRender(const UmbreonRenderParams &prm);
+
+    /// Overall completion of the in-flight async render in [0, 1] (0 if none).
+    double getProgress() const;
+
+    /// Human-readable current render phase (umbreon RenderPhase name); "Idle"
+    /// when no render is in flight.
+    LString getPhaseName() const;
+
+    /// True once the async render has finished (or when none is in flight).
+    bool isDone() const;
+
+    /// Request cooperative cancellation of the in-flight async render (no-op
+    /// when none). finishAsyncRender() then reports outCancelled = true.
+    void cancelRender() const;
+
+    /// Join the async render and encode its result to interleaved 8-bit pixels
+    /// (identical encoding to render()). On cancellation outCancelled is set
+    /// true and no pixels are produced (outRGBA empty). Throws when no async
+    /// render is in flight, or built without umbreon. Call at most once per
+    /// startAsyncRender().
+    void finishAsyncRender(int &outWidth, int &outHeight, int &outNcomp,
+                           std::vector<unsigned char> &outRGBA,
+                           bool &outCancelled);
+
+    ////////////////////////////////////////////////////////////
     // Edge / silhouette line configuration (mirrors PovDisplayContext).
     // Edge lines are rendered by umbreon's native screen-space stroke pass
     // (RenderOptions::strokeEdges), configured from these settings in
@@ -112,6 +149,12 @@ namespace render {
 
     /// Append the current section buffer (m_pIntData) to the umbreon scene.
     void appendIntData();
+
+    /// Build the umbreon scene + render options (stored in the pimpl) from prm.
+    /// Shared by the synchronous render() and the asynchronous
+    /// startAsyncRender(). Touches the CueMol scene graph, so it must run on the
+    /// calling thread. No-op when built without umbreon (callers throw first).
+    void buildSceneAndOptions(const UmbreonRenderParams &prm);
 
     /// Resolve a CueMol material name to an index into the per-mesh material
     /// table (Impl::matTable), parsing its POV finish (StyleMgr) on first use

@@ -230,6 +230,74 @@ namespace {
                          float(rgba.w()));
   }
 
+  /// Convert a linear HDR umbreon framebuffer to interleaved 8-bit pixels
+  /// (top-left origin, outNcomp = 3 or 4). Shared by the synchronous render()
+  /// and the asynchronous finishAsyncRender() paths so both encode identically.
+  /// When transparentBackground is true the input is premultiplied RGBA (alpha =
+  /// coverage) and is un-premultiplied in linear space before the 8-bit encode.
+  void encodeFrame(umbreon::FrameResult &frame, bool transparentBackground,
+                   int &outWidth, int &outHeight, int &outNcomp,
+                   std::vector<unsigned char> &outRGBA)
+  {
+    // Count saturated pixels: any RGB channel > 1.0 in the final framebuffer
+    // will clamp to white on output (the encode step clips to [0,1]). Logged to
+    // help judge whether the lighting/exposure is blowing out highlights.
+    {
+      const std::size_t npix =
+          std::size_t(frame.width) * std::size_t(frame.height);
+      std::size_t nsat = 0;
+      for (std::size_t i = 0; i < npix; ++i) {
+        if (frame.color[i * 4 + 0] > 1.0f ||
+            frame.color[i * 4 + 1] > 1.0f ||
+            frame.color[i * 4 + 2] > 1.0f)
+          ++nsat;
+      }
+      const double pct =
+          (npix > 0) ? (100.0 * double(nsat) / double(npix)) : 0.0;
+      LOG_DPRINTLN("Umbreon> saturated pixels: %d / %d (%.2f%%)",
+                   int(nsat), int(npix), pct);
+    }
+
+    outWidth = frame.width;
+    outHeight = frame.height;
+    outNcomp = transparentBackground ? 4 : 3;
+
+    // For a transparent background umbreon returns premultiplied RGB (color
+    // weighted by coverage) with alpha = coverage. PNG expects straight alpha, so
+    // un-premultiply in linear space before encoding; the encode paths below then
+    // emit the 4th (alpha) channel via outNcomp. The opaque path (outNcomp = 3)
+    // is left byte-for-byte unchanged.
+    if (transparentBackground) {
+      const std::size_t npix =
+          std::size_t(frame.width) * std::size_t(frame.height);
+      for (std::size_t i = 0; i < npix; ++i) {
+        float a = frame.color[i * 4 + 3];
+        if (a < 0.0f) a = 0.0f;
+        if (a > 1.0f) a = 1.0f;
+        const float inv = (a > 1.0e-6f) ? 1.0f / a : 0.0f;
+        frame.color[i * 4 + 0] *= inv;
+        frame.color[i * 4 + 1] *= inv;
+        frame.color[i * 4 + 2] *= inv;
+        frame.color[i * 4 + 3] = a;
+      }
+    }
+
+    // Direct linear mapping: clamp each HDR channel to [0,1] and scale to 8-bit
+    // (no assumed_gamma, no sRGB OETF). The PNG is tagged sRGB by the exporter so
+    // a color-managed viewer applies the transfer curve at display time.
+    {
+      const std::size_t npix =
+          std::size_t(frame.width) * std::size_t(frame.height);
+      outRGBA.resize(npix * std::size_t(outNcomp));
+      for (std::size_t i = 0; i < npix; ++i) {
+        for (int c = 0; c < outNcomp; ++c)
+          outRGBA[i * outNcomp + c] = toUnorm8(frame.color[i * 4 + c]);
+      }
+    }
+
+    MB_DPRINTLN("Umbreon> render done: %.3f sec", frame.renderSeconds);
+  }
+
 }  // anonymous namespace
 #endif  // HAVE_UMBREON
 
@@ -267,6 +335,19 @@ struct UmbreonDisplayContext::Impl
   /// Representative stroke width (final px) for the global strokeEdges.thickness;
   /// per-section widths live in groupEdgeStyle[*].cls[*].width.
   float edgeThicknessPx = float(EDGE_THICKNESS_PX);
+
+  /// Render options built from UmbreonRenderParams by buildSceneAndOptions();
+  /// consumed by render() (sync) or moved into renderAsync() (async).
+  umbreon::RenderOptions opt;
+
+  /// In-flight asynchronous render handle (null when none). RenderTask is
+  /// move-only and only constructible via umbreon::renderAsync, hence the
+  /// unique_ptr. Its reads are lock-free, so the getters below are thread-safe.
+  std::unique_ptr<umbreon::RenderTask> task;
+
+  /// Whether the pending render emits a transparent (RGBA) background; captured
+  /// in buildSceneAndOptions so finishAsyncRender() encodes without needing prm.
+  bool transparentBackground = false;
 #endif
 };
 
@@ -556,11 +637,13 @@ void UmbreonDisplayContext::buildCamera()
 #endif
 }
 
-void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
-                                   int &outWidth, int &outHeight, int &outNcomp,
-                                   std::vector<unsigned char> &outRGBA)
+void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
 {
 #ifdef HAVE_UMBREON
+  // Captured so finishAsyncRender()/encodeFrame can pick the RGB vs RGBA path
+  // without re-reading prm after the scene/options have been moved away.
+  m_pImpl->transparentBackground = prm.transparentBackground;
+
   buildCamera();
 
   umbreon::Scene &scene = m_pImpl->scene;
@@ -640,7 +723,8 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
   // HDR framebuffer (see the encode below) and the PNG is tagged sRGB.
   scene.assumedGamma = 1.0f;
 
-  umbreon::RenderOptions opt;
+  m_pImpl->opt = umbreon::RenderOptions();
+  umbreon::RenderOptions &opt = m_pImpl->opt;
   opt.width = (prm.width > 0) ? prm.width : 640;
   opt.height = (prm.height > 0) ? prm.height : 480;
   opt.supersample = (prm.supersample > 0) ? prm.supersample : 1;
@@ -712,69 +796,115 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
   MB_DPRINTLN("Umbreon> render %dx%d ss=%d ao=%d tris=%d",
               opt.width, opt.height, opt.supersample, opt.aoSamples,
               int(scene.mesh.triangleCount()));
+#endif
+}
 
-  umbreon::FrameResult frame = umbreon::render(scene, opt);
-
-  // Count saturated pixels: any RGB channel > 1.0 in the final framebuffer will
-  // clamp to white on output (the encode step clips to [0,1]). Logged to help
-  // judge whether the lighting/exposure is blowing out highlights.
-  {
-    const std::size_t npix =
-        std::size_t(frame.width) * std::size_t(frame.height);
-    std::size_t nsat = 0;
-    for (std::size_t i = 0; i < npix; ++i) {
-      if (frame.color[i * 4 + 0] > 1.0f ||
-          frame.color[i * 4 + 1] > 1.0f ||
-          frame.color[i * 4 + 2] > 1.0f)
-        ++nsat;
-    }
-    const double pct =
-        (npix > 0) ? (100.0 * double(nsat) / double(npix)) : 0.0;
-    LOG_DPRINTLN("Umbreon> saturated pixels: %d / %d (%.2f%%)",
-                 int(nsat), int(npix), pct);
-  }
-
-  outWidth = frame.width;
-  outHeight = frame.height;
-  outNcomp = prm.transparentBackground ? 4 : 3;
-
-  // For a transparent background umbreon returns premultiplied RGB (color
-  // weighted by coverage) with alpha = coverage. PNG expects straight alpha, so
-  // un-premultiply in linear space before encoding; the encode paths below then
-  // emit the 4th (alpha) channel via outNcomp. The opaque path (outNcomp = 3)
-  // is left byte-for-byte unchanged.
-  if (prm.transparentBackground) {
-    const std::size_t npix =
-        std::size_t(frame.width) * std::size_t(frame.height);
-    for (std::size_t i = 0; i < npix; ++i) {
-      float a = frame.color[i * 4 + 3];
-      if (a < 0.0f) a = 0.0f;
-      if (a > 1.0f) a = 1.0f;
-      const float inv = (a > 1.0e-6f) ? 1.0f / a : 0.0f;
-      frame.color[i * 4 + 0] *= inv;
-      frame.color[i * 4 + 1] *= inv;
-      frame.color[i * 4 + 2] *= inv;
-      frame.color[i * 4 + 3] = a;
-    }
-  }
-
-  // Direct linear mapping: clamp each HDR channel to [0,1] and scale to 8-bit
-  // (no assumed_gamma, no sRGB OETF). The PNG is tagged sRGB by the exporter so
-  // a color-managed viewer applies the transfer curve at display time.
-  {
-    const std::size_t npix =
-        std::size_t(frame.width) * std::size_t(frame.height);
-    outRGBA.resize(npix * std::size_t(outNcomp));
-    for (std::size_t i = 0; i < npix; ++i) {
-      for (int c = 0; c < outNcomp; ++c)
-        outRGBA[i * outNcomp + c] = toUnorm8(frame.color[i * 4 + c]);
-    }
-  }
-
-  MB_DPRINTLN("Umbreon> render done: %.3f sec",
-              frame.renderSeconds);
+void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
+                                   int &outWidth, int &outHeight, int &outNcomp,
+                                   std::vector<unsigned char> &outRGBA)
+{
+#ifdef HAVE_UMBREON
+  buildSceneAndOptions(prm);
+  umbreon::FrameResult frame = umbreon::render(m_pImpl->scene, m_pImpl->opt);
+  encodeFrame(frame, m_pImpl->transparentBackground,
+              outWidth, outHeight, outNcomp, outRGBA);
 #else
   outWidth = outHeight = outNcomp = 0;
+  outRGBA.clear();
+  MB_THROW(qlib::RuntimeException,
+           "umbreon backend not available (built without ENABLE_UMBREON)");
+#endif
+}
+
+void UmbreonDisplayContext::startAsyncRender(const UmbreonRenderParams &prm)
+{
+#ifdef HAVE_UMBREON
+  buildSceneAndOptions(prm);
+  // Hand the scene + options to a background render thread and return at once.
+  // renderAsync takes both by value, so after the move m_pImpl->scene/opt are
+  // empty until the next startRender() reset; nothing on the calling side may
+  // touch them while the worker runs. RenderTask is move-only and only
+  // constructible via renderAsync, hence the unique_ptr.
+  m_pImpl->task = std::make_unique<umbreon::RenderTask>(
+      umbreon::renderAsync(std::move(m_pImpl->scene), std::move(m_pImpl->opt)));
+#else
+  MB_THROW(qlib::RuntimeException,
+           "umbreon backend not available (built without ENABLE_UMBREON)");
+#endif
+}
+
+double UmbreonDisplayContext::getProgress() const
+{
+#ifdef HAVE_UMBREON
+  return m_pImpl->task ? double(m_pImpl->task->progress()) : 0.0;
+#else
+  return 0.0;
+#endif
+}
+
+LString UmbreonDisplayContext::getPhaseName() const
+{
+#ifdef HAVE_UMBREON
+  if (!m_pImpl->task)
+    return LString("Idle");
+  return LString(umbreon::toString(m_pImpl->task->phase()));
+#else
+  return LString("Idle");
+#endif
+}
+
+bool UmbreonDisplayContext::isDone() const
+{
+#ifdef HAVE_UMBREON
+  // No task in flight -> report done so a polling loop terminates safely.
+  return m_pImpl->task ? m_pImpl->task->done() : true;
+#else
+  return true;
+#endif
+}
+
+void UmbreonDisplayContext::cancelRender() const
+{
+#ifdef HAVE_UMBREON
+  if (m_pImpl->task)
+    m_pImpl->task->cancel();
+#endif
+}
+
+void UmbreonDisplayContext::finishAsyncRender(int &outWidth, int &outHeight,
+                                              int &outNcomp,
+                                              std::vector<unsigned char> &outRGBA,
+                                              bool &outCancelled)
+{
+#ifdef HAVE_UMBREON
+  if (!m_pImpl->task) {
+    MB_THROW(qlib::RuntimeException, "umbreon: no async render in progress");
+    return;
+  }
+  // get() joins the worker and rethrows any exception the render threw. Reset
+  // the handle on every path (get() may be called only once) so a subsequent
+  // startAsyncRender() is not blocked.
+  umbreon::FrameResult frame;
+  try {
+    frame = m_pImpl->task->get();
+  } catch (...) {
+    m_pImpl->task.reset();
+    throw;
+  }
+  m_pImpl->task.reset();
+
+  outCancelled = frame.cancelled;
+  if (frame.cancelled) {
+    // A cancelled render yields a partial frame; do not encode it.
+    outWidth = outHeight = outNcomp = 0;
+    outRGBA.clear();
+    return;
+  }
+  encodeFrame(frame, m_pImpl->transparentBackground,
+              outWidth, outHeight, outNcomp, outRGBA);
+#else
+  outWidth = outHeight = outNcomp = 0;
+  outCancelled = false;
   outRGBA.clear();
   MB_THROW(qlib::RuntimeException,
            "umbreon backend not available (built without ENABLE_UMBREON)");

@@ -1,9 +1,10 @@
 /**
  * Pins the in-process branch of `renderStart`: an in-process backend (one that
- * defines `renderInProcess`) renders synchronously, no ProcessManager task is
- * queued, and the completion push is DEFERRED to a later macrotask (setTimeout)
- * -- never emitted synchronously inside renderStart, which would lose the push
- * to useRenderJob's jobId race.
+ * defines `beginInProcess`) starts a background render and is driven by a poll
+ * timer -- no ProcessManager task is queued, nothing is pushed synchronously
+ * inside renderStart (which would lose the push to useRenderJob's jobId race),
+ * progress updates are pushed while the render runs, and completion is emitted
+ * only after the handle reports done and `finish()` writes the image.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -38,15 +39,17 @@ const PNG_BYTES = Buffer.from('test-png-content')
 
 describe('renderStart in-process branch', () => {
     let outFile: string
-    let timerCb: (() => void) | null
+    let intervalCb: (() => void) | null
 
     beforeEach(() => {
         outFile = path.join(os.tmpdir(), `umbreon-test-${Date.now()}-${Math.trunc(performance.now())}.png`)
-        timerCb = null
-        vi.spyOn(globalThis, 'setTimeout').mockImplementation(((cb: () => void) => {
-            timerCb = cb
-            return 0 as never
+        intervalCb = null
+        // Capture the poll callback instead of running it on a real timer.
+        vi.spyOn(globalThis, 'setInterval').mockImplementation(((cb: () => void) => {
+            intervalCb = cb
+            return 1 as never
         }) as never)
+        vi.spyOn(globalThis, 'clearInterval').mockImplementation((() => {}) as never)
     })
 
     afterEach(() => {
@@ -71,12 +74,23 @@ describe('renderStart in-process branch', () => {
         }
     }
 
-    it('renders in-process, queues no ProcessManager task, defers completion', () => {
-        const renderInProcess = vi.fn((_c: unknown, _s: unknown, _snap: unknown, out: string) => {
-            fs.writeFileSync(out, PNG_BYTES)
-        })
-        const buildTasks = vi.fn()
-        const fakeBackend = {
+    /** A fake in-process handle whose finish() writes the output PNG. */
+    function makeHandle(overrides: Record<string, unknown> = {}) {
+        return {
+            progress: vi.fn(() => 0.5),
+            phase: vi.fn(() => 'Primary'),
+            isDone: vi.fn(() => false),
+            finish: vi.fn(() => {
+                fs.writeFileSync(outFile, PNG_BYTES)
+                return false
+            }),
+            cancel: vi.fn(),
+            ...overrides,
+        }
+    }
+
+    function makeBackend(handle: ReturnType<typeof makeHandle>) {
+        return {
             id: 'umbreon',
             exportScene: vi.fn((_c: unknown, _s: unknown, _snap: unknown, workDir: string) => ({
                 inputPath: '',
@@ -84,11 +98,16 @@ describe('renderStart in-process branch', () => {
                 blendTable: {},
             })),
             outputImagePath: () => outFile,
-            renderInProcess,
-            buildTasks,
+            beginInProcess: vi.fn(() => handle),
+            buildTasks: vi.fn(),
             parseProgress: () => null,
         }
-        hoisted.getRenderBackend.mockReturnValue(fakeBackend)
+    }
+
+    it('starts the async render, queues no ProcessManager task, polls progress then completes', () => {
+        const handle = makeHandle()
+        const backend = makeBackend(handle)
+        hoisted.getRenderBackend.mockReturnValue(backend)
 
         const pushMessage = vi.fn()
         const getService = vi.fn()
@@ -98,31 +117,63 @@ describe('renderStart in-process branch', () => {
 
         expect(res.ok).toBe(true)
         expect(res.jobId).toMatch(/^render-/)
-        expect(renderInProcess).toHaveBeenCalledTimes(1)
-        expect(renderInProcess).toHaveBeenCalledWith(ctx, expect.anything(), expect.anything(), outFile)
-        expect(buildTasks).not.toHaveBeenCalled()
+        expect(backend.beginInProcess).toHaveBeenCalledTimes(1)
+        expect(backend.beginInProcess).toHaveBeenCalledWith(ctx, expect.anything(), expect.anything(), outFile)
+        expect(backend.buildTasks).not.toHaveBeenCalled()
 
-        // No external-process path: ProcessManager never fetched, and completion
-        // is NOT emitted synchronously (respects useRenderJob's jobId race).
+        // No external-process path: ProcessManager never fetched, and nothing is
+        // emitted synchronously (respects useRenderJob's jobId race).
         expect(getService).not.toHaveBeenCalled()
         expect(pushMessage).not.toHaveBeenCalled()
+        expect(intervalCb).toBeTypeOf('function')
 
-        // The deferred macrotask reads the PNG and emits completion.
-        expect(timerCb).toBeTypeOf('function')
-        timerCb!()
-
+        // Tick 1: render still running -> a progress push.
+        intervalCb!()
         expect(pushMessage).toHaveBeenCalledTimes(1)
-        const [channel, update] = pushMessage.mock.calls[0] as [string, Record<string, unknown>]
-        expect(channel).toBe('render-progress')
-        expect(update.type).toBe('complete')
-        expect(update.jobId).toBe(res.jobId)
-        expect(String(update.imageDataUrl)).toMatch(/^data:image\/png;base64,/)
-        expect(update.width).toBe(640)
-        expect(update.height).toBe(480)
+        const [ch, prog] = pushMessage.mock.calls[0] as [string, Record<string, unknown>]
+        expect(ch).toBe('render-progress')
+        expect(prog.type).toBe('progress')
+        expect(prog.jobId).toBe(res.jobId)
+        expect(prog.progress).toBe(50) // 0.5 -> 50%
+        expect(prog.phase).toBe('running')
+        expect(handle.finish).not.toHaveBeenCalled()
+
+        // Tick 2: render done -> finish() writes the PNG, then a complete push.
+        handle.isDone.mockReturnValue(true)
+        intervalCb!()
+        expect(handle.finish).toHaveBeenCalledTimes(1)
+
+        const complete = pushMessage.mock.calls.at(-1) as [string, Record<string, unknown>]
+        expect(complete[1].type).toBe('complete')
+        expect(complete[1].jobId).toBe(res.jobId)
+        expect(String(complete[1].imageDataUrl)).toMatch(/^data:image\/png;base64,/)
+        expect(complete[1].width).toBe(640)
+        expect(complete[1].height).toBe(480)
     })
 
-    it('reports an error when the in-process render throws (e.g. umbreon not built)', () => {
-        const fakeBackend = {
+    it('drops completion when the render was cancelled (no complete push)', () => {
+        const handle = makeHandle({
+            isDone: vi.fn(() => true),
+            finish: vi.fn(() => true), // reports cancelled
+        })
+        const backend = makeBackend(handle)
+        hoisted.getRenderBackend.mockReturnValue(backend)
+
+        const pushMessage = vi.fn()
+        const ctx = { svc: { pushMessage, getService: vi.fn() } } as unknown as WorkerContext
+
+        const res = services.renderStart(ctx, makeArgs())
+        expect(res.ok).toBe(true)
+
+        // The done+cancelled tick calls finish() but emits neither progress nor
+        // complete (the user cancellation was already reflected in the renderer).
+        intervalCb!()
+        expect(handle.finish).toHaveBeenCalledTimes(1)
+        expect(pushMessage).not.toHaveBeenCalled()
+    })
+
+    it('reports an error when the in-process render fails to start (e.g. umbreon not built)', () => {
+        const backend = {
             id: 'umbreon',
             exportScene: vi.fn((_c: unknown, _s: unknown, _snap: unknown, workDir: string) => ({
                 inputPath: '',
@@ -130,13 +181,13 @@ describe('renderStart in-process branch', () => {
                 blendTable: {},
             })),
             outputImagePath: () => outFile,
-            renderInProcess: vi.fn(() => {
+            beginInProcess: vi.fn(() => {
                 throw new Error('umbreon backend not compiled in')
             }),
             buildTasks: vi.fn(),
             parseProgress: () => null,
         }
-        hoisted.getRenderBackend.mockReturnValue(fakeBackend)
+        hoisted.getRenderBackend.mockReturnValue(backend)
 
         const ctx = {
             svc: { pushMessage: vi.fn(), getService: vi.fn() },

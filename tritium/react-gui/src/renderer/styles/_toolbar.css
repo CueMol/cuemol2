@@ -1,4 +1,12 @@
 /* ─── Toolbar ─── */
+/* Wrapper around the Navbar so useCollapsibleLabels can observe the toolbar
+   (Blueprint's Navbar is an FC and does not forward a DOM ref). Transparent to
+   the app's column layout: full width, never shrinks vertically. */
+.app-toolbar-wrap {
+  flex-shrink: 0;
+  min-width: 0;
+}
+
 .app-toolbar {
   padding: 0 var(--space-4) !important;
   padding-left: var(--titlebar-inset, var(--space-4)) !important;
@@ -9,12 +17,33 @@
 
 .app-toolbar .bp5-navbar-group {
   height: 36px;
+  /* The group is float-based (Blueprint), so its shrink-to-fit width otherwise
+     grows to the full label content instead of capping at the toolbar width;
+     the cap makes scrollWidth > clientWidth measurable so useCollapsibleLabels
+     can detect the overflow. No overflow: hidden here -- it would clip the
+     icon-only hover tooltip (and scrollWidth reports overflow regardless);
+     nothing paints outside anyway because the hook collapses the labels before
+     the overflowing layout is ever painted. */
+  min-width: 0;
+  max-width: 100%;
 }
 
 .app-toolbar .bp5-button {
   font-size: var(--fs-lg) !important;
   min-height: 24px !important;
   padding: var(--space-1) var(--space-3) !important;
+  /* Never shrink: a label is shown in full or hidden entirely, never truncated
+     to a fragment. useCollapsibleLabels hides every label at once (icon-only)
+     when the full labels no longer fit. */
+  flex-shrink: 0;
+}
+
+/* Labels never wrap to a second line; they are shown in full or hidden entirely
+   (see the flex-shrink:0 above and useCollapsibleLabels). Same behavior as
+   FormButton in _form-kit.css; here the buttons are raw Blueprint Buttons and
+   every one is icon+text. */
+.app-toolbar .bp5-button-text {
+  white-space: nowrap;
 }
 
 .app-toolbar .bp5-button .bp5-icon {

@@ -10,10 +10,11 @@
  * permanently visible.
  */
 
-import React, { useCallback } from "react";
+import React, { useCallback, useRef } from "react";
 import { ProgressBar, type Intent } from "@blueprintjs/core";
 import { SelectField, FormButton } from "../../h3-kit/form";
 import { AppIcon } from "../AppIcon";
+import { useCollapsibleLabels } from "../../hooks/useCollapsibleLabels";
 import { type RenderJob, isRenderJobActive } from "../../hooks/useRenderJob";
 import { RENDER_SIZE_PRESETS } from "../../data/renderSettings";
 import type { RenderTargetViewWire } from "../../../shared/ipcTypes";
@@ -85,6 +86,11 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
 }) => {
   const active = isRenderJobActive(job);
 
+  const barRef = useRef<HTMLDivElement>(null);
+  // Collapse toolbar labels (Start/Stop, Render Settings) to icon-only when the
+  // bar is too narrow to show even their ellipsis (truncation itself is CSS).
+  useCollapsibleLabels(barRef);
+
   const handleTargetChange = useCallback(
     (value: string) => {
       const id = Number(value);
@@ -96,7 +102,7 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
   return (
     <div className="render-panel">
       {/* -- Action bar -- */}
-      <div className="render-panel-bar">
+      <div ref={barRef} className="render-panel-bar">
         {active ? (
           <FormButton
             intent="danger"

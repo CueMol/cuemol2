@@ -8,6 +8,17 @@ render すると crash する**問題の調査記録と、その恒久対策と�
 対象ブランチ: `feat/render-window-umbreon` (OIDN 有効化は commit `db945e4f`,
 PR #422)。本書の crash は**その時点で未修正の既知問題**。
 
+> **更新 (2026-07-12): in-process の非同期化 (progress/cancel/非ブロッキング) は
+> 実装済み。** libcuemol2 側に umbreon `renderAsync`/`RenderTask` を橋渡しする
+> scriptable な非同期 API (`UmbreonSceneExporter::beginRender`/`getRenderProgress`/
+> `getRenderPhaseName`/`isRenderDone`/`cancelRender`/`endRender`) を追加し、tritium
+> の render backend をポーリング駆動に置き換えた (ray trace は umbreon の background
+> thread で走るので worker はブロックしない)。これにより §4 が process 分離の利点と
+> して挙げる「worker が固まらない」「progress/cancel」は **in-process のまま達成済み**。
+> **本書の主題である OIDN/PartitionAlloc の大確保 crash (§2) は未解決**で、その根本
+> 対策としての process 分離 (§4) は引き続き有効。=> 分離の残る動機は「3rd-party
+> (OIDN/embree) の大確保を PA の効かない子プロセスに出す」memory 面のみに絞られた。
+
 ---
 
 ## 1. 症状

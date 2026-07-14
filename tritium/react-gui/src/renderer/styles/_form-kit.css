@@ -858,6 +858,69 @@
   font-size: var(--fs-base);
 }
 
+/* Label collapse: a button label never wraps to a second line. An icon+text
+   button shows its label in full or -- when a tight toolbar row can no longer
+   fit the full labels -- hidden entirely (icon-only, via useCollapsibleLabels);
+   it is never truncated to a fragment. A text-only button keeps its label: with
+   no icon to fall back to it must never be hidden, so the collapse is gated on
+   the presence of an icon (the button does not shrink). The icon test matches
+   both a Blueprint named icon (.bp5-icon) and a custom icon element (AppIcon
+   renders a bare Phosphor svg) -- same rule as useCollapsibleLabels. */
+.h3-form-btn .bp5-button-text {
+  white-space: nowrap;
+}
+.h3-form-btn:has(.bp5-icon, svg) {
+  flex-shrink: 0;
+}
+
+/* When a whole toolbar row's labels no longer fit, useCollapsibleLabels marks
+   every icon+text button so it renders icon-only (shared by toolbar buttons and
+   FormButtons). The icon always remains. */
+.bp5-button[data-label-collapsed] .bp5-button-text {
+  display: none;
+}
+
+/* Icon-only: Blueprint gives every button child a 7px inter-child margin-right,
+   which would linger on the icon (the hidden label is still the last DOM child)
+   and push the icon off-centre. Drop it so the lone icon sits centred. */
+.bp5-button[data-label-collapsed] > * {
+  margin-right: 0;
+}
+
+/* Icon-only hover tooltip: the collapsed label (carried in the attribute value)
+   is shown below the button after a short delay. A CSS pseudo-element is used
+   instead of a native `title` because Chromium suppresses native tooltips over
+   Electron -webkit-app-region: drag areas (the main toolbar is one). */
+.bp5-button[data-label-collapsed] {
+  position: relative;
+}
+.bp5-button[data-label-collapsed]::after {
+  content: attr(data-label-collapsed);
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  white-space: nowrap;
+  pointer-events: none;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--fs-sm);
+  font-weight: normal;
+  visibility: hidden;
+  opacity: 0;
+}
+.bp5-button[data-label-collapsed]:hover::after {
+  visibility: visible;
+  opacity: 1;
+  /* Delay the show (like a native tooltip); hiding on hover-out is instant
+     because the transition lives only on the :hover state. */
+  transition: opacity 100ms ease 500ms, visibility 0s linear 500ms;
+}
+
 /* Compact keyboard-focus ring. Drawn INSET (inside the button box) so the
    highlight never bleeds past the button edge -- an outset ring overflows and
    overlaps neighbours once the row/grid gap is tight (--space-1). The inset

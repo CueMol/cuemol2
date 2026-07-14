@@ -77,6 +77,39 @@ runtime_class UmbreonSceneExporter extends SceneExporter
   /// denoise the GI indirect irradiance (Intel OIDN)
   property boolean giDenoise => m_bGiDenoise;
 
+  ////////////////////
+  // Asynchronous render (non-blocking, with progress + cancel).
+  //
+  // The synchronous write() (inherited from SceneExporter) blocks the caller
+  // for the whole ray trace. For a responsive UI drive the render in three
+  // phases instead: beginRender() -> poll getRenderProgress()/isRenderDone()
+  // (optionally cancelRender()) -> endRender() to write the PNG. The heavy ray
+  // trace runs on a background thread, so the polling calls return at once.
+
+  /// Build the scene (on the calling thread) and start the ray trace on a
+  /// background thread, returning immediately.
+  void beginRender();
+
+  /// Overall completion of the in-flight render in [0, 1] (0 when none).
+  real getRenderProgress();
+
+  /// Human-readable current render phase; "Idle" when no render is in flight.
+  string getRenderPhaseName();
+
+  /// True once the render has finished (or when none is in flight).
+  boolean isRenderDone();
+
+  /// Request cooperative cancellation of the in-flight render.
+  void cancelRender();
+
+  /// Join the render and write the result to the output path (set via setPath),
+  /// unless it was cancelled. Releases the render state.
+  void endRender();
+
+  /// Whether the last endRender() ended because the render was cancelled (so no
+  /// image was written).
+  boolean wasRenderCancelled();
+
 };
 
 #endif
