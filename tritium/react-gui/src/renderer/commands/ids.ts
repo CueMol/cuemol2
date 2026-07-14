@@ -59,6 +59,8 @@ export const CmdId = {
   // Scene style
   SceneBgWhite: 'scene.bg.white', // no args
   SceneBgBlack: 'scene.bg.black', // no args
+  SceneColorProof: 'scene.colorProof', // no args -- toggle color proofing on active scene
+  SceneProperties: 'scene.properties', // no args -- open active scene in inspector
 
   // Rendering
   UiRenderWindow:     'ui.renderWindow', // no args -- open/focus the Rendering window

@@ -1,4 +1,6 @@
-/* Menu bar (Windows/Linux custom title bar menu) */
+/* Menu bar (Windows/Linux custom title bar menu). The dropdown panels and
+   their rows are the shared menu kit (_menu-kit.css) rendered by MenuPanel;
+   this file owns only the bar itself and the dropdown anchor position. */
 
 .menubar {
   -webkit-app-region: drag;
@@ -32,57 +34,10 @@
   color: var(--text-primary);
 }
 
-/* Dropdown panel */
-
+/* Fixed-position anchor for the open group's MenuPanel, attached just below
+   the bar (left offset is set inline from the group's bounding rect). */
 .menubar__dropdown {
-  -webkit-app-region: no-drag;
   position: fixed;
   top: 36px;
-  min-width: 200px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-top: none;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   z-index: 9999;
-  padding: var(--space-2) 0;
-}
-
-.menubar__dropdown-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-2) 24px var(--space-2) var(--space-6);
-  font-size: var(--fs-lg);
-  color: var(--text-primary);
-  cursor: default;
-  gap: 32px;
-  white-space: nowrap;
-}
-
-.menubar__dropdown-item:hover {
-  background: var(--bg-active);
-}
-
-.menubar__dropdown-item--disabled {
-  color: var(--text-muted);
-  pointer-events: none;
-}
-
-.menubar__dropdown-check {
-  width: 14px;
-  flex: 0 0 14px;
-  color: var(--text-primary);
-  text-align: center;
-}
-
-.menubar__dropdown-separator {
-  height: 1px;
-  background: var(--border-subtle);
-  margin: var(--space-2) 0;
-}
-
-.menubar__dropdown-accelerator {
-  color: var(--text-muted);
-  font-size: var(--fs-base);
-  margin-left: auto;
 }

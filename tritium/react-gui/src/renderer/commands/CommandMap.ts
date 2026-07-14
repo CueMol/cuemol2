@@ -65,6 +65,8 @@ export interface CommandMap {
   // Scene background
   [CmdId.SceneBgWhite]:        { args: void;            result: void }
   [CmdId.SceneBgBlack]:        { args: void;            result: void }
+  [CmdId.SceneColorProof]:     { args: void;            result: void }
+  [CmdId.SceneProperties]:     { args: void;            result: void }
 
   // Rendering
   [CmdId.UiRenderWindow]:      { args: void;            result: void }

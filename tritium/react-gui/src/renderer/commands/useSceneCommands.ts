@@ -26,6 +26,8 @@ interface UseSceneCommandsOptions {
     cm: AsyncCueMol | null
     getActiveSceneInfo: ActiveSceneCommandDeps
     onBgColorChanged?: (bgColor: SceneBgColor) => void
+    /** Open the active scene in the generic property inspector (Scene > Properties...). */
+    showSceneProperty?: (sceneId: number) => void
     newScene: NewSceneAction
 }
 
@@ -33,6 +35,7 @@ export function useSceneCommands({
     cm,
     getActiveSceneInfo,
     onBgColorChanged,
+    showSceneProperty,
     newScene,
 }: UseSceneCommandsOptions): void {
 
@@ -95,6 +98,26 @@ export function useSceneCommands({
 
     useRegisterCommand(CmdId.SceneBgWhite, () => setSceneBgColor('white'))
     useRegisterCommand(CmdId.SceneBgBlack, () => setSceneBgColor('black'))
+
+    // Scene > Use color proofing (UXP `onColorProof`): toggle the active
+    // scene's color-proofing flag. The worker sets a default ICC profile when
+    // none is configured, so a plain toggle takes effect. Same worker service
+    // as the scene-tree context menu's Use color proofing item.
+    useRegisterCommand(CmdId.SceneColorProof, async () => {
+        if (!cm) return
+        const info = getActiveSceneInfo()
+        if (!info) return
+        await cm.invokeService('toggleSceneColorProofing', { sceneId: info.scene_uid })
+    })
+
+    // Scene > Properties... : open the active scene node in the inspector.
+    // The scene's tree-node id equals its scene uid, so the generic inspector
+    // opener resolves it (SceneRenderingSection). Parity with the scene-tree
+    // context menu's Properties... on a scene row.
+    useRegisterCommand(CmdId.SceneProperties, () => {
+        const info = getActiveSceneInfo()
+        if (info) showSceneProperty?.(info.scene_uid)
+    })
 
     useRegisterCommand(
         CmdId.OpenObjByPath,

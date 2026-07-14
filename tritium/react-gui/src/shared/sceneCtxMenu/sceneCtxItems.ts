@@ -1,57 +1,53 @@
 /**
- * @file main/contextMenu/sceneCtxItems.ts
- * @description Leaf item / submenu builders for the scene-tree native
- * context menu. Each builder is a pure function returning Electron
- * `MenuItemConstructorOptions` (or an array of them, for gated items
- * that may be absent). Extracted from `sceneContextMenu.ts`, which keeps
- * the entry point, the per-node-type `buildTemplate` switch, and the
- * camera / style node builders.
+ * @file shared/sceneCtxMenu/sceneCtxItems.ts
+ * @description Leaf item / submenu builders for the scene-tree context
+ * menu. Each builder is a pure function returning platform-neutral
+ * `MenuNode<SceneCtxAction>`s (or an array of them, for gated items that
+ * may be absent). One source feeds both presentation paths: the React
+ * `MenuPanel` on Windows / Linux and the native Electron menu on macOS
+ * (`main/sceneContextMenu.ts` via `toElectronTemplate`).
  *
- * The shared `SceneCtxActionFn` records the chosen `SceneCtxAction` in a
- * closure slot -- see `sceneContextMenu.ts` for the popup-callback
- * contract.
+ * The per-node-type `buildTemplate` switch and the camera / style node
+ * builders live in `./sceneCtxTemplates.ts`.
  */
 
-import type { MenuItemConstructorOptions } from 'electron'
+import type { MenuNode } from '../menuNodes'
 import type {
     RendColoringId,
     SceneCtxAction,
     SceneCtxMenuPayload,
     SceneCtxNodeType,
-} from '../../shared/ipcTypes'
+} from '../ipcTypes'
 
-export type SceneCtxActionFn = (a: SceneCtxAction) => MenuItemConstructorOptions['click']
+export type SceneCtxNode = MenuNode<SceneCtxAction>
 
 /** Show or Hide item, depending on the node's current visibility. */
-export function showHideItems(
-    payload: SceneCtxMenuPayload,
-    action: SceneCtxActionFn,
-): MenuItemConstructorOptions[] {
+export function showHideItems(payload: SceneCtxMenuPayload): SceneCtxNode[] {
     if (!payload.hasVisibility) return []
     if (payload.isVisible) {
-        return [{ label: 'Hide', click: action({ kind: 'hide' }) }]
+        return [{ label: 'Hide', action: { kind: 'hide' } }]
     }
-    return [{ label: 'Show', click: action({ kind: 'show' }) }]
+    return [{ label: 'Show', action: { kind: 'show' } }]
 }
 
 /** Rename item (begins inline rename on the targeted row). */
-export function renameItem(action: SceneCtxActionFn): MenuItemConstructorOptions {
-    return { label: 'Rename…', click: action({ kind: 'rename' }) }
+export function renameItem(): SceneCtxNode {
+    return { label: 'Rename…', action: { kind: 'rename' } }
 }
 
 /** Delete item for the targeted node. */
-export function deleteItem(action: SceneCtxActionFn): MenuItemConstructorOptions {
-    return { label: 'Delete', click: action({ kind: 'delete' }) }
+export function deleteItem(): SceneCtxNode {
+    return { label: 'Delete', action: { kind: 'delete' } }
 }
 
 /** Properties item (opens the property inspector for the targeted node). */
-export function propertyItem(action: SceneCtxActionFn): MenuItemConstructorOptions {
-    return { label: 'Properties…', click: action({ kind: 'property' }) }
+export function propertyItem(): SceneCtxNode {
+    return { label: 'Properties…', action: { kind: 'property' } }
 }
 
 /** Copy item (copies the targeted node to the worker clipboard). */
-export function copyItem(action: SceneCtxActionFn): MenuItemConstructorOptions {
-    return { label: 'Copy', click: action({ kind: 'copy' }) }
+export function copyItem(): SceneCtxNode {
+    return { label: 'Copy', action: { kind: 'copy' } }
 }
 
 /**
@@ -62,8 +58,7 @@ export function copyItem(action: SceneCtxActionFn): MenuItemConstructorOptions {
 export function pasteItem(
     payload: SceneCtxMenuPayload,
     expectedKind: 'object' | 'renderer' | 'style' | 'camera',
-    action: SceneCtxActionFn,
-): MenuItemConstructorOptions[] {
+): SceneCtxNode[] {
     if (payload.clipboardKind !== expectedKind) return []
     const label =
         expectedKind === 'object'
@@ -73,7 +68,7 @@ export function pasteItem(
               : expectedKind === 'camera'
                 ? 'Paste Camera'
                 : 'Paste Renderer'
-    return [{ label, click: action({ kind: 'paste' }) }]
+    return [{ label, action: { kind: 'paste' } }]
 }
 
 /**
@@ -84,23 +79,20 @@ export function pasteItem(
  * renderer types that do not support a `coloring` property (gated by the
  * renderer-supplied `supportsColoring` flag).
  */
-export function coloringSubmenu(
-    payload: SceneCtxMenuPayload,
-    action: SceneCtxActionFn,
-): MenuItemConstructorOptions[] {
+export function coloringSubmenu(payload: SceneCtxMenuPayload): SceneCtxNode[] {
     if (!payload.supportsColoring) return []
-    const item = (label: string, coloringId: RendColoringId): MenuItemConstructorOptions => ({
+    const item = (label: string, coloringId: RendColoringId): SceneCtxNode => ({
         label,
-        click: action({ kind: 'setRendColoring', coloringId }),
+        action: { kind: 'setRendColoring', coloringId },
     })
-    const submenu: MenuItemConstructorOptions[] = []
+    const submenu: SceneCtxNode[] = []
     const paintStyles = payload.paintStyles ?? []
     if (paintStyles.length > 0) {
         submenu.push({
             label: 'Paint (Secondary str.)',
             submenu: paintStyles.map((s) => ({
                 label: s.label,
-                click: action({ kind: 'setRendColoring', coloringId: `style-${s.name}` }),
+                action: { kind: 'setRendColoring', coloringId: `style-${s.name}` },
             })),
         })
         submenu.push({ type: 'separator' })
@@ -123,12 +115,9 @@ export function coloringSubmenu(
  * Gated by `payload.canPaint`, so it only appears when the renderer's
  * coloring is `PaintColoring` and the parent mol has a non-empty selection.
  */
-export function paintSubmenu(
-    payload: SceneCtxMenuPayload,
-    action: SceneCtxActionFn,
-): MenuItemConstructorOptions[] {
+export function paintSubmenu(payload: SceneCtxMenuPayload): SceneCtxNode[] {
     if (!payload.canPaint) return []
-    return [{ label: 'Paint', submenu: buildPaintFamilyMenus(action) }]
+    return [{ label: 'Paint', submenu: buildPaintFamilyMenus() }]
 }
 
 interface PaintFamily {
@@ -170,12 +159,12 @@ const PAINT_FAMILIES: PaintFamily[] = [
 ]
 
 /** Build the per-color-family sub-submenus from `PAINT_FAMILIES`. */
-function buildPaintFamilyMenus(action: SceneCtxActionFn): MenuItemConstructorOptions[] {
+function buildPaintFamilyMenus(): SceneCtxNode[] {
     return PAINT_FAMILIES.map(({ label, items }) => ({
         label,
         submenu: items.map((it) => ({
             label: it.label,
-            click: action({ kind: 'paintRend', colorValue: it.value }),
+            action: { kind: 'paintRend' as const, colorValue: it.value },
         })),
     }))
 }
@@ -189,26 +178,23 @@ function buildPaintFamilyMenus(action: SceneCtxActionFn): MenuItemConstructorOpt
  * strip pre-existing entries. The submenu disappears entirely when both
  * groups are empty.
  */
-export function styleSubmenu(
-    payload: SceneCtxMenuPayload,
-    action: SceneCtxActionFn,
-): MenuItemConstructorOptions[] {
+export function styleSubmenu(payload: SceneCtxMenuPayload): SceneCtxNode[] {
     const rs = payload.rendStyle
     if (!rs) return []
     const typeStyles = rs.typeStyles ?? []
     const edgeStyles = rs.edgeStyles ?? []
     if (typeStyles.length === 0 && edgeStyles.length === 0) return []
 
-    const submenu: MenuItemConstructorOptions[] = []
+    const submenu: SceneCtxNode[] = []
     for (const s of typeStyles) {
         submenu.push({
             label: s.label,
-            click: action({
+            action: {
                 kind: 'applyRendStyle',
                 styleName: s.name,
                 pattern: s.pattern,
                 flags: s.flags,
-            }),
+            },
         })
     }
     if (typeStyles.length > 0 && edgeStyles.length > 0) {
@@ -217,12 +203,12 @@ export function styleSubmenu(
     for (const s of edgeStyles) {
         submenu.push({
             label: s.label,
-            click: action({
+            action: {
                 kind: 'applyRendStyle',
                 styleName: s.name,
                 pattern: s.pattern,
                 flags: s.flags,
-            }),
+            },
         })
     }
     return [{ label: 'Style', submenu }]
@@ -232,10 +218,7 @@ export function styleSubmenu(
  * Scene-row Background color submenu. UXP only exposes White / Black
  * presets here. Radio state reflects `payload.bgColor`.
  */
-export function bgColorSubmenu(
-    payload: SceneCtxMenuPayload,
-    action: SceneCtxActionFn,
-): MenuItemConstructorOptions {
+export function bgColorSubmenu(payload: SceneCtxMenuPayload): SceneCtxNode {
     const current = payload.bgColor ?? 'other'
     return {
         label: 'Background color',
@@ -244,13 +227,13 @@ export function bgColorSubmenu(
                 label: 'White',
                 type: 'radio',
                 checked: current === 'white',
-                click: action({ kind: 'setSceneBgColor', color: 'white' }),
+                action: { kind: 'setSceneBgColor', color: 'white' },
             },
             {
                 label: 'Black',
                 type: 'radio',
                 checked: current === 'black',
-                click: action({ kind: 'setSceneBgColor', color: 'black' }),
+                action: { kind: 'setSceneBgColor', color: 'black' },
             },
         ],
     }
@@ -260,15 +243,12 @@ export function bgColorSubmenu(
  * "Use color proofing" checkbox item. Combined-gate display matches UXP
  * `onSceneMenuShowing`: checked iff `use_colproof && icc_filename !== ""`.
  */
-export function colorProofingItem(
-    payload: SceneCtxMenuPayload,
-    action: SceneCtxActionFn,
-): MenuItemConstructorOptions {
+export function colorProofingItem(payload: SceneCtxMenuPayload): SceneCtxNode {
     return {
         label: 'Use color proofing',
         type: 'checkbox',
         checked: payload.colorProofingEnabled === true,
-        click: action({ kind: 'toggleColorProofing' }),
+        action: { kind: 'toggleColorProofing' },
     }
 }
 
@@ -277,17 +257,14 @@ export function colorProofingItem(
  * Hidden for the `*selection` renderer (controlled by
  * `payload.supportsChangeSel`).
  */
-export function changeSelSubmenu(
-    payload: SceneCtxMenuPayload,
-    action: SceneCtxActionFn,
-): MenuItemConstructorOptions[] {
+export function changeSelSubmenu(payload: SceneCtxMenuPayload): SceneCtxNode[] {
     if (!payload.supportsChangeSel) return []
     const item = (
         label: string,
         selKind: 'current' | 'all' | 'protein' | 'nucleic' | 'water' | 'ligand' | 'sugar',
-    ): MenuItemConstructorOptions => ({
+    ): SceneCtxNode => ({
         label,
-        click: action({ kind: 'setRendSel', selKind }),
+        action: { kind: 'setRendSel', selKind },
     })
     return [{
         label: 'Change sel',
@@ -309,17 +286,14 @@ export function changeSelSubmenu(
  * Hidden when the list is empty - that doubles as the visibility gate,
  * since the worker filters synthetic / current-type entries out.
  */
-export function changeTypeSubmenu(
-    payload: SceneCtxMenuPayload,
-    action: SceneCtxActionFn,
-): MenuItemConstructorOptions[] {
+export function changeTypeSubmenu(payload: SceneCtxMenuPayload): SceneCtxNode[] {
     const types = payload.rendChangeTypes
     if (!types || types.length === 0) return []
     return [{
         label: 'Change type',
         submenu: types.map((name) => ({
             label: name,
-            click: action({ kind: 'changeRendType', typeName: name }),
+            action: { kind: 'changeRendType' as const, typeName: name },
         })),
     }]
 }
@@ -328,14 +302,11 @@ export function changeTypeSubmenu(
  * "Generate surface obj" item. Visible only for isosurf renderers
  * (mirrors UXP `gensurfitem.hidden` gate driven by `checkRend("isosurf")`).
  */
-export function generateSurfObjItem(
-    payload: SceneCtxMenuPayload,
-    action: SceneCtxActionFn,
-): MenuItemConstructorOptions[] {
+export function generateSurfObjItem(payload: SceneCtxMenuPayload): SceneCtxNode[] {
     if (!payload.canGenSurfObj) return []
     return [{
         label: 'Generate surface obj',
-        click: action({ kind: 'generateSurfObj' }),
+        action: { kind: 'generateSurfObj' },
     }]
 }
 
@@ -343,8 +314,8 @@ export function generateSurfObjItem(
  * Object-row "New Group..." item -- creates an empty `*group` renderer
  * under the targeted mol. Mirrors UXP `wspcPanelObjCtxtMenu` New Group.
  */
-export function newRendGroupItem(action: SceneCtxActionFn): MenuItemConstructorOptions {
-    return { label: 'New Group…', click: action({ kind: 'newRendGroup' }) }
+export function newRendGroupItem(): SceneCtxNode {
+    return { label: 'New Group…', action: { kind: 'newRendGroup' } }
 }
 
 /**
@@ -353,8 +324,8 @@ export function newRendGroupItem(action: SceneCtxActionFn): MenuItemConstructorO
  * clicked row (UXP `onNewCmd`), shows the shared NewRendererDialog, and
  * dispatches `createRendererOnObject`.
  */
-export function newRendererItem(action: SceneCtxActionFn): MenuItemConstructorOptions {
-    return { label: 'New Renderer…', click: action({ kind: 'newRenderer' }) }
+export function newRendererItem(): SceneCtxNode {
+    return { label: 'New Renderer…', action: { kind: 'newRenderer' } }
 }
 
 /**
@@ -362,30 +333,30 @@ export function newRendererItem(action: SceneCtxActionFn): MenuItemConstructorOp
  * (All / protein / water / ...) plus the Around / Around-byres distance
  * sub-submenus.
  */
-export function selectionSubmenu(action: SceneCtxActionFn): MenuItemConstructorOptions {
+export function selectionSubmenu(): SceneCtxNode {
     const aroundItem = (
         label: string,
         selectKind:
             | 'around3' | 'around5' | 'around7' | 'around10'
             | 'aroundByres3' | 'aroundByres5' | 'aroundByres7',
-    ): MenuItemConstructorOptions => ({
+    ): SceneCtxNode => ({
         label,
-        click: action({ kind: 'selectMol', selectKind }),
+        action: { kind: 'selectMol', selectKind },
     })
     return {
         label: 'Selection',
         submenu: [
-            { label: 'All', click: action({ kind: 'selectMol', selectKind: 'all' }) },
-            { label: 'Unselect', click: action({ kind: 'selectMol', selectKind: 'unselect' }) },
-            { label: 'Invert', click: action({ kind: 'selectMol', selectKind: 'invert' }) },
+            { label: 'All', action: { kind: 'selectMol', selectKind: 'all' } },
+            { label: 'Unselect', action: { kind: 'selectMol', selectKind: 'unselect' } },
+            { label: 'Invert', action: { kind: 'selectMol', selectKind: 'invert' } },
             { type: 'separator' },
-            { label: 'Protein', click: action({ kind: 'selectMol', selectKind: 'protein' }) },
-            { label: 'Nucleic', click: action({ kind: 'selectMol', selectKind: 'nucleic' }) },
-            { label: 'Water', click: action({ kind: 'selectMol', selectKind: 'water' }) },
-            { label: 'Sugar', click: action({ kind: 'selectMol', selectKind: 'sugar' }) },
-            { label: 'Hydrogen', click: action({ kind: 'selectMol', selectKind: 'hydrogen' }) },
+            { label: 'Protein', action: { kind: 'selectMol', selectKind: 'protein' } },
+            { label: 'Nucleic', action: { kind: 'selectMol', selectKind: 'nucleic' } },
+            { label: 'Water', action: { kind: 'selectMol', selectKind: 'water' } },
+            { label: 'Sugar', action: { kind: 'selectMol', selectKind: 'sugar' } },
+            { label: 'Hydrogen', action: { kind: 'selectMol', selectKind: 'hydrogen' } },
             { type: 'separator' },
-            { label: 'Toggle Sidechain', click: action({ kind: 'selectMol', selectKind: 'sidechain' }) },
+            { label: 'Toggle Sidechain', action: { kind: 'selectMol', selectKind: 'sidechain' } },
             { type: 'separator' },
             {
                 label: 'Around',

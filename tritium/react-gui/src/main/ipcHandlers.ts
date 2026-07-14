@@ -302,6 +302,18 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
     showNaviContextMenu(mainWindow, payload),
   )
 
+  // Edit role picked from the Windows/Linux React text context menu
+  // (registerTextContextMenu pushes IPC.TEXT_CTX_SHOW; selectAll is handled
+  // renderer-side and never reaches here).
+  handleInvoke(IPC.TEXT_CTX_ACTION, (_event, role) => {
+    const wc = mainWindow.webContents
+    switch (role) {
+      case 'cut': wc.cut(); break
+      case 'copy': wc.copy(); break
+      case 'paste': wc.paste(); break
+    }
+  })
+
   // Renderer reply to a WINDOW_CLOSE_REQUEST. `proceed: true` means every
   // tab is confirmed/closed: mark the window confirmed and re-issue close()
   // so the funnel lets it through. `proceed: false` (user cancelled) clears

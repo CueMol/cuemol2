@@ -10,6 +10,7 @@ import './app.css'
 import App from './App'
 import { MolTabProvider } from './hooks/useMolTab'
 import { CueMolProvider } from './hooks/useCueMol'
+import { LogProvider } from './contexts/LogContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { CommandProvider } from './commands/CommandRegistry'
 import { DialogProvider } from './contexts/DialogContext'
@@ -29,6 +30,10 @@ const container = document.getElementById('root') as HTMLElement
 createRoot(container).render(
   <ErrorBoundary>
     <CueMolProvider>
+      {/* LogProvider owns the Output-panel buffer + the C++ log subscription;
+          inside CueMolProvider so useLogEvent can reach the core, and above
+          App so any component can append via useLogPanel(). */}
+      <LogProvider>
       <MolTabProvider>
         <ThemeProvider>
           <CommandProvider>
@@ -53,6 +58,7 @@ createRoot(container).render(
           </CommandProvider>
         </ThemeProvider>
       </MolTabProvider>
+      </LogProvider>
     </CueMolProvider>
   </ErrorBoundary>
 )

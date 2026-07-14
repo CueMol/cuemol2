@@ -120,6 +120,12 @@ export const IPC = {
   // invoke channel for native scene-tree context menu (ScenePane right-click)
   SCENE_CTX_SHOW: 'scene-ctx:show',
 
+  // Text clipboard context menu on Windows/Linux: main pushes the right-click
+  // params to the renderer (React menu), which invokes the chosen edit role
+  // back on the main process. macOS keeps the native popup instead.
+  TEXT_CTX_SHOW:   'text-ctx:show',   // push:   main -> renderer
+  TEXT_CTX_ACTION: 'text-ctx:action', // invoke: renderer -> main
+
   // gesture push channels (main -> renderer)
   ROTATE_GESTURE: 'gesture:rotate',
 

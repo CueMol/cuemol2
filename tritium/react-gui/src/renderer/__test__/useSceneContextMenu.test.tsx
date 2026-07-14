@@ -38,6 +38,12 @@ vi.mock('../components/dialogs/EditInteractionListDialogProvider', () => ({
 vi.mock('../components/dialogs/StyleEditorDialogProvider', () => ({
     useShowStyleEditorDialog: () => vi.fn().mockResolvedValue(null),
 }))
+// The hook calls useShowContextMenu() unconditionally; these tests drive the
+// darwin (native IPC) path, so a no-op stub is enough (the React MenuPanel
+// path is covered by contextMenuProvider.test.tsx).
+vi.mock('../components/menu/ContextMenuProvider', () => ({
+    useShowContextMenu: () => vi.fn().mockResolvedValue(null),
+}))
 
 function makeMockCm() {
     return {
@@ -118,7 +124,7 @@ let invokeMock: ReturnType<typeof vi.fn>
 
 beforeEach(() => {
     invokeMock = vi.fn().mockResolvedValue(null)
-    ;(window as any).electronAPI = { invoke: invokeMock }
+    ;(window as any).electronAPI = { platform: 'darwin', invoke: invokeMock }
 })
 
 afterEach(() => { vi.clearAllMocks() })
@@ -140,7 +146,7 @@ describe('useSceneContextMenu — dispatch contracts', () => {
                 ? Promise.resolve({ kind: 'show' })
                 : Promise.resolve(null),
         )
-        ;(window as any).electronAPI = { invoke: invokeMock }
+        ;(window as any).electronAPI = { platform: 'darwin', invoke: invokeMock }
         const opts = makeOpts()
         const h = mountHook(opts)
         await act(async () => { await h.result.openContextMenu(objectNode(), 10, 20) })
@@ -154,7 +160,7 @@ describe('useSceneContextMenu — dispatch contracts', () => {
                 ? Promise.resolve({ kind: 'paintRend', colorValue: '#ff0000' })
                 : Promise.resolve(null),
         )
-        ;(window as any).electronAPI = { invoke: invokeMock }
+        ;(window as any).electronAPI = { platform: 'darwin', invoke: invokeMock }
         const opts = makeOpts()
         const h = mountHook(opts)
         await act(async () => { await h.result.openContextMenu(objectNode(), 10, 20) })
@@ -169,7 +175,7 @@ describe('useSceneContextMenu — dispatch contracts', () => {
                 ? Promise.resolve({ kind: 'paintRend', colorValue: '#00ff00' })
                 : Promise.resolve(null),
         )
-        ;(window as any).electronAPI = { invoke: invokeMock }
+        ;(window as any).electronAPI = { platform: 'darwin', invoke: invokeMock }
         const opts = makeOpts()
         const h = mountHook(opts)
         await act(async () => { await h.result.openContextMenu(rendererNode(), 10, 20) })
@@ -189,7 +195,7 @@ describe('useSceneContextMenu — dispatch contracts', () => {
             }
             return Promise.resolve(null)
         })
-        ;(window as any).electronAPI = { invoke: invokeMock }
+        ;(window as any).electronAPI = { platform: 'darwin', invoke: invokeMock }
         const selectedIds = new Set(['42', '43'])
         const opts = makeOpts({ selectedIds })
         const h = mountHook(opts)
@@ -200,7 +206,7 @@ describe('useSceneContextMenu — dispatch contracts', () => {
 
     it('returns early without dispatching when the menu is dismissed (action=null)', async () => {
         invokeMock = vi.fn().mockResolvedValue(null)
-        ;(window as any).electronAPI = { invoke: invokeMock }
+        ;(window as any).electronAPI = { platform: 'darwin', invoke: invokeMock }
         const opts = makeOpts()
         const h = mountHook(opts)
         await act(async () => { await h.result.openContextMenu(objectNode(), 10, 20) })

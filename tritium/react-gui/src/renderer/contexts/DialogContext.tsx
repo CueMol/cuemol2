@@ -40,8 +40,12 @@ import { EditCameraVisFlagsDialogProvider } from '../components/dialogs/EditCame
 import { EditInteractionListDialogProvider } from '../components/dialogs/EditInteractionListDialogProvider'
 import { StyleEditorDialogProvider } from '../components/dialogs/StyleEditorDialogProvider'
 import { composeProviders } from './composeProviders'
+import { ContextMenuProvider } from '../components/menu/ContextMenuProvider'
 
 export const DialogProvider = composeProviders([
+  // Not a dialog, but the same "mount one host, expose a useShowXxx hook"
+  // shape: the React context menu host for Windows / Linux.
+  ContextMenuProvider,
   AboutDialogProvider,
   NewTabDialogProvider,
   ConfirmCloseTabDialogProvider,

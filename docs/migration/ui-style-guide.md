@@ -78,6 +78,24 @@ listbox はフォームと違い**描画基盤が3種**あり単一コンポー�
 
 ---
 
+## 0.6. メニュー — menu-kit / MenuPanel (MUST)
+
+アプリの**全メニュー面**(Windows/Linux のメニューバー drop-down、3D view の右クリック、scene tree の右クリック、テキスト欄の clipboard メニュー)は、**単一の描画部品 `components/menu/MenuPanel.tsx` + `styles/_menu-kit.css`** で描く。メニューごとに独自の row/CSS を書かない。VS Code 風の見た目(チェック gutter → ラベル → 右寄せ accelerator/chevron、行高 `--ctrl-h-md`)で、色は全てテーマトークン(`--bg-elevated`/`--bg-active`/`--border`/`--text-*`)、行テキストは `.type-row` role。
+
+**データは platform 中立の `MenuNode<T>` に統一** (`shared/menuNodes.ts`)。1 つのテンプレートビルダーが両経路を賄う:
+
+| 経路 | 描画 | 実装 |
+|---|---|---|
+| Windows / Linux | React `MenuPanel`(menu-kit) | drop-down は `MenuBar` + `resolveAppMenu`、右クリックは `ContextMenuProvider` の `useShowContextMenu()` |
+| macOS | ネイティブ Electron menu | main の `menuNodeAdapter.ts` (`toElectronTemplate`) が同じ `MenuNode` を変換。**macOS の外見は従来のネイティブのまま**変えない |
+
+- **`MenuNode<T>` は action を値で持つ** (`action?: T`)。Electron の `click` closure をテンプレートに埋めない → 同じ node を React 描画にもネイティブ変換にも使える。leaf の action は `MenuPanel` の `onPick` / native の `click` で解決。
+- 右クリックメニューの追加は **`shared/**CtxMenu.ts` に純粋ビルダーを 1 つ**書き、renderer 側フックで `window.electronAPI.platform === 'darwin'` 分岐(darwin=既存 IPC のネイティブ popup、それ以外=`useShowContextMenu(nodes, {x,y})`)。main 側は `toElectronTemplate` で受ける。
+- メニューの見た目を変えたいときは **`_menu-kit.css` か `MenuPanel`** を 1 箇所編集する(consumer 側の CSS を足さない)。`_menubar.css` はバー本体と drop-down のアンカー位置だけを持つ。
+- チェック gutter は**全行に常時**描く(checkable でない行も空 gutter)→ ラベルの x 位置が native menu 同様に揃う。
+
+---
+
 ## 0.7. アイコン — AppIcon (MUST)
 
 アイコンは **`components/AppIcon.tsx` の `<AppIcon name="..." size="sm|md|lg" />` 経由で描く**。consumer 側で

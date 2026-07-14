@@ -25,6 +25,7 @@ import { InspectorPanel } from "./components/panels/InspectorPanel";
 import { installSelectAllScope } from "./utils/selectAllScope";
 
 import { useLayoutPersistence } from "./hooks/useLayoutPersistence";
+import { useTextContextMenu } from "./hooks/useTextContextMenu";
 import { useInputDeviceStatus } from "./hooks/useInputDeviceStatus";
 import { useActiveTool } from "./hooks/useActiveTool";
 import { ActiveToolProvider } from "./contexts/ActiveToolContext";
@@ -382,6 +383,8 @@ const App: React.FC = () => {
     onCenterMarkChanged,
     onBgColorChanged,
     showViewProperty: handleShowViewProps,
+    // Scene's tree-node id equals its scene uid; handleShowGeneric resolves it.
+    showSceneProperty: (sceneId: number) => handleShowGeneric(String(sceneId)),
     newScene,
   });
 
@@ -404,6 +407,9 @@ const App: React.FC = () => {
   // Track the active selectable region so Cmd+A / Edit > Select All target only
   // the focused field or that region (e.g. the log panel), never the whole GUI.
   useEffect(() => installSelectAllScope(), []);
+
+  // --- Text clipboard context menu (Windows/Linux React menu path) ---
+  useTextContextMenu();
 
   // --- Derived sidebar sub-panel state ---
 

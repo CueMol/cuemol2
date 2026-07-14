@@ -4,6 +4,7 @@ import styles from './MolViewPane.module.css'
 import { useMolTabDispatch } from '../../hooks/useMolTab'
 import { useCueMol } from '../../hooks/useCueMol'
 import { useViewInputConfig } from '../../contexts/ViewInputConfigContext'
+import { useLogActions } from '../../contexts/LogContext'
 import { GES_PINCH, GES_ROTATE } from '../../worker/shared/gestureAxes'
 import { IPC } from '../../../shared/ipcChannels'
 
@@ -26,6 +27,13 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const { getActiveViewID } = useMolTabDispatch()
   const { cueMolReady, cm } = useCueMol()
+
+  // Write-only log access: stable identities, so consuming it does not defeat
+  // this component's React.memo (the Output buffer grows without re-rendering
+  // the WebGL canvas). Captured in a ref for the stable init effect below.
+  const logActions = useLogActions()
+  const appendLogRef = useRef(logActions.appendLine)
+  useEffect(() => { appendLogRef.current = logActions.appendLine }, [logActions])
 
   // Ref to the stable getActiveViewID callback -- lets ResizeObserver and
   // mouse handlers always query the active view without re-registration.
@@ -81,6 +89,13 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
         const { width, height } = canvasRef.current.getBoundingClientRect()
         if (width > 0 && height > 0) {
           cm.resized(view_uid, width, height, dpr)
+          // Startup diagnostic (Output panel): the backing store is CSS x dpr,
+          // so a higher dpr acts as supersampling. Helps explain edge crispness
+          // differences across displays / platforms.
+          appendLogRef.current(
+            `[view] devicePixelRatio=${dpr}, css=${Math.round(width)}x${Math.round(height)}, ` +
+            `backing=${Math.round(width * dpr)}x${Math.round(height * dpr)} px`,
+          )
         }
       }
     })()
