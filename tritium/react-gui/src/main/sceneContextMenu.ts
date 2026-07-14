@@ -1,22 +1,24 @@
+/**
+ * @file main/sceneContextMenu.ts
+ * @description Native (macOS) popup for the scene-tree right-click menu.
+ *
+ * The per-node-type menu structure lives in
+ * `shared/sceneCtxMenu/sceneCtxTemplates.ts` (`buildTemplate`); this file
+ * only adapts it to an Electron native menu. Windows / Linux render the
+ * same nodes with the React `MenuPanel` in the renderer and never call
+ * this.
+ *
+ * Action contract: `toElectronTemplate` wraps each node's action value in
+ * a `click` handler that stores it in a closure-captured `chosen` slot.
+ * Electron fires `click` **before** the menu's `callback`, so by the time
+ * the Promise resolves, `chosen` holds the action (or null for dismiss).
+ */
 import { Menu } from 'electron'
 import type { BrowserWindow } from 'electron'
 import type { SceneCtxAction, SceneCtxMenuPayload } from '../shared/ipcTypes'
-import type { SceneCtxActionFn } from './contextMenu/sceneCtxItems'
-import { buildTemplate } from './contextMenu/sceneCtxTemplates'
+import { buildTemplate } from '../shared/sceneCtxMenu/sceneCtxTemplates'
+import { toElectronTemplate } from './menuNodeAdapter'
 
-/**
- * Native context menu shown when the user right-clicks a row in `ScenePane`.
- *
- * Action contract: each menu item's `click` handler stores a discriminated
- * `SceneCtxAction` payload in a closure-captured `chosen` slot. Electron
- * fires `click` **before** the menu's `callback`, so by the time the
- * Promise resolves, `chosen` holds the action (or null for dismiss).
- * Mirrors the dispatch pattern in `main/naviContextMenu.ts`.
- *
- * The per-node-type menu structure lives in `./contextMenu/sceneCtxTemplates.ts`
- * (`buildTemplate`); the leaf item / submenu builders live in
- * `./contextMenu/sceneCtxItems.ts`.
- */
 export function showSceneContextMenu(
     mainWindow: BrowserWindow,
     payload: SceneCtxMenuPayload,
@@ -24,11 +26,9 @@ export function showSceneContextMenu(
     return new Promise((resolve) => {
         let chosen: SceneCtxAction | null = null
 
-        const action: SceneCtxActionFn = (a: SceneCtxAction) => () => {
-            chosen = a
-        }
-
-        const template = buildTemplate(payload, action)
+        const template = toElectronTemplate(buildTemplate(payload), (action) => {
+            chosen = action
+        })
         const menu = Menu.buildFromTemplate(template)
         menu.popup({
             window: mainWindow,

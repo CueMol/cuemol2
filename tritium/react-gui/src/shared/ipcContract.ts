@@ -28,6 +28,8 @@ import type {
   RenderWindowStateUpdate,
   SceneCtxAction,
   SceneCtxMenuPayload,
+  TextCtxAction,
+  TextCtxShowPayload,
   UiState,
   ViewSizePx,
 } from './ipcTypes'
@@ -90,6 +92,7 @@ export interface InvokeChannels {
   [IPC.RENDER_VIEW_SIZE_REPLY]: { req: { reqId: number; size: ViewSizePx | null }; res: void }
   [IPC.NAVI_CTX_SHOW]:     { req: NaviCtxMenuPayload;    res: NaviCtxAction | null }
   [IPC.SCENE_CTX_SHOW]:    { req: SceneCtxMenuPayload;   res: SceneCtxAction | null }
+  [IPC.TEXT_CTX_ACTION]:   { req: Exclude<TextCtxAction, 'selectAll'>; res: void }
   [IPC.CRASH_REPORT]:      { req: CrashReport;           res: void }
   [IPC.FORCE_QUIT]:        { req: void;                  res: void }
 }
@@ -114,6 +117,7 @@ export interface PushChannels {
   [IPC.WINDOW_CLOSE_REQUEST]: void
   [IPC.MENU_OPEN_RECENT]:  RecentFileEntry
   [IPC.RECENT_UPDATED]:    RecentFileEntry[]
+  [IPC.TEXT_CTX_SHOW]:     TextCtxShowPayload
   // Rendering window relay
   [IPC.RENDER_WINDOW_EXEC]:       RenderWindowCommand
   [IPC.RENDER_WINDOW_STATE_PUSH]: RenderWindowStateUpdate

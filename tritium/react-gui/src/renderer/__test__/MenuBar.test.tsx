@@ -195,7 +195,7 @@ describe('MenuBar', () => {
     act(() => { fileItem.click() })
 
     const byLabel = (label: string) =>
-      Array.from(container.querySelectorAll('.menubar__dropdown-item')).find((el) =>
+      Array.from(container.querySelectorAll('.menu-item')).find((el) =>
         Array.from(el.querySelectorAll('span')).some((s) => s.textContent === label),
       ) as HTMLElement | undefined
 
@@ -214,7 +214,7 @@ describe('MenuBar', () => {
     ) as HTMLElement
     act(() => { fileItem.click() })
 
-    const saveScene = Array.from(container.querySelectorAll('.menubar__dropdown-item')).find((el) =>
+    const saveScene = Array.from(container.querySelectorAll('.menu-item')).find((el) =>
       Array.from(el.querySelectorAll('span')).some((s) => s.textContent === 'Save Scene'),
     ) as HTMLElement
     expect(saveScene.getAttribute('aria-disabled')).toBe('false')
@@ -229,7 +229,7 @@ describe('MenuBar', () => {
 
     act(() => { viewItem.click() })
 
-    const centerMark = Array.from(container.querySelectorAll('.menubar__dropdown-item')).find(
+    const centerMark = Array.from(container.querySelectorAll('.menu-item')).find(
       (el) => el.textContent?.includes('Center mark'),
     ) as HTMLElement
 
@@ -255,13 +255,13 @@ describe('MenuBar', () => {
       (el) => el.textContent?.includes('File'),
     ) as HTMLElement
     act(() => { fileItem.click() })
-    const recent = Array.from(container.querySelectorAll('.menubar__dropdown-item')).find(
+    const recent = Array.from(container.querySelectorAll('.menu-item')).find(
       (el) => el.textContent?.startsWith('Open Recent'),
     ) as HTMLElement
     act(() => {
       recent.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
     })
-    return container.querySelector('.menubar__submenu') as HTMLElement
+    return container.querySelector('.menu-flyout') as HTMLElement
   }
 
   it('shows "(none)" and a disabled Clear Menu when recents is empty', () => {
@@ -269,7 +269,7 @@ describe('MenuBar', () => {
     const submenu = openFileThenRecent(container)
     expect(submenu).toBeTruthy()
     expect(submenu.textContent).toContain('(none)')
-    const clear = Array.from(submenu.querySelectorAll('.menubar__dropdown-item')).find(
+    const clear = Array.from(submenu.querySelectorAll('.menu-item')).find(
       (el) => el.textContent?.includes('Clear Menu'),
     ) as HTMLElement
     expect(clear).toBeTruthy()
@@ -287,7 +287,7 @@ describe('MenuBar', () => {
     expect(submenu.textContent).toContain('a.pdb')
     expect(submenu.textContent).toContain('b.qsc')
     expect(submenu.textContent).not.toContain('(none)')
-    const clear = Array.from(submenu.querySelectorAll('.menubar__dropdown-item')).find(
+    const clear = Array.from(submenu.querySelectorAll('.menu-item')).find(
       (el) => el.textContent?.includes('Clear Menu'),
     ) as HTMLElement
     expect(clear.getAttribute('aria-disabled')).toBe('false')
@@ -300,7 +300,7 @@ describe('MenuBar', () => {
       { path: '/a.pdb', ftype: 'obj' },
     ])
     const submenu = openFileThenRecent(container)
-    const clear = Array.from(submenu.querySelectorAll('.menubar__dropdown-item')).find(
+    const clear = Array.from(submenu.querySelectorAll('.menu-item')).find(
       (el) => el.textContent?.includes('Clear Menu'),
     ) as HTMLElement
     act(() => { clear.click() })
@@ -316,7 +316,7 @@ describe('MenuBar', () => {
 
     act(() => { viewItem.click() })
 
-    const centerMark = Array.from(container.querySelectorAll('.menubar__dropdown-item')).find(
+    const centerMark = Array.from(container.querySelectorAll('.menu-item')).find(
       (el) => el.textContent?.includes('Center mark'),
     ) as HTMLElement
 

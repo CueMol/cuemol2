@@ -1,6 +1,15 @@
+/**
+ * @file main/naviContextMenu.ts
+ * @description Native (macOS) popup for the 3D-view atom right-click menu.
+ * The menu structure lives in `shared/naviCtxMenu.ts`; this file only adapts
+ * it to an Electron native menu. Windows / Linux render the same nodes with
+ * the React `MenuPanel` in the renderer and never call this.
+ */
 import { Menu } from 'electron'
-import type { BrowserWindow, MenuItemConstructorOptions } from 'electron'
+import type { BrowserWindow } from 'electron'
 import type { NaviCtxAction, NaviCtxMenuPayload } from '../shared/ipcTypes'
+import { buildNaviCtxMenuNodes } from '../shared/naviCtxMenu'
+import { toElectronTemplate } from './menuNodeAdapter'
 
 export function showNaviContextMenu(
   mainWindow: BrowserWindow,
@@ -9,55 +18,9 @@ export function showNaviContextMenu(
   return new Promise((resolve) => {
     let chosen: NaviCtxAction | null = null
 
-    const action = (a: NaviCtxAction): MenuItemConstructorOptions['click'] =>
-      () => { chosen = a }
-
-    const aroundByresSubmenu: MenuItemConstructorOptions[] = [
-      { label: '3 Å', click: action('arByres3') },
-      { label: '5 Å', click: action('arByres5') },
-      { label: '7 Å', click: action('arByres7') },
-      { label: '10 Å', click: action('arByres10') },
-    ]
-
-    const aroundSubmenu: MenuItemConstructorOptions[] = [
-      { label: '3 Å', click: action('around3') },
-      { label: '5 Å', click: action('around5') },
-      { label: '7 Å', click: action('around7') },
-      { label: '10 Å', click: action('around10') },
-    ]
-
-    const template: MenuItemConstructorOptions[] = [
-      { label: payload.atomLabel, enabled: false },
-      { label: payload.rendLabel, enabled: false },
-      ...(payload.isSymm && payload.symmLabel
-        ? [{ label: `symop: ${payload.symmLabel}`, enabled: false } as MenuItemConstructorOptions]
-        : []),
-      { type: 'separator' },
-      { label: 'Center at this atom', click: action('centerAt') },
-      { type: 'separator' },
-      { label: 'Select Atom', click: action('selectAtom') },
-      { label: 'Select Residue', click: action('selectResid') },
-      { label: 'Select Chain', click: action('selectChain') },
-      { label: 'Select Molecule', click: action('selectMol') },
-      { type: 'separator' },
-      { label: 'Add Select Atom', click: action('addSelectAtom') },
-      { label: 'Add Select Residue', click: action('addSelectResid') },
-      { label: 'Add Select Chain', click: action('addSelectChain') },
-      { type: 'separator' },
-      { label: 'Unselect', click: action('unselect') },
-      { label: 'Invert Selection', click: action('invertSel') },
-      { label: 'Toggle Sidechain', click: action('toggleSidechain') },
-      { type: 'separator' },
-      { label: 'Around Byres', submenu: aroundByresSubmenu },
-      { label: 'Around', submenu: aroundSubmenu },
-      ...(payload.isSymm
-        ? [
-            { type: 'separator' } as MenuItemConstructorOptions,
-            { label: 'Center at SYMM atom', click: action('centerAtSymm') } as MenuItemConstructorOptions,
-            { label: 'Create SYMM mol...', enabled: false } as MenuItemConstructorOptions,
-          ]
-        : []),
-    ]
+    const template = toElectronTemplate(buildNaviCtxMenuNodes(payload), (action) => {
+      chosen = action
+    })
 
     const menu = Menu.buildFromTemplate(template)
     menu.popup({

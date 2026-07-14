@@ -3,9 +3,12 @@ import type {
     ChangeRendSelKind,
     RendColoringId,
     SceneCtxAction,
+    SceneCtxMenuPayload,
     SelectMolKind,
 } from '../../shared/ipcTypes'
 import { IPC } from '../../shared/ipcChannels'
+import { buildTemplate } from '../../shared/sceneCtxMenu/sceneCtxTemplates'
+import { useShowContextMenu } from '../components/menu/ContextMenuProvider'
 import type { SceneTreeNode } from '../worker/shared/sceneTreeTypes'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import { useShowTextPromptDialog } from '../components/dialogs/TextPromptDialogProvider'
@@ -116,6 +119,21 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
     const { cm, sceneId, activeViewId, createCamera, createRendererOnObject,
             selectedIds, bulkSetNodeVisible, bulkDeleteNodes } = opts
 
+    const showContextMenu = useShowContextMenu()
+
+    // macOS shows the native menu (main process); Windows / Linux render the
+    // same shared template with the React MenuPanel so the look matches the
+    // menu bar dropdowns.
+    const showSceneCtxMenu = useCallback(
+        async (payload: SceneCtxMenuPayload): Promise<SceneCtxAction | null> => {
+            if (window.electronAPI.platform === 'darwin') {
+                return await window.electronAPI.invoke(IPC.SCENE_CTX_SHOW, payload)
+            }
+            return await showContextMenu(buildTemplate(payload), { x: payload.x, y: payload.y })
+        },
+        [showContextMenu],
+    )
+
     // Electron disables window.prompt -- use the in-app Blueprint dialog
     // for Rename / New Group text input flows instead.
     const showTextPrompt = useShowTextPromptDialog()
@@ -212,18 +230,15 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                 !!selectedIds && selectedIds.size > 1 && selectedIds.has(idStr)
             if (isMulti) {
                 const multiNodeIds = Array.from(selectedIds!).map((s) => Number(s))
-                const multiAction: SceneCtxAction | null = await window.electronAPI.invoke(
-                    IPC.SCENE_CTX_SHOW,
-                    {
-                        x, y,
-                        nodeType: node.type,
-                        nodeLabel: nodeMenuLabel(node),
-                        isVisible: node.visible,
-                        hasVisibility: false,
-                        clipboardKind: null,
-                        multiNodeIds,
-                    },
-                )
+                const multiAction: SceneCtxAction | null = await showSceneCtxMenu({
+                    x, y,
+                    nodeType: node.type,
+                    nodeLabel: nodeMenuLabel(node),
+                    isVisible: node.visible,
+                    hasVisibility: false,
+                    clipboardKind: null,
+                    multiNodeIds,
+                })
                 if (!multiAction) return
                 await dispatchSceneCtxAction(node, multiAction, {
                     ...opts,
@@ -234,10 +249,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
             }
 
             const payload = await buildSceneCtxPayload(cm, sceneId, node)
-            const action: SceneCtxAction | null = await window.electronAPI.invoke(
-                IPC.SCENE_CTX_SHOW,
-                { x, y, ...payload },
-            )
+            const action: SceneCtxAction | null = await showSceneCtxMenu({ x, y, ...payload })
             if (!action) return
             await dispatchSceneCtxAction(node, action, {
                 ...opts,
@@ -247,6 +259,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
         },
         [
             cm, sceneId, opts, selectedIds, bulkSetNodeVisible, bulkDeleteNodes,
+            showSceneCtxMenu,
             showTextPrompt, showApplyRendStyle, showCreateRendStyle, showEditCameraVisFlags, showEditInteractionList, showStyleEditor,
             openNewRendererFlow, openNewCameraFlow,
         ],

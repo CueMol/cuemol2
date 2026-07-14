@@ -19,6 +19,7 @@
 import { Menu } from 'electron'
 import type { BrowserWindow, MenuItemConstructorOptions } from 'electron'
 import { IPC } from '../shared/ipcChannels'
+import { buildTextCtxMenuNodes } from '../shared/textCtxMenu'
 
 /**
  * Subset of Electron's `ContextMenuParams` consumed by the template builder.
@@ -74,23 +75,42 @@ export function buildTextContextMenuTemplate(
 }
 
 /**
- * Register the native `context-menu` listener on the window's webContents.
- * Pops up the clipboard menu only when `buildTextContextMenuTemplate` yields
- * items, leaving scene-tree / navi right-clicks to their existing menus.
+ * Register the `context-menu` listener on the window's webContents.
+ *
+ * macOS pops up the native clipboard menu (role-based). Windows / Linux
+ * instead push the params to the renderer, which shows the shared React
+ * `MenuPanel` (matching the menu bar dropdowns) and invokes the chosen
+ * edit role back through `IPC.TEXT_CTX_ACTION`. Both paths show a menu
+ * only when the template gate yields items, leaving scene-tree / navi
+ * right-clicks to their existing menus.
  */
 export function registerTextContextMenu(mainWindow: BrowserWindow): void {
   mainWindow.webContents.on('context-menu', (_event, params) => {
-    const template = buildTextContextMenuTemplate(
-      {
-        isEditable: params.isEditable,
-        selectionText: params.selectionText,
-        editFlags: {
-          canCut: params.editFlags.canCut,
-          canCopy: params.editFlags.canCopy,
-          canPaste: params.editFlags.canPaste,
-          canSelectAll: params.editFlags.canSelectAll,
-        },
+    const menuParams: TextContextMenuParams = {
+      isEditable: params.isEditable,
+      selectionText: params.selectionText,
+      editFlags: {
+        canCut: params.editFlags.canCut,
+        canCopy: params.editFlags.canCopy,
+        canPaste: params.editFlags.canPaste,
+        canSelectAll: params.editFlags.canSelectAll,
       },
+    }
+
+    if (process.platform !== 'darwin') {
+      // Same empty gate as the native path (via the shared node builder),
+      // so no push happens for right-clicks with nothing clipboard-related.
+      if (buildTextCtxMenuNodes(menuParams).length === 0) return
+      mainWindow.webContents.send(IPC.TEXT_CTX_SHOW, {
+        x: params.x,
+        y: params.y,
+        ...menuParams,
+      })
+      return
+    }
+
+    const template = buildTextContextMenuTemplate(
+      menuParams,
       () => mainWindow.webContents.send(IPC.MENU_GENERIC, 'menu:select-all'),
     )
     if (template.length === 0) return

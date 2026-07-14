@@ -205,6 +205,32 @@ export interface NaviCtxMenuPayload {
   symmLabel?: string
 }
 
+// - Text clipboard context menu (editable fields / selectable text) -
+
+/** Edit-role picked from the text clipboard context menu. */
+export type TextCtxAction = 'cut' | 'copy' | 'paste' | 'selectAll'
+
+/** Subset of Electron's `ContextMenuParams.editFlags` the menu consumes. */
+export interface TextCtxEditFlags {
+  canCut: boolean
+  canCopy: boolean
+  canPaste: boolean
+  canSelectAll: boolean
+}
+
+/**
+ * Push payload for the Windows/Linux React text context menu: the
+ * right-click position plus the `webContents 'context-menu'` params the
+ * template builder needs.
+ */
+export interface TextCtxShowPayload {
+  x: number
+  y: number
+  isEditable: boolean
+  selectionText: string
+  editFlags: TextCtxEditFlags
+}
+
 // - Scene-tree context menu (ScenePane right-click) -
 
 /**
