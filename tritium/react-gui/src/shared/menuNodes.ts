@@ -36,3 +36,23 @@ export type MenuNode<T> = MenuSeparatorNode | MenuActionNode<T>
 export function isSeparatorNode<T>(node: MenuNode<T>): node is MenuSeparatorNode {
   return node.type === 'separator'
 }
+
+/**
+ * Drop leading / trailing separators and collapse runs of consecutive ones
+ * to a single separator. Templates place separators around optional groups
+ * (e.g. a paste item that is absent when the clipboard is empty); without
+ * this a dropped group leaves two adjacent separators that render as a
+ * double rule. Applied per level by both render paths, so callers do not
+ * need to recurse.
+ */
+export function collapseSeparators<T>(nodes: ReadonlyArray<MenuNode<T>>): MenuNode<T>[] {
+  const out: MenuNode<T>[] = []
+  for (const node of nodes) {
+    if (isSeparatorNode(node)) {
+      if (out.length === 0 || isSeparatorNode(out[out.length - 1])) continue
+    }
+    out.push(node)
+  }
+  while (out.length > 0 && isSeparatorNode(out[out.length - 1])) out.pop()
+  return out
+}

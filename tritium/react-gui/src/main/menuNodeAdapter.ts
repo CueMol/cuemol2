@@ -10,7 +10,7 @@
  * `naviContextMenu.ts` / `sceneContextMenu.ts`).
  */
 import type { MenuItemConstructorOptions } from 'electron'
-import { isSeparatorNode } from '../shared/menuNodes'
+import { collapseSeparators, isSeparatorNode } from '../shared/menuNodes'
 import type { MenuNode } from '../shared/menuNodes'
 
 /** Map `MenuNode`s to an Electron template, routing picks to `onPick`. */
@@ -18,7 +18,9 @@ export function toElectronTemplate<T>(
   nodes: ReadonlyArray<MenuNode<T>>,
   onPick: (action: T) => void,
 ): MenuItemConstructorOptions[] {
-  return nodes.map((node) => {
+  // Collapse separators per level so a dropped optional group does not leave
+  // a double rule (matches the React MenuPanel render path).
+  return collapseSeparators(nodes).map((node) => {
     if (isSeparatorNode(node)) return { type: 'separator' as const }
     const item: MenuItemConstructorOptions = {
       label: node.label,

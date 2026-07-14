@@ -12,7 +12,7 @@
  */
 import React, { useLayoutEffect, useRef, useState } from 'react'
 import { AppIcon } from '../AppIcon'
-import { isSeparatorNode } from '../../../shared/menuNodes'
+import { collapseSeparators, isSeparatorNode } from '../../../shared/menuNodes'
 import type { MenuActionNode, MenuNode } from '../../../shared/menuNodes'
 
 export interface MenuPanelProps<T> {
@@ -31,9 +31,12 @@ function toDisplayAccel(acc: string): string {
 const EDGE_MARGIN = 4
 
 export function MenuPanel<T>({ nodes, onPick, className }: MenuPanelProps<T>): React.ReactElement {
+  // Collapse separators per level (a dropped optional group must not leave a
+  // double rule); MenuPanel recurses for submenus, so each level is covered.
+  const items = collapseSeparators(nodes)
   return (
     <div className={`menu-panel${className ? ` ${className}` : ''}`} role="menu">
-      {nodes.map((node, idx) =>
+      {items.map((node, idx) =>
         isSeparatorNode(node) ? (
           <div key={idx} className="menu-separator" role="separator" />
         ) : node.submenu && node.submenu.length > 0 ? (
