@@ -1,22 +1,23 @@
 /**
- * Tests for SelectionBuilder -- inline current-selection + set-operation editor.
+ * Tests for SelectionBuilder -- the operand builder + set-operation editor.
  *
- * Pins the observable contract:
- *  1. renders the three blocks inline (no popover trigger)
- *  2. Property keyword + value composes SPACE-separated syntax (chain 'A')
- *     and "Set" makes it the current selection
- *  3. the current expression is mirrored to the parent via onEmit in real time
- *  4. "Add" composes "(current) or (term)" seeded from the value prop
- *  5. an external `value` change re-seeds the builder's current selection
- *  6. Step back (undo) survives the emit/re-seed round-trip
- *  7. Named source pick + Set applies the global named selection
- *  8. resolveValues feeds a datalist for autocomplete
- *  9. "Define name..." calls onSaveAs with (name, current)
+ * The builder is controlled: the container owns the applied selection
+ * (`current`, mirroring mol.sel) and the operand `draft`/`dispatch`. Every op
+ * computes the resulting expression and hands it to `onApply`; there is no
+ * builder-local current or undo. Tests wrap it in a `Harness` that owns
+ * `current` (updated by onApply) so the two match real usage, and read the live
+ * value from a `.cur` probe span.
  *
- * The builder is a controlled editor: it emits `state.current` through onEmit
- * and re-seeds from `value`. Tests wrap it in a `Harness` that owns the value
- * state so the two-way sync mirrors real usage, and read the live value from a
- * `.cur` probe span.
+ * Pins:
+ *  1. renders the Term + Modify sections
+ *  2. Property keyword + value composes space-separated syntax and Replace
+ *     makes it the current selection
+ *  3. Add composes "(current) or (term)" from `current`
+ *  4. a Modify op (Invert) transforms `current`
+ *  5. Named source: full variant shows an inline listbox; picking + Replace
+ *     applies the named selection
+ *  6. resolveValues is queried for keyword autocomplete
+ *  7. compact variant uses a popover picker (not an inline listbox)
  */
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
@@ -30,20 +31,30 @@ vi.mock('../contexts/ThemeContext', () => ({
 
 import { SelectionBuilder } from '../components/panes/selection/SelectionBuilder'
 import type { SelectionBuilderProps } from '../components/panes/selection/SelectionBuilder'
+import {
+    builderReducer,
+    initBuilderState,
+} from '../components/panes/selection/selBuilderReducer'
 import { mountTree, flushPromises } from './helpers/testHarness'
 
-type HarnessProps = Partial<Omit<SelectionBuilderProps, 'value' | 'onEmit'>> & { initial?: string }
+type HarnessProps = Partial<
+    Omit<SelectionBuilderProps, 'current' | 'draft' | 'dispatch' | 'onApply'>
+> & { initial?: string }
 
-/** Controlled wrapper: owns the value, mirrors the two-way builder sync. */
+/** Controlled wrapper: owns `current`, updated by the builder's onApply. */
 const Harness: React.FC<HarnessProps> = ({ initial = '', ...builderProps }) => {
-    const [val, setVal] = React.useState(initial)
+    const [current, setCurrent] = React.useState(initial)
+    const [draft, dispatch] = React.useReducer(builderReducer, undefined, initBuilderState)
     return (
         <div>
-            <button className="ext-set" onClick={() => setVal('aname CB')}>
-                ext
-            </button>
-            <SelectionBuilder value={val} onEmit={setVal} {...builderProps} />
-            <span className="cur">{val}</span>
+            <SelectionBuilder
+                current={current}
+                draft={draft}
+                dispatch={dispatch}
+                onApply={setCurrent}
+                {...builderProps}
+            />
+            <span className="cur">{current}</span>
         </div>
     )
 }
@@ -62,11 +73,6 @@ function setInputValue(input: HTMLInputElement, value: string): void {
     input.dispatchEvent(new Event('input', { bubbles: true }))
 }
 
-/**
- * Select a Property keyword from the builder's keyword dropdown. The default
- * keyword is `hierarchical`, so tests that exercise a single-value keyword
- * (e.g. chain) switch to it explicitly to stay independent of the default.
- */
 function selectKeyword(container: HTMLElement, key: string): void {
     const select = container.querySelector('.selbuilder-property select') as HTMLSelectElement
     const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')!.set!
@@ -82,31 +88,28 @@ function clickButtonByText(root: ParentNode, text: string): void {
 }
 
 describe('SelectionBuilder', () => {
-    it('renders the three blocks inline', async () => {
+    it('renders the Term and Modify sections', async () => {
         const { container, unmount } = mountTree(<Harness />)
         await flushPromises()
         const heads = Array.from(container.querySelectorAll('.h3-form-field-section-title')).map((e) =>
             e.textContent?.trim(),
         )
-        // The action toolbar has no header (the selection text field is the
-        // current selection). Term (binary ops) and Modify (unary ops) are the
-        // two sibling FieldSections (Term first); Apply is nested under Term.
         expect(heads).toEqual(['Term', 'Modify'])
         unmount()
     })
 
-    it('composes space-separated syntax and Set makes it current', async () => {
+    it('composes space-separated syntax and Replace makes it current', async () => {
         const { container, unmount } = mountTree(<Harness />)
         await flushPromises()
         await act(async () => { selectKeyword(container, 'chain') })
         await act(async () => { setInputValue(termValueInput(container), 'A') })
-        await act(async () => { clickButtonByText(container, 'Set') })
+        await act(async () => { clickButtonByText(container, 'Replace') })
         await flushPromises()
         expect(current(container)).toBe("chain 'A'")
         unmount()
     })
 
-    it('Add composes "(current) or (term)" seeded from value', async () => {
+    it('Add composes "(current) or (term)" from current', async () => {
         const { container, unmount } = mountTree(<Harness initial="chain 'X'" />)
         await flushPromises()
         await act(async () => { selectKeyword(container, 'chain') })
@@ -117,91 +120,57 @@ describe('SelectionBuilder', () => {
         unmount()
     })
 
-    it('re-seeds the current selection from an external value change', async () => {
-        const { container, unmount } = mountTree(<Harness />)
+    it('Invert transforms the current selection', async () => {
+        const { container, unmount } = mountTree(<Harness initial="aname CB" />)
         await flushPromises()
-        // Parent changes the value out from under the builder.
-        await act(async () => {
-            (container.querySelector('.ext-set') as HTMLButtonElement).click()
-        })
-        await flushPromises()
-        expect(current(container)).toBe('aname CB')
-        // The new value really seeded the reducer: a unary op builds on it.
-        await act(async () => { clickButtonByText(container, 'Not') })
+        await act(async () => { clickButtonByText(container, 'Invert') })
         await flushPromises()
         expect(current(container)).toBe('not (aname CB)')
         unmount()
     })
 
-    it('Step back (undo) survives the emit round-trip', async () => {
-        const { container, unmount } = mountTree(<Harness />)
-        await flushPromises()
-        await act(async () => { selectKeyword(container, 'chain') })
-        await act(async () => { setInputValue(termValueInput(container), 'A') })
-        await act(async () => { clickButtonByText(container, 'Set') })
-        await flushPromises()
-        // Apply Mainchain by mistake, then step back.
-        await act(async () => { clickButtonByText(container, 'Mainch') })
-        await flushPromises()
-        expect(current(container)).toBe("bymainch (chain 'A')")
-        const undo = container.querySelector('button[aria-label="Step back"]') as HTMLButtonElement
-        await act(async () => { undo.click() })
-        await flushPromises()
-        expect(current(container)).toBe("chain 'A'")
-        unmount()
-    })
-
-    it('Named source: picking a global named selection and Set applies its name', async () => {
-        // Built-in macros (protein, water, ...) arrive here as global defs
-        // loaded from default_style.xml; there is no hardcoded macro list.
+    it('Named source (full): inline listbox pick + Replace applies the named selection', async () => {
+        // Built-in macros (protein, water, ...) arrive as global defs.
         const { container, unmount } = mountTree(<Harness globalDefs={['protein']} />)
         await flushPromises()
-        // Switch the term source to Named, then open the picker popover (the
-        // list renders in a portal so a long list never pushes Apply down).
+        // Switching to Named expands an inline listbox directly (no popover).
         await act(async () => { clickButtonByText(container, 'Named') })
-        await act(async () => { clickButtonByText(container, 'Select named...') })
         await flushPromises()
-        const protein = Array.from(document.querySelectorAll('.bp5-menu-item')).find(
+        const row = Array.from(container.querySelectorAll('.h3-list-row')).find(
             (e) => e.textContent?.trim() === 'protein',
         ) as HTMLElement
-        await act(async () => { protein.click() })
+        await act(async () => { row.click() })
         await flushPromises()
-        await act(async () => { clickButtonByText(container, 'Set') })
+        await act(async () => { clickButtonByText(container, 'Replace') })
         await flushPromises()
         expect(current(container)).toBe('protein')
         unmount()
     })
 
-    it('resolveValues feeds a datalist for autocomplete', async () => {
+    it('queries resolveValues for keyword autocomplete', async () => {
         const resolveValues = vi.fn(async () => ['A', 'B'])
         const { container, unmount } = mountTree(<Harness resolveValues={resolveValues} />)
         await flushPromises()
         // chain has an autocomplete category; the default keyword (hier) does not.
         await act(async () => { selectKeyword(container, 'chain') })
         await flushPromises()
-        const opts = Array.from(container.querySelectorAll('#selbuilder-value-list option')).map(
-            (o) => (o as HTMLOptionElement).value,
-        )
-        expect(opts).toEqual(['A', 'B'])
         expect(resolveValues).toHaveBeenCalledWith('chain')
         unmount()
     })
 
-    it('Define name... calls onSaveAs with (name, current)', async () => {
-        const onSaveAs = vi.fn(async () => true)
+    it('compact variant uses a popover picker for Named (no inline listbox)', async () => {
         const { container, unmount } = mountTree(
-            <Harness initial="chain 'A'" onSaveAs={onSaveAs} />,
+            <Harness variant="compact" globalDefs={['protein']} />,
         )
         await flushPromises()
-        await act(async () => { clickButtonByText(container, 'Define name...') })
+        await act(async () => { clickButtonByText(container, 'Named') })
         await flushPromises()
-        const nameInput = container.querySelector(
-            '.selbuilder-saverow input.bp5-input',
-        ) as HTMLInputElement
-        await act(async () => { setInputValue(nameInput, 'mysel') })
-        await act(async () => { clickButtonByText(container, 'Define') })
-        await flushPromises()
-        expect(onSaveAs).toHaveBeenCalledWith('mysel', "chain 'A'")
+        // The compact source is a popover trigger, not an inline list row.
+        const trigger = Array.from(container.querySelectorAll('button')).find(
+            (b) => b.textContent?.trim() === 'Select named...',
+        )
+        expect(trigger).toBeTruthy()
+        expect(container.querySelector('.selbuilder-sourcelist')).toBeNull()
         unmount()
     })
 })

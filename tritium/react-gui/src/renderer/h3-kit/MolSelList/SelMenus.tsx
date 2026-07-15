@@ -16,6 +16,8 @@
 
 import React from 'react';
 import { Menu, MenuDivider, MenuItem } from '@blueprintjs/core';
+import { Listbox } from '../list/Listbox';
+import { ListRow } from '../list/ListRow';
 
 /* --- Named selections (Selected / Scene / Global) --- */
 
@@ -135,4 +137,73 @@ export const HistoryMenu: React.FC<HistoryMenuProps> = ({
             ))
         )}
     </Menu>
+);
+
+/* --- Inline list-kit variants (full-density Selection pane) --- */
+
+/** One list-kit row showing a selection expression. */
+const SelListRow: React.FC<{ value: string; active?: boolean; onPick: (v: string) => void }> = ({
+    value,
+    active,
+    onPick,
+}) => (
+    <ListRow selected={active} onClick={() => onPick(value)}>
+        <span className="type-row sellist-text">{value}</span>
+    </ListRow>
+);
+
+/**
+ * Inline listbox counterpart of `NamedSelMenu`, rendered directly under the
+ * source segment (not in a popover) so the Named source expands in place --
+ * symmetric with the Property source. Same grouping (Selected / Scene /
+ * Global).
+ */
+export const NamedSelList: React.FC<NamedSelMenuProps> = ({
+    currentSel,
+    sceneDefs = [],
+    globalDefs = [],
+    activeValue,
+    onPick,
+}) => {
+    const hasNamed = currentSel !== undefined || sceneDefs.length > 0 || globalDefs.length > 0;
+    return (
+        <Listbox className="sellist">
+            {!hasNamed && <div className="sellist-empty type-body">No named selections</div>}
+            {currentSel !== undefined && (
+                <>
+                    <div className="sellist-group type-caption">Selected</div>
+                    <SelListRow value={currentSel} active={activeValue === currentSel} onPick={onPick} />
+                </>
+            )}
+            {sceneDefs.length > 0 && (
+                <>
+                    <div className="sellist-group type-caption">Scene</div>
+                    {sceneDefs.map((v) => (
+                        <SelListRow key={`s-${v}`} value={v} active={activeValue === v} onPick={onPick} />
+                    ))}
+                </>
+            )}
+            {globalDefs.length > 0 && (
+                <>
+                    <div className="sellist-group type-caption">Global</div>
+                    {globalDefs.map((v) => (
+                        <SelListRow key={`g-${v}`} value={v} active={activeValue === v} onPick={onPick} />
+                    ))}
+                </>
+            )}
+        </Listbox>
+    );
+};
+
+/** Inline listbox counterpart of `HistoryMenu`. */
+export const HistoryList: React.FC<HistoryMenuProps> = ({ history = [], activeValue, onPick }) => (
+    <Listbox className="sellist">
+        {history.length === 0 ? (
+            <div className="sellist-empty type-body">No history</div>
+        ) : (
+            history.map((h, i) => (
+                <SelListRow key={i} value={h} active={activeValue === h} onPick={onPick} />
+            ))
+        )}
+    </Listbox>
 );

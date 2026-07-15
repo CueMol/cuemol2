@@ -71,7 +71,7 @@ export const KEYWORDS: KeywordDef[] = [
     { key: 'none', label: 'none', emit: 'none', valueKind: 'none', quote: false },
     { key: 'resn', label: 'resn', full: 'Residue name', emit: 'resn', valueKind: 'nameList', quote: false, autocomplete: 'resname' },
     { key: 'name', label: 'name', full: 'Atom name', emit: 'name', valueKind: 'nameList', quote: false, autocomplete: 'aname' },
-    { key: 'elem', label: 'Element', emit: 'elem', valueKind: 'nameList', quote: false, autocomplete: 'elem' },
+    { key: 'elem', label: 'elem', full: 'Element', emit: 'elem', valueKind: 'nameList', quote: false, autocomplete: 'elem' },
     { key: 'alt', label: 'Altloc', emit: 'alt', valueKind: 'nameList', quote: false, allowNull: true },
     { key: 'bfac', label: 'bfac', full: 'B-factor', emit: 'bfac', valueKind: 'compare', quote: false },
     { key: 'rprop', label: 'rprop', full: 'Residue prop', emit: 'rprop', valueKind: 'nameValue', quote: false },

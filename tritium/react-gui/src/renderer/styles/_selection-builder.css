@@ -1,24 +1,25 @@
 /*
- * SelectionBuilder -- inline UI for composing CueMol selection-syntax
- * expressions via set operations and unary transforms. Rendered inside the
- * SelectionPane, so it fills the (narrow) side-panel width rather than a
- * fixed popover. All sizing/colour values come from the app's semantic
- * tokens in `_variables.css` so it follows the active theme.
+ * SelectionBuilder -- inline UI for composing CueMol selection expressions via
+ * set operations and unary transforms. Rendered inside the SelectionPane
+ * (variant=full) and reusable in a space-constrained context (variant=compact).
+ * All sizing/colour values come from the app's semantic tokens in
+ * `_variables.css` / form-kit + list-kit; this file owns only the builder's
+ * bespoke LAYOUT (grids vs columns, the Apply indent, the inline listbox box),
+ * never a control height or focus ring.
  *
- * Three stacked blocks (Current selection / Term / Apply term). Button rows
- * wrap/grid so they stay usable at the side panel's minimum width (~180px).
- *
- * The MolSelList picker trigger / popover styling lives in `_mol-sel-list.css`
- * (it is a generic h3-kit widget, not part of this pane-local builder).
+ * Two FieldSections: Term (source + operand + Apply) and Modify (unary ops).
+ * Apply is a child of Term (indented); Term and Modify are peers. In `full`
+ * each action button is its own row (grows downward); in `compact` the buttons
+ * pack into a 2x2 grid and Named/History use a popover instead of an inline
+ * listbox.
  */
 
 .selbuilder {
   display: flex;
   flex-direction: column;
   /* One section gap for every top-level group, shared with the pane's
-     sp-pane-fill / selection-text-row containers, so the action toolbar and the
-     Term / Modify FieldSections sit at the same rhythm as the Molecule /
-     Selection sections above them -- no per-section tuning. */
+     sp-pane-fill / selection-text-row containers, so Term / Modify sit at the
+     same rhythm as the Molecule / Selection sections above them. */
   gap: var(--form-section-gap);
 }
 
@@ -27,99 +28,13 @@
   pointer-events: none;
 }
 
-/* Builder controls take the form-kit canonical heights + focus treatment
-   (single source: --field-* tokens / _form-kit.css). The builder owns only
-   its bespoke LAYOUT (grids, preview boxes); it never re-chooses a control
-   height or focus ring. Selects carry the `.h3-form-select` class directly (so
-   they get the shadow strip + recentred caret); inputs use a scoped compact
-   inset focus ring here so the highlight never overflows the tight rows. */
-.selbuilder .bp5-input-group .bp5-input {
-  height: var(--field-h);
-  /* Match the catalog TextField (.h3-form-input) label scale. Without this the
-     inputs inherit Blueprint's default 14px and read larger than the SoT. */
-  font-size: var(--fs-lg);
-}
+/* All controls are form-kit catalog components (TextField / SelectField /
+   ComboBoxField / SegmentField / FormButton), so their heights, fonts and focus
+   rings come from _form-kit.css. This file owns ONLY the builder's bespoke
+   layout (grids, the Apply indent, the inline listbox box) -- never a control
+   size, font, colour or focus ring. */
 
-.selbuilder .bp5-input-group .bp5-input:focus {
-  box-shadow: inset 0 0 0 1px var(--accent);
-}
-
-.selbuilder .bp5-button {
-  min-height: var(--field-btn-h);
-  /* Match the catalog FormButton (.h3-form-btn) label scale so builder buttons read
-     the same as the LogPanel / RenderPanel toolbar buttons. */
-  font-size: var(--fs-base);
-}
-
-/* Inset focus ring, mirroring the catalog button (.h3-form-btn). Blueprint's default
-   outset focus outline overflows the button box and overlaps neighbours in the
-   tight modify / apply grids (--space-1 gap); an inset ring stays within bounds
-   at any spacing. */
-.selbuilder .bp5-button:focus,
-.selbuilder .bp5-button:focus-visible {
-  outline: none;
-  box-shadow: inset 0 0 0 1px var(--accent);
-}
-
-/* Term / Modify are now form-kit FieldSections (title = .type-group-label,
-   spacing owned by the .selbuilder container gap); no bespoke block / heading
-   styles live here anymore. */
-
-/* Hit-count badge (shared with the SelectionPane current-selection badge). */
-.selbuilder-count {
-  flex: 0 0 auto;
-}
-
-.selbuilder-modify-row,
-.selbuilder-distance-row,
-.selbuilder-current-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2) var(--space-3);
-  flex-wrap: wrap;
-}
-
-/* Inline control labels (Modify / Distance) -- subdued like field labels,
-   sized via the label role. They sit inline; the controls wrap beside them. */
-.selbuilder-field-label,
-.selbuilder-unit {
-  font-size: var(--type-label-fs);
-  font-weight: var(--type-label-fw);
-  color: var(--text-secondary);
-  flex-shrink: 0;
-}
-
-/* Modify ops as a 2x2 grid so the four labelled buttons fit a ~180px pane. */
-.selbuilder-modify-btns.bp5-button-group {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-1);
-  width: 100%;
-}
-
-.selbuilder-modify-btns.bp5-button-group > .bp5-button {
-  margin: 0;
-}
-
-/* Narrow numeric distance field -- fixed small width is a layout constant.
-   Holds a short radius value (e.g. "5"), so half the former width is plenty. */
-.selbuilder-distance {
-  flex: 0 0 32px;
-  width: 32px;
-}
-
-.selbuilder-current-actions {
-  justify-content: space-between;
-}
-
-.selbuilder-saverow {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex: 1 1 auto;
-}
-
-/* --- Term --- */
+/* --- Term: source selector + operand --- */
 
 .selbuilder-property {
   display: flex;
@@ -140,7 +55,8 @@
   min-width: 0;
 }
 
-.selbuilder-term-form .bp5-input-group {
+.selbuilder-term-form .bp5-input-group,
+.selbuilder-term-form .h3-form-combobox {
   flex: 1 1 60px;
   min-width: 0;
 }
@@ -150,8 +66,44 @@
   font-weight: var(--fw-semibold);
 }
 
-/* Named/History term picker: trigger button shows the picked value; the list
-   lives in a floating Popover so it never pushes the Apply-term buttons down. */
+/* Named/History inline listbox (full variant): expands directly under the
+   source segment so the operand area is symmetric with the Property source. */
+.selbuilder-sourcelist {
+  min-width: 0;
+}
+
+.sellist {
+  max-height: 148px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.sellist .h3-list-row {
+  min-width: 0;
+}
+
+/* Group header inside the listbox (Selected / Scene / Global). */
+.sellist-group {
+  padding: var(--space-1) var(--space-2);
+  color: var(--text-muted);
+}
+
+.sellist-empty {
+  padding: var(--space-2);
+  color: var(--text-muted);
+}
+
+.sellist-text {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Named/History popover picker (compact variant). */
 .selbuilder-term-trigger.bp5-button {
   justify-content: space-between;
 }
@@ -168,36 +120,79 @@
   border-radius: var(--radius-md);
 }
 
-/* Unify menu item typography with the popover's other row text. Blueprint
-   renders these MenuItems, so reference the row role tokens directly. */
 .selbuilder-menu .bp5-menu-item {
   font-size: var(--type-row-fs);
   line-height: var(--type-row-lh);
   min-height: var(--ctrl-h-md);
 }
 
-/* --- Apply (nested under Term) --- */
+/* --- Apply (child of Term) --- */
 
-/* Apply is a child of the Term block (label + button grid), not a sibling
-   block, so its "Apply" sub-label reads as belonging to the term above it. */
+/* Apply is nested under Term (not a peer of Term/Modify), so it carries a left
+   indent + its own "Apply" sub-label to read as belonging to the term above. */
 .selbuilder-apply {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-left: var(--space-3);
+}
+
+/* The "Apply" label and "Å" unit carry their typography role class
+   (.type-label / .type-caption) in the markup, which owns font size/weight;
+   this only adds the subdued colour + keeps them from shrinking. */
+.selbuilder-field-label,
+.selbuilder-unit {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+/* --- Action-button layouts (shared by Apply + Modify) --- */
+
+/* full: one function per row (grows downward, most readable). */
+.selbuilder-op-col {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
 }
 
-/* 2x2 grid so each button has room for its icon + label + hit-count badge
-   (a single 4-up row is too narrow and the badge overflows). */
-.selbuilder-apply-row {
+/* compact: 2x2 grid so four labelled buttons fit a narrow widget. */
+.selbuilder-op-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-2);
 }
 
-.selbuilder-apply-btn {
+/* label on the left, hit-count badge pushed to the right edge. */
+.selbuilder-op-btn.bp5-button {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: var(--space-2);
   min-width: 0;
+  justify-content: flex-start;
+}
+
+.selbuilder-op-label {
+  flex: 1 1 auto;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- Modify distance row --- */
+
+.selbuilder-distance-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  flex-wrap: wrap;
+}
+
+/* Narrow numeric distance field -- holds a short radius (e.g. "5"). */
+.selbuilder-distance {
+  flex: 0 0 44px;
+}
+
+.selbuilder-distance .bp5-input-group {
+  width: 44px;
 }

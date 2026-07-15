@@ -19,6 +19,8 @@ export interface TextFieldProps {
     invalid?: boolean;
     /** Fill the available width (default true). */
     fill?: boolean;
+    /** Render the value in the monospace face (e.g. a code / selection expression). */
+    mono?: boolean;
     /** Leading icon (Blueprint icon name or element), e.g. a filter/search glyph. */
     leftIcon?: React.ComponentProps<typeof InputGroup>['leftIcon'];
     /** Trailing element rendered inside the input's right edge (e.g. a clear or dropdown-trigger button). */
@@ -36,6 +38,7 @@ export const TextField: React.FC<TextFieldProps> = ({
     readOnly,
     invalid,
     fill = true,
+    mono,
     leftIcon,
     rightElement,
     onKeyDown,
@@ -43,7 +46,7 @@ export const TextField: React.FC<TextFieldProps> = ({
 }) => (
     <InputGroup
         small
-        className="h3-form-input"
+        className={`h3-form-input${mono ? ' h3-form-input-mono' : ''}`}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}

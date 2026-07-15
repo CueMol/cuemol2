@@ -302,6 +302,27 @@
   color: var(--accent-red);
 }
 
+/* Current-selection actions: an icon-only row (Select / Center / Clear /
+   Define). Icons only, tooltips carry the meaning. */
+.selection-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* "Define name..." popover: a short name input plus the confirm button. */
+.selection-define-popover {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+}
+
+.selection-define-popover .h3-form-input {
+  flex: 1 1 auto;
+  min-width: 120px;
+}
+
 /* ─── Component Catalog gallery (CatalogPane1-3 showcase) ─── */
 .catalog-note {
   margin-top: var(--form-section-gap);

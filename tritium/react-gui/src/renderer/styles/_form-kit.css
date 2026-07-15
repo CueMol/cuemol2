@@ -207,6 +207,12 @@
   color: var(--text-muted);
 }
 
+/* Monospace variant (TextField `mono`) -- code / selection-expression fields. */
+.h3-form-input-mono.bp5-input-group .bp5-input,
+.h3-form-input-mono.bp5-input-group input {
+  font-family: var(--font-mono);
+}
+
 /* Blueprint renders a JSX `leftIcon` (our <AppIcon> SVG) as a passthrough
    element WITHOUT the .bp5-icon class, so Blueprint's left-slot positioning
    never applies and the bare SVG sits statically at the top edge (overflowing
