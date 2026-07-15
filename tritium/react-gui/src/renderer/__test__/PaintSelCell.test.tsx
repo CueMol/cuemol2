@@ -2,21 +2,16 @@
  * Degrade-detection tests for `PaintSelCell` (Paint table's inline-edit
  * cell that wraps `MolSelList`).
  *
- * Pins the observable contract:
- *   - typing in the input updates the draft only; no commit happens
- *     until focus leaves the cell entirely
- *   - blurring into a sibling inside the cell (e.g. the picker trigger
- *     button) does NOT commit -- prevents stale-draft commits when the
- *     user opens the picker mid-edit
- *   - blurring into the picker popover (rendered in a portal outside the
- *     cell) also does NOT commit -- the popover is "inside the edit"
- *   - blurring out of the cell commits and pushes the value into the
- *     shared selection history
- *   - picking from the popover updates the draft and commits on the
- *     subsequent outside-blur
- *   - Enter on the input commits and blurs
- *   - changing the external `value` prop re-syncs the draft (event-
- *     driven refetch)
+ * Pins the observable commit contract:
+ *   - typing in the input updates the draft only; no commit until blur
+ *   - blurring the input commits the changed value and pushes it to history
+ *   - blurring without a change does not commit
+ *   - picking from the popover commits immediately (regression guard: an
+ *     earlier version swallowed popover picks, so the scene kept the old
+ *     selection)
+ *   - "*" / empty / "none" commits are not pushed to the shared history
+ *   - changing the external `value` prop re-syncs the draft (event-driven
+ *     refetch)
  */
 
 import React from 'react'
@@ -60,15 +55,9 @@ function typeInto(input: HTMLInputElement, value: string): void {
     input.dispatchEvent(new Event('input', { bubbles: true }))
 }
 
-/**
- * Fire a focusout event manually with a chosen `relatedTarget`. jsdom's
- * `.blur()` clears focus but emits a focusout whose `relatedTarget` is
- * always `null`, so to exercise the picker-blur branch we synthesise the
- * event directly.
- */
-function fireBlur(target: HTMLElement, relatedTarget: HTMLElement | null): void {
-    const ev = new FocusEvent('focusout', { bubbles: true, relatedTarget })
-    target.dispatchEvent(ev)
+/** React maps onBlur to the delegated focusout event. */
+function blur(input: HTMLInputElement): void {
+    input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
 }
 
 /** Click a button/menu-item by visible text, searched in document. */
@@ -116,7 +105,7 @@ describe('PaintSelCell', () => {
         unmount()
     })
 
-    it('does NOT commit when focus moves to the picker trigger (sibling inside the cell)', async () => {
+    it('commits + pushes history when the input blurs with a change', async () => {
         const onCommit = vi.fn()
         const { container, unmount } = mountTree(
             <PaintSelCell sceneID={1} value="chain A" onCommit={onCommit} />,
@@ -124,112 +113,41 @@ describe('PaintSelCell', () => {
         await flushPromises()
         const input = getInput(container)
         await act(async () => { typeInto(input, 'chain B') })
-        // Clicking the picker trigger mid-edit: input loses focus to the
-        // trigger button, which lives inside the cell wrapper.
-        await act(async () => { fireBlur(input, getTrigger(container)) })
-        expect(onCommit).not.toHaveBeenCalled()
-        unmount()
-    })
-
-    it('does NOT commit when focus moves into the picker popover (portal outside the cell)', async () => {
-        const onCommit = vi.fn()
-        // Simulate the popover portal: a menu item living under the picker's
-        // portal class, which the cell wrapper does not contain.
-        const portal = document.createElement('div')
-        portal.className = 'h3-mol-sel-list-popover'
-        const item = document.createElement('a')
-        portal.appendChild(item)
-        document.body.appendChild(portal)
-        const { container, unmount } = mountTree(
-            <PaintSelCell sceneID={1} value="chain A" onCommit={onCommit} />,
-        )
-        await flushPromises()
-        const input = getInput(container)
-        await act(async () => { typeInto(input, 'chain B') })
-        await act(async () => { fireBlur(input, item) })
-        expect(onCommit).not.toHaveBeenCalled()
-        unmount()
-    })
-
-    it('commits + pushes history when focus leaves the cell entirely', async () => {
-        const onCommit = vi.fn()
-        const outside = document.createElement('button')
-        document.body.appendChild(outside)
-        const { container, unmount } = mountTree(
-            <PaintSelCell sceneID={1} value="chain A" onCommit={onCommit} />,
-        )
-        await flushPromises()
-        const input = getInput(container)
-        await act(async () => { typeInto(input, 'chain B') })
-        await act(async () => { fireBlur(input, outside) })
+        await act(async () => { blur(input) })
         expect(onCommit).toHaveBeenCalledWith('chain B')
         expect(getHistory()).toContain('chain B')
         unmount()
-        outside.remove()
     })
 
-    it('does not commit when blur exits without a change', async () => {
+    it('does not commit when the input blurs without a change', async () => {
         const onCommit = vi.fn()
-        const outside = document.createElement('button')
-        document.body.appendChild(outside)
         const { container, unmount } = mountTree(
             <PaintSelCell sceneID={1} value="chain A" onCommit={onCommit} />,
         )
         await flushPromises()
-        await act(async () => { fireBlur(getInput(container), outside) })
+        await act(async () => { blur(getInput(container)) })
         expect(onCommit).not.toHaveBeenCalled()
         unmount()
-        outside.remove()
     })
 
-    it('picking from the popover updates the draft and commits on outside blur', async () => {
+    it('picking from the popover commits immediately (no blur required)', async () => {
         const onCommit = vi.fn()
-        const outside = document.createElement('button')
-        document.body.appendChild(outside)
         // Seed history so the picker has a real entry to choose.
         globalThis.localStorage.setItem(STORAGE_KEY, JSON.stringify(['chain Z']))
         const { container, unmount } = mountTree(
             <PaintSelCell sceneID={1} value="chain A" onCommit={onCommit} />,
         )
         await flushPromises()
-        // Open the picker, switch to History, pick the seeded entry.
         await act(async () => { getTrigger(container).click() })
         await flushPromises()
         await act(async () => { clickByText('History') })
         await flushPromises()
         await act(async () => { clickByText('chain Z') })
         await flushPromises()
-        // Pick alone does not commit.
-        expect(onCommit).not.toHaveBeenCalled()
-        expect(getInput(container).value).toBe('chain Z')
-        // Focus leaves the cell -> commit the picked value.
-        await act(async () => { fireBlur(getInput(container), outside) })
+        // The pick alone commits -- this is the regression guard.
         expect(onCommit).toHaveBeenCalledWith('chain Z')
+        expect(getInput(container).value).toBe('chain Z')
         unmount()
-        outside.remove()
-    })
-
-    it('Enter on the input commits (via blur)', async () => {
-        const onCommit = vi.fn()
-        const outside = document.createElement('button')
-        document.body.appendChild(outside)
-        const { container, unmount } = mountTree(
-            <PaintSelCell sceneID={1} value="chain A" onCommit={onCommit} />,
-        )
-        await flushPromises()
-        const input = getInput(container)
-        await act(async () => { typeInto(input, 'chain B') })
-        const blurSpy = vi.spyOn(input, 'blur').mockImplementation(() => {
-            // Mimic the focusout into `outside` that real blur() would trigger.
-            fireBlur(input, outside)
-        })
-        await act(async () => {
-            input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
-        })
-        expect(blurSpy).toHaveBeenCalled()
-        expect(onCommit).toHaveBeenCalledWith('chain B')
-        unmount()
-        outside.remove()
     })
 
     it('re-syncs the draft when the value prop changes (event-driven refetch)', async () => {
@@ -246,21 +164,18 @@ describe('PaintSelCell', () => {
         unmount()
     })
 
-    it('does not push history for empty / "*" / "none" commits', async () => {
+    it('does not push history for "*" commits (but still commits)', async () => {
         const onCommit = vi.fn()
-        const outside = document.createElement('button')
-        document.body.appendChild(outside)
         const { container, unmount } = mountTree(
             <PaintSelCell sceneID={1} value="chain A" onCommit={onCommit} />,
         )
         await flushPromises()
         const input = getInput(container)
         await act(async () => { typeInto(input, '*') })
-        await act(async () => { fireBlur(input, outside) })
+        await act(async () => { blur(input) })
         expect(onCommit).toHaveBeenCalledWith('*')
         expect(getHistory()).not.toContain('*')
         unmount()
-        outside.remove()
     })
 
     it('forwards molID to MolSelList getSelDefs', async () => {

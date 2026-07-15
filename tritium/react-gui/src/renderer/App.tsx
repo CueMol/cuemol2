@@ -531,10 +531,15 @@ const App: React.FC = () => {
                     </Allotment.Pane>
 
                     {/* Right: Inspector */}
+                    {/* Collapse the pane whenever nothing is being inspected
+                        (no target), even if the open flag is still set -- an
+                        empty inspector shows no useful content, so it should not
+                        take space. Selecting a node re-applies a target (via
+                        applyTarget, which also re-opens) and the pane reappears. */}
                     <Allotment.Pane
                       minSize={240}
                       preferredSize={300}
-                      visible={inspectorOpen}
+                      visible={inspectorOpen && inspectorTarget !== null}
                       snap
                     >
                       <InspectorPanel
