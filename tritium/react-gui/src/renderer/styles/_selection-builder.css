@@ -1,17 +1,14 @@
 /*
  * SelectionBuilder -- inline UI for composing CueMol selection expressions via
- * set operations and unary transforms. Rendered inside the SelectionPane
- * (variant=full) and reusable in a space-constrained context (variant=compact).
+ * set operations and unary transforms. Rendered inside the SelectionPane.
  * All sizing/colour values come from the app's semantic tokens in
  * `_variables.css` / form-kit + list-kit; this file owns only the builder's
- * bespoke LAYOUT (grids vs columns, the Apply indent, the inline listbox box),
+ * bespoke LAYOUT (the keyword+value row, the Apply indent, the op grids),
  * never a control height or focus ring.
  *
- * Two FieldSections: Term (source + operand + Apply) and Modify (unary ops).
- * Apply is a child of Term (indented); Term and Modify are peers. In `full`
- * each action button is its own row (grows downward); in `compact` the buttons
- * pack into a 2x2 grid and Named/History use a popover instead of an inline
- * listbox.
+ * Two FieldSections: Term (keyword + operand + Apply) and Modify (unary ops).
+ * Apply is a child of Term (indented); Term and Modify are peers. Apply is a
+ * single row of four icon-only buttons; Modify is a 2x2 grid.
  */
 
 .selbuilder {
@@ -66,52 +63,15 @@
   font-weight: var(--fw-semibold);
 }
 
-/* Named/History inline listbox (full variant): expands directly under the
-   source segment so the operand area is symmetric with the Property source. */
-.selbuilder-sourcelist {
+/* Named/History candidate dropdown: fills the value area beside the keyword,
+   like the other value inputs. Scoped to the pick modifier so the compare
+   operator's fixed-width select (a plain term-form select) is unaffected. */
+.selbuilder-term-pick .bp5-html-select {
+  flex: 1 1 60px;
   min-width: 0;
 }
 
-.sellist {
-  max-height: 148px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-}
-
-.sellist .h3-list-row {
-  min-width: 0;
-}
-
-/* Group header inside the listbox (Selected / Scene / Global). */
-.sellist-group {
-  padding: var(--space-1) var(--space-2);
-  color: var(--text-muted);
-}
-
-.sellist-empty {
-  padding: var(--space-2);
-  color: var(--text-muted);
-}
-
-.sellist-text {
-  display: block;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Named/History popover picker (compact variant). */
-.selbuilder-term-trigger.bp5-button {
-  justify-content: space-between;
-}
-
-.selbuilder-term-popover {
-  min-width: 180px;
-}
-
+/* Named/History popover menu, used by the MolSelList picker. */
 .selbuilder-menu {
   max-height: 160px;
   overflow-y: auto;
@@ -148,32 +108,45 @@
 
 /* --- Action-button layouts (shared by Apply + Modify) --- */
 
-/* full: one function per row (grows downward, most readable). */
-.selbuilder-op-col {
+/* Apply: four icon-only buttons dividing a single row evenly. Blueprint wraps
+   each button in a Tooltip target span (.bp5-popover-target), so the equal
+   share lives on that span and the button stretches to fill it. */
+.selbuilder-op-row {
   display: flex;
-  flex-direction: column;
   gap: var(--space-1);
 }
 
-/* compact: 2x2 grid so four labelled buttons fit a narrow widget. */
+.selbuilder-op-row > .bp5-popover-target {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* 2x2 grid so the four labelled buttons fit a narrow pane compactly. */
 .selbuilder-op-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-2);
 }
 
-/* label on the left, hit-count badge pushed to the right edge. */
+/* Icon-only Apply button: just the set-op icon (name + resulting atom count
+   live in the tooltip). Stretches to fill its Tooltip target span. */
+.selbuilder-op-btn--icon.bp5-button {
+  width: 100%;
+  padding-left: var(--space-2);
+  padding-right: var(--space-2);
+}
+
+/* Compact button: icon + label + hit-count badge centred as one group. */
 .selbuilder-op-btn.bp5-button {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   min-width: 0;
-  justify-content: flex-start;
+  justify-content: center;
 }
 
 .selbuilder-op-label {
-  flex: 1 1 auto;
-  text-align: left;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -188,11 +161,13 @@
   flex-wrap: wrap;
 }
 
-/* Narrow numeric distance field -- holds a short radius (e.g. "5"). */
+/* Narrow distance dropdown -- a 2-digit radius (e.g. "5" / "10") + caret. Kept
+   compact so Around / Expand stay on the same row. */
 .selbuilder-distance {
-  flex: 0 0 44px;
+  flex: 0 0 auto;
 }
 
-.selbuilder-distance .bp5-input-group {
-  width: 44px;
+.selbuilder-distance .bp5-html-select,
+.selbuilder-distance .bp5-html-select select {
+  width: 3.5rem;
 }

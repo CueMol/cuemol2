@@ -2,11 +2,12 @@
  * @file components/panes/selection/selBuilderReducer.ts
  * @description Operand-draft state model for the Selection Builder.
  *
- * Holds only the in-progress "term" draft: which of three sources is active
- * (Property keyword + value fields, or a picked Named / History expression)
- * plus the shared Around/Expand distance. The "current selection" is NOT owned
- * here -- it is the target molecule's `mol.sel` (single source of truth), held
- * by the container and passed in as `current` where an operation needs it.
+ * Holds only the in-progress "term" draft: the selected keyword plus either its
+ * value fields (property keywords) or a picked ready-made expression (the
+ * `named` / `history` keywords), and the shared Around/Expand distance. The
+ * "current selection" is NOT owned here -- it is the target molecule's
+ * `mol.sel` (single source of truth), held by the container and passed in as
+ * `current` where an operation needs it.
  * Expression composition is delegated to the pure functions in
  * `selectionExpr.ts`; the reducer itself is pure and unit-tested.
  *
@@ -21,24 +22,18 @@ import { getKeywordDef } from './selectionGrammar';
 import type { UnaryOp, TermFields } from './selectionExpr';
 import { buildTerm } from './selectionExpr';
 
-/** Which source supplies the term applied to the current selection. */
-export type TermSource = 'property' | 'named' | 'history';
-
 export interface BuilderState {
-    /** Active term source. */
-    source: TermSource;
-    /** Property source: selected keyword. */
+    /** Selected keyword (a property keyword, or `named` / `history`). */
     keyword: Keyword;
-    /** Property source: keyword-specific value-field values. */
+    /** Property keyword: keyword-specific value-field values. */
     fields: TermFields;
-    /** Named / History source: the picked ready-made expression. */
+    /** `named` / `history` keyword: the picked ready-made expression. */
     picked: string;
     /** Shared Around/Expand distance (Angstrom). */
     distance: string;
 }
 
 export type BuilderAction =
-    | { type: 'SET_SOURCE'; source: TermSource }
     | { type: 'SET_KEYWORD'; keyword: Keyword }
     | { type: 'SET_FIELD'; name: string; value: string }
     | { type: 'SET_PICKED'; value: string }
@@ -61,7 +56,6 @@ function defaultFields(keyword: Keyword): TermFields {
 /** Build the initial operand-draft state. */
 export function initBuilderState(): BuilderState {
     return {
-        source: 'property',
         keyword: 'hierarchical',
         fields: defaultFields('hierarchical'),
         picked: '',
@@ -70,16 +64,16 @@ export function initBuilderState(): BuilderState {
 }
 
 /**
- * The term currently described by the draft, or `null` when incomplete.
- * Property source derives it from keyword + fields; Named / History use the
- * picked expression.
+ * The term currently described by the draft, or `null` when incomplete. The
+ * `named` / `history` keywords use the picked expression; every other keyword
+ * derives it from the keyword + value fields.
  */
 export function selectTerm(state: BuilderState): string | null {
-    if (state.source === 'property') {
-        return buildTerm(state.keyword, state.fields);
+    if (state.keyword === 'named' || state.keyword === 'history') {
+        const picked = state.picked.trim();
+        return picked === '' ? null : picked;
     }
-    const picked = state.picked.trim();
-    return picked === '' ? null : picked;
+    return buildTerm(state.keyword, state.fields);
 }
 
 /** Whether the shared distance field holds a valid non-negative number. */
@@ -102,10 +96,15 @@ export function canApplyUnary(state: BuilderState, op: UnaryOp, current: string)
 
 export function builderReducer(state: BuilderState, action: BuilderAction): BuilderState {
     switch (action.type) {
-        case 'SET_SOURCE':
-            return { ...state, source: action.source };
         case 'SET_KEYWORD':
-            return { ...state, keyword: action.keyword, fields: defaultFields(action.keyword) };
+            // Reset both the property fields and the named/history pick: the new
+            // keyword decides which one selectTerm reads, so the other is stale.
+            return {
+                ...state,
+                keyword: action.keyword,
+                fields: defaultFields(action.keyword),
+                picked: '',
+            };
         case 'SET_FIELD':
             return { ...state, fields: { ...state.fields, [action.name]: action.value } };
         case 'SET_PICKED':

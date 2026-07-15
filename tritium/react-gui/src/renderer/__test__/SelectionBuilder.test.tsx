@@ -14,10 +14,9 @@
  *     makes it the current selection
  *  3. Add composes "(current) or (term)" from `current`
  *  4. a Modify op (Invert) transforms `current`
- *  5. Named source: full variant shows an inline listbox; picking + Replace
- *     applies the named selection
+ *  5. the Named keyword shows a candidate dropdown; picking + Replace applies
+ *     the named selection
  *  6. resolveValues is queried for keyword autocomplete
- *  7. compact variant uses a popover picker (not an inline listbox)
  */
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
@@ -73,16 +72,33 @@ function setInputValue(input: HTMLInputElement, value: string): void {
     input.dispatchEvent(new Event('input', { bubbles: true }))
 }
 
-function selectKeyword(container: HTMLElement, key: string): void {
-    const select = container.querySelector('.selbuilder-property select') as HTMLSelectElement
+function setSelectValue(select: HTMLSelectElement, value: string): void {
     const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')!.set!
-    setter.call(select, key)
+    setter.call(select, value)
     select.dispatchEvent(new Event('change', { bubbles: true }))
+}
+
+function selectKeyword(container: HTMLElement, key: string): void {
+    // The keyword dropdown is the first select in the Term row (the candidate
+    // dropdown, when present, lives in .selbuilder-term-pick after it).
+    setSelectValue(container.querySelector('.selbuilder-property select') as HTMLSelectElement, key)
+}
+
+function selectCandidate(container: HTMLElement, value: string): void {
+    setSelectValue(container.querySelector('.selbuilder-term-pick select') as HTMLSelectElement, value)
 }
 
 function clickButtonByText(root: ParentNode, text: string): void {
     const btn = Array.from(root.querySelectorAll('button')).find(
         (b) => b.textContent?.trim() === text,
+    ) as HTMLButtonElement
+    btn.click()
+}
+
+/** Apply (set-op) buttons are icon-only; their name lives in aria-label. */
+function clickButtonByLabel(root: ParentNode, label: string): void {
+    const btn = Array.from(root.querySelectorAll('button')).find(
+        (b) => b.getAttribute('aria-label') === label,
     ) as HTMLButtonElement
     btn.click()
 }
@@ -103,7 +119,7 @@ describe('SelectionBuilder', () => {
         await flushPromises()
         await act(async () => { selectKeyword(container, 'chain') })
         await act(async () => { setInputValue(termValueInput(container), 'A') })
-        await act(async () => { clickButtonByText(container, 'Replace') })
+        await act(async () => { clickButtonByLabel(container, 'Replace') })
         await flushPromises()
         expect(current(container)).toBe("chain 'A'")
         unmount()
@@ -114,7 +130,7 @@ describe('SelectionBuilder', () => {
         await flushPromises()
         await act(async () => { selectKeyword(container, 'chain') })
         await act(async () => { setInputValue(termValueInput(container), 'A') })
-        await act(async () => { clickButtonByText(container, 'Add') })
+        await act(async () => { clickButtonByLabel(container, 'Add') })
         await flushPromises()
         expect(current(container)).toBe("(chain 'X') or (chain 'A')")
         unmount()
@@ -129,19 +145,16 @@ describe('SelectionBuilder', () => {
         unmount()
     })
 
-    it('Named source (full): inline listbox pick + Replace applies the named selection', async () => {
+    it('Named keyword: candidate dropdown pick + Replace applies the named selection', async () => {
         // Built-in macros (protein, water, ...) arrive as global defs.
         const { container, unmount } = mountTree(<Harness globalDefs={['protein']} />)
         await flushPromises()
-        // Switching to Named expands an inline listbox directly (no popover).
-        await act(async () => { clickButtonByText(container, 'Named') })
+        // Named is a keyword: selecting it swaps the value area for a candidate
+        // dropdown, from which we pick 'protein'.
+        await act(async () => { selectKeyword(container, 'named') })
         await flushPromises()
-        const row = Array.from(container.querySelectorAll('.h3-list-row')).find(
-            (e) => e.textContent?.trim() === 'protein',
-        ) as HTMLElement
-        await act(async () => { row.click() })
-        await flushPromises()
-        await act(async () => { clickButtonByText(container, 'Replace') })
+        await act(async () => { selectCandidate(container, 'protein') })
+        await act(async () => { clickButtonByLabel(container, 'Replace') })
         await flushPromises()
         expect(current(container)).toBe('protein')
         unmount()
@@ -155,22 +168,6 @@ describe('SelectionBuilder', () => {
         await act(async () => { selectKeyword(container, 'chain') })
         await flushPromises()
         expect(resolveValues).toHaveBeenCalledWith('chain')
-        unmount()
-    })
-
-    it('compact variant uses a popover picker for Named (no inline listbox)', async () => {
-        const { container, unmount } = mountTree(
-            <Harness variant="compact" globalDefs={['protein']} />,
-        )
-        await flushPromises()
-        await act(async () => { clickButtonByText(container, 'Named') })
-        await flushPromises()
-        // The compact source is a popover trigger, not an inline list row.
-        const trigger = Array.from(container.querySelectorAll('button')).find(
-            (b) => b.textContent?.trim() === 'Select named...',
-        )
-        expect(trigger).toBeTruthy()
-        expect(container.querySelector('.selbuilder-sourcelist')).toBeNull()
         unmount()
     })
 })

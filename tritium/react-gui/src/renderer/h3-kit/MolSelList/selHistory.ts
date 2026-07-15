@@ -10,7 +10,7 @@
 import { createLruStringHistory } from '../../utils/createLruStringHistory';
 
 export const STORAGE_KEY = 'cuemol.molSelList.history';
-export const MAX_ENTRIES = 20;
+export const MAX_ENTRIES = 40;
 
 const SKIP = new Set(['', '*', 'none']);
 

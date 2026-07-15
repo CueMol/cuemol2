@@ -294,6 +294,18 @@
   min-width: 0;
 }
 
+/* The hit-count badge must never shrink -- the flex-grow input above absorbs
+   all width changes. Reserve enough width for a 4-5 digit count so large atom
+   counts stay fully legible instead of being ellipsized down to "1...". The
+   count sits inside Blueprint's grow-to-fill text span, so centre it with
+   text-align (justify-content alone leaves the number flush left). */
+.selection-input-with-count .selbuilder-count {
+  flex: none;
+  min-width: 3.25rem;
+  justify-content: center;
+  text-align: center;
+}
+
 /* Inline validation message: body text in the danger colour. */
 .selection-error {
   flex-shrink: 0;

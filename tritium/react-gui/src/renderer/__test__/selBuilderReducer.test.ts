@@ -15,12 +15,13 @@ function draft(over: Partial<BuilderState> = {}): BuilderState {
 }
 
 describe('initBuilderState', () => {
-    it('defaults to the property/hierarchical source (no current owned here)', () => {
+    it('defaults to the hierarchical keyword (no current / source owned here)', () => {
         const s = initBuilderState()
-        expect(s.source).toBe('property')
         expect(s.keyword).toBe('hierarchical')
-        // The reducer no longer owns the current selection (mol.sel is SoT).
+        // The reducer no longer owns the current selection (mol.sel is SoT) and
+        // no longer carries a separate term-source field (keyword drives it).
         expect('current' in s).toBe(false)
+        expect('source' in s).toBe(false)
     })
 })
 
@@ -29,28 +30,25 @@ describe('selectTerm', () => {
         expect(selectTerm(draft({ fields: { value: 'A' } }))).toBe("chain 'A'")
     })
 
-    it('uses the picked expression for named / history', () => {
-        expect(selectTerm(draft({ source: 'named', picked: 'protein' }))).toBe('protein')
+    it('uses the picked expression for the named / history keywords', () => {
+        expect(selectTerm(draft({ keyword: 'named', picked: 'protein' }))).toBe('protein')
     })
 
     it('returns null for an empty draft', () => {
         expect(selectTerm(draft({ fields: { value: '' } }))).toBeNull()
-        expect(selectTerm(draft({ source: 'history', picked: '' }))).toBeNull()
+        expect(selectTerm(draft({ keyword: 'history', picked: '' }))).toBeNull()
     })
 })
 
 describe('builderReducer', () => {
-    it('SET_SOURCE switches the active source', () => {
-        expect(builderReducer(draft(), { type: 'SET_SOURCE', source: 'named' }).source).toBe('named')
-    })
-
-    it('SET_KEYWORD resets fields (bfac gets a default op)', () => {
-        const s = builderReducer(draft({ fields: { value: 'A' } }), {
+    it('SET_KEYWORD resets fields (bfac gets a default op) and clears the pick', () => {
+        const s = builderReducer(draft({ fields: { value: 'A' }, picked: 'protein' }), {
             type: 'SET_KEYWORD',
             keyword: 'bfac',
         })
         expect(s.keyword).toBe('bfac')
         expect(s.fields).toEqual({ op: '<', value: '' })
+        expect(s.picked).toBe('')
     })
 
     it('SET_FIELD merges a single field', () => {
@@ -74,7 +72,7 @@ describe('builderReducer', () => {
     })
 
     it('INIT returns the initial draft (full reset)', () => {
-        const s = builderReducer(draft({ source: 'named', picked: 'protein', distance: '9' }), {
+        const s = builderReducer(draft({ keyword: 'named', picked: 'protein', distance: '9' }), {
             type: 'INIT',
         })
         expect(s).toEqual(initBuilderState())

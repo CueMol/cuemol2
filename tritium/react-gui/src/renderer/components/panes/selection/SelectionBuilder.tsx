@@ -6,30 +6,23 @@
  * ## Model
  *
  * The "current selection" is the target molecule's `mol.sel` (single source of
- * truth), passed in as `current`. The builder never owns it: a "term" (from one
- * of three sources -- a Property keyword+value, a Named def, or a History
- * entry) is combined into the current selection via binary set operations
- * (Replace / Add / Subtract / Intersect), and the current selection is reshaped
- * by unary transforms (Invert / Byres / Sidechain / Mainchain / Around /
- * Expand). Every button computes the resulting expression and hands it to
- * `onApply`, which the container writes straight to `mol.sel` (live). Logical
- * operators are never typed by the user.
+ * truth), passed in as `current`. The builder never owns it: a "term" is picked
+ * from a single keyword dropdown -- a property keyword (compose `keyword value`
+ * syntax) or the `Named` / `History` keywords (pick a ready-made expression from
+ * the candidate dropdown beside it). The term is combined into the current
+ * selection via binary set operations (Replace / Add / Subtract / Intersect),
+ * and the current selection is reshaped by unary transforms (Invert / Byres /
+ * Sidechain / Mainchain / Around / Expand). Every button computes the resulting
+ * expression and hands it to `onApply`, which the container writes straight to
+ * `mol.sel` (live). Logical operators are never typed by the user.
  *
  * The operand draft (`draft` / `dispatch`) is controlled by the container so it
  * can be persisted across side-panel activity-group switches. There is no
  * builder-local undo/redo -- stepping back is the scene undo (Cmd+Z).
  *
- * ## variant
- *
- * `full` (Selection pane): one function per row (grows downward), and the Named
- * / History sources expand an inline listbox directly under the source segment
- * -- symmetric with the Property source. `compact` (space-constrained reuse,
- * e.g. a future MolSelList widget): 2x2 button grids and a popover picker for
- * Named / History. Behaviour is identical across variants; only layout density
- * differs.
- *
- * Every action button shows the would-be hit count so the user can predict the
- * result before applying.
+ * Apply is a single row of four icon-only buttons (the set-op name is the
+ * tooltip); Modify is a 2x2 grid. Every action button shows the would-be hit
+ * count so the user can predict the result before applying.
  *
  * Grammar reference: `src/modules/molstr/parser_sel.yxx` / `scanner_sel.lxx`
  * (see selectionExpr.ts / selectionGrammar.ts).
@@ -38,38 +31,28 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Popover } from '@blueprintjs/core';
+import { Tooltip } from '@blueprintjs/core';
 import { AppIcon } from '../../AppIcon';
 import type { AppIconKey } from '../../../data/appIcons';
 import {
     ComboBoxField,
     FieldSection,
     FormButton,
-    SegmentField,
     SelectField,
     TextField,
 } from '../../../h3-kit/form';
-import { useTheme } from '../../../contexts/ThemeContext';
 import type { ResolveValues } from './useSelectionValues';
 import { KEYWORDS, getKeywordDef, type Keyword } from './selectionGrammar';
 import type { BinaryOp, UnaryOp } from './selectionExpr';
 import { applyBinary, applyUnary, canApplyBinary } from './selectionExpr';
-import type { BuilderState, BuilderAction, TermSource } from './selBuilderReducer';
+import type { BuilderState, BuilderAction } from './selBuilderReducer';
 import { canApplyUnary, selectTerm } from './selBuilderReducer';
 import { useSelHitCount, type GetHitCount } from '../../../h3-kit/MolSelList/useSelHitCount';
 import { CountTag } from '../../../h3-kit/MolSelList/CountTag';
-import {
-    HistoryList,
-    HistoryMenu,
-    NamedSelList,
-    NamedSelMenu,
-} from '../../../h3-kit/MolSelList/SelMenus';
 
 /* --- Props --- */
 
 export interface SelectionBuilderProps {
-    /** Layout density (default `full`). */
-    variant?: 'full' | 'compact';
     /** Applied selection (mol.sel reflection) -- the base of every operation. */
     current: string;
     /** Operand-draft state (owned by the container so it persists). */
@@ -114,12 +97,15 @@ const DIST_OPS: { op: UnaryOp; label: string }[] = [
     { op: 'expand', label: 'Expand' },
 ];
 
+// Preset Around/Expand radii (Angstrom), chosen from a compact dropdown. The
+// radius is a small contact-shell distance and never reaches three digits.
+const DISTANCE_OPTIONS = ['3', '4', '5', '6', '8', '10'];
+
 const VALUE_LIST_EMPTY: string[] = [];
 
 /* --- Component --- */
 
 export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
-    variant = 'full',
     current,
     draft,
     dispatch,
@@ -131,23 +117,14 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
     getHitCount,
     disabled,
 }) => {
-    const compact = variant === 'compact';
     const keywordDef = getKeywordDef(draft.keyword);
     const term = selectTerm(draft);
-    const currentSel = current.trim() === '' ? undefined : current;
 
-    // Named/History term list is shown in a Popover (compact) so a long list
-    // never pushes the Apply buttons off-screen; the portal needs the theme
-    // class because it mounts outside the themed app root.
-    const [pickerOpen, setPickerOpen] = useState(false);
-    const { theme } = useTheme();
-    const portalClassName = theme === 'dark' ? 'bp5-dark' : '';
-
-    // --- Autocomplete values for the active Property keyword ---
+    // --- Autocomplete values for the active keyword ---
     const [suggestItems, setSuggestItems] = useState<string[]>(VALUE_LIST_EMPTY);
     useEffect(() => {
         const kind = keywordDef.autocomplete;
-        if (draft.source !== 'property' || !kind || !resolveValues) {
+        if (!kind || !resolveValues) {
             setSuggestItems(VALUE_LIST_EMPTY);
             return;
         }
@@ -162,28 +139,16 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
         return () => {
             cancelled = true;
         };
-    }, [draft.source, keywordDef.autocomplete, resolveValues]);
+    }, [keywordDef.autocomplete, resolveValues]);
 
     const setField = (name: string, v: string): void =>
         dispatch({ type: 'SET_FIELD', name, value: v });
-
-    const onSourceChange = (v: TermSource): void => {
-        dispatch({ type: 'SET_SOURCE', source: v });
-        // Compact keeps a popover picker; open it immediately on switch so the
-        // list is one step (full expands an inline listbox, no popover).
-        if (compact) setPickerOpen(v === 'named' || v === 'history');
-    };
 
     const onBinary = (op: BinaryOp): void => {
         if (term !== null && canApplyBinary(current, op)) onApply(applyBinary(current, term, op));
     };
     const onUnary = (op: UnaryOp): void => {
         if (canApplyUnary(draft, op, current)) onApply(applyUnary(current, op, draft.distance));
-    };
-
-    const onPickTerm = (v: string): void => {
-        dispatch({ type: 'SET_PICKED', value: v });
-        if (compact) setPickerOpen(false);
     };
 
     /* -- Value input, keyword-dependent -- */
@@ -254,6 +219,62 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                         />
                     </div>
                 );
+            case 'named':
+                // Pick a named selection from the space beside the keyword:
+                // scene-level then global (built-in macro) defs.
+                return (
+                    <div className="selbuilder-term-form selbuilder-term-pick">
+                        <SelectField
+                            value={draft.picked}
+                            disabled={disabled}
+                            aria-label="Named selection"
+                            onChange={(v) => dispatch({ type: 'SET_PICKED', value: v })}
+                        >
+                            <option value="" disabled>
+                                Select named...
+                            </option>
+                            {sceneDefs.length > 0 && (
+                                <optgroup label="Scene">
+                                    {sceneDefs.map((v) => (
+                                        <option key={`s-${v}`} value={v}>
+                                            {v}
+                                        </option>
+                                    ))}
+                                </optgroup>
+                            )}
+                            {globalDefs.length > 0 && (
+                                <optgroup label="Global">
+                                    {globalDefs.map((v) => (
+                                        <option key={`g-${v}`} value={v}>
+                                            {v}
+                                        </option>
+                                    ))}
+                                </optgroup>
+                            )}
+                        </SelectField>
+                    </div>
+                );
+            case 'history':
+                // Pick a recently used expression from the space beside the keyword.
+                return (
+                    <div className="selbuilder-term-form selbuilder-term-pick">
+                        <SelectField
+                            value={draft.picked}
+                            disabled={disabled}
+                            aria-label="History"
+                            onChange={(v) => dispatch({ type: 'SET_PICKED', value: v })}
+                        >
+                            <option value="" disabled>
+                                Select history...
+                            </option>
+                            {history.map((h, i) => (
+                                <option key={i} value={h}>
+                                    {h}
+                                </option>
+                            ))}
+                        </SelectField>
+                    </div>
+                );
             default:
                 // nameList / numList -- single value field with autocomplete.
                 return (
@@ -271,108 +292,46 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                 );
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [keywordDef, draft.fields, suggestItems, disabled]);
-
-    const opListClass = compact ? 'selbuilder-op-grid' : 'selbuilder-op-col';
+    }, [
+        keywordDef,
+        draft.fields,
+        draft.picked,
+        suggestItems,
+        disabled,
+        sceneDefs,
+        globalDefs,
+        history,
+    ]);
 
     return (
-        <div className={`selbuilder selbuilder--${variant}${disabled ? ' selbuilder--disabled' : ''}`}>
-            {/* Term: build/pick an operand and apply it via binary set ops. */}
+        <div className={`selbuilder${disabled ? ' selbuilder--disabled' : ''}`}>
+            {/* Term: build/pick an operand and apply it via binary set ops. The
+                keyword dropdown lists property keywords plus Named / History;
+                the value area beside it adapts to the chosen keyword. */}
             <FieldSection title="Term">
-                <SegmentField
-                    value={draft.source}
-                    onValueChange={onSourceChange}
-                    options={[
-                        { label: 'Prop', value: 'property' },
-                        { label: 'Named', value: 'named' },
-                        { label: 'History', value: 'history' },
-                    ]}
-                />
-                {draft.source === 'property' && (
-                    <div className="selbuilder-property">
-                        <SelectField
-                            value={draft.keyword}
-                            disabled={disabled}
-                            fill={false}
-                            aria-label="Property keyword"
-                            onChange={(v) => dispatch({ type: 'SET_KEYWORD', keyword: v as Keyword })}
-                        >
-                            {KEYWORDS.map((k) => (
-                                <option key={k.key} value={k.key} title={k.full ?? k.label}>
-                                    {k.label}
-                                </option>
-                            ))}
-                        </SelectField>
-                        {valueInput}
-                    </div>
-                )}
-                {(draft.source === 'named' || draft.source === 'history') &&
-                    (compact ? (
-                        <Popover
-                            isOpen={pickerOpen}
-                            onInteraction={setPickerOpen}
-                            placement="bottom-start"
-                            portalClassName={portalClassName}
-                            fill
-                            disabled={disabled}
-                            content={
-                                <div className="selbuilder-term-popover">
-                                    {draft.source === 'named' ? (
-                                        <NamedSelMenu
-                                            currentSel={currentSel}
-                                            sceneDefs={sceneDefs}
-                                            globalDefs={globalDefs}
-                                            activeValue={draft.picked}
-                                            onPick={onPickTerm}
-                                            dismissOnPick
-                                        />
-                                    ) : (
-                                        <HistoryMenu
-                                            history={history}
-                                            activeValue={draft.picked}
-                                            onPick={onPickTerm}
-                                            dismissOnPick
-                                        />
-                                    )}
-                                </div>
-                            }
-                        >
-                            <Button
-                                fill
-                                alignText="left"
-                                rightIcon={<span className="h3-form-caret" aria-hidden />}
-                                className="selbuilder-term-trigger h3-form-btn h3-form-dropdown-caret"
-                                disabled={disabled}
-                                text={
-                                    draft.picked ||
-                                    (draft.source === 'named' ? 'Select named...' : 'Select history...')
-                                }
-                            />
-                        </Popover>
-                    ) : (
-                        <div className="selbuilder-sourcelist">
-                            {draft.source === 'named' ? (
-                                <NamedSelList
-                                    currentSel={currentSel}
-                                    sceneDefs={sceneDefs}
-                                    globalDefs={globalDefs}
-                                    activeValue={draft.picked}
-                                    onPick={onPickTerm}
-                                />
-                            ) : (
-                                <HistoryList
-                                    history={history}
-                                    activeValue={draft.picked}
-                                    onPick={onPickTerm}
-                                />
-                            )}
-                        </div>
-                    ))}
+                <div className="selbuilder-property">
+                    <SelectField
+                        value={draft.keyword}
+                        disabled={disabled}
+                        fill={false}
+                        aria-label="Term keyword"
+                        onChange={(v) => dispatch({ type: 'SET_KEYWORD', keyword: v as Keyword })}
+                    >
+                        {KEYWORDS.map((k) => (
+                            <option key={k.key} value={k.key} title={k.full ?? k.label}>
+                                {k.label}
+                            </option>
+                        ))}
+                    </SelectField>
+                    {valueInput}
+                </div>
 
-                {/* Apply the term into the current selection (child of Term). */}
+                {/* Apply the term into the current selection (child of Term).
+                    Icon-only buttons in a single row; the set-op name is the
+                    tooltip and the badge previews the resulting hit count. */}
                 <div className="selbuilder-apply">
                     <span className="type-label selbuilder-field-label">Apply</span>
-                    <div className={opListClass}>
+                    <div className="selbuilder-op-row">
                         {BINARY_OPS.map((b) => {
                             const preview =
                                 term !== null && canApplyBinary(current, b.op)
@@ -383,6 +342,7 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                                     key={b.op}
                                     label={b.label}
                                     icon={b.icon}
+                                    iconOnly
                                     preview={preview}
                                     getHitCount={getHitCount}
                                     enabled={!disabled}
@@ -396,7 +356,7 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
 
             {/* Modify: unary transforms of the current selection (peer of Term). */}
             <FieldSection title="Modify">
-                <div className={opListClass}>
+                <div className="selbuilder-op-grid">
                     {MODIFY_OPS.map((m) => {
                         const preview = canApplyUnary(draft, m.op, current)
                             ? applyUnary(current, m.op, draft.distance)
@@ -415,13 +375,18 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                 </div>
                 <div className="selbuilder-distance-row">
                     <span className="selbuilder-distance">
-                        <TextField
+                        <SelectField
                             value={draft.distance}
                             disabled={disabled}
+                            aria-label="Distance (Angstrom)"
                             onChange={(v) => dispatch({ type: 'SET_DISTANCE', value: v })}
-                            placeholder="0"
-                            fill={false}
-                        />
+                        >
+                            {DISTANCE_OPTIONS.map((d) => (
+                                <option key={d} value={d}>
+                                    {d}
+                                </option>
+                            ))}
+                        </SelectField>
                     </span>
                     <span className="type-caption selbuilder-unit">{'Å'}</span>
                     {DIST_OPS.map((d) => {
@@ -432,6 +397,7 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                             <OpButton
                                 key={d.op}
                                 label={d.label}
+                                countInTooltip
                                 preview={preview}
                                 getHitCount={getHitCount}
                                 enabled={!disabled}
@@ -452,6 +418,10 @@ interface OpButtonProps {
     /** Hover tooltip (defaults to label). */
     title?: string;
     icon?: AppIconKey;
+    /** Render the icon only (no label); the label moves to the tooltip. */
+    iconOnly?: boolean;
+    /** Move the hit count from the inline badge into the tooltip (saves width). */
+    countInTooltip?: boolean;
     /** The would-be expression after applying, or null when not applicable. */
     preview: string | null;
     getHitCount?: GetHitCount;
@@ -463,11 +433,17 @@ interface OpButtonProps {
  * A compose/transform button showing the would-be hit count after applying it,
  * so the user does not accidentally build an empty selection. Disabled when the
  * op is not applicable (e.g. Add on an empty current selection).
+ *
+ * The count shows in an inline badge by default. Where a badge does not fit --
+ * the 4-up Apply row (`iconOnly`) and the Around/Expand row (`countInTooltip`)
+ * -- the label + resulting atom count fold into a Blueprint Tooltip instead.
  */
 const OpButton: React.FC<OpButtonProps> = ({
     label,
     title,
     icon,
+    iconOnly = false,
+    countInTooltip = false,
     preview,
     getHitCount,
     enabled,
@@ -475,16 +451,28 @@ const OpButton: React.FC<OpButtonProps> = ({
 }) => {
     const applicable = enabled && preview !== null;
     const count = useSelHitCount(getHitCount, applicable ? preview : null, enabled);
-    return (
+    // A native `title` is unreliable here -- Electron suppresses it over some
+    // regions and it never shows on a disabled button (ops are disabled until a
+    // term is composed) -- so a folded count uses a Blueprint Tooltip (portal).
+    const useTooltip = iconOnly || countInTooltip;
+    const countSuffix = typeof count === 'number' ? ` (${count} atoms)` : '';
+    const btn = (
         <FormButton
-            className="selbuilder-op-btn"
-            title={title ?? label}
+            className={`selbuilder-op-btn${iconOnly ? ' selbuilder-op-btn--icon' : ''}`}
+            title={useTooltip ? undefined : (title ?? label)}
+            aria-label={iconOnly ? label : undefined}
             disabled={!applicable}
             onClick={onClick}
             icon={icon ? <AppIcon name={icon} aria-hidden /> : undefined}
         >
-            <span className="selbuilder-op-label">{label}</span>
-            <CountTag count={count} />
+            {!iconOnly && <span className="selbuilder-op-label">{label}</span>}
+            {!iconOnly && !countInTooltip && <CountTag count={count} />}
         </FormButton>
+    );
+    if (!useTooltip) return btn;
+    return (
+        <Tooltip content={`${label}${countSuffix}`} placement="bottom" compact>
+            {btn}
+        </Tooltip>
     );
 };

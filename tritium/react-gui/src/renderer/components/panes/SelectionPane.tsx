@@ -424,7 +424,6 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({
                     </FieldSection>
 
                     <SelectionBuilder
-                        variant="full"
                         current={currentSel}
                         draft={draft}
                         dispatch={dispatch}
