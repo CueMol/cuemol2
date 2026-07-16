@@ -77,6 +77,9 @@ runtime_class UmbreonSceneExporter extends SceneExporter
   /// denoise the GI indirect irradiance (Intel OIDN)
   property boolean giDenoise => m_bGiDenoise;
 
+  /// full-frame post-pass denoiser (0 = None, 1 = AtrousBilateral, 2 = OIDN)
+  property integer denoiser => m_nDenoiser;
+
   ////////////////////
   // Asynchronous render (non-blocking, with progress + cancel).
   //

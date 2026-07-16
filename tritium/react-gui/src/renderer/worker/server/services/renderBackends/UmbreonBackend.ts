@@ -34,6 +34,16 @@ import {
   pixelImageSize,
 } from "./RenderBackend";
 
+// GI denoise method (renderBackends.ts "denoise" enum) -> the two umbreon
+// exporter knobs. OIDN denoises the pre-composite indirect buffer (giDenoise ->
+// pt1Denoise); A-trous runs the full-frame post-pass denoiser (denoiser = 1);
+// None turns both off.
+const DENOISE_MODE: Record<string, { giDenoise: boolean; denoiser: number }> = {
+  OIDN: { giDenoise: true, denoiser: 0 },
+  "A-trous": { giDenoise: false, denoiser: 1 },
+  None: { giDenoise: false, denoiser: 0 },
+};
+
 export const umbreonBackend: RenderBackend = {
   id: "umbreon",
 
@@ -87,7 +97,9 @@ export const umbreonBackend: RenderBackend = {
     exporter.giSamples = numVal(ub, "giSamples", 32);
     exporter.giIntensity = numVal(ub, "giIntensity", 1.0);
     exporter.giEnvIntensity = numVal(ub, "giEnvIntensity", 1.0);
-    exporter.giDenoise = boolVal(ub, "giDenoise", true);
+    const denoise = DENOISE_MODE[strVal(ub, "denoise", "OIDN")] ?? DENOISE_MODE.OIDN;
+    exporter.giDenoise = denoise.giDenoise; // pt1Denoise: OIDN on the indirect buffer
+    exporter.denoiser = denoise.denoiser; // full-frame post-pass (0 = None, 1 = a-trous)
 
     exporter.attach(scene);
     exporter.setPath(outputPath);

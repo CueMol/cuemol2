@@ -112,7 +112,7 @@ UmbreonSceneExporter::UmbreonSceneExporter()
        m_bEnableEdgeLines(true), m_dCreaseLimit(-1.0), m_dEdgeRise(0.5),
        m_bTransparentBackground(false),
        m_bGI(false), m_nGiSamples(32), m_dGiIntensity(1.0),
-       m_dGiEnvIntensity(1.0), m_bGiDenoise(true),
+       m_dGiEnvIntensity(1.0), m_bGiDenoise(true), m_nDenoiser(0),
        m_bWasCancelled(false)
 {
 }
@@ -191,6 +191,7 @@ void UmbreonSceneExporter::setupContext(UmbreonDisplayContext &ctx,
   prm.giIntensity = m_dGiIntensity;
   prm.giEnvIntensity = m_dGiEnvIntensity;
   prm.giDenoise = m_bGiDenoise;
+  prm.denoiser = m_nDenoiser;
 }
 
 void UmbreonSceneExporter::write()
