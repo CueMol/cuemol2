@@ -39,6 +39,14 @@ fi
 # local co-dev checkout) is never dirtied.
 BUILD_DIR=$BASEDIR/tmp/umbreon_build
 
+# Always start from a clean build dir. A stale CMakeCache is reused across runs
+# and can pin the wrong toolchain -- e.g. on Windows/MSYS a cached
+# CMAKE_LINKER=<Strawberry>/ld.exe survives even in a correct MSVC env, so cl
+# compiles but the link step feeds MSVC flags to GNU ld and fails. A clean
+# reconfigure re-detects the MSVC linker; the umbreon lib build is short enough
+# that always rebuilding is cheaper than debugging a poisoned cache.
+rm -rf "$BUILD_DIR"
+
 cmake -G Ninja -S "$UMBREON_SRC" -B "$BUILD_DIR" \
       -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
