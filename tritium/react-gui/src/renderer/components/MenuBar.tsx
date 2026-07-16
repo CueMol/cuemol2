@@ -12,6 +12,7 @@
  * (standard edit role), or a recent-file open.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react'
+import appIcon from '../assets/app-icon.png'
 import { APP_MENU } from '../../shared/menuTemplate'
 import type { AppMenuRole } from '../../shared/menuTemplate'
 import type { RecentFileEntry, SceneBgColor, ViewCenterMark } from '../../shared/ipcTypes'
@@ -106,6 +107,8 @@ export const MenuBar: React.FC<MenuBarProps> = ({ activeTab, viewProjection = nu
 
   return (
     <div className="menubar" ref={barRef} role="menubar">
+      {/* App icon at the left edge (VS Code-style), before the menu groups. */}
+      <img className="menubar__app-icon" src={appIcon} alt="" aria-hidden="true" />
       {visibleGroups.map((group) => {
         const groupId = group.label
         const isOpen = openMenu === groupId

@@ -16,6 +16,17 @@
   user-select: none;
 }
 
+/* Application icon at the left edge of the bar (VS Code-style). Decorative and
+   part of the drag region, so it never intercepts clicks or breaks dragging. */
+.menubar__app-icon {
+  width: var(--icon-lg);
+  height: var(--icon-lg);
+  align-self: center;
+  margin: 0 var(--space-2) 0 var(--space-3);
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
 .menubar__item {
   -webkit-app-region: no-drag;
   position: relative;
