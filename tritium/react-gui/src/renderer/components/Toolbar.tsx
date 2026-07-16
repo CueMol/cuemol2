@@ -15,6 +15,7 @@ import { Button, Divider, Navbar, Alignment } from "@blueprintjs/core";
 import { useCommands } from "../commands/CommandRegistry";
 import { CmdId } from "../commands/ids";
 import { useCollapsibleLabels } from "../hooks/useCollapsibleLabels";
+import { Tooltip } from "../h3-kit/Tooltip";
 import { UndoRedoSplitButton } from "./toolbar/UndoRedoSplitButton";
 import { AppIcon } from "./AppIcon";
 import type { AppIconKey } from "../data/appIcons";
@@ -56,8 +57,9 @@ export const Toolbar: React.FC<ToolbarProps> = ({ undoRedo, hasScene }) => {
   const { dispatch } = useCommands();
   const barRef = useRef<HTMLDivElement>(null);
   // Collapse each label to icon-only when the toolbar is too narrow to show
-  // even its ellipsis (truncation itself is CSS; see _toolbar.css).
-  useCollapsibleLabels(barRef);
+  // even its ellipsis (truncation itself is CSS; see _toolbar.css). While
+  // collapsed, the hidden label is shown in the shared Tooltip below.
+  const collapsed = useCollapsibleLabels(barRef);
 
   const renderItem = (item: ToolbarItem): React.ReactNode => {
     switch (item.kind) {
@@ -71,6 +73,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ undoRedo, hasScene }) => {
             canExecute={undoRedo.canUndo}
             descs={undoRedo.undoDescs}
             onPick={undoRedo.pickUndo}
+            collapsed={collapsed}
           />
         );
       case "redo":
@@ -81,35 +84,40 @@ export const Toolbar: React.FC<ToolbarProps> = ({ undoRedo, hasScene }) => {
             canExecute={undoRedo.canRedo}
             descs={undoRedo.redoDescs}
             onPick={undoRedo.pickRedo}
+            collapsed={collapsed}
           />
         );
       case "cmd":
+        // Tooltip only while icon-only: a visible label needs no tooltip
+        // (empty content self-disables the shared Tooltip).
         return (
-          <Button
-            key={item.id}
-            minimal
-            disabled={item.requiresScene === true && !hasScene}
-            icon={<AppIcon name={item.icon} size={16} aria-hidden />}
-            text={item.text}
-            onClick={() =>
-              dispatch(item.cmd).catch((e: unknown) =>
-                console.error(`${item.cmd} failed:`, e),
-              )
-            }
-          />
+          <Tooltip key={item.id} content={collapsed ? item.text : ""}>
+            <Button
+              minimal
+              disabled={item.requiresScene === true && !hasScene}
+              icon={<AppIcon name={item.icon} size={16} aria-hidden />}
+              text={item.text}
+              onClick={() =>
+                dispatch(item.cmd).catch((e: unknown) =>
+                  console.error(`${item.cmd} failed:`, e),
+                )
+              }
+            />
+          </Tooltip>
         );
       case "mock":
         // Placeholder: command not implemented yet (see ADR-0013).
         return (
-          <Button
-            key={item.id}
-            minimal
-            icon={<AppIcon name={item.icon} size={16} aria-hidden />}
-            text={item.text}
-            onClick={() =>
-              console.warn(`[Toolbar] "${item.text}" is not implemented yet`)
-            }
-          />
+          <Tooltip key={item.id} content={collapsed ? item.text : ""}>
+            <Button
+              minimal
+              icon={<AppIcon name={item.icon} size={16} aria-hidden />}
+              text={item.text}
+              onClick={() =>
+                console.warn(`[Toolbar] "${item.text}" is not implemented yet`)
+              }
+            />
+          </Tooltip>
         );
     }
   };

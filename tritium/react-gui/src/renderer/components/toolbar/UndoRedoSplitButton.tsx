@@ -15,6 +15,7 @@
 import React from "react";
 import { Button, ButtonGroup, Menu, MenuItem, Popover } from "@blueprintjs/core";
 import { AppIcon } from "../AppIcon";
+import { Tooltip } from "../../h3-kit/Tooltip";
 import { useCommands } from "../../commands/CommandRegistry";
 import { CmdId } from "../../commands/ids";
 
@@ -26,6 +27,8 @@ interface UndoRedoSplitButtonProps {
   descs: string[];
   /** Jump `depth+1` steps (depth = the picked entry's index). */
   onPick: (depth: number) => void;
+  /** Whether the toolbar has collapsed labels to icon-only (drives the tooltip). */
+  collapsed?: boolean;
 }
 
 export const UndoRedoSplitButton: React.FC<UndoRedoSplitButtonProps> = ({
@@ -33,6 +36,7 @@ export const UndoRedoSplitButton: React.FC<UndoRedoSplitButtonProps> = ({
   canExecute,
   descs,
   onPick,
+  collapsed = false,
 }) => {
   const { dispatch } = useCommands();
   const isUndo = kind === "undo";
@@ -51,23 +55,33 @@ export const UndoRedoSplitButton: React.FC<UndoRedoSplitButtonProps> = ({
     </Menu>
   );
 
+  // Only tooltip while icon-only (the visible label is otherwise enough). The
+  // shared Tooltip works over the toolbar's -webkit-app-region: drag area where
+  // a native `title` is suppressed. Empty content self-disables the tooltip.
+  const tipContent = collapsed
+    ? canExecute && descs.length > 0
+      ? `${text}: ${descs[0]}`
+      : text
+    : "";
+
   return (
-    <ButtonGroup minimal>
-      <Button
-        icon={<AppIcon name={isUndo ? "ui.undo" : "ui.redo"} aria-hidden />}
-        text={text}
-        title={canExecute && descs.length > 0 ? `${text}: ${descs[0]}` : text}
-        disabled={!canExecute}
-        onClick={runStep}
-      />
-      <Popover content={historyMenu} placement="bottom-start" disabled={descs.length === 0}>
+    <Tooltip content={tipContent}>
+      <ButtonGroup minimal>
         <Button
-          className="h3-form-dropdown-caret"
-          icon={<span className="h3-form-caret" aria-hidden />}
-          aria-label={`${text} history`}
-          disabled={descs.length === 0}
+          icon={<AppIcon name={isUndo ? "ui.undo" : "ui.redo"} aria-hidden />}
+          text={text}
+          disabled={!canExecute}
+          onClick={runStep}
         />
-      </Popover>
-    </ButtonGroup>
+        <Popover content={historyMenu} placement="bottom-start" disabled={descs.length === 0}>
+          <Button
+            className="h3-form-dropdown-caret"
+            icon={<span className="h3-form-caret" aria-hidden />}
+            aria-label={`${text} history`}
+            disabled={descs.length === 0}
+          />
+        </Popover>
+      </ButtonGroup>
+    </Tooltip>
   );
 };
