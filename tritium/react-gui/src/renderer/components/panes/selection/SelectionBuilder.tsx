@@ -93,9 +93,9 @@ const MODIFY_OPS: { op: UnaryOp; label: string; full: string }[] = [
     { op: 'mainchain', label: 'Mainch', full: 'Mainchain' },
 ];
 
-const DIST_OPS: { op: UnaryOp; label: string }[] = [
-    { op: 'around', label: 'Around' },
-    { op: 'expand', label: 'Expand' },
+const DIST_OPS: { op: UnaryOp; label: string; full: string }[] = [
+    { op: 'around', label: 'Arnd', full: 'Around' },
+    { op: 'expand', label: 'Expn', full: 'Expand' },
 ];
 
 // Preset Around/Expand radii (Angstrom), chosen from a compact dropdown. The
@@ -384,6 +384,7 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                             <OpButton
                                 key={d.op}
                                 label={d.label}
+                                title={d.full}
                                 preview={preview}
                                 getHitCount={getHitCount}
                                 enabled={!disabled}
