@@ -1,0 +1,108 @@
+/* Menu kit: VS Code-like menu panels shared by the Windows/Linux menu bar
+   dropdowns and the React context menus (macOS uses native menus and never
+   renders these). Colors / spacing / radius come from the theme tokens so
+   dark and light both work; row text is the .type-row role (applied by
+   MenuPanel on each row). */
+
+.menu-panel {
+  min-width: 200px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  padding: var(--space-2) 0;
+  user-select: none;
+  -webkit-app-region: no-drag;
+}
+
+/* Row layout: [check gutter] [label] ... [accelerator | submenu chevron].
+   The check gutter is rendered on every row so labels align whether or not
+   the item is checkable; the accelerator / chevron push themselves to the
+   right edge with margin-left auto. */
+.menu-item {
+  display: flex;
+  align-items: center;
+  min-height: var(--ctrl-h-md);
+  padding: 0 var(--space-5) 0 var(--space-4);
+  gap: var(--space-3);
+  color: var(--text-primary);
+  cursor: default;
+  white-space: nowrap;
+}
+
+.menu-item:hover,
+.menu-item--submenu-open {
+  background: var(--bg-active);
+}
+
+.menu-item--disabled {
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.menu-item__check {
+  flex: 0 0 var(--icon-md);
+  width: var(--icon-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-item__label {
+  flex: 0 1 auto;
+}
+
+.menu-item__accel {
+  margin-left: auto;
+  padding-left: var(--space-6);
+  color: var(--text-muted);
+}
+
+.menu-item__chevron {
+  margin-left: auto;
+  padding-left: var(--space-6);
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-secondary);
+}
+
+.menu-separator {
+  height: 1px;
+  /* Use --border, not --border-subtle: in dark mode --border-subtle is darker
+     than --bg-elevated (the panel bg) so the rule is invisible; --border sits
+     above the bg in both themes. */
+  background: var(--border);
+  margin: var(--space-2) var(--space-4);
+}
+
+/* Submenu flyout: the parent row is the anchor; the wrapper positions the
+   nested .menu-panel at the row's right edge (MenuPanel flips / shifts it at
+   the viewport edges). */
+.menu-item--has-submenu {
+  position: relative;
+}
+
+.menu-flyout {
+  position: absolute;
+  left: 100%;
+  top: calc(-1 * var(--space-2));
+  z-index: 9999;
+}
+
+.menu-flyout--flip-x {
+  left: auto;
+  right: 100%;
+}
+
+/* React context menu host (ContextMenuProvider): full-screen capture layer
+   plus a fixed-position anchor for the root panel. */
+.ctx-menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+}
+
+.ctx-menu-pos {
+  position: fixed;
+  z-index: 9999;
+}

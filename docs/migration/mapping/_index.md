@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-07-12 (`dialog.tool.apbs-calcpot` を todo -> split/wip。UXP `tools/apbs-calcpot` を `CalcApbsPotDialog` (共有 `DialogShell` + `footerActions` Start/Stop/Close) として移植。worker `calcApbsPot.service` (`calcApbsStart`/`calcApbsCancel`/`proposeElepotName`) が C++ `ProcessManager` で pdb2pqr->apbs の 2 相パイプラインを駆動 (worker ではキューが `queueTask` でしか進まないため deps 非依存で poll loop が apbs を明示 queue)、`apbs-progress` push (`WorkerTransport`/`AsyncCueMol`/`useCalcApbsJob`) で inline 進捗表示、OpenDX `.dx` を `createHandler('apbs',0)` -> `ElePotMap` + `*unitcell` renderer として 1 undo txn で load。両 charge method (pdb2pqr force-field / internal `PQRFileWriter` use_H) 維持。exe パスは UXP の in-dialog から Settings > Tools > APBS / PDB2PQR (`ApbsConfigContext`、electron-store、render binaries と同方式) へ移し未設定時は Start を gate。menu `apbs` を stub -> `ui.calcApbsPotDialog` に配線 (`menu.cuemol2.tools` 6/10->7/10)。dialog 専用 CSS は追加せず共有トークン/クラスに準拠。service 7 + dialog 4 の vitest 追加。Dialog_tool wip 0->1 / todo 3->2、Total wip 31->32 / todo 5->4、split 36->37 / unassigned 5->4、Unstarted 5->4。ADR-0038。full E2E は apbs/pdb2pqr バイナリ必要で host pending)
 - Updated: 2026-07-12 (`dialog.tool.molclient-tools` を todo -> dropped/done。MolClient (SMILES -> molecule) は外部 MolServer XMLRPC backend 必須で移植しない判断。Dialog_tool done 17->18 / todo 4->3、Total done 103->104 / todo 6->5、dropped 11->12 / unassigned 6->5、Unstarted 6->5。code 変更なし)
 - Updated: 2026-07-12 (`other.config-dialog` を todo -> merged/done。UXP Options prefwindow (Misc/Key/Mouse pane host) は左パネルの `SettingsPane` (`useSettingsPaneNav` + `settingsConfig` の nav tree、modal でない) として実装済。3 pane の扱いが確定 (Misc=`config-misc` wip / Mouse=`config-mouse` wip / Key=`config-keybind` deferred) したためシェルを done 化。Other done 2->3 / todo 1->0、Total done 102->103 / todo 7->6、merged 57->58 / unassigned 7->6、Unstarted 7->6。code 変更なし)
 - Updated: 2026-07-12 (2 行の todo 解消。`overlay.config-keybind` -> deferred/done (UXP key-binding editor は 1:1 移植せず、将来 tritium ネイティブで別方式にする方針。config-misc/mouse で既に deferred 扱い) — 初の `deferred` mapping 行で Breakdown に deferred 行を追加。`dialog.tool.msms-makesurf` -> dropped/done (外部 MSMS は不使用、built-in `makesurf` が surface 生成を担当)。Overlay done 23->24 / todo 1->0、Dialog_tool done 16->17 / todo 5->4。Total done 100->102 / todo 9->7、deferred 0->1 / dropped 10->11 / unassigned 9->7、Unstarted 9->7。code 変更なし)
@@ -91,11 +92,11 @@
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 1 | 1 | 0 | 0 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 16 | 14 | 2 | 0 | 0 | 0 |
 | Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 15 | 2 | 0 | 1 | 0 |
-| Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 18 | 0 | 0 | 3 | 0 |
+| Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 18 | 1 | 0 | 2 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 8 | 5 | 0 | 0 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 24 | 4 | 0 | 0 | 0 |
 | Other | [other.md](other.md) | 4 | 3 | 1 | 0 | 0 | 0 |
-| **Total** | | **140** | **104** | **31** | **0** | **5** | **0** |
+| **Total** | | **140** | **104** | **32** | **0** | **4** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -134,11 +135,11 @@
 |---------|------:|
 | 1:1 (`direct`) | 28 |
 | merged | 58 |
-| split | 36 |
+| split | 37 |
 | redesign | 0 |
 | deferred | 1 |
 | deprecated (`dropped`) | 12 |
-| *(not yet assigned)* | 5 |
+| *(not yet assigned)* | 4 |
 
 ---
 
@@ -153,7 +154,8 @@
 | [`menu.cuemol2.edit`](menus.md#menucuemol2edit) | `menuTemplate` / `MenuBar` / `useMenuDispatch` | 6/8 wired (Undo / Redo + Merge / Delete / Change chain / Change resid open their tool dialogs). Clear undo + Options stub |
 | [`menu.cuemol2.rendering`](menus.md#menucuemol2rendering) | `menuTemplate` / `runSceneExportFlow` / `RenderWindowApp` | 2/3 wired (POV-Ray = modeless Rendering window; Export scene submenu). Animation rendering deferred to render-window Still/Animation mode |
 | [`menu.cuemol2.scene`](menus.md#menucuemol2scene) | `menuTemplate` / `sceneBgColor.service` | 2/4 wired (Background White / Black). Use color proofing + Properties stubbed |
-| [`menu.cuemol2.tools`](menus.md#menucuemol2tools) | `menuTemplate` / `useToolCommands` | 6/10 resolved (Superpose / Interaction / Reassign-2ndry / Mol-surf / Surf-cutter wired + Bond editor merged to viewport tool). Morph anim / APBS / Exec script / Perf measure stub |
+| [`menu.cuemol2.tools`](menus.md#menucuemol2tools) | `menuTemplate` / `useToolCommands` | 7/10 resolved (Superpose / Interaction / Reassign-2ndry / Mol-surf / Surf-cutter / APBS wired + Bond editor merged to viewport tool). Morph anim / Exec script / Perf measure stub |
+| [`dialog.tool.apbs-calcpot`](tool_dlgs.md#dialogtoolapbs-calcpot) | `CalcApbsPotDialog` / `useCalcApbsJob` / `calcApbsPot.service` / `ApbsConfigContext` | Modal computing an `ElePotMap` via a worker `ProcessManager` two-phase pdb2pqr->apbs pipeline (inline progress, `apbs-progress` push), `.dx` loaded (`createHandler('apbs',0)` -> `*unitcell`) under one undo txn. Both charge methods kept; exe paths moved to Settings > Tools (`ApbsConfigContext`, Start gated when unset). Shared `DialogShell` + `footerActions` Start/Stop/Close. Full E2E needs apbs/pdb2pqr binaries (ADR-0038) |
 | [`menu.cuemol2-macos`](menus.md#menucuemol2-macos) | `main/menu.ts` | macOS App menu added; item-level completion 6/7 (Preferences stubbed) |
 | [`dialog.apply-rend-style`](other_dlgs.md#dialogapply-rend-style) | `ApplyRendStyleDialog` / `getRendererStyleEditInfo` / `applyRendererStyleList` | List view + Add popup + Delete/Up/Down on the working style list; commit calls `rend.applyStyles` under "Change style" txn |
 | [`dialog.rendstyle-create`](other_dlgs.md#dialogrendstyle-create) | `CreateRendStyleDialog` / `getCreateRendStyleInfo` / `createStyleFromRenderer` | Writable style-set listbox + base-name input; commit calls `StyleManager.createStyleFromObj`. Same-name overwrite handled in C++ |
@@ -181,4 +183,4 @@
 
 ## Unstarted
 
-**5 / 140** items are `todo` (not yet started).
+**4 / 140** items are `todo` (not yet started).

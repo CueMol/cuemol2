@@ -28,6 +28,7 @@ export interface CommandMap {
   [CmdId.UiChangeResidueIndexDialog]: { args: void;     result: void }
   [CmdId.UiMergeMolDialog]:    { args: void;            result: void }
   [CmdId.UiMakeMolSurfDialog]: { args: void;            result: void }
+  [CmdId.UiCalcApbsPotDialog]: { args: void;            result: void }
   [CmdId.UiInteractionAnalysisDialog]: { args: void;    result: void }
   [CmdId.UiCutSurfByPlaneDialog]: { args: void;         result: void }
   [CmdId.UiReassignProt2ndryDialog]: { args: void;      result: void }
@@ -64,6 +65,8 @@ export interface CommandMap {
   // Scene background
   [CmdId.SceneBgWhite]:        { args: void;            result: void }
   [CmdId.SceneBgBlack]:        { args: void;            result: void }
+  [CmdId.SceneColorProof]:     { args: void;            result: void }
+  [CmdId.SceneProperties]:     { args: void;            result: void }
 
   // Rendering
   [CmdId.UiRenderWindow]:      { args: void;            result: void }

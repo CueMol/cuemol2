@@ -3,6 +3,7 @@ import React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
 import { useNaviContextMenu } from '../hooks/useNaviContextMenu';
+import { ContextMenuProvider } from '../components/menu/ContextMenuProvider';
 import { IPC } from '../../shared/ipcChannels';
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }));
@@ -44,7 +45,9 @@ function makeRenderHook<T>(useHookFn: () => T) {
 
     act(() => {
         root = createRoot(container);
-        root.render(React.createElement(TestComponent));
+        root.render(
+            React.createElement(ContextMenuProvider, null, React.createElement(TestComponent)),
+        );
     });
 
     return {
@@ -73,10 +76,13 @@ let hookHandle: ReturnType<typeof makeRenderHook<ReturnType<typeof useNaviContex
 beforeEach(() => {
     vi.clearAllMocks();
     mockShowMenu.mockResolvedValue(null);
-    // After B, electronAPI exposes a generic `invoke(channel, payload)`. Route
+    // electronAPI exposes a generic `invoke(channel, payload)`. Route
     // NAVI_CTX_SHOW through to mockShowMenu so existing assertions on the
-    // payload object remain valid.
+    // payload object remain valid. platform 'darwin' selects the native
+    // popup path (this IPC); the Windows/Linux React MenuPanel path is
+    // covered separately by contextMenuProvider.test.tsx.
     (window as any).electronAPI = {
+      platform: 'darwin',
       invoke: vi.fn((channel: string, payload: unknown) =>
         channel === IPC.NAVI_CTX_SHOW ? mockShowMenu(payload) : Promise.resolve(),
       ),

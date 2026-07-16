@@ -71,6 +71,8 @@ const DISPATCH_HANDLED: ReadonlySet<string> = new Set<string>([
   IPC.MENU_CENTER_MARK_NONE,
   IPC.MENU_BG_WHITE,
   IPC.MENU_BG_BLACK,
+  IPC.MENU_COLOR_PROOF,
+  IPC.MENU_SCENE_PROPS,
   IPC.MENU_ABOUT,
   IPC.MENU_GET_PDB,
   'menu:change-chain-id',
@@ -82,6 +84,7 @@ const DISPATCH_HANDLED: ReadonlySet<string> = new Set<string>([
   'menu:mol-surf',
   'menu:interaction',
   'menu:surf-cutter',
+  IPC.MENU_APBS,
   'menu:pov-render',
   'menu:clear-recent',
   'menu:save-file-as',
@@ -105,10 +108,7 @@ const DISPATCH_HANDLED: ReadonlySet<string> = new Set<string>([
 const UNIMPLEMENTED_ALLOWLIST: ReadonlySet<string> = new Set<string>([
   'menu:clear-undo',
   'menu:options',
-  'menu:scene-props',
-  'menu:color-proof',
   'menu:morph-anim',
-  'menu:apbs',
   'menu:exec-script',
   'menu:perf-meas',
 ])
@@ -125,8 +125,8 @@ describe('menu pipeline -- exhaustiveness', () => {
     expect(uncovered).toEqual([])
   })
 
-  it('the unimplemented allowlist has exactly 8 entries (not-yet-ported placeholders)', () => {
-    expect(UNIMPLEMENTED_ALLOWLIST.size).toBe(8)
+  it('the unimplemented allowlist has exactly 5 entries (not-yet-ported placeholders)', () => {
+    expect(UNIMPLEMENTED_ALLOWLIST.size).toBe(5)
   })
 
   it('no allowlisted channel is also dispatch-handled (the two sets are disjoint)', () => {

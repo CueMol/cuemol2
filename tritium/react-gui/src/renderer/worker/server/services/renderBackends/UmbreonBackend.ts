@@ -3,15 +3,17 @@
  * @description Umbreon (Embree) rendering backend -- an IN-PROCESS ray tracer.
  *
  * Unlike POV-Ray (which exports a .pov/.inc pair and spawns povray + blendpng),
- * the umbreon C++ exporter renders the scene and writes the final PNG in a
- * single synchronous `write()` call. So this backend implements the optional
- * `renderInProcess` hook instead of `buildTasks`: the render-job pipeline calls
- * it directly and never queues a ProcessManager task.
+ * the umbreon C++ exporter renders the scene in-process and writes the final
+ * PNG itself. So this backend implements the optional `beginInProcess` hook
+ * instead of `buildTasks`: the render-job pipeline drives it directly and never
+ * queues a ProcessManager task.
  *
- * NOTE: `write()` blocks the single-threaded worker for the whole ray trace, so
- * during a render the worker (and thus the main-window 3D view) freezes and no
- * progress can be reported. This mirrors the existing File > Export umbreon PNG
- * path and is the accepted v1 behaviour.
+ * The render runs ASYNCHRONOUSLY: `beginRender()` builds the scene (on the
+ * worker thread) and kicks the ray trace onto a background C++ thread, returning
+ * at once. The returned handle exposes lock-free progress / phase / done reads
+ * and cooperative cancellation, so the render-job pipeline can poll it between
+ * worker ticks -- the worker (and the main-window 3D view) stays responsive and
+ * a live progress bar is driven. `finish()` joins the worker and writes the PNG.
  */
 
 import * as path from "path";
@@ -24,6 +26,7 @@ import type { RenderBinaries } from "../../../shared/renderTypes";
 import {
   type RenderBackend,
   type ExportedScene,
+  type InProcessRender,
   type RenderTaskSpec,
   numVal,
   strVal,
@@ -45,7 +48,7 @@ export const umbreonBackend: RenderBackend = {
   id: "umbreon",
 
   // No input file to write: umbreon renders straight to the output PNG in
-  // `renderInProcess`. Carry only the workdir so `outputImagePath` can derive
+  // `beginInProcess`. Carry only the workdir so `outputImagePath` can derive
   // the target path (the shared `exportScene -> outputImagePath` convention).
   exportScene(_ctx, _scene, _snapshot, workDir): ExportedScene {
     return { inputPath: "", workDir, blendTable: {} };
@@ -55,12 +58,12 @@ export const umbreonBackend: RenderBackend = {
     return path.join(exported.workDir, "render.png");
   },
 
-  renderInProcess(
+  beginInProcess(
     ctx: WorkerContext,
     scene: Scene,
     snapshot: RenderSettingsSnapshot,
     outputPath: string,
-  ): void {
+  ): InProcessRender {
     const exporter = ctx.strMgr.createHandler("umbreon", 2) as UmbreonSceneExporter;
     if (!exporter) throw new Error("cannot create umbreon exporter");
 
@@ -100,12 +103,31 @@ export const umbreonBackend: RenderBackend = {
 
     exporter.attach(scene);
     exporter.setPath(outputPath);
-    exporter.write(); // synchronous ray trace + libpng write to outputPath
-    exporter.detach();
+    // Build the scene (this call) and start the ray trace on a background C++
+    // thread; returns immediately so the pipeline can poll for progress.
+    exporter.beginRender();
+
+    let finished = false;
+    return {
+      progress: () => exporter.getRenderProgress(), // 0..1
+      phase: () => exporter.getRenderPhaseName(),
+      isDone: () => exporter.isRenderDone(),
+      finish: () => {
+        // endRender joins the worker and writes the PNG (unless cancelled).
+        // Guard against a double finish (poll tick racing a forced finish).
+        if (finished) return exporter.wasRenderCancelled();
+        finished = true;
+        exporter.endRender();
+        const cancelled = exporter.wasRenderCancelled();
+        exporter.detach();
+        return cancelled;
+      },
+      cancel: () => exporter.cancelRender(),
+    };
   },
 
   // Never invoked for an in-process backend (renderJob branches on
-  // `renderInProcess` before touching these); defensive stubs.
+  // `beginInProcess` before touching these); defensive stubs.
   buildTasks(_exported, _snapshot, _binaries: RenderBinaries): RenderTaskSpec[] {
     throw new Error("umbreon renders in-process; buildTasks is unused");
   },

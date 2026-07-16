@@ -21,6 +21,7 @@ export const CmdId = {
   UiChangeResidueIndexDialog: 'ui.changeResidueIndexDialog', // no args
   UiMergeMolDialog:   'ui.mergeMolDialog',   // no args
   UiMakeMolSurfDialog: 'ui.makeMolSurfDialog', // no args
+  UiCalcApbsPotDialog: 'ui.calcApbsPotDialog', // no args
   UiInteractionAnalysisDialog: 'ui.interactionAnalysisDialog', // no args
   UiCutSurfByPlaneDialog: 'ui.cutSurfByPlaneDialog', // no args
   UiReassignProt2ndryDialog: 'ui.reassignProt2ndryDialog', // no args
@@ -58,6 +59,8 @@ export const CmdId = {
   // Scene style
   SceneBgWhite: 'scene.bg.white', // no args
   SceneBgBlack: 'scene.bg.black', // no args
+  SceneColorProof: 'scene.colorProof', // no args -- toggle color proofing on active scene
+  SceneProperties: 'scene.properties', // no args -- open active scene in inspector
 
   // Rendering
   UiRenderWindow:     'ui.renderWindow', // no args -- open/focus the Rendering window

@@ -29,6 +29,7 @@ import { DeleteMolDialogProvider } from '../components/dialogs/DeleteMolDialogPr
 import { ChangeResidueIndexDialogProvider } from '../components/dialogs/ChangeResidueIndexDialogProvider'
 import { MergeMolDialogProvider } from '../components/dialogs/MergeMolDialogProvider'
 import { MakeMolSurfDialogProvider } from '../components/dialogs/MakeMolSurfDialogProvider'
+import { CalcApbsPotDialogProvider } from '../components/dialogs/CalcApbsPotDialogProvider'
 import { InteractionAnalysisDialogProvider } from '../components/dialogs/InteractionAnalysisDialogProvider'
 import { CutSurfByPlaneDialogProvider } from '../components/dialogs/CutSurfByPlaneDialogProvider'
 import { ExportPngOptionsDialogProvider } from '../components/dialogs/ExportPngOptionsDialogProvider'
@@ -39,8 +40,12 @@ import { EditCameraVisFlagsDialogProvider } from '../components/dialogs/EditCame
 import { EditInteractionListDialogProvider } from '../components/dialogs/EditInteractionListDialogProvider'
 import { StyleEditorDialogProvider } from '../components/dialogs/StyleEditorDialogProvider'
 import { composeProviders } from './composeProviders'
+import { ContextMenuProvider } from '../components/menu/ContextMenuProvider'
 
 export const DialogProvider = composeProviders([
+  // Not a dialog, but the same "mount one host, expose a useShowXxx hook"
+  // shape: the React context menu host for Windows / Linux.
+  ContextMenuProvider,
   AboutDialogProvider,
   NewTabDialogProvider,
   ConfirmCloseTabDialogProvider,
@@ -60,6 +65,7 @@ export const DialogProvider = composeProviders([
   ChangeResidueIndexDialogProvider,
   MergeMolDialogProvider,
   MakeMolSurfDialogProvider,
+  CalcApbsPotDialogProvider,
   InteractionAnalysisDialogProvider,
   CutSurfByPlaneDialogProvider,
   ExportPngOptionsDialogProvider,

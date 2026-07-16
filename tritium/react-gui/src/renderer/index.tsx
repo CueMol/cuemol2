@@ -10,11 +10,13 @@ import './app.css'
 import App from './App'
 import { MolTabProvider } from './hooks/useMolTab'
 import { CueMolProvider } from './hooks/useCueMol'
+import { LogProvider } from './contexts/LogContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { CommandProvider } from './commands/CommandRegistry'
 import { DialogProvider } from './contexts/DialogContext'
 import { ModalOpenCounterProvider } from './contexts/ModalOpenCounterContext'
 import { RenderConfigProvider } from './contexts/RenderConfigContext'
+import { ApbsConfigProvider } from './contexts/ApbsConfigContext'
 import { ViewInputConfigProvider } from './contexts/ViewInputConfigContext'
 import { AppSettingsProvider } from './contexts/AppSettingsContext'
 import { ErrorBoundary } from './crash/ErrorBoundary'
@@ -28,23 +30,35 @@ const container = document.getElementById('root') as HTMLElement
 createRoot(container).render(
   <ErrorBoundary>
     <CueMolProvider>
+      {/* LogProvider owns the Output-panel buffer + the C++ log subscription;
+          inside CueMolProvider so useLogEvent can reach the core, and above
+          App so any component can append via useLogPanel(). */}
+      <LogProvider>
       <MolTabProvider>
         <ThemeProvider>
           <CommandProvider>
             <ModalOpenCounterProvider>
-              <DialogProvider>
-                <RenderConfigProvider>
-                  <ViewInputConfigProvider>
-                    <AppSettingsProvider>
-                      <App />
-                    </AppSettingsProvider>
-                  </ViewInputConfigProvider>
-                </RenderConfigProvider>
-              </DialogProvider>
+              {/* ApbsConfigProvider sits ABOVE DialogProvider so the
+                  APBS tool dialog (rendered by DialogProvider) can read the
+                  persisted exe paths live; SettingsPane (in <App/>) is below
+                  it too. Other config providers stay below DialogProvider
+                  because no dialog consumes them. */}
+              <ApbsConfigProvider>
+                <DialogProvider>
+                  <RenderConfigProvider>
+                    <ViewInputConfigProvider>
+                      <AppSettingsProvider>
+                        <App />
+                      </AppSettingsProvider>
+                    </ViewInputConfigProvider>
+                  </RenderConfigProvider>
+                </DialogProvider>
+              </ApbsConfigProvider>
             </ModalOpenCounterProvider>
           </CommandProvider>
         </ThemeProvider>
       </MolTabProvider>
+      </LogProvider>
     </CueMolProvider>
   </ErrorBoundary>
 )

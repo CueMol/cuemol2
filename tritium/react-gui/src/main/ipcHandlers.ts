@@ -107,6 +107,32 @@ function getRenderBinaries(): AppPathInfo['defaultRenderBinaries'] {
   }
 }
 
+/**
+ * Resolve the default APBS / pdb2pqr executable paths. The renderer
+ * (ApbsConfigContext) uses these as the fallback when the user has not set an
+ * explicit path in Settings. Same strategy as getRenderBinaries: packaged
+ * builds resolve from the bundled `bundle_apps/apbs` tree under
+ * process.resourcesPath (staged by collect-cuemol2-runtime.sh), dev builds from
+ * the BUNDLE_APPS env var. The executable names match the extpkgs layout
+ * (UXP parity): `apbs` / `apbs.exe`, and `pdb2pqr` / `pdb2pqr_wrap.bat`.
+ */
+function getApbsBinaries(): AppPathInfo['defaultApbsBinaries'] {
+  const exe = process.platform === 'win32' ? '.exe' : ''
+  const pdb2pqrName = process.platform === 'win32' ? 'pdb2pqr_wrap.bat' : 'pdb2pqr'
+  if (app.isPackaged) {
+    const res = process.resourcesPath
+    return {
+      apbsExe: path.join(res, 'bundle_apps', 'apbs', `apbs${exe}`),
+      pdb2pqrExe: path.join(res, 'bundle_apps', 'apbs', pdb2pqrName),
+    }
+  }
+  const bundle = process.env.BUNDLE_APPS
+  return {
+    apbsExe: bundle ? path.join(bundle, 'apbs', `apbs${exe}`) : '',
+    pdb2pqrExe: bundle ? path.join(bundle, 'apbs', pdb2pqrName) : '',
+  }
+}
+
 // --- File open ---
 
 
@@ -191,6 +217,7 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
       userStylePath,
       userStyleExists,
       defaultRenderBinaries: getRenderBinaries(),
+      defaultApbsBinaries: getApbsBinaries(),
     }
   })
 
@@ -274,6 +301,18 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   handleInvoke(IPC.NAVI_CTX_SHOW, (_event, payload) =>
     showNaviContextMenu(mainWindow, payload),
   )
+
+  // Edit role picked from the Windows/Linux React text context menu
+  // (registerTextContextMenu pushes IPC.TEXT_CTX_SHOW; selectAll is handled
+  // renderer-side and never reaches here).
+  handleInvoke(IPC.TEXT_CTX_ACTION, (_event, role) => {
+    const wc = mainWindow.webContents
+    switch (role) {
+      case 'cut': wc.cut(); break
+      case 'copy': wc.copy(); break
+      case 'paste': wc.paste(); break
+    }
+  })
 
   // Renderer reply to a WINDOW_CLOSE_REQUEST. `proceed: true` means every
   // tab is confirmed/closed: mark the window confirmed and re-issue close()

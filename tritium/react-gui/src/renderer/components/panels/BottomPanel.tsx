@@ -15,7 +15,7 @@ import type { AppIconKey } from "../../data/appIcons";
 import { LogPanel } from "./LogPanel";
 import { SequencePanel } from "./SequencePanel";
 import { AnimationPanel } from "./AnimationPanel";
-import { useLogEvent } from "../../hooks/useLogEvent";
+import { useLogActions, useLogContents } from "../../contexts/LogContext";
 import { IPC } from "../../../shared/ipcChannels";
 import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
 
@@ -69,15 +69,15 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<BottomTabType>("output");
 
-  // Keep the log buffer and Output-tab UI state in the always-mounted
-  // BottomPanel so they survive tab switches; LogPanel itself is unmounted
-  // when another tab is active.
-  const [logContents, setLogContents] = useState("");
+  // The log buffer lives in LogProvider (so renderer-side code can append via
+  // useLogPanel() and it survives tab switches); the Output-tab UI state stays
+  // local to the always-mounted BottomPanel.
+  const logContents = useLogContents();
+  const { clear: clearLog } = useLogActions();
   const [logFilter, setLogFilter] = useState("");
   const [logAutoScroll, setLogAutoScroll] = useState(true);
-  useLogEvent((msg) => setLogContents((c) => c + msg));
 
-  const handleClearLog = useCallback(() => setLogContents(""), []);
+  const handleClearLog = useCallback(() => clearLog(), [clearLog]);
   const handleToggleAutoScroll = useCallback(() => setLogAutoScroll((v) => !v), []);
   const handleSaveLogAs = useCallback(async () => {
     // Save the unfiltered buffer so downstream readers get the full

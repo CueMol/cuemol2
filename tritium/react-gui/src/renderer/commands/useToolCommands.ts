@@ -7,6 +7,7 @@
  *   - `UiChangeResidueIndexDialog` -> `ChangeResidueIndexDialog` (UXP `tools/chg_resindex`).
  *   - `UiMergeMolDialog` -> `MergeMolDialog` (UXP `tools/mol_merge`).
  *   - `UiMakeMolSurfDialog` -> `MakeMolSurfDialog` (UXP `tools/makesurf`).
+ *   - `UiCalcApbsPotDialog` -> `CalcApbsPotDialog` (UXP `tools/apbs-calcpot`).
  *   - `UiInteractionAnalysisDialog` -> `InteractionAnalysisDialog` (UXP `tools/intr-tool`).
  *   - `UiCutSurfByPlaneDialog` -> `CutSurfByPlaneDialog` (UXP `tools/surf-cutbyplane`).
  *   - `UiReassignProt2ndryDialog` -> `ReassignProt2ndryDialog` (UXP `tools/prot2ndry-tool`).
@@ -27,6 +28,7 @@ import { useShowDeleteMolDialog } from '../components/dialogs/DeleteMolDialogPro
 import { useShowChangeResidueIndexDialog } from '../components/dialogs/ChangeResidueIndexDialogProvider'
 import { useShowMergeMolDialog } from '../components/dialogs/MergeMolDialogProvider'
 import { useShowMakeMolSurfDialog } from '../components/dialogs/MakeMolSurfDialogProvider'
+import { useShowCalcApbsPotDialog } from '../components/dialogs/CalcApbsPotDialogProvider'
 import { useShowInteractionAnalysisDialog } from '../components/dialogs/InteractionAnalysisDialogProvider'
 import { useShowCutSurfByPlaneDialog } from '../components/dialogs/CutSurfByPlaneDialogProvider'
 import { useShowReassignProt2ndryDialog } from '../components/dialogs/ReassignProt2ndryDialogProvider'
@@ -46,6 +48,7 @@ export function useToolCommands({
     const showChangeResidueIndexDialog = useShowChangeResidueIndexDialog()
     const showMergeMolDialog = useShowMergeMolDialog()
     const showMakeMolSurfDialog = useShowMakeMolSurfDialog()
+    const showCalcApbsPotDialog = useShowCalcApbsPotDialog()
     const showInteractionAnalysisDialog = useShowInteractionAnalysisDialog()
     const showCutSurfByPlaneDialog = useShowCutSurfByPlaneDialog()
     const showReassignProt2ndryDialog = useShowReassignProt2ndryDialog()
@@ -90,6 +93,10 @@ export function useToolCommands({
 
     useActiveSceneCommand(CmdId.UiMakeMolSurfDialog, (info) => {
         void showMakeMolSurfDialog({ sceneId: info.scene_uid })
+    })
+
+    useActiveSceneCommand(CmdId.UiCalcApbsPotDialog, (info) => {
+        void showCalcApbsPotDialog({ sceneId: info.scene_uid })
     })
 
     useActiveSceneCommand(CmdId.UiInteractionAnalysisDialog, (info) => {

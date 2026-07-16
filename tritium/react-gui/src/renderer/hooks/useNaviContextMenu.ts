@@ -3,11 +3,14 @@ import { useCueMol } from './useCueMol';
 import type { HitTestResult } from '../types';
 import type { NaviCtxAction } from '../../shared/ipcTypes';
 import { IPC } from '../../shared/ipcChannels';
+import { buildNaviCtxMenuNodes } from '../../shared/naviCtxMenu';
+import { useShowContextMenu } from '../components/menu/ContextMenuProvider';
 
 export function useNaviContextMenu(): {
     openContextMenu: (hit: HitTestResult, viewId: number, x: number, y: number) => Promise<void>;
 } {
     const { cm } = useCueMol();
+    const showContextMenu = useShowContextMenu();
 
     const openContextMenu = useCallback(async (
         hit: HitTestResult,
@@ -18,15 +21,15 @@ export function useNaviContextMenu(): {
         const isSymm = hit.rendtype === '*symm';
         const atomLabel = hit.obj_name ? `${hit.obj_name}: ${hit.message}` : hit.message;
         const rendLabel = `${hit.rend_name} (${hit.rendtype})`;
+        const payload = { isSymm, atomLabel, rendLabel, symmLabel: hit.symm_name };
 
-        const action: NaviCtxAction | null = await window.electronAPI.invoke(IPC.NAVI_CTX_SHOW, {
-            x,
-            y,
-            isSymm,
-            atomLabel,
-            rendLabel,
-            symmLabel: hit.symm_name,
-        });
+        // macOS shows the native menu (main process); Windows / Linux render
+        // the same shared template with the React MenuPanel for a look that
+        // matches the menu bar dropdowns.
+        const action: NaviCtxAction | null =
+            window.electronAPI.platform === 'darwin'
+                ? await window.electronAPI.invoke(IPC.NAVI_CTX_SHOW, { x, y, ...payload })
+                : await showContextMenu(buildNaviCtxMenuNodes(payload), { x, y });
 
         if (!action || !cm) return;
 
@@ -97,7 +100,7 @@ export function useNaviContextMenu(): {
                 await cm.invokeService('naviCtxAround', { viewId, objId, distance: 10, byres: false });
                 break;
         }
-    }, [cm]);
+    }, [cm, showContextMenu]);
 
     return { openContextMenu };
 }

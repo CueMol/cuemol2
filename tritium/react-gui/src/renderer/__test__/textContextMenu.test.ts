@@ -19,6 +19,8 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { APP_MENU, type AppMenuItem } from '../../shared/menuTemplate'
+import { buildTextCtxMenuNodes } from '../../shared/textCtxMenu'
+import { isSeparatorNode } from '../../shared/menuNodes'
 
 // textContextMenu.ts imports `Menu` from electron at module load; mock it so the
 // pure template builder can be exercised under jsdom without a real Electron.
@@ -105,5 +107,40 @@ describe('buildTextContextMenuTemplate', () => {
       vi.fn(),
     )
     expect(t).toEqual([])
+  })
+})
+
+// The Windows/Linux React path renders shared MenuNodes instead of native
+// roles; pin that its branch gating mirrors buildTextContextMenuTemplate,
+// especially the empty gate that also guards the main->renderer push.
+describe('buildTextCtxMenuNodes (win/linux React path)', () => {
+  const labelsOf = (nodes: ReturnType<typeof buildTextCtxMenuNodes>) =>
+    nodes.map((n) => (isSeparatorNode(n) ? 'separator' : n.label))
+
+  it('editable field: cut/copy/paste + select all, enabled per editFlags', () => {
+    const nodes = buildTextCtxMenuNodes({
+      isEditable: true,
+      selectionText: '',
+      editFlags: { canCut: true, canCopy: true, canPaste: false, canSelectAll: true },
+    })
+    expect(labelsOf(nodes)).toEqual(['Cut', 'Copy', 'Paste', 'separator', 'Select All'])
+    const paste = nodes.find((n) => !isSeparatorNode(n) && n.label === 'Paste')
+    expect(paste && !isSeparatorNode(paste) ? paste.enabled : undefined).toBe(false)
+    const paste2 = nodes.find((n) => !isSeparatorNode(n) && n.label === 'Cut')
+    expect(paste2 && !isSeparatorNode(paste2) ? paste2.enabled : undefined).toBe(true)
+  })
+
+  it('non-editable with selected text: copy + select all only', () => {
+    const nodes = buildTextCtxMenuNodes({
+      isEditable: false, selectionText: 'hello', editFlags: ALL_TRUE,
+    })
+    expect(labelsOf(nodes)).toEqual(['Copy', 'separator', 'Select All'])
+  })
+
+  it('non-editable with no selection: empty (gate for scene-tree / canvas)', () => {
+    const nodes = buildTextCtxMenuNodes({
+      isEditable: false, selectionText: '   ', editFlags: ALL_TRUE,
+    })
+    expect(nodes).toEqual([])
   })
 })
