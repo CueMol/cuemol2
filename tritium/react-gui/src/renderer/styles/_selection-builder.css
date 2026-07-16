@@ -148,13 +148,15 @@
   flex-wrap: wrap;
 }
 
-/* Narrow distance dropdown -- a 2-digit radius (e.g. "5" / "10") + caret. Kept
-   compact so Around / Expand stay on the same row. */
+/* Narrow distance dropdown at the end of the row (after Around / Expand). Sized
+   just wide enough for a 2-digit radius (e.g. "10") plus the chevron clearance
+   -- the caret + side padding reserve ~24px, so this is close to the practical
+   floor for a native select. */
 .selbuilder-distance {
   flex: 0 0 auto;
 }
 
 .selbuilder-distance .bp5-html-select,
 .selbuilder-distance .bp5-html-select select {
-  width: 3.5rem;
+  width: 2.75rem;
 }

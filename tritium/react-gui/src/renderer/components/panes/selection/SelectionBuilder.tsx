@@ -376,21 +376,6 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                     })}
                 </div>
                 <div className="selbuilder-distance-row">
-                    <span className="selbuilder-distance">
-                        <SelectField
-                            value={draft.distance}
-                            disabled={disabled}
-                            aria-label="Distance (Angstrom)"
-                            onChange={(v) => dispatch({ type: 'SET_DISTANCE', value: v })}
-                        >
-                            {DISTANCE_OPTIONS.map((d) => (
-                                <option key={d} value={d}>
-                                    {d}
-                                </option>
-                            ))}
-                        </SelectField>
-                    </span>
-                    <span className="type-caption selbuilder-unit">{'Å'}</span>
                     {DIST_OPS.map((d) => {
                         const preview = canApplyUnary(draft, d.op, current)
                             ? applyUnary(current, d.op, draft.distance)
@@ -406,6 +391,21 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                             />
                         );
                     })}
+                    <span className="selbuilder-distance">
+                        <SelectField
+                            value={draft.distance}
+                            disabled={disabled}
+                            aria-label="Distance (Angstrom)"
+                            onChange={(v) => dispatch({ type: 'SET_DISTANCE', value: v })}
+                        >
+                            {DISTANCE_OPTIONS.map((d) => (
+                                <option key={d} value={d}>
+                                    {d}
+                                </option>
+                            ))}
+                        </SelectField>
+                    </span>
+                    <span className="type-caption selbuilder-unit">{'Å'}</span>
                 </div>
             </FieldSection>
         </div>
