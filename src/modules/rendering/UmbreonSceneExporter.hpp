@@ -90,6 +90,9 @@ namespace render {
     /// denoise the GI indirect irradiance with the Intel OIDN denoiser
     bool m_bGiDenoise;
 
+    /// full-frame post-pass denoiser (0 = None, 1 = AtrousBilateral, 2 = OIDN)
+    int m_nDenoiser;
+
     /// Asynchronous render context, created by beginRender() and released by
     /// endRender(). Held across the poll phase so the scene walk + background
     /// ray trace outlive a single scriptable call. Null when no render is in

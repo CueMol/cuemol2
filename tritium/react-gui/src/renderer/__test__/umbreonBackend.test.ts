@@ -73,7 +73,7 @@ describe('umbreonBackend.beginInProcess', () => {
                 p('giSamples', 64),
                 p('giIntensity', 1.5),
                 p('giEnvIntensity', 0.5),
-                p('giDenoise', false),
+                p('denoise', 'A-trous'),
             ],
         }
 
@@ -105,7 +105,9 @@ describe('umbreonBackend.beginInProcess', () => {
         expect(exporter.giSamples).toBe(64)
         expect(exporter.giIntensity).toBe(1.5)
         expect(exporter.giEnvIntensity).toBe(0.5)
+        // denoise "A-trous" -> pt1Denoise off + full-frame a-trous.
         expect(exporter.giDenoise).toBe(false)
+        expect(exporter.denoiser).toBe(1)
 
         // Start sequence: attach -> setPath -> beginRender (non-blocking start).
         expect(exporter.attach).toHaveBeenCalledWith(scene)
@@ -171,5 +173,8 @@ describe('umbreonBackend.beginInProcess', () => {
         expect(exporter.aoDistance).toBe(1e20)
         expect(exporter.supersample).toBe(3)
         expect(exporter.perspective).toBe(true)
+        // absent denoise -> "OIDN" default -> pt1Denoise on, no full-frame pass.
+        expect(exporter.giDenoise).toBe(true)
+        expect(exporter.denoiser).toBe(0)
     })
 })

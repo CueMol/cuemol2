@@ -51,6 +51,10 @@ namespace render {
     double giIntensity = 1.0;
     double giEnvIntensity = 1.0;
     bool giDenoise = true;
+    /// Full-frame post-pass denoiser on the final HDR color (umbreon
+    /// RenderOptions::denoiser): 0 = None, 1 = AtrousBilateral, 2 = OIDN. This
+    /// is independent of giDenoise, which denoises only the GI indirect buffer.
+    int denoiser = 0;
     /// When true, render a transparent background: the output is RGBA (4
     /// components) with alpha = coverage (0 where no geometry is hit), so the
     /// PNG can be composited over another image (POV "_transpbg").
