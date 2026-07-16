@@ -38,6 +38,9 @@ export interface GetNewRendererOptionsResult {
     objClassName: string;
     /** True when the object supports MolCoord-style selection. */
     isMol: boolean;
+    /** The target mol's current selection expression, or '' when none / not a
+     *  mol. Non-empty means the dialog starts with the Selection checkbox on. */
+    currentSel: string;
 }
 
 const EMPTY: GetNewRendererOptionsResult = {
@@ -49,6 +52,7 @@ const EMPTY: GetNewRendererOptionsResult = {
     objName: '',
     objClassName: '',
     isMol: false,
+    currentSel: '',
 };
 
 function resolveTarget(
@@ -128,6 +132,20 @@ function getNewRendererOptions(
         targetObjId = (obj as unknown as { uid: number }).uid ?? -1;
     } catch { /* ignore */ }
 
+    const isMol = !NON_MOL_CLASSES.has(objClassName);
+
+    // The mol's current selection (mol.sel). When non-empty the dialog starts
+    // with the Selection checkbox on, targeting that selection. Read defensively
+    // -- `sel` is MolCoord-only and its getter can throw on other subclasses.
+    let currentSel = '';
+    if (isMol) {
+        try {
+            const sel = (obj as unknown as { sel?: { toString(): string } }).sel;
+            const str = sel ? sel.toString() : '';
+            if (str.length > 0) currentSel = str;
+        } catch { /* ignore */ }
+    }
+
     return {
         ok: true,
         targetObjId,
@@ -136,7 +154,8 @@ function getNewRendererOptions(
         defaultName,
         objName,
         objClassName,
-        isMol: !NON_MOL_CLASSES.has(objClassName),
+        isMol,
+        currentSel,
     };
 }
 

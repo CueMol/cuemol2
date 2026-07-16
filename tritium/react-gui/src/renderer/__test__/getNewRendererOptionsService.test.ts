@@ -19,6 +19,8 @@ interface FixtureOpts {
     objExists?: boolean
     rendExists?: boolean
     sceneExists?: boolean
+    /** The mol's current selection string (mol.sel.toString()); '' = none. */
+    sel?: string
 }
 
 function makeFixture(opts: FixtureOpts = {}) {
@@ -34,6 +36,7 @@ function makeFixture(opts: FixtureOpts = {}) {
         objExists = true,
         rendExists = true,
         sceneExists = true,
+        sel = '',
     } = opts
 
     const searchCompatibleRendererNames = vi.fn(() => compatible)
@@ -44,6 +47,8 @@ function makeFixture(opts: FixtureOpts = {}) {
             // C++ wrapper exposes getClassName() as a method, not a property.
             getClassName: vi.fn(() => objClassName),
             searchCompatibleRendererNames,
+            // MolCoord.sel -- toString() yields the current selection expr.
+            sel: { toString: () => sel },
         }
         : null
     const rend = rendExists
@@ -110,6 +115,30 @@ describe('getNewRendererOptions.service', () => {
         })
         expect(res.ok).toBe(true)
         expect(res.isMol).toBe(false)
+    })
+
+    it('reports the mol current selection (mol.sel) as currentSel', () => {
+        const f = makeFixture({ sel: "chain 'A'" })
+        const res = services.getNewRendererOptions(f.ctx, {
+            sceneId: 1, sourceNodeId: 10, sourceNodeType: 'object',
+        })
+        expect(res.currentSel).toBe("chain 'A'")
+    })
+
+    it('currentSel is empty when the mol has no selection', () => {
+        const f = makeFixture({ sel: '' })
+        const res = services.getNewRendererOptions(f.ctx, {
+            sceneId: 1, sourceNodeId: 10, sourceNodeType: 'object',
+        })
+        expect(res.currentSel).toBe('')
+    })
+
+    it('currentSel is empty for a non-mol object even if it exposes sel', () => {
+        const f = makeFixture({ objClassName: 'MolSurfObj', sel: "chain 'A'" })
+        const res = services.getNewRendererOptions(f.ctx, {
+            sceneId: 1, sourceNodeId: 10, sourceNodeType: 'object',
+        })
+        expect(res.currentSel).toBe('')
     })
 
     it('default name skips already-taken slots scene-wide', () => {

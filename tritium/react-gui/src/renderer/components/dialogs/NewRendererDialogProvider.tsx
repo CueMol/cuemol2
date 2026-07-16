@@ -14,6 +14,8 @@ export interface NewRendererDialogArgs {
     isMol: boolean
     /** Target molecule uid -- forwarded to MolSelList for `current (<sel>)`. */
     molID?: number
+    /** The target mol's current selection; non-empty defaults the checkbox on. */
+    currentSel?: string
     groupName?: string
 }
 
@@ -32,6 +34,7 @@ export const {
             defaultName={args?.defaultName ?? ''}
             isMol={args?.isMol ?? false}
             molID={args?.molID}
+            currentSel={args?.currentSel}
             groupName={args?.groupName}
             onConfirm={(result) => resolve(result)}
             onCancel={() => resolve(null)}
