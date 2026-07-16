@@ -162,10 +162,20 @@ export const MolSelList: React.FC<MolSelListProps> = ({
     // update the value, so closing the popover is the finalize step (the
     // analogue of the old "pick an item" commit); input blur also commits.
     const handleInteraction = useCallback(
-        (next: boolean) => {
-            if (next) setHistoryItems(getHistory());
-            else onCommit?.(selectedSel);
-            setIsOpen(next);
+        (next: boolean, e?: React.SyntheticEvent<HTMLElement>) => {
+            if (next) {
+                setHistoryItems(getHistory());
+                setIsOpen(true);
+                return;
+            }
+            // A pick inside a nested combobox dropdown (the keyword autocomplete)
+            // is portaled OUTSIDE this popover's DOM, so it reads as an outside
+            // click. Keep the popover open so autocomplete selection behaves like
+            // the native <select> dropdowns (which never close it).
+            const target = e?.target as HTMLElement | null;
+            if (target?.closest('.h3-form-combobox-menu')) return;
+            onCommit?.(selectedSel);
+            setIsOpen(false);
         },
         [onCommit, selectedSel],
     );

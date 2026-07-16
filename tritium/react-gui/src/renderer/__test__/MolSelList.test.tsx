@@ -191,6 +191,31 @@ describe('MolSelList', () => {
         unmount()
     })
 
+    it('keeps the popover open when a nested combobox dropdown item is picked', async () => {
+        setupCm()
+        const onCommit = vi.fn()
+        const { unmount } = mountTree(
+            <MolSelList sceneID={1} molID={11} selectedSel="" onSelectedSelChange={() => undefined} onCommit={onCommit} />,
+        )
+        await flushPromises()
+        await openPicker()
+        // A pick in the keyword-autocomplete dropdown is portaled OUTSIDE the
+        // popover; simulate its mousedown target (a `.h3-form-combobox-menu`
+        // item) reaching Blueprint's outside-click handler.
+        const menu = document.createElement('div')
+        menu.className = 'h3-form-combobox-menu'
+        const item = document.createElement('a')
+        menu.appendChild(item)
+        document.body.appendChild(menu)
+        await act(async () => { item.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
+        await flushPromises()
+        // The popover stays open and nothing is committed.
+        expect(document.querySelector('.h3-mol-sel-list-popover')).not.toBeNull()
+        expect(onCommit).not.toHaveBeenCalled()
+        menu.remove()
+        unmount()
+    })
+
     it('marks input intent=danger when validateSelection returns ok:false', async () => {
         setupCm({ validateOk: false })
         const { container, unmount } = mountTree(
