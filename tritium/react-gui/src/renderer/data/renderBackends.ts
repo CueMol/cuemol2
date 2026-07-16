@@ -21,6 +21,12 @@ export interface RenderBackendDescriptor {
   groups: RenderGroupDef[];
   /** Backend-specific property definitions (mock defaults for now). */
   props: PropDef[];
+  /**
+   * Common (backend-independent) prop keys this backend does NOT support. They
+   * are hidden from the editor while this backend is active so the settings only
+   * show what the backend actually honors (POV-Ray honors every common prop).
+   */
+  unsupportedCommonKeys?: string[];
 }
 
 /** POV-Ray backend-specific options (UXP `render-pov-dlg` "POV-Ray" tab). */
@@ -45,10 +51,12 @@ const POVRAY_PROPS: PropDef[] = [
  * common keys.
  */
 const UMBREON_PROPS: PropDef[] = [
-  // --- Umbreon Quality ---
-  { key: "supersample",   label: "Supersampling",      type: "integer", value: 3,    group: "Umbreon Quality", min: 1, max: 8,    step: 1 },
-  // --- Ambient Occlusion (off by default: aoSamples 0) ---
-  { key: "aoSamples",     label: "AO samples",         type: "integer", value: 0,    group: "Ambient Occlusion", min: 0, max: 64,  step: 1 },
+  // --- Quality (merges with the common Quality group in the editor) ---
+  { key: "supersample",   label: "Supersampling",      type: "integer", value: 3,    group: "Quality", min: 1, max: 8,    step: 1 },
+  // --- Ambient Occlusion (off by default via the aoEnabled switch, like
+  //     Shadows/GI; the backend maps aoEnabled=false to aoSamples 0) ---
+  { key: "aoEnabled",     label: "Enable AO",          type: "boolean", value: false, group: "Ambient Occlusion" },
+  { key: "aoSamples",     label: "AO samples",         type: "integer", value: 8,    group: "Ambient Occlusion", min: 1, max: 64,  step: 1 },
   // C++ ctor default is 1e20 (unbounded); a finite default keeps the drag field
   // usable once AO is enabled (the backend falls back to 1e20 if absent).
   { key: "aoDistance",    label: "AO distance",        type: "real",    value: 100,  group: "Ambient Occlusion", min: 1, max: 1000, step: 10 },
@@ -85,13 +93,23 @@ export const RENDER_BACKENDS: Record<RenderBackendId, RenderBackendDescriptor> =
     id: "umbreon",
     label: "Umbreon",
     groups: [
-      { key: "Umbreon Quality", defaultExpanded: true },
+      { key: "Quality", defaultExpanded: false },
       { key: "Ambient Occlusion", defaultExpanded: false },
       { key: "Shadows", defaultExpanded: false },
       { key: "Edges", defaultExpanded: false },
       { key: "Global Illumination", defaultExpanded: false },
     ],
     props: UMBREON_PROPS,
+    // Common props the umbreon backend does not read (POV-Ray-only): stereo is
+    // unsupported, blendpng post-blend is POV-Ray's layer compositing, umbreon
+    // renders in-process (no CPU-thread knob), and pixel labels are POV-only.
+    unsupportedCommonKeys: [
+      "stereoMode",
+      "stereoDepth",
+      "numThreads",
+      "postBlend",
+      "pixelLabels",
+    ],
   },
 };
 

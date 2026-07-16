@@ -74,6 +74,7 @@ export const NumericField: React.FC<NumericFieldProps> = ({
                 max={max}
                 stepSize={step}
                 minorStepSize={null}
+                majorStepSize={null}
                 disabled={disabled}
                 className="h3-form-numeric"
                 fill={false}

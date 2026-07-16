@@ -93,6 +93,7 @@ function mountBridge(cm: unknown, setActiveTab = vi.fn()) {
             tabs: [molviewTab],
             setActiveTab,
             binaries: DEFAULT_RENDER_BINARIES,
+            umbreonAvailable: true,
         }),
     );
     return h;
@@ -171,6 +172,7 @@ describe('useRenderWindowBridge', () => {
         expect(context[context.length - 1]).toMatchObject({
             views,
             activeViewId: 7,
+            umbreonAvailable: true,
         });
         // The image is sent exactly once, in its own result update.
         expect(results.length).toBe(1);

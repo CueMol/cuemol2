@@ -45,4 +45,10 @@ export interface PropDef {
   options?: string[];
   /** Accordion group this property belongs to in the editor. */
   group: string;
+  /**
+   * Render the label beside the control on a single row (default: label above).
+   * For numeric props this also swaps the drag field for a plain number box --
+   * used by the render-settings width/height fields.
+   */
+  inline?: boolean;
 }

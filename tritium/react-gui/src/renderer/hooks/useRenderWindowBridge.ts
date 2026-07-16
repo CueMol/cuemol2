@@ -47,6 +47,8 @@ interface UseRenderWindowBridgeArgs {
   setActiveTab: (id: string) => void;
   /** Render binary paths (from useRenderConfig; main window is the source). */
   binaries: RenderBinaries;
+  /** Whether the umbreon backend is compiled in (forwarded to the render window). */
+  umbreonAvailable: boolean;
 }
 
 /** Push a state update toward the render window (dropped if it is closed). */
@@ -75,8 +77,9 @@ export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): void {
       job: renderJob.job,
       views: args.views,
       activeViewId: args.activeViewId ?? null,
+      umbreonAvailable: args.umbreonAvailable,
     });
-  }, [renderJob.job, args.views, args.activeViewId]);
+  }, [renderJob.job, args.views, args.activeViewId, args.umbreonAvailable]);
 
   // --- Command execution (EXEC push from main) ---
   //
@@ -131,6 +134,7 @@ export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): void {
           job: rj.job,
           views: a.views,
           activeViewId: a.activeViewId ?? null,
+          umbreonAvailable: a.umbreonAvailable,
         });
         pushState({ kind: "result", result: latestResultRef.current });
         break;

@@ -83,7 +83,9 @@ export const umbreonBackend: RenderBackend = {
     // Umbreon-specific backend props. Fallbacks preserve the C++ ctor defaults
     // (e.g. aoDistance 1e20 = unbounded) when a prop is absent from the snapshot.
     exporter.supersample = numVal(ub, "supersample", 3);
-    exporter.aoSamples = numVal(ub, "aoSamples", 0);
+    // AO on/off is a dedicated switch; map it to aoSamples 0 when off (C++
+    // treats 0 samples as AO disabled). When on, aoSamples is >= 1.
+    exporter.aoSamples = boolVal(ub, "aoEnabled", false) ? numVal(ub, "aoSamples", 8) : 0;
     exporter.aoDistance = numVal(ub, "aoDistance", 1e20);
     exporter.aoIntensity = numVal(ub, "aoIntensity", 1.0);
     exporter.shadows = boolVal(ub, "shadows", false);

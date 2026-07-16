@@ -41,6 +41,8 @@ export interface RenderWindowClientState {
   views: RenderTargetViewWire[];
   /** The main window's active molview, or null. */
   activeViewId: number | null;
+  /** Whether the umbreon render backend is compiled into this build. */
+  umbreonAvailable: boolean;
 }
 
 const INITIAL_STATE: RenderWindowClientState = {
@@ -48,6 +50,7 @@ const INITIAL_STATE: RenderWindowClientState = {
   result: null,
   views: [],
   activeViewId: null,
+  umbreonAvailable: false,
 };
 
 /** Send a command toward the main window's bridge. */
@@ -112,6 +115,7 @@ export function useRenderWindowClient(): {
             job: update.job as RenderJob | null,
             views: update.views,
             activeViewId: update.activeViewId,
+            umbreonAvailable: update.umbreonAvailable,
           }));
         } else {
           setState((prev) => ({

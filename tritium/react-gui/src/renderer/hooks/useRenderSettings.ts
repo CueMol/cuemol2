@@ -11,7 +11,7 @@
  * set; per-scene state is deferred to a later phase.
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import type { PropDef } from "../data/rendererProperties";
 import {
   RENDER_COMMON_PROPS,
@@ -78,7 +78,9 @@ const convertSizeUnit = (props: PropDef[], newUnit: string): PropDef[] => {
   });
 };
 
-export function useRenderSettings() {
+export function useRenderSettings(
+  { umbreonAvailable = false }: { umbreonAvailable?: boolean } = {},
+) {
   const [backend, setBackendState] = useState<RenderBackendId>(DEFAULT_RENDER_BACKEND);
   const [commonProps, setCommonProps] = useState<PropDef[]>(() =>
     cloneProps(RENDER_COMMON_PROPS),
@@ -87,12 +89,32 @@ export function useRenderSettings() {
     cloneProps(RENDER_BACKENDS[DEFAULT_RENDER_BACKEND].props),
   );
   const [preset, setPreset] = useState<string>(DEFAULT_RENDER_PRESET);
+  // Once the user (or a restore) picks a backend, stop auto-defaulting to umbreon.
+  const userPickedRef = useRef(false);
 
   /** Switch the active backend, keeping common settings, resetting backend ones. */
-  const setBackend = useCallback((id: RenderBackendId) => {
+  const applyBackend = useCallback((id: RenderBackendId) => {
     setBackendState(id);
     setBackendProps(cloneProps(RENDER_BACKENDS[id].props));
   }, []);
+
+  /** User-initiated backend switch (sticks against the umbreon auto-default). */
+  const setBackend = useCallback(
+    (id: RenderBackendId) => {
+      userPickedRef.current = true;
+      applyBackend(id);
+    },
+    [applyBackend],
+  );
+
+  // Prefer umbreon as the initial default once we learn it is available -- but a
+  // manual pick or a restored snapshot wins. `umbreonAvailable` is a static
+  // build capability that only flips false -> true once, so this runs at most once.
+  useEffect(() => {
+    if (umbreonAvailable && !userPickedRef.current) {
+      applyBackend("umbreon");
+    }
+  }, [umbreonAvailable, applyBackend]);
 
   /** Update a single setting value by key (common or backend-specific). */
   const handleChange = useCallback(
@@ -164,6 +186,9 @@ export function useRenderSettings() {
 
   /** Load settings from a snapshot (used by "Re-render"). */
   const restore = useCallback((snapshot: RenderSettingsSnapshot) => {
+    // A restored snapshot carries its own backend; do not let the umbreon
+    // auto-default override it afterwards.
+    userPickedRef.current = true;
     setBackendState(snapshot.backend);
     setCommonProps(cloneProps(snapshot.commonProps));
     setBackendProps(cloneProps(snapshot.backendProps));
