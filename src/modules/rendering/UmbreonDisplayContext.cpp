@@ -44,15 +44,6 @@ namespace {
   /// StrokeEdgeOptions::thickness / EdgeClassStyle::width).
   const int EDGE_THICKNESS_PX = 2;
 
-  /// GI denoise picks OIDN only when the internal (supersampled) render area
-  /// stays under this; larger renders fall back to the a-trous denoiser. OIDN's
-  /// U-Net scratch is a single contiguous arena that grows with the render area
-  /// and, in the tritium/Electron renderer, PartitionAlloc hard-crashes (SIGTRAP)
-  /// on a single allocation past ~2 GiB. Empirically 800x800 @ ss3 (this bound)
-  /// denoises but 900x900 @ ss3 crashes. Tunable; see
-  /// docs/architecture/umbreon-process-isolation.md.
-  const long OIDN_MAX_RENDER_AREA = 6000000L;  // ~2450x2450 internal px
-
   inline umbreon::Vec3 toVec3(const Vector4D &v)
   {
     return umbreon::Vec3(float(v.x()), float(v.y()), float(v.z()));
@@ -664,25 +655,13 @@ void UmbreonDisplayContext::render(const UmbreonRenderParams &prm,
     opt.pt1Spp = (prm.giSamples > 0) ? prm.giSamples : 32;
     opt.giIntensity = float(prm.giIntensity);
     opt.giEnvIntensity = float(prm.giEnvIntensity);
-    if (prm.giDenoise) {
-      // OIDN's UNet scratch arena grows with the internal (supersampled) render
-      // area; above OIDN_MAX_RENDER_AREA the single allocation crosses the
-      // Electron renderer's ~2 GiB PartitionAlloc limit and hard-crashes. Use
-      // OIDN up to that size and fall back to the dependency-free, bounded-memory
-      // a-trous denoiser (full-frame) above it.
-      const long renderArea = long(prm.width) * long(prm.height) *
-                              long(prm.supersample) * long(prm.supersample);
-      if (renderArea <= OIDN_MAX_RENDER_AREA) {
-        opt.pt1Denoise = true;  // OIDN on the indirect irradiance (E) buffer
-      } else {
-        opt.pt1Denoise = false;
-        opt.denoiser = 1;  // DenoiserBackend::AtrousBilateral (full-frame)
-        LOG_DPRINTLN("Umbreon> GI denoise: render %dx%d (ss=%d) too large for "
-                     "OIDN; using a-trous denoiser",
-                     prm.width, prm.height, prm.supersample);
-      }
-    }
+    opt.pt1Denoise = prm.giDenoise;
   }
+
+  // Full-frame post-pass denoiser on the final HDR color (0 = None, 1 =
+  // AtrousBilateral, 2 = OIDN). Independent of the GI E-buffer denoise above and
+  // a no-op at 0, so it is set unconditionally.
+  opt.denoiser = prm.denoiser;
 
   // Native screen-space (Freestyle-style) edge lines. Enabled when any section
   // requested edge lines; each section's natures + edge color live in

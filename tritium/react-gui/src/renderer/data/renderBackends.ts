@@ -65,7 +65,12 @@ const UMBREON_PROPS: PropDef[] = [
   { key: "giSamples",     label: "GI samples",         type: "integer", value: 32,   group: "Global Illumination", min: 1, max: 256, step: 1 },
   { key: "giIntensity",   label: "GI intensity",       type: "real",    value: 1.0,  group: "Global Illumination", min: 0, max: 3, step: 0.1 },
   { key: "giEnvIntensity", label: "GI environment",    type: "real",    value: 1.0,  group: "Global Illumination", min: 0, max: 3, step: 0.1 },
-  { key: "giDenoise",     label: "GI denoise",         type: "boolean", value: true, group: "Global Illumination" },
+  // GI denoise method: a single control that composes the two umbreon knobs
+  // (pt1Denoise = OIDN on the pre-composite indirect buffer; denoiser =
+  // full-frame post-pass). OIDN -> pt1Denoise on; A-trous -> full-frame a-trous;
+  // None -> both off. See the DENOISE_MODE map in UmbreonBackend.
+  { key: "denoise",       label: "Denoise",            type: "enum",    value: "OIDN", group: "Global Illumination",
+    options: ["OIDN", "A-trous", "None"] },
 ];
 
 /** All registered rendering backends, keyed by id. */

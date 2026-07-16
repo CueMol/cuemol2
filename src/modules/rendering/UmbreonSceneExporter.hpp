@@ -85,6 +85,9 @@ namespace render {
     /// denoise the GI indirect irradiance with the Intel OIDN denoiser
     bool m_bGiDenoise;
 
+    /// full-frame post-pass denoiser (0 = None, 1 = AtrousBilateral, 2 = OIDN)
+    int m_nDenoiser;
+
   public:
     UmbreonSceneExporter();
     virtual ~UmbreonSceneExporter();
