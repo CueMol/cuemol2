@@ -33,11 +33,14 @@ import { fireService } from '../../utils/fireService';
 import { FieldSection, FormButton, TextField } from '../../h3-kit/form';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getHistory, pushHistory } from '../../h3-kit/MolSelList/selHistory';
-import { useSelHitCount } from '../../h3-kit/MolSelList/useSelHitCount';
+import { useSelHitCount, useHitCountResolver } from '../../h3-kit/MolSelList/useSelHitCount';
 import { CountTag } from '../../h3-kit/MolSelList/CountTag';
-import { SelectionBuilder } from './selection/SelectionBuilder';
-import { useSelectionValues } from './selection/useSelectionValues';
-import { builderReducer, initBuilderState } from './selection/selBuilderReducer';
+import {
+    SelectionBuilder,
+    useSelectionValues,
+    builderReducer,
+    initBuilderState,
+} from '../../h3-kit/selection';
 import { loadSnapshot, saveSnapshot } from './selection/selectionPaneStore';
 import { useCueMolEventListener } from '../../hooks/useCueMolEventListener';
 import { SEM_ANY, SEM_OBJECT, SEM_RENDERER, SEM_SCENE } from '../../event';
@@ -194,20 +197,7 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({
 
     const resolveValues = useSelectionValues({ cm, sceneID: activeSceneId, molID: selectedMolId });
 
-    const getHitCount = useMemo(
-        () =>
-            cm && activeSceneId !== undefined && selectedMolId !== undefined
-                ? (str: string): Promise<number | null> =>
-                      cm
-                          .invokeService('getSelHitCount', {
-                              sceneId: activeSceneId,
-                              molId: selectedMolId,
-                              selStr: str,
-                          })
-                          .then((r) => r.count)
-                : undefined,
-        [cm, activeSceneId, selectedMolId],
-    );
+    const getHitCount = useHitCountResolver(cm, activeSceneId, selectedMolId);
 
     // Hit count of the expression currently in the text field.
     const currentCount = useSelHitCount(getHitCount, textDraft);

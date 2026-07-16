@@ -1,20 +1,18 @@
 /**
  * @file MolSelList.tsx
- * @description Lightweight atom-selection picker: a free-text Blueprint
- * `InputGroup` with a chevron trigger tucked inside its right edge (like a
- * native `<select>`) that opens a popover listing ready-made selection
- * expressions.
+ * @description Atom-selection picker: a free-text Blueprint `InputGroup` with a
+ * chevron trigger tucked inside its right edge (like a native `<select>`) that
+ * opens a popover holding the shared `SelectionBuilder` (the same Term + Modify
+ * composer the SelectionPane uses).
  *
- * The popover has a `Named | History` `SegmentedControl` at the top; choosing
- * a tab shows the corresponding list (see `SelMenus.tsx`). "Named" surfaces the
- * target molecule's current selection ("Selected"), scene-level named defs, and
- * global named defs (built-in macros like `protein` / `water` arrive under
- * "Global" automatically). "History" lists recently used expressions. Picking
- * an item writes it into the controlled value and closes the popover.
- *
- * This is the reusable picker used across panes/panels. Authoring complex
- * selections (set operations, distance shells, ...) lives in the SelectionPane
- * builder; named selections defined there reappear here under "Named".
+ * The builder composes CueMol selection expressions (Prop keyword + value,
+ * Named / History, set operations, distance shells) into the widget's own
+ * `selectedSel` value. It is NON-destructive: the target molecule's `mol.sel`
+ * is used only as read-only context (hit counts, keyword autocomplete) and is
+ * never mutated -- MolSelList is used across many dialogs that pick a selection
+ * for an operation without applying it. Each builder op calls
+ * `onSelectedSelChange` (updates the value); it does NOT `onCommit` -- commit
+ * stays on input blur, as before.
  *
  * Live validation: each `selectedSel` change is sent (debounced) to the
  * `validateSelection` worker service; on failure the input gets `Intent.DANGER`.
@@ -24,21 +22,22 @@
  * unmount.
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-    Button,
-    Popover,
-} from '@blueprintjs/core';
+import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { Button, Popover } from '@blueprintjs/core';
 import { AppIcon } from '../../components/AppIcon';
 import { useCueMol } from '../../hooks/useCueMol';
 import { useTheme } from '../../contexts/ThemeContext';
-import { TextField, SegmentField } from '../form';
+import { TextField } from '../form';
+import {
+    SelectionBuilder,
+    builderReducer,
+    initBuilderState,
+    useSelectionValues,
+} from '../selection';
 import { getHistory } from './selHistory';
-import { HistoryMenu, NamedSelMenu } from './SelMenus';
+import { useHitCountResolver } from './useSelHitCount';
 
 const VALIDATE_DEBOUNCE_MS = 500;
-
-type PickSource = 'named' | 'history';
 
 export interface MolSelListProps {
     sceneID: number;
@@ -46,9 +45,9 @@ export interface MolSelListProps {
     selectedSel: string;
     onSelectedSelChange: (value: string) => void;
     /**
-     * Fired when the value should be committed: a popover pick or input blur.
-     * Lets a parent live-apply once (e.g. compile + assign a selection) rather
-     * than on every keystroke.
+     * Fired when the value should be committed: input blur. Lets a parent
+     * live-apply once (e.g. compile + assign a selection) rather than on every
+     * keystroke. Builder operations update the value but do NOT commit.
      */
     onCommit?: (value: string) => void;
     /** Optional: currently selected molecule UID (controlled). */
@@ -93,18 +92,21 @@ export const MolSelList: React.FC<MolSelListProps> = ({
 
     const [sceneDefs, setSceneDefs] = useState<string[]>([]);
     const [globalDefs, setGlobalDefs] = useState<string[]>([]);
-    const [currentSel, setCurrentSel] = useState<string | undefined>(undefined);
     const [historyItems, setHistoryItems] = useState<string[]>(() => getHistory());
     const [isValid, setIsValid] = useState(true);
     const [isOpen, setIsOpen] = useState(false);
-    const [source, setSource] = useState<PickSource>('named');
 
-    // ---- Fetch named selection defs (scene + global) and current mol sel ----
+    // Operand draft for the builder (kept for the widget's lifetime so the last
+    // keyword / value survives reopening the popover).
+    const [draft, dispatch] = useReducer(builderReducer, undefined, initBuilderState);
+    const resolveValues = useSelectionValues({ cm, sceneID, molID });
+    const getHitCount = useHitCountResolver(cm, sceneID, molID);
+
+    // ---- Fetch named selection defs (scene + global) ----
     useEffect(() => {
         if (!cm) {
             setSceneDefs([]);
             setGlobalDefs([]);
-            setCurrentSel(undefined);
             return;
         }
         let cancelled = false;
@@ -114,13 +116,11 @@ export const MolSelList: React.FC<MolSelListProps> = ({
                 if (cancelled) return;
                 setSceneDefs(res.scene);
                 setGlobalDefs(res.global);
-                setCurrentSel(res.currentSel);
             })
             .catch(() => {
                 if (cancelled) return;
                 setSceneDefs([]);
                 setGlobalDefs([]);
-                setCurrentSel(undefined);
             });
         return () => {
             cancelled = true;
@@ -157,49 +157,33 @@ export const MolSelList: React.FC<MolSelListProps> = ({
         };
     }, [cm, selectedSel, sceneID]);
 
-    // Refresh history each time the popover opens, in case another pane
-    // appended an entry while we were idle.
-    const handleInteraction = useCallback((next: boolean) => {
-        if (next) setHistoryItems(getHistory());
-        setIsOpen(next);
-    }, []);
-
-    const handlePick = useCallback(
-        (value: string): void => {
-            onSelectedSelChange(value);
-            onCommit?.(value);
-            setIsOpen(false);
+    // On open, refresh history (another pane may have appended while we were
+    // idle). On close, commit the composed value once -- builder ops only
+    // update the value, so closing the popover is the finalize step (the
+    // analogue of the old "pick an item" commit); input blur also commits.
+    const handleInteraction = useCallback(
+        (next: boolean) => {
+            if (next) setHistoryItems(getHistory());
+            else onCommit?.(selectedSel);
+            setIsOpen(next);
         },
-        [onSelectedSelChange, onCommit],
+        [onCommit, selectedSel],
     );
 
     const pickerContent = (
         <div className="h3-mol-sel-list-popover">
-            <SegmentField
-                value={source}
-                onValueChange={setSource}
-                options={[
-                    { label: 'Named', value: 'named' },
-                    { label: 'History', value: 'history' },
-                ]}
+            <SelectionBuilder
+                current={selectedSel}
+                draft={draft}
+                dispatch={dispatch}
+                onApply={onSelectedSelChange}
+                history={historyItems}
+                sceneDefs={sceneDefs}
+                globalDefs={globalDefs}
+                resolveValues={resolveValues}
+                getHitCount={getHitCount}
+                disabled={disabled}
             />
-            {source === 'named' ? (
-                <NamedSelMenu
-                    currentSel={currentSel}
-                    sceneDefs={sceneDefs}
-                    globalDefs={globalDefs}
-                    activeValue={selectedSel}
-                    onPick={handlePick}
-                    dismissOnPick
-                />
-            ) : (
-                <HistoryMenu
-                    history={historyItems}
-                    activeValue={selectedSel}
-                    onPick={handlePick}
-                    dismissOnPick
-                />
-            )}
         </div>
     );
 
@@ -228,8 +212,8 @@ export const MolSelList: React.FC<MolSelListProps> = ({
                 icon={<span className="h3-form-caret" aria-hidden />}
                 minimal
                 disabled={disabled}
-                title="Pick selection"
-                aria-label="Pick selection"
+                title="Build selection"
+                aria-label="Build selection"
             />
         </Popover>
     );

@@ -20,7 +20,7 @@
  * @module selectionPaneStore
  */
 
-import type { BuilderState } from './selBuilderReducer';
+import type { BuilderState } from '../../../h3-kit/selection';
 
 export interface SelectionPaneSnapshot {
     /** Scene the snapshot belongs to; re-seed only when it matches. */

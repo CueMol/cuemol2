@@ -67,10 +67,13 @@
 }
 
 /* MolSelList picker popover: Named/History segmented control + a menu. */
+/* Holds the shared SelectionBuilder (Term + Modify). Wider than the old
+   Named/History picker so the builder's 2x2 op grids and keyword+value row fit
+   without wrapping awkwardly. */
 .h3-mol-sel-list-popover {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-3);
-  min-width: 180px;
+  min-width: 260px;
 }

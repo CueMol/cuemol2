@@ -5,7 +5,7 @@ import {
     selectTerm,
     canApplyUnary,
     type BuilderState,
-} from '../components/panes/selection/selBuilderReducer'
+} from '../h3-kit/selection/selBuilderReducer'
 
 // The real default keyword is `hierarchical` (see initBuilderState); these
 // reducer-behaviour fixtures pin a single-value keyword (chain) so the term

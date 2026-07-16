@@ -9,13 +9,41 @@
  * @module useSelHitCount
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { AsyncCueMol } from '../../worker/client/AsyncCueMol';
 
 /** number = count, 'loading' = in flight, null = uncountable, undefined = N/A. */
 export type HitCount = number | 'loading' | null | undefined;
 
 /** Backend resolver: expression -> matched-atom count (null on compile fail). */
 export type GetHitCount = (selStr: string) => Promise<number | null>;
+
+/**
+ * Build a stable `getHitCount` resolver bound to a scene + molecule, or
+ * `undefined` when either is missing (feature disabled). Shared by the
+ * SelectionPane and the MolSelList builder popover so both count atoms the same
+ * way via the read-only `getSelHitCount` worker service.
+ */
+export function useHitCountResolver(
+    cm: AsyncCueMol | null,
+    sceneID: number | undefined,
+    molID: number | undefined,
+): GetHitCount | undefined {
+    return useMemo(
+        () =>
+            cm && sceneID !== undefined && molID !== undefined
+                ? (selStr: string): Promise<number | null> =>
+                      cm
+                          .invokeService('getSelHitCount', {
+                              sceneId: sceneID,
+                              molId: molID,
+                              selStr,
+                          })
+                          .then((r) => r.count)
+                : undefined,
+        [cm, sceneID, molID],
+    );
+}
 
 const DEBOUNCE_MS = 250;
 

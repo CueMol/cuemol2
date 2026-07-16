@@ -31,24 +31,24 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Tooltip } from '../../../h3-kit/Tooltip';
-import { AppIcon } from '../../AppIcon';
-import type { AppIconKey } from '../../../data/appIcons';
+import { Tooltip } from '../Tooltip';
+import { AppIcon } from '../../components/AppIcon';
+import type { AppIconKey } from '../../data/appIcons';
 import {
     ComboBoxField,
     FieldSection,
     FormButton,
     SelectField,
     TextField,
-} from '../../../h3-kit/form';
+} from '../form';
 import type { ResolveValues } from './useSelectionValues';
 import { KEYWORDS, getKeywordDef, type Keyword } from './selectionGrammar';
 import type { BinaryOp, UnaryOp } from './selectionExpr';
 import { applyBinary, applyUnary, canApplyBinary } from './selectionExpr';
 import type { BuilderState, BuilderAction } from './selBuilderReducer';
 import { canApplyUnary, selectTerm } from './selBuilderReducer';
-import { useSelHitCount, type GetHitCount } from '../../../h3-kit/MolSelList/useSelHitCount';
-import { CountTag } from '../../../h3-kit/MolSelList/CountTag';
+import { useSelHitCount, type GetHitCount } from '../MolSelList/useSelHitCount';
+import { CountTag } from '../MolSelList/CountTag';
 
 /* --- Props --- */
 

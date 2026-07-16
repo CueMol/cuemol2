@@ -6,9 +6,9 @@
  *   - typing in the input updates the draft only; no commit until blur
  *   - blurring the input commits the changed value and pushes it to history
  *   - blurring without a change does not commit
- *   - picking from the popover commits immediately (regression guard: an
- *     earlier version swallowed popover picks, so the scene kept the old
- *     selection)
+ *   - composing in the builder popover commits on popover close (the finalize
+ *     step; regression guard: an earlier version swallowed popover picks, so
+ *     the scene kept the old selection)
  *   - "*" / empty / "none" commits are not pushed to the shared history
  *   - changing the external `value` prop re-syncs the draft (event-driven
  *     refetch)
@@ -37,14 +37,14 @@ vi.mock('../contexts/ThemeContext', () => ({
 }))
 
 import { PaintSelCell } from '../components/panes/PaintSelCell'
-import { STORAGE_KEY, getHistory } from '../h3-kit/MolSelList/selHistory'
+import { getHistory } from '../h3-kit/MolSelList/selHistory'
 import { mountTree, flushPromises } from './helpers/testHarness'
 
 function getInput(container: HTMLElement): HTMLInputElement {
     return container.querySelector('input.bp5-input') as HTMLInputElement
 }
 function getTrigger(container: HTMLElement): HTMLButtonElement {
-    return container.querySelector('button[aria-label="Pick selection"]') as HTMLButtonElement
+    return container.querySelector('button[aria-label="Build selection"]') as HTMLButtonElement
 }
 
 function typeInto(input: HTMLInputElement, value: string): void {
@@ -55,15 +55,21 @@ function typeInto(input: HTMLInputElement, value: string): void {
     input.dispatchEvent(new Event('input', { bubbles: true }))
 }
 
+function setSelect(select: HTMLSelectElement, value: string): void {
+    const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')!.set!
+    setter.call(select, value)
+    select.dispatchEvent(new Event('change', { bubbles: true }))
+}
+
 /** React maps onBlur to the delegated focusout event. */
 function blur(input: HTMLInputElement): void {
     input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
 }
 
-/** Click a button/menu-item by visible text, searched in document. */
-function clickByText(text: string): void {
-    const el = Array.from(document.querySelectorAll('button, .bp5-menu-item')).find(
-        (b) => b.textContent?.trim() === text,
+/** Click a builder op button by its label span (ignoring the hit-count badge). */
+function clickOp(label: string): void {
+    const el = Array.from(document.querySelectorAll('button')).find(
+        (b) => b.querySelector('.selbuilder-op-label')?.textContent?.trim() === label,
     ) as HTMLElement
     el.click()
 }
@@ -130,23 +136,34 @@ describe('PaintSelCell', () => {
         unmount()
     })
 
-    it('picking from the popover commits immediately (no blur required)', async () => {
+    it('composing in the popover commits on close (no input blur required)', async () => {
         const onCommit = vi.fn()
-        // Seed history so the picker has a real entry to choose.
-        globalThis.localStorage.setItem(STORAGE_KEY, JSON.stringify(['chain Z']))
         const { container, unmount } = mountTree(
             <PaintSelCell sceneID={1} value="chain A" onCommit={onCommit} />,
         )
         await flushPromises()
+        // Open the builder popover and compose `chain 'Z'` via Set.
         await act(async () => { getTrigger(container).click() })
         await flushPromises()
-        await act(async () => { clickByText('History') })
+        await act(async () => {
+            setSelect(document.querySelector('.selbuilder-property select') as HTMLSelectElement, 'chain')
+        })
+        await act(async () => {
+            typeInto(document.querySelector('.selbuilder-term-form input.bp5-input') as HTMLInputElement, 'Z')
+        })
+        await act(async () => { clickOp('Set') })
         await flushPromises()
-        await act(async () => { clickByText('chain Z') })
+        // Composing updates the draft (input reflects it) but has not committed.
+        expect(getInput(container).value).toBe("chain 'Z'")
+        expect(onCommit).not.toHaveBeenCalled()
+        // Closing the popover (outside click) finalises -> commit (the analogue
+        // of the old pick commit); no input blur needed.
+        await act(async () => {
+            document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+        })
         await flushPromises()
-        // The pick alone commits -- this is the regression guard.
-        expect(onCommit).toHaveBeenCalledWith('chain Z')
-        expect(getInput(container).value).toBe('chain Z')
+        expect(onCommit).toHaveBeenCalledWith("chain 'Z'")
+        expect(getInput(container).value).toBe("chain 'Z'")
         unmount()
     })
 
