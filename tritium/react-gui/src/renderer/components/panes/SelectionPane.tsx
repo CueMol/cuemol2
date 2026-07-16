@@ -28,6 +28,7 @@ import type { AsyncCueMol } from '../../worker/client/AsyncCueMol';
 import { SectionHeader } from './SectionHeader';
 import { AppIcon } from '../AppIcon';
 import { ObjectSelect, objectFilters } from '../../h3-kit/ObjectSelect';
+import { Tooltip } from '../../h3-kit/Tooltip';
 import { fireService } from '../../utils/fireService';
 import { FieldSection, FormButton, TextField } from '../../h3-kit/form';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -358,27 +359,30 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({
                         </div>
                         {errorMsg !== null && <div className="selection-error">{errorMsg}</div>}
                         <div className="selection-actions">
-                            <FormButton
-                                icon={<AppIcon name="ui.select" aria-hidden />}
-                                title="Apply typed selection"
-                                aria-label="Apply selection"
-                                disabled={!selectEnabled}
-                                onClick={onTextApply}
-                            />
-                            <FormButton
-                                icon={<AppIcon name="ui.locate" aria-hidden />}
-                                title="Center view on selection"
-                                aria-label="Center view on selection"
-                                disabled={!(canCenter && currentSel !== '')}
-                                onClick={onCenter}
-                            />
-                            <FormButton
-                                icon={<AppIcon name="ui.eraser" aria-hidden />}
-                                title="Clear selection"
-                                aria-label="Clear selection"
-                                disabled={!clearEnabled}
-                                onClick={onClear}
-                            />
+                            <Tooltip content="Apply typed selection">
+                                <FormButton
+                                    icon={<AppIcon name="ui.select" aria-hidden />}
+                                    aria-label="Apply selection"
+                                    disabled={!selectEnabled}
+                                    onClick={onTextApply}
+                                />
+                            </Tooltip>
+                            <Tooltip content="Center view on selection">
+                                <FormButton
+                                    icon={<AppIcon name="ui.locate" aria-hidden />}
+                                    aria-label="Center view on selection"
+                                    disabled={!(canCenter && currentSel !== '')}
+                                    onClick={onCenter}
+                                />
+                            </Tooltip>
+                            <Tooltip content="Clear selection">
+                                <FormButton
+                                    icon={<AppIcon name="ui.eraser" aria-hidden />}
+                                    aria-label="Clear selection"
+                                    disabled={!clearEnabled}
+                                    onClick={onClear}
+                                />
+                            </Tooltip>
                             <Popover
                                 isOpen={defining}
                                 onInteraction={(next) => {
@@ -410,15 +414,17 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({
                             >
                                 {/* Raw Button (ref-forwarding) as the Popover
                                     target, with the FormButton class so it is
-                                    visually identical to the other actions. */}
-                                <Button
-                                    small
-                                    className="h3-form-btn"
-                                    icon={<AppIcon name="ui.tag" aria-hidden />}
-                                    title="Define as a named selection (reusable in this scene)"
-                                    aria-label="Define name"
-                                    disabled={!defineEnabled}
-                                />
+                                    visually identical to the other actions. The
+                                    tooltip nests inside the Popover target. */}
+                                <Tooltip content="Define as a named selection (reusable in this scene)">
+                                    <Button
+                                        small
+                                        className="h3-form-btn"
+                                        icon={<AppIcon name="ui.tag" aria-hidden />}
+                                        aria-label="Define name"
+                                        disabled={!defineEnabled}
+                                    />
+                                </Tooltip>
                             </Popover>
                         </div>
                     </FieldSection>

@@ -95,14 +95,6 @@ function clickButtonByText(root: ParentNode, text: string): void {
     btn.click()
 }
 
-/** Apply (set-op) buttons are icon-only; their name lives in aria-label. */
-function clickButtonByLabel(root: ParentNode, label: string): void {
-    const btn = Array.from(root.querySelectorAll('button')).find(
-        (b) => b.getAttribute('aria-label') === label,
-    ) as HTMLButtonElement
-    btn.click()
-}
-
 describe('SelectionBuilder', () => {
     it('renders the Term and Modify sections', async () => {
         const { container, unmount } = mountTree(<Harness />)
@@ -119,7 +111,7 @@ describe('SelectionBuilder', () => {
         await flushPromises()
         await act(async () => { selectKeyword(container, 'chain') })
         await act(async () => { setInputValue(termValueInput(container), 'A') })
-        await act(async () => { clickButtonByLabel(container, 'Replace') })
+        await act(async () => { clickButtonByText(container, 'Set') })
         await flushPromises()
         expect(current(container)).toBe("chain 'A'")
         unmount()
@@ -130,7 +122,7 @@ describe('SelectionBuilder', () => {
         await flushPromises()
         await act(async () => { selectKeyword(container, 'chain') })
         await act(async () => { setInputValue(termValueInput(container), 'A') })
-        await act(async () => { clickButtonByLabel(container, 'Add') })
+        await act(async () => { clickButtonByText(container, 'Add') })
         await flushPromises()
         expect(current(container)).toBe("(chain 'X') or (chain 'A')")
         unmount()
@@ -154,7 +146,7 @@ describe('SelectionBuilder', () => {
         await act(async () => { selectKeyword(container, 'named') })
         await flushPromises()
         await act(async () => { selectCandidate(container, 'protein') })
-        await act(async () => { clickButtonByLabel(container, 'Replace') })
+        await act(async () => { clickButtonByText(container, 'Set') })
         await flushPromises()
         expect(current(container)).toBe('protein')
         unmount()

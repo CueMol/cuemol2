@@ -7,8 +7,8 @@
  * never a control height or focus ring.
  *
  * Two FieldSections: Term (keyword + operand + Apply) and Modify (unary ops).
- * Apply is a child of Term (indented); Term and Modify are peers. Apply is a
- * single row of four icon-only buttons; Modify is a 2x2 grid.
+ * Apply is a child of Term (indented); Term and Modify are peers. Apply and
+ * Modify are both 2x2 grids of labelled buttons.
  */
 
 .selbuilder {
@@ -108,36 +108,23 @@
 
 /* --- Action-button layouts (shared by Apply + Modify) --- */
 
-/* Apply: four icon-only buttons dividing a single row evenly. Blueprint wraps
-   each button in a Tooltip target span (.bp5-popover-target), so the equal
-   share lives on that span and the button stretches to fill it. */
-.selbuilder-op-row {
-  display: flex;
-  gap: var(--space-1);
-}
-
-.selbuilder-op-row > .bp5-popover-target {
-  flex: 1 1 0;
-  min-width: 0;
-}
-
-/* 2x2 grid so the four labelled buttons fit a narrow pane compactly. */
+/* 2x2 grid so the four labelled buttons fit a narrow pane compactly. Every
+   button is wrapped in a Tooltip target span (.bp5-popover-target), which is
+   the grid item; the button fills it via width:100%. */
 .selbuilder-op-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-2);
 }
 
-/* Icon-only Apply button: just the set-op icon (name + resulting atom count
-   live in the tooltip). Stretches to fill its Tooltip target span. */
-.selbuilder-op-btn--icon.bp5-button {
-  width: 100%;
-  padding-left: var(--space-2);
-  padding-right: var(--space-2);
+.selbuilder-op-grid > .bp5-popover-target {
+  min-width: 0;
 }
 
-/* Compact button: icon + label + hit-count badge centred as one group. */
+/* Compact button: icon + label + hit-count badge centred as one group; fills
+   its Tooltip target span (and thus the grid cell). */
 .selbuilder-op-btn.bp5-button {
+  width: 100%;
   display: flex;
   align-items: center;
   gap: var(--space-2);

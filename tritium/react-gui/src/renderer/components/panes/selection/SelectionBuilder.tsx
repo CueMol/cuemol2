@@ -20,9 +20,9 @@
  * can be persisted across side-panel activity-group switches. There is no
  * builder-local undo/redo -- stepping back is the scene undo (Cmd+Z).
  *
- * Apply is a single row of four icon-only buttons (the set-op name is the
- * tooltip); Modify is a 2x2 grid. Every action button shows the would-be hit
- * count so the user can predict the result before applying.
+ * Apply and Modify are each a 2x2 grid of labelled buttons. Every action button
+ * shows the would-be hit count as an inline badge (so the user can predict the
+ * result before applying) and the full op name in a canonical h3-kit tooltip.
  *
  * Grammar reference: `src/modules/molstr/parser_sel.yxx` / `scanner_sel.lxx`
  * (see selectionExpr.ts / selectionGrammar.ts).
@@ -31,7 +31,7 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Tooltip } from '@blueprintjs/core';
+import { Tooltip } from '../../../h3-kit/Tooltip';
 import { AppIcon } from '../../AppIcon';
 import type { AppIconKey } from '../../../data/appIcons';
 import {
@@ -77,19 +77,20 @@ export interface SelectionBuilderProps {
 /* --- Op tables --- */
 
 // Set-operation icons: import = replace the current with the term, plus/minus
-// = union/difference, intersection = the overlap.
-const BINARY_OPS: { op: BinaryOp; label: string; icon: AppIconKey }[] = [
-    { op: 'set', label: 'Replace', icon: 'ui.import' },
-    { op: 'add', label: 'Add', icon: 'ui.add' },
-    { op: 'sub', label: 'Subtract', icon: 'ui.remove' },
-    { op: 'intersect', label: 'Intersect', icon: 'ui.intersect' },
+// = union/difference, intersection = the overlap. `label` is the abbreviated
+// button text; `full` is the tooltip.
+const BINARY_OPS: { op: BinaryOp; label: string; full: string; icon: AppIconKey }[] = [
+    { op: 'set', label: 'Set', full: 'Set (replace)', icon: 'ui.import' },
+    { op: 'add', label: 'Add', full: 'Add (union)', icon: 'ui.add' },
+    { op: 'sub', label: 'Sub', full: 'Subtract', icon: 'ui.remove' },
+    { op: 'intersect', label: 'Intsec', full: 'Intersect', icon: 'ui.intersect' },
 ];
 
-const MODIFY_OPS: { op: UnaryOp; label: string }[] = [
-    { op: 'not', label: 'Invert' },
-    { op: 'byres', label: 'Byres' },
-    { op: 'sidechain', label: 'Sidechain' },
-    { op: 'mainchain', label: 'Mainchain' },
+const MODIFY_OPS: { op: UnaryOp; label: string; full: string }[] = [
+    { op: 'not', label: 'Invert', full: 'Invert' },
+    { op: 'byres', label: 'Byres', full: 'By residue' },
+    { op: 'sidechain', label: 'Sidech', full: 'Sidechain' },
+    { op: 'mainchain', label: 'Mainch', full: 'Mainchain' },
 ];
 
 const DIST_OPS: { op: UnaryOp; label: string }[] = [
@@ -327,11 +328,11 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                 </div>
 
                 {/* Apply the term into the current selection (child of Term).
-                    Icon-only buttons in a single row; the set-op name is the
-                    tooltip and the badge previews the resulting hit count. */}
+                    A 2x2 grid of labelled buttons; each shows the resulting hit
+                    count as a badge and the full op name as a tooltip. */}
                 <div className="selbuilder-apply">
                     <span className="type-label selbuilder-field-label">Apply</span>
-                    <div className="selbuilder-op-row">
+                    <div className="selbuilder-op-grid">
                         {BINARY_OPS.map((b) => {
                             const preview =
                                 term !== null && canApplyBinary(current, b.op)
@@ -341,8 +342,8 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                                 <OpButton
                                     key={b.op}
                                     label={b.label}
+                                    title={b.full}
                                     icon={b.icon}
-                                    iconOnly
                                     preview={preview}
                                     getHitCount={getHitCount}
                                     enabled={!disabled}
@@ -365,6 +366,7 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                             <OpButton
                                 key={m.op}
                                 label={m.label}
+                                title={m.full}
                                 preview={preview}
                                 getHitCount={getHitCount}
                                 enabled={!disabled}
@@ -397,7 +399,6 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                             <OpButton
                                 key={d.op}
                                 label={d.label}
-                                countInTooltip
                                 preview={preview}
                                 getHitCount={getHitCount}
                                 enabled={!disabled}
@@ -415,13 +416,9 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
 
 interface OpButtonProps {
     label: string;
-    /** Hover tooltip (defaults to label). */
+    /** Full-name tooltip (defaults to the label). */
     title?: string;
     icon?: AppIconKey;
-    /** Render the icon only (no label); the label moves to the tooltip. */
-    iconOnly?: boolean;
-    /** Move the hit count from the inline badge into the tooltip (saves width). */
-    countInTooltip?: boolean;
     /** The would-be expression after applying, or null when not applicable. */
     preview: string | null;
     getHitCount?: GetHitCount;
@@ -430,20 +427,16 @@ interface OpButtonProps {
 }
 
 /**
- * A compose/transform button showing the would-be hit count after applying it,
- * so the user does not accidentally build an empty selection. Disabled when the
+ * A compose/transform button: an (optional) icon, the abbreviated label, and an
+ * inline badge previewing the resulting hit count so the user does not
+ * accidentally build an empty selection. The full op name shows in a canonical
+ * (h3-kit) tooltip -- the same tooltip shape used everywhere. Disabled when the
  * op is not applicable (e.g. Add on an empty current selection).
- *
- * The count shows in an inline badge by default. Where a badge does not fit --
- * the 4-up Apply row (`iconOnly`) and the Around/Expand row (`countInTooltip`)
- * -- the label + resulting atom count fold into a Blueprint Tooltip instead.
  */
 const OpButton: React.FC<OpButtonProps> = ({
     label,
     title,
     icon,
-    iconOnly = false,
-    countInTooltip = false,
     preview,
     getHitCount,
     enabled,
@@ -451,28 +444,17 @@ const OpButton: React.FC<OpButtonProps> = ({
 }) => {
     const applicable = enabled && preview !== null;
     const count = useSelHitCount(getHitCount, applicable ? preview : null, enabled);
-    // A native `title` is unreliable here -- Electron suppresses it over some
-    // regions and it never shows on a disabled button (ops are disabled until a
-    // term is composed) -- so a folded count uses a Blueprint Tooltip (portal).
-    const useTooltip = iconOnly || countInTooltip;
-    const countSuffix = typeof count === 'number' ? ` (${count} atoms)` : '';
-    const btn = (
-        <FormButton
-            className={`selbuilder-op-btn${iconOnly ? ' selbuilder-op-btn--icon' : ''}`}
-            title={useTooltip ? undefined : (title ?? label)}
-            aria-label={iconOnly ? label : undefined}
-            disabled={!applicable}
-            onClick={onClick}
-            icon={icon ? <AppIcon name={icon} aria-hidden /> : undefined}
-        >
-            {!iconOnly && <span className="selbuilder-op-label">{label}</span>}
-            {!iconOnly && !countInTooltip && <CountTag count={count} />}
-        </FormButton>
-    );
-    if (!useTooltip) return btn;
     return (
-        <Tooltip content={`${label}${countSuffix}`} placement="bottom" compact>
-            {btn}
+        <Tooltip content={title ?? label}>
+            <FormButton
+                className="selbuilder-op-btn"
+                disabled={!applicable}
+                onClick={onClick}
+                icon={icon ? <AppIcon name={icon} aria-hidden /> : undefined}
+            >
+                <span className="selbuilder-op-label">{label}</span>
+                <CountTag count={count} />
+            </FormButton>
         </Tooltip>
     );
 };
