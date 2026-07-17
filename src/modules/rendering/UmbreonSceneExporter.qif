@@ -60,7 +60,7 @@ runtime_class UmbreonSceneExporter extends SceneExporter
   property boolean transparentBackground => m_bTransparentBackground;
 
   //////////
-  // diffuse global illumination (umbreon pt1 path-traced integrator)
+  // diffuse global illumination (umbreon pt2 path-traced integrator)
 
   /// enable diffuse global illumination
   property boolean useGI => m_bGI;

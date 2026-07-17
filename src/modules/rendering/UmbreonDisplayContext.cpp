@@ -727,15 +727,27 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
   opt.lightRadius = float(prm.lightRadius);
   opt.transparentBackground = prm.transparentBackground;
 
-  // Diffuse global illumination (pt1 path-traced integrator). Enabling GI sets
-  // gi + giIntegrator=1 (the composited path; the irradiance-cache integrator
-  // does not composite yet). pt1Denoise runs Intel OIDN on the indirect
-  // irradiance (E) buffer BEFORE the albedo multiply -- direct lighting and
-  // albedo stay noise-free -- which needs umbreon built with UMBREON_WITH_OIDN
-  // (linked from the deplibs OIDN bundle; see src/cmake/umbreon.cmake).
+  // Diffuse global illumination (pt2 path-traced integrator). Enabling GI sets
+  // gi + giIntegrator=2. pt2 is a superset of pt1 built on the same gather core,
+  // adding traced mirror/glossy reflection, emissive geometry as a GI source and
+  // a blue-noise sampler; each extension is gated on a material/light the scene
+  // actually carries, so a scene without them costs the same as pt1. pt1 (=1) is
+  // frozen as umbreon's regression anchor and receives no further work.
+  //
+  // The integrator is pinned rather than left at umbreon's default: the deplibs
+  // umbreon tracks a floating ref (UMBREON_GIT_REF=main in deplibs.env), so
+  // following the default would silently change the rendered image whenever
+  // umbreon promotes a new integrator. Pinning keeps that an explicit update.
+  //
+  // The pt1* knobs below apply to pt2 as well despite the pt1 naming (umbreon
+  // shares spp / gather grid / denoise / sky / seed between the two).
+  // pt1Denoise runs Intel OIDN on the indirect irradiance (E) buffer BEFORE the
+  // albedo multiply -- direct lighting and albedo stay noise-free -- which needs
+  // umbreon built with UMBREON_WITH_OIDN (linked from the deplibs OIDN bundle;
+  // see src/cmake/umbreon.cmake).
   if (prm.giEnabled) {
     opt.gi = true;
-    opt.giIntegrator = 1;
+    opt.giIntegrator = 2;
     opt.pt1Spp = (prm.giSamples > 0) ? prm.giSamples : 32;
     opt.giIntensity = float(prm.giIntensity);
     opt.giEnvIntensity = float(prm.giEnvIntensity);
