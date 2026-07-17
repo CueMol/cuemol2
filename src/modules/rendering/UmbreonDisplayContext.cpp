@@ -136,9 +136,11 @@ namespace {
         {"default", 0.20f, 0.80f, 0.0f, 0.3742032f, 0.40f, 0.00f},
         {"matte", 0.30f, 0.80f, 0.0f, 0.5000000f, 0.00f, 0.00f},
         // TODO: add an "aniso_diff_metal" sibling -- brushed metal, driven by
-        // pbr.anisotropy (+ pbr.anisotropyRotation, in turns: 0.25 = a
-        // circumferential/lathe brush instead of an axial one). The bench demo
-        // equivalent is metallic 1, roughness 0.35, anisotropy 0.8. It needs
+        // pbr.anisotropy (+ pbr.anisotropyRotation, in turns: 0 = brushed
+        // along the axis, 0.25 = a circumferential/lathe brush). The reviewed
+        // bench demo (`--material principled --pbr-aniso 0.9`, outputs/
+        // principled_20260717/bs_aniso_090.png) is metallic 1, roughness 0.35,
+        // specular 0.5, anisotropy 0.9, rotation 0. It needs
         // PbrEntry extended (no anisotropy fields yet) and the name added to
         // default_style.xml so the UI can offer it. Constraint worth knowing
         // BEFORE wiring it: umbreon applies anisotropy to sphere/cylinder
