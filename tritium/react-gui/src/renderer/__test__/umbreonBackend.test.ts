@@ -61,6 +61,7 @@ describe('umbreonBackend.beginInProcess', () => {
             ],
             backendProps: [
                 p('supersample', 4),
+                p('aoEnabled', true),
                 p('aoSamples', 16),
                 p('aoDistance', 50),
                 p('aoIntensity', 0.8),
@@ -171,6 +172,8 @@ describe('umbreonBackend.beginInProcess', () => {
         // aoDistance keeps the unbounded 1e20 default even though the UI default
         // is a finite 100; supersample defaults to 3; projection -> perspective.
         expect(exporter.aoDistance).toBe(1e20)
+        // absent aoEnabled -> AO off -> aoSamples forced to 0.
+        expect(exporter.aoSamples).toBe(0)
         expect(exporter.supersample).toBe(3)
         expect(exporter.perspective).toBe(true)
         // absent denoise -> "OIDN" default -> pt1Denoise on, no full-frame pass.

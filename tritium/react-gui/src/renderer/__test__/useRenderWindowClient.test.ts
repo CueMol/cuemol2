@@ -40,7 +40,13 @@ const viewB: RenderTargetViewWire = {
 const context = (
     views: RenderTargetViewWire[],
     activeViewId: number | null,
-): RenderWindowStateUpdate => ({ kind: 'context', job: null, views, activeViewId });
+): RenderWindowStateUpdate => ({
+    kind: 'context',
+    job: null,
+    views,
+    activeViewId,
+    umbreonAvailable: false,
+});
 
 /** electronAPI mock recording subscription order and command invokes. */
 function setupApi() {
@@ -106,11 +112,13 @@ describe('useRenderWindowClient', () => {
                 },
                 views: [viewA],
                 activeViewId: 7,
+                umbreonAvailable: true,
             });
         });
         expect(h.result.state.job?.progress).toBe(42);
         expect(h.result.state.views).toEqual([viewA]);
         expect(h.result.state.activeViewId).toBe(7);
+        expect(h.result.state.umbreonAvailable).toBe(true);
         // A context update never clobbers the (separately pushed) result.
         expect(h.result.state.result).toBeNull();
 

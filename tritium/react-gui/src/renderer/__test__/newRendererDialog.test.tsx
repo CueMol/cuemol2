@@ -192,4 +192,24 @@ describe('NewRendererDialog (renderer-add parity)', () => {
         expect(globalThis.localStorage.getItem(STORAGE_KEY)).toBeNull()
         handle.unmount()
     })
+
+    // The Selection checkbox (Blueprint Checkbox) is distinct from the
+    // "Center view" Switch (.bp5-switch); scope to .bp5-checkbox.
+    function selectionCheckbox(): HTMLInputElement {
+        return document.body.querySelector('.bp5-checkbox input') as HTMLInputElement
+    }
+
+    it('Selection checkbox defaults ON when the mol has a current selection', async () => {
+        const handle = mount({ isMol: true, molID: 10, currentSel: "chain 'A'" })
+        await flushPromises()
+        expect(selectionCheckbox().checked).toBe(true)
+        handle.unmount()
+    })
+
+    it('Selection checkbox defaults OFF when the mol has no selection', async () => {
+        const handle = mount({ isMol: true, molID: 10, currentSel: '' })
+        await flushPromises()
+        expect(selectionCheckbox().checked).toBe(false)
+        handle.unmount()
+    })
 })

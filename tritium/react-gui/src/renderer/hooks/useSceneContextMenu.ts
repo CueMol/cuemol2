@@ -206,6 +206,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                 defaultName: info.defaultName,
                 isMol: info.isMol,
                 molID: info.isMol && info.targetObjId >= 0 ? info.targetObjId : undefined,
+                currentSel: info.currentSel,
                 groupName: info.groupName || undefined,
             })
             if (!result) return

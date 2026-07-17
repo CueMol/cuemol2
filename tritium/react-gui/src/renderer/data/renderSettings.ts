@@ -29,7 +29,7 @@ export const RENDER_COMMON_GROUPS: RenderGroupDef[] = [
   { key: "Image", defaultExpanded: true },
   { key: "Camera", defaultExpanded: true },
   { key: "Quality", defaultExpanded: false },
-  { key: "Output", defaultExpanded: false },
+  { key: "Edges", defaultExpanded: false },
 ];
 
 /** A named image-size preset (UXP `render-pov-dlg` preset list). */
@@ -128,13 +128,19 @@ export function pxToSizeUnit(px: number, dpi: number, unit: string): number {
 /** Backend-independent render-setting definitions (mock defaults). */
 export const RENDER_COMMON_PROPS: PropDef[] = [
   // --- Image (width/height carry the active unit as a field suffix; the px
-  //     min/max/step mirror SIZE_UNIT_FIELD_META.px) ---
-  { key: "width",  label: "Width",     type: "integer", value: 1200, group: "Image", min: 100, max: 10000, step: 100, unit: "px", decimals: 0 },
-  { key: "height", label: "Height",    type: "integer", value: 900,  group: "Image", min: 100, max: 10000, step: 100, unit: "px", decimals: 0 },
+  //     min/max/step mirror SIZE_UNIT_FIELD_META.px. `inline` renders them as
+  //     compact single-row plain number boxes, not two-row drag fields.) ---
+  { key: "width",  label: "Width",     type: "integer", value: 1200, group: "Image", min: 100, max: 10000, step: 100, unit: "px", decimals: 0, inline: true },
+  { key: "height", label: "Height",    type: "integer", value: 900,  group: "Image", min: 100, max: 10000, step: 100, unit: "px", decimals: 0, inline: true },
   { key: "unit",   label: "Size unit", type: "enum",    value: "px",  group: "Image", options: ["px", "in", "mm", "cm"] },
   // Editable combobox with the UXP render-pov-dlg DPI presets (plus high-DPI
   // options); custom values allowed.
   { key: "dpi",    label: "DPI",       type: "combo",   value: 600,   group: "Image", options: ["72", "150", "300", "600", "1200", "2400"] },
+  // Output settings merged into Image (no separate Output group).
+  { key: "fileFormat",    label: "File format",                type: "enum",    value: "png", group: "Image", options: ["png"] },
+  { key: "transparentBg", label: "Transparent background",     type: "boolean", value: false, group: "Image" },
+  { key: "postBlend",     label: "Post-render alpha blending", type: "boolean", value: true,  group: "Image" },
+  { key: "pixelLabels",   label: "Pixel labels",               type: "boolean", value: false, group: "Image" },
 
   // --- Camera ---
   { key: "projection",  label: "Projection",   type: "enum", value: "perspective", group: "Camera",
@@ -142,15 +148,11 @@ export const RENDER_COMMON_PROPS: PropDef[] = [
   { key: "stereoMode",  label: "Stereo mode",  type: "enum", value: "none", group: "Camera",
     options: ["none", "left", "right"] },
   { key: "stereoDepth", label: "Stereo depth", type: "real", value: 0.03, group: "Camera", min: 0, max: 1, step: 0.01 },
+  { key: "clipPlane",   label: "Enable clip plane", type: "boolean", value: true, group: "Camera" },
 
   // --- Quality ---
   { key: "numThreads", label: "CPU threads", type: "integer", value: 2,    group: "Quality", min: 1, max: 32, step: 1 },
-  { key: "edgeLines",  label: "Edge lines",  type: "boolean", value: true, group: "Quality" },
 
-  // --- Output ---
-  { key: "fileFormat",    label: "File format",                type: "enum",    value: "png", group: "Output", options: ["png"] },
-  { key: "transparentBg", label: "Transparent background",     type: "boolean", value: false, group: "Output" },
-  { key: "clipPlane",     label: "Enable clip plane",          type: "boolean", value: true,  group: "Output" },
-  { key: "postBlend",     label: "Post-render alpha blending", type: "boolean", value: true,  group: "Output" },
-  { key: "pixelLabels",   label: "Pixel labels",               type: "boolean", value: false, group: "Output" },
+  // --- Edges (toon outline lines; backends may add crease/rise detail here) ---
+  { key: "edgeLines",  label: "Edge lines",  type: "boolean", value: true, group: "Edges" },
 ];

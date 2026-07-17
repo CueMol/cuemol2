@@ -59,12 +59,33 @@
   border-color: var(--border);
 }
 
+/* Each button is wrapped in the shared Tooltip, which inserts a
+   `.bp5-popover-target` span between the button and the flex row. Keep the span
+   transparent to layout: a non-shrinking flex item (the shrink:0 that used to be
+   on the button now has to live here, or overflow detection in
+   useCollapsibleLabels would never trigger). */
+.app-toolbar .bp5-navbar-group > .bp5-popover-target {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* The top Toolbar shows the collapsed-label tooltip via the shared h3-kit
+   Tooltip, so suppress the CSS `::after` bubble (_form-kit.css) here -- both
+   firing would double the tooltip. The `data-label-collapsed` attribute itself
+   stays: it still hides the label text. */
+.app-toolbar .bp5-button[data-label-collapsed]::after,
+.app-toolbar .bp5-button[data-label-collapsed]:hover::after {
+  content: none;
+}
+
 /* ─── macOS Title Bar Draggable Region ─── */
 .app-toolbar {
   -webkit-app-region: drag;
 }
 
 .app-toolbar .bp5-button,
-.app-toolbar .bp5-navbar-divider {
+.app-toolbar .bp5-navbar-divider,
+.app-toolbar .bp5-popover-target {
   -webkit-app-region: no-drag;
 }

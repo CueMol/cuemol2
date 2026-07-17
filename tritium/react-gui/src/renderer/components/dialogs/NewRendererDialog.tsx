@@ -34,6 +34,9 @@ interface Props {
     /** Target molecule uid -- forwarded to MolSelList for `current (<sel>)`. */
     molID?: number
     isMol: boolean
+    /** The target mol's current selection; non-empty starts the Selection
+     *  checkbox on, targeting that selection. */
+    currentSel?: string
     /** Optional group label appended to the dialog title for context. */
     groupName?: string
     onConfirm: (result: NewRendererDialogResult) => void
@@ -49,6 +52,7 @@ export function NewRendererDialog({
     sceneId,
     molID,
     isMol,
+    currentSel,
     groupName,
     onConfirm,
     onCancel,
@@ -64,6 +68,7 @@ export function NewRendererDialog({
             rendererTypes,
             objectName: objName,
             initialRendererName: defaultName,
+            initialSelection: currentSel,
         })
 
     const canSubmit =

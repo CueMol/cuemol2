@@ -30,6 +30,20 @@ describe('render backends registry', () => {
         }
     })
 
+    it('unifies umbreon supersampling into the shared "Quality" group', () => {
+        // Issue: a common "Quality" next to an "Umbreon Quality" is confusing.
+        const groupKeys = RENDER_BACKENDS.umbreon.groups.map((g) => g.key)
+        expect(groupKeys).not.toContain('Umbreon Quality')
+        expect(groupKeys).toContain('Quality')
+        const supersample = RENDER_BACKENDS.umbreon.props.find((p) => p.key === 'supersample')
+        expect(supersample?.group).toBe('Quality')
+    })
+
+    it('keeps edge lines on/off in the Edges group, not Quality', () => {
+        const edgeLines = RENDER_COMMON_PROPS.find((p) => p.key === 'edgeLines')
+        expect(edgeLines?.group).toBe('Edges')
+    })
+
     it('no backend prop key collides with a common prop key', () => {
         const commonKeys = new Set(RENDER_COMMON_PROPS.map((cp) => cp.key))
         for (const id of RENDER_BACKEND_IDS) {

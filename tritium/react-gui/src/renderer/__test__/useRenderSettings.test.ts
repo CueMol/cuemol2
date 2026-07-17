@@ -25,6 +25,27 @@ describe('useRenderSettings', () => {
         h.unmount();
     });
 
+    it('defaults to umbreon when the build supports it', () => {
+        const h = makeRenderHook(() => useRenderSettings({ umbreonAvailable: true }));
+        expect(h.result.backend).toBe('umbreon');
+        // Backend props swapped to umbreon's (POV-Ray-only "shadow" is gone).
+        expect(valueOf(h.result.backendProps, 'shadow')).toBeUndefined();
+        expect(valueOf(h.result.backendProps, 'aoEnabled')).toBe(false);
+        h.unmount();
+    });
+
+    it('a manual backend pick wins over a later umbreon auto-default', () => {
+        let avail = false;
+        const h = makeRenderHook(() => useRenderSettings({ umbreonAvailable: avail }));
+        // User explicitly stays on POV-Ray before umbreon availability is known.
+        act(() => h.result.setBackend('povray'));
+        // Umbreon becomes available afterwards -> must NOT override the manual pick.
+        avail = true;
+        h.rerender();
+        expect(h.result.backend).toBe('povray');
+        h.unmount();
+    });
+
     it('handleChange updates a common setting value', () => {
         const h = makeRenderHook(() => useRenderSettings());
         act(() => h.result.handleChange('width', 800));

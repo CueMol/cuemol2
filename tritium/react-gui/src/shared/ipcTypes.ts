@@ -643,6 +643,12 @@ export type RenderWindowStateUpdate =
       views: RenderTargetViewWire[]
       /** The main window's active molview, or null when none is active. */
       activeViewId: number | null
+      /**
+       * Whether the umbreon render backend is compiled into this libcuemol2
+       * build (probed in the main window via getAvailableSceneExporters). The
+       * render window has no worker, so it learns this only from this push.
+       */
+      umbreonAvailable: boolean
     }
   | { kind: 'result'; result: RenderResultWire | null }
 

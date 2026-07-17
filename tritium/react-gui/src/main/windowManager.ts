@@ -207,6 +207,13 @@ export function createWindow(): void {
   // 'close' listener; both listeners fire on close).
   win.on('close', (event) => handleWindowClose(win, event))
 
+  // The Rendering window is no longer a child of the main window (see
+  // createOrFocusRenderWindow), so it does not auto-close with it. Close it
+  // here so all windows are gone -> 'window-all-closed' fires -> the app quits.
+  win.on('closed', () => {
+    if (renderWindow && !renderWindow.isDestroyed()) renderWindow.close()
+  })
+
   // macOS trackpad 2-finger rotate gesture: Chromium does not emit a DOM
   // event for this, so we capture it here and push it to the renderer via IPC.
   // On non-macOS this event never fires but attaching is harmless.
@@ -268,7 +275,11 @@ export function createOrFocusRenderWindow(mainWindow: BrowserWindow): void {
   y = Math.min(Math.max(y, workArea.y), workArea.y + workArea.height - 100)
 
   const win = new BrowserWindow({
-    parent: mainWindow,
+    // Intentionally NOT a `parent: mainWindow` child window: on macOS/Windows a
+    // child window is pinned above its parent, which blocks operating the main
+    // window underneath. As an independent top-level window the normal z-order
+    // applies (clicking the main window brings it to front). The main window's
+    // 'closed' handler closes this one so the app can still quit (see below).
     width,
     height,
     x,

@@ -1,8 +1,7 @@
 /**
  * @file h3-kit/MolSelList/SelMenus.tsx
  * @description Presentational Blueprint menus that list ready-made selection
- * expressions, shared by the SelectionBuilder (Term source) and the MolSelList
- * picker popover.
+ * expressions, used by the MolSelList picker popover.
  *
  * `NamedSelMenu` groups the active molecule's current selection ("Selected"),
  * scene-level named defs, and global named defs (built-in macros like
@@ -136,3 +135,4 @@ export const HistoryMenu: React.FC<HistoryMenuProps> = ({
         )}
     </Menu>
 );
+

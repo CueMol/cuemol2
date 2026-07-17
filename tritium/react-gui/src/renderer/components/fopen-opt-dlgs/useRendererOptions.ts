@@ -45,6 +45,12 @@ export interface UseRendererOptionsArgs {
     /** Optional seed for `options.rendererName` (the name-follow effect
      *  overrides it once the worker resolves a unique name). */
     initialRendererName?: string;
+    /**
+     * When a non-empty expression is given, the Selection checkbox starts
+     * enabled with this expression (e.g. the target mol's current `mol.sel`).
+     * Omitted / empty -> checkbox off, selection `*` (all atoms).
+     */
+    initialSelection?: string;
 }
 
 export interface UseRendererOptionsResult {
@@ -60,7 +66,7 @@ export function useRendererOptions(
     args: UseRendererOptionsArgs,
 ): UseRendererOptionsResult {
     const { visible, sceneId, objClassName, rendererTypes, objectName,
-        initialRendererName } = args;
+        initialRendererName, initialSelection } = args;
     const { cm } = useCueMol();
 
     // Initial renderer type: history value if still listed, else the first
@@ -72,14 +78,18 @@ export function useRendererOptions(
         return rendererTypes[0];
     }, [rendererTypes, objClassName]);
 
-    const buildOptions = useCallback((): RendererOptions => ({
-        objectName,
-        rendererType: initialType,
-        rendererName: initialRendererName ?? (initialType ? `${initialType}1` : ''),
-        selectionEnabled: false,
-        selection: '*',
-        centerView: true,
-    }), [objectName, initialType, initialRendererName]);
+    const buildOptions = useCallback((): RendererOptions => {
+        const seedSel = (initialSelection ?? '').trim();
+        return {
+            objectName,
+            rendererType: initialType,
+            rendererName: initialRendererName ?? (initialType ? `${initialType}1` : ''),
+            // A non-empty current selection starts the checkbox on, targeting it.
+            selectionEnabled: seedSel !== '',
+            selection: seedSel !== '' ? seedSel : '*',
+            centerView: true,
+        };
+    }, [objectName, initialType, initialRendererName, initialSelection]);
 
     const [options, setOptions] = useState<RendererOptions>(buildOptions);
 

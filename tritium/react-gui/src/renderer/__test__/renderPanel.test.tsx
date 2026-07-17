@@ -2,11 +2,11 @@
  * @file __test__/renderPanel.test.tsx
  * @description Degrade-detection tests for the RenderPanel Start-button gate.
  *
- * Pins the contract that the render controls (Start button, image-size preset,
- * Render Settings shortcut) are disabled -- and Start cannot fire onStart --
- * when `renderable` is false: the fix for a non-molview tab leaving pressable
- * controls that silently do nothing. While a job is active the panel shows Stop
- * instead, which is never gated.
+ * Pins the contract that the render controls (Start button, Render Settings
+ * shortcut) are disabled -- and Start cannot fire onStart -- when `renderable`
+ * is false: the fix for a non-molview tab leaving pressable controls that
+ * silently do nothing. While a job is active the panel shows Stop instead,
+ * which is never gated.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -33,10 +33,8 @@ function mount(props: Partial<React.ComponentProps<typeof RenderPanel>>): void {
       <RenderPanel
         job={null}
         renderable={true}
-        preset="Current size"
         onStart={noop}
         onCancel={noop}
-        onApplyPreset={noop}
         onOpenSettings={noop}
         {...props}
       />,
@@ -78,9 +76,7 @@ describe('RenderPanel -- Start button gating', () => {
     expect(start!.disabled).toBe(true);
     act(() => start!.click());
     expect(onStart).not.toHaveBeenCalled();
-    // The image-size preset and the Render Settings shortcut are gated too.
-    const presetSelect = container.querySelector('select') as HTMLSelectElement | null;
-    expect(presetSelect?.disabled).toBe(true);
+    // The Render Settings shortcut is gated too.
     expect(button('Render Settings')!.disabled).toBe(true);
   });
 
@@ -92,8 +88,6 @@ describe('RenderPanel -- Start button gating', () => {
     expect(start!.disabled).toBe(false);
     act(() => start!.click());
     expect(onStart).toHaveBeenCalledTimes(1);
-    const presetSelect = container.querySelector('select') as HTMLSelectElement | null;
-    expect(presetSelect?.disabled).toBe(false);
     expect(button('Render Settings')!.disabled).toBe(false);
   });
 

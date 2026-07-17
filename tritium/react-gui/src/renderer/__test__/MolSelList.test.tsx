@@ -1,17 +1,16 @@
 /**
- * Tests for MolSelList -- the lightweight Named/History selection picker.
+ * Tests for MolSelList -- the selection picker whose chevron popover now holds
+ * the shared Term + Modify `SelectionBuilder`.
  *
  * Pins the contract that:
- *  1. getSelDefs is invoked with the supplied sceneID on mount
+ *  1. getSelDefs is invoked with the supplied sceneID (and molID) on mount
  *  2. selectedSel is reflected in the InputGroup (controlled, persists on blur)
  *  3. typing fires onSelectedSelChange on every keystroke
- *  4. the picker is a popover opened by the caret trigger; it carries a
- *     Named | History SegmentedControl
- *  5. the Named menu lists Selected / Scene / Global named defs
- *  6. the History tab lists getHistory() entries
- *  7. picking an item fires onSelectedSelChange and closes the popover
- *  8. validateSelection drives the input's danger intent
- *  9. selectedSel of `*` / empty does not invoke validateSelection
+ *  4. the caret opens a popover holding the Term / Modify builder
+ *  5. a builder op composes into selectedSel via onSelectedSelChange WITHOUT
+ *     committing (onCommit stays on blur) and does NOT write mol.sel
+ *  6. validateSelection drives the input's danger intent
+ *  7. selectedSel of `*` / empty does not invoke validateSelection
  */
 import React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -35,7 +34,6 @@ vi.mock('../contexts/ThemeContext', () => ({
 }))
 
 import { MolSelList } from '../h3-kit/MolSelList/MolSelList'
-import { STORAGE_KEY } from '../h3-kit/MolSelList/selHistory'
 import { mountTree, flushPromises } from './helpers/testHarness'
 
 function setupCm(opts?: {
@@ -58,7 +56,7 @@ function getInput(container: HTMLElement): HTMLInputElement {
 }
 
 function pickerTrigger(): HTMLButtonElement {
-    return document.querySelector('button[aria-label="Pick selection"]') as HTMLButtonElement
+    return document.querySelector('button[aria-label="Build selection"]') as HTMLButtonElement
 }
 
 /** Open the picker popover (rendered in a portal on document.body). */
@@ -67,18 +65,20 @@ async function openPicker(): Promise<void> {
     await flushPromises()
 }
 
-/** Click a button/segment by its visible text, searched in document. */
-function clickByText(text: string): void {
-    const el = Array.from(document.querySelectorAll('button, .bp5-menu-item')).find(
-        (b) => b.textContent?.trim() === text,
-    ) as HTMLElement
-    el.click()
+function setNativeValue(el: HTMLInputElement | HTMLSelectElement, value: string): void {
+    const proto = el instanceof HTMLSelectElement ? HTMLSelectElement.prototype : HTMLInputElement.prototype
+    const setter = Object.getOwnPropertyDescriptor(proto, 'value')!.set!
+    setter.call(el, value)
+    el.dispatchEvent(new Event(el instanceof HTMLSelectElement ? 'change' : 'input', { bubbles: true }))
 }
 
-function menuItemTexts(): string[] {
-    return Array.from(document.querySelectorAll('.h3-mol-sel-list-popover .bp5-menu-item')).map(
-        (el) => el.textContent?.trim() ?? '',
-    )
+/** Click a builder op button by its label span (ignoring the hit-count badge,
+ *  which may read "..." while loading). */
+function clickOp(label: string): void {
+    const el = Array.from(document.querySelectorAll('button')).find(
+        (b) => b.querySelector('.selbuilder-op-label')?.textContent?.trim() === label,
+    ) as HTMLElement
+    el.click()
 }
 
 describe('MolSelList', () => {
@@ -103,6 +103,16 @@ describe('MolSelList', () => {
         unmount()
     })
 
+    it('forwards molID to getSelDefs', async () => {
+        setupCm()
+        const { unmount } = mountTree(
+            <MolSelList sceneID={3} molID={11} selectedSel="" onSelectedSelChange={() => undefined} />,
+        )
+        await flushPromises()
+        expect(mockCm.invokeService).toHaveBeenCalledWith('getSelDefs', { sceneId: 3, molId: 11 })
+        unmount()
+    })
+
     it('reflects selectedSel in the input and persists on blur', async () => {
         setupCm()
         const { container, unmount } = mountTree(
@@ -124,19 +134,12 @@ describe('MolSelList', () => {
             <MolSelList sceneID={1} selectedSel="" onSelectedSelChange={onChange} />,
         )
         await flushPromises()
-        const input = getInput(container)
-        const nativeSetter = Object.getOwnPropertyDescriptor(
-            HTMLInputElement.prototype, 'value',
-        )!.set!
-        await act(async () => {
-            nativeSetter.call(input, 'chain.A')
-            input.dispatchEvent(new Event('input', { bubbles: true }))
-        })
+        await act(async () => { setNativeValue(getInput(container), 'chain.A') })
         expect(onChange).toHaveBeenCalledWith('chain.A')
         unmount()
     })
 
-    it('opens a popover with a Named | History SegmentedControl', async () => {
+    it('opens a popover holding the Term / Modify builder', async () => {
         setupCm()
         const { unmount } = mountTree(
             <MolSelList sceneID={1} selectedSel="" onSelectedSelChange={() => undefined} />,
@@ -145,58 +148,71 @@ describe('MolSelList', () => {
         await openPicker()
         const popover = document.querySelector('.h3-mol-sel-list-popover')
         expect(popover).not.toBeNull()
-        const btnTexts = Array.from(popover!.querySelectorAll('button')).map((b) =>
-            b.textContent?.trim(),
+        const titles = Array.from(popover!.querySelectorAll('.h3-form-field-section-title')).map(
+            (e) => e.textContent?.trim(),
         )
-        expect(btnTexts).toEqual(expect.arrayContaining(['Named', 'History']))
+        expect(titles).toEqual(expect.arrayContaining(['Term', 'Modify']))
         unmount()
     })
 
-    it('Named tab lists Selected / Scene / Global named defs', async () => {
-        setupCm({ selDefs: { scene: ['mySceneSel'], global: ['myGlobalSel'], currentSel: 'chain.A' } })
-        const { unmount } = mountTree(
-            <MolSelList sceneID={3} molID={11} selectedSel="" onSelectedSelChange={() => undefined} />,
-        )
-        await flushPromises()
-        await openPicker()
-        // Default tab is Named.
-        expect(menuItemTexts()).toEqual(expect.arrayContaining(['chain.A', 'mySceneSel', 'myGlobalSel']))
-        // Dividers carry the scope titles.
-        const dividers = Array.from(
-            document.querySelectorAll('.h3-mol-sel-list-popover .bp5-menu-header'),
-        ).map((el) => el.textContent?.trim())
-        expect(dividers).toEqual(expect.arrayContaining(['Selected', 'Scene', 'Global']))
-        unmount()
-    })
-
-    it('History tab lists getHistory() entries', async () => {
-        globalThis.localStorage.setItem(STORAGE_KEY, JSON.stringify(['chain.A', 'aname CA']))
+    it('a builder op composes into selectedSel without committing or writing mol.sel', async () => {
         setupCm()
+        const onChange = vi.fn()
+        const onCommit = vi.fn()
         const { unmount } = mountTree(
-            <MolSelList sceneID={1} selectedSel="" onSelectedSelChange={() => undefined} />,
+            <MolSelList
+                sceneID={1}
+                molID={11}
+                selectedSel=""
+                onSelectedSelChange={onChange}
+                onCommit={onCommit}
+            />,
         )
         await flushPromises()
         await openPicker()
-        await act(async () => { clickByText('History') })
+        // Pick the `chain` keyword, type a value, and press Set.
+        await act(async () => {
+            setNativeValue(document.querySelector('.selbuilder-property select') as HTMLSelectElement, 'chain')
+        })
+        await act(async () => {
+            setNativeValue(document.querySelector('.selbuilder-term-form input.bp5-input') as HTMLInputElement, 'A')
+        })
+        await act(async () => { clickOp('Set') })
         await flushPromises()
-        expect(menuItemTexts()).toEqual(expect.arrayContaining(['chain.A', 'aname CA']))
+        // The composed expression flows to the value...
+        expect(onChange).toHaveBeenCalledWith("chain 'A'")
+        // ...but the builder never commits (that is blur's job) nor mutates the
+        // molecule's actual selection.
+        expect(onCommit).not.toHaveBeenCalled()
+        const wroteSel = mockCm.invokeService.mock.calls.some(
+            (c: unknown[]) => c[0] === 'applyMolSelString' || c[0] === 'centerMolSelection',
+        )
+        expect(wroteSel).toBe(false)
         unmount()
     })
 
-    it('picking a Named item fires onSelectedSelChange and closes the popover', async () => {
-        const onChange = vi.fn()
-        setupCm({ selDefs: { scene: ['mySceneSel'], global: [] } })
+    it('keeps the popover open when a nested combobox dropdown item is picked', async () => {
+        setupCm()
+        const onCommit = vi.fn()
         const { unmount } = mountTree(
-            <MolSelList sceneID={1} selectedSel="" onSelectedSelChange={onChange} />,
+            <MolSelList sceneID={1} molID={11} selectedSel="" onSelectedSelChange={() => undefined} onCommit={onCommit} />,
         )
         await flushPromises()
         await openPicker()
-        await act(async () => { clickByText('mySceneSel') })
+        // A pick in the keyword-autocomplete dropdown is portaled OUTSIDE the
+        // popover; simulate its mousedown target (a `.h3-form-combobox-menu`
+        // item) reaching Blueprint's outside-click handler.
+        const menu = document.createElement('div')
+        menu.className = 'h3-form-combobox-menu'
+        const item = document.createElement('a')
+        menu.appendChild(item)
+        document.body.appendChild(menu)
+        await act(async () => { item.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
         await flushPromises()
-        expect(onChange).toHaveBeenCalledWith('mySceneSel')
-        // Popover dismissed on pick (wait out the Blueprint close transition).
-        await act(async () => { await new Promise((r) => setTimeout(r, 350)) })
-        expect(document.querySelector('.h3-mol-sel-list-popover')).toBeNull()
+        // The popover stays open and nothing is committed.
+        expect(document.querySelector('.h3-mol-sel-list-popover')).not.toBeNull()
+        expect(onCommit).not.toHaveBeenCalled()
+        menu.remove()
         unmount()
     })
 
@@ -224,16 +240,6 @@ describe('MolSelList', () => {
         await flushPromises()
         const validateCalls = mockCm.invokeService.mock.calls.filter((c: unknown[]) => c[0] === 'validateSelection')
         expect(validateCalls.length).toBe(0)
-        unmount()
-    })
-
-    it('forwards molID to getSelDefs', async () => {
-        setupCm({ selDefs: { scene: [], global: [], currentSel: 'chain.A' } })
-        const { unmount } = mountTree(
-            <MolSelList sceneID={3} molID={11} selectedSel="" onSelectedSelChange={() => undefined} />,
-        )
-        await flushPromises()
-        expect(mockCm.invokeService).toHaveBeenCalledWith('getSelDefs', { sceneId: 3, molId: 11 })
         unmount()
     })
 })

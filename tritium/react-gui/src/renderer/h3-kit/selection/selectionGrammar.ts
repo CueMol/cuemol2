@@ -15,7 +15,11 @@
 
 import type { SelValueKind } from './useSelectionValues';
 
-/** Property keyword selectable in the builder's Property source. */
+/**
+ * A term keyword selectable in the builder's single dropdown. Most are property
+ * keywords (compose `keyword value` syntax); `named` / `history` instead pick a
+ * ready-made expression from a candidate dropdown.
+ */
 export type Keyword =
     | 'all'
     | 'none'
@@ -27,7 +31,9 @@ export type Keyword =
     | 'alt'
     | 'bfac'
     | 'rprop'
-    | 'hierarchical';
+    | 'hierarchical'
+    | 'named'
+    | 'history';
 
 /** Shape of the value-input UI a keyword requires. */
 export type ValueKind =
@@ -36,7 +42,9 @@ export type ValueKind =
     | 'numList' // comma list of numbers / ranges (resi)
     | 'compare' // comparison operator + integer (bfac)
     | 'nameValue' // name=value pair (rprop)
-    | 'hierarchical'; // chain.resid.aname (3 fields)
+    | 'hierarchical' // chain.resid.aname (3 fields)
+    | 'named' // pick a named selection (Selected / Scene / Global)
+    | 'history'; // pick a recently used expression
 
 /** A property keyword and how its value is formatted into syntax. */
 export interface KeywordDef {
@@ -71,10 +79,12 @@ export const KEYWORDS: KeywordDef[] = [
     { key: 'none', label: 'none', emit: 'none', valueKind: 'none', quote: false },
     { key: 'resn', label: 'resn', full: 'Residue name', emit: 'resn', valueKind: 'nameList', quote: false, autocomplete: 'resname' },
     { key: 'name', label: 'name', full: 'Atom name', emit: 'name', valueKind: 'nameList', quote: false, autocomplete: 'aname' },
-    { key: 'elem', label: 'Element', emit: 'elem', valueKind: 'nameList', quote: false, autocomplete: 'elem' },
+    { key: 'elem', label: 'elem', full: 'Element', emit: 'elem', valueKind: 'nameList', quote: false, autocomplete: 'elem' },
     { key: 'alt', label: 'Altloc', emit: 'alt', valueKind: 'nameList', quote: false, allowNull: true },
     { key: 'bfac', label: 'bfac', full: 'B-factor', emit: 'bfac', valueKind: 'compare', quote: false },
     { key: 'rprop', label: 'rprop', full: 'Residue prop', emit: 'rprop', valueKind: 'nameValue', quote: false },
+    { key: 'named', label: 'Named', full: 'Named selection', emit: '', valueKind: 'named', quote: false },
+    { key: 'history', label: 'History', emit: '', valueKind: 'history', quote: false },
 ];
 
 /** Look up a keyword definition; falls back to the first entry. */

@@ -306,17 +306,31 @@ const App: React.FC = () => {
   // state back.
 
   // Renderable targets offered in the render window's Target dropdown.
-  // The scene name is the tab title minus its ":<viewIdx>" suffix.
+  // The scene name is the tab title minus its ":<viewIdx>" suffix. The live
+  // title comes from the tab strip (`tabs`), which useMolViewTabTitleSync keeps
+  // current on rename -- `molTabEntries[].title` is frozen at tab-creation time,
+  // so reading it here left the render window's Target names stale.
   const renderTargetViews = useMemo(
     () =>
-      molTabEntries.map((e) => ({
-        viewId: e.view_id,
-        sceneId: e.scene_uid,
-        sceneName: e.title.replace(/:\d+$/, ""),
-        title: e.title,
-      })),
-    [molTabEntries],
+      molTabEntries.map((e) => {
+        const liveTitle =
+          tabs.find((t) => t.type === "molview" && t.viewId === e.view_id)?.title ??
+          e.title;
+        return {
+          viewId: e.view_id,
+          sceneId: e.scene_uid,
+          sceneName: liveTitle.replace(/:\d+$/, ""),
+          title: liveTitle,
+        };
+      }),
+    [molTabEntries, tabs],
   );
+
+  // --- Scene-exporter availability (hides Umbreon etc. on builds lacking it) ---
+  // Probed here (before useRenderWindowBridge) so the umbreon capability can be
+  // forwarded to the modeless render window, which has no worker of its own.
+  const exportAvailable = useSceneExportCaps({ cm, cueMolReady });
+  const umbreonAvailable = exportAvailable?.includes("umbreon") ?? false;
 
   useRenderWindowBridge({
     cm,
@@ -325,6 +339,7 @@ const App: React.FC = () => {
     tabs,
     setActiveTab,
     binaries: renderBinaries,
+    umbreonAvailable,
   });
 
   // --- Scene-tree wiring (selection, handlers, ctxmenu, inline rename) ---
@@ -347,9 +362,6 @@ const App: React.FC = () => {
     onCenterMarkChanged,
     onBgColorChanged,
   } = useActiveViewState({ cm, activeMolViewId, activeSceneId });
-
-  // --- Scene-exporter availability (hides Umbreon etc. on builds lacking it) ---
-  const exportAvailable = useSceneExportCaps({ cm, cueMolReady });
 
   // --- Undo/redo availability + history dropdown (owns CmdId.Undo/Redo) ---
   const undoRedo = useUndoRedoState({ cm, activeMolViewId, getActiveSceneInfo });

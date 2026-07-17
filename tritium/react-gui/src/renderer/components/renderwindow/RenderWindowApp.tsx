@@ -26,8 +26,14 @@ import { RENDER_SIZE_PRESETS } from "../../data/renderSettings";
 import type { RenderResult } from "../../data/renderResult";
 
 export const RenderWindowApp: React.FC = () => {
-  const settings = useRenderSettings();
   const client = useRenderWindowClient();
+  // Umbreon is the default backend when the build supports it (forwarded from
+  // the main window); otherwise fall back to the static default (POV-Ray).
+  const umbreonAvailable = client.state.umbreonAvailable;
+  const settings = useRenderSettings({ umbreonAvailable });
+  const backendIds = umbreonAvailable
+    ? RENDER_BACKEND_IDS
+    : RENDER_BACKEND_IDS.filter((id) => id !== "umbreon");
 
   // macOS traffic-light inset for the custom title bar (hiddenInset frame),
   // mirroring App.tsx. Windows/Linux reserve overlay space in CSS instead.
@@ -118,10 +124,8 @@ export const RenderWindowApp: React.FC = () => {
               <RenderPanel
                 job={job}
                 renderable={canRender}
-                preset={settings.preset}
                 onStart={handleStart}
                 onCancel={client.cancel}
-                onApplyPreset={handleApplyPreset}
                 targetViews={views}
                 targetViewId={client.targetViewId}
                 onTargetChange={client.setTargetViewId}
@@ -142,11 +146,13 @@ export const RenderWindowApp: React.FC = () => {
             </div>
             <RenderSettingsEditor
               backend={settings.backend}
-              backendIds={RENDER_BACKEND_IDS}
+              backendIds={backendIds}
               commonProps={settings.commonProps}
               backendProps={settings.backendProps}
               onBackendChange={settings.setBackend}
               onChange={settings.handleChange}
+              preset={settings.preset}
+              onApplyPreset={handleApplyPreset}
             />
           </div>
         </Allotment.Pane>
