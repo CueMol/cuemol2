@@ -161,9 +161,11 @@ namespace render {
     void buildSceneAndOptions(const UmbreonRenderParams &prm);
 
     /// Resolve a CueMol material name to an index into the per-mesh material
-    /// table (Impl::matTable), parsing its POV finish (StyleMgr) on first use
-    /// and caching the result. Empty name maps to "default". Returns 0 when
-    /// built without umbreon.
+    /// table (Impl::matTable), building the umbreon material from the name on
+    /// first use (see lookupMaterial in the .cpp: principled for physical
+    /// materials, Toon for the NPR ones -- no POV def, no StyleMgr) and
+    /// caching the result. Empty name maps to "default"; an unknown name falls
+    /// back to it too. Returns 0 when built without umbreon.
     int materialIndexFor(const LString &matName);
   };
 
