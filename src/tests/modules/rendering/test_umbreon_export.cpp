@@ -554,6 +554,102 @@ TEST(UmbreonExport, GlobalIlluminationAffectsOutput)
     EXPECT_NE(base, giFrame);
 }
 
+// Pins the GI integrator's TRACED reflection (the pt2 behavior CueMol asks for
+// via giIntegrator=2 in buildSceneAndOptions): a reflective material must mirror
+// the actual scene geometry, not the background color.
+//
+// Setup: a gray "spec_metal" panel (F_MetalD: reflection 0.65, specular 0.80)
+// tilted 45 deg about Y, so its mirror direction is exactly -X. A red "matte"
+// panel sits at x = -4, OUTSIDE the view frustum (zoom 6 => the frame spans x
+// in [-3,3]) and edge-on to the camera, so it is invisible directly and can
+// only reach the metal through a reflection bounce. The background is black.
+//
+// The discriminator is the MAGNITUDE of the red the metal picks up. A traced
+// specular lobe composites reflection * E_spec = 0.65 * red. The older fake
+// environment term composites reflection * background = 0.65 * black = 0, and
+// leaves only the diffuse gather's bounce -- the red panel subtends a small
+// part of the cosine-weighted hemisphere, so that is an order of magnitude
+// weaker. The threshold below sits between the two measured regimes.
+TEST(UmbreonExport, ReflectiveMaterialMirrorsSceneGeometryUnderGI)
+{
+    UmbreonDisplayContext ctx;
+    ctx.init();
+    ctx.setPerspective(false);
+    ctx.setViewDist(100.0);
+    ctx.setZoom(6.0);
+    ctx.setSlabDepth(1.0e6);  // push the depth fog far away (negligible)
+    ctx.loadIdent();
+
+    ctx.startRender();
+    ctx.startSection("refl");
+
+    // Metal panel through the origin, normal (-1,0,1)/sqrt(2) (faces the +Z
+    // camera, tilts the mirror ray to -X). Spanned by U = (1,0,1)/sqrt(2) and
+    // Y; every point on it reflects toward -X.
+    const double h = 0.70710678;  // 1/sqrt(2)
+    const double a = 1.5, b = 1.5;
+    ctx.setMaterial("spec_metal");  // before color(): the CLUT captures the name
+    ctx.color(gfx::SolidColor::createRGB(0.5, 0.5, 0.5));  // gray: any red is reflected
+    ctx.startTriangles();
+    const Vector4D nrm(-h, 0.0, h);
+    const Vector4D p1(-a * h, -b, -a * h);
+    const Vector4D p2(a * h, -b, a * h);
+    const Vector4D p3(a * h, b, a * h);
+    const Vector4D p4(-a * h, b, -a * h);
+    const Vector4D quad[6] = {p1, p2, p3, p1, p3, p4};
+    for (const Vector4D &v : quad) {
+        ctx.normal(nrm);
+        ctx.vertex(v);
+    }
+    ctx.end();
+
+    // Red panel at x = -4 facing +X: out of frame and edge-on, so it is only
+    // reachable by a bounce. "matte" (ambient 0.3, diffuse 0.8) is an ordinary
+    // diffuse surface -- it must have a non-zero diffuse to feed the bounce at
+    // all ("nolighting" has diffuse 0, so its flat ambient look is camera-
+    // visible self-illumination only and it hands the gather nothing).
+    ctx.setMaterial("matte");
+    ctx.color(gfx::SolidColor::createRGB(1.0, 0.0, 0.0));
+    ctx.startTriangles();
+    const Vector4D rn(1.0, 0.0, 0.0);
+    const Vector4D q1(-4.0, -1.5, -1.5);
+    const Vector4D q2(-4.0, -1.5, 1.5);
+    const Vector4D q3(-4.0, 1.5, 1.5);
+    const Vector4D q4(-4.0, 1.5, -1.5);
+    const Vector4D rquad[6] = {q1, q2, q3, q1, q3, q4};
+    for (const Vector4D &v : rquad) {
+        ctx.normal(rn);
+        ctx.vertex(v);
+    }
+    ctx.end();
+    ctx.endSection();
+
+    UmbreonRenderParams prm;
+    prm.width = 48;
+    prm.height = 48;
+    prm.supersample = 1;
+    prm.giEnabled = true;
+    prm.giSamples = 8;
+    prm.giDenoise = false;  // keep the raw gather: OIDN would blur the signal
+
+    int ow = 0, oh = 0, ncomp = 0;
+    std::vector<unsigned char> pix;
+    ctx.render(prm, ow, oh, ncomp, pix);
+
+    ASSERT_EQ(pix.size(), static_cast<std::size_t>(48 * 48 * 3));
+
+    // center of the frame: on the metal panel
+    const std::size_t c = (static_cast<std::size_t>(24) * 48 + 24) * 3;
+    const int red = pix[c], blue = pix[c + 2];
+
+    EXPECT_GT(red, 8);  // the metal panel is actually there
+
+    // Measured at this setup: R-B = 119 with the traced lobe, R-B = 2 with the
+    // fake reflection*background term (the metal only picks up the gather's weak
+    // diffuse bounce off the red panel). 40 sits well between the two regimes.
+    EXPECT_GT(red - blue, 40);
+}
+
 // Pins per-renderer veil compositing: a semi-transparent section (renderer) is
 // laid down as ONE single-layer veil, so several overlapping spheres in it look
 // identical to a single sphere -- the overlaps do not double-blend. Without the

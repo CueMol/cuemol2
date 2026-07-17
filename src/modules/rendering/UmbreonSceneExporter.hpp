@@ -75,7 +75,7 @@ namespace render {
     /// "_transpbg"). Default false (opaque RGB over the scene background color).
     bool m_bTransparentBackground;
 
-    /// diffuse global illumination (pt1 path-traced integrator); default off
+    /// diffuse global illumination (pt2 path-traced integrator); default off
     bool m_bGI;
 
     /// GI gather samples per pixel (higher = less noise)

@@ -41,7 +41,7 @@ namespace render {
     bool shadows = false;
     int shadowSamples = 1;
     double lightRadius = 0.0;
-    /// diffuse global illumination (umbreon pt1 path-traced integrator). When
+    /// diffuse global illumination (umbreon pt2 path-traced integrator). When
     /// on, the lighting is rebalanced to the POV radiosity split (energy moved
     /// into the GI-gathered ambient). giSamples = gather rays per pixel;
     /// giIntensity = indirect gain; giEnvIntensity = environment (sky)
