@@ -135,6 +135,17 @@ namespace {
         // ported from a POV finish
         {"default", 0.20f, 0.80f, 0.0f, 0.3742032f, 0.40f, 0.00f},
         {"matte", 0.30f, 0.80f, 0.0f, 0.5000000f, 0.00f, 0.00f},
+        // TODO: add an "aniso_diff_metal" sibling -- brushed metal, driven by
+        // pbr.anisotropy (+ pbr.anisotropyRotation, in turns: 0.25 = a
+        // circumferential/lathe brush instead of an axial one). The bench demo
+        // equivalent is metallic 1, roughness 0.35, anisotropy 0.8. It needs
+        // PbrEntry extended (no anisotropy fields yet) and the name added to
+        // default_style.xml so the UI can offer it. Constraint worth knowing
+        // BEFORE wiring it: umbreon applies anisotropy to sphere/cylinder
+        // primitives ONLY (sphere pole = world +Y, cylinder = its own axis);
+        // mesh surfaces stay isotropic until a per-vertex tangent attribute
+        // exists, so the material is inert on the mesh-based renderers and
+        // only shows on ball-and-stick.
         {"diff_metal", 0.35f, 0.30f, 1.0f, 0.5491005f, 0.80f, 0.10f},
         {"spec_metal", 0.15f, 0.60f, 1.0f, 0.3742032f, 0.80f, 0.65f},
         // authored: no POV finish to port from (approximate by intent)
