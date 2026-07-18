@@ -31,10 +31,20 @@ SimpleRenderer::SimpleRenderer()
     m_dCvScl2 = 0.05;
     m_bUseShader = false;
     m_bCheckShaderOK = false;
+
+    m_bUseCoordTex = false;
+    m_bCoordDirty = false;
+    m_pCoordTex = nullptr;
+    m_nTexW = 0;
+    m_nTexH = 0;
 }
 
 SimpleRenderer::~SimpleRenderer()
 {
+    if (m_pCoordTex != nullptr) {
+        delete m_pCoordTex;
+        m_pCoordTex = nullptr;
+    }
 }
 
 const char *SimpleRenderer::getTypeName() const
