@@ -4,6 +4,9 @@
 #include "NAMDCoorReader.qif"
 #include "GROFileReader.qif"
 #include "AmberPrmtopReader.qif"
+#include "TrajBlock.qif"
+#include "Trajectory.qif"
+#include "DCDTrajReader.qif"
 
 module mdtools
 {
@@ -13,5 +16,8 @@ module mdtools
   NAMDCoorReader;
   GROFileReader;
   AmberPrmtopReader;
+  TrajBlock;
+  Trajectory;
+  DCDTrajReader;
 };
 

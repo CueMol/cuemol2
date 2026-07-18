@@ -51,6 +51,9 @@ namespace molstr {
   class MolCoord;
   typedef qlib::LScrSp<MolCoord> MolCoordPtr;
 
+  class AnimMol;
+  typedef qlib::LScrSp<AnimMol> AnimMolPtr;
+
   class MolChain;
   typedef qlib::LScrSp<MolChain> MolChainPtr;
 
