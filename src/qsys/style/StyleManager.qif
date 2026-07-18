@@ -97,10 +97,10 @@ runtime_class StyleManager
 
   // String-based methods
 
-  /// Get style's value by string key in dot notation
+  /// Get style value by string key in dot notation
   string getStyleValue(integer nSceneID, string setId, string key);
 
-  /// Set style's value by string key in dot notation
+  /// Set style value by string key in dot notation
   void setStyleValue(integer nSceneID, string setId, string key, string value);
 
   /// Get names (IDs) of defined styles in this
