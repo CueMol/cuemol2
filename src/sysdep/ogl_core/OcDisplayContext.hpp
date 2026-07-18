@@ -16,6 +16,7 @@ class PixRep;
 class PixelBuffer;
 class RenderTarget;
 class DataTexture;
+class FloatDataTexture;
 }  // namespace gfx
 
 namespace sysdep {
@@ -72,6 +73,8 @@ public:
     gfx::DataTexture *createDataTextureFromFile(const LString &path, int w,
                                                         int h, int ncomp,
                                                         bool linear) override;
+
+    gfx::FloatDataTexture *createFloatDataTexture() override;
 
     void bindRenderTarget(gfx::RenderTarget *prt) override;
 

@@ -17,6 +17,7 @@
 #include "OcBufTexRep.hpp"
 #include "OcRenderTarget.hpp"
 #include "OcDataTexture.hpp"
+#include "OcFloatDataTexture.hpp"
 #include <gfx/SolidColor.hpp>
 #include <gfx/Mesh.hpp>
 #include <gfx/AbstDrawAttrs.hpp>
@@ -142,6 +143,13 @@ gfx::DataTexture *OcDisplayContext::createDataTexture(int w, int h, int ncomp,
         return nullptr;
     }
     return p;
+}
+
+gfx::FloatDataTexture *OcDisplayContext::createFloatDataTexture()
+{
+    // The texture is allocated later via FloatDataTexture::create(w, h, ncomp);
+    // pass this context so it can resolve the view ID at that point.
+    return MB_NEW OcFloatDataTexture(this);
 }
 
 gfx::DataTexture *OcDisplayContext::createDataTextureFromFile(const LString &path,

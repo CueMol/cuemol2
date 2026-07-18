@@ -431,6 +431,22 @@ export class GfxManager {
         return this.textures.createDataTexture(name, width, height, ncomp, linear, array_buf);
     }
 
+    /**
+     * API: create a mutable float data texture (RGB32F, NEAREST, clamp-to-edge)
+     * for per-atom coordinate lookup from vertex shaders. ncomp is limited to 3.
+     * Returns false if `name` is taken or the component count is unsupported.
+     */
+    /// API
+    createFloatDataTexture(name: string, width: number, height: number,
+                           ncomp: number): boolean {
+        return this.textures.createFloatDataTexture(name, width, height, ncomp);
+    }
+
+    /// API
+    updateFloatDataTexture(name: string, array_buf: any): boolean {
+        return this.textures.updateFloatDataTexture(name, array_buf);
+    }
+
     /// API
     bindTexture(name: string, texUnit: number): void {
         this.textures.bindTexture(name, texUnit);

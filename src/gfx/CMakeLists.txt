@@ -23,6 +23,7 @@ CmsXform.cpp
 ColProfMgr.cpp
 Hittest.cpp
 SphereGpuPrim.cpp
+SphereIdxGpuPrim.cpp
 CylinderGpuPrim.cpp
 TrigGpuPrim.cpp
 LineGpuPrim.cpp
@@ -48,9 +49,11 @@ AbstDrawElem.hpp
 VBORep.hpp
 RenderTarget.hpp
 DataTexture.hpp
+FloatDataTexture.hpp
 GradientColor.hpp
 GpuPrim.hpp
 SphereGpuPrim.hpp
+SphereIdxGpuPrim.hpp
 CylinderGpuPrim.hpp
 TrigGpuPrim.hpp
 LineGpuPrim.hpp

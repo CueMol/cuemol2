@@ -11,6 +11,7 @@ SET(SYSDEP_SRCS
   ogl_core/OcBufferRep.cpp
   ogl_core/OcRenderTarget.cpp
   ogl_core/OcDataTexture.cpp
+  ogl_core/OcFloatDataTexture.cpp
 )
 
 SET(SYSDEP_HDRS

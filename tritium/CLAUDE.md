@@ -375,6 +375,18 @@ Variadic-tuple trick for `void` args (used in all three): `type Args<K> = X exte
 
 Note: the C++ `View` / `Scene` objects are not destroyed by `removeView`; that is a separate future concern.
 
+### Worker-thread rAF vs message-handler tasks (GL call timing)
+
+The Web Worker owns the GL context for its whole lifetime (`GfxManager._canvas` has no unbind path, above), so a GL call is legal from **any** Worker task, not only from the rAF callback. Message-handler / service tasks already call GL directly in production: `WorkerService.resized()` runs a full `drawScene` synchronously, `GfxManager.activateView()` issues a redraw, and `exportImage.service.ts` renders to an FBO + `readPixels`. None of these run inside rAF and all are correct -- the safety comes from the context being held, not from being in rAF.
+
+What the rAF callback owns is **present**: one tick runs `cuemol.performIdleTasks()` then `checkAndUpdateScenes()` (`ViewLoopController`), in that order, and re-schedules itself unconditionally. Consequences:
+
+- To ask for a redraw, set `Scene::setUpdateFlag()` (a single bool the rAF loop polls); do not drive `drawScene` yourself from an event handler.
+- Timer-driven state changes (AnimMgr playback -> `fireAtomsMoved`) run inside `performIdleTasks()`, so they are drawn in the **same** tick. UI-driven changes (message-handler `setProp`) run outside rAF, so they are drawn on the **next** tick (up to one frame later).
+- A per-frame GL upload should be **deferred to `display()`** (guarded by a dirty flag), not done in the event handler that detected the change. `objectChanged()` can fire N times in one task (e.g. drag preview writes `setProp` repeatedly), but the draw coalesces to once per frame; deferring the upload to `display()` makes it coalesce the same way and guarantees it runs inside the tick with a `DisplayContext` in hand. The CPK2Renderer coordinate-texture path (`m_bCoordDirty`) is the reference for this.
+
+Also note the "runs synchronously inside the Web Worker" wording under *Worker directory layout* (`server/services/*.service.ts`): "synchronously" means "does not `await` the C++ wrapper", not "runs inside the rAF tick". Services are dispatched as `Promise.resolve().then(...)` message-handler microtasks (`WorkerService`), i.e. outside rAF.
+
 ---
 
 ## react-gui Tests (`tritium/react-gui/`)

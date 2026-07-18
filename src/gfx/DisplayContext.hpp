@@ -37,6 +37,7 @@ class PixGpuPrim;
 class BufTexRep;
 class RenderTarget;
 class DataTexture;
+class FloatDataTexture;
 
 class GFX_API DisplayContext : public qlib::LObject
 {
@@ -581,6 +582,10 @@ public:
     {
         return nullptr;
     }
+
+    /// Create a backend-specific mutable float data texture.
+    /// Returns nullptr if not supported (caller must fall back).
+    virtual FloatDataTexture *createFloatDataTexture();
 
     /// Make the given render target the current draw target. Passing nullptr
     /// restores the default framebuffer. Default is a no-op.

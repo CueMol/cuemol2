@@ -44,6 +44,7 @@ const EXPECTED_PEER_API = [
     'clearRenderTarget',
     'createBuffer',
     'createDataTexture',
+    'createFloatDataTexture',
     'createFramebuffer',
     'createShader',
     'createTexture',
@@ -68,6 +69,7 @@ const EXPECTED_PEER_API = [
     'setViewport',
     'unbindTexture',
     'updateDrawParamsUBO',
+    'updateFloatDataTexture',
     'updateFogUBO',
     'updateMatricesUBO',
 ] as const;
