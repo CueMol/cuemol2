@@ -45,7 +45,7 @@ namespace qlib {
   public:
     LClass();
 
-    virtual ~LClass();
+    ~LClass() override;
 
     ///
     /// returns full-qualified system-independent name

@@ -31,26 +31,26 @@ namespace molstr {
 
   public:
     PDBFileWriter();
-    virtual ~PDBFileWriter();
+    ~PDBFileWriter() override;
 
     /// Attach to and lock the target object
-    virtual void attach(qsys::ObjectPtr pObj);
+    void attach(qsys::ObjectPtr pObj) override;
 
     // /** detach from the target object */
     // virtual qsys::ObjectPtr detach();
 
     /** write to the stream */
-    virtual bool write(qlib::OutStream &outs);
+    bool write(qlib::OutStream &outs) override;
 
     /** get file-type description */
-    virtual const char *getTypeDescr() const;
+    const char *getTypeDescr() const override;
 
     /** get file extension */
-    virtual const char *getFileExt() const;
+    const char *getFileExt() const override;
 
-    virtual const char *getName() const;
+    const char *getName() const override;
 
-    virtual bool canHandle(qsys::ObjectPtr pobj) const;
+    bool canHandle(qsys::ObjectPtr pobj) const override;
 
     /////////
 

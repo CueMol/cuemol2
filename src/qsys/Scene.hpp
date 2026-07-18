@@ -167,7 +167,7 @@ namespace qsys {
     Scene();
 
     /// destructor
-    virtual ~Scene();
+    ~Scene() override;
 
     /// initialization
     void init();
@@ -572,15 +572,15 @@ namespace qsys {
 
     //////////
     // for property event propagation
-    virtual qlib::uid_t getRootUID() const;
+    qlib::uid_t getRootUID() const override;
     /// Property changed event handler for the scene properties
-    virtual void propChanged(qlib::LPropEvent &ev);
+    void propChanged(qlib::LPropEvent &ev) override;
 
     /// object changed event
-    virtual void objectChanged(ObjectEvent &ev);
+    void objectChanged(ObjectEvent &ev) override;
 
     /// renderer changed event
-    virtual void rendererChanged(RendererEvent &ev);
+    void rendererChanged(RendererEvent &ev) override;
 
     ////////////////////////////////////////////////////////////
     // Serialization/Deserialization
@@ -588,12 +588,12 @@ namespace qsys {
     ///
     /// Serialize this scene to the stream
     ///
-    virtual void writeTo2(qlib::LDom2Node *pNode) const;
+    void writeTo2(qlib::LDom2Node *pNode) const override;
 
     ///
     /// Serialize this scene to the localfile
     ///
-    virtual void readFrom2(qlib::LDom2Node *pNode);
+    void readFrom2(qlib::LDom2Node *pNode) override;
 
     /// force to embed all external files (cameras and styles)
     void forceEmbed();
@@ -656,7 +656,7 @@ namespace qsys {
     void setIccIntent(int n);
 
     /// convert to string
-    virtual LString toString() const;
+    LString toString() const override;
     
   };
 

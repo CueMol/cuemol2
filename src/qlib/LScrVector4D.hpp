@@ -39,7 +39,7 @@ public:
 
     LScrVector4D(double ax, double ay, double az) : Vector4D(ax, ay, az) {}
 
-    virtual ~LScrVector4D();
+    ~LScrVector4D() override;
 
     // Assignment operator
     const LScrVector4D &operator=(const LScrVector4D &arg)
@@ -111,8 +111,8 @@ public:
         return LScrVector4D(Vector4D::sub(aVal));
     }
 
-    virtual bool isStrConv() const;
-    virtual LString toString() const;
+    bool isStrConv() const override;
+    LString toString() const override;
 
     void setStrValue(const LString &val);
 

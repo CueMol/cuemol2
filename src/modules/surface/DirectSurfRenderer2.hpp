@@ -46,25 +46,25 @@ namespace surface {
   public:
 
     DirectSurfRenderer2();
-    virtual ~DirectSurfRenderer2();
+    ~DirectSurfRenderer2() override;
 
-    virtual const char *getTypeName() const;
+    const char *getTypeName() const override;
 
     ///////////////////////////////////////////
 
-    virtual void preRender(DisplayContext *pdc);
+    void preRender(DisplayContext *pdc) override;
 
-    virtual void postRender(DisplayContext *pdc);
+    void postRender(DisplayContext *pdc) override;
 
-    virtual void render(DisplayContext *pdl);
+    void render(DisplayContext *pdl) override;
 
-    virtual void display(DisplayContext *pdc);
+    void display(DisplayContext *pdc) override;
 
-    virtual void invalidateDisplayCache();
+    void invalidateDisplayCache() override;
 
-    virtual void unloading();
+    void unloading() override;
 
-    virtual void propChanged(qlib::LPropEvent &ev);
+    void propChanged(qlib::LPropEvent &ev) override;
 
     ///////////////////////////////////////////
 
@@ -275,8 +275,8 @@ namespace surface {
     MolCoordPtr resolveMolIDImpl(const LString &name);
 
   public:
-    virtual void objectChanged(qsys::ObjectEvent &ev);
-    virtual void sceneChanged(qsys::SceneEvent &ev);
+    void objectChanged(qsys::ObjectEvent &ev) override;
+    void sceneChanged(qsys::SceneEvent &ev) override;
 
     ////////////////////////////////
     // for "potential" mode

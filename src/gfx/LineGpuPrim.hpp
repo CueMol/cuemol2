@@ -54,7 +54,7 @@ public:
     // ─── Lifecycle ────────────────────────────────────────────────────────────
 
     LineGpuPrim();
-    virtual ~LineGpuPrim();
+    ~LineGpuPrim() override;
 
     /** Load the wide-line shader. */
     bool init(DisplayContext *pDC) override;

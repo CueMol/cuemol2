@@ -72,7 +72,7 @@ namespace xtal {
     DensityMap();
 
     /// destructor
-    virtual ~DensityMap();
+    ~DensityMap() override;
 
     ///////////////////////////////////////////////
     // Object interface
@@ -84,38 +84,38 @@ namespace xtal {
     ///////////////////////////////////////////////
     // ScalarObject interface
 
-    virtual double getValueAt(const Vector4D &pos) const;
-    virtual unsigned char atByte(int i, int j, int k) const;
-    virtual double atFloat(int i, int j, int k) const;
+    double getValueAt(const Vector4D &pos) const override;
+    unsigned char atByte(int i, int j, int k) const override;
+    double atFloat(int i, int j, int k) const override;
 
-    virtual bool isInRange(const Vector4D &pos) const;
-    virtual bool isInBoundary(int i, int j, int k) const;
+    bool isInRange(const Vector4D &pos) const override;
+    bool isInBoundary(int i, int j, int k) const override;
 
-    virtual Vector4D getCenter() const;
-    virtual Vector4D getOrigin() const;
+    Vector4D getCenter() const override;
+    Vector4D getOrigin() const override;
 
-    virtual double getRmsdDensity() const;
-    virtual double getMinDensity() const { return m_dMinMap; }
-    virtual double getMaxDensity() const { return m_dMaxMap; }
-    virtual double getMeanDensity() const { return m_dMeanMap; }
+    double getRmsdDensity() const override;
+    double getMinDensity() const override { return m_dMinMap; }
+    double getMaxDensity() const override { return m_dMaxMap; }
+    double getMeanDensity() const override { return m_dMeanMap; }
 
-    virtual double getLevelBase() const;
-    virtual double getLevelStep() const;
+    double getLevelBase() const override;
+    double getLevelStep() const override;
 
     // get number of columns, rows, sections
-    virtual int getColNo() const { return m_nCols; }
-    virtual int getRowNo() const { return m_nRows; }
-    virtual int getSecNo() const { return m_nSecs; }
+    int getColNo() const override { return m_nCols; }
+    int getRowNo() const override { return m_nRows; }
+    int getSecNo() const override { return m_nSecs; }
 
-    virtual int getStartCol() const { return m_nStartCol; }
-    virtual int getStartRow() const { return m_nStartRow; }
-    virtual int getStartSec() const { return m_nStartSec; }
+    int getStartCol() const override { return m_nStartCol; }
+    int getStartRow() const override { return m_nStartRow; }
+    int getStartSec() const override { return m_nStartSec; }
 
-    virtual double getColGridSize() const;
-    virtual double getRowGridSize() const;
-    virtual double getSecGridSize() const;
+    double getColGridSize() const override;
+    double getRowGridSize() const override;
+    double getSecGridSize() const override;
 
-    virtual Vector4D convToOrth(const Vector4D &index) const;
+    Vector4D convToOrth(const Vector4D &index) const override;
 
     virtual void fitView(const qsys::ViewPtr &pView, bool dummy) const;
 
@@ -162,9 +162,9 @@ namespace xtal {
     ////////////////////////////////////////////
     // Data chunk serialization
 
-    virtual bool isDataSrcWritable() const { return true; }
-    virtual LString getDataChunkReaderName(int nQdfVer) const;
-    virtual void writeDataChunkTo(qlib::LDom2OutStream &oos) const;
+    bool isDataSrcWritable() const override { return true; }
+    LString getDataChunkReaderName(int nQdfVer) const override;
+    void writeDataChunkTo(qlib::LDom2OutStream &oos) const override;
 
     ///////////////////////////////////////////////////////////////
 

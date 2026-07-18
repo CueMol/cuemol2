@@ -61,7 +61,7 @@ public:
 public:
     MmcifMapReader();
 
-    virtual ~MmcifMapReader();
+    ~MmcifMapReader() override;
 
     //////////////////////////////////////////////
     // Read/build methods
@@ -69,32 +69,32 @@ public:
     ///
     /// Read from the input stream ins, and build the attached object.
     ///
-    virtual bool read(qlib::InStream &ins);
+    bool read(qlib::InStream &ins) override;
 
     //////////////////////////////////////////////
     // Information query methods
 
     /// get the nickname of this reader (referred from script interface)
-    virtual const char *getName() const;
+    const char *getName() const override;
 
     /// get file-type description
-    virtual const char *getTypeDescr() const;
+    const char *getTypeDescr() const override;
 
     /// get file extension
-    virtual const char *getFileExt() const;
+    const char *getFileExt() const override;
 
     /// create default object for this reader
-    virtual qsys::ObjectPtr createDefaultObj() const;
+    qsys::ObjectPtr createDefaultObj() const override;
 
     /// Content sniffer: YES when the header carries a `_refln.` CIF
     /// category (this reader's structure-factor target), NO when it
     /// carries `_atom_site.` instead (an MmcifMolReader file), UNKNOWN
     /// otherwise. Scans up to ~200 lines or the end of the peek buffer.
-    virtual int canHandleContent(qlib::InStream &ins) const;
+    int canHandleContent(qlib::InStream &ins) const override;
 
     //////////////////////////////////////////////
 
-    virtual void readDataItem(CifParser &parser);
+    void readDataItem(CifParser &parser) override;
 
     double getResoln() const
     {

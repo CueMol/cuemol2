@@ -45,15 +45,15 @@ namespace anim {
   public:
     MolAnim();
     MolAnim(const MolAnim &arg);
-    virtual ~MolAnim();
+    ~MolAnim() override;
 
-    virtual void getTgtUIDs(AnimMgr *pMgr, std::vector<qlib::uid_t> &arry);
+    void getTgtUIDs(AnimMgr *pMgr, std::vector<qlib::uid_t> &arry) override;
 
-    virtual void onPropInit(AnimMgr *pMgr, qlib::uid_t tgt_uid);
+    void onPropInit(AnimMgr *pMgr, qlib::uid_t tgt_uid) override;
 
-    virtual void onStart(qlib::time_value elapsed, AnimMgr *pMgr);
-    virtual void onTimer(qlib::time_value elapsed, AnimMgr *pMgr);
-    virtual void onEnd(qlib::time_value elapsed, AnimMgr *pMgr);
+    void onStart(qlib::time_value elapsed, AnimMgr *pMgr) override;
+    void onTimer(qlib::time_value elapsed, AnimMgr *pMgr) override;
+    void onEnd(qlib::time_value elapsed, AnimMgr *pMgr) override;
 
     LReal getStartValue() const { return m_startValue; }
     void setStartValue(LReal val) { m_startValue = val; }
@@ -61,7 +61,7 @@ namespace anim {
     LReal getEndValue() const { return m_endValue; }
     void setEndValue(LReal val) { m_endValue = val; }
 
-    LString getPropName() const {
+    LString getPropName() const override {
       return m_propName;
     }
     void setPropName(LString val) {

@@ -29,7 +29,7 @@ class QSYS_API GUIView : public qsys::View
 
 public:
     GUIView();
-    virtual ~GUIView();
+    ~GUIView() override;
 
     //////////
     // Mouse events
@@ -66,34 +66,34 @@ public:
 
     //////////
 
-    virtual void setCenterMark(int nMode) override;
+    void setCenterMark(int nMode) override;
 
     /// Setup the projection matrix
-    virtual void setUpProjMat(int cx, int cy) override;
+    void setUpProjMat(int cx, int cy) override;
 
     /// Setup the light source color
     void setUpLightColor();
 
     /// Setup the projection matrix for stereo (View interface)
-    virtual void setUpModelMat(int nid) override;
+    void setUpModelMat(int nid) override;
 
-    virtual void drawScene() override;
+    void drawScene() override;
 
     /// Keep redrawing on idle while temporal-jitter accumulation is unfinished,
     /// or while a full-resolution AO follow-up is owed after a half-res
     /// (camera-moving) frame (adaptive aoHalfRes).
-    virtual bool needsContinuousRedraw() const override
+    bool needsContinuousRedraw() const override
     {
         return m_jitterMoreSamples || m_aoHalfPending;
     }
 
     /// Force a redraw and restart any temporal-jitter accumulation (used when
     /// the scene content changes via the scene-level update flag).
-    virtual void forceRedraw() override;
+    void forceRedraw() override;
 
     /// Release GPU resources (incl. AO render targets) while the GL context is
     /// still alive, before the display context is torn down.
-    virtual void unloading() override;
+    void unloading() override;
 
     /// Clean-up the drawing display with the current bg color
     virtual void clear();
@@ -102,13 +102,13 @@ public:
     // Hit test operations
 
 public:
-    virtual LString hitTest(int x, int y) override;
+    LString hitTest(int x, int y) override;
 
-    virtual LString hitTestRect(int x, int y, int w, int h, bool bNr) override;
+    LString hitTestRect(int x, int y, int w, int h, bool bNr) override;
 
-    virtual qlib::LScrVector4D projToScreen(const qlib::Vector4D &wpos) override;
+    qlib::LScrVector4D projToScreen(const qlib::Vector4D &wpos) override;
 
-    virtual LString hitTestPolygon(qlib::LByteArrayPtr pts, bool bNearest) override;
+    LString hitTestPolygon(qlib::LByteArrayPtr pts, bool bNearest) override;
 
 protected:
     MouseEventHandler m_meh;
@@ -131,9 +131,9 @@ private:
 
 public:
     /// Create a new off-screen view compatible with this view
-    virtual View *createOffScreenView(int w, int h, int aa_depth) override;
+    View *createOffScreenView(int w, int h, int aa_depth) override;
 
-    virtual void readPixels(int x, int y, int width, int height, char *pbuf,
+    void readPixels(int x, int y, int width, int height, char *pbuf,
                             int nbufsize, int ncomp) override;
 
     void setFogColorImpl(DisplayContext *pdc);

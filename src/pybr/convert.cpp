@@ -33,13 +33,13 @@ public:
         m_pCB = p;
     }
 
-    virtual ~QpyCallBackObj()
+    ~QpyCallBackObj() override
     {
         MB_DPRINTLN("~QpyCallBackObj (%p) called", m_pCB);
         Py_DECREF(m_pCB);
     }
 
-    virtual bool invoke(qlib::LVarArgs &args)
+    bool invoke(qlib::LVarArgs &args) override
     {
         const int nargs = args.getSize();
         PyObject *pPyArgs, *pPyRes;
@@ -74,7 +74,7 @@ public:
         return true;
     }
 
-    virtual LCloneableObject *clone() const
+    LCloneableObject *clone() const override
     {
         MB_ASSERT(false);
         return NULL;

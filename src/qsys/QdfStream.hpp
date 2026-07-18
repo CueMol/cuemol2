@@ -117,7 +117,7 @@ namespace qsys {
     QdfInStream(InStream &r)
          : super_t(r), m_pBinIn(NULL), m_pB64In(NULL), m_pZIn(NULL) {}
 
-    virtual ~QdfInStream();
+    ~QdfInStream() override;
 
     ////////////////////////////////
 
@@ -264,7 +264,7 @@ namespace qsys {
     QdfOutStream(OutStream &r)
          : super_t(r), m_nVersion(0), m_pOut(NULL), m_pB64Out(NULL), m_pZOut(NULL) {}
 
-    virtual ~QdfOutStream();
+    ~QdfOutStream() override;
 
     ////////////////////////////////
 

@@ -234,7 +234,7 @@ namespace qlib {
 	execute(ev, cblist[i]);
     }
 
-    virtual void fireEvent(LEvent *rpEvent)
+    void fireEvent(LEvent *rpEvent) override
     {
       _EvntType *pEv = dynamic_cast<_EvntType *>(rpEvent);
       if (pEv==NULL) {

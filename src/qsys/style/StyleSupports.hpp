@@ -24,9 +24,9 @@ namespace qsys {
          : qlib::LEvent(ev)
     {}
   
-    virtual ~StyleEvent();
+    ~StyleEvent() override;
 
-    virtual LCloneableObject *clone() const;
+    LCloneableObject *clone() const override;
   };
 
   ////////////////////////////////////////////

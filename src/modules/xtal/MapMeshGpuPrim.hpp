@@ -41,7 +41,7 @@ private:
 
 public:
     MapMeshGpuPrim() : m_pPO(nullptr), m_pDrawElem(nullptr) {}
-    virtual ~MapMeshGpuPrim() { invalidate(); }
+    ~MapMeshGpuPrim() override { invalidate(); }
 
     // Non-copyable
     MapMeshGpuPrim(const MapMeshGpuPrim &) = delete;

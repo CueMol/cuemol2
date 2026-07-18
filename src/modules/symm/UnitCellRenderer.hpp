@@ -47,20 +47,20 @@ private:
 
 public:
   UnitCellRenderer();
-  virtual ~UnitCellRenderer();
+  ~UnitCellRenderer() override;
 
   //////////////////////////////////////////////////////
 
-  virtual bool isCompatibleObj(qsys::ObjectPtr pobj) const;
-  virtual LString toString() const;
-  virtual const char *getTypeName() const;
+  bool isCompatibleObj(qsys::ObjectPtr pobj) const override;
+  LString toString() const override;
+  const char *getTypeName() const override;
 
-  virtual void preRender(DisplayContext *pdc);
-  virtual void postRender(DisplayContext *pdc);
-  virtual void render(DisplayContext *pdl);
-  virtual bool isHitTestSupported() const;
+  void preRender(DisplayContext *pdc) override;
+  void postRender(DisplayContext *pdc) override;
+  void render(DisplayContext *pdl) override;
+  bool isHitTestSupported() const override;
 
-  virtual qlib::Vector4D getCenter() const;
+  qlib::Vector4D getCenter() const override;
 
   //////////////////////////////////////////////////////
 

@@ -111,25 +111,25 @@ private:
 
 public:
   NARenderer();
-  virtual ~NARenderer();
+  ~NARenderer() override;
 
   // virtual Renderer *create();
 
-  virtual const char *getTypeName() const;
+  const char *getTypeName() const override;
 
   //////////////////////////////////////////////////////
 
-  virtual void beginRend(DisplayContext *pdl);
-  virtual void endRend(DisplayContext *pdl);
+  void beginRend(DisplayContext *pdl) override;
+  void endRend(DisplayContext *pdl) override;
 
-  virtual void beginSegment(DisplayContext *pdl, MolResiduePtr pRes);
-  virtual void rendResid(DisplayContext *pdl, MolResiduePtr pRes);
-  virtual void endSegment(DisplayContext *pdl, MolResiduePtr pRes);
+  void beginSegment(DisplayContext *pdl, MolResiduePtr pRes) override;
+  void rendResid(DisplayContext *pdl, MolResiduePtr pRes) override;
+  void endSegment(DisplayContext *pdl, MolResiduePtr pRes) override;
 
   //////////////////////////////////////////////////////
 
-  virtual void attachObj(qlib::uid_t obj_uid);
-  virtual qlib::uid_t detachObj();
+  void attachObj(qlib::uid_t obj_uid) override;
+  qlib::uid_t detachObj() override;
 
 private:
   void rendResidBasePair(DisplayContext *pdl, MolResiduePtr pRes);

@@ -31,17 +31,17 @@ namespace qsys {
 
     AnimObjEvent(const AnimObjEvent &ev) : super_t(ev), m_nIndex(ev.m_nIndex) {}
 
-    virtual ~AnimObjEvent();
+    ~AnimObjEvent() override;
 
-    virtual LCloneableObject *clone() const;
+    LCloneableObject *clone() const override;
 
     //////////
 
     void setIndex(int n) { m_nIndex = n; }
     int getIndex() const { return m_nIndex; }
 
-    virtual LString getJSON() const;
-    virtual bool getCategory(LString &category, int &nSrcType, int &nEvtType) const;
+    LString getJSON() const override;
+    bool getCategory(LString &category, int &nSrcType, int &nEvtType) const override;
 
   };
 
@@ -76,19 +76,19 @@ namespace qsys {
 
     AnimObjEditInfo();
 
-    virtual ~AnimObjEditInfo();
+    ~AnimObjEditInfo() override;
 
     ////////////////////////////////////////
 
     /// Perform undo
-    virtual bool undo();
+    bool undo() override;
 
     /// Perform redo
-    virtual bool redo();
+    bool redo() override;
 
-    virtual bool isUndoable() const;
+    bool isUndoable() const override;
 
-    virtual bool isRedoable() const;
+    bool isRedoable() const override;
 
   private:
     AnimMgrPtr getTgtMgr() const;

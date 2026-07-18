@@ -24,7 +24,7 @@ namespace qlib {
     /** default ctor */
     LRcObject() : LObject(), m_nRef(0) {}
 
-    virtual ~LRcObject();
+    ~LRcObject() override;
 
     //
     // member methods

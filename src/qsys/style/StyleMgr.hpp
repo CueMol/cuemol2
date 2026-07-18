@@ -74,7 +74,7 @@ namespace qsys {
   public:
     
     StyleMgr();
-    virtual ~StyleMgr();
+    ~StyleMgr() override;
     
     //////////////////////////////
     // context management
@@ -315,7 +315,7 @@ namespace qsys {
   class StyleEventCaster
        : public qlib::LEventCaster<StyleEvent, StyleEventListener>
   {
-    virtual void execute(StyleEvent &ev, StyleEventListener *p)
+    void execute(StyleEvent &ev, StyleEventListener *p) override
     {
       p->styleChanged(ev);
     }

@@ -102,24 +102,24 @@ public:
 
 public:
     SimpleRenderer();
-    virtual ~SimpleRenderer();
+    ~SimpleRenderer() override;
 
-    virtual const char *getTypeName() const;
+    const char *getTypeName() const override;
 
     //////////////////////////////////////////////////////
 
     // old rendering interface (using GL compatible prof)
 
-    virtual bool isRendBond() const;
+    bool isRendBond() const override;
 
-    virtual void preRender(DisplayContext *pdc);
+    void preRender(DisplayContext *pdc) override;
 
-    virtual void beginRend(DisplayContext *pdl);
-    virtual void endRend(DisplayContext *pdl);
+    void beginRend(DisplayContext *pdl) override;
+    void endRend(DisplayContext *pdl) override;
 
-    virtual void rendAtom(DisplayContext *pdl, MolAtomPtr pAtom, bool fbonded);
-    virtual void rendBond(DisplayContext *pdl, MolAtomPtr pAtom1, MolAtomPtr pAtom2,
-                          MolBond *pMB);
+    void rendAtom(DisplayContext *pdl, MolAtomPtr pAtom, bool fbonded) override;
+    void rendBond(DisplayContext *pdl, MolAtomPtr pAtom1, MolAtomPtr pAtom2,
+                          MolBond *pMB) override;
 
 private:
     void drawInterAtomLine(MolAtomPtr pAtom1, MolAtomPtr pAtom2, MolBond *pMB,
@@ -130,12 +130,12 @@ private:
 
 public:
     // new rendering interface (using LineGpuPrim)
-    virtual void display(DisplayContext *pdc);
+    void display(DisplayContext *pdc) override;
 
-    virtual void invalidateDisplayCache();
+    void invalidateDisplayCache() override;
 
     /// object changed event (--> invalidate shader cache if required)
-    virtual void objectChanged(qsys::ObjectEvent &ev);
+    void objectChanged(qsys::ObjectEvent &ev) override;
 
 private:
     /// Build and upload line geometry to LineGpuPrim

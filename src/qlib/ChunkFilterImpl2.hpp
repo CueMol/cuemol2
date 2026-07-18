@@ -96,7 +96,7 @@ namespace qlib {
     }
 
 
-    virtual bool ready() {
+    bool ready() override {
       //MB_DPRINTLN("CF3::ready() called, EOF=%d, EOC=%d, navail=%d", m_bEOF, m_bEOC, m_nAvail);
       if (m_nAvail>0)
 	return true;
@@ -109,7 +109,7 @@ namespace qlib {
       return true;
     }
     
-    virtual int read() {
+    int read() override {
       //MB_DPRINTLN("ChunkFIlter3::read()");
       quint8 rval;
       int nread = read((char *)&rval, 0, 1);
@@ -265,7 +265,7 @@ namespace qlib {
 	m_buffer[ito+i] = m_buffer[ifrom+i];
     }
 
-    virtual int read(char *abuf, int aoff, int alen)
+    int read(char *abuf, int aoff, int alen) override
     {
       //MB_DPRINTLN("ChunkFIlter3::read(%p, %d, %d)", abuf, aoff, alen);
 
@@ -423,7 +423,7 @@ namespace qlib {
       return -1;
     }
     
-    virtual int skip(int len) {
+    int skip(int len) override {
       MB_THROW(FileFormatException, "skip() not supported");
       return super_t::skip(len);
     }

@@ -90,7 +90,7 @@ public:
         return *this;
     }
 
-    virtual ~LRegExpr();
+    ~LRegExpr() override;
 
     void cleanup();
 
@@ -122,8 +122,8 @@ public:
     LString getSubstr(int index);
     LString getNamedSubstr(const LString &name);
 
-    virtual bool isStrConv() const;
-    virtual LString toString() const;
+    bool isStrConv() const override;
+    LString toString() const override;
 
     typedef std::true_type has_fromString;
     static LRegExpr *fromStringS(const LString &src);

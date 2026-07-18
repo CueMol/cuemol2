@@ -76,7 +76,7 @@ namespace surface {
 
     MolSurfObj();
 
-    virtual ~MolSurfObj();
+    ~MolSurfObj() override;
 
     ////////////////////////////////////////////
     // MbObject operations
@@ -229,9 +229,9 @@ namespace surface {
     ////////////////////////////////////////////
     // Data chunk serialization
 
-    virtual bool isDataSrcWritable() const { return true; }
-    virtual LString getDataChunkReaderName(int nQdfVer) const;
-    virtual void writeDataChunkTo(qlib::LDom2OutStream &oos) const;
+    bool isDataSrcWritable() const override { return true; }
+    LString getDataChunkReaderName(int nQdfVer) const override;
+    void writeDataChunkTo(qlib::LDom2OutStream &oos) const override;
 
   };
 

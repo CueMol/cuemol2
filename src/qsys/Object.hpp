@@ -125,10 +125,10 @@ namespace qsys {
     Object();
 
     // dtor
-    virtual ~Object();
+    ~Object() override;
   
     /// convert to string
-    virtual LString toString() const;
+    LString toString() const override;
 
     /// show debug message (to error log)
     virtual void dump() const;
@@ -192,10 +192,10 @@ namespace qsys {
     }
     
     /// Read object from stream (LDataSrcContiner implementation)
-    virtual void readFromStream(qlib::InStream &ins);
+    void readFromStream(qlib::InStream &ins) override;
 
     /// Update src path prop (after reading from src or alt_src)
-    virtual void updateSrcPath(const LString &srcpath);
+    void updateSrcPath(const LString &srcpath) override;
 
     ////////////////////////////////////////////////////////////
   
@@ -290,16 +290,16 @@ namespace qsys {
     void fireObjectEvent(ObjectEvent &ev);
 
     /// for property event propagation
-    virtual qlib::uid_t getRootUID() const;
+    qlib::uid_t getRootUID() const override;
 
     /// property event handler for object properties
-    virtual void propChanged(qlib::LPropEvent &ev);
+    void propChanged(qlib::LPropEvent &ev) override;
 
     ////////////////////////////////////////////////////////////
     // Serialization/Deserialization
 
-    virtual void writeTo2(LDom2Node *pNode) const;
-    virtual void readFrom2(LDom2Node *pNode);
+    void writeTo2(LDom2Node *pNode) const override;
+    void readFrom2(LDom2Node *pNode) override;
 
     /// convert rel and abs of src and alt_src paths
     void convSrcPath(const LString &src_str,
@@ -309,7 +309,7 @@ namespace qsys {
 
     virtual void forceEmbed();
 
-    virtual void setDataChunkName(const LString &name, LDom2Node *pNode, int nQdfVer);
+    void setDataChunkName(const LString &name, LDom2Node *pNode, int nQdfVer) override;
 
   private:
     void registerRendererImpl(RendererPtr);

@@ -63,7 +63,7 @@ namespace molstr {
     {
     }
   
-    ~ChainIterator()
+    ~ChainIterator() override
     {
     }
 

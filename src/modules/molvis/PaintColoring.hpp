@@ -46,12 +46,12 @@ namespace molvis {
 
   public:
     PaintColoring();
-    virtual ~PaintColoring();
+    ~PaintColoring() override;
 
     //////////////////////////////////////////////////////
     // Coloring interface implementation
 
-    virtual bool getAtomColor(MolAtomPtr pAtom, ColorPtr &color);
+    bool getAtomColor(MolAtomPtr pAtom, ColorPtr &color) override;
 
     //////////////////////////////////////////////////////
 
@@ -74,8 +74,8 @@ namespace molvis {
     //////////////////////////////////////////////////////
     // Serialization / deserialization impl for non-prop data
 
-    virtual void writeTo2(qlib::LDom2Node *pNode) const;
-    virtual void readFrom2(qlib::LDom2Node *pNode);
+    void writeTo2(qlib::LDom2Node *pNode) const override;
+    void readFrom2(qlib::LDom2Node *pNode) override;
 
   private:
 

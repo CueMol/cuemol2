@@ -139,7 +139,7 @@ public:
   /// invalidate the cache entry 
   void invalidateCache(int id);
 
-  virtual void objectChanged(qsys::ObjectEvent &ev);
+  void objectChanged(qsys::ObjectEvent &ev) override;
 
 private:
   // Implementations

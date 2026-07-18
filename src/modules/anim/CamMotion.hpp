@@ -49,11 +49,11 @@ namespace anim {
  public:
     CamMotion();
     CamMotion(const CamMotion &arg);
-    virtual ~CamMotion();
+    ~CamMotion() override;
 
-    virtual void onStart(qlib::time_value elapsed, AnimMgr *pMgr);
-    virtual void onTimer(qlib::time_value elapsed, AnimMgr *pMgr);
-    virtual void onTimerPost(qlib::time_value elapsed, AnimMgr *pMgr);
+    void onStart(qlib::time_value elapsed, AnimMgr *pMgr) override;
+    void onTimer(qlib::time_value elapsed, AnimMgr *pMgr) override;
+    void onTimerPost(qlib::time_value elapsed, AnimMgr *pMgr) override;
 
     LString getDestCamName() const { return m_destCamName; }
     void setDestCamName(LString val) { m_destCamName = val; }

@@ -26,12 +26,12 @@ public:
 
     OcView(const OcView &r);
 
-    virtual ~OcView();
+    ~OcView() override;
 
     //////////
 
 public:
-    virtual LString toString() const override;
+    LString toString() const override;
 
     void setup();
 

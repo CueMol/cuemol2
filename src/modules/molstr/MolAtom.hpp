@@ -97,7 +97,7 @@ namespace molstr {
     MolAtom(const MolAtom &src);
 
     /// dtor
-    virtual ~MolAtom();
+    ~MolAtom() override;
 
     ////////////////////////////
     // Basic hardcoded properties
@@ -238,7 +238,7 @@ namespace molstr {
     /// get atom info string
     LString formatMsg() const;
 
-    virtual LString toString() const;
+    LString toString() const override;
 
     ////////////////////////
     // unisotropic B factor
@@ -300,7 +300,7 @@ namespace molstr {
     int getAtomPropNames(std::set<LString> &names) const {
       return getDynPropNames(names);
     }
-    LString getPropTypeName(const LString &propnm) const {
+    LString getPropTypeName(const LString &propnm) const override {
       return getDynPropTypeName(propnm);
     }
 

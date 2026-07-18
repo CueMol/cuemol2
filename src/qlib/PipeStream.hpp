@@ -26,42 +26,42 @@ namespace qlib {
     PipeStreamImpl() : m_feof(false) {}
 
     /** check if input is available. */
-    virtual bool ready();
+    bool ready() override;
     
     /** read one byte */
-    virtual int read();
+    int read() override;
     
     /** read into mem block */
-    virtual int read(char *buf, int off, int len);
+    int read(char *buf, int off, int len) override;
     
     /**
        Try to skip n bytes.
        @return the actual number of bytes skipped
     */
-    virtual int skip(int n);
+    int skip(int n) override;
     
     /** close the stream */
-    virtual void i_close();
+    void i_close() override;
     
     /** get source URI of this stream */
-    virtual LString getSrcURI() const;
+    LString getSrcURI() const override;
 
     ////////////////////
     
     /** write out mem block */
-    virtual int write(const char *buf, int off, int len);
+    int write(const char *buf, int off, int len) override;
     
     /** write one byte */
-    virtual void write(int b);
+    void write(int b) override;
     
     /** flush output stream */
-    virtual void flush();
+    void flush() override;
     
     /** close the stream */
-    virtual void o_close();
+    void o_close() override;
     
     /** get destination URI of this stream */
-    virtual LString getDestURI() const;
+    LString getDestURI() const override;
     
   };
 
@@ -75,7 +75,7 @@ namespace qlib {
       m_pimpl = pimpl;
     }
     
-    virtual qlib::InStream::impl_type getImpl() const {
+    qlib::InStream::impl_type getImpl() const override {
       return m_pimpl;
     }
   };
@@ -90,7 +90,7 @@ namespace qlib {
       m_pimpl = pimpl;
     }
     
-    virtual qlib::OutStream::impl_type getImpl() const {
+    qlib::OutStream::impl_type getImpl() const override {
       return m_pimpl;
     }
   };

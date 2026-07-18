@@ -67,7 +67,7 @@ namespace {
 
     void set(qlib::LSCBPtr pcb) { m_pCb = pcb; }
 
-    virtual void sceneChanged(SceneEvent &ev)
+    void sceneChanged(SceneEvent &ev) override
     {
       int ntype = ev.getType();
 

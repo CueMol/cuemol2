@@ -83,11 +83,11 @@ namespace molstr {
 
     CPKColoring();
     CPKColoring(const CPKColoring &r);
-    virtual ~CPKColoring();
+    ~CPKColoring() override;
 
     void setAtomColor(ElemID no, const gfx::ColorPtr &col);
 
-    virtual bool getAtomColor(MolAtomPtr pAtom, gfx::ColorPtr &color);
+    bool getAtomColor(MolAtomPtr pAtom, gfx::ColorPtr &color) override;
 
     // virtual bool getResidColor(MolResiduePtr pResid, gfx::ColorPtr &color);
 

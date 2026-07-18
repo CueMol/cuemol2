@@ -293,10 +293,10 @@ public:
   {
   }
     
-  virtual ~XMLParser2() {
+  ~XMLParser2() override {
   }
     
-  virtual void startElement(const LString &name, const ExpatInStream::Attributes &attrs)
+  void startElement(const LString &name, const ExpatInStream::Attributes &attrs) override
   {
     //MB_DPRINTLN("Start Element: tag= %s depth=%d",name.c_str(), getDepth());
 
@@ -335,13 +335,13 @@ public:
     m_pData->current()->clearContents();
   }
   
-  virtual void endElement(const LString &name) {
+  void endElement(const LString &name) override {
     //MB_DPRINTLN("End Element: tag= %s depth=%d",name.c_str(), getDepth());
     if (getDepth()>0)
       m_pData->popNode();
   }
   
-  virtual void charData(const LString &sbuf) {
+  void charData(const LString &sbuf) override {
     //MB_DPRINTLN("charData: [%s]", sbuf.c_str());
     //m_pData->current()->value += sbuf;
     m_pData->current()->appendContents(sbuf);

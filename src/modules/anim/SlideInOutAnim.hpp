@@ -38,13 +38,13 @@ namespace anim {
   public:
     SlideInOutAnim();
     SlideInOutAnim(const SlideInOutAnim &arg);
-    virtual ~SlideInOutAnim();
+    ~SlideInOutAnim() override;
 
-    virtual void onPropInit(AnimMgr *pMgr, qlib::uid_t tgt_uid);
+    void onPropInit(AnimMgr *pMgr, qlib::uid_t tgt_uid) override;
 
-    virtual void onStart(qlib::time_value elapsed, AnimMgr *pMgr);
-    virtual void onTimer(qlib::time_value elapsed, AnimMgr *pMgr);
-    virtual void onEnd(qlib::time_value elapsed, AnimMgr *pMgr);
+    void onStart(qlib::time_value elapsed, AnimMgr *pMgr) override;
+    void onTimer(qlib::time_value elapsed, AnimMgr *pMgr) override;
+    void onEnd(qlib::time_value elapsed, AnimMgr *pMgr) override;
 
     /////////////////////
     // persistent props
@@ -58,8 +58,8 @@ namespace anim {
     double getDistance() const { return m_distance; }
     void setDistance(double b) { m_distance = b; }
 
-    virtual LString getPropName() const;
-    virtual void setPropName(LString val);
+    LString getPropName() const override;
+    void setPropName(LString val) override;
 
   };
 }

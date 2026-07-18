@@ -37,10 +37,10 @@ namespace qsys {
   public:
     SceneXMLReader();
 
-    virtual ~SceneXMLReader();
+    ~SceneXMLReader() override;
 
     /// Get category ID
-    virtual int getCatID() const;
+    int getCatID() const override;
 
     virtual void read();
 
@@ -65,13 +65,13 @@ namespace qsys {
     // Attributes
 
     /// Get name of the writer
-    virtual const char *getName() const;
+    const char *getName() const override;
 
     /// Get file-type description
-    virtual const char *getTypeDescr() const;
+    const char *getTypeDescr() const override;
 
     /// Get file extension
-    virtual const char *getFileExt() const;
+    const char *getFileExt() const override;
 
   private:
     LString m_errmsg;

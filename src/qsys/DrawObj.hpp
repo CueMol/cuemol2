@@ -35,7 +35,7 @@ private:
 public:
 public:
     DrawObj();
-    virtual ~DrawObj();
+    ~DrawObj() override;
 
     virtual void display(DisplayContext *pdc, ViewPtr pView) = 0;
     virtual void display2D(DisplayContext *pdc, ViewPtr pView) = 0;

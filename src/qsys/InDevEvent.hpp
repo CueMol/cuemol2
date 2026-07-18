@@ -79,9 +79,9 @@ namespace qsys {
       copyFrom(arg);
     }
 
-    virtual ~InDevEvent();
+    ~InDevEvent() override;
 
-    virtual LCloneableObject *clone() const;
+    LCloneableObject *clone() const override;
 
     ////////////////////////////////////////////
 
@@ -144,7 +144,7 @@ namespace qsys {
       return *this;
     }
 
-    virtual LString getJSON() const;
+    LString getJSON() const override;
   };
 
   /////////////////////////////////////////////
@@ -195,7 +195,7 @@ namespace qsys {
     }
     */
 
-    virtual void execute(InDevEvent &ev, InDevListener *p)
+    void execute(InDevEvent &ev, InDevListener *p) override
     {
       bool res = false;
       const int nev = ev.getType();

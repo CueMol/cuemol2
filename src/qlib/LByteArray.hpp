@@ -85,7 +85,7 @@ public:
 
     LByteArray(const LByteArray &a) : Array<qbyte>(a), m_nElemType(a.m_nElemType) {}
 
-    virtual ~LByteArray();
+    ~LByteArray() override;
 
     //////////
 
@@ -146,7 +146,7 @@ public:
 
     //////////
 
-    LString toString() const;
+    LString toString() const override;
 };
 
 }  // namespace qlib

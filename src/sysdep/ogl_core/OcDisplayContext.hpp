@@ -30,52 +30,52 @@ private:
 
 public:
     OcDisplayContext();
-    virtual ~OcDisplayContext();
+    ~OcDisplayContext() override;
 
-    virtual void enableDepthTest(bool) override;
+    void enableDepthTest(bool) override;
 
-    virtual void setDepthTestEnabled(bool) override;
+    void setDepthTestEnabled(bool) override;
 
-    virtual void setCullFace(bool f = true) override;
+    void setCullFace(bool f = true) override;
 
-    virtual void setInvertColorBlend(bool bInv) override;
+    void setInvertColorBlend(bool bInv) override;
 
-    virtual void setBlendEnabled(bool b) override;
+    void setBlendEnabled(bool b) override;
 
-    virtual void setBlendModeAdd(bool add) override;
+    void setBlendModeAdd(bool add) override;
 
     //////////
 
     /// Clear the target buffer with the specified color.
-    virtual void clearBuffer(const gfx::ColorPtr &pcol) override;
+    void clearBuffer(const gfx::ColorPtr &pcol) override;
 
     //////////
     // Shader object creation (compiles GLSL via OglProgramObject)
 
-    virtual gfx::ShaderObject *createShaderObject(const LString &name,
+    gfx::ShaderObject *createShaderObject(const LString &name,
                                                   const LString &vert_path,
                                                   const LString &frag_path) override;
 
-    virtual void setFrontFace(bool bCCW = true) override;
+    void setFrontFace(bool bCCW = true) override;
 
-    virtual gfx::BufTexRep *createBufTexRep() override;
+    gfx::BufTexRep *createBufTexRep() override;
 
-    virtual gfx::VBORep *createVBORep(const gfx::AbstDrawAttrs &ada) override;
+    gfx::VBORep *createVBORep(const gfx::AbstDrawAttrs &ada) override;
 
-    virtual gfx::PixRep *createPixRep(const gfx::PixelBuffer &pixbuf) override;
+    gfx::PixRep *createPixRep(const gfx::PixelBuffer &pixbuf) override;
 
-    virtual gfx::RenderTarget *createRenderTarget(int w, int h, int flags) override;
+    gfx::RenderTarget *createRenderTarget(int w, int h, int flags) override;
 
-    virtual gfx::DataTexture *createDataTexture(int w, int h, int ncomp, bool linear,
+    gfx::DataTexture *createDataTexture(int w, int h, int ncomp, bool linear,
                                                 const void *data) override;
 
-    virtual gfx::DataTexture *createDataTextureFromFile(const LString &path, int w,
+    gfx::DataTexture *createDataTextureFromFile(const LString &path, int w,
                                                         int h, int ncomp,
                                                         bool linear) override;
 
-    virtual void bindRenderTarget(gfx::RenderTarget *prt) override;
+    void bindRenderTarget(gfx::RenderTarget *prt) override;
 
-    virtual void bindDefaultFramebuffer() override;
+    void bindDefaultFramebuffer() override;
 };
 
 }  // namespace sysdep

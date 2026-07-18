@@ -62,7 +62,7 @@ namespace molstr {
 
   public:
     Prot2ndryEditInfo();
-    virtual ~Prot2ndryEditInfo();
+    ~Prot2ndryEditInfo() override;
 
     /////////////////////////////////////////////////////
 
@@ -77,13 +77,13 @@ namespace molstr {
     /////////////////////////////////////////////////////
 
     /// perform undo
-    virtual bool undo();
+    bool undo() override;
 
     /// perform redo
-    virtual bool redo();
+    bool redo() override;
 
-    virtual bool isUndoable() const;
-    virtual bool isRedoable() const;
+    bool isUndoable() const override;
+    bool isRedoable() const override;
 
   };
 

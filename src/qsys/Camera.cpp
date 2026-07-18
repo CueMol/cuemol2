@@ -232,7 +232,7 @@ namespace {
     {
     }
     
-    virtual ~VisSetEditInfo()
+    ~VisSetEditInfo() override
     {
     }
     
@@ -249,7 +249,7 @@ namespace {
     }
 
     /// Perform undo
-    virtual bool undo()
+    bool undo() override
     {
       CameraPtr pCam = getTargetCam();
       if (pCam.isnull()) return false;
@@ -267,7 +267,7 @@ namespace {
     }
   
     /// Perform redo
-    virtual bool redo() {
+    bool redo() override {
       CameraPtr pCam = getTargetCam();
       if (pCam.isnull()) return false;
       if (m_nMode==VSE_ADD) {
@@ -283,12 +283,12 @@ namespace {
       return true;
     }
   
-    virtual bool isUndoable() const {
+    bool isUndoable() const override {
       CameraPtr pCam = getTargetCam();
       if (pCam.isnull()) return false;
       return true;
     }
-    virtual bool isRedoable() const {
+    bool isRedoable() const override {
       CameraPtr pCam = getTargetCam();
       if (pCam.isnull()) return false;
       return true;

@@ -25,12 +25,12 @@ namespace qlib {
     LLogEvent() : m_nType(0) {}
     LLogEvent(const LLogEvent &src)
          : m_nType(src.m_nType), m_bNL(src.m_bNL), m_msg(src.m_msg) {}
-    virtual ~LLogEvent();
+    ~LLogEvent() override;
 
     LLogEvent(int n, bool b, const LString &msg)
          : m_nType(n), m_bNL(b), m_msg(msg) {}
 
-    virtual LCloneableObject *clone() const;
+    LCloneableObject *clone() const override;
 
     //////////
 
@@ -42,7 +42,7 @@ namespace qlib {
 
     bool isNL() const { return m_bNL; }
 
-    virtual LString getJSON() const;
+    LString getJSON() const override;
 
   };
 

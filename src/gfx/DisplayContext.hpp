@@ -128,7 +128,7 @@ public:
 
 public:
     DisplayContext();
-    virtual ~DisplayContext();
+    ~DisplayContext() override;
 
     virtual bool setCurrent() = 0;
     virtual bool isCurrent() const = 0;

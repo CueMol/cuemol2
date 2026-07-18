@@ -27,18 +27,18 @@ namespace sysdep {
 
     CglView();
 
-    virtual ~CglView();
+    ~CglView() override;
   
     //////////
   
   public:
-    virtual LString toString() const override;
+    LString toString() const override;
 
-    virtual DisplayContext *getDisplayContext() override;
+    DisplayContext *getDisplayContext() override;
 
-    virtual void swapBuffers() override;
+    void swapBuffers() override;
 
-    virtual void unloading() override;
+    void unloading() override;
 
     ////
     // framebuffer operations

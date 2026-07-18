@@ -60,7 +60,7 @@ public:
     /// Construct an off-screen view of (w,h) sharing pParentCtxt. Allocates
     /// the render target with the given gfx::RTFlags; isValid() reports success.
     OffScreenView(gfx::DisplayContext *pParentCtxt, int w, int h, int flags);
-    virtual ~OffScreenView();
+    ~OffScreenView() override;
 
     /// True if the render target was allocated successfully.
     bool isValid() const
@@ -69,37 +69,37 @@ public:
     }
 
     /// Return the borrowed parent display context.
-    virtual gfx::DisplayContext *getDisplayContext() override
+    gfx::DisplayContext *getDisplayContext() override
     {
         return m_pParentCtxt;
     }
 
     /// No window to present to.
-    virtual void swapBuffers() override {}
+    void swapBuffers() override {}
 
     /// Select transparent (alpha=0) vs opaque background-color clear.
-    virtual void setBgTransparent(bool b) override
+    void setBgTransparent(bool b) override
     {
         m_bBgTransparent = b;
     }
 
     /// Capture a depth visualization (grayscale) instead of the scene color.
-    virtual void setDepthMode(bool b) override
+    void setDepthMode(bool b) override
     {
         m_bDepthMode = b;
     }
 
     /// Set the jitter supersampling level for export (0 = off, 1..5).
-    virtual void setSuperSampleLevel(int n) override
+    void setSuperSampleLevel(int n) override
     {
         m_nSuperSample = n;
     }
 
     /// Render the scene into the off-screen render target.
-    virtual void drawScene() override;
+    void drawScene() override;
 
     /// Read back a sub-rectangle of the color attachment (ncomp 3=RGB / 4=RGBA).
-    virtual void readPixels(int x, int y, int width, int height, char *pbuf,
+    void readPixels(int x, int y, int width, int height, char *pbuf,
                             int nbufsize, int ncomp) override;
 
 private:

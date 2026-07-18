@@ -20,7 +20,7 @@ private:
 
 public:
     Command();
-    virtual ~Command();
+    ~Command() override;
 
     /// Execute the command
     virtual void run() = 0;

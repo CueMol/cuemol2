@@ -124,7 +124,7 @@ namespace {
     SysConfigTabReader(InStream &r) : ExpatInStream(r), m_pDB(NULL) {
     }
     
-    virtual ~SysConfigTabReader() {
+    ~SysConfigTabReader() override {
     }
     
     void setDB(SysConfig *pDB) {
@@ -221,12 +221,12 @@ namespace {
 
     //////////////////////////////////////////////////////////////////////////////
 
-    virtual void startElement(const LString &name, const Attributes &attrs) {
+    void startElement(const LString &name, const Attributes &attrs) override {
       if (name.equals("entry"))
         startEntry(attrs);
     }
 
-    virtual void endElement(const LString &name) {
+    void endElement(const LString &name) override {
       if (name.equals("entry"))
         endEntry();
     }

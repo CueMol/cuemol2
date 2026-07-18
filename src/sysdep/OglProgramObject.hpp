@@ -87,15 +87,15 @@ private:
 
 public:
     OglProgramObject() : m_hPO(0) {}
-    virtual ~OglProgramObject();
+    ~OglProgramObject() override;
 
     bool init();
 
-    virtual bool loadShaders(const qlib::MapTable<qlib::LString> &name) override;
+    bool loadShaders(const qlib::MapTable<qlib::LString> &name) override;
 
-    virtual void enable() override;
+    void enable() override;
 
-    virtual void disable() override;
+    void disable() override;
 
     //////////
 
@@ -126,7 +126,7 @@ public:
         glBindAttribLocation(m_hPO, index, name);
     }
 
-    virtual int getAttribLocation(const char *name) override
+    int getAttribLocation(const char *name) override
     {
         GLint al = glGetAttribLocation(m_hPO, name);
         if (al == -1) {
@@ -139,44 +139,44 @@ public:
 
     // int
 
-    virtual void setUniform(const LString &name, int v0) override
+    void setUniform(const LString &name, int v0) override
     {
         glUniform1i(getUniformLocation(name), v0);
     }
 
-    virtual void setUniform(const LString &name, int v0, int v1) override
+    void setUniform(const LString &name, int v0, int v1) override
     {
         glUniform2i(getUniformLocation(name), v0, v1);
     }
 
-    virtual void setUniform(const LString &name, int v0, int v1, int v2) override
+    void setUniform(const LString &name, int v0, int v1, int v2) override
     {
         glUniform3i(getUniformLocation(name), v0, v1, v2);
     }
 
-    virtual void setUniform(const LString &name, int v0, int v1, int v2, int v3) override
+    void setUniform(const LString &name, int v0, int v1, int v2, int v3) override
     {
         glUniform4i(getUniformLocation(name), v0, v1, v2, v3);
     }
 
     // float
 
-    virtual void setUniformF(const LString &name, float v0) override
+    void setUniformF(const LString &name, float v0) override
     {
         glUniform1f(getUniformLocation(name), v0);
     }
 
-    virtual void setUniformF(const LString &name, float v0, float v1) override
+    void setUniformF(const LString &name, float v0, float v1) override
     {
         glUniform2f(getUniformLocation(name), v0, v1);
     }
 
-    virtual void setUniformF(const LString &name, float v0, float v1, float v2) override
+    void setUniformF(const LString &name, float v0, float v1, float v2) override
     {
         glUniform3f(getUniformLocation(name), v0, v1, v2);
     }
 
-    virtual void setUniformF(const LString &name, float v0, float v1, float v2,
+    void setUniformF(const LString &name, float v0, float v1, float v2,
                              float v3) override
     {
         glUniform4f(getUniformLocation(name), v0, v1, v2, v3);
@@ -246,8 +246,8 @@ public:
         glUniformMatrix4fv(getUniformLocation(name), count, transpose, v);
     }
 
-    virtual void setMatrix(const LString &name, const qlib::Matrix4D &mat) override;
-    virtual void setMatrix(const LString &name, const qlib::Matrix3D &mat) override;
+    void setMatrix(const LString &name, const qlib::Matrix4D &mat) override;
+    void setMatrix(const LString &name, const qlib::Matrix3D &mat) override;
 
     // attribute variable
 
@@ -298,13 +298,13 @@ public:
     void setProgParam(GLenum pname, GLint param);
 
     // Platform-specific: set OpenGL viewport before matrices UBO upload.
-    virtual void setupViewport(gfx::DisplayContext *pdc) override;
+    void setupViewport(gfx::DisplayContext *pdc) override;
 
     // UBO management
-    virtual void initDrawParamsUBO(size_t size) override;
-    virtual void updateDrawParamsUBO(const void *data, size_t size) override;
-    virtual void updateFogUBO(const void *data, size_t size) override;
-    virtual void updateMatricesUBO(const void *data, size_t size) override;
+    void initDrawParamsUBO(size_t size) override;
+    void updateDrawParamsUBO(const void *data, size_t size) override;
+    void updateFogUBO(const void *data, size_t size) override;
+    void updateMatricesUBO(const void *data, size_t size) override;
 };
 
 }  // namespace sysdep

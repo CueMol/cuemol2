@@ -72,11 +72,11 @@ namespace molstr {
 
     BfacColoring();
     BfacColoring(const BfacColoring &r);
-    virtual ~BfacColoring();
+    ~BfacColoring() override;
 
     //virtual bool init(Renderer *pRend);
-    virtual bool start(MolCoordPtr pMol, Renderer *pRend);
-    virtual bool getAtomColor(MolAtomPtr pAtom, gfx::ColorPtr &color);
+    bool start(MolCoordPtr pMol, Renderer *pRend) override;
+    bool getAtomColor(MolAtomPtr pAtom, gfx::ColorPtr &color) override;
 
     bool isAutoMode() const {
       return m_nAuto!=BFA_NONE;

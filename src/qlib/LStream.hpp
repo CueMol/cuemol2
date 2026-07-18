@@ -59,13 +59,13 @@ namespace qlib {
     virtual int skip(int len) =0;
 
     /// close stream
-    virtual void close() =0;
+    void close() override =0;
 
     /// get implementation
     virtual impl_type getImpl() const =0;
 
     /// get source URI of this stream
-    virtual LString getURI() const =0;
+    LString getURI() const override =0;
 
     ///////////////////////
 
@@ -84,27 +84,27 @@ namespace qlib {
     // /// dtor: do nothing
     // virtual ~InStreamAdaptor() {}
 
-    virtual bool ready() {
+    bool ready() override {
       return getImpl()->ready();
     }
   
-    virtual int read() {
+    int read() override {
       return getImpl()->read();
     }
   
-    virtual int read(char *buf, int off, int len) {
+    int read(char *buf, int off, int len) override {
       return getImpl()->read(buf, off, len);
     }
 
-    virtual int skip(int len) {
+    int skip(int len) override {
       return getImpl()->skip(len);
     }
 
-    virtual void close() {
+    void close() override {
       return getImpl()->i_close();
     }
 
-    virtual LString getURI() const {
+    LString getURI() const override {
       return getImpl()->getSrcURI();
     }
   };
@@ -133,10 +133,10 @@ namespace qlib {
 
 
     /// Close the stream.
-    virtual void close() =0;
+    void close() override =0;
 
     /// get destination URI of this stream
-    virtual LString getURI() const =0;
+    LString getURI() const override =0;
 
     /// get implementation
     virtual impl_type getImpl() const =0;
@@ -152,23 +152,23 @@ namespace qlib {
     //  dtor
     // virtual ~OutStreamAdaptor() {}
 
-    virtual int write(const char *buf, int off, int len) {
+    int write(const char *buf, int off, int len) override {
       return getImpl()->write(buf, off, len);
     }
     
-    virtual void write(int b) {
+    void write(int b) override {
       return getImpl()->write(b);
     }
 
-    virtual void flush() {
+    void flush() override {
       getImpl()->flush();
     }
 
-    virtual void close() {
+    void close() override {
       getImpl()->o_close();
     }
 
-    virtual LString getURI() const {
+    LString getURI() const override {
       return getImpl()->getDestURI();
     }
   };

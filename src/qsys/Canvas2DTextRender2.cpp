@@ -71,15 +71,15 @@ class TextRenderEvent : public qlib::LEvent
 public:
   gfx::TextImgBufPtr m_pAry;
 
-  virtual ~TextRenderEvent()
+  ~TextRenderEvent() override
   {
   }
 
-  virtual LCloneableObject *clone() const {
+  LCloneableObject *clone() const override {
     return MB_NEW TextRenderEvent(*this);
   }
 
-  virtual qlib::LScriptable *getScrObject() const {
+  qlib::LScriptable *getScrObject() const override {
     return m_pAry.copy();
   }
 };

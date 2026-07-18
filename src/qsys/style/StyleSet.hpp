@@ -91,7 +91,7 @@ namespace qsys {
     
     StyleSet();
 
-    ~StyleSet();
+    ~StyleSet() override;
 
     //////////
     // Generic properties

@@ -26,30 +26,30 @@ namespace qlib {
 
   public:
     LScrObjBase();
-    virtual ~LScrObjBase();
+    ~LScrObjBase() override;
 
     typedef std::false_type has_fromString;
 
   public:
     //////////////////////
     // property support (high-level) interface
-    virtual bool getProperty(const LString &propnm, LVariant &presult) const;
-    virtual bool setProperty(const LString &propnm, const LVariant &pvalue);
+    bool getProperty(const LString &propnm, LVariant &presult) const override;
+    bool setProperty(const LString &propnm, const LVariant &pvalue) override;
 
-    virtual bool hasProperty(const LString &propnm) const;
-    virtual bool hasWritableProperty(const LString &propnm) const;
-    virtual LString getPropTypeName(const LString &) const;
+    bool hasProperty(const LString &propnm) const override;
+    bool hasWritableProperty(const LString &propnm) const override;
+    LString getPropTypeName(const LString &) const override;
 
-    virtual bool resetProperty(const LString &propnm);
-    virtual bool hasPropDefault(const LString &propnm) const;
+    bool resetProperty(const LString &propnm) override;
+    bool hasPropDefault(const LString &propnm) const override;
     // virtual bool isPropDefault(const LString &propnm) const;
-    virtual bool getPropDefault(const LString &propnm, LVariant &value);
+    bool getPropDefault(const LString &propnm, LVariant &value) override;
 
     // property event (implementation)
     virtual void nodePropChgImpl(LPropEvent &ev);
     virtual void firePropChanged(LPropEvent &ev, const LString &parentname);
 
-    virtual uid_t getRootUID() const;
+    uid_t getRootUID() const override;
 
     // default state handling
     virtual void setDefaultPropFlag(const LString &propnm, bool bflag) =0;
@@ -57,15 +57,15 @@ namespace qlib {
     //////////////////////
     // scriptable support
 
-    virtual bool isStrConv() const;
+    bool isStrConv() const override;
     virtual bool fromString(const LString &src);
-    virtual LString toString() const;
+    LString toString() const override;
 
     //////////////////////
     // serialization
 
-    virtual void writeTo2(LDom2Node *pNode) const;
-    virtual void readFrom2(LDom2Node *pNode);
+    void writeTo2(LDom2Node *pNode) const override;
+    void readFrom2(LDom2Node *pNode) override;
 
     //////////////////////
     // convenience methods
@@ -99,13 +99,13 @@ namespace qlib {
     LDefSupportScrObjBase();
 
     /// dtor
-    virtual ~LDefSupportScrObjBase();
+    ~LDefSupportScrObjBase() override;
 
-    virtual bool isPropDefault(const LString &propnm) const;
-    virtual void setDefaultPropFlag(const LString &propnm, bool bflag);
+    bool isPropDefault(const LString &propnm) const override;
+    void setDefaultPropFlag(const LString &propnm, bool bflag) override;
 
     /// Has the property default value (of class or instance)?
-    virtual bool hasPropDefault(const LString &propnm) const;
+    bool hasPropDefault(const LString &propnm) const override;
 
     // /// set instance default value
     // virtual bool setInstDefault(const LString &name, const LVariant &value);
@@ -137,8 +137,8 @@ namespace qlib {
       return *this;
     }
 
-    virtual LScriptable *copy() const;
-    virtual void destruct();
+    LScriptable *copy() const override;
+    void destruct() override;
   };
 
   class QLIB_API LNoCopyScrObject : public LDefSupportScrObjBase, public LObject
@@ -162,8 +162,8 @@ namespace qlib {
     /// default ctor
     LNoCopyScrObject() : super_t() {}
 
-    virtual LScriptable *copy() const;
-    virtual void destruct();
+    LScriptable *copy() const override;
+    void destruct() override;
   };
 
   class QLIB_API LSingletonScrObject : public LDefSupportScrObjBase, public LObject
@@ -183,8 +183,8 @@ namespace qlib {
   public:
     LSingletonScrObject() : super_t() {}
 
-    virtual LScriptable *copy() const;
-    virtual void destruct();
+    LScriptable *copy() const override;
+    void destruct() override;
     //virtual bool isPropDefault(const LString &propnm) const;
     //virtual void setDefaultPropFlag(const LString &propnm, bool bflag);
   };

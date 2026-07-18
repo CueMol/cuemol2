@@ -31,16 +31,16 @@ namespace molstr {
     typedef MolRenderer super_t;
 
     MainChainRenderer();
-    virtual ~MainChainRenderer();
+    ~MainChainRenderer() override;
 
     //////////////////////////////////////////////////////
     // overridden methods
 
-    virtual void render(DisplayContext *pdl);
+    void render(DisplayContext *pdl) override;
 
     // virtual void renderHitDL(DisplayContext *phl);
 
-    virtual qlib::Vector4D getCenter() const;
+    qlib::Vector4D getCenter() const override;
 
     // virtual void propChanged(qlib::LPropEvent &ev);
 
@@ -48,11 +48,11 @@ namespace molstr {
     // Hittest implementation
     //
 
-    virtual bool isHitTestSupported() const;
-    virtual void renderHit(DisplayContext *phl);
+    bool isHitTestSupported() const override;
+    void renderHit(DisplayContext *phl) override;
 
     // hittest data is interpreted by the same routine in MolRenderer
-    virtual LString interpHit(const gfx::RawHitData &hdat);
+    LString interpHit(const gfx::RawHitData &hdat) override;
 
     //////////////////////////////////////////////////////
     // pure virtual methods

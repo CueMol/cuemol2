@@ -26,23 +26,23 @@ public:
 
     TTYView(const TTYView &r);
 
-    virtual ~TTYView();
+    ~TTYView() override;
 
     //////////
 
 public:
-    virtual LString toString() const;
+    LString toString() const override;
 
     /// Setup the projection matrix for stereo (View interface)
-    virtual void setUpModelMat(int nid);
+    void setUpModelMat(int nid) override;
 
     /// Setup projection matrix (View interface)
-    virtual void setUpProjMat(int w, int h);
+    void setUpProjMat(int w, int h) override;
 
     /// Draw current scene
-    virtual void drawScene();
+    void drawScene() override;
 
-    virtual gfx::DisplayContext *getDisplayContext();
+    gfx::DisplayContext *getDisplayContext() override;
 };
 }  // namespace qsys
 

@@ -27,7 +27,7 @@ namespace anim {
   public:
     NoopAnimObj();
     NoopAnimObj(const NoopAnimObj &arg);
-    virtual ~NoopAnimObj();
+    ~NoopAnimObj() override;
 
     // virtual void onStart(qlib::time_value elapsed, AnimMgr *pMgr);
     // virtual void onTimer(qlib::time_value elapsed, AnimMgr *pMgr);

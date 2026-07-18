@@ -72,7 +72,7 @@ public:
      */
     void unbind(const gfx::AbstDrawAttrs &ada) override;
 
-    virtual ~OcBufferRep();
+    ~OcBufferRep() override;
 };
 
 }  // namespace sysdep

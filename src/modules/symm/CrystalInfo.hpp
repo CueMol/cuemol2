@@ -90,7 +90,7 @@ namespace symm {
     }
 
     // destructor
-    ~CrystalInfo();
+    ~CrystalInfo() override;
 
     // = operator
     const CrystalInfo &operator=(const CrystalInfo &src)
@@ -197,9 +197,9 @@ namespace symm {
 
     void setSGByName(const LString &name);
 
-    virtual void writeQdfData(DataTab &out);
+    void writeQdfData(DataTab &out) override;
 
-    virtual void readQdfData(const DataTab &in);
+    void readQdfData(const DataTab &in) override;
 
 
   public:

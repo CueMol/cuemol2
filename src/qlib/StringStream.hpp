@@ -37,7 +37,7 @@ namespace qlib {
     explicit StrInStream(const LScrSp<LByteArray> pBuf);
     
 
-    virtual ~StrInStream();
+    ~StrInStream() override;
     
     /// Copy ctor
     StrInStream(const StrInStream &r);
@@ -45,16 +45,16 @@ namespace qlib {
     /// Copy operator
     const StrInStream &operator=(const StrInStream &arg);
 
-    virtual bool ready();
+    bool ready() override;
 
-    virtual int read();
+    int read() override;
   
-    virtual int read(char *buf, int off, int len);
+    int read(char *buf, int off, int len) override;
 
-    virtual void close();
+    void close() override;
 
     /** get implementation */
-    virtual impl_type getImpl() const;
+    impl_type getImpl() const override;
 
   }; // class StrInStream
 
@@ -88,18 +88,18 @@ namespace qlib {
       return *this;
     }
 
-    virtual ~StrOutStream();
+    ~StrOutStream() override;
     
-    virtual int write(const char *buf, int off, int len);
+    int write(const char *buf, int off, int len) override;
     
-    virtual void write(int b);
+    void write(int b) override;
 
-    virtual void flush();
+    void flush() override;
 
-    virtual void close();
+    void close() override;
 
     /// Get implementation
-    virtual impl_type getImpl() const;
+    impl_type getImpl() const override;
 
     /// Get the written data as string
     LString getString() const;

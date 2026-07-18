@@ -63,7 +63,7 @@ namespace molstr {
     {
     }
   
-    ~AtomIterator() {}
+    ~AtomIterator() override {}
 
     void setTarget(MolCoordPtr pmol);
     MolCoordPtr getTarget() const;

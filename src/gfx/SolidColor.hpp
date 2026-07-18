@@ -55,7 +55,7 @@ namespace gfx {
     SolidColor(const qlib::Vector4D &v);
     // SolidColor(const LString &name);
 
-    virtual ~SolidColor();
+    ~SolidColor() override;
     
     /// = operator
     const SolidColor &operator=(const SolidColor &r);
@@ -63,16 +63,16 @@ namespace gfx {
     ///////////////////////////
     // Common access interfaces
 
-    virtual int r() const;
-    virtual int g() const;
-    virtual int b() const;
-    virtual int a() const;
+    int r() const override;
+    int g() const override;
+    int b() const override;
+    int a() const override;
 
-    virtual quint32 getCode() const;
+    quint32 getCode() const override;
 
-    virtual LString getMaterial() const;
+    LString getMaterial() const override;
     
-    virtual bool equals(const AbstractColor &c) const;
+    bool equals(const AbstractColor &c) const override;
     
     ///////////////////////////
 
@@ -111,8 +111,8 @@ namespace gfx {
 
     ////////////
 
-    virtual bool isStrConv() const;
-    virtual LString toString() const;
+    bool isStrConv() const override;
+    LString toString() const override;
 
   private:
     // void updateNamedColor() const;

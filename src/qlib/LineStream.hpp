@@ -37,7 +37,7 @@ namespace qlib {
       {
       }
 
-      virtual bool ready();
+      bool ready() override;
 
       void readLine(LString &r);
 
@@ -115,7 +115,7 @@ namespace qlib {
     void setLineNo(int n) { m_pimpl->setLineNo(n); }
 
     /** get implementation */
-    virtual impl_type getImpl() const {
+    impl_type getImpl() const override {
       return m_pimpl;
     }
 

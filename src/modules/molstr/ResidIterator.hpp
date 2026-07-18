@@ -45,7 +45,7 @@ namespace molstr {
     /// construct iterator for part of pmol selected by psel
     ResidIterator(MolCoordPtr pmol, SelectionPtr psel);
   
-    ~ResidIterator();
+    ~ResidIterator() override;
 
     //////////
 

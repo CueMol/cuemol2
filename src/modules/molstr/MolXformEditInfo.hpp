@@ -36,7 +36,7 @@ private:
 
 public:
   MolXformEditInfo();
-  virtual ~MolXformEditInfo();
+  ~MolXformEditInfo() override;
 
   /////////////////////////////////////////////////////
 
@@ -55,13 +55,13 @@ public:
   /////////////////////////////////////////////////////
 
   /// perform undo
-  virtual bool undo();
+  bool undo() override;
 
   /// perform redo
-  virtual bool redo();
+  bool redo() override;
 
-  virtual bool isUndoable() const;
-  virtual bool isRedoable() const;
+  bool isUndoable() const override;
+  bool isRedoable() const override;
 
 };
 

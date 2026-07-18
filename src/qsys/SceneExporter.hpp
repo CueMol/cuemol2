@@ -38,10 +38,10 @@ namespace qsys {
   public:
     SceneExporter() : m_nWidth(0), m_nHeight(0) {}
 
-    virtual ~SceneExporter();
+    ~SceneExporter() override;
 
     /// Get category ID (obj reader/writer, scene exporter, etc)
-    virtual int getCatID() const;
+    int getCatID() const override;
 
     virtual void write() =0;
 

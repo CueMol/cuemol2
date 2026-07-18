@@ -42,12 +42,12 @@ private:
     bool init(gfx::DisplayContext *pdc);
 public:
     DistPickDrawObj();
-    virtual ~DistPickDrawObj();
+    ~DistPickDrawObj() override;
 
-    virtual void display(DisplayContext *pdc, qsys::ViewPtr pView);
-    virtual void display2D(DisplayContext *pdc, qsys::ViewPtr pView);
+    void display(DisplayContext *pdc, qsys::ViewPtr pView) override;
+    void display2D(DisplayContext *pdc, qsys::ViewPtr pView) override;
 
-    virtual void setEnabled(bool f);
+    void setEnabled(bool f) override;
 
     void append(qlib::uid_t mol_id, int naid);
 };

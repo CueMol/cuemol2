@@ -31,7 +31,7 @@ namespace pybr {
 
   public:
     PythonBridge();
-    virtual ~PythonBridge();
+    ~PythonBridge() override;
 
     void runFile(const LString &filename);
     void runFile2(const LString &filename, qlib::uid_t scene_id, qlib::uid_t view_id);

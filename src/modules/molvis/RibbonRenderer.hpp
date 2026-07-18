@@ -130,18 +130,18 @@ public:
 
 public:
   RibbonRenderer();
-  virtual ~RibbonRenderer();
+  ~RibbonRenderer() override;
 
   // virtual Renderer *create();
   // virtual bool setClientObj(MbObject *pobj);
 
-  virtual const char *getTypeName() const;
+  const char *getTypeName() const override;
 
-  virtual void preRender(DisplayContext *pdc);
+  void preRender(DisplayContext *pdc) override;
 
   //////////////////////////////////////////////////////
 
-  virtual void beginRend(DisplayContext *pdl);
+  void beginRend(DisplayContext *pdl) override;
 
   // virtual void endSegment(DisplayCommand *pdl, MolResidue *pRes);
   // virtual void display(DisplayContext *pdc);
@@ -149,14 +149,14 @@ public:
 
   //////////////////////////////////////////////////////
 
-  virtual void renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
+  void renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
                             MolResiduePtr pStartRes, double fstart,
-                            MolResiduePtr pEndRes, double fend);
+                            MolResiduePtr pEndRes, double fend) override;
 
   ////////////////////////////////////////////
   // property handling
 
-  virtual void propChanged(qlib::LPropEvent &ev);
+  void propChanged(qlib::LPropEvent &ev) override;
 
   TubeSectionPtr getHelixSection() const { return m_ptsHelix; }
   TubeSectionPtr getSheetSection() const { return m_ptsSheet; }

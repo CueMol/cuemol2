@@ -42,35 +42,35 @@ namespace surface {
 
   public:
     PLYFileReader();
-    virtual ~PLYFileReader();
+    ~PLYFileReader() override;
 
     //////////////////////////////////////////////
     // Information query methods
 
     /// get the nickname of this reader (referred from script interface)
-    virtual const char *getName() const;
+    const char *getName() const override;
 
     /// get file-type description
-    virtual const char *getTypeDescr() const;
+    const char *getTypeDescr() const override;
 
     /// get file extension
-    virtual const char *getFileExt() const;
+    const char *getFileExt() const override;
 
     /// create default object for this reader
-    virtual qsys::ObjectPtr createDefaultObj() const;
+    qsys::ObjectPtr createDefaultObj() const override;
 
     //////////////////////////////////////////////
     // Read/build methods
 
-    virtual void attach(qsys::ObjectPtr pObj);
-    virtual qsys::ObjectPtr detach();
+    void attach(qsys::ObjectPtr pObj) override;
+    qsys::ObjectPtr detach() override;
 
     /// Read from the input stream ins, and build the attached object.
-    virtual bool read(qlib::InStream &ins);
+    bool read(qlib::InStream &ins) override;
 
     /// Content sniff: positive marker is the literal "ply" magic line
     /// that begins every PLY file (ascii and binary alike).
-    virtual int canHandleContent(qlib::InStream &ins) const;
+    int canHandleContent(qlib::InStream &ins) const override;
   };
 
 }  // namespace surface

@@ -38,7 +38,7 @@ namespace qsys {
   public:
 
     ObjLoadEditInfo();
-    virtual ~ObjLoadEditInfo();
+    ~ObjLoadEditInfo() override;
 
     void setupObjCreate(qlib::uid_t scid, ObjectPtr pObj);
 
@@ -49,14 +49,14 @@ namespace qsys {
     void setupRendDestroy(qlib::uid_t objid, RendererPtr pRend);
 
     /** perform undo */
-    virtual bool undo();
+    bool undo() override;
 
     /** perform redo */
-    virtual bool redo();
+    bool redo() override;
 
-    virtual bool isUndoable() const;
+    bool isUndoable() const override;
 
-    virtual bool isRedoable() const;
+    bool isRedoable() const override;
 
   };
 

@@ -167,18 +167,18 @@ namespace render {
 
   public:
     FileDisplayContext();
-    virtual ~FileDisplayContext();
+    ~FileDisplayContext() override;
 
     //////////////////////////////
     // generic implementation
 
-    virtual bool isFile() const;
-    virtual bool isRenderPixmap() const;
+    bool isFile() const override;
+    bool isRenderPixmap() const override;
 
-    virtual void vertex(const Vector4D &v);
-    virtual void normal(const Vector4D &v);
-    virtual void color(const gfx::ColorPtr &c);
-    virtual void attribute(int n);
+    void vertex(const Vector4D &v) override;
+    void normal(const Vector4D &v) override;
+    void color(const gfx::ColorPtr &c) override;
+    void attribute(int n) override;
 
     // virtual void pushMatrix();
     // virtual void popMatrix();
@@ -187,11 +187,11 @@ namespace render {
 
     ////////////////
 
-    virtual void setLineWidth(double lw);
-    virtual void setLineStipple(unsigned short pattern);
-    virtual void setLighting(bool f=true);
+    void setLineWidth(double lw) override;
+    void setLineStipple(unsigned short pattern) override;
+    void setLighting(bool f=true) override;
 
-    virtual void setPointSize(double size);
+    void setPointSize(double size) override;
 
     //virtual void loadName(int nameid);
     //virtual void pushName(int nameid);
@@ -200,61 +200,61 @@ namespace render {
     ////////////////
     // line and triangles
 
-    virtual void startPoints();
-    virtual void startPolygon();
-    virtual void startLines();
-    virtual void startLineStrip();
-    virtual void startTriangles();
-    virtual void startTriangleStrip();
-    virtual void startTriangleFan();
-    virtual void startQuadStrip();
-    virtual void startQuads();
+    void startPoints() override;
+    void startPolygon() override;
+    void startLines() override;
+    void startLineStrip() override;
+    void startTriangles() override;
+    void startTriangleStrip() override;
+    void startTriangleFan() override;
+    void startQuadStrip() override;
+    void startQuads() override;
 
-    virtual void end();
+    void end() override;
 
     /// Polygon mode (fill/line/point)
-    virtual void setPolygonMode(int id);
+    void setPolygonMode(int id) override;
 
     ///////////////////////////////
     // higher-order objects
 
-    virtual void setDetail(int n);
-    virtual int getDetail() const;
+    void setDetail(int n) override;
+    int getDetail() const override;
 
     /// Display unit sphere
-    virtual void sphere();
+    void sphere() override;
 
     /// Display sphere with radius of r at position vec
-    virtual void sphere(double r, const Vector4D &vec);
+    void sphere(double r, const Vector4D &vec) override;
 
     /// Display cone (and cylinder)
-    virtual void cone(double r1, double r2,const Vector4D &pos1,
-                      const Vector4D &pos2,bool bCap);
+    void cone(double r1, double r2,const Vector4D &pos1,
+                      const Vector4D &pos2,bool bCap) override;
 
     /// Mesh drawing
-    virtual void drawMesh(const gfx::Mesh &);
+    void drawMesh(const gfx::Mesh &) override;
 
     ///////////////////////////////
     // Display List (not supported)
 
-    virtual DisplayContext *createDisplayList();
-    virtual bool canCreateDL() const;
-    virtual void callDisplayList(DisplayContext *pdl);
-    virtual bool isCompatibleDL(DisplayContext *pdl) const;
+    DisplayContext *createDisplayList() override;
+    bool canCreateDL() const override;
+    void callDisplayList(DisplayContext *pdl) override;
+    bool isCompatibleDL(DisplayContext *pdl) const override;
 
-    virtual bool isDisplayList() const;
-    virtual bool recordStart();
-    virtual void recordEnd();
+    bool isDisplayList() const override;
+    bool recordStart() override;
+    void recordEnd() override;
 
     ///////////////////////////////
 
-    virtual qsys::View *getTargetView() const { return NULL; }
+    qsys::View *getTargetView() const override { return NULL; }
 
-    virtual void startSection(const LString &name);
-    virtual void endSection();
+    void startSection(const LString &name) override;
+    void endSection() override;
 
-    virtual bool setCurrent();
-    virtual bool isCurrent() const;
+    bool setCurrent() override;
+    bool isCurrent() const override;
 
     virtual bool isPostBlend() const;
 

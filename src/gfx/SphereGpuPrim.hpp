@@ -50,7 +50,7 @@ public:
     // ─── Lifecycle ────────────────────────────────────────────────────────────
 
     SphereGpuPrim();
-    virtual ~SphereGpuPrim();
+    ~SphereGpuPrim() override;
 
     /** Load the sphere impostor shader. */
     bool init(DisplayContext *pDC) override;

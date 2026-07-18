@@ -35,7 +35,7 @@ public:
     LScrMatrix4D(const Matrix4D &arg) : Matrix4D(arg) {}
 
     /// destructor
-    virtual ~LScrMatrix4D();
+    ~LScrMatrix4D() override;
 
     /// Assignment operator
     const LScrMatrix4D &operator=(const LScrMatrix4D &arg)
@@ -51,8 +51,8 @@ public:
     virtual bool equals(const LScrMatrix4D &arg);
 
     // String <--> value conversion
-    virtual bool isStrConv() const;
-    virtual LString toString() const;
+    bool isStrConv() const override;
+    LString toString() const override;
     typedef std::true_type has_fromString;
     static LScrMatrix4D *fromStringS(const LString &src);
 

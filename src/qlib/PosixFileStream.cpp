@@ -34,7 +34,7 @@ public:
   }
 
   /// dtor
-  virtual ~PosixFIOImpl()
+  ~PosixFIOImpl() override
   {
     // MB_DPRINTLN("PosixFIOImpl(%p) dtor called", this);
     if (m_fp!=NULL)
@@ -43,12 +43,12 @@ public:
 
   ////////////////////////////////////////////////////////////////
 
-  virtual LString getPathName() const
+  LString getPathName() const override
   {
     return m_origFname;
   }
 
-  virtual void i_open(const LString &fname)
+  void i_open(const LString &fname) override
   {
     MB_ASSERT(m_fp==NULL);
 #ifdef _WIN32
@@ -67,7 +67,7 @@ public:
     setFileInfo(fname);
   }
 
-  virtual bool ready() {
+  bool ready() override {
     MB_ASSERT(m_fp!=NULL);
     int neof = feof(m_fp);
     if (neof!=0) return false;
@@ -79,7 +79,7 @@ public:
     return true;
   }
 
-  virtual int read() {
+  int read() override {
     MB_ASSERT(m_fp!=NULL);
     int ch = ::fgetc(m_fp);
     if (ch==EOF) {
@@ -90,7 +90,7 @@ public:
       return ch;
   }
 
-  virtual int read(char *buf, int off, int len) {
+  int read(char *buf, int off, int len) override {
     MB_ASSERT(m_fp!=NULL);
     size_t res = ::fread(&buf[off], sizeof(char), len, m_fp);
     if (res==0 && feof(m_fp)) {
@@ -109,7 +109,7 @@ public:
   ///  Try to skip n bytes.
   ///  @return the actual number of bytes skipped
   ///
-  virtual int skip(int n) {
+  int skip(int n) override {
     MB_ASSERT(m_fp!=NULL);
     int res = ::fseek(m_fp, n, SEEK_CUR);
     if (res<0)
@@ -118,7 +118,7 @@ public:
     return n;
   }
 
-  virtual void i_close() {
+  void i_close() override {
     if (m_fp==NULL) return;
     ::fclose(m_fp);
     m_fp = NULL;
@@ -126,7 +126,7 @@ public:
 
   ////////////////////////////////////////////////////////////////
 
-  virtual void o_open(const LString &fname, bool bAppend) {
+  void o_open(const LString &fname, bool bAppend) override {
     MB_ASSERT(m_fp==NULL);
 #ifdef _WIN32
     if (bAppend)
@@ -150,29 +150,29 @@ public:
     setFileInfo(fname);
   }
   
-  virtual int write(const char *buf, int off, int len) {
+  int write(const char *buf, int off, int len) override {
     MB_ASSERT(m_fp!=NULL);
     size_t res = ::fwrite(&buf[off], sizeof(char), len, m_fp);
     return res;
   }
     
-  virtual void write(int b) {
+  void write(int b) override {
     MB_ASSERT(m_fp!=NULL);
     ::fputc(b, m_fp);
   }
 
-  virtual void flush() {
+  void flush() override {
     MB_ASSERT(m_fp!=NULL);
     ::fflush(m_fp);
   }
 
-  virtual void o_close() {
+  void o_close() override {
     if (m_fp==NULL) return;
      ::fclose(m_fp);
     m_fp = NULL;
   }
 
-  virtual int seek(int pos, int mode) {
+  int seek(int pos, int mode) override {
     switch (mode) {
     default:
     case 0: {
@@ -200,11 +200,11 @@ public:
     }
   }
 
-  virtual LString getSrcURI() const {
+  LString getSrcURI() const override {
     return m_origFname;
   }
   
-  virtual LString getDestURI() const {
+  LString getDestURI() const override {
     return m_origFname;
   }
 

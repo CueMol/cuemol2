@@ -35,7 +35,7 @@ namespace molstr {
     virtual void init(MolCoordPtr pMol, Renderer *pRend) {}
 
   public:
-    virtual ~ColoringScheme();
+    ~ColoringScheme() override;
 
     /// Initialization (called before the start of rendering)
     virtual bool start(MolCoordPtr pMol, Renderer *pRend);
@@ -63,10 +63,10 @@ namespace molstr {
 
   public:
     SolidColoring() {}
-    virtual ~SolidColoring();
+    ~SolidColoring() override;
 
     /// dummy method: always returns false
-    virtual bool getAtomColor(MolAtomPtr pAtom, ColorPtr &pcol);
+    bool getAtomColor(MolAtomPtr pAtom, ColorPtr &pcol) override;
 
   };
 

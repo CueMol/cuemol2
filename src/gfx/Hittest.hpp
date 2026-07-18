@@ -58,7 +58,7 @@ namespace gfx {
     {
     }
     
-    virtual ~HitData();
+    ~HitData() override;
     
     void clear();
 
@@ -81,8 +81,8 @@ namespace gfx {
 
     ///
     
-    virtual int getDataSize(qlib::uid_t rend_id) const;
-    virtual int getDataAt(qlib::uid_t rend_id, int ii, int subii) const;
+    int getDataSize(qlib::uid_t rend_id) const override;
+    int getDataAt(qlib::uid_t rend_id, int ii, int subii) const override;
 
   };
 

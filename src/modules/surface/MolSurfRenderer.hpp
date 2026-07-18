@@ -226,32 +226,32 @@ namespace surface {
     MolSurfRenderer();
 
     /// destructor
-    virtual ~MolSurfRenderer();
+    ~MolSurfRenderer() override;
 
     //////////////////////////////////////////////////////
     // Renderer implementation
 
-    virtual bool isCompatibleObj(qsys::ObjectPtr pobj) const;
+    bool isCompatibleObj(qsys::ObjectPtr pobj) const override;
 
-    virtual LString toString() const;
+    LString toString() const override;
 
     ///////////////////////////////////////////
 
-    virtual const char *getTypeName() const;
+    const char *getTypeName() const override;
 
     // virtual void attachObj(qlib::uid_t obj_uid);
     // virtual qlib::uid_t detachObj();
 
-    virtual Vector4D getCenter() const;
-    virtual bool hasCenter() const;
+    Vector4D getCenter() const override;
+    bool hasCenter() const override;
 
     ///////////////////////////////////////////
     // DispListRenderer implemention
 
-    virtual void preRender(DisplayContext *pdc);
-    virtual void postRender(DisplayContext *pdc);
+    void preRender(DisplayContext *pdc) override;
+    void postRender(DisplayContext *pdc) override;
 
-    virtual void render(DisplayContext *pdl);
+    void render(DisplayContext *pdl) override;
 
     // virtual void targetChanged(MbObjEvent &ev);
 
@@ -342,13 +342,13 @@ namespace surface {
 
     ////
 
-    virtual void propChanged(qlib::LPropEvent &ev);
+    void propChanged(qlib::LPropEvent &ev) override;
 
     /// object-changed event handler
-    virtual void objectChanged(qsys::ObjectEvent &ev);
+    void objectChanged(qsys::ObjectEvent &ev) override;
 
     /// scene-changed event handler (for onloaded event)
-    virtual void sceneChanged(qsys::SceneEvent &ev);
+    void sceneChanged(qsys::SceneEvent &ev) override;
 
     /////////////////
     // Serialization

@@ -38,7 +38,7 @@ namespace qlib {
 
     explicit ExpatInStream(InStream &r);
 
-    virtual ~ExpatInStream();
+    ~ExpatInStream() override;
 
     XML_Parser getParser() { return m_parser; }
 

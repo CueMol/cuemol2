@@ -62,7 +62,7 @@ private:
 public:
     StreamManager();
 
-    virtual ~StreamManager();
+    ~StreamManager() override;
 
     // /// Create new object and read data from the stream.
     // ObjectPtr loadObject(const LString &url, const LString &ftype);

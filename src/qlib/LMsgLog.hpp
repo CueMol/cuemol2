@@ -39,7 +39,7 @@ namespace qlib {
 
   public:
     LMsgLog();
-    virtual ~LMsgLog();
+    ~LMsgLog() override;
 
     void writeLog(int nlev, const char *msg, bool bNL =false);
 

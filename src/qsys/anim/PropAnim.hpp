@@ -14,7 +14,7 @@ namespace qsys {
   class QSYS_API PropAnim : public AnimObj
   {
   public:
-    virtual ~PropAnim() {}
+    ~PropAnim() override {}
 
     // propanim interface
     virtual void onPropInit(AnimMgr *pMgr, qlib::uid_t tgt_uid) =0;

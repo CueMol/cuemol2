@@ -39,7 +39,7 @@ private:
 
 public:
     OcRenderTarget();
-    virtual ~OcRenderTarget();
+    ~OcRenderTarget() override;
 
     /// Allocate the FBO and attachments. Records the parent view ID for
     /// cleanup. Returns false if the framebuffer is incomplete.

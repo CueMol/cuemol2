@@ -47,7 +47,7 @@ namespace qlib {
     }
 
     /// destructor
-    virtual ~LScrTime();
+    ~LScrTime() override;
 
     /// Assignment
     const LScrTime &operator=(const LScrTime &arg)
@@ -113,8 +113,8 @@ namespace qlib {
     //////////
 
     virtual bool equals(const LScrTime &arg);
-    virtual bool isStrConv() const;
-    virtual LString toString() const;
+    bool isStrConv() const override;
+    LString toString() const override;
 
     typedef std::true_type has_fromString;
     static LScrTime *fromStringS(const LString &src);

@@ -46,7 +46,7 @@ namespace molstr {
 
   public:
     MolChain();
-    virtual ~MolChain();
+    ~MolChain() override;
 
     //////////////////////////////////////////////////////////
     // Basic properties

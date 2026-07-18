@@ -25,9 +25,9 @@ namespace qsys {
   public:
     Canvas2DTextRender2();
 
-    virtual ~Canvas2DTextRender2();
+    ~Canvas2DTextRender2() override;
 
-    virtual bool renderText(const LString &str, gfx::PixelBuffer &buf);
+    bool renderText(const LString &str, gfx::PixelBuffer &buf) override;
 
     virtual void setMouseCursor(int ncursor) {}
 
@@ -44,7 +44,7 @@ namespace qsys {
   public:
     bool setupFont(double fontsize, const LString &fontname,
                    const LString &font_style,
-                   const LString &font_wgt);
+                   const LString &font_wgt) override;
 
     LString getCSSFont() const { return m_strCSSFont; }
 

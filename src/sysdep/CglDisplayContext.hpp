@@ -27,10 +27,10 @@ namespace sysdep {
     //CglDisplayContext(int sceneid, CglView *pView);
     CglDisplayContext();
 
-    virtual ~CglDisplayContext();
+    ~CglDisplayContext() override;
 
-    virtual bool setCurrent() override;
-    virtual bool isCurrent() const override;
+    bool setCurrent() override;
+    bool isCurrent() const override;
 
     ///////////////
     // System dependent impl.

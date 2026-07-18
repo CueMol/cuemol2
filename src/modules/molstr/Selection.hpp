@@ -37,7 +37,7 @@ namespace molstr {
     Selection(const Selection &) {}
 
     /** dtor */
-    virtual ~Selection() {}
+    ~Selection() override {}
 
     virtual int isSelectedMol(MolCoordPtr pobj) =0;
     virtual int isSelectedChain(MolChainPtr pchain) =0;
@@ -55,7 +55,7 @@ namespace molstr {
 
     virtual bool equals(Selection *pSel) const;
 
-    virtual qlib::LString toString() const =0;
+    qlib::LString toString() const override =0;
 
     typedef std::true_type has_fromString;
     static Selection *fromStringS(const qlib::LString &src);

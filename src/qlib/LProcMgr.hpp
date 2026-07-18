@@ -104,7 +104,7 @@ public:
 
 public:
     LProcMgr();
-    virtual ~LProcMgr();
+    ~LProcMgr() override;
 
     void setSlotSize(int n);
     int getSlotSize() const
@@ -203,7 +203,7 @@ private:
 public:
     /// Idle task support:
     /// Check process queue periodically
-    virtual void doIdleTask();
+    void doIdleTask() override;
 
     // these methods are called by ClassReg (ignore)
     static bool initClass(qlib::LClass *);

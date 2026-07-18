@@ -61,7 +61,7 @@ namespace gfx {
     GradientColor(ColorPtr pc1, ColorPtr pc2, double par);
     // GradientColor(const AbstractColor &c1, const AbstractColor &c2, double par);
 
-    virtual ~GradientColor();
+    ~GradientColor() override;
     
     /// = operator
     const GradientColor &operator=(const GradientColor &r);
@@ -69,22 +69,22 @@ namespace gfx {
     ///////////////////////////
     // AbstractColor implementations
 
-    virtual int r() const;
-    virtual int g() const;
-    virtual int b() const;
-    virtual int a() const;
+    int r() const override;
+    int g() const override;
+    int b() const override;
+    int a() const override;
 
-    virtual quint32 getCode() const;
+    quint32 getCode() const override;
     
-    virtual LString getMaterial() const;
+    LString getMaterial() const override;
 
-    virtual bool equals(const AbstractColor &c) const;
+    bool equals(const AbstractColor &c) const override;
     
     ////////////
     // Simple copy obj implementation
 
-    virtual bool isStrConv() const;
-    virtual LString toString() const;
+    bool isStrConv() const override;
+    LString toString() const override;
 
     ///////////////////////////
     // special access methods

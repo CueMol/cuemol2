@@ -48,7 +48,7 @@ namespace importers {
     }
 
     /// dtor
-    virtual ~PickleInStream();
+    ~PickleInStream() override;
 
     /// copy operator
     const PickleInStream &operator=(const PickleInStream &arg) {

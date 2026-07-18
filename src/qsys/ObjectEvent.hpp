@@ -34,14 +34,14 @@ namespace qsys {
          : QsysEvent(ev)
     {}
 
-    virtual ~ObjectEvent();
+    ~ObjectEvent() override;
 
-    virtual LCloneableObject *clone() const;
+    LCloneableObject *clone() const override;
 
     //////////
 
-    virtual LString getJSON() const;
-    virtual bool getCategory(LString &category, int &nSrcType, int &nEvtType) const;
+    LString getJSON() const override;
+    bool getCategory(LString &category, int &nSrcType, int &nEvtType) const override;
   };
 
   /////////////////////////////
@@ -58,7 +58,7 @@ namespace qsys {
   class ObjectEventCaster : public qlib::LEventCaster<ObjectEvent, ObjectEventListener>
   {
   public:
-    virtual void execute(ObjectEvent &ev, ObjectEventListener *p)
+    void execute(ObjectEvent &ev, ObjectEventListener *p) override
     {
       p->objectChanged(ev);
     }

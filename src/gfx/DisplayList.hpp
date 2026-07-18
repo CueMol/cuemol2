@@ -128,60 +128,60 @@ private:
 
 public:
     DisplayList();
-    virtual ~DisplayList();
+    ~DisplayList() override;
 
-    virtual bool setCurrent()
+    bool setCurrent() override
     {
         return true;
     }
-    virtual bool isCurrent() const
+    bool isCurrent() const override
     {
         return true;
     }
-    virtual bool isFile() const
+    bool isFile() const override
     {
         return false;
     }
 
-    virtual void vertex(const qlib::Vector4D &);
-    virtual void normal(const qlib::Vector4D &);
-    virtual void color(const gfx::ColorPtr &c);
+    void vertex(const qlib::Vector4D &) override;
+    void normal(const qlib::Vector4D &) override;
+    void color(const gfx::ColorPtr &c) override;
 
-    virtual void startPoints();
-    virtual void startLines();
-    virtual void startLineStrip();
-    virtual void startTriangles();
-    virtual void startTriangleStrip();
-    virtual void startTriangleFan();
-    virtual void end();
+    void startPoints() override;
+    void startLines() override;
+    void startLineStrip() override;
+    void startTriangles() override;
+    void startTriangleStrip() override;
+    void startTriangleFan() override;
+    void end() override;
 
-    virtual void setPolygonMode(int id);
-    virtual void startPolygon();
-    virtual void startQuadStrip() {}
-    virtual void startQuads() {}
+    void setPolygonMode(int id) override;
+    void startPolygon() override;
+    void startQuadStrip() override {}
+    void startQuads() override {}
 
     ///////////////////////////////
     // higher-order objects
 
-    virtual void sphere();
+    void sphere() override;
 
-    virtual void cone(double r1, double r2,
+    void cone(double r1, double r2,
                       const qlib::Vector4D &pos1, const qlib::Vector4D &pos2,
-                      bool bCap);
+                      bool bCap) override;
 
-    virtual void setDetail(int n);
-    virtual int getDetail() const;
+    void setDetail(int n) override;
+    int getDetail() const override;
 
-    virtual void drawMesh(const gfx::Mesh &mesh);
+    void drawMesh(const gfx::Mesh &mesh) override;
 
     ///////////////////////////////
     // Display list
 
-    virtual gfx::DisplayContext *createDisplayList()
+    gfx::DisplayContext *createDisplayList() override
     {
         return nullptr;
     }
-    virtual bool canCreateDL() const
+    bool canCreateDL() const override
     {
         return false;
     }
@@ -189,9 +189,9 @@ public:
     {
         return m_fValid;
     }
-    virtual bool isDisplayList() const;
-    virtual bool recordStart();
-    virtual void recordEnd();
+    bool isDisplayList() const override;
+    bool recordStart() override;
+    void recordEnd() override;
 
     void callDisplayListImpl(gfx::DisplayContext *pdc);
 

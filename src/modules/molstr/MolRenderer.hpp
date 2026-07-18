@@ -41,27 +41,27 @@ namespace molstr {
 
     MolRenderer();
     MolRenderer(const MolRenderer &r);
-    virtual ~MolRenderer();
+    ~MolRenderer() override;
 
     //////////////////////////////////////////////////////
     // Renderer implementation
 
-    virtual qlib::Vector4D getCenter() const;
-    virtual bool hasCenter() const;
+    qlib::Vector4D getCenter() const override;
+    bool hasCenter() const override;
 
-    virtual bool isCompatibleObj(qsys::ObjectPtr pobj) const;
+    bool isCompatibleObj(qsys::ObjectPtr pobj) const override;
 
-    virtual LString toString() const;
+    LString toString() const override;
 
-    virtual void propChanged(qlib::LPropEvent &ev);
+    void propChanged(qlib::LPropEvent &ev) override;
 
     // check the MolCoord's coloring change
-    virtual void objectChanged(qsys::ObjectEvent &ev);
+    void objectChanged(qsys::ObjectEvent &ev) override;
 
-    LString interpHit(const gfx::RawHitData &rhit);
+    LString interpHit(const gfx::RawHitData &rhit) override;
 
     /// Collect (atom_id, world_pos) for each hit atom, for polygon selection.
-    virtual void getHitPositions(const gfx::RawHitData &rhit,
+    void getHitPositions(const gfx::RawHitData &rhit,
                                  std::vector<int> &ids,
                                  std::vector<qlib::Vector4D> &poss) const override;
 

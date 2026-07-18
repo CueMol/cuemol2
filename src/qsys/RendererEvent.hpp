@@ -35,14 +35,14 @@ public:
        : QsysEvent(ev)
     {}
 
-  virtual ~RendererEvent();
+  ~RendererEvent() override;
 
-  virtual LCloneableObject *clone() const;
+  LCloneableObject *clone() const override;
 
   //////////
 
-  virtual LString getJSON() const;
-  virtual bool getCategory(LString &category, int &nSrcType, int &nEvtType) const;
+  LString getJSON() const override;
+  bool getCategory(LString &category, int &nSrcType, int &nEvtType) const override;
 
 };
 
@@ -60,7 +60,7 @@ public:
 class RendererEventCaster : public qlib::LEventCaster<RendererEvent, RendererEventListener>
 {
 public:
-  virtual void execute(RendererEvent &ev, RendererEventListener *p)
+  void execute(RendererEvent &ev, RendererEventListener *p) override
   {
     p->rendererChanged(ev);
   }

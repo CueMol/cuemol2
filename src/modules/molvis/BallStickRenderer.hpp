@@ -82,30 +82,30 @@ namespace molvis {
 
   public:
     BallStickRenderer();
-    virtual ~BallStickRenderer();
+    ~BallStickRenderer() override;
 
-    virtual const char *getTypeName() const;
-
-    //////////////////////////////////////////////////////
-
-    virtual void display(DisplayContext *pdc);
-
-    virtual void invalidateDisplayCache();
+    const char *getTypeName() const override;
 
     //////////////////////////////////////////////////////
 
-    virtual void preRender(DisplayContext *pdc);
-    virtual void postRender(DisplayContext *pdc);
+    void display(DisplayContext *pdc) override;
 
-    virtual bool isRendBond() const;
-    virtual void beginRend(DisplayContext *pdl);
-    virtual void endRend(DisplayContext *pdl);
-    virtual void rendAtom(DisplayContext *pdl, MolAtomPtr pAtom, bool fbonded);
-    virtual void rendBond(DisplayContext *pdl, MolAtomPtr pAtom1, MolAtomPtr pAtom2, MolBond *pMB);
+    void invalidateDisplayCache() override;
 
     //////////////////////////////////////////////////////
 
-    virtual void propChanged(qlib::LPropEvent &ev);
+    void preRender(DisplayContext *pdc) override;
+    void postRender(DisplayContext *pdc) override;
+
+    bool isRendBond() const override;
+    void beginRend(DisplayContext *pdl) override;
+    void endRend(DisplayContext *pdl) override;
+    void rendAtom(DisplayContext *pdl, MolAtomPtr pAtom, bool fbonded) override;
+    void rendBond(DisplayContext *pdl, MolAtomPtr pAtom1, MolAtomPtr pAtom2, MolBond *pMB) override;
+
+    //////////////////////////////////////////////////////
+
+    void propChanged(qlib::LPropEvent &ev) override;
 
     //////////////////////////////////////////////////////
 

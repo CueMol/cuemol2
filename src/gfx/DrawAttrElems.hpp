@@ -26,7 +26,7 @@ namespace gfx {
     DrawAttrElems() : super_t() {}
     //virtual ~DrawAttrElems() {}
 
-    virtual int getType() const {
+    int getType() const override {
         return AbstDrawElem::VA_ATTR_INDS;
     }
 
@@ -46,16 +46,16 @@ namespace gfx {
       m_inds.refer(nelems, static_cast<_IndType *>(p));
     }
 
-    virtual const void *getIndData() const
+    const void *getIndData() const override
     {
       return m_inds.data();
     }
 
-    virtual size_t getIndElemSize() const {
+    size_t getIndElemSize() const override {
       return sizeof(_IndType);
     }
 
-    virtual size_t getIndSize() const {
+    size_t getIndSize() const override {
       return m_inds.size();
     }
 

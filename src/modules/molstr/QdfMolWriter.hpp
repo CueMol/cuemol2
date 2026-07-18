@@ -28,23 +28,23 @@ private:
 
 public:
   QdfMolWriter();
-  virtual ~QdfMolWriter();
+  ~QdfMolWriter() override;
 
   /// Attach to and lock the target object
-  virtual void attach(qsys::ObjectPtr pObj);
+  void attach(qsys::ObjectPtr pObj) override;
 
   /// Write to the stream
-  virtual bool write(qlib::OutStream &outs);
+  bool write(qlib::OutStream &outs) override;
 
   /// Get file-type description
-  virtual const char *getTypeDescr() const;
+  const char *getTypeDescr() const override;
 
   /// Get file extension
-  virtual const char *getFileExt() const;
+  const char *getFileExt() const override;
 
-  virtual const char *getName() const;
+  const char *getName() const override;
 
-  virtual bool canHandle(qsys::ObjectPtr pobj) const;
+  bool canHandle(qsys::ObjectPtr pobj) const override;
 
   /////////
   

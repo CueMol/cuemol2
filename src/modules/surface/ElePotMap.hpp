@@ -47,7 +47,7 @@ private:
 
 public:
   ElePotMap();
-  virtual ~ElePotMap();
+  ~ElePotMap() override;
 
   bool setMapFloatArray(const float *array,
 			int ncol, int nrow, int nsect,
@@ -82,45 +82,45 @@ public:
 
   virtual bool isEmpty() const;
   
-  virtual double getValueAt(const Vector4D &pos) const;
+  double getValueAt(const Vector4D &pos) const override;
 
-  virtual bool isInRange(const Vector4D &pos) const;
+  bool isInRange(const Vector4D &pos) const override;
   
-  virtual Vector4D getCenter() const ;
-  virtual Vector4D getOrigin() const ;
-  virtual double getRmsdDensity() const ;
-  virtual double getMinDensity() const { return m_dMinMap; }
-  virtual double getMaxDensity() const { return m_dMaxMap; }
-  virtual double getMeanDensity() const { return m_dMeanMap; }
+  Vector4D getCenter() const override ;
+  Vector4D getOrigin() const override ;
+  double getRmsdDensity() const override ;
+  double getMinDensity() const override { return m_dMinMap; }
+  double getMaxDensity() const override { return m_dMaxMap; }
+  double getMeanDensity() const override { return m_dMeanMap; }
 
-  virtual double getLevelBase() const ;
-  virtual double getLevelStep() const ;
+  double getLevelBase() const override ;
+  double getLevelStep() const override ;
 
-  virtual bool isInBoundary(int i, int j, int k) const;
-  virtual unsigned char atByte(int i, int j, int k) const ;
-  virtual double atFloat(int i, int j, int k) const ;
+  bool isInBoundary(int i, int j, int k) const override;
+  unsigned char atByte(int i, int j, int k) const override ;
+  double atFloat(int i, int j, int k) const override ;
 
-  virtual int getColNo() const ;
-  virtual int getRowNo() const ;
-  virtual int getSecNo() const ;
+  int getColNo() const override ;
+  int getRowNo() const override ;
+  int getSecNo() const override ;
 
-  virtual int getStartCol() const ;
-  virtual int getStartRow() const ;
-  virtual int getStartSec() const ;
+  int getStartCol() const override ;
+  int getStartRow() const override ;
+  int getStartSec() const override ;
 
   // interval==1/(grid size)
-  virtual double getColGridSize() const ;
-  virtual double getRowGridSize() const ;
-  virtual double getSecGridSize() const ;
+  double getColGridSize() const override ;
+  double getRowGridSize() const override ;
+  double getSecGridSize() const override ;
 
-  virtual Vector4D convToOrth(const Vector4D &index) const;
+  Vector4D convToOrth(const Vector4D &index) const override;
 
   ////////////////////////////////////////////
   // Data chunk serialization
 
-  virtual bool isDataSrcWritable() const { return true; }
-  virtual LString getDataChunkReaderName(int nQdfVer) const;
-  virtual void writeDataChunkTo(qlib::LDom2OutStream &oos) const;
+  bool isDataSrcWritable() const override { return true; }
+  LString getDataChunkReaderName(int nQdfVer) const override;
+  void writeDataChunkTo(qlib::LDom2OutStream &oos) const override;
 
   //
 

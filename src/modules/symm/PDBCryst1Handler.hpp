@@ -23,10 +23,10 @@ using molstr::MolCoord;
 class PDBCryst1Handler : public PDBFileReader::RecordHandler
 {
 public:
-  virtual ~PDBCryst1Handler();
-  virtual const char *getRecordName() const;
-  virtual bool read(const LString &record, MolCoord *pMol);
-  virtual bool write(LString &record, MolCoord *pMol);
+  ~PDBCryst1Handler() override;
+  const char *getRecordName() const override;
+  bool read(const LString &record, MolCoord *pMol) override;
+  bool write(LString &record, MolCoord *pMol) override;
 };
 
 }

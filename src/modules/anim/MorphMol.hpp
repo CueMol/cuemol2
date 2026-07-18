@@ -34,13 +34,13 @@ namespace anim {
     
   public:
     // Data source container interface implementation
-    virtual bool isDataSrcWritable() const;
-    virtual LString getDataChunkReaderName(int nQdfVer) const;
-    virtual void writeDataChunkTo(qlib::LDom2OutStream &oos) const;
-    virtual void readFromStream(qlib::InStream &ins);
-    virtual void setDataChunkName(const LString &name, qlib::LDom2Node *pNode, int nQdfVer);
+    bool isDataSrcWritable() const override;
+    LString getDataChunkReaderName(int nQdfVer) const override;
+    void writeDataChunkTo(qlib::LDom2OutStream &oos) const override;
+    void readFromStream(qlib::InStream &ins) override;
+    void setDataChunkName(const LString &name, qlib::LDom2Node *pNode, int nQdfVer) override;
 
-    virtual void updateSrcPath(const LString &srcpath);
+    void updateSrcPath(const LString &srcpath) override;
   };
 
   class ANIM_API MorphMol : public molstr::MolCoord
@@ -69,7 +69,7 @@ namespace anim {
     
     MorphMol();
     
-    virtual ~MorphMol();
+    ~MorphMol() override;
     
     /// Detached from ObjReader (i.e. end of loading)
     // virtual void readerDetached();
@@ -128,14 +128,14 @@ namespace anim {
     ////////////////////////////////////////////////////
     // Serialization/Deserialization
 
-    virtual void writeTo2(qlib::LDom2Node *pNode) const;
-    virtual void readFrom2(qlib::LDom2Node *pNode);
+    void writeTo2(qlib::LDom2Node *pNode) const override;
+    void readFrom2(qlib::LDom2Node *pNode) override;
 
-    virtual void readFromStream(qlib::InStream &ins);
+    void readFromStream(qlib::InStream &ins) override;
 
-    virtual void forceEmbed();
+    void forceEmbed() override;
 
-    virtual void writeDataChunkTo(qlib::LDom2OutStream &oos) const;
+    void writeDataChunkTo(qlib::LDom2OutStream &oos) const override;
 
   private:
     /// Create from mol

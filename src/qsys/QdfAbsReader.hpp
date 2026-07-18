@@ -23,7 +23,7 @@ namespace qsys {
 
   public:
     QdfAbsReader();
-    virtual ~QdfAbsReader();
+    ~QdfAbsReader() override;
 
     /////////
 

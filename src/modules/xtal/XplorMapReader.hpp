@@ -46,7 +46,7 @@ public:
   XplorMapReader();
 
   /// destructor
-  virtual ~XplorMapReader();
+  ~XplorMapReader() override;
 
   //////////////////////////////////////////////
   // Read/build methods
@@ -54,25 +54,25 @@ public:
   ///
   /// Read from the input stream ins, and build the attached object.
   ///
-  virtual bool read(qlib::InStream &ins);
+  bool read(qlib::InStream &ins) override;
 
   /// Content-sniff: report whether `ins` looks like an X-PLOR/CNS map.
-  virtual int canHandleContent(qlib::InStream &ins) const;
+  int canHandleContent(qlib::InStream &ins) const override;
 
   //////////////////////////////////////////////
   // Information query methods
   
   /// get the nickname of this reader (referred from script interface)
-  virtual const char *getName() const;
+  const char *getName() const override;
 
   /// get file-type description
-  virtual const char *getTypeDescr() const;
+  const char *getTypeDescr() const override;
 
   /// get file extension
-  virtual const char *getFileExt() const;
+  const char *getFileExt() const override;
 
   /// create default object for this reader
-  virtual qsys::ObjectPtr createDefaultObj() const;
+  qsys::ObjectPtr createDefaultObj() const override;
 
   ///////////////////////////////////////////
 

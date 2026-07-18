@@ -139,7 +139,7 @@ namespace qlib {
     {
     }
     
-    virtual ~XmlInStream();
+    ~XmlInStream() override;
     
     bool registerTag(XmlTagHandler *pth, bool bForce=false);
     
@@ -147,11 +147,11 @@ namespace qlib {
     
     ////////////////////////////////////////
     
-    virtual void startElement(const LString &name, const ExpatInStream::Attributes &attrs);
+    void startElement(const LString &name, const ExpatInStream::Attributes &attrs) override;
 
-    virtual void endElement(const LString &name);
+    void endElement(const LString &name) override;
 
-    virtual void charData(const LString &sbuf);
+    void charData(const LString &sbuf) override;
   };
 
   ///////////////////////////////////////////////////////////////////

@@ -47,15 +47,15 @@ namespace render {
     
   public:
     PovDisplayContext();
-    virtual ~PovDisplayContext();
+    ~PovDisplayContext() override;
 
-    void startRender();
-    void endRender();
+    void startRender() override;
+    void endRender() override;
 
-    virtual void startSection(const LString &name);
-    virtual void endSection();
+    void startSection(const LString &name) override;
+    void endSection() override;
 
-    virtual bool isPostBlend() const;
+    bool isPostBlend() const override;
 
   private:
     /// Main flag for edge line display
@@ -142,13 +142,13 @@ namespace render {
     void writePoint(PrintStream &ips,
                     const Vector4D &v1, const Vector4D &n1, int alpha);
 
-    virtual void writeEdgeLineImpl(PrintStream &ips, int xa1, int xa2,
+    void writeEdgeLineImpl(PrintStream &ips, int xa1, int xa2,
                                    const Vector4D &x1, const Vector4D &n1,
-                                   const Vector4D &x2, const Vector4D &b2);
-    virtual void writePointImpl(PrintStream &ips,
+                                   const Vector4D &x2, const Vector4D &b2) override;
+    void writePointImpl(PrintStream &ips,
                                 const Vector4D &v1,
                                 const Vector4D &n1,
-				int alpha);
+				int alpha) override;
 
 
     //////////////////
@@ -171,9 +171,9 @@ namespace render {
     std::list<LString> m_imgFileNames;
     
   public:
-    virtual void drawPixels(const Vector4D &pos,
+    void drawPixels(const Vector4D &pos,
                             const gfx::PixelBuffer &data,
-                            const gfx::ColorPtr &acol);
+                            const gfx::ColorPtr &acol) override;
 
     void setWritePix(bool b) { m_bWritePix = b; }
 
@@ -182,7 +182,7 @@ namespace render {
       return LString::join(",", m_imgFileNames);
     }
 
-    bool isRenderPixmap() const;
+    bool isRenderPixmap() const override;
 
   };
 

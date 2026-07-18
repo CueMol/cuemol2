@@ -18,7 +18,7 @@ public:
     quint32 m_nBufID;
 
     OcTexRep() : m_nViewID(0), m_nBufID(0) {}
-    virtual ~OcTexRep();
+    ~OcTexRep() override;
 
     void create(gfx::DisplayContext *pdc, const gfx::PixelBuffer &pixbuf);
 

@@ -66,20 +66,20 @@ namespace molvis {
 
   public:
     SplineRenderer();
-    virtual ~SplineRenderer();
+    ~SplineRenderer() override;
 
-    virtual const char *getTypeName() const;
+    const char *getTypeName() const override;
 
-    void preRender(DisplayContext *pdc);
+    void preRender(DisplayContext *pdc) override;
 
     //////////////////////////////////////////////////////
     // MainChainRenderer interface
 
-    virtual void beginRend(DisplayContext *pdl);
-    virtual void beginSegment(DisplayContext *pdl, MolResiduePtr pRes);
-    virtual void rendResid(DisplayContext *pdl, MolResiduePtr pRes);
-    virtual void endSegment(DisplayContext *pdl, MolResiduePtr pRes);
-    virtual void endRend(DisplayContext *pdl);
+    void beginRend(DisplayContext *pdl) override;
+    void beginSegment(DisplayContext *pdl, MolResiduePtr pRes) override;
+    void rendResid(DisplayContext *pdl, MolResiduePtr pRes) override;
+    void endSegment(DisplayContext *pdl, MolResiduePtr pRes) override;
+    void endRend(DisplayContext *pdl) override;
 
     //////////////////////////////////////////////////////
     // SplineRenderer interface
@@ -88,14 +88,14 @@ namespace molvis {
                               MolResiduePtr pStartRes, double fstart,
                               MolResiduePtr pEndRes, double fend);
 
-    virtual bool getDiffVec(MolResiduePtr pRes, Vector4D &rpos, Vector4D &rvec);
+    bool getDiffVec(MolResiduePtr pRes, Vector4D &rpos, Vector4D &rvec) override;
 
     //////////////////////////////////////////////////////
     // event handling
 
-    virtual void propChanged(qlib::LPropEvent &ev);
+    void propChanged(qlib::LPropEvent &ev) override;
 
-    virtual void objectChanged(qsys::ObjectEvent &ev);
+    void objectChanged(qsys::ObjectEvent &ev) override;
 
     //////////////////////////////////////////////////////
 
@@ -183,7 +183,7 @@ namespace molvis {
     }
 
     /// Pivot atom name (change should be notified to SplieCoeffSet)
-    void setPivAtomName(const LString &aname);
+    void setPivAtomName(const LString &aname) override;
 
   };
 

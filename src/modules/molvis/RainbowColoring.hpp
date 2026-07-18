@@ -114,16 +114,16 @@ namespace molvis {
     
   public:
     RainbowColoring();
-    virtual ~RainbowColoring();
+    ~RainbowColoring() override;
 
     //////////////////////////////////////////////////////
     // Coloring interface implementation
 
     /// Initialization (called at the start of rendering)
-    virtual bool start(MolCoordPtr pMol, Renderer *pRend);
+    bool start(MolCoordPtr pMol, Renderer *pRend) override;
   
-    virtual bool getAtomColor(MolAtomPtr pAtom, ColorPtr &color);
-    virtual bool getResidColor(MolResiduePtr pResid, ColorPtr &color);
+    bool getAtomColor(MolAtomPtr pAtom, ColorPtr &color) override;
+    bool getResidColor(MolResiduePtr pResid, ColorPtr &color) override;
 
     // virtual bool end();
 

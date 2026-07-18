@@ -63,7 +63,7 @@ namespace molstr {
     /// Copy ctor
     ResiPatch(const ResiPatch &arg);
 
-    virtual ~ResiPatch();
+    ~ResiPatch() override;
 
 
     ///////////////////////////////////////////////////////////////////

@@ -41,19 +41,19 @@ namespace {
     NamedColResImpl() : m_uidgen(0) {}
 
     /// Resolve named color
-    virtual ColorPtr getColor(const LString &rkey)
+    ColorPtr getColor(const LString &rkey) override
     {
       return m_pSM->getColor(rkey);
     }
 
     /// Resolve named color with scene ID
-    virtual ColorPtr getColor(const LString &rkey, qlib::uid_t nScopeID)
+    ColorPtr getColor(const LString &rkey, qlib::uid_t nScopeID) override
     {
       return m_pSM->getColor(rkey, nScopeID);
     }
 
     /// Get current context ID
-    virtual qlib::uid_t getContextID()
+    qlib::uid_t getContextID() override
     {
       return m_pSM->getContextID();
     }
@@ -76,7 +76,7 @@ namespace {
     
   public:
 
-    virtual qlib::uid_t makeCache() {
+    qlib::uid_t makeCache() override {
       qlib::uid_t uid = createNewUID();
       bool res = m_catab.insert(uid).second;
       if (res)
@@ -85,14 +85,14 @@ namespace {
         return qlib::invalid_uid;
     }
 
-    virtual bool isCached(qlib::uid_t uid) const {
+    bool isCached(qlib::uid_t uid) const override {
       CacheTable::const_iterator i = m_catab.find(uid);
       if (i==m_catab.end())
         return false;
       return true;
     }
 
-    virtual void setCached(qlib::uid_t uid, bool b) {
+    void setCached(qlib::uid_t uid, bool b) override {
       if (b)
         m_catab.insert(uid);
       else {
@@ -102,7 +102,7 @@ namespace {
       }
     }
 
-    virtual void invalidateCache() {
+    void invalidateCache() override {
       m_catab.clear();
     }
 

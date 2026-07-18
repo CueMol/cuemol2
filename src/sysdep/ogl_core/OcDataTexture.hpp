@@ -31,7 +31,7 @@ private:
 
 public:
     OcDataTexture();
-    virtual ~OcDataTexture();
+    ~OcDataTexture() override;
 
     /// Allocate and upload the texture. ncomp: 1 = R8, 2 = RG8. linear selects
     /// LINEAR vs NEAREST filtering. Returns false on failure.

@@ -51,7 +51,7 @@ namespace gfx {
     {
     }
 
-    virtual ~AbstractColor();
+    ~AbstractColor() override;
   
     ///////////////////////////
     // Common access interfaces

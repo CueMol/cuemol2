@@ -41,15 +41,15 @@ namespace anim {
   public:
     RendPropAnim();
     RendPropAnim(const RendPropAnim &arg);
-    virtual ~RendPropAnim();
+    ~RendPropAnim() override;
 
     // propanim interface
-    virtual void onPropInit(qsys::AnimMgr *pMgr, qlib::uid_t tgt_uid) =0;
+    void onPropInit(qsys::AnimMgr *pMgr, qlib::uid_t tgt_uid) override =0;
 
-    virtual LString getPropName() const;
+    LString getPropName() const override;
     virtual void setPropName(LString val);
 
-    virtual void getTgtUIDs(qsys::AnimMgr *pMgr, std::vector<qlib::uid_t> &arry);
+    void getTgtUIDs(qsys::AnimMgr *pMgr, std::vector<qlib::uid_t> &arry) override;
 
     LString getRendNames() const;
     void setRendNames(LString val);

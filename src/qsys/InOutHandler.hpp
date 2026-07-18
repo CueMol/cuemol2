@@ -51,7 +51,7 @@ namespace qsys {
     // Constructor / Destructor
     InOutHandler();
 
-    virtual ~InOutHandler();
+    ~InOutHandler() override;
 
     ////////////////////////////////////////
 
@@ -112,8 +112,8 @@ namespace qsys {
     ////////////////////////////////
     // Serialization/Deserialization
 
-    virtual void writeTo2(qlib::LDom2Node *pNode) const;
-    virtual void readFrom2(qlib::LDom2Node *pNode);
+    void writeTo2(qlib::LDom2Node *pNode) const override;
+    void readFrom2(qlib::LDom2Node *pNode) override;
 
     ////////////////////////////////
     // I/O Benchmark

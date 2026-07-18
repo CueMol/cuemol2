@@ -40,10 +40,10 @@ namespace qsys {
   public:
     SceneXMLWriter();
 
-    virtual ~SceneXMLWriter();
+    ~SceneXMLWriter() override;
 
     /// Get category ID
-    virtual int getCatID() const;
+    int getCatID() const override;
 
     virtual void write();
 
@@ -62,24 +62,24 @@ namespace qsys {
     // Attributes
 
     /// Get name of the writer
-    virtual const char *getName() const;
+    const char *getName() const override;
 
     /// Get file-type description
-    virtual const char *getTypeDescr() const;
+    const char *getTypeDescr() const override;
 
     /// Get file extension
-    virtual const char *getFileExt() const;
+    const char *getFileExt() const override;
 
     /////////////
     // Compression setting
 
     // compression type
-    virtual int getCompressMode() const;
-    virtual void setCompressMode(int);
+    int getCompressMode() const override;
+    void setCompressMode(int) override;
 
     // Base64 encoding flag
-    virtual bool getBase64Flag() const;
-    virtual void setBase64Flag(bool);
+    bool getBase64Flag() const override;
+    void setBase64Flag(bool) override;
 
     // Embed-all flag
     bool getEmbedAll() const {

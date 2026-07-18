@@ -36,31 +36,31 @@ public:
     //     m_bHasGS = false;
     // }
 
-    virtual ~OcViewCap() {}
+    ~OcViewCap() override {}
 
     /// vertex buffer object
-    virtual bool hasVBO() const
+    bool hasVBO() const override
     {
         return true;
     }
     /// framebuffer object
-    virtual bool hasFBO() const
+    bool hasFBO() const override
     {
         return true;
     }
 
     /// vertex shader
-    virtual bool hasVertShader() const
+    bool hasVertShader() const override
     {
         return true;
     }
     /// fragment shader
-    virtual bool hasFragShader() const
+    bool hasFragShader() const override
     {
         return true;
     }
     /// geoetry shader
-    virtual bool hasGeomShader() const
+    bool hasGeomShader() const override
     {
         return true;
     }

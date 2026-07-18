@@ -44,12 +44,12 @@ private:
 
 public:
     RectSelDrawObj();
-    virtual ~RectSelDrawObj();
+    ~RectSelDrawObj() override;
 
-    virtual void display(DisplayContext *pdc, qsys::ViewPtr pView);
-    virtual void display2D(DisplayContext *pdc, qsys::ViewPtr pView);
+    void display(DisplayContext *pdc, qsys::ViewPtr pView) override;
+    void display2D(DisplayContext *pdc, qsys::ViewPtr pView) override;
 
-    virtual void setEnabled(bool f);
+    void setEnabled(bool f) override;
 
     void start(int x, int y);
     void move(int x, int y);

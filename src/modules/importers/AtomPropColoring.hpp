@@ -30,9 +30,9 @@ namespace importers {
 
     AtomPropColoring();
     AtomPropColoring(const AtomPropColoring &r);
-    virtual ~AtomPropColoring();
+    ~AtomPropColoring() override;
 
-    virtual bool getAtomColor(MolAtomPtr pAtom, gfx::ColorPtr &color);
+    bool getAtomColor(MolAtomPtr pAtom, gfx::ColorPtr &color) override;
   };
 
 }

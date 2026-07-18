@@ -74,7 +74,7 @@ namespace mdtools {
 
     AmberPrmtopReader();
 
-    virtual ~AmberPrmtopReader();
+    ~AmberPrmtopReader() override;
 
     //////////////////////////////////////////////
     // Read/build methods
@@ -84,21 +84,21 @@ namespace mdtools {
     using qsys::ObjReader::read;
 
     /// Read prmtop from ins, build attached MolCoord, then load coord sub-stream.
-    virtual bool read(qlib::InStream &ins);
+    bool read(qlib::InStream &ins) override;
 
     /// Content sniff: prmtop new format starts with %VERSION or %FLAG.
-    virtual int canHandleContent(qlib::InStream &ins) const;
+    int canHandleContent(qlib::InStream &ins) const override;
 
     //////////////////////////////////////////////
     // Information query methods
 
-    virtual const char *getName() const;
+    const char *getName() const override;
 
-    virtual const char *getTypeDescr() const;
+    const char *getTypeDescr() const override;
 
-    virtual const char *getFileExt() const;
+    const char *getFileExt() const override;
 
-    virtual qsys::ObjectPtr createDefaultObj() const;
+    qsys::ObjectPtr createDefaultObj() const override;
 
     //////////////////////////////////////////////
 

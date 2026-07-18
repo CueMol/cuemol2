@@ -51,7 +51,7 @@ namespace xtal {
       invalidateDisplayCache();
     }
 
-    virtual Vector4D getCenter() const {
+    Vector4D getCenter() const override {
       return m_center;
     }
 
@@ -178,7 +178,7 @@ namespace xtal {
     MapRenderer();
 
     /// destructor
-    virtual ~MapRenderer();
+    ~MapRenderer() override;
 
     // // TO DO: remove this
     // MapRenderer(const MapRenderer &) {}
@@ -186,11 +186,11 @@ namespace xtal {
     //////////////////////////////////////////////////////
     // Renderer implementation
 
-    virtual bool isCompatibleObj(qsys::ObjectPtr pobj) const;
+    bool isCompatibleObj(qsys::ObjectPtr pobj) const override;
 
-    virtual LString toString() const;
+    LString toString() const override;
 
-    virtual void propChanged(qlib::LPropEvent &ev);
+    void propChanged(qlib::LPropEvent &ev) override;
 
     ///////////////////////////////////////////
 

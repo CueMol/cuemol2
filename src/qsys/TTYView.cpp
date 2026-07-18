@@ -18,41 +18,41 @@ private:
 
 public:
     TTYDisplayContext() {}
-    virtual ~TTYDisplayContext() {}
+    ~TTYDisplayContext() override {}
 
-    virtual bool setCurrent()
+    bool setCurrent() override
     {
         return true;
     }
-    virtual bool isCurrent() const
+    bool isCurrent() const override
     {
         return true;
     }
-    virtual bool isFile() const
+    bool isFile() const override
     {
         return true;
     }
 
-    virtual void vertex(const qlib::Vector4D &) {}
-    virtual void normal(const qlib::Vector4D &) {}
-    virtual void color(const gfx::ColorPtr &c) {}
+    void vertex(const qlib::Vector4D &) override {}
+    void normal(const qlib::Vector4D &) override {}
+    void color(const gfx::ColorPtr &c) override {}
 
-    virtual void pushMatrix() {}
-    virtual void popMatrix() {}
-    virtual void multMatrix(const qlib::Matrix4D &mat) {}
-    virtual void loadMatrix(const qlib::Matrix4D &mat) {}
+    void pushMatrix() override {}
+    void popMatrix() override {}
+    void multMatrix(const qlib::Matrix4D &mat) override {}
+    void loadMatrix(const qlib::Matrix4D &mat) override {}
 
-    virtual void setPolygonMode(int id) {}
-    virtual void startPoints() {}
-    virtual void startPolygon() {}
-    virtual void startLines() {}
-    virtual void startLineStrip() {}
-    virtual void startTriangles() {}
-    virtual void startTriangleStrip() {}
-    virtual void startTriangleFan() {}
-    virtual void startQuadStrip() {}
-    virtual void startQuads() {}
-    virtual void end() {}
+    void setPolygonMode(int id) override {}
+    void startPoints() override {}
+    void startPolygon() override {}
+    void startLines() override {}
+    void startLineStrip() override {}
+    void startTriangles() override {}
+    void startTriangleStrip() override {}
+    void startTriangleFan() override {}
+    void startQuadStrip() override {}
+    void startQuads() override {}
+    void end() override {}
 };
 }  // namespace qsys
 

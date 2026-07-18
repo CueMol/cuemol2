@@ -52,7 +52,7 @@ public:
     // ─── Lifecycle ────────────────────────────────────────────────────────────
 
     CylinderGpuPrim();
-    virtual ~CylinderGpuPrim();
+    ~CylinderGpuPrim() override;
 
     /** Load the cylinder impostor shader. */
     bool init(DisplayContext *pDC) override;

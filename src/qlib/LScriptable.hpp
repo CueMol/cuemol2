@@ -30,7 +30,7 @@ namespace qlib {
 
     LScriptable() : m_pRefCounter(NULL) {}
     LScriptable(const LScriptable &) : m_pRefCounter(NULL) {}
-    virtual ~LScriptable() {}
+    ~LScriptable() override {}
 
     ///////////////////////////
     // memory management

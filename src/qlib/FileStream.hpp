@@ -24,7 +24,7 @@ namespace qlib {
     class QLIB_API AbstFIOImpl : public IOImpl {
     public:
 
-      virtual ~AbstFIOImpl() {}
+      ~AbstFIOImpl() override {}
 
       /// open file stream for reading
       virtual void i_open(const LString &fname) =0;
@@ -69,7 +69,7 @@ namespace qlib {
     }
 
     /** dtor */
-    virtual ~FileInStream();
+    ~FileInStream() override;
     
     //////////////////////////////////////////////////////
 
@@ -78,32 +78,32 @@ namespace qlib {
       m_pimpl->i_open(fname);
     }
 
-    virtual bool ready() {
+    bool ready() override {
       return m_pimpl->ready();
     }
 
-    virtual int read() {
+    int read() override {
       return m_pimpl->read();
     }
   
-    virtual int read(char *buf, int off, int len) {
+    int read(char *buf, int off, int len) override {
       return m_pimpl->read(buf, off, len);
     }
 
-    virtual int skip(int len) {
+    int skip(int len) override {
       return m_pimpl->skip(len);
     }
 
-    virtual void close() {
+    void close() override {
       m_pimpl->i_close();
     }
 
-    virtual LString getURI() const {
+    LString getURI() const override {
       return m_pimpl->getSrcURI();
     }
 
     /** get implementation */
-    virtual impl_type getImpl() const {
+    impl_type getImpl() const override {
       return m_pimpl;
     }
 
@@ -142,7 +142,7 @@ namespace qlib {
     }
 
     /** dtor */
-    virtual ~FileOutStream();
+    ~FileOutStream() override;
     
     //////////////////////////////////////////////////////
 
@@ -151,29 +151,29 @@ namespace qlib {
       m_pimpl->o_open(fname, bAppend);
     }
 
-    virtual int write(const char *buf, int off, int len) {
+    int write(const char *buf, int off, int len) override {
       return m_pimpl->write(buf, off, len);
     }
     
-    virtual void write(int b) {
+    void write(int b) override {
       return m_pimpl->write(b);
     }
 
-    virtual void flush() {
+    void flush() override {
       m_pimpl->flush();
     }
 
-    virtual void close() {
+    void close() override {
       m_pimpl->o_close();
     }
 
-    virtual LString getURI() const {
+    LString getURI() const override {
       return m_pimpl->getDestURI();
     }
     
 
     /** get implementation */
-    virtual impl_type getImpl() const {
+    impl_type getImpl() const override {
       return m_pimpl;
     }
 

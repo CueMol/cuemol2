@@ -56,7 +56,7 @@ namespace qlib {
     }
 
     /** destructor */
-    virtual ~LScrQuat();
+    ~LScrQuat() override;
 
     // Assignment operator
     const LScrQuat &operator=(const LScrQuat &arg) {
@@ -80,8 +80,8 @@ namespace qlib {
 
     virtual bool equals(const LScrQuat &arg) const;
 
-    virtual bool isStrConv() const;
-    virtual LString toString() const;
+    bool isStrConv() const override;
+    LString toString() const override;
 
     typedef std::true_type has_fromString;
     static LScrQuat *fromStringS(const LString &src);

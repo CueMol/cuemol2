@@ -36,15 +36,15 @@ namespace molstr {
     {
     }
     
-    virtual ~XMLTopparParser()
+    ~XMLTopparParser() override
     {
     }
     
-    virtual void startElement(const LString &name, const ExpatInStream::Attributes &attrs);
+    void startElement(const LString &name, const ExpatInStream::Attributes &attrs) override;
   
-    virtual void endElement(const LString &name);
+    void endElement(const LString &name) override;
   
-    virtual void charData(const LString &sbuf)
+    void charData(const LString &sbuf) override
     {
     }
   

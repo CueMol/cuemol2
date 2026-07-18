@@ -30,7 +30,7 @@ namespace qsys {
     {
     }
     
-    virtual ~CameraCreateEditInfo()
+    ~CameraCreateEditInfo() override
     {
     }
 
@@ -49,7 +49,7 @@ namespace qsys {
     }
 
     /// perform undo 
-    virtual bool undo()
+    bool undo() override
     {
       Scene *pScene;
       pScene = qlib::ObjectManager::sGetObj<Scene>(m_nSceneID);
@@ -78,7 +78,7 @@ namespace qsys {
     }
 
     /// perform redo
-    virtual bool redo()
+    bool redo() override
     {
       Scene *pScene;
       pScene = qlib::ObjectManager::sGetObj<Scene>(m_nSceneID);
@@ -106,7 +106,7 @@ namespace qsys {
       return true;
     }
 
-    virtual bool isUndoable() const
+    bool isUndoable() const override
     {
       Scene *pScene;
       pScene = qlib::ObjectManager::sGetObj<Scene>(m_nSceneID);
@@ -114,7 +114,7 @@ namespace qsys {
       return true;
     }
 
-    virtual bool isRedoable() const
+    bool isRedoable() const override
     {
       return isUndoable();
     }
@@ -151,7 +151,7 @@ namespace qsys {
     {
     }
     
-    virtual ~CameraPropEditInfo()
+    ~CameraPropEditInfo() override
     {
     }
 
@@ -165,7 +165,7 @@ namespace qsys {
     }
 
     /// perform undo 
-    virtual bool undo()
+    bool undo() override
     {
       Scene *pScene;
       pScene = qlib::ObjectManager::sGetObj<Scene>(m_nSceneID);
@@ -186,7 +186,7 @@ namespace qsys {
     }
 
     /// perform redo
-    virtual bool redo()
+    bool redo() override
     {
       Scene *pScene;
       pScene = qlib::ObjectManager::sGetObj<Scene>(m_nSceneID);
@@ -206,7 +206,7 @@ namespace qsys {
       return true;
     }
 
-    virtual bool isUndoable() const
+    bool isUndoable() const override
     {
       Scene *pScene;
       pScene = qlib::ObjectManager::sGetObj<Scene>(m_nSceneID);
@@ -218,7 +218,7 @@ namespace qsys {
       return true;
     }
 
-    virtual bool isRedoable() const
+    bool isRedoable() const override
     {
       return isUndoable();
     }

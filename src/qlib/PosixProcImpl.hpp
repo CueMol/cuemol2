@@ -63,7 +63,7 @@ public:
     pid_t m_childpid;
     int m_infd;
 
-    virtual void run()
+    void run() override
     {
         // Read output from the child process's pipe for STDOUT
         const int kBufferSize = 1024 * 64;  // 64 kB buf
@@ -113,7 +113,7 @@ public:
 class PosixProcMgrImpl : public LProcMgrImpl
 {
 public:
-    virtual int getCPUCount() const
+    int getCPUCount() const override
     {
         // TO DO: impl
         return 4;
@@ -170,8 +170,8 @@ public:
         return true;
     }
 
-    virtual ProcInThread *createProcess(const LString &path, const LString &args,
-                                        const LString &wdir)
+    ProcInThread *createProcess(const LString &path, const LString &args,
+                                        const LString &wdir) override
     {
         MB_DPRINTLN("PosixProc: createProcess: path=[%s] args=[%s] wdir=[%s]",
                      path.c_str(), args.c_str(), wdir.c_str());
@@ -306,7 +306,7 @@ public:
         return pData;
     }
 
-    virtual void kill(ProcInThread *pAData)
+    void kill(ProcInThread *pAData) override
     {
         PosixInThread *pData = (PosixInThread *)pAData;
         pid_t childpid = pData->m_childpid;

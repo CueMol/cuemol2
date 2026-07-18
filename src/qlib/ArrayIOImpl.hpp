@@ -31,22 +31,22 @@ namespace qlib {
 
       explicit ArrayInImpl(const qbyte *in, int len);
       
-      virtual bool ready();
+      bool ready() override;
 
-      virtual int read();
+      int read() override;
 
-      virtual int read(char *buf, int off, int len);
+      int read(char *buf, int off, int len) override;
       
       ///
       /// Try to skip n bytes.
       /// @return the actual number of bytes skipped
       ///
-      virtual int skip(int n);
+      int skip(int n) override;
 
-      virtual void i_close();
+      void i_close() override;
 
       /// get source URI of this stream
-      virtual LString getSrcURI() const;
+      LString getSrcURI() const override;
     };
     
     /// Array output implementation
@@ -64,16 +64,16 @@ namespace qlib {
 
       ArrayOutImpl() : OutImpl() {}
 
-      virtual int write(const char *buf, int off, int len);
+      int write(const char *buf, int off, int len) override;
     
-      virtual void write(int b);
+      void write(int b) override;
       
-      virtual void flush();
+      void flush() override;
 
-      virtual void o_close();
+      void o_close() override;
       
       /// get destination URI of this stream
-      virtual LString getDestURI() const;
+      LString getDestURI() const override;
 
       const data_type *getData() const {
 	return &m_data;

@@ -93,7 +93,7 @@ namespace molstr {
     {
     }
 
-    virtual ~SelOpNode();
+    ~SelOpNode() override;
 
     SelSuperNode *getNode() { return m_p; }
     int getMode() const { return m_nmode; }
@@ -104,11 +104,11 @@ namespace molstr {
     LString getAroundTarget() const { return m_artarg; }
     void setAroundTarget(const char *s) { m_artarg = s; }
 
-    virtual int getType() const;
-    virtual SelSuperNode *clone() const;
-    virtual LString toString() const;
+    int getType() const override;
+    SelSuperNode *clone() const override;
+    LString toString() const override;
 
-    virtual bool isSelected(MolAtomPtr pAtom);
+    bool isSelected(MolAtomPtr pAtom) override;
 
     //////////////////////
   private:
@@ -145,17 +145,17 @@ namespace molstr {
     {
     }
 
-    virtual ~SelBinNode();
+    ~SelBinNode() override;
 
     SelSuperNode *getNode1() { return m_p1; }
     SelSuperNode *getNode2() { return m_p2; }
     int getMode() const { return m_nmode; }
 
-    virtual int getType() const;
-    virtual SelSuperNode *clone() const;
-    virtual LString toString() const;
+    int getType() const override;
+    SelSuperNode *clone() const override;
+    LString toString() const override;
 
-    virtual bool isSelected(MolAtomPtr pAtom);
+    bool isSelected(MolAtomPtr pAtom) override;
   };
 
   /// All or none selection terminal node
@@ -176,11 +176,11 @@ namespace molstr {
     bool isAll() const { return m_fall; }
     bool isNone() const { return !m_fall; }
 
-    virtual int getType() const;
-    virtual SelSuperNode *clone() const;
-    virtual LString toString() const;
+    int getType() const override;
+    SelSuperNode *clone() const override;
+    LString toString() const override;
 
-    virtual bool isSelected(MolAtomPtr pAtom);
+    bool isSelected(MolAtomPtr pAtom) override;
   };
 
   /// Macro reference terminal node
@@ -211,11 +211,11 @@ namespace molstr {
     void setName(const char *name);
     const LString &getName() const { return m_name; }
 
-    virtual int getType() const;
-    virtual SelSuperNode *clone() const;
-    virtual LString toString() const;
+    int getType() const override;
+    SelSuperNode *clone() const override;
+    LString toString() const override;
 
-    virtual bool isSelected(MolAtomPtr pAtom);
+    bool isSelected(MolAtomPtr pAtom) override;
 
   private:
     bool resolveReference() const;
@@ -292,10 +292,10 @@ namespace molstr {
     bool isAtomSelected(const LString &aName, char altconf) const;
 
     void dump() const;
-    virtual int getType() const;
-    virtual SelSuperNode *clone() const;
+    int getType() const override;
+    SelSuperNode *clone() const override;
 
-    virtual LString toString() const;
+    LString toString() const override;
     // virtual bool isSelected(MolAtomPtr pAtom);
 
   private:
@@ -323,7 +323,7 @@ namespace molstr {
     SelRangesNode(int n1, int n2) { m_list.append(n1,n2+1); }
     SelRangesNode(const SelRangesNode &);
 
-    ~SelRangesNode() {}
+    ~SelRangesNode() override {}
 
     void append(int n) { m_list.append(n,n+1); }
 
@@ -338,9 +338,9 @@ namespace molstr {
 
     void dump() const;
 
-    virtual int getType() const;
-    virtual SelSuperNode *clone() const;
-    virtual LString toString() const;
+    int getType() const override;
+    SelSuperNode *clone() const override;
+    LString toString() const override;
   };
 
   ///
@@ -358,7 +358,7 @@ namespace molstr {
     SelResidNode(int n1, char c1, int n2, char c2);
     SelResidNode(const SelResidNode &);
 
-    ~SelResidNode() {}
+    ~SelResidNode() override {}
 
     void append(int n1, char c1, int n2, char c2);
 
@@ -366,9 +366,9 @@ namespace molstr {
 
     void dump() const;
 
-    virtual int getType() const;
-    virtual SelSuperNode *clone() const;
-    virtual LString toString() const;
+    int getType() const override;
+    SelSuperNode *clone() const override;
+    LString toString() const override;
 
     bool isResidSelected(ResidIndex ind) const;
 
@@ -395,16 +395,16 @@ namespace molstr {
     {
     }
     
-    virtual ~SelHierNode();
+    ~SelHierNode() override;
     
     SelNamesNode *getChains() { return m_pChains; }
     SelResidNode *getResids() { return m_pResids; }
     SelNamesNode *getAtoms() { return m_pAtoms; }
     
-    virtual int getType() const;
-    virtual SelSuperNode *clone() const;
-    virtual LString toString() const;
-    virtual bool isSelected(MolAtomPtr pAtom);
+    int getType() const override;
+    SelSuperNode *clone() const override;
+    LString toString() const override;
+    bool isSelected(MolAtomPtr pAtom) override;
   };
 
 
@@ -460,18 +460,18 @@ namespace molstr {
     {
     }
 
-    virtual ~SelTermNode();
+    ~SelTermNode() override;
 
     SelRangesNode *getRangesNode() { return m_pr; }
     SelResidNode *getResidNode() { return m_pr2; }
     SelNamesNode *getNamesNode() { return m_pn; }
     int getMode() const { return m_nmode; }
 
-    virtual int getType() const;
-    virtual SelSuperNode *clone() const;
-    virtual LString toString() const;
+    int getType() const override;
+    SelSuperNode *clone() const override;
+    LString toString() const override;
 
-    virtual bool isSelected(MolAtomPtr pAtom);
+    bool isSelected(MolAtomPtr pAtom) override;
   };
 
   /**
@@ -493,17 +493,17 @@ namespace molstr {
     SelCompNode();
     SelCompNode(const SelCompNode &);
     SelCompNode(int mode, int op, double dvalue);
-    virtual ~SelCompNode();
+    ~SelCompNode() override;
 
     int getMode() const { return m_nmode; }
     int getOp() const { return m_ncompop; }
     double getValue() const { return m_dvalue; }
 
-    virtual int getType() const;
-    virtual SelSuperNode *clone() const;
+    int getType() const override;
+    SelSuperNode *clone() const override;
 
-    virtual LString toString() const;
-    virtual bool isSelected(MolAtomPtr pAtom);
+    LString toString() const override;
+    bool isSelected(MolAtomPtr pAtom) override;
   };
 
   /**
@@ -529,17 +529,17 @@ namespace molstr {
     SelPropNode(const SelPropNode &r);
     SelPropNode(int mode, const char *name, const char *value);
   
-    virtual ~SelPropNode();
+    ~SelPropNode() override;
 
     int getMode() const { return m_nmode; }
     const LString &getName() const { return m_propname; }
     const LString &getValue() const { return m_propvalue; }
 
-    virtual int getType() const;
-    virtual SelSuperNode *clone() const;
+    int getType() const override;
+    SelSuperNode *clone() const override;
 
-    virtual LString toString() const;
-    virtual bool isSelected(MolAtomPtr pAtom);
+    LString toString() const override;
+    bool isSelected(MolAtomPtr pAtom) override;
   };
 
 #if 0

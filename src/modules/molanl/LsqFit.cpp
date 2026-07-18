@@ -69,7 +69,7 @@ namespace {
     }
 
     // x:n=3+3, fvec:m
-    void eval(double *x, double *fvec, int iflag)
+    void eval(double *x, double *fvec, int iflag) override
     {
       ++m_nEval;
       int i;

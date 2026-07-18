@@ -485,7 +485,7 @@ private:
 
 public:
   MolBondEditInfo() {}
-  virtual ~MolBondEditInfo() {}
+  ~MolBondEditInfo() override {}
 
   /////////////////////////////////////////////////////
 
@@ -519,7 +519,7 @@ public:
   /////////////////////////////////////////////////////
 
   /// perform undo
-  virtual bool undo()
+  bool undo() override
   {
     if (m_bMake) {
       // undo of make --> remove
@@ -532,7 +532,7 @@ public:
   }
 
   /// perform redo
-  virtual bool redo()
+  bool redo() override
   {
     if (m_bMake) {
       // redo of make --> make
@@ -544,12 +544,12 @@ public:
     }
   }
 
-  virtual bool isUndoable() const
+  bool isUndoable() const override
   {
     return true;
   }
   
-  virtual bool isRedoable() const
+  bool isRedoable() const override
   {
     return true;
   }
@@ -687,7 +687,7 @@ namespace {
 
   public:
     ChgChnameEditInfo() {}
-    virtual ~ChgChnameEditInfo() {}
+    ~ChgChnameEditInfo() override {}
     
     /////////////////////////////////////////////////////
     
@@ -707,7 +707,7 @@ namespace {
     /////////////////////////////////////////////////////
 
     /// perform undo
-    virtual bool undo()
+    bool undo() override
     {
       MolCoord *pmol =
         qlib::ObjectManager::sGetObj<MolCoord>(m_nTgtUID);
@@ -733,7 +733,7 @@ namespace {
     }
 
     /// perform redo
-    virtual bool redo()
+    bool redo() override
     {
       MolCoord *pmol =
         qlib::ObjectManager::sGetObj<MolCoord>(m_nTgtUID);
@@ -758,12 +758,12 @@ namespace {
       return true;
     }
 
-    virtual bool isUndoable() const
+    bool isUndoable() const override
     {
       return true;
     }
 
-    virtual bool isRedoable() const
+    bool isRedoable() const override
     {
       return true;
     }
@@ -852,7 +852,7 @@ namespace {
 
   public:
     ShiftResIndexEditInfo() {}
-    virtual ~ShiftResIndexEditInfo() {}
+    ~ShiftResIndexEditInfo() override {}
     
     /////////////////////////////////////////////////////
     
@@ -872,7 +872,7 @@ namespace {
     /////////////////////////////////////////////////////
 
     /// perform undo
-    virtual bool undo()
+    bool undo() override
     {
       MolCoord *pmol =
         qlib::ObjectManager::sGetObj<MolCoord>(m_nTgtUID);
@@ -899,7 +899,7 @@ namespace {
     }
 
     /// perform redo
-    virtual bool redo()
+    bool redo() override
     {
       MolCoord *pmol =
         qlib::ObjectManager::sGetObj<MolCoord>(m_nTgtUID);
@@ -925,12 +925,12 @@ namespace {
       return true;
     }
 
-    virtual bool isUndoable() const
+    bool isUndoable() const override
     {
       return true;
     }
 
-    virtual bool isRedoable() const
+    bool isRedoable() const override
     {
       return true;
     }
