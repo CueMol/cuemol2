@@ -46,6 +46,10 @@ private:
 public:
     qlib::uid_t getTargTrajUID() const { return m_nTrajUID; }
     void setTargTrajUID(qlib::uid_t uid) { m_nTrajUID = uid; }
+
+    /// Resolve the parent Trajectory (by the target UID, or the attached
+    /// block's trajectory UID). Defined with the Trajectory class.
+    TrajectoryPtr getTargTraj() const;
 };
 
 MC_DECL_SCRSP(TrajBlockReader);

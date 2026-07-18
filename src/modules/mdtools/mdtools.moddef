@@ -5,6 +5,7 @@
 #include "GROFileReader.qif"
 #include "AmberPrmtopReader.qif"
 #include "TrajBlock.qif"
+#include "Trajectory.qif"
 
 module mdtools
 {
@@ -15,5 +16,6 @@ module mdtools
   GROFileReader;
   AmberPrmtopReader;
   TrajBlock;
+  Trajectory;
 };
 

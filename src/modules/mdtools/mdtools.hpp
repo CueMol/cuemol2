@@ -40,6 +40,7 @@
 namespace mdtools {
 
   MC_DECL_SCRSP(TrajBlock);
+  MC_DECL_SCRSP(Trajectory);
 
   /// Common Initialization for the mdtools library
   MDTOOLS_API bool init();
