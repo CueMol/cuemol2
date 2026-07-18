@@ -18,6 +18,7 @@
 
 #include <gfx/DisplayContext.hpp>
 #include <gfx/SolidColor.hpp>
+#include <gfx/FloatDataTexture.hpp>
 #include <qsys/Scene.hpp>
 
 using namespace molstr;
