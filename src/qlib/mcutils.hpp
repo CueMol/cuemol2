@@ -26,7 +26,7 @@
 
 #define MC_DYNCLASS \
   public: \
-    virtual qlib::LClass *getClassObj() const; \
+    qlib::LClass *getClassObj() const override; \
     static void regClass(); \
     static void unregClass(); \
     static qlib::LClass *getClassObjS(); \
@@ -58,7 +58,7 @@
 
 #define MC_CLONEABLE \
   public: \
-    virtual qlib::LCloneableObject *clone() const; \
+    qlib::LCloneableObject *clone() const override; \
 
 #define MC_CLONEABLE_IMPL(fqclsnm) \
 qlib::LCloneableObject *fqclsnm::clone() const \
@@ -69,19 +69,19 @@ qlib::LCloneableObject *fqclsnm::clone() const \
 
 #define MC_SCRIPTABLE                                                   \
   MC_DYNCLASS;                                                          \
-  virtual bool getPropertyImpl(const qlib::LString &propnm,             \
-                               qlib::LVariant &presult) const;          \
-  virtual bool setPropertyImpl(const qlib::LString &propnm,             \
-                               const qlib::LVariant &pvalue);           \
-  virtual bool resetPropertyImpl(const qlib::LString &nm);              \
-  virtual void resetAllProps();                                         \
-  virtual bool getPropSpecImpl(const qlib::LString &name,               \
-                               qlib::PropSpec *pspec) const;            \
-  virtual void getPropNames(std::set<qlib::LString> &) const;           \
-  virtual bool hasMethod(const qlib::LString &nm) const;                \
-  virtual bool invokeMethod(const qlib::LString &nm, qlib::LVarArgs &args);\
-  virtual qlib::LClass *getScrClassObj() const; \
-  virtual bool implements(const qlib::LString &nm) const; \
+  bool getPropertyImpl(const qlib::LString &propnm,                     \
+                       qlib::LVariant &presult) const override;         \
+  bool setPropertyImpl(const qlib::LString &propnm,                     \
+                       const qlib::LVariant &pvalue) override;          \
+  bool resetPropertyImpl(const qlib::LString &nm) override;             \
+  void resetAllProps() override;                                        \
+  bool getPropSpecImpl(const qlib::LString &name,                       \
+                       qlib::PropSpec *pspec) const override;           \
+  void getPropNames(std::set<qlib::LString> &) const override;          \
+  bool hasMethod(const qlib::LString &nm) const override;               \
+  bool invokeMethod(const qlib::LString &nm, qlib::LVarArgs &args) override;\
+  qlib::LClass *getScrClassObj() const override; \
+  bool implements(const qlib::LString &nm) const override; \
   
 
 #define MC_SCRIPTABLE_EMPTY_IMPL(fqclsnm) \
