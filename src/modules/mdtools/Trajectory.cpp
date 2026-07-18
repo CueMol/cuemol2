@@ -70,14 +70,13 @@ void Trajectory::setup()
     m_nAllAtomSize = getAtomSize();
     m_loadSelAry.resize(m_nAllAtomSize);
 
-    int i = 0;
-    AtomIter aiter = super_t::beginAtom();
-    AtomIter eiter = super_t::endAtom();
-    for (; aiter != eiter; ++aiter, ++i) {
-        int aid = aiter->first;
-        m_loadSelAry[i] = aid;
+    // Load-all: the i-th trajectory atom (beginAtom / array-index order) reads
+    // the i-th atom from the data file (file order). getSelIndexArray() holds
+    // 0-based file indices, so this is the identity map. (Partial loads via
+    // setupSel() supply an explicit file-index array.)
+    for (int i = 0; i < m_nAllAtomSize; ++i) {
+        m_loadSelAry[i] = static_cast<quint32>(i);
     }
-    // load all atoms
     m_pLoadSel = SelectionPtr();
 }
 

@@ -7,15 +7,30 @@
 
 #include "mdtools/FortBinStream.hpp"
 #include "mdtools/TrajBlock.hpp"
+#include "mdtools/Trajectory.hpp"
+#include "mdtools/DCDTrajReader.hpp"
+#include "mdtools/GROFileReader.hpp"
+
+#include "molstr/MolAtom.hpp"
 
 #include <qlib/StringStream.hpp>
+#include <qlib/Vector4D.hpp>
+#include <qlib/LExceptions.hpp>
 
+#include <cstring>
 #include <string>
+#include <vector>
 
 using mdtools::FortBinInStream;
 using mdtools::FortBinFormatException;
 using mdtools::TrajBlock;
+using mdtools::Trajectory;
+using mdtools::TrajectoryPtr;
+using mdtools::DCDTrajReader;
+using mdtools::GROFileReader;
+using molstr::MolAtomPtr;
 using qlib::StrInStream;
+using qlib::Vector4D;
 
 namespace {
 
@@ -195,4 +210,140 @@ TEST(TrajBlockTest, StartIndexAndTrajUIDRoundTrip)
     EXPECT_EQ(tb.getStartIndex(), 7);
     tb.setTrajUID(42);
     EXPECT_EQ(tb.getTrajUID(), static_cast<qlib::uid_t>(42));
+}
+
+// ---- Trajectory + DCDTrajReader (GRO topology + synthetic DCD) ----
+
+namespace {
+
+// 3-atom water topology (coords in nm; scaled to Angstrom on load).
+const char *const kWaterGRO =
+    "water\n"
+    "    3\n"
+    "    1SOL     OW    1   0.100   0.200   0.300\n"
+    "    1SOL    HW1    2   0.110   0.200   0.300\n"
+    "    1SOL    HW2    3   0.100   0.210   0.300\n"
+    "   2.00000   2.00000   2.00000\n";
+
+// Deterministic per (frame, atom, axis) DCD coordinate (Angstrom).
+float dcdCoord(int frame, int atom, int axis)
+{
+    return static_cast<float>(frame) * 10.0f + static_cast<float>(atom) +
+           0.1f * static_cast<float>(axis + 1);
+}
+
+// Build a minimal DCD byte stream (no unit cell) with the given atom/frame
+// count, using dcdCoord() for the coordinates.
+std::string buildDCD(int natom, int nframes)
+{
+    std::string buf;
+
+    // 84-byte CORD header (21 int32 fields): [0]="CORD", [1]=NFILE, [11]=FCELL.
+    int hdr[21] = {0};
+    std::memcpy(&hdr[0], "CORD", 4);
+    hdr[1] = nframes;
+    hdr[11] = 0;  // no unit cell
+    appendRecord(buf, hdr, sizeof(hdr));
+
+    // Title record (content ignored by the reader).
+    const char title[4] = {'t', 'e', 's', 't'};
+    appendRecord(buf, title, sizeof(title));
+
+    // NATOM record.
+    int na = natom;
+    appendRecord(buf, &na, sizeof(int));
+
+    // X/Y/Z record per frame.
+    for (int f = 0; f < nframes; ++f) {
+        std::vector<float> ax(natom);
+        for (int axis = 0; axis < 3; ++axis) {
+            for (int a = 0; a < natom; ++a) ax[a] = dcdCoord(f, a, axis);
+            appendRecord(buf, ax.data(), natom * sizeof(float));
+        }
+    }
+    return buf;
+}
+
+// Build a Trajectory with water topology (via GROFileReader attached to it).
+TrajectoryPtr makeWaterTrajectory()
+{
+    TrajectoryPtr pTraj(MB_NEW Trajectory());
+    GROFileReader gro;
+    gro.attach(pTraj);
+    StrInStream gins(kWaterGRO, static_cast<int>(std::strlen(kWaterGRO)));
+    gro.read(gins);
+    gro.detach();
+    pTraj->setup();
+    return pTraj;
+}
+
+}  // namespace
+
+TEST(TrajectoryTest, DcdPlaybackMapsFramesToAtoms)
+{
+    TrajectoryPtr pTraj = makeWaterTrajectory();
+    ASSERT_EQ(pTraj->getAtomSize(), 3);
+
+    const int nframes = 4;
+    std::string dcd = buildDCD(3, nframes);
+
+    DCDTrajReader dcd_reader;
+    dcd_reader.attach(pTraj);
+    StrInStream dins(dcd.data(), static_cast<int>(dcd.size()));
+    dcd_reader.read(dins);
+    dcd_reader.detach();
+
+    EXPECT_EQ(pTraj->getFrameSize(), nframes);
+    EXPECT_EQ(pTraj->getBlockCount(), 1);  // small system -> single block
+
+    for (int f = 0; f < nframes; ++f) {
+        pTraj->setFrame(f);
+        for (int i = 0; i < 3; ++i) {
+            int aid = pTraj->getAtomIDByArrayInd(static_cast<quint32>(i));
+            Vector4D pos = pTraj->getAtom(aid)->getPos();
+            EXPECT_NEAR(pos.x(), dcdCoord(f, i, 0), 1e-4);
+            EXPECT_NEAR(pos.y(), dcdCoord(f, i, 1), 1e-4);
+            EXPECT_NEAR(pos.z(), dcdCoord(f, i, 2), 1e-4);
+        }
+    }
+}
+
+TEST(TrajectoryTest, DcdSplitsIntoBoundedBlocks)
+{
+    TrajectoryPtr pTraj = makeWaterTrajectory();
+
+    const int nframes = 5;
+    std::string dcd = buildDCD(3, nframes);
+
+    DCDTrajReader dcd_reader;
+    // 3 atoms -> 36 bytes/frame; cap at one frame per block to force chunking.
+    dcd_reader.setMaxBlockBytes(36);
+    dcd_reader.attach(pTraj);
+    StrInStream dins(dcd.data(), static_cast<int>(dcd.size()));
+    dcd_reader.read(dins);
+    dcd_reader.detach();
+
+    EXPECT_EQ(pTraj->getFrameSize(), nframes);
+    EXPECT_EQ(pTraj->getBlockCount(), nframes);  // one frame per block
+
+    // Coordinates must still be correct across block boundaries.
+    for (int f = 0; f < nframes; ++f) {
+        pTraj->setFrame(f);
+        int aid = pTraj->getAtomIDByArrayInd(2u);
+        Vector4D pos = pTraj->getAtom(aid)->getPos();
+        EXPECT_NEAR(pos.x(), dcdCoord(f, 2, 0), 1e-4);
+        EXPECT_NEAR(pos.z(), dcdCoord(f, 2, 2), 1e-4);
+    }
+}
+
+TEST(TrajectoryTest, DcdNatomMismatchThrows)
+{
+    TrajectoryPtr pTraj = makeWaterTrajectory();  // 3 atoms
+
+    std::string dcd = buildDCD(5, 2);  // 5 atoms != 3
+
+    DCDTrajReader dcd_reader;
+    dcd_reader.attach(pTraj);
+    StrInStream dins(dcd.data(), static_cast<int>(dcd.size()));
+    EXPECT_THROW(dcd_reader.read(dins), qlib::FileFormatException);
 }

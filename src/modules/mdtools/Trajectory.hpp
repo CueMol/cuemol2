@@ -113,6 +113,9 @@ public:
 
     int getFrameSize() const { return m_nTotalFrms; }
 
+    /// Number of coordinate blocks (chunks) the frames are split across.
+    int getBlockCount() const { return static_cast<int>(m_blocks.size()); }
+
 private:
     /// Frame averaging window size (0: off)
     int m_nAver;

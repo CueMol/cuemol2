@@ -6,6 +6,7 @@
 #include "AmberPrmtopReader.qif"
 #include "TrajBlock.qif"
 #include "Trajectory.qif"
+#include "DCDTrajReader.qif"
 
 module mdtools
 {
@@ -17,5 +18,6 @@ module mdtools
   AmberPrmtopReader;
   TrajBlock;
   Trajectory;
+  DCDTrajReader;
 };
 
