@@ -12,6 +12,28 @@ Phase 2 の目的は **MD trajectory (DCD) の realtime 表示**である。DCD 
 
 ---
 
+## 0.5. 実装結果 (MVP 完了・2026-07-18)
+
+`feature/md-trajectory-phase2` で **2a/2b(AnimMol)/2c を実装し、実データ(gmx.gro 113961 原子 + 1001-frame DCD, 1.37GB)を `.qsc` でロード → coord-texture SimpleRenderer で full-frame 再生**まで end-to-end 動作確認。gtest 1185 全 pass。
+
+**計画から変えた点(develop の現実装に合わせた/実装で判明)**:
+
+1. **DCDTrajReader はブロック中心** (`createDefaultObj → TrajBlock`、1 DCD=1 block、`Trajectory::append` は外部)。当初の Trajectory 中心・内部複数ブロック分割は `.qsc` の `<trajfiles>/<trajfile>`(=block-centric)serialize と非互換だったため revert。2GB 単一 alloc 対策はフレーム単位チャンク(TrajBlock)だけで達成される。
+2. **`.qsc` ロード順序**: `procDataSrcLoad` は子(DCD block)を親(GRO topology)より先にロードするため、DCD 読込時に topology が 0 原子。→ DCD 読込を **topology 非依存**化(未ロード時は DCD 自身の natom + identity load-all、NATOM 検証は topology がある時のみ + `append` の getCrdSize で担保)。
+3. **遅延 setup()**: GRO reader は `Trajectory::setup()` を呼ばないので、`getAllAtomSize`/`getSelIndexArray` で topology 到達後に自動実行。
+4. **遅延 finalize**: develop の `qsys::Object` は `SceneEventListener` ではなく `sceneChanged(ONLOADED)` フックが無い(dev2016 との差)。→ `setFrame`/`getFrameSize` 初回アクセスで `updateTrajBlockDataImpl` を実行。
+5. **frame count off-by-one 修正**: kept 数は `ceil(nfile/nevery)`(frame 0 を含む)。floor だと 1 block 分不足で `getCrdArray` 範囲外 → SIGSEGV(参照実装も同じ floor バグ)。
+6. **PSF は保留**: PSF は trajectory ではなく、develop の `PsfReader` は coordinate reader 併用前提のヘルパ。専用 PSF ObjReader は要設計。GRO topology で代替(GROFileReader を Trajectory に attach)。
+
+**保留(今後実装)**:
+- **厳密な 1-frame/vsync ベンチ**: AnimMgr は wall-clock でフレームを飛ばす(遅いと frame drop して同じ時間で再生)。ベンチには rAF tick ごとに `dynframe++` する frame カウントベースの harness が必要(`ViewLoopController` に追加、`PERF_MEASURE` と併用)。MVP では MolAnim の `length = nframes/target_fps`(秒)で近似。
+- **lazy loading**: develop の `InStream` に portable な seek が無い(`FileInStream` のみ int で 2GB 制限)ため eager のみ。seekable stream 抽象の導入が前提。
+- **MorphMol の AnimMol 再親子化**、**readsel(部分ロード)**、**frame_aver_size 検証**、**§2.3 の dynamic events / 共有テクスチャ (2e)**。
+
+テスト用データ + `.qsc`: `~/tmp/260718_cm3_traj/`(`gmx.gro`, `*.dcd`, `test_gro_traj*.qsc`)。
+
+---
+
 ## 1. 全体像と依存関係
 
 ```
