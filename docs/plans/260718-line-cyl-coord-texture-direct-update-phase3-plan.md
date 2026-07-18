@@ -147,11 +147,15 @@ BallStick のボールは Phase 1 の `SphereIdxGpuPrim` を**そのまま再利
 
 レンダラが `renderCoordTexImpl` で「テクセル layout に載せる原子リスト (= `m_aidcache`)」と「`AID → index` の逆引きマップ (`std::unordered_map<int,int>` 等)」を構築する。結合/円柱/アスターはこのマップで各原子の index を引く。Phase 2 で `AnimMol::getCrdArrayInd(aid)` が入れば、このマップは不要になる (インターフェースは変えない)。
 
-### 4.6 SimpleRenderer の二重結合: ind_d 方式を目標、静的オフセットを v1 fallback として許容
+### 4.6 SimpleRenderer の二重結合: ind_d 方式をシェーダ内計算 + ビュー向きフォールバックで実装
 
-- **目標 (アニメ正確)**: 参照の ind_d 方式。二重/三重結合ごとに「方向決定用の第 3 原子」の index を build 時に取り出し、シェーダで `getNormalVec` により垂線を計算する。分子が動いても方向が追従する。
-- **build 時の課題**: 現 `MolBond::getDblBondDir` は内部で `getNormalVec(pAtom1, pAtom2, this, pMol, nb1, bOK1)` が参照隣接原子を選ぶ。その原子の AID をきれいに取り出せるか要検証 (方向ベクトルでなく参照原子 index を返す小さなヘルパを足す)。
-- **v1 fallback**: `getDblBondDir` の CPU 計算値を `LineIdxGpuPrim` の静的オフセット (§4.2) に焼く。実装は楽だが、アニメ中にオフセット方向が model 空間で凍る (小さな morph では目立たない、大きな回転では誤差)。`LineIdxGpuPrim` の offset がそのまま使えるので **ほぼ無料**。まず fallback で SimpleRenderer を成立させ、その後 ind_d に上げる段階化が可能。
+**採用 (実装済み)**: 変位方向を頂点シェーダ (`linevalidx_vert.glsl` の `calcDispDir`) で毎フレーム計算する。焼き込み (v1) は不採用。
+
+- **決定可能なケース**: 参照原子 (distal) の index を `a_val.w` で渡し、シェーダで `d = v2 - ebond·(ebond·v2)` の**面内垂線**を求める。分子が動いても方向が原子に追従する。参照原子が座標テクスチャに無い (選択外) 場合は index を `-1` としてフォールバックへ。
+- **決定不能なケース (三重結合の共線・孤立二重結合)**: **ビュー向き垂線**を使う。eye 空間で結合軸に垂直な screen 面内ベクトルを作り `inverse(mat3(MV))` で model 空間へ戻す。旧 `getDblBondDir` の world 固定 `(1,0,0)` を廃止し、常にカメラに開く。
+- **決定/不決定の判定**: 距離でなく比率 `length(d) > 0.15·|v2|` (軸から約 8.6° 以上)。わずかに曲がった実アルキンもノイズに乏しい微小垂線を避けて確実にフォールバックへ。
+- **符号非依存**: 二重/三重結合は `±m_dCvScl` で軸対称に描くので、垂線の符号 (どちら向きか) は見た目に無関係。合わせるべきは面 (軸) だけ。これにより旧 `getDblBondDir` の quirky な nv1/nv2 選択を完全再現する必要が無い。
+- **`MolBond::getDblBondRefAtom`**: 旧 `getDistalAtomID` は **id1 側限定**で、末端側が id1 のとき参照原子を取れず `(1,0,0)` に落ちていた。新ヘルパは id1→id2 の順で重原子隣接を探すので、末端二重結合 (例: C=O) でも参照原子を拾える。
 
 ### 4.7 シェーダ body 分割 (Phase 1 の sphere2 と同型)
 
@@ -196,13 +200,17 @@ sub-phase ごとに区切って実装・検証・コミットする (Phase 1 と
 | shader | 円柱 body + direct/idx ラッパ | 新規/変更 |
 | renderer | `src/modules/molvis/BallStickRenderer.hpp` / `.cpp` | 変更 (球=SphereIdxGpuPrim 再利用, 円柱=CylinderIdxGpuPrim, 共有テクスチャ, AID map) |
 
-### Phase 3d: SimpleRenderer (最難関)
+### Phase 3d: SimpleRenderer (最難関) — 実装済み (commit `0ec02d49`)
+
+§4.6 の v1 静的オフセットではなく、**シェーダ内で変位方向を計算する ind_d 版 + ビュー向きフォールバック**を採用した (下記 §4.6 参照)。valence 平行線を含めて `LineValIdxGpuPrim` 1 本に集約。
 
 | 層 | ファイル | 種別 |
 |---|---|---|
-| shader | 二重結合 idx シェーダ (ind_d 版) | 新規 (ind_d 採用時) |
-| core | `MolBond` に方向原子 index を返すヘルパ | 変更 (ind_d 採用時, 要検証) |
-| renderer | `src/modules/molstr/SimpleRenderer*.cpp` | 変更 (LineIdxGpuPrim 再利用 + valence) |
+| gfx prim | `src/gfx/LineValIdxGpuPrim.hpp` / `.cpp` | 新規 (parametric endpoint + shared 垂線変位) |
+| shader | `src/sysdep/ogl_core/linevalidx_vert.glsl` | 新規 (idx 専用, `linew_inc.glsl` 再利用) |
+| gfx/shader build | `src/gfx/CMakeLists.txt` / `src/sysdep/CMakeLists.txt` | 変更 |
+| core | `MolBond::getDblBondRefAtom` | 新規 (id1→id2 の順で参照原子 index を返す) |
+| renderer | `src/modules/molstr/SimpleRenderer*.cpp` / `.hpp` | 変更 (LineValIdxGpuPrim + valence + coord tex 4 点セット) |
 
 **変更しないファイル (重要)**: `MolCoord.*`, `MolAtom.*`, `MorphMol.*`, `AnimMgr.*`, `SphereGpuPrim.*`, `LineGpuPrim.*` (direct 版として残す), `CylinderGpuPrim.*`, `EcBufferRep.*`, Phase 1 の `FloatDataTexture` / `SphereIdxGpuPrim` (再利用のみ)。
 
@@ -239,11 +247,9 @@ Phase 1 の `CPK2Renderer` の実装 (`renderCoordTexImpl` / `updateCoordTex` / 
 2. `BallStickRenderer` の `renderShaderImpl` を idx 版に:ボールは `SphereIdxGpuPrim` (Phase 1 の `setData(i, idx, rad, devcode)`)、円柱は `CylinderIdxGpuPrim` (`setData(i, idx1, idx2, bondw, devcode)`)。**1 枚の座標テクスチャを両プリミティブに `setCoordTex`** (§4.4)。`updateCoordTex` は 1 枚を更新。
 3. valence は無視 (現 `renderShaderImpl` と同じ、§3.4)。dead コードは触らない。
 
-### Step 3d: `SimpleRenderer`
+### Step 3d: `SimpleRenderer` (実装済み)
 
-1. まず **valence 無効 (単線のみ)** で `LineIdxGpuPrim` に載せ、bicolor (中点)・孤立原子アスターを成立させる (Selection の実装が下敷き)。
-2. 次に二重/三重結合を追加。まず §4.6 の **v1 fallback (静的オフセット)** で成立させる (`LineIdxGpuPrim` の offset に `getDblBondDir` を焼く)。
-3. 余力があれば **ind_d 方式**へ (方向原子 index を build 時に抽出、シェーダ内 `getNormalVec`)。`MolBond` のヘルパ追加が要るか実装時に判断。
+`LineIdxGpuPrim` ではなく専用の `LineValIdxGpuPrim` を新設し、単結合・二色結合 (mix による中点)・孤立原子アスター・二重/三重結合の平行線をすべて 1 プリミティブ・1 シェーダに集約した。二色中点は静的オフセットでなく `mix(p1,p2,0.5)` でアニメ正確。valence 変位方向は §4.6 のシェーダ内計算 (ind_d + ビュー向きフォールバック) で最初から実装。`display`/`objectChanged`/`invalidateDisplayCache`/`renderCoordTexImpl`/`updateCoordTex` は CPK/Selection と同型の 4 点セット。coord tex 利用不可時は既存 `LineGpuPrim`→legacy にフォールバック。
 
 ---
 
@@ -269,7 +275,7 @@ Phase 1 の `CPK2Renderer` の実装 (`renderCoordTexImpl` / `updateCoordTex` / 
 1. **`SelectionRenderer` の `MODE_POINT`**: 点スプライトはレガシー維持。将来 `PointIdxGpuPrim` (§4.8)。
 2. **レンダラ間の座標テクスチャ共有**: Phase 3 は per-renderer 所有。1 分子に複数レンダラが付くと座標が複数枚。集約は Phase 2 (`AnimMol`, Phase 1 plan §8.4)。
 3. **`BallStickRenderer` の dead valence**: 移植も削除もしない (§4.9)。
-4. **SimpleRenderer の二重結合**: v1 は静的オフセット (アニメ中に方向が凍る)。ind_d 方式への upgrade は同 sub-phase 内の後段 or 別課題。
+4. **SimpleRenderer の二重結合方向**: シェーダ内計算 (ind_d + ビュー向きフォールバック) で実装済み・アニメ追従。決定可能ケースの参照原子選択は旧 `getDblBondDir` の nv1/nv2 分岐を厳密再現していない (軸対称描画のため見た目は同等)。
 5. **AID→index マップのコスト**: `unordered_map` の構築は `renderCoordTexImpl` 時のみ (毎フレームではない)。Phase 2 の `AnimMol::getCrdArrayInd` で不要化。
 6. **トポロジ変化の検知**: Phase 1 と同じく `updateCoordTex` は `m_aidcache` の AID で引き直すので、原子削除は `getAtom()` null → 全再構築フォールバック。原子入れ替えは非検知 (`atomsMoved` は座標のみの意味なので実用上問題なし)。
 
