@@ -17,7 +17,6 @@ using namespace mdtools;
 DCDTrajReader::DCDTrajReader() : super_t()
 {
     m_nSkip = 1;
-    m_maxBlockBytes = qint64(256) * 1024 * 1024;
     m_natom = 0;
     m_nfile = 0;
     m_fcell = false;
@@ -44,27 +43,27 @@ const char *DCDTrajReader::getFileExt() const
 
 qsys::ObjectPtr DCDTrajReader::createDefaultObj() const
 {
-    // A DCD needs pre-existing topology; a standalone default is an empty
-    // Trajectory (readHeader's NATOM check then rejects it).
-    return qsys::ObjectPtr(MB_NEW Trajectory());
+    return qsys::ObjectPtr(MB_NEW TrajBlock());
 }
 
 ///////////////////////////////////////////
 
 bool DCDTrajReader::read(qlib::InStream &ins)
 {
-    TrajectoryPtr pTraj(getTarget<Trajectory>());
-    if (pTraj.isnull()) pTraj = getTargTraj();
-    if (pTraj.isnull()) {
-        MB_THROW(qlib::RuntimeException, "DCDTrajReader: no target Trajectory");
+    TrajBlockPtr pTB(getTarget<TrajBlock>());
+    if (pTB.isnull()) {
+        MB_THROW(qlib::RuntimeException, "DCDTrajReader: not attached to a TrajBlock");
         return false;
     }
 
-    // Record the target trajectory UID for lazy loadFrm().
-    if (getTargTrajUID() == qlib::invalid_uid) setTargTrajUID(pTraj->getUID());
+    TrajectoryPtr pTraj = getTargTraj();
+    if (pTraj.isnull()) {
+        MB_THROW(qlib::RuntimeException, "DCDTrajReader: target Trajectory not found");
+        return false;
+    }
 
     readHeader(ins, pTraj);
-    readBody(ins, pTraj);
+    readBody(ins, pTB, pTraj);
 
     return true;
 }
@@ -94,10 +93,8 @@ void DCDTrajReader::readHeader(qlib::InStream &ins, const TrajectoryPtr &pTraj)
     phdr++;  // skip "CORD"
 
     int nfile = phdr[0];  // NFILE (number of frames)
-    phdr += 9;            // skip NFILE..(9 int fields incl. NPRIV/NSAVC/NSTEP + 5)
-
-    // phdr now at DT (float), then FCELL (int)
-    phdr++;               // skip DT
+    phdr += 9;            // skip NFILE .. (9 int fields)
+    phdr++;               // skip DT (float)
     int fcell = phdr[0];  // FCELL
 
     // Title record (skip).
@@ -126,15 +123,6 @@ void DCDTrajReader::readHeader(qlib::InStream &ins, const TrajectoryPtr &pTraj)
         MB_THROW(qlib::FileFormatException, msg);
         return;
     }
-}
-
-int DCDTrajReader::framesPerBlock(int nReadAtoms) const
-{
-    qint64 bytesPerFrame = static_cast<qint64>(nReadAtoms) * 3 * sizeof(qfloat32);
-    if (bytesPerFrame <= 0) return 1;
-    qint64 fpb = m_maxBlockBytes / bytesPerFrame;
-    if (fpb < 1) fpb = 1;
-    return static_cast<int>(fpb);
 }
 
 void DCDTrajReader::readFrameRecords(FortBinInStream &fbis, std::vector<float> &tmpv,
@@ -183,30 +171,22 @@ void DCDTrajReader::readFrameRecords(FortBinInStream &fbis, std::vector<float> &
     }
 }
 
-void DCDTrajReader::readBody(qlib::InStream &ins, const TrajectoryPtr &pTraj)
+void DCDTrajReader::readBody(qlib::InStream &ins, const TrajBlockPtr &pTB,
+                             const TrajectoryPtr &pTraj)
 {
-    const int nread = m_nfile / m_nSkip;  // total frames to keep
+    const int nread = m_nfile / m_nSkip;  // frames to keep
     if (nread <= 0) return;
 
     const int nReadAtoms = static_cast<int>(pTraj->getAtomSize());
-    const int fpb = framesPerBlock(nReadAtoms);
 
-    // Pre-create the bounded blocks (option A: allocate all frames upfront, in
-    // per-frame chunks -- no single allocation exceeds one frame).
-    std::vector<TrajBlockPtr> blocks;
-    for (int startFrm = 0; startFrm < nread; startFrm += fpb) {
-        int nInBlk = qlib::min(fpb, nread - startFrm);
-        TrajBlockPtr pBlk(MB_NEW TrajBlock());
-        pBlk->setTrajUID(pTraj->getUID());
-        pBlk->allocate(nReadAtoms, nInBlk);
-        blocks.push_back(pBlk);
-    }
-    LOG_DPRINTLN("DCDTraj> %d frames in %d block(s), <=%d frames/block",
-                 nread, static_cast<int>(blocks.size()), fpb);
+    // One block for this DCD file, allocated as per-frame chunks (no single
+    // whole-file buffer). Frame count bounded by the file's frame count.
+    pTB->allocate(nReadAtoms, nread);
 
-    // Eager: read the file sequentially, scattering each kept frame into its
-    // block. Skipped frames (m_nSkip>1) are still read to advance the stream.
-    // (Seek-based lazy loading is deferred; see loadFrm().)
+    LOG_DPRINTLN("DCDTraj> reading %d frames (skip=%d) into one block", nread, m_nSkip);
+
+    // Eager: read the file sequentially. Skipped frames (m_nSkip>1) are still
+    // read to advance the stream.
     FortBinInStream fbis(ins);
     std::vector<float> tmpv(m_natom * 3);
     int nInd = 0;  // kept-frame index
@@ -214,25 +194,21 @@ void DCDTrajReader::readBody(qlib::InStream &ins, const TrajectoryPtr &pTraj)
         qfloat32 *pcoord = NULL;
         qfloat32 *pcell = NULL;
         if (istep % m_nSkip == 0) {
-            TrajBlockPtr &pBlk = blocks[nInd / fpb];
-            const int inBlk = nInd % fpb;
-            pcoord = pBlk->getCrdArray(inBlk);
-            pcell = pBlk->getCellArray(inBlk);
+            pcoord = pTB->getCrdArray(nInd);
+            pcell = pTB->getCellArray(nInd);
         }
         readFrameRecords(fbis, tmpv, pcoord, pcell, pTraj);
         if (pcoord != NULL) {
-            blocks[nInd / fpb]->setLoaded(nInd % fpb, true);
+            pTB->setLoaded(nInd, true);
             ++nInd;
         }
     }
-
-    for (const TrajBlockPtr &pBlk : blocks) pTraj->append(pBlk);
 }
 
 void DCDTrajReader::loadFrm(int ifrm, TrajBlock *pTB)
 {
-    // Unreachable: readBody() reads all frames eagerly and never registers a
-    // block loader, so TrajBlock::load() is not called. Seek-based lazy loading
-    // is deferred until develop exposes a portable seekable-stream interface.
+    // Unreachable: read() reads all frames eagerly and never registers a block
+    // loader, so TrajBlock::load() is not called. Seek-based lazy loading is
+    // deferred until develop exposes a portable seekable-stream interface.
     MB_THROW(qlib::RuntimeException, "DCDTrajReader: lazy frame load not implemented");
 }

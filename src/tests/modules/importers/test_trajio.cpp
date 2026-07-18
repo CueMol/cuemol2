@@ -277,6 +277,21 @@ TrajectoryPtr makeWaterTrajectory()
     return pTraj;
 }
 
+// Load one DCD (as bytes) into a new TrajBlock and append it to pTraj, matching
+// the scripted / .qsc block-centric flow: createDefaultObj -> TrajBlock, read,
+// Trajectory::append. The target Trajectory is resolved from its UID.
+void appendDCD(const TrajectoryPtr &pTraj, const std::string &dcd)
+{
+    DCDTrajReader reader;
+    reader.setTargTrajUID(pTraj->getUID());
+    mdtools::TrajBlockPtr pBlk(reader.createDefaultObj());
+    reader.attach(pBlk);
+    StrInStream dins(dcd.data(), static_cast<int>(dcd.size()));
+    reader.read(dins);
+    reader.detach();
+    pTraj->append(pBlk);
+}
+
 }  // namespace
 
 TEST(TrajectoryTest, DcdPlaybackMapsFramesToAtoms)
@@ -285,16 +300,10 @@ TEST(TrajectoryTest, DcdPlaybackMapsFramesToAtoms)
     ASSERT_EQ(pTraj->getAtomSize(), 3);
 
     const int nframes = 4;
-    std::string dcd = buildDCD(3, nframes);
-
-    DCDTrajReader dcd_reader;
-    dcd_reader.attach(pTraj);
-    StrInStream dins(dcd.data(), static_cast<int>(dcd.size()));
-    dcd_reader.read(dins);
-    dcd_reader.detach();
+    appendDCD(pTraj, buildDCD(3, nframes));
 
     EXPECT_EQ(pTraj->getFrameSize(), nframes);
-    EXPECT_EQ(pTraj->getBlockCount(), 1);  // small system -> single block
+    EXPECT_EQ(pTraj->getBlockCount(), 1);  // one DCD -> one block
 
     for (int f = 0; f < nframes; ++f) {
         pTraj->setFrame(f);
@@ -308,42 +317,38 @@ TEST(TrajectoryTest, DcdPlaybackMapsFramesToAtoms)
     }
 }
 
-TEST(TrajectoryTest, DcdSplitsIntoBoundedBlocks)
+TEST(TrajectoryTest, MultipleDcdBlocksSpanFrames)
 {
     TrajectoryPtr pTraj = makeWaterTrajectory();
 
-    const int nframes = 5;
-    std::string dcd = buildDCD(3, nframes);
+    // Two DCD files -> two blocks (like two <trajfile> entries in a .qsc).
+    appendDCD(pTraj, buildDCD(3, 3));  // frames 0..2
+    appendDCD(pTraj, buildDCD(3, 2));  // frames 3..4 (in-block frames 0..1)
 
-    DCDTrajReader dcd_reader;
-    // 3 atoms -> 36 bytes/frame; cap at one frame per block to force chunking.
-    dcd_reader.setMaxBlockBytes(36);
-    dcd_reader.attach(pTraj);
-    StrInStream dins(dcd.data(), static_cast<int>(dcd.size()));
-    dcd_reader.read(dins);
-    dcd_reader.detach();
+    EXPECT_EQ(pTraj->getBlockCount(), 2);
+    EXPECT_EQ(pTraj->getFrameSize(), 5);
 
-    EXPECT_EQ(pTraj->getFrameSize(), nframes);
-    EXPECT_EQ(pTraj->getBlockCount(), nframes);  // one frame per block
+    // Global frame 2 -> block 0, in-block frame 2.
+    pTraj->setFrame(2);
+    int aid = pTraj->getAtomIDByArrayInd(2u);
+    EXPECT_NEAR(pTraj->getAtom(aid)->getPos().x(), dcdCoord(2, 2, 0), 1e-4);
 
-    // Coordinates must still be correct across block boundaries.
-    for (int f = 0; f < nframes; ++f) {
-        pTraj->setFrame(f);
-        int aid = pTraj->getAtomIDByArrayInd(2u);
-        Vector4D pos = pTraj->getAtom(aid)->getPos();
-        EXPECT_NEAR(pos.x(), dcdCoord(f, 2, 0), 1e-4);
-        EXPECT_NEAR(pos.z(), dcdCoord(f, 2, 2), 1e-4);
-    }
+    // Global frames 3,4 -> block 1, in-block frames 0,1.
+    pTraj->setFrame(3);
+    EXPECT_NEAR(pTraj->getAtom(aid)->getPos().x(), dcdCoord(0, 2, 0), 1e-4);
+    pTraj->setFrame(4);
+    EXPECT_NEAR(pTraj->getAtom(aid)->getPos().x(), dcdCoord(1, 2, 0), 1e-4);
 }
 
 TEST(TrajectoryTest, DcdNatomMismatchThrows)
 {
     TrajectoryPtr pTraj = makeWaterTrajectory();  // 3 atoms
 
+    DCDTrajReader reader;
+    reader.setTargTrajUID(pTraj->getUID());
+    mdtools::TrajBlockPtr pBlk(reader.createDefaultObj());
+    reader.attach(pBlk);
     std::string dcd = buildDCD(5, 2);  // 5 atoms != 3
-
-    DCDTrajReader dcd_reader;
-    dcd_reader.attach(pTraj);
     StrInStream dins(dcd.data(), static_cast<int>(dcd.size()));
-    EXPECT_THROW(dcd_reader.read(dins), qlib::FileFormatException);
+    EXPECT_THROW(reader.read(dins), qlib::FileFormatException);
 }
