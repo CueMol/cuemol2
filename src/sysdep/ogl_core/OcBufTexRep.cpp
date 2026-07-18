@@ -27,20 +27,20 @@ void OcBufTexRep::init(gfx::DisplayContext *pdc)
     m_nTexID = texid;
     CHK_GLERROR("OcBufTexRep::init glGenTextures");
 
-    MB_DPRINTLN("OcBufTexRep::init view=%d, buf=%d, tex=%d", m_nViewID, m_nBufID, m_nTexID);
+    MB_DPRINTLN("OcBufTexRep::init view=%d, buf=%d, tex=%d", (int)m_nViewID, m_nBufID, m_nTexID);
 }
 
 OcBufTexRep::~OcBufTexRep()
 {
     MB_DPRINTLN("OcBufTexRep::~OcBufTexRep view=%d, buf=%d, tex=%d",
-                m_nViewID, m_nBufID, m_nTexID);
+                (int)m_nViewID, m_nBufID, m_nTexID);
 
     if (m_nBufID == 0 && m_nTexID == 0) return;
 
     qsys::ViewPtr rvw = qsys::SceneManager::getViewS(m_nViewID);
     if (rvw.isnull()) {
         MB_DPRINTLN("OcBufTexRep> unknown parent view (%d), buf/tex cannot be deleted",
-                    m_nViewID);
+                    (int)m_nViewID);
         return;
     }
 

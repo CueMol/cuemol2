@@ -256,7 +256,8 @@ public:
 
             if (wdir.length() > 0) {
                 cur_wdir = getcwd(NULL, 0);
-                chdir(wdir.c_str());
+                if (chdir(wdir.c_str()) != 0)
+                    MB_DPRINTLN("PosixProc: failed to chdir to %s", wdir.c_str());
                 MB_DPRINTLN("PosixProc: wdir is changed to %s", wdir.c_str());
             }
 
@@ -271,7 +272,8 @@ public:
 
             if (cur_wdir != NULL) {
                 MB_DPRINTLN("PosixProc: wdir is returned to %s", cur_wdir);
-                chdir(cur_wdir);
+                if (chdir(cur_wdir) != 0)
+                    MB_DPRINTLN("PosixProc: failed to restore wdir");
                 free(cur_wdir);
                 cur_wdir = NULL;
             }
@@ -285,7 +287,8 @@ public:
             close(ifd[0]);
 
             if (cur_wdir != NULL) {
-                chdir(cur_wdir);
+                if (chdir(cur_wdir) != 0)
+                    MB_DPRINTLN("PosixProc: failed to restore wdir");
                 free(cur_wdir);
                 cur_wdir = NULL;
             }

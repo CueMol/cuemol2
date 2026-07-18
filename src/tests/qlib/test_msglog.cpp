@@ -116,7 +116,8 @@ TEST(LMsgLog, FileRedirPath)
     FILE *fp = std::fopen(tmpstr.c_str(), "r");
     ASSERT_NE(fp, nullptr);
     char buf[256] = {};
-    std::fread(buf, 1, sizeof(buf) - 1, fp);
+    const size_t nread = std::fread(buf, 1, sizeof(buf) - 1, fp);
+    (void)nread;
     std::fclose(fp);
     std::remove(tmpstr.c_str());
 

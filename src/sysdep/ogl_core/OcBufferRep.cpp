@@ -216,14 +216,14 @@ void OcBufferRep::unbind(const gfx::AbstDrawAttrs &ada)
 
 OcBufferRep::~OcBufferRep()
 {
-    MB_DPRINTLN("OcBufferRep> Destructing view=%d, buf=%d, ind=%d", m_nViewID, m_nBufID,
+    MB_DPRINTLN("OcBufferRep> Destructing view=%d, buf=%d, ind=%d", (int)m_nViewID, m_nBufID,
                 m_nIndBufID);
 
     qsys::ViewPtr rvw = qsys::SceneManager::getViewS(m_nViewID);
     if (rvw.isnull()) {
         MB_DPRINTLN(
             "OcBufferRep> unknown parent view (%d), Texture %d cannot be deleted",
-            m_nViewID, m_nBufID);
+            (int)m_nViewID, m_nBufID);
         return;
     }
     gfx::DisplayContext *pctxt = rvw->getDisplayContext();

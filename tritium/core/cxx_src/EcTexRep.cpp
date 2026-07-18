@@ -59,12 +59,12 @@ void EcTexRep::create(gfx::DisplayContext *pdc, const gfx::PixelBuffer &pixbuf)
 
 EcTexRep::~EcTexRep()
 {
-    MB_DPRINTLN("EcTexRep::~EcTexRep view=%d, tex=%s", m_nViewID, m_texName.c_str());
+    MB_DPRINTLN("EcTexRep::~EcTexRep view=%d, tex=%s", (int)m_nViewID, m_texName.c_str());
 
     qsys::ViewPtr rvw = qsys::SceneManager::getViewS(m_nViewID);
     if (rvw.isnull()) {
         MB_DPRINTLN("EcTexRep> unknown parent view (%d), texture %s cannot be deleted",
-                    m_nViewID, m_texName.c_str());
+                    (int)m_nViewID, m_texName.c_str());
         return;
     }
 
@@ -98,7 +98,7 @@ void EcTexRep::bind(int texUnit)
 {
     qsys::ViewPtr rvw = qsys::SceneManager::getViewS(m_nViewID);
     if (rvw.isnull()) {
-        MB_DPRINTLN("EcTexRep::bind> unknown parent view (%d)", m_nViewID);
+        MB_DPRINTLN("EcTexRep::bind> unknown parent view (%d)", (int)m_nViewID);
         return;
     }
 
@@ -121,7 +121,7 @@ void EcTexRep::unbind()
 {
     qsys::ViewPtr rvw = qsys::SceneManager::getViewS(m_nViewID);
     if (rvw.isnull()) {
-        MB_DPRINTLN("EcTexRep::unbind> unknown parent view (%d)", m_nViewID);
+        MB_DPRINTLN("EcTexRep::unbind> unknown parent view (%d)", (int)m_nViewID);
         return;
     }
 
