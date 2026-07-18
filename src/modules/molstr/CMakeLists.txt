@@ -39,6 +39,7 @@ MolBond.cpp
 MolResidue.cpp
 MolChain.cpp
 MolCoord.cpp
+AnimMol.cpp
 MolCoordGeomImpl.cpp
 AtomIterator.cpp
 PDBFileReader.cpp
@@ -80,6 +81,7 @@ MolAtom.qif
 MolResidue.qif
 MolChain.qif
 MolCoord.qif
+AnimMol.qif
 MolRenderer.qif
 NameLabelRenderer.qif
 SelectionRenderer.qif
