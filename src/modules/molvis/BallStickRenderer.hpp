@@ -9,6 +9,11 @@
 #include "molvis.hpp"
 #include <modules/molstr/MolAtomRenderer.hpp>
 #include <gfx/GpuPrim.hpp>
+#include <gfx/SphereIdxGpuPrim.hpp>
+#include <gfx/CylinderIdxGpuPrim.hpp>
+
+#include <vector>
+#include <unordered_map>
 
 namespace molstr { class MolCoord; }
 
@@ -92,6 +97,8 @@ namespace molvis {
 
     void invalidateDisplayCache() override;
 
+    void objectChanged(qsys::ObjectEvent &ev) override;
+
     //////////////////////////////////////////////////////
 
     void preRender(DisplayContext *pdc) override;
@@ -138,6 +145,27 @@ namespace molvis {
     gfx::CylinderGpuPrim *m_pCylGpuPrim;
 
     void renderShaderImpl(DisplayContext *pdc);
+
+    //////////////////////////
+    // coordinate texture path (direct update)
+
+    bool m_bUseCoordTex;
+    bool m_bCoordDirty;
+
+    /// Ball / stick primitives with texture-fetched positions (shared texture)
+    gfx::SphereIdxGpuPrim m_sphIdxGpuPrim;
+    gfx::CylinderIdxGpuPrim m_cylIdxGpuPrim;
+
+    /// Coordinate texture (owned) shared by both index primitives.
+    gfx::FloatDataTexture *m_pCoordTex;
+
+    std::vector<qfloat32> m_coordbuf;
+    std::vector<int> m_aidcache;
+    std::unordered_map<int, int> m_aid2idx;
+    int m_nTexW, m_nTexH;
+
+    void renderCoordTexImpl(DisplayContext *pdc);
+    bool updateCoordTex();
 
   private:
     int m_nGlRendMode;

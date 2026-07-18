@@ -95,6 +95,7 @@ IF (BUILD_OPENGL_SYSDEP)
     sphere2_vertex.glsl
     sphere2idx_vertex.glsl
     cylinder_vertex.glsl
+    cylinder_idx_vertex.glsl
     cylinder_frag.glsl
   )
   SET(SHADER_DEPS
@@ -103,6 +104,7 @@ IF (BUILD_OPENGL_SYSDEP)
     ${CMAKE_SOURCE_DIR}/src/sysdep/ogl_core/matrices_inc.glsl
     ${CMAKE_SOURCE_DIR}/src/sysdep/ogl_core/lib_atoms.glsl
     ${CMAKE_CURRENT_SOURCE_DIR}/sphere2_body_vert.glsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/cylinder_body_vert.glsl
   )
   SET(SHADER_INCLUDE_DIRS
     ${CMAKE_SOURCE_DIR}/src/sysdep/ogl_core

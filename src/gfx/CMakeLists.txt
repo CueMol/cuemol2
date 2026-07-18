@@ -25,6 +25,7 @@ Hittest.cpp
 SphereGpuPrim.cpp
 SphereIdxGpuPrim.cpp
 CylinderGpuPrim.cpp
+CylinderIdxGpuPrim.cpp
 LineIdxGpuPrim.cpp
 TrigGpuPrim.cpp
 LineGpuPrim.cpp
@@ -56,6 +57,7 @@ GpuPrim.hpp
 SphereGpuPrim.hpp
 SphereIdxGpuPrim.hpp
 CylinderGpuPrim.hpp
+CylinderIdxGpuPrim.hpp
 TrigGpuPrim.hpp
 LineGpuPrim.hpp
 LineIdxGpuPrim.hpp
