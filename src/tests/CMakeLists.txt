@@ -7,14 +7,18 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-# On Windows the test executables link cuemol2's module DLLs and have no rpath,
-# so the default POST_BUILD discovery -- which runs each test exe at build time
-# to enumerate cases -- fails before those DLLs are locatable. PRE_TEST defers
+# Use PRE_TEST discovery on all platforms.
+#
+# The default POST_BUILD mode runs each test executable at build time to
+# enumerate its cases, which is fragile in two ways: on Windows the module DLLs
+# are not yet locatable (no rpath), and on macOS/Linux the enumeration output is
+# intermittently truncated, making CMake's ParseTestList fail with "value,
+# object or array expected" and breaking the build non-deterministically (a
+# known gtest_discover_tests / string(JSON) flakiness). PRE_TEST defers
 # enumeration to ctest time, where the DLL directories are placed on PATH (see
-# the build_win_x64 "Run gtest" step in .github/workflows/build2.yml).
-if(WIN32)
-  set(CMAKE_GTEST_DISCOVER_TESTS_DISCOVERY_MODE PRE_TEST)
-endif()
+# the "Run gtest" step in .github/workflows/build2.yml), so a plain build never
+# runs the test exes and cannot flake.
+set(CMAKE_GTEST_DISCOVER_TESTS_DISCOVERY_MODE PRE_TEST)
 
 add_executable(test_qlib
   qlib/test_main.cpp
