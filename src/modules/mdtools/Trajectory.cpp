@@ -12,6 +12,7 @@
 
 #include <qsys/SceneManager.hpp>
 #include <qlib/Utils.hpp>
+#include <qlib/LDOM2Tree.hpp>
 
 using namespace mdtools;
 using molstr::MolAtom;
@@ -53,6 +54,7 @@ Trajectory::Trajectory()
     m_nAver = 0;
     m_bAverBufValid = false;
     m_nAllAtomSize = 0;
+    m_bSetupDone = false;
 }
 
 Trajectory::~Trajectory() {}
@@ -78,6 +80,7 @@ void Trajectory::setup()
         m_loadSelAry[i] = static_cast<quint32>(i);
     }
     m_pLoadSel = SelectionPtr();
+    m_bSetupDone = true;
 }
 
 void Trajectory::setupSel(int nAll, const SelectionPtr &pLoadSel,
@@ -87,6 +90,26 @@ void Trajectory::setupSel(int nAll, const SelectionPtr &pLoadSel,
     m_loadSelAry.assign(aidmap.begin(), aidmap.end());
     m_nAllAtomSize = nAll;
     m_pLoadSel = pLoadSel;
+    m_bSetupDone = true;
+}
+
+void Trajectory::ensureSetup()
+{
+    if (m_bSetupDone) return;
+    if (getAtomSize() == 0) return;  // topology not loaded yet; retry later
+    setup();
+}
+
+quint32 Trajectory::getAllAtomSize() const
+{
+    const_cast<Trajectory *>(this)->ensureSetup();
+    return m_nAllAtomSize;
+}
+
+const quint32 *Trajectory::getSelIndexArray() const
+{
+    const_cast<Trajectory *>(this)->ensureSetup();
+    return m_loadSelAry.empty() ? NULL : &m_loadSelAry[0];
 }
 
 //////////
@@ -249,4 +272,85 @@ void Trajectory::update(int iframe, bool bDyn)
     // MVP: always fire OBE_CHANGED "atomsMoved". Dynamic-event distinction
     // (bDyn) is deferred to a later optimization sub-phase.
     fireAtomsMoved();
+}
+
+void Trajectory::setFrame(int ifrm)
+{
+    ensureInit();
+    update(ifrm);
+}
+
+void Trajectory::setDynFrame(int ifrm)
+{
+    ensureInit();
+    update(ifrm, true);
+}
+
+int Trajectory::getFrameSize() const
+{
+    const_cast<Trajectory *>(this)->ensureInit();
+    return m_nTotalFrms;
+}
+
+//////////
+// Lazy finalization (no SCE_SCENE_ONLOADED hook on develop Objects)
+
+void Trajectory::ensureInit()
+{
+    if (m_bInit) return;
+    if (m_blocks.empty()) return;  // nothing loaded from a .qsc yet
+    updateTrajBlockDataImpl();
+}
+
+void Trajectory::updateTrajBlockDataImpl()
+{
+    // Assign contiguous start indices and total frame count.
+    int nnext = 0;
+    for (const TrajBlockPtr &pBlk : m_blocks) {
+        pBlk->setSceneID(getSceneID());
+        pBlk->setStartIndex(nnext);
+        nnext += pBlk->getSize();
+    }
+    m_nTotalFrms = nnext;
+
+    // Mark initialized before update(0) so the ensureInit() in setFrame() /
+    // getFrameSize() does not re-enter.
+    m_bInit = true;
+
+    update(0);          // prime frame 0 (write-both)
+    applyTopology();
+}
+
+//////////
+// Serialization (QSC) -- mirrors the dev2016 <trajfiles>/<trajfile> layout.
+
+void Trajectory::writeTo2(qlib::LDom2Node *pNode) const
+{
+    super_t::writeTo2(pNode);
+
+    qlib::LDom2Node *pFSNode = pNode->appendChild("trajfiles");
+    for (const TrajBlockPtr &pBlk : m_blocks) {
+        qlib::LDom2Node *pCCNode = pFSNode->appendChild("trajfile");
+        pBlk->writeTo2(pCCNode);
+    }
+}
+
+void Trajectory::readFrom2(qlib::LDom2Node *pNode)
+{
+    super_t::readFrom2(pNode);
+
+    qlib::LDom2Node *pFSNode = pNode->findChild("trajfiles");
+    if (pFSNode == NULL) return;
+
+    for (pFSNode->firstChild(); pFSNode->hasMoreChild(); pFSNode->nextChild()) {
+        qlib::LDom2Node *pChNode = pFSNode->getCurChild();
+        if (!pChNode->getTagName().equals("trajfile")) continue;
+
+        TrajBlockPtr pBlk(MB_NEW TrajBlock());
+        pBlk->readFrom2(pChNode);
+        // Start index is assigned later, once all blocks/frames are known.
+        pBlk->setStartIndex(-1);
+        pBlk->setTrajUID(getUID());
+        m_blocks.push_back(pBlk);
+    }
 }
