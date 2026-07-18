@@ -56,6 +56,15 @@ namespace molstr {
     Vector4D getDblBondDir(MolCoordPtr pMol) const;
 
     int getDistalAtomID(MolCoordPtr pMol, int &nbonds) const;
+
+    /// Pick a heavy-atom neighbour to define the double/triple bond
+    /// displacement plane. Tries the id1 side first, then the id2 side.
+    /// Returns the neighbour's AID, or -1 when neither side has one (isolated
+    /// double bond, or a triple bond whose neighbours are collinear -- the
+    /// caller then uses a view-facing fallback). Unlike getDblBondDir this
+    /// returns the reference atom index (resolved into a coordinate texture)
+    /// so the perpendicular can be recomputed per frame in the vertex shader.
+    int getDblBondRefAtom(MolCoordPtr pMol) const;
   };
 }
 

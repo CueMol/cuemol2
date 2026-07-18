@@ -17,12 +17,19 @@
 #include <modules/molstr/BondIterator.hpp>
 
 #include <gfx/GpuPrim.hpp>
+#include <gfx/FloatDataTexture.hpp>
+#include <qsys/Scene.hpp>
 
 using namespace molvis;
 using namespace molstr;
 
 using gfx::DisplayContext;
 using gfx::ColorPtr;
+
+namespace {
+// Fixed coordinate texture width (matches TEX2D_WIDTH in lib_atoms.glsl).
+constexpr int TEX2D_WIDTH = 1024;
+}  // namespace
 
 BallStickRenderer::BallStickRenderer()
 {
@@ -32,6 +39,12 @@ BallStickRenderer::BallStickRenderer()
   m_pSphGpuPrim = MB_NEW gfx::SphereGpuPrim();
   m_pCylGpuPrim = MB_NEW gfx::CylinderGpuPrim();
   m_nVBMode = VBMODE_OFF;
+
+  m_bUseCoordTex = false;
+  m_bCoordDirty = false;
+  m_pCoordTex = nullptr;
+  m_nTexW = 0;
+  m_nTexH = 0;
 }
 
 BallStickRenderer::~BallStickRenderer()
@@ -39,6 +52,8 @@ BallStickRenderer::~BallStickRenderer()
   MB_DPRINTLN("BallStickRenderer destructed %p", this);
   delete m_pSphGpuPrim;
   delete m_pCylGpuPrim;
+  if (m_pCoordTex != nullptr)
+    delete m_pCoordTex;
 }
 
 const char *BallStickRenderer::getTypeName() const
@@ -67,6 +82,10 @@ void BallStickRenderer::display(DisplayContext *pdc)
       m_bUseShader = false;
     }
 
+    // Try the coordinate texture path; falls back silently when unavailable.
+    m_bUseCoordTex = m_bUseShader &&
+                     m_sphIdxGpuPrim.init(pdc) && m_cylIdxGpuPrim.init(pdc);
+
     m_bCheckShaderOK = true;
   }
 
@@ -76,6 +95,30 @@ void BallStickRenderer::display(DisplayContext *pdc)
       (m_nGlRendMode==REND_DEFAULT ||
        m_nGlRendMode==REND_SHADER)) {
 
+    // Coordinate texture (direct update) path. Rings are drawn via the legacy
+    // display list, so only take this path when rings are off.
+    if (m_bUseCoordTex && !m_fRing) {
+      if (!m_sphIdxGpuPrim.isValid()) {
+        renderCoordTexImpl(pdc);
+        // renderCoordTexImpl clears m_bUseCoordTex when the backend cannot
+        // provide a float data texture.
+      }
+      if (m_bUseCoordTex && m_sphIdxGpuPrim.isValid()) {
+        if (m_bCoordDirty) {
+          if (!updateCoordTex()) {
+            invalidateDisplayCache();
+            return;
+          }
+          m_bCoordDirty = false;
+        }
+        preRender(pdc);
+        m_sphIdxGpuPrim.draw(pdc);
+        m_cylIdxGpuPrim.draw(pdc);
+        postRender(pdc);
+        return;
+      }
+    }
+
     if (m_fRing) {
       // only draw rings using old displist version
       MB_DPRINTLN("Ballstick ring render");
@@ -84,7 +127,7 @@ void BallStickRenderer::display(DisplayContext *pdc)
       m_bDrawRingOnly = false;
     }
 
-    // shader rendering mode
+    // shader rendering mode (non-texture)
     if (!m_pSphGpuPrim->isValid()) {
       renderShaderImpl(pdc);
       if (!m_pSphGpuPrim->isValid())
@@ -112,6 +155,34 @@ void BallStickRenderer::invalidateDisplayCache()
     m_pSphGpuPrim->invalidate();
     m_pCylGpuPrim->invalidate();
   }
+
+  m_sphIdxGpuPrim.invalidate();
+  m_cylIdxGpuPrim.invalidate();
+  if (m_pCoordTex != nullptr) {
+    delete m_pCoordTex;
+    m_pCoordTex = nullptr;
+  }
+  m_aidcache.clear();
+  m_aid2idx.clear();
+  m_coordbuf.clear();
+  m_bCoordDirty = false;
+}
+
+void BallStickRenderer::objectChanged(qsys::ObjectEvent &ev)
+{
+  if (ev.getType() == qsys::ObjectEvent::OBE_CHANGED &&
+      ev.getDescr().equals("atomsMoved")) {
+    // Positions changed but topology/colour did not. Mark the coordinate
+    // texture dirty and let display() do the upload once per frame.
+    if (m_bUseCoordTex && m_sphIdxGpuPrim.isValid()) {
+      m_bCoordDirty = true;
+      qsys::ScenePtr pScene = getScene();
+      if (!pScene.isnull()) pScene->setUpdateFlag();
+      invalidateHittestCache();
+      return;
+    }
+  }
+  super_t::objectChanged(ev);
 }
 
 ////////////
@@ -552,4 +623,158 @@ void BallStickRenderer::renderShaderImpl(DisplayContext *pdc)
   // finalize the coloring scheme
   getColSchm()->end();
   pMol->getColSchm()->end();
+}
+
+//////////////////////
+// Coordinate texture (direct update) implementation
+
+void BallStickRenderer::renderCoordTexImpl(DisplayContext *pdc)
+{
+  MolCoordPtr pMol = getClientMol();
+  if (pMol.isnull()) {
+    MB_DPRINTLN("BallStickRenderer::renderCoordTex> Client mol is null");
+    return;
+  }
+
+  getColSchm()->start(pMol, this);
+  pMol->getColSchm()->start(pMol, this);
+  const qlib::uid_t nSceneID = getSceneID();
+
+  // Build the atom texel layout + AID -> index map.
+  m_aidcache.clear();
+  m_aid2idx.clear();
+  {
+    AtomIterator iter(pMol, getSelection());
+    int i = 0;
+    for (iter.first(); iter.hasMore(); iter.next()) {
+      int aid = iter.getID();
+      MolAtomPtr pAtom = pMol->getAtom(aid);
+      if (pAtom.isnull()) continue;
+      m_aidcache.push_back(aid);
+      m_aid2idx[aid] = i;
+      ++i;
+    }
+  }
+  const int natoms = static_cast<int>(m_aidcache.size());
+  if (natoms == 0) {
+    getColSchm()->end();
+    pMol->getColSchm()->end();
+    return;
+  }
+
+  // Count cylinders: same colour -> 1, different -> 2 halves.
+  int nbons = 0;
+  {
+    BondIterator biter(pMol, getSelection());
+    for (biter.first(); biter.hasMore(); biter.next()) {
+      MolBond *pMB = biter.getBond();
+      if (m_aid2idx.find(pMB->getAtom1()) == m_aid2idx.end() ||
+          m_aid2idx.find(pMB->getAtom2()) == m_aid2idx.end())
+        continue;
+      MolAtomPtr pA1 = pMol->getAtom(pMB->getAtom1());
+      MolAtomPtr pA2 = pMol->getAtom(pMB->getAtom2());
+      if (pA1.isnull() || pA2.isnull()) continue;
+      ColorPtr c1 = ColSchmHolder::getColor(pA1);
+      ColorPtr c2 = ColSchmHolder::getColor(pA2);
+      if (c1->equals(*c2.get())) ++nbons;
+      else nbons += 2;
+    }
+  }
+
+  // Allocate the shared coordinate texture.
+  m_nTexW = TEX2D_WIDTH;
+  m_nTexH = (natoms + TEX2D_WIDTH - 1) / TEX2D_WIDTH;
+  m_coordbuf.resize(static_cast<size_t>(m_nTexW) * m_nTexH * 3);
+
+  m_pCoordTex = pdc->createFloatDataTexture();
+  if (m_pCoordTex == nullptr ||
+      !m_pCoordTex->create(m_nTexW, m_nTexH, 3)) {
+    if (m_pCoordTex != nullptr) { delete m_pCoordTex; m_pCoordTex = nullptr; }
+    m_bUseCoordTex = false;
+    m_aidcache.clear();
+    m_aid2idx.clear();
+    m_coordbuf.clear();
+    getColSchm()->end();
+    pMol->getColSchm()->end();
+    return;
+  }
+
+  // Write atom positions.
+  for (int i = 0; i < natoms; ++i) {
+    MolAtomPtr pAtom = pMol->getAtom(m_aidcache[i]);
+    const qlib::Vector4D pos = pAtom->getPos();
+    m_coordbuf[i * 3 + 0] = static_cast<qfloat32>(pos.x());
+    m_coordbuf[i * 3 + 1] = static_cast<qfloat32>(pos.y());
+    m_coordbuf[i * 3 + 2] = static_cast<qfloat32>(pos.z());
+  }
+
+  // Balls: one sphere per atom (texel index = enumeration order).
+  m_sphIdxGpuPrim.alloc(pdc, natoms);
+  for (int i = 0; i < natoms; ++i) {
+    MolAtomPtr pAtom = pMol->getAtom(m_aidcache[i]);
+    quint32 devcode = ColSchmHolder::getColor(pAtom)->getDevCode(nSceneID);
+    m_sphIdxGpuPrim.setData(i, i, static_cast<float>(m_sphr), devcode);
+  }
+  m_sphIdxGpuPrim.setCoordTex(m_pCoordTex, 0);
+
+  // Sticks: one cylinder per bond, bicolour split at the midpoint (t=0.5).
+  if (nbons != 0) {
+    m_cylIdxGpuPrim.alloc(pdc, nbons);
+    BondIterator biter(pMol, getSelection());
+    int i = 0;
+    for (biter.first(); biter.hasMore(); biter.next()) {
+      MolBond *pMB = biter.getBond();
+      auto it1 = m_aid2idx.find(pMB->getAtom1());
+      auto it2 = m_aid2idx.find(pMB->getAtom2());
+      if (it1 == m_aid2idx.end() || it2 == m_aid2idx.end()) continue;
+      MolAtomPtr pA1 = pMol->getAtom(pMB->getAtom1());
+      MolAtomPtr pA2 = pMol->getAtom(pMB->getAtom2());
+      if (pA1.isnull() || pA2.isnull()) continue;
+
+      ColorPtr c1 = ColSchmHolder::getColor(pA1);
+      ColorPtr c2 = ColSchmHolder::getColor(pA2);
+      const quint32 dc1 = c1->getDevCode(nSceneID);
+      const quint32 dc2 = c2->getDevCode(nSceneID);
+      const int i1 = it1->second, i2 = it2->second;
+      const float bw = static_cast<float>(m_bondw);
+
+      if (c1->equals(*c2.get())) {
+        m_cylIdxGpuPrim.setData(i++, i1, i2, 0.0f, 1.0f, bw, dc1);
+      } else {
+        m_cylIdxGpuPrim.setData(i++, i1, i2, 0.0f, 0.5f, bw, dc1);
+        m_cylIdxGpuPrim.setData(i++, i1, i2, 0.5f, 1.0f, bw, dc2);
+      }
+    }
+    m_cylIdxGpuPrim.setCoordTex(m_pCoordTex, 0);
+  }
+
+  getColSchm()->end();
+  pMol->getColSchm()->end();
+
+  m_pCoordTex->update(&m_coordbuf[0]);
+  m_bCoordDirty = false;
+
+  LOG_DPRINTLN("BallStickRenderer> rendered %d atoms, %d bonds (coord texture %dx%d)",
+               natoms, nbons, m_nTexW, m_nTexH);
+}
+
+bool BallStickRenderer::updateCoordTex()
+{
+  if (!m_bUseCoordTex || m_pCoordTex == nullptr) return false;
+  if (m_aidcache.empty()) return false;
+
+  MolCoordPtr pMol = getClientMol();
+  if (pMol.isnull()) return false;
+
+  const int natoms = static_cast<int>(m_aidcache.size());
+  for (int i = 0; i < natoms; ++i) {
+    MolAtomPtr pAtom = pMol->getAtom(m_aidcache[i]);
+    if (pAtom.isnull()) return false;   // topology changed; force rebuild
+    const qlib::Vector4D pos = pAtom->getPos();
+    m_coordbuf[i * 3 + 0] = static_cast<qfloat32>(pos.x());
+    m_coordbuf[i * 3 + 1] = static_cast<qfloat32>(pos.y());
+    m_coordbuf[i * 3 + 2] = static_cast<qfloat32>(pos.z());
+  }
+  m_pCoordTex->update(&m_coordbuf[0]);
+  return true;
 }

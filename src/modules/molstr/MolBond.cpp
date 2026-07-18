@@ -95,6 +95,43 @@ namespace {
   }
 }
 
+namespace {
+  // Find a heavy-atom neighbour of baseAid, excluding the atom across
+  // pExclBond and any hydrogens. Returns the last such neighbour's AID
+  // (proximal-to-distal storage order), or -1 if none.
+  int findRefNeighbor(MolCoordPtr pMol, int baseAid, const MolBond *pExclBond)
+  {
+    MolAtomPtr pBase = pMol->getAtom(baseAid);
+    if (pBase.isnull()) return -1;
+
+    int found = -1;
+    MolAtom::BondIter biter = pBase->bondBegin();
+    MolAtom::BondIter bend = pBase->bondEnd();
+    for (; biter != bend; ++biter) {
+      const MolBond *pb = *biter;
+      if (pb == pExclBond) continue;
+
+      int a1 = pb->getAtom1();
+      int a2 = pb->getAtom2();
+      MolAtomPtr pa1 = pMol->getAtom(a1);
+      MolAtomPtr pa2 = pMol->getAtom(a2);
+      if (pa1.isnull() || pa2.isnull()) continue;
+      if (pa1->getElement() == ElemSym::H || pa2->getElement() == ElemSym::H)
+        continue;
+
+      found = (a1 == baseAid) ? a2 : a1;
+    }
+    return found;
+  }
+}
+
+int MolBond::getDblBondRefAtom(MolCoordPtr pMol) const
+{
+  int aid = findRefNeighbor(pMol, id1, this);
+  if (aid >= 0) return aid;
+  return findRefNeighbor(pMol, id2, this);
+}
+
 Vector4D MolBond::getDblBondDir(MolCoordPtr pMol) const
 {
   MolAtomPtr pAtom1 = pMol->getAtom( id1 );

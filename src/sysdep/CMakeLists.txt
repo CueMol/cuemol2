@@ -86,6 +86,7 @@ SET(SHADER_SOURCES
   ogl_core/linew_vert.glsl
   ogl_core/linew2_vert.glsl
   ogl_core/linew2idx_vert.glsl
+  ogl_core/linevalidx_vert.glsl
   ogl_core/linew_frag.glsl
   ogl_core/postproc_vert.glsl
   ogl_core/depthvis_frag.glsl
