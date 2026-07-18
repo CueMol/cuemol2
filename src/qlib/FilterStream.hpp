@@ -35,22 +35,22 @@ namespace qlib {
       InFilterImpl(const impl_type &in) : m_pin(in) {}
 
       /// check if input is available.
-      virtual bool ready() {
+      bool ready() override {
 	return m_pin->ready();
       }
 
       /// read one byte
-      virtual int read() {
+      int read() override {
 	return m_pin->read();
       }
       
       /// read into mem block
-      virtual int read(char *buf, int off, int len) {
+      int read(char *buf, int off, int len) override {
 	return m_pin->read(buf, off, len);
       }
 
       /// close the stream
-      virtual void i_close() {
+      void i_close() override {
 	m_pin->i_close();
       }
 
@@ -58,11 +58,11 @@ namespace qlib {
       ///  Try to skip n bytes.
       ///  @return the actual number of bytes skipped
       ///
-      virtual int skip(int n) {
+      int skip(int n) override {
         return m_pin->skip(n);
       }
       
-      virtual LString getSrcURI() const {
+      LString getSrcURI() const override {
         return m_pin->getSrcURI();
       }
 
@@ -92,30 +92,30 @@ namespace qlib {
       OutFilterImpl(const impl_type &out) : m_pout(out) {}
 
       /// Write out mem block
-      virtual int write(const char *buf, int off, int len)
+      int write(const char *buf, int off, int len) override
       {
 	return m_pout->write(buf, off, len);
       }
       
       /// write one byte
-      virtual void write(int b)
+      void write(int b) override
       {
 	m_pout->write(b);
       }
       
       /// flush output stream
-      virtual void flush()
+      void flush() override
       {
 	m_pout->flush();
       }
       
       /// close the stream
-      virtual void o_close()
+      void o_close() override
       {
 	m_pout->o_close();
       }
 
-      virtual LString getDestURI() const {
+      LString getDestURI() const override {
         return m_pout->getDestURI();
       }
 
@@ -144,7 +144,7 @@ namespace qlib {
     {
     }
 
-    virtual InStream::impl_type getImpl() const {
+    InStream::impl_type getImpl() const override {
       return m_pimpl;
     }
   };
@@ -164,7 +164,7 @@ namespace qlib {
     {
     }
 
-    virtual OutStream::impl_type getImpl() const
+    OutStream::impl_type getImpl() const override
     {
       return m_pimpl;
     }

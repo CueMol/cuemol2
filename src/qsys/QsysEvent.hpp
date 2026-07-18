@@ -55,7 +55,7 @@ public:
          m_pPropEvt(ev.m_pPropEvt)
     {}
 
-  virtual ~QsysEvent() {}
+  ~QsysEvent() override {}
 
   //////////
 

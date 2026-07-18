@@ -22,7 +22,7 @@ namespace qlib {
   class LLogEventCaster
     : public LMthrEventCaster<LLogEvent, LLogEventListener>
   {
-    virtual void execute(LLogEvent &ev, LLogEventListener *p)
+    void execute(LLogEvent &ev, LLogEventListener *p) override
     {
       p->logAppended(ev);
     }

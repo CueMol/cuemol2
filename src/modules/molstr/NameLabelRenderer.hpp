@@ -63,41 +63,41 @@ private:
 
 public:
   NameLabelRenderer();
-  virtual ~NameLabelRenderer();
+  ~NameLabelRenderer() override;
 
   //////////////////////////////////////////////////////
 
-  virtual bool isCompatibleObj(qsys::ObjectPtr pobj) const;
-  virtual LString toString() const;
+  bool isCompatibleObj(qsys::ObjectPtr pobj) const override;
+  LString toString() const override;
 
-  virtual void display(DisplayContext *pdc);
-  virtual void displayLabels(DisplayContext *pdc);
+  void display(DisplayContext *pdc) override;
+  void displayLabels(DisplayContext *pdc) override;
 
   virtual void preRender(DisplayContext *pdc);
   virtual void render(DisplayContext *pdc);
   virtual void postRender(DisplayContext *pdc);
-  virtual bool isHitTestSupported() const;
+  bool isHitTestSupported() const override;
 
-  virtual Vector4D getCenter() const;
+  Vector4D getCenter() const override;
 
-  virtual const char *getTypeName() const;
+  const char *getTypeName() const override;
 
-  virtual bool isTransp() const { return true; }
+  bool isTransp() const override { return true; }
 
   //////
   // Event handlers
 
-  virtual void propChanged(qlib::LPropEvent &ev);
+  void propChanged(qlib::LPropEvent &ev) override;
 
-  virtual void styleChanged(qsys::StyleEvent &);
+  void styleChanged(qsys::StyleEvent &) override;
 
-  virtual void objectChanged(qsys::ObjectEvent &ev);
+  void objectChanged(qsys::ObjectEvent &ev) override;
 
   //////
   // Serialization / deserialization impl for non-prop data
 
-  virtual void writeTo2(qlib::LDom2Node *pNode) const;
-  virtual void readFrom2(qlib::LDom2Node *pNode);
+  void writeTo2(qlib::LDom2Node *pNode) const override;
+  void readFrom2(qlib::LDom2Node *pNode) override;
 
   //////////////////////////////////////////////////////
 

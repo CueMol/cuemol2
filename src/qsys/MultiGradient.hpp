@@ -55,7 +55,7 @@ namespace qsys {
     MultiGradient();
     // MultiGradient(const MultiGradient &r);
 
-    virtual ~MultiGradient();
+    ~MultiGradient() override;
 
     /// clear all gradient nodes
     void clear() { m_data.clear(); }
@@ -98,8 +98,8 @@ namespace qsys {
     //////////////////////////////////////////////////////
     // Serialization / deserialization impl for non-prop data
 
-    virtual void writeTo2(qlib::LDom2Node *pNode) const;
-    virtual void readFrom2(qlib::LDom2Node *pNode);
+    void writeTo2(qlib::LDom2Node *pNode) const override;
+    void readFrom2(qlib::LDom2Node *pNode) override;
 
     virtual void copyFrom(const MultiGradientPtr &pSrc);
 

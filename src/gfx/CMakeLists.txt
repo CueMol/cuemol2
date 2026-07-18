@@ -107,6 +107,11 @@ ADD_FLEX_BISON_DEPENDENCY(gfx_color_scanner gfx_color_parser)
 # message(STATUS "FLEX_gfx_color_scanner_OUTPUTS: ${FLEX_gfx_color_scanner_OUTPUTS}")
 list(APPEND GFX_SRCS ${BISON_gfx_color_parser_OUTPUTS})
 list(APPEND GFX_SRCS ${FLEX_gfx_color_scanner_OUTPUTS})
+
+# Generated Bison/Flex parser sources: suppress warnings (generated, not hand-edited).
+set_source_files_properties(
+  ${BISON_gfx_color_parser_OUTPUTS} ${FLEX_gfx_color_scanner_OUTPUTS}
+  PROPERTIES COMPILE_OPTIONS "$<IF:$<CXX_COMPILER_ID:MSVC>,/w,-w>")
 # message("GFX_SRCS ${GFX_SRCS}")
 
 #########################

@@ -57,7 +57,7 @@ namespace molstr {
     SelCommand(SelSuperNode *pNode);
 
     /// dtor
-    virtual ~SelCommand();
+    ~SelCommand() override;
 
     /////////////////////////////////////////////////
 
@@ -66,16 +66,16 @@ namespace molstr {
 
     /////////////////////////////////////////////////
 
-    virtual int isSelectedMol(MolCoordPtr pobj);
-    virtual int isSelectedChain(MolChainPtr pchain);
-    virtual int isSelectedResid(MolResiduePtr presid);
-    virtual bool isSelected(MolAtomPtr patom);
+    int isSelectedMol(MolCoordPtr pobj) override;
+    int isSelectedChain(MolChainPtr pchain) override;
+    int isSelectedResid(MolResiduePtr presid) override;
+    bool isSelected(MolAtomPtr patom) override;
 
-    virtual LString toString() const;
-    virtual bool isStrConv() const;
+    LString toString() const override;
+    bool isStrConv() const override;
     // virtual bool fromString(const LString &src);
 
-    virtual bool isEmpty() const;
+    bool isEmpty() const override;
 
     LString dumpNodes() const;
 

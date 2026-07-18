@@ -68,16 +68,16 @@ namespace render {
 
   public:
     UmbreonDisplayContext();
-    virtual ~UmbreonDisplayContext();
+    ~UmbreonDisplayContext() override;
 
     /// Reset the accumulated umbreon scene. Called by Scene::display().
-    virtual void startRender();
+    void startRender() override;
 
-    virtual void startSection(const LString &name);
+    void startSection(const LString &name) override;
 
     /// Translate the just-finished section's RendIntData into umbreon
     /// primitives, then release the buffer (via the base class).
-    virtual void endSection();
+    void endSection() override;
 
     /// Render the accumulated scene with umbreon and return interleaved 8-bit
     /// pixels (top-left origin, outNcomp components per pixel). The umbreon

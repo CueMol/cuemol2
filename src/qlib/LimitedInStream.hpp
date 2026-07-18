@@ -31,13 +31,13 @@ public:
     {
     }
 
-    virtual bool ready()
+    bool ready() override
     {
         if (m_remaining <= 0) return false;
         return getImpl()->ready();
     }
 
-    virtual int read()
+    int read() override
     {
         if (m_remaining <= 0) return -1;
         int c = getImpl()->read();
@@ -46,7 +46,7 @@ public:
         return c;
     }
 
-    virtual int read(char *buf, int off, int len)
+    int read(char *buf, int off, int len) override
     {
         if (m_remaining <= 0) return -1;
         int reqLen = len;
@@ -57,7 +57,7 @@ public:
         return n;
     }
 
-    virtual int skip(int n)
+    int skip(int n) override
     {
         if (m_remaining <= 0) return 0;
         int reqN = n;
@@ -82,7 +82,7 @@ public:
     {
     }
 
-    virtual InStream::impl_type getImpl() const { return m_pimpl; }
+    InStream::impl_type getImpl() const override { return m_pimpl; }
 };
 
 }  // namespace qlib

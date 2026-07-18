@@ -50,6 +50,9 @@ namespace qlib {
     virtual bool getPropSpecImpl(const LString &, PropSpec *pspec) const =0;
     virtual void getPropNames(std::set<LString> &) const =0;
 
+    /// Reset all properties to their default values (no-op by default).
+    virtual void resetAllProps() {}
+
     //
 
     virtual qlib::uid_t getRootUID() const =0;

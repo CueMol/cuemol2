@@ -218,7 +218,7 @@ void MTZ2MapReader::readNcol(const char *sbuf)
   stmp.split(' ', sls);
 
   MB_DPRINTLN("[%s]", stmp.c_str());
-  MB_DPRINTLN("size=%d", sls.size());
+  MB_DPRINTLN("size=%d", (int)sls.size());
 
   if (sls.size()<4) {
     MB_THROW(qlib::FileFormatException, "Invalid NCOL");
@@ -255,7 +255,7 @@ void MTZ2MapReader::readColumn(const char *sbuf)
   stmp.split(' ', sls);
 
   MB_DPRINTLN("[%s]", stmp.c_str());
-  MB_DPRINTLN("size=%d", sls.size());
+  MB_DPRINTLN("size=%d", (int)sls.size());
   
   MB_DPRINTLN("%s", LString::join(",",sls).c_str());
 
@@ -290,7 +290,7 @@ void MTZ2MapReader::readDcell(const char *sbuf)
   stmp.split(' ', sls);
 
   MB_DPRINTLN("[%s]", stmp.c_str());
-  MB_DPRINTLN("size=%d", sls.size());
+  MB_DPRINTLN("size=%d", (int)sls.size());
   
   MB_DPRINTLN("%s", LString::join(",",sls).c_str());
 
@@ -339,7 +339,7 @@ void MTZ2MapReader::readSyminf(const char *sbuf)
   stmp.split(' ', sls);
 
   MB_DPRINTLN("[%s]", stmp.c_str());
-  MB_DPRINTLN("size=%d", sls.size());
+  MB_DPRINTLN("size=%d", (int)sls.size());
 
   if (sls.size()<4) {
     MB_THROW(qlib::FileFormatException, "Invalid SYMINF");
@@ -384,7 +384,7 @@ void MTZ2MapReader::readResoln(const char *sbuf)
   stmp.split(' ', sls);
 
   MB_DPRINTLN("[%s]", stmp.c_str());
-  MB_DPRINTLN("size=%d", sls.size());
+  MB_DPRINTLN("size=%d", (int)sls.size());
 
   if (sls.size()<3) {
     MB_THROW(qlib::FileFormatException, "Invalid RESO");

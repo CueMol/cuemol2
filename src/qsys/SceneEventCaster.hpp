@@ -15,7 +15,7 @@ namespace qsys {
   class SceneEventCaster : public qlib::LEventCaster<SceneEvent, SceneEventListener>
   {
   public:
-    virtual void execute(SceneEvent &ev, SceneEventListener *p)
+    void execute(SceneEvent &ev, SceneEventListener *p) override
     {
       p->sceneChanged(ev);
     }

@@ -40,13 +40,13 @@ namespace anim {
   public:
     ShowHideAnim();
     ShowHideAnim(const ShowHideAnim &arg);
-    virtual ~ShowHideAnim();
+    ~ShowHideAnim() override;
 
-    virtual void onPropInit(AnimMgr *pMgr, qlib::uid_t tgt_uid);
+    void onPropInit(AnimMgr *pMgr, qlib::uid_t tgt_uid) override;
 
-    virtual void onStart(qlib::time_value elapsed, AnimMgr *pMgr);
-    virtual void onTimer(qlib::time_value elapsed, AnimMgr *pMgr);
-    virtual void onEnd(qlib::time_value elapsed, AnimMgr *pMgr);
+    void onStart(qlib::time_value elapsed, AnimMgr *pMgr) override;
+    void onTimer(qlib::time_value elapsed, AnimMgr *pMgr) override;
+    void onEnd(qlib::time_value elapsed, AnimMgr *pMgr) override;
 
     bool isHide() const { return m_bHide; }
     void setHide(bool b) { m_bHide = b; }
@@ -54,8 +54,8 @@ namespace anim {
     bool isFade() const { return m_bFade; }
     void setFade(bool b) { m_bFade = b; }
 
-    virtual LString getPropName() const;
-    virtual void setPropName(LString val);
+    LString getPropName() const override;
+    void setPropName(LString val) override;
 
     double getTgtAlpha() const { return m_dTgtAlpha; }
     void setTgtAlpha(double d) { m_dTgtAlpha = d; }

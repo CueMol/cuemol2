@@ -30,7 +30,7 @@ public:
 
   /// Internal data structure is changed by non-setter method(s)
   /// (i.e. append/insertBefore, etc)
-  virtual bool isIntrDataChanged() const { return true; }
+  bool isIntrDataChanged() const override { return true; }
 };
 
 class PaintColorEditInfo : public qsys::PropEditInfoBase
@@ -57,7 +57,7 @@ public:
   {
   }
 
-  virtual ~PaintColorEditInfo()
+  ~PaintColorEditInfo() override
   {
   }
 
@@ -81,7 +81,7 @@ public:
   }
 
   /// Perform undo
-  virtual bool undo()
+  bool undo() override
   {
     MB_DPRINTLN("PaintColUndo mode=%d", m_nMode);
 
@@ -109,7 +109,7 @@ public:
   }
   
   /// Perform redo
-  virtual bool redo() {
+  bool redo() override {
     PaintColoring *pTgtCol = getTargetColoring();
     if (pTgtCol==NULL)
       return false;
@@ -133,11 +133,11 @@ public:
     return true;
   }
   
-  virtual bool isUndoable() const {
+  bool isUndoable() const override {
     if (m_pSel.isnull() || m_pCol.isnull()) return false;
     return true;
   }
-  virtual bool isRedoable() const {
+  bool isRedoable() const override {
     if (m_pSel.isnull() || m_pCol.isnull()) return false;
     return true;
   }

@@ -37,7 +37,7 @@ namespace qsys {
   public:
     SceneManager();
 
-    virtual ~SceneManager();
+    ~SceneManager() override;
 
   public:
   
@@ -161,7 +161,7 @@ namespace qsys {
 
     /// Idle task support:
     /// Check scene update periodically
-    virtual void doIdleTask();
+    void doIdleTask() override;
  
   };
 

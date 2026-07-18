@@ -59,18 +59,18 @@ public:
   // renderer support
 
   SymmRenderer();
-  virtual ~SymmRenderer();
+  ~SymmRenderer() override;
 
-  virtual bool isCompatibleObj(qsys::ObjectPtr pobj) const;
-  virtual LString toString() const;
-  virtual const char *getTypeName() const;
+  bool isCompatibleObj(qsys::ObjectPtr pobj) const override;
+  LString toString() const override;
+  const char *getTypeName() const override;
 
-  virtual qlib::Vector4D getCenter() const;
+  qlib::Vector4D getCenter() const override;
 
   //////////////////////////////////////////////////////
   // Renderer implementation
   
-  virtual void display(DisplayContext *pdc);
+  void display(DisplayContext *pdc) override;
   
   // virtual void invalidateDisplayCache();
   
@@ -78,25 +78,25 @@ public:
   //////////////////////////////////////////////////////
   // hit test support
 
-  virtual bool isHitTestSupported() const;
+  bool isHitTestSupported() const override;
 
   // Render hittest object
-  virtual void displayHit(DisplayContext *pdc);
+  void displayHit(DisplayContext *pdc) override;
 
   /// Hittest result interpretation
-  virtual LString interpHit(const gfx::RawHitData &hdat);
+  LString interpHit(const gfx::RawHitData &hdat) override;
 
   //////////////////////////////////////////////////////
   // For auto-update of rendering center
 
   /// View event for auto-update center
-  virtual void viewChanged(qsys::ViewEvent &);
+  void viewChanged(qsys::ViewEvent &) override;
 
   /// Setup view event capturing
-  virtual void setSceneID(qlib::uid_t nid);
+  void setSceneID(qlib::uid_t nid) override;
 
   /// Release view event capturing
-  virtual qlib::uid_t detachObj();
+  qlib::uid_t detachObj() override;
 
 
   //////////////////////////////////////////////////////
@@ -145,7 +145,7 @@ public:
   Matrix4D getXformMatrix(int symid) const;
 
   /// symm-update event handling
-  virtual void objectChanged(qsys::ObjectEvent &ev);
+  void objectChanged(qsys::ObjectEvent &ev) override;
 
   //////////////////////////////////////////////////////
 

@@ -57,7 +57,7 @@ EcDataTexture::~EcDataTexture()
     qsys::ViewPtr rvw = qsys::SceneManager::getViewS(m_nViewID);
     if (rvw.isnull()) {
         MB_DPRINTLN("EcDataTexture> unknown parent view (%d), texture %s cannot be deleted",
-                    m_nViewID, m_texName.c_str());
+                    (int)m_nViewID, m_texName.c_str());
         return;
     }
 
@@ -79,7 +79,7 @@ void EcDataTexture::bind(int texUnit)
 {
     qsys::ViewPtr rvw = qsys::SceneManager::getViewS(m_nViewID);
     if (rvw.isnull()) {
-        MB_DPRINTLN("EcDataTexture::bind> unknown parent view (%d)", m_nViewID);
+        MB_DPRINTLN("EcDataTexture::bind> unknown parent view (%d)", (int)m_nViewID);
         return;
     }
 
@@ -102,7 +102,7 @@ void EcDataTexture::unbind()
 {
     qsys::ViewPtr rvw = qsys::SceneManager::getViewS(m_nViewID);
     if (rvw.isnull()) {
-        MB_DPRINTLN("EcDataTexture::unbind> unknown parent view (%d)", m_nViewID);
+        MB_DPRINTLN("EcDataTexture::unbind> unknown parent view (%d)", (int)m_nViewID);
         return;
     }
 

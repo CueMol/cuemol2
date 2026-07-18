@@ -75,7 +75,7 @@ namespace molstr {
     // construction / destruction
 
     MolResidue();
-    virtual ~MolResidue();
+    ~MolResidue() override;
 
     //////////////////////////////////////////////////////////
     // Atom/bond operations
@@ -221,7 +221,7 @@ namespace molstr {
       return false;
     }
 
-    LString toString() const;
+    LString toString() const override;
   };
 
 

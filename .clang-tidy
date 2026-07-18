@@ -1,0 +1,11 @@
+# Enforce the 'override' keyword on virtual overrides.
+# Fixes clang's -Winconsistent-missing-override across first-party sources.
+# Usage: clang-tidy -p <build-dir> <file>   (build must be configured with
+#        -DCMAKE_EXPORT_COMPILE_COMMANDS=ON so compile_commands.json exists).
+# HeaderFilterRegex scopes diagnostics/fixes to this repo's src/ tree;
+# ExcludeHeaderFilterRegex keeps vendored third-party code untouched.
+Checks: '-*,modernize-use-override'
+HeaderFilterRegex: 'src/'
+ExcludeHeaderFilterRegex: '(/mmdb/|/ssmlib/|/BALL/|/smospl/|/zlib/|/expat/|/pcre/|/libpng/|/minpack/|/edtsurf/)'
+WarningsAsErrors: ''
+FormatStyle: file

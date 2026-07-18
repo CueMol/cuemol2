@@ -1102,7 +1102,7 @@ bool CnsParFile::read(FILE *fp)
     if (chkRec("REMARK")) {
       char sbuf[256];
       // read to the end of line
-      fgets(sbuf, sizeof sbuf, m_fp);
+      if (fgets(sbuf, sizeof sbuf, m_fp) == NULL) sbuf[0] = '\0';
 MB_DPRINT("CnsParFile > REMARK:%s", sbuf);
       continue;
     }

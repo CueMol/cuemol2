@@ -18,7 +18,7 @@ runtime_class SceneXMLWriter extends InOutHandler
   ////////////////////
   // Property definition
 
-  /// Embed-all-objects flag (Embed don't have to be persistent)
+  /// Embed-all-objects flag (Embed does not have to be persistent)
   property boolean embedAll => redirect(getEmbedAll, setEmbedAll) (nopersist);
 
   /// version ID (Version value should be persistent,

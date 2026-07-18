@@ -105,15 +105,15 @@ void OcBufferRep::create(gfx::DisplayContext *pdc, const gfx::AbstDrawAttrs &ada
     // Init VBO & copy data
     glBindBuffer(GL_ARRAY_BUFFER, m_nBufID);
     glBufferData(GL_ARRAY_BUFFER, ada.getDataSize(), ada.getData(), GL_STATIC_DRAW);
-    MB_DPRINTLN("OcBufferRep> Buffer %d created for view %d, size=%d", m_nBufID, m_nViewID,
-                ada.getDataSize());
+    MB_DPRINTLN("OcBufferRep> Buffer %d created for view %d, size=%d", m_nBufID, (int)m_nViewID,
+                (int)ada.getDataSize());
 
     if (ada.getType() == AbstDrawElem::VA_ATTR_INDS) {
         glGenBuffers(1, &m_nIndBufID);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nIndBufID);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, ada.getIndDataSize(), ada.getIndData(),
                      GL_STATIC_DRAW);
-        MB_DPRINTLN("OcBufferRep> Index Buffer %d created for view %d, size=%d", m_nIndBufID, m_nViewID, ada.getIndDataSize());
+        MB_DPRINTLN("OcBufferRep> Index Buffer %d created for view %d, size=%d", m_nIndBufID, (int)m_nViewID, (int)ada.getIndDataSize());
     }
 }
 
@@ -216,14 +216,14 @@ void OcBufferRep::unbind(const gfx::AbstDrawAttrs &ada)
 
 OcBufferRep::~OcBufferRep()
 {
-    MB_DPRINTLN("OcBufferRep> Destructing view=%d, buf=%d, ind=%d", m_nViewID, m_nBufID,
+    MB_DPRINTLN("OcBufferRep> Destructing view=%d, buf=%d, ind=%d", (int)m_nViewID, m_nBufID,
                 m_nIndBufID);
 
     qsys::ViewPtr rvw = qsys::SceneManager::getViewS(m_nViewID);
     if (rvw.isnull()) {
         MB_DPRINTLN(
             "OcBufferRep> unknown parent view (%d), Texture %d cannot be deleted",
-            m_nViewID, m_nBufID);
+            (int)m_nViewID, m_nBufID);
         return;
     }
     gfx::DisplayContext *pctxt = rvw->getDisplayContext();

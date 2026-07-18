@@ -115,7 +115,7 @@ namespace molstr {
 
   public:
     ResiToppar();
-    virtual ~ResiToppar();
+    ~ResiToppar() override;
 
     // add new atom
     bool addAtom(const LString &name, const LString &type,

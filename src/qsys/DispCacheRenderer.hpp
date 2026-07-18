@@ -31,12 +31,12 @@ namespace qsys {
 
     DispCacheRenderer();
     DispCacheRenderer(const DispCacheRenderer &r);
-    virtual ~DispCacheRenderer();
+    ~DispCacheRenderer() override;
 
     //////////////////////////////////////////////////////
     // Renderer implementation
 
-    virtual void unloading();
+    void unloading() override;
 
     ///////////////////////////////////////
     // DispCacheRenderer rendering interface
@@ -63,15 +63,15 @@ namespace qsys {
     // Event handling
 
     /// object changed event (--> call invalidate if required)
-    virtual void objectChanged(ObjectEvent &ev);
+    void objectChanged(ObjectEvent &ev) override;
 
-    virtual void propChanged(qlib::LPropEvent &ev);
+    void propChanged(qlib::LPropEvent &ev) override;
 
     /// Style event listener
-    virtual void styleChanged(StyleEvent &);
+    void styleChanged(StyleEvent &) override;
     
     /// Scene event listener (for detecting color profile change)
-    virtual void sceneChanged(SceneEvent &ev);
+    void sceneChanged(SceneEvent &ev) override;
     
   private:
     bool m_bShaderAlpha;

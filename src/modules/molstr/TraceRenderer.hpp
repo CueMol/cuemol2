@@ -50,9 +50,9 @@ namespace molstr {
     
   public:
     TraceRenderer();
-    virtual ~TraceRenderer();
+    ~TraceRenderer() override;
     
-    virtual const char *getTypeName() const;
+    const char *getTypeName() const override;
 
     //////////////////////////////////////////////////////
     // Renderer interface
@@ -65,16 +65,16 @@ namespace molstr {
     //////////////////////////////////////////////////////
     // DispCacheRenderer interface
 
-    virtual void preRender(DisplayContext *pdc);
+    void preRender(DisplayContext *pdc) override;
     
     //////////////////////////////////////////////////////
     // MainChainRenderer interface
 
-    virtual void beginRend(DisplayContext *pdl);
-    virtual void beginSegment(DisplayContext *pdl, MolResiduePtr pRes);
-    virtual void rendResid(DisplayContext *pdl, MolResiduePtr pRes);
-    virtual void endSegment(DisplayContext *pdl, MolResiduePtr pRes);
-    virtual void endRend(DisplayContext *pdl);
+    void beginRend(DisplayContext *pdl) override;
+    void beginSegment(DisplayContext *pdl, MolResiduePtr pRes) override;
+    void rendResid(DisplayContext *pdl, MolResiduePtr pRes) override;
+    void endSegment(DisplayContext *pdl, MolResiduePtr pRes) override;
+    void endRend(DisplayContext *pdl) override;
     
     //////////////////////////////////////////////////////
     

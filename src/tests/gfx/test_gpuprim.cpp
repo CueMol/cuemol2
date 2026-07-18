@@ -50,7 +50,7 @@ public:
     MockShaderObject *m_pMockPO;
 
     MockDisplayContext() : m_pMockPO(new MockShaderObject()) {}
-    ~MockDisplayContext() { delete m_pMockPO; }
+    ~MockDisplayContext() override { delete m_pMockPO; }
 
     // Pure virtual implementations (all no-ops)
     bool setCurrent() override { return true; }

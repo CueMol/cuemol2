@@ -86,7 +86,7 @@ bool OcRenderTarget::init(gfx::DisplayContext *pdc, int w, int h, int flags)
     }
 
     MB_DPRINTLN("OcRenderTarget::init view=%d fbo=%d color=%d depth=%d normal=%d (%dx%d) OK",
-                m_nViewID, m_nFBO, m_nColorTex, m_nDepthTex, m_nNormalTex, w, h);
+                (int)m_nViewID, m_nFBO, m_nColorTex, m_nDepthTex, m_nNormalTex, w, h);
     return true;
 }
 
@@ -145,7 +145,7 @@ OcRenderTarget::~OcRenderTarget()
     qsys::ViewPtr rvw = qsys::SceneManager::getViewS(m_nViewID);
     if (rvw.isnull()) {
         MB_DPRINTLN("OcRenderTarget> unknown parent view (%d), FBO cannot be deleted",
-                    m_nViewID);
+                    (int)m_nViewID);
         return;
     }
     gfx::DisplayContext *pctxt = rvw->getDisplayContext();

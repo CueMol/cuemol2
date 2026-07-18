@@ -85,7 +85,7 @@ public:
 public:
 
   TubeSection();
-  ~TubeSection();
+  ~TubeSection() override;
 
   /////////////////////////////////////
   // Setters/Getters
@@ -170,7 +170,7 @@ public:
 
   char getSfType(int j) const { return m_sftypes[j%m_nSectTabSz]; }
 
-  virtual bool resetProperty(const LString &propnm);
+  bool resetProperty(const LString &propnm) override;
 
   ////////////////////////////////////////
   // Cap rendering routines

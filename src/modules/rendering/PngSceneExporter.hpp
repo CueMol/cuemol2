@@ -35,25 +35,25 @@ private:
 
 public:
   PngSceneExporter();
-  virtual ~PngSceneExporter();
+  ~PngSceneExporter() override;
 
   /////////////////////////////////
 
   /// Get name of the writer
-  virtual const char *getName() const;
+  const char *getName() const override;
 
   /// Get file-type description
-  virtual const char *getTypeDescr() const;
+  const char *getTypeDescr() const override;
 
   /// Get file extension
-  virtual const char *getFileExt() const;
+  const char *getFileExt() const override;
 
   ////////////////////////////////////////
 
-  virtual int prepare(const char *filename);
+  int prepare(const char *filename) override;
   // virtual bool request(int &posx, int &posy, int &width, int &height);
-  virtual void writeData(const char *pbuf, int nsize);
-  virtual void completed();
+  void writeData(const char *pbuf, int nsize) override;
+  void completed() override;
 
 };
 

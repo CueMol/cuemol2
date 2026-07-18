@@ -22,7 +22,7 @@ runtime_class ScrEventManager
   integer append(string cat, integer src_type, integer evt_type, integer src_uid);
   boolean remove(integer id);
 
-  // Event manager's enum IDs
+  // Event manager enum IDs
   property integer SEM_ANY => redirect(getSEM_ANY, XXX) (readonly);
   property integer SEM_LOG => redirect(getSEM_LOG, XXX) (readonly);
   property integer SEM_INDEV => redirect(getSEM_INDEV, XXX) (readonly);
@@ -41,7 +41,7 @@ runtime_class ScrEventManager
   property integer SEM_CHANGED => redirect(getSEM_CHANGED, XXX) (readonly);
   property integer SEM_OTHER => redirect(getSEM_OTHER, XXX) (readonly);
 
-  // InDevEvent's mouse modifier IDs
+  // InDevEvent mouse modifier IDs
   property integer INDEV_SHIFT => redirect(getINDEV_SHIFT, XXX) (readonly);
   property integer INDEV_CTRL => redirect(getINDEV_CTRL, XXX) (readonly);
   property integer INDEV_ALT => redirect(getINDEV_ALT, XXX) (readonly);

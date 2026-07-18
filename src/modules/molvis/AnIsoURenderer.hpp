@@ -44,19 +44,19 @@ namespace molvis {
   public:
 
     AnIsoURenderer();
-    virtual ~AnIsoURenderer();
+    ~AnIsoURenderer() override;
 
-    virtual const char *getTypeName() const;
+    const char *getTypeName() const override;
 
-    virtual void display(DisplayContext *pdc);
-
-    //////////////////////////////////////////////////////
-
-    virtual void rendAtom(DisplayContext *pdl, MolAtomPtr pAtom, bool fbonded);
+    void display(DisplayContext *pdc) override;
 
     //////////////////////////////////////////////////////
 
-    virtual void propChanged(qlib::LPropEvent &ev);
+    void rendAtom(DisplayContext *pdl, MolAtomPtr pAtom, bool fbonded) override;
+
+    //////////////////////////////////////////////////////
+
+    void propChanged(qlib::LPropEvent &ev) override;
 
   private:
     double sphrcos(int j) const { return (*m_pSphrTab)[j*2]; }

@@ -40,7 +40,7 @@ class QSYS_API ScrEventManager : public qlib::LSingletonScrObject,
 
 public:
     ScrEventManager();
-    virtual ~ScrEventManager();
+    ~ScrEventManager() override;
 
     /////////////////////////////
 
@@ -115,7 +115,7 @@ private:
     int m_nLogLsnID;
 
 public:
-    virtual void logAppended(qlib::LLogEvent &ev);
+    void logAppended(qlib::LLogEvent &ev) override;
 
     static bool initClass(qlib::LClass *pcls);
     static void finiClass(qlib::LClass *pcls);

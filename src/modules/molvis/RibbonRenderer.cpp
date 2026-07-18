@@ -28,14 +28,14 @@ namespace molvis {
     double m_coil;
 
     RibbonSmoothEval() : m_helix(0.0), m_sheet(0.5), m_coil(0.0) {}
-    virtual ~RibbonSmoothEval() {}
+    ~RibbonSmoothEval() override {}
 
-    virtual bool getAtomValue(MolAtom *pAtom, double &value) {
+    bool getAtomValue(MolAtom *pAtom, double &value) override {
       // not used
       return false;
     }
 
-    virtual bool getResidValue(MolResidue *pRes, double &value) {
+    bool getResidValue(MolResidue *pRes, double &value) override {
       if (pRes==NULL) return false;
       LString sec("coil");
       pRes->getPropStr("secondary", sec);

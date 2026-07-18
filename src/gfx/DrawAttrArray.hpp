@@ -25,9 +25,9 @@ namespace gfx {
   public:
 
       DrawAttrArray() : super_t() {}
-    virtual ~DrawAttrArray() {}
+    ~DrawAttrArray() override {}
 
-    virtual int getType() const {
+    int getType() const override {
         return AbstDrawElem::VA_ATTRS;
     }
 
@@ -51,12 +51,12 @@ namespace gfx {
       super_t::setSize(nelems);
     }
 
-    virtual const void *getData() const
+    const void *getData() const override
     {
       return m_data.data();
     }
 
-    virtual size_t getElemSize() const {
+    size_t getElemSize() const override {
       return sizeof(_ElemType);
     }
 

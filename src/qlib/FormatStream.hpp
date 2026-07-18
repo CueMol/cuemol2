@@ -35,7 +35,7 @@ namespace qlib {
     // FormatInStream(FormatInStream &r) : m_pimpl(r.getImpl()) {}
 
     /** dtor */
-    virtual ~FormatInStream() {}
+    ~FormatInStream() override {}
 
     /** copy operator */
     FormatInStream &operator=(InStream &arg) {
@@ -48,7 +48,7 @@ namespace qlib {
     ///////////////////////
 
     /** get implementation */
-    virtual impl_type getImpl() const {
+    impl_type getImpl() const override {
       return m_pimpl;
     }
 
@@ -86,7 +86,7 @@ namespace qlib {
     // FormatOutStream(FormatOutStream &r) : m_pimpl(r.getImpl()) {}
     
     /** dtor */
-    virtual ~FormatOutStream() {}
+    ~FormatOutStream() override {}
 
     /** copy operator */
     FormatOutStream &operator=(OutStream &arg) {
@@ -99,7 +99,7 @@ namespace qlib {
     ///////////////////////
 
     /** get implementation */
-    virtual impl_type getImpl() const {
+    impl_type getImpl() const override {
       return m_pimpl;
     }
 

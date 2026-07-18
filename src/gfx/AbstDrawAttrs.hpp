@@ -48,7 +48,7 @@ namespace gfx {
   public:
     AbstDrawAttrs() : m_nInsts(0), m_pExtDataHandle(nullptr), m_pExtIndDataHandle(nullptr) {}
 
-    virtual ~AbstDrawAttrs()
+    ~AbstDrawAttrs() override
     {
         if (m_dataFinalizer) m_dataFinalizer();
         if (m_indDataFinalizer) m_indDataFinalizer();

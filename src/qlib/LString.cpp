@@ -340,7 +340,7 @@ struct PosixLocale : public LLocale
 #endif
     }
 
-    virtual ~PosixLocale()
+    ~PosixLocale() override
     {
 #ifdef HAVE_FREELOCALE
         freelocale(m_cloc);

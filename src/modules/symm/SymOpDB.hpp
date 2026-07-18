@@ -64,7 +64,7 @@ private:
   
 public:
   SymOpDB();
-  virtual ~SymOpDB();
+  ~SymOpDB() override;
 
   //////////////////////////////////////////////////////////
 

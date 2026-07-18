@@ -46,13 +46,13 @@ Object::Object()
   m_pEvtCaster = MB_NEW ObjectEventCaster;
   addPropListener(this);
 
-  MB_DPRINTLN("Object (%p/%d) created\n", this, m_uid);
+  MB_DPRINTLN("Object (%p/%d) created\n", this, (int)m_uid);
 
 }
 
 Object::~Object()
 {
-  MB_DPRINTLN("Object(%p/%d/%s) destructed\n", this, m_uid, m_name.c_str());
+  MB_DPRINTLN("Object(%p/%d/%s) destructed\n", this, (int)m_uid, m_name.c_str());
   delete m_pEvtCaster;
   qlib::ObjectManager::sUnregObj(m_uid);
 
@@ -82,11 +82,11 @@ void Object::dump() const
   for (; iter!=endRend(); ++iter) {
     RendererPtr rrend = iter->second;
     if (!rrend.isnull()) {
-      MB_DPRINT("rend %p/%d (nref=%d): ", rrend.get(), rrend->getUID(), rrend.use_count());
+      MB_DPRINT("rend %p/%d (nref=%d): ", rrend.get(), (int)rrend->getUID(), (int)rrend.use_count());
       //rrend->dump();
     }
     else {
-      MB_DPRINTLN("(invalid rend %d)", iter->first);
+      MB_DPRINTLN("(invalid rend %d)", (int)iter->first);
     }
   }
   

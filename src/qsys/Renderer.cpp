@@ -48,7 +48,7 @@ Renderer::Renderer(const Renderer &r)
   MB_ASSERT(false);
   m_uid = qlib::ObjectManager::sRegObj(this);
   //: m_uid(qlib::LUIDGen::sget())
-  MB_DPRINTLN("????? ERROR ?? XXX: Renderer copy (%p/%d) created\n", this, m_uid);
+  MB_DPRINTLN("????? ERROR ?? XXX: Renderer copy (%p/%d) created\n", this, (int)m_uid);
   addPropListener(this);
 }
 
@@ -320,7 +320,7 @@ void Renderer::displayLabels(DisplayContext *pdc)
 
 void Renderer::processHit(DisplayContext *pdc)
 {
-  MB_DPRINTLN("Renderer.processHit: scene=%d, rend=%d, obj=%d", m_nSceneID, m_uid, m_nClientObj);
+  MB_DPRINTLN("Renderer.processHit: scene=%d, rend=%d, obj=%d", (int)m_nSceneID, (int)m_uid, (int)m_nClientObj);
 
   pdc->startHit(m_uid);
   displayHit(pdc);

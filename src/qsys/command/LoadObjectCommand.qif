@@ -43,9 +43,9 @@ runtime_class LoadObjectCommand extends Command
     property boolean content_first => m_bContentFirst;
     default content_first = false;
 
-    /// Caps how many bytes each reader's canHandleContent() is allowed
+    /// Caps how many bytes the canHandleContent() of each reader is allowed
     /// to consume during sniff. 0 (default) means unbounded -- the
-    /// streaming sniffer reads each candidate's stream until it returns
+    /// streaming sniffer reads each candidate stream until it returns
     /// a verdict or hits EOF. Set a positive value to bound sniffing
     /// against pathological / very large inputs.
     property integer max_sniff_bytes => m_nMaxSniffBytes;
@@ -53,7 +53,7 @@ runtime_class LoadObjectCommand extends Command
 
     /// Setter for the target scene that bypasses the property setter
     /// path. The auto-generated setter for `target_scene` routes through
-    /// setPropHelper -> setupParentData which clobbers the scene's
+    /// setPropHelper -> setupParentData which clobbers the scene
     /// parent linkage (m_thisname / m_rootuid) and breaks nested undo
     /// records. Non-UXP callers should prefer this method.
     void setTargetScene(object<Scene$> pScene);

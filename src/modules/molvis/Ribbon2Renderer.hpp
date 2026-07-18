@@ -233,16 +233,16 @@ using namespace molstr;
 
   public:
     Ribbon2Renderer();
-    virtual ~Ribbon2Renderer();
+    ~Ribbon2Renderer() override;
 
-    virtual const char *getTypeName() const;
+    const char *getTypeName() const override;
 
-    virtual void beginRend(DisplayContext *pdl);
-    virtual void endRend(DisplayContext *pdl);
+    void beginRend(DisplayContext *pdl) override;
+    void endRend(DisplayContext *pdl) override;
 
-    virtual void beginSegment(DisplayContext *pdl, MolResiduePtr pRes);
-    virtual void rendResid(DisplayContext *pdl, MolResiduePtr pRes);
-    virtual void endSegment(DisplayContext *pdl, MolResiduePtr pRes);
+    void beginSegment(DisplayContext *pdl, MolResiduePtr pRes) override;
+    void rendResid(DisplayContext *pdl, MolResiduePtr pRes) override;
+    void endSegment(DisplayContext *pdl, MolResiduePtr pRes) override;
 
   private:
     //////////////////////////////////////////////////////
@@ -278,9 +278,9 @@ using namespace molstr;
     //////////////////////////////////////////////////////
     // event handling
 
-    virtual void propChanged(qlib::LPropEvent &ev);
+    void propChanged(qlib::LPropEvent &ev) override;
 
-    virtual void objectChanged(qsys::ObjectEvent &ev);
+    void objectChanged(qsys::ObjectEvent &ev) override;
 
     //////////////////////////////////////////////////////
 
@@ -380,7 +380,7 @@ using namespace molstr;
   public:
     /// Returns 1-st differential vector as to the axial (t) parameter.
     ///  (used for the tangential vector calculation for the disorder renderer)
-    virtual bool getDiffVec(MolResiduePtr pRes, Vector4D &rpos, Vector4D &rvec);
+    bool getDiffVec(MolResiduePtr pRes, Vector4D &rpos, Vector4D &rvec) override;
 
     /// Ribbon shaped helix flag
     bool m_bRibbonHelix;

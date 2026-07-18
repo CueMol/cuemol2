@@ -22,7 +22,7 @@ namespace qsys {
     
   public:
     ScalarObject();
-    virtual ~ScalarObject();
+    ~ScalarObject() override;
 
     virtual double getValueAt(const Vector4D &pos) const =0;
 

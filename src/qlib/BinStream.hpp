@@ -54,7 +54,7 @@ namespace qlib {
     }
 
     /** dtor */
-    virtual ~BinInStream();
+    ~BinInStream() override;
     
     //////////////////////////////////////
     // binary input specific methods
@@ -155,7 +155,7 @@ namespace qlib {
       return *this;
     }
 
-    virtual ~BinOutStream();
+    ~BinOutStream() override;
     
     //////////////////////////////////////
     // binary output specific methods

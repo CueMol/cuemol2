@@ -119,7 +119,7 @@ void EventManager::checkTimerQueue()
 {
   if (m_timerq.empty()) return;
   qlib::time_value curr = m_pImpl->getCurrentTime();
-  MB_DPRINTLN("EventManager::checkTimerQueue() curr=%ld", curr);
+  MB_DPRINTLN("EventManager::checkTimerQueue() curr=%lld", (long long)curr);
 
   TimerQueue::iterator iter = m_timerq.begin();
   //TimerQueue::iterator eiter = m_timerq.end();

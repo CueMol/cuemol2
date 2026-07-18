@@ -20,7 +20,7 @@ namespace qlib {
   class QLIB_API LEvent : public LCloneableObject
   {
   public:
-    virtual ~LEvent() {}
+    ~LEvent() override {}
     
     template <class T>
     bool instanceOf() const {

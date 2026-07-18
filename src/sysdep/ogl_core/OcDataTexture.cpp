@@ -57,7 +57,7 @@ bool OcDataTexture::init(gfx::DisplayContext *pdc, int w, int h, int ncomp,
         return false;
     }
 
-    MB_DPRINTLN("OcDataTexture::init view=%d tex=%d (%dx%d ncomp=%d) OK", m_nViewID,
+    MB_DPRINTLN("OcDataTexture::init view=%d tex=%d (%dx%d ncomp=%d) OK", (int)m_nViewID,
                 m_nTex, w, h, ncomp);
     return true;
 }
@@ -72,7 +72,7 @@ OcDataTexture::~OcDataTexture()
     qsys::ViewPtr rvw = qsys::SceneManager::getViewS(m_nViewID);
     if (rvw.isnull()) {
         MB_DPRINTLN("OcDataTexture> unknown parent view (%d), tex cannot be deleted",
-                    m_nViewID);
+                    (int)m_nViewID);
         return;
     }
     gfx::DisplayContext *pctxt = rvw->getDisplayContext();

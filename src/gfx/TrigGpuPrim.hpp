@@ -61,7 +61,7 @@ public:
     // ─── Lifecycle ────────────────────────────────────────────────────────────
 
     TrigGpuPrim();
-    virtual ~TrigGpuPrim();
+    ~TrigGpuPrim() override;
 
     /** Load the triangle mesh and edge shaders. */
     bool init(DisplayContext *pDC) override;

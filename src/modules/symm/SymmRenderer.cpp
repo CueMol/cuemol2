@@ -93,7 +93,7 @@ void SymmRenderer::display(DisplayContext *pdc)
     else
       genByExtent();
 
-    MB_DPRINTLN("SymmRend> %d operations", m_data.size());
+    MB_DPRINTLN("SymmRend> %d operations", (int)m_data.size());
     m_bUpdate = false;
   }
   // m_pdc->setLighting(false);
@@ -471,7 +471,7 @@ void SymmRenderer::displayHit(DisplayContext *pdc)
     else
       genByExtent();
 
-    MB_DPRINTLN("SymmRend> %d operations", m_data.size());
+    MB_DPRINTLN("SymmRend> %d operations", (int)m_data.size());
     m_bUpdate = false;
   }
 

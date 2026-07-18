@@ -57,29 +57,29 @@ namespace mdtools {
 
     GROFileReader();
 
-    virtual ~GROFileReader();
+    ~GROFileReader() override;
 
     //////////////////////////////////////////////
     // Read/build methods
 
     /// Read from the input stream ins, and build the attached object.
-    virtual bool read(qlib::InStream &ins);
+    bool read(qlib::InStream &ins) override;
 
     /// Content sniff: validate that line 2 is a non-negative integer and
     /// line 3 has the GRO fixed-column layout (>= 44 chars with three
     /// parseable doubles at columns 20/28/36).
-    virtual int canHandleContent(qlib::InStream &ins) const;
+    int canHandleContent(qlib::InStream &ins) const override;
 
     //////////////////////////////////////////////
     // Information query methods
 
-    virtual const char *getName() const;
+    const char *getName() const override;
 
-    virtual const char *getTypeDescr() const;
+    const char *getTypeDescr() const override;
 
-    virtual const char *getFileExt() const;
+    const char *getFileExt() const override;
 
-    virtual qsys::ObjectPtr createDefaultObj() const;
+    qsys::ObjectPtr createDefaultObj() const override;
 
     //////////////////////////////////////////////
 

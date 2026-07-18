@@ -16,46 +16,46 @@ namespace gfx {
   {
   public:
     AbstHitContext() {}
-    virtual ~AbstHitContext() {}
+    ~AbstHitContext() override {}
 
-    virtual bool setCurrent() { return true; }
-    virtual bool isCurrent() const { return true; }
-    virtual qsys::View *getTargetView() const { return NULL; }
+    bool setCurrent() override { return true; }
+    bool isCurrent() const override { return true; }
+    qsys::View *getTargetView() const override { return NULL; }
 
     /// Returns whether the rendering target of this context is a file or not.
-    virtual bool isFile() const { return false; }
+    bool isFile() const override { return false; }
 
     /// Returns whether this context can render pixmap or not.
-    virtual bool isRenderPixmap() const { return false; }
+    bool isRenderPixmap() const override { return false; }
 
     /// Returns whether this context support VA/VBO (DrawElem()) method
-    virtual bool isDrawElemSupported() const { return false; }
+    bool isDrawElemSupported() const override { return false; }
 
     ////////////////
 
     /// Set current vertex vector by Vector4D
-    virtual void vertex(const Vector4D &vec) {}
+    void vertex(const Vector4D &vec) override {}
 
     /// Set current normal vector by Vector4D
-    virtual void normal(const Vector4D &vec) {}
+    void normal(const Vector4D &vec) override {}
 
     /// Set current color
-    virtual void color(const ColorPtr &c) {}
+    void color(const ColorPtr &c) override {}
 
     ////////////////
     // line and triangle primitives
     
-    virtual void setPolygonMode(int id) {}
-    virtual void startPoints() {}
-    virtual void startPolygon() {}
-    virtual void startLines() {}
-    virtual void startLineStrip() {}
-    virtual void startTriangles() {}
-    virtual void startTriangleStrip() {}
-    virtual void startTriangleFan() {}
-    virtual void startQuadStrip() {}
-    virtual void startQuads() {}
-    virtual void end() {}
+    void setPolygonMode(int id) override {}
+    void startPoints() override {}
+    void startPolygon() override {}
+    void startLines() override {}
+    void startLineStrip() override {}
+    void startTriangles() override {}
+    void startTriangleStrip() override {}
+    void startTriangleFan() override {}
+    void startQuadStrip() override {}
+    void startQuads() override {}
+    void end() override {}
 
   };
 
@@ -77,38 +77,38 @@ namespace gfx {
 
   public:
     HittestList() {}
-    virtual ~HittestList();
+    ~HittestList() override;
 
     //
     // Hittest methods
     //
 
-    virtual void drawPointHit(int nid, const Vector4D &pos);
+    void drawPointHit(int nid, const Vector4D &pos) override;
 
     //
     // Display List support
     //
   
-    virtual DisplayContext *createDisplayList() {
+    DisplayContext *createDisplayList() override {
       return NULL;
     }
 
-    virtual bool canCreateDL() const { return true; }
+    bool canCreateDL() const override { return true; }
 
-    virtual void callDisplayList(DisplayContext *pdl) {
+    void callDisplayList(DisplayContext *pdl) override {
     }
     
-    virtual bool isCompatibleDL(DisplayContext *pdl) const {
+    bool isCompatibleDL(DisplayContext *pdl) const override {
       if (dynamic_cast<HittestList *>(pdl)!=NULL)
         return true;
       else
         return false;
     }
     
-    virtual bool isDisplayList() const { return false; }
+    bool isDisplayList() const override { return false; }
 
     void dump() const {
-      MB_DPRINTLN("HittestList %p size=%d", this, m_data.size());
+      MB_DPRINTLN("HittestList %p size=%d", this, (int)m_data.size());
     }
 
   };
@@ -137,7 +137,7 @@ namespace gfx {
 
   public:
     HittestContext() : m_nCurUID(qlib::invalid_uid) { pushMatrix(); pushName(-1);}
-    virtual ~HittestContext() {}
+    ~HittestContext() override {}
 
     ///////////////////////
     // Matrix stack support
@@ -153,45 +153,45 @@ namespace gfx {
     ///////////////////////
     // Hittest start/end
 
-    virtual void startHit(qlib::uid_t rend_uid) {
+    void startHit(qlib::uid_t rend_uid) override {
       m_nCurUID = rend_uid;
     }
 
-    virtual void endHit() {
+    void endHit() override {
       m_nCurUID = qlib::invalid_uid;
     }
 
-    virtual void loadName(int nameid);
+    void loadName(int nameid) override;
 
-    virtual void pushName(int nameid);
+    void pushName(int nameid) override;
 
-    virtual void popName();
+    void popName() override;
 
     ///////////////////////
     // Display List support
   
-    virtual DisplayContext *createDisplayList() {
+    DisplayContext *createDisplayList() override {
       return MB_NEW HittestList();
     }
 
-    virtual bool canCreateDL() const { return true; }
+    bool canCreateDL() const override { return true; }
 
-    virtual void callDisplayList(DisplayContext *pdl);
+    void callDisplayList(DisplayContext *pdl) override;
     
-    virtual bool isCompatibleDL(DisplayContext *pdl) const {
+    bool isCompatibleDL(DisplayContext *pdl) const override {
       if (dynamic_cast<HittestList *>(pdl)!=NULL)
         return true;
       else
         return false;
     }
     
-    virtual bool isDisplayList() const { return false; }
+    bool isDisplayList() const override { return false; }
 
     // virtual bool recordStart();
     // virtual void recordEnd();
 
     void dump() const {
-      MB_DPRINTLN("HitContext %p size=%d", this, m_data.size());
+      MB_DPRINTLN("HitContext %p size=%d", this, (int)m_data.size());
       /*BOOST_FOREACH (HittestList *phl, m_data) {
 	phl->dump();
 	}*/

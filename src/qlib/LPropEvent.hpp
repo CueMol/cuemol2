@@ -43,9 +43,9 @@ namespace qlib {
     LPropEvent(const LString &name)
       : m_pTarg(NULL), m_name(name), m_bNewDef(false), m_bOldDef(false) {}
 
-    virtual ~LPropEvent() {}
+    ~LPropEvent() override {}
 
-    virtual LCloneableObject *clone() const {
+    LCloneableObject *clone() const override {
       // Making the copy of the variants may not be safe (???)
       MB_ASSERT(false);
       return MB_NEW LPropEvent(*this);
@@ -101,7 +101,7 @@ namespace qlib {
   class LPropEventCaster
        : public LEventCaster<LPropEvent, LPropEventListener>
   {
-    virtual void execute(LPropEvent &ev, LPropEventListener *p)
+    void execute(LPropEvent &ev, LPropEventListener *p) override
     {
       p->propChanged(ev);
     }

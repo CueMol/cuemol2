@@ -48,19 +48,19 @@ class MqoDisplayContext;
 
   public:
     WbpSceneExporter();
-    virtual ~WbpSceneExporter();
+    ~WbpSceneExporter() override;
 
     /// write to the stream
-    virtual void write();
+    void write() override;
 
     /// Get name of the writer
-    virtual const char *getName() const;
+    const char *getName() const override;
 
     /// Get file-type description
-    virtual const char *getTypeDescr() const;
+    const char *getTypeDescr() const override;
 
     /// Get file extension
-    virtual const char *getFileExt() const;
+    const char *getFileExt() const override;
 
     /////////////////////////////////
 

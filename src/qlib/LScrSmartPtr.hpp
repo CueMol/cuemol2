@@ -36,7 +36,7 @@ namespace qlib {
   public:
     explicit LSupScrSp(LScriptable *p = 0);
 
-    virtual ~LSupScrSp();
+    ~LSupScrSp() override;
 
     /** copy ctor */
     LSupScrSp(LSupScrSp const &r): m_ptr(r.m_ptr) {
@@ -75,69 +75,69 @@ namespace qlib {
       std::swap(m_pcnt, other.m_pcnt);
     }
     
-    virtual LClass *getClassObj() const;
+    LClass *getClassObj() const override;
     
-    virtual bool isSmartPtr() const;
+    bool isSmartPtr() const override;
 
     /** get the wrapped raw ptr if this is smartptr, otherwise returns null */
-    virtual LScriptable *getSPInner() const;
+    LScriptable *getSPInner() const override;
 
     ///////////////////////////
     // Memory management
 
-    virtual LScriptable *copy() const;
-    virtual void destruct();
+    LScriptable *copy() const override;
+    void destruct() override;
 
     ///////////////////////////
     // Property support
 
-    virtual bool getProperty(const LString &propnm, LVariant &presult) const;
-    virtual bool setProperty(const LString &propnm, const LVariant &pvalue);
+    bool getProperty(const LString &propnm, LVariant &presult) const override;
+    bool setProperty(const LString &propnm, const LVariant &pvalue) override;
 
-    virtual LString getPropTypeName(const LString &) const;
-    virtual bool hasProperty(const LString &propnm) const;
-    virtual bool hasWritableProperty(const LString &propnm) const;
+    LString getPropTypeName(const LString &) const override;
+    bool hasProperty(const LString &propnm) const override;
+    bool hasWritableProperty(const LString &propnm) const override;
 
-    virtual bool hasPropDefault(const LString &propnm) const;
-    virtual bool isPropDefault(const LString &propnm) const;
-    virtual bool resetProperty(const LString &propnm);
-    virtual bool getPropDefault(const LString &propnm, LVariant &value);
-
-    ////
-
-    virtual bool getPropertyImpl(const LString &propnm, LVariant &presult) const;
-    virtual bool setPropertyImpl(const LString &propnm, const LVariant &pvalue);
-    virtual bool resetPropertyImpl(const LString &propnm);
-    virtual bool getPropSpecImpl(const LString &, PropSpec *pspec) const;
-    virtual void getPropNames(std::set<LString> &) const;
+    bool hasPropDefault(const LString &propnm) const override;
+    bool isPropDefault(const LString &propnm) const override;
+    bool resetProperty(const LString &propnm) override;
+    bool getPropDefault(const LString &propnm, LVariant &value) override;
 
     ////
 
-    virtual qlib::uid_t getRootUID() const;
+    bool getPropertyImpl(const LString &propnm, LVariant &presult) const override;
+    bool setPropertyImpl(const LString &propnm, const LVariant &pvalue) override;
+    bool resetPropertyImpl(const LString &propnm) override;
+    bool getPropSpecImpl(const LString &, PropSpec *pspec) const override;
+    void getPropNames(std::set<LString> &) const override;
+
+    ////
+
+    qlib::uid_t getRootUID() const override;
 
 
     ///////////////////////////
     // reflection
 
-    virtual bool hasMethod(const LString &nm) const;
-    virtual bool invokeMethod(const LString &nm, LVarArgs &args);
+    bool hasMethod(const LString &nm) const override;
+    bool invokeMethod(const LString &nm, LVarArgs &args) override;
 
     ///////////////////////////
     // string conversions
 
-    virtual bool isStrConv() const;
-    virtual LString toString() const;
+    bool isStrConv() const override;
+    LString toString() const override;
 
     ///////////////////////////
     // serialization
-    virtual void writeTo2(LDom2Node *pNode) const;
-    virtual void readFrom2(LDom2Node *pNode);
+    void writeTo2(LDom2Node *pNode) const override;
+    void readFrom2(LDom2Node *pNode) override;
 
     //
     
-    virtual LClass *getScrClassObj() const;
+    LClass *getScrClassObj() const override;
 
-    virtual bool implements(const qlib::LString &nm) const;
+    bool implements(const qlib::LString &nm) const override;
 
   };
 
@@ -275,7 +275,7 @@ namespace qlib {
 
     //////////////////////////////////
 
-    virtual LCloneableObject *clone() const
+    LCloneableObject *clone() const override
     {
       return MB_NEW LScrSp(*this);
     }

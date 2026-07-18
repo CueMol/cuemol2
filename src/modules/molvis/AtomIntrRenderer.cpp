@@ -50,7 +50,7 @@ public:
   {
   }
   
-  virtual ~AtomIntrEditInfo()
+  ~AtomIntrEditInfo() override
   {
   }      
 
@@ -74,7 +74,7 @@ public:
   /////////////////////////////////////////////////////
 
   /// perform undo
-  virtual bool undo()
+  bool undo() override
   {
     AtomIntrRenderer *pRend =
       qlib::ObjectManager::sGetObj<AtomIntrRenderer>(m_nTgtUID);
@@ -88,7 +88,7 @@ public:
   }
   
   /// perform redo
-  virtual bool redo()
+  bool redo() override
   {
     AtomIntrRenderer *pRend =
       qlib::ObjectManager::sGetObj<AtomIntrRenderer>(m_nTgtUID);
@@ -101,12 +101,12 @@ public:
     return true;
   }
   
-  virtual bool isUndoable() const
+  bool isUndoable() const override
   {
     return true;
   }
 
-  virtual bool isRedoable() const
+  bool isRedoable() const override
   {
     return true;
   }

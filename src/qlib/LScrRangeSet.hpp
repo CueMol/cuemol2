@@ -31,7 +31,7 @@ public:
     LScrRangeSet(const super_t &arg) : super_t(arg) {}
 
     /// destructor
-    virtual ~LScrRangeSet();
+    ~LScrRangeSet() override;
 
     /// Assignment operator
     const LScrRangeSet &operator=(const LScrRangeSet &arg)
@@ -53,10 +53,10 @@ public:
     void dump() const;
 
     // virtual bool equals(const LScrRangeSet &arg) const;
-    virtual bool isStrConv() const;
-    virtual LString toString() const;
+    bool isStrConv() const override;
+    LString toString() const override;
 
-    virtual bool fromString(const LString &src);
+    bool fromString(const LString &src) override;
 
     //
 

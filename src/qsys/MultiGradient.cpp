@@ -223,7 +223,7 @@ namespace {
 
     /// Internal data structure is changed by non-setter method(s)
     /// (i.e. append/insertBefore, etc)
-    virtual bool isIntrDataChanged() const { return true; }
+    bool isIntrDataChanged() const override { return true; }
   };
 
   class MultiGradEditInfo : public qsys::PropEditInfoBase
@@ -234,7 +234,7 @@ namespace {
     {
     }
 
-    virtual ~MultiGradEditInfo()
+    ~MultiGradEditInfo() override
     {
     }
 
@@ -261,7 +261,7 @@ namespace {
     }
 
     /// Perform undo
-    virtual bool undo()
+    bool undo() override
     {
       MultiGradient *pTgt = getTargetObj();
       if (pTgt==NULL)
@@ -273,7 +273,7 @@ namespace {
     }
 
     /// Perform redo
-    virtual bool redo()
+    bool redo() override
     {
       MultiGradient *pTgt = getTargetObj();
       if (pTgt==NULL)
@@ -284,11 +284,11 @@ namespace {
       return true;
     }
 
-    virtual bool isUndoable() const {
+    bool isUndoable() const override {
       if (m_pOld.isnull() || m_pNew.isnull()) return false;
       return true;
     }
-    virtual bool isRedoable() const {
+    bool isRedoable() const override {
       if (m_pOld.isnull() || m_pNew.isnull()) return false;
       return true;
     }

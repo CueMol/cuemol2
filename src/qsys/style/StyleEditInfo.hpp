@@ -40,7 +40,7 @@ namespace qsys {
   public:
 
     StyleCreateEditInfo();
-    virtual ~StyleCreateEditInfo();
+    ~StyleCreateEditInfo() override;
 
     void setupCreate(qlib::uid_t scid, StyleSetPtr pTgt, int nBefore);
 
@@ -49,14 +49,14 @@ namespace qsys {
     //////////
 
     /// perform undo
-    virtual bool undo();
+    bool undo() override;
 
     /// perform redo
-    virtual bool redo();
+    bool redo() override;
 
-    virtual bool isUndoable() const;
+    bool isUndoable() const override;
 
-    virtual bool isRedoable() const;
+    bool isRedoable() const override;
 
   };
 
@@ -75,21 +75,21 @@ namespace qsys {
   public:
 
     StyleSrcEditInfo();
-    virtual ~StyleSrcEditInfo();
+    ~StyleSrcEditInfo() override;
 
     void setup(StyleSetPtr pTgt, LString before, LString after);
 
     //////////
 
     /// perform undo
-    virtual bool undo();
+    bool undo() override;
 
     /// perform redo
-    virtual bool redo();
+    bool redo() override;
 
-    virtual bool isUndoable() const;
+    bool isUndoable() const override;
 
-    virtual bool isRedoable() const;
+    bool isRedoable() const override;
 
   };
 
@@ -114,7 +114,7 @@ namespace qsys {
     {
     }
 
-    virtual ~RendStyleEditInfo();
+    ~RendStyleEditInfo() override;
 
     /// Setup edit info from old and new names of the styles
     void setup(qlib::uid_t uid, const LString &ov, const LString &nv)
@@ -126,14 +126,14 @@ namespace qsys {
     }
 
     /// Perform undo
-    virtual bool undo();
+    bool undo() override;
 
     /// Perform redo
-    virtual bool redo();
+    bool redo() override;
 
-    virtual bool isUndoable() const;
+    bool isUndoable() const override;
 
-    virtual bool isRedoable() const;
+    bool isRedoable() const override;
 
   private:
     void fireStyleEvents(StyleSupports *pTgt);

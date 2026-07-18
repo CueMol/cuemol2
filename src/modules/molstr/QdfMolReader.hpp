@@ -28,22 +28,22 @@ namespace molstr {
     
     QdfMolReader();
 
-    virtual ~QdfMolReader();
+    ~QdfMolReader() override;
 
     //////////////////////////////////////////////
     // Information query methods
 
     /// Get the nickname of this reader (referred from script interface)
-    virtual const char *getName() const;
+    const char *getName() const override;
 
     /// Get file-type description
-    virtual const char *getTypeDescr() const;
+    const char *getTypeDescr() const override;
 
     /// Get file extension
-    virtual const char *getFileExt() const;
+    const char *getFileExt() const override;
 
     /// Create default object for this reader
-    virtual qsys::ObjectPtr createDefaultObj() const;
+    qsys::ObjectPtr createDefaultObj() const override;
 
     //////////////////////////////////////////////
     // Read/build methods
@@ -51,7 +51,7 @@ namespace molstr {
     ///
     ///  Read from the input stream ins, and build the attached object.
     ///
-    virtual bool read(qlib::InStream &ins);
+    bool read(qlib::InStream &ins) override;
 
   private:
 

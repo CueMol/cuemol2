@@ -40,12 +40,12 @@ void OcTexRep::create(gfx::DisplayContext *pdc, const gfx::PixelBuffer &pixbuf)
 
 OcTexRep::~OcTexRep()
 {
-    MB_DPRINTLN("OcTexRep::~OcTexRep view=%d, tex=%d", m_nViewID, m_nBufID);
+    MB_DPRINTLN("OcTexRep::~OcTexRep view=%d, tex=%d", (int)m_nViewID, m_nBufID);
 
     qsys::ViewPtr rvw = qsys::SceneManager::getViewS(m_nViewID);
     if (rvw.isnull()) {
         MB_DPRINTLN("OcTexRep> unknown parent view (%d), Texture %d cannot be deleted",
-                    m_nViewID, m_nBufID);
+                    (int)m_nViewID, m_nBufID);
         return;
     }
 

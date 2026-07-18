@@ -32,10 +32,10 @@ namespace importers {
   public:
     PSEFileReader();
 
-    virtual ~PSEFileReader();
+    ~PSEFileReader() override;
 
     /// Get category ID
-    virtual int getCatID() const;
+    int getCatID() const override;
 
     virtual void read();
 
@@ -54,13 +54,13 @@ namespace importers {
     // Attributes
 
     /// Get name of the writer
-    virtual const char *getName() const;
+    const char *getName() const override;
 
     /// Get file-type description
-    virtual const char *getTypeDescr() const;
+    const char *getTypeDescr() const override;
 
     /// Get file extension
-    virtual const char *getFileExt() const;
+    const char *getFileExt() const override;
 
   private:
 

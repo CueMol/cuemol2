@@ -35,23 +35,23 @@ namespace qlib {
 
       XzInFilterImpl(const impl_type &in);
 
-      virtual ~XzInFilterImpl();
+      ~XzInFilterImpl() override;
 
       /// Check if input is available
-      virtual bool ready();
+      bool ready() override;
 
       /// read one byte
-      virtual int read();
+      int read() override;
       
       /// read into mem block
-      virtual int read(char *buf, int off, int len);
+      int read(char *buf, int off, int len) override;
 
       /// close the stream
-      virtual void i_close();
+      void i_close() override;
 
       /// Try to skip n bytes.
       /// @return the actual number of bytes skipped
-      virtual int skip(int n);
+      int skip(int n) override;
       
     private:
       int readImpl(char *buf, int len);
@@ -84,12 +84,12 @@ namespace qlib {
 
       XzOutFilterImpl(const impl_type &in);
 
-      virtual ~XzOutFilterImpl();
+      ~XzOutFilterImpl() override;
 
-      virtual int write(const char *buf, int off, int len);
-      virtual void write(int b);
-      virtual void flush();
-      virtual void o_close();
+      int write(const char *buf, int off, int len) override;
+      void write(int b) override;
+      void flush() override;
+      void o_close() override;
 
     private:
     };

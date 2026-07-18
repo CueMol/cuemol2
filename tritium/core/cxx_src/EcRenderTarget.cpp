@@ -62,7 +62,7 @@ EcRenderTarget::~EcRenderTarget()
     auto pView = getView();
     if (pView == nullptr) {
         MB_DPRINTLN("EcRenderTarget> unknown parent view (%d), fbo %s not deleted",
-                    m_nViewID, m_fboName.c_str());
+                    (int)m_nViewID, m_fboName.c_str());
         return;
     }
     auto peer = pView->getPeerObj();

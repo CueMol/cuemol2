@@ -117,35 +117,35 @@ public:
     GLSLMapMeshRenderer();
 
     /// destructor
-    virtual ~GLSLMapMeshRenderer();
+    ~GLSLMapMeshRenderer() override;
 
     ///////////////////////////////////////////
 
-    virtual const char *getTypeName() const;
+    const char *getTypeName() const override;
 
-    virtual void setSceneID(qlib::uid_t nid);
+    void setSceneID(qlib::uid_t nid) override;
 
-    virtual qlib::uid_t detachObj();
+    qlib::uid_t detachObj() override;
 
     bool initShader(DisplayContext *pdc);
 
     /// Called just before this object is unloaded
-    virtual void unloading();
+    void unloading() override;
 
     ///////////////////////////////////////////
 
-    void display(DisplayContext *pdc);
+    void display(DisplayContext *pdc) override;
 
-    virtual void render(DisplayContext *pdl) {}
-    virtual void preRender(DisplayContext *pdc) {}
-    virtual void postRender(DisplayContext *pdc) {}
+    void render(DisplayContext *pdl) override {}
+    void preRender(DisplayContext *pdc) override {}
+    void postRender(DisplayContext *pdc) override {}
 
-    virtual bool isTransp() const
+    bool isTransp() const override
     {
         return true;
     }
 
-    virtual void invalidateDisplayCache();
+    void invalidateDisplayCache() override;
 
     ///////////////////////////////////////////////////////////////
 
@@ -176,7 +176,7 @@ public:
 
     ///////////////////////////////////////////////////////////////
 
-    virtual void viewChanged(qsys::ViewEvent &);
+    void viewChanged(qsys::ViewEvent &) override;
 
     ///////////////////////////////////////////////////////////////
 

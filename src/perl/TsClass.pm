@@ -76,7 +76,7 @@ sub genTsWrapper($)
     }
   }
 
-  print("Output TS file: $out_fname\n");
+  Utils::debug("Output TS file: $out_fname\n");
 
   # Reset per-class generation state
   %imports = ();

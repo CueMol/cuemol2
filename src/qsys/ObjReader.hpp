@@ -35,7 +35,7 @@ namespace qsys {
 
   public:
     ObjReader();
-    virtual ~ObjReader();
+    ~ObjReader() override;
 
     //////////////////////////////////////////////
     // Read/build methods
@@ -56,15 +56,15 @@ namespace qsys {
     // Information query methods
 
     /// get the nickname of this reader (referred from script interface)
-    virtual const char *getName() const =0;
+    const char *getName() const override =0;
 
     /// get file-type description
-    virtual const char *getTypeDescr() const =0;
+    const char *getTypeDescr() const override =0;
 
     /// get file extension
-    virtual const char *getFileExt() const =0;
+    const char *getFileExt() const override =0;
 
-    virtual int getCatID() const { return IOH_CAT_OBJREADER; }
+    int getCatID() const override { return IOH_CAT_OBJREADER; }
 
     //////////////////////////////////////////////
     // Content sniffing (tri-state)
@@ -93,11 +93,11 @@ namespace qsys {
       return CONTENT_UNKNOWN;
     }
 
-    virtual int getCompressMode() const;
-    virtual void setCompressMode(int);
+    int getCompressMode() const override;
+    void setCompressMode(int) override;
 
-    virtual bool getBase64Flag() const;
-    virtual void setBase64Flag(bool);
+    bool getBase64Flag() const override;
+    void setBase64Flag(bool) override;
 
     //////////////////////////////////////////////
     // Convenience methods

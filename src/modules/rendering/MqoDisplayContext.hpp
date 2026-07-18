@@ -46,15 +46,15 @@ protected:
   
 public:
   MqoDisplayContext();
-  virtual ~MqoDisplayContext();
+  ~MqoDisplayContext() override;
 
   ///////////////////////////////
 
-  void startRender();
-  void endRender();
+  void startRender() override;
+  void endRender() override;
 
-  virtual void startSection(const LString &name);
-  virtual void endSection();
+  void startSection(const LString &name) override;
+  void endSection() override;
 
   ////////////////////////////////////////////////////////////
   // Metaseq implementation

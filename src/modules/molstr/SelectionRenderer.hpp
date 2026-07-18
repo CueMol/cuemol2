@@ -60,44 +60,44 @@ public:
   };
 
   SelectionRenderer();
-  virtual ~SelectionRenderer();
+  ~SelectionRenderer() override;
 
-  virtual const char *getTypeName() const;
+  const char *getTypeName() const override;
 
-  virtual void setSelection(SelectionPtr pSel) {}
+  void setSelection(SelectionPtr pSel) override {}
     
   // Get selection object
-  virtual SelectionPtr getSelection() const;
+  SelectionPtr getSelection() const override;
 
   // virtual void attachObj(qlib::uid_t obj_uid);
   // virtual qlib::uid_t detachObj();
 
-  virtual bool isTransp() const;
+  bool isTransp() const override;
 
   //////////////////////////////////////////////////////
 
-  virtual bool isRendBond() const;
+  bool isRendBond() const override;
 
-  virtual void preRender(DisplayContext *pdc);
-  virtual void postRender(DisplayContext *pdc);
+  void preRender(DisplayContext *pdc) override;
+  void postRender(DisplayContext *pdc) override;
 
-  virtual void beginRend(DisplayContext *pdl);
-  virtual void endRend(DisplayContext *pdl);
+  void beginRend(DisplayContext *pdl) override;
+  void endRend(DisplayContext *pdl) override;
 
-  virtual void rendAtom(DisplayContext *pdl, MolAtomPtr pAtom, bool fbonded);
-  virtual void rendBond(DisplayContext *pdl, MolAtomPtr pAtom1, MolAtomPtr pAtom2, MolBond *pMB);
+  void rendAtom(DisplayContext *pdl, MolAtomPtr pAtom, bool fbonded) override;
+  void rendBond(DisplayContext *pdl, MolAtomPtr pAtom1, MolAtomPtr pAtom2, MolBond *pMB) override;
 
   // virtual void render(DisplayContext *pdl, MolSelectPtr pSel);
 
-  virtual bool isHitTestSupported() const { return false; }
-  virtual void renderHit(DisplayContext *phl) {}
+  bool isHitTestSupported() const override { return false; }
+  void renderHit(DisplayContext *phl) override {}
 
   //////////////////////////////////////////////////////
 
-  void propChanged(qlib::LPropEvent &ev);
+  void propChanged(qlib::LPropEvent &ev) override;
 
   /// object changed event (--> call invalidate if required)
-  virtual void objectChanged(qsys::ObjectEvent &ev);
+  void objectChanged(qsys::ObjectEvent &ev) override;
 
   // virtual LString interpHit(const gfx::RawHitData &hdat) { return LString(); }
 

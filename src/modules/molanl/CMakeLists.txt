@@ -5,15 +5,18 @@ include_directories(
   ${Boost_INCLUDE_DIRS}
   )
 
-# Normal C++ source files
+# First-party C++ source files
 SET(MOLANL_SRCS
 molanl.cpp
 MolAnlManager.cpp
 LsqFit.cpp
 ContactMap.cpp
+)
+
 #
-# mmdb/ssmlib files
+# Vendored (project-maintained fork): mmdb + ssmlib
 #
+SET(MOLANL_VENDORED_SRCS
 mmdb/bfgs_min.cpp
 mmdb/file_.cpp
 mmdb/hybrid_36.cpp
@@ -53,11 +56,18 @@ ssmlib/ss_graph.cpp
 ssmlib/ss_vxedge.cpp
 ssmlib/ssm_align.cpp
 ssmlib/ssm_superpose.cpp
+)
+
+# Suppress warnings for vendored sources only (first-party files above keep warnings).
+set_source_files_properties(${MOLANL_VENDORED_SRCS}
+  PROPERTIES COMPILE_OPTIONS "$<IF:$<CXX_COMPILER_ID:MSVC>,/w,-w>")
+
 #
-# MINPACK_SRC
+# MINPACK_SRC (third-party numerical solver)
 #
+SET(MOLANL_MINPACK_SRCS
 minpack/lmdif.cpp
-minpack/fdjac2.cpp 
+minpack/fdjac2.cpp
 minpack/enorm.cpp
 minpack/qrfac.cpp
 minpack/lmpar.cpp
@@ -65,6 +75,8 @@ minpack/dpmpar.cpp
 minpack/qrsolv.cpp
 minpack/LMMinimizer.cpp
 )
+
+LIST(APPEND MOLANL_SRCS ${MOLANL_VENDORED_SRCS} ${MOLANL_MINPACK_SRCS})
 
 ##########
 # CueMol interface definitions for MCWRAPGEN

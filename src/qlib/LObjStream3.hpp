@@ -32,12 +32,12 @@ namespace qlib {
 
     LObjInStream3(InStream &out);
 
-    virtual ~LObjInStream3();
+    ~LObjInStream3() override;
 
     //////////
 
     void start();
-    virtual void close();
+    void close() override;
 
     // read XML part of the stream
     void read(LDom2Tree &tree);

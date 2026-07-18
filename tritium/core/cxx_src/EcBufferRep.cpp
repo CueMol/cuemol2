@@ -94,8 +94,8 @@ void EcBufferRep::create(gfx::DisplayContext *pdc, const gfx::AbstDrawAttrs &dat
 
     // index data
     const size_t nindex_bytes = data.getIndDataSize();
-    MB_DPRINTLN("index buffer size: %d bytes = %d * %d", nindex_bytes,
-                data.getIndSize(), data.getIndElemSize());
+    MB_DPRINTLN("index buffer size: %d bytes = %d * %d", (int)nindex_bytes,
+                (int)data.getIndSize(), (int)data.getIndElemSize());
     if (nindex_bytes > 0) {
         auto *pIndRef =
             static_cast<Napi::ObjectReference *>(data.getExtIndDataHandle());
@@ -112,7 +112,7 @@ void EcBufferRep::create(gfx::DisplayContext *pdc, const gfx::AbstDrawAttrs &dat
 
     m_bufName = qlib::LString::format("buf_%p", this);
     MB_DPRINTLN("create buffer: name=%s, size=%d bytes, nelems=%d", m_bufName.c_str(),
-                buffer_size, nelems);
+                (int)buffer_size, (int)nelems);
 
     // m_arrayBufRef now holds the initial data; mark dirty so the first
     // draw() triggers the GPU upload.
@@ -123,8 +123,8 @@ void EcBufferRep::create(gfx::DisplayContext *pdc, const gfx::AbstDrawAttrs &dat
     try {
         auto pbuf = m_arrayBufRef.Value();
         auto pindbuf = (m_nIndexElems > 0) ? m_indexBufRef.Value() : env.Null();
-        MB_DPRINTLN("createBuffer(%s): pbuf=%p, pindbuf=%p", m_bufName.c_str(), pbuf,
-                    pindbuf);
+        MB_DPRINTLN("createBuffer(%s): pbuf=%p, pindbuf=%p", m_bufName.c_str(),
+                    (void *)(napi_value)pbuf, (void *)(napi_value)pindbuf);
         auto rval = method.Call(
             peer,
             {Napi::String::New(env, m_bufName), Napi::Number::New(env, buffer_size),
@@ -196,8 +196,8 @@ void EcBufferRep::draw(const gfx::AbstDrawAttrs &ada)
         // if (m_nIndexElems > 0) {
         auto pbuf = m_arrayBufRef.Value();
         auto pindbuf = (m_nIndexElems > 0) ? m_indexBufRef.Value() : env.Null();
-        MB_DPRINTLN("drawBuffer(%s): pbuf=%p, pindbuf=%p", m_bufName.c_str(), pbuf,
-                    pindbuf);
+        MB_DPRINTLN("drawBuffer(%s): pbuf=%p, pindbuf=%p", m_bufName.c_str(),
+                    (void *)(napi_value)pbuf, (void *)(napi_value)pindbuf);
         int nelems = (m_nIndexElems > 0) ? m_nIndexElems : m_nElems;
         method.Call(
             peer,

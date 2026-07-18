@@ -232,7 +232,7 @@ namespace {
     {
     }
     
-    virtual ~VisSetEditInfo()
+    ~VisSetEditInfo() override
     {
     }
     
@@ -249,46 +249,46 @@ namespace {
     }
 
     /// Perform undo
-    virtual bool undo()
+    bool undo() override
     {
       CameraPtr pCam = getTargetCam();
       if (pCam.isnull()) return false;
       if (m_nMode==VSE_ADD) {
         // remove
         pCam->visRemove(m_nElemID);
-        MB_DPRINTLN("VSE.undo> VSE_ADD remove(%d)", m_nElemID);
+        MB_DPRINTLN("VSE.undo> VSE_ADD remove(%d)", (int)m_nElemID);
       }
       else {
         // add
         pCam->visAppend(m_nElemID, m_value.bVis, m_value.bObj);
-        MB_DPRINTLN("VSE.undo> VSE_REMOVE append(%d, %d, %d)", m_nElemID, m_value.bVis, m_value.bObj);
+        MB_DPRINTLN("VSE.undo> VSE_REMOVE append(%d, %d, %d)", (int)m_nElemID, m_value.bVis, m_value.bObj);
       }
       return true;
     }
   
     /// Perform redo
-    virtual bool redo() {
+    bool redo() override {
       CameraPtr pCam = getTargetCam();
       if (pCam.isnull()) return false;
       if (m_nMode==VSE_ADD) {
         // add
         pCam->visAppend(m_nElemID, m_value.bVis, m_value.bObj);
-        MB_DPRINTLN("VSE.redo> VSE_ADD append(%d, %d, %d)", m_nElemID, m_value.bVis, m_value.bObj);
+        MB_DPRINTLN("VSE.redo> VSE_ADD append(%d, %d, %d)", (int)m_nElemID, m_value.bVis, m_value.bObj);
       }
       else {
         // remove
         pCam->visRemove(m_nElemID);
-        MB_DPRINTLN("VSE.redo> VSE_REMOVE remove(%d)", m_nElemID);
+        MB_DPRINTLN("VSE.redo> VSE_REMOVE remove(%d)", (int)m_nElemID);
       }
       return true;
     }
   
-    virtual bool isUndoable() const {
+    bool isUndoable() const override {
       CameraPtr pCam = getTargetCam();
       if (pCam.isnull()) return false;
       return true;
     }
-    virtual bool isRedoable() const {
+    bool isRedoable() const override {
       CameraPtr pCam = getTargetCam();
       if (pCam.isnull()) return false;
       return true;

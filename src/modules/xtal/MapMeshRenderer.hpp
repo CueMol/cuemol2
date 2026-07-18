@@ -102,24 +102,24 @@ namespace xtal {
     MapMeshRenderer();
 
     /// destructor
-    virtual ~MapMeshRenderer();
+    ~MapMeshRenderer() override;
 
     ///////////////////////////////////////////
 
-    virtual const char *getTypeName() const;
+    const char *getTypeName() const override;
 
     //virtual void attachObj(qlib::uid_t obj_uid);
-    virtual void setSceneID(qlib::uid_t nid);
+    void setSceneID(qlib::uid_t nid) override;
 
-    virtual qlib::uid_t detachObj();
+    qlib::uid_t detachObj() override;
 
     ///////////////////////////////////////////
 
-    virtual void render(DisplayContext *pdl);
-    virtual void preRender(DisplayContext *pdc);
-    virtual void postRender(DisplayContext *pdc) {}
+    void render(DisplayContext *pdl) override;
+    void preRender(DisplayContext *pdc) override;
+    void postRender(DisplayContext *pdc) override {}
 
-    virtual bool isTransp() const { return true; }
+    bool isTransp() const override { return true; }
 
     ///////////////////////////////////////////////////////////////
 
@@ -147,7 +147,7 @@ namespace xtal {
   virtual void dispMgrChanged(DispMgrEvent &ev);
      */
 
-    virtual void viewChanged(qsys::ViewEvent &);
+    void viewChanged(qsys::ViewEvent &) override;
 
   protected:
     // We must override firePropertyChanged() to avoid destructing the display list,

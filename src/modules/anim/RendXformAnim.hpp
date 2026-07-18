@@ -53,16 +53,16 @@ namespace anim {
   public:
     RendXformAnim();
     RendXformAnim(const RendXformAnim &arg);
-    virtual ~RendXformAnim();
+    ~RendXformAnim() override;
 
-    virtual void onPropInit(AnimMgr *pMgr, qlib::uid_t tgt_uid);
+    void onPropInit(AnimMgr *pMgr, qlib::uid_t tgt_uid) override;
 
-    virtual void onStart(qlib::time_value elapsed, AnimMgr *pMgr);
-    virtual void onTimer(qlib::time_value elapsed, AnimMgr *pMgr);
-    virtual void onEnd(qlib::time_value elapsed, AnimMgr *pMgr);
+    void onStart(qlib::time_value elapsed, AnimMgr *pMgr) override;
+    void onTimer(qlib::time_value elapsed, AnimMgr *pMgr) override;
+    void onEnd(qlib::time_value elapsed, AnimMgr *pMgr) override;
 
-    virtual LString getPropName() const;
-    virtual void setPropName(LString val);
+    LString getPropName() const override;
+    void setPropName(LString val) override;
 
     /////////////////////
     // persistent props

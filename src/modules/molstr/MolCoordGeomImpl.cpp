@@ -323,7 +323,7 @@ namespace {
     MolMergeEditInfo() {
     }
     
-    virtual ~MolMergeEditInfo() {
+    ~MolMergeEditInfo() override {
     }
     
     /////////////////////////////////////////////////////
@@ -390,7 +390,7 @@ namespace {
 
   public:
     /// perform undo
-    virtual bool undo() {
+    bool undo() override {
       MolCoord *pmol =
         qlib::ObjectManager::sGetObj<MolCoord>(m_nTgtUID);
       if (pmol==NULL)
@@ -422,7 +422,7 @@ namespace {
     }
     
     /// perform redo
-    virtual bool redo() {
+    bool redo() override {
       MolCoord *pmol =
         qlib::ObjectManager::sGetObj<MolCoord>(m_nTgtUID);
       if (pmol==NULL)
@@ -451,11 +451,11 @@ namespace {
       return true;
     }
     
-    virtual bool isUndoable() const {
+    bool isUndoable() const override {
       return true;
     }
 
-    virtual bool isRedoable() const {
+    bool isRedoable() const override {
       return true;
     }
     

@@ -112,31 +112,31 @@ public:
 
 public:
   AtomIntrRenderer();
-  virtual ~AtomIntrRenderer();
+  ~AtomIntrRenderer() override;
 
   //////////////////////////////////////////////////////
 
-  virtual bool isCompatibleObj(qsys::ObjectPtr pobj) const;
-  virtual LString toString() const;
+  bool isCompatibleObj(qsys::ObjectPtr pobj) const override;
+  LString toString() const override;
 
-  virtual void preRender(DisplayContext *pdc);
-  virtual void postRender(DisplayContext *pdc);
-  virtual void render(DisplayContext *pdl);
-  virtual bool isHitTestSupported() const;
+  void preRender(DisplayContext *pdc) override;
+  void postRender(DisplayContext *pdc) override;
+  void render(DisplayContext *pdl) override;
+  bool isHitTestSupported() const override;
 
-  Vector4D getCenter() const;
+  Vector4D getCenter() const override;
 
-  virtual const char *getTypeName() const;
+  const char *getTypeName() const override;
 
-  virtual bool isTransp() const;
+  bool isTransp() const override;
 
-  virtual void displayLabels(DisplayContext *pdc);
+  void displayLabels(DisplayContext *pdc) override;
 
   ////
 
-  virtual void propChanged(qlib::LPropEvent &ev);
+  void propChanged(qlib::LPropEvent &ev) override;
 
-  virtual void styleChanged(qsys::StyleEvent &ev);
+  void styleChanged(qsys::StyleEvent &ev) override;
 
   //////////////////////////////////////////////////////
 
@@ -245,8 +245,8 @@ public:
   //////////////////////////////////////////////////////
   // Serialization / deserialization impl for non-prop data
 
-  virtual void writeTo2(qlib::LDom2Node *pNode) const;
-  virtual void readFrom2(qlib::LDom2Node *pNode);
+  void writeTo2(qlib::LDom2Node *pNode) const override;
+  void readFrom2(qlib::LDom2Node *pNode) override;
 
 private:
 

@@ -42,10 +42,10 @@ namespace qlib {
     {
     }
 
-    virtual ~LBaseSpecClass() {}
+    ~LBaseSpecClass() override {}
 
     /** returns full-qualified system-independent name */
-    const LString &getClassName() const {
+    const LString &getClassName() const override {
       return m_strClassName;
     }
 
@@ -53,11 +53,11 @@ namespace qlib {
        returns system-dependent name of this class
        (same as the RTTI's type_info name)
     */
-    const LString &getAbiClassName() const {
+    const LString &getAbiClassName() const override {
       return m_strAbiName;
     }
 
-    virtual LDynamic *dynamicCast(LDynamic *pobj) const
+    LDynamic *dynamicCast(LDynamic *pobj) const override
     {
       return dynamic_cast<_Type *>(pobj);
     }
@@ -81,7 +81,7 @@ namespace qlib {
     {
     }
 
-    virtual ~LSpecificClass()
+    ~LSpecificClass() override
     {
     }
     
@@ -95,18 +95,18 @@ namespace qlib {
     }
 
   public:
-    virtual LDynamic *createObj() const
+    LDynamic *createObj() const override
     {
       return createObj_helper(std::integral_constant<bool, std::is_abstract<_Type>::value>());
     }
 
-    virtual LDynamic *createFromString(const LString &aStr) const
+    LDynamic *createFromString(const LString &aStr) const override
     {
       return _Type::fromStringS(aStr);
     }
 
-    virtual bool callInit() { return _Type::initClass(this); }
-    virtual void callFini() { _Type::finiClass(this); }
+    bool callInit() override { return _Type::initClass(this); }
+    void callFini() override { _Type::finiClass(this); }
   };
 
   //////////////////////////////////////////////////////////////////////
@@ -123,21 +123,21 @@ namespace qlib {
     {
     }
 
-    virtual ~LSingletonSpecificClass()
+    ~LSingletonSpecificClass() override
     {
     }
     
-    virtual LDynamic *createObj() const
+    LDynamic *createObj() const override
     {
       return _Type::getInstance();
     }
 
-    virtual bool isSingleton() const {
+    bool isSingleton() const override {
       return true;
     }
 
-    virtual bool callInit() { return _Type::initClass(this); }
-    virtual void callFini() { _Type::finiClass(this); }
+    bool callInit() override { return _Type::initClass(this); }
+    void callFini() override { _Type::finiClass(this); }
   };
 
   //////////
@@ -158,7 +158,7 @@ namespace qlib {
 
     /// Create new object suitable for scripting interface.
     /// (i.e., SmartPtr (LScrSp) wrapped object)
-    virtual LDynamic *createScrObj() const
+    LDynamic *createScrObj() const override
     {
       //return LSpecificClass<_Type>::createObj();
       return MB_NEW qlib::LScrSp<_Type>(static_cast<_Type *>( LSpecificClass<_Type>::createObj() ));
@@ -166,7 +166,7 @@ namespace qlib {
 
     /// Create new object suitable for scripting interface from string representation.
     /// (i.e., SmartPtr (LScrSp) wrapped object)
-    virtual LDynamic *createScrObjFromStr(const LString &aStr) const
+    LDynamic *createScrObjFromStr(const LString &aStr) const override
     {
       _Type *pNewObj = static_cast<_Type *>( LSpecificClass<_Type>::createFromString(aStr) );
       return MB_NEW qlib::LScrSp<_Type>(pNewObj);

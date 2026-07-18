@@ -33,13 +33,13 @@ namespace anim {
   public:
     RealPropAnim();
     RealPropAnim(const RealPropAnim &arg);
-    virtual ~RealPropAnim();
+    ~RealPropAnim() override;
 
-    virtual void onPropInit(AnimMgr *pMgr, qlib::uid_t tgt_uid);
+    void onPropInit(AnimMgr *pMgr, qlib::uid_t tgt_uid) override;
 
-    virtual void onStart(qlib::time_value elapsed, AnimMgr *pMgr);
-    virtual void onTimer(qlib::time_value elapsed, AnimMgr *pMgr);
-    virtual void onEnd(qlib::time_value elapsed, AnimMgr *pMgr);
+    void onStart(qlib::time_value elapsed, AnimMgr *pMgr) override;
+    void onTimer(qlib::time_value elapsed, AnimMgr *pMgr) override;
+    void onEnd(qlib::time_value elapsed, AnimMgr *pMgr) override;
 
     LReal getStartValue() const { return m_startValue; }
     void setStartValue(LReal val) { m_startValue = val; }

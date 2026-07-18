@@ -37,7 +37,7 @@ namespace molanl {
   public:
     MolAnlManager();
 
-    virtual ~MolAnlManager();
+    ~MolAnlManager() override;
 
     //////////
     // services

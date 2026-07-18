@@ -41,7 +41,7 @@ namespace qsys {
 
   public:
     QdfAbsWriter();
-    virtual ~QdfAbsWriter();
+    ~QdfAbsWriter() override;
 
     /////////
     // QDF common interface

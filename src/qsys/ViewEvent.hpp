@@ -41,14 +41,14 @@ public:
        : QsysEvent(event), m_pTarget(event.m_pTarget)
     {}
 
-  virtual ~ViewEvent();
+  ~ViewEvent() override;
 
-  virtual LCloneableObject *clone() const;
+  LCloneableObject *clone() const override;
 
   //////////
 
-  virtual LString getJSON() const;
-  virtual bool getCategory(LString &category, int &nSrcType, int &nEvtType) const;
+  LString getJSON() const override;
+  bool getCategory(LString &category, int &nSrcType, int &nEvtType) const override;
 
   void setTargetPtr(View *pView) { m_pTarget = pView; }
   View *getTargetPtr() const { return m_pTarget; }
@@ -68,7 +68,7 @@ public:
 class ViewEventCaster : public qlib::LEventCaster<ViewEvent, ViewEventListener>
 {
 public:
-  virtual void execute(ViewEvent &ev, ViewEventListener *p)
+  void execute(ViewEvent &ev, ViewEventListener *p) override
   {
     p->viewChanged(ev);
   }

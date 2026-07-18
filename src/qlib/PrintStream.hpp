@@ -25,7 +25,7 @@ namespace qlib {
 
     PrintStream(OutStream &out) : super_t(out) {}
 
-    virtual ~PrintStream();
+    ~PrintStream() override;
 
     //////////////////////////////////////
     // Print-specific methods

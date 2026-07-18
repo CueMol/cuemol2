@@ -84,7 +84,7 @@ public:
   
 public:
   JctTable();
-  ~JctTable();
+  ~JctTable() override;
 
   bool isValid() const {
     return (m_nTabSz>0 && m_pParTab!=NULL && m_pEsclTab!=NULL);

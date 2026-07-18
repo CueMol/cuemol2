@@ -66,6 +66,10 @@ target_include_directories(
   ${CMAKE_CURRENT_BINARY_DIR}
   )
 
+# Vendored upstream library: suppress all build warnings.
+# The source is re-synced from upstream, so it is not hand-edited to fix warnings.
+target_compile_options(qmexpat PRIVATE $<IF:$<C_COMPILER_ID:MSVC>,/w,-w>)
+
 # install(TARGETS qmexpat
 #   FILE_SET HEADERS
 # )

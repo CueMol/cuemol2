@@ -1379,7 +1379,7 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
       int jend = elem.jen;
       if (ielem==0 && nelem==1) {
         // single element --> no shift
-        MB_DPRINTLN("ielem=0 nelem=1, shift=0", isft);
+        MB_DPRINTLN("ielem=0 nelem=1, shift=0");
       }
       else if (ielem==0) {
         jend -= isft;

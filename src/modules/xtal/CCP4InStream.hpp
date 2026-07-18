@@ -79,7 +79,7 @@ public:
   }
 
   /** dtor */
-  virtual ~CCP4InStream() {}
+  ~CCP4InStream() override {}
 
   //////////////////////////////////////
   // CCP4 input specific methods

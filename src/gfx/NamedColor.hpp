@@ -91,7 +91,7 @@ namespace gfx {
     NamedColor(const LString &name);
     NamedColor(const LString &name, qlib::uid_t nCtxtID);
 
-    virtual ~NamedColor();
+    ~NamedColor() override;
     
     /// = operator
     const NamedColor &operator=(const NamedColor &r);
@@ -99,19 +99,19 @@ namespace gfx {
     ///////////////////////////
     // Common access interfaces
 
-    virtual int r() const;
-    virtual int g() const;
-    virtual int b() const;
-    virtual int a() const;
+    int r() const override;
+    int g() const override;
+    int b() const override;
+    int a() const override;
 
-    virtual quint32 getCode() const;
+    quint32 getCode() const override;
 
-    virtual LString getMaterial() const;
+    LString getMaterial() const override;
     
-    virtual bool equals(const AbstractColor &c) const;
+    bool equals(const AbstractColor &c) const override;
     
-    virtual bool isStrConv() const;
-    virtual LString toString() const;
+    bool isStrConv() const override;
+    LString toString() const override;
 
     ///////////////////////////
 

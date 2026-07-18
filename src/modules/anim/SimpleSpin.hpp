@@ -37,11 +37,11 @@ namespace anim {
   public:
     SimpleSpin();
     SimpleSpin(const SimpleSpin &arg);
-    virtual ~SimpleSpin();
+    ~SimpleSpin() override;
 
-    virtual void onStart(qlib::time_value elapsed, AnimMgr *pMgr);
-    virtual void onTimer(qlib::time_value elapsed, AnimMgr *pMgr);
-    virtual void onTimerPost(qlib::time_value elapsed, AnimMgr *pMgr);
+    void onStart(qlib::time_value elapsed, AnimMgr *pMgr) override;
+    void onTimer(qlib::time_value elapsed, AnimMgr *pMgr) override;
+    void onTimerPost(qlib::time_value elapsed, AnimMgr *pMgr) override;
 
     LReal getAngle() const { return m_angle; }
     void setAngle(LReal val) { m_angle = val; }

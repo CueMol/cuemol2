@@ -114,8 +114,8 @@ void RendIntData::buildAABBTree(int nexcl_mode)
         // MB_DPRINTLN("face %d (%d,%d,%d)", i, ff.iv1, ff.iv2, ff.iv3);
         i++;
     }
-    MB_DPRINTLN("faces len=%d", pfaces->size());
-    MB_DPRINTLN("faceids len=%d", pfaceids->size());
+    MB_DPRINTLN("faces len=%d", (int)pfaces->size());
+    MB_DPRINTLN("faceids len=%d", (int)pfaceids->size());
 
     // find occluded verteces by mesh faces
     // --> write only the visible edges

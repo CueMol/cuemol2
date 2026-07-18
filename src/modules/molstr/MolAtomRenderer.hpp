@@ -27,17 +27,17 @@ namespace molstr {
 
   public:
     MolAtomRenderer();
-    virtual ~MolAtomRenderer();
+    ~MolAtomRenderer() override;
 
     //////////////////////////////////////////////////////
     // interface implementations
 
-    virtual void render(DisplayContext *pdl);
+    void render(DisplayContext *pdl) override;
 
     // Hittest implementation
 
-    virtual bool isHitTestSupported() const;
-    virtual void renderHit(DisplayContext *phl);
+    bool isHitTestSupported() const override;
+    void renderHit(DisplayContext *phl) override;
 
     // hittest data is interpreted by the same routine in MolRenderer
     // virtual LString interpHit(const gfx::RawHitData &hdat);

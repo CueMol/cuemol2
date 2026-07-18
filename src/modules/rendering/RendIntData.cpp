@@ -1273,7 +1273,7 @@ void RendIntData::calcSilEdgeLines(double dViewDist, double dnangl)
     m_secpts[i].bvis = false;
   }
 
-  MB_DPRINTLN("Silhouette extraction done. (%d edges, %d corners)", m_silEdges.size(), ncorner);
+  MB_DPRINTLN("Silhouette extraction done. (%d edges, %d corners)", (int)m_silEdges.size(), ncorner);
 }
 
 #if 0

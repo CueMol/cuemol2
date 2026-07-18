@@ -33,6 +33,10 @@ if (APPLE)
   target_compile_definitions(qmpng PUBLIC PNG_ARM_NEON_OPT=0)
 endif()
 
+# Vendored upstream library: suppress all build warnings.
+# The source is re-synced from upstream, so it is not hand-edited to fix warnings.
+target_compile_options(qmpng PRIVATE $<IF:$<C_COMPILER_ID:MSVC>,/w,-w>)
+
 # install(TARGETS qmpng
 #   FILE_SET HEADERS
 # )

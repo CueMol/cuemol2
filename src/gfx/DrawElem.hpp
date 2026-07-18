@@ -25,7 +25,7 @@ class GFX_API DrawElem : public AbstDrawElem
 
 public:
     DrawElem();
-    virtual ~DrawElem();
+    ~DrawElem() override;
 
     virtual bool vertex(int ind, const Vector4D &v) = 0;
 

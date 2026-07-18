@@ -132,7 +132,7 @@ namespace molstr {
   
     MolCoord();
 
-    virtual ~MolCoord();
+    ~MolCoord() override;
 
     /////////////////////////////////////////////////////
 
@@ -246,7 +246,7 @@ namespace molstr {
 
     /// Set overall transformation matrix
     ///  non-identity matrix is cached in MolAtom object to facile calculation
-    virtual void setXformMatrix(const qlib::Matrix4D &m);
+    void setXformMatrix(const qlib::Matrix4D &m) override;
 
     ///
     ///  Apply affine transformation to the selected part by pSel
@@ -358,9 +358,9 @@ namespace molstr {
     ////////////////////////////////////////////
     // Data chunk serialization
 
-    virtual bool isDataSrcWritable() const;
-    virtual LString getDataChunkReaderName(int nQdfVer) const;
-    virtual void writeDataChunkTo(qlib::LDom2OutStream &oos) const;
+    bool isDataSrcWritable() const override;
+    LString getDataChunkReaderName(int nQdfVer) const override;
+    void writeDataChunkTo(qlib::LDom2OutStream &oos) const override;
 
     ////////////////////////////////////////////
 

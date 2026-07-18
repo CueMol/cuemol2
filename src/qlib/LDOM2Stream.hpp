@@ -37,7 +37,7 @@ namespace qlib {
 
     LDom2OutStream(OutStream &out) : super_t(out), m_nLevel(0), m_indstr("\t") {}
 
-    virtual ~LDom2OutStream() {}
+    ~LDom2OutStream() override {}
 
     void setIndentString(const LString &a) { m_indstr = a; }
 
@@ -128,7 +128,7 @@ namespace qlib {
 
     LDom2InStream(InStream &out) : super_t(out) {}
 
-    virtual ~LDom2InStream() {}
+    ~LDom2InStream() override {}
 
     //////////
 

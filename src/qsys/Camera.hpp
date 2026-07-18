@@ -307,16 +307,16 @@ namespace qsys {
     // LDataSrcContainer implementation
 
     /// Update src path prop (after reading from src or alt_src)
-    virtual void updateSrcPath(const LString &srcpath);
+    void updateSrcPath(const LString &srcpath) override;
 
-    virtual void readFromStream(qlib::InStream &ins);
+    void readFromStream(qlib::InStream &ins) override;
     // virtual void readFromPath(const LString &path);
 
 
     ////////////////////////////////////////////////////////////
     // Serialization/Deserialization
-    virtual void writeTo2(qlib::LDom2Node *pNode) const;
-    virtual void readFrom2(qlib::LDom2Node *pNode);
+    void writeTo2(qlib::LDom2Node *pNode) const override;
+    void readFrom2(qlib::LDom2Node *pNode) override;
 
     /// Save camera to the local file
     void writeFile(const LString &aLocalFile) const;
@@ -347,14 +347,14 @@ namespace qsys {
          : super_t(ev)
     {}
 
-    virtual ~CameraEvent();
+    ~CameraEvent() override;
 
-    virtual LCloneableObject *clone() const;
+    LCloneableObject *clone() const override;
 
     //////////
 
-    virtual LString getJSON() const;
-    virtual bool getCategory(LString &category, int &nSrcType, int &nEvtType) const;
+    LString getJSON() const override;
+    bool getCategory(LString &category, int &nSrcType, int &nEvtType) const override;
   };
 
 }

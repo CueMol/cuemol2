@@ -40,7 +40,7 @@ namespace gfx {
       m_material = r.m_material;
     }
 
-    virtual ~MolColorRef() {}
+    ~MolColorRef() override {}
     
     /// = operator
     const MolColorRef &operator=(const MolColorRef &r) {
@@ -57,21 +57,21 @@ namespace gfx {
     ///////////////////////////
     // Common access interfaces
 
-    virtual int r() const { return 0x7F; }
-    virtual int g() const { return 0x7F; }
-    virtual int b() const { return 0x7F; }
-    virtual int a() const { return 0x7F; }
+    int r() const override { return 0x7F; }
+    int g() const override { return 0x7F; }
+    int b() const override { return 0x7F; }
+    int a() const override { return 0x7F; }
 
-    virtual quint32 getCode() const { return 0x7F7F7F7F; }
+    quint32 getCode() const override { return 0x7F7F7F7F; }
 
-    virtual LString getMaterial() const { return m_material; }
+    LString getMaterial() const override { return m_material; }
     
-    virtual bool equals(const AbstractColor &c) const;
+    bool equals(const AbstractColor &c) const override;
     
-    virtual bool isStrConv() const {
+    bool isStrConv() const override {
       return true;
     }
-    virtual LString toString() const;
+    LString toString() const override;
 
     ColorPtr modifyColor(const ColorPtr &pCol) const;
 

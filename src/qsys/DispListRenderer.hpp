@@ -36,23 +36,23 @@ namespace qsys {
 
     DispListRenderer();
     DispListRenderer(const DispListRenderer &r);
-    virtual ~DispListRenderer();
+    ~DispListRenderer() override;
 
     //////////////////////////////////////////////////////
     // Renderer implementation
 
-    virtual void display(DisplayContext *pdc);
+    void display(DisplayContext *pdc) override;
 
-    virtual void invalidateDisplayCache();
+    void invalidateDisplayCache() override;
 
     //
     // Hittest implementation
     //
 
     /// render Hittest object
-    virtual void displayHit(DisplayContext *pdc);
+    void displayHit(DisplayContext *pdc) override;
 
-    virtual void invalidateHittestCache();
+    void invalidateHittestCache() override;
 
   };
 }

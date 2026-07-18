@@ -245,7 +245,7 @@ int MolCoord::appendAtom(MolAtomPtr pAtom)
 		      " (c:'%s' rn:'%s' ri:'%s' an:'%s')",
                       cname.c_str(), rname.c_str(), nresid.toString().c_str(),
 		      aname.c_str());
-    MB_DPRINTLN(msg);
+    MB_DPRINTLN("%s", msg.c_str());
     MB_THROW(qlib::IllegalArgumentException, msg);
     return -1;
   }
@@ -320,7 +320,7 @@ int MolCoord::appendAtomScrHelper(MolAtomPtr pAtom, const LString &ch,
   if (nuid!=qlib::invalid_uid) {
     // pAtom has been already belonged to other mol
     // --> ERROR!!
-    MB_DPRINTLN("MolCoord.appendAtom> ERROR, pAtom already belongs to mol %d ().", nuid);
+    MB_DPRINTLN("MolCoord.appendAtom> ERROR, pAtom already belongs to mol %d ().", (int)nuid);
     return -1;
   }
 

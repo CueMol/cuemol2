@@ -21,7 +21,7 @@ public:
     quint32 m_nTexID;  // GL texture buffer object
 
     OcBufTexRep() : m_nViewID(0), m_nBufID(0), m_nTexID(0) {}
-    virtual ~OcBufTexRep();
+    ~OcBufTexRep() override;
 
     /// Allocate GL objects and record view ID for cleanup.
     void init(gfx::DisplayContext *pdc);

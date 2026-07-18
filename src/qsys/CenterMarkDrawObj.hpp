@@ -17,10 +17,10 @@ class QSYS_API CenterMarkDrawObj : public DrawObj
 
 public:
     CenterMarkDrawObj();
-    virtual ~CenterMarkDrawObj() = default;
+    ~CenterMarkDrawObj() override = default;
 
-    virtual void display(gfx::DisplayContext *pdc, ViewPtr pView) override;
-    virtual void display2D(gfx::DisplayContext *pdc, ViewPtr pView) override;
+    void display(gfx::DisplayContext *pdc, ViewPtr pView) override;
+    void display2D(gfx::DisplayContext *pdc, ViewPtr pView) override;
 
     int getCenterMark() const { return m_nCenterMark; }
     void setCenterMark(int nMode);

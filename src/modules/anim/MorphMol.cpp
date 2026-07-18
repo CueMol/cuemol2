@@ -264,7 +264,7 @@ public:
   {
   }
 
-  virtual ~MorphMolEditInfo()
+  ~MorphMolEditInfo() override
   {
   }
 
@@ -273,7 +273,7 @@ public:
   }
 
   /// Perform undo
-  virtual bool undo()
+  bool undo() override
   {
     MB_DPRINTLN("MorphMol Undo mode=%d", m_nMode);
 
@@ -297,7 +297,7 @@ public:
   }
   
   /// Perform redo
-  virtual bool redo()
+  bool redo() override
   {
     MB_DPRINTLN("MorphMol Redo mode=%d", m_nMode);
 
@@ -320,11 +320,11 @@ public:
     return true;
   }
   
-  virtual bool isUndoable() const {
+  bool isUndoable() const override {
     if (m_pTgtMol.isnull()) return false;
     return true;
   }
-  virtual bool isRedoable() const {
+  bool isRedoable() const override {
     if (m_pTgtMol.isnull()) return false;
     return true;
   }

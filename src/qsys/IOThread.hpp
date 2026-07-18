@@ -36,13 +36,13 @@ namespace qsys {
       m_in.setImpl(m_pipeImpl);
     }
 
-    virtual ~IOThread()
+    ~IOThread() override
     {
     }
 
     //////////
 
-    virtual void run()
+    void run() override
     {
       //MB_DPRINTLN("*** Thread %p started ***", m_pthr);
       try {

@@ -112,16 +112,16 @@ public:
     m_nMatch = 0;
   }
 
-  virtual bool ready() {
+  bool ready() override {
     if (!m_bReady) return false;
     return super_t::ready();
   }
   
-  virtual int read() {
+  int read() override {
     return readOneImpl();
   }
   
-  virtual int read(char *abuf, int aoff, int alen) {
+  int read(char *abuf, int aoff, int alen) override {
     int i;
     for (i=0; i<alen; ++i) {
       int c = readOneImpl();
@@ -131,7 +131,7 @@ public:
     return i;
   }
   
-  virtual int skip(int len) {
+  int skip(int len) override {
     MB_THROW(FileFormatException, "skip() not supported");
     return super_t::skip(len);
   }

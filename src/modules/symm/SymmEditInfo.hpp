@@ -33,7 +33,7 @@ public:
   {
   }
   
-  virtual ~SymmEditInfo()
+  ~SymmEditInfo() override
   {
   }
 
@@ -53,7 +53,7 @@ public:
   /////////////////////////////////////////////////////
 
   /// perform undo
-  virtual bool undo()
+  bool undo() override
   {
     SymOpDB *pDB = SymOpDB::getInstance();
     if (m_bHasOld)
@@ -63,7 +63,7 @@ public:
   }
 
   /// perform redo
-  virtual bool redo()
+  bool redo() override
   {
     SymOpDB *pDB = SymOpDB::getInstance();
     if (m_bHasNew)
@@ -72,12 +72,12 @@ public:
       return pDB->changeXIImpl(m_nTgtUID, NULL);
   }
 
-  virtual bool isUndoable() const
+  bool isUndoable() const override
   {
     return true;
   }
   
-  virtual bool isRedoable() const
+  bool isRedoable() const override
   {
     return true;
   }

@@ -72,7 +72,7 @@ namespace qlib {
     class QLIB_API IOImpl : public InImpl, public OutImpl
     {
     public:
-      virtual ~IOImpl() {}
+      ~IOImpl() override {}
     };
 
   } // namespace detail

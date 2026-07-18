@@ -26,7 +26,7 @@ private:
 
 public:
     CmdMgr() = default;
-    virtual ~CmdMgr() = default;
+    ~CmdMgr() override = default;
 
     /// Register a command object
     void regist(const CommandPtr &pcmd);

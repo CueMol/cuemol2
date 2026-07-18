@@ -405,7 +405,7 @@ void SymOpDB::loadSymLibFile()
     appendSg(pCurSg);
   }
 
-  MB_DPRINTLN("LoadSymLib> read %d s.g.s successfully.", m_psgtab->size());
+  MB_DPRINTLN("LoadSymLib> read %d s.g.s successfully.", (int)m_psgtab->size());
   return;
 }
 

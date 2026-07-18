@@ -68,7 +68,7 @@ namespace qsys {
     AnimObj(const AnimObj &arg);
 
     /// dtor
-    virtual ~AnimObj();
+    ~AnimObj() override;
 
     virtual void onTimerPre(qlib::time_value elapsed, AnimMgr *pMgr);
     virtual void onTimer(qlib::time_value elapsed, AnimMgr *pMgr);

@@ -40,7 +40,7 @@ namespace surface {
     HoleSurfBuilder();
 
     /// dtor
-    virtual ~HoleSurfBuilder();
+    ~HoleSurfBuilder() override;
 
   private:
     /// Target molecule

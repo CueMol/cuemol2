@@ -81,7 +81,7 @@ namespace qsys {
   public:
     Renderer();
     Renderer(const Renderer &r);
-    virtual ~Renderer();
+    ~Renderer() override;
   
     //////////
 
@@ -100,7 +100,7 @@ namespace qsys {
 
     virtual bool isCompatibleObj(ObjectPtr pobj) const =0;
 
-    virtual LString toString() const;
+    LString toString() const override;
 
     /// Called just before this object is unloaded
     virtual void unloading();
@@ -194,19 +194,19 @@ namespace qsys {
     // Style supports
 
     /// Reset to the stylesheet values (impl)
-    virtual bool resetProperty(const LString &propnm);
+    bool resetProperty(const LString &propnm) override;
 
     /// Get the style-resolved (or class) default value without changing the prop
-    virtual bool getPropDefault(const LString &propnm, qlib::LVariant &value);
+    bool getPropDefault(const LString &propnm, qlib::LVariant &value) override;
 
     /// Get stylesheet of this renderer
-    virtual StyleSheet *getStyleSheet() const;
+    StyleSheet *getStyleSheet() const override;
 
     /// Style event listener
-    virtual void styleChanged(StyleEvent &);
+    void styleChanged(StyleEvent &) override;
 
     /// Style context ID (==scene ID)
-    virtual qlib::uid_t getStyleCtxtID() const;
+    qlib::uid_t getStyleCtxtID() const override;
 
     /// Apply style sheet
     /// (name_list should be comma-separated list of style names)
@@ -317,20 +317,20 @@ namespace qsys {
     void fireRendererEvent(RendererEvent &ev);
 
     /// object changed event (do nothing)
-    virtual void objectChanged(ObjectEvent &ev);
+    void objectChanged(ObjectEvent &ev) override;
 
     /// scene changed event (for onloaded event)
-    virtual void sceneChanged(SceneEvent &ev);
+    void sceneChanged(SceneEvent &ev) override;
 
     /// For property event propagation
-    virtual qlib::uid_t getRootUID() const;
+    qlib::uid_t getRootUID() const override;
     
     /// Property event handler
-    virtual void propChanged(qlib::LPropEvent &ev);
+    void propChanged(qlib::LPropEvent &ev) override;
 
     /// Serialization
-    virtual void writeTo2(qlib::LDom2Node *pNode) const;
-    virtual void readFrom2(qlib::LDom2Node *pNode);
+    void writeTo2(qlib::LDom2Node *pNode) const override;
+    void readFrom2(qlib::LDom2Node *pNode) override;
 
   };
 

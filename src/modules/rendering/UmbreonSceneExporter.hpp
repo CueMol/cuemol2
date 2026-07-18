@@ -110,10 +110,10 @@ namespace render {
 
   public:
     UmbreonSceneExporter();
-    virtual ~UmbreonSceneExporter();
+    ~UmbreonSceneExporter() override;
 
     /// render the scene and write the image (synchronous; blocks until done)
-    virtual void write();
+    void write() override;
 
     /////////////////////////////////
     // Asynchronous render: drive with beginRender() -> poll -> endRender().
@@ -147,13 +147,13 @@ namespace render {
     /////////////////////////////////
 
     /// Get name of the writer
-    virtual const char *getName() const;
+    const char *getName() const override;
 
     /// Get file-type description
-    virtual const char *getTypeDescr() const;
+    const char *getTypeDescr() const override;
 
     /// Get file extension
-    virtual const char *getFileExt() const;
+    const char *getFileExt() const override;
   };
 
 }

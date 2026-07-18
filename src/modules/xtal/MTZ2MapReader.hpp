@@ -38,31 +38,31 @@ public:
   MTZ2MapReader();
 
   /// destructor
-  virtual ~MTZ2MapReader();
+  ~MTZ2MapReader() override;
 
   //////////////////////////////////////////////
   // Read/build methods
 
   /// read from stream
-  virtual bool read(qlib::InStream &ins);
+  bool read(qlib::InStream &ins) override;
 
   /// Content-sniff: report whether `ins` looks like an MTZ file.
-  virtual int canHandleContent(qlib::InStream &ins) const;
+  int canHandleContent(qlib::InStream &ins) const override;
 
   //////////////////////////////////////////////
   // Information query interface (ObjReader)
   
   /// get the nickname of this reader (referred from script interface)
-  virtual const char *getName() const;
+  const char *getName() const override;
 
   /// get file-type description
-  virtual const char *getTypeDescr() const;
+  const char *getTypeDescr() const override;
 
   /// get file extension
-  virtual const char *getFileExt() const;
+  const char *getFileExt() const override;
 
   /// create default object for this reader
-  virtual qsys::ObjectPtr createDefaultObj() const;
+  qsys::ObjectPtr createDefaultObj() const override;
 
   //////////////////////////////////////////////
   // Information query method

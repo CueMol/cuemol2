@@ -29,7 +29,7 @@ namespace qsys {
     {
     }
 
-    virtual ~PropEditInfoBase() {}
+    ~PropEditInfoBase() override {}
 
     void setTargetUID(qlib::uid_t uid) { m_nTgtUID = uid; }
     qlib::uid_t getTargetUID() const { return m_nTgtUID; }
@@ -64,7 +64,7 @@ namespace qsys {
     {
     }
 
-    virtual ~PropEditInfo() {
+    ~PropEditInfo() override {
       m_newvalue.cleanup();
       m_oldvalue.cleanup();
     }
@@ -105,14 +105,14 @@ namespace qsys {
     ////////////////////////////////////////////////////////////////////
 
     /// Perform undo
-    virtual bool undo();
+    bool undo() override;
 
     /// Perform redo
-    virtual bool redo();
+    bool redo() override;
 
-    virtual bool isUndoable() const;
+    bool isUndoable() const override;
 
-    virtual bool isRedoable() const;
+    bool isRedoable() const override;
 
   };
 

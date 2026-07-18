@@ -31,7 +31,7 @@ namespace surface {
 
   public:
     MolSurfEditInfo();
-    virtual ~MolSurfEditInfo();
+    ~MolSurfEditInfo() override;
 
     /////////////////////////////////////////////////////
 
@@ -43,13 +43,13 @@ namespace surface {
     /////////////////////////////////////////////////////
 
     /// perform undo
-    virtual bool undo();
+    bool undo() override;
 
     /// perform redo
-    virtual bool redo();
+    bool redo() override;
 
-    virtual bool isUndoable() const;
-    virtual bool isRedoable() const;
+    bool isUndoable() const override;
+    bool isRedoable() const override;
 
   private:
     MolSurfObj *getTargetObj() const;

@@ -18,15 +18,15 @@ class QSYS_API NewRendererCommand : public Command
 
 public:
     NewRendererCommand() = default;
-    virtual ~NewRendererCommand() = default;
+    ~NewRendererCommand() override = default;
 
     /// Execute the command
-    virtual void run();
+    void run() override;
 
-    virtual void runGUI(void *pwnd_info);
+    void runGUI(void *pwnd_info) override;
 
     /// Get command's unique name
-    virtual const char *getName() const;
+    const char *getName() const override;
 
     //////////
     // properties (input)

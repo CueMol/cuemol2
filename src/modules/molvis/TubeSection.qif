@@ -44,5 +44,5 @@ runtime_class TubeSection
 
 };
 
-#endif // TUBE_SECTION_QIF_INCLUDED
+#endif
 

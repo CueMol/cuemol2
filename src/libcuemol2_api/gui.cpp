@@ -40,8 +40,8 @@ namespace {
   {
   public:
     CglViewFactory() {}
-    virtual ~CglViewFactory() {}
-    virtual qsys::View* create() {
+    ~CglViewFactory() override {}
+    qsys::View* create() override {
       return MB_NEW sysdep::CglView();
     }
   };

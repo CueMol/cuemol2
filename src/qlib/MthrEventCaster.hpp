@@ -32,7 +32,7 @@ namespace qlib {
     LMthrEventCaster() : super_t() {}
 
     /** dtor */
-    virtual ~LMthrEventCaster() {}
+    ~LMthrEventCaster() override {}
 
     /////////////////////////////////////////
     // Lock

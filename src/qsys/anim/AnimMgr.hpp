@@ -107,7 +107,7 @@ namespace qsys {
     AnimMgr();
 
     /// dtor
-    virtual ~AnimMgr();
+    ~AnimMgr() override;
 
     void setTgtSceneID(qlib::uid_t nID) { m_nTgtSceneID = nID; }
     ScenePtr getTgtScene() const;
@@ -136,10 +136,10 @@ namespace qsys {
     ViewPtr getTgtView() const { return m_pTgtView; }
 
     /// Timer event handling (TimerListener impl)
-    virtual bool onTimer(double t, qlib::time_value curr, bool bLast);
+    bool onTimer(double t, qlib::time_value curr, bool bLast) override;
 
     /// scene event handler (to remove the view reference on view destruction)
-    virtual void sceneChanged(SceneEvent &);
+    void sceneChanged(SceneEvent &) override;
 
     /////////////////
     // implementation
@@ -265,19 +265,19 @@ namespace qsys {
     ////////////////////////////////////////////////////
 
     /// For property event propagation
-    virtual qlib::uid_t getRootUID() const;
+    qlib::uid_t getRootUID() const override;
     
     /// Property event handler (for child animation objs)
-    virtual void propChanged(qlib::LPropEvent &ev);
+    void propChanged(qlib::LPropEvent &ev) override;
 
     ////////////////////////////////////////////////////
     // Serialization/Deserialization
 
     /// Serialize this scene to the stream
-    virtual void writeTo2(qlib::LDom2Node *pNode) const;
+    void writeTo2(qlib::LDom2Node *pNode) const override;
 
     /// Serialize this scene to the localfile
-    virtual void readFrom2(qlib::LDom2Node *pNode);
+    void readFrom2(qlib::LDom2Node *pNode) override;
   };
 
 }

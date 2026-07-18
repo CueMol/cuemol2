@@ -74,7 +74,7 @@ class IMPORTERS_API MmcifMolReader : public qsys::ObjReader, CifParserClient
 
     MmcifMolReader();
 
-    virtual ~MmcifMolReader();
+    ~MmcifMolReader() override;
 
     //////////////////////////////////////////////
     // Read/build methods
@@ -82,32 +82,32 @@ class IMPORTERS_API MmcifMolReader : public qsys::ObjReader, CifParserClient
     ///
     /// Read from the input stream ins, and build the attached object.
     ///
-    virtual bool read(qlib::InStream &ins);
+    bool read(qlib::InStream &ins) override;
 
     //////////////////////////////////////////////
     // Information query methods
 
     /// get the nickname of this reader (referred from script interface)
-    virtual const char *getName() const;
+    const char *getName() const override;
 
     /// get file-type description
-    virtual const char *getTypeDescr() const;
+    const char *getTypeDescr() const override;
 
     /// get file extension
-    virtual const char *getFileExt() const;
+    const char *getFileExt() const override;
 
     /// create default object for this reader
-    virtual qsys::ObjectPtr createDefaultObj() const;
+    qsys::ObjectPtr createDefaultObj() const override;
 
     /// Content sniffer: YES when the header carries an `_atom_site.`
     /// CIF category (this reader's coordinate target), NO when it
     /// carries `_refln.` instead (an MmcifMapReader file), UNKNOWN
     /// otherwise. Scans up to ~200 lines or the end of the peek buffer.
-    virtual int canHandleContent(qlib::InStream &ins) const;
+    int canHandleContent(qlib::InStream &ins) const override;
 
     //////////////////////////////////////////////
 
-    virtual void readDataItem(CifParser &parser);
+    void readDataItem(CifParser &parser) override;
 
 
   private:

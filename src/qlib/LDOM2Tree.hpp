@@ -108,7 +108,6 @@ public:
     LScrSp<_Type> rval;
     LScriptable *pScrObj = createObjByTypeName();
     if (pScrObj==NULL) {
-      pScrObj->destruct();
       MB_THROW(FileFormatException, "cannot create object from type name (1)");
       return rval;
     }

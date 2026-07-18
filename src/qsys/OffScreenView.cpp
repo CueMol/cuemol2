@@ -75,7 +75,7 @@ void OffScreenView::drawScene()
 
     ScenePtr pScene = getScene();
     if (pScene.isnull()) {
-        MB_DPRINTLN("OffScreenView::drawScene: invalid scene %d", getSceneID());
+        MB_DPRINTLN("OffScreenView::drawScene: invalid scene %d", (int)getSceneID());
         return;
     }
 

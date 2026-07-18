@@ -39,15 +39,15 @@ namespace render {
 
   public:
     LuxRendDisplayContext();
-    virtual ~LuxRendDisplayContext();
+    ~LuxRendDisplayContext() override;
 
     ///////////////////////////////
 
-    void startRender();
-    void endRender();
+    void startRender() override;
+    void endRender() override;
 
-    virtual void startSection(const LString &name);
-    virtual void endSection();
+    void startSection(const LString &name) override;
+    void endSection() override;
 
     ////////////////////////////////////////////////////////////
     // Implementation
@@ -223,14 +223,14 @@ namespace render {
     void writeSilEdges(PrintStream &ps);
     
   public:
-    virtual void writeEdgeLineImpl(PrintStream &ips, int xa1, int xa2,
+    void writeEdgeLineImpl(PrintStream &ips, int xa1, int xa2,
 				   const Vector4D &x1, const Vector4D &n1,
-				   const Vector4D &x2, const Vector4D &n2);
+				   const Vector4D &x2, const Vector4D &n2) override;
 
-    virtual void writePointImpl(PrintStream &ips,
+    void writePointImpl(PrintStream &ips,
 				const Vector4D &v1,
 				const Vector4D &n1,
-				int alpha);
+				int alpha) override;
 
   };
 

@@ -135,7 +135,7 @@ void CutByPlane2::makeSectionMesh(Boundary &outer)
   }
     
 
-  MB_DPRINTLN("Nr of verts: %d", cdt.number_of_vertices());
+  MB_DPRINTLN("Nr of verts: %d", (int)cdt.number_of_vertices());
   MB_DPRINTLN("Mesh longest: %f", m_cdiv);
 
   try {
@@ -155,7 +155,7 @@ void CutByPlane2::makeSectionMesh(Boundary &outer)
     return;
   }
 
-  MB_DPRINTLN("Mesh refined, Nr of verts: %d", cdt.number_of_vertices());
+  MB_DPRINTLN("Mesh refined, Nr of verts: %d", (int)cdt.number_of_vertices());
 
   // generate new mesh vertices
   {

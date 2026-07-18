@@ -30,26 +30,26 @@ namespace qsys {
 
   public:
     RendGroup();
-    virtual ~RendGroup();
+    ~RendGroup() override;
   
     //////////
 
   public:
 
-    virtual const char *getTypeName() const;
+    const char *getTypeName() const override;
 
-    virtual bool isCompatibleObj(ObjectPtr pobj) const;
+    bool isCompatibleObj(ObjectPtr pobj) const override;
 
-    virtual LString toString() const;
+    LString toString() const override;
 
     /// Called just before this object is unloaded
-    virtual void unloading();
+    void unloading() override;
 
-    virtual qlib::Vector4D getCenter() const;
-    virtual bool hasCenter() const;
+    qlib::Vector4D getCenter() const override;
+    bool hasCenter() const override;
 
     /// Display renderers in the scene to the frame buffer
-    virtual void display(DisplayContext *pdc);
+    void display(DisplayContext *pdc) override;
 
     void setUICollapsed(bool b) { m_bUICollapsed = b; }
     bool isUICollapsed() const { return m_bUICollapsed; }

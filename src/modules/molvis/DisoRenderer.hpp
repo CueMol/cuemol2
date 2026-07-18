@@ -45,17 +45,17 @@ namespace molvis {
 
   public:
     DisoRenderer();
-    virtual ~DisoRenderer();
+    ~DisoRenderer() override;
 
     //////////////////////////////////////////////////////
 
-    virtual LString toString() const;
-    virtual const char *getTypeName() const;
-    virtual bool isDispLater() const;
+    LString toString() const override;
+    const char *getTypeName() const override;
+    bool isDispLater() const override;
 
     ////
 
-    virtual void render(DisplayContext *pdl);
+    void render(DisplayContext *pdl) override;
 
     //////////////////////////////////////////////////////
     // Properties
@@ -122,7 +122,7 @@ namespace molvis {
 
   public:
 
-    virtual void rendererChanged(qsys::RendererEvent &ev);
+    void rendererChanged(qsys::RendererEvent &ev) override;
     // virtual void propChanged(qlib::LPropEvent &ev);
     // virtual void styleChanged(qsys::StyleEvent &ev);
 

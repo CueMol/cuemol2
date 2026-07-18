@@ -77,7 +77,7 @@ namespace molstr {
     }
 
     /// destructor
-    virtual ~ResidRangeSet();
+    ~ResidRangeSet() override;
 
     /// Assignment operator
     const ResidRangeSet &operator=(const ResidRangeSet &arg) {
@@ -105,10 +105,10 @@ namespace molstr {
     void dump() const;
 
     // virtual bool equals(const LScrRangeSet &arg) const;
-    virtual bool isStrConv() const;
-    virtual LString toString() const;
+    bool isStrConv() const override;
+    LString toString() const override;
 
-    virtual bool fromString(const LString &src);
+    bool fromString(const LString &src) override;
 
     typedef std::true_type has_fromString;
     static ResidRangeSet *fromStringS(const LString &src);

@@ -35,7 +35,7 @@ public:
 
     ShaderObject *getShaderObject(const LString &name, qlib::uid_t nSceneID);
 
-    virtual void sceneChanged(qsys::SceneEvent &ev);
+    void sceneChanged(qsys::SceneEvent &ev) override;
 };
 
 }  // namespace qsys

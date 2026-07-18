@@ -51,36 +51,36 @@ namespace molvis {
 
   public:
     CPK2Renderer();
-    virtual ~CPK2Renderer();
+    ~CPK2Renderer() override;
 
-    virtual const char *getTypeName() const;
+    const char *getTypeName() const override;
 
     // /// override to initialize the shader
     // virtual void setSceneID(qlib::uid_t nid);
 
     /// cleanup the shaders
-    virtual void unloading();
+    void unloading() override;
 
     //////////////////////////////////////////////////////
 
-    virtual void display(DisplayContext *pdc);
+    void display(DisplayContext *pdc) override;
 
-    virtual void invalidateDisplayCache();
+    void invalidateDisplayCache() override;
 
     //////////////////////////////////////////////////////
 
-    virtual bool isRendBond() const;
+    bool isRendBond() const override;
 
-    virtual void beginRend(DisplayContext *pdl);
-    virtual void endRend(DisplayContext *pdl);
+    void beginRend(DisplayContext *pdl) override;
+    void endRend(DisplayContext *pdl) override;
 
-    virtual void rendAtom(DisplayContext *pdl, MolAtomPtr pAtom, bool fbonded);
-    virtual void rendBond(DisplayContext *pdl, MolAtomPtr pAtom1, MolAtomPtr pAtom2, MolBond *pMB);
+    void rendAtom(DisplayContext *pdl, MolAtomPtr pAtom, bool fbonded) override;
+    void rendBond(DisplayContext *pdl, MolAtomPtr pAtom1, MolAtomPtr pAtom2, MolBond *pMB) override;
 
     //////////////////////////////////////////////////////
     // properties
 
-    virtual void propChanged(qlib::LPropEvent &ev);
+    void propChanged(qlib::LPropEvent &ev) override;
 
     int getDetail() const { return m_nDetail; }
     void setDetail(int n) { m_nDetail = n; }

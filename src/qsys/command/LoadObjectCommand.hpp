@@ -24,15 +24,15 @@ private:
 
 public:
     LoadObjectCommand() = default;
-    virtual ~LoadObjectCommand() = default;
+    ~LoadObjectCommand() override = default;
 
     /// Execute the command
-    virtual void run();
+    void run() override;
 
-    virtual void runGUI(void *pwnd_info);
+    void runGUI(void *pwnd_info) override;
 
     /// Get command's unique name
-    virtual const char *getName() const;
+    const char *getName() const override;
 
     /// Pick a reader nickname for `m_filePath`.
     ///

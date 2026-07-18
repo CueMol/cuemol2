@@ -88,7 +88,7 @@ namespace qsys {
 
   public:
     ViewInputConfig();
-    ~ViewInputConfig();
+    ~ViewInputConfig() override;
 
     bool setBinding(int nID, int nModifAxis);
 
@@ -158,14 +158,14 @@ namespace qsys {
 
   public:
     /// Reset to the stylesheet values (impl)
-    virtual bool resetProperty(const LString &propnm);
+    bool resetProperty(const LString &propnm) override;
 
     /// Get the style-resolved (or class) default value without changing the prop
-    virtual bool getPropDefault(const LString &propnm, qlib::LVariant &value);
+    bool getPropDefault(const LString &propnm, qlib::LVariant &value) override;
 
-    virtual StyleSheet *getStyleSheet() const;
-    virtual void styleChanged(StyleEvent &);
-    virtual qlib::uid_t getStyleCtxtID() const;
+    StyleSheet *getStyleSheet() const override;
+    void styleChanged(StyleEvent &) override;
+    qlib::uid_t getStyleCtxtID() const override;
     
     /// Apply style sheet
     void applyStyle(const LString &name);

@@ -21,7 +21,7 @@ namespace qsys {
   public:
     ObjExtData();
     ObjExtData(const ObjExtData &arg);
-    virtual ~ObjExtData();
+    ~ObjExtData() override;
 
     typedef qlib::MapTable<LString> DataTab;
 

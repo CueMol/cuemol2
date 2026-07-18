@@ -110,7 +110,7 @@ namespace qsys {
   public:
     View();
 
-    virtual ~View();
+    ~View() override;
   
     //////////
   
@@ -128,7 +128,7 @@ namespace qsys {
 
     ScenePtr getScene() const;
 
-    virtual LString toString() const;
+    LString toString() const override;
 
     virtual void dump() const;
 
@@ -403,24 +403,24 @@ namespace qsys {
     // InDevEvent message handlers
     
     /// mouse drag start event
-    virtual bool mouseDragStart(InDevEvent &);
+    bool mouseDragStart(InDevEvent &) override;
     
     /// mouse drag move event
-    virtual bool mouseDragMove(InDevEvent &);
+    bool mouseDragMove(InDevEvent &) override;
     
     /// mouse drag end event
-    virtual bool mouseDragEnd(InDevEvent &);
+    bool mouseDragEnd(InDevEvent &) override;
     
     /// mouse click event (L,M,R button)
-    virtual bool mouseClicked(InDevEvent &);
+    bool mouseClicked(InDevEvent &) override;
     
     /// mouse double click event (L,M,R button)
-    virtual bool mouseDoubleClicked(InDevEvent &);
+    bool mouseDoubleClicked(InDevEvent &) override;
     
     /// mouse double click event (L,M,R button)
-    virtual bool mouseWheel(InDevEvent &);
+    bool mouseWheel(InDevEvent &) override;
 
-    virtual bool mouseGesture(InDevEvent &);
+    bool mouseGesture(InDevEvent &) override;
     
     ////////////////////////////////////////////////
     // Hit test operations
@@ -487,7 +487,7 @@ namespace qsys {
     void fireInDevEvent(InDevEvent &ev);
 
     /// Timer event handling (TimerListener impl)
-    virtual bool onTimer(double t, qlib::time_value curr, bool bLast);
+    bool onTimer(double t, qlib::time_value curr, bool bLast) override;
 
     /////////////////////////////////////////////////////////////
     // Utility routines
@@ -526,7 +526,7 @@ namespace qsys {
 
     void checkAndUpdate() {
         if (m_bUpdateRequired) {
-            MB_DPRINTLN("View::checkAndUpdate> view %d update %d", m_uid, m_bUpdateRequired);
+            MB_DPRINTLN("View::checkAndUpdate> view %d update %d", (int)m_uid, m_bUpdateRequired);
             drawScene();
         }
         clearUpdateFlag();
@@ -546,7 +546,7 @@ namespace qsys {
 
     //////////
     // for property event propagation
-    virtual qlib::uid_t getRootUID() const;
+    qlib::uid_t getRootUID() const override;
 
     void setCursor(const LString &cursor);
     LString getCursor() const { return m_cursorName; }
@@ -583,14 +583,14 @@ namespace qsys {
 
   public:
     /// Reset to the stylesheet values (impl)
-    virtual bool resetProperty(const LString &propnm);
+    bool resetProperty(const LString &propnm) override;
 
     /// Get the style-resolved (or class) default value without changing the prop
-    virtual bool getPropDefault(const LString &propnm, qlib::LVariant &value);
+    bool getPropDefault(const LString &propnm, qlib::LVariant &value) override;
 
-    virtual StyleSheet *getStyleSheet() const;
-    virtual void styleChanged(StyleEvent &);
-    virtual qlib::uid_t getStyleCtxtID() const;
+    StyleSheet *getStyleSheet() const override;
+    void styleChanged(StyleEvent &) override;
+    qlib::uid_t getStyleCtxtID() const override;
     
     /// Apply style sheet
     /// (name_list should be comma-separated list of style names)

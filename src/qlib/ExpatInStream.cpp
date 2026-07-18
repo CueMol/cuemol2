@@ -51,7 +51,7 @@ void ExpatInStream::setError(const LString &msg)
   m_errorMsg = msg;
   m_errorMsg.append(LString::format(" at line %d",
                                     XML_GetCurrentLineNumber(m_parser)));
-  MB_DPRINTLN(m_errorMsg);
+  MB_DPRINTLN("%s", m_errorMsg.c_str());
   m_bError = true;
 }
 

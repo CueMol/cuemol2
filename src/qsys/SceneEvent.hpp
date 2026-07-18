@@ -63,18 +63,18 @@ namespace qsys {
          : QsysEvent(ev)
       {}
   
-    virtual ~SceneEvent();
+    ~SceneEvent() override;
 
-    virtual LCloneableObject *clone() const;
+    LCloneableObject *clone() const override;
 
     //////////
 
     // void setObj(qlib::uid_t uid) { m_nObjID = uid; }
     // qlib::uid_t getObj() const { return m_nObjID; }
 
-    virtual LString getJSON() const;
+    LString getJSON() const override;
 
-    virtual bool getCategory(LString &category, int &nSrcType, int &nEvtType) const;
+    bool getCategory(LString &category, int &nSrcType, int &nEvtType) const override;
 
     //void setSubEvt(qlib::LEvent *uid) { m_pSubEvt = uid; }
     //qlib::LEvent *getSubEvt() const { return m_pSubEvt; }
