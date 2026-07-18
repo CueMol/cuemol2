@@ -39,6 +39,8 @@
 
 namespace mdtools {
 
+  MC_DECL_SCRSP(TrajBlock);
+
   /// Common Initialization for the mdtools library
   MDTOOLS_API bool init();
   
