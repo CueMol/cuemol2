@@ -117,9 +117,14 @@ void DCDTrajReader::readHeader(qlib::InStream &ins, const TrajectoryPtr &pTraj)
 
     LOG_DPRINTLN("DCDTraj> NFILE=%d NATOM=%d FCELL=%d", m_nfile, m_natom, fcell);
 
-    if (natom != static_cast<int>(pTraj->getAllAtomSize())) {
+    // Validate against the topology only when it is already loaded. During .qsc
+    // load the DCD block is read before the Trajectory's own topology (GRO/PSF),
+    // so getAllAtomSize() may still be 0 here; Trajectory::append()'s
+    // getCrdSize() check re-validates once the topology is present.
+    const int topoN = static_cast<int>(pTraj->getAllAtomSize());
+    if (topoN > 0 && natom != topoN) {
         LString msg = LString::format("DCD: Inconsistent NATOM with topology %d!=%d",
-                                      natom, pTraj->getAllAtomSize());
+                                      natom, topoN);
         MB_THROW(qlib::FileFormatException, msg);
         return;
     }
@@ -130,6 +135,16 @@ void DCDTrajReader::readFrameRecords(FortBinInStream &fbis, std::vector<float> &
                                      const TrajectoryPtr &pTraj)
 {
     int nrlen;
+
+    // Skipped frame (nevery>1): advance past the records without copying.
+    if (pcoord == NULL) {
+        const int nrec = m_fcell ? 4 : 3;  // cell + X/Y/Z, or X/Y/Z
+        for (int i = 0; i < nrec; ++i) {
+            fbis.getRecordSize_throw();
+            fbis.readRecord(NULL, 0);
+        }
+        return;
+    }
 
     // Cell geometry record (optional).
     if (m_fcell) {
@@ -160,10 +175,14 @@ void DCDTrajReader::readFrameRecords(FortBinInStream &fbis, std::vector<float> &
     }
 
     if (pcoord != NULL) {
-        const int nReadAtoms = static_cast<int>(pTraj->getAtomSize());
+        // Selection index array maps trajectory atom -> file atom. It is NULL
+        // when the topology is not loaded yet (.qsc order); fall back to the
+        // identity map over the file's atoms (load-all).
         const quint32 *psia = pTraj->getSelIndexArray();
+        const int nReadAtoms =
+            (psia != NULL) ? static_cast<int>(pTraj->getAtomSize()) : m_natom;
         for (int jj = 0; jj < nReadAtoms; ++jj) {
-            const int k = static_cast<int>(psia[jj]);
+            const int k = (psia != NULL) ? static_cast<int>(psia[jj]) : jj;
             pcoord[jj * 3 + 0] = tmpv[k + m_natom * 0];
             pcoord[jj * 3 + 1] = tmpv[k + m_natom * 1];
             pcoord[jj * 3 + 2] = tmpv[k + m_natom * 2];
@@ -174,10 +193,16 @@ void DCDTrajReader::readFrameRecords(FortBinInStream &fbis, std::vector<float> &
 void DCDTrajReader::readBody(qlib::InStream &ins, const TrajBlockPtr &pTB,
                              const TrajectoryPtr &pTraj)
 {
-    const int nread = m_nfile / m_nSkip;  // frames to keep
+    // Number of kept frames: every m_nSkip-th of the m_nfile frames, counting
+    // frame 0 (== ceil(m_nfile / m_nSkip)). Using floor would under-allocate
+    // the block by one when m_nfile is not a multiple of m_nSkip.
+    const int nread = (m_nfile + m_nSkip - 1) / m_nSkip;
     if (nread <= 0) return;
 
-    const int nReadAtoms = static_cast<int>(pTraj->getAtomSize());
+    // Use the topology atom count when available (supports partial loads),
+    // otherwise the file's atom count (.qsc loads the DCD before the topology).
+    const int topoN = static_cast<int>(pTraj->getAtomSize());
+    const int nReadAtoms = (topoN > 0) ? topoN : m_natom;
 
     // One block for this DCD file, allocated as per-frame chunks (no single
     // whole-file buffer). Frame count bounded by the file's frame count.
@@ -193,7 +218,7 @@ void DCDTrajReader::readBody(qlib::InStream &ins, const TrajBlockPtr &pTB,
     for (int istep = 0; istep < m_nfile; ++istep) {
         qfloat32 *pcoord = NULL;
         qfloat32 *pcell = NULL;
-        if (istep % m_nSkip == 0) {
+        if (istep % m_nSkip == 0 && nInd < nread) {
             pcoord = pTB->getCrdArray(nInd);
             pcell = pTB->getCellArray(nInd);
         }
