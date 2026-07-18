@@ -5,7 +5,7 @@ include_directories(
   ${Boost_INCLUDE_DIRS}
   )
 
-# Normal C++ source files
+# First-party C++ source files
 SET(SURFACE_SRCS
 QdfPotReader.cpp
 QdfPotWriter.cpp
@@ -31,6 +31,13 @@ Boundary.cpp
 MolSurfEditInfo.cpp
 HoleSurfBuilder.cpp
 surface.cpp
+edtsurf/ProteinSurface.cpp
+  )
+
+#
+# Vendored (project-maintained fork): BALL
+#
+SET(SURFACE_VENDORED_SRCS
 BALL/COMMON/constants.cpp
 BALL/COMMON/hash.cpp
 BALL/DATATYPE/hashGrid.cpp
@@ -52,8 +59,13 @@ BALL/STRUCTURE/trianglePoint.cpp
 BALL/STRUCTURE/triangulatedSAS.cpp
 BALL/STRUCTURE/triangulatedSES.cpp
 BALL/STRUCTURE/triangulatedSurface.cpp
-edtsurf/ProteinSurface.cpp
   )
+
+# Suppress warnings for vendored sources only (first-party files above keep warnings).
+set_source_files_properties(${SURFACE_VENDORED_SRCS}
+  PROPERTIES COMPILE_OPTIONS "$<IF:$<CXX_COMPILER_ID:MSVC>,/w,-w>")
+
+LIST(APPEND SURFACE_SRCS ${SURFACE_VENDORED_SRCS})
 
 ##########
 # CueMol interface definitions for MCWRAPGEN

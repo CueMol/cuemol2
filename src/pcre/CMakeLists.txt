@@ -35,6 +35,10 @@ else()
   set_property(TARGET qmpcre PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()
 
+# Vendored upstream library: suppress all build warnings.
+# The source is re-synced from upstream, so it is not hand-edited to fix warnings.
+target_compile_options(qmpcre PRIVATE $<IF:$<C_COMPILER_ID:MSVC>,/w,-w>)
+
 # install(TARGETS qmpcre
 #   FILE_SET HEADERS
 # )

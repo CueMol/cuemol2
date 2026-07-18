@@ -30,6 +30,10 @@ else()
   target_compile_options(qmzlib PUBLIC "-fPIC")
 endif()
 
+# Vendored upstream library: suppress all build warnings.
+# The source is re-synced from upstream, so it is not hand-edited to fix warnings.
+target_compile_options(qmzlib PRIVATE $<IF:$<C_COMPILER_ID:MSVC>,/w,-w>)
+
 # install(TARGETS qmzlib
 #   FILE_SET HEADERS
 # )
