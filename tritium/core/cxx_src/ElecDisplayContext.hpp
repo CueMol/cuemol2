@@ -6,6 +6,7 @@ namespace gfx {
 class ShaderObject;
 class RenderTarget;
 class DataTexture;
+class FloatDataTexture;
 }  // namespace gfx
 
 namespace node_jsbr {
@@ -76,6 +77,9 @@ public:
     virtual gfx::DataTexture *createDataTextureFromFile(const LString &path, int w,
                                                         int h, int ncomp,
                                                         bool linear) override;
+
+    /// Create a mutable float data texture (per-atom coordinate lookup).
+    virtual gfx::FloatDataTexture *createFloatDataTexture() override;
 
     virtual void bindRenderTarget(gfx::RenderTarget *prt) override;
 

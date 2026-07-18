@@ -496,6 +496,11 @@ BufTexRep *DisplayContext::createBufTexRep()
     return nullptr;
 }
 
+FloatDataTexture *DisplayContext::createFloatDataTexture()
+{
+    return nullptr;
+}
+
 VBORep *DisplayContext::createVBORep(const AbstDrawAttrs &)
 {
     return nullptr;

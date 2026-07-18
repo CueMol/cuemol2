@@ -24,6 +24,10 @@ export class TextureStore {
     // 2D textures keyed by C++ texture name.
     private _tex_data: { [key: string]: WebGLTexture } = {};
 
+    // Size of each mutable float texture (needed by updateFloatDataTexture's
+    // texSubImage2D). Only populated for createFloatDataTexture entries.
+    private _tex_size: { [key: string]: { width: number; height: number } } = {};
+
     private _gl!: GL;
 
     /** Inject the WebGL2 context once it has been acquired in bindCanvas. */
@@ -97,6 +101,56 @@ export class TextureStore {
         return true;
     }
 
+    /**
+     * Create a mutable float data texture (RGB32F, NEAREST, clamp-to-edge).
+     * Used for per-atom coordinate lookup from vertex shaders. ncomp is
+     * currently limited to 3. Returns false if `name` is already taken or the
+     * component count is unsupported.
+     */
+    createFloatDataTexture(name: string, width: number, height: number,
+                           ncomp: number): boolean {
+        if (name in this._tex_data) {
+            console.log(`texture name ${name} already exists`);
+            return false;
+        }
+        if (ncomp !== 3) {
+            console.log(`createFloatDataTexture: unsupported ncomp ${ncomp}`);
+            return false;
+        }
+
+        const gl = this._gl;
+        const tex = gl.createTexture()!;
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB32F, width, height, 0,
+                      gl.RGB, gl.FLOAT, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+
+        this._tex_data[name] = tex;
+        this._tex_size[name] = { width, height };
+        console.log('create float data texture OK, name=', name, 'size=', width,
+                    'x', height, 'ncomp=', ncomp);
+        return true;
+    }
+
+    /** Replace the whole contents of a float data texture (RGB32F). */
+    updateFloatDataTexture(name: string, array_buf: any): boolean {
+        const tex = this._tex_data[name];
+        const sz = this._tex_size[name];
+        if (!tex || !sz) return false;
+        const gl = this._gl;
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, sz.width, sz.height,
+                         gl.RGB, gl.FLOAT, new Float32Array(array_buf));
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        return true;
+    }
+
     bindTexture(name: string, texUnit: number): void {
         const gl = this._gl;
         const tex = this._tex_data[name];
@@ -117,6 +171,7 @@ export class TextureStore {
         if (!(name in this._tex_data)) return false;
         gl.deleteTexture(this._tex_data[name]);
         delete this._tex_data[name];
+        delete this._tex_size[name];
         return true;
     }
 }

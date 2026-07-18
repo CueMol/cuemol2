@@ -7,6 +7,7 @@
 #include "EcTexRep.hpp"
 #include "EcRenderTarget.hpp"
 #include "EcDataTexture.hpp"
+#include "EcFloatDataTexture.hpp"
 
 #include <gfx/AbstDrawAttrs.hpp>
 #include <gfx/RenderTarget.hpp>
@@ -200,6 +201,13 @@ gfx::DataTexture *ElecDisplayContext::createDataTexture(int w, int h, int ncomp,
         return nullptr;
     }
     return pTex;
+}
+
+gfx::FloatDataTexture *ElecDisplayContext::createFloatDataTexture()
+{
+    // The texture is allocated later via FloatDataTexture::create(w, h, ncomp);
+    // pass this context so it can resolve the target view at that point.
+    return MB_NEW EcFloatDataTexture(this);
 }
 
 gfx::DataTexture *ElecDisplayContext::createDataTextureFromFile(const LString &path,

@@ -93,6 +93,7 @@ IF (BUILD_OPENGL_SYSDEP)
   SET(GLSL_SHADER_FILES
     sphere_frag.glsl
     sphere2_vertex.glsl
+    sphere2idx_vertex.glsl
     cylinder_vertex.glsl
     cylinder_frag.glsl
   )
@@ -100,9 +101,12 @@ IF (BUILD_OPENGL_SYSDEP)
     ${CMAKE_SOURCE_DIR}/src/sysdep/ogl_core/lighting_inc.glsl
     ${CMAKE_SOURCE_DIR}/src/sysdep/ogl_core/fog_inc.glsl
     ${CMAKE_SOURCE_DIR}/src/sysdep/ogl_core/matrices_inc.glsl
+    ${CMAKE_SOURCE_DIR}/src/sysdep/ogl_core/lib_atoms.glsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/sphere2_body_vert.glsl
   )
   SET(SHADER_INCLUDE_DIRS
     ${CMAKE_SOURCE_DIR}/src/sysdep/ogl_core
+    ${CMAKE_CURRENT_SOURCE_DIR}
   )
   set_target_properties(molvis PROPERTIES SHADER_SOURCES "${GLSL_SHADER_FILES}")
   GLSL_PREPROC(molvis "${SHADER_DEPS}")
