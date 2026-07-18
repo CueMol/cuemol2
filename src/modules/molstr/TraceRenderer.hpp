@@ -9,6 +9,11 @@
 
 #include "molstr.hpp"
 #include "MainChainRenderer.hpp"
+#include <gfx/LineIdxGpuPrim.hpp>
+
+#include <vector>
+#include <utility>
+#include <unordered_map>
 
 class TraceRenderer_wrap;
 
@@ -27,10 +32,55 @@ namespace molstr {
   private:
     /// Line width
     double m_lw;
-    
+
     // ColoringSchemePtr m_pcoloring;
 
     bool m_bUseVBO;
+
+    //////////////////////////////////////////////////////
+    // coordinate texture path (direct update)
+
+    bool m_bUseShader;
+    bool m_bCheckShaderOK;
+
+    /// Line primitive with texture-fetched endpoints (used when available)
+    gfx::LineIdxGpuPrim m_lineIdxGpuPrim;
+
+    /// Coordinate texture (owned). Null when the backend does not support it.
+    gfx::FloatDataTexture *m_pCoordTex;
+
+    /// CPU-side staging buffer for the coordinate texture (w*h*3 floats)
+    std::vector<qfloat32> m_coordbuf;
+
+    /// Pivot AIDs in the same order as the coordinate texture texels
+    std::vector<int> m_aidcache;
+
+    /// pivot AID -> texel index
+    std::unordered_map<int, int> m_aid2idx;
+
+    int m_nTexW, m_nTexH;
+
+    bool m_bUseCoordTex;
+    bool m_bCoordDirty;
+
+    // ---- collection state (filled during a collect-mode traversal) ----
+
+    /// True while render() is being run only to gather the trace topology.
+    bool m_bCollecting;
+
+    /// Pivot AID pairs of consecutive residues within a segment.
+    std::vector<std::pair<int, int>> m_traceBonds;
+
+    /// Pivot AIDs of single-residue (isolated) segments.
+    std::vector<int> m_traceIso;
+
+    /// pivot AID -> device colour code
+    std::unordered_map<int, quint32> m_aidColor;
+
+    bool m_bHavePrev;
+    int m_prevAid;
+    int m_curSegFirstAid;
+    int m_curSegCount;
 
     // struct IntBond {
     //   quint32 aid1, aid2;
@@ -56,12 +106,13 @@ namespace molstr {
 
     //////////////////////////////////////////////////////
     // Renderer interface
-    
-    // new rendering interface (using GL VBO)
-    // virtual void display(DisplayContext *pdc);
-    
-    // virtual void invalidateDisplayCache();
-    
+
+    void display(DisplayContext *pdc) override;
+
+    void invalidateDisplayCache() override;
+
+    void objectChanged(qsys::ObjectEvent &ev) override;
+
     //////////////////////////////////////////////////////
     // DispCacheRenderer interface
 
@@ -88,9 +139,18 @@ namespace molstr {
     
   private:
     void renderSimpleHittest(DisplayContext *phl);
-    
+
     void renderDLSel(DisplayContext *pdl);
-    
+
+    /// Gather trace topology (collect-mode traversal), build the coordinate
+    /// texture, the AID->index map, and the immutable line VBO. Falls back
+    /// (clears m_bUseCoordTex) when no float data texture is available.
+    void renderCoordTexImpl(DisplayContext *pdc);
+
+    /// Re-gather pivot positions into the coordinate texture. Called from
+    /// display() when m_bCoordDirty.
+    bool updateCoordTex();
+
   };
 
 }

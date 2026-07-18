@@ -85,6 +85,7 @@ SET(SHADER_SOURCES
   ogl_core/pixdraw_frag.glsl
   ogl_core/linew_vert.glsl
   ogl_core/linew2_vert.glsl
+  ogl_core/linew2idx_vert.glsl
   ogl_core/linew_frag.glsl
   ogl_core/postproc_vert.glsl
   ogl_core/depthvis_frag.glsl
@@ -101,6 +102,8 @@ SET(SHADER_DEPS
   ogl_core/lighting_inc.glsl
   ogl_core/fog_inc.glsl
   ogl_core/matrices_inc.glsl
+  ogl_core/linew_inc.glsl
+  ogl_core/lib_atoms.glsl
 )
 set_target_properties(sysdep PROPERTIES SHADER_SOURCES "${SHADER_SOURCES}")
 GLSL_PREPROC(sysdep "${SHADER_DEPS}")
