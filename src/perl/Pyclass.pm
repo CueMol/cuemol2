@@ -35,7 +35,7 @@ sub genWrapper($)
     }
   }
 
-  print("Output Python file: $out_fname\n");
+  Utils::debug("Output Python file: $out_fname\n");
 
   open(OUT, ">$out_fname") || die "$?:$!";
   set_building_file($out_fname);

@@ -217,7 +217,7 @@ sub genCxxHeader($) {
     die("ERROR: C++ class name (cpp_name) is required in input file");
   }
 
-  print("Output C++ header file: $wp_hdr_fname\n");
+  Utils::debug("Output C++ header file: $wp_hdr_fname\n");
 
   open(OUT, ">$wp_hdr_fname") || die "$?:$!";
   set_building_file($wp_hdr_fname);
@@ -253,7 +253,7 @@ sub genCxxSource($) {
     die("ERROR: C++ class name (cpp_name) is required in input file");
   }
 
-  print("Output C++ source file: $out_fname\n");
+  Utils::debug("Output C++ source file: $out_fname\n");
 
   open(OUT, ">$out_fname") || die "$?:$!";
   set_building_file($out_fname);
