@@ -82,7 +82,7 @@ void TTYView::drawScene()
 {
     qsys::ScenePtr pScene = getScene();
     if (pScene.isnull()) {
-        MB_DPRINTLN("DrawScene: invalid scene %d !!", getSceneID());
+        MB_DPRINTLN("DrawScene: invalid scene %d !!", (int)getSceneID());
         return;
     }
 

@@ -199,7 +199,7 @@ void GUIView::drawScene()
 
     qsys::ScenePtr pScene = getScene();
     if (pScene.isnull()) {
-        MB_DPRINTLN("DrawScene: invalid scene %d !!", getSceneID());
+        MB_DPRINTLN("DrawScene: invalid scene %d !!", (int)getSceneID());
         return;
     }
 
@@ -391,7 +391,7 @@ void GUIView::clear()
 {
     qsys::ScenePtr pScene = getScene();
     if (pScene.isnull()) {
-        MB_DPRINTLN("OcView::clear() invalid scene %d !!", getSceneID());
+        MB_DPRINTLN("OcView::clear() invalid scene %d !!", (int)getSceneID());
         return;
     }
 
@@ -444,7 +444,7 @@ LString GUIView::hitTest(int ax, int ay)
         return LString();
     }
 
-    MB_DPRINTLN("Hittest OK: sc=%d, rend=%d, obj=%d", sceneid, rend_id, objid);
+    MB_DPRINTLN("Hittest OK: sc=%d, rend=%d, obj=%d", (int)sceneid, (int)rend_id, (int)objid);
 
     LString rval;
     {
@@ -525,8 +525,8 @@ LString GUIView::hitTestRect(int ax, int ay, int aw, int ah, bool bNearest)
 
         if (objids.find(objid) != objids.end()) {
             MB_DPRINTLN(
-                "GUIView.hitTestRect> duplicated objid %d for rendid %d ignored", objid,
-                rend_id);
+                "GUIView.hitTestRect> duplicated objid %d for rendid %d ignored", (int)objid,
+                (int)rend_id);
             continue;
         }
         objids.insert(objid);
@@ -724,7 +724,7 @@ bool GUIView::hitTestImpl(gfx::DisplayContext *pdc, const Vector4D &parm, bool f
 {
     qsys::ScenePtr pScene = getScene();
     if (pScene.isnull()) {
-        MB_DPRINTLN("hitTest: invalid scene %d !!", getSceneID());
+        MB_DPRINTLN("hitTest: invalid scene %d !!", (int)getSceneID());
         return false;
     }
 

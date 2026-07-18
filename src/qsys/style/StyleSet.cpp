@@ -31,7 +31,7 @@ StyleSet::StyleSet()
      : m_bReadOnly(false), m_bModified(false), m_bOverrideID(false)
 {
   m_nUID = qlib::ObjectManager::sRegObj(this);
-  MB_DPRINTLN("StyleSet (%d) created.", m_nUID);
+  MB_DPRINTLN("StyleSet (%d) created.", (int)m_nUID);
 }
 
 StyleSet::~StyleSet()
@@ -44,7 +44,7 @@ StyleSet::~StyleSet()
 
   qlib::ObjectManager::sUnregObj(m_nUID);
 
-  MB_DPRINTLN("StyleSet (%d/%p) destructed", m_nUID, this);
+  MB_DPRINTLN("StyleSet (%d/%p) destructed", (int)m_nUID, this);
 }
 
 //////////

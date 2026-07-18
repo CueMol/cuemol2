@@ -231,18 +231,18 @@ PyObject *toNDArray(PyObject *self, PyObject *args)
 
     qlib::LScrSp<qlib::LByteArray> &baptr = *pba;
     void *src_data = static_cast<void *>(baptr->data());
-    MB_DPRINTLN("toNDArray %p (%d) created!!", baptr.get(), baptr.use_count());
+    MB_DPRINTLN("toNDArray %p (%d) created!!", baptr.get(), (int)baptr.use_count());
 
     ////
     // make shared copy
     qlib::LScrSp<qlib::LByteArray> *pba_sh = new qlib::LScrSp<qlib::LByteArray>(*pba);
     MB_DPRINTLN("toNDArray shared %p (%d) created!!", pba_sh->get(),
-                pba_sh->use_count());
+                (int)pba_sh->use_count());
     auto deleter = [pba_sh]() mutable {
         // Release the shared pointer when numpy array is deleted
         qlib::LScrSp<qlib::LByteArray> &baptr = *pba_sh;
         MB_DPRINTLN("toNDArray %p (%d) deleter called!!", baptr.get(),
-                    baptr.use_count());
+                    (int)baptr.use_count());
         delete pba_sh;
         MB_DPRINTLN("toNDArray destruct OK");
     };

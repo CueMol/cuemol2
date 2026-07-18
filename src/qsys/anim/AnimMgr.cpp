@@ -188,7 +188,7 @@ void AnimMgr::pause()
       m_nState = AM_STOP;
       m_pTgtView = ViewPtr();
     }
-    MB_DPRINTLN("AnimMgr pause remain=%ld", m_timeRemain);
+    MB_DPRINTLN("AnimMgr pause remain=%lld", (long long)m_timeRemain);
   }
 }
 

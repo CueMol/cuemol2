@@ -128,7 +128,7 @@ Scene::Scene()
   m_nAAMethod = AA_FXAA;
   m_nAAJitterLevel = 0;
 
-  MB_DPRINTLN("Scene (%d) created.", m_nUID);
+  MB_DPRINTLN("Scene (%d) created.", (int)m_nUID);
 }
 
 void Scene::init()
@@ -171,7 +171,7 @@ Scene::~Scene()
   delete m_pEvtCaster;
   qlib::ObjectManager::sUnregObj(m_nUID);
 
-  MB_DPRINTLN("Scene (%d/%p) destructed", m_nUID, this);
+  MB_DPRINTLN("Scene (%d/%p) destructed", (int)m_nUID, this);
 }
 
 void Scene::dump() const
@@ -179,14 +179,14 @@ void Scene::dump() const
   MB_DPRINTLN("SCENE DUMP:");
   MB_DPRINTLN("Scene : {");
   MB_DPRINTLN("  name = <%s>", m_name.c_str());
-  MB_DPRINTLN("  uid = <%d>", m_nUID);
+  MB_DPRINTLN("  uid = <%d>", (int)m_nUID);
 
   data_t::const_iterator iter = m_data.begin();
   for (; iter!=m_data.end(); ++iter) {
     MB_DPRINT("%p/%d (nref=%d): ",
 	      iter->second.get(),
-	      iter->second->getUID(),
-	      iter->second.use_count());
+	      (int)iter->second->getUID(),
+	      (int)iter->second.use_count());
     iter->second->dump();
   }
 
@@ -241,21 +241,21 @@ void Scene::unloading()
   rendtab_t::const_iterator riter = m_rendtab.begin();
   for (; riter!=m_rendtab.end(); ++riter) {
     RendererPtr prend = riter->second;
-    MB_DPRINTLN("Scene.unloading()> prend %d unloading().", riter->first);
+    MB_DPRINTLN("Scene.unloading()> prend %d unloading().", (int)riter->first);
     prend->unloading();
   }
   
   data_t::const_iterator oiter = m_data.begin();
   for (; oiter!=m_data.end(); ++oiter) {
     ObjectPtr pobj = oiter->second;
-    MB_DPRINTLN("Scene.unloading()> obj %d unloading().", oiter->first);
+    MB_DPRINTLN("Scene.unloading()> obj %d unloading().", (int)oiter->first);
     pobj->unloading();
   }
 
   viewtab_t::const_iterator viter = m_viewtab.begin();
   for (; viter!=m_viewtab.end(); ++viter) {
     ViewPtr pview = viter->second;
-    MB_DPRINTLN("Scene.unloading()> rview %d unloading().", viter->first);
+    MB_DPRINTLN("Scene.unloading()> rview %d unloading().", (int)viter->first);
     pview->unloading();
   }
 

@@ -44,7 +44,7 @@ View::View()
 
   m_pEvtCaster = MB_NEW ViewEventCaster;
   m_uid = qlib::ObjectManager::sRegObj(this);
-  MB_DPRINTLN("View (%p/%d) created\n", this, m_uid);
+  MB_DPRINTLN("View (%p/%d) created\n", this, (int)m_uid);
 
   // ???
   m_nWidth = 100;
@@ -79,7 +79,7 @@ View::View()
 View::View(const View &r)
 {
   m_uid = qlib::ObjectManager::sRegObj(this);
-  MB_DPRINTLN("Cannot create View copy (%p/%d)\n", this, m_uid);
+  MB_DPRINTLN("Cannot create View copy (%p/%d)\n", this, (int)m_uid);
   MB_ASSERT(false);
 }
 
@@ -118,7 +118,7 @@ LString View::toString() const
 
 void View::dump() const
 {
-  MB_DPRINT("View: %s/%d(%p)", m_name.c_str(), m_uid, this);
+  MB_DPRINT("View: %s/%d(%p)", m_name.c_str(), (int)m_uid, this);
 }
 
 void View::setSceneID(qlib::uid_t nid)

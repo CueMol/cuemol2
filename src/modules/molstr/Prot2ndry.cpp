@@ -1449,7 +1449,7 @@ void MolCoord::calcProt2ndry(double hb_high /*= -500.0*/, bool bIgnoreBulge /*=f
   ps.m_bIgnoreBulge = bIgnoreBulge;
   if (ps.m_chains.size()<=0) {
     MB_DPRINTLN("calcProt2ndry> no amino acid residues in %d/%s",
-                getUID(), getName().c_str());
+                (int)getUID(), getName().c_str());
     return;
   }
   ps.doit();
@@ -1482,7 +1482,7 @@ void MolCoord::calcProt2ndry2(bool bIgnoreBulge /*=false*/, double dhangl1/*=60.
   ps.m_bIgnoreBulge = bIgnoreBulge;
   if (ps.m_chains.size()<=0) {
     LOG_DPRINTLN("Prot2ndry> no amino acid residues in %d/%s",
-                getUID(), getName().c_str());
+                (int)getUID(), getName().c_str());
     return;
   }
   ps.doit();

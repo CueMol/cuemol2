@@ -146,7 +146,7 @@ void BoundarySet::build2(std::map<int, int> &sidmap, CutByPlane2 *pCBP)
       pbn->insert(ed.first, pCBP->ontoPlane(ed.first));
     }
 
-    MB_DPRINTLN("boundary no %d size=%d", super_t::size(), pbn->getSize());
+    MB_DPRINTLN("boundary no %d size=%d", (int)super_t::size(), pbn->getSize());
 
     if (pbn->getSize()>0) {
       int nfirst = pbn->getID(0);
@@ -162,7 +162,7 @@ void BoundarySet::build2(std::map<int, int> &sidmap, CutByPlane2 *pCBP)
       }
     }
     else {
-      MB_DPRINTLN("ERROR: empty boundary no %d --> skip", super_t::size());
+      MB_DPRINTLN("ERROR: empty boundary no %d --> skip", (int)super_t::size());
       delete pbn;
     }
   }

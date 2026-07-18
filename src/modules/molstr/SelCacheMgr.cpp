@@ -44,7 +44,7 @@ SelCacheData *SelCacheMgr::createCacheEntry()
 
   pNewData->m_nCacheID = id;
 
-  MB_DPRINTLN("SelCacheMgr> molsel cache entry is created (%d); curr cache size=%d",id, m_data.size());
+  MB_DPRINTLN("SelCacheMgr> molsel cache entry is created (%d); curr cache size=%d",id, (int)m_data.size());
 
   while (m_data.size()>m_nCacheMax) {
     CacheEntTab::iterator i = m_data.begin();

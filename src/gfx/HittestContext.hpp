@@ -108,7 +108,7 @@ namespace gfx {
     virtual bool isDisplayList() const { return false; }
 
     void dump() const {
-      MB_DPRINTLN("HittestList %p size=%d", this, m_data.size());
+      MB_DPRINTLN("HittestList %p size=%d", this, (int)m_data.size());
     }
 
   };
@@ -191,7 +191,7 @@ namespace gfx {
     // virtual void recordEnd();
 
     void dump() const {
-      MB_DPRINTLN("HitContext %p size=%d", this, m_data.size());
+      MB_DPRINTLN("HitContext %p size=%d", this, (int)m_data.size());
       /*BOOST_FOREACH (HittestList *phl, m_data) {
 	phl->dump();
 	}*/

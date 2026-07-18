@@ -168,8 +168,8 @@ void SceneManager::dump() const
   for (; iter!=eiter; ++iter) {
     MB_DPRINT("%p/%d (nref=%d): ",
 	      iter->second.get(),
-	      iter->second->getUID(),
-	      iter->second.use_count());
+	      (int)iter->second->getUID(),
+	      (int)iter->second.use_count());
     iter->second->dump();
   }
   MB_DPRINTLN("}");

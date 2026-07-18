@@ -105,15 +105,15 @@ void OcBufferRep::create(gfx::DisplayContext *pdc, const gfx::AbstDrawAttrs &ada
     // Init VBO & copy data
     glBindBuffer(GL_ARRAY_BUFFER, m_nBufID);
     glBufferData(GL_ARRAY_BUFFER, ada.getDataSize(), ada.getData(), GL_STATIC_DRAW);
-    MB_DPRINTLN("OcBufferRep> Buffer %d created for view %d, size=%d", m_nBufID, m_nViewID,
-                ada.getDataSize());
+    MB_DPRINTLN("OcBufferRep> Buffer %d created for view %d, size=%d", m_nBufID, (int)m_nViewID,
+                (int)ada.getDataSize());
 
     if (ada.getType() == AbstDrawElem::VA_ATTR_INDS) {
         glGenBuffers(1, &m_nIndBufID);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nIndBufID);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, ada.getIndDataSize(), ada.getIndData(),
                      GL_STATIC_DRAW);
-        MB_DPRINTLN("OcBufferRep> Index Buffer %d created for view %d, size=%d", m_nIndBufID, m_nViewID, ada.getIndDataSize());
+        MB_DPRINTLN("OcBufferRep> Index Buffer %d created for view %d, size=%d", m_nIndBufID, (int)m_nViewID, (int)ada.getIndDataSize());
     }
 }
 

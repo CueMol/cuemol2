@@ -58,7 +58,7 @@ public:
 #endif
     if (m_fp==NULL) {
       auto msg = LString::format("Cannot open file: %s", fname.c_str());
-      MB_DPRINTLN(msg);
+      MB_DPRINTLN("%s", msg.c_str());
       MB_THROW(IOException, msg);
     }
 
@@ -141,7 +141,7 @@ public:
 #endif
     if (m_fp==NULL) {
       auto msg = LString::format("Cannot open file: %s", fname.c_str());
-      MB_DPRINTLN(msg);
+      MB_DPRINTLN("%s", msg.c_str());
       MB_THROW(IOException, msg);
     }
 

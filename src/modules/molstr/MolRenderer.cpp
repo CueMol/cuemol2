@@ -220,7 +220,7 @@ Vector4D MolRenderer::getCenter() const
   if (i==0) {
     // TO DO: throw exception
     MB_DPRINT("MolRenderer> cannot determine the center for ");
-    MB_DPRINTLN("%s (UID=%d)", getClientMol()->getName().c_str(), getClientMol()->getUID());
+    MB_DPRINTLN("%s (UID=%d)", getClientMol()->getName().c_str(), (int)getClientMol()->getUID());
     //LOG_DPRINTLN("%s:%s",
     //(pthis->getClientMol()->getName()).c_str(),
     //getName().c_str());

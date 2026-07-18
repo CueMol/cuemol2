@@ -244,7 +244,7 @@ void QdfMolWriter::writeResidData()
       os.defFixedStr(PROP_PFX+(rpiter->first), rpiter->second);
       MB_DPRINTLN("QdfMolWriter> resid prop <%s> defined", rpiter->first.c_str());
     }
-    MB_DPRINTLN("QdfMolWriter> %d resid props defined", propset.size());
+    MB_DPRINTLN("QdfMolWriter> %d resid props defined", (int)propset.size());
   }
 
   startData();

@@ -143,7 +143,7 @@ int HitData::getDataAt(qlib::uid_t rend_id, int ii, int subii) const
   pEnt = iter->second;
 
   if (ii>=pEnt->index.size()) {
-    MB_DPRINTLN("HitTest> rend ID %d; main index (%d) is out of bound", rend_id, ii);
+    MB_DPRINTLN("HitTest> rend ID %d; main index (%d) is out of bound", (int)rend_id, ii);
     return -1;
   }
 
@@ -156,7 +156,7 @@ int HitData::getDataAt(qlib::uid_t rend_id, int ii, int subii) const
 
   if (subii>=intn_end-intn_start) {
     MB_DPRINTLN("HitTest> rend ID %d; mainindex (%d), subindex(%d) is out of bound",
-                rend_id, ii, subii);
+                (int)rend_id, ii, subii);
     return -1;
   }
 
@@ -277,7 +277,7 @@ void HittestContext::callDisplayList(DisplayContext *pdl)
           vv.y()>-1.0 && vv.y()<1.0 &&
           vv.z()>z_min && vv.z()<z_max) {
           
-          MB_DPRINT("[%d %d]", m_nCurUID, elem.id);
+          MB_DPRINT("[%d %d]", (int)m_nCurUID, elem.id);
           MB_DPRINT(" (%f,%f,%f) -->",
                     elem.pos.x(), elem.pos.y(), elem.pos.z());
           MB_DPRINTLN(" (%f,%f,%f)", vv.x(), vv.y(), vv.z());

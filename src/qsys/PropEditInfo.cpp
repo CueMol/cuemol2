@@ -39,7 +39,7 @@ bool PropEditInfo::isUndoable() const
 {
   qlib::LPropSupport *pTgt = getTarget();
   if (pTgt==NULL) {
-    MB_DPRINTLN("PropEditInfo> isUndoable target(%d) is NULL", getTargetUID());
+    MB_DPRINTLN("PropEditInfo> isUndoable target(%d) is NULL", (int)getTargetUID());
     return false;
   }
   
@@ -52,7 +52,7 @@ bool PropEditInfo::isRedoable() const
 {
   qlib::LPropSupport *pTgt = getTarget();
   if (pTgt==NULL) {
-    MB_DPRINTLN("PropEditInfo> isRedoable target(%d) is NULL", getTargetUID());
+    MB_DPRINTLN("PropEditInfo> isRedoable target(%d) is NULL", (int)getTargetUID());
     return false;
   }
   
