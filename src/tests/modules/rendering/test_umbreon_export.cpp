@@ -311,59 +311,87 @@ TEST(UmbreonExport, OutputIsDirectLinearMap)
     EXPECT_NEAR(ratio, 2.0, 0.25);
 }
 
-// Pins per-material finish resolution (setMaterial -> CLUT -> StyleMgr POV def
-// -> umbreon::Material). "nolighting" (ambient 1.0) and "shadow" (ambient 0.75)
-// are both ambient-only flat finishes (diffuse 0, specular 0), so they are
+// Renders one flat gray triangle (normal +Z, facing the camera) carrying
+// `matName`, at 64x64. Shared by the per-material tests below: they vary only
+// the material name, so the material resolution IS the discriminator.
+static std::vector<unsigned char> renderTriangleWithMaterial(const char *matName)
+{
+    UmbreonDisplayContext ctx;
+    ctx.init();
+    ctx.setPerspective(false);
+    ctx.setViewDist(100.0);
+    ctx.setZoom(6.0);
+    ctx.setSlabDepth(1.0e6);  // push the depth fog far away (negligible)
+    ctx.loadIdent();
+
+    ctx.startRender();
+    ctx.startSection("m");
+    ctx.setMaterial(matName);  // before color(): the CLUT captures the name
+    ctx.color(gfx::SolidColor::createRGB(0.5, 0.5, 0.5));
+    ctx.startTriangles();
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(-2.0, -2.0, 0.0));
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(2.0, -2.0, 0.0));
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(0.0, 2.0, 0.0));
+    ctx.end();
+    ctx.endSection();
+
+    UmbreonRenderParams prm;
+    prm.width = 64;
+    prm.height = 64;
+    prm.supersample = 1;
+
+    int ow = 0, oh = 0, ncomp = 0;
+    std::vector<unsigned char> pix;
+    ctx.render(prm, ow, oh, ncomp, pix);
+    return pix;
+}
+
+// Red channel of the center pixel of a 64x64 RGB frame (the triangle covers it).
+static const std::size_t kCenterPx = (static_cast<std::size_t>(32) * 64 + 32) * 3;
+
+// Pins per-material resolution (setMaterial -> CLUT -> lookupMaterial ->
+// umbreon::Material). "nolighting" (ambient 1.0) and "shadow" (ambient 0.75)
+// are both ambient-only flat NPR materials (diffuse 0, specular 0), so they are
 // independent of lighting/normals and differ ONLY by their ambient term. The
 // same gray triangle therefore renders brighter under nolighting than shadow.
-// If the exporter ignored per-material finishes (one shared surfaceFinish for
-// everything, as before), the two would be identical and this would fail.
+// If the exporter ignored per-material lookup (one shared default for
+// everything, as it once did), the two would be identical and this would fail.
 TEST(UmbreonExport, AppliesPerMaterialFinish)
 {
-    auto renderWithMaterial = [](const char *matName) {
-        UmbreonDisplayContext ctx;
-        ctx.init();
-        ctx.setPerspective(false);
-        ctx.setViewDist(100.0);
-        ctx.setZoom(6.0);
-        ctx.setSlabDepth(1.0e6);  // push the depth fog far away (negligible)
-        ctx.loadIdent();
-
-        ctx.startRender();
-        ctx.startSection("m");
-        ctx.setMaterial(matName);  // before color(): the CLUT captures the name
-        ctx.color(gfx::SolidColor::createRGB(0.5, 0.5, 0.5));
-        ctx.startTriangles();
-        ctx.normal(Vector4D(0.0, 0.0, 1.0));
-        ctx.vertex(Vector4D(-2.0, -2.0, 0.0));
-        ctx.normal(Vector4D(0.0, 0.0, 1.0));
-        ctx.vertex(Vector4D(2.0, -2.0, 0.0));
-        ctx.normal(Vector4D(0.0, 0.0, 1.0));
-        ctx.vertex(Vector4D(0.0, 2.0, 0.0));
-        ctx.end();
-        ctx.endSection();
-
-        UmbreonRenderParams prm;
-        prm.width = 64;
-        prm.height = 64;
-        prm.supersample = 1;
-
-        int ow = 0, oh = 0, ncomp = 0;
-        std::vector<unsigned char> pix;
-        ctx.render(prm, ow, oh, ncomp, pix);
-        return pix;
-    };
-
-    std::vector<unsigned char> noli = renderWithMaterial("nolighting");
-    std::vector<unsigned char> shad = renderWithMaterial("shadow");
+    std::vector<unsigned char> noli = renderTriangleWithMaterial("nolighting");
+    std::vector<unsigned char> shad = renderTriangleWithMaterial("shadow");
 
     ASSERT_EQ(noli.size(), static_cast<std::size_t>(64 * 64 * 3));
     ASSERT_EQ(noli.size(), shad.size());
 
-    const std::size_t c = (static_cast<std::size_t>(32) * 64 + 32) * 3;
-    EXPECT_GT(noli[c], 8);  // the flat ambient surface is visible
+    EXPECT_GT(noli[kCenterPx], 8);  // the flat ambient surface is visible
     // ambient 1.0 (nolighting) is clearly brighter than 0.75 (shadow)
-    EXPECT_GT(static_cast<int>(noli[c]), static_cast<int>(shad[c]) + 15);
+    EXPECT_GT(static_cast<int>(noli[kCenterPx]),
+              static_cast<int>(shad[kCenterPx]) + 15);
+}
+
+// Pins the authored PBR materials. "metallic_chrome" has no POV finish block in
+// the style (its def is a bare `texture{T_Chrome_4D}`), so the old POV-def path
+// fell back to the default plastic finish and chrome rendered EXACTLY like
+// "default" -- the bug the name -> material table replaced. Chrome is now an
+// authored principled metal (metallic 1), whose metal cut zeroes the diffuse
+// lobe, so it must render clearly DARKER than default plastic (diffuse 0.8)
+// under the same light. Fails if the table is bypassed or chrome loses its
+// metallic authoring.
+TEST(UmbreonExport, AuthoredMetalDiffersFromDefaultPlastic)
+{
+    std::vector<unsigned char> chrome =
+        renderTriangleWithMaterial("metallic_chrome");
+    std::vector<unsigned char> plastic = renderTriangleWithMaterial("default");
+
+    ASSERT_EQ(chrome.size(), static_cast<std::size_t>(64 * 64 * 3));
+    ASSERT_EQ(chrome.size(), plastic.size());
+
+    EXPECT_LT(static_cast<int>(chrome[kCenterPx]),
+              static_cast<int>(plastic[kCenterPx]));
 }
 
 // Pins the transparent-background path (transparentBackground -> RGBA output
@@ -558,8 +586,12 @@ TEST(UmbreonExport, GlobalIlluminationAffectsOutput)
 // via giIntegrator=2 in buildSceneAndOptions): a reflective material must mirror
 // the actual scene geometry, not the background color.
 //
-// Setup: a gray "spec_metal" panel (F_MetalD: reflection 0.65, specular 0.80)
-// tilted 45 deg about Y, so its mirror direction is exactly -X. A red "matte"
+// Setup: a gray "spec_metal" panel (a principled metal ported from POV
+// F_MetalD: metallic 1, roughness 0.37, reflection 0.65 -- the reflection
+// scalar is dormant in the BSDF but still sets the non-pt2 fake environment
+// amount) tilted 45 deg about Y, so its mirror direction is exactly -X. Note
+// the traced lobe is glossy at that roughness, not a sharp mirror; the
+// threshold below has margin for the spread. A red "matte"
 // panel sits at x = -4, OUTSIDE the view frustum (zoom 6 => the frame spans x
 // in [-3,3]) and edge-on to the camera, so it is invisible directly and can
 // only reach the metal through a reflection bounce. The background is black.
