@@ -68,8 +68,11 @@ export const TrajTrack: React.FC<TrajTrackProps> = ({
 }) => {
     const scrollRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLDivElement>(null);
-    // While reordering: the dragged block index + its horizontal cursor offset.
-    const [dragState, setDragState] = useState<{ index: number; dx: number } | null>(null);
+    // While reordering: the dragged block index (`from`), its horizontal cursor
+    // offset (`dx`), and the current drop target block index (`to`).
+    const [dragState, setDragState] = useState<
+        { from: number; dx: number; to: number } | null
+    >(null);
 
     const widthPx = trackWidthPx(nframe, pxPerFrame);
     const playheadLeft = frameToPx(frame, pxPerFrame);
@@ -128,7 +131,10 @@ export const TrajTrack: React.FC<TrajTrackProps> = ({
                 if (!moved && Math.abs(ev.clientX - startX) > DRAG_THRESHOLD_PX) {
                     moved = true;
                 }
-                if (moved) setDragState({ index, dx: ev.clientX - startX });
+                if (moved) {
+                    const to = frameToBlockIndex(clientXToFrame(ev.clientX), blocks);
+                    setDragState({ from: index, dx: ev.clientX - startX, to });
+                }
             };
             const onUp = (ev: MouseEvent) => {
                 document.removeEventListener('mousemove', onMove);
@@ -162,6 +168,17 @@ export const TrajTrack: React.FC<TrajTrackProps> = ({
     // Scrubbable areas get a seek cursor only when seeking is possible.
     const seekClass = canControl ? ' is-seekable' : '';
 
+    // Drop indicator (insertion line) shown while reordering: at the trailing
+    // edge of the target when moving right, the leading edge when moving left.
+    let dropIndicatorLeft: number | null = null;
+    if (dragState && dragState.to !== dragState.from && blocks[dragState.to]) {
+        const tb = blocks[dragState.to];
+        dropIndicatorLeft =
+            dragState.to > dragState.from
+                ? frameToPx(tb.startIndex + tb.nframe, pxPerFrame)
+                : frameToPx(tb.startIndex, pxPerFrame);
+    }
+
     return (
         <div className="mdtraj-track" ref={scrollRef}>
             <div className="mdtraj-canvas" ref={canvasRef} style={{ width: widthPx }}>
@@ -180,8 +197,9 @@ export const TrajTrack: React.FC<TrajTrackProps> = ({
                             index={i}
                             pxPerFrame={pxPerFrame}
                             selected={selectedBlock === i}
-                            dragging={dragState?.index === i}
-                            dragOffsetPx={dragState?.index === i ? dragState.dx : 0}
+                            dragging={dragState?.from === i}
+                            dragOffsetPx={dragState?.from === i ? dragState.dx : 0}
+                            dragActive={dragState !== null}
                             onMouseDownBlock={handleBlockMouseDown}
                         />
                     ))}
@@ -189,6 +207,13 @@ export const TrajTrack: React.FC<TrajTrackProps> = ({
                         <div className="mdtraj-empty-hint type-caption">
                             No blocks -- use Add to append a trajectory file
                         </div>
+                    )}
+                    {dropIndicatorLeft !== null && (
+                        <div
+                            className="mdtraj-drop-indicator"
+                            style={{ left: dropIndicatorLeft }}
+                            aria-hidden
+                        />
                     )}
                 </div>
                 {/* Seek gutter below the blocks: houses the playhead triangle

@@ -174,6 +174,35 @@
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45);
 }
 
+/* Drop indicator (insertion line) at the boundary where the dragged block will
+   land, with a caret on top -- the tab-drop cue. Sits under the dragged block
+   (z 8) but above the other blocks and the playhead (z 6). */
+.mdtraj-drop-indicator {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--accent-selected);
+  border-radius: 1px;
+  box-shadow: 0 0 4px var(--accent-selected-glow);
+  z-index: 7;
+  pointer-events: none;
+}
+
+.mdtraj-drop-indicator::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid var(--accent-selected);
+}
+
 .mdtraj-block-label {
   overflow: hidden;
   text-overflow: ellipsis;

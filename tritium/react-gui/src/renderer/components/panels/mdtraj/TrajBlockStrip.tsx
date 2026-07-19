@@ -26,6 +26,8 @@ interface TrajBlockStripProps {
     dragging: boolean;
     /** Horizontal offset (px) while dragging, so the block follows the cursor. */
     dragOffsetPx: number;
+    /** True while ANY block drag is in progress (suppresses the tooltip). */
+    dragActive: boolean;
     /** Begin a click-or-drag interaction (parent distinguishes the two). */
     onMouseDownBlock: (index: number, e: React.MouseEvent) => void;
 }
@@ -49,6 +51,7 @@ export const TrajBlockStrip: React.FC<TrajBlockStripProps> = ({
     selected,
     dragging,
     dragOffsetPx,
+    dragActive,
     onMouseDownBlock,
 }) => {
     const left = frameToPx(block.startIndex, pxPerFrame) + (dragging ? dragOffsetPx : 0);
@@ -85,6 +88,7 @@ export const TrajBlockStrip: React.FC<TrajBlockStripProps> = ({
     return (
         <Tooltip
             content={tooltip}
+            disabled={dragActive}
             renderTarget={({ isOpen, ref, ...targetProps }) => (
                 <div
                     {...targetProps}
