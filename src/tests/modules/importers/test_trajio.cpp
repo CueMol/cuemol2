@@ -12,6 +12,8 @@
 #include "mdtools/DCDTrajReader.hpp"
 #include "mdtools/TrrTrajReader.hpp"
 #include "mdtools/XtcTrajReader.hpp"
+#include "mdtools/Netcdf3InStream.hpp"
+#include "mdtools/AmberNetCDFReader.hpp"
 #include "mdtools/GROFileReader.hpp"
 
 #include "molstr/MolAtom.hpp"
@@ -36,6 +38,7 @@ using mdtools::TrajectoryPtr;
 using mdtools::DCDTrajReader;
 using mdtools::TrrTrajReader;
 using mdtools::XtcTrajReader;
+using mdtools::AmberNetCDFReader;
 using mdtools::GROFileReader;
 using molstr::MolAtomPtr;
 using qlib::StrInStream;
@@ -867,6 +870,178 @@ void appendXTC(const TrajectoryPtr &pTraj, const std::string &xtc)
     pTraj->append(pBlk);
 }
 
+// ---- AMBER NetCDF builders ----
+
+// Overwrite big-endian bytes in an already-built buffer (offset backpatch).
+void patchBE32(std::string &buf, size_t pos, quint32 v)
+{
+    buf[pos + 0] = static_cast<char>((v >> 24) & 0xff);
+    buf[pos + 1] = static_cast<char>((v >> 16) & 0xff);
+    buf[pos + 2] = static_cast<char>((v >> 8) & 0xff);
+    buf[pos + 3] = static_cast<char>(v & 0xff);
+}
+
+void patchBE64(std::string &buf, size_t pos, quint64 v)
+{
+    for (int i = 0; i < 8; ++i) buf[pos + i] = static_cast<char>((v >> ((7 - i) * 8)) & 0xff);
+}
+
+// Write a NetCDF "Pascal" string: [i32 length][bytes][pad to a multiple of 4].
+void appendNcName(std::string &buf, const char *s)
+{
+    const int n = static_cast<int>(std::strlen(s));
+    appendBE32(buf, static_cast<quint32>(n));
+    buf.append(s, n);
+    const int pad = (4 - (n % 4)) % 4;
+    for (int i = 0; i < pad; ++i) buf.push_back('\0');
+}
+
+// Write a NC_CHAR attribute: name + type(2) + count + bytes + pad.
+void appendNcCharAttr(std::string &buf, const char *name, const char *value)
+{
+    appendNcName(buf, name);
+    appendBE32(buf, 2u);  // NC_CHAR
+    const int n = static_cast<int>(std::strlen(value));
+    appendBE32(buf, static_cast<quint32>(n));  // count
+    buf.append(value, n);
+    const int pad = (4 - (n % 4)) % 4;
+    for (int i = 0; i < pad; ++i) buf.push_back('\0');
+}
+
+// Deterministic AMBER coordinate (Angstrom) for (frame, atom, axis).
+float ncCoord(int frame, int atom, int axis)
+{
+    return 100.0f * static_cast<float>(frame) + static_cast<float>(atom) +
+           0.1f * static_cast<float>(axis + 1);
+}
+
+// Fixed unit cell: a,b,c (Angstrom), alpha,beta,gamma (degrees).
+const double kNcCell[6] = {10.0, 11.0, 12.0, 90.0, 90.0, 90.0};
+
+// Build a minimal AMBER NetCDF3 trajectory with coordinates + cell_lengths +
+// cell_angles as record variables. version is 1 (CDF-1, 32-bit offset) or 2
+// (CDF-2, 64-bit offset). Uses ncCoord()/kNcCell for deterministic data.
+std::string buildAmberNC(int natom, int nframes, int version)
+{
+    std::string b;
+    b.append("CDF", 3);
+    b.push_back(static_cast<char>(version));
+    appendBE32(b, static_cast<quint32>(nframes));  // numrecs
+
+    // Dimensions: spatial=0, atom=1, frame=2(record), cell_spatial=3, cell_angular=4.
+    appendBE32(b, 10u);  // NC_DIMENSION
+    appendBE32(b, 5u);
+    appendNcName(b, "spatial");
+    appendBE32(b, 3u);
+    appendNcName(b, "atom");
+    appendBE32(b, static_cast<quint32>(natom));
+    appendNcName(b, "frame");
+    appendBE32(b, 0u);  // record dimension
+    appendNcName(b, "cell_spatial");
+    appendBE32(b, 3u);
+    appendNcName(b, "cell_angular");
+    appendBE32(b, 3u);
+
+    // Global attributes.
+    appendBE32(b, 12u);  // NC_ATTRIBUTE
+    appendBE32(b, 2u);
+    appendNcCharAttr(b, "Conventions", "AMBER");
+    appendNcCharAttr(b, "ConventionVersion", "1.0");
+
+    // Variables (all record variables, in file/record order).
+    appendBE32(b, 11u);  // NC_VARIABLE
+    appendBE32(b, 3u);
+
+    const bool b64off = (version >= 2);
+    size_t posCoord = 0, posClen = 0, posCang = 0;
+
+    // coordinates [frame, atom, spatial], NC_FLOAT.
+    appendNcName(b, "coordinates");
+    appendBE32(b, 3u);
+    appendBE32(b, 2u);
+    appendBE32(b, 1u);
+    appendBE32(b, 0u);
+    appendBE32(b, 12u);  // NC_ATTRIBUTE
+    appendBE32(b, 1u);
+    appendNcCharAttr(b, "units", "angstrom");
+    appendBE32(b, 5u);                                     // NC_FLOAT
+    appendBE32(b, static_cast<quint32>(4 * natom * 3));    // vsize
+    posCoord = b.size();
+    if (b64off)
+        appendBE64(b, 0u);
+    else
+        appendBE32(b, 0u);  // begin placeholder
+
+    // cell_lengths [frame, cell_spatial], NC_FLOAT.
+    appendNcName(b, "cell_lengths");
+    appendBE32(b, 2u);
+    appendBE32(b, 2u);
+    appendBE32(b, 3u);
+    appendBE32(b, 12u);
+    appendBE32(b, 1u);
+    appendNcCharAttr(b, "units", "angstrom");
+    appendBE32(b, 5u);
+    appendBE32(b, 12u);
+    posClen = b.size();
+    if (b64off)
+        appendBE64(b, 0u);
+    else
+        appendBE32(b, 0u);
+
+    // cell_angles [frame, cell_angular], NC_FLOAT.
+    appendNcName(b, "cell_angles");
+    appendBE32(b, 2u);
+    appendBE32(b, 2u);
+    appendBE32(b, 4u);
+    appendBE32(b, 12u);
+    appendBE32(b, 1u);
+    appendNcCharAttr(b, "units", "degree");
+    appendBE32(b, 5u);
+    appendBE32(b, 12u);
+    posCang = b.size();
+    if (b64off)
+        appendBE64(b, 0u);
+    else
+        appendBE32(b, 0u);
+
+    // Header complete: patch the variable begins now the header size is known.
+    const quint64 hdr = static_cast<quint64>(b.size());
+    const quint64 coordBegin = hdr;
+    const quint64 clenBegin = hdr + static_cast<quint64>(12 * natom);
+    const quint64 cangBegin = clenBegin + 12u;
+    if (b64off) {
+        patchBE64(b, posCoord, coordBegin);
+        patchBE64(b, posClen, clenBegin);
+        patchBE64(b, posCang, cangBegin);
+    } else {
+        patchBE32(b, posCoord, static_cast<quint32>(coordBegin));
+        patchBE32(b, posClen, static_cast<quint32>(clenBegin));
+        patchBE32(b, posCang, static_cast<quint32>(cangBegin));
+    }
+
+    // Record data: per frame, coordinates then cell_lengths then cell_angles.
+    for (int f = 0; f < nframes; ++f) {
+        for (int a = 0; a < natom; ++a)
+            for (int axis = 0; axis < 3; ++axis) appendBEf32(b, ncCoord(f, a, axis));
+        for (int i = 0; i < 3; ++i) appendBEf32(b, static_cast<float>(kNcCell[i]));
+        for (int i = 0; i < 3; ++i) appendBEf32(b, static_cast<float>(kNcCell[3 + i]));
+    }
+    return b;
+}
+
+// Load one AMBER NetCDF (as bytes) into a new TrajBlock and append it to pTraj.
+void appendAmberNC(const TrajectoryPtr &pTraj, const std::string &nc)
+{
+    AmberNetCDFReader reader;
+    reader.setTargTrajUID(pTraj->getUID());
+    mdtools::TrajBlockPtr pBlk(reader.createDefaultObj());
+    reader.attach(pBlk);
+    StrInStream nins(nc.data(), static_cast<int>(nc.size()));
+    reader.read(nins);
+    reader.detach();
+    pTraj->append(pBlk);
+}
+
 }  // namespace
 
 TEST(TrajectoryTest, DcdPlaybackMapsFramesToAtoms)
@@ -1069,4 +1244,140 @@ TEST(TrajectoryTest, XtcNatomMismatchThrows)
     std::string xtc = buildXTCUncompressed(5, 2);  // 5 atoms != 3
     StrInStream xins(xtc.data(), static_cast<int>(xtc.size()));
     EXPECT_THROW(reader.read(xins), qlib::FileFormatException);
+}
+
+// ---- Netcdf3InStream (AMBER NetCDF header + record decode) ----
+
+TEST(Netcdf3InStreamTest, ParsesHeader)
+{
+    std::string nc = buildAmberNC(4, 3, 2);
+    StrInStream ins(nc.data(), static_cast<int>(nc.size()));
+    mdtools::Netcdf3InStream ncs(ins);
+    ncs.parseHeader();
+    EXPECT_TRUE(ncs.getConvention().equals("AMBER"));
+    EXPECT_EQ(ncs.getNatoms(), 4);
+    EXPECT_EQ(ncs.getNumFrames(), 3);
+    EXPECT_TRUE(ncs.hasCell());
+    EXPECT_TRUE(ncs.hasRecordDim());
+}
+
+TEST(Netcdf3InStreamTest, ReadsFramesCoordsAndCell)
+{
+    const int natom = 4, nframes = 3;
+    std::string nc = buildAmberNC(natom, nframes, 2);
+    StrInStream ins(nc.data(), static_cast<int>(nc.size()));
+    mdtools::Netcdf3InStream ncs(ins);
+    ncs.parseHeader();
+
+    std::vector<qfloat32> crd;
+    qfloat32 cell[6];
+    for (int f = 0; f < nframes; ++f) {
+        ASSERT_TRUE(ncs.readFrame(crd, cell));
+        ASSERT_EQ(static_cast<int>(crd.size()), natom * 3);
+        for (int a = 0; a < natom; ++a)
+            for (int axis = 0; axis < 3; ++axis)
+                EXPECT_NEAR(crd[a * 3 + axis], ncCoord(f, a, axis), 1e-4);
+        for (int i = 0; i < 6; ++i) EXPECT_NEAR(cell[i], static_cast<float>(kNcCell[i]), 1e-4);
+    }
+    EXPECT_FALSE(ncs.readFrame(crd, cell));  // clean end of stream
+}
+
+TEST(Netcdf3InStreamTest, Cdf1MatchesCdf2)
+{
+    // The only on-file difference between CDF-1 and CDF-2 is the variable offset
+    // field width; both must decode to identical coordinates and cell.
+    const int natom = 3, nframes = 2;
+    std::string nc1 = buildAmberNC(natom, nframes, 1);
+    std::string nc2 = buildAmberNC(natom, nframes, 2);
+    StrInStream i1(nc1.data(), static_cast<int>(nc1.size()));
+    StrInStream i2(nc2.data(), static_cast<int>(nc2.size()));
+    mdtools::Netcdf3InStream s1(i1), s2(i2);
+    s1.parseHeader();
+    s2.parseHeader();
+    EXPECT_EQ(s1.getNumFrames(), s2.getNumFrames());
+
+    std::vector<qfloat32> c1, c2;
+    qfloat32 cell1[6], cell2[6];
+    for (int f = 0; f < nframes; ++f) {
+        ASSERT_TRUE(s1.readFrame(c1, cell1));
+        ASSERT_TRUE(s2.readFrame(c2, cell2));
+        ASSERT_EQ(c1.size(), c2.size());
+        for (size_t i = 0; i < c1.size(); ++i) EXPECT_FLOAT_EQ(c1[i], c2[i]);
+        for (int i = 0; i < 6; ++i) EXPECT_FLOAT_EQ(cell1[i], cell2[i]);
+    }
+}
+
+// ---- Trajectory + AmberNetCDFReader (GRO topology + synthetic NetCDF) ----
+
+TEST(TrajectoryTest, AmberNetCDFPlayback)
+{
+    TrajectoryPtr pTraj = makeWaterTrajectory();
+    ASSERT_EQ(pTraj->getAtomSize(), 3);
+
+    const int nframes = 4;
+    appendAmberNC(pTraj, buildAmberNC(3, nframes, 2));
+
+    EXPECT_EQ(pTraj->getFrameSize(), nframes);
+    EXPECT_EQ(pTraj->getBlockCount(), 1);
+
+    for (int f = 0; f < nframes; ++f) {
+        pTraj->setFrame(f);
+        for (int i = 0; i < 3; ++i) {
+            int aid = pTraj->getAtomIDByArrayInd(static_cast<quint32>(i));
+            Vector4D pos = pTraj->getAtom(aid)->getPos();
+            // AMBER coordinates are Angstrom (no scaling).
+            EXPECT_NEAR(pos.x(), ncCoord(f, i, 0), 1e-4);
+            EXPECT_NEAR(pos.y(), ncCoord(f, i, 1), 1e-4);
+            EXPECT_NEAR(pos.z(), ncCoord(f, i, 2), 1e-4);
+        }
+    }
+}
+
+TEST(TrajectoryTest, AmberNetCDFNatomMismatchThrows)
+{
+    TrajectoryPtr pTraj = makeWaterTrajectory();  // 3 atoms
+
+    AmberNetCDFReader reader;
+    reader.setTargTrajUID(pTraj->getUID());
+    mdtools::TrajBlockPtr pBlk(reader.createDefaultObj());
+    reader.attach(pBlk);
+    std::string nc = buildAmberNC(5, 2, 2);  // 5 atoms != 3
+    StrInStream nins(nc.data(), static_cast<int>(nc.size()));
+    EXPECT_THROW(reader.read(nins), qlib::FileFormatException);
+}
+
+TEST(TrajectoryTest, AmberNetCDFNeverySkip)
+{
+    TrajectoryPtr pTraj = makeWaterTrajectory();
+
+    AmberNetCDFReader reader;
+    reader.setTargTrajUID(pTraj->getUID());
+    reader.setSkipNo(2);  // keep every 2nd frame
+    mdtools::TrajBlockPtr pBlk(reader.createDefaultObj());
+    reader.attach(pBlk);
+    std::string nc = buildAmberNC(3, 6, 2);  // 6 frames -> 3 kept
+    StrInStream nins(nc.data(), static_cast<int>(nc.size()));
+    reader.read(nins);
+    reader.detach();
+    pTraj->append(pBlk);
+
+    EXPECT_EQ(pTraj->getFrameSize(), 3);
+}
+
+TEST(TrajectoryTest, AmberNetCDFInitialFrameIsTrajFrameZero)
+{
+    // GRO topology carries its own (initial-structure) coordinates. Once a
+    // trajectory block is appended, the initial display (before any setFrame)
+    // must show the trajectory's frame 0, not the GRO coordinates.
+    TrajectoryPtr pTraj = makeWaterTrajectory();
+    appendAmberNC(pTraj, buildAmberNC(3, 4, 2));
+
+    // No setFrame() call: read the eagerly-primed initial positions directly.
+    for (int i = 0; i < 3; ++i) {
+        int aid = pTraj->getAtomIDByArrayInd(static_cast<quint32>(i));
+        Vector4D pos = pTraj->getAtom(aid)->getPos();
+        EXPECT_NEAR(pos.x(), ncCoord(0, i, 0), 1e-4);
+        EXPECT_NEAR(pos.y(), ncCoord(0, i, 1), 1e-4);
+        EXPECT_NEAR(pos.z(), ncCoord(0, i, 2), 1e-4);
+    }
 }

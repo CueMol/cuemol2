@@ -15,6 +15,7 @@
 #include "DCDTrajReader.hpp"
 #include "TrrTrajReader.hpp"
 #include "XtcTrajReader.hpp"
+#include "AmberNetCDFReader.hpp"
 
 extern void mdtools_regClasses();
 extern void mdtools_unregClasses();
@@ -36,6 +37,7 @@ namespace mdtools {
     pSM->registReader<DCDTrajReader>();
     pSM->registReader<TrrTrajReader>();
     pSM->registReader<XtcTrajReader>();
+    pSM->registReader<AmberNetCDFReader>();
 
     MB_DPRINTLN("mdtools init: OK");
     return true;

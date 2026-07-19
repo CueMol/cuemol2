@@ -81,8 +81,19 @@ public:
 
     void update(int n, bool bDyn = false);
 
+    /// Object hook (end of loading). Eagerly primes frame 0 once the topology
+    /// and blocks are both loaded, so the initial display shows the
+    /// trajectory's first frame rather than the topology's own (zero /
+    /// initial-structure) coordinates. No-op until blocks exist.
+    void readerDetached() override;
+
 private:
     void findBlk(int nfrm, int &nBlkInd, int &nFrmInd) const;
+
+    /// Write frame-0 coordinates into the atoms, (re)build distance-dependent
+    /// topology (bonds) and compute secondary structure, all on the real
+    /// frame-0 coordinates. Called once when the trajectory is first primed.
+    void primeInitialFrame();
 
     /// Finalize blocks loaded from a .qsc (assign start indices, total frame
     /// count, prime frame 0 and topology). develop's Object is not a
