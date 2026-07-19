@@ -13,6 +13,8 @@
 #include "GROFileReader.hpp"
 #include "AmberPrmtopReader.hpp"
 #include "DCDTrajReader.hpp"
+#include "TrrTrajReader.hpp"
+#include "XtcTrajReader.hpp"
 
 extern void mdtools_regClasses();
 extern void mdtools_unregClasses();
@@ -32,6 +34,8 @@ namespace mdtools {
     pSM->registReader<GROFileReader>();
     pSM->registReader<AmberPrmtopReader>();
     pSM->registReader<DCDTrajReader>();
+    pSM->registReader<TrrTrajReader>();
+    pSM->registReader<XtcTrajReader>();
 
     MB_DPRINTLN("mdtools init: OK");
     return true;

@@ -44,6 +44,23 @@ TrajectoryPtr TrajBlockReader::getTargTraj() const
     return pTraj;
 }
 
+void TrajBlockReader::scatterCoords(const TrajectoryPtr &pTraj,
+                                    const std::vector<qfloat32> &filecrd, int natomFile,
+                                    qfloat32 *pcoord, float scale)
+{
+    // The selection index array maps trajectory atom -> file atom. It is NULL
+    // when the topology is not loaded yet (.qsc order); fall back to the
+    // identity map over the file's atoms (load-all).
+    const quint32 *psia = pTraj->getSelIndexArray();
+    const int nReadAtoms = (psia != NULL) ? static_cast<int>(pTraj->getAtomSize()) : natomFile;
+    for (int jj = 0; jj < nReadAtoms; ++jj) {
+        const int k = (psia != NULL) ? static_cast<int>(psia[jj]) : jj;
+        pcoord[jj * 3 + 0] = filecrd[k * 3 + 0] * scale;
+        pcoord[jj * 3 + 1] = filecrd[k * 3 + 1] * scale;
+        pcoord[jj * 3 + 2] = filecrd[k * 3 + 2] * scale;
+    }
+}
+
 Trajectory::Trajectory()
 {
     m_bInit = false;

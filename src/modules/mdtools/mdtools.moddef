@@ -7,6 +7,8 @@
 #include "TrajBlock.qif"
 #include "Trajectory.qif"
 #include "DCDTrajReader.qif"
+#include "TrrTrajReader.qif"
+#include "XtcTrajReader.qif"
 
 module mdtools
 {
@@ -19,5 +21,7 @@ module mdtools
   TrajBlock;
   Trajectory;
   DCDTrajReader;
+  TrrTrajReader;
+  XtcTrajReader;
 };
 
