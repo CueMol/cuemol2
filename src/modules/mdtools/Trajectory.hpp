@@ -97,6 +97,12 @@ public:
 private:
     void findBlk(int nfrm, int &nBlkInd, int &nFrmInd) const;
 
+    /// Fire an object-changed event for a block-set change (block append /
+    /// remove -> nframe / nblock changed). This is a trajectory-specific
+    /// structural change, distinct from molecular topologyChanged (covalent
+    /// bond / atom edits); the frame-set changed, not the connectivity.
+    void fireTrajBlockChanged();
+
     /// Write frame-0 coordinates into the atoms, (re)build distance-dependent
     /// topology (bonds) and compute secondary structure, all on the real
     /// frame-0 coordinates. Called once when the trajectory is first primed.

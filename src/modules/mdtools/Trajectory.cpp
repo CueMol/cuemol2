@@ -14,6 +14,7 @@
 #include <qsys/SceneManager.hpp>
 #include <qsys/Scene.hpp>
 #include <qsys/UndoManager.hpp>
+#include <qsys/ObjectEvent.hpp>
 #include <qlib/Utils.hpp>
 #include <qlib/LDOM2Tree.hpp>
 
@@ -256,9 +257,21 @@ void Trajectory::append(TrajBlockPtr pBlk)
     }
 
     // A block append changes the frame structure (nframe/nblock).
-    fireTopologyChanged();
+    fireTrajBlockChanged();
 
     LOG_DPRINTLN("Traj> append blk start=%d, size=%d", nnext, pBlk->getSize());
+}
+
+void Trajectory::fireTrajBlockChanged()
+{
+    // Trajectory-specific structural change (frame set changed). Distinct from
+    // molecular topologyChanged (bond/atom connectivity), so it uses its own
+    // descr; a listener filters on it via the event category (args.method).
+    qsys::ObjectEvent obe;
+    obe.setType(qsys::ObjectEvent::OBE_CHANGED);
+    obe.setTarget(getUID());
+    obe.setDescr("trajBlockChanged");
+    fireObjectEvent(obe);
 }
 
 void Trajectory::removeBlock(int index)
@@ -294,7 +307,7 @@ void Trajectory::removeBlock(int index)
     }
 
     // A block remove changes the frame structure (nframe/nblock).
-    fireTopologyChanged();
+    fireTrajBlockChanged();
 
     LOG_DPRINTLN("Traj> removeBlock idx=%d, nblk=%d, total=%d", index,
                  static_cast<int>(m_blocks.size()), m_nTotalFrms);

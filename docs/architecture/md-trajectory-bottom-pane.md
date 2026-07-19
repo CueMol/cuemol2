@@ -49,11 +49,15 @@ start index 再計算 + 現在 frame クランプ + `fireTopologyChanged`。0 bl
 - **初回ロード (`loadTrajectory`)**: object 全体の `ObjLoadEditInfo` (scene.addObject) で undo される
   ため、その中の block append も記録はされるが、Add と独立した操作単位。実運用で undo が trajectory を
   0 block にする瞬間は発生しない (Add-undo は追加分 1 個のみ除去、load-undo は object ごと消える)。
-- **pane 同期**: append/removeBlock が `fireTopologyChanged()` (`OBE_CHANGED`/descr=`"topologyChanged"`)
-  を発火。renderer 側では event category が `args.method` として届く (`EventSlots` が `getCategory()` の
-  category=descr を `method` に載せる。`args.obj.descr` ではない — `useMolSequenceData` と同じ)。
-  `useTrajectory` は `args.method === "topologyChanged"` で refetch、`"atomsMoved"` は無視
-  (per-frame storm 回避)。
+- **pane 同期**: append/removeBlock が **trajectory 専用の** `fireTrajBlockChanged()`
+  (`OBE_CHANGED`/descr=`"trajBlockChanged"`) を発火。分子の `topologyChanged` (共有結合/原子の add/remove)
+  とは意味が異なる (frame 集合が変わっただけで connectivity は不変) ため、専用 descr にしている。
+  renderer 側では event category が `args.method` として届く (`EventSlots` が `getCategory()` の
+  category=descr を `method` に載せる。`args.obj.descr` ではない)。`useTrajectory` は
+  `args.method === "trajBlockChanged"` で refetch、`"atomsMoved"` は無視 (per-frame storm 回避)。
+
+  SEM 分類: `SEM_OBJECT` / `SEM_CHANGED` / category(=descr)=`"trajBlockChanged"`、scope=scene。
+  `SEM_ADDED`/`SEM_REMOVING` ではない (それらは scene への object/renderer 追加削除用)。
 
 ## 再生の方式: JS タイマー (Animation との最大の差)
 

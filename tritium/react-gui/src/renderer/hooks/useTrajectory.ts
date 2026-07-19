@@ -114,12 +114,14 @@ export function useTrajectory({
         evtMask: SEM_ANY,
         scopeId: sceneId ?? -1,
         handler: (args: unknown) => {
-            // The event category is delivered as `method` (see EventSlots /
-            // useMolSequenceData): block append/remove fires SEM_CHANGED with
-            // method "topologyChanged"; the per-frame coordinate event is
-            // method "atomsMoved" and is ignored to avoid a playback storm.
+            // The event category is delivered as `method` (see EventSlots).
+            // Block append/remove fires SEM_CHANGED with method
+            // "trajBlockChanged" (a trajectory-specific structural change,
+            // distinct from molecular "topologyChanged"); the per-frame
+            // coordinate event is "atomsMoved" and is ignored to avoid a
+            // playback refetch storm.
             const a = args as { evtType?: number; method?: string } | null;
-            if (a?.evtType === SEM_CHANGED && a?.method !== 'topologyChanged') return;
+            if (a?.evtType === SEM_CHANGED && a?.method !== 'trajBlockChanged') return;
             refetch();
         },
         debounceMs: REFETCH_DEBOUNCE_MS,
