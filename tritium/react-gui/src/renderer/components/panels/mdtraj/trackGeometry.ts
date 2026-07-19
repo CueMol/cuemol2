@@ -66,9 +66,13 @@ export function fitPxPerFrame(nframe: number, availPx: number): number {
     return clampPxPerFrame((availPx - 40) / nframe);
 }
 
-/** Color slot index (0 .. BLOCK_COLOR_COUNT-1) for a block position. */
-export function blockColorIndex(index: number): number {
-    return ((index % BLOCK_COLOR_COUNT) + BLOCK_COLOR_COUNT) % BLOCK_COLOR_COUNT;
+/**
+ * Color slot index (0 .. BLOCK_COLOR_COUNT-1) for a stable block key (e.g. the
+ * block uid). Keying on a stable identity rather than the position index keeps
+ * a block's color constant across a reorder, so a move is visually obvious.
+ */
+export function blockColorIndex(key: number): number {
+    return ((key % BLOCK_COLOR_COUNT) + BLOCK_COLOR_COUNT) % BLOCK_COLOR_COUNT;
 }
 
 /** File basename (last path segment) of a source path. */

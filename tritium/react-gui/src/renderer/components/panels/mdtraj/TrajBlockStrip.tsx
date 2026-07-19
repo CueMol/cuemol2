@@ -50,7 +50,9 @@ export const TrajBlockStrip: React.FC<TrajBlockStripProps> = ({
 }) => {
     const left = frameToPx(block.startIndex, pxPerFrame);
     const width = Math.max(MIN_BLOCK_PX, frameToPx(block.nframe, pxPerFrame));
-    const colorIdx = blockColorIndex(index);
+    // Color by the block's stable uid (not its position), so the color follows
+    // the block on reorder and makes a move visually obvious.
+    const colorIdx = blockColorIndex(block.uid);
     const label = basename(block.src) || block.name || `block ${index + 1}`;
     const lastFrame = block.startIndex + Math.max(0, block.nframe - 1);
     const className =

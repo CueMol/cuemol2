@@ -173,7 +173,7 @@ export const TrajTrack: React.FC<TrajTrackProps> = ({
                 >
                     {blocks.map((b, i) => (
                         <TrajBlockStrip
-                            key={`${b.uid}-${i}`}
+                            key={b.uid}
                             block={b}
                             index={i}
                             pxPerFrame={pxPerFrame}
