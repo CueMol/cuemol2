@@ -1144,6 +1144,77 @@ TEST(TrajectoryTest, BlockAppendUndoRedo)
     qsys::SceneManager::getInstance()->destroyScene(pScene->getUID());
 }
 
+// Remove is undoable: undo re-inserts the removed block at its index, redo
+// removes it again. Frame count / block count / start indices round-trip.
+TEST(TrajectoryTest, BlockRemoveUndoRedo)
+{
+    qsys::ScenePtr pScene = qsys::SceneManager::getInstance()->createScene();
+    TrajectoryPtr pTraj = makeWaterTrajectory();
+    appendDCD(pTraj, buildDCD(3, 2));  // block 0: frames 0..1
+    appendDCD(pTraj, buildDCD(3, 3));  // block 1: frames 2..4
+    pScene->addObject(pTraj);
+    EXPECT_EQ(pTraj->getBlockCount(), 2);
+    EXPECT_EQ(pTraj->getFrameSize(), 5);
+
+    pScene->startUndoTxn("Remove trajectory block");
+    pTraj->removeBlock(0);
+    pScene->commitUndoTxn();
+    EXPECT_EQ(pTraj->getBlockCount(), 1);
+    EXPECT_EQ(pTraj->getFrameSize(), 3);
+    EXPECT_EQ(pTraj->getBlock(0)->getStartIndex(), 0);
+
+    // Undo re-inserts block 0.
+    ASSERT_TRUE(pScene->isUndoable());
+    pScene->undo(1);
+    EXPECT_EQ(pTraj->getBlockCount(), 2);
+    EXPECT_EQ(pTraj->getFrameSize(), 5);
+    EXPECT_EQ(pTraj->getBlock(1)->getStartIndex(), 2);
+
+    // Redo removes it again.
+    pScene->redo(1);
+    EXPECT_EQ(pTraj->getBlockCount(), 1);
+    EXPECT_EQ(pTraj->getFrameSize(), 3);
+
+    qsys::SceneManager::getInstance()->destroyScene(pScene->getUID());
+}
+
+// Move (reorder) is undoable: undo moves the block back, redo re-applies. Uses
+// distinct block frame counts (2,3,4) as identity; total frames is unchanged.
+TEST(TrajectoryTest, BlockMoveUndoRedo)
+{
+    qsys::ScenePtr pScene = qsys::SceneManager::getInstance()->createScene();
+    TrajectoryPtr pTraj = makeWaterTrajectory();
+    appendDCD(pTraj, buildDCD(3, 2));  // block A: 2 frames
+    appendDCD(pTraj, buildDCD(3, 3));  // block B: 3 frames
+    appendDCD(pTraj, buildDCD(3, 4));  // block C: 4 frames
+    pScene->addObject(pTraj);
+    EXPECT_EQ(pTraj->getFrameSize(), 9);
+
+    // Move A (index 0) to index 2 -> order [B(3), C(4), A(2)].
+    pScene->startUndoTxn("Reorder trajectory block");
+    pTraj->moveBlock(0, 2);
+    pScene->commitUndoTxn();
+    EXPECT_EQ(pTraj->getBlock(0)->getSize(), 3);
+    EXPECT_EQ(pTraj->getBlock(1)->getSize(), 4);
+    EXPECT_EQ(pTraj->getBlock(2)->getSize(), 2);
+    EXPECT_EQ(pTraj->getBlock(2)->getStartIndex(), 7);
+    EXPECT_EQ(pTraj->getFrameSize(), 9);  // total unchanged by a reorder
+
+    // Undo restores [A(2), B(3), C(4)].
+    ASSERT_TRUE(pScene->isUndoable());
+    pScene->undo(1);
+    EXPECT_EQ(pTraj->getBlock(0)->getSize(), 2);
+    EXPECT_EQ(pTraj->getBlock(1)->getSize(), 3);
+    EXPECT_EQ(pTraj->getBlock(2)->getSize(), 4);
+
+    // Redo re-applies the move.
+    pScene->redo(1);
+    EXPECT_EQ(pTraj->getBlock(0)->getSize(), 3);
+    EXPECT_EQ(pTraj->getBlock(2)->getSize(), 2);
+
+    qsys::SceneManager::getInstance()->destroyScene(pScene->getUID());
+}
+
 TEST(TrajectoryTest, DcdNatomMismatchThrows)
 {
     TrajectoryPtr pTraj = makeWaterTrajectory();  // 3 atoms

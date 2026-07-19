@@ -148,6 +148,56 @@ export const TrajectoryPanel: React.FC<TrajectoryPanelProps> = ({ cm, activeScen
         }
     }, [cm, activeSceneId, objId, refetch]);
 
+    /** Remove the selected block. */
+    const handleRemoveBlock = useCallback(async () => {
+        if (!cm || activeSceneId === undefined || objId === undefined || selectedBlock === null) return;
+        setError(null);
+        try {
+            const r = await cm.invokeService('removeTrajectoryBlock', {
+                sceneId: activeSceneId,
+                objId,
+                index: selectedBlock,
+            });
+            if (!r.ok) setError(r.error ?? 'Failed to remove block');
+            else setSelectedBlock(null);
+            refetch();
+        } catch (e) {
+            setError(e instanceof Error ? e.message : String(e));
+        }
+    }, [cm, activeSceneId, objId, selectedBlock, refetch]);
+
+    /** Move the block at `from` to index `to` (Move buttons + strip drag). */
+    const handleReorderBlock = useCallback(
+        async (from: number, to: number) => {
+            if (!cm || activeSceneId === undefined || objId === undefined) return;
+            if (from === to || to < 0 || to >= blocks.length) return;
+            setError(null);
+            try {
+                const r = await cm.invokeService('moveTrajectoryBlock', {
+                    sceneId: activeSceneId,
+                    objId,
+                    from,
+                    to,
+                });
+                if (!r.ok) setError(r.error ?? 'Failed to move block');
+                else setSelectedBlock(to);
+                refetch();
+            } catch (e) {
+                setError(e instanceof Error ? e.message : String(e));
+            }
+        },
+        [cm, activeSceneId, objId, blocks.length, refetch],
+    );
+
+    /** Move the selected block by one position (Move buttons). */
+    const handleMoveBlock = useCallback(
+        (delta: -1 | 1) => {
+            if (selectedBlock === null) return;
+            handleReorderBlock(selectedBlock, selectedBlock + delta);
+        },
+        [selectedBlock, handleReorderBlock],
+    );
+
     // --- Empty (no scene) state ---
     if (!cm || activeSceneId === undefined) {
         return (
@@ -210,6 +260,7 @@ export const TrajectoryPanel: React.FC<TrajectoryPanelProps> = ({ cm, activeScen
                 onSelectBlock={setSelectedBlock}
                 onScrubPreview={playback.previewFrame}
                 onScrubCommit={playback.commit}
+                onReorderBlock={handleReorderBlock}
             />
 
             <ButtonRow className="mdtraj-block-toolbar">
@@ -222,18 +273,21 @@ export const TrajectoryPanel: React.FC<TrajectoryPanelProps> = ({ cm, activeScen
                 />
                 <FormButton
                     icon={<AppIcon name="ui.trash" aria-hidden />}
-                    disabled
-                    title="Remove block (not yet available)"
+                    onClick={handleRemoveBlock}
+                    disabled={selectedBlock === null}
+                    title="Remove selected block"
                 />
                 <FormButton
                     icon={<AppIcon name="ui.caretLeft" aria-hidden />}
-                    disabled
-                    title="Move block earlier (not yet available)"
+                    onClick={() => handleMoveBlock(-1)}
+                    disabled={selectedBlock === null || selectedBlock === 0}
+                    title="Move selected block earlier"
                 />
                 <FormButton
                     icon={<AppIcon name="ui.caretRight" aria-hidden />}
-                    disabled
-                    title="Move block later (not yet available)"
+                    onClick={() => handleMoveBlock(1)}
+                    disabled={selectedBlock === null || selectedBlock >= blocks.length - 1}
+                    title="Move selected block later"
                 />
                 <span className="mdtraj-block-count type-caption">
                     {blocks.length} block{blocks.length === 1 ? '' : 's'}

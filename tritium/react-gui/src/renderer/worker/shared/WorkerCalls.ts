@@ -56,6 +56,9 @@ import type {
   SetTrajectoryFrameResult,
   AppendTrajectoryBlockArgs,
   AppendTrajectoryBlockResult,
+  RemoveTrajectoryBlockArgs,
+  MoveTrajectoryBlockArgs,
+  TrajBlockEditResult,
 } from '../server/services/trajectory.service'
 import type { LoadSceneArgs } from '../server/services/loadScene.service'
 import type {
@@ -502,6 +505,8 @@ export interface ServiceMap {
   getTrajectoryState:         { args: GetTrajectoryStateArgs;          result: TrajectoryState }
   setTrajectoryFrame:         { args: SetTrajectoryFrameArgs;          result: SetTrajectoryFrameResult }
   appendTrajectoryBlock:      { args: AppendTrajectoryBlockArgs;       result: AppendTrajectoryBlockResult }
+  removeTrajectoryBlock:      { args: RemoveTrajectoryBlockArgs;       result: TrajBlockEditResult }
+  moveTrajectoryBlock:        { args: MoveTrajectoryBlockArgs;         result: TrajBlockEditResult }
   loadScene:                  { args: LoadSceneArgs;                   result: { ok: boolean } }
   streamLoadFromUrl:          { args: StreamLoadFromUrlArgs;           result: StreamLoadFromUrlResult }
   streamLoadDensityMap:       { args: StreamLoadDensityMapArgs;        result: StreamLoadDensityMapResult }

@@ -1,6 +1,6 @@
 // -*-Mode: C++;-*-
 //
-// Undo/redo info for trajectory block append
+// Undo/redo info for trajectory block append / remove / move
 //
 
 #include <common.h>
@@ -14,12 +14,24 @@ using namespace mdtools;
 
 bool TrajBlockEditInfo::undo()
 {
-    // Undo an append: remove the block that was appended. Recording is disabled
-    // by the UndoManager while undo runs, so removeBlock does not re-record.
+    // Recording is disabled by the UndoManager while undo runs, so the
+    // Trajectory edit methods below do not re-record.
     Trajectory *pTraj = qlib::ObjectManager::sGetObj<Trajectory>(m_nTrajUID);
     if (pTraj == NULL) return false;
     try {
-        pTraj->removeBlock(m_nIndex);
+        switch (m_nMode) {
+        case MODE_APPEND:
+            pTraj->removeBlock(m_nIndex);
+            break;
+        case MODE_REMOVE:
+            pTraj->insertBlock(m_nIndex, m_pBlock);
+            break;
+        case MODE_MOVE:
+            pTraj->moveBlock(m_nToIndex, m_nIndex);
+            break;
+        default:
+            return false;
+        }
     } catch (...) {
         return false;
     }
@@ -28,12 +40,22 @@ bool TrajBlockEditInfo::undo()
 
 bool TrajBlockEditInfo::redo()
 {
-    // Redo an append: re-append the retained block at the back (its original
-    // position, since undo removes are LIFO within a transaction).
     Trajectory *pTraj = qlib::ObjectManager::sGetObj<Trajectory>(m_nTrajUID);
     if (pTraj == NULL) return false;
     try {
-        pTraj->append(m_pBlock);
+        switch (m_nMode) {
+        case MODE_APPEND:
+            pTraj->append(m_pBlock);
+            break;
+        case MODE_REMOVE:
+            pTraj->removeBlock(m_nIndex);
+            break;
+        case MODE_MOVE:
+            pTraj->moveBlock(m_nIndex, m_nToIndex);
+            break;
+        default:
+            return false;
+        }
     } catch (...) {
         return false;
     }

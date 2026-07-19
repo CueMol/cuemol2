@@ -1,6 +1,6 @@
 # MD Trajectory Bottom Pane (tritium)
 
-Status: implemented (Phase A + B + D-1 block-Add undo/redo). Phase C (block remove / reorder UI) deferred.
+Status: implemented (Phase A + B + C block remove/reorder + D-1 undo/redo).
 Related: [MD Trajectory Open Dialog](md-trajectory-open-dialog.md).
 
 ## 目的
@@ -111,12 +111,15 @@ SEM_CHANGED=4` と **連番**で、OR したビットマスクにならない。
 
 ## スコープ (現状) と後続
 
-- **含む (Phase A+B+D-1)**: target 選択 / 再生 (JS タイマー) / frame readout+spinbox /
-  seek (△ playhead) / frame 数比例の block セグメント / Add block / **Add の undo/redo**。
-- **後続 (Phase C)**: UI からの block 削除・drag 並び替え。`Trajectory::removeBlock` は D-1 で実装済み
-  なので、残りは `moveBlock` (並び替え) + worker service (`removeTrajectoryBlock`/`moveTrajectoryBlock`)
-  + UI 有効化 (現在ボタン枠は disabled で配置済み)。remove の undo は `TrajBlockEditInfo` に REMOVE
-  モードを足す。
+- **含む (Phase A+B+C+D-1)**: target 選択 / 再生 (JS タイマー) / frame readout+spinbox /
+  seek (△ playhead) / frame 数比例の block セグメント / Add / Remove / Move (◀▶ ボタン + strip drag) /
+  すべて undo/redo 対応。
+- **block edit の C++** (Phase C): `Trajectory::removeBlock` / `insertBlock` (undo 用) / `moveBlock`
+  (erase-at-from + insert-at-to で block が index `to` に来る) + `recomputeBlockLayout` (start index 再計算)。
+  `TrajBlockEditInfo` の APPEND / REMOVE / MOVE モードがそれぞれ逆操作で undo/redo。記録は interactive txn
+  のときだけ (`isOK`)、undo/redo 実行中は `m_fDisable` で非記録。worker は `removeTrajectoryBlock` /
+  `moveTrajectoryBlock` (withUndoTxn)。GUI は Remove/Move ボタン + strip の click-select / drag-reorder
+  (`TrajTrack` が click と drag を閾値で判別、drop 先の block を frame から解決)。
 - **スコープ外**: prmtop/psf/netcdf topology、per-block 間引き、`frame_aver_size` UI、
   movie/画像エクスポート、trajectory セットの MRU。
 

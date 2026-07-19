@@ -154,13 +154,19 @@
   background: var(--mdtraj-block-0);
   color: var(--mdtraj-block-text);
   overflow: hidden;
-  cursor: pointer;
+  cursor: grab;
   box-shadow: inset 0 1px 0 var(--overlay-border-top);
 }
 
 .mdtraj-block.is-selected {
   outline: 2px solid var(--accent-selected);
   outline-offset: -1px;
+}
+
+/* Block being dragged to reorder. */
+.mdtraj-block.is-dragging {
+  cursor: grabbing;
+  opacity: 0.55;
 }
 
 .mdtraj-block-label {

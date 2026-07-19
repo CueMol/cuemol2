@@ -37,6 +37,8 @@ function makeTraj(opts: { nframe?: number; frame?: number; blocks?: BlockSpec[] 
         get nblock() { return blocks.length },
         getBlock: vi.fn((i: number) => blocks[i]),
         append: vi.fn(),
+        removeBlock: vi.fn(),
+        moveBlock: vi.fn(),
     }
     return { traj, frameWrites }
 }
@@ -206,5 +208,46 @@ describe('appendTrajectoryBlock', () => {
         expect(res.error).toMatch(/atom coord size/)
         expect(scene.rollbackUndoTxn).toHaveBeenCalled()
         expect(scene.commitUndoTxn).not.toHaveBeenCalled()
+    })
+})
+
+describe('removeTrajectoryBlock', () => {
+    beforeEach(() => vi.clearAllMocks())
+
+    it('removes the block inside an undo txn', () => {
+        const { traj } = makeTraj({ nframe: 5 })
+        const { ctx, scene } = makeCtx(traj)
+        const res = trajServices.removeTrajectoryBlock(ctx, { sceneId: 1, objId: 42, index: 1 })
+        expect(res.ok).toBe(true)
+        expect(scene.startUndoTxn).toHaveBeenCalledWith('Remove trajectory block')
+        expect(traj.removeBlock).toHaveBeenCalledWith(1)
+        expect(scene.commitUndoTxn).toHaveBeenCalled()
+    })
+
+    it('rolls back and reports when removeBlock throws (bad index)', () => {
+        const { traj } = makeTraj({ nframe: 5 })
+        ;(traj.removeBlock as ReturnType<typeof vi.fn>).mockImplementationOnce(() => {
+            throw new Error('removeBlock(): index out of range')
+        })
+        const { ctx, scene } = makeCtx(traj)
+        const res = trajServices.removeTrajectoryBlock(ctx, { sceneId: 1, objId: 42, index: 9 })
+        expect(res.ok).toBe(false)
+        expect(res.error).toMatch(/out of range/)
+        expect(scene.rollbackUndoTxn).toHaveBeenCalled()
+        expect(scene.commitUndoTxn).not.toHaveBeenCalled()
+    })
+})
+
+describe('moveTrajectoryBlock', () => {
+    beforeEach(() => vi.clearAllMocks())
+
+    it('moves the block inside an undo txn', () => {
+        const { traj } = makeTraj({ nframe: 9 })
+        const { ctx, scene } = makeCtx(traj)
+        const res = trajServices.moveTrajectoryBlock(ctx, { sceneId: 1, objId: 42, from: 0, to: 2 })
+        expect(res.ok).toBe(true)
+        expect(scene.startUndoTxn).toHaveBeenCalledWith('Reorder trajectory block')
+        expect(traj.moveBlock).toHaveBeenCalledWith(0, 2)
+        expect(scene.commitUndoTxn).toHaveBeenCalled()
     })
 })

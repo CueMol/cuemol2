@@ -35,6 +35,8 @@ runtime_class Trajectory extends AnimMol
   object<TrajBlock$> getBlock(integer index);
 
   void removeBlock(integer index);
+
+  void moveBlock(integer from, integer to);
 };
 
 #endif

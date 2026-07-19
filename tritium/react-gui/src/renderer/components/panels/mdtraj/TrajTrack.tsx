@@ -11,7 +11,7 @@
  * trajectory is not re-seeked on every mouse move. A bare click also seeks.
  */
 
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import type { TrajBlockInfo } from '../../../worker/server/services/trajectory.service';
 import { TrajBlockStrip } from './TrajBlockStrip';
 import {
@@ -20,6 +20,18 @@ import {
     trackWidthPx,
     niceFrameStep,
 } from './trackGeometry';
+
+/** Min pixel travel before a block mousedown counts as a drag (vs a click). */
+const DRAG_THRESHOLD_PX = 4;
+
+/** Index of the block that owns a given frame (last block as a fallback). */
+function frameToBlockIndex(frame: number, blocks: TrajBlockInfo[]): number {
+    for (let i = 0; i < blocks.length; i++) {
+        const start = blocks[i].startIndex;
+        if (frame >= start && frame < start + blocks[i].nframe) return i;
+    }
+    return blocks.length - 1;
+}
 
 interface TrajTrackProps {
     blocks: TrajBlockInfo[];
@@ -35,6 +47,8 @@ interface TrajTrackProps {
     onScrubPreview: (frame: number | null) => void;
     /** Commit a frame on release / click. */
     onScrubCommit: (frame: number) => void;
+    /** Reorder: move the block at `from` to index `to` (block drag). */
+    onReorderBlock: (from: number, to: number) => void;
 }
 
 /**
@@ -50,9 +64,11 @@ export const TrajTrack: React.FC<TrajTrackProps> = ({
     onSelectBlock,
     onScrubPreview,
     onScrubCommit,
+    onReorderBlock,
 }) => {
     const scrollRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLDivElement>(null);
+    const [draggingBlock, setDraggingBlock] = useState<number | null>(null);
 
     const widthPx = trackWidthPx(nframe, pxPerFrame);
     const playheadLeft = frameToPx(frame, pxPerFrame);
@@ -95,6 +111,40 @@ export const TrajTrack: React.FC<TrajTrackProps> = ({
         [canControl, nframe, clientXToFrame, onScrubPreview, onScrubCommit],
     );
 
+    /**
+     * Begin a block interaction: a bare click selects; a horizontal drag beyond
+     * the threshold reorders the block to whichever block the cursor ends over.
+     * The reorder commits once on release (the C++ event refetches the layout).
+     */
+    const handleBlockMouseDown = useCallback(
+        (index: number, e: React.MouseEvent) => {
+            if (e.button !== 0) return;
+            e.stopPropagation(); // do not start a ruler scrub / lane deselect
+            const startX = e.clientX;
+            let moved = false;
+            const onMove = (ev: MouseEvent) => {
+                if (!moved && Math.abs(ev.clientX - startX) > DRAG_THRESHOLD_PX) {
+                    moved = true;
+                    setDraggingBlock(index);
+                }
+            };
+            const onUp = (ev: MouseEvent) => {
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+                setDraggingBlock(null);
+                if (!moved) {
+                    onSelectBlock(index);
+                    return;
+                }
+                const to = frameToBlockIndex(clientXToFrame(ev.clientX), blocks);
+                if (to >= 0 && to !== index) onReorderBlock(index, to);
+            };
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+        },
+        [blocks, clientXToFrame, onSelectBlock, onReorderBlock],
+    );
+
     const step = niceFrameStep(pxPerFrame);
     const ticks: React.ReactNode[] = [];
     for (let t = 0; t <= nframe; t += step) {
@@ -128,7 +178,8 @@ export const TrajTrack: React.FC<TrajTrackProps> = ({
                             index={i}
                             pxPerFrame={pxPerFrame}
                             selected={selectedBlock === i}
-                            onSelect={onSelectBlock}
+                            dragging={draggingBlock === i}
+                            onMouseDownBlock={handleBlockMouseDown}
                         />
                     ))}
                     {blocks.length === 0 && (

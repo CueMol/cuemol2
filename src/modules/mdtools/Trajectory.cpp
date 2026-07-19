@@ -282,18 +282,25 @@ void Trajectory::removeBlock(int index)
         return;
     }
 
-    // Drop the block, then recompute the contiguous start indices and total.
-    m_blocks.erase(m_blocks.begin() + index);
-
-    int nstart = 0;
-    for (const TrajBlockPtr &pblk : m_blocks) {
-        pblk->setStartIndex(nstart);
-        nstart += pblk->getSize();
+    // Retain the block and record an undo step (interactive txn only; the
+    // UndoManager disables recording during undo/redo and .qsc load).
+    TrajBlockPtr pBlk = m_blocks[index];
+    {
+        qsys::UndoManager *pUM = nullptr;
+        qsys::ScenePtr cursc = getScene();
+        if (!cursc.isnull()) pUM = cursc->getUndoMgr();
+        if (pUM != nullptr && pUM->isOK()) {
+            TrajBlockEditInfo *pEI = MB_NEW TrajBlockEditInfo;
+            pEI->setupRemove(getUID(), pBlk, index);
+            pUM->addEditInfo(pEI);
+        }
     }
-    m_nTotalFrms = nstart;
+
+    m_blocks.erase(m_blocks.begin() + index);
+    recomputeBlockLayout();
 
     if (m_blocks.empty()) {
-        // Back to the pre-append state; a later append re-primes frame 0.
+        // Back to the pre-append state; a later append/insert re-primes frame 0.
         m_bInit = false;
         m_nCurFrm = 0;
         m_nBlkInd = 0;
@@ -311,6 +318,86 @@ void Trajectory::removeBlock(int index)
 
     LOG_DPRINTLN("Traj> removeBlock idx=%d, nblk=%d, total=%d", index,
                  static_cast<int>(m_blocks.size()), m_nTotalFrms);
+}
+
+void Trajectory::insertBlock(int index, TrajBlockPtr pBlk)
+{
+    const int nblk = static_cast<int>(m_blocks.size());
+    if (index < 0 || index > nblk) {
+        MB_THROW(qlib::RuntimeException, "insertBlock(): index out of range");
+        return;
+    }
+
+    pBlk->setSceneID(getSceneID());
+    m_blocks.insert(m_blocks.begin() + index, pBlk);
+    recomputeBlockLayout();
+
+    if (!m_bInit) {
+        // Re-populating a previously-emptied trajectory: re-prime frame 0.
+        m_bInit = true;
+        primeInitialFrame();
+    }
+    else {
+        if (m_nCurFrm >= m_nTotalFrms) m_nCurFrm = m_nTotalFrms - 1;
+        if (m_nCurFrm < 0) m_nCurFrm = 0;
+        update(m_nCurFrm);
+    }
+
+    fireTrajBlockChanged();
+
+    LOG_DPRINTLN("Traj> insertBlock idx=%d, nblk=%d, total=%d", index,
+                 static_cast<int>(m_blocks.size()), m_nTotalFrms);
+}
+
+void Trajectory::moveBlock(int from, int to)
+{
+    const int nblk = static_cast<int>(m_blocks.size());
+    if (from < 0 || from >= nblk || to < 0 || to >= nblk) {
+        MB_THROW(qlib::RuntimeException, "moveBlock(): index out of range");
+        return;
+    }
+    if (from == to) return;
+
+    // Record an undo step (interactive txn only).
+    {
+        qsys::UndoManager *pUM = nullptr;
+        qsys::ScenePtr cursc = getScene();
+        if (!cursc.isnull()) pUM = cursc->getUndoMgr();
+        if (pUM != nullptr && pUM->isOK()) {
+            TrajBlockEditInfo *pEI = MB_NEW TrajBlockEditInfo;
+            pEI->setupMove(getUID(), from, to);
+            pUM->addEditInfo(pEI);
+        }
+    }
+
+    // Reorder: remove at `from`, re-insert so the block ends up at index `to`.
+    TrajBlockPtr pBlk = m_blocks[from];
+    m_blocks.erase(m_blocks.begin() + from);
+    m_blocks.insert(m_blocks.begin() + to, pBlk);
+    recomputeBlockLayout();
+
+    // Frame count is unchanged, but the current global frame now maps to
+    // different coordinates under the new ordering, so refresh.
+    if (!m_blocks.empty()) {
+        if (m_nCurFrm >= m_nTotalFrms) m_nCurFrm = m_nTotalFrms - 1;
+        if (m_nCurFrm < 0) m_nCurFrm = 0;
+        update(m_nCurFrm);
+    }
+
+    fireTrajBlockChanged();
+
+    LOG_DPRINTLN("Traj> moveBlock from=%d to=%d, nblk=%d", from, to,
+                 static_cast<int>(m_blocks.size()));
+}
+
+void Trajectory::recomputeBlockLayout()
+{
+    int nstart = 0;
+    for (const TrajBlockPtr &pblk : m_blocks) {
+        pblk->setStartIndex(nstart);
+        nstart += pblk->getSize();
+    }
+    m_nTotalFrms = nstart;
 }
 
 TrajBlockPtr Trajectory::getBlock(int index) const

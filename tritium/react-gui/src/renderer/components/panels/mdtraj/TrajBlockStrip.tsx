@@ -7,8 +7,8 @@
  * to their frame counts. Color is cycled by block position; the label is the
  * source-file basename plus a short format badge (XTC / DCD / TRR).
  *
- * Blocks are display + selection only for now. Remove / drag-reorder need new
- * C++ methods (Trajectory has no removeBlock / moveBlock) and are deferred.
+ * Mousedown is forwarded to the parent track, which decides click-to-select vs
+ * drag-to-reorder (it owns the geometry of all blocks).
  */
 
 import React from 'react';
@@ -22,7 +22,10 @@ interface TrajBlockStripProps {
     index: number;
     pxPerFrame: number;
     selected: boolean;
-    onSelect: (index: number) => void;
+    /** True while this block is being dragged to reorder. */
+    dragging: boolean;
+    /** Begin a click-or-drag interaction (parent distinguishes the two). */
+    onMouseDownBlock: (index: number, e: React.MouseEvent) => void;
 }
 
 /** Minimum visible width so a tiny block stays clickable. */
@@ -42,7 +45,8 @@ export const TrajBlockStrip: React.FC<TrajBlockStripProps> = ({
     index,
     pxPerFrame,
     selected,
-    onSelect,
+    dragging,
+    onMouseDownBlock,
 }) => {
     const left = frameToPx(block.startIndex, pxPerFrame);
     const width = Math.max(MIN_BLOCK_PX, frameToPx(block.nframe, pxPerFrame));
@@ -50,7 +54,9 @@ export const TrajBlockStrip: React.FC<TrajBlockStripProps> = ({
     const label = basename(block.src) || block.name || `block ${index + 1}`;
     const lastFrame = block.startIndex + Math.max(0, block.nframe - 1);
     const className =
-        `mdtraj-block mdtraj-block--c${colorIdx}` + (selected ? ' is-selected' : '');
+        `mdtraj-block mdtraj-block--c${colorIdx}` +
+        (selected ? ' is-selected' : '') +
+        (dragging ? ' is-dragging' : '');
 
     // Hover info: frame range and full source path (the name + format are
     // already shown on the block itself, so they are not repeated here).
@@ -68,9 +74,9 @@ export const TrajBlockStrip: React.FC<TrajBlockStripProps> = ({
 
     // The block is absolutely positioned, so it cannot use the default tooltip
     // target span (that wrapper would be zero-size and never hovered). Attach
-    // the tooltip handlers + ref directly to the block via renderTarget. The
-    // block's own onClick/onMouseDown override Blueprint's (hover drives the
-    // tooltip, so its click handlers are not needed).
+    // the tooltip handlers + ref directly to the block via renderTarget.
+    // Mousedown goes to the parent track, which handles click-select vs
+    // drag-reorder (and stops the ruler scrub).
     return (
         <Tooltip
             content={tooltip}
@@ -86,12 +92,10 @@ export const TrajBlockStrip: React.FC<TrajBlockStripProps> = ({
                     }
                     style={{ left, width }}
                     data-index={index}
-                    // Do not let a click on a block start a ruler scrub.
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onSelect(index);
-                    }}
+                    onMouseDown={(e) => onMouseDownBlock(index, e)}
+                    // Prevent the lane's click-to-deselect from firing on a
+                    // block click (selection is handled in onMouseDownBlock).
+                    onClick={(e) => e.stopPropagation()}
                 >
                     <span className="mdtraj-block-label">{label}</span>
                     {block.format && (

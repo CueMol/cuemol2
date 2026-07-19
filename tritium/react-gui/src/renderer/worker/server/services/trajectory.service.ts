@@ -48,6 +48,8 @@ interface TrajObj {
     nblock: number;
     getBlock(index: number): unknown;
     append(block: unknown): void;
+    removeBlock(index: number): void;
+    moveBlock(from: number, to: number): void;
 }
 
 interface TrajBlockReaderHandle {
@@ -121,6 +123,30 @@ export interface AppendTrajectoryBlockResult {
     /** Total frame count after the append. */
     nframe?: number;
     /** Error message on failure (e.g. atom-count mismatch). */
+    error?: string;
+}
+
+export interface RemoveTrajectoryBlockArgs {
+    sceneId: number;
+    objId: number;
+    /** Index of the block to remove. */
+    index: number;
+}
+
+export interface MoveTrajectoryBlockArgs {
+    sceneId: number;
+    objId: number;
+    /** Index of the block to move. */
+    from: number;
+    /** Target index (the block ends up here). */
+    to: number;
+}
+
+export interface TrajBlockEditResult {
+    ok: boolean;
+    /** Total frame count after the edit. */
+    nframe?: number;
+    /** Error message on failure. */
     error?: string;
 }
 
@@ -251,4 +277,52 @@ function appendTrajectoryBlock(
     }
 }
 
-export const services = { getTrajectoryState, setTrajectoryFrame, appendTrajectoryBlock };
+/** Remove the block at `index` (Remove). Runs in an undo txn. */
+function removeTrajectoryBlock(
+    ctx: WorkerContext,
+    args: RemoveTrajectoryBlockArgs,
+): TrajBlockEditResult {
+    const scene = ctx.sceMgr.getScene(args.sceneId);
+    if (!scene) return { ok: false, error: 'scene not found' };
+    const traj = resolveTraj(ctx, args.sceneId, args.objId);
+    if (!traj) return { ok: false, error: 'trajectory not found' };
+    try {
+        return withUndoTxn(scene, 'Remove trajectory block', () => {
+            traj.removeBlock(args.index);
+            return { ok: true, nframe: safeNum(() => traj.nframe, 0) };
+        });
+    } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        log.warn(`[worker] removeTrajectoryBlock failed: ${msg}`);
+        return { ok: false, error: msg };
+    }
+}
+
+/** Reorder: move the block at `from` to index `to`. Runs in an undo txn. */
+function moveTrajectoryBlock(
+    ctx: WorkerContext,
+    args: MoveTrajectoryBlockArgs,
+): TrajBlockEditResult {
+    const scene = ctx.sceMgr.getScene(args.sceneId);
+    if (!scene) return { ok: false, error: 'scene not found' };
+    const traj = resolveTraj(ctx, args.sceneId, args.objId);
+    if (!traj) return { ok: false, error: 'trajectory not found' };
+    try {
+        return withUndoTxn(scene, 'Reorder trajectory block', () => {
+            traj.moveBlock(args.from, args.to);
+            return { ok: true, nframe: safeNum(() => traj.nframe, 0) };
+        });
+    } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        log.warn(`[worker] moveTrajectoryBlock failed: ${msg}`);
+        return { ok: false, error: msg };
+    }
+}
+
+export const services = {
+    getTrajectoryState,
+    setTrajectoryFrame,
+    appendTrajectoryBlock,
+    removeTrajectoryBlock,
+    moveTrajectoryBlock,
+};
