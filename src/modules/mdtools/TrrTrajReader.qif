@@ -1,0 +1,25 @@
+// -*-Mode: C++;-*-
+//
+// GROMACS TRR trajectory file reader scripting interface
+//
+
+#ifndef TRR_TRAJ_READER_QIF_INCLUDED
+#define TRR_TRAJ_READER_QIF_INCLUDED
+
+#include <qsys/ObjReader.qif>
+
+runtime_class TrrTrajReader extends ObjReader
+{
+  client_hdr "TrrTrajReader.hpp";
+  client_name mdtools::TrrTrajReader;
+
+  scriptable;
+  smartptr;
+
+  property integer nevery => redirect(getSkipNo, setSkipNo);
+  default nevery = 1;
+
+  property integer targTrajUID => redirect(getTargTrajUID, setTargTrajUID) (nopersist);
+};
+
+#endif

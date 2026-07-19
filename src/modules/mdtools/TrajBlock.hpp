@@ -8,6 +8,7 @@
 
 #include "mdtools.hpp"
 #include <qlib/Array.hpp>
+#include <vector>
 
 #include <qsys/Object.hpp>
 #include <qsys/ObjReader.hpp>
@@ -50,6 +51,16 @@ public:
     /// Resolve the parent Trajectory (by the target UID, or the attached
     /// block's trajectory UID). Defined with the Trajectory class.
     TrajectoryPtr getTargTraj() const;
+
+protected:
+    /// Scatter file-order interleaved coordinates (natomFile atoms, xyz per
+    /// atom, in the file's native unit) into pcoord for the trajectory's loaded
+    /// atoms, multiplying by scale (nm -> Angstrom = 10). Uses the trajectory's
+    /// selection index map, or the identity map when the topology is not loaded
+    /// yet (.qsc loads the coordinate block before the topology). Defined with
+    /// the Trajectory class.
+    void scatterCoords(const TrajectoryPtr &pTraj, const std::vector<qfloat32> &filecrd,
+                       int natomFile, qfloat32 *pcoord, float scale);
 };
 
 MC_DECL_SCRSP(TrajBlockReader);
@@ -70,9 +81,9 @@ class MDTOOLS_API TrajBlock : public qsys::Object
 private:
     typedef qlib::Array<qfloat32> PosArray;
 
-    typedef qlib::Array<PosArray *> data_t;
+    typedef std::vector<PosArray *> data_t;
 
-    /// coordinates array (m_nCrds * m_nSize)
+    /// coordinates array (one PosArray of m_nCrds floats per frame)
     data_t m_data;
 
     /// start frame index of this block
@@ -80,9 +91,6 @@ private:
 
     /// number of coordinates per frame (natom*3)
     int m_nCrds;
-
-    /// number of frames in this block
-    int m_nSize;
 
 public:
     /// Size of cell dimension array (symm matrix)
@@ -104,13 +112,23 @@ public:
     /// Allocate coord array (natom x nsize frames)
     void allocate(int natom, int nsize);
 
+    /// Prepare for streaming appends: set the per-frame atom count and drop any
+    /// existing frames. Used by readers that do not know the frame count up
+    /// front (XTC/TRR); frames are added one at a time via appendFrame().
+    void initFrames(int natom);
+
+    /// Append one empty frame and return its coordinate array (m_nCrds floats).
+    /// The frame's cell array is available via getCellArray(getSize()-1).
+    /// initFrames() or allocate() must have set the atom count first.
+    qfloat32 *appendFrame();
+
     void clear();
 
     /// get coordinate array pointer of the specified frame
     qfloat32 *getCrdArray(int ifrm)
     {
         MB_ASSERT(0 <= ifrm);
-        MB_ASSERT(ifrm < m_nSize);
+        MB_ASSERT(ifrm < getSize());
 
         PosArray *p = m_data[ifrm];
         return &(*p)[0];
@@ -119,7 +137,7 @@ public:
     void setStartIndex(int n) { m_nIndex = n; }
     int getStartIndex() const { return m_nIndex; }
 
-    int getSize() const { return m_nSize; }
+    int getSize() const { return static_cast<int>(m_data.size()); }
 
     int getCrdSize() const { return m_nCrds; }
 
@@ -127,7 +145,7 @@ public:
     qfloat32 *getCellArray(int ifrm = 0)
     {
         MB_ASSERT(0 <= ifrm);
-        MB_ASSERT(ifrm < m_nSize);
+        MB_ASSERT(ifrm < getSize());
 
         return &m_cells[ifrm * CELL_SIZE];
     }

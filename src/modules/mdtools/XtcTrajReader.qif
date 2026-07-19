@@ -1,0 +1,25 @@
+// -*-Mode: C++;-*-
+//
+// GROMACS XTC trajectory file reader scripting interface
+//
+
+#ifndef XTC_TRAJ_READER_QIF_INCLUDED
+#define XTC_TRAJ_READER_QIF_INCLUDED
+
+#include <qsys/ObjReader.qif>
+
+runtime_class XtcTrajReader extends ObjReader
+{
+  client_hdr "XtcTrajReader.hpp";
+  client_name mdtools::XtcTrajReader;
+
+  scriptable;
+  smartptr;
+
+  property integer nevery => redirect(getSkipNo, setSkipNo);
+  default nevery = 1;
+
+  property integer targTrajUID => redirect(getTargTrajUID, setTargTrajUID) (nopersist);
+};
+
+#endif
