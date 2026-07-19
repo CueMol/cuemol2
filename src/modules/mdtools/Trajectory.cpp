@@ -6,11 +6,14 @@
 #include <common.h>
 
 #include "Trajectory.hpp"
+#include "TrajBlockEditInfo.hpp"
 
 #include <modules/molstr/MolCoord.hpp>
 #include <modules/molstr/MolAtom.hpp>
 
 #include <qsys/SceneManager.hpp>
+#include <qsys/Scene.hpp>
+#include <qsys/UndoManager.hpp>
 #include <qlib/Utils.hpp>
 #include <qlib/LDOM2Tree.hpp>
 
@@ -239,7 +242,62 @@ void Trajectory::append(TrajBlockPtr pBlk)
         primeInitialFrame();
     }
 
+    // Record undo/redo (only inside an interactive txn; the UndoManager
+    // disables recording during undo/redo execution and .qsc load runs
+    // outside any txn, so neither re-records here).
+    qsys::UndoManager *pUM = nullptr;
+    qsys::ScenePtr cursc = getScene();
+    if (!cursc.isnull())
+        pUM = cursc->getUndoMgr();
+    if (pUM != nullptr && pUM->isOK()) {
+        TrajBlockEditInfo *pEI = MB_NEW TrajBlockEditInfo;
+        pEI->setupAppend(getUID(), pBlk, static_cast<int>(m_blocks.size()) - 1);
+        pUM->addEditInfo(pEI);
+    }
+
+    // A block append changes the frame structure (nframe/nblock).
+    fireTopologyChanged();
+
     LOG_DPRINTLN("Traj> append blk start=%d, size=%d", nnext, pBlk->getSize());
+}
+
+void Trajectory::removeBlock(int index)
+{
+    const int nblk = static_cast<int>(m_blocks.size());
+    if (index < 0 || index >= nblk) {
+        MB_THROW(qlib::RuntimeException, "removeBlock(): index out of range");
+        return;
+    }
+
+    // Drop the block, then recompute the contiguous start indices and total.
+    m_blocks.erase(m_blocks.begin() + index);
+
+    int nstart = 0;
+    for (const TrajBlockPtr &pblk : m_blocks) {
+        pblk->setStartIndex(nstart);
+        nstart += pblk->getSize();
+    }
+    m_nTotalFrms = nstart;
+
+    if (m_blocks.empty()) {
+        // Back to the pre-append state; a later append re-primes frame 0.
+        m_bInit = false;
+        m_nCurFrm = 0;
+        m_nBlkInd = 0;
+        m_nFrmInd = 0;
+    }
+    else {
+        // Keep the current frame in range and refresh the atom coordinates.
+        if (m_nCurFrm >= m_nTotalFrms) m_nCurFrm = m_nTotalFrms - 1;
+        if (m_nCurFrm < 0) m_nCurFrm = 0;
+        update(m_nCurFrm);
+    }
+
+    // A block remove changes the frame structure (nframe/nblock).
+    fireTopologyChanged();
+
+    LOG_DPRINTLN("Traj> removeBlock idx=%d, nblk=%d, total=%d", index,
+                 static_cast<int>(m_blocks.size()), m_nTotalFrms);
 }
 
 TrajBlockPtr Trajectory::getBlock(int index) const

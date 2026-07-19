@@ -16,6 +16,9 @@
 #include "mdtools/AmberNetCDFReader.hpp"
 #include "mdtools/GROFileReader.hpp"
 
+#include "qsys/SceneManager.hpp"
+#include "qsys/Scene.hpp"
+
 #include "molstr/MolAtom.hpp"
 
 #include <qlib/StringStream.hpp>
@@ -1088,6 +1091,57 @@ TEST(TrajectoryTest, MultipleDcdBlocksSpanFrames)
     EXPECT_NEAR(pTraj->getAtom(aid)->getPos().x(), dcdCoord(0, 2, 0), 1e-4);
     pTraj->setFrame(4);
     EXPECT_NEAR(pTraj->getAtom(aid)->getPos().x(), dcdCoord(1, 2, 0), 1e-4);
+}
+
+TEST(TrajectoryTest, RemoveBlockOutOfRangeThrows)
+{
+    TrajectoryPtr pTraj = makeWaterTrajectory();
+    appendDCD(pTraj, buildDCD(3, 2));
+    EXPECT_EQ(pTraj->getBlockCount(), 1);
+    EXPECT_THROW(pTraj->removeBlock(-1), qlib::RuntimeException);
+    EXPECT_THROW(pTraj->removeBlock(1), qlib::RuntimeException);
+    // Valid removal leaves an empty (0-block) trajectory.
+    pTraj->removeBlock(0);
+    EXPECT_EQ(pTraj->getBlockCount(), 0);
+    EXPECT_EQ(pTraj->getFrameSize(), 0);
+}
+
+// Interactive "Add block" (append inside an undo txn on a scene object) is
+// undoable: undo removes the appended block, redo re-appends it, and the frame
+// count / block count / start indices round-trip. The initial block is appended
+// before scene membership, so (like the object-level load) it is NOT recorded.
+TEST(TrajectoryTest, BlockAppendUndoRedo)
+{
+    qsys::ScenePtr pScene = qsys::SceneManager::getInstance()->createScene();
+    TrajectoryPtr pTraj = makeWaterTrajectory();
+
+    // "Loaded" initial block: not in a scene yet -> append is not recorded.
+    appendDCD(pTraj, buildDCD(3, 2));  // frames 0..1
+    pScene->addObject(pTraj);
+    EXPECT_EQ(pTraj->getBlockCount(), 1);
+    EXPECT_EQ(pTraj->getFrameSize(), 2);
+
+    // Interactive Add of a second block inside a txn -> recorded.
+    pScene->startUndoTxn("Add trajectory block");
+    appendDCD(pTraj, buildDCD(3, 3));  // frames 2..4
+    pScene->commitUndoTxn();
+    EXPECT_EQ(pTraj->getBlockCount(), 2);
+    EXPECT_EQ(pTraj->getFrameSize(), 5);
+    EXPECT_EQ(pTraj->getBlock(1)->getStartIndex(), 2);
+
+    // Undo removes the added block.
+    ASSERT_TRUE(pScene->isUndoable());
+    pScene->undo(1);
+    EXPECT_EQ(pTraj->getBlockCount(), 1);
+    EXPECT_EQ(pTraj->getFrameSize(), 2);
+
+    // Redo re-appends it (same contiguous layout).
+    pScene->redo(1);
+    EXPECT_EQ(pTraj->getBlockCount(), 2);
+    EXPECT_EQ(pTraj->getFrameSize(), 5);
+    EXPECT_EQ(pTraj->getBlock(1)->getStartIndex(), 2);
+
+    qsys::SceneManager::getInstance()->destroyScene(pScene->getUID());
 }
 
 TEST(TrajectoryTest, DcdNatomMismatchThrows)

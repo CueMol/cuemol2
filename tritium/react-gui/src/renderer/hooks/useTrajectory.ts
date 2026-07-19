@@ -101,8 +101,11 @@ export function useTrajectory({
         refetch();
     }, [cm, sceneId, objId, refetch]);
 
-    // Structure changes only (append/remove/undo). Ignore SEM_CHANGED, which is
-    // the per-frame atomsMoved event fired during playback/scrub.
+    // Structure changes -> refetch. This includes object add/remove/prop
+    // (SEM_ADDED/REMOVING/PROPCHG) and the trajectory's own block append/remove,
+    // which fire OBE_CHANGED with descr "topologyChanged". The per-frame
+    // coordinate event (descr "atomsMoved", also SEM_CHANGED) is ignored so
+    // playback/scrub does not cause a refetch storm.
     useCueMolEventListener({
         cm,
         enabled: sceneId !== undefined && objId !== undefined,
@@ -111,8 +114,8 @@ export function useTrajectory({
         evtMask: SEM_ANY,
         scopeId: sceneId ?? -1,
         handler: (args: unknown) => {
-            const evtType = (args as { evtType?: number } | null)?.evtType;
-            if (evtType === SEM_CHANGED) return;
+            const a = args as { evtType?: number; obj?: { descr?: string } } | null;
+            if (a?.evtType === SEM_CHANGED && a?.obj?.descr !== 'topologyChanged') return;
             refetch();
         },
         debounceMs: REFETCH_DEBOUNCE_MS,

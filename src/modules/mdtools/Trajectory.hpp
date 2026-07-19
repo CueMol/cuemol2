@@ -79,6 +79,13 @@ public:
 
     void append(TrajBlockPtr pBlk);
 
+    /// Remove the coordinate block at the given index (0 <= index <
+    /// getBlockCount()). Recomputes block start indices and the total frame
+    /// count, clamps the current frame, and notifies a topology change. Removing
+    /// the last remaining block leaves an empty (0-block) trajectory; a later
+    /// append re-primes frame 0. Used by undo of append and (future) block edit.
+    void removeBlock(int index);
+
     void update(int n, bool bDyn = false);
 
     /// Object hook (end of loading). Eagerly primes frame 0 once the topology

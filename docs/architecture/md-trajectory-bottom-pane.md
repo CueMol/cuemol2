@@ -1,6 +1,6 @@
 # MD Trajectory Bottom Pane (tritium)
 
-Status: implemented (Phase A + B). Phase C (block remove / reorder) deferred.
+Status: implemented (Phase A + B + D-1 block-Add undo/redo). Phase C (block remove / reorder UI) deferred.
 Related: [MD Trajectory Open Dialog](md-trajectory-open-dialog.md).
 
 ## 目的
@@ -34,8 +34,24 @@ block 構造の列挙は未公開だったため、本タスクで **`.qif` に 
 
 これで worker から `nblock`/`getBlock(i)` を回して
 `{ uid, name, src, nframe, startIndex, format }` の block 配列を組める。
-**削除 (`removeBlock`) / 並び替え (`moveBlock`) は C++ にも存在しない** ため Phase C 送り
-(append-only)。
+**`Trajectory::removeBlock(index)` は Phase D-1 で追加** (undo に必要。範囲チェック + erase +
+start index 再計算 + 現在 frame クランプ + `fireTopologyChanged`。0 block まで許容)。UI からの
+削除・drag 並び替え (`moveBlock`) は Phase C 送り。
+
+## undo/redo (Phase D-1)
+
+- **seek / 再生 (`setTrajectoryFrame`)**: 非 undo。`frame` は `nopersist`、Animation transport と
+  同じ transient view state。
+- **block Add (`appendTrajectoryBlock`)**: undo/redo 可能。`Trajectory::append` が txn 中
+  (`getScene()->getUndoMgr()->isOK()`) に `TrajBlockEditInfo`(APPEND) を `addEditInfo` する。undo =
+  `removeBlock`、redo = 再 `append`。UndoManager は undo/redo 実行中 `m_fDisable` で記録を止めるので
+  再帰記録しない。
+- **初回ロード (`loadTrajectory`)**: object 全体の `ObjLoadEditInfo` (scene.addObject) で undo される
+  ため、その中の block append も記録はされるが、Add と独立した操作単位。実運用で undo が trajectory を
+  0 block にする瞬間は発生しない (Add-undo は追加分 1 個のみ除去、load-undo は object ごと消える)。
+- **pane 同期**: append/removeBlock が `fireTopologyChanged()` (`OBE_CHANGED`/descr=`"topologyChanged"`)
+  を発火。`useTrajectory` は descr で分岐し `"topologyChanged"` で refetch、`"atomsMoved"` は無視
+  (per-frame storm 回避)。
 
 ## 再生の方式: JS タイマー (Animation との最大の差)
 
@@ -89,11 +105,12 @@ SEM_CHANGED=4` と **連番**で、OR したビットマスクにならない。
 
 ## スコープ (現状) と後続
 
-- **含む (Phase A+B)**: target 選択 / 再生 (JS タイマー) / frame readout+spinbox /
-  seek (△ playhead) / frame 数比例の block セグメント / Add block。
-- **後続 (Phase C)**: block 削除・drag 並び替え。C++ `Trajectory::removeBlock` /
-  `moveBlock` (start index 再計算・`m_nTotalFrms` 更新・current frame クランプ・イベント
-  発火) + `.qif` + worker service が前提。UI にはボタン枠を disabled で配置済み。
+- **含む (Phase A+B+D-1)**: target 選択 / 再生 (JS タイマー) / frame readout+spinbox /
+  seek (△ playhead) / frame 数比例の block セグメント / Add block / **Add の undo/redo**。
+- **後続 (Phase C)**: UI からの block 削除・drag 並び替え。`Trajectory::removeBlock` は D-1 で実装済み
+  なので、残りは `moveBlock` (並び替え) + worker service (`removeTrajectoryBlock`/`moveTrajectoryBlock`)
+  + UI 有効化 (現在ボタン枠は disabled で配置済み)。remove の undo は `TrajBlockEditInfo` に REMOVE
+  モードを足す。
 - **スコープ外**: prmtop/psf/netcdf topology、per-block 間引き、`frame_aver_size` UI、
   movie/画像エクスポート、trajectory セットの MRU。
 
