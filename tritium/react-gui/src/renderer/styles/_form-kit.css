@@ -675,6 +675,13 @@
   flex-shrink: 0;
 }
 
+/* Slider-less variant (SliderField `slider={false}`): no slider fills the middle,
+   so push the number box + stepper to the right -- reads label-left /
+   control-right like an inline Field. */
+.h3-form-sliderfield-row.no-slider .h3-form-sliderfield-number {
+  margin-left: auto;
+}
+
 /* Slider-group labels are kept shorter than the surrounding enum-group labels
    so the slider can stretch wider in the row; siblings still column-align. */
 .h3-form-sliderfield-label {

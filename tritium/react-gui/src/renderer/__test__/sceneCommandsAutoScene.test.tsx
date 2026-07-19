@@ -33,6 +33,12 @@ vi.mock('../components/dialogs/StreamProgressDialogProvider', () => ({
 }))
 vi.mock('../components/dialogs/pdbIdHistory', () => ({ pushHistory: vi.fn() }))
 vi.mock('../commands/addRecent', () => ({ addRecent: vi.fn() }))
+vi.mock('../components/dialogs/OpenMdTrajDialogProvider', () => ({
+  useShowOpenMdTrajDialog: () => vi.fn(),
+}))
+vi.mock('../components/dialogs/NewRendererDialogProvider', () => ({
+  useShowNewRendererDialog: () => vi.fn(),
+}))
 
 import { useSceneCommands } from '../commands/useSceneCommands'
 

@@ -27,6 +27,8 @@ import * as editApi from './apis/editApi';
 import type { GetCompatibleRendererNamesResult } from '../server/services/getCompatibleRendererNames.service';
 import type { GetMtzColumnInfoResult } from '../server/services/getMtzColumnInfo.service';
 import type { GetReaderDefaultOptionsResult } from '../server/services/getReaderDefaultOptions.service';
+import type { LoadTrajectoryArgs } from '../server/services/loadTrajectory.service';
+import type { GetTrajectoryRendererInfoResult } from '../server/services/getTrajectoryRendererInfo.service';
 import type {
     MethodArgs,
     MethodKey,
@@ -287,6 +289,20 @@ export class AsyncCueMol {
                contentFirst = false, maxSniffBytes?: number, readerName?: string): Promise<boolean> {
         return fileApi.loadObject(this._transport, filePath, scene_id, options,
                                   contentFirst, maxSniffBytes, readerName);
+    }
+
+    /**
+     * Assemble and load an MD trajectory (topology + ordered trajectory files)
+     * into a scene as a single Trajectory object. Rejects on failure (e.g.
+     * atom-count mismatch) so the caller can surface an error dialog.
+     */
+    loadTrajectory(args: LoadTrajectoryArgs): Promise<{ ok: boolean; objId?: number }> {
+        return fileApi.loadTrajectory(this._transport, args);
+    }
+
+    /** Renderer types compatible with a Trajectory object (no file load). */
+    getTrajectoryRendererInfo(): Promise<GetTrajectoryRendererInfoResult> {
+        return fileApi.getTrajectoryRendererInfo(this._transport);
     }
 
     // --- Edit ---

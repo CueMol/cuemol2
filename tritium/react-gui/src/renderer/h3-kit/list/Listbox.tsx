@@ -14,10 +14,14 @@
 import React from 'react';
 
 export interface ListboxProps {
+    /** Bordered, sunken, scrollable box (for standalone lists e.g. in a dialog). */
+    framed?: boolean;
     className?: string;
     children: React.ReactNode;
 }
 
-export const Listbox: React.FC<ListboxProps> = ({ className, children }) => (
-    <div className={`h3-listbox${className ? ` ${className}` : ''}`}>{children}</div>
+export const Listbox: React.FC<ListboxProps> = ({ framed, className, children }) => (
+    <div className={`h3-listbox${framed ? ' is-framed' : ''}${className ? ` ${className}` : ''}`}>
+        {children}
+    </div>
 );

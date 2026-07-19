@@ -13,6 +13,7 @@ export const CmdId = {
 
   // Dialog triggers
   UiOpenObjDialog:    'ui.openObjDialog',    // no args
+  UiOpenTrajDialog:   'ui.openTrajDialog',   // no args -- MD trajectory open flow
   UiOpenSceneDialog:  'ui.openSceneDialog',  // no args
   UiAboutDialog:      'ui.aboutDialog',      // no args
   UiGetPdbDialog:     'ui.getPdbDialog',     // no args

@@ -16,6 +16,12 @@ UIスタイルは **デザイントークン** (CSS custom properties) に一元
 
 label+control の UI (フォーム行・テキスト入力・select・numeric・switch・color・compact button・ツールバーのボタン/フィルタ入力) は、**必ず `h3-kit/form/` のカタログコンポーネントで組む**。生の Blueprint `Button`/`InputGroup`/`HTMLSelect` を独自 CSS で並べない。
 
+**実装前にカタログを探して再利用する (最優先 / まずこれ)**: UI を書き始める前に、下表と **実物カタログ `components/panes/CatalogPane1/2/3`** を一覧し、欲しい見た目 (参照画像があればそれ) に一致する既存 component を特定してから使う。既存パターンを別 component で自作し直さない。よくある取り違え:
+- **ステッパー付き数値ボックス (up/down 矢印)** = `SliderField` (`SliderNumericField`)。`slider={false}` で slider 無しの「数値+ステッパー」だけになる。`NumericField` は**既定でステッパーを隠す**設計なので、ステッパーを足そうとしない。
+- **drag で増減する数値** = `DragNumericField` (`NumericField` ではない)。
+- **2 桁の裸 cell** = `NumberCell`。
+真にカタログに無い時のみ、`_form-kit.css` にサイズを 1 定義して**先にカタログへ追加**する。カタログ調査を飛ばして Blueprint 直叩き/独自 CSS で作ると、既存の verified 実装とサイズ・デザインが食い違い手戻りする (このガイドが防ぎたい再発そのもの)。
+
 | コンポーネント | 用途 | canonical サイズ (source) |
 |---|---|---|
 | `FieldSection` | **pane 内の最上位グループ** (`title` = グループ見出し + 任意の中身) | title は `.type-group-label` role, section 間 gap は親 container の `gap: --form-section-gap` |
@@ -24,7 +30,8 @@ label+control の UI (フォーム行・テキスト入力・select・numeric・
 | `SectionHeader` | サブセクション見出し**バー** (背景tint+下線, 大文字) | `.section-header` role (高 `--ctrl-h-md`) |
 | `TextField` | 単一行テキスト入力 (任意 `leftIcon` = フィルタ/検索) | 高 `--field-h` (22px) |
 | `SelectField` | ドロップダウン (`<option>` を children に) | 高 `--field-h` (22px) |
-| `NumericField` | 数値 stepper / 明示 slider (discrete count 等)。任意で `unit` | 入力高 `--field-h-sm` (20px) |
+| `NumericField` | 数値 + 明示 slider (`slider` 既定 true)。**ネイティブ stepper は既定で非表示** (compact 用)。任意で `unit` | 入力高 `--field-h-sm` (20px) |
+| `SliderField` (`SliderNumericField`) | label + slider + 数値 + **custom ステッパー (up/down)** + 任意 `unit`。**ステッパー付き数値ボックスはこれ**。`slider={false}` で slider 無しの数値+ステッパーだけにできる (count/stride 等) | `.h3-form-sliderfield*` (`_form-kit.css`) |
 | `DragNumericField` | 数値 (Blender風 drag number button)。**UXP の numslider の移植先**。renderer property 等のドラッグ可能な数値はこれを使う (`NumericField` ではない) | サイズは `.h3-form-drag*` (`_form-kit.css`) |
 | `SwitchField` | 真偽トグル (`inline` Field 内で使う) | Blueprint Switch |
 | `ColorField` | 色 (`CueColorField` の薄いラッパ) | - |

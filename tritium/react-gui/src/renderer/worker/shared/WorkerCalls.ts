@@ -47,6 +47,8 @@ import type { GetSiblingRendererNamesArgs, GetSiblingRendererNamesResult } from 
 import type { GetSelHitCountArgs, GetSelHitCountResult } from '../server/services/getSelHitCount.service'
 import type { SaveSelDefArgs, SaveSelDefResult } from '../server/services/saveSelDef.service'
 import type { LoadObjectArgs } from '../server/services/loadObject.service'
+import type { LoadTrajectoryArgs } from '../server/services/loadTrajectory.service'
+import type { GetTrajectoryRendererInfoResult } from '../server/services/getTrajectoryRendererInfo.service'
 import type { LoadSceneArgs } from '../server/services/loadScene.service'
 import type {
   StreamLoadFromUrlArgs,
@@ -487,6 +489,8 @@ export interface ServiceMap {
   getSelHitCount:             { args: GetSelHitCountArgs;              result: GetSelHitCountResult }
   saveSelDef:                 { args: SaveSelDefArgs;                  result: SaveSelDefResult }
   loadObject:                 { args: LoadObjectArgs;                  result: { ok: boolean } }
+  loadTrajectory:             { args: LoadTrajectoryArgs;              result: { ok: boolean; objId?: number } }
+  getTrajectoryRendererInfo:  { args: Record<string, never>;          result: GetTrajectoryRendererInfoResult }
   loadScene:                  { args: LoadSceneArgs;                   result: { ok: boolean } }
   streamLoadFromUrl:          { args: StreamLoadFromUrlArgs;           result: StreamLoadFromUrlResult }
   streamLoadDensityMap:       { args: StreamLoadDensityMapArgs;        result: StreamLoadDensityMapResult }

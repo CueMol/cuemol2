@@ -62,8 +62,12 @@ export interface InvokeChannels {
                               res: { canceled: boolean; filePath: string; filterIndex: number } }
   [IPC.DIALOG_PICK_PATH]:  { req: { title: string; directory?: boolean;
                                      /** Optional open-dialog file filters (file mode only). */
-                                     filters?: { name: string; extensions: string[] }[] };
-                             res: { canceled: boolean; filePath: string } }
+                                     filters?: { name: string; extensions: string[] }[];
+                                     /** Allow selecting multiple files (file mode only). */
+                                     multi?: boolean };
+                             res: { canceled: boolean; filePath: string;
+                                     /** All selected paths (populated when `multi` is set). */
+                                     filePaths?: string[] } }
   [IPC.SAVE_TEXT_AS]:      { req: {
                                 defaultName: string
                                 content: string

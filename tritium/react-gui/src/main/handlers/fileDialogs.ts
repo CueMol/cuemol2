@@ -152,12 +152,16 @@ export async function handleSceneExportDialog(
  */
 export async function handlePickPathDialog(
   mainWindow: BrowserWindow,
-  payload: { title: string; directory?: boolean; filters?: { name: string; extensions: string[] }[] },
-): Promise<{ canceled: boolean; filePath: string }> {
+  payload: { title: string; directory?: boolean; filters?: { name: string; extensions: string[] }[]; multi?: boolean },
+): Promise<{ canceled: boolean; filePath: string; filePaths?: string[] }> {
+  const properties: Array<'openDirectory' | 'openFile' | 'multiSelections'> =
+    payload.directory ? ['openDirectory'] : ['openFile']
+  // multiSelections only applies to file mode.
+  if (payload.multi && !payload.directory) properties.push('multiSelections')
   const result = await withMenuBlocked('native', () =>
     dialog.showOpenDialog(mainWindow, {
       title: payload.title,
-      properties: [payload.directory ? 'openDirectory' : 'openFile'],
+      properties,
       // Filters only apply to file mode; ignored by the OS for directories.
       ...(payload.filters && !payload.directory ? { filters: payload.filters } : {}),
     }),
@@ -165,7 +169,8 @@ export async function handlePickPathDialog(
   if (result.canceled || result.filePaths.length === 0) {
     return { canceled: true, filePath: '' }
   }
-  return { canceled: false, filePath: result.filePaths[0] }
+  // filePath keeps the single-select contract; filePaths carries the full set.
+  return { canceled: false, filePath: result.filePaths[0], filePaths: result.filePaths }
 }
 
 /**

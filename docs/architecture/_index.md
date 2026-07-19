@@ -15,6 +15,11 @@ modules and that are not obvious from any single header.
   GTAO のパイプライン、projection 由来の view-space 復元と GL 座標系、MRT
   geometry 法線、Apple Metal-GL の MRT/ブレンドのハマりどころ、tritium
   (WebGL2) / WebGPU 移植時の注意点。
+- [MD Trajectory Open Dialog (tritium)](md-trajectory-open-dialog.md) (日本語) --
+  MD trajectory を tritium から開く新規機能の設計。block-centric `Trajectory` を worker から
+  scriptable API のみで組み立てる `loadTrajectory` service、renderer cancel = 全 transaction
+  キャンセルに合わせた 2 段 deferred-load フロー、`DIALOG_PICK_PATH` の複数選択拡張、
+  `OpenMdTrajDialog` の構成とスコープ (gro のみ / 再生 UI 別タスク)。migration ではない。
 - [umbreon の Electron メモリ制約と process 分離設計](umbreon-process-isolation.md)
   (日本語) -- tritium で umbreon GI(OIDN) が大解像度で crash する既知問題の根本原因
   (Chromium PartitionAlloc の OOM crash, OS 制限ではない)、検討した各対策と却下理由、

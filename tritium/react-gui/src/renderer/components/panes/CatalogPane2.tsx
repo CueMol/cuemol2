@@ -100,6 +100,14 @@ export const CatalogPane2: React.FC<CatalogPane2Props> = ({
                 max={100}
                 unit="%"
               />
+              <SliderNumericField
+                label="Stride (slider=false)"
+                value={opacity}
+                onCommit={setOpacity}
+                min={1}
+                max={9999}
+                slider={false}
+              />
             </FieldGroup>
 
             <FieldGroup title="Listbox (list / tree row)">

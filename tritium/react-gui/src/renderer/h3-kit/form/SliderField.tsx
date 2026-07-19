@@ -60,6 +60,12 @@ export interface SliderFieldProps {
     scale?: number;
     onCommit: (next: number) => void;
     disabled?: boolean;
+    /**
+     * Show the slider track (default true). Set false for a plain number box
+     * with the same custom +/- stepper but no slider (e.g. an integer count /
+     * stride where dragging a slider is not meaningful).
+     */
+    slider?: boolean;
     /** Extra class applied to the outer row (layout only -- never sizing). */
     className?: string;
 }
@@ -79,6 +85,7 @@ export const SliderField: React.FC<SliderFieldProps> = ({
     scale = 1,
     onCommit,
     disabled,
+    slider = true,
     className,
 }) => {
     const shown = value * scale;
@@ -171,19 +178,21 @@ export const SliderField: React.FC<SliderFieldProps> = ({
     }, [stepBy]);
 
     return (
-        <div className={`h3-form-sliderfield-row ${className ?? ''}`}>
+        <div className={`h3-form-sliderfield-row${slider ? '' : ' no-slider'} ${className ?? ''}`}>
             <label className="h3-form-sliderfield-label">{label}</label>
-            <Slider
-                min={min}
-                max={max}
-                stepSize={step}
-                value={draft}
-                onChange={handleSliderChange}
-                onRelease={handleSliderRelease}
-                disabled={disabled}
-                labelRenderer={false}
-                className="h3-form-sliderfield-slider"
-            />
+            {slider && (
+                <Slider
+                    min={min}
+                    max={max}
+                    stepSize={step}
+                    value={draft}
+                    onChange={handleSliderChange}
+                    onRelease={handleSliderRelease}
+                    disabled={disabled}
+                    labelRenderer={false}
+                    className="h3-form-sliderfield-slider"
+                />
+            )}
             <input
                 type="number"
                 className="h3-form-sliderfield-number"

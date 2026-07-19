@@ -54,9 +54,12 @@
   gap: var(--space-3);
 }
 
-/* Buttons inside body and footer (excluding header close button) */
-.bp5-dialog-body .bp5-button,
-.bp5-dialog-footer .bp5-button {
+/* Buttons inside body and footer (excluding header close button).
+   form-kit buttons (`.h3-form-btn`) are excluded: they own their compact
+   catalog size (styles/_form-kit.css) and must not be enlarged to the legacy
+   dialog-button metrics just because they render inside a dialog body. */
+.bp5-dialog-body .bp5-button:not(.h3-form-btn),
+.bp5-dialog-footer .bp5-button:not(.h3-form-btn) {
   min-height: 26px;
   padding: 3px var(--space-4);
   font-size: var(--fs-xl);
@@ -100,6 +103,15 @@
   display: flex;
   flex-direction: column;
   gap: var(--form-section-gap);
+}
+
+/* Open MD Trajectory dialog: a roomier inter-section gap than the default so
+   its three meaning-units (topology / trajectory files / frame sampling) read
+   as clearly separate groups in a control-dense dialog. */
+.omt-traj-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
 }
 
 /* Inline secondary hint under a control (e.g. a non-blocking PDB-format note). */

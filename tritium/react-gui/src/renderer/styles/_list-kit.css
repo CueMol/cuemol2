@@ -21,6 +21,27 @@
   min-width: 0;
 }
 
+/* Framed variant: a bordered, sunken, scrollable list box for standalone use
+   (e.g. inside a dialog where the list is not already inside a bordered pane).
+   Owns its own border / radius / padding / scroll extents so consumers never
+   re-declare them. */
+.h3-listbox.is-framed {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-input);
+  padding: var(--space-1);
+  min-height: calc(var(--row-h) * 3);
+  max-height: calc(var(--row-h) * 6);
+  overflow-y: auto;
+}
+
+/* Empty-state placeholder row inside a listbox. */
+.h3-list-empty {
+  padding: var(--space-1) var(--list-row-pad-x);
+  color: var(--text-muted);
+  font-style: italic;
+}
+
 .h3-list-row {
   display: flex;
   align-items: center;
