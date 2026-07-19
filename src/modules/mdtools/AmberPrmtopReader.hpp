@@ -69,6 +69,9 @@ namespace mdtools {
     /// Bonds: pairs of 0-based atom indices (after dividing the raw prmtop indices by 3).
     std::vector<std::pair<int, int>> m_bonds;
 
+    /// Bond-building mode (BONDMODE_*), from the "bondmode" reader option.
+    int m_nBondMode;
+
     //////////////////////////////////////////////
   public:
 
@@ -101,6 +104,19 @@ namespace mdtools {
     qsys::ObjectPtr createDefaultObj() const override;
 
     //////////////////////////////////////////////
+    // Bond-building mode (reader option "bondmode")
+
+    /// Use the bonds declared in the file; suppress distance autogen (default).
+    static constexpr int BONDMODE_FILE = 0;
+    /// Use file bonds and also let applyTopology augment (TopoDB + distance).
+    static constexpr int BONDMODE_HYBRID = 1;
+    /// Ignore file bonds; rebuild via applyTopology (PDB-like).
+    static constexpr int BONDMODE_AUTOGEN = 2;
+
+    int getBondMode() const { return m_nBondMode; }
+    void setBondMode(int n) { m_nBondMode = n; }
+
+    //////////////////////////////////////////////
 
   private:
 
@@ -111,7 +127,9 @@ namespace mdtools {
     void buildMol();
 
     /// Open the "coord" sub-stream and apply the snapshot to m_pMol.
-    void loadCoord();
+    /// Returns true if real coordinates were read, false for a topology-only
+    /// load (no "coord" sub-stream; atoms keep their default zero positions).
+    bool loadCoord();
 
     /// Read one section's payload according to fmt and dispatch by FLAG name.
     void readFlagSection(qlib::LineStream &lin,

@@ -1,0 +1,25 @@
+// -*-Mode: C++;-*-
+//
+// AMBER NetCDF trajectory file reader scripting interface
+//
+
+#ifndef AMBER_NETCDF_READER_QIF_INCLUDED
+#define AMBER_NETCDF_READER_QIF_INCLUDED
+
+#include <qsys/ObjReader.qif>
+
+runtime_class AmberNetCDFReader extends ObjReader
+{
+  client_hdr "AmberNetCDFReader.hpp";
+  client_name mdtools::AmberNetCDFReader;
+
+  scriptable;
+  smartptr;
+
+  property integer nevery => redirect(getSkipNo, setSkipNo);
+  default nevery = 1;
+
+  property integer targTrajUID => redirect(getTargTrajUID, setTargTrajUID) (nopersist);
+};
+
+#endif
