@@ -19,6 +19,7 @@ import { QscWriterOptionDialogProvider } from '../components/dialogs/QscWriterOp
 import { StreamProgressDialogProvider } from '../components/dialogs/StreamProgressDialogProvider'
 import { TextPromptDialogProvider } from '../components/dialogs/TextPromptDialogProvider'
 import { NewRendererDialogProvider } from '../components/dialogs/NewRendererDialogProvider'
+import { OpenMdTrajDialogProvider } from '../components/dialogs/OpenMdTrajDialogProvider'
 import { ApplyRendStyleDialogProvider } from '../components/dialogs/ApplyRendStyleDialogProvider'
 import { CreateRendStyleDialogProvider } from '../components/dialogs/CreateRendStyleDialogProvider'
 import { ObjectPickerDialogProvider } from '../components/dialogs/ObjectPickerDialogProvider'
@@ -50,6 +51,7 @@ export const DialogProvider = composeProviders([
   NewTabDialogProvider,
   ConfirmCloseTabDialogProvider,
   FileOpenOptionDialogProvider,
+  OpenMdTrajDialogProvider,
   GetPdbDialogProvider,
   QscWriterOptionDialogProvider,
   StreamProgressDialogProvider,

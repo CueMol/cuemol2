@@ -85,6 +85,7 @@ export const MENU_ACTION_MAP = {
   // --- File ---
   [IPC.MENU_NEW_TAB]:          { dispatch: 'tab.new',            deliver: 'dedicated-direct' },
   [IPC.MENU_OPEN_FILE]:        { dispatch: 'ui.openObjDialog',   deliver: 'dedicated-direct' },
+  [IPC.MENU_OPEN_TRAJ]:        { dispatch: 'ui.openTrajDialog',  deliver: 'generic' },
   [IPC.MENU_GET_PDB]:          { dispatch: 'ui.getPdbDialog',    deliver: 'generic' },
   [IPC.MENU_CLEAR_RECENT]:     { dispatch: MENU_DISPATCH_RECENT_CLEAR, deliver: 'generic' },
   [IPC.MENU_SAVE_FILE_AS]:     { dispatch: 'object.saveAs',      deliver: 'generic' },
