@@ -9,6 +9,7 @@
 #include "DCDTrajReader.qif"
 #include "TrrTrajReader.qif"
 #include "XtcTrajReader.qif"
+#include "AmberNetCDFReader.qif"
 
 module mdtools
 {
@@ -23,5 +24,6 @@ module mdtools
   DCDTrajReader;
   TrrTrajReader;
   XtcTrajReader;
+  AmberNetCDFReader;
 };
 

@@ -235,9 +235,8 @@ void Trajectory::append(TrajBlockPtr pBlk)
     m_nTotalFrms += pBlk->getSize();
 
     if (!m_bInit) {
-        update(0);          // write frame-0 coords into the atoms
-        applyTopology();
         m_bInit = true;
+        primeInitialFrame();
     }
 
     LOG_DPRINTLN("Traj> append blk start=%d, size=%d", nnext, pBlk->getSize());
@@ -339,12 +338,36 @@ void Trajectory::updateTrajBlockDataImpl()
     }
     m_nTotalFrms = nnext;
 
-    // Mark initialized before update(0) so the ensureInit() in setFrame() /
+    // Mark initialized before priming so the ensureInit() in setFrame() /
     // getFrameSize() does not re-enter.
     m_bInit = true;
 
-    update(0);          // prime frame 0 (write-both)
+    primeInitialFrame();
+}
+
+void Trajectory::primeInitialFrame()
+{
+    // Write frame-0 coordinates into the atoms, then rebuild coordinate-
+    // dependent topology (distance bonds via removeNonpersBonds + applyTopology)
+    // and secondary structure on those real coordinates. This is what makes a
+    // trajectory show (and assign topology from) its own frame 0 rather than
+    // the topology file's coordinates -- which for a coordinate-less topology
+    // (e.g. prmtop) would otherwise be all-zero.
+    update(0);
     applyTopology();
+    calcProt2ndry();
+}
+
+void Trajectory::readerDetached()
+{
+    super_t::readerDetached();
+    // End of a topology/data load. In a .qsc the <trajfiles> blocks are read
+    // before the topology src, so by the time the topology reader detaches both
+    // the blocks and the atoms exist: prime frame 0 now, before the first
+    // render, so the initial display is the trajectory's frame 0. ensureInit()
+    // is idempotent and a no-op while no blocks exist (topology-only load, or
+    // the live append-first order where append() does the priming).
+    ensureInit();
 }
 
 //////////
