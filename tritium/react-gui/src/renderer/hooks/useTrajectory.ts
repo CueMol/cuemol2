@@ -42,9 +42,6 @@ export interface UseTrajectoryResult {
 
 const EMPTY: TrajectoryState = { ok: false, nframe: 0, frame: 0, blocks: [] };
 
-// Coalesce structure-event bursts (an append/undo fires several events).
-const REFETCH_DEBOUNCE_MS = 50;
-
 /**
  * Subscribe to the selected trajectory's frame/block state.
  *
@@ -124,7 +121,11 @@ export function useTrajectory({
             if (a?.evtType === SEM_CHANGED && a?.method !== 'trajBlockChanged') return;
             refetch();
         },
-        debounceMs: REFETCH_DEBOUNCE_MS,
+        // No debounce: removeBlock fires atomsMoved (from the coord update)
+        // *before* trajBlockChanged, and a leading-edge debounce would deliver
+        // only the first event (atomsMoved -> ignored), dropping trajBlockChanged.
+        // Delivering each event individually lets the handler ignore atomsMoved
+        // and refetch on trajBlockChanged (matching useMolSequenceData).
     });
 
     return {
