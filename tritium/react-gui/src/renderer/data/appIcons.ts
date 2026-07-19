@@ -143,6 +143,7 @@ export const APP_ICONS = {
   "panel.output": { lib: "phosphor", Comp: Terminal },
   "panel.sequence": { lib: "phosphor", Comp: TextAlignLeft },
   "panel.animation": { lib: "phosphor", Comp: FilmStrip },
+  "panel.trajectory": { lib: "phosphor", Comp: FilmSlate },
   "panel.render": { lib: "phosphor", Comp: Image },
 
   // Generic reusable UI icons.

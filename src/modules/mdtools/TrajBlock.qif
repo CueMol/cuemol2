@@ -15,6 +15,12 @@ runtime_class TrajBlock extends Object
 
   scriptable;
   smartptr;
+
+  /// Number of coordinate frames in this block.
+  property integer nframe => redirect(getSize, XX) (readonly);
+
+  /// Start frame index of this block within the parent trajectory.
+  property integer start_index => redirect(getStartIndex, XX) (readonly);
 };
 
 #endif

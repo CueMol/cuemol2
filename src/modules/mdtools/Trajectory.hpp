@@ -140,6 +140,9 @@ public:
     /// Number of coordinate blocks (chunks) the frames are split across.
     int getBlockCount() const { return static_cast<int>(m_blocks.size()); }
 
+    /// Get the coordinate block at the given index (0 <= index < getBlockCount()).
+    TrajBlockPtr getBlock(int index) const;
+
 private:
     /// Frame averaging window size (0: off)
     int m_nAver;

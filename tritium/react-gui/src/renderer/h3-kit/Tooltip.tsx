@@ -19,13 +19,20 @@ import { Tooltip as BpTooltip, type TooltipProps as BpTooltipProps } from '@blue
 export interface TooltipProps {
     /** Tooltip body. When empty/nullish the tooltip is disabled (no empty bubble). */
     content: BpTooltipProps['content'];
-    /** The target element the tooltip describes (single child). */
-    children: React.ReactElement;
+    /** The target element the tooltip describes (single child). Omit when using `renderTarget`. */
+    children?: React.ReactElement;
     /** Placement relative to the target (default `bottom`). */
     placement?: BpTooltipProps['placement'];
     /** Force-disable the tooltip. */
     disabled?: boolean;
     className?: string;
+    /**
+     * Full control over the target via Blueprint's render-prop API. Use instead
+     * of `children` when the target is custom-positioned (e.g. an absolutely
+     * placed timeline segment) and so cannot be wrapped in the default target
+     * span -- spread the injected handlers + `ref` onto your own element.
+     */
+    renderTarget?: BpTooltipProps['renderTarget'];
 }
 
 const isEmptyContent = (content: BpTooltipProps['content']): boolean =>
@@ -37,6 +44,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
     placement = 'bottom',
     disabled,
     className,
+    renderTarget,
 }) => (
     <BpTooltip
         content={content}
@@ -44,6 +52,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
         compact
         disabled={disabled || isEmptyContent(content)}
         className={className}
+        renderTarget={renderTarget}
     >
         {children}
     </BpTooltip>

@@ -243,6 +243,15 @@ void Trajectory::append(TrajBlockPtr pBlk)
     LOG_DPRINTLN("Traj> append blk start=%d, size=%d", nnext, pBlk->getSize());
 }
 
+TrajBlockPtr Trajectory::getBlock(int index) const
+{
+    if (index < 0 || index >= static_cast<int>(m_blocks.size())) {
+        MB_THROW(qlib::RuntimeException, "getBlock(): index out of range");
+        return TrajBlockPtr();
+    }
+    return m_blocks[index];
+}
+
 void Trajectory::findBlk(int iframe, int &nBlkInd, int &nFrmInd) const
 {
     int ind1 = 0;

@@ -295,6 +295,19 @@
   --anim-type-realprop: #a84f68;
   --anim-type-xform: #5a68b0;
   --anim-type-noop: #4a5060;
+
+  /* MD Trajectory panel: single-lane block track. Block colors cycle through a
+     fixed palette (theme-independent, like the anim-type colors above). Only
+     styles/_md-traj-panel.css references these. */
+  --mdtraj-lane-h: 32px;                   /* block-segment lane height */
+  --mdtraj-gutter-h: 12px;                 /* seek gutter (holds playhead grip) */
+  --mdtraj-block-text: #f4f6fa;            /* fixed light label tone on blocks */
+  --mdtraj-block-0: #3a63b0;
+  --mdtraj-block-1: #2f7d8a;
+  --mdtraj-block-2: #3f8a55;
+  --mdtraj-block-3: #b07d2a;
+  --mdtraj-block-4: #7355a8;
+  --mdtraj-block-5: #a84f68;
 }
 
 /* ─── Light Theme ─── */

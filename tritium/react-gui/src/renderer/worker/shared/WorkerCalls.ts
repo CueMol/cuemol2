@@ -49,6 +49,14 @@ import type { SaveSelDefArgs, SaveSelDefResult } from '../server/services/saveSe
 import type { LoadObjectArgs } from '../server/services/loadObject.service'
 import type { LoadTrajectoryArgs } from '../server/services/loadTrajectory.service'
 import type { GetTrajectoryRendererInfoResult } from '../server/services/getTrajectoryRendererInfo.service'
+import type {
+  GetTrajectoryStateArgs,
+  TrajectoryState,
+  SetTrajectoryFrameArgs,
+  SetTrajectoryFrameResult,
+  AppendTrajectoryBlockArgs,
+  AppendTrajectoryBlockResult,
+} from '../server/services/trajectory.service'
 import type { LoadSceneArgs } from '../server/services/loadScene.service'
 import type {
   StreamLoadFromUrlArgs,
@@ -491,6 +499,9 @@ export interface ServiceMap {
   loadObject:                 { args: LoadObjectArgs;                  result: { ok: boolean } }
   loadTrajectory:             { args: LoadTrajectoryArgs;              result: { ok: boolean; objId?: number } }
   getTrajectoryRendererInfo:  { args: Record<string, never>;          result: GetTrajectoryRendererInfoResult }
+  getTrajectoryState:         { args: GetTrajectoryStateArgs;          result: TrajectoryState }
+  setTrajectoryFrame:         { args: SetTrajectoryFrameArgs;          result: SetTrajectoryFrameResult }
+  appendTrajectoryBlock:      { args: AppendTrajectoryBlockArgs;       result: AppendTrajectoryBlockResult }
   loadScene:                  { args: LoadSceneArgs;                   result: { ok: boolean } }
   streamLoadFromUrl:          { args: StreamLoadFromUrlArgs;           result: StreamLoadFromUrlResult }
   streamLoadDensityMap:       { args: StreamLoadDensityMapArgs;        result: StreamLoadDensityMapResult }
