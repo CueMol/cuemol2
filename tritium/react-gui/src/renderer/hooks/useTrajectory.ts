@@ -114,8 +114,12 @@ export function useTrajectory({
         evtMask: SEM_ANY,
         scopeId: sceneId ?? -1,
         handler: (args: unknown) => {
-            const a = args as { evtType?: number; obj?: { descr?: string } } | null;
-            if (a?.evtType === SEM_CHANGED && a?.obj?.descr !== 'topologyChanged') return;
+            // The event category is delivered as `method` (see EventSlots /
+            // useMolSequenceData): block append/remove fires SEM_CHANGED with
+            // method "topologyChanged"; the per-frame coordinate event is
+            // method "atomsMoved" and is ignored to avoid a playback storm.
+            const a = args as { evtType?: number; method?: string } | null;
+            if (a?.evtType === SEM_CHANGED && a?.method !== 'topologyChanged') return;
             refetch();
         },
         debounceMs: REFETCH_DEBOUNCE_MS,
