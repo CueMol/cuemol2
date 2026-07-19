@@ -16,6 +16,15 @@ runtime_class AmberPrmtopReader extends ObjReader
   scriptable;
   smartptr;
 
+  /// Bond-building strategy for the explicit bonds in the prmtop file.
+  enumdef bondmode {
+    file = mdtools::AmberPrmtopReader::BONDMODE_FILE;
+    hybrid = mdtools::AmberPrmtopReader::BONDMODE_HYBRID;
+    autogen = mdtools::AmberPrmtopReader::BONDMODE_AUTOGEN;
+  }
+  property enum bondmode => redirect(getBondMode, setBondMode);
+  default bondmode = "file";
+
 };
 
 #endif

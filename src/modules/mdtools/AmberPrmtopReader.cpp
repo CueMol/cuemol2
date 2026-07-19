@@ -20,6 +20,7 @@
 #include <modules/molstr/MolResidue.hpp>
 #include <modules/molstr/MolAtom.hpp>
 #include <modules/molstr/ResidIndex.hpp>
+#include <modules/molstr/ResidIterator.hpp>
 #include <modules/molstr/ElemSym.hpp>
 
 using namespace mdtools;
@@ -41,7 +42,8 @@ LString trimStr(const LString &s)
 }  // namespace
 
 AmberPrmtopReader::AmberPrmtopReader()
-    : m_natom(0), m_nres(0), m_nbonh(0), m_mbona(0), m_ifbox(0)
+    : m_natom(0), m_nres(0), m_nbonh(0), m_mbona(0), m_ifbox(0),
+      m_nBondMode(BONDMODE_FILE)
 {
 }
 
@@ -107,10 +109,14 @@ bool AmberPrmtopReader::read(qlib::InStream &ins)
   try {
     parseTopology(ins);
     buildMol();
-    loadCoord();
+    const bool bHasCoord = loadCoord();
 
     m_pMol->applyTopology();
-    m_pMol->calcProt2ndry();
+    // Secondary structure is geometry-based; only compute it when we have real
+    // coordinates. For a topology-only load (e.g. prmtop used as a trajectory
+    // topology) the Trajectory recomputes it on frame 0.
+    if (bHasCoord)
+      m_pMol->calcProt2ndry();
   }
   catch (...) {
     m_pMol = MolCoordPtr();
@@ -597,19 +603,35 @@ void AmberPrmtopReader::buildMol()
     // We rely on this convention (same as NAMDCoorReader/PsfReader).
   }
 
-  // Add bonds. The /3 conversion was already done during section parsing.
-  for (const auto &pr : m_bonds) {
-    int a = pr.first;
-    int b = pr.second;
-    if (a < 0 || a >= m_natom || b < 0 || b >= m_natom) {
-      LOG_DPRINTLN("AmberPrmtopReader> Skipping out-of-range bond (%d, %d)", a, b);
-      continue;
+  // Add the bonds declared in the file. In "autogen" mode the file bonds are
+  // ignored and applyTopology() rebuilds them (PDB-like). The /3 conversion was
+  // already done during section parsing.
+  if (m_nBondMode != BONDMODE_AUTOGEN) {
+    for (const auto &pr : m_bonds) {
+      int a = pr.first;
+      int b = pr.second;
+      if (a < 0 || a >= m_natom || b < 0 || b >= m_natom) {
+        LOG_DPRINTLN("AmberPrmtopReader> Skipping out-of-range bond (%d, %d)", a, b);
+        continue;
+      }
+      m_pMol->makeBond(a, b, true);
     }
-    m_pMol->makeBond(a, b, true);
+  }
+
+  // In the default "file" mode the prmtop bonds are authoritative: mark every
+  // residue "noautogen" so applyTopology() does not add distance-based bonds
+  // (the same convention bond-aware formats like SDF/MOL2 use). This keeps
+  // topology-DB polymer linking while avoiding spurious / zero-coordinate bonds.
+  if (m_nBondMode == BONDMODE_FILE) {
+    ResidIterator riter(m_pMol);
+    for (riter.first(); riter.hasMore(); riter.next()) {
+      MolResiduePtr pRes = riter.get();
+      if (!pRes.isnull()) pRes->setPropStr("noautogen", "true");
+    }
   }
 }
 
-void AmberPrmtopReader::loadCoord()
+bool AmberPrmtopReader::loadCoord()
 {
   // The "coord" sub-stream (inpcrd / restrt) is optional. Without it the
   // user gets a topology-only load: all atoms exist with their default
@@ -622,7 +644,7 @@ void AmberPrmtopReader::loadCoord()
                  "but atom positions are undefined (zero).");
     LOG_DPRINTLN("AmberPrmtopReader>   To load coordinates, attach an inpcrd/"
                  "restrt file as the \"coord\" sub-stream via the file-options dialog.");
-    return;
+    return false;
   }
 
   std::unique_ptr<qlib::InStream> pSubIn(createInStream("coord"));
@@ -631,4 +653,5 @@ void AmberPrmtopReader::loadCoord()
   AmberCrdReader crd;
   crd.attach(m_pMol);
   crd.read(*pSubIn);
+  return true;
 }

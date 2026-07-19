@@ -6,6 +6,7 @@
 #include "molstr/MolCoord.hpp"
 #include "molstr/MolAtom.hpp"
 #include "molstr/MolBond.hpp"
+#include "molstr/MolResidue.hpp"
 #include "molstr/ElemSym.hpp"
 #include "molstr/ResidIndex.hpp"
 #include "symm/CrystalInfo.hpp"
@@ -342,4 +343,67 @@ TEST(AmberPrmtopReaderTest, OldFormatRejected)
 
     StrInStream ins(kOldPrmtop, static_cast<int>(std::string(kOldPrmtop).size()));
     EXPECT_THROW(reader.load(ins), qlib::FileFormatException);
+}
+
+// ---- bondmode reader option (file-authoritative bonds by default) ----
+
+TEST(AmberPrmtopReaderTest, BondmodeDefaultsToFile)
+{
+    AmberPrmtopReader reader;
+    EXPECT_EQ(reader.getBondMode(), AmberPrmtopReader::BONDMODE_FILE);
+}
+
+// Default "file" mode marks residues "noautogen" (the bond-aware-format
+// convention) so applyTopology() does not distance-autogen bonds -- avoiding
+// spurious / zero-coordinate bonds. Verify the marker is set and the file
+// bonds survive a coordinate-less (topology-only) load.
+TEST(AmberPrmtopReaderTest, FileBondModeSetsNoautogenMarker)
+{
+    AmberPrmtopReader reader;  // default bondmode == file
+    // Topology-only load (no "coord" sub-stream): atoms stay at the origin.
+    StrInStream ins(kPrmtopWater, static_cast<int>(std::string(kPrmtopWater).size()));
+    qsys::ObjectPtr pObj = reader.load(ins);
+    MolCoordPtr pMol(pObj);
+    ASSERT_FALSE(pMol.isnull());
+
+    molstr::MolResiduePtr pRes = pMol->getResidue("A", molstr::ResidIndex(1));
+    ASSERT_FALSE(pRes.isnull());
+    LString noautogen;
+    pRes->getPropStr("noautogen", noautogen);
+    EXPECT_TRUE(noautogen.equals("true"));
+
+    // File-declared bonds present; coordinate-less atoms remain at the origin.
+    bool found_0_1 = false, found_0_2 = false;
+    for (auto it = pMol->beginBond(); it != pMol->endBond(); ++it) {
+        const MolBond *pBond = it->second;
+        if (pBond == nullptr) continue;
+        int a = pBond->getAtom1(), b = pBond->getAtom2();
+        if ((a == 0 && b == 1) || (a == 1 && b == 0)) found_0_1 = true;
+        if ((a == 0 && b == 2) || (a == 2 && b == 0)) found_0_2 = true;
+    }
+    EXPECT_TRUE(found_0_1);
+    EXPECT_TRUE(found_0_2);
+
+    qlib::Vector4D p0 = pMol->getAtom(0)->getPos();
+    EXPECT_NEAR(p0.x(), 0.0, 1e-9);
+    EXPECT_NEAR(p0.y(), 0.0, 1e-9);
+    EXPECT_NEAR(p0.z(), 0.0, 1e-9);
+}
+
+// The "autogen" mode does not set the noautogen marker, so the reader option
+// demonstrably changes behaviour (bonds come from applyTopology, PDB-like).
+TEST(AmberPrmtopReaderTest, AutogenBondModeClearsNoautogenMarker)
+{
+    AmberPrmtopReader reader;
+    reader.setBondMode(AmberPrmtopReader::BONDMODE_AUTOGEN);
+
+    StrInStream ins(kPrmtopWater, static_cast<int>(std::string(kPrmtopWater).size()));
+    MolCoordPtr pMol(reader.load(ins));
+    ASSERT_FALSE(pMol.isnull());
+
+    molstr::MolResiduePtr pRes = pMol->getResidue("A", molstr::ResidIndex(1));
+    ASSERT_FALSE(pRes.isnull());
+    LString noautogen;
+    pRes->getPropStr("noautogen", noautogen);
+    EXPECT_FALSE(noautogen.equals("true"));
 }

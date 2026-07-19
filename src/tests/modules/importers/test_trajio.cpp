@@ -1363,3 +1363,21 @@ TEST(TrajectoryTest, AmberNetCDFNeverySkip)
 
     EXPECT_EQ(pTraj->getFrameSize(), 3);
 }
+
+TEST(TrajectoryTest, AmberNetCDFInitialFrameIsTrajFrameZero)
+{
+    // GRO topology carries its own (initial-structure) coordinates. Once a
+    // trajectory block is appended, the initial display (before any setFrame)
+    // must show the trajectory's frame 0, not the GRO coordinates.
+    TrajectoryPtr pTraj = makeWaterTrajectory();
+    appendAmberNC(pTraj, buildAmberNC(3, 4, 2));
+
+    // No setFrame() call: read the eagerly-primed initial positions directly.
+    for (int i = 0; i < 3; ++i) {
+        int aid = pTraj->getAtomIDByArrayInd(static_cast<quint32>(i));
+        Vector4D pos = pTraj->getAtom(aid)->getPos();
+        EXPECT_NEAR(pos.x(), ncCoord(0, i, 0), 1e-4);
+        EXPECT_NEAR(pos.y(), ncCoord(0, i, 1), 1e-4);
+        EXPECT_NEAR(pos.z(), ncCoord(0, i, 2), 1e-4);
+    }
+}
