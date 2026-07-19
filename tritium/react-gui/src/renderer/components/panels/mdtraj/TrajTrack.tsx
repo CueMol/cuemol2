@@ -68,7 +68,8 @@ export const TrajTrack: React.FC<TrajTrackProps> = ({
 }) => {
     const scrollRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLDivElement>(null);
-    const [draggingBlock, setDraggingBlock] = useState<number | null>(null);
+    // While reordering: the dragged block index + its horizontal cursor offset.
+    const [dragState, setDragState] = useState<{ index: number; dx: number } | null>(null);
 
     const widthPx = trackWidthPx(nframe, pxPerFrame);
     const playheadLeft = frameToPx(frame, pxPerFrame);
@@ -120,18 +121,19 @@ export const TrajTrack: React.FC<TrajTrackProps> = ({
         (index: number, e: React.MouseEvent) => {
             if (e.button !== 0) return;
             e.stopPropagation(); // do not start a ruler scrub / lane deselect
+            e.preventDefault(); // do not start a text selection while dragging
             const startX = e.clientX;
             let moved = false;
             const onMove = (ev: MouseEvent) => {
                 if (!moved && Math.abs(ev.clientX - startX) > DRAG_THRESHOLD_PX) {
                     moved = true;
-                    setDraggingBlock(index);
                 }
+                if (moved) setDragState({ index, dx: ev.clientX - startX });
             };
             const onUp = (ev: MouseEvent) => {
                 document.removeEventListener('mousemove', onMove);
                 document.removeEventListener('mouseup', onUp);
-                setDraggingBlock(null);
+                setDragState(null);
                 if (!moved) {
                     onSelectBlock(index);
                     return;
@@ -178,7 +180,8 @@ export const TrajTrack: React.FC<TrajTrackProps> = ({
                             index={i}
                             pxPerFrame={pxPerFrame}
                             selected={selectedBlock === i}
-                            dragging={draggingBlock === i}
+                            dragging={dragState?.index === i}
+                            dragOffsetPx={dragState?.index === i ? dragState.dx : 0}
                             onMouseDownBlock={handleBlockMouseDown}
                         />
                     ))}

@@ -24,6 +24,8 @@ interface TrajBlockStripProps {
     selected: boolean;
     /** True while this block is being dragged to reorder. */
     dragging: boolean;
+    /** Horizontal offset (px) while dragging, so the block follows the cursor. */
+    dragOffsetPx: number;
     /** Begin a click-or-drag interaction (parent distinguishes the two). */
     onMouseDownBlock: (index: number, e: React.MouseEvent) => void;
 }
@@ -46,9 +48,10 @@ export const TrajBlockStrip: React.FC<TrajBlockStripProps> = ({
     pxPerFrame,
     selected,
     dragging,
+    dragOffsetPx,
     onMouseDownBlock,
 }) => {
-    const left = frameToPx(block.startIndex, pxPerFrame);
+    const left = frameToPx(block.startIndex, pxPerFrame) + (dragging ? dragOffsetPx : 0);
     const width = Math.max(MIN_BLOCK_PX, frameToPx(block.nframe, pxPerFrame));
     // Color by the block's stable uid (not its position), so the color follows
     // the block on reorder and makes a move visually obvious.
