@@ -573,13 +573,21 @@ export interface RenderPropDefWire {
 
 /** Frozen render-settings snapshot (mirrors RenderSettingsSnapshot). */
 export interface RenderSettingsSnapshotWire {
-  /** "still" or "animation" (mirrors RenderMode). */
+  /** "still" or "movie" (mirrors RenderMode). */
   mode: string
   backend: string
   commonProps: RenderPropDefWire[]
   backendProps: RenderPropDefWire[]
-  /** Animation-mode settings; absent for a still render. */
-  animProps?: RenderPropDefWire[]
+  /** Movie settings (mirrors MovieSettings); absent for a still render. */
+  movie?: {
+    outputDir: string
+    baseName: string
+    fps: number
+    makeMovie: boolean
+    movieFormat: string
+    dupLastFrame: boolean
+    bitrateKbps: number
+  }
 }
 
 /** Scene/view a render was started from (mirrors RenderSource). */

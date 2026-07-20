@@ -38,9 +38,6 @@ import { RENDER_PROGRESS_CHANNEL } from "../../shared/renderTypes";
 import { getRenderBackend, type RenderBackend } from "./renderBackends";
 import {
   pixelImageSize,
-  numVal,
-  strVal,
-  boolVal,
   type RenderTaskSpec,
   type InProcessRender,
 } from "./renderBackends/RenderBackend";
@@ -574,11 +571,12 @@ function startAnimJob(
     return fail(`The ${backend.id} backend cannot render animations`);
   }
 
-  const animProps = args.snapshot.animProps ?? [];
-  const outputDir = strVal(animProps, "outputDir", "").trim();
-  const baseName = strVal(animProps, "baseName", "movie").trim() || "movie";
-  const fps = numVal(animProps, "fps", 30);
-  const dupLastFrame = boolVal(animProps, "dupLastFrame", true);
+  const movie = args.snapshot.movie;
+  if (!movie) return fail("Movie settings are missing");
+
+  const outputDir = movie.outputDir.trim();
+  const baseName = movie.baseName.trim() || "movie";
+  const { fps, dupLastFrame } = movie;
 
   if (!outputDir) return fail("No output folder is set");
   if (!fs.existsSync(outputDir)) return fail(`Output folder not found: ${outputDir}`);
@@ -690,7 +688,7 @@ function renderStart(ctx: WorkerContext, args: RenderStartArgs): RenderStartResu
   const workDir = fs.mkdtempSync(path.join(os.tmpdir(), "cuemol-render-"));
 
   // Animation mode drives AnimMgr frame by frame instead of exporting once.
-  if (args.snapshot.mode === "animation") {
+  if (args.snapshot.mode === "movie") {
     return startAnimJob(ctx, backend, scene, args, workDir);
   }
 

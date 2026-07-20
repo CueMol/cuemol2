@@ -32,6 +32,8 @@ function mount(props: Partial<React.ComponentProps<typeof RenderPanel>>): void {
     root.render(
       <RenderPanel
         job={null}
+        mode="still"
+        onModeChange={noop}
         renderable={true}
         onStart={noop}
         onCancel={noop}

@@ -12,6 +12,7 @@ import * as path from 'path'
 import type { WorkerContext } from '../worker/server/types/WorkerContext'
 import type { RenderStartArgs } from '../worker/shared/renderTypes'
 import type { PropDef } from '../data/rendererProperties'
+import type { MovieSettings } from '../data/renderSettings'
 
 const hoisted = vi.hoisted(() => ({
     getRenderBackend: vi.fn(),
@@ -133,25 +134,25 @@ describe('renderStart animation branch', () => {
         } as unknown as WorkerContext
     }
 
-    function makeArgs(over: PropDef[] = []): RenderStartArgs {
-        const base: PropDef[] = [
-            p('outputDir', outputDir),
-            p('baseName', 'movie'),
-            p('fps', 30),
-            p('dupLastFrame', true),
-        ]
-        // Replace by key -- the worker reads each prop with find(), so an
-        // appended duplicate would never be seen.
-        const animProps = base.map((b) => over.find((o) => o.key === b.key) ?? b)
+    function makeArgs(over: Partial<MovieSettings> = {}): RenderStartArgs {
         return {
             sceneId: 1,
             viewId: 2,
             snapshot: {
-                mode: 'animation',
+                mode: 'movie',
                 backend: 'povray',
                 commonProps: [p('width', 640), p('height', 480), p('unit', 'px'), p('dpi', 600)],
                 backendProps: [],
-                animProps,
+                movie: {
+                    outputDir,
+                    baseName: 'movie',
+                    fps: 30,
+                    makeMovie: false,
+                    movieFormat: 'mp4_h264',
+                    dupLastFrame: true,
+                    bitrateKbps: 1024,
+                    ...over,
+                },
             },
             binaries: { povrayExe: process.execPath, povrayInc: '', blendpng: process.execPath },
         }
@@ -196,7 +197,7 @@ describe('renderStart animation branch', () => {
 
     it('drops the last frame when dupLastFrame is off', () => {
         const ctx = makeCtx()
-        services.renderStart(ctx, makeArgs([p('dupLastFrame', false)]))
+        services.renderStart(ctx, makeArgs({ dupLastFrame: false }))
         for (let i = 0; i < FRAME_COUNT; i++) intervalCb?.()
 
         expect(animMgr.writeFrame).toHaveBeenCalledTimes(FRAME_COUNT - 1)
@@ -217,7 +218,7 @@ describe('renderStart animation branch', () => {
     })
 
     it('fails before starting when the output folder is missing', () => {
-        const args = makeArgs([p('outputDir', path.join(outputDir, 'does-not-exist'))])
+        const args = makeArgs({ outputDir: path.join(outputDir, 'does-not-exist') })
         const res = services.renderStart(makeCtx(), args)
 
         expect(res.ok).toBe(false)

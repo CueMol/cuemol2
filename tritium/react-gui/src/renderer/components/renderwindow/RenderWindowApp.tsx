@@ -18,8 +18,10 @@ import "allotment/dist/style.css";
 
 import { RenderResultPane } from "../panes/RenderResultPane";
 import { RenderPanel } from "../panels/RenderPanel";
+import { MovieSettingsPanel } from "../panels/MovieSettingsPanel";
 import { RenderSettingsEditor } from "../inspector/RenderSettingsEditor";
 import { useRenderSettings } from "../../hooks/useRenderSettings";
+import { isRenderJobActive } from "../../hooks/useRenderJob";
 import { useRenderWindowClient } from "../../hooks/useRenderWindowClient";
 import { RENDER_BACKEND_IDS } from "../../data/renderBackends";
 import { RENDER_SIZE_PRESETS } from "../../data/renderSettings";
@@ -123,6 +125,15 @@ export const RenderWindowApp: React.FC = () => {
             <Allotment.Pane minSize={120} preferredSize={200} snap>
               <RenderPanel
                 job={job}
+                mode={settings.mode}
+                onModeChange={settings.setMode}
+                movieTab={
+                  <MovieSettingsPanel
+                    settings={settings.movie}
+                    onChange={settings.updateMovie}
+                    disabled={isRenderJobActive(job)}
+                  />
+                }
                 renderable={canRender}
                 onStart={handleStart}
                 onCancel={client.cancel}
@@ -145,9 +156,6 @@ export const RenderWindowApp: React.FC = () => {
               Render Settings
             </div>
             <RenderSettingsEditor
-              mode={settings.mode}
-              animProps={settings.animProps}
-              onModeChange={settings.setMode}
               backend={settings.backend}
               backendIds={backendIds}
               commonProps={settings.commonProps}

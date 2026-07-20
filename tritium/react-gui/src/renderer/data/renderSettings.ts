@@ -17,7 +17,7 @@ export type RenderBackendId = "povray" | "umbreon";
  * What a render job produces: a single image, or the frame sequence (and
  * optionally the encoded movie) of the scene's animation.
  */
-export type RenderMode = "still" | "animation";
+export type RenderMode = "still" | "movie";
 
 /** Accordion group descriptor for the render-settings editor. */
 export interface RenderGroupDef {
@@ -160,32 +160,65 @@ export const MOVIE_FORMAT_EXT: Record<MovieFormatId, string> = {
 /** Movie format ids in display order. */
 export const MOVIE_FORMAT_IDS = Object.keys(MOVIE_FORMAT_EXT) as MovieFormatId[];
 
-/**
- * Accordion groups shown only in animation mode, appended after the common
- * ones. `RenderSettingsEditor` merges them in the same way as backend groups.
- */
-export const RENDER_ANIM_GROUPS: RenderGroupDef[] = [
-  { key: "Animation", defaultExpanded: true },
-  { key: "Movie", defaultExpanded: true },
-];
+/** Human-readable format names (UXP `ffmpeg-oformat` menu labels). */
+export const MOVIE_FORMAT_LABEL: Record<MovieFormatId, string> = {
+  mov_h264: "QuickTime (H.264)",
+  mov_h265: "QuickTime (H.265)",
+  mov_raw: "QuickTime (uncompressed)",
+  mp4_h264: "MP4 (H.264)",
+  mp4_h265: "MP4 (H.265)",
+  wmv2: "Windows Media (WMV2)",
+  gifanim: "Animated GIF",
+};
 
 /**
- * Animation-mode settings, driven through the same `PropDef` format as the
- * common ones so the existing editor widgets are reused.
+ * Movie-mode settings.
+ *
+ * These are backend-independent and belong to the render *mode*, not to the
+ * render settings, so they are a plain typed record rather than PropDefs and
+ * get their own panel (see MovieSettingsPanel). That also lets the panel do
+ * things the PropDef editor cannot: a folder-picker button, and disabling the
+ * format / bit rate when encoding is off.
  *
  * The frame range is not exposed: like UXP `anim-render-dlg`, the whole
  * timeline (0 .. AnimMgr.length) is always rendered.
  */
-export const RENDER_ANIM_PROPS: PropDef[] = [
-  { key: "outputDir",    label: "Output folder", type: "string",  value: "",      group: "Animation" },
-  { key: "baseName",     label: "Base name",     type: "string",  value: "movie", group: "Animation" },
-  { key: "fps",          label: "Frame rate",    type: "combo",   value: 30,      group: "Animation", options: ["24", "30", "60"], unit: "fps" },
-  { key: "dupLastFrame", label: "Include last frame", type: "boolean", value: true, group: "Animation" },
+export interface MovieSettings {
+  /** Folder the frame sequence (and the movie) is written to. */
+  outputDir: string;
+  /** Base name of the output files (`<base>_frm_0000.png`). */
+  baseName: string;
+  /** Frames per second. */
+  fps: number;
+  /** Whether to encode the frames into a movie with ffmpeg. */
+  makeMovie: boolean;
+  /** Container / codec of the encoded movie. */
+  movieFormat: MovieFormatId;
+  /**
+   * Whether to render the final frame. Dropping it makes the sequence loop
+   * cleanly, since the first and last frames are otherwise identical
+   * (UXP's "Loop" checkbox).
+   */
+  dupLastFrame: boolean;
+  /** Encoding bit rate in kbps. */
+  bitrateKbps: number;
+}
 
-  { key: "makeMovie",    label: "Encode movie",  type: "boolean", value: true,        group: "Movie" },
-  { key: "movieFormat",  label: "Format",        type: "enum",    value: "mp4_h264",  group: "Movie", options: MOVIE_FORMAT_IDS },
-  { key: "bitrateKbps",  label: "Bit rate",      type: "combo",   value: 1024,        group: "Movie", options: ["256", "1024", "10240"], unit: "kbps" },
-];
+export const DEFAULT_MOVIE_SETTINGS: MovieSettings = {
+  outputDir: "",
+  baseName: "movie",
+  fps: 30,
+  makeMovie: true,
+  movieFormat: "mp4_h264",
+  dupLastFrame: true,
+  bitrateKbps: 1024,
+};
+
+/** Frame-rate choices offered in the Movie panel (UXP `main-mlist-fps`). */
+export const MOVIE_FPS_PRESETS = [24, 30, 60];
+
+/** Bit-rate choices in kbps (UXP `ffmpeg-bitrate`). */
+export const MOVIE_BITRATE_PRESETS = [256, 1024, 10240];
 
 /** Backend-independent render-setting definitions (mock defaults). */
 export const RENDER_COMMON_PROPS: PropDef[] = [
