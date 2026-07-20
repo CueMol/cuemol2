@@ -66,6 +66,7 @@ describe('renderStart in-process branch', () => {
             sceneId: 1,
             viewId: 2,
             snapshot: {
+                mode: 'still',
                 backend: 'umbreon',
                 commonProps: [p('width', 640), p('height', 480), p('unit', 'px'), p('dpi', 600)],
                 backendProps: [],

@@ -15,12 +15,14 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import type { PropDef } from "../data/rendererProperties";
 import {
   RENDER_COMMON_PROPS,
+  RENDER_ANIM_PROPS,
   RENDER_SIZE_PRESETS,
   DEFAULT_RENDER_PRESET,
   SIZE_UNIT_FIELD_META,
   sizeUnitToPx,
   pxToSizeUnit,
   type RenderBackendId,
+  type RenderMode,
 } from "../data/renderSettings";
 import { RENDER_BACKENDS, DEFAULT_RENDER_BACKEND } from "../data/renderBackends";
 import type { RenderSettingsSnapshot } from "../data/renderResult";
@@ -89,6 +91,10 @@ export function useRenderSettings(
     cloneProps(RENDER_BACKENDS[DEFAULT_RENDER_BACKEND].props),
   );
   const [preset, setPreset] = useState<string>(DEFAULT_RENDER_PRESET);
+  const [mode, setMode] = useState<RenderMode>("still");
+  const [animProps, setAnimProps] = useState<PropDef[]>(() =>
+    cloneProps(RENDER_ANIM_PROPS),
+  );
   // Once the user (or a restore) picks a backend, stop auto-defaulting to umbreon.
   const userPickedRef = useRef(false);
 
@@ -127,6 +133,7 @@ export function useRenderSettings(
       }
       setCommonProps((prev) => applyChange(prev, key, value));
       setBackendProps((prev) => applyChange(prev, key, value));
+      setAnimProps((prev) => applyChange(prev, key, value));
       // A manual size edit no longer matches any preset.
       if (key === "width" || key === "height") {
         setPreset(DEFAULT_RENDER_PRESET);
@@ -177,11 +184,13 @@ export function useRenderSettings(
   /** Frozen copy of the current settings, used for a render result. */
   const getSnapshot = useCallback(
     (): RenderSettingsSnapshot => ({
+      mode,
       backend,
       commonProps: cloneProps(commonProps),
       backendProps: cloneProps(backendProps),
+      ...(mode === "animation" ? { animProps: cloneProps(animProps) } : {}),
     }),
-    [backend, commonProps, backendProps],
+    [mode, backend, commonProps, backendProps, animProps],
   );
 
   /** Load settings from a snapshot (used by "Re-render"). */
@@ -192,15 +201,20 @@ export function useRenderSettings(
     setBackendState(snapshot.backend);
     setCommonProps(cloneProps(snapshot.commonProps));
     setBackendProps(cloneProps(snapshot.backendProps));
+    setMode(snapshot.mode);
+    if (snapshot.animProps) setAnimProps(cloneProps(snapshot.animProps));
     // Restored sizes are explicit, so no preset is active.
     setPreset(DEFAULT_RENDER_PRESET);
   }, []);
 
   return {
+    mode,
     backend,
     commonProps,
     backendProps,
+    animProps,
     preset,
+    setMode,
     setBackend,
     handleChange,
     applyPreset,

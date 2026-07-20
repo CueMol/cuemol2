@@ -9,7 +9,7 @@
  */
 
 import type { PropDef } from "./rendererProperties";
-import type { RenderBackendId } from "./renderSettings";
+import type { RenderBackendId, RenderMode } from "./renderSettings";
 
 /** Reference to the scene/view a render was started from. */
 export interface RenderSource {
@@ -21,9 +21,18 @@ export interface RenderSource {
 
 /** Frozen copy of the render settings used for a result. */
 export interface RenderSettingsSnapshot {
+  /** Whether this render produces one image or the animation's frames. */
+  mode: RenderMode;
   backend: RenderBackendId;
   commonProps: PropDef[];
   backendProps: PropDef[];
+  /**
+   * Animation-mode settings (output folder, base name, fps, movie options).
+   * Kept as PropDefs like the other sets so the worker reads them with the
+   * same numVal / strVal / boolVal helpers. Only present when mode is
+   * "animation".
+   */
+  animProps?: PropDef[];
 }
 
 /** A completed render, displayed in the Rendering window. */

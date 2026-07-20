@@ -15,12 +15,15 @@ import React, { useCallback } from "react";
 import { HTMLSelect } from "@blueprintjs/core";
 
 import { PropGroupedEditor } from "./PropGroupedEditor";
+import { SegmentField } from "../../h3-kit/form";
 import type { PropDef } from "../../data/rendererProperties";
 import {
   RENDER_COMMON_GROUPS,
+  RENDER_ANIM_GROUPS,
   RENDER_SIZE_PRESETS,
   type RenderBackendId,
   type RenderGroupDef,
+  type RenderMode,
 } from "../../data/renderSettings";
 import { RENDER_BACKENDS } from "../../data/renderBackends";
 
@@ -31,6 +34,10 @@ import { RENDER_BACKENDS } from "../../data/renderBackends";
  * declared order.
  */
 const GROUP_ORDER = [
+  // Animation-only groups lead: in animation mode the output folder is the
+  // one setting that must be filled in before a render can start.
+  "Animation",
+  "Movie",
   "Image",
   "Camera",
   "Quality",
@@ -42,6 +49,12 @@ const GROUP_ORDER = [
 ];
 
 interface RenderSettingsEditorProps {
+  /** Still or animation render. Animation adds the Animation / Movie groups. */
+  mode: RenderMode;
+  /** Animation-mode property definitions (ignored when mode is "still"). */
+  animProps: PropDef[];
+  /** Called when the user switches between still and animation output. */
+  onModeChange: (mode: RenderMode) => void;
   /** Currently selected backend. */
   backend: RenderBackendId;
   /** Backend ids available in the selector. */
@@ -61,6 +74,9 @@ interface RenderSettingsEditorProps {
 }
 
 export const RenderSettingsEditor: React.FC<RenderSettingsEditorProps> = ({
+  mode,
+  animProps,
+  onModeChange,
   backend,
   backendIds,
   commonProps,
@@ -99,8 +115,14 @@ export const RenderSettingsEditor: React.FC<RenderSettingsEditorProps> = ({
   // "Quality", "Edges") render as a single accordion. The backend's group def
   // wins on a key clash (its defaultExpanded), then GROUP_ORDER fixes display
   // order (any unlisted backend group is appended in declared order).
-  const allProps: PropDef[] = [...visibleCommonProps, ...backendProps];
+  const isAnim = mode === "animation";
+  const allProps: PropDef[] = [
+    ...(isAnim ? animProps : []),
+    ...visibleCommonProps,
+    ...backendProps,
+  ];
   const groupDefs = new Map<string, RenderGroupDef>();
+  if (isAnim) for (const g of RENDER_ANIM_GROUPS) groupDefs.set(g.key, g);
   for (const g of RENDER_COMMON_GROUPS) groupDefs.set(g.key, g);
   for (const g of backendGroups) groupDefs.set(g.key, g);
   const orderedGroups: RenderGroupDef[] = [
@@ -110,6 +132,20 @@ export const RenderSettingsEditor: React.FC<RenderSettingsEditorProps> = ({
 
   return (
     <div className="insp-properties-tab">
+      {/* -- Still / Animation output mode. Animation renders the scene's
+             whole timeline as a frame sequence (Animation / Movie groups). -- */}
+      <div className="insp-render-backend-bar">
+        <span className="insp-prop-label">Output</span>
+        <SegmentField<RenderMode>
+          value={mode}
+          onValueChange={onModeChange}
+          options={[
+            { label: "Still", value: "still" },
+            { label: "Animation", value: "animation" },
+          ]}
+        />
+      </div>
+
       {/* -- Backend selector -- */}
       <div className="insp-render-backend-bar">
         <span className="insp-prop-label">Backend</span>

@@ -145,6 +145,9 @@ export const RenderWindowApp: React.FC = () => {
               Render Settings
             </div>
             <RenderSettingsEditor
+              mode={settings.mode}
+              animProps={settings.animProps}
+              onModeChange={settings.setMode}
               backend={settings.backend}
               backendIds={backendIds}
               commonProps={settings.commonProps}

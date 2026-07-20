@@ -13,6 +13,12 @@ import type { PropDef } from "./rendererProperties";
 /** Identifier of a rendering backend. Extended as backends are added. */
 export type RenderBackendId = "povray" | "umbreon";
 
+/**
+ * What a render job produces: a single image, or the frame sequence (and
+ * optionally the encoded movie) of the scene's animation.
+ */
+export type RenderMode = "still" | "animation";
+
 /** Accordion group descriptor for the render-settings editor. */
 export interface RenderGroupDef {
   /** Group key -- also the value of each member `PropDef.group`. */
@@ -124,6 +130,62 @@ export function pxToSizeUnit(px: number, dpi: number, unit: string): number {
       return Math.round(px); // px
   }
 }
+
+// --- Animation (movie) rendering ---
+
+/**
+ * Container / codec combination for the encoded movie, ported from the UXP
+ * `anim-render-dlg` "Output format" list.
+ */
+export type MovieFormatId =
+  | "mov_h264"
+  | "mov_h265"
+  | "mov_raw"
+  | "mp4_h264"
+  | "mp4_h265"
+  | "wmv2"
+  | "gifanim";
+
+/** Output file extension per movie format, including the dot. */
+export const MOVIE_FORMAT_EXT: Record<MovieFormatId, string> = {
+  mov_h264: ".mov",
+  mov_h265: ".mov",
+  mov_raw: ".mov",
+  mp4_h264: ".mp4",
+  mp4_h265: ".mp4",
+  wmv2: ".wmv",
+  gifanim: ".gif",
+};
+
+/** Movie format ids in display order. */
+export const MOVIE_FORMAT_IDS = Object.keys(MOVIE_FORMAT_EXT) as MovieFormatId[];
+
+/**
+ * Accordion groups shown only in animation mode, appended after the common
+ * ones. `RenderSettingsEditor` merges them in the same way as backend groups.
+ */
+export const RENDER_ANIM_GROUPS: RenderGroupDef[] = [
+  { key: "Animation", defaultExpanded: true },
+  { key: "Movie", defaultExpanded: true },
+];
+
+/**
+ * Animation-mode settings, driven through the same `PropDef` format as the
+ * common ones so the existing editor widgets are reused.
+ *
+ * The frame range is not exposed: like UXP `anim-render-dlg`, the whole
+ * timeline (0 .. AnimMgr.length) is always rendered.
+ */
+export const RENDER_ANIM_PROPS: PropDef[] = [
+  { key: "outputDir",    label: "Output folder", type: "string",  value: "",      group: "Animation" },
+  { key: "baseName",     label: "Base name",     type: "string",  value: "movie", group: "Animation" },
+  { key: "fps",          label: "Frame rate",    type: "combo",   value: 30,      group: "Animation", options: ["24", "30", "60"], unit: "fps" },
+  { key: "dupLastFrame", label: "Include last frame", type: "boolean", value: true, group: "Animation" },
+
+  { key: "makeMovie",    label: "Encode movie",  type: "boolean", value: true,        group: "Movie" },
+  { key: "movieFormat",  label: "Format",        type: "enum",    value: "mp4_h264",  group: "Movie", options: MOVIE_FORMAT_IDS },
+  { key: "bitrateKbps",  label: "Bit rate",      type: "combo",   value: 1024,        group: "Movie", options: ["256", "1024", "10240"], unit: "kbps" },
+];
 
 /** Backend-independent render-setting definitions (mock defaults). */
 export const RENDER_COMMON_PROPS: PropDef[] = [

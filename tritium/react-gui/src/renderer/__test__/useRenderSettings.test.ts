@@ -86,6 +86,7 @@ describe('useRenderSettings', () => {
         const h = makeRenderHook(() => useRenderSettings());
         act(() =>
             h.result.restore({
+                mode: 'still',
                 backend: 'povray',
                 commonProps: [
                     { key: 'width', label: 'Width', type: 'integer', value: 640, group: 'Image' },

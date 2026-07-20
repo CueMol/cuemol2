@@ -75,6 +75,10 @@ export type RenderUpdate =
       jobId: string;
       progress: number; // 0..100
       phase: RenderUpdatePhase;
+      /** Animation mode: 0-based index of the frame being rendered. */
+      frameIndex?: number;
+      /** Animation mode: total number of frames in the job. */
+      frameCount?: number;
       logChunk?: string;
     }
   | {

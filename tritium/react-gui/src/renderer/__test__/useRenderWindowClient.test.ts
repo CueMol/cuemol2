@@ -24,6 +24,7 @@ import type {
 import type { RenderSettingsSnapshot } from '../data/renderResult';
 
 const snapshot: RenderSettingsSnapshot = {
+    mode: 'still',
     backend: 'povray',
     commonProps: [],
     backendProps: [],
@@ -129,7 +130,7 @@ describe('useRenderWindowClient', () => {
                     id: 'r1', imageDataUrl: 'data:x', width: 8, height: 6,
                     elapsedSec: 1, sourceSceneId: 1, sourceSceneName: 'SceneA',
                     sourceViewId: 7,
-                    settingsSnapshot: { backend: 'povray', commonProps: [], backendProps: [] },
+                    settingsSnapshot: { mode: 'still', backend: 'povray', commonProps: [], backendProps: [] },
                 },
             });
         });

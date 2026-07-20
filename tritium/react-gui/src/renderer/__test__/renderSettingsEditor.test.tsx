@@ -30,6 +30,9 @@ function mountEditor() {
   return mountTree(
     <RenderSettingsEditor
       backend="povray"
+      mode="still"
+      animProps={[]}
+      onModeChange={vi.fn()}
       backendIds={RENDER_BACKEND_IDS}
       commonProps={RENDER_COMMON_PROPS}
       backendProps={RENDER_BACKENDS.povray.props}
@@ -79,7 +82,10 @@ describe('RenderSettingsEditor backend-specific common filtering', () => {
     return mountTree(
       <RenderSettingsEditor
         backend={backend}
-        backendIds={RENDER_BACKEND_IDS}
+        mode="still"
+      animProps={[]}
+      onModeChange={vi.fn()}
+      backendIds={RENDER_BACKEND_IDS}
         commonProps={RENDER_COMMON_PROPS}
         backendProps={RENDER_BACKENDS[backend].props}
         onBackendChange={vi.fn()}

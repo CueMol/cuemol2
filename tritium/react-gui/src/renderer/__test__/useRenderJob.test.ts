@@ -18,6 +18,7 @@ import type {
 } from '../data/renderResult';
 
 const snapshot: RenderSettingsSnapshot = {
+    mode: 'still',
     backend: 'povray',
     commonProps: [],
     backendProps: [],
