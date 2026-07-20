@@ -43,6 +43,10 @@ export const objectFilters = {
     /** MolSurfObj (molecular surface objects). */
     molSurf: (it: SceneObjectEntry): boolean =>
         it.className === 'MolSurfObj',
+    /** MD Trajectory objects (mdtools::Trajectory, a MolCoord subclass whose
+     *  class name does not end in "Mol", so it is not covered by molCoord). */
+    trajectory: (it: SceneObjectEntry): boolean =>
+        it.className === 'Trajectory',
     /** Union of molCoord + densityMap; the Symmetry panel uses this. */
     molCoordOrDensityMap: (it: SceneObjectEntry): boolean =>
         objectFilters.molCoord(it) || objectFilters.densityMap(it),

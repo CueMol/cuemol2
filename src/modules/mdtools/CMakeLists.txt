@@ -18,6 +18,7 @@ XdrInStream.cpp
 Netcdf3InStream.cpp
 TrajBlock.cpp
 Trajectory.cpp
+TrajBlockEditInfo.cpp
 DCDTrajReader.cpp
 TrrTrajReader.cpp
 XtcTrajReader.cpp

@@ -28,7 +28,15 @@ runtime_class Trajectory extends AnimMol
   property integer frame_aver_size => redirect(getFrmAverSize, setFrmAverSize);
   default frame_aver_size = 0;
 
+  property integer nblock => redirect(getBlockCount, XX) (readonly);
+
   void append(object<TrajBlock$> pblk);
+
+  object<TrajBlock$> getBlock(integer index);
+
+  void removeBlock(integer index);
+
+  void moveBlock(integer from, integer to);
 };
 
 #endif

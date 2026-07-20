@@ -21,6 +21,7 @@
 @import "./styles/_render-window.css";
 @import "./styles/_sequence-panel.css";
 @import "./styles/_animation-panel.css";
+@import "./styles/_md-traj-panel.css";
 @import "./styles/_status-bar.css";
 @import "./styles/_viewport-tool-palette.css";
 @import "./styles/_rectsel-overlay.css";

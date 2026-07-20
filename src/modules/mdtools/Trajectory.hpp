@@ -79,6 +79,25 @@ public:
 
     void append(TrajBlockPtr pBlk);
 
+    /// Remove the coordinate block at the given index (0 <= index <
+    /// getBlockCount()). Recomputes block start indices and the total frame
+    /// count, clamps the current frame, and notifies a block-set change.
+    /// Removing the last remaining block leaves an empty (0-block) trajectory;
+    /// a later append/insert re-primes frame 0. Records an undo step when run
+    /// inside an interactive transaction.
+    void removeBlock(int index);
+
+    /// Insert a coordinate block at the given index (0 <= index <=
+    /// getBlockCount()). Recomputes layout and notifies a block-set change.
+    /// Undo primitive for removeBlock (does not record an undo step itself).
+    void insertBlock(int index, TrajBlockPtr pBlk);
+
+    /// Move the block at `from` to position `to` (both in [0, getBlockCount())).
+    /// Recomputes start indices (total frame count is unchanged) and notifies a
+    /// block-set change. Records an undo step when run inside an interactive
+    /// transaction.
+    void moveBlock(int from, int to);
+
     void update(int n, bool bDyn = false);
 
     /// Object hook (end of loading). Eagerly primes frame 0 once the topology
@@ -89,6 +108,16 @@ public:
 
 private:
     void findBlk(int nfrm, int &nBlkInd, int &nFrmInd) const;
+
+    /// Fire an object-changed event for a block-set change (block append /
+    /// remove -> nframe / nblock changed). This is a trajectory-specific
+    /// structural change, distinct from molecular topologyChanged (covalent
+    /// bond / atom edits); the frame-set changed, not the connectivity.
+    void fireTrajBlockChanged();
+
+    /// Reassign contiguous start indices to the current block order and update
+    /// the total frame count. Call after any m_blocks reorder / erase / insert.
+    void recomputeBlockLayout();
 
     /// Write frame-0 coordinates into the atoms, (re)build distance-dependent
     /// topology (bonds) and compute secondary structure, all on the real
@@ -150,6 +179,9 @@ public:
 
     /// Number of coordinate blocks (chunks) the frames are split across.
     int getBlockCount() const { return static_cast<int>(m_blocks.size()); }
+
+    /// Get the coordinate block at the given index (0 <= index < getBlockCount()).
+    TrajBlockPtr getBlock(int index) const;
 
 private:
     /// Frame averaging window size (0: off)

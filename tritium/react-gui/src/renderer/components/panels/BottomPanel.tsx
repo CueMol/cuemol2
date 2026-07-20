@@ -15,6 +15,7 @@ import type { AppIconKey } from "../../data/appIcons";
 import { LogPanel } from "./LogPanel";
 import { SequencePanel } from "./SequencePanel";
 import { AnimationPanel } from "./AnimationPanel";
+import { TrajectoryPanel } from "./TrajectoryPanel";
 import { useLogActions, useLogContents } from "../../contexts/LogContext";
 import { IPC } from "../../../shared/ipcChannels";
 import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
@@ -23,7 +24,7 @@ import type { AsyncCueMol } from "../../worker/client/AsyncCueMol";
 // Types
 // ---------------------------------------------
 
-type BottomTabType = "output" | "sequence" | "animation";
+type BottomTabType = "output" | "sequence" | "animation" | "trajectory";
 
 interface TabButtonProps {
   tab: BottomTabType;
@@ -122,6 +123,8 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({
             onInspectAnimElement={onInspectAnimElement}
           />
         );
+      case "trajectory":
+        return <TrajectoryPanel cm={cm} activeSceneId={activeSceneId} />;
     }
   };
 
@@ -131,6 +134,7 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({
         <TabButton tab="output" activeTab={activeTab} icon="panel.output" label="Output" onClick={setActiveTab} />
         <TabButton tab="sequence" activeTab={activeTab} icon="panel.sequence" label="Sequence" onClick={setActiveTab} />
         <TabButton tab="animation" activeTab={activeTab} icon="panel.animation" label="Animation" onClick={setActiveTab} />
+        <TabButton tab="trajectory" activeTab={activeTab} icon="panel.trajectory" label="Trajectory" onClick={setActiveTab} />
       </div>
       <div className="bottom-panel-content">{renderContent()}</div>
     </div>

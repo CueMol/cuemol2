@@ -6,11 +6,15 @@
 #include <common.h>
 
 #include "Trajectory.hpp"
+#include "TrajBlockEditInfo.hpp"
 
 #include <modules/molstr/MolCoord.hpp>
 #include <modules/molstr/MolAtom.hpp>
 
 #include <qsys/SceneManager.hpp>
+#include <qsys/Scene.hpp>
+#include <qsys/UndoManager.hpp>
+#include <qsys/ObjectEvent.hpp>
 #include <qlib/Utils.hpp>
 #include <qlib/LDOM2Tree.hpp>
 
@@ -239,7 +243,170 @@ void Trajectory::append(TrajBlockPtr pBlk)
         primeInitialFrame();
     }
 
+    // Record undo/redo (only inside an interactive txn; the UndoManager
+    // disables recording during undo/redo execution and .qsc load runs
+    // outside any txn, so neither re-records here).
+    qsys::UndoManager *pUM = nullptr;
+    qsys::ScenePtr cursc = getScene();
+    if (!cursc.isnull())
+        pUM = cursc->getUndoMgr();
+    if (pUM != nullptr && pUM->isOK()) {
+        TrajBlockEditInfo *pEI = MB_NEW TrajBlockEditInfo;
+        pEI->setupAppend(getUID(), pBlk, static_cast<int>(m_blocks.size()) - 1);
+        pUM->addEditInfo(pEI);
+    }
+
+    // A block append changes the frame structure (nframe/nblock).
+    fireTrajBlockChanged();
+
     LOG_DPRINTLN("Traj> append blk start=%d, size=%d", nnext, pBlk->getSize());
+}
+
+void Trajectory::fireTrajBlockChanged()
+{
+    // Trajectory-specific structural change (frame set changed). Distinct from
+    // molecular topologyChanged (bond/atom connectivity), so it uses its own
+    // descr; a listener filters on it via the event category (args.method).
+    qsys::ObjectEvent obe;
+    obe.setType(qsys::ObjectEvent::OBE_CHANGED);
+    obe.setTarget(getUID());
+    obe.setDescr("trajBlockChanged");
+    fireObjectEvent(obe);
+}
+
+void Trajectory::removeBlock(int index)
+{
+    const int nblk = static_cast<int>(m_blocks.size());
+    if (index < 0 || index >= nblk) {
+        MB_THROW(qlib::RuntimeException, "removeBlock(): index out of range");
+        return;
+    }
+
+    // Retain the block and record an undo step (interactive txn only; the
+    // UndoManager disables recording during undo/redo and .qsc load).
+    TrajBlockPtr pBlk = m_blocks[index];
+    {
+        qsys::UndoManager *pUM = nullptr;
+        qsys::ScenePtr cursc = getScene();
+        if (!cursc.isnull()) pUM = cursc->getUndoMgr();
+        if (pUM != nullptr && pUM->isOK()) {
+            TrajBlockEditInfo *pEI = MB_NEW TrajBlockEditInfo;
+            pEI->setupRemove(getUID(), pBlk, index);
+            pUM->addEditInfo(pEI);
+        }
+    }
+
+    m_blocks.erase(m_blocks.begin() + index);
+    recomputeBlockLayout();
+
+    if (m_blocks.empty()) {
+        // Back to the pre-append state; a later append/insert re-primes frame 0.
+        m_bInit = false;
+        m_nCurFrm = 0;
+        m_nBlkInd = 0;
+        m_nFrmInd = 0;
+    }
+    else {
+        // Keep the current frame in range and refresh the atom coordinates.
+        if (m_nCurFrm >= m_nTotalFrms) m_nCurFrm = m_nTotalFrms - 1;
+        if (m_nCurFrm < 0) m_nCurFrm = 0;
+        update(m_nCurFrm);
+    }
+
+    // A block remove changes the frame structure (nframe/nblock).
+    fireTrajBlockChanged();
+
+    LOG_DPRINTLN("Traj> removeBlock idx=%d, nblk=%d, total=%d", index,
+                 static_cast<int>(m_blocks.size()), m_nTotalFrms);
+}
+
+void Trajectory::insertBlock(int index, TrajBlockPtr pBlk)
+{
+    const int nblk = static_cast<int>(m_blocks.size());
+    if (index < 0 || index > nblk) {
+        MB_THROW(qlib::RuntimeException, "insertBlock(): index out of range");
+        return;
+    }
+
+    pBlk->setSceneID(getSceneID());
+    m_blocks.insert(m_blocks.begin() + index, pBlk);
+    recomputeBlockLayout();
+
+    if (!m_bInit) {
+        // Re-populating a previously-emptied trajectory: re-prime frame 0.
+        m_bInit = true;
+        primeInitialFrame();
+    }
+    else {
+        if (m_nCurFrm >= m_nTotalFrms) m_nCurFrm = m_nTotalFrms - 1;
+        if (m_nCurFrm < 0) m_nCurFrm = 0;
+        update(m_nCurFrm);
+    }
+
+    fireTrajBlockChanged();
+
+    LOG_DPRINTLN("Traj> insertBlock idx=%d, nblk=%d, total=%d", index,
+                 static_cast<int>(m_blocks.size()), m_nTotalFrms);
+}
+
+void Trajectory::moveBlock(int from, int to)
+{
+    const int nblk = static_cast<int>(m_blocks.size());
+    if (from < 0 || from >= nblk || to < 0 || to >= nblk) {
+        MB_THROW(qlib::RuntimeException, "moveBlock(): index out of range");
+        return;
+    }
+    if (from == to) return;
+
+    // Record an undo step (interactive txn only).
+    {
+        qsys::UndoManager *pUM = nullptr;
+        qsys::ScenePtr cursc = getScene();
+        if (!cursc.isnull()) pUM = cursc->getUndoMgr();
+        if (pUM != nullptr && pUM->isOK()) {
+            TrajBlockEditInfo *pEI = MB_NEW TrajBlockEditInfo;
+            pEI->setupMove(getUID(), from, to);
+            pUM->addEditInfo(pEI);
+        }
+    }
+
+    // Reorder: remove at `from`, re-insert so the block ends up at index `to`.
+    TrajBlockPtr pBlk = m_blocks[from];
+    m_blocks.erase(m_blocks.begin() + from);
+    m_blocks.insert(m_blocks.begin() + to, pBlk);
+    recomputeBlockLayout();
+
+    // Frame count is unchanged, but the current global frame now maps to
+    // different coordinates under the new ordering, so refresh.
+    if (!m_blocks.empty()) {
+        if (m_nCurFrm >= m_nTotalFrms) m_nCurFrm = m_nTotalFrms - 1;
+        if (m_nCurFrm < 0) m_nCurFrm = 0;
+        update(m_nCurFrm);
+    }
+
+    fireTrajBlockChanged();
+
+    LOG_DPRINTLN("Traj> moveBlock from=%d to=%d, nblk=%d", from, to,
+                 static_cast<int>(m_blocks.size()));
+}
+
+void Trajectory::recomputeBlockLayout()
+{
+    int nstart = 0;
+    for (const TrajBlockPtr &pblk : m_blocks) {
+        pblk->setStartIndex(nstart);
+        nstart += pblk->getSize();
+    }
+    m_nTotalFrms = nstart;
+}
+
+TrajBlockPtr Trajectory::getBlock(int index) const
+{
+    if (index < 0 || index >= static_cast<int>(m_blocks.size())) {
+        MB_THROW(qlib::RuntimeException, "getBlock(): index out of range");
+        return TrajBlockPtr();
+    }
+    return m_blocks[index];
 }
 
 void Trajectory::findBlk(int iframe, int &nBlkInd, int &nFrmInd) const
