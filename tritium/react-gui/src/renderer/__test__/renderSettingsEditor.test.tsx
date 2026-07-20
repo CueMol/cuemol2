@@ -23,7 +23,7 @@ vi.mock('../hooks/useCueMol', () => ({
 vi.mock('../contexts/ThemeContext', () => ({ useTheme: () => ({ theme: 'dark' }) }));
 
 import { RenderSettingsEditor } from '../components/inspector/RenderSettingsEditor';
-import { RENDER_COMMON_PROPS } from '../data/renderSettings';
+import { RENDER_COMMON_PROPS, RENDER_SIZE_PRESETS } from '../data/renderSettings';
 import { RENDER_BACKENDS, RENDER_BACKEND_IDS } from '../data/renderBackends';
 
 function mountEditor() {
@@ -37,6 +37,7 @@ function mountEditor() {
       onChange={vi.fn()}
       preset="Custom"
       onApplyPreset={vi.fn()}
+      sizePresets={RENDER_SIZE_PRESETS}
     />,
   );
 }
@@ -86,6 +87,7 @@ describe('RenderSettingsEditor backend-specific common filtering', () => {
         onChange={vi.fn()}
         preset="Custom"
         onApplyPreset={vi.fn()}
+      sizePresets={RENDER_SIZE_PRESETS}
       />,
     );
   }

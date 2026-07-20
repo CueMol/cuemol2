@@ -64,8 +64,27 @@ export const RENDER_SIZE_PRESETS: RenderSizePreset[] = [
   { label: "1200×1200 (600dpi)", width: 1200, height: 1200, dpi: 600 },
 ];
 
+/**
+ * Movie-mode size presets: standard video resolutions (UXP `anim-render-dlg`
+ * `preset-size-list`). Sizes are exact pixels, so no DPI is applied.
+ */
+export const MOVIE_SIZE_PRESETS: RenderSizePreset[] = [
+  { label: "Custom", width: 0, height: 0 },
+  { label: "QVGA (320×240)", width: 320, height: 240 },
+  { label: "VGA (640×480)", width: 640, height: 480 },
+  { label: "SVGA (800×600)", width: 800, height: 600 },
+  { label: "XGA (1024×768)", width: 1024, height: 768 },
+  { label: "HD720 (1280×720)", width: 1280, height: 720 },
+  { label: "HD1080 (1920×1080)", width: 1920, height: 1080 },
+];
+
 /** Default preset label (no enforced size). */
 export const DEFAULT_RENDER_PRESET = "Custom";
+
+/** Size presets for a render mode: video resolutions for movies. */
+export function sizePresetsForMode(mode: RenderMode): RenderSizePreset[] {
+  return mode === "movie" ? MOVIE_SIZE_PRESETS : RENDER_SIZE_PRESETS;
+}
 
 // --- Image-size units ---
 

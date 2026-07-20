@@ -15,10 +15,10 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import type { PropDef } from "../data/rendererProperties";
 import {
   RENDER_COMMON_PROPS,
-  RENDER_SIZE_PRESETS,
   DEFAULT_RENDER_PRESET,
   DEFAULT_MOVIE_SETTINGS,
   SIZE_UNIT_FIELD_META,
+  sizePresetsForMode,
   sizeUnitToPx,
   pxToSizeUnit,
   type RenderBackendId,
@@ -147,7 +147,7 @@ export function useRenderSettings(
   const applyPreset = useCallback(
     (label: string, dynamicSize?: { width: number; height: number }) => {
       setPreset(label);
-      const sized = RENDER_SIZE_PRESETS.find((p) => p.label === label);
+      const sized = sizePresetsForMode(mode).find((p) => p.label === label);
       if (!sized) return;
 
       let size: { width: number; height: number } | undefined;
@@ -176,8 +176,18 @@ export function useRenderSettings(
         return next;
       });
     },
-    [],
+    [mode],
   );
+
+  /**
+   * Switch the render mode. The preset lists differ per mode (video
+   * resolutions for movies), so a selected preset from the other mode would
+   * not exist in the new list -- reset it to the neutral "Custom".
+   */
+  const changeMode = useCallback((next: RenderMode) => {
+    setMode(next);
+    setPreset(DEFAULT_RENDER_PRESET);
+  }, []);
 
   /** Frozen copy of the current settings, used for a render result. */
   const getSnapshot = useCallback(
@@ -217,7 +227,7 @@ export function useRenderSettings(
     backendProps,
     movie,
     preset,
-    setMode,
+    setMode: changeMode,
     setBackend,
     handleChange,
     updateMovie,

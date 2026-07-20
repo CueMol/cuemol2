@@ -19,9 +19,9 @@ import { Field, SelectField } from "../../h3-kit/form";
 import type { PropDef } from "../../data/rendererProperties";
 import {
   RENDER_COMMON_GROUPS,
-  RENDER_SIZE_PRESETS,
   type RenderBackendId,
   type RenderGroupDef,
+  type RenderSizePreset,
 } from "../../data/renderSettings";
 import { RENDER_BACKENDS } from "../../data/renderBackends";
 
@@ -59,6 +59,8 @@ interface RenderSettingsEditorProps {
   preset: string;
   /** Called when the user picks an image-size preset. */
   onApplyPreset: (label: string) => void;
+  /** Image-size presets to offer (mode-dependent: video sizes for movies). */
+  sizePresets: RenderSizePreset[];
 }
 
 export const RenderSettingsEditor: React.FC<RenderSettingsEditorProps> = ({
@@ -70,6 +72,7 @@ export const RenderSettingsEditor: React.FC<RenderSettingsEditorProps> = ({
   onChange,
   preset,
   onApplyPreset,
+  sizePresets,
 }) => {
   const handleBackendChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -109,7 +112,7 @@ export const RenderSettingsEditor: React.FC<RenderSettingsEditorProps> = ({
     Image: (
       <Field label="Preset">
         <SelectField value={preset} onChange={onApplyPreset}>
-          {RENDER_SIZE_PRESETS.map((p) => (
+          {sizePresets.map((p) => (
             <option key={p.label} value={p.label}>
               {p.label}
             </option>

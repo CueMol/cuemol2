@@ -128,6 +128,25 @@ describe('useRenderSettings', () => {
         h.unmount();
     });
 
+    it('applies a movie video-resolution preset (exact pixels, no DPI change)', () => {
+        const h = makeRenderHook(() => useRenderSettings());
+        act(() => h.result.setMode('movie'));
+        act(() => h.result.applyPreset('HD1080 (1920×1080)'));
+        expect(valueOf(h.result.commonProps, 'width')).toBe(1920);
+        expect(valueOf(h.result.commonProps, 'height')).toBe(1080);
+        expect(valueOf(h.result.commonProps, 'unit')).toBe('px');
+        h.unmount();
+    });
+
+    it('resets the preset when the mode changes (preset lists differ)', () => {
+        const h = makeRenderHook(() => useRenderSettings());
+        act(() => h.result.applyPreset('600×600 (300dpi)'));
+        // The still preset does not exist in the movie list.
+        act(() => h.result.setMode('movie'));
+        expect(h.result.preset).toBe('Custom');
+        h.unmount();
+    });
+
     // --- Size-unit conversion (UXP render-pov-dlg onImgSzUnitSel parity) ---
 
     it('changing the unit reprojects width/height via DPI and switches the control to real', () => {

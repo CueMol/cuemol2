@@ -25,7 +25,7 @@ import { useRenderSettings } from "../../hooks/useRenderSettings";
 import { isRenderJobActive } from "../../hooks/useRenderJob";
 import { useRenderWindowClient } from "../../hooks/useRenderWindowClient";
 import { RENDER_BACKEND_IDS } from "../../data/renderBackends";
-import { RENDER_SIZE_PRESETS } from "../../data/renderSettings";
+import { sizePresetsForMode } from "../../data/renderSettings";
 import { IPC } from "../../../shared/ipcChannels";
 
 export const RenderWindowApp: React.FC = () => {
@@ -68,9 +68,10 @@ export const RenderWindowApp: React.FC = () => {
    * Apply an image-size preset. The "Current view" preset resolves the main
    * window's live canvas pixel size over IPC.
    */
+  const sizePresets = sizePresetsForMode(settings.mode);
   const handleApplyPreset = useCallback(
     (label: string) => {
-      const preset = RENDER_SIZE_PRESETS.find((p) => p.label === label);
+      const preset = sizePresets.find((p) => p.label === label);
       if (preset?.dynamic) {
         void client.getViewSize().then((size) => {
           if (size) settings.applyPreset(label, size);
@@ -80,7 +81,7 @@ export const RenderWindowApp: React.FC = () => {
       }
       settings.applyPreset(label);
     },
-    [client, settings],
+    [client, settings, sizePresets],
   );
 
   const { job, result, views, preview } = client.state;
@@ -168,6 +169,7 @@ export const RenderWindowApp: React.FC = () => {
               onChange={settings.handleChange}
               preset={settings.preset}
               onApplyPreset={handleApplyPreset}
+              sizePresets={sizePresets}
             />
           </div>
         </Allotment.Pane>
