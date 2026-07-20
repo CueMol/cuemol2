@@ -22,8 +22,10 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 
+import type { AnimMgr } from "@cuemol/core/src/wrappers/AnimMgr";
 import type { ProcessManager } from "@cuemol/core/src/wrappers/ProcessManager";
 import type { Scene } from "@cuemol/core/src/wrappers/Scene";
+import type { TimeValue } from "@cuemol/core/src/wrappers/TimeValue";
 import type { WorkerContext } from "../types/WorkerContext";
 import type {
   RenderStartArgs,
@@ -36,10 +38,14 @@ import { RENDER_PROGRESS_CHANNEL } from "../../shared/renderTypes";
 import { getRenderBackend, type RenderBackend } from "./renderBackends";
 import {
   pixelImageSize,
+  numVal,
+  strVal,
+  boolVal,
   type RenderTaskSpec,
   type InProcessRender,
 } from "./renderBackends/RenderBackend";
 import { getSceneOrNull } from "./helpers/sceneResolver";
+import { getAnimMgrOrNull } from "./helpers/animResolve";
 
 /** Poll interval for external process status / stdout. */
 const POLL_MS = 700;
@@ -57,6 +63,28 @@ const TASK_RUNNING = 1;
 
 /** Phase of a render job. */
 type JobPhase = "render" | "finalize";
+
+/**
+ * State of an in-flight animation render. The job renders one frame at a
+ * time: each frame runs the same render -> finalize phases as a still, and
+ * the poll loop starts the next frame instead of completing the job.
+ */
+interface AnimJobState {
+  /** The scene's animation manager, advanced one frame per writeFrame(). */
+  animMgr: AnimMgr;
+  /** Scene being rendered; the backend needs it per frame. */
+  scene: Scene;
+  /** Total number of frames this job renders. */
+  frameCount: number;
+  /** 0-based index of the frame currently rendering. */
+  currFrame: number;
+  /** Folder finished frames are moved into. */
+  outputDir: string;
+  /** Base name of the output files. */
+  baseName: string;
+  /** Output paths of the frames finished so far. */
+  framePaths: string[];
+}
 
 /** State of one in-flight render job. */
 interface RenderJobEntry {
@@ -80,6 +108,8 @@ interface RenderJobEntry {
   inProcess: InProcessRender | null;
   /** Last in-process phase name pushed to the log (so it is logged on change). */
   lastPhaseName: string;
+  /** Animation state; null for a still render. */
+  anim: AnimJobState | null;
 }
 
 const jobs = new Map<string, RenderJobEntry>();
@@ -133,6 +163,175 @@ function finishJob(
       error: `Output image not produced: ${String(e)}`,
     });
   }
+}
+
+// --- Animation (movie) rendering ---
+
+/** Frame number as it appears in the output file names. */
+function frameSuffix(i: number): string {
+  return String(i).padStart(4, "0");
+}
+
+/** Create a C++ TimeValue holding `ms` milliseconds. */
+function makeTimeValue(ctx: WorkerContext, ms: number): TimeValue {
+  const tv = ctx.svc.createObj("TimeValue") as TimeValue | null;
+  if (!tv) throw new Error("cannot create TimeValue");
+  tv.millisec = Math.max(0, Math.round(ms));
+  return tv;
+}
+
+/**
+ * Stop the animation manager. This is what restores the scene properties the
+ * animation overwrote, so it must run on every exit -- completion, error and
+ * cancel alike. Safe to call more than once.
+ */
+function stopAnim(entry: RenderJobEntry): void {
+  if (!entry.anim) return;
+  try {
+    entry.anim.animMgr.stop();
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Export the current frame and queue its render tasks, reusing the still
+ * pipeline's phase fields so pollJob drives it unchanged.
+ */
+function submitAnimFrame(
+  ctx: WorkerContext,
+  backend: RenderBackend,
+  entry: RenderJobEntry,
+  args: RenderStartArgs,
+): void {
+  const anim = entry.anim!;
+  const exported = backend.exportAnimFrame!(
+    ctx,
+    anim.scene,
+    anim.animMgr,
+    args.snapshot,
+    entry.workDir,
+    anim.currFrame,
+  );
+
+  const tasks = backend.buildTasks(exported, args.snapshot, args.binaries);
+  const renderSpecs = tasks.filter((t) => t.kind === "render");
+  if (renderSpecs.length === 0) throw new Error("backend produced no render tasks");
+
+  // Fail on the first frame rather than after queueing a whole sequence.
+  if (anim.currFrame === 0) {
+    for (const exe of new Set(tasks.map((t) => t.exe))) {
+      if (!fs.existsSync(exe)) throw new Error(`Executable not found: ${exe}`);
+    }
+  }
+
+  const pm = ctx.svc.getService("ProcessManager") as ProcessManager;
+  if (renderSpecs.length > pm.getSlotSize()) {
+    pm.setSlotSize(renderSpecs.length);
+  }
+  const taskIds: number[] = [];
+  for (const t of renderSpecs) {
+    const tid = pm.queueTask(t.exe, t.args, "");
+    if (tid < 0) throw new Error("ProcessManager could not queue a render task");
+    taskIds.push(tid);
+  }
+
+  entry.outputPath = backend.outputImagePath(exported);
+  entry.phase = "render";
+  entry.finalizeSpecs = tasks.filter((t) => t.kind === "finalize");
+  entry.taskIds = taskIds;
+  entry.taskProgress = taskIds.map(() => 0);
+}
+
+/** Finish an animation job: stop the animation and report the last frame. */
+function finishAnimJob(
+  ctx: WorkerContext,
+  entry: RenderJobEntry,
+  args: RenderStartArgs,
+): void {
+  const anim = entry.anim!;
+  stopTimer(entry);
+  jobs.delete(entry.jobId);
+  stopAnim(entry);
+  cleanupDir(entry.workDir);
+
+  // The frame sequence is the real output; the last frame stands in as the
+  // result image so the window has something to show.
+  const lastFrame = anim.framePaths[anim.framePaths.length - 1];
+  const { width, height } = pixelImageSize(args.snapshot.commonProps);
+  try {
+    const buf = fs.readFileSync(lastFrame);
+    emit(ctx, {
+      type: "complete",
+      jobId: entry.jobId,
+      imageDataUrl: `data:image/png;base64,${buf.toString("base64")}`,
+      width,
+      height,
+      elapsedSec: (Date.now() - entry.startedAt) / 1000,
+    });
+  } catch (e) {
+    emit(ctx, {
+      type: "error",
+      jobId: entry.jobId,
+      error: `Frames not produced: ${String(e)}`,
+    });
+  }
+}
+
+/**
+ * The current frame finished: move its image into the output folder and
+ * either start the next frame or finish the job.
+ */
+function advanceAnimFrame(
+  ctx: WorkerContext,
+  backend: RenderBackend,
+  entry: RenderJobEntry,
+  args: RenderStartArgs,
+): void {
+  const anim = entry.anim!;
+  const dest = path.join(
+    anim.outputDir,
+    `${anim.baseName}_frm_${frameSuffix(anim.currFrame)}.png`,
+  );
+  try {
+    fs.renameSync(entry.outputPath, dest);
+  } catch {
+    // rename fails across devices; fall back to copy + remove.
+    fs.copyFileSync(entry.outputPath, dest);
+    fs.rmSync(entry.outputPath, { force: true });
+  }
+  anim.framePaths.push(dest);
+  anim.currFrame += 1;
+
+  if (anim.currFrame >= anim.frameCount) {
+    finishAnimJob(ctx, entry, args);
+    return;
+  }
+
+  emit(ctx, {
+    type: "progress",
+    jobId: entry.jobId,
+    progress: Math.round((anim.currFrame / anim.frameCount) * 100),
+    phase: "running",
+    frameIndex: anim.currFrame,
+    frameCount: anim.frameCount,
+    logChunk: `Frame ${anim.currFrame + 1} / ${anim.frameCount}\n`,
+  });
+  submitAnimFrame(ctx, backend, entry, args);
+}
+
+/**
+ * One render unit finished. A still job completes here; an animation job
+ * banks the frame and starts the next one.
+ */
+function completeUnit(
+  ctx: WorkerContext,
+  backend: RenderBackend,
+  entry: RenderJobEntry,
+  args: RenderStartArgs,
+): void {
+  if (entry.anim) advanceAnimFrame(ctx, backend, entry, args);
+  else finishJob(ctx, entry, args);
 }
 
 /** Poll the current phase's tasks; returns the accumulated stdout log. */
@@ -207,7 +406,7 @@ function pollJob(
       logChunk: logChunk || undefined,
     });
     if (entry.finalizeSpecs.length === 0) {
-      finishJob(ctx, entry, args);
+      completeUnit(ctx, backend, entry, args);
       return;
     }
     const pm = ctx.svc.getService("ProcessManager") as ProcessManager;
@@ -230,7 +429,7 @@ function pollJob(
     phase: "blending",
     logChunk: logChunk || undefined,
   });
-  if (allDone) finishJob(ctx, entry, args);
+  if (allDone) completeUnit(ctx, backend, entry, args);
 }
 
 /**
@@ -277,6 +476,7 @@ function startInProcessJob(
     taskProgress: [],
     inProcess: handle,
     lastPhaseName: "",
+    anim: null,
   };
   jobs.set(jobId, entry);
 
@@ -354,6 +554,117 @@ function pollInProcessJob(
   finishJob(ctx, entry, args); // reads the PNG, emits `complete`
 }
 
+/**
+ * Start an animation render: set up AnimMgr for offline rendering, then
+ * queue the first frame. Subsequent frames are started by the poll loop.
+ */
+function startAnimJob(
+  ctx: WorkerContext,
+  backend: RenderBackend,
+  scene: Scene,
+  args: RenderStartArgs,
+  workDir: string,
+): RenderStartResult {
+  const fail = (error: string): RenderStartResult => {
+    cleanupDir(workDir);
+    return { ok: false, jobId: "", error };
+  };
+
+  if (!backend.exportAnimFrame) {
+    return fail(`The ${backend.id} backend cannot render animations`);
+  }
+
+  const animProps = args.snapshot.animProps ?? [];
+  const outputDir = strVal(animProps, "outputDir", "").trim();
+  const baseName = strVal(animProps, "baseName", "movie").trim() || "movie";
+  const fps = numVal(animProps, "fps", 30);
+  const dupLastFrame = boolVal(animProps, "dupLastFrame", true);
+
+  if (!outputDir) return fail("No output folder is set");
+  if (!fs.existsSync(outputDir)) return fail(`Output folder not found: ${outputDir}`);
+
+  const animMgr = getAnimMgrOrNull(scene);
+  if (!animMgr) return fail("Scene has no animation manager");
+  if (animMgr.size <= 0) return fail("Scene has no animation to render");
+
+  let frameCount: number;
+  try {
+    // Without a start camera AnimMgr silently falls back to a default one and
+    // every frame comes out meaningless. renderStart already captured the
+    // active view into "__current".
+    animMgr.startcam = "__current";
+    frameCount = animMgr.setupRender(
+      makeTimeValue(ctx, 0),
+      makeTimeValue(ctx, animMgr.length.millisec),
+      fps,
+    );
+  } catch (e) {
+    return fail(`Cannot set up the animation render: ${String(e)}`);
+  }
+
+  // UXP's "Loop" checkbox: dropping the last frame makes the sequence loop
+  // cleanly, since the first and last frames are otherwise identical.
+  if (!dupLastFrame) frameCount -= 1;
+  if (frameCount <= 0) {
+    try {
+      animMgr.stop();
+    } catch {
+      /* ignore */
+    }
+    return fail("The animation has no frames to render");
+  }
+
+  const jobId = `render-${Date.now()}`;
+  const entry: RenderJobEntry = {
+    jobId,
+    workDir,
+    outputPath: "",
+    startedAt: Date.now(),
+    timer: null,
+    cancelled: false,
+    announcedDir: false,
+    phase: "render",
+    finalizeSpecs: [],
+    taskIds: [],
+    taskProgress: [],
+    inProcess: null,
+    lastPhaseName: "",
+    anim: {
+      animMgr,
+      scene,
+      frameCount,
+      currFrame: 0,
+      outputDir,
+      baseName,
+      framePaths: [],
+    },
+  };
+  jobs.set(jobId, entry);
+
+  try {
+    submitAnimFrame(ctx, backend, entry, args);
+  } catch (e) {
+    stopAnim(entry);
+    jobs.delete(jobId);
+    cleanupDir(workDir);
+    return { ok: false, jobId: "", error: String(e) };
+  }
+
+  entry.timer = setInterval(() => {
+    try {
+      pollJob(ctx, backend, entry, args);
+    } catch (e) {
+      stopTimer(entry);
+      jobs.delete(jobId);
+      stopAnim(entry);
+      cleanupDir(workDir);
+      emit(ctx, { type: "error", jobId, error: String(e) });
+    }
+  }, POLL_MS);
+
+  return { ok: true, jobId };
+}
+
 /** Start a render job. */
 function renderStart(ctx: WorkerContext, args: RenderStartArgs): RenderStartResult {
   const scene = getSceneOrNull(ctx, args.sceneId);
@@ -377,6 +688,11 @@ function renderStart(ctx: WorkerContext, args: RenderStartArgs): RenderStartResu
   }
 
   const workDir = fs.mkdtempSync(path.join(os.tmpdir(), "cuemol-render-"));
+
+  // Animation mode drives AnimMgr frame by frame instead of exporting once.
+  if (args.snapshot.mode === "animation") {
+    return startAnimJob(ctx, backend, scene, args, workDir);
+  }
 
   let outputPath: string;
   let renderSpecs: RenderTaskSpec[];
@@ -433,6 +749,7 @@ function renderStart(ctx: WorkerContext, args: RenderStartArgs): RenderStartResu
     taskProgress: taskIds.map(() => 0),
     inProcess: null,
     lastPhaseName: "",
+    anim: null,
   };
   jobs.set(jobId, entry);
   entry.timer = setInterval(() => {
@@ -469,6 +786,8 @@ function renderCancel(ctx: WorkerContext, args: RenderCancelArgs): RenderCancelR
   // External-process (POV-Ray): stop polling and kill the render processes now.
   stopTimer(entry);
   jobs.delete(entry.jobId);
+  // Restores the scene properties an animation overwrote (no-op for a still).
+  stopAnim(entry);
 
   const pm = ctx.svc.getService("ProcessManager") as ProcessManager;
   for (const tid of entry.taskIds) {

@@ -9,9 +9,11 @@
  * (it also stamps the output DPI), matching povrender.js.
  */
 
+import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 
+import type { AnimMgr } from "@cuemol/core/src/wrappers/AnimMgr";
 import type { Scene } from "@cuemol/core/src/wrappers/Scene";
 import type { PovSceneExporter } from "@cuemol/core/src/wrappers/PovSceneExporter";
 import type { WorkerContext } from "../../types/WorkerContext";
@@ -137,6 +139,45 @@ function buildPovArgs(
   return [...args, ...optArgs].join(" ");
 }
 
+/**
+ * Create and configure the POV exporter.
+ *
+ * Mirrors uxp_gui povrender.js: only these properties are set, leaving
+ * creaseLimit / edgeRise at their C++ defaults. Width and height are always
+ * set -- PovSceneExporter falls back to the attached view for the height and
+ * divides by it, so an animation frame (which has no view) would divide by
+ * zero without them.
+ */
+function makeExporter(
+  ctx: WorkerContext,
+  snapshot: RenderSettingsSnapshot,
+): PovSceneExporter {
+  const exporter = ctx.strMgr.createHandler("pov", 2) as PovSceneExporter;
+  if (!exporter) throw new Error("cannot create POV-Ray exporter");
+
+  const common = snapshot.commonProps;
+  exporter.perspective = strVal(common, "projection", "perspective") === "perspective";
+  exporter.useClipZ = boolVal(common, "clipPlane", true);
+  exporter.usePostBlend = boolVal(common, "postBlend", true);
+  exporter.showEdgeLines = boolVal(common, "edgeLines", true);
+  exporter.usePixImgs = false;
+  exporter.makeRelIncPath = false;
+  const { width, height } = pixelImageSize(common);
+  exporter.width = width;
+  exporter.height = height;
+  return exporter;
+}
+
+/** Parse the exporter's post-blend table (empty table on any problem). */
+function readBlendTable(json: string): Record<string, string> {
+  if (!json) return {};
+  try {
+    return JSON.parse(json) as Record<string, string>;
+  } catch {
+    return {};
+  }
+}
+
 export const povrayBackend: RenderBackend = {
   id: "povray",
 
@@ -146,22 +187,8 @@ export const povrayBackend: RenderBackend = {
     snapshot: RenderSettingsSnapshot,
     workDir: string,
   ): ExportedScene {
-    const exporter = ctx.strMgr.createHandler("pov", 2) as PovSceneExporter;
-    if (!exporter) throw new Error("cannot create POV-Ray exporter");
-
-    // Mirror uxp_gui povrender.js exactly: set only these properties and
-    // leave creaseLimit / edgeRise at their C++ defaults.
-    const common = snapshot.commonProps;
-    exporter.perspective = strVal(common, "projection", "perspective") === "perspective";
-    exporter.useClipZ = boolVal(common, "clipPlane", true);
-    exporter.usePostBlend = boolVal(common, "postBlend", true);
-    exporter.showEdgeLines = boolVal(common, "edgeLines", true);
-    exporter.usePixImgs = false;
-    exporter.makeRelIncPath = false;
+    const exporter = makeExporter(ctx, snapshot);
     exporter.camera = "__current";
-    const { width, height } = pixelImageSize(common);
-    exporter.width = width;
-    exporter.height = height;
 
     const povPath = path.join(workDir, "render.pov");
     const incPath = path.join(workDir, "render.inc");
@@ -169,18 +196,37 @@ export const povrayBackend: RenderBackend = {
     exporter.setPath(povPath);
     exporter.setSubPath("inc", incPath);
     exporter.write();
-    const blendTableJson = exporter.blendTable;
+    const blendTable = readBlendTable(exporter.blendTable);
     exporter.detach();
 
-    let blendTable: Record<string, string> = {};
-    if (blendTableJson) {
-      try {
-        blendTable = JSON.parse(blendTableJson) as Record<string, string>;
-      } catch {
-        blendTable = {};
-      }
-    }
     return { inputPath: povPath, workDir, blendTable };
+  },
+
+  exportAnimFrame(
+    ctx: WorkerContext,
+    _scene: Scene,
+    animMgr: AnimMgr,
+    snapshot: RenderSettingsSnapshot,
+    workDir: string,
+    frameIndex: number,
+  ): ExportedScene {
+    // One directory per frame, so buildTasks / outputImagePath -- which use
+    // fixed names inside the working dir -- need no per-frame variant.
+    const frameDir = path.join(workDir, `f${String(frameIndex).padStart(5, "0")}`);
+    fs.mkdirSync(frameDir, { recursive: true });
+
+    const exporter = makeExporter(ctx, snapshot);
+    const povPath = path.join(frameDir, "render.pov");
+    exporter.setPath(povPath);
+    exporter.setSubPath("inc", path.join(frameDir, "render.inc"));
+
+    // writeFrame() attaches the scene, applies this frame's animation state,
+    // sets the animation's own camera and writes -- so no attach / detach and
+    // no exporter.camera here.
+    animMgr.writeFrame(exporter);
+    const blendTable = readBlendTable(exporter.blendTable);
+
+    return { inputPath: povPath, workDir: frameDir, blendTable };
   },
 
   buildTasks(

@@ -8,6 +8,7 @@
  * a backend needs no change to the job pipeline.
  */
 
+import type { AnimMgr } from "@cuemol/core/src/wrappers/AnimMgr";
 import type { Scene } from "@cuemol/core/src/wrappers/Scene";
 import type { WorkerContext } from "../../types/WorkerContext";
 import type { PropDef } from "../../../../data/rendererProperties";
@@ -52,6 +53,24 @@ export interface RenderBackend {
     scene: Scene,
     snapshot: RenderSettingsSnapshot,
     workDir: string,
+  ): ExportedScene;
+  /**
+   * Animation mode: write the input files for one frame.
+   *
+   * The backend hands its configured exporter to `AnimMgr.writeFrame()`,
+   * which applies that frame's animation state and its own camera before
+   * writing (so the exporter's `camera` name is not used here). Each frame
+   * gets its own directory under `workDir`, which keeps `buildTasks` and
+   * `outputImagePath` working unchanged. A backend without this cannot
+   * render animations and is rejected up-front.
+   */
+  exportAnimFrame?(
+    ctx: WorkerContext,
+    scene: Scene,
+    animMgr: AnimMgr,
+    snapshot: RenderSettingsSnapshot,
+    workDir: string,
+    frameIndex: number,
   ): ExportedScene;
   /** Build the process tasks that render `exported`. */
   buildTasks(
