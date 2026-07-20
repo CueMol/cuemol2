@@ -30,11 +30,27 @@ export interface RenderSettingsSnapshot {
   movie?: MovieSettings;
 }
 
+/**
+ * Where a finished movie's frames live. The images stay on disk and are read
+ * back one at a time by the result viewer's frame slider; keeping a whole
+ * sequence in memory is not viable.
+ */
+export interface RenderMovieOutput {
+  frameCount: number;
+  outputDir: string;
+  baseName: string;
+}
+
+/** File name of one frame of a rendered sequence. */
+export function movieFrameFileName(baseName: string, frameIndex: number): string {
+  return `${baseName}_frm_${String(frameIndex).padStart(4, "0")}.png`;
+}
+
 /** A completed render, displayed in the Rendering window. */
 export interface RenderResult {
   /** Unique id. */
   id: string;
-  /** Rendered image as a data URL. */
+  /** Rendered image as a data URL; for a movie, its last frame. */
   imageDataUrl: string;
   /** Logical image width in pixels. */
   width: number;
@@ -50,6 +66,8 @@ export interface RenderResult {
   sourceViewId?: number;
   /** Settings used for this render. */
   settingsSnapshot: RenderSettingsSnapshot;
+  /** Present when this was a movie render. */
+  movie?: RenderMovieOutput;
 }
 
 /** Build a render result from the rendered image and the job's context. */
@@ -60,6 +78,7 @@ export function buildRenderResult(args: {
   elapsedSec: number;
   source: RenderSource;
   snapshot: RenderSettingsSnapshot;
+  movie?: RenderMovieOutput;
 }): RenderResult {
   return {
     id: `render-result-${Date.now()}`,
@@ -71,5 +90,6 @@ export function buildRenderResult(args: {
     sourceSceneName: args.source.sceneName || "Scene",
     sourceViewId: args.source.viewId,
     settingsSnapshot: args.snapshot,
+    ...(args.movie ? { movie: args.movie } : {}),
   };
 }

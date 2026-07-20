@@ -33,6 +33,7 @@ import type {
   RenderCancelArgs,
   RenderCancelResult,
   RenderUpdate,
+  RenderUpdatePhase,
 } from "../../shared/renderTypes";
 import { RENDER_PROGRESS_CHANNEL } from "../../shared/renderTypes";
 import { getRenderBackend, type RenderBackend } from "./renderBackends";
@@ -43,6 +44,7 @@ import {
 } from "./renderBackends/RenderBackend";
 import { getSceneOrNull } from "./helpers/sceneResolver";
 import { getAnimMgrOrNull } from "./helpers/animResolve";
+import { movieFrameFileName } from "../../../data/renderResult";
 
 /** Poll interval for external process status / stdout. */
 const POLL_MS = 700;
@@ -81,7 +83,16 @@ interface AnimJobState {
   baseName: string;
   /** Output paths of the frames finished so far. */
   framePaths: string[];
+  /** When the last live-preview image was pushed (rate limiting). */
+  lastPreviewAt: number;
 }
+
+/**
+ * Shortest gap between live-preview pushes. A preview carries a full image,
+ * so it is kept well below the progress-tick rate; POV-Ray frames take
+ * seconds anyway, but a cheap backend could otherwise stream one per frame.
+ */
+const PREVIEW_MIN_INTERVAL_MS = 1000;
 
 /** State of one in-flight render job. */
 interface RenderJobEntry {
@@ -163,11 +174,6 @@ function finishJob(
 }
 
 // --- Animation (movie) rendering ---
-
-/** Frame number as it appears in the output file names. */
-function frameSuffix(i: number): string {
-  return String(i).padStart(4, "0");
-}
 
 /** Create a C++ TimeValue holding `ms` milliseconds. */
 function makeTimeValue(ctx: WorkerContext, ms: number): TimeValue {
@@ -265,6 +271,11 @@ function finishAnimJob(
       width,
       height,
       elapsedSec: (Date.now() - entry.startedAt) / 1000,
+      movie: {
+        frameCount: anim.framePaths.length,
+        outputDir: anim.outputDir,
+        baseName: anim.baseName,
+      },
     });
   } catch (e) {
     emit(ctx, {
@@ -288,7 +299,7 @@ function advanceAnimFrame(
   const anim = entry.anim!;
   const dest = path.join(
     anim.outputDir,
-    `${anim.baseName}_frm_${frameSuffix(anim.currFrame)}.png`,
+    movieFrameFileName(anim.baseName, anim.currFrame),
   );
   try {
     fs.renameSync(entry.outputPath, dest);
@@ -298,22 +309,39 @@ function advanceAnimFrame(
     fs.rmSync(entry.outputPath, { force: true });
   }
   anim.framePaths.push(dest);
+  const finishedIndex = anim.currFrame;
   anim.currFrame += 1;
+  const wasLast = anim.currFrame >= anim.frameCount;
 
-  if (anim.currFrame >= anim.frameCount) {
+  // Live preview of the frame just finished. The last frame is skipped
+  // because finishAnimJob reports it as the result image straight after.
+  const now = Date.now();
+  if (!wasLast && now - anim.lastPreviewAt >= PREVIEW_MIN_INTERVAL_MS) {
+    anim.lastPreviewAt = now;
+    try {
+      const size = pixelImageSize(args.snapshot.commonProps);
+      emit(ctx, {
+        type: "framePreview",
+        jobId: entry.jobId,
+        frameIndex: finishedIndex,
+        dataUrl: `data:image/png;base64,${fs.readFileSync(dest).toString("base64")}`,
+        width: size.width,
+        height: size.height,
+      });
+    } catch {
+      /* the preview is best-effort; the render itself carries on */
+    }
+  }
+
+  if (wasLast) {
     finishAnimJob(ctx, entry, args);
     return;
   }
 
-  emit(ctx, {
-    type: "progress",
-    jobId: entry.jobId,
-    progress: Math.round((anim.currFrame / anim.frameCount) * 100),
-    phase: "running",
-    frameIndex: anim.currFrame,
-    frameCount: anim.frameCount,
-    logChunk: `Frame ${anim.currFrame + 1} / ${anim.frameCount}\n`,
-  });
+  emit(
+    ctx,
+    progressUpdate(entry, "running", `Frame ${anim.currFrame + 1} / ${anim.frameCount}\n`, 0),
+  );
   submitAnimFrame(ctx, backend, entry, args);
 }
 
@@ -366,6 +394,36 @@ function mean(xs: number[]): number {
   return xs.length ? Math.round(xs.reduce((s, x) => s + x, 0) / xs.length) : 0;
 }
 
+/**
+ * Build a progress update.
+ *
+ * `progress` is always the whole job's: for a movie that is the finished
+ * frames plus the current frame's share, so the bar advances once across the
+ * sequence instead of resetting on every frame. The current frame's own
+ * progress rides alongside it as `frameProgress`.
+ */
+function progressUpdate(
+  entry: RenderJobEntry,
+  phase: RenderUpdatePhase,
+  logChunk: string,
+  frameProgressOverride?: number,
+): RenderUpdate {
+  const frameProgress = frameProgressOverride ?? mean(entry.taskProgress);
+  const anim = entry.anim;
+  return {
+    type: "progress",
+    jobId: entry.jobId,
+    progress: anim
+      ? Math.round(((anim.currFrame + frameProgress / 100) / anim.frameCount) * 100)
+      : frameProgress,
+    phase,
+    ...(anim
+      ? { frameIndex: anim.currFrame, frameCount: anim.frameCount, frameProgress }
+      : {}),
+    logChunk: logChunk || undefined,
+  };
+}
+
 /** One poll tick. */
 function pollJob(
   ctx: WorkerContext,
@@ -384,24 +442,12 @@ function pollJob(
 
   if (entry.phase === "render") {
     if (!allDone) {
-      emit(ctx, {
-        type: "progress",
-        jobId: entry.jobId,
-        progress: mean(entry.taskProgress),
-        phase: "running",
-        logChunk: logChunk || undefined,
-      });
+      emit(ctx, progressUpdate(entry, "running", logChunk));
       return;
     }
     // All render tasks finished -- queue the finalize task(s) now. The
     // queueTask call is what advances the ProcessManager queue.
-    emit(ctx, {
-      type: "progress",
-      jobId: entry.jobId,
-      progress: 100,
-      phase: "blending",
-      logChunk: logChunk || undefined,
-    });
+    emit(ctx, progressUpdate(entry, "blending", logChunk, 100));
     if (entry.finalizeSpecs.length === 0) {
       completeUnit(ctx, backend, entry, args);
       return;
@@ -419,13 +465,7 @@ function pollJob(
   }
 
   // Finalize phase.
-  emit(ctx, {
-    type: "progress",
-    jobId: entry.jobId,
-    progress: 100,
-    phase: "blending",
-    logChunk: logChunk || undefined,
-  });
+  emit(ctx, progressUpdate(entry, "blending", logChunk, 100));
   if (allDone) completeUnit(ctx, backend, entry, args);
 }
 
@@ -635,6 +675,7 @@ function startAnimJob(
       outputDir,
       baseName,
       framePaths: [],
+      lastPreviewAt: 0,
     },
   };
   jobs.set(jobId, entry);

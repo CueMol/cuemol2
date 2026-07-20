@@ -17,6 +17,7 @@ import { Allotment } from "allotment";
 import "allotment/dist/style.css";
 
 import { RenderResultPane } from "../panes/RenderResultPane";
+import { RenderImageViewer } from "../panes/RenderImageViewer";
 import { RenderPanel } from "../panels/RenderPanel";
 import { MovieSettingsPanel } from "../panels/MovieSettingsPanel";
 import { RenderSettingsEditor } from "../inspector/RenderSettingsEditor";
@@ -101,7 +102,7 @@ export const RenderWindowApp: React.FC = () => {
     [client, settings],
   );
 
-  const { job, result, views } = client.state;
+  const { job, result, views, preview } = client.state;
   const canRender = client.target !== null;
 
   return (
@@ -119,7 +120,18 @@ export const RenderWindowApp: React.FC = () => {
           <Allotment vertical>
             <Allotment.Pane minSize={160}>
               <div className="render-window-image">
-                {result ? (
+                {preview ? (
+                  /* A movie render in flight: show the frames as they land,
+                     which is the only feedback until the job completes. */
+                  <RenderImageViewer
+                    src={preview.dataUrl}
+                    imgWidth={preview.width}
+                    imgHeight={preview.height}
+                    name={`${client.target?.sceneName ?? "Scene"} -- frame ${
+                      preview.frameIndex + 1
+                    }`}
+                  />
+                ) : result ? (
                   <RenderResultPane
                     result={result}
                     onReRender={handleReRender}

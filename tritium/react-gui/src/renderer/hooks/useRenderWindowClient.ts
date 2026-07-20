@@ -20,6 +20,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { IPC } from "../../shared/ipcChannels";
 import type {
+  RenderFramePreviewWire,
   RenderTargetViewWire,
   RenderWindowCommand,
   RenderWindowStateUpdate,
@@ -37,6 +38,8 @@ export interface RenderWindowClientState {
   job: RenderJob | null;
   /** Latest completed render, or null when nothing has been rendered. */
   result: RenderResult | null;
+  /** Most recent finished frame of a running movie render. */
+  preview: RenderFramePreviewWire | null;
   /** Open molviews selectable as render targets. */
   views: RenderTargetViewWire[];
   /** The main window's active molview, or null. */
@@ -48,6 +51,7 @@ export interface RenderWindowClientState {
 const INITIAL_STATE: RenderWindowClientState = {
   job: null,
   result: null,
+  preview: null,
   views: [],
   activeViewId: null,
   umbreonAvailable: false,
@@ -117,11 +121,15 @@ export function useRenderWindowClient(): {
             activeViewId: update.activeViewId,
             umbreonAvailable: update.umbreonAvailable,
           }));
-        } else {
+        } else if (update.kind === "result") {
           setState((prev) => ({
             ...prev,
             result: update.result as RenderResult | null,
+            // A finished render supersedes the live preview.
+            preview: null,
           }));
+        } else {
+          setState((prev) => ({ ...prev, preview: update.preview }));
         }
       },
     );

@@ -190,9 +190,56 @@ describe('renderStart animation branch', () => {
         ])
 
         const completes = pushMessage.mock.calls
-            .map((c) => c[1] as { type: string })
+            .map((c) => c[1] as { type: string; movie?: unknown })
             .filter((u) => u.type === 'complete')
         expect(completes).toHaveLength(1)
+        // The result carries where the frames landed, so the viewer can read
+        // them back one at a time for its frame slider.
+        expect(completes[0].movie).toEqual({
+            frameCount: FRAME_COUNT,
+            outputDir,
+            baseName: 'movie',
+        })
+    })
+
+    it('reports whole-job progress, not the current frame alone', () => {
+        const ctx = makeCtx()
+        services.renderStart(ctx, makeArgs())
+        intervalCb?.() // frame 0 finishes, frame 1 is queued
+
+        const last = pushMessage.mock.calls
+            .map((c) => c[1] as {
+                type: string
+                progress?: number
+                frameIndex?: number
+                frameCount?: number
+                frameProgress?: number
+            })
+            .filter((u) => u.type === 'progress')
+            .pop()
+
+        // One of three frames is done, so the job is a third of the way in --
+        // it does not fall back to 0% just because a new frame started.
+        expect(last?.progress).toBe(Math.round((1 / FRAME_COUNT) * 100))
+        expect(last?.frameIndex).toBe(1)
+        expect(last?.frameCount).toBe(FRAME_COUNT)
+        expect(last?.frameProgress).toBe(0)
+    })
+
+    it('previews finished frames, rate-limited and excluding the last', () => {
+        const ctx = makeCtx()
+        services.renderStart(ctx, makeArgs())
+        for (let i = 0; i < FRAME_COUNT; i++) intervalCb?.()
+
+        const previews = pushMessage.mock.calls
+            .map((c) => c[1] as { type: string; frameIndex?: number })
+            .filter((u) => u.type === 'framePreview')
+
+        // Every frame finishes within the same second here, so the rate limit
+        // lets only the first through; the last frame is never previewed
+        // because it is reported as the result image instead.
+        expect(previews).toHaveLength(1)
+        expect(previews[0].frameIndex).toBe(0)
     })
 
     it('drops the last frame when dupLastFrame is off', () => {

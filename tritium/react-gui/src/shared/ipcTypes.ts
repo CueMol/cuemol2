@@ -600,13 +600,28 @@ export interface RenderSourceWire {
 /** Render job state pushed to the render window (mirrors RenderJob). */
 export interface RenderJobWire {
   jobId: string
-  status: string
+  /** Progress of the whole job (all frames, for a movie). */
   progress: number
+  status: string
   phase: string
   log: string[]
   startedAt: number
   finishedAt?: number
   source?: RenderSourceWire
+  /** Movie mode: 0-based index of the frame being rendered. */
+  frameIndex?: number
+  /** Movie mode: total number of frames. */
+  frameCount?: number
+  /** Movie mode: progress of the current frame alone. */
+  frameProgress?: number
+}
+
+/** Live preview of a finished movie frame (mirrors the worker's push). */
+export interface RenderFramePreviewWire {
+  dataUrl: string
+  width: number
+  height: number
+  frameIndex: number
 }
 
 /** Completed render pushed to the render window (mirrors RenderResult). */
@@ -663,6 +678,11 @@ export type RenderWindowStateUpdate =
       umbreonAvailable: boolean
     }
   | { kind: 'result'; result: RenderResultWire | null }
+  /**
+   * Most recently finished movie frame. Its own variant so the image never
+   * rides along with the context pushes, which fire on every progress tick.
+   */
+  | { kind: 'framePreview'; preview: RenderFramePreviewWire | null }
 
 /** Pixel size of the main window's molview canvas ("Current view" preset). */
 export interface ViewSizePx {

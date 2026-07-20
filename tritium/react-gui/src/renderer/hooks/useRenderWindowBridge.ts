@@ -21,6 +21,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { IPC } from "../../shared/ipcChannels";
 import type {
+  RenderJobWire,
   RenderTargetViewWire,
   RenderWindowCommand,
   RenderWindowStateUpdate,
@@ -33,8 +34,22 @@ import type {
   RenderSettingsSnapshot,
   RenderSource,
 } from "../data/renderResult";
-import { useRenderJob } from "./useRenderJob";
+import { useRenderJob, type RenderJob } from "./useRenderJob";
 import type { TabData } from "../types";
+
+/**
+ * Drop the live preview image from a job before it goes on a context push.
+ * Those fire on every progress tick; the image travels on its own
+ * `framePreview` update instead.
+ */
+function toJobWire(job: RenderJob | null): RenderJobWire | null {
+  if (!job) return null;
+  const { previewDataUrl, previewWidth, previewHeight, ...wire } = job;
+  void previewDataUrl;
+  void previewWidth;
+  void previewHeight;
+  return wire;
+}
 
 interface UseRenderWindowBridgeArgs {
   cm: AsyncCueMol | null;
@@ -74,12 +89,34 @@ export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): void {
   useEffect(() => {
     pushState({
       kind: "context",
-      job: renderJob.job,
+      job: toJobWire(renderJob.job),
       views: args.views,
       activeViewId: args.activeViewId ?? null,
       umbreonAvailable: args.umbreonAvailable,
     });
   }, [renderJob.job, args.views, args.activeViewId, args.umbreonAvailable]);
+
+  // Push the live frame preview separately, and only when the image actually
+  // changed -- the worker already rate-limits it, and keeping it off the
+  // context push stops a multi-KB image riding every progress tick.
+  const lastPreviewRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    const job = renderJob.job;
+    const dataUrl = job?.previewDataUrl;
+    if (dataUrl === lastPreviewRef.current) return;
+    lastPreviewRef.current = dataUrl;
+    pushState({
+      kind: "framePreview",
+      preview: dataUrl
+        ? {
+            dataUrl,
+            width: job?.previewWidth ?? 0,
+            height: job?.previewHeight ?? 0,
+            frameIndex: job?.frameIndex ?? 0,
+          }
+        : null,
+    });
+  }, [renderJob.job]);
 
   // --- Command execution (EXEC push from main) ---
   //
@@ -131,7 +168,7 @@ export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): void {
       case "sync":
         pushState({
           kind: "context",
-          job: rj.job,
+          job: toJobWire(rj.job),
           views: a.views,
           activeViewId: a.activeViewId ?? null,
           umbreonAvailable: a.umbreonAvailable,

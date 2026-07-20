@@ -72,22 +72,48 @@ export type RenderUpdatePhase = "exporting" | "running" | "blending";
 export type RenderUpdate =
   | {
       type: "progress";
+      /**
+       * Progress of the whole job, 0..100. For a movie that means finished
+       * frames plus the current frame's share -- not the current frame alone.
+       */
       jobId: string;
-      progress: number; // 0..100
+      progress: number;
       phase: RenderUpdatePhase;
-      /** Animation mode: 0-based index of the frame being rendered. */
+      /** Movie mode: 0-based index of the frame being rendered. */
       frameIndex?: number;
-      /** Animation mode: total number of frames in the job. */
+      /** Movie mode: total number of frames in the job. */
       frameCount?: number;
+      /** Movie mode: progress of the current frame alone, 0..100. */
+      frameProgress?: number;
       logChunk?: string;
+    }
+  | {
+      /**
+       * A finished movie frame, for the live preview. Sent on its own rather
+       * than on progress ticks, and rate-limited by the worker, so the image
+       * payload never rides along with the frequent progress updates.
+       */
+      type: "framePreview";
+      jobId: string;
+      frameIndex: number;
+      dataUrl: string;
+      width: number;
+      height: number;
     }
   | {
       type: "complete";
       jobId: string;
+      /** The image, or for a movie the last rendered frame. */
       imageDataUrl: string;
       width: number;
       height: number;
       elapsedSec: number;
+      /**
+       * Movie mode: where the frame sequence landed. The frames stay on disk
+       * and are read back one at a time for the result viewer's frame slider,
+       * rather than all being pushed here.
+       */
+      movie?: { frameCount: number; outputDir: string; baseName: string };
     }
   | {
       type: "error";

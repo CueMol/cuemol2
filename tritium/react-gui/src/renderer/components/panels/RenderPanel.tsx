@@ -193,12 +193,28 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
 
           {job && (
             <div className="render-panel-progress">
+              {/* Whole-job progress. For a movie this spans the entire
+                  sequence, so it never resets between frames. */}
               <ProgressBar
                 value={job.progress / 100}
                 intent={intentForJob(job)}
                 stripes={active}
                 animate={active}
               />
+              {job.frameCount !== undefined && job.frameCount > 0 && (
+                <div className="render-panel-frame-progress">
+                  <span className="render-panel-frame-label type-label">
+                    Frame {Math.min((job.frameIndex ?? 0) + 1, job.frameCount)} /{" "}
+                    {job.frameCount}
+                  </span>
+                  <ProgressBar
+                    value={(job.frameProgress ?? 0) / 100}
+                    intent={intentForJob(job)}
+                    stripes={active}
+                    animate={active}
+                  />
+                </div>
+              )}
             </div>
           )}
 

@@ -35,13 +35,25 @@ export type RenderJobStatus =
 /** State of a single render job. */
 export interface RenderJob {
   jobId: string;
+  /** Progress of the whole job, 0..100 (all frames, for a movie). */
+  progress: number;
   status: RenderJobStatus;
-  progress: number; // 0..100
   phase: string;
   log: string[];
   startedAt: number;
   finishedAt?: number;
   source?: RenderSource;
+  /** Movie mode: 0-based index of the frame being rendered. */
+  frameIndex?: number;
+  /** Movie mode: total number of frames. */
+  frameCount?: number;
+  /** Movie mode: progress of the current frame alone, 0..100. */
+  frameProgress?: number;
+  /** Movie mode: most recently finished frame, shown as a live preview. */
+  previewDataUrl?: string;
+  /** Pixel size of `previewDataUrl`. */
+  previewWidth?: number;
+  previewHeight?: number;
 }
 
 /** Parameters needed to start a render. */
@@ -108,7 +120,21 @@ export function useRenderJob(opts: {
                 status: "running",
                 progress: u.progress,
                 phase: PHASE_LABELS[u.phase],
+                frameIndex: u.frameIndex,
+                frameCount: u.frameCount,
+                frameProgress: u.frameProgress,
                 log: u.logChunk ? appendLog(prev.log, splitLog(u.logChunk)) : prev.log,
+              }
+            : prev,
+        );
+      } else if (u.type === "framePreview") {
+        setJob((prev) =>
+          prev
+            ? {
+                ...prev,
+                previewDataUrl: u.dataUrl,
+                previewWidth: u.width,
+                previewHeight: u.height,
               }
             : prev,
         );
@@ -134,6 +160,7 @@ export function useRenderJob(opts: {
             elapsedSec: u.elapsedSec,
             source: pending.params.source,
             snapshot: pending.params.snapshot,
+            movie: u.movie,
           }),
         );
       } else {
