@@ -322,6 +322,13 @@
       procMgr.killAll();
       procMgr.setLogPath("");
 
+      // stop() restores the scene properties overwritten by the animation.
+      // Without it the scene stays at the frame the render was aborted on.
+      if (this.mAnimMgr) {
+        this.mAnimMgr.stop();
+        this.mAnimMgr = null;
+      }
+
       // update UI
       this._bRender = false;
       this.mbRenderOK = false;
@@ -415,6 +422,11 @@
 
     this.mbRenderOK = true;
     this._bRender = false;
+
+    // stop() restores the scene properties overwritten by the animation.
+    // Without it the scene stays at the last rendered frame.
+    if (this.mAnimMgr)
+      this.mAnimMgr.stop();
     this.mAnimMgr = null;
     this.mExp = null;
     
@@ -462,6 +474,13 @@
       this.mTimer = null;
       procMgr.killAll();
       procMgr.setLogPath("");
+
+      // stop() restores the scene properties overwritten by the animation.
+      if (this.mAnimMgr) {
+        this.mAnimMgr.stop();
+        this.mAnimMgr = null;
+      }
+
       this._bRender = false;
       this.disableButtons(false);
       this.appendLog("Fatal error: "+e);

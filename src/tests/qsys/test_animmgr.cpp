@@ -313,6 +313,26 @@ TEST_F(AnimMgrRestoreTest, DeletedTargetIsSkipped)
     EXPECT_NO_THROW(m_pMgr->stop());
 }
 
+// A playback abandoned without stop() (the render dialog closed mid-run, or
+// a fatal error) must not leave a stale save behind: the next playback saves
+// the scene as it is at that point.
+TEST_F(AnimMgrRestoreTest, AbandonedPlaybackDoesNotLeaveStaleSave)
+{
+    // First render, never stopped.
+    m_pMgr->setupRender(qlib::LScrTime(0), qlib::LScrTime(ANIM_LEN), 10.0);
+
+    // The user edits the scene, then starts a second render.
+    const double newOrig = 0.75;
+    setAlpha(m_rendUID, newOrig);
+    m_pMgr->setupRender(qlib::LScrTime(0), qlib::LScrTime(ANIM_LEN), 10.0);
+
+    m_pMgr->stop();
+
+    // Restores what the scene looked like when the second render began,
+    // not the value from before the abandoned first one.
+    EXPECT_DOUBLE_EQ(getAlpha(m_rendUID), newOrig);
+}
+
 // The offline-rendering entry point shares startImpl(), so it saves the
 // same values; the render driver only has to call stop() when it is done.
 TEST_F(AnimMgrRestoreTest, SetupRenderThenStopRestores)

@@ -82,11 +82,12 @@ namespace qsys {
     typedef std::map<LString, qlib::LVariant> propsave_t;
     propsave_t m_propSave;
 
-    /// True once m_propSave has been filled for the current playback.
-    /// Keeps loop playback from re-saving (and thus losing) the original
-    /// values on the second and later laps, since each lap re-runs
-    /// startImpl() through start().
-    bool m_bPropSaved;
+    /// True only while a loop playback is starting its next lap, where the
+    /// values saved before the first lap must be carried over. Every other
+    /// startImpl() re-saves from the current scene state, so a playback
+    /// abandoned without reaching stop() (dialog closed mid-render, fatal
+    /// error) cannot leave a stale save behind for the next one.
+    bool m_bLoopLap;
 
     //////////////////////
     //  persistent workarea

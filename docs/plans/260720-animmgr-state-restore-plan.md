@@ -75,8 +75,14 @@ PropAnim (abstract, qsys/anim/PropAnim.hpp)
 // AnimMgr.hpp (private)
 typedef std::map<LString, qlib::LVariant> propsave_t;  // key = "<uid>:<propname>"
 propsave_t m_propSave;
-bool m_bPropSaved;   // ループ周回での二重退避を防ぐ
+bool m_bLoopLap;   // ループ周回中のみ true (下記参照)
 ```
+
+`m_bLoopLap` は「ループ再生が次の周回を始めるところ」でだけ true にする。当初は
+「退避済みか」を表す `m_bPropSaved` にしていたが、それだと `stop()` を経ずに再生が
+中断された場合 (レンダ中にダイアログを閉じる、異常終了) にフラグが true のまま残り、
+**次回の再生で退避がスキップされる**穴があった。「周回中か」で持てば、それ以外の
+`startImpl()` は必ず現在のシーン状態から取り直すので穴が塞がる。
 
 key の書式は既存 `prop_tl` の `LString::format("%d:%s", int(uid), propnm)`
 (`AnimMgr.cpp:117`) をそのまま流用し、分解ロジックも既存 (`:131-135`) に合わせる。
@@ -129,12 +135,13 @@ void restoreProps();
 `onPropInit()` の**直前**:
 
 ```cpp
-if (!m_bPropSaved)
+if (!m_bLoopLap)
   pPropAnim->onPropSave(this, uid);
 pPropAnim->onPropInit(this, uid);
 ```
 
-ループ全体を抜けた後に `m_bPropSaved = true`。
+ループに入る前に、`m_bLoopLap` が false なら `m_propSave.clear()` する
+(中断された再生の残骸を捨てる)。
 
 **復元** — 2 箇所:
 
@@ -152,8 +159,10 @@ pPropAnim->onPropInit(this, uid);
 UXP の `anim-render-dlg.js` は `stop()` を呼んでいないため、そのままでは復元されない。
 PR 2 (tritium) では完了時・中断時の双方で必ず `stop()` を呼ぶ。
 
-> uxp_gui 側にも 1 行 `stop()` を足すかは PR 1 の任意項目。挙動が変わるので、
-> 入れるなら本 PR でまとめて入れて手動確認する。
+> 本 PR で uxp_gui 側にも入れた。`anim-render-dlg.js` の 3 箇所
+> (`onStop` / `finRenderTasks` / `onTimer` の catch) で `mAnimMgr.stop()` を呼ぶ。
+> `onTimerReenc` の catch は同じ後始末をするが AnimMgr を使わない (PNG 連番からの
+> 再エンコードのみ) ので対象外。
 
 ## 5. 事前確認の結果 (2026-07-20 実施・全項目クリア)
 
@@ -195,11 +204,13 @@ PR 2 (tritium) では完了時・中断時の双方で必ず `stop()` を呼ぶ�
 | `RestoresPropertiesBeyondGetPropName` | `getPropName()` に現れないプロパティ (`visible`) も復元される |
 | `RestoresObjectValuedProperty` | `xformMat` (`LT_OBJECT`) の保存/復元が通る (§5 の残リスク検証) |
 | `DeletedTargetIsSkipped` | 再生中に対象 renderer が消えても例外なく skip |
+| `AbandonedPlaybackDoesNotLeaveStaleSave` | `stop()` を経ずに中断された再生が次回の退避を壊さない (§4.1 の穴を pin) |
 | `SetupRenderThenStopRestores` | オフラインレンダ経路 (`setupRender` → `stop`) でも復元される |
 
-テスト自体の有効性は、`savePropVal()` を一時的に no-op にして 9 件中 8 件が red に
-なることで確認済み (`PauseKeepsAnimatedValue` のみ green のままで、これは復元機能に
-依存しないテストなので正しい)。
+テスト自体の有効性は 2 通りで確認済み。`savePropVal()` を一時的に no-op にすると
+9 件が red になる (`PauseKeepsAnimatedValue` のみ green のままで、これは復元機能に
+依存しないテストなので正しい)。`m_propSave.clear()` を無効化すると
+`AbandonedPlaybackDoesNotLeaveStaleSave` だけが red になる。
 
 実サブクラス (`ShowHideAnim` / `RendXformAnim` など) は `modules/anim` にあり
 `test_qsys` からリンクされていないため、テストは `PropAnim` を継承したテスト専用クラスで

@@ -31,7 +31,7 @@ AnimMgr::AnimMgr()
   m_timeRemain = 0;
   m_nState = AM_STOP;
   m_timeElapsed = 0;
-  m_bPropSaved = false;
+  m_bLoopLap = false;
   m_pEvMgr = qlib::EventManager::getInstance();
 
   addPropListener(this);
@@ -131,7 +131,6 @@ void AnimMgr::restoreProps()
   }
 
   m_propSave.clear();
-  m_bPropSaved = false;
 }
 
 void AnimMgr::startImpl()
@@ -209,6 +208,12 @@ void AnimMgr::startImpl()
 
   // call onPropInit() of the primary objects
 
+  if (!m_bLoopLap) {
+    // Fresh playback: discard anything left over by a playback that never
+    // reached stop(), and save the scene state as it is now.
+    m_propSave.clear();
+  }
+
   BOOST_FOREACH (const prop_tl::value_type &elem, tl) {
     const LString key = elem.first;
     int cpos = key.indexOf(':');
@@ -226,13 +231,11 @@ void AnimMgr::startImpl()
     // Save the pre-animation value before the anim overwrites it.
     // Skipped on the second and later laps of a loop playback, so that
     // restoreProps() returns to the state from before the first lap.
-    if (!m_bPropSaved)
+    if (!m_bLoopLap)
       pPropAnim->onPropSave(this, uid);
 
     pPropAnim->onPropInit(this, uid);
   }
-
-  m_bPropSaved = true;
 }
 
 void AnimMgr::start(ViewPtr pView)
@@ -391,9 +394,12 @@ bool AnimMgr::onTimer(double t, qlib::time_value curr, bool bLast)
     m_nState = AM_STOP;
     m_timeElapsed = 0;
     if (m_loop) {
-      // Keep the saved values across laps; the next startImpl() sees
-      // m_bPropSaved and does not overwrite them.
+      // Carry the saved values into the next lap. This is the only path
+      // that sets m_bLoopLap, so startImpl() keeps them instead of
+      // re-saving from the already-animated scene state.
+      m_bLoopLap = true;
       start(m_pTgtView);
+      m_bLoopLap = false;
     }
     else {
       // Playback ran to its natural end. This path does not go through
