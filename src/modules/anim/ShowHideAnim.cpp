@@ -58,6 +58,15 @@ void ShowHideAnim::onPropInit(AnimMgr *pMgr, qlib::uid_t tgt_uid)
   }
 }
 
+void ShowHideAnim::onPropSave(AnimMgr *pMgr, qlib::uid_t tgt_uid)
+{
+  // getPropName() reports only "visible", but the fade path also
+  // overwrites "alpha".
+  pMgr->savePropVal(tgt_uid, LString("visible"));
+  if (m_bFade)
+    pMgr->savePropVal(tgt_uid, LString("alpha"));
+}
+
 void ShowHideAnim::onStart(qlib::time_value elapsed, AnimMgr *pMgr)
 {
   fillRendArray(pMgr->getTgtScene());

@@ -40,6 +40,13 @@ void RendXformAnim::onPropInit(AnimMgr *pMgr, qlib::uid_t tgt_uid)
   pTgtRend->setXformMatrix(xfmmat);
 }
 
+void RendXformAnim::onPropSave(AnimMgr *pMgr, qlib::uid_t tgt_uid)
+{
+  // The transform is written through setXformMatrix(), which Renderer.qif
+  // exposes as the "xformMat" property.
+  pMgr->savePropVal(tgt_uid, LString("xformMat"));
+}
+
 void RendXformAnim::onStart(qlib::time_value elapsed, AnimMgr *pMgr)
 {
   m_stDPosWld = m_startDPos;

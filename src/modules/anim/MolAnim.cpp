@@ -57,6 +57,11 @@ void MolAnim::onPropInit(AnimMgr *pMgr, qlib::uid_t tgt_uid)
   pTgtObj->setProperty(getPropName(), var);
 }
 
+void MolAnim::onPropSave(AnimMgr *pMgr, qlib::uid_t tgt_uid)
+{
+  pMgr->savePropVal(tgt_uid, getPropName());
+}
+
 void MolAnim::onStart(qlib::time_value elapsed, AnimMgr *pMgr)
 {
   qlib::LVariant var(m_startValue);

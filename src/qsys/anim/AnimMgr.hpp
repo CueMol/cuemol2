@@ -75,6 +75,19 @@ namespace qsys {
     };
     typedef std::multimap<qlib::time_value, timeline_tuple> timeline;
 
+    /// Pre-animation values of the properties overwritten by the anim objs.
+    /// Key is "<target uid>:<propname>", the same format as the prop_tl key
+    /// built in startImpl(). Filled through savePropVal() and written back
+    /// by restoreProps().
+    typedef std::map<LString, qlib::LVariant> propsave_t;
+    propsave_t m_propSave;
+
+    /// True once m_propSave has been filled for the current playback.
+    /// Keeps loop playback from re-saving (and thus losing) the original
+    /// values on the second and later laps, since each lap re-runs
+    /// startImpl() through start().
+    bool m_bPropSaved;
+
     //////////////////////
     //  persistent workarea
 
@@ -135,6 +148,12 @@ namespace qsys {
 
     ViewPtr getTgtView() const { return m_pTgtView; }
 
+    /// Save the current value of a property, so that it is restored when
+    /// playback stops. Called from PropAnim::onPropSave() implementations.
+    /// Saving the same target/property twice is a no-op, so overlapping
+    /// anims keep the value from before the first one ran.
+    void savePropVal(qlib::uid_t tgt_uid, const LString &propnm);
+
     /// Timer event handling (TimerListener impl)
     bool onTimer(double t, qlib::time_value curr, bool bLast) override;
 
@@ -148,8 +167,13 @@ namespace qsys {
     void startImpl();
 
     void onTimerImpl(qlib::time_value elapsed);
-    
+
     void fireEvent(AnimObjEvent &ev);
+
+    /// Write back all values saved by savePropVal() and clear the table.
+    /// Targets that no longer exist are skipped silently (a renderer can be
+    /// deleted while an animation runs).
+    void restoreProps();
 
   public:
 

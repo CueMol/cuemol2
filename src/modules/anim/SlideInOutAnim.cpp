@@ -73,6 +73,13 @@ void SlideInOutAnim::onPropInit(AnimMgr *pMgr, qlib::uid_t tgt_uid)
   }
 }
 
+void SlideInOutAnim::onPropSave(AnimMgr *pMgr, qlib::uid_t tgt_uid)
+{
+  // Base class saves "xformMat"; this class also toggles visibility.
+  super_t::onPropSave(pMgr, tgt_uid);
+  pMgr->savePropVal(tgt_uid, LString("visible"));
+}
+
 void SlideInOutAnim::onStart(qlib::time_value elapsed, AnimMgr *pMgr)
 {
   convDistDir(pMgr);

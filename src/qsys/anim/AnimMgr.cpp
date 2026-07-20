@@ -31,6 +31,7 @@ AnimMgr::AnimMgr()
   m_timeRemain = 0;
   m_nState = AM_STOP;
   m_timeElapsed = 0;
+  m_bPropSaved = false;
   m_pEvMgr = qlib::EventManager::getInstance();
 
   addPropListener(this);
@@ -50,6 +51,87 @@ ScenePtr AnimMgr::getTgtScene() const
   // ensureNotNull(m_pTgtView);
   // return m_pTgtView->getScene();
   return SceneManager::getSceneS(m_nTgtSceneID);
+}
+
+namespace {
+
+  /// Resolve an animation target uid to the scriptable object owning the
+  /// animated property. PropAnim targets are either renderers (the
+  /// RendPropAnim family) or objects (MolAnim). Uids are globally unique,
+  /// so probing renderers first and objects second is unambiguous.
+  qlib::LScriptable *resolveAnimTgt(qlib::uid_t uid)
+  {
+    RendererPtr pRend = SceneManager::getRendererS(uid);
+    if (!pRend.isnull())
+      return pRend.get();
+
+    ObjectPtr pObj = SceneManager::getObjectS(uid);
+    if (!pObj.isnull())
+      return pObj.get();
+
+    return NULL;
+  }
+
+}  // namespace
+
+void AnimMgr::savePropVal(qlib::uid_t tgt_uid, const LString &propnm)
+{
+  const LString key = LString::format("%d:%s", int(tgt_uid), propnm.c_str());
+
+  if (m_propSave.find(key) != m_propSave.end()) {
+    // Already saved by an earlier anim writing the same property.
+    // Keep the first (i.e. oldest) value.
+    return;
+  }
+
+  qlib::LScriptable *pTgt = resolveAnimTgt(tgt_uid);
+  if (pTgt == NULL) {
+    LOG_DPRINTLN("AnimMgr> savePropVal: unknown target uid %d", int(tgt_uid));
+    return;
+  }
+
+  qlib::LVariant value;
+  if (!pTgt->getProperty(propnm, value)) {
+    LOG_DPRINTLN("AnimMgr> savePropVal: cannot read prop %s of uid %d",
+                 propnm.c_str(), int(tgt_uid));
+    return;
+  }
+
+  m_propSave.insert(propsave_t::value_type(key, value));
+}
+
+void AnimMgr::restoreProps()
+{
+  BOOST_FOREACH (const propsave_t::value_type &elem, m_propSave) {
+    const LString &key = elem.first;
+
+    const int cpos = key.indexOf(':');
+    if (cpos < 0)
+      continue;
+
+    qlib::uid_t uid = qlib::invalid_uid;
+    if (!key.substr(0, cpos).toNum(&uid))
+      continue;
+
+    const LString propnm = key.substr(cpos + 1, key.length() - cpos - 1);
+
+    qlib::LScriptable *pTgt = resolveAnimTgt(uid);
+    if (pTgt == NULL) {
+      // Target was removed while the animation was running.
+      continue;
+    }
+
+    try {
+      pTgt->setProperty(propnm, elem.second);
+    }
+    catch (const qlib::LException &e) {
+      LOG_DPRINTLN("AnimMgr> restoreProps: cannot restore %s (%s)",
+                   key.c_str(), e.getMsg().c_str());
+    }
+  }
+
+  m_propSave.clear();
+  m_bPropSaved = false;
 }
 
 void AnimMgr::startImpl()
@@ -140,9 +222,17 @@ void AnimMgr::startImpl()
                 //int( pPropAnim->getAbsStart() ),
                 key.c_str(),
                 int(uid));
+
+    // Save the pre-animation value before the anim overwrites it.
+    // Skipped on the second and later laps of a loop playback, so that
+    // restoreProps() returns to the state from before the first lap.
+    if (!m_bPropSaved)
+      pPropAnim->onPropSave(this, uid);
+
     pPropAnim->onPropInit(this, uid);
   }
 
+  m_bPropSaved = true;
 }
 
 void AnimMgr::start(ViewPtr pView)
@@ -166,6 +256,11 @@ void AnimMgr::start(ViewPtr pView)
 
 void AnimMgr::stop()
 {
+  // A full stop returns the scene to its pre-animation state. pause() does
+  // not, so a paused (or seeked, see goTime()) animation keeps its current
+  // frame's values.
+  restoreProps();
+
   m_pEvMgr->removeTimer(this);
   m_timeStart = 0;
   m_timeEnd = 0;
@@ -295,10 +390,17 @@ bool AnimMgr::onTimer(double t, qlib::time_value curr, bool bLast)
     m_timeEnd = 0;
     m_nState = AM_STOP;
     m_timeElapsed = 0;
-    if (m_loop)
+    if (m_loop) {
+      // Keep the saved values across laps; the next startImpl() sees
+      // m_bPropSaved and does not overwrite them.
       start(m_pTgtView);
-    else
+    }
+    else {
+      // Playback ran to its natural end. This path does not go through
+      // stop(), so the restore has to happen here as well.
+      restoreProps();
       m_pTgtView = ViewPtr();
+    }
     return false;
   }
   return true;
