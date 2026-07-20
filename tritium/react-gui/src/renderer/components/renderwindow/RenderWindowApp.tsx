@@ -25,6 +25,7 @@ import { isRenderJobActive } from "../../hooks/useRenderJob";
 import { useRenderWindowClient } from "../../hooks/useRenderWindowClient";
 import { RENDER_BACKEND_IDS } from "../../data/renderBackends";
 import { RENDER_SIZE_PRESETS } from "../../data/renderSettings";
+import { IPC } from "../../../shared/ipcChannels";
 import type { RenderResult } from "../../data/renderResult";
 
 export const RenderWindowApp: React.FC = () => {
@@ -67,6 +68,19 @@ export const RenderWindowApp: React.FC = () => {
   const handleShowSourceScene = useCallback(() => {
     client.showSource();
   }, [client]);
+
+  /** Pick the folder the movie frames are written to. */
+  const handlePickFolder = useCallback(() => {
+    void (async () => {
+      const res = await window.electronAPI?.invoke(IPC.DIALOG_PICK_PATH, {
+        title: "Choose the folder for the rendered frames",
+        directory: true,
+      });
+      if (res && !res.canceled && res.filePath) {
+        settings.updateMovie({ outputDir: res.filePath });
+      }
+    })();
+  }, [settings]);
 
   /**
    * Apply an image-size preset. The "Current view" preset resolves the main
@@ -131,6 +145,7 @@ export const RenderWindowApp: React.FC = () => {
                   <MovieSettingsPanel
                     settings={settings.movie}
                     onChange={settings.updateMovie}
+                    onPickFolder={handlePickFolder}
                     disabled={isRenderJobActive(job)}
                   />
                 }
