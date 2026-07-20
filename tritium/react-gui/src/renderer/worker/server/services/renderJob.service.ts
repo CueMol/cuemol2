@@ -44,7 +44,7 @@ import {
 } from "./renderBackends/RenderBackend";
 import { getSceneOrNull } from "./helpers/sceneResolver";
 import { getAnimMgrOrNull } from "./helpers/animResolve";
-import { movieFrameFileName } from "../../../data/renderResult";
+import { movieFrameFileName } from "../../../../shared/movieFrames";
 
 /** Poll interval for external process status / stdout. */
 const POLL_MS = 700;

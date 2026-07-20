@@ -7,9 +7,11 @@
  * image. The settings snapshot is shown in a popover.
  */
 
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Button, Divider, Popover } from "@blueprintjs/core";
 import { AppIcon } from "../AppIcon";
+import { SliderField } from "../../h3-kit/form";
+import { IPC } from "../../../shared/ipcChannels";
 
 import { RenderImageViewer } from "./RenderImageViewer";
 import type { RenderResult } from "../../data/renderResult";
@@ -52,6 +54,41 @@ export const RenderResultPane: React.FC<RenderResultPaneProps> = ({
   onShowSourceScene,
   onOpenSettings,
 }) => {
+  // Frame slider (movie results). The sequence stays on disk and the shown
+  // frame is read back through main on demand -- holding every frame in
+  // memory is not viable, and result.imageDataUrl is only the last one.
+  const lastFrame = result.movie ? result.movie.frameCount - 1 : 0;
+  const [frameIndex, setFrameIndex] = useState<number | null>(null);
+  const [frameUrl, setFrameUrl] = useState<string | null>(null);
+  const shownFrame = frameIndex ?? lastFrame;
+
+  // A new result starts back at its own last frame.
+  useEffect(() => {
+    setFrameIndex(null);
+    setFrameUrl(null);
+  }, [result.id]);
+
+  const handleFrameChange = useCallback(
+    (displayed: number) => {
+      const movie = result.movie;
+      if (!movie) return;
+      const index = Math.max(
+        0,
+        Math.min(movie.frameCount - 1, Math.round(displayed) - 1),
+      );
+      setFrameIndex(index);
+      void window.electronAPI
+        ?.invoke(IPC.RENDER_FRAME_READ, {
+          outputDir: movie.outputDir,
+          baseName: movie.baseName,
+          frameIndex: index,
+        })
+        .then((res) => setFrameUrl(res?.dataUrl ?? null))
+        .catch(() => setFrameUrl(null));
+    },
+    [result.movie],
+  );
+
   const handleSave = useCallback(() => {
     const a = document.createElement("a");
     a.href = result.imageDataUrl;
@@ -127,15 +164,32 @@ export const RenderResultPane: React.FC<RenderResultPaneProps> = ({
     </>
   );
 
+  const movie = result.movie;
+
   return (
     <div className="render-result-pane">
       <RenderImageViewer
-        src={result.imageDataUrl}
+        src={frameUrl ?? result.imageDataUrl}
         imgWidth={result.width}
         imgHeight={result.height}
-        name={result.sourceSceneName}
+        name={
+          movie
+            ? `${result.sourceSceneName} -- frame ${shownFrame + 1} / ${movie.frameCount}`
+            : result.sourceSceneName
+        }
         actions={actions}
       />
+      {movie && movie.frameCount > 1 && (
+        <div className="render-result-frames">
+          <SliderField
+            label="Frame"
+            value={shownFrame + 1}
+            min={1}
+            max={movie.frameCount}
+            onCommit={handleFrameChange}
+          />
+        </div>
+      )}
     </div>
   );
 };

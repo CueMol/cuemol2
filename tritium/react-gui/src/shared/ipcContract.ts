@@ -94,6 +94,9 @@ export interface InvokeChannels {
   [IPC.RENDER_WINDOW_STATE]:   { req: RenderWindowStateUpdate; res: void }
   [IPC.RENDER_VIEW_SIZE_GET]:  { req: void;                    res: ViewSizePx | null }
   [IPC.RENDER_VIEW_SIZE_REPLY]: { req: { reqId: number; size: ViewSizePx | null }; res: void }
+  /** Read one frame of a finished movie render back off disk (frame slider). */
+  [IPC.RENDER_FRAME_READ]: { req: { outputDir: string; baseName: string; frameIndex: number }
+                             res: { dataUrl: string | null } }
   [IPC.NAVI_CTX_SHOW]:     { req: NaviCtxMenuPayload;    res: NaviCtxAction | null }
   [IPC.SCENE_CTX_SHOW]:    { req: SceneCtxMenuPayload;   res: SceneCtxAction | null }
   [IPC.TEXT_CTX_ACTION]:   { req: Exclude<TextCtxAction, 'selectAll'>; res: void }

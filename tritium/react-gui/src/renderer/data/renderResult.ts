@@ -41,11 +41,6 @@ export interface RenderMovieOutput {
   baseName: string;
 }
 
-/** File name of one frame of a rendered sequence. */
-export function movieFrameFileName(baseName: string, frameIndex: number): string {
-  return `${baseName}_frm_${String(frameIndex).padStart(4, "0")}.png`;
-}
-
 /** A completed render, displayed in the Rendering window. */
 export interface RenderResult {
   /** Unique id. */

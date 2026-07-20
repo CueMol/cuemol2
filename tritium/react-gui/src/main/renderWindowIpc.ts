@@ -15,9 +15,12 @@
  * window with a timeout fallback.
  */
 
+import * as fs from 'fs'
+import * as path from 'path'
 import type { BrowserWindow } from 'electron'
 import { IPC } from '../shared/ipcChannels'
 import type { ViewSizePx } from '../shared/ipcTypes'
+import { movieFrameFileName } from '../shared/movieFrames'
 import { handleInvoke } from './ipcHandlers'
 
 /** How long to wait for the main window's view-size reply. */
@@ -80,5 +83,20 @@ export function registerRenderWindowIpc(deps: RenderWindowIpcDeps): void {
 
   handleInvoke(IPC.RENDER_VIEW_SIZE_REPLY, (_event, { reqId, size }) => {
     pending.get(reqId)?.(size)
+  })
+
+  // Frame slider: read one already-rendered frame straight off disk. The
+  // frames are plain files in the user's output folder, so this needs
+  // neither the worker nor the main window -- unlike the view-size round
+  // trip above, it is a single hop.
+  handleInvoke(IPC.RENDER_FRAME_READ, (_event, { outputDir, baseName, frameIndex }) => {
+    try {
+      const file = path.join(outputDir, movieFrameFileName(baseName, frameIndex))
+      const buf = fs.readFileSync(file)
+      return { dataUrl: `data:image/png;base64,${buf.toString('base64')}` }
+    } catch {
+      // Frame deleted or moved since the render finished.
+      return { dataUrl: null }
+    }
   })
 }

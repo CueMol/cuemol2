@@ -306,6 +306,14 @@
   white-space: nowrap;
 }
 
+/* Frame slider under a finished movie's image. */
+.render-result-frames {
+  padding: var(--space-3) var(--space-5);
+  background: var(--bg-panel-header);
+  border-top: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
 /* Log area — matches the Output tab (LogView) font, spacing and background. */
 .render-panel-log {
   flex: 1;

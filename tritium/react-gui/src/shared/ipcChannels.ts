@@ -114,6 +114,7 @@ export const IPC = {
   RENDER_VIEW_SIZE_GET:     'render-window:view-size-get',     // invoke: render window -> main
   RENDER_VIEW_SIZE_REQUEST: 'render-window:view-size-request', // push:   main -> main window
   RENDER_VIEW_SIZE_REPLY:   'render-window:view-size-reply',   // invoke: main window -> main
+  RENDER_FRAME_READ:        'render-window:frame-read',        // invoke: render window -> main
 
   // invoke channel for native viewport context menu
   NAVI_CTX_SHOW: 'navi-ctx:show',
