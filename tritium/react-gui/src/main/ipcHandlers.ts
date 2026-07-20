@@ -6,8 +6,7 @@
  * response shapes from `shared/ipcContract`.
  */
 
-import { ipcMain, app, dialog, nativeTheme } from 'electron'
-import type { BrowserWindow } from 'electron'
+import { ipcMain, app, dialog, nativeTheme, BrowserWindow } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import { IPC } from '../shared/ipcChannels'
@@ -250,7 +249,12 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   )
 
   handleInvoke(IPC.DIALOG_PICK_PATH, async (_event, payload) =>
-    handlePickPathDialog(mainWindow, payload),
+    // Parent the picker to the window that asked for it, so a request from
+    // the Rendering window is modal to that window, not the main one.
+    handlePickPathDialog(
+      BrowserWindow.fromWebContents(_event.sender) ?? mainWindow,
+      payload,
+    ),
   )
 
   handleInvoke(IPC.SAVE_TEXT_AS, async (_event, payload) =>

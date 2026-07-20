@@ -100,7 +100,7 @@ export const MovieSettingsPanel: React.FC<MovieSettingsPanelProps> = ({
               onPickFolder && (
                 <FormButton
                   minimal
-                  icon={<AppIcon name="toolbar.openFile" aria-hidden />}
+                  icon={<AppIcon name="ui.folder" aria-hidden />}
                   aria-label="Choose output folder"
                   onClick={onPickFolder}
                   disabled={disabled}

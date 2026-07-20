@@ -15,6 +15,7 @@ import React, { useCallback } from "react";
 import { HTMLSelect } from "@blueprintjs/core";
 
 import { PropGroupedEditor } from "./PropGroupedEditor";
+import { Field, SelectField } from "../../h3-kit/form";
 import type { PropDef } from "../../data/rendererProperties";
 import {
   RENDER_COMMON_GROUPS,
@@ -77,13 +78,6 @@ export const RenderSettingsEditor: React.FC<RenderSettingsEditorProps> = ({
     [onBackendChange],
   );
 
-  const handlePresetChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
-      onApplyPreset(e.currentTarget.value);
-    },
-    [onApplyPreset],
-  );
-
   const backendGroups = RENDER_BACKENDS[backend].groups;
 
   // Hide common settings the active backend does not honor (e.g. Umbreon has no
@@ -108,6 +102,23 @@ export const RenderSettingsEditor: React.FC<RenderSettingsEditorProps> = ({
     ...[...groupDefs.values()].filter((g) => !GROUP_ORDER.includes(g.key)),
   ];
 
+  // The image-size preset sits at the top of the Image group -- it is a
+  // shortcut for the width / height fields right below it, so it belongs in
+  // the same section rather than in a separate bar.
+  const groupLeadContent = {
+    Image: (
+      <Field label="Preset">
+        <SelectField value={preset} onChange={onApplyPreset}>
+          {RENDER_SIZE_PRESETS.map((p) => (
+            <option key={p.label} value={p.label}>
+              {p.label}
+            </option>
+          ))}
+        </SelectField>
+      </Field>
+    ),
+  };
+
   return (
     <div className="insp-properties-tab">
       {/* -- Backend selector -- */}
@@ -127,26 +138,14 @@ export const RenderSettingsEditor: React.FC<RenderSettingsEditorProps> = ({
         </HTMLSelect>
       </div>
 
-      {/* -- Image-size preset (consolidated from the bottom panel). The exact
-             size lives in the Image group's width / height fields below. -- */}
-      <div className="insp-render-backend-bar">
-        <span className="insp-prop-label">Image size</span>
-        <HTMLSelect
-          className="insp-select h3-form-select"
-          fill
-          value={preset}
-          onChange={handlePresetChange}
-        >
-          {RENDER_SIZE_PRESETS.map((p) => (
-            <option key={p.label} value={p.label}>
-              {p.label}
-            </option>
-          ))}
-        </HTMLSelect>
-      </div>
-
-      {/* -- One merged set of ordered groups (common + backend) -- */}
-      <PropGroupedEditor properties={allProps} groups={orderedGroups} onChange={onChange} />
+      {/* -- One merged set of ordered groups (common + backend). The
+             image-size preset rides at the top of the Image group. -- */}
+      <PropGroupedEditor
+        properties={allProps}
+        groups={orderedGroups}
+        onChange={onChange}
+        groupLeadContent={groupLeadContent}
+      />
     </div>
   );
 };
