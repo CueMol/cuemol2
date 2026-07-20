@@ -193,74 +193,43 @@
   overflow: hidden;
 }
 
-/* Detail tabs (render log / movie settings). Mirrors the main window's
-   BottomPanel tab strip so the two read as the same control. */
-.render-panel-tabs {
+/* Tab body: execution column, plus the movie-settings column in Movie mode. */
+.render-panel-body {
+  flex: 1;
   display: flex;
-  align-items: stretch;
-  background: var(--bg-panel-header);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
+  min-height: 0;
 }
 
-.render-panel-tab {
-  display: flex;
-  align-items: center;
-  padding: var(--space-2) var(--space-5);
-  font-size: var(--fs-base);
-  font-weight: var(--fw-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--ls-tight);
-  color: var(--text-muted);
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-  transition: all 0.15s;
-  user-select: none;
-}
-
-.render-panel-tab:hover:not(:disabled) {
-  color: var(--text-secondary);
-  background: var(--bg-hover);
-}
-
-.render-panel-tab.active {
-  color: var(--text-secondary);
-  border-bottom-color: var(--accent);
-}
-
-.render-panel-tab:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
-.render-panel-tabcontent {
+.render-panel-main {
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
+  min-width: 0;
 }
 
-/* Movie settings scroll inside their tab; the action bar below stays put. */
-.movie-settings-panel {
-  flex: 1;
+/* Movie settings sit beside the log rather than above it, so the extra
+   options use horizontal space instead of scrolling the panel. */
+.render-panel-movie {
+  flex: 0 0 var(--render-movie-col-w);
+  min-width: 0;
   overflow-y: auto;
+  border-left: 1px solid var(--border-subtle);
+}
+
+.movie-settings-panel {
   padding: var(--space-4) var(--space-5);
   display: flex;
   flex-direction: column;
   gap: var(--form-section-gap);
 }
 
-/* Sits below the tab content, so its rule is a top border. */
 .render-panel-bar {
   display: flex;
   align-items: center;
   gap: var(--space-4);
   padding: var(--space-3) var(--space-5);
   background: var(--bg-panel-header);
-  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
 }
 

@@ -10,8 +10,8 @@
  */
 
 import React, { useCallback, useState } from "react";
-import { AppIcon } from "../AppIcon";
 import type { AppIconKey } from "../../data/appIcons";
+import { PanelTabButton } from "./PanelTabButton";
 import { LogPanel } from "./LogPanel";
 import { SequencePanel } from "./SequencePanel";
 import { AnimationPanel } from "./AnimationPanel";
@@ -38,14 +38,8 @@ interface TabButtonProps {
 // Sub-component: TabButton
 // ---------------------------------------------
 
-const TabButton: React.FC<TabButtonProps> = ({ tab, activeTab, icon, label, onClick }) => (
-  <div
-    className={`bottom-tab ${activeTab === tab ? "active" : ""}`}
-    onClick={() => onClick(tab)}
-  >
-    <AppIcon name={icon} size="md" className="tab-icon" aria-hidden />
-    <span className="tab-label">{label}</span>
-  </div>
+const TabButton: React.FC<TabButtonProps> = (props) => (
+  <PanelTabButton<BottomTabType> {...props} />
 );
 
 // ---------------------------------------------

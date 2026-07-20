@@ -282,6 +282,7 @@
   --anim-ruler-h: var(--ctrl-h-md);       /* time ruler height */
   --anim-lane-h: var(--row-h);            /* one strip lane height */
   --anim-label-col-w: 140px;              /* channel-list column width */
+  --render-movie-col-w: 240px;            /* movie-settings column in the render panel */
   --anim-strip-radius: var(--radius-sm);  /* strip corner radius */
   --anim-playhead-w: 2px;                 /* playhead line thickness */
   --anim-handle-w: 6px;                   /* strip resize-grip width */

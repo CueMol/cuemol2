@@ -141,7 +141,7 @@ export const RenderWindowApp: React.FC = () => {
                 job={job}
                 mode={settings.mode}
                 onModeChange={settings.setMode}
-                movieTab={
+                moviePanel={
                   <MovieSettingsPanel
                     settings={settings.movie}
                     onChange={settings.updateMovie}
