@@ -10,7 +10,7 @@
  * and disabling the format / bit rate while encoding is off.
  */
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Collapse } from "@blueprintjs/core";
 
 import {
@@ -57,8 +57,17 @@ export const MovieSettingsPanel: React.FC<MovieSettingsPanelProps> = ({
 }) => {
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
+  // Numeric fields keep a draft string so an intermediate empty value while
+  // editing (e.g. after deleting the last digit) is not snapped back by the
+  // committed number. The draft re-syncs whenever the committed value changes.
+  const [fpsDraft, setFpsDraft] = useState(String(settings.fps));
+  const [bitrateDraft, setBitrateDraft] = useState(String(settings.bitrateKbps));
+  useEffect(() => setFpsDraft(String(settings.fps)), [settings.fps]);
+  useEffect(() => setBitrateDraft(String(settings.bitrateKbps)), [settings.bitrateKbps]);
+
   const handleFps = useCallback(
     (text: string) => {
+      setFpsDraft(text);
       const fps = positiveNumber(text);
       if (fps !== undefined) onChange({ fps });
     },
@@ -67,6 +76,7 @@ export const MovieSettingsPanel: React.FC<MovieSettingsPanelProps> = ({
 
   const handleBitrate = useCallback(
     (text: string) => {
+      setBitrateDraft(text);
       const bitrateKbps = positiveNumber(text);
       if (bitrateKbps !== undefined) onChange({ bitrateKbps });
     },
@@ -111,7 +121,7 @@ export const MovieSettingsPanel: React.FC<MovieSettingsPanelProps> = ({
 
         <Field label="Frame rate">
           <ComboBoxField
-            value={String(settings.fps)}
+            value={fpsDraft}
             onChange={handleFps}
             options={MOVIE_FPS_PRESETS.map(String)}
             disabled={disabled}
@@ -165,7 +175,7 @@ export const MovieSettingsPanel: React.FC<MovieSettingsPanelProps> = ({
           </Field>
           <Field label="Bit rate (kbps)">
             <ComboBoxField
-              value={String(settings.bitrateKbps)}
+              value={bitrateDraft}
               onChange={handleBitrate}
               options={MOVIE_BITRATE_PRESETS.map(String)}
               disabled={encodeDisabled}

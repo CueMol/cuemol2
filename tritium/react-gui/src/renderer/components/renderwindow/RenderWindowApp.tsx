@@ -27,7 +27,6 @@ import { useRenderWindowClient } from "../../hooks/useRenderWindowClient";
 import { RENDER_BACKEND_IDS } from "../../data/renderBackends";
 import { RENDER_SIZE_PRESETS } from "../../data/renderSettings";
 import { IPC } from "../../../shared/ipcChannels";
-import type { RenderResult } from "../../data/renderResult";
 
 export const RenderWindowApp: React.FC = () => {
   const client = useRenderWindowClient();
@@ -51,24 +50,6 @@ export const RenderWindowApp: React.FC = () => {
   const handleStart = useCallback(() => {
     client.start(settings.getSnapshot());
   }, [client, settings]);
-
-  /** Re-render a previous result: restore its snapshot, render its source. */
-  const handleReRender = useCallback(
-    (result: RenderResult) => {
-      settings.restore(result.settingsSnapshot);
-      client.start(result.settingsSnapshot, {
-        sceneId: result.sourceSceneId,
-        sceneName: result.sourceSceneName,
-        viewId: result.sourceViewId,
-      });
-    },
-    [client, settings],
-  );
-
-  /** Show the result's source scene in the main window. */
-  const handleShowSourceScene = useCallback(() => {
-    client.showSource();
-  }, [client]);
 
   /** Pick the folder the movie frames are written to. */
   const handlePickFolder = useCallback(() => {
@@ -132,11 +113,7 @@ export const RenderWindowApp: React.FC = () => {
                     }`}
                   />
                 ) : result ? (
-                  <RenderResultPane
-                    result={result}
-                    onReRender={handleReRender}
-                    onShowSourceScene={handleShowSourceScene}
-                  />
+                  <RenderResultPane result={result} />
                 ) : (
                   <div className="render-window-empty type-body">
                     {canRender

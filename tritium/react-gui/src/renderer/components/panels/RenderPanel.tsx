@@ -201,20 +201,6 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
                 stripes={active}
                 animate={active}
               />
-              {job.frameCount !== undefined && job.frameCount > 0 && (
-                <div className="render-panel-frame-progress">
-                  <span className="render-panel-frame-label type-label">
-                    Frame {Math.min((job.frameIndex ?? 0) + 1, job.frameCount)} /{" "}
-                    {job.frameCount}
-                  </span>
-                  <ProgressBar
-                    value={(job.frameProgress ?? 0) / 100}
-                    intent={intentForJob(job)}
-                    stripes={active}
-                    animate={active}
-                  />
-                </div>
-              )}
             </div>
           )}
 
