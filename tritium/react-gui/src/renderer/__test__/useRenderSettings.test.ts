@@ -138,12 +138,24 @@ describe('useRenderSettings', () => {
         h.unmount();
     });
 
-    it('resets the preset when the mode changes (preset lists differ)', () => {
+    it('movie mode starts on the QVGA preset', () => {
         const h = makeRenderHook(() => useRenderSettings());
         act(() => h.result.applyPreset('600×600 (300dpi)'));
-        // The still preset does not exist in the movie list.
+        // Switching to movie replaces the still preset with QVGA and its size.
         act(() => h.result.setMode('movie'));
-        expect(h.result.preset).toBe('Custom');
+        expect(h.result.preset).toBe('QVGA (320×240)');
+        expect(valueOf(h.result.commonProps, 'width')).toBe(320);
+        expect(valueOf(h.result.commonProps, 'height')).toBe(240);
+        h.unmount();
+    });
+
+    it('still mode returns to its default preset (1200x1200)', () => {
+        const h = makeRenderHook(() => useRenderSettings());
+        act(() => h.result.setMode('movie'));
+        act(() => h.result.setMode('still'));
+        expect(h.result.preset).toBe('1200×1200 (600dpi)');
+        expect(valueOf(h.result.commonProps, 'width')).toBe(1200);
+        expect(valueOf(h.result.commonProps, 'height')).toBe(1200);
         h.unmount();
     });
 
@@ -151,12 +163,12 @@ describe('useRenderSettings', () => {
 
     it('changing the unit reprojects width/height via DPI and switches the control to real', () => {
         const h = makeRenderHook(() => useRenderSettings());
-        // defaults: 1200 x 900 px at 600 DPI.
+        // defaults: 1200 x 1200 px at 600 DPI.
         act(() => h.result.handleChange('unit', 'in'));
         expect(valueOf(h.result.commonProps, 'unit')).toBe('in');
-        // 1200px / 600dpi = 2 in; 900 / 600 = 1.5 in.
+        // 1200px / 600dpi = 2 in for both.
         expect(valueOf(h.result.commonProps, 'width')).toBe(2);
-        expect(valueOf(h.result.commonProps, 'height')).toBe(1.5);
+        expect(valueOf(h.result.commonProps, 'height')).toBe(2);
         // The field becomes a fractional control, not an integer pixel one,
         // and carries the new unit as its in-field suffix.
         const width = propOf(h.result.commonProps, 'width') as { type: string; unit?: string; decimals?: number };
@@ -171,7 +183,7 @@ describe('useRenderSettings', () => {
         act(() => h.result.handleChange('unit', 'in'));
         act(() => h.result.handleChange('unit', 'px'));
         expect(valueOf(h.result.commonProps, 'width')).toBe(1200);
-        expect(valueOf(h.result.commonProps, 'height')).toBe(900);
+        expect(valueOf(h.result.commonProps, 'height')).toBe(1200);
         const width = propOf(h.result.commonProps, 'width') as { type: string; unit?: string };
         expect(width.type).toBe('integer');
         expect(width.unit).toBe('px');

@@ -193,42 +193,38 @@
   overflow: hidden;
 }
 
-/* Settings body: the image column (both modes) plus the movie column in
-   Movie mode, side by side so options use horizontal space and the panel
-   scrolls rather than stacking everything into one tall column. */
+/* Settings body: two resizable columns (Allotment). Start / progress above
+   and the log below stay full-width, outside this split. */
 .render-panel-body {
   flex: 1;
-  display: flex;
   min-height: 0;
 }
 
-/* Image settings: first column, flexes to fill the leftover width. */
-.render-panel-image {
-  flex: 1;
-  min-width: 0;
+/* Each Allotment pane scrolls its own column. */
+.render-panel-col {
+  height: 100%;
   overflow-y: auto;
 }
 
-.image-settings-panel {
+.image-settings-panel,
+.movie-settings-panel {
   padding: var(--space-4) var(--space-5);
   display: flex;
   flex-direction: column;
   gap: var(--form-row-gap);
 }
 
-/* Movie settings: fixed second column beside the image one. */
-.render-panel-movie {
-  flex: 0 0 var(--render-movie-col-w);
+/* Width x height on one row. */
+.image-size-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
   min-width: 0;
-  overflow-y: auto;
-  border-left: 1px solid var(--border-subtle);
 }
 
-.movie-settings-panel {
-  padding: var(--space-4) var(--space-5);
-  display: flex;
-  flex-direction: column;
-  gap: var(--form-section-gap);
+.image-size-x {
+  color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 .render-panel-bar {
@@ -255,12 +251,13 @@
   padding: var(--space-2) var(--space-5);
   background: var(--bg-panel-header);
   border: none;
-  color: var(--text-muted);
+  /* Enabled-widget contrast: --text-muted reads as disabled. */
+  color: var(--text-secondary);
   cursor: pointer;
 }
 
 .render-panel-log-toggle:hover {
-  color: var(--text-secondary);
+  color: var(--text-primary);
   background: var(--bg-hover);
 }
 

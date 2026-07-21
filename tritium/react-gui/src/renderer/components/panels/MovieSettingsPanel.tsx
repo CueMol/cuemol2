@@ -11,7 +11,6 @@
  */
 
 import React, { useCallback, useEffect, useState } from "react";
-import { Collapse } from "@blueprintjs/core";
 
 import {
   Field,
@@ -33,6 +32,8 @@ import {
 } from "../../data/renderSettings";
 
 interface MovieSettingsPanelProps {
+  /** Section heading for this column. */
+  title: string;
   /** Current movie settings. */
   settings: MovieSettings;
   /** Apply a partial change. */
@@ -50,13 +51,12 @@ function positiveNumber(text: string): number | undefined {
 }
 
 export const MovieSettingsPanel: React.FC<MovieSettingsPanelProps> = ({
+  title,
   settings,
   onChange,
   onPickFolder,
   disabled = false,
 }) => {
-  const [advancedOpen, setAdvancedOpen] = useState(false);
-
   // Numeric fields keep a draft string so an intermediate empty value while
   // editing (e.g. after deleting the last digit) is not snapped back by the
   // committed number. The draft re-syncs whenever the committed value changes.
@@ -88,7 +88,7 @@ export const MovieSettingsPanel: React.FC<MovieSettingsPanelProps> = ({
 
   return (
     <div className="movie-settings-panel">
-      <FieldSection title="Output">
+      <FieldSection title={title}>
         <Field label="Folder">
           <TextField
             value={settings.outputDir}
@@ -127,9 +127,7 @@ export const MovieSettingsPanel: React.FC<MovieSettingsPanelProps> = ({
             disabled={disabled}
           />
         </Field>
-      </FieldSection>
 
-      <FieldSection title="Movie">
         <Field label="Encode movie" inline>
           <SwitchField
             checked={settings.makeMovie}
@@ -151,38 +149,24 @@ export const MovieSettingsPanel: React.FC<MovieSettingsPanelProps> = ({
             ))}
           </SelectField>
         </Field>
-      </FieldSection>
 
-      <FormButton
-        minimal
-        icon={
-          <AppIcon
-            name={advancedOpen ? "ui.caretDown" : "ui.caretRight"}
-            aria-hidden
+        <Field label="Render last frame" inline>
+          <SwitchField
+            checked={settings.dupLastFrame}
+            onChange={(dupLastFrame) => onChange({ dupLastFrame })}
+            disabled={disabled}
           />
-        }
-        text="Advanced"
-        onClick={() => setAdvancedOpen((v) => !v)}
-      />
-      <Collapse isOpen={advancedOpen}>
-        <FieldSection>
-          <Field label="Render last frame" inline>
-            <SwitchField
-              checked={settings.dupLastFrame}
-              onChange={(dupLastFrame) => onChange({ dupLastFrame })}
-              disabled={disabled}
-            />
-          </Field>
-          <Field label="Bit rate (kbps)">
-            <ComboBoxField
-              value={bitrateDraft}
-              onChange={handleBitrate}
-              options={MOVIE_BITRATE_PRESETS.map(String)}
-              disabled={encodeDisabled}
-            />
-          </Field>
-        </FieldSection>
-      </Collapse>
+        </Field>
+
+        <Field label="Bit rate (kbps)">
+          <ComboBoxField
+            value={bitrateDraft}
+            onChange={handleBitrate}
+            options={MOVIE_BITRATE_PRESETS.map(String)}
+            disabled={encodeDisabled}
+          />
+        </Field>
+      </FieldSection>
     </div>
   );
 };

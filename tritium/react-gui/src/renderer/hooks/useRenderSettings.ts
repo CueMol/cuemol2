@@ -15,7 +15,11 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import type { PropDef } from "../data/rendererProperties";
 import {
   RENDER_COMMON_PROPS,
+  RENDER_SIZE_PRESETS,
+  MOVIE_SIZE_PRESETS,
   DEFAULT_RENDER_PRESET,
+  DEFAULT_STILL_PRESET,
+  DEFAULT_MOVIE_PRESET,
   DEFAULT_MOVIE_SETTINGS,
   SIZE_UNIT_FIELD_META,
   sizePresetsForMode,
@@ -24,6 +28,7 @@ import {
   type RenderBackendId,
   type RenderMode,
   type MovieSettings,
+  type RenderSizePreset,
 } from "../data/renderSettings";
 import { RENDER_BACKENDS, DEFAULT_RENDER_BACKEND } from "../data/renderBackends";
 import type { RenderSettingsSnapshot } from "../data/renderResult";
@@ -91,7 +96,9 @@ export function useRenderSettings(
   const [backendProps, setBackendProps] = useState<PropDef[]>(() =>
     cloneProps(RENDER_BACKENDS[DEFAULT_RENDER_BACKEND].props),
   );
-  const [preset, setPreset] = useState<string>(DEFAULT_RENDER_PRESET);
+  // Still mode starts on its default preset; the common-prop defaults above
+  // (1200 x 1200 px at 600 DPI) already match it, so no apply is needed here.
+  const [preset, setPreset] = useState<string>(DEFAULT_STILL_PRESET);
   const [mode, setMode] = useState<RenderMode>("still");
   const [movie, setMovie] = useState<MovieSettings>(DEFAULT_MOVIE_SETTINGS);
   // Once the user (or a restore) picks a backend, stop auto-defaulting to umbreon.
@@ -140,6 +147,27 @@ export function useRenderSettings(
     [],
   );
 
+  /** Write a preset's pixel size (and DPI) into the width / height fields. */
+  const applyPresetSize = useCallback((sized: RenderSizePreset, size: { width: number; height: number }) => {
+    // Presets are defined in pixels, so reset the unit to "px" and lay the
+    // width / height fields out with the px metadata (UXP `onPresetSel`).
+    setCommonProps((prev) => {
+      let next = prev.map((p) =>
+        p.key === "unit"
+          ? { ...p, value: "px" }
+          : p.key === "width"
+            ? setSizeProp(p, size.width, "px")
+            : p.key === "height"
+              ? setSizeProp(p, size.height, "px")
+              : p,
+      );
+      if (sized.dpi !== undefined) {
+        next = applyChange(next, "dpi", sized.dpi);
+      }
+      return next;
+    });
+  }, []);
+
   /**
    * Apply a size preset (Render tab dropdown). "Custom" leaves the size
    * unchanged; the "Current view" preset uses the supplied `dynamicSize`.
@@ -156,43 +184,28 @@ export function useRenderSettings(
       } else if (sized.width > 0) {
         size = { width: sized.width, height: sized.height };
       }
-      if (!size) return;
-
-      // Presets are defined in pixels, so reset the unit to "px" and lay the
-      // width / height fields out with the px metadata (UXP `onPresetSel`).
-      setCommonProps((prev) => {
-        let next = prev.map((p) =>
-          p.key === "unit"
-            ? { ...p, value: "px" }
-            : p.key === "width"
-              ? setSizeProp(p, size.width, "px")
-              : p.key === "height"
-                ? setSizeProp(p, size.height, "px")
-                : p,
-        );
-        if (sized.dpi !== undefined) {
-          next = applyChange(next, "dpi", sized.dpi);
-        }
-        return next;
-      });
+      if (size) applyPresetSize(sized, size);
     },
-    [mode],
+    [mode, applyPresetSize],
   );
 
   /**
-   * Switch the render mode. The preset lists differ per mode (video
-   * resolutions for movies), so a selected preset from the other mode would
-   * not exist in the new list -- reset it to the neutral "Custom".
+   * Switch the render mode. Each mode jumps to its own default size preset
+   * (still: high-res square; movie: QVGA) -- a preset from the other mode has
+   * no match in this mode's list, and this also reprojects the size to px.
    */
   const changeMode = useCallback((next: RenderMode) => {
     setMode(next);
-    setPreset(DEFAULT_RENDER_PRESET);
-    // Movie output is pixel-based and hides the unit / DPI controls, so drop
-    // any physical unit left over from still mode (reprojecting to px).
-    if (next === "movie") {
-      setCommonProps((prev) => convertSizeUnit(prev, "px"));
+    const list = next === "movie" ? MOVIE_SIZE_PRESETS : RENDER_SIZE_PRESETS;
+    const label = next === "movie" ? DEFAULT_MOVIE_PRESET : DEFAULT_STILL_PRESET;
+    const def = list.find((p) => p.label === label);
+    if (def && def.width > 0) {
+      setPreset(def.label);
+      applyPresetSize(def, { width: def.width, height: def.height });
+    } else {
+      setPreset(DEFAULT_RENDER_PRESET);
     }
-  }, []);
+  }, [applyPresetSize]);
 
   /** Frozen copy of the current settings, used for a render result. */
   const getSnapshot = useCallback(

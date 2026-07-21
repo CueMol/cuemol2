@@ -88,6 +88,49 @@ export const RenderWindowApp: React.FC = () => {
   const { job, result, views, preview } = client.state;
   const canRender = client.target !== null;
 
+  // The bottom pane's two columns are composed per mode, split so neither is
+  // overloaded: still shows Size | Output, movie shows Image | Movie.
+  const isMovie = settings.mode === "movie";
+  const leftPanel = isMovie ? (
+    <ImageSettingsPanel
+      title="Image"
+      commonProps={settings.commonProps}
+      onChange={settings.handleChange}
+      fields={["width", "height", "transparentBg", "postBlend", "pixelLabels"]}
+      showPreset
+      preset={settings.preset}
+      onApplyPreset={handleApplyPreset}
+      sizePresets={sizePresets}
+    />
+  ) : (
+    <ImageSettingsPanel
+      title="Size"
+      commonProps={settings.commonProps}
+      onChange={settings.handleChange}
+      fields={["width", "height", "unit", "dpi"]}
+      showPreset
+      preset={settings.preset}
+      onApplyPreset={handleApplyPreset}
+      sizePresets={sizePresets}
+    />
+  );
+  const rightPanel = isMovie ? (
+    <MovieSettingsPanel
+      title="Movie"
+      settings={settings.movie}
+      onChange={settings.updateMovie}
+      onPickFolder={handlePickFolder}
+      disabled={isRenderJobActive(job)}
+    />
+  ) : (
+    <ImageSettingsPanel
+      title="Output"
+      commonProps={settings.commonProps}
+      onChange={settings.handleChange}
+      fields={["transparentBg", "postBlend", "pixelLabels"]}
+    />
+  );
+
   return (
     <div className="render-window">
       {/* Custom title bar: drag strip matching the main window's chrome */}
@@ -132,24 +175,8 @@ export const RenderWindowApp: React.FC = () => {
                 job={job}
                 mode={settings.mode}
                 onModeChange={settings.setMode}
-                imagePanel={
-                  <ImageSettingsPanel
-                    commonProps={settings.commonProps}
-                    onChange={settings.handleChange}
-                    preset={settings.preset}
-                    onApplyPreset={handleApplyPreset}
-                    sizePresets={sizePresets}
-                    movie={settings.mode === "movie"}
-                  />
-                }
-                moviePanel={
-                  <MovieSettingsPanel
-                    settings={settings.movie}
-                    onChange={settings.updateMovie}
-                    onPickFolder={handlePickFolder}
-                    disabled={isRenderJobActive(job)}
-                  />
-                }
+                leftPanel={leftPanel}
+                rightPanel={rightPanel}
                 renderable={canRender}
                 onStart={handleStart}
                 onCancel={client.cancel}

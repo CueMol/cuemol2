@@ -1,11 +1,12 @@
 /**
  * @file __test__/imageSettingsPanel.test.tsx
- * @description Wiring contract for the bottom-pane image-size settings.
+ * @description Wiring contract for one bottom-pane image-settings column.
  *
- * Pins the image-size field rendering (moved here from the Render Settings
- * pane): width / height are compact plain number boxes with a unit suffix and
- * DPI is an editable combobox -- and the movie variant hides the DPI and the
- * unit selector, since movie output is pixel-based.
+ * The panel renders a titled column from an ordered list of Image-group keys:
+ * width / height collapse to a single "Size" row, an optional preset dropdown
+ * leads, and each remaining key renders its editor. The columns are composed
+ * per mode in RenderWindowApp (Size | Output for still, Image | Movie for
+ * movie).
  */
 
 import React from 'react';
@@ -22,30 +23,52 @@ vi.mock('../contexts/ThemeContext', () => ({ useTheme: () => ({ theme: 'dark' })
 import { ImageSettingsPanel } from '../components/panels/ImageSettingsPanel';
 import { RENDER_COMMON_PROPS, RENDER_SIZE_PRESETS } from '../data/renderSettings';
 
-function mount(movie = false) {
+/** The still "Size" column: preset + W x H row + unit + DPI. */
+function mountSize() {
   return mountTree(
     <ImageSettingsPanel
+      title="Size"
       commonProps={RENDER_COMMON_PROPS}
       onChange={vi.fn()}
+      fields={['width', 'height', 'unit', 'dpi']}
+      showPreset
       preset="Custom"
       onApplyPreset={vi.fn()}
       sizePresets={RENDER_SIZE_PRESETS}
-      movie={movie}
     />,
   );
 }
 
-describe('ImageSettingsPanel (still)', () => {
-  it('renders width/height as plain number boxes (no drag, no slider)', () => {
-    const { container, unmount } = mount();
-    expect(container.querySelectorAll('.h3-form-numeric').length).toBe(2);
+/** The movie "Image" column: preset + W x H row + output toggles, no DPI/unit. */
+function mountMovieImage() {
+  return mountTree(
+    <ImageSettingsPanel
+      title="Image"
+      commonProps={RENDER_COMMON_PROPS}
+      onChange={vi.fn()}
+      fields={['width', 'height', 'transparentBg', 'postBlend', 'pixelLabels']}
+      showPreset
+      preset="QVGA (320×240)"
+      onApplyPreset={vi.fn()}
+      sizePresets={RENDER_SIZE_PRESETS}
+    />,
+  );
+}
+
+describe('ImageSettingsPanel size column', () => {
+  it('renders width and height on one row as plain number boxes', () => {
+    const { container, unmount } = mountSize();
+    // Both size boxes are in the single "Size" row.
+    const row = container.querySelector('.image-size-row');
+    expect(row).not.toBeNull();
+    expect(row!.querySelectorAll('.h3-form-numeric').length).toBe(2);
+    // No slider / drag on the size boxes.
     expect(container.querySelector('.bp5-slider')).toBeNull();
-    expect(container.querySelector('.h3-form-field-row.h3-form-inline')).not.toBeNull();
     unmount();
   });
 
-  it('shows the active size unit (px) inside the width/height fields', () => {
-    const { container, unmount } = mount();
+  it('shows the active size unit (px) on the size boxes', () => {
+    const { container, unmount } = mountSize();
     const units = Array.from(container.querySelectorAll('.h3-form-unit')).map(
       (u) => u.textContent,
     );
@@ -54,7 +77,7 @@ describe('ImageSettingsPanel (still)', () => {
   });
 
   it('renders DPI as an editable combobox showing the current value', () => {
-    const { container, unmount } = mount();
+    const { container, unmount } = mountSize();
     const combo = container.querySelector('.h3-form-combobox');
     expect(combo).not.toBeNull();
     const input = combo!.querySelector('input') as HTMLInputElement;
@@ -63,16 +86,16 @@ describe('ImageSettingsPanel (still)', () => {
   });
 });
 
-describe('ImageSettingsPanel (movie)', () => {
-  it('hides DPI and the unit selector (movie output is pixel-based)', () => {
-    const { container, unmount } = mount(true);
+describe('ImageSettingsPanel movie image column', () => {
+  it('has the size row and output toggles but no DPI / unit', () => {
+    const { container, unmount } = mountMovieImage();
     const text = container.textContent ?? '';
     expect(text).not.toContain('Size unit');
     expect(text).not.toContain('DPI');
-    // No DPI combobox in movie mode.
+    // No DPI combobox in the movie image column.
     expect(container.querySelector('.h3-form-combobox')).toBeNull();
-    // Width / height boxes are still there.
-    expect(container.querySelectorAll('.h3-form-numeric').length).toBe(2);
+    // Size row is still present.
+    expect(container.querySelector('.image-size-row')).not.toBeNull();
     unmount();
   });
 });

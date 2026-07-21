@@ -78,8 +78,14 @@ export const MOVIE_SIZE_PRESETS: RenderSizePreset[] = [
   { label: "HD1080 (1920×1080)", width: 1920, height: 1080 },
 ];
 
-/** Default preset label (no enforced size). */
+/** Neutral preset label (no enforced size). */
 export const DEFAULT_RENDER_PRESET = "Custom";
+
+/** Still mode starts on a high-resolution square. */
+export const DEFAULT_STILL_PRESET = "1200×1200 (600dpi)";
+
+/** Movie mode starts on QVGA (a small, quick size). */
+export const DEFAULT_MOVIE_PRESET = "QVGA (320×240)";
 
 /** Size presets for a render mode: video resolutions for movies. */
 export function sizePresetsForMode(mode: RenderMode): RenderSizePreset[] {
@@ -245,13 +251,11 @@ export const RENDER_COMMON_PROPS: PropDef[] = [
   //     min/max/step mirror SIZE_UNIT_FIELD_META.px. `inline` renders them as
   //     compact single-row plain number boxes, not two-row drag fields.) ---
   { key: "width",  label: "Width",     type: "integer", value: 1200, group: "Image", min: 100, max: 10000, step: 100, unit: "px", decimals: 0, inline: true },
-  { key: "height", label: "Height",    type: "integer", value: 900,  group: "Image", min: 100, max: 10000, step: 100, unit: "px", decimals: 0, inline: true },
+  { key: "height", label: "Height",    type: "integer", value: 1200, group: "Image", min: 100, max: 10000, step: 100, unit: "px", decimals: 0, inline: true },
   { key: "unit",   label: "Size unit", type: "enum",    value: "px",  group: "Image", options: ["px", "in", "mm", "cm"] },
   // Editable combobox with the UXP render-pov-dlg DPI presets (plus high-DPI
   // options); custom values allowed.
   { key: "dpi",    label: "DPI",       type: "combo",   value: 600,   group: "Image", options: ["72", "150", "300", "600", "1200", "2400"] },
-  // Output settings merged into Image (no separate Output group).
-  { key: "fileFormat",    label: "File format",                type: "enum",    value: "png", group: "Image", options: ["png"] },
   { key: "transparentBg", label: "Transparent background",     type: "boolean", value: false, group: "Image" },
   { key: "postBlend",     label: "Post-render alpha blending", type: "boolean", value: true,  group: "Image" },
   { key: "pixelLabels",   label: "Pixel labels",               type: "boolean", value: false, group: "Image" },

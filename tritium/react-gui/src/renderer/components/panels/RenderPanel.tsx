@@ -4,18 +4,19 @@
  * Rendering window's bottom pane).
  *
  * The tab strip selects the output mode: Still renders one image, Movie
- * renders the scene's animation as a frame sequence. Both share the same
- * execution column (Start/Stop, target, progress, log); Movie adds a settings
- * column beside it, so its extra options use the horizontal space rather than
- * pushing the log out of view.
+ * renders the scene's animation as a frame sequence. Below the action bar and
+ * progress, the settings area is two resizable columns (leftPanel | rightPanel,
+ * 1:1 by default) composed by the host; the collapsible log sits below them.
  *
- * Detailed image settings live in the adjacent Render Settings pane. The
- * optional `onOpenSettings` shortcut is for hosts where that pane is not
- * permanently visible.
+ * The remaining, less-touched settings live in the adjacent Render Settings
+ * pane. The optional `onOpenSettings` shortcut is for hosts where that pane is
+ * not permanently visible.
  */
 
 import React, { useCallback, useRef, useState } from "react";
 import { ProgressBar, Collapse, type Intent } from "@blueprintjs/core";
+import { Allotment } from "allotment";
+import "allotment/dist/style.css";
 import { SelectField, FormButton } from "../../h3-kit/form";
 import { AppIcon } from "../AppIcon";
 import { PanelTabButton } from "./PanelTabButton";
@@ -31,17 +32,10 @@ interface RenderPanelProps {
   mode: RenderMode;
   /** Switch the output mode (i.e. the tab). */
   onModeChange: (mode: RenderMode) => void;
-  /**
-   * Image-size settings column (both modes). Passed in so this panel stays
-   * unaware of the settings themselves.
-   */
-  imagePanel?: React.ReactNode;
-  /**
-   * Movie settings column, shown beside the image column in Movie mode.
-   * Passed in rather than built here so this panel stays unaware of the
-   * movie settings themselves.
-   */
-  moviePanel?: React.ReactNode;
+  /** Left settings column. Passed in so this panel stays unaware of its content. */
+  leftPanel?: React.ReactNode;
+  /** Right settings column (empty in still mode). */
+  rightPanel?: React.ReactNode;
   /**
    * Whether the active content tab has a scene to render. Gates the panel's
    * render controls (Start button, Render Settings shortcut): a non-renderable
@@ -92,8 +86,8 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
   job,
   mode,
   onModeChange,
-  imagePanel,
-  moviePanel,
+  leftPanel,
+  rightPanel,
   renderable,
   onStart,
   onCancel,
@@ -212,12 +206,18 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
         </div>
       )}
 
-      {/* -- Settings columns: image (both modes) + movie (movie mode). -- */}
+      {/* -- Settings: two resizable columns, 1:1 by default. Start / progress
+             above and the log below stay full-width, outside this split. In
+             still mode the right column is empty, keeping the same shape. -- */}
       <div className="render-panel-body">
-        {imagePanel && <div className="render-panel-image">{imagePanel}</div>}
-        {mode === "movie" && moviePanel && (
-          <div className="render-panel-movie">{moviePanel}</div>
-        )}
+        <Allotment defaultSizes={[1, 1]}>
+          <Allotment.Pane minSize={120}>
+            <div className="render-panel-col">{leftPanel}</div>
+          </Allotment.Pane>
+          <Allotment.Pane minSize={120}>
+            <div className="render-panel-col">{rightPanel}</div>
+          </Allotment.Pane>
+        </Allotment>
       </div>
 
       {/* -- Log: auxiliary, collapsed by default. -- */}
