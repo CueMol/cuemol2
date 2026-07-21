@@ -67,6 +67,7 @@ export const RenderConfigProvider: React.FC<RenderConfigProviderProps> = ({
           povrayExe: ui?.povrayExe || def?.povrayExe || DEFAULT_RENDER_BINARIES.povrayExe,
           povrayInc: ui?.povrayInc || def?.povrayInc || DEFAULT_RENDER_BINARIES.povrayInc,
           blendpng: ui?.blendpng || def?.blendpng || DEFAULT_RENDER_BINARIES.blendpng,
+          ffmpeg: ui?.ffmpeg || def?.ffmpeg || DEFAULT_RENDER_BINARIES.ffmpeg,
         });
       } catch {
         // Electron not available (Vite dev server) -- keep defaults.

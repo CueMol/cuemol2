@@ -154,7 +154,7 @@ describe('renderStart animation branch', () => {
                     ...over,
                 },
             },
-            binaries: { povrayExe: process.execPath, povrayInc: '', blendpng: process.execPath },
+            binaries: { povrayExe: process.execPath, povrayInc: '', blendpng: process.execPath, ffmpeg: process.execPath },
         }
     }
 
@@ -200,6 +200,32 @@ describe('renderStart animation branch', () => {
             outputDir,
             baseName: 'movie',
         })
+    })
+
+    it('encodes a movie with ffmpeg after the frames when makeMovie is on', () => {
+        const ctx = makeCtx()
+        services.renderStart(ctx, makeArgs({ makeMovie: true }))
+        // FRAME_COUNT ticks render the frames; one more polls the encode task.
+        for (let i = 0; i < FRAME_COUNT + 1; i++) intervalCb?.()
+
+        // One ffmpeg task queued after the per-frame render tasks.
+        expect(queueTask).toHaveBeenCalledTimes(FRAME_COUNT + 1)
+        const encodeArgs = queueTask.mock.calls[queueTask.mock.calls.length - 1][1] as string
+        expect(encodeArgs).toContain('movie_frm_%04d.png')
+
+        const complete = pushMessage.mock.calls
+            .map((c) => c[1] as { type: string; movie?: { moviePath?: string } })
+            .find((u) => u.type === 'complete')
+        expect(complete?.movie?.moviePath).toContain('movie.mp4')
+        expect(animMgr.stop).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not encode when makeMovie is off (no ffmpeg task)', () => {
+        const ctx = makeCtx()
+        services.renderStart(ctx, makeArgs({ makeMovie: false }))
+        for (let i = 0; i < FRAME_COUNT + 1; i++) intervalCb?.()
+        // Only the FRAME_COUNT render tasks; no ffmpeg task.
+        expect(queueTask).toHaveBeenCalledTimes(FRAME_COUNT)
     })
 
     it('reports whole-job progress, not the current frame alone', () => {

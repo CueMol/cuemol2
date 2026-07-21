@@ -45,6 +45,11 @@ import {
 import { getSceneOrNull } from "./helpers/sceneResolver";
 import { getAnimMgrOrNull } from "./helpers/animResolve";
 import { movieFrameFileName } from "../../../../shared/movieFrames";
+import {
+  buildFfmpegArgs,
+  movieOutputPath,
+  type FfmpegEncodeOptions,
+} from "./ffmpegEncode";
 
 /** Poll interval for external process status / stdout. */
 const POLL_MS = 700;
@@ -85,6 +90,10 @@ interface AnimJobState {
   framePaths: string[];
   /** When the last live-preview image was pushed (rate limiting). */
   lastPreviewAt: number;
+  /** Movie encode in progress: the ffmpeg task id, else null. */
+  encodeTid: number | null;
+  /** Encoded movie path, once the encode has been queued. */
+  moviePath: string | null;
 }
 
 /**
@@ -93,6 +102,11 @@ interface AnimJobState {
  * seconds anyway, but a cheap backend could otherwise stream one per frame.
  */
 const PREVIEW_MIN_INTERVAL_MS = 1000;
+
+/** Expand a leading `~` to the user's home directory. */
+function expandHomePath(p: string): string {
+  return p.startsWith("~/") ? path.join(os.homedir(), p.slice(2)) : p;
+}
 
 /** State of one in-flight render job. */
 interface RenderJobEntry {
@@ -275,6 +289,7 @@ function finishAnimJob(
         frameCount: anim.framePaths.length,
         outputDir: anim.outputDir,
         baseName: anim.baseName,
+        ...(anim.moviePath ? { moviePath: anim.moviePath } : {}),
       },
     });
   } catch (e) {
@@ -334,7 +349,9 @@ function advanceAnimFrame(
   }
 
   if (wasLast) {
-    finishAnimJob(ctx, entry, args);
+    // All frames are on disk. Encode them if asked, otherwise finish.
+    if (shouldEncode(args)) startEncode(ctx, entry, args);
+    else finishAnimJob(ctx, entry, args);
     return;
   }
 
@@ -343,6 +360,79 @@ function advanceAnimFrame(
     progressUpdate(entry, "running", `Frame ${anim.currFrame + 1} / ${anim.frameCount}\n`, 0),
   );
   submitAnimFrame(ctx, backend, entry, args);
+}
+
+/** Whether this job should encode a movie (asked for, and ffmpeg is set). */
+function shouldEncode(args: RenderStartArgs): boolean {
+  return Boolean(args.snapshot.movie?.makeMovie) && Boolean(args.binaries.ffmpeg);
+}
+
+/** ffmpeg options for this job, from the frames on disk and the snapshot. */
+function encodeOptions(entry: RenderJobEntry, args: RenderStartArgs): FfmpegEncodeOptions {
+  const anim = entry.anim!;
+  const movie = args.snapshot.movie!;
+  return {
+    outputDir: anim.outputDir,
+    baseName: anim.baseName,
+    fps: movie.fps,
+    frameCount: anim.framePaths.length,
+    format: movie.movieFormat,
+    bitrateKbps: movie.bitrateKbps,
+  };
+}
+
+/** Queue the ffmpeg encode task and move the job into its encoding phase. */
+function startEncode(
+  ctx: WorkerContext,
+  entry: RenderJobEntry,
+  args: RenderStartArgs,
+): void {
+  const anim = entry.anim!;
+  const ffmpeg = expandHomePath(args.binaries.ffmpeg);
+  if (!fs.existsSync(ffmpeg)) {
+    stopTimer(entry);
+    jobs.delete(entry.jobId);
+    stopAnim(entry);
+    cleanupDir(entry.workDir);
+    emit(ctx, { type: "error", jobId: entry.jobId, error: `ffmpeg not found: ${ffmpeg}` });
+    return;
+  }
+
+  const opts = encodeOptions(entry, args);
+  const pm = ctx.svc.getService("ProcessManager") as ProcessManager;
+  const tid = pm.queueTask(ffmpeg, buildFfmpegArgs(opts), "");
+  if (tid < 0) {
+    stopTimer(entry);
+    jobs.delete(entry.jobId);
+    stopAnim(entry);
+    cleanupDir(entry.workDir);
+    emit(ctx, { type: "error", jobId: entry.jobId, error: "Could not queue the ffmpeg task" });
+    return;
+  }
+
+  anim.encodeTid = tid;
+  anim.moviePath = movieOutputPath(opts);
+  emit(ctx, progressUpdate(entry, "encoding", "Encoding movie\n", 100));
+}
+
+/** Poll the ffmpeg encode task; finish the job once it ends. */
+function pollEncode(
+  ctx: WorkerContext,
+  entry: RenderJobEntry,
+  args: RenderStartArgs,
+): void {
+  const anim = entry.anim!;
+  const pm = ctx.svc.getService("ProcessManager") as ProcessManager;
+  const tid = anim.encodeTid!;
+  const status = pm.getTaskStatus(tid);
+  const out = pm.getResultOutput(tid); // also releases the slot on end
+  const logChunk = out || undefined;
+
+  if (status === TASK_QUEUED || status === TASK_RUNNING) {
+    emit(ctx, progressUpdate(entry, "encoding", logChunk ?? ""));
+    return;
+  }
+  finishAnimJob(ctx, entry, args);
 }
 
 /**
@@ -432,6 +522,14 @@ function pollJob(
   args: RenderStartArgs,
 ): void {
   if (entry.cancelled) return;
+
+  // A movie encode runs as its own single-task phase, outside the per-frame
+  // render -> finalize cycle below.
+  if (entry.anim?.encodeTid != null) {
+    pollEncode(ctx, entry, args);
+    return;
+  }
+
   const { allDone, logChunk: rawLog } = pollTasks(ctx, backend, entry);
 
   let logChunk = rawLog;
@@ -676,6 +774,8 @@ function startAnimJob(
       baseName,
       framePaths: [],
       lastPreviewAt: 0,
+      encodeTid: null,
+      moviePath: null,
     },
   };
   jobs.set(jobId, entry);
@@ -829,7 +929,11 @@ function renderCancel(ctx: WorkerContext, args: RenderCancelArgs): RenderCancelR
   stopAnim(entry);
 
   const pm = ctx.svc.getService("ProcessManager") as ProcessManager;
-  for (const tid of entry.taskIds) {
+  // The current phase's render tasks, plus the ffmpeg encode task if one is
+  // in flight.
+  const tids = [...entry.taskIds];
+  if (entry.anim?.encodeTid != null) tids.push(entry.anim.encodeTid);
+  for (const tid of tids) {
     if (tid >= 0) {
       try {
         pm.kill(tid);

@@ -89,6 +89,7 @@ const PHASE_LABELS: Record<RenderUpdatePhase, string> = {
   exporting: "Exporting scene",
   running: "Rendering",
   blending: "Blending layers",
+  encoding: "Encoding movie",
 };
 
 export function useRenderJob(opts: {

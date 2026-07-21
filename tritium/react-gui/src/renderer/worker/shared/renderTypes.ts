@@ -21,6 +21,8 @@ export interface RenderBinaries {
   povrayInc: string;
   /** blendpng layer-compositing executable. */
   blendpng: string;
+  /** ffmpeg executable (movie encoding). */
+  ffmpeg: string;
 }
 
 /**
@@ -35,6 +37,7 @@ export const DEFAULT_RENDER_BINARIES: RenderBinaries = {
   povrayExe: "~/tmp/proj64_deplibs/povray/bin/povray",
   povrayInc: "~/tmp/proj64_deplibs/povray/include",
   blendpng: "~/tmp/proj64_deplibs/cuemol2/bin/blendpng",
+  ffmpeg: "~/tmp/proj64_deplibs/ffmpeg/bin/ffmpeg",
 };
 
 /** Arguments for the `renderStart` worker service. */
@@ -63,7 +66,7 @@ export interface RenderCancelResult {
 }
 
 /** Coarse phase of a running render. */
-export type RenderUpdatePhase = "exporting" | "running" | "blending";
+export type RenderUpdatePhase = "exporting" | "running" | "blending" | "encoding";
 
 /**
  * Worker -> renderer push payload (channel `render-progress`).
@@ -113,7 +116,12 @@ export type RenderUpdate =
        * and are read back one at a time for the result viewer's frame slider,
        * rather than all being pushed here.
        */
-      movie?: { frameCount: number; outputDir: string; baseName: string };
+      movie?: {
+        frameCount: number;
+        outputDir: string;
+        baseName: string;
+        moviePath?: string;
+      };
     }
   | {
       type: "error";

@@ -20,6 +20,8 @@ export const IPC = {
   SAVE_TEXT_AS:       'dialog:saveTextAs',
   FILE_EXISTS:        'file:exists',
   FILE_BACKUP_RENAME: 'file:backupRename',
+  SHELL_OPEN_PATH:    'shell:openPath',       // invoke: open a file with the OS default app
+  SHELL_REVEAL_PATH:  'shell:revealPath',     // invoke: reveal a file in Finder / Explorer
   LAYOUT_LOAD:    'layout:load',
   LAYOUT_SAVE:    'layout:save',
   UI_LOAD:        'ui:load',

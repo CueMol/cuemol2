@@ -71,7 +71,7 @@ describe('renderStart in-process branch', () => {
                 commonProps: [p('width', 640), p('height', 480), p('unit', 'px'), p('dpi', 600)],
                 backendProps: [],
             } as RenderSettingsSnapshot,
-            binaries: { povrayExe: '', povrayInc: '', blendpng: '' },
+            binaries: { povrayExe: '', povrayInc: '', blendpng: '', ffmpeg: '' },
         }
     }
 

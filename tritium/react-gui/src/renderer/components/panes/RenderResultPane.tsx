@@ -89,16 +89,32 @@ export const RenderResultPane: React.FC<RenderResultPaneProps> = ({ result }) =>
     </div>
   );
 
-  // Result actions, rendered at the start of the viewer's single toolbar. Only
-  // the settings-used popover is kept alongside the viewer's own zoom controls;
-  // save / copy / re-render / show-source were dropped as clutter.
-  const actions = (
-    <Popover content={settingsPopover} placement="bottom-start">
-      <Button small icon={<AppIcon name="ui.properties" aria-hidden />} title="Settings used for this render" />
-    </Popover>
-  );
-
   const movie = result.movie;
+  const moviePath = movie?.moviePath;
+
+  const openMovie = useCallback(() => {
+    if (moviePath) window.electronAPI?.invoke(IPC.SHELL_OPEN_PATH, { path: moviePath });
+  }, [moviePath]);
+  const revealMovie = useCallback(() => {
+    if (moviePath) window.electronAPI?.invoke(IPC.SHELL_REVEAL_PATH, { path: moviePath });
+  }, [moviePath]);
+
+  // Result actions, rendered at the start of the viewer's single toolbar,
+  // beside the viewer's own zoom controls: the settings-used popover, plus
+  // open / reveal for an encoded movie.
+  const actions = (
+    <>
+      <Popover content={settingsPopover} placement="bottom-start">
+        <Button small icon={<AppIcon name="ui.properties" aria-hidden />} title="Settings used for this render" />
+      </Popover>
+      {moviePath && (
+        <>
+          <Button small icon={<AppIcon name="media.play" aria-hidden />} title="Open movie" onClick={openMovie} />
+          <Button small icon={<AppIcon name="ui.folder" aria-hidden />} title="Reveal movie in file browser" onClick={revealMovie} />
+        </>
+      )}
+    </>
+  );
 
   return (
     <div className="render-result-pane">

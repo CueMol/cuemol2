@@ -59,6 +59,8 @@ export interface UiState {
   povrayInc?: string
   /** blendpng executable path (Rendering settings). */
   blendpng?: string
+  /** ffmpeg executable path (Rendering settings). */
+  ffmpeg?: string
   /** APBS executable path (External Tools settings). */
   apbsExe?: string
   /** pdb2pqr executable path (External Tools settings). */
@@ -156,6 +158,7 @@ export interface AppPathInfo {
     povrayExe: string
     povrayInc: string
     blendpng: string
+    ffmpeg: string
   }
   /**
    * Default APBS / pdb2pqr executable paths resolved by Main (getApbsBinaries).

@@ -39,6 +39,8 @@ export interface RenderMovieOutput {
   frameCount: number;
   outputDir: string;
   baseName: string;
+  /** Encoded movie file, when one was produced (makeMovie). */
+  moviePath?: string;
 }
 
 /** A completed render, displayed in the Rendering window. */
