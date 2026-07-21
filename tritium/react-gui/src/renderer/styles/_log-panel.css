@@ -193,22 +193,30 @@
   overflow: hidden;
 }
 
-/* Tab body: execution column, plus the movie-settings column in Movie mode. */
+/* Settings body: the image column (both modes) plus the movie column in
+   Movie mode, side by side so options use horizontal space and the panel
+   scrolls rather than stacking everything into one tall column. */
 .render-panel-body {
   flex: 1;
   display: flex;
   min-height: 0;
 }
 
-.render-panel-main {
+/* Image settings: first column, flexes to fill the leftover width. */
+.render-panel-image {
   flex: 1;
-  display: flex;
-  flex-direction: column;
   min-width: 0;
+  overflow-y: auto;
 }
 
-/* Movie settings sit beside the log rather than above it, so the extra
-   options use horizontal space instead of scrolling the panel. */
+.image-settings-panel {
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--form-row-gap);
+}
+
+/* Movie settings: fixed second column beside the image one. */
 .render-panel-movie {
   flex: 0 0 var(--render-movie-col-w);
   min-width: 0;
@@ -231,6 +239,29 @@
   background: var(--bg-panel-header);
   border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
+}
+
+/* Collapsible log at the bottom of the panel. */
+.render-panel-logsection {
+  flex-shrink: 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.render-panel-log-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-2) var(--space-5);
+  background: var(--bg-panel-header);
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.render-panel-log-toggle:hover {
+  color: var(--text-secondary);
+  background: var(--bg-hover);
 }
 
 /* Image-size preset (quick dropdown; full size controls live in Inspector).
@@ -301,7 +332,8 @@
 
 /* Log area — matches the Output tab (LogView) font, spacing and background. */
 .render-panel-log {
-  flex: 1;
+  /* Bounded height inside the collapse; scrolls when the log is long. */
+  max-height: 160px;
   overflow-y: auto;
   padding: var(--space-2) var(--space-4);
   background: var(--bg-input);

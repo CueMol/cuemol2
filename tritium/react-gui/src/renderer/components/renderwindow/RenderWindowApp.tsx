@@ -19,6 +19,7 @@ import "allotment/dist/style.css";
 import { RenderResultPane } from "../panes/RenderResultPane";
 import { RenderImageViewer } from "../panes/RenderImageViewer";
 import { RenderPanel } from "../panels/RenderPanel";
+import { ImageSettingsPanel } from "../panels/ImageSettingsPanel";
 import { MovieSettingsPanel } from "../panels/MovieSettingsPanel";
 import { RenderSettingsEditor } from "../inspector/RenderSettingsEditor";
 import { useRenderSettings } from "../../hooks/useRenderSettings";
@@ -131,6 +132,16 @@ export const RenderWindowApp: React.FC = () => {
                 job={job}
                 mode={settings.mode}
                 onModeChange={settings.setMode}
+                imagePanel={
+                  <ImageSettingsPanel
+                    commonProps={settings.commonProps}
+                    onChange={settings.handleChange}
+                    preset={settings.preset}
+                    onApplyPreset={handleApplyPreset}
+                    sizePresets={sizePresets}
+                    movie={settings.mode === "movie"}
+                  />
+                }
                 moviePanel={
                   <MovieSettingsPanel
                     settings={settings.movie}
@@ -167,9 +178,6 @@ export const RenderWindowApp: React.FC = () => {
               backendProps={settings.backendProps}
               onBackendChange={settings.setBackend}
               onChange={settings.handleChange}
-              preset={settings.preset}
-              onApplyPreset={handleApplyPreset}
-              sizePresets={sizePresets}
             />
           </div>
         </Allotment.Pane>

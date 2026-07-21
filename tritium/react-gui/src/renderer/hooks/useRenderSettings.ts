@@ -187,6 +187,11 @@ export function useRenderSettings(
   const changeMode = useCallback((next: RenderMode) => {
     setMode(next);
     setPreset(DEFAULT_RENDER_PRESET);
+    // Movie output is pixel-based and hides the unit / DPI controls, so drop
+    // any physical unit left over from still mode (reprojecting to px).
+    if (next === "movie") {
+      setCommonProps((prev) => convertSizeUnit(prev, "px"));
+    }
   }, []);
 
   /** Frozen copy of the current settings, used for a render result. */

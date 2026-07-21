@@ -14,8 +14,8 @@
  * permanently visible.
  */
 
-import React, { useCallback, useRef } from "react";
-import { ProgressBar, type Intent } from "@blueprintjs/core";
+import React, { useCallback, useRef, useState } from "react";
+import { ProgressBar, Collapse, type Intent } from "@blueprintjs/core";
 import { SelectField, FormButton } from "../../h3-kit/form";
 import { AppIcon } from "../AppIcon";
 import { PanelTabButton } from "./PanelTabButton";
@@ -32,7 +32,12 @@ interface RenderPanelProps {
   /** Switch the output mode (i.e. the tab). */
   onModeChange: (mode: RenderMode) => void;
   /**
-   * Movie settings column, shown beside the execution column in Movie mode.
+   * Image-size settings column (both modes). Passed in so this panel stays
+   * unaware of the settings themselves.
+   */
+  imagePanel?: React.ReactNode;
+  /**
+   * Movie settings column, shown beside the image column in Movie mode.
    * Passed in rather than built here so this panel stays unaware of the
    * movie settings themselves.
    */
@@ -87,6 +92,7 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
   job,
   mode,
   onModeChange,
+  imagePanel,
   moviePanel,
   renderable,
   onStart,
@@ -97,6 +103,9 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
   onTargetChange,
 }) => {
   const active = isRenderJobActive(job);
+  // The log is auxiliary, so it starts collapsed; a running job's progress and
+  // Stop button stay visible above it regardless.
+  const [logOpen, setLogOpen] = useState(false);
 
   const barRef = useRef<HTMLDivElement>(null);
   // Collapse toolbar labels (Start/Stop, Render Settings) to icon-only when the
@@ -132,78 +141,99 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
         />
       </div>
 
+      {/* -- Action bar + progress. Kept above the settings and the log so a
+             running job stays visible and cancellable. -- */}
+      <div ref={barRef} className="render-panel-bar">
+        {active ? (
+          <FormButton
+            intent="danger"
+            icon={<AppIcon name="media.stop" aria-hidden />}
+            text="Stop"
+            onClick={onCancel}
+          />
+        ) : (
+          <FormButton
+            intent="primary"
+            icon={<AppIcon name="media.play" aria-hidden />}
+            text="Start Render"
+            onClick={onStart}
+            disabled={!renderable}
+          />
+        )}
+
+        {targetViews && (
+          <span className="render-panel-preset">
+            <span className="render-panel-preset-label type-label">Target</span>
+            <span className="render-panel-target-select">
+              <SelectField
+                value={targetViewId != null ? String(targetViewId) : ""}
+                onChange={handleTargetChange}
+                fill
+                disabled={targetViews.length === 0}
+              >
+                {targetViews.length === 0 && <option value="">(no scene)</option>}
+                {targetViews.map((v) => (
+                  <option key={v.viewId} value={String(v.viewId)}>
+                    {v.title}
+                  </option>
+                ))}
+              </SelectField>
+            </span>
+          </span>
+        )}
+
+        {onOpenSettings && (
+          <FormButton
+            minimal
+            icon={<AppIcon name="ui.settings" aria-hidden />}
+            text="Render Settings"
+            onClick={onOpenSettings}
+            disabled={!renderable}
+          />
+        )}
+
+        {job && (
+          <span className="render-panel-status">
+            {job.phase} · {job.progress}% · {elapsedSec(job)}s
+          </span>
+        )}
+      </div>
+
+      {job && (
+        <div className="render-panel-progress">
+          {/* Whole-job progress. For a movie this spans the entire sequence,
+              so it never resets between frames. */}
+          <ProgressBar
+            value={job.progress / 100}
+            intent={intentForJob(job)}
+            stripes={active}
+            animate={active}
+          />
+        </div>
+      )}
+
+      {/* -- Settings columns: image (both modes) + movie (movie mode). -- */}
       <div className="render-panel-body">
-        {/* -- Execution column (both modes) -- */}
-        <div className="render-panel-main">
-          <div ref={barRef} className="render-panel-bar">
-            {active ? (
-              <FormButton
-                intent="danger"
-                icon={<AppIcon name="media.stop" aria-hidden />}
-                text="Stop"
-                onClick={onCancel}
-              />
-            ) : (
-              <FormButton
-                intent="primary"
-                icon={<AppIcon name="media.play" aria-hidden />}
-                text="Start Render"
-                onClick={onStart}
-                disabled={!renderable}
-              />
-            )}
+        {imagePanel && <div className="render-panel-image">{imagePanel}</div>}
+        {mode === "movie" && moviePanel && (
+          <div className="render-panel-movie">{moviePanel}</div>
+        )}
+      </div>
 
-            {targetViews && (
-              <span className="render-panel-preset">
-                <span className="render-panel-preset-label type-label">Target</span>
-                <span className="render-panel-target-select">
-                  <SelectField
-                    value={targetViewId != null ? String(targetViewId) : ""}
-                    onChange={handleTargetChange}
-                    fill
-                    disabled={targetViews.length === 0}
-                  >
-                    {targetViews.length === 0 && <option value="">(no scene)</option>}
-                    {targetViews.map((v) => (
-                      <option key={v.viewId} value={String(v.viewId)}>
-                        {v.title}
-                      </option>
-                    ))}
-                  </SelectField>
-                </span>
-              </span>
-            )}
-
-            {onOpenSettings && (
-              <FormButton
-                minimal
-                icon={<AppIcon name="ui.settings" aria-hidden />}
-                text="Render Settings"
-                onClick={onOpenSettings}
-                disabled={!renderable}
-              />
-            )}
-
-            {job && (
-              <span className="render-panel-status">
-                {job.phase} · {job.progress}% · {elapsedSec(job)}s
-              </span>
-            )}
-          </div>
-
-          {job && (
-            <div className="render-panel-progress">
-              {/* Whole-job progress. For a movie this spans the entire
-                  sequence, so it never resets between frames. */}
-              <ProgressBar
-                value={job.progress / 100}
-                intent={intentForJob(job)}
-                stripes={active}
-                animate={active}
-              />
-            </div>
-          )}
-
+      {/* -- Log: auxiliary, collapsed by default. -- */}
+      <div className="render-panel-logsection">
+        <button
+          type="button"
+          className="render-panel-log-toggle"
+          onClick={() => setLogOpen((v) => !v)}
+        >
+          <AppIcon
+            name={logOpen ? "ui.caretDown" : "ui.caretRight"}
+            aria-hidden
+          />
+          <span className="type-label">Log</span>
+        </button>
+        <Collapse isOpen={logOpen}>
           <div className="render-panel-log">
             {job && job.log.length > 0 ? (
               job.log.map((line, i) => (
@@ -212,17 +242,10 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
                 </div>
               ))
             ) : (
-              <div className="render-panel-empty">
-                No render yet. Press Start Render to begin.
-              </div>
+              <div className="render-panel-empty">No render log yet.</div>
             )}
           </div>
-        </div>
-
-        {/* -- Movie settings column (Movie mode only) -- */}
-        {mode === "movie" && moviePanel && (
-          <div className="render-panel-movie">{moviePanel}</div>
-        )}
+        </Collapse>
       </div>
     </div>
   );
