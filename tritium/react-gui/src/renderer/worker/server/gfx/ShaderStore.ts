@@ -156,7 +156,6 @@ export class ShaderStore {
 
         this._prog_data[name] = program;
         console.log("shader program register: name=" + name);
-        console.log("shader program register: obj=" + this._prog_data[name]);
 
         return true;
     }

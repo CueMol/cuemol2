@@ -155,8 +155,12 @@ export function createWindow(): void {
     win.focus()
   })
 
-  // Forward renderer/worker console messages to stdout/stderr
+  // Forward renderer/worker console messages to stdout/stderr. In a packaged
+  // app stdout is not attached to a terminal, so info/log level messages are
+  // dropped here: formatting and writing them costs main-process time for
+  // output nobody sees. warn/error are always kept for crash diagnosis.
   win.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+    if (level < 2 && app.isPackaged) return
     const src = sourceId ? ` (${sourceId}:${line})` : ''
     if (level === 3) {
       console.error('[Renderer]', message + src)
@@ -323,8 +327,10 @@ export function createOrFocusRenderWindow(mainWindow: BrowserWindow): void {
     if (!win.isDestroyed()) win.show()
   })
 
-  // Forward console messages like the main window, tagged for telling apart.
+  // Forward console messages like the main window (same packaged-build level
+  // filter), tagged for telling apart.
   win.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+    if (level < 2 && app.isPackaged) return
     const src = sourceId ? ` (${sourceId}:${line})` : ''
     if (level === 3) {
       console.error('[RenderWin]', message + src)
