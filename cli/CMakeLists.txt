@@ -30,6 +30,7 @@ SET(CLI_LINK_LIBRARIES
 # Normal C++ source files
 SET(CLI_SRCS
 cli_main.cpp
+render_scene.cpp
 )
 
 set(DATA_DIR ${CMAKE_SOURCE_DIR}/../data/)
