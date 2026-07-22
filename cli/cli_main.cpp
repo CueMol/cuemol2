@@ -2,6 +2,8 @@
 #include <common.h>
 #include <libcuemol2_api/loader.hpp>
 
+#include "render_scene.hpp"
+
 #include <iostream>
 #include <string>
 #include <optional>
@@ -23,8 +25,7 @@
 #endif
 
 using qlib::LString;
-void process_input(const LString &loadscr, const std::deque<LString> &args,
-                   bool bInvokeIntrShell);
+void process_input(const LString &loadscr, bool bInvokeIntrShell);
 
 #ifndef DEFAULT_CONFIG
 #define DEFAULT_CONFIG "./sysconfig.xml"
@@ -37,19 +38,30 @@ struct Config
     bool interactive;
     std::string input_file;
     std::string config_file;
+
+    /// Output PNG path; non-empty selects headless render mode.
+    std::string render_file;
+    int width;
+    int height;
+    std::string camera;
 };
 
 std::optional<Config> parse_arguments(int argc, const char *argv[])
 {
     /// argment parser
     po::options_description desc("Allowed options");
+    const cuetty::RenderOpts defs;
     desc.add_options()("help,h", "Show help message")("interactive,i",
                                                       "Run in interactive mode")(
         "input", po::value<std::string>()->default_value(""), "Input file")(
-        "config,c", po::value<std::string>()->default_value(""), "Config file");
-    // ("output,o", po::value<std::string>()->default_value("out.txt"), "Output file")
-    // ("verbose,v", po::bool_switch()->default_value(false), "Enable verbose mode")
-    // ("count,n", po::value<int>()->default_value(10), "Number of iterations");
+        "config,c", po::value<std::string>()->default_value(""), "Config file")(
+        "render,r", po::value<std::string>()->default_value(""),
+        "Render the input scene into this PNG file and exit (headless)")(
+        "width", po::value<int>()->default_value(defs.width), "Render width in pixels")(
+        "height", po::value<int>()->default_value(defs.height),
+        "Render height in pixels")("camera",
+                                   po::value<std::string>()->default_value(defs.camera),
+                                   "Camera name to render from");
 
     po::variables_map vm;
 
@@ -70,9 +82,26 @@ std::optional<Config> parse_arguments(int argc, const char *argv[])
         return std::nullopt;
     }
 
-    return Config{vm.count("interactive") > 0,
+    Config config{vm.count("interactive") > 0,
                   vm["input"].as<std::string>(),
-                  vm["config"].as<std::string>()};
+                  vm["config"].as<std::string>(),
+                  vm["render"].as<std::string>(),
+                  vm["width"].as<int>(),
+                  vm["height"].as<int>(),
+                  vm["camera"].as<std::string>()};
+
+    if (!config.render_file.empty()) {
+        if (config.input_file.empty()) {
+            std::cerr << "Error: --render requires --input <scene file>" << std::endl;
+            return std::nullopt;
+        }
+        if (config.width <= 0 || config.height <= 0) {
+            std::cerr << "Error: --width and --height must be positive" << std::endl;
+            return std::nullopt;
+        }
+    }
+
+    return config;
 }
 
 // //
@@ -102,52 +131,43 @@ int internal_main(int argc, const char *argv[])
         return -1;
     }
 
-    int i;
-    LString loadscr;
-    std::deque<LString> args2;
-
-    bool bInvokeIntrShell = config->interactive;
     LString confpath = config->config_file;
     if (confpath.isEmpty()) {
         confpath = DEFAULT_CONFIG;
     }
 
-    // for (i = 1; i < argc; ++i) {
-    //     MB_DPRINTLN("arg%d=%s", i, argv[i]);
-    //     LString value = argv[i];
+    // Render mode never creates a qsys::View (the umbreon exporter walks the
+    // scene through a file DisplayContext), so skip registering the platform's
+    // OpenGL view factory and stay headless.
+    const bool bRender = !config->render_file.empty();
 
-    //     if (value.equals("-i")) {
-    //         bInvokeIntrShell = true;
-    //         continue;
-    //     } else if (value.equals("-conf")) {
-    //         ++i;
-    //         if (i >= argc) break;
-    //         confpath = argv[i];
-    //         // ++i;
-    //         continue;
-    //     } else {
-    //         break;
-    //     }
-    // }
-
-    // for (; i < argc; ++i) {
-    //     MB_DPRINTLN("arg%d=%s", i, argv[i]);
-    //     args2.push_back(argv[i]);
-    // }
-
-    // if (args2.size() > 0) loadscr = args2.front();
-
-    int result = cuemol2::init(confpath, true);
+    int result = cuemol2::init(confpath, !bRender);
     if (result < 0) {
         return result;
     }
 
-    // if (!loadscr.isEmpty()) {
-    process_input(loadscr, args2, bInvokeIntrShell);
-    //}
+    int rc = 0;
+    if (bRender) {
+        cuetty::RenderOpts opts;
+        opts.width = config->width;
+        opts.height = config->height;
+        opts.camera = config->camera;
+        rc = cuetty::renderSceneToPng(config->input_file, config->render_file, opts);
+        // Tear the loaded scene down before the modules are finalized below;
+        // process_input() does the same for the non-render path. Skipping this
+        // crashes in cuemol2::fini().
+        qsys::SceneManager::getInstance()->destroyAllScenes();
+    } else {
+        process_input(config->input_file.c_str(), config->interactive);
+    }
 
     cuemol2::fini();
     cuemol2::fini_qlib();
+
+    if (rc != 0) {
+        printf("=== Terminated with error ===\n");
+        return rc;
+    }
 
     printf("=== Terminated normaly ===\n");
     return 0;
@@ -170,25 +190,22 @@ int main(int argc, const char *argv[])
 
 namespace fs = boost::filesystem;
 
-void process_input(const LString &loadscr, const std::deque<LString> &args,
-                   bool bInvokeIntrShell)
+void process_input(const LString &loadscr, bool bInvokeIntrShell)
 {
     qsys::SceneManager *pSM = qsys::SceneManager::getInstance();
     LOG_DPRINTLN("CueMol version %s build %s", pSM->getVersion().c_str(),
                  pSM->getBuildID().c_str());
 
-    fs::path scr_path(loadscr.c_str());
-
-    fs::path full_path = fs::system_complete(scr_path);
-    if (full_path.extension() == ".qsc") {
-        qsys::LoadSceneCommand cmd;
-        cmd.m_filePath = full_path.string().c_str();
-        cmd.m_fileFmt = "qsc";
-        cmd.run();
-
-        // qsys::ScenePtr rscene = pSM->loadSceneFrom(scr_path.string(), "xml");
-        // qlib::FileOutStream &fos = qlib::FileOutStream::getStdErr();
-        // rscene->writeTo(fos, true);
+    if (!loadscr.isEmpty()) {
+        fs::path full_path = fs::system_complete(fs::path(loadscr.c_str()));
+        if (full_path.extension() == ".qsc") {
+            qsys::LoadSceneCommand cmd;
+            cmd.m_filePath = full_path.string().c_str();
+            // m_fileFmt is left empty on purpose: the command then guesses the
+            // format from the file name. Naming it "qsc" would not resolve --
+            // the registered scene-reader nickname is "qsc_xml".
+            cmd.run();
+        }
     }
 
     if (bInvokeIntrShell) {
