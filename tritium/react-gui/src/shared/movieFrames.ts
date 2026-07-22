@@ -11,3 +11,10 @@
 export function movieFrameFileName(baseName: string, frameIndex: number): string {
   return `${baseName}_frm_${String(frameIndex).padStart(4, '0')}.png`
 }
+
+/**
+ * Output-movie file extensions across all encode formats (see MOVIE_FORMAT_EXT
+ * in renderSettings). Used by the clean-up to remove any encoded movie for a
+ * base name regardless of the format it was made with.
+ */
+export const MOVIE_FILE_EXTENSIONS = ['.mov', '.mp4', '.wmv', '.gif'] as const

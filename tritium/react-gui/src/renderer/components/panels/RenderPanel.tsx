@@ -56,6 +56,13 @@ interface RenderPanelProps {
   /** Whether a complete frame sequence is on disk to re-encode. */
   canEncode?: boolean;
   /**
+   * Delete the intermediate frames and the output movie (movie mode). Shown
+   * only when provided; enabled by `canCleanup`.
+   */
+  onCleanup?: () => void;
+  /** Whether there are frames / a movie on disk to delete. */
+  canCleanup?: boolean;
+  /**
    * Open the Render Settings editor. Omit when the settings editor is
    * permanently visible next to this panel -- the button is then hidden.
    */
@@ -100,6 +107,8 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
   onCancel,
   onEncode,
   canEncode = false,
+  onCleanup,
+  canCleanup = false,
   onOpenSettings,
   targetViews,
   targetViewId,
@@ -177,6 +186,21 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
               canEncode
                 ? "Re-encode the rendered frames into a movie (no re-rendering)"
                 : "No complete frame sequence found in the output folder"
+            }
+          />
+        )}
+
+        {/* Movie mode: delete the intermediate frames and the output movie. */}
+        {!active && onCleanup && (
+          <FormButton
+            icon={<AppIcon name="ui.trash" aria-hidden />}
+            text="Clean up"
+            onClick={onCleanup}
+            disabled={!canCleanup}
+            title={
+              canCleanup
+                ? "Delete the rendered frames and the output movie"
+                : "Nothing to clean up in the output folder"
             }
           />
         )}

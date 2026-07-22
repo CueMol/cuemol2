@@ -76,6 +76,8 @@ export function useRenderWindowClient(): {
   encode: (snapshot: RenderSettingsSnapshot, frameCount: number) => void;
   /** Count the contiguous rendered frames on disk for the given output. */
   checkFrames: (outputDir: string, baseName: string) => Promise<number>;
+  /** Delete the rendered frames and any encoded movie; resolves to true on success. */
+  cleanupFrames: (outputDir: string, baseName: string) => Promise<boolean>;
   cancel: () => void;
   showSource: () => void;
   getViewSize: () => Promise<ViewSizePx | null>;
@@ -189,6 +191,20 @@ export function useRenderWindowClient(): {
     [],
   );
 
+  const cleanupFrames = useCallback(
+    async (outputDir: string, baseName: string): Promise<boolean> => {
+      const api = window.electronAPI;
+      if (!api || !outputDir) return false;
+      try {
+        const res = await api.invoke(IPC.RENDER_FRAMES_CLEANUP, { outputDir, baseName });
+        return res?.ok ?? false;
+      } catch {
+        return false;
+      }
+    },
+    [],
+  );
+
   const cancel = useCallback(() => sendCommand({ type: "cancel" }), []);
   const showSource = useCallback(() => sendCommand({ type: "show-source" }), []);
 
@@ -210,6 +226,7 @@ export function useRenderWindowClient(): {
     start,
     encode,
     checkFrames,
+    cleanupFrames,
     cancel,
     showSource,
     getViewSize,

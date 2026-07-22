@@ -102,6 +102,9 @@ export interface InvokeChannels {
   /** Count the contiguous rendered frames on disk (enables the re-encode button). */
   [IPC.RENDER_FRAMES_CHECK]: { req: { outputDir: string; baseName: string }
                                res: { frameCount: number } }
+  /** Delete the rendered frame images and any encoded movie for a base name. */
+  [IPC.RENDER_FRAMES_CLEANUP]: { req: { outputDir: string; baseName: string }
+                                 res: { ok: boolean; deleted: number } }
   [IPC.NAVI_CTX_SHOW]:     { req: NaviCtxMenuPayload;    res: NaviCtxAction | null }
   [IPC.SCENE_CTX_SHOW]:    { req: SceneCtxMenuPayload;   res: SceneCtxAction | null }
   [IPC.TEXT_CTX_ACTION]:   { req: Exclude<TextCtxAction, 'selectAll'>; res: void }

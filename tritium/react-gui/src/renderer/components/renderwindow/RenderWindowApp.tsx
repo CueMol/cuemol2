@@ -78,6 +78,14 @@ export const RenderWindowApp: React.FC = () => {
     if (availFrames > 0) client.encode(settings.getSnapshot(), availFrames);
   }, [client, settings, availFrames]);
 
+  // Clean up: delete the intermediate frames and the output movie, after a
+  // confirmation.
+  const [confirmCleanup, setConfirmCleanup] = useState(false);
+  const handleConfirmCleanup = useCallback(() => {
+    setConfirmCleanup(false);
+    void client.cleanupFrames(outputDir, baseName).then(() => refreshFrames());
+  }, [client, outputDir, baseName, refreshFrames]);
+
   /** Pick the folder the movie frames are written to. */
   const handlePickFolder = useCallback(() => {
     void (async () => {
@@ -220,6 +228,8 @@ export const RenderWindowApp: React.FC = () => {
                 onCancel={client.cancel}
                 onEncode={isMovieMode ? handleEncode : undefined}
                 canEncode={availFrames > 0}
+                onCleanup={isMovieMode ? () => setConfirmCleanup(true) : undefined}
+                canCleanup={availFrames > 0}
                 targetViews={views}
                 targetViewId={client.targetViewId}
                 onTargetChange={client.setTargetViewId}
@@ -260,6 +270,23 @@ export const RenderWindowApp: React.FC = () => {
         onClose={() => setErrorMsg(null)}
       >
         <p>{errorMsg}</p>
+      </Alert>
+
+      <Alert
+        isOpen={confirmCleanup}
+        intent="danger"
+        icon="trash"
+        confirmButtonText="Delete"
+        cancelButtonText="Cancel"
+        className={theme === "dark" ? "bp5-dark" : undefined}
+        onCancel={() => setConfirmCleanup(false)}
+        onConfirm={handleConfirmCleanup}
+      >
+        <p>
+          Delete the {availFrames} rendered frame
+          {availFrames === 1 ? "" : "s"} and any encoded movie in the output
+          folder? This cannot be undone.
+        </p>
       </Alert>
     </div>
   );

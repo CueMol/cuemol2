@@ -20,7 +20,7 @@ import * as path from 'path'
 import type { BrowserWindow } from 'electron'
 import { IPC } from '../shared/ipcChannels'
 import type { ViewSizePx } from '../shared/ipcTypes'
-import { movieFrameFileName } from '../shared/movieFrames'
+import { movieFrameFileName, MOVIE_FILE_EXTENSIONS } from '../shared/movieFrames'
 import { handleInvoke } from './ipcHandlers'
 
 /** How long to wait for the main window's view-size reply. */
@@ -111,5 +111,31 @@ export function registerRenderWindowIpc(deps: RenderWindowIpcDeps): void {
       n += 1
     }
     return { frameCount: n }
+  })
+
+  // Clean up: delete every rendered frame image (any index) and any encoded
+  // movie for this base name in the output folder. Confirmed on the renderer
+  // side before this is called.
+  handleInvoke(IPC.RENDER_FRAMES_CLEANUP, (_event, { outputDir, baseName }) => {
+    if (!outputDir) return { ok: false, deleted: 0 }
+    const esc = baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const frameRe = new RegExp(`^${esc}_frm_\\d+\\.png$`)
+    const movieNames = new Set(MOVIE_FILE_EXTENSIONS.map((ext) => `${baseName}${ext}`))
+    let deleted = 0
+    try {
+      for (const name of fs.readdirSync(outputDir)) {
+        if (!frameRe.test(name) && !movieNames.has(name)) continue
+        try {
+          fs.rmSync(path.join(outputDir, name), { force: true })
+          deleted += 1
+        } catch {
+          /* leave files we cannot remove */
+        }
+      }
+    } catch {
+      // Output folder gone.
+      return { ok: false, deleted }
+    }
+    return { ok: true, deleted }
   })
 }

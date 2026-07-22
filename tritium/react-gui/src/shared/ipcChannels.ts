@@ -118,6 +118,7 @@ export const IPC = {
   RENDER_VIEW_SIZE_REPLY:   'render-window:view-size-reply',   // invoke: main window -> main
   RENDER_FRAME_READ:        'render-window:frame-read',        // invoke: render window -> main
   RENDER_FRAMES_CHECK:      'render-window:frames-check',      // invoke: render window -> main (count contiguous frames)
+  RENDER_FRAMES_CLEANUP:    'render-window:frames-cleanup',    // invoke: render window -> main (delete frames + movie)
 
   // invoke channel for native viewport context menu
   NAVI_CTX_SHOW: 'navi-ctx:show',
