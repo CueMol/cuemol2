@@ -10,6 +10,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Button, Popover } from "@blueprintjs/core";
 import { AppIcon } from "../AppIcon";
+import { Tooltip } from "../../h3-kit/Tooltip";
 import { SliderField } from "../../h3-kit/form";
 import { IPC } from "../../../shared/ipcChannels";
 
@@ -105,12 +106,20 @@ export const RenderResultPane: React.FC<RenderResultPaneProps> = ({ result }) =>
   const actions = (
     <>
       <Popover content={settingsPopover} placement="bottom-start">
-        <Button small icon={<AppIcon name="ui.properties" aria-hidden />} title="Settings used for this render" />
+        {/* Tooltip nested in the Popover so the button has both (Blueprint
+            merges the refs). */}
+        <Tooltip content="Settings used for this render">
+          <Button small icon={<AppIcon name="ui.properties" aria-hidden />} aria-label="Settings used for this render" />
+        </Tooltip>
       </Popover>
       {moviePath && (
         <>
-          <Button small icon={<AppIcon name="media.play" aria-hidden />} title="Open movie" onClick={openMovie} />
-          <Button small icon={<AppIcon name="ui.folder" aria-hidden />} title="Reveal movie in file browser" onClick={revealMovie} />
+          <Tooltip content="Open the movie in the default player">
+            <Button small icon={<AppIcon name="media.play" aria-hidden />} aria-label="Open movie" onClick={openMovie} />
+          </Tooltip>
+          <Tooltip content="Reveal the movie in the file browser">
+            <Button small icon={<AppIcon name="ui.folder" aria-hidden />} aria-label="Reveal movie in file browser" onClick={revealMovie} />
+          </Tooltip>
         </>
       )}
     </>

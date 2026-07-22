@@ -164,17 +164,18 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
           />
         )}
 
-        {/* Movie mode: re-encode the frames already on disk. Enabled only when
-            a complete frame sequence is present. */}
+        {/* Movie mode: re-encode the frames already on disk into a movie,
+            without re-rendering. Enabled only when a complete frame sequence
+            is present. */}
         {!active && onEncode && (
           <FormButton
             icon={<AppIcon name="file.render" aria-hidden />}
-            text="Encode"
+            text="Re-encode"
             onClick={onEncode}
             disabled={!canEncode}
             title={
               canEncode
-                ? "Encode the rendered frames into a movie"
+                ? "Re-encode the rendered frames into a movie (no re-rendering)"
                 : "No complete frame sequence found in the output folder"
             }
           />
