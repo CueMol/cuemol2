@@ -611,6 +611,8 @@ export interface RenderJobWire {
   startedAt: number
   finishedAt?: number
   source?: RenderSourceWire
+  /** Failure message, present when status is "error". */
+  error?: string
   /** Movie mode: 0-based index of the frame being rendered. */
   frameIndex?: number
   /** Movie mode: total number of frames. */

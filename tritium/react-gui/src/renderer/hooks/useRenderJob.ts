@@ -43,6 +43,8 @@ export interface RenderJob {
   startedAt: number;
   finishedAt?: number;
   source?: RenderSource;
+  /** Failure message, set when status is "error" (shown in a message box). */
+  error?: string;
   /** Movie mode: 0-based index of the frame being rendered. */
   frameIndex?: number;
   /** Movie mode: total number of frames. */
@@ -174,6 +176,7 @@ export function useRenderJob(opts: {
                 status: "error",
                 phase: "Error",
                 finishedAt: Date.now(),
+                error: u.error,
                 log: appendLog(prev.log, [u.error]),
               }
             : prev,
@@ -208,7 +211,7 @@ export function useRenderJob(opts: {
       } catch (e) {
         setJob((prev) =>
           prev
-            ? { ...prev, status: "error", phase: "Error", finishedAt: Date.now(), log: appendLog(prev.log, [String(e)]) }
+            ? { ...prev, status: "error", phase: "Error", finishedAt: Date.now(), error: String(e), log: appendLog(prev.log, [String(e)]) }
             : prev,
         );
         return;
@@ -217,6 +220,7 @@ export function useRenderJob(opts: {
         pendingRef.current = { jobId: res.jobId, params };
         setJob((prev) => (prev ? { ...prev, jobId: res.jobId } : prev));
       } else {
+        const err = res?.error ?? "Render failed to start";
         setJob((prev) =>
           prev
             ? {
@@ -224,7 +228,8 @@ export function useRenderJob(opts: {
                 status: "error",
                 phase: "Error",
                 finishedAt: Date.now(),
-                log: appendLog(prev.log, [res?.error ?? "Render failed to start"]),
+                error: err,
+                log: appendLog(prev.log, [err]),
               }
             : prev,
         );

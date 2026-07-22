@@ -12,10 +12,12 @@
  * result state back.
  */
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Allotment } from "allotment";
+import { Alert } from "@blueprintjs/core";
 import "allotment/dist/style.css";
 
+import { useTheme } from "../../contexts/ThemeContext";
 import { RenderResultPane } from "../panes/RenderResultPane";
 import { RenderImageViewer } from "../panes/RenderImageViewer";
 import { RenderPanel } from "../panels/RenderPanel";
@@ -111,6 +113,18 @@ export const RenderWindowApp: React.FC = () => {
 
   const { job, result, views, preview } = client.state;
   const canRender = client.target !== null;
+
+  // Surface a failed render / encode in a message box (the log is collapsed).
+  // Keyed off the job's startedAt so each failure alerts once.
+  const { theme } = useTheme();
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const shownErrorRef = useRef<number>(0);
+  useEffect(() => {
+    if (job?.status === "error" && job.startedAt !== shownErrorRef.current) {
+      shownErrorRef.current = job.startedAt;
+      setErrorMsg(job.error ?? "The render failed.");
+    }
+  }, [job?.status, job?.startedAt, job?.error]);
 
   // The bottom pane's two columns are composed per mode, split so neither is
   // overloaded: still shows Size | Output, movie shows Image | Movie.
@@ -236,6 +250,17 @@ export const RenderWindowApp: React.FC = () => {
         </Allotment.Pane>
       </Allotment>
       </div>
+
+      <Alert
+        isOpen={errorMsg !== null}
+        intent="danger"
+        icon="error"
+        confirmButtonText="OK"
+        className={theme === "dark" ? "bp5-dark" : undefined}
+        onClose={() => setErrorMsg(null)}
+      >
+        <p>{errorMsg}</p>
+      </Alert>
     </div>
   );
 };
