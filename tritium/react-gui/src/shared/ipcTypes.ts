@@ -654,7 +654,13 @@ export interface RenderTargetViewWire {
 export type RenderWindowCommand =
   /** Start a render. `source` set = the render window's selected target (or
    * a re-render); otherwise the main window falls back to its active view. */
-  | { type: 'start'; snapshot: RenderSettingsSnapshotWire; source?: RenderSourceWire }
+  | {
+      type: 'start'
+      snapshot: RenderSettingsSnapshotWire
+      source?: RenderSourceWire
+      /** Movie re-encode: encode this many existing frames, no rendering. */
+      encodeOnly?: { frameCount: number }
+    }
   | { type: 'cancel' }
   /** Switch the main window to the latest result's source molview tab. */
   | { type: 'show-source' }

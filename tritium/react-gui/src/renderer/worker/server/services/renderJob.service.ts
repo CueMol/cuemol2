@@ -74,10 +74,10 @@ type JobPhase = "render" | "finalize";
  * the poll loop starts the next frame instead of completing the job.
  */
 interface AnimJobState {
-  /** The scene's animation manager, advanced one frame per writeFrame(). */
-  animMgr: AnimMgr;
-  /** Scene being rendered; the backend needs it per frame. */
-  scene: Scene;
+  /** The scene's animation manager (null for a re-encode-only job). */
+  animMgr: AnimMgr | null;
+  /** Scene being rendered (null for a re-encode-only job). */
+  scene: Scene | null;
   /** Total number of frames this job renders. */
   frameCount: number;
   /** 0-based index of the frame currently rendering. */
@@ -203,7 +203,7 @@ function makeTimeValue(ctx: WorkerContext, ms: number): TimeValue {
  * cancel alike. Safe to call more than once.
  */
 function stopAnim(entry: RenderJobEntry): void {
-  if (!entry.anim) return;
+  if (!entry.anim?.animMgr) return;
   try {
     entry.anim.animMgr.stop();
   } catch {
@@ -222,10 +222,11 @@ function submitAnimFrame(
   args: RenderStartArgs,
 ): void {
   const anim = entry.anim!;
+  // This path only runs for a full render, where scene / animMgr are set.
   const exported = backend.exportAnimFrame!(
     ctx,
-    anim.scene,
-    anim.animMgr,
+    anim.scene!,
+    anim.animMgr!,
     args.snapshot,
     entry.workDir,
     anim.currFrame,
@@ -804,8 +805,94 @@ function startAnimJob(
   return { ok: true, jobId };
 }
 
+/**
+ * Re-encode: skip rendering and run ffmpeg over an already-rendered frame
+ * sequence on disk. Reuses the encode phase (startEncode / pollEncode /
+ * finishAnimJob) with a job whose frames are all "already done".
+ */
+function startEncodeOnlyJob(
+  ctx: WorkerContext,
+  args: RenderStartArgs,
+): RenderStartResult {
+  const movie = args.snapshot.movie;
+  if (!movie) return { ok: false, jobId: "", error: "Movie settings are missing" };
+
+  const outputDir = movie.outputDir.trim();
+  const baseName = movie.baseName.trim() || "movie";
+  const frameCount = args.encodeOnly?.frameCount ?? 0;
+  if (!outputDir || !fs.existsSync(outputDir)) {
+    return { ok: false, jobId: "", error: `Output folder not found: ${outputDir}` };
+  }
+  if (frameCount <= 0) return { ok: false, jobId: "", error: "No frames to encode" };
+
+  // The frames already exist; list their paths so finishAnimJob can report
+  // the last one as the result image.
+  const framePaths = Array.from({ length: frameCount }, (_, i) =>
+    path.join(outputDir, movieFrameFileName(baseName, i)),
+  );
+
+  // An empty temp dir stands in for the (unused) render working dir, so the
+  // finish/cancel cleanup never touches the user's output folder.
+  const workDir = fs.mkdtempSync(path.join(os.tmpdir(), "cuemol-encode-"));
+  const jobId = `render-${Date.now()}`;
+  const entry: RenderJobEntry = {
+    jobId,
+    workDir,
+    outputPath: "",
+    startedAt: Date.now(),
+    timer: null,
+    cancelled: false,
+    announcedDir: false,
+    phase: "render",
+    finalizeSpecs: [],
+    taskIds: [],
+    taskProgress: [],
+    inProcess: null,
+    lastPhaseName: "",
+    anim: {
+      animMgr: null,
+      scene: null,
+      frameCount,
+      currFrame: frameCount,
+      outputDir,
+      baseName,
+      framePaths,
+      lastPreviewAt: 0,
+      encodeTid: null,
+      moviePath: null,
+    },
+  };
+  jobs.set(jobId, entry);
+
+  startEncode(ctx, entry, args);
+  if (!jobs.has(jobId)) {
+    // startEncode already emitted an error and cleaned up (e.g. ffmpeg missing).
+    return { ok: false, jobId: "", error: "Could not start the encode" };
+  }
+
+  entry.timer = setInterval(() => {
+    try {
+      // encodeTid is already set, so pollJob branches straight to pollEncode
+      // and never touches the backend.
+      pollJob(ctx, null as unknown as RenderBackend, entry, args);
+    } catch (e) {
+      stopTimer(entry);
+      jobs.delete(jobId);
+      cleanupDir(workDir);
+      emit(ctx, { type: "error", jobId, error: String(e) });
+    }
+  }, POLL_MS);
+
+  return { ok: true, jobId };
+}
+
 /** Start a render job. */
 function renderStart(ctx: WorkerContext, args: RenderStartArgs): RenderStartResult {
+  // Re-encode needs no scene: it runs ffmpeg over frames already on disk.
+  if (args.snapshot.mode === "movie" && args.encodeOnly) {
+    return startEncodeOnlyJob(ctx, args);
+  }
+
   const scene = getSceneOrNull(ctx, args.sceneId);
   if (!scene) return { ok: false, jobId: "", error: "Scene not found" };
 

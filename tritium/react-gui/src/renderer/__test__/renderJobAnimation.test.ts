@@ -307,4 +307,42 @@ describe('renderStart animation branch', () => {
         expect(res.error).toContain('no animation')
         expect(animMgr.setupRender).not.toHaveBeenCalled()
     })
+
+    describe('re-encode only', () => {
+        function encodeArgs(frameCount: number): RenderStartArgs {
+            const a = makeArgs({ makeMovie: true })
+            return { ...a, encodeOnly: { frameCount } }
+        }
+
+        it('encodes existing frames without rendering', () => {
+            // Frames already on disk.
+            for (let i = 0; i < 3; i++) {
+                fs.writeFileSync(
+                    path.join(outputDir, `movie_frm_000${i}.png`),
+                    PNG_BYTES,
+                )
+            }
+            const ctx = makeCtx()
+            const res = services.renderStart(ctx, encodeArgs(3))
+            expect(res.ok).toBe(true)
+            // No scene setup and no frame rendering happened.
+            expect(animMgr.setupRender).not.toHaveBeenCalled()
+            expect(animMgr.writeFrame).not.toHaveBeenCalled()
+            // One ffmpeg task queued straight away.
+            expect(queueTask).toHaveBeenCalledTimes(1)
+            expect(queueTask.mock.calls[0][1]).toContain('movie_frm_%04d.png')
+
+            // Poll once: the encode task ends, the job completes with the movie.
+            intervalCb?.()
+            const complete = pushMessage.mock.calls
+                .map((c) => c[1] as { type: string; movie?: { moviePath?: string } })
+                .find((u) => u.type === 'complete')
+            expect(complete?.movie?.moviePath).toContain('movie.mp4')
+        })
+
+        it('rejects a zero frame count', () => {
+            const res = services.renderStart(makeCtx(), encodeArgs(0))
+            expect(res.ok).toBe(false)
+        })
+    })
 })

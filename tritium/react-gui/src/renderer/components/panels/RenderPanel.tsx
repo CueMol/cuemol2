@@ -49,6 +49,13 @@ interface RenderPanelProps {
   /** Cancel the active render. */
   onCancel: () => void;
   /**
+   * Re-encode the frames already on disk (movie mode). Shown only when
+   * provided; enabled by `canEncode`.
+   */
+  onEncode?: () => void;
+  /** Whether a complete frame sequence is on disk to re-encode. */
+  canEncode?: boolean;
+  /**
    * Open the Render Settings editor. Omit when the settings editor is
    * permanently visible next to this panel -- the button is then hidden.
    */
@@ -91,6 +98,8 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
   renderable,
   onStart,
   onCancel,
+  onEncode,
+  canEncode = false,
   onOpenSettings,
   targetViews,
   targetViewId,
@@ -152,6 +161,22 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
             text="Start Render"
             onClick={onStart}
             disabled={!renderable}
+          />
+        )}
+
+        {/* Movie mode: re-encode the frames already on disk. Enabled only when
+            a complete frame sequence is present. */}
+        {!active && onEncode && (
+          <FormButton
+            icon={<AppIcon name="file.render" aria-hidden />}
+            text="Encode"
+            onClick={onEncode}
+            disabled={!canEncode}
+            title={
+              canEncode
+                ? "Encode the rendered frames into a movie"
+                : "No complete frame sequence found in the output folder"
+            }
           />
         )}
 

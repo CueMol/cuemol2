@@ -49,6 +49,12 @@ export interface RenderStartArgs {
   snapshot: RenderSettingsSnapshot;
   /** External binary paths to use. */
   binaries: RenderBinaries;
+  /**
+   * Movie re-encode: skip rendering and encode an already-rendered frame
+   * sequence (of this many frames) that is on disk in the movie's output
+   * folder. Movie mode only; ignored otherwise.
+   */
+  encodeOnly?: { frameCount: number };
 }
 
 export interface RenderStartResult {

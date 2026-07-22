@@ -72,6 +72,10 @@ export function useRenderWindowClient(): {
   target: RenderTargetViewWire | null;
   /** Start a render of the selected target. */
   start: (snapshot: RenderSettingsSnapshot, source?: RenderSource) => void;
+  /** Re-encode `frameCount` existing frames into a movie (no rendering). */
+  encode: (snapshot: RenderSettingsSnapshot, frameCount: number) => void;
+  /** Count the contiguous rendered frames on disk for the given output. */
+  checkFrames: (outputDir: string, baseName: string) => Promise<number>;
   cancel: () => void;
   showSource: () => void;
   getViewSize: () => Promise<ViewSizePx | null>;
@@ -160,6 +164,31 @@ export function useRenderWindowClient(): {
     [],
   );
 
+  const encode = useCallback(
+    (snapshot: RenderSettingsSnapshot, frameCount: number) => {
+      const t = targetRef.current;
+      const source = t
+        ? { sceneId: t.sceneId, sceneName: t.sceneName, viewId: t.viewId }
+        : undefined;
+      sendCommand({ type: "start", snapshot, source, encodeOnly: { frameCount } });
+    },
+    [],
+  );
+
+  const checkFrames = useCallback(
+    async (outputDir: string, baseName: string): Promise<number> => {
+      const api = window.electronAPI;
+      if (!api || !outputDir) return 0;
+      try {
+        const res = await api.invoke(IPC.RENDER_FRAMES_CHECK, { outputDir, baseName });
+        return res?.frameCount ?? 0;
+      } catch {
+        return 0;
+      }
+    },
+    [],
+  );
+
   const cancel = useCallback(() => sendCommand({ type: "cancel" }), []);
   const showSource = useCallback(() => sendCommand({ type: "show-source" }), []);
 
@@ -179,6 +208,8 @@ export function useRenderWindowClient(): {
     setTargetViewId,
     target,
     start,
+    encode,
+    checkFrames,
     cancel,
     showSource,
     getViewSize,

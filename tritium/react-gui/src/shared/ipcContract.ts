@@ -99,6 +99,9 @@ export interface InvokeChannels {
   /** Read one frame of a finished movie render back off disk (frame slider). */
   [IPC.RENDER_FRAME_READ]: { req: { outputDir: string; baseName: string; frameIndex: number }
                              res: { dataUrl: string | null } }
+  /** Count the contiguous rendered frames on disk (enables the re-encode button). */
+  [IPC.RENDER_FRAMES_CHECK]: { req: { outputDir: string; baseName: string }
+                               res: { frameCount: number } }
   [IPC.NAVI_CTX_SHOW]:     { req: NaviCtxMenuPayload;    res: NaviCtxAction | null }
   [IPC.SCENE_CTX_SHOW]:    { req: SceneCtxMenuPayload;   res: SceneCtxAction | null }
   [IPC.TEXT_CTX_ACTION]:   { req: Exclude<TextCtxAction, 'selectAll'>; res: void }

@@ -99,4 +99,17 @@ export function registerRenderWindowIpc(deps: RenderWindowIpcDeps): void {
       return { dataUrl: null }
     }
   })
+
+  // Re-encode gate: count the contiguous rendered frames on disk, starting at
+  // frame 0. A gap means the sequence is incomplete, so counting stops there.
+  handleInvoke(IPC.RENDER_FRAMES_CHECK, (_event, { outputDir, baseName }) => {
+    if (!outputDir) return { frameCount: 0 }
+    let n = 0
+    for (;;) {
+      const file = path.join(outputDir, movieFrameFileName(baseName, n))
+      if (!fs.existsSync(file)) break
+      n += 1
+    }
+    return { frameCount: n }
+  })
 }

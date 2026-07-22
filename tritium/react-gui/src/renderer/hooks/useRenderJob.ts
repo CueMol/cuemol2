@@ -62,8 +62,10 @@ export interface RenderStartParams {
   viewId?: number;
   snapshot: RenderSettingsSnapshot;
   source: RenderSource;
-  /** External binary paths (POV-Ray / blendpng). */
+  /** External binary paths (POV-Ray / blendpng / ffmpeg). */
   binaries: RenderBinaries;
+  /** Movie re-encode: encode this many already-rendered frames, no rendering. */
+  encodeOnly?: { frameCount: number };
 }
 
 const ACTIVE_STATUSES: RenderJobStatus[] = ["exporting", "running", "blending"];
@@ -184,12 +186,13 @@ export function useRenderJob(opts: {
   const start = useCallback(
     async (params: RenderStartParams) => {
       if (!cm) return;
+      const encoding = params.encodeOnly !== undefined;
       setJob({
         jobId: "",
-        status: "exporting",
+        status: encoding ? "blending" : "exporting",
         progress: 0,
-        phase: "Exporting scene",
-        log: ["Render started"],
+        phase: encoding ? "Encoding movie" : "Exporting scene",
+        log: [encoding ? "Encode started" : "Render started"],
         startedAt: Date.now(),
         source: params.source,
       });
@@ -200,6 +203,7 @@ export function useRenderJob(opts: {
           viewId: params.viewId,
           snapshot: params.snapshot,
           binaries: params.binaries,
+          ...(params.encodeOnly ? { encodeOnly: params.encodeOnly } : {}),
         });
       } catch (e) {
         setJob((prev) =>

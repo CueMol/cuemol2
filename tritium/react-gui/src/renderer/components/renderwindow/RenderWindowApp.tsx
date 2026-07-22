@@ -12,7 +12,7 @@
  * result state back.
  */
 
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Allotment } from "allotment";
 import "allotment/dist/style.css";
 
@@ -51,6 +51,30 @@ export const RenderWindowApp: React.FC = () => {
   const handleStart = useCallback(() => {
     client.start(settings.getSnapshot());
   }, [client, settings]);
+
+  // Re-encode gate: how many contiguous frames sit in the movie output folder.
+  // Re-checked when the movie output settings change and after a job settles
+  // (a render just wrote frames, or an encode consumed them). Only meaningful
+  // in movie mode.
+  const [availFrames, setAvailFrames] = useState(0);
+  const isMovieMode = settings.mode === "movie";
+  const { outputDir, baseName } = settings.movie;
+  const jobStatus = client.state.job?.status;
+  const refreshFrames = useCallback(() => {
+    if (!isMovieMode) {
+      setAvailFrames(0);
+      return;
+    }
+    void client.checkFrames(outputDir, baseName).then(setAvailFrames);
+  }, [client, isMovieMode, outputDir, baseName]);
+  useEffect(() => {
+    refreshFrames();
+  }, [refreshFrames, jobStatus]);
+
+  /** Re-encode the frames already on disk (no rendering). */
+  const handleEncode = useCallback(() => {
+    if (availFrames > 0) client.encode(settings.getSnapshot(), availFrames);
+  }, [client, settings, availFrames]);
 
   /** Pick the folder the movie frames are written to. */
   const handlePickFolder = useCallback(() => {
@@ -180,6 +204,8 @@ export const RenderWindowApp: React.FC = () => {
                 renderable={canRender}
                 onStart={handleStart}
                 onCancel={client.cancel}
+                onEncode={isMovieMode ? handleEncode : undefined}
+                canEncode={availFrames > 0}
                 targetViews={views}
                 targetViewId={client.targetViewId}
                 onTargetChange={client.setTargetViewId}

@@ -143,6 +143,12 @@ export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): void {
             };
           }
         }
+        // A re-encode needs no scene (it runs over frames already on disk);
+        // stand in a placeholder source for the result display if none exists.
+        if (!source && cmd.encodeOnly) {
+          const movie = (cmd.snapshot as RenderSettingsSnapshot).movie;
+          source = { sceneId: -1, sceneName: movie?.baseName || "Movie" };
+        }
         if (!source) return;
         void rj.start({
           sceneId: source.sceneId,
@@ -150,6 +156,7 @@ export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): void {
           snapshot: cmd.snapshot as RenderSettingsSnapshot,
           source,
           binaries: a.binaries,
+          ...(cmd.encodeOnly ? { encodeOnly: cmd.encodeOnly } : {}),
         });
         break;
       }
