@@ -160,6 +160,7 @@ export const APP_ICONS = {
   "ui.tint": { lib: "phosphor", Comp: Drop },
   "ui.widget": { lib: "phosphor", Comp: SquaresFour },
   "ui.wrench": { lib: "phosphor", Comp: Wrench },
+  "ui.folder": { lib: "phosphor", Comp: FolderOpen },
   "ui.filter": { lib: "phosphor", Comp: Funnel },
   "ui.undo": { lib: "phosphor", Comp: ArrowUUpLeft },
   "ui.redo": { lib: "phosphor", Comp: ArrowUUpRight },

@@ -56,6 +56,7 @@ namespace anim {
     ~RendXformAnim() override;
 
     void onPropInit(AnimMgr *pMgr, qlib::uid_t tgt_uid) override;
+    void onPropSave(AnimMgr *pMgr, qlib::uid_t tgt_uid) override;
 
     void onStart(qlib::time_value elapsed, AnimMgr *pMgr) override;
     void onTimer(qlib::time_value elapsed, AnimMgr *pMgr) override;

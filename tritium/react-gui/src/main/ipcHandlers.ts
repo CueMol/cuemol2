@@ -6,8 +6,7 @@
  * response shapes from `shared/ipcContract`.
  */
 
-import { ipcMain, app, dialog, nativeTheme } from 'electron'
-import type { BrowserWindow } from 'electron'
+import { ipcMain, app, dialog, nativeTheme, shell, BrowserWindow } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import { IPC } from '../shared/ipcChannels'
@@ -96,6 +95,7 @@ function getRenderBinaries(): AppPathInfo['defaultRenderBinaries'] {
       povrayExe: path.join(res, 'bundle_apps', 'povray', 'bin', `povray${exe}`),
       povrayInc: path.join(res, 'bundle_apps', 'povray', 'include'),
       blendpng: path.join(res, 'cuemol2', 'bin', `blendpng${exe}`),
+      ffmpeg: path.join(res, 'bundle_apps', 'ffmpeg', 'bin', `ffmpeg${exe}`),
     }
   }
   const root = process.env.LIBCUEMOL2_ROOT
@@ -104,6 +104,7 @@ function getRenderBinaries(): AppPathInfo['defaultRenderBinaries'] {
     povrayExe: bundle ? path.join(bundle, 'povray', 'bin', `povray${exe}`) : '',
     povrayInc: bundle ? path.join(bundle, 'povray', 'include') : '',
     blendpng: root ? path.join(root, 'bin', `blendpng${exe}`) : '',
+    ffmpeg: bundle ? path.join(bundle, 'ffmpeg', 'bin', `ffmpeg${exe}`) : '',
   }
 }
 
@@ -250,7 +251,12 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   )
 
   handleInvoke(IPC.DIALOG_PICK_PATH, async (_event, payload) =>
-    handlePickPathDialog(mainWindow, payload),
+    // Parent the picker to the window that asked for it, so a request from
+    // the Rendering window is modal to that window, not the main one.
+    handlePickPathDialog(
+      BrowserWindow.fromWebContents(_event.sender) ?? mainWindow,
+      payload,
+    ),
   )
 
   handleInvoke(IPC.SAVE_TEXT_AS, async (_event, payload) =>
@@ -258,6 +264,18 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   )
 
   handleInvoke(IPC.FILE_EXISTS, (_event, payload) => handleFileExists(payload.path))
+
+  // Open a produced file (e.g. a rendered movie) in the OS default app.
+  handleInvoke(IPC.SHELL_OPEN_PATH, async (_event, { path: p }) => {
+    const error = await shell.openPath(p)
+    return { ok: error === '', ...(error ? { error } : {}) }
+  })
+
+  // Reveal a produced file in Finder / Explorer.
+  handleInvoke(IPC.SHELL_REVEAL_PATH, (_event, { path: p }) => {
+    shell.showItemInFolder(p)
+    return { ok: true }
+  })
 
   handleInvoke(IPC.FILE_BACKUP_RENAME, (_event, payload) => handleBackupRename(payload.path))
 

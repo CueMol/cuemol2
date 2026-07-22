@@ -193,6 +193,40 @@
   overflow: hidden;
 }
 
+/* Settings body: two resizable columns (Allotment). Start / progress above
+   and the log below stay full-width, outside this split. */
+.render-panel-body {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Each Allotment pane scrolls its own column. */
+.render-panel-col {
+  height: 100%;
+  overflow-y: auto;
+}
+
+.image-settings-panel,
+.movie-settings-panel {
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--form-row-gap);
+}
+
+/* Width x height on one row. */
+.image-size-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.image-size-x {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
 .render-panel-bar {
   display: flex;
   align-items: center;
@@ -201,6 +235,30 @@
   background: var(--bg-panel-header);
   border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
+}
+
+/* Collapsible log at the bottom of the panel. */
+.render-panel-logsection {
+  flex-shrink: 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.render-panel-log-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-2) var(--space-5);
+  background: var(--bg-panel-header);
+  border: none;
+  /* Enabled-widget contrast: --text-muted reads as disabled. */
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.render-panel-log-toggle:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
 }
 
 /* Image-size preset (quick dropdown; full size controls live in Inspector).
@@ -261,9 +319,18 @@
   flex-shrink: 0;
 }
 
+/* Frame slider under a finished movie's image. */
+.render-result-frames {
+  padding: var(--space-3) var(--space-5);
+  background: var(--bg-panel-header);
+  border-top: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
 /* Log area — matches the Output tab (LogView) font, spacing and background. */
 .render-panel-log {
-  flex: 1;
+  /* Bounded height inside the collapse; scrolls when the log is long. */
+  max-height: 160px;
   overflow-y: auto;
   padding: var(--space-2) var(--space-4);
   background: var(--bg-input);

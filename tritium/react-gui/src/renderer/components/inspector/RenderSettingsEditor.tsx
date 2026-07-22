@@ -18,20 +18,19 @@ import { PropGroupedEditor } from "./PropGroupedEditor";
 import type { PropDef } from "../../data/rendererProperties";
 import {
   RENDER_COMMON_GROUPS,
-  RENDER_SIZE_PRESETS,
   type RenderBackendId,
   type RenderGroupDef,
 } from "../../data/renderSettings";
 import { RENDER_BACKENDS } from "../../data/renderBackends";
 
 /**
- * Display order for every settings group (common + any backend's). Groups with
- * no visible props are dropped by PropGroupedEditor, so this superset is safe
- * for every backend. Backend groups not listed here are appended in their
- * declared order.
+ * Display order for every settings group (common + any backend's). The Image
+ * group is intentionally absent: image-size settings live in the bottom pane
+ * (ImageSettingsPanel), not here. Groups with no visible props are dropped by
+ * PropGroupedEditor, so this superset is safe for every backend. Backend
+ * groups not listed here are appended in their declared order.
  */
 const GROUP_ORDER = [
-  "Image",
   "Camera",
   "Quality",
   "Edges",
@@ -54,10 +53,6 @@ interface RenderSettingsEditorProps {
   onBackendChange: (id: RenderBackendId) => void;
   /** Called when any setting value changes. */
   onChange: (key: string, value: string | number | boolean) => void;
-  /** Currently selected image-size preset label (consolidated here from the panel). */
-  preset: string;
-  /** Called when the user picks an image-size preset. */
-  onApplyPreset: (label: string) => void;
 }
 
 export const RenderSettingsEditor: React.FC<RenderSettingsEditorProps> = ({
@@ -67,8 +62,6 @@ export const RenderSettingsEditor: React.FC<RenderSettingsEditorProps> = ({
   backendProps,
   onBackendChange,
   onChange,
-  preset,
-  onApplyPreset,
 }) => {
   const handleBackendChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -77,23 +70,16 @@ export const RenderSettingsEditor: React.FC<RenderSettingsEditorProps> = ({
     [onBackendChange],
   );
 
-  const handlePresetChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
-      onApplyPreset(e.currentTarget.value);
-    },
-    [onApplyPreset],
-  );
-
   const backendGroups = RENDER_BACKENDS[backend].groups;
 
   // Hide common settings the active backend does not honor (e.g. Umbreon has no
-  // stereo / post-blend). PropGroupedEditor drops any group left with no props,
-  // so a fully-hidden common group simply disappears (no empty accordion).
+  // stereo / post-blend), and the Image group, which lives in the bottom pane.
+  // PropGroupedEditor drops any group left with no props, so a fully-hidden
+  // common group simply disappears (no empty accordion).
   const hiddenCommon = new Set(RENDER_BACKENDS[backend].unsupportedCommonKeys ?? []);
-  const visibleCommonProps =
-    hiddenCommon.size === 0
-      ? commonProps
-      : commonProps.filter((p) => !hiddenCommon.has(p.key));
+  const visibleCommonProps = commonProps.filter(
+    (p) => p.group !== "Image" && !hiddenCommon.has(p.key),
+  );
 
   // Merge common + backend props and their groups so shared group keys (e.g.
   // "Quality", "Edges") render as a single accordion. The backend's group def
@@ -127,26 +113,13 @@ export const RenderSettingsEditor: React.FC<RenderSettingsEditorProps> = ({
         </HTMLSelect>
       </div>
 
-      {/* -- Image-size preset (consolidated from the bottom panel). The exact
-             size lives in the Image group's width / height fields below. -- */}
-      <div className="insp-render-backend-bar">
-        <span className="insp-prop-label">Image size</span>
-        <HTMLSelect
-          className="insp-select h3-form-select"
-          fill
-          value={preset}
-          onChange={handlePresetChange}
-        >
-          {RENDER_SIZE_PRESETS.map((p) => (
-            <option key={p.label} value={p.label}>
-              {p.label}
-            </option>
-          ))}
-        </HTMLSelect>
-      </div>
-
-      {/* -- One merged set of ordered groups (common + backend) -- */}
-      <PropGroupedEditor properties={allProps} groups={orderedGroups} onChange={onChange} />
+      {/* -- One merged set of ordered groups (common + backend). Image-size
+             settings are not here; they live in the bottom pane. -- */}
+      <PropGroupedEditor
+        properties={allProps}
+        groups={orderedGroups}
+        onChange={onChange}
+      />
     </div>
   );
 };

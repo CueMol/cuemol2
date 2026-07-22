@@ -48,6 +48,7 @@ describe('umbreonBackend.beginInProcess', () => {
         const scene = { __scene: true }
 
         const snapshot: RenderSettingsSnapshot = {
+            mode: 'still',
             backend: 'umbreon',
             commonProps: [
                 p('projection', 'orthographic'),
@@ -147,6 +148,7 @@ describe('umbreonBackend.beginInProcess', () => {
             strMgr: { createHandler: vi.fn(() => exporter) },
         } as unknown as WorkerContext
         const snapshot: RenderSettingsSnapshot = {
+            mode: 'still',
             backend: 'umbreon',
             commonProps: [p('width', 640), p('height', 480), p('unit', 'px'), p('dpi', 600)],
             backendProps: [],
@@ -162,6 +164,7 @@ describe('umbreonBackend.beginInProcess', () => {
             strMgr: { createHandler: vi.fn(() => exporter) },
         } as unknown as WorkerContext
         const snapshot: RenderSettingsSnapshot = {
+            mode: 'still',
             backend: 'umbreon',
             commonProps: [p('width', 640), p('height', 480), p('unit', 'px'), p('dpi', 600)],
             backendProps: [],

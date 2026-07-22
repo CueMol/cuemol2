@@ -22,8 +22,10 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 
+import type { AnimMgr } from "@cuemol/core/src/wrappers/AnimMgr";
 import type { ProcessManager } from "@cuemol/core/src/wrappers/ProcessManager";
 import type { Scene } from "@cuemol/core/src/wrappers/Scene";
+import type { TimeValue } from "@cuemol/core/src/wrappers/TimeValue";
 import type { WorkerContext } from "../types/WorkerContext";
 import type {
   RenderStartArgs,
@@ -31,6 +33,7 @@ import type {
   RenderCancelArgs,
   RenderCancelResult,
   RenderUpdate,
+  RenderUpdatePhase,
 } from "../../shared/renderTypes";
 import { RENDER_PROGRESS_CHANNEL } from "../../shared/renderTypes";
 import { getRenderBackend, type RenderBackend } from "./renderBackends";
@@ -40,6 +43,13 @@ import {
   type InProcessRender,
 } from "./renderBackends/RenderBackend";
 import { getSceneOrNull } from "./helpers/sceneResolver";
+import { getAnimMgrOrNull } from "./helpers/animResolve";
+import { movieFrameFileName } from "../../../../shared/movieFrames";
+import {
+  buildFfmpegArgs,
+  movieOutputPath,
+  type FfmpegEncodeOptions,
+} from "./ffmpegEncode";
 
 /** Poll interval for external process status / stdout. */
 const POLL_MS = 700;
@@ -57,6 +67,46 @@ const TASK_RUNNING = 1;
 
 /** Phase of a render job. */
 type JobPhase = "render" | "finalize";
+
+/**
+ * State of an in-flight animation render. The job renders one frame at a
+ * time: each frame runs the same render -> finalize phases as a still, and
+ * the poll loop starts the next frame instead of completing the job.
+ */
+interface AnimJobState {
+  /** The scene's animation manager (null for a re-encode-only job). */
+  animMgr: AnimMgr | null;
+  /** Scene being rendered (null for a re-encode-only job). */
+  scene: Scene | null;
+  /** Total number of frames this job renders. */
+  frameCount: number;
+  /** 0-based index of the frame currently rendering. */
+  currFrame: number;
+  /** Folder finished frames are moved into. */
+  outputDir: string;
+  /** Base name of the output files. */
+  baseName: string;
+  /** Output paths of the frames finished so far. */
+  framePaths: string[];
+  /** When the last live-preview image was pushed (rate limiting). */
+  lastPreviewAt: number;
+  /** Movie encode in progress: the ffmpeg task id, else null. */
+  encodeTid: number | null;
+  /** Encoded movie path, once the encode has been queued. */
+  moviePath: string | null;
+}
+
+/**
+ * Shortest gap between live-preview pushes. A preview carries a full image,
+ * so it is kept well below the progress-tick rate; POV-Ray frames take
+ * seconds anyway, but a cheap backend could otherwise stream one per frame.
+ */
+const PREVIEW_MIN_INTERVAL_MS = 1000;
+
+/** Expand a leading `~` to the user's home directory. */
+function expandHomePath(p: string): string {
+  return p.startsWith("~/") ? path.join(os.homedir(), p.slice(2)) : p;
+}
 
 /** State of one in-flight render job. */
 interface RenderJobEntry {
@@ -80,6 +130,8 @@ interface RenderJobEntry {
   inProcess: InProcessRender | null;
   /** Last in-process phase name pushed to the log (so it is logged on change). */
   lastPhaseName: string;
+  /** Animation state; null for a still render. */
+  anim: AnimJobState | null;
 }
 
 const jobs = new Map<string, RenderJobEntry>();
@@ -135,6 +187,269 @@ function finishJob(
   }
 }
 
+// --- Animation (movie) rendering ---
+
+/** Create a C++ TimeValue holding `ms` milliseconds. */
+function makeTimeValue(ctx: WorkerContext, ms: number): TimeValue {
+  const tv = ctx.svc.createObj("TimeValue") as TimeValue | null;
+  if (!tv) throw new Error("cannot create TimeValue");
+  tv.millisec = Math.max(0, Math.round(ms));
+  return tv;
+}
+
+/**
+ * Stop the animation manager. This is what restores the scene properties the
+ * animation overwrote, so it must run on every exit -- completion, error and
+ * cancel alike. Safe to call more than once.
+ */
+function stopAnim(entry: RenderJobEntry): void {
+  if (!entry.anim?.animMgr) return;
+  try {
+    entry.anim.animMgr.stop();
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Export the current frame and queue its render tasks, reusing the still
+ * pipeline's phase fields so pollJob drives it unchanged.
+ */
+function submitAnimFrame(
+  ctx: WorkerContext,
+  backend: RenderBackend,
+  entry: RenderJobEntry,
+  args: RenderStartArgs,
+): void {
+  const anim = entry.anim!;
+  // This path only runs for a full render, where scene / animMgr are set.
+  const exported = backend.exportAnimFrame!(
+    ctx,
+    anim.scene!,
+    anim.animMgr!,
+    args.snapshot,
+    entry.workDir,
+    anim.currFrame,
+  );
+
+  const tasks = backend.buildTasks(exported, args.snapshot, args.binaries);
+  const renderSpecs = tasks.filter((t) => t.kind === "render");
+  if (renderSpecs.length === 0) throw new Error("backend produced no render tasks");
+
+  // Fail on the first frame rather than after queueing a whole sequence.
+  if (anim.currFrame === 0) {
+    for (const exe of new Set(tasks.map((t) => t.exe))) {
+      if (!fs.existsSync(exe)) throw new Error(`Executable not found: ${exe}`);
+    }
+  }
+
+  const pm = ctx.svc.getService("ProcessManager") as ProcessManager;
+  if (renderSpecs.length > pm.getSlotSize()) {
+    pm.setSlotSize(renderSpecs.length);
+  }
+  const taskIds: number[] = [];
+  for (const t of renderSpecs) {
+    const tid = pm.queueTask(t.exe, t.args, "");
+    if (tid < 0) throw new Error("ProcessManager could not queue a render task");
+    taskIds.push(tid);
+  }
+
+  entry.outputPath = backend.outputImagePath(exported);
+  entry.phase = "render";
+  entry.finalizeSpecs = tasks.filter((t) => t.kind === "finalize");
+  entry.taskIds = taskIds;
+  entry.taskProgress = taskIds.map(() => 0);
+}
+
+/** Finish an animation job: stop the animation and report the last frame. */
+function finishAnimJob(
+  ctx: WorkerContext,
+  entry: RenderJobEntry,
+  args: RenderStartArgs,
+): void {
+  const anim = entry.anim!;
+  stopTimer(entry);
+  jobs.delete(entry.jobId);
+  stopAnim(entry);
+  cleanupDir(entry.workDir);
+
+  // The frame sequence is the real output; the last frame stands in as the
+  // result image so the window has something to show.
+  const lastFrame = anim.framePaths[anim.framePaths.length - 1];
+  const { width, height } = pixelImageSize(args.snapshot.commonProps);
+  try {
+    const buf = fs.readFileSync(lastFrame);
+    emit(ctx, {
+      type: "complete",
+      jobId: entry.jobId,
+      imageDataUrl: `data:image/png;base64,${buf.toString("base64")}`,
+      width,
+      height,
+      elapsedSec: (Date.now() - entry.startedAt) / 1000,
+      movie: {
+        frameCount: anim.framePaths.length,
+        outputDir: anim.outputDir,
+        baseName: anim.baseName,
+        ...(anim.moviePath ? { moviePath: anim.moviePath } : {}),
+      },
+    });
+  } catch (e) {
+    emit(ctx, {
+      type: "error",
+      jobId: entry.jobId,
+      error: `Frames not produced: ${String(e)}`,
+    });
+  }
+}
+
+/**
+ * The current frame finished: move its image into the output folder and
+ * either start the next frame or finish the job.
+ */
+function advanceAnimFrame(
+  ctx: WorkerContext,
+  backend: RenderBackend,
+  entry: RenderJobEntry,
+  args: RenderStartArgs,
+): void {
+  const anim = entry.anim!;
+  const dest = path.join(
+    anim.outputDir,
+    movieFrameFileName(anim.baseName, anim.currFrame),
+  );
+  try {
+    fs.renameSync(entry.outputPath, dest);
+  } catch {
+    // rename fails across devices; fall back to copy + remove.
+    fs.copyFileSync(entry.outputPath, dest);
+    fs.rmSync(entry.outputPath, { force: true });
+  }
+  anim.framePaths.push(dest);
+  const finishedIndex = anim.currFrame;
+  anim.currFrame += 1;
+  const wasLast = anim.currFrame >= anim.frameCount;
+
+  // Live preview of the frame just finished. The last frame is skipped
+  // because finishAnimJob reports it as the result image straight after.
+  const now = Date.now();
+  if (!wasLast && now - anim.lastPreviewAt >= PREVIEW_MIN_INTERVAL_MS) {
+    anim.lastPreviewAt = now;
+    try {
+      const size = pixelImageSize(args.snapshot.commonProps);
+      emit(ctx, {
+        type: "framePreview",
+        jobId: entry.jobId,
+        frameIndex: finishedIndex,
+        dataUrl: `data:image/png;base64,${fs.readFileSync(dest).toString("base64")}`,
+        width: size.width,
+        height: size.height,
+      });
+    } catch {
+      /* the preview is best-effort; the render itself carries on */
+    }
+  }
+
+  if (wasLast) {
+    // All frames are on disk. Encode them if asked, otherwise finish.
+    if (shouldEncode(args)) startEncode(ctx, entry, args);
+    else finishAnimJob(ctx, entry, args);
+    return;
+  }
+
+  emit(
+    ctx,
+    progressUpdate(entry, "running", `Frame ${anim.currFrame + 1} / ${anim.frameCount}\n`, 0),
+  );
+  submitAnimFrame(ctx, backend, entry, args);
+}
+
+/** Whether this job should encode a movie (asked for, and ffmpeg is set). */
+function shouldEncode(args: RenderStartArgs): boolean {
+  return Boolean(args.snapshot.movie?.makeMovie) && Boolean(args.binaries.ffmpeg);
+}
+
+/** ffmpeg options for this job, from the frames on disk and the snapshot. */
+function encodeOptions(entry: RenderJobEntry, args: RenderStartArgs): FfmpegEncodeOptions {
+  const anim = entry.anim!;
+  const movie = args.snapshot.movie!;
+  return {
+    outputDir: anim.outputDir,
+    baseName: anim.baseName,
+    fps: movie.fps,
+    frameCount: anim.framePaths.length,
+    format: movie.movieFormat,
+    bitrateKbps: movie.bitrateKbps,
+  };
+}
+
+/** Queue the ffmpeg encode task and move the job into its encoding phase. */
+function startEncode(
+  ctx: WorkerContext,
+  entry: RenderJobEntry,
+  args: RenderStartArgs,
+): void {
+  const anim = entry.anim!;
+  const ffmpeg = expandHomePath(args.binaries.ffmpeg);
+  if (!fs.existsSync(ffmpeg)) {
+    stopTimer(entry);
+    jobs.delete(entry.jobId);
+    stopAnim(entry);
+    cleanupDir(entry.workDir);
+    emit(ctx, { type: "error", jobId: entry.jobId, error: `ffmpeg not found: ${ffmpeg}` });
+    return;
+  }
+
+  const opts = encodeOptions(entry, args);
+  const pm = ctx.svc.getService("ProcessManager") as ProcessManager;
+  const tid = pm.queueTask(ffmpeg, buildFfmpegArgs(opts), "");
+  if (tid < 0) {
+    stopTimer(entry);
+    jobs.delete(entry.jobId);
+    stopAnim(entry);
+    cleanupDir(entry.workDir);
+    emit(ctx, { type: "error", jobId: entry.jobId, error: "Could not queue the ffmpeg task" });
+    return;
+  }
+
+  anim.encodeTid = tid;
+  anim.moviePath = movieOutputPath(opts);
+  emit(ctx, progressUpdate(entry, "encoding", "Encoding movie\n", 100));
+}
+
+/** Poll the ffmpeg encode task; finish the job once it ends. */
+function pollEncode(
+  ctx: WorkerContext,
+  entry: RenderJobEntry,
+  args: RenderStartArgs,
+): void {
+  const anim = entry.anim!;
+  const pm = ctx.svc.getService("ProcessManager") as ProcessManager;
+  const tid = anim.encodeTid!;
+  const status = pm.getTaskStatus(tid);
+  const out = pm.getResultOutput(tid); // also releases the slot on end
+  const logChunk = out || undefined;
+
+  if (status === TASK_QUEUED || status === TASK_RUNNING) {
+    emit(ctx, progressUpdate(entry, "encoding", logChunk ?? ""));
+    return;
+  }
+  finishAnimJob(ctx, entry, args);
+}
+
+/**
+ * One render unit finished. A still job completes here; an animation job
+ * banks the frame and starts the next one.
+ */
+function completeUnit(
+  ctx: WorkerContext,
+  backend: RenderBackend,
+  entry: RenderJobEntry,
+  args: RenderStartArgs,
+): void {
+  if (entry.anim) advanceAnimFrame(ctx, backend, entry, args);
+  else finishJob(ctx, entry, args);
+}
+
 /** Poll the current phase's tasks; returns the accumulated stdout log. */
 function pollTasks(
   ctx: WorkerContext,
@@ -170,6 +485,36 @@ function mean(xs: number[]): number {
   return xs.length ? Math.round(xs.reduce((s, x) => s + x, 0) / xs.length) : 0;
 }
 
+/**
+ * Build a progress update.
+ *
+ * `progress` is always the whole job's: for a movie that is the finished
+ * frames plus the current frame's share, so the bar advances once across the
+ * sequence instead of resetting on every frame. The current frame's own
+ * progress rides alongside it as `frameProgress`.
+ */
+function progressUpdate(
+  entry: RenderJobEntry,
+  phase: RenderUpdatePhase,
+  logChunk: string,
+  frameProgressOverride?: number,
+): RenderUpdate {
+  const frameProgress = frameProgressOverride ?? mean(entry.taskProgress);
+  const anim = entry.anim;
+  return {
+    type: "progress",
+    jobId: entry.jobId,
+    progress: anim
+      ? Math.round(((anim.currFrame + frameProgress / 100) / anim.frameCount) * 100)
+      : frameProgress,
+    phase,
+    ...(anim
+      ? { frameIndex: anim.currFrame, frameCount: anim.frameCount, frameProgress }
+      : {}),
+    logChunk: logChunk || undefined,
+  };
+}
+
 /** One poll tick. */
 function pollJob(
   ctx: WorkerContext,
@@ -178,6 +523,14 @@ function pollJob(
   args: RenderStartArgs,
 ): void {
   if (entry.cancelled) return;
+
+  // A movie encode runs as its own single-task phase, outside the per-frame
+  // render -> finalize cycle below.
+  if (entry.anim?.encodeTid != null) {
+    pollEncode(ctx, entry, args);
+    return;
+  }
+
   const { allDone, logChunk: rawLog } = pollTasks(ctx, backend, entry);
 
   let logChunk = rawLog;
@@ -188,26 +541,14 @@ function pollJob(
 
   if (entry.phase === "render") {
     if (!allDone) {
-      emit(ctx, {
-        type: "progress",
-        jobId: entry.jobId,
-        progress: mean(entry.taskProgress),
-        phase: "running",
-        logChunk: logChunk || undefined,
-      });
+      emit(ctx, progressUpdate(entry, "running", logChunk));
       return;
     }
     // All render tasks finished -- queue the finalize task(s) now. The
     // queueTask call is what advances the ProcessManager queue.
-    emit(ctx, {
-      type: "progress",
-      jobId: entry.jobId,
-      progress: 100,
-      phase: "blending",
-      logChunk: logChunk || undefined,
-    });
+    emit(ctx, progressUpdate(entry, "blending", logChunk, 100));
     if (entry.finalizeSpecs.length === 0) {
-      finishJob(ctx, entry, args);
+      completeUnit(ctx, backend, entry, args);
       return;
     }
     const pm = ctx.svc.getService("ProcessManager") as ProcessManager;
@@ -223,14 +564,8 @@ function pollJob(
   }
 
   // Finalize phase.
-  emit(ctx, {
-    type: "progress",
-    jobId: entry.jobId,
-    progress: 100,
-    phase: "blending",
-    logChunk: logChunk || undefined,
-  });
-  if (allDone) finishJob(ctx, entry, args);
+  emit(ctx, progressUpdate(entry, "blending", logChunk, 100));
+  if (allDone) completeUnit(ctx, backend, entry, args);
 }
 
 /**
@@ -277,6 +612,7 @@ function startInProcessJob(
     taskProgress: [],
     inProcess: handle,
     lastPhaseName: "",
+    anim: null,
   };
   jobs.set(jobId, entry);
 
@@ -354,8 +690,209 @@ function pollInProcessJob(
   finishJob(ctx, entry, args); // reads the PNG, emits `complete`
 }
 
+/**
+ * Start an animation render: set up AnimMgr for offline rendering, then
+ * queue the first frame. Subsequent frames are started by the poll loop.
+ */
+function startAnimJob(
+  ctx: WorkerContext,
+  backend: RenderBackend,
+  scene: Scene,
+  args: RenderStartArgs,
+  workDir: string,
+): RenderStartResult {
+  const fail = (error: string): RenderStartResult => {
+    cleanupDir(workDir);
+    return { ok: false, jobId: "", error };
+  };
+
+  if (!backend.exportAnimFrame) {
+    return fail(`The ${backend.id} backend cannot render animations`);
+  }
+
+  const movie = args.snapshot.movie;
+  if (!movie) return fail("Movie settings are missing");
+
+  const outputDir = movie.outputDir.trim();
+  const baseName = movie.baseName.trim() || "movie";
+  const { fps, dupLastFrame } = movie;
+
+  if (!outputDir) return fail("No output folder is set");
+  if (!fs.existsSync(outputDir)) return fail(`Output folder not found: ${outputDir}`);
+
+  const animMgr = getAnimMgrOrNull(scene);
+  if (!animMgr) return fail("Scene has no animation manager");
+  if (animMgr.size <= 0) return fail("Scene has no animation to render");
+
+  let frameCount: number;
+  try {
+    // Without a start camera AnimMgr silently falls back to a default one and
+    // every frame comes out meaningless. renderStart already captured the
+    // active view into "__current".
+    animMgr.startcam = "__current";
+    frameCount = animMgr.setupRender(
+      makeTimeValue(ctx, 0),
+      makeTimeValue(ctx, animMgr.length.millisec),
+      fps,
+    );
+  } catch (e) {
+    return fail(`Cannot set up the animation render: ${String(e)}`);
+  }
+
+  // UXP's "Loop" checkbox: dropping the last frame makes the sequence loop
+  // cleanly, since the first and last frames are otherwise identical.
+  if (!dupLastFrame) frameCount -= 1;
+  if (frameCount <= 0) {
+    try {
+      animMgr.stop();
+    } catch {
+      /* ignore */
+    }
+    return fail("The animation has no frames to render");
+  }
+
+  const jobId = `render-${Date.now()}`;
+  const entry: RenderJobEntry = {
+    jobId,
+    workDir,
+    outputPath: "",
+    startedAt: Date.now(),
+    timer: null,
+    cancelled: false,
+    announcedDir: false,
+    phase: "render",
+    finalizeSpecs: [],
+    taskIds: [],
+    taskProgress: [],
+    inProcess: null,
+    lastPhaseName: "",
+    anim: {
+      animMgr,
+      scene,
+      frameCount,
+      currFrame: 0,
+      outputDir,
+      baseName,
+      framePaths: [],
+      lastPreviewAt: 0,
+      encodeTid: null,
+      moviePath: null,
+    },
+  };
+  jobs.set(jobId, entry);
+
+  try {
+    submitAnimFrame(ctx, backend, entry, args);
+  } catch (e) {
+    stopAnim(entry);
+    jobs.delete(jobId);
+    cleanupDir(workDir);
+    return { ok: false, jobId: "", error: String(e) };
+  }
+
+  entry.timer = setInterval(() => {
+    try {
+      pollJob(ctx, backend, entry, args);
+    } catch (e) {
+      stopTimer(entry);
+      jobs.delete(jobId);
+      stopAnim(entry);
+      cleanupDir(workDir);
+      emit(ctx, { type: "error", jobId, error: String(e) });
+    }
+  }, POLL_MS);
+
+  return { ok: true, jobId };
+}
+
+/**
+ * Re-encode: skip rendering and run ffmpeg over an already-rendered frame
+ * sequence on disk. Reuses the encode phase (startEncode / pollEncode /
+ * finishAnimJob) with a job whose frames are all "already done".
+ */
+function startEncodeOnlyJob(
+  ctx: WorkerContext,
+  args: RenderStartArgs,
+): RenderStartResult {
+  const movie = args.snapshot.movie;
+  if (!movie) return { ok: false, jobId: "", error: "Movie settings are missing" };
+
+  const outputDir = movie.outputDir.trim();
+  const baseName = movie.baseName.trim() || "movie";
+  const frameCount = args.encodeOnly?.frameCount ?? 0;
+  if (!outputDir || !fs.existsSync(outputDir)) {
+    return { ok: false, jobId: "", error: `Output folder not found: ${outputDir}` };
+  }
+  if (frameCount <= 0) return { ok: false, jobId: "", error: "No frames to encode" };
+
+  // The frames already exist; list their paths so finishAnimJob can report
+  // the last one as the result image.
+  const framePaths = Array.from({ length: frameCount }, (_, i) =>
+    path.join(outputDir, movieFrameFileName(baseName, i)),
+  );
+
+  // An empty temp dir stands in for the (unused) render working dir, so the
+  // finish/cancel cleanup never touches the user's output folder.
+  const workDir = fs.mkdtempSync(path.join(os.tmpdir(), "cuemol-encode-"));
+  const jobId = `render-${Date.now()}`;
+  const entry: RenderJobEntry = {
+    jobId,
+    workDir,
+    outputPath: "",
+    startedAt: Date.now(),
+    timer: null,
+    cancelled: false,
+    announcedDir: false,
+    phase: "render",
+    finalizeSpecs: [],
+    taskIds: [],
+    taskProgress: [],
+    inProcess: null,
+    lastPhaseName: "",
+    anim: {
+      animMgr: null,
+      scene: null,
+      frameCount,
+      currFrame: frameCount,
+      outputDir,
+      baseName,
+      framePaths,
+      lastPreviewAt: 0,
+      encodeTid: null,
+      moviePath: null,
+    },
+  };
+  jobs.set(jobId, entry);
+
+  startEncode(ctx, entry, args);
+  if (!jobs.has(jobId)) {
+    // startEncode already emitted an error and cleaned up (e.g. ffmpeg missing).
+    return { ok: false, jobId: "", error: "Could not start the encode" };
+  }
+
+  entry.timer = setInterval(() => {
+    try {
+      // encodeTid is already set, so pollJob branches straight to pollEncode
+      // and never touches the backend.
+      pollJob(ctx, null as unknown as RenderBackend, entry, args);
+    } catch (e) {
+      stopTimer(entry);
+      jobs.delete(jobId);
+      cleanupDir(workDir);
+      emit(ctx, { type: "error", jobId, error: String(e) });
+    }
+  }, POLL_MS);
+
+  return { ok: true, jobId };
+}
+
 /** Start a render job. */
 function renderStart(ctx: WorkerContext, args: RenderStartArgs): RenderStartResult {
+  // Re-encode needs no scene: it runs ffmpeg over frames already on disk.
+  if (args.snapshot.mode === "movie" && args.encodeOnly) {
+    return startEncodeOnlyJob(ctx, args);
+  }
+
   const scene = getSceneOrNull(ctx, args.sceneId);
   if (!scene) return { ok: false, jobId: "", error: "Scene not found" };
 
@@ -377,6 +914,11 @@ function renderStart(ctx: WorkerContext, args: RenderStartArgs): RenderStartResu
   }
 
   const workDir = fs.mkdtempSync(path.join(os.tmpdir(), "cuemol-render-"));
+
+  // Animation mode drives AnimMgr frame by frame instead of exporting once.
+  if (args.snapshot.mode === "movie") {
+    return startAnimJob(ctx, backend, scene, args, workDir);
+  }
 
   let outputPath: string;
   let renderSpecs: RenderTaskSpec[];
@@ -433,6 +975,7 @@ function renderStart(ctx: WorkerContext, args: RenderStartArgs): RenderStartResu
     taskProgress: taskIds.map(() => 0),
     inProcess: null,
     lastPhaseName: "",
+    anim: null,
   };
   jobs.set(jobId, entry);
   entry.timer = setInterval(() => {
@@ -469,9 +1012,15 @@ function renderCancel(ctx: WorkerContext, args: RenderCancelArgs): RenderCancelR
   // External-process (POV-Ray): stop polling and kill the render processes now.
   stopTimer(entry);
   jobs.delete(entry.jobId);
+  // Restores the scene properties an animation overwrote (no-op for a still).
+  stopAnim(entry);
 
   const pm = ctx.svc.getService("ProcessManager") as ProcessManager;
-  for (const tid of entry.taskIds) {
+  // The current phase's render tasks, plus the ffmpeg encode task if one is
+  // in flight.
+  const tids = [...entry.taskIds];
+  if (entry.anim?.encodeTid != null) tids.push(entry.anim.encodeTid);
+  for (const tid of tids) {
     if (tid >= 0) {
       try {
         pm.kill(tid);

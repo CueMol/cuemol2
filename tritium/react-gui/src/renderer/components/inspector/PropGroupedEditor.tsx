@@ -37,6 +37,12 @@ interface PropGroupedEditorProps {
   groups: PropGroupDef[];
   /** Called when a property value changes. */
   onChange: (key: string, value: string | number | boolean) => void;
+  /**
+   * Extra content rendered at the top of a group's body, above its props,
+   * keyed by group key. Used to place a control (e.g. the image-size preset)
+   * inside the group it belongs to rather than in a separate bar.
+   */
+  groupLeadContent?: Record<string, React.ReactNode>;
 }
 
 // ------------------------------------------------------------
@@ -87,6 +93,7 @@ export const PropGroupedEditor: React.FC<PropGroupedEditorProps> = ({
   properties,
   groups,
   onChange,
+  groupLeadContent,
 }) => {
   /** Group properties by their `group` field. */
   const grouped = useMemo(() => {
@@ -103,14 +110,16 @@ export const PropGroupedEditor: React.FC<PropGroupedEditorProps> = ({
     <>
       {groups.map((grp) => {
         const props = grouped.get(grp.key);
-        if (!props || props.length === 0) return null;
+        const lead = groupLeadContent?.[grp.key];
+        if ((!props || props.length === 0) && !lead) return null;
         return (
           <AccordionSection
             key={grp.key}
             title={grp.key}
             defaultExpanded={grp.defaultExpanded}
           >
-            {props.map((prop) => renderPropEditor(prop, onChange))}
+            {lead}
+            {props?.map((prop) => renderPropEditor(prop, onChange))}
           </AccordionSection>
         );
       })}

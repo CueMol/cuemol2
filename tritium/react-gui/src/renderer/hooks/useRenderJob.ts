@@ -35,13 +35,27 @@ export type RenderJobStatus =
 /** State of a single render job. */
 export interface RenderJob {
   jobId: string;
+  /** Progress of the whole job, 0..100 (all frames, for a movie). */
+  progress: number;
   status: RenderJobStatus;
-  progress: number; // 0..100
   phase: string;
   log: string[];
   startedAt: number;
   finishedAt?: number;
   source?: RenderSource;
+  /** Failure message, set when status is "error" (shown in a message box). */
+  error?: string;
+  /** Movie mode: 0-based index of the frame being rendered. */
+  frameIndex?: number;
+  /** Movie mode: total number of frames. */
+  frameCount?: number;
+  /** Movie mode: progress of the current frame alone, 0..100. */
+  frameProgress?: number;
+  /** Movie mode: most recently finished frame, shown as a live preview. */
+  previewDataUrl?: string;
+  /** Pixel size of `previewDataUrl`. */
+  previewWidth?: number;
+  previewHeight?: number;
 }
 
 /** Parameters needed to start a render. */
@@ -50,8 +64,10 @@ export interface RenderStartParams {
   viewId?: number;
   snapshot: RenderSettingsSnapshot;
   source: RenderSource;
-  /** External binary paths (POV-Ray / blendpng). */
+  /** External binary paths (POV-Ray / blendpng / ffmpeg). */
   binaries: RenderBinaries;
+  /** Movie re-encode: encode this many already-rendered frames, no rendering. */
+  encodeOnly?: { frameCount: number };
 }
 
 const ACTIVE_STATUSES: RenderJobStatus[] = ["exporting", "running", "blending"];
@@ -77,6 +93,7 @@ const PHASE_LABELS: Record<RenderUpdatePhase, string> = {
   exporting: "Exporting scene",
   running: "Rendering",
   blending: "Blending layers",
+  encoding: "Encoding movie",
 };
 
 export function useRenderJob(opts: {
@@ -108,7 +125,21 @@ export function useRenderJob(opts: {
                 status: "running",
                 progress: u.progress,
                 phase: PHASE_LABELS[u.phase],
+                frameIndex: u.frameIndex,
+                frameCount: u.frameCount,
+                frameProgress: u.frameProgress,
                 log: u.logChunk ? appendLog(prev.log, splitLog(u.logChunk)) : prev.log,
+              }
+            : prev,
+        );
+      } else if (u.type === "framePreview") {
+        setJob((prev) =>
+          prev
+            ? {
+                ...prev,
+                previewDataUrl: u.dataUrl,
+                previewWidth: u.width,
+                previewHeight: u.height,
               }
             : prev,
         );
@@ -134,6 +165,7 @@ export function useRenderJob(opts: {
             elapsedSec: u.elapsedSec,
             source: pending.params.source,
             snapshot: pending.params.snapshot,
+            movie: u.movie,
           }),
         );
       } else {
@@ -144,6 +176,7 @@ export function useRenderJob(opts: {
                 status: "error",
                 phase: "Error",
                 finishedAt: Date.now(),
+                error: u.error,
                 log: appendLog(prev.log, [u.error]),
               }
             : prev,
@@ -156,12 +189,13 @@ export function useRenderJob(opts: {
   const start = useCallback(
     async (params: RenderStartParams) => {
       if (!cm) return;
+      const encoding = params.encodeOnly !== undefined;
       setJob({
         jobId: "",
-        status: "exporting",
+        status: encoding ? "blending" : "exporting",
         progress: 0,
-        phase: "Exporting scene",
-        log: ["Render started"],
+        phase: encoding ? "Encoding movie" : "Exporting scene",
+        log: [encoding ? "Encode started" : "Render started"],
         startedAt: Date.now(),
         source: params.source,
       });
@@ -172,11 +206,12 @@ export function useRenderJob(opts: {
           viewId: params.viewId,
           snapshot: params.snapshot,
           binaries: params.binaries,
+          ...(params.encodeOnly ? { encodeOnly: params.encodeOnly } : {}),
         });
       } catch (e) {
         setJob((prev) =>
           prev
-            ? { ...prev, status: "error", phase: "Error", finishedAt: Date.now(), log: appendLog(prev.log, [String(e)]) }
+            ? { ...prev, status: "error", phase: "Error", finishedAt: Date.now(), error: String(e), log: appendLog(prev.log, [String(e)]) }
             : prev,
         );
         return;
@@ -185,6 +220,7 @@ export function useRenderJob(opts: {
         pendingRef.current = { jobId: res.jobId, params };
         setJob((prev) => (prev ? { ...prev, jobId: res.jobId } : prev));
       } else {
+        const err = res?.error ?? "Render failed to start";
         setJob((prev) =>
           prev
             ? {
@@ -192,7 +228,8 @@ export function useRenderJob(opts: {
                 status: "error",
                 phase: "Error",
                 finishedAt: Date.now(),
-                log: appendLog(prev.log, [res?.error ?? "Render failed to start"]),
+                error: err,
+                log: appendLog(prev.log, [err]),
               }
             : prev,
         );

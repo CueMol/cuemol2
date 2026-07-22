@@ -29,6 +29,7 @@ vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }));
 
 const snapshot: RenderSettingsSnapshot = {
+    mode: 'still',
     backend: 'povray',
     commonProps: [],
     backendProps: [],

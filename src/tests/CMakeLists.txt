@@ -104,6 +104,7 @@ add_executable(test_qsys
   qsys/test_canvas2dtextrender2.cpp
   qsys/test_guiview.cpp
   qsys/test_shaderobjmgr.cpp
+  qsys/test_animmgr.cpp
 )
 target_include_directories(test_qsys PRIVATE
   ${CMAKE_SOURCE_DIR}/src

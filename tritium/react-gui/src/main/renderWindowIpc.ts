@@ -15,9 +15,12 @@
  * window with a timeout fallback.
  */
 
+import * as fs from 'fs'
+import * as path from 'path'
 import type { BrowserWindow } from 'electron'
 import { IPC } from '../shared/ipcChannels'
 import type { ViewSizePx } from '../shared/ipcTypes'
+import { movieFrameFileName, MOVIE_FILE_EXTENSIONS } from '../shared/movieFrames'
 import { handleInvoke } from './ipcHandlers'
 
 /** How long to wait for the main window's view-size reply. */
@@ -80,5 +83,59 @@ export function registerRenderWindowIpc(deps: RenderWindowIpcDeps): void {
 
   handleInvoke(IPC.RENDER_VIEW_SIZE_REPLY, (_event, { reqId, size }) => {
     pending.get(reqId)?.(size)
+  })
+
+  // Frame slider: read one already-rendered frame straight off disk. The
+  // frames are plain files in the user's output folder, so this needs
+  // neither the worker nor the main window -- unlike the view-size round
+  // trip above, it is a single hop.
+  handleInvoke(IPC.RENDER_FRAME_READ, (_event, { outputDir, baseName, frameIndex }) => {
+    try {
+      const file = path.join(outputDir, movieFrameFileName(baseName, frameIndex))
+      const buf = fs.readFileSync(file)
+      return { dataUrl: `data:image/png;base64,${buf.toString('base64')}` }
+    } catch {
+      // Frame deleted or moved since the render finished.
+      return { dataUrl: null }
+    }
+  })
+
+  // Re-encode gate: count the contiguous rendered frames on disk, starting at
+  // frame 0. A gap means the sequence is incomplete, so counting stops there.
+  handleInvoke(IPC.RENDER_FRAMES_CHECK, (_event, { outputDir, baseName }) => {
+    if (!outputDir) return { frameCount: 0 }
+    let n = 0
+    for (;;) {
+      const file = path.join(outputDir, movieFrameFileName(baseName, n))
+      if (!fs.existsSync(file)) break
+      n += 1
+    }
+    return { frameCount: n }
+  })
+
+  // Clean up: delete every rendered frame image (any index) and any encoded
+  // movie for this base name in the output folder. Confirmed on the renderer
+  // side before this is called.
+  handleInvoke(IPC.RENDER_FRAMES_CLEANUP, (_event, { outputDir, baseName }) => {
+    if (!outputDir) return { ok: false, deleted: 0 }
+    const esc = baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const frameRe = new RegExp(`^${esc}_frm_\\d+\\.png$`)
+    const movieNames = new Set(MOVIE_FILE_EXTENSIONS.map((ext) => `${baseName}${ext}`))
+    let deleted = 0
+    try {
+      for (const name of fs.readdirSync(outputDir)) {
+        if (!frameRe.test(name) && !movieNames.has(name)) continue
+        try {
+          fs.rmSync(path.join(outputDir, name), { force: true })
+          deleted += 1
+        } catch {
+          /* leave files we cannot remove */
+        }
+      }
+    } catch {
+      // Output folder gone.
+      return { ok: false, deleted }
+    }
+    return { ok: true, deleted }
   })
 }

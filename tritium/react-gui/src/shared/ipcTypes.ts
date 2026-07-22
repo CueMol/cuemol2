@@ -59,6 +59,8 @@ export interface UiState {
   povrayInc?: string
   /** blendpng executable path (Rendering settings). */
   blendpng?: string
+  /** ffmpeg executable path (Rendering settings). */
+  ffmpeg?: string
   /** APBS executable path (External Tools settings). */
   apbsExe?: string
   /** pdb2pqr executable path (External Tools settings). */
@@ -156,6 +158,7 @@ export interface AppPathInfo {
     povrayExe: string
     povrayInc: string
     blendpng: string
+    ffmpeg: string
   }
   /**
    * Default APBS / pdb2pqr executable paths resolved by Main (getApbsBinaries).
@@ -573,9 +576,21 @@ export interface RenderPropDefWire {
 
 /** Frozen render-settings snapshot (mirrors RenderSettingsSnapshot). */
 export interface RenderSettingsSnapshotWire {
+  /** "still" or "movie" (mirrors RenderMode). */
+  mode: string
   backend: string
   commonProps: RenderPropDefWire[]
   backendProps: RenderPropDefWire[]
+  /** Movie settings (mirrors MovieSettings); absent for a still render. */
+  movie?: {
+    outputDir: string
+    baseName: string
+    fps: number
+    makeMovie: boolean
+    movieFormat: string
+    dupLastFrame: boolean
+    bitrateKbps: number
+  }
 }
 
 /** Scene/view a render was started from (mirrors RenderSource). */
@@ -588,13 +603,30 @@ export interface RenderSourceWire {
 /** Render job state pushed to the render window (mirrors RenderJob). */
 export interface RenderJobWire {
   jobId: string
-  status: string
+  /** Progress of the whole job (all frames, for a movie). */
   progress: number
+  status: string
   phase: string
   log: string[]
   startedAt: number
   finishedAt?: number
   source?: RenderSourceWire
+  /** Failure message, present when status is "error". */
+  error?: string
+  /** Movie mode: 0-based index of the frame being rendered. */
+  frameIndex?: number
+  /** Movie mode: total number of frames. */
+  frameCount?: number
+  /** Movie mode: progress of the current frame alone. */
+  frameProgress?: number
+}
+
+/** Live preview of a finished movie frame (mirrors the worker's push). */
+export interface RenderFramePreviewWire {
+  dataUrl: string
+  width: number
+  height: number
+  frameIndex: number
 }
 
 /** Completed render pushed to the render window (mirrors RenderResult). */
@@ -624,7 +656,13 @@ export interface RenderTargetViewWire {
 export type RenderWindowCommand =
   /** Start a render. `source` set = the render window's selected target (or
    * a re-render); otherwise the main window falls back to its active view. */
-  | { type: 'start'; snapshot: RenderSettingsSnapshotWire; source?: RenderSourceWire }
+  | {
+      type: 'start'
+      snapshot: RenderSettingsSnapshotWire
+      source?: RenderSourceWire
+      /** Movie re-encode: encode this many existing frames, no rendering. */
+      encodeOnly?: { frameCount: number }
+    }
   | { type: 'cancel' }
   /** Switch the main window to the latest result's source molview tab. */
   | { type: 'show-source' }
@@ -651,6 +689,11 @@ export type RenderWindowStateUpdate =
       umbreonAvailable: boolean
     }
   | { kind: 'result'; result: RenderResultWire | null }
+  /**
+   * Most recently finished movie frame. Its own variant so the image never
+   * rides along with the context pushes, which fire on every progress tick.
+   */
+  | { kind: 'framePreview'; preview: RenderFramePreviewWire | null }
 
 /** Pixel size of the main window's molview canvas ("Current view" preset). */
 export interface ViewSizePx {

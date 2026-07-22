@@ -20,6 +20,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { IPC } from "../../shared/ipcChannels";
 import type {
+  RenderFramePreviewWire,
   RenderTargetViewWire,
   RenderWindowCommand,
   RenderWindowStateUpdate,
@@ -37,6 +38,8 @@ export interface RenderWindowClientState {
   job: RenderJob | null;
   /** Latest completed render, or null when nothing has been rendered. */
   result: RenderResult | null;
+  /** Most recent finished frame of a running movie render. */
+  preview: RenderFramePreviewWire | null;
   /** Open molviews selectable as render targets. */
   views: RenderTargetViewWire[];
   /** The main window's active molview, or null. */
@@ -48,6 +51,7 @@ export interface RenderWindowClientState {
 const INITIAL_STATE: RenderWindowClientState = {
   job: null,
   result: null,
+  preview: null,
   views: [],
   activeViewId: null,
   umbreonAvailable: false,
@@ -68,6 +72,12 @@ export function useRenderWindowClient(): {
   target: RenderTargetViewWire | null;
   /** Start a render of the selected target. */
   start: (snapshot: RenderSettingsSnapshot, source?: RenderSource) => void;
+  /** Re-encode `frameCount` existing frames into a movie (no rendering). */
+  encode: (snapshot: RenderSettingsSnapshot, frameCount: number) => void;
+  /** Count the contiguous rendered frames on disk for the given output. */
+  checkFrames: (outputDir: string, baseName: string) => Promise<number>;
+  /** Delete the rendered frames and any encoded movie; resolves to true on success. */
+  cleanupFrames: (outputDir: string, baseName: string) => Promise<boolean>;
   cancel: () => void;
   showSource: () => void;
   getViewSize: () => Promise<ViewSizePx | null>;
@@ -117,11 +127,15 @@ export function useRenderWindowClient(): {
             activeViewId: update.activeViewId,
             umbreonAvailable: update.umbreonAvailable,
           }));
-        } else {
+        } else if (update.kind === "result") {
           setState((prev) => ({
             ...prev,
             result: update.result as RenderResult | null,
+            // A finished render supersedes the live preview.
+            preview: null,
           }));
+        } else {
+          setState((prev) => ({ ...prev, preview: update.preview }));
         }
       },
     );
@@ -152,6 +166,45 @@ export function useRenderWindowClient(): {
     [],
   );
 
+  const encode = useCallback(
+    (snapshot: RenderSettingsSnapshot, frameCount: number) => {
+      const t = targetRef.current;
+      const source = t
+        ? { sceneId: t.sceneId, sceneName: t.sceneName, viewId: t.viewId }
+        : undefined;
+      sendCommand({ type: "start", snapshot, source, encodeOnly: { frameCount } });
+    },
+    [],
+  );
+
+  const checkFrames = useCallback(
+    async (outputDir: string, baseName: string): Promise<number> => {
+      const api = window.electronAPI;
+      if (!api || !outputDir) return 0;
+      try {
+        const res = await api.invoke(IPC.RENDER_FRAMES_CHECK, { outputDir, baseName });
+        return res?.frameCount ?? 0;
+      } catch {
+        return 0;
+      }
+    },
+    [],
+  );
+
+  const cleanupFrames = useCallback(
+    async (outputDir: string, baseName: string): Promise<boolean> => {
+      const api = window.electronAPI;
+      if (!api || !outputDir) return false;
+      try {
+        const res = await api.invoke(IPC.RENDER_FRAMES_CLEANUP, { outputDir, baseName });
+        return res?.ok ?? false;
+      } catch {
+        return false;
+      }
+    },
+    [],
+  );
+
   const cancel = useCallback(() => sendCommand({ type: "cancel" }), []);
   const showSource = useCallback(() => sendCommand({ type: "show-source" }), []);
 
@@ -171,6 +224,9 @@ export function useRenderWindowClient(): {
     setTargetViewId,
     target,
     start,
+    encode,
+    checkFrames,
+    cleanupFrames,
     cancel,
     showSource,
     getViewSize,

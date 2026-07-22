@@ -151,15 +151,19 @@ export async function handleSceneExportDialog(
  * blendpng). Returns the resolved absolute path.
  */
 export async function handlePickPathDialog(
-  mainWindow: BrowserWindow,
+  parentWindow: BrowserWindow,
   payload: { title: string; directory?: boolean; filters?: { name: string; extensions: string[] }[]; multi?: boolean },
 ): Promise<{ canceled: boolean; filePath: string; filePaths?: string[] }> {
-  const properties: Array<'openDirectory' | 'openFile' | 'multiSelections'> =
-    payload.directory ? ['openDirectory'] : ['openFile']
+  const properties: Array<
+    'openDirectory' | 'openFile' | 'multiSelections' | 'createDirectory'
+  > = payload.directory ? ['openDirectory'] : ['openFile']
   // multiSelections only applies to file mode.
   if (payload.multi && !payload.directory) properties.push('multiSelections')
+  // Let the user make a new folder from within the picker (macOS button;
+  // no-op elsewhere) -- an output folder often does not exist yet.
+  if (payload.directory) properties.push('createDirectory')
   const result = await withMenuBlocked('native', () =>
-    dialog.showOpenDialog(mainWindow, {
+    dialog.showOpenDialog(parentWindow, {
       title: payload.title,
       properties,
       // Filters only apply to file mode; ignored by the OS for directories.

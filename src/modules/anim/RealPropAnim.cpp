@@ -38,6 +38,11 @@ void RealPropAnim::onPropInit(AnimMgr *pMgr, qlib::uid_t tgt_uid)
   pTgtRend->setProperty(getPropName(), var);
 }
 
+void RealPropAnim::onPropSave(AnimMgr *pMgr, qlib::uid_t tgt_uid)
+{
+  pMgr->savePropVal(tgt_uid, getPropName());
+}
+
 void RealPropAnim::onStart(qlib::time_value elapsed, AnimMgr *pMgr)
 {
   qlib::LVariant var(m_startValue);

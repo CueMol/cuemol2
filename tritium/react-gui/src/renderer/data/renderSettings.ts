@@ -13,6 +13,12 @@ import type { PropDef } from "./rendererProperties";
 /** Identifier of a rendering backend. Extended as backends are added. */
 export type RenderBackendId = "povray" | "umbreon";
 
+/**
+ * What a render job produces: a single image, or the frame sequence (and
+ * optionally the encoded movie) of the scene's animation.
+ */
+export type RenderMode = "still" | "movie";
+
 /** Accordion group descriptor for the render-settings editor. */
 export interface RenderGroupDef {
   /** Group key -- also the value of each member `PropDef.group`. */
@@ -58,8 +64,33 @@ export const RENDER_SIZE_PRESETS: RenderSizePreset[] = [
   { label: "1200×1200 (600dpi)", width: 1200, height: 1200, dpi: 600 },
 ];
 
-/** Default preset label (no enforced size). */
+/**
+ * Movie-mode size presets: standard video resolutions (UXP `anim-render-dlg`
+ * `preset-size-list`). Sizes are exact pixels, so no DPI is applied.
+ */
+export const MOVIE_SIZE_PRESETS: RenderSizePreset[] = [
+  { label: "Custom", width: 0, height: 0 },
+  { label: "QVGA (320×240)", width: 320, height: 240 },
+  { label: "VGA (640×480)", width: 640, height: 480 },
+  { label: "SVGA (800×600)", width: 800, height: 600 },
+  { label: "XGA (1024×768)", width: 1024, height: 768 },
+  { label: "HD720 (1280×720)", width: 1280, height: 720 },
+  { label: "HD1080 (1920×1080)", width: 1920, height: 1080 },
+];
+
+/** Neutral preset label (no enforced size). */
 export const DEFAULT_RENDER_PRESET = "Custom";
+
+/** Still mode starts on a high-resolution square. */
+export const DEFAULT_STILL_PRESET = "1200×1200 (600dpi)";
+
+/** Movie mode starts on QVGA (a small, quick size). */
+export const DEFAULT_MOVIE_PRESET = "QVGA (320×240)";
+
+/** Size presets for a render mode: video resolutions for movies. */
+export function sizePresetsForMode(mode: RenderMode): RenderSizePreset[] {
+  return mode === "movie" ? MOVIE_SIZE_PRESETS : RENDER_SIZE_PRESETS;
+}
 
 // --- Image-size units ---
 
@@ -125,19 +156,106 @@ export function pxToSizeUnit(px: number, dpi: number, unit: string): number {
   }
 }
 
+// --- Animation (movie) rendering ---
+
+/**
+ * Container / codec combination for the encoded movie, ported from the UXP
+ * `anim-render-dlg` "Output format" list.
+ */
+export type MovieFormatId =
+  | "mov_h264"
+  | "mov_h265"
+  | "mov_raw"
+  | "mp4_h264"
+  | "mp4_h265"
+  | "wmv2"
+  | "gifanim";
+
+/** Output file extension per movie format, including the dot. */
+export const MOVIE_FORMAT_EXT: Record<MovieFormatId, string> = {
+  mov_h264: ".mov",
+  mov_h265: ".mov",
+  mov_raw: ".mov",
+  mp4_h264: ".mp4",
+  mp4_h265: ".mp4",
+  wmv2: ".wmv",
+  gifanim: ".gif",
+};
+
+/** Movie format ids in display order. */
+export const MOVIE_FORMAT_IDS = Object.keys(MOVIE_FORMAT_EXT) as MovieFormatId[];
+
+/** Human-readable format names (UXP `ffmpeg-oformat` menu labels). */
+export const MOVIE_FORMAT_LABEL: Record<MovieFormatId, string> = {
+  mov_h264: "QuickTime (H.264)",
+  mov_h265: "QuickTime (H.265)",
+  mov_raw: "QuickTime (uncompressed)",
+  mp4_h264: "MP4 (H.264)",
+  mp4_h265: "MP4 (H.265)",
+  wmv2: "Windows Media (WMV2)",
+  gifanim: "Animated GIF",
+};
+
+/**
+ * Movie-mode settings.
+ *
+ * These are backend-independent and belong to the render *mode*, not to the
+ * render settings, so they are a plain typed record rather than PropDefs and
+ * get their own panel (see MovieSettingsPanel). That also lets the panel do
+ * things the PropDef editor cannot: a folder-picker button, and disabling the
+ * format / bit rate when encoding is off.
+ *
+ * The frame range is not exposed: like UXP `anim-render-dlg`, the whole
+ * timeline (0 .. AnimMgr.length) is always rendered.
+ */
+export interface MovieSettings {
+  /** Folder the frame sequence (and the movie) is written to. */
+  outputDir: string;
+  /** Base name of the output files (`<base>_frm_0000.png`). */
+  baseName: string;
+  /** Frames per second. */
+  fps: number;
+  /** Whether to encode the frames into a movie with ffmpeg. */
+  makeMovie: boolean;
+  /** Container / codec of the encoded movie. */
+  movieFormat: MovieFormatId;
+  /**
+   * Whether to render the final frame. Dropping it makes the sequence loop
+   * cleanly, since the first and last frames are otherwise identical
+   * (UXP's "Loop" checkbox).
+   */
+  dupLastFrame: boolean;
+  /** Encoding bit rate in kbps. */
+  bitrateKbps: number;
+}
+
+export const DEFAULT_MOVIE_SETTINGS: MovieSettings = {
+  outputDir: "",
+  baseName: "movie",
+  fps: 30,
+  makeMovie: true,
+  movieFormat: "mp4_h264",
+  dupLastFrame: true,
+  bitrateKbps: 1024,
+};
+
+/** Frame-rate choices offered in the Movie panel (UXP `main-mlist-fps`). */
+export const MOVIE_FPS_PRESETS = [24, 30, 60];
+
+/** Bit-rate choices in kbps (UXP `ffmpeg-bitrate`). */
+export const MOVIE_BITRATE_PRESETS = [256, 1024, 10240];
+
 /** Backend-independent render-setting definitions (mock defaults). */
 export const RENDER_COMMON_PROPS: PropDef[] = [
   // --- Image (width/height carry the active unit as a field suffix; the px
   //     min/max/step mirror SIZE_UNIT_FIELD_META.px. `inline` renders them as
   //     compact single-row plain number boxes, not two-row drag fields.) ---
   { key: "width",  label: "Width",     type: "integer", value: 1200, group: "Image", min: 100, max: 10000, step: 100, unit: "px", decimals: 0, inline: true },
-  { key: "height", label: "Height",    type: "integer", value: 900,  group: "Image", min: 100, max: 10000, step: 100, unit: "px", decimals: 0, inline: true },
+  { key: "height", label: "Height",    type: "integer", value: 1200, group: "Image", min: 100, max: 10000, step: 100, unit: "px", decimals: 0, inline: true },
   { key: "unit",   label: "Size unit", type: "enum",    value: "px",  group: "Image", options: ["px", "in", "mm", "cm"] },
   // Editable combobox with the UXP render-pov-dlg DPI presets (plus high-DPI
   // options); custom values allowed.
   { key: "dpi",    label: "DPI",       type: "combo",   value: 600,   group: "Image", options: ["72", "150", "300", "600", "1200", "2400"] },
-  // Output settings merged into Image (no separate Output group).
-  { key: "fileFormat",    label: "File format",                type: "enum",    value: "png", group: "Image", options: ["png"] },
   { key: "transparentBg", label: "Transparent background",     type: "boolean", value: false, group: "Image" },
   { key: "postBlend",     label: "Post-render alpha blending", type: "boolean", value: true,  group: "Image" },
   { key: "pixelLabels",   label: "Pixel labels",               type: "boolean", value: false, group: "Image" },

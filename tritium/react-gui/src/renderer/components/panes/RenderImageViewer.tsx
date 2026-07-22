@@ -18,6 +18,7 @@
 import React, { useRef, useState, useCallback, useLayoutEffect } from "react";
 import { Button, ButtonGroup } from "@blueprintjs/core";
 import { AppIcon } from "../AppIcon";
+import { Tooltip } from "../../h3-kit/Tooltip";
 
 interface RenderImageViewerProps {
   /** Image data URL. */
@@ -121,11 +122,19 @@ export const RenderImageViewer: React.FC<RenderImageViewerProps> = ({
       <div className="riv-toolbar">
         {actions}
         <ButtonGroup>
-          <Button small icon={<AppIcon name="ui.zoomOut" aria-hidden />} title="Zoom out" onClick={() => zoom(0.8)} />
-          <Button small icon={<AppIcon name="ui.zoomIn" aria-hidden />} title="Zoom in" onClick={() => zoom(1.25)} />
+          <Tooltip content="Zoom out">
+            <Button small icon={<AppIcon name="ui.zoomOut" aria-hidden />} aria-label="Zoom out" onClick={() => zoom(0.8)} />
+          </Tooltip>
+          <Tooltip content="Zoom in">
+            <Button small icon={<AppIcon name="ui.zoomIn" aria-hidden />} aria-label="Zoom in" onClick={() => zoom(1.25)} />
+          </Tooltip>
         </ButtonGroup>
-        <Button small icon={<AppIcon name="ui.zoomToFit" aria-hidden />} text="Fit" onClick={fit} />
-        <Button small text="100%" onClick={() => setScale(1)} />
+        <Tooltip content="Fit to window">
+          <Button small icon={<AppIcon name="ui.zoomToFit" aria-hidden />} text="Fit" onClick={fit} />
+        </Tooltip>
+        <Tooltip content="Actual size (100%)">
+          <Button small text="100%" onClick={() => setScale(1)} />
+        </Tooltip>
         <span className="riv-info">
           {name} · {imgWidth}×{imgHeight} · {Math.round(scale * 100)}%
         </span>

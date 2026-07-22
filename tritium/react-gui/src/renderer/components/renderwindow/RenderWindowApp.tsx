@@ -12,18 +12,24 @@
  * result state back.
  */
 
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Allotment } from "allotment";
+import { Alert } from "@blueprintjs/core";
 import "allotment/dist/style.css";
 
+import { useTheme } from "../../contexts/ThemeContext";
 import { RenderResultPane } from "../panes/RenderResultPane";
+import { RenderImageViewer } from "../panes/RenderImageViewer";
 import { RenderPanel } from "../panels/RenderPanel";
+import { ImageSettingsPanel } from "../panels/ImageSettingsPanel";
+import { MovieSettingsPanel } from "../panels/MovieSettingsPanel";
 import { RenderSettingsEditor } from "../inspector/RenderSettingsEditor";
 import { useRenderSettings } from "../../hooks/useRenderSettings";
+import { isRenderJobActive } from "../../hooks/useRenderJob";
 import { useRenderWindowClient } from "../../hooks/useRenderWindowClient";
 import { RENDER_BACKEND_IDS } from "../../data/renderBackends";
-import { RENDER_SIZE_PRESETS } from "../../data/renderSettings";
-import type { RenderResult } from "../../data/renderResult";
+import { sizePresetsForMode } from "../../data/renderSettings";
+import { IPC } from "../../../shared/ipcChannels";
 
 export const RenderWindowApp: React.FC = () => {
   const client = useRenderWindowClient();
@@ -48,31 +54,59 @@ export const RenderWindowApp: React.FC = () => {
     client.start(settings.getSnapshot());
   }, [client, settings]);
 
-  /** Re-render a previous result: restore its snapshot, render its source. */
-  const handleReRender = useCallback(
-    (result: RenderResult) => {
-      settings.restore(result.settingsSnapshot);
-      client.start(result.settingsSnapshot, {
-        sceneId: result.sourceSceneId,
-        sceneName: result.sourceSceneName,
-        viewId: result.sourceViewId,
-      });
-    },
-    [client, settings],
-  );
+  // Re-encode gate: how many contiguous frames sit in the movie output folder.
+  // Re-checked when the movie output settings change and after a job settles
+  // (a render just wrote frames, or an encode consumed them). Only meaningful
+  // in movie mode.
+  const [availFrames, setAvailFrames] = useState(0);
+  const isMovieMode = settings.mode === "movie";
+  const { outputDir, baseName } = settings.movie;
+  const jobStatus = client.state.job?.status;
+  const refreshFrames = useCallback(() => {
+    if (!isMovieMode) {
+      setAvailFrames(0);
+      return;
+    }
+    void client.checkFrames(outputDir, baseName).then(setAvailFrames);
+  }, [client, isMovieMode, outputDir, baseName]);
+  useEffect(() => {
+    refreshFrames();
+  }, [refreshFrames, jobStatus]);
 
-  /** Show the result's source scene in the main window. */
-  const handleShowSourceScene = useCallback(() => {
-    client.showSource();
-  }, [client]);
+  /** Re-encode the frames already on disk (no rendering). */
+  const handleEncode = useCallback(() => {
+    if (availFrames > 0) client.encode(settings.getSnapshot(), availFrames);
+  }, [client, settings, availFrames]);
+
+  // Clean up: delete the intermediate frames and the output movie, after a
+  // confirmation.
+  const [confirmCleanup, setConfirmCleanup] = useState(false);
+  const handleConfirmCleanup = useCallback(() => {
+    setConfirmCleanup(false);
+    void client.cleanupFrames(outputDir, baseName).then(() => refreshFrames());
+  }, [client, outputDir, baseName, refreshFrames]);
+
+  /** Pick the folder the movie frames are written to. */
+  const handlePickFolder = useCallback(() => {
+    void (async () => {
+      const res = await window.electronAPI?.invoke(IPC.DIALOG_PICK_PATH, {
+        title: "Choose the folder for the rendered frames",
+        directory: true,
+      });
+      if (res && !res.canceled && res.filePath) {
+        settings.updateMovie({ outputDir: res.filePath });
+      }
+    })();
+  }, [settings]);
 
   /**
    * Apply an image-size preset. The "Current view" preset resolves the main
    * window's live canvas pixel size over IPC.
    */
+  const sizePresets = sizePresetsForMode(settings.mode);
   const handleApplyPreset = useCallback(
     (label: string) => {
-      const preset = RENDER_SIZE_PRESETS.find((p) => p.label === label);
+      const preset = sizePresets.find((p) => p.label === label);
       if (preset?.dynamic) {
         void client.getViewSize().then((size) => {
           if (size) settings.applyPreset(label, size);
@@ -82,11 +116,66 @@ export const RenderWindowApp: React.FC = () => {
       }
       settings.applyPreset(label);
     },
-    [client, settings],
+    [client, settings, sizePresets],
   );
 
-  const { job, result, views } = client.state;
+  const { job, result, views, preview } = client.state;
   const canRender = client.target !== null;
+
+  // Surface a failed render / encode in a message box (the log is collapsed).
+  // Keyed off the job's startedAt so each failure alerts once.
+  const { theme } = useTheme();
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const shownErrorRef = useRef<number>(0);
+  useEffect(() => {
+    if (job?.status === "error" && job.startedAt !== shownErrorRef.current) {
+      shownErrorRef.current = job.startedAt;
+      setErrorMsg(job.error ?? "The render failed.");
+    }
+  }, [job?.status, job?.startedAt, job?.error]);
+
+  // The bottom pane's two columns are composed per mode, split so neither is
+  // overloaded: still shows Size | Output, movie shows Image | Movie.
+  const isMovie = settings.mode === "movie";
+  const leftPanel = isMovie ? (
+    <ImageSettingsPanel
+      title="Image"
+      commonProps={settings.commonProps}
+      onChange={settings.handleChange}
+      fields={["width", "height", "transparentBg", "postBlend", "pixelLabels"]}
+      showPreset
+      preset={settings.preset}
+      onApplyPreset={handleApplyPreset}
+      sizePresets={sizePresets}
+    />
+  ) : (
+    <ImageSettingsPanel
+      title="Size"
+      commonProps={settings.commonProps}
+      onChange={settings.handleChange}
+      fields={["width", "height", "unit", "dpi"]}
+      showPreset
+      preset={settings.preset}
+      onApplyPreset={handleApplyPreset}
+      sizePresets={sizePresets}
+    />
+  );
+  const rightPanel = isMovie ? (
+    <MovieSettingsPanel
+      title="Movie"
+      settings={settings.movie}
+      onChange={settings.updateMovie}
+      onPickFolder={handlePickFolder}
+      disabled={isRenderJobActive(job)}
+    />
+  ) : (
+    <ImageSettingsPanel
+      title="Output"
+      commonProps={settings.commonProps}
+      onChange={settings.handleChange}
+      fields={["transparentBg", "postBlend", "pixelLabels"]}
+    />
+  );
 
   return (
     <div className="render-window">
@@ -103,12 +192,19 @@ export const RenderWindowApp: React.FC = () => {
           <Allotment vertical>
             <Allotment.Pane minSize={160}>
               <div className="render-window-image">
-                {result ? (
-                  <RenderResultPane
-                    result={result}
-                    onReRender={handleReRender}
-                    onShowSourceScene={handleShowSourceScene}
+                {preview ? (
+                  /* A movie render in flight: show the frames as they land,
+                     which is the only feedback until the job completes. */
+                  <RenderImageViewer
+                    src={preview.dataUrl}
+                    imgWidth={preview.width}
+                    imgHeight={preview.height}
+                    name={`${client.target?.sceneName ?? "Scene"} -- frame ${
+                      preview.frameIndex + 1
+                    }`}
                   />
+                ) : result ? (
+                  <RenderResultPane result={result} />
                 ) : (
                   <div className="render-window-empty type-body">
                     {canRender
@@ -123,9 +219,17 @@ export const RenderWindowApp: React.FC = () => {
             <Allotment.Pane minSize={120} preferredSize={200} snap>
               <RenderPanel
                 job={job}
+                mode={settings.mode}
+                onModeChange={settings.setMode}
+                leftPanel={leftPanel}
+                rightPanel={rightPanel}
                 renderable={canRender}
                 onStart={handleStart}
                 onCancel={client.cancel}
+                onEncode={isMovieMode ? handleEncode : undefined}
+                canEncode={availFrames > 0}
+                onCleanup={isMovieMode ? () => setConfirmCleanup(true) : undefined}
+                canCleanup={availFrames > 0}
                 targetViews={views}
                 targetViewId={client.targetViewId}
                 onTargetChange={client.setTargetViewId}
@@ -151,13 +255,39 @@ export const RenderWindowApp: React.FC = () => {
               backendProps={settings.backendProps}
               onBackendChange={settings.setBackend}
               onChange={settings.handleChange}
-              preset={settings.preset}
-              onApplyPreset={handleApplyPreset}
             />
           </div>
         </Allotment.Pane>
       </Allotment>
       </div>
+
+      <Alert
+        isOpen={errorMsg !== null}
+        intent="danger"
+        icon="error"
+        confirmButtonText="OK"
+        className={theme === "dark" ? "bp5-dark" : undefined}
+        onClose={() => setErrorMsg(null)}
+      >
+        <p>{errorMsg}</p>
+      </Alert>
+
+      <Alert
+        isOpen={confirmCleanup}
+        intent="danger"
+        icon="trash"
+        confirmButtonText="Delete"
+        cancelButtonText="Cancel"
+        className={theme === "dark" ? "bp5-dark" : undefined}
+        onCancel={() => setConfirmCleanup(false)}
+        onConfirm={handleConfirmCleanup}
+      >
+        <p>
+          Delete the {availFrames} rendered frame
+          {availFrames === 1 ? "" : "s"} and any encoded movie in the output
+          folder? This cannot be undone.
+        </p>
+      </Alert>
     </div>
   );
 };

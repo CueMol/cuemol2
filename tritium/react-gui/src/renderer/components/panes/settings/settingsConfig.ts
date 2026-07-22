@@ -169,6 +169,13 @@ export const SETTINGS: SettingDef[] = [
     category: 'display.rendering',
     control: { kind: 'path' },
   },
+  {
+    key: 'rendering.ffmpeg',
+    label: 'ffmpeg Executable',
+    description: 'Path to the ffmpeg binary used to encode movie renders.',
+    category: 'display.rendering',
+    control: { kind: 'path' },
+  },
 
   // --- Tools > APBS / PDB2PQR ---
   {
@@ -235,6 +242,7 @@ export const DEFAULTS: Record<string, string | number | boolean> = {
   'rendering.povrayExe': DEFAULT_RENDER_BINARIES.povrayExe,
   'rendering.povrayInc': DEFAULT_RENDER_BINARIES.povrayInc,
   'rendering.blendpng': DEFAULT_RENDER_BINARIES.blendpng,
+  'rendering.ffmpeg': DEFAULT_RENDER_BINARIES.ffmpeg,
   'tools.apbsExe': DEFAULT_APBS_BINARIES.apbsExe,
   'tools.pdb2pqrExe': DEFAULT_APBS_BINARIES.pdb2pqrExe,
   'tools.pdb2pqrFF': DEFAULT_PDB2PQR_FF,
@@ -267,6 +275,7 @@ export const RENDER_BINARY_SETTING_KEYS: Record<string, keyof RenderBinaries> = 
   'rendering.povrayExe': 'povrayExe',
   'rendering.povrayInc': 'povrayInc',
   'rendering.blendpng': 'blendpng',
+  'rendering.ffmpeg': 'ffmpeg',
 }
 
 // --- APBS tool settings ---

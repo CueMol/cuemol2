@@ -3,24 +3,39 @@
  * @description Render execution controls, progress and log (hosted in the
  * Rendering window's bottom pane).
  *
- * Detailed settings (including image size) live in the adjacent Render
- * Settings pane; this panel owns the state-changing operations (Start / Stop),
- * the target selector, the progress bar and the render log. The optional
- * `onOpenSettings` shortcut is for hosts where the settings editor is not
- * permanently visible.
+ * The tab strip selects the output mode: Still renders one image, Movie
+ * renders the scene's animation as a frame sequence. Below the action bar and
+ * progress, the settings area is two resizable columns (leftPanel | rightPanel,
+ * 1:1 by default) composed by the host; the collapsible log sits below them.
+ *
+ * The remaining, less-touched settings live in the adjacent Render Settings
+ * pane. The optional `onOpenSettings` shortcut is for hosts where that pane is
+ * not permanently visible.
  */
 
-import React, { useCallback, useRef } from "react";
-import { ProgressBar, type Intent } from "@blueprintjs/core";
+import React, { useCallback, useRef, useState } from "react";
+import { ProgressBar, Collapse, type Intent } from "@blueprintjs/core";
+import { Allotment } from "allotment";
+import "allotment/dist/style.css";
 import { SelectField, FormButton } from "../../h3-kit/form";
 import { AppIcon } from "../AppIcon";
+import { PanelTabButton } from "./PanelTabButton";
 import { useCollapsibleLabels } from "../../hooks/useCollapsibleLabels";
 import { type RenderJob, isRenderJobActive } from "../../hooks/useRenderJob";
+import type { RenderMode } from "../../data/renderSettings";
 import type { RenderTargetViewWire } from "../../../shared/ipcTypes";
 
 interface RenderPanelProps {
   /** Current render job, or null when none has run yet. */
   job: RenderJob | null;
+  /** Output mode; also the selected tab. */
+  mode: RenderMode;
+  /** Switch the output mode (i.e. the tab). */
+  onModeChange: (mode: RenderMode) => void;
+  /** Left settings column. Passed in so this panel stays unaware of its content. */
+  leftPanel?: React.ReactNode;
+  /** Right settings column (empty in still mode). */
+  rightPanel?: React.ReactNode;
   /**
    * Whether the active content tab has a scene to render. Gates the panel's
    * render controls (Start button, Render Settings shortcut): a non-renderable
@@ -33,6 +48,20 @@ interface RenderPanelProps {
   onStart: () => void;
   /** Cancel the active render. */
   onCancel: () => void;
+  /**
+   * Re-encode the frames already on disk (movie mode). Shown only when
+   * provided; enabled by `canEncode`.
+   */
+  onEncode?: () => void;
+  /** Whether a complete frame sequence is on disk to re-encode. */
+  canEncode?: boolean;
+  /**
+   * Delete the intermediate frames and the output movie (movie mode). Shown
+   * only when provided; enabled by `canCleanup`.
+   */
+  onCleanup?: () => void;
+  /** Whether there are frames / a movie on disk to delete. */
+  canCleanup?: boolean;
   /**
    * Open the Render Settings editor. Omit when the settings editor is
    * permanently visible next to this panel -- the button is then hidden.
@@ -69,15 +98,26 @@ const elapsedSec = (job: RenderJob): string =>
 
 export const RenderPanel: React.FC<RenderPanelProps> = ({
   job,
+  mode,
+  onModeChange,
+  leftPanel,
+  rightPanel,
   renderable,
   onStart,
   onCancel,
+  onEncode,
+  canEncode = false,
+  onCleanup,
+  canCleanup = false,
   onOpenSettings,
   targetViews,
   targetViewId,
   onTargetChange,
 }) => {
   const active = isRenderJobActive(job);
+  // The log is auxiliary, so it starts collapsed; a running job's progress and
+  // Stop button stay visible above it regardless.
+  const [logOpen, setLogOpen] = useState(false);
 
   const barRef = useRef<HTMLDivElement>(null);
   // Collapse toolbar labels (Start/Stop, Render Settings) to icon-only when the
@@ -94,7 +134,27 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
 
   return (
     <div className="render-panel">
-      {/* -- Action bar -- */}
+      {/* -- Output mode. Uses the shared panel tab strip so it matches the
+             main window's bottom panel exactly. -- */}
+      <div className="bottom-panel-tabs">
+        <PanelTabButton<RenderMode>
+          tab="still"
+          activeTab={mode}
+          icon="panel.render"
+          label="Still"
+          onClick={onModeChange}
+        />
+        <PanelTabButton<RenderMode>
+          tab="movie"
+          activeTab={mode}
+          icon="panel.animation"
+          label="Movie"
+          onClick={onModeChange}
+        />
+      </div>
+
+      {/* -- Action bar + progress. Kept above the settings and the log so a
+             running job stays visible and cancellable. -- */}
       <div ref={barRef} className="render-panel-bar">
         {active ? (
           <FormButton
@@ -110,6 +170,38 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
             text="Start Render"
             onClick={onStart}
             disabled={!renderable}
+          />
+        )}
+
+        {/* Movie mode: re-encode the frames already on disk into a movie,
+            without re-rendering. Enabled only when a complete frame sequence
+            is present. */}
+        {!active && onEncode && (
+          <FormButton
+            icon={<AppIcon name="file.render" aria-hidden />}
+            text="Re-encode"
+            onClick={onEncode}
+            disabled={!canEncode}
+            title={
+              canEncode
+                ? "Re-encode the rendered frames into a movie (no re-rendering)"
+                : "No complete frame sequence found in the output folder"
+            }
+          />
+        )}
+
+        {/* Movie mode: delete the intermediate frames and the output movie. */}
+        {!active && onCleanup && (
+          <FormButton
+            icon={<AppIcon name="ui.trash" aria-hidden />}
+            text="Clean up"
+            onClick={onCleanup}
+            disabled={!canCleanup}
+            title={
+              canCleanup
+                ? "Delete the rendered frames and the output movie"
+                : "Nothing to clean up in the output folder"
+            }
           />
         )}
 
@@ -151,9 +243,10 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
         )}
       </div>
 
-      {/* -- Progress -- */}
       {job && (
         <div className="render-panel-progress">
+          {/* Whole-job progress. For a movie this spans the entire sequence,
+              so it never resets between frames. */}
           <ProgressBar
             value={job.progress / 100}
             intent={intentForJob(job)}
@@ -163,19 +256,46 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
         </div>
       )}
 
-      {/* -- Log -- */}
-      <div className="render-panel-log">
-        {job && job.log.length > 0 ? (
-          job.log.map((line, i) => (
-            <div className="render-log-line" key={i}>
-              {line}
-            </div>
-          ))
-        ) : (
-          <div className="render-panel-empty">
-            No render yet. Press Start Render to begin.
+      {/* -- Settings: two resizable columns, 1:1 by default. Start / progress
+             above and the log below stay full-width, outside this split. In
+             still mode the right column is empty, keeping the same shape. -- */}
+      <div className="render-panel-body">
+        <Allotment defaultSizes={[1, 1]}>
+          <Allotment.Pane minSize={120}>
+            <div className="render-panel-col">{leftPanel}</div>
+          </Allotment.Pane>
+          <Allotment.Pane minSize={120}>
+            <div className="render-panel-col">{rightPanel}</div>
+          </Allotment.Pane>
+        </Allotment>
+      </div>
+
+      {/* -- Log: auxiliary, collapsed by default. -- */}
+      <div className="render-panel-logsection">
+        <button
+          type="button"
+          className="render-panel-log-toggle"
+          onClick={() => setLogOpen((v) => !v)}
+        >
+          <AppIcon
+            name={logOpen ? "ui.caretDown" : "ui.caretRight"}
+            aria-hidden
+          />
+          <span className="type-label">Log</span>
+        </button>
+        <Collapse isOpen={logOpen}>
+          <div className="render-panel-log">
+            {job && job.log.length > 0 ? (
+              job.log.map((line, i) => (
+                <div className="render-log-line" key={i}>
+                  {line}
+                </div>
+              ))
+            ) : (
+              <div className="render-panel-empty">No render log yet.</div>
+            )}
           </div>
-        )}
+        </Collapse>
       </div>
     </div>
   );
