@@ -430,6 +430,9 @@ void UmbreonDisplayContext::appendIntData()
   if (defAlpha < 1.0f - 1.0e-4f)
     m_pImpl->groupBlend.push_back(umbreon::GroupBlend{group, defAlpha});
 
+  MB_DPRINTLN("UmbreonDC> section %s: group=%d alpha=%f", getSecName().c_str(),
+              int(group), double(defAlpha));
+
   // Normalize thin primitives: dots -> spheres, lines -> cylinders.
   pdat->convDots();
   pdat->convLines(true);
@@ -637,6 +640,18 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
   // overlapping primitives within a renderer do not double-blend (umbreon's
   // blendpng-equivalent multi-pass group alpha).
   scene.groupBlend = m_pImpl->groupBlend;
+
+  // Report the blend table umbreon receives. Each entry costs a full extra
+  // render pass, and the background pass weight (1 - sum) goes negative once
+  // several sections are nearly opaque -- both are worth seeing in a render
+  // log when an image comes out unexpectedly bright or slow.
+  if (!scene.groupBlend.empty()) {
+    double sumA = 0.0;
+    for (const umbreon::GroupBlend &gb : scene.groupBlend) sumA += gb.alpha;
+    LOG_DPRINTLN("Umbreon> group alpha: %d of %d sections, sum=%f, bg weight=%f",
+                 int(scene.groupBlend.size()), m_pImpl->nextGroup, sumA,
+                 1.0 - sumA);
+  }
 
   // background color (passed through as the linear working color); default black
   umbreon::Vec3 bg(0.0f, 0.0f, 0.0f);
