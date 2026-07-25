@@ -2,7 +2,9 @@
 #
 # Build libumbreon (the Embree ray-tracing backend) from source and install it
 # into the deplibs prefix, so libcuemol2 can consume it via find_package(umbreon).
-# Reused by the local `install_umbreon` task and the umbreon_smoke CI workflow.
+# Reused by the local `install_umbreon` task and by the CI build workflows
+# (build2.yml / build_linux.yml), which build every release artifact with
+# ENABLE_UMBREON=ON.
 #
 # usage: run.sh <deplibs_dir> <umbreon_src_dir>
 #

@@ -66,6 +66,11 @@ jobs:
 
     env:
       MACOSX_DEPLOYMENT_TARGET: "10.15"
+      # Ship the umbreon (Embree) ray-tracing backend. Injected here rather than
+      # flipped in build_libcuemol2_posix/run.sh because src/cmake/umbreon.cmake
+      # does find_package(umbreon CONFIG REQUIRED): a default of ON would break
+      # configure for any local checkout that has not run `task install_umbreon`.
+      ENABLE_UMBREON: "ON"
 
     steps:
     - name: Show build mode
@@ -122,6 +127,21 @@ jobs:
       uses: ./build_scripts/download_deplibs
       with:
         basedir: ${{ github.workspace }}/target
+
+    # umbreon is built from source (CueMol/umbreon at UMBREON_GIT_REF); Embree /
+    # TBB / OIDN come prebuilt in the deplibs bundle. libcuemol2 then links it
+    # via find_package(umbreon), resolving those deps to the same bundled copies.
+    - name: Read umbreon git ref
+      shell: bash
+      run: |
+        . build_scripts/deplibs.env
+        echo "UMBREON_GIT_REF=$UMBREON_GIT_REF" >> $GITHUB_ENV
+
+    - name: Build+install umbreon
+      uses: ./build_scripts/build_umbreon_posix
+      with:
+        basedir: ${{ github.workspace }}/target
+        ref: ${{ env.UMBREON_GIT_REF }}
 
     - name: Build libcuemol2
       uses: ./build_scripts/build_libcuemol2_posix
@@ -217,6 +237,10 @@ jobs:
   build_win_x64:
     name: "Windows intel msvc"
     runs-on: windows-2022
+    env:
+      # See the build_posix job: umbreon is opted into per-workflow, not by
+      # flipping the build script default.
+      ENABLE_UMBREON: "ON"
     steps:
     - uses: actions/checkout@v4
       with:
@@ -288,6 +312,20 @@ jobs:
       uses: ./build_scripts/download_deplibs
       with:
         basedir: ${{ github.workspace }}\target
+
+    # See the build_posix job. build_umbreon_posix/run.sh cygpath-normalizes its
+    # arguments, so the same action serves the MSVC leg.
+    - name: Read umbreon git ref
+      shell: bash
+      run: |
+        . build_scripts/deplibs.env
+        echo "UMBREON_GIT_REF=$UMBREON_GIT_REF" >> $GITHUB_ENV
+
+    - name: Build+install umbreon
+      uses: ./build_scripts/build_umbreon_posix
+      with:
+        basedir: ${{ github.workspace }}\target
+        ref: ${{ env.UMBREON_GIT_REF }}
 
     - name: Build libcuemol2
       uses: ./build_scripts/build_libcuemol2_posix
