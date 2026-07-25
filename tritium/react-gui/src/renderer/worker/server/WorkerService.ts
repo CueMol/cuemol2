@@ -283,7 +283,7 @@ export class WorkerService {
      */
     bindCanvas(canvas: any, view_id: number, dpr: number): boolean {
         if (this._gfx_mgr) {
-            console.log('bindCanvas:', canvas, view_id, dpr);
+            console.log('bindCanvas:', view_id, dpr);
             this._gfx_mgr.bindCanvas(canvas, view_id, dpr);
             this._gfx_mgr.activateView(view_id);
             return true;
