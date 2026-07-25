@@ -26,6 +26,12 @@ modules and that are not obvious from any single header.
   block 列挙のための `.qif` getter 追加 (`nblock`/`getBlock`/`TrajBlock.nframe`/`start_index`)、
   event type 連番 (bitmask 不可) を踏まえた atomsMoved の扱い、△ playhead の scrub、
   Phase C (remove/reorder = C++ 新規メソッド前提) の切り分け。
+- [Umbreon GI — pt2 integrator を明示 pin](umbreon-pt2-integrator.md) (日本語) --
+  indirect GI integrator を libcuemol2 側から `giIntegrator = 2` に明示 pin する判断。
+  `UMBREON_GIT_REF=main` が浮動 ref のため、既定値追従だと umbreon が pt3 を既定に
+  昇格した時点で絵が黙って変わる。UI/`.qif` には露出しない理由、GI オン時に metal 材質の
+  反射が背景色から実ジオメトリに変わる影響、principled BSDF material 採用を見送った理由、
+  umbreon 側 API doc が古くヘッダを SSOT とすべき点。
 - [umbreon group-alpha blend](umbreon-group-alpha-blend.md) -- section 透過
   (group alpha) を多重パスで合成する際の不変条件: パスの重みは単位分割
   (合計ちょうど 1) でなければならず、合計が 1 を超えたときに背景係数が**負に
