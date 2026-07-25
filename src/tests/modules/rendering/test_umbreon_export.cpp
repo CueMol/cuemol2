@@ -731,6 +731,83 @@ TEST(UmbreonExport, PostBlendsTranslucentSectionWithoutDoubleBlend)
     EXPECT_EQ(one, three);
 }
 
+// Two semi-transparent sections make the group-alpha blend weights sum to more
+// than 1 (0.95 + 0.95), which over-brightens every pass and blows OPAQUE
+// geometry out to white.
+//
+// The blend is out = (1 - sum(a)) * bgPass + sum_i a_i * layerPass_i. The
+// background weight is clamped at 0 when sum(a) > 1, but the layer weights are
+// not rescaled, so the total stays at sum(a). An opaque section belongs to no
+// blend group, so it is present in EVERY layer pass and is multiplied by
+// sum(a) = 1.9; anything above ~0.24 linear then clips to pure white.
+TEST(UmbreonExport, OpaqueSectionSurvivesTwoTranslucentSections)
+{
+    // A bright opaque triangle, plus `nTrans` translucent sections placed well
+    // away from it (off to the sides), so they never cover the triangle.
+    auto renderWith = [](int nTrans, double transAlpha) {
+        UmbreonDisplayContext ctx;
+        ctx.init();
+        ctx.setPerspective(false);
+        ctx.setViewDist(100.0);
+        ctx.setZoom(6.0);
+        ctx.loadIdent();
+
+        ctx.startRender();
+
+        ctx.setAlpha(1.0);  // opaque -> no blend group
+        ctx.startSection("opaque");
+        ctx.color(gfx::SolidColor::createRGB(0.8, 0.8, 0.8));
+        ctx.startTriangles();
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(-1.0, -1.0, 0.0));
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(1.0, -1.0, 0.0));
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(0.0, 1.0, 0.0));
+        ctx.end();
+        ctx.endSection();
+
+        for (int i = 0; i < nTrans; ++i) {
+            ctx.setAlpha(transAlpha);
+            ctx.startSection(LString::format("trans%d", i));
+            ctx.color(gfx::SolidColor::createRGB(0.2, 0.4, 1.0));
+            ctx.sphere(0.4, Vector4D((i == 0) ? -2.5 : 2.5, 2.0, 0.0));
+            ctx.endSection();
+        }
+
+        UmbreonRenderParams prm;
+        prm.width = 64;
+        prm.height = 64;
+        prm.supersample = 1;
+
+        int ow = 0, oh = 0, ncomp = 0;
+        std::vector<unsigned char> pix;
+        ctx.render(prm, ow, oh, ncomp, pix);
+        return pix;
+    };
+
+    // Sample the middle of the opaque triangle (below the frame centre, since
+    // the triangle spans y = -1 .. 1 with its wide edge at the bottom).
+    const std::size_t c = (static_cast<std::size_t>(38) * 64 + 32) * 3;
+
+    const std::vector<unsigned char> none = renderWith(0, 1.0);
+    ASSERT_EQ(none.size(), static_cast<std::size_t>(64 * 64 * 3));
+    // Baseline: lit grey, not saturated.
+    ASSERT_GT(none[c], 8);
+    ASSERT_LT(none[c], 250);
+
+    // One translucent section: sum(a) = 0.95 <= 1, so the opaque triangle is
+    // unaffected.
+    const std::vector<unsigned char> one = renderWith(1, 0.95);
+    EXPECT_NEAR(one[c], none[c], 2);
+
+    // Two translucent sections: sum(a) = 1.9. The opaque triangle must still
+    // match the baseline -- it is in no blend group and nothing occludes it.
+    const std::vector<unsigned char> two = renderWith(2, 0.95);
+    EXPECT_NEAR(two[c], none[c], 2)
+        << "opaque geometry was scaled by the group-alpha weight sum";
+}
+
 // Pins the asynchronous render path (startAsyncRender -> finishAsyncRender)
 // against the synchronous render(): rendering the SAME scene on a background
 // thread must produce a byte-identical frame (umbreon guarantees deterministic

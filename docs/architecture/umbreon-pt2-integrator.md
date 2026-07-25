@@ -1,8 +1,11 @@
-# ADR-0039: Umbreon GI — pt2 integrator を明示 pin
+# Umbreon GI — pt2 integrator を明示 pin
 
-- Status: accepted
-- Date: 2026-07-17
-- Mapping rows: [`dialog.tool.render-pov`](../mapping/tool_dlgs.md)
+umbreon の indirect GI integrator を libcuemol2 側から明示的に pin する判断の記録
+(2026-07-17)。浮動 ref (`UMBREON_GIT_REF=main`) に追従することで絵が黙って変わるのを
+防ぐのが目的。
+
+Related: [umbreon group-alpha blend](umbreon-group-alpha-blend.md),
+[umbreon の Electron メモリ制約と process 分離設計](umbreon-process-isolation.md)。
 
 ## Context
 
@@ -116,10 +119,10 @@ gather core を共有しているため)。cuemol2 の `giSamples` / `giDenoise`
 
 `spec_metal` / `diff_metal` を本物の GGX メタルにできる価値はあるが、絵の変化が広範囲になるため別 PR とする。
 
-### 関連 ADR
+### 関連ドキュメント
 
-- [ADR-0035](ADR-0035-render-window.md) — GI 設定を載せている render window
-- [ADR-0037](ADR-0037-scene-export-capability-gate.md) — `HAVE_UMBREON` の capability gate
+- [ADR-0035](../migration/adr/ADR-0035-render-window.md) — GI 設定を載せている render window
+- [ADR-0037](../migration/adr/ADR-0037-scene-export-capability-gate.md) — `HAVE_UMBREON` の capability gate
 
 ### その他の deferred 事項
 

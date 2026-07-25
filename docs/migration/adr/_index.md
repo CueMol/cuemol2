@@ -19,7 +19,13 @@ Architecture Decision Records for the UXP → tritium migration.
 >
 > **Numbering.** Four-digit zero-padded sequential (`ADR-0001`, `ADR-0002`,
 > ...). Once assigned, never renumber — supersession is recorded in the
-> Status field, not by reusing numbers.
+> Status field, not by reusing numbers. A number may also be absent because
+> the document turned out not to be about the migration and moved to
+> `../../architecture/`; those numbers are retired, not reused (see below).
+>
+> **Moved out of this set.** ADR-0039 (Umbreon GI pt2 integrator) ->
+> [`docs/architecture/umbreon-pt2-integrator.md`](../../architecture/umbreon-pt2-integrator.md).
+> umbreon is a new rendering backend, not a UXP surface being migrated.
 >
 > **Template.** Copy `_template.md` when adding a new ADR.
 
@@ -67,5 +73,4 @@ Architecture Decision Records for the UXP → tritium migration.
 | [ADR-0036](ADR-0036-settings-panel-wiring.md) | Settings panel wiring — atom-label defaults (StyleManager DefaultLabel.*) + view-input tbrad/hitprec (ViewInputConfig + UserViewConf), user-style persisted via new saveUserStyle on window close; mock cleanup (32 -> 13 settings) | accepted (host E2E pending) | 2026-07-05 | `overlay.config-misc`, `overlay.config-mouse` |
 | [ADR-0037](ADR-0037-scene-export-capability-gate.md) | Scene-export menu items gated by libcuemol2 exporter capability — startup `getAvailableSceneExporters` probe hides exporters not compiled in (e.g. Umbreon without HAVE_UMBREON) via MenuState.exportCaps + MenuItem.visible; fail-open | accepted (host E2E pending) | 2026-07-12 | `menu.cuemol2.rendering` |
 | [ADR-0038](ADR-0038-apbs-calcpot.md) | APBS electrostatic-potential tool — modal + inline progress (DialogShell footerActions), exe paths moved to Settings (ApbsConfigContext), worker ProcessManager two-phase pdb2pqr->apbs pipeline loading an ElePotMap | accepted (host E2E pending) | 2026-07-12 | `dialog.tool.apbs-calcpot` |
-| [ADR-0039](ADR-0039-umbreon-pt2-integrator.md) | Umbreon GI — pt2 integrator を明示 pin (pt1 は umbreon 側で frozen regression anchor 化); UI 非露出、浮動 ref `UMBREON_GIT_REF=main` への追従で絵が黙って変わるのを防ぐ。principled BSDF material 採用は deferred | accepted | 2026-07-17 | `dialog.tool.render-pov` |
 | [ADR-0040](ADR-0040-animation-rendering.md) | Animation (movie) rendering — ADR-0035 の Rendering window に Still/Animation モードとして統合; scene duplication と target-scene ロックは採らず (実現性は確認済みで将来の option として記録)、代わりに `AnimMgr` の property 保存/復元 (startImpl で保存・stop で復元・pause では保持) を libcuemol2 側に先行実装し undo/redo との乖離を解消。umbreon (in-process ray tracer) は `AnimMgr::writeFrame` を `beginFrame`/`endFrame` に分割し、その間で非同期 render を 1 フレームずつ回す | accepted | 2026-07-20 | `dialog.anim-render` |
