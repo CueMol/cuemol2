@@ -1,10 +1,13 @@
-# ADR-0041: umbreon group-alpha blend — the pass weights are a partition of unity
+# umbreon group-alpha blend — the pass weights are a partition of unity
 
-- Status: accepted (host E2E verified 2026-07-25 from tritium)
-- Date: 2026-07-25
-- Mapping rows: [`dialog.tool.render-pov`](../mapping/tool_dlgs.md#dialogtoolrender-pov)
-- Related: [ADR-0039](ADR-0039-umbreon-pt2-integrator.md) (the umbreon backend),
-  [ADR-0017](ADR-0017-povray-rendering-ui.md) (the POV-Ray pipeline this mirrors)
+Why section transparency ("group alpha") in the umbreon backend is realised as
+a multi-pass blend whose weights must sum to exactly 1, what breaks when they
+do not, and why the background coefficient is allowed to go negative. Written
+up after opaque renderers blew out to white in a scene with two nearly-opaque
+sections (fixed in [CueMol/umbreon#66](https://github.com/CueMol/umbreon/pull/66),
+host-verified from tritium on 2026-07-25).
+
+Related: [umbreon の Electron メモリ制約と process 分離設計](umbreon-process-isolation.md).
 
 ## Context
 
@@ -28,7 +31,7 @@ out = (1 - sum_i a_i) * render(scene minus every blend group)
     + sum_i a_i       * render(scene with group i kept, other groups hidden)
 ```
 
-## Decision
+## The defect: clamping the background weight
 
 The defect is in umbreon, not in libcuemol2. `renderImpl` clamped the
 background coefficient at zero:
@@ -56,7 +59,7 @@ libcuemol2 keeps a cross-layer regression test
 blend table it hands to umbreon (`Umbreon> group alpha: ...`, including the
 background weight).
 
-## Consequences
+## Consequences and limits
 
 - Scenes with several nearly-opaque renderers render correctly. libcuemol2
   needed no change: it was already feeding umbreon the same weights POV-Ray
@@ -72,9 +75,7 @@ background weight).
 - One extra full render pass per translucent section remains the cost of the
   model. The new log line makes that visible (`N of M sections`).
 
-## Notes
-
-### Why POV-Ray never showed it
+## Why POV-Ray never showed it
 
 `PovDisplayContext::startSection` quantises the alpha to one decimal digit for
 its `m_blendTab` string key and returns early when `intalp >= 10`, so
@@ -86,7 +87,7 @@ scene. umbreon has no such constraint and correctly keeps `alpha = 0.95` as a
 95% blend; that divergence in the `[0.95, 1.0)` range is intentional and not
 "fixed" by matching POV's cutoff.
 
-### Reproduction
+## Reproduction
 
 `src/tests/modules/rendering/test_umbreon_export.cpp`
 `OpaqueSectionSurvivesTwoTranslucentSections`: a bright opaque triangle plus
@@ -101,7 +102,7 @@ scene. umbreon has no such constraint and correctly keeps `alpha = 0.95` as a
 umbreon's own unit-level guard is `T9` in
 `tests/test_render_transparency.cpp`.
 
-### Implementation pointers
+## Implementation pointers
 
 - `src/modules/rendering/UmbreonDisplayContext.cpp` — `appendIntData` assigns
   one group per section and pushes the `groupBlend` entry; `render()` hands
