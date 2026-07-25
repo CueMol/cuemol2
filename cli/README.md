@@ -26,7 +26,8 @@ build `cli/` directly (see `build_scripts/build_cuetty_posix/run.sh` for the
 cmake arguments).
 
 **Headless rendering additionally requires libcuemol2 to be built with
-`ENABLE_UMBREON=ON`**, which is *not* the default:
+`ENABLE_UMBREON=ON`**. CI builds every release artifact that way, but it is
+*not* the default for a local build:
 
 ```sh
 task install_umbreon                        # build+install umbreon into the deplibs prefix

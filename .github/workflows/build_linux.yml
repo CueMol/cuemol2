@@ -22,6 +22,11 @@ jobs:
     # dispatch), not on every feature-branch push. Core build + tests run always.
     env:
       DO_PACKAGE: ${{ github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
+      # Ship the umbreon (Embree) ray-tracing backend. Injected here rather than
+      # flipped in build_libcuemol2_posix/run.sh because src/cmake/umbreon.cmake
+      # does find_package(umbreon CONFIG REQUIRED): a default of ON would break
+      # configure for any local checkout that has not run `task install_umbreon`.
+      ENABLE_UMBREON: "ON"
     strategy:
       fail-fast: false
       matrix:
@@ -69,6 +74,21 @@ jobs:
       uses: ./build_scripts/download_deplibs
       with:
         basedir: ${{ github.workspace }}/target
+
+    # umbreon is built from source (CueMol/umbreon at UMBREON_GIT_REF); Embree /
+    # TBB / OIDN come prebuilt in the deplibs bundle. libcuemol2 then links it
+    # via find_package(umbreon), resolving those deps to the same bundled copies.
+    - name: Read umbreon git ref
+      shell: bash
+      run: |
+        . build_scripts/deplibs.env
+        echo "UMBREON_GIT_REF=$UMBREON_GIT_REF" >> $GITHUB_ENV
+
+    - name: Build+install umbreon
+      uses: ./build_scripts/build_umbreon_posix
+      with:
+        basedir: ${{ github.workspace }}/target
+        ref: ${{ env.UMBREON_GIT_REF }}
 
     - name: Build libcuemol2
       uses: ./build_scripts/build_libcuemol2_posix
