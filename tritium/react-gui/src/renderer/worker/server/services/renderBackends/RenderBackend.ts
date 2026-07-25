@@ -61,8 +61,10 @@ export interface RenderBackend {
    * which applies that frame's animation state and its own camera before
    * writing (so the exporter's `camera` name is not used here). Each frame
    * gets its own directory under `workDir`, which keeps `buildTasks` and
-   * `outputImagePath` working unchanged. A backend without this cannot
-   * render animations and is rejected up-front.
+   * `outputImagePath` working unchanged.
+   *
+   * In-process backends implement `beginInProcessAnimFrame` instead. A backend
+   * with neither cannot render animations and is rejected up-front.
    */
   exportAnimFrame?(
     ctx: WorkerContext,
@@ -94,6 +96,25 @@ export interface RenderBackend {
   beginInProcess?(
     ctx: WorkerContext,
     scene: Scene,
+    snapshot: RenderSettingsSnapshot,
+    outputPath: string,
+  ): InProcessRender;
+  /**
+   * Animation mode for an in-process backend: start the current frame's render
+   * on a background thread. When a backend defines this, the render-job
+   * pipeline calls it INSTEAD of `exportAnimFrame` + `buildTasks`, so no
+   * ProcessManager task is queued for the frame.
+   *
+   * The backend steps the animation itself -- `AnimMgr.beginFrame()` before
+   * starting the render, `AnimMgr.endFrame()` from the handle's `finish()` --
+   * which is what keeps the frame's state applied to the scene for the whole
+   * (asynchronous) render. The pipeline then sees the same poll -> finish
+   * cycle as a still in-process render and moves the finished frame into the
+   * output folder. See UmbreonBackend.
+   */
+  beginInProcessAnimFrame?(
+    ctx: WorkerContext,
+    animMgr: AnimMgr,
     snapshot: RenderSettingsSnapshot,
     outputPath: string,
   ): InProcessRender;

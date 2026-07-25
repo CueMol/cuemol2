@@ -3,6 +3,7 @@
 
 #include "qsys/Renderer.hpp"
 #include "qsys/Scene.hpp"
+#include "qsys/SceneExporter.hpp"
 #include "qsys/SceneManager.hpp"
 #include "qsys/anim/AnimMgr.hpp"
 #include "qsys/anim/PropAnim.hpp"
@@ -158,6 +159,28 @@ public:
         const double rho = getRho(elapsed);
         setAlpha(m_tgtUID, ANIM_START * (1.0 - rho) + ANIM_END * rho);
     }
+};
+
+/// SceneExporter recording how the frame-writing path drove it. Stands in
+/// for a real exporter (POV / umbreon) in the offline-rendering tests.
+class MockSceneExporter : public qsys::SceneExporter
+{
+public:
+    int m_nWriteCalls = 0;
+    /// Whether write() saw an attached scene and a frame camera.
+    bool m_bAttachedOnWrite = false;
+    bool m_bCameraOnWrite = false;
+
+    void write() override
+    {
+        ++m_nWriteCalls;
+        m_bAttachedOnWrite = !getClient().isnull();
+        m_bCameraOnWrite = !getCamera().isnull();
+    }
+
+    const char *getName() const override { return "animmock"; }
+    const char *getTypeDescr() const override { return "Mock exporter"; }
+    const char *getFileExt() const override { return "*.mock"; }
 };
 
 }  // namespace
@@ -344,4 +367,73 @@ TEST_F(AnimMgrRestoreTest, SetupRenderThenStopRestores)
 
     m_pMgr->stop();
     EXPECT_DOUBLE_EQ(getAlpha(m_rendUID), ORIG_ALPHA);
+}
+
+// writeFrame() is beginFrame() + write() + endFrame(): the synchronous path
+// still hands the exporter an attached scene and the frame's camera, then
+// releases it and advances the sequence.
+TEST_F(AnimMgrRestoreTest, WriteFrameAttachesSceneAndCamera)
+{
+    m_pMgr->setupRender(qlib::LScrTime(0), qlib::LScrTime(ANIM_LEN), 10.0);
+
+    MockSceneExporter *pExp = MB_NEW MockSceneExporter();
+    qlib::LScrSp<qsys::SceneExporter> pWriter(pExp);
+
+    const int frame0 = m_pMgr->getFrameNo();
+    m_pMgr->writeFrame(pWriter);
+
+    EXPECT_EQ(pExp->m_nWriteCalls, 1);
+    EXPECT_TRUE(pExp->m_bAttachedOnWrite);
+    EXPECT_TRUE(pExp->m_bCameraOnWrite);
+    EXPECT_TRUE(pExp->getClient().isnull());
+    EXPECT_EQ(m_pMgr->getFrameNo(), frame0 + 1);
+
+    m_pMgr->stop();
+}
+
+// An asynchronous exporter renders between beginFrame() and endFrame(), so
+// the frame state must hold across that whole interval: only endFrame()
+// detaches the scene and consumes the frame.
+TEST_F(AnimMgrRestoreTest, BeginFrameHoldsStateUntilEndFrame)
+{
+    m_pMgr->setupRender(qlib::LScrTime(0), qlib::LScrTime(ANIM_LEN), 10.0);
+
+    MockSceneExporter *pExp = MB_NEW MockSceneExporter();
+    qlib::LScrSp<qsys::SceneExporter> pWriter(pExp);
+
+    const int frame0 = m_pMgr->getFrameNo();
+    ASSERT_TRUE(m_pMgr->beginFrame(pWriter));
+
+    EXPECT_FALSE(pExp->getClient().isnull());
+    EXPECT_FALSE(pExp->getCamera().isnull());
+    EXPECT_EQ(pExp->m_nWriteCalls, 0);
+    EXPECT_EQ(m_pMgr->getFrameNo(), frame0);
+
+    m_pMgr->endFrame(pWriter);
+
+    EXPECT_TRUE(pExp->getClient().isnull());
+    EXPECT_EQ(m_pMgr->getFrameNo(), frame0 + 1);
+
+    m_pMgr->stop();
+}
+
+// The frame loop terminates: once the sequence set up by setupRender() is
+// exhausted, beginFrame() reports false instead of rendering another frame.
+TEST_F(AnimMgrRestoreTest, BeginFrameStopsAtEndOfSequence)
+{
+    const int nframes =
+        m_pMgr->setupRender(qlib::LScrTime(0), qlib::LScrTime(ANIM_LEN), 10.0);
+    ASSERT_GT(nframes, 0);
+
+    MockSceneExporter *pExp = MB_NEW MockSceneExporter();
+    qlib::LScrSp<qsys::SceneExporter> pWriter(pExp);
+
+    for (int i = 0; i < nframes; ++i) {
+        ASSERT_TRUE(m_pMgr->beginFrame(pWriter));
+        m_pMgr->endFrame(pWriter);
+    }
+
+    EXPECT_FALSE(m_pMgr->beginFrame(pWriter));
+
+    m_pMgr->stop();
 }

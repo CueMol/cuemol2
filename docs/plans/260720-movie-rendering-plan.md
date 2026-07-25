@@ -189,6 +189,8 @@ UXP の Preview タブ (フレームスライダーによる出力画像のプ�
    `am.stop()` を足す。in-process (umbreon) 経路で animation を許すかも決める
    (初版は **POV-Ray のみ**に絞るのが安全 — umbreon は `attach`〜`detach` 間ライブ Scene 参照を
    保持するため、フレームごとの attach/detach と噛み合うか未検証)
+   -> **決着済み**: `AnimMgr::writeFrame` を `beginFrame`/`endFrame` に分割し、
+   umbreon は両者の間で非同期 render を回す形で対応した ([ADR-0040](../migration/adr/ADR-0040-animation-rendering.md) decision 6)
 7. **`animation.service.ts` との競合** — UI から play 中に render を start した場合の扱い。
    同じ `AnimMgr` を両方が触るので、少なくとも start 時に再生中なら停止する
 
@@ -219,7 +221,8 @@ Vitest (`react-gui/src/renderer/__test__/`)。既存の
 - **プロセス並列レンダリング** — UXP の `setSlotSize(ncpu)` 相当。長尺で効くが、
   ProcessManager の slot 管理と進捗集計が複雑になる
 - **Preview タブ** (出力済みフレームのスライダー閲覧) と **Re-encode ボタン**
-- **umbreon backend での animation** — 初版は POV-Ray のみ
+- ~~**umbreon backend での animation** — 初版は POV-Ray のみ~~
+  -> 実装済み ([ADR-0040](../migration/adr/ADR-0040-animation-rendering.md) decision 6)
 - **結果履歴** — 現行どおり最新 1 件
 - **設定の永続化** — 現行の Still と同じく window ローカルで、閉じるとリセット
   (`useRenderSettings.ts:11`)。ただし**出力ディレクトリとベース名は毎回入れ直すのが苦痛**なので、

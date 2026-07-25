@@ -14,10 +14,15 @@
  * and cooperative cancellation, so the render-job pipeline can poll it between
  * worker ticks -- the worker (and the main-window 3D view) stays responsive and
  * a live progress bar is driven. `finish()` joins the worker and writes the PNG.
+ *
+ * Animation mode reuses that same asynchronous cycle one frame at a time
+ * (`beginInProcessAnimFrame`), driving `AnimMgr` with the split
+ * `beginFrame()` / `endFrame()` pair rather than the blocking `writeFrame()`.
  */
 
 import * as path from "path";
 
+import type { AnimMgr } from "@cuemol/core/src/wrappers/AnimMgr";
 import type { Scene } from "@cuemol/core/src/wrappers/Scene";
 import type { UmbreonSceneExporter } from "@cuemol/core/src/wrappers/UmbreonSceneExporter";
 import type { WorkerContext } from "../../types/WorkerContext";
@@ -44,6 +49,93 @@ const DENOISE_MODE: Record<string, { giDenoise: boolean; denoiser: number }> = {
   None: { giDenoise: false, denoiser: 0 },
 };
 
+/**
+ * Create the umbreon exporter and apply every setting from `snapshot`.
+ *
+ * Shared by the still and the animation paths, which differ only in how the
+ * camera is chosen: the still path names it (`camera = "__current"`), while an
+ * animation frame gets the animation's own camera object from
+ * `AnimMgr.beginFrame()` (an explicit camera object overrides the name).
+ */
+function makeExporter(
+  ctx: WorkerContext,
+  snapshot: RenderSettingsSnapshot,
+): UmbreonSceneExporter {
+  const exporter = ctx.strMgr.createHandler("umbreon", 2) as UmbreonSceneExporter;
+  if (!exporter) throw new Error("cannot create umbreon exporter");
+
+  const common = snapshot.commonProps;
+  const ub = snapshot.backendProps;
+
+  // Reused common props (same mapping as PovrayBackend.exportScene).
+  exporter.perspective = strVal(common, "projection", "perspective") === "perspective";
+  exporter.useClipZ = boolVal(common, "clipPlane", true);
+  exporter.showEdgeLines = boolVal(common, "edgeLines", true);
+  exporter.transparentBackground = boolVal(common, "transparentBg", false);
+  const { width, height } = pixelImageSize(common);
+  exporter.width = width;
+  exporter.height = height;
+
+  // Umbreon-specific backend props. Fallbacks preserve the C++ ctor defaults
+  // (e.g. aoDistance 1e20 = unbounded) when a prop is absent from the snapshot.
+  exporter.supersample = numVal(ub, "supersample", 3);
+  // AO on/off is a dedicated switch; map it to aoSamples 0 when off (C++
+  // treats 0 samples as AO disabled). When on, aoSamples is >= 1.
+  exporter.aoSamples = boolVal(ub, "aoEnabled", false) ? numVal(ub, "aoSamples", 8) : 0;
+  exporter.aoDistance = numVal(ub, "aoDistance", 1e20);
+  exporter.aoIntensity = numVal(ub, "aoIntensity", 1.0);
+  exporter.shadows = boolVal(ub, "shadows", false);
+  exporter.shadowSamples = numVal(ub, "shadowSamples", 1);
+  exporter.lightRadius = numVal(ub, "lightRadius", 0.0);
+  exporter.creaseLimit = numVal(ub, "creaseLimit", -1.0);
+  exporter.edgeRise = numVal(ub, "edgeRise", 0.5);
+
+  // Diffuse global illumination (pt1 path-traced integrator).
+  exporter.useGI = boolVal(ub, "useGI", false);
+  exporter.giSamples = numVal(ub, "giSamples", 32);
+  exporter.giIntensity = numVal(ub, "giIntensity", 1.0);
+  exporter.giEnvIntensity = numVal(ub, "giEnvIntensity", 1.0);
+  const denoise = DENOISE_MODE[strVal(ub, "denoise", "OIDN")] ?? DENOISE_MODE.OIDN;
+  exporter.giDenoise = denoise.giDenoise; // pt1Denoise: OIDN on the indirect buffer
+  exporter.denoiser = denoise.denoiser; // full-frame post-pass (0 = None, 1 = a-trous)
+
+  return exporter;
+}
+
+/**
+ * Wrap a started umbreon render as an `InProcessRender` handle.
+ *
+ * @param onFinish - Released alongside the exporter once the render has been
+ *   joined, whatever the outcome. The animation path releases the frame back
+ *   to `AnimMgr` here; the still path detaches the scene.
+ */
+function makeHandle(
+  exporter: UmbreonSceneExporter,
+  onFinish: () => void,
+): InProcessRender {
+  let finished = false;
+  return {
+    progress: () => exporter.getRenderProgress(), // 0..1
+    phase: () => exporter.getRenderPhaseName(),
+    isDone: () => exporter.isRenderDone(),
+    finish: () => {
+      // endRender joins the worker and writes the PNG (unless cancelled).
+      // Guard against a double finish (poll tick racing a forced finish).
+      if (finished) return exporter.wasRenderCancelled();
+      finished = true;
+      try {
+        exporter.endRender();
+        return exporter.wasRenderCancelled();
+      } finally {
+        // The scene stays attached to the exporter until this runs, so it must
+        // happen even when endRender() throws.
+        onFinish();
+      }
+    },
+    cancel: () => exporter.cancelRender(),
+  };
+}
+
 export const umbreonBackend: RenderBackend = {
   id: "umbreon",
 
@@ -64,44 +156,8 @@ export const umbreonBackend: RenderBackend = {
     snapshot: RenderSettingsSnapshot,
     outputPath: string,
   ): InProcessRender {
-    const exporter = ctx.strMgr.createHandler("umbreon", 2) as UmbreonSceneExporter;
-    if (!exporter) throw new Error("cannot create umbreon exporter");
-
-    const common = snapshot.commonProps;
-    const ub = snapshot.backendProps;
-
-    // Reused common props (same mapping as PovrayBackend.exportScene).
-    exporter.perspective = strVal(common, "projection", "perspective") === "perspective";
-    exporter.useClipZ = boolVal(common, "clipPlane", true);
-    exporter.showEdgeLines = boolVal(common, "edgeLines", true);
-    exporter.transparentBackground = boolVal(common, "transparentBg", false);
-    const { width, height } = pixelImageSize(common);
-    exporter.width = width;
-    exporter.height = height;
+    const exporter = makeExporter(ctx, snapshot);
     exporter.camera = "__current";
-
-    // Umbreon-specific backend props. Fallbacks preserve the C++ ctor defaults
-    // (e.g. aoDistance 1e20 = unbounded) when a prop is absent from the snapshot.
-    exporter.supersample = numVal(ub, "supersample", 3);
-    // AO on/off is a dedicated switch; map it to aoSamples 0 when off (C++
-    // treats 0 samples as AO disabled). When on, aoSamples is >= 1.
-    exporter.aoSamples = boolVal(ub, "aoEnabled", false) ? numVal(ub, "aoSamples", 8) : 0;
-    exporter.aoDistance = numVal(ub, "aoDistance", 1e20);
-    exporter.aoIntensity = numVal(ub, "aoIntensity", 1.0);
-    exporter.shadows = boolVal(ub, "shadows", false);
-    exporter.shadowSamples = numVal(ub, "shadowSamples", 1);
-    exporter.lightRadius = numVal(ub, "lightRadius", 0.0);
-    exporter.creaseLimit = numVal(ub, "creaseLimit", -1.0);
-    exporter.edgeRise = numVal(ub, "edgeRise", 0.5);
-
-    // Diffuse global illumination (pt1 path-traced integrator).
-    exporter.useGI = boolVal(ub, "useGI", false);
-    exporter.giSamples = numVal(ub, "giSamples", 32);
-    exporter.giIntensity = numVal(ub, "giIntensity", 1.0);
-    exporter.giEnvIntensity = numVal(ub, "giEnvIntensity", 1.0);
-    const denoise = DENOISE_MODE[strVal(ub, "denoise", "OIDN")] ?? DENOISE_MODE.OIDN;
-    exporter.giDenoise = denoise.giDenoise; // pt1Denoise: OIDN on the indirect buffer
-    exporter.denoiser = denoise.denoiser; // full-frame post-pass (0 = None, 1 = a-trous)
 
     exporter.attach(scene);
     exporter.setPath(outputPath);
@@ -109,23 +165,34 @@ export const umbreonBackend: RenderBackend = {
     // thread; returns immediately so the pipeline can poll for progress.
     exporter.beginRender();
 
-    let finished = false;
-    return {
-      progress: () => exporter.getRenderProgress(), // 0..1
-      phase: () => exporter.getRenderPhaseName(),
-      isDone: () => exporter.isRenderDone(),
-      finish: () => {
-        // endRender joins the worker and writes the PNG (unless cancelled).
-        // Guard against a double finish (poll tick racing a forced finish).
-        if (finished) return exporter.wasRenderCancelled();
-        finished = true;
-        exporter.endRender();
-        const cancelled = exporter.wasRenderCancelled();
-        exporter.detach();
-        return cancelled;
-      },
-      cancel: () => exporter.cancelRender(),
-    };
+    return makeHandle(exporter, () => exporter.detach());
+  },
+
+  beginInProcessAnimFrame(
+    ctx: WorkerContext,
+    animMgr: AnimMgr,
+    snapshot: RenderSettingsSnapshot,
+    outputPath: string,
+  ): InProcessRender {
+    const exporter = makeExporter(ctx, snapshot);
+    exporter.setPath(outputPath);
+
+    // beginFrame() attaches the scene, applies this frame's animation state and
+    // hands over the animation's own camera -- so no attach() and no `camera`
+    // name here (an explicit camera object wins over the name anyway). The
+    // frame stays applied until endFrame(), which is what lets the ray trace
+    // run asynchronously in between.
+    if (!animMgr.beginFrame(exporter)) {
+      throw new Error("the animation has no frame left to render");
+    }
+    try {
+      exporter.beginRender();
+    } catch (e) {
+      animMgr.endFrame(exporter);
+      throw e;
+    }
+
+    return makeHandle(exporter, () => animMgr.endFrame(exporter));
   },
 
   // Never invoked for an in-process backend (renderJob branches on

@@ -63,6 +63,12 @@ runtime_class AnimMgr
 
   void writeFrame(object<SceneExporter$> pWr);
 
+  // Split form of writeFrame(), for exporters that render asynchronously:
+  // beginFrame() applies the frame state, the render runs, endFrame() detaches
+  // the exporter and advances to the next frame.
+  boolean beginFrame(object<SceneExporter$> pWr);
+  void endFrame(object<SceneExporter$> pWr);
+
   property integer frameno => redirect(getFrameNo, XXX) (readonly);
 
   ////////////////////////////

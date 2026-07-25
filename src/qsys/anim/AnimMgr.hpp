@@ -236,7 +236,18 @@ namespace qsys {
 
     /// Write single frame using the SceneExporter
     void writeFrame(qlib::LScrSp<SceneExporter> pWriter);
-    
+
+    /// Prepare the exporter for the current frame WITHOUT writing it: attach
+    /// the target scene, apply this frame's animation state and hand the
+    /// frame's camera to the exporter.
+    /// Returns false when the frame sequence is already exhausted.
+    /// Pairs with endFrame(); an exporter that renders asynchronously
+    /// (e.g. UmbreonSceneExporter) runs between the two calls.
+    bool beginFrame(qlib::LScrSp<SceneExporter> pWriter);
+
+    /// Detach the exporter and advance to the next frame (see beginFrame()).
+    void endFrame(qlib::LScrSp<SceneExporter> pWriter);
+
     /////////////////
     // implementation
   private:

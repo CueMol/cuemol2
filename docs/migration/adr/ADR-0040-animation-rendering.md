@@ -1,6 +1,6 @@
 # ADR-0040: Animation (movie) rendering — Still/Animation mode in the Rendering window, and AnimMgr state restore
 
-- Status: proposed
+- Status: accepted (host E2E verified 2026-07-25; both backends)
 - Date: 2026-07-20
 - Mapping rows: [`dialog.anim-render`](../mapping/other_dlgs.md)
 - Related: [ADR-0035](ADR-0035-render-window.md) (the window this extends),
@@ -105,6 +105,31 @@ displays which scene is being rendered so the state is at least visible.
 plays still conflicts with the restore set (the saved value wins on stop).
 Left as-is; see Consequences.
 
+**6. umbreon renders frames through a split `AnimMgr` frame step.** The frame
+loop of (1) is backend-agnostic in shape but not in mechanism: POV-Ray exports
+a `.pov` per frame and queues an external process, whereas umbreon is an
+in-process ray tracer. `AnimMgr::writeFrame()` calls `SceneExporter::write()`,
+which for umbreon blocks the calling thread for the whole ray trace — running
+it in the Web Worker would freeze the worker (and the main window's 3D view)
+for seconds per frame, with no progress and no cancellation.
+
+`AnimMgr::writeFrame()` is therefore split into a scriptable
+`beginFrame()` / `endFrame()` pair — `attach` + `onTimerImpl` + `setCamera`,
+then `detach` + advance — with `writeFrame()` rewritten as their composition so
+the synchronous API (UXP, scripts) is unchanged. umbreon's backend runs the
+already-async still cycle (`beginRender()` -> poll -> `endRender()`,
+ADR-0039 / `docs/architecture/umbreon-process-isolation.md`) *between* the two
+calls, one frame at a time. `endFrame()` runs from the poll handle's
+`finish()`, so the frame's state stays applied to the scene for exactly as long
+as the ray trace needs it.
+
+The render-job pipeline gains one optional backend hook
+(`beginInProcessAnimFrame`) and reuses everything else: the same poll timer,
+the same whole-job progress arithmetic, the same frame-file naming, live
+preview, ffmpeg encode and `stop()`-on-exit. An in-process movie polls at the
+still-render rate (250 ms) rather than the external-process rate (700 ms),
+because its progress advances continuously within a frame.
+
 ## Consequences
 
 - Editing *other* scenes during a movie render works with no new code: the
@@ -130,6 +155,20 @@ Left as-is; see Consequences.
   for now; a future option is disabling undo/edits while `AM_RUNNING`.
 - Rendering the wrong output because the target scene was edited mid-render
   remains possible. Deferred with (2) and (4).
+- Both backends render movies, and the Rendering window needs no
+  backend-dependent UI: the Movie settings apply unchanged to either.
+- `beginFrame()` / `endFrame()` are a new public obligation on the frame
+  driver — an unpaired `beginFrame()` leaves the exporter attached to the
+  scene. `UmbreonBackend` therefore releases the frame from the poll handle's
+  `finish()`, including when `endRender()` throws, and the pipeline calls
+  `AnimMgr.stop()` on every exit path (completion, cancel, error) as before.
+- A cancelled in-process movie is cooperative, not immediate: the poll loop
+  must keep ticking after `renderCancel` so `finish()` can join the C++ render
+  thread. The current frame therefore runs to its next cancellation boundary
+  instead of dying at once (an external-process render is killed outright).
+- umbreon's memory ceiling in the Electron renderer (`umbreon-process-isolation.md`)
+  now applies per movie frame as well: a GI + OIDN movie at a resolution that
+  crashes a still will crash the same way on its first frame.
 
 ## Notes
 
@@ -140,7 +179,9 @@ Left as-is; see Consequences.
   and benefits uxp_gui immediately. Land first so the rendering work can
   assume a non-destructive `AnimMgr`.
 - **PR 2 (tritium)** — decisions (1): Still/Animation mode, frame loop,
-  ffmpeg encode.
+  ffmpeg encode. POV-Ray only.
+- **PR 3 (libcuemol2 + tritium)** — decision (6): the `beginFrame()` /
+  `endFrame()` split and the umbreon movie path.
 
 ### Implementation pointers
 
@@ -154,6 +195,11 @@ Left as-is; see Consequences.
   the only slot release) applies per frame.
 - `renderBackends/` — `RenderBackend` assumes one job = one image
   (`outputImagePath()`); a movie needs a different result shape.
+- Decision (6): `AnimMgr::beginFrame` / `endFrame` (`AnimMgr.cpp`, exposed in
+  `AnimMgr.qif`), `UmbreonBackend.beginInProcessAnimFrame`, and
+  `renderJob.service.ts` `submitInProcessAnimFrame` / `pollInProcessJob`
+  (which now completes a *unit* — a still job or one movie frame — rather than
+  the whole job).
 - ffmpeg is already staged into `bundle_apps/ffmpeg`
   (`packaging/collect-cuemol2-runtime.sh:185-191`, "future wiring"), but
   `getRenderBinaries()` (`main/ipcHandlers.ts:91-108`) does not resolve it —
