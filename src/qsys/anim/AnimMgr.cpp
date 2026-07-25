@@ -671,17 +671,34 @@ int AnimMgr::setupRender(const qlib::LScrTime &t_start,
 /// Write single frame using the SceneExporter
 void AnimMgr::writeFrame(qlib::LScrSp<SceneExporter> pWriter)
 {
-  if (m_nCurrFrame>m_nEndFrame)
+  if (!beginFrame(pWriter))
     return; // error (eof reached)
 
+  pWriter->write();
+
+  endFrame(pWriter);
+}
+
+/// Prepare the exporter for the current frame, without writing it
+bool AnimMgr::beginFrame(qlib::LScrSp<SceneExporter> pWriter)
+{
+  if (m_nCurrFrame>m_nEndFrame)
+    return false; // error (eof reached)
+
   qlib::time_value curt = qlib::time_value(::floor(double(m_nCurrFrame)*m_delt));
-  MB_DPRINTLN("Write frame %d (%f ms)", m_nCurrFrame, double(curt)/1000000.0);
+  MB_DPRINTLN("Begin frame %d (%f ms)", m_nCurrFrame, double(curt)/1000000.0);
 
   ScenePtr pScene = getTgtScene();
   pWriter->attach(pScene);
   onTimerImpl(curt);
   pWriter->setCamera(m_pWorkCam);
-  pWriter->write();
+
+  return true;
+}
+
+/// Detach the exporter and advance to the next frame
+void AnimMgr::endFrame(qlib::LScrSp<SceneExporter> pWriter)
+{
   pWriter->detach();
 
   ++m_nCurrFrame;
