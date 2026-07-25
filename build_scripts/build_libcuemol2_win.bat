@@ -27,9 +27,13 @@ if /I "%ENABLE_TBB%"=="ON" (
 )
 
 REM umbreon (Embree) backend is off by default. When on, libcuemol2 finds it (and
-REM the bundled Embree) from the deplibs prefix; install it first (install_umbreon).
+REM the bundled Embree / OIDN) from the deplibs prefix; install it first
+REM (install_umbreon). OpenImageDenoise_DIR is required because umbreon is built
+REM with UMBREON_WITH_OIDN=ON and links OIDN PUBLIC, while umbreonConfig.cmake
+REM stays denoiser-agnostic -- so the consumer resolves OIDN itself
+REM (src/cmake/umbreon.cmake). Keep in sync with build_libcuemol2_posix/run.sh.
 if "%ENABLE_UMBREON%"=="" SET ENABLE_UMBREON=OFF
-SET UMBREON_OPT=-DENABLE_UMBREON=%ENABLE_UMBREON% -Dembree_DIR=%BASEDIR%\embree-%EMBREE_VER%\lib\cmake\embree-%EMBREE_VER% -Dumbreon_DIR=%BASEDIR%\umbreon\lib\cmake\umbreon
+SET UMBREON_OPT=-DENABLE_UMBREON=%ENABLE_UMBREON% -Dembree_DIR=%BASEDIR%\embree-%EMBREE_VER%\lib\cmake\embree-%EMBREE_VER% -Dumbreon_DIR=%BASEDIR%\umbreon\lib\cmake\umbreon -DOpenImageDenoise_DIR=%BASEDIR%\oidn-%OIDN_VER%\lib\cmake\OpenImageDenoise-%OIDN_VER%
 
 SET SCRIPT_DIR=%~dp0
 echo SCRIPT_DIR: %SCRIPT_DIR%
