@@ -18,6 +18,13 @@ PR #422)。本書の crash は**その時点で未修正の既知問題**。
 > **本書の主題である OIDN/PartitionAlloc の大確保 crash (§2) は未解決**で、その根本
 > 対策としての process 分離 (§4) は引き続き有効。=> 分離の残る動機は「3rd-party
 > (OIDN/embree) の大確保を PA の効かない子プロセスに出す」memory 面のみに絞られた。
+>
+> **更新 (2026-07-25): animation (movie) rendering も同じ非同期経路に載った。**
+> `AnimMgr::writeFrame` を `beginFrame`/`endFrame` に分割し、その間で
+> `beginRender` -> poll -> `endRender` を 1 フレームずつ回す
+> ([ADR-0040](../migration/adr/ADR-0040-animation-rendering.md) decision 6)。
+> §2 の crash 条件は**フレームごとに同じ**なので、still で落ちる解像度 x GI 設定は
+> movie でも 1 フレーム目で落ちる。
 
 ---
 

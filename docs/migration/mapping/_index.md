@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-07-25 (`dialog.anim-render` を todo -> merged/review。Rendering window の Movie モードに **umbreon backend を配線**。umbreon は in-process ray tracer なので `AnimMgr::writeFrame` (= 同期 `SceneExporter::write`) をそのまま呼ぶと worker が 1 フレームあたり数秒〜数十秒ブロックし progress も cancel も効かない。そこで libcuemol2 の `AnimMgr::writeFrame` を scriptable な `beginFrame`(attach + `onTimerImpl` + `setCamera`) / `endFrame`(detach + フレーム前進) に分割し (`writeFrame` は両者の合成に書き換え = 同期 API は不変)、umbreon backend は既存の still 非同期経路 (`beginRender` -> poll -> `endRender`) をその間で 1 フレームずつ回す。`RenderBackend` に optional hook `beginInProcessAnimFrame` を追加、`renderJob.service` の `pollInProcessJob` を「ジョブ完了」から「ユニット完了」(still = ジョブ / movie = 1 フレーム) に一般化して frame loop・全体進捗・live preview・ffmpeg encode・`stop()` 復元を両 backend 共通化。in-process movie は 250ms poll (外部プロセスは 700ms)。cancel は協調型なので `pollJob` の in-process 分岐を cancelled ガードより前に置き、`finish()` が C++ render thread を join できるようにした。UI 変更なし (backend selector / Movie タブは元々 backend 非依存)。gtest 3 (`AnimMgrRestoreTest.{WriteFrameAttachesSceneAndCamera,BeginFrameHoldsStateUntilEndFrame,BeginFrameStopsAtEndOfSequence}`) + vitest 7 追加、gtest 1240 / vitest 2332 pass、production build OK。あわせて PR2 で更新漏れだった `dialog.anim-render` 行 (todo のまま) を実態に是正。Dialog_other todo 1->0 / done 15->16、Total todo 4->3 / done 104->105、merged 58->59 / unassigned 4->3、Unstarted 4->3。ADR-0040 decision 6。host E2E 済 (両 backend)。**別件の既知バグ**: umbreon の group alpha rendering で renderer alpha が 1.0 付近 (0.99) だと blend が破綻する (原因未特定、still/movie 共通、本変更とは無関係。`dialog.tool.render-pov` 側で追跡))
 - Updated: 2026-07-12 (`dialog.tool.apbs-calcpot` を todo -> split/wip。UXP `tools/apbs-calcpot` を `CalcApbsPotDialog` (共有 `DialogShell` + `footerActions` Start/Stop/Close) として移植。worker `calcApbsPot.service` (`calcApbsStart`/`calcApbsCancel`/`proposeElepotName`) が C++ `ProcessManager` で pdb2pqr->apbs の 2 相パイプラインを駆動 (worker ではキューが `queueTask` でしか進まないため deps 非依存で poll loop が apbs を明示 queue)、`apbs-progress` push (`WorkerTransport`/`AsyncCueMol`/`useCalcApbsJob`) で inline 進捗表示、OpenDX `.dx` を `createHandler('apbs',0)` -> `ElePotMap` + `*unitcell` renderer として 1 undo txn で load。両 charge method (pdb2pqr force-field / internal `PQRFileWriter` use_H) 維持。exe パスは UXP の in-dialog から Settings > Tools > APBS / PDB2PQR (`ApbsConfigContext`、electron-store、render binaries と同方式) へ移し未設定時は Start を gate。menu `apbs` を stub -> `ui.calcApbsPotDialog` に配線 (`menu.cuemol2.tools` 6/10->7/10)。dialog 専用 CSS は追加せず共有トークン/クラスに準拠。service 7 + dialog 4 の vitest 追加。Dialog_tool wip 0->1 / todo 3->2、Total wip 31->32 / todo 5->4、split 36->37 / unassigned 5->4、Unstarted 5->4。ADR-0038。full E2E は apbs/pdb2pqr バイナリ必要で host pending)
 - Updated: 2026-07-12 (`dialog.tool.molclient-tools` を todo -> dropped/done。MolClient (SMILES -> molecule) は外部 MolServer XMLRPC backend 必須で移植しない判断。Dialog_tool done 17->18 / todo 4->3、Total done 103->104 / todo 6->5、dropped 11->12 / unassigned 6->5、Unstarted 6->5。code 変更なし)
 - Updated: 2026-07-12 (`other.config-dialog` を todo -> merged/done。UXP Options prefwindow (Misc/Key/Mouse pane host) は左パネルの `SettingsPane` (`useSettingsPaneNav` + `settingsConfig` の nav tree、modal でない) として実装済。3 pane の扱いが確定 (Misc=`config-misc` wip / Mouse=`config-mouse` wip / Key=`config-keybind` deferred) したためシェルを done 化。Other done 2->3 / todo 1->0、Total done 102->103 / todo 7->6、merged 57->58 / unassigned 7->6、Unstarted 7->6。code 変更なし)
@@ -91,12 +92,12 @@
 | Menu | [menus.md](menus.md) | 11 | 6 | 5 | 0 | 0 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 1 | 1 | 0 | 0 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 16 | 14 | 2 | 0 | 0 | 0 |
-| Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 15 | 2 | 0 | 1 | 0 |
+| Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 16 | 2 | 0 | 0 | 0 |
 | Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 18 | 1 | 0 | 2 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 8 | 5 | 0 | 0 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 24 | 4 | 0 | 0 | 0 |
 | Other | [other.md](other.md) | 4 | 3 | 1 | 0 | 0 | 0 |
-| **Total** | | **140** | **104** | **32** | **0** | **4** | **0** |
+| **Total** | | **140** | **105** | **32** | **0** | **3** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -134,12 +135,12 @@
 | Mapping | Count |
 |---------|------:|
 | 1:1 (`direct`) | 28 |
-| merged | 58 |
+| merged | 59 |
 | split | 37 |
 | redesign | 0 |
 | deferred | 1 |
 | deprecated (`dropped`) | 12 |
-| *(not yet assigned)* | 4 |
+| *(not yet assigned)* | 3 |
 
 ---
 
@@ -183,4 +184,4 @@
 
 ## Unstarted
 
-**4 / 140** items are `todo` (not yet started).
+**3 / 140** items are `todo` (not yet started).

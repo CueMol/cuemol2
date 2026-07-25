@@ -345,4 +345,148 @@ describe('renderStart animation branch', () => {
             expect(res.ok).toBe(false)
         })
     })
+
+    // An in-process backend (umbreon) renders each frame on a background C++
+    // thread instead of spawning a process, so the frame loop is driven by the
+    // poll handle rather than by ProcessManager tasks.
+    describe('in-process backend', () => {
+        /** One frame's handle; `done` flips when the test says the frame ended. */
+        function makeHandle(onFinish: () => void) {
+            const h = {
+                done: false,
+                progress: vi.fn(() => 0.5),
+                phase: vi.fn(() => 'Primary'),
+                isDone: vi.fn(() => h.done),
+                finish: vi.fn(() => {
+                    onFinish()
+                    return false
+                }),
+                cancel: vi.fn(() => {
+                    h.done = true
+                }),
+            }
+            return h
+        }
+
+        let handles: ReturnType<typeof makeHandle>[]
+
+        beforeEach(() => {
+            handles = []
+            hoisted.getRenderBackend.mockReturnValue({
+                id: 'umbreon',
+                exportScene: vi.fn(),
+                outputImagePath: vi.fn(),
+                // No exportAnimFrame / buildTasks: this backend renders frames
+                // in-process only.
+                buildTasks: vi.fn(),
+                parseProgress: () => null,
+                beginInProcessAnimFrame: vi.fn(
+                    (
+                        _ctx: unknown,
+                        _mgr: unknown,
+                        _snap: unknown,
+                        outputPath: string,
+                    ) => {
+                        // finish() writes the frame PNG the pipeline then moves.
+                        const h = makeHandle(() => fs.writeFileSync(outputPath, PNG_BYTES))
+                        handles.push(h)
+                        return h
+                    },
+                ),
+            })
+        })
+
+        /** Run the frame currently in flight to completion. */
+        function finishCurrentFrame(): void {
+            handles[handles.length - 1].done = true
+            intervalCb?.()
+        }
+
+        it('renders every frame through the handle without queueing any task', () => {
+            const ctx = makeCtx()
+            const res = services.renderStart(ctx, makeArgs())
+            expect(res.ok).toBe(true)
+
+            // Only the first frame starts up-front, and no blocking writeFrame.
+            expect(handles).toHaveLength(1)
+            expect(animMgr.writeFrame).not.toHaveBeenCalled()
+
+            for (let i = 0; i < FRAME_COUNT; i++) finishCurrentFrame()
+
+            expect(handles).toHaveLength(FRAME_COUNT)
+            expect(handles.every((h) => h.finish.mock.calls.length === 1)).toBe(true)
+            // In-process: the external-process path is never touched.
+            expect(queueTask).not.toHaveBeenCalled()
+
+            expect(fs.readdirSync(outputDir).sort()).toEqual([
+                'movie_frm_0000.png',
+                'movie_frm_0001.png',
+                'movie_frm_0002.png',
+            ])
+            // The scene properties the animation overwrote are restored.
+            expect(animMgr.stop).toHaveBeenCalledTimes(1)
+        })
+
+        it('reports the frame progress as a share of the whole job', () => {
+            const ctx = makeCtx()
+            services.renderStart(ctx, makeArgs())
+
+            intervalCb?.() // frame 0 still running, 50% through
+
+            const last = pushMessage.mock.calls
+                .map((c) => c[1] as {
+                    type: string
+                    progress?: number
+                    frameIndex?: number
+                    frameCount?: number
+                    frameProgress?: number
+                })
+                .filter((u) => u.type === 'progress')
+                .pop()
+
+            expect(last?.frameIndex).toBe(0)
+            expect(last?.frameCount).toBe(FRAME_COUNT)
+            expect(last?.frameProgress).toBe(50)
+            // Half of one of three frames.
+            expect(last?.progress).toBe(Math.round((0.5 / FRAME_COUNT) * 100))
+        })
+
+        it('cancels cooperatively and still stops the animation', () => {
+            const ctx = makeCtx()
+            const res = services.renderStart(ctx, makeArgs())
+            finishCurrentFrame() // frame 0 done, frame 1 in flight
+
+            services.renderCancel(ctx, { jobId: res.jobId })
+            // The running render is asked to stop rather than killed outright.
+            expect(handles[1].cancel).toHaveBeenCalledTimes(1)
+            expect(animMgr.stop).not.toHaveBeenCalled()
+
+            // The next tick observes the finished (cancelled) render.
+            handles[1].finish.mockReturnValueOnce(true)
+            intervalCb?.()
+
+            expect(animMgr.stop).toHaveBeenCalledTimes(1)
+            // No further frame is started, and no completion is reported.
+            expect(handles).toHaveLength(2)
+            expect(
+                pushMessage.mock.calls.filter((c) => (c[1] as { type: string }).type === 'complete'),
+            ).toHaveLength(0)
+        })
+
+        it('encodes the frames with ffmpeg once they are all rendered', () => {
+            const ctx = makeCtx()
+            services.renderStart(ctx, makeArgs({ makeMovie: true }))
+            for (let i = 0; i < FRAME_COUNT; i++) finishCurrentFrame()
+
+            // The encode still runs as an external ProcessManager task.
+            expect(queueTask).toHaveBeenCalledTimes(1)
+            expect(queueTask.mock.calls[0][1]).toContain('movie_frm_%04d.png')
+
+            intervalCb?.() // the encode task ends
+            const complete = pushMessage.mock.calls
+                .map((c) => c[1] as { type: string; movie?: { moviePath?: string } })
+                .find((u) => u.type === 'complete')
+            expect(complete?.movie?.moviePath).toContain('movie.mp4')
+        })
+    })
 })

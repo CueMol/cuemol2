@@ -16,6 +16,15 @@
  * two phases: all render tasks are queued first, and the finalize task is
  * queued by the poll loop once every render task has finished -- that
  * `queueTask` call is what starts it.
+ *
+ * ## In-process backends
+ *
+ * A backend can instead render inside this process on a background C++ thread
+ * (umbreon). Then no task is queued at all: the pipeline holds a poll handle
+ * (`InProcessRender`) and drives it on the same timer. Both render modes go
+ * through this path -- a still uses `beginInProcess`, a movie repeats
+ * `beginInProcessAnimFrame` once per frame -- so the phase fields below are
+ * shared by all four combinations of (still | movie) x (external | in-process).
  */
 
 import * as fs from "fs";
@@ -70,8 +79,9 @@ type JobPhase = "render" | "finalize";
 
 /**
  * State of an in-flight animation render. The job renders one frame at a
- * time: each frame runs the same render -> finalize phases as a still, and
- * the poll loop starts the next frame instead of completing the job.
+ * time: each frame runs the same cycle as a still (render -> finalize for an
+ * external backend, one poll handle for an in-process one), and the poll loop
+ * starts the next frame instead of completing the job.
  */
 interface AnimJobState {
   /** The scene's animation manager (null for a re-encode-only job). */
@@ -212,8 +222,9 @@ function stopAnim(entry: RenderJobEntry): void {
 }
 
 /**
- * Export the current frame and queue its render tasks, reusing the still
- * pipeline's phase fields so pollJob drives it unchanged.
+ * Start the current frame, reusing the still pipeline's fields so pollJob
+ * drives it unchanged: an in-process backend gets a poll handle, an
+ * external-process backend gets its render tasks queued.
  */
 function submitAnimFrame(
   ctx: WorkerContext,
@@ -221,6 +232,11 @@ function submitAnimFrame(
   entry: RenderJobEntry,
   args: RenderStartArgs,
 ): void {
+  if (backend.beginInProcessAnimFrame) {
+    submitInProcessAnimFrame(ctx, backend, entry, args);
+    return;
+  }
+
   const anim = entry.anim!;
   // This path only runs for a full render, where scene / animMgr are set.
   const exported = backend.exportAnimFrame!(
@@ -259,6 +275,36 @@ function submitAnimFrame(
   entry.finalizeSpecs = tasks.filter((t) => t.kind === "finalize");
   entry.taskIds = taskIds;
   entry.taskProgress = taskIds.map(() => 0);
+}
+
+/**
+ * Start the current frame on an in-process backend (umbreon): the ray trace
+ * runs on a background C++ thread and the poll loop drives it through the
+ * handle, exactly as a still in-process render.
+ *
+ * The frame image goes to one fixed path inside the working dir --
+ * `advanceAnimFrame` moves it into the output folder as soon as it is done, so
+ * the name can be reused by every frame.
+ */
+function submitInProcessAnimFrame(
+  ctx: WorkerContext,
+  backend: RenderBackend,
+  entry: RenderJobEntry,
+  args: RenderStartArgs,
+): void {
+  const anim = entry.anim!;
+  entry.outputPath = path.join(entry.workDir, "frame.png");
+  entry.phase = "render";
+  entry.finalizeSpecs = [];
+  entry.taskIds = [];
+  entry.taskProgress = [];
+  entry.lastPhaseName = "";
+  entry.inProcess = backend.beginInProcessAnimFrame!(
+    ctx,
+    anim.animMgr!,
+    args.snapshot,
+    entry.outputPath,
+  );
 }
 
 /** Finish an animation job: stop the animation and report the last frame. */
@@ -522,6 +568,16 @@ function pollJob(
   entry: RenderJobEntry,
   args: RenderStartArgs,
 ): void {
+  // In-process render (umbreon): no ProcessManager task to poll. Checked
+  // before the cancelled guard below -- a cancel here is cooperative, so the
+  // loop must keep ticking until the handle reports done and `finish()` can
+  // join the C++ render thread (renderCancel deliberately leaves the timer
+  // running for exactly this).
+  if (entry.inProcess) {
+    pollInProcessJob(ctx, backend, entry, args);
+    return;
+  }
+
   if (entry.cancelled) return;
 
   // A movie encode runs as its own single-task phase, outside the per-frame
@@ -618,7 +674,7 @@ function startInProcessJob(
 
   entry.timer = setInterval(() => {
     try {
-      pollInProcessJob(ctx, entry, args);
+      pollInProcessJob(ctx, backend, entry, args);
     } catch (e) {
       stopTimer(entry);
       jobs.delete(jobId);
@@ -633,11 +689,15 @@ function startInProcessJob(
 /**
  * One poll tick for an in-process render: push a progress update while it runs,
  * or -- once the background render reports done -- join the worker and write the
- * image via the handle's `finish()`, then emit completion (or drop it on a user
- * cancel).
+ * image via the handle's `finish()`, then complete the unit (or drop it on a
+ * user cancel).
+ *
+ * A still job completes here; an animation job banks the frame and starts the
+ * next one, so this drives both the still and the movie in-process paths.
  */
 function pollInProcessJob(
   ctx: WorkerContext,
+  backend: RenderBackend,
   entry: RenderJobEntry,
   args: RenderStartArgs,
 ): void {
@@ -659,23 +719,22 @@ function pollInProcessJob(
       logChunk += `${phaseName}\n`;
     }
 
-    emit(ctx, {
-      type: "progress",
-      jobId: entry.jobId,
-      progress: Math.max(0, Math.min(100, Math.round(frac * 100))),
-      phase: "running",
-      logChunk: logChunk || undefined,
-    });
+    const pct = Math.max(0, Math.min(100, Math.round(frac * 100)));
+    emit(ctx, progressUpdate(entry, "running", logChunk, pct));
     return;
   }
 
   // Done (completed or cancelled): join the worker + write the PNG via finish().
-  stopTimer(entry);
+  // The handle is cleared first: for a movie, completeUnit starts the next
+  // frame, which installs a fresh handle.
+  entry.inProcess = null;
   let cancelled: boolean;
   try {
     cancelled = handle.finish();
   } catch (e) {
+    stopTimer(entry);
     jobs.delete(entry.jobId);
+    stopAnim(entry);
     cleanupDir(entry.workDir);
     emit(ctx, { type: "error", jobId: entry.jobId, error: String(e) });
     return;
@@ -683,16 +742,21 @@ function pollInProcessJob(
 
   if (cancelled || entry.cancelled) {
     // User cancellation: no complete push (matches the external cancel path).
+    stopTimer(entry);
     jobs.delete(entry.jobId);
+    stopAnim(entry);
     cleanupDir(entry.workDir);
     return;
   }
-  finishJob(ctx, entry, args); // reads the PNG, emits `complete`
+
+  // Still: emit `complete` (finishJob stops the timer). Movie: bank the frame
+  // and start the next one, keeping the poll timer running.
+  completeUnit(ctx, backend, entry, args);
 }
 
 /**
  * Start an animation render: set up AnimMgr for offline rendering, then
- * queue the first frame. Subsequent frames are started by the poll loop.
+ * start the first frame. Subsequent frames are started by the poll loop.
  */
 function startAnimJob(
   ctx: WorkerContext,
@@ -706,7 +770,7 @@ function startAnimJob(
     return { ok: false, jobId: "", error };
   };
 
-  if (!backend.exportAnimFrame) {
+  if (!backend.exportAnimFrame && !backend.beginInProcessAnimFrame) {
     return fail(`The ${backend.id} backend cannot render animations`);
   }
 
@@ -790,17 +854,22 @@ function startAnimJob(
     return { ok: false, jobId: "", error: String(e) };
   }
 
-  entry.timer = setInterval(() => {
-    try {
-      pollJob(ctx, backend, entry, args);
-    } catch (e) {
-      stopTimer(entry);
-      jobs.delete(jobId);
-      stopAnim(entry);
-      cleanupDir(workDir);
-      emit(ctx, { type: "error", jobId, error: String(e) });
-    }
-  }, POLL_MS);
+  entry.timer = setInterval(
+    () => {
+      try {
+        pollJob(ctx, backend, entry, args);
+      } catch (e) {
+        stopTimer(entry);
+        jobs.delete(jobId);
+        stopAnim(entry);
+        cleanupDir(workDir);
+        emit(ctx, { type: "error", jobId, error: String(e) });
+      }
+    },
+    // An in-process frame reports continuous progress, so it is polled at the
+    // tighter still-render rate (see IN_PROCESS_POLL_MS).
+    backend.beginInProcessAnimFrame ? IN_PROCESS_POLL_MS : POLL_MS,
+  );
 
   return { ok: true, jobId };
 }
@@ -998,7 +1067,8 @@ function renderCancel(ctx: WorkerContext, args: RenderCancelArgs): RenderCancelR
   entry.cancelled = true;
 
   // In-process (umbreon): request cooperative cancellation and let the poll loop
-  // observe isDone() and finish() (which joins the C++ worker cleanly). Killing
+  // observe isDone() and finish() (which joins the C++ worker cleanly, and for a
+  // movie also releases the frame back to AnimMgr before stopAnim runs). Killing
   // the timer here would leave the render thread running detached.
   if (entry.inProcess) {
     try {

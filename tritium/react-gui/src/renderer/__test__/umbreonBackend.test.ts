@@ -5,6 +5,10 @@
  * attach -> setPath -> beginRender start sequence (NOT the blocking write), and
  * that the returned handle forwards progress/phase/done/cancel to the exporter
  * and finish() joins (endRender) + detaches.
+ *
+ * Also pins the animation variant, which drives the same async cycle one frame
+ * at a time through AnimMgr.beginFrame() / endFrame() rather than the blocking
+ * writeFrame().
  */
 
 import { describe, it, expect, vi } from 'vitest'
@@ -158,6 +162,29 @@ describe('umbreonBackend.beginInProcess', () => {
         expect(handle.finish()).toBe(true)
     })
 
+    it('does not leak the exporter when finish() fails to join the render', () => {
+        const exporter = makeExporter()
+        exporter.endRender = vi.fn(() => {
+            throw new Error('render produced no image')
+        })
+        const ctx = {
+            strMgr: { createHandler: vi.fn(() => exporter) },
+        } as unknown as WorkerContext
+        const snapshot: RenderSettingsSnapshot = {
+            mode: 'still',
+            backend: 'umbreon',
+            commonProps: [p('width', 640), p('height', 480), p('unit', 'px'), p('dpi', 600)],
+            backendProps: [],
+        }
+
+        const handle = umbreonBackend.beginInProcess!(ctx, {} as never, snapshot, '/o.png')
+
+        // The scene stays attached until detach(), so it must run even when
+        // endRender() throws (otherwise the scene is held for good).
+        expect(() => handle.finish()).toThrow(/no image/)
+        expect(exporter.detach).toHaveBeenCalledTimes(1)
+    })
+
     it('falls back to the C++ ctor defaults when umbreon props are absent', () => {
         const exporter = makeExporter()
         const ctx = {
@@ -182,5 +209,92 @@ describe('umbreonBackend.beginInProcess', () => {
         // absent denoise -> "OIDN" default -> pt1Denoise on, no full-frame pass.
         expect(exporter.giDenoise).toBe(true)
         expect(exporter.denoiser).toBe(0)
+    })
+})
+
+describe('umbreonBackend.beginInProcessAnimFrame', () => {
+    /** AnimMgr mock exposing the split frame-stepping pair. */
+    function makeAnimMgr(hasFrame = true) {
+        return {
+            beginFrame: vi.fn(() => hasFrame),
+            endFrame: vi.fn(),
+        }
+    }
+
+    const snapshot: RenderSettingsSnapshot = {
+        mode: 'movie',
+        backend: 'umbreon',
+        commonProps: [p('width', 640), p('height', 480), p('unit', 'px'), p('dpi', 600)],
+        backendProps: [p('supersample', 2)],
+    }
+
+    it('steps AnimMgr around the async render instead of blocking on writeFrame', () => {
+        const exporter = makeExporter()
+        const ctx = {
+            strMgr: { createHandler: vi.fn(() => exporter) },
+        } as unknown as WorkerContext
+        const animMgr = makeAnimMgr()
+
+        const handle = umbreonBackend.beginInProcessAnimFrame!(
+            ctx,
+            animMgr as never,
+            snapshot,
+            '/out/frame.png',
+        )
+
+        // The snapshot still drives the exporter props.
+        expect(exporter.supersample).toBe(2)
+        expect(exporter.width).toBe(640)
+
+        // beginFrame() attaches the scene and hands over the animation's own
+        // camera, so neither attach() nor a camera name is set here.
+        expect(exporter.attach).not.toHaveBeenCalled()
+        expect(exporter.camera).toBeUndefined()
+
+        // setPath -> beginFrame -> beginRender, and the frame is NOT released
+        // yet: the ray trace runs while the frame state is still applied.
+        expect(exporter.setPath).toHaveBeenCalledWith('/out/frame.png')
+        expect(animMgr.beginFrame).toHaveBeenCalledWith(exporter)
+        expect(exporter.beginRender).toHaveBeenCalledTimes(1)
+        expect(order(animMgr.beginFrame)).toBeLessThan(order(exporter.beginRender))
+        expect(animMgr.endFrame).not.toHaveBeenCalled()
+
+        // finish(): join + write the PNG, then release the frame (which is what
+        // detaches the exporter and advances to the next frame).
+        expect(handle.finish()).toBe(false)
+        expect(exporter.endRender).toHaveBeenCalledTimes(1)
+        expect(animMgr.endFrame).toHaveBeenCalledWith(exporter)
+        expect(order(exporter.endRender)).toBeLessThan(order(animMgr.endFrame))
+    })
+
+    it('releases the frame when the render fails to start', () => {
+        const exporter = makeExporter()
+        exporter.beginRender = vi.fn(() => {
+            throw new Error('umbreon backend not compiled in')
+        })
+        const ctx = {
+            strMgr: { createHandler: vi.fn(() => exporter) },
+        } as unknown as WorkerContext
+        const animMgr = makeAnimMgr()
+
+        expect(() =>
+            umbreonBackend.beginInProcessAnimFrame!(ctx, animMgr as never, snapshot, '/o.png'),
+        ).toThrow(/not compiled in/)
+
+        // beginFrame() already attached the scene, so it must be released.
+        expect(animMgr.endFrame).toHaveBeenCalledTimes(1)
+    })
+
+    it('fails when the frame sequence is already exhausted', () => {
+        const exporter = makeExporter()
+        const ctx = {
+            strMgr: { createHandler: vi.fn(() => exporter) },
+        } as unknown as WorkerContext
+        const animMgr = makeAnimMgr(false)
+
+        expect(() =>
+            umbreonBackend.beginInProcessAnimFrame!(ctx, animMgr as never, snapshot, '/o.png'),
+        ).toThrow(/no frame left/)
+        expect(exporter.beginRender).not.toHaveBeenCalled()
     })
 })
