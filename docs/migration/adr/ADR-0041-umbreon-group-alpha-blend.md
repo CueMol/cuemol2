@@ -1,6 +1,6 @@
 # ADR-0041: umbreon group-alpha blend — the pass weights are a partition of unity
 
-- Status: accepted
+- Status: accepted (host E2E verified 2026-07-25 from tritium)
 - Date: 2026-07-25
 - Mapping rows: [`dialog.tool.render-pov`](../mapping/tool_dlgs.md#dialogtoolrender-pov)
 - Related: [ADR-0039](ADR-0039-umbreon-pt2-integrator.md) (the umbreon backend),
