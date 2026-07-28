@@ -79,6 +79,11 @@ export function storeRenderImage(resultId: string, sourcePath: string): boolean 
   return true
 }
 
+/** Where an archived render lives, whether or not it is still there. */
+export function renderImagePath(resultId: string): string {
+  return path.join(HISTORY_DIR, renderHistoryFileName(resultId))
+}
+
 /**
  * Read an archived render back as a data URL, or null when it is gone (evicted
  * past the limit, or lost with a crashed run's directory).
@@ -86,7 +91,7 @@ export function storeRenderImage(resultId: string, sourcePath: string): boolean 
 export function readRenderImage(resultId: string): string | null {
   if (!resultId) return null
   try {
-    const buf = fs.readFileSync(path.join(HISTORY_DIR, renderHistoryFileName(resultId)))
+    const buf = fs.readFileSync(renderImagePath(resultId))
     return `data:image/png;base64,${buf.toString('base64')}`
   } catch {
     return null

@@ -658,6 +658,17 @@ export interface RenderTargetViewWire {
 }
 
 /**
+ * Which rendered image an export acts on.
+ *
+ * A still (and a movie's stand-in image) is the archived render, named by
+ * result id; the frame slider instead shows a frame straight out of the user's
+ * own output folder, so exporting what is on screen has to name that file.
+ */
+export type RenderImageRef =
+  | { kind: 'result'; resultId: string }
+  | { kind: 'frame'; outputDir: string; baseName: string; frameIndex: number }
+
+/**
  * Camera-ish settings of a render target view, used to default the Rendering
  * window's Camera settings to what the target view currently shows.
  *

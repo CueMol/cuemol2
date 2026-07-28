@@ -32,6 +32,7 @@ import type {
   TextCtxShowPayload,
   UiState,
   ViewSizePx,
+  RenderImageRef,
   RenderViewCamera,
 } from './ipcTypes'
 
@@ -109,6 +110,13 @@ export interface InvokeChannels {
   }
   /** Read an archived render back for display (render window -> main). */
   [IPC.RENDER_HISTORY_READ]: { req: { resultId: string }; res: { dataUrl: string | null } }
+  /** Write the shown render to a file the user picks. */
+  [IPC.RENDER_IMAGE_SAVE]: {
+    req: { ref: RenderImageRef; defaultName: string }
+    res: { canceled: boolean; filePath?: string; error?: string }
+  }
+  /** Put the shown render on the system clipboard. */
+  [IPC.RENDER_IMAGE_COPY]: { req: { ref: RenderImageRef }; res: { ok: boolean; error?: string } }
   /** Read one frame of a finished movie render back off disk (frame slider). */
   [IPC.RENDER_FRAME_READ]: { req: { outputDir: string; baseName: string; frameIndex: number }
                              res: { dataUrl: string | null } }

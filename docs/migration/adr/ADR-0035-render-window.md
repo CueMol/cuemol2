@@ -78,6 +78,15 @@ Key constraints and choices:
   The metadata list lives in the main window's bridge, not the render window,
   so the history survives that window closing -- matching how long the
   archived files live -- and a re-sync re-pushes the whole list.
+- **Save / Copy** are back in the result toolbar. They were dropped as clutter
+  while the window had no history; with one, exporting the render you settled
+  on is the point of keeping the earlier attempts. Both act on what is on
+  screen -- the archived render, or the frame the movie slider is showing --
+  and both are file operations in the main process (`RENDER_IMAGE_SAVE` opens
+  a native save dialog and copies the file; `RENDER_IMAGE_COPY` writes it to
+  the clipboard as a `nativeImage`), since the render window has neither
+  filesystem nor clipboard access. A failed export raises an alert rather than
+  looking like it worked.
 - **Camera defaults follow the target view.** Selecting a render target reads
   that view's projection over a `RENDER_VIEW_CAMERA_GET` round trip (same
   shape as the view-size trip) so a render starts from what the user is

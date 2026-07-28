@@ -17,11 +17,11 @@
 
 import * as fs from 'fs'
 import * as path from 'path'
-import type { BrowserWindow } from 'electron'
+import { clipboard, dialog, nativeImage, type BrowserWindow } from 'electron'
 import { IPC } from '../shared/ipcChannels'
-import type { RenderViewCamera, ViewSizePx } from '../shared/ipcTypes'
+import type { RenderImageRef, RenderViewCamera, ViewSizePx } from '../shared/ipcTypes'
 import { movieFrameFileName, MOVIE_FILE_EXTENSIONS } from '../shared/movieFrames'
-import { readRenderImage, storeRenderImage } from './renderHistory'
+import { readRenderImage, renderImagePath, storeRenderImage } from './renderHistory'
 import { handleInvoke } from './ipcHandlers'
 
 /** How long to wait for a main-window reply (view size / view camera). */
@@ -128,6 +128,50 @@ export function registerRenderWindowIpc(deps: RenderWindowIpcDeps): void {
   handleInvoke(IPC.RENDER_HISTORY_READ, (_event, { resultId }) => ({
     dataUrl: readRenderImage(resultId),
   }))
+
+  // --- Exporting the shown render ---
+  //
+  // Both act on a file: the archived render, or -- while the frame slider is
+  // showing one -- that frame in the user's own output folder, so what is
+  // exported is always what is on screen.
+
+  const refToPath = (ref: RenderImageRef): string =>
+    ref.kind === 'result'
+      ? renderImagePath(ref.resultId)
+      : path.join(ref.outputDir, movieFrameFileName(ref.baseName, ref.frameIndex))
+
+  handleInvoke(IPC.RENDER_IMAGE_SAVE, async (_event, { ref, defaultName }) => {
+    const source = refToPath(ref)
+    if (!fs.existsSync(source)) {
+      return { canceled: false, error: 'The rendered image is no longer available.' }
+    }
+    const rw = getRenderWindow()
+    const parent = rw && !rw.isDestroyed() ? rw : mainWindow
+    const picked = await dialog.showSaveDialog(parent, {
+      title: 'Save Rendered Image',
+      defaultPath: defaultName,
+      filters: [
+        { name: 'PNG Image', extensions: ['png'] },
+        { name: 'All Files', extensions: ['*'] },
+      ],
+    })
+    if (picked.canceled || !picked.filePath) return { canceled: true }
+    try {
+      fs.copyFileSync(source, picked.filePath)
+      return { canceled: false, filePath: picked.filePath }
+    } catch (e) {
+      return { canceled: false, filePath: picked.filePath, error: (e as Error).message }
+    }
+  })
+
+  handleInvoke(IPC.RENDER_IMAGE_COPY, (_event, { ref }) => {
+    const image = nativeImage.createFromPath(refToPath(ref))
+    if (image.isEmpty()) {
+      return { ok: false, error: 'The rendered image is no longer available.' }
+    }
+    clipboard.writeImage(image)
+    return { ok: true }
+  })
 
   // Frame slider: read one already-rendered frame straight off disk. The
   // frames are plain files in the user's output folder, so this needs
