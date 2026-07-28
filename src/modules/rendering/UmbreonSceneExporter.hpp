@@ -43,14 +43,39 @@ namespace render {
     /// supersampling (antialiasing) factor; 1 = off
     int m_nSupersample;
 
+    /// antialiasing mode: 0 = grid, 1 = adaptive (edge pixels only)
+    int m_nAaMode;
+
+    /// adaptive-AA refinement grid per flagged pixel; 0 = use m_nSupersample
+    int m_nAaDepth;
+
     /// ambient-occlusion ray count per mesh hit; 0 = off
     int m_nAoSamples;
 
-    /// ambient-occlusion occluder search radius (world units)
+    /// ambient-occlusion occluder search radius (world units); <= 0 = auto
+    /// (fraction of the scene bounding-box diagonal)
     double m_dAoDistance;
 
     /// ambient-occlusion strength (0 = none, 1 = full)
     double m_dAoIntensity;
+
+    /// AO darkening applied to the direct diffuse term (0 = ambient only).
+    /// CueMol's default lighting puts most energy in the direct lights, so AO
+    /// is nearly invisible at 0; 1.0 is the recipe value.
+    double m_dAoDiffuseFactor;
+
+    /// gather AO at three nested radii instead of one
+    bool m_bAoMultiScale;
+
+    /// shade the ambient along the average unoccluded direction (bent normal)
+    bool m_bAoBentNormal;
+
+    /// low-discrepancy AO sampling (Hammersley + per-pixel rotation)
+    bool m_bAoLowDiscrepancy;
+
+    /// AO gather resolution divisor (0/1 = per shading hit, -1 = per output
+    /// pixel + bilateral interpolation, k > 1 = explicit divisor)
+    int m_nAoResDiv;
 
     /// cast shadows from the lights
     bool m_bShadows;

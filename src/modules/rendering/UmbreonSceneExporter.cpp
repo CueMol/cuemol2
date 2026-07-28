@@ -107,7 +107,10 @@ namespace {
 
 UmbreonSceneExporter::UmbreonSceneExporter()
      : m_bPerspective(true), m_bUseClipZ(true), m_nSupersample(3),
+       m_nAaMode(0), m_nAaDepth(0),
        m_nAoSamples(0), m_dAoDistance(1.0e20), m_dAoIntensity(1.0),
+       m_dAoDiffuseFactor(0.0), m_bAoMultiScale(false), m_bAoBentNormal(false),
+       m_bAoLowDiscrepancy(false), m_nAoResDiv(0),
        m_bShadows(false), m_nShadowSamples(1), m_dLightRadius(0.0),
        m_bEnableEdgeLines(true), m_dCreaseLimit(-1.0), m_dEdgeRise(0.5),
        m_bTransparentBackground(false),
@@ -179,9 +182,16 @@ void UmbreonSceneExporter::setupContext(UmbreonDisplayContext &ctx,
   prm.width = width;
   prm.height = height;
   prm.supersample = m_nSupersample;
+  prm.aaMode = m_nAaMode;
+  prm.aaDepth = m_nAaDepth;
   prm.aoSamples = m_nAoSamples;
   prm.aoDistance = m_dAoDistance;
   prm.aoIntensity = m_dAoIntensity;
+  prm.aoDiffuseFactor = m_dAoDiffuseFactor;
+  prm.aoMultiScale = m_bAoMultiScale;
+  prm.aoBentNormal = m_bAoBentNormal;
+  prm.aoLowDiscrepancy = m_bAoLowDiscrepancy;
+  prm.aoResDiv = m_nAoResDiv;
   prm.shadows = m_bShadows;
   prm.shadowSamples = m_nShadowSamples;
   prm.lightRadius = m_dLightRadius;
