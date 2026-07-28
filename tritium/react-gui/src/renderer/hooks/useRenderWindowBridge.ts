@@ -20,6 +20,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { IPC } from "../../shared/ipcChannels";
+import { RENDER_HISTORY_LIMIT } from "../../shared/renderHistory";
 import type {
   RenderJobWire,
   RenderTargetViewWire,
@@ -75,12 +76,29 @@ function pushState(update: RenderWindowStateUpdate): void {
 export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): void {
   const { cm } = args;
 
-  // Latest completed render; survives render-window close/reopen.
-  const latestResultRef = useRef<RenderResult | null>(null);
+  // Completed renders, oldest first. Owned here (not in the render window) so
+  // the history survives that window closing, which is also how long the
+  // archived image files live.
+  const historyRef = useRef<RenderResult[]>([]);
 
-  const handleComplete = useCallback((result: RenderResult) => {
-    latestResultRef.current = result;
-    pushState({ kind: "result", result });
+  const handleComplete = useCallback((result: RenderResult, imagePath: string) => {
+    // Archive first: the render window reads the image straight back by id, so
+    // pushing before the copy lands would show an empty frame.
+    const api = window.electronAPI;
+    const stored = api
+      ? api
+          .invoke(IPC.RENDER_HISTORY_STORE, {
+            resultId: result.id,
+            sourcePath: imagePath,
+          })
+          .catch(() => ({ ok: false }))
+      : Promise.resolve({ ok: false });
+    void stored.then(() => {
+      historyRef.current = [...historyRef.current, result].slice(
+        -RENDER_HISTORY_LIMIT,
+      );
+      pushState({ kind: "history", entries: historyRef.current });
+    });
   }, []);
 
   const renderJob = useRenderJob({ cm, onComplete: handleComplete });
@@ -165,7 +183,8 @@ export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): void {
         void rj.cancel();
         break;
       case "show-source": {
-        const result = latestResultRef.current;
+        // The newest render is the one whose scene "Show source" means.
+        const result = historyRef.current[historyRef.current.length - 1] ?? null;
         if (!result || result.sourceViewId === undefined) return;
         const tab = a.tabs.find(
           (t) => t.type === "molview" && t.viewId === result.sourceViewId,
@@ -181,7 +200,7 @@ export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): void {
           activeViewId: a.activeViewId ?? null,
           umbreonAvailable: a.umbreonAvailable,
         });
-        pushState({ kind: "result", result: latestResultRef.current });
+        pushState({ kind: "history", entries: historyRef.current });
         break;
     }
   }, []);

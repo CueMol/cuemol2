@@ -147,7 +147,10 @@ describe('renderStart in-process branch', () => {
         const complete = pushMessage.mock.calls.at(-1) as [string, Record<string, unknown>]
         expect(complete[1].type).toBe('complete')
         expect(complete[1].jobId).toBe(res.jobId)
-        expect(String(complete[1].imageDataUrl)).toMatch(/^data:image\/png;base64,/)
+        // The produced file is reported by path; it is archived by the main
+        // process rather than inlined as a data URL.
+        expect(complete[1].imagePath).toBe(outFile)
+        expect(complete[1].imageDataUrl).toBeUndefined()
         expect(complete[1].width).toBe(640)
         expect(complete[1].height).toBe(480)
     })

@@ -21,6 +21,7 @@ import type { BrowserWindow } from 'electron'
 import { IPC } from '../shared/ipcChannels'
 import type { RenderViewCamera, ViewSizePx } from '../shared/ipcTypes'
 import { movieFrameFileName, MOVIE_FILE_EXTENSIONS } from '../shared/movieFrames'
+import { readRenderImage, storeRenderImage } from './renderHistory'
 import { handleInvoke } from './ipcHandlers'
 
 /** How long to wait for a main-window reply (view size / view camera). */
@@ -114,6 +115,19 @@ export function registerRenderWindowIpc(deps: RenderWindowIpcDeps): void {
   handleInvoke(IPC.RENDER_VIEW_CAMERA_REPLY, (_event, { reqId, camera }) => {
     pendingCam.get(reqId)?.(camera)
   })
+
+  // --- Render history ---
+  //
+  // Finished renders are archived as files rather than pushed around as data
+  // URLs, so the render window holds only the image it is showing.
+
+  handleInvoke(IPC.RENDER_HISTORY_STORE, (_event, { resultId, sourcePath }) => ({
+    ok: storeRenderImage(resultId, sourcePath),
+  }))
+
+  handleInvoke(IPC.RENDER_HISTORY_READ, (_event, { resultId }) => ({
+    dataUrl: readRenderImage(resultId),
+  }))
 
   // Frame slider: read one already-rendered frame straight off disk. The
   // frames are plain files in the user's output folder, so this needs

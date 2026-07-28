@@ -60,14 +60,24 @@ Key constraints and choices:
   ported from umbreon's `docs/quality_presets.md`; see
   [ADR-0042](ADR-0042-umbreon-quality-presets.md) for the axis model and the
   AO / AA wiring it required in libcuemol2.
-- **Render history.** Completed renders accumulate in the render window
-  (capped at 10, since each holds a full-size image) and the result pane gets
-  Back / Forward arrows. Stepping restores the entry's image AND its settings
-  snapshot, so a parameter change can be compared against the previous
-  attempt and reverted to it -- the earlier behaviour replaced the single
-  latest result outright. The history is window-local like the settings, so
-  closing the window clears it; the main window still keeps only the latest
-  result for a re-sync.
+- **Render history, on disk.** Completed renders accumulate (50 deep) and the
+  result pane gets Back / Forward arrows. Stepping restores the entry's image
+  AND its settings snapshot, so a parameter change can be compared against the
+  previous attempt and reverted to it -- the earlier behaviour replaced the
+  single latest result outright.
+
+  The depth is affordable because the images never sit in memory. A finished
+  render is already a PNG in the worker's work dir, so the worker reports its
+  *path* (`imagePath`) instead of a data URL, the main window has the main
+  process archive it by result id (`main/renderHistory.ts`, a temp directory
+  wiped on quit and on the next start), and the render window holds metadata
+  only, reading back just the entry it shows (`RENDER_HISTORY_READ`) -- the
+  same shape as the movie frame slider. Nothing multi-MB crosses IPC any more,
+  where a completed render used to push a base64 image through two hops.
+
+  The metadata list lives in the main window's bridge, not the render window,
+  so the history survives that window closing -- matching how long the
+  archived files live -- and a re-sync re-pushes the whole list.
 - **Camera defaults follow the target view.** Selecting a render target reads
   that view's projection over a `RENDER_VIEW_CAMERA_GET` round trip (same
   shape as the view-size trip) so a render starts from what the user is

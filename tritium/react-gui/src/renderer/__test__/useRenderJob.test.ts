@@ -78,7 +78,7 @@ describe('useRenderJob', () => {
         h.unmount();
     });
 
-    it('completion marks the job done and emits a result', async () => {
+    it('completion marks the job done and hands over the result + image path', async () => {
         const { cm, emit } = makeCm();
         const onComplete = vi.fn();
         const h = makeRenderHook(() => useRenderJob({ cm: cm as never, onComplete }));
@@ -86,13 +86,15 @@ describe('useRenderJob', () => {
 
         act(() => emit({
             type: 'complete', jobId: 'job-1',
-            imageDataUrl: 'data:image/png;base64,AA', width: 800, height: 600, elapsedSec: 3.5,
+            imagePath: '/tmp/render/out.png', width: 800, height: 600, elapsedSec: 3.5,
         }));
         expect(h.result.job?.status).toBe('done');
         expect(onComplete).toHaveBeenCalledTimes(1);
         const result = onComplete.mock.calls[0][0] as RenderResult;
-        expect(result.imageDataUrl).toBe('data:image/png;base64,AA');
         expect(result.sourceSceneName).toBe('Scene1');
+        // The image itself is never inlined: the caller archives this file and
+        // the viewer reads it back by result id.
+        expect(onComplete.mock.calls[0][1]).toBe('/tmp/render/out.png');
         h.unmount();
     });
 

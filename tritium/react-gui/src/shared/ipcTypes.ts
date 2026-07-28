@@ -629,10 +629,15 @@ export interface RenderFramePreviewWire {
   frameIndex: number
 }
 
-/** Completed render pushed to the render window (mirrors RenderResult). */
+/**
+ * Completed render pushed to the render window (mirrors RenderResult).
+ *
+ * Metadata only: the rendered image is archived on disk by the main process
+ * under `id` and read back for the entry on screen, so a whole history can be
+ * pushed without moving megabytes.
+ */
 export interface RenderResultWire {
   id: string
-  imageDataUrl: string
   width: number
   height: number
   elapsedSec: number
@@ -701,7 +706,13 @@ export type RenderWindowStateUpdate =
        */
       umbreonAvailable: boolean
     }
-  | { kind: 'result'; result: RenderResultWire | null }
+  /**
+   * Completed renders, oldest first. The whole list travels because it is
+   * metadata only -- each entry's image is archived on disk by the main
+   * process and read back by result id (see shared/renderHistory) -- and
+   * because it must survive a render-window close and re-sync.
+   */
+  | { kind: 'history'; entries: RenderResultWire[] }
   /**
    * Most recently finished movie frame. Its own variant so the image never
    * rides along with the context pushes, which fire on every progress tick.

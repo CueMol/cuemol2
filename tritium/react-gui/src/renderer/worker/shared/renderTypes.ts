@@ -112,8 +112,12 @@ export type RenderUpdate =
   | {
       type: "complete";
       jobId: string;
-      /** The image, or for a movie the last rendered frame. */
-      imageDataUrl: string;
+      /**
+       * Path of the produced PNG (for a movie, its last frame). The image is
+       * NOT inlined: it is archived by the main process and read back only for
+       * the entry the render window is showing (see shared/renderHistory).
+       */
+      imagePath: string;
       width: number;
       height: number;
       elapsedSec: number;

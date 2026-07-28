@@ -45,10 +45,12 @@ export interface RenderMovieOutput {
 
 /** A completed render, displayed in the Rendering window. */
 export interface RenderResult {
-  /** Unique id. */
+  /**
+   * Unique id. Also the key the rendered image is archived under: the image
+   * lives on disk (main process) and is read back for the entry on screen, so
+   * a long history costs metadata rather than memory.
+   */
   id: string;
-  /** Rendered image as a data URL; for a movie, its last frame. */
-  imageDataUrl: string;
   /** Logical image width in pixels. */
   width: number;
   /** Logical image height in pixels. */
@@ -69,7 +71,6 @@ export interface RenderResult {
 
 /** Build a render result from the rendered image and the job's context. */
 export function buildRenderResult(args: {
-  imageDataUrl: string;
   width: number;
   height: number;
   elapsedSec: number;
@@ -79,7 +80,6 @@ export function buildRenderResult(args: {
 }): RenderResult {
   return {
     id: `render-result-${Date.now()}`,
-    imageDataUrl: args.imageDataUrl,
     width: args.width,
     height: args.height,
     elapsedSec: args.elapsedSec,

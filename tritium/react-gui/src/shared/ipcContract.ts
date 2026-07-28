@@ -102,6 +102,13 @@ export interface InvokeChannels {
     req: { reqId: number; camera: RenderViewCamera | null }
     res: void
   }
+  /** Archive a finished render's PNG under its result id (main window -> main). */
+  [IPC.RENDER_HISTORY_STORE]: {
+    req: { resultId: string; sourcePath: string }
+    res: { ok: boolean }
+  }
+  /** Read an archived render back for display (render window -> main). */
+  [IPC.RENDER_HISTORY_READ]: { req: { resultId: string }; res: { dataUrl: string | null } }
   /** Read one frame of a finished movie render back off disk (frame slider). */
   [IPC.RENDER_FRAME_READ]: { req: { outputDir: string; baseName: string; frameIndex: number }
                              res: { dataUrl: string | null } }

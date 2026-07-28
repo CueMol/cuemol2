@@ -120,21 +120,23 @@ describe('useRenderWindowClient', () => {
         expect(h.result.state.views).toEqual([viewA]);
         expect(h.result.state.activeViewId).toBe(7);
         expect(h.result.state.umbreonAvailable).toBe(true);
-        // A context update never clobbers the (separately pushed) result.
-        expect(h.result.state.result).toBeNull();
+        // A context update never clobbers the (separately pushed) history.
+        expect(h.result.state.history).toEqual([]);
 
         act(() => {
             harness.push({
-                kind: 'result',
-                result: {
-                    id: 'r1', imageDataUrl: 'data:x', width: 8, height: 6,
-                    elapsedSec: 1, sourceSceneId: 1, sourceSceneName: 'SceneA',
-                    sourceViewId: 7,
-                    settingsSnapshot: { mode: 'still', backend: 'povray', commonProps: [], backendProps: [] },
-                },
+                kind: 'history',
+                entries: [
+                    {
+                        id: 'r1', width: 8, height: 6,
+                        elapsedSec: 1, sourceSceneId: 1, sourceSceneName: 'SceneA',
+                        sourceViewId: 7,
+                        settingsSnapshot: { mode: 'still', backend: 'povray', commonProps: [], backendProps: [] },
+                    },
+                ],
             });
         });
-        expect(h.result.state.result?.id).toBe('r1');
+        expect(h.result.shownResult?.id).toBe('r1');
         expect(h.result.state.job?.progress).toBe(42);
         h.unmount();
     });
@@ -220,61 +222,63 @@ describe('useRenderWindowClient', () => {
 // compared against -- and stepped back to -- the previous attempt. Each entry
 // carries the snapshot that produced it, which the window restores on Back.
 describe('useRenderWindowClient render history', () => {
-    /** A completed-render push with the given id. */
-    const resultPush = (id: string): RenderWindowStateUpdate => ({
-        kind: 'result',
-        result: {
-            id,
-            imageDataUrl: `data:image/png;base64,${id}`,
-            width: 100,
-            height: 100,
-            sourceSceneId: 1,
-            sourceSceneName: 'SceneA',
-            settingsSnapshot: snapshot,
-            finishedAt: 0,
-        } as never,
+    /** Metadata of one archived render. */
+    const entry = (id: string) => ({
+        id,
+        width: 100,
+        height: 100,
+        elapsedSec: 1,
+        sourceSceneId: 1,
+        sourceSceneName: 'SceneA',
+        settingsSnapshot: snapshot,
     });
 
-    it('accumulates completed renders and shows the newest', () => {
+    /** The main window pushes the whole history, oldest first. */
+    const historyPush = (...ids: string[]): RenderWindowStateUpdate => ({
+        kind: 'history',
+        entries: ids.map(entry) as never,
+    });
+
+    it('shows the newest render of the pushed history', () => {
         const h = makeRenderHook(() => useRenderWindowClient());
-        act(() => harness.push(resultPush('r1')));
-        act(() => harness.push(resultPush('r2')));
+        act(() => harness.push(historyPush('r1', 'r2')));
 
         expect(h.result.state.history.map((r) => r.id)).toEqual(['r1', 'r2']);
         expect(h.result.shownResult?.id).toBe('r2');
         h.unmount();
     });
 
-    it('does not duplicate the entry a re-sync re-pushes', () => {
+    it('keeps the shown entry when a re-sync re-pushes the same list', () => {
         const h = makeRenderHook(() => useRenderWindowClient());
-        act(() => harness.push(resultPush('r1')));
-        // Reopening the window re-pushes the same latest result.
-        act(() => harness.push(resultPush('r1')));
+        act(() => harness.push(historyPush('r1', 'r2')));
+        act(() => { h.result.goBack(); });
+        expect(h.result.shownResult?.id).toBe('r1');
 
-        expect(h.result.state.history).toHaveLength(1);
+        // Reopening the window re-pushes the list unchanged.
+        act(() => harness.push(historyPush('r1', 'r2')));
+        expect(h.result.shownResult?.id).toBe('r1');
         h.unmount();
     });
 
     it('steps back and forward, returning the entry now shown', () => {
         const h = makeRenderHook(() => useRenderWindowClient());
-        act(() => harness.push(resultPush('r1')));
-        act(() => harness.push(resultPush('r2')));
+        act(() => harness.push(historyPush('r1', 'r2')));
 
-        let shown: { id: string } | null = null;
-        act(() => { shown = h.result.goBack() as never; });
+        const shown: (string | undefined)[] = [];
+        act(() => { shown.push(h.result.goBack()?.id); });
         // The returned entry is what the window restores the settings from.
-        expect(shown?.id).toBe('r1');
+        expect(shown[0]).toBe('r1');
         expect(h.result.shownResult?.id).toBe('r1');
 
-        act(() => { shown = h.result.goForward() as never; });
-        expect(shown?.id).toBe('r2');
+        act(() => { shown.push(h.result.goForward()?.id); });
+        expect(shown[1]).toBe('r2');
         expect(h.result.shownResult?.id).toBe('r2');
         h.unmount();
     });
 
     it('stops at the ends of the history', () => {
         const h = makeRenderHook(() => useRenderWindowClient());
-        act(() => harness.push(resultPush('r1')));
+        act(() => harness.push(historyPush('r1')));
 
         let shown: unknown = 'unset';
         act(() => { shown = h.result.goBack(); });
@@ -287,13 +291,32 @@ describe('useRenderWindowClient render history', () => {
 
     it('jumps to the newest render when a new one completes mid-history', () => {
         const h = makeRenderHook(() => useRenderWindowClient());
-        act(() => harness.push(resultPush('r1')));
-        act(() => harness.push(resultPush('r2')));
+        act(() => harness.push(historyPush('r1', 'r2')));
         act(() => { h.result.goBack(); });
         expect(h.result.shownResult?.id).toBe('r1');
 
-        act(() => harness.push(resultPush('r3')));
+        act(() => harness.push(historyPush('r1', 'r2', 'r3')));
         expect(h.result.shownResult?.id).toBe('r3');
+        h.unmount();
+    });
+
+    it('reads the shown entry\'s image back from the archive, one at a time', async () => {
+        const h = makeRenderHook(() => useRenderWindowClient());
+        act(() => harness.push(historyPush('r1', 'r2')));
+        await act(async () => { await Promise.resolve(); });
+
+        // Only the entry on screen is fetched -- the rest stay metadata.
+        const reads = (harness.api.invoke as ReturnType<typeof vi.fn>).mock.calls
+            .filter((c) => c[0] === IPC.RENDER_HISTORY_READ)
+            .map((c) => (c[1] as { resultId: string }).resultId);
+        expect(reads).toEqual(['r2']);
+
+        act(() => { h.result.goBack(); });
+        await act(async () => { await Promise.resolve(); });
+        const reads2 = (harness.api.invoke as ReturnType<typeof vi.fn>).mock.calls
+            .filter((c) => c[0] === IPC.RENDER_HISTORY_READ)
+            .map((c) => (c[1] as { resultId: string }).resultId);
+        expect(reads2).toEqual(['r2', 'r1']);
         h.unmount();
     });
 });

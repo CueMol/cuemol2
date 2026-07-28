@@ -122,6 +122,7 @@ export const RenderWindowApp: React.FC = () => {
   );
 
   const { job, views, preview, history, historyIndex } = client.state;
+  const shownImage = client.shownImage;
   const jobActive = isRenderJobActive(job);
   const canRender = client.target !== null;
   // The image on screen is a history entry, so a parameter change can be
@@ -200,6 +201,7 @@ export const RenderWindowApp: React.FC = () => {
                 ) : result ? (
                   <RenderResultPane
                     result={result}
+                    imageSrc={shownImage}
                     onBack={handleBack}
                     onForward={handleForward}
                     canBack={historyIndex > 0}

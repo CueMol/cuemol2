@@ -119,6 +119,8 @@ export const IPC = {
   RENDER_VIEW_CAMERA_GET:     'render-window:view-camera-get',     // invoke: render window -> main
   RENDER_VIEW_CAMERA_REQUEST: 'render-window:view-camera-request', // push:   main -> main window
   RENDER_VIEW_CAMERA_REPLY:   'render-window:view-camera-reply',   // invoke: main window -> main
+  RENDER_HISTORY_STORE:     'render-window:history-store',     // invoke: main window -> main
+  RENDER_HISTORY_READ:      'render-window:history-read',      // invoke: render window -> main
   RENDER_FRAME_READ:        'render-window:frame-read',        // invoke: render window -> main
   RENDER_FRAMES_CHECK:      'render-window:frames-check',      // invoke: render window -> main (count contiguous frames)
   RENDER_FRAMES_CLEANUP:    'render-window:frames-cleanup',    // invoke: render window -> main (delete frames + movie)

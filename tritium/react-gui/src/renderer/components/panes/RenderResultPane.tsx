@@ -22,6 +22,12 @@ import { RENDER_BACKENDS } from "../../data/renderBackends";
 interface RenderResultPaneProps {
   /** The render result shown in this pane. */
   result: RenderResult;
+  /**
+   * The result's image, read back from the on-disk archive by the window.
+   * Null while it loads, or when the file is gone (evicted past the history
+   * limit, or lost with a crashed run).
+   */
+  imageSrc: string | null;
   /** Show the previous render (and its settings). Omit to hide the control. */
   onBack?: () => void;
   /** Show the next render. Omit to hide the control. */
@@ -51,6 +57,7 @@ const SnapshotList: React.FC<{ title: string; props: PropDef[] }> = ({
 
 export const RenderResultPane: React.FC<RenderResultPaneProps> = ({
   result,
+  imageSrc,
   onBack,
   onForward,
   canBack = false,
@@ -172,7 +179,7 @@ export const RenderResultPane: React.FC<RenderResultPaneProps> = ({
   return (
     <div className="render-result-pane">
       <RenderImageViewer
-        src={frameUrl ?? result.imageDataUrl}
+        src={frameUrl ?? imageSrc ?? ""}
         imgWidth={result.width}
         imgHeight={result.height}
         name={

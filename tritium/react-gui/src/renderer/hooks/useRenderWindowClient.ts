@@ -34,19 +34,14 @@ import type {
   RenderSource,
 } from "../data/renderResult";
 
-/**
- * How many completed renders stay navigable with Back / Forward. Each entry
- * holds a full-size image data URL (multi-MB at print sizes), so the list is
- * capped rather than unbounded.
- */
-const HISTORY_LIMIT = 10;
-
 export interface RenderWindowClientState {
   /** Mirrored render job (progress/log), or null when idle. */
   job: RenderJob | null;
-  /** Latest completed render, or null when nothing has been rendered. */
-  result: RenderResult | null;
-  /** Completed renders, oldest first (capped at HISTORY_LIMIT). */
+  /**
+   * Completed renders, oldest first, as pushed by the main window. Metadata
+   * only -- the images are archived on disk and read back one at a time
+   * (see `shownImage`), so this stays cheap however long it grows.
+   */
   history: RenderResult[];
   /** Index into `history` of the result on screen, or -1 when empty. */
   historyIndex: number;
@@ -62,7 +57,6 @@ export interface RenderWindowClientState {
 
 const INITIAL_STATE: RenderWindowClientState = {
   job: null,
-  result: null,
   history: [],
   historyIndex: -1,
   preview: null,
@@ -99,6 +93,11 @@ export function useRenderWindowClient(): {
   getViewCamera: (viewId: number) => Promise<RenderViewCamera | null>;
   /** The result currently on screen (a history entry), or null. */
   shownResult: RenderResult | null;
+  /**
+   * Its image, read back from the on-disk archive; null while loading or when
+   * the file is gone (evicted, or lost with a crashed run).
+   */
+  shownImage: string | null;
   /** Show the previous / next render; returns the result now shown. */
   goBack: () => RenderResult | null;
   goForward: () => RenderResult | null;
@@ -152,22 +151,22 @@ export function useRenderWindowClient(): {
             activeViewId: update.activeViewId,
             umbreonAvailable: update.umbreonAvailable,
           }));
-        } else if (update.kind === "result") {
-          const result = update.result as RenderResult | null;
+        } else if (update.kind === "history") {
+          const history = update.entries as RenderResult[];
           setState((prev) => {
-            // A re-sync re-pushes the same latest result, so append by id.
-            const isNew =
-              result !== null &&
-              !prev.history.some((r) => r.id === result.id);
-            const history = isNew
-              ? [...prev.history, result].slice(-HISTORY_LIMIT)
-              : prev.history;
+            // A re-sync re-pushes the list unchanged; only a genuinely newer
+            // entry moves the view (that is what the user just rendered).
+            const newest = history[history.length - 1]?.id;
+            const wasNewest = prev.history[prev.history.length - 1]?.id;
+            const grew = newest !== undefined && newest !== wasNewest;
+            // Entries evicted past the limit shift the index; keep the shown
+            // entry by id where it still exists.
+            const shownId = prev.history[prev.historyIndex]?.id;
+            const kept = history.findIndex((r) => r.id === shownId);
             return {
               ...prev,
-              result,
               history,
-              // A new render is always what the user wants to see.
-              historyIndex: isNew ? history.length - 1 : prev.historyIndex,
+              historyIndex: grew || kept < 0 ? history.length - 1 : kept,
               // A finished render supersedes the live preview.
               preview: null,
             };
@@ -265,6 +264,31 @@ export function useRenderWindowClient(): {
   const goBack = useCallback(() => stepHistory(-1), [stepHistory]);
   const goForward = useCallback(() => stepHistory(1), [stepHistory]);
 
+  // Image of the entry on screen. Only this one is held in memory: the rest of
+  // the history is metadata, and the archived PNGs are read back per entry.
+  const shownResult = state.history[state.historyIndex] ?? null;
+  const shownId = shownResult?.id ?? null;
+  const [shownImage, setShownImage] = useState<string | null>(null);
+  useEffect(() => {
+    if (shownId === null) {
+      setShownImage(null);
+      return;
+    }
+    let cancelled = false;
+    setShownImage(null);
+    void window.electronAPI
+      ?.invoke(IPC.RENDER_HISTORY_READ, { resultId: shownId })
+      .then((res) => {
+        if (!cancelled) setShownImage(res?.dataUrl ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setShownImage(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [shownId]);
+
   const getViewCamera = useCallback(
     async (viewId: number): Promise<RenderViewCamera | null> => {
       const api = window.electronAPI;
@@ -301,7 +325,8 @@ export function useRenderWindowClient(): {
     showSource,
     getViewSize,
     getViewCamera,
-    shownResult: state.history[state.historyIndex] ?? null,
+    shownResult,
+    shownImage,
     goBack,
     goForward,
   };
