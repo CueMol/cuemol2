@@ -202,6 +202,7 @@ export const RenderWindowApp: React.FC = () => {
                   <RenderResultPane
                     result={result}
                     imageSrc={shownImage}
+                    onClearHistory={client.clearHistory}
                     onBack={handleBack}
                     onForward={handleForward}
                     canBack={historyIndex > 0}

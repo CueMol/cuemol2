@@ -87,6 +87,7 @@ export function useRenderWindowClient(): {
   /** Delete the rendered frames and any encoded movie; resolves to true on success. */
   cleanupFrames: (outputDir: string, baseName: string) => Promise<boolean>;
   cancel: () => void;
+  clearHistory: () => void;
   showSource: () => void;
   getViewSize: () => Promise<ViewSizePx | null>;
   /** The target view's camera settings, used to default the Camera group. */
@@ -243,6 +244,11 @@ export function useRenderWindowClient(): {
   );
 
   const cancel = useCallback(() => sendCommand({ type: "cancel" }), []);
+  /** Drop every past render (metadata, archived images and their work dirs). */
+  const clearHistory = useCallback(
+    () => sendCommand({ type: "clear-history" }),
+    [],
+  );
   const showSource = useCallback(() => sendCommand({ type: "show-source" }), []);
 
   /**
@@ -322,6 +328,7 @@ export function useRenderWindowClient(): {
     checkFrames,
     cleanupFrames,
     cancel,
+    clearHistory,
     showSource,
     getViewSize,
     getViewCamera,

@@ -15,7 +15,9 @@ import * as os from 'os';
 import * as path from 'path';
 import {
   clearRenderHistory,
+  clearRenderWorkDirs,
   readRenderImage,
+  registerRenderWorkDir,
   storeRenderImage,
 } from '../../main/renderHistory';
 import { RENDER_HISTORY_LIMIT } from '../../shared/renderHistory';
@@ -98,5 +100,46 @@ describe('main render history store', () => {
     storeRenderImage('render-result-1', makeImage('a', 'IMAGE-A'));
     clearRenderHistory();
     expect(readRenderImage('render-result-1')).toBeNull();
+  });
+});
+
+// A still render's work directory outlives its job (the .pov / .inc are worth
+// inspecting), which used to leave one directory per render in the temp dir
+// forever. They are registered as their image is archived and go with the
+// history, so clearing it -- or quitting -- reclaims them.
+describe('main render history work directories', () => {
+  /** A work directory under the temp dir, with a file in it. */
+  function makeWorkDir(): string {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cuemol-render-test-'));
+    fs.writeFileSync(path.join(dir, 'render.png'), 'IMAGE');
+    return dir;
+  }
+
+  it('deletes registered work directories when the history is cleared', () => {
+    const dir = makeWorkDir();
+    registerRenderWorkDir(dir);
+    expect(fs.existsSync(dir)).toBe(true);
+
+    clearRenderHistory();
+    expect(fs.existsSync(dir)).toBe(false);
+  });
+
+  it('deletes each directory once, tolerating one already gone', () => {
+    const dir = makeWorkDir();
+    registerRenderWorkDir(dir);
+    registerRenderWorkDir(dir); // a re-report must not double-register
+    fs.rmSync(dir, { recursive: true, force: true });
+
+    expect(() => clearRenderWorkDirs()).not.toThrow();
+  });
+
+  it('ignores a directory outside the temp dir', () => {
+    // Guards the cleanup against ever deleting a user's own folder.
+    const outside = path.join(srcDir, 'not-temp');
+    fs.mkdirSync(outside);
+    // srcDir IS under the temp dir in this test, so name a path that is not.
+    registerRenderWorkDir(path.join(path.parse(outside).root, 'definitely-not-temp'));
+    clearRenderWorkDirs();
+    expect(fs.existsSync(outside)).toBe(true);
   });
 });

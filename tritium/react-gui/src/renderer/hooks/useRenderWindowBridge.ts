@@ -81,25 +81,29 @@ export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): void {
   // archived image files live.
   const historyRef = useRef<RenderResult[]>([]);
 
-  const handleComplete = useCallback((result: RenderResult, imagePath: string) => {
+  const handleComplete = useCallback(
+    (result: RenderResult, image: { path: string; workDir?: string }) => {
     // Archive first: the render window reads the image straight back by id, so
     // pushing before the copy lands would show an empty frame.
-    const api = window.electronAPI;
-    const stored = api
-      ? api
-          .invoke(IPC.RENDER_HISTORY_STORE, {
-            resultId: result.id,
-            sourcePath: imagePath,
-          })
-          .catch(() => ({ ok: false }))
-      : Promise.resolve({ ok: false });
-    void stored.then(() => {
-      historyRef.current = [...historyRef.current, result].slice(
-        -RENDER_HISTORY_LIMIT,
-      );
-      pushState({ kind: "history", entries: historyRef.current });
-    });
-  }, []);
+      const api = window.electronAPI;
+      const stored = api
+        ? api
+            .invoke(IPC.RENDER_HISTORY_STORE, {
+              resultId: result.id,
+              sourcePath: image.path,
+              ...(image.workDir ? { workDir: image.workDir } : {}),
+            })
+            .catch(() => ({ ok: false }))
+        : Promise.resolve({ ok: false });
+      void stored.then(() => {
+        historyRef.current = [...historyRef.current, result].slice(
+          -RENDER_HISTORY_LIMIT,
+        );
+        pushState({ kind: "history", entries: historyRef.current });
+      });
+    },
+    [],
+  );
 
   const renderJob = useRenderJob({ cm, onComplete: handleComplete });
 
@@ -181,6 +185,11 @@ export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): void {
       }
       case "cancel":
         void rj.cancel();
+        break;
+      case "clear-history":
+        historyRef.current = [];
+        pushState({ kind: "history", entries: [] });
+        window.electronAPI?.invoke(IPC.RENDER_HISTORY_CLEAR).catch(() => {});
         break;
       case "show-source": {
         // The newest render is the one whose scene "Show source" means.

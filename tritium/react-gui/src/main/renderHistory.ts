@@ -24,6 +24,18 @@ const HISTORY_DIR = path.join(os.tmpdir(), 'cuemol-render-history')
 /** Archived ids, oldest first -- the eviction order. */
 let archived: string[] = []
 
+/**
+ * Work directories this run's renders left behind. The worker keeps a still
+ * render's directory after the job (its .pov / .inc are worth inspecting while
+ * the app is up), which used to mean one directory per render accumulating in
+ * the temp dir forever. They are registered as their image is archived and
+ * dropped with the history -- on quit, or when the user clears it.
+ *
+ * Only directories the worker reports are touched: a movie's frames live in
+ * the user's own output folder and are never registered.
+ */
+let workDirs: string[] = []
+
 /** Create the history directory, returning false when it cannot be used. */
 function ensureDir(): boolean {
   try {
@@ -46,6 +58,31 @@ export function clearRenderHistory(): void {
   } catch {
     /* a locked or already-removed directory is not worth failing over */
   }
+  clearRenderWorkDirs()
+}
+
+/**
+ * Remember a finished render's work directory so it can be cleaned up later.
+ * Ignores anything outside the temp dir, so a mis-reported path cannot turn
+ * the cleanup into a delete of the user's own files.
+ */
+export function registerRenderWorkDir(dir: string): void {
+  if (!dir) return
+  const resolved = path.resolve(dir)
+  if (!resolved.startsWith(path.resolve(os.tmpdir()) + path.sep)) return
+  if (!workDirs.includes(resolved)) workDirs.push(resolved)
+}
+
+/** Delete the registered work directories. */
+export function clearRenderWorkDirs(): void {
+  for (const dir of workDirs) {
+    try {
+      fs.rmSync(dir, { recursive: true, force: true })
+    } catch {
+      /* ignore */
+    }
+  }
+  workDirs = []
 }
 
 /**

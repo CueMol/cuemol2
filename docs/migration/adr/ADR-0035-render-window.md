@@ -78,6 +78,17 @@ Key constraints and choices:
   The metadata list lives in the main window's bridge, not the render window,
   so the history survives that window closing -- matching how long the
   archived files live -- and a re-sync re-pushes the whole list.
+- **Clearing** is explicit as well as automatic: a trash button in the result
+  toolbar (confirmed, since the images cannot be recovered without
+  re-rendering) drops the metadata, the archived images and the temp work
+  directories the jobs left behind. Those work directories are the reason it
+  is worth a button: the worker keeps a still render's directory after the job
+  so its `.pov` / `.inc` can be inspected, which used to leave one directory
+  per render in the temp dir forever (71 of them, 23 MB, on the machine this
+  was found). They are now registered as their image is archived and go with
+  the history -- on quit as well as on demand. Only directories the worker
+  reports and that sit under the temp dir are touched, so a movie's frames (in
+  the user's own folder) and any mis-reported path are never deleted.
 - **Save / Copy** are back in the result toolbar. They were dropped as clutter
   while the window had no history; with one, exporting the render you settled
   on is the point of keeping the earlier attempts. Both act on what is on

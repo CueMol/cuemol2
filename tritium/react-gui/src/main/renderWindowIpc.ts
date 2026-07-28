@@ -21,7 +21,13 @@ import { clipboard, dialog, nativeImage, type BrowserWindow } from 'electron'
 import { IPC } from '../shared/ipcChannels'
 import type { RenderImageRef, RenderViewCamera, ViewSizePx } from '../shared/ipcTypes'
 import { movieFrameFileName, MOVIE_FILE_EXTENSIONS } from '../shared/movieFrames'
-import { readRenderImage, renderImagePath, storeRenderImage } from './renderHistory'
+import {
+  clearRenderHistory,
+  readRenderImage,
+  registerRenderWorkDir,
+  renderImagePath,
+  storeRenderImage,
+} from './renderHistory'
 import { handleInvoke } from './ipcHandlers'
 
 /** How long to wait for a main-window reply (view size / view camera). */
@@ -121,9 +127,17 @@ export function registerRenderWindowIpc(deps: RenderWindowIpcDeps): void {
   // Finished renders are archived as files rather than pushed around as data
   // URLs, so the render window holds only the image it is showing.
 
-  handleInvoke(IPC.RENDER_HISTORY_STORE, (_event, { resultId, sourcePath }) => ({
-    ok: storeRenderImage(resultId, sourcePath),
-  }))
+  handleInvoke(IPC.RENDER_HISTORY_STORE, (_event, { resultId, sourcePath, workDir }) => {
+    const ok = storeRenderImage(resultId, sourcePath)
+    // Registered only once the copy landed, so a failed archive cannot take
+    // the source directory with it.
+    if (ok && workDir) registerRenderWorkDir(workDir)
+    return { ok }
+  })
+
+  handleInvoke(IPC.RENDER_HISTORY_CLEAR, () => {
+    clearRenderHistory()
+  })
 
   handleInvoke(IPC.RENDER_HISTORY_READ, (_event, { resultId }) => ({
     dataUrl: readRenderImage(resultId),

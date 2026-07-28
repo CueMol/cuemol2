@@ -186,6 +186,10 @@ function finishJob(
       type: "complete",
       jobId: entry.jobId,
       imagePath: entry.outputPath,
+      // Kept past the job (the .pov / .inc are worth inspecting), so hand it
+      // over to be cleaned up with the render history rather than leaving one
+      // directory per render in the temp dir forever.
+      workDir: entry.workDir,
       width,
       height,
       elapsedSec: (Date.now() - entry.startedAt) / 1000,

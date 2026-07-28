@@ -103,11 +103,18 @@ export interface InvokeChannels {
     req: { reqId: number; camera: RenderViewCamera | null }
     res: void
   }
-  /** Archive a finished render's PNG under its result id (main window -> main). */
+  /**
+   * Archive a finished render's PNG under its result id (main window -> main).
+   * `workDir` is the job's temp directory when it is one the app should clean
+   * up with the history; a movie's frames live in the user's own folder and
+   * are not reported.
+   */
   [IPC.RENDER_HISTORY_STORE]: {
-    req: { resultId: string; sourcePath: string }
+    req: { resultId: string; sourcePath: string; workDir?: string }
     res: { ok: boolean }
   }
+  /** Drop every archived render and the work directories they came from. */
+  [IPC.RENDER_HISTORY_CLEAR]: { req: void; res: void }
   /** Read an archived render back for display (render window -> main). */
   [IPC.RENDER_HISTORY_READ]: { req: { resultId: string }; res: { dataUrl: string | null } }
   /** Write the shown render to a file the user picks. */

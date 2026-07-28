@@ -276,6 +276,20 @@ describe('useRenderWindowClient render history', () => {
         h.unmount();
     });
 
+    it('clearHistory asks the main window to drop every past render', () => {
+        const h = makeRenderHook(() => useRenderWindowClient());
+        act(() => harness.push(historyPush('r1', 'r2')));
+
+        act(() => { h.result.clearHistory(); });
+
+        expect(harness.commands().at(-1)).toEqual({ type: 'clear-history' });
+        // The list is emptied by the main window's reply, not optimistically.
+        expect(h.result.state.history).toHaveLength(2);
+        act(() => harness.push({ kind: 'history', entries: [] }));
+        expect(h.result.shownResult).toBeNull();
+        h.unmount();
+    });
+
     it('stops at the ends of the history', () => {
         const h = makeRenderHook(() => useRenderWindowClient());
         act(() => harness.push(historyPush('r1')));

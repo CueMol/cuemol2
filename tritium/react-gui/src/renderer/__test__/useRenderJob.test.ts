@@ -93,8 +93,9 @@ describe('useRenderJob', () => {
         const result = onComplete.mock.calls[0][0] as RenderResult;
         expect(result.sourceSceneName).toBe('Scene1');
         // The image itself is never inlined: the caller archives this file and
-        // the viewer reads it back by result id.
-        expect(onComplete.mock.calls[0][1]).toBe('/tmp/render/out.png');
+        // the viewer reads it back by result id. The work dir rides along so
+        // the caller can clean it up with the history.
+        expect(onComplete.mock.calls[0][1]).toEqual({ path: '/tmp/render/out.png' });
         h.unmount();
     });
 

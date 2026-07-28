@@ -161,7 +161,8 @@ describe('useRenderWindowBridge', () => {
         });
         act(() => emit({
             type: 'complete', jobId: 'job-1',
-            imagePath: '/tmp/render/out.png', width: 800, height: 600, elapsedSec: 3.5,
+            imagePath: '/tmp/render/out.png', workDir: '/tmp/render',
+            width: 800, height: 600, elapsedSec: 3.5,
         }));
         await flushPromises();
 
@@ -183,7 +184,12 @@ describe('useRenderWindowBridge', () => {
         // ... which the main process was asked to store first.
         expect(harness.api.invoke).toHaveBeenCalledWith(
             IPC.RENDER_HISTORY_STORE,
-            expect.objectContaining({ sourcePath: '/tmp/render/out.png' }),
+            expect.objectContaining({
+                sourcePath: '/tmp/render/out.png',
+                // The job's temp dir goes with it, so it is cleaned up with
+                // the history instead of accumulating one per render.
+                workDir: '/tmp/render',
+            }),
         );
         h.unmount();
     });
@@ -211,6 +217,29 @@ describe('useRenderWindowBridge', () => {
         expect(
             (after[after.length - 1] as { entries: unknown[] }).entries,
         ).toHaveLength(1);
+        h.unmount();
+    });
+
+    it('EXEC clear-history empties the list and drops the archived images', async () => {
+        const { cm, emit } = makeCm();
+        const h = mountBridge(cm);
+        await act(async () => {
+            harness.exec({ type: 'start', snapshot });
+            await flushPromises();
+        });
+        act(() => emit({
+            type: 'complete', jobId: 'job-1',
+            imagePath: '/tmp/a.png', width: 8, height: 6, elapsedSec: 1,
+        }));
+        await flushPromises();
+
+        act(() => { harness.exec({ type: 'clear-history' }); });
+
+        // The window is told the history is empty ...
+        const last = harness.stateUpdates().at(-1);
+        expect(last).toMatchObject({ kind: 'history', entries: [] });
+        // ... and the files behind it are dropped too.
+        expect(harness.api.invoke).toHaveBeenCalledWith(IPC.RENDER_HISTORY_CLEAR);
         h.unmount();
     });
 

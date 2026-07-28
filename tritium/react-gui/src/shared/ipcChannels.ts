@@ -123,6 +123,7 @@ export const IPC = {
   RENDER_HISTORY_READ:      'render-window:history-read',      // invoke: render window -> main
   RENDER_IMAGE_SAVE:        'render-window:image-save',        // invoke: render window -> main
   RENDER_IMAGE_COPY:        'render-window:image-copy',        // invoke: render window -> main
+  RENDER_HISTORY_CLEAR:     'render-window:history-clear',     // invoke: main window -> main
   RENDER_FRAME_READ:        'render-window:frame-read',        // invoke: render window -> main
   RENDER_FRAMES_CHECK:      'render-window:frames-check',      // invoke: render window -> main (count contiguous frames)
   RENDER_FRAMES_CLEANUP:    'render-window:frames-cleanup',    // invoke: render window -> main (delete frames + movie)

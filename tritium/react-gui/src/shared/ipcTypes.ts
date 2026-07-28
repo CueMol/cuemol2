@@ -697,6 +697,11 @@ export type RenderWindowCommand =
   | { type: 'show-source' }
   /** Request a full state re-push (sent by the render window on mount). */
   | { type: 'sync' }
+  /**
+   * Drop every past render: the metadata list here, the archived images, and
+   * the temp work directories the jobs left behind.
+   */
+  | { type: 'clear-history' }
 
 /**
  * State pushed to the render window. Split into variants so the multi-MB

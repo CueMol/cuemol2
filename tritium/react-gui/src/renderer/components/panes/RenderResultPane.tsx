@@ -35,6 +35,11 @@ interface RenderResultPaneProps {
    * limit, or lost with a crashed run).
    */
   imageSrc: string | null;
+  /**
+   * Drop every past render, including the images kept in the temp directory.
+   * Omit to hide the control.
+   */
+  onClearHistory?: () => void;
   /** Show the previous render (and its settings). Omit to hide the control. */
   onBack?: () => void;
   /** Show the next render. Omit to hide the control. */
@@ -95,6 +100,7 @@ export function exportFileName(
 export const RenderResultPane: React.FC<RenderResultPaneProps> = ({
   result,
   imageSrc,
+  onClearHistory,
   onBack,
   onForward,
   canBack = false,
@@ -157,6 +163,7 @@ export const RenderResultPane: React.FC<RenderResultPaneProps> = ({
   const saveName = exportFileName(result, frameIndex);
 
   const [exportError, setExportError] = useState<string | null>(null);
+  const [confirmClear, setConfirmClear] = useState(false);
   const { theme } = useTheme();
 
   const handleSave = useCallback(() => {
@@ -213,6 +220,16 @@ export const RenderResultPane: React.FC<RenderResultPaneProps> = ({
           )}
         </>
       )}
+      {onClearHistory && (
+        <Tooltip content="Clear the render history and its temporary images">
+          <Button
+            small
+            icon={<AppIcon name="ui.trash" aria-hidden />}
+            aria-label="Clear render history"
+            onClick={() => setConfirmClear(true)}
+          />
+        </Tooltip>
+      )}
       <Tooltip content="Save the image to a file">
         <Button
           small
@@ -262,6 +279,27 @@ export const RenderResultPane: React.FC<RenderResultPaneProps> = ({
         }
         actions={actions}
       />
+      {/* Clearing throws away images that cannot be re-created without
+          re-rendering, so it asks first. */}
+      <Alert
+        isOpen={confirmClear}
+        intent="danger"
+        icon="trash"
+        confirmButtonText="Clear"
+        cancelButtonText="Cancel"
+        className={theme === "dark" ? "bp5-dark" : undefined}
+        onCancel={() => setConfirmClear(false)}
+        onConfirm={() => {
+          setConfirmClear(false);
+          onClearHistory?.();
+        }}
+      >
+        <p>
+          Discard every render in the history and delete the temporary images
+          kept for them? The rendered scenes are unaffected.
+        </p>
+      </Alert>
+
       {/* A failed export is worth saying out loud: the button otherwise looks
           like it worked. */}
       <Alert
