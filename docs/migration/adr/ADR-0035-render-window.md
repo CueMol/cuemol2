@@ -89,6 +89,14 @@ Key constraints and choices:
   the history -- on quit as well as on demand. Only directories the worker
   reports and that sit under the temp dir are touched, so a movie's frames (in
   the user's own folder) and any mis-reported path are never deleted.
+- **Trackpad zoom** in the result viewer. Panning was already there (the image
+  sits in a scroll container, so a two-finger swipe scrolls it), but zoom was
+  toolbar-only. A pinch reaches an element as a wheel event with a synthetic
+  `ctrlKey` -- the only signal browsers give for it -- so the viewer zooms on
+  that (and on cmd/ctrl + wheel), anchored at the pointer, and leaves a plain
+  wheel to scroll natively. Registered through `@use-gesture`'s `useWheel` with
+  `passive: false`, as `MolViewPane` does: React's own `onWheel` is passive at
+  the root and could not suppress the browser's page zoom.
 - **Save / Copy** are back in the result toolbar. They were dropped as clutter
   while the window had no history; with one, exporting the render you settled
   on is the point of keeping the earlier attempts. Both act on what is on
