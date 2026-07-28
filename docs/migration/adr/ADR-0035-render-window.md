@@ -89,6 +89,15 @@ Key constraints and choices:
   the history -- on quit as well as on demand. Only directories the worker
   reports and that sit under the temp dir are touched, so a movie's frames (in
   the user's own folder) and any mis-reported path are never deleted.
+
+  Their names are random, so a run that dies before its cleanup would leave
+  them unidentifiable: the registered paths are therefore also written to a
+  `workdirs.json` beside the archived images, and the next start removes
+  exactly what that lists. Sweeping the temp dir by name pattern instead would
+  risk deleting a second instance's in-flight directory. That startup cleanup
+  does not ask first -- what it reclaims is unreachable, since the history
+  metadata died with the crashed run -- unlike the in-session Clear button,
+  which confirms because it discards a history the user is looking at.
 - **Trackpad zoom** in the result viewer. Panning was already there (the image
   sits in a scroll container, so a two-finger swipe scrolls it), but zoom was
   toolbar-only. A pinch reaches an element as a wheel event with a synthetic
