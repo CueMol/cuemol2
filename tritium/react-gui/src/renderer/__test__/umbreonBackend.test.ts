@@ -199,12 +199,17 @@ describe('umbreonBackend.beginInProcess', () => {
 
         umbreonBackend.beginInProcess!(ctx, {} as never, snapshot, '/o.png')
 
-        // aoDistance keeps the unbounded 1e20 default even though the UI default
-        // is a finite 100; supersample defaults to 3; projection -> perspective.
-        expect(exporter.aoDistance).toBe(1e20)
+        // aoDistance defaults to 0, which asks libcuemol2 to scale the radius
+        // to the scene bounding box; supersample defaults to 3; projection ->
+        // perspective.
+        expect(exporter.aoDistance).toBe(0)
         // absent aoEnabled -> AO off -> aoSamples forced to 0.
         expect(exporter.aoSamples).toBe(0)
         expect(exporter.supersample).toBe(3)
+        // Antialiasing is plain grid supersampling: the adaptive-AA knobs are
+        // never written, so umbreon keeps its (off) defaults.
+        expect(exporter.aaMode).toBeUndefined()
+        expect(exporter.aaDepth).toBeUndefined()
         expect(exporter.perspective).toBe(true)
         // absent denoise -> "OIDN" default -> pt1Denoise on, no full-frame pass.
         expect(exporter.giDenoise).toBe(true)

@@ -3,8 +3,12 @@
  * @description Root component of the modeless Rendering window.
  *
  * Layout (Allotment splits):
- *   [ image area (RenderResultPane)      | Render Settings editor ]
- *   [ RenderPanel (Start/progress/log)   |   (right pane, full height) ]
+ *   [ image area (RenderResultPane)   | Render Settings pane ]
+ *   [ RenderPanel (run bar + log)     |  (right pane, full height) ]
+ *
+ * Every setting lives in the right pane (RenderSettingsPane: Render / Image
+ * tabs); the bottom pane is the run controls (including the Backend and Target
+ * dropdowns) plus the log.
  *
  * Render settings state (useRenderSettings) lives locally in this window;
  * a Start sends the frozen snapshot to the main window over IPC
@@ -21,9 +25,7 @@ import { useTheme } from "../../contexts/ThemeContext";
 import { RenderResultPane } from "../panes/RenderResultPane";
 import { RenderImageViewer } from "../panes/RenderImageViewer";
 import { RenderPanel } from "../panels/RenderPanel";
-import { ImageSettingsPanel } from "../panels/ImageSettingsPanel";
-import { MovieSettingsPanel } from "../panels/MovieSettingsPanel";
-import { RenderSettingsEditor } from "../inspector/RenderSettingsEditor";
+import { RenderSettingsPane } from "./RenderSettingsPane";
 import { useRenderSettings } from "../../hooks/useRenderSettings";
 import { isRenderJobActive } from "../../hooks/useRenderJob";
 import { useRenderWindowClient } from "../../hooks/useRenderWindowClient";
@@ -119,8 +121,43 @@ export const RenderWindowApp: React.FC = () => {
     [client, settings, sizePresets],
   );
 
-  const { job, result, views, preview } = client.state;
+  const { job, views, preview, history, historyIndex } = client.state;
+  const jobActive = isRenderJobActive(job);
   const canRender = client.target !== null;
+  // The image on screen is a history entry, so a parameter change can be
+  // compared against the previous attempt instead of replacing it.
+  const result = client.shownResult;
+
+  // Step through the render history, restoring the settings that produced the
+  // entry now shown -- the point of going back is to get that render's
+  // parameters back, not just its picture.
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
+  const clientRef = useRef(client);
+  clientRef.current = client;
+  const handleBack = useCallback(() => {
+    const shown = clientRef.current.goBack();
+    if (shown) settingsRef.current.restore(shown.settingsSnapshot);
+  }, []);
+  const handleForward = useCallback(() => {
+    const shown = clientRef.current.goForward();
+    if (shown) settingsRef.current.restore(shown.settingsSnapshot);
+  }, []);
+
+  // Default the Camera settings to what the selected target view shows, so a
+  // render starts from the projection the user is looking at. Re-read on every
+  // target change; a manual edit stands until the target changes again.
+  const targetViewId = client.targetViewId;
+  useEffect(() => {
+    if (targetViewId === null) return;
+    let cancelled = false;
+    void clientRef.current.getViewCamera(targetViewId).then((camera) => {
+      if (!cancelled && camera) settingsRef.current.applyViewCamera(camera);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [targetViewId]);
 
   // Surface a failed render / encode in a message box (the log is collapsed).
   // Keyed off the job's startedAt so each failure alerts once.
@@ -133,49 +170,6 @@ export const RenderWindowApp: React.FC = () => {
       setErrorMsg(job.error ?? "The render failed.");
     }
   }, [job?.status, job?.startedAt, job?.error]);
-
-  // The bottom pane's two columns are composed per mode, split so neither is
-  // overloaded: still shows Size | Output, movie shows Image | Movie.
-  const isMovie = settings.mode === "movie";
-  const leftPanel = isMovie ? (
-    <ImageSettingsPanel
-      title="Image"
-      commonProps={settings.commonProps}
-      onChange={settings.handleChange}
-      fields={["width", "height", "transparentBg", "postBlend", "pixelLabels"]}
-      showPreset
-      preset={settings.preset}
-      onApplyPreset={handleApplyPreset}
-      sizePresets={sizePresets}
-    />
-  ) : (
-    <ImageSettingsPanel
-      title="Size"
-      commonProps={settings.commonProps}
-      onChange={settings.handleChange}
-      fields={["width", "height", "unit", "dpi"]}
-      showPreset
-      preset={settings.preset}
-      onApplyPreset={handleApplyPreset}
-      sizePresets={sizePresets}
-    />
-  );
-  const rightPanel = isMovie ? (
-    <MovieSettingsPanel
-      title="Movie"
-      settings={settings.movie}
-      onChange={settings.updateMovie}
-      onPickFolder={handlePickFolder}
-      disabled={isRenderJobActive(job)}
-    />
-  ) : (
-    <ImageSettingsPanel
-      title="Output"
-      commonProps={settings.commonProps}
-      onChange={settings.handleChange}
-      fields={["transparentBg", "postBlend", "pixelLabels"]}
-    />
-  );
 
   return (
     <div className="render-window">
@@ -204,7 +198,18 @@ export const RenderWindowApp: React.FC = () => {
                     }`}
                   />
                 ) : result ? (
-                  <RenderResultPane result={result} />
+                  <RenderResultPane
+                    result={result}
+                    onBack={handleBack}
+                    onForward={handleForward}
+                    canBack={historyIndex > 0}
+                    canForward={historyIndex < history.length - 1}
+                    historyLabel={
+                      history.length > 1
+                        ? `${historyIndex + 1} / ${history.length}`
+                        : undefined
+                    }
+                  />
                 ) : (
                   <div className="render-window-empty type-body">
                     {canRender
@@ -221,8 +226,6 @@ export const RenderWindowApp: React.FC = () => {
                 job={job}
                 mode={settings.mode}
                 onModeChange={settings.setMode}
-                leftPanel={leftPanel}
-                rightPanel={rightPanel}
                 renderable={canRender}
                 onStart={handleStart}
                 onCancel={client.cancel}
@@ -230,6 +233,9 @@ export const RenderWindowApp: React.FC = () => {
                 canEncode={availFrames > 0}
                 onCleanup={isMovieMode ? () => setConfirmCleanup(true) : undefined}
                 canCleanup={availFrames > 0}
+                backend={settings.backend}
+                backendIds={backendIds}
+                onBackendChange={settings.setBackend}
                 targetViews={views}
                 targetViewId={client.targetViewId}
                 onTargetChange={client.setTargetViewId}
@@ -238,25 +244,30 @@ export const RenderWindowApp: React.FC = () => {
           </Allotment>
         </Allotment.Pane>
 
-        {/* Right: Render Settings editor (always visible). The min widths
+        {/* Right: Render Settings pane (always visible). The min widths
             must satisfy leftMin + settingsMin + sash <= window minWidth
             (480, windowManager.ts) so the window can actually reach its
             minimum and the render bar can get narrow enough to collapse
             its button labels. */}
         <Allotment.Pane minSize={150} preferredSize={300}>
-          <div className="render-window-settings">
-            <div className="render-window-settings-header type-group-label">
-              Render Settings
-            </div>
-            <RenderSettingsEditor
-              backend={settings.backend}
-              backendIds={backendIds}
-              commonProps={settings.commonProps}
-              backendProps={settings.backendProps}
-              onBackendChange={settings.setBackend}
-              onChange={settings.handleChange}
-            />
-          </div>
+          <RenderSettingsPane
+            backend={settings.backend}
+            commonProps={settings.commonProps}
+            backendProps={settings.backendProps}
+            onChange={settings.handleChange}
+            lighting={settings.lighting}
+            qualitySteps={settings.qualitySteps}
+            onLightingChange={settings.setLighting}
+            onQualityStepChange={settings.setQualityStep}
+            mode={settings.mode}
+            preset={settings.preset}
+            sizePresets={sizePresets}
+            onApplyPreset={handleApplyPreset}
+            movie={settings.movie}
+            onMovieChange={settings.updateMovie}
+            onPickFolder={handlePickFolder}
+            movieDisabled={jobActive}
+          />
         </Allotment.Pane>
       </Allotment>
       </div>

@@ -32,6 +32,7 @@ import type {
   TextCtxShowPayload,
   UiState,
   ViewSizePx,
+  RenderViewCamera,
 } from './ipcTypes'
 
 export interface InvokeChannels {
@@ -96,6 +97,11 @@ export interface InvokeChannels {
   [IPC.RENDER_WINDOW_STATE]:   { req: RenderWindowStateUpdate; res: void }
   [IPC.RENDER_VIEW_SIZE_GET]:  { req: void;                    res: ViewSizePx | null }
   [IPC.RENDER_VIEW_SIZE_REPLY]: { req: { reqId: number; size: ViewSizePx | null }; res: void }
+  [IPC.RENDER_VIEW_CAMERA_GET]: { req: { viewId: number }; res: RenderViewCamera | null }
+  [IPC.RENDER_VIEW_CAMERA_REPLY]: {
+    req: { reqId: number; camera: RenderViewCamera | null }
+    res: void
+  }
   /** Read one frame of a finished movie render back off disk (frame slider). */
   [IPC.RENDER_FRAME_READ]: { req: { outputDir: string; baseName: string; frameIndex: number }
                              res: { dataUrl: string | null } }
@@ -137,6 +143,7 @@ export interface PushChannels {
   [IPC.RENDER_WINDOW_EXEC]:       RenderWindowCommand
   [IPC.RENDER_WINDOW_STATE_PUSH]: RenderWindowStateUpdate
   [IPC.RENDER_VIEW_SIZE_REQUEST]: { reqId: number }
+  [IPC.RENDER_VIEW_CAMERA_REQUEST]: { reqId: number; viewId: number }
 }
 
 export type InvokeChannel = keyof InvokeChannels

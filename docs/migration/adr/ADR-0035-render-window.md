@@ -34,12 +34,44 @@ Add a second `BrowserWindow` ("Rendering", `render.html`) as a modeless
 child of the main window (`parent: mainWindow`, so it always stays above
 it). It hosts, in Allotment splits: the result image viewer
 (`RenderResultPane`/`RenderImageViewer`), the render execution panel
-(`RenderPanel`: Start/Stop, size preset, progress, log) below it, and the
-`RenderSettingsEditor` in a right pane. The main window loses the
-BottomPanel "render" tab, the inspector `renderSettings` target, and the
+(`RenderPanel`: Start/Stop, Backend / Target, progress, log) below it, and
+the settings pane (`RenderSettingsPane`) on the right. The main window loses
+the BottomPanel "render" tab, the inspector `renderSettings` target, and the
 `renderResult` tab type.
 
 Key constraints and choices:
+
+- **Settings live in one pane, run controls in the other.** The right pane
+  splits into two tabs: "Image" (`RenderImageTab` — Size, Output and, in movie
+  mode, the Movie section; opens first, since size is what a render is set up
+  around) and "Render" (`RenderSettingsEditor` — the quality section plus the
+  backend-driven groups). The bottom pane is then only the run bar and the
+  log. The first layout put the image / movie settings in two resizable
+  columns in the bottom pane, which split one concern across both panes, cost
+  the log its space, and made the settings height depend on the sash
+  position. The Backend dropdown sits in the run bar next to Target, since
+  the pair answers "render what, with what" and is picked per run, not per
+  setting; the Image tab hides output settings the active backend does not
+  honor, exactly as the Render tab hides unsupported group props.
+- **Quality axes** (umbreon). The Render tab opens with a Quality section:
+  a Lighting dropdown (Raytrace only / Ambient Occlusion / Global
+  Illumination) plus one dropdown per independent quality axis
+  (Supersampling, the method's own AO / GI quality, Shadows). The values are
+  ported from umbreon's `docs/quality_presets.md`; see
+  [ADR-0042](ADR-0042-umbreon-quality-presets.md) for the axis model and the
+  AO / AA wiring it required in libcuemol2.
+- **Render history.** Completed renders accumulate in the render window
+  (capped at 10, since each holds a full-size image) and the result pane gets
+  Back / Forward arrows. Stepping restores the entry's image AND its settings
+  snapshot, so a parameter change can be compared against the previous
+  attempt and reverted to it -- the earlier behaviour replaced the single
+  latest result outright. The history is window-local like the settings, so
+  closing the window clears it; the main window still keeps only the latest
+  result for a re-sync.
+- **Camera defaults follow the target view.** Selecting a render target reads
+  that view's projection over a `RENDER_VIEW_CAMERA_GET` round trip (same
+  shape as the view-size trip) so a render starts from what the user is
+  looking at.
 
 - **Worker locality.** The CueMol native addon lives only in the main
   window's renderer (a second window is a separate OS process — a second
@@ -104,11 +136,16 @@ Key constraints and choices:
   - Renderer: `render.html` / `render.tsx` (ErrorBoundary + ThemeProvider
     only; no `installGlobalCrashHandlers`),
     `components/renderwindow/RenderWindowApp.tsx`,
+    `components/renderwindow/RenderSettingsPane.tsx` (tab strip) and
+    `RenderImageTab.tsx` (Size / Output / Movie sections, composed from
+    `ImageSettingsPanel` / `MovieSettingsPanel`),
     `hooks/useRenderWindowBridge.ts` (main window),
     `hooks/useRenderWindowClient.ts` (render window),
     `styles/_render-window.css`.
   - Tests: `__test__/useRenderWindowBridge.test.ts`,
-    `__test__/useRenderWindowClient.test.ts`.
+    `__test__/useRenderWindowClient.test.ts`,
+    `__test__/renderSettingsPane.test.tsx` (which setting lives on which
+    tab), `__test__/renderPanel.test.tsx` (run bar + log-only bottom pane).
 - The real two-window relay, `parent` z-order, and the multi-entry build
   cannot be unit-tested (jsdom, single process) — covered by the manual
   checklist in the PR.

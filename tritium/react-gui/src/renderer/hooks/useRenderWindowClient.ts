@@ -24,6 +24,7 @@ import type {
   RenderTargetViewWire,
   RenderWindowCommand,
   RenderWindowStateUpdate,
+  RenderViewCamera,
   ViewSizePx,
 } from "../../shared/ipcTypes";
 import type { RenderJob } from "./useRenderJob";
@@ -33,11 +34,22 @@ import type {
   RenderSource,
 } from "../data/renderResult";
 
+/**
+ * How many completed renders stay navigable with Back / Forward. Each entry
+ * holds a full-size image data URL (multi-MB at print sizes), so the list is
+ * capped rather than unbounded.
+ */
+const HISTORY_LIMIT = 10;
+
 export interface RenderWindowClientState {
   /** Mirrored render job (progress/log), or null when idle. */
   job: RenderJob | null;
   /** Latest completed render, or null when nothing has been rendered. */
   result: RenderResult | null;
+  /** Completed renders, oldest first (capped at HISTORY_LIMIT). */
+  history: RenderResult[];
+  /** Index into `history` of the result on screen, or -1 when empty. */
+  historyIndex: number;
   /** Most recent finished frame of a running movie render. */
   preview: RenderFramePreviewWire | null;
   /** Open molviews selectable as render targets. */
@@ -51,6 +63,8 @@ export interface RenderWindowClientState {
 const INITIAL_STATE: RenderWindowClientState = {
   job: null,
   result: null,
+  history: [],
+  historyIndex: -1,
   preview: null,
   views: [],
   activeViewId: null,
@@ -81,8 +95,19 @@ export function useRenderWindowClient(): {
   cancel: () => void;
   showSource: () => void;
   getViewSize: () => Promise<ViewSizePx | null>;
+  /** The target view's camera settings, used to default the Camera group. */
+  getViewCamera: (viewId: number) => Promise<RenderViewCamera | null>;
+  /** The result currently on screen (a history entry), or null. */
+  shownResult: RenderResult | null;
+  /** Show the previous / next render; returns the result now shown. */
+  goBack: () => RenderResult | null;
+  goForward: () => RenderResult | null;
 } {
   const [state, setState] = useState<RenderWindowClientState>(INITIAL_STATE);
+  // Mirrors `state` for the history navigation, which must resolve its entry
+  // synchronously (see stepHistory).
+  const stateRef = useRef(state);
+  stateRef.current = state;
   const [targetViewId, setTargetViewIdState] = useState<number | null>(null);
 
   // The previously pushed activeViewId, to detect CHANGES (auto-follow
@@ -128,12 +153,25 @@ export function useRenderWindowClient(): {
             umbreonAvailable: update.umbreonAvailable,
           }));
         } else if (update.kind === "result") {
-          setState((prev) => ({
-            ...prev,
-            result: update.result as RenderResult | null,
-            // A finished render supersedes the live preview.
-            preview: null,
-          }));
+          const result = update.result as RenderResult | null;
+          setState((prev) => {
+            // A re-sync re-pushes the same latest result, so append by id.
+            const isNew =
+              result !== null &&
+              !prev.history.some((r) => r.id === result.id);
+            const history = isNew
+              ? [...prev.history, result].slice(-HISTORY_LIMIT)
+              : prev.history;
+            return {
+              ...prev,
+              result,
+              history,
+              // A new render is always what the user wants to see.
+              historyIndex: isNew ? history.length - 1 : prev.historyIndex,
+              // A finished render supersedes the live preview.
+              preview: null,
+            };
+          });
         } else {
           setState((prev) => ({ ...prev, preview: update.preview }));
         }
@@ -208,6 +246,38 @@ export function useRenderWindowClient(): {
   const cancel = useCallback(() => sendCommand({ type: "cancel" }), []);
   const showSource = useCallback(() => sendCommand({ type: "show-source" }), []);
 
+  /**
+   * Step through the render history. Returns the result now on screen so the
+   * caller can restore the settings that produced it, or null at the end.
+   *
+   * The entry is read from a ref rather than inside the state updater: the
+   * updater does not run until React flushes, so a value captured there would
+   * still be null when this returns.
+   */
+  const stepHistory = useCallback((delta: number): RenderResult | null => {
+    const { history, historyIndex } = stateRef.current;
+    const next = historyIndex + delta;
+    if (next < 0 || next >= history.length) return null;
+    setState((prev) => ({ ...prev, historyIndex: next, preview: null }));
+    return history[next];
+  }, []);
+
+  const goBack = useCallback(() => stepHistory(-1), [stepHistory]);
+  const goForward = useCallback(() => stepHistory(1), [stepHistory]);
+
+  const getViewCamera = useCallback(
+    async (viewId: number): Promise<RenderViewCamera | null> => {
+      const api = window.electronAPI;
+      if (!api) return null;
+      try {
+        return await api.invoke(IPC.RENDER_VIEW_CAMERA_GET, { viewId });
+      } catch {
+        return null;
+      }
+    },
+    [],
+  );
+
   const getViewSize = useCallback(async (): Promise<ViewSizePx | null> => {
     const api = window.electronAPI;
     if (!api) return null;
@@ -230,5 +300,9 @@ export function useRenderWindowClient(): {
     cancel,
     showSource,
     getViewSize,
+    getViewCamera,
+    shownResult: state.history[state.historyIndex] ?? null,
+    goBack,
+    goForward,
   };
 }

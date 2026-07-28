@@ -440,6 +440,14 @@
 }
 
 /* Backend selector row above the render-settings accordions */
+/* Quality section at the top of the Render tab (Lighting / level dropdowns +
+   the lead props). Sits above the accordions, so it carries the same inset as
+   an accordion body and a rule to separate it from the first group. */
+.insp-render-quality {
+  padding: var(--space-4) var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
 .insp-render-backend-bar {
   display: flex;
   align-items: center;

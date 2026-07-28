@@ -19,11 +19,11 @@ import * as fs from 'fs'
 import * as path from 'path'
 import type { BrowserWindow } from 'electron'
 import { IPC } from '../shared/ipcChannels'
-import type { ViewSizePx } from '../shared/ipcTypes'
+import type { RenderViewCamera, ViewSizePx } from '../shared/ipcTypes'
 import { movieFrameFileName, MOVIE_FILE_EXTENSIONS } from '../shared/movieFrames'
 import { handleInvoke } from './ipcHandlers'
 
-/** How long to wait for the main window's view-size reply. */
+/** How long to wait for a main-window reply (view size / view camera). */
 const VIEW_SIZE_TIMEOUT_MS = 2000
 
 export interface RenderWindowIpcDeps {
@@ -83,6 +83,36 @@ export function registerRenderWindowIpc(deps: RenderWindowIpcDeps): void {
 
   handleInvoke(IPC.RENDER_VIEW_SIZE_REPLY, (_event, { reqId, size }) => {
     pending.get(reqId)?.(size)
+  })
+
+  // --- Target-view camera round trip ---
+  //
+  // Same shape as the size trip above: the view lives in the main window's
+  // worker, so the render window cannot read it directly. Used to default the
+  // Camera settings to what the selected target view currently shows.
+
+  let nextCamReqId = 1
+  const pendingCam = new Map<number, (camera: RenderViewCamera | null) => void>()
+
+  handleInvoke(IPC.RENDER_VIEW_CAMERA_GET, (_event, { viewId }) => {
+    if (mainWindow.isDestroyed()) return Promise.resolve(null)
+    const reqId = nextCamReqId++
+    return new Promise<RenderViewCamera | null>((resolve) => {
+      const timer = setTimeout(() => {
+        pendingCam.delete(reqId)
+        resolve(null)
+      }, VIEW_SIZE_TIMEOUT_MS)
+      pendingCam.set(reqId, (camera) => {
+        clearTimeout(timer)
+        pendingCam.delete(reqId)
+        resolve(camera)
+      })
+      mainWindow.webContents.send(IPC.RENDER_VIEW_CAMERA_REQUEST, { reqId, viewId })
+    })
+  })
+
+  handleInvoke(IPC.RENDER_VIEW_CAMERA_REPLY, (_event, { reqId, camera }) => {
+    pendingCam.get(reqId)?.(camera)
   })
 
   // Frame slider: read one already-rendered frame straight off disk. The

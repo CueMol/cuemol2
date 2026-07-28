@@ -4,25 +4,25 @@
  * Rendering window's bottom pane).
  *
  * The tab strip selects the output mode: Still renders one image, Movie
- * renders the scene's animation as a frame sequence. Below the action bar and
- * progress, the settings area is two resizable columns (leftPanel | rightPanel,
- * 1:1 by default) composed by the host; the collapsible log sits below them.
+ * renders the scene's animation as a frame sequence. Below it sits the run bar
+ * -- Start / Stop, the movie-only actions, and the two "what is rendered by
+ * what" dropdowns (Backend, Target) -- then the job progress. Everything below
+ * that is the log, which fills the rest of the pane.
  *
- * The remaining, less-touched settings live in the adjacent Render Settings
- * pane. The optional `onOpenSettings` shortcut is for hosts where that pane is
- * not permanently visible.
+ * The settings themselves live in the adjacent Render Settings pane (Render /
+ * Image tabs). The optional `onOpenSettings` shortcut is for hosts where that
+ * pane is not permanently visible.
  */
 
-import React, { useCallback, useRef, useState } from "react";
-import { ProgressBar, Collapse, type Intent } from "@blueprintjs/core";
-import { Allotment } from "allotment";
-import "allotment/dist/style.css";
+import React, { useCallback, useRef } from "react";
+import { ProgressBar, type Intent } from "@blueprintjs/core";
 import { SelectField, FormButton } from "../../h3-kit/form";
 import { AppIcon } from "../AppIcon";
 import { PanelTabButton } from "./PanelTabButton";
 import { useCollapsibleLabels } from "../../hooks/useCollapsibleLabels";
 import { type RenderJob, isRenderJobActive } from "../../hooks/useRenderJob";
-import type { RenderMode } from "../../data/renderSettings";
+import type { RenderBackendId, RenderMode } from "../../data/renderSettings";
+import { RENDER_BACKENDS } from "../../data/renderBackends";
 import type { RenderTargetViewWire } from "../../../shared/ipcTypes";
 
 interface RenderPanelProps {
@@ -32,10 +32,6 @@ interface RenderPanelProps {
   mode: RenderMode;
   /** Switch the output mode (i.e. the tab). */
   onModeChange: (mode: RenderMode) => void;
-  /** Left settings column. Passed in so this panel stays unaware of its content. */
-  leftPanel?: React.ReactNode;
-  /** Right settings column (empty in still mode). */
-  rightPanel?: React.ReactNode;
   /**
    * Whether the active content tab has a scene to render. Gates the panel's
    * render controls (Start button, Render Settings shortcut): a non-renderable
@@ -67,6 +63,16 @@ interface RenderPanelProps {
    * permanently visible next to this panel -- the button is then hidden.
    */
   onOpenSettings?: () => void;
+  /**
+   * Selected rendering backend. Shown next to the target because the pair
+   * answers "render what, with what"; the backend's own settings stay in the
+   * Render Settings pane. Omit (with `backendIds`) to hide the dropdown.
+   */
+  backend?: RenderBackendId;
+  /** Backend ids available in the selector. */
+  backendIds?: RenderBackendId[];
+  /** Called when the user picks a different backend. */
+  onBackendChange?: (id: RenderBackendId) => void;
   /**
    * Render targets for the Target dropdown (open molviews pushed by the
    * main window). Omit to hide the dropdown.
@@ -100,8 +106,6 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
   job,
   mode,
   onModeChange,
-  leftPanel,
-  rightPanel,
   renderable,
   onStart,
   onCancel,
@@ -110,14 +114,14 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
   onCleanup,
   canCleanup = false,
   onOpenSettings,
+  backend,
+  backendIds,
+  onBackendChange,
   targetViews,
   targetViewId,
   onTargetChange,
 }) => {
   const active = isRenderJobActive(job);
-  // The log is auxiliary, so it starts collapsed; a running job's progress and
-  // Stop button stay visible above it regardless.
-  const [logOpen, setLogOpen] = useState(false);
 
   const barRef = useRef<HTMLDivElement>(null);
   // Collapse toolbar labels (Start/Stop, Render Settings) to icon-only when the
@@ -130,6 +134,13 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
       if (Number.isFinite(id)) onTargetChange?.(id);
     },
     [onTargetChange],
+  );
+
+  const handleBackendChange = useCallback(
+    (value: string) => {
+      onBackendChange?.(value as RenderBackendId);
+    },
+    [onBackendChange],
   );
 
   return (
@@ -205,6 +216,21 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
           />
         )}
 
+        {backend && backendIds && backendIds.length > 0 && (
+          <span className="render-panel-preset">
+            <span className="render-panel-preset-label type-label">Backend</span>
+            <span className="render-panel-backend-select">
+              <SelectField value={backend} onChange={handleBackendChange} fill>
+                {backendIds.map((id) => (
+                  <option key={id} value={id}>
+                    {RENDER_BACKENDS[id].label}
+                  </option>
+                ))}
+              </SelectField>
+            </span>
+          </span>
+        )}
+
         {targetViews && (
           <span className="render-panel-preset">
             <span className="render-panel-preset-label type-label">Target</span>
@@ -256,46 +282,22 @@ export const RenderPanel: React.FC<RenderPanelProps> = ({
         </div>
       )}
 
-      {/* -- Settings: two resizable columns, 1:1 by default. Start / progress
-             above and the log below stay full-width, outside this split. In
-             still mode the right column is empty, keeping the same shape. -- */}
-      <div className="render-panel-body">
-        <Allotment defaultSizes={[1, 1]}>
-          <Allotment.Pane minSize={120}>
-            <div className="render-panel-col">{leftPanel}</div>
-          </Allotment.Pane>
-          <Allotment.Pane minSize={120}>
-            <div className="render-panel-col">{rightPanel}</div>
-          </Allotment.Pane>
-        </Allotment>
-      </div>
-
-      {/* -- Log: auxiliary, collapsed by default. -- */}
+      {/* -- Log: the whole area below the run bar, so a long job's output is
+             readable without a disclosure step (the pane itself is
+             resizable / snappable when the log is not wanted). -- */}
       <div className="render-panel-logsection">
-        <button
-          type="button"
-          className="render-panel-log-toggle"
-          onClick={() => setLogOpen((v) => !v)}
-        >
-          <AppIcon
-            name={logOpen ? "ui.caretDown" : "ui.caretRight"}
-            aria-hidden
-          />
-          <span className="type-label">Log</span>
-        </button>
-        <Collapse isOpen={logOpen}>
-          <div className="render-panel-log">
-            {job && job.log.length > 0 ? (
-              job.log.map((line, i) => (
-                <div className="render-log-line" key={i}>
-                  {line}
-                </div>
-              ))
-            ) : (
-              <div className="render-panel-empty">No render log yet.</div>
-            )}
-          </div>
-        </Collapse>
+        <div className="render-panel-log-header type-label">Log</div>
+        <div className="render-panel-log">
+          {job && job.log.length > 0 ? (
+            job.log.map((line, i) => (
+              <div className="render-log-line" key={i}>
+                {line}
+              </div>
+            ))
+          ) : (
+            <div className="render-panel-empty">No render log yet.</div>
+          )}
+        </div>
       </div>
     </div>
   );

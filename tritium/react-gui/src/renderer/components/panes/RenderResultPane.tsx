@@ -22,6 +22,15 @@ import { RENDER_BACKENDS } from "../../data/renderBackends";
 interface RenderResultPaneProps {
   /** The render result shown in this pane. */
   result: RenderResult;
+  /** Show the previous render (and its settings). Omit to hide the control. */
+  onBack?: () => void;
+  /** Show the next render. Omit to hide the control. */
+  onForward?: () => void;
+  /** Whether an older / newer render exists to step to. */
+  canBack?: boolean;
+  canForward?: boolean;
+  /** Position in the history, e.g. "2 / 5"; shown beside the arrows. */
+  historyLabel?: string;
 }
 
 /** Read-only list of a snapshot's property values, shown in the popover. */
@@ -40,7 +49,14 @@ const SnapshotList: React.FC<{ title: string; props: PropDef[] }> = ({
   </div>
 );
 
-export const RenderResultPane: React.FC<RenderResultPaneProps> = ({ result }) => {
+export const RenderResultPane: React.FC<RenderResultPaneProps> = ({
+  result,
+  onBack,
+  onForward,
+  canBack = false,
+  canForward = false,
+  historyLabel,
+}) => {
   // Frame slider (movie results). The sequence stays on disk and the shown
   // frame is read back through main on demand -- holding every frame in
   // memory is not viable, and result.imageDataUrl is only the last one.
@@ -105,6 +121,34 @@ export const RenderResultPane: React.FC<RenderResultPaneProps> = ({ result }) =>
   // open / reveal for an encoded movie.
   const actions = (
     <>
+      {/* Render history: each step restores that render's image AND the
+          settings that produced it, so a parameter change can be compared
+          against -- and reverted to -- the previous attempt. */}
+      {(onBack || onForward) && (
+        <>
+          <Tooltip content="Previous render (restores its settings)">
+            <Button
+              small
+              icon={<AppIcon name="ui.caretLeft" aria-hidden />}
+              aria-label="Previous render"
+              onClick={onBack}
+              disabled={!canBack}
+            />
+          </Tooltip>
+          <Tooltip content="Next render (restores its settings)">
+            <Button
+              small
+              icon={<AppIcon name="ui.caretRight" aria-hidden />}
+              aria-label="Next render"
+              onClick={onForward}
+              disabled={!canForward}
+            />
+          </Tooltip>
+          {historyLabel && (
+            <span className="rr-history-pos type-label">{historyLabel}</span>
+          )}
+        </>
+      )}
       <Popover content={settingsPopover} placement="bottom-start">
         {/* Tooltip nested in the Popover so the button has both (Blueprint
             merges the refs). */}

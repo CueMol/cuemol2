@@ -215,3 +215,85 @@ describe('useRenderWindowClient', () => {
         h.unmount();
     });
 });
+
+// Render history: completed renders accumulate so a parameter change can be
+// compared against -- and stepped back to -- the previous attempt. Each entry
+// carries the snapshot that produced it, which the window restores on Back.
+describe('useRenderWindowClient render history', () => {
+    /** A completed-render push with the given id. */
+    const resultPush = (id: string): RenderWindowStateUpdate => ({
+        kind: 'result',
+        result: {
+            id,
+            imageDataUrl: `data:image/png;base64,${id}`,
+            width: 100,
+            height: 100,
+            sourceSceneId: 1,
+            sourceSceneName: 'SceneA',
+            settingsSnapshot: snapshot,
+            finishedAt: 0,
+        } as never,
+    });
+
+    it('accumulates completed renders and shows the newest', () => {
+        const h = makeRenderHook(() => useRenderWindowClient());
+        act(() => harness.push(resultPush('r1')));
+        act(() => harness.push(resultPush('r2')));
+
+        expect(h.result.state.history.map((r) => r.id)).toEqual(['r1', 'r2']);
+        expect(h.result.shownResult?.id).toBe('r2');
+        h.unmount();
+    });
+
+    it('does not duplicate the entry a re-sync re-pushes', () => {
+        const h = makeRenderHook(() => useRenderWindowClient());
+        act(() => harness.push(resultPush('r1')));
+        // Reopening the window re-pushes the same latest result.
+        act(() => harness.push(resultPush('r1')));
+
+        expect(h.result.state.history).toHaveLength(1);
+        h.unmount();
+    });
+
+    it('steps back and forward, returning the entry now shown', () => {
+        const h = makeRenderHook(() => useRenderWindowClient());
+        act(() => harness.push(resultPush('r1')));
+        act(() => harness.push(resultPush('r2')));
+
+        let shown: { id: string } | null = null;
+        act(() => { shown = h.result.goBack() as never; });
+        // The returned entry is what the window restores the settings from.
+        expect(shown?.id).toBe('r1');
+        expect(h.result.shownResult?.id).toBe('r1');
+
+        act(() => { shown = h.result.goForward() as never; });
+        expect(shown?.id).toBe('r2');
+        expect(h.result.shownResult?.id).toBe('r2');
+        h.unmount();
+    });
+
+    it('stops at the ends of the history', () => {
+        const h = makeRenderHook(() => useRenderWindowClient());
+        act(() => harness.push(resultPush('r1')));
+
+        let shown: unknown = 'unset';
+        act(() => { shown = h.result.goBack(); });
+        expect(shown).toBeNull();
+        act(() => { shown = h.result.goForward(); });
+        expect(shown).toBeNull();
+        expect(h.result.shownResult?.id).toBe('r1');
+        h.unmount();
+    });
+
+    it('jumps to the newest render when a new one completes mid-history', () => {
+        const h = makeRenderHook(() => useRenderWindowClient());
+        act(() => harness.push(resultPush('r1')));
+        act(() => harness.push(resultPush('r2')));
+        act(() => { h.result.goBack(); });
+        expect(h.result.shownResult?.id).toBe('r1');
+
+        act(() => harness.push(resultPush('r3')));
+        expect(h.result.shownResult?.id).toBe('r3');
+        h.unmount();
+    });
+});

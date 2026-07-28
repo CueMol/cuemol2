@@ -52,12 +52,12 @@
   text-align: center;
 }
 
-/* Right pane: Render Settings editor (scrolls independently) */
+/* Right pane: Render Settings (header + Render/Image tab strip + body) */
 .render-window-settings {
   display: flex;
   flex-direction: column;
   height: 100%;
-  overflow-y: auto;
+  overflow: hidden;
   background: var(--bg-surface);
   border-left: 1px solid var(--border);
 }
@@ -67,4 +67,30 @@
   background: var(--toolbar-bg);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+}
+
+/* Tab strip; mirrors the Inspector's mode bar so both panes switch the same way. */
+.render-window-settings-tabbar {
+  display: flex;
+  align-items: center;
+  padding: var(--space-2) var(--space-4);
+  background: var(--bg-panel-header);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+/* Only the active tab's content scrolls; the header and tabs stay put. */
+.render-window-settings-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Image tab: stacked sections. One padding and one section gap for the whole
+   tab, so no section sets its own spacing (see docs ui-style-guide.md). */
+.render-image-tab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--form-section-gap);
+  padding: var(--space-4) var(--space-5);
 }

@@ -1,13 +1,13 @@
 /**
  * @file components/panels/MovieSettingsPanel.tsx
- * @description Movie output settings, shown in the Rendering window's bottom
- * pane (Movie tab) while the render mode is "movie".
+ * @description Movie output settings -- the "Movie" section of the Rendering
+ * window's Image tab (RenderImageTab), shown while the render mode is "movie".
  *
  * These settings belong to the render *mode*, not to a backend: they apply
- * unchanged to POV-Ray and Umbreon alike. Keeping them out of the Render
- * Settings editor keeps that editor to the backend-driven groups, and lets
- * this panel do things the generic PropDef editor cannot -- a folder picker,
- * and disabling the format / bit rate while encoding is off.
+ * unchanged to POV-Ray and Umbreon alike. Keeping them out of the Render tab
+ * keeps that tab to the backend-driven groups, and a hand-written panel does
+ * things the generic PropDef editor cannot -- a folder picker, and disabling
+ * the format / bit rate while encoding is off.
  */
 
 import React, { useCallback, useEffect, useState } from "react";

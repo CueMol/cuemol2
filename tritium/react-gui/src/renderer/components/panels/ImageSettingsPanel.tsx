@@ -1,12 +1,11 @@
 /**
  * @file components/panels/ImageSettingsPanel.tsx
- * @description One column of image-size settings, shown in the Rendering
- * window's bottom pane.
+ * @description One section of image settings in the Rendering window's
+ * Render Settings pane (Image tab).
  *
- * The bottom pane splits into two resizable columns; this renders one of them
- * from an ordered list of Image-group keys, under a section heading. Width and
- * height render on a single "Size" row. The columns are composed in
- * RenderWindowApp: still uses Size | Output, movie uses Image | (movie panel).
+ * Renders an ordered list of Image-group keys under a section heading, with
+ * width and height collapsed onto a single "Size" row. The Image tab composes
+ * the sections (RenderImageTab: Size, then Output).
  */
 
 import React from "react";

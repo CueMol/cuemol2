@@ -19,6 +19,144 @@ export type RenderBackendId = "povray" | "umbreon";
  */
 export type RenderMode = "still" | "movie";
 
+// --- Quality axes ---
+//
+// Ported from umbreon's `docs/quality_presets.md`, which decomposes the many
+// RenderOptions fields into a few INDEPENDENT axes, each with its own 3-4 step
+// ladder: A (base image quality: supersample + antialiasing), B (depth cue:
+// AO or GI -- mutually exclusive, since both express "concave dark, convex
+// bright"), C (shadows). The axes are orthogonal, so each gets its own
+// dropdown rather than being folded into one overall level.
+
+/**
+ * Depth-cue method. AO and GI are alternatives, never combined: the umbreon
+ * guide models them as one selector rather than two switches.
+ */
+export type RenderLightingMode = "none" | "ao" | "gi";
+
+/**
+ * Step shown once an axis' settings no longer match any of its steps (the user
+ * edited one of the props it owns by hand).
+ */
+export const RENDER_QUALITY_CUSTOM = "custom";
+
+/** Prop values applied together by a quality step. */
+export type RenderPropPatch = Record<string, string | number | boolean>;
+
+/** One choice of the Lighting selector. */
+export interface RenderLightingOption {
+  id: RenderLightingMode;
+  label: string;
+  /** Props that switch this method on -- and the competing one off. */
+  enable: RenderPropPatch;
+  /** Accordion group shown only while this method is selected. */
+  group?: string;
+}
+
+/** One step of a quality axis' ladder. */
+export interface RenderQualityStep {
+  id: string;
+  label: string;
+  /** Props this step writes. Every step of an axis must write the same keys. */
+  patch: RenderPropPatch;
+}
+
+/** An independently-settable quality axis, rendered as one dropdown. */
+export interface RenderQualityAxis {
+  /** Axis identifier (also the key of its selected step in the hook state). */
+  key: string;
+  /** Field label. */
+  label: string;
+  /** Steps, in display order. */
+  steps: RenderQualityStep[];
+  /** Step selected when the backend is picked. */
+  defaultStep: string;
+  /** Shown only while one of these methods is active (omit = always). */
+  lightings?: RenderLightingMode[];
+}
+
+/** A backend's quality axes plus the depth-cue methods they can apply to. */
+export interface RenderQualityConfig {
+  /** Lighting methods offered, in display order. */
+  lightings: RenderLightingOption[];
+  /** Method selected when the backend is picked. */
+  defaultLighting: RenderLightingMode;
+  /** Independent axes, in display order. */
+  axes: RenderQualityAxis[];
+  /** Prop keys the Lighting selector owns (hidden from the groups). */
+  lightingKeys: string[];
+}
+
+/** Selected step per axis key ("custom" once its props were edited by hand). */
+export type RenderQualitySteps = Record<string, string>;
+
+/** Axes that apply to `lighting`, in display order. */
+export function axesFor(
+  cfg: RenderQualityConfig,
+  lighting: RenderLightingMode,
+): RenderQualityAxis[] {
+  return cfg.axes.filter((a) => !a.lightings || a.lightings.includes(lighting));
+}
+
+/** The props a step writes (empty for "custom" / an unknown step). */
+export function stepPatch(axis: RenderQualityAxis, stepId: string): RenderPropPatch {
+  return axis.steps.find((s) => s.id === stepId)?.patch ?? {};
+}
+
+/** Every axis at its default step, for the given method. */
+export function defaultQualitySteps(cfg: RenderQualityConfig): RenderQualitySteps {
+  const steps: RenderQualitySteps = {};
+  for (const axis of cfg.axes) steps[axis.key] = axis.defaultStep;
+  return steps;
+}
+
+/**
+ * Full patch for a method plus the axes that apply to it, at the given steps.
+ * Used when the backend is selected and when the method changes: the axes that
+ * belong to the new method are (re-)applied at their selected step, while the
+ * always-on axes keep whatever they hold.
+ */
+export function lightingPatch(
+  cfg: RenderQualityConfig,
+  lighting: RenderLightingMode,
+  steps: RenderQualitySteps,
+  opts: { includeShared?: boolean } = {},
+): RenderPropPatch {
+  const patch: RenderPropPatch = {};
+  for (const axis of axesFor(cfg, lighting)) {
+    // A method switch only re-applies that method's own axes; the shared ones
+    // (image quality, shadows) are unrelated to the method and stay put.
+    if (!axis.lightings && !opts.includeShared) continue;
+    Object.assign(patch, stepPatch(axis, steps[axis.key] ?? axis.defaultStep));
+  }
+  Object.assign(patch, cfg.lightings.find((l) => l.id === lighting)?.enable ?? {});
+  return patch;
+}
+
+/**
+ * Which lighting method the current prop values represent. Derived rather than
+ * stored, so the selector and the underlying switches can never disagree.
+ */
+export function lightingOf(
+  cfg: RenderQualityConfig,
+  read: (key: string) => string | number | boolean | undefined,
+): RenderLightingMode {
+  for (const option of cfg.lightings) {
+    if (option.id === "none") continue;
+    const on = Object.entries(option.enable).every(([k, v]) => read(k) === v);
+    if (on) return option.id;
+  }
+  return "none";
+}
+
+/** The axis owning `key`, if any -- editing it drops that axis to Custom. */
+export function axisOwning(
+  cfg: RenderQualityConfig,
+  key: string,
+): RenderQualityAxis | undefined {
+  return cfg.axes.find((a) => a.steps.some((s) => key in s.patch));
+}
+
 /** Accordion group descriptor for the render-settings editor. */
 export interface RenderGroupDef {
   /** Group key -- also the value of each member `PropDef.group`. */

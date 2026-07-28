@@ -23,6 +23,7 @@ import { IPC } from "../../shared/ipcChannels";
 import type {
   RenderJobWire,
   RenderTargetViewWire,
+  RenderViewCamera,
   RenderWindowCommand,
   RenderWindowStateUpdate,
   ViewSizePx,
@@ -202,9 +203,26 @@ export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): void {
       }
       api.invoke(IPC.RENDER_VIEW_SIZE_REPLY, { reqId, size }).catch(() => {});
     });
+    // Camera settings of a render target view: the render window defaults its
+    // Camera group to whatever the target view currently shows, and only this
+    // window can read the view (the worker lives here).
+    const offCamera = api.onPush(IPC.RENDER_VIEW_CAMERA_REQUEST, ({ reqId, viewId }) => {
+      const reply = (camera: RenderViewCamera | null) =>
+        api.invoke(IPC.RENDER_VIEW_CAMERA_REPLY, { reqId, camera }).catch(() => {});
+      if (!cm) {
+        reply(null);
+        return;
+      }
+      cm.invokeService("getViewProjection", { viewId })
+        .then((res) =>
+          reply(res?.ok ? { perspective: res.perspective } : null),
+        )
+        .catch(() => reply(null));
+    });
     return () => {
       offExec();
       offSize();
+      offCamera();
     };
-  }, [execCommand]);
+  }, [execCommand, cm]);
 }

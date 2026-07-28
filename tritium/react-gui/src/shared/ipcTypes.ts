@@ -652,6 +652,19 @@ export interface RenderTargetViewWire {
   title: string
 }
 
+/**
+ * Camera-ish settings of a render target view, used to default the Rendering
+ * window's Camera settings to what the target view currently shows.
+ *
+ * Only settings with a real counterpart are carried: the view's stereo mode is
+ * a DISPLAY mode (parallel / cross / hardware) while the render stereo picks
+ * an eye to render, so the two do not correspond and stereo is left alone.
+ */
+export interface RenderViewCamera {
+  /** True = perspective projection, false = orthographic. */
+  perspective: boolean
+}
+
 /** Command sent by the render window; forwarded verbatim to the main window. */
 export type RenderWindowCommand =
   /** Start a render. `source` set = the render window's selected target (or

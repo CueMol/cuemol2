@@ -1,12 +1,16 @@
 /**
  * @file __test__/renderPanel.test.tsx
- * @description Degrade-detection tests for the RenderPanel Start-button gate.
+ * @description Degrade-detection tests for the RenderPanel run bar.
  *
  * Pins the contract that the render controls (Start button, Render Settings
  * shortcut) are disabled -- and Start cannot fire onStart -- when `renderable`
  * is false: the fix for a non-molview tab leaving pressable controls that
  * silently do nothing. While a job is active the panel shows Stop instead,
  * which is never gated.
+ *
+ * Also pins the panel's shape after the settings moved to the Render Settings
+ * pane: the run bar carries the Backend dropdown next to Target, and the log is
+ * the only thing below it (no settings columns, no disclosure step).
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -112,5 +116,59 @@ describe('RenderPanel -- Start button gating', () => {
     expect(button('Render Settings')).toBeUndefined();
     // The other controls are unaffected.
     expect(button('Start Render')).toBeDefined();
+  });
+});
+
+describe('RenderPanel -- backend selector in the run bar', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('renders the backend dropdown and reports a pick', () => {
+    const onBackendChange = vi.fn();
+    mount({
+      backend: 'povray',
+      backendIds: ['povray', 'umbreon'],
+      onBackendChange,
+    });
+    expect(container.textContent).toContain('Backend');
+    const select = container.querySelector(
+      '.render-panel-backend-select select',
+    ) as HTMLSelectElement;
+    expect(select).not.toBeNull();
+    expect(select.value).toBe('povray');
+    expect(Array.from(select.options).map((o) => o.value)).toEqual([
+      'povray',
+      'umbreon',
+    ]);
+    act(() => {
+      select.value = 'umbreon';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    expect(onBackendChange).toHaveBeenCalledWith('umbreon');
+  });
+
+  it('hides the dropdown when no backend is supplied', () => {
+    mount({});
+    expect(container.querySelector('.render-panel-backend-select')).toBeNull();
+  });
+});
+
+describe('RenderPanel -- log fills the area below the run bar', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('shows the log without a disclosure step and hosts no settings columns', () => {
+    mount({ job: { ...RUNNING_JOB, log: ['frame 1 done'] } });
+    // The log body is rendered directly (it used to sit inside a Collapse
+    // toggled by a "Log" button).
+    expect(button('Log')).toBeUndefined();
+    const log = container.querySelector('.render-panel-log');
+    expect(log).not.toBeNull();
+    expect(log!.textContent).toContain('frame 1 done');
+    // The settings columns moved to the Render Settings pane.
+    expect(container.querySelector('.image-settings-panel')).toBeNull();
+    expect(container.querySelector('.movie-settings-panel')).toBeNull();
   });
 });
