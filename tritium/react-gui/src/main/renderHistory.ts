@@ -21,6 +21,16 @@ import { RENDER_HISTORY_LIMIT, renderHistoryFileName } from '../shared/renderHis
 /** Fixed directory name, so a crashed run's leftovers are found on restart. */
 const HISTORY_DIR = path.join(os.tmpdir(), 'cuemol-render-history')
 
+/**
+ * Index of the work directories this run registered, kept beside the archived
+ * images. The directories have random names, so a run that dies without
+ * reaching its cleanup would otherwise leave them unidentifiable; the next
+ * start reads this file and removes exactly those. Sweeping the temp dir by
+ * name pattern instead would risk deleting a second instance's in-flight
+ * directory.
+ */
+const WORKDIR_INDEX = path.join(HISTORY_DIR, 'workdirs.json')
+
 /** Archived ids, oldest first -- the eviction order. */
 let archived: string[] = []
 
@@ -52,13 +62,40 @@ function ensureDir(): boolean {
  * settings that produced each render are not either.
  */
 export function clearRenderHistory(): void {
+  // Adopt a previous run's directories: the on-disk index outlived the
+  // in-memory list when that run crashed. Done silently -- the images they
+  // hold are unreachable (the history metadata died with that run), so there
+  // is nothing for a user to decide.
+  for (const dir of readWorkDirIndex()) registerRenderWorkDir(dir)
+  clearRenderWorkDirs()
   archived = []
   try {
     fs.rmSync(HISTORY_DIR, { recursive: true, force: true })
   } catch {
     /* a locked or already-removed directory is not worth failing over */
   }
-  clearRenderWorkDirs()
+}
+
+/** Work directories recorded on disk, or none when there is no usable index. */
+function readWorkDirIndex(): string[] {
+  try {
+    const parsed: unknown = JSON.parse(fs.readFileSync(WORKDIR_INDEX, 'utf8'))
+    return Array.isArray(parsed)
+      ? parsed.filter((d): d is string => typeof d === 'string')
+      : []
+  } catch {
+    return []
+  }
+}
+
+/** Persist the current list so a crashed run's directories stay identifiable. */
+function writeWorkDirIndex(): void {
+  if (!ensureDir()) return
+  try {
+    fs.writeFileSync(WORKDIR_INDEX, JSON.stringify(workDirs))
+  } catch {
+    /* losing the index only costs the next start's cleanup */
+  }
 }
 
 /**
@@ -70,19 +107,33 @@ export function registerRenderWorkDir(dir: string): void {
   if (!dir) return
   const resolved = path.resolve(dir)
   if (!resolved.startsWith(path.resolve(os.tmpdir()) + path.sep)) return
-  if (!workDirs.includes(resolved)) workDirs.push(resolved)
+  if (workDirs.includes(resolved)) return
+  workDirs.push(resolved)
+  writeWorkDirIndex()
 }
 
 /** Delete the registered work directories. */
 export function clearRenderWorkDirs(): void {
+  let removed = 0
   for (const dir of workDirs) {
     try {
       fs.rmSync(dir, { recursive: true, force: true })
+      removed++
     } catch {
       /* ignore */
     }
   }
+  if (removed > 0) {
+    // Silent, but not invisible: the only other trace is the disk space.
+    const plural = removed === 1 ? 'y' : 'ies'
+    console.log(`[Main] render history: removed ${removed} work director${plural}`)
+  }
   workDirs = []
+  try {
+    fs.rmSync(WORKDIR_INDEX, { force: true })
+  } catch {
+    /* ignore */
+  }
 }
 
 /**

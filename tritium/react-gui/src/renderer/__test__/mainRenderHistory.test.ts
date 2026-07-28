@@ -9,7 +9,7 @@
  * order, and that a cleared store reports its images as gone.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -131,6 +131,21 @@ describe('main render history work directories', () => {
     fs.rmSync(dir, { recursive: true, force: true });
 
     expect(() => clearRenderWorkDirs()).not.toThrow();
+  });
+
+  it('reclaims a crashed run\'s directories on the next start', async () => {
+    // A run registers a work dir ...
+    const dir = makeWorkDir();
+    registerRenderWorkDir(dir);
+
+    // ... then dies without reaching its cleanup, losing the in-memory list.
+    // A fresh module instance is exactly that: same files, no state.
+    vi.resetModules();
+    const restarted = await import('../../main/renderHistory');
+
+    // The next start clears the history, which adopts the on-disk index.
+    restarted.clearRenderHistory();
+    expect(fs.existsSync(dir)).toBe(false);
   });
 
   it('ignores a directory outside the temp dir', () => {
