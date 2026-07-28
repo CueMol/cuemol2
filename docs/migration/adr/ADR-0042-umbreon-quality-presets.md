@@ -80,11 +80,17 @@ method.
   `aoEnabled` / `useGI`, so the selector cannot disagree with the props it
   represents. Switching method writes the exclusive pair and re-applies that
   method's axis at its selected step; the shared axes are left alone.
-- **Steps write real props; manual edits win.** A step writes into the same
-  `PropDef` values the accordions edit, and editing a prop drops *only its
-  owning axis* to Custom (`axisOwning`) — the other dropdowns still describe
-  their props correctly. The snapshot / `UmbreonBackend` path is unchanged:
-  steps produce ordinary prop values.
+- **Steps write real props and are read back from them.** A step writes into
+  the same `PropDef` values the accordions edit, and each dropdown reports
+  whichever step its values currently match (`stepOf`), or Custom when they
+  match none — the same derived treatment as the lighting method, and for the
+  same reason. A remembered selection went stale whenever anything wrote the
+  props without going through the dropdown (switching method, restoring a
+  render's snapshot), leaving axes reading "Custom" over values that plainly
+  matched a step. Deriving also makes editing a prop back onto a ladder value
+  indistinguishable from picking that step. Custom is offered in the dropdown
+  only while it is the truth. The snapshot / `UmbreonBackend` path is
+  unchanged: steps produce ordinary prop values.
 - **The unselected method's group disappears** from the accordions, along with
   the `aoEnabled` / `useGI` switches the selector now owns.
 - **Defaults are applied on backend selection**, not left at each prop's

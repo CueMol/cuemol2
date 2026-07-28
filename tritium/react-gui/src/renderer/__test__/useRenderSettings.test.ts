@@ -306,13 +306,58 @@ describe('useRenderSettings quality axes', () => {
         h.unmount();
     });
 
-    it('editing a prop drops only the axis that owns it to Custom', () => {
+    it('editing a prop off the ladder drops only that axis to Custom', () => {
         const h = umbreonHook();
         act(() => h.result.handleChange('supersample', 6));
         expect(h.result.qualitySteps.aa).toBe('custom');
         // The other axes still describe their own props correctly.
         expect(h.result.qualitySteps.gi).toBe('medium');
         expect(h.result.qualitySteps.shadows).toBe('off');
+        h.unmount();
+    });
+
+    it('editing a prop back onto a step reports that step again', () => {
+        const h = umbreonHook();
+        act(() => h.result.handleChange('supersample', 6));
+        expect(h.result.qualitySteps.aa).toBe('custom');
+        // The step is read back from the values, so landing on a ladder value
+        // by hand is indistinguishable from picking it in the dropdown.
+        act(() => h.result.handleChange('supersample', 4));
+        expect(h.result.qualitySteps.aa).toBe('ultra');
+        h.unmount();
+    });
+
+    it('switching the lighting method leaves the shared axes alone', () => {
+        const h = umbreonHook();
+        act(() => h.result.setQualityStep('shadows', 'soft'));
+        act(() => h.result.setQualityStep('aa', 'ultra'));
+
+        act(() => h.result.setLighting('ao'));
+        // Image quality and shadows have nothing to do with the depth cue, so
+        // they keep both their values and their step names.
+        expect(h.result.qualitySteps.aa).toBe('ultra');
+        expect(h.result.qualitySteps.shadows).toBe('soft');
+        expect(valueOf(h.result.backendProps, 'supersample')).toBe(4);
+        expect(valueOf(h.result.backendProps, 'shadowSamples')).toBe(16);
+
+        act(() => h.result.setLighting('none'));
+        expect(h.result.qualitySteps.aa).toBe('ultra');
+        expect(h.result.qualitySteps.shadows).toBe('soft');
+        h.unmount();
+    });
+
+    it('restoring a snapshot reports the steps its values match', () => {
+        const h = umbreonHook();
+        act(() => h.result.setQualityStep('aa', 'low'));
+        act(() => h.result.setQualityStep('gi', 'high'));
+        const snapshot = h.result.getSnapshot();
+
+        act(() => h.result.setQualityStep('aa', 'ultra'));
+        act(() => h.result.restore(snapshot));
+        // Re-rendering a past result must not leave every dropdown on Custom
+        // over values that plainly match a step.
+        expect(h.result.qualitySteps.aa).toBe('low');
+        expect(h.result.qualitySteps.gi).toBe('high');
         h.unmount();
     });
 

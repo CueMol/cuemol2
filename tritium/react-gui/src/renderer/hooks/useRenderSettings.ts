@@ -27,7 +27,7 @@ import {
   pxToSizeUnit,
   lightingPatch,
   lightingOf,
-  axisOwning,
+  qualityStepsOf,
   stepPatch,
   defaultQualitySteps,
   RENDER_QUALITY_CUSTOM,
@@ -70,11 +70,8 @@ const applyPatch = (props: PropDef[], patch: RenderPropPatch): PropDef[] => {
 const qualityOf = (id: RenderBackendId): RenderQualityConfig | undefined =>
   RENDER_BACKENDS[id].quality;
 
-/** Every axis of a backend at its default step (empty without a quality table). */
-const initialQualitySteps = (id: RenderBackendId): RenderQualitySteps => {
-  const cfg = qualityOf(id);
-  return cfg ? defaultQualitySteps(cfg) : {};
-};
+/** Axis steps of a backend that declares none. */
+const NO_QUALITY_STEPS: RenderQualitySteps = {};
 
 /**
  * A backend's declared props with its default method and default step of every
@@ -142,11 +139,6 @@ export function useRenderSettings(
   const [preset, setPreset] = useState<string>(DEFAULT_STILL_PRESET);
   const [mode, setMode] = useState<RenderMode>("still");
   const [movie, setMovie] = useState<MovieSettings>(DEFAULT_MOVIE_SETTINGS);
-  // Selected step per quality axis. The axes are independent, so each keeps its
-  // own selection and falls back to "custom" on its own.
-  const [qualitySteps, setQualitySteps] = useState<RenderQualitySteps>(() =>
-    initialQualitySteps(DEFAULT_RENDER_BACKEND),
-  );
   // Once the user (or a restore) picks a backend, stop auto-defaulting to umbreon.
   const userPickedRef = useRef(false);
 
@@ -156,7 +148,6 @@ export function useRenderSettings(
     // Start the new backend on its default method + default step of every
     // axis, so the quality dropdowns and the prop values agree from the start.
     setBackendProps(cloneProps(backendPropsWithDefaults(id)));
-    setQualitySteps(initialQualitySteps(id));
   }, []);
 
   /** User-initiated backend switch (sticks against the umbreon auto-default). */
@@ -185,9 +176,24 @@ export function useRenderSettings(
    * Active lighting method, derived from the props rather than stored, so the
    * Lighting selector can never disagree with the underlying switches.
    */
+  const readSetting = useCallback(
+    (key: string) => readVal(backendProps, key) ?? readVal(commonProps, key),
+    [backendProps, commonProps],
+  );
+
   const lighting: RenderLightingMode = quality
-    ? lightingOf(quality, (key) => readVal(backendProps, key))
+    ? lightingOf(quality, readSetting)
     : "none";
+
+  /**
+   * Step each axis' values currently represent. Derived, not remembered: a
+   * stored pick goes stale whenever anything else writes the props (switching
+   * method, restoring a render's snapshot), which showed "Custom" over values
+   * that plainly matched a step.
+   */
+  const qualitySteps: RenderQualitySteps = quality
+    ? qualityStepsOf(quality, readSetting)
+    : NO_QUALITY_STEPS;
 
   /** Write a whole axis patch without invalidating the selected steps. */
   const applyQualityPatch = useCallback((patch: RenderPropPatch) => {
@@ -198,8 +204,7 @@ export function useRenderSettings(
   /** Move one axis to a step, leaving every other axis where it is. */
   const setQualityStep = useCallback(
     (axisKey: string, stepId: string) => {
-      setQualitySteps((prev) => ({ ...prev, [axisKey]: stepId }));
-      // Custom is a state an axis falls into, not a set of values.
+      // Custom is what an axis reads as, not something to apply.
       if (!quality || stepId === RENDER_QUALITY_CUSTOM) return;
       const axis = quality.axes.find((a) => a.key === axisKey);
       if (axis) applyQualityPatch(stepPatch(axis, stepId));
@@ -235,15 +240,10 @@ export function useRenderSettings(
       if (key === "width" || key === "height") {
         setPreset(DEFAULT_RENDER_PRESET);
       }
-      // ... and a manual edit drops the owning axis to Custom, so its dropdown
-      // never claims a step whose values the user has overridden. Only that
-      // axis changes: the others still describe their own props correctly.
-      const axis = quality ? axisOwning(quality, key) : undefined;
-      if (axis) {
-        setQualitySteps((prev) => ({ ...prev, [axis.key]: RENDER_QUALITY_CUSTOM }));
-      }
+      // An edit needs no bookkeeping: each axis' dropdown reads back from the
+      // values, so it drops to Custom -- or lands on another step -- by itself.
     },
-    [quality],
+    [],
   );
 
   /** Write a preset's pixel size (and DPI) into the width / height fields. */
@@ -328,14 +328,9 @@ export function useRenderSettings(
     setBackendProps(cloneProps(snapshot.backendProps));
     setMode(snapshot.mode);
     if (snapshot.movie) setMovie({ ...snapshot.movie });
-    // Restored sizes and quality values are explicit, so no preset is active.
+    // Restored sizes are explicit, so no size preset is active. The quality
+    // dropdowns need no reset: they read the restored values back.
     setPreset(DEFAULT_RENDER_PRESET);
-    const cfg = qualityOf(snapshot.backend);
-    setQualitySteps(
-      cfg
-        ? Object.fromEntries(cfg.axes.map((a) => [a.key, RENDER_QUALITY_CUSTOM]))
-        : {},
-    );
   }, []);
 
   /**

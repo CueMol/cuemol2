@@ -128,13 +128,36 @@ describe('RenderSettingsEditor quality section', () => {
       'gi',
     ]);
     // Supersampling is a dropdown of ladder steps, not a free number box.
+    // Custom is absent: this axis' values match a step, so offering it would
+    // be a choice that means nothing.
     expect(Array.from(aaSel.options).map((o) => o.value)).toEqual([
       'low',
       'medium',
       'high',
       'ultra',
-      'custom',
     ]);
+    unmount();
+  });
+
+  it('offers Custom only on an axis whose values match no step', () => {
+    const { container, unmount } = mountTree(
+      <RenderSettingsEditor
+        backend="umbreon"
+        commonProps={RENDER_COMMON_PROPS}
+        backendProps={RENDER_BACKENDS.umbreon.props}
+        onChange={vi.fn()}
+        lighting="gi"
+        // What useRenderSettings reports once a prop was edited off-ladder.
+        qualitySteps={{ aa: 'custom', gi: 'medium', shadows: 'off' }}
+        onLightingChange={vi.fn()}
+        onQualityStepChange={vi.fn()}
+      />,
+    );
+    const [, aaSel, giSel] = qualitySelects(container);
+    expect(aaSel.value).toBe('custom');
+    expect(Array.from(aaSel.options).map((o) => o.value)).toContain('custom');
+    // The axes that do match a step are unaffected.
+    expect(Array.from(giSel.options).map((o) => o.value)).not.toContain('custom');
     unmount();
   });
 

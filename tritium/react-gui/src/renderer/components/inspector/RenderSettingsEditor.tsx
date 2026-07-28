@@ -140,24 +140,28 @@ export const RenderSettingsEditor: React.FC<RenderSettingsEditorProps> = ({
               </SelectField>
             </Field>
 
-            {visibleAxes.map((axis) => (
-              <Field key={axis.key} label={axis.label}>
-                <SelectField
-                  value={qualitySteps[axis.key] ?? axis.defaultStep}
-                  onChange={(v) => onQualityStepChange(axis.key, v)}
-                >
-                  {axis.steps.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.label}
-                    </option>
-                  ))}
-                  {/* Where an axis lands after one of its props is edited by
-                      hand; selectable so it can be left without changing a
-                      value. */}
-                  <option value={RENDER_QUALITY_CUSTOM}>Custom</option>
-                </SelectField>
-              </Field>
-            ))}
+            {visibleAxes.map((axis) => {
+              const step = qualitySteps[axis.key] ?? axis.defaultStep;
+              return (
+                <Field key={axis.key} label={axis.label}>
+                  <SelectField
+                    value={step}
+                    onChange={(v) => onQualityStepChange(axis.key, v)}
+                  >
+                    {axis.steps.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.label}
+                      </option>
+                    ))}
+                    {/* Only offered while it is the truth: the axis reads back
+                        from its props, so Custom means they match no step. */}
+                    {step === RENDER_QUALITY_CUSTOM && (
+                      <option value={RENDER_QUALITY_CUSTOM}>Custom</option>
+                    )}
+                  </SelectField>
+                </Field>
+              );
+            })}
           </FieldSection>
         </div>
       )}

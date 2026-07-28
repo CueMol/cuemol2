@@ -35,7 +35,7 @@ export type RenderMode = "still" | "movie";
 export type RenderLightingMode = "none" | "ao" | "gi";
 
 /**
- * Step shown once an axis' settings no longer match any of its steps (the user
+ * Step reported for an axis whose settings match none of its steps (the user
  * edited one of the props it owns by hand).
  */
 export const RENDER_QUALITY_CUSTOM = "custom";
@@ -87,8 +87,41 @@ export interface RenderQualityConfig {
   lightingKeys: string[];
 }
 
-/** Selected step per axis key ("custom" once its props were edited by hand). */
+/** Step per axis key ("custom" when the values match none of its steps). */
 export type RenderQualitySteps = Record<string, string>;
+
+/**
+ * Which step an axis' current values represent, or "custom" when they match
+ * none of them.
+ *
+ * Derived from the props rather than remembered from the last pick, for the
+ * same reason the lighting method is: a stored selection drifts out of sync
+ * with what the settings actually say -- it went stale whenever anything wrote
+ * the props without going through the dropdown (switching method, restoring a
+ * render's snapshot), leaving every axis reading "Custom" over values that
+ * plainly matched a step.
+ */
+export function stepOf(
+  axis: RenderQualityAxis,
+  read: (key: string) => string | number | boolean | undefined,
+): string {
+  for (const step of axis.steps) {
+    if (Object.entries(step.patch).every(([key, value]) => read(key) === value)) {
+      return step.id;
+    }
+  }
+  return RENDER_QUALITY_CUSTOM;
+}
+
+/** `stepOf` for every axis of a backend. */
+export function qualityStepsOf(
+  cfg: RenderQualityConfig,
+  read: (key: string) => string | number | boolean | undefined,
+): RenderQualitySteps {
+  const steps: RenderQualitySteps = {};
+  for (const axis of cfg.axes) steps[axis.key] = stepOf(axis, read);
+  return steps;
+}
 
 /** Axes that apply to `lighting`, in display order. */
 export function axesFor(
@@ -103,7 +136,7 @@ export function stepPatch(axis: RenderQualityAxis, stepId: string): RenderPropPa
   return axis.steps.find((s) => s.id === stepId)?.patch ?? {};
 }
 
-/** Every axis at its default step, for the given method. */
+/** Every axis at its default step. */
 export function defaultQualitySteps(cfg: RenderQualityConfig): RenderQualitySteps {
   const steps: RenderQualitySteps = {};
   for (const axis of cfg.axes) steps[axis.key] = axis.defaultStep;
@@ -149,13 +182,7 @@ export function lightingOf(
   return "none";
 }
 
-/** The axis owning `key`, if any -- editing it drops that axis to Custom. */
-export function axisOwning(
-  cfg: RenderQualityConfig,
-  key: string,
-): RenderQualityAxis | undefined {
-  return cfg.axes.find((a) => a.steps.some((s) => key in s.patch));
-}
+
 
 /** Accordion group descriptor for the render-settings editor. */
 export interface RenderGroupDef {
