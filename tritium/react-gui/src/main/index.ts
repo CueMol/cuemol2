@@ -6,6 +6,7 @@ import { createWindow } from './windowManager'
 import { loadUi } from './stateStore'
 import { isAppQuitting, isForceQuit, setAppQuitting } from './quitState'
 import { clearRenderHistory } from './renderHistory'
+import { sweepMovieOutputs } from './movieOutput'
 import { APP_PRODUCT_NAME } from '../shared/appInfo'
 
 app.setName(APP_PRODUCT_NAME)
@@ -31,6 +32,11 @@ app.whenReady().then(() => {
   // Drop any render-history images a previous run left behind (its metadata
   // died with that run, so the files are unreachable).
   clearRenderHistory()
+
+  // Age out past runs' movie output. Unlike the render history this is not
+  // wiped wholesale: a movie can represent hours of rendering, so only stale
+  // frames and long-past sessions go (see movieOutput.ts / ADR-0043).
+  sweepMovieOutputs()
 
   // Align the native window chrome with the persisted UI theme. Without
   // this, macOS keeps the system appearance for its window frame and draws

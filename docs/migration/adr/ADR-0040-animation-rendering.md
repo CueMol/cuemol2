@@ -6,7 +6,9 @@
 - Related: [ADR-0035](ADR-0035-render-window.md) (the window this extends),
   [ADR-0017](ADR-0017-povray-rendering-ui.md) (the worker pipeline this
   extends), [ADR-0029](ADR-0029-anim-timeline-strip-model.md) (the animation
-  panel that drives the same `AnimMgr`)
+  panel that drives the same `AnimMgr`),
+  [ADR-0043](ADR-0043-movie-output-lifetime.md) (where the output goes, how
+  long the frames and the movie live, and how a failed encode is detected)
 
 ## Context
 

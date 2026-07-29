@@ -54,6 +54,12 @@ describe('renderStart animation branch', () => {
     }
     let pushMessage: ReturnType<typeof vi.fn>
     let queueTask: ReturnType<typeof vi.fn>
+    /**
+     * Whether the fake ffmpeg task writes its output file. The pipeline reads
+     * the file's presence as the encode's verdict (ProcessManager reports no
+     * exit code), so turning this off is how a failed encode is simulated.
+     */
+    let encodeWritesMovie: boolean
 
     beforeEach(() => {
         outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-test-'))
@@ -74,7 +80,16 @@ describe('renderStart animation branch', () => {
         }
         hoisted.getAnimMgrOrNull.mockReturnValue(animMgr)
 
-        queueTask = vi.fn(() => 1)
+        encodeWritesMovie = true
+        queueTask = vi.fn((_exe: string, args: string) => {
+            // The ffmpeg command ends with its quoted output path; a real
+            // encode produces that file.
+            const m = /"([^"]+)"\s*$/.exec(args)
+            if (encodeWritesMovie && m && /\.(mp4|mov|wmv|gif)$/.test(m[1])) {
+                fs.writeFileSync(m[1], 'movie-bytes')
+            }
+            return 1
+        })
         pushMessage = vi.fn()
 
         // A backend that writes the frame PNG the pipeline then moves.
@@ -144,6 +159,7 @@ describe('renderStart animation branch', () => {
                 commonProps: [p('width', 640), p('height', 480), p('unit', 'px'), p('dpi', 600)],
                 backendProps: [],
                 movie: {
+                    useTempDir: false,
                     outputDir,
                     baseName: 'movie',
                     fps: 30,
@@ -306,6 +322,88 @@ describe('renderStart animation branch', () => {
         expect(res.ok).toBe(false)
         expect(res.error).toContain('no animation')
         expect(animMgr.setupRender).not.toHaveBeenCalled()
+    })
+
+    // An earlier, longer render's frames would otherwise survive past this
+    // sequence's end, where they inflate the re-encode count and can make
+    // ffmpeg abort on a size change partway through the pattern.
+    it('clears an earlier render of the same base name before starting', () => {
+        for (let i = 0; i < 9; i++) {
+            fs.writeFileSync(path.join(outputDir, `movie_frm_000${i}.png`), PNG_BYTES)
+        }
+        fs.writeFileSync(path.join(outputDir, 'movie.mp4'), 'old-movie')
+        // A different base name and an unrelated file are not this render's.
+        fs.writeFileSync(path.join(outputDir, 'other_frm_0000.png'), PNG_BYTES)
+        fs.writeFileSync(path.join(outputDir, 'notes.txt'), 'keep me')
+
+        const ctx = makeCtx()
+        services.renderStart(ctx, makeArgs())
+        for (let i = 0; i < FRAME_COUNT; i++) intervalCb?.()
+
+        expect(fs.readdirSync(outputDir).sort()).toEqual([
+            'movie_frm_0000.png',
+            'movie_frm_0001.png',
+            'movie_frm_0002.png',
+            'notes.txt',
+            'other_frm_0000.png',
+        ])
+    })
+
+    it('fails before rendering a frame when ffmpeg is missing', () => {
+        const args = makeArgs({ makeMovie: true })
+        args.binaries = { ...args.binaries, ffmpeg: path.join(outputDir, 'no-such-ffmpeg') }
+
+        const res = services.renderStart(makeCtx(), args)
+
+        expect(res.ok).toBe(false)
+        expect(res.error).toContain('ffmpeg not found')
+        // The whole point: nothing was rendered before the failure.
+        expect(animMgr.writeFrame).not.toHaveBeenCalled()
+        expect(queueTask).not.toHaveBeenCalled()
+    })
+
+    it('fails before rendering a frame when no ffmpeg is configured', () => {
+        const args = makeArgs({ makeMovie: true })
+        args.binaries = { ...args.binaries, ffmpeg: '' }
+
+        const res = services.renderStart(makeCtx(), args)
+
+        expect(res.ok).toBe(false)
+        expect(res.error).toContain('No ffmpeg executable is configured')
+        expect(animMgr.writeFrame).not.toHaveBeenCalled()
+    })
+
+    it('renders the frames without ffmpeg when makeMovie is off', () => {
+        const args = makeArgs({ makeMovie: false })
+        args.binaries = { ...args.binaries, ffmpeg: '' }
+
+        const res = services.renderStart(makeCtx(), args)
+
+        expect(res.ok).toBe(true)
+    })
+
+    // ProcessManager exposes no exit code, so a failed encode used to end as a
+    // success -- and with an earlier movie still at that path, the window
+    // offered that one as the result.
+    it('reports an error when the encode produces no movie file', () => {
+        encodeWritesMovie = false
+        fs.writeFileSync(path.join(outputDir, 'movie.mp4'), 'stale-movie')
+
+        const ctx = makeCtx()
+        services.renderStart(ctx, makeArgs({ makeMovie: true }))
+        for (let i = 0; i < FRAME_COUNT + 1; i++) intervalCb?.()
+
+        const updates = pushMessage.mock.calls.map(
+            (c) => c[1] as { type: string; error?: string },
+        )
+        expect(updates.find((u) => u.type === 'complete')).toBeUndefined()
+        expect(updates.find((u) => u.type === 'error')?.error).toContain(
+            'could not be encoded',
+        )
+        // The stale movie was cleared before the encode, so nothing can pass
+        // for this render's output.
+        expect(fs.existsSync(path.join(outputDir, 'movie.mp4'))).toBe(false)
+        expect(animMgr.stop).toHaveBeenCalledTimes(1)
     })
 
     describe('re-encode only', () => {

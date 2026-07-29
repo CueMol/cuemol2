@@ -133,6 +133,21 @@ export interface InvokeChannels {
   /** Delete the rendered frame images and any encoded movie for a base name. */
   [IPC.RENDER_FRAMES_CLEANUP]: { req: { outputDir: string; baseName: string }
                                  res: { ok: boolean; deleted: number } }
+  /**
+   * The app-managed movie output folder for this run, created on first ask.
+   * The default output location, so a movie render needs no setup at all
+   * (see main/movieOutput.ts for its lifetime).
+   */
+  [IPC.RENDER_MOVIE_TEMPDIR]: { req: void; res: { dir: string } }
+  /**
+   * Copy an encoded movie to a file the user picks. The counterpart of
+   * RENDER_IMAGE_SAVE for the movie: with the temporary folder as the default
+   * output, this is how a movie is kept beyond the sweep.
+   */
+  [IPC.RENDER_MOVIE_SAVE]: {
+    req: { moviePath: string; defaultName: string }
+    res: { canceled: boolean; filePath?: string; error?: string }
+  }
   [IPC.NAVI_CTX_SHOW]:     { req: NaviCtxMenuPayload;    res: NaviCtxAction | null }
   [IPC.SCENE_CTX_SHOW]:    { req: SceneCtxMenuPayload;   res: SceneCtxAction | null }
   [IPC.TEXT_CTX_ACTION]:   { req: Exclude<TextCtxAction, 'selectAll'>; res: void }

@@ -27,6 +27,7 @@ import { RenderImageViewer } from "../panes/RenderImageViewer";
 import { RenderPanel } from "../panels/RenderPanel";
 import { RenderSettingsPane } from "./RenderSettingsPane";
 import { useRenderSettings } from "../../hooks/useRenderSettings";
+import { useMovieOutputPrefs } from "../../hooks/useMovieOutputPrefs";
 import { isRenderJobActive } from "../../hooks/useRenderJob";
 import { useRenderWindowClient } from "../../hooks/useRenderWindowClient";
 import { RENDER_BACKEND_IDS } from "../../data/renderBackends";
@@ -39,6 +40,9 @@ export const RenderWindowApp: React.FC = () => {
   // the main window); otherwise fall back to the static default (POV-Ray).
   const umbreonAvailable = client.state.umbreonAvailable;
   const settings = useRenderSettings({ umbreonAvailable });
+  // Default the movie output to the app-managed folder and remember the
+  // settings across window closes (see hooks/useMovieOutputPrefs.ts).
+  const movieOutput = useMovieOutputPrefs(settings.movie, settings.updateMovie);
   const backendIds = umbreonAvailable
     ? RENDER_BACKEND_IDS
     : RENDER_BACKEND_IDS.filter((id) => id !== "umbreon");
@@ -52,7 +56,7 @@ export const RenderWindowApp: React.FC = () => {
   }, []);
 
   /** Start a render of the main window's active scene. */
-  const handleStart = useCallback(() => {
+  const startRender = useCallback(() => {
     client.start(settings.getSnapshot());
   }, [client, settings]);
 
@@ -96,10 +100,27 @@ export const RenderWindowApp: React.FC = () => {
         directory: true,
       });
       if (res && !res.canceled && res.filePath) {
-        settings.updateMovie({ outputDir: res.filePath });
+        movieOutput.selectCustomDir(res.filePath);
       }
     })();
-  }, [settings]);
+  }, [movieOutput]);
+
+  // A movie render clears the output folder's existing frames for this base
+  // name first, so a folder the user chose is confirmed before that happens.
+  // The app-managed folder is not: asking every time is exactly the setup
+  // burden the temporary default removes.
+  const [confirmOverwrite, setConfirmOverwrite] = useState(false);
+  const handleStart = useCallback(() => {
+    if (isMovieMode && !settings.movie.useTempDir && availFrames > 0) {
+      setConfirmOverwrite(true);
+      return;
+    }
+    startRender();
+  }, [isMovieMode, settings.movie.useTempDir, availFrames, startRender]);
+  const handleConfirmOverwrite = useCallback(() => {
+    setConfirmOverwrite(false);
+    startRender();
+  }, [startRender]);
 
   /**
    * Apply an image-size preset. The "Current view" preset resolves the main
@@ -268,6 +289,7 @@ export const RenderWindowApp: React.FC = () => {
             onApplyPreset={handleApplyPreset}
             movie={settings.movie}
             onMovieChange={settings.updateMovie}
+            onUseTempDir={movieOutput.selectTempDir}
             onPickFolder={handlePickFolder}
             movieDisabled={jobActive}
           />
@@ -284,6 +306,24 @@ export const RenderWindowApp: React.FC = () => {
         onClose={() => setErrorMsg(null)}
       >
         <p>{errorMsg}</p>
+      </Alert>
+
+      <Alert
+        isOpen={confirmOverwrite}
+        intent="warning"
+        icon="warning-sign"
+        confirmButtonText="Render"
+        cancelButtonText="Cancel"
+        className={theme === "dark" ? "bp5-dark" : undefined}
+        onCancel={() => setConfirmOverwrite(false)}
+        onConfirm={handleConfirmOverwrite}
+      >
+        <p>
+          The output folder already holds {availFrames} frame
+          {availFrames === 1 ? "" : "s"} named &quot;{baseName}&quot;. They and
+          any movie encoded from them will be deleted before this render
+          starts.
+        </p>
       </Alert>
 
       <Alert

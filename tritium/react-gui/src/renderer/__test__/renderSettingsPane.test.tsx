@@ -35,7 +35,11 @@ import {
 import { RENDER_BACKENDS } from '../data/renderBackends';
 
 function mountPane(
-  opts: { backend?: RenderBackendId; mode?: RenderMode } = {},
+  opts: {
+    backend?: RenderBackendId;
+    mode?: RenderMode;
+    movie?: Partial<typeof DEFAULT_MOVIE_SETTINGS>;
+  } = {},
 ): ReturnType<typeof mountTree> {
   const backend = opts.backend ?? 'povray';
   const mode = opts.mode ?? 'still';
@@ -53,8 +57,9 @@ function mountPane(
       preset="Custom"
       sizePresets={mode === 'movie' ? MOVIE_SIZE_PRESETS : RENDER_SIZE_PRESETS}
       onApplyPreset={vi.fn()}
-      movie={DEFAULT_MOVIE_SETTINGS}
+      movie={{ ...DEFAULT_MOVIE_SETTINGS, ...opts.movie }}
       onMovieChange={vi.fn()}
+      onUseTempDir={vi.fn()}
       onPickFolder={vi.fn()}
     />,
   );
@@ -126,6 +131,50 @@ describe('RenderSettingsPane Image tab per mode', () => {
     expect(text).not.toContain('DPI');
     // The size row itself stays.
     expect(container.querySelector('.image-size-row')).not.toBeNull();
+    unmount();
+  });
+});
+
+// The output folder defaults to the app-managed one so a movie render needs no
+// setup; picking a folder is what makes it editable and required.
+describe('RenderSettingsPane movie output location', () => {
+  /** The Folder row's text input. */
+  function folderInput(container: HTMLElement): HTMLInputElement {
+    const input = container.querySelector<HTMLInputElement>(
+      'input[placeholder="Choose a folder for the rendered frames"]',
+    );
+    expect(input).not.toBeNull();
+    return input!;
+  }
+
+  it('shows the temporary folder read-only, with a note about its lifetime', () => {
+    const { container, unmount } = mountPane({
+      mode: 'movie',
+      movie: { useTempDir: true, outputDir: '/tmp/cuemol-movies/session-x' },
+    });
+    selectTab(container, 'Image');
+
+    const input = folderInput(container);
+    expect(input.value).toBe('/tmp/cuemol-movies/session-x');
+    expect(input.readOnly).toBe(true);
+    // Not flagged as missing: an unset-looking field the user never has to
+    // fill is exactly what this replaces.
+    expect(container.querySelector('.movie-settings-hint')).not.toBeNull();
+    unmount();
+  });
+
+  it('lets a custom folder be edited and flags it while empty', () => {
+    const { container, unmount } = mountPane({
+      mode: 'movie',
+      movie: { useTempDir: false, outputDir: '' },
+    });
+    selectTab(container, 'Image');
+
+    const input = folderInput(container);
+    expect(input.readOnly).toBe(false);
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    // The temporary-folder note does not apply to a folder the user owns.
+    expect(container.querySelector('.movie-settings-hint')).toBeNull();
     unmount();
   });
 });

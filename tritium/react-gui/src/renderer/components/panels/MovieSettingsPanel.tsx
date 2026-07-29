@@ -17,6 +17,7 @@ import {
   FieldSection,
   TextField,
   SelectField,
+  SegmentField,
   SwitchField,
   ComboBoxField,
   FormButton,
@@ -31,6 +32,14 @@ import {
   type MovieFormatId,
 } from "../../data/renderSettings";
 
+/** Where the output goes: the app-managed folder, or one the user picks. */
+type LocationMode = "temp" | "custom";
+
+const LOCATION_OPTIONS = [
+  { label: "Temporary", value: "temp" as const },
+  { label: "Custom", value: "custom" as const },
+];
+
 interface MovieSettingsPanelProps {
   /** Section heading for this column. */
   title: string;
@@ -38,6 +47,8 @@ interface MovieSettingsPanelProps {
   settings: MovieSettings;
   /** Apply a partial change. */
   onChange: (patch: Partial<MovieSettings>) => void;
+  /** Switch the output back to the app-managed folder. */
+  onUseTempDir?: () => void;
   /** Open a folder picker. Omit to hide the browse button. */
   onPickFolder?: () => void;
   /** Disable every control (a render is in flight). */
@@ -54,6 +65,7 @@ export const MovieSettingsPanel: React.FC<MovieSettingsPanelProps> = ({
   title,
   settings,
   onChange,
+  onUseTempDir,
   onPickFolder,
   disabled = false,
 }) => {
@@ -86,16 +98,36 @@ export const MovieSettingsPanel: React.FC<MovieSettingsPanelProps> = ({
   // Encoding options only matter when a movie is actually produced.
   const encodeDisabled = disabled || !settings.makeMovie;
 
+  const handleLocation = useCallback(
+    (mode: LocationMode) => {
+      if (mode === "temp") onUseTempDir?.();
+      else onPickFolder?.();
+    },
+    [onUseTempDir, onPickFolder],
+  );
+
   return (
     <div className="movie-settings-panel">
       <FieldSection title={title}>
+        <Field label="Location">
+          <SegmentField<LocationMode>
+            value={settings.useTempDir ? "temp" : "custom"}
+            onValueChange={handleLocation}
+            options={LOCATION_OPTIONS}
+            disabled={disabled}
+          />
+        </Field>
+
         <Field label="Folder">
           <TextField
             value={settings.outputDir}
             onChange={(outputDir) => onChange({ outputDir })}
             placeholder="Choose a folder for the rendered frames"
             disabled={disabled}
-            invalid={settings.outputDir.trim() === ""}
+            // The app owns the temporary folder, so it is shown but not typed
+            // into; picking a folder is what leaves it.
+            readOnly={settings.useTempDir}
+            invalid={!settings.useTempDir && settings.outputDir.trim() === ""}
             rightElement={
               onPickFolder && (
                 <FormButton
@@ -109,6 +141,13 @@ export const MovieSettingsPanel: React.FC<MovieSettingsPanelProps> = ({
             }
           />
         </Field>
+
+        {settings.useTempDir && (
+          <div className="movie-settings-hint type-caption">
+            Temporary folder: the frames are removed a day after the render and
+            the movie after a month. Use Save movie as... to keep it.
+          </div>
+        )}
 
         <Field label="Base name">
           <TextField

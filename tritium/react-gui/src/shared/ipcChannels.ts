@@ -127,6 +127,8 @@ export const IPC = {
   RENDER_FRAME_READ:        'render-window:frame-read',        // invoke: render window -> main
   RENDER_FRAMES_CHECK:      'render-window:frames-check',      // invoke: render window -> main (count contiguous frames)
   RENDER_FRAMES_CLEANUP:    'render-window:frames-cleanup',    // invoke: render window -> main (delete frames + movie)
+  RENDER_MOVIE_TEMPDIR:     'render-window:movie-tempdir',     // invoke: render window -> main (app-managed output folder)
+  RENDER_MOVIE_SAVE:        'render-window:movie-save',        // invoke: render window -> main (copy the movie out)
 
   // invoke channel for native viewport context menu
   NAVI_CTX_SHOW: 'navi-ctx:show',

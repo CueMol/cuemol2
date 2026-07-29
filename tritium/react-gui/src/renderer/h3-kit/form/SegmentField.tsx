@@ -27,6 +27,8 @@ export interface SegmentFieldProps<T extends string> {
     options: SegmentFieldOption<T>[];
     /** Stretch to fill the available width (default true). */
     fill?: boolean;
+    /** Grey out and ignore clicks, like the other catalog controls. */
+    disabled?: boolean;
     className?: string;
 }
 
@@ -39,15 +41,18 @@ export function SegmentField<T extends string>({
     onValueChange,
     options,
     fill = true,
+    disabled,
     className,
 }: SegmentFieldProps<T>): React.JSX.Element {
+    // Blueprint disables segments individually, not the control as a whole.
+    const opts = disabled ? options.map((o) => ({ ...o, disabled: true })) : options;
     return (
         <SegmentedControl
             small
             fill={fill}
             value={value}
             onValueChange={(v) => onValueChange(v as T)}
-            options={options}
+            options={opts}
             className={`h3-form-segmented${className ? ` ${className}` : ''}`}
         />
     );
