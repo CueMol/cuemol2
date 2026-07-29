@@ -92,18 +92,32 @@ function makeExporter(
   exporter.supersample = numVal(ub, "supersample", 3);
   // AO on/off is a dedicated switch; map it to aoSamples 0 when off (C++
   // treats 0 samples as AO disabled). When on, aoSamples is >= 1.
-  exporter.aoSamples = boolVal(ub, "aoEnabled", false) ? numVal(ub, "aoSamples", 8) : 0;
-  // 0 (or less) asks libcuemol2 to scale the radius to the scene bounding box.
-  exporter.aoDistance = numVal(ub, "aoDistance", 0);
-  exporter.aoIntensity = numVal(ub, "aoIntensity", 1.0);
-  // AO quality recipe. aoDiffuseFactor defaults to 1.0 rather than umbreon's
-  // 0.0: at 0 the AO term only touches the ambient light, and CueMol's default
-  // lighting is mostly direct, so AO would be nearly invisible.
-  exporter.aoDiffuseFactor = numVal(ub, "aoDiffuseFactor", 1.0);
-  exporter.aoMultiScale = boolVal(ub, "aoMultiScale", true);
-  exporter.aoBentNormal = boolVal(ub, "aoBentNormal", true);
-  exporter.aoLowDiscrepancy = boolVal(ub, "aoLowDiscrepancy", true);
-  exporter.aoResDiv = AO_GATHER[strVal(ub, "aoGather", "Per output pixel")] ?? -1;
+  //
+  // The rest of the AO block is written ONLY while AO is on. umbreon gates
+  // every AO computation on aoSamples > 0, so the values would not change the
+  // image either way -- but aoResDiv is read before that gate: the coarse-AO
+  // grid cannot be combined with GI, so an out-resolution gather sent
+  // alongside GI makes umbreon print
+  //   "warning: --ao-res out is not supported with --gi yet"
+  // on every GI render. AO and GI are alternatives (the Lighting selector
+  // treats them as such), so the AO knobs simply have no business being sent
+  // when AO is off. Left unset they keep the C++ ctor's neutral values
+  // (aoResDiv 0, recipe flags off).
+  const aoEnabled = boolVal(ub, "aoEnabled", false);
+  exporter.aoSamples = aoEnabled ? numVal(ub, "aoSamples", 8) : 0;
+  if (aoEnabled) {
+    // 0 (or less) asks libcuemol2 to scale the radius to the scene bounding box.
+    exporter.aoDistance = numVal(ub, "aoDistance", 0);
+    exporter.aoIntensity = numVal(ub, "aoIntensity", 1.0);
+    // AO quality recipe. aoDiffuseFactor defaults to 1.0 rather than umbreon's
+    // 0.0: at 0 the AO term only touches the ambient light, and CueMol's
+    // default lighting is mostly direct, so AO would be nearly invisible.
+    exporter.aoDiffuseFactor = numVal(ub, "aoDiffuseFactor", 1.0);
+    exporter.aoMultiScale = boolVal(ub, "aoMultiScale", true);
+    exporter.aoBentNormal = boolVal(ub, "aoBentNormal", true);
+    exporter.aoLowDiscrepancy = boolVal(ub, "aoLowDiscrepancy", true);
+    exporter.aoResDiv = AO_GATHER[strVal(ub, "aoGather", "Per output pixel")] ?? -1;
+  }
   exporter.shadows = boolVal(ub, "shadows", false);
   exporter.shadowSamples = numVal(ub, "shadowSamples", 1);
   exporter.lightRadius = numVal(ub, "lightRadius", 0.0);

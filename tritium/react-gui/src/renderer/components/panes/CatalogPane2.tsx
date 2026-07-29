@@ -52,6 +52,7 @@ export const CatalogPane2: React.FC<CatalogPane2Props> = ({
   const [gz, setGz] = useState(0.54612);
   const [molSel, setMolSel] = useState("*");
   const [opacity, setOpacity] = useState(80);
+  const [angle, setAngle] = useState(90);
   const [listSel, setListSel] = useState("3J3Q");
   const [seg, setSeg] = useState("all");
   const [color, setColor] = useState("#3b82f6");
@@ -108,6 +109,20 @@ export const CatalogPane2: React.FC<CatalogPane2Props> = ({
                 max={9999}
                 slider={false}
               />
+              {/* Label-less variant: the Field owns the label, so the stepper
+                  can share a row with another control (e.g. a preset select). */}
+              <Field label="Angle (hideLabel, in a Field)">
+                <SliderNumericField
+                  label="Angle"
+                  hideLabel
+                  slider={false}
+                  value={angle}
+                  onCommit={setAngle}
+                  min={0}
+                  max={360}
+                  unit="°"
+                />
+              </Field>
             </FieldGroup>
 
             <FieldGroup title="Listbox (list / tree row)">

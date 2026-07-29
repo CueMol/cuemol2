@@ -20,7 +20,13 @@ import * as path from 'path'
 import { clipboard, dialog, nativeImage, type BrowserWindow } from 'electron'
 import { IPC } from '../shared/ipcChannels'
 import type { RenderImageRef, RenderViewCamera, ViewSizePx } from '../shared/ipcTypes'
-import { movieFrameFileName, MOVIE_FILE_EXTENSIONS } from '../shared/movieFrames'
+import {
+  frameFileRegExp,
+  movieFileNames,
+  movieFrameFileName,
+  resolveMovieBaseName,
+} from '../shared/movieFrames'
+import { getSessionMovieDir } from './movieOutput'
 import {
   clearRenderHistory,
   readRenderImage,
@@ -152,7 +158,10 @@ export function registerRenderWindowIpc(deps: RenderWindowIpcDeps): void {
   const refToPath = (ref: RenderImageRef): string =>
     ref.kind === 'result'
       ? renderImagePath(ref.resultId)
-      : path.join(ref.outputDir, movieFrameFileName(ref.baseName, ref.frameIndex))
+      : path.join(
+          ref.outputDir,
+          movieFrameFileName(resolveMovieBaseName(ref.baseName), ref.frameIndex),
+        )
 
   handleInvoke(IPC.RENDER_IMAGE_SAVE, async (_event, { ref, defaultName }) => {
     const source = refToPath(ref)
@@ -178,6 +187,33 @@ export function registerRenderWindowIpc(deps: RenderWindowIpcDeps): void {
     }
   })
 
+  // Save the encoded movie itself. With the app-managed folder as the default
+  // output, this is how a movie leaves the sweep's reach; the frames stay
+  // where they are (they are the re-encode input, not a deliverable).
+  handleInvoke(IPC.RENDER_MOVIE_SAVE, async (_event, { moviePath, defaultName }) => {
+    if (!fs.existsSync(moviePath)) {
+      return { canceled: false, error: 'The movie file is no longer available.' }
+    }
+    const rw = getRenderWindow()
+    const parent = rw && !rw.isDestroyed() ? rw : mainWindow
+    const ext = path.extname(moviePath).replace(/^\./, '')
+    const picked = await dialog.showSaveDialog(parent, {
+      title: 'Save Movie',
+      defaultPath: defaultName,
+      filters: [
+        ...(ext ? [{ name: `${ext.toUpperCase()} Movie`, extensions: [ext] }] : []),
+        { name: 'All Files', extensions: ['*'] },
+      ],
+    })
+    if (picked.canceled || !picked.filePath) return { canceled: true }
+    try {
+      fs.copyFileSync(moviePath, picked.filePath)
+      return { canceled: false, filePath: picked.filePath }
+    } catch (e) {
+      return { canceled: false, filePath: picked.filePath, error: (e as Error).message }
+    }
+  })
+
   handleInvoke(IPC.RENDER_IMAGE_COPY, (_event, { ref }) => {
     const image = nativeImage.createFromPath(refToPath(ref))
     if (image.isEmpty()) {
@@ -187,13 +223,20 @@ export function registerRenderWindowIpc(deps: RenderWindowIpcDeps): void {
     return { ok: true }
   })
 
+  // The default movie output folder: created on first ask and shared by every
+  // movie render of this run, so an animation render needs no setup at all.
+  handleInvoke(IPC.RENDER_MOVIE_TEMPDIR, () => ({ dir: getSessionMovieDir() }))
+
   // Frame slider: read one already-rendered frame straight off disk. The
   // frames are plain files in the user's output folder, so this needs
   // neither the worker nor the main window -- unlike the view-size round
   // trip above, it is a single hop.
   handleInvoke(IPC.RENDER_FRAME_READ, (_event, { outputDir, baseName, frameIndex }) => {
     try {
-      const file = path.join(outputDir, movieFrameFileName(baseName, frameIndex))
+      const file = path.join(
+        outputDir,
+        movieFrameFileName(resolveMovieBaseName(baseName), frameIndex),
+      )
       const buf = fs.readFileSync(file)
       return { dataUrl: `data:image/png;base64,${buf.toString('base64')}` }
     } catch {
@@ -206,9 +249,10 @@ export function registerRenderWindowIpc(deps: RenderWindowIpcDeps): void {
   // frame 0. A gap means the sequence is incomplete, so counting stops there.
   handleInvoke(IPC.RENDER_FRAMES_CHECK, (_event, { outputDir, baseName }) => {
     if (!outputDir) return { frameCount: 0 }
+    const base = resolveMovieBaseName(baseName)
     let n = 0
     for (;;) {
-      const file = path.join(outputDir, movieFrameFileName(baseName, n))
+      const file = path.join(outputDir, movieFrameFileName(base, n))
       if (!fs.existsSync(file)) break
       n += 1
     }
@@ -220,9 +264,9 @@ export function registerRenderWindowIpc(deps: RenderWindowIpcDeps): void {
   // side before this is called.
   handleInvoke(IPC.RENDER_FRAMES_CLEANUP, (_event, { outputDir, baseName }) => {
     if (!outputDir) return { ok: false, deleted: 0 }
-    const esc = baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    const frameRe = new RegExp(`^${esc}_frm_\\d+\\.png$`)
-    const movieNames = new Set(MOVIE_FILE_EXTENSIONS.map((ext) => `${baseName}${ext}`))
+    const base = resolveMovieBaseName(baseName)
+    const frameRe = frameFileRegExp(base)
+    const movieNames = movieFileNames(base)
     let deleted = 0
     try {
       for (const name of fs.readdirSync(outputDir)) {

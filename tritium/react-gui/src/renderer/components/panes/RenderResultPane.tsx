@@ -180,6 +180,20 @@ export const RenderResultPane: React.FC<RenderResultPaneProps> = ({
       .catch((e: Error) => setExportError(e.message));
   }, [imageRef]);
 
+  // The movie itself, not a frame of it. With the app-managed folder as the
+  // default output, this is how a finished movie is kept past the sweep.
+  const handleSaveMovie = useCallback(() => {
+    if (!moviePath) return;
+    const ext = moviePath.slice(moviePath.lastIndexOf("."));
+    void window.electronAPI
+      ?.invoke(IPC.RENDER_MOVIE_SAVE, {
+        moviePath,
+        defaultName: `${result.sourceSceneName}${ext}`,
+      })
+      .then((res) => setExportError(res?.error ?? null))
+      .catch((e: Error) => setExportError(e.message));
+  }, [moviePath, result.sourceSceneName]);
+
   const openMovie = useCallback(() => {
     if (moviePath) window.electronAPI?.invoke(IPC.SHELL_OPEN_PATH, { path: moviePath });
   }, [moviePath]);
@@ -255,6 +269,14 @@ export const RenderResultPane: React.FC<RenderResultPaneProps> = ({
       </Popover>
       {moviePath && (
         <>
+          <Tooltip content="Save the movie to a file...">
+            <Button
+              small
+              icon={<AppIcon name="ui.saveAs" aria-hidden />}
+              aria-label="Save movie as"
+              onClick={handleSaveMovie}
+            />
+          </Tooltip>
           <Tooltip content="Open the movie in the default player">
             <Button small icon={<AppIcon name="media.play" aria-hidden />} aria-label="Open movie" onClick={openMovie} />
           </Tooltip>

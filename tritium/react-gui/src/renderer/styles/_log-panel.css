@@ -202,6 +202,14 @@
   flex-direction: column;
 }
 
+/* Note under the output folder while it is the app-managed one, saying what
+   happens to the files. Sits between form rows, so it takes the same row
+   rhythm rather than inventing spacing. */
+.movie-settings-hint {
+  color: var(--text-muted);
+  padding: var(--space-1) 0 var(--space-2);
+}
+
 /* Width x height on one row. */
 .image-size-row {
   display: flex;

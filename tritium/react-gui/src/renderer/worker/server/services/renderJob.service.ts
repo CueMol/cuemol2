@@ -53,7 +53,12 @@ import {
 } from "./renderBackends/RenderBackend";
 import { getSceneOrNull } from "./helpers/sceneResolver";
 import { getAnimMgrOrNull } from "./helpers/animResolve";
-import { movieFrameFileName } from "../../../../shared/movieFrames";
+import {
+  frameFileRegExp,
+  movieFileNames,
+  movieFrameFileName,
+  resolveMovieBaseName,
+} from "../../../../shared/movieFrames";
 import {
   buildFfmpegArgs,
   movieOutputPath,
@@ -104,6 +109,13 @@ interface AnimJobState {
   encodeTid: number | null;
   /** Encoded movie path, once the encode has been queued. */
   moviePath: string | null;
+  /** Tail of ffmpeg's output, so a failed encode can say why. */
+  encodeLog: string;
+  /**
+   * Start-camera name the render replaced, to be put back when it ends; null
+   * when the animation's own start camera was used as-is.
+   */
+  startCamBak: string | null;
 }
 
 /**
@@ -219,12 +231,82 @@ function makeTimeValue(ctx: WorkerContext, ms: number): TimeValue {
  * cancel alike. Safe to call more than once.
  */
 function stopAnim(entry: RenderJobEntry): void {
-  if (!entry.anim?.animMgr) return;
+  const anim = entry.anim;
+  if (!anim?.animMgr) return;
   try {
-    entry.anim.animMgr.stop();
+    anim.animMgr.stop();
   } catch {
     /* ignore */
   }
+  // Put back the start camera the render had to replace. `startcam` is a scene
+  // property the Animation panel shows and the scene file stores, so leaving
+  // the render's stand-in behind would quietly rewrite the user's choice --
+  // AnimMgr::stop() restores animated properties, not this one.
+  if (anim.startCamBak !== null) {
+    restoreStartCam(anim.animMgr, anim.startCamBak);
+    anim.startCamBak = null;
+  }
+}
+
+/**
+ * Name of the implicit "camera the user is looking through" (UXP convention;
+ * see ensureStartCam in animation.service.ts, which seeds `startcam` from it).
+ */
+const CURRENT_CAM_NAME = "__current";
+
+/** Whether the scene has a camera by this name; null when it cannot be told. */
+function sceneHasCamera(scene: Scene, name: string): boolean | null {
+  const s = scene as unknown as { hasCamera?: (n: string) => boolean };
+  if (typeof s.hasCamera !== "function") return null;
+  try {
+    return s.hasCamera(name);
+  } catch {
+    return null;
+  }
+}
+
+/** Write a start-camera name back, ignoring a scene that has gone away. */
+function restoreStartCam(animMgr: AnimMgr, value: string): void {
+  try {
+    animMgr.startcam = value;
+  } catch {
+    /* the scene may be gone by the time the job unwinds */
+  }
+}
+
+/**
+ * Point the animation at a start camera the render can use, returning the name
+ * it replaced (null when nothing was replaced).
+ *
+ * The Animation panel's start camera is the user's choice and is used as-is.
+ * It is only stood in for when there is nothing to start from -- unset, or
+ * naming a camera the scene no longer has. AnimMgr then falls back to the
+ * scene's active view, which an offline render does not have, and ends up
+ * inventing a default camera that makes every frame meaningless
+ * (AnimMgr::startImpl, src/qsys/anim/AnimMgr.cpp). renderStart captured the
+ * render target's view into "__current" for exactly that case.
+ *
+ * The replacement is undone by stopAnim: `startcam` is persisted scene state,
+ * not a render setting.
+ */
+function overrideStartCamForRender(scene: Scene, animMgr: AnimMgr): string | null {
+  let startcam = "";
+  try {
+    startcam = animMgr.startcam ?? "";
+  } catch {
+    /* unreadable -- treat as unset */
+  }
+  // An explicit choice stands, unless the scene has since lost that camera.
+  if (startcam && sceneHasCamera(scene, startcam) !== false) return null;
+  // Nothing usable to fall back to either: leave the animation alone rather
+  // than rewrite it to a camera that does not exist.
+  if (sceneHasCamera(scene, CURRENT_CAM_NAME) === false) return null;
+  try {
+    animMgr.startcam = CURRENT_CAM_NAME;
+  } catch {
+    return null;
+  }
+  return startcam;
 }
 
 /**
@@ -415,9 +497,63 @@ function advanceAnimFrame(
   submitAnimFrame(ctx, backend, entry, args);
 }
 
-/** Whether this job should encode a movie (asked for, and ffmpeg is set). */
+/**
+ * Whether this job should encode a movie. ffmpeg itself is checked before the
+ * first frame is rendered (see resolveFfmpeg / startAnimJob), so by the time
+ * the sequence is done the binary is known to be usable.
+ */
 function shouldEncode(args: RenderStartArgs): boolean {
-  return Boolean(args.snapshot.movie?.makeMovie) && Boolean(args.binaries.ffmpeg);
+  return Boolean(args.snapshot.movie?.makeMovie);
+}
+
+/**
+ * Resolve the configured ffmpeg binary, or say why it cannot be used.
+ *
+ * Checked up front rather than at encode time: an animation render can take
+ * hours, and discovering only then that the encoder is missing wastes all of
+ * it. A missing path is an error rather than a silent skip -- "render the
+ * frames but no movie" is what the Encode movie switch is for.
+ */
+function resolveFfmpeg(args: RenderStartArgs): { path: string } | { error: string } {
+  const configured = args.binaries.ffmpeg?.trim();
+  if (!configured) {
+    return { error: "No ffmpeg executable is configured (Settings > Rendering)" };
+  }
+  const exe = expandHomePath(configured);
+  if (!fs.existsSync(exe)) return { error: `ffmpeg not found: ${exe}` };
+  return { path: exe };
+}
+
+/**
+ * Delete a base name's frame images and encoded movies from a folder.
+ *
+ * Run before an animation render so the folder describes exactly one sequence.
+ * Frames left by an earlier, longer render would otherwise survive past the new
+ * sequence's end, where they inflate the re-encode frame count and -- if that
+ * render used a different image size -- make ffmpeg abort partway.
+ *
+ * @returns how many files were removed.
+ */
+function purgeMovieArtifacts(outputDir: string, baseName: string): number {
+  const frameRe = frameFileRegExp(baseName);
+  const movieNames = movieFileNames(baseName);
+  let removed = 0;
+  let names: string[];
+  try {
+    names = fs.readdirSync(outputDir);
+  } catch {
+    return 0;
+  }
+  for (const name of names) {
+    if (!frameRe.test(name) && !movieNames.has(name)) continue;
+    try {
+      fs.rmSync(path.join(outputDir, name), { force: true });
+      removed++;
+    } catch {
+      /* leave files we cannot remove; the render overwrites what it reaches */
+    }
+  }
+  return removed;
 }
 
 /** ffmpeg options for this job, from the frames on disk and the snapshot. */
@@ -441,19 +577,24 @@ function startEncode(
   args: RenderStartArgs,
 ): void {
   const anim = entry.anim!;
-  const ffmpeg = expandHomePath(args.binaries.ffmpeg);
-  if (!fs.existsSync(ffmpeg)) {
+  const resolved = resolveFfmpeg(args);
+  if ("error" in resolved) {
     stopTimer(entry);
     jobs.delete(entry.jobId);
     stopAnim(entry);
     cleanupDir(entry.workDir);
-    emit(ctx, { type: "error", jobId: entry.jobId, error: `ffmpeg not found: ${ffmpeg}` });
+    emit(ctx, { type: "error", jobId: entry.jobId, error: resolved.error });
     return;
   }
 
   const opts = encodeOptions(entry, args);
+  // Clear the target first: ProcessManager reports no exit code, so "did the
+  // file appear" is how pollEncode tells a finished encode from a failed one.
+  // Left in place, a previous render's movie would pass for this one's.
+  fs.rmSync(movieOutputPath(opts), { force: true });
+
   const pm = ctx.svc.getService("ProcessManager") as ProcessManager;
-  const tid = pm.queueTask(ffmpeg, buildFfmpegArgs(opts), "");
+  const tid = pm.queueTask(resolved.path, buildFfmpegArgs(opts), "");
   if (tid < 0) {
     stopTimer(entry);
     jobs.delete(entry.jobId);
@@ -465,8 +606,12 @@ function startEncode(
 
   anim.encodeTid = tid;
   anim.moviePath = movieOutputPath(opts);
+  anim.encodeLog = "";
   emit(ctx, progressUpdate(entry, "encoding", "Encoding movie\n", 100));
 }
+
+/** Longest ffmpeg output tail kept for a failure message. */
+const ENCODE_LOG_TAIL = 600;
 
 /** Poll the ffmpeg encode task; finish the job once it ends. */
 function pollEncode(
@@ -480,9 +625,28 @@ function pollEncode(
   const status = pm.getTaskStatus(tid);
   const out = pm.getResultOutput(tid); // also releases the slot on end
   const logChunk = out || undefined;
+  if (out) anim.encodeLog = (anim.encodeLog + out).slice(-ENCODE_LOG_TAIL);
 
   if (status === TASK_QUEUED || status === TASK_RUNNING) {
     emit(ctx, progressUpdate(entry, "encoding", logChunk ?? ""));
+    return;
+  }
+
+  // ProcessManager exposes no exit code, so the movie file is the verdict --
+  // startEncode removed any earlier one, so its presence means this run wrote
+  // it. Without this check a failed encode was reported as a success and the
+  // window offered whatever movie happened to be at that path.
+  if (anim.moviePath && !fs.existsSync(anim.moviePath)) {
+    stopTimer(entry);
+    jobs.delete(entry.jobId);
+    stopAnim(entry);
+    cleanupDir(entry.workDir);
+    const detail = anim.encodeLog.trim();
+    emit(ctx, {
+      type: "error",
+      jobId: entry.jobId,
+      error: `The movie could not be encoded${detail ? `: ${detail}` : " (see the log)"}`,
+    });
     return;
   }
   finishAnimJob(ctx, entry, args);
@@ -771,7 +935,14 @@ function startAnimJob(
   args: RenderStartArgs,
   workDir: string,
 ): RenderStartResult {
+  // Set once the start camera has been stood in for; every exit below puts it
+  // back, and the job entry takes over that duty once it exists.
+  let startCamMgr: AnimMgr | null = null;
+  let startCamBak: string | null = null;
   const fail = (error: string): RenderStartResult => {
+    if (startCamMgr !== null && startCamBak !== null) {
+      restoreStartCam(startCamMgr, startCamBak);
+    }
     cleanupDir(workDir);
     return { ok: false, jobId: "", error };
   };
@@ -784,11 +955,18 @@ function startAnimJob(
   if (!movie) return fail("Movie settings are missing");
 
   const outputDir = movie.outputDir.trim();
-  const baseName = movie.baseName.trim() || "movie";
+  const baseName = resolveMovieBaseName(movie.baseName);
   const { fps, dupLastFrame } = movie;
 
   if (!outputDir) return fail("No output folder is set");
   if (!fs.existsSync(outputDir)) return fail(`Output folder not found: ${outputDir}`);
+
+  // Fail before a single frame is rendered rather than after the whole
+  // sequence, matching how the render executables are checked below.
+  if (movie.makeMovie) {
+    const resolved = resolveFfmpeg(args);
+    if ("error" in resolved) return fail(resolved.error);
+  }
 
   const animMgr = getAnimMgrOrNull(scene);
   if (!animMgr) return fail("Scene has no animation manager");
@@ -796,10 +974,8 @@ function startAnimJob(
 
   let frameCount: number;
   try {
-    // Without a start camera AnimMgr silently falls back to a default one and
-    // every frame comes out meaningless. renderStart already captured the
-    // active view into "__current".
-    animMgr.startcam = "__current";
+    startCamMgr = animMgr;
+    startCamBak = overrideStartCamForRender(scene, animMgr);
     frameCount = animMgr.setupRender(
       makeTimeValue(ctx, 0),
       makeTimeValue(ctx, animMgr.length.millisec),
@@ -847,9 +1023,26 @@ function startAnimJob(
       lastPreviewAt: 0,
       encodeTid: null,
       moviePath: null,
+      encodeLog: "",
+      startCamBak,
     },
   };
   jobs.set(jobId, entry);
+  // The entry owns the restore from here on (stopAnim runs on every exit).
+  startCamBak = null;
+
+  // Start from an empty sequence: a previous render's frames past this one's
+  // end would otherwise stay in the folder and be taken for part of it.
+  const purged = purgeMovieArtifacts(outputDir, baseName);
+  if (purged > 0) {
+    emit(ctx, {
+      type: "progress",
+      jobId,
+      progress: 0,
+      phase: "exporting",
+      logChunk: `Removed ${purged} file(s) from an earlier render of "${baseName}"\n`,
+    });
+  }
 
   try {
     submitAnimFrame(ctx, backend, entry, args);
@@ -893,7 +1086,7 @@ function startEncodeOnlyJob(
   if (!movie) return { ok: false, jobId: "", error: "Movie settings are missing" };
 
   const outputDir = movie.outputDir.trim();
-  const baseName = movie.baseName.trim() || "movie";
+  const baseName = resolveMovieBaseName(movie.baseName);
   const frameCount = args.encodeOnly?.frameCount ?? 0;
   if (!outputDir || !fs.existsSync(outputDir)) {
     return { ok: false, jobId: "", error: `Output folder not found: ${outputDir}` };
@@ -935,6 +1128,8 @@ function startEncodeOnlyJob(
       lastPreviewAt: 0,
       encodeTid: null,
       moviePath: null,
+      encodeLog: "",
+      startCamBak: null,
     },
   };
   jobs.set(jobId, entry);

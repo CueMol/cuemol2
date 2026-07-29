@@ -67,7 +67,10 @@ const UMBREON_PROPS: PropDef[] = [
   // unsupported alongside GI, so the same setting would mean different things
   // per lighting method. Renders therefore always use the full grid (the C++
   // ctor default); the qif properties stay available for scripting.
-  { key: "supersample",   label: "Supersampling",      type: "integer", value: 2,    group: "Antialiasing", min: 1, max: 8,    step: 1 },
+  // 3 = the "aa" axis' default step, which every fresh backend selection
+  // applies anyway; declared to match so the three places that state a
+  // supersampling default (here, the axis, UmbreonBackend's fallback) agree.
+  { key: "supersample",   label: "Supersampling",      type: "integer", value: 3,    group: "Antialiasing", min: 1, max: 8,    step: 1 },
   // --- Ambient Occlusion (off by default via the aoEnabled switch, like
   //     Shadows/GI; the backend maps aoEnabled=false to aoSamples 0) ---
   { key: "aoEnabled",     label: "Enable AO",          type: "boolean", value: false, group: "Ambient Occlusion" },

@@ -11,7 +11,9 @@
  * vector, Target camera / renderers / opacity / MorphMol, the combined
  * "Direction angle", etc. The UXP numslider widgets map to `DragNumericField`;
  * the spin-axis components (plain number boxes in UXP, not sliders) map to the
- * catalog `NumberCell`.
+ * catalog `NumberCell`. The slide direction is the exception: a whole-degree
+ * bearing reads as a typed / stepped value, so it uses the catalog stepper
+ * (`SliderField` with `slider={false}`) beside its cardinal presets.
  *
  * Identity is the stable `uid`. The component refetches on every SEM_ANIM event
  * (the payload carries no uid, so it always re-resolves), reports the element
@@ -29,6 +31,7 @@ import {
   TimeField,
   SelectField,
   DragNumericField,
+  SliderField,
   NumberCell,
   SwitchField,
   SegmentField,
@@ -622,15 +625,22 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
           {type === "SlideInOutAnim" && (
             <Field label="Direction angle">
               <div className="anim-dir-row">
-                <DragNumericField
+                {/* A whole-degree bearing: typed or stepped, not dragged --
+                    the cardinal presets beside it are what a coarse sweep is
+                    for. */}
+                <SliderField
+                  label="Direction angle"
+                  hideLabel
+                  slider={false}
                   value={form.direction}
                   min={0}
                   max={360}
-                  step={5}
-                  decimals={0}
+                  step={1}
                   unit="°"
-                  onChange={(v) => setField({ direction: v })}
-                  onRelease={(v) => commit("direction", v)}
+                  onCommit={(v) => {
+                    setField({ direction: v });
+                    commit("direction", v);
+                  }}
                 />
                 <SelectField
                   fill={false}

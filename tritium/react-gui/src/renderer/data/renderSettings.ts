@@ -8,6 +8,7 @@
  * widgets (`PropEditors`) and accordion grouping can be reused as-is.
  */
 
+import { DEFAULT_MOVIE_BASE_NAME } from "../../shared/movieFrames";
 import type { PropDef } from "./rendererProperties";
 
 /** Identifier of a rendering backend. Extended as backends are added. */
@@ -374,6 +375,13 @@ export const MOVIE_FORMAT_LABEL: Record<MovieFormatId, string> = {
  * timeline (0 .. AnimMgr.length) is always rendered.
  */
 export interface MovieSettings {
+  /**
+   * Whether `outputDir` is the app-managed folder rather than one the user
+   * picked. Ownership only: `outputDir` is a real path either way, so nothing
+   * downstream has to resolve anything. It decides who may delete the files
+   * (see main/movieOutput.ts) and whether the panel says so.
+   */
+  useTempDir: boolean;
   /** Folder the frame sequence (and the movie) is written to. */
   outputDir: string;
   /** Base name of the output files (`<base>_frm_0000.png`). */
@@ -395,8 +403,11 @@ export interface MovieSettings {
 }
 
 export const DEFAULT_MOVIE_SETTINGS: MovieSettings = {
+  // Resolved to the real path on mount (useMovieOutputPrefs); empty only until
+  // main answers, so a movie render needs no setup to start.
+  useTempDir: true,
   outputDir: "",
-  baseName: "movie",
+  baseName: DEFAULT_MOVIE_BASE_NAME,
   fps: 30,
   makeMovie: true,
   movieFormat: "mp4_h264",

@@ -36,6 +36,29 @@ export interface LayoutState {
 
 // - UI preferences -
 
+/**
+ * Movie-mode output preferences of the Rendering window.
+ *
+ * Declared structurally (all fields optional, no renderer types) so shared and
+ * main can read it without importing renderer/data/renderSettings; the renderer
+ * merges it over DEFAULT_MOVIE_SETTINGS. Persisted because the Rendering window
+ * is destroyed on close, which used to lose every movie setting on every close
+ * (UXP `anim-render-dlg` kept the same values in prefs).
+ */
+export interface MovieRenderPrefs {
+  /** Whether the output folder is the app-managed temporary one. */
+  useTempDir?: boolean
+  /** Last user-picked output folder; only meaningful with useTempDir false. */
+  outputDir?: string
+  baseName?: string
+  fps?: number
+  makeMovie?: boolean
+  /** MovieFormatId; kept as a plain string here to avoid a renderer import. */
+  movieFormat?: string
+  dupLastFrame?: boolean
+  bitrateKbps?: number
+}
+
 /** Miscellaneous UI preferences exchanged with the main process. */
 export interface UiState {
   sidebarActiveView?: string
@@ -67,6 +90,8 @@ export interface UiState {
   pdb2pqrExe?: string
   /** Default pdb2pqr force field (External Tools settings). */
   pdb2pqrFF?: string
+  /** Movie-mode output preferences (Rendering window). */
+  movieRender?: MovieRenderPrefs
 }
 
 // - File dialog -

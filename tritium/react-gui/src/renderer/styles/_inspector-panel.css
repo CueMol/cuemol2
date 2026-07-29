@@ -159,8 +159,8 @@
   min-width: 0;
 }
 
-.anim-dir-row .h3-form-drag {
-  flex: 1 1 auto;
+.anim-dir-row .h3-form-sliderfield-row {
+  flex: 0 0 auto;
 }
 
 .anim-dir-row .h3-form-select {
