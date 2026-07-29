@@ -21,6 +21,7 @@ import {
   SelectField,
   NumericField,
   DragNumericField,
+  TimeField,
   SwitchField,
 } from "../../h3-kit/form";
 
@@ -42,6 +43,7 @@ export const CatalogPane1: React.FC<CatalogPane1Props> = ({
   const [num, setNum] = useState(50);
   const [num2, setNum2] = useState(8);
   const [drag, setDrag] = useState(1.0);
+  const [timeMs, setTimeMs] = useState(1500);
   const [sw, setSw] = useState(true);
   const [filter, setFilter] = useState("");
 
@@ -119,6 +121,9 @@ export const CatalogPane1: React.FC<CatalogPane1Props> = ({
                   step={0.1}
                   unit="Å"
                 />
+              </Field>
+              <Field label="TimeField (drag / spin / typed timecode)">
+                <TimeField value={timeMs} onCommit={setTimeMs} />
               </Field>
               <Field label="SwitchField" inline>
                 <SwitchField checked={sw} onChange={setSw} />

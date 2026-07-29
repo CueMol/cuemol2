@@ -128,16 +128,15 @@ describe("AnimElementInspector", () => {
       <AnimElementInspector cm={cm as never} sceneId={1} uid={7} onGone={vi.fn()} onHeaderChange={vi.fn()} />,
     );
     await flushPromises();
-    // Start / Duration use the TimeField (ms -> M:SS.mmm); the timing write
+    // Start / Duration use the TimeField (ms -> M:SS.mmm), which renders the
+    // value as text until clicked (DragNumericField preset); the timing write
     // contract is pinned in animDetailService.test.ts.
-    const startInput = fieldByLabel(container, "Start time")!.querySelector(
-      "input.h3-form-time",
-    ) as HTMLInputElement;
-    const durInput = fieldByLabel(container, "Duration")!.querySelector(
-      "input.h3-form-time",
-    ) as HTMLInputElement;
-    expect(startInput.value).toBe("0:00.200"); // 200 ms
-    expect(durInput.value).toBe("0:01.000"); // 1200 - 200 = 1000 ms
+    const timeText = (label: string) =>
+      fieldByLabel(container, label)!.querySelector(
+        ".h3-form-time .h3-form-drag-value",
+      )?.textContent;
+    expect(timeText("Start time")).toBe("0:00.200"); // 200 ms
+    expect(timeText("Duration")).toBe("0:01.000"); // 1200 - 200 = 1000 ms
     expect(fieldByLabel(container, "Quadric")).not.toBeNull();
     unmount();
   });
