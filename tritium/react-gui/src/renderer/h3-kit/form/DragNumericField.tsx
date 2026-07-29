@@ -33,9 +33,21 @@
  *
  * The widget is focusable as a single unit (`tabIndex=0` on the root); its
  * parts (arrows, edit input) never take a separate focus ring. Keyboard
- * interaction on the focused widget is intentionally not implemented yet
- * (Blender's number button has no key-input focus); only the edit input
- * handles Enter / Escape while editing.
+ * interaction on the focused widget is intentionally not implemented (Blender's
+ * number button has no key-input focus); the edit input handles Enter / Escape,
+ * plus Up / Down when `resolveStep` opts the field into keyboard stepping.
+ *
+ * Non-decimal values (`format` / `parse` / `resolveStep`): the display string,
+ * the text-edit parser and the step granularity are all overridable, so the same
+ * interaction model can drive a non-plain-number field -- e.g. the `TimeField`
+ * preset, which shows `M:SS.mmm` and steps the segment under the caret. When
+ * `parse` is given the edit input switches from `type="number"` to `type="text"`
+ * (a timecode is not a valid number-input value).
+ *
+ * The step affordance is laid out either at the field's sides (`stepper="sides"`,
+ * the default `<` / `>`) or stacked at its right edge (`stepper="stacked"`, an
+ * up / down pair -- the spin-button shape used by time and other unit-segmented
+ * values).
  *
  * Sizing/spacing/colors come entirely from `.h3-form-drag*` in `styles/_form-kit.css`
  * (driven by the `--field-*` / `--space-*` / color tokens); no size prop is
@@ -178,6 +190,35 @@ export interface DragNumericFieldProps {
      * move focus to the previous field in a column. No-op when unset.
      */
     onCommitPrev?: () => void;
+    /**
+     * Display formatter. Defaults to `value.toFixed(decimals)`. Override for a
+     * non-decimal presentation (e.g. a timecode); `parse` must then read the
+     * same shape back.
+     */
+    format?: (value: number) => string;
+    /**
+     * Text-edit parser; return null for malformed input (the edit is then
+     * discarded). Defaults to `Number()` with a finite check. Providing it also
+     * switches the edit input to `type="text"`.
+     */
+    parse?: (text: string) => number | null;
+    /** Step-affordance layout. Default `sides` (`<` / `>` at the field edges). */
+    stepper?: 'sides' | 'stacked';
+    /**
+     * Step granularity for the arrows and (opt-in) the Up / Down keys, which
+     * would otherwise both use `step`. Receives the live text edit -- with
+     * `caretPos` null when the whole draft is selected, i.e. there is no
+     * meaningful caret -- or null when the field is not being edited, so a
+     * unit-segmented field can step the segment under the caret. Supplying it
+     * also enables Up / Down stepping while editing.
+     */
+    resolveStep?: (edit: { text: string; caretPos: number | null } | null) => number;
+    /** Accessible name for the widget as a whole. */
+    'aria-label'?: string;
+    /** Native tooltip on the widget as a whole. */
+    title?: string;
+    /** Extra class on the root, for a preset's canonical width. */
+    className?: string;
 }
 
 /** Imperative handle exposed via ref (see `onCommitNext` / `onCommitPrev`). */
@@ -196,14 +237,28 @@ interface DragState {
 /** Transient arrow-press bookkeeping for the auto-repeat hold. */
 interface PressState {
     sign: 1 | -1;
-    /** Accumulated value during the hold; advanced one `step` per tick. */
+    /** Accumulated value during the hold; advanced one `stepSize` per tick. */
     held: number;
+    /** Increment per tick -- `step`, or what `resolveStep` returned. */
+    stepSize: number;
     /** Initial-delay timeout, then the repeat interval (cleared on release). */
     delayTimer: ReturnType<typeof setTimeout> | null;
     repeatTimer: ReturnType<typeof setInterval> | null;
 }
 
 type Mode = 'idle' | 'hover' | 'dragging' | 'editing';
+
+/**
+ * Caret offset inside the edit input, or null when the whole draft is selected
+ * (click-to-edit selects everything, so there is no segment to act on).
+ */
+function caretPosOf(input: HTMLInputElement | null, draft: string): number | null {
+    if (!input) return null;
+    const start = input.selectionStart;
+    if (start === null) return null;
+    if (start === 0 && input.selectionEnd === draft.length) return null;
+    return start;
+}
 
 /**
  * Blender-style draggable numeric field. See the file header for the drag /
@@ -227,6 +282,13 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
     onDragCancel,
     onCommitNext,
     onCommitPrev,
+    format: formatProp,
+    parse,
+    stepper = 'sides',
+    resolveStep,
+    'aria-label': ariaLabel,
+    title,
+    className,
 }, ref) => {
     const [mode, setMode] = useState<Mode>('idle');
     const [draft, setDraft] = useState('');
@@ -235,6 +297,13 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
     const inputRef = useRef<HTMLInputElement>(null);
     const dragRef = useRef<DragState | null>(null);
     const pressRef = useRef<PressState | null>(null);
+    // Value accumulated by a held Up / Down key, committed once on key release.
+    const keyStepRef = useRef<number | null>(null);
+    // Selection to restore after a key step rewrites the draft: a caret offset,
+    // or 'all' to keep the whole draft selected (so a repeat keeps reading as
+    // "no caret" and stays on the default step instead of drifting to the
+    // segment that happens to sit at offset 0).
+    const caretRef = useRef<number | 'all' | null>(null);
 
     // Finest resolution the value can take (the Shift snap); drives both
     // storage quantization and the default display precision. The coarse snap
@@ -243,8 +312,18 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
     const coarseStep = coarseSnap ?? step * SNAP_FACTOR;
     const dispDecimals = decimals ?? decimalsOf(fineStep);
     const format = useCallback(
-        (v: number) => v.toFixed(dispDecimals),
-        [dispDecimals],
+        (v: number) => (formatProp ? formatProp(v) : v.toFixed(dispDecimals)),
+        [formatProp, dispDecimals],
+    );
+
+    /** Read a typed draft, or null when it is empty / malformed. */
+    const parseDraft = useCallback(
+        (text: string): number | null => {
+            if (parse) return parse(text);
+            const n = Number(text);
+            return text.trim() !== '' && Number.isFinite(n) ? n : null;
+        },
+        [parse],
     );
 
     // The global mousemove closure must see the latest committed value (for the
@@ -389,8 +468,8 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
     const pressStep = useCallback(() => {
         const p = pressRef.current;
         if (!p) return;
-        const { min, max, step, fineStep, onChange } = cbRef.current;
-        const next = clampAndQuantize(p.held + p.sign * step, min, max, fineStep);
+        const { min, max, fineStep, onChange } = cbRef.current;
+        const next = clampAndQuantize(p.held + p.sign * p.stepSize, min, max, fineStep);
         if (next === p.held) {
             if (p.repeatTimer !== null) {
                 clearInterval(p.repeatTimer);
@@ -424,11 +503,12 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
     // `baseValue` overrides the starting value (used when stepping out of
     // text-edit mode, where the step is relative to the typed draft).
     const startPress = useCallback(
-        (sign: 1 | -1, baseValue?: number) => {
+        (sign: 1 | -1, baseValue?: number, stepSize?: number) => {
             if (disabled) return;
             const p: PressState = {
                 sign,
                 held: baseValue ?? valueRef.current,
+                stepSize: stepSize ?? cbRef.current.step,
                 delayTimer: null,
                 repeatTimer: null,
             };
@@ -466,17 +546,21 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
             e.preventDefault();
             e.stopPropagation();
             if (mode === 'editing') {
-                const parsed = Number(draft);
+                // Read the caret BEFORE leaving edit mode -- a segmented field
+                // steps whatever segment the caret sits in (UXP timeedit parity).
+                const stepSize = resolveStep?.({
+                    text: draft,
+                    caretPos: caretPosOf(inputRef.current, draft),
+                });
+                const parsed = parseDraft(draft);
                 const base =
-                    draft.trim() !== '' && Number.isFinite(parsed)
-                        ? clampAndQuantize(parsed, min, max, fineStep)
-                        : valueRef.current;
-                startPress(sign, base);
+                    parsed !== null ? clampAndQuantize(parsed, min, max, fineStep) : valueRef.current;
+                startPress(sign, base, stepSize);
             } else {
-                startPress(sign);
+                startPress(sign, undefined, resolveStep?.(null));
             }
         },
-        [mode, draft, min, max, fineStep, startPress],
+        [mode, draft, min, max, fineStep, startPress, parseDraft, resolveStep],
     );
 
     // Clean up listeners + any pointer lock on unmount (mid-interaction safety).
@@ -508,20 +592,69 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
         }
     }, [mode]);
 
+    // Put the caret back where a key step left it (the draft was rewritten from
+    // the formatter, which resets the selection to the end).
+    useEffect(() => {
+        const el = inputRef.current;
+        const want = caretRef.current;
+        if (mode !== 'editing' || !el || want === null) return;
+        caretRef.current = null;
+        if (want === 'all') {
+            el.select();
+            return;
+        }
+        const pos = Math.min(want, draft.length);
+        el.setSelectionRange?.(pos, pos);
+    }, [draft, mode]);
+
     const commitEdit = useCallback(() => {
         // Starting an arrow press from edit mode moves focus to the root, which
         // blurs the input and fires this. Skip while a press is active: the
         // press commits the stepped value, and committing the draft here would
         // both overwrite that step and push a spurious extra undo step.
         if (pressRef.current) return;
-        const parsed = Number(draft);
-        if (draft.trim() !== '' && Number.isFinite(parsed)) {
+        // A pending key-step hold is superseded by this commit; leaving it set
+        // would let the trailing keyup commit the same value a second time.
+        keyStepRef.current = null;
+        const parsed = parseDraft(draft);
+        if (parsed !== null) {
             const next = clampAndQuantize(parsed, min, max, fineStep);
             onChange(next);
             onRelease?.(next);
         }
         setMode('idle');
-    }, [draft, min, max, fineStep, onChange, onRelease]);
+    }, [draft, min, max, fineStep, onChange, onRelease, parseDraft]);
+
+    /**
+     * Step the draft by one Up / Down press (opt-in via `resolveStep`). A held
+     * key auto-repeats keydown, so the steps accumulate and the whole hold
+     * commits once on key release -- the same one-interaction-one-undo-step
+     * contract as a drag or an arrow press.
+     */
+    const keyStep = useCallback(
+        (sign: 1 | -1) => {
+            const input = inputRef.current;
+            const caretPos = caretPosOf(input, draft);
+            const stepSize = resolveStep?.({ text: draft, caretPos }) ?? step;
+            const base = keyStepRef.current ?? parseDraft(draft) ?? valueRef.current;
+            const next = clampAndQuantize(base + sign * stepSize, min, max, fineStep);
+            keyStepRef.current = next;
+            // Keep the selection on the segment being stepped so a repeat keeps
+            // acting on it (the formatted width can change, e.g. 0:59 -> 1:00).
+            caretRef.current = caretPos ?? 'all';
+            setDraft(format(next));
+            onChange(next);
+        },
+        [draft, resolveStep, step, min, max, fineStep, parseDraft, format, onChange],
+    );
+
+    /** Commit a finished Up / Down hold as one step. */
+    const endKeyStep = useCallback(() => {
+        const held = keyStepRef.current;
+        if (held === null) return;
+        keyStepRef.current = null;
+        onRelease?.(held);
+    }, [onRelease]);
 
     const handleEditKeyDown = useCallback(
         (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -538,10 +671,16 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
                     target();
                 }
             } else if (e.key === 'Escape') {
+                keyStepRef.current = null;
                 setMode('idle');
+            } else if (resolveStep && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+                // Own the keys so a `type="number"` input's native spinner does
+                // not step the draft a second time.
+                e.preventDefault();
+                keyStep(e.key === 'ArrowUp' ? 1 : -1);
             }
         },
-        [commitEdit, onCommitNext, onCommitPrev],
+        [commitEdit, onCommitNext, onCommitPrev, resolveStep, keyStep],
     );
 
     // --- Render ---
@@ -551,6 +690,7 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
         mode === 'dragging' && 'h3-form-drag-active',
         mode === 'editing' && 'h3-form-drag-editing',
         disabled && 'h3-form-drag-disabled',
+        className,
     ]
         .filter(Boolean)
         .join(' ');
@@ -562,11 +702,45 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
             ? Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100))
             : null;
 
+    const stacked = stepper === 'stacked';
+
+    /** One step affordance; `stacked` only changes the glyph and its class. */
+    const stepButton = (sign: 1 | -1) => (
+        <button
+            type="button"
+            className={
+                stacked
+                    ? `h3-form-drag-spin h3-form-drag-spin-${sign > 0 ? 'up' : 'down'}`
+                    : `h3-form-drag-arrow h3-form-drag-arrow-${sign > 0 ? 'right' : 'left'}`
+            }
+            tabIndex={-1}
+            disabled={disabled || (sign > 0 ? value >= max : value <= min)}
+            aria-label={sign > 0 ? 'Increment' : 'Decrement'}
+            onMouseDown={(e) => handleStepButtonDown(e, sign)}
+        >
+            <AppIcon
+                name={
+                    stacked
+                        ? sign > 0
+                            ? 'ui.caretUp'
+                            : 'ui.caretDown'
+                        : sign > 0
+                          ? 'ui.caretRight'
+                          : 'ui.caretLeft'
+                }
+                size={10}
+                aria-hidden
+            />
+        </button>
+    );
+
     return (
         <div
             ref={rootRef}
             className={rootClass}
             tabIndex={disabled ? -1 : 0}
+            aria-label={ariaLabel}
+            title={title}
             onMouseDown={handleMouseDown}
             onMouseEnter={() => mode === 'idle' && setMode('hover')}
             onMouseLeave={() => mode === 'hover' && setMode('idle')}
@@ -578,26 +752,19 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
                     aria-hidden="true"
                 />
             )}
-            <button
-                type="button"
-                className="h3-form-drag-arrow h3-form-drag-arrow-left"
-                tabIndex={-1}
-                disabled={disabled || value <= min}
-                aria-label="Decrement"
-                onMouseDown={(e) => handleStepButtonDown(e, -1)}
-            >
-                <AppIcon name="ui.caretLeft" size={10} aria-hidden />
-            </button>
+            {!stacked && stepButton(-1)}
 
             {mode === 'editing' ? (
                 <input
                     ref={inputRef}
-                    type="number"
+                    type={parse ? 'text' : 'number'}
+                    inputMode="numeric"
                     className="h3-form-drag-input"
                     value={draft}
-                    step={fineStep}
+                    step={parse ? undefined : fineStep}
                     onChange={(e) => setDraft(e.target.value)}
                     onKeyDown={handleEditKeyDown}
+                    onKeyUp={endKeyStep}
                     onBlur={commitEdit}
                 />
             ) : (
@@ -607,16 +774,14 @@ export const DragNumericField = forwardRef<DragNumericFieldHandle, DragNumericFi
                 </span>
             )}
 
-            <button
-                type="button"
-                className="h3-form-drag-arrow h3-form-drag-arrow-right"
-                tabIndex={-1}
-                disabled={disabled || value >= max}
-                aria-label="Increment"
-                onMouseDown={(e) => handleStepButtonDown(e, 1)}
-            >
-                <AppIcon name="ui.caretRight" size={10} aria-hidden />
-            </button>
+            {stacked ? (
+                <div className="h3-form-drag-spinner">
+                    {stepButton(1)}
+                    {stepButton(-1)}
+                </div>
+            ) : (
+                stepButton(1)
+            )}
         </div>
     );
 });
