@@ -35,6 +35,8 @@ interface ObjSpec {
   timeRefName?: string;
   startMs?: number;
   endMs?: number;
+  absStartMs?: number;
+  absEndMs?: number;
   quadric?: number;
   props?: Record<string, unknown>;
 }
@@ -47,6 +49,8 @@ function makeObj(o: ObjSpec): Record<string, unknown> {
     timeRefName: o.timeRefName ?? "",
     start: tv(o.startMs ?? 0),
     end: tv(o.endMs ?? 1000),
+    absStart: tv(o.absStartMs ?? o.startMs ?? 0),
+    absEnd: tv(o.absEndMs ?? o.endMs ?? 1000),
     quadric: o.quadric ?? 0,
     getClassName: () => o.className,
     ...(o.props ?? {}),
@@ -160,6 +164,67 @@ describe("animDetail.service setAnimElementProp", () => {
     const { ctx } = makeCtx({ objs });
     services.setAnimElementProp(ctx, { sceneId: 1, uid: 5, prop: "tgtAlpha", value: 0.5 });
     expect(objs[0].tgt_alpha).toBe(0.5);
+  });
+
+  // A relative element resolves as `abs = ref.absEnd + rel`, so switching the
+  // reference has to re-base `rel` or the element jumps to a different time.
+  it("re-bases relative -> absolute so the element keeps its place", () => {
+    const objs = [
+      makeObj({ uid: 10, name: "A", className: "CamMotion", absStartMs: 0, absEndMs: 3000 }),
+      makeObj({
+        uid: 20, name: "B", className: "SimpleSpin", timeRefName: "A",
+        startMs: 1000, endMs: 2000, absStartMs: 4000, absEndMs: 5000,
+      }),
+    ];
+    const { ctx, createdTV } = makeCtx({ objs });
+    services.setAnimElementProp(ctx, { sceneId: 1, uid: 20, prop: "timeRefName", value: "" });
+    expect(objs[1].timeRefName).toBe("");
+    // base 0 -> rel becomes the absolute span it already occupied.
+    expect(createdTV[0].millisec).toBe(4000);
+    expect(createdTV[1].millisec).toBe(5000);
+    expect(objs[1].start).toBe(createdTV[0]);
+    expect(objs[1].end).toBe(createdTV[1]);
+  });
+
+  it("re-bases absolute -> relative against the new reference's absEnd", () => {
+    const objs = [
+      makeObj({ uid: 10, name: "A", className: "CamMotion", absStartMs: 0, absEndMs: 3000 }),
+      makeObj({
+        uid: 20, name: "B", className: "SimpleSpin",
+        startMs: 4000, endMs: 5000, absStartMs: 4000, absEndMs: 5000,
+      }),
+    ];
+    const { ctx, createdTV } = makeCtx({ objs });
+    services.setAnimElementProp(ctx, { sceneId: 1, uid: 20, prop: "timeRefName", value: "A" });
+    expect(objs[1].timeRefName).toBe("A");
+    expect(createdTV[0].millisec).toBe(1000); // 4000 - 3000
+    expect(createdTV[1].millisec).toBe(2000);
+  });
+
+  it("clamps to the reference's end (keeping the duration) instead of a negative rel", () => {
+    // B sits BEFORE A ends, so expressing it relative to A would need a
+    // negative start -- an unsupported state. B is pulled to A's end.
+    const objs = [
+      makeObj({ uid: 10, name: "A", className: "CamMotion", absStartMs: 0, absEndMs: 3000 }),
+      makeObj({
+        uid: 20, name: "B", className: "SimpleSpin",
+        startMs: 2500, endMs: 3500, absStartMs: 2500, absEndMs: 3500,
+      }),
+    ];
+    const { ctx, createdTV } = makeCtx({ objs });
+    services.setAnimElementProp(ctx, { sceneId: 1, uid: 20, prop: "timeRefName", value: "A" });
+    expect(createdTV[0].millisec).toBe(0); // would have been -500
+    expect(createdTV[1].millisec).toBe(1000); // duration preserved
+  });
+
+  it("leaves the times alone when the new reference name does not exist", () => {
+    const objs = [
+      makeObj({ uid: 20, name: "B", className: "SimpleSpin", startMs: 0, endMs: 1000 }),
+    ];
+    const { ctx, createdTV } = makeCtx({ objs });
+    services.setAnimElementProp(ctx, { sceneId: 1, uid: 20, prop: "timeRefName", value: "ghost" });
+    expect(objs[0].timeRefName).toBe("ghost");
+    expect(createdTV).toHaveLength(0); // no re-base attempted
   });
 
   it("swallows a resolveRelTime throw so the field edit still commits", () => {

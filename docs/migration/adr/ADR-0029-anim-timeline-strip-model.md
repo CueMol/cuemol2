@@ -257,6 +257,29 @@ committing the same value twice.
     a transport op had already latched a live snapshot.
   - No seeding happens when no view is active (`viewId` omitted).
 
+### Relative time is an offset from the reference's END, and is never negative
+
+`AnimMgr::resolveTimeImpl` resolves `abs = base + rel`, where `base` is 0 for an
+absolute element and the **reference's `absEnd`** otherwise. Two consequences
+were missed when strip dragging landed:
+
+- **Switching "Relative to" must re-base the stored times.** Writing
+  `timeRefName` alone reinterprets the same `rel` against a different base, so
+  the element teleports. `setAnimElementProp` now reads the element's resolved
+  absolute span plus the new base (both **before** the write -- the reference's
+  own position cannot depend on this element without forming a cycle, which
+  `resolveRelTime` rejects) and rewrites `start` / `end` as `abs - base`.
+- **A negative relative time is not a supported state.** It would mean "starts
+  before the element it chains after finishes", and converting such an element
+  to absolute yields a negative absolute start that nothing downstream can draw.
+  `rel` is therefore floored at 0 in both places it can be produced: the strip
+  drag bounds the delta by the relative start as well as the absolute one (for a
+  chained element the relative bound is the binding one), and the re-base pulls
+  the element to the reference's end, keeping its duration, rather than emitting
+  a negative start. Only the DURATION is floored in the inspector's Start /
+  Duration commit, so a legacy scene or a Generic-tab write that still holds a
+  negative start is not silently moved by an unrelated edit.
+
 ### Known issues / scope
 - `AnimMgr.length` auto = `max(absEnd)`; `start>end` silent clamp; no per-frame
   position event (poll); `classNameToType` heuristic for element type; uid reuse

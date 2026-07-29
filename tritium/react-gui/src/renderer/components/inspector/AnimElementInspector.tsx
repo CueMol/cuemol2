@@ -442,13 +442,19 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
 
   // Start / Duration each commit one TimeValue; end = start + duration. The
   // committed ms is explicit (the other field is read from the current form).
+  // Only the DURATION is floored at 0: a relative element's start is measured
+  // from its reference's end, so a negative start (it overlaps the element it
+  // chains after) is legal. Clamping it here used to move such an element to
+  // its reference's end as a side effect of editing the duration.
   const commitStart = (ms: number) => {
     setField({ startMs: ms });
-    commit("timing", { startMs: Math.max(0, ms), endMs: Math.max(0, ms) + Math.max(0, form.durationMs) });
+    const dur = Math.max(0, form.durationMs);
+    commit("timing", { startMs: ms, endMs: ms + dur });
   };
   const commitDuration = (ms: number) => {
     setField({ durationMs: ms });
-    commit("timing", { startMs: Math.max(0, form.startMs), endMs: Math.max(0, form.startMs) + Math.max(0, ms) });
+    const start = form.startMs;
+    commit("timing", { startMs: start, endMs: start + Math.max(0, ms) });
   };
 
   /** Write one axis component, keeping the other two; near-zero keeps the old vector. */
