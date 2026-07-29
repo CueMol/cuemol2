@@ -1,6 +1,6 @@
 # ADR-0042: Umbreon quality presets — a Lighting method plus one dropdown per independent quality axis
 
-- Status: accepted (host E2E pending)
+- Status: accepted (host E2E verified)
 - Date: 2026-07-28
 - Mapping rows: [`dialog.tool.render-pov`](../mapping/tool_dlgs.md)
 - Related: [ADR-0035](ADR-0035-render-window.md) (the Rendering window and its

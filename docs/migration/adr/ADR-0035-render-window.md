@@ -1,6 +1,6 @@
 # ADR-0035: Rendering window — modeless child BrowserWindow hosting all render UI
 
-- Status: accepted (merged in PR #418; host E2E pending). The competing
+- Status: accepted (merged in PR #418; host E2E verified). The competing
   docked-pane alternative (PR #416 / ADR-0034) was closed unmerged.
 - Date: 2026-07-05
 - Mapping rows: [`dialog.tool.render-pov`](../mapping/tool_dlgs.md)
