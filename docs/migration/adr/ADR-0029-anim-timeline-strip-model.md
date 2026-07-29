@@ -1,6 +1,6 @@
 # ADR-0029: Animation panel — strip-timeline model and detail inspector
 
-- Status: accepted (anim panel migration complete; Phases 1-6 host E2E verified, Phase 7 timeedit verified locally)
+- Status: accepted (anim panel migration complete; Phases 1-6 host E2E verified, Phase 7 timeedit and Phase 8 start-camera verified by unit tests + production bundle)
 - Date: 2026-06-13
 - Mapping rows: [`panel.anim`](../mapping/panels.md#panelanim), [`dialog.animobj`](../mapping/other_dlgs.md#dialoganimobj)
 
@@ -65,7 +65,9 @@ scan** of `AnimMgr`'s current list (`findByUid`).
   release only -- realtime drag preview is intentionally NOT used because an anim
   element's prop does not live-update the 3D mid-drag (the 3D reflects only the
   playhead-time application). The UXP `timeedit` widget is ported in Phase 7
-  (below) as the reusable h3-kit `TimeField`, so no UXP-parity gaps remain
+  (below) as the reusable h3-kit `TimeField`. The panel-level **start camera**
+  (`AnimMgr.startcam`, UXP's "Start cam:" row) was missed in the original port
+  and is added in Phase 8 (below), closing the last panel-level parity gap
   (offline movie render stays a separate, out-of-scope workstream).
 
 ## Notes
@@ -165,6 +167,52 @@ scan** of `AnimMgr`'s current list (`findByUid`).
   DragNumericFields, mirroring the UXP `timeedit` widget. end = start + duration
   commits one `timing` write; no worker change.
 
+### Phase 8 -- start camera (`AnimMgr.startcam`)
+
+- UXP `anim-panel.xul` has a panel-level `<label>Start cam:</label> <camerasel>`
+  row above the element tree; the original tritium port carried `startcam` in
+  the `AnimMgrState` payload but exposed **no UI**, so the property was
+  unreachable. It now lives in the timeline header (`AnimTransport`) next to the
+  Loop switch -- the same manager-scoped-setting slot, and the header already
+  holds the duration readout that was UXP's neighbouring "Duration:" row.
+- Worker: `animSetStartCam` follows the `animSetLoop` shape (returns the
+  post-mutation `AnimMgrState`, so the renderer syncs in one round trip).
+  **No undo txn**: `AnimMgr::setStartCamName` is a plain field write that
+  records nothing, so a txn would only be committed-then-discarded as empty
+  (UXP assigns the property directly too).
+- The camera list rides on the existing `animListTimeline` payload
+  (`cameras: string[]` from `Scene.getCameraInfoJSON` -- cameras are not in
+  `getSceneDataJSON`) rather than a second round trip. Because cameras change
+  outside SEM_ANIM, `useAnimTimeline` gained a second listener on
+  `SEM_CAMERA|SEM_SCENE` -- the same masks the UXP `<camerasel>` binding used --
+  so an Explorer create / delete / rename or a scene load refreshes the list.
+- **Dangling name:** a stored `startcam` naming a since-deleted camera renders
+  as "(none)" (UXP `_selectItem` falls back to index 0 identically) while C++
+  keeps the string; `AnimMgr::init` then falls back to the view's current
+  camera. The value is only rewritten when the user picks from the select.
+- **Auto-seeding on add** (UXP `onAddCmd`, ported verbatim in `ensureStartCam`):
+  adding an element saves the active view as the `__current` camera whenever the
+  scene lacks it, and adopts that name as `startcam` only when `startcam` is
+  still empty (an explicit choice is never overwritten). This pins the animation
+  to the view the elements were authored against instead of leaving it to C++'s
+  play-time fallback (whatever the camera happens to be when Play is pressed).
+  Notes:
+  - It runs **outside** the add's undo txn, as in UXP: neither `saveViewToCam`
+    nor `setStartCamName` is part of the element edit, so undoing the add leaves
+    the camera and the start-camera name in place.
+  - `__current` is a scene camera like any other (`getCameraInfoJSON` does not
+    filter it), so it appears in the Explorer camera list and in the start-cam
+    select -- the same as UXP, which also writes `__current` from its file-open
+    and image-export paths.
+  - Beyond UXP: if `saveViewToCam` fails, `startcam` is left empty rather than
+    pointed at a camera that does not exist.
+  - The renderer needs the seeded value without an event to hang it on
+    (`setStartCamName` fires none), so `animAddElement` returns the post-add
+    `AnimMgrState` and `useAnimEdit` forwards it to `useAnimTransport.adoptMgr`.
+    Without that hand-off the header select would show a stale "(none)" whenever
+    a transport op had already latched a live snapshot.
+  - No seeding happens when no view is active (`viewId` omitted).
+
 ### Known issues / scope
 - `AnimMgr.length` auto = `max(absEnd)`; `start>end` silent clamp; no per-frame
   position event (poll); `classNameToType` heuristic for element type; uid reuse
@@ -174,7 +222,8 @@ scan** of `AnimMgr`'s current list (`findByUid`).
 
 ### References
 - UXP: `uxp_gui/cuemol2/base/content/anim/` (`anim-panel.*`,
-  `animobj-common-proppage.*`, `animobj-propdlg.xul`, `anim-slider-bindings.xml`).
+  `animobj-common-proppage.*`, `animobj-propdlg.xul`, `anim-slider-bindings.xml`),
+  `uxp_gui/cuemol2/base/content/camerasel-binding.xml` (start-cam menulist).
 - C++: `src/qsys/anim/AnimMgr.{qif,cpp}`, `src/qsys/anim/AnimObj.{qif,cpp,hpp}`.
 - Plan: `docs/migration/anim-panel-timeline-plan.md` (Phase 0-5 roadmap).
 - Related: ADR-0015 (generic property inspector — the reused getPropsJSON bridge).
