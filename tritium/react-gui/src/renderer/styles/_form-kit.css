@@ -721,6 +721,16 @@
   margin-left: auto;
 }
 
+/* Label-less variant (`hideLabel`, i.e. nested in a Field that owns the label):
+   there is nothing on the left to push away from, so the control stays put. */
+.h3-form-sliderfield-row.no-label {
+  min-width: 0;
+}
+
+.h3-form-sliderfield-row.no-slider.no-label .h3-form-sliderfield-number {
+  margin-left: 0;
+}
+
 /* Slider-group labels are kept shorter than the surrounding enum-group labels
    so the slider can stretch wider in the row; siblings still column-align. */
 .h3-form-sliderfield-label {

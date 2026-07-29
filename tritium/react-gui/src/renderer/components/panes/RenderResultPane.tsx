@@ -269,11 +269,11 @@ export const RenderResultPane: React.FC<RenderResultPaneProps> = ({
       </Popover>
       {moviePath && (
         <>
-          <Tooltip content="Save the movie to a file">
+          <Tooltip content="Save the movie to a file...">
             <Button
               small
-              icon={<AppIcon name="file.render" aria-hidden />}
-              aria-label="Save movie"
+              icon={<AppIcon name="ui.saveAs" aria-hidden />}
+              aria-label="Save movie as"
               onClick={handleSaveMovie}
             />
           </Tooltip>

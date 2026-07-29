@@ -41,6 +41,12 @@ void React; // classic JSX runtime (vitest)
 export interface SliderFieldProps {
     /** Label text shown to the left of the slider. */
     label: string;
+    /**
+     * Drop the label element, leaving just the control. For use inside a
+     * form-kit `Field`, which already supplies the label -- `label` is then
+     * only the accessible name. Same convention as `ObjectSelect`.
+     */
+    hideLabel?: boolean;
     /** Stored value (post-`scale` division). */
     value: number;
     min: number;
@@ -77,6 +83,7 @@ export interface SliderFieldProps {
  */
 export const SliderField: React.FC<SliderFieldProps> = ({
     label,
+    hideLabel,
     value,
     min,
     max,
@@ -178,8 +185,12 @@ export const SliderField: React.FC<SliderFieldProps> = ({
     }, [stepBy]);
 
     return (
-        <div className={`h3-form-sliderfield-row${slider ? '' : ' no-slider'} ${className ?? ''}`}>
-            <label className="h3-form-sliderfield-label">{label}</label>
+        <div
+            className={`h3-form-sliderfield-row${slider ? '' : ' no-slider'}${
+                hideLabel ? ' no-label' : ''
+            } ${className ?? ''}`}
+        >
+            {!hideLabel && <label className="h3-form-sliderfield-label">{label}</label>}
             {slider && (
                 <Slider
                     min={min}
@@ -196,6 +207,7 @@ export const SliderField: React.FC<SliderFieldProps> = ({
             <input
                 type="number"
                 className="h3-form-sliderfield-number"
+                aria-label={hideLabel ? label : undefined}
                 min={min}
                 max={max}
                 step={step}

@@ -181,6 +181,9 @@ export const APP_ICONS = {
   "ui.search": { lib: "phosphor", Comp: MagnifyingGlass },
   "ui.eraser": { lib: "phosphor", Comp: Eraser },
   "ui.save": { lib: "phosphor", Comp: FloppyDisk },
+  // "Save a copy somewhere" -- the variant floppy reads as a save dialog and
+  // stays distinguishable from ui.save when both sit in one toolbar.
+  "ui.saveAs": { lib: "phosphor", Comp: FloppyDiskBack },
   "ui.settings": { lib: "phosphor", Comp: Gear },
   "ui.layers": { lib: "phosphor", Comp: Stack },
   "ui.tag": { lib: "phosphor", Comp: Tag },
