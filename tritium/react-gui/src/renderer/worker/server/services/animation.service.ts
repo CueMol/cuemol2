@@ -16,6 +16,7 @@
 
 import type { AnimMgr } from "@cuemol/core/src/wrappers/AnimMgr";
 import type { AnimObj } from "@cuemol/core/src/wrappers/AnimObj";
+import type { Scene } from "@cuemol/core/src/wrappers/Scene";
 import type { TimeValue } from "@cuemol/core/src/wrappers/TimeValue";
 import type { WorkerContext } from "../types/WorkerContext";
 import type { AnimAddType, AnimElement, AnimMgrState, AnimTimeline } from "../../../types";
@@ -70,6 +71,12 @@ export interface AnimSetLoopArgs {
   loop: boolean;
 }
 
+export interface AnimSetStartCamArgs {
+  sceneId: number;
+  /** Scene camera name applied before playback; '' = none (use the view camera). */
+  startcam: string;
+}
+
 /** Result of a transport op: the post-mutation manager snapshot. */
 export interface AnimTransportResult {
   ok: boolean;
@@ -89,6 +96,11 @@ export interface AnimAddElementArgs {
   type: AnimAddType;
   /** Insert before this index; append when omitted or >= size. */
   insertIndex?: number;
+  /**
+   * Active view, used to seed the `__current` start camera (UXP parity).
+   * Omitted when no view is active -- the start camera is then left alone.
+   */
+  viewId?: number;
 }
 
 export interface AnimRemoveElementArgs {
@@ -111,6 +123,12 @@ export interface AnimAddResult {
   ok: boolean;
   uid?: number;
   index?: number;
+  /**
+   * Post-add manager snapshot. An add can adopt the `__current` start camera
+   * (see `ensureStartCam`), and that change fires no event the renderer could
+   * listen for, so it is handed back the way the transport ops do.
+   */
+  mgr?: AnimMgrState;
 }
 
 /**
@@ -171,6 +189,21 @@ const EMPTY_MGR_STATE: AnimMgrState = {
 };
 
 /**
+ * Scene camera names, for the start-camera selector (UXP `<camerasel>` items).
+ *
+ * Cameras are not part of `getSceneDataJSON`; `getCameraInfoJSON` is the only
+ * source (see the scene-content JSON table in `tritium/CLAUDE.md`).
+ */
+function readCameraNames(scene: Scene): string[] {
+  try {
+    const arr = JSON.parse(scene.getCameraInfoJSON()) as Array<{ name?: string }>;
+    return arr.map((c) => c?.name).filter((n): n is string => !!n);
+  } catch {
+    return [];
+  }
+}
+
+/**
  * List every `AnimObj` in the scene's `AnimMgr` as timeline strips.
  *
  * Resolves relative->absolute times first (a cyclic/missing `timeRefName`
@@ -183,6 +216,7 @@ function listTimeline(ctx: WorkerContext, args: AnimListTimelineArgs): AnimTimel
     sceneId: args.sceneId,
     elements: [],
     mgr: EMPTY_MGR_STATE,
+    cameras: [],
     fps: DEFAULT_FPS,
   };
 
@@ -208,6 +242,7 @@ function listTimeline(ctx: WorkerContext, args: AnimListTimelineArgs): AnimTimel
     sceneId: args.sceneId,
     elements,
     mgr: readMgrState(mgr),
+    cameras: readCameraNames(scene),
     fps: DEFAULT_FPS,
   };
 }
@@ -295,6 +330,27 @@ function setLoop(ctx: WorkerContext, args: AnimSetLoopArgs): AnimTransportResult
   if (!mgr) return fail();
   try {
     mgr.loop = args.loop;
+  } catch {
+    return { ok: false, mgr: readMgrState(mgr) };
+  }
+  return { ok: true, mgr: readMgrState(mgr) };
+}
+
+/**
+ * Set the start camera (`AnimMgr.startcam`); '' clears it.
+ *
+ * The camera is applied when playback starts: `AnimMgr::init` looks the name up
+ * on the scene and falls back to the view's current camera when it is empty or
+ * unresolvable (`src/qsys/anim/AnimMgr.cpp`). No undo txn -- `setStartCamName`
+ * is a plain field write that records nothing, so a txn would only be discarded
+ * as empty (UXP `anim-panel.js` assigns it directly too). The name is stored
+ * verbatim; a later camera delete leaves it dangling and C++ falls back.
+ */
+function setStartCam(ctx: WorkerContext, args: AnimSetStartCamArgs): AnimTransportResult {
+  const mgr = resolveMgr(ctx, args.sceneId);
+  if (!mgr) return fail();
+  try {
+    mgr.startcam = args.startcam;
   } catch {
     return { ok: false, mgr: readMgrState(mgr) };
   }
@@ -395,12 +451,44 @@ function setElementTime(
   return { ok: true };
 }
 
+/**
+ * Name of the implicit "camera the user is looking through" (UXP convention;
+ * also written by its file-open / image-export paths).
+ */
+const CURRENT_CAM_NAME = "__current";
+
+/**
+ * Seed the start camera from the live view when an element is added.
+ *
+ * UXP `anim-panel.js` onAddCmd, verbatim: the `__current` camera is saved from
+ * the active view whenever the scene lacks it, and `startcam` adopts it only
+ * when still empty (an explicit choice is never overwritten). Without this a
+ * fresh animation starts from wherever the camera happens to be at Play time
+ * instead of from the view the elements were authored against.
+ *
+ * Runs OUTSIDE the add's undo txn, as in UXP: neither `saveViewToCam` nor
+ * `setStartCamName` belongs to the element edit, so undoing the add leaves both
+ * in place. Any failure is swallowed -- a camera problem must not block the add.
+ */
+function ensureStartCam(scene: Scene, mgr: AnimMgr, viewId: number | undefined): void {
+  if (viewId === undefined) return;
+  try {
+    if (!scene.hasCamera(CURRENT_CAM_NAME)) scene.saveViewToCam(viewId, CURRENT_CAM_NAME);
+    // Never point startcam at a camera the save failed to create.
+    if (!scene.hasCamera(CURRENT_CAM_NAME)) return;
+    if (safeStr(() => mgr.startcam) === "") mgr.startcam = CURRENT_CAM_NAME;
+  } catch {
+    /* camera seeding is best-effort */
+  }
+}
+
 /** Create a new element, auto-chained to the preceding one, and insert it. */
 function addElement(ctx: WorkerContext, args: AnimAddElementArgs): AnimAddResult {
   const sm = resolveSceneMgr(ctx, args.sceneId);
   if (!sm) return { ok: false };
   const { scene, mgr } = sm;
   const className = classForAddType(args.type);
+  ensureStartCam(scene, mgr, args.viewId);
   let uid: number | undefined;
   let index: number | undefined;
   try {
@@ -436,9 +524,9 @@ function addElement(ctx: WorkerContext, args: AnimAddElementArgs): AnimAddResult
       index = insertAt;
     });
   } catch {
-    return { ok: false };
+    return { ok: false, mgr: readMgrState(mgr) };
   }
-  return { ok: true, uid, index };
+  return { ok: true, uid, index, mgr: readMgrState(mgr) };
 }
 
 /** Remove the element at `index`. */
@@ -494,6 +582,7 @@ export const services = {
   animStop: stop,
   animGoTime: goTime,
   animSetLoop: setLoop,
+  animSetStartCam: setStartCam,
   animSetElementTime: setElementTime,
   animAddElement: addElement,
   animRemoveElement: removeElement,

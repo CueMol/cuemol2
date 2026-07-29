@@ -35,6 +35,8 @@ interface MockTransport {
   stop: ReturnType<typeof vi.fn>;
   seek: ReturnType<typeof vi.fn>;
   setLoop: ReturnType<typeof vi.fn>;
+  setStartCam: ReturnType<typeof vi.fn>;
+  adoptMgr: ReturnType<typeof vi.fn>;
 }
 let mockTransport: MockTransport;
 vi.mock("../hooks/useAnimTransport", () => ({
@@ -80,11 +82,16 @@ function el(over: Partial<AnimElement>): AnimElement {
   };
 }
 
-function timeline(elements: AnimElement[], lengthMs = 5000): AnimTimeline {
+function timeline(
+  elements: AnimElement[],
+  lengthMs = 5000,
+  cameras: string[] = [],
+): AnimTimeline {
   return {
     sceneId: 1,
     elements,
     mgr: { lengthMs, elapsedMs: 0, playState: "stop", loop: false, startcam: "" },
+    cameras,
     fps: 30,
   };
 }
@@ -102,6 +109,8 @@ function defaultTransport(): MockTransport {
     stop: vi.fn(),
     seek: vi.fn(),
     setLoop: vi.fn(),
+    setStartCam: vi.fn(),
+    adoptMgr: vi.fn(),
   };
 }
 
@@ -227,6 +236,60 @@ describe("AnimationPanel transport + scrub", () => {
       <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} />,
     );
     expect(container.querySelector(".anim-transport-playback .bp5-active")).not.toBeNull();
+    unmount();
+  });
+});
+
+describe("AnimationPanel start camera", () => {
+  beforeEach(() => {
+    mockTimeline = timeline([el({ uid: 1 })], 5000, ["front", "back"]);
+    mockTransport = defaultTransport();
+    mockEdit = defaultEdit();
+  });
+
+  function startCamSelect(container: HTMLElement) {
+    return container.querySelector(".anim-startcam select") as HTMLSelectElement;
+  }
+
+  it("offers (none) plus every scene camera, selecting the manager's startcam", () => {
+    mockTransport.mgr = { ...mockTransport.mgr, startcam: "back" };
+    const { container, unmount } = mountTree(
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} />,
+    );
+    const sel = startCamSelect(container);
+    expect(Array.from(sel.options).map((o) => o.value)).toEqual(["", "front", "back"]);
+    expect(sel.value).toBe("back");
+    unmount();
+  });
+
+  it("commits the picked camera name via setStartCam", () => {
+    const { container, unmount } = mountTree(
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} />,
+    );
+    const sel = startCamSelect(container);
+    act(() => {
+      sel.value = "front";
+      sel.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(mockTransport.setStartCam).toHaveBeenCalledWith("front");
+    unmount();
+  });
+
+  it("falls back to (none) when the stored startcam no longer exists (UXP parity)", () => {
+    mockTransport.mgr = { ...mockTransport.mgr, startcam: "deleted-cam" };
+    const { container, unmount } = mountTree(
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} />,
+    );
+    expect(startCamSelect(container).value).toBe("");
+    unmount();
+  });
+
+  it("stays usable without an active view (startcam needs no view)", () => {
+    mockTransport.canControl = false;
+    const { container, unmount } = mountTree(
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={undefined} />,
+    );
+    expect(startCamSelect(container).disabled).toBe(false);
     unmount();
   });
 });

@@ -13,7 +13,7 @@
  *
  * ```
  * +-----------------------------------------------------------------+
- * | [|<][>/||][#][>|]  0:02.500 / 0:10.000  Loop[x] Elements 3 FPS 30 [Fit -+] |
+ * | [|<][>/||][#][>|] 0:02.500/0:10.000 Start cam[v] Loop[x] Elem 3 FPS 30 [Fit -+] |
  * +----------------+------------------------------------------------+
  * |  (channel list)|  0      1.0s     2.0s     3.0s   <- ruler/scrub |
  * |  (cam) Cam0    |  #====== Cam0 ======#                          |
@@ -106,6 +106,10 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
   const { addElement, removeElement, moveElement, setElementTime } = useAnimEdit({
     cm,
     sceneId: activeSceneId,
+    viewId: activeMolViewId,
+    // An add can seed the start camera (UXP parity); that fires no event, so
+    // the returned snapshot is what keeps the header select current.
+    onMgrState: transport.adoptMgr,
   });
 
   const [pxPerMs, setPxPerMs] = useState(DEFAULT_PX_PER_MS);
@@ -301,11 +305,13 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
         isPlaying={transport.isPlaying}
         canControl={canControl}
         loop={tmgr.loop}
+        cameras={timeline?.cameras ?? []}
         onPlayPause={transport.togglePlay}
         onStop={transport.stop}
         onSkipStart={() => seek(0)}
         onSkipEnd={() => seek(lengthMs)}
         onToggleLoop={transport.setLoop}
+        onStartCamChange={transport.setStartCam}
         onFit={handleFit}
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}

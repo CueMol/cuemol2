@@ -234,6 +234,13 @@ export interface AnimTimeline {
   mgr: AnimMgrState;
 
   /**
+   * Scene camera names (`Scene.getCameraInfoJSON`), for the start-camera
+   * selector. The "(none)" entry is added renderer-side, as in UXP's
+   * `<camerasel>` widget.
+   */
+  cameras: string[];
+
+  /**
    * Display-only frames-per-second for the ruler's frame readout and a
    * future render default. Not a C++ property; defaults to 30.
    */

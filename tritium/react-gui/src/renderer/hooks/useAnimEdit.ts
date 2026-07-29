@@ -6,15 +6,24 @@
  * Thin `invokeService` wrappers with no local state: each mutation fires a
  * SEM_ANIM event on the C++ side, and `useAnimTimeline` refetches the timeline
  * in response, so the panel stays in sync without returning the new data here.
+ *
+ * The one exception is `addElement`, which can seed the manager's start camera
+ * (UXP parity, see `ensureStartCam` worker-side). That is a manager property
+ * change with no event behind it, so the post-add snapshot is pushed to
+ * `onMgrState` instead of being waited for.
  */
 
 import { useCallback, useRef } from "react";
 import type { AsyncCueMol } from "../worker/client/AsyncCueMol";
-import type { AnimAddType } from "../types";
+import type { AnimAddType, AnimMgrState } from "../types";
 
 interface UseAnimEditOptions {
   cm: AsyncCueMol | null;
   sceneId: number | undefined;
+  /** Active view; lets an add seed the `__current` start camera. */
+  viewId: number | undefined;
+  /** Receives the post-add manager snapshot (start-camera seeding). */
+  onMgrState?: (mgr: AnimMgrState) => void;
 }
 
 export interface UseAnimEditResult {
@@ -34,19 +43,35 @@ export interface UseAnimEditResult {
  * @param opts - `cm` (worker client) and the active `sceneId`.
  * @returns add / remove / move / setElementTime callbacks (no-ops without a scene).
  */
-export function useAnimEdit({ cm, sceneId }: UseAnimEditOptions): UseAnimEditResult {
+export function useAnimEdit({
+  cm,
+  sceneId,
+  viewId,
+  onMgrState,
+}: UseAnimEditOptions): UseAnimEditResult {
   const cmRef = useRef(cm);
   cmRef.current = cm;
   const sceneIdRef = useRef(sceneId);
   sceneIdRef.current = sceneId;
+  const viewIdRef = useRef(viewId);
+  viewIdRef.current = viewId;
+  const onMgrStateRef = useRef(onMgrState);
+  onMgrStateRef.current = onMgrState;
 
   const addElement = useCallback((type: AnimAddType, insertIndex?: number) => {
     const c = cmRef.current;
     const sid = sceneIdRef.current;
     if (!c || sid === undefined) return;
-    c.invokeService("animAddElement", { sceneId: sid, type, insertIndex }).catch(
-      (e: unknown) => console.warn("animAddElement failed:", e),
-    );
+    c.invokeService("animAddElement", {
+      sceneId: sid,
+      type,
+      insertIndex,
+      viewId: viewIdRef.current,
+    })
+      .then((res) => {
+        if (res?.mgr) onMgrStateRef.current?.(res.mgr);
+      })
+      .catch((e: unknown) => console.warn("animAddElement failed:", e));
   }, []);
 
   const removeElement = useCallback((index: number) => {

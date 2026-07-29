@@ -285,6 +285,7 @@
   --anim-strip-radius: var(--radius-sm);  /* strip corner radius */
   --anim-playhead-w: 2px;                 /* playhead line thickness */
   --anim-handle-w: 6px;                   /* strip resize-grip width */
+  --anim-startcam-w: 120px;               /* start-camera select width */
 
   --anim-strip-text: #f4f6fa;             /* fixed light label tone on strips */
   --anim-type-spin: #2f7d8a;

@@ -29,7 +29,7 @@ import type {
 
 import type { AppInfoResult } from '../server/services/appInfo.service'
 import type { DrainLogMessagesResult } from '../server/services/drainLogMessages.service'
-import type { AnimListTimelineArgs, AnimGetMgrStateArgs, AnimPlayArgs, AnimPauseArgs, AnimStopArgs, AnimGoTimeArgs, AnimSetLoopArgs, AnimTransportResult, AnimSetElementTimeArgs, AnimAddElementArgs, AnimRemoveElementArgs, AnimMoveElementArgs, AnimEditResult, AnimAddResult } from '../server/services/animation.service'
+import type { AnimListTimelineArgs, AnimGetMgrStateArgs, AnimPlayArgs, AnimPauseArgs, AnimStopArgs, AnimGoTimeArgs, AnimSetLoopArgs, AnimSetStartCamArgs, AnimTransportResult, AnimSetElementTimeArgs, AnimAddElementArgs, AnimRemoveElementArgs, AnimMoveElementArgs, AnimEditResult, AnimAddResult } from '../server/services/animation.service'
 import type { GetAnimElementDetailArgs, GetAnimElementDetailResult, SetAnimElementPropArgs, SetAnimElementPropResult, GetAnimTargetOptionsArgs, GetAnimTargetOptionsResult, GetAnimElementGenericPropsArgs, SetAnimElementGenericPropArgs, ResetAnimElementGenericPropsArgs, AnimGenericPropsResult } from '../server/services/animDetail.service'
 import type { AnimTimeline, AnimMgrState } from '../../types'
 import type { CreateNewSceneAndViewArgs, CreateNewSceneAndViewResult } from '../server/services/createNewSceneAndView.service'
@@ -676,6 +676,7 @@ export interface ServiceMap {
   animStop:                   { args: AnimStopArgs;                    result: AnimTransportResult }
   animGoTime:                 { args: AnimGoTimeArgs;                  result: AnimTransportResult }
   animSetLoop:                { args: AnimSetLoopArgs;                 result: AnimTransportResult }
+  animSetStartCam:            { args: AnimSetStartCamArgs;             result: AnimTransportResult }
   animSetElementTime:         { args: AnimSetElementTimeArgs;          result: AnimEditResult }
   animAddElement:             { args: AnimAddElementArgs;              result: AnimAddResult }
   animRemoveElement:          { args: AnimRemoveElementArgs;           result: AnimEditResult }
