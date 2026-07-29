@@ -78,11 +78,20 @@ const ADD_TYPES: { id: AnimAddType; label: string }[] = [
   { id: "NoopAnimObj", label: "No operation" },
 ];
 
-/** Live preview span of the strip currently being dragged. */
+/**
+ * Span a strip is drawn at instead of its fetched one.
+ *
+ * Live while dragging, then HELD after release (`committed`) until the refetched
+ * timeline carries the edit -- otherwise the strip would jump back to its old
+ * place for the length of the worker round trip plus the SEM_ANIM debounce, and
+ * only then move to where it was dropped.
+ */
 interface DragPreview {
   uid: number;
   absStartMs: number;
   absEndMs: number;
+  /** The edit is in flight; drop this the moment fresh data arrives. */
+  committed?: boolean;
 }
 
 /**
@@ -213,11 +222,19 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
       const { startMs: relStart, endMs: relEnd, absStartMs: absStart, absEndMs: absEnd } = el;
       let moved = false;
 
+      // Lower bound on the delta. The absolute start stays >= 0, and a CHAINED
+      // element's relative start does too: a relative time is an offset from the
+      // reference's end, so a negative one would place the element before the
+      // element it chains after finishes -- not a supported state (it resolves
+      // to an absolute time that can fall before zero). The relative bound is
+      // the binding one whenever the reference does not itself start at 0.
+      const minDelta = -Math.min(absStart, el.timeRefName ? relStart : Infinity);
+
       const deltaFor = (clientX: number): number => {
         const raw = (clientX - startX) / pxPerMs;
-        if (mode === "move") return Math.max(raw, -absStart); // abs start stays >= 0
+        if (mode === "move") return Math.max(raw, minDelta);
         if (mode === "resize-left")
-          return Math.max(Math.min(raw, absEnd - absStart), -absStart); // start in [0, end]
+          return Math.max(Math.min(raw, absEnd - absStart), minDelta); // start in [0, end]
         return Math.max(raw, absStart - absEnd); // resize-right: end stays >= start
       };
 
@@ -235,8 +252,10 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
       const onUp = (ev: MouseEvent) => {
         document.removeEventListener("mousemove", onMove);
         document.removeEventListener("mouseup", onUp);
-        setDragPreview(null);
-        if (!moved) return; // click selects via onClick
+        if (!moved) {
+          setDragPreview(null);
+          return; // click selects via onClick
+        }
         const d = deltaFor(ev.clientX);
         let newStart = relStart;
         let newEnd = relEnd;
@@ -248,7 +267,15 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
         } else {
           newEnd = relEnd + d;
         }
-        setElementTime(el.index, newStart, newEnd);
+        // Keep drawing the dropped span until the refetch reflects it (see
+        // DragPreview); the effect below drops it when fresh data arrives.
+        setDragPreview((p) => (p ? { ...p, committed: true } : p));
+        setElementTime(el.index, newStart, newEnd).then((ok) => {
+          // The write failed, so no SEM_ANIM event and no refetch is coming --
+          // release the preview or the strip would be stuck at a span the C++
+          // side never took.
+          if (!ok) setDragPreview(null);
+        });
       };
 
       document.addEventListener("mousemove", onMove);
@@ -259,11 +286,31 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
 
   const addInsertIndex = selectedIndex !== null ? selectedIndex + 1 : undefined;
 
+  /**
+   * Delete the selected element and move the selection to its neighbour -- the
+   * following element, or the preceding one when the last was deleted (the list
+   * convention). Without this the toolbar disables itself after every delete and
+   * clearing a timeline means re-selecting between each click.
+   */
+  const handleDelete = useCallback(() => {
+    if (selectedIndex === null) return;
+    const next = elements[selectedIndex + 1] ?? elements[selectedIndex - 1] ?? null;
+    removeElement(selectedIndex);
+    setSelectedUid(next?.uid ?? null);
+  }, [selectedIndex, elements, removeElement]);
+
   // Reset the selection on scene switch so a stale uid from the previous scene
   // is never emitted against the new scene's inspector.
   useEffect(() => {
     setSelectedUid(null);
   }, [activeSceneId]);
+
+  // Release a held (committed) drag preview as soon as a fresh timeline lands:
+  // the fetched strip now carries the edit, so the two agree and the handover is
+  // invisible. `elements` identity changes once per fetch.
+  useEffect(() => {
+    setDragPreview((p) => (p?.committed ? null : p));
+  }, [elements]);
 
   // Drive the right Inspector from the strip selection. When the selected
   // element is gone (deleted via SEM_ANIM refetch), clear both the local
@@ -359,7 +406,7 @@ export const AnimationPanel: React.FC<AnimationPanelProps> = ({
             <FormButton
               icon={<AppIcon name="ui.trash" aria-hidden />}
               disabled={selectedIndex === null}
-              onClick={() => selectedIndex !== null && removeElement(selectedIndex)}
+              onClick={handleDelete}
               title="Delete element"
             />
             <FormButton

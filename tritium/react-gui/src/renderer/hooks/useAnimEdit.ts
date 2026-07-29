@@ -33,8 +33,12 @@ export interface UseAnimEditResult {
   removeElement: (index: number) => void;
   /** Reorder: raw target index (i-1 to move up, i+1 to move down). */
   moveElement: (from: number, to: number) => void;
-  /** Set an element's RELATIVE start/end (ms). */
-  setElementTime: (index: number, startMs: number, endMs: number) => void;
+  /**
+   * Set an element's RELATIVE start/end (ms). Resolves true once the worker
+   * accepted the write, so a caller holding an optimistic preview knows whether
+   * a refetch is actually coming.
+   */
+  setElementTime: (index: number, startMs: number, endMs: number) => Promise<boolean>;
 }
 
 /**
@@ -93,13 +97,17 @@ export function useAnimEdit({
   }, []);
 
   const setElementTime = useCallback(
-    (index: number, startMs: number, endMs: number) => {
+    (index: number, startMs: number, endMs: number): Promise<boolean> => {
       const c = cmRef.current;
       const sid = sceneIdRef.current;
-      if (!c || sid === undefined) return;
-      c.invokeService("animSetElementTime", { sceneId: sid, index, startMs, endMs }).catch(
-        (e: unknown) => console.warn("animSetElementTime failed:", e),
-      );
+      if (!c || sid === undefined) return Promise.resolve(false);
+      return c
+        .invokeService("animSetElementTime", { sceneId: sid, index, startMs, endMs })
+        .then((res) => !!res?.ok)
+        .catch((e: unknown) => {
+          console.warn("animSetElementTime failed:", e);
+          return false;
+        });
     },
     [],
   );
