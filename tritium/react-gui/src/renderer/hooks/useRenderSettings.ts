@@ -25,10 +25,20 @@ import {
   sizePresetsForMode,
   sizeUnitToPx,
   pxToSizeUnit,
+  lightingPatch,
+  lightingOf,
+  qualityStepsOf,
+  stepPatch,
+  defaultQualitySteps,
+  RENDER_QUALITY_CUSTOM,
   type RenderBackendId,
   type RenderMode,
   type MovieSettings,
   type RenderSizePreset,
+  type RenderLightingMode,
+  type RenderQualityConfig,
+  type RenderQualitySteps,
+  type RenderPropPatch,
 } from "../data/renderSettings";
 import { RENDER_BACKENDS, DEFAULT_RENDER_BACKEND } from "../data/renderBackends";
 import type { RenderSettingsSnapshot } from "../data/renderResult";
@@ -48,6 +58,34 @@ const applyChange = (
 ): PropDef[] => {
   if (!props.some((p) => p.key === key)) return props;
   return props.map((p) => (p.key === key ? { ...p, value } : p));
+};
+
+/** Apply several values at once (used by the quality axes). */
+const applyPatch = (props: PropDef[], patch: RenderPropPatch): PropDef[] => {
+  if (!props.some((p) => p.key in patch)) return props;
+  return props.map((p) => (p.key in patch ? { ...p, value: patch[p.key] } : p));
+};
+
+/** A backend's quality axes, or undefined when it declares none (POV-Ray). */
+const qualityOf = (id: RenderBackendId): RenderQualityConfig | undefined =>
+  RENDER_BACKENDS[id].quality;
+
+/** Axis steps of a backend that declares none. */
+const NO_QUALITY_STEPS: RenderQualitySteps = {};
+
+/**
+ * A backend's declared props with its default method and default step of every
+ * axis already applied, so the dropdowns describe the values from the start.
+ */
+const backendPropsWithDefaults = (id: RenderBackendId): PropDef[] => {
+  const cfg = qualityOf(id);
+  const props = RENDER_BACKENDS[id].props;
+  if (!cfg) return props;
+  const steps = defaultQualitySteps(cfg);
+  return applyPatch(
+    props,
+    lightingPatch(cfg, cfg.defaultLighting, steps, { includeShared: true }),
+  );
 };
 
 /** Round to a number of decimal places. */
@@ -94,7 +132,7 @@ export function useRenderSettings(
     cloneProps(RENDER_COMMON_PROPS),
   );
   const [backendProps, setBackendProps] = useState<PropDef[]>(() =>
-    cloneProps(RENDER_BACKENDS[DEFAULT_RENDER_BACKEND].props),
+    cloneProps(backendPropsWithDefaults(DEFAULT_RENDER_BACKEND)),
   );
   // Still mode starts on its default preset; the common-prop defaults above
   // (1200 x 1200 px at 600 DPI) already match it, so no apply is needed here.
@@ -107,7 +145,9 @@ export function useRenderSettings(
   /** Switch the active backend, keeping common settings, resetting backend ones. */
   const applyBackend = useCallback((id: RenderBackendId) => {
     setBackendState(id);
-    setBackendProps(cloneProps(RENDER_BACKENDS[id].props));
+    // Start the new backend on its default method + default step of every
+    // axis, so the quality dropdowns and the prop values agree from the start.
+    setBackendProps(cloneProps(backendPropsWithDefaults(id)));
   }, []);
 
   /** User-initiated backend switch (sticks against the umbreon auto-default). */
@@ -128,6 +168,63 @@ export function useRenderSettings(
     }
   }, [umbreonAvailable, applyBackend]);
 
+  // --- Quality axes (backend-provided; absent for POV-Ray) ---
+
+  const quality = qualityOf(backend);
+
+  /**
+   * Active lighting method, derived from the props rather than stored, so the
+   * Lighting selector can never disagree with the underlying switches.
+   */
+  const readSetting = useCallback(
+    (key: string) => readVal(backendProps, key) ?? readVal(commonProps, key),
+    [backendProps, commonProps],
+  );
+
+  const lighting: RenderLightingMode = quality
+    ? lightingOf(quality, readSetting)
+    : "none";
+
+  /**
+   * Step each axis' values currently represent. Derived, not remembered: a
+   * stored pick goes stale whenever anything else writes the props (switching
+   * method, restoring a render's snapshot), which showed "Custom" over values
+   * that plainly matched a step.
+   */
+  const qualitySteps: RenderQualitySteps = quality
+    ? qualityStepsOf(quality, readSetting)
+    : NO_QUALITY_STEPS;
+
+  /** Write a whole axis patch without invalidating the selected steps. */
+  const applyQualityPatch = useCallback((patch: RenderPropPatch) => {
+    setCommonProps((prev) => applyPatch(prev, patch));
+    setBackendProps((prev) => applyPatch(prev, patch));
+  }, []);
+
+  /** Move one axis to a step, leaving every other axis where it is. */
+  const setQualityStep = useCallback(
+    (axisKey: string, stepId: string) => {
+      // Custom is what an axis reads as, not something to apply.
+      if (!quality || stepId === RENDER_QUALITY_CUSTOM) return;
+      const axis = quality.axes.find((a) => a.key === axisKey);
+      if (axis) applyQualityPatch(stepPatch(axis, stepId));
+    },
+    [quality, applyQualityPatch],
+  );
+
+  /**
+   * Switch the lighting method (AO / GI are mutually exclusive) and re-apply
+   * that method's own axes at their selected steps. The shared axes (image
+   * quality, shadows) are independent of the method and are left alone.
+   */
+  const setLighting = useCallback(
+    (mode: RenderLightingMode) => {
+      if (!quality) return;
+      applyQualityPatch(lightingPatch(quality, mode, qualitySteps));
+    },
+    [quality, qualitySteps, applyQualityPatch],
+  );
+
   /** Update a single setting value by key (common or backend-specific). */
   const handleChange = useCallback(
     (key: string, value: string | number | boolean) => {
@@ -143,6 +240,8 @@ export function useRenderSettings(
       if (key === "width" || key === "height") {
         setPreset(DEFAULT_RENDER_PRESET);
       }
+      // An edit needs no bookkeeping: each axis' dropdown reads back from the
+      // values, so it drops to Custom -- or lands on another step -- by itself.
     },
     [],
   );
@@ -229,8 +328,26 @@ export function useRenderSettings(
     setBackendProps(cloneProps(snapshot.backendProps));
     setMode(snapshot.mode);
     if (snapshot.movie) setMovie({ ...snapshot.movie });
-    // Restored sizes are explicit, so no preset is active.
+    // Restored sizes are explicit, so no size preset is active. The quality
+    // dropdowns need no reset: they read the restored values back.
     setPreset(DEFAULT_RENDER_PRESET);
+  }, []);
+
+  /**
+   * Default the Camera settings to what the render target view shows. Called
+   * when the target changes, so a render starts from the same projection the
+   * user is looking at; a later manual edit stands until the target changes
+   * again. Only settings with a real counterpart are taken -- the view's
+   * stereo mode is a display mode, not the render's eye selection.
+   */
+  const applyViewCamera = useCallback((camera: { perspective: boolean }) => {
+    setCommonProps((prev) =>
+      applyChange(
+        prev,
+        "projection",
+        camera.perspective ? "perspective" : "orthographic",
+      ),
+    );
   }, []);
 
   /** Patch one or more movie settings. */
@@ -245,11 +362,16 @@ export function useRenderSettings(
     backendProps,
     movie,
     preset,
+    lighting,
+    qualitySteps,
+    setLighting,
+    setQualityStep,
     setMode: changeMode,
     setBackend,
     handleChange,
     updateMovie,
     applyPreset,
+    applyViewCamera,
     getSnapshot,
     restore,
   } as const;

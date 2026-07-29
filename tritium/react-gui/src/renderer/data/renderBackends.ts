@@ -9,7 +9,11 @@
  */
 
 import type { PropDef } from "./rendererProperties";
-import type { RenderBackendId, RenderGroupDef } from "./renderSettings";
+import type {
+  RenderBackendId,
+  RenderGroupDef,
+  RenderQualityConfig,
+} from "./renderSettings";
 
 /** Static description of a rendering backend used to drive the editor UI. */
 export interface RenderBackendDescriptor {
@@ -27,6 +31,12 @@ export interface RenderBackendDescriptor {
    * show what the backend actually honors (POV-Ray honors every common prop).
    */
   unsupportedCommonKeys?: string[];
+  /**
+   * Composite quality presets (Lighting method + a named level). Omit for a
+   * backend whose settings are not organised as quality axes -- the editor
+   * then shows only the accordion groups.
+   */
+  quality?: RenderQualityConfig;
 }
 
 /** POV-Ray backend-specific options (UXP `render-pov-dlg` "POV-Ray" tab). */
@@ -52,15 +62,34 @@ const POVRAY_PROPS: PropDef[] = [
  */
 const UMBREON_PROPS: PropDef[] = [
   // --- Quality (merges with the common Quality group in the editor) ---
-  { key: "supersample",   label: "Supersampling",      type: "integer", value: 3,    group: "Quality", min: 1, max: 8,    step: 1 },
+  // Supersampling is the whole of this group, hence the "Antialiasing" heading.
+  // umbreon's adaptive AA (aaMode / aaDepth) is deliberately not offered: it is
+  // unsupported alongside GI, so the same setting would mean different things
+  // per lighting method. Renders therefore always use the full grid (the C++
+  // ctor default); the qif properties stay available for scripting.
+  { key: "supersample",   label: "Supersampling",      type: "integer", value: 2,    group: "Antialiasing", min: 1, max: 8,    step: 1 },
   // --- Ambient Occlusion (off by default via the aoEnabled switch, like
   //     Shadows/GI; the backend maps aoEnabled=false to aoSamples 0) ---
   { key: "aoEnabled",     label: "Enable AO",          type: "boolean", value: false, group: "Ambient Occlusion" },
-  { key: "aoSamples",     label: "AO samples",         type: "integer", value: 8,    group: "Ambient Occlusion", min: 1, max: 64,  step: 1 },
-  // C++ ctor default is 1e20 (unbounded); a finite default keeps the drag field
-  // usable once AO is enabled (the backend falls back to 1e20 if absent).
-  { key: "aoDistance",    label: "AO distance",        type: "real",    value: 100,  group: "Ambient Occlusion", min: 1, max: 1000, step: 10 },
+  { key: "aoSamples",     label: "AO samples",         type: "integer", value: 64,   group: "Ambient Occlusion", min: 1, max: 256, step: 8 },
+  // 0 = auto: libcuemol2 derives the radius from the scene bounding box, so AO
+  // strength does not depend on how large the molecule is. A positive value
+  // overrides it with a fixed world radius.
+  { key: "aoDistance",    label: "AO distance (0 = auto)", type: "real", value: 0,   group: "Ambient Occlusion", min: 0, max: 1000, step: 10 },
   { key: "aoIntensity",   label: "AO intensity",       type: "real",    value: 1.0,  group: "Ambient Occlusion", min: 0, max: 1,    step: 0.1 },
+  // AO quality recipe (umbreon quality_presets.md section 2a). aoDiffuseFactor
+  // defaults to the recipe value 1.0, NOT umbreon's 0.0: with CueMol's default
+  // lighting most energy is direct, and AO at 0 darkens only the ambient term,
+  // so it would be all but invisible.
+  { key: "aoDiffuseFactor", label: "AO on direct light", type: "real",  value: 1.0,  group: "Ambient Occlusion", min: 0, max: 1, step: 0.1 },
+  { key: "aoMultiScale",  label: "Multi-scale AO",     type: "boolean", value: true, group: "Ambient Occlusion" },
+  { key: "aoBentNormal",  label: "Bent normal",        type: "boolean", value: true, group: "Ambient Occlusion" },
+  { key: "aoLowDiscrepancy", label: "Low-discrepancy sampling", type: "boolean", value: true, group: "Ambient Occlusion" },
+  // Gather resolution: "Per output pixel" is the coarse-grid fast path (needs
+  // supersampling > 1), "Per shading hit" the exact inline gather. Mapped to
+  // aoResDiv -1 / 0 by the AO_GATHER table in UmbreonBackend.
+  { key: "aoGather",      label: "AO gather",          type: "enum",    value: "Per output pixel", group: "Ambient Occlusion",
+    options: ["Per output pixel", "Per shading hit"] },
   // --- Shadows ---
   { key: "shadows",       label: "Cast shadows",       type: "boolean", value: false, group: "Shadows" },
   { key: "shadowSamples", label: "Shadow samples",     type: "integer", value: 1,    group: "Shadows", min: 1, max: 64, step: 1 },
@@ -81,6 +110,122 @@ const UMBREON_PROPS: PropDef[] = [
     options: ["OIDN", "A-trous", "None"] },
 ];
 
+/**
+ * Umbreon's quality axes, ported from the umbreon repository's
+ * `docs/quality_presets.md` (section 1 for antialiasing, 2a for AO, 2b for GI,
+ * 3 for shadows).
+ *
+ * Three rules from that guide shape the table:
+ * - The axes are independent, so each is its own dropdown: image quality and
+ *   shadows have nothing to do with which depth cue is active.
+ * - AO and GI are alternatives, so they are one selector, not two switches,
+ *   and each brings its own quality axis with the guide's own step names.
+ * - A step moves quality only. Look-changing knobs (GI bounces / intensity,
+ *   AO distance / intensity, edge style) are NOT in any patch: if a step
+ *   changed those, "High" would mean a different picture, not a better one.
+ */
+const UMBREON_QUALITY: RenderQualityConfig = {
+  lightings: [
+    { id: "none", label: "Raytrace only", enable: { aoEnabled: false, useGI: false } },
+    {
+      id: "ao",
+      label: "Ambient Occlusion",
+      enable: { aoEnabled: true, useGI: false },
+      group: "Ambient Occlusion",
+    },
+    {
+      id: "gi",
+      label: "Global Illumination",
+      enable: { aoEnabled: false, useGI: true },
+      group: "Global Illumination",
+    },
+  ],
+  // GI is the guide's recommended depth cue: its built-in denoiser reaches a
+  // clean image at a fraction of AO's samples (its measurements put GI high at
+  // ~2 s against AO high at ~48 s).
+  defaultLighting: "gi",
+  lightingKeys: ["aoEnabled", "useGI"],
+  axes: [
+    // Axis A. Plain grid supersampling: the image is rendered at ss times the
+    // output size and box-averaged down, so the cost goes as ss^2. Edge lines
+    // (on by default) resolve at this factor too, which is why 3x is the step
+    // to reach for when strokes look jagged.
+    {
+      key: "aa",
+      label: "Supersampling",
+      defaultStep: "high",
+      steps: [
+        { id: "low", label: "1x (off)", patch: { supersample: 1 } },
+        { id: "medium", label: "2x", patch: { supersample: 2 } },
+        { id: "high", label: "3x", patch: { supersample: 3 } },
+        { id: "ultra", label: "4x", patch: { supersample: 4 } },
+      ],
+    },
+    // Axis B-AO. The recipe flags come on at Medium; High trades the coarse
+    // grid for the exact per-hit gather, which is where AO gets expensive.
+    {
+      key: "ao",
+      label: "AO quality",
+      defaultStep: "medium",
+      lightings: ["ao"],
+      steps: [
+        {
+          id: "low",
+          label: "Low",
+          patch: {
+            aoSamples: 16, aoGather: "Per output pixel", aoLowDiscrepancy: true,
+            aoMultiScale: false, aoBentNormal: false, aoDiffuseFactor: 1.0,
+          },
+        },
+        {
+          id: "medium",
+          label: "Medium",
+          patch: {
+            aoSamples: 64, aoGather: "Per output pixel", aoLowDiscrepancy: true,
+            aoMultiScale: true, aoBentNormal: true, aoDiffuseFactor: 1.0,
+          },
+        },
+        {
+          id: "high",
+          label: "High",
+          patch: {
+            aoSamples: 256, aoGather: "Per shading hit", aoLowDiscrepancy: true,
+            aoMultiScale: true, aoBentNormal: true, aoDiffuseFactor: 1.0,
+          },
+        },
+      ],
+    },
+    // Axis B-GI: samples per pixel only. The denoiser stays on at every step
+    // (it is what keeps a low sample count usable); Reference is the guide's
+    // converged step, meant for a final still rather than iteration.
+    {
+      key: "gi",
+      label: "GI quality",
+      defaultStep: "medium",
+      lightings: ["gi"],
+      steps: [
+        { id: "low", label: "Low", patch: { giSamples: 8, denoise: "OIDN" } },
+        { id: "medium", label: "Medium", patch: { giSamples: 32, denoise: "OIDN" } },
+        { id: "high", label: "High", patch: { giSamples: 64, denoise: "OIDN" } },
+        { id: "reference", label: "Reference", patch: { giSamples: 256, denoise: "OIDN" } },
+      ],
+    },
+    // Axis C. Shadows fall on meshes only and are independent of the depth
+    // cue; the guide notes molecular scenes rarely need them, hence Off.
+    {
+      key: "shadows",
+      label: "Shadows",
+      defaultStep: "off",
+      steps: [
+        { id: "off", label: "Off", patch: { shadows: false, shadowSamples: 1, lightRadius: 0 } },
+        { id: "hard", label: "Hard", patch: { shadows: true, shadowSamples: 1, lightRadius: 0 } },
+        { id: "soft", label: "Soft", patch: { shadows: true, shadowSamples: 16, lightRadius: 3 } },
+        { id: "softer", label: "Very soft", patch: { shadows: true, shadowSamples: 32, lightRadius: 5 } },
+      ],
+    },
+  ],
+};
+
 /** All registered rendering backends, keyed by id. */
 export const RENDER_BACKENDS: Record<RenderBackendId, RenderBackendDescriptor> = {
   povray: {
@@ -93,13 +238,14 @@ export const RENDER_BACKENDS: Record<RenderBackendId, RenderBackendDescriptor> =
     id: "umbreon",
     label: "Umbreon",
     groups: [
-      { key: "Quality", defaultExpanded: false },
+      { key: "Antialiasing", defaultExpanded: false },
       { key: "Ambient Occlusion", defaultExpanded: false },
       { key: "Shadows", defaultExpanded: false },
       { key: "Edges", defaultExpanded: false },
       { key: "Global Illumination", defaultExpanded: false },
     ],
     props: UMBREON_PROPS,
+    quality: UMBREON_QUALITY,
     // Common props the umbreon backend does not read (POV-Ray-only): stereo is
     // unsupported, blendpng post-blend is POV-Ray's layer compositing, umbreon
     // renders in-process (no CPU-thread knob), and pixel labels are POV-only.

@@ -100,7 +100,16 @@ export function useRenderJob(opts: {
   /** Worker bridge (null until CueMol is ready). */
   cm: AsyncCueMol | null;
   /** Called with the finished result when a job completes. */
-  onComplete: (result: RenderResult) => void;
+  /**
+   * Called with the finished render and the file it produced. The image is not
+   * inlined into the result: the caller archives that file and the viewer
+   * reads it back by result id. `workDir` is present when the job left a temp
+   * directory behind for the caller to clean up later.
+   */
+  onComplete: (
+    result: RenderResult,
+    image: { path: string; workDir?: string },
+  ) => void;
 }) {
   const { cm, onComplete } = opts;
   const [job, setJob] = useState<RenderJob | null>(null);
@@ -159,7 +168,6 @@ export function useRenderJob(opts: {
         pendingRef.current = null;
         onCompleteRef.current(
           buildRenderResult({
-            imageDataUrl: u.imageDataUrl,
             width: u.width,
             height: u.height,
             elapsedSec: u.elapsedSec,
@@ -167,6 +175,7 @@ export function useRenderJob(opts: {
             snapshot: pending.params.snapshot,
             movie: u.movie,
           }),
+          { path: u.imagePath, ...(u.workDir ? { workDir: u.workDir } : {}) },
         );
       } else {
         setJob((prev) =>

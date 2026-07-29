@@ -5,6 +5,7 @@ import fs from 'fs'
 import { createWindow } from './windowManager'
 import { loadUi } from './stateStore'
 import { isAppQuitting, isForceQuit, setAppQuitting } from './quitState'
+import { clearRenderHistory } from './renderHistory'
 import { APP_PRODUCT_NAME } from '../shared/appInfo'
 
 app.setName(APP_PRODUCT_NAME)
@@ -27,6 +28,10 @@ if (process.env.CUEMOL_FRESH_PREFS && process.env.CUEMOL_FRESH_PREFS !== '0') {
 }
 
 app.whenReady().then(() => {
+  // Drop any render-history images a previous run left behind (its metadata
+  // died with that run, so the files are unreachable).
+  clearRenderHistory()
+
   // Align the native window chrome with the persisted UI theme. Without
   // this, macOS keeps the system appearance for its window frame and draws
   // a light 1px titlebar hairline across the top of dark hidden-titlebar
@@ -43,6 +48,12 @@ app.whenReady().then(() => {
   session.defaultSession.setPermissionCheckHandler(() => true)
 
   createWindow()
+})
+
+// The render history is per-run: its images are temp files and the settings
+// that produced them are not persisted either.
+app.on('will-quit', () => {
+  clearRenderHistory()
 })
 
 app.on('window-all-closed', () => {

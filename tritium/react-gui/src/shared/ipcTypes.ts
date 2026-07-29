@@ -629,10 +629,15 @@ export interface RenderFramePreviewWire {
   frameIndex: number
 }
 
-/** Completed render pushed to the render window (mirrors RenderResult). */
+/**
+ * Completed render pushed to the render window (mirrors RenderResult).
+ *
+ * Metadata only: the rendered image is archived on disk by the main process
+ * under `id` and read back for the entry on screen, so a whole history can be
+ * pushed without moving megabytes.
+ */
 export interface RenderResultWire {
   id: string
-  imageDataUrl: string
   width: number
   height: number
   elapsedSec: number
@@ -652,6 +657,30 @@ export interface RenderTargetViewWire {
   title: string
 }
 
+/**
+ * Which rendered image an export acts on.
+ *
+ * A still (and a movie's stand-in image) is the archived render, named by
+ * result id; the frame slider instead shows a frame straight out of the user's
+ * own output folder, so exporting what is on screen has to name that file.
+ */
+export type RenderImageRef =
+  | { kind: 'result'; resultId: string }
+  | { kind: 'frame'; outputDir: string; baseName: string; frameIndex: number }
+
+/**
+ * Camera-ish settings of a render target view, used to default the Rendering
+ * window's Camera settings to what the target view currently shows.
+ *
+ * Only settings with a real counterpart are carried: the view's stereo mode is
+ * a DISPLAY mode (parallel / cross / hardware) while the render stereo picks
+ * an eye to render, so the two do not correspond and stereo is left alone.
+ */
+export interface RenderViewCamera {
+  /** True = perspective projection, false = orthographic. */
+  perspective: boolean
+}
+
 /** Command sent by the render window; forwarded verbatim to the main window. */
 export type RenderWindowCommand =
   /** Start a render. `source` set = the render window's selected target (or
@@ -668,6 +697,11 @@ export type RenderWindowCommand =
   | { type: 'show-source' }
   /** Request a full state re-push (sent by the render window on mount). */
   | { type: 'sync' }
+  /**
+   * Drop every past render: the metadata list here, the archived images, and
+   * the temp work directories the jobs left behind.
+   */
+  | { type: 'clear-history' }
 
 /**
  * State pushed to the render window. Split into variants so the multi-MB
@@ -688,7 +722,13 @@ export type RenderWindowStateUpdate =
        */
       umbreonAvailable: boolean
     }
-  | { kind: 'result'; result: RenderResultWire | null }
+  /**
+   * Completed renders, oldest first. The whole list travels because it is
+   * metadata only -- each entry's image is archived on disk by the main
+   * process and read back by result id (see shared/renderHistory) -- and
+   * because it must survive a render-window close and re-sync.
+   */
+  | { kind: 'history'; entries: RenderResultWire[] }
   /**
    * Most recently finished movie frame. Its own variant so the image never
    * rides along with the context pushes, which fire on every progress tick.

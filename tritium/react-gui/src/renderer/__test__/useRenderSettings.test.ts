@@ -209,3 +209,172 @@ describe('useRenderSettings', () => {
         h.unmount();
     });
 });
+
+// Quality axes (umbreon). The axes are independent -- image quality, shadows
+// and the depth-cue method's own ladder are separate dropdowns -- and each one
+// falls back to Custom on its own as soon as a prop it owns is edited by hand.
+describe('useRenderSettings quality axes', () => {
+    /** Hook on the umbreon backend (the only one with quality axes). */
+    const umbreonHook = () => {
+        const h = makeRenderHook(() => useRenderSettings());
+        act(() => h.result.setBackend('umbreon'));
+        return h;
+    };
+
+    it('starts on the default method with every axis at its default step', () => {
+        const h = umbreonHook();
+        expect(h.result.lighting).toBe('gi');
+        expect(h.result.qualitySteps).toEqual({
+            aa: 'high',
+            ao: 'medium',
+            gi: 'medium',
+            shadows: 'off',
+        });
+        // Those defaults are already written into the props.
+        expect(valueOf(h.result.backendProps, 'useGI')).toBe(true);
+        expect(valueOf(h.result.backendProps, 'supersample')).toBe(3);
+        expect(valueOf(h.result.backendProps, 'giSamples')).toBe(32);
+        expect(valueOf(h.result.backendProps, 'shadows')).toBe(false);
+        h.unmount();
+    });
+
+    it('setLighting switches the method exclusively (AO on turns GI off)', () => {
+        const h = umbreonHook();
+        act(() => h.result.setLighting('ao'));
+        expect(h.result.lighting).toBe('ao');
+        expect(valueOf(h.result.backendProps, 'aoEnabled')).toBe(true);
+        expect(valueOf(h.result.backendProps, 'useGI')).toBe(false);
+
+        act(() => h.result.setLighting('none'));
+        expect(h.result.lighting).toBe('none');
+        expect(valueOf(h.result.backendProps, 'aoEnabled')).toBe(false);
+        expect(valueOf(h.result.backendProps, 'useGI')).toBe(false);
+        h.unmount();
+    });
+
+    it('switching method applies that method\'s ladder at its selected step', () => {
+        const h = umbreonHook();
+        act(() => h.result.setQualityStep('ao', 'high'));
+        act(() => h.result.setLighting('ao'));
+        // The AO axis kept its step and its values are now in the props.
+        expect(h.result.qualitySteps.ao).toBe('high');
+        expect(valueOf(h.result.backendProps, 'aoSamples')).toBe(256);
+        expect(valueOf(h.result.backendProps, 'aoGather')).toBe('Per shading hit');
+        h.unmount();
+    });
+
+    it('the supersampling axis sets the grid factor only', () => {
+        const h = umbreonHook();
+        act(() => h.result.setQualityStep('aa', 'low'));
+        expect(valueOf(h.result.backendProps, 'supersample')).toBe(1);
+        act(() => h.result.setQualityStep('aa', 'ultra'));
+        expect(valueOf(h.result.backendProps, 'supersample')).toBe(4);
+        // Adaptive AA is not offered (unsupported alongside GI), so no
+        // antialiasing-mode prop exists to be written.
+        expect(valueOf(h.result.backendProps, 'aaMode')).toBeUndefined();
+        h.unmount();
+    });
+
+    it('applyViewCamera defaults the projection to the target view', () => {
+        const h = umbreonHook();
+        act(() => h.result.applyViewCamera({ perspective: false }));
+        expect(valueOf(h.result.commonProps, 'projection')).toBe('orthographic');
+        act(() => h.result.applyViewCamera({ perspective: true }));
+        expect(valueOf(h.result.commonProps, 'projection')).toBe('perspective');
+        h.unmount();
+    });
+
+    it('the shadow axis is independent of the depth-cue method', () => {
+        const h = umbreonHook();
+        act(() => h.result.setQualityStep('shadows', 'soft'));
+        expect(valueOf(h.result.backendProps, 'shadows')).toBe(true);
+        expect(valueOf(h.result.backendProps, 'shadowSamples')).toBe(16);
+        expect(valueOf(h.result.backendProps, 'lightRadius')).toBe(3);
+        // Switching the method leaves it alone.
+        act(() => h.result.setLighting('ao'));
+        expect(h.result.qualitySteps.shadows).toBe('soft');
+        expect(valueOf(h.result.backendProps, 'shadowSamples')).toBe(16);
+        h.unmount();
+    });
+
+    it('the GI ladder follows the umbreon guide steps', () => {
+        const h = umbreonHook();
+        act(() => h.result.setQualityStep('gi', 'low'));
+        expect(valueOf(h.result.backendProps, 'giSamples')).toBe(8);
+        act(() => h.result.setQualityStep('gi', 'reference'));
+        expect(valueOf(h.result.backendProps, 'giSamples')).toBe(256);
+        h.unmount();
+    });
+
+    it('editing a prop off the ladder drops only that axis to Custom', () => {
+        const h = umbreonHook();
+        act(() => h.result.handleChange('supersample', 6));
+        expect(h.result.qualitySteps.aa).toBe('custom');
+        // The other axes still describe their own props correctly.
+        expect(h.result.qualitySteps.gi).toBe('medium');
+        expect(h.result.qualitySteps.shadows).toBe('off');
+        h.unmount();
+    });
+
+    it('editing a prop back onto a step reports that step again', () => {
+        const h = umbreonHook();
+        act(() => h.result.handleChange('supersample', 6));
+        expect(h.result.qualitySteps.aa).toBe('custom');
+        // The step is read back from the values, so landing on a ladder value
+        // by hand is indistinguishable from picking it in the dropdown.
+        act(() => h.result.handleChange('supersample', 4));
+        expect(h.result.qualitySteps.aa).toBe('ultra');
+        h.unmount();
+    });
+
+    it('switching the lighting method leaves the shared axes alone', () => {
+        const h = umbreonHook();
+        act(() => h.result.setQualityStep('shadows', 'soft'));
+        act(() => h.result.setQualityStep('aa', 'ultra'));
+
+        act(() => h.result.setLighting('ao'));
+        // Image quality and shadows have nothing to do with the depth cue, so
+        // they keep both their values and their step names.
+        expect(h.result.qualitySteps.aa).toBe('ultra');
+        expect(h.result.qualitySteps.shadows).toBe('soft');
+        expect(valueOf(h.result.backendProps, 'supersample')).toBe(4);
+        expect(valueOf(h.result.backendProps, 'shadowSamples')).toBe(16);
+
+        act(() => h.result.setLighting('none'));
+        expect(h.result.qualitySteps.aa).toBe('ultra');
+        expect(h.result.qualitySteps.shadows).toBe('soft');
+        h.unmount();
+    });
+
+    it('restoring a snapshot reports the steps its values match', () => {
+        const h = umbreonHook();
+        act(() => h.result.setQualityStep('aa', 'low'));
+        act(() => h.result.setQualityStep('gi', 'high'));
+        const snapshot = h.result.getSnapshot();
+
+        act(() => h.result.setQualityStep('aa', 'ultra'));
+        act(() => h.result.restore(snapshot));
+        // Re-rendering a past result must not leave every dropdown on Custom
+        // over values that plainly match a step.
+        expect(h.result.qualitySteps.aa).toBe('low');
+        expect(h.result.qualitySteps.gi).toBe('high');
+        h.unmount();
+    });
+
+    it('editing a look setting no axis owns keeps every axis', () => {
+        const h = umbreonHook();
+        // GI intensity is a look knob, deliberately outside the quality ladders.
+        act(() => h.result.handleChange('giIntensity', 1.5));
+        expect(h.result.qualitySteps.gi).toBe('medium');
+        expect(h.result.qualitySteps.aa).toBe('high');
+        h.unmount();
+    });
+
+    it('switching backend resets the axes (POV-Ray declares none)', () => {
+        const h = umbreonHook();
+        act(() => h.result.setQualityStep('aa', 'low'));
+        act(() => h.result.setBackend('povray'));
+        expect(h.result.qualitySteps).toEqual({});
+        h.unmount();
+    });
+});

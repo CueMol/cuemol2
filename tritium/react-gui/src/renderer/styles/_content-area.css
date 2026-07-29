@@ -317,6 +317,14 @@
   user-select: none;
 }
 
+/* Render-history position ("2 / 5") between the Back / Forward arrows and the
+   rest of the result toolbar. */
+.rr-history-pos {
+  color: var(--text-secondary);
+  white-space: nowrap;
+  padding: 0 var(--space-2);
+}
+
 /* ── Settings snapshot popover ── */
 .rr-snapshot-pop {
   padding: var(--space-4) var(--space-4);

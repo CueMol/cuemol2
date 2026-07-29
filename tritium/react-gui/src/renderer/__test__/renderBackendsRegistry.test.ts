@@ -30,13 +30,14 @@ describe('render backends registry', () => {
         }
     })
 
-    it('unifies umbreon supersampling into the shared "Quality" group', () => {
+    it('names umbreon\'s supersampling group after what it holds', () => {
         // Issue: a common "Quality" next to an "Umbreon Quality" is confusing.
+        // The group holds supersampling alone, so it says "Antialiasing".
         const groupKeys = RENDER_BACKENDS.umbreon.groups.map((g) => g.key)
         expect(groupKeys).not.toContain('Umbreon Quality')
-        expect(groupKeys).toContain('Quality')
+        expect(groupKeys).toContain('Antialiasing')
         const supersample = RENDER_BACKENDS.umbreon.props.find((p) => p.key === 'supersample')
-        expect(supersample?.group).toBe('Quality')
+        expect(supersample?.group).toBe('Antialiasing')
     })
 
     it('keeps edge lines on/off in the Edges group, not Quality', () => {

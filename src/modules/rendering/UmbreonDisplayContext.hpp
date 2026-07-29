@@ -31,11 +31,28 @@ namespace render {
     int width = 0;
     int height = 0;
     int supersample = 1;
+    /// Antialiasing mode (umbreon RenderOptions::aaMode): 0 = grid, 1 =
+    /// adaptive (refine only edge pixels, aaDepth x aaDepth; 0 = supersample).
+    /// Adaptive is unsupported alongside GI and is forced back to grid there.
+    int aaMode = 0;
+    int aaDepth = 0;
     /// ambient occlusion: rays per mesh hit (0 = off), occluder search radius
-    /// (world units), and strength (0 = none, 1 = full).
+    /// (world units; <= 0 = auto from the scene bounding box) and strength
+    /// (0 = none, 1 = full).
     int aoSamples = 0;
     double aoDistance = 1.0e20;
     double aoIntensity = 1.0;
+    /// AO quality recipe (umbreon RenderOptions::ao*). The defaults reproduce
+    /// umbreon's legacy single-scale binary AO; any non-default value switches
+    /// it to the enhanced estimator. aoDiffuseFactor > 0 also darkens the
+    /// direct diffuse term, which is what makes AO visible under CueMol's
+    /// mostly-direct default lighting. aoResDiv: 0/1 = gather per shading hit,
+    /// -1 = gather per output pixel and interpolate (needs supersample > 1).
+    double aoDiffuseFactor = 0.0;
+    bool aoMultiScale = false;
+    bool aoBentNormal = false;
+    bool aoLowDiscrepancy = false;
+    int aoResDiv = 0;
     /// shadows: cast from the lights; samples per light (>1 = soft area light)
     /// and light angular radius in degrees (>0 = soft shadows).
     bool shadows = false;

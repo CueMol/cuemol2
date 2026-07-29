@@ -177,13 +177,19 @@ function finishJob(
   jobs.delete(entry.jobId);
   // Phase 5 keeps the working dir (render.pov / .inc / .png) for inspection.
   try {
-    const buf = fs.readFileSync(entry.outputPath);
+    // Existence check only: the image itself is archived by the main process
+    // and read back on demand, so it never becomes a multi-MB string here.
+    fs.accessSync(entry.outputPath);
     // Report the actual pixel size (unit + DPI applied), not the raw value.
     const { width, height } = pixelImageSize(args.snapshot.commonProps);
     emit(ctx, {
       type: "complete",
       jobId: entry.jobId,
-      imageDataUrl: `data:image/png;base64,${buf.toString("base64")}`,
+      imagePath: entry.outputPath,
+      // Kept past the job (the .pov / .inc are worth inspecting), so hand it
+      // over to be cleaned up with the render history rather than leaving one
+      // directory per render in the temp dir forever.
+      workDir: entry.workDir,
       width,
       height,
       elapsedSec: (Date.now() - entry.startedAt) / 1000,
@@ -324,11 +330,11 @@ function finishAnimJob(
   const lastFrame = anim.framePaths[anim.framePaths.length - 1];
   const { width, height } = pixelImageSize(args.snapshot.commonProps);
   try {
-    const buf = fs.readFileSync(lastFrame);
+    fs.accessSync(lastFrame);
     emit(ctx, {
       type: "complete",
       jobId: entry.jobId,
-      imageDataUrl: `data:image/png;base64,${buf.toString("base64")}`,
+      imagePath: lastFrame,
       width,
       height,
       elapsedSec: (Date.now() - entry.startedAt) / 1000,

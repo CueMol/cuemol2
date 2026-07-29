@@ -2,26 +2,53 @@
  * @file components/panes/RenderResultPane.tsx
  * @description Rendering-window image area for a completed render.
  *
- * Top toolbar carries the result actions (Save / Copy / Show Settings /
- * Re-render / Show Source Scene); below it a `RenderImageViewer` shows the
- * image. The settings snapshot is shown in a popover.
+ * The viewer's toolbar carries the result actions -- history Back / Forward,
+ * Save, Copy, the settings-used popover, and open / reveal for an encoded
+ * movie -- beside the viewer's own zoom controls.
+ *
+ * Save and Copy export whatever is on screen: the archived render, or the
+ * frame the slider is showing. Both are file operations in the main process,
+ * since the image lives on disk (see main/renderHistory.ts) and this window
+ * has neither filesystem nor clipboard access.
  */
 
 import React, { useCallback, useEffect, useState } from "react";
-import { Button, Popover } from "@blueprintjs/core";
+import { Alert, Button, Popover } from "@blueprintjs/core";
 import { AppIcon } from "../AppIcon";
 import { Tooltip } from "../../h3-kit/Tooltip";
 import { SliderField } from "../../h3-kit/form";
 import { IPC } from "../../../shared/ipcChannels";
 
 import { RenderImageViewer } from "./RenderImageViewer";
+import { useTheme } from "../../contexts/ThemeContext";
 import type { RenderResult } from "../../data/renderResult";
+import type { RenderImageRef } from "../../../shared/ipcTypes";
 import type { PropDef } from "../../data/rendererProperties";
 import { RENDER_BACKENDS } from "../../data/renderBackends";
 
 interface RenderResultPaneProps {
   /** The render result shown in this pane. */
   result: RenderResult;
+  /**
+   * The result's image, read back from the on-disk archive by the window.
+   * Null while it loads, or when the file is gone (evicted past the history
+   * limit, or lost with a crashed run).
+   */
+  imageSrc: string | null;
+  /**
+   * Drop every past render, including the images kept in the temp directory.
+   * Omit to hide the control.
+   */
+  onClearHistory?: () => void;
+  /** Show the previous render (and its settings). Omit to hide the control. */
+  onBack?: () => void;
+  /** Show the next render. Omit to hide the control. */
+  onForward?: () => void;
+  /** Whether an older / newer render exists to step to. */
+  canBack?: boolean;
+  canForward?: boolean;
+  /** Position in the history, e.g. "2 / 5"; shown beside the arrows. */
+  historyLabel?: string;
 }
 
 /** Read-only list of a snapshot's property values, shown in the popover. */
@@ -40,7 +67,46 @@ const SnapshotList: React.FC<{ title: string; props: PropDef[] }> = ({
   </div>
 );
 
-export const RenderResultPane: React.FC<RenderResultPaneProps> = ({ result }) => {
+/**
+ * Which image the export actions act on: the frame under the movie slider once
+ * one is shown, else the archived render. Exported so the "export what is on
+ * screen" rule can be pinned without driving the slider.
+ */
+export function exportImageRef(
+  result: RenderResult,
+  frameIndex: number | null,
+): RenderImageRef {
+  if (frameIndex !== null && result.movie) {
+    return {
+      kind: "frame",
+      outputDir: result.movie.outputDir,
+      baseName: result.movie.baseName,
+      frameIndex,
+    };
+  }
+  return { kind: "result", resultId: result.id };
+}
+
+/** Default file name offered by the save dialog. */
+export function exportFileName(
+  result: RenderResult,
+  frameIndex: number | null,
+): string {
+  const frame =
+    frameIndex !== null && result.movie ? `-frame${frameIndex + 1}` : "";
+  return `${result.sourceSceneName}-${result.width}x${result.height}${frame}.png`;
+}
+
+export const RenderResultPane: React.FC<RenderResultPaneProps> = ({
+  result,
+  imageSrc,
+  onClearHistory,
+  onBack,
+  onForward,
+  canBack = false,
+  canForward = false,
+  historyLabel,
+}) => {
   // Frame slider (movie results). The sequence stays on disk and the shown
   // frame is read back through main on demand -- holding every frame in
   // memory is not viable, and result.imageDataUrl is only the last one.
@@ -93,6 +159,27 @@ export const RenderResultPane: React.FC<RenderResultPaneProps> = ({ result }) =>
   const movie = result.movie;
   const moviePath = movie?.moviePath;
 
+  const imageRef = exportImageRef(result, frameIndex);
+  const saveName = exportFileName(result, frameIndex);
+
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const { theme } = useTheme();
+
+  const handleSave = useCallback(() => {
+    void window.electronAPI
+      ?.invoke(IPC.RENDER_IMAGE_SAVE, { ref: imageRef, defaultName: saveName })
+      .then((res) => setExportError(res?.error ?? null))
+      .catch((e: Error) => setExportError(e.message));
+  }, [imageRef, saveName]);
+
+  const handleCopy = useCallback(() => {
+    void window.electronAPI
+      ?.invoke(IPC.RENDER_IMAGE_COPY, { ref: imageRef })
+      .then((res) => setExportError(res?.ok ? null : (res?.error ?? null)))
+      .catch((e: Error) => setExportError(e.message));
+  }, [imageRef]);
+
   const openMovie = useCallback(() => {
     if (moviePath) window.electronAPI?.invoke(IPC.SHELL_OPEN_PATH, { path: moviePath });
   }, [moviePath]);
@@ -105,6 +192,60 @@ export const RenderResultPane: React.FC<RenderResultPaneProps> = ({ result }) =>
   // open / reveal for an encoded movie.
   const actions = (
     <>
+      {/* Render history: each step restores that render's image AND the
+          settings that produced it, so a parameter change can be compared
+          against -- and reverted to -- the previous attempt. */}
+      {(onBack || onForward) && (
+        <>
+          <Tooltip content="Previous render (restores its settings)">
+            <Button
+              small
+              icon={<AppIcon name="ui.caretLeft" aria-hidden />}
+              aria-label="Previous render"
+              onClick={onBack}
+              disabled={!canBack}
+            />
+          </Tooltip>
+          <Tooltip content="Next render (restores its settings)">
+            <Button
+              small
+              icon={<AppIcon name="ui.caretRight" aria-hidden />}
+              aria-label="Next render"
+              onClick={onForward}
+              disabled={!canForward}
+            />
+          </Tooltip>
+          {historyLabel && (
+            <span className="rr-history-pos type-label">{historyLabel}</span>
+          )}
+        </>
+      )}
+      {onClearHistory && (
+        <Tooltip content="Clear the render history and its temporary images">
+          <Button
+            small
+            icon={<AppIcon name="ui.trash" aria-hidden />}
+            aria-label="Clear render history"
+            onClick={() => setConfirmClear(true)}
+          />
+        </Tooltip>
+      )}
+      <Tooltip content="Save the image to a file">
+        <Button
+          small
+          icon={<AppIcon name="ui.save" aria-hidden />}
+          aria-label="Save image"
+          onClick={handleSave}
+        />
+      </Tooltip>
+      <Tooltip content="Copy the image to the clipboard">
+        <Button
+          small
+          icon={<AppIcon name="ui.duplicate" aria-hidden />}
+          aria-label="Copy image to clipboard"
+          onClick={handleCopy}
+        />
+      </Tooltip>
       <Popover content={settingsPopover} placement="bottom-start">
         {/* Tooltip nested in the Popover so the button has both (Blueprint
             merges the refs). */}
@@ -128,7 +269,7 @@ export const RenderResultPane: React.FC<RenderResultPaneProps> = ({ result }) =>
   return (
     <div className="render-result-pane">
       <RenderImageViewer
-        src={frameUrl ?? result.imageDataUrl}
+        src={frameUrl ?? imageSrc ?? ""}
         imgWidth={result.width}
         imgHeight={result.height}
         name={
@@ -138,6 +279,40 @@ export const RenderResultPane: React.FC<RenderResultPaneProps> = ({ result }) =>
         }
         actions={actions}
       />
+      {/* Clearing throws away images that cannot be re-created without
+          re-rendering, so it asks first. */}
+      <Alert
+        isOpen={confirmClear}
+        intent="danger"
+        icon="trash"
+        confirmButtonText="Clear"
+        cancelButtonText="Cancel"
+        className={theme === "dark" ? "bp5-dark" : undefined}
+        onCancel={() => setConfirmClear(false)}
+        onConfirm={() => {
+          setConfirmClear(false);
+          onClearHistory?.();
+        }}
+      >
+        <p>
+          Discard every render in the history and delete the temporary images
+          kept for them? The rendered scenes are unaffected.
+        </p>
+      </Alert>
+
+      {/* A failed export is worth saying out loud: the button otherwise looks
+          like it worked. */}
+      <Alert
+        isOpen={exportError !== null}
+        intent="danger"
+        icon="error"
+        confirmButtonText="OK"
+        className={theme === "dark" ? "bp5-dark" : undefined}
+        onClose={() => setExportError(null)}
+      >
+        <p>{exportError}</p>
+      </Alert>
+
       {movie && movie.frameCount > 1 && (
         <div className="render-result-frames">
           <SliderField

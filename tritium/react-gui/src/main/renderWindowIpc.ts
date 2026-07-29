@@ -17,13 +17,20 @@
 
 import * as fs from 'fs'
 import * as path from 'path'
-import type { BrowserWindow } from 'electron'
+import { clipboard, dialog, nativeImage, type BrowserWindow } from 'electron'
 import { IPC } from '../shared/ipcChannels'
-import type { ViewSizePx } from '../shared/ipcTypes'
+import type { RenderImageRef, RenderViewCamera, ViewSizePx } from '../shared/ipcTypes'
 import { movieFrameFileName, MOVIE_FILE_EXTENSIONS } from '../shared/movieFrames'
+import {
+  clearRenderHistory,
+  readRenderImage,
+  registerRenderWorkDir,
+  renderImagePath,
+  storeRenderImage,
+} from './renderHistory'
 import { handleInvoke } from './ipcHandlers'
 
-/** How long to wait for the main window's view-size reply. */
+/** How long to wait for a main-window reply (view size / view camera). */
 const VIEW_SIZE_TIMEOUT_MS = 2000
 
 export interface RenderWindowIpcDeps {
@@ -83,6 +90,101 @@ export function registerRenderWindowIpc(deps: RenderWindowIpcDeps): void {
 
   handleInvoke(IPC.RENDER_VIEW_SIZE_REPLY, (_event, { reqId, size }) => {
     pending.get(reqId)?.(size)
+  })
+
+  // --- Target-view camera round trip ---
+  //
+  // Same shape as the size trip above: the view lives in the main window's
+  // worker, so the render window cannot read it directly. Used to default the
+  // Camera settings to what the selected target view currently shows.
+
+  let nextCamReqId = 1
+  const pendingCam = new Map<number, (camera: RenderViewCamera | null) => void>()
+
+  handleInvoke(IPC.RENDER_VIEW_CAMERA_GET, (_event, { viewId }) => {
+    if (mainWindow.isDestroyed()) return Promise.resolve(null)
+    const reqId = nextCamReqId++
+    return new Promise<RenderViewCamera | null>((resolve) => {
+      const timer = setTimeout(() => {
+        pendingCam.delete(reqId)
+        resolve(null)
+      }, VIEW_SIZE_TIMEOUT_MS)
+      pendingCam.set(reqId, (camera) => {
+        clearTimeout(timer)
+        pendingCam.delete(reqId)
+        resolve(camera)
+      })
+      mainWindow.webContents.send(IPC.RENDER_VIEW_CAMERA_REQUEST, { reqId, viewId })
+    })
+  })
+
+  handleInvoke(IPC.RENDER_VIEW_CAMERA_REPLY, (_event, { reqId, camera }) => {
+    pendingCam.get(reqId)?.(camera)
+  })
+
+  // --- Render history ---
+  //
+  // Finished renders are archived as files rather than pushed around as data
+  // URLs, so the render window holds only the image it is showing.
+
+  handleInvoke(IPC.RENDER_HISTORY_STORE, (_event, { resultId, sourcePath, workDir }) => {
+    const ok = storeRenderImage(resultId, sourcePath)
+    // Registered only once the copy landed, so a failed archive cannot take
+    // the source directory with it.
+    if (ok && workDir) registerRenderWorkDir(workDir)
+    return { ok }
+  })
+
+  handleInvoke(IPC.RENDER_HISTORY_CLEAR, () => {
+    clearRenderHistory()
+  })
+
+  handleInvoke(IPC.RENDER_HISTORY_READ, (_event, { resultId }) => ({
+    dataUrl: readRenderImage(resultId),
+  }))
+
+  // --- Exporting the shown render ---
+  //
+  // Both act on a file: the archived render, or -- while the frame slider is
+  // showing one -- that frame in the user's own output folder, so what is
+  // exported is always what is on screen.
+
+  const refToPath = (ref: RenderImageRef): string =>
+    ref.kind === 'result'
+      ? renderImagePath(ref.resultId)
+      : path.join(ref.outputDir, movieFrameFileName(ref.baseName, ref.frameIndex))
+
+  handleInvoke(IPC.RENDER_IMAGE_SAVE, async (_event, { ref, defaultName }) => {
+    const source = refToPath(ref)
+    if (!fs.existsSync(source)) {
+      return { canceled: false, error: 'The rendered image is no longer available.' }
+    }
+    const rw = getRenderWindow()
+    const parent = rw && !rw.isDestroyed() ? rw : mainWindow
+    const picked = await dialog.showSaveDialog(parent, {
+      title: 'Save Rendered Image',
+      defaultPath: defaultName,
+      filters: [
+        { name: 'PNG Image', extensions: ['png'] },
+        { name: 'All Files', extensions: ['*'] },
+      ],
+    })
+    if (picked.canceled || !picked.filePath) return { canceled: true }
+    try {
+      fs.copyFileSync(source, picked.filePath)
+      return { canceled: false, filePath: picked.filePath }
+    } catch (e) {
+      return { canceled: false, filePath: picked.filePath, error: (e as Error).message }
+    }
+  })
+
+  handleInvoke(IPC.RENDER_IMAGE_COPY, (_event, { ref }) => {
+    const image = nativeImage.createFromPath(refToPath(ref))
+    if (image.isEmpty()) {
+      return { ok: false, error: 'The rendered image is no longer available.' }
+    }
+    clipboard.writeImage(image)
+    return { ok: true }
   })
 
   // Frame slider: read one already-rendered frame straight off disk. The

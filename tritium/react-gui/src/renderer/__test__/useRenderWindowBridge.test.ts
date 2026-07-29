@@ -161,13 +161,14 @@ describe('useRenderWindowBridge', () => {
         });
         act(() => emit({
             type: 'complete', jobId: 'job-1',
-            imageDataUrl: 'data:image/png;base64,AA', width: 800, height: 600, elapsedSec: 3.5,
+            imagePath: '/tmp/render/out.png', workDir: '/tmp/render',
+            width: 800, height: 600, elapsedSec: 3.5,
         }));
         await flushPromises();
 
         const updates = harness.stateUpdates();
         const context = updates.filter((u) => u.kind === 'context');
-        const results = updates.filter((u) => u.kind === 'result');
+        const results = updates.filter((u) => u.kind === 'history');
         // At least: initial context, job-started context, job-done context.
         expect(context.length).toBeGreaterThanOrEqual(2);
         expect(context[context.length - 1]).toMatchObject({
@@ -175,15 +176,25 @@ describe('useRenderWindowBridge', () => {
             activeViewId: 7,
             umbreonAvailable: true,
         });
-        // The image is sent exactly once, in its own result update.
+        // The finished render is announced once, as a history push carrying
+        // metadata only -- the image went to the on-disk archive.
         expect(results.length).toBe(1);
-        expect(results[0]).toMatchObject({
-            result: { imageDataUrl: 'data:image/png;base64,AA' },
-        });
+        expect((results[0] as { entries: unknown[] }).entries).toHaveLength(1);
+        expect(JSON.stringify(results[0])).not.toContain('data:image');
+        // ... which the main process was asked to store first.
+        expect(harness.api.invoke).toHaveBeenCalledWith(
+            IPC.RENDER_HISTORY_STORE,
+            expect.objectContaining({
+                sourcePath: '/tmp/render/out.png',
+                // The job's temp dir goes with it, so it is cleaned up with
+                // the history instead of accumulating one per render.
+                workDir: '/tmp/render',
+            }),
+        );
         h.unmount();
     });
 
-    it('EXEC sync re-pushes both the context and the latest result', async () => {
+    it('EXEC sync re-pushes both the context and the render history', async () => {
         const { cm, emit } = makeCm();
         const h = mountBridge(cm);
         await act(async () => {
@@ -192,7 +203,7 @@ describe('useRenderWindowBridge', () => {
         });
         act(() => emit({
             type: 'complete', jobId: 'job-1',
-            imageDataUrl: 'data:x', width: 8, height: 6, elapsedSec: 1,
+            imagePath: '/tmp/a.png', width: 8, height: 6, elapsedSec: 1,
         }));
         await flushPromises();
         const before = harness.stateUpdates().length;
@@ -202,10 +213,33 @@ describe('useRenderWindowBridge', () => {
         const after = harness.stateUpdates();
         expect(after.length).toBe(before + 2);
         expect(after[after.length - 2].kind).toBe('context');
-        expect(after[after.length - 1]).toMatchObject({
-            kind: 'result',
-            result: { imageDataUrl: 'data:x' },
+        expect(after[after.length - 1]).toMatchObject({ kind: 'history' });
+        expect(
+            (after[after.length - 1] as { entries: unknown[] }).entries,
+        ).toHaveLength(1);
+        h.unmount();
+    });
+
+    it('EXEC clear-history empties the list and drops the archived images', async () => {
+        const { cm, emit } = makeCm();
+        const h = mountBridge(cm);
+        await act(async () => {
+            harness.exec({ type: 'start', snapshot });
+            await flushPromises();
         });
+        act(() => emit({
+            type: 'complete', jobId: 'job-1',
+            imagePath: '/tmp/a.png', width: 8, height: 6, elapsedSec: 1,
+        }));
+        await flushPromises();
+
+        act(() => { harness.exec({ type: 'clear-history' }); });
+
+        // The window is told the history is empty ...
+        const last = harness.stateUpdates().at(-1);
+        expect(last).toMatchObject({ kind: 'history', entries: [] });
+        // ... and the files behind it are dropped too.
+        expect(harness.api.invoke).toHaveBeenCalledWith(IPC.RENDER_HISTORY_CLEAR);
         h.unmount();
     });
 
@@ -219,7 +253,7 @@ describe('useRenderWindowBridge', () => {
         });
         act(() => emit({
             type: 'complete', jobId: 'job-1',
-            imageDataUrl: 'data:x', width: 8, height: 6, elapsedSec: 1,
+            imagePath: '/tmp/a.png', width: 8, height: 6, elapsedSec: 1,
         }));
         await flushPromises();
 

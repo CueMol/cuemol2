@@ -519,6 +519,202 @@ TEST(UmbreonExport, AmbientOcclusionAndShadowsAffectOutput)
     EXPECT_NE(base, enh);
 }
 
+// The AO quality recipe (UmbreonSceneExporter aoDiffuseFactor / aoMultiScale /
+// aoBentNormal / aoLowDiscrepancy / aoResDiv) must reach umbreon's RenderOptions.
+//
+// aoDiffuseFactor is the one that decides whether AO is visible at all: AO
+// darkens only the ambient term by default, and CueMol's default lighting puts
+// most of its energy in the direct lights, so AO at factor 0 barely changes the
+// image. Raising it to 1.0 must darken the occluded region measurably. This
+// pins the wiring that the Rendering window's AO quality presets depend on.
+namespace {
+
+/// Mean of every channel byte -- a proxy for overall image brightness.
+double meanLevel(const std::vector<unsigned char> &pix)
+{
+    if (pix.empty())
+        return 0.0;
+    double sum = 0.0;
+    for (unsigned char c : pix) sum += double(c);
+    return sum / double(pix.size());
+}
+
+/// A plane with a sphere hovering in front of it, rendered with the supplied
+/// AO settings. The sphere occludes the plane, so AO has something to darken.
+std::vector<unsigned char> renderAoRecipe(const UmbreonRenderParams &aoPrm)
+{
+    UmbreonDisplayContext ctx;
+    ctx.init();
+    ctx.setPerspective(false);
+    ctx.setViewDist(100.0);
+    ctx.setZoom(8.0);
+    ctx.loadIdent();
+
+    ctx.startRender();
+    ctx.startSection("s");
+    ctx.color(gfx::SolidColor::createRGB(0.8, 0.8, 0.8));
+    ctx.startTriangles();
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(-3.0, -3.0, 0.0));
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(3.0, -3.0, 0.0));
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(3.0, 3.0, 0.0));
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(-3.0, -3.0, 0.0));
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(3.0, 3.0, 0.0));
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(-3.0, 3.0, 0.0));
+    ctx.end();
+    ctx.sphere(1.2, Vector4D(0.0, 0.0, 1.5));
+    ctx.endSection();
+
+    UmbreonRenderParams prm = aoPrm;
+    prm.width = 64;
+    prm.height = 64;
+
+    int ow = 0, oh = 0, ncomp = 0;
+    std::vector<unsigned char> pix;
+    ctx.render(prm, ow, oh, ncomp, pix);
+    return pix;
+}
+
+}  // anonymous namespace
+
+TEST(UmbreonExport, AoDiffuseFactorDarkensOccludedGeometry)
+{
+    UmbreonRenderParams prm;
+    prm.supersample = 1;
+    prm.aoSamples = 32;
+    prm.aoDistance = 10.0;
+    prm.aoIntensity = 1.0;
+    prm.aoLowDiscrepancy = true;
+
+    // Ambient-only AO (umbreon's default factor).
+    std::vector<unsigned char> ambientOnly = renderAoRecipe(prm);
+
+    // The recipe value: AO also darkens the direct diffuse term.
+    prm.aoDiffuseFactor = 1.0;
+    std::vector<unsigned char> withDiffuse = renderAoRecipe(prm);
+
+    ASSERT_EQ(ambientOnly.size(), static_cast<std::size_t>(64 * 64 * 3));
+    ASSERT_EQ(ambientOnly.size(), withDiffuse.size());
+    // Strictly darker overall, not merely different: the occluded plane loses
+    // direct diffuse energy it kept at factor 0.
+    EXPECT_LT(meanLevel(withDiffuse), meanLevel(ambientOnly) - 1.0);
+}
+
+// AO radius auto-scaling: aoDistance <= 0 means "derive it from this scene".
+// A fixed world radius would make the same setting darken a small molecule and
+// do nothing on a large one, since AO only finds occluders within the radius.
+TEST(UmbreonExport, AutoAoDistanceScalesWithTheScene)
+{
+    // The same geometry at two scales. With auto distance both must show AO;
+    // a fixed radius tuned for the small one leaves the large one untouched.
+    auto renderScaled = [](double scale, double aoDistance) {
+        UmbreonDisplayContext ctx;
+        ctx.init();
+        ctx.setPerspective(false);
+        ctx.setViewDist(100.0 * scale);
+        ctx.setZoom(8.0 * scale);
+        ctx.loadIdent();
+
+        ctx.startRender();
+        ctx.startSection("s");
+        ctx.color(gfx::SolidColor::createRGB(0.8, 0.8, 0.8));
+        ctx.startTriangles();
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(-3.0 * scale, -3.0 * scale, 0.0));
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(3.0 * scale, -3.0 * scale, 0.0));
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(3.0 * scale, 3.0 * scale, 0.0));
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(-3.0 * scale, -3.0 * scale, 0.0));
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(3.0 * scale, 3.0 * scale, 0.0));
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(-3.0 * scale, 3.0 * scale, 0.0));
+        ctx.end();
+        ctx.sphere(1.2 * scale, Vector4D(0.0, 0.0, 1.5 * scale));
+        ctx.endSection();
+
+        UmbreonRenderParams prm;
+        prm.width = 64;
+        prm.height = 64;
+        prm.supersample = 1;
+        prm.aoSamples = 32;
+        prm.aoDistance = aoDistance;
+        prm.aoIntensity = 1.0;
+        prm.aoDiffuseFactor = 1.0;
+
+        int ow = 0, oh = 0, ncomp = 0;
+        std::vector<unsigned char> pix;
+        ctx.render(prm, ow, oh, ncomp, pix);
+        return pix;
+    };
+
+    const double smallAo = meanLevel(renderScaled(1.0, 0.0));   // auto
+    const double largeAo = meanLevel(renderScaled(20.0, 0.0));  // auto
+    // A radius tuned for the small scene, used unchanged on the large one.
+    const double largeFixed = meanLevel(renderScaled(20.0, 10.0));
+
+    // Auto keeps the occlusion at both scales: the 20x scene is darkened about
+    // as much as the 1x one, while the fixed radius leaves it much brighter.
+    EXPECT_NEAR(largeAo, smallAo, 6.0);
+    EXPECT_LT(largeAo, largeFixed - 1.0);
+}
+
+// Adaptive AA (aaMode = 1) refines only the pixels an edge crosses. It must
+// reach the renderer and change the edges relative to a plain ss=1 grid render,
+// and it must be forced back to grid under GI (umbreon does not support the
+// combination).
+TEST(UmbreonExport, AdaptiveAaRefinesEdges)
+{
+    UmbreonRenderParams prm;
+    prm.supersample = 1;
+
+    std::vector<unsigned char> grid = renderAoRecipe(prm);
+
+    prm.aaMode = 1;
+    prm.aaDepth = 3;
+    std::vector<unsigned char> adaptive = renderAoRecipe(prm);
+
+    ASSERT_EQ(grid.size(), static_cast<std::size_t>(64 * 64 * 3));
+    ASSERT_EQ(grid.size(), adaptive.size());
+    // Same scene, better edges: the frames differ but stay comparably bright
+    // (adaptive AA is an edge refinement, not a shading change).
+    EXPECT_NE(grid, adaptive);
+    EXPECT_NEAR(meanLevel(adaptive), meanLevel(grid), 4.0);
+}
+
+TEST(UmbreonExport, AoRecipeFlagsReachTheRenderer)
+{
+    UmbreonRenderParams prm;
+    // aoResDiv = -1 (gather once per output pixel) only engages above ss 1.
+    prm.supersample = 2;
+    prm.aoSamples = 16;
+    prm.aoDistance = 10.0;
+    prm.aoIntensity = 1.0;
+    prm.aoDiffuseFactor = 1.0;
+    std::vector<unsigned char> inlineGather = renderAoRecipe(prm);
+
+    prm.aoMultiScale = true;
+    prm.aoBentNormal = true;
+    prm.aoLowDiscrepancy = true;
+    prm.aoResDiv = -1;
+    std::vector<unsigned char> recipe = renderAoRecipe(prm);
+
+    ASSERT_EQ(inlineGather.size(), static_cast<std::size_t>(64 * 64 * 3));
+    ASSERT_EQ(inlineGather.size(), recipe.size());
+    // The frame is still lit (the coarse-grid path did not blank it) ...
+    EXPECT_GT(meanLevel(recipe), 1.0);
+    // ... and the enhanced estimator produced a different shading than the
+    // single-scale inline gather.
+    EXPECT_NE(inlineGather, recipe);
+}
+
 // Smoke test for the pt1 path-traced GI integrator + Intel OIDN denoiser:
 // enabling GI must run without crashing, produce a lit frame, and (via the
 // radiosity lighting rebalance) differ from the local-shading render.

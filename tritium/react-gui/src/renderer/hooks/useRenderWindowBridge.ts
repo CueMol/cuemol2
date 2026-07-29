@@ -20,9 +20,11 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { IPC } from "../../shared/ipcChannels";
+import { RENDER_HISTORY_LIMIT } from "../../shared/renderHistory";
 import type {
   RenderJobWire,
   RenderTargetViewWire,
+  RenderViewCamera,
   RenderWindowCommand,
   RenderWindowStateUpdate,
   ViewSizePx,
@@ -74,13 +76,34 @@ function pushState(update: RenderWindowStateUpdate): void {
 export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): void {
   const { cm } = args;
 
-  // Latest completed render; survives render-window close/reopen.
-  const latestResultRef = useRef<RenderResult | null>(null);
+  // Completed renders, oldest first. Owned here (not in the render window) so
+  // the history survives that window closing, which is also how long the
+  // archived image files live.
+  const historyRef = useRef<RenderResult[]>([]);
 
-  const handleComplete = useCallback((result: RenderResult) => {
-    latestResultRef.current = result;
-    pushState({ kind: "result", result });
-  }, []);
+  const handleComplete = useCallback(
+    (result: RenderResult, image: { path: string; workDir?: string }) => {
+    // Archive first: the render window reads the image straight back by id, so
+    // pushing before the copy lands would show an empty frame.
+      const api = window.electronAPI;
+      const stored = api
+        ? api
+            .invoke(IPC.RENDER_HISTORY_STORE, {
+              resultId: result.id,
+              sourcePath: image.path,
+              ...(image.workDir ? { workDir: image.workDir } : {}),
+            })
+            .catch(() => ({ ok: false }))
+        : Promise.resolve({ ok: false });
+      void stored.then(() => {
+        historyRef.current = [...historyRef.current, result].slice(
+          -RENDER_HISTORY_LIMIT,
+        );
+        pushState({ kind: "history", entries: historyRef.current });
+      });
+    },
+    [],
+  );
 
   const renderJob = useRenderJob({ cm, onComplete: handleComplete });
 
@@ -163,8 +186,14 @@ export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): void {
       case "cancel":
         void rj.cancel();
         break;
+      case "clear-history":
+        historyRef.current = [];
+        pushState({ kind: "history", entries: [] });
+        window.electronAPI?.invoke(IPC.RENDER_HISTORY_CLEAR).catch(() => {});
+        break;
       case "show-source": {
-        const result = latestResultRef.current;
+        // The newest render is the one whose scene "Show source" means.
+        const result = historyRef.current[historyRef.current.length - 1] ?? null;
         if (!result || result.sourceViewId === undefined) return;
         const tab = a.tabs.find(
           (t) => t.type === "molview" && t.viewId === result.sourceViewId,
@@ -180,7 +209,7 @@ export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): void {
           activeViewId: a.activeViewId ?? null,
           umbreonAvailable: a.umbreonAvailable,
         });
-        pushState({ kind: "result", result: latestResultRef.current });
+        pushState({ kind: "history", entries: historyRef.current });
         break;
     }
   }, []);
@@ -202,9 +231,26 @@ export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): void {
       }
       api.invoke(IPC.RENDER_VIEW_SIZE_REPLY, { reqId, size }).catch(() => {});
     });
+    // Camera settings of a render target view: the render window defaults its
+    // Camera group to whatever the target view currently shows, and only this
+    // window can read the view (the worker lives here).
+    const offCamera = api.onPush(IPC.RENDER_VIEW_CAMERA_REQUEST, ({ reqId, viewId }) => {
+      const reply = (camera: RenderViewCamera | null) =>
+        api.invoke(IPC.RENDER_VIEW_CAMERA_REPLY, { reqId, camera }).catch(() => {});
+      if (!cm) {
+        reply(null);
+        return;
+      }
+      cm.invokeService("getViewProjection", { viewId })
+        .then((res) =>
+          reply(res?.ok ? { perspective: res.perspective } : null),
+        )
+        .catch(() => reply(null));
+    });
     return () => {
       offExec();
       offSize();
+      offCamera();
     };
-  }, [execCommand]);
+  }, [execCommand, cm]);
 }

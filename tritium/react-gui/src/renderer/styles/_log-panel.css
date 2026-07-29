@@ -193,25 +193,13 @@
   overflow: hidden;
 }
 
-/* Settings body: two resizable columns (Allotment). Start / progress above
-   and the log below stay full-width, outside this split. */
-.render-panel-body {
-  flex: 1;
-  min-height: 0;
-}
-
-/* Each Allotment pane scrolls its own column. */
-.render-panel-col {
-  height: 100%;
-  overflow-y: auto;
-}
-
+/* Settings sections (Rendering window, Render Settings pane > Image tab).
+   Padding and the gap between sections belong to the tab container
+   (.render-image-tab), so a section never tunes its own spacing. */
 .image-settings-panel,
 .movie-settings-panel {
-  padding: var(--space-4) var(--space-5);
   display: flex;
   flex-direction: column;
-  gap: var(--form-row-gap);
 }
 
 /* Width x height on one row. */
@@ -237,31 +225,25 @@
   flex-shrink: 0;
 }
 
-/* Collapsible log at the bottom of the panel. */
+/* Log: everything below the run bar. Fills the panel and scrolls internally,
+   so the pane's own height is the only thing that bounds it. */
 .render-panel-logsection {
-  flex-shrink: 0;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   border-top: 1px solid var(--border-subtle);
 }
 
-.render-panel-log-toggle {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  width: 100%;
+.render-panel-log-header {
   padding: var(--space-2) var(--space-5);
   background: var(--bg-panel-header);
-  border: none;
   /* Enabled-widget contrast: --text-muted reads as disabled. */
   color: var(--text-secondary);
-  cursor: pointer;
+  flex-shrink: 0;
 }
 
-.render-panel-log-toggle:hover {
-  color: var(--text-primary);
-  background: var(--bg-hover);
-}
-
-/* Image-size preset (quick dropdown; full size controls live in Inspector).
+/* Label + dropdown pair in the run bar (Backend, Target).
    display: contents -- the label and select lay out as direct flex items of
    the bar. Kept as a nested flex container instead, the pair's automatic
    minimum would be pinned at the select's preferred width (a definite width
@@ -282,14 +264,7 @@
    tight: the selected text is usually much shorter than the box, so the
    slack inside the dropdown is the first thing to go, before the buttons'
    labels collapse to icon-only (useCollapsibleLabels). */
-.render-panel-preset-select {
-  display: flex;
-  width: 168px;
-  flex: 0 1 auto;
-  min-width: 72px;
-}
-
-/* Target-view dropdown (Rendering window; same row styling as the preset). */
+.render-panel-backend-select,
 .render-panel-target-select {
   display: flex;
   width: 168px;
@@ -300,7 +275,7 @@
 /* A flex item's default minimum is its content width, which for a native
    select is its widest option; lift that so the wrapper's min-width above
    is the real floor and long options just clip inside the closed box. */
-.render-panel-preset-select .bp5-html-select,
+.render-panel-backend-select .bp5-html-select,
 .render-panel-target-select .bp5-html-select {
   min-width: 0;
 }
@@ -329,8 +304,9 @@
 
 /* Log area — matches the Output tab (LogView) font, spacing and background. */
 .render-panel-log {
-  /* Bounded height inside the collapse; scrolls when the log is long. */
-  max-height: 160px;
+  /* Takes the panel's remaining height and scrolls when the log is long. */
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: var(--space-2) var(--space-4);
   background: var(--bg-input);

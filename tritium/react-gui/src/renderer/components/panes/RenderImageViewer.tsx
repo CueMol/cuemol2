@@ -3,7 +3,11 @@
  * @description Zoomable / pannable image viewer for the Render Result tab.
  *
  * The image is laid out at `width x height x scale` inside a scrollable
- * container; panning is drag-to-scroll. Fit-to-view and 100% are explicit
+ * container; panning is drag-to-scroll, and a two-finger swipe pans it as
+ * ordinary scrolling. Zoom is the toolbar buttons plus a trackpad pinch --
+ * which every browser encodes as a wheel event with a synthetic `ctrlKey`, the
+ * only way to read a pinch on an element -- anchored at the pointer so the
+ * spot under the cursor stays put. Fit-to-view and 100% are explicit
  * actions. The initial fit is applied in a layout effect -- before the browser
  * paints -- so switching to the tab never flashes the image at 100% before it
  * shrinks to fit. The fit needs only the container size and the image
@@ -16,6 +20,7 @@
  */
 
 import React, { useRef, useState, useCallback, useLayoutEffect } from "react";
+import { useWheel } from "@use-gesture/react";
 import { Button, ButtonGroup } from "@blueprintjs/core";
 import { AppIcon } from "../AppIcon";
 import { Tooltip } from "../../h3-kit/Tooltip";
@@ -35,6 +40,17 @@ interface RenderImageViewerProps {
 
 const MIN_SCALE = 0.05;
 const MAX_SCALE = 8;
+
+/**
+ * Wheel delta -> zoom factor, as `exp(-delta * RATE)`: exponential so a pinch
+ * feels the same at every zoom level, and smooth enough that a trackpad's
+ * stream of small deltas does not step visibly. A mouse wheel notch (~100px)
+ * lands near the 0.8 the toolbar button applies.
+ */
+const ZOOM_RATE = 0.002;
+
+/** Rough px-per-line, for the wheels that report deltas in lines. */
+const LINE_HEIGHT_PX = 16;
 const clamp = (v: number, lo: number, hi: number): number =>
   Math.min(hi, Math.max(lo, v));
 
@@ -84,6 +100,71 @@ export const RenderImageViewer: React.FC<RenderImageViewerProps> = ({
   const zoom = useCallback(
     (factor: number) => setScale((s) => clamp(s * factor, MIN_SCALE, MAX_SCALE)),
     [],
+  );
+
+  // --- Pointer-anchored zoom (trackpad pinch / ctrl+wheel) ---
+  //
+  // The scroll offset that keeps the pointed-at spot in place can only be set
+  // once the stage has been re-laid out at the new scale, so the wheel handler
+  // records what to line up and a layout effect applies it after the resize.
+  const scaleRef = useRef(scale);
+  scaleRef.current = scale;
+  const stageRef = useRef<HTMLDivElement>(null);
+  const anchorRef = useRef<{
+    /** Image-space point under the pointer. */
+    cx: number;
+    cy: number;
+    /** Where that point sat in the viewport. */
+    px: number;
+    py: number;
+  } | null>(null);
+
+  const zoomAt = useCallback(
+    (factor: number, clientX: number, clientY: number) => {
+      const el = scrollRef.current;
+      const stage = stageRef.current;
+      if (!el || !stage) return;
+      const current = scaleRef.current;
+      const next = clamp(current * factor, MIN_SCALE, MAX_SCALE);
+      if (next === current) return;
+      const rect = el.getBoundingClientRect();
+      const stageRect = stage.getBoundingClientRect();
+      anchorRef.current = {
+        cx: (clientX - stageRect.left) / current,
+        cy: (clientY - stageRect.top) / current,
+        px: clientX - rect.left,
+        py: clientY - rect.top,
+      };
+      setScale(next);
+    },
+    [],
+  );
+
+  useLayoutEffect(() => {
+    const anchor = anchorRef.current;
+    const el = scrollRef.current;
+    const stage = stageRef.current;
+    if (!anchor || !el || !stage) return;
+    anchorRef.current = null;
+    // offsetLeft/Top carry the centring margin the stage gets while it is
+    // smaller than the viewport, which the image-space point knows nothing of.
+    el.scrollLeft = anchor.cx * scale + stage.offsetLeft - anchor.px;
+    el.scrollTop = anchor.cy * scale + stage.offsetTop - anchor.py;
+  }, [scale]);
+
+  // Registered on the element with passive:false, because React's own onWheel
+  // is passive at the root and could not suppress the browser's page zoom.
+  // A plain wheel is left alone: that is the two-finger swipe, and letting it
+  // scroll natively is what pans the image.
+  useWheel(
+    ({ event }) => {
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+      const delta =
+        event.deltaMode === 1 ? event.deltaY * LINE_HEIGHT_PX : event.deltaY;
+      zoomAt(Math.exp(-delta * ZOOM_RATE), event.clientX, event.clientY);
+    },
+    { target: scrollRef, eventOptions: { passive: false } },
   );
 
   // Fallback fit: only needed if the layout effect ran before the container was
@@ -149,6 +230,7 @@ export const RenderImageViewer: React.FC<RenderImageViewerProps> = ({
       >
         <div
           className="riv-stage"
+          ref={stageRef}
           style={{ width: imgWidth * scale, height: imgHeight * scale }}
         >
           <img

@@ -61,3 +61,64 @@ describe('RenderImageViewer -- fit before paint', () => {
     expect(stage.style.height).toBe('300px');
   });
 });
+
+// Trackpad zoom. A pinch reaches the page as a wheel event carrying a
+// synthetic ctrlKey -- the only signal an element gets for it -- so that is
+// what the viewer zooms on. A plain wheel must stay untouched: it is the
+// two-finger swipe, and native scrolling is what pans the image.
+describe('RenderImageViewer -- trackpad zoom', () => {
+  /** Dispatch a wheel event on the scroll container, returning it. */
+  function wheel(init: WheelEventInit): WheelEvent {
+    const el = container.querySelector('.riv-scroll') as HTMLElement;
+    const ev = new WheelEvent('wheel', { bubbles: true, cancelable: true, ...init });
+    act(() => {
+      el.dispatchEvent(ev);
+    });
+    return ev;
+  }
+
+  /** Zoom percentage from the toolbar info text. */
+  function zoomPct(): number {
+    const info = container.querySelector('.riv-info')?.textContent ?? '';
+    return Number(/(\d+)%/.exec(info)?.[1] ?? NaN);
+  }
+
+  it('zooms in on a pinch (ctrl+wheel) and suppresses the browser page zoom', () => {
+    mount(800, 600);
+    expect(zoomPct()).toBe(50);
+
+    const ev = wheel({ deltaY: -100, ctrlKey: true, clientX: 200, clientY: 150 });
+    expect(zoomPct()).toBeGreaterThan(50);
+    // Without preventDefault the OS/browser would zoom the whole page instead.
+    expect(ev.defaultPrevented).toBe(true);
+  });
+
+  it('zooms out on the opposite pinch direction', () => {
+    mount(800, 600);
+    wheel({ deltaY: 100, ctrlKey: true, clientX: 200, clientY: 150 });
+    expect(zoomPct()).toBeLessThan(50);
+  });
+
+  it('treats cmd/ctrl + wheel as zoom too', () => {
+    mount(800, 600);
+    wheel({ deltaY: -100, metaKey: true, clientX: 200, clientY: 150 });
+    expect(zoomPct()).toBeGreaterThan(50);
+  });
+
+  it('leaves a plain wheel to scroll the container (that is the pan)', () => {
+    mount(800, 600);
+    const ev = wheel({ deltaY: -100, clientX: 200, clientY: 150 });
+    expect(zoomPct()).toBe(50);
+    // Not consumed, so the container scrolls natively.
+    expect(ev.defaultPrevented).toBe(false);
+  });
+
+  it('does not zoom past the limits', () => {
+    mount(800, 600);
+    // Way past MAX_SCALE (8) in one gesture.
+    wheel({ deltaY: -100000, ctrlKey: true, clientX: 200, clientY: 150 });
+    expect(zoomPct()).toBe(800);
+    wheel({ deltaY: 100000, ctrlKey: true, clientX: 200, clientY: 150 });
+    expect(zoomPct()).toBe(5);
+  });
+});

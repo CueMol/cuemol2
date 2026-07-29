@@ -26,14 +26,51 @@ runtime_class UmbreonSceneExporter extends SceneExporter
   /// supersampling (antialiasing) factor; 1 = off
   property integer supersample => m_nSupersample;
 
+  /// antialiasing mode: 0 = grid (evaluate every subsample), 1 = adaptive
+  /// (refine only the pixels an edge crosses). Adaptive reaches a comparable
+  /// edge at a fraction of the cost, but umbreon does not support it together
+  /// with GI, where it is silently treated as grid.
+  property integer aaMode => m_nAaMode;
+
+  /// adaptive-AA refinement grid per flagged pixel; 0 = use `supersample`
+  property integer aaDepth => m_nAaDepth;
+
   /// ambient-occlusion ray count per mesh hit; 0 = off
   property integer aoSamples => m_nAoSamples;
 
-  /// ambient-occlusion occluder search radius (world units)
+  /// ambient-occlusion occluder search radius (world units); 0 or less = auto
+  /// (a fraction of the scene bounding-box diagonal, so AO strength does not
+  /// depend on how large the molecule is)
   property real aoDistance => m_dAoDistance;
 
   /// ambient-occlusion strength (0 = none, 1 = full)
   property real aoIntensity => m_dAoIntensity;
+
+  //////////
+  // AO quality recipe. All default to umbreon's legacy single-scale binary
+  // behaviour, so leaving them alone keeps the previous image. Any non-default
+  // value switches umbreon to its enhanced AO estimator.
+
+  /// how much AO darkens the DIRECT diffuse term (0 = ambient only). With
+  /// CueMol's default lighting most energy is direct, so AO is nearly
+  /// invisible at 0; 1.0 is the recipe value for a GTAO-like depth cue.
+  property real aoDiffuseFactor => m_dAoDiffuseFactor;
+
+  /// gather AO at three nested radii instead of one (large-scale cavities plus
+  /// contact detail)
+  property boolean aoMultiScale => m_bAoMultiScale;
+
+  /// shade the ambient along the average unoccluded direction (bent normal)
+  property boolean aoBentNormal => m_bAoBentNormal;
+
+  /// Hammersley sequence with a per-pixel rotation instead of white noise;
+  /// same cost, much less noise at a given sample count
+  property boolean aoLowDiscrepancy => m_bAoLowDiscrepancy;
+
+  /// AO gather resolution divisor: 0 (or 1) = one gather per shading hit,
+  /// -1 = gather once per output pixel and interpolate (needs supersample > 1;
+  /// the fast path for interactive AO), k > 1 = explicit divisor
+  property integer aoResDiv => m_nAoResDiv;
 
   /// cast shadows from the lights
   property boolean shadows => m_bShadows;

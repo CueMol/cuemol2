@@ -49,6 +49,15 @@ const DENOISE_MODE: Record<string, { giDenoise: boolean; denoiser: number }> = {
   None: { giDenoise: false, denoiser: 0 },
 };
 
+// AO gather resolution (renderBackends.ts "aoGather" enum) -> umbreon aoResDiv.
+// -1 gathers once per output pixel and interpolates (the fast path, effective
+// only above supersample 1); 0 gathers at every shading hit.
+const AO_GATHER: Record<string, number> = {
+  "Per output pixel": -1,
+  "Per shading hit": 0,
+};
+
+
 /**
  * Create the umbreon exporter and apply every setting from `snapshot`.
  *
@@ -78,12 +87,23 @@ function makeExporter(
 
   // Umbreon-specific backend props. Fallbacks preserve the C++ ctor defaults
   // (e.g. aoDistance 1e20 = unbounded) when a prop is absent from the snapshot.
+  // Supersampling only: umbreon's adaptive AA is left at its off default,
+  // since it is unsupported alongside GI and so is not offered in the UI.
   exporter.supersample = numVal(ub, "supersample", 3);
   // AO on/off is a dedicated switch; map it to aoSamples 0 when off (C++
   // treats 0 samples as AO disabled). When on, aoSamples is >= 1.
   exporter.aoSamples = boolVal(ub, "aoEnabled", false) ? numVal(ub, "aoSamples", 8) : 0;
-  exporter.aoDistance = numVal(ub, "aoDistance", 1e20);
+  // 0 (or less) asks libcuemol2 to scale the radius to the scene bounding box.
+  exporter.aoDistance = numVal(ub, "aoDistance", 0);
   exporter.aoIntensity = numVal(ub, "aoIntensity", 1.0);
+  // AO quality recipe. aoDiffuseFactor defaults to 1.0 rather than umbreon's
+  // 0.0: at 0 the AO term only touches the ambient light, and CueMol's default
+  // lighting is mostly direct, so AO would be nearly invisible.
+  exporter.aoDiffuseFactor = numVal(ub, "aoDiffuseFactor", 1.0);
+  exporter.aoMultiScale = boolVal(ub, "aoMultiScale", true);
+  exporter.aoBentNormal = boolVal(ub, "aoBentNormal", true);
+  exporter.aoLowDiscrepancy = boolVal(ub, "aoLowDiscrepancy", true);
+  exporter.aoResDiv = AO_GATHER[strVal(ub, "aoGather", "Per output pixel")] ?? -1;
   exporter.shadows = boolVal(ub, "shadows", false);
   exporter.shadowSamples = numVal(ub, "shadowSamples", 1);
   exporter.lightRadius = numVal(ub, "lightRadius", 0.0);

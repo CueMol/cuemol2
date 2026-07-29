@@ -32,6 +32,8 @@ import type {
   TextCtxShowPayload,
   UiState,
   ViewSizePx,
+  RenderImageRef,
+  RenderViewCamera,
 } from './ipcTypes'
 
 export interface InvokeChannels {
@@ -96,6 +98,32 @@ export interface InvokeChannels {
   [IPC.RENDER_WINDOW_STATE]:   { req: RenderWindowStateUpdate; res: void }
   [IPC.RENDER_VIEW_SIZE_GET]:  { req: void;                    res: ViewSizePx | null }
   [IPC.RENDER_VIEW_SIZE_REPLY]: { req: { reqId: number; size: ViewSizePx | null }; res: void }
+  [IPC.RENDER_VIEW_CAMERA_GET]: { req: { viewId: number }; res: RenderViewCamera | null }
+  [IPC.RENDER_VIEW_CAMERA_REPLY]: {
+    req: { reqId: number; camera: RenderViewCamera | null }
+    res: void
+  }
+  /**
+   * Archive a finished render's PNG under its result id (main window -> main).
+   * `workDir` is the job's temp directory when it is one the app should clean
+   * up with the history; a movie's frames live in the user's own folder and
+   * are not reported.
+   */
+  [IPC.RENDER_HISTORY_STORE]: {
+    req: { resultId: string; sourcePath: string; workDir?: string }
+    res: { ok: boolean }
+  }
+  /** Drop every archived render and the work directories they came from. */
+  [IPC.RENDER_HISTORY_CLEAR]: { req: void; res: void }
+  /** Read an archived render back for display (render window -> main). */
+  [IPC.RENDER_HISTORY_READ]: { req: { resultId: string }; res: { dataUrl: string | null } }
+  /** Write the shown render to a file the user picks. */
+  [IPC.RENDER_IMAGE_SAVE]: {
+    req: { ref: RenderImageRef; defaultName: string }
+    res: { canceled: boolean; filePath?: string; error?: string }
+  }
+  /** Put the shown render on the system clipboard. */
+  [IPC.RENDER_IMAGE_COPY]: { req: { ref: RenderImageRef }; res: { ok: boolean; error?: string } }
   /** Read one frame of a finished movie render back off disk (frame slider). */
   [IPC.RENDER_FRAME_READ]: { req: { outputDir: string; baseName: string; frameIndex: number }
                              res: { dataUrl: string | null } }
@@ -137,6 +165,7 @@ export interface PushChannels {
   [IPC.RENDER_WINDOW_EXEC]:       RenderWindowCommand
   [IPC.RENDER_WINDOW_STATE_PUSH]: RenderWindowStateUpdate
   [IPC.RENDER_VIEW_SIZE_REQUEST]: { reqId: number }
+  [IPC.RENDER_VIEW_CAMERA_REQUEST]: { reqId: number; viewId: number }
 }
 
 export type InvokeChannel = keyof InvokeChannels

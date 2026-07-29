@@ -280,6 +280,28 @@ namespace {
     MB_DPRINTLN("Umbreon> render done: %.3f sec", frame.renderSeconds);
   }
 
+  /// Bounding-box diagonal of everything in the scene (mesh, balls, sticks).
+  /// Used to scale the AO radius to the molecule; returns 0 for an empty scene.
+  double sceneDiagonal(const umbreon::Scene &scene)
+  {
+    umbreon::Aabb bb = scene.mesh.bounds();
+    // mesh.bounds() covers the triangles only, but a CPK / ball-and-stick
+    // representation has no triangles at all, so fold in the primitives.
+    for (const umbreon::Sphere &s : scene.spheres) {
+      const umbreon::Vec3 r(s.radius, s.radius, s.radius);
+      bb.extend(s.center - r);
+      bb.extend(s.center + r);
+    }
+    for (const umbreon::Cylinder &c : scene.cylinders) {
+      const umbreon::Vec3 r(c.radius, c.radius, c.radius);
+      bb.extend(c.p0 - r);
+      bb.extend(c.p0 + r);
+      bb.extend(c.p1 - r);
+      bb.extend(c.p1 + r);
+    }
+    return bb.valid() ? double(bb.diagonal()) : 0.0;
+  }
+
 }  // anonymous namespace
 #endif  // HAVE_UMBREON
 
@@ -720,9 +742,34 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
   opt.width = (prm.width > 0) ? prm.width : 640;
   opt.height = (prm.height > 0) ? prm.height : 480;
   opt.supersample = (prm.supersample > 0) ? prm.supersample : 1;
+  // Adaptive AA refines only the pixels an edge crosses, reaching a grid-like
+  // edge for a fraction of the samples. umbreon cannot combine it with GI (it
+  // warns and falls back), so decide that here instead of relying on the
+  // warning path.
+  opt.aaMode = prm.giEnabled ? 0 : ((prm.aaMode > 0) ? 1 : 0);
+  opt.aaDepth = (prm.aaDepth > 0) ? prm.aaDepth : 0;
   opt.aoSamples = (prm.aoSamples > 0) ? prm.aoSamples : 0;
-  opt.aoDistance = float(prm.aoDistance);
+  // AO radius. A fixed world radius makes the effect depend on how large the
+  // molecule is -- the same setting darkens a small peptide and does nothing
+  // on a ribosome -- so <= 0 means "scale it to this scene": a fraction of the
+  // bounding-box diagonal, which is what umbreon's own auto distances do
+  // (giMaxDistance / giRecordSpacing). 0.7 sits mid-range of the 0.5-0.85 the
+  // umbreon quality guide recommends for molecular scenes, where a larger
+  // radius means stronger occlusion (a short one finds no occluders at all).
+  opt.aoDistance = (prm.aoDistance > 0.0)
+                       ? float(prm.aoDistance)
+                       : float(sceneDiagonal(scene) * 0.7);
   opt.aoIntensity = float(prm.aoIntensity);
+  // AO quality recipe. umbreon keeps its legacy binary single-scale estimator
+  // while all of these are at their defaults, so an unset recipe renders
+  // exactly as before. aoDiffuseFactor is the one that makes AO visible here:
+  // CueMol's default lighting puts most energy in the direct lights, which the
+  // ambient-only AO term never touches.
+  opt.aoDiffuseFactor = float(prm.aoDiffuseFactor);
+  opt.aoMultiScale = prm.aoMultiScale;
+  opt.aoBentNormal = prm.aoBentNormal;
+  opt.aoLowDiscrepancy = prm.aoLowDiscrepancy;
+  opt.aoResDiv = prm.aoResDiv;
   opt.shadows = prm.shadows;
   opt.shadowSamples = (prm.shadowSamples > 0) ? prm.shadowSamples : 1;
   opt.lightRadius = float(prm.lightRadius);
@@ -785,9 +832,9 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
     scene.groupEdgeStyle = m_pImpl->groupEdgeStyle;
   }
 
-  MB_DPRINTLN("Umbreon> render %dx%d ss=%d ao=%d tris=%d",
-              opt.width, opt.height, opt.supersample, opt.aoSamples,
-              int(scene.mesh.triangleCount()));
+  MB_DPRINTLN("Umbreon> render %dx%d ss=%d aa=%d ao=%d aodist=%f tris=%d",
+              opt.width, opt.height, opt.supersample, opt.aaMode, opt.aoSamples,
+              opt.aoDistance, int(scene.mesh.triangleCount()));
 #endif
 }
 
