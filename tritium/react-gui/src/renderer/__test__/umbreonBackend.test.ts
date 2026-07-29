@@ -199,12 +199,13 @@ describe('umbreonBackend.beginInProcess', () => {
 
         umbreonBackend.beginInProcess!(ctx, {} as never, snapshot, '/o.png')
 
-        // aoDistance defaults to 0, which asks libcuemol2 to scale the radius
-        // to the scene bounding box; supersample defaults to 3; projection ->
-        // perspective.
-        expect(exporter.aoDistance).toBe(0)
-        // absent aoEnabled -> AO off -> aoSamples forced to 0.
+        // supersample defaults to 3; projection -> perspective.
+        // absent aoEnabled -> AO off -> aoSamples forced to 0, and the rest of
+        // the AO block stays unwritten so umbreon keeps its neutral defaults
+        // (see the AO-off test below).
         expect(exporter.aoSamples).toBe(0)
+        expect(exporter.aoDistance).toBeUndefined()
+        expect(exporter.aoResDiv).toBeUndefined()
         expect(exporter.supersample).toBe(3)
         // Antialiasing is plain grid supersampling: the adaptive-AA knobs are
         // never written, so umbreon keeps its (off) defaults.
@@ -214,6 +215,77 @@ describe('umbreonBackend.beginInProcess', () => {
         // absent denoise -> "OIDN" default -> pt1Denoise on, no full-frame pass.
         expect(exporter.giDenoise).toBe(true)
         expect(exporter.denoiser).toBe(0)
+    })
+
+    // AO and GI are alternatives (the Lighting selector enforces it), so an AO
+    // recipe has no business travelling with a GI render. umbreon reads
+    // aoResDiv BEFORE the aoSamples > 0 gate and cannot combine its coarse-AO
+    // grid with GI, so sending "gather per output pixel" alongside GI made it
+    // warn ("--ao-res out is not supported with --gi yet") on every render.
+    it('writes no AO settings at all while AO is off', () => {
+        const exporter = makeExporter()
+        const ctx = {
+            strMgr: { createHandler: vi.fn(() => exporter) },
+        } as unknown as WorkerContext
+
+        const snapshot: RenderSettingsSnapshot = {
+            mode: 'still',
+            backend: 'umbreon',
+            commonProps: [p('width', 640), p('height', 480), p('unit', 'px'), p('dpi', 600)],
+            backendProps: [
+                p('aoEnabled', false),
+                // Values left behind by an earlier AO session must not leak out.
+                p('aoSamples', 256),
+                p('aoGather', 'Per output pixel'),
+                p('aoMultiScale', true),
+                p('aoBentNormal', true),
+                p('aoLowDiscrepancy', true),
+                p('aoDiffuseFactor', 1),
+                p('aoDistance', 50),
+                p('aoIntensity', 0.8),
+                p('useGI', true),
+            ],
+        }
+
+        umbreonBackend.beginInProcess!(ctx, {} as never, snapshot, '/o.png')
+
+        expect(exporter.aoSamples).toBe(0)
+        expect(exporter.aoResDiv).toBeUndefined()
+        expect(exporter.aoMultiScale).toBeUndefined()
+        expect(exporter.aoBentNormal).toBeUndefined()
+        expect(exporter.aoLowDiscrepancy).toBeUndefined()
+        expect(exporter.aoDiffuseFactor).toBeUndefined()
+        expect(exporter.aoDistance).toBeUndefined()
+        expect(exporter.aoIntensity).toBeUndefined()
+        // GI itself is unaffected.
+        expect(exporter.useGI).toBe(true)
+    })
+
+    it('writes the AO recipe while AO is on', () => {
+        const exporter = makeExporter()
+        const ctx = {
+            strMgr: { createHandler: vi.fn(() => exporter) },
+        } as unknown as WorkerContext
+
+        const snapshot: RenderSettingsSnapshot = {
+            mode: 'still',
+            backend: 'umbreon',
+            commonProps: [p('width', 640), p('height', 480), p('unit', 'px'), p('dpi', 600)],
+            backendProps: [
+                p('aoEnabled', true),
+                p('aoSamples', 64),
+                p('aoGather', 'Per shading hit'),
+                p('aoMultiScale', true),
+                p('aoDiffuseFactor', 1),
+            ],
+        }
+
+        umbreonBackend.beginInProcess!(ctx, {} as never, snapshot, '/o.png')
+
+        expect(exporter.aoSamples).toBe(64)
+        expect(exporter.aoResDiv).toBe(0) // "Per shading hit"
+        expect(exporter.aoMultiScale).toBe(true)
+        expect(exporter.aoDiffuseFactor).toBe(1)
     })
 })
 
