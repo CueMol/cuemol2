@@ -35,6 +35,8 @@ interface MockTransport {
   stop: ReturnType<typeof vi.fn>;
   seek: ReturnType<typeof vi.fn>;
   setLoop: ReturnType<typeof vi.fn>;
+  setStartCam: ReturnType<typeof vi.fn>;
+  adoptMgr: ReturnType<typeof vi.fn>;
 }
 let mockTransport: MockTransport;
 vi.mock("../hooks/useAnimTransport", () => ({
@@ -57,7 +59,9 @@ function defaultEdit(): MockEdit {
     addElement: vi.fn(),
     removeElement: vi.fn(),
     moveElement: vi.fn(),
-    setElementTime: vi.fn(),
+    // Resolves like the real hook: the panel awaits it to know whether a
+    // refetch (and so a preview handover) is coming.
+    setElementTime: vi.fn(() => Promise.resolve(true)),
   };
 }
 
@@ -80,11 +84,16 @@ function el(over: Partial<AnimElement>): AnimElement {
   };
 }
 
-function timeline(elements: AnimElement[], lengthMs = 5000): AnimTimeline {
+function timeline(
+  elements: AnimElement[],
+  lengthMs = 5000,
+  cameras: string[] = [],
+): AnimTimeline {
   return {
     sceneId: 1,
     elements,
     mgr: { lengthMs, elapsedMs: 0, playState: "stop", loop: false, startcam: "" },
+    cameras,
     fps: 30,
   };
 }
@@ -102,6 +111,8 @@ function defaultTransport(): MockTransport {
     stop: vi.fn(),
     seek: vi.fn(),
     setLoop: vi.fn(),
+    setStartCam: vi.fn(),
+    adoptMgr: vi.fn(),
   };
 }
 
@@ -231,6 +242,60 @@ describe("AnimationPanel transport + scrub", () => {
   });
 });
 
+describe("AnimationPanel start camera", () => {
+  beforeEach(() => {
+    mockTimeline = timeline([el({ uid: 1 })], 5000, ["front", "back"]);
+    mockTransport = defaultTransport();
+    mockEdit = defaultEdit();
+  });
+
+  function startCamSelect(container: HTMLElement) {
+    return container.querySelector(".anim-startcam select") as HTMLSelectElement;
+  }
+
+  it("offers (none) plus every scene camera, selecting the manager's startcam", () => {
+    mockTransport.mgr = { ...mockTransport.mgr, startcam: "back" };
+    const { container, unmount } = mountTree(
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} />,
+    );
+    const sel = startCamSelect(container);
+    expect(Array.from(sel.options).map((o) => o.value)).toEqual(["", "front", "back"]);
+    expect(sel.value).toBe("back");
+    unmount();
+  });
+
+  it("commits the picked camera name via setStartCam", () => {
+    const { container, unmount } = mountTree(
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} />,
+    );
+    const sel = startCamSelect(container);
+    act(() => {
+      sel.value = "front";
+      sel.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(mockTransport.setStartCam).toHaveBeenCalledWith("front");
+    unmount();
+  });
+
+  it("falls back to (none) when the stored startcam no longer exists (UXP parity)", () => {
+    mockTransport.mgr = { ...mockTransport.mgr, startcam: "deleted-cam" };
+    const { container, unmount } = mountTree(
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} />,
+    );
+    expect(startCamSelect(container).value).toBe("");
+    unmount();
+  });
+
+  it("stays usable without an active view (startcam needs no view)", () => {
+    mockTransport.canControl = false;
+    const { container, unmount } = mountTree(
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={undefined} />,
+    );
+    expect(startCamSelect(container).disabled).toBe(false);
+    unmount();
+  });
+});
+
 describe("AnimationPanel editing", () => {
   beforeEach(() => {
     mockTimeline = timeline([
@@ -261,6 +326,67 @@ describe("AnimationPanel editing", () => {
     unmount();
   });
 
+  it("holds the dropped span until fresh data arrives (no snap back to the old place)", () => {
+    const { container, root, unmount } = mount();
+    const strip = () => container.querySelector('.anim-strip[data-uid="1"]') as HTMLElement;
+    act(() => strip().dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 100 })));
+    act(() => document.dispatchEvent(new MouseEvent("mousemove", { clientX: 200 })));
+    // DEFAULT_PX_PER_MS = 0.1 -> +100 px = +1000 ms -> left 1000*0.1 = 100 px.
+    expect(strip().style.left).toBe("100px");
+    act(() => document.dispatchEvent(new MouseEvent("mouseup", { clientX: 200 })));
+    // Still at the drop position: the fetched timeline has not caught up yet.
+    expect(strip().style.left).toBe("100px");
+
+    // The refetch lands with the edit applied -> the preview hands over.
+    mockTimeline = timeline([
+      el({ uid: 1, name: "A", index: 0, startMs: 1000, endMs: 2000, absStartMs: 1000, absEndMs: 2000 }),
+      el({ uid: 2, name: "B", index: 1, startMs: 0, endMs: 1000, absStartMs: 1000, absEndMs: 2000 }),
+    ]);
+    act(() => {
+      root.render(<AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} />);
+    });
+    expect(strip().style.left).toBe("100px");
+    unmount();
+  });
+
+  it("releases the held span when the write is rejected", async () => {
+    mockEdit.setElementTime = vi.fn(() => Promise.resolve(false));
+    const { container, unmount } = mount();
+    const strip = () => container.querySelector('.anim-strip[data-uid="1"]') as HTMLElement;
+    act(() => strip().dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 100 })));
+    act(() => document.dispatchEvent(new MouseEvent("mousemove", { clientX: 200 })));
+    act(() => document.dispatchEvent(new MouseEvent("mouseup", { clientX: 200 })));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(strip().style.left).toBe("0px"); // back to the fetched span
+    unmount();
+  });
+
+  it("does not drag a chained element before its reference's end (relative start >= 0)", () => {
+    // B is chained after A with relative start 0 (abs 1000). Dragging far left
+    // must stop at relative 0, not run negative -- a relative time is measured
+    // from the reference's END, so a negative one is not a supported state.
+    mockTimeline = timeline([
+      el({ uid: 1, name: "A", index: 0, startMs: 0, endMs: 1000, absStartMs: 0, absEndMs: 1000 }),
+      el({
+        uid: 2, name: "B", index: 1, timeRefName: "A",
+        startMs: 0, endMs: 1000, absStartMs: 1000, absEndMs: 2000,
+      }),
+    ]);
+    const { container, unmount } = mount();
+    const strip = container.querySelector('.anim-strip[data-uid="2"]') as HTMLElement;
+    act(() => strip.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 300 })));
+    act(() => document.dispatchEvent(new MouseEvent("mousemove", { clientX: 0 })));
+    act(() => document.dispatchEvent(new MouseEvent("mouseup", { clientX: 0 })));
+    expect(mockEdit.setElementTime).toHaveBeenCalledTimes(1);
+    const [index, startMs, endMs] = mockEdit.setElementTime.mock.calls[0];
+    expect(index).toBe(1);
+    expect(startMs).toBe(0); // floored at the reference's end
+    expect(endMs).toBe(1000); // duration preserved
+    unmount();
+  });
+
   it("resize-right grip changes only the end (relative start unchanged)", () => {
     const { container, unmount } = mount();
     const grip = container.querySelector(
@@ -283,6 +409,48 @@ describe("AnimationPanel editing", () => {
     expect(delBtn.disabled).toBe(false);
     act(() => delBtn.click());
     expect(mockEdit.removeElement).toHaveBeenCalledWith(0);
+    unmount();
+  });
+
+  it("selects the following element after a delete so the button stays live", () => {
+    const onInspect = vi.fn();
+    const { container, unmount } = mountTree(
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} onInspectAnimElement={onInspect} />,
+    );
+    selectFirst(container); // uid 1 (index 0)
+    const delBtn = container.querySelectorAll(".anim-label-toolbar button")[1] as HTMLButtonElement;
+    act(() => delBtn.click());
+    // Selection moves to uid 2 -- delete is still enabled for the next click.
+    expect(onInspect).toHaveBeenLastCalledWith(1, 2);
+    expect(
+      (container.querySelectorAll(".anim-label-toolbar button")[1] as HTMLButtonElement).disabled,
+    ).toBe(false);
+    unmount();
+  });
+
+  it("falls back to the preceding element when the last one is deleted", () => {
+    const onInspect = vi.fn();
+    const { container, unmount } = mountTree(
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} onInspectAnimElement={onInspect} />,
+    );
+    act(() => (container.querySelectorAll(".anim-label-row")[1] as HTMLElement).click()); // uid 2
+    const delBtn = container.querySelectorAll(".anim-label-toolbar button")[1] as HTMLButtonElement;
+    act(() => delBtn.click());
+    expect(mockEdit.removeElement).toHaveBeenCalledWith(1);
+    expect(onInspect).toHaveBeenLastCalledWith(1, 1);
+    unmount();
+  });
+
+  it("clears the selection when the only element is deleted", () => {
+    mockTimeline = timeline([el({ uid: 1, index: 0 })]);
+    const onInspect = vi.fn();
+    const { container, unmount } = mountTree(
+      <AnimationPanel cm={cm} activeSceneId={1} activeMolViewId={2} onInspectAnimElement={onInspect} />,
+    );
+    selectFirst(container);
+    const delBtn = container.querySelectorAll(".anim-label-toolbar button")[1] as HTMLButtonElement;
+    act(() => delBtn.click());
+    expect(onInspect).toHaveBeenLastCalledWith(1, null);
     unmount();
   });
 

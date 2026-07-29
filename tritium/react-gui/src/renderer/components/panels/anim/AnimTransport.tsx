@@ -1,16 +1,19 @@
 /**
  * @file components/panels/anim/AnimTransport.tsx
- * @description Timeline header: playback transport, time readout, loop, and zoom.
+ * @description Timeline header: playback transport, time readout, start camera,
+ * loop, and zoom.
  *
  * Playback controls drive the C++ `AnimMgr` via the parent's transport hook.
  * They are disabled when there is no active view (`canControl` false). The
- * zoom / fit controls are pure view state and always functional.
+ * start-camera select is a manager property (no view needed) and the zoom / fit
+ * controls are pure view state, so both stay functional regardless.
  */
 
 import React from "react";
 import { AppIcon } from "../../AppIcon";
 import { ButtonRow, FormButton } from "../../../h3-kit/form/ButtonRow";
 import { SwitchField } from "../../../h3-kit/form/SwitchField";
+import { SelectField } from "../../../h3-kit/form/SelectField";
 import type { AnimMgrState } from "../../../types";
 import { formatClock } from "./timelineGeometry";
 
@@ -23,18 +26,22 @@ interface AnimTransportProps {
   /** Whether transport can act (cm + scene + active view present). */
   canControl: boolean;
   loop: boolean;
+  /** Scene camera names offered by the start-camera select. */
+  cameras: string[];
   onPlayPause: () => void;
   onStop: () => void;
   onSkipStart: () => void;
   onSkipEnd: () => void;
   onToggleLoop: (loop: boolean) => void;
+  /** Set `AnimMgr.startcam` ('' = none). */
+  onStartCamChange: (name: string) => void;
   onFit: () => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
 }
 
 /**
- * Render the transport / readout / loop / zoom header row.
+ * Render the transport / readout / start-cam / loop / zoom header row.
  */
 export const AnimTransport: React.FC<AnimTransportProps> = ({
   mgr,
@@ -43,11 +50,13 @@ export const AnimTransport: React.FC<AnimTransportProps> = ({
   isPlaying,
   canControl,
   loop,
+  cameras,
   onPlayPause,
   onStop,
   onSkipStart,
   onSkipEnd,
   onToggleLoop,
+  onStartCamChange,
   onFit,
   onZoomIn,
   onZoomOut,
@@ -86,6 +95,22 @@ export const AnimTransport: React.FC<AnimTransportProps> = ({
       <span className="anim-readout-value type-mono">{formatClock(mgr.elapsedMs)}</span>
       <span className="anim-readout-sep">/</span>
       <span className="anim-readout-value type-mono">{formatClock(mgr.lengthMs)}</span>
+    </div>
+
+    <div className="anim-readout anim-startcam">
+      <span className="anim-readout-label type-caption">Start cam</span>
+      <SelectField
+        value={cameras.includes(mgr.startcam) ? mgr.startcam : ""}
+        onChange={onStartCamChange}
+        aria-label="Start camera"
+      >
+        <option value="">(none)</option>
+        {cameras.map((name) => (
+          <option key={name} value={name}>
+            {name}
+          </option>
+        ))}
+      </SelectField>
     </div>
 
     <div className="anim-readout anim-readout-meta">

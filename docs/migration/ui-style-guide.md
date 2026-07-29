@@ -19,6 +19,7 @@ label+control の UI (フォーム行・テキスト入力・select・numeric・
 **実装前にカタログを探して再利用する (最優先 / まずこれ)**: UI を書き始める前に、下表と **実物カタログ `components/panes/CatalogPane1/2/3`** を一覧し、欲しい見た目 (参照画像があればそれ) に一致する既存 component を特定してから使う。既存パターンを別 component で自作し直さない。よくある取り違え:
 - **ステッパー付き数値ボックス (up/down 矢印)** = `SliderField` (`SliderNumericField`)。`slider={false}` で slider 無しの「数値+ステッパー」だけになる。`NumericField` は**既定でステッパーを隠す**設計なので、ステッパーを足そうとしない。
 - **drag で増減する数値** = `DragNumericField` (`NumericField` ではない)。
+- **時間 (ms) の入力** = `TimeField` (`DragNumericField` を直接組まない)。
 - **2 桁の裸 cell** = `NumberCell`。
 真にカタログに無い時のみ、`_form-kit.css` にサイズを 1 定義して**先にカタログへ追加**する。カタログ調査を飛ばして Blueprint 直叩き/独自 CSS で作ると、既存の verified 実装とサイズ・デザインが食い違い手戻りする (このガイドが防ぎたい再発そのもの)。
 
@@ -32,7 +33,8 @@ label+control の UI (フォーム行・テキスト入力・select・numeric・
 | `SelectField` | ドロップダウン (`<option>` を children に) | 高 `--field-h` (22px) |
 | `NumericField` | 数値 + 明示 slider (`slider` 既定 true)。**ネイティブ stepper は既定で非表示** (compact 用)。任意で `unit` | 入力高 `--field-h-sm` (20px) |
 | `SliderField` (`SliderNumericField`) | label + slider + 数値 + **custom ステッパー (up/down)** + 任意 `unit`。**ステッパー付き数値ボックスはこれ**。`slider={false}` で slider 無しの数値+ステッパーだけにできる (count/stride 等) | `.h3-form-sliderfield*` (`_form-kit.css`) |
-| `DragNumericField` | 数値 (Blender風 drag number button)。**UXP の numslider の移植先**。renderer property 等のドラッグ可能な数値はこれを使う (`NumericField` ではない) | サイズは `.h3-form-drag*` (`_form-kit.css`) |
+| `DragNumericField` | 数値 (Blender風 drag number button)。**UXP の numslider の移植先**。renderer property 等のドラッグ可能な数値はこれを使う (`NumericField` ではない)。`format`/`parse`/`resolveStep`/`stepper="stacked"` で非10進の値にも転用できる (下記 `TimeField`) | サイズは `.h3-form-drag*` (`_form-kit.css`) |
+| `TimeField` | 時間 (ms) の timecode `M:SS.mmm`。**UXP の timeedit の移植先**。`DragNumericField` プリセットで drag scrub + ▲▼ spin + 打ち込み (`250ms` / `1.5s` / `+2s` の相対も可) | `.h3-form-drag` + `.h3-form-time` (`_form-kit.css`) |
 | `SwitchField` | 真偽トグル (`inline` Field 内で使う) | Blueprint Switch |
 | `ColorField` | 色 (`CueColorField` の薄いラッパ) | - |
 | `ButtonRow` / `FormButton` | コンパクトボタンの行 / ボタン | 高 `--field-btn-h`, ラベル `--fs-base` |

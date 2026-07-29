@@ -6,12 +6,14 @@
  *     and exposes the resolved timeline;
  *   - a SEM_ANIM listener scoped to the active scene is installed
  *     (refetch-on-change), so edits from any path stay in sync;
+ *   - a second SEM_CAMERA|SEM_SCENE listener keeps the start-camera list
+ *     current when cameras are added / removed / renamed elsewhere;
  *   - with no active scene there is no fetch and the timeline is null.
  */
 
 import { describe, it, expect, vi } from "vitest";
 import { makeRenderHook, flushPromises } from "./helpers/testHarness";
-import { SEM_ANIM } from "../event";
+import { SEM_ANIM, SEM_CAMERA, SEM_SCENE } from "../event";
 import { useAnimTimeline } from "../hooks/useAnimTimeline";
 import type { AnimTimeline } from "../types";
 
@@ -20,6 +22,7 @@ function fixture(sceneId = 7): AnimTimeline {
     sceneId,
     elements: [],
     mgr: { lengthMs: 0, elapsedMs: 0, playState: "stop", loop: false, startcam: "" },
+    cameras: [],
     fps: 30,
   };
 }
@@ -55,6 +58,17 @@ describe("useAnimTimeline", () => {
     const args = cm.addEventListener.mock.calls[0];
     expect(args[1]).toBe(SEM_ANIM); // srcMask
     expect(args[3]).toBe(7); // scopeId
+    h.unmount();
+  });
+
+  it("also subscribes to SEM_CAMERA|SEM_SCENE (start-camera list sync)", async () => {
+    const cm = makeCm();
+    const h = makeRenderHook(() =>
+      useAnimTimeline({ cm: cm as never, sceneId: 7 }),
+    );
+    await flushPromises();
+    const masks = cm.addEventListener.mock.calls.map((c) => c[1]);
+    expect(masks).toContain(SEM_CAMERA | SEM_SCENE);
     h.unmount();
   });
 

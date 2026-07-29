@@ -39,6 +39,16 @@
   color: var(--text-muted);
 }
 
+/* Start-camera select (UXP anim-panel "Start cam:" row). Fixed width so the
+   header layout does not reflow when a longer camera name is selected. */
+.anim-startcam {
+  flex-shrink: 0;
+}
+
+.anim-startcam .h3-form-select.bp5-html-select {
+  width: var(--anim-startcam-w);
+}
+
 .anim-zoom {
   margin-left: auto;
 }

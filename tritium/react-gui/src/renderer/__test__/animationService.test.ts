@@ -54,6 +54,12 @@ function makeCtx(opts: {
   elapsedMs?: number;
   loop?: boolean;
   startcam?: string;
+  /** Cameras the scene already owns (drives hasCamera + getCameraInfoJSON). */
+  cameras?: string[];
+  /** Overrides the JSON derived from `cameras` (malformed-payload cases). */
+  cameraInfoJSON?: string;
+  /** Make saveViewToCam a no-op, as if the camera could not be created. */
+  saveViewToCamFails?: boolean;
   resolveThrows?: boolean;
   noScene?: boolean;
   noView?: boolean;
@@ -92,7 +98,27 @@ function makeCtx(opts: {
   const startUndoTxn = vi.fn();
   const commitUndoTxn = vi.fn();
   const rollbackUndoTxn = vi.fn();
-  const scene = { getAnimMgr: () => mgr, startUndoTxn, commitUndoTxn, rollbackUndoTxn };
+  const sceneCameras = new Set(opts.cameras ?? []);
+  const getCameraInfoJSON = vi.fn(
+    () =>
+      opts.cameraInfoJSON ??
+      JSON.stringify([...sceneCameras].map((name) => ({ name, vis_size: 0 }))),
+  );
+  const hasCamera = vi.fn((name: string) => sceneCameras.has(name));
+  const saveViewToCam = vi.fn((_viewId: number, name: string) => {
+    if (opts.saveViewToCamFails) return false;
+    sceneCameras.add(name);
+    return true;
+  });
+  const scene = {
+    getAnimMgr: () => mgr,
+    getCameraInfoJSON,
+    hasCamera,
+    saveViewToCam,
+    startUndoTxn,
+    commitUndoTxn,
+    rollbackUndoTxn,
+  };
   const view = { __view: true };
   // Each createObj('TimeValue') yields a fresh value (recorded in order); any
   // other class yields the shared `createdObj` (the new AnimObj under test).
@@ -115,7 +141,7 @@ function makeCtx(opts: {
   } as unknown as WorkerContext;
   return {
     ctx, mgr, getAt, resolveRelTime, start, pause, stop, goTime,
-    append, insertBefore, removeAt, getByName,
+    append, insertBefore, removeAt, getByName, getCameraInfoJSON, hasCamera, saveViewToCam,
     startUndoTxn, commitUndoTxn, rollbackUndoTxn,
     view, createdTimeValues, createdObj, createObj,
   };
@@ -177,6 +203,18 @@ describe("animation.service animListTimeline", () => {
     const res = services.animListTimeline(ctx, { sceneId: 99 });
     expect(res.elements).toEqual([]);
     expect(res.sceneId).toBe(99);
+  });
+
+  it("lists the scene camera names for the start-camera selector", () => {
+    const { ctx } = makeCtx({ cameras: ["front", "back"], startcam: "back" });
+    const res = services.animListTimeline(ctx, { sceneId: 1 });
+    expect(res.cameras).toEqual(["front", "back"]);
+    expect(res.mgr.startcam).toBe("back");
+  });
+
+  it("yields no cameras when getCameraInfoJSON is unparsable", () => {
+    const { ctx } = makeCtx({ cameraInfoJSON: "not json" });
+    expect(services.animListTimeline(ctx, { sceneId: 1 }).cameras).toEqual([]);
   });
 
   it("maps the numeric playState fallback (1 -> play)", () => {
@@ -248,6 +286,21 @@ describe("animation.service transport", () => {
     expect(res.mgr.loop).toBe(true);
   });
 
+  it("animSetStartCam writes mgr.startcam and returns it, outside any undo txn", () => {
+    const { ctx, mgr, startUndoTxn } = makeCtx({ startcam: "" });
+    const res = services.animSetStartCam(ctx, { sceneId: 1, startcam: "front" });
+    expect(mgr.startcam).toBe("front");
+    expect(res.mgr.startcam).toBe("front");
+    // setStartCamName records nothing undoable; a txn would only be discarded.
+    expect(startUndoTxn).not.toHaveBeenCalled();
+  });
+
+  it("animSetStartCam clears the start camera with an empty name", () => {
+    const { ctx, mgr } = makeCtx({ startcam: "front" });
+    expect(services.animSetStartCam(ctx, { sceneId: 1, startcam: "" }).ok).toBe(true);
+    expect(mgr.startcam).toBe("");
+  });
+
   it("transport ops fail safely when the scene is missing", () => {
     const { ctx } = makeCtx({ noScene: true });
     expect(services.animPlay(ctx, { sceneId: 9, viewId: 1 }).ok).toBe(false);
@@ -314,6 +367,46 @@ describe("animation.service editing", () => {
     const res = services.animMoveElement(ctx, { sceneId: 1, from: 1, to: 0 });
     expect(removeAt).toHaveBeenCalledWith(1);
     expect(insertBefore).toHaveBeenCalledWith(0, objs[1]);
+    expect(res.ok).toBe(true);
+  });
+
+  it("animAddElement seeds __current from the view and adopts it as startcam", () => {
+    const { ctx, mgr, saveViewToCam, startUndoTxn } = makeCtx({ startcam: "" });
+    const res = services.animAddElement(ctx, {
+      sceneId: 1, type: "SimpleSpin", viewId: 7,
+    });
+    expect(saveViewToCam).toHaveBeenCalledWith(7, "__current");
+    expect(mgr.startcam).toBe("__current");
+    expect(res.mgr?.startcam).toBe("__current");
+    // UXP seeds the camera before the element edit, outside its undo txn.
+    expect(saveViewToCam.mock.invocationCallOrder[0]).toBeLessThan(
+      startUndoTxn.mock.invocationCallOrder[0],
+    );
+  });
+
+  it("animAddElement keeps an existing __current and never overwrites a set startcam", () => {
+    const { ctx, mgr, saveViewToCam } = makeCtx({
+      cameras: ["__current", "front"], startcam: "front",
+    });
+    services.animAddElement(ctx, { sceneId: 1, type: "SimpleSpin", viewId: 7 });
+    expect(saveViewToCam).not.toHaveBeenCalled();
+    expect(mgr.startcam).toBe("front");
+  });
+
+  it("animAddElement leaves the start camera alone without an active view", () => {
+    const { ctx, mgr, saveViewToCam } = makeCtx({ startcam: "" });
+    services.animAddElement(ctx, { sceneId: 1, type: "SimpleSpin" });
+    expect(saveViewToCam).not.toHaveBeenCalled();
+    expect(mgr.startcam).toBe("");
+  });
+
+  it("animAddElement does not point startcam at a camera the save failed to create", () => {
+    const { ctx, mgr, append } = makeCtx({ startcam: "", saveViewToCamFails: true });
+    const res = services.animAddElement(ctx, {
+      sceneId: 1, type: "SimpleSpin", viewId: 7,
+    });
+    expect(mgr.startcam).toBe("");
+    expect(append).toHaveBeenCalled(); // the add itself still goes through
     expect(res.ok).toBe(true);
   });
 

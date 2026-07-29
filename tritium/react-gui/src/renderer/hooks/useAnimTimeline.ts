@@ -13,7 +13,7 @@
 import { useRef } from "react";
 import type { AsyncCueMol } from "../worker/client/AsyncCueMol";
 import type { AnimTimeline } from "../types";
-import { SEM_ANIM, SEM_ANY } from "../event";
+import { SEM_ANIM, SEM_CAMERA, SEM_SCENE, SEM_ANY } from "../event";
 import { useLiveFetch } from "./useLiveFetch";
 
 interface UseAnimTimelineOptions {
@@ -75,6 +75,16 @@ export function useAnimTimeline({
       {
         enabled: sceneId !== undefined,
         srcMask: SEM_ANIM,
+        evtMask: SEM_ANY,
+        scopeId: sceneId ?? -1,
+        debounceMs: REFETCH_DEBOUNCE_MS,
+      },
+      // The start-camera selector lists the scene's cameras, which change
+      // outside SEM_ANIM (Explorer create / delete / rename, scene load).
+      // Same masks as the UXP `<camerasel>` widget binding.
+      {
+        enabled: sceneId !== undefined,
+        srcMask: SEM_CAMERA | SEM_SCENE,
         evtMask: SEM_ANY,
         scopeId: sceneId ?? -1,
         debounceMs: REFETCH_DEBOUNCE_MS,

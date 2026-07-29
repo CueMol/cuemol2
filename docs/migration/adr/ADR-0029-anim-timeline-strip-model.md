@@ -1,6 +1,6 @@
 # ADR-0029: Animation panel — strip-timeline model and detail inspector
 
-- Status: accepted (anim panel migration complete; Phases 1-6 host E2E verified, Phase 7 timeedit verified locally)
+- Status: accepted (anim panel migration complete; Phases 1-6 host E2E verified, Phase 7 timeedit and Phase 8 start-camera verified by unit tests + production bundle)
 - Date: 2026-06-13
 - Mapping rows: [`panel.anim`](../mapping/panels.md#panelanim), [`dialog.animobj`](../mapping/other_dlgs.md#dialoganimobj)
 
@@ -65,7 +65,9 @@ scan** of `AnimMgr`'s current list (`findByUid`).
   release only -- realtime drag preview is intentionally NOT used because an anim
   element's prop does not live-update the 3D mid-drag (the 3D reflects only the
   playhead-time application). The UXP `timeedit` widget is ported in Phase 7
-  (below) as the reusable h3-kit `TimeField`, so no UXP-parity gaps remain
+  (below) as the reusable h3-kit `TimeField`. The panel-level **start camera**
+  (`AnimMgr.startcam`, UXP's "Start cam:" row) was missed in the original port
+  and is added in Phase 8 (below), closing the last panel-level parity gap
   (offline movie render stays a separate, out-of-scope workstream).
 
 ## Notes
@@ -160,10 +162,123 @@ scan** of `AnimMgr`'s current list (`findByUid`).
   debounce), so an Explorer add / delete / rename keeps the checklist and the
   camera / mol selects current (they previously fetched only on scene change).
 - **timeedit:** Start / Duration use the reusable h3-kit `TimeField`
-  (`h3-kit/form/TimeField.tsx`: ms <-> `M:SS.mmm` / `H:MM:SS.mmm`, commit on
-  blur/Enter; `formatMs` / `parseTime` exported) instead of raw-ms
-  DragNumericFields, mirroring the UXP `timeedit` widget. end = start + duration
-  commits one `timing` write; no worker change.
+  (`h3-kit/form/TimeField.tsx`: ms <-> `M:SS.mmm` / `H:MM:SS.mmm`;
+  `formatMs` / `parseTime` exported) instead of raw-ms DragNumericFields,
+  mirroring the UXP `timeedit` widget. end = start + duration commits one
+  `timing` write; no worker change. Its interaction model is covered below.
+
+### TimeField interaction (why not UXP's segmented spinner)
+
+The first port was text-only -- typed timecode committing on blur / Enter -- so
+UXP's up / down spin buttons, the one way to nudge a value there, had no
+equivalent. Surveying how animation tools take time input:
+
+- **DCC / editing apps** (Blender, After Effects, Premiere, Resolve, Maya)
+  converge on **one field that scrubs on horizontal drag** and accepts typing;
+  explicit spinners are rare (Blender only reveals `<` `>` on hover), and the
+  timecode apps add `+` / `-` relative entry.
+- **Segmented boxes + a shared spinner** is an OS form-widget pattern -- UXP's
+  `timeedit` is literally Mozilla's `datetimepicker` XBL reused, not an
+  animation-tool UI.
+- 3D apps (Blender / Maya / Unity) work in **frames**, which CueMol cannot: fps
+  is display-only (30) with no C++ property, and `AnimObj` stores ms.
+
+So `TimeField` was rebuilt as a **`DragNumericField` preset** -- the catalog
+already implements that interaction model (pointer-lock drag, auto-repeat step
+arrows, modifier snaps, one-interaction-one-undo-step), so this is a reuse, not
+a new widget. `DragNumericField` gained only optional props: `format` / `parse`
+(non-decimal display and entry; `parse` switches the edit input to
+`type="text"`), `stepper="stacked"` (an up / down pair at the right edge instead
+of the side `<` `>`, the SliderField stepper shape), `resolveStep` (per-
+interaction step granularity, which also opts the field into Up / Down keys),
+plus `className` / `aria-label` / `title`. Its 34 existing tests were unchanged.
+
+Resulting model: drag snaps to 0.1 s (Shift 1 ms -- also the stored resolution,
+so a typed `.345` survives -- Ctrl / Cmd 1 s); the spin buttons and Up / Down
+step **the segment the caret is in**, defaulting to seconds when nothing is
+selected and stepping the fraction by 100 ms, which is exactly UXP's
+`_increaseOrDecrease` (`_currentField || _fieldSecond`, `change *= 100` for the
+millisecond box). Typed entry additionally accepts a unit-suffixed number
+(`250ms`, `1.5s`, `2min`) and a `+` / `-` offset (`+2s`, `-1:30`). The magnitude
+grammar is shared between the absolute and relative forms, so an unsuffixed
+number stays seconds in both (`10` = 10 s, `+10` adds 10 s) rather than adopting
+the timecode apps' "bare number = smallest unit" rule; a tooltip carries the
+accepted forms, which are otherwise undiscoverable.
+
+Two interaction bugs found and fixed while building it, both regression-tested:
+a key step after the click's select-all parked the caret at offset 0, so repeats
+drifted from seconds to minutes (the widget now restores "whole draft selected"
+instead); and a pending key-step hold also fired on the keyup after Enter,
+committing the same value twice.
+
+### Phase 8 -- start camera (`AnimMgr.startcam`)
+
+- UXP `anim-panel.xul` has a panel-level `<label>Start cam:</label> <camerasel>`
+  row above the element tree; the original tritium port carried `startcam` in
+  the `AnimMgrState` payload but exposed **no UI**, so the property was
+  unreachable. It now lives in the timeline header (`AnimTransport`) next to the
+  Loop switch -- the same manager-scoped-setting slot, and the header already
+  holds the duration readout that was UXP's neighbouring "Duration:" row.
+- Worker: `animSetStartCam` follows the `animSetLoop` shape (returns the
+  post-mutation `AnimMgrState`, so the renderer syncs in one round trip).
+  **No undo txn**: `AnimMgr::setStartCamName` is a plain field write that
+  records nothing, so a txn would only be committed-then-discarded as empty
+  (UXP assigns the property directly too).
+- The camera list rides on the existing `animListTimeline` payload
+  (`cameras: string[]` from `Scene.getCameraInfoJSON` -- cameras are not in
+  `getSceneDataJSON`) rather than a second round trip. Because cameras change
+  outside SEM_ANIM, `useAnimTimeline` gained a second listener on
+  `SEM_CAMERA|SEM_SCENE` -- the same masks the UXP `<camerasel>` binding used --
+  so an Explorer create / delete / rename or a scene load refreshes the list.
+- **Dangling name:** a stored `startcam` naming a since-deleted camera renders
+  as "(none)" (UXP `_selectItem` falls back to index 0 identically) while C++
+  keeps the string; `AnimMgr::init` then falls back to the view's current
+  camera. The value is only rewritten when the user picks from the select.
+- **Auto-seeding on add** (UXP `onAddCmd`, ported verbatim in `ensureStartCam`):
+  adding an element saves the active view as the `__current` camera whenever the
+  scene lacks it, and adopts that name as `startcam` only when `startcam` is
+  still empty (an explicit choice is never overwritten). This pins the animation
+  to the view the elements were authored against instead of leaving it to C++'s
+  play-time fallback (whatever the camera happens to be when Play is pressed).
+  Notes:
+  - It runs **outside** the add's undo txn, as in UXP: neither `saveViewToCam`
+    nor `setStartCamName` is part of the element edit, so undoing the add leaves
+    the camera and the start-camera name in place.
+  - `__current` is a scene camera like any other (`getCameraInfoJSON` does not
+    filter it), so it appears in the Explorer camera list and in the start-cam
+    select -- the same as UXP, which also writes `__current` from its file-open
+    and image-export paths.
+  - Beyond UXP: if `saveViewToCam` fails, `startcam` is left empty rather than
+    pointed at a camera that does not exist.
+  - The renderer needs the seeded value without an event to hang it on
+    (`setStartCamName` fires none), so `animAddElement` returns the post-add
+    `AnimMgrState` and `useAnimEdit` forwards it to `useAnimTransport.adoptMgr`.
+    Without that hand-off the header select would show a stale "(none)" whenever
+    a transport op had already latched a live snapshot.
+  - No seeding happens when no view is active (`viewId` omitted).
+
+### Relative time is an offset from the reference's END, and is never negative
+
+`AnimMgr::resolveTimeImpl` resolves `abs = base + rel`, where `base` is 0 for an
+absolute element and the **reference's `absEnd`** otherwise. Two consequences
+were missed when strip dragging landed:
+
+- **Switching "Relative to" must re-base the stored times.** Writing
+  `timeRefName` alone reinterprets the same `rel` against a different base, so
+  the element teleports. `setAnimElementProp` now reads the element's resolved
+  absolute span plus the new base (both **before** the write -- the reference's
+  own position cannot depend on this element without forming a cycle, which
+  `resolveRelTime` rejects) and rewrites `start` / `end` as `abs - base`.
+- **A negative relative time is not a supported state.** It would mean "starts
+  before the element it chains after finishes", and converting such an element
+  to absolute yields a negative absolute start that nothing downstream can draw.
+  `rel` is therefore floored at 0 in both places it can be produced: the strip
+  drag bounds the delta by the relative start as well as the absolute one (for a
+  chained element the relative bound is the binding one), and the re-base pulls
+  the element to the reference's end, keeping its duration, rather than emitting
+  a negative start. Only the DURATION is floored in the inspector's Start /
+  Duration commit, so a legacy scene or a Generic-tab write that still holds a
+  negative start is not silently moved by an unrelated edit.
 
 ### Known issues / scope
 - `AnimMgr.length` auto = `max(absEnd)`; `start>end` silent clamp; no per-frame
@@ -174,7 +289,8 @@ scan** of `AnimMgr`'s current list (`findByUid`).
 
 ### References
 - UXP: `uxp_gui/cuemol2/base/content/anim/` (`anim-panel.*`,
-  `animobj-common-proppage.*`, `animobj-propdlg.xul`, `anim-slider-bindings.xml`).
+  `animobj-common-proppage.*`, `animobj-propdlg.xul`, `anim-slider-bindings.xml`),
+  `uxp_gui/cuemol2/base/content/camerasel-binding.xml` (start-cam menulist).
 - C++: `src/qsys/anim/AnimMgr.{qif,cpp}`, `src/qsys/anim/AnimObj.{qif,cpp,hpp}`.
 - Plan: `docs/migration/anim-panel-timeline-plan.md` (Phase 0-5 roadmap).
 - Related: ADR-0015 (generic property inspector — the reused getPropsJSON bridge).

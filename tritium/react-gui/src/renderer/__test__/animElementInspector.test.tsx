@@ -128,17 +128,51 @@ describe("AnimElementInspector", () => {
       <AnimElementInspector cm={cm as never} sceneId={1} uid={7} onGone={vi.fn()} onHeaderChange={vi.fn()} />,
     );
     await flushPromises();
-    // Start / Duration use the TimeField (ms -> M:SS.mmm); the timing write
+    // Start / Duration use the TimeField (ms -> M:SS.mmm), which renders the
+    // value as text until clicked (DragNumericField preset); the timing write
     // contract is pinned in animDetailService.test.ts.
-    const startInput = fieldByLabel(container, "Start time")!.querySelector(
-      "input.h3-form-time",
-    ) as HTMLInputElement;
-    const durInput = fieldByLabel(container, "Duration")!.querySelector(
-      "input.h3-form-time",
-    ) as HTMLInputElement;
-    expect(startInput.value).toBe("0:00.200"); // 200 ms
-    expect(durInput.value).toBe("0:01.000"); // 1200 - 200 = 1000 ms
+    const timeText = (label: string) =>
+      fieldByLabel(container, label)!.querySelector(
+        ".h3-form-time .h3-form-drag-value",
+      )?.textContent;
+    expect(timeText("Start time")).toBe("0:00.200"); // 200 ms
+    expect(timeText("Duration")).toBe("0:01.000"); // 1200 - 200 = 1000 ms
     expect(fieldByLabel(container, "Quadric")).not.toBeNull();
+    unmount();
+  });
+
+  it("keeps a negative relative start when the duration is edited", async () => {
+    // Negative relative starts are no longer reachable through the UI (drag and
+    // the rel/abs conversion both floor at 0), but a legacy scene or the Generic
+    // tab can still hold one. Editing the duration must not silently move such
+    // an element, which a defensive Math.max(0, start) used to do.
+    const cm = makeCm(detail({ type: "NoopAnimObj", startMs: -500, endMs: 500 }));
+    const { container, unmount } = mountTree(
+      <AnimElementInspector cm={cm as never} sceneId={1} uid={7} onGone={vi.fn()} onHeaderChange={vi.fn()} />,
+    );
+    await flushPromises();
+    const durField = fieldByLabel(container, "Duration")!.querySelector(
+      ".h3-form-time",
+    ) as HTMLElement;
+    // Click into the duration field, type 2s, commit.
+    act(() => durField.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0 })));
+    act(() => document.dispatchEvent(new MouseEvent("mouseup")));
+    const input = durField.querySelector("input") as HTMLInputElement;
+    const setter = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype, "value",
+    )?.set;
+    act(() => {
+      setter?.call(input, "0:02.000");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    act(() => input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
+    await flushPromises();
+    expect(cm.invokeService).toHaveBeenCalledWith("setAnimElementProp", {
+      sceneId: 1,
+      uid: 7,
+      prop: "timing",
+      value: { startMs: -500, endMs: 1500 },
+    });
     unmount();
   });
 

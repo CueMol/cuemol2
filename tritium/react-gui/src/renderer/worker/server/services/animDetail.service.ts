@@ -185,6 +185,31 @@ function tryResolveRel(mgr: AnimMgr): void {
   }
 }
 
+/**
+ * Hold a re-based span at or after its base, keeping its duration.
+ *
+ * A relative start is an offset from the reference's END, so a negative one
+ * would mean "starts before the element it chains after finishes" -- a state
+ * the timeline was never designed for (it resolves to an absolute time that can
+ * fall before zero). Rather than let a conversion produce one, the element is
+ * pulled to the reference's end and keeps its length.
+ */
+function clampRelSpan(start: number, end: number): { start: number; end: number } {
+  if (start >= 0) return { start, end };
+  return { start: 0, end: Math.max(0, end - start) };
+}
+
+/**
+ * Absolute end (ms) of the sibling named `name` -- the base a relative time is
+ * measured from -- or null when no element carries that name.
+ */
+function refAbsEndMs(mgr: AnimMgr, name: string): number | null {
+  const ref = forEachAnimObj(mgr, (obj) =>
+    safeStr(() => obj.name) === name ? obj : undefined,
+  );
+  return ref ? safeNum(() => ref.absEnd.millisec) : null;
+}
+
 /** Read the subtype-specific props for the element's type. */
 function readTypeProps(obj: AnimObj, type: AnimElementType): AnimElementTypeProps {
   const w = obj as unknown as Record<string, unknown>;
@@ -282,10 +307,37 @@ function applyProp(
     case "quadric":
       w.quadric = Number(value);
       break;
-    case "timeRefName":
-      w.timeRefName = String(value);
+    case "timeRefName": {
+      // Re-base the stored relative times so the element keeps its place on the
+      // timeline. C++ resolves `abs = base + rel`, where `base` is 0 when the
+      // element is absolute and the reference's absEnd otherwise
+      // (`AnimMgr::resolveTimeImpl`), so writing the name alone reinterprets the
+      // SAME rel against a different base and teleports the element.
+      //
+      // A negative relative time is not a supported state (see `clampRelSpan`);
+      // when the element sat before the new reference's end, it is pulled to
+      // that end -- position is preserved only where it can be.
+      const nextRef = String(value);
+      tryResolveRel(mgr); // read the current abs position, not a stale one
+      const absStart = safeNum(() => obj.absStart.millisec);
+      const absEnd = safeNum(() => obj.absEnd.millisec);
+      // Read the new base BEFORE the write: the reference's own position does
+      // not depend on this element (a chain back to it would be a cycle, which
+      // `resolveRelTime` rejects and `tryResolveRel` swallows).
+      const base = nextRef === "" ? 0 : refAbsEndMs(mgr, nextRef);
+      w.timeRefName = nextRef;
+      if (base !== null) {
+        const span = clampRelSpan(absStart - base, absEnd - base);
+        const tvS = makeTimeValue(ctx, span.start);
+        const tvE = makeTimeValue(ctx, span.end);
+        if (tvS && tvE) {
+          w.start = tvS;
+          w.end = tvE;
+        }
+      }
       tryResolveRel(mgr);
       break;
+    }
     case "timing": {
       const v = value as { startMs: number; endMs: number };
       const tvS = makeTimeValue(ctx, Math.min(v.startMs, v.endMs));

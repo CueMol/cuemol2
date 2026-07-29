@@ -39,6 +39,14 @@ export interface UseAnimTransportResult {
   stop: () => void;
   seek: (ms: number) => void;
   setLoop: (loop: boolean) => void;
+  /** Set the start camera by name ('' = none); needs no active view. */
+  setStartCam: (name: string) => void;
+  /**
+   * Adopt a manager snapshot produced elsewhere (an edit service that mutated
+   * manager state, e.g. an add seeding the start camera). Needed because those
+   * changes fire no event the panel could listen for.
+   */
+  adoptMgr: (mgr: AnimMgrState) => void;
 }
 
 const EMPTY_MGR: AnimMgrState = {
@@ -170,6 +178,21 @@ export function useAnimTransport({
       .catch((err: unknown) => console.warn("animSetLoop failed:", err));
   }, []);
 
+  // Start camera is a manager property, not a playback op: it is settable
+  // without an active view (unlike play / seek), so it only guards on cm+scene.
+  const setStartCam = useCallback((name: string) => {
+    const c = cmRef.current;
+    const sid = sceneIdRef.current;
+    if (!c || sid === undefined) return;
+    c.invokeService("animSetStartCam", { sceneId: sid, startcam: name })
+      .then((res) => {
+        if (res?.mgr) setLiveMgr(res.mgr);
+      })
+      .catch((err: unknown) => console.warn("animSetStartCam failed:", err));
+  }, []);
+
+  const adoptMgr = useCallback((next: AnimMgrState) => setLiveMgr(next), []);
+
   const isPlayingRef = useRef(isPlaying);
   isPlayingRef.current = isPlaying;
   const togglePlay = useCallback(() => {
@@ -177,5 +200,8 @@ export function useAnimTransport({
     else play();
   }, [play, pause]);
 
-  return { mgr, isPlaying, canControl, play, pause, togglePlay, stop, seek, setLoop };
+  return {
+    mgr, isPlaying, canControl, play, pause, togglePlay, stop, seek, setLoop, setStartCam,
+    adoptMgr,
+  };
 }
