@@ -17,12 +17,22 @@ import type { MovieSettings } from '../data/renderSettings'
 const hoisted = vi.hoisted(() => ({
     getRenderBackend: vi.fn(),
     getAnimMgrOrNull: vi.fn(),
+    /** Cameras the fake scene holds, by name. */
+    cameras: new Set<string>(),
 }))
 vi.mock('../worker/server/services/renderBackends', () => ({
     getRenderBackend: hoisted.getRenderBackend,
 }))
 vi.mock('../worker/server/services/helpers/sceneResolver', () => ({
-    getSceneOrNull: vi.fn(() => ({ __scene: true })),
+    getSceneOrNull: vi.fn(() => ({
+        __scene: true,
+        hasCamera: (name: string) => hoisted.cameras.has(name),
+        // renderStart captures the render target's view into "__current".
+        saveViewToCam: (_viewId: number, name: string) => {
+            hoisted.cameras.add(name)
+            return true
+        },
+    })),
 }))
 vi.mock('../worker/server/services/helpers/animResolve', () => ({
     getAnimMgrOrNull: hoisted.getAnimMgrOrNull,
@@ -63,6 +73,7 @@ describe('renderStart animation branch', () => {
 
     beforeEach(() => {
         outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-test-'))
+        hoisted.cameras.clear()
         intervalCb = null
         vi.spyOn(globalThis, 'setInterval').mockImplementation(((cb: () => void) => {
             intervalCb = cb
@@ -185,6 +196,82 @@ describe('renderStart animation branch', () => {
         expect(animMgr.writeFrame).toHaveBeenCalledTimes(1)
         expect(queueTask).toHaveBeenCalledTimes(1)
         expect(animMgr.stop).not.toHaveBeenCalled()
+    })
+
+    // `startcam` is the Animation panel's setting and persisted scene state,
+    // not a render option: the render must honour it and must not rewrite it.
+    describe('start camera', () => {
+        /** The name AnimMgr held while the frames were being set up. */
+        function startCamDuringSetup(): string {
+            expect(animMgr.setupRender).toHaveBeenCalledTimes(1)
+            return setupStartCam
+        }
+        let setupStartCam: string
+
+        beforeEach(() => {
+            setupStartCam = ''
+            animMgr.setupRender = vi.fn(() => {
+                setupStartCam = animMgr.startcam
+                return FRAME_COUNT
+            })
+        })
+
+        it('renders from the camera chosen in the Animation panel', () => {
+            hoisted.cameras.add('front')
+            animMgr.startcam = 'front'
+
+            const ctx = makeCtx()
+            services.renderStart(ctx, makeArgs())
+            for (let i = 0; i < FRAME_COUNT; i++) intervalCb?.()
+
+            expect(startCamDuringSetup()).toBe('front')
+            expect(animMgr.startcam).toBe('front')
+        })
+
+        it('falls back to the captured view when none is set, then puts it back', () => {
+            animMgr.startcam = ''
+
+            const ctx = makeCtx()
+            services.renderStart(ctx, makeArgs())
+
+            expect(startCamDuringSetup()).toBe('__current')
+            for (let i = 0; i < FRAME_COUNT; i++) intervalCb?.()
+            expect(animMgr.startcam).toBe('')
+        })
+
+        it('stands in for a camera the scene no longer has, keeping the name', () => {
+            animMgr.startcam = 'deleted-cam'
+
+            const ctx = makeCtx()
+            services.renderStart(ctx, makeArgs())
+
+            expect(startCamDuringSetup()).toBe('__current')
+            for (let i = 0; i < FRAME_COUNT; i++) intervalCb?.()
+            expect(animMgr.startcam).toBe('deleted-cam')
+        })
+
+        it('restores the start camera when the job is cancelled', () => {
+            animMgr.startcam = ''
+
+            const ctx = makeCtx()
+            const res = services.renderStart(ctx, makeArgs())
+            intervalCb?.()
+            services.renderCancel(ctx, { jobId: res.jobId })
+
+            expect(animMgr.startcam).toBe('')
+        })
+
+        it('restores the start camera when the setup fails', () => {
+            animMgr.startcam = ''
+            animMgr.setupRender = vi.fn(() => {
+                throw new Error('setup failed')
+            })
+
+            const res = services.renderStart(makeCtx(), makeArgs())
+
+            expect(res.ok).toBe(false)
+            expect(animMgr.startcam).toBe('')
+        })
     })
 
     it('renders every frame, writes them to the output folder and stops the animation', () => {

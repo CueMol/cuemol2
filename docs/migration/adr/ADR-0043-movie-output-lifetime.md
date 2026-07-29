@@ -113,6 +113,28 @@ movie を削除する。マッチ規則は `shared/movieFrames.ts` の `frameFil
 (POV-Ray / blendpng の既存の存在チェックと同じ扱い)。未設定も明示エラーにした —
 「frame だけ描いて movie は作らない」は Encode movie スイッチ off が担う。
 
+### Decision 6: レンダは `startcam` を上書きしない
+
+`startAnimJob` は `setupRender` の前に無条件で `animMgr.startcam = "__current"` と
+していた。Animation panel の start camera (`animSetStartCam`) で選んだカメラが
+**常に無視され**、しかも `startcam` は AnimMgr の scriptable property なので
+`writeTo2` 経由で qsc にも書かれる。`AnimMgr::stop()` の `restoreProps()` が戻すのは
+PropAnim が保存した対象プロパティだけで `m_startCamName` は対象外なので、一度
+レンダすると**ユーザーの設定が `__current` に置き換わったまま残る**。
+
+元々この代入があったのは、`AnimMgr::startImpl()` が start camera 未設定時に
+`m_pTgtView` → `pScene->getActiveView()` の順にフォールバックし、オフライン
+レンダではどちらも無いために `MB_NEW Camera()` (無意味な既定カメラ) を作って
+しまうため (`src/qsys/anim/AnimMgr.cpp:148-164`)。
+
+→ `overrideStartCamForRender()` を導入し、**ユーザーの選択をそのまま使う**。
+差し替えるのは (a) 未設定、または (b) 指定カメラが scene に存在しない場合だけで、
+その場合も `renderStart` が捕捉した `__current` を一時的に使い、`stopAnim()` で
+**元の名前に戻す** (完了・エラー・キャンセルの全経路が `stopAnim` を通る)。
+`__current` 自体が作れなかった場合は何も書き換えない — 存在しないカメラ名で
+ユーザーの設定を潰さないため。再生側 (`animation.service.ts` の `play` /
+`ensureStartCam`) は元から「空のときだけ入れる」で正しかったので変更なし。
+
 ## Consequences
 
 **得られるもの**
@@ -124,6 +146,8 @@ movie を削除する。マッチ規則は `shared/movieFrames.ts` の `frameFil
 - ffmpeg 失敗が「成功」として報告されなくなり、古い movie が新しい結果に化ける経路が
   消えた。
 - ffmpeg 不在が全 frame 描画後ではなく開始前に分かる。
+- Animation panel で選んだ start camera がレンダに効くようになり、レンダが scene の
+  `startcam` を書き換えて (qsc にまで) 残すこともなくなった。
 
 **代償・制約**
 
@@ -153,12 +177,13 @@ movie を削除する。マッチ規則は `shared/movieFrames.ts` の `frameFil
   - `tritium/react-gui/src/renderer/components/panels/MovieSettingsPanel.tsx` —
     Location セグメント + 一時フォルダの注記
   - `tritium/react-gui/src/renderer/worker/server/services/renderJob.service.ts` —
-    `purgeMovieArtifacts()` / `resolveFfmpeg()` / `startEncode` / `pollEncode`
+    `purgeMovieArtifacts()` / `resolveFfmpeg()` / `startEncode` / `pollEncode` /
+    `overrideStartCamForRender()` + `stopAnim()` の restore
 - テスト
   - `__test__/mainMovieOutput.test.ts` — 寿命ルール、pid 保護、root 外不干渉
   - `__test__/useMovieOutputPrefs.test.ts` — 既定解決と永続化の payload 形状
   - `__test__/renderJobAnimation.test.ts` — stale frame purge、encode 失敗検出、
-    ffmpeg 事前チェック
+    ffmpeg 事前チェック、start camera の尊重と復元 (完了 / cancel / setup 失敗)
   - `__test__/renderSettingsPane.test.tsx` — Temporary / Custom の readOnly と invalid
 - UXP 参照: `uxp_gui/cuemol2/base/content/anim/anim-render-dlg.js:14-17`
   (prefs キー)、`:66-82` (復元)、`:261` / `:686` (保存)

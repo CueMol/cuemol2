@@ -111,6 +111,11 @@ interface AnimJobState {
   moviePath: string | null;
   /** Tail of ffmpeg's output, so a failed encode can say why. */
   encodeLog: string;
+  /**
+   * Start-camera name the render replaced, to be put back when it ends; null
+   * when the animation's own start camera was used as-is.
+   */
+  startCamBak: string | null;
 }
 
 /**
@@ -226,12 +231,82 @@ function makeTimeValue(ctx: WorkerContext, ms: number): TimeValue {
  * cancel alike. Safe to call more than once.
  */
 function stopAnim(entry: RenderJobEntry): void {
-  if (!entry.anim?.animMgr) return;
+  const anim = entry.anim;
+  if (!anim?.animMgr) return;
   try {
-    entry.anim.animMgr.stop();
+    anim.animMgr.stop();
   } catch {
     /* ignore */
   }
+  // Put back the start camera the render had to replace. `startcam` is a scene
+  // property the Animation panel shows and the scene file stores, so leaving
+  // the render's stand-in behind would quietly rewrite the user's choice --
+  // AnimMgr::stop() restores animated properties, not this one.
+  if (anim.startCamBak !== null) {
+    restoreStartCam(anim.animMgr, anim.startCamBak);
+    anim.startCamBak = null;
+  }
+}
+
+/**
+ * Name of the implicit "camera the user is looking through" (UXP convention;
+ * see ensureStartCam in animation.service.ts, which seeds `startcam` from it).
+ */
+const CURRENT_CAM_NAME = "__current";
+
+/** Whether the scene has a camera by this name; null when it cannot be told. */
+function sceneHasCamera(scene: Scene, name: string): boolean | null {
+  const s = scene as unknown as { hasCamera?: (n: string) => boolean };
+  if (typeof s.hasCamera !== "function") return null;
+  try {
+    return s.hasCamera(name);
+  } catch {
+    return null;
+  }
+}
+
+/** Write a start-camera name back, ignoring a scene that has gone away. */
+function restoreStartCam(animMgr: AnimMgr, value: string): void {
+  try {
+    animMgr.startcam = value;
+  } catch {
+    /* the scene may be gone by the time the job unwinds */
+  }
+}
+
+/**
+ * Point the animation at a start camera the render can use, returning the name
+ * it replaced (null when nothing was replaced).
+ *
+ * The Animation panel's start camera is the user's choice and is used as-is.
+ * It is only stood in for when there is nothing to start from -- unset, or
+ * naming a camera the scene no longer has. AnimMgr then falls back to the
+ * scene's active view, which an offline render does not have, and ends up
+ * inventing a default camera that makes every frame meaningless
+ * (AnimMgr::startImpl, src/qsys/anim/AnimMgr.cpp). renderStart captured the
+ * render target's view into "__current" for exactly that case.
+ *
+ * The replacement is undone by stopAnim: `startcam` is persisted scene state,
+ * not a render setting.
+ */
+function overrideStartCamForRender(scene: Scene, animMgr: AnimMgr): string | null {
+  let startcam = "";
+  try {
+    startcam = animMgr.startcam ?? "";
+  } catch {
+    /* unreadable -- treat as unset */
+  }
+  // An explicit choice stands, unless the scene has since lost that camera.
+  if (startcam && sceneHasCamera(scene, startcam) !== false) return null;
+  // Nothing usable to fall back to either: leave the animation alone rather
+  // than rewrite it to a camera that does not exist.
+  if (sceneHasCamera(scene, CURRENT_CAM_NAME) === false) return null;
+  try {
+    animMgr.startcam = CURRENT_CAM_NAME;
+  } catch {
+    return null;
+  }
+  return startcam;
 }
 
 /**
@@ -860,7 +935,14 @@ function startAnimJob(
   args: RenderStartArgs,
   workDir: string,
 ): RenderStartResult {
+  // Set once the start camera has been stood in for; every exit below puts it
+  // back, and the job entry takes over that duty once it exists.
+  let startCamMgr: AnimMgr | null = null;
+  let startCamBak: string | null = null;
   const fail = (error: string): RenderStartResult => {
+    if (startCamMgr !== null && startCamBak !== null) {
+      restoreStartCam(startCamMgr, startCamBak);
+    }
     cleanupDir(workDir);
     return { ok: false, jobId: "", error };
   };
@@ -892,10 +974,8 @@ function startAnimJob(
 
   let frameCount: number;
   try {
-    // Without a start camera AnimMgr silently falls back to a default one and
-    // every frame comes out meaningless. renderStart already captured the
-    // active view into "__current".
-    animMgr.startcam = "__current";
+    startCamMgr = animMgr;
+    startCamBak = overrideStartCamForRender(scene, animMgr);
     frameCount = animMgr.setupRender(
       makeTimeValue(ctx, 0),
       makeTimeValue(ctx, animMgr.length.millisec),
@@ -944,9 +1024,12 @@ function startAnimJob(
       encodeTid: null,
       moviePath: null,
       encodeLog: "",
+      startCamBak,
     },
   };
   jobs.set(jobId, entry);
+  // The entry owns the restore from here on (stopAnim runs on every exit).
+  startCamBak = null;
 
   // Start from an empty sequence: a previous render's frames past this one's
   // end would otherwise stay in the folder and be taken for part of it.
@@ -1046,6 +1129,7 @@ function startEncodeOnlyJob(
       encodeTid: null,
       moviePath: null,
       encodeLog: "",
+      startCamBak: null,
     },
   };
   jobs.set(jobId, entry);
