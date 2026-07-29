@@ -160,10 +160,54 @@ scan** of `AnimMgr`'s current list (`findByUid`).
   debounce), so an Explorer add / delete / rename keeps the checklist and the
   camera / mol selects current (they previously fetched only on scene change).
 - **timeedit:** Start / Duration use the reusable h3-kit `TimeField`
-  (`h3-kit/form/TimeField.tsx`: ms <-> `M:SS.mmm` / `H:MM:SS.mmm`, commit on
-  blur/Enter; `formatMs` / `parseTime` exported) instead of raw-ms
-  DragNumericFields, mirroring the UXP `timeedit` widget. end = start + duration
-  commits one `timing` write; no worker change.
+  (`h3-kit/form/TimeField.tsx`: ms <-> `M:SS.mmm` / `H:MM:SS.mmm`;
+  `formatMs` / `parseTime` exported) instead of raw-ms DragNumericFields,
+  mirroring the UXP `timeedit` widget. end = start + duration commits one
+  `timing` write; no worker change. Its interaction model is covered below.
+
+### TimeField interaction (why not UXP's segmented spinner)
+
+The first port was text-only -- typed timecode committing on blur / Enter -- so
+UXP's up / down spin buttons, the one way to nudge a value there, had no
+equivalent. Surveying how animation tools take time input:
+
+- **DCC / editing apps** (Blender, After Effects, Premiere, Resolve, Maya)
+  converge on **one field that scrubs on horizontal drag** and accepts typing;
+  explicit spinners are rare (Blender only reveals `<` `>` on hover), and the
+  timecode apps add `+` / `-` relative entry.
+- **Segmented boxes + a shared spinner** is an OS form-widget pattern -- UXP's
+  `timeedit` is literally Mozilla's `datetimepicker` XBL reused, not an
+  animation-tool UI.
+- 3D apps (Blender / Maya / Unity) work in **frames**, which CueMol cannot: fps
+  is display-only (30) with no C++ property, and `AnimObj` stores ms.
+
+So `TimeField` was rebuilt as a **`DragNumericField` preset** -- the catalog
+already implements that interaction model (pointer-lock drag, auto-repeat step
+arrows, modifier snaps, one-interaction-one-undo-step), so this is a reuse, not
+a new widget. `DragNumericField` gained only optional props: `format` / `parse`
+(non-decimal display and entry; `parse` switches the edit input to
+`type="text"`), `stepper="stacked"` (an up / down pair at the right edge instead
+of the side `<` `>`, the SliderField stepper shape), `resolveStep` (per-
+interaction step granularity, which also opts the field into Up / Down keys),
+plus `className` / `aria-label` / `title`. Its 34 existing tests were unchanged.
+
+Resulting model: drag snaps to 0.1 s (Shift 1 ms -- also the stored resolution,
+so a typed `.345` survives -- Ctrl / Cmd 1 s); the spin buttons and Up / Down
+step **the segment the caret is in**, defaulting to seconds when nothing is
+selected and stepping the fraction by 100 ms, which is exactly UXP's
+`_increaseOrDecrease` (`_currentField || _fieldSecond`, `change *= 100` for the
+millisecond box). Typed entry additionally accepts a unit-suffixed number
+(`250ms`, `1.5s`, `2min`) and a `+` / `-` offset (`+2s`, `-1:30`). The magnitude
+grammar is shared between the absolute and relative forms, so an unsuffixed
+number stays seconds in both (`10` = 10 s, `+10` adds 10 s) rather than adopting
+the timecode apps' "bare number = smallest unit" rule; a tooltip carries the
+accepted forms, which are otherwise undiscoverable.
+
+Two interaction bugs found and fixed while building it, both regression-tested:
+a key step after the click's select-all parked the caret at offset 0, so repeats
+drifted from seconds to minutes (the widget now restores "whole draft selected"
+instead); and a pending key-step hold also fired on the keyup after Enter,
+committing the same value twice.
 
 ### Known issues / scope
 - `AnimMgr.length` auto = `max(absEnd)`; `start>end` silent clamp; no per-frame
