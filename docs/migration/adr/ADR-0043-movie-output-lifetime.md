@@ -1,6 +1,7 @@
 # ADR-0043: Movie render output location and temporary-file lifetime
 
-- Status: accepted (host E2E pending)
+- Status: accepted (host E2E verified 2026-07-29: 設定なしで Start / 設定の復元 /
+  stale frame の掃除 / ffmpeg 事前チェック)
 - Date: 2026-07-29
 - Mapping rows: [`dialog.anim-render`](../mapping/other_dlgs.md)
 
