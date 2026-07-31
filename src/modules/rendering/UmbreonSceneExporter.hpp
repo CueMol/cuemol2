@@ -169,6 +169,10 @@ namespace render {
     /// Whether the last endRender() ended in cancellation (no image written).
     bool wasRenderCancelled() const;
 
+    /// Diagnostics umbreon emitted since the last call (see the .qif).
+    /// Process-wide, not per-exporter: umbreon's log sink is global.
+    LString getRenderLog() const;
+
     /////////////////////////////////
 
     /// Get name of the writer

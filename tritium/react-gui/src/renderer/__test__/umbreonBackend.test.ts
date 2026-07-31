@@ -39,6 +39,7 @@ function makeExporter(): Record<string, unknown> {
         getRenderPhaseName: vi.fn(() => 'Primary'),
         isRenderDone: vi.fn(() => false),
         wasRenderCancelled: vi.fn(() => false),
+        getRenderLog: vi.fn(() => ''),
     }
 }
 
@@ -127,6 +128,16 @@ describe('umbreonBackend.beginInProcess', () => {
         expect(handle.progress()).toBe(0.42)
         expect(handle.phase()).toBe('Primary')
         expect(handle.isDone()).toBe(false)
+
+        // umbreon's own diagnostics reach the render log through the handle:
+        // an in-process backend has no stdout for the host to capture, so a
+        // fallback warning or the GI stage timing would otherwise be lost.
+        ;(exporter.getRenderLog as ReturnType<typeof vi.fn>).mockReturnValueOnce(
+            'warning: --ao-res out is not supported with --gi yet\n',
+        )
+        expect(handle.drainLog?.()).toBe(
+            'warning: --ao-res out is not supported with --gi yet\n',
+        )
 
         // cancel() forwards to the exporter's cooperative cancel.
         handle.cancel()

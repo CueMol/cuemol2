@@ -139,6 +139,15 @@ namespace render {
     /// true and no pixels are produced (outRGBA empty). Throws when no async
     /// render is in flight, or built without umbreon. Call at most once per
     /// startAsyncRender().
+    /// Drain the diagnostics umbreon has emitted since the last call.
+    ///
+    /// umbreon's log sink is process-wide (umbreon/log.hpp), so this is too:
+    /// one buffer collects whatever the library reported -- fallback warnings,
+    /// Embree errors, the per-stage GI timing of a finished render -- and hands
+    /// it over as newline-separated text for the host's render log. Empty when
+    /// nothing was reported. Safe to call from any thread.
+    static LString drainLog();
+
     void finishAsyncRender(int &outWidth, int &outHeight, int &outNcomp,
                            std::vector<unsigned char> &outRGBA,
                            bool &outCancelled);

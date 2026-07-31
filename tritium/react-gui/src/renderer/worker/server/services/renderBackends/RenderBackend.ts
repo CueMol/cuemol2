@@ -141,6 +141,13 @@ export interface InProcessRender {
   finish(): boolean;
   /** Request cooperative cancellation (the render stops at the next boundary). */
   cancel(): void;
+  /**
+   * Drain whatever the renderer has reported since the last call, for the render
+   * log: fallback warnings, backend errors, per-stage timing. Newline-separated,
+   * empty when there is nothing new. Optional -- a backend with no diagnostics
+   * channel simply omits it.
+   */
+  drainLog?(): string;
 }
 
 // - PropDef value readers -
