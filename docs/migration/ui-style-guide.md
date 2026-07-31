@@ -35,10 +35,13 @@ label+control の UI (フォーム行・テキスト入力・select・numeric・
 | `SliderField` (`SliderNumericField`) | label + slider + 数値 + **custom ステッパー (up/down)** + 任意 `unit`。**ステッパー付き数値ボックスはこれ**。`slider={false}` で slider 無しの数値+ステッパーだけにできる (count/stride 等) | `.h3-form-sliderfield*` (`_form-kit.css`) |
 | `DragNumericField` | 数値 (Blender風 drag number button)。**UXP の numslider の移植先**。renderer property 等のドラッグ可能な数値はこれを使う (`NumericField` ではない)。`format`/`parse`/`resolveStep`/`stepper="stacked"` で非10進の値にも転用できる (下記 `TimeField`) | サイズは `.h3-form-drag*` (`_form-kit.css`) |
 | `TimeField` | 時間 (ms) の timecode `M:SS.mmm`。**UXP の timeedit の移植先**。`DragNumericField` プリセットで drag scrub + ▲▼ spin + 打ち込み (`250ms` / `1.5s` / `+2s` の相対も可) | `.h3-form-drag` + `.h3-form-time` (`_form-kit.css`) |
-| `SwitchField` | 真偽トグル (`inline` Field 内で使う) | Blueprint Switch |
+| `SwitchField` | **真偽トグル** (on/off。`inline` Field 内で使う) | Blueprint Switch |
+| `RadioField` | **設定としての二者択一/N択** (名前の付いた選択肢を並べて 1 つ選ぶ)。横並び + 幅が足りなければ自動で折返し (向きは選ばない) | ラベル `--fs-lg`, 間隔 `--space-5` (`.h3-form-radio-group`) |
 | `ColorField` | 色 (`CueColorField` の薄いラッパ) | - |
 | `ButtonRow` / `FormButton` | コンパクトボタンの行 / ボタン | 高 `--field-btn-h`, ラベル `--fs-base` |
-| `SegmentField` | モード/ソース切替 (`Named\|History` 等) | 高 `--field-btn-h`, ラベル `--fs-base` (= `FormButton` と同一, `.h3-form-segmented`) |
+| `SegmentField` | **view/モード切替** (`Named\|History`, pane 上部の tab strip)。**設定行には使わない** — pane 内だとタブがもう 1 段あるように読める | 高 `--field-btn-h`, ラベル `--fs-base` (= `FormButton` と同一, `.h3-form-segmented`) |
+
+**「1 つ選ぶ」系の使い分け**: `SegmentField` = **view の切替** (`.mode-bar` に置く tab strip)、`RadioField` = **設定の N 択** (選択肢に名前があり、並べて見せたい)、`SelectField` = 選択肢が多い / 一覧を畳みたいとき、`SwitchField` = 本当に on/off の真偽値。二値だからといって `SwitchField` を選ぶと「どちらか選ぶ」ではなく「有効/無効」に読まれる。
 
 **なぜカタログか (最重要)**: トークン (`--space-*` / `--ctrl-h-*`) は「どの値か」を統一するが、**値を選ぶ行為自体がサイズ選び**になり強制力にならない (typography の `.type-*` role がテキストで解決したのと同じ問題が、コントロール高・行・余白の軸に残っていた)。カタログコンポーネントは **size props を公開しない** ので、**同じコンポーネントを使えば必ず同じサイズ**になる。これが「コンポーネント追加のたびにサイズがおかしくなる」再発を仕組みで防ぐ唯一の方法。
 
@@ -175,6 +178,7 @@ listbox はフォームと違い**描画基盤が3種**あり単一コンポー�
 |---|---|---|
 | `.type-title` | dialog タイトル / 主見出し | 14 / 1.3 / semibold |
 | `.type-subtitle` | 二次見出し | 13 / 1.3 / semibold |
+| `.type-panel-title` | `.panel-header` に出るパネル名 / 検査対象名 (Inspector, Render Settings)。**大文字化しない** (見出しではなく内容) | 12 / 1.3 / semibold |
 | `.type-eyebrow` | 大文字セクション見出し (panel/section header, selection-label 等)。uppercase + `--ls-wide` 込み | 11 / 1 / semibold |
 | `.type-label` | フォーム/コントロールの label | 11 / 1 / medium |
 | `.type-row` | リスト・ツリー行のテキスト (tree node, named-color row, menu item) | 12 / 1.3 / normal |
@@ -184,7 +188,7 @@ listbox はフォームと違い**描画基盤が3種**あり単一コンポー�
 | `.type-hero` | 空状態 / スプラッシュの大見出し | 20 / 1 / normal |
 
 **どの role を当てるか (決定木)**:
-1. それは **見出し**か? → dialog/主見出し=`title`、二次=`subtitle`、パネル/セクションの大文字バー=`eyebrow`。
+1. それは **見出し**か? → dialog/主見出し=`title`、二次=`subtitle`、パネル/セクションの大文字バー=`eyebrow`、`.panel-header` に出すパネル名/対象名=`panel-title`。
 2. **コントロールの名札** (1〜数語、操作対象を指す)か? → `label`。
 3. **リストやツリーの並んだ項目**のテキストか? → `row`。
 4. **文章・説明・メッセージ** (空状態やエラーを含む)か? → `body`。
@@ -202,6 +206,19 @@ listbox はフォームと違い**描画基盤が3種**あり単一コンポー�
 ```
 
 新しい役割が本当に必要なら (既存 role に収まらない)、まず `_variables.css` に `--type-<role>-*` を、`_typography.css` に `.type-<role>` を足してから使う。コンポーネントに `font-size: var(--fs-…)` を直書きしない。
+
+### 構造 role (パネルの外枠)
+
+typography と同じ考え方で、**パネルの箱も role で決める**。高さ・chrome・border は下表のクラスが持ち、consumer 側の CSS は padding など「その pane 固有の分」だけを足す。箱の宣言を各 pane に書き写すと、片方だけ直したときに必ず drift する (Rendering window の設定 pane が main window の Inspector とズレていたのがこの例)。
+
+| role (class) | 用途 | 持っているもの |
+|---|---|---|
+| `.panel-header` | トップレベル pane のタイトルバー (Explorer / Inspector / Render Settings / Log) | 高 `--panel-header-h` (30px), `--toolbar-bg`, 下 border |
+| `.panel-header-icon` | 上記の先頭 icon | accent 色, `flex-shrink: 0` |
+| `.panel-header-name` | 上記のタイトル文字 (`.type-panel-title` と組で使う) | `--text-primary`, ellipsis |
+| `.mode-bar` | `.panel-header` 直下のモード/タブ切替ストリップ (Inspector の Properties/Generic, Rendering window の Image/Render) | strip の chrome + padding。中身は form-kit `SegmentField` |
+| `.section-header` | pane 内のサブセクション見出しバー | 高 `--ctrl-h-md` (24px), `--bg-panel-header`, 下 border |
+| `.h3-list-row` | リスト/ツリー行 | 高 `--row-h` (22px) — `_list-kit.css` |
 
 ### 余白・サイズ・角丸 (theme-independent)
 
@@ -263,7 +280,7 @@ UXP機能を tritium に起こす / 新規コンポーネントを追加する�
 - [ ] 高さは `var(--ctrl-h-*)` / `--panel-header-h` / `--row-h` か (新しい高さを直書きしていないか)
 - [ ] 角丸は `var(--radius-*)` か
 - [ ] **各テキスト要素に意味的 role を当てたか** (`.type-*` クラス。Blueprint 注入要素は `--type-<role>-*` 変数)。生 `--fs-*`/`--lh-*` を直書き・px 逆算で選んでいないか。同じ役割の隣接 UI と同じ role か
-- [ ] panel/section header・リスト行は `.panel-header` / `.section-header` / `.h3-list-row` を使い、box を重複定義していないか
+- [ ] panel/section header・タブ strip・リスト行は `.panel-header` (+`-icon`/`-name`) / `.mode-bar` / `.section-header` / `.h3-list-row` を使い、box を重複定義していないか (§構造 role)
 - [ ] 既存 role に収まらない場合のみ、コンポーネントに直書きせず `_variables.css` + `_typography.css` に新 role を足したか
 - [ ] **dark / light 両テーマで確認したか** (`task run_tritium` 後にテーマ切替)
 - [ ] `npm run lint:style` を通したか (ベースライン件数を増やしていないか)

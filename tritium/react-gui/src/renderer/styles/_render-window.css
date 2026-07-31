@@ -62,22 +62,18 @@
   border-left: 1px solid var(--border);
 }
 
+/* Title bar. The box is the shared .panel-header role and the title text the
+   .panel-header-name / .type-panel-title pair, so this pane's header is the
+   same object as the main window's Inspector header -- only the padding and
+   the icon gap are set here (see _typography.css). */
 .render-window-settings-header {
-  padding: var(--space-3) var(--space-5);
-  background: var(--toolbar-bg);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
+  gap: var(--space-4);
+  padding: 0 var(--space-4) 0 var(--space-5);
 }
 
-/* Tab strip; mirrors the Inspector's mode bar so both panes switch the same way. */
-.render-window-settings-tabbar {
-  display: flex;
-  align-items: center;
-  padding: var(--space-2) var(--space-4);
-  background: var(--bg-panel-header);
-  border-bottom: 1px solid var(--border-subtle);
-  flex-shrink: 0;
-}
+/* The tab strip below the header has no rule of its own: its chrome and
+   padding are the shared .mode-bar role, so the Image / Render switcher is the
+   same size as the Inspector's Properties / Generic one. */
 
 /* Only the active tab's content scrolls; the header and tabs stay put. */
 .render-window-settings-body {

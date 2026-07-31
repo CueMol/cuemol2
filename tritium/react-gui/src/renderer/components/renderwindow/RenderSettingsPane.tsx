@@ -9,15 +9,17 @@
  * (Camera / Quality / Edges / the backend's own). The split keeps a single
  * scrolling column short enough to scan in a narrow pane.
  *
- * The tab strip follows the Inspector's mode bar (SegmentField under the pane
- * header) so both panes switch views the same way. The backend selector is not
- * in this pane -- it sits in the run bar next to the render target
- * (RenderPanel), with the run controls.
+ * The header and the tab strip are the shared .panel-header / .mode-bar roles
+ * the main window's Inspector uses, so the two panes are titled and switched
+ * with the same chrome rather than two look-alike copies of it. The backend
+ * selector is not in this pane -- it sits in the run bar next to the render
+ * target (RenderPanel), with the run controls.
  */
 
 import React, { useState } from "react";
 
 import { SegmentField } from "../../h3-kit/form";
+import { AppIcon } from "../AppIcon";
 import { RenderSettingsEditor } from "../inspector/RenderSettingsEditor";
 import { RenderImageTab } from "./RenderImageTab";
 import { RENDER_BACKENDS } from "../../data/renderBackends";
@@ -65,6 +67,8 @@ interface RenderSettingsPaneProps {
   onMovieChange: (patch: Partial<MovieSettings>) => void;
   /** Switch the movie output back to the app-managed folder. */
   onUseTempDir?: () => void;
+  /** Leave the app-managed folder for one the user names. */
+  onUseCustomDir?: () => void;
   /** Open a folder picker for the movie output. */
   onPickFolder?: () => void;
   /** Disable the movie controls (a render is in flight). */
@@ -87,6 +91,7 @@ export const RenderSettingsPane: React.FC<RenderSettingsPaneProps> = ({
   movie,
   onMovieChange,
   onUseTempDir,
+  onUseCustomDir,
   onPickFolder,
   movieDisabled = false,
 }) => {
@@ -94,11 +99,12 @@ export const RenderSettingsPane: React.FC<RenderSettingsPaneProps> = ({
 
   return (
     <div className="render-window-settings">
-      <div className="render-window-settings-header type-group-label">
-        Render Settings
+      <div className="render-window-settings-header panel-header">
+        <AppIcon name="ui.properties" size="md" className="panel-header-icon" aria-hidden />
+        <span className="panel-header-name type-panel-title">Render Settings</span>
       </div>
 
-      <div className="render-window-settings-tabbar">
+      <div className="render-window-settings-tabbar mode-bar">
         <SegmentField<RenderSettingsTab>
           value={tab}
           onValueChange={setTab}
@@ -133,6 +139,7 @@ export const RenderSettingsPane: React.FC<RenderSettingsPaneProps> = ({
             movie={movie}
             onMovieChange={onMovieChange}
             onUseTempDir={onUseTempDir}
+            onUseCustomDir={onUseCustomDir}
             onPickFolder={onPickFolder}
             movieDisabled={movieDisabled}
           />

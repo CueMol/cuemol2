@@ -393,7 +393,7 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
 
   // Properties / Generic switcher, shown above the body in both modes.
   const modeBar = (
-    <div className="inspector-mode-bar">
+    <div className="inspector-mode-bar mode-bar">
       <SegmentField
         value={mode}
         onValueChange={(v) => setMode(v as "properties" | "generic")}

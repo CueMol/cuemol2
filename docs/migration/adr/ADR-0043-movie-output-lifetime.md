@@ -176,7 +176,9 @@ PropAnim が保存した対象プロパティだけで `m_startCamName` は対�
     `frameFileRegExp()` / `movieFileNames()` / `ANY_FRAME_FILE_RE`
   - `tritium/react-gui/src/renderer/hooks/useMovieOutputPrefs.ts` — 解決と永続化
   - `tritium/react-gui/src/renderer/components/panels/MovieSettingsPanel.tsx` —
-    Location セグメント + 一時フォルダの注記
+    Location の `RadioField` + 一時フォルダの注記 (`SegmentField` だと pane 内に
+    Image/Render タブがもう 1 段あるように読め、`SwitchField` だと二択ではなく
+    on/off に読めるため、設定としての「二者択一」= radio にした)
   - `tritium/react-gui/src/renderer/worker/server/services/renderJob.service.ts` —
     `purgeMovieArtifacts()` / `resolveFfmpeg()` / `startEncode` / `pollEncode` /
     `overrideStartCamForRender()` + `stopAnim()` の restore
@@ -185,7 +187,8 @@ PropAnim が保存した対象プロパティだけで `m_startCamName` は対�
   - `__test__/useMovieOutputPrefs.test.ts` — 既定解決と永続化の payload 形状
   - `__test__/renderJobAnimation.test.ts` — stale frame purge、encode 失敗検出、
     ffmpeg 事前チェック、start camera の尊重と復元 (完了 / cancel / setup 失敗)
-  - `__test__/renderSettingsPane.test.tsx` — Temporary / Custom の readOnly と invalid
+  - `__test__/renderSettingsPane.test.tsx` — Location radio、
+    一時 / 指定フォルダの readOnly と invalid
 - UXP 参照: `uxp_gui/cuemol2/base/content/anim/anim-render-dlg.js:14-17`
   (prefs キー)、`:66-82` (復元)、`:261` / `:686` (保存)
 - 関連 ADR: [ADR-0035](ADR-0035-render-window.md) (Rendering window と

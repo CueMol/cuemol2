@@ -144,11 +144,43 @@ describe('useMovieOutputPrefs', () => {
     const handle = mountHook();
     await flushPromises();
 
-    act(() => handle.result.prefs.selectCustomDir('/Users/me/renders'));
+    act(() => handle.result.prefs.setCustomDir('/Users/me/renders'));
     act(() => vi.advanceTimersByTime(1000));
 
     expect(handle.result.movie.useTempDir).toBe(false);
     expect(lastSavedPrefs()?.outputDir).toBe('/Users/me/renders');
+    handle.unmount();
+  });
+
+  // The Temporary-folder switch flips the mode without opening a picker, so
+  // turning it back off has to remember where the user had pointed it.
+  it('restores the folder last named when the temporary folder is left again', async () => {
+    routeInvoke();
+    const handle = mountHook();
+    await flushPromises();
+
+    act(() => handle.result.prefs.setCustomDir('/Users/me/renders'));
+    act(() => handle.result.prefs.selectTempDir());
+    expect(handle.result.movie.outputDir).toBe(TEMP_DIR);
+
+    act(() => handle.result.prefs.selectCustomDir());
+
+    expect(handle.result.movie.useTempDir).toBe(false);
+    expect(handle.result.movie.outputDir).toBe('/Users/me/renders');
+    handle.unmount();
+  });
+
+  it('leaves the folder empty when none has been named yet', async () => {
+    routeInvoke();
+    const handle = mountHook();
+    await flushPromises();
+
+    act(() => handle.result.prefs.selectCustomDir());
+
+    expect(handle.result.movie.useTempDir).toBe(false);
+    // Empty rather than the temporary path: the field is now the required
+    // one the user has to fill, and the panel flags it as such.
+    expect(handle.result.movie.outputDir).toBe('');
     handle.unmount();
   });
 

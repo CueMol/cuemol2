@@ -145,9 +145,9 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
     <ColorPickerProvider cm={cm} sceneId={sceneId}>
     <div className="inspector-panel">
       {/* -- Header -- */}
-      <div className="inspector-header">
+      <div className="inspector-header panel-header">
         <div className="inspector-header-left">
-          <AppIcon name="ui.properties" size="md" className="inspector-header-icon" aria-hidden />
+          <AppIcon name="ui.properties" size="md" className="panel-header-icon" aria-hidden />
           <div className="inspector-header-info">
             {hasTarget && targetCategory && (
               <Tag minimal className="inspector-header-badge">
@@ -155,9 +155,9 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
               </Tag>
             )}
             {nodeName ? (
-              <span className="inspector-header-name">{nodeName}</span>
+              <span className="panel-header-name type-panel-title">{nodeName}</span>
             ) : !hasTarget ? (
-              <span className="inspector-header-name">Inspector</span>
+              <span className="panel-header-name type-panel-title">Inspector</span>
             ) : null}
             {nodeType && (
               <span className="inspector-header-type">{nodeType}</span>
@@ -192,7 +192,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
         /* -- Node target (scene-tree node / View) -- */
         <>
           {/* -- Mode switcher + reset all -- */}
-          <div className="inspector-mode-bar">
+          <div className="inspector-mode-bar mode-bar">
             <SegmentField
               value={mode}
               onValueChange={handleModeChange}

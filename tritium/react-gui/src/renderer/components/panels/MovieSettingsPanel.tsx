@@ -17,7 +17,7 @@ import {
   FieldSection,
   TextField,
   SelectField,
-  SegmentField,
+  RadioField,
   SwitchField,
   ComboBoxField,
   FormButton,
@@ -32,7 +32,7 @@ import {
   type MovieFormatId,
 } from "../../data/renderSettings";
 
-/** Where the output goes: the app-managed folder, or one the user picks. */
+/** Where the output goes: the app-managed folder, or one the user names. */
 type LocationMode = "temp" | "custom";
 
 const LOCATION_OPTIONS = [
@@ -49,6 +49,8 @@ interface MovieSettingsPanelProps {
   onChange: (patch: Partial<MovieSettings>) => void;
   /** Switch the output back to the app-managed folder. */
   onUseTempDir?: () => void;
+  /** Leave the app-managed folder for one the user names. */
+  onUseCustomDir?: () => void;
   /** Open a folder picker. Omit to hide the browse button. */
   onPickFolder?: () => void;
   /** Disable every control (a render is in flight). */
@@ -66,6 +68,7 @@ export const MovieSettingsPanel: React.FC<MovieSettingsPanelProps> = ({
   settings,
   onChange,
   onUseTempDir,
+  onUseCustomDir,
   onPickFolder,
   disabled = false,
 }) => {
@@ -98,19 +101,24 @@ export const MovieSettingsPanel: React.FC<MovieSettingsPanelProps> = ({
   // Encoding options only matter when a movie is actually produced.
   const encodeDisabled = disabled || !settings.makeMovie;
 
+  // A radio group, not a segmented control: this is a setting with two named
+  // alternatives, and a segmented control inside a settings section reads as a
+  // second row of tabs under the pane's Image / Render strip. Picking Custom
+  // only leaves the app-managed folder -- the browse button below is what
+  // actually names one -- so choosing a location never pops a dialog.
   const handleLocation = useCallback(
     (mode: LocationMode) => {
       if (mode === "temp") onUseTempDir?.();
-      else onPickFolder?.();
+      else onUseCustomDir?.();
     },
-    [onUseTempDir, onPickFolder],
+    [onUseTempDir, onUseCustomDir],
   );
 
   return (
     <div className="movie-settings-panel">
       <FieldSection title={title}>
         <Field label="Location">
-          <SegmentField<LocationMode>
+          <RadioField<LocationMode>
             value={settings.useTempDir ? "temp" : "custom"}
             onValueChange={handleLocation}
             options={LOCATION_OPTIONS}
