@@ -38,13 +38,30 @@ afterEach(() => {
   if (origH) Object.defineProperty(window.HTMLElement.prototype, 'clientHeight', origH);
 });
 
-function mount(imgWidth: number, imgHeight: number): void {
+function mount(imgWidth: number, imgHeight: number, fitKey?: string): void {
   container = document.createElement('div');
   document.body.appendChild(container);
   act(() => {
     root = createRoot(container);
-    root.render(<RenderImageViewer src="data:," imgWidth={imgWidth} imgHeight={imgHeight} name="scene1" />);
+    root.render(
+      <RenderImageViewer src="data:," imgWidth={imgWidth} imgHeight={imgHeight} name="scene1" fitKey={fitKey} />,
+    );
   });
+}
+
+/** Re-render the SAME viewer instance with a different fitKey / size. */
+function rerender(imgWidth: number, imgHeight: number, fitKey?: string): void {
+  act(() => {
+    root.render(
+      <RenderImageViewer src="data:," imgWidth={imgWidth} imgHeight={imgHeight} name="scene1" fitKey={fitKey} />,
+    );
+  });
+}
+
+/** Zoom percentage from the toolbar info text. */
+function readZoomPct(): number {
+  const info = container.querySelector('.riv-info')?.textContent ?? '';
+  return Number(/(\d+)%/.exec(info)?.[1] ?? NaN);
 }
 
 describe('RenderImageViewer -- fit before paint', () => {
@@ -59,6 +76,57 @@ describe('RenderImageViewer -- fit before paint', () => {
     const stage = container.querySelector('.riv-stage') as HTMLElement;
     expect(stage.style.width).toBe('400px');
     expect(stage.style.height).toBe('300px');
+  });
+});
+
+// A finished render should arrive fitted, not at whatever zoom the previous
+// image was left at. The viewer stays mounted between results (same component
+// at the same position), so without a fit key it would keep the old scale --
+// which is exactly what users saw: a new render showing at 100%, or at some
+// zoom inherited from the last one.
+describe('RenderImageViewer -- re-fit on a new image', () => {
+  /** Pinch-zoom in, so the current scale is clearly not the fitted one. */
+  function zoomIn(): void {
+    const el = container.querySelector('.riv-scroll') as HTMLElement;
+    act(() => {
+      el.dispatchEvent(
+        new WheelEvent('wheel', {
+          bubbles: true, cancelable: true, deltaY: -300, ctrlKey: true, clientX: 200, clientY: 150,
+        }),
+      );
+    });
+  }
+
+  it('re-fits when the fit key changes, even at an unchanged image size', () => {
+    mount(800, 600, 'result-1');
+    expect(readZoomPct()).toBe(50);
+    zoomIn();
+    expect(readZoomPct()).toBeGreaterThan(50);
+
+    // A new render result at the same size: computeFit's identity is unchanged,
+    // so only the key can tell the viewer this is a different image.
+    rerender(800, 600, 'result-2');
+    expect(readZoomPct()).toBe(50);
+  });
+
+  it('keeps the zoom while the key holds (movie frame scrubbing)', () => {
+    mount(800, 600, 'result-1');
+    zoomIn();
+    const zoomed = readZoomPct();
+    expect(zoomed).toBeGreaterThan(50);
+
+    // Same result, next frame: the user's zoom is theirs to keep.
+    rerender(800, 600, 'result-1');
+    expect(readZoomPct()).toBe(zoomed);
+  });
+
+  it('fits once on mount when no key is given', () => {
+    mount(800, 600);
+    expect(readZoomPct()).toBe(50);
+    zoomIn();
+    const zoomed = readZoomPct();
+    rerender(800, 600);
+    expect(readZoomPct()).toBe(zoomed);
   });
 });
 

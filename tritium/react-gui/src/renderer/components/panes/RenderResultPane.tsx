@@ -294,6 +294,9 @@ export const RenderResultPane: React.FC<RenderResultPaneProps> = ({
         src={frameUrl ?? imageSrc ?? ""}
         imgWidth={result.width}
         imgHeight={result.height}
+        // Keyed on the result, not the shown image: a finished render arrives
+        // fitted, while stepping the frame slider keeps the zoom the user set.
+        fitKey={result.id}
         name={
           movie
             ? `${result.sourceSceneName} -- frame ${shownFrame + 1} / ${movie.frameCount}`
