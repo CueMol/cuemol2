@@ -167,6 +167,10 @@ function makeHandle(
       }
     },
     cancel: () => exporter.cancelRender(),
+    // umbreon's own diagnostics (fallback warnings, Embree errors, the GI
+    // stage timing). The C++ side collects them from the library's log sink;
+    // this hands each poll's batch to the render log.
+    drainLog: () => exporter.getRenderLog(),
   };
 }
 

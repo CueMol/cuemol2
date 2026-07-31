@@ -150,6 +150,13 @@ runtime_class UmbreonSceneExporter extends SceneExporter
   /// image was written).
   boolean wasRenderCancelled();
 
+  /// Drain the diagnostics umbreon has emitted since the last call: fallback
+  /// warnings ("--ao-res out is not supported with --gi yet"), Embree errors,
+  /// and the per-stage GI timing. Newline-separated, empty when there is
+  /// nothing new. Poll it alongside getRenderProgress() to stream the
+  /// renderer's own output into a host log.
+  string getRenderLog();
+
 };
 
 #endif

@@ -192,7 +192,7 @@ export const CatalogPane3: React.FC<CatalogPane3Props> = ({
 
             <FieldGroup title="Inspector property pane (mockup)">
               <div className="catalog-inspector-mock">
-                <div className="inspector-mode-bar">
+                <div className="inspector-mode-bar mode-bar">
                   <SegmentField
                     value={mkMode}
                     onValueChange={setMkMode}

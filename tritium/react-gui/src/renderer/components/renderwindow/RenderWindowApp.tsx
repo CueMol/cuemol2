@@ -100,7 +100,7 @@ export const RenderWindowApp: React.FC = () => {
         directory: true,
       });
       if (res && !res.canceled && res.filePath) {
-        movieOutput.selectCustomDir(res.filePath);
+        movieOutput.setCustomDir(res.filePath);
       }
     })();
   }, [movieOutput]);
@@ -290,6 +290,7 @@ export const RenderWindowApp: React.FC = () => {
             movie={settings.movie}
             onMovieChange={settings.updateMovie}
             onUseTempDir={movieOutput.selectTempDir}
+            onUseCustomDir={movieOutput.selectCustomDir}
             onPickFolder={handlePickFolder}
             movieDisabled={jobActive}
           />

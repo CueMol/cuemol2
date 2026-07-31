@@ -80,8 +80,14 @@ export interface MovieOutputPrefs {
   tempDir: string;
   /** Switch the output back to the app-managed folder. */
   selectTempDir: () => void;
+  /**
+   * Leave the app-managed folder without opening a picker, restoring the
+   * folder last chosen in this session (empty if there is none, which shows
+   * the Folder field as the required, unset field it now is).
+   */
+  selectCustomDir: () => void;
   /** Point the output at a folder the user picked. */
-  selectCustomDir: (dir: string) => void;
+  setCustomDir: (dir: string) => void;
 }
 
 /**
@@ -95,6 +101,9 @@ export function useMovieOutputPrefs(
   const [tempDir, setTempDir] = useState("");
   /** Suppress the write-back until the load has been applied. */
   const loadedRef = useRef(false);
+  /** Last folder the user named, so toggling the temporary folder off and on
+   *  does not throw it away. */
+  const lastCustomRef = useRef("");
   const updateRef = useRef(updateMovie);
   updateRef.current = updateMovie;
 
@@ -117,6 +126,7 @@ export function useMovieOutputPrefs(
       if (cancelled) return;
       setTempDir(dir);
       const patch = patchFromPrefs(prefs);
+      if (patch.outputDir) lastCustomRef.current = patch.outputDir;
       const useTemp = patch.useTempDir ?? DEFAULT_MOVIE_SETTINGS.useTempDir;
       // A restored custom folder wins; otherwise this run's folder, which is
       // the whole point of the default.
@@ -146,9 +156,14 @@ export function useMovieOutputPrefs(
     updateRef.current({ useTempDir: true, outputDir: tempDir });
   }, [tempDir]);
 
-  const selectCustomDir = useCallback((dir: string) => {
+  const selectCustomDir = useCallback(() => {
+    updateRef.current({ useTempDir: false, outputDir: lastCustomRef.current });
+  }, []);
+
+  const setCustomDir = useCallback((dir: string) => {
+    lastCustomRef.current = dir;
     updateRef.current({ useTempDir: false, outputDir: dir });
   }, []);
 
-  return { tempDir, selectTempDir, selectCustomDir };
+  return { tempDir, selectTempDir, selectCustomDir, setCustomDir };
 }

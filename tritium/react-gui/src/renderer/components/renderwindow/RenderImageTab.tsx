@@ -57,6 +57,8 @@ interface RenderImageTabProps {
   onMovieChange: (patch: Partial<MovieSettings>) => void;
   /** Switch the movie output back to the app-managed folder. */
   onUseTempDir?: () => void;
+  /** Leave the app-managed folder for one the user names. */
+  onUseCustomDir?: () => void;
   /** Open a folder picker for the movie output. */
   onPickFolder?: () => void;
   /** Disable the movie controls (a render is in flight). */
@@ -74,6 +76,7 @@ export const RenderImageTab: React.FC<RenderImageTabProps> = ({
   movie,
   onMovieChange,
   onUseTempDir,
+  onUseCustomDir,
   onPickFolder,
   movieDisabled = false,
 }) => {
@@ -111,6 +114,7 @@ export const RenderImageTab: React.FC<RenderImageTabProps> = ({
           settings={movie}
           onChange={onMovieChange}
           onUseTempDir={onUseTempDir}
+          onUseCustomDir={onUseCustomDir}
           onPickFolder={onPickFolder}
           disabled={movieDisabled}
         />

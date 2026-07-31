@@ -912,6 +912,52 @@
   font-size: var(--fs-lg);
 }
 
+/* ── Radio group ──
+ * Laid out with flex rather than Blueprint's `inline` prop so the spacing is a
+ * token and the options wrap by themselves in a narrow pane -- a caller never
+ * picks between a row and a column. Blueprint sizes the whole control for a
+ * full-size form, so the option row, the circle and the focus ring are all
+ * brought down to the kit's compact scale below. */
+.h3-form-radio-group.bp5-radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-5);
+}
+
+/* Each option occupies a compact control row and centres its own contents, so
+   the circle and its hover / focus highlight have vertical room instead of
+   spilling out of the text line box (the UI font at --fs-lg leaves only ~15px
+   of line box, which is less than the circle plus its highlight). */
+.h3-form-radio-group .bp5-control.bp5-radio {
+  display: flex;
+  align-items: center;
+  min-height: var(--field-h-sm);
+  margin: 0;
+  font-size: var(--fs-lg);
+}
+
+/* The circle is sized by its OWN font-size (Blueprint gives it width/height of
+   1em), so one token scales the ring and the inner dot together. Blueprint's
+   16px is a full-size-form circle; --icon-md is the kit's control-glyph size
+   and reads as a peer of the 12px label. The -3px optical nudge that went with
+   the 16px circle is dropped -- the row centres it now. */
+.h3-form-radio-group .bp5-control .bp5-control-indicator {
+  font-size: var(--icon-md);
+  margin-top: 0;
+  margin-inline-end: var(--space-2);
+}
+
+/* Tight focus ring. Blueprint's is 2px wide at a 2px offset, which puts an 8px
+   halo around the circle and spills out of the row -- the same reason the
+   catalog's button and select replace their focus rings (see .h3-form-btn).
+   Kept as an outline rather than an inset ring because a checked radio is
+   filled with the accent colour, where an inset ring would disappear. */
+.h3-form-radio-group .bp5-control input:focus ~ .bp5-control-indicator {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+
 /* ── Compact form button + a row of them ── */
 .h3-form-btn.bp5-button {
   min-height: var(--field-btn-h);

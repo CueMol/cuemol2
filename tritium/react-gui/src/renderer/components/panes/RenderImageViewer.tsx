@@ -36,6 +36,15 @@ interface RenderImageViewerProps {
   name: string;
   /** Result action buttons, rendered at the start of the single toolbar. */
   actions?: React.ReactNode;
+  /**
+   * Identity of the image being shown. When it changes the viewer re-fits: a
+   * newly rendered image is a new thing to look at, and the zoom that suited
+   * the previous one is not a property of it. Frame scrubbing within one movie
+   * result keeps the same key, so a zoomed-in look survives it.
+   *
+   * Omit to fit only once, on mount.
+   */
+  fitKey?: string | number;
 }
 
 const MIN_SCALE = 0.05;
@@ -60,10 +69,20 @@ export const RenderImageViewer: React.FC<RenderImageViewerProps> = ({
   imgHeight,
   name,
   actions,
+  fitKey,
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const fittedRef = useRef(false);
+  const fitKeyRef = useRef(fitKey);
+
+  // Arm the fit for a new image. Done during render rather than in an effect so
+  // the layout effect below already sees it disarmed and re-fits BEFORE the
+  // browser paints -- the whole point of fitting in a layout effect.
+  if (fitKey !== fitKeyRef.current) {
+    fitKeyRef.current = fitKey;
+    fittedRef.current = false;
+  }
 
   /**
    * Scale that fits the whole image within the viewport, or null when the
@@ -91,7 +110,10 @@ export const RenderImageViewer: React.FC<RenderImageViewerProps> = ({
       fittedRef.current = true;
       setScale(f);
     }
-  }, [computeFit]);
+    // fitKey is a dependency, not just a guard: a re-render at the SAME size
+    // leaves computeFit's identity untouched, so without it the effect would
+    // never re-run for the new image.
+  }, [computeFit, fitKey]);
 
   const fit = useCallback(() => {
     const f = computeFit();

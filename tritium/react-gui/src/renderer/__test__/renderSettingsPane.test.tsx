@@ -39,6 +39,8 @@ function mountPane(
     backend?: RenderBackendId;
     mode?: RenderMode;
     movie?: Partial<typeof DEFAULT_MOVIE_SETTINGS>;
+    onUseTempDir?: () => void;
+    onUseCustomDir?: () => void;
   } = {},
 ): ReturnType<typeof mountTree> {
   const backend = opts.backend ?? 'povray';
@@ -59,7 +61,8 @@ function mountPane(
       onApplyPreset={vi.fn()}
       movie={{ ...DEFAULT_MOVIE_SETTINGS, ...opts.movie }}
       onMovieChange={vi.fn()}
-      onUseTempDir={vi.fn()}
+      onUseTempDir={opts.onUseTempDir ?? vi.fn()}
+      onUseCustomDir={opts.onUseCustomDir ?? vi.fn()}
       onPickFolder={vi.fn()}
     />,
   );
@@ -108,6 +111,29 @@ describe('RenderSettingsPane tabs', () => {
   });
 });
 
+// The pane is titled and switched with the same chrome as the main window's
+// Inspector. Pinned by class because that IS the mechanism: the roles carry
+// the height, typography and strip padding, so a pane that stops using them
+// silently drifts away from the Inspector again.
+describe('RenderSettingsPane chrome', () => {
+  it('titles the pane with the shared panel-header role', () => {
+    const { container, unmount } = mountPane();
+    const header = container.querySelector('.render-window-settings-header');
+    expect(header?.classList.contains('panel-header')).toBe(true);
+    const name = header?.querySelector('.panel-header-name');
+    expect(name?.textContent).toBe('Render Settings');
+    expect(name?.classList.contains('type-panel-title')).toBe(true);
+    unmount();
+  });
+
+  it('puts the tab strip in the shared mode-bar role', () => {
+    const { container, unmount } = mountPane();
+    const bar = container.querySelector('.render-window-settings-tabbar');
+    expect(bar?.classList.contains('mode-bar')).toBe(true);
+    unmount();
+  });
+});
+
 describe('RenderSettingsPane Image tab per mode', () => {
   it('has no Movie section in still mode', () => {
     const { container, unmount } = mountPane({ mode: 'still' });
@@ -146,6 +172,59 @@ describe('RenderSettingsPane movie output location', () => {
     expect(input).not.toBeNull();
     return input!;
   }
+
+  /** The Location radio carrying the given value. */
+  function locationRadio(container: HTMLElement, value: string): HTMLInputElement {
+    const input = container.querySelector<HTMLInputElement>(
+      `.h3-form-radio-group input[type="radio"][value="${value}"]`,
+    );
+    expect(input, `no Location radio for ${value}`).not.toBeNull();
+    return input!;
+  }
+
+  // A radio group, not a segmented control: a segmented control inside the
+  // settings section reads as a second row of tabs under the Image / Render
+  // strip, which is what the pane header already uses.
+  it('offers the location as a radio group, not a segmented control', () => {
+    const onUseTempDir = vi.fn();
+    const onUseCustomDir = vi.fn();
+    const { container, unmount } = mountPane({
+      mode: 'movie',
+      movie: { useTempDir: true, outputDir: '/tmp/cuemol-movies/session-x' },
+      onUseTempDir,
+      onUseCustomDir,
+    });
+    selectTab(container, 'Image');
+
+    // No "Temporary" / "Custom" tab-like buttons anywhere in the pane.
+    const labels = Array.from(container.querySelectorAll('button')).map((b) =>
+      (b.textContent ?? '').trim(),
+    );
+    expect(labels).not.toContain('Custom');
+
+    expect(locationRadio(container, 'temp').checked).toBe(true);
+    // Choosing Custom only leaves the app-managed folder; naming one is the
+    // browse button's job, so no dialog is opened from here.
+    act(() => locationRadio(container, 'custom').click());
+    expect(onUseCustomDir).toHaveBeenCalledTimes(1);
+    expect(onUseTempDir).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  it('switches back to the app-managed folder when Temporary is picked', () => {
+    const onUseTempDir = vi.fn();
+    const { container, unmount } = mountPane({
+      mode: 'movie',
+      movie: { useTempDir: false, outputDir: '/Users/me/renders' },
+      onUseTempDir,
+    });
+    selectTab(container, 'Image');
+
+    expect(locationRadio(container, 'custom').checked).toBe(true);
+    act(() => locationRadio(container, 'temp').click());
+    expect(onUseTempDir).toHaveBeenCalledTimes(1);
+    unmount();
+  });
 
   it('shows the temporary folder read-only, with a note about its lifetime', () => {
     const { container, unmount } = mountPane({

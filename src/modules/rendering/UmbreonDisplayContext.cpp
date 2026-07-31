@@ -16,9 +16,11 @@
 
 #ifdef HAVE_UMBREON
 #  include <umbreon/umbreon.hpp>
+#  include <umbreon/log.hpp>
 #  include <cmath>
 #  include <cstdint>
 #  include <map>
+#  include <mutex>
 #  include <vector>
 #endif
 
@@ -355,10 +357,63 @@ struct UmbreonDisplayContext::Impl
 #endif
 };
 
+namespace {
+
+#ifdef HAVE_UMBREON
+/// Process-wide collector behind UmbreonDisplayContext::drainLog(). umbreon's
+/// sink is global (one render at a time in this process), so the buffer is too.
+struct LogCollector
+{
+  std::mutex mtx;
+  LString text;
+};
+
+LogCollector &logCollector()
+{
+  static LogCollector collector;
+  return collector;
+}
+
+/// Route umbreon's diagnostics into the collector. Installed once and kept for
+/// the process lifetime; before this the library wrote them to stderr, where a
+/// GUI host never saw them.
+void ensureLogSink()
+{
+  static std::once_flag once;
+  std::call_once(once, [] {
+    umbreon::setLogSink([](umbreon::LogLevel level, const char *text) {
+      LogCollector &c = logCollector();
+      std::lock_guard<std::mutex> lock(c.mtx);
+      if (level == umbreon::LogLevel::Warning) c.text += "warning: ";
+      c.text += text;
+      c.text += "\n";
+    });
+  });
+}
+#endif
+
+}  // anonymous namespace
+
 UmbreonDisplayContext::UmbreonDisplayContext()
      : super_t(), m_pImpl(new Impl()),
        m_bEnableEdgeLines(true), m_dCreaseLimit(-1.0), m_dEdgeRise(0.5)
 {
+#ifdef HAVE_UMBREON
+  ensureLogSink();
+#endif
+}
+
+LString UmbreonDisplayContext::drainLog()
+{
+#ifdef HAVE_UMBREON
+  LogCollector &c = logCollector();
+  std::lock_guard<std::mutex> lock(c.mtx);
+  LString out = c.text;
+  c.text = LString();
+  return out;
+#else
+  return LString();
+#endif
 }
 
 UmbreonDisplayContext::~UmbreonDisplayContext()

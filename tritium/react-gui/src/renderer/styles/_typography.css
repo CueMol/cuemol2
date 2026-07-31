@@ -25,6 +25,14 @@
   font-weight: var(--type-subtitle-fw);
 }
 
+/* Panel title inside a .panel-header (the panel's name, or the name of what it
+   is inspecting). Not uppercased -- pick .type-eyebrow for a section heading. */
+.type-panel-title {
+  font-size: var(--type-panel-title-fs);
+  line-height: var(--type-panel-title-lh);
+  font-weight: var(--type-panel-title-fw);
+}
+
 /* Uppercase eyebrow used by panel and section headers. */
 .type-eyebrow {
   font-size: var(--type-eyebrow-fs);
@@ -95,6 +103,39 @@
   color: var(--text-secondary);
   background: var(--toolbar-bg);
   border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* Leading icon of a .panel-header. Accent-tinted and never squeezed by a long
+   title. */
+.panel-header-icon {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+/* Title text of a .panel-header; pair with .type-panel-title. Truncates rather
+   than wrapping, since the pane is resizable and the title can be a long
+   object name. */
+.panel-header-name {
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/*
+ * Mode / tab switcher strip sitting directly under a .panel-header (the
+ * Inspector's Properties/Generic bar, the Rendering window's Image/Render
+ * tabs). Owns the strip's chrome and padding; the switcher inside it is the
+ * form-kit SegmentField, so every pane switches views at the same size.
+ */
+.mode-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: var(--bg-panel-header);
+  border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
 }
 

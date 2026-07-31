@@ -311,6 +311,11 @@ bool UmbreonSceneExporter::wasRenderCancelled() const
   return m_bWasCancelled;
 }
 
+LString UmbreonSceneExporter::getRenderLog() const
+{
+  return UmbreonDisplayContext::drainLog();
+}
+
 /// name of the writer
 const char *UmbreonSceneExporter::getName() const
 {

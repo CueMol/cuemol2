@@ -145,6 +145,12 @@
   --type-subtitle-fs: var(--fs-xl);
   --type-subtitle-lh: var(--lh-snug);
   --type-subtitle-fw: var(--fw-semibold);
+  /* Title shown in a .panel-header: the panel's own name, or the object it is
+     inspecting (Inspector, Render Settings). Content rather than a section
+     heading, so it is never uppercased -- that is what --type-eyebrow is for. */
+  --type-panel-title-fs: var(--fs-lg);
+  --type-panel-title-lh: var(--lh-snug);
+  --type-panel-title-fw: var(--fw-semibold);
   /* Uppercase section / panel-header eyebrow (pair with uppercase + --ls-wide) */
   --type-eyebrow-fs: var(--fs-base);
   --type-eyebrow-lh: var(--lh-tight);

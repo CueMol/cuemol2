@@ -378,15 +378,25 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
     app.exit(0)
   })
 
+  /**
+   * UI zoom is app-wide, not per window: the Rendering window shares the main
+   * window's design tokens, so leaving it at 100% while the main window is
+   * zoomed makes the same header / tab strip render at two different sizes.
+   * A window opened later adopts the level in windowManager.
+   */
+  const setUiZoomLevel = (level: number): void => {
+    for (const w of BrowserWindow.getAllWindows()) w.webContents.setZoomLevel(level)
+  }
+
   handleInvoke(IPC.MENU_INVOKE_ROLE, (_event, role) => {
     const wc = mainWindow.webContents
     switch (role) {
       case 'reload': wc.reload(); break
       case 'forceReload': wc.reloadIgnoringCache(); break
       case 'toggleDevTools': wc.toggleDevTools(); break
-      case 'resetZoom': wc.setZoomLevel(0); break
-      case 'zoomIn': wc.setZoomLevel(wc.getZoomLevel() + 0.5); break
-      case 'zoomOut': wc.setZoomLevel(wc.getZoomLevel() - 0.5); break
+      case 'resetZoom': setUiZoomLevel(0); break
+      case 'zoomIn': setUiZoomLevel(wc.getZoomLevel() + 0.5); break
+      case 'zoomOut': setUiZoomLevel(wc.getZoomLevel() - 0.5); break
       case 'togglefullscreen': mainWindow.setFullScreen(!mainWindow.isFullScreen()); break
       case 'about': app.showAboutPanel(); break
       case 'quit': app.quit(); break

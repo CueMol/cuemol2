@@ -22,6 +22,7 @@ import {
   ButtonRow,
   FormButton,
   SegmentField,
+  RadioField,
   ColorField,
 } from "../../h3-kit/form";
 import { Listbox, ListRow } from "../../h3-kit/list";
@@ -55,6 +56,7 @@ export const CatalogPane2: React.FC<CatalogPane2Props> = ({
   const [angle, setAngle] = useState(90);
   const [listSel, setListSel] = useState("3J3Q");
   const [seg, setSeg] = useState("all");
+  const [radio, setRadio] = useState("temp");
   const [color, setColor] = useState("#3b82f6");
 
   return (
@@ -150,6 +152,21 @@ export const CatalogPane2: React.FC<CatalogPane2Props> = ({
                   { label: "Sidechain", value: "sidechain" },
                 ]}
               />
+            </FieldGroup>
+
+            {/* One of N as a *setting* (a segmented control above reads as a
+                tab strip, so it belongs at the top of a pane, not in a form). */}
+            <FieldGroup title="Radio group">
+              <Field label="Location">
+                <RadioField
+                  value={radio}
+                  onValueChange={setRadio}
+                  options={[
+                    { label: "Temporary", value: "temp" },
+                    { label: "Custom", value: "custom" },
+                  ]}
+                />
+              </Field>
             </FieldGroup>
 
             <FieldGroup title="Buttons">

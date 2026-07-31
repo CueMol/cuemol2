@@ -9,17 +9,12 @@
   overflow: hidden;
 }
 
-/* ── Header ── */
+/* ── Header ──
+ * The bar itself (height / chrome / border) is the shared .panel-header role
+ * in _typography.css; only what is specific to this pane lives here. */
 .inspector-header {
-  display: flex;
-  align-items: center;
   justify-content: space-between;
   padding: 0 var(--space-4) 0 var(--space-5);
-  height: var(--panel-header-h);
-  min-height: var(--panel-header-h);
-  background: var(--toolbar-bg);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
 }
 
 .inspector-header-left {
@@ -30,26 +25,12 @@
   overflow: hidden;
 }
 
-.inspector-header-icon {
-  color: var(--accent);
-  flex-shrink: 0;
-}
-
 .inspector-header-info {
   display: flex;
   align-items: baseline;
   gap: var(--space-3);
   min-width: 0;
   overflow: hidden;
-}
-
-.inspector-header-name {
-  font-size: var(--fs-lg);
-  font-weight: var(--fw-semibold);
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .inspector-header-type {
@@ -81,18 +62,10 @@
 }
 
 /* ── Mode switcher (SegmentField) ──
- * The switcher itself (background / border / segment height / label scale) is
- * the catalog SegmentField (`.h3-form-segmented` in `_form-kit.css`); only the bar
- * container lives here. */
-.inspector-mode-bar {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
-  flex-shrink: 0;
-  background: var(--bg-panel-header);
-  border-bottom: 1px solid var(--border-subtle);
-}
+ * The bar is the shared .mode-bar role (_typography.css) and the switcher is
+ * the catalog SegmentField (`.h3-form-segmented` in `_form-kit.css`), so this
+ * pane owns neither the strip's chrome nor the segment size; only the trailing
+ * reset button below is specific to the Inspector. */
 
 /* Reset all: icon-only, pushed to the right end of the mode bar (next to the
    Properties/Generic switcher). */

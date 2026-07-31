@@ -152,6 +152,12 @@ interface RenderJobEntry {
   inProcess: InProcessRender | null;
   /** Last in-process phase name pushed to the log (so it is logged on change). */
   lastPhaseName: string;
+  /**
+   * When `lastPhaseName` began, so each phase can be logged with how long it
+   * took. Poll-resolution only (IN_PROCESS_POLL_MS) -- the exact per-stage
+   * split arrives from the backend itself at the end of the render.
+   */
+  lastPhaseAt: number;
   /** Animation state; null for a still render. */
   anim: AnimJobState | null;
 }
@@ -387,6 +393,7 @@ function submitInProcessAnimFrame(
   entry.taskIds = [];
   entry.taskProgress = [];
   entry.lastPhaseName = "";
+  entry.lastPhaseAt = 0;
   entry.inProcess = backend.beginInProcessAnimFrame!(
     ctx,
     anim.animMgr!,
@@ -731,6 +738,24 @@ function progressUpdate(
   };
 }
 
+/**
+ * Whatever the backend has reported since the last drain, as a log chunk.
+ *
+ * A backend that renders in-process has no stdout for the host to capture, so
+ * its diagnostics (umbreon's fallback warnings, Embree errors, the per-stage GI
+ * timing) only reach the render log through this. Backends without a
+ * diagnostics channel omit `drainLog` and contribute nothing.
+ */
+function drainBackendLog(handle: InProcessRender): string {
+  if (!handle.drainLog) return "";
+  try {
+    return handle.drainLog();
+  } catch {
+    // Diagnostics must never take the render down with them.
+    return "";
+  }
+}
+
 /** One poll tick. */
 function pollJob(
   ctx: WorkerContext,
@@ -838,6 +863,7 @@ function startInProcessJob(
     taskProgress: [],
     inProcess: handle,
     lastPhaseName: "",
+    lastPhaseAt: 0,
     anim: null,
   };
   jobs.set(jobId, entry);
@@ -883,11 +909,20 @@ function pollInProcessJob(
       logChunk += `Working dir: ${entry.workDir}\n`;
       entry.announcedDir = true;
     }
-    // Log each phase transition once (umbreon Setup -> Primary -> ...).
+    // Log each phase transition once (umbreon Setup -> Primary -> ...),
+    // closing the previous one with its elapsed time: the bare name says where
+    // the render is, not which stage is costing anything.
     if (phaseName && phaseName !== entry.lastPhaseName) {
+      const now = Date.now();
+      if (entry.lastPhaseName && entry.lastPhaseAt > 0) {
+        const sec = (now - entry.lastPhaseAt) / 1000;
+        logChunk += `${entry.lastPhaseName} done (${sec.toFixed(1)}s)\n`;
+      }
       entry.lastPhaseName = phaseName;
-      logChunk += `${phaseName}\n`;
+      entry.lastPhaseAt = now;
+      logChunk += `${phaseName}...\n`;
     }
+    logChunk += drainBackendLog(handle);
 
     const pct = Math.max(0, Math.min(100, Math.round(frac * 100)));
     emit(ctx, progressUpdate(entry, "running", logChunk, pct));
@@ -909,6 +944,12 @@ function pollInProcessJob(
     emit(ctx, { type: "error", jobId: entry.jobId, error: String(e) });
     return;
   }
+
+  // Drain once more before the job moves on: the renderer reports its
+  // per-stage timing at the very end of the render, which lands after the last
+  // poll that still saw work in flight.
+  const tailLog = drainBackendLog(handle);
+  if (tailLog) emit(ctx, progressUpdate(entry, "running", tailLog, 100));
 
   if (cancelled || entry.cancelled) {
     // User cancellation: no complete push (matches the external cancel path).
@@ -1012,6 +1053,7 @@ function startAnimJob(
     taskProgress: [],
     inProcess: null,
     lastPhaseName: "",
+    lastPhaseAt: 0,
     anim: {
       animMgr,
       scene,
@@ -1117,6 +1159,7 @@ function startEncodeOnlyJob(
     taskProgress: [],
     inProcess: null,
     lastPhaseName: "",
+    lastPhaseAt: 0,
     anim: {
       animMgr: null,
       scene: null,
@@ -1245,6 +1288,7 @@ function renderStart(ctx: WorkerContext, args: RenderStartArgs): RenderStartResu
     taskProgress: taskIds.map(() => 0),
     inProcess: null,
     lastPhaseName: "",
+    lastPhaseAt: 0,
     anim: null,
   };
   jobs.set(jobId, entry);
