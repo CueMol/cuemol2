@@ -327,6 +327,15 @@ export function createOrFocusRenderWindow(mainWindow: BrowserWindow): void {
     if (!win.isDestroyed()) win.show()
   })
 
+  // Adopt the main window's UI zoom. Zoom level is per-webContents and resets
+  // on load, so it is applied after the page is up rather than at creation;
+  // without it a zoomed main window and a 100% Rendering window draw the same
+  // header and tab strip at two different sizes.
+  win.webContents.on('did-finish-load', () => {
+    if (win.isDestroyed() || mainWindow.isDestroyed()) return
+    win.webContents.setZoomLevel(mainWindow.webContents.getZoomLevel())
+  })
+
   // Forward console messages like the main window (same packaged-build level
   // filter), tagged for telling apart.
   win.webContents.on('console-message', (_event, level, message, line, sourceId) => {
