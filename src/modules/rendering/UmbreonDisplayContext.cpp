@@ -536,15 +536,32 @@ void UmbreonDisplayContext::appendIntData()
         eg = float(pcol->fg());
         eb = float(pcol->fb());
       }
-      // Edge line width: getEdgeLineWidth() is a world-space radius (as POV /
-      // Lux use it); convert to the native stroke width in FINAL pixels via the
-      // line scale (world units per pixel, seeded by the exporter). Fall back to
-      // the default when the width is unset (< 0).
+      // Edge line width: getEdgeLineWidth() is a world-space length (A); the
+      // native stroke width is the FULL band width in FINAL pixels, so divide
+      // by the line scale (world units per pixel, seeded by the exporter).
+      //
+      // The 1:1 conversion is what matches the INTERACTIVE GL view, which is
+      // the look this backend is reproducing. GL draws edges as an inverted
+      // hull (gfx/TrigGpuPrim::drawEdges + edge_vert.glsl): the mesh is offset
+      // by edge_width ALONG THE NORMAL and its back faces are drawn behind the
+      // surface. At a silhouette the normal lies in the screen plane, so the
+      // contour moves out by exactly edge_width and the visible band -- the
+      // sliver outside the true silhouette -- is edge_width wide. umbreon inks
+      // a band of cls.width final px centred on the same contour, so equal
+      // widths give equal line thickness (the band straddles the contour
+      // instead of sitting outside it, which shifts it by half a line width).
+      //
+      // Note this is NOT the POV convention: PovSilBuilder emits the edge as a
+      // cylinder of RADIUS getEdgeLineWidth(), i.e. a 2x wider band. Following
+      // POV here is what made rendered images look heavily over-inked next to
+      // the GL view.
+      //
+      // Falls back to the default when the width is unset (< 0).
       const double elw = getEdgeLineWidth();
       const double lscale = getLineScale();
       float widthPx = float(EDGE_THICKNESS_PX);
       if (elw > 0.0 && lscale > 0.0)
-        widthPx = float(2.0 * elw / lscale);
+        widthPx = float(elw / lscale);
       if (widthPx < 1.0f)
         widthPx = 1.0f;
       // The stroke pass maps silhouette -> Silhouette, border -> Object,
@@ -887,11 +904,25 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
     opt.strokeEdges.thickness = int(m_pImpl->edgeThicknessPx + 0.5f);
     if (opt.strokeEdges.thickness < 1)
       opt.strokeEdges.thickness = 1;
-    // Outward contour offset (world units); CueMol's edge-rise knob.
-    opt.strokeEdges.raise = float(m_dEdgeRise);
+    // strokeEdges.raise is deliberately left at 0. CueMol's edge-rise knob is a
+    // DIMENSIONLESS multiplier of half the line width (PovSilBuilder writes the
+    // offset as sl_rise * (w/2)), not a world-unit distance, so feeding
+    // m_dEdgeRise straight in would lift the contour by whole angstroms. The
+    // stroke pass has no use for the lift either: its visibility is ray-cast on
+    // the true surface point, which is why umbreon documents raise == 0 for it
+    // (only the object-space edge method reads the field).
     opt.strokeEdges.color[0] = 0.0f;
     opt.strokeEdges.color[1] = 0.0f;
     opt.strokeEdges.color[2] = 0.0f;
+    // Round caps and round joins. umbreon defaults to butt caps + a mitered
+    // join (its byte-identical legacy path), which shows up as flat stubs where
+    // a chain ends against another line and as spikes at sharp corners. The GL
+    // view has neither: its outline is an inverted hull, so an outline never
+    // terminates flat and a corner is just the hull's own rounding. Rounded
+    // ends/corners are the closer match, and they also hide the seams where the
+    // chained silhouette is cut into visible runs.
+    opt.strokeEdges.roundCap = true;
+    opt.strokeEdges.roundJoin = true;
     // Cover every group id; sections with no edge lines keep an all-disabled
     // EdgeStyle, so the stroke pass draws nothing for them.
     if (m_pImpl->groupEdgeStyle.size() < std::size_t(m_pImpl->nextGroup))

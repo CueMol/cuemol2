@@ -127,6 +127,83 @@ TEST(UmbreonExport, RendersSilhouetteEdgesWithoutCrashing)
     EXPECT_GT(nNonBg, 200u);
 }
 
+// Pins the edge-width unit conversion: getEdgeLineWidth() is a world-space
+// length (A) and umbreon's stroke width is the FULL band width in FINAL pixels,
+// so the conversion is edgeLineWidth / lineScale -- ONE to one, matching the GL
+// view's inverted-hull band (see the derivation in UmbreonDisplayContext). The
+// POV convention (a cylinder of RADIUS edgeLineWidth, i.e. 2x) is what this
+// guards against: it inked every rendered image twice as heavy as the GL view.
+//
+// A white quad facing the camera is bordered on a blue background; the ink is
+// the only BLACK in the frame, so the band is measured by scanning the center
+// row for its dark run. lineScale is set to 0.1 A/px and the width to 0.8 A, so
+// the band must come out ~8 px wide (16 px would be the POV convention).
+TEST(UmbreonExport, EdgeWidthConvertsAngstromToFinalPixels)
+{
+    const double kLineScale = 0.1;  // A per pixel
+    const double kEdgeWidthA = 0.8;
+    const int kExpectPx = int(kEdgeWidthA / kLineScale + 0.5);  // 8
+
+    UmbreonDisplayContext ctx;
+    ctx.init();
+
+    ctx.setPerspective(false);
+    ctx.setViewDist(100.0);
+    ctx.setZoom(6.4);  // 64 px over 6.4 A == kLineScale
+    ctx.setLineScale(kLineScale);
+    ctx.setBgColor(gfx::SolidColor::createRGB(0.0, 0.0, 1.0));
+    ctx.loadIdent();
+
+    ctx.enableEdgeLines(true);
+    ctx.setEdgeLineType(gfx::DisplayContext::ELT_EDGES);
+    ctx.setEdgeLineWidth(kEdgeWidthA);
+    ctx.setEdgeLineColor(gfx::SolidColor::createRGB(0.0, 0.0, 0.0));
+
+    ctx.startRender();
+    ctx.startSection("width");
+
+    // A white quad facing the camera: no silhouette (it is flat-on), so the
+    // only inked feature is its open border.
+    ctx.color(gfx::SolidColor::createRGB(1.0, 1.0, 1.0));
+    ctx.startTriangles();
+    const double kQuad = 2.0;
+    const Vector4D nz(0.0, 0.0, 1.0);
+    const Vector4D c0(-kQuad, -kQuad, 0.0), c1(kQuad, -kQuad, 0.0);
+    const Vector4D c2(kQuad, kQuad, 0.0), c3(-kQuad, kQuad, 0.0);
+    const Vector4D tri[6] = {c0, c1, c2, c0, c2, c3};
+    for (int i = 0; i < 6; ++i) {
+        ctx.normal(nz);
+        ctx.vertex(tri[i]);
+    }
+    ctx.end();
+
+    ctx.endSection();
+
+    UmbreonRenderParams prm;
+    prm.width = 64;
+    prm.height = 64;
+    prm.supersample = 1;
+
+    int ow = 0, oh = 0, ncomp = 0;
+    std::vector<unsigned char> pix;
+    ctx.render(prm, ow, oh, ncomp, pix);
+
+    ASSERT_EQ(pix.size(), static_cast<std::size_t>(64 * 64 * 3));
+
+    // Longest run of BLACK (all channels dark) in the center row: neither the
+    // white quad nor the blue background is dark in every channel.
+    int best = 0, run = 0;
+    for (int x = 0; x < 64; ++x) {
+        const std::size_t i = (static_cast<std::size_t>(32) * 64 + x) * 3;
+        const bool ink = pix[i] < 60 && pix[i + 1] < 60 && pix[i + 2] < 60;
+        run = ink ? run + 1 : 0;
+        if (run > best) best = run;
+    }
+    // +-2 px covers the ribbon's antialiased shoulders while still rejecting
+    // the 2x (POV radius) conversion.
+    EXPECT_NEAR(best, kExpectPx, 2);
+}
+
 // Pins the section-alpha (setAlpha) transparency path: an opaque RED triangle
 // sits at z=0, and a translucent BLUE triangle (its section drawn with
 // alpha 0.5) covers it at z=1, closer to the camera. With the section default
