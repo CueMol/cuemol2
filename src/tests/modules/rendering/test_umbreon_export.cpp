@@ -192,9 +192,10 @@ TEST(UmbreonExport, BlendsTranslucentSectionOverOpaqueGeometry)
 
 // Pins the slab near-clip path (setClipZ): with the slab depth set so the clip
 // plane is z = 1, a GREEN triangle at z=0 is inside the slab and a RED triangle
-// at z=2 is in front of the clip plane (closer to the camera). calcMeshClip
-// removes the red triangle entirely, so the center pixel shows the green behind
-// it. Without clipping the closer red would occlude the green (center red).
+// at z=2 is in front of the clip plane (closer to the camera). The clipping is
+// umbreon's (Scene::clipNear = viewDist - slab/2); the mesh is handed over
+// uncut, and the red triangle is removed by the plane, so the center pixel
+// shows the green behind it. Without clipping the closer red would occlude it.
 TEST(UmbreonExport, ClipsGeometryInFrontOfSlabPlane)
 {
     UmbreonDisplayContext ctx;
@@ -249,6 +250,82 @@ TEST(UmbreonExport, ClipsGeometryInFrontOfSlabPlane)
     const std::size_t c = (static_cast<std::size_t>(32) * 64 + 32) * 3;
     EXPECT_GT(pix[c + 1], 30);  // green (inside the slab) is visible
     EXPECT_LT(pix[c + 0], 30);  // red (in front of the clip plane) is gone
+}
+
+// Pins that the slab plane cuts the ANALYTIC primitives too: spheres and
+// cylinders are handed to umbreon whole and its clipNear plane does the
+// cutting. The RED sphere (center z=1.5, radius 0.6) straddles the clip plane
+// at z=1, and its rim -- everything more than ~0.37 off the view axis -- lies
+// ENTIRELY in front of that plane. The probe sits in the rim, so it shows the
+// sphere when clipping is off and the GREEN backdrop (z=0, inside the slab)
+// when it is on. The CueMol-side clip this replaces could not cut a quadric: it
+// only dropped a sphere fully in front of the plane and drew the rest whole,
+// which left the probe red in both renders.
+TEST(UmbreonExport, ClipPlaneCutsAnalyticSphere)
+{
+    // Orthographic: 64 px over a zoom (view height) of 4.0 => 16 px per world
+    // unit, so pixel x=39 is world x = (39 + 0.5 - 32) / 16 = 0.47 -- inside the
+    // sphere's 0.6 disk, and on the cut-away rim. The scene is symmetric about
+    // the view axis, so the probe does not depend on the image axis directions.
+    const int kProbeX = 39, kProbeY = 32;
+
+    auto renderProbe = [kProbeX, kProbeY](bool useClipZ, unsigned char &red,
+                                          unsigned char &green) {
+        UmbreonDisplayContext ctx;
+        ctx.init();
+
+        ctx.setPerspective(false);
+        ctx.setViewDist(100.0);
+        ctx.setZoom(4.0);
+        ctx.setSlabDepth(2.0);  // near clip plane at z = slab/2 = 1.0
+        ctx.setClipZ(useClipZ);
+        ctx.loadIdent();
+
+        ctx.startRender();
+        ctx.startSection("clipsph");
+
+        // GREEN backdrop at z=0 (inside the slab)
+        ctx.color(gfx::SolidColor::createRGB(0.0, 1.0, 0.0));
+        ctx.startTriangles();
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(-2.0, -2.0, 0.0));
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(2.0, -2.0, 0.0));
+        ctx.normal(Vector4D(0.0, 0.0, 1.0));
+        ctx.vertex(Vector4D(0.0, 2.0, 0.0));
+        ctx.end();
+
+        // RED sphere straddling the clip plane (spans z = 0.9 .. 2.1)
+        ctx.color(gfx::SolidColor::createRGB(1.0, 0.0, 0.0));
+        ctx.sphere(0.6, Vector4D(0.0, 0.0, 1.5));
+
+        ctx.endSection();
+
+        UmbreonRenderParams prm;
+        prm.width = 64;
+        prm.height = 64;
+        prm.supersample = 1;
+
+        int ow = 0, oh = 0, ncomp = 0;
+        std::vector<unsigned char> pix;
+        ctx.render(prm, ow, oh, ncomp, pix);
+        ASSERT_EQ(pix.size(), static_cast<std::size_t>(64 * 64 * 3));
+
+        const std::size_t c =
+            (static_cast<std::size_t>(kProbeY) * 64 + kProbeX) * 3;
+        red = pix[c + 0];
+        green = pix[c + 1];
+    };
+
+    unsigned char red = 0, green = 0;
+
+    renderProbe(false, red, green);
+    EXPECT_GT(red, 30);    // unclipped: the whole sphere is drawn
+    EXPECT_LT(green, 30);
+
+    renderProbe(true, red, green);
+    EXPECT_LT(red, 30);    // clipped: the sphere's rim is cut away
+    EXPECT_GT(green, 30);  // the backdrop inside the slab shows through
 }
 
 // Pins the output encoding contract: the umbreon linear HDR framebuffer is
@@ -1164,4 +1241,70 @@ TEST(UmbreonExport, AsyncRenderCanBeCancelled)
         // Finished before the first cancel check: a normal complete frame.
         ASSERT_EQ(pix.size(), static_cast<std::size_t>(256 * 256 * 3));
     }
+}
+// Pins the slab clip running together with the native stroke edge pass and
+// supersampling -- the combination the app actually renders with, and the one
+// that has to agree inside umbreon (the clip-cut G-buffer is captured only when
+// clip planes AND stroke edges are both on). The scene is the near-clip scene
+// above: a GREEN triangle inside the slab and a RED one in front of the plane.
+TEST(UmbreonExport, ClipsWithEdgeLinesAndSupersampling)
+{
+    UmbreonDisplayContext ctx;
+    ctx.init();
+
+    ctx.setPerspective(false);
+    ctx.setViewDist(100.0);
+    ctx.setZoom(6.0);
+    ctx.setSlabDepth(2.0);  // near clip plane at z = slab/2 = 1.0
+    ctx.setClipZ(true);
+    ctx.setLineScale(6.0 / 64.0);
+    ctx.loadIdent();
+
+    ctx.enableEdgeLines(true);
+    ctx.setEdgeLineType(gfx::DisplayContext::ELT_EDGES);
+    ctx.setEdgeLineWidth(0.06);
+    ctx.setEdgeLineColor(gfx::SolidColor::createRGB(0.0, 0.0, 0.0));
+
+    ctx.startRender();
+    ctx.startSection("clipedges");
+
+    // GREEN triangle at z=0 (inside the slab) -- kept
+    ctx.color(gfx::SolidColor::createRGB(0.0, 1.0, 0.0));
+    ctx.startTriangles();
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(-2.0, -2.0, 0.0));
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(2.0, -2.0, 0.0));
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(0.0, 2.0, 0.0));
+    ctx.end();
+
+    // RED triangle at z=2 (in front of the clip plane) -- removed by the plane
+    ctx.color(gfx::SolidColor::createRGB(1.0, 0.0, 0.0));
+    ctx.startTriangles();
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(-2.0, -2.0, 2.0));
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(2.0, -2.0, 2.0));
+    ctx.normal(Vector4D(0.0, 0.0, 1.0));
+    ctx.vertex(Vector4D(0.0, 2.0, 2.0));
+    ctx.end();
+
+    ctx.endSection();
+
+    UmbreonRenderParams prm;
+    prm.width = 64;
+    prm.height = 64;
+    prm.supersample = 3;
+
+    int ow = 0, oh = 0, ncomp = 0;
+    std::vector<unsigned char> pix;
+    ctx.render(prm, ow, oh, ncomp, pix);
+
+    ASSERT_EQ(pix.size(), static_cast<std::size_t>(64 * 64 * 3));
+
+    // Center pixel: well inside the green triangle, away from any outline.
+    const std::size_t c = (static_cast<std::size_t>(32) * 64 + 32) * 3;
+    EXPECT_GT(pix[c + 1], 30);  // green (inside the slab) is visible
+    EXPECT_LT(pix[c + 0], 30);  // red (in front of the clip plane) is gone
 }

@@ -575,18 +575,15 @@ void UmbreonDisplayContext::appendIntData()
   }
 
   // --- triangle mesh (de-indexed: 3 corners per triangle) ---
-  // With slab clipping on (m_dClipZ >= 0), render the near-clipped mesh:
-  // calcMeshClip() cuts triangles at z == m_dClipZ, interpolating position /
-  // normal / color, exactly as the GL view and the Lux exporter do. It returns
-  // NULL when nothing is clipped, in which case the original mesh is used.
+  // The camera slab is clipped by umbreon (Scene::clipNear, set in
+  // buildSceneAndOptions), so the mesh is handed over UNCLIPPED and
+  // RendIntData::m_dClipZ is deliberately ignored here. Cutting the triangles
+  // on this side (calcMeshClip) would turn the cross-section into real geometry
+  // -- an open mesh boundary that the native stroke pass then inks as a
+  // silhouette. umbreon clamps the primary rays instead and knows which
+  // boundaries its own planes cut, so the cut stays line-free.
   {
-    Mesh *pClipped = NULL;
     Mesh *pmesh = &pdat->m_mesh;
-    if (pdat->m_dClipZ >= 0.0) {
-      pClipped = pdat->calcMeshClip();
-      if (pClipped != NULL)
-        pmesh = pClipped;
-    }
     const int nface = pmesh->getFaceSize();
     umbreon::Mesh &um = scene.mesh;
     for (int i = 0; i < nface; ++i) {
@@ -608,18 +605,15 @@ void UmbreonDisplayContext::appendIntData()
         um.colors.push_back(resolveColor(clut, pv[k]->c));
       }
     }
-    if (pClipped != NULL)
-      delete pClipped;
   }
 
   // --- analytic spheres (shaded, not flat outline) ---
-  // umbreon cannot cut a quadric at the clip plane, so (like the Lux exporter)
-  // drop spheres that lie entirely in front of it and draw the rest whole.
+  // Emitted whole: umbreon's clip plane cuts the quadric exactly, so a sphere
+  // straddling the plane no longer has to be drawn whole (nor a fully clipped
+  // one dropped) the way the Lux exporter still does.
   for (RendIntData::SphList::const_iterator i = pdat->m_spheres.begin();
        i != pdat->m_spheres.end(); ++i) {
     const RendIntData::Sph *p = *i;
-    if (pdat->m_dClipZ >= 0.0 && p->v1.z() - p->r >= pdat->m_dClipZ)
-      continue;
     umbreon::Sphere s;
     s.center = toVec3(p->v1);
     s.radius = float(p->r);
@@ -644,14 +638,7 @@ void UmbreonDisplayContext::appendIntData()
       v2.w() = 1.0;
       p->pTransf->xform4D(v2);
     }
-    // drop cylinders entirely in front of the near clip plane (umbreon cannot
-    // cut a quadric there); the Lux exporter does the same.
-    if (pdat->m_dClipZ >= 0.0) {
-      const double zfar = (v1.z() < v2.z()) ? v1.z() : v2.z();
-      const double delw = (p->w1 > p->w2) ? p->w1 : p->w2;
-      if (zfar - delw >= pdat->m_dClipZ)
-        continue;
-    }
+    // Emitted whole, like the spheres above: the slab cut is umbreon's job.
     umbreon::Cylinder c;
     c.p0 = toVec3(v1);
     c.p1 = toVec3(v2);
@@ -736,6 +723,31 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
     bg = umbreon::Vec3(float(m_bgcolor->fr()), float(m_bgcolor->fg()),
                        float(m_bgcolor->fb()));
   scene.background = bg;
+
+  // View-space slab clipping (the CueMol camera slab), done by umbreon: it
+  // clamps every primary ray to linear view-z in [clipNear, clipFar] -- the
+  // distance along the camera forward axis -- so the geometry above is handed
+  // over UNCLIPPED and the plane does the cutting. Eye-space z maps to view-z
+  // as vz = m_dViewDist - z (the camera sits at (0,0,m_dViewDist) looking down
+  // -Z, see buildCamera), so the near cutaway plane RendIntData used to cut the
+  // mesh at (m_dClipZ = slab/2 in eye z, the GL view's dist - slab/2) becomes
+  // clipNear directly.
+  //
+  // Only the near plane is set. The GL view's far plane (dist + slabDepth) has
+  // no observable effect here: the depth fog below ends at dist + slabDepth/2,
+  // in FRONT of it, so anything the far plane could remove is already blended
+  // fully into the background -- down to alpha 0 on the transparent-background
+  // path. Secondary rays (shadow / AO / GI) stay unclipped in umbreon, matching
+  // the interactive view where the slab is a display device, not scene geometry.
+  if (m_bUseClipZ) {
+    const double clipNear = m_dViewDist - m_dSlabDepth * 0.5;
+    // A near plane at or behind the camera clips nothing; leaving it at -inf
+    // keeps the whole ray (umbreon ignores a non-positive clipNear anyway).
+    if (clipNear > 0.0) {
+      scene.clipNear = float(clipNear);
+      MB_DPRINTLN("Umbreon> near clip plane: view-z %f", clipNear);
+    }
+  }
 
   // OpenGL linear depth fog (depth cue): the umbreon renderer consumes only
   // fog.start/end (plane eye-z) + color; the legacy POV fog_type/offset/alt/up

@@ -138,9 +138,10 @@ void UmbreonSceneExporter::setupContext(UmbreonDisplayContext &ctx,
   ctx.setPerspective(m_bPerspective);
   ctx.setBgColor(pScene->getBgColor());
 
-  // Clip geometry to the camera slab (near cutaway plane); the actual plane
-  // (z = slab/2) is computed in FileDisplayContext::startSection from the slab
-  // depth set below.
+  // Clip to the camera slab. The geometry is handed to umbreon unclipped; the
+  // context turns this flag plus the slab depth / view distance set below into
+  // umbreon's view-space near clip plane (Scene::clipNear), and umbreon does
+  // the cutting.
   ctx.setClipZ(m_bUseClipZ);
 
   ctx.enableEdgeLines(m_bEnableEdgeLines);
