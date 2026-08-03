@@ -28,6 +28,9 @@ FileDisplayContext::FileDisplayContext()
   m_bUnitary = true;
   m_nDetail = 3;
   m_dUniTol = 1e-3;
+  // Slab clipping off until an exporter opts in with setClipZ(); every exporter
+  // sets it explicitly, so this only defines the bare-context (test) default.
+  m_bUseClipZ = false;
   m_dLineScale = 0.02;
   m_nPolyMode = POLY_FILL;
   m_bLighting = false;

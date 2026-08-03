@@ -536,15 +536,32 @@ void UmbreonDisplayContext::appendIntData()
         eg = float(pcol->fg());
         eb = float(pcol->fb());
       }
-      // Edge line width: getEdgeLineWidth() is a world-space radius (as POV /
-      // Lux use it); convert to the native stroke width in FINAL pixels via the
-      // line scale (world units per pixel, seeded by the exporter). Fall back to
-      // the default when the width is unset (< 0).
+      // Edge line width: getEdgeLineWidth() is a world-space length (A); the
+      // native stroke width is the FULL band width in FINAL pixels, so divide
+      // by the line scale (world units per pixel, seeded by the exporter).
+      //
+      // The 1:1 conversion is what matches the INTERACTIVE GL view, which is
+      // the look this backend is reproducing. GL draws edges as an inverted
+      // hull (gfx/TrigGpuPrim::drawEdges + edge_vert.glsl): the mesh is offset
+      // by edge_width ALONG THE NORMAL and its back faces are drawn behind the
+      // surface. At a silhouette the normal lies in the screen plane, so the
+      // contour moves out by exactly edge_width and the visible band -- the
+      // sliver outside the true silhouette -- is edge_width wide. umbreon inks
+      // a band of cls.width final px centred on the same contour, so equal
+      // widths give equal line thickness (the band straddles the contour
+      // instead of sitting outside it, which shifts it by half a line width).
+      //
+      // Note this is NOT the POV convention: PovSilBuilder emits the edge as a
+      // cylinder of RADIUS getEdgeLineWidth(), i.e. a 2x wider band. Following
+      // POV here is what made rendered images look heavily over-inked next to
+      // the GL view.
+      //
+      // Falls back to the default when the width is unset (< 0).
       const double elw = getEdgeLineWidth();
       const double lscale = getLineScale();
       float widthPx = float(EDGE_THICKNESS_PX);
       if (elw > 0.0 && lscale > 0.0)
-        widthPx = float(2.0 * elw / lscale);
+        widthPx = float(elw / lscale);
       if (widthPx < 1.0f)
         widthPx = 1.0f;
       // The stroke pass maps silhouette -> Silhouette, border -> Object,
@@ -575,18 +592,15 @@ void UmbreonDisplayContext::appendIntData()
   }
 
   // --- triangle mesh (de-indexed: 3 corners per triangle) ---
-  // With slab clipping on (m_dClipZ >= 0), render the near-clipped mesh:
-  // calcMeshClip() cuts triangles at z == m_dClipZ, interpolating position /
-  // normal / color, exactly as the GL view and the Lux exporter do. It returns
-  // NULL when nothing is clipped, in which case the original mesh is used.
+  // The camera slab is clipped by umbreon (Scene::clipNear, set in
+  // buildSceneAndOptions), so the mesh is handed over UNCLIPPED and
+  // RendIntData::m_dClipZ is deliberately ignored here. Cutting the triangles
+  // on this side (calcMeshClip) would turn the cross-section into real geometry
+  // -- an open mesh boundary that the native stroke pass then inks as a
+  // silhouette. umbreon clamps the primary rays instead and knows which
+  // boundaries its own planes cut, so the cut stays line-free.
   {
-    Mesh *pClipped = NULL;
     Mesh *pmesh = &pdat->m_mesh;
-    if (pdat->m_dClipZ >= 0.0) {
-      pClipped = pdat->calcMeshClip();
-      if (pClipped != NULL)
-        pmesh = pClipped;
-    }
     const int nface = pmesh->getFaceSize();
     umbreon::Mesh &um = scene.mesh;
     for (int i = 0; i < nface; ++i) {
@@ -608,18 +622,15 @@ void UmbreonDisplayContext::appendIntData()
         um.colors.push_back(resolveColor(clut, pv[k]->c));
       }
     }
-    if (pClipped != NULL)
-      delete pClipped;
   }
 
   // --- analytic spheres (shaded, not flat outline) ---
-  // umbreon cannot cut a quadric at the clip plane, so (like the Lux exporter)
-  // drop spheres that lie entirely in front of it and draw the rest whole.
+  // Emitted whole: umbreon's clip plane cuts the quadric exactly, so a sphere
+  // straddling the plane no longer has to be drawn whole (nor a fully clipped
+  // one dropped) the way the Lux exporter still does.
   for (RendIntData::SphList::const_iterator i = pdat->m_spheres.begin();
        i != pdat->m_spheres.end(); ++i) {
     const RendIntData::Sph *p = *i;
-    if (pdat->m_dClipZ >= 0.0 && p->v1.z() - p->r >= pdat->m_dClipZ)
-      continue;
     umbreon::Sphere s;
     s.center = toVec3(p->v1);
     s.radius = float(p->r);
@@ -644,14 +655,7 @@ void UmbreonDisplayContext::appendIntData()
       v2.w() = 1.0;
       p->pTransf->xform4D(v2);
     }
-    // drop cylinders entirely in front of the near clip plane (umbreon cannot
-    // cut a quadric there); the Lux exporter does the same.
-    if (pdat->m_dClipZ >= 0.0) {
-      const double zfar = (v1.z() < v2.z()) ? v1.z() : v2.z();
-      const double delw = (p->w1 > p->w2) ? p->w1 : p->w2;
-      if (zfar - delw >= pdat->m_dClipZ)
-        continue;
-    }
+    // Emitted whole, like the spheres above: the slab cut is umbreon's job.
     umbreon::Cylinder c;
     c.p0 = toVec3(v1);
     c.p1 = toVec3(v2);
@@ -736,6 +740,31 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
     bg = umbreon::Vec3(float(m_bgcolor->fr()), float(m_bgcolor->fg()),
                        float(m_bgcolor->fb()));
   scene.background = bg;
+
+  // View-space slab clipping (the CueMol camera slab), done by umbreon: it
+  // clamps every primary ray to linear view-z in [clipNear, clipFar] -- the
+  // distance along the camera forward axis -- so the geometry above is handed
+  // over UNCLIPPED and the plane does the cutting. Eye-space z maps to view-z
+  // as vz = m_dViewDist - z (the camera sits at (0,0,m_dViewDist) looking down
+  // -Z, see buildCamera), so the near cutaway plane RendIntData used to cut the
+  // mesh at (m_dClipZ = slab/2 in eye z, the GL view's dist - slab/2) becomes
+  // clipNear directly.
+  //
+  // Only the near plane is set. The GL view's far plane (dist + slabDepth) has
+  // no observable effect here: the depth fog below ends at dist + slabDepth/2,
+  // in FRONT of it, so anything the far plane could remove is already blended
+  // fully into the background -- down to alpha 0 on the transparent-background
+  // path. Secondary rays (shadow / AO / GI) stay unclipped in umbreon, matching
+  // the interactive view where the slab is a display device, not scene geometry.
+  if (m_bUseClipZ) {
+    const double clipNear = m_dViewDist - m_dSlabDepth * 0.5;
+    // A near plane at or behind the camera clips nothing; leaving it at -inf
+    // keeps the whole ray (umbreon ignores a non-positive clipNear anyway).
+    if (clipNear > 0.0) {
+      scene.clipNear = float(clipNear);
+      MB_DPRINTLN("Umbreon> near clip plane: view-z %f", clipNear);
+    }
+  }
 
   // OpenGL linear depth fog (depth cue): the umbreon renderer consumes only
   // fog.start/end (plane eye-z) + color; the legacy POV fog_type/offset/alt/up
@@ -875,11 +904,25 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
     opt.strokeEdges.thickness = int(m_pImpl->edgeThicknessPx + 0.5f);
     if (opt.strokeEdges.thickness < 1)
       opt.strokeEdges.thickness = 1;
-    // Outward contour offset (world units); CueMol's edge-rise knob.
-    opt.strokeEdges.raise = float(m_dEdgeRise);
+    // strokeEdges.raise is deliberately left at 0. CueMol's edge-rise knob is a
+    // DIMENSIONLESS multiplier of half the line width (PovSilBuilder writes the
+    // offset as sl_rise * (w/2)), not a world-unit distance, so feeding
+    // m_dEdgeRise straight in would lift the contour by whole angstroms. The
+    // stroke pass has no use for the lift either: its visibility is ray-cast on
+    // the true surface point, which is why umbreon documents raise == 0 for it
+    // (only the object-space edge method reads the field).
     opt.strokeEdges.color[0] = 0.0f;
     opt.strokeEdges.color[1] = 0.0f;
     opt.strokeEdges.color[2] = 0.0f;
+    // Round caps and round joins. umbreon defaults to butt caps + a mitered
+    // join (its byte-identical legacy path), which shows up as flat stubs where
+    // a chain ends against another line and as spikes at sharp corners. The GL
+    // view has neither: its outline is an inverted hull, so an outline never
+    // terminates flat and a corner is just the hull's own rounding. Rounded
+    // ends/corners are the closer match, and they also hide the seams where the
+    // chained silhouette is cut into visible runs.
+    opt.strokeEdges.roundCap = true;
+    opt.strokeEdges.roundJoin = true;
     // Cover every group id; sections with no edge lines keep an all-disabled
     // EdgeStyle, so the stroke pass draws nothing for them.
     if (m_pImpl->groupEdgeStyle.size() < std::size_t(m_pImpl->nextGroup))
