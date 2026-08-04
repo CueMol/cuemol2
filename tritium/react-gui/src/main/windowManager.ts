@@ -15,6 +15,7 @@ import { registerIpcHandlers } from './ipcHandlers'
 import { registerRenderWindowIpc } from './renderWindowIpc'
 import { createMenu } from './menu'
 import { registerTextContextMenu } from './textContextMenu'
+import { getDevIconPath } from './helpers/appIcon'
 import { IPC } from '../shared/ipcChannels'
 import {
   clearCloseWatchdog,
@@ -114,6 +115,9 @@ export function createWindow(): void {
     minHeight: 300,
     title: 'CueMol',
     backgroundColor: '#1e2028',
+    // Window / taskbar icon for an unpackaged run on Windows and Linux
+    // (undefined once packaged, and ignored on macOS -- see appIcon.ts).
+    ...(getDevIconPath() ? { icon: getDevIconPath() } : {}),
     // macOS: let a click on this window while it is inactive activate it AND
     // hit the clicked control in the same click (the default requires a separate
     // activating click first). Matters because the modeless Rendering window
@@ -292,6 +296,8 @@ export function createOrFocusRenderWindow(mainWindow: BrowserWindow): void {
     minHeight: 480,
     title: 'Rendering',
     backgroundColor: '#1e2028',
+    // Same dev-run icon as the main window (see createWindow).
+    ...(getDevIconPath() ? { icon: getDevIconPath() } : {}),
     // Single-click activate-and-act on macOS (see createWindow). Symmetric, so
     // whichever window is inactive can still be operated in one click.
     acceptFirstMouse: true,

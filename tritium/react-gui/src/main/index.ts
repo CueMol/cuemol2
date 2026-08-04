@@ -3,6 +3,7 @@ import os from 'os'
 import path from 'path'
 import fs from 'fs'
 import { createWindow } from './windowManager'
+import { applyDevDockIcon } from './helpers/appIcon'
 import { loadUi } from './stateStore'
 import { isAppQuitting, isForceQuit, setAppQuitting } from './quitState'
 import { clearRenderHistory } from './renderHistory'
@@ -29,6 +30,9 @@ if (process.env.CUEMOL_FRESH_PREFS && process.env.CUEMOL_FRESH_PREFS !== '0') {
 }
 
 app.whenReady().then(() => {
+  // Dev runs have no .app bundle to take the dock icon from (see appIcon.ts).
+  applyDevDockIcon()
+
   // Drop any render-history images a previous run left behind (its metadata
   // died with that run, so the files are unreachable).
   clearRenderHistory()
