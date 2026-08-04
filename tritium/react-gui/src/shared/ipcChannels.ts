@@ -74,7 +74,8 @@ export const IPC = {
   MENU_CHANGE_CHAIN_ID:  'menu:change-chain-id',
   MENU_CHANGE_RESID_NUM: 'menu:change-resid-num',
   MENU_OPTIONS:       'menu:options',
-  MENU_POV_RENDER:    'menu:pov-render',
+  MENU_IMAGE_RENDER:  'menu:image-render',
+  MENU_MOVIE_RENDER:  'menu:movie-render',
   MENU_EXPORT_PNG:     'menu:export-png',
   MENU_EXPORT_UMBREON: 'menu:export-umbreon',
   MENU_EXPORT_POV:     'menu:export-pov',
@@ -90,8 +91,9 @@ export const IPC = {
   MENU_MOL_SURF:      'menu:mol-surf',
   MENU_SURF_CUTTER:   'menu:surf-cutter',
   MENU_APBS:          'menu:apbs',
-  MENU_EXEC_SCRIPT:   'menu:exec-script',
   MENU_PERF_MEAS:     'menu:perf-meas',
+  MENU_WINDOW_MAIN:   'menu:window-main',
+  MENU_WINDOW_RENDER: 'menu:window-render',
 
   // invoke channels (renderer -> main, with reply) -- menu role actions
   MENU_INVOKE_ROLE: 'menu:invoke-role',
@@ -101,6 +103,10 @@ export const IPC = {
   WINDOW_CLOSE_REQUEST: 'window:close-request',
   WINDOW_CLOSE_PROCEED: 'window:close-proceed',
 
+  // Window menu: raise the main window (the Rendering window has its own
+  // open-or-focus channel, RENDER_WINDOW_OPEN).
+  WINDOW_FOCUS_MAIN: 'window:focus-main',       // invoke: any renderer -> main
+
   // Renderer/Worker crash reporting + fallback UI's Quit button
   CRASH_REPORT: 'app:crash-report',
   FORCE_QUIT:   'app:force-quit',
@@ -109,6 +115,7 @@ export const IPC = {
   // The render window has no CueMol worker; commands and state are relayed
   // between it and the main window through the main process.
   RENDER_WINDOW_OPEN:       'render-window:open',              // invoke: any renderer -> main
+  RENDER_WINDOW_MODE_PUSH:  'render-window:mode-push',         // push:   main -> render window
   RENDER_WINDOW_COMMAND:    'render-window:command',           // invoke: render window -> main
   RENDER_WINDOW_EXEC:       'render-window:exec',              // push:   main -> main window
   RENDER_WINDOW_STATE:      'render-window:state',             // invoke: main window -> main

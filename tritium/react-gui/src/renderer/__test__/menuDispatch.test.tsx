@@ -94,6 +94,8 @@ describe('useMenuDispatch -- channel to CmdId mapping', () => {
     ['menu:save-current-view',  CmdId.SaveCurrentView,     undefined],
     ['menu:reload-scene',       CmdId.SceneReload,         undefined],
     ['menu:view-props',         CmdId.UiViewProperty,      undefined],
+    // macOS App > Preferences... and non-macOS Edit > Options share this channel.
+    [IPC.MENU_OPTIONS,          CmdId.UiSettingsTab,       undefined],
   ]
 
   for (const [channel, expectedId, expectedArgs] of cases) {

@@ -20,6 +20,7 @@ import { useToolCommands } from '../commands/useToolCommands';
 import { useFileCommands } from '../commands/useFileCommands';
 import { useViewCommands } from '../commands/useViewCommands';
 import { useRenderCommands } from '../commands/useRenderCommands';
+import { useWindowCommands } from '../commands/useWindowCommands';
 import { useElectronIpc } from './useElectronIpc';
 import type { NewSceneAction } from './useNewSceneAction';
 
@@ -29,6 +30,8 @@ interface UseCommandRegistrationsOptions {
   addMolViewTab: (title: string, viewId: number) => void;
   getActiveSceneInfo: ActiveSceneCommandDeps;
   handleCloseTab: (id: string) => Promise<boolean>;
+  /** Open the Settings tab, or activate it when it is already open. */
+  openSettingsTab: () => void;
   activeTab: string | null;
   activeMolViewId: number | undefined;
   onProjectionChanged: (perspective: boolean) => void;
@@ -47,6 +50,7 @@ export function useCommandRegistrations({
   addMolViewTab,
   getActiveSceneInfo,
   handleCloseTab,
+  openSettingsTab,
   activeTab,
   activeMolViewId,
   onProjectionChanged,
@@ -58,7 +62,7 @@ export function useCommandRegistrations({
 }: UseCommandRegistrationsOptions): void {
   useSceneCommands({ cm, getActiveSceneInfo, onBgColorChanged, showSceneProperty, newScene });
   useUiDialogCommands({ cm });
-  useTabCommands({ handleCloseTab });
+  useTabCommands({ handleCloseTab, openSettingsTab });
   useNewTabCommand({ cm, addMolTab, addMolViewTab, getActiveSceneInfo, newScene });
   useEditCommands({ cm, getActiveSceneInfo });
   useToolCommands({ cm, getActiveSceneInfo });
@@ -71,5 +75,6 @@ export function useCommandRegistrations({
     showViewProperty,
   });
   useRenderCommands();
+  useWindowCommands();
   useElectronIpc(activeTab);
 }

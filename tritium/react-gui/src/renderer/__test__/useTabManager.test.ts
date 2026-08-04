@@ -47,3 +47,25 @@ describe('useTabManager — molview tab title update', () => {
         h.unmount();
     });
 });
+
+describe('useTabManager — Settings tab (singleton)', () => {
+    it('openSettingsTab adds the tab once and re-activates it afterwards', () => {
+        // Preferences / Options route here (CmdId.UiSettingsTab), so picking
+        // the menu entry repeatedly must not stack duplicate Settings tabs.
+        const h = makeRenderHook(() => useTabManager());
+
+        act(() => h.result.openSettingsTab());
+        const settings = h.result.tabs.filter((t) => t.type === 'settings');
+        expect(settings).toHaveLength(1);
+        expect(h.result.activeTab).toBe(settings[0].id);
+
+        // Move away, then ask again: same tab, active once more.
+        act(() => h.result.addMolViewTab('Scene:0', 10));
+        expect(h.result.activeTab).not.toBe(settings[0].id);
+
+        act(() => h.result.openSettingsTab());
+        expect(h.result.tabs.filter((t) => t.type === 'settings')).toHaveLength(1);
+        expect(h.result.activeTab).toBe(settings[0].id);
+        h.unmount();
+    });
+});

@@ -19,7 +19,12 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { clipboard, dialog, nativeImage, type BrowserWindow } from 'electron'
 import { IPC } from '../shared/ipcChannels'
-import type { RenderImageRef, RenderViewCamera, ViewSizePx } from '../shared/ipcTypes'
+import type {
+  RenderImageRef,
+  RenderViewCamera,
+  RenderWindowMode,
+  ViewSizePx,
+} from '../shared/ipcTypes'
 import {
   frameFileRegExp,
   movieFileNames,
@@ -46,6 +51,43 @@ export interface RenderWindowIpcDeps {
 }
 
 /**
+ * Deliver a requested output mode to the render window.
+ *
+ * A freshly created window cannot receive it yet -- its React tree subscribes
+ * during mount -- so the request is held until the window announces itself
+ * with the 'sync' command, which is the same handshake the state relay uses
+ * for rehydration. An already-open window is subscribed, so it is pushed
+ * straight away.
+ */
+function makeModeRelay(getRenderWindow: () => BrowserWindow | null) {
+  let pending: RenderWindowMode | null = null
+  let seq = 0
+
+  const send = (rw: BrowserWindow, mode: RenderWindowMode): void => {
+    seq += 1
+    rw.webContents.send(IPC.RENDER_WINDOW_MODE_PUSH, { mode, seq })
+  }
+
+  return {
+    /** Called on RENDER_WINDOW_OPEN, before the window is opened / focused. */
+    request(mode: RenderWindowMode | undefined, wasOpen: boolean): void {
+      if (!mode) return
+      const rw = getRenderWindow()
+      if (wasOpen && rw && !rw.isDestroyed()) send(rw, mode)
+      else pending = mode
+    },
+    /** Called when the render window sends its mount-time 'sync'. */
+    flush(): void {
+      if (pending === null) return
+      const rw = getRenderWindow()
+      const mode = pending
+      pending = null
+      if (rw && !rw.isDestroyed()) send(rw, mode)
+    },
+  }
+}
+
+/**
  * Register the render-window relay handlers. Called once from
  * createWindow(); handlers survive render-window close/recreate because
  * they only hold the getter.
@@ -53,7 +95,11 @@ export interface RenderWindowIpcDeps {
 export function registerRenderWindowIpc(deps: RenderWindowIpcDeps): void {
   const { mainWindow, getRenderWindow, openRenderWindow } = deps
 
-  handleInvoke(IPC.RENDER_WINDOW_OPEN, () => {
+  const modeRelay = makeModeRelay(getRenderWindow)
+
+  handleInvoke(IPC.RENDER_WINDOW_OPEN, (_event, opts) => {
+    const rw = getRenderWindow()
+    modeRelay.request(opts?.mode, rw !== null && !rw.isDestroyed())
     openRenderWindow()
   })
 
@@ -62,6 +108,9 @@ export function registerRenderWindowIpc(deps: RenderWindowIpcDeps): void {
     if (!mainWindow.isDestroyed()) {
       mainWindow.webContents.send(IPC.RENDER_WINDOW_EXEC, cmd)
     }
+    // The mount-time 'sync' is the render window announcing it is subscribed:
+    // a mode requested while it was still loading can be delivered now.
+    if (cmd.type === 'sync') modeRelay.flush()
   })
 
   // Main window -> render window (state forward; silent drop when closed)

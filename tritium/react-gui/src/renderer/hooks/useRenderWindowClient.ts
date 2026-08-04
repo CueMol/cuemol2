@@ -13,8 +13,10 @@
  * sticks until the next active-view change). A selection whose view was
  * closed falls back to the active view.
  *
- * On mount it subscribes to RENDER_WINDOW_STATE_PUSH FIRST and then sends a
- * 'sync' command -- that ordering guarantees the sync reply is not missed.
+ * On mount it subscribes to RENDER_WINDOW_STATE_PUSH and
+ * RENDER_WINDOW_MODE_PUSH FIRST and then sends a 'sync' command -- that
+ * ordering guarantees neither the sync reply nor the output mode requested by
+ * the Rendering menu entry that opened the window is missed.
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -23,6 +25,7 @@ import type {
   RenderFramePreviewWire,
   RenderTargetViewWire,
   RenderWindowCommand,
+  RenderWindowModeRequest,
   RenderWindowStateUpdate,
   RenderViewCamera,
   ViewSizePx,
@@ -53,6 +56,12 @@ export interface RenderWindowClientState {
   activeViewId: number | null;
   /** Whether the umbreon render backend is compiled into this build. */
   umbreonAvailable: boolean;
+  /**
+   * Output mode asked for by the Rendering menu entry that opened / raised
+   * this window, or null when none was requested. Carries a `seq` so
+   * re-picking the mode the window is already in still registers.
+   */
+  modeRequest: RenderWindowModeRequest | null;
 }
 
 const INITIAL_STATE: RenderWindowClientState = {
@@ -63,6 +72,7 @@ const INITIAL_STATE: RenderWindowClientState = {
   views: [],
   activeViewId: null,
   umbreonAvailable: false,
+  modeRequest: null,
 };
 
 /** Send a command toward the main window's bridge. */
@@ -177,8 +187,20 @@ export function useRenderWindowClient(): {
         }
       },
     );
+    // Mode requested by the Rendering menu. Subscribed before the sync for the
+    // same reason: main holds the request of a still-loading window and
+    // releases it when this sync arrives.
+    const offMode = api.onPush(
+      IPC.RENDER_WINDOW_MODE_PUSH,
+      (request: RenderWindowModeRequest) => {
+        setState((prev) => ({ ...prev, modeRequest: request }));
+      },
+    );
     sendCommand({ type: "sync" });
-    return off;
+    return () => {
+      off();
+      offMode();
+    };
   }, []);
 
   const setTargetViewId = useCallback((viewId: number) => {

@@ -107,10 +107,12 @@ export const MENU_ACTION_MAP = {
   [IPC.MENU_DELETE_MOL_ATOMS]: { dispatch: 'ui.deleteMolDialog', deliver: 'generic' },
   [IPC.MENU_CHANGE_CHAIN_ID]:  { dispatch: 'ui.changeChainIdDialog', deliver: 'generic' },
   [IPC.MENU_CHANGE_RESID_NUM]: { dispatch: 'ui.changeResidueIndexDialog', deliver: 'generic' },
-  [IPC.MENU_OPTIONS]:          { dispatch: MENU_DISPATCH_UNIMPLEMENTED, deliver: 'generic' },
+  // macOS App > Preferences... shares this channel (see main/menu.ts).
+  [IPC.MENU_OPTIONS]:          { dispatch: 'ui.settingsTab',     deliver: 'generic' },
 
   // --- Rendering ---
-  [IPC.MENU_POV_RENDER]:       { dispatch: 'ui.renderWindow',    deliver: 'generic' },
+  [IPC.MENU_IMAGE_RENDER]:     { dispatch: 'ui.renderWindow.image', deliver: 'generic' },
+  [IPC.MENU_MOVIE_RENDER]:     { dispatch: 'ui.renderWindow.movie', deliver: 'generic' },
   [IPC.MENU_EXPORT_PNG]:       { dispatch: 'scene.export.png',     deliver: 'generic' },
   [IPC.MENU_EXPORT_UMBREON]:   { dispatch: 'scene.export.umbreon', deliver: 'generic' },
   [IPC.MENU_EXPORT_POV]:       { dispatch: 'scene.export.pov',     deliver: 'generic' },
@@ -139,13 +141,18 @@ export const MENU_ACTION_MAP = {
   [IPC.MENU_MOL_SURF]:         { dispatch: 'ui.makeMolSurfDialog', deliver: 'generic' },
   [IPC.MENU_SURF_CUTTER]:      { dispatch: 'ui.cutSurfByPlaneDialog', deliver: 'generic' },
   [IPC.MENU_APBS]:             { dispatch: 'ui.calcApbsPotDialog', deliver: 'generic' },
-  [IPC.MENU_EXEC_SCRIPT]:      { dispatch: MENU_DISPATCH_UNIMPLEMENTED, deliver: 'generic' },
   [IPC.MENU_PERF_MEAS]:        { dispatch: MENU_DISPATCH_UNIMPLEMENTED, deliver: 'generic' },
 
+  // --- Window ---
+  // Both raise a window rather than acting on the scene; the Rendering entry
+  // shares 'ui.renderWindow' with Rendering > POV-Ray rendering (open-or-focus).
+  [IPC.MENU_WINDOW_MAIN]:      { dispatch: 'window.focusMain',   deliver: 'generic' },
+  [IPC.MENU_WINDOW_RENDER]:    { dispatch: 'ui.renderWindow',    deliver: 'generic' },
+
   // --- Help ---
-  // Only About is carried forward (see menuTemplate.ts). The Window menu and
-  // the Mozilla-specific Help items (plugins / config / addon-mgr / console /
-  // check-updates) were dropped, so they no longer appear here.
+  // Only About is carried forward (see menuTemplate.ts). The Mozilla-specific
+  // Help items (plugins / config / addon-mgr / console / check-updates) were
+  // dropped, so they no longer appear here.
   [IPC.MENU_ABOUT]:            { dispatch: 'ui.aboutDialog',     deliver: 'generic' },
 } as const satisfies Record<string, MenuActionEntry>
 

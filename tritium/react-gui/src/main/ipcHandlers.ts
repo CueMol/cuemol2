@@ -403,4 +403,17 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
       case 'close': mainWindow.close(); break
     }
   })
+
+  /**
+   * Window > Main Window. The Rendering window is an independent top-level
+   * window (not a child), so normal z-order applies and a plain focus() is
+   * enough to raise the main window above it. Minimized / hidden are restored
+   * first so the entry always ends with the window on screen.
+   */
+  handleInvoke(IPC.WINDOW_FOCUS_MAIN, () => {
+    if (mainWindow.isDestroyed()) return
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.show()
+    mainWindow.focus()
+  })
 }

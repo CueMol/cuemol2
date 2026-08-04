@@ -65,6 +65,16 @@ export const CmdId = {
 
   // Rendering
   UiRenderWindow:     'ui.renderWindow', // no args -- open/focus the Rendering window
+  // ...and the two mode-selecting entry points (Rendering menu). Same window;
+  // they also activate its Still / Movie output mode.
+  UiRenderWindowImage: 'ui.renderWindow.image', // no args
+  UiRenderWindowMovie: 'ui.renderWindow.movie', // no args
+
+  // Window switching
+  WindowFocusMain:    'window.focusMain', // no args -- raise the main window
+
+  // App settings
+  UiSettingsTab:      'ui.settingsTab', // no args -- open/activate the Settings tab
 } as const
 
 export type CmdId = typeof CmdId[keyof typeof CmdId]
