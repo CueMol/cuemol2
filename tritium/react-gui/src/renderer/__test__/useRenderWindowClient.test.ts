@@ -19,6 +19,7 @@ import { useRenderWindowClient } from '../hooks/useRenderWindowClient';
 import { IPC } from '../../shared/ipcChannels';
 import type {
     RenderTargetViewWire,
+    RenderWindowModeRequest,
     RenderWindowStateUpdate,
 } from '../../shared/ipcTypes';
 import type { RenderSettingsSnapshot } from '../data/renderResult';
@@ -53,11 +54,17 @@ const context = (
 function setupApi() {
     const events: string[] = [];
     let pushCb: ((u: RenderWindowStateUpdate) => void) | null = null;
+    let modeCb: ((r: RenderWindowModeRequest) => void) | null = null;
     const api = setupElectronAPI({
-        onPush: vi.fn((channel: string, cb: (u: RenderWindowStateUpdate) => void) => {
+        onPush: vi.fn((channel: string, cb: (u: never) => void) => {
             events.push(`subscribe:${channel}`);
-            if (channel === IPC.RENDER_WINDOW_STATE_PUSH) pushCb = cb;
-            return () => { pushCb = null; };
+            if (channel === IPC.RENDER_WINDOW_STATE_PUSH) {
+                pushCb = cb as (u: RenderWindowStateUpdate) => void;
+            }
+            if (channel === IPC.RENDER_WINDOW_MODE_PUSH) {
+                modeCb = cb as (r: RenderWindowModeRequest) => void;
+            }
+            return () => { pushCb = null; modeCb = null; };
         }),
         invoke: vi.fn((channel: string) => {
             events.push(`invoke:${channel}`);
@@ -68,6 +75,7 @@ function setupApi() {
         api,
         events,
         push: (u: RenderWindowStateUpdate) => pushCb?.(u),
+        pushMode: (r: RenderWindowModeRequest) => modeCb?.(r),
         commands: () =>
             (api.invoke as ReturnType<typeof vi.fn>).mock.calls
                 .filter((c) => c[0] === IPC.RENDER_WINDOW_COMMAND)
@@ -98,6 +106,31 @@ describe('useRenderWindowClient', () => {
         expect(subIdx).toBeGreaterThanOrEqual(0);
         expect(syncIdx).toBeGreaterThan(subIdx);
         expect(harness.commands()[0]).toEqual({ type: 'sync' });
+        h.unmount();
+    });
+
+    it('subscribes to the mode push before the sync and mirrors the request', () => {
+        // Main holds a mode requested while this window was still loading and
+        // releases it on the sync, so the subscription must come first.
+        const h = makeRenderHook(() => useRenderWindowClient());
+
+        const subIdx = harness.events.indexOf(
+            `subscribe:${IPC.RENDER_WINDOW_MODE_PUSH}`,
+        );
+        const syncIdx = harness.events.indexOf(
+            `invoke:${IPC.RENDER_WINDOW_COMMAND}`,
+        );
+        expect(subIdx).toBeGreaterThanOrEqual(0);
+        expect(syncIdx).toBeGreaterThan(subIdx);
+        expect(h.result.state.modeRequest).toBeNull();
+
+        act(() => { harness.pushMode({ mode: 'movie', seq: 1 }); });
+        expect(h.result.state.modeRequest).toEqual({ mode: 'movie', seq: 1 });
+
+        // Same mode requested again: the seq makes it a distinct object, so
+        // the consumer re-applies it even though the mode did not change.
+        act(() => { harness.pushMode({ mode: 'movie', seq: 2 }); });
+        expect(h.result.state.modeRequest).toEqual({ mode: 'movie', seq: 2 });
         h.unmount();
     });
 

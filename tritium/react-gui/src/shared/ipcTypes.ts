@@ -706,6 +706,28 @@ export interface RenderViewCamera {
   perspective: boolean
 }
 
+/** Output mode of the Rendering window (mirrors renderer-side RenderMode). */
+export type RenderWindowMode = 'still' | 'movie'
+
+/** Payload of RENDER_WINDOW_OPEN. */
+export interface RenderWindowOpenOptions {
+  /**
+   * Activate this output mode once the window is up. Omitted (the Toolbar
+   * Render button, Window > Rendering Window) leaves the mode as it was.
+   */
+  mode?: RenderWindowMode
+}
+
+/** Payload of RENDER_WINDOW_MODE_PUSH: the mode the window must switch to. */
+export interface RenderWindowModeRequest {
+  mode: RenderWindowMode
+  /**
+   * Bumped per request so re-picking the mode the window is already in still
+   * reads as a new request on the render-window side.
+   */
+  seq: number
+}
+
 /** Command sent by the render window; forwarded verbatim to the main window. */
 export type RenderWindowCommand =
   /** Start a render. `source` set = the render window's selected target (or

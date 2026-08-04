@@ -47,6 +47,18 @@ export const RenderWindowApp: React.FC = () => {
     ? RENDER_BACKEND_IDS
     : RENDER_BACKEND_IDS.filter((id) => id !== "umbreon");
 
+  // Rendering > Image / Movie rendering both open this window and pin its
+  // output mode. The request is a state object with a seq, so re-picking the
+  // mode the window is already in still re-runs this (and re-applies that
+  // mode's default size preset). setMode is read through a ref to keep the
+  // effect keyed on the request alone.
+  const { modeRequest } = client.state;
+  const setModeRef = useRef(settings.setMode);
+  setModeRef.current = settings.setMode;
+  useEffect(() => {
+    if (modeRequest) setModeRef.current(modeRequest.mode);
+  }, [modeRequest]);
+
   // macOS traffic-light inset for the custom title bar (hiddenInset frame),
   // mirroring App.tsx. Windows/Linux reserve overlay space in CSS instead.
   useEffect(() => {

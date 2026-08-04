@@ -389,6 +389,7 @@ const App: React.FC = () => {
     addMolViewTab,
     getActiveSceneInfo,
     handleCloseTab,
+    openSettingsTab,
     activeTab,
     activeMolViewId,
     onProjectionChanged,

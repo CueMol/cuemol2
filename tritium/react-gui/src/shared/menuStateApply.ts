@@ -25,8 +25,8 @@ import { SCENE_EXPORT_MENU_EXPORTERS } from './menuTemplate'
  *
  * Excludes items already gated by their own state slice (background colour,
  * perspective / orthographic, center mark) and the not-yet-ported placeholders
- * (scene-props, color-proof, pov-render, ...), whose disabled-ness is a separate
- * concern.
+ * (scene-props, color-proof, image-render, ...), whose disabled-ness is a
+ * separate concern.
  */
 export const SCENE_REQUIRING_MENU_IDS: readonly string[] = [
     // File

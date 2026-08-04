@@ -115,10 +115,11 @@ export const APP_MENU: AppMenuGroup[] = [
   {
     label: 'Rendering',
     submenu: [
-      // POV-Ray rendering opens the modeless Rendering window (ui.renderWindow).
-      // Animation rendering will be folded into that same window as a
-      // Still / Animation mode (follow-up), so it has no separate menu item.
-      { id: 'pov-render',    label: 'POV-Ray rendering...',   ipcChannel: IPC.MENU_POV_RENDER },
+      // Both open the modeless Rendering window and activate its matching
+      // output mode there (Image -> Still, Movie -> Movie); the backend
+      // (POV-Ray / Umbreon) is picked inside that window, not here.
+      { id: 'image-render',  label: 'Image rendering...',     ipcChannel: IPC.MENU_IMAGE_RENDER },
+      { id: 'movie-render',  label: 'Movie rendering...',     ipcChannel: IPC.MENU_MOVIE_RENDER },
       {
         id: 'export-scene', label: 'Export scene',
         submenu: [
@@ -184,15 +185,25 @@ export const APP_MENU: AppMenuGroup[] = [
       { id: 'mol-surf',       label: 'Mol surface generation...',    ipcChannel: IPC.MENU_MOL_SURF },
       { id: 'surf-cutter',    label: 'Mol surface cutter...',        ipcChannel: IPC.MENU_SURF_CUTTER },
       { id: 'apbs',           label: 'APBS elepot calculation...',   ipcChannel: IPC.MENU_APBS },
-      { type: 'separator' },
-      { id: 'exec-script',    label: 'Execute script...',            ipcChannel: IPC.MENU_EXEC_SCRIPT },
+      // Execute script is not carried forward (no plan to implement); the
+      // item and its channel were removed 2026-08-04 rather than left as a
+      // dead entry.
       { type: 'separator' },
       { id: 'perf-meas',      label: 'Performance measure',         ipcChannel: IPC.MENU_PERF_MEAS },
     ],
   },
 
-  // Window menu intentionally omitted: the topbar / log / panel-layout actions
-  // it hosted in UXP no longer map onto the tritium UI structure.
+  // Window menu
+  // Not a UXP carry-over (the UXP topbar / log / panel-layout items were
+  // dropped): this is the tritium window switcher. Picking an entry raises
+  // that window; Rendering opens it first when it is not up yet.
+  {
+    label: 'Window',
+    submenu: [
+      { id: 'window-main',   label: 'Main Window',      ipcChannel: IPC.MENU_WINDOW_MAIN },
+      { id: 'window-render', label: 'Rendering Window', ipcChannel: IPC.MENU_WINDOW_RENDER },
+    ],
+  },
 
   // Help menu
   // Only About is carried forward; the UXP plugins / config / addon-manager /

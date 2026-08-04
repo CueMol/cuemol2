@@ -25,6 +25,8 @@ import type {
   NaviCtxMenuPayload,
   RecentFileEntry,
   RenderWindowCommand,
+  RenderWindowModeRequest,
+  RenderWindowOpenOptions,
   RenderWindowStateUpdate,
   SceneCtxAction,
   SceneCtxMenuPayload,
@@ -92,8 +94,9 @@ export interface InvokeChannels {
   [IPC.RECENT_CLEAR]:      { req: void;                  res: void }
   [IPC.MENU_INVOKE_ROLE]:  { req: string;                res: void }
   [IPC.WINDOW_CLOSE_PROCEED]: { req: { proceed: boolean }; res: void }
+  [IPC.WINDOW_FOCUS_MAIN]: { req: void;                  res: void }
   // Rendering window relay (see ipcChannels.ts for direction of each leg)
-  [IPC.RENDER_WINDOW_OPEN]:    { req: void;                    res: void }
+  [IPC.RENDER_WINDOW_OPEN]:    { req: RenderWindowOpenOptions; res: void }
   [IPC.RENDER_WINDOW_COMMAND]: { req: RenderWindowCommand;     res: void }
   [IPC.RENDER_WINDOW_STATE]:   { req: RenderWindowStateUpdate; res: void }
   [IPC.RENDER_VIEW_SIZE_GET]:  { req: void;                    res: ViewSizePx | null }
@@ -179,6 +182,7 @@ export interface PushChannels {
   // Rendering window relay
   [IPC.RENDER_WINDOW_EXEC]:       RenderWindowCommand
   [IPC.RENDER_WINDOW_STATE_PUSH]: RenderWindowStateUpdate
+  [IPC.RENDER_WINDOW_MODE_PUSH]:  RenderWindowModeRequest
   [IPC.RENDER_VIEW_SIZE_REQUEST]: { reqId: number }
   [IPC.RENDER_VIEW_CAMERA_REQUEST]: { reqId: number; viewId: number }
 }

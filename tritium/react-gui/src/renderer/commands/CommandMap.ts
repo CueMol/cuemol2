@@ -71,6 +71,14 @@ export interface CommandMap {
 
   // Rendering
   [CmdId.UiRenderWindow]:      { args: void;            result: void }
+  [CmdId.UiRenderWindowImage]: { args: void;            result: void }
+  [CmdId.UiRenderWindowMovie]: { args: void;            result: void }
+
+  // Window switching
+  [CmdId.WindowFocusMain]:     { args: void;            result: void }
+
+  // App settings
+  [CmdId.UiSettingsTab]:       { args: void;            result: void }
 }
 
 export type CommandKey = keyof CommandMap
