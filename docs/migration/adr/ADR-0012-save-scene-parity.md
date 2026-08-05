@@ -45,9 +45,22 @@ mapped.
    `qscwriter-option-dlg.xul`):
    - Embed possible / Compatibility (QDF0 / QDF1) / Compression / Text
      encoding.
+   - **Default is QDF1 + xz**, diverging from UXP (see below).
    - **QDF0 forces base64=false, compress=none.** The dialog enforces
      this client-side; the worker also validates.
 3. Backup + write via `saveScene` worker.
+
+**Option dialog default = QDF1 (Ver 2.3 or later).** UXP
+`qscwriter-option-dlg.js` `onLoad` picks QDF0 ("default: qdf0
+(compat)"), a choice that predates QDF1 being the established format.
+Because QDF0 has no notion of compression, that default also makes
+`onDialogAccept` coerce `compress` to `none`, so a scene saved straight
+through the dialog was never compressed no matter what the (disabled)
+compression control showed. Tritium defaults to QDF1 instead, which
+leaves compression live and lands on xz. Everything else about the
+dialog, including the QDF0 constraint rule, stays UXP-faithful — a user
+who needs a 2.2-readable file still picks QDF0 explicitly and gets the
+same coercion.
 
 **Accelerator.** `Shift+Cmd+S` (Mac) / `Shift+Ctrl+S` (Win/Linux) is
 assigned to **Save Scene As** — taken from the stub `Save File As` item.
@@ -69,6 +82,11 @@ cancels the save dialog.
 - **`Shift+Cmd+S` reassignment** is a UI improvement over UXP, not a
   parity loss. Documented here so future audits don't flag it as a
   divergence.
+- **Scenes saved through Save As are compressed by default** (QDF1 +
+  xz), where UXP wrote them uncompressed. A file that must open in
+  CueMol 2.2 requires picking QDF0 in the dialog; this is the one
+  behavioral difference a UXP user will notice. Documented here so
+  future audits don't flag the default as a parity bug.
 - **Save Scene path is the canonical Save** for both menu and
   ConfirmCloseTabDialog — adding any other "save scene" entry point
   should route through `CmdId.FileSave`, not duplicate the logic.
