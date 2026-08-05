@@ -515,11 +515,12 @@ void UmbreonDisplayContext::appendIntData()
   pdat->convLines(true);
 
   // Native screen-space edge lines (umbreon strokeEdges). Record which edge
-  // natures this section draws (silhouette / border / crease) and its edge
-  // color into this group's EdgeStyle; the strokeEdges pass configured in
-  // render() rasterizes them in screen space. Analytic spheres/cylinders are
-  // kept (emitted below, not folded into the mesh) so umbreon outlines
-  // ball-and-stick natively -- no CueMol-side outline geometry is built.
+  // natures this section draws (silhouette / border / crease), its silhouette
+  // MODE and its edge color into this group's EdgeStyle; the strokeEdges pass
+  // configured in render() rasterizes them in screen space. Analytic
+  // spheres/cylinders are kept (emitted below, not folded into the mesh) so
+  // umbreon outlines ball-and-stick natively -- no CueMol-side outline geometry
+  // is built.
   {
     const int elt = getEdgeLineType();
     const bool bSil = m_bEnableEdgeLines &&
@@ -529,6 +530,35 @@ void UmbreonDisplayContext::appendIntData()
 
     umbreon::EdgeStyle es;  // every edge class disabled by default
     if (bSil || bBorder || bCrease) {
+      // CueMol edge-line TYPE -> umbreon silhouette extraction MODE.
+      //
+      // ELT_SILHOUETTE is CueMol's outer-contour-only look. The GL view draws
+      // the inverted-hull edge fragments at the far plane (gl_FragDepth =
+      // 0.9999 in trigedge_frag.glsl, 0.99 in the sphere/cylinder impostor
+      // shaders), so an edge fragment survives only where NO geometry covers
+      // it -- i.e. against the background. Every INTERIOR self-occlusion
+      // contour (one helix of this same renderer passing in front of another)
+      // is hidden behind the surface it lies on.
+      //
+      // ELT_EDGES writes the hull's true depth instead, so those self-occlusion
+      // contours DO ink, together with the boundaries against other renderers.
+      //
+      // umbreon's counterpart is EdgeStyle::silhouetteMode: Outline drops the
+      // same-section self-occlusion cracks (CrackClass::DepthGap) at
+      // classification time and keeps only the section union's outer contour,
+      // while Full inks them. The boundary against ANOTHER section is a
+      // separate class (EdgeClass::Object), already gated by bBorder above and
+      // off for ELT_SILHOUETTE -- so the two settings together reproduce each
+      // GL mode.
+      //
+      // Without the mode an ELT_SILHOUETTE section inked its self-occlusion
+      // cracks as well: umbreon draws a DepthGap run with the Disconnected
+      // style slot, which falls back to the Silhouette slot when a section
+      // leaves Disconnected unconfigured -- as every section here does.
+      es.silhouetteMode = (elt == ELT_SILHOUETTE)
+                              ? umbreon::SilhouetteMode::Outline
+                              : umbreon::SilhouetteMode::Full;
+
       float er = 0.0f, eg = 0.0f, eb = 0.0f;
       gfx::ColorPtr pcol = getEdgeLineColor();
       if (!pcol.isnull()) {
@@ -585,6 +615,11 @@ void UmbreonDisplayContext::appendIntData()
       m_pImpl->anyEdges = true;
       if (bCrease)
         m_pImpl->anyCrease = true;
+      MB_DPRINTLN("UmbreonDC> section %s: edges mode=%s width=%f px",
+                  getSecName().c_str(),
+                  (elt == ELT_SILHOUETTE) ? "silhouette(outline)"
+                                          : "edges(full)",
+                  double(widthPx));
     }
     if (m_pImpl->groupEdgeStyle.size() <= group)
       m_pImpl->groupEdgeStyle.resize(std::size_t(group) + 1);

@@ -1385,3 +1385,114 @@ TEST(UmbreonExport, ClipsWithEdgeLinesAndSupersampling)
     EXPECT_GT(pix[c + 1], 30);  // green (inside the slab) is visible
     EXPECT_LT(pix[c + 0], 30);  // red (in front of the clip plane) is gone
 }
+
+namespace {
+
+const int kEdgeModeDim = 96;
+
+// Render TWO overlapping spheres of ONE section at different depths with the
+// given CueMol edge line type, and report how much ink the frame carries: the
+// total count of BLACK pixels, and the number of separate ink runs on the
+// center row. The spheres are white and use the "nolighting" material (flat,
+// full brightness), on a blue background, so black is the only color that is
+// dark in every channel and the shading never approaches the ink threshold.
+//
+// Screen layout at the center row (view height 6 A over 96 px):
+//   back sphere  x in [-2.4, 0.6] at eye z 0
+//   front sphere x in [-0.6, 2.4] at eye z 2.5 (toward the camera)
+// so the front sphere's left contour at x = -0.6 lies ON the back sphere -- a
+// same-section self-occlusion boundary, which is exactly what the silhouette
+// mode switches off.
+void renderTwoSphereEdges(int edgeLineType, std::size_t &outInk, int &outRuns)
+{
+    const double kViewH = 6.0;
+    const double kLineScale = kViewH / kEdgeModeDim;
+
+    UmbreonDisplayContext ctx;
+    ctx.init();
+
+    ctx.setPerspective(false);
+    ctx.setViewDist(100.0);
+    ctx.setZoom(kViewH);
+    ctx.setLineScale(kLineScale);
+    ctx.setBgColor(gfx::SolidColor::createRGB(0.0, 0.0, 1.0));
+    ctx.loadIdent();
+
+    ctx.enableEdgeLines(true);
+    ctx.setEdgeLineType(edgeLineType);
+    ctx.setEdgeLineWidth(2.0 * kLineScale);  // a 2 px band
+    ctx.setEdgeLineColor(gfx::SolidColor::createRGB(0.0, 0.0, 0.0));
+
+    ctx.startRender();
+    ctx.startSection("twosph");
+
+    ctx.setMaterial("nolighting");
+    ctx.color(gfx::SolidColor::createRGB(1.0, 1.0, 1.0));
+    ctx.sphere(1.5, Vector4D(-0.9, 0.0, 0.0));
+    ctx.sphere(1.5, Vector4D(0.9, 0.0, 2.5));
+
+    ctx.endSection();
+
+    UmbreonRenderParams prm;
+    prm.width = kEdgeModeDim;
+    prm.height = kEdgeModeDim;
+    prm.supersample = 2;
+
+    int ow = 0, oh = 0, ncomp = 0;
+    std::vector<unsigned char> pix;
+    ctx.render(prm, ow, oh, ncomp, pix);
+    ASSERT_EQ(pix.size(),
+              static_cast<std::size_t>(kEdgeModeDim * kEdgeModeDim * 3));
+
+    const auto isInk = [&pix](std::size_t i) {
+        return pix[i] < 60 && pix[i + 1] < 60 && pix[i + 2] < 60;
+    };
+
+    outInk = 0;
+    for (std::size_t i = 0; i + 2 < pix.size(); i += 3) {
+        if (isInk(i)) ++outInk;
+    }
+
+    outRuns = 0;
+    bool prev = false;
+    for (int x = 0; x < kEdgeModeDim; ++x) {
+        const std::size_t i =
+            (static_cast<std::size_t>(kEdgeModeDim / 2) * kEdgeModeDim + x) * 3;
+        const bool ink = isInk(i);
+        if (ink && !prev) ++outRuns;
+        prev = ink;
+    }
+}
+
+}  // namespace
+
+// Pins the edge line TYPE -> umbreon silhouette MODE switch: ELT_SILHOUETTE
+// maps to SilhouetteMode::Outline (outer contour of the section union only) and
+// ELT_EDGES to SilhouetteMode::Full (every self-occlusion boundary inks too).
+//
+// This is CueMol's own distinction between the two modes: the GL view draws the
+// inverted-hull edge fragments at the far plane in silhouette mode
+// (gl_FragDepth = 0.9999), so an interior contour is hidden behind the surface
+// it lies on, while edges mode writes the hull's true depth and inks it.
+//
+// The same two-sphere scene is rendered under both types, so the surface
+// shading is identical and the whole difference is the interior line: the
+// center row crosses three ink bands in edges mode (left outer contour, the
+// front sphere's occluding contour, right outer contour) and only the two
+// outer ones in silhouette mode.
+TEST(UmbreonExport, SilhouetteModeInksOnlyTheOuterContour)
+{
+    std::size_t inkSil = 0, inkEdges = 0;
+    int runsSil = 0, runsEdges = 0;
+
+    renderTwoSphereEdges(gfx::DisplayContext::ELT_SILHOUETTE, inkSil, runsSil);
+    renderTwoSphereEdges(gfx::DisplayContext::ELT_EDGES, inkEdges, runsEdges);
+
+    // The outer contour survives in both modes.
+    EXPECT_GT(inkSil, 40u);
+
+    // Only edges mode inks the interior self-occlusion contour.
+    EXPECT_EQ(runsSil, 2);
+    EXPECT_EQ(runsEdges, 3);
+    EXPECT_GT(inkEdges, inkSil + 30);
+}
