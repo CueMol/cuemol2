@@ -30,8 +30,8 @@ vi.mock('../contexts/ThemeContext', () => ({
 // renderer skips real dialog mounting and returns a fixed options object.
 const QSC_OPTS_DEFAULT = {
     embedAll: false,
-    version: 'QDF0' as const,
-    compress: 'none' as const,
+    version: 'QDF1' as const,
+    compress: 'xzip' as const,
     base64: false,
 }
 const showOptionDialogMock = vi.fn()
@@ -158,7 +158,7 @@ describe('Save Scene flow (CmdId.FileSave / FileSaveAs)', () => {
         // Worker is asked to save with the chosen path and the option dialog result.
         expect(cm.invokeService).toHaveBeenCalledWith('saveScene', expect.objectContaining({
             sceneId: 1, viewId: 2, filePath: '/tmp/new.qsc',
-            options: expect.objectContaining({ version: 'QDF0' }),
+            options: expect.objectContaining({ version: 'QDF1' }),
         }))
         handle.unmount()
     })
@@ -224,7 +224,7 @@ describe('Save Scene flow (CmdId.FileSave / FileSaveAs)', () => {
         // saveScene receives the new path and options object.
         expect(cm.invokeService).toHaveBeenCalledWith('saveScene', expect.objectContaining({
             filePath: '/tmp/copy.qsc',
-            options: expect.objectContaining({ version: 'QDF0' }),
+            options: expect.objectContaining({ version: 'QDF1' }),
         }))
         handle.unmount()
     })

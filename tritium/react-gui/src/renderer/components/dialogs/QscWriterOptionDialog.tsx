@@ -42,17 +42,24 @@ export function QscWriterOptionDialog({ visible, onConfirm, onCancel }: Props): 
     const isDark = theme === 'dark';
 
     const [embedAll, setEmbedAll] = useState(false);
-    const [version, setVersion] = useState<QscVersion>('QDF0');
+    const [version, setVersion] = useState<QscVersion>('QDF1');
     const [compress, setCompress] = useState<QscCompress>('xzip');
     const [base64, setBase64] = useState(false);
 
     useEffect(() => {
         if (visible) {
-            // Match qscwriter-option-dlg.js onLoad: defaults are QDF0 +
-            // embed off + base64 off + xz. The QDF0 disable rule is enforced
-            // at OK time (see handleOk).
+            // Defaults: QDF1 + embed off + base64 off + xz.
+            //
+            // UXP qscwriter-option-dlg.js onLoad picks QDF0 ("default: qdf0
+            // (compat)"), which predates QDF1 being the established format --
+            // and because QDF0 has no notion of compression, that default also
+            // silently forces compress=none at OK time, so scenes saved
+            // straight through the dialog were never compressed. QDF1 is the
+            // default here instead, which leaves the compression option live
+            // and lands on xz. Everything else, including the QDF0 disable
+            // rule enforced at OK time (see handleOk), stays UXP-faithful.
             setEmbedAll(false);
-            setVersion('QDF0');
+            setVersion('QDF1');
             setCompress('xzip');
             setBase64(false);
         }

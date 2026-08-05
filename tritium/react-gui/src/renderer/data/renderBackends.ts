@@ -100,6 +100,12 @@ const UMBREON_PROPS: PropDef[] = [
   // --- Edges (creaseLimit -1 = disabled/auto sentinel) ---
   { key: "creaseLimit",   label: "Crease limit",       type: "real",    value: -1.0, group: "Edges", min: -1, max: 180, step: 1 },
   { key: "edgeRise",      label: "Edge rise",          type: "real",    value: 0.5,  group: "Edges", min: 0, max: 5, step: 0.1 },
+  // Contact contours BETWEEN renderers: the intersection circle where one
+  // renderer's geometry plunges into another's surface (a stick entering a
+  // ribbon). It is surface contact, not occlusion, so neither umbreon nor the
+  // GL view inks it -- which leaves a silhouette-mode renderer's outer contour
+  // open wherever it meets another renderer. Off by default to match that look.
+  { key: "contactEdges",  label: "Contact edges",      type: "boolean", value: false, group: "Edges" },
   // --- Global Illumination (pt1 path-traced integrator; off by default) ---
   { key: "useGI",         label: "Enable GI",          type: "boolean", value: false, group: "Global Illumination" },
   { key: "giSamples",     label: "GI samples",         type: "integer", value: 32,   group: "Global Illumination", min: 1, max: 256, step: 1 },

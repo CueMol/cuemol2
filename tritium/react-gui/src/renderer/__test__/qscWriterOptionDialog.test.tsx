@@ -1,9 +1,16 @@
 /**
- * Pins the QDF0 disable rule from UXP qscwriter-option-dlg.js:34-49 -- when
- * the user picks "Ver 2.2 or later" (QDF0), the OK action MUST coerce
- * `compress` to "none" and `base64` to false regardless of the (disabled)
- * UI state. This guarantees a downstream SceneXMLWriter is never asked to
- * write a QDF0 file with QDF1-only options.
+ * Pins two contracts of the scene save option dialog:
+ *
+ * 1. The default format is QDF1 ("Ver 2.3 or later") with compression live
+ *    and set to xz -- a deliberate divergence from UXP
+ *    qscwriter-option-dlg.js onLoad, which defaults to QDF0 and thereby
+ *    forces every straight-through save to be uncompressed.
+ * 2. The QDF0 disable rule from UXP qscwriter-option-dlg.js:34-49 -- when the
+ *    user picks "Ver 2.2 or later" (QDF0), the compression / encoding
+ *    controls are disabled AND the OK action coerces `compress` to "none"
+ *    and `base64` to false regardless of the (disabled) UI state. This
+ *    guarantees a downstream SceneXMLWriter is never asked to write a QDF0
+ *    file with QDF1-only options.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -36,7 +43,7 @@ function findSelectByLabel(root: ParentNode, label: string): HTMLSelectElement |
     return null
 }
 
-describe('QscWriterOptionDialog (UXP parity)', () => {
+describe('QscWriterOptionDialog', () => {
     let captured: QscWriterOptions | null
     let resolved: boolean
 
@@ -63,9 +70,15 @@ describe('QscWriterOptionDialog (UXP parity)', () => {
         )
     }
 
-    it('defaults to QDF0 with embedAll=false and forces compress=none / base64=false on OK', async () => {
+    it('defaults to QDF1 with xz compression live and embedAll=false', async () => {
         const handle = mount()
         await flushPromises()
+
+        // The compression control must be usable at the default version --
+        // that is the point of defaulting to QDF1.
+        const compressSelect = findSelectByLabel(document.body, 'Compression')
+        expect(compressSelect).toBeTruthy()
+        expect(compressSelect!.disabled).toBe(false)
 
         const ok = findButtonByText(document.body, 'OK')
         expect(ok).toBeTruthy()
@@ -75,31 +88,20 @@ describe('QscWriterOptionDialog (UXP parity)', () => {
         expect(resolved).toBe(true)
         expect(captured).toEqual({
             embedAll: false,
-            version: 'QDF0',
-            compress: 'none',
+            version: 'QDF1',
+            compress: 'xzip',
             base64: false,
         })
         handle.unmount()
     })
 
-    it('switches to QDF1 and passes through compress / base64 selections', async () => {
+    it('passes through compress / base64 selections on QDF1', async () => {
         const handle = mount()
-        await flushPromises()
-
-        const versionSelect = findSelectByLabel(document.body, 'Compatibility')
-        expect(versionSelect).toBeTruthy()
-
-        // Pick QDF1.
-        await act(async () => {
-            versionSelect!.value = 'QDF1'
-            versionSelect!.dispatchEvent(new Event('change', { bubbles: true }))
-        })
         await flushPromises()
 
         // Pick gzip compression.
         const compressSelect = findSelectByLabel(document.body, 'Compression')
         expect(compressSelect).toBeTruthy()
-        expect(compressSelect!.disabled).toBe(false)
         await act(async () => {
             compressSelect!.value = 'gzip'
             compressSelect!.dispatchEvent(new Event('change', { bubbles: true }))
@@ -119,13 +121,34 @@ describe('QscWriterOptionDialog (UXP parity)', () => {
         handle.unmount()
     })
 
-    it('disables compress / base64 when version is QDF0', async () => {
+    it('disables and coerces compress / base64 when switched to QDF0', async () => {
         const handle = mount()
+        await flushPromises()
+
+        const versionSelect = findSelectByLabel(document.body, 'Compatibility')
+        expect(versionSelect).toBeTruthy()
+        await act(async () => {
+            versionSelect!.value = 'QDF0'
+            versionSelect!.dispatchEvent(new Event('change', { bubbles: true }))
+        })
         await flushPromises()
 
         const compressSelect = findSelectByLabel(document.body, 'Compression')
         expect(compressSelect).toBeTruthy()
         expect(compressSelect!.disabled).toBe(true)
+
+        // The xz picked by the default is coerced away at OK time, so a QDF0
+        // file is never asked for QDF1-only options.
+        const ok = findButtonByText(document.body, 'OK')
+        ok!.click()
+        await flushPromises()
+
+        expect(captured).toEqual({
+            embedAll: false,
+            version: 'QDF0',
+            compress: 'none',
+            base64: false,
+        })
         handle.unmount()
     })
 })
