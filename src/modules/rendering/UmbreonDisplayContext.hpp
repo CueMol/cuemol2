@@ -72,6 +72,16 @@ namespace render {
     /// RenderOptions::denoiser): 0 = None, 1 = AtrousBilateral, 2 = OIDN. This
     /// is independent of giDenoise, which denoises only the GI indirect buffer.
     int denoiser = 0;
+    /// Ink the depth-CONTINUOUS contact/intersection contour between DIFFERENT
+    /// renderer sections (umbreon strokeEdges.contact): the circle where one
+    /// section's primitive plunges into another section's surface, e.g. a
+    /// stick entering another renderer's ribbon mesh. Such a boundary is
+    /// surface contact rather than occlusion, so umbreon vetoes it by default
+    /// and so does the GL view (its inverted hull is buried inside the other
+    /// surface there); a silhouette-mode section is therefore left with an
+    /// OPEN outer contour wherever it meets another renderer. Turning this on
+    /// closes it. Same-section contact stays seamless whatever this says.
+    bool contactEdges = false;
     /// When true, render a transparent background: the output is RGBA (4
     /// components) with alpha = coverage (0 where no geometry is hit), so the
     /// PNG can be composited over another image (POV "_transpbg").

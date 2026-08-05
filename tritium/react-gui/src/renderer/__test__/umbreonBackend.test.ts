@@ -76,6 +76,7 @@ describe('umbreonBackend.beginInProcess', () => {
                 p('lightRadius', 2),
                 p('creaseLimit', 30),
                 p('edgeRise', 1),
+                p('contactEdges', true),
                 p('useGI', true),
                 p('giSamples', 64),
                 p('giIntensity', 1.5),
@@ -107,6 +108,7 @@ describe('umbreonBackend.beginInProcess', () => {
         expect(exporter.lightRadius).toBe(2)
         expect(exporter.creaseLimit).toBe(30)
         expect(exporter.edgeRise).toBe(1)
+        expect(exporter.contactEdges).toBe(true)
         // GI (pt1) props.
         expect(exporter.useGI).toBe(true)
         expect(exporter.giSamples).toBe(64)
@@ -226,6 +228,9 @@ describe('umbreonBackend.beginInProcess', () => {
         // absent denoise -> "OIDN" default -> pt1Denoise on, no full-frame pass.
         expect(exporter.giDenoise).toBe(true)
         expect(exporter.denoiser).toBe(0)
+        // Cross-renderer contact contours stay off, so an unset prop renders
+        // the same picture umbreon and the GL view draw.
+        expect(exporter.contactEdges).toBe(false)
     })
 
     // AO and GI are alternatives (the Lighting selector enforces it), so an AO

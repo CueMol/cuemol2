@@ -936,6 +936,16 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
     opt.strokeEdges.silhouette = true;
     opt.strokeEdges.border = true;
     opt.strokeEdges.crease = m_pImpl->anyCrease;
+    // Cross-section CONTACT contours (depth-continuous intersections, e.g. a
+    // stick plunging into another renderer's ribbon). Off by default in both
+    // umbreon and the GL view: the border/silhouette classes ink only across a
+    // depth STEP, so a surface contact draws nothing and a silhouette-mode
+    // section's outer contour stays open where it meets another renderer.
+    // This global toggle revives exactly those lines; the per-section
+    // EdgeStyle slots in appendIntData are untouched (umbreon picks a
+    // deterministic owner section for each contact run and styles it from
+    // there, since the near side is numerical noise at a contact).
+    opt.strokeEdges.contact = prm.contactEdges;
     opt.strokeEdges.thickness = int(m_pImpl->edgeThicknessPx + 0.5f);
     if (opt.strokeEdges.thickness < 1)
       opt.strokeEdges.thickness = 1;

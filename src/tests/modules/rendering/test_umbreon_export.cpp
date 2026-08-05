@@ -1390,12 +1390,37 @@ namespace {
 
 const int kEdgeModeDim = 96;
 
+// Report how much ink a kEdgeModeDim square frame carries: the total count of
+// BLACK pixels, and the number of separate ink runs on the center row. The
+// scenes below are white with the "nolighting" material (flat, full
+// brightness) on a blue background, so black is the only color that is dark in
+// every channel and the shading never approaches the ink threshold.
+void countEdgeInk(const std::vector<unsigned char> &pix, std::size_t &outInk,
+                  int &outRuns)
+{
+    const auto isInk = [&pix](std::size_t i) {
+        return pix[i] < 60 && pix[i + 1] < 60 && pix[i + 2] < 60;
+    };
+
+    outInk = 0;
+    for (std::size_t i = 0; i + 2 < pix.size(); i += 3) {
+        if (isInk(i)) ++outInk;
+    }
+
+    outRuns = 0;
+    bool prev = false;
+    for (int x = 0; x < kEdgeModeDim; ++x) {
+        const std::size_t i =
+            (static_cast<std::size_t>(kEdgeModeDim / 2) * kEdgeModeDim + x) * 3;
+        const bool ink = isInk(i);
+        if (ink && !prev) ++outRuns;
+        prev = ink;
+    }
+}
+
 // Render TWO overlapping spheres of ONE section at different depths with the
-// given CueMol edge line type, and report how much ink the frame carries: the
-// total count of BLACK pixels, and the number of separate ink runs on the
-// center row. The spheres are white and use the "nolighting" material (flat,
-// full brightness), on a blue background, so black is the only color that is
-// dark in every channel and the shading never approaches the ink threshold.
+// given CueMol edge line type, and report how much ink the frame carries (see
+// countEdgeInk).
 //
 // Screen layout at the center row (view height 6 A over 96 px):
 //   back sphere  x in [-2.4, 0.6] at eye z 0
@@ -1444,24 +1469,70 @@ void renderTwoSphereEdges(int edgeLineType, std::size_t &outInk, int &outRuns)
     ASSERT_EQ(pix.size(),
               static_cast<std::size_t>(kEdgeModeDim * kEdgeModeDim * 3));
 
-    const auto isInk = [&pix](std::size_t i) {
-        return pix[i] < 60 && pix[i + 1] < 60 && pix[i + 2] < 60;
-    };
+    countEdgeInk(pix, outInk, outRuns);
+}
 
-    outInk = 0;
-    for (std::size_t i = 0; i + 2 < pix.size(); i += 3) {
-        if (isInk(i)) ++outInk;
-    }
+// Render TWO INTERSECTING spheres in TWO DIFFERENT sections, both in CueMol's
+// silhouette edge mode, with the cross-section contact contours off or on.
+//
+// Both spheres have radius 1.5 A at eye z 0, centred at x = -0.9 and +0.9, so
+// they overlap in 3D. On the center row the visible surface swaps from the
+// left sphere to the right one exactly at x = 0, where their depths are EQUAL:
+// that boundary is the intersection contour of the two renderers -- surface
+// contact, not occlusion -- which is what contactEdges controls. Each sphere's
+// own rim inside the overlap (x = -+0.6) is buried under the other sphere and
+// never reaches the screen, so besides the contact line the row crosses only
+// the two outer contours at x = -+2.4.
+void renderTwoSectionContact(bool contactEdges, std::size_t &outInk,
+                             int &outRuns)
+{
+    const double kViewH = 6.0;
+    const double kLineScale = kViewH / kEdgeModeDim;
 
-    outRuns = 0;
-    bool prev = false;
-    for (int x = 0; x < kEdgeModeDim; ++x) {
-        const std::size_t i =
-            (static_cast<std::size_t>(kEdgeModeDim / 2) * kEdgeModeDim + x) * 3;
-        const bool ink = isInk(i);
-        if (ink && !prev) ++outRuns;
-        prev = ink;
-    }
+    UmbreonDisplayContext ctx;
+    ctx.init();
+
+    ctx.setPerspective(false);
+    ctx.setViewDist(100.0);
+    ctx.setZoom(kViewH);
+    ctx.setLineScale(kLineScale);
+    ctx.setBgColor(gfx::SolidColor::createRGB(0.0, 0.0, 1.0));
+    ctx.loadIdent();
+
+    ctx.enableEdgeLines(true);
+    ctx.setEdgeLineType(gfx::DisplayContext::ELT_SILHOUETTE);
+    ctx.setEdgeLineWidth(2.0 * kLineScale);  // a 2 px band
+    ctx.setEdgeLineColor(gfx::SolidColor::createRGB(0.0, 0.0, 0.0));
+
+    ctx.startRender();
+
+    // One sphere per section, so the boundary between them is a CROSS-section
+    // one (same-section contact is seamless whatever contactEdges says).
+    ctx.startSection("left");
+    ctx.setMaterial("nolighting");
+    ctx.color(gfx::SolidColor::createRGB(1.0, 1.0, 1.0));
+    ctx.sphere(1.5, Vector4D(-0.9, 0.0, 0.0));
+    ctx.endSection();
+
+    ctx.startSection("right");
+    ctx.setMaterial("nolighting");
+    ctx.color(gfx::SolidColor::createRGB(1.0, 1.0, 1.0));
+    ctx.sphere(1.5, Vector4D(0.9, 0.0, 0.0));
+    ctx.endSection();
+
+    UmbreonRenderParams prm;
+    prm.width = kEdgeModeDim;
+    prm.height = kEdgeModeDim;
+    prm.supersample = 2;
+    prm.contactEdges = contactEdges;
+
+    int ow = 0, oh = 0, ncomp = 0;
+    std::vector<unsigned char> pix;
+    ctx.render(prm, ow, oh, ncomp, pix);
+    ASSERT_EQ(pix.size(),
+              static_cast<std::size_t>(kEdgeModeDim * kEdgeModeDim * 3));
+
+    countEdgeInk(pix, outInk, outRuns);
 }
 
 }  // namespace
@@ -1495,4 +1566,32 @@ TEST(UmbreonExport, SilhouetteModeInksOnlyTheOuterContour)
     EXPECT_EQ(runsSil, 2);
     EXPECT_EQ(runsEdges, 3);
     EXPECT_GT(inkEdges, inkSil + 30);
+}
+
+// Pins the contactEdges knob (UmbreonSceneExporter "contactEdges" ->
+// UmbreonRenderParams::contactEdges -> umbreon strokeEdges.contact): the
+// depth-CONTINUOUS boundary where one renderer's geometry plunges into
+// another's surface inks only when it is asked for.
+//
+// The silhouette / border classes ink across a depth STEP, so a contact
+// boundary draws nothing by default -- which is also what the interactive GL
+// view shows, its inverted hull being buried inside the other surface there --
+// and a silhouette-mode renderer's outer contour is left OPEN wherever it
+// meets another renderer. The same two intersecting spheres, one per section,
+// are rendered under both settings: the center row crosses the two outer
+// contours with the flag off and their intersection line as well with it on.
+TEST(UmbreonExport, ContactEdgesInkTheCrossSectionIntersection)
+{
+    std::size_t inkOff = 0, inkOn = 0;
+    int runsOff = 0, runsOn = 0;
+
+    renderTwoSectionContact(false, inkOff, runsOff);
+    renderTwoSectionContact(true, inkOn, runsOn);
+
+    // The outer contour of the union is drawn either way.
+    EXPECT_GT(inkOff, 40u);
+
+    EXPECT_EQ(runsOff, 2);
+    EXPECT_EQ(runsOn, 3);
+    EXPECT_GT(inkOn, inkOff + 30);
 }

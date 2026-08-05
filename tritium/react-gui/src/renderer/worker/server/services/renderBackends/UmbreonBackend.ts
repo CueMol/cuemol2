@@ -123,6 +123,11 @@ function makeExporter(
   exporter.lightRadius = numVal(ub, "lightRadius", 0.0);
   exporter.creaseLimit = numVal(ub, "creaseLimit", -1.0);
   exporter.edgeRise = numVal(ub, "edgeRise", 0.5);
+  // Contact contours between DIFFERENT renderers (umbreon strokeEdges.contact).
+  // Off by default, matching umbreon and the GL view: a depth-continuous
+  // intersection is surface contact rather than occlusion, so nothing inks
+  // there unless this is asked for.
+  exporter.contactEdges = boolVal(ub, "contactEdges", false);
 
   // Diffuse global illumination (pt1 path-traced integrator).
   exporter.useGI = boolVal(ub, "useGI", false);

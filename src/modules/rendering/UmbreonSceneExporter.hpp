@@ -95,6 +95,10 @@ namespace render {
     /// edge line rise from the surface
     double m_dEdgeRise;
 
+    /// ink the depth-continuous contact/intersection contour between DIFFERENT
+    /// renderer sections (umbreon strokeEdges.contact); default off
+    bool m_bContactEdges;
+
     /// Transparent background: emit an RGBA PNG with alpha = coverage (0 where
     /// no geometry is hit) so it can be composited over another image (POV
     /// "_transpbg"). Default false (opaque RGB over the scene background color).
