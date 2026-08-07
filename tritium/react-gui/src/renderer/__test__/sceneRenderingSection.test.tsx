@@ -81,7 +81,7 @@ function fullEntries(aoOn = true): GenericPropEntry[] {
     entry({ key: 'aoHalfRes', type: 'boolean', value: false }),
     // enumdef arrives from C++ getPropsJSON in alphabetical order; the section
     // must impose the natural None/FXAA/SMAA display order itself.
-    entry({ key: 'aa_method', type: 'enum', value: 'smaa', enumdef: ['fxaa', 'none', 'smaa'] }),
+    entry({ key: 'aa_method', type: 'enum', value: 'fxaa', enumdef: ['fxaa', 'none', 'smaa'] }),
     entry({ key: 'aaSmaaThreshold', type: 'real', value: 0.05 }),
     entry({ key: 'aaJitterLevel', type: 'integer', value: 0 }),
     entry({ key: 'bgcolor', type: 'object', value: '#000000' }),
@@ -192,10 +192,10 @@ describe('SceneAntialiasingSection', () => {
     const sel = rowByLabel(container, 'Method')!.querySelector('select') as HTMLSelectElement
     expect(Array.from(sel.options).map((o) => o.textContent)).toEqual(['None', 'FXAA', 'SMAA'])
     act(() => {
-      sel.value = 'fxaa'
+      sel.value = 'smaa'
       sel.dispatchEvent(new Event('change', { bubbles: true }))
     })
-    expect(onSet).toHaveBeenCalledWith('aa_method', 'enum', 'fxaa')
+    expect(onSet).toHaveBeenCalledWith('aa_method', 'enum', 'smaa')
     unmount()
   })
 
@@ -216,6 +216,7 @@ describe('SceneAntialiasingSection', () => {
   })
 
   it('enables the SMAA threshold row for smaa and disables it for other methods', () => {
+    // aa_method is fxaa (the C++ default) in fullEntries -> threshold dimmed.
     const { container, unmount } = mountTree(
       <SceneAntialiasingSection
         entries={fullEntries()}
@@ -224,20 +225,19 @@ describe('SceneAntialiasingSection', () => {
         sceneId={1}
       />,
     )
-    // aa_method is smaa in fullEntries -> threshold active (drag row not dimmed).
     expect(
       rowByLabel(container, 'SMAA threshold')!.querySelector('.h3-form-drag-disabled'),
-    ).toBeNull()
+    ).not.toBeNull()
     unmount()
 
-    const withFxaa = fullEntries().map((e) =>
+    const withSmaa = fullEntries().map((e) =>
       e.key === 'aa_method'
-        ? entry({ key: 'aa_method', type: 'enum', value: 'fxaa', enumdef: ['fxaa', 'none', 'smaa'] })
+        ? entry({ key: 'aa_method', type: 'enum', value: 'smaa', enumdef: ['fxaa', 'none', 'smaa'] })
         : e,
     )
     const second = mountTree(
       <SceneAntialiasingSection
-        entries={withFxaa}
+        entries={withSmaa}
         onSet={vi.fn()}
         onReset={vi.fn()}
         sceneId={1}
@@ -245,7 +245,7 @@ describe('SceneAntialiasingSection', () => {
     )
     expect(
       rowByLabel(second.container, 'SMAA threshold')!.querySelector('.h3-form-drag-disabled'),
-    ).not.toBeNull()
+    ).toBeNull()
     second.unmount()
   })
 

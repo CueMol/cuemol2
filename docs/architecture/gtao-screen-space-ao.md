@@ -39,8 +39,9 @@ libcuemol2 の OpenGL (core profile) バックエンドに実装した、リア�
 > default FB が阻んでいた depth blit (UI overlay の遮蔽) を優先 -- ため直描き時は AA なし)。
 
 AO/AA/jitter を全く使わない (全て無効・stereo・FBO 非対応) 場合は従来パス
-(clearBuffer + display) にフォールバックする。デフォルト設定は `aa_method = smaa` なので、
-既定ではパイプライン経由で描画される。
+(clearBuffer + display) にフォールバックする。デフォルト設定は `aa_method = fxaa` なので、
+既定ではパイプライン経由で描画される (SMAA は選択肢。分子シーンでは細線・オブジェクト間
+境界への効きから FXAA を既定とした)。
 
 ### 主要ファイル
 
@@ -366,6 +367,7 @@ output location も確認。これらで「location は正しい→書き込み�
 | `aoHalfRes` | false | adaptive 半解像度 GTAO: drag 中 half / idle full / export 常に full (負荷削減, §4.7) |
 | `aa_method` | fxaa | post-process AA (none/fxaa/smaa, §4.5) |
 | `aaJitterLevel` | 0 | temporal jitter SS レベル (0=off, 1..5=2..32 枚, §4.6) |
+| `aaSmaaThreshold` | 0.05 | SMAA エッジ検出閾値 (RGB 差の最大値。0.1=Medium/High, 0.05=Ultra 相当) |
 
 FalloffRange / SampleDistributionPower / RadiusMultiplier 等の XeGTAO ヒューリスティックは
 shader 定数のまま (必要なら同様に Scene プロパティへ昇格できる構造)。

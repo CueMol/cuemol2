@@ -105,7 +105,7 @@ export class GfxManager {
         this._canvas = canvas;
         // antialias: false -- the off-screen frame pipeline owns antialiasing
         // (post-process FXAA/SMAA and/or temporal jitter; default aa_method is
-        // smaa), so the multisampled default framebuffer added no visible
+        // fxaa), so the multisampled default framebuffer added no visible
         // benefit while it blocked blitDepthToDefault (a single-sample FBO
         // cannot blit into a multisampled default fb), degrading on-screen
         // overlay depth occlusion. With a single-sample default framebuffer the

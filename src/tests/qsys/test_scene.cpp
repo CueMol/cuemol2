@@ -418,10 +418,10 @@ TEST_F(SceneTest, AAPropsAreIndependentOfAO)
 // require it on their own; all off = legacy direct (MSAA) rendering.
 TEST_F(SceneTest, RequiresFramePipelineContract)
 {
-    // Default scene: AO off, aa_method smaa, jitter 0 -> pipeline required
+    // Default scene: AO off, aa_method fxaa, jitter 0 -> pipeline required
     // (the default AA is deliberately active without AO).
     EXPECT_FALSE(m_pScene->isAOEnabled());
-    EXPECT_EQ(m_pScene->getAAMethod(), qsys::Scene::AA_SMAA);
+    EXPECT_EQ(m_pScene->getAAMethod(), qsys::Scene::AA_FXAA);
     EXPECT_EQ(m_pScene->getAAJitterLevel(), 0);
     EXPECT_TRUE(m_pScene->requiresFramePipeline());
 
@@ -436,7 +436,7 @@ TEST_F(SceneTest, RequiresFramePipelineContract)
     EXPECT_TRUE(m_pScene->requiresFramePipeline());
 
     m_pScene->setAOEnabled(false);
-    m_pScene->setAAMethod(qsys::Scene::AA_FXAA);
+    m_pScene->setAAMethod(qsys::Scene::AA_SMAA);
     EXPECT_TRUE(m_pScene->requiresFramePipeline());
 }
 

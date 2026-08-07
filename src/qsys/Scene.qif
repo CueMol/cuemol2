@@ -76,7 +76,7 @@ runtime_class Scene
     smaa = 2;
   }
   property enum aa_method => redirect(getAAMethod, setAAMethod);
-  default aa_method = "smaa";
+  default aa_method = "fxaa";
 
   /// Temporal jitter supersampling level (0 = off, 1..5 = 2/4/8/16/32 samples).
   /// Accumulated only while the camera is still; resets on change.
