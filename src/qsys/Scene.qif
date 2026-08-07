@@ -83,6 +83,13 @@ runtime_class Scene
   property integer aaJitterLevel => redirect(getAAJitterLevel, setAAJitterLevel);
   default aaJitterLevel = 0;
 
+  /// SMAA edge-detection threshold (max RGB delta between neighbors). Lower =
+  /// more edges antialiased; higher = only strong edges. 0.05 matches the SMAA
+  /// "Ultra" preset (0.1 = Medium/High) -- molecular scenes need the lower
+  /// value so object-object silhouettes with modest color contrast are caught.
+  property real aaSmaaThreshold => redirect(getAASmaaThreshold, setAASmaaThreshold);
+  default aaSmaaThreshold = 0.05;
+
   property string onload => m_scrOnLoadEvent;
   default onload = "";
 

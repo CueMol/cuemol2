@@ -123,6 +123,9 @@ namespace qsys {
     /// Temporal jitter supersampling level (0 = off, 1..5 = 2/4/8/16/32 samples)
     int m_nAAJitterLevel;
 
+    /// SMAA edge-detection threshold (max RGB delta between neighbor pixels)
+    double m_fAASmaaThreshold;
+
     /// UID of this scene
     qlib::uid_t m_nUID;
 
@@ -256,6 +259,13 @@ namespace qsys {
     void setAAJitterLevel(int v) {
       setUpdateFlag();
       m_nAAJitterLevel = v;
+    }
+
+    /// SMAA edge-detection threshold. Lower = more edges antialiased.
+    double getAASmaaThreshold() const { return m_fAASmaaThreshold; }
+    void setAASmaaThreshold(double v) {
+      setUpdateFlag();
+      m_fAASmaaThreshold = v;
     }
 
     /// True when the scene's render settings require the off-screen frame

@@ -66,6 +66,10 @@ struct AoConstants
     /// Per-sample noise rotation [0,1) for temporal supersampling (0 = single
     /// frame). Decorrelates the GTAO noise across accumulated jitter samples.
     float aoNoiseOffset = 0.0f;
+    /// SMAA edge-detection threshold (max RGB delta between neighbor pixels),
+    /// mirrored from Scene.aaSmaaThreshold. 0.1 = SMAA Medium/High preset,
+    /// 0.05 = Ultra.
+    float smaaThreshold = 0.05f;
 
     /// Fill the camera-derived geometric fields (isOrtho, depthLinearize*,
     /// ndcToView*, viewportPixelSize) from the camera parameters. The AO tuning

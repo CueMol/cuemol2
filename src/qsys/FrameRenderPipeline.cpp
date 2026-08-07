@@ -204,6 +204,8 @@ bool FrameRenderPipeline::render(gfx::DisplayContext *pdc, const ScenePtr &pScen
 
     // 2. AO constants: camera part from params, AO tuning read from the Scene.
     gfx::AoConstants aoc = params.camAoc;
+    // SMAA tuning (used by the post-AA stage, independent of AO).
+    aoc.smaaThreshold = float(pScene->getAASmaaThreshold());
     if (aoActive) {
         aoc.effectRadius = float(pScene->getAORadius());
         aoc.finalValuePower = float(pScene->getAOIntensity());

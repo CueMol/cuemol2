@@ -439,3 +439,13 @@ TEST_F(SceneTest, RequiresFramePipelineContract)
     m_pScene->setAAMethod(qsys::Scene::AA_FXAA);
     EXPECT_TRUE(m_pScene->requiresFramePipeline());
 }
+
+// The SMAA edge-detection threshold is a tunable scene property; 0.05 (the
+// SMAA "Ultra" preset) is the deliberate default so object-object silhouettes
+// with modest color contrast are still antialiased.
+TEST_F(SceneTest, SmaaThresholdDefaultAndSetGet)
+{
+    EXPECT_DOUBLE_EQ(m_pScene->getAASmaaThreshold(), 0.05);
+    m_pScene->setAASmaaThreshold(0.12);
+    EXPECT_DOUBLE_EQ(m_pScene->getAASmaaThreshold(), 0.12);
+}
