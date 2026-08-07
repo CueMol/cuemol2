@@ -192,6 +192,32 @@ describe('SceneAntialiasingSection', () => {
     expect(onSet).toHaveBeenCalledWith('aa_method', 'enum', 'smaa')
     unmount()
   })
+
+  it('Jitter SS is a 0-5 dropdown (not a numeric stepper) and commits a number', () => {
+    const onSet = vi.fn()
+    const { container, unmount } = mountTree(
+      <SceneAntialiasingSection
+        entries={fullEntries()}
+        onSet={onSet}
+        onReset={vi.fn()}
+        sceneId={1}
+      />,
+    )
+    const row = rowByLabel(container, 'Jitter SS')!
+    // A dropdown (SelectField), not the NumericField/DragNumericField stepper.
+    const sel = row.querySelector('select') as HTMLSelectElement
+    expect(sel).not.toBeNull()
+    expect(row.querySelector('.h3-form-numeric, .h3-form-drag')).toBeNull()
+    expect(Array.from(sel.options).map((o) => [o.value, o.textContent])).toEqual([
+      ['0', 'Off'], ['1', '1'], ['2', '2'], ['3', '3'], ['4', '4'], ['5', '5'],
+    ])
+    act(() => {
+      sel.value = '3'
+      sel.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    expect(onSet).toHaveBeenCalledWith('aaJitterLevel', 'integer', 3)
+    unmount()
+  })
 })
 
 describe('SceneBackgroundSection', () => {

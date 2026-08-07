@@ -350,6 +350,48 @@ export const MappedEnumRow: React.FC<MappedEnumRowProps> = ({
   );
 };
 
+export interface NumEnumRowProps extends RowProps {
+  /** Allowed integer values, in display order. */
+  options: number[];
+  /** Optional friendly label per value (e.g. 0 -> "Off"); falls back to the number itself. */
+  labels?: Record<number, string>;
+  disabled?: boolean;
+}
+
+/**
+ * Dropdown for an integer property restricted to a small fixed set of values
+ * (e.g. Scene antialiasing Jitter SS, 0-5) -- a `SelectField` is a clearer
+ * affordance than a numeric stepper when the domain is this small, and it
+ * makes an out-of-range value unreachable through the UI instead of merely
+ * clamped. Commits the parsed number immediately, like `EnumRow` /
+ * `MappedEnumRow`.
+ *
+ * Exported so other small-integer-domain properties reuse the same contract.
+ */
+export const NumEnumRow: React.FC<NumEnumRowProps> = ({
+  entry,
+  label,
+  options,
+  labels,
+  onSet,
+  onReset,
+  disabled,
+}) => (
+  <PropertyField label={label} {...resetProps(entry, onReset)}>
+    <SelectField
+      value={String(entry.value)}
+      disabled={disabled || entry.readonly}
+      onChange={(v) => onSet(entry.key, entry.type, Number(v))}
+    >
+      {options.map((opt) => (
+        <option key={opt} value={opt}>
+          {labels?.[opt] ?? String(opt)}
+        </option>
+      ))}
+    </SelectField>
+  </PropertyField>
+);
+
 /** Cap-type enum labels shared by the spline-family renderers (cartoon / tube). */
 export const CAP_LABELS: Record<string, string> = {
   sphere: "Round",
