@@ -215,9 +215,10 @@ void GUIView::drawScene()
 
     ////////////////////////////////////////////////
 
-    // Temporal-jitter: assume no further accumulation this frame unless the AO
-    // path re-arms it below; keep the projection un-jittered for the default
-    // setUpProjMat call (the AO path re-applies the per-sample offset).
+    // Temporal-jitter: assume no further accumulation this frame unless the
+    // pipeline path re-arms it below; keep the projection un-jittered for the
+    // default setUpProjMat call (the pipeline path re-applies the per-sample
+    // offset).
     m_jitterMoreSamples = false;
     m_jitterPxX = m_jitterPxY = 0.0;
     m_aoHalfPending = false;
@@ -227,11 +228,17 @@ void GUIView::drawScene()
     switch (getStereoMode()) {
         default:
         case Camera::CSM_NONE: {
-            // Screen-space ambient occlusion (GTAO) renders the 3D scene into
-            // an off-screen target so depth/color are available to a fullscreen
-            // pass, then composites the result onto the default framebuffer.
-            const bool useAO = pScene->isAOEnabled() && hasFBO() &&
-                               getStereoMode() == Camera::CSM_NONE;
+            // The off-screen frame pipeline serves AO (GTAO) and/or AA
+            // (FXAA/SMAA/temporal jitter): the 3D scene is rendered into an
+            // off-screen target so depth/color are available to the fullscreen
+            // passes, then composited onto the default framebuffer. AO and AA
+            // are independent: any of them routes the frame through the
+            // pipeline; none of them = legacy direct rendering (hardware MSAA
+            // on the default framebuffer).
+            const bool pipeAvail = hasFBO();
+            const bool aoOn = pScene->isAOEnabled() && pipeAvail;
+            const bool usePipeline =
+                pipeAvail && pScene->requiresFramePipeline();
 
             // Adaptive half-resolution AO: when aoHalfRes is enabled, the GTAO
             // term is computed at half resolution only while the camera is
@@ -240,8 +247,8 @@ void GUIView::drawScene()
             // for camera/scene-driven redraws and false for the idle continuous
             // redraws, so it distinguishes "moving" from "still".
             const bool aoHalfRes =
-                useAO && pScene->isAOHalfRes() && getUpdateFlag();
-            if (useAO) {
+                aoOn && pScene->isAOHalfRes() && getUpdateFlag();
+            if (usePipeline) {
                 ensurePipeline(convToBackingX(getWidth()),
                                convToBackingY(getHeight()), aoHalfRes);
             }
@@ -251,7 +258,8 @@ void GUIView::drawScene()
             // otherwise re-arm the redraw).
             m_aoHalfPending = aoHalfRes;
 
-            if (useAO && m_pPipeline != nullptr && m_pPipeline->isReady()) {
+            if (usePipeline && m_pPipeline != nullptr &&
+                m_pPipeline->isReady()) {
                 // Temporal-jitter supersampling (camera still): the pipeline
                 // renders each jittered sample's final color, sums it into the
                 // float accumulation buffer, and displays the running average.
@@ -285,6 +293,7 @@ void GUIView::drawScene()
                 // by the pipeline; the scene geometry is rendered via the callback.
                 FrameRenderParams params;
                 params.camAoc = computeAoConstants();
+                params.enableAO = aoOn;
                 // Rotate the GTAO noise per accumulated jitter sample (R1
                 // sequence) so the grain averages out; 0 when not jittering.
                 if (jitterActive) {

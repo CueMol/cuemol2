@@ -67,18 +67,19 @@ runtime_class Scene
   property boolean aoHalfRes => redirect(isAOHalfRes, setAOHalfRes);
   default aoHalfRes = false;
 
-  /// Post-process anti-aliasing method applied after the AO composite.
-  /// none = no post-AA (legacy behavior), fxaa = FXAA, smaa = SMAA (reserved).
+  /// Post-process anti-aliasing method, independent of the AO setting (either
+  /// one routes the frame through the off-screen pipeline).
+  /// none = direct rendering with hardware MSAA, fxaa = FXAA, smaa = SMAA.
   enumdef aa_method {
     none = 0;
     fxaa = 1;
     smaa = 2;
   }
   property enum aa_method => redirect(getAAMethod, setAAMethod);
-  default aa_method = "fxaa";
+  default aa_method = "smaa";
 
   /// Temporal jitter supersampling level (0 = off, 1..5 = 2/4/8/16/32 samples).
-  /// Accumulated only while the camera is still (AO path); resets on change.
+  /// Accumulated only while the camera is still; resets on change.
   property integer aaJitterLevel => redirect(getAAJitterLevel, setAAJitterLevel);
   default aaJitterLevel = 0;
 

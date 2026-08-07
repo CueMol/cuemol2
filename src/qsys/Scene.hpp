@@ -243,7 +243,8 @@ namespace qsys {
       AA_SMAA = 2,
     };
 
-    /// Post-process anti-aliasing method applied after the AO composite.
+    /// Post-process anti-aliasing method applied after the composite stage of
+    /// the frame pipeline (independent of the AO setting).
     int getAAMethod() const { return m_nAAMethod; }
     void setAAMethod(int v) {
       setUpdateFlag();
@@ -255,6 +256,15 @@ namespace qsys {
     void setAAJitterLevel(int v) {
       setUpdateFlag();
       m_nAAJitterLevel = v;
+    }
+
+    /// True when the scene's render settings require the off-screen frame
+    /// pipeline (AO, spatial post-AA, or temporal jitter); false = legacy
+    /// direct rendering (hardware MSAA on the default framebuffer) suffices.
+    /// AO and AA are independent: any one of them routes the frame through
+    /// the pipeline.
+    bool requiresFramePipeline() const {
+      return m_bAOEnabled || m_nAAMethod != AA_NONE || m_nAAJitterLevel > 0;
     }
 
     /// get source path of this scene
