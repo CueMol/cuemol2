@@ -1,6 +1,6 @@
 # ADR-0021: Selection Builder popover for MolSelList
 
-- Status: accepted (RendererOptionsPane only; PaintSelCell / SelectionPane deferred)
+- Status: accepted; partially superseded by [ADR-0044](ADR-0044-selection-quick-pick.md) (the Builder / Library / History tab layout and "Named / History as Term keywords only" are replaced by the Named / History / Term / Mod tabs with one-click apply)
 - Date: 2026-05-29
 - Mapping rows: [`widget.molsellist`](../mapping/custom_widgets.md#widgetmolsellist)
 

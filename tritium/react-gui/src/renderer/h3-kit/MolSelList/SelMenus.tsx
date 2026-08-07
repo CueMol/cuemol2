@@ -61,6 +61,7 @@ export const NamedSelMenu: React.FC<NamedSelMenuProps> = ({
                     <MenuDivider title="Selected" />
                     <MenuItem
                         text={currentSel}
+                        htmlTitle={currentSel}
                         active={activeValue === currentSel}
                         shouldDismissPopover={dismissOnPick}
                         onClick={() => onPick(currentSel)}
@@ -74,6 +75,7 @@ export const NamedSelMenu: React.FC<NamedSelMenuProps> = ({
                         <MenuItem
                             key={`s-${v}`}
                             text={v}
+                            htmlTitle={v}
                             active={activeValue === v}
                             shouldDismissPopover={dismissOnPick}
                             onClick={() => onPick(v)}
@@ -88,6 +90,7 @@ export const NamedSelMenu: React.FC<NamedSelMenuProps> = ({
                         <MenuItem
                             key={`g-${v}`}
                             text={v}
+                            htmlTitle={v}
                             active={activeValue === v}
                             shouldDismissPopover={dismissOnPick}
                             onClick={() => onPick(v)}
@@ -127,6 +130,7 @@ export const HistoryMenu: React.FC<HistoryMenuProps> = ({
                 <MenuItem
                     key={i}
                     text={h}
+                    htmlTitle={h}
                     active={activeValue === h}
                     shouldDismissPopover={dismissOnPick}
                     onClick={() => onPick(h)}

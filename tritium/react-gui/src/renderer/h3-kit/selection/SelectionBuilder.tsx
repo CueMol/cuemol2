@@ -1,26 +1,40 @@
 /**
  * @file components/panes/selection/SelectionBuilder.tsx
- * @description Inline UI for composing CueMol selection expressions without
- * typing the grammar. Lives in the SelectionPane.
+ * @description Tabbed UI for picking or composing CueMol selection expressions
+ * without typing the grammar. Hosted by the SelectionPane and the MolSelList
+ * picker popover.
  *
  * ## Model
  *
  * The "current selection" is the target molecule's `mol.sel` (single source of
- * truth), passed in as `current`. The builder never owns it: a "term" is picked
- * from a single keyword dropdown -- a property keyword (compose `keyword value`
- * syntax) or the `Named` / `History` keywords (pick a ready-made expression from
- * the candidate dropdown beside it). The term is combined into the current
- * selection via binary set operations (Replace / Add / Subtract / Intersect),
- * and the current selection is reshaped by unary transforms (Invert / Byres /
- * Sidechain / Mainchain / Around / Expand). Every button computes the resulting
- * expression and hands it to `onApply`, which the container writes straight to
- * `mol.sel` (live). Logical operators are never typed by the user.
+ * truth), passed in as `current`. The builder never owns it. Four tabs:
+ *
+ * - The NAMED / HISTORY tabs list ready-made expressions (named selection defs
+ *   and recently used expressions). A click applies the expression right away
+ *   as a replacement through `onQuickApply` (fallback: `onApply`) -- the
+ *   one-click path for the common "select protein" case, matching the legacy
+ *   UXP dropdown. Combining a ready-made expression into the current selection
+ *   instead goes through the Term tab's Named / History keywords.
+ * - The TERM tab composes a term -- a property keyword (`keyword value`
+ *   syntax) or the Named / History keywords (pick a ready-made expression from
+ *   the candidate dropdown beside it) -- and combines it into the current
+ *   selection via binary set operations (Replace / Add / Subtract /
+ *   Intersect). Pressing Enter in a term value field applies the term
+ *   directly while `current` is empty (Set is the only meaningful op then).
+ * - The MOD tab reshapes the current selection via unary transforms (Invert /
+ *   Byres / Sidechain / Mainchain / Around / Expand); it takes no term.
+ *
+ * Every op button computes the resulting expression and hands it to
+ * `onApply`, which the container writes straight to `mol.sel` (live).
+ * Logical operators are never typed by the user.
  *
  * The operand draft (`draft` / `dispatch`) is controlled by the container so it
- * can be persisted across side-panel activity-group switches. There is no
- * builder-local undo/redo -- stepping back is the scene undo (Cmd+Z).
+ * can be persisted across side-panel activity-group switches; the active tab
+ * is builder-local, so every fresh mount starts on Named (the frequent path).
+ * There is no builder-local undo/redo -- stepping back is the scene undo
+ * (Cmd+Z).
  *
- * Apply and Modify are each a 2x2 grid of labelled buttons. Every action button
+ * Apply and Mod are each a 2x2 grid of labelled buttons. Every action button
  * shows the would-be hit count as an inline badge (so the user can predict the
  * result before applying) and the full op name in a canonical h3-kit tooltip.
  *
@@ -36,10 +50,11 @@ import { AppIcon } from '../../components/AppIcon';
 import type { AppIconKey } from '../../data/appIcons';
 import {
     ComboBoxField,
-    FieldSection,
     FormButton,
+    SegmentField,
     SelectField,
     TextField,
+    type SegmentFieldOption,
 } from '../form';
 import type { ResolveValues } from './useSelectionValues';
 import { KEYWORDS, getKeywordDef, type Keyword } from './selectionGrammar';
@@ -49,6 +64,7 @@ import type { BuilderState, BuilderAction } from './selBuilderReducer';
 import { canApplyUnary, selectTerm } from './selBuilderReducer';
 import { useSelHitCount, type GetHitCount } from '../MolSelList/useSelHitCount';
 import { CountTag } from '../MolSelList/CountTag';
+import { NamedSelMenu, HistoryMenu } from '../MolSelList/SelMenus';
 
 /* --- Props --- */
 
@@ -61,6 +77,18 @@ export interface SelectionBuilderProps {
     dispatch: React.Dispatch<BuilderAction>;
     /** Apply a newly-composed expression to the molecule (container writes it). */
     onApply: (expr: string) => void;
+    /**
+     * Immediate-apply channel: a Named / History tab click (or Enter in a term
+     * value field while `current` is empty) applies the expression right away.
+     * MolSelList commits + closes its popover here; falls back to `onApply`.
+     */
+    onQuickApply?: (expr: string) => void;
+    /**
+     * Target molecule's applied selection, listed under "Selected" in the
+     * Named tab (independent of `current`, which MolSelList sets to the field
+     * value).
+     */
+    namedCurrentSel?: string;
     /** Recently used expressions, newest first (History source). */
     history?: string[];
     /** Scene-level named selection defs (StyleManager). */
@@ -73,6 +101,17 @@ export interface SelectionBuilderProps {
     getHitCount?: GetHitCount;
     disabled?: boolean;
 }
+
+/* --- Tabs --- */
+
+type BuilderTab = 'named' | 'history' | 'term' | 'modify';
+
+const TAB_OPTIONS: SegmentFieldOption<BuilderTab>[] = [
+    { label: 'Named', value: 'named' },
+    { label: 'History', value: 'history' },
+    { label: 'Term', value: 'term' },
+    { label: 'Mod', value: 'modify' },
+];
 
 /* --- Op tables --- */
 
@@ -111,6 +150,8 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
     draft,
     dispatch,
     onApply,
+    onQuickApply,
+    namedCurrentSel,
     history = [],
     sceneDefs = [],
     globalDefs = [],
@@ -120,6 +161,30 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
 }) => {
     const keywordDef = getKeywordDef(draft.keyword);
     const term = selectTerm(draft);
+
+    // Local: each fresh mount (popover open) starts on the frequent path.
+    const [tab, setTab] = useState<BuilderTab>('named');
+
+    const applyImmediate = onQuickApply ?? onApply;
+    const currentEmpty = current.trim() === '';
+
+    // Named / History tab click: always apply as a replacement right away (the
+    // one-click pick, like the legacy UXP dropdown). Combining into the
+    // current selection goes through the Builder tab's Named / History
+    // keywords instead.
+    const handleQuickPick = (value: string): void => {
+        if (!disabled) applyImmediate(value);
+    };
+    // Highlight the list entry matching the applied/field value, if any.
+    const activeQuickValue = currentEmpty ? undefined : current.trim();
+
+    // Enter in a term value field: apply directly, but only while current is
+    // empty -- with a selection in place a silent replace would be surprising,
+    // so the explicit op buttons stay the only path there.
+    const onTermKeyDown = (e: React.KeyboardEvent): void => {
+        if (e.key !== 'Enter' || !currentEmpty || term === null) return;
+        applyImmediate(term);
+    };
 
     // --- Autocomplete values for the active keyword ---
     const [suggestItems, setSuggestItems] = useState<string[]>(VALUE_LIST_EMPTY);
@@ -175,6 +240,7 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                             value={draft.fields.value ?? ''}
                             disabled={disabled}
                             onChange={(v) => setField('value', v)}
+                            onKeyDown={onTermKeyDown}
                             placeholder="value"
                         />
                     </div>
@@ -186,6 +252,7 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                             value={draft.fields.name ?? ''}
                             disabled={disabled}
                             onChange={(v) => setField('name', v)}
+                            onKeyDown={onTermKeyDown}
                             placeholder="property"
                         />
                         <span className="selbuilder-sep">=</span>
@@ -193,6 +260,7 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                             value={draft.fields.value ?? ''}
                             disabled={disabled}
                             onChange={(v) => setField('value', v)}
+                            onKeyDown={onTermKeyDown}
                             placeholder="value"
                         />
                     </div>
@@ -204,18 +272,21 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                             value={draft.fields.chain ?? ''}
                             disabled={disabled}
                             onChange={(v) => setField('chain', v)}
+                            onKeyDown={onTermKeyDown}
                             placeholder="chain"
                         />
                         <TextField
                             value={draft.fields.resid ?? ''}
                             disabled={disabled}
                             onChange={(v) => setField('resid', v)}
+                            onKeyDown={onTermKeyDown}
                             placeholder="resid"
                         />
                         <TextField
                             value={draft.fields.aname ?? ''}
                             disabled={disabled}
                             onChange={(v) => setField('aname', v)}
+                            onKeyDown={onTermKeyDown}
                             placeholder="atom"
                         />
                     </div>
@@ -285,6 +356,7 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
                             disabled={disabled}
                             onChange={(v) => setField('value', v)}
                             onPick={(v) => setField('value', v)}
+                            onKeyDown={onTermKeyDown}
                             options={suggestItems}
                             placeholder={keywordDef.valueKind === 'numList' ? '1:10, 20' : 'value'}
                             triggerTitle="Show candidate values"
@@ -302,113 +374,148 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
         sceneDefs,
         globalDefs,
         history,
+        currentEmpty,
+        term,
     ]);
 
     return (
         <div className={`selbuilder${disabled ? ' selbuilder--disabled' : ''}`}>
-            {/* Term: build/pick an operand and apply it via binary set ops. The
-                keyword dropdown lists property keywords plus Named / History;
-                the value area beside it adapts to the chosen keyword. */}
-            <FieldSection title="Term">
-                <div className="selbuilder-property">
-                    <SelectField
-                        value={draft.keyword}
-                        disabled={disabled}
-                        fill={false}
-                        aria-label="Term keyword"
-                        onChange={(v) => dispatch({ type: 'SET_KEYWORD', keyword: v as Keyword })}
-                    >
-                        {KEYWORDS.map((k) => (
-                            <option key={k.key} value={k.key} title={k.full ?? k.label}>
-                                {k.label}
-                            </option>
-                        ))}
-                    </SelectField>
-                    {valueInput}
-                </div>
+            <SegmentField<BuilderTab>
+                value={tab}
+                onValueChange={setTab}
+                options={TAB_OPTIONS}
+                compact
+                disabled={disabled}
+            />
 
-                {/* Apply the term into the current selection (child of Term).
-                    A 2x2 grid of labelled buttons; each shows the resulting hit
-                    count as a badge and the full op name as a tooltip. */}
-                <div className="selbuilder-apply">
-                    <span className="type-label selbuilder-field-label">Apply</span>
+            {/* Named / History: ready-made expressions, one click applies. */}
+            {tab === 'named' && (
+                <NamedSelMenu
+                    currentSel={namedCurrentSel}
+                    sceneDefs={sceneDefs}
+                    globalDefs={globalDefs}
+                    activeValue={activeQuickValue}
+                    onPick={handleQuickPick}
+                />
+            )}
+            {tab === 'history' && (
+                <HistoryMenu
+                    history={history}
+                    activeValue={activeQuickValue}
+                    onPick={handleQuickPick}
+                />
+            )}
+
+            {/* Term: build/pick an operand and apply it via binary set ops.
+                The keyword dropdown lists property keywords plus Named /
+                History; the value area beside it adapts to the chosen
+                keyword. The tab label is the section heading. */}
+            {tab === 'term' && (
+                <div className="selbuilder-main">
+                    <div className="selbuilder-property">
+                        <SelectField
+                            value={draft.keyword}
+                            disabled={disabled}
+                            fill={false}
+                            aria-label="Term keyword"
+                            onChange={(v) =>
+                                dispatch({ type: 'SET_KEYWORD', keyword: v as Keyword })
+                            }
+                        >
+                            {KEYWORDS.map((k) => (
+                                <option key={k.key} value={k.key} title={k.full ?? k.label}>
+                                    {k.label}
+                                </option>
+                            ))}
+                        </SelectField>
+                        {valueInput}
+                    </div>
+
+                    {/* Apply the term into the current selection. A 2x2 grid of
+                        labelled buttons; each shows the resulting hit count as
+                        a badge and the full op name as a tooltip. */}
+                    <div className="selbuilder-apply">
+                        <span className="type-label selbuilder-field-label">Apply</span>
+                        <div className="selbuilder-op-grid">
+                            {BINARY_OPS.map((b) => {
+                                const preview =
+                                    term !== null && canApplyBinary(current, b.op)
+                                        ? applyBinary(current, term, b.op)
+                                        : null;
+                                return (
+                                    <OpButton
+                                        key={b.op}
+                                        label={b.label}
+                                        title={b.full}
+                                        icon={b.icon}
+                                        preview={preview}
+                                        getHitCount={getHitCount}
+                                        enabled={!disabled}
+                                        onClick={() => onBinary(b.op)}
+                                    />
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Mod: unary transforms of the current selection (no term). */}
+            {tab === 'modify' && (
+                <div className="selbuilder-main">
                     <div className="selbuilder-op-grid">
-                        {BINARY_OPS.map((b) => {
-                            const preview =
-                                term !== null && canApplyBinary(current, b.op)
-                                    ? applyBinary(current, term, b.op)
-                                    : null;
+                        {MODIFY_OPS.map((m) => {
+                            const preview = canApplyUnary(draft, m.op, current)
+                                ? applyUnary(current, m.op, draft.distance)
+                                : null;
                             return (
                                 <OpButton
-                                    key={b.op}
-                                    label={b.label}
-                                    title={b.full}
-                                    icon={b.icon}
+                                    key={m.op}
+                                    label={m.label}
+                                    title={m.full}
                                     preview={preview}
                                     getHitCount={getHitCount}
                                     enabled={!disabled}
-                                    onClick={() => onBinary(b.op)}
+                                    onClick={() => onUnary(m.op)}
                                 />
                             );
                         })}
                     </div>
+                    <div className="selbuilder-distance-row">
+                        {DIST_OPS.map((d) => {
+                            const preview = canApplyUnary(draft, d.op, current)
+                                ? applyUnary(current, d.op, draft.distance)
+                                : null;
+                            return (
+                                <OpButton
+                                    key={d.op}
+                                    label={d.label}
+                                    title={d.full}
+                                    preview={preview}
+                                    getHitCount={getHitCount}
+                                    enabled={!disabled}
+                                    onClick={() => onUnary(d.op)}
+                                />
+                            );
+                        })}
+                        <span className="selbuilder-distance">
+                            <SelectField
+                                value={draft.distance}
+                                disabled={disabled}
+                                aria-label="Distance (Angstrom)"
+                                onChange={(v) => dispatch({ type: 'SET_DISTANCE', value: v })}
+                            >
+                                {DISTANCE_OPTIONS.map((d) => (
+                                    <option key={d} value={d}>
+                                        {d}
+                                    </option>
+                                ))}
+                            </SelectField>
+                        </span>
+                        <span className="type-caption selbuilder-unit">{'Å'}</span>
+                    </div>
                 </div>
-            </FieldSection>
-
-            {/* Modify: unary transforms of the current selection (peer of Term). */}
-            <FieldSection title="Modify">
-                <div className="selbuilder-op-grid">
-                    {MODIFY_OPS.map((m) => {
-                        const preview = canApplyUnary(draft, m.op, current)
-                            ? applyUnary(current, m.op, draft.distance)
-                            : null;
-                        return (
-                            <OpButton
-                                key={m.op}
-                                label={m.label}
-                                title={m.full}
-                                preview={preview}
-                                getHitCount={getHitCount}
-                                enabled={!disabled}
-                                onClick={() => onUnary(m.op)}
-                            />
-                        );
-                    })}
-                </div>
-                <div className="selbuilder-distance-row">
-                    {DIST_OPS.map((d) => {
-                        const preview = canApplyUnary(draft, d.op, current)
-                            ? applyUnary(current, d.op, draft.distance)
-                            : null;
-                        return (
-                            <OpButton
-                                key={d.op}
-                                label={d.label}
-                                title={d.full}
-                                preview={preview}
-                                getHitCount={getHitCount}
-                                enabled={!disabled}
-                                onClick={() => onUnary(d.op)}
-                            />
-                        );
-                    })}
-                    <span className="selbuilder-distance">
-                        <SelectField
-                            value={draft.distance}
-                            disabled={disabled}
-                            aria-label="Distance (Angstrom)"
-                            onChange={(v) => dispatch({ type: 'SET_DISTANCE', value: v })}
-                        >
-                            {DISTANCE_OPTIONS.map((d) => (
-                                <option key={d} value={d}>
-                                    {d}
-                                </option>
-                            ))}
-                        </SelectField>
-                    </span>
-                    <span className="type-caption selbuilder-unit">{'Å'}</span>
-                </div>
-            </FieldSection>
+            )}
         </div>
     );
 };
