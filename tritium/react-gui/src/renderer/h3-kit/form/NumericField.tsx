@@ -4,11 +4,24 @@
  * numeric input. Sizing comes from `.h3-form-numeric-row` / `.h3-form-slider` /
  * `.h3-form-numeric` (see `styles/_form-kit.css`); no size prop is exposed.
  *
+ * The numeric input is a bare `<input type="number">`, not Blueprint's
+ * `NumericInput`: Blueprint's component is fully controlled by `props.value`
+ * whenever it is non-null, so it always redisplays `value.toString()` and
+ * ignores whatever the user just typed unless the parent's `value` changes in
+ * lockstep. Since `onChange` here only fires for a parseable number, clearing
+ * the field (or typing a transient state like "-" or "1.") produced no
+ * `onChange`, so `value` never moved and the field snapped back to the old
+ * digit(s) on every keystroke -- making it impossible to clear and retype.
+ * `editText` tracks the user's literal keystrokes while editing so the field
+ * can go empty; the display falls back to `value` once editing ends. Mirrors
+ * the same fix already applied to `SliderField` / `RejectNumberInput` /
+ * `NumberCell`.
+ *
  * @module form/NumericField
  */
 
-import React, { useCallback } from 'react';
-import { NumericInput, Slider } from '@blueprintjs/core';
+import React, { useCallback, useState } from 'react';
+import { Slider } from '@blueprintjs/core';
 
 export interface NumericFieldProps {
     value: number;
@@ -41,15 +54,33 @@ export const NumericField: React.FC<NumericFieldProps> = ({
     disabled,
     onRelease,
 }) => {
+    // Raw text held while the user is editing the numeric input. When null,
+    // the input mirrors `value`. When non-null, the user is mid-edit and we
+    // show their literal keystrokes -- this is what lets an empty field stay
+    // empty instead of snapping back to the last committed value.
+    const [editText, setEditText] = useState<string | null>(null);
+
     const handleSlider = useCallback((v: number) => onChange(v), [onChange]);
-    const handleNumeric = useCallback(
-        (_vn: number, vs: string) => {
-            const parsed = parseFloat(vs);
+
+    const handleNumericChange = useCallback(
+        (e: React.ChangeEvent<HTMLInputElement>) => {
+            const text = e.target.value;
+            setEditText(text);
+            const parsed = parseFloat(text);
             if (!isNaN(parsed)) onChange(parsed);
         },
         [onChange],
     );
-    const commit = useCallback(() => onRelease?.(value), [onRelease, value]);
+
+    // Commit reads `value` (not `editText`): every parseable keystroke already
+    // pushed itself through `onChange` above, so by the time blur/Enter fires
+    // the prop already carries the latest valid number. An edit that was never
+    // parseable (left empty, or stuck on "-" / "1.") simply reverts the
+    // display -- `value` itself never moved, so there is nothing to commit.
+    const commit = useCallback(() => {
+        setEditText(null);
+        onRelease?.(value);
+    }, [onRelease, value]);
 
     return (
         <div className="h3-form-numeric-row">
@@ -66,18 +97,15 @@ export const NumericField: React.FC<NumericFieldProps> = ({
                     className="h3-form-slider"
                 />
             )}
-            <NumericInput
-                small
-                value={value}
-                onValueChange={handleNumeric}
+            <input
+                type="number"
+                className="h3-form-numeric"
                 min={min}
                 max={max}
-                stepSize={step}
-                minorStepSize={null}
-                majorStepSize={null}
+                step={step}
+                value={editText ?? String(value)}
                 disabled={disabled}
-                className="h3-form-numeric"
-                fill={false}
+                onChange={handleNumericChange}
                 onBlur={commit}
                 onKeyDown={(e) => {
                     if (e.key === "Enter") commit();

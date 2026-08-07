@@ -240,7 +240,7 @@
 .h3-form-input.bp5-input-group .bp5-input:disabled,
 .h3-form-input.bp5-input-group input:disabled,
 .h3-form-select.bp5-html-select select:disabled,
-.h3-form-numeric .bp5-input-group .bp5-input:disabled {
+.h3-form-numeric:disabled {
   color: var(--text-muted) !important;
 }
 
@@ -427,39 +427,39 @@
   box-shadow: 0 0 0 2px var(--accent), 0 1px 3px var(--slider-handle-shadow);
 }
 
-/* Fixed compact numeric column that never shrinks or overflows. */
-.h3-form-numeric.bp5-numeric-input {
+/* Fixed compact numeric column that never shrinks or overflows. A bare
+ * `<input type="number">` (see NumericField.tsx for why this is not
+ * Blueprint's NumericInput), so no nested `.bp5-input-group` / spinner
+ * button-group to style or hide -- only the native spin buttons remain. */
+.h3-form-numeric {
   flex: 0 0 68px;
   width: 68px;
-  min-width: 68px;
-}
-
-.h3-form-numeric .bp5-input-group {
-  width: 100%;
   min-width: 0;
-}
-
-.h3-form-numeric .bp5-input-group .bp5-input {
-  background: var(--bg-input) !important;
-  border: 1px solid var(--border) !important;
-  color: var(--text-primary) !important;
+  box-sizing: border-box;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-family: inherit;
   font-size: var(--fs-lg);
   height: var(--field-h-sm);
-  width: 100%;
   text-align: right;
   padding-right: var(--space-2);
   border-radius: var(--radius-md);
+  outline: none;
   caret-color: var(--accent);
+  -moz-appearance: textfield;
 }
 
-.h3-form-numeric .bp5-input-group .bp5-input:focus {
-  border-color: var(--accent) !important;
-  box-shadow: 0 0 0 1px var(--accent) !important;
+.h3-form-numeric::-webkit-outer-spin-button,
+.h3-form-numeric::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
 }
 
-/* Hide the numeric spinner buttons for the compact layout. */
-.h3-form-numeric .bp5-button-group {
-  display: none;
+.h3-form-numeric:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
 }
 
 /* Unit suffix after a numeric input. */

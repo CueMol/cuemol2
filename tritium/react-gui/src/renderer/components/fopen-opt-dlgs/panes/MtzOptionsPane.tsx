@@ -7,7 +7,7 @@
  * of that type), and resolution / grid spacing follow the UXP controls.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Checkbox, HTMLSelect, NumericInput, FormGroup } from '@blueprintjs/core';
 import type { MtzOptions } from '../types';
 import type { GetMtzColumnInfoResult } from '../../../worker/server/services/getMtzColumnInfo.service';
@@ -33,6 +33,14 @@ function round1(x: number): number {
 }
 
 export const MtzOptionsPane: React.FC<MtzOptionsPaneProps> = ({ options, onChange, columnInfo }) => {
+  // Raw text held while the resolution field is being edited. Blueprint's
+  // NumericInput is fully controlled once `value` is set, so without this an
+  // empty / transiently-invalid keystroke has no onValueChange to move
+  // `value`, and the field immediately snaps back to the last digit instead
+  // of letting the user clear it. Mirrors the fix applied to the h3-kit
+  // NumericField.
+  const [resoEdit, setResoEdit] = useState<string | null>(null);
+
   if (!columnInfo || !columnInfo.ok) {
     return (
       <div className="fod-section">
@@ -116,8 +124,12 @@ export const MtzOptionsPane: React.FC<MtzOptionsPaneProps> = ({ options, onChang
       <FormGroup label="Max resolution (A)" labelFor="mtz-reso" className="fod-form-group">
         <NumericInput
           id="mtz-reso"
-          value={options.resolutionLimit}
-          onValueChange={(val) => { if (!isNaN(val)) onChange({ ...options, resolutionLimit: round1(val) }); }}
+          value={resoEdit ?? String(options.resolutionLimit)}
+          onValueChange={(val, s) => {
+            setResoEdit(s);
+            if (!isNaN(val)) onChange({ ...options, resolutionLimit: round1(val) });
+          }}
+          onBlur={() => setResoEdit(null)}
           min={resoMin > 0 ? resoMin : undefined}
           max={resoMax > 0 ? resoMax : undefined}
           stepSize={0.1}
