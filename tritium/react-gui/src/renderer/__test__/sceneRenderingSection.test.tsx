@@ -11,7 +11,7 @@
  *   - the AA method shows friendly labels and commits the raw enum id;
  *   - the AA controls (method / jitter) are never gated on the AO flag (AA is
  *     independent of AO in the C++ frame pipeline);
- *   - the SMAA threshold row is active for smaa and disabled for other methods;
+ *   - the `aaSmaaThreshold` entry renders no row (deliberately not surfaced);
  *   - enabling colour proofing with no profile seeds the default ICC profile in
  *     one multi-write (`onSetMany`); with a profile it is a plain toggle;
  *   - PropertiesTab shows the four scene sections (no placeholder) for `scene`.
@@ -215,8 +215,9 @@ describe('SceneAntialiasingSection', () => {
     unmount()
   })
 
-  it('enables the SMAA threshold row for smaa and disables it for other methods', () => {
-    // aa_method is fxaa (the C++ default) in fullEntries -> threshold dimmed.
+  it('does not surface the aaSmaaThreshold property as a row', () => {
+    // The C++ scene exposes aaSmaaThreshold, but its visual effect is too
+    // subtle for a GUI row; the section must ignore the entry.
     const { container, unmount } = mountTree(
       <SceneAntialiasingSection
         entries={fullEntries()}
@@ -225,28 +226,9 @@ describe('SceneAntialiasingSection', () => {
         sceneId={1}
       />,
     )
-    expect(
-      rowByLabel(container, 'SMAA threshold')!.querySelector('.h3-form-drag-disabled'),
-    ).not.toBeNull()
+    expect(rowByLabel(container, 'SMAA threshold')).toBeNull()
+    expect(container.querySelectorAll('.h3-form-prop-row').length).toBe(2)
     unmount()
-
-    const withSmaa = fullEntries().map((e) =>
-      e.key === 'aa_method'
-        ? entry({ key: 'aa_method', type: 'enum', value: 'smaa', enumdef: ['fxaa', 'none', 'smaa'] })
-        : e,
-    )
-    const second = mountTree(
-      <SceneAntialiasingSection
-        entries={withSmaa}
-        onSet={vi.fn()}
-        onReset={vi.fn()}
-        sceneId={1}
-      />,
-    )
-    expect(
-      rowByLabel(second.container, 'SMAA threshold')!.querySelector('.h3-form-drag-disabled'),
-    ).toBeNull()
-    second.unmount()
   })
 
   it('Jitter SS is a 0-5 dropdown (not a numeric stepper) and commits a number', () => {
