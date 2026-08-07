@@ -252,24 +252,38 @@ export function SymmetryChangeDialog({
     const displayCell = restricted.cell
     const disabled = restricted.disabled
 
+    // Raw text held per-field while it is being edited. Blueprint's
+    // NumericInput is fully controlled once `value` is set, so without this an
+    // empty / transiently-invalid keystroke has no onValueChange to move
+    // `value`, and the field immediately snaps back to the last digit instead
+    // of letting the user clear it. Mirrors the fix applied to the h3-kit
+    // NumericField.
+    const [editing, setEditing] = useState<Partial<Record<keyof CellState, string>>>({})
+
     const numericFor = useCallback(
         (key: keyof CellState, label: string): React.ReactElement => (
             <FormGroup label={label} inline style={{ marginBottom: 4 }}>
                 <NumericInput
-                    value={displayCell[key]}
+                    value={editing[key] ?? String(displayCell[key])}
                     disabled={disabled[key] || submitting}
                     buttonPosition="none"
                     fill={false}
                     selectAllOnFocus
-                    onValueChange={(v) => {
+                    onValueChange={(v, s) => {
+                        setEditing((prev) => ({ ...prev, [key]: s }))
                         if (Number.isFinite(v)) {
                             setCell((prev) => ({ ...prev, [key]: v }))
                         }
                     }}
+                    onBlur={() => setEditing((prev) => {
+                        const next = { ...prev }
+                        delete next[key]
+                        return next
+                    })}
                 />
             </FormGroup>
         ),
-        [displayCell, disabled, submitting],
+        [displayCell, disabled, submitting, editing],
     )
 
     const isNear = (x: number, y: number, eps = 1e-3): boolean => Math.abs(x - y) < eps

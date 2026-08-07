@@ -150,6 +150,54 @@ describe('MakeMolSurfDialog commit wire', () => {
         handle.unmount()
     })
 
+    it('density is an editable combobox with 1-5 presets; picking one updates the commit payload', async () => {
+        routeInvoke(() => ({ ok: true }))
+        const handle = mount()
+        await flushPromises()
+
+        const chevron = document.body.querySelector(
+            '.h3-form-combobox-caret',
+        ) as HTMLButtonElement
+        expect(chevron).toBeTruthy()
+        await act(async () => { chevron.click() })
+        const items = Array.from(document.querySelectorAll('.bp5-menu-item')).map(
+            (el) => el.textContent,
+        )
+        expect(items).toEqual(['1', '2', '3', '4', '5'])
+        const three = Array.from(document.querySelectorAll('.bp5-menu-item')).find(
+            (el) => el.textContent === '3',
+        ) as HTMLElement
+        await act(async () => { three.click() })
+
+        await act(async () => { okButton().click() })
+        await flushPromises()
+
+        expect((commitCalls()[0][1] as Record<string, unknown>).density).toBe(3)
+        handle.unmount()
+    })
+
+    it('density accepts free-typed values outside the preset list', async () => {
+        routeInvoke(() => ({ ok: true }))
+        const handle = mount()
+        await flushPromises()
+
+        const input = document.body.querySelector('.h3-form-combobox input') as HTMLInputElement
+        expect(input).toBeTruthy()
+        const setter = Object.getOwnPropertyDescriptor(
+            window.HTMLInputElement.prototype, 'value',
+        )?.set
+        act(() => {
+            setter?.call(input, '7')
+            input.dispatchEvent(new Event('input', { bubbles: true }))
+        })
+
+        await act(async () => { okButton().click() })
+        await flushPromises()
+
+        expect((commitCalls()[0][1] as Record<string, unknown>).density).toBe(7)
+        handle.unmount()
+    })
+
     it('reset-on-open clears the error while the molecule id persists', async () => {
         routeInvoke(() => ({ ok: false, error: 'surf failed' }))
         const handle = mount(true)

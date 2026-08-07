@@ -12,7 +12,7 @@
  * the colour string and the resolved RGB (for instant swatch preview).
  */
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { NumericInput } from '@blueprintjs/core'
 import { ColorSlider } from './ColorSlider'
 import { hsbToRgb, packToHex, packToHsbString, rgbToHsb, type Hsb, type Rgb } from './colorMath'
@@ -103,6 +103,20 @@ export const RgbHsbPanel: React.FC<RgbHsbPanelProps> = ({ mode, initialRgb, onCh
     const [rgb, setRgb] = useState<Rgb>(initialRgb)
     const [hsb, setHsb] = useState<Hsb>(() => rgbToHsb(initialRgb))
 
+    // Raw text held per-row while its spinner is being edited (index-aligned
+    // with `rows`). Blueprint's NumericInput is fully controlled once `value`
+    // is set, so without this an empty / transiently-invalid keystroke has no
+    // onValueChange to move `value`, and the spinner immediately snaps back to
+    // the last digit instead of letting the field clear. Mirrors the fix
+    // applied to the h3-kit NumericField.
+    const [drafts, setDrafts] = useState<(string | null)[]>([null, null, null])
+    // Row semantics change with mode (R/G/B vs H/S/B); drop any in-progress
+    // edit rather than carry stale text into the other space.
+    useEffect(() => setDrafts([null, null, null]), [mode])
+    const setDraftAt = (i: number, text: string | null) => {
+        setDrafts((prev) => prev.map((d, idx) => (idx === i ? text : d)))
+    }
+
     const rows = mode === 'rgb' ? rgbRows(rgb) : hsbRows(hsb)
 
     const edit = (index: number, next: number, completed: boolean) => {
@@ -137,12 +151,14 @@ export const RgbHsbPanel: React.FC<RgbHsbPanelProps> = ({ mode, initialRgb, onCh
                         className="h3-color-slider-spinner"
                         min={row.min}
                         max={row.max}
-                        value={row.value}
+                        value={drafts[i] ?? String(row.value)}
                         clampValueOnBlur
-                        onValueChange={(v) => {
+                        onValueChange={(v, s) => {
+                            setDraftAt(i, s)
                             if (Number.isNaN(v)) return
                             edit(i, Math.max(row.min, Math.min(row.max, v)), true)
                         }}
+                        onBlur={() => setDraftAt(i, null)}
                     />
                 </div>
             ))}

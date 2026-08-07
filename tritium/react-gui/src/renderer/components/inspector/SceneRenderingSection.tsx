@@ -24,7 +24,7 @@ import React from "react";
 import {
   BoolRow,
   NumRow,
-  NumInputRow,
+  NumEnumRow,
   MappedEnumRow,
   ColorRow,
   TextRow,
@@ -137,10 +137,17 @@ const AA_METHOD_LABELS: Record<string, string> = {
   smaa: "SMAA",
 };
 
+// aaJitterLevel only takes 0-5 (GUIView.cpp clamps to this range: levels
+// above 5 have no jitter table). 0 disables temporal jitter while AO stays
+// on; 1-5 select the jitter sample-count table (1<<level samples).
+const JITTER_LEVELS = [0, 1, 2, 3, 4, 5];
+const JITTER_LEVEL_LABELS: Record<number, string> = { 0: "Off" };
+
 /**
  * Post-process anti-aliasing: method (none / FXAA / SMAA) and temporal jitter
  * supersampling level. Jitter only accumulates on the AO path, so it is
- * disabled while AO is off.
+ * disabled while AO is off. The level is a dropdown (`NumEnumRow`), not a
+ * numeric stepper: it only takes the six values in `JITTER_LEVELS`.
  */
 export const SceneAntialiasingSection: React.FC<RendererPropSectionProps> = ({
   entries,
@@ -164,15 +171,13 @@ export const SceneAntialiasingSection: React.FC<RendererPropSectionProps> = ({
         />
       )}
       {aaJitter && (
-        <NumInputRow
-          key={`jitter:${aaJitter.value}`}
+        <NumEnumRow
           entry={aaJitter}
           label="Jitter SS"
+          options={JITTER_LEVELS}
+          labels={JITTER_LEVEL_LABELS}
           onSet={onSet}
           onReset={onReset}
-          min={0}
-          max={5}
-          step={1}
           disabled={jitterOff}
         />
       )}

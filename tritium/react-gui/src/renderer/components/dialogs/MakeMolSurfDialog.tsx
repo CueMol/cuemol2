@@ -8,8 +8,11 @@
  *   - Surface object name (`TextField`; prefilled with a unique `sf_<molname>`
  *     via `proposeMolSurfName` and refreshed when the molecule changes, like
  *     UXP `makeSugName`).
- *   - Point density (/A) and probe radius (A) numeric inputs. Defaults match
- *     the UXP XUL: density = 1 (min, no explicit value), probe radius = 1.4.
+ *   - Point density (/A): an editable `ComboBoxField` with common presets
+ *     (1-5) -- picking a typical density is more common than dialing in an
+ *     arbitrary one, so a preset list beats a bare numeric stepper. Probe
+ *     radius (A) stays a plain numeric input. Defaults match the UXP XUL:
+ *     density = 1 (min, no explicit value), probe radius = 1.4.
  *   - OK commits via the `makeMolSurf` worker service under one undo txn.
  *
  * The caller passes only `{ sceneId }`. The last-picked molecule persists
@@ -17,10 +20,10 @@
  * regeneration mode is intentionally out of scope.
  */
 
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { useCueMol } from '../../hooks/useCueMol'
 import { useMolEditCommit } from '../../hooks/useMolEditCommit'
-import { Field, FieldSection, NumericField, SwitchField, TextField } from '../../h3-kit/form'
+import { ComboBoxField, Field, FieldSection, NumericField, SwitchField, TextField } from '../../h3-kit/form'
 import { DialogShell } from './DialogShell'
 import { MolPicker } from './MolPicker'
 import { MolSelList } from '../../h3-kit/MolSelList/MolSelList'
@@ -44,6 +47,10 @@ interface Props {
 const DEFAULT_DENSITY = 1
 const DEFAULT_PROBE_RADIUS = 1.4
 
+// Common point-density values shown in the ComboBoxField dropdown; typing a
+// different positive integer is still accepted (see handleDensityChange).
+const DENSITY_PRESETS = ['1', '2', '3', '4', '5']
+
 export function MakeMolSurfDialog({
     visible, sceneId, onConfirm, onCancel,
 }: Props): React.JSX.Element {
@@ -55,6 +62,17 @@ export function MakeMolSurfDialog({
     const [surfName, setSurfName] = useState<string>('')
     const [density, setDensity] = useState<number>(DEFAULT_DENSITY)
     const [probeRadius, setProbeRadius] = useState<number>(DEFAULT_PROBE_RADIUS)
+
+    // Raw text for the density combobox: free typing stays local until it
+    // parses to a positive integer, and the draft re-syncs whenever the
+    // committed value changes from outside (preset pick, reset-on-open).
+    const [densityDraft, setDensityDraft] = useState<string>(String(DEFAULT_DENSITY))
+    useEffect(() => setDensityDraft(String(density)), [density])
+    const handleDensityChange = useCallback((text: string) => {
+        setDensityDraft(text)
+        const n = Math.round(Number(text))
+        if (Number.isFinite(n) && n >= 1) setDensity(n)
+    }, [])
 
     // Commit handler + submitting/errorMsg state + reset-on-open. The molecule
     // id is intentionally NOT reset (last-picked persists); the surface name is
@@ -158,13 +176,10 @@ export function MakeMolSurfDialog({
                             />
                         </Field>
                         <Field label="Point density (/A)">
-                            <NumericField
-                                value={density}
-                                onChange={setDensity}
-                                min={1}
-                                max={50}
-                                step={1}
-                                slider={false}
+                            <ComboBoxField
+                                value={densityDraft}
+                                onChange={handleDensityChange}
+                                options={DENSITY_PRESETS}
                                 disabled={submitting}
                             />
                         </Field>
