@@ -104,15 +104,17 @@ export class GfxManager {
         }
         this._canvas = canvas;
         // antialias: true is the WebGL2 default, but request it explicitly so the
-        // dependency is obvious. With the default aa_method (none) the scene is
-        // drawn straight to the DEFAULT framebuffer, so the multisampled default
-        // framebuffer IS the only geometry antialiasing -- forcing false makes
-        // the view visibly jaggy. (When aa_method is a post-process pass like
-        // SMAA the MSAA becomes redundant, but the context attribute is fixed at
-        // creation and cannot be toggled per aa_method, so it stays on.) The
-        // tradeoff is that blitDepthToDefault is skipped (a single-sample FBO
-        // cannot blit into a multisampled default fb), degrading only on-screen
-        // overlay depth occlusion.
+        // dependency is obvious. The scene is drawn straight to the DEFAULT
+        // framebuffer only when AO, aa_method, and jitter are all off (legacy
+        // direct path); there the multisampled default framebuffer is the only
+        // geometry antialiasing -- forcing false makes that mode visibly jaggy.
+        // With the default settings (aa_method smaa) the frame goes through the
+        // off-screen pipeline and the MSAA is redundant, but the context
+        // attribute is fixed at creation and cannot be toggled per aa_method, so
+        // it stays on. The tradeoff is that blitDepthToDefault is skipped (a
+        // single-sample FBO cannot blit into a multisampled default fb),
+        // degrading on-screen overlay depth occlusion whenever the pipeline is
+        // active -- i.e. in the default configuration.
         this._context = wrapGL(canvas.getContext('webgl2', { antialias: true }));
         const gl = this._context;
         // Required for rendering to RGBA16F color/normal attachments (GTAO MRT

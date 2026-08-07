@@ -9,6 +9,8 @@
  *   - AO sub-controls are disabled while `aoEnabled` is off;
  *   - a numeric AO row commits a realtime single-step `onSet`;
  *   - the AA method shows friendly labels and commits the raw enum id;
+ *   - the AA controls (method / jitter) are never gated on the AO flag (AA is
+ *     independent of AO in the C++ frame pipeline);
  *   - enabling colour proofing with no profile seeds the default ICC profile in
  *     one multi-write (`onSetMany`); with a profile it is a plain toggle;
  *   - PropertiesTab shows the four scene sections (no placeholder) for `scene`.
@@ -76,7 +78,7 @@ function fullEntries(aoOn = true): GenericPropEntry[] {
     entry({ key: 'aoSlices', type: 'integer', value: 9 }),
     entry({ key: 'aoSteps', type: 'integer', value: 3 }),
     entry({ key: 'aoHalfRes', type: 'boolean', value: false }),
-    entry({ key: 'aa_method', type: 'enum', value: 'fxaa', enumdef: ['none', 'fxaa', 'smaa'] }),
+    entry({ key: 'aa_method', type: 'enum', value: 'smaa', enumdef: ['none', 'fxaa', 'smaa'] }),
     entry({ key: 'aaJitterLevel', type: 'integer', value: 0 }),
     entry({ key: 'bgcolor', type: 'object', value: '#000000' }),
     entry({ key: 'use_colproof', type: 'boolean', value: false }),
@@ -186,10 +188,26 @@ describe('SceneAntialiasingSection', () => {
     const sel = rowByLabel(container, 'Method')!.querySelector('select') as HTMLSelectElement
     expect(Array.from(sel.options).map((o) => o.textContent)).toEqual(['None', 'FXAA', 'SMAA'])
     act(() => {
-      sel.value = 'smaa'
+      sel.value = 'fxaa'
       sel.dispatchEvent(new Event('change', { bubbles: true }))
     })
-    expect(onSet).toHaveBeenCalledWith('aa_method', 'enum', 'smaa')
+    expect(onSet).toHaveBeenCalledWith('aa_method', 'enum', 'fxaa')
+    unmount()
+  })
+
+  it('keeps the AA controls enabled while AO is off (AA is independent of AO)', () => {
+    const { container, unmount } = mountTree(
+      <SceneAntialiasingSection
+        entries={fullEntries(false)}
+        onSet={vi.fn()}
+        onReset={vi.fn()}
+        sceneId={1}
+      />,
+    )
+    const method = rowByLabel(container, 'Method')!.querySelector('select') as HTMLSelectElement
+    const jitter = rowByLabel(container, 'Jitter SS')!.querySelector('select') as HTMLSelectElement
+    expect(method.disabled).toBe(false)
+    expect(jitter.disabled).toBe(false)
     unmount()
   })
 

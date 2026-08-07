@@ -17,10 +17,11 @@
  *   await window.__cm.invokeService('devRenderOpts', { viewId: <id> })  // toggles AO
  *
  * Temporal-jitter supersampling (jitterLevel 0=off, 1..5 = 2/4/8/16/32 samples)
- * accumulates only while the camera is still and requires the AO path to be on.
- * Adaptive half-res AO (aoHalfRes) computes the GTAO term at half resolution
- * while the camera is moving and re-renders at full resolution once still;
- * requires the AO path to be on.
+ * accumulates only while the camera is still. AA (aaMethod / jitterLevel) is
+ * independent of AO: any of them routes the frame through the off-screen
+ * pipeline on its own. Adaptive half-res AO (aoHalfRes) computes the GTAO term
+ * at half resolution while the camera is moving and re-renders at full
+ * resolution once still; it only has an effect while AO is on.
  *
  * Remove this file (and its ServiceMap row + the window.__cm hook) once the
  * pipeline ships with real UI controls.

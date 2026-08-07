@@ -138,15 +138,16 @@ const AA_METHOD_LABELS: Record<string, string> = {
 };
 
 // aaJitterLevel only takes 0-5 (GUIView.cpp clamps to this range: levels
-// above 5 have no jitter table). 0 disables temporal jitter while AO stays
-// on; 1-5 select the jitter sample-count table (1<<level samples).
+// above 5 have no jitter table). 0 disables temporal jitter; 1-5 select the
+// jitter sample-count table (1<<level samples).
 const JITTER_LEVELS = [0, 1, 2, 3, 4, 5];
 const JITTER_LEVEL_LABELS: Record<number, string> = { 0: "Off" };
 
 /**
  * Post-process anti-aliasing: method (none / FXAA / SMAA) and temporal jitter
- * supersampling level. Jitter only accumulates on the AO path, so it is
- * disabled while AO is off. The level is a dropdown (`NumEnumRow`), not a
+ * supersampling level. AA is independent of AO: method and jitter each route
+ * the frame through the off-screen pipeline on their own, so neither control
+ * is gated on the AO flag. The level is a dropdown (`NumEnumRow`), not a
  * numeric stepper: it only takes the six values in `JITTER_LEVELS`.
  */
 export const SceneAntialiasingSection: React.FC<RendererPropSectionProps> = ({
@@ -157,8 +158,6 @@ export const SceneAntialiasingSection: React.FC<RendererPropSectionProps> = ({
   const get = finder(entries);
   const aaMethod = get("aa_method");
   const aaJitter = get("aaJitterLevel");
-  const aoEnabled = get("aoEnabled");
-  const jitterOff = aoEnabled ? !Boolean(aoEnabled.value) : true;
   return (
     <>
       {aaMethod && (
@@ -178,7 +177,6 @@ export const SceneAntialiasingSection: React.FC<RendererPropSectionProps> = ({
           labels={JITTER_LEVEL_LABELS}
           onSet={onSet}
           onReset={onReset}
-          disabled={jitterOff}
         />
       )}
     </>
