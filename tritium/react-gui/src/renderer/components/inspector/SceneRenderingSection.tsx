@@ -29,8 +29,16 @@ import {
   ColorRow,
   TextRow,
 } from "./RendererCommonSection";
+import { PropertyField, SelectField } from "../../h3-kit/form";
+import { RENDER_QUALITY_CUSTOM, stepPatch } from "../../data/renderSettings";
+import type { RenderQualityAxis } from "../../data/renderSettings";
+import {
+  SCENE_AO_PRESET_AXIS,
+  SCENE_AA_QUALITY_AXIS,
+  sceneStepOf,
+} from "../../data/sceneQualityPresets";
 import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
-import type { RendererPropSectionProps } from "./rendererPropSections";
+import type { PropMultiWrite, RendererPropSectionProps } from "./rendererPropSections";
 
 /** Find a live property entry by key. */
 function finder(entries: GenericPropEntry[]) {
@@ -39,13 +47,61 @@ function finder(entries: GenericPropEntry[]) {
 }
 
 /**
- * Ambient occlusion (GTAO): enable toggle plus radius / intensity / slices /
- * steps and adaptive half-resolution. The numeric and half-res rows are
- * disabled while AO is off (they have no effect without the AO path).
+ * Composite preset dropdown (umbreon quality-axis pattern): its step is
+ * DERIVED from the live property values (`sceneStepOf`; reads "Custom" when
+ * they match no step -- the Custom option is only offered while that is the
+ * truth), and selecting a step applies its patch as ONE undo step via
+ * `onSetMany`. Editing an individual row needs no bookkeeping: the dropdown
+ * reads back from the values, so it drops to Custom -- or lands on another
+ * step -- by itself. Carries no modified/reset decorations: no single
+ * property backs it (same rationale as the atomintr Dashed toggle).
+ */
+const QualityRow: React.FC<{
+  axis: RenderQualityAxis;
+  entries: GenericPropEntry[];
+  onSetMany?: RendererPropSectionProps["onSetMany"];
+  disabled?: boolean;
+}> = ({ axis, entries, onSetMany, disabled }) => {
+  const get = finder(entries);
+  // Render only when every property the axis writes is present.
+  if (Object.keys(axis.steps[0].patch).some((k) => !get(k))) return null;
+
+  const step = sceneStepOf(axis, (k) => get(k)?.value);
+  const apply = (stepId: string) => {
+    // "Custom" is a read-back state, not an applicable choice.
+    if (stepId === RENDER_QUALITY_CUSTOM || !onSetMany) return;
+    const writes: PropMultiWrite[] = Object.entries(stepPatch(axis, stepId)).map(
+      ([key, value]) => ({ key, valueType: get(key)!.type, value }),
+    );
+    onSetMany(writes);
+  };
+  return (
+    <PropertyField label={axis.label}>
+      <SelectField value={step} disabled={disabled} onChange={apply}>
+        {axis.steps.map((s) => (
+          <option key={s.id} value={s.id}>
+            {s.label}
+          </option>
+        ))}
+        {step === RENDER_QUALITY_CUSTOM && (
+          <option value={RENDER_QUALITY_CUSTOM}>Custom</option>
+        )}
+      </SelectField>
+    </PropertyField>
+  );
+};
+
+/**
+ * Ambient occlusion (GTAO): enable toggle, a look-preset dropdown (radius /
+ * steps / intensity as one tuned set, see `SCENE_AO_PRESET_AXIS`), plus the
+ * individual radius / intensity / slices / steps / half-resolution tuning
+ * rows. Everything below the toggle is disabled while AO is off (no effect
+ * without the AO path).
  */
 export const SceneAmbientOcclusionSection: React.FC<RendererPropSectionProps> = ({
   entries,
   onSet,
+  onSetMany,
   onReset,
 }) => {
   const get = finder(entries);
@@ -61,6 +117,12 @@ export const SceneAmbientOcclusionSection: React.FC<RendererPropSectionProps> = 
       {aoEnabled && (
         <BoolRow entry={aoEnabled} label="Enabled" onSet={onSet} onReset={onReset} />
       )}
+      <QualityRow
+        axis={SCENE_AO_PRESET_AXIS}
+        entries={entries}
+        onSetMany={onSetMany}
+        disabled={off}
+      />
       {aoRadius && (
         <NumRow
           entry={aoRadius}
@@ -147,18 +209,21 @@ const JITTER_LEVELS = [0, 1, 2, 3, 4, 5];
 const JITTER_LEVEL_LABELS: Record<number, string> = { 0: "Off" };
 
 /**
- * Post-process anti-aliasing: method (none / FXAA / SMAA) and the temporal
- * jitter supersampling level. AA is independent of AO: method and jitter each
- * route the frame through the off-screen pipeline on their own, so neither
- * control is gated on the AO flag. The C++ scene also has an
- * `aaSmaaThreshold` property (SMAA edge-detection tuning); it is deliberately
- * not surfaced here -- its visual effect proved too subtle to justify a row,
- * so it stays script/.qsc-only. The level is a dropdown (`NumEnumRow`), not a
- * numeric stepper: it only takes the six values in `JITTER_LEVELS`.
+ * Post-process anti-aliasing: a quality-preset dropdown (method + jitter as
+ * one ladder, see `SCENE_AA_QUALITY_AXIS`), the method (none / FXAA / SMAA)
+ * and the temporal jitter supersampling level. AA is independent of AO:
+ * method and jitter each route the frame through the off-screen pipeline on
+ * their own, so no control here is gated on the AO flag. The C++ scene also
+ * has an `aaSmaaThreshold` property (SMAA edge-detection tuning); it is
+ * deliberately not surfaced here -- its visual effect proved too subtle to
+ * justify a row, so it stays script/.qsc-only. The level is a dropdown
+ * (`NumEnumRow`), not a numeric stepper: it only takes the six values in
+ * `JITTER_LEVELS`.
  */
 export const SceneAntialiasingSection: React.FC<RendererPropSectionProps> = ({
   entries,
   onSet,
+  onSetMany,
   onReset,
 }) => {
   const get = finder(entries);
@@ -166,6 +231,11 @@ export const SceneAntialiasingSection: React.FC<RendererPropSectionProps> = ({
   const aaJitter = get("aaJitterLevel");
   return (
     <>
+      <QualityRow
+        axis={SCENE_AA_QUALITY_AXIS}
+        entries={entries}
+        onSetMany={onSetMany}
+      />
       {aaMethod && (
         <MappedEnumRow
           entry={aaMethod}
