@@ -5,17 +5,16 @@
  * Pins:
  *   - the registry resolves `type_name === "scene"` to the four curated
  *     sections (Ambient occlusion / Anti-aliasing / Background / Color proofing);
- *   - each row renders only when its property exists;
- *   - AO sub-controls are disabled while `aoEnabled` is off;
- *   - a numeric AO row commits a realtime single-step `onSet`;
- *   - the AA method shows friendly labels and commits the raw enum id;
- *   - the AA controls (method / jitter) are never gated on the AO flag (AA is
- *     independent of AO in the C++ frame pipeline);
- *   - the `aaSmaaThreshold` entry renders no row (deliberately not surfaced);
+ *   - the AO/AA sections are preset-only: AO renders Enabled + Preset, AA
+ *     renders Quality, and none of the individual tuning knobs (radius /
+ *     intensity / slices / steps / half-res / method / jitter /
+ *     aaSmaaThreshold) gets a row (they live in the generic property tree);
  *   - the AO Preset / AA Quality dropdowns derive their step from the live
  *     values (default entries read Low / Standard, never Custom), apply a
  *     step as ONE `onSetMany` multi-write, offer Custom only while true, and
  *     ignore props outside their patch (aoSlices);
+ *   - the AO Preset is disabled while AO is off; the AA Quality is not (AA is
+ *     independent of AO in the C++ frame pipeline);
  *   - enabling colour proofing with no profile seeds the default ICC profile in
  *     one multi-write (`onSetMany`); with a profile it is a plain toggle;
  *   - PropertiesTab shows the four scene sections (no placeholder) for `scene`.
@@ -24,7 +23,7 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
-import { mountTree, pressStepArrow } from './helpers/testHarness'
+import { mountTree } from './helpers/testHarness'
 import type { GenericPropEntry } from '../worker/server/services/genericProps.service'
 
 void React
@@ -121,149 +120,59 @@ describe('Scene section registry', () => {
 })
 
 describe('SceneAmbientOcclusionSection', () => {
-  it('renders the AO rows; Radius carries the Angstrom unit', () => {
+  it('renders Enabled + Preset only; the tuning knobs have no rows', () => {
     const { container, unmount } = mountTree(
       <SceneAmbientOcclusionSection
         entries={fullEntries()}
         onSet={vi.fn()}
+        onSetMany={vi.fn()}
         onReset={vi.fn()}
         sceneId={1}
       />,
     )
-    for (const label of ['Enabled', 'Radius', 'Intensity', 'Slices', 'Steps', 'Half resolution']) {
-      expect(rowByLabel(container, label)).not.toBeNull()
+    expect(rowByLabel(container, 'Enabled')).not.toBeNull()
+    expect(rowByLabel(container, 'Preset')).not.toBeNull()
+    // The individual knobs live in the generic property tree, not here.
+    for (const label of ['Radius', 'Intensity', 'Slices', 'Steps', 'Half resolution']) {
+      expect(rowByLabel(container, label)).toBeNull()
     }
-    expect(
-      rowByLabel(container, 'Radius')!.querySelector('.h3-form-drag-unit')!.textContent,
-    ).toBe('Å')
+    expect(container.querySelectorAll('.h3-form-prop-row').length).toBe(2)
     unmount()
   })
 
-  it('disables the AO sub-controls while aoEnabled is off', () => {
+  it('keeps the Enabled toggle active while AO is off', () => {
     const { container, unmount } = mountTree(
       <SceneAmbientOcclusionSection
         entries={fullEntries(false)}
         onSet={vi.fn()}
+        onSetMany={vi.fn()}
         onReset={vi.fn()}
         sceneId={1}
       />,
     )
-    // Radius (DragNumericField) dimmed, Half resolution (switch) input disabled.
-    expect(
-      rowByLabel(container, 'Radius')!.querySelector('.h3-form-drag-disabled'),
-    ).not.toBeNull()
-    expect(
-      (rowByLabel(container, 'Half resolution')!.querySelector('input') as HTMLInputElement)
-        .disabled,
-    ).toBe(true)
-    // The Enabled toggle itself stays enabled.
     expect(
       (rowByLabel(container, 'Enabled')!.querySelector('input') as HTMLInputElement).disabled,
     ).toBe(false)
     unmount()
   })
-
-  it('commits a realtime single-step change of Radius on the step arrow', () => {
-    const onSet = vi.fn()
-    const { container, unmount } = mountTree(
-      <SceneAmbientOcclusionSection
-        entries={fullEntries()}
-        onSet={onSet}
-        onReset={vi.fn()}
-        sceneId={1}
-      />,
-    )
-    const incr = rowByLabel(container, 'Radius')!.querySelector(
-      '.h3-form-drag-arrow-right',
-    ) as HTMLButtonElement
-    pressStepArrow(incr)
-    // step 0.1 from 4.0 -> 4.1, committed live (preview restored to original first).
-    expect(onSet).toHaveBeenCalledWith('aoRadius', 'real', 4.1, {
-      mode: 'commit',
-      originalValue: 4.0,
-      originalWasDefault: false,
-    })
-    unmount()
-  })
 })
 
 describe('SceneAntialiasingSection', () => {
-  it('shows friendly method labels in None/FXAA/SMAA order and commits the raw enum id', () => {
-    const onSet = vi.fn()
-    const { container, unmount } = mountTree(
-      <SceneAntialiasingSection
-        entries={fullEntries()}
-        onSet={onSet}
-        onReset={vi.fn()}
-        sceneId={1}
-      />,
-    )
-    const sel = rowByLabel(container, 'Method')!.querySelector('select') as HTMLSelectElement
-    expect(Array.from(sel.options).map((o) => o.textContent)).toEqual(['None', 'FXAA', 'SMAA'])
-    act(() => {
-      sel.value = 'smaa'
-      sel.dispatchEvent(new Event('change', { bubbles: true }))
-    })
-    expect(onSet).toHaveBeenCalledWith('aa_method', 'enum', 'smaa')
-    unmount()
-  })
-
-  it('keeps the AA controls enabled while AO is off (AA is independent of AO)', () => {
-    const { container, unmount } = mountTree(
-      <SceneAntialiasingSection
-        entries={fullEntries(false)}
-        onSet={vi.fn()}
-        onReset={vi.fn()}
-        sceneId={1}
-      />,
-    )
-    const method = rowByLabel(container, 'Method')!.querySelector('select') as HTMLSelectElement
-    const jitter = rowByLabel(container, 'Jitter SS')!.querySelector('select') as HTMLSelectElement
-    expect(method.disabled).toBe(false)
-    expect(jitter.disabled).toBe(false)
-    unmount()
-  })
-
-  it('does not surface the aaSmaaThreshold property as a row', () => {
-    // The C++ scene exposes aaSmaaThreshold, but its visual effect is too
-    // subtle for a GUI row; the section must ignore the entry.
+  it('renders the Quality dropdown only; method / jitter / threshold have no rows', () => {
     const { container, unmount } = mountTree(
       <SceneAntialiasingSection
         entries={fullEntries()}
         onSet={vi.fn()}
+        onSetMany={vi.fn()}
         onReset={vi.fn()}
         sceneId={1}
       />,
     )
-    expect(rowByLabel(container, 'SMAA threshold')).toBeNull()
-    // Quality + Method + Jitter SS -- and nothing else.
-    expect(container.querySelectorAll('.h3-form-prop-row').length).toBe(3)
-    unmount()
-  })
-
-  it('Jitter SS is a 0-5 dropdown (not a numeric stepper) and commits a number', () => {
-    const onSet = vi.fn()
-    const { container, unmount } = mountTree(
-      <SceneAntialiasingSection
-        entries={fullEntries()}
-        onSet={onSet}
-        onReset={vi.fn()}
-        sceneId={1}
-      />,
-    )
-    const row = rowByLabel(container, 'Jitter SS')!
-    // A dropdown (SelectField), not the NumericField/DragNumericField stepper.
-    const sel = row.querySelector('select') as HTMLSelectElement
-    expect(sel).not.toBeNull()
-    expect(row.querySelector('.h3-form-numeric, .h3-form-drag')).toBeNull()
-    expect(Array.from(sel.options).map((o) => [o.value, o.textContent])).toEqual([
-      ['0', 'Off'], ['1', '1'], ['2', '2'], ['3', '3'], ['4', '4'], ['5', '5'],
-    ])
-    act(() => {
-      sel.value = '3'
-      sel.dispatchEvent(new Event('change', { bubbles: true }))
-    })
-    expect(onSet).toHaveBeenCalledWith('aaJitterLevel', 'integer', 3)
+    expect(rowByLabel(container, 'Quality')).not.toBeNull()
+    for (const label of ['Method', 'Jitter SS', 'SMAA threshold']) {
+      expect(rowByLabel(container, label)).toBeNull()
+    }
+    expect(container.querySelectorAll('.h3-form-prop-row').length).toBe(1)
     unmount()
   })
 })
