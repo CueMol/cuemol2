@@ -250,7 +250,7 @@ void GUIView::drawScene()
                 aoOn && pScene->isAOHalfRes() && getUpdateFlag();
             if (usePipeline) {
                 ensurePipeline(convToBackingX(getWidth()),
-                               convToBackingY(getHeight()), aoHalfRes);
+                               convToBackingY(getHeight()), aoHalfRes, aoOn);
             }
             // Owe a full-resolution follow-up frame after a half-res one, so the
             // idle loop keeps running until the still image is rendered at full
@@ -856,7 +856,7 @@ void GUIView::setFogColorImpl(DisplayContext *pdc)
 //////////
 // Screen-space ambient occlusion (GTAO) live path
 
-void GUIView::ensurePipeline(int w, int h, bool halfRes)
+void GUIView::ensurePipeline(int w, int h, bool halfRes, bool aoEnabled)
 {
     DisplayContext *pdc = getDisplayContext();
     if (pdc == nullptr) return;
@@ -864,7 +864,7 @@ void GUIView::ensurePipeline(int w, int h, bool halfRes)
     // Lazily create the pipeline (the display context is not valid in the GUIView
     // constructor, so this cannot be done there).
     if (m_pPipeline == nullptr) m_pPipeline = MB_NEW FrameRenderPipeline();
-    m_pPipeline->setSize(pdc, w, h, halfRes);
+    m_pPipeline->setSize(pdc, w, h, halfRes, aoEnabled);
 }
 
 gfx::AoConstants GUIView::computeAoConstants() const
@@ -893,8 +893,11 @@ bool GUIView::renderAOColorFrame(DisplayContext *pdc, const ScenePtr &pScene,
     const bool useAO = pScene->isAOEnabled() && hasFBO();
     // The off-screen export always renders the AO term at full resolution: the
     // half-res mode is a live-interaction optimization (see drawScene), not a
-    // quality setting, so an exported still must not inherit it.
-    if (useAO) ensurePipeline(bw, bh, /*halfRes=*/false);
+    // quality setting, so an exported still must not inherit it. The AO-off
+    // plain-scene fallback below is equivalent to an AA-only pipeline composite
+    // (this path never applies spatial post-AA), so the pipeline is only set up
+    // for AO here; pass params.enableAO when export post-AA is added.
+    if (useAO) ensurePipeline(bw, bh, /*halfRes=*/false, /*aoEnabled=*/true);
 
     if (useAO && m_pPipeline != nullptr && m_pPipeline->isReady()) {
         // Composite-only chain (no spatial post-AA, no jitter, no UI depth blit),

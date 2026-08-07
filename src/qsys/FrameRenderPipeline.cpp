@@ -20,37 +20,57 @@ FrameRenderPipeline::~FrameRenderPipeline()
     dispose();
 }
 
-void FrameRenderPipeline::setSize(gfx::DisplayContext *pdc, int w, int h, bool halfRes)
+void FrameRenderPipeline::setSize(gfx::DisplayContext *pdc, int w, int h, bool halfRes,
+                                  bool aoEnabled)
 {
     if (pdc == nullptr) return;
 
+    // The normal attachment (MRT) lets the GTAO pass use real geometry
+    // normals instead of depth-reconstructed ones; it exists only for the AO
+    // passes. Attachment flags are fixed at creation, so recreate the scene
+    // target when the AO requirement changes.
+    if (m_pAOSceneRT != nullptr && m_pAOSceneRT->hasNormal() != aoEnabled) {
+        delete m_pAOSceneRT;
+        m_pAOSceneRT = nullptr;
+    }
     if (m_pAOSceneRT == nullptr) {
-        // The normal attachment (MRT) lets the GTAO pass use real geometry
-        // normals instead of depth-reconstructed ones.
-        m_pAOSceneRT = pdc->createRenderTarget(
-            w, h, gfx::RT_COLOR_RGBA8 | gfx::RT_DEPTH_TEX | gfx::RT_NORMAL_RGBA16F);
+        int flags = gfx::RT_COLOR_RGBA8 | gfx::RT_DEPTH_TEX;
+        if (aoEnabled) flags |= gfx::RT_NORMAL_RGBA16F;
+        m_pAOSceneRT = pdc->createRenderTarget(w, h, flags);
     } else {
         m_pAOSceneRT->resize(w, h);
     }
 
-    // AO term targets (GTAO + denoise). Half resolution when requested; the
-    // composite edge-aware upsamples them back to full res. resize() is a no-op
-    // when unchanged, so toggling halfRes at runtime re-allocates them.
-    const int aoW = halfRes ? (w + 1) / 2 : w;
-    const int aoH = halfRes ? (h + 1) / 2 : h;
+    // AO term targets (GTAO + denoise), allocated only while AO is on. Half
+    // resolution when requested; the composite edge-aware upsamples them back
+    // to full res. resize() is a no-op when unchanged, so toggling halfRes at
+    // runtime re-allocates them.
+    if (aoEnabled) {
+        const int aoW = halfRes ? (w + 1) / 2 : w;
+        const int aoH = halfRes ? (h + 1) / 2 : h;
 
-    // AO targets hold packed data (AO + edges) and must use NEAREST filtering.
-    const int aoFlags = gfx::RT_COLOR_RGBA8 | gfx::RT_COLOR_NEAREST;
-    if (m_pAoRT == nullptr) {
-        m_pAoRT = pdc->createRenderTarget(aoW, aoH, aoFlags);
-    } else {
-        m_pAoRT->resize(aoW, aoH);
-    }
+        // AO targets hold packed data (AO + edges) and must use NEAREST filtering.
+        const int aoFlags = gfx::RT_COLOR_RGBA8 | gfx::RT_COLOR_NEAREST;
+        if (m_pAoRT == nullptr) {
+            m_pAoRT = pdc->createRenderTarget(aoW, aoH, aoFlags);
+        } else {
+            m_pAoRT->resize(aoW, aoH);
+        }
 
-    if (m_pAoDenRT == nullptr) {
-        m_pAoDenRT = pdc->createRenderTarget(aoW, aoH, aoFlags);
+        if (m_pAoDenRT == nullptr) {
+            m_pAoDenRT = pdc->createRenderTarget(aoW, aoH, aoFlags);
+        } else {
+            m_pAoDenRT->resize(aoW, aoH);
+        }
     } else {
-        m_pAoDenRT->resize(aoW, aoH);
+        if (m_pAoRT != nullptr) {
+            delete m_pAoRT;
+            m_pAoRT = nullptr;
+        }
+        if (m_pAoDenRT != nullptr) {
+            delete m_pAoDenRT;
+            m_pAoDenRT = nullptr;
+        }
     }
 
     // Composite target for the post-process AA stage. LINEAR filtering (no
@@ -144,8 +164,9 @@ void FrameRenderPipeline::dispose()
 
 bool FrameRenderPipeline::isReady() const
 {
-    return m_pAOSceneRT != nullptr && m_pAoRT != nullptr && m_pAoDenRT != nullptr &&
-           m_pAOPostProc != nullptr;
+    // The AO term targets are optional (absent in AA-only mode); render()
+    // falls back to the no-AO composite when they are missing.
+    return m_pAOSceneRT != nullptr && m_pAOPostProc != nullptr;
 }
 
 gfx::RenderTarget *FrameRenderPipeline::selectOutRT(const FrameRenderParams &params) const

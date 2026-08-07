@@ -85,8 +85,12 @@ public:
     /// (Re)create the render targets at the given backing-pixel size. Idempotent:
     /// existing targets are resized, not reallocated. When halfRes is true the
     /// GTAO term targets (AO / denoise) are allocated at half resolution; the
-    /// scene and composite targets stay full resolution.
-    void setSize(gfx::DisplayContext *pdc, int w, int h, bool halfRes);
+    /// scene and composite targets stay full resolution. When aoEnabled is false
+    /// the AO term targets and the scene target's MRT normal attachment are not
+    /// allocated (released if present) to save VRAM and scene-pass bandwidth;
+    /// toggling AO recreates the scene target with the matching attachments.
+    void setSize(gfx::DisplayContext *pdc, int w, int h, bool halfRes,
+                 bool aoEnabled);
 
     /// Release all render targets and the post-process primitive. Does NOT touch
     /// the display context (the targets self-guard the GL context via their parent
