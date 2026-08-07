@@ -136,6 +136,9 @@ const AA_METHOD_LABELS: Record<string, string> = {
   fxaa: "FXAA",
   smaa: "SMAA",
 };
+// Display order (off first, then by quality); the enumdef from C++ is
+// alphabetical (fxaa/none/smaa).
+const AA_METHOD_ORDER = ["none", "fxaa", "smaa"];
 
 // aaJitterLevel only takes 0-5 (GUIView.cpp clamps to this range: levels
 // above 5 have no jitter table). 0 disables temporal jitter; 1-5 select the
@@ -165,6 +168,7 @@ export const SceneAntialiasingSection: React.FC<RendererPropSectionProps> = ({
           entry={aaMethod}
           label="Method"
           labels={AA_METHOD_LABELS}
+          options={AA_METHOD_ORDER}
           onSet={onSet}
           onReset={onReset}
         />

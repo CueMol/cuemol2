@@ -78,7 +78,9 @@ function fullEntries(aoOn = true): GenericPropEntry[] {
     entry({ key: 'aoSlices', type: 'integer', value: 9 }),
     entry({ key: 'aoSteps', type: 'integer', value: 3 }),
     entry({ key: 'aoHalfRes', type: 'boolean', value: false }),
-    entry({ key: 'aa_method', type: 'enum', value: 'smaa', enumdef: ['none', 'fxaa', 'smaa'] }),
+    // enumdef arrives from C++ getPropsJSON in alphabetical order; the section
+    // must impose the natural None/FXAA/SMAA display order itself.
+    entry({ key: 'aa_method', type: 'enum', value: 'smaa', enumdef: ['fxaa', 'none', 'smaa'] }),
     entry({ key: 'aaJitterLevel', type: 'integer', value: 0 }),
     entry({ key: 'bgcolor', type: 'object', value: '#000000' }),
     entry({ key: 'use_colproof', type: 'boolean', value: false }),
@@ -175,7 +177,7 @@ describe('SceneAmbientOcclusionSection', () => {
 })
 
 describe('SceneAntialiasingSection', () => {
-  it('shows friendly method labels and commits the raw enum id', () => {
+  it('shows friendly method labels in None/FXAA/SMAA order and commits the raw enum id', () => {
     const onSet = vi.fn()
     const { container, unmount } = mountTree(
       <SceneAntialiasingSection

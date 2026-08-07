@@ -34,7 +34,9 @@ libcuemol2 の OpenGL (core profile) バックエンドに実装した、リア�
 > どれか 1 つでも有効なら off-screen パイプラインに乗り、AO off なら GTAO/denoise パスを
 > スキップして composite は単純コピーになる。scene を single-sample off-screen FBO に描くため
 > パイプライン経由時は default FB の MSAA が効かず、edge AA は post-process AA (§4.5) が担う。
-> 全て off のときのみ従来の直描き (default FB の MSAA) に戻る。
+> 全て off のときのみ従来の直描きに戻る (uxp_gui は default FB の MSAA が効く。tritium は
+> WebGL2 context を `antialias: false` で作る -- パイプラインが AA を担う前提で、multisampled
+> default FB が阻んでいた depth blit (UI overlay の遮蔽) を優先 -- ため直描き時は AA なし)。
 
 AO/AA/jitter を全く使わない (全て無効・stereo・FBO 非対応) 場合は従来パス
 (clearBuffer + display) にフォールバックする。デフォルト設定は `aa_method = smaa` なので、
@@ -412,7 +414,7 @@ shader 定数のまま (必要なら同様に Scene プロパティへ昇格で�
 ### AA ロードマップ (§4.5/§4.6 の続き)
 - **フル TAA**: motion vector 再投影で動作中も AA。reuseOcclusion 最適化、hold バッファ。
 - ~~**全経路統一**~~ 実装済み: AA/jitter は AO 非依存でパイプラインに乗る (§1)。全 off 時のみ
-  default FB MSAA の直描き。stereo 対応は未実装 (stereo では AO も AA も効かない)。
+  直描き (MSAA の有無は §1 参照)。stereo 対応は未実装 (stereo では AO も AA も効かない)。
 - **オフスクリーン書き出しの post-AA**: `renderAOColorFrame` (`enablePostAA=false`) は
   composite までで、書き出しの AA は上位の jitter SS ループ (常時 32 サンプル) が担う。
   書き出しへ FXAA/SMAA を適用する場合は `params.enableAO` と同様に分岐を追加する。
