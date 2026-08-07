@@ -11,6 +11,7 @@
  *   - the AA method shows friendly labels and commits the raw enum id;
  *   - the AA controls (method / jitter) are never gated on the AO flag (AA is
  *     independent of AO in the C++ frame pipeline);
+ *   - the SMAA threshold row is active for smaa and disabled for other methods;
  *   - enabling colour proofing with no profile seeds the default ICC profile in
  *     one multi-write (`onSetMany`); with a profile it is a plain toggle;
  *   - PropertiesTab shows the four scene sections (no placeholder) for `scene`.
@@ -81,6 +82,7 @@ function fullEntries(aoOn = true): GenericPropEntry[] {
     // enumdef arrives from C++ getPropsJSON in alphabetical order; the section
     // must impose the natural None/FXAA/SMAA display order itself.
     entry({ key: 'aa_method', type: 'enum', value: 'smaa', enumdef: ['fxaa', 'none', 'smaa'] }),
+    entry({ key: 'aaSmaaThreshold', type: 'real', value: 0.05 }),
     entry({ key: 'aaJitterLevel', type: 'integer', value: 0 }),
     entry({ key: 'bgcolor', type: 'object', value: '#000000' }),
     entry({ key: 'use_colproof', type: 'boolean', value: false }),
@@ -211,6 +213,40 @@ describe('SceneAntialiasingSection', () => {
     expect(method.disabled).toBe(false)
     expect(jitter.disabled).toBe(false)
     unmount()
+  })
+
+  it('enables the SMAA threshold row for smaa and disables it for other methods', () => {
+    const { container, unmount } = mountTree(
+      <SceneAntialiasingSection
+        entries={fullEntries()}
+        onSet={vi.fn()}
+        onReset={vi.fn()}
+        sceneId={1}
+      />,
+    )
+    // aa_method is smaa in fullEntries -> threshold active (drag row not dimmed).
+    expect(
+      rowByLabel(container, 'SMAA threshold')!.querySelector('.h3-form-drag-disabled'),
+    ).toBeNull()
+    unmount()
+
+    const withFxaa = fullEntries().map((e) =>
+      e.key === 'aa_method'
+        ? entry({ key: 'aa_method', type: 'enum', value: 'fxaa', enumdef: ['fxaa', 'none', 'smaa'] })
+        : e,
+    )
+    const second = mountTree(
+      <SceneAntialiasingSection
+        entries={withFxaa}
+        onSet={vi.fn()}
+        onReset={vi.fn()}
+        sceneId={1}
+      />,
+    )
+    expect(
+      rowByLabel(second.container, 'SMAA threshold')!.querySelector('.h3-form-drag-disabled'),
+    ).not.toBeNull()
+    second.unmount()
   })
 
   it('Jitter SS is a 0-5 dropdown (not a numeric stepper) and commits a number', () => {

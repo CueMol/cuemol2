@@ -147,11 +147,13 @@ const JITTER_LEVELS = [0, 1, 2, 3, 4, 5];
 const JITTER_LEVEL_LABELS: Record<number, string> = { 0: "Off" };
 
 /**
- * Post-process anti-aliasing: method (none / FXAA / SMAA) and temporal jitter
- * supersampling level. AA is independent of AO: method and jitter each route
- * the frame through the off-screen pipeline on their own, so neither control
- * is gated on the AO flag. The level is a dropdown (`NumEnumRow`), not a
- * numeric stepper: it only takes the six values in `JITTER_LEVELS`.
+ * Post-process anti-aliasing: method (none / FXAA / SMAA), the SMAA
+ * edge-detection threshold, and the temporal jitter supersampling level. AA is
+ * independent of AO: method and jitter each route the frame through the
+ * off-screen pipeline on their own, so neither control is gated on the AO
+ * flag. The threshold row only applies to SMAA and is disabled for the other
+ * methods. The level is a dropdown (`NumEnumRow`), not a numeric stepper: it
+ * only takes the six values in `JITTER_LEVELS`.
  */
 export const SceneAntialiasingSection: React.FC<RendererPropSectionProps> = ({
   entries,
@@ -161,6 +163,8 @@ export const SceneAntialiasingSection: React.FC<RendererPropSectionProps> = ({
   const get = finder(entries);
   const aaMethod = get("aa_method");
   const aaJitter = get("aaJitterLevel");
+  const smaaThreshold = get("aaSmaaThreshold");
+  const smaaOff = aaMethod ? String(aaMethod.value) !== "smaa" : true;
   return (
     <>
       {aaMethod && (
@@ -171,6 +175,20 @@ export const SceneAntialiasingSection: React.FC<RendererPropSectionProps> = ({
           options={AA_METHOD_ORDER}
           onSet={onSet}
           onReset={onReset}
+        />
+      )}
+      {smaaThreshold && (
+        <NumRow
+          entry={smaaThreshold}
+          label="SMAA threshold"
+          onSet={onSet}
+          onReset={onReset}
+          min={0.01}
+          max={0.2}
+          step={0.01}
+          decimals={2}
+          realtime
+          disabled={smaaOff}
         />
       )}
       {aaJitter && (
