@@ -8,16 +8,17 @@
 
 uniform sampler2D u_colorTex;
 uniform vec2 u_rcpFrame;  // (1/width, 1/height), == SMAA uTexSizeInv
+// Edge-detection threshold (max RGB delta), Scene.aaSmaaThreshold.
+// 0.1 = SMAA Medium/High preset, 0.05 = Ultra.
+uniform float u_threshold;
 
 in vec2 v_uv;
 
 out vec4 o_FragColor;
 
-const float SMAA_THRESHOLD = 0.1;
-
 vec4 SMAAColorEdgeDetectionPS(vec2 texcoord, vec4 offset[3], sampler2D colorTex)
 {
-    vec2 threshold = vec2(SMAA_THRESHOLD, SMAA_THRESHOLD);
+    vec2 threshold = vec2(u_threshold, u_threshold);
 
     // Calculate color deltas:
     vec4 delta;

@@ -165,8 +165,10 @@ private:
 
     /// Lazily create the off-screen pipeline (needs a valid display context) and
     /// (re)size its render targets to the given backing-pixel size. When halfRes
-    /// is true the GTAO term targets are allocated at half resolution.
-    void ensurePipeline(int w, int h, bool halfRes);
+    /// is true the GTAO term targets are allocated at half resolution; when
+    /// aoEnabled is false the AO-specific targets are not allocated at all
+    /// (AA-only pipeline).
+    void ensurePipeline(int w, int h, bool halfRes, bool aoEnabled);
 
     /// Compute the view-space reconstruction constants for the GTAO passes from
     /// the current camera (perspective). Mirrors setUpProjMat's slab derivation.

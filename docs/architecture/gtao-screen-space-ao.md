@@ -16,22 +16,32 @@ libcuemol2 の OpenGL (core profile) バックエンドに実装した、リア�
 
 ```
 1. scene  -> off-screen FBO (m_pAOSceneRT)  ※常にフル解像度
-              COLOR0 = 色 (RGBA8) / DEPTH = 深度tex (DEPTH24) / COLOR1 = 法線 (RGBA16F, MRT)
+              COLOR0 = 色 (RGBA8) / DEPTH = 深度tex (DEPTH24)
+              / COLOR1 = 法線 (RGBA16F, MRT; AO 有効時のみ attach)
 2. GTAO   -> AO RT (m_pAoRT, RGBA8)        R=遮蔽 G=packed edges  ※aoHalfRes 時は半解像度 (§4.7)
+              ※AO 有効時のみ。AO off (AA-only) では 2-3 をスキップ
 3. denoise-> denoise RT (m_pAoDenRT)       edge-aware 3x3 blur (単一パス)  ※AO RT と同解像度
 4. composite (color * AO, 半解像度時は edge-aware upsample) + post-AA -> default framebuffer  (§4.5/§4.7)
+     AO off 時は AO RT を渡さず u_hasAO=0 の単純コピー (shader は AO 系 uniform を読まない)
      aa_method=none: composite を直接 default fb へ
-     aa_method=fxaa: composite -> m_pCompRT(LINEAR) -> FXAA -> default fb
+     aa_method=fxaa/smaa: composite -> m_pCompRT(LINEAR) -> FXAA/SMAA -> default fb
 5. depth blit (scene depth -> default fb)  UI overlay の depth test 用
 6. UI overlay / 2D-UI / swapBuffers        AO/AA の影響を受けない
 ```
 
-> **AA は AO 経路でのみ必要**: scene を single-sample off-screen FBO に描くため、AO 有効時は
-> default FB の MSAA が効かず edge AA が失われる (非 AO 経路は従来どおり MSAA)。これを後段の
-> post-process AA で補う (§4.5)。
+> **AA と AO は独立**: パイプライン起動条件は `hasFBO() && CSM_NONE &&
+> Scene::requiresFramePipeline()` (= `aoEnabled || aa_method != none || aaJitterLevel > 0`)。
+> どれか 1 つでも有効なら off-screen パイプラインに乗り、AO off なら GTAO/denoise パスを
+> スキップして composite は単純コピーになる。scene を single-sample off-screen FBO に描くため
+> パイプライン経由時は default FB の MSAA が効かず、edge AA は post-process AA (§4.5) が担う。
+> 全て off のときのみ従来の直描きに戻る (uxp_gui は default FB の MSAA が効く。tritium は
+> WebGL2 context を `antialias: false` で作る -- パイプラインが AA を担う前提で、multisampled
+> default FB が阻んでいた depth blit (UI overlay の遮蔽) を優先 -- ため直描き時は AA なし)。
 
-AO を使わない (無効・stereo・FBO 非対応) 場合は従来パス (clearBuffer + display) に
-フォールバックする。判定は `pScene->isAOEnabled() && hasFBO() && getStereoMode()==CSM_NONE`。
+AO/AA/jitter を全く使わない (全て無効・stereo・FBO 非対応) 場合は従来パス
+(clearBuffer + display) にフォールバックする。デフォルト設定は `aa_method = fxaa` なので、
+既定ではパイプライン経由で描画される (SMAA は選択肢。分子シーンでは細線・オブジェクト間
+境界への効きから FXAA を既定とした)。
 
 ### 主要ファイル
 
@@ -41,7 +51,8 @@ AO を使わない (無効・stereo・FBO 非対応) 場合は従来パス (clea
 | FBO 抽象 | `src/gfx/RenderTarget.hpp` | `RTFlags` / `RTTexUnit` / `RenderTarget` IF |
 | FBO 実装 | `src/sysdep/ogl_core/OcRenderTarget.{hpp,cpp}` | MRT (color+depth+normal)、clear、blit |
 | フルスクリーン描画 | `src/gfx/PostProcGpuPrim.{hpp,cpp}` | `drawGtao` / `drawDenoise` / `drawComposite` / `drawFxaa` + `struct AoConstants` |
-| ライブ経路 | `src/qsys/GUIView.cpp` | `drawScene` の AO 分岐 / `ensureAORTs` / `computeAoConstants` / `cleanupAORTs` / `unloading` |
+| ライブ経路 | `src/qsys/GUIView.cpp` | `drawScene` のパイプライン分岐 / `ensurePipeline` / `computeAoConstants` / `unloading` |
+| パス連結 | `src/qsys/FrameRenderPipeline.{hpp,cpp}` | RT 群の所有 (`setSize`, AO off 時は AO 項 RT / MRT 法線を確保しない) と `render` のパス実行 |
 | GTAO 本体 | `src/sysdep/ogl_core/gtao_frag.glsl` | horizon 積分・法線選択・line 除外 |
 | denoise | `src/sysdep/ogl_core/ao_denoise_frag.glsl` | edge-aware blur |
 | composite | `src/sysdep/ogl_core/ao_composite_frag.glsl` | `color.rgb * AO` (+ 半解像度時 joint bilateral upsample) |
@@ -200,7 +211,8 @@ AO 経路は scene を **single-sample** off-screen FBO に描くため、MSAA �
 平均する。フル TAA (motion vector 再投影) ではなく、動いたらリセットする「静止時 SS」。
 
 ### 制御
-- `Scene.aaJitterLevel` (0=off, 1..5 → 2/4/8/16/32 サンプル)。AO 経路・CSM_NONE のみ。
+- `Scene.aaJitterLevel` (0=off, 1..5 → 2/4/8/16/32 サンプル)。パイプライン経路 (CSM_NONE)
+  のみ。AO 非依存 (jitter 単独でもパイプラインに乗る)。
 - jitter オフセット表は Mol* JitterVectors (1/16px 単位) を `GUIView.cpp` に複製。
 
 ### 1 フレーム (jitterActive 時)
@@ -230,7 +242,8 @@ sampleIndex++ / 収束で停止
 
 ### 既知の制限 / 将来
 - AO は毎サンプル再計算 (Mol* reuseOcclusion 最適化は未実装 = 重いが正しい)。
-- フル TAA (動作中 AA)、hold バッファによるフリッカ低減、非 AO 経路統一、stereo は未対応。
+- フル TAA (動作中 AA)、hold バッファによるフリッカ低減、stereo は未対応。
+  (AA/jitter の AO 非依存化 = 経路統一は実装済み: §1)
 
 ---
 
@@ -354,6 +367,7 @@ output location も確認。これらで「location は正しい→書き込み�
 | `aoHalfRes` | false | adaptive 半解像度 GTAO: drag 中 half / idle full / export 常に full (負荷削減, §4.7) |
 | `aa_method` | fxaa | post-process AA (none/fxaa/smaa, §4.5) |
 | `aaJitterLevel` | 0 | temporal jitter SS レベル (0=off, 1..5=2..32 枚, §4.6) |
+| `aaSmaaThreshold` | 0.05 | SMAA エッジ検出閾値 (RGB 差の最大値。0.1=Medium/High, 0.05=Ultra 相当) |
 
 FalloffRange / SampleDistributionPower / RadiusMultiplier 等の XeGTAO ヒューリスティックは
 shader 定数のまま (必要なら同様に Scene プロパティへ昇格できる構造)。
@@ -401,8 +415,11 @@ shader 定数のまま (必要なら同様に Scene プロパティへ昇格で�
 
 ### AA ロードマップ (§4.5/§4.6 の続き)
 - **フル TAA**: motion vector 再投影で動作中も AA。reuseOcclusion 最適化、hold バッファ。
-- **全経路統一**: 非 AO 経路も offscreen+post-AA/jitter に通し AA を context MSAA 非依存にする
-  (tritium と整合)。現状は AO 経路のみ、非 AO は default FB MSAA。stereo 対応。
+- ~~**全経路統一**~~ 実装済み: AA/jitter は AO 非依存でパイプラインに乗る (§1)。全 off 時のみ
+  直描き (MSAA の有無は §1 参照)。stereo 対応は未実装 (stereo では AO も AA も効かない)。
+- **オフスクリーン書き出しの post-AA**: `renderAOColorFrame` (`enablePostAA=false`) は
+  composite までで、書き出しの AA は上位の jitter SS ループ (常時 32 サンプル) が担う。
+  書き出しへ FXAA/SMAA を適用する場合は `params.enableAO` と同様に分岐を追加する。
 
 ---
 

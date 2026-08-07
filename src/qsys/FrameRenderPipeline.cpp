@@ -1,6 +1,7 @@
 // -*-Mode: C++;-*-
 //
-// FrameRenderPipeline: off-screen multi-pass orchestration for the GTAO AO path.
+// FrameRenderPipeline: off-screen multi-pass orchestration for the GTAO AO and
+// post-process AA paths.
 //
 
 #include <common.h>
@@ -19,37 +20,57 @@ FrameRenderPipeline::~FrameRenderPipeline()
     dispose();
 }
 
-void FrameRenderPipeline::setSize(gfx::DisplayContext *pdc, int w, int h, bool halfRes)
+void FrameRenderPipeline::setSize(gfx::DisplayContext *pdc, int w, int h, bool halfRes,
+                                  bool aoEnabled)
 {
     if (pdc == nullptr) return;
 
+    // The normal attachment (MRT) lets the GTAO pass use real geometry
+    // normals instead of depth-reconstructed ones; it exists only for the AO
+    // passes. Attachment flags are fixed at creation, so recreate the scene
+    // target when the AO requirement changes.
+    if (m_pAOSceneRT != nullptr && m_pAOSceneRT->hasNormal() != aoEnabled) {
+        delete m_pAOSceneRT;
+        m_pAOSceneRT = nullptr;
+    }
     if (m_pAOSceneRT == nullptr) {
-        // The normal attachment (MRT) lets the GTAO pass use real geometry
-        // normals instead of depth-reconstructed ones.
-        m_pAOSceneRT = pdc->createRenderTarget(
-            w, h, gfx::RT_COLOR_RGBA8 | gfx::RT_DEPTH_TEX | gfx::RT_NORMAL_RGBA16F);
+        int flags = gfx::RT_COLOR_RGBA8 | gfx::RT_DEPTH_TEX;
+        if (aoEnabled) flags |= gfx::RT_NORMAL_RGBA16F;
+        m_pAOSceneRT = pdc->createRenderTarget(w, h, flags);
     } else {
         m_pAOSceneRT->resize(w, h);
     }
 
-    // AO term targets (GTAO + denoise). Half resolution when requested; the
-    // composite edge-aware upsamples them back to full res. resize() is a no-op
-    // when unchanged, so toggling halfRes at runtime re-allocates them.
-    const int aoW = halfRes ? (w + 1) / 2 : w;
-    const int aoH = halfRes ? (h + 1) / 2 : h;
+    // AO term targets (GTAO + denoise), allocated only while AO is on. Half
+    // resolution when requested; the composite edge-aware upsamples them back
+    // to full res. resize() is a no-op when unchanged, so toggling halfRes at
+    // runtime re-allocates them.
+    if (aoEnabled) {
+        const int aoW = halfRes ? (w + 1) / 2 : w;
+        const int aoH = halfRes ? (h + 1) / 2 : h;
 
-    // AO targets hold packed data (AO + edges) and must use NEAREST filtering.
-    const int aoFlags = gfx::RT_COLOR_RGBA8 | gfx::RT_COLOR_NEAREST;
-    if (m_pAoRT == nullptr) {
-        m_pAoRT = pdc->createRenderTarget(aoW, aoH, aoFlags);
-    } else {
-        m_pAoRT->resize(aoW, aoH);
-    }
+        // AO targets hold packed data (AO + edges) and must use NEAREST filtering.
+        const int aoFlags = gfx::RT_COLOR_RGBA8 | gfx::RT_COLOR_NEAREST;
+        if (m_pAoRT == nullptr) {
+            m_pAoRT = pdc->createRenderTarget(aoW, aoH, aoFlags);
+        } else {
+            m_pAoRT->resize(aoW, aoH);
+        }
 
-    if (m_pAoDenRT == nullptr) {
-        m_pAoDenRT = pdc->createRenderTarget(aoW, aoH, aoFlags);
+        if (m_pAoDenRT == nullptr) {
+            m_pAoDenRT = pdc->createRenderTarget(aoW, aoH, aoFlags);
+        } else {
+            m_pAoDenRT->resize(aoW, aoH);
+        }
     } else {
-        m_pAoDenRT->resize(aoW, aoH);
+        if (m_pAoRT != nullptr) {
+            delete m_pAoRT;
+            m_pAoRT = nullptr;
+        }
+        if (m_pAoDenRT != nullptr) {
+            delete m_pAoDenRT;
+            m_pAoDenRT = nullptr;
+        }
     }
 
     // Composite target for the post-process AA stage. LINEAR filtering (no
@@ -143,8 +164,9 @@ void FrameRenderPipeline::dispose()
 
 bool FrameRenderPipeline::isReady() const
 {
-    return m_pAOSceneRT != nullptr && m_pAoRT != nullptr && m_pAoDenRT != nullptr &&
-           m_pAOPostProc != nullptr;
+    // The AO term targets are optional (absent in AA-only mode); render()
+    // falls back to the no-AO composite when they are missing.
+    return m_pAOSceneRT != nullptr && m_pAOPostProc != nullptr;
 }
 
 gfx::RenderTarget *FrameRenderPipeline::selectOutRT(const FrameRenderParams &params) const
@@ -163,6 +185,11 @@ bool FrameRenderPipeline::render(gfx::DisplayContext *pdc, const ScenePtr &pScen
     if (!isReady()) return false;
 
     const bool jitter = params.jitterActive && m_jitterSupported;
+    // AA-only mode skips the GTAO/denoise passes and composites without an AO
+    // term. The RT guards also cover the case where the AO targets were not
+    // allocated (setSize with aoEnabled=false).
+    const bool aoActive =
+        params.enableAO && m_pAoRT != nullptr && m_pAoDenRT != nullptr;
 
     // 1. Render the 3D scene into the off-screen target (color + depth + MRT
     // normal). The clear precedes the scene callback; the model-matrix setup the
@@ -177,45 +204,58 @@ bool FrameRenderPipeline::render(gfx::DisplayContext *pdc, const ScenePtr &pScen
 
     // 2. AO constants: camera part from params, AO tuning read from the Scene.
     gfx::AoConstants aoc = params.camAoc;
-    aoc.effectRadius = float(pScene->getAORadius());
-    aoc.finalValuePower = float(pScene->getAOIntensity());
-    aoc.sliceCount = pScene->getAOSlices();
-    aoc.stepsPerSlice = pScene->getAOSteps();
-    aoc.aoNoiseOffset = params.aoNoiseOffset;
-    // AO buffer texel size (= full res, or 2x coarser at half res). The GTAO /
-    // denoise passes run at this resolution, so they use it as their pixel size;
-    // the composite reads both to know whether (and how) to upsample.
-    aoc.aoTexelSize[0] = 1.0f / float(m_pAoRT->getWidth());
-    aoc.aoTexelSize[1] = 1.0f / float(m_pAoRT->getHeight());
-    // Fog parameters for the composite's AO fade. These must match the scene's
-    // setupFog (ShaderObject::setupFog): fogScale = 1/(fogEnd - fogStart). The
-    // composite recomputes the same linear fog factor from the scene depth and
-    // fades the AO term out where fog has taken over, so fully-fogged pixels are
-    // not darkened by AO.
-    const double fogStart = pdc->getFogStart();
-    const double fogEnd = pdc->getFogEnd();
-    aoc.fogEnd = float(fogEnd);
-    aoc.fogScale = (fogEnd > fogStart) ? float(1.0 / (fogEnd - fogStart)) : 0.0f;
-    gfx::AoConstants aocAO = aoc;
-    aocAO.viewportPixelSize[0] = aoc.aoTexelSize[0];
-    aocAO.viewportPixelSize[1] = aoc.aoTexelSize[1];
-    // Keep the horizon-radius cap at a fixed full-res-equivalent value so half
-    // res yields the same occlusion as full res.
-    aocAO.maxScreenspaceRadius =
-        256.0f * (aoc.viewportPixelSize[0] / aoc.aoTexelSize[0]);
+    // SMAA tuning (used by the post-AA stage, independent of AO).
+    aoc.smaaThreshold = float(pScene->getAASmaaThreshold());
+    if (aoActive) {
+        aoc.effectRadius = float(pScene->getAORadius());
+        aoc.finalValuePower = float(pScene->getAOIntensity());
+        aoc.sliceCount = pScene->getAOSlices();
+        aoc.stepsPerSlice = pScene->getAOSteps();
+        aoc.aoNoiseOffset = params.aoNoiseOffset;
+        // AO buffer texel size (= full res, or 2x coarser at half res). The GTAO /
+        // denoise passes run at this resolution, so they use it as their pixel size;
+        // the composite reads both to know whether (and how) to upsample.
+        aoc.aoTexelSize[0] = 1.0f / float(m_pAoRT->getWidth());
+        aoc.aoTexelSize[1] = 1.0f / float(m_pAoRT->getHeight());
+        // Fog parameters for the composite's AO fade. These must match the scene's
+        // setupFog (ShaderObject::setupFog): fogScale = 1/(fogEnd - fogStart). The
+        // composite recomputes the same linear fog factor from the scene depth and
+        // fades the AO term out where fog has taken over, so fully-fogged pixels are
+        // not darkened by AO.
+        const double fogStart = pdc->getFogStart();
+        const double fogEnd = pdc->getFogEnd();
+        aoc.fogEnd = float(fogEnd);
+        aoc.fogScale = (fogEnd > fogStart) ? float(1.0 / (fogEnd - fogStart)) : 0.0f;
+        gfx::AoConstants aocAO = aoc;
+        aocAO.viewportPixelSize[0] = aoc.aoTexelSize[0];
+        aocAO.viewportPixelSize[1] = aoc.aoTexelSize[1];
+        // Keep the horizon-radius cap at a fixed full-res-equivalent value so half
+        // res yields the same occlusion as full res.
+        aocAO.maxScreenspaceRadius =
+            256.0f * (aoc.viewportPixelSize[0] / aoc.aoTexelSize[0]);
 
-    // 3. GTAO pass: read the scene depth, write AO + packed edges.
-    m_pAoRT->bind();
-    m_pAoRT->clear(1.0f, 1.0f, 1.0f, 1.0f);
-    m_pAOPostProc->drawGtao(pdc, m_pAOSceneRT, aocAO, /*debugMode=*/0);
-    m_pAoRT->unbind();
+        // 3. GTAO pass: read the scene depth, write AO + packed edges.
+        m_pAoRT->bind();
+        m_pAoRT->clear(1.0f, 1.0f, 1.0f, 1.0f);
+        m_pAOPostProc->drawGtao(pdc, m_pAOSceneRT, aocAO, /*debugMode=*/0);
+        m_pAoRT->unbind();
 
-    // 4. Edge-aware denoise of the AO term (single pass).
-    m_pAoDenRT->bind();
-    m_pAOPostProc->drawDenoise(pdc, m_pAoRT, aocAO);
-    m_pAoDenRT->unbind();
+        // 4. Edge-aware denoise of the AO term (single pass).
+        m_pAoDenRT->bind();
+        m_pAOPostProc->drawDenoise(pdc, m_pAoRT, aocAO);
+        m_pAoDenRT->unbind();
+    } else {
+        // AA-only: keep the AO texel size equal to the viewport so the
+        // composite's upsample check stays off. The composite shader reads no
+        // other AO uniforms when u_hasAO == 0 (plain copy).
+        aoc.aoTexelSize[0] = aoc.viewportPixelSize[0];
+        aoc.aoTexelSize[1] = aoc.viewportPixelSize[1];
+    }
 
     gfx::RenderTarget *outRT = selectOutRT(params);
+    // The composite multiplies the denoised AO term, or plain-copies the scene
+    // color when the AO passes did not run (nullptr -> u_hasAO == 0).
+    gfx::RenderTarget *pAoDen = aoActive ? m_pAoDenRT : nullptr;
 
     if (params.enablePostAA) {
         // ---- Live path: composite scene color * denoised AO, then the selected
@@ -232,7 +272,7 @@ bool FrameRenderPipeline::render(gfx::DisplayContext *pdc, const ScenePtr &pScen
             pdc->setBlendEnabled(false);
 
             m_pCompRT->bind();
-            m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, m_pAoDenRT, aoc);
+            m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, pAoDen, aoc);
             m_pCompRT->unbind();
 
             if (aaMethod == Scene::AA_SMAA && m_pSmaaEdgeRT != nullptr &&
@@ -260,7 +300,7 @@ bool FrameRenderPipeline::render(gfx::DisplayContext *pdc, const ScenePtr &pScen
             pdc->setBlendEnabled(true);
         } else {
             if (outRT != nullptr) outRT->bind();
-            m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, m_pAoDenRT, aoc);
+            m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, pAoDen, aoc);
             if (outRT != nullptr) outRT->unbind();
         }
 
@@ -300,7 +340,7 @@ bool FrameRenderPipeline::render(gfx::DisplayContext *pdc, const ScenePtr &pScen
         pdc->setDepthTestEnabled(false);
         pdc->setBlendEnabled(false);
         if (outRT != nullptr) outRT->bind();
-        m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, m_pAoDenRT, aoc);
+        m_pAOPostProc->drawComposite(pdc, m_pAOSceneRT, pAoDen, aoc);
         if (outRT != nullptr) outRT->unbind();
         pdc->setBlendEnabled(true);
         pdc->setDepthTestEnabled(true);

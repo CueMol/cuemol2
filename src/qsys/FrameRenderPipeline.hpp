@@ -1,7 +1,9 @@
 // -*-Mode: C++;-*-
 //
-// FrameRenderPipeline: off-screen multi-pass orchestration for the GTAO AO path
-// (scene -> GTAO -> denoise -> composite -> [FXAA/SMAA] -> [temporal jitter]).
+// FrameRenderPipeline: off-screen multi-pass orchestration for the GTAO AO and
+// post-process AA paths (scene -> [GTAO -> denoise] -> composite ->
+// [FXAA/SMAA] -> [temporal jitter]). AO and AA are independent: either one
+// routes the frame through this pipeline.
 //
 // Extracted from GUIView::drawScene so the same pass chain serves both the live
 // view and the off-screen exporter, and so the future tritium (WebGL2) port
@@ -41,6 +43,11 @@ struct FrameRenderParams
     /// GTAO noise rotation [0,1) for temporal supersampling (0 = single frame).
     float aoNoiseOffset = 0.0f;
 
+    /// Run the GTAO + denoise passes and multiply the AO term in the composite.
+    /// false = the pipeline serves AA only: the scene color passes through the
+    /// composite unchanged (u_hasAO == 0 plain copy).
+    bool enableAO = true;
+
     /// Clear the scene target's background alpha to 0 (transparent export).
     bool bgTransparent = false;
 
@@ -78,8 +85,12 @@ public:
     /// (Re)create the render targets at the given backing-pixel size. Idempotent:
     /// existing targets are resized, not reallocated. When halfRes is true the
     /// GTAO term targets (AO / denoise) are allocated at half resolution; the
-    /// scene and composite targets stay full resolution.
-    void setSize(gfx::DisplayContext *pdc, int w, int h, bool halfRes);
+    /// scene and composite targets stay full resolution. When aoEnabled is false
+    /// the AO term targets and the scene target's MRT normal attachment are not
+    /// allocated (released if present) to save VRAM and scene-pass bandwidth;
+    /// toggling AO recreates the scene target with the matching attachments.
+    void setSize(gfx::DisplayContext *pdc, int w, int h, bool halfRes,
+                 bool aoEnabled);
 
     /// Release all render targets and the post-process primitive. Does NOT touch
     /// the display context (the targets self-guard the GL context via their parent
@@ -90,12 +101,13 @@ public:
     /// True once the core targets and post-process primitive exist (setSize ran).
     bool isReady() const;
 
-    /// Run the pass chain: scene(via sceneRenderFn) -> GTAO -> denoise ->
-    /// composite -> [post-AA] -> [jitter accumulate/display] -> [depth blit].
-    /// pScene supplies AO/AA/background settings. sceneRenderFn sets the model
-    /// matrix and calls pScene->display(pdc); the pipeline binds/clears the scene
-    /// target around it. Returns true when the AO chain ran (always true once
-    /// isReady()); the caller handles the plain-scene fallback when not ready.
+    /// Run the pass chain: scene(via sceneRenderFn) -> [GTAO -> denoise (when
+    /// params.enableAO)] -> composite -> [post-AA] -> [jitter
+    /// accumulate/display] -> [depth blit]. pScene supplies AO/AA/background
+    /// settings. sceneRenderFn sets the model matrix and calls
+    /// pScene->display(pdc); the pipeline binds/clears the scene target around
+    /// it. Returns true when the chain ran (always true once isReady()); the
+    /// caller handles the plain-scene fallback when not ready.
     bool render(gfx::DisplayContext *pdc, const ScenePtr &pScene,
                 const FrameRenderParams &params,
                 const std::function<void()> &sceneRenderFn);

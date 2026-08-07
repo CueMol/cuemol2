@@ -103,25 +103,26 @@ export class GfxManager {
             throw Error('already bound to canvas');
         }
         this._canvas = canvas;
-        // antialias: true is the WebGL2 default, but request it explicitly so the
-        // dependency is obvious. With the default aa_method (none) the scene is
-        // drawn straight to the DEFAULT framebuffer, so the multisampled default
-        // framebuffer IS the only geometry antialiasing -- forcing false makes
-        // the view visibly jaggy. (When aa_method is a post-process pass like
-        // SMAA the MSAA becomes redundant, but the context attribute is fixed at
-        // creation and cannot be toggled per aa_method, so it stays on.) The
-        // tradeoff is that blitDepthToDefault is skipped (a single-sample FBO
-        // cannot blit into a multisampled default fb), degrading only on-screen
-        // overlay depth occlusion.
-        this._context = wrapGL(canvas.getContext('webgl2', { antialias: true }));
+        // antialias: false -- the off-screen frame pipeline owns antialiasing
+        // (post-process FXAA/SMAA and/or temporal jitter; default aa_method is
+        // fxaa), so the multisampled default framebuffer added no visible
+        // benefit while it blocked blitDepthToDefault (a single-sample FBO
+        // cannot blit into a multisampled default fb), degrading on-screen
+        // overlay depth occlusion. With a single-sample default framebuffer the
+        // depth blit works in every pipeline mode. The context attribute is
+        // fixed at creation and cannot follow aa_method, so the legacy direct
+        // path (AO / aa_method / jitter all off) is left without any geometry
+        // AA -- pick a post-AA method instead of relying on MSAA.
+        this._context = wrapGL(canvas.getContext('webgl2', { antialias: false }));
         const gl = this._context;
         // Required for rendering to RGBA16F color/normal attachments (GTAO MRT
         // normal buffer, float jitter accumulator). Acquire once; without it the
         // off-screen AO float framebuffers are incomplete.
         const floatColorExt = gl.getExtension('EXT_color_buffer_float');
         console.log('EXT_color_buffer_float =', floatColorExt !== null);
-        // antialias defaults to true; a multisampled default fb cannot be a blit
-        // destination from a single-sample fbo (see blitDepthToDefault).
+        // Read the actual attribute back (the browser may override the request);
+        // a multisampled default fb cannot be a blit destination from a
+        // single-sample fbo (see blitDepthToDefault).
         const defaultFbMultisampled = gl.getContextAttributes()?.antialias ?? false;
         console.log('default framebuffer multisampled =', defaultFbMultisampled);
 

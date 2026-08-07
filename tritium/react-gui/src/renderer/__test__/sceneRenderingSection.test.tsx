@@ -5,10 +5,16 @@
  * Pins:
  *   - the registry resolves `type_name === "scene"` to the four curated
  *     sections (Ambient occlusion / Anti-aliasing / Background / Color proofing);
- *   - each row renders only when its property exists;
- *   - AO sub-controls are disabled while `aoEnabled` is off;
- *   - a numeric AO row commits a realtime single-step `onSet`;
- *   - the AA method shows friendly labels and commits the raw enum id;
+ *   - the AO/AA sections are preset-only: AO renders Enabled + Preset, AA
+ *     renders Quality, and none of the individual tuning knobs (radius /
+ *     intensity / slices / steps / half-res / method / jitter /
+ *     aaSmaaThreshold) gets a row (they live in the generic property tree);
+ *   - the AO Preset / AA Quality dropdowns derive their step from the live
+ *     values (default entries read Low / Standard, never Custom), apply a
+ *     step as ONE `onSetMany` multi-write, offer Custom only while true, and
+ *     ignore props outside their patch (aoSlices);
+ *   - the AO Preset is disabled while AO is off; the AA Quality is not (AA is
+ *     independent of AO in the C++ frame pipeline);
  *   - enabling colour proofing with no profile seeds the default ICC profile in
  *     one multi-write (`onSetMany`); with a profile it is a plain toggle;
  *   - PropertiesTab shows the four scene sections (no placeholder) for `scene`.
@@ -17,7 +23,7 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { act } from 'react'
-import { mountTree, pressStepArrow } from './helpers/testHarness'
+import { mountTree } from './helpers/testHarness'
 import type { GenericPropEntry } from '../worker/server/services/genericProps.service'
 
 void React
@@ -43,6 +49,11 @@ import {
   SceneBackgroundSection,
   SceneColorProofingSection,
 } from '../components/inspector/SceneRenderingSection'
+import {
+  SCENE_AO_PRESET_AXIS,
+  SCENE_AA_QUALITY_AXIS,
+  sceneStepOf,
+} from '../data/sceneQualityPresets'
 import { getRendererPropSections } from '../components/inspector/rendererPropSections'
 import { PropertiesTab } from '../components/inspector/PropertiesTab'
 
@@ -76,7 +87,10 @@ function fullEntries(aoOn = true): GenericPropEntry[] {
     entry({ key: 'aoSlices', type: 'integer', value: 9 }),
     entry({ key: 'aoSteps', type: 'integer', value: 3 }),
     entry({ key: 'aoHalfRes', type: 'boolean', value: false }),
-    entry({ key: 'aa_method', type: 'enum', value: 'fxaa', enumdef: ['none', 'fxaa', 'smaa'] }),
+    // enumdef arrives from C++ getPropsJSON in alphabetical order; the section
+    // must impose the natural None/FXAA/SMAA display order itself.
+    entry({ key: 'aa_method', type: 'enum', value: 'fxaa', enumdef: ['fxaa', 'none', 'smaa'] }),
+    entry({ key: 'aaSmaaThreshold', type: 'real', value: 0.05 }),
     entry({ key: 'aaJitterLevel', type: 'integer', value: 0 }),
     entry({ key: 'bgcolor', type: 'object', value: '#000000' }),
     entry({ key: 'use_colproof', type: 'boolean', value: false }),
@@ -106,116 +120,230 @@ describe('Scene section registry', () => {
 })
 
 describe('SceneAmbientOcclusionSection', () => {
-  it('renders the AO rows; Radius carries the Angstrom unit', () => {
+  it('renders Enabled + Preset only; the tuning knobs have no rows', () => {
     const { container, unmount } = mountTree(
       <SceneAmbientOcclusionSection
         entries={fullEntries()}
         onSet={vi.fn()}
+        onSetMany={vi.fn()}
         onReset={vi.fn()}
         sceneId={1}
       />,
     )
-    for (const label of ['Enabled', 'Radius', 'Intensity', 'Slices', 'Steps', 'Half resolution']) {
-      expect(rowByLabel(container, label)).not.toBeNull()
+    expect(rowByLabel(container, 'Enabled')).not.toBeNull()
+    expect(rowByLabel(container, 'Preset')).not.toBeNull()
+    // The individual knobs live in the generic property tree, not here.
+    for (const label of ['Radius', 'Intensity', 'Slices', 'Steps', 'Half resolution']) {
+      expect(rowByLabel(container, label)).toBeNull()
     }
-    expect(
-      rowByLabel(container, 'Radius')!.querySelector('.h3-form-drag-unit')!.textContent,
-    ).toBe('Å')
+    expect(container.querySelectorAll('.h3-form-prop-row').length).toBe(2)
     unmount()
   })
 
-  it('disables the AO sub-controls while aoEnabled is off', () => {
+  it('keeps the Enabled toggle active while AO is off', () => {
     const { container, unmount } = mountTree(
       <SceneAmbientOcclusionSection
         entries={fullEntries(false)}
         onSet={vi.fn()}
+        onSetMany={vi.fn()}
         onReset={vi.fn()}
         sceneId={1}
       />,
     )
-    // Radius (DragNumericField) dimmed, Half resolution (switch) input disabled.
-    expect(
-      rowByLabel(container, 'Radius')!.querySelector('.h3-form-drag-disabled'),
-    ).not.toBeNull()
-    expect(
-      (rowByLabel(container, 'Half resolution')!.querySelector('input') as HTMLInputElement)
-        .disabled,
-    ).toBe(true)
-    // The Enabled toggle itself stays enabled.
     expect(
       (rowByLabel(container, 'Enabled')!.querySelector('input') as HTMLInputElement).disabled,
     ).toBe(false)
     unmount()
   })
+})
 
-  it('commits a realtime single-step change of Radius on the step arrow', () => {
-    const onSet = vi.fn()
+describe('SceneAntialiasingSection', () => {
+  it('renders the Quality dropdown only; method / jitter / threshold have no rows', () => {
     const { container, unmount } = mountTree(
-      <SceneAmbientOcclusionSection
+      <SceneAntialiasingSection
         entries={fullEntries()}
-        onSet={onSet}
+        onSet={vi.fn()}
+        onSetMany={vi.fn()}
         onReset={vi.fn()}
         sceneId={1}
       />,
     )
-    const incr = rowByLabel(container, 'Radius')!.querySelector(
-      '.h3-form-drag-arrow-right',
-    ) as HTMLButtonElement
-    pressStepArrow(incr)
-    // step 0.1 from 4.0 -> 4.1, committed live (preview restored to original first).
-    expect(onSet).toHaveBeenCalledWith('aoRadius', 'real', 4.1, {
-      mode: 'commit',
-      originalValue: 4.0,
-      originalWasDefault: false,
-    })
+    expect(rowByLabel(container, 'Quality')).not.toBeNull()
+    for (const label of ['Method', 'Jitter SS', 'SMAA threshold']) {
+      expect(rowByLabel(container, label)).toBeNull()
+    }
+    expect(container.querySelectorAll('.h3-form-prop-row').length).toBe(1)
     unmount()
   })
 })
 
-describe('SceneAntialiasingSection', () => {
-  it('shows friendly method labels and commits the raw enum id', () => {
+describe('Scene quality presets', () => {
+  const read = (entries: GenericPropEntry[]) => (k: string) =>
+    entries.find((e) => e.key === k)?.value
+
+  it('every step of an axis writes the same key set', () => {
+    for (const axis of [SCENE_AO_PRESET_AXIS, SCENE_AA_QUALITY_AXIS]) {
+      const keys = Object.keys(axis.steps[0].patch).sort()
+      for (const step of axis.steps) {
+        expect(Object.keys(step.patch).sort()).toEqual(keys)
+      }
+    }
+  })
+
+  it('the default steps match the C++ defaults (a fresh scene is not Custom)', () => {
+    expect(sceneStepOf(SCENE_AO_PRESET_AXIS, read(fullEntries()))).toBe('low')
+    expect(sceneStepOf(SCENE_AA_QUALITY_AXIS, read(fullEntries()))).toBe('standard')
+  })
+
+  it('sceneStepOf tolerates float round-trip noise (epsilon compare)', () => {
+    const entries = fullEntries().map((e) =>
+      e.key === 'aoIntensity'
+        ? entry({ key: 'aoIntensity', type: 'real', value: 2.2000000001 })
+        : e,
+    )
+    expect(sceneStepOf(SCENE_AO_PRESET_AXIS, read(entries))).toBe('low')
+  })
+
+  it('editing a prop outside the patch (aoSlices) keeps the AO preset step', () => {
+    const entries = fullEntries().map((e) =>
+      e.key === 'aoSlices' ? entry({ key: 'aoSlices', type: 'integer', value: 12 }) : e,
+    )
+    expect(sceneStepOf(SCENE_AO_PRESET_AXIS, read(entries))).toBe('low')
+  })
+
+  it('AO Preset reads "low" on defaults and applies a step as one multi-write', () => {
     const onSet = vi.fn()
+    const onSetMany = vi.fn()
     const { container, unmount } = mountTree(
-      <SceneAntialiasingSection
+      <SceneAmbientOcclusionSection
         entries={fullEntries()}
         onSet={onSet}
+        onSetMany={onSetMany}
         onReset={vi.fn()}
         sceneId={1}
       />,
     )
-    const sel = rowByLabel(container, 'Method')!.querySelector('select') as HTMLSelectElement
-    expect(Array.from(sel.options).map((o) => o.textContent)).toEqual(['None', 'FXAA', 'SMAA'])
+    const sel = rowByLabel(container, 'Preset')!.querySelector('select') as HTMLSelectElement
+    expect(sel.value).toBe('low')
+    // Custom is only offered while it is the truth -- not on a step.
+    expect(Array.from(sel.options).map((o) => o.value)).toEqual(['low', 'medium', 'high'])
     act(() => {
-      sel.value = 'smaa'
+      sel.value = 'medium'
       sel.dispatchEvent(new Event('change', { bubbles: true }))
     })
-    expect(onSet).toHaveBeenCalledWith('aa_method', 'enum', 'smaa')
+    expect(onSetMany).toHaveBeenCalledTimes(1)
+    expect(onSetMany).toHaveBeenCalledWith([
+      { key: 'aoRadius', valueType: 'real', value: 8 },
+      { key: 'aoSteps', valueType: 'integer', value: 4 },
+      { key: 'aoIntensity', valueType: 'real', value: 1.9 },
+    ])
+    expect(onSet).not.toHaveBeenCalled()
     unmount()
   })
 
-  it('Jitter SS is a 0-5 dropdown (not a numeric stepper) and commits a number', () => {
-    const onSet = vi.fn()
+  it('AO Preset reads Custom (offered only then) after a patched prop was edited', () => {
+    const entries = fullEntries().map((e) =>
+      e.key === 'aoRadius' ? entry({ key: 'aoRadius', type: 'real', value: 6.0 }) : e,
+    )
+    const onSetMany = vi.fn()
     const { container, unmount } = mountTree(
-      <SceneAntialiasingSection
-        entries={fullEntries()}
-        onSet={onSet}
+      <SceneAmbientOcclusionSection
+        entries={entries}
+        onSet={vi.fn()}
+        onSetMany={onSetMany}
         onReset={vi.fn()}
         sceneId={1}
       />,
     )
-    const row = rowByLabel(container, 'Jitter SS')!
-    // A dropdown (SelectField), not the NumericField/DragNumericField stepper.
-    const sel = row.querySelector('select') as HTMLSelectElement
-    expect(sel).not.toBeNull()
-    expect(row.querySelector('.h3-form-numeric, .h3-form-drag')).toBeNull()
-    expect(Array.from(sel.options).map((o) => [o.value, o.textContent])).toEqual([
-      ['0', 'Off'], ['1', '1'], ['2', '2'], ['3', '3'], ['4', '4'], ['5', '5'],
+    const sel = rowByLabel(container, 'Preset')!.querySelector('select') as HTMLSelectElement
+    expect(sel.value).toBe('custom')
+    expect(Array.from(sel.options).map((o) => o.value)).toEqual([
+      'low', 'medium', 'high', 'custom',
     ])
+    // Re-picking "custom" is a read-back state, not an applicable choice.
     act(() => {
-      sel.value = '3'
+      sel.value = 'custom'
       sel.dispatchEvent(new Event('change', { bubbles: true }))
     })
-    expect(onSet).toHaveBeenCalledWith('aaJitterLevel', 'integer', 3)
+    expect(onSetMany).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('disables the AO Preset while AO is off; the AA Quality stays enabled', () => {
+    const ao = mountTree(
+      <SceneAmbientOcclusionSection
+        entries={fullEntries(false)}
+        onSet={vi.fn()}
+        onSetMany={vi.fn()}
+        onReset={vi.fn()}
+        sceneId={1}
+      />,
+    )
+    expect(
+      (rowByLabel(ao.container, 'Preset')!.querySelector('select') as HTMLSelectElement).disabled,
+    ).toBe(true)
+    ao.unmount()
+
+    const aa = mountTree(
+      <SceneAntialiasingSection
+        entries={fullEntries(false)}
+        onSet={vi.fn()}
+        onSetMany={vi.fn()}
+        onReset={vi.fn()}
+        sceneId={1}
+      />,
+    )
+    expect(
+      (rowByLabel(aa.container, 'Quality')!.querySelector('select') as HTMLSelectElement).disabled,
+    ).toBe(false)
+    aa.unmount()
+  })
+
+  it('AA Quality reads "standard" on defaults and applies a step as one multi-write', () => {
+    const onSet = vi.fn()
+    const onSetMany = vi.fn()
+    const { container, unmount } = mountTree(
+      <SceneAntialiasingSection
+        entries={fullEntries()}
+        onSet={onSet}
+        onSetMany={onSetMany}
+        onReset={vi.fn()}
+        sceneId={1}
+      />,
+    )
+    const sel = rowByLabel(container, 'Quality')!.querySelector('select') as HTMLSelectElement
+    expect(sel.value).toBe('standard')
+    act(() => {
+      sel.value = 'ultra'
+      sel.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    expect(onSetMany).toHaveBeenCalledTimes(1)
+    expect(onSetMany).toHaveBeenCalledWith([
+      { key: 'aa_method', valueType: 'enum', value: 'fxaa' },
+      { key: 'aaJitterLevel', valueType: 'integer', value: 5 },
+    ])
+    expect(onSet).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('AA Quality reads Custom when SMAA is picked in the Method row', () => {
+    const entries = fullEntries().map((e) =>
+      e.key === 'aa_method'
+        ? entry({ key: 'aa_method', type: 'enum', value: 'smaa', enumdef: ['fxaa', 'none', 'smaa'] })
+        : e,
+    )
+    const { container, unmount } = mountTree(
+      <SceneAntialiasingSection
+        entries={entries}
+        onSet={vi.fn()}
+        onSetMany={vi.fn()}
+        onReset={vi.fn()}
+        sceneId={1}
+      />,
+    )
+    expect(
+      (rowByLabel(container, 'Quality')!.querySelector('select') as HTMLSelectElement).value,
+    ).toBe('custom')
     unmount()
   })
 })

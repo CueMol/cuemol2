@@ -302,10 +302,12 @@ export interface MappedEnumRowProps extends RowProps {
   /** Display text per raw enum ID (value stays the raw C++ string ID). */
   labels: Record<string, string>;
   /**
-   * Restrict the offered options to this subset of the property's `enumdef`
-   * (in this order). Use when the UXP dialog exposes fewer choices than the C++
-   * enum (e.g. the cartoon cylinder-helix / sheet / coil section type omits
-   * "fancy1"). Defaults to the full `enumdef`.
+   * Offer these options, in this order. Entries not present in the property's
+   * `enumdef` are dropped, so this both restricts the choices (e.g. the
+   * cartoon cylinder-helix / sheet / coil section type omits "fancy1") and
+   * fixes the display order (the `enumdef` from C++ getPropsJSON is
+   * alphabetical, which is rarely the natural order). Defaults to the full
+   * `enumdef`.
    */
   options?: string[];
   disabled?: boolean;
@@ -330,8 +332,10 @@ export const MappedEnumRow: React.FC<MappedEnumRowProps> = ({
   disabled,
 }) => {
   const allOptions = entry.enumdef ?? [String(entry.value)];
+  // options controls the display order (enumdef is alphabetical); keep only
+  // the entries the live enumdef actually offers.
   const shownOptions = options
-    ? allOptions.filter((o) => options.includes(o))
+    ? options.filter((o) => allOptions.includes(o))
     : allOptions;
   return (
     <PropertyField label={label} {...resetProps(entry, onReset)}>

@@ -397,3 +397,55 @@ TEST_F(SceneTest, CreateViewSetsSceneID)
     ASSERT_FALSE(pView.isnull());
     EXPECT_EQ(pView->getSceneID(), m_pScene->getUID());
 }
+
+// AA (aa_method / aaJitterLevel) is independent of AO: the settings hold
+// their values regardless of the AO flag, and toggling AO does not touch them.
+TEST_F(SceneTest, AAPropsAreIndependentOfAO)
+{
+    m_pScene->setAOEnabled(false);
+    m_pScene->setAAMethod(qsys::Scene::AA_SMAA);
+    m_pScene->setAAJitterLevel(3);
+    EXPECT_EQ(m_pScene->getAAMethod(), qsys::Scene::AA_SMAA);
+    EXPECT_EQ(m_pScene->getAAJitterLevel(), 3);
+
+    m_pScene->setAOEnabled(true);
+    EXPECT_EQ(m_pScene->getAAMethod(), qsys::Scene::AA_SMAA);
+    EXPECT_EQ(m_pScene->getAAJitterLevel(), 3);
+}
+
+// requiresFramePipeline() decides whether drawScene routes the frame through
+// the off-screen pipeline: AO, spatial post-AA, or temporal jitter each
+// require it on their own; all off = legacy direct (MSAA) rendering.
+TEST_F(SceneTest, RequiresFramePipelineContract)
+{
+    // Default scene: AO off, aa_method fxaa, jitter 0 -> pipeline required
+    // (the default AA is deliberately active without AO).
+    EXPECT_FALSE(m_pScene->isAOEnabled());
+    EXPECT_EQ(m_pScene->getAAMethod(), qsys::Scene::AA_FXAA);
+    EXPECT_EQ(m_pScene->getAAJitterLevel(), 0);
+    EXPECT_TRUE(m_pScene->requiresFramePipeline());
+
+    m_pScene->setAAMethod(qsys::Scene::AA_NONE);
+    EXPECT_FALSE(m_pScene->requiresFramePipeline());
+
+    m_pScene->setAAJitterLevel(2);
+    EXPECT_TRUE(m_pScene->requiresFramePipeline());
+
+    m_pScene->setAAJitterLevel(0);
+    m_pScene->setAOEnabled(true);
+    EXPECT_TRUE(m_pScene->requiresFramePipeline());
+
+    m_pScene->setAOEnabled(false);
+    m_pScene->setAAMethod(qsys::Scene::AA_SMAA);
+    EXPECT_TRUE(m_pScene->requiresFramePipeline());
+}
+
+// The SMAA edge-detection threshold is a tunable scene property; 0.05 (the
+// SMAA "Ultra" preset) is the deliberate default so object-object silhouettes
+// with modest color contrast are still antialiased.
+TEST_F(SceneTest, SmaaThresholdDefaultAndSetGet)
+{
+    EXPECT_DOUBLE_EQ(m_pScene->getAASmaaThreshold(), 0.05);
+    m_pScene->setAASmaaThreshold(0.12);
+    EXPECT_DOUBLE_EQ(m_pScene->getAASmaaThreshold(), 0.12);
+}

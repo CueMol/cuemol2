@@ -127,6 +127,7 @@ Scene::Scene()
   m_bAOHalfRes = false;
   m_nAAMethod = AA_FXAA;
   m_nAAJitterLevel = 0;
+  m_fAASmaaThreshold = 0.05;
 
   MB_DPRINTLN("Scene (%d) created.", (int)m_nUID);
 }

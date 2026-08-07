@@ -327,6 +327,7 @@ void PostProcGpuPrim::drawSmaaEdges(DisplayContext *pDC, RenderTarget *srcColorR
     m_pSmaaEdgePO->setUniform("u_colorTex", RT_TU_COLOR);
     m_pSmaaEdgePO->setUniformF("u_rcpFrame", consts.viewportPixelSize[0],
                                consts.viewportPixelSize[1]);
+    m_pSmaaEdgePO->setUniformF("u_threshold", consts.smaaThreshold);
 
     pDC->drawElem(*m_pDrawElem);
 
