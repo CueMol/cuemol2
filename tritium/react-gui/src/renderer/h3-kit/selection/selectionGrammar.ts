@@ -67,11 +67,14 @@ export interface KeywordDef {
 }
 
 /**
- * Ordered keyword definitions; drives the Property keyword dropdown. Ordered by
- * expected usage frequency (hier / chain / resid first), then the remaining
+ * Ordered keyword definitions; drives the Term keyword dropdown. Ordered by
+ * expected usage frequency: the ready-made sources (Named / History) first,
+ * then the property keywords (hier / chain / resid first), then the remaining
  * keywords in their original order. Abbreviated labels carry a `full` tooltip.
  */
 export const KEYWORDS: KeywordDef[] = [
+    { key: 'named', label: 'Named', full: 'Named selection', emit: '', valueKind: 'named', quote: false },
+    { key: 'history', label: 'History', emit: '', valueKind: 'history', quote: false },
     { key: 'hierarchical', label: 'hier', full: 'Hierarchical', emit: '', valueKind: 'hierarchical', quote: false },
     { key: 'chain', label: 'chain', emit: 'chain', valueKind: 'nameList', quote: true, autocomplete: 'chain' },
     { key: 'resi', label: 'resid', full: 'Residue index', emit: 'resid', valueKind: 'numList', quote: false },
@@ -83,8 +86,6 @@ export const KEYWORDS: KeywordDef[] = [
     { key: 'alt', label: 'Altloc', emit: 'alt', valueKind: 'nameList', quote: false, allowNull: true },
     { key: 'bfac', label: 'bfac', full: 'B-factor', emit: 'bfac', valueKind: 'compare', quote: false },
     { key: 'rprop', label: 'rprop', full: 'Residue prop', emit: 'rprop', valueKind: 'nameValue', quote: false },
-    { key: 'named', label: 'Named', full: 'Named selection', emit: '', valueKind: 'named', quote: false },
-    { key: 'history', label: 'History', emit: '', valueKind: 'history', quote: false },
 ];
 
 /** Look up a keyword definition; falls back to the first entry. */

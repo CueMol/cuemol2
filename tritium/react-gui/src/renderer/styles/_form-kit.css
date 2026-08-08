@@ -1061,3 +1061,21 @@
   padding-bottom: 0;
   font-size: var(--fs-base);
 }
+
+/* Compact variant: reduced chrome for dense hosts (popovers). Blueprint's
+   container carries 3px padding/gap of its own, so both drop to --space-1 and
+   the segment height drops one step; the labels render at the group-label
+   role so a tab strip reads at the same level as the FieldSection titles it
+   switches between. */
+.h3-form-segmented--compact.bp5-segmented-control {
+  padding: var(--space-1);
+  gap: var(--space-1);
+}
+
+.h3-form-segmented--compact.bp5-segmented-control .bp5-button {
+  min-height: var(--field-segment-compact-h);
+  font-size: var(--type-group-label-fs);
+  line-height: var(--type-group-label-lh);
+  font-weight: var(--type-group-label-fw);
+  letter-spacing: var(--ls-wide);
+}

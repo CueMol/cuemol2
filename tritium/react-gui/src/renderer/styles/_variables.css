@@ -247,6 +247,7 @@
   --form-row-gap: var(--space-1);      /* gap between rows in a FieldGroup */
   --form-section-gap: var(--space-3);  /* gap between form sections */
   --field-btn-h: var(--ctrl-h-sm);     /* compact form button height */
+  --field-segment-compact-h: 16px;     /* SegmentField compact-variant segment height */
 
   /* ── Per-property reset (PropertyField modified indicator) ──
      The left bar's width is always reserved so a row never shifts when it

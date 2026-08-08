@@ -22,7 +22,7 @@
  * @module SelectionPane
  */
 
-import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { Button, Popover } from '@blueprintjs/core';
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol';
 import { SectionHeader } from './SectionHeader';
@@ -168,6 +168,10 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({
                 setGlobalDefs([]);
                 setCurrentSel('');
             });
+        // The pane stays mounted, so re-read the shared history store here --
+        // expressions pushed by other widgets (MolSelList hosts) would
+        // otherwise never reach this pane's quick list.
+        setHistoryItems(getHistory());
     }, [cm, activeSceneId, selectedMolId]);
 
     useEffect(() => {
@@ -419,6 +423,12 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({
                         </div>
                     </FieldSection>
 
+                    {/* No onQuickApply here: the default onApply channel
+                        already applies straight to mol.sel (live, no history
+                        record), which is exactly what a Named / History tab
+                        click should do. namedCurrentSel is omitted as well --
+                        `current` already mirrors mol.sel, so a "Selected"
+                        entry would duplicate it. */}
                     <SelectionBuilder
                         current={currentSel}
                         draft={draft}

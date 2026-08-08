@@ -74,6 +74,14 @@ function clickOp(label: string): void {
     el.click()
 }
 
+/** Switch the (portaled) builder popover to a tab by its label. */
+function selectTab(label: string): void {
+    const btn = Array.from(document.querySelectorAll('.h3-form-segmented button')).find(
+        (b) => b.textContent?.trim() === label,
+    ) as HTMLButtonElement
+    btn.click()
+}
+
 describe('PaintSelCell', () => {
     beforeEach(() => {
         globalThis.localStorage.clear()
@@ -142,9 +150,11 @@ describe('PaintSelCell', () => {
             <PaintSelCell sceneID={1} value="chain A" onCommit={onCommit} />,
         )
         await flushPromises()
-        // Open the builder popover and compose `chain 'Z'` via Set.
+        // Open the builder popover and compose `chain 'Z'` via Set (the
+        // composer lives on the Term tab; the popover opens on Named).
         await act(async () => { getTrigger(container).click() })
         await flushPromises()
+        await act(async () => { selectTab('Term') })
         await act(async () => {
             setSelect(document.querySelector('.selbuilder-property select') as HTMLSelectElement, 'chain')
         })

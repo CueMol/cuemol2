@@ -6,9 +6,9 @@
  * bespoke LAYOUT (the keyword+value row, the Apply indent, the op grids),
  * never a control height or focus ring.
  *
- * Two FieldSections: Term (keyword + operand + Apply) and Modify (unary ops).
- * Apply is a child of Term (indented); Term and Modify are peers. Apply and
- * Modify are both 2x2 grids of labelled buttons.
+ * Four tabs (SegmentField): Named / History (ready-made expression menus),
+ * Term (keyword + operand + Apply), and Mod (unary ops). Apply and Mod are
+ * both 2x2 grids of labelled buttons.
  */
 
 .selbuilder {
@@ -23,6 +23,15 @@
 .selbuilder--disabled {
   opacity: 0.55;
   pointer-events: none;
+}
+
+/* Term / Mod tab panels: stack their rows at the shared section rhythm (the
+   Named / History tab panels are bare menus). */
+.selbuilder-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--form-section-gap);
+  min-width: 0;
 }
 
 /* All controls are form-kit catalog components (TextField / SelectField /
@@ -86,15 +95,28 @@
   min-height: var(--ctrl-h-md);
 }
 
-/* --- Apply (child of Term) --- */
+/* Group headers (Selected / Scene / Global): Blueprint's MenuDivider title is
+   an oversized heading by default; align it with the catalog group-label role
+   (the same scale as the FieldSection titles) so it no longer outweighs the
+   tabs and the menu rows. */
+.selbuilder-menu .bp5-menu-header .bp5-heading {
+  font-size: var(--type-group-label-fs);
+  line-height: var(--type-group-label-lh);
+  font-weight: var(--type-group-label-fw);
+  letter-spacing: var(--ls-wide);
+  color: var(--text-primary);
+  padding: var(--space-2) var(--space-3) 0 var(--space-3);
+}
 
-/* Apply is nested under Term (not a peer of Term/Modify), so it carries a left
-   indent + its own "Apply" sub-label to read as belonging to the term above. */
+/* --- Apply (Term tab) --- */
+
+/* The "Apply" sub-label + op grid below the keyword row. Flat (no indent):
+   inside the Term tab the keyword row and Apply are the whole content, so
+   there is no sibling section to indent against. */
 .selbuilder-apply {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  padding-left: var(--space-3);
 }
 
 /* The "Apply" label and "Å" unit carry their typography role class
@@ -139,13 +161,28 @@
   white-space: nowrap;
 }
 
+/* When space runs short the LABEL shrinks (ellipsis above); the count badge
+   never does -- a truncated number would misread as a smaller count. The
+   badge's own width is bounded by CountTag's abbreviation (~4 chars). */
+.selbuilder-op-btn .selbuilder-count {
+  flex: none;
+}
+
 /* --- Modify distance row --- */
 
+/* Single line, never wraps: wrapping used to push the Angstrom unit onto its
+   own line when the op badges got wide. The two op buttons absorb the
+   shortfall instead (their labels ellipsize); the distance select and the
+   unit keep their natural width. */
 .selbuilder-distance-row {
   display: flex;
   align-items: center;
-  gap: var(--space-2) var(--space-3);
-  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.selbuilder-distance-row > .bp5-popover-target {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 /* Narrow distance dropdown at the end of the row (after Around / Expand). Sized

@@ -5,14 +5,18 @@
  * opens a popover holding the shared `SelectionBuilder` (the same Term + Modify
  * composer the SelectionPane uses).
  *
- * The builder composes CueMol selection expressions (Prop keyword + value,
- * Named / History, set operations, distance shells) into the widget's own
- * `selectedSel` value. It is NON-destructive: the target molecule's `mol.sel`
- * is used only as read-only context (hit counts, keyword autocomplete) and is
- * never mutated -- MolSelList is used across many dialogs that pick a selection
- * for an operation without applying it. Each builder op calls
- * `onSelectedSelChange` (updates the value); it does NOT `onCommit` -- commit
- * stays on input blur, as before.
+ * The builder is tabbed (Named / History / Builder). The Builder tab composes
+ * CueMol selection expressions (property keyword + value, set operations,
+ * distance shells) into the widget's own `selectedSel` value. It is
+ * NON-destructive: the target molecule's `mol.sel` is used only as read-only
+ * context (hit counts, keyword autocomplete, the Named tab's "Selected"
+ * entry) and is never mutated -- MolSelList is used across many dialogs that
+ * pick a selection for an operation without applying it. Each builder op
+ * calls `onSelectedSelChange` (updates the value); it does NOT `onCommit` --
+ * commit stays on input blur / popover close. The exception is the builder's
+ * quick-apply path (a Named / History tab click, or Enter on a term while the
+ * field is empty): it commits the expression immediately and closes the
+ * popover, restoring the old one-click-pick flow.
  *
  * Live validation: each `selectedSel` change is sent (debounced) to the
  * `validateSelection` worker service; on failure the input gets `Intent.DANGER`.
@@ -92,6 +96,9 @@ export const MolSelList: React.FC<MolSelListProps> = ({
 
     const [sceneDefs, setSceneDefs] = useState<string[]>([]);
     const [globalDefs, setGlobalDefs] = useState<string[]>([]);
+    // The target molecule's applied selection (mol.sel), shown as the Named
+    // tab's "Selected" entry. Read-only context; never written back.
+    const [molCurrentSel, setMolCurrentSel] = useState<string | undefined>(undefined);
     const [historyItems, setHistoryItems] = useState<string[]>(() => getHistory());
     const [isValid, setIsValid] = useState(true);
     const [isOpen, setIsOpen] = useState(false);
@@ -107,6 +114,7 @@ export const MolSelList: React.FC<MolSelListProps> = ({
         if (!cm) {
             setSceneDefs([]);
             setGlobalDefs([]);
+            setMolCurrentSel(undefined);
             return;
         }
         let cancelled = false;
@@ -116,11 +124,13 @@ export const MolSelList: React.FC<MolSelListProps> = ({
                 if (cancelled) return;
                 setSceneDefs(res.scene);
                 setGlobalDefs(res.global);
+                setMolCurrentSel(res.currentSel);
             })
             .catch(() => {
                 if (cancelled) return;
                 setSceneDefs([]);
                 setGlobalDefs([]);
+                setMolCurrentSel(undefined);
             });
         return () => {
             cancelled = true;
@@ -168,6 +178,12 @@ export const MolSelList: React.FC<MolSelListProps> = ({
                 setIsOpen(true);
                 return;
             }
+            // Already closed: nothing to commit. The quick-apply path closes
+            // the popover itself (committing the NEW value); the click that
+            // triggered it then reaches Blueprint's outside-click detection
+            // with a detached target, which would otherwise re-commit the
+            // stale selectedSel here.
+            if (!isOpen) return;
             // A pick inside a nested combobox dropdown (the keyword autocomplete)
             // is portaled OUTSIDE this popover's DOM, so it reads as an outside
             // click. Keep the popover open so autocomplete selection behaves like
@@ -177,7 +193,20 @@ export const MolSelList: React.FC<MolSelListProps> = ({
             onCommit?.(selectedSel);
             setIsOpen(false);
         },
-        [onCommit, selectedSel],
+        [onCommit, selectedSel, isOpen],
+    );
+
+    // Quick-apply (a Named / History tab pick): the one-click replacement.
+    // Commit the NEW expression explicitly -- the `selectedSel` prop is still
+    // the stale pre-click value in this tick, so routing through the popover's
+    // close-commit would commit the wrong value.
+    const handleQuickApply = useCallback(
+        (expr: string) => {
+            onSelectedSelChange(expr);
+            onCommit?.(expr);
+            setIsOpen(false);
+        },
+        [onSelectedSelChange, onCommit],
     );
 
     const pickerContent = (
@@ -187,6 +216,8 @@ export const MolSelList: React.FC<MolSelListProps> = ({
                 draft={draft}
                 dispatch={dispatch}
                 onApply={onSelectedSelChange}
+                onQuickApply={handleQuickApply}
+                namedCurrentSel={molCurrentSel}
                 history={historyItems}
                 sceneDefs={sceneDefs}
                 globalDefs={globalDefs}
