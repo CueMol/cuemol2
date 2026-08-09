@@ -81,7 +81,8 @@ chosen file extension (Electron does not return it natively).
   to one branch typically gives the others the same capability for free.
 - **Properties stays a stub through every phase** — the per-type
   property editor lands in Phase 5 (separate ADR when written).
-- **Regenerate surface is deferred to Phase 6c.**
+- **Regenerate surface (Phase 6c) landed separately** — see
+  [ADR-0047](ADR-0047-molsurf-regenerate.md).
 
 ## Notes
 
@@ -115,10 +116,11 @@ chosen file extension (Electron does not return it natively).
 
 ### Pending
 
-- Regenerate surface (Phase 6c, deferred)
 - Properties — depends on the per-type property editor (Phase 5)
 
 ### Related ADRs
 
 - [ADR-0004](ADR-0004-renderer-ctxmenu.md) — Renderer ctxmenu, shares
   Paint / New Renderer / clipboard helpers
+- [ADR-0047](ADR-0047-molsurf-regenerate.md) — Regenerate surface
+  (Phase 6c), the last non-Properties item of this branch

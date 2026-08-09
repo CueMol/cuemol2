@@ -95,6 +95,56 @@ describe('buildSceneCtxPayload — gating', () => {
         expect(iso.canGenSurfObj).toBe(true)
         expect(simple.canGenSurfObj).toBe(false)
     })
+
+    it('canRegenSurface is true only for MolSurfObj object rows', async () => {
+        const cm = makeCm()
+        const surf = await buildSceneCtxPayload(cm, 7,
+            objectNode({ className: 'MolSurfObj' }))
+        const mol = await buildSceneCtxPayload(cm, 7, objectNode())
+        const rend = await buildSceneCtxPayload(cm, 7,
+            rendererNode({ className: 'MolSurfObj' }))
+        expect(surf.canRegenSurface).toBe(true)
+        expect(mol.canRegenSurface).toBe(false)
+        expect(rend.canRegenSurface).toBe(false)
+    })
+})
+
+describe('buildSceneCtxPayload — regenerate surface gate', () => {
+    it('enables the item from the pre-fetched canRegen flag', async () => {
+        const cm = makeCm({ getMolSurfRegenInfo: { ok: true, canRegen: true } })
+        const p = await buildSceneCtxPayload(cm, 7, objectNode({ className: 'MolSurfObj' }))
+        expect(cm.invokeService).toHaveBeenCalledWith('getMolSurfRegenInfo',
+            { sceneId: 7, objId: 1 })
+        expect(p.canRegenSurface).toBe(true)
+        expect(p.regenSurfaceEnabled).toBe(true)
+    })
+
+    it('keeps the item visible but disabled when the origin molecule is gone', async () => {
+        const cm = makeCm({ getMolSurfRegenInfo: { ok: true, canRegen: false } })
+        const p = await buildSceneCtxPayload(cm, 7, objectNode({ className: 'MolSurfObj' }))
+        expect(p.canRegenSurface).toBe(true)
+        expect(p.regenSurfaceEnabled).toBe(false)
+    })
+
+    it('does not pre-fetch for non-MolSurfObj object rows', async () => {
+        const cm = makeCm()
+        const p = await buildSceneCtxPayload(cm, 7, objectNode())
+        const names = cm.invokeService.mock.calls.map((c: unknown[]) => c[0])
+        expect(names).not.toContain('getMolSurfRegenInfo')
+        expect(p.regenSurfaceEnabled).toBe(false)
+    })
+
+    it('degrades to disabled when the pre-fetch throws', async () => {
+        const cm = {
+            invokeService: vi.fn(async (name: string) => {
+                if (name === 'getMolSurfRegenInfo') throw new Error('boom')
+                return null
+            }),
+        } as any
+        const p = await buildSceneCtxPayload(cm, 7, objectNode({ className: 'MolSurfObj' }))
+        expect(p.canRegenSurface).toBe(true)
+        expect(p.regenSurfaceEnabled).toBe(false)
+    })
 })
 
 describe('buildSceneCtxPayload — pre-fetch dispatch', () => {

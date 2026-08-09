@@ -35,6 +35,9 @@ vi.mock('../components/dialogs/EditCameraVisFlagsDialogProvider', () => ({
 vi.mock('../components/dialogs/EditInteractionListDialogProvider', () => ({
     useShowEditInteractionListDialog: () => vi.fn().mockResolvedValue(null),
 }))
+vi.mock('../components/dialogs/RegenMolSurfDialogProvider', () => ({
+    useShowRegenMolSurfDialog: () => vi.fn().mockResolvedValue(null),
+}))
 vi.mock('../components/dialogs/StyleEditorDialogProvider', () => ({
     useShowStyleEditorDialog: () => vi.fn().mockResolvedValue(null),
 }))

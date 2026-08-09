@@ -100,6 +100,37 @@ describe('buildTemplate — node-type branches', () => {
     })
 })
 
+describe('buildTemplate — regenerate surface gate', () => {
+    const REGEN = 'Regenerate surface…'
+
+    it('is absent unless the object is a MolSurfObj', () => {
+        const tpl = buildTemplate(payload({ nodeType: 'object' }))
+        expect(findItem(tpl, REGEN)).toBeUndefined()
+    })
+
+    it('is present and enabled when the origin molecule resolves', () => {
+        const tpl = buildTemplate(payload({
+            nodeType: 'object', canRegenSurface: true, regenSurfaceEnabled: true,
+        }))
+        expect(kindOf(findItem(tpl, REGEN))).toBe('regenSurface')
+        expect(asItem(findItem(tpl, REGEN))?.enabled).toBe(true)
+    })
+
+    it('stays visible but disabled when the origin molecule is missing', () => {
+        const tpl = buildTemplate(payload({
+            nodeType: 'object', canRegenSurface: true, regenSurfaceEnabled: false,
+        }))
+        expect(asItem(findItem(tpl, REGEN))?.enabled).toBe(false)
+    })
+
+    it('is not offered on renderer rows', () => {
+        const tpl = buildTemplate(payload({
+            nodeType: 'renderer', canRegenSurface: true, regenSurfaceEnabled: true,
+        }))
+        expect(findItem(tpl, REGEN)).toBeUndefined()
+    })
+})
+
 describe('buildTemplate — camera gates', () => {
     it('Reload follows cameraInfo.src; Clear vis flags follows visSize', () => {
         const withSrc = buildTemplate(

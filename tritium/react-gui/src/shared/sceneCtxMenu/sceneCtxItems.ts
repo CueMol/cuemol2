@@ -311,6 +311,20 @@ export function generateSurfObjItem(payload: SceneCtxMenuPayload): SceneCtxNode[
 }
 
 /**
+ * Object-row "Regenerate surface..." item. Two-stage gate mirroring UXP
+ * `setupMolSurfCtxtMenu`: hidden unless the object is a `MolSurfObj`, then
+ * shown-but-disabled unless its origin molecule is still in the scene.
+ */
+export function regenSurfaceItem(payload: SceneCtxMenuPayload): SceneCtxNode[] {
+    if (!payload.canRegenSurface) return []
+    return [{
+        label: 'Regenerate surface…',
+        enabled: payload.regenSurfaceEnabled === true,
+        action: { kind: 'regenSurface' },
+    }]
+}
+
+/**
  * Object-row "New Group..." item -- creates an empty `*group` renderer
  * under the targeted mol. Mirrors UXP `wspcPanelObjCtxtMenu` New Group.
  */

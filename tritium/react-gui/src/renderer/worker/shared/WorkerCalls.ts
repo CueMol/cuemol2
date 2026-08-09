@@ -417,6 +417,12 @@ import type {
   ProposeMolSurfNameResult,
 } from '../server/services/makeMolSurf.service'
 import type {
+  GetMolSurfRegenInfoArgs,
+  GetMolSurfRegenInfoResult,
+  RegenMolSurfArgs,
+  RegenMolSurfResult,
+} from '../server/services/regenMolSurf.service'
+import type {
   CalcApbsStartArgs,
   CalcApbsStartResult,
   CalcApbsCancelArgs,
@@ -663,6 +669,8 @@ export interface ServiceMap {
   mergeMol:                   { args: MergeMolArgs;                    result: MergeMolResult }
   makeMolSurf:                { args: MakeMolSurfArgs;                 result: MakeMolSurfResult }
   proposeMolSurfName:         { args: ProposeMolSurfNameArgs;          result: ProposeMolSurfNameResult }
+  getMolSurfRegenInfo:        { args: GetMolSurfRegenInfoArgs;         result: GetMolSurfRegenInfoResult }
+  regenMolSurf:               { args: RegenMolSurfArgs;                result: RegenMolSurfResult }
   calcApbsStart:              { args: CalcApbsStartArgs;               result: CalcApbsStartResult }
   calcApbsCancel:             { args: CalcApbsCancelArgs;              result: CalcApbsCancelResult }
   proposeElepotName:          { args: ProposeElepotNameArgs;           result: ProposeElepotNameResult }

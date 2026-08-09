@@ -20,7 +20,7 @@
  * regeneration mode is intentionally out of scope.
  */
 
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useCueMol } from '../../hooks/useCueMol'
 import { useMolEditCommit } from '../../hooks/useMolEditCommit'
 import { ComboBoxField, Field, FieldSection, NumericField, SwitchField, TextField } from '../../h3-kit/form'
@@ -28,6 +28,7 @@ import { DialogShell } from './DialogShell'
 import { MolPicker } from './MolPicker'
 import { MolSelList } from '../../h3-kit/MolSelList/MolSelList'
 import { pushHistory } from '../../h3-kit/MolSelList/selHistory'
+import { DEFAULT_DENSITY, DENSITY_PRESETS, useMolSurfDensity } from './molSurfDensity'
 
 export interface MakeMolSurfDialogResult {
     ok: boolean
@@ -42,14 +43,10 @@ interface Props {
     onCancel: () => void
 }
 
-// UXP XUL defaults: density has min="1" and no explicit value (numberbox
-// initialises to its min), probe radius value="1.4".
-const DEFAULT_DENSITY = 1
+// UXP XUL default for the probe radius (`value="1.4"`). The density default
+// and its preset list live in `molSurfDensity.ts`, shared with the regenerate
+// dialog.
 const DEFAULT_PROBE_RADIUS = 1.4
-
-// Common point-density values shown in the ComboBoxField dropdown; typing a
-// different positive integer is still accepted (see handleDensityChange).
-const DENSITY_PRESETS = ['1', '2', '3', '4', '5']
 
 export function MakeMolSurfDialog({
     visible, sceneId, onConfirm, onCancel,
@@ -60,19 +57,11 @@ export function MakeMolSurfDialog({
     const [useSel, setUseSel] = useState<boolean>(false)
     const [selStr, setSelStr] = useState<string>('')
     const [surfName, setSurfName] = useState<string>('')
-    const [density, setDensity] = useState<number>(DEFAULT_DENSITY)
     const [probeRadius, setProbeRadius] = useState<number>(DEFAULT_PROBE_RADIUS)
 
-    // Raw text for the density combobox: free typing stays local until it
-    // parses to a positive integer, and the draft re-syncs whenever the
-    // committed value changes from outside (preset pick, reset-on-open).
-    const [densityDraft, setDensityDraft] = useState<string>(String(DEFAULT_DENSITY))
-    useEffect(() => setDensityDraft(String(density)), [density])
-    const handleDensityChange = useCallback((text: string) => {
-        setDensityDraft(text)
-        const n = Math.round(Number(text))
-        if (Number.isFinite(n) && n >= 1) setDensity(n)
-    }, [])
+    const {
+        density, setDensity, draft: densityDraft, onDraftChange: handleDensityChange,
+    } = useMolSurfDensity(DEFAULT_DENSITY)
 
     // Commit handler + submitting/errorMsg state + reset-on-open. The molecule
     // id is intentionally NOT reset (last-picked persists); the surface name is

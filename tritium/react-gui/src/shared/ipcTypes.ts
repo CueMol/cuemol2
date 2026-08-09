@@ -353,6 +353,7 @@ export type SceneCtxAction =
   | { kind: 'toggleColorProofing' }
   | { kind: 'setRendSel'; selKind: ChangeRendSelKind }
   | { kind: 'generateSurfObj' }
+  | { kind: 'regenSurface' }
   | { kind: 'editInteractionList' }
   | { kind: 'newRendGroup' }
   | { kind: 'newRenderer' }
@@ -456,6 +457,20 @@ export interface SceneCtxMenuPayload {
    * gate). Renderer ctx only.
    */
   canGenSurfObj?: boolean
+  /**
+   * Whether the "Regenerate surface..." item should appear at all on the
+   * object ctx menu. True iff the object's class is `MolSurfObj` (matches
+   * the `item.hidden` half of UXP `setupMolSurfCtxtMenu`). Object ctx only.
+   */
+  canRegenSurface?: boolean
+  /**
+   * Whether that same item is clickable. True iff the surface's `orig_mol`
+   * still resolves to an object in the scene -- a surface loaded from a file
+   * or produced by `generateSurfObj` has no origin molecule and shows up
+   * disabled, matching the `item.disabled` half of UXP
+   * `setupMolSurfCtxtMenu`. Object ctx only.
+   */
+  regenSurfaceEnabled?: boolean
   /**
    * Whether the "Edit interaction list..." item should appear on the renderer
    * ctx menu. True iff the renderer is `atomintr` (UXP `aintr-edit` dialog).
