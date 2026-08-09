@@ -27,6 +27,8 @@ import type { EditCameraVisFlagsDialogResult } from '../../components/dialogs/Ed
 import type { EditInteractionListDialogArgs } from '../../components/dialogs/EditInteractionListDialogProvider'
 import type { EditInteractionListDialogResult } from '../../components/dialogs/EditInteractionListDialog'
 import type { StyleEditorDialogArgs } from '../../components/dialogs/StyleEditorDialogProvider'
+import type { RegenMolSurfDialogArgs } from '../../components/dialogs/RegenMolSurfDialogProvider'
+import type { RegenMolSurfDialogResult } from '../../components/dialogs/RegenMolSurfDialog'
 import { runObjectSaveFlow } from './runObjectSaveFlow'
 
 export interface DispatchSceneCtxActionCtx {
@@ -107,6 +109,9 @@ export interface DispatchSceneCtxActionCtx {
     showEditInteractionList: (
         args: EditInteractionListDialogArgs,
     ) => Promise<EditInteractionListDialogResult | null>
+    showRegenMolSurf: (
+        args: RegenMolSurfDialogArgs,
+    ) => Promise<RegenMolSurfDialogResult | null>
     showStyleEditor: (args: StyleEditorDialogArgs) => Promise<void>
 
     // Shared sub-flows reused by toolbar Add button.
@@ -192,6 +197,29 @@ export async function dispatchSceneCtxAction(
             if (node.type !== 'renderer') return
             await ctx.generateRendererSurfObj(idStr)
             return
+        case 'regenSurface': {
+            if (node.type !== 'object') return
+            if (!ctx.cm || ctx.sceneId === undefined) return
+            // Re-read the origin-molecule state rather than trusting the
+            // menu payload: the scene may have changed while the menu was
+            // open, and the dialog needs orig_den / orig_prad / orig_sel to
+            // prefill anyway.
+            const info = await ctx.cm.invokeService('getMolSurfRegenInfo', {
+                sceneId: ctx.sceneId,
+                objId: node.id,
+            })
+            if (!info?.canRegen) return
+            await ctx.showRegenMolSurf({
+                sceneId: ctx.sceneId,
+                objId: node.id,
+                objName: info.objName,
+                origMol: info.origMol,
+                selStr: info.selStr,
+                density: info.density,
+                probeRadius: info.probeRadius,
+            })
+            return
+        }
         case 'changeRendType':
             if (node.type !== 'renderer') return
             await ctx.changeRendererType(idStr, action.typeName)

@@ -30,6 +30,7 @@ import { DeleteMolDialogProvider } from '../components/dialogs/DeleteMolDialogPr
 import { ChangeResidueIndexDialogProvider } from '../components/dialogs/ChangeResidueIndexDialogProvider'
 import { MergeMolDialogProvider } from '../components/dialogs/MergeMolDialogProvider'
 import { MakeMolSurfDialogProvider } from '../components/dialogs/MakeMolSurfDialogProvider'
+import { RegenMolSurfDialogProvider } from '../components/dialogs/RegenMolSurfDialogProvider'
 import { CalcApbsPotDialogProvider } from '../components/dialogs/CalcApbsPotDialogProvider'
 import { InteractionAnalysisDialogProvider } from '../components/dialogs/InteractionAnalysisDialogProvider'
 import { CutSurfByPlaneDialogProvider } from '../components/dialogs/CutSurfByPlaneDialogProvider'
@@ -67,6 +68,7 @@ export const DialogProvider = composeProviders([
   ChangeResidueIndexDialogProvider,
   MergeMolDialogProvider,
   MakeMolSurfDialogProvider,
+  RegenMolSurfDialogProvider,
   CalcApbsPotDialogProvider,
   InteractionAnalysisDialogProvider,
   CutSurfByPlaneDialogProvider,

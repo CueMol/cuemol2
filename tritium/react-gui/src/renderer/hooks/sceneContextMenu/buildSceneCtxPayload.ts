@@ -52,6 +52,8 @@ export interface SceneCtxPayload {
     colorProofingEnabled: boolean
     supportsChangeSel: boolean
     canGenSurfObj: boolean
+    canRegenSurface: boolean
+    regenSurfaceEnabled: boolean
     canEditInteractions: boolean
     rendChangeTypes: string[]
     styleInfo?: SceneTreeNode extends { styleInfo?: infer S } ? S : undefined
@@ -81,6 +83,12 @@ export async function buildSceneCtxPayload(
     // Generate surface obj is isosurf-only.
     const canGenSurfObj =
         node.type === 'renderer' && node.className === 'isosurf'
+
+    // Regenerate surface is MolSurfObj-only. For object rows `className` is
+    // already the C++ class name, so visibility needs no round-trip; whether
+    // the item is *enabled* does (see the origin-molecule pre-fetch below).
+    const canRegenSurface =
+        node.type === 'object' && node.className === 'MolSurfObj'
 
     // Edit interaction list is atomintr-only (UXP aintr-edit dialog).
     const canEditInteractions =
@@ -135,17 +143,28 @@ export async function buildSceneCtxPayload(
         }
     }
 
-    // Object-row paint pre-fetch -- drives the Paint color-picker submenu
-    // gate (UXP `onPaintMol` object branch, hidden when sel is empty or
-    // coloring is not PaintColoring).
+    // Object-row pre-fetch -- the Paint color-picker submenu gate (UXP
+    // `onPaintMol` object branch, hidden when sel is empty or coloring is
+    // not PaintColoring) plus, for MolSurfObj rows, whether the surface's
+    // origin molecule is still resolvable (UXP `setupMolSurfCtxtMenu`).
+    let regenSurfaceEnabled = false
     if (cm && node.type === 'object' && sceneId !== undefined) {
         try {
-            const info = await cm.invokeService('getObjectPaintInfo', {
-                sceneId, objId: node.id,
-            })
+            const regenPromise = canRegenSurface
+                ? cm.invokeService('getMolSurfRegenInfo', {
+                      sceneId, objId: node.id,
+                  })
+                : Promise.resolve(null)
+            const [info, regenInfo] = await Promise.all([
+                cm.invokeService('getObjectPaintInfo', {
+                    sceneId, objId: node.id,
+                }),
+                regenPromise,
+            ])
             canPaint = info?.canPaint === true
+            regenSurfaceEnabled = regenInfo?.canRegen === true
         } catch (err) {
-            console.warn('object paint pre-fetch failed:', err)
+            console.warn('object ctx pre-fetch failed:', err)
         }
     }
 
@@ -184,6 +203,8 @@ export async function buildSceneCtxPayload(
         colorProofingEnabled,
         supportsChangeSel,
         canGenSurfObj,
+        canRegenSurface,
+        regenSurfaceEnabled,
         canEditInteractions,
         rendChangeTypes,
         styleInfo: styleInfo as SceneCtxPayload['styleInfo'],

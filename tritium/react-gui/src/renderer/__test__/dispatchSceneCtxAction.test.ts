@@ -56,6 +56,7 @@ function makeCtx(overrides: Partial<DispatchSceneCtxActionCtx> = {}): DispatchSc
         showCreateRendStyle: vi.fn().mockResolvedValue(null),
         showEditCameraVisFlags: vi.fn().mockResolvedValue(null),
         showEditInteractionList: vi.fn().mockResolvedValue(null),
+        showRegenMolSurf: vi.fn().mockResolvedValue(null),
         showStyleEditor: vi.fn().mockResolvedValue(undefined),
         openNewRendererFlow: vi.fn().mockResolvedValue(undefined),
         openNewCameraFlow: vi.fn().mockResolvedValue(undefined),
@@ -194,6 +195,50 @@ describe('dispatchSceneCtxAction — multi-select cases', () => {
         await dispatchSceneCtxAction(objectNode(), { kind: 'multiHide' } as SceneCtxAction, ctx)
         await dispatchSceneCtxAction(objectNode(), { kind: 'multiDelete' } as SceneCtxAction, ctx)
         // No throw; callbacks never invoked (they don't exist)
+    })
+})
+
+describe('dispatchSceneCtxAction — regenSurface', () => {
+    const regenInfo = {
+        ok: true, canRegen: true, objName: 'sf_1crn', origMol: '1crn',
+        origMolFound: true, selStr: 'protein', density: 3, probeRadius: 1.4,
+    }
+    const cmWith = (info: unknown) =>
+        ({ invokeService: vi.fn().mockResolvedValue(info) }) as any
+
+    it('pre-fetches the regen info and opens the dialog with it', async () => {
+        const cm = cmWith(regenInfo)
+        const ctx = makeCtx({ cm })
+        await dispatchSceneCtxAction(
+            objectNode({ id: 42, className: 'MolSurfObj' }),
+            { kind: 'regenSurface' } as SceneCtxAction, ctx,
+        )
+        expect(cm.invokeService).toHaveBeenCalledWith('getMolSurfRegenInfo', {
+            sceneId: 7, objId: 42,
+        })
+        expect(ctx.showRegenMolSurf).toHaveBeenCalledWith({
+            sceneId: 7, objId: 42, objName: 'sf_1crn', origMol: '1crn',
+            selStr: 'protein', density: 3, probeRadius: 1.4,
+        })
+    })
+
+    it('does not open the dialog when the origin molecule is gone', async () => {
+        const ctx = makeCtx({ cm: cmWith({ ...regenInfo, canRegen: false }) })
+        await dispatchSceneCtxAction(
+            objectNode({ className: 'MolSurfObj' }),
+            { kind: 'regenSurface' } as SceneCtxAction, ctx,
+        )
+        expect(ctx.showRegenMolSurf).not.toHaveBeenCalled()
+    })
+
+    it('is a no-op on a non-object node', async () => {
+        const cm = cmWith(regenInfo)
+        const ctx = makeCtx({ cm })
+        await dispatchSceneCtxAction(
+            rendererNode(), { kind: 'regenSurface' } as SceneCtxAction, ctx,
+        )
+        expect(cm.invokeService).not.toHaveBeenCalled()
+        expect(ctx.showRegenMolSurf).not.toHaveBeenCalled()
     })
 })
 

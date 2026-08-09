@@ -30,6 +30,7 @@ import {
     paintSubmenu,
     pasteItem,
     propertyItem,
+    regenSurfaceItem,
     renameItem,
     selectionSubmenu,
     showHideItems,
@@ -73,6 +74,7 @@ export function buildTemplate(payload: SceneCtxMenuPayload): SceneCtxNode[] {
             return [
                 ...header,
                 ...showHideItems(payload),
+                ...regenSurfaceItem(payload),
                 selectionSubmenu(),
                 ...paintSubmenu(payload),
                 { type: 'separator' },
