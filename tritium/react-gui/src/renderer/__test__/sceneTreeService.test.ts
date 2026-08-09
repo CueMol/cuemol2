@@ -325,6 +325,46 @@ describe('sceneTree service', () => {
             expect(setRendererVisible).toHaveBeenCalledWith(false)
         })
 
+        it('cascades rendGroup visibility to name-matched members in one "Change group visibility" txn', () => {
+            const { ctx, mockScene, startUndoTxn, commitUndoTxn } = makeCtx('[]')
+            const setGrpVisible = vi.fn()
+            const setChildVisible = vi.fn()
+            const setOtherVisible = vi.fn()
+            const clientObj = { rend_uids: '50,100,101' }
+            const grp = {
+                uid: 50, name: 'grp1',
+                getClientObj: () => clientObj,
+                get visible() { return true },
+                set visible(v: boolean) { setGrpVisible(v) },
+            }
+            const child = {
+                uid: 100, group: 'grp1',
+                get visible() { return true },
+                set visible(v: boolean) { setChildVisible(v) },
+            }
+            const other = {
+                uid: 101, group: '',
+                get visible() { return true },
+                set visible(v: boolean) { setOtherVisible(v) },
+            }
+            ;(mockScene as { getRenderer: ReturnType<typeof vi.fn> }).getRenderer =
+                vi.fn((uid: number) =>
+                    uid === 50 ? grp : uid === 100 ? child : uid === 101 ? other : null)
+            const res = services.setNodeVisible(ctx, {
+                sceneId: 1, nodeId: 50, nodeType: 'rendGroup', visible: false,
+            })
+            expect(res.ok).toBe(true)
+            // Single txn covering group + members; label matches UXP
+            // toggleVisibleRendGrp.
+            expect(startUndoTxn).toHaveBeenCalledTimes(1)
+            expect(startUndoTxn).toHaveBeenCalledWith('Change group visibility')
+            expect(commitUndoTxn).toHaveBeenCalledTimes(1)
+            expect(setGrpVisible).toHaveBeenCalledWith(false)
+            expect(setChildVisible).toHaveBeenCalledWith(false)
+            // Sibling renderer not in the group stays untouched.
+            expect(setOtherVisible).not.toHaveBeenCalled()
+        })
+
         it('rolls back undo txn on setter exception', () => {
             const { ctx, mockScene, startUndoTxn, commitUndoTxn, rollbackUndoTxn } = makeCtx('[]')
             const throwingObj = {
@@ -339,6 +379,54 @@ describe('sceneTree service', () => {
             expect(startUndoTxn).toHaveBeenCalled()
             expect(rollbackUndoTxn).toHaveBeenCalled()
             expect(commitUndoTxn).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('setNodeUiCollapsed', () => {
+        it('writes ui_collapsed on a rendGroup via getRenderer with NO undo txn', () => {
+            const { ctx, mockScene, startUndoTxn } = makeCtx('[]')
+            const setCollapsed = vi.fn()
+            const grp = {
+                get ui_collapsed() { return false },
+                set ui_collapsed(v: boolean) { setCollapsed(v) },
+            }
+            ;(mockScene as { getRenderer: ReturnType<typeof vi.fn> }).getRenderer =
+                vi.fn(() => grp)
+            const res = services.setNodeUiCollapsed(ctx, {
+                sceneId: 1, nodeId: 50, nodeType: 'rendGroup', collapsed: true,
+            })
+            expect(res.ok).toBe(true)
+            expect(setCollapsed).toHaveBeenCalledWith(true)
+            // UXP onTwistyClick parity: a collapse is not an edit.
+            expect(startUndoTxn).not.toHaveBeenCalled()
+        })
+
+        it('writes ui_collapsed on an object via getObject', () => {
+            const { ctx, mockScene } = makeCtx('[]')
+            const setCollapsed = vi.fn()
+            const obj = {
+                get ui_collapsed() { return true },
+                set ui_collapsed(v: boolean) { setCollapsed(v) },
+            }
+            ;(mockScene as { getObject: ReturnType<typeof vi.fn> }).getObject =
+                vi.fn(() => obj)
+            const res = services.setNodeUiCollapsed(ctx, {
+                sceneId: 1, nodeId: 10, nodeType: 'object', collapsed: false,
+            })
+            expect(res.ok).toBe(true)
+            expect((mockScene as { getObject: ReturnType<typeof vi.fn> }).getObject)
+                .toHaveBeenCalledWith(10)
+            expect(setCollapsed).toHaveBeenCalledWith(false)
+        })
+
+        it('rejects unsupported node types', () => {
+            const { ctx } = makeCtx('[]')
+            const res = services.setNodeUiCollapsed(ctx, {
+                sceneId: 1, nodeId: 100,
+                nodeType: 'renderer' as unknown as 'rendGroup',
+                collapsed: true,
+            })
+            expect(res.ok).toBe(false)
         })
     })
 })

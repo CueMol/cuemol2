@@ -213,3 +213,110 @@ describe('NewRendererDialog (renderer-add parity)', () => {
         handle.unmount()
     })
 })
+
+// --- renderer presets (ADR-0046) ---
+
+const PRESETS = [
+    { name: 'Default1RendPreset', desc: 'Default preset 1' },
+    { name: 'NoDescRendPreset', desc: '' },
+]
+
+describe('NewRendererDialog presets', () => {
+    beforeEach(() => {
+        globalThis.localStorage.clear()
+        mockCm.invokeService.mockReset()
+        mockCm.invokeService.mockImplementation((name: string, args: { prefix: string }) =>
+            name === 'proposeUniqName'
+                ? Promise.resolve({ name: args.prefix + '1' })
+                : Promise.resolve(null),
+        )
+    })
+
+    function selectionCheckbox(): HTMLInputElement {
+        return document.body.querySelector('.bp5-checkbox input') as HTMLInputElement
+    }
+
+    it('renders a leading Presets optgroup (label=desc||name) but keeps the plain-type default', async () => {
+        const handle = mount({ presetTypes: PRESETS })
+        await flushPromises()
+        const select = getById<HTMLSelectElement>('rend-type')
+        const groups = Array.from(select.querySelectorAll('optgroup'))
+        expect(groups.map((g) => g.label)).toEqual(['Presets', 'Renderer types'])
+        const presetOpts = Array.from(groups[0].querySelectorAll('option'))
+        expect(presetOpts.map((o) => o.value)).toEqual([
+            'Default1RendPreset', 'NoDescRendPreset',
+        ])
+        // Label is desc, falling back to the style name when desc is empty.
+        expect(presetOpts.map((o) => o.textContent)).toEqual([
+            'Default preset 1', 'NoDescRendPreset',
+        ])
+        // Deliberate deviation from UXP: presets are offered but NOT the
+        // default selection without history.
+        expect(select.value).toBe('simple')
+        handle.unmount()
+    })
+
+    it('picking a preset derives the short name, disables Selection, and Create carries presetName', async () => {
+        const handle = mount({ presetTypes: PRESETS, isMol: true, molID: 10 })
+        await flushPromises()
+
+        mockCm.invokeService.mockClear()
+        await act(async () => {
+            setSelectValue(getById<HTMLSelectElement>('rend-type'), 'Default1RendPreset')
+        })
+        await flushPromises()
+
+        // Short prefix: 'Default1RendPreset' -> 'default1_' -> 'default1_1'.
+        const calls = proposeArgs().filter((a) => a.kind === 'sceneRenderer')
+        expect(calls[calls.length - 1]).toMatchObject({
+            kind: 'sceneRenderer', prefix: 'default1_', sceneId: 7,
+        })
+        expect(getById<HTMLInputElement>('rend-name').value).toBe('default1_1')
+        // The preset's children carry sel from the style definition.
+        expect(selectionCheckbox().disabled).toBe(true)
+
+        const createBtn = findByText(document.body, 'button', 'Create') as HTMLButtonElement
+        await act(async () => { createBtn.click() })
+        await flushPromises()
+        expect(handle.captured?.rendOpts.presetName).toBe('Default1RendPreset')
+        expect(handle.captured?.rendOpts.rendererName).toBe('default1_1')
+        // The preset pick is stored in the type history.
+        expect(getDefaultRendType('MolCoord')).toBe('Default1RendPreset')
+        handle.unmount()
+    })
+
+    it('switching back to a plain type clears presetName and re-enables Selection', async () => {
+        const handle = mount({ presetTypes: PRESETS, isMol: true, molID: 10 })
+        await flushPromises()
+        await act(async () => {
+            setSelectValue(getById<HTMLSelectElement>('rend-type'), 'Default1RendPreset')
+        })
+        await flushPromises()
+        await act(async () => {
+            setSelectValue(getById<HTMLSelectElement>('rend-type'), 'ribbon')
+        })
+        await flushPromises()
+        expect(selectionCheckbox().disabled).toBe(false)
+        const createBtn = findByText(document.body, 'button', 'Create') as HTMLButtonElement
+        await act(async () => { createBtn.click() })
+        await flushPromises()
+        expect(handle.captured?.rendOpts.presetName).toBeUndefined()
+        expect(handle.captured?.rendOpts.rendererType).toBe('ribbon')
+        handle.unmount()
+    })
+
+    it('a preset history entry is restored when still offered, else falls back to the first type', async () => {
+        setDefaultRendType('MolCoord', 'Default1RendPreset')
+        const withPresets = mount({ presetTypes: PRESETS })
+        await flushPromises()
+        expect(getById<HTMLSelectElement>('rend-type').value).toBe('Default1RendPreset')
+        withPresets.unmount()
+
+        // Same history, but no presets offered (e.g. group context / style
+        // removed) -> falls back to the first plain type.
+        const withoutPresets = mount()
+        await flushPromises()
+        expect(getById<HTMLSelectElement>('rend-type').value).toBe('simple')
+        withoutPresets.unmount()
+    })
+})

@@ -176,6 +176,8 @@ interface SidePanelProps {
   onShowSceneContextMenu?: (node: SceneTreeNode, x: number, y: number) => void;
   /** Drag-drop reorder callback. */
   onMoveSceneNode?: (args: MoveSceneNodeArgs) => unknown;
+  /** Row expand/collapse notification (persists `ui_collapsed`). */
+  onSceneNodeExpandChange?: (node: SceneTreeNode, collapsed: boolean) => void;
 
   /* --- Generic persistence props (per-view) --- */
 
@@ -232,6 +234,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   sceneOpsEnabled,
   onShowSceneContextMenu,
   onMoveSceneNode,
+  onSceneNodeExpandChange,
   viewSizes,
   viewCollapsed,
   onViewSizesChange,
@@ -291,6 +294,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             onShowContextMenu={onShowSceneContextMenu}
             onMoveNode={onMoveSceneNode}
             opsEnabled={sceneOpsEnabled}
+            onNodeExpandChange={onSceneNodeExpandChange}
             collapsed={collapsed}
             onToggleCollapse={onToggle}
           />
@@ -421,7 +425,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     onSceneSelect, onSceneToggleSelect,
     onToggleVisibility, onShowProperty,
     onFocusSelected, onDeleteSelected, onAddSelected, sceneOpsEnabled,
-    onShowSceneContextMenu, onMoveSceneNode,
+    onShowSceneContextMenu, onMoveSceneNode, onSceneNodeExpandChange,
   ]);
 
   /* --- Generic view renderer (works for any N panes) --- */

@@ -29,8 +29,9 @@ import {
     type SetStateAction,
 } from 'react';
 import { useCueMol } from '../../hooks/useCueMol';
-import type { RendererOptions } from './types';
+import type { PresetTypeEntry, RendererOptions } from './types';
 import { getDefaultRendType, setDefaultRendType } from './rendTypeHistory';
+import { presetNamePrefix } from './presetUtils';
 
 export interface UseRendererOptionsArgs {
     /** Dialog visibility -- a false->true transition resets the state. */
@@ -40,6 +41,8 @@ export interface UseRendererOptionsArgs {
     objClassName: string;
     /** Compatible renderer types listed in the dropdown. */
     rendererTypes: string[];
+    /** Renderer presets offered in the dropdown's Presets optgroup. */
+    presetTypes?: PresetTypeEntry[];
     /** Seed for `options.objectName`. */
     objectName: string;
     /** Optional seed for `options.rendererName` (the name-follow effect
@@ -65,31 +68,50 @@ export interface UseRendererOptionsResult {
 export function useRendererOptions(
     args: UseRendererOptionsArgs,
 ): UseRendererOptionsResult {
-    const { visible, sceneId, objClassName, rendererTypes, objectName,
-        initialRendererName, initialSelection } = args;
+    const { visible, sceneId, objClassName, rendererTypes, presetTypes,
+        objectName, initialRendererName, initialSelection } = args;
     const { cm } = useCueMol();
 
-    // Initial renderer type: history value if still listed, else the first
-    // compatible type.
-    const initialType = useMemo(() => {
-        if (rendererTypes.length === 0) return '';
+    const presets = useMemo(() => presetTypes ?? [], [presetTypes]);
+
+    // Initial pick: the history value when it is still offered -- it may
+    // name a preset or a plain renderer type -- else the first compatible
+    // type. Presets are never the default without history (deliberate
+    // deviation from UXP, which preselected the first preset; ADR-0046).
+    const initialPick = useMemo(() => {
+        const first = rendererTypes[0] ?? '';
         const hist = getDefaultRendType(objClassName);
-        if (hist && rendererTypes.includes(hist)) return hist;
-        return rendererTypes[0];
-    }, [rendererTypes, objClassName]);
+        if (hist) {
+            if (presets.some((p) => p.name === hist)) {
+                return { rendererType: first, presetName: hist as string | undefined };
+            }
+            if (rendererTypes.includes(hist)) {
+                return { rendererType: hist, presetName: undefined };
+            }
+        }
+        return { rendererType: first, presetName: undefined };
+    }, [rendererTypes, presets, objClassName]);
 
     const buildOptions = useCallback((): RendererOptions => {
         const seedSel = (initialSelection ?? '').trim();
+        const pName = initialPick.presetName;
+        // Name seed; the name-follow effect replaces it with a scene-wide
+        // unique proposal right after open.
+        const nameSeed = pName
+            ? `${presetNamePrefix(pName)}1`
+            : initialRendererName ??
+              (initialPick.rendererType ? `${initialPick.rendererType}1` : '');
         return {
             objectName,
-            rendererType: initialType,
-            rendererName: initialRendererName ?? (initialType ? `${initialType}1` : ''),
+            rendererType: initialPick.rendererType,
+            rendererName: nameSeed,
             // A non-empty current selection starts the checkbox on, targeting it.
             selectionEnabled: seedSel !== '',
             selection: seedSel !== '' ? seedSel : '*',
             centerView: true,
+            presetName: pName,
         };
-    }, [objectName, initialType, initialRendererName, initialSelection]);
+    }, [objectName, initialPick, initialRendererName, initialSelection]);
 
     const [options, setOptions] = useState<RendererOptions>(buildOptions);
 
@@ -125,14 +147,18 @@ export function useRendererOptions(
     // dialog open).
     useEffect(() => {
         if (!visible || !cm) return;
-        const rType = options.rendererType;
-        if (!rType) return;
+        // A preset derives its short prefix ('Default1RendPreset' ->
+        // 'default1_' -> 'default1_1'); a plain type uses the type name.
+        const prefix = options.presetName
+            ? presetNamePrefix(options.presetName)
+            : options.rendererType;
+        if (!prefix) return;
         if (!rendererNameIsDefaultRef.current) return;
         const seq = ++rendNameSeqRef.current;
         (async () => {
             const res = await cm.invokeService('proposeUniqName', {
                 kind: 'sceneRenderer',
-                prefix: rType,
+                prefix,
                 sceneId,
             });
             if (seq !== rendNameSeqRef.current) return; // stale
@@ -141,7 +167,7 @@ export function useRendererOptions(
             if (!res) return;
             setOptions((prev) => ({ ...prev, rendererName: res.name }));
         })();
-    }, [cm, visible, options.rendererType, sceneId]);
+    }, [cm, visible, options.rendererType, options.presetName, sceneId]);
 
     // User edits to the renderer name: propagate the value and silently
     // update the "is default" ref so the next type pick respects it.
@@ -152,8 +178,11 @@ export function useRendererOptions(
     }, []);
 
     const commitHistory = useCallback(() => {
-        setDefaultRendType(objClassName, options.rendererType);
-    }, [objClassName, options.rendererType]);
+        // A preset pick stores the preset style name; a stale entry (style
+        // removed later) simply fails the membership check on the next open
+        // and falls back to the first plain type.
+        setDefaultRendType(objClassName, options.presetName ?? options.rendererType);
+    }, [objClassName, options.presetName, options.rendererType]);
 
     return { options, setOptions, onRendererNameUserEdit, commitHistory };
 }

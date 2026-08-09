@@ -378,4 +378,39 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
         expect(rendNameInput.value).toBe('cartoon1')
         handle.unmount()
     })
+
+    // --- renderer presets (ADR-0046) ---
+
+    it('shows a Presets optgroup when presetTypes is supplied and Open carries presetName', async () => {
+        const handle = mount({
+            presetTypes: [{ name: 'Default1RendPreset', desc: 'Default preset 1' }],
+        })
+        await flushPromises()
+
+        const select = getById<HTMLSelectElement>('rend-type')
+        const groups = Array.from(select.querySelectorAll('optgroup'))
+        expect(groups.map((g) => g.label)).toEqual(['Presets', 'Renderer types'])
+        // Plain type stays the default selection.
+        expect(select.value).toBe('simple')
+
+        await act(async () => { setSelectValue(select, 'Default1RendPreset') })
+        await flushPromises()
+        expect(getById<HTMLInputElement>('rend-name').value).toBe('default1_1')
+
+        const openBtn = findByText(document.body, 'button', 'Open') as HTMLButtonElement
+        await act(async () => { openBtn.click() })
+        await flushPromises()
+        expect(handle.captured?.renderer.presetName).toBe('Default1RendPreset')
+        expect(handle.captured?.renderer.rendererName).toBe('default1_1')
+        handle.unmount()
+    })
+
+    it('keeps the flat option list (no optgroup) when presetTypes is absent', async () => {
+        const handle = mount()
+        await flushPromises()
+        const select = getById<HTMLSelectElement>('rend-type')
+        expect(select.querySelectorAll('optgroup').length).toBe(0)
+        expect(select.querySelectorAll('option').length).toBe(3)
+        handle.unmount()
+    })
 })

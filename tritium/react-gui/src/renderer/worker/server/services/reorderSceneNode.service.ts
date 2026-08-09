@@ -19,6 +19,7 @@ import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { WorkerContext } from '../types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
 import { getSceneOrNull } from './helpers/sceneResolver';
+import { enumerateObjectRenderers } from './helpers/groupChildren';
 
 /** -1 = drop BEFORE target; 0 = drop AT target (used for rendGroup INTO); +1 = drop AFTER. */
 export type ReorderOri = -1 | 0 | 1;
@@ -145,24 +146,6 @@ function enumerateObjects(scene: Scene): CueMolObject[] {
     return out;
 }
 
-function enumerateRenderers(obj: CueMolObject, scene: Scene): Renderer[] {
-    let csv = '';
-    try {
-        csv = obj.rend_uids;
-    } catch {
-        return [];
-    }
-    if (!csv) return [];
-    const out: Renderer[] = [];
-    for (const part of csv.split(',')) {
-        const uid = parseInt(part.trim(), 10);
-        if (!Number.isFinite(uid)) continue;
-        const rend = scene.getRenderer(uid) as Renderer | null;
-        if (rend) out.push(rend);
-    }
-    return out;
-}
-
 function reorderSceneNode(
     ctx: WorkerContext,
     args: ReorderSceneNodeArgs,
@@ -213,7 +196,7 @@ function reorderSceneNode(
         const dst = scene.getRenderer(args.targetId) as Renderer | null;
         if (!dst) return;
 
-        const items = sortByUiOrder(enumerateRenderers(destObj, scene));
+        const items = sortByUiOrder(enumerateObjectRenderers(destObj, scene));
         if (items.length === 0) return;
 
         bubbleSwapOrder(

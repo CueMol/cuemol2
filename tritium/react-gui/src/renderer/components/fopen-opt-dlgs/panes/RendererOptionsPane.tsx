@@ -1,12 +1,17 @@
 import React from 'react';
 import { InputGroup, HTMLSelect, Switch, FormGroup, Divider, Checkbox } from '@blueprintjs/core';
-import type { RendererOptions } from '../types';
+import type { PresetTypeEntry, RendererOptions } from '../types';
 import { MolSelList } from '../../../h3-kit/MolSelList';
 
 interface RendererOptionsPaneProps {
   options: RendererOptions;
   onChange: (updated: RendererOptions) => void;
   rendererTypes: string[];
+  /**
+   * Renderer presets shown in a leading "Presets" optgroup (UXP puts them
+   * first in the menulist). Empty / omitted keeps the flat plain-type list.
+   */
+  presetTypes?: PresetTypeEntry[];
   sceneId: number;
   isMolFormat: boolean;
   /**
@@ -25,9 +30,22 @@ interface RendererOptionsPaneProps {
   onRendererNameUserEdit?: (newValue: string) => void;
 }
 
-export const RendererOptionsPane: React.FC<RendererOptionsPaneProps> = ({ options, onChange, rendererTypes, sceneId, isMolFormat, molID, onRendererNameUserEdit }) => {
+export const RendererOptionsPane: React.FC<RendererOptionsPaneProps> = ({ options, onChange, rendererTypes, presetTypes, sceneId, isMolFormat, molID, onRendererNameUserEdit }) => {
   const set = <K extends keyof RendererOptions>(key: K) =>
     (value: RendererOptions[K]) => onChange({ ...options, [key]: value });
+
+  const presets = presetTypes ?? [];
+  const isPreset = !!options.presetName;
+
+  // The ONLY writer of options.presetName: a preset value sets it, a plain
+  // type clears it while keeping rendererType (lossless toggle back).
+  const onTypeChange = (v: string) => {
+    if (presets.some((p) => p.name === v)) {
+      onChange({ ...options, presetName: v });
+    } else {
+      onChange({ ...options, presetName: undefined, rendererType: v });
+    }
+  };
 
   return (
     <div className="fod-section">
@@ -46,13 +64,28 @@ export const RendererOptionsPane: React.FC<RendererOptionsPaneProps> = ({ option
           id="rend-type"
           className="h3-form-select"
           fill
-          value={options.rendererType}
-          onChange={(e) => set('rendererType')(e.target.value)}
-          disabled={rendererTypes.length === 0}
+          value={options.presetName ?? options.rendererType}
+          onChange={(e) => onTypeChange(e.target.value)}
+          disabled={rendererTypes.length === 0 && presets.length === 0}
         >
-          {rendererTypes.map((t) => (
-            <option key={t} value={t}>{t}</option>
-          ))}
+          {presets.length > 0 ? (
+            <>
+              <optgroup label="Presets">
+                {presets.map((p) => (
+                  <option key={p.name} value={p.name}>{p.desc || p.name}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Renderer types">
+                {rendererTypes.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </optgroup>
+            </>
+          ) : (
+            rendererTypes.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))
+          )}
         </HTMLSelect>
       </FormGroup>
       <FormGroup label="Renderer name" labelFor="rend-name" className="fod-form-group">
@@ -73,6 +106,10 @@ export const RendererOptionsPane: React.FC<RendererOptionsPaneProps> = ({ option
               onChange={(e) => set('selectionEnabled')(e.target.checked)}
               label="Selection"
               style={{ marginBottom: 0 }}
+              // A preset's children carry their sel from the style
+              // definition; the dialog selection would be ignored
+              // (RendGroup has no sel), so disable it while picked.
+              disabled={isPreset}
             />
           }
           labelFor="rend-sel"
@@ -83,7 +120,7 @@ export const RendererOptionsPane: React.FC<RendererOptionsPaneProps> = ({ option
             molID={molID}
             selectedSel={options.selection}
             onSelectedSelChange={set('selection')}
-            disabled={!options.selectionEnabled}
+            disabled={!options.selectionEnabled || isPreset}
             placeholder="* (all atoms)"
           />
         </FormGroup>

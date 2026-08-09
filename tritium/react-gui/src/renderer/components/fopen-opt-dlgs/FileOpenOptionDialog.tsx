@@ -48,7 +48,7 @@ import { AmberPrmtopOptionsPane } from './panes/AmberPrmtopOptionsPane';
 import { RendererOptionsPane } from './panes/RendererOptionsPane';
 import { pushHistory } from '../../h3-kit/MolSelList';
 
-import type { PdbOptions, MtzOptions, Ccp4MapOptions, MsmsOptions, NamdCoorOptions, AmberPrmtopOptions } from './types';
+import type { PdbOptions, MtzOptions, Ccp4MapOptions, MsmsOptions, NamdCoorOptions, AmberPrmtopOptions, PresetTypeEntry } from './types';
 
 // ---- helpers ----
 
@@ -80,6 +80,8 @@ export interface FileOpenOptionDialogProps {
   filePath: string;
   sceneId: number;
   rendererTypes: string[];
+  /** Renderer presets for the Renderer pane's "Presets" optgroup. */
+  presetTypes?: PresetTypeEntry[];
   /**
    * C++ object class name (e.g. 'MolCoord', 'DensityMap') of the file
    * about to be loaded. Used as the renderer-type history key. Empty
@@ -103,6 +105,7 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
   filePath,
   sceneId,
   rendererTypes,
+  presetTypes,
   objType,
   readerName,
   onConfirm,
@@ -122,6 +125,7 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
     sceneId,
     objClassName: objType,
     rendererTypes,
+    presetTypes,
     objectName: baseNameNoExt(filePath),
   });
 
@@ -301,6 +305,7 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
           options={rendererOptions}
           onChange={setRendererOptions}
           rendererTypes={rendererTypes}
+          presetTypes={presetTypes}
           sceneId={sceneId}
           isMolFormat={isMolFormat(formatKind)}
           onRendererNameUserEdit={onRendererNameUserEdit}

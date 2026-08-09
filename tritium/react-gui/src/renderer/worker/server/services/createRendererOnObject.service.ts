@@ -38,11 +38,15 @@ function createRendererOnObject(
     const obj = scene.getObject(args.objId) as CueMolObject | null;
     if (!obj) return { ok: false };
 
+    const label = args.rendOpts.presetName
+        ? `Create preset renderer ${args.rendOpts.presetName}`
+        : `Create new ${args.rendOpts.rendererType} renderer`;
+
     let newRendId = -1;
     let newName = '';
     withUndoTxn(
         scene,
-        `Create new ${args.rendOpts.rendererType} renderer`,
+        label,
         () => {
             const rend = setupRenderer(
                 ctx,
@@ -51,8 +55,15 @@ function createRendererOnObject(
             ) as Renderer | null;
             if (!rend) return;
             if (args.groupName) {
-                try { rend.group = args.groupName; }
-                catch (e) { console.warn('rend.group assign failed:', e); }
+                // A preset creates its own group; nesting it into another
+                // group is unsupported (the UI hides presets in a group
+                // context -- this is defence in depth).
+                if (args.rendOpts.presetName) {
+                    console.warn('preset renderer cannot join a group; groupName ignored');
+                } else {
+                    try { rend.group = args.groupName; }
+                    catch (e) { console.warn('rend.group assign failed:', e); }
+                }
             }
             newRendId = (rend as unknown as { uid: number }).uid ?? -1;
             try { newName = rend.name ?? ''; } catch { newName = ''; }

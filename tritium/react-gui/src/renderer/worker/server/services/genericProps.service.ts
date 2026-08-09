@@ -6,12 +6,14 @@
 // inside an undo transaction (UXP `commitPropChange`).
 
 import type { BaseWrapper } from '@cuemol/core/src/BaseWrapper';
+import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { WorkerContext } from '../types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
 import { resolvePropTarget, type PropTargetType } from './helpers/resolvePropTarget';
 import { parseGenericProps, type GenericPropEntry } from './helpers/parseGenericProps';
 import { makeSel } from './helpers/makeSel';
 import { safeRead } from './helpers/safeRead';
+import { listGroupChildRenderers } from './helpers/groupChildren';
 
 export type { GenericPropEntry } from './helpers/parseGenericProps';
 export type { PropTargetType } from './helpers/resolvePropTarget';
@@ -234,6 +236,29 @@ function setGenericProp(
             ? `Reset property: ${args.propName}`
             : `Change property: ${args.propName}`;
 
+    // Renaming a renderer group must re-assign every member's `group`
+    // string (membership is a name reference) and keep the name unique
+    // scene-wide -- the same contract as the tree renameNode service.
+    // Collect members by the OLD name before the write happens.
+    let grpRename: { children: Renderer[]; newName: string } | null = null;
+    if (
+        args.op === 'set' &&
+        args.nodeType === 'rendGroup' &&
+        args.propName === 'name'
+    ) {
+        const newName = String(args.value ?? '').trim();
+        if (newName.length === 0) return fail;
+        const grp = target as unknown as Renderer;
+        const dup = safeRead(() => scene.getRendByName(newName) as Renderer | null);
+        if (dup && safeRead(() => dup.uid) !== safeRead(() => grp.uid)) {
+            return fail;
+        }
+        grpRename = {
+            children: listGroupChildRenderers(scene, grp),
+            newName,
+        };
+    }
+
     try {
         // Realtime commit: a preview drag already moved the prop to its last
         // frame value (txn-free) and flipped its default flag to non-default.
@@ -253,6 +278,11 @@ function setGenericProp(
                 // Scene.name has no property setter; rename via setName(), which
                 // also fires propChanged("name") (see isSceneNameWrite).
                 scene.setName(String(args.value ?? ''));
+            } else if (grpRename) {
+                target.setProp('name', grpRename.newName);
+                for (const c of grpRename.children) {
+                    try { c.group = grpRename.newName; } catch { /* ignore */ }
+                }
             } else if (args.valueType.startsWith('object<MolSelection>')) {
                 // Selection properties need a compiled SelCommand, not a raw
                 // string (UXP `commitPropChange` MolSelection branch). An empty

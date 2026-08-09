@@ -17,6 +17,7 @@ import React, { useMemo } from "react";
 import { AccordionSection, AccordionGroup } from "./AccordionSection";
 import { RendererCommonSection } from "./RendererCommonSection";
 import { ObjectCommonSection } from "./ObjectCommonSection";
+import { RendGroupCommonSection } from "./RendGroupCommonSection";
 import {
   DUMMY_SECTION,
   getRendererPropSections,
@@ -83,6 +84,26 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
       <div className="insp-properties-tab">
         <AccordionGroup initialOpen="Basic settings">
           <ObjectCommonSection
+            entries={displayEntries}
+            onSet={onSet}
+            onReset={onReset}
+            sceneId={sceneId}
+            nodeId={nodeId}
+          />
+        </AccordionGroup>
+      </div>
+    );
+  }
+
+  // Renderer groups inherit the full Renderer property set in C++ but draw
+  // nothing themselves, so the renderer-common page (opacity / material /
+  // edge lines) and the type-section placeholder would present dead knobs.
+  // Show the dedicated minimal page instead (Name / Visible / Locked).
+  if (rendererType === "*group") {
+    return (
+      <div className="insp-properties-tab">
+        <AccordionGroup initialOpen="Basic settings">
+          <RendGroupCommonSection
             entries={displayEntries}
             onSet={onSet}
             onReset={onReset}

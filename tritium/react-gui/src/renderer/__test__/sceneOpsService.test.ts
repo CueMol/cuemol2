@@ -6,6 +6,7 @@ import type { WorkerContext } from '../worker/server/types/WorkerContext'
 interface SceneOverrides {
     getObject?: ReturnType<typeof vi.fn>
     getRenderer?: ReturnType<typeof vi.fn>
+    getRendByName?: ReturnType<typeof vi.fn>
     setName?: ReturnType<typeof vi.fn>
 }
 
@@ -20,6 +21,7 @@ function makeCtx(overrides: SceneOverrides = {}) {
     const mockScene = {
         getObject: overrides.getObject ?? vi.fn(() => null),
         getRenderer: overrides.getRenderer ?? vi.fn(() => null),
+        getRendByName: overrides.getRendByName ?? vi.fn(() => null),
         destroyObject: vi.fn(() => true),
         setName,
         startUndoTxn, commitUndoTxn, rollbackUndoTxn,
@@ -248,6 +250,83 @@ describe('sceneOps service', () => {
                     sceneId: 1, nodeId: 1, nodeType: nt, newName: 'x',
                 }).ok).toBe(false)
             }
+        })
+
+        it('renames rendGroup and re-assigns each member group string in one txn', () => {
+            const setGrpName = vi.fn()
+            const setChildGroup = vi.fn()
+            const setOtherGroup = vi.fn()
+            const clientObj = { rend_uids: '50,100,101' }
+            const grp = {
+                uid: 50,
+                get name() { return 'oldGrp' },
+                set name(v: string) { setGrpName(v) },
+                getClientObj: () => clientObj,
+            }
+            const child = {
+                uid: 100,
+                get group() { return 'oldGrp' },
+                set group(v: string) { setChildGroup(v) },
+            }
+            const other = {
+                uid: 101,
+                get group() { return '' },
+                set group(v: string) { setOtherGroup(v) },
+            }
+            const getRenderer = vi.fn((uid: number) =>
+                uid === 50 ? grp : uid === 100 ? child : uid === 101 ? other : null)
+            const { ctx, startUndoTxn, commitUndoTxn } = makeCtx({ getRenderer })
+            const res = services.renameNode(ctx, {
+                sceneId: 1, nodeId: 50, nodeType: 'rendGroup', newName: 'newGrp',
+            })
+            expect(res.ok).toBe(true)
+            // Single txn, UXP onRenameRendGrp label.
+            expect(startUndoTxn).toHaveBeenCalledTimes(1)
+            expect(startUndoTxn).toHaveBeenCalledWith('Change rend group name: newGrp')
+            expect(setGrpName).toHaveBeenCalledWith('newGrp')
+            // Member matched by OLD group name follows; unrelated sibling stays.
+            expect(setChildGroup).toHaveBeenCalledWith('newGrp')
+            expect(setOtherGroup).not.toHaveBeenCalled()
+            expect(commitUndoTxn).toHaveBeenCalledTimes(1)
+        })
+
+        it('rejects rendGroup rename when another renderer holds the name scene-wide', () => {
+            const setGrpName = vi.fn()
+            const grp = {
+                uid: 50,
+                get name() { return 'oldGrp' },
+                set name(v: string) { setGrpName(v) },
+                getClientObj: () => null,
+            }
+            const { ctx, startUndoTxn } = makeCtx({
+                getRenderer: vi.fn(() => grp),
+                getRendByName: vi.fn(() => ({ uid: 60 })),
+            })
+            const res = services.renameNode(ctx, {
+                sceneId: 1, nodeId: 50, nodeType: 'rendGroup', newName: 'taken',
+            })
+            expect(res.ok).toBe(false)
+            expect(startUndoTxn).not.toHaveBeenCalled()
+            expect(setGrpName).not.toHaveBeenCalled()
+        })
+
+        it('allows rendGroup rename when getRendByName resolves to the group itself', () => {
+            const setGrpName = vi.fn()
+            const grp = {
+                uid: 50,
+                get name() { return 'oldGrp' },
+                set name(v: string) { setGrpName(v) },
+                getClientObj: () => null,
+            }
+            const { ctx } = makeCtx({
+                getRenderer: vi.fn(() => grp),
+                getRendByName: vi.fn(() => grp),
+            })
+            const res = services.renameNode(ctx, {
+                sceneId: 1, nodeId: 50, nodeType: 'rendGroup', newName: 'oldGrp',
+            })
+            expect(res.ok).toBe(true)
+            expect(setGrpName).toHaveBeenCalledWith('oldGrp')
         })
 
         it('renames the scene via scene.setName under undo txn', () => {

@@ -5,8 +5,11 @@ import type { WorkerContext } from '../worker/server/types/WorkerContext'
 interface FixtureOpts {
     /** uid -> initial visible state for objects. */
     objs?: Record<number, { visible: boolean }>
-    /** uid -> initial visible state for renderers (or rendGroups). */
-    rends?: Record<number, { visible: boolean }>
+    /**
+     * uid -> initial state for renderers (or rendGroups). `name` matters
+     * for rendGroups; `group` marks membership of a renderer in a group.
+     */
+    rends?: Record<number, { visible: boolean; name?: string; group?: string }>
     sceneExists?: boolean
 }
 
@@ -32,11 +35,16 @@ function makeFixture(opts: FixtureOpts = {}) {
         visible: boolean
         setVisible: ReturnType<typeof vi.fn>
         parentUid: number
+        name: string
+        group: string
     }> = {}
     for (const [uidStr, init] of Object.entries(rends)) {
         const uid = Number(uidStr)
         const setVisible = vi.fn((v: boolean) => { rendRecs[uid].visible = v })
-        rendRecs[uid] = { visible: init.visible, setVisible, parentUid: 10 }
+        rendRecs[uid] = {
+            visible: init.visible, setVisible, parentUid: 10,
+            name: init.name ?? '', group: init.group ?? '',
+        }
     }
 
     const startUndoTxn = vi.fn()
@@ -62,10 +70,19 @@ function makeFixture(opts: FixtureOpts = {}) {
             const parent = objRec
                 ? {
                     destroyRenderer: objRec.destroyRenderer,
+                    // Sibling enumeration used by the rendGroup cascade.
+                    get rend_uids(): string {
+                        return Object.entries(rendRecs)
+                            .filter(([, r]) => r.parentUid === rec.parentUid)
+                            .map(([u]) => u)
+                            .join(',')
+                    },
                 }
                 : null
             return {
                 uid,
+                name: rec.name,
+                group: rec.group,
                 get visible(): boolean { return rec.visible },
                 set visible(v: boolean) { rec.setVisible(v) },
                 getClientObj: () => parent,
@@ -126,6 +143,28 @@ describe('bulkSceneNodeOps.bulkSetNodeVisible', () => {
         expect(f.startUndoTxn).toHaveBeenCalledWith('Hide multiple')
         expect(f.objRecs[10].setVisible).toHaveBeenCalledWith(false)
         expect(f.rendRecs[100].setVisible).toHaveBeenCalledWith(false)
+    })
+
+    it('cascades rendGroup visibility to its member renderers within the single txn', () => {
+        const f = makeFixture({
+            objs: { 10: { visible: true } },
+            rends: {
+                200: { visible: true, name: 'grp1' },   // rendGroup
+                201: { visible: true, group: 'grp1' },  // member
+                202: { visible: true, group: '' },      // unrelated sibling
+            },
+        })
+        const res = services.bulkSetNodeVisible(f.ctx, {
+            sceneId: 7,
+            visible: false,
+            items: [{ nodeId: 200, nodeType: 'rendGroup' }],
+        })
+        // applied counts selected items, not cascaded children.
+        expect(res).toEqual({ ok: true, applied: 1 })
+        expect(f.startUndoTxn).toHaveBeenCalledTimes(1)
+        expect(f.rendRecs[200].setVisible).toHaveBeenCalledWith(false)
+        expect(f.rendRecs[201].setVisible).toHaveBeenCalledWith(false)
+        expect(f.rendRecs[202].setVisible).not.toHaveBeenCalled()
     })
 
     it('rejects when all items are non-operable types', () => {

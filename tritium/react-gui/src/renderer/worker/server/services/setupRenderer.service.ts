@@ -54,11 +54,62 @@ function recenterAllViews(scene: Scene, pos: unknown): void {
     }
 }
 
+/**
+ * Recenter the views on the new renderer when the dialog asked for it.
+ * Works for both plain renderers and preset groups (RendGroup.getCenter
+ * averages its members' centers).
+ */
+function recenterIfRequested(mol: any, rend: Renderer, rendOpts: RendererOptions): void {
+    if (!rendOpts.centerView) return;
+    try {
+        const scene = mol.getScene() as Scene | null;
+        if (scene && typeof (rend as unknown as { getCenter?: () => unknown }).getCenter === 'function') {
+            const pos = (rend as unknown as { getCenter: () => unknown }).getCenter();
+            recenterAllViews(scene, pos);
+        }
+    } catch (e) {
+        log.warn('recenter view failed:', e);
+    }
+}
+
 export function setupRenderer(
     ctx: WorkerContext,
     mol: any,
     rendOpts: RendererOptions,
 ): Renderer | null {
+    if (rendOpts.presetName) {
+        // Preset renderer group (UXP doSetupRend /RendPreset$/ branch):
+        // C++ creates the *group renderer plus one child per <renderer>
+        // node of the preset style; each child gets its sel / style from
+        // the style definition and its name as name_prefix + type. Both
+        // grp_name and name_prefix are the dialog's rendererName. The
+        // caller's undo txn covers all N+1 registrations.
+        let rend: Renderer | null = null;
+        try {
+            rend = mol.createPresetRenderer(
+                rendOpts.presetName,
+                rendOpts.rendererName,
+                rendOpts.rendererName,
+            ) as Renderer | null;
+        } catch (e) {
+            // C++ throws on an unknown style or a non-rendpreset type.
+            log.warn(`createPresetRenderer('${rendOpts.presetName}') failed:`, e);
+            return null;
+        }
+        if (!rend) return null;
+        // No name assignment (C++ setName(grp_name) already did it) and no
+        // applyStyles (children carry styles from the preset definition;
+        // UXP's setDefaultStyles is a no-op on a *group). The dialog's
+        // Selection is not applied either: RendGroup has no sel, and the
+        // children's sel comes from the preset (the UI disables the
+        // Selection field while a preset is picked).
+        recenterIfRequested(mol, rend, rendOpts);
+        if (!NON_MOL_CLASSES.includes(mol.getClassName())) {
+            molPostProc(ctx, mol, true);
+        }
+        return rend;
+    }
+
     // Direct method call -- avoids the `cmd.target_object = mol` setter
     // that would corrupt mol.m_thisname (see file header).
     const rend = mol.createRenderer(rendOpts.rendererType) as Renderer | null;
@@ -81,17 +132,7 @@ export function setupRenderer(
         rend.applyStyles(styleName);
     }
 
-    if (rendOpts.centerView) {
-        try {
-            const scene = mol.getScene() as Scene | null;
-            if (scene && typeof (rend as unknown as { getCenter?: () => unknown }).getCenter === 'function') {
-                const pos = (rend as unknown as { getCenter: () => unknown }).getCenter();
-                recenterAllViews(scene, pos);
-            }
-        } catch (e) {
-            log.warn('recenter view failed:', e);
-        }
-    }
+    recenterIfRequested(mol, rend, rendOpts);
 
     log.info('renderer created: rend=', rend);
 

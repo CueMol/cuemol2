@@ -51,6 +51,7 @@ function makeScene(overrides: Record<string, unknown> = {}) {
     toggleInSelection: vi.fn(),
     refetch: vi.fn(),
     toggleVisibility: vi.fn(),
+    setNodeUiCollapsed: vi.fn(),
     moveSceneNode: vi.fn(),
     focusNode: vi.fn().mockResolvedValue(true),
     deleteNode: vi.fn().mockResolvedValue(true),
@@ -172,6 +173,48 @@ describe('useSceneTreeController double-click', () => {
     });
     expect(showGeneric).toHaveBeenCalledWith('42');
     expect(scene.applyCameraToView).not.toHaveBeenCalled();
+    h.unmount();
+  });
+});
+
+describe('useSceneTreeController expand/collapse persistence', () => {
+  it('persists object / rendGroup rows via setNodeUiCollapsed', () => {
+    const scene = makeScene();
+    const h = renderController(scene);
+    act(() => {
+      h.result.onSceneNodeExpandChange(
+        node({ id: 50, type: 'rendGroup', name: 'g1' }), true,
+      );
+    });
+    expect(scene.setNodeUiCollapsed).toHaveBeenCalledWith('50', true);
+    act(() => {
+      h.result.onSceneNodeExpandChange(
+        node({ id: 10, type: 'object', name: 'mol1' }), false,
+      );
+    });
+    expect(scene.setNodeUiCollapsed).toHaveBeenCalledWith('10', false);
+    h.unmount();
+  });
+
+  it('ignores synthesised rows and non-persistable node types', () => {
+    const scene = makeScene();
+    const h = renderController(scene);
+    act(() => {
+      h.result.onSceneNodeExpandChange(
+        node({ id: -1, type: 'cameraRoot', name: 'Cameras' }), true,
+      );
+      h.result.onSceneNodeExpandChange(
+        node({ id: -2, type: 'styleRoot', name: 'Styles' }), true,
+      );
+      // Negative-id guard also applies to otherwise-persistable types.
+      h.result.onSceneNodeExpandChange(
+        node({ id: -5, type: 'object', name: 'x' }), true,
+      );
+      h.result.onSceneNodeExpandChange(
+        node({ id: 1, type: 'scene', name: 'S' }), true,
+      );
+    });
+    expect(scene.setNodeUiCollapsed).not.toHaveBeenCalled();
     h.unmount();
   });
 });

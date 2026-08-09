@@ -85,6 +85,37 @@ describe('createRendererOnObject.service', () => {
         expect(groupSetter).toHaveBeenCalledWith('grpA')
     })
 
+    it('uses a "Create preset renderer <name>" txn label for preset options', () => {
+        const f = buildFixture()
+        const res = services.createRendererOnObject(f.ctx, {
+            sceneId: 1, objId: 10,
+            rendOpts: { ...baseOpts, presetName: 'Default1RendPreset', rendererName: 'default1_1' },
+        })
+        expect(res.ok).toBe(true)
+        expect(f.startUndoTxn).toHaveBeenCalledWith(
+            'Create preset renderer Default1RendPreset',
+        )
+    })
+
+    it('never assigns rend.group for a preset even when groupName is provided', () => {
+        const f = buildFixture()
+        const groupSetter = vi.fn()
+        setupMock.mockImplementationOnce(() => ({
+            uid: 444,
+            name: 'default1_1',
+            get group(): string { return '' },
+            set group(v: string) { groupSetter(v) },
+        }))
+        const res = services.createRendererOnObject(f.ctx, {
+            sceneId: 1, objId: 10,
+            rendOpts: { ...baseOpts, presetName: 'Default1RendPreset' },
+            groupName: 'grpA',
+        })
+        expect(res.ok).toBe(true)
+        // A preset creates its own group; nesting is unsupported.
+        expect(groupSetter).not.toHaveBeenCalled()
+    })
+
     it('returns ok:false when scene cannot be resolved', () => {
         const f = buildFixture({ sceneExists: false })
         const res = services.createRendererOnObject(f.ctx, {

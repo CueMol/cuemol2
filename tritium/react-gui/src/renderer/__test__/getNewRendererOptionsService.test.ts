@@ -21,6 +21,11 @@ interface FixtureOpts {
     sceneExists?: boolean
     /** The mol's current selection string (mol.sel.toString()); '' = none. */
     sel?: string
+    /**
+     * scopeId -> getStyleNamesJSON payload. When omitted the ctx has NO
+     * styleMgr at all, exercising the fetchStyleEntries fallback.
+     */
+    styleEntries?: Record<number, string>
 }
 
 function makeFixture(opts: FixtureOpts = {}) {
@@ -65,10 +70,14 @@ function makeFixture(opts: FixtureOpts = {}) {
         getRenderer: vi.fn(() => rend),
         getRendByName: vi.fn((n: string) => existingRends.includes(n) ? { __r: n } : null),
     }
+    const getStyleNamesJSON = vi.fn(
+        (scopeId: number) => opts.styleEntries?.[scopeId] ?? '[]',
+    )
     const ctx = {
         sceMgr: { getScene: vi.fn(() => (sceneExists ? scene : null)) },
+        ...(opts.styleEntries ? { styleMgr: { getStyleNamesJSON } } : {}),
     } as unknown as WorkerContext
-    return { ctx, scene, obj, rend }
+    return { ctx, scene, obj, rend, getStyleNamesJSON }
 }
 
 describe('getNewRendererOptions.service', () => {
@@ -163,5 +172,88 @@ describe('getNewRendererOptions.service', () => {
             sceneId: 1, sourceNodeId: 100, sourceNodeType: 'renderer',
         })
         expect(res.ok).toBe(false)
+    })
+})
+
+// --- renderer presets (`<objClassName>-rendpreset` styles) ---
+
+const GLOBAL_STYLES = JSON.stringify([
+    { name: 'Default1RendPreset', desc: 'Default preset 1', type: 'PDBMol-rendpreset' },
+    { name: 'DefaultRibbon', desc: '', type: 'renderer' },
+    { name: 'MapPreset', desc: 'map', type: 'DensityMap-rendpreset' },
+    { name: 'NoDescRendPreset', type: 'PDBMol-rendpreset' },
+])
+const SCENE_STYLES = JSON.stringify([
+    { name: 'LocalRendPreset', desc: 'Scene local', type: 'PDBMol-rendpreset' },
+])
+
+describe('getNewRendererOptions presets', () => {
+    it('collects global then scene-local presets filtered to <objClass>-rendpreset', () => {
+        const f = makeFixture({ styleEntries: { 0: GLOBAL_STYLES, 1: SCENE_STYLES } })
+        const res = services.getNewRendererOptions(f.ctx, {
+            sceneId: 1, sourceNodeId: 10, sourceNodeType: 'object',
+        })
+        expect(f.getStyleNamesJSON).toHaveBeenCalledWith(0)
+        expect(f.getStyleNamesJSON).toHaveBeenCalledWith(1)
+        // Global entries first (UXP concat order); non-matching types
+        // dropped; missing desc normalised to ''.
+        expect(res.presetTypes).toEqual([
+            { name: 'Default1RendPreset', desc: 'Default preset 1' },
+            { name: 'NoDescRendPreset', desc: '' },
+            { name: 'LocalRendPreset', desc: 'Scene local' },
+        ])
+    })
+
+    it('hides presets when the flow targets a group (renderer row with group)', () => {
+        const f = makeFixture({
+            styleEntries: { 0: GLOBAL_STYLES },
+            rendGroup: 'grpA',
+        })
+        const res = services.getNewRendererOptions(f.ctx, {
+            sceneId: 1, sourceNodeId: 100, sourceNodeType: 'renderer',
+        })
+        expect(res.ok).toBe(true)
+        expect(res.presetTypes).toEqual([])
+    })
+
+    it('hides presets when launched from a rendGroup row', () => {
+        const f = makeFixture({
+            styleEntries: { 0: GLOBAL_STYLES },
+            rendName: 'myGrp',
+        })
+        const res = services.getNewRendererOptions(f.ctx, {
+            sceneId: 1, sourceNodeId: 100, sourceNodeType: 'rendGroup',
+        })
+        expect(res.presetTypes).toEqual([])
+    })
+
+    it('reports empty presets when styleMgr is unavailable', () => {
+        const f = makeFixture({})
+        const res = services.getNewRendererOptions(f.ctx, {
+            sceneId: 1, sourceNodeId: 10, sourceNodeType: 'object',
+        })
+        expect(res.ok).toBe(true)
+        expect(res.presetTypes).toEqual([])
+    })
+})
+
+describe('getRendPresetTypes.service', () => {
+    it('returns presets for the given class name', () => {
+        const f = makeFixture({ styleEntries: { 0: GLOBAL_STYLES, 7: SCENE_STYLES } })
+        const res = services.getRendPresetTypes(f.ctx, {
+            sceneId: 7, objClassName: 'PDBMol',
+        })
+        expect(res.presets.map((p) => p.name)).toEqual([
+            'Default1RendPreset', 'NoDescRendPreset', 'LocalRendPreset',
+        ])
+    })
+
+    it('returns [] for an empty class name without touching the style manager', () => {
+        const f = makeFixture({ styleEntries: { 0: GLOBAL_STYLES } })
+        const res = services.getRendPresetTypes(f.ctx, {
+            sceneId: 1, objClassName: '',
+        })
+        expect(res.presets).toEqual([])
+        expect(f.getStyleNamesJSON).not.toHaveBeenCalled()
     })
 })

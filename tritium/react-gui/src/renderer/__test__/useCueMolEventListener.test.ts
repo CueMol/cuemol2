@@ -20,6 +20,7 @@ interface MountResult {
 function mountListener(opts: {
     addImmediate?: boolean
     debounceMs?: number
+    filter?: (args: unknown) => boolean
 }): MountResult {
     let storedFire: ((args: unknown) => void) | null = null
     let pendingResolve: ((id: number) => void) | null = null
@@ -51,6 +52,7 @@ function mountListener(opts: {
             scopeId: 7,
             handler,
             debounceMs: opts.debounceMs,
+            filter: opts.filter,
         })
         return null
     }
@@ -122,6 +124,34 @@ describe('useCueMolEventListener', () => {
         await flushPromises()
         expect(m.cm.removeEventListener).toHaveBeenCalledTimes(1)
         expect(m.cm.removeEventListener.mock.calls[0][0]).toBe(202)
+    })
+
+    it('filtered events are discarded without consuming the debounce window', async () => {
+        let stored: (() => void) | null = null
+        const setSpy = vi.spyOn(globalThis, 'setTimeout').mockImplementation(
+            ((cb: () => void) => { stored = cb; return 1 as unknown as ReturnType<typeof setTimeout> }) as typeof setTimeout,
+        )
+        try {
+            const m = mountListener({
+                debounceMs: 30,
+                filter: (args) => (args as { skip?: boolean }).skip !== true,
+            })
+            await flushPromises()
+            // A filtered event must NOT open a debounce window; otherwise
+            // it would swallow the next legitimate event inside the window.
+            m.fireEvent({ skip: true })
+            expect(stored).toBeNull()
+            expect(m.handler).not.toHaveBeenCalled()
+            // The next passing event still schedules and fires normally.
+            m.fireEvent({ skip: false, n: 1 })
+            expect(stored).not.toBeNull()
+            act(() => { stored!() })
+            expect(m.handler).toHaveBeenCalledTimes(1)
+            expect(m.handler.mock.calls[0][0]).toEqual({ skip: false, n: 1 })
+            m.unmount()
+        } finally {
+            setSpy.mockRestore()
+        }
     })
 
     it('coalesces events within the debounce window into one handler call', async () => {

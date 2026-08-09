@@ -64,11 +64,16 @@ function makeFixture(opts: {
         calls.push(`createRenderer(${type})`)
         return rend
     })
+    const createPresetRenderer = vi.fn((preset: string, grp: string, prefix: string) => {
+        calls.push(`createPresetRenderer(${preset},${grp},${prefix})`)
+        return rend
+    })
 
     const scene = opts.scene ?? { view_uids: '' }
 
     const mol = {
         createRenderer,
+        createPresetRenderer,
         getClassName: () => opts.className,
         getScene: () => scene,
     }
@@ -81,7 +86,10 @@ function makeFixture(opts: {
         cmdMgr: { getCmd },
     } as unknown as WorkerContext
 
-    return { ctx, mol, rend, scene, calls, setSel, setName, applyStyles, getCenter, createRenderer, getCmd }
+    return {
+        ctx, mol, rend, scene, calls, setSel, setName, applyStyles, getCenter,
+        createRenderer, createPresetRenderer, getCmd,
+    }
 }
 
 const baseOpts: RendererOptions = {
@@ -195,6 +203,71 @@ describe('setupRenderer — direct API (no NewRendererCommand)', () => {
         setupRenderer(ctx, mol as unknown, { ...baseOpts, selectionEnabled: true, selection: 'protein' })
         expect(makeSel).not.toHaveBeenCalled()
         expect(setSel).not.toHaveBeenCalled()
+        expect(molPostProc).not.toHaveBeenCalled()
+    })
+})
+
+describe('setupRenderer — preset renderer group (presetName set)', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    const presetOpts: RendererOptions = {
+        ...baseOpts,
+        presetName: 'Default1RendPreset',
+        rendererName: 'default1_1',
+    }
+
+    it('creates via createPresetRenderer(preset, name, name); no createRenderer / name / applyStyles / getCmd', () => {
+        const f = makeFixture({ className: 'MolCoord' })
+        const result = setupRenderer(f.ctx, f.mol as unknown, presetOpts)
+        expect(f.createPresetRenderer).toHaveBeenCalledWith(
+            'Default1RendPreset', 'default1_1', 'default1_1',
+        )
+        expect(f.createRenderer).not.toHaveBeenCalled()
+        // C++ setName(grp_name) already named the group; children carry
+        // their styles from the preset definition.
+        expect(f.setName).not.toHaveBeenCalled()
+        expect(f.applyStyles).not.toHaveBeenCalled()
+        expect(f.getCmd).not.toHaveBeenCalled()
+        expect(result).toBe(f.rend)
+    })
+
+    it('runs molPostProc for a mol class but never assigns sel (RendGroup has none)', () => {
+        const f = makeFixture({ className: 'MolCoord' })
+        setupRenderer(f.ctx, f.mol as unknown, {
+            ...presetOpts, selectionEnabled: true, selection: 'protein',
+        })
+        expect(molPostProc).toHaveBeenCalledTimes(1)
+        expect(makeSel).not.toHaveBeenCalled()
+        expect(f.setSel).not.toHaveBeenCalled()
+    })
+
+    it('skips molPostProc for a NON_MOL class', () => {
+        const f = makeFixture({ className: 'DensityMap' })
+        setupRenderer(f.ctx, f.mol as unknown, presetOpts)
+        expect(molPostProc).not.toHaveBeenCalled()
+    })
+
+    it('centerView=true recenters through the group getCenter (member average)', () => {
+        const setViewCenter = vi.fn()
+        const getView = vi.fn(() => ({ setViewCenter }))
+        const f = makeFixture({
+            className: 'MolCoord',
+            scene: { view_uids: '10', getView },
+        })
+        setupRenderer(f.ctx, f.mol as unknown, { ...presetOpts, centerView: true })
+        expect(f.getCenter).toHaveBeenCalled()
+        expect(setViewCenter).toHaveBeenCalledWith({ __pos: true })
+    })
+
+    it('returns null (no molPostProc) when createPresetRenderer throws', () => {
+        const f = makeFixture({ className: 'MolCoord' })
+        ;(f.mol.createPresetRenderer as ReturnType<typeof vi.fn>).mockImplementationOnce(() => {
+            throw new Error('Unknown renderer preset')
+        })
+        const result = setupRenderer(f.ctx, f.mol as unknown, presetOpts)
+        expect(result).toBeNull()
         expect(molPostProc).not.toHaveBeenCalled()
     })
 })
