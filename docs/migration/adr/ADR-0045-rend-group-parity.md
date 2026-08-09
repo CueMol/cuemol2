@@ -1,6 +1,6 @@
 # ADR-0045: Renderer group 完全パリティ — visibility カスケード / rename 追従 / ui_collapsed 永続化 / deep Copy&Paste
 
-- Status: accepted (host E2E pending)
+- Status: accepted (host E2E verified)
 - Date: 2026-08-09
 - Mapping rows: [`panel.workspace.tree`](../mapping/panels.md#panelworkspacetree), [`panel.workspace.ctxmenu.rendgroup`](../mapping/panels.md#panelworkspacectxmenurendgroup), [`panel.workspace.ctxmenu.multi`](../mapping/panels.md#panelworkspacectxmenumulti)
 

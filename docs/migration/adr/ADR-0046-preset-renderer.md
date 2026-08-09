@@ -1,6 +1,6 @@
 # ADR-0046: Preset renderer — style 定義の predefined renderer group を一括生成
 
-- Status: accepted (host E2E pending)
+- Status: accepted (host E2E verified)
 - Date: 2026-08-09
 - Mapping rows: [`dialog.setup-renderer`](../mapping/other_dlgs.md), [`overlay.fopen-renderopt`](../mapping/overlay.md), [`panel.workspace.ctxmenu.object`](../mapping/panels.md#panelworkspacectxmenuobject)
 
