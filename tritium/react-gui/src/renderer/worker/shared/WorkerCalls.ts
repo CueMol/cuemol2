@@ -146,6 +146,8 @@ import type {
   GetSceneTreeResult,
   SetNodeVisibleArgs,
   SetNodeVisibleResult,
+  SetNodeUiCollapsedArgs,
+  SetNodeUiCollapsedResult,
 } from '../server/services/sceneTree.service'
 import type {
   FocusOnNodeArgs,
@@ -292,6 +294,8 @@ import type {
 import type {
   GetNewRendererOptionsArgs,
   GetNewRendererOptionsResult,
+  GetRendPresetTypesArgs,
+  GetRendPresetTypesResult,
 } from '../server/services/getNewRendererOptions.service'
 import type {
   CreateStyleSetArgs,
@@ -536,6 +540,7 @@ export interface ServiceMap {
   getNamedColors:             { args: GetNamedColorsArgs;              result: GetNamedColorsResult }
   getSceneTree:               { args: GetSceneTreeArgs;                result: GetSceneTreeResult }
   setNodeVisible:             { args: SetNodeVisibleArgs;              result: SetNodeVisibleResult }
+  setNodeUiCollapsed:         { args: SetNodeUiCollapsedArgs;          result: SetNodeUiCollapsedResult }
   focusOnNode:                { args: FocusOnNodeArgs;                 result: FocusOnNodeResult }
   deleteNode:                 { args: DeleteNodeArgs;                  result: DeleteNodeResult }
   getGenericProps:            { args: GetGenericPropsArgs;             result: GetGenericPropsResult }
@@ -591,6 +596,7 @@ export interface ServiceMap {
   bulkDeleteNode:             { args: BulkDeleteArgs;                  result: BulkOpResult }
   createRendererOnObject:     { args: CreateRendererOnObjectArgs;      result: CreateRendererOnObjectResult }
   getNewRendererOptions:      { args: GetNewRendererOptionsArgs;       result: GetNewRendererOptionsResult }
+  getRendPresetTypes:         { args: GetRendPresetTypesArgs;          result: GetRendPresetTypesResult }
   createStyleSet:             { args: CreateStyleSetArgs;              result: CreateStyleSetResult }
   destroyStyleSet:            { args: DestroyStyleSetArgs;             result: DestroyStyleSetResult }
   toggleStyleSetReadOnly:     { args: ToggleStyleSetReadOnlyArgs;      result: ToggleStyleSetReadOnlyResult }

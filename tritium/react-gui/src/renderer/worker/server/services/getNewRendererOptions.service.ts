@@ -10,7 +10,9 @@ import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { WorkerContext } from '../types/WorkerContext';
+import type { PresetTypeEntry } from '../../../components/fopen-opt-dlgs/types';
 import { getSceneOrNull } from './helpers/sceneResolver';
+import { fetchStyleEntries } from './helpers/styleEntries';
 
 const NON_MOL_CLASSES = new Set(['ElePotMap', 'MolSurfObj', 'DensityMap']);
 
@@ -41,6 +43,10 @@ export interface GetNewRendererOptionsResult {
     /** The target mol's current selection expression, or '' when none / not a
      *  mol. Non-empty means the dialog starts with the Selection checkbox on. */
     currentSel: string;
+    /** Renderer presets (`${objClassName}-rendpreset` styles) offered in the
+     *  dialog's Presets optgroup. Empty when the flow targets a group (a
+     *  preset creates its own group and cannot nest into another). */
+    presetTypes: PresetTypeEntry[];
 }
 
 const EMPTY: GetNewRendererOptionsResult = {
@@ -53,7 +59,26 @@ const EMPTY: GetNewRendererOptionsResult = {
     objClassName: '',
     isMol: false,
     currentSel: '',
+    presetTypes: [],
 };
+
+/**
+ * Collect renderer presets compatible with `objClassName`: styles whose
+ * `type` equals `<objClassName>-rendpreset`, from the global scope (0)
+ * followed by the scene-local scope -- UXP `getCompatibleRendPresetNames`
+ * concat order.
+ */
+export function collectRendPresetTypes(
+    ctx: WorkerContext,
+    sceneId: number,
+    objClassName: string,
+): PresetTypeEntry[] {
+    if (!objClassName) return [];
+    const typenm = `${objClassName}-rendpreset`;
+    return [...fetchStyleEntries(ctx, 0), ...fetchStyleEntries(ctx, sceneId)]
+        .filter((e) => e.type === typenm && !!e.name)
+        .map((e) => ({ name: e.name as string, desc: e.desc ?? '' }));
+}
 
 function resolveTarget(
     scene: Scene,
@@ -146,6 +171,14 @@ function getNewRendererOptions(
         } catch { /* ignore */ }
     }
 
+    // Presets are hidden when the new renderer would land inside a group
+    // (renderer row inheriting a group / rendGroup row): a preset creates
+    // its own group and group nesting is unsupported. Deliberate guard on
+    // top of UXP, which offered presets there too (ADR-0046).
+    const presetTypes = groupName
+        ? []
+        : collectRendPresetTypes(ctx, args.sceneId, objClassName);
+
     return {
         ok: true,
         targetObjId,
@@ -156,9 +189,34 @@ function getNewRendererOptions(
         objClassName,
         isMol,
         currentSel,
+        presetTypes,
+    };
+}
+
+export interface GetRendPresetTypesArgs {
+    sceneId: number;
+    objClassName: string;
+}
+
+export interface GetRendPresetTypesResult {
+    presets: PresetTypeEntry[];
+}
+
+/**
+ * Standalone preset lookup for the file-open flow, which resolves its
+ * renderer-type list before a scene exists (getCompatibleRendererNames)
+ * and can only ask for presets after ensureActiveScene().
+ */
+function getRendPresetTypes(
+    ctx: WorkerContext,
+    args: GetRendPresetTypesArgs,
+): GetRendPresetTypesResult {
+    return {
+        presets: collectRendPresetTypes(ctx, args.sceneId, args.objClassName),
     };
 }
 
 export const services = {
     getNewRendererOptions,
+    getRendPresetTypes,
 };

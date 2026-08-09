@@ -121,6 +121,13 @@ interface ScenePaneProps {
      * caller that does not yet compute this still works.
      */
     opsEnabled?: { focus: boolean; delete: boolean; property: boolean; add: boolean };
+    /**
+     * Row expand/collapse notification (collapsed=true on collapse). The
+     * controller persists object / rendGroup rows into C++ `ui_collapsed`
+     * so the state survives a qsc save/load. Unrelated to the pane-level
+     * `collapsed` / `onToggleCollapse` pair below (SectionHeader folding).
+     */
+    onNodeExpandChange?: (node: SceneTreeNode, collapsed: boolean) => void;
     collapsed?: boolean;
     onToggleCollapse?: () => void;
 }
@@ -156,6 +163,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     onShowContextMenu,
     onMoveNode,
     opsEnabled,
+    onNodeExpandChange,
     collapsed,
     onToggleCollapse,
 }) => {
@@ -271,13 +279,21 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     }, [editingNodeId, clearRenameTimer]);
     useEffect(() => clearRenameTimer, [clearRenameTimer]);
 
+    // Notify the controller of expand/collapse so object / rendGroup rows
+    // persist `ui_collapsed` (held in a ref like the rename callbacks so
+    // the handlers stay identity-stable across renders).
+    const expandChangeRef = useRef(onNodeExpandChange);
+    expandChangeRef.current = onNodeExpandChange;
+
     const handleNodeExpand = useCallback((node: TreeNodeInfo) => {
         setExpandOverrides((prev) => {
             const next = new Map(prev);
             next.set(String(node.id), true);
             return next;
         });
-    }, []);
+        const sceneNode = nodeLookup.get(String(node.id));
+        if (sceneNode) expandChangeRef.current?.(sceneNode, false);
+    }, [nodeLookup]);
 
     const handleNodeCollapse = useCallback((node: TreeNodeInfo) => {
         setExpandOverrides((prev) => {
@@ -285,7 +301,9 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
             next.set(String(node.id), false);
             return next;
         });
-    }, []);
+        const sceneNode = nodeLookup.get(String(node.id));
+        if (sceneNode) expandChangeRef.current?.(sceneNode, true);
+    }, [nodeLookup]);
 
     const handleNodeClick = useCallback(
         (
@@ -538,14 +556,30 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
             ) {
                 return undefined;
             }
-            const eyeIcon = node.visible ? "ui.eyeOpen" : "ui.eyeClosed";
-            const disabledByAncestor = node.visible && !node.effectiveVisible;
+            // Gray-out (disabled) states:
+            //  (a) own flag ON but an ancestor hides the row -- the
+            //      object/renderer relationship (C++ display loop gates
+            //      on the object's flag, so the row's own flag survives).
+            //  (b) the row is a member of a hidden group. The group
+            //      hide/show cascade rewrites every member's own flag
+            //      (OFF on hide, ON on show), so while the group is
+            //      hidden each member is "visible once the group is
+            //      shown" regardless of its cascaded-off flag -- render
+            //      it with the same gray open eye as (a) so the group
+            //      relationship reads like the object one.
+            const parent = parentLookup(node.id);
+            const inHiddenGroup =
+                parent?.type === "rendGroup" && !parent.visible;
+            const disabledByAncestor =
+                (node.visible && !node.effectiveVisible) || inHiddenGroup;
+            const eyeIcon =
+                node.visible || inHiddenGroup ? "ui.eyeOpen" : "ui.eyeClosed";
             const className =
                 "visibility-toggle " +
-                (node.effectiveVisible
-                    ? "visible"
-                    : disabledByAncestor
-                      ? "disabled"
+                (disabledByAncestor
+                    ? "disabled"
+                    : node.effectiveVisible
+                      ? "visible"
                       : "hidden");
             return (
                 <Button
@@ -553,14 +587,23 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                     small
                     icon={<AppIcon name={eyeIcon} aria-hidden />}
                     className={className}
+                    aria-disabled={disabledByAncestor || undefined}
                     onClick={(e: React.MouseEvent) => {
                         e.stopPropagation();
+                        // Gray-out rows do not toggle: under a hidden
+                        // ancestor object the flip would visibly do
+                        // nothing, and inside a hidden group it would
+                        // desync the member from the group cascade (the
+                        // C++ display loop has no group gate, so an ON
+                        // member of a hidden group would draw). Deviation
+                        // from UXP, which let the click flip the flag.
+                        if (disabledByAncestor) return;
                         onToggleVisibility(nodeId);
                     }}
                 />
             );
         },
-        [onToggleVisibility],
+        [onToggleVisibility, parentLookup],
     );
 
     const treeContents: TreeNodeInfo[] = useMemo(() => {

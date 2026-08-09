@@ -29,6 +29,7 @@ import {
     SEM_CAMERA,
     SEM_STYLE,
     SEM_ANY,
+    SEM_PROPCHG,
 } from '../event'
 import { useCueMolEventListener } from './useCueMolEventListener'
 import { findNode } from './sceneTree/sceneTreeNodeUtils'
@@ -98,6 +99,20 @@ const SCENE_EVENT_MASK =
 
 // Coalesce event bursts (PDB load fires many add/propchg in quick succession).
 const REFETCH_DEBOUNCE_MS = 30
+
+/**
+ * Discard `ui_collapsed` PROPCHG events before they reach the debounce.
+ * Expanding/collapsing a group row writes the flag back to C++ (via
+ * `setNodeUiCollapsed`) purely for qsc persistence; the tree UI already
+ * holds the state locally, so a refetch per twisty click is pure churn.
+ */
+function ignoreUiCollapsedPropChg(args: unknown): boolean {
+    const a = args as
+        | { evtType?: number; obj?: { propname?: string } }
+        | null
+        | undefined
+    return !(a?.evtType === SEM_PROPCHG && a?.obj?.propname === 'ui_collapsed')
+}
 
 export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTreeResult {
     const [tree, setTree] = useState<SceneTreeNode | null>(null)
@@ -173,6 +188,7 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         scopeId: sceneId ?? -1,
         handler: refetch,
         debounceMs: REFETCH_DEBOUNCE_MS,
+        filter: ignoreUiCollapsedPropChg,
     })
 
     // --- Domain action callbacks ---

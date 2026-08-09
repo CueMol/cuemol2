@@ -22,7 +22,32 @@ import { useShowNewRendererDialog } from '../components/dialogs/NewRendererDialo
 import type { CoordServerType, MapServerType } from '../components/dialogs/GetPdbDialog'
 import { useStreamProgressDialog, type StreamProgressApi } from '../components/dialogs/StreamProgressDialogProvider'
 import { pushHistory as pushPdbIdHistory } from '../components/dialogs/pdbIdHistory'
+import type { PresetTypeEntry } from '../components/fopen-opt-dlgs/types'
 import type { NewSceneAction } from '../hooks/useNewSceneAction'
+
+/**
+ * Fetch the renderer presets (`<objType>-rendpreset` styles) for the
+ * file-open option dialog. Called AFTER ensureActiveScene() because the
+ * renderer-type lookup itself runs before a scene exists. Presets are
+ * optional decoration -- any failure (including test mocks resolving
+ * undefined) degrades to an empty list.
+ */
+async function fetchPresetTypes(
+    cm: AsyncCueMol,
+    sceneId: number,
+    objType: string | undefined,
+): Promise<PresetTypeEntry[]> {
+    if (!objType) return []
+    try {
+        const r = await cm.invokeService('getRendPresetTypes', {
+            sceneId,
+            objClassName: objType,
+        })
+        return r?.presets ?? []
+    } catch {
+        return []
+    }
+}
 
 interface UseSceneCommandsOptions {
     cm: AsyncCueMol | null
@@ -158,10 +183,12 @@ export function useSceneCommands({
                     // tab. Creates a new scene + view when none is active.
                     const info = await ensureActiveScene()
                     if (!info) return
+                    const presetTypes = await fetchPresetTypes(cm, info.scene_uid, objType)
                     const options = await showFileOpenOptionDialog({
                         filePath: data.path,
                         sceneId: info.scene_uid,
                         rendererTypes: types,
+                        presetTypes,
                         objType,
                         readerName,
                     })
@@ -283,10 +310,12 @@ export function useSceneCommands({
                                 'The selected server type may not provide this entry, or the format is unsupported.',
                         })
                     } else {
+                        const presetTypes = await fetchPresetTypes(cm, info.scene_uid, objType)
                         const options = await showFileOpenOptionDialog({
                             filePath: virtualFilename,
                             sceneId: info.scene_uid,
                             rendererTypes,
+                            presetTypes,
                             objType,
                             readerName,
                         })

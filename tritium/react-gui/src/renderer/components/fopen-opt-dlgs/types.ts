@@ -70,6 +70,22 @@ export interface RendererOptions {
   selectionEnabled: boolean;
   selection: string;
   centerView: boolean;
+  /**
+   * Set when the user picked a renderer preset (a `<objtype>-rendpreset`
+   * style name, e.g. 'Default1RendPreset'). When set, the worker creates a
+   * renderer group + child renderers via `Object.createPresetRenderer` and
+   * `rendererType` is ignored; `rendererName` becomes both the group name
+   * and the child-name prefix. Undefined -> plain single-renderer create.
+   */
+  presetName?: string;
+}
+
+/** One preset entry offered in the renderer-type dropdown. */
+export interface PresetTypeEntry {
+  /** Style id, e.g. 'Default1RendPreset' (the value passed to the worker). */
+  name: string;
+  /** Human label from the style's desc attribute ('' when undefined). */
+  desc: string;
 }
 
 // Discriminated union for format-specific options

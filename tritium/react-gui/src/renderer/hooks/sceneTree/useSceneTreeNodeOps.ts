@@ -16,6 +16,11 @@ import { findNode, findTypedNode } from './sceneTreeNodeUtils'
 
 export interface SceneTreeNodeOps {
     toggleVisibility: (id: string) => void
+    /**
+     * Persist a row's expand/collapse state into C++ `ui_collapsed`
+     * (object / rendGroup rows only; fire-and-forget, no undo txn).
+     */
+    setNodeUiCollapsed: (id: string, collapsed: boolean) => void
     /** Focus a node (typically the selection) in the given view. */
     focusNode: (viewId: number, id: string) => Promise<boolean>
     /** Delete a node (typically the selection). */
@@ -77,6 +82,26 @@ export function useSceneTreeNodeOps(
                 console.warn('setNodeVisible failed:', err)
             })
             // Event subscription will trigger refetch automatically.
+        },
+        [cm, sceneIdRef, tree],
+    )
+
+    const setNodeUiCollapsed = useCallback(
+        (id: string, collapsed: boolean) => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return
+            // Only real C++ nodes persist collapse state; synthesised rows
+            // (cameraRoot / styleRoot) are excluded by the type filter.
+            const found = findTypedNode(tree, id, 'object', 'rendGroup')
+            if (!found || found.numId < 0) return
+            cm.invokeService('setNodeUiCollapsed', {
+                sceneId: sid,
+                nodeId: found.numId,
+                nodeType: found.node.type as 'object' | 'rendGroup',
+                collapsed,
+            }).catch((err: unknown) => {
+                console.warn('setNodeUiCollapsed failed:', err)
+            })
         },
         [cm, sceneIdRef, tree],
     )
@@ -313,6 +338,7 @@ export function useSceneTreeNodeOps(
 
     return {
         toggleVisibility,
+        setNodeUiCollapsed,
         focusNode,
         deleteNode,
         renameNode,

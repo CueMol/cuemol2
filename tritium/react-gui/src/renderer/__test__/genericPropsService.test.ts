@@ -104,6 +104,62 @@ describe('setGenericProp', () => {
     expect(setProp).toHaveBeenCalledWith('name', 'rib2')
   })
 
+  // --- rendGroup name writes (membership is a name reference) ---
+
+  it('renames a rendGroup and re-assigns each member group string in one txn', () => {
+    const setChildGroup = vi.fn()
+    const setOtherGroup = vi.fn()
+    const clientObj = { rend_uids: '50,100,101' }
+    const grp = {
+      uid: 50, name: 'oldGrp', setProp, resetProp,
+      getPropsJSON: () => '[]',
+      getClientObj: () => clientObj,
+    }
+    const child = {
+      uid: 100,
+      get group() { return 'oldGrp' },
+      set group(v: string) { setChildGroup(v) },
+    }
+    const other = {
+      uid: 101,
+      get group() { return '' },
+      set group(v: string) { setOtherGroup(v) },
+    }
+    const sceneWithRends = {
+      uid: 42,
+      getRendByName: vi.fn(() => null),
+      getRenderer: vi.fn((id: number) =>
+        id === 50 ? grp : id === 100 ? child : id === 101 ? other : null),
+    }
+    ;(resolvePropTarget as Mock).mockReturnValue({ scene: sceneWithRends, target: grp })
+    const res = call({
+      nodeType: 'rendGroup', propName: 'name', valueType: 'string', value: ' newGrp ',
+    })
+    expect(res.ok).toBe(true)
+    // Trimmed name written; member matched by OLD name follows; unrelated
+    // sibling untouched. One txn covers the whole rename.
+    expect(setProp).toHaveBeenCalledWith('name', 'newGrp')
+    expect(setChildGroup).toHaveBeenCalledWith('newGrp')
+    expect(setOtherGroup).not.toHaveBeenCalled()
+    expect(withUndoTxnSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects a rendGroup rename that collides with another renderer scene-wide', () => {
+    const grp = {
+      uid: 50, name: 'oldGrp', setProp, resetProp,
+      getPropsJSON: () => '[]',
+      getClientObj: () => null,
+    }
+    const sceneWithDup = { uid: 42, getRendByName: vi.fn(() => ({ uid: 60 })) }
+    ;(resolvePropTarget as Mock).mockReturnValue({ scene: sceneWithDup, target: grp })
+    const res = call({
+      nodeType: 'rendGroup', propName: 'name', valueType: 'string', value: 'taken',
+    })
+    expect(res.ok).toBe(false)
+    expect(setProp).not.toHaveBeenCalled()
+    expect(withUndoTxnSpy).not.toHaveBeenCalled()
+  })
+
   // --- Realtime drag write modes ---
 
   it('previews a write without an undo transaction and returns no entries', () => {

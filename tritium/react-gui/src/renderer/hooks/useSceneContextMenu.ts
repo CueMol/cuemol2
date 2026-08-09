@@ -203,6 +203,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                 objName: info.objName,
                 objClassName: info.objClassName,
                 rendererTypes: info.rendererTypes,
+                presetTypes: info.presetTypes ?? [],
                 defaultName: info.defaultName,
                 isMol: info.isMol,
                 molID: info.isMol && info.targetObjId >= 0 ? info.targetObjId : undefined,

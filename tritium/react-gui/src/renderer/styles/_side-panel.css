@@ -244,17 +244,34 @@
   border-radius: var(--radius-md);
 }
 
-.visibility-toggle.visible .bp5-icon {
-  color: var(--accent);
-}
+/* The eye button hosts a Phosphor SVG (fill="currentColor") directly --
+   Blueprint does NOT wrap a custom icon element in .bp5-icon -- so any
+   state color must go on the button itself for the glyph to inherit it
+   (a .bp5-icon-scoped selector here silently matches nothing).
 
-.visibility-toggle.hidden .bp5-icon {
+   `.visible` / `.hidden` intentionally have NO color rule: those states
+   are carried by the glyph alone (open vs closed eye) in the normal text
+   color, matching UXP visible1.png / invisible0.png. Only the tristate
+   gray-out is colored: `.disabled` (UXP visible1-dis.png) -- the row's
+   own flag is ON but an ancestor object / group is hidden, so it does
+   not draw (open-eye glyph in muted gray). */
+.visibility-toggle.disabled.bp5-button {
   color: var(--text-muted);
   opacity: 0.5;
+  /* Click is a no-op in this state (see ScenePane visibilityButton). */
+  cursor: default;
 }
 
 .visibility-toggle.bp5-button:hover {
   background: var(--overlay-hover) !important;
+}
+
+/* Suppress the focus ring: clicking the eye leaves the button focused and
+   the outline reads as a stuck highlight on the row. The toggle state
+   itself is the visual feedback (same convention as the activity bar). */
+.visibility-toggle.bp5-button:focus,
+.visibility-toggle.bp5-button:focus-visible {
+  outline: none;
 }
 
 /* ─── Selection Panel ─── */

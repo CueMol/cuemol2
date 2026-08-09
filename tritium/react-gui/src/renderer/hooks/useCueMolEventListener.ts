@@ -30,12 +30,23 @@ export interface UseCueMolEventListenerOptions {
      * first event's payload). Useful for refetch-on-burst patterns.
      */
     debounceMs?: number
+    /**
+     * Optional predicate applied BEFORE debounce scheduling; events for
+     * which it returns false are discarded entirely. The pre-debounce
+     * placement matters: a filtered event must not open (or consume) a
+     * debounce window, otherwise it would swallow the next legitimate
+     * event arriving inside the window. Held in a ref -- an inline
+     * function does not force a resubscribe.
+     */
+    filter?: (args: unknown) => boolean
 }
 
 export function useCueMolEventListener(opts: UseCueMolEventListenerOptions): void {
     const { cm, enabled = true, category, srcMask, evtMask, scopeId, debounceMs = 0 } = opts
     const handlerRef = useRef(opts.handler)
     handlerRef.current = opts.handler
+    const filterRef = useRef(opts.filter)
+    filterRef.current = opts.filter
 
     useEffect(() => {
         if (!cm || !enabled) return
@@ -46,6 +57,7 @@ export function useCueMolEventListener(opts: UseCueMolEventListenerOptions): voi
 
         const fire = (args: unknown): void => {
             if (cancelled) return
+            if (filterRef.current && !filterRef.current(args)) return
             if (debounceMs > 0) {
                 if (timer !== null) return
                 timer = setTimeout(() => {

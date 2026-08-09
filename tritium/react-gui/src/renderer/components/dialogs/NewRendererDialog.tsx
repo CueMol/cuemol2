@@ -3,7 +3,7 @@ import { Button, Dialog, DialogBody, DialogFooter } from '@blueprintjs/core'
 import { useTheme } from '../../contexts/ThemeContext'
 import { RendererOptionsPane } from '../fopen-opt-dlgs/panes/RendererOptionsPane'
 import { useRendererOptions } from '../fopen-opt-dlgs/useRendererOptions'
-import type { RendererOptions } from '../fopen-opt-dlgs/types'
+import type { PresetTypeEntry, RendererOptions } from '../fopen-opt-dlgs/types'
 
 /**
  * "New Renderer" dialog -- reuses the same `RendererOptionsPane` the file-
@@ -29,6 +29,8 @@ interface Props {
     objName: string
     objClassName: string
     rendererTypes: string[]
+    /** Renderer presets for the leading "Presets" optgroup. */
+    presetTypes?: PresetTypeEntry[]
     defaultName: string
     sceneId: number
     /** Target molecule uid -- forwarded to MolSelList for `current (<sel>)`. */
@@ -48,6 +50,7 @@ export function NewRendererDialog({
     objName,
     objClassName,
     rendererTypes,
+    presetTypes,
     defaultName,
     sceneId,
     molID,
@@ -66,14 +69,15 @@ export function NewRendererDialog({
             sceneId,
             objClassName,
             rendererTypes,
+            presetTypes,
             objectName: objName,
             initialRendererName: defaultName,
             initialSelection: currentSel,
         })
 
     const canSubmit =
-        rendererTypes.length > 0 &&
-        options.rendererType.length > 0 &&
+        (rendererTypes.length > 0 || (presetTypes?.length ?? 0) > 0) &&
+        (!!options.presetName || options.rendererType.length > 0) &&
         options.rendererName.trim().length > 0
 
     const handleOk = (): void => {
@@ -112,6 +116,7 @@ export function NewRendererDialog({
                     options={options}
                     onChange={setOptions}
                     rendererTypes={rendererTypes}
+                    presetTypes={presetTypes}
                     sceneId={sceneId}
                     molID={molID}
                     isMolFormat={isMol}

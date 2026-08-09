@@ -240,3 +240,57 @@ describe('useSceneCommands - open scene into just-created scene', () => {
     h.unmount()
   })
 })
+
+describe('useSceneCommands - renderer preset supply (ADR-0046)', () => {
+  beforeEach(() => {
+    setupElectronAPI()
+    showFileOpenOptionDialog.mockReset()
+    showGetPdbDialog.mockReset()
+    showErrorAlert.mockReset()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+  })
+  afterEach(() => {
+    teardownElectronAPI()
+    vi.restoreAllMocks()
+  })
+
+  it('OpenObjByPath fetches getRendPresetTypes after scene resolution and forwards presetTypes', async () => {
+    const cm = makeCm()
+    const PRESETS = [{ name: 'Default1RendPreset', desc: 'Default preset 1' }]
+    ;(cm.invokeService as ReturnType<typeof vi.fn>).mockImplementation(
+      (name: string) =>
+        name === 'getRendPresetTypes'
+          ? Promise.resolve({ presets: PRESETS })
+          : Promise.resolve(undefined),
+    )
+    showFileOpenOptionDialog.mockResolvedValue(null) // cancel -> no load
+    const h = mountWith(cm, () => ({ scene_uid: 5, view_id: 6 }), vi.fn())
+    await flushPromises()
+
+    await h.result.dispatch(CmdId.OpenObjByPath, { path: '/tmp/x.pdb' } as never)
+    await drain()
+
+    expect(cm.invokeService).toHaveBeenCalledWith('getRendPresetTypes', {
+      sceneId: 5, objClassName: 'MolCoord',
+    })
+    expect(showFileOpenOptionDialog).toHaveBeenCalledWith(
+      expect.objectContaining({ presetTypes: PRESETS }),
+    )
+    h.unmount()
+  })
+
+  it('degrades to an empty preset list when the service resolves undefined', async () => {
+    const cm = makeCm() // invokeService resolves undefined by default
+    showFileOpenOptionDialog.mockResolvedValue(null)
+    const h = mountWith(cm, () => ({ scene_uid: 5, view_id: 6 }), vi.fn())
+    await flushPromises()
+
+    await h.result.dispatch(CmdId.OpenObjByPath, { path: '/tmp/x.pdb' } as never)
+    await drain()
+
+    expect(showFileOpenOptionDialog).toHaveBeenCalledWith(
+      expect.objectContaining({ presetTypes: [] }),
+    )
+    h.unmount()
+  })
+})

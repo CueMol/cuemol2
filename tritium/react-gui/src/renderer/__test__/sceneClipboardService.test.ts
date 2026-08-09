@@ -10,10 +10,14 @@ interface BuildCtxOpts {
     existingObjectNames?: string[]
     /** Existing renderer names on the target object (for paste uniquification). */
     existingRendererNames?: string[]
+    /** Renderer names taken scene-wide (for group-name uniquification). */
+    existingSceneRendNames?: string[]
     /** Mock object returned by scene.getObject. If omitted, returns the source object. */
     customObject?: unknown
     /** What strMgr.fromXML should return. */
     restored?: unknown
+    /** What strMgr.rendArrayFromXML should return ([grpName, ...natives]). */
+    restoredArray?: unknown[]
 }
 
 function buildCtx(opts: BuildCtxOpts & {
@@ -40,11 +44,18 @@ function buildCtx(opts: BuildCtxOpts & {
     const attachRenderer = vi.fn()
     const setObjName = vi.fn()
     const setRendName = vi.fn()
+    const setCreatedGroupName = vi.fn()
+    const createdGroup = {
+        uid: 777,
+        set name(v: string) { setCreatedGroupName(v) },
+        get name() { return '' },
+    }
     const targetObj = {
         attachRenderer,
         getRendererByName: vi.fn((n: string) =>
             (opts.existingRendererNames ?? []).includes(n) ? { __r: n } : null,
         ),
+        createRenderer: vi.fn(() => createdGroup),
     }
     // rendgroup paste target: a group renderer (uid=888) whose
     // getClientObj returns the same parent mol used by object paste.
@@ -79,6 +90,9 @@ function buildCtx(opts: BuildCtxOpts & {
         getObjectByName: vi.fn((n: string) =>
             (opts.existingObjectNames ?? []).includes(n) ? { __o: n } : null,
         ),
+        getRendByName: vi.fn((n: string) =>
+            (opts.existingSceneRendNames ?? []).includes(n) ? { uid: 12345 } : null,
+        ),
         addObject,
         startUndoTxn,
         commitUndoTxn,
@@ -89,6 +103,10 @@ function buildCtx(opts: BuildCtxOpts & {
     // Default fromXML returns the object/renderer restored fixture; style
     // tests override per-call via the `restoredStyle` arg below.
     const fromXML = vi.fn((_: unknown) => restored)
+    const rendGrpToXML = vi.fn(() => ({ __byteArray: true, __ary: true }))
+    const rendArrayFromXML = vi.fn(() => opts.restoredArray ?? [])
+    // Identity: tests hand wrapper-shaped mocks straight through.
+    const createWrapper = vi.fn((n: unknown) => n)
 
     // StyleManager mock used by both copyNode and pasteNode style branches.
     const sourceStyleSet = opts.sourceStyleSet ?? { name: 'mystyle' }
@@ -107,13 +125,15 @@ function buildCtx(opts: BuildCtxOpts & {
 
     const ctx = {
         sceMgr: { getScene: vi.fn(() => mockScene) },
-        strMgr: { toXML, fromXML },
+        strMgr: { toXML, fromXML, rendGrpToXML, rendArrayFromXML, createWrapper },
         svc: { getService },
     } as unknown as WorkerContext
 
     return {
         ctx, mockScene, sourceObj, sourceRend, targetObj, targetGroup, restored,
         addObject, attachRenderer, toXML, fromXML,
+        rendGrpToXML, rendArrayFromXML, createWrapper,
+        createdGroup, setCreatedGroupName,
         setObjName, setRendName,
         startUndoTxn, commitUndoTxn,
         styleMgr, sourceStyleSet,
@@ -141,10 +161,26 @@ describe('sceneClipboard.copyNode', () => {
         expect(toXML).toHaveBeenCalled()
     })
 
-    it('rendGroup copy is treated as renderer kind', () => {
-        const { ctx } = buildCtx()
+    it('rendGroup copy serializes member natives + group name via rendGrpToXML (kind stays renderer)', () => {
+        const { ctx, mockScene, rendGrpToXML, toXML } = buildCtx()
+        const parentObj = { rend_uids: '50,100,101' }
+        const grp = { uid: 50, name: 'grpA', getClientObj: () => parentObj }
+        const member = { uid: 100, name: 'r1', group: 'grpA', wrapped: { __native: 1 } }
+        const stranger = { uid: 101, name: 'r2', group: '', wrapped: { __native: 2 } }
+        ;(mockScene.getRenderer as ReturnType<typeof vi.fn>).mockImplementation(
+            (id?: number) =>
+                id === 50 ? grp : id === 100 ? member : id === 101 ? stranger : null)
         const res = services.copyNode(ctx, { sceneId: 1, nodeId: 50, nodeType: 'rendGroup' })
-        expect(res.kind).toBe('renderer')
+        expect(res).toEqual({ ok: true, kind: 'renderer' })
+        // Natives of group members only (unwrapped via .wrapped); the
+        // group renderer itself and non-members are excluded.
+        expect(rendGrpToXML).toHaveBeenCalledWith([{ __native: 1 }], 'grpA')
+        expect(toXML).not.toHaveBeenCalled()
+        // Public clipboard kind stays 'renderer' so ctxmenu Paste gating
+        // is unchanged (UXP qscrend | qscrendary equivalence).
+        expect(services.getClipboardKind(ctx, {})).toEqual({
+            kind: 'renderer', sourceName: 'grpA',
+        })
     })
 
     it('returns ok:false when scene lookup fails', () => {
@@ -289,6 +325,83 @@ describe('sceneClipboard.pasteNode', () => {
         services.copyNode(ctx, { sceneId: 1, nodeId: 100, nodeType: 'renderer' })
         const res = services.pasteNode(ctx, { sceneId: 1, targetGroupId: 888 })
         expect(res.ok).toBe(false)
+    })
+
+    // --- rendArray (deep group copy) paste ---
+
+    /** Build a renderer-shaped mock for rendArrayFromXML output. */
+    function makeArrayRend(name: string, opts: { compatible?: boolean } = {}) {
+        const setName = vi.fn()
+        const setGroup = vi.fn()
+        const rend = {
+            get name() { return name },
+            set name(v: string) { setName(v) },
+            get group() { return '' },
+            set group(v: string) { setGroup(v) },
+            isCompatibleObj: vi.fn(() => opts.compatible ?? true),
+        }
+        return { rend, setName, setGroup }
+    }
+
+    /** Seed the clipboard with a rendArray entry (deep rendGroup copy). */
+    function seedRendArrayClipboard(ctx: WorkerContext) {
+        // Default fixture: getRenderer(50) -> sourceRend (no members), so
+        // this stores form='rendArray' XML; paste output is then driven by
+        // the restoredArray option.
+        services.copyNode(ctx, { sceneId: 1, nodeId: 50, nodeType: 'rendGroup' })
+    }
+
+    it('rendArray paste onto a rendGroup row joins the clicked group (XML group name ignored)', () => {
+        const a = makeArrayRend('r1')
+        const b = makeArrayRend('r2')
+        const f = buildCtx({ restoredArray: ['srcGrp', a.rend, b.rend] })
+        seedRendArrayClipboard(f.ctx)
+        const res = services.pasteNode(f.ctx, { sceneId: 1, targetGroupId: 888 })
+        expect(res.ok).toBe(true)
+        expect(f.startUndoTxn).toHaveBeenCalledWith('Paste renderers')
+        expect(f.rendArrayFromXML).toHaveBeenCalledWith(expect.anything(), 1)
+        // Each native goes through createWrapper (UXP convPolymObj).
+        expect(f.createWrapper).toHaveBeenCalledTimes(2)
+        // Both land in the clicked group; no new group is created.
+        expect(a.setGroup).toHaveBeenCalledWith('grpA')
+        expect(b.setGroup).toHaveBeenCalledWith('grpA')
+        expect(f.targetObj.createRenderer).not.toHaveBeenCalled()
+        expect(f.attachRenderer).toHaveBeenCalledTimes(2)
+        expect(res.newName).toBe('grpA')
+    })
+
+    it('rendArray paste onto an object row auto-creates the group with a scene-wide unique name', () => {
+        const a = makeArrayRend('r1')
+        const f = buildCtx({
+            restoredArray: ['srcGrp', a.rend],
+            existingSceneRendNames: ['srcGrp'],
+        })
+        seedRendArrayClipboard(f.ctx)
+        const res = services.pasteNode(f.ctx, { sceneId: 1, targetObjId: 999 })
+        expect(res.ok).toBe(true)
+        expect(f.targetObj.createRenderer).toHaveBeenCalledWith('*group')
+        // 'srcGrp' is taken scene-wide -> uniquified to 'srcGrp_1'.
+        expect(f.setCreatedGroupName).toHaveBeenCalledWith('srcGrp_1')
+        expect(a.setGroup).toHaveBeenCalledWith('srcGrp_1')
+        expect(f.attachRenderer).toHaveBeenCalledWith(a.rend)
+        expect(res.newId).toBe(777)
+        expect(res.newName).toBe('srcGrp_1')
+    })
+
+    it('rendArray paste with empty XML group name skips group creation and clears rend.group', () => {
+        const a = makeArrayRend('r1')
+        const bad = makeArrayRend('rX', { compatible: false })
+        const f = buildCtx({ restoredArray: ['', a.rend, bad.rend] })
+        seedRendArrayClipboard(f.ctx)
+        const res = services.pasteNode(f.ctx, { sceneId: 1, targetObjId: 999 })
+        expect(res.ok).toBe(true)
+        expect(f.targetObj.createRenderer).not.toHaveBeenCalled()
+        expect(a.setGroup).toHaveBeenCalledWith('')
+        // Incompatible renderer is skipped, the rest still paste.
+        expect(bad.setGroup).not.toHaveBeenCalled()
+        expect(f.attachRenderer).toHaveBeenCalledTimes(1)
+        expect(res.newName).toBe('r1')
+        expect(res.newId).toBeNull()
     })
 })
 

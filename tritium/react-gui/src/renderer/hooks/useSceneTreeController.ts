@@ -49,6 +49,7 @@ export function useSceneTreeController({
     setSelectedId,
     toggleInSelection,
     toggleVisibility,
+    setNodeUiCollapsed,
     moveSceneNode,
     focusNode,
     deleteNode,
@@ -107,6 +108,19 @@ export function useSceneTreeController({
       }
     },
     [renameCamera, renameNode],
+  );
+
+  // Tree row expand/collapse -- persist into C++ `ui_collapsed` so the
+  // state survives a qsc save/load (UXP onTwistyClick parity). Only real
+  // C++ rows qualify; synthesised rows (cameraRoot / styleRoot, negative
+  // ids) and camera / style rows are no-ops.
+  const handleNodeExpandChange = useCallback(
+    (node: SceneTreeNode, collapsed: boolean) => {
+      if (node.type !== "object" && node.type !== "rendGroup") return;
+      if (node.id < 0) return;
+      setNodeUiCollapsed(String(node.id), collapsed);
+    },
+    [setNodeUiCollapsed],
   );
 
   // --- Context menu + shared New Renderer / New Camera flows ---
@@ -197,6 +211,7 @@ export function useSceneTreeController({
     onCommitInlineRename: handleCommitInlineRename,
     onShowSceneContextMenu: handleShowContextMenu,
     onMoveSceneNode: moveSceneNode,
+    onSceneNodeExpandChange: handleNodeExpandChange,
     sceneOpsEnabled: selectedHasOps,
   };
 }

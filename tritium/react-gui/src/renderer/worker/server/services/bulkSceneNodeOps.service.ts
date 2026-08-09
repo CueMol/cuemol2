@@ -13,6 +13,7 @@ import type { WorkerContext } from '../types/WorkerContext';
 import type { SceneNodeType } from '../../shared/sceneTreeTypes';
 import { getSceneOrNull } from './helpers/sceneResolver';
 import { withUndoTxn } from './withUndoTxn';
+import { listGroupChildRenderers } from './helpers/groupChildren';
 
 export interface BulkSceneNodeItem {
     nodeId: number;
@@ -67,6 +68,16 @@ function bulkSetNodeVisible(
                 if (!rend) continue;
                 if (rend.visible !== args.visible) {
                     rend.visible = args.visible;
+                }
+                if (it.nodeType === 'rendGroup') {
+                    // Cascade to member renderers (UXP toggleVisibleRendGrp
+                    // parity). Selecting a group together with its children
+                    // just re-assigns the same value -- idempotent.
+                    for (const child of listGroupChildRenderers(scene, rend)) {
+                        if (child.visible !== args.visible) {
+                            child.visible = args.visible;
+                        }
+                    }
                 }
                 applied += 1;
             }

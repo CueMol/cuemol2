@@ -17,6 +17,7 @@ import type { WorkerContext } from '../types/WorkerContext';
 import type { SceneNodeType } from '../../shared/sceneTreeTypes';
 import { withUndoTxn } from './withUndoTxn';
 import { safeRead } from './helpers/safeRead';
+import { listGroupChildRenderers } from './helpers/groupChildren';
 
 export interface FocusOnNodeArgs {
     sceneId: number;
@@ -230,6 +231,29 @@ function renameNode(ctx: WorkerContext, args: RenameNodeArgs): RenameNodeResult 
         // Scene itself.
         withUndoTxn(scene, `Rename to ${trimmed}`, () => {
             (scene as unknown as { setName: (n: string) => void }).setName(trimmed);
+        });
+        return { ok: true };
+    }
+
+    if (args.nodeType === 'rendGroup') {
+        // Group membership is a name reference (each member renderer's
+        // `group` string must equal the group's name), so renaming the
+        // group must re-assign every member's `group` in the same txn --
+        // UXP `onRenameRendGrp` parity. Additionally reject a name that
+        // collides with any other renderer in the scene: group names are
+        // the membership key, and `createRendererGroup` enforces the same
+        // scene-wide uniqueness via getRendByName.
+        const grp = scene.getRenderer(args.nodeId) as Renderer | null;
+        if (!grp) return { ok: false };
+        const dup = safeRead(() => scene.getRendByName(trimmed) as Renderer | null);
+        if (dup && safeRead(() => dup.uid) !== args.nodeId) return { ok: false };
+        // Collect members by the OLD name before the rename happens.
+        const children = listGroupChildRenderers(scene, grp);
+        withUndoTxn(scene, `Change rend group name: ${trimmed}`, () => {
+            grp.name = trimmed;
+            for (const c of children) {
+                try { c.group = trimmed; } catch { /* ignore */ }
+            }
         });
         return { ok: true };
     }

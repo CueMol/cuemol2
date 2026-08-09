@@ -18,6 +18,7 @@ import type { WorkerContext } from '../types/WorkerContext';
 import { withUndoTxn } from './withUndoTxn';
 import { getSceneOrNull } from './helpers/sceneResolver';
 import { safeRead } from './helpers/safeRead';
+import { listGroupChildRenderers } from './helpers/groupChildren';
 
 export type ClipboardKind = 'object' | 'renderer' | 'style' | 'camera';
 
@@ -32,6 +33,17 @@ interface ClipboardEntry {
      * name collision under the destination scene).
      */
     sourceScopeId?: number;
+    /**
+     * XML payload shape for kind 'renderer'. 'single' (or absent) is one
+     * renderer serialized with toXML; 'rendArray' is a renderer array
+     * serialized with rendGrpToXML (UXP clipboard type "qscrendary" --
+     * element 0 of the restored array is the source group name). The
+     * public clipboard kind stays 'renderer' for both so ctxmenu Paste
+     * gating matches UXP (qscrend | qscrendary enable the same item).
+     */
+    form?: 'single' | 'rendArray';
+    /** Group name embedded in a 'rendArray' payload ('' when none). */
+    sourceGroupName?: string;
 }
 
 let clipboard: ClipboardEntry | null = null;
@@ -119,8 +131,32 @@ function copyNode(ctx: WorkerContext, args: CopyNodeArgs): CopyNodeResult {
         sourceClassName = 'StyleSet';
         sourceScopeId = args.scopeId;
         kind = 'style';
+    } else if (args.nodeType === 'rendGroup') {
+        // Deep-copy the group: serialize its member renderers (not the
+        // empty group shell) together with the group name -- UXP
+        // `multiRendCopyImpl` / clipboard type "qscrendary". Members are
+        // enumerated live by group-name match; rendGrpToXML takes native
+        // addon objects, so unwrap each TS wrapper via `.wrapped`.
+        const grp = scene.getRenderer(args.nodeId) as Renderer | null;
+        if (!grp) return { ok: false, kind: null };
+        const grpName = safeRead(() => grp.name) ?? '';
+        const children = listGroupChildRenderers(scene, grp);
+        const natives = children.map(
+            (r) => (r as unknown as { wrapped: unknown }).wrapped,
+        );
+        const xml = ctx.strMgr.rendGrpToXML(natives, grpName);
+        if (!xml) return { ok: false, kind: null };
+        clipboard = {
+            kind: 'renderer',
+            xml,
+            sourceName: grpName,
+            sourceClassName: '*group',
+            form: 'rendArray',
+            sourceGroupName: grpName,
+        };
+        return { ok: true, kind: 'renderer' };
     } else {
-        // renderer or rendGroup
+        // single renderer
         const rend = scene.getRenderer(args.nodeId) as Renderer | null;
         if (!rend) return { ok: false, kind: null };
         target = rend as unknown as LScrObject;
@@ -284,6 +320,65 @@ function pasteNode(ctx: WorkerContext, args: PasteNodeArgs): PasteNodeResult {
         return empty;
     }
 
+    if (entry.form === 'rendArray') {
+        // Renderer-array paste (deep group copy) -- UXP `onPasteRend`
+        // "qscrendary" branch. Element 0 of the restored array is the
+        // source group name; the rest are native renderer objects that
+        // need `createWrapper` (UXP `convPolymObj`) before property access.
+        let ok = false;
+        let newName = '';
+        let newId: number = -1;
+        withUndoTxn(scene, 'Paste renderers', () => {
+            const arr = ctx.strMgr.rendArrayFromXML(entry.xml, args.sceneId) as
+                | unknown[]
+                | null;
+            if (!Array.isArray(arr) || arr.length === 0) return;
+            const grpFromXml = typeof arr[0] === 'string' ? arr[0] : '';
+            let destGrp = destGroupName;
+            if (destGrp === '' && grpFromXml !== '') {
+                // Pasting onto an object row with a group in the XML:
+                // auto-create the group (UXP keeps the embedded name as-is;
+                // we uniquify scene-wide because the group name is the
+                // membership key -- matches createRendererGroup / rename).
+                const finalGrp = uniqueGroupName(scene, grpFromXml);
+                const grp = target!.createRenderer('*group') as unknown as
+                    | Renderer
+                    | null;
+                if (!grp) return;
+                try { grp.name = finalGrp; } catch { /* ignore */ }
+                destGrp = finalGrp;
+                newId = safeRead(() => (grp as unknown as { uid: number }).uid) ?? -1;
+                newName = finalGrp;
+                ok = true;
+            }
+            for (let i = 1; i < arr.length; i++) {
+                const rend = ctx.strMgr.createWrapper(arr[i]) as Renderer | null;
+                if (!rend) continue;
+                // Incompatible renderer -> skip, keep pasting the rest
+                // (UXP pasteRendImpl shows an alert per item; we warn).
+                const compat = safeRead(() =>
+                    (rend as unknown as {
+                        isCompatibleObj: (o: CueMolObject) => boolean;
+                    }).isCompatibleObj(target!));
+                if (compat === false) {
+                    console.warn('pasteNode: skipped incompatible renderer');
+                    continue;
+                }
+                const wanted = (safeRead(() => rend.name) ?? '') || 'rend';
+                const finalName = uniqueRendererName(target!, wanted);
+                try { rend.name = finalName; } catch { /* ignore */ }
+                try { rend.group = destGrp; } catch { /* ignore */ }
+                target!.attachRenderer(rend);
+                if (newName === '') newName = finalName;
+                ok = true;
+            }
+            // Report the group as the pasted node when one was involved.
+            if (destGrp !== '') newName = destGrp;
+        });
+        if (!ok) return empty;
+        return { ok: true, newId: newId >= 0 ? newId : null, newName };
+    }
+
     let newName = '';
     let newId: number = -1;
     withUndoTxn(scene, txnLabel, () => {
@@ -336,6 +431,22 @@ function uniqueObjectName(scene: Scene, prefix: string): string {
     for (let i = 1; i < 10000; i++) {
         const candidate = `${prefix}_${i}`;
         if (!scene.getObjectByName(candidate)) return candidate;
+    }
+    return `${prefix}_${Date.now()}`;
+}
+
+/**
+ * Return `prefix`, or `prefix_<i>` if any renderer in the scene already
+ * has that name. Group names are scene-wide unique because they are the
+ * membership key (same gate as createRendererGroup / rendGroup rename).
+ */
+function uniqueGroupName(scene: Scene, prefix: string): string {
+    const taken = (n: string): boolean =>
+        !!safeRead(() => scene.getRendByName(n));
+    if (!taken(prefix)) return prefix;
+    for (let i = 1; i < 10000; i++) {
+        const candidate = `${prefix}_${i}`;
+        if (!taken(candidate)) return candidate;
     }
     return `${prefix}_${Date.now()}`;
 }
