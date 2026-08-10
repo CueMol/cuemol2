@@ -11,6 +11,7 @@ import { buildTemplate } from '../../shared/sceneCtxMenu/sceneCtxTemplates'
 import { useShowContextMenu } from '../components/menu/ContextMenuProvider'
 import type { SceneTreeNode } from '../worker/shared/sceneTreeTypes'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
+import { useShowErrorAlert } from '../components/dialogs/ErrorAlertDialogProvider'
 import { useShowTextPromptDialog } from '../components/dialogs/TextPromptDialogProvider'
 import { useShowNewRendererDialog } from '../components/dialogs/NewRendererDialogProvider'
 import { useShowApplyRendStyleDialog } from '../components/dialogs/ApplyRendStyleDialogProvider'
@@ -137,6 +138,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
 
     // Electron disables window.prompt -- use the in-app Blueprint dialog
     // for Rename / New Group text input flows instead.
+    const showErrorAlert = useShowErrorAlert()
     const showTextPrompt = useShowTextPromptDialog()
     const showNewRenderer = useShowNewRendererDialog()
     const showApplyRendStyle = useShowApplyRendStyleDialog()
@@ -246,7 +248,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
                 if (!multiAction) return
                 await dispatchSceneCtxAction(node, multiAction, {
                     ...opts,
-                    showTextPrompt, showApplyRendStyle, showCreateRendStyle, showEditCameraVisFlags, showEditInteractionList, showRegenMolSurf, showStyleEditor,
+                    showErrorAlert, showTextPrompt, showApplyRendStyle, showCreateRendStyle, showEditCameraVisFlags, showEditInteractionList, showRegenMolSurf, showStyleEditor,
                     openNewRendererFlow, openNewCameraFlow,
                 })
                 return
@@ -257,14 +259,14 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
             if (!action) return
             await dispatchSceneCtxAction(node, action, {
                 ...opts,
-                showTextPrompt, showApplyRendStyle, showCreateRendStyle, showEditCameraVisFlags, showEditInteractionList, showRegenMolSurf, showStyleEditor,
+                showErrorAlert, showTextPrompt, showApplyRendStyle, showCreateRendStyle, showEditCameraVisFlags, showEditInteractionList, showRegenMolSurf, showStyleEditor,
                 openNewRendererFlow, openNewCameraFlow,
             })
         },
         [
             cm, sceneId, opts, selectedIds, bulkSetNodeVisible, bulkDeleteNodes,
             showSceneCtxMenu,
-            showTextPrompt, showApplyRendStyle, showCreateRendStyle, showEditCameraVisFlags, showEditInteractionList, showRegenMolSurf, showStyleEditor,
+            showErrorAlert, showTextPrompt, showApplyRendStyle, showCreateRendStyle, showEditCameraVisFlags, showEditInteractionList, showRegenMolSurf, showStyleEditor,
             openNewRendererFlow, openNewCameraFlow,
         ],
     )

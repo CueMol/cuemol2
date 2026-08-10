@@ -20,8 +20,12 @@ const showObjectPicker = vi.fn<(args: unknown) => Promise<number | null>>()
 const showConfirmReload = vi.fn<(args: unknown) => Promise<boolean>>()
 const showExportPngOptions =
   vi.fn<(args: unknown) => Promise<{ width: number; height: number; alpha: boolean; dpi: number } | null>>()
+const showErrorAlert = vi.fn<(args: unknown) => Promise<void>>()
 vi.mock('../components/dialogs/ObjectPickerDialogProvider', () => ({
   useShowObjectPicker: () => showObjectPicker,
+}))
+vi.mock('../components/dialogs/ErrorAlertDialogProvider', () => ({
+  useShowErrorAlert: () => showErrorAlert,
 }))
 vi.mock('../components/dialogs/ConfirmReloadSceneDialogProvider', () => ({
   useShowConfirmReloadSceneDialog: () => showConfirmReload,
@@ -272,14 +276,20 @@ describe('useFileCommands', () => {
 
   // --- ObjectSaveAs ---
 
-  it('ObjectSaveAs: empty scene does not enter the object-save flow', async () => {
+  it('ObjectSaveAs: alerts and stops when no object is savable', async () => {
+    // UXP `onFileSaveAs` alerts "No object to save" when its writer-filtered
+    // list comes back empty.
     const cm = makeCm({
-      getSceneTree: () => ({ ok: true, tree: { children: [] } }),
+      listSavableObjects: () => ({ ok: true, objects: [] }),
     })
     const h = await mountWith(cm)
 
     await h.result.dispatch(CmdId.ObjectSaveAs)
 
+    expect(showErrorAlert).toHaveBeenCalledWith({
+      title: 'Save File As', message: 'No object to save',
+    })
+    expect(showObjectPicker).not.toHaveBeenCalled()
     expect(cm.invokeService).not.toHaveBeenCalledWith(
       'getObjectSaveInfo', expect.anything(),
     )
@@ -288,9 +298,9 @@ describe('useFileCommands', () => {
 
   it('ObjectSaveAs: single object skips the picker and saves it directly', async () => {
     const cm = makeCm({
-      getSceneTree: () => ({
+      listSavableObjects: () => ({
         ok: true,
-        tree: { children: [{ id: 10, name: 'mol', type: 'object', children: [] }] },
+        objects: [{ id: 10, name: 'mol', className: 'MolCoord' }],
       }),
       // ok:false short-circuits runObjectSaveFlow before the native dialog.
       getObjectSaveInfo: () => ({ ok: false, filters: [] }),
@@ -301,7 +311,31 @@ describe('useFileCommands', () => {
 
     expect(showObjectPicker).not.toHaveBeenCalled()
     expect(cm.invokeService).toHaveBeenCalledWith('getObjectSaveInfo', {
-      sceneId: 1, objId: 10,
+      sceneId: 1, objId: 10, preferredWriter: 'pdb',
+    })
+    h.unmount()
+  })
+
+  it('ObjectSaveAs: picker rows carry the UXP "name (type, id=N)" label', async () => {
+    const cm = makeCm({
+      listSavableObjects: () => ({
+        ok: true,
+        objects: [
+          { id: 10, name: 'mol', className: 'MolCoord' },
+          { id: 11, name: 'map', className: 'DensityMap' },
+        ],
+      }),
+    })
+    showObjectPicker.mockResolvedValueOnce(null)
+    const h = await mountWith(cm)
+
+    await h.result.dispatch(CmdId.ObjectSaveAs)
+
+    expect(showObjectPicker).toHaveBeenCalledWith({
+      objects: [
+        { id: 10, name: 'mol (MolCoord, id=10)' },
+        { id: 11, name: 'map (DensityMap, id=11)' },
+      ],
     })
     h.unmount()
   })

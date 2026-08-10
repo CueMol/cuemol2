@@ -21,7 +21,24 @@ interface FixtureOpts {
     createHandlerThrows?: boolean
     /** When true, writer.write() throws. */
     writeThrows?: boolean
+    /**
+     * Per-object compatibility CSV for listSavableObjects. The sentinel
+     * '__throw__' makes findCompatibleWriterNamesForObj throw for that id;
+     * a missing id yields ''. When omitted, `compatibleNames` is used for
+     * every id.
+     */
+    compatibleByObjId?: Record<number, string>
+    /** Raw output of scene.getSceneDataJSON. */
+    sceneDataJSON?: string
 }
+
+/** Default scene: one MolCoord, one DensityMap, one MolSurfObj. */
+const DEFAULT_SCENE_JSON = JSON.stringify([
+    { ID: 1, name: 'scene1' },
+    { ID: 10, name: 'mol1', type: 'MolCoord', rends: [] },
+    { ID: 11, name: 'map1', type: 'DensityMap', rends: [] },
+    { ID: 12, name: 'surf1', type: 'MolSurfObj', rends: [] },
+])
 
 function makeFixture(opts: FixtureOpts = {}) {
     const {
@@ -40,15 +57,24 @@ function makeFixture(opts: FixtureOpts = {}) {
         objExists = true,
         createHandlerThrows = false,
         writeThrows = false,
+        compatibleByObjId,
+        sceneDataJSON = DEFAULT_SCENE_JSON,
     } = opts
 
     const obj = { name: objName, src: objSrc, uid: 10 }
     const scene = {
         getObject: vi.fn(() => (objExists ? obj : null)),
+        getSceneDataJSON: vi.fn(() => sceneDataJSON),
     }
 
-    const findCompatibleWriterNamesForObj = vi.fn(() => compatibleNames)
+    const findCompatibleWriterNamesForObj = vi.fn((id: number) => {
+        if (!compatibleByObjId) return compatibleNames
+        const csv = compatibleByObjId[id] ?? ''
+        if (csv === '__throw__') throw new Error('compat boom')
+        return csv
+    })
     const getInfoJSON2 = vi.fn(() => infoJSON)
+    const msgLog = { writeln: vi.fn() }
 
     const setPath = vi.fn()
     const attach = vi.fn()
@@ -75,10 +101,11 @@ function makeFixture(opts: FixtureOpts = {}) {
             getInfoJSON2,
             createHandler,
         },
+        svc: { getService: vi.fn(() => msgLog) },
     } as unknown as WorkerContext
 
     return {
-        ctx, scene, obj, writer,
+        ctx, scene, obj, writer, msgLog,
         findCompatibleWriterNamesForObj, getInfoJSON2, createHandler,
         setPath, attach, writeFn, detach,
         getConvToLink: () => convToLink,
@@ -139,6 +166,27 @@ describe('getObjectSaveInfo', () => {
         expect(res.defaultDir).toBe('C:\\Users\\me\\data')
     })
 
+    it('moves preferredWriter to the head and uses its ext for the default name', () => {
+        // Electron cannot preselect a filter row, so the remembered writer is
+        // restored by reordering; the default extension must follow it.
+        const { ctx } = makeFixture({ objName: 'mol1', objSrc: '' })
+        const res = services.getObjectSaveInfo(ctx, {
+            sceneId: 1, objId: 10, preferredWriter: 'xyz',
+        })
+        expect(res.filters.map((f) => f.name)).toEqual(['xyz', 'pdb'])
+        expect(res.defaultFileName).toBe('mol1.xyz')
+    })
+
+    it('leaves the order unchanged for an unknown or already-first preferredWriter', () => {
+        const { ctx } = makeFixture()
+        for (const preferredWriter of ['mmcif', 'pdb']) {
+            const res = services.getObjectSaveInfo(ctx, {
+                sceneId: 1, objId: 10, preferredWriter,
+            })
+            expect(res.filters.map((f) => f.name)).toEqual(['pdb', 'xyz'])
+        }
+    })
+
     it('returns ok:false when there are no compatible writers', () => {
         const { ctx } = makeFixture({ compatibleNames: '' })
         const res = services.getObjectSaveInfo(ctx, { sceneId: 1, objId: 10 })
@@ -171,6 +219,21 @@ describe('saveObjectToFile', () => {
         expect(attach).toHaveBeenCalledWith(obj)
         expect(writeFn).toHaveBeenCalled()
         expect(detach).toHaveBeenCalled()
+    })
+
+    it('reports the written file in the message log, but not on failure', () => {
+        const ok = makeFixture()
+        services.saveObjectToFile(ok.ctx, {
+            sceneId: 1, objId: 10, path: '/tmp/out.pdb', writerName: 'pdb',
+        })
+        // UXP `onSaveAsObj` putLogMsg text.
+        expect(ok.msgLog.writeln).toHaveBeenCalledWith('File: [/tmp/out.pdb] is saved.')
+
+        const failed = makeFixture({ writeThrows: true })
+        services.saveObjectToFile(failed.ctx, {
+            sceneId: 1, objId: 10, path: '/tmp/out.pdb', writerName: 'pdb',
+        })
+        expect(failed.msgLog.writeln).not.toHaveBeenCalled()
     })
 
     it('rejects empty path / empty writerName', () => {
@@ -214,5 +277,28 @@ describe('saveObjectToFile', () => {
             })).toEqual({ ok: false })
             expect(createHandler).not.toHaveBeenCalled()
         }
+    })
+})
+
+describe('listSavableObjects', () => {
+    beforeEach(() => vi.clearAllMocks())
+
+    it('keeps only objects that have at least one compatible writer', () => {
+        // UXP `onFileSaveAs` drops objects whose compatibility CSV is empty;
+        // a throwing lookup is treated the same way.
+        const { ctx } = makeFixture({
+            compatibleByObjId: { 10: 'pdb,xyz', 11: '', 12: '__throw__' },
+        })
+        const res = services.listSavableObjects(ctx, { sceneId: 1 })
+        expect(res.ok).toBe(true)
+        expect(res.objects).toEqual([
+            { id: 10, name: 'mol1', className: 'MolCoord' },
+        ])
+    })
+
+    it('returns ok:false when the scene is missing', () => {
+        const { ctx } = makeFixture({ sceneExists: false })
+        expect(services.listSavableObjects(ctx, { sceneId: 1 }))
+            .toEqual({ ok: false, objects: [] })
     })
 })

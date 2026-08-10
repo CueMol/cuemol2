@@ -257,6 +257,8 @@ import type {
   GetObjectSaveInfoResult,
   SaveObjectToFileArgs,
   SaveObjectToFileResult,
+  ListSavableObjectsArgs,
+  ListSavableObjectsResult,
 } from '../server/services/objectSave.service'
 import type {
   SetRendererSelectionArgs,
@@ -592,6 +594,7 @@ export interface ServiceMap {
   createStyleFromRenderer:    { args: CreateStyleFromRendererArgs;     result: CreateStyleFromRendererResult }
   getObjectSaveInfo:          { args: GetObjectSaveInfoArgs;           result: GetObjectSaveInfoResult }
   saveObjectToFile:           { args: SaveObjectToFileArgs;            result: SaveObjectToFileResult }
+  listSavableObjects:         { args: ListSavableObjectsArgs;          result: ListSavableObjectsResult }
   setRendererSelection:       { args: SetRendererSelectionArgs;        result: SetRendererSelectionResult }
   generateRendererSurfObj:    { args: GenerateRendererSurfObjArgs;     result: GenerateRendererSurfObjResult }
   createRendererGroup:        { args: CreateRendererGroupArgs;         result: CreateRendererGroupResult }

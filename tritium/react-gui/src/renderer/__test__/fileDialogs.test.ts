@@ -47,6 +47,15 @@ interface FileDialogsModule {
   ): Promise<{ canceled: boolean; filePath: string }>
   handleStyleOpenDialog(win: object): Promise<{ canceled: boolean; filePath: string }>
   handleCameraOpenDialog(win: object): Promise<{ canceled: boolean; filePath: string }>
+  handleObjectSaveDialog(
+    win: object,
+    payload: {
+      defaultDir: string
+      defaultName: string
+      filters: FileFilter[]
+      defaultFilterIndex?: number
+    },
+  ): Promise<{ canceled: boolean; filePath: string; filterIndex: number }>
 }
 
 let mod: FileDialogsModule
@@ -179,5 +188,62 @@ describe('fileDialogs open-family handlers', () => {
     showOpenDialog.mockResolvedValue({ canceled: false, filePaths: [] })
     const res = await mod.handleCameraOpenDialog(win)
     expect(res).toEqual({ canceled: true, filePath: '' })
+  })
+})
+
+// --- handleObjectSaveDialog ---
+//
+// Electron's showSaveDialog return value has no filterIndex field, so the
+// handler recovers the writer choice from the extension of the chosen path.
+// That recovery loop is the only place the object-save flow decides which
+// writer runs, hence these assertions.
+describe('handleObjectSaveDialog', () => {
+  const objectFilters: FileFilter[] = [
+    { name: 'XYZ file', extensions: ['xyz'] },
+    { name: 'PDB file', extensions: ['pdb', 'ent'] },
+  ]
+  const payload = {
+    defaultDir: '/data',
+    defaultName: 'mol1.xyz',
+    filters: objectFilters,
+    defaultFilterIndex: 0,
+  }
+
+  it('passes the writer filters plus an All Files row and a joined defaultPath', async () => {
+    showSaveDialog.mockResolvedValue({ canceled: false, filePath: '/data/mol1.xyz' })
+    await mod.handleObjectSaveDialog(win, payload)
+    const [passedWin, opts] = showSaveDialog.mock.calls[0]
+    expect(passedWin).toBe(win)
+    expect(opts.title).toBe('Save Object As')
+    expect(opts.defaultPath).toBe('/data/mol1.xyz')
+    expect(opts.filters).toEqual([
+      ...objectFilters,
+      { name: 'All Files', extensions: ['*'] },
+    ])
+  })
+
+  it('recovers the filter index from the chosen extension', async () => {
+    // Secondary extension of a multi-extension row must match too.
+    for (const [filePath, expected] of [
+      ['/data/mol1.xyz', 0],
+      ['/data/mol1.pdb', 1],
+      ['/data/mol1.ent', 1],
+    ] as const) {
+      showSaveDialog.mockResolvedValue({ canceled: false, filePath })
+      const res = await mod.handleObjectSaveDialog(win, payload)
+      expect(res).toEqual({ canceled: false, filePath, filterIndex: expected })
+    }
+  })
+
+  it('falls back to defaultFilterIndex for an unmatched extension', async () => {
+    showSaveDialog.mockResolvedValue({ canceled: false, filePath: '/data/mol1.dat' })
+    const res = await mod.handleObjectSaveDialog(win, { ...payload, defaultFilterIndex: 1 })
+    expect(res.filterIndex).toBe(1)
+  })
+
+  it('reports cancellation with no filter index', async () => {
+    showSaveDialog.mockResolvedValue({ canceled: true, filePath: undefined })
+    const res = await mod.handleObjectSaveDialog(win, payload)
+    expect(res).toEqual({ canceled: true, filePath: '', filterIndex: -1 })
   })
 })

@@ -83,3 +83,65 @@ and `Reload Scene` buttons, which were mock placeholders under
 - UXP parity: `fileopen.js` `onFileSaveAs` / `onSaveCurView` / `onReloadScene`.
 - Tests: `__test__/fileCommands.test.tsx`, plus `menuDispatch` / `Toolbar`
   test updates.
+
+## Addendum (2026-08-10): object Save As UXP parity pass
+
+The initial port left four gaps against UXP `fileopen.js` `onSaveAsObj` /
+`onFileSaveAs`. All four are now closed.
+
+### 1. Remembered writer -- realized by reordering, not preselection
+
+UXP restores pref `cuemol2.ui.histories.save_writer_name` (default `"pdb"`)
+into `nsIFilePicker.filterIndex`. Electron's `showSaveDialog` has **no
+filter-preselect option at all**, so the writer is instead moved to the head
+of the filter list: `getObjectSaveInfo` takes a `preferredWriter` argument and
+`filters[0]` becomes that writer. One change covers three effects -- the
+native format popup defaults to it, the no-`src` default file name takes its
+extension, and the `defaultFilterIndex: 0` fallback in `handleObjectSaveDialog`
+resolves to it. The value is persisted in `UiState.saveWriterName`
+(electron-store) by `runObjectSaveFlow` after a successful write.
+
+**Known divergence**: the filter index is still recovered from the chosen
+file extension, so an explicitly typed extension beats the remembered writer
+(e.g. remembered `qdfmol` + the prefilled `copy_of_1crn.pdb` writes PDB). This
+is deliberate -- preferring `defaultFilterIndex` over the extension would write
+QDF bytes into a file named `.pdb`. UXP has no equivalent case because its
+dialog reports the real `filterIndex`.
+
+### 2. Failure alert and success log
+
+`runObjectSaveFlow` now returns a discriminated
+`{status: 'saved' | 'cancelled' | 'no-writer' | 'error'}` instead of a boolean.
+Both call sites (`useFileCommands` `ObjectSaveAs`, `dispatchSceneCtxAction`
+`saveAsObject`) show `useShowErrorAlert` with the UXP text
+`Failed to save file: <path>` on `'error'`; the alert lives in the callers
+because `runObjectSaveFlow` is a plain function, not a hook, so
+`DispatchSceneCtxActionCtx` gained a required `showErrorAlert` field.
+
+This also fixes a real defect: `invokeService` resolves rather than throws, so
+`saveObjectToFile` returning `{ok: false}` previously read as success. The
+result flag is now checked explicitly.
+
+On success, `saveObjectToFile` writes `File: [<path>] is saved.` to the C++
+`MsgLog` service (UXP `putLogMsg`), so it lands in the log pane. The call is
+guarded -- a missing or failing MsgLog must never fail a completed write.
+
+### 3. Writer-filtered object picker
+
+UXP `onFileSaveAs` excludes objects whose `findCompatibleWriterNamesForObj` is
+empty and alerts `No object to save` when nothing remains. A new worker service
+`listSavableObjects` applies the same filter in one round-trip (per-object
+compatibility checks from the renderer would be N+1 IPC calls), and the picker
+rows now use the UXP label format `<name> (<type>, id=<ID>)`.
+
+### Implementation / tests
+
+- `shared/ipcTypes.ts` (`UiState.saveWriterName`),
+  `worker/server/services/objectSave.service.ts` (`preferredWriter` reorder,
+  `writeMsgLog`, `listSavableObjects`), `worker/shared/WorkerCalls.ts` (1 row),
+  `hooks/sceneContextMenu/runObjectSaveFlow.ts`, `dispatchSceneCtxAction.ts`,
+  `hooks/useSceneContextMenu.ts`, `commands/useFileCommands.ts`.
+- Tests: `__test__/runObjectSaveFlow.test.ts` (new), plus additions to
+  `objectSaveService`, `fileCommands`, `dispatchSceneCtxAction` and
+  `fileDialogs` (the previously untested `handleObjectSaveDialog`
+  extension-to-filterIndex recovery).

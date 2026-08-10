@@ -17,6 +17,7 @@
 import { IPC } from '../../shared/ipcChannels'
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import type { ActiveSceneCommandDeps } from './commandTypes'
+import { useShowErrorAlert } from '../components/dialogs/ErrorAlertDialogProvider'
 import { useShowObjectPicker } from '../components/dialogs/ObjectPickerDialogProvider'
 import { useShowConfirmReloadSceneDialog } from '../components/dialogs/ConfirmReloadSceneDialogProvider'
 import { useShowExportPngOptionsDialog } from '../components/dialogs/ExportPngOptionsDialogProvider'
@@ -35,34 +36,51 @@ export function useFileCommands({
     getActiveSceneInfo,
 }: UseFileCommandsOptions): void {
 
+    const showErrorAlert = useShowErrorAlert()
     const showObjectPicker = useShowObjectPicker()
     const showConfirmReload = useShowConfirmReloadSceneDialog()
     const showExportPngOptions = useShowExportPngOptionsDialog()
 
     // ObjectSaveAs -- UXP `onFileSaveAs`. The File menu has no right-clicked
     // node, so the object to save is resolved from the active scene: save
-    // directly when there is exactly one, otherwise show a picker.
+    // directly when there is exactly one, otherwise show a picker. Objects
+    // without a compatible writer are excluded, as UXP does.
     useRegisterCommand(CmdId.ObjectSaveAs, async () => {
         if (!cm) return
         const info = getActiveSceneInfo()
         if (!info) return
-        const res = await cm.invokeService('getSceneTree', { sceneId: info.scene_uid })
-        const objects = (res?.tree?.children ?? [])
-            .filter((n) => n.type === 'object')
-            .map((n) => ({ id: n.id, name: n.name }))
+        const res = await cm.invokeService('listSavableObjects', {
+            sceneId: info.scene_uid,
+        })
+        const objects = res?.ok ? res.objects : []
         if (objects.length === 0) {
-            console.info('Save File As: scene has no objects to save')
+            await showErrorAlert({
+                title: 'Save File As',
+                message: 'No object to save',
+            })
             return
         }
         let objId: number
         if (objects.length === 1) {
             objId = objects[0].id
         } else {
-            const picked = await showObjectPicker({ objects })
+            const picked = await showObjectPicker({
+                // UXP labels its prompt rows "<name> (<type>, id=<ID>)".
+                objects: objects.map((o) => ({
+                    id: o.id,
+                    name: `${o.name} (${o.className}, id=${o.id})`,
+                })),
+            })
             if (picked === null) return
             objId = picked
         }
-        await runObjectSaveFlow(cm, info.scene_uid, objId)
+        const flow = await runObjectSaveFlow(cm, info.scene_uid, objId)
+        if (flow.status === 'error') {
+            await showErrorAlert({
+                title: 'Save File As',
+                message: `Failed to save file: ${flow.path}`,
+            })
+        }
     })
 
     // SaveCurrentView -- UXP `onSaveCurView`: store the live view in the
