@@ -79,8 +79,14 @@ chosen file extension (Electron does not return it natively).
 - **Helpers (`selStrTransforms`, `makeSel`, `setupRenderer`) are shared
   across the object / renderer / rendGroup branches**, so adding a Phase
   to one branch typically gives the others the same capability for free.
-- **Properties stays a stub through every phase** — the per-type
-  property editor lands in Phase 5 (separate ADR when written).
+- **Properties was a stub through every phase of this ADR** — it used the
+  read-only key/value `getNodeInfo` bridge. It was superseded later by the
+  Inspector work in [ADR-0015](ADR-0015-generic-property-inspector.md):
+  `showProperty` now opens the Inspector, which defaults Object targets to
+  the structured Properties tab (`ObjectCommonSection`). The "Phase 5
+  per-type editor" wording only ever applied to *renderer* types; UXP's
+  `object-propdlg.xul` has a single "Common" tab and no per-type object
+  pages, so nothing further is owed on the object branch.
 - **Regenerate surface (Phase 6c) landed separately** — see
   [ADR-0047](ADR-0047-molsurf-regenerate.md).
 
@@ -102,6 +108,10 @@ chosen file extension (Electron does not return it natively).
   / `getNewRendererOptions.service.ts` — New Renderer
 - `tritium/react-gui/src/renderer/worker/server/services/rendererColoring.service.ts`
   — `paintObjectSelection` / `getObjectPaintInfo` (Phase 5d)
+- `tritium/react-gui/src/renderer/components/inspector/ObjectCommonSection.tsx`
+  — Properties (via the ADR-0015 Inspector, not this ADR's stub)
+- `tritium/react-gui/src/renderer/worker/server/services/regenMolSurf.service.ts`
+  — Regenerate surface (ADR-0047)
 - `tritium/react-gui/src/renderer/worker/server/services/helpers/selStrTransforms.ts`
   — `rewriteAround` (Phase 6a)
 - `tritium/react-gui/src/renderer/worker/server/services/objectSave.service.ts`
@@ -116,7 +126,8 @@ chosen file extension (Electron does not return it natively).
 
 ### Pending
 
-- Properties — depends on the per-type property editor (Phase 5)
+- (none — every inventory feature of `panel.workspace.ctxmenu.object` is
+  wired; the row is `done`.)
 
 ### Related ADRs
 

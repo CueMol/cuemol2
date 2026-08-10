@@ -1,6 +1,6 @@
 # ADR-0047: MolSurfObj "Regenerate surface..." — density-only regeneration from the object context menu
 
-- Status: accepted (host E2E pending)
+- Status: accepted (host E2E verified)
 - Date: 2026-08-09
 - Mapping rows: [`panel.workspace.ctxmenu.object`](../mapping/panels.md#panelworkspacectxmenuobject), [`dialog.tool.makesurf`](../mapping/tool_dlgs.md#dialogtoolmakesurf)
 
