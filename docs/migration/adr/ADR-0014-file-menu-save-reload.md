@@ -145,3 +145,21 @@ rows now use the UXP label format `<name> (<type>, id=<ID>)`.
   `objectSaveService`, `fileCommands`, `dispatchSceneCtxAction` and
   `fileDialogs` (the previously untested `handleObjectSaveDialog`
   extension-to-filterIndex recovery).
+
+### 4. Internal QDF writers are hidden (deviation from UXP)
+
+UXP `makeFilter` applies its QDF-hiding rule to readers only (`nCatID==0`), so
+its object save dialog offers `qdfmol`, `qdfmap`, `qdfsurf`, `qdfpot` and
+`qdflwobj`. Tritium hides them on the write side too: QDF is the cuemol2
+internal storage format, not a user-facing one, and the read side already
+excludes it (`helpers/readerFilter.ts`, shared by both directions).
+
+The filter is applied once in `compatibleWriterNames`, which backs both
+`getObjectSaveInfo` and `listSavableObjects`, so an object left with no writer
+disappears from the picker rather than being offered and then failing.
+
+**Accepted consequence**: `MolCoord` keeps `pdb` / `sdf` / `pqr` / `xyzr`, but
+`DensityMap`, `MolSurfObj`, `ElePotMap` and `LWObject` have no non-QDF writer
+at all, so those objects can no longer be saved via Save File As -- they are
+omitted from the object picker, and a scene holding only such objects reports
+"No object to save". Re-exposing them would mean re-exposing the QDF format.

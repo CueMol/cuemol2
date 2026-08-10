@@ -187,6 +187,28 @@ describe('getObjectSaveInfo', () => {
         }
     })
 
+    it('hides internal qdf writers from the filter list', () => {
+        const { ctx } = makeFixture({
+            compatibleNames: 'pdb,qdfmol,xyz',
+            infoJSON: JSON.stringify([
+                { name: 'pdb', descr: 'PDB file', fext: '*.pdb', category: 1 },
+                { name: 'qdfmol', descr: 'CueMol coords', fext: '*.qdf', category: 1 },
+                { name: 'xyz', descr: 'XYZ file', fext: '*.xyz', category: 1 },
+            ]),
+        })
+        const res = services.getObjectSaveInfo(ctx, { sceneId: 1, objId: 10 })
+        expect(res.filters.map((f) => f.name)).toEqual(['pdb', 'xyz'])
+    })
+
+    it('returns ok:false when qdf was the object\'s only writer', () => {
+        // DensityMap / MolSurfObj / ElePotMap / LWObject have no other writer,
+        // so hiding qdf leaves them unsavable by design.
+        const { ctx } = makeFixture({ compatibleNames: 'qdfmap' })
+        const res = services.getObjectSaveInfo(ctx, { sceneId: 1, objId: 10 })
+        expect(res.ok).toBe(false)
+        expect(res.filters).toEqual([])
+    })
+
     it('returns ok:false when there are no compatible writers', () => {
         const { ctx } = makeFixture({ compatibleNames: '' })
         const res = services.getObjectSaveInfo(ctx, { sceneId: 1, objId: 10 })
@@ -285,9 +307,10 @@ describe('listSavableObjects', () => {
 
     it('keeps only objects that have at least one compatible writer', () => {
         // UXP `onFileSaveAs` drops objects whose compatibility CSV is empty;
-        // a throwing lookup is treated the same way.
+        // a throwing lookup is treated the same way. A qdf-only object (here
+        // the DensityMap) drops out too, since qdf writers are hidden.
         const { ctx } = makeFixture({
-            compatibleByObjId: { 10: 'pdb,xyz', 11: '', 12: '__throw__' },
+            compatibleByObjId: { 10: 'pdb,xyz', 11: 'qdfmap', 12: '__throw__' },
         })
         const res = services.listSavableObjects(ctx, { sceneId: 1 })
         expect(res.ok).toBe(true)

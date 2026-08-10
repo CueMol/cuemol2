@@ -20,6 +20,7 @@ import type { MsgLog } from '@cuemol/core/src/wrappers/MsgLog';
 import type { WorkerContext } from '../types/WorkerContext';
 import { parseSceneTreeJSON } from '../../shared/sceneTreeTypes';
 import { getSceneOrNull } from './helpers/sceneResolver';
+import { isHiddenObjWriter } from './helpers/readerFilter';
 import { safeRead } from './helpers/safeRead';
 
 // --- helpers ---
@@ -77,15 +78,22 @@ function writeMsgLog(ctx: WorkerContext, message: string): void {
 }
 
 /**
- * Compatible object-writer names for `objId`, as reported by the C++
+ * User-facing object-writer names for `objId`, as reported by the C++
  * StreamManager. Returns an empty list when the object has no writer (or the
  * lookup throws), which is how UXP `onFileSaveAs` decides an object is not
  * savable.
+ *
+ * Internal `qdf*` writers are dropped here rather than at the two call sites,
+ * so an object left with no writer disappears from both the save-dialog filter
+ * list and the File-menu picker instead of being offered and then failing.
  */
 function compatibleWriterNames(ctx: WorkerContext, objId: number): string[] {
     try {
         const csv = ctx.strMgr.findCompatibleWriterNamesForObj(objId);
-        return csv.split(',').map((s) => s.trim()).filter((s) => s.length > 0);
+        return csv
+            .split(',')
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0 && !isHiddenObjWriter(s));
     } catch {
         return [];
     }
