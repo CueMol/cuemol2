@@ -2,7 +2,7 @@
 //
 // Phase: panel.workspace.ctxmenu.object -- Save As.
 //
-// Mirrors UXP `Qm2Main.onSaveAsObj` (`fileopen.js`). Two worker services:
+// Mirrors UXP `Qm2Main.onSaveAsObj` (`fileopen.js`). Three worker services:
 //   - `getObjectSaveInfo`: enumerates compatible writers for the object,
 //     returns filters + a sensible default file name (UXP uses
 //     `copy_of_<leafName>` when the object has a `src` path, else
@@ -11,10 +11,16 @@
 //   - `saveObjectToFile`: runs the
 //     `createHandler` -> `setPath` -> `convToLink=true` -> `attach` ->
 //     `write` -> `detach` dance UXP performs after the dialog.
+//   - `listSavableObjects`: scene objects that have at least one compatible
+//     writer, for the File-menu object picker (UXP `onFileSaveAs` applies the
+//     same filter to its prompt list).
 
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
+import type { MsgLog } from '@cuemol/core/src/wrappers/MsgLog';
 import type { WorkerContext } from '../types/WorkerContext';
+import { parseSceneTreeJSON } from '../../shared/sceneTreeTypes';
 import { getSceneOrNull } from './helpers/sceneResolver';
+import { isHiddenObjWriter } from './helpers/readerFilter';
 import { safeRead } from './helpers/safeRead';
 
 // --- helpers ---
@@ -56,11 +62,56 @@ function dirnameOf(p: string): string {
     return idx >= 0 ? p.slice(0, idx) : '';
 }
 
+/**
+ * Append a line to the CueMol message log (UXP `cuemol.putLogMsg`).
+ * Guarded: a missing / failing MsgLog service must never fail an operation
+ * that has already completed.
+ */
+function writeMsgLog(ctx: WorkerContext, message: string): void {
+    try {
+        const msgLog = ctx.svc.getService('MsgLog') as MsgLog | null;
+        if (!msgLog) return;
+        msgLog.writeln(message);
+    } catch {
+        /* logging must not fail the caller */
+    }
+}
+
+/**
+ * User-facing object-writer names for `objId`, as reported by the C++
+ * StreamManager. Returns an empty list when the object has no writer (or the
+ * lookup throws), which is how UXP `onFileSaveAs` decides an object is not
+ * savable.
+ *
+ * Internal `qdf*` writers are dropped here rather than at the two call sites,
+ * so an object left with no writer disappears from both the save-dialog filter
+ * list and the File-menu picker instead of being offered and then failing.
+ */
+function compatibleWriterNames(ctx: WorkerContext, objId: number): string[] {
+    try {
+        const csv = ctx.strMgr.findCompatibleWriterNamesForObj(objId);
+        return csv
+            .split(',')
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0 && !isHiddenObjWriter(s));
+    } catch {
+        return [];
+    }
+}
+
 // --- getObjectSaveInfo ---
 
 export interface GetObjectSaveInfoArgs {
     sceneId: number;
     objId: number;
+    /**
+     * Writer to move to the head of `filters` (the last-used writer restored
+     * from `UiState.saveWriterName`). Ignored when the object has no such
+     * writer. UXP instead preselects `nsIFilePicker.filterIndex`; Electron has
+     * no equivalent, so reordering is what makes the native dialog default to
+     * this writer.
+     */
+    preferredWriter?: string;
 }
 
 /** One save-dialog filter row. Mirrors `ElectronFileFilter` shape. */
@@ -102,13 +153,7 @@ function getObjectSaveInfo(
     // matching the object's C++ class. UXP `Qm2Main.onSaveAsObj` builds
     // its filter list from the intersection of these with the full writer
     // catalogue via `getInfoJSON2`.
-    let candidates: string[] = [];
-    try {
-        const csv = ctx.strMgr.findCompatibleWriterNamesForObj(args.objId);
-        candidates = csv.split(',').map((s) => s.trim()).filter((s) => s.length > 0);
-    } catch {
-        return empty;
-    }
+    const candidates = compatibleWriterNames(ctx, args.objId);
     if (candidates.length === 0) return empty;
 
     let info: InfoEntry[] = [];
@@ -135,6 +180,14 @@ function getObjectSaveInfo(
         });
     }
     if (filters.length === 0) return empty;
+
+    // Restore the last-used writer by moving it to the head of the list. The
+    // native dialog defaults to filters[0], so this both preselects the writer
+    // and drives the default extension picked below.
+    if (args.preferredWriter) {
+        const pi = filters.findIndex((f) => f.name === args.preferredWriter);
+        if (pi > 0) filters.unshift(filters.splice(pi, 1)[0]);
+    }
 
     // Default file name + directory. UXP `onSaveAsObj`:
     //   - obj.src non-empty -> `copy_of_<leafName>` in the obj.src directory
@@ -204,6 +257,8 @@ function saveObjectToFile(
         writer.attach(obj);
         attached = true;
         writer.write();
+        // UXP `onSaveAsObj` reports the write in the message log pane.
+        writeMsgLog(ctx, `File: [${args.path}] is saved.`);
         return { ok: true };
     } catch {
         return { ok: false };
@@ -214,7 +269,49 @@ function saveObjectToFile(
     }
 }
 
+// --- listSavableObjects ---
+
+export interface ListSavableObjectsArgs {
+    sceneId: number;
+}
+
+export interface SavableObjectEntry {
+    id: number;
+    name: string;
+    /** C++ class name of the object ("MolCoord", "DensityMap", ...). */
+    className: string;
+}
+
+export interface ListSavableObjectsResult {
+    ok: boolean;
+    objects: SavableObjectEntry[];
+}
+
+/**
+ * Scene objects that can actually be written to a file. UXP `onFileSaveAs`
+ * filters its object prompt the same way -- objects whose
+ * `findCompatibleWriterNamesForObj` is empty are not offered.
+ */
+function listSavableObjects(
+    ctx: WorkerContext,
+    args: ListSavableObjectsArgs,
+): ListSavableObjectsResult {
+    const scene = getSceneOrNull(ctx, args.sceneId);
+    if (!scene) return { ok: false, objects: [] };
+    const tree = parseSceneTreeJSON(scene.getSceneDataJSON());
+    if (!tree) return { ok: false, objects: [] };
+
+    const objects: SavableObjectEntry[] = [];
+    for (const node of tree.children) {
+        if (node.type !== 'object') continue;
+        if (compatibleWriterNames(ctx, node.id).length === 0) continue;
+        objects.push({ id: node.id, name: node.name, className: node.className });
+    }
+    return { ok: true, objects };
+}
+
 export const services = {
     getObjectSaveInfo,
     saveObjectToFile,
+    listSavableObjects,
 };

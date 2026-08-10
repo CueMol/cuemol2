@@ -6,6 +6,12 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+const runObjectSaveFlow = vi.fn()
+vi.mock('../hooks/sceneContextMenu/runObjectSaveFlow', () => ({
+    runObjectSaveFlow: (...args: unknown[]) => runObjectSaveFlow(...args),
+}))
+
 import {
     dispatchSceneCtxAction,
     type DispatchSceneCtxActionCtx,
@@ -19,6 +25,7 @@ function makeCtx(overrides: Partial<DispatchSceneCtxActionCtx> = {}): DispatchSc
         sceneId: 7,
         activeViewId: 5,
         toggleVisibility: vi.fn(),
+        showErrorAlert: vi.fn().mockResolvedValue(undefined),
         deleteNode: vi.fn().mockResolvedValue(true),
         showProperty: vi.fn(),
         selectObjectMol: vi.fn().mockResolvedValue(true),
@@ -79,6 +86,34 @@ const styleNode = (overrides: Record<string, unknown> = {}): any => ({
     id: 300, type: 'style', name: 'st1', visible: true, children: [],
     styleInfo: { scopeId: 0, src: '', readonly: false, modified: false },
     ...overrides,
+})
+
+describe('dispatchSceneCtxAction — saveAsObject', () => {
+    beforeEach(() => vi.clearAllMocks())
+
+    it('alerts with the UXP text when the write fails', async () => {
+        runObjectSaveFlow.mockResolvedValue({ status: 'error', path: '/tmp/x.pdb' })
+        const ctx = makeCtx({ cm: {} as never })
+        await dispatchSceneCtxAction(
+            objectNode(), { kind: 'saveAsObject' } as SceneCtxAction, ctx,
+        )
+        expect(runObjectSaveFlow).toHaveBeenCalledWith(ctx.cm, 7, 42)
+        expect(ctx.showErrorAlert).toHaveBeenCalledWith({
+            title: 'Save Object As',
+            message: 'Failed to save file: /tmp/x.pdb',
+        })
+    })
+
+    it('stays silent on success and on cancel', async () => {
+        for (const status of ['saved', 'cancelled', 'no-writer']) {
+            runObjectSaveFlow.mockResolvedValue({ status, path: '/tmp/x.pdb' })
+            const ctx = makeCtx({ cm: {} as never })
+            await dispatchSceneCtxAction(
+                objectNode(), { kind: 'saveAsObject' } as SceneCtxAction, ctx,
+            )
+            expect(ctx.showErrorAlert).not.toHaveBeenCalled()
+        }
+    })
 })
 
 describe('dispatchSceneCtxAction — simple verbs', () => {

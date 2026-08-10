@@ -17,6 +17,9 @@ import { IPC } from '../../shared/ipcChannels'
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
 
+vi.mock('../components/dialogs/ErrorAlertDialogProvider', () => ({
+    useShowErrorAlert: () => vi.fn().mockResolvedValue(undefined),
+}))
 vi.mock('../components/dialogs/TextPromptDialogProvider', () => ({
     useShowTextPromptDialog: () => vi.fn().mockResolvedValue('typed-name'),
 }))

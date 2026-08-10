@@ -95,6 +95,7 @@ export interface DispatchSceneCtxActionCtx {
     reloadCameraFromSrc: (name: string) => Promise<boolean>
 
     // Dialog hooks (resolved by the parent React hook and passed in).
+    showErrorAlert: (args: { title: string; message: string }) => Promise<void>
     showTextPrompt: (opts: {
         title: string
         label: string
@@ -348,7 +349,13 @@ export async function dispatchSceneCtxAction(
         case 'saveAsObject': {
             if (node.type !== 'object') return
             if (!ctx.cm || ctx.sceneId === undefined) return
-            await runObjectSaveFlow(ctx.cm, ctx.sceneId, node.id)
+            const res = await runObjectSaveFlow(ctx.cm, ctx.sceneId, node.id)
+            if (res.status === 'error') {
+                await ctx.showErrorAlert({
+                    title: 'Save Object As',
+                    message: `Failed to save file: ${res.path}`,
+                })
+            }
             return
         }
         case 'newStyle': {

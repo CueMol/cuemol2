@@ -92,6 +92,13 @@ export interface UiState {
   pdb2pqrFF?: string
   /** Movie-mode output preferences (Rendering window). */
   movieRender?: MovieRenderPrefs
+  /**
+   * Writer last used by object "Save File As" (UXP pref
+   * `cuemol2.ui.histories.save_writer_name`). Electron's save dialog cannot
+   * preselect a filter row, so this writer is moved to the head of the filter
+   * list instead -- see `getObjectSaveInfo`'s `preferredWriter`.
+   */
+  saveWriterName?: string
 }
 
 // - File dialog -
