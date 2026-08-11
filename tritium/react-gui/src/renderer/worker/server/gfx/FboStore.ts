@@ -85,7 +85,7 @@ export class FboStore {
      * Create an off-screen FBO. `flags` is a gfx::RTFlags bitmask:
      *   RT_COLOR_RGBA16F (0x10) -> RGBA16F color attachment 0 (else RGBA8)
      *   RT_COLOR_NEAREST (0x04) -> NEAREST color filtering (else LINEAR)
-     *   RT_DEPTH_TEX     (0x02) -> sampleable DEPTH_COMPONENT24 depth texture
+     *   RT_DEPTH_TEX     (0x02) -> sampleable DEPTH24_STENCIL8 depth texture
      *   RT_NORMAL_RGBA16F(0x08) -> RGBA16F MRT normal at color attachment 1
      * Float (RGBA16F) attachments require EXT_color_buffer_float. Returns
      * false if the framebuffer is incomplete.
@@ -147,17 +147,26 @@ export class FboStore {
         }
 
         // Depth attachment (sampleable), only when RT_DEPTH_TEX is set.
+        //
+        // DEPTH24_STENCIL8, not DEPTH_COMPONENT24: blitDepthToDefault requires
+        // the read and draw depth/stencil formats to match, and the default
+        // framebuffer's depth is a packed depth/stencil allocation on ANGLE/
+        // Metal even when the context reports STENCIL_BITS 0. A depth-only
+        // attachment made every depth blit fail with GL_INVALID_OPERATION
+        // (once per frame), leaving UI overlays without scene depth. Sampling
+        // is unaffected: DEPTH_STENCIL_TEXTURE_MODE defaults to
+        // DEPTH_COMPONENT, so the GTAO passes read the same depth in .r.
         let depthTex: WebGLTexture | null = null;
         if (wantDepth) {
             depthTex = gl.createTexture()!;
             gl.bindTexture(gl.TEXTURE_2D, depthTex);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT24, width, height, 0,
-                          gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, null);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH24_STENCIL8, width, height, 0,
+                          gl.DEPTH_STENCIL, gl.UNSIGNED_INT_24_8, null);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT,
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT,
                                     gl.TEXTURE_2D, depthTex, 0);
         }
 

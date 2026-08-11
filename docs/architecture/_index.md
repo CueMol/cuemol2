@@ -46,4 +46,11 @@ modules and that are not obvious from any single header.
   恒久対策 (umbreon を別プロセス化し Scene を mmap file で zero-copy 渡し /
   Boost.Interprocess `managed_mapped_file` + Boost.Process) の設計方針と次ステップ。
   macOS の shm 上限が低いため mapped file 必須。renderer worker 内の大確保一般に共通する制約。
+- [umbreon レンダリングが renderer プロセスの darwinbg 降格で数倍遅くなる](umbreon-render-qos-throttling.md)
+  (日本語) -- 「一旦遅くなると設定を変えても遅いまま、再起動で直る」報告の原因調査。
+  macOS の task policy 実験で、renderer プロセスが darwinbg (background task
+  policy) に落ちたまま解除されないケースが 6 倍級の遅化を再現・維持できると特定
+  (umbreon 側のスレッド/TBB バグではない)。renderer プロセス内からの自己修復は
+  原理的に不可能なため、対策は Electron main プロセス側 (renderer backgrounding
+  の無効化、powerSaveBlocker、外部からの taskpolicy 解除) に限られる。
 
