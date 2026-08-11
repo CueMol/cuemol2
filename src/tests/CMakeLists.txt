@@ -179,6 +179,7 @@ gtest_discover_tests(test_surface PROPERTIES LABELS "test_surface")
 add_executable(test_xtal
   modules/xtal/test_main.cpp
   modules/xtal/test_maprenderer_color.cpp
+  modules/xtal/test_mapsurf_molfanc.cpp
   modules/xtal/test_multigrad_undo.cpp
   modules/xtal/test_quant_step.cpp
 )
