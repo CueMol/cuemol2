@@ -14,6 +14,7 @@ import React, { useLayoutEffect, useRef, useState } from 'react'
 import { AppIcon } from '../AppIcon'
 import { collapseSeparators, isSeparatorNode } from '../../../shared/menuNodes'
 import type { MenuActionNode, MenuNode } from '../../../shared/menuNodes'
+import { formatAccelerator } from '../../../shared/menuAccel'
 
 export interface MenuPanelProps<T> {
   nodes: ReadonlyArray<MenuNode<T>>
@@ -22,9 +23,10 @@ export interface MenuPanelProps<T> {
   className?: string
 }
 
-/** Convert an Electron accelerator string to a display string for Windows/Linux. */
+/** Convert an Electron accelerator string to a display string. This menu is
+ *  only mounted on Windows/Linux, so the macOS glyph form never applies. */
 function toDisplayAccel(acc: string): string {
-  return acc.replace('CmdOrCtrl', 'Ctrl').replace('CommandOrControl', 'Ctrl')
+  return formatAccelerator(acc, false)
 }
 
 /** Margin (px) kept between a shifted flyout and the viewport edge. */
