@@ -368,6 +368,11 @@ struct LogCollector
   LString text;
 };
 
+/// Cap on the collected text. The GUI polls drainLog() so the buffer stays
+/// small there, but the synchronous write() path (python, scripts) never
+/// drains it; without a cap it grows for the process lifetime.
+constexpr int MAX_LOG_LENGTH = 1 << 20;
+
 LogCollector &logCollector()
 {
   static LogCollector collector;
@@ -387,6 +392,9 @@ void ensureLogSink()
       if (level == umbreon::LogLevel::Warning) c.text += "warning: ";
       c.text += text;
       c.text += "\n";
+      // Keep the newest half so the cap is not re-hit on every append.
+      if (c.text.length() > MAX_LOG_LENGTH)
+        c.text = c.text.right(MAX_LOG_LENGTH / 2);
     });
   });
 }
