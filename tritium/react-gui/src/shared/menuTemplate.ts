@@ -248,6 +248,32 @@ export function isExportItemUnavailable(
   return !available.includes(exporter)
 }
 
+/**
+ * Find a menu item by its `id` anywhere in the tree (depth-first), so UI
+ * outside the menu itself can quote a real label and accelerator instead of
+ * repeating them. Returns null when the id is not present.
+ */
+export function findMenuItemById(
+  id: string,
+  groups: readonly AppMenuGroup[] = APP_MENU,
+): AppMenuItem | null {
+  const walk = (items: readonly AppMenuItem[]): AppMenuItem | null => {
+    for (const item of items) {
+      if (item.id === id) return item
+      if (item.submenu) {
+        const hit = walk(item.submenu)
+        if (hit) return hit
+      }
+    }
+    return null
+  }
+  for (const group of groups) {
+    const hit = walk(group.submenu)
+    if (hit) return hit
+  }
+  return null
+}
+
 /** Labels shown in the React custom menu bar for role-based items. */
 const ROLE_LABELS: Partial<Record<AppMenuRole, string>> = {
   cut: 'Cut',

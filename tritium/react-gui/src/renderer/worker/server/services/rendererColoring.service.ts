@@ -48,6 +48,12 @@ import {
     listElePotMapObjects,
     setRendererElepotProp,
 } from './coloring/elepotWriter';
+import {
+    getMultiGradState,
+    getMultiGradHistogram,
+    setMultiGradNodes,
+    setMultiGradColorMap,
+} from './coloring/multiGrad';
 
 // Re-export the public types so existing importers
 // (`WorkerCalls.ts`, `ColorPane.tsx`, the coloring hooks) resolve unchanged.
@@ -90,6 +96,19 @@ export type {
     ListElePotMapObjectsResult,
     SetRendererElepotPropArgs,
     SetRendererElepotPropResult,
+    MultiGradNodeDto,
+    MultiGradWriteNode,
+    MultiGradMapObjectEntry,
+    MultiGradMapStats,
+    MultiGradPercentiles,
+    GetMultiGradStateArgs,
+    GetMultiGradStateResult,
+    GetMultiGradHistogramArgs,
+    GetMultiGradHistogramResult,
+    SetMultiGradNodesArgs,
+    SetMultiGradNodesResult,
+    SetMultiGradColorMapArgs,
+    SetMultiGradColorMapResult,
 } from './coloring/types';
 
 export const services = {
@@ -109,4 +128,8 @@ export const services = {
     setColoringProp,
     listElePotMapObjects,
     setRendererElepotProp,
+    getMultiGradState,
+    getMultiGradHistogram,
+    setMultiGradNodes,
+    setMultiGradColorMap,
 };

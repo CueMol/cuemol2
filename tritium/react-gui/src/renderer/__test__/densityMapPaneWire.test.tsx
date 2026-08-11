@@ -52,6 +52,15 @@ vi.mock('../h3-kit/colorpicker/ColorPickerContext', () => ({
 import { DensityMapPane } from '../components/panes/DensityMapPane'
 import { mountTree, flushPromises } from './helpers/testHarness'
 
+// jsdom has no ResizeObserver; the gradient stop bar observes its width.
+class ResizeObserverStub {
+    observe(): void {}
+    unobserve(): void {}
+    disconnect(): void {}
+}
+;(globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver =
+    ResizeObserverStub
+
 const SCENE_ID = 7
 const VIEW_ID = 5
 const REND_ID = 200
@@ -63,9 +72,10 @@ interface MockCm {
 
 /**
  * cm mock: listMapRenderers exposes one renderer (auto-selected), and
- * getMapRendererState returns a full state with the chosen useAbsLevel.
+ * getMapRendererState returns a full state with the chosen useAbsLevel /
+ * colormode. The multigrad reads keep the inline MultiGradSection happy.
  */
-function makeCm(useAbsLevel: boolean): MockCm {
+function makeCm(useAbsLevel: boolean, colormode = 'solid'): MockCm {
     return {
         invokeService: vi.fn((name: string) => {
             if (name === 'listMapRenderers') {
@@ -83,20 +93,39 @@ function makeCm(useAbsLevel: boolean): MockCm {
             if (name === 'getMapRendererState') {
                 return Promise.resolve({
                     state: {
-                        alpha: 1, color: '#ffffff', extent: 10,
+                        alpha: 1, color: '#ffffff', colormode, extent: 10,
                         siglevel: 1.5, useAbsLevel,
                         maxLevel: 5, minLevel: -5, maxExtent: 100, denSigma: 1,
                         defaults: { alpha: false, siglevel: false, extent: false },
                     },
                 })
             }
+            if (name === 'getMultiGradState') {
+                return Promise.resolve({
+                    ok: true,
+                    capable: true,
+                    colormode,
+                    colorMapName: 'map1',
+                    nodes: [
+                        { value: 0, color: '#FF0000', hex: '#FF0000' },
+                        { value: 10, color: '#FFFFFF', hex: '#FFFFFF' },
+                    ],
+                    mapObjects: [
+                        { objId: OBJ_ID, name: 'map1', className: 'DensityMap' },
+                    ],
+                    mapStats: { min: 0, max: 10, mean: 5, sigma: 1, quantStep: 0 },
+                })
+            }
+            if (name === 'getMultiGradHistogram') {
+                return Promise.resolve({ ok: true, histo: [], nmax: 0 })
+            }
             return Promise.resolve({ ok: true })
         }),
     }
 }
 
-async function mountPane(useAbsLevel = false) {
-    const cm = makeCm(useAbsLevel)
+async function mountPane(useAbsLevel = false, colormode = 'solid') {
+    const cm = makeCm(useAbsLevel, colormode)
     const handle = mountTree(
         <DensityMapPane
             cm={cm as never}
@@ -216,6 +245,71 @@ describe('DensityMapPane wire', () => {
             rendId: REND_ID,
             viewId: VIEW_ID,
         })
+        unmount()
+    })
+
+    // --- Multi-gradient color mode ---
+
+    async function openModeMenu(container: HTMLElement) {
+        const caret = container.querySelector(
+            'button[aria-label="Level mode"]',
+        ) as HTMLButtonElement
+        await act(async () => { caret.click() })
+        await flushPromises()
+        return Array.from(
+            document.querySelectorAll('.bp5-menu-item'),
+        ) as HTMLElement[]
+    }
+
+    it('"Multi-gradient color" menu routes through setRendererColoring', async () => {
+        const { cm, container, unmount } = await mountPane(false, 'solid')
+        const items = await openModeMenu(container)
+        const mgItem = items.find((el) =>
+            el.textContent?.includes('Multi-gradient color'),
+        )
+        expect(mgItem).toBeTruthy()
+        await act(async () => { mgItem!.click() })
+        await flushPromises()
+        expect(cm.invokeService).toHaveBeenCalledWith('setRendererColoring', {
+            sceneId: SCENE_ID,
+            rendId: REND_ID,
+            targetKind: 'renderer',
+            coloringId: 'paint-type-multigrad',
+        })
+        unmount()
+    })
+
+    it('"Solid color" menu in multigrad mode fires colormode=solid', async () => {
+        const { cm, container, unmount } = await mountPane(false, 'multigrad')
+        const items = await openModeMenu(container)
+        const solidItem = items.find((el) =>
+            el.textContent?.includes('Solid color'),
+        )
+        await act(async () => { solidItem!.click() })
+        await flushPromises()
+        expect(cm.invokeService).toHaveBeenCalledWith('setMapRendererProp', {
+            sceneId: SCENE_ID,
+            rendId: REND_ID,
+            propName: 'colormode',
+            value: 'solid',
+            mode: undefined,
+            originalValue: undefined,
+            originalWasDefault: undefined,
+        })
+        unmount()
+    })
+
+    it('multigrad mode hides the color swatch and embeds MultiGradSection', async () => {
+        const { container, unmount } = await mountPane(false, 'multigrad')
+        expect(container.querySelector('[data-testid="color-commit"]')).toBeNull()
+        expect(container.querySelector('.mg-stopbar')).not.toBeNull()
+        unmount()
+    })
+
+    it('solid mode shows the swatch and no gradient editor', async () => {
+        const { container, unmount } = await mountPane(false, 'solid')
+        expect(container.querySelector('[data-testid="color-commit"]')).not.toBeNull()
+        expect(container.querySelector('.mg-stopbar')).toBeNull()
         unmount()
     })
 })

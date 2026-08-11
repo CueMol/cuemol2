@@ -143,3 +143,102 @@ TEST(MultiGradientTest, CreateDefaultS)
     EXPECT_EQ(pMg->getSize(), 1);
     EXPECT_DOUBLE_EQ(pMg->getValueAt(0), 0.0);
 }
+
+// ---- getNodesJSON / setNodesJSON ----
+
+TEST(MultiGradientJSONTest, GetNodesJSONEmpty)
+{
+    MultiGradient mg;
+    EXPECT_EQ(mg.getNodesJSON(), qlib::LString("[]"));
+}
+
+TEST(MultiGradientJSONTest, RoundTrip)
+{
+    MultiGradient src;
+    src.insert(0.0, makeColor(1, 0, 0));
+    src.insert(0.5, makeColor(0, 1, 0));
+    src.insert(1.25, makeColor(0, 0, 1));
+
+    qlib::LString json = src.getNodesJSON();
+
+    MultiGradient dst;
+    dst.setNodesJSON(json);
+
+    ASSERT_EQ(dst.getSize(), 3);
+    // sorted order and values preserved
+    EXPECT_DOUBLE_EQ(dst.getValueAt(0), 0.0);
+    EXPECT_DOUBLE_EQ(dst.getValueAt(1), 0.5);
+    EXPECT_DOUBLE_EQ(dst.getValueAt(2), 1.25);
+    // colors preserved
+    EXPECT_EQ(dst.getColorAt(0)->r(), 255);
+    EXPECT_EQ(dst.getColorAt(0)->g(), 0);
+    EXPECT_EQ(dst.getColorAt(1)->g(), 255);
+    EXPECT_EQ(dst.getColorAt(2)->b(), 255);
+}
+
+TEST(MultiGradientJSONTest, SetNodesJSONSortsAndSkipsDuplicates)
+{
+    MultiGradient mg;
+    mg.setNodesJSON(
+        "[{\"value\":1.0,\"color\":\"#0000FF\"},"
+        "{\"value\":0.0,\"color\":\"#FF0000\"},"
+        "{\"value\":1.0,\"color\":\"#00FF00\"}]");
+
+    // duplicate value 1.0 is skipped; nodes are sorted by value
+    ASSERT_EQ(mg.getSize(), 2);
+    EXPECT_DOUBLE_EQ(mg.getValueAt(0), 0.0);
+    EXPECT_DOUBLE_EQ(mg.getValueAt(1), 1.0);
+    EXPECT_EQ(mg.getColorAt(0)->r(), 255);
+    EXPECT_EQ(mg.getColorAt(1)->b(), 255);
+}
+
+TEST(MultiGradientJSONTest, SetNodesJSONEmptyArrayClears)
+{
+    MultiGradient mg;
+    mg.insert(0.0, makeColor(1, 0, 0));
+    mg.insert(1.0, makeColor(0, 1, 0));
+    mg.setNodesJSON("[]");
+    EXPECT_EQ(mg.getSize(), 0);
+}
+
+TEST(MultiGradientJSONTest, SetNodesJSONInvalidJSONThrows)
+{
+    MultiGradient mg;
+    mg.insert(0.0, makeColor(1, 0, 0));
+    EXPECT_THROW(mg.setNodesJSON("not a json"), qlib::RuntimeException);
+    // original data is untouched on error
+    EXPECT_EQ(mg.getSize(), 1);
+}
+
+TEST(MultiGradientJSONTest, SetNodesJSONInvalidColorThrows)
+{
+    MultiGradient mg;
+    EXPECT_THROW(
+        mg.setNodesJSON("[{\"value\":0.0,\"color\":\"#zzz***\"}]"),
+        qlib::RuntimeException);
+    EXPECT_EQ(mg.getSize(), 0);
+}
+
+TEST(MultiGradientJSONTest, SetNodesJSONMissingFieldThrows)
+{
+    MultiGradient mg;
+    EXPECT_THROW(mg.setNodesJSON("[{\"value\":0.0}]"), qlib::RuntimeException);
+    EXPECT_THROW(mg.setNodesJSON("[{\"color\":\"#FF0000\"}]"),
+                 qlib::RuntimeException);
+}
+
+TEST(MultiGradientJSONTest, NamedColorRoundTrip)
+{
+    MultiGradient mg;
+    mg.setNodesJSON("[{\"value\":0.5,\"color\":\"red\"}]");
+    ASSERT_EQ(mg.getSize(), 1);
+
+    // named color is kept as a symbolic name in the color field
+    qlib::LString json = mg.getNodesJSON();
+    EXPECT_TRUE(json.indexOf("\"color\":\"red\"") >= 0);
+
+    MultiGradient mg2;
+    mg2.setNodesJSON(json);
+    ASSERT_EQ(mg2.getSize(), 1);
+    EXPECT_DOUBLE_EQ(mg2.getValueAt(0), 0.5);
+}

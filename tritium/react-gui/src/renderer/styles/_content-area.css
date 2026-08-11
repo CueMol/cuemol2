@@ -198,6 +198,14 @@
   margin-bottom: var(--space-2);
 }
 
+/* Welcome-screen app icon. Full-colour artwork, so unlike .placeholder-icon it
+   takes no accent tint -- only the size and the shared bottom margin. */
+.placeholder-app-icon {
+  width: var(--icon-hero);
+  height: var(--icon-hero);
+  margin-bottom: var(--space-2);
+}
+
 .placeholder-title {
   font-size: var(--fs-hero);
   font-weight: var(--fw-semibold);

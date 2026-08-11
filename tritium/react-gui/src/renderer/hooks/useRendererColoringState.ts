@@ -25,18 +25,21 @@ const REFETCH_DEBOUNCE_MS = 30
 const COLORING_EVENT_MASK = SEM_OBJECT | SEM_RENDERER
 
 /**
- * Renderer-level props that the Elepot deck reads. PROPCHG events for
- * these surface with the propname matching the renderer's own field
- * (not "coloring"), so the filter has to allow them through. Kept in sync
- * with `readElepotParams` + `paint-type-elepot` mutation set in
- * `rendererColoring.service.ts`.
+ * Renderer-level props that the Elepot / Multi-gradient decks read.
+ * PROPCHG events for these surface with the propname matching the
+ * renderer's own field (not "coloring"), so the filter has to allow them
+ * through. Kept in sync with `readElepotParams` + `paint-type-elepot` /
+ * `paint-type-multigrad` mutation sets in `rendererColoring.service.ts`.
  */
-const ELEPOT_REFETCH_PROPS = new Set<string>([
+const DECK_REFETCH_PROPS = new Set<string>([
     'colormode',
     'elepot',
     'ramp_above',
     'lowcol', 'midcol', 'highcol',
     'lowpar', 'midpar', 'highpar',
+    // Multi-gradient deck: gradient nodes + color-map binding
+    'multi_grad',
+    'color_mapname',
 ])
 
 export interface UseRendererColoringStateOptions {
@@ -59,6 +62,7 @@ const EMPTY_STATE: GetRendererColoringStateResult = {
     paintEntries: [],
     surfaceType: '',
     colormode: '',
+    multiGradCapable: false,
 }
 
 /**
@@ -93,7 +97,9 @@ function shouldRefetchColoring(args: unknown): boolean {
     return (
         propname === 'coloring' ||
         propname === 'defaultcolor' ||
-        ELEPOT_REFETCH_PROPS.has(propname)
+        DECK_REFETCH_PROPS.has(propname) ||
+        // nested multi_grad event names (e.g. "multi_grad.<child>")
+        propname.startsWith('multi_grad')
     )
 }
 

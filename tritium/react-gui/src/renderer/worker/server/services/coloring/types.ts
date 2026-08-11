@@ -218,12 +218,14 @@ export interface GetRendererColoringStateResult {
      */
     surfaceType: string;
     /**
-     * MolSurfRenderer colormode (e.g. "molecule", "potential", "solid").
-     * Empty for renderers without the colormode property.
+     * MolSurfRenderer / MapRenderer colormode (e.g. "molecule", "potential",
+     * "solid", "multigrad"). Empty for renderers without the property.
      */
     colormode: string;
     /** Populated only when the renderer is a surface AND colormode === "potential". */
     elepotParams?: ElepotParams;
+    /** True iff the renderer exposes a `multi_grad` property. */
+    multiGradCapable: boolean;
 }
 
 export interface AddPaintEntryArgs {
@@ -330,5 +332,150 @@ export interface SetRendererElepotPropArgs {
 }
 
 export interface SetRendererElepotPropResult {
+    ok: boolean;
+}
+
+// --- Multi-gradient (multigrad) deck ---
+
+/** One gradient node as read from / written to the C++ MultiGradient. */
+export interface MultiGradNodeDto {
+    /** Map-density value of the node. */
+    value: number;
+    /** CueMol color string (hex or named), round-trips through C++. */
+    color: string;
+    /** Resolved #RRGGBB for UI display (from the C++ r/g/b fields). */
+    hex: string;
+}
+
+/** A gradient node to write; display hex is not needed on the write path. */
+export interface MultiGradWriteNode {
+    value: number;
+    color: string;
+}
+
+/** Scene map object eligible as a multigrad color source. */
+export interface MultiGradMapObjectEntry {
+    objId: number;
+    name: string;
+    /** C++ class name (e.g. "DensityMap", "ElePotMap"). */
+    className: string;
+}
+
+/** Density statistics of the resolved color-map object. */
+export interface MultiGradMapStats {
+    min: number;
+    max: number;
+    mean: number;
+    sigma: number;
+    /**
+     * Spacing of the discrete value lattice of the stored samples; 0
+     * when the map stores continuous (float) values. 8-bit maps
+     * (CCP4/MRC via DensityMap) quantize to (max-min)/256, far coarser
+     * than the sigma/1000 base-histogram resolution, so this bounds how
+     * fine the display bins can get before empty comb teeth appear.
+     */
+    quantStep: number;
+}
+
+/**
+ * Central-95% density range of the color-map object (2.5th / 97.5th
+ * percentile points of its histogram). Used as the default view range
+ * when no gradient nodes exist -- the raw min/max is usually blown up
+ * by outliers.
+ */
+export interface MultiGradPercentiles {
+    lo: number;
+    hi: number;
+}
+
+export interface GetMultiGradStateArgs {
+    sceneId: number;
+    rendId: number;
+}
+
+export interface GetMultiGradStateResult {
+    ok: boolean;
+    /** True iff the renderer exposes a `multi_grad` property. */
+    capable: boolean;
+    /** Renderer colormode as a string (e.g. "solid", "multigrad"). */
+    colormode: string;
+    /** Renderer `color_mapname` (may name a non-existent object). */
+    colorMapName: string;
+    /** Current gradient nodes, sorted ascending by value. */
+    nodes: MultiGradNodeDto[];
+    /** Scene maps selectable as the color source. */
+    mapObjects: MultiGradMapObjectEntry[];
+    /** Stats of the resolved color-map object; null when unresolved. */
+    mapStats: MultiGradMapStats | null;
+    /** Central-95% range of the map histogram; null when unavailable. */
+    mapPercentiles: MultiGradPercentiles | null;
+    /**
+     * Voxels counted over the map's full density range, and the largest
+     * single-bin count in that histogram (the dominant peak, e.g. the
+     * zero bin of a solvent-flattened map). Together they bound how fine
+     * the display bins can usefully get; null when unavailable.
+     */
+    mapVoxelCount: number | null;
+    mapPeakCount: number | null;
+}
+
+export interface GetMultiGradHistogramArgs {
+    sceneId: number;
+    rendId: number;
+    /** Histogram domain lower bound (density units). */
+    min: number;
+    /** Histogram domain upper bound. */
+    max: number;
+    /** Number of bins. */
+    nbins: number;
+}
+
+export interface GetMultiGradHistogramResult {
+    ok: boolean;
+    /** Bin counts over [min, max]; length nbins. */
+    histo: number[];
+    /** Max bin count within the requested range (normalization factor). */
+    nmax: number;
+    /**
+     * Max bin count over the map's FULL density range at the same bin
+     * width and grid alignment, so the y-scale stays fixed while the
+     * view pans. Null when unavailable (unresolved stats, degenerate
+     * bin width, or an extreme zoom-in where the full-range rebin would
+     * exceed the bin cap).
+     */
+    globalNmax: number | null;
+}
+
+export interface SetMultiGradNodesArgs {
+    sceneId: number;
+    rendId: number;
+    /** Full replacement node set. */
+    nodes: MultiGradWriteNode[];
+    /**
+     * `preview`: txn-free write (live drag frame, no undo entry).
+     * `abort`: txn-free restore of `originalNodes` (drag cancelled).
+     * `commit` (default): restore `originalNodes` txn-free when given,
+     * then write `nodes` inside one undo txn.
+     */
+    mode?: 'preview' | 'commit' | 'abort';
+    /** Pre-drag snapshot; required for `abort`, optional for `commit`. */
+    originalNodes?: MultiGradWriteNode[];
+    /** Undo label override (default "Change multi gradient color"). */
+    label?: string;
+}
+
+export interface SetMultiGradNodesResult {
+    ok: boolean;
+    error?: string;
+}
+
+export interface SetMultiGradColorMapArgs {
+    sceneId: number;
+    rendId: number;
+    /** Name of the map object to color by. */
+    mapName: string;
+}
+
+export interface SetMultiGradColorMapResult {
     ok: boolean;
 }

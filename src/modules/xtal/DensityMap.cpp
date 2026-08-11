@@ -338,6 +338,14 @@ double DensityMap::getLevelStep() const
   return m_dLevelStep;
 }
 
+double DensityMap::getQuantStep() const
+{
+  // Samples are stored 8-bit quantized: every value atFloat() can
+  // return is m_dLevelBase + n * m_dLevelStep, so the level step is
+  // also the spacing of the data value lattice.
+  return m_dLevelStep;
+}
+
 bool DensityMap::isInBoundary(int i, int j, int k) const
 {
   /*

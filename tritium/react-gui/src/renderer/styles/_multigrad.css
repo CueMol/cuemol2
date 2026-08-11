@@ -1,0 +1,156 @@
+/* ─── Multi-gradient editor (GradientStopBar + MultiGradSection) ───
+ *
+ * Illustrator-style stop bar: histogram strip, gradient preview bar,
+ * draggable stop-marker lane, min/max labels. All sizes / colors come
+ * from the _variables.css tokens; the gradient itself and each swatch
+ * color are user data set via inline style (dynamic values only).
+ */
+
+.mg-stopbar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex-shrink: 0;
+  /* markers overhang the lane slightly while dragging */
+  user-select: none;
+}
+
+.mg-stopbar.is-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.mg-histo {
+  height: 48px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+/* View-range gestures enabled: hand cursor for drag-pan. */
+.mg-histo.is-pannable {
+  cursor: grab;
+}
+
+.mg-histo.is-panning {
+  cursor: grabbing;
+}
+
+.mg-histo-canvas {
+  display: block;
+}
+
+.mg-gradient-bar {
+  height: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.mg-stop-lane {
+  position: relative;
+  height: 16px;
+  /* small horizontal inset so edge markers stay clickable */
+  margin: 0 1px;
+  cursor: copy;
+}
+
+.mg-stop-marker {
+  position: absolute;
+  top: 0;
+  width: 12px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: grab;
+}
+
+.mg-stop-marker:active {
+  cursor: grabbing;
+}
+
+.mg-stop-marker.is-ghost {
+  opacity: 0.3;
+}
+
+/* Upward triangle pointing at the gradient bar (house-shape roof). */
+.mg-stop-pointer {
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-bottom: 4px solid var(--text-secondary);
+}
+
+.mg-stop-swatch {
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-sizing: border-box;
+}
+
+.mg-stop-marker.is-selected .mg-stop-pointer {
+  border-bottom-color: var(--accent);
+}
+
+.mg-stop-marker.is-selected .mg-stop-swatch {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.mg-minmax-row {
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-secondary);
+}
+
+/* Selected-stop editor row: value input + color field share one line. */
+.mg-stop-edit-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.mg-stop-value-input {
+  flex: 0 0 64px;
+  width: 64px;
+  text-align: right;
+}
+
+/* Toolbar row: add / delete / delete-all buttons + preset dropdown.
+   Wraps in narrow side panels so buttons never shrink into each other;
+   the spacer pushes the keep-ratio switch right (or onto its own line). */
+.mg-toolbar-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  row-gap: var(--space-1);
+}
+
+.mg-toolbar-row > * {
+  flex-shrink: 0;
+}
+
+.mg-toolbar-spacer {
+  flex: 1;
+}
+
+/* View-range zoom row: -, +, Fit buttons under the stop bar. */
+.mg-zoom-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.mg-zoom-label {
+  color: var(--text-muted);
+}
+
+/* Guidance note shown for map renderers not in multigrad mode. */
+.mg-guide-note {
+  color: var(--text-secondary);
+  margin: 0;
+}

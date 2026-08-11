@@ -160,6 +160,7 @@ describe('getMapRendererState', () => {
         const rend = {
             alpha: 0.8,
             color: { toString: () => '#FF0000' },
+            colormode: 'multigrad',
             extent: 25,
             siglevel: 1.5,
             use_abslevel: false,
@@ -183,6 +184,7 @@ describe('getMapRendererState', () => {
         expect(state).toEqual({
             alpha: 0.8,
             color: '#FF0000',
+            colormode: 'multigrad',
             extent: 25,
             siglevel: 1.5,
             useAbsLevel: false,
@@ -256,6 +258,22 @@ describe('setMapRendererProp', () => {
             sceneId: 100, rendId: 11, propName: 'use_abslevel', value: true,
         })
         expect(setProp).toHaveBeenCalledWith('use_abslevel', true)
+    })
+
+    it('string colormode passes through setProp inside an undo txn', () => {
+        const setProp = vi.fn()
+        const rend = { setProp }
+        const scene = makeUndoScene(100)
+        scene.getRenderer = vi.fn(() => rend)
+        const ctx = makeCtx({ scene })
+
+        const res = setMapRendererProp(ctx, {
+            sceneId: 100, rendId: 11, propName: 'colormode', value: 'solid',
+        })
+        expect(res).toEqual({ ok: true })
+        expect(setProp).toHaveBeenCalledWith('colormode', 'solid')
+        expect(scene.startUndoTxn).toHaveBeenCalledWith('Change map renderer prop')
+        expect(makeColor).not.toHaveBeenCalled()
     })
 
     it('"color" path compiles via makeColor and assigns via the typed setter (not setProp)', () => {

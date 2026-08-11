@@ -221,6 +221,9 @@
   --icon-sm: 12px;
   --icon-md: 14px;
   --icon-lg: 18px;
+  /* App icon drawn as the hero element on the welcome screen. Scales with the
+     UI like the type around it; the asset is 256px so this downscales. */
+  --icon-hero: calc(64px * var(--ui-scale));
 
   /* Blender-style dropdown chevron. Single source for the glyph used by both
      the native-select caret (CSS mask in _form-kit.css) and the

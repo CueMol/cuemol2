@@ -322,6 +322,7 @@ export type RendColoringId =
   | 'paint-type-cpk'
   | 'paint-type-solid'
   | 'paint-type-elepot'
+  | 'paint-type-multigrad'
   | 'paint-type-resetdef'
 
 /**
