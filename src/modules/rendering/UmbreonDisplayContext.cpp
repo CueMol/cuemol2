@@ -975,7 +975,9 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
     scene.groupEdgeStyle = m_pImpl->groupEdgeStyle;
   }
 
-  MB_DPRINTLN("Umbreon> render %dx%d ss=%d aa=%d ao=%d aodist=%f tris=%d",
+  // %g: aoDistance defaults to the 1e20 "unlimited" sentinel, which %f would
+  // print as a 21-digit integer and read as a corrupted value.
+  MB_DPRINTLN("Umbreon> render %dx%d ss=%d aa=%d ao=%d aodist=%g tris=%d",
               opt.width, opt.height, opt.supersample, opt.aaMode, opt.aoSamples,
               opt.aoDistance, int(scene.mesh.triangleCount()));
 #endif
