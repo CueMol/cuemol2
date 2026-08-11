@@ -318,7 +318,9 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
   // MapSurfRenderer ("isosurf"): UXP isosurf-propdlg "Map" tab. One section --
   // drawing mode, line/point size (off for fill), max grid size, back-face
   // culling, plus the Center update / Limit display block shared with contour
-  // (both extend MapRenderer). Coloring / tuning props stay out.
+  // (both extend MapRenderer). Coloring (colormode / target / MOLFANC scheme)
+  // is owned by the Coloring panel (ColorPane), same as molsurf; tuning props
+  // stay out.
   isosurf: [
     {
       key: "isosurf-main",

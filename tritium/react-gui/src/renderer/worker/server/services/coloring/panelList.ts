@@ -8,7 +8,6 @@
  * Runs in the Web Worker thread; C++ wrappers are called synchronously.
  */
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
-import type { MolRenderer } from '@cuemol/core/src/wrappers/MolRenderer';
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { WorkerContext } from '../../types/WorkerContext';
 import { getSceneOrNull } from '../helpers/sceneResolver';
@@ -19,6 +18,7 @@ import {
     isSelEmpty,
     getColoringClassName,
     isMultiGradCapable,
+    hasColoringProp,
 } from './colorTargets';
 import type {
     GetPaintColoringStylesArgs,
@@ -116,18 +116,6 @@ interface RawSceneRendItem {
     childNodes?: RawSceneRendItem[];
 }
 
-function rendererHasColoringProp(rend: Renderer): boolean {
-    // The `paint_coloring_filter` UXP gate checks that the renderer exposes a
-    // `coloring` property. Wrapper getters throw for missing properties, so
-    // probe via the proxy and discard read-only errors.
-    try {
-        const c = (rend as unknown as MolRenderer).coloring;
-        return c !== undefined;
-    } catch {
-        return false;
-    }
-}
-
 function collectRendsRecursive(
     items: RawSceneRendItem[] | undefined,
     out: { id: number; name: string; typeName: string }[],
@@ -144,15 +132,6 @@ function collectRendsRecursive(
         if (Array.isArray(it.childNodes)) {
             collectRendsRecursive(it.childNodes, out);
         }
-    }
-}
-
-function objectHasColoringProp(obj: unknown): boolean {
-    try {
-        const c = (obj as { coloring?: unknown })?.coloring;
-        return c !== undefined;
-    } catch {
-        return false;
     }
 }
 
@@ -191,7 +170,7 @@ export function listPaintCapableRenderers(
         const obj = parsed[i] as RawSceneObjItem;
         if (typeof obj?.ID !== 'number') continue;
         const objWrap = scene.getObject(obj.ID);
-        if (objWrap && objectHasColoringProp(objWrap)) {
+        if (objWrap && hasColoringProp(objWrap)) {
             out.push({
                 targetKind: 'object',
                 rendId: obj.ID,
@@ -213,7 +192,7 @@ export function listPaintCapableRenderers(
             // Map renderers (contour / isosurf / gpu_*) have no `coloring`
             // property but are colorable via their `multi_grad` gradient, so
             // they qualify for the panel too.
-            if (!rendererHasColoringProp(rend) && !isMultiGradCapable(rend)) {
+            if (!hasColoringProp(rend) && !isMultiGradCapable(rend)) {
                 continue;
             }
             out.push({

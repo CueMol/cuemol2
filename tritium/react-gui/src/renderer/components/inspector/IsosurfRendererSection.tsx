@@ -18,8 +18,14 @@
  * is disabled while the drawing mode is "fill" (it only matters for line/point
  * rendering). "Center update" and the "Limit display by" block are identical to
  * the contour renderer (both extend C++ `MapRenderer`) and come from
- * `MapRendererCommon`. Coloring and tuning props (`binning` / `glrender_mode` /
- * ...) are not on the UXP Map tab and stay out.
+ * `MapRendererCommon`. Tuning props (`binning` / `glrender_mode` / ...) are not
+ * on the UXP Map tab and stay out.
+ *
+ * @remarks Coloring is deliberately NOT on this section: the MOLFANC
+ * (colormode="molecule") coloring -- mode switch, reference molecule
+ * (`target`) and coloring scheme -- is edited in the Coloring panel
+ * (`ColorPane`), same as molsurf. The raw `colormode` / `target` / `sel`
+ * properties stay editable through the generic Properties tab.
  *
  * Backed by the same live getGenericProps / setGenericProp bridge as the common
  * page; each property is looked up by key and its row renders nothing when the

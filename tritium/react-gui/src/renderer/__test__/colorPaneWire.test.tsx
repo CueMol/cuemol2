@@ -114,6 +114,8 @@ interface ColoringState {
     paintEntries?: Array<{ idx: number; selStr: string; colorValue: string }>
     surfaceType?: string
     colormode?: string
+    hasColoring?: boolean
+    molFancTarget?: string
     cpkColors?: Record<string, string>
     rainbowParams?: Record<string, unknown>
     bfacParams?: Record<string, unknown>
@@ -421,6 +423,8 @@ describe('ColorPane wire', () => {
             ok: true,
             className: 'SolidColoring',
             defaultColor: '#000000',
+            // The paint items are gated on the renderer exposing `coloring`.
+            hasColoring: true,
         })
         // Open the "Coloring" dropdown.
         const caret = container.querySelector(

@@ -2,10 +2,13 @@
  * Wire tests for the ColorPane Multi-gradient deck (UXP multigrad editor
  * port). Pins the observable renderer-side wire only:
  *
- *   - deck routing: multigrad colormode -> MultiGradSection; map renderer
- *     outside multigrad mode -> guidance note.
- *   - Coloring dropdown: map renderers offer only the Multi-gradient item;
- *     clicking it fires setRendererColoring with 'paint-type-multigrad'.
+ *   - deck routing: multigrad colormode -> MultiGradSection; a map renderer
+ *     without a `coloring` property (contour) outside multigrad mode ->
+ *     guidance note.
+ *   - Coloring dropdown: map renderers without `coloring` offer only the
+ *     Multi-gradient item; clicking it fires setRendererColoring with
+ *     'paint-type-multigrad'. (isosurf has `coloring` and offers the full
+ *     paint set -- pinned in colorPaneMolFancWire.test.tsx.)
  *   - toolbar: Add / Delete all / Preset fire setMultiGradNodes commits
  *     with the expected node payloads + labels.
  *   - Color map selector fires setMultiGradColorMap.
@@ -112,8 +115,8 @@ function makeCm(opts: {
                             objName: 'mtz1',
                             rendId: REND_ID,
                             targetKind: 'renderer',
-                            name: 'isosurf1',
-                            typeName: opts.surfaceTypeName ?? 'isosurf',
+                            name: 'contour1',
+                            typeName: opts.surfaceTypeName ?? 'contour',
                         },
                     ],
                 })
@@ -141,9 +144,10 @@ const MAP_REND_MULTIGRAD = {
     className: '',
     defaultColor: '',
     paintEntries: [],
-    surfaceType: 'isosurf',
+    surfaceType: 'contour',
     colormode: 'multigrad',
     multiGradCapable: true,
+    hasColoring: false,
 }
 
 async function mountWith(coloringState: Record<string, unknown>) {

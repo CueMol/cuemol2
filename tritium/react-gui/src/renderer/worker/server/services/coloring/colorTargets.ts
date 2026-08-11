@@ -43,6 +43,70 @@ export function isMolSurf(rend: Renderer): boolean {
 }
 
 /**
+ * The isosurf map renderer (C++ `xtal::MapSurfRenderer`). It is the only
+ * map renderer with the MOLFANC (`colormode="molecule"`) nearest-atom
+ * coloring: it carries `coloring` / `target` / `sel` and a colormode
+ * enumdef that includes "solid". Keep this a type_name check -- duck-typing
+ * on `target` would misfire on renderers where the property means something
+ * else (e.g. DisoRenderer), and dsurface's colormode has no "solid" entry.
+ */
+export function isMapSurf(rend: Renderer): boolean {
+    return readTypeName(rend) === 'isosurf';
+}
+
+/**
+ * Duck-typed probe for the `coloring` (ColoringScheme) property on a
+ * renderer or object wrapper. Mirrors UXP `'coloring' in rend`, which
+ * gates the Paint/CPK/Bfac/Rainbow/Reset items and decks.
+ */
+export function hasColoringProp(t: unknown): boolean {
+    try {
+        const c = (t as { coloring?: unknown })?.coloring;
+        return c !== undefined;
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Read the renderer's MOLFANC reference-molecule name (`target` property).
+ * Returns null when the renderer does not expose the property (the wrapper
+ * getter throws or yields a non-string).
+ */
+export function readMolFancTargetOrNull(rend: Renderer): string | null {
+    try {
+        const t = (rend as unknown as { target?: unknown }).target;
+        return typeof t === 'string' ? t : null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Walk the scene's top-level objects and return the first MolCoord's name.
+ * Returns "" when the scene has none. Same shape as
+ * `elepotWriter.findFirstElePotMapName`; the class test matches the
+ * client-side `objectFilters.molCoord` (h3-kit/ObjectSelect).
+ */
+export function findFirstMolCoordName(scene: Scene): string {
+    try {
+        const parsed = JSON.parse(scene.getSceneDataJSON()) as unknown;
+        if (!Array.isArray(parsed)) return '';
+        for (let i = 1; i < parsed.length; i++) {
+            const obj = parsed[i] as { type?: string; name?: string };
+            const cls = obj?.type;
+            if (typeof cls !== 'string') continue;
+            if (cls === 'MolCoord' || cls.endsWith('Mol')) {
+                if (typeof obj.name === 'string') return obj.name;
+            }
+        }
+    } catch {
+        // Fall through to empty.
+    }
+    return '';
+}
+
+/**
  * Read `type_name` from a renderer; returns "" for wrappers that don't expose
  * the field (e.g. some renderer groups, or non-renderer objects).
  */

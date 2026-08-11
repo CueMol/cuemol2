@@ -235,6 +235,8 @@ import type {
   ListElePotMapObjectsResult,
   SetRendererElepotPropArgs,
   SetRendererElepotPropResult,
+  SetRendererColoringTargetArgs,
+  SetRendererColoringTargetResult,
   GetMultiGradStateArgs,
   GetMultiGradStateResult,
   GetMultiGradHistogramArgs,
@@ -594,6 +596,7 @@ export interface ServiceMap {
   setColoringProp:            { args: SetColoringPropArgs;             result: SetColoringPropResult }
   listElePotMapObjects:       { args: ListElePotMapObjectsArgs;        result: ListElePotMapObjectsResult }
   setRendererElepotProp:      { args: SetRendererElepotPropArgs;       result: SetRendererElepotPropResult }
+  setRendererColoringTarget:  { args: SetRendererColoringTargetArgs;   result: SetRendererColoringTargetResult }
   getMultiGradState:          { args: GetMultiGradStateArgs;           result: GetMultiGradStateResult }
   getMultiGradHistogram:      { args: GetMultiGradHistogramArgs;       result: GetMultiGradHistogramResult }
   setMultiGradNodes:          { args: SetMultiGradNodesArgs;           result: SetMultiGradNodesResult }

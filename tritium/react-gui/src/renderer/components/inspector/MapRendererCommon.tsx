@@ -135,31 +135,36 @@ export const CenterUpdateRow: React.FC<CenterUpdateRowProps> = ({
   );
 };
 
-interface LimitTargetRowProps {
+export interface MolTargetRowProps {
   entry: GenericPropEntry;
+  /** Row label (e.g. "Target", "Selection mol", "Coloring mol"). */
+  label: string;
+  /** Scene molecule (MolCoord) object names to offer. */
   names: string[];
-  disabled: boolean;
+  disabled?: boolean;
   onSet: SetFn;
   onReset: ResetFn;
 }
 
 /**
- * "Target" selector for the display-limit feature: lists the scene's molecule
- * objects (MolCoord interface) by name, committing the raw object-name string
- * into `bndry_molname`. The current value stays selectable even when the fetch
- * is empty or excludes it; an empty value shows a blank placeholder option (the
- * row is disabled while limiting is off).
+ * Molecule-target selector shared by the MapRenderer display-limit block and
+ * the reference-molecule (`target`) rows of surface-style renderers: lists the
+ * scene's molecule objects (MolCoord interface) by name, committing the raw
+ * object-name string into the given property. The current value stays
+ * selectable even when the fetch is empty or excludes it; an empty value shows
+ * a blank placeholder option.
  */
-const LimitTargetRow: React.FC<LimitTargetRowProps> = ({
+export const MolTargetRow: React.FC<MolTargetRowProps> = ({
   entry,
+  label,
   names,
-  disabled,
+  disabled = false,
   onSet,
   onReset,
 }) => {
   const current = String(entry.value ?? "");
   return (
-    <PropertyField label="Target" {...resetProps(entry, onReset)}>
+    <PropertyField label={label} {...resetProps(entry, onReset)}>
       <SelectField
         value={current}
         disabled={disabled || entry.readonly}
@@ -245,8 +250,9 @@ export const LimitDisplayRows: React.FC<LimitDisplayRowsProps> = ({
       <PropertyField label="Limit display by" inline>
         <SwitchField checked={limitOn} onChange={toggleLimit} />
       </PropertyField>
-      <LimitTargetRow
+      <MolTargetRow
         entry={bndryMol}
+        label="Target"
         names={molNames}
         disabled={!limitOn}
         onSet={onSet}

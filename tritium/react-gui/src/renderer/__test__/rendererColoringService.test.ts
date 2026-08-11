@@ -14,6 +14,14 @@ interface MakeFixtureOpts {
     rendExists?: boolean
     /** Mock JSON returned by styleMgr.getStyleNamesJSON, keyed by sceneId. */
     styleNamesJSON?: Record<number, string>
+    /**
+     * When set, the renderer exposes a `target` property (MOLFANC reference
+     * mol) with this initial value; when omitted, reads yield undefined
+     * (renderer without the property).
+     */
+    initialTarget?: string
+    /** Top-level scene objects returned by scene.getSceneDataJSON. */
+    sceneObjects?: Array<{ type: string; name: string }>
 }
 
 function makeFixture(opts: MakeFixtureOpts = {}) {
@@ -28,11 +36,17 @@ function makeFixture(opts: MakeFixtureOpts = {}) {
     const resetProp = vi.fn()
     const setColoring = vi.fn()
     const setColormode = vi.fn()
+    const setTarget = vi.fn()
 
     let styleValue = initialStyle
     let colormodeValue = ''
+    let targetValue = opts.initialTarget ?? ''
 
-    const rend = {
+    const setProp = vi.fn((name: string, value: unknown) => {
+        if (name === 'target') { targetValue = String(value); setTarget(value) }
+    })
+
+    const rend: Record<string, unknown> = {
         // Plain accessors so the service can read/write style and properties.
         get style() { return styleValue },
         set style(v: string) { styleValue = v },
@@ -43,6 +57,13 @@ function makeFixture(opts: MakeFixtureOpts = {}) {
         get coloring() { return undefined },
         applyStyles,
         resetProp,
+        setProp,
+    }
+    if (opts.initialTarget !== undefined) {
+        Object.defineProperty(rend, 'target', {
+            get: () => targetValue,
+            set: (v: string) => { targetValue = v; setTarget(v) },
+        })
     }
 
     const startUndoTxn = vi.fn()
@@ -52,6 +73,12 @@ function makeFixture(opts: MakeFixtureOpts = {}) {
     const scene = {
         uid: 7,
         getRenderer: vi.fn(() => (rendExists ? rend : null)),
+        getSceneDataJSON: vi.fn(() => JSON.stringify([
+            { type: '', ID: 1, name: 'scene' },
+            ...(opts.sceneObjects ?? []).map((o, i) => ({
+                type: o.type, ID: 10 + i, name: o.name,
+            })),
+        ])),
         startUndoTxn,
         commitUndoTxn,
         rollbackUndoTxn,
@@ -70,6 +97,7 @@ function makeFixture(opts: MakeFixtureOpts = {}) {
 
     return {
         ctx, scene, rend, applyStyles, resetProp, setColoring, setColormode,
+        setTarget, setProp,
         createObj, getStyleNamesJSON, startUndoTxn, commitUndoTxn, rollbackUndoTxn,
         getStyle: () => styleValue,
     }
@@ -321,6 +349,97 @@ describe('setRendererColoring — Phase 1 new cases', () => {
     })
 })
 
+describe('setRendererColoring — isosurf (MOLFANC) cases', () => {
+    beforeEach(() => vi.clearAllMocks())
+
+    it('paint-type-paint forces colormode="molecule" and auto-picks the first MolCoord as target', () => {
+        const { ctx, setColormode, setTarget } = makeFixture({
+            typeName: 'isosurf',
+            initialTarget: '',
+            sceneObjects: [
+                { type: 'DensityMap', name: 'map1' },
+                { type: 'MolCoord', name: 'mol1' },
+                { type: 'MolCoord', name: 'mol2' },
+            ],
+        })
+        const res = services.setRendererColoring(ctx, baseArgs('paint-type-paint'))
+        expect(res).toEqual({ ok: true })
+        expect(setColormode).toHaveBeenCalledWith('molecule')
+        expect(setTarget).toHaveBeenCalledWith('mol1')
+    })
+
+    it('does not overwrite an already-set target', () => {
+        const { ctx, setColormode, setTarget } = makeFixture({
+            typeName: 'isosurf',
+            initialTarget: 'molX',
+            sceneObjects: [{ type: 'MolCoord', name: 'mol1' }],
+        })
+        services.setRendererColoring(ctx, baseArgs('paint-type-cpk'))
+        expect(setColormode).toHaveBeenCalledWith('molecule')
+        expect(setTarget).not.toHaveBeenCalled()
+    })
+
+    it('paint-type-solid resets coloring and switches colormode back to "solid"', () => {
+        const { ctx, resetProp, setColormode } = makeFixture({
+            typeName: 'isosurf',
+            initialTarget: '',
+        })
+        const res = services.setRendererColoring(ctx, baseArgs('paint-type-solid'))
+        expect(res).toEqual({ ok: true })
+        expect(resetProp).toHaveBeenCalledWith('coloring')
+        expect(setColormode).toHaveBeenCalledWith('solid')
+    })
+
+    it('paint-type-solid on molsurf does not touch colormode (unchanged behavior)', () => {
+        const { ctx, resetProp, setColormode } = makeFixture({ typeName: 'molsurf' })
+        services.setRendererColoring(ctx, baseArgs('paint-type-solid'))
+        expect(resetProp).toHaveBeenCalledWith('coloring')
+        expect(setColormode).not.toHaveBeenCalled()
+    })
+
+    it('paint-type-resetdef resets both coloring and colormode', () => {
+        const { ctx, resetProp } = makeFixture({
+            typeName: 'isosurf',
+            initialTarget: '',
+        })
+        services.setRendererColoring(ctx, baseArgs('paint-type-resetdef'))
+        expect(resetProp).toHaveBeenCalledWith('coloring')
+        expect(resetProp).toHaveBeenCalledWith('colormode')
+    })
+})
+
+describe('setRendererColoringTarget', () => {
+    beforeEach(() => vi.clearAllMocks())
+
+    it('writes the target name via setProp inside an undo txn', () => {
+        const { ctx, setProp, startUndoTxn, commitUndoTxn } = makeFixture({
+            typeName: 'isosurf',
+            initialTarget: '',
+        })
+        const res = services.setRendererColoringTarget(ctx, {
+            sceneId: 1,
+            rendId: 100,
+            targetKind: 'renderer',
+            targetName: 'mol2',
+        })
+        expect(res).toEqual({ ok: true })
+        expect(setProp).toHaveBeenCalledWith('target', 'mol2')
+        expect(startUndoTxn).toHaveBeenCalledWith('Change coloring target')
+        expect(commitUndoTxn).toHaveBeenCalledTimes(1)
+    })
+
+    it('refuses renderers without a target property', () => {
+        const { ctx, setProp } = makeFixture({ typeName: 'cartoon' })
+        const res = services.setRendererColoringTarget(ctx, {
+            sceneId: 1,
+            rendId: 100,
+            targetName: 'mol2',
+        })
+        expect(res).toEqual({ ok: false })
+        expect(setProp).not.toHaveBeenCalled()
+    })
+})
+
 // Helper to build a richer fixture: scene with getSceneDataJSON + per-renderer
 // coloring objects. Used by listPaintCapableRenderers and getRendererColoringState.
 interface PaintEntry { sel: string; color: string }
@@ -333,6 +452,12 @@ interface RendSpec {
     paintEntries?: PaintEntry[]
     /** Initial scalar properties on the coloring (CPK col_C, Rainbow mode, ...). */
     coloringProps?: Record<string, unknown>
+    /** When set, the renderer exposes a `colormode` property with this value. */
+    colormode?: string
+    /** When set, the renderer exposes a `target` property with this value. */
+    target?: string
+    /** When true, the renderer exposes a `multi_grad` property. */
+    multiGrad?: boolean
 }
 
 interface ObjectSpec {
@@ -449,7 +574,7 @@ function makeRichFixture(opts: MakeRichOpts) {
 
         const typeName =
             (spec as RendSpec).typeName ?? (spec as ObjectSpec).name ?? ''
-        const rend = {
+        const rend: Record<string, unknown> = {
             type_name: typeName,
             get coloring() {
                 return coloring
@@ -469,6 +594,11 @@ function makeRichFixture(opts: MakeRichOpts) {
             applyStyles,
             hasPropDefault,
         }
+        // Optional renderer-level props (MOLFANC / multigrad probes).
+        const rspec = spec as RendSpec
+        if (rspec.colormode !== undefined) rend.colormode = rspec.colormode
+        if (rspec.target !== undefined) rend.target = rspec.target
+        if (rspec.multiGrad) rend.multi_grad = { __mg: true }
 
         return {
             rend,
@@ -642,6 +772,54 @@ describe('getRendererColoringState', () => {
         expect(res.className).toBe('CPKColoring')
         expect(res.paintEntries).toEqual([])
         expect(rendWrappers.get(100)!.spies.getSelAt).not.toHaveBeenCalled()
+    })
+
+    it('reports hasColoring and the MOLFANC target for isosurf', () => {
+        const { ctx } = makeRichFixture({
+            objects: [{
+                id: 10, name: 'mtz1', rends: [{
+                    id: 100, name: 'iso1', typeName: 'isosurf',
+                    coloringClass: 'SolidColoring',
+                    colormode: 'molecule', target: 'mol1', multiGrad: true,
+                }],
+            }],
+        })
+        const res = services.getRendererColoringState(ctx, { sceneId: 1, rendId: 100 })
+        expect(res.ok).toBe(true)
+        expect(res.hasColoring).toBe(true)
+        expect(res.molFancTarget).toBe('mol1')
+    })
+
+    it('reports hasColoring:false and no molFancTarget for a plain map renderer', () => {
+        const { ctx } = makeRichFixture({
+            objects: [{
+                id: 10, name: 'mtz1', rends: [{
+                    id: 100, name: 'ctr1', typeName: 'contour',
+                    coloringClass: null,
+                    colormode: 'solid', multiGrad: true,
+                }],
+            }],
+        })
+        const res = services.getRendererColoringState(ctx, { sceneId: 1, rendId: 100 })
+        expect(res.hasColoring).toBe(false)
+        expect(res.molFancTarget).toBeUndefined()
+    })
+
+    it('does not expose an unrelated target prop as molFancTarget (no colormode)', () => {
+        // DisoRenderer-like: has coloring + a `target` that names a renderer,
+        // but no colormode -- the colormode gate must keep it out.
+        const { ctx } = makeRichFixture({
+            objects: [{
+                id: 10, name: 'mol1', rends: [{
+                    id: 100, name: 'diso1', typeName: 'disorder',
+                    coloringClass: 'SolidColoring',
+                    target: 'cartoon1',
+                }],
+            }],
+        })
+        const res = services.getRendererColoringState(ctx, { sceneId: 1, rendId: 100 })
+        expect(res.hasColoring).toBe(true)
+        expect(res.molFancTarget).toBeUndefined()
     })
 })
 

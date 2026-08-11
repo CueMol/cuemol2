@@ -11,6 +11,7 @@ import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { MolRenderer } from '@cuemol/core/src/wrappers/MolRenderer';
 import type { ColoringScheme } from '@cuemol/core/src/wrappers/ColoringScheme';
 import type { AbstractColor } from '@cuemol/core/src/wrappers/AbstractColor';
+import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { WorkerContext } from '../../types/WorkerContext';
 import { withUndoTxn } from '../withUndoTxn';
 import { getSceneOrNull } from '../helpers/sceneResolver';
@@ -19,11 +20,14 @@ import { makeColor } from '../helpers/makeColor';
 import {
     resolveColoringTarget,
     isMolSurf,
+    isMapSurf,
     isElepotCapable,
     isMultiGradCapable,
     getMultiGradOrNull,
     getColoringClassName,
     materializeColoringIfDefault,
+    readMolFancTargetOrNull,
+    findFirstMolCoordName,
 } from './colorTargets';
 import { findFirstElePotMapName } from './elepotWriter';
 import {
@@ -39,7 +43,29 @@ import type {
     SetRendererDefaultColorResult,
     SetColoringPropArgs,
     SetColoringPropResult,
+    SetRendererColoringTargetArgs,
+    SetRendererColoringTargetResult,
 } from './types';
+
+/**
+ * Force `colormode = "molecule"` on renderers whose coloring only applies
+ * in molecule mode (molsurf's MOLFANC, and the isosurf map renderer's
+ * nearest-atom coloring). On these renderers the MOLFANC path also needs a
+ * reference molecule, so when `target` is still empty the scene's first
+ * MolCoord is picked as a sensible default (mirrors the elepot default in
+ * `paint-type-elepot`). No-op for every other renderer.
+ */
+function forceMoleculeColormode(scene: Scene, rend: Renderer): void {
+    if (!isMolSurf(rend) && !isMapSurf(rend)) return;
+    (rend as unknown as { colormode: string }).colormode = 'molecule';
+    const target = readMolFancTargetOrNull(rend);
+    if (target === '') {
+        const name = findFirstMolCoordName(scene);
+        if (name) {
+            (rend as unknown as { target: string }).target = name;
+        }
+    }
+}
 
 /**
  * Apply a `style-XXX` coloring style.
@@ -47,36 +73,33 @@ import type {
  * Steps mirror UXP:
  *   1. strip existing `*Paint$` entries from rend.style,
  *   2. push the new style name,
- *   3. on molsurf, force colormode = "molecule" (the surface ignores
- *      coloring when colormode != "molecule"),
+ *   3. on molsurf / isosurf, force colormode = "molecule" (the surface
+ *      ignores coloring when colormode != "molecule"),
  *   4. resetProp("coloring") so the new style's coloring takes effect,
  *   5. applyStyles(newStyle).
  */
-function applyStyleColoring(rend: Renderer, styleName: string): void {
+function applyStyleColoring(scene: Scene, rend: Renderer, styleName: string): void {
     const curStyle = rend.style ?? '';
     const stripped = styleRemove(curStyle, /Paint$/);
     const newStyle = stylePush(stripped, styleName);
 
-    if (isMolSurf(rend)) {
-        (rend as unknown as { colormode: string }).colormode = 'molecule';
-    }
+    forceMoleculeColormode(scene, rend);
     rend.resetProp('coloring');
     rend.applyStyles(newStyle);
 }
 
 /**
  * Apply a `paint-type-XXX` coloring by instantiating a fresh coloring object
- * and assigning it. On molsurf, also force colormode = "molecule".
+ * and assigning it. On molsurf / isosurf, also force colormode = "molecule".
  */
 function applyObjColoring(
     ctx: WorkerContext,
+    scene: Scene,
     rend: Renderer,
     coloringClassName: string,
 ): void {
     const coloring = ctx.svc.createObj(coloringClassName) as ColoringScheme;
-    if (isMolSurf(rend)) {
-        (rend as unknown as { colormode: string }).colormode = 'molecule';
-    }
+    forceMoleculeColormode(scene, rend);
     (rend as unknown as MolRenderer).coloring = coloring;
 }
 
@@ -150,7 +173,7 @@ export function setRendererColoring(
         const styleName = args.coloringId.substring('style-'.length);
         if (!styleName) return { ok: false };
         withUndoTxn(scene, 'Change coloring style', () => {
-            applyStyleColoring(rend, styleName);
+            applyStyleColoring(scene, rend, styleName);
         });
         return { ok: true };
     }
@@ -158,31 +181,47 @@ export function setRendererColoring(
     switch (args.coloringId) {
         case 'paint-type-bfac':
             withUndoTxn(scene, 'Change coloring', () => {
-                applyObjColoring(ctx, rend, 'BfacColoring');
+                applyObjColoring(ctx, scene, rend, 'BfacColoring');
             });
             return { ok: true };
         case 'paint-type-rainbow':
             withUndoTxn(scene, 'Change coloring', () => {
-                applyObjColoring(ctx, rend, 'RainbowColoring');
+                applyObjColoring(ctx, scene, rend, 'RainbowColoring');
             });
             return { ok: true };
         case 'paint-type-paint':
             withUndoTxn(scene, 'Change coloring', () => {
-                applyObjColoring(ctx, rend, 'PaintColoring');
+                applyObjColoring(ctx, scene, rend, 'PaintColoring');
             });
             return { ok: true };
         case 'paint-type-cpk':
             withUndoTxn(scene, 'Change coloring', () => {
-                applyObjColoring(ctx, rend, 'CPKColoring');
+                applyObjColoring(ctx, scene, rend, 'CPKColoring');
             });
             return { ok: true };
         case 'paint-type-solid':
-        case 'paint-type-resetdef':
-            // UXP `setRendColoring`: both Solid and "Reset to default" route
-            // through `resetProp("coloring")`. The unknown deck then shows
-            // the renderer's defaultcolor picker.
+            // UXP `setRendColoring`: Solid routes through
+            // `resetProp("coloring")`; the unknown deck then shows the
+            // renderer's defaultcolor picker. On the isosurf map renderer
+            // the mesh color is governed by colormode, so also switch it
+            // back to "solid" -- otherwise the MOLFANC nearest-atom path
+            // keeps overriding the solid color.
             withUndoTxn(scene, 'Reset coloring', () => {
                 rend.resetProp('coloring');
+                if (isMapSurf(rend)) {
+                    (rend as unknown as { colormode: string }).colormode = 'solid';
+                }
+            });
+            return { ok: true };
+        case 'paint-type-resetdef':
+            // "Reset to default style": restore the style-inherited coloring.
+            // On isosurf also reset colormode to its default ("solid") so the
+            // renderer returns to its true default state.
+            withUndoTxn(scene, 'Reset coloring', () => {
+                rend.resetProp('coloring');
+                if (isMapSurf(rend)) {
+                    rend.resetProp('colormode');
+                }
             });
             return { ok: true };
         case 'paint-type-multigrad':
@@ -298,6 +337,30 @@ export function setColoringProp(
         const live = (rend as unknown as MolRenderer).coloring;
         if (!live) return;
         live.setProp(args.propName, value);
+    });
+    return { ok: true };
+}
+
+/**
+ * Write the MOLFANC reference-molecule name (`target` property) on a
+ * renderer. Drives the Coloring panel's "Coloring mol" selector shown in
+ * molecule colormode. Refuses on renderers without the `target` property.
+ */
+export function setRendererColoringTarget(
+    ctx: WorkerContext,
+    args: SetRendererColoringTargetArgs,
+): SetRendererColoringTargetResult {
+    const scene = getSceneOrNull(ctx, args.sceneId);
+    if (!scene) return { ok: false };
+    const rend = resolveColoringTarget(scene, args.targetKind, args.rendId);
+    if (!rend) return { ok: false };
+    if (readMolFancTargetOrNull(rend) === null) return { ok: false };
+
+    withUndoTxn(scene, 'Change coloring target', () => {
+        // `target` lives directly on the renderer's native wrapper; use the
+        // setProp escape hatch (same shape as setRendererElepotProp).
+        (rend as unknown as { setProp: (n: string, v: unknown) => void })
+            .setProp('target', args.targetName);
     });
     return { ok: true };
 }
