@@ -15,14 +15,17 @@ import type {
     ColoringTargetKind,
     GetRendererColoringStateResult,
 } from '../worker/server/services/rendererColoring.service'
-import { SEM_OBJECT, SEM_RENDERER, SEM_ANY } from '../event'
+import { SEM_OBJECT, SEM_RENDERER, SEM_SCENE, SEM_ANY } from '../event'
 import { useLiveFetch } from './useLiveFetch'
 
 const REFETCH_DEBOUNCE_MS = 30
 // Listen for renderer events when editing a renderer's coloring and for
 // object events when editing an object's coloring. Combining the masks
 // keeps the subscription wire identical regardless of target kind.
-const COLORING_EVENT_MASK = SEM_OBJECT | SEM_RENDERER
+// SEM_SCENE covers the bulk-load path (sceneLoaded after a slow qsc load,
+// which fires no per-renderer events) -- scene events carry no propname so
+// they pass the refetch filter below.
+const COLORING_EVENT_MASK = SEM_OBJECT | SEM_RENDERER | SEM_SCENE
 
 /**
  * Renderer-level props that the Elepot / Multi-gradient decks read.
@@ -40,6 +43,9 @@ const DECK_REFETCH_PROPS = new Set<string>([
     // Multi-gradient deck: gradient nodes + color-map binding
     'multi_grad',
     'color_mapname',
+    // MOLFANC (molecule colormode): reference mol + atom-map selection
+    'target',
+    'sel',
 ])
 
 export interface UseRendererColoringStateOptions {
@@ -63,6 +69,7 @@ const EMPTY_STATE: GetRendererColoringStateResult = {
     surfaceType: '',
     colormode: '',
     multiGradCapable: false,
+    hasColoring: false,
 }
 
 /**

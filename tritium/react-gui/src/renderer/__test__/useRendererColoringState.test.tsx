@@ -12,7 +12,7 @@ import React from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 import { useRendererColoringState } from '../hooks/useRendererColoringState'
-import { SEM_OBJECT, SEM_RENDERER, SEM_ANY } from '../event'
+import { SEM_OBJECT, SEM_RENDERER, SEM_SCENE, SEM_ANY } from '../event'
 
 void React
 
@@ -117,13 +117,15 @@ describe('useRendererColoringState', () => {
         h.unmount()
     })
 
-    it('subscribes with SEM_OBJECT|SEM_RENDERER source mask scoped to the scene', async () => {
+    it('subscribes with SEM_OBJECT|SEM_RENDERER|SEM_SCENE source mask scoped to the scene', async () => {
+        // SEM_SCENE covers the bulk-load path: after a slow qsc load only the
+        // scene-level sceneLoaded event fires, and the deck must refetch on it.
         const cm = makeCm()
         const h = mountHook(cm)
         await flush()
         expect(cm.addEventListener).toHaveBeenCalledWith(
             '',
-            SEM_OBJECT | SEM_RENDERER,
+            SEM_OBJECT | SEM_RENDERER | SEM_SCENE,
             SEM_ANY,
             SCENE_ID,
             expect.any(Function),
