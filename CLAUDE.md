@@ -120,14 +120,17 @@ core (@cuemol/core): C++ addon + auto-generated TypeScript wrappers
 - 境界 (main↔preload↔renderer / renderer↔worker / コマンド) をまたぐ追加は **型契約マップ** に行追加が起点 — `shared/ipcContract.ts` (`InvokeChannels`/`PushChannels`)、`worker/shared/WorkerCalls.ts` (`ServiceMap`/`MethodMap`/`RpcMap`)、`commands/CommandMap.ts`。マップ行を足すと callsite 側が compile error で誘導される。詳細は `tritium/CLAUDE.md`
 - LSP の警告 (`Cannot find module '@cuemol/core/...'`、`electronAPI does not exist on Window` など) は project-references 解決の noise が多い。検証は `npx tsc -p tsconfig.<project>.json --noEmit` と production build (`task build_tritium`) を真とする
 
-**End-to-end 検証チェーン**
+**検証チェーン (実装 → ユーザー目視確認 → test/lint の順)**
 
-`npm test` は worker や main を mock するので、実 IPC 経路や bundle 整合性は捕捉できない。リファクタや境界変更の最終確認は次の順で:
+実装が終わったら、**まず動くものをユーザーに見せる**。テストや lint の整備は目視確認で仕様・挙動が確定した後に行う (先に書くと修正時に手戻りで無駄になる):
 
-1. `cd tritium/react-gui && npm test` (Vitest, ~200+ tests)
-2. `cd tritium/react-gui && npx tsc -p tsconfig.web.json --noEmit` (renderer 型) と `tsconfig.node.json` (main + preload 型)
-3. `cd build_scripts && task build_tritium` (electron-vite production bundle — bundler レベルの依存解決を catch)
-4. `cd build_scripts && task run_tritium` で起動し、`launch worker OK` → `CueMol2 nodejs add-on : INITIALIZED` → `bindCanvas` → `shader program created OK` まで進むか確認
+1. `cd build_scripts && task build_tritium` (electron-vite production bundle — bundler レベルの依存解決を catch。既存テストの修正もこの段階ではしない)
+2. `cd build_scripts && task run_tritium` で起動し、`launch worker OK` → `CueMol2 nodejs add-on : INITIALIZED` → `bindCanvas` → `shader program created OK` まで進むか確認
+3. **ユーザーによる目視確認 (E2E) を依頼し、フィードバックを反映する。挙動が確定するまで 1-3 を繰り返す**
+4. 確定後に: `cd tritium/react-gui && npm test` (Vitest) — 既存テストの追随修正と新規テストの追加
+5. `cd tritium/react-gui && npx tsc -p tsconfig.web.json --noEmit` (renderer 型) と `tsconfig.node.json` (main + preload 型)、`task lint_tritium_style`
+
+`npm test` は worker や main を mock するので、実 IPC 経路や bundle 整合性は捕捉できない。ビルドと起動の確認だけを先に行い、テスト整備は目視確認後にまとめて行う。
 
 **Refactoring 前の degrade 検出テスト**
 
