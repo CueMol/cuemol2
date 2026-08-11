@@ -232,6 +232,7 @@ export const MultiGradSection: React.FC<MultiGradSectionProps> = ({
             max: s.max,
             voxelCount: state?.mapVoxelCount ?? null,
             peakCount: state?.mapPeakCount ?? null,
+            quantStep: s.quantStep,
         })
     }, [state?.mapStats, state?.mapVoxelCount, state?.mapPeakCount])
 

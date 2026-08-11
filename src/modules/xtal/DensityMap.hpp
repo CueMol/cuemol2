@@ -101,6 +101,7 @@ namespace xtal {
 
     double getLevelBase() const override;
     double getLevelStep() const override;
+    double getQuantStep() const override;
 
     // get number of columns, rows, sections
     int getColNo() const override { return m_nCols; }

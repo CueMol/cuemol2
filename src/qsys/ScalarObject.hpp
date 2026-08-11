@@ -43,6 +43,16 @@ namespace qsys {
     virtual double getLevelBase() const =0;
     virtual double getLevelStep() const =0;
 
+    /// Spacing of the discrete value lattice of the stored samples.
+    /// Returns 0 when the storage is continuous (i.e. values are not
+    /// quantized). Implementations with quantized storage (e.g. the
+    /// 8-bit DensityMap) override this with their actual step, so
+    /// histogram clients can avoid requesting bins finer than the data.
+    /// Note: getLevelStep() is not usable for this purpose -- float
+    /// implementations also return a non-zero value there (the atByte()
+    /// conversion scale), even though their data is not quantized.
+    virtual double getQuantStep() const { return 0.0; }
+
     virtual bool isInBoundary(int i, int j, int k) const =0;
     virtual unsigned char atByte(int i, int j, int k) const =0;
     virtual double atFloat(int i, int j, int k) const =0;

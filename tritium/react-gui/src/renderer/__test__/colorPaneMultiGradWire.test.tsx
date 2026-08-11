@@ -83,7 +83,7 @@ const MULTIGRAD_STATE = {
         { objId: 1, name: 'map1', className: 'DensityMap' },
         { objId: 2, name: 'map2', className: 'DensityMap' },
     ],
-    mapStats: { min: 0, max: 10, mean: 5, sigma: 1 },
+    mapStats: { min: 0, max: 10, mean: 5, sigma: 1, quantStep: 0 },
     // central-95% range; narrower than the raw map range above
     mapPercentiles: { lo: 0.5, hi: 9.5 },
     // dense map: the bin-width floor stays well below the zoom levels

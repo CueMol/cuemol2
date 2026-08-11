@@ -147,7 +147,11 @@ export function readMapStats(obj: CueObject): MultiGradMapStats | null {
     if (min === null || max === null || mean === null || sigma === null) {
         return null;
     }
-    return { min, max, mean, sigma };
+    // Unlike the four stats above, a missing quant step is non-fatal:
+    // it only relaxes a bin-width floor, so it degrades to 0
+    // (continuous) instead of failing the whole read.
+    const quantStep = safeReadNumber(obj, 'den_quant_step') ?? 0;
+    return { min, max, mean, sigma, quantStep };
 }
 
 function safeReadString(obj: unknown, prop: string): string {

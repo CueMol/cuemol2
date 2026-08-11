@@ -137,6 +137,11 @@ export interface HistogramFloorStats {
   voxelCount: number | null;
   /** Largest single-bin count over the full range (the dominant peak). */
   peakCount: number | null;
+  /**
+   * Spacing of the map's discrete value lattice (`den_quant_step`);
+   * 0 or null when the storage is continuous.
+   */
+  quantStep: number | null;
 }
 
 /**
@@ -146,22 +151,27 @@ export interface HistogramFloorStats {
  * behaviour Plotly/matplotlib have by default, expressed the way
  * Vega-Lite does it (`bin.minstep`).
  *
- * Two independent floors, whichever is coarser:
+ * Three independent floors, whichever is coarsest:
  *  1. the C++ base histogram's own resolution (`sigma / 1000`) -- below
  *     it the rebin just smears the same numbers;
  *  2. enough samples per bin on average. The dominant bin is excluded
  *     from the count first: a solvent-flattened map puts ~80% of its
  *     voxels in the zero peak, and counting those would badly
- *     over-estimate how much data is available to fill the other bins.
+ *     over-estimate how much data is available to fill the other bins;
+ *  3. the data's own quantization step. 8-bit maps (CCP4/MRC via
+ *     DensityMap) only take 256 distinct values spaced (max-min)/256
+ *     apart -- far coarser than floors 1 and 2 -- and bins narrower
+ *     than that lattice are genuinely empty between the lattice points,
+ *     which is what draws the comb-teeth artifact.
  *
- * Both terms are per-map constants, so the bin width still depends only
+ * All terms are per-map constants, so the bin width still depends only
  * on the zoom level -- panning never changes it and stays a pure
  * translation.
  *
  * @returns the floor, or 0 when the statistics are unavailable.
  */
 export function minHistogramBinWidth(stats: HistogramFloorStats): number {
-  const { sigma, min, max, voxelCount, peakCount } = stats;
+  const { sigma, min, max, voxelCount, peakCount, quantStep } = stats;
   let floor = 0;
   if (sigma > 0) floor = sigma / BASE_HIST_BINS_PER_SIGMA;
 
@@ -174,6 +184,10 @@ export function minHistogramBinWidth(stats: HistogramFloorStats): number {
     if (effective > 0) {
       floor = Math.max(floor, (MIN_SAMPLES_PER_BIN * range) / effective);
     }
+  }
+
+  if (quantStep !== null && quantStep > 0) {
+    floor = Math.max(floor, quantStep);
   }
   return floor;
 }

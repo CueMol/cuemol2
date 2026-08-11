@@ -199,7 +199,10 @@ describe('getMultiGradState', () => {
             ]),
             colormode: 'multigrad',
             colorMapName: 'map1',
-            mapObj: { den_min: -1, den_max: 5, den_mean: 0.5, den_sigma: 1.2 },
+            mapObj: {
+                den_min: -1, den_max: 5, den_mean: 0.5, den_sigma: 1.2,
+                den_quant_step: 5.0 / 256,
+            },
         })
         scene.getRenderer = vi.fn(() => rend)
         scene.getSceneDataJSON = vi.fn(() => JSON.stringify([
@@ -222,7 +225,31 @@ describe('getMultiGradState', () => {
             { objId: 1, name: 'map1', className: 'DensityMap' },
             { objId: 3, name: 'pot1', className: 'ElePotMap' },
         ])
-        expect(res.mapStats).toEqual({ min: -1, max: 5, mean: 0.5, sigma: 1.2 })
+        expect(res.mapStats).toEqual({
+            min: -1, max: 5, mean: 0.5, sigma: 1.2, quantStep: 5.0 / 256,
+        })
+    })
+
+    it('a missing den_quant_step degrades to 0, not a null mapStats', () => {
+        // Objects without the property (older wrapper, exotic map class)
+        // must still resolve their stats -- the quant step only relaxes
+        // a bin-width floor.
+        const scene = makeUndoScene(100)
+        const { rend } = makeMultiGradRend({
+            colormode: 'multigrad',
+            colorMapName: 'map1',
+            mapObj: { den_min: -1, den_max: 5, den_mean: 0.5, den_sigma: 1.2 },
+        })
+        scene.getRenderer = vi.fn(() => rend)
+        scene.getSceneDataJSON = vi.fn(() => JSON.stringify([
+            { ID: 100, type: '', name: 'scene' },
+            { ID: 1, type: 'DensityMap', name: 'map1' },
+        ]))
+        const res = getMultiGradState(makeCtx(scene), { sceneId: 100, rendId: 1 })
+        expect(res.ok).toBe(true)
+        expect(res.mapStats).toEqual({
+            min: -1, max: 5, mean: 0.5, sigma: 1.2, quantStep: 0,
+        })
     })
 
     it('reports capable=false for a renderer without multi_grad', () => {

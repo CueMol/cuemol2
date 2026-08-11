@@ -257,17 +257,18 @@ describe('histogram bin grid (nice binning)', () => {
 });
 
 describe('minHistogramBinWidth (bin-width floor)', () => {
-    // Measured from the realistic 64^3 solvent-flattened test map.
+    // Measured from the realistic 64^3 solvent-flattened test map
+    // (an OpenDX float map, so its storage is not quantized).
     const REAL = {
         sigma: 0.8564, min: -0.631, max: 8.008,
-        voxelCount: 262143, peakCount: 204288,
+        voxelCount: 262143, peakCount: 204288, quantStep: 0,
     };
 
     it('floor 1: never finer than the C++ base histogram (sigma/1000)', () => {
         // a dense map where the statistical floor is negligible
         const w = minHistogramBinWidth({
             sigma: 2, min: 0, max: 10,
-            voxelCount: 1e9, peakCount: 0,
+            voxelCount: 1e9, peakCount: 0, quantStep: 0,
         });
         expect(w).toBeCloseTo(2 / 1000, 12);
     });
@@ -290,22 +291,44 @@ describe('minHistogramBinWidth (bin-width floor)', () => {
     it('a sparse map gets a much coarser floor than a dense one', () => {
         const sparse = minHistogramBinWidth({
             sigma: 0.83, min: -1.13, max: 6.57,
-            voxelCount: 13816, peakCount: 10712,
+            voxelCount: 13816, peakCount: 10712, quantStep: 0,
         });
         expect(sparse).toBeGreaterThan(minHistogramBinWidth(REAL) * 10);
     });
 
+    it('floor 3: an 8-bit map is bounded by its value lattice', () => {
+        // Same dense stats as floor 1, but stored 8-bit: the (max-min)/256
+        // lattice is ~20x coarser than sigma/1000 and must win, otherwise
+        // sub-lattice bins are genuinely empty (the comb-teeth artifact).
+        const quantStep = 10 / 256;
+        const w = minHistogramBinWidth({
+            sigma: 2, min: 0, max: 10,
+            voxelCount: 1e9, peakCount: 0, quantStep,
+        });
+        expect(w).toBeCloseTo(quantStep, 12);
+    });
+
+    it('floor 3: continuous storage (0 or null) leaves the floor alone', () => {
+        const base = minHistogramBinWidth(REAL);
+        expect(minHistogramBinWidth({ ...REAL, quantStep: null })).toBe(base);
+        // a lattice finer than the other floors changes nothing either
+        expect(minHistogramBinWidth({ ...REAL, quantStep: base / 100 })).toBe(base);
+    });
+
     it('falls back gracefully when statistics are unavailable', () => {
         expect(minHistogramBinWidth({
-            sigma: 0, min: 0, max: 0, voxelCount: null, peakCount: null,
+            sigma: 0, min: 0, max: 0,
+            voxelCount: null, peakCount: null, quantStep: null,
         })).toBe(0);
         // sigma alone still gives the base-resolution floor
         expect(minHistogramBinWidth({
-            sigma: 1, min: 0, max: 10, voxelCount: null, peakCount: null,
+            sigma: 1, min: 0, max: 10,
+            voxelCount: null, peakCount: null, quantStep: null,
         })).toBeCloseTo(1e-3, 12);
         // a peak count >= the total is ignored rather than yielding 0/negative
         expect(minHistogramBinWidth({
-            sigma: 1, min: 0, max: 10, voxelCount: 100, peakCount: 100,
+            sigma: 1, min: 0, max: 10,
+            voxelCount: 100, peakCount: 100, quantStep: null,
         })).toBeCloseTo((10 * 10) / 100, 12);
     });
 });

@@ -23,6 +23,7 @@ runtime_class ScalarObject extends Object
   property real den_min => redirect(getMinDensity, XXX) (readonly);
   property real den_max => redirect(getMaxDensity, XXX) (readonly);
   property real den_mean => redirect(getMeanDensity, XXX) (readonly);
+  property real den_quant_step => redirect(getQuantStep, XXX) (readonly);
   
   // Methods
   string getHistogramJSON(real min, real max, integer nbin);

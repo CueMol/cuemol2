@@ -113,7 +113,7 @@ function makeCm(useAbsLevel: boolean, colormode = 'solid'): MockCm {
                     mapObjects: [
                         { objId: OBJ_ID, name: 'map1', className: 'DensityMap' },
                     ],
-                    mapStats: { min: 0, max: 10, mean: 5, sigma: 1 },
+                    mapStats: { min: 0, max: 10, mean: 5, sigma: 1, quantStep: 0 },
                 })
             }
             if (name === 'getMultiGradHistogram') {

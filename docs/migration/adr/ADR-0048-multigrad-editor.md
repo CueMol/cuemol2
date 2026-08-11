@@ -123,18 +123,33 @@ in-flight 1 本の coalesced preview) を持つ。
   から決めているため、zoom in を続けると bin 幅がデータの実解像度を下回り、
   空 bin が櫛状に並ぶ。実測 (合成 map 2 種を実アプリで計測) では、13.8k
   voxel の疎な map で深い zoom 時に空 bin 99%、262k voxel の現実的な map
-  では 0-5% だった。`minHistogramBinWidth()` が 2 つの下限の粗い方を返す:
-  (1) C++ base histogram の解像度 `sigma/1000`
+  では 0-5% だった。`minHistogramBinWidth()` が 3 つの下限の最も粗いものを
+  返す: (1) C++ base histogram の解像度 `sigma/1000`
   (`ScalarObject::calcBaseHistogram` の bin 幅)、(2) 1 bin あたり平均 10
-  サンプルを保つ `10 * range / N_eff`。`N_eff` は全域 voxel 数から**最大
-  bin (スパイク) を除いた**数で、solvent flatten 済み map では voxel の
-  8 割がゼロ bin に集中するため除外しないと 4.5 倍過大評価になる。両項とも
-  map ごとの定数なので bin 幅は zoom レベルのみに依存し、pan 不変性は保た
-  れる。下限に達した後の zoom は「棒が太くなるだけ」になり、Plotly /
-  matplotlib / d3 の既定挙動 (bin はデータ空間で固定し zoom は viewport
-  変換) へ漸近する。ChimeraX が x zoom を持たないため直接の前例は無い。
-  必要な統計 (`mapVoxelCount` / `mapPeakCount`) は `getMultiGradState` が
-  既に取得している全域ヒストグラムから無料で得られるので **C++ 変更は不要**。
+  サンプルを保つ `10 * range / N_eff`、(3) データ自身の量子化ステップ
+  `den_quant_step`。`N_eff` は全域 voxel 数から**最大 bin (スパイク) を
+  除いた**数で、solvent flatten 済み map では voxel の 8 割がゼロ bin に
+  集中するため除外しないと 4.5 倍過大評価になる。各項とも map ごとの定数
+  なので bin 幅は zoom レベルのみに依存し、pan 不変性は保たれる。下限に
+  達した後の zoom は「棒が太くなるだけ」になり、Plotly / matplotlib / d3
+  の既定挙動 (bin はデータ空間で固定し zoom は viewport 変換) へ漸近する。
+  ChimeraX が x zoom を持たないため直接の前例は無い。(1)(2) に必要な統計
+  (`mapVoxelCount` / `mapPeakCount`) は `getMultiGradState` が既に取得して
+  いる全域ヒストグラムから無料で得られる。
+- **下限 (3) データ量子化ステップ — CCP4 系 map の串状アーティファクト対策**:
+  `xtal::DensityMap` (CCP4/MRC/BRIX) は density を 8-bit 量子化して保持する
+  (`atFloat() = byte * levelStep + base`、`levelStep = range/256`) ため、
+  取りうる値は格子間隔 `range/256` の離散格子上にしかない。典型的な map で
+  この間隔は (1)(2) の 40 倍以上粗く、bin 幅が格子間隔を下回ると格子点を
+  含まない bin が真にゼロになり、zoom レベルごとに位相の変わる櫛状の
+  ギザギザが出る (実マップで観測)。`ScalarObject::getQuantStep()` (default
+  0 = 連続) を新設し `DensityMap` のみ override、qif の readonly property
+  `den_quant_step` 経由で `mapStats.quantStep` に載せて第 3 の下限にした。
+  既存の `getLevelStep()` は流用**できない** — float 保持の `ElePotMap` も
+  `atByte()` 変換用に range/256 を返すため、量子化の有無を区別できない。
+  bin 幅が格子間隔の 1〜2.5 倍の帯域では bin あたりの格子点数が 1/2 個で
+  交互になる高さのちらつきが残り得るが、log スケールが比を圧縮するため
+  実用上は均される (E2E で全 zoom レベル gap 0% を実測)。
 - **pan は span を保存する形で計算する**: `{min+shift, max+shift}` だと
   pan を繰り返すたびに `max-min` が浮動小数点誤差で漂い、zoom レベルが
   静かに変わる。`{min+shift, min+shift+span}` として span を厳密に保つ

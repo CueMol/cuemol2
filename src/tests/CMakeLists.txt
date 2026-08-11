@@ -180,6 +180,7 @@ add_executable(test_xtal
   modules/xtal/test_main.cpp
   modules/xtal/test_maprenderer_color.cpp
   modules/xtal/test_multigrad_undo.cpp
+  modules/xtal/test_quant_step.cpp
 )
 target_include_directories(test_xtal PRIVATE
   ${CMAKE_SOURCE_DIR}/src

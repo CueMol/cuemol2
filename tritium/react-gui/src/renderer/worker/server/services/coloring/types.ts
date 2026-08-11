@@ -367,6 +367,14 @@ export interface MultiGradMapStats {
     max: number;
     mean: number;
     sigma: number;
+    /**
+     * Spacing of the discrete value lattice of the stored samples; 0
+     * when the map stores continuous (float) values. 8-bit maps
+     * (CCP4/MRC via DensityMap) quantize to (max-min)/256, far coarser
+     * than the sigma/1000 base-histogram resolution, so this bounds how
+     * fine the display bins can get before empty comb teeth appear.
+     */
+    quantStep: number;
 }
 
 /**
