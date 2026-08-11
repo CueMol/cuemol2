@@ -620,8 +620,9 @@ void Scene::display(DisplayContext *pdc)
 {
   qlib::AutoPerfMeas apm(PM_RENDER_SCENE);
 
-  // StyleMgr is held in the member variable (at the ctor)
-  m_pStyleMgr->pushContextID(getUID());
+  // Scoped push of this scene's style context: a renderer throwing mid-display
+  // must not leave the scene ID on the StyleMgr context stack.
+  AutoStyleCtxt style_ctxt(getUID());
   pdc->startRender();
 
   std::vector<RendererPtr> transps;
@@ -708,7 +709,6 @@ void Scene::display(DisplayContext *pdc)
   }
 
   pdc->endRender();
-  m_pStyleMgr->popContextID();
 }
 
 void Scene::displayRendImpl(DisplayContext *pdc, ObjectPtr pObj, RendererPtr pRend)
@@ -755,7 +755,9 @@ void Scene::displayRendImpl(DisplayContext *pdc, ObjectPtr pObj, RendererPtr pRe
 
 void Scene::processHit(DisplayContext *pdc)
 {
-  m_pStyleMgr->pushContextID(getUID());
+  // Scoped push, matching display(): keep the StyleMgr context stack balanced
+  // on every exit path.
+  AutoStyleCtxt style_ctxt(getUID());
   pdc->startRender();
 
   rendtab_t::const_iterator i = m_rendtab.begin();
@@ -770,7 +772,6 @@ void Scene::processHit(DisplayContext *pdc)
   }
 
   pdc->endRender();
-  m_pStyleMgr->popContextID();
 }
 
 //////////////////////////////
