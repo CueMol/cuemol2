@@ -203,10 +203,17 @@ export const umbreonBackend: RenderBackend = {
     exporter.camera = "__current";
 
     exporter.attach(scene);
-    exporter.setPath(outputPath);
-    // Build the scene (this call) and start the ray trace on a background C++
-    // thread; returns immediately so the pipeline can poll for progress.
-    exporter.beginRender();
+    try {
+      exporter.setPath(outputPath);
+      // Build the scene (this call) and start the ray trace on a background C++
+      // thread; returns immediately so the pipeline can poll for progress.
+      exporter.beginRender();
+    } catch (e) {
+      // A failed start must not leave the scene attached: the exporter would
+      // keep holding the C++ scene reference until it is garbage-collected.
+      exporter.detach();
+      throw e;
+    }
 
     return makeHandle(exporter, () => exporter.detach());
   },

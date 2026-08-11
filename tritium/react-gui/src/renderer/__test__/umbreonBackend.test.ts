@@ -198,6 +198,30 @@ describe('umbreonBackend.beginInProcess', () => {
         expect(exporter.detach).toHaveBeenCalledTimes(1)
     })
 
+    it('detaches the scene when the render fails to start', () => {
+        const exporter = makeExporter()
+        exporter.beginRender = vi.fn(() => {
+            throw new Error('umbreon backend not compiled in')
+        })
+        const ctx = {
+            strMgr: { createHandler: vi.fn(() => exporter) },
+        } as unknown as WorkerContext
+        const snapshot: RenderSettingsSnapshot = {
+            mode: 'still',
+            backend: 'umbreon',
+            commonProps: [p('width', 640), p('height', 480), p('unit', 'px'), p('dpi', 600)],
+            backendProps: [],
+        }
+
+        expect(() =>
+            umbreonBackend.beginInProcess!(ctx, {} as never, snapshot, '/o.png'),
+        ).toThrow(/not compiled in/)
+
+        // attach() already ran, so the scene must be released -- otherwise the
+        // exporter keeps the C++ scene reference alive until GC.
+        expect(exporter.detach).toHaveBeenCalledTimes(1)
+    })
+
     it('falls back to the C++ ctor defaults when umbreon props are absent', () => {
         const exporter = makeExporter()
         const ctx = {
