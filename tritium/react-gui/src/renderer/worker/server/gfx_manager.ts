@@ -108,11 +108,14 @@ export class GfxManager {
         // fxaa), so the multisampled default framebuffer added no visible
         // benefit while it blocked blitDepthToDefault (a single-sample FBO
         // cannot blit into a multisampled default fb), degrading on-screen
-        // overlay depth occlusion. With a single-sample default framebuffer the
-        // depth blit works in every pipeline mode. The context attribute is
-        // fixed at creation and cannot follow aa_method, so the legacy direct
-        // path (AO / aa_method / jitter all off) is left without any geometry
-        // AA -- pick a post-AA method instead of relying on MSAA.
+        // overlay depth occlusion. A single-sample default framebuffer is
+        // necessary for the depth blit but not sufficient: the formats must
+        // also match, which is why FboStore allocates depth attachments as
+        // DEPTH24_STENCIL8 (the default fb's depth is packed on ANGLE/Metal).
+        // The context attribute is fixed at creation and cannot follow
+        // aa_method, so the legacy direct path (AO / aa_method / jitter all
+        // off) is left without any geometry AA -- pick a post-AA method
+        // instead of relying on MSAA.
         this._context = wrapGL(canvas.getContext('webgl2', { antialias: false }));
         const gl = this._context;
         // Required for rendering to RGBA16F color/normal attachments (GTAO MRT
@@ -475,7 +478,7 @@ export class GfxManager {
     /// API: create an off-screen FBO. `flags` is a gfx::RTFlags bitmask:
     ///   RT_COLOR_RGBA16F (0x10) -> RGBA16F color attachment 0 (else RGBA8)
     ///   RT_COLOR_NEAREST (0x04) -> NEAREST color filtering (else LINEAR)
-    ///   RT_DEPTH_TEX     (0x02) -> sampleable DEPTH_COMPONENT24 depth texture
+    ///   RT_DEPTH_TEX     (0x02) -> sampleable DEPTH24_STENCIL8 depth texture
     ///   RT_NORMAL_RGBA16F(0x08) -> RGBA16F MRT normal at color attachment 1
     /// Float (RGBA16F) attachments require EXT_color_buffer_float. Returns false
     /// if the framebuffer is incomplete.
