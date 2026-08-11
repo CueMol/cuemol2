@@ -1,6 +1,6 @@
 # ADR-0048: Multi-gradient color editor (Illustrator-like redesign)
 
-- Status: accepted (host E2E verified)
+- Status: accepted (host E2E verified; 実機 CCP4 map で zoom 挙動を owner 確認済み)
 - Date: 2026-08-11
 - Mapping rows: [`dialog.tool.multigrad-editor`](../mapping/tool_dlgs.md#dialogtoolmultigrad-editor), [`panel.coloring.deck.multigrad`](../mapping/panels.md#panelcoloringdeckmultigrad), [`panel.coloring.shell`](../mapping/panels.md#panelcoloringshell), [`panel.densitymap`](../mapping/panels.md#paneldensitymap)
 
