@@ -18,6 +18,7 @@ import {
     getMolSel,
     isSelEmpty,
     getColoringClassName,
+    isMultiGradCapable,
 } from './colorTargets';
 import type {
     GetPaintColoringStylesArgs,
@@ -209,7 +210,12 @@ export function listPaintCapableRenderers(
             if (r.typeName === '*selection') continue;
             const rend = scene.getRenderer(r.id) as Renderer | null;
             if (!rend) continue;
-            if (!rendererHasColoringProp(rend)) continue;
+            // Map renderers (contour / isosurf / gpu_*) have no `coloring`
+            // property but are colorable via their `multi_grad` gradient, so
+            // they qualify for the panel too.
+            if (!rendererHasColoringProp(rend) && !isMultiGradCapable(rend)) {
+                continue;
+            }
             out.push({
                 targetKind: 'renderer',
                 rendId: r.id,

@@ -59,6 +59,7 @@ import type {
 } from '../../worker/server/services/rendererColoring.service'
 import { CueColorField } from '../../h3-kit/colorpicker/CueColorField'
 import { ColorPickerProvider } from '../../h3-kit/colorpicker/ColorPickerContext'
+import { MultiGradSection } from '../multigrad/MultiGradSection'
 import { usePaintCapableRenderers } from '../../hooks/usePaintCapableRenderers'
 import { useRendererColoringState } from '../../hooks/useRendererColoringState'
 import { useElePotMapObjects } from '../../hooks/useElePotMapObjects'
@@ -76,7 +77,6 @@ import { fireService } from '../../utils/fireService'
 interface ColoringModeItem {
     label: string
     coloringId: RendColoringId | null
-    /** Wired in Phase 1/2/3 (Multi-gradient still deferred). */
     enabled: boolean
     /**
      * UXP `setupColoringSelector` hides the Electrostatic-potential item
@@ -85,6 +85,8 @@ interface ColoringModeItem {
      * `state.surfaceType`.
      */
     surfaceOnly?: boolean
+    /** Shown only when the renderer exposes a `multi_grad` gradient. */
+    multigradOnly?: boolean
 }
 
 const COLORING_MODE_ITEMS: ColoringModeItem[] = [
@@ -94,7 +96,7 @@ const COLORING_MODE_ITEMS: ColoringModeItem[] = [
     { label: 'Bfac/Occ coloring',       coloringId: 'paint-type-bfac',     enabled: true  },
     { label: 'Rainbow coloring',        coloringId: 'paint-type-rainbow',  enabled: true  },
     { label: 'Electrostatic potential', coloringId: 'paint-type-elepot',   enabled: true, surfaceOnly: true },
-    { label: 'Multi-gradient coloring', coloringId: null,                  enabled: false },
+    { label: 'Multi-gradient coloring', coloringId: 'paint-type-multigrad', enabled: true, multigradOnly: true },
     { label: 'Reset to default style',  coloringId: 'paint-type-resetdef', enabled: true  },
 ]
 
@@ -679,6 +681,11 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
     const surfaceType = state?.surfaceType ?? ''
     const isSurface = surfaceType === 'molsurf' || surfaceType === 'dsurface' || surfaceType === 'dsurf2'
     const isElepotActive = isSurface && state?.colormode === 'potential'
+    const multiGradCapable = state?.multiGradCapable === true
+    const isMultiGradActive = multiGradCapable && state?.colormode === 'multigrad'
+    // Map renderers (contour / isosurf / gpu_*) carry a multi_grad gradient
+    // but no `coloring` property, so none of the coloring-class decks apply.
+    const isMapRenderer = multiGradCapable && !isSurface
 
     // Fetch the ElePotMap object list only while the Elepot deck is active;
     // outside of that the dropdown is hidden and the listener would burn
@@ -849,6 +856,37 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
                 </div>
             )
         }
+        // Multi-gradient deck: routes on colormode (like Elepot) before the
+        // coloring class -- a renderer in multigrad mode may carry a stale
+        // coloring object that must not surface its deck.
+        if (isMultiGradActive) {
+            return (
+                <div className="color-deck-scroll">
+                    <div className="color-section-label">
+                        Multi-gradient coloring:
+                    </div>
+                    <MultiGradSection
+                        cm={cm}
+                        sceneId={sceneId}
+                        rendId={target.id}
+                    />
+                </div>
+            )
+        }
+        // A map renderer outside multigrad mode has no editable coloring
+        // here (its solid color lives in the Density map panel), so guide
+        // the user to the mode switch instead of showing a wrong deck.
+        if (isMapRenderer) {
+            return (
+                <div className="color-deck-scroll">
+                    <p className="mg-guide-note">
+                        This map renderer uses its solid color. Switch to
+                        Multi-gradient coloring via the Coloring dropdown to
+                        edit a gradient here.
+                    </p>
+                </div>
+            )
+        }
         // UXP `_setupData` routes surface + colormode==potential to the
         // Elepot deck before evaluating the coloring class, so do the same
         // here -- a surface may have a stale CPK/Rainbow coloring set when
@@ -929,8 +967,15 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
                                         // the Electrostatic-potential item on
                                         // non-surface renderers; do the same
                                         // here so the dropdown matches the
-                                        // active target's capabilities.
-                                        .filter((it) => !it.surfaceOnly || isSurface)
+                                        // active target's capabilities. Map
+                                        // renderers have no `coloring` prop,
+                                        // so only the Multi-gradient item
+                                        // applies to them.
+                                        .filter((it) =>
+                                            isMapRenderer
+                                                ? it.multigradOnly
+                                                : (!it.surfaceOnly || isSurface) &&
+                                                  (!it.multigradOnly || multiGradCapable))
                                         .map((it, i) => (
                                             <MenuItem
                                                 key={i}

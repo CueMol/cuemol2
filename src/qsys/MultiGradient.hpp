@@ -103,6 +103,15 @@ namespace qsys {
 
     virtual void copyFrom(const MultiGradientPtr &pSrc);
 
+    /// Get all nodes as a JSON array string
+    /// [{"value":<double>,"color":"<color str>","r":<0-255>,"g":..,"b":..}, ...]
+    LString getNodesJSON() const;
+
+    /// Replace all nodes from a JSON array string (same format as getNodesJSON;
+    /// only "value" and "color" fields are used). Fires prop-changed event and
+    /// records undo via copyFrom().
+    void setNodesJSON(const LString &json);
+
     // utility method for creating default value
     static MultiGradientPtr createDefaultS();
 

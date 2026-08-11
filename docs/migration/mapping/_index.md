@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-08-11 (**Multi-gradient color editor** (ADR-0048): UXP のモーダル multigrad editor を Illustrator 風の直接操作 stop bar として ColorPane multigrad deck + DensityMapPane に非モーダル inline 実装。`dialog.tool.multigrad-editor` todo -> merged/done、`panel.coloring.deck.multigrad` todo -> direct/done、`panel.coloring.shell` wip -> done (全 deck enabled、map renderer も `multi_grad` probe で対象化)。`panel.densitymap` の multigrad scope-out 注記を更新 (▼メニュー radio 対 + inline 埋め込み)。C++ に batch JSON API (`MultiGradient.getNodesJSON`/`setNodesJSON`、Boost.PropertyTree、copyFrom 継承で undo/PROPCHG 維持) + gtest 10 / core Jest 5 / vitest 63。drag protocol preview/commit/abort (1 gesture = 1 undo)。host E2E (playwright _electron): load -> 切替 -> seed -> histogram -> drag/undo/redo/Esc -> dark/light を機械検証。Panel done 16->18 / wip 10->9 / todo 1->0、Dialog_tool done 18->19 / todo 2->1、Total done 108->111 / wip 29->28 / todo 3->1、direct 28->29 / merged 59->60 / unassigned 3->1。In Progress から shell 行を除去)
 - Updated: 2026-08-10 (`panel.workspace.ctxmenu.object` を wip -> done に是正 (reconciliation、code 変更なし)。ADR-0047 の実機確認の際に Notes の残項目「Properties (read-only stub until Phase 5)」が stale と判明。ADR-0003 (2026-05-12) は Phase 3a 時点の `getNodeInfo` read-only key/value stub を指していたが、その後 ADR-0015 の Inspector 実装で置き換わっており、現在は ctxmenu の `{kind:'property'}` -> `showProperty` -> `handleShowGeneric` -> Inspector が Object ターゲットを構造化 Properties タブへ既定で寄せ (`InspectorPanel` の `defaultMode`)、`ObjectCommonSection` が Name / Selection / Visible / Locked / Linked(read-only src) を `getGenericProps`/`setGenericProp` でライブ編集する (`dialog.property.object` は 2026-06-12 に done 済み)。ADR-0003 が言う「Phase 5 の per-type property editor」は *renderer* 型別ページの話 (`dialog.property.renderer` は wip 継続) で、UXP `object-propdlg.xul` は "Common" 1 タブのみ・object 型別ページが存在しないため object 行に該当する残作業はない。inventory の 8 機能 (Regen surface / Selection / Paint / Copy-Paste / New Renderer / New Group / Save As / Delete-Properties) すべて充足を確認。ADR-0003 の Consequences・Pending・Implementation pointers も是正。Panel done 15->16 / wip 11->10、Total done 107->108 / wip 30->29。In Progress 表から当該行を除去。mapping type は split のまま (counts 不変))
 - Updated: 2026-08-09 (**MolSurfObj "Regenerate surface..."** (ADR-0047): ADR-0003 で Phase 6c として deferred にしていた object ctxmenu 最後の非 Properties 項目を実装。UXP `setupMolSurfCtxtMenu` の 3 状態ゲートを移植 — `MolSurfObj` 以外の行では hidden (`canRegenSurface` は `node.className` から同期判定)、`orig_mol` が空 or シーンから消えていれば表示のまま disabled (`regenSurfaceEnabled` は object 行 prefetch に `getMolSurfRegenInfo` を 1 本追加して判定、prefetch 失敗時は disabled へ縮退)。新 worker service `regenMolSurf.service` (`getMolSurfRegenInfo` / `regenMolSurf`) が `tryUndoTxn(scene,'Regenerate mol surface')` の中で `MolSurfObj.regenerateSES1(density)` を呼ぶ (頂点/面のスナップショットは C++ `MolSurfEditInfo` が自前で積むので worker 側は txn ラベルのみ供給)。UI は専用の `RegenMolSurfDialog` — UXP は `makesurf.xul` を 2 モードで使い回すが、既に done + test 済みの `MakeMolSurfDialog` に分岐を入れず分離し、density 入力の preset/draft 管理のみ `molSurfDensity.ts` (`useMolSurfDensity`) に切り出して共有。編集可能なのは density のみで対象分子 / selection / probe radius は `orig_*` の read-only 表示 (`.qif` が `regenerateSES1(density)` の第 1 引数しか公開しておらず、UXP も probe radius 編集をコメントアウトしたまま)。UXP の 3 バグ (windowtype 不一致で二重起動ガードが無効 / `orig_sel!=""` の wrapper-文字列比較が常に true / `nden==NaN` が false で空欄時 NaN が C++ へ) は移植側で解消。`panel.workspace.ctxmenu.object` の Notes+React+ADR 列と `dialog.tool.makesurf` の Notes を更新 (両行 status 据え置き — 前者は Properties stub のため wip 継続、後者は done 継続。category counts 不変)。vitest 2586 pass (新規 20) / tsc web+node: 変更ファイル 0 err / lint:style ベースライン不変 / production build OK / host E2E 済)
 - Updated: 2026-08-09 (**Preset renderer** (ADR-0046): UXP setupRenderer.xul の predefined renderer group 生成 (`<objtype>-rendpreset` style → `Object.createPresetRenderer` で group + 子 renderer 一括生成、ADR-0045 で「スコープ外」とした残項目) を New Renderer / file-open / Get PDB の全経路に実装。`RendererOptions.presetName` optional field (UXP の `/RendPreset$/` 正規表現判定は廃し明示フィールド、既存 4 worker 消費者のうち `setupRenderer` の分岐追加のみで file-open 実行経路はコード変更ゼロ)。`getNewRendererOptions` に `presetTypes` (group 内では空 = ネスト防止ガード)、file-open 用に新 service `getRendPresetTypes` (`ensureActiveScene()` 後に prefetch — 型リスト取得が scene 解決前に走る順序制約のため)。UI は `RendererOptionsPane` に Presets optgroup (label = desc||name、既定選択は現行の履歴/通常タイプ先頭を維持 = UXP の preset 既定選択は不採用)、preset 選択中は Selection disable、既定名は短縮形 `default1_1` (`presetNamePrefix`)。`dialog.setup-renderer` / `overlay.fopen-renderopt` の Notes+ADR 列更新 (両行 done 継続、counts 不変)。vitest 2559 pass (新規 27) / tsc: 変更ファイル 0 err / production build OK / host E2E 済)
@@ -96,16 +97,16 @@
 
 | Category | File | Total | done | wip | review | todo | frozen |
 |----------|------|------:|-----:|----:|-------:|-----:|-------:|
-| Panel | [panels.md](panels.md) | 27 | 16 | 10 | 0 | 1 | 0 |
+| Panel | [panels.md](panels.md) | 27 | 18 | 9 | 0 | 0 | 0 |
 | Menu | [menus.md](menus.md) | 11 | 8 | 3 | 0 | 0 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 1 | 1 | 0 | 0 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 16 | 14 | 2 | 0 | 0 | 0 |
 | Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 16 | 2 | 0 | 0 | 0 |
-| Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 18 | 1 | 0 | 2 | 0 |
+| Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 19 | 1 | 0 | 1 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 8 | 5 | 0 | 0 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 24 | 4 | 0 | 0 | 0 |
 | Other | [other.md](other.md) | 4 | 3 | 1 | 0 | 0 | 0 |
-| **Total** | | **140** | **108** | **29** | **0** | **3** | **0** |
+| **Total** | | **140** | **111** | **28** | **0** | **1** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -142,13 +143,13 @@
 
 | Mapping | Count |
 |---------|------:|
-| 1:1 (`direct`) | 28 |
-| merged | 59 |
+| 1:1 (`direct`) | 29 |
+| merged | 60 |
 | split | 37 |
 | redesign | 0 |
 | deferred | 1 |
 | deprecated (`dropped`) | 12 |
-| *(not yet assigned)* | 3 |
+| *(not yet assigned)* | 1 |
 
 ---
 
@@ -183,10 +184,9 @@
 | [`overlay.property.renderer-common`](overlay.md#overlaypropertyrenderer-common) | `RendererCommonSection` | Common (Basic settings + Edge lines) section of the Inspector Properties tab; tracked under `dialog.property.renderer` (wip) |
 | [`overlay.propeditor-generic`](overlay.md#overlaypropeditor-generic) | `InspectorPanel` / `GenericTab` / `genericProps.service` / `useInspectorState` | Generic property editor as the Generic tab of the docked inspector pane (ADR-0015); `getPropsJSON` bridge, live-apply, undo-wrapped writes. First stage edits primitive types (string/int/real/bool/enum); nested-object sub-properties now editable via dot-path keys (`parseGenericProps` recurses, `setNestedProperty` writes — ADR-0015 Update); color/vector/timeval widgets deferred. Replaces the retired read-only `NodePropertyDialog` modal. |
 | [`dialog.property.renderer`](prop_dlgs.md) | `inspector/RendererCommonSection` / `inspector/PropertiesTab` / `rendererPropSections` / `getMaterialNames.service` | renderer-common-page (Basic settings + Edge lines) as the structured Properties tab, default for renderer targets; live `getGenericProps`/`setGenericProp` (sel compiled via `makeSel`, egcolor/material as strings). Per-renderer-type sections deferred to the `rendererPropSections` registry — every type currently shows Common + a collapsed dummy placeholder. |
-| [`panel.coloring.shell`](panels.md#panelcoloringshell) | `ColorPane` / `usePaintCapableRenderers` / `rendererColoring.service` | Phase 1: renderer selector (paint-capable filter) + Coloring type dropdown (Paint / Solid / Reset enabled; CPK / Bfac / Rainbow / Elepot / Multi-gradient "coming soon"). |
 | [`panel.molstruct`](panels.md#panelmolstruct) | `MolStructPane` / `useMolStructure` / `selStrFromTree` / `getMolStructure.service` / `applyMolSelString.service` | Phase 1+2: molecule selector + lazy chain/residue/atom tree (per-chain & per-residue cache, self-heal on missing) + multi-select + Select / Center / Zoom (ADR-0018). Known issue: first-expand stagger from Blueprint `Tree` Collapse JS state machine (virtualization swap deferred). |
 ---
 
 ## Unstarted
 
-**3 / 140** items are `todo` (not yet started).
+**1 / 140** items are `todo` (not yet started).

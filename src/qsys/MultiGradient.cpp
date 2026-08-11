@@ -22,6 +22,10 @@
 
 #include <qlib/ObjectManager.hpp>
 
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <sstream>
+
 using namespace qsys;
 
 // MC_CLONEABLE_IMPL(qsys::MultiGradient);
@@ -203,6 +207,87 @@ void MultiGradient::readFrom2(qlib::LDom2Node *pNode)
     insert(val, pCol);
   }
 
+}
+
+namespace {
+  // minimal JSON string escape for color strings
+  LString escapeJSONString(const LString &src)
+  {
+    LString rval;
+    for (int i=0; i<src.length(); ++i) {
+      char c = src[i];
+      if (c=='"' || c=='\\')
+        rval += '\\';
+      rval += c;
+    }
+    return rval;
+  }
+}
+
+LString MultiGradient::getNodesJSON() const
+{
+  LString rval = "[";
+  bool bfirst = true;
+  for (const Node &node : m_data) {
+    if (!bfirst)
+      rval += ",";
+    bfirst = false;
+    LString colstr = node.pColor->toString();
+    rval += LString::format("{\"value\":%.15g,\"color\":\"%s\",\"r\":%d,\"g\":%d,\"b\":%d}",
+                            node.value,
+                            escapeJSONString(colstr).c_str(),
+                            node.pColor->r(),
+                            node.pColor->g(),
+                            node.pColor->b());
+  }
+  rval += "]";
+  return rval;
+}
+
+void MultiGradient::setNodesJSON(const LString &json)
+{
+  namespace pt = boost::property_tree;
+
+  // ptree's read_json requires a rooted document; wrap the array in an object
+  LString wrapped = LString("{\"nodes\":") + json + "}";
+  pt::ptree tree;
+  std::istringstream iss(wrapped.c_str());
+  try {
+    pt::read_json(iss, tree);
+  }
+  catch (const pt::json_parser_error &e) {
+    LString msg = LString::format("MultiGradient.setNodesJSON> invalid JSON: %s", e.what());
+    MB_THROW(qlib::RuntimeException, msg);
+  }
+
+  auto nodes = tree.get_child_optional("nodes");
+  if (!nodes) {
+    MB_THROW(qlib::RuntimeException, "MultiGradient.setNodesJSON> nodes array not found");
+  }
+
+  MultiGradientPtr pScratch(MB_NEW MultiGradient());
+
+  for (const auto &child : *nodes) {
+    const pt::ptree &node = child.second;
+    auto value = node.get_optional<double>("value");
+    auto color = node.get_optional<std::string>("color");
+    if (!value || !color) {
+      MB_THROW(qlib::RuntimeException,
+               "MultiGradient.setNodesJSON> node requires value and color fields");
+    }
+    gfx::ColorPtr pCol(gfx::AbstractColor::fromStringS(LString(color->c_str())));
+    if (pCol.isnull()) {
+      LString msg = LString::format("MultiGradient.setNodesJSON> invalid color: %s",
+                                    color->c_str());
+      MB_THROW(qlib::RuntimeException, msg);
+    }
+    if (pScratch->insert(*value, pCol)<0) {
+      LOG_DPRINTLN("MultiGradient.setNodesJSON> duplicate value %f skipped", *value);
+    }
+  }
+
+  // copyFrom() inherits undo recording and prop-changed event firing
+  copyFrom(pScratch);
 }
 
 //static

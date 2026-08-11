@@ -20,6 +20,7 @@ import {
     resolveColoringTarget,
     readTypeName,
     isElepotCapable,
+    isMultiGradCapable,
     getColoringClassName,
 } from './colorTargets';
 import type {
@@ -215,6 +216,7 @@ export function getRendererColoringState(
         return {
             ok: false, className: '', defaultColor: '',
             paintEntries: [], surfaceType: '', colormode: '',
+            multiGradCapable: false,
         };
     }
     const rend = resolveColoringTarget(scene, args.targetKind, args.rendId);
@@ -222,6 +224,7 @@ export function getRendererColoringState(
         return {
             ok: false, className: '', defaultColor: '',
             paintEntries: [], surfaceType: '', colormode: '',
+            multiGradCapable: false,
         };
     }
 
@@ -231,7 +234,9 @@ export function getRendererColoringState(
     // / colormode and yield empty strings).
     const surfaceType =
         args.targetKind === 'object' ? '' : readTypeName(rend);
-    const colormode = isElepotCapable(rend)
+    const multiGradCapable =
+        args.targetKind !== 'object' && isMultiGradCapable(rend);
+    const colormode = isElepotCapable(rend) || multiGradCapable
         ? safeReadString(rend, 'colormode')
         : '';
 
@@ -242,6 +247,7 @@ export function getRendererColoringState(
         paintEntries: [],
         surfaceType,
         colormode,
+        multiGradCapable,
     };
 
     // Elepot deck takes priority over the coloring class on surface renderers

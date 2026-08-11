@@ -20,10 +20,18 @@ import {
     resolveColoringTarget,
     isMolSurf,
     isElepotCapable,
+    isMultiGradCapable,
+    getMultiGradOrNull,
     getColoringClassName,
     materializeColoringIfDefault,
 } from './colorTargets';
 import { findFirstElePotMapName } from './elepotWriter';
+import {
+    findFirstScalarMapName,
+    getColorMapObjOrNull,
+    readMapStats,
+} from './multiGrad';
+import { buildPresetNodes } from '../../../../components/multigrad/multiGradPresets';
 import type {
     SetRendererColoringArgs,
     SetRendererColoringResult,
@@ -70,6 +78,52 @@ function applyObjColoring(
         (rend as unknown as { colormode: string }).colormode = 'molecule';
     }
     (rend as unknown as MolRenderer).coloring = coloring;
+}
+
+/** Scene wrapper type for the multigrad helpers below. */
+type SceneW = Parameters<typeof findFirstScalarMapName>[0];
+
+/**
+ * Default color-map name for a renderer switching to multigrad: a map
+ * renderer colors by its own client map; any other renderer (molsurf)
+ * falls back to the scene's first scalar map.
+ */
+function defaultColorMapName(scene: SceneW, rend: Renderer): string {
+    try {
+        const client = rend.getClientObj();
+        if (client) {
+            const cls = client.getClassName();
+            if (cls === 'DensityMap' || cls === 'ElePotMap') {
+                return (client as unknown as { name: string }).name ?? '';
+            }
+        }
+    } catch {
+        // fall through to the scene-wide search
+    }
+    return findFirstScalarMapName(scene);
+}
+
+/**
+ * Seed a heatmap gradient when the renderer's gradient is empty and its
+ * color map resolves. Deviation from UXP (which left the gradient empty
+ * until the modal editor was opened): with live in-panel editing, an empty
+ * gradient would render the whole surface black on switch.
+ */
+function seedEmptyGradient(rend: Renderer): void {
+    const mg = getMultiGradOrNull(rend);
+    if (!mg) return;
+    try {
+        if (mg.size > 0) return;
+    } catch {
+        return;
+    }
+    const mapObj = getColorMapObjOrNull(rend);
+    if (!mapObj) return;
+    const stats = readMapStats(mapObj);
+    if (!stats) return;
+    const nodes = buildPresetNodes('heatmap1', stats);
+    if (!nodes) return;
+    mg.setNodesJSON(JSON.stringify(nodes));
 }
 
 /**
@@ -129,6 +183,28 @@ export function setRendererColoring(
             // the renderer's defaultcolor picker.
             withUndoTxn(scene, 'Reset coloring', () => {
                 rend.resetProp('coloring');
+            });
+            return { ok: true };
+        case 'paint-type-multigrad':
+            // Switch a map / surface renderer to multi-gradient coloring.
+            // Steps (one txn): (1) default `color_mapname` when empty -- a
+            // map renderer colors by its own client map, a surface renderer
+            // by the scene's first scalar map; (2) colormode = "multigrad";
+            // (3) deviation from UXP: seed a heatmap gradient when the
+            // gradient is empty, so the live (non-modal) switch does not
+            // paint everything black.
+            if (!isMultiGradCapable(rend)) return { ok: false };
+            withUndoTxn(scene, 'Change to multi gradient coloring', () => {
+                const r = rend as unknown as {
+                    color_mapname: string;
+                    colormode: string;
+                };
+                if (!r.color_mapname) {
+                    const defName = defaultColorMapName(scene, rend);
+                    if (defName) r.color_mapname = defName;
+                }
+                r.colormode = 'multigrad';
+                seedEmptyGradient(rend);
             });
             return { ok: true };
         case 'paint-type-elepot':

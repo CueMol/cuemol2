@@ -13,6 +13,7 @@ import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { MolSelection } from '@cuemol/core/src/wrappers/MolSelection';
 import type { ColoringScheme } from '@cuemol/core/src/wrappers/ColoringScheme';
 import type { PaintColoring } from '@cuemol/core/src/wrappers/PaintColoring';
+import type { MultiGradient } from '@cuemol/core/src/wrappers/MultiGradient';
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { WorkerContext } from '../../types/WorkerContext';
 import { getSceneOrNull } from '../helpers/sceneResolver';
@@ -58,6 +59,26 @@ export function readTypeName(rend: Renderer): string {
 export function isElepotCapable(rend: Renderer): boolean {
     const t = readTypeName(rend);
     return t === 'molsurf' || t === 'dsurface' || t === 'dsurf2';
+}
+
+/**
+ * Duck-typed read of the renderer's `multi_grad` property (MapRenderer /
+ * MolSurfRenderer subclasses only). Returns null when the renderer does
+ * not expose the property (the wrapper getter throws).
+ */
+export function getMultiGradOrNull(rend: Renderer): MultiGradient | null {
+    try {
+        const mg = (rend as unknown as { multi_grad?: MultiGradient })
+            .multi_grad;
+        return mg ?? null;
+    } catch {
+        return null;
+    }
+}
+
+/** Renderers eligible for the Multi-gradient deck. */
+export function isMultiGradCapable(rend: Renderer): boolean {
+    return getMultiGradOrNull(rend) !== null;
 }
 
 export function getColoringClassName(rend: Renderer): string {

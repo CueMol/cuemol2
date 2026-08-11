@@ -235,6 +235,14 @@ import type {
   ListElePotMapObjectsResult,
   SetRendererElepotPropArgs,
   SetRendererElepotPropResult,
+  GetMultiGradStateArgs,
+  GetMultiGradStateResult,
+  GetMultiGradHistogramArgs,
+  GetMultiGradHistogramResult,
+  SetMultiGradNodesArgs,
+  SetMultiGradNodesResult,
+  SetMultiGradColorMapArgs,
+  SetMultiGradColorMapResult,
 } from '../server/services/rendererColoring.service'
 import type {
   GetRendererStyleEntriesArgs,
@@ -586,6 +594,10 @@ export interface ServiceMap {
   setColoringProp:            { args: SetColoringPropArgs;             result: SetColoringPropResult }
   listElePotMapObjects:       { args: ListElePotMapObjectsArgs;        result: ListElePotMapObjectsResult }
   setRendererElepotProp:      { args: SetRendererElepotPropArgs;       result: SetRendererElepotPropResult }
+  getMultiGradState:          { args: GetMultiGradStateArgs;           result: GetMultiGradStateResult }
+  getMultiGradHistogram:      { args: GetMultiGradHistogramArgs;       result: GetMultiGradHistogramResult }
+  setMultiGradNodes:          { args: SetMultiGradNodesArgs;           result: SetMultiGradNodesResult }
+  setMultiGradColorMap:       { args: SetMultiGradColorMapArgs;        result: SetMultiGradColorMapResult }
   getRendererStyleEntries:    { args: GetRendererStyleEntriesArgs;     result: GetRendererStyleEntriesResult }
   applyRendererStyle:         { args: ApplyRendererStyleArgs;          result: ApplyRendererStyleResult }
   getRendererStyleEditInfo:   { args: GetRendererStyleEditInfoArgs;    result: GetRendererStyleEditInfoResult }

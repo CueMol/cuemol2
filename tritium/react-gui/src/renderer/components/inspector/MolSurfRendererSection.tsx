@@ -49,6 +49,7 @@ const COLORMODE_LABELS: Record<string, string> = {
   solid: "Solid color",
   molecule: "By molecule",
   potential: "By potential",
+  multigrad: "Multi-gradient",
 };
 
 interface TargetRowProps {

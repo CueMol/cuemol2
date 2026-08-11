@@ -475,6 +475,12 @@ import { setupRenderer } from '../worker/server/services/setupRenderer.service'
 
 Use this when pinning a cross-layer invariant (e.g. "field X gates whether wrapper Y is touched"). See `__test__/setupRendererService.test.ts` for a four-case example covering true/false toggle, special-value short-circuit, and class-name short-circuit.
 
+### アプリを自動操作する E2E (Playwright `_electron` 等) の終了処理
+
+シーンに変更があるとアプリ終了が確認ダイアログで**ブロックする**。main が `win.on('close')` を preventDefault して `IPC.WINDOW_CLOSE_REQUEST` を送り、renderer が全タブを walk して `ConfirmCloseTabDialog` (Cancel / Don't Save / Save) を出すため。放置すると人手の応答待ちで止まる (main 側 watchdog の強制 close は 10 秒後)。
+
+自動終了させるには: このダイアログは **native ではなく renderer 側の Blueprint Dialog** なので、`app.close()` を await せずに走らせつつ `.bp5-dialog button` から `Don't Save` を探してクリックし (タブ数だけ繰り返す)、`page.evaluate` が投げたら閉じたと判定する。保険として最後に `app.process().kill('SIGKILL')`。
+
 ---
 
 ## Other API notes

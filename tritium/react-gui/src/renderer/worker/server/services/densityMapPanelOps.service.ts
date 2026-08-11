@@ -14,10 +14,6 @@
  * The "Show unitcell" action reuses `showUnitCellRenderer` from
  * `symmetryPanelOps.service.ts`; the panel resolves the parent obj id
  * via the entry it gets from `listMapRenderers`.
- *
- * Multi-gradient color mode is out of scope (user-directed): the
- * `colormode` property is not surfaced and `setMapRendererProp` does
- * not accept it.
  */
 
 import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
@@ -152,6 +148,12 @@ export interface MapRendererState {
     alpha: number;
     /** Stringified `rend.color`. Empty string when unreadable. */
     color: string;
+    /**
+     * Renderer colormode as a string (e.g. "solid", "multigrad"; enum
+     * props are strings at runtime). Drives the pane's Solid /
+     * Multi-gradient radio pair and the inline gradient editor.
+     */
+    colormode: string;
     extent: number;
     siglevel: number;
     useAbsLevel: boolean;
@@ -196,6 +198,7 @@ function getMapRendererState(
     const r = rend as unknown as {
         alpha: number;
         color: AbstractColor;
+        colormode: string;
         extent: number;
         siglevel: number;
         use_abslevel: boolean;
@@ -222,6 +225,10 @@ function getMapRendererState(
         state: {
             alpha: safeRead(() => r.alpha, 1),
             color,
+            colormode: safeRead(() => {
+                const v = r.colormode as unknown;
+                return typeof v === 'string' ? v : '';
+            }, ''),
             extent: safeRead(() => r.extent, 0),
             siglevel: safeRead(() => r.siglevel, 0),
             useAbsLevel: safeRead(() => r.use_abslevel, false),
@@ -257,12 +264,18 @@ function readDefaultFlags(rend: Renderer): MapRendererState['defaults'] {
 
 // --- setMapRendererProp ---
 
-/** Property names the panel may write. */
+/**
+ * Property names the panel may write. `colormode` takes a string enum id
+ * (e.g. "solid") and is commit-only (never previewed); switching TO
+ * multigrad routes through `setRendererColoring` instead so the
+ * color-map default + gradient seed logic applies.
+ */
 export type MapRendererPropName =
     | 'alpha'
     | 'extent'
     | 'siglevel'
     | 'use_abslevel'
+    | 'colormode'
     | 'color';
 
 export interface SetMapRendererPropArgs {
