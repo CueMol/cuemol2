@@ -7,6 +7,7 @@
 
 #include "MapRenderer.qif"
 #include <modules/molstr/SelCommand.qif>
+#include <modules/molstr/ColoringScheme.qif>
 
 runtime_class MapSurfRenderer extends MapRenderer
 {
@@ -54,6 +55,22 @@ runtime_class MapSurfRenderer extends MapRenderer
 
   /// Convert to MolSurfObj
   object<Object$> generateSurfObj();
+
+  //////////
+  // for "molecule" colormode
+
+  /// reference molecule target (used in molecule mode)
+  property string target => redirect(getTgtObjName, setTgtObjName);
+  default target = "";
+
+  property object<ColoringScheme$> coloring => redirect(getColSchm, setColSchm);
+  default coloring = molstr::ColoringScheme::createDefaultS();
+
+  using SelCommand;
+
+  /// Selection for atom mapping (used in molecule mode)
+  property object<MolSelection$> sel => redirect(getMolSel, setMolSel);
+  default sel = molstr::SelectionPtr(new molstr::SelCommand());
 
   //////////
 

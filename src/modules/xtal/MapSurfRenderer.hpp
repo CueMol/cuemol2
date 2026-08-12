@@ -15,11 +15,14 @@
 #include <modules/molstr/molstr.hpp>
 #include <modules/molstr/BSPTree.hpp>
 
+#include <modules/molstr/ColoringScheme.hpp>
 #include <modules/surface/MolSurfObj.hpp>
 #include <gfx/DrawAttrArray.hpp>
 #include <gfx/ShaderObject.hpp>
 
 class MapSurfRenderer_wrap;
+
+namespace molstr { class AtomPosMap2; }
 
 namespace xtal {
 
@@ -31,6 +34,7 @@ namespace xtal {
   class DensityMap;
 
   class MapSurfRenderer : public MapRenderer,
+                          public molstr::ColSchmHolder,
                           public qsys::ViewEventListener
   {
     MC_SCRIPTABLE;
@@ -40,6 +44,15 @@ namespace xtal {
     typedef MapRenderer super_t;
     friend class ::MapSurfRenderer_wrap;
 
+  public:
+    // Both MapRenderer::getColor() (solid color property) and
+    // ColSchmHolder::getColor(MolAtomPtr/MolResiduePtr) are inherited from
+    // different bases; bring both overload sets into the same scope so that
+    // unqualified calls resolve by argument instead of being ambiguous.
+    using MapRenderer::getColor;
+    using molstr::ColSchmHolder::getColor;
+
+  private:
     ///////////////////////////////////////////
     // properties
 
@@ -153,6 +166,42 @@ namespace xtal {
     }
 
   private:
+    /// Molecule object ID by which painting color is determined
+    /// (used in MOLFANC mode)
+    qlib::uid_t m_nTgtMolID;
+
+    /// Molecule object name by which painting color is determined.
+    /// Used if MolID cannot be resolved (when deserialized from qsc file)
+    qlib::LString m_sTgtMolName;
+
+    /// Selection for atompos-map (used in MOLFANC mode)
+    SelectionPtr m_pMolSel;
+
+  public:
+    /// Get reference molecule target (used in MOLFANC mode)
+    qlib::LString getTgtObjName() const;
+
+    /// Set reference molecule target (used in MOLFANC mode)
+    void setTgtObjName(const qlib::LString &n);
+
+    SelectionPtr getMolSel() const { return m_pMolSel; }
+
+    void setMolSel(SelectionPtr pNewSel) {
+      m_pMolSel = pNewSel;
+      invalidateDisplayCache();
+    }
+
+    ////
+
+    void propChanged(qlib::LPropEvent &ev) override;
+
+    /// object-changed event handler (for target mol changes in MOLFANC mode)
+    void objectChanged(qsys::ObjectEvent &ev) override;
+
+    /// scene-changed event handler (for target mol name resolution)
+    void sceneChanged(qsys::SceneEvent &ev) override;
+
+  private:
 
     ///////////////////////////////////////////
     // work area
@@ -228,6 +277,21 @@ namespace xtal {
     qsys::ScalarObject *m_pColMapObj;
 
     qsys::MultiGradient *m_pGrad;
+
+    /// Coloring target mol (for MOLFANC mode; only valid during rendering)
+    MolCoordPtr m_pColMol;
+
+    /// Nearest-atom map for MOLFANC coloring (only valid during rendering)
+    molstr::AtomPosMap2 *m_pAtomPosMap;
+
+    /// Resolve mol name, set m_nTgtMolID, listen the MolCoord events,
+    /// and return the MolCoord object
+    MolCoordPtr resolveMolIDImpl(const qlib::LString &name);
+
+    void makeAtomPosMap();
+
+    /// Get color of the nearest atom (v is in the orthogonal coordinates)
+    bool getColorMol(const Vector4D &v, gfx::ColorPtr &rcol);
 
     void setVertexColor(DisplayContext *pdl, const Vector4D &rfPosition);
 

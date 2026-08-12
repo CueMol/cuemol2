@@ -17,13 +17,19 @@
 #include <qsys/ViewEvent.hpp>
 #include <qsys/View.hpp>
 #include <qsys/Scene.hpp>
+#include <qsys/SceneManager.hpp>
 #include <modules/molstr/AtomIterator.hpp>
+#include <modules/molstr/AtomPosMap2.hpp>
+#include <modules/molstr/MolAtom.hpp>
+#include <modules/molstr/MolCoord.hpp>
 
 using namespace xtal;
 using qlib::Matrix4D;
 using qlib::Matrix3D;
 using qsys::ScrEventManager;
+using qsys::SceneManager;
 using molstr::AtomIterator;
+using molstr::MolAtomPtr;
 
 // default constructor
 MapSurfRenderer::MapSurfRenderer()
@@ -35,6 +41,9 @@ MapSurfRenderer::MapSurfRenderer()
   m_nDrawMode = MSRDRAW_FILL;
   m_lw = 1.2;
   m_pCMap = NULL;
+
+  m_nTgtMolID = qlib::invalid_uid;
+  m_pAtomPosMap = NULL;
 
   m_nBinFac = 1;
   m_nMaxGrid = 100;
@@ -67,6 +76,18 @@ MapSurfRenderer::~MapSurfRenderer()
   // for safety, remove from event manager is needed here...
   ScrEventManager *pSEM = ScrEventManager::getInstance();
   pSEM->removeViewListener(this);
+
+  if (m_pAtomPosMap!=NULL)
+    delete m_pAtomPosMap;
+
+  // detach from the coloring target mol
+  if (m_nTgtMolID!=qlib::invalid_uid) {
+    qsys::ObjectPtr pObj = SceneManager::getObjectS(m_nTgtMolID);
+    if (!pObj.isnull()) {
+      pObj->removeListener(this);
+    }
+    m_nTgtMolID = qlib::invalid_uid;
+  }
 
 // #if (GUI_ARCH!=MB_GUI_ARCH_CLI)
 //   if (m_pVBO!=NULL)
@@ -416,6 +437,7 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
 
   m_pColMapObj = NULL;
   m_pGrad = NULL;
+  m_pColMol = MolCoordPtr();
 
   if (getColorMode()==MapRenderer::MAPREND_MULTIGRAD) {
     m_pGrad = getMultiGrad().get();
@@ -428,6 +450,31 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
       LOG_DPRINTLN("MapSurfRend> \"%s\" is not a scalar object.", nm.c_str());
     }
     setupXformMat();
+  }
+  else if (!m_bGenSurfMode &&
+           getColorMode()==MapRenderer::MAPREND_MOLFANC) {
+    if (m_nTgtMolID!=qlib::invalid_uid) {
+      qsys::ObjectPtr pobj = SceneManager::getObjectS(m_nTgtMolID);
+      m_pColMol = MolCoordPtr(pobj, qlib::no_throw_tag());
+    }
+    if (!m_pColMol.isnull()) {
+      // TO DO: re-generate atom-map only when Mol is changed.
+      makeAtomPosMap();
+
+      // Sync the ColoringScheme fallback color with the solid color prop
+      molstr::ColSchmHolder::setDefaultColor(MapRenderer::getColor());
+
+      // initialize the coloring scheme (with the target mol)
+      molstr::ColoringSchemePtr pCS = getColSchm();
+      if (!pCS.isnull())
+        pCS->start(m_pColMol, this);
+
+      setupXformMat();
+    }
+    else {
+      LOG_DPRINTLN("MapSurfRend> MOLFANC target mol \"%d\" is not found.",
+                   int(m_nTgtMolID));
+    }
   }
 
   /////////////////////
@@ -494,6 +541,18 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
         pdl->end();*/
       }
         
+
+  // cleanup for MOLFANC mode
+  if (!m_pColMol.isnull()) {
+    molstr::ColoringSchemePtr pCS = getColSchm();
+    if (!pCS.isnull())
+      pCS->end();
+  }
+  if (m_pAtomPosMap!=NULL) {
+    delete m_pAtomPosMap;
+    m_pAtomPosMap = NULL;
+  }
+  m_pColMol = MolCoordPtr();
 
   m_pColMapObj = NULL;
   m_pGrad = NULL;
@@ -931,13 +990,17 @@ void MapSurfRenderer::setupXformMat()
   ScalarObject *pMap = m_pCMap;
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
 
+  // Apply the object's xform matrix first, to be consistent with
+  // setupXformMat(pdl) used in the display-list path.
+  m_xform = pMap->getXformMatrix();
+
   //  setup frac-->orth matrix
   if (pXtal==NULL) {
-    m_xform = Matrix4D::makeTransMat(pMap->getOrigin());
+    m_xform.matprod( Matrix4D::makeTransMat(pMap->getOrigin()) );
   }
   else {
     Matrix3D orthmat = pXtal->getXtalInfo().getOrthMat();
-    m_xform = Matrix4D(orthmat);
+    m_xform.matprod( Matrix4D(orthmat) );
   }
 
   {  
@@ -995,15 +1058,179 @@ void MapSurfRenderer::setVertexColor(DisplayContext *pdl, const Vector4D &pos)
   if (m_bGenSurfMode)
     return;
 
-  if (m_pColMapObj==NULL)
-    return;
-
   Vector4D vv(pos);
   vv.w() = 1.0;
   m_xform.xform4D(vv);
 
+  if (getColorMode()==MapRenderer::MAPREND_MOLFANC) {
+    ColorPtr pcol;
+    if (getColorMol(vv, pcol))
+      pdl->color(pcol);
+    // on failure, the solid color baked in render() remains in effect
+    return;
+  }
+
+  // MULTIGRAD mode
+  if (m_pColMapObj==NULL)
+    return;
+
   double par = m_pColMapObj->getValueAt(vv);
   ColorPtr pcol = m_pGrad->getColor(par);
   pdl->color(pcol);
+}
+
+bool MapSurfRenderer::getColorMol(const Vector4D &v, gfx::ColorPtr &rcol)
+{
+  if (m_pColMol.isnull())
+    return false;
+  if (m_pAtomPosMap==NULL)
+    return false;
+
+  int aid = m_pAtomPosMap->searchNearestAtom(v);
+  if (aid<0) {
+    MB_DPRINTLN("nearest atom is not found at (%f,%f,%f)", v.x(), v.y(), v.z());
+    return false;
+  }
+
+  MolAtomPtr pa = m_pColMol->getAtom(aid);
+  if (pa.isnull())
+    return false;
+
+  rcol = molstr::ColSchmHolder::getColor(pa);
+  return true;
+}
+
+void MapSurfRenderer::makeAtomPosMap()
+{
+  if (m_pColMol.isnull())
+    return;
+
+  if (m_pAtomPosMap!=NULL)
+    delete m_pAtomPosMap;
+
+  m_pAtomPosMap = MB_NEW molstr::AtomPosMap2();
+  m_pAtomPosMap->setTarget(m_pColMol);
+  m_pAtomPosMap->generate(m_pMolSel);
+}
+
+/// Resolve mol name, set m_nTgtMolID, listen the MolCoord events,
+/// and return the MolCoord object
+MolCoordPtr MapSurfRenderer::resolveMolIDImpl(const qlib::LString &name)
+{
+  qsys::ScenePtr pScene = getScene();
+  if (pScene.isnull())
+    return MolCoordPtr();
+
+  qsys::ObjectPtr pobj = pScene->getObjectByName(name);
+  MolCoordPtr pMol = MolCoordPtr(pobj, qlib::no_throw_tag());
+  if (pMol.isnull()) {
+    return pMol;
+  }
+
+  m_nTgtMolID = pMol->getUID();
+
+  // event handling: attach to the new object
+  pMol->addListener(this);
+
+  MB_DPRINTLN("MapSurfRend.resolveMolID> resolved (%s), OK.", name.c_str());
+  return pMol;
+}
+
+void MapSurfRenderer::setTgtObjName(const qlib::LString &name)
+{
+  // detach from oldobj
+  if (m_nTgtMolID!=qlib::invalid_uid) {
+    qsys::ObjectPtr pObj = SceneManager::getObjectS(m_nTgtMolID);
+    if (!pObj.isnull()) {
+      pObj->removeListener(this);
+    }
+    m_nTgtMolID = qlib::invalid_uid;
+  }
+
+  // get object by name
+  if (name.isEmpty())
+    return;
+
+  m_sTgtMolName = name;
+
+  if (getScene().isnull())
+    return; // Scene is not loaded (when called in the scene-file loading)
+
+  MolCoordPtr pMol = resolveMolIDImpl(name);
+  if (pMol.isnull()) {
+    LOG_DPRINTLN("MapSurfRend> \"%s\" is not a MolCoord object.", name.c_str());
+    return;
+  }
+
+  invalidateDisplayCache();
+}
+
+qlib::LString MapSurfRenderer::getTgtObjName() const
+{
+  if (m_nTgtMolID==qlib::invalid_uid)
+    return LString();
+  qsys::ObjectPtr pObj = SceneManager::getObjectS(m_nTgtMolID);
+  if (pObj.isnull())
+    return LString();
+  return pObj->getName();
+}
+
+void MapSurfRenderer::propChanged(qlib::LPropEvent &ev)
+{
+  LString name = ev.getName();
+  LString pname = ev.getParentName();
+
+  if (name.equals("coloring")||
+      pname.equals("coloring")||
+      pname.startsWith("coloring.")) {
+    invalidateDisplayCache();
+  }
+  else if (name.equals("target")||
+           name.equals("sel")) {
+    invalidateDisplayCache();
+  }
+
+  super_t::propChanged(ev);
+}
+
+void MapSurfRenderer::objectChanged(qsys::ObjectEvent &ev)
+{
+  if (getColorMode()==MapRenderer::MAPREND_MOLFANC &&
+      ev.getType()==qsys::ObjectEvent::OBE_PROPCHG) {
+    qlib::LPropEvent *pPE = ev.getPropEvent();
+    if (pPE) {
+      if (pPE->getName().equals("defaultcolor")||
+          pPE->getName().equals("coloring")||
+          pPE->getParentName().equals("coloring")||
+          pPE->getParentName().startsWith("coloring.")) {
+        invalidateDisplayCache();
+      }
+    }
+  }
+
+  super_t::objectChanged(ev);
+}
+
+void MapSurfRenderer::sceneChanged(qsys::SceneEvent &ev)
+{
+  if (ev.getType()==qsys::SceneEvent::SCE_SCENE_ONLOADED) {
+    // resolve target mol name, if required
+    if (!m_sTgtMolName.isEmpty())
+      resolveMolIDImpl(m_sTgtMolName);
+  }
+  else if (ev.getType()==qsys::SceneEvent::SCE_OBJ_ADDED &&
+           ev.getTarget()==getClientObjID()) {
+    // resolve target mol name, if required
+    if (!m_sTgtMolName.isEmpty())
+      resolveMolIDImpl(m_sTgtMolName);
+  }
+  else if (ev.getType()==qsys::SceneEvent::SCE_REND_ADDED &&
+           ev.getTarget()==getUID()) {
+    // resolve target mol name, if required
+    if (!m_sTgtMolName.isEmpty())
+      resolveMolIDImpl(m_sTgtMolName);
+  }
+
+  super_t::sceneChanged(ev);
 }
 

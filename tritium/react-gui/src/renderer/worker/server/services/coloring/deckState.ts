@@ -22,6 +22,8 @@ import {
     isElepotCapable,
     isMultiGradCapable,
     getColoringClassName,
+    hasColoringProp,
+    readMolFancTargetOrNull,
 } from './colorTargets';
 import type {
     GetRendererColoringStateArgs,
@@ -216,7 +218,7 @@ export function getRendererColoringState(
         return {
             ok: false, className: '', defaultColor: '',
             paintEntries: [], surfaceType: '', colormode: '',
-            multiGradCapable: false,
+            multiGradCapable: false, hasColoring: false,
         };
     }
     const rend = resolveColoringTarget(scene, args.targetKind, args.rendId);
@@ -224,7 +226,7 @@ export function getRendererColoringState(
         return {
             ok: false, className: '', defaultColor: '',
             paintEntries: [], surfaceType: '', colormode: '',
-            multiGradCapable: false,
+            multiGradCapable: false, hasColoring: false,
         };
     }
 
@@ -239,6 +241,7 @@ export function getRendererColoringState(
     const colormode = isElepotCapable(rend) || multiGradCapable
         ? safeReadString(rend, 'colormode')
         : '';
+    const hasColoring = hasColoringProp(rend);
 
     const result: GetRendererColoringStateResult = {
         ok: true,
@@ -248,7 +251,17 @@ export function getRendererColoringState(
         surfaceType,
         colormode,
         multiGradCapable,
+        hasColoring,
     };
+
+    // MOLFANC reference-molecule name; the colormode gate keeps unrelated
+    // `target` properties (e.g. DisoRenderer's target renderer name) out.
+    if (colormode !== '') {
+        const molFancTarget = readMolFancTargetOrNull(rend);
+        if (molFancTarget !== null) {
+            result.molFancTarget = molFancTarget;
+        }
+    }
 
     // Elepot deck takes priority over the coloring class on surface renderers
     // (mirrors UXP `_setupData` which checks colormode === "potential" before

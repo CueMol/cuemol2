@@ -28,6 +28,7 @@ import {
     setRendererColoring,
     setRendererDefaultColor,
     setColoringProp,
+    setRendererColoringTarget,
 } from './coloring/applyColoring';
 import {
     paintRendererSelection,
@@ -96,6 +97,8 @@ export type {
     ListElePotMapObjectsResult,
     SetRendererElepotPropArgs,
     SetRendererElepotPropResult,
+    SetRendererColoringTargetArgs,
+    SetRendererColoringTargetResult,
     MultiGradNodeDto,
     MultiGradWriteNode,
     MultiGradMapObjectEntry,
@@ -128,6 +131,7 @@ export const services = {
     setColoringProp,
     listElePotMapObjects,
     setRendererElepotProp,
+    setRendererColoringTarget,
     getMultiGradState,
     getMultiGradHistogram,
     setMultiGradNodes,

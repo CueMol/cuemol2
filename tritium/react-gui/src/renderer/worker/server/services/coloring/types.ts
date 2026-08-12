@@ -226,6 +226,18 @@ export interface GetRendererColoringStateResult {
     elepotParams?: ElepotParams;
     /** True iff the renderer exposes a `multi_grad` property. */
     multiGradCapable: boolean;
+    /**
+     * True iff the target exposes a `coloring` (ColoringScheme) property.
+     * Mirrors UXP `'coloring' in rend`; gates the Paint/CPK/Bfac/Rainbow/
+     * Reset dropdown items (map renderers without it offer only multigrad).
+     */
+    hasColoring: boolean;
+    /**
+     * MOLFANC reference-molecule name (renderer `target` property). Present
+     * only for renderers that expose both a colormode and the property
+     * (molsurf / dsurface / isosurf); drives the "Coloring mol" selector.
+     */
+    molFancTarget?: string;
 }
 
 export interface AddPaintEntryArgs {
@@ -332,6 +344,18 @@ export interface SetRendererElepotPropArgs {
 }
 
 export interface SetRendererElepotPropResult {
+    ok: boolean;
+}
+
+export interface SetRendererColoringTargetArgs {
+    sceneId: number;
+    rendId: number;
+    targetKind?: ColoringTargetKind;
+    /** MolCoord object name to write into the renderer's `target` property. */
+    targetName: string;
+}
+
+export interface SetRendererColoringTargetResult {
     ok: boolean;
 }
 

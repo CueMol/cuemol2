@@ -57,12 +57,14 @@ import type {
     PaintEntryDto,
     RainbowParams,
 } from '../../worker/server/services/rendererColoring.service'
+import type { SceneObjectEntry } from '../../worker/server/services/listSceneObjects.service'
 import { CueColorField } from '../../h3-kit/colorpicker/CueColorField'
 import { ColorPickerProvider } from '../../h3-kit/colorpicker/ColorPickerContext'
 import { MultiGradSection } from '../multigrad/MultiGradSection'
 import { usePaintCapableRenderers } from '../../hooks/usePaintCapableRenderers'
 import { useRendererColoringState } from '../../hooks/useRendererColoringState'
 import { useElePotMapObjects } from '../../hooks/useElePotMapObjects'
+import { useMolCoordObjects } from '../../hooks/useMolCoordObjects'
 import { PaintSelCell } from './PaintSelCell'
 import { fireService } from '../../utils/fireService'
 
@@ -683,9 +685,18 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
     const isElepotActive = isSurface && state?.colormode === 'potential'
     const multiGradCapable = state?.multiGradCapable === true
     const isMultiGradActive = multiGradCapable && state?.colormode === 'multigrad'
-    // Map renderers (contour / isosurf / gpu_*) carry a multi_grad gradient
-    // but no `coloring` property, so none of the coloring-class decks apply.
-    const isMapRenderer = multiGradCapable && !isSurface
+    // UXP `'coloring' in rend`: gates the Paint/CPK/Bfac/Rainbow/Reset items.
+    const hasColoring = state?.hasColoring === true
+    // Map renderers without a `coloring` property (contour / gpu_*) carry a
+    // multi_grad gradient only, so none of the coloring-class decks apply.
+    // The isosurf map renderer has `coloring` (MOLFANC) and is NOT in this
+    // group -- it routes through the coloring-class decks like molsurf.
+    const isMapRenderer = multiGradCapable && !hasColoring
+    // MOLFANC (molecule colormode): the renderer colors by its reference
+    // molecule (`target` property); show the "Coloring mol" selector.
+    const molFancTarget = state?.molFancTarget
+    const isMolFancActive =
+        molFancTarget !== undefined && state?.colormode === 'molecule'
 
     // Fetch the ElePotMap object list only while the Elepot deck is active;
     // outside of that the dropdown is hidden and the listener would burn
@@ -694,6 +705,14 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
         cm,
         sceneId,
         enabled: isElepotActive,
+    })
+
+    // Molecule list for the "Coloring mol" selector; fetched only while a
+    // molecule-colormode renderer is selected (same gating as Elepot).
+    const { objects: molObjects } = useMolCoordObjects({
+        cm,
+        sceneId,
+        enabled: isMolFancActive,
     })
 
     // -- Mutation handlers --
@@ -836,6 +855,22 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
         [cm, requireTarget],
     )
 
+    /**
+     * "Coloring mol" selector commit: write the MOLFANC reference-molecule
+     * name into the renderer's `target` property.
+     */
+    const onSetColoringTarget = useCallback(
+        (targetName: string) => {
+            const t = requireTarget()
+            if (!t || !cm) return
+            fireService(cm, 'setRendererColoringTarget', {
+                ...t,
+                targetName,
+            })
+        },
+        [cm, requireTarget],
+    )
+
     // -- Deck routing --
     const renderDeck = (): React.ReactNode => {
         if (sceneId === undefined || target === null) {
@@ -873,9 +908,10 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
                 </div>
             )
         }
-        // A map renderer outside multigrad mode has no editable coloring
-        // here (its solid color lives in the Density map panel), so guide
-        // the user to the mode switch instead of showing a wrong deck.
+        // A map renderer without a `coloring` property (contour / gpu_*) has
+        // no editable coloring outside multigrad mode (its solid color lives
+        // in the Density map panel), so guide the user to the mode switch
+        // instead of showing a wrong deck.
         if (isMapRenderer) {
             return (
                 <div className="color-deck-scroll">
@@ -900,44 +936,78 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
                 />
             )
         }
-        if (className === PAINT_DECK_CLASS) {
-            return (
-                <PaintTable
-                    entries={entries}
-                    selectedIdx={selectedRow}
-                    onSelect={setSelectedRow}
-                    onAdd={onAddRow}
-                    onRemove={onRemoveRow}
-                    onMoveUp={() => onMoveRow('up')}
-                    onMoveDown={() => onMoveRow('down')}
-                    onUpdate={onUpdateCell}
-                    sceneId={sceneId}
-                    molId={parentMolId}
-                />
-            )
+        // MOLFANC (molecule colormode): the coloring-class decks below color
+        // by the nearest atom of the reference molecule; show a selector for
+        // it above the deck. Same sentinel-option shape as the Elepot
+        // "Potential" selector so a stale / removed target stays visible.
+        const molFancSelector = isMolFancActive ? (
+            <Field label="Coloring mol" inline>
+                <SelectField
+                    value={molFancTarget}
+                    disabled={molObjects.length === 0}
+                    onChange={onSetColoringTarget}
+                >
+                    {molObjects.find((o) => o.name === molFancTarget) === undefined && (
+                        <option value={molFancTarget}>
+                            {molFancTarget || '(no molecule selected)'}
+                        </option>
+                    )}
+                    {molObjects.map((o: SceneObjectEntry) => (
+                        <option key={o.uid} value={o.name}>
+                            {o.name}
+                        </option>
+                    ))}
+                </SelectField>
+            </Field>
+        ) : null
+        const renderClassDeck = (): React.ReactNode => {
+            if (className === PAINT_DECK_CLASS) {
+                return (
+                    <PaintTable
+                        entries={entries}
+                        selectedIdx={selectedRow}
+                        onSelect={setSelectedRow}
+                        onAdd={onAddRow}
+                        onRemove={onRemoveRow}
+                        onMoveUp={() => onMoveRow('up')}
+                        onMoveDown={() => onMoveRow('down')}
+                        onUpdate={onUpdateCell}
+                        sceneId={sceneId}
+                        molId={parentMolId}
+                    />
+                )
+            }
+            if (SOLID_DECK_CLASSES.has(className)) {
+                return (
+                    <SolidDeck
+                        className={className}
+                        defaultColor={defaultColor}
+                        onCommit={onDefaultColorCommit}
+                    />
+                )
+            }
+            if (className === 'CPKColoring' && state.cpkColors) {
+                return <CpkDeck colors={state.cpkColors} onCommit={onSetColoringProp} />
+            }
+            if (className === 'RainbowColoring' && state.rainbowParams) {
+                return <RainbowDeck params={state.rainbowParams} onCommit={onSetColoringProp} />
+            }
+            if (className === 'BfacColoring' && state.bfacParams) {
+                return <BfacDeck params={state.bfacParams} onCommit={onSetColoringProp} />
+            }
+            return <DeferredDeck className={className} />
         }
-        if (SOLID_DECK_CLASSES.has(className)) {
-            return (
-                <SolidDeck
-                    className={className}
-                    defaultColor={defaultColor}
-                    onCommit={onDefaultColorCommit}
-                />
-            )
-        }
-        if (className === 'CPKColoring' && state.cpkColors) {
-            return <CpkDeck colors={state.cpkColors} onCommit={onSetColoringProp} />
-        }
-        if (className === 'RainbowColoring' && state.rainbowParams) {
-            return <RainbowDeck params={state.rainbowParams} onCommit={onSetColoringProp} />
-        }
-        if (className === 'BfacColoring' && state.bfacParams) {
-            return <BfacDeck params={state.bfacParams} onCommit={onSetColoringProp} />
-        }
-        return <DeferredDeck className={className} />
+        return (
+            <>
+                {molFancSelector}
+                {renderClassDeck()}
+            </>
+        )
     }
 
-    const dropdownDisabled = target === null
+    // Also disabled while the first coloring-state fetch is in flight, so
+    // the dropdown never opens with capability flags still unknown.
+    const dropdownDisabled = target === null || state === null
 
     return (
         <ColorPickerProvider cm={cm} sceneId={sceneId}>
@@ -963,19 +1033,24 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
                             content={
                                 <Menu>
                                     {COLORING_MODE_ITEMS
-                                        // UXP `setupColoringSelector` hides
-                                        // the Electrostatic-potential item on
-                                        // non-surface renderers; do the same
-                                        // here so the dropdown matches the
-                                        // active target's capabilities. Map
-                                        // renderers have no `coloring` prop,
-                                        // so only the Multi-gradient item
-                                        // applies to them.
+                                        // UXP `setupColoringSelector` gates:
+                                        // the Paint/CPK/Bfac/Rainbow/Solid/
+                                        // Reset items require a `coloring`
+                                        // property ('coloring' in rend), the
+                                        // Multi-gradient item a `multi_grad`
+                                        // property, and Electrostatic
+                                        // potential additionally a surface
+                                        // renderer. Map renderers without
+                                        // `coloring` (contour / gpu_*) offer
+                                        // only Multi-gradient; isosurf has
+                                        // `coloring` (MOLFANC) and offers
+                                        // the full paint set.
                                         .filter((it) =>
-                                            isMapRenderer
-                                                ? it.multigradOnly
-                                                : (!it.surfaceOnly || isSurface) &&
-                                                  (!it.multigradOnly || multiGradCapable))
+                                            it.multigradOnly
+                                                ? multiGradCapable
+                                                : it.surfaceOnly
+                                                  ? hasColoring && isSurface
+                                                  : hasColoring)
                                         .map((it, i) => (
                                             <MenuItem
                                                 key={i}

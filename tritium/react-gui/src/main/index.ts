@@ -9,6 +9,11 @@ import { isAppQuitting, isForceQuit, setAppQuitting } from './quitState'
 import { clearRenderHistory } from './renderHistory'
 import { sweepMovieOutputs } from './movieOutput'
 import { APP_PRODUCT_NAME } from '../shared/appInfo'
+import { installMainCrashHandlers } from './installMainCrashHandlers'
+
+// Before anything else, so a throw during the setup below is still reported
+// to the terminal and a closed stdout pipe cannot masquerade as a crash.
+installMainCrashHandlers()
 
 app.setName(APP_PRODUCT_NAME)
 

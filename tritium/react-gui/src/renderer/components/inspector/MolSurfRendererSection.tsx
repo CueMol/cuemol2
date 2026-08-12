@@ -29,14 +29,10 @@
  */
 
 import React from "react";
-import { NumRow, SelRow, MappedEnumRow, resetProps } from "./RendererCommonSection";
-import { useMolObjectNames } from "./MapRendererCommon";
-import { PropertyField, SelectField } from "../../h3-kit/form";
+import { NumRow, SelRow, MappedEnumRow } from "./RendererCommonSection";
+import { MolTargetRow, useMolObjectNames } from "./MapRendererCommon";
 import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
 import type { RendererPropSectionProps } from "./rendererPropSections";
-
-type SetFn = RendererPropSectionProps["onSet"];
-type ResetFn = RendererPropSectionProps["onReset"];
 
 /** Drawing-mode labels, shared with the dsurface surface section. */
 const DRAWMODE_LABELS: Record<string, string> = {
@@ -52,44 +48,6 @@ const COLORMODE_LABELS: Record<string, string> = {
   multigrad: "Multi-gradient",
 };
 
-interface TargetRowProps {
-  entry: GenericPropEntry;
-  sceneId: number | undefined;
-  onSet: SetFn;
-  onReset: ResetFn;
-}
-
-/**
- * "Selection mol" selector: lists the scene's molecule (MolCoord) objects by
- * name, committing the raw object-name string into `target` (the reference
- * molecule for the surface). The current value stays selectable even when the
- * fetch is empty or excludes it; an empty value shows a blank placeholder.
- */
-const TargetRow: React.FC<TargetRowProps> = ({ entry, sceneId, onSet, onReset }) => {
-  const names = useMolObjectNames(sceneId);
-  const current = String(entry.value ?? "");
-  return (
-    <PropertyField label="Selection mol" {...resetProps(entry, onReset)}>
-      <SelectField
-        value={current}
-        disabled={entry.readonly}
-        onChange={(v) => onSet(entry.key, entry.type, v)}
-      >
-        {current === "" && <option value="" />}
-        {/* Keep the current value selectable even if it is not in the list. */}
-        {current !== "" && !names.includes(current) && (
-          <option value={current}>{current}</option>
-        )}
-        {names.map((n) => (
-          <option key={n} value={n}>
-            {n}
-          </option>
-        ))}
-      </SelectField>
-    </PropertyField>
-  );
-};
-
 /**
  * "MolSurf" section: drawing mode, line/point size, the reference-molecule
  * target, the shown selection and the coloring mode.
@@ -101,6 +59,7 @@ export const MolSurfMainSection: React.FC<RendererPropSectionProps> = ({
   sceneId,
 }) => {
   const get = (key: string) => entries.find((e: GenericPropEntry) => e.key === key);
+  const molNames = useMolObjectNames(sceneId);
 
   const drawmode = get("drawmode");
   const width = get("width");
@@ -138,7 +97,13 @@ export const MolSurfMainSection: React.FC<RendererPropSectionProps> = ({
         />
       )}
       {target && (
-        <TargetRow entry={target} sceneId={sceneId} onSet={onSet} onReset={onReset} />
+        <MolTargetRow
+          entry={target}
+          label="Selection mol"
+          names={molNames}
+          onSet={onSet}
+          onReset={onReset}
+        />
       )}
       {showsel && (
         <SelRow

@@ -35,6 +35,17 @@ body {
   height: 100%;
 }
 
+/* --- Busy cursor --- */
+/* The CueMol worker is single-threaded: while a tracked RPC is in flight the
+   whole UI is stale, so signal it on the pointer as well as in the status bar.
+   The universal selector and !important are required because nearly every
+   interactive element declares its own cursor (buttons, tree rows, the render
+   image viewer's grab, the rect-select overlay's crosshair, ...). */
+:root[data-busy="true"],
+:root[data-busy="true"] * {
+  cursor: wait !important;
+}
+
 /* ─── Scrollbars ─── */
 ::-webkit-scrollbar {
   width: 8px;

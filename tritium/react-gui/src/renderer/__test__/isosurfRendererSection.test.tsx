@@ -9,8 +9,8 @@
  *     section (default-expanded);
  *   - the curated rows render (Center update / Drawing mode / Line-Point size /
  *     Max grid size / Back-face culling / Use periodic boundary / Limit display
- *     by / Target / Selection / Distance) and unrelated props (coloring) are
- *     ignored;
+ *     by / Target / Selection / Distance) and unrelated props (colormode /
+ *     target / sel -- owned by the Coloring panel -- and siglevel) are ignored;
  *   - "Drawing mode" writes `drawmode`; Line/Point size is disabled while the
  *     mode is "fill" and enabled for line / point (UXP updateDisabledState);
  *   - "Max grid size" commits a single-step `max_grids`; "Back-face culling"
@@ -129,7 +129,10 @@ describe('IsosurfMainSection', () => {
   it('renders the curated rows and ignores unrelated (coloring) props', () => {
     const entries = [
       ...isosurfEntries(),
-      entry({ key: 'colormode', type: 'enum', value: 'solid', enumdef: ['solid'] }),
+      // Coloring props are owned by the Coloring panel, not this section.
+      entry({ key: 'colormode', type: 'enum', value: 'solid', enumdef: ['molecule', 'multigrad', 'solid'] }),
+      entry({ key: 'target', type: 'string', value: '' }),
+      entry({ key: 'sel', type: 'object<MolSelection>', value: '' }),
       entry({ key: 'siglevel', type: 'real', value: 1.1 }),
     ]
     const { container, unmount } = mountTree(
