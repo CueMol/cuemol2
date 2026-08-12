@@ -50,6 +50,7 @@ import { CmdId } from "./commands/ids";
 import type { ViewCenterMark } from "../shared/ipcTypes";
 import { IPC } from "../shared/ipcChannels";
 import { useCueMolBusy } from "./hooks/useCueMolBusy";
+import { useBusyCursor } from "./hooks/useBusyCursor";
 import { useShowConfirmCloseTabDialog } from "./components/dialogs/ConfirmCloseTabDialogProvider";
 import { useRenderConfig } from "./contexts/RenderConfigContext";
 import { useWindowCloseHandler } from "./hooks/useWindowCloseHandler";
@@ -402,6 +403,10 @@ const App: React.FC = () => {
   });
 
   const cueMolBusy = useCueMolBusy();
+
+  // Same flag also drives a global wait cursor, so the busy state is visible
+  // wherever the pointer is -- not only in the status bar.
+  useBusyCursor(cueMolBusy);
 
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
