@@ -226,10 +226,20 @@ namespace xtal {
 
     void renderImpl(DisplayContext *pdl);
 
-    void marchCube(DisplayContext *pdl, int fx, int fy, int fz);
+    /// One emission record of the marching-cubes build: a vertex position
+    /// (cell-grid coordinates, pre-xform) and its (possibly flipped) normal.
+    struct MCVert {
+      Vector4D pos;
+      Vector4D norm;
+    };
+    typedef std::vector<MCVert> MCVertBuf;
 
-    //double getOffset(double fValue1, double fValue2, double fValueDesired);
-    // Vector4D getNormal(const Vector4D &rfNormal,bool,bool,bool);
+    /// Pure per-cell marching-cubes kernel. Appends the cell's emission
+    /// records to out in the exact serial order (gen-surf inside-cell caps
+    /// early-return; triangle corners; gen-surf crossing-cell caps last).
+    /// Only reads shared state, so distinct cells may run concurrently.
+    void marchCubeCell(int fx, int fy, int fz, const float values[8],
+                       const bool bary[8], bool bGenSurf, MCVertBuf &out) const;
 
     /// Coloring map object (for MULTIGRAD mode)
     qsys::ScalarObject *m_pColMapObj;
@@ -276,12 +286,7 @@ namespace xtal {
       
     }
 
-    Vector4D getGrdNorm(int ix, int iy, int iz);
-    Vector4D getGrdNorm2(int ix, int iy, int iz);
-
-    float m_values[8];
-    bool m_bary[8];
-    Vector4D m_norms[8];
+    Vector4D getGrdNorm2(int ix, int iy, int iz) const;
 
     void setupXformMat(DisplayContext *pdl);
     void setupXformMat();

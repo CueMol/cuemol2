@@ -458,22 +458,26 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
   /////////////////////
   // do marching cubes
 
-  int ncol = m_nActCol;
-  int nrow = m_nActRow;
-  int nsec = m_nActSec;
+  const int ncol = m_nActCol;
+  const int nrow = m_nActRow;
+  const int nsec = m_nActSec;
 
-  int i,j,k;
-  /*
-  for (i=0; i<ncol; i++)
-    for (j=0; j<nrow; j++)
-      for (k=0; k<nsec; k++) {
-        //if (i==1&&j==1)
-        //MB_DPRINTLN("i=%d, thr=%d", k, omp_get_thread_num());
-*/
+  const bool bGenSurf = (pdl==NULL);
 
-  for (i=0; i<ncol; i+=m_nBinFac)
-    for (j=0; j<nrow; j+=m_nBinFac)
-      for (k=0; k<nsec; k+=m_nBinFac) {
+  // Phase 1: run the per-cell marching-cubes kernel over the grid, slab by
+  // slab along the col axis, recording the emissions into per-slab buffers.
+  // The kernel only reads shared state, so the slabs are independent.
+  const int nslabs = (ncol + m_nBinFac - 1) / m_nBinFac;
+  std::vector<MCVertBuf> slabs(nslabs);
+
+  for (int si=0; si<nslabs; ++si) {
+    const int i = si * m_nBinFac;
+    MCVertBuf &out = slabs[si];
+    float values[8];
+    bool bary[8];
+
+    for (int j=0; j<nrow; j+=m_nBinFac)
+      for (int k=0; k<nsec; k+=m_nBinFac) {
 
         int ix = i+m_nStCol - pMap->getStartCol();
         int iy = j+m_nStRow - pMap->getStartRow();
@@ -493,32 +497,42 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
           const int ixx = ix + (mct::cubeVertexOffset[ii][0]) * m_nBinFac;
           const int iyy = iy + (mct::cubeVertexOffset[ii][1]) * m_nBinFac;
           const int izz = iz + (mct::cubeVertexOffset[ii][2]) * m_nBinFac;
-          m_values[ii] = getDen(ixx, iyy, izz);
-          
+          values[ii] = getDen(ixx, iyy, izz);
+
           // check mol boundary
-          m_bary[ii] = inMolBndry(pMap, ixx, iyy, izz);
-          if (m_bary[ii])
+          bary[ii] = inMolBndry(pMap, ixx, iyy, izz);
+          if (bary[ii])
             bin = true;
         }
 
         if (!bin)
           continue;
 
-        marchCube(pdl, i, j, k);
-        
-        if (i==0) {
-        }
-        /*
-        pdl->startLines();
-        pdl->vertex(i,j,k);
-        pdl->vertex(i+1,j,k);
-        pdl->vertex(i,j,k);
-        pdl->vertex(i,j+1,k);
-        pdl->vertex(i,j,k);
-        pdl->vertex(i,j,k+1);
-        pdl->end();*/
+        marchCubeCell(i, j, k, values, bary, bGenSurf, out);
       }
-        
+  }
+
+  // Phase 2 (serial, slab order): replay the records, evaluating vertex
+  // colors here because the coloring schemes (incl. script-implemented
+  // ones) are not safe to call concurrently.
+  for (int si=0; si<nslabs; ++si) {
+    const MCVertBuf &buf = slabs[si];
+    for (MCVertBuf::const_iterator it = buf.begin(); it != buf.end(); ++it) {
+      if (bGenSurf) {
+        addMSVert(it->pos, it->norm);
+      }
+      else {
+        if (getColorMode()!=MapRenderer::MAPREND_SIMPLE)
+          setVertexColor(pdl, it->pos);
+#ifdef SHOW_NORMAL
+        m_tmpv.push_back(it->pos);
+        m_tmpv.push_back(it->pos + it->norm);
+#endif
+        pdl->normal(it->norm);
+        pdl->vertex(it->pos);
+      }
+    }
+  }
 
   // cleanup for MOLFANC mode
   if (!m_pColMol.isnull()) {
@@ -536,24 +550,7 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
   m_pGrad = NULL;
 }
 
-/*
-Vector4D MapSurfRenderer::getGrdNorm(int x, int y, int z)
-{
-  Vector4D rval;
-
-  int ix = x+ (m_nStCol - m_pCMap->getStartCol());
-  int iy = y+ (m_nStRow - m_pCMap->getStartRow());
-  int iz = z+ (m_nStSec - m_pCMap->getStartSec());
-
-  //const int n = m_nBinFac;
-  const int n = 1;
-  rval.x() = getDen(ix-n, iy,   iz  ) - getDen(ix+n, iy,   iz );
-  rval.y() = getDen(ix,   iy-n, iz  ) - getDen(ix,   iy+n, iz  );
-  rval.z() = getDen(ix,   iy,   iz-n) - getDen(ix,   iy,   iz+n);
-  return rval;
-}*/
-
-Vector4D MapSurfRenderer::getGrdNorm2(int ix, int iy, int iz)
+Vector4D MapSurfRenderer::getGrdNorm2(int ix, int iy, int iz) const
 {
   Vector4D rval;
 
@@ -579,17 +576,20 @@ inline int getVertFlag4(int iVertFlag, const int *iv)
 
 //////////////////////////////////////////
 
-void MapSurfRenderer::marchCube(DisplayContext *pdl,
-                                int fx, int fy, int fz)
+void MapSurfRenderer::marchCubeCell(int fx, int fy, int fz,
+                                    const float values[8],
+                                    const bool bary[8],
+                                    bool bGenSurf, MCVertBuf &out) const
 {
-  int iCorner, iVertex, iVertexTest, iEdge, iTriangle, iFlagIndex, iEdgeFlags;
+  int iCorner, iVertex, iEdge, iTriangle, iFlagIndex, iEdgeFlags;
 
   Vector4D asEdgeVertex[12];
   Vector4D asEdgeNorm[12];
+  Vector4D norms[8];
   bool edgeBinFlags[12];
 
   // Find which vertices are inside (0) of the surface and which are outside (1)
-  iFlagIndex = gfx::mc::cornerFlags(m_values, m_dLevel);
+  iFlagIndex = gfx::mc::cornerFlags(values, m_dLevel);
 
   // If the cube is entirely inside or outside of the surface, then there will be no intersections
 
@@ -613,7 +613,7 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
   if (m_nActSec<=fz+m_nBinFac)
     border_flag |= 1<<5;
 
-  if(iFlagIndex == 0 && pdl==NULL) {
+  if(iFlagIndex == 0 && bGenSurf) {
     // Fill the border of the extent
     // inside of the iso-surface
     int nx, ny, nz, dx, dy, dz, dx2, dy2, dz2;
@@ -635,7 +635,8 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
           dx2 =  border_plane[k][(3+0-i/2)%3];
           dy2 =  border_plane[k][(3+1-i/2)%3];
           dz2 =  border_plane[k][(3+2-i/2)%3];
-          addMSVert(fx+dx+dx2, fy+dy+dy2, fz+dz+dz2, nx, ny, nz);
+          out.push_back(MCVert{Vector4D(fx+dx+dx2, fy+dy+dy2, fz+dz+dz2),
+                               Vector4D(nx, ny, nz)});
         }
       }
     }
@@ -647,7 +648,7 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
 
   {
     for (int ii=0; ii<8; ii++) {
-      m_norms[ii].w() = -1.0;
+      norms[ii].w() = -1.0;
     }
   }
   ScalarObject *pMap = m_pCMap;
@@ -662,14 +663,14 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
     if(iEdgeFlags & (1<<iEdge)) {
       const int ec0 = mct::cubeEdgeConnection[iEdge][0];
       const int ec1 = mct::cubeEdgeConnection[iEdge][1];
-      if (m_bary[ec0]==false || m_bary[ec1]==false) {
+      if (bary[ec0]==false || bary[ec1]==false) {
         edgeBinFlags[iEdge] = false;
         continue;
       }
       edgeBinFlags[iEdge] = true;
 
-      const double fOffset = gfx::mc::edgeOffset(m_values[ ec0 ],
-                                                 m_values[ ec1 ],
+      const double fOffset = gfx::mc::edgeOffset(values[ ec0 ],
+                                                 values[ ec1 ],
                                                  float(m_dLevel));
 
       asEdgeVertex[iEdge].x() =
@@ -684,23 +685,23 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
       asEdgeVertex[iEdge].w() = 0;
 
       Vector4D nv0,nv1;
-      if (m_norms[ ec0 ].w()<0.0) {
+      if (norms[ ec0 ].w()<0.0) {
         const int ixx = ix + (mct::cubeVertexOffset[ec0][0]) * m_nBinFac;
         const int iyy = iy + (mct::cubeVertexOffset[ec0][1]) * m_nBinFac;
         const int izz = iz + (mct::cubeVertexOffset[ec0][2]) * m_nBinFac;
-        nv0 = m_norms[ec0] = getGrdNorm2(ixx, iyy, izz);
+        nv0 = norms[ec0] = getGrdNorm2(ixx, iyy, izz);
       }
       else {
-        nv0 = m_norms[ec0];
+        nv0 = norms[ec0];
       }
-      if (m_norms[ ec1 ].w()<0.0) {
+      if (norms[ ec1 ].w()<0.0) {
         const int ixx = ix + (mct::cubeVertexOffset[ec1][0]) * m_nBinFac;
         const int iyy = iy + (mct::cubeVertexOffset[ec1][1]) * m_nBinFac;
         const int izz = iz + (mct::cubeVertexOffset[ec1][2]) * m_nBinFac;
-        nv1 = m_norms[ec1] = getGrdNorm2(ixx, iyy, izz);
+        nv1 = norms[ec1] = getGrdNorm2(ixx, iyy, izz);
       }
       else {
-        nv1 = m_norms[ec1];
+        nv1 = norms[ec1];
       }
       asEdgeNorm[iEdge] = (nv0.scale(1.0-fOffset) + nv1.scale(fOffset)).normalize();
     }
@@ -724,39 +725,13 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
 
     for(iCorner = 0; iCorner < 3; iCorner++) {
       iVertex = mct::triangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
-      
-      if (getColorMode()!=MapRenderer::MAPREND_SIMPLE)
-        setVertexColor(pdl, asEdgeVertex[iVertex]);
 
-      if (m_dLevel<0) {
-        if (pdl!=NULL) {
-          pdl->normal(-asEdgeNorm[iVertex]);
-          pdl->vertex(asEdgeVertex[iVertex]);
-        }
-        else {
-          addMSVert(asEdgeVertex[iVertex], -asEdgeNorm[iVertex]);
-        }
-#ifdef SHOW_NORMAL
-        m_tmpv.push_back(asEdgeVertex[iVertex]);
-        m_tmpv.push_back(asEdgeVertex[iVertex]-asEdgeNorm[iVertex]);
-#endif
-
-      }
-      else {
-        if (pdl!=NULL) {
-          pdl->normal(asEdgeNorm[iVertex]);
-          pdl->vertex(asEdgeVertex[iVertex]);
-        }
-        else {
-          addMSVert(asEdgeVertex[iVertex], asEdgeNorm[iVertex]);
-        }
-        
-#ifdef SHOW_NORMAL
-        m_tmpv.push_back(asEdgeVertex[iVertex]);
-        m_tmpv.push_back(asEdgeVertex[iVertex]+asEdgeNorm[iVertex]);
-#endif
-      }
-
+      // The negative-level normal flip is applied at record time; phase 2
+      // replays the records verbatim.
+      if (m_dLevel<0)
+        out.push_back(MCVert{asEdgeVertex[iVertex], -asEdgeNorm[iVertex]});
+      else
+        out.push_back(MCVert{asEdgeVertex[iVertex], asEdgeNorm[iVertex]});
 
     } // for(iCorner = 0; iCorner < 3; iCorner++)
 
@@ -764,7 +739,7 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
 
 
   // Fill the border of the extent
-  if(pdl==NULL) {
+  if(bGenSurf) {
     Vector4D v[8+12];
     for (int i=0; i<8; ++i) {
       v[i].x() = double(fx) + mct::cubeVertexOffset[i][0] * m_nBinFac;
@@ -784,11 +759,11 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
         
         const int *iverts = bdr_verts[iBorder]; //{0, 4, 7, 3};
         int ivf4 = getVertFlag4(iFlagIndex, iverts);
-        
+
         for (int j=0; j<3*3; ++j) {
-          int ix = bdr_tris[ivf4][j];
-          if (ix<0) break;
-          addMSVert(v[iverts[ix]], norm);
+          int iv = bdr_tris[ivf4][j];
+          if (iv<0) break;
+          out.push_back(MCVert{v[iverts[iv]], norm});
         }
       }
     }
