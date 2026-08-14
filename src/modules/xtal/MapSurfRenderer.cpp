@@ -13,6 +13,9 @@
 #include <gfx/DisplayContext.hpp>
 #include <gfx/MarchingCubes.hpp>
 #include <gfx/Mesh.hpp>
+#include <qlib/parallel.hpp>
+
+#include <chrono>
 
 #include <qsys/ScrEventManager.hpp>
 #include <qsys/ViewEvent.hpp>
@@ -466,12 +469,17 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
 
   // Phase 1: run the per-cell marching-cubes kernel over the grid, slab by
   // slab along the col axis, recording the emissions into per-slab buffers.
-  // The kernel only reads shared state, so the slabs are independent.
+  // The kernel only reads shared state, so the slabs run concurrently on
+  // oneTBB; replaying the buffers in slab order (phase 2) reproduces the
+  // serial emission order exactly, independent of the thread count.
   const int nslabs = (ncol + m_nBinFac - 1) / m_nBinFac;
   std::vector<MCVertBuf> slabs(nslabs);
 
-  for (int si=0; si<nslabs; ++si) {
-    const int i = si * m_nBinFac;
+  const std::chrono::steady_clock::time_point t0 =
+      std::chrono::steady_clock::now();
+
+  qlib::parallel_for(0, (size_t) nslabs, [&](size_t si) {
+    const int i = (int) si * m_nBinFac;
     MCVertBuf &out = slabs[si];
     float values[8];
     bool bary[8];
@@ -510,6 +518,20 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
 
         marchCubeCell(i, j, k, values, bary, bGenSurf, out);
       }
+  });
+
+  {
+    const double build_ms = std::chrono::duration<double, std::milli>(
+                                std::chrono::steady_clock::now() - t0)
+                                .count();
+    size_t nrec = 0;
+    for (int si=0; si<nslabs; ++si)
+      nrec += slabs[si].size();
+    MB_DPRINTLN("MapSurfRend> MC build %.2f ms "
+                "(backend=%s, threads=%d, %d slabs, %d verts)",
+                build_ms,
+                qlib::parallel_enabled() ? "oneTBB" : "serial",
+                qlib::parallel_max_concurrency(), nslabs, (int) nrec);
   }
 
   // Phase 2 (serial, slab order): replay the records, evaluating vertex
