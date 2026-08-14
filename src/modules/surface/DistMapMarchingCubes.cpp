@@ -7,7 +7,7 @@
 
 #include "DistMapMarchingCubes.hpp"
 
-#include <gfx/MarchingCubesTables.hpp>
+#include <gfx/MarchingCubes.hpp>
 #include <qlib/parallel.hpp>
 
 #include <unordered_map>
@@ -92,10 +92,7 @@ MSVert DistMapMarchingCubes::makeVertex(const int g0[3], const int g1[3]) const
 {
   const float v0 = valueAt(g0[0], g0[1], g0[2]);
   const float v1 = valueAt(g1[0], g1[1], g1[2]);
-  float t = 0.5f;
-  const float d = v1 - v0;
-  if (d != 0.0f)
-    t = (m_level - v0) / d;
+  const float t = gfx::mc::edgeOffset(v0, v1, m_level);
 
   const Vector4D p0((double) g0[0], (double) g0[1], (double) g0[2]);
   const Vector4D p1((double) g1[0], (double) g1[1], (double) g1[2]);
@@ -142,21 +139,19 @@ void DistMapMarchingCubes::build()
     for (int j = 0; j < m_ny - 1; ++j) {
       for (int k = 0; k < m_nz - 1; ++k) {
 
-        int flag = 0;
+        float cv[8];
         for (int c = 0; c < 8; ++c) {
-          const float cval =
-              valueAt(i + gfx::mctables::cubeVertexOffset[c][0],
-                      j + gfx::mctables::cubeVertexOffset[c][1],
-                      k + gfx::mctables::cubeVertexOffset[c][2]);
-          if (cval <= m_level)
-            flag |= (1 << c);
+          cv[c] = valueAt(i + gfx::mctables::cubeVertexOffset[c][0],
+                          j + gfx::mctables::cubeVertexOffset[c][1],
+                          k + gfx::mctables::cubeVertexOffset[c][2]);
         }
+        const int flag = gfx::mc::cornerFlags(cv, m_level);
 
         // Entirely inside or outside: no surface crossing.
         if (flag == 0 || flag == 255)
           continue;
 
-        const int eflags = gfx::mctables::cubeEdgeFlags[flag];
+        const int eflags = gfx::mc::edgeFlags(flag);
         if (eflags == 0)
           continue;
 
@@ -165,12 +160,11 @@ void DistMapMarchingCubes::build()
             ekey[e] = edgeKey(i, j, k, e);
         }
 
-        const int *tri = gfx::mctables::triangleConnectionTable[flag];
-        for (int t = 0; tri[t] != -1; t += 3) {
-          keys.push_back(ekey[tri[t]]);
-          keys.push_back(ekey[tri[t + 1]]);
-          keys.push_back(ekey[tri[t + 2]]);
-        }
+        gfx::mc::forEachTriangle(flag, [&keys, &ekey](int e0, int e1, int e2) {
+          keys.push_back(ekey[e0]);
+          keys.push_back(ekey[e1]);
+          keys.push_back(ekey[e2]);
+        });
       }
     }
   });

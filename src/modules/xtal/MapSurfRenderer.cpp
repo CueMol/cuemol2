@@ -11,6 +11,7 @@
 #include "MapSurfRenderer_consts.hpp"
 #include "DensityMap.hpp"
 #include <gfx/DisplayContext.hpp>
+#include <gfx/MarchingCubes.hpp>
 #include <gfx/Mesh.hpp>
 
 #include <qsys/ScrEventManager.hpp>
@@ -24,6 +25,7 @@
 #include <modules/molstr/MolCoord.hpp>
 
 using namespace xtal;
+namespace mct = gfx::mctables;
 using qlib::Matrix4D;
 using qlib::Matrix3D;
 using qsys::ScrEventManager;
@@ -488,9 +490,9 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
         bool bin = false;
         int ii;
         for (ii=0; ii<8; ii++) {
-          const int ixx = ix + (vtxoffs[ii][0]) * m_nBinFac;
-          const int iyy = iy + (vtxoffs[ii][1]) * m_nBinFac;
-          const int izz = iz + (vtxoffs[ii][2]) * m_nBinFac;
+          const int ixx = ix + (mct::cubeVertexOffset[ii][0]) * m_nBinFac;
+          const int iyy = iy + (mct::cubeVertexOffset[ii][1]) * m_nBinFac;
+          const int izz = iz + (mct::cubeVertexOffset[ii][2]) * m_nBinFac;
           m_values[ii] = getDen(ixx, iyy, izz);
           
           // check mol boundary
@@ -532,20 +534,6 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
 
   m_pColMapObj = NULL;
   m_pGrad = NULL;
-}
-
-//fGetOffset finds the approximate point of intersection of the surface
-// between two points with the values fValue1 and fValue2
-namespace {
-  inline float getOffset(float fValue1, float fValue2, float fValueDesired)
-  {
-    float fDelta = fValue2 - fValue1;
-    
-    if(fDelta == 0.0f) {
-      return 0.5f;
-    }
-    return (fValueDesired - fValue1)/fDelta;
-  }
 }
 
 /*
@@ -601,11 +589,7 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
   bool edgeBinFlags[12];
 
   // Find which vertices are inside (0) of the surface and which are outside (1)
-  iFlagIndex = 0;
-  for(iVertexTest = 0; iVertexTest < 8; iVertexTest++) {
-    if(m_values[iVertexTest] <= m_dLevel) 
-      iFlagIndex |= 1<<iVertexTest;
-  }
+  iFlagIndex = gfx::mc::cornerFlags(m_values, m_dLevel);
 
   // If the cube is entirely inside or outside of the surface, then there will be no intersections
 
@@ -659,7 +643,7 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
   }
 
   // Find which edges are intersected by the surface
-  iEdgeFlags = aiCubeEdgeFlags[iFlagIndex];
+  iEdgeFlags = gfx::mc::edgeFlags(iFlagIndex);
 
   {
     for (int ii=0; ii<8; ii++) {
@@ -676,42 +660,43 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
   for(iEdge = 0; iEdge < 12; iEdge++) {
     //if there is an intersection on this edge
     if(iEdgeFlags & (1<<iEdge)) {
-      const int ec0 = a2iEdgeConnection[iEdge][0];
-      const int ec1 = a2iEdgeConnection[iEdge][1];
+      const int ec0 = mct::cubeEdgeConnection[iEdge][0];
+      const int ec1 = mct::cubeEdgeConnection[iEdge][1];
       if (m_bary[ec0]==false || m_bary[ec1]==false) {
         edgeBinFlags[iEdge] = false;
         continue;
       }
       edgeBinFlags[iEdge] = true;
-      
-      const double fOffset = getOffset(m_values[ ec0 ], 
-                                       m_values[ ec1 ], m_dLevel);
-      
+
+      const double fOffset = gfx::mc::edgeOffset(m_values[ ec0 ],
+                                                 m_values[ ec1 ],
+                                                 float(m_dLevel));
+
       asEdgeVertex[iEdge].x() =
         double(fx) +
-          (a2fVertexOffset[ec0][0] + fOffset*a2fEdgeDirection[iEdge][0]) * m_nBinFac;
+          (mct::cubeVertexOffset[ec0][0] + fOffset*mct::cubeEdgeDirection[iEdge][0]) * m_nBinFac;
       asEdgeVertex[iEdge].y() =
         double(fy) +
-          (a2fVertexOffset[ec0][1] + fOffset*a2fEdgeDirection[iEdge][1]) * m_nBinFac;
+          (mct::cubeVertexOffset[ec0][1] + fOffset*mct::cubeEdgeDirection[iEdge][1]) * m_nBinFac;
       asEdgeVertex[iEdge].z() =
         double(fz) +
-          (a2fVertexOffset[ec0][2] + fOffset*a2fEdgeDirection[iEdge][2]) * m_nBinFac;
+          (mct::cubeVertexOffset[ec0][2] + fOffset*mct::cubeEdgeDirection[iEdge][2]) * m_nBinFac;
       asEdgeVertex[iEdge].w() = 0;
-      
+
       Vector4D nv0,nv1;
       if (m_norms[ ec0 ].w()<0.0) {
-        const int ixx = ix + (vtxoffs[ec0][0]) * m_nBinFac;
-        const int iyy = iy + (vtxoffs[ec0][1]) * m_nBinFac;
-        const int izz = iz + (vtxoffs[ec0][2]) * m_nBinFac;
+        const int ixx = ix + (mct::cubeVertexOffset[ec0][0]) * m_nBinFac;
+        const int iyy = iy + (mct::cubeVertexOffset[ec0][1]) * m_nBinFac;
+        const int izz = iz + (mct::cubeVertexOffset[ec0][2]) * m_nBinFac;
         nv0 = m_norms[ec0] = getGrdNorm2(ixx, iyy, izz);
       }
       else {
         nv0 = m_norms[ec0];
       }
       if (m_norms[ ec1 ].w()<0.0) {
-        const int ixx = ix + (vtxoffs[ec1][0]) * m_nBinFac;
-        const int iyy = iy + (vtxoffs[ec1][1]) * m_nBinFac;
-        const int izz = iz + (vtxoffs[ec1][2]) * m_nBinFac;
+        const int ixx = ix + (mct::cubeVertexOffset[ec1][0]) * m_nBinFac;
+        const int iyy = iy + (mct::cubeVertexOffset[ec1][1]) * m_nBinFac;
+        const int izz = iz + (mct::cubeVertexOffset[ec1][2]) * m_nBinFac;
         nv1 = m_norms[ec1] = getGrdNorm2(ixx, iyy, izz);
       }
       else {
@@ -723,12 +708,12 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
 
   // Draw the triangles that were found.  There can be up to five per cube
   for(iTriangle = 0; iTriangle < 5; iTriangle++) {
-    if(a2iTriangleConnectionTable[iFlagIndex][3*iTriangle] < 0)
+    if(mct::triangleConnectionTable[iFlagIndex][3*iTriangle] < 0)
       break;
-    
+
     bool bNotDraw = false;
     for(iCorner = 0; iCorner < 3; iCorner++) {
-      iVertex = a2iTriangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
+      iVertex = mct::triangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
       if (!edgeBinFlags[iVertex]) {
         bNotDraw = true;
         break;
@@ -738,7 +723,7 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
       continue;
 
     for(iCorner = 0; iCorner < 3; iCorner++) {
-      iVertex = a2iTriangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
+      iVertex = mct::triangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
       
       if (getColorMode()!=MapRenderer::MAPREND_SIMPLE)
         setVertexColor(pdl, asEdgeVertex[iVertex]);
@@ -782,9 +767,9 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
   if(pdl==NULL) {
     Vector4D v[8+12];
     for (int i=0; i<8; ++i) {
-      v[i].x() = double(fx) + a2fVertexOffset[i][0] * m_nBinFac;
-      v[i].y() = double(fy) + a2fVertexOffset[i][1] * m_nBinFac;
-      v[i].z() = double(fz) + a2fVertexOffset[i][2] * m_nBinFac;
+      v[i].x() = double(fx) + mct::cubeVertexOffset[i][0] * m_nBinFac;
+      v[i].y() = double(fy) + mct::cubeVertexOffset[i][1] * m_nBinFac;
+      v[i].z() = double(fz) + mct::cubeVertexOffset[i][2] * m_nBinFac;
       v[i].w() = 0;
     }
     for (int i=0; i<12; ++i) {
@@ -798,8 +783,6 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
         Vector4D norm(border_normal[iBorder][0], border_normal[iBorder][1], border_normal[iBorder][2]);
         
         const int *iverts = bdr_verts[iBorder]; //{0, 4, 7, 3};
-        const int *iedges = bdr_edges[iBorder]; //[4] = {8, 7, 11, 3};
-        
         int ivf4 = getVertFlag4(iFlagIndex, iverts);
         
         for (int j=0; j<3*3; ++j) {
@@ -807,153 +790,6 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
           if (ix<0) break;
           addMSVert(v[iverts[ix]], norm);
         }
-        
-
-            /*
-          switch (ivf4) {
-            // 1-tri case
-          case 15-1:
-            addMSVert(v[iverts[0]], norm);
-            addMSVert(v[iverts[0+4]], norm);
-            addMSVert(v[iverts[3+4]], norm);
-            break;
-          case 15-2:
-            addMSVert(v[iverts[1]], norm);
-            addMSVert(v[iverts[1+4]], norm);
-            addMSVert(v[iverts[0+4]], norm);
-            break;
-          case 15-4:
-            addMSVert(v[iverts[2]], norm);
-            addMSVert(v[iverts[2+4]], norm);
-            addMSVert(v[iverts[1+4]], norm);
-            break;
-          case 15-8:
-            addMSVert(v[iverts[3]], norm);
-            addMSVert(v[iverts[3+4]], norm);
-            addMSVert(v[iverts[2+4]], norm);
-            break;
-
-            // 2-tri case
-          case 12: // 1100
-            addMSVert(v[iverts[0]], norm);
-            addMSVert(v[iverts[1]], norm);
-            addMSVert(asEdgeVertex[iedges[3]], norm);
-            
-            addMSVert(v[iverts[1]], norm);
-            addMSVert(asEdgeVertex[iedges[1]], norm);
-            addMSVert(asEdgeVertex[iedges[3]], norm);
-            break;
-            
-          case 3: // 0011
-            addMSVert(v[iverts[2]], norm);
-            addMSVert(v[iverts[3]], norm);
-            addMSVert(asEdgeVertex[iedges[1]], norm);
-            
-            addMSVert(v[iverts[3]], norm);
-            addMSVert(asEdgeVertex[iedges[3]], norm);
-            addMSVert(asEdgeVertex[iedges[1]], norm);
-            break;
-
-          case 6: // 0110
-            addMSVert(v[iverts[3]], norm);
-            addMSVert(v[iverts[0]], norm);
-            addMSVert(asEdgeVertex[iedges[2]], norm);
-            
-            addMSVert(v[iverts[0]], norm);
-            addMSVert(asEdgeVertex[iedges[0]], norm);
-            addMSVert(asEdgeVertex[iedges[2]], norm);
-            break;
-
-          case 9: // 1001
-            addMSVert(v[iverts[1]], norm);
-            addMSVert(v[iverts[2]], norm);
-            addMSVert(asEdgeVertex[iedges[0]], norm);
-            
-            addMSVert(v[iverts[2]], norm);
-            addMSVert(asEdgeVertex[iedges[2]], norm);
-            addMSVert(asEdgeVertex[iedges[0]], norm);
-            break;
-
-            
-          case 5:
-          case 10:
-            LOG_DPRINTLN("XXX");
-            break;
-            
-          case 0:
-            addMSVert(v[iverts[0]], norm);
-            addMSVert(v[iverts[1]], norm);
-            addMSVert(v[iverts[3]], norm);
-
-            addMSVert(v[iverts[1]], norm);
-            addMSVert(v[iverts[2]], norm);
-            addMSVert(v[iverts[3]], norm);
-            break;
-
-          case 15:
-            break;
-            
-
-            // 3-tri case
-          case 1:
-            addMSVert(v[iverts[2]], norm);
-            addMSVert(asEdgeVertex[iedges[3]], norm);
-            addMSVert(asEdgeVertex[iedges[0]], norm);
-
-            addMSVert(v[iverts[2]], norm);
-            addMSVert(asEdgeVertex[iedges[0]], norm);
-            addMSVert(v[iverts[1]], norm);
-
-            addMSVert(v[iverts[2]], norm);
-            addMSVert(v[iverts[3]], norm);
-            addMSVert(asEdgeVertex[iedges[3]], norm);
-            break;
-
-          case 2:
-            addMSVert(v[iverts[3]], norm);
-            addMSVert(asEdgeVertex[iedges[0]], norm);
-            addMSVert(asEdgeVertex[iedges[1]], norm);
-
-            addMSVert(v[iverts[3]], norm);
-            addMSVert(asEdgeVertex[iedges[1]], norm);
-            addMSVert(v[iverts[2]], norm);
-
-            addMSVert(v[iverts[3]], norm);
-            addMSVert(v[iverts[0]], norm);
-            addMSVert(asEdgeVertex[iedges[0]], norm);
-            break;
-
-          case 4:
-            addMSVert(v[iverts[0]], norm);
-            addMSVert(asEdgeVertex[iedges[1]], norm);
-            addMSVert(asEdgeVertex[iedges[2]], norm);
-            
-            addMSVert(v[iverts[0]], norm);
-            addMSVert(asEdgeVertex[iedges[2]], norm);
-            addMSVert(v[iverts[3]], norm);
-
-            addMSVert(v[iverts[0]], norm);
-            addMSVert(v[iverts[1]], norm);
-            addMSVert(asEdgeVertex[iedges[1]], norm);
-            break;
-
-          case 8:
-            addMSVert(v[iverts[1]], norm);
-            addMSVert(asEdgeVertex[iedges[2]], norm);
-            addMSVert(asEdgeVertex[iedges[3]], norm);
-            
-            addMSVert(v[iverts[1]], norm);
-            addMSVert(asEdgeVertex[iedges[3]], norm);
-            addMSVert(v[iverts[0]], norm);
-
-            addMSVert(v[iverts[1]], norm);
-            addMSVert(v[iverts[2]], norm);
-            addMSVert(asEdgeVertex[iedges[2]], norm);
-            break;
-          }
-             */
-
-
       }
     }
     return;
