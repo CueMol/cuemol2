@@ -1,0 +1,297 @@
+// -*-Mode: C++;-*-
+//
+// Degrade-detection pins for the MapSurfRenderer marching-cubes path.
+//
+// These tests pin the observable output of generateSurfObj() (vertex/face
+// counts, geometry aggregates, and an order-sensitive checksum) on a fixed
+// synthetic density map, so that the MC kernel unification and the TBB
+// two-phase restructuring can be verified to preserve the output exactly,
+// including the vertex emission order.
+//
+// The golden values were captured from the serial pre-refactor build; the
+// same values must hold for the parallel build (any thread count), since
+// the parallel driver is required to reproduce the serial emission order.
+//
+
+#include <gtest/gtest.h>
+#include <common.h>
+#include <qlib/LString.hpp>
+#include <qlib/Vector4D.hpp>
+#include <qsys/Scene.hpp>
+#include <qsys/SceneManager.hpp>
+#include <cmath>
+#include <vector>
+#include "molstr/ElemSym.hpp"
+#include "molstr/MolAtom.hpp"
+#include "molstr/MolCoord.hpp"
+#include "molstr/ResidIndex.hpp"
+#include "surface/MolSurfObj.hpp"
+#include "xtal/DensityMap.hpp"
+#include "xtal/MapSurfRenderer.hpp"
+
+using qlib::LString;
+using qlib::Vector4D;
+
+namespace {
+
+// Set to 1 to print the actual values for (re-)capturing the goldens.
+#define MAPSURF_PIN_CAPTURE 0
+
+/// Aggregate summary of a generated surface, comparable against goldens.
+struct SurfSummary {
+    int nverts;
+    int nfaces;
+    Vector4D vmin, vmax;
+    Vector4D centroid;
+    double area;
+    /// Order-sensitive checksum over positions and normals; pins the
+    /// emission order, not only the vertex set.
+    double checksum;
+};
+
+class MapSurfPin : public ::testing::Test {
+protected:
+    qsys::ScenePtr m_pScene;
+    qsys::ObjectPtr m_pObj;
+    qsys::RendererPtr m_pRend;
+    xtal::MapSurfRenderer *m_pMSR;
+
+    static const int N = 12;
+
+    void SetUp() override
+    {
+        m_pScene = qsys::SceneManager::getInstance()->createScene();
+
+        xtal::DensityMap *pMap = MB_NEW xtal::DensityMap();
+        // Asymmetric smooth field: two Gaussians on a negative background,
+        // so both positive and negative iso-levels cut real surfaces.
+        std::vector<float> data(N * N * N);
+        for (int k = 0; k < N; ++k)
+            for (int j = 0; j < N; ++j)
+                for (int i = 0; i < N; ++i) {
+                    const double d1 = (i - 4.0) * (i - 4.0) +
+                                      (j - 5.0) * (j - 5.0) +
+                                      (k - 6.0) * (k - 6.0);
+                    const double d2 = (i - 8.0) * (i - 8.0) +
+                                      (j - 3.5) * (j - 3.5) +
+                                      (k - 4.5) * (k - 4.5);
+                    data[(size_t)(k * N + j) * N + i] =
+                        float(100.0 * std::exp(-d1 / 8.0) +
+                              60.0 * std::exp(-d2 / 5.0) - 40.0);
+                }
+        pMap->setMapFloatArray(data.data(), N, N, N, 0, 1, 2);
+        pMap->setMapParams(0, 0, 0, N, N, N);
+        pMap->setXtalParams(double(N), double(N), double(N), 90.0, 90.0, 90.0);
+
+        m_pObj = qsys::ObjectPtr(pMap);
+        m_pObj->setName("pinmap");
+        m_pScene->addObject(m_pObj);
+
+        m_pRend = m_pObj->createRenderer("isosurf");
+        m_pMSR = dynamic_cast<xtal::MapSurfRenderer *>(m_pRend.get());
+        ASSERT_NE(m_pMSR, nullptr);
+        // The map covers the whole cell, which would enable PBC and extend
+        // the marching range; keep it bounded like a real cropped map view.
+        m_pMSR->setUsePBC(false);
+        // Center the display extent on the map so the whole field is covered.
+        m_pMSR->setCenter(Vector4D(6.0, 6.0, 6.0));
+    }
+
+    void TearDown() override
+    {
+        qsys::SceneManager::getInstance()->destroyScene(m_pScene->getUID());
+    }
+
+    SurfSummary summarize()
+    {
+        SurfSummary s;
+        s.nverts = -1;
+        s.nfaces = -1;
+        s.area = 0.0;
+        s.checksum = 0.0;
+
+        qsys::ObjectPtr pSurfObj = m_pMSR->generateSurfObj();
+        surface::MolSurfObj *pSurf =
+            dynamic_cast<surface::MolSurfObj *>(pSurfObj.get());
+        if (pSurf == nullptr)
+            return s;
+
+        s.nverts = pSurf->getVertSize();
+        s.nfaces = pSurf->getFaceSize();
+
+        Vector4D sum;
+        for (int i = 0; i < s.nverts; ++i) {
+            const surface::MSVert &v = pSurf->getVertAt(i);
+            const Vector4D p = v.v3d();
+            if (i == 0) {
+                s.vmin = p;
+                s.vmax = p;
+            }
+            else {
+                s.vmin.x() = std::min(s.vmin.x(), p.x());
+                s.vmin.y() = std::min(s.vmin.y(), p.y());
+                s.vmin.z() = std::min(s.vmin.z(), p.z());
+                s.vmax.x() = std::max(s.vmax.x(), p.x());
+                s.vmax.y() = std::max(s.vmax.y(), p.y());
+                s.vmax.z() = std::max(s.vmax.z(), p.z());
+            }
+            sum += p;
+            s.checksum += double(i + 1) *
+                (p.x() + 2.0 * p.y() + 3.0 * p.z() +
+                 4.0 * double(v.nx) + 5.0 * double(v.ny) + 6.0 * double(v.nz));
+        }
+        if (s.nverts > 0)
+            s.centroid = sum.divide(double(s.nverts));
+
+        for (int i = 0; i < s.nfaces; ++i) {
+            const surface::MSFace &f = pSurf->getFaceAt(i);
+            const Vector4D a = pSurf->getVertAt((int)f.id1).v3d();
+            const Vector4D b = pSurf->getVertAt((int)f.id2).v3d();
+            const Vector4D c = pSurf->getVertAt((int)f.id3).v3d();
+            const Vector4D ab = b - a;
+            const Vector4D ac = c - a;
+            s.area += 0.5 * (ab.cross(ac)).length();
+        }
+        return s;
+    }
+
+    static void expectSummary(const SurfSummary &s, const char *tag,
+                              int nverts, double minx, double miny, double minz,
+                              double maxx, double maxy, double maxz,
+                              double cx, double cy, double cz,
+                              double area, double checksum)
+    {
+#if MAPSURF_PIN_CAPTURE
+        printf("PIN %s: nverts=%d\n", tag, s.nverts);
+        printf("PIN %s: bbox min=(%.6f, %.6f, %.6f) max=(%.6f, %.6f, %.6f)\n",
+               tag, s.vmin.x(), s.vmin.y(), s.vmin.z(),
+               s.vmax.x(), s.vmax.y(), s.vmax.z());
+        printf("PIN %s: centroid=(%.6f, %.6f, %.6f) area=%.6f\n",
+               tag, s.centroid.x(), s.centroid.y(), s.centroid.z(), s.area);
+        printf("PIN %s: checksum=%.6f\n", tag, s.checksum);
+#else
+        (void)tag;
+        EXPECT_EQ(s.nverts, nverts);
+        EXPECT_EQ(s.nfaces, s.nverts / 3);
+        // Vertices are stored as float32; keep tolerances above that noise.
+        EXPECT_NEAR(s.vmin.x(), minx, 1e-4);
+        EXPECT_NEAR(s.vmin.y(), miny, 1e-4);
+        EXPECT_NEAR(s.vmin.z(), minz, 1e-4);
+        EXPECT_NEAR(s.vmax.x(), maxx, 1e-4);
+        EXPECT_NEAR(s.vmax.y(), maxy, 1e-4);
+        EXPECT_NEAR(s.vmax.z(), maxz, 1e-4);
+        EXPECT_NEAR(s.centroid.x(), cx, 1e-4);
+        EXPECT_NEAR(s.centroid.y(), cy, 1e-4);
+        EXPECT_NEAR(s.centroid.z(), cz, 1e-4);
+        EXPECT_NEAR(s.area, area, area * 1e-6 + 1e-4);
+        const double ctol = std::abs(checksum) * 1e-6 + 1e-3;
+        EXPECT_NEAR(s.checksum, checksum, ctol);
+#endif
+    }
+};
+
+}  // namespace
+
+// P1: default settings (siglevel 1.1, no binning, no boundary).
+TEST_F(MapSurfPin, DefaultSurface)
+{
+    const SurfSummary s = summarize();
+    ASSERT_GT(s.nverts, 0);
+    expectSummary(s, "P1",
+                  /*nverts*/ 684,
+                  /*bbox*/ 1.906816, 2.831297, 3.831297,
+                  8.409676, 7.105779, 8.105779,
+                  /*centroid*/ 5.004821, 4.650756, 5.644807,
+                  /*area*/ 69.305242, /*checksum*/ 7610693.011298);
+}
+
+// P2: binning factor 2 exercises the strided cell iteration.
+TEST_F(MapSurfPin, BinFac2)
+{
+    m_pMSR->setBinFac(2);
+    const SurfSummary s = summarize();
+    ASSERT_GT(s.nverts, 0);
+    expectSummary(s, "P2",
+                  /*nverts*/ 120,
+                  /*bbox*/ 2.247477, 2.872503, 3.843344,
+                  8.187305, 7.093184, 7.771781,
+                  /*centroid*/ 5.691435, 4.680012, 5.422827,
+                  /*area*/ 52.900922, /*checksum*/ 241464.930009);
+}
+
+// P3: negative iso-level exercises the normal-flip branch.
+TEST_F(MapSurfPin, NegativeLevel)
+{
+    m_pMSR->setSigLevel(-0.5);
+    const SurfSummary s = summarize();
+    ASSERT_GT(s.nverts, 0);
+    expectSummary(s, "P3",
+                  /*nverts*/ 1392,
+                  /*bbox*/ 0.977932, 1.630540, 2.630540,
+                  9.702794, 8.022068, 9.022068,
+                  /*centroid*/ 5.044657, 4.599363, 5.599923,
+                  /*area*/ 148.692445, /*checksum*/ 29333588.014872);
+}
+
+// P4: mol-boundary masking; also pins BSPTree::collChk semantics.
+// Note generateSurfObj() itself never calls setupMolBndry(); it uses the
+// boundary state left by the last render/setup, which we set up explicitly
+// here (this leftover-state behavior is itself part of the pinned contract).
+TEST_F(MapSurfPin, MolBoundary)
+{
+    molstr::MolCoordPtr pMol(MB_NEW molstr::MolCoord());
+    const double apos[2][3] = {{4.0, 5.0, 6.0}, {8.0, 3.5, 4.5}};
+    for (int i = 0; i < 2; ++i) {
+        molstr::MolAtomPtr pAtom(MB_NEW molstr::MolAtom());
+        pAtom->setParentUID(pMol->getUID());
+        pAtom->setName(LString::format("A%d", i));
+        pAtom->setElement(molstr::ElemSym::C);
+        pAtom->setChainName("A");
+        pAtom->setResIndex(molstr::ResidIndex(1));
+        pAtom->setResName("RES");
+        pAtom->setPos(Vector4D(apos[i][0], apos[i][1], apos[i][2]));
+        pMol->appendAtom(pAtom);
+    }
+    qsys::ObjectPtr pMolObj = qsys::ObjectPtr(pMol);
+    pMolObj->setName("bndmol");
+    m_pScene->addObject(pMolObj);
+
+    m_pMSR->setBndryMolName("bndmol");
+    m_pMSR->setBndryRng(3.0);
+    m_pMSR->setupMolBndry();
+
+    const SurfSummary s = summarize();
+    ASSERT_GT(s.nverts, 0);
+    expectSummary(s, "P4",
+                  /*nverts*/ 582,
+                  /*bbox*/ 1.906816, 2.831297, 3.831297,
+                  8.409676, 7.000000, 8.000000,
+                  /*centroid*/ 4.995943, 4.581498, 5.608023,
+                  /*area*/ 63.268962, /*checksum*/ 5370513.295668);
+}
+
+// P6: two runs must be bitwise identical (catches nondeterminism in-process).
+TEST_F(MapSurfPin, RunTwiceBitwise)
+{
+    qsys::ObjectPtr pSurfObj0 = m_pMSR->generateSurfObj();
+    qsys::ObjectPtr pSurfObj1 = m_pMSR->generateSurfObj();
+    surface::MolSurfObj *pS0 =
+        dynamic_cast<surface::MolSurfObj *>(pSurfObj0.get());
+    surface::MolSurfObj *pS1 =
+        dynamic_cast<surface::MolSurfObj *>(pSurfObj1.get());
+    ASSERT_NE(pS0, nullptr);
+    ASSERT_NE(pS1, nullptr);
+
+    ASSERT_EQ(pS0->getVertSize(), pS1->getVertSize());
+    ASSERT_GT(pS0->getVertSize(), 0);
+    for (int i = 0; i < pS0->getVertSize(); ++i) {
+        const surface::MSVert &a = pS0->getVertAt(i);
+        const surface::MSVert &b = pS1->getVertAt(i);
+        ASSERT_EQ(a.x, b.x) << "vertex " << i;
+        ASSERT_EQ(a.y, b.y) << "vertex " << i;
+        ASSERT_EQ(a.z, b.z) << "vertex " << i;
+        ASSERT_EQ(a.nx, b.nx) << "vertex " << i;
+        ASSERT_EQ(a.ny, b.ny) << "vertex " << i;
+        ASSERT_EQ(a.nz, b.nz) << "vertex " << i;
+    }
+}
