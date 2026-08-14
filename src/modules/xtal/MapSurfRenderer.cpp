@@ -48,26 +48,7 @@ MapSurfRenderer::MapSurfRenderer()
   m_nBinFac = 1;
   m_nMaxGrid = 100;
 
-  m_nGlRendMode = MSR_REND_DLIST;
-
   m_bGenSurfMode = false;
-
-#if (GUI_ARCH!=MB_GUI_ARCH_CLI)
-//#if (GUI_ARCH!=CLI)
-  //m_bUseOpenMP = false;
-  
-  m_nOmpThr = -1;
-  m_bIsoLev = 0;
-  // m_bWorkOK = false;
-  // m_pVBO=NULL;
-
-  m_bChkShaderDone = false;
-
-  m_pPO = NULL;
-  m_pAttrArray = NULL;
-  m_nMapTexID = 0;
-  m_nMapBufID = 0;
-#endif
 }
 
 // destructor
@@ -88,11 +69,6 @@ MapSurfRenderer::~MapSurfRenderer()
     }
     m_nTgtMolID = qlib::invalid_uid;
   }
-
-// #if (GUI_ARCH!=MB_GUI_ARCH_CLI)
-//   if (m_pVBO!=NULL)
-//     delete m_pVBO;
-// #endif
 }
 
 /////////////////////////////////

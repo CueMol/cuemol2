@@ -9,7 +9,6 @@
 #include "xtal.hpp"
 #include "MapRenderer.hpp"
 
-#include <qlib/ByteMap.hpp>
 #include <qsys/ScalarObject.hpp>
 #include <qsys/ViewEvent.hpp>
 #include <modules/molstr/molstr.hpp>
@@ -17,8 +16,6 @@
 
 #include <modules/molstr/ColoringScheme.hpp>
 #include <modules/surface/MolSurfObj.hpp>
-#include <gfx/DrawAttrArray.hpp>
-#include <gfx/ShaderObject.hpp>
 
 class MapSurfRenderer_wrap;
 
@@ -125,45 +122,6 @@ namespace xtal {
 
     /// Get max extent (in angstrom unit; calculated from m_nMaxGrid)
     double getMaxExtent() const;
-
-  public:
-    /// OpenGL rendering mode const
-    static const int MSR_REND_DLIST=0;
-    static const int MSR_REND_VBO=1;
-    static const int MSR_REND_SHADER=2;
-
-  private:
-    /// OpenGL rendering mode
-    int m_nGlRendMode;
-
-    /// Use OpenMP (experimental)
-    // bool m_bUseOpenMP;
-
-  public:
-    int getGLRenderMode() const { return m_nGlRendMode; }
-    void setGLRenderMode(int n) {
-      invalidateDisplayCache();
-      m_nGlRendMode = n;
-    } 
-
-    /*
-    bool isUseOpenMP() const { return m_bUseOpenMP; }
-    void setUseOpenMP(bool b) {
-      m_bUseOpenMP = b;
-      invalidateDisplayCache();
-    }
-     */
-
-  private:
-    /// OpenMP Thread number(-1: use all system cores)
-    int m_nOmpThr;
-
-  public:
-    int getOmpThr() const { return m_nOmpThr; }
-    void setOmpThr(int val) {
-      m_nOmpThr = val;
-      invalidateDisplayCache();
-    }
 
   private:
     /// Molecule object ID by which painting color is determined
@@ -327,110 +285,6 @@ namespace xtal {
 
     void setupXformMat(DisplayContext *pdl);
     void setupXformMat();
-
-#if (GUI_ARCH!=MB_GUI_ARCH_CLI)
-    //////////
-    // Experimental rendering impl (OpenMP/VBO)
-
-    /// Workarea data OK/NG (invalid)
-      //    bool m_bWorkOK;
-
-// virtual void display(DisplayContext *pdc);
-
-//    virtual void invalidateDisplayCache();
-    
-    void createVBO1(DisplayContext *pdl);
-    void displayVBO1(DisplayContext *pdl);
-    
-    typedef std::vector<surface::MSVert> MSVertList;
-
-    void marchCube2(int fx, int fy, int fz,
-		    const qbyte *values,
-		    const bool *bary,
-		    int *pvind);
-
-                                     //MSVertList &verts);
-      
-    inline qbyte getByteDen(int x, int y, int z) const
-    {
-      // TO DO: support symop
-
-      if (m_bPBC) {
-        const int xx = (x+10000*m_nMapColNo)%m_nMapColNo;
-        const int yy = (y+10000*m_nMapRowNo)%m_nMapRowNo;
-        const int zz = (z+10000*m_nMapSecNo)%m_nMapSecNo;
-        return m_pCMap->atByte(xx,yy,zz);
-      }
-      else {
-        if (x<0||y<0||z<0)
-          return 0;
-        if (x>=m_nMapColNo||
-            y>=m_nMapRowNo||
-            z>=m_nMapSecNo)
-          return 0;
-        return m_pCMap->atByte(x, y, z);
-      }
-      
-    }
-
-    inline void getGrdNormByte(int ix, int iy, int iz,
-			       float *norm)
-    {
-      const int del = 1;
-      norm[0] = float(getByteDen(ix-del, iy,   iz  )) - float(getByteDen(ix+del, iy,   iz  ));
-      norm[1] = float(getByteDen(ix,   iy-del, iz  )) - float(getByteDen(ix,   iy+del, iz  ));
-      norm[2] = float(getByteDen(ix,   iy,   iz-del)) - float(getByteDen(ix,   iy,   iz+del));
-      norm[3] = 0.0f;
-    }
-    
-    qbyte m_bIsoLev;
-
-    int m_nbcol;
-    int m_nbrow;
-    int m_nbsec;
-
-    qbyte m_col_r, m_col_g, m_col_b, m_col_a;
-    //std::vector<gfx::DrawElemVNC> m_verts;
-      // gfx::DrawElemVNC *m_pVBO;
-    
-    //////////
-    // Experimental rendering impl (OpenMP/GLSL)
-    
-    // void displayGLSL1(DisplayContext *pdc);
-    // void createGLSL1(DisplayContext *pdc);
-
-    // void displayGLSL2(DisplayContext *pdc);
-    // void createGLSL2(DisplayContext *pdc);
-    // bool initShader(DisplayContext *pdc);
-
-    /// Called just before this object is unloaded
-    // virtual void unloading();
-
-  private:
-    bool m_bChkShaderDone;
-
-    struct AttrElem {
-        // TODO: use integer attrib
-        qfloat32 ind;
-        qfloat32 flag;
-        qfloat32 ivert;
-    };
-    
-    typedef gfx::DrawAttrArray<AttrElem> AttrArray;
-
-    gfx::ShaderObject *m_pPO;
-
-    AttrArray *m_pAttrArray;
-    
-    typedef qlib::Array3D<qbyte> MapTmp;
-
-    MapTmp m_maptmp;
-
-    /// Map 3D texture ID
-    quint32 m_nMapTexID;
-    quint32 m_nMapBufID;
-
-#endif
 
   private:
     bool m_bGenSurfMode;
