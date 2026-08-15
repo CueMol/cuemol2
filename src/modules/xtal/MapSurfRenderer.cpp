@@ -15,7 +15,6 @@
 #include <gfx/Mesh.hpp>
 #include <qlib/parallel.hpp>
 
-#include <chrono>
 #include <unordered_map>
 
 #include <qsys/ScrEventManager.hpp>
@@ -510,18 +509,15 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
     std::vector<MCVertBuf> slabs;
     runMarchingCubes(true, slabs);
 
-    const std::chrono::steady_clock::time_point t1 =
-        std::chrono::steady_clock::now();
     const int nslabs = (int) slabs.size();
     for (int si=0; si<nslabs; ++si) {
       const MCVertBuf &buf = slabs[si];
       for (MCVertBuf::const_iterator it = buf.begin(); it != buf.end(); ++it)
         addMSVert(it->pos, it->norm);
     }
-    const double replay_ms = std::chrono::duration<double, std::milli>(
-                                 std::chrono::steady_clock::now() - t1)
-                                 .count();
-    LOG_DPRINTLN("MapSurfRend> replay %.2f ms (gensurf)", replay_ms);
+    // benchmark timing (uncomment when profiling):
+    // const std::chrono::steady_clock::time_point t1 = ...;
+    // LOG_DPRINTLN("MapSurfRend> replay %.2f ms (gensurf)", replay_ms);
   }
   else {
     // display path: build/reuse the persistent mesh cache, then replay it
@@ -554,9 +550,6 @@ void MapSurfRenderer::runMarchingCubes(bool bGenSurf,
   const int nslabs = (ncol + m_nBinFac - 1) / m_nBinFac;
   slabs.clear();
   slabs.resize(nslabs);
-
-  const std::chrono::steady_clock::time_point t0 =
-      std::chrono::steady_clock::now();
 
   qlib::parallel_for(0, (size_t) nslabs, [&](size_t si) {
     const int i = (int) si * m_nBinFac;
@@ -600,30 +593,19 @@ void MapSurfRenderer::runMarchingCubes(bool bGenSurf,
       }
   });
 
-  {
-    const double build_ms = std::chrono::duration<double, std::milli>(
-                                std::chrono::steady_clock::now() - t0)
-                                .count();
-    size_t nrec = 0;
-    for (int si=0; si<nslabs; ++si)
-      nrec += slabs[si].size();
-    // Always-on log (release builds included) so the MC/coloring cost split
-    // can be benchmarked on release builds.
-    LOG_DPRINTLN("MapSurfRend> MC build %.2f ms "
-                 "(backend=%s, threads=%d, %d slabs, %d verts)",
-                 build_ms,
-                 qlib::parallel_enabled() ? "oneTBB" : "serial",
-                 qlib::parallel_max_concurrency(), nslabs, (int) nrec);
-  }
+  // benchmark timing (uncomment when profiling; measure around the
+  // parallel_for above):
+  // LOG_DPRINTLN("MapSurfRend> MC build %.2f ms "
+  //              "(backend=%s, threads=%d, %d slabs, %d verts)",
+  //              build_ms,
+  //              qlib::parallel_enabled() ? "oneTBB" : "serial",
+  //              qlib::parallel_max_concurrency(), nslabs, (int) nrec);
 }
 
 void MapSurfRenderer::buildMeshCache()
 {
   std::vector<MCVertBuf> slabs;
   runMarchingCubes(false, slabs);
-
-  const std::chrono::steady_clock::time_point t0 =
-      std::chrono::steady_clock::now();
 
   size_t nrec = 0;
   for (size_t si=0; si<slabs.size(); ++si)
@@ -649,20 +631,15 @@ void MapSurfRenderer::buildMeshCache()
   m_bMeshCacheValid = true;
   m_bAidValid = false;
 
-  const double flat_ms = std::chrono::duration<double, std::milli>(
-                             std::chrono::steady_clock::now() - t0)
-                             .count();
-  LOG_DPRINTLN("MapSurfRend> mesh flatten %.2f ms (%d verts, %.1f MB)",
-               flat_ms, (int) nrec,
-               double(nrec * sizeof(CachedVert)) / (1024.0 * 1024.0));
+  // benchmark timing (uncomment when profiling):
+  // LOG_DPRINTLN("MapSurfRend> mesh flatten %.2f ms (%d verts, %.1f MB)",
+  //              flat_ms, (int) nrec,
+  //              double(nrec * sizeof(CachedVert)) / (1024.0 * 1024.0));
 }
 
 void MapSurfRenderer::resolveAidCache()
 {
   MB_ASSERT(m_pAtomPosMap!=NULL);
-
-  const std::chrono::steady_clock::time_point t0 =
-      std::chrono::steady_clock::now();
 
   // The tree was built at a defined point (ensureBuilt in makeAtomPosMap),
   // so concurrent queries are read-only and safe; each returns a plain int.
@@ -677,18 +654,13 @@ void MapSurfRenderer::resolveAidCache()
 
   m_bAidValid = true;
 
-  const double aid_ms = std::chrono::duration<double, std::milli>(
-                            std::chrono::steady_clock::now() - t0)
-                            .count();
-  LOG_DPRINTLN("MapSurfRend> aid resolve %.2f ms (parallel, %d verts)",
-               aid_ms, (int) nverts);
+  // benchmark timing (uncomment when profiling):
+  // LOG_DPRINTLN("MapSurfRend> aid resolve %.2f ms (parallel, %d verts)",
+  //              aid_ms, (int) nverts);
 }
 
 void MapSurfRenderer::replayMeshCache(DisplayContext *pdl)
 {
-  const std::chrono::steady_clock::time_point t1 =
-      std::chrono::steady_clock::now();
-
   // Serial replay: vertex colors are evaluated here because the coloring
   // schemes (incl. script-implemented ones) are not safe to call
   // concurrently.
@@ -737,12 +709,10 @@ void MapSurfRenderer::replayMeshCache(DisplayContext *pdl)
     pdl->vertex(pos);
   }
 
-  const double replay_ms = std::chrono::duration<double, std::milli>(
-                               std::chrono::steady_clock::now() - t1)
-                               .count();
-  LOG_DPRINTLN("MapSurfRend> replay/color %.2f ms "
-               "(colormode=%d, %d verts, memo %d atoms)",
-               replay_ms, cmode, (int) nverts, (int) colmemo.size());
+  // benchmark timing (uncomment when profiling):
+  // LOG_DPRINTLN("MapSurfRend> replay/color %.2f ms "
+  //              "(colormode=%d, %d verts, memo %d atoms)",
+  //              replay_ms, cmode, (int) nverts, (int) colmemo.size());
 }
 
 void MapSurfRenderer::invalidateMeshCache()
@@ -1158,9 +1128,6 @@ void MapSurfRenderer::buildGpuMesh(DisplayContext *pdc)
   }
   const int nfaces = nverts/3;
 
-  const std::chrono::steady_clock::time_point t0 =
-      std::chrono::steady_clock::now();
-
   std::vector<quint32> vcols;
   resolveVertexColors(vcols);
 
@@ -1177,10 +1144,8 @@ void MapSurfRenderer::buildGpuMesh(DisplayContext *pdc)
     m_trigGpuPrim.setFace(i, i*3, i*3+1, i*3+2);
   m_trigGpuPrim.setUpdated(true);
 
-  const double fill_ms = std::chrono::duration<double, std::milli>(
-                             std::chrono::steady_clock::now() - t0)
-                             .count();
-  LOG_DPRINTLN("MapSurfRend> gpu fill %.2f ms (%d verts)", fill_ms, nverts);
+  // benchmark timing (uncomment when profiling):
+  // LOG_DPRINTLN("MapSurfRend> gpu fill %.2f ms (%d verts)", fill_ms, nverts);
 }
 
 bool MapSurfRenderer::updateGpuColors()
@@ -1189,9 +1154,6 @@ bool MapSurfRenderer::updateGpuColors()
   if (nverts<=0 || m_trigGpuPrim.getVertexSize()!=nverts)
     return false;
 
-  const std::chrono::steady_clock::time_point t0 =
-      std::chrono::steady_clock::now();
-
   std::vector<quint32> vcols;
   resolveVertexColors(vcols);
 
@@ -1199,11 +1161,9 @@ bool MapSurfRenderer::updateGpuColors()
     m_trigGpuPrim.setColor(i, vcols[i]);
   m_trigGpuPrim.setUpdated(true);
 
-  const double recol_ms = std::chrono::duration<double, std::milli>(
-                              std::chrono::steady_clock::now() - t0)
-                              .count();
-  LOG_DPRINTLN("MapSurfRend> gpu recolor %.2f ms (%d verts)", recol_ms,
-               nverts);
+  // benchmark timing (uncomment when profiling):
+  // LOG_DPRINTLN("MapSurfRend> gpu recolor %.2f ms (%d verts)", recol_ms,
+  //              nverts);
   return true;
 }
 
@@ -1340,9 +1300,6 @@ void MapSurfRenderer::makeAtomPosMap()
   if (m_pAtomPosMap!=NULL)
     return;
 
-  const std::chrono::steady_clock::time_point t0 =
-      std::chrono::steady_clock::now();
-
   m_pAtomPosMap = MB_NEW molstr::AtomPosMap2();
   m_pAtomPosMap->setTarget(m_pColMol);
   m_pAtomPosMap->generate(m_pMolSel);
@@ -1350,10 +1307,8 @@ void MapSurfRenderer::makeAtomPosMap()
   // build happens at a defined point and later queries are read-only.
   m_pAtomPosMap->ensureBuilt();
 
-  const double build_ms = std::chrono::duration<double, std::milli>(
-                              std::chrono::steady_clock::now() - t0)
-                              .count();
-  LOG_DPRINTLN("MapSurfRend> AtomPosMap build %.2f ms", build_ms);
+  // benchmark timing (uncomment when profiling):
+  // LOG_DPRINTLN("MapSurfRend> AtomPosMap build %.2f ms", build_ms);
 }
 
 /// Resolve mol name, set m_nTgtMolID, listen the MolCoord events,
