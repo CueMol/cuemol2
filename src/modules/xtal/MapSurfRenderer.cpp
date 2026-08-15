@@ -54,6 +54,10 @@ MapSurfRenderer::MapSurfRenderer()
   m_nMaxGrid = 100;
 
   m_bGenSurfMode = false;
+
+  m_bMeshCacheValid = false;
+  m_bAidValid = false;
+  m_bColorDirty = false;
 }
 
 // destructor
@@ -471,19 +475,69 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
   /////////////////////
   // do marching cubes
 
+  const bool bGenSurf = (pdl==NULL);
+
+  if (bGenSurf) {
+    // gen-surf path: transient double-precision records, no mesh cache
+    // (keeps generateSurfObj output byte-identical to the historical path)
+    std::vector<MCVertBuf> slabs;
+    runMarchingCubes(true, slabs);
+
+    const std::chrono::steady_clock::time_point t1 =
+        std::chrono::steady_clock::now();
+    const int nslabs = (int) slabs.size();
+    for (int si=0; si<nslabs; ++si) {
+      const MCVertBuf &buf = slabs[si];
+      for (MCVertBuf::const_iterator it = buf.begin(); it != buf.end(); ++it)
+        addMSVert(it->pos, it->norm);
+    }
+    const double replay_ms = std::chrono::duration<double, std::milli>(
+                                 std::chrono::steady_clock::now() - t1)
+                                 .count();
+    LOG_DPRINTLN("MapSurfRend> replay %.2f ms (gensurf)", replay_ms);
+  }
+  else {
+    // display path: build/reuse the persistent mesh cache, then replay it
+    // into the display list with serial coloring
+    if (!m_bMeshCacheValid)
+      buildMeshCache();
+    replayMeshCache(pdl);
+  }
+
+  // cleanup for MOLFANC mode
+  if (!m_pColMol.isnull()) {
+    molstr::ColoringSchemePtr pCS = getColSchm();
+    if (!pCS.isnull())
+      pCS->end();
+    molstr::ColoringSchemePtr pMolCS = m_pColMol->getColSchm();
+    if (!pMolCS.isnull())
+      pMolCS->end();
+  }
+  // m_pAtomPosMap is intentionally kept alive here: it is cached across
+  // renders and dropped only via invalidateAtomPosMap().
+  m_pColMol = MolCoordPtr();
+
+  m_pColMapObj = NULL;
+  m_pGrad = NULL;
+}
+
+void MapSurfRenderer::runMarchingCubes(bool bGenSurf,
+                                       std::vector<MCVertBuf> &slabs) const
+{
+  ScalarObject *pMap = m_pCMap;
+
   const int ncol = m_nActCol;
   const int nrow = m_nActRow;
   const int nsec = m_nActSec;
 
-  const bool bGenSurf = (pdl==NULL);
-
   // Phase 1: run the per-cell marching-cubes kernel over the grid, slab by
   // slab along the col axis, recording the emissions into per-slab buffers.
   // The kernel only reads shared state, so the slabs run concurrently on
-  // oneTBB; replaying the buffers in slab order (phase 2) reproduces the
-  // serial emission order exactly, independent of the thread count.
+  // oneTBB; consuming the buffers in slab order reproduces the serial
+  // emission order exactly, independent of the thread count.
   const int nslabs = (ncol + m_nBinFac - 1) / m_nBinFac;
-  std::vector<MCVertBuf> slabs(nslabs);
+  slabs.clear();
+  slabs.resize(nslabs);
 
   const std::chrono::steady_clock::time_point t0 =
       std::chrono::steady_clock::now();
@@ -545,55 +599,100 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
                  qlib::parallel_enabled() ? "oneTBB" : "serial",
                  qlib::parallel_max_concurrency(), nslabs, (int) nrec);
   }
+}
 
-  const std::chrono::steady_clock::time_point t1 =
+void MapSurfRenderer::buildMeshCache()
+{
+  std::vector<MCVertBuf> slabs;
+  runMarchingCubes(false, slabs);
+
+  const std::chrono::steady_clock::time_point t0 =
       std::chrono::steady_clock::now();
 
-  // Phase 2 (serial, slab order): replay the records, evaluating vertex
-  // colors here because the coloring schemes (incl. script-implemented
-  // ones) are not safe to call concurrently.
-  for (int si=0; si<nslabs; ++si) {
+  size_t nrec = 0;
+  for (size_t si=0; si<slabs.size(); ++si)
+    nrec += slabs[si].size();
+
+  m_meshCache.clear();
+  m_meshCache.reserve(nrec);
+  for (size_t si=0; si<slabs.size(); ++si) {
     const MCVertBuf &buf = slabs[si];
     for (MCVertBuf::const_iterator it = buf.begin(); it != buf.end(); ++it) {
-      if (bGenSurf) {
-        addMSVert(it->pos, it->norm);
-      }
-      else {
-        if (getColorMode()!=MapRenderer::MAPREND_SIMPLE)
-          setVertexColor(pdl, it->pos);
-#ifdef SHOW_NORMAL
-        m_tmpv.push_back(it->pos);
-        m_tmpv.push_back(it->pos + it->norm);
-#endif
-        pdl->normal(it->norm);
-        pdl->vertex(it->pos);
-      }
+      CachedVert cv;
+      cv.x = (float) it->pos.x();
+      cv.y = (float) it->pos.y();
+      cv.z = (float) it->pos.z();
+      cv.nx = (float) it->norm.x();
+      cv.ny = (float) it->norm.y();
+      cv.nz = (float) it->norm.z();
+      cv.aid = -1;
+      m_meshCache.push_back(cv);
     }
   }
 
-  {
-    const double replay_ms = std::chrono::duration<double, std::milli>(
-                                 std::chrono::steady_clock::now() - t1)
-                                 .count();
-    LOG_DPRINTLN("MapSurfRend> replay/color %.2f ms (colormode=%d, gensurf=%d)",
-                 replay_ms, getColorMode(), bGenSurf ? 1 : 0);
+  m_bMeshCacheValid = true;
+  m_bAidValid = false;
+
+  const double flat_ms = std::chrono::duration<double, std::milli>(
+                             std::chrono::steady_clock::now() - t0)
+                             .count();
+  LOG_DPRINTLN("MapSurfRend> mesh flatten %.2f ms (%d verts, %.1f MB)",
+               flat_ms, (int) nrec,
+               double(nrec * sizeof(CachedVert)) / (1024.0 * 1024.0));
+}
+
+void MapSurfRenderer::replayMeshCache(DisplayContext *pdl)
+{
+  const std::chrono::steady_clock::time_point t1 =
+      std::chrono::steady_clock::now();
+
+  // Serial replay: vertex colors are evaluated here because the coloring
+  // schemes (incl. script-implemented ones) are not safe to call
+  // concurrently.
+  const bool bColor = (getColorMode()!=MapRenderer::MAPREND_SIMPLE);
+  const size_t nverts = m_meshCache.size();
+  for (size_t i=0; i<nverts; ++i) {
+    const CachedVert &cv = m_meshCache[i];
+    const Vector4D pos(cv.x, cv.y, cv.z);
+    if (bColor)
+      setVertexColor(pdl, pos);
+#ifdef SHOW_NORMAL
+    m_tmpv.push_back(pos);
+    m_tmpv.push_back(pos + Vector4D(cv.nx, cv.ny, cv.nz));
+#endif
+    pdl->normal(Vector4D(cv.nx, cv.ny, cv.nz));
+    pdl->vertex(pos);
   }
 
-  // cleanup for MOLFANC mode
-  if (!m_pColMol.isnull()) {
-    molstr::ColoringSchemePtr pCS = getColSchm();
-    if (!pCS.isnull())
-      pCS->end();
-    molstr::ColoringSchemePtr pMolCS = m_pColMol->getColSchm();
-    if (!pMolCS.isnull())
-      pMolCS->end();
-  }
-  // m_pAtomPosMap is intentionally kept alive here: it is cached across
-  // renders and dropped only via invalidateAtomPosMap().
-  m_pColMol = MolCoordPtr();
+  const double replay_ms = std::chrono::duration<double, std::milli>(
+                               std::chrono::steady_clock::now() - t1)
+                               .count();
+  LOG_DPRINTLN("MapSurfRend> replay/color %.2f ms (colormode=%d, %d verts)",
+               replay_ms, getColorMode(), (int) nverts);
+}
 
-  m_pColMapObj = NULL;
-  m_pGrad = NULL;
+void MapSurfRenderer::invalidateMeshCache()
+{
+  m_meshCache.clear();
+  std::vector<CachedVert>().swap(m_meshCache);
+  m_bMeshCacheValid = false;
+  m_bAidValid = false;
+  super_t::invalidateDisplayCache();
+}
+
+void MapSurfRenderer::invalidateGeomCache()
+{
+  invalidateMeshCache();
+}
+
+void MapSurfRenderer::invalidateDisplayCache()
+{
+  // Generic (color-level) invalidation: keep the mesh cache, mark the
+  // GPU-side colors dirty, and drop the display list as before. All
+  // geometry-affecting inputs route through invalidateGeomCache()/
+  // invalidateMeshCache() instead.
+  m_bColorDirty = true;
+  super_t::invalidateDisplayCache();
 }
 
 Vector4D MapSurfRenderer::getGrdNorm2(int ix, int iy, int iz) const
@@ -1062,6 +1161,20 @@ void MapSurfRenderer::objectChanged(qsys::ObjectEvent &ev)
       (ev.getDescr().equals("atomsMoved") ||
        ev.getDescr().equals("topologyChanged"))) {
     invalidateAtomPosMap();
+    m_bAidValid = false;
+  }
+
+  // The client map object's data or xform changed --> the mesh cache is
+  // stale (the base class handles the display-cache invalidation).
+  if (ev.getTarget()==getClientObjID()) {
+    if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED) {
+      invalidateMeshCache();
+    }
+    else if (ev.getType()==qsys::ObjectEvent::OBE_PROPCHG) {
+      qlib::LPropEvent *pPE = ev.getPropEvent();
+      if (pPE!=NULL && pPE->getName().equals("xformMat"))
+        invalidateMeshCache();
+    }
   }
 
   if (getColorMode()==MapRenderer::MAPREND_MOLFANC &&

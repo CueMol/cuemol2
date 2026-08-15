@@ -108,8 +108,10 @@ namespace xtal {
   public:
     int getBinFac() const { return m_nBinFac; }
     void setBinFac(int n) {
+      if (m_nBinFac == n)
+        return;
       m_nBinFac = n;
-      invalidateDisplayCache();
+      invalidateGeomCache();
     }
     
   private:
@@ -244,6 +246,59 @@ namespace xtal {
     /// Only reads shared state, so distinct cells may run concurrently.
     void marchCubeCell(int fx, int fy, int fz, const float values[8],
                        const bool bary[8], bool bGenSurf, MCVertBuf &out) const;
+
+    ///////////////////////////////////////////
+    // persistent mesh cache (display mode)
+
+    /// Persistent per-vertex mesh cache record (cell-grid coords, pre-xform,
+    /// normal flip already applied); shared geometry source of the display
+    /// sinks. The gen-surf path keeps its own transient double-precision
+    /// records and does not use this cache.
+    struct CachedVert {
+      float x, y, z;      ///< position
+      float nx, ny, nz;   ///< normal
+      qint32 aid;         ///< nearest atom id (MOLFANC); -1 = unresolved
+    };
+
+    /// Mesh cache, flattened in slab order (empty + !m_bMeshCacheValid =
+    /// rebuild needed)
+    std::vector<CachedVert> m_meshCache;
+
+    /// Mesh cache validity (geometry level)
+    bool m_bMeshCacheValid;
+
+    /// Validity of the aid column of the mesh cache (MOLFANC)
+    bool m_bAidValid;
+
+    /// GPU-side colors need re-resolution (color level; used by the GpuPrim
+    /// display path)
+    bool m_bColorDirty;
+
+    /// Phase 1: run the per-cell MC kernel over the current range in
+    /// parallel, one buffer per col-axis slab (shared by the gen-surf path
+    /// and buildMeshCache)
+    void runMarchingCubes(bool bGenSurf, std::vector<MCVertBuf> &slabs) const;
+
+    /// Run the parallel MC over the current range and flatten the records
+    /// into m_meshCache (slabs freed afterwards)
+    void buildMeshCache();
+
+    /// Replay m_meshCache into the display-list context (serial coloring)
+    void replayMeshCache(DisplayContext *pdl);
+
+    /// GEOM-level invalidation: drop the mesh cache (and everything below)
+    void invalidateMeshCache();
+
+  protected:
+    /// MapRenderer geometry-setter hook: also drop the mesh cache
+    void invalidateGeomCache() override;
+
+  public:
+    /// COLOR-level invalidation (any generic display-cache invalidation):
+    /// keep the mesh cache, mark colors dirty, drop the DL
+    void invalidateDisplayCache() override;
+
+  private:
 
     /// Coloring map object (for MULTIGRAD mode)
     qsys::ScalarObject *m_pColMapObj;
