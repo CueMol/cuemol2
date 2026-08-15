@@ -16,6 +16,7 @@
 
 #include <modules/molstr/ColoringScheme.hpp>
 #include <modules/surface/MolSurfObj.hpp>
+#include <gfx/TrigGpuPrim.hpp>
 
 class MapSurfRenderer_wrap;
 
@@ -79,7 +80,12 @@ namespace xtal {
   public:
     int getDrawMode() const { return m_nDrawMode; }
     void setDrawMode(int n) {
+      if (m_nDrawMode == n)
+        return;
       m_nDrawMode = n;
+      // fill<->line/point also switches the display route (GpuPrim vs DL);
+      // drop the GPU prim, keep the mesh cache (geometry is unchanged)
+      invalidateGpuMesh();
       invalidateDisplayCache();
     }
     
@@ -212,6 +218,13 @@ namespace xtal {
     void preRender(DisplayContext *pdc) override;
     void postRender(DisplayContext *pdc) override;
 
+    /// GpuPrim-based display path (fill mode, GL contexts); file export and
+    /// line/point draw modes fall back to the display-list path
+    void display(DisplayContext *pdc) override;
+
+    /// Called just before this renderer is unloaded from the view
+    void unloading() override;
+
     // virtual bool isTransp() const { return true; }
 
     ///////////////////////////////////////////////////////////////
@@ -287,6 +300,41 @@ namespace xtal {
     /// AtomPosMap2 tree to be built (ensureBuilt); queries are read-only
     /// and return plain ints, so they run concurrently.
     void resolveAidCache();
+
+    ///////////////////////////////////////////
+    // GpuPrim display path
+
+    /// Triangle-mesh GPU primitive (fill-mode interactive rendering)
+    gfx::TrigGpuPrim m_trigGpuPrim;
+
+    /// Shader availability probed (one-shot)
+    bool m_bCheckShaderOK;
+
+    /// Shader program available on this context
+    bool m_bUseShader;
+
+    /// Set up the coloring environment for a build/recolor pass (target
+    /// mol resolution, atom-pos map, scheme start brackets, m_xform);
+    /// shared by the DL render path and the GpuPrim display path
+    void setupColorEnv();
+
+    /// Tear down what setupColorEnv() set up (scheme end brackets etc.)
+    void cleanupColorEnv();
+
+    /// Resolve one devcode per cached vertex according to the color mode
+    /// (per-atom memoized for MOLFANC); requires setupColorEnv()
+    void resolveVertexColors(std::vector<quint32> &vcols);
+
+    /// Full GPU-prim fill: geometry + colors from the mesh cache
+    void buildGpuMesh(DisplayContext *pdc);
+
+    /// In-place color rewrite of the GPU prim (VBO/VAO reused; whole buffer
+    /// re-uploaded on the next draw). Returns false if the vertex count no
+    /// longer matches (caller falls back to buildGpuMesh).
+    bool updateGpuColors();
+
+    /// Drop the GPU prim only (mesh cache kept)
+    void invalidateGpuMesh();
 
     /// Replay m_meshCache into the display-list context (serial coloring)
     void replayMeshCache(DisplayContext *pdl);

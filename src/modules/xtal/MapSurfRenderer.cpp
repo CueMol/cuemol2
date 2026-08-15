@@ -59,6 +59,9 @@ MapSurfRenderer::MapSurfRenderer()
   m_bMeshCacheValid = false;
   m_bAidValid = false;
   m_bColorDirty = false;
+
+  m_bCheckShaderOK = false;
+  m_bUseShader = false;
 }
 
 // destructor
@@ -407,7 +410,7 @@ void MapSurfRenderer::makerange()
 /////////////////////////////////////////////////////////////////////////////////
 
 
-void MapSurfRenderer::renderImpl(DisplayContext *pdl)
+void MapSurfRenderer::setupColorEnv()
 {
   ScalarObject *pMap = m_pCMap;
 
@@ -444,7 +447,6 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
       m_pColMol = MolCoordPtr(pobj, qlib::no_throw_tag());
     }
     if (!m_pColMol.isnull()) {
-      // TO DO: re-generate atom-map only when Mol is changed.
       makeAtomPosMap();
 
       // Sync the ColoringScheme fallback color with the solid color prop
@@ -472,6 +474,30 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
       invalidateAtomPosMap();
     }
   }
+}
+
+void MapSurfRenderer::cleanupColorEnv()
+{
+  // cleanup for MOLFANC mode
+  if (!m_pColMol.isnull()) {
+    molstr::ColoringSchemePtr pCS = getColSchm();
+    if (!pCS.isnull())
+      pCS->end();
+    molstr::ColoringSchemePtr pMolCS = m_pColMol->getColSchm();
+    if (!pMolCS.isnull())
+      pMolCS->end();
+  }
+  // m_pAtomPosMap is intentionally kept alive here: it is cached across
+  // renders and dropped only via invalidateAtomPosMap().
+  m_pColMol = MolCoordPtr();
+
+  m_pColMapObj = NULL;
+  m_pGrad = NULL;
+}
+
+void MapSurfRenderer::renderImpl(DisplayContext *pdl)
+{
+  setupColorEnv();
 
   /////////////////////
   // do marching cubes
@@ -508,21 +534,7 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
     replayMeshCache(pdl);
   }
 
-  // cleanup for MOLFANC mode
-  if (!m_pColMol.isnull()) {
-    molstr::ColoringSchemePtr pCS = getColSchm();
-    if (!pCS.isnull())
-      pCS->end();
-    molstr::ColoringSchemePtr pMolCS = m_pColMol->getColSchm();
-    if (!pMolCS.isnull())
-      pMolCS->end();
-  }
-  // m_pAtomPosMap is intentionally kept alive here: it is cached across
-  // renders and dropped only via invalidateAtomPosMap().
-  m_pColMol = MolCoordPtr();
-
-  m_pColMapObj = NULL;
-  m_pGrad = NULL;
+  cleanupColorEnv();
 }
 
 void MapSurfRenderer::runMarchingCubes(bool bGenSurf,
@@ -739,7 +751,13 @@ void MapSurfRenderer::invalidateMeshCache()
   std::vector<CachedVert>().swap(m_meshCache);
   m_bMeshCacheValid = false;
   m_bAidValid = false;
+  m_trigGpuPrim.invalidate();
   super_t::invalidateDisplayCache();
+}
+
+void MapSurfRenderer::invalidateGpuMesh()
+{
+  m_trigGpuPrim.invalidate();
 }
 
 void MapSurfRenderer::invalidateGeomCache()
@@ -977,6 +995,216 @@ void MapSurfRenderer::marchCubeCell(int fx, int fy, int fz,
     return;
   }
 
+}
+
+///////////////////////////////////////////////////////////////
+// GpuPrim display path
+
+void MapSurfRenderer::display(DisplayContext *pdc)
+{
+  // File (non-GL) export -- incl. umbreon/povray -- and non-fill draw modes
+  // (line/point) use the legacy display-list path (render()).
+  if (pdc->isFile() || m_nDrawMode!=MSRDRAW_FILL) {
+    super_t::display(pdc);
+    return;
+  }
+
+  if (!m_bCheckShaderOK) {
+    m_bUseShader = m_trigGpuPrim.init(pdc);
+    if (m_bUseShader)
+      MB_DPRINTLN("MapSurfRend> triangle shader OK");
+    m_bCheckShaderOK = true;
+  }
+  if (!m_bUseShader) {
+    // shader unavailable --> legacy path
+    super_t::display(pdc);
+    return;
+  }
+
+  ScalarObject *pMap = getScalarObj();
+  if (pMap==NULL)
+    return;
+  m_pCMap = pMap;
+
+  const bool bNeedBuild =
+      !m_bMeshCacheValid || !m_trigGpuPrim.isValid() || m_bColorDirty ||
+      (getColorMode()==MapRenderer::MAPREND_MOLFANC && !m_bAidValid);
+
+  if (bNeedBuild) {
+    // check and setup mol boundary data + map-range info (as render() does)
+    setupMolBndry();
+    makerange();
+
+    setupColorEnv();
+
+    if (!m_bMeshCacheValid) {
+      buildMeshCache();
+      m_trigGpuPrim.invalidate();
+    }
+    if (getColorMode()==MapRenderer::MAPREND_MOLFANC &&
+        !m_pColMol.isnull() && m_pAtomPosMap!=NULL && !m_bAidValid) {
+      resolveAidCache();
+      // atom correspondence changed --> colors must be re-resolved
+      m_bColorDirty = true;
+    }
+
+    if (!m_trigGpuPrim.isValid()) {
+      buildGpuMesh(pdc);
+    }
+    else if (m_bColorDirty) {
+      // Color-only change: rewrite colors in place (VBO/VAO reused);
+      // rebuild if the vertex count no longer matches.
+      if (!updateGpuColors())
+        buildGpuMesh(pdc);
+    }
+    m_bColorDirty = false;
+
+    cleanupColorEnv();
+  }
+
+  if (!m_trigGpuPrim.isValid()) {
+    m_pCMap = NULL;
+    return;
+  }
+
+  preRender(pdc);
+  pdc->pushMatrix();
+  // Apply the same map transform the DL path bakes into its vertices; the
+  // cached records stay in cell-grid coordinates.
+  setupXformMat(pdc);
+  m_trigGpuPrim.setEdgeLineType(pdc->getEdgeLineType());
+  m_trigGpuPrim.draw(pdc);
+  pdc->popMatrix();
+  postRender(pdc);
+
+  m_pCMap = NULL;
+}
+
+void MapSurfRenderer::unloading()
+{
+  m_trigGpuPrim.invalidate();
+  super_t::unloading();
+}
+
+void MapSurfRenderer::resolveVertexColors(std::vector<quint32> &vcols)
+{
+  const size_t nverts = m_meshCache.size();
+  vcols.resize(nverts);
+
+  const int cmode = getColorMode();
+  const qlib::uid_t nSceneID = getSceneID();
+
+  quint32 basecol = 0xFFFFFFFF;
+  {
+    ColorPtr pbase = MapRenderer::getColor();
+    if (!pbase.isnull())
+      basecol = pbase->getDevCode(nSceneID);
+  }
+
+  if (cmode==MapRenderer::MAPREND_MOLFANC &&
+      m_bAidValid && !m_pColMol.isnull()) {
+    // per-atom memoized colors (schemes are evaluated once per atom);
+    // unresolved vertices keep the base color, matching the DL path where
+    // the baked base color remains in effect on lookup failure
+    std::unordered_map<int, quint32> memo;
+    for (size_t i=0; i<nverts; ++i) {
+      const qint32 aid = m_meshCache[i].aid;
+      quint32 col = basecol;
+      if (aid>=0) {
+        std::unordered_map<int, quint32>::const_iterator it = memo.find(aid);
+        if (it==memo.end()) {
+          MolAtomPtr pa = m_pColMol->getAtom(aid);
+          if (!pa.isnull()) {
+            ColorPtr pcol = molstr::ColSchmHolder::getColor(pa);
+            if (!pcol.isnull())
+              col = pcol->getDevCode(nSceneID);
+          }
+          memo.insert(
+              std::unordered_map<int, quint32>::value_type(aid, col));
+        }
+        else {
+          col = it->second;
+        }
+      }
+      vcols[i] = col;
+    }
+  }
+  else if (cmode==MapRenderer::MAPREND_MULTIGRAD &&
+           m_pColMapObj!=NULL && m_pGrad!=NULL) {
+    for (size_t i=0; i<nverts; ++i) {
+      const CachedVert &cv = m_meshCache[i];
+      Vector4D vv(cv.x, cv.y, cv.z);
+      vv.w() = 1.0;
+      m_xform.xform4D(vv);
+      const double par = m_pColMapObj->getValueAt(vv);
+      ColorPtr pcol = m_pGrad->getColor(par);
+      vcols[i] = pcol.isnull() ? basecol : pcol->getDevCode(nSceneID);
+    }
+  }
+  else {
+    // SIMPLE mode (or unresolved coloring setup): uniform base color.
+    // The trig shader has no uniform-color path, so every vertex carries
+    // the resolved devcode.
+    std::fill(vcols.begin(), vcols.end(), basecol);
+  }
+}
+
+void MapSurfRenderer::buildGpuMesh(DisplayContext *pdc)
+{
+  const int nverts = (int) m_meshCache.size();
+  if (nverts<=0) {
+    m_trigGpuPrim.invalidate();
+    return;
+  }
+  const int nfaces = nverts/3;
+
+  const std::chrono::steady_clock::time_point t0 =
+      std::chrono::steady_clock::now();
+
+  std::vector<quint32> vcols;
+  resolveVertexColors(vcols);
+
+  m_trigGpuPrim.setPolygonMode(DisplayContext::POLY_FILL);
+  m_trigGpuPrim.alloc(pdc, nverts, nfaces);
+  for (int i=0; i<nverts; ++i) {
+    const CachedVert &cv = m_meshCache[i];
+    m_trigGpuPrim.setVertex(i, Vector4D(cv.x, cv.y, cv.z));
+    m_trigGpuPrim.setNormal(i, Vector4D(cv.nx, cv.ny, cv.nz));
+    m_trigGpuPrim.setColor(i, vcols[i]);
+  }
+  // identity triangle soup (the MC emits unshared vertex triples)
+  for (int i=0; i<nfaces; ++i)
+    m_trigGpuPrim.setFace(i, i*3, i*3+1, i*3+2);
+  m_trigGpuPrim.setUpdated(true);
+
+  const double fill_ms = std::chrono::duration<double, std::milli>(
+                             std::chrono::steady_clock::now() - t0)
+                             .count();
+  LOG_DPRINTLN("MapSurfRend> gpu fill %.2f ms (%d verts)", fill_ms, nverts);
+}
+
+bool MapSurfRenderer::updateGpuColors()
+{
+  const int nverts = (int) m_meshCache.size();
+  if (nverts<=0 || m_trigGpuPrim.getVertexSize()!=nverts)
+    return false;
+
+  const std::chrono::steady_clock::time_point t0 =
+      std::chrono::steady_clock::now();
+
+  std::vector<quint32> vcols;
+  resolveVertexColors(vcols);
+
+  for (int i=0; i<nverts; ++i)
+    m_trigGpuPrim.setColor(i, vcols[i]);
+  m_trigGpuPrim.setUpdated(true);
+
+  const double recol_ms = std::chrono::duration<double, std::milli>(
+                              std::chrono::steady_clock::now() - t0)
+                              .count();
+  LOG_DPRINTLN("MapSurfRend> gpu recolor %.2f ms (%d verts)", recol_ms,
+               nverts);
+  return true;
 }
 
 void MapSurfRenderer::setupXformMat()
