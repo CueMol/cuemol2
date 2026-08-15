@@ -527,12 +527,17 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
     size_t nrec = 0;
     for (int si=0; si<nslabs; ++si)
       nrec += slabs[si].size();
-    MB_DPRINTLN("MapSurfRend> MC build %.2f ms "
-                "(backend=%s, threads=%d, %d slabs, %d verts)",
-                build_ms,
-                qlib::parallel_enabled() ? "oneTBB" : "serial",
-                qlib::parallel_max_concurrency(), nslabs, (int) nrec);
+    // Always-on log (release builds included) so the MC/coloring cost split
+    // can be benchmarked on release builds.
+    LOG_DPRINTLN("MapSurfRend> MC build %.2f ms "
+                 "(backend=%s, threads=%d, %d slabs, %d verts)",
+                 build_ms,
+                 qlib::parallel_enabled() ? "oneTBB" : "serial",
+                 qlib::parallel_max_concurrency(), nslabs, (int) nrec);
   }
+
+  const std::chrono::steady_clock::time_point t1 =
+      std::chrono::steady_clock::now();
 
   // Phase 2 (serial, slab order): replay the records, evaluating vertex
   // colors here because the coloring schemes (incl. script-implemented
@@ -554,6 +559,14 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
         pdl->vertex(it->pos);
       }
     }
+  }
+
+  {
+    const double replay_ms = std::chrono::duration<double, std::milli>(
+                                 std::chrono::steady_clock::now() - t1)
+                                 .count();
+    LOG_DPRINTLN("MapSurfRend> replay/color %.2f ms (colormode=%d, gensurf=%d)",
+                 replay_ms, getColorMode(), bGenSurf ? 1 : 0);
   }
 
   // cleanup for MOLFANC mode
@@ -914,12 +927,20 @@ void MapSurfRenderer::makeAtomPosMap()
   if (m_pColMol.isnull())
     return;
 
+  const std::chrono::steady_clock::time_point t0 =
+      std::chrono::steady_clock::now();
+
   if (m_pAtomPosMap!=NULL)
     delete m_pAtomPosMap;
 
   m_pAtomPosMap = MB_NEW molstr::AtomPosMap2();
   m_pAtomPosMap->setTarget(m_pColMol);
   m_pAtomPosMap->generate(m_pMolSel);
+
+  const double build_ms = std::chrono::duration<double, std::milli>(
+                              std::chrono::steady_clock::now() - t0)
+                              .count();
+  LOG_DPRINTLN("MapSurfRend> AtomPosMap build %.2f ms", build_ms);
 }
 
 /// Resolve mol name, set m_nTgtMolID, listen the MolCoord events,
