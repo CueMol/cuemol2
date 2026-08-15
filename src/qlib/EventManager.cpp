@@ -71,17 +71,24 @@ void EventManager::messageLoop()
 
 ////////////////////////////////////////////////////
 
-void EventManager::setTimer(TimerListener *pobj, qlib::time_value dur_msec)
+void EventManager::setTimer(TimerListener *pobj, qlib::time_value dur)
 {
+    if (m_pImpl==NULL) {
+      // Without a timer impl nothing ever calls checkTimerQueue(), so the
+      // entry would just leak. Ignore it instead of dereferencing null.
+      MB_DPRINTLN("EvtMgr> setTimer ignored (no TimerImpl)");
+      return;
+    }
+
+    // One pending timer per listener
+    removeTimer(pobj);
+
     qlib::time_value curr = m_pImpl->getCurrentTime();
     TimerTuple tt;
     tt.start = curr;
-    tt.end = curr + dur_msec;
+    tt.end = curr + dur;
     tt.pobj = pobj;
     m_timerq.push_back(tt);
-    
-    //timerEntryMethod();
-    //checkQueueAndSetupTimer(false);
 }
 
 void EventManager::removeTimer(TimerListener *pobj)
@@ -102,8 +109,6 @@ void EventManager::initTimer(TimerImpl *pimpl)
 {
   MB_ASSERT(m_pImpl==NULL);
   m_pImpl = pimpl;
-
-  // m_pImpl->start();
 }
 
 void EventManager::finiTimer()
@@ -118,34 +123,35 @@ void EventManager::finiTimer()
 void EventManager::checkTimerQueue()
 {
   if (m_timerq.empty()) return;
-  qlib::time_value curr = m_pImpl->getCurrentTime();
+  if (m_pImpl==NULL) return;
+
+  const qlib::time_value curr = m_pImpl->getCurrentTime();
   MB_DPRINTLN("EventManager::checkTimerQueue() curr=%lld", (long long)curr);
 
-  TimerQueue::iterator iter = m_timerq.begin();
-  //TimerQueue::iterator eiter = m_timerq.end();
-  //for (; iter!=eiter;) {
+  // onTimer() may re-enter setTimer()/removeTimer() (AnimMgr loop playback, a
+  // listener destroyed by an event fired from within the callback, ...), which
+  // would invalidate an iterator held across the callback. Work from a
+  // snapshot and mutate m_timerq only by listener identity. removeTimer() only
+  // compares the pointer, so it stays safe even if the listener is gone.
+  const TimerQueue snap(m_timerq);
 
-  for (; iter!=m_timerq.end(); ) {
-    const TimerTuple &rtt = *iter;
+  for (const TimerTuple &rtt : snap) {
     TimerListener *pobj = rtt.pobj;
-    qlib::time_value dur_end = rtt.end-curr;
+    const qlib::time_value dur_end = rtt.end-curr;
     if (dur_end<=0) {
       // process ended timer (last event)
-      iter = m_timerq.erase(iter);
+      removeTimer(pobj);
       pobj->onTimer(1.0, curr, true);
-      continue;
     }
     else {
       // process active timer
-      double rho = double(curr-rtt.start)/double(rtt.end-rtt.start);
+      const double rho = double(curr-rtt.start)/double(rtt.end-rtt.start);
       if (!pobj->onTimer(rho, curr, false)) {
         // timer iteration is canceled
-        iter = m_timerq.erase(iter);
+        removeTimer(pobj);
         MB_DPRINTLN("EvtMgr> timer canceled");
-        continue;
       }
     }
-    ++iter;
   }
 }
 
@@ -157,7 +163,8 @@ TimerImpl::~TimerImpl()
 
 #include <chrono>
 
-qlib::time_value TimerImpl::getCurrentTime()
+//static
+qlib::time_value TimerImpl::sGetSystemTime()
 {
   using namespace std::chrono;
 
@@ -166,8 +173,13 @@ qlib::time_value TimerImpl::getCurrentTime()
   // time_value is in nano-sec rep with int64 precision
   qlib::time_value t1 = duration_cast<nanoseconds>(tp.time_since_epoch()).count();
 
-  // LOG_DPRINTLN("getCurrentTime() = %llu", t1);
+  // LOG_DPRINTLN("sGetSystemTime() = %llu", t1);
   return t1;
+}
+
+qlib::time_value TimerImpl::getCurrentTime()
+{
+  return sGetSystemTime();
 }
 
 //////////
