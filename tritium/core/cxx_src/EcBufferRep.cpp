@@ -149,26 +149,33 @@ void EcBufferRep::bind() {}
 
 void EcBufferRep::update(const gfx::AbstDrawAttrs &ada)
 {
-    // if (!ada.isUpdated()) {
-    //     m_bDataUpdated = false;
-    //     return;
-    // }
+    // In-place buffer update path, gated by the check-and-reset dirty flag
+    // (mirrors OcBufferRep::update; see fa3909cd). The flag stays false on
+    // ordinary frames, so per-frame draws upload nothing; a renderer that
+    // rewrites its CPU-side array and calls setUpdated(true) gets exactly one
+    // GPU upload on the next draw. This body was disabled while no renderer
+    // used the path (3e10ee12: createBuffer now uploads the initial data
+    // directly); re-enabled for in-place color updates.
+    if (!ada.isUpdated()) {
+        m_bDataUpdated = false;
+        return;
+    }
 
-    // // If the storage is externally backed (V8 ArrayBuffer), the renderer's
-    // // at(i) writes already landed in the same backing store as
-    // // m_arrayBufRef -- no memcpy needed. Otherwise copy from C++ heap.
-    // if (ada.getExtDataHandle() == nullptr) {
-    //     const size_t buffer_size = ada.getDataSize();
-    //     copyToBuffer(m_arrayBufRef, ada.getData(), buffer_size);
+    // If the storage is externally backed (V8 ArrayBuffer), the renderer's
+    // at(i) writes already landed in the same backing store as
+    // m_arrayBufRef -- no memcpy needed. Otherwise copy from C++ heap.
+    if (ada.getExtDataHandle() == nullptr) {
+        const size_t buffer_size = ada.getDataSize();
+        copyToBuffer(m_arrayBufRef, ada.getData(), buffer_size);
 
-    //     const size_t nindex_bytes = ada.getIndDataSize();
-    //     if (nindex_bytes > 0 && m_nIndexElems > 0) {
-    //         copyToBuffer(m_indexBufRef, ada.getIndData(), nindex_bytes);
-    //     }
-    // }
+        const size_t nindex_bytes = ada.getIndDataSize();
+        if (nindex_bytes > 0 && m_nIndexElems > 0) {
+            copyToBuffer(m_indexBufRef, ada.getIndData(), nindex_bytes);
+        }
+    }
 
-    // ada.setUpdated(false);
-    // m_bDataUpdated = true;
+    ada.setUpdated(false);
+    m_bDataUpdated = true;
 }
 
 void EcBufferRep::setAttrib(const gfx::AbstDrawAttrs &ada) {}

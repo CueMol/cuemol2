@@ -313,11 +313,13 @@ CPK では「球 i ↔ `CPK2Renderer::renderShaderImpl()` の `AtomIterator` 列
 - 問題が起きたときにフラグ 1 つで従来動作に戻せる
 - `pdc->isFile()` (レイトレース等のファイル出力) は従来どおり `super_t::display(pdc)` に落ちる (既存の分岐をそのまま使う)
 
-### 3.6 `EcBufferRep::update()` は復活させない
+### 3.6 `EcBufferRep::update()` は復活させない → その後復活した (経緯追記)
 
-`tritium/core/cxx_src/EcBufferRep.cpp:150-172` は本体が丸ごとコメントアウトされた空関数で、`create()` 内の `m_bDataUpdated = true;` (`:119`) も無効化されている。これはドラッグ回転ジャンク修正 (`fa3909cd "Fix drag-rotation jank by managing dirty flag in EcBufferRep"`) の結果であり、現状 `isUpdated` は恒久的に false、毎フレームの VBO アップロードはゼロ。
+(当初の記述) `tritium/core/cxx_src/EcBufferRep.cpp:150-172` は本体が丸ごとコメントアウトされた空関数で、`create()` 内の `m_bDataUpdated = true;` (`:119`) も無効化されている。これはドラッグ回転ジャンク修正 (`fa3909cd "Fix drag-rotation jank by managing dirty flag in EcBufferRep"`) の結果であり、現状 `isUpdated` は恒久的に false、毎フレームの VBO アップロードはゼロ。
 
-**座標テクスチャ方式では VBO は不変データ (index / dsp / 半径 / 色) だけを持つので `STATIC_DRAW` のままでよく、`bufferSubData` は不要**。この修正と衝突しない。触らないこと。
+**座標テクスチャ方式では VBO は不変データ (index / dsp / 半径 / 色) だけを持つので `STATIC_DRAW` のままでよく、`bufferSubData` は不要**。この修正と衝突しない。座標テクスチャ作業のスコープでは触らない。
+
+**[追記] update() は後に復活済み**。経緯の整理: ジャンクの原因は「旧 update() が dirty flag をチェックせず・reset もせず毎フレーム全 memcpy + upload していた」ことで、fa3909cd はまさに check-and-reset パターンを実装してこれを修正した (in-place update 自体の禁止ではない)。その後 3e10ee12 で createBuffer が初期データを直接 upload する方式になり、当時 update() を使う consumer がいなかったため「unrequired」として本体をコメントアウトしていた。isosurf の色のみ更新 (MapSurfRenderer の GpuPrim 化) が consumer として必要になったため、fa3909cd の check-and-reset 実装をそのまま復活させた。通常フレームでは flag が false のため upload はゼロのまま (ジャンク非再発)。`create()` 内の `m_bDataUpdated = true;` は 3e10ee12 の設計どおり無効のまま (初期 upload は createBuffer が行う)。
 
 ### 3.7 `OBE_CHANGED_DYNAMIC` / `OBE_CHANGED_FIXDYN` は Phase 1 では導入しない
 
