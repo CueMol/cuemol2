@@ -21,6 +21,7 @@
 #include "style/StyleEditInfo.hpp"
 
 #include <gfx/DisplayContext.hpp>
+#include <qlib/EventManager.hpp>
 #include <qlib/Utils.hpp>
 #include <qlib/Matrix4D.hpp>
 #include <qlib/LVarArgs.hpp>
@@ -39,6 +40,9 @@ namespace qsys { namespace detail {
   /// Idle time after the last wheel/gesture center drag before the change is
   /// settled (flushed as a non-drag "center" event).
   static const qlib::time_value CENTER_SETTLE_DELAY_NS = 200LL * 1000000LL;
+
+  /// Length of the setViewCenterAnim() / setCameraAnim() interpolation.
+  static const double VIEW_ANIM_MSEC = 500.0;
 
   /// Monotonic timestamp in nanoseconds.
   /// Deliberately not qlib::EventManager::getCurrentTime(): that requires an
@@ -288,7 +292,8 @@ void View::tickCenterSettle(qlib::time_value now)
 void View::setViewCenterAnim(const qlib::Vector4D &pos)
 {
   m_pMscr->setupSetXYZ(pos);
-  qlib::EventManager::getInstance()->setTimer(this, 500);
+  qlib::EventManager::getInstance()
+      ->setTimerMilliSec(this, detail::VIEW_ANIM_MSEC);
 }
 
 void View::setRotQuat(const qlib::LQuat &q)
@@ -849,9 +854,10 @@ bool View::mouseDragEnd(InDevEvent &ev)
 #endif
 
   if (m_pMscr->getType()!=MomentumScroll::MMS_NONE) {
-    qlib::time_value peri = m_pMscr->setupXY(ev);
-    if (peri>0)
-      qlib::EventManager::getInstance()->setTimer(this, peri);
+    // setupXY() returns nano-seconds (0 == no anim)
+    const qlib::time_value peri_ns = m_pMscr->setupXY(ev);
+    if (peri_ns>0)
+      qlib::EventManager::getInstance()->setTimer(this, peri_ns);
   }
 
   return true;
@@ -955,7 +961,8 @@ void View::setCameraAnim(CameraPtr rcam, bool bAnim)
 {
   if (!m_curcam.equals(*rcam.get()) && bAnim) {
     m_pMscr->setupSetCamera(rcam);
-    qlib::EventManager::getInstance()->setTimer(this, 500);
+    qlib::EventManager::getInstance()
+        ->setTimerMilliSec(this, detail::VIEW_ANIM_MSEC);
   }
   else {
     m_curcam = Camera(*(rcam.get()));
