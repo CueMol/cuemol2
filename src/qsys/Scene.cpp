@@ -886,6 +886,15 @@ void Scene::setActiveViewID(qlib::uid_t uid)
 
 void Scene::checkAndUpdate()
 {
+  // Settle wheel/gesture-driven view-center drags (they have no end event of
+  // their own). Done before the update-flag branches, so a settle-induced
+  // invalidation is redrawn in this same tick.
+  {
+    viewtab_t::const_iterator viter = m_viewtab.begin();
+    for (; viter!=m_viewtab.end(); ++viter)
+      viter->second->tickCenterSettle();
+  }
+
     // MB_DPRINTLN("Scene::checkAndUpdate> scene %d update %d", m_nUID, m_bUpdateRequired);
   if (m_bUpdateRequired) {
     // Force to redraw all views

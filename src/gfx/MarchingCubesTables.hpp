@@ -15,20 +15,27 @@ namespace gfx {
 namespace mctables {
 
   /// Positions, relative to corner 0, of the 8 cube corners.
-  static const int cubeVertexOffset[8][3] = {
+  inline constexpr int cubeVertexOffset[8][3] = {
     {0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {0, 1, 0},
     {0, 0, 1}, {1, 0, 1}, {1, 1, 1}, {0, 1, 1}
   };
 
   /// Endpoint corner indices for each of the 12 cube edges.
-  static const int cubeEdgeConnection[12][2] = {
+  inline constexpr int cubeEdgeConnection[12][2] = {
     {0, 1}, {1, 2}, {2, 3}, {3, 0},
     {4, 5}, {5, 6}, {6, 7}, {7, 4},
     {0, 4}, {1, 5}, {2, 6}, {3, 7}
   };
 
+  /// Direction (endpoint1 - endpoint0) of each cube edge; components in {-1,0,1}.
+  inline constexpr int cubeEdgeDirection[12][3] = {
+    {1, 0, 0}, {0, 1, 0}, {-1, 0, 0}, {0, -1, 0},
+    {1, 0, 0}, {0, 1, 0}, {-1, 0, 0}, {0, -1, 0},
+    {0, 0, 1}, {0, 0, 1}, {0, 0, 1}, {0, 0, 1}
+  };
+
   /// Edge intersection flags indexed by the 8-bit corner inside-mask.
-  static const int cubeEdgeFlags[256] = {
+  inline constexpr int cubeEdgeFlags[256] = {
     0x000, 0x109, 0x203, 0x30a, 0x406, 0x50f, 0x605, 0x70c, 0x80c, 0x905, 0xa0f, 0xb06, 0xc0a, 0xd03, 0xe09, 0xf00,
     0x190, 0x099, 0x393, 0x29a, 0x596, 0x49f, 0x795, 0x69c, 0x99c, 0x895, 0xb9f, 0xa96, 0xd9a, 0xc93, 0xf99, 0xe90,
     0x230, 0x339, 0x033, 0x13a, 0x636, 0x73f, 0x435, 0x53c, 0xa3c, 0xb35, 0x83f, 0x936, 0xe3a, 0xf33, 0xc39, 0xd30,
@@ -48,7 +55,7 @@ namespace mctables {
   };
 
   /// Triangle edge list indexed by the corner inside-mask (terminated by -1).
-  static const int triangleConnectionTable[256][16] = {
+  inline constexpr int triangleConnectionTable[256][16] = {
     {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
     {0, 8, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
     {0, 1, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},

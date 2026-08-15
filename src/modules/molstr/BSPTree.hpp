@@ -301,6 +301,9 @@ namespace molstr {
     /**
     Check if there are any points around the position "pos"
     in the radius "r".
+    Stateless (no shared scratch buffer), so concurrent calls from
+    multiple threads are safe; unlike findAround(), which uses the
+    shared mutable index buffer and is NOT thread-safe.
      */
     bool collChk(const Vector4D &pos, double r) const
     {
@@ -313,27 +316,35 @@ namespace molstr {
       vfmax.y() += r;
       vfmax.z() += r;
 
-      if (m_ibuf.size()<m_data.size())
-        m_ibuf.resize(m_data.size());
-      m_ibx = 0;
-      findBoxImpl(m_pRoot, vfmin, vfmax);
-      if (m_ibx==0) return 0;
-
-      Vector4D vt;
-      int i, jj, k;
-      for (i=0, k=0; i<m_ibx; ++i) {
-        jj = m_ibuf[i];
-        vt.x() = m_data[jj].pos[0];
-        vt.y() = m_data[jj].pos[1];
-        vt.z() = m_data[jj].pos[2];
-        if (isNearPos(pos, vt, r))
-          return true;
-      }
-
-      return false;
+      if (m_pRoot==NULL)
+        return false;
+      return collChkImpl(m_pRoot, vfmin, vfmax, pos, r);
     }
 
   private:
+    bool collChkImpl(const Node *pnode, const Vector4D &vfmin,
+                     const Vector4D &vfmax, const Vector4D &pos,
+                     double r) const
+    {
+      if (!intersect(vfmin, vfmax, pnode->vmin, pnode->vmax))
+        return false;
+
+      if (pnode->pc1==NULL) {
+        // terminal node --> check the node's elements directly
+        Vector4D vt;
+        for (int i=pnode->imin; i<pnode->imax; ++i) {
+          vt.x() = m_data[i].pos[0];
+          vt.y() = m_data[i].pos[1];
+          vt.z() = m_data[i].pos[2];
+          if (isNearPos(pos, vt, r))
+            return true;
+        }
+        return false;
+      }
+
+      return collChkImpl(pnode->pc1, vfmin, vfmax, pos, r) ||
+        collChkImpl(pnode->pc2, vfmin, vfmax, pos, r);
+    }
     inline
       bool isNearPos(const Vector4D &pos1, const Vector4D &pos2, const double r) const
       {

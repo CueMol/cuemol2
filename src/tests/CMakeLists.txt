@@ -178,8 +178,10 @@ gtest_discover_tests(test_surface PROPERTIES LABELS "test_surface")
 
 add_executable(test_xtal
   modules/xtal/test_main.cpp
+  modules/xtal/test_atomposmap2.cpp
   modules/xtal/test_maprenderer_color.cpp
   modules/xtal/test_mapsurf_molfanc.cpp
+  modules/xtal/test_mapsurf_pin.cpp
   modules/xtal/test_multigrad_undo.cpp
   modules/xtal/test_quant_step.cpp
 )
@@ -197,6 +199,15 @@ if (BUILD_OPENGL_SYSDEP)
   target_link_libraries(test_xtal PRIVATE sysdep)
 endif()
 gtest_discover_tests(test_xtal PROPERTIES LABELS "test_xtal")
+
+# Run the MC pinning tests again in a separate process with oneTBB forced
+# serial (the CUEMOL_TBB_THREADS cap is latched once per process), so both
+# the default-parallel and forced-serial paths are checked against the same
+# golden values.
+add_test(NAME test_xtal_mc_serial
+  COMMAND test_xtal --gtest_filter=MapSurfPin.*)
+set_tests_properties(test_xtal_mc_serial PROPERTIES
+  ENVIRONMENT "CUEMOL_TBB_THREADS=1" LABELS "test_xtal")
 
 add_executable(test_importers
   modules/importers/test_main.cpp

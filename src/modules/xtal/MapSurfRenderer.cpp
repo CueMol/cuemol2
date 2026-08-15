@@ -11,7 +11,11 @@
 #include "MapSurfRenderer_consts.hpp"
 #include "DensityMap.hpp"
 #include <gfx/DisplayContext.hpp>
+#include <gfx/MarchingCubes.hpp>
 #include <gfx/Mesh.hpp>
+#include <qlib/parallel.hpp>
+
+#include <unordered_map>
 
 #include <qsys/ScrEventManager.hpp>
 #include <qsys/ViewEvent.hpp>
@@ -24,6 +28,7 @@
 #include <modules/molstr/MolCoord.hpp>
 
 using namespace xtal;
+namespace mct = gfx::mctables;
 using qlib::Matrix4D;
 using qlib::Matrix3D;
 using qsys::ScrEventManager;
@@ -48,26 +53,14 @@ MapSurfRenderer::MapSurfRenderer()
   m_nBinFac = 1;
   m_nMaxGrid = 100;
 
-  m_nGlRendMode = MSR_REND_DLIST;
-
   m_bGenSurfMode = false;
 
-#if (GUI_ARCH!=MB_GUI_ARCH_CLI)
-//#if (GUI_ARCH!=CLI)
-  //m_bUseOpenMP = false;
-  
-  m_nOmpThr = -1;
-  m_bIsoLev = 0;
-  // m_bWorkOK = false;
-  // m_pVBO=NULL;
+  m_bMeshCacheValid = false;
+  m_bAidValid = false;
+  m_bColorDirty = false;
 
-  m_bChkShaderDone = false;
-
-  m_pPO = NULL;
-  m_pAttrArray = NULL;
-  m_nMapTexID = 0;
-  m_nMapBufID = 0;
-#endif
+  m_bCheckShaderOK = false;
+  m_bUseShader = false;
 }
 
 // destructor
@@ -88,11 +81,6 @@ MapSurfRenderer::~MapSurfRenderer()
     }
     m_nTgtMolID = qlib::invalid_uid;
   }
-
-// #if (GUI_ARCH!=MB_GUI_ARCH_CLI)
-//   if (m_pVBO!=NULL)
-//     delete m_pVBO;
-// #endif
 }
 
 /////////////////////////////////
@@ -421,7 +409,7 @@ void MapSurfRenderer::makerange()
 /////////////////////////////////////////////////////////////////////////////////
 
 
-void MapSurfRenderer::renderImpl(DisplayContext *pdl)
+void MapSurfRenderer::setupColorEnv()
 {
   ScalarObject *pMap = m_pCMap;
 
@@ -458,7 +446,6 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
       m_pColMol = MolCoordPtr(pobj, qlib::no_throw_tag());
     }
     if (!m_pColMol.isnull()) {
-      // TO DO: re-generate atom-map only when Mol is changed.
       makeAtomPosMap();
 
       // Sync the ColoringScheme fallback color with the solid color prop
@@ -469,33 +456,109 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
       if (!pCS.isnull())
         pCS->start(m_pColMol, this);
 
+      // The mol-side scheme is also evaluated by ColSchmHolder::getColor()
+      // and must be bracketed too (stateful schemes such as rainbow
+      // precompute their tables in start()); every other renderer already
+      // does this.
+      molstr::ColoringSchemePtr pMolCS = m_pColMol->getColSchm();
+      if (!pMolCS.isnull())
+        pMolCS->start(m_pColMol, this);
+
       setupXformMat();
     }
     else {
       LOG_DPRINTLN("MapSurfRend> MOLFANC target mol \"%d\" is not found.",
                    int(m_nTgtMolID));
+      // Don't keep a map that pins the MolCoordPtr of a removed object
+      invalidateAtomPosMap();
     }
   }
+}
+
+void MapSurfRenderer::cleanupColorEnv()
+{
+  // cleanup for MOLFANC mode
+  if (!m_pColMol.isnull()) {
+    molstr::ColoringSchemePtr pCS = getColSchm();
+    if (!pCS.isnull())
+      pCS->end();
+    molstr::ColoringSchemePtr pMolCS = m_pColMol->getColSchm();
+    if (!pMolCS.isnull())
+      pMolCS->end();
+  }
+  // m_pAtomPosMap is intentionally kept alive here: it is cached across
+  // renders and dropped only via invalidateAtomPosMap().
+  m_pColMol = MolCoordPtr();
+
+  m_pColMapObj = NULL;
+  m_pGrad = NULL;
+}
+
+void MapSurfRenderer::renderImpl(DisplayContext *pdl)
+{
+  setupColorEnv();
 
   /////////////////////
   // do marching cubes
 
-  int ncol = m_nActCol;
-  int nrow = m_nActRow;
-  int nsec = m_nActSec;
+  const bool bGenSurf = (pdl==NULL);
 
-  int i,j,k;
-  /*
-  for (i=0; i<ncol; i++)
-    for (j=0; j<nrow; j++)
-      for (k=0; k<nsec; k++) {
-        //if (i==1&&j==1)
-        //MB_DPRINTLN("i=%d, thr=%d", k, omp_get_thread_num());
-*/
+  if (bGenSurf) {
+    // gen-surf path: transient double-precision records, no mesh cache
+    // (keeps generateSurfObj output byte-identical to the historical path)
+    std::vector<MCVertBuf> slabs;
+    runMarchingCubes(true, slabs);
 
-  for (i=0; i<ncol; i+=m_nBinFac)
-    for (j=0; j<nrow; j+=m_nBinFac)
-      for (k=0; k<nsec; k+=m_nBinFac) {
+    const int nslabs = (int) slabs.size();
+    for (int si=0; si<nslabs; ++si) {
+      const MCVertBuf &buf = slabs[si];
+      for (MCVertBuf::const_iterator it = buf.begin(); it != buf.end(); ++it)
+        addMSVert(it->pos, it->norm);
+    }
+    // benchmark timing (uncomment when profiling):
+    // const std::chrono::steady_clock::time_point t1 = ...;
+    // LOG_DPRINTLN("MapSurfRend> replay %.2f ms (gensurf)", replay_ms);
+  }
+  else {
+    // display path: build/reuse the persistent mesh cache, then replay it
+    // into the display list with serial coloring
+    if (!m_bMeshCacheValid)
+      buildMeshCache();
+    if (getColorMode()==MapRenderer::MAPREND_MOLFANC &&
+        !m_pColMol.isnull() && m_pAtomPosMap!=NULL && !m_bAidValid)
+      resolveAidCache();
+    replayMeshCache(pdl);
+  }
+
+  cleanupColorEnv();
+}
+
+void MapSurfRenderer::runMarchingCubes(bool bGenSurf,
+                                       std::vector<MCVertBuf> &slabs) const
+{
+  ScalarObject *pMap = m_pCMap;
+
+  const int ncol = m_nActCol;
+  const int nrow = m_nActRow;
+  const int nsec = m_nActSec;
+
+  // Phase 1: run the per-cell marching-cubes kernel over the grid, slab by
+  // slab along the col axis, recording the emissions into per-slab buffers.
+  // The kernel only reads shared state, so the slabs run concurrently on
+  // oneTBB; consuming the buffers in slab order reproduces the serial
+  // emission order exactly, independent of the thread count.
+  const int nslabs = (ncol + m_nBinFac - 1) / m_nBinFac;
+  slabs.clear();
+  slabs.resize(nslabs);
+
+  qlib::parallel_for(0, (size_t) nslabs, [&](size_t si) {
+    const int i = (int) si * m_nBinFac;
+    MCVertBuf &out = slabs[si];
+    float values[8];
+    bool bary[8];
+
+    for (int j=0; j<nrow; j+=m_nBinFac)
+      for (int k=0; k<nsec; k+=m_nBinFac) {
 
         int ix = i+m_nStCol - pMap->getStartCol();
         int iy = j+m_nStRow - pMap->getStartRow();
@@ -512,84 +575,177 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
         bool bin = false;
         int ii;
         for (ii=0; ii<8; ii++) {
-          const int ixx = ix + (vtxoffs[ii][0]) * m_nBinFac;
-          const int iyy = iy + (vtxoffs[ii][1]) * m_nBinFac;
-          const int izz = iz + (vtxoffs[ii][2]) * m_nBinFac;
-          m_values[ii] = getDen(ixx, iyy, izz);
-          
+          const int ixx = ix + (mct::cubeVertexOffset[ii][0]) * m_nBinFac;
+          const int iyy = iy + (mct::cubeVertexOffset[ii][1]) * m_nBinFac;
+          const int izz = iz + (mct::cubeVertexOffset[ii][2]) * m_nBinFac;
+          values[ii] = getDen(ixx, iyy, izz);
+
           // check mol boundary
-          m_bary[ii] = inMolBndry(pMap, ixx, iyy, izz);
-          if (m_bary[ii])
+          bary[ii] = inMolBndry(pMap, ixx, iyy, izz);
+          if (bary[ii])
             bin = true;
         }
 
         if (!bin)
           continue;
 
-        marchCube(pdl, i, j, k);
-        
-        if (i==0) {
-        }
-        /*
-        pdl->startLines();
-        pdl->vertex(i,j,k);
-        pdl->vertex(i+1,j,k);
-        pdl->vertex(i,j,k);
-        pdl->vertex(i,j+1,k);
-        pdl->vertex(i,j,k);
-        pdl->vertex(i,j,k+1);
-        pdl->end();*/
+        marchCubeCell(i, j, k, values, bary, bGenSurf, out);
       }
-        
+  });
 
-  // cleanup for MOLFANC mode
-  if (!m_pColMol.isnull()) {
-    molstr::ColoringSchemePtr pCS = getColSchm();
-    if (!pCS.isnull())
-      pCS->end();
-  }
-  if (m_pAtomPosMap!=NULL) {
-    delete m_pAtomPosMap;
-    m_pAtomPosMap = NULL;
-  }
-  m_pColMol = MolCoordPtr();
-
-  m_pColMapObj = NULL;
-  m_pGrad = NULL;
+  // benchmark timing (uncomment when profiling; measure around the
+  // parallel_for above):
+  // LOG_DPRINTLN("MapSurfRend> MC build %.2f ms "
+  //              "(backend=%s, threads=%d, %d slabs, %d verts)",
+  //              build_ms,
+  //              qlib::parallel_enabled() ? "oneTBB" : "serial",
+  //              qlib::parallel_max_concurrency(), nslabs, (int) nrec);
 }
 
-//fGetOffset finds the approximate point of intersection of the surface
-// between two points with the values fValue1 and fValue2
-namespace {
-  inline float getOffset(float fValue1, float fValue2, float fValueDesired)
-  {
-    float fDelta = fValue2 - fValue1;
-    
-    if(fDelta == 0.0f) {
-      return 0.5f;
-    }
-    return (fValueDesired - fValue1)/fDelta;
-  }
-}
-
-/*
-Vector4D MapSurfRenderer::getGrdNorm(int x, int y, int z)
+void MapSurfRenderer::buildMeshCache()
 {
-  Vector4D rval;
+  std::vector<MCVertBuf> slabs;
+  runMarchingCubes(false, slabs);
 
-  int ix = x+ (m_nStCol - m_pCMap->getStartCol());
-  int iy = y+ (m_nStRow - m_pCMap->getStartRow());
-  int iz = z+ (m_nStSec - m_pCMap->getStartSec());
+  size_t nrec = 0;
+  for (size_t si=0; si<slabs.size(); ++si)
+    nrec += slabs[si].size();
 
-  //const int n = m_nBinFac;
-  const int n = 1;
-  rval.x() = getDen(ix-n, iy,   iz  ) - getDen(ix+n, iy,   iz );
-  rval.y() = getDen(ix,   iy-n, iz  ) - getDen(ix,   iy+n, iz  );
-  rval.z() = getDen(ix,   iy,   iz-n) - getDen(ix,   iy,   iz+n);
-  return rval;
-}*/
+  m_meshCache.clear();
+  m_meshCache.reserve(nrec);
+  for (size_t si=0; si<slabs.size(); ++si) {
+    const MCVertBuf &buf = slabs[si];
+    for (MCVertBuf::const_iterator it = buf.begin(); it != buf.end(); ++it) {
+      CachedVert cv;
+      cv.x = (float) it->pos.x();
+      cv.y = (float) it->pos.y();
+      cv.z = (float) it->pos.z();
+      cv.nx = (float) it->norm.x();
+      cv.ny = (float) it->norm.y();
+      cv.nz = (float) it->norm.z();
+      cv.aid = -1;
+      m_meshCache.push_back(cv);
+    }
+  }
 
-Vector4D MapSurfRenderer::getGrdNorm2(int ix, int iy, int iz)
+  m_bMeshCacheValid = true;
+  m_bAidValid = false;
+
+  // benchmark timing (uncomment when profiling):
+  // LOG_DPRINTLN("MapSurfRend> mesh flatten %.2f ms (%d verts, %.1f MB)",
+  //              flat_ms, (int) nrec,
+  //              double(nrec * sizeof(CachedVert)) / (1024.0 * 1024.0));
+}
+
+void MapSurfRenderer::resolveAidCache()
+{
+  MB_ASSERT(m_pAtomPosMap!=NULL);
+
+  // The tree was built at a defined point (ensureBuilt in makeAtomPosMap),
+  // so concurrent queries are read-only and safe; each returns a plain int.
+  const size_t nverts = m_meshCache.size();
+  qlib::parallel_for(0, nverts, [&](size_t i) {
+    CachedVert &cv = m_meshCache[i];
+    Vector4D vv(cv.x, cv.y, cv.z);
+    vv.w() = 1.0;
+    m_xform.xform4D(vv);
+    cv.aid = m_pAtomPosMap->searchNearestAtom(vv);
+  });
+
+  m_bAidValid = true;
+
+  // benchmark timing (uncomment when profiling):
+  // LOG_DPRINTLN("MapSurfRend> aid resolve %.2f ms (parallel, %d verts)",
+  //              aid_ms, (int) nverts);
+}
+
+void MapSurfRenderer::replayMeshCache(DisplayContext *pdl)
+{
+  // Serial replay: vertex colors are evaluated here because the coloring
+  // schemes (incl. script-implemented ones) are not safe to call
+  // concurrently.
+  const int cmode = getColorMode();
+  // MOLFANC with a resolved aid column: colors are memoized per atom, so
+  // the (two-pass) coloring-scheme evaluation runs once per atom instead
+  // of once per vertex.
+  const bool bMolFanc = (cmode==MapRenderer::MAPREND_MOLFANC &&
+                         m_bAidValid && !m_pColMol.isnull());
+  const bool bColor = (cmode!=MapRenderer::MAPREND_SIMPLE);
+  std::unordered_map<int, ColorPtr> colmemo;
+
+  const size_t nverts = m_meshCache.size();
+  for (size_t i=0; i<nverts; ++i) {
+    const CachedVert &cv = m_meshCache[i];
+    const Vector4D pos(cv.x, cv.y, cv.z);
+    if (bMolFanc) {
+      if (cv.aid>=0) {
+        std::unordered_map<int, ColorPtr>::const_iterator it =
+            colmemo.find(cv.aid);
+        ColorPtr pcol;
+        if (it==colmemo.end()) {
+          MolAtomPtr pa = m_pColMol->getAtom(cv.aid);
+          if (!pa.isnull())
+            pcol = molstr::ColSchmHolder::getColor(pa);
+          colmemo.insert(
+              std::unordered_map<int, ColorPtr>::value_type(cv.aid, pcol));
+        }
+        else {
+          pcol = it->second;
+        }
+        // on failure (null), the previously set color remains in effect --
+        // same semantics as the historical getColorMol failure path
+        if (!pcol.isnull())
+          pdl->color(pcol);
+      }
+    }
+    else if (bColor) {
+      setVertexColor(pdl, pos);
+    }
+#ifdef SHOW_NORMAL
+    m_tmpv.push_back(pos);
+    m_tmpv.push_back(pos + Vector4D(cv.nx, cv.ny, cv.nz));
+#endif
+    pdl->normal(Vector4D(cv.nx, cv.ny, cv.nz));
+    pdl->vertex(pos);
+  }
+
+  // benchmark timing (uncomment when profiling):
+  // LOG_DPRINTLN("MapSurfRend> replay/color %.2f ms "
+  //              "(colormode=%d, %d verts, memo %d atoms)",
+  //              replay_ms, cmode, (int) nverts, (int) colmemo.size());
+}
+
+void MapSurfRenderer::invalidateMeshCache()
+{
+  m_meshCache.clear();
+  std::vector<CachedVert>().swap(m_meshCache);
+  m_bMeshCacheValid = false;
+  m_bAidValid = false;
+  m_trigGpuPrim.invalidate();
+  super_t::invalidateDisplayCache();
+}
+
+void MapSurfRenderer::invalidateGpuMesh()
+{
+  m_trigGpuPrim.invalidate();
+}
+
+void MapSurfRenderer::invalidateGeomCache()
+{
+  invalidateMeshCache();
+}
+
+void MapSurfRenderer::invalidateDisplayCache()
+{
+  // Generic (color-level) invalidation: keep the mesh cache, mark the
+  // GPU-side colors dirty, and drop the display list as before. All
+  // geometry-affecting inputs route through invalidateGeomCache()/
+  // invalidateMeshCache() instead.
+  m_bColorDirty = true;
+  super_t::invalidateDisplayCache();
+}
+
+Vector4D MapSurfRenderer::getGrdNorm2(int ix, int iy, int iz) const
 {
   Vector4D rval;
 
@@ -615,21 +771,20 @@ inline int getVertFlag4(int iVertFlag, const int *iv)
 
 //////////////////////////////////////////
 
-void MapSurfRenderer::marchCube(DisplayContext *pdl,
-                                int fx, int fy, int fz)
+void MapSurfRenderer::marchCubeCell(int fx, int fy, int fz,
+                                    const float values[8],
+                                    const bool bary[8],
+                                    bool bGenSurf, MCVertBuf &out) const
 {
-  int iCorner, iVertex, iVertexTest, iEdge, iTriangle, iFlagIndex, iEdgeFlags;
+  int iCorner, iVertex, iEdge, iTriangle, iFlagIndex, iEdgeFlags;
 
   Vector4D asEdgeVertex[12];
   Vector4D asEdgeNorm[12];
+  Vector4D norms[8];
   bool edgeBinFlags[12];
 
   // Find which vertices are inside (0) of the surface and which are outside (1)
-  iFlagIndex = 0;
-  for(iVertexTest = 0; iVertexTest < 8; iVertexTest++) {
-    if(m_values[iVertexTest] <= m_dLevel) 
-      iFlagIndex |= 1<<iVertexTest;
-  }
+  iFlagIndex = gfx::mc::cornerFlags(values, m_dLevel);
 
   // If the cube is entirely inside or outside of the surface, then there will be no intersections
 
@@ -653,7 +808,7 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
   if (m_nActSec<=fz+m_nBinFac)
     border_flag |= 1<<5;
 
-  if(iFlagIndex == 0 && pdl==NULL) {
+  if(iFlagIndex == 0 && bGenSurf) {
     // Fill the border of the extent
     // inside of the iso-surface
     int nx, ny, nz, dx, dy, dz, dx2, dy2, dz2;
@@ -675,7 +830,8 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
           dx2 =  border_plane[k][(3+0-i/2)%3];
           dy2 =  border_plane[k][(3+1-i/2)%3];
           dz2 =  border_plane[k][(3+2-i/2)%3];
-          addMSVert(fx+dx+dx2, fy+dy+dy2, fz+dz+dz2, nx, ny, nz);
+          out.push_back(MCVert{Vector4D(fx+dx+dx2, fy+dy+dy2, fz+dz+dz2),
+                               Vector4D(nx, ny, nz)});
         }
       }
     }
@@ -683,11 +839,11 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
   }
 
   // Find which edges are intersected by the surface
-  iEdgeFlags = aiCubeEdgeFlags[iFlagIndex];
+  iEdgeFlags = gfx::mc::edgeFlags(iFlagIndex);
 
   {
     for (int ii=0; ii<8; ii++) {
-      m_norms[ii].w() = -1.0;
+      norms[ii].w() = -1.0;
     }
   }
   ScalarObject *pMap = m_pCMap;
@@ -700,46 +856,47 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
   for(iEdge = 0; iEdge < 12; iEdge++) {
     //if there is an intersection on this edge
     if(iEdgeFlags & (1<<iEdge)) {
-      const int ec0 = a2iEdgeConnection[iEdge][0];
-      const int ec1 = a2iEdgeConnection[iEdge][1];
-      if (m_bary[ec0]==false || m_bary[ec1]==false) {
+      const int ec0 = mct::cubeEdgeConnection[iEdge][0];
+      const int ec1 = mct::cubeEdgeConnection[iEdge][1];
+      if (bary[ec0]==false || bary[ec1]==false) {
         edgeBinFlags[iEdge] = false;
         continue;
       }
       edgeBinFlags[iEdge] = true;
-      
-      const double fOffset = getOffset(m_values[ ec0 ], 
-                                       m_values[ ec1 ], m_dLevel);
-      
+
+      const double fOffset = gfx::mc::edgeOffset(values[ ec0 ],
+                                                 values[ ec1 ],
+                                                 float(m_dLevel));
+
       asEdgeVertex[iEdge].x() =
         double(fx) +
-          (a2fVertexOffset[ec0][0] + fOffset*a2fEdgeDirection[iEdge][0]) * m_nBinFac;
+          (mct::cubeVertexOffset[ec0][0] + fOffset*mct::cubeEdgeDirection[iEdge][0]) * m_nBinFac;
       asEdgeVertex[iEdge].y() =
         double(fy) +
-          (a2fVertexOffset[ec0][1] + fOffset*a2fEdgeDirection[iEdge][1]) * m_nBinFac;
+          (mct::cubeVertexOffset[ec0][1] + fOffset*mct::cubeEdgeDirection[iEdge][1]) * m_nBinFac;
       asEdgeVertex[iEdge].z() =
         double(fz) +
-          (a2fVertexOffset[ec0][2] + fOffset*a2fEdgeDirection[iEdge][2]) * m_nBinFac;
+          (mct::cubeVertexOffset[ec0][2] + fOffset*mct::cubeEdgeDirection[iEdge][2]) * m_nBinFac;
       asEdgeVertex[iEdge].w() = 0;
-      
+
       Vector4D nv0,nv1;
-      if (m_norms[ ec0 ].w()<0.0) {
-        const int ixx = ix + (vtxoffs[ec0][0]) * m_nBinFac;
-        const int iyy = iy + (vtxoffs[ec0][1]) * m_nBinFac;
-        const int izz = iz + (vtxoffs[ec0][2]) * m_nBinFac;
-        nv0 = m_norms[ec0] = getGrdNorm2(ixx, iyy, izz);
+      if (norms[ ec0 ].w()<0.0) {
+        const int ixx = ix + (mct::cubeVertexOffset[ec0][0]) * m_nBinFac;
+        const int iyy = iy + (mct::cubeVertexOffset[ec0][1]) * m_nBinFac;
+        const int izz = iz + (mct::cubeVertexOffset[ec0][2]) * m_nBinFac;
+        nv0 = norms[ec0] = getGrdNorm2(ixx, iyy, izz);
       }
       else {
-        nv0 = m_norms[ec0];
+        nv0 = norms[ec0];
       }
-      if (m_norms[ ec1 ].w()<0.0) {
-        const int ixx = ix + (vtxoffs[ec1][0]) * m_nBinFac;
-        const int iyy = iy + (vtxoffs[ec1][1]) * m_nBinFac;
-        const int izz = iz + (vtxoffs[ec1][2]) * m_nBinFac;
-        nv1 = m_norms[ec1] = getGrdNorm2(ixx, iyy, izz);
+      if (norms[ ec1 ].w()<0.0) {
+        const int ixx = ix + (mct::cubeVertexOffset[ec1][0]) * m_nBinFac;
+        const int iyy = iy + (mct::cubeVertexOffset[ec1][1]) * m_nBinFac;
+        const int izz = iz + (mct::cubeVertexOffset[ec1][2]) * m_nBinFac;
+        nv1 = norms[ec1] = getGrdNorm2(ixx, iyy, izz);
       }
       else {
-        nv1 = m_norms[ec1];
+        nv1 = norms[ec1];
       }
       asEdgeNorm[iEdge] = (nv0.scale(1.0-fOffset) + nv1.scale(fOffset)).normalize();
     }
@@ -747,12 +904,12 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
 
   // Draw the triangles that were found.  There can be up to five per cube
   for(iTriangle = 0; iTriangle < 5; iTriangle++) {
-    if(a2iTriangleConnectionTable[iFlagIndex][3*iTriangle] < 0)
+    if(mct::triangleConnectionTable[iFlagIndex][3*iTriangle] < 0)
       break;
-    
+
     bool bNotDraw = false;
     for(iCorner = 0; iCorner < 3; iCorner++) {
-      iVertex = a2iTriangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
+      iVertex = mct::triangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
       if (!edgeBinFlags[iVertex]) {
         bNotDraw = true;
         break;
@@ -762,40 +919,14 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
       continue;
 
     for(iCorner = 0; iCorner < 3; iCorner++) {
-      iVertex = a2iTriangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
-      
-      if (getColorMode()!=MapRenderer::MAPREND_SIMPLE)
-        setVertexColor(pdl, asEdgeVertex[iVertex]);
+      iVertex = mct::triangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
 
-      if (m_dLevel<0) {
-        if (pdl!=NULL) {
-          pdl->normal(-asEdgeNorm[iVertex]);
-          pdl->vertex(asEdgeVertex[iVertex]);
-        }
-        else {
-          addMSVert(asEdgeVertex[iVertex], -asEdgeNorm[iVertex]);
-        }
-#ifdef SHOW_NORMAL
-        m_tmpv.push_back(asEdgeVertex[iVertex]);
-        m_tmpv.push_back(asEdgeVertex[iVertex]-asEdgeNorm[iVertex]);
-#endif
-
-      }
-      else {
-        if (pdl!=NULL) {
-          pdl->normal(asEdgeNorm[iVertex]);
-          pdl->vertex(asEdgeVertex[iVertex]);
-        }
-        else {
-          addMSVert(asEdgeVertex[iVertex], asEdgeNorm[iVertex]);
-        }
-        
-#ifdef SHOW_NORMAL
-        m_tmpv.push_back(asEdgeVertex[iVertex]);
-        m_tmpv.push_back(asEdgeVertex[iVertex]+asEdgeNorm[iVertex]);
-#endif
-      }
-
+      // The negative-level normal flip is applied at record time; phase 2
+      // replays the records verbatim.
+      if (m_dLevel<0)
+        out.push_back(MCVert{asEdgeVertex[iVertex], -asEdgeNorm[iVertex]});
+      else
+        out.push_back(MCVert{asEdgeVertex[iVertex], asEdgeNorm[iVertex]});
 
     } // for(iCorner = 0; iCorner < 3; iCorner++)
 
@@ -803,12 +934,12 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
 
 
   // Fill the border of the extent
-  if(pdl==NULL) {
+  if(bGenSurf) {
     Vector4D v[8+12];
     for (int i=0; i<8; ++i) {
-      v[i].x() = double(fx) + a2fVertexOffset[i][0] * m_nBinFac;
-      v[i].y() = double(fy) + a2fVertexOffset[i][1] * m_nBinFac;
-      v[i].z() = double(fz) + a2fVertexOffset[i][2] * m_nBinFac;
+      v[i].x() = double(fx) + mct::cubeVertexOffset[i][0] * m_nBinFac;
+      v[i].y() = double(fy) + mct::cubeVertexOffset[i][1] * m_nBinFac;
+      v[i].z() = double(fz) + mct::cubeVertexOffset[i][2] * m_nBinFac;
       v[i].w() = 0;
     }
     for (int i=0; i<12; ++i) {
@@ -822,167 +953,218 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
         Vector4D norm(border_normal[iBorder][0], border_normal[iBorder][1], border_normal[iBorder][2]);
         
         const int *iverts = bdr_verts[iBorder]; //{0, 4, 7, 3};
-        const int *iedges = bdr_edges[iBorder]; //[4] = {8, 7, 11, 3};
-        
         int ivf4 = getVertFlag4(iFlagIndex, iverts);
-        
+
         for (int j=0; j<3*3; ++j) {
-          int ix = bdr_tris[ivf4][j];
-          if (ix<0) break;
-          addMSVert(v[iverts[ix]], norm);
+          int iv = bdr_tris[ivf4][j];
+          if (iv<0) break;
+          out.push_back(MCVert{v[iverts[iv]], norm});
         }
-        
-
-            /*
-          switch (ivf4) {
-            // 1-tri case
-          case 15-1:
-            addMSVert(v[iverts[0]], norm);
-            addMSVert(v[iverts[0+4]], norm);
-            addMSVert(v[iverts[3+4]], norm);
-            break;
-          case 15-2:
-            addMSVert(v[iverts[1]], norm);
-            addMSVert(v[iverts[1+4]], norm);
-            addMSVert(v[iverts[0+4]], norm);
-            break;
-          case 15-4:
-            addMSVert(v[iverts[2]], norm);
-            addMSVert(v[iverts[2+4]], norm);
-            addMSVert(v[iverts[1+4]], norm);
-            break;
-          case 15-8:
-            addMSVert(v[iverts[3]], norm);
-            addMSVert(v[iverts[3+4]], norm);
-            addMSVert(v[iverts[2+4]], norm);
-            break;
-
-            // 2-tri case
-          case 12: // 1100
-            addMSVert(v[iverts[0]], norm);
-            addMSVert(v[iverts[1]], norm);
-            addMSVert(asEdgeVertex[iedges[3]], norm);
-            
-            addMSVert(v[iverts[1]], norm);
-            addMSVert(asEdgeVertex[iedges[1]], norm);
-            addMSVert(asEdgeVertex[iedges[3]], norm);
-            break;
-            
-          case 3: // 0011
-            addMSVert(v[iverts[2]], norm);
-            addMSVert(v[iverts[3]], norm);
-            addMSVert(asEdgeVertex[iedges[1]], norm);
-            
-            addMSVert(v[iverts[3]], norm);
-            addMSVert(asEdgeVertex[iedges[3]], norm);
-            addMSVert(asEdgeVertex[iedges[1]], norm);
-            break;
-
-          case 6: // 0110
-            addMSVert(v[iverts[3]], norm);
-            addMSVert(v[iverts[0]], norm);
-            addMSVert(asEdgeVertex[iedges[2]], norm);
-            
-            addMSVert(v[iverts[0]], norm);
-            addMSVert(asEdgeVertex[iedges[0]], norm);
-            addMSVert(asEdgeVertex[iedges[2]], norm);
-            break;
-
-          case 9: // 1001
-            addMSVert(v[iverts[1]], norm);
-            addMSVert(v[iverts[2]], norm);
-            addMSVert(asEdgeVertex[iedges[0]], norm);
-            
-            addMSVert(v[iverts[2]], norm);
-            addMSVert(asEdgeVertex[iedges[2]], norm);
-            addMSVert(asEdgeVertex[iedges[0]], norm);
-            break;
-
-            
-          case 5:
-          case 10:
-            LOG_DPRINTLN("XXX");
-            break;
-            
-          case 0:
-            addMSVert(v[iverts[0]], norm);
-            addMSVert(v[iverts[1]], norm);
-            addMSVert(v[iverts[3]], norm);
-
-            addMSVert(v[iverts[1]], norm);
-            addMSVert(v[iverts[2]], norm);
-            addMSVert(v[iverts[3]], norm);
-            break;
-
-          case 15:
-            break;
-            
-
-            // 3-tri case
-          case 1:
-            addMSVert(v[iverts[2]], norm);
-            addMSVert(asEdgeVertex[iedges[3]], norm);
-            addMSVert(asEdgeVertex[iedges[0]], norm);
-
-            addMSVert(v[iverts[2]], norm);
-            addMSVert(asEdgeVertex[iedges[0]], norm);
-            addMSVert(v[iverts[1]], norm);
-
-            addMSVert(v[iverts[2]], norm);
-            addMSVert(v[iverts[3]], norm);
-            addMSVert(asEdgeVertex[iedges[3]], norm);
-            break;
-
-          case 2:
-            addMSVert(v[iverts[3]], norm);
-            addMSVert(asEdgeVertex[iedges[0]], norm);
-            addMSVert(asEdgeVertex[iedges[1]], norm);
-
-            addMSVert(v[iverts[3]], norm);
-            addMSVert(asEdgeVertex[iedges[1]], norm);
-            addMSVert(v[iverts[2]], norm);
-
-            addMSVert(v[iverts[3]], norm);
-            addMSVert(v[iverts[0]], norm);
-            addMSVert(asEdgeVertex[iedges[0]], norm);
-            break;
-
-          case 4:
-            addMSVert(v[iverts[0]], norm);
-            addMSVert(asEdgeVertex[iedges[1]], norm);
-            addMSVert(asEdgeVertex[iedges[2]], norm);
-            
-            addMSVert(v[iverts[0]], norm);
-            addMSVert(asEdgeVertex[iedges[2]], norm);
-            addMSVert(v[iverts[3]], norm);
-
-            addMSVert(v[iverts[0]], norm);
-            addMSVert(v[iverts[1]], norm);
-            addMSVert(asEdgeVertex[iedges[1]], norm);
-            break;
-
-          case 8:
-            addMSVert(v[iverts[1]], norm);
-            addMSVert(asEdgeVertex[iedges[2]], norm);
-            addMSVert(asEdgeVertex[iedges[3]], norm);
-            
-            addMSVert(v[iverts[1]], norm);
-            addMSVert(asEdgeVertex[iedges[3]], norm);
-            addMSVert(v[iverts[0]], norm);
-
-            addMSVert(v[iverts[1]], norm);
-            addMSVert(v[iverts[2]], norm);
-            addMSVert(asEdgeVertex[iedges[2]], norm);
-            break;
-          }
-             */
-
-
       }
     }
     return;
   }
 
+}
+
+///////////////////////////////////////////////////////////////
+// GpuPrim display path
+
+void MapSurfRenderer::display(DisplayContext *pdc)
+{
+  // File (non-GL) export -- incl. umbreon/povray -- and non-fill draw modes
+  // (line/point) use the legacy display-list path (render()).
+  if (pdc->isFile() || m_nDrawMode!=MSRDRAW_FILL) {
+    super_t::display(pdc);
+    return;
+  }
+
+  if (!m_bCheckShaderOK) {
+    m_bUseShader = m_trigGpuPrim.init(pdc);
+    if (m_bUseShader)
+      MB_DPRINTLN("MapSurfRend> triangle shader OK");
+    m_bCheckShaderOK = true;
+  }
+  if (!m_bUseShader) {
+    // shader unavailable --> legacy path
+    super_t::display(pdc);
+    return;
+  }
+
+  ScalarObject *pMap = getScalarObj();
+  if (pMap==NULL)
+    return;
+  m_pCMap = pMap;
+
+  const bool bNeedBuild =
+      !m_bMeshCacheValid || !m_trigGpuPrim.isValid() || m_bColorDirty ||
+      (getColorMode()==MapRenderer::MAPREND_MOLFANC && !m_bAidValid);
+
+  if (bNeedBuild) {
+    // check and setup mol boundary data + map-range info (as render() does)
+    setupMolBndry();
+    makerange();
+
+    setupColorEnv();
+
+    if (!m_bMeshCacheValid) {
+      buildMeshCache();
+      m_trigGpuPrim.invalidate();
+    }
+    if (getColorMode()==MapRenderer::MAPREND_MOLFANC &&
+        !m_pColMol.isnull() && m_pAtomPosMap!=NULL && !m_bAidValid) {
+      resolveAidCache();
+      // atom correspondence changed --> colors must be re-resolved
+      m_bColorDirty = true;
+    }
+
+    if (!m_trigGpuPrim.isValid()) {
+      buildGpuMesh(pdc);
+    }
+    else if (m_bColorDirty) {
+      // Color-only change: rewrite colors in place (VBO/VAO reused);
+      // rebuild if the vertex count no longer matches.
+      if (!updateGpuColors())
+        buildGpuMesh(pdc);
+    }
+    m_bColorDirty = false;
+
+    cleanupColorEnv();
+  }
+
+  if (!m_trigGpuPrim.isValid()) {
+    m_pCMap = NULL;
+    return;
+  }
+
+  preRender(pdc);
+  pdc->pushMatrix();
+  // Apply the same map transform the DL path bakes into its vertices; the
+  // cached records stay in cell-grid coordinates.
+  setupXformMat(pdc);
+  m_trigGpuPrim.setEdgeLineType(pdc->getEdgeLineType());
+  m_trigGpuPrim.draw(pdc);
+  pdc->popMatrix();
+  postRender(pdc);
+
+  m_pCMap = NULL;
+}
+
+void MapSurfRenderer::unloading()
+{
+  m_trigGpuPrim.invalidate();
+  super_t::unloading();
+}
+
+void MapSurfRenderer::resolveVertexColors(std::vector<quint32> &vcols)
+{
+  const size_t nverts = m_meshCache.size();
+  vcols.resize(nverts);
+
+  const int cmode = getColorMode();
+  const qlib::uid_t nSceneID = getSceneID();
+
+  quint32 basecol = 0xFFFFFFFF;
+  {
+    ColorPtr pbase = MapRenderer::getColor();
+    if (!pbase.isnull())
+      basecol = pbase->getDevCode(nSceneID);
+  }
+
+  if (cmode==MapRenderer::MAPREND_MOLFANC &&
+      m_bAidValid && !m_pColMol.isnull()) {
+    // per-atom memoized colors (schemes are evaluated once per atom);
+    // unresolved vertices keep the base color, matching the DL path where
+    // the baked base color remains in effect on lookup failure
+    std::unordered_map<int, quint32> memo;
+    for (size_t i=0; i<nverts; ++i) {
+      const qint32 aid = m_meshCache[i].aid;
+      quint32 col = basecol;
+      if (aid>=0) {
+        std::unordered_map<int, quint32>::const_iterator it = memo.find(aid);
+        if (it==memo.end()) {
+          MolAtomPtr pa = m_pColMol->getAtom(aid);
+          if (!pa.isnull()) {
+            ColorPtr pcol = molstr::ColSchmHolder::getColor(pa);
+            if (!pcol.isnull())
+              col = pcol->getDevCode(nSceneID);
+          }
+          memo.insert(
+              std::unordered_map<int, quint32>::value_type(aid, col));
+        }
+        else {
+          col = it->second;
+        }
+      }
+      vcols[i] = col;
+    }
+  }
+  else if (cmode==MapRenderer::MAPREND_MULTIGRAD &&
+           m_pColMapObj!=NULL && m_pGrad!=NULL) {
+    for (size_t i=0; i<nverts; ++i) {
+      const CachedVert &cv = m_meshCache[i];
+      Vector4D vv(cv.x, cv.y, cv.z);
+      vv.w() = 1.0;
+      m_xform.xform4D(vv);
+      const double par = m_pColMapObj->getValueAt(vv);
+      ColorPtr pcol = m_pGrad->getColor(par);
+      vcols[i] = pcol.isnull() ? basecol : pcol->getDevCode(nSceneID);
+    }
+  }
+  else {
+    // SIMPLE mode (or unresolved coloring setup): uniform base color.
+    // The trig shader has no uniform-color path, so every vertex carries
+    // the resolved devcode.
+    std::fill(vcols.begin(), vcols.end(), basecol);
+  }
+}
+
+void MapSurfRenderer::buildGpuMesh(DisplayContext *pdc)
+{
+  const int nverts = (int) m_meshCache.size();
+  if (nverts<=0) {
+    m_trigGpuPrim.invalidate();
+    return;
+  }
+  const int nfaces = nverts/3;
+
+  std::vector<quint32> vcols;
+  resolveVertexColors(vcols);
+
+  m_trigGpuPrim.setPolygonMode(DisplayContext::POLY_FILL);
+  m_trigGpuPrim.alloc(pdc, nverts, nfaces);
+  for (int i=0; i<nverts; ++i) {
+    const CachedVert &cv = m_meshCache[i];
+    m_trigGpuPrim.setVertex(i, Vector4D(cv.x, cv.y, cv.z));
+    m_trigGpuPrim.setNormal(i, Vector4D(cv.nx, cv.ny, cv.nz));
+    m_trigGpuPrim.setColor(i, vcols[i]);
+  }
+  // identity triangle soup (the MC emits unshared vertex triples)
+  for (int i=0; i<nfaces; ++i)
+    m_trigGpuPrim.setFace(i, i*3, i*3+1, i*3+2);
+  m_trigGpuPrim.setUpdated(true);
+
+  // benchmark timing (uncomment when profiling):
+  // LOG_DPRINTLN("MapSurfRend> gpu fill %.2f ms (%d verts)", fill_ms, nverts);
+}
+
+bool MapSurfRenderer::updateGpuColors()
+{
+  const int nverts = (int) m_meshCache.size();
+  if (nverts<=0 || m_trigGpuPrim.getVertexSize()!=nverts)
+    return false;
+
+  std::vector<quint32> vcols;
+  resolveVertexColors(vcols);
+
+  for (int i=0; i<nverts; ++i)
+    m_trigGpuPrim.setColor(i, vcols[i]);
+  m_trigGpuPrim.setUpdated(true);
+
+  // benchmark timing (uncomment when profiling):
+  // LOG_DPRINTLN("MapSurfRend> gpu recolor %.2f ms (%d verts)", recol_ms,
+  //              nverts);
+  return true;
 }
 
 void MapSurfRenderer::setupXformMat()
@@ -1100,17 +1282,33 @@ bool MapSurfRenderer::getColorMol(const Vector4D &v, gfx::ColorPtr &rcol)
   return true;
 }
 
+void MapSurfRenderer::invalidateAtomPosMap()
+{
+  if (m_pAtomPosMap!=NULL) {
+    delete m_pAtomPosMap;
+    m_pAtomPosMap = NULL;
+  }
+}
+
 void MapSurfRenderer::makeAtomPosMap()
 {
   if (m_pColMol.isnull())
     return;
 
+  // Cached across renders; NULL means "rebuild needed" (see
+  // invalidateAtomPosMap callers for the invalidation conditions).
   if (m_pAtomPosMap!=NULL)
-    delete m_pAtomPosMap;
+    return;
 
   m_pAtomPosMap = MB_NEW molstr::AtomPosMap2();
   m_pAtomPosMap->setTarget(m_pColMol);
   m_pAtomPosMap->generate(m_pMolSel);
+  // Force the lazy CGAL tree build here (not on the first query), so the
+  // build happens at a defined point and later queries are read-only.
+  m_pAtomPosMap->ensureBuilt();
+
+  // benchmark timing (uncomment when profiling):
+  // LOG_DPRINTLN("MapSurfRend> AtomPosMap build %.2f ms", build_ms);
 }
 
 /// Resolve mol name, set m_nTgtMolID, listen the MolCoord events,
@@ -1129,6 +1327,9 @@ MolCoordPtr MapSurfRenderer::resolveMolIDImpl(const qlib::LString &name)
 
   m_nTgtMolID = pMol->getUID();
 
+  // target (possibly a different mol) resolved --> cached atom map is stale
+  invalidateAtomPosMap();
+
   // event handling: attach to the new object
   pMol->addListener(this);
 
@@ -1146,6 +1347,7 @@ void MapSurfRenderer::setTgtObjName(const qlib::LString &name)
     }
     m_nTgtMolID = qlib::invalid_uid;
   }
+  invalidateAtomPosMap();
 
   // get object by name
   if (name.isEmpty())
@@ -1195,6 +1397,31 @@ void MapSurfRenderer::propChanged(qlib::LPropEvent &ev)
 
 void MapSurfRenderer::objectChanged(qsys::ObjectEvent &ev)
 {
+  // Atom positions/topology of the MOLFANC target mol changed --> the
+  // cached nearest-atom map is stale (the isosurface geometry itself does
+  // not depend on the mol, so only the map is dropped here; the display
+  // cache invalidation is handled by the base class as before).
+  if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED &&
+      ev.getTarget()==m_nTgtMolID &&
+      (ev.getDescr().equals("atomsMoved") ||
+       ev.getDescr().equals("topologyChanged"))) {
+    invalidateAtomPosMap();
+    m_bAidValid = false;
+  }
+
+  // The client map object's data or xform changed --> the mesh cache is
+  // stale (the base class handles the display-cache invalidation).
+  if (ev.getTarget()==getClientObjID()) {
+    if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED) {
+      invalidateMeshCache();
+    }
+    else if (ev.getType()==qsys::ObjectEvent::OBE_PROPCHG) {
+      qlib::LPropEvent *pPE = ev.getPropEvent();
+      if (pPE!=NULL && pPE->getName().equals("xformMat"))
+        invalidateMeshCache();
+    }
+  }
+
   if (getColorMode()==MapRenderer::MAPREND_MOLFANC &&
       ev.getType()==qsys::ObjectEvent::OBE_PROPCHG) {
     qlib::LPropEvent *pPE = ev.getPropEvent();

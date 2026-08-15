@@ -78,7 +78,6 @@
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
-      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <AdditionalDependencies>libfftw3f-3.lib;opengl32.lib;glu32.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -95,7 +94,6 @@
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <AdditionalDependencies>libfftw3f-3.lib;opengl32.lib;glu32.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -112,7 +110,6 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <AdditionalDependencies>libfftw3f-3.lib;opengl32.lib;glu32.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -132,7 +129,6 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <AdditionalDependencies>libfftw3f-3.lib;opengl32.lib;glu32.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -152,7 +148,6 @@
     <ClCompile Include="..\..\src\modules\xtal\DensityMap_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\GLSLMapMeshRenderer.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\GLSLMapMeshRenderer_wrap.cpp" />
-    <ClCompile Include="..\..\src\modules\xtal\GLSLMapSurfRendImpl1.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\GLSLMapVolRenderer.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\GLSLMapVolRenderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MapMeshRenderer.cpp" />
@@ -161,7 +156,6 @@
     <ClCompile Include="..\..\src\modules\xtal\MapRenderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MapSurfRenderer.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MapSurfRenderer_wrap.cpp" />
-    <ClCompile Include="..\..\src\modules\xtal\MapSurfRendImpl2.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MTZ2MapReader.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MTZ2MapReader_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\QdfDenMapReader.cpp" />
@@ -193,8 +187,6 @@
     <glslshader Include="..\..\src\modules\xtal\mapmesh_frag.glsl" />
     <glslshader Include="..\..\src\modules\xtal\mapmesh_geom.glsl" />
     <glslshader Include="..\..\src\modules\xtal\mapmesh_vertex.glsl" />
-    <glslshader Include="..\..\src\modules\xtal\mapsurf1_frag.glsl" />
-    <glslshader Include="..\..\src\modules\xtal\mapsurf1_vertex.glsl" />
     <glslshader Include="..\..\src\modules\xtal\mapvol_frag.glsl" />
     <glslshader Include="..\..\src\modules\xtal\mapvol_vertex.glsl" />
   </ItemGroup>

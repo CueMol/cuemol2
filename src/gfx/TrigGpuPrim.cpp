@@ -60,6 +60,13 @@ void TrigGpuPrim::alloc(DisplayContext *pDC, int nverts, int nfaces)
     MB_ASSERT(m_pPO != nullptr);
     MB_ASSERT(pDC != nullptr);
 
+    // Re-allocation: release the previous mesh (and its GPU buffer via the
+    // VBORep dtor) instead of leaking it.
+    if (m_pDrawElems != nullptr) {
+        delete m_pDrawElems;
+        m_pDrawElems = nullptr;
+    }
+
     m_pDrawElems = MB_NEW TrigMesh();
     auto &data = *m_pDrawElems;
 

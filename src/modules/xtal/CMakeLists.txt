@@ -62,8 +62,6 @@ IF (BUILD_OPENGL_SYSDEP)
     MapMeshGpuPrim.cpp
     GLSLMapMeshRenderer2.cpp
     # GLSLMapVolRenderer.cpp
-    # MapSurfRendImpl2.cpp
-    # GLSLMapSurfRendImpl1.cpp
   )
   list(APPEND XTAL_MCWG_QIFS
     GLSLMapMeshRenderer.qif
@@ -95,8 +93,6 @@ IF (BUILD_OPENGL_SYSDEP)
     mapmesh2_vert.glsl
     # mapvol_vertex.glsl
     # mapvol_frag.glsl
-    mapsurf1_vertex.glsl
-    mapsurf1_frag.glsl
   )
 
   SET(SHADER_DEPS
