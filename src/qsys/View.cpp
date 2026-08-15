@@ -30,7 +30,28 @@
 //#include <cmath>
 #include <boost/math/special_functions/fpclassify.hpp>
 
+#include <chrono>
+
 using namespace qsys;
+
+namespace qsys { namespace detail {
+
+  /// Idle time after the last wheel/gesture center drag before the change is
+  /// settled (flushed as a non-drag "center" event).
+  static const qlib::time_value CENTER_SETTLE_DELAY_NS = 200LL * 1000000LL;
+
+  /// Monotonic timestamp in nanoseconds.
+  /// Deliberately not qlib::EventManager::getCurrentTime(): that requires an
+  /// initialized timer impl, which is absent in non-GUI hosts (e.g. tests).
+  static qlib::time_value steadyNowNs()
+  {
+    return qlib::time_value(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::steady_clock::now().time_since_epoch())
+            .count());
+  }
+
+} }
 
 MB_PUBLIC ViewCap *View::m_spViewCap = NULL;
 
@@ -60,6 +81,11 @@ View::View()
   m_pMscr = new MomentumScroll(this);
   m_bRotMMS = false;
   m_bTransMMS = false;
+
+  m_bCenterChanged = false;
+  m_bMouseDragActive = false;
+  m_bCenterSettlePending = false;
+  m_centerSettleLast = 0;
 
   m_bSwapStereoEyes = false;
 
@@ -208,6 +234,17 @@ void View::setViewCenterDrag(const qlib::Vector4D &pos)
   setUpdateFlag();
   m_bCenterChanged = true;
 
+  // Wheel/gesture-driven center moves (trackpad pan, momentum scroll, ...)
+  // have no end event of their own, unlike a mouse drag which ends in
+  // mouseDragEnd(). Arm the settle timer so the change is flushed as a
+  // non-drag "center" event once the interaction goes idle; without this,
+  // listeners that only act on the final value (map renderers in
+  // autoupdate mode) would never update.
+  if (!m_bMouseDragActive) {
+    m_bCenterSettlePending = true;
+    m_centerSettleLast = detail::steadyNowNs();
+  }
+
   // fire event
   {
     ViewEvent ev;
@@ -216,6 +253,36 @@ void View::setViewCenterDrag(const qlib::Vector4D &pos)
     fireViewEvent(ev);
   }
   // MB_DPRINTLN("viewcen chg drg %f,%f,%f", pos.x(), pos.y(), pos.z());
+}
+
+void View::flushCenterChange()
+{
+  m_bCenterSettlePending = false;
+  if (m_bCenterChanged) {
+    // setViewCenter() clears m_bCenterChanged and fires the non-drag
+    // "center" property change
+    setViewCenter(getViewCenter());
+  }
+}
+
+void View::tickCenterSettle()
+{
+  if (!m_bCenterSettlePending)
+    return;
+  tickCenterSettle(detail::steadyNowNs());
+}
+
+void View::tickCenterSettle(qlib::time_value now)
+{
+  if (!m_bCenterSettlePending)
+    return;
+  // Never settle in the middle of a mouse drag; mouseDragEnd() flushes it.
+  if (m_bMouseDragActive)
+    return;
+  if (now - m_centerSettleLast < detail::CENTER_SETTLE_DELAY_NS)
+    return;
+
+  flushCenterChange();
 }
 
 void View::setViewCenterAnim(const qlib::Vector4D &pos)
@@ -550,6 +617,13 @@ bool View::mouseDragStart(InDevEvent &ev)
   // initialize work flags
   m_nMouseMode = 0;
 
+  // A wheel/gesture center move that has not settled yet would be discarded
+  // by the m_bCenterChanged reset below; flush it first so its listeners see
+  // the final value (this mirrors the UXP widget's checkScrollEndPending).
+  flushCenterChange();
+
+  m_bMouseDragActive = true;
+
   // save pre-drag state
   //m_saveViewCenter = getViewCenter();
   //m_saveRotQuat = getRotQuat();
@@ -765,9 +839,8 @@ bool View::mouseWheel(InDevEvent &ev)
 /** mouse drag end event */
 bool View::mouseDragEnd(InDevEvent &ev)
 {
-  if (m_bCenterChanged) {
-    setViewCenter(getViewCenter());
-  }
+  m_bMouseDragActive = false;
+  flushCenterChange();
 
 #if (GUI_ARCH==OSX)
   setCursor("auto");

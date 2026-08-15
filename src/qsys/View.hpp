@@ -91,6 +91,17 @@ namespace qsys {
 
     bool m_bCenterChanged;
 
+    /// True between mouseDragStart and mouseDragEnd (used to keep the
+    /// wheel/gesture settle from firing in the middle of a mouse drag)
+    bool m_bMouseDragActive;
+
+    /// A wheel/gesture-driven center drag is waiting to be settled
+    /// (i.e. flushed as a non-drag "center" property change)
+    bool m_bCenterSettlePending;
+
+    /// Steady-clock timestamp (ns) of the last wheel/gesture center drag
+    qlib::time_value m_centerSettleLast;
+
     /// Name of the mouse cursor type
     LString m_cursorName;
 
@@ -190,6 +201,19 @@ namespace qsys {
 
     // Set View center with animation
     void setViewCenterAnim(const qlib::Vector4D &pos);
+
+    /// Flush a pending center change as a non-drag "center" property change.
+    /// This is what ends an interactive center move for listeners that only
+    /// act on the final value (e.g. map renderers in autoupdate mode).
+    void flushCenterChange();
+
+    /// Settle a wheel/gesture-driven center drag once the interaction has
+    /// been idle for the settle delay. Called once per frame by
+    /// Scene::checkAndUpdate; cheap no-op when nothing is pending.
+    void tickCenterSettle();
+
+    /// tickCenterSettle() with an explicit "now" (steady-clock ns), for tests
+    void tickCenterSettle(qlib::time_value now);
 
     // Get View center (for scripting iface)
     qlib::LScrVector4D getViewCenterScr() const {
