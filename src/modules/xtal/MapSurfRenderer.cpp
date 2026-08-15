@@ -16,6 +16,7 @@
 #include <qlib/parallel.hpp>
 
 #include <chrono>
+#include <unordered_map>
 
 #include <qsys/ScrEventManager.hpp>
 #include <qsys/ViewEvent.hpp>
@@ -501,6 +502,9 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
     // into the display list with serial coloring
     if (!m_bMeshCacheValid)
       buildMeshCache();
+    if (getColorMode()==MapRenderer::MAPREND_MOLFANC &&
+        !m_pColMol.isnull() && m_pAtomPosMap!=NULL && !m_bAidValid)
+      resolveAidCache();
     replayMeshCache(pdl);
   }
 
@@ -641,6 +645,33 @@ void MapSurfRenderer::buildMeshCache()
                double(nrec * sizeof(CachedVert)) / (1024.0 * 1024.0));
 }
 
+void MapSurfRenderer::resolveAidCache()
+{
+  MB_ASSERT(m_pAtomPosMap!=NULL);
+
+  const std::chrono::steady_clock::time_point t0 =
+      std::chrono::steady_clock::now();
+
+  // The tree was built at a defined point (ensureBuilt in makeAtomPosMap),
+  // so concurrent queries are read-only and safe; each returns a plain int.
+  const size_t nverts = m_meshCache.size();
+  qlib::parallel_for(0, nverts, [&](size_t i) {
+    CachedVert &cv = m_meshCache[i];
+    Vector4D vv(cv.x, cv.y, cv.z);
+    vv.w() = 1.0;
+    m_xform.xform4D(vv);
+    cv.aid = m_pAtomPosMap->searchNearestAtom(vv);
+  });
+
+  m_bAidValid = true;
+
+  const double aid_ms = std::chrono::duration<double, std::milli>(
+                            std::chrono::steady_clock::now() - t0)
+                            .count();
+  LOG_DPRINTLN("MapSurfRend> aid resolve %.2f ms (parallel, %d verts)",
+               aid_ms, (int) nverts);
+}
+
 void MapSurfRenderer::replayMeshCache(DisplayContext *pdl)
 {
   const std::chrono::steady_clock::time_point t1 =
@@ -649,13 +680,43 @@ void MapSurfRenderer::replayMeshCache(DisplayContext *pdl)
   // Serial replay: vertex colors are evaluated here because the coloring
   // schemes (incl. script-implemented ones) are not safe to call
   // concurrently.
-  const bool bColor = (getColorMode()!=MapRenderer::MAPREND_SIMPLE);
+  const int cmode = getColorMode();
+  // MOLFANC with a resolved aid column: colors are memoized per atom, so
+  // the (two-pass) coloring-scheme evaluation runs once per atom instead
+  // of once per vertex.
+  const bool bMolFanc = (cmode==MapRenderer::MAPREND_MOLFANC &&
+                         m_bAidValid && !m_pColMol.isnull());
+  const bool bColor = (cmode!=MapRenderer::MAPREND_SIMPLE);
+  std::unordered_map<int, ColorPtr> colmemo;
+
   const size_t nverts = m_meshCache.size();
   for (size_t i=0; i<nverts; ++i) {
     const CachedVert &cv = m_meshCache[i];
     const Vector4D pos(cv.x, cv.y, cv.z);
-    if (bColor)
+    if (bMolFanc) {
+      if (cv.aid>=0) {
+        std::unordered_map<int, ColorPtr>::const_iterator it =
+            colmemo.find(cv.aid);
+        ColorPtr pcol;
+        if (it==colmemo.end()) {
+          MolAtomPtr pa = m_pColMol->getAtom(cv.aid);
+          if (!pa.isnull())
+            pcol = molstr::ColSchmHolder::getColor(pa);
+          colmemo.insert(
+              std::unordered_map<int, ColorPtr>::value_type(cv.aid, pcol));
+        }
+        else {
+          pcol = it->second;
+        }
+        // on failure (null), the previously set color remains in effect --
+        // same semantics as the historical getColorMol failure path
+        if (!pcol.isnull())
+          pdl->color(pcol);
+      }
+    }
+    else if (bColor) {
       setVertexColor(pdl, pos);
+    }
 #ifdef SHOW_NORMAL
     m_tmpv.push_back(pos);
     m_tmpv.push_back(pos + Vector4D(cv.nx, cv.ny, cv.nz));
@@ -667,8 +728,9 @@ void MapSurfRenderer::replayMeshCache(DisplayContext *pdl)
   const double replay_ms = std::chrono::duration<double, std::milli>(
                                std::chrono::steady_clock::now() - t1)
                                .count();
-  LOG_DPRINTLN("MapSurfRend> replay/color %.2f ms (colormode=%d, %d verts)",
-               replay_ms, getColorMode(), (int) nverts);
+  LOG_DPRINTLN("MapSurfRend> replay/color %.2f ms "
+               "(colormode=%d, %d verts, memo %d atoms)",
+               replay_ms, cmode, (int) nverts, (int) colmemo.size());
 }
 
 void MapSurfRenderer::invalidateMeshCache()

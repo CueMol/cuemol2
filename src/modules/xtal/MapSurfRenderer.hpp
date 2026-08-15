@@ -283,6 +283,11 @@ namespace xtal {
     /// into m_meshCache (slabs freed afterwards)
     void buildMeshCache();
 
+    /// Parallel nearest-atom pass over m_meshCache (MOLFANC). Requires the
+    /// AtomPosMap2 tree to be built (ensureBuilt); queries are read-only
+    /// and return plain ints, so they run concurrently.
+    void resolveAidCache();
+
     /// Replay m_meshCache into the display-list context (serial coloring)
     void replayMeshCache(DisplayContext *pdl);
 
