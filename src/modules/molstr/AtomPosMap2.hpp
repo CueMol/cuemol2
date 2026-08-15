@@ -32,6 +32,10 @@ namespace molstr {
 
     void generate(SelectionPtr pSel = SelectionPtr());
 
+    /// Force the lazy CGAL Kd-tree build (const_build is not thread-safe).
+    /// After this returns, concurrent searchNearestAtom() calls are safe.
+    void ensureBuilt();
+
     int searchNearestAtom(const Vector4D &pos);
 
   private:

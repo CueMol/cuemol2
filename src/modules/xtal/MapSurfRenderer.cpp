@@ -463,6 +463,8 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
     else {
       LOG_DPRINTLN("MapSurfRend> MOLFANC target mol \"%d\" is not found.",
                    int(m_nTgtMolID));
+      // Don't keep a map that pins the MolCoordPtr of a removed object
+      invalidateAtomPosMap();
     }
   }
 
@@ -586,10 +588,8 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
     if (!pMolCS.isnull())
       pMolCS->end();
   }
-  if (m_pAtomPosMap!=NULL) {
-    delete m_pAtomPosMap;
-    m_pAtomPosMap = NULL;
-  }
+  // m_pAtomPosMap is intentionally kept alive here: it is cached across
+  // renders and dropped only via invalidateAtomPosMap().
   m_pColMol = MolCoordPtr();
 
   m_pColMapObj = NULL;
@@ -933,20 +933,33 @@ bool MapSurfRenderer::getColorMol(const Vector4D &v, gfx::ColorPtr &rcol)
   return true;
 }
 
+void MapSurfRenderer::invalidateAtomPosMap()
+{
+  if (m_pAtomPosMap!=NULL) {
+    delete m_pAtomPosMap;
+    m_pAtomPosMap = NULL;
+  }
+}
+
 void MapSurfRenderer::makeAtomPosMap()
 {
   if (m_pColMol.isnull())
     return;
 
+  // Cached across renders; NULL means "rebuild needed" (see
+  // invalidateAtomPosMap callers for the invalidation conditions).
+  if (m_pAtomPosMap!=NULL)
+    return;
+
   const std::chrono::steady_clock::time_point t0 =
       std::chrono::steady_clock::now();
-
-  if (m_pAtomPosMap!=NULL)
-    delete m_pAtomPosMap;
 
   m_pAtomPosMap = MB_NEW molstr::AtomPosMap2();
   m_pAtomPosMap->setTarget(m_pColMol);
   m_pAtomPosMap->generate(m_pMolSel);
+  // Force the lazy CGAL tree build here (not on the first query), so the
+  // build happens at a defined point and later queries are read-only.
+  m_pAtomPosMap->ensureBuilt();
 
   const double build_ms = std::chrono::duration<double, std::milli>(
                               std::chrono::steady_clock::now() - t0)
@@ -970,6 +983,9 @@ MolCoordPtr MapSurfRenderer::resolveMolIDImpl(const qlib::LString &name)
 
   m_nTgtMolID = pMol->getUID();
 
+  // target (possibly a different mol) resolved --> cached atom map is stale
+  invalidateAtomPosMap();
+
   // event handling: attach to the new object
   pMol->addListener(this);
 
@@ -987,6 +1003,7 @@ void MapSurfRenderer::setTgtObjName(const qlib::LString &name)
     }
     m_nTgtMolID = qlib::invalid_uid;
   }
+  invalidateAtomPosMap();
 
   // get object by name
   if (name.isEmpty())
@@ -1036,6 +1053,17 @@ void MapSurfRenderer::propChanged(qlib::LPropEvent &ev)
 
 void MapSurfRenderer::objectChanged(qsys::ObjectEvent &ev)
 {
+  // Atom positions/topology of the MOLFANC target mol changed --> the
+  // cached nearest-atom map is stale (the isosurface geometry itself does
+  // not depend on the mol, so only the map is dropped here; the display
+  // cache invalidation is handled by the base class as before).
+  if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED &&
+      ev.getTarget()==m_nTgtMolID &&
+      (ev.getDescr().equals("atomsMoved") ||
+       ev.getDescr().equals("topologyChanged"))) {
+    invalidateAtomPosMap();
+  }
+
   if (getColorMode()==MapRenderer::MAPREND_MOLFANC &&
       ev.getType()==qsys::ObjectEvent::OBE_PROPCHG) {
     qlib::LPropEvent *pPE = ev.getPropEvent();

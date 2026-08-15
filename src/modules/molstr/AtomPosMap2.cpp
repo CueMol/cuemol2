@@ -86,6 +86,20 @@ void AtomPosMap2::generate(SelectionPtr pSel)
   m_pKdTree = ptree;
 }
 
+void AtomPosMap2::ensureBuilt()
+{
+  if (m_pKdTree==NULL)
+    return;
+
+  Tree *pTree = static_cast<Tree *>(m_pKdTree);
+  if (pTree->size()==0)
+    return;
+
+  // CGAL builds the tree lazily on the first query, and that build is not
+  // thread-safe; force it here so concurrent queries afterwards are safe.
+  pTree->build();
+}
+
 int AtomPosMap2::searchNearestAtom(const Vector4D &pos)
 {
   MB_ASSERT(m_pKdTree!=NULL);

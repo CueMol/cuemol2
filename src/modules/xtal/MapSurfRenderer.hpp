@@ -145,7 +145,11 @@ namespace xtal {
     SelectionPtr getMolSel() const { return m_pMolSel; }
 
     void setMolSel(SelectionPtr pNewSel) {
+      if (!m_pMolSel.isnull() && !pNewSel.isnull() &&
+          m_pMolSel->equals(pNewSel.get()))
+        return;
       m_pMolSel = pNewSel;
+      invalidateAtomPosMap();
       invalidateDisplayCache();
     }
 
@@ -249,8 +253,14 @@ namespace xtal {
     /// Coloring target mol (for MOLFANC mode; only valid during rendering)
     MolCoordPtr m_pColMol;
 
-    /// Nearest-atom map for MOLFANC coloring (only valid during rendering)
+    /// Nearest-atom map for MOLFANC coloring. Cached across renders;
+    /// NULL means "rebuild needed". Dropped when the target mol, the
+    /// selection, or the atom positions/topology change (never on
+    /// color-only display-cache invalidations).
     molstr::AtomPosMap2 *m_pAtomPosMap;
+
+    /// Drop the cached nearest-atom map (rebuilt on next MOLFANC render)
+    void invalidateAtomPosMap();
 
     /// Resolve mol name, set m_nTgtMolID, listen the MolCoord events,
     /// and return the MolCoord object
