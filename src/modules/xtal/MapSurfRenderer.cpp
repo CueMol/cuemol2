@@ -450,6 +450,14 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
       if (!pCS.isnull())
         pCS->start(m_pColMol, this);
 
+      // The mol-side scheme is also evaluated by ColSchmHolder::getColor()
+      // and must be bracketed too (stateful schemes such as rainbow
+      // precompute their tables in start()); every other renderer already
+      // does this.
+      molstr::ColoringSchemePtr pMolCS = m_pColMol->getColSchm();
+      if (!pMolCS.isnull())
+        pMolCS->start(m_pColMol, this);
+
       setupXformMat();
     }
     else {
@@ -574,6 +582,9 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
     molstr::ColoringSchemePtr pCS = getColSchm();
     if (!pCS.isnull())
       pCS->end();
+    molstr::ColoringSchemePtr pMolCS = m_pColMol->getColSchm();
+    if (!pMolCS.isnull())
+      pMolCS->end();
   }
   if (m_pAtomPosMap!=NULL) {
     delete m_pAtomPosMap;
