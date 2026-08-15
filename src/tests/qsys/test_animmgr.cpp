@@ -8,6 +8,8 @@
 #include "qsys/anim/AnimMgr.hpp"
 #include "qsys/anim/PropAnim.hpp"
 
+#include "MockTimerImpl.hpp"
+
 #include <qlib/EventManager.hpp>
 #include <qlib/LScrTime.hpp>
 #include <qlib/Vector4D.hpp>
@@ -27,28 +29,13 @@ const double ORIG_ALPHA = 0.25;
 const double ANIM_START = 0.5;
 const double ANIM_END = 1.0;
 
-/// TimerImpl whose clock the test controls. AnimMgr::start() reads
-/// getCurrentTime(), which dereferences a null impl without this.
-class MockTimerImpl : public qlib::TimerImpl
-{
-public:
-    qlib::time_value m_now = 0;
+using qsystest::MockTimerImpl;
 
-    qlib::time_value getCurrentTime() override { return m_now; }
-    void start(qlib::time_value /*period*/) override {}
-    void stop() override {}
-};
-
-/// EventManager holds one TimerImpl for the whole process and asserts on a
-/// second initTimer(), so the mock is installed once and shared by all cases.
+/// AnimMgr::start() reads getCurrentTime(), so a controllable clock is needed.
+/// See MockTimerImpl.hpp for why the instance is shared across the binary.
 MockTimerImpl *getMockTimer()
 {
-    static MockTimerImpl *s_pTimer = nullptr;
-    if (s_pTimer == nullptr) {
-        s_pTimer = MB_NEW MockTimerImpl();
-        qlib::EventManager::getInstance()->initTimer(s_pTimer);
-    }
-    return s_pTimer;
+    return qsystest::getSharedMockTimer();
 }
 
 /// Renderer used as an animation target. "alpha" and "visible" are

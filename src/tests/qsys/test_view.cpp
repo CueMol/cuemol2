@@ -3,8 +3,14 @@
 #include "qsys/TTYView.hpp"
 #include "qsys/Camera.hpp"
 #include "qsys/InDevEvent.hpp"
+#include "qsys/MomentumScroll.hpp"
 #include "qsys/ScrEventManager.hpp"
 #include "qsys/ViewEvent.hpp"
+
+#include "MockTimerImpl.hpp"
+
+#include <qlib/EventManager.hpp>
+#include <qlib/LTimeValue.hpp>
 
 #include <chrono>
 
@@ -445,4 +451,88 @@ TEST(ViewCenterSettleTest, PendingSettleFlushedAtDragStart)
     ev.setType(qsys::InDevEvent::INDEV_DRAG_START);
     v.mouseDragStart(ev);
     EXPECT_EQ(counter.nfired, 1);
+}
+
+// --- View animation timer (View + MomentumScroll + EventManager) ---
+//
+// These pin the time unit across the whole chain. View schedules its
+// interpolation through EventManager::setTimer(), whose argument is the
+// internal nano-second representation. Passing a raw milli-second count makes
+// the timer expire within the first tick, so the animation degrades into a
+// single jump to its end value -- which no unit-level test of any one of the
+// three classes can detect.
+
+namespace {
+
+/// Advance the shared mock clock and service the timer queue.
+void tickTimerAt(qlib::time_value now)
+{
+    qsystest::getSharedMockTimer()->m_now = now;
+    qlib::EventManager::getInstance()->checkTimerQueue();
+}
+
+}  // namespace
+
+TEST(ViewAnimTimerTest, SetViewCenterAnimInterpolatesOverHalfSecond)
+{
+    qsystest::getSharedMockTimer()->m_now = 0;
+
+    qsys::TTYView v;
+    v.setViewCenter(Vector4D(0.0, 0.0, 0.0));
+    v.setViewCenterAnim(Vector4D(10.0, 0.0, 0.0));
+
+    // 1 msec in: barely started. With milli-seconds fed to setTimer() the
+    // "500" timer is already expired here and the center jumps to 10.0.
+    tickTimerAt(1 * ONE_MS_NS);
+    EXPECT_LT(v.getViewCenter().x(), 1.0)
+        << "setViewCenterAnim() must schedule its timer in nano-seconds";
+
+    // Half way: getQuadricXform(0.5) == 0.5
+    tickTimerAt(250 * ONE_MS_NS);
+    EXPECT_NEAR(v.getViewCenter().x(), 5.0, 1e-6);
+
+    // Past the end
+    tickTimerAt(600 * ONE_MS_NS);
+    EXPECT_NEAR(v.getViewCenter().x(), 10.0, 1e-9);
+
+    // Timer consumed: no further movement
+    tickTimerAt(1000 * ONE_MS_NS);
+    EXPECT_NEAR(v.getViewCenter().x(), 10.0, 1e-9);
+}
+
+TEST(ViewAnimTimerTest, SetCameraAnimInterpolatesOverHalfSecond)
+{
+    qsystest::getSharedMockTimer()->m_now = 0;
+
+    qsys::TTYView v;
+    v.setZoom(100.0);
+
+    qsys::CameraPtr pDest(MB_NEW qsys::Camera());
+    pDest->setZoom(200.0);
+    v.setCameraAnim(pDest, true);
+
+    tickTimerAt(1 * ONE_MS_NS);
+    EXPECT_LT(v.getZoom(), 110.0)
+        << "setCameraAnim() must schedule its timer in nano-seconds";
+
+    tickTimerAt(250 * ONE_MS_NS);
+    EXPECT_NEAR(v.getZoom(), 150.0, 1e-6);
+
+    tickTimerAt(600 * ONE_MS_NS);
+    EXPECT_NEAR(v.getZoom(), 200.0, 1e-9);
+}
+
+TEST(ViewMomentumScrollTest, SetupXYReturnsNanoSeconds)
+{
+    qsys::TTYView v;
+    qsys::MomentumScroll mms(&v);
+    mms.setType(qsys::MomentumScroll::MMS_TRANSXY);
+
+    qsys::InDevEvent ev;
+    ev.setVeloX(2000.0);  // > TRANSXY_MINVEL
+    ev.setVeloY(0.0);
+
+    // The result is handed straight to EventManager::setTimer(), so it must
+    // already be in the internal (ns) representation.
+    EXPECT_EQ(mms.setupXY(ev), qlib::timeval::fromMilliSec(500));
 }

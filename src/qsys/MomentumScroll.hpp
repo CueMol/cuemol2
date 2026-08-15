@@ -8,6 +8,7 @@
 #define QSYS_MOMENTUM_SCROLL_HPP_INCLUDED__
 
 #include "qsys.hpp"
+#include <qlib/LTimeValue.hpp>
 #include <boost/math/special_functions/fpclassify.hpp>
 
 namespace qsys {
@@ -63,13 +64,21 @@ namespace qsys {
 #define ROTXY_MINVEL 500.0
 #define ROTXY_SPINVEL_SCL 50.0
 
+/// Length of the MMS_TRANSXY deceleration animation (millisec)
+#define TRANSXY_ANIM_MSEC 500.0
+/// Upper bound of the MMS_ROTXY deceleration animation (millisec)
+#define ROTXY_MAX_ANIM_MSEC 2000.0
+
     LQuat m_qrot_start;
     LQuat m_qrot_end;
     Vector4D m_spinAxis;
     double m_spinIniVel;
 
     /// setup X-Y momentum scroll
-    /// @returns: period of anim in millisec; 0 means no anim
+    /// @returns duration of the momentum animation in the internal time
+    ///   representation (nano-seconds, qlib::time_value); 0 means no anim.
+    ///   The value is passed straight to EventManager::setTimer(), which also
+    ///   takes nano-seconds.
     qlib::time_value setupXY(InDevEvent &ev)
     {
       qlib::VectorND<2,double> vel;
@@ -111,7 +120,7 @@ namespace qsys {
         m_vIniCen = m_pView->getViewCenter();
         
         m_bActive = true;
-	return 500;
+	return qlib::timeval::fromMilliSec(TRANSXY_ANIM_MSEC);
       }
 
       case MMS_ROTXY: {
@@ -154,10 +163,11 @@ namespace qsys {
         //MB_DPRINTLN("  inivel=%f", qlib::toDegree(m_spinIniVel));
         m_bActive = true;
 
-	// maximum len is 2 sec
-	double ti = qlib::min(vlen, 2000.0);
-	
-	return qlib::time_value(ti);
+	// The drag speed (px/sec) doubles as the animation length in
+	// milli-seconds, capped at 2 sec.
+	const double ti_msec = qlib::min(vlen, ROTXY_MAX_ANIM_MSEC);
+
+	return qlib::timeval::fromMilliSec(ti_msec);
       }
       }
       
