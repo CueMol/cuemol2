@@ -9,6 +9,7 @@
 #include "xtal.hpp"
 
 #include <qlib/Vector4D.hpp>
+#include <qlib/Utils.hpp>
 #include <gfx/gfx.hpp>
 #include <gfx/AbstractColor.hpp>
 #include <qsys/MultiGradient.hpp>
@@ -41,14 +42,29 @@ namespace xtal {
     ///////////////////////////////////////////////////////////////
     // properties, setter/getter
 
+  protected:
+    /// Invalidation hook for geometry-affecting properties (center, level,
+    /// extent, PBC, boundary). The default is a plain display-cache
+    /// invalidation (the historical behavior for all map renderers);
+    /// subclasses keeping a persistent geometry cache override this to also
+    /// drop that cache.
+    virtual void invalidateGeomCache() {
+      invalidateDisplayCache();
+    }
+
   private:
     /// center of the display extent
     Vector4D m_center;
 
   public:
     void setCenter(const Vector4D &v) {
+      // Skip the rebuild when the center is numerically unchanged; the view
+      // fires a "center" prop change with the same value on every pan
+      // mouse-up, which otherwise forces a full (and identical) rebuild.
+      if (m_center.equals(v))
+        return;
       m_center = v;
-      invalidateDisplayCache();
+      invalidateGeomCache();
     }
 
     Vector4D getCenter() const override {
@@ -62,8 +78,10 @@ namespace xtal {
   public:
     double getSigLevel() const { return m_dSigLevel; }
     void setSigLevel(double value) {
+      if (qlib::isNear4(value, m_dSigLevel))
+        return;
       m_dSigLevel = value;
-      invalidateDisplayCache();
+      invalidateGeomCache();
     }
 
     /////////
@@ -75,8 +93,10 @@ namespace xtal {
   public:
     double getExtent() const { return m_dMapExtent; }
     void setExtent(double value) {
+      if (qlib::isNear4(value, m_dMapExtent))
+        return;
       m_dMapExtent = value;
-      invalidateDisplayCache();
+      invalidateGeomCache();
     }
 
     //////////////////
@@ -122,8 +142,10 @@ namespace xtal {
 
   public:
     void setUsePBC(bool val) {
+      if (m_bUsePBC == val)
+        return;
       m_bUsePBC = val;
-      invalidateDisplayCache();
+      invalidateGeomCache();
     }
     bool isUsePBC() const { return m_bUsePBC; }
 

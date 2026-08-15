@@ -95,7 +95,7 @@ void MapRenderer::setBndryMolName(const LString &s)
   m_strBndryMol = s;
 
   /// target mol is changed-->redraw map
-  super_t::invalidateDisplayCache();
+  invalidateGeomCache();
 }
 
 void MapRenderer::setBndrySel(const SelectionPtr &pSel)
@@ -110,7 +110,7 @@ void MapRenderer::setBndrySel(const SelectionPtr &pSel)
   //setupMolBndry();
 
   /// selection is changed-->redraw map
-  super_t::invalidateDisplayCache();
+  invalidateGeomCache();
 }
 
 void MapRenderer::setBndryRng(double d)
@@ -123,7 +123,7 @@ void MapRenderer::setBndryRng(double d)
   // setupMolBndry();
 
   if (m_bUseMolBndry)
-    super_t::invalidateDisplayCache();
+    invalidateGeomCache();
 }
 
 void MapRenderer::setupMolBndry()
