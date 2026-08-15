@@ -33,6 +33,7 @@ MapMeshRenderer::MapMeshRenderer()
   m_lw = 1.0;
   m_bPBC = false;
   m_bAutoUpdate = true;
+  m_bDragUpdate = false;
 
   //resetAllProps();
 
