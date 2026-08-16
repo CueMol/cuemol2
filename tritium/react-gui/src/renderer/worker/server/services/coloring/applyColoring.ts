@@ -17,6 +17,7 @@ import { withUndoTxn } from '../withUndoTxn';
 import { getSceneOrNull } from '../helpers/sceneResolver';
 import { remove as styleRemove, push as stylePush } from '../helpers/styleutil';
 import { makeColor } from '../helpers/makeColor';
+import { createDefPaintColoring } from '../helpers/defPaintColoring';
 import {
     resolveColoringTarget,
     isMolSurf,
@@ -104,17 +105,38 @@ function applyStyleColoring(scene: Scene, rend: Renderer, styleName: string): vo
 /**
  * Apply a `paint-type-XXX` coloring by instantiating a fresh coloring object
  * and assigning it. On molsurf / isosurf, also force colormode = "molecule".
+ * `init` runs on the fresh object before it is assigned (the CPK variants use
+ * it to pin the carbon colour).
  */
 function applyObjColoring(
     ctx: WorkerContext,
     scene: Scene,
     rend: Renderer,
     coloringClassName: string,
+    init?: (coloring: ColoringScheme) => void,
 ): void {
     const coloring = ctx.svc.createObj(coloringClassName) as ColoringScheme;
+    init?.(coloring);
     forceMoleculeColormode(scene, rend);
     (rend as unknown as MolRenderer).coloring = coloring;
 }
+
+/**
+ * Carbon colour per CPK variant (UXP `setRendColoring`). The three ids build
+ * the same `CPKColoring` and differ only in `col_C`: the default binds carbon
+ * to the molecule colour, the two gray variants pin it (dark reads on a light
+ * background, light on a dark one). The values mirror the DefaultCPKColoring /
+ * DarkCPKColoring / LightCPKColoring styles in `data/default_style.xml`, which
+ * the renderer context menu applies -- picking "CPK coloring" in the Coloring
+ * panel and "CPK molcol" in the context menu now land on the same colours.
+ * Without this the fresh object kept the C++ default (a pale yellow), which
+ * matched neither.
+ */
+const CPK_CARBON_COLORS: Record<string, string> = {
+    'paint-type-cpk': '$molcol',
+    'paint-type-cpk-darkgray': '#404040',
+    'paint-type-cpk-lightgray': '#C0C0C0',
+};
 
 /** Scene wrapper type for the multigrad helpers below. */
 type SceneW = Parameters<typeof findFirstScalarMapName>[0];
@@ -203,15 +225,28 @@ export function setRendererColoring(
             });
             return { ok: true };
         case 'paint-type-paint':
+            // UXP `createDefPaintColoring`: the Default entry seeds the four
+            // secondary-structure rows rather than handing back an empty
+            // table, which read as "the menu did nothing".
             withUndoTxn(scene, 'Change coloring', () => {
-                applyObjColoring(ctx, scene, rend, 'PaintColoring');
+                const coloring = createDefPaintColoring(ctx, scene.uid);
+                if (!coloring) return;
+                forceMoleculeColormode(scene, rend);
+                (rend as unknown as MolRenderer).coloring = coloring;
             });
             return { ok: true };
         case 'paint-type-cpk':
+        case 'paint-type-cpk-darkgray':
+        case 'paint-type-cpk-lightgray': {
+            const carbon = CPK_CARBON_COLORS[args.coloringId];
             withUndoTxn(scene, 'Change coloring', () => {
-                applyObjColoring(ctx, scene, rend, 'CPKColoring');
+                applyObjColoring(ctx, scene, rend, 'CPKColoring', (coloring) => {
+                    (coloring as unknown as { col_C: AbstractColor }).col_C =
+                        makeColor(ctx, carbon, scene.uid);
+                });
             });
             return { ok: true };
+        }
         case 'paint-type-solid':
             // UXP `setRendColoring`: Solid routes through
             // `resetProp("coloring")`; the unknown deck then shows the

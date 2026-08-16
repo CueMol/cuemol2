@@ -319,7 +319,11 @@ export type RendColoringId =
   | 'paint-type-bfac'
   | 'paint-type-rainbow'
   | 'paint-type-paint'
+  // The three CPK ids differ only in the carbon colour (see
+  // CPK_CARBON_COLORS in coloring/applyColoring.ts).
   | 'paint-type-cpk'
+  | 'paint-type-cpk-darkgray'
+  | 'paint-type-cpk-lightgray'
   | 'paint-type-solid'
   | 'paint-type-elepot'
   | 'paint-type-multigrad'

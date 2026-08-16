@@ -43,6 +43,8 @@ import { SectionHeader } from './SectionHeader'
 import { AppIcon } from '../AppIcon'
 import {
     Field,
+    FieldGrid,
+    FieldGridRow,
     ColorField,
     SelectField,
     SliderField,
@@ -104,7 +106,12 @@ const PAINT_SUBMENU_ID = 'paint-type-paint'
 const COLORING_MODE_ITEMS: ColoringModeItem[] = [
     { label: 'Paint coloring',          coloringId: 'paint-type-paint',    enabled: true  },
     { label: 'Solid coloring',          coloringId: 'paint-type-solid',    enabled: true  },
+    // The three CPK entries differ only in the carbon colour, matching the
+    // Default / Darkgray / Lightgray CPK styles the renderer context menu
+    // offers. Labels follow those styles' `desc`.
     { label: 'CPK coloring',            coloringId: 'paint-type-cpk',      enabled: true  },
+    { label: 'CPK (darkgray carbon)',   coloringId: 'paint-type-cpk-darkgray',  enabled: true },
+    { label: 'CPK (lightgray carbon)',  coloringId: 'paint-type-cpk-lightgray', enabled: true },
     { label: 'Bfac/Occ coloring',       coloringId: 'paint-type-bfac',     enabled: true  },
     { label: 'Rainbow coloring',        coloringId: 'paint-type-rainbow',  enabled: true  },
     { label: 'Electrostatic potential', coloringId: 'paint-type-elepot',   enabled: true, surfaceOnly: true },
@@ -381,17 +388,39 @@ interface CpkDeckProps {
     onCommit: (propName: string, value: string) => void
 }
 
-/** Mirrors UXP `coloring-deck-cpk.xul`: 7 per-element colour pickers. */
+/** The deck's rows, in UXP `coloring-deck-cpk.xul` order. */
+const CPK_ELEMENTS: { label: string; prop: string; key: keyof CpkColors }[] = [
+    { label: 'Carbon',     prop: 'col_C', key: 'colC' },
+    { label: 'Nitrogen',   prop: 'col_N', key: 'colN' },
+    { label: 'Oxygen',     prop: 'col_O', key: 'colO' },
+    { label: 'Sulfur',     prop: 'col_S', key: 'colS' },
+    { label: 'Phosphorus', prop: 'col_P', key: 'colP' },
+    { label: 'Hydrogen',   prop: 'col_H', key: 'colH' },
+    { label: 'Others',     prop: 'col_X', key: 'colX' },
+]
+
+/**
+ * Mirrors UXP `coloring-deck-cpk.xul`: 7 per-element colour pickers.
+ *
+ * Laid out with `FieldGrid` rather than a stack of inline `Field`s so the
+ * labels share one column. With per-row labels each one ellipsised at its own
+ * width once the pane narrowed ("Phosp..." vs "Sul..."), which pushed every
+ * swatch to a different x -- the element names here are long enough and
+ * different enough in length for that to show at ordinary pane widths.
+ */
 const CpkDeck: React.FC<CpkDeckProps> = ({ colors, onCommit }) => (
     <div className="color-deck-scroll">
         <div className="color-section-label">CPK coloring:</div>
-        <Field label="Carbon"     inline><ColorField value={colors.colC} onCommit={(v) => onCommit('col_C', v)} /></Field>
-        <Field label="Nitrogen"   inline><ColorField value={colors.colN} onCommit={(v) => onCommit('col_N', v)} /></Field>
-        <Field label="Oxygen"     inline><ColorField value={colors.colO} onCommit={(v) => onCommit('col_O', v)} /></Field>
-        <Field label="Sulfur"     inline><ColorField value={colors.colS} onCommit={(v) => onCommit('col_S', v)} /></Field>
-        <Field label="Phosphorus" inline><ColorField value={colors.colP} onCommit={(v) => onCommit('col_P', v)} /></Field>
-        <Field label="Hydrogen"   inline><ColorField value={colors.colH} onCommit={(v) => onCommit('col_H', v)} /></Field>
-        <Field label="Others"     inline><ColorField value={colors.colX} onCommit={(v) => onCommit('col_X', v)} /></Field>
+        <FieldGrid>
+            {CPK_ELEMENTS.map(({ label, prop, key }) => (
+                <FieldGridRow key={prop} label={label}>
+                    <ColorField
+                        value={colors[key]}
+                        onCommit={(v) => onCommit(prop, v)}
+                    />
+                </FieldGridRow>
+            ))}
+        </FieldGrid>
     </div>
 )
 

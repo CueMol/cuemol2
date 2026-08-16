@@ -165,6 +165,8 @@ describe('ColorPane MOLFANC wire (isosurf)', () => {
             'Paint coloring',
             'Solid coloring',
             'CPK coloring',
+            'CPK (darkgray carbon)',
+            'CPK (lightgray carbon)',
             'Bfac/Occ coloring',
             'Rainbow coloring',
             'Multi-gradient coloring',
