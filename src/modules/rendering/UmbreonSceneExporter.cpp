@@ -103,6 +103,34 @@ namespace {
     png_destroy_write_struct(&pPNG, &pInfo);
   }
 
+  /// Parse a "#RRGGBB" hex string into display-encoded RGB floats in [0, 1].
+  /// Returns false (leaving rgb untouched) for an empty or malformed string,
+  /// so an unset color degrades to "keep the hatch style's own color" instead
+  /// of throwing.
+  bool parseHexColor(const LString &str, float rgb[3])
+  {
+    LString s = str.trim();
+    if (s.startsWith("#"))
+      s = s.substr(1);
+    if (s.length() != 6)
+      return false;
+    int v[6];
+    for (int i = 0; i < 6; ++i) {
+      const char c = s[i];
+      if (c >= '0' && c <= '9')
+        v[i] = c - '0';
+      else if (c >= 'a' && c <= 'f')
+        v[i] = c - 'a' + 10;
+      else if (c >= 'A' && c <= 'F')
+        v[i] = c - 'A' + 10;
+      else
+        return false;
+    }
+    for (int k = 0; k < 3; ++k)
+      rgb[k] = float(v[k * 2] * 16 + v[k * 2 + 1]) / 255.0f;
+    return true;
+  }
+
 }  // anonymous namespace
 
 UmbreonSceneExporter::UmbreonSceneExporter()
@@ -117,6 +145,11 @@ UmbreonSceneExporter::UmbreonSceneExporter()
        m_bTransparentBackground(false),
        m_bGI(false), m_nGiSamples(32), m_dGiIntensity(1.0),
        m_dGiEnvIntensity(1.0), m_bGiDenoise(true), m_nDenoiser(0),
+       m_bHatchEnable(false), m_sHatchStyle("richardson"),
+       m_dHatchDensity(1.0), m_dHatchWidthScale(1.0),
+       m_sHatchBase(""), m_sHatchInk(""),
+       m_sHatchInkColor(""), m_sHatchPaperColor(""),
+       m_bHatchDefaultEdges(true),
        m_bWasCancelled(false)
 {
 }
@@ -205,6 +238,16 @@ void UmbreonSceneExporter::setupContext(UmbreonDisplayContext &ctx,
   prm.giEnvIntensity = m_dGiEnvIntensity;
   prm.giDenoise = m_bGiDenoise;
   prm.denoiser = m_nDenoiser;
+  prm.hatchEnable = m_bHatchEnable;
+  prm.hatchStyle = m_sHatchStyle;
+  prm.hatchDensity = m_dHatchDensity;
+  prm.hatchWidthScale = m_dHatchWidthScale;
+  prm.hatchBase = m_sHatchBase;
+  prm.hatchInk = m_sHatchInk;
+  prm.hatchInkColorSet = parseHexColor(m_sHatchInkColor, prm.hatchInkColor);
+  prm.hatchPaperColorSet =
+      parseHexColor(m_sHatchPaperColor, prm.hatchPaperColor);
+  prm.hatchDefaultEdges = m_bHatchDefaultEdges;
 }
 
 void UmbreonSceneExporter::write()

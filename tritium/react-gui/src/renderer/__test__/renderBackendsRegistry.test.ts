@@ -10,11 +10,52 @@ import { RENDER_BACKENDS, RENDER_BACKEND_IDS } from '../data/renderBackends'
 import { RENDER_COMMON_PROPS } from '../data/renderSettings'
 
 describe('render backends registry', () => {
-    it('registers both the povray and umbreon backends', () => {
+    it('registers the povray, umbreon and umbreon NPR backends', () => {
         expect(RENDER_BACKEND_IDS).toContain('povray')
         expect(RENDER_BACKEND_IDS).toContain('umbreon')
+        expect(RENDER_BACKEND_IDS).toContain('umbreon_npr')
         expect(RENDER_BACKENDS.umbreon.id).toBe('umbreon')
         expect(RENDER_BACKENDS.umbreon.label).toBe('Umbreon')
+        expect(RENDER_BACKENDS.umbreon_npr.id).toBe('umbreon_npr')
+        expect(RENDER_BACKENDS.umbreon_npr.label).toBe('Umbreon (NPR)')
+    })
+
+    // NPR renders through umbreon's hatch ink mode, which discards the shaded
+    // color -- umbreon force-disables GI there. Offering a GI lighting or a GI
+    // quality ladder would be a dead control, so the backend must carry
+    // neither, and its default must be plain raytracing.
+    it('offers the NPR backend raytracing and AO only, defaulting to raytracing', () => {
+        const quality = RENDER_BACKENDS.umbreon_npr.quality
+        expect(quality?.lightings.map((l) => l.id)).toEqual(['none', 'ao'])
+        expect(quality?.defaultLighting).toBe('none')
+        expect(quality?.axes.map((a) => a.key)).not.toContain('gi')
+        const groupKeys = RENDER_BACKENDS.umbreon_npr.groups.map((g) => g.key)
+        expect(groupKeys).not.toContain('Global Illumination')
+        expect(groupKeys).toContain('Hatching')
+        const giProps = RENDER_BACKENDS.umbreon_npr.props.filter(
+            (p) => p.group === 'Global Illumination',
+        )
+        expect(giProps).toEqual([])
+    })
+
+    // Every key a lighting option's enable patch writes must exist as a prop of
+    // that backend: the settings hook drops patch keys with no matching PropDef,
+    // and `lightingOf` then never matches the option, so the selector would
+    // silently snap back to "none".
+    it('every lighting enable patch key exists as a prop of its backend', () => {
+        for (const id of RENDER_BACKEND_IDS) {
+            const backend = RENDER_BACKENDS[id]
+            if (!backend.quality) continue
+            const propKeys = new Set(backend.props.map((p) => p.key))
+            for (const lighting of backend.quality.lightings) {
+                for (const key of Object.keys(lighting.enable)) {
+                    expect(
+                        propKeys.has(key),
+                        `${id}: lighting "${lighting.id}" patches unknown prop "${key}"`,
+                    ).toBe(true)
+                }
+            }
+        }
     })
 
     it('every backend prop belongs to one of its declared groups', () => {

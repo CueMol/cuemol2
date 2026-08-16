@@ -12,7 +12,7 @@ import { DEFAULT_MOVIE_BASE_NAME } from "../../shared/movieFrames";
 import type { PropDef } from "./rendererProperties";
 
 /** Identifier of a rendering backend. Extended as backends are added. */
-export type RenderBackendId = "povray" | "umbreon";
+export type RenderBackendId = "povray" | "umbreon" | "umbreon_npr";
 
 /**
  * What a render job produces: a single image, or the frame sequence (and

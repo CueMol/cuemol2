@@ -86,6 +86,44 @@ namespace render {
     /// components) with alpha = coverage (0 where no geometry is hit), so the
     /// PNG can be composited over another image (POV "_transpbg").
     bool transparentBackground = false;
+    /// NPR tone-hatching pass (umbreon RenderOptions::hatch). When on, the
+    /// image is an ink drawing: hatch marks carry the shading tone on a paper
+    /// base, and GI is not used (umbreon force-disables it under the default
+    /// ink mode, so it is decided here instead of relying on the warning).
+    bool hatchEnable = false;
+    /// Hatch style: an umbreon look (richardson / ink-cross / manga) or layer
+    /// preset (pen-cross / pencil / engraving / stipple / screentone-60 /
+    /// manga-square). An unknown name warns and falls back to richardson.
+    qlib::LString hatchStyle = "richardson";
+    /// Mark density multiplier: every layer's lattice pitch is DIVIDED by it,
+    /// so 2 doubles the number of hatch lines / halftone dots. A multiplier
+    /// (not an absolute pitch) so the relative pitches of a multi-layer look
+    /// are preserved.
+    double hatchDensity = 1.0;
+    /// Mark width multiplier over the style's per-layer widths.
+    double hatchWidthScale = 1.0;
+    /// Base / ink model overrides (umbreon --hatch-base / --hatch-ink). The
+    /// four combinations are the manual's coloring patterns: paper+fixed =
+    /// pen figure, paper+albedo = colored pencil (richardson), albedo+fixed =
+    /// comic (flat fill under black ink), albedo+albedo = print-like. Empty =
+    /// keep the style's own model. hatchBase: "paper" | "albedo"; hatchInk:
+    /// "fixed" | "albedo".
+    qlib::LString hatchBase;
+    qlib::LString hatchInk;
+    /// Ink / paper color overrides, display-encoded RGB in [0, 1] (the hatch
+    /// composite runs on the display-encoded frame; see umbreon HatchOptions).
+    /// Applied only when the matching *Set flag is true; otherwise the style's
+    /// own colors are kept (richardson, for one, carries a warm paper color
+    /// that a fixed white default would silently destroy).
+    bool hatchInkColorSet = false;
+    bool hatchPaperColorSet = false;
+    float hatchInkColor[3] = {0.0f, 0.0f, 0.0f};
+    float hatchPaperColor[3] = {1.0f, 1.0f, 1.0f};
+    /// Give sections whose renderer requests no edge lines a default contour
+    /// (silhouette outline in the ink color), so an unconfigured scene still
+    /// reads as a drawing. Sections WITH renderer-side edge settings keep
+    /// their captured per-section style.
+    bool hatchDefaultEdges = true;
   };
 
   /// DisplayContext backend that renders a scene with umbreon (Embree).

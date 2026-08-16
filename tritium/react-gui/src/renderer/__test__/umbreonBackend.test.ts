@@ -12,7 +12,10 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { umbreonBackend } from '../worker/server/services/renderBackends/UmbreonBackend'
+import {
+    umbreonBackend,
+    umbreonNprBackend,
+} from '../worker/server/services/renderBackends/UmbreonBackend'
 import type { WorkerContext } from '../worker/server/types/WorkerContext'
 import type { RenderSettingsSnapshot } from '../data/renderResult'
 import type { PropDef } from '../data/rendererProperties'
@@ -413,5 +416,104 @@ describe('umbreonBackend.beginInProcessAnimFrame', () => {
             umbreonBackend.beginInProcessAnimFrame!(ctx, animMgr as never, snapshot, '/o.png'),
         ).toThrow(/no frame left/)
         expect(exporter.beginRender).not.toHaveBeenCalled()
+    })
+})
+
+// The NPR backend shares the whole in-process cycle with the plain one and
+// differs only in the exporter block it writes: the hatch pass instead of GI.
+describe('umbreonNprBackend.beginInProcess', () => {
+    const nprSnapshot = (extra: PropDef[] = []): RenderSettingsSnapshot => ({
+        mode: 'still',
+        backend: 'umbreon_npr',
+        commonProps: [p('width', 640), p('height', 480), p('unit', 'px'), p('dpi', 600)],
+        backendProps: [
+            p('supersample', 4),
+            p('hatchStyle', 'manga'),
+            p('hatchDensity', 2),
+            p('hatchWidthScale', 0.5),
+            p('hatchColoring', 'Ink on color fill'),
+            p('hatchDefaultEdges', false),
+            ...extra,
+        ],
+    })
+
+    const beginNpr = (snapshot: RenderSettingsSnapshot) => {
+        const exporter = makeExporter()
+        const createHandler = vi.fn(() => exporter)
+        const ctx = { strMgr: { createHandler } } as unknown as WorkerContext
+        umbreonNprBackend.beginInProcess!(ctx, {} as never, snapshot, '/o.png')
+        return { exporter, createHandler }
+    }
+
+    it('writes the hatch block and no GI, reusing the umbreon exporter', () => {
+        const { exporter, createHandler } = beginNpr(nprSnapshot())
+
+        // Same C++ exporter: NPR is a mode of it, not a separate handler.
+        expect(createHandler).toHaveBeenCalledWith('umbreon', 2)
+        expect(exporter.supersample).toBe(4)
+
+        expect(exporter.hatchEnable).toBe(true)
+        expect(exporter.hatchStyle).toBe('manga')
+        expect(exporter.hatchDensity).toBe(2)
+        expect(exporter.hatchWidthScale).toBe(0.5)
+        expect(exporter.hatchDefaultEdges).toBe(false)
+        // "Ink on color fill" = a flat unshaded fill of each renderer's own
+        // color under a fixed ink (the manual's comic pattern).
+        expect(exporter.hatchBase).toBe('albedo')
+        expect(exporter.hatchInk).toBe('fixed')
+
+        // GI is never sent: hatch ink mode discards the shaded color, so
+        // umbreon force-disables it and a sent value would only mislead.
+        expect(exporter.useGI).toBeUndefined()
+        expect(exporter.giSamples).toBeUndefined()
+        expect(exporter.denoiser).toBeUndefined()
+    })
+
+    it('sends a color only while its Custom switch is on', () => {
+        // Off: empty strings tell the exporter to keep the style's own colors
+        // (richardson's warm paper and per-section ink would be destroyed by
+        // an unconditional black-on-white default).
+        const off = beginNpr(
+            nprSnapshot([p('hatchInkColor', '#123456'), p('hatchPaperColor', '#abcdef')]),
+        )
+        expect(off.exporter.hatchInkColor).toBe('')
+        expect(off.exporter.hatchPaperColor).toBe('')
+
+        const on = beginNpr(
+            nprSnapshot([
+                p('hatchCustomInk', true),
+                p('hatchInkColor', '#123456'),
+                p('hatchCustomPaper', true),
+                p('hatchPaperColor', '#abcdef'),
+            ]),
+        )
+        expect(on.exporter.hatchInkColor).toBe('#123456')
+        expect(on.exporter.hatchPaperColor).toBe('#abcdef')
+    })
+
+    it('keeps the style\'s own base/ink model on "Style default"', () => {
+        const snapshot = nprSnapshot()
+        snapshot.backendProps = snapshot.backendProps.map((prop) =>
+            prop.key === 'hatchColoring' ? p('hatchColoring', 'Style default') : prop,
+        )
+        const { exporter } = beginNpr(snapshot)
+        expect(exporter.hatchBase).toBe('')
+        expect(exporter.hatchInk).toBe('')
+    })
+
+    it('the plain umbreon backend never enables hatching', () => {
+        const exporter = makeExporter()
+        const ctx = {
+            strMgr: { createHandler: vi.fn(() => exporter) },
+        } as unknown as WorkerContext
+        const snapshot: RenderSettingsSnapshot = {
+            mode: 'still',
+            backend: 'umbreon',
+            commonProps: [p('width', 640), p('height', 480), p('unit', 'px'), p('dpi', 600)],
+            backendProps: [p('useGI', true)],
+        }
+        umbreonBackend.beginInProcess!(ctx, {} as never, snapshot, '/o.png')
+        expect(exporter.hatchEnable).toBeUndefined()
+        expect(exporter.useGI).toBe(true)
     })
 })

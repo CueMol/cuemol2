@@ -33,7 +33,7 @@ import {
 import { RENDER_BACKENDS } from '../data/renderBackends';
 
 function mountFor(
-  backend: 'povray' | 'umbreon',
+  backend: 'povray' | 'umbreon' | 'umbreon_npr',
   opts: { lighting?: RenderLightingMode } = {},
 ) {
   return mountTree(
@@ -248,6 +248,26 @@ describe('RenderSettingsEditor quality section', () => {
   it('has no quality section for a backend without a preset table', () => {
     const { container, unmount } = mountFor('povray');
     expect(container.querySelector('.insp-render-quality')).toBeNull();
+    unmount();
+  });
+
+  it('offers the NPR backend raytracing and AO only, with the Hatching group', () => {
+    const { container, unmount } = mountFor('umbreon_npr', { lighting: 'none' });
+    const [lightingSel] = qualitySelects(container);
+    // GI is absent: hatch ink mode discards the shaded color, so umbreon
+    // force-disables it and the option would be dead.
+    expect(Array.from(lightingSel.options).map((o) => o.value)).toEqual([
+      'none',
+      'ao',
+    ]);
+    expect(qualityLabels(container)).toEqual([
+      'Lighting',
+      'Supersampling',
+      'Shadows',
+    ]);
+    const groups = groupHeaders(container);
+    expect(groups).toContain('Hatching');
+    expect(groups).not.toContain('Global Illumination');
     unmount();
   });
 });

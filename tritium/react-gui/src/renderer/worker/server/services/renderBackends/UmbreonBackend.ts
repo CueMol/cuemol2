@@ -57,6 +57,17 @@ const AO_GATHER: Record<string, number> = {
   "Per shading hit": 0,
 };
 
+// NPR coloring pattern (renderBackends.ts "hatchColoring" enum) -> the
+// exporter's hatchBase/hatchInk pair (umbreon --hatch-base / --hatch-ink).
+// Empty strings keep the style's own base/ink model.
+const HATCH_COLORING: Record<string, { base: string; ink: string }> = {
+  "Style default": { base: "", ink: "" },
+  "Ink on paper": { base: "paper", ink: "fixed" },
+  "Colored ink on paper": { base: "paper", ink: "albedo" },
+  "Ink on color fill": { base: "albedo", ink: "fixed" },
+  "Colored ink on color fill": { base: "albedo", ink: "albedo" },
+};
+
 
 /**
  * Create the umbreon exporter and apply every setting from `snapshot`.
@@ -65,10 +76,16 @@ const AO_GATHER: Record<string, number> = {
  * camera is chosen: the still path names it (`camera = "__current"`), while an
  * animation frame gets the animation's own camera object from
  * `AnimMgr.beginFrame()` (an explicit camera object overrides the name).
+ *
+ * @param npr - Umbreon (NPR) backend: write the hatch block instead of the GI
+ *   one. The two are exclusive by design -- hatch ink mode discards the shaded
+ *   color, so the C++ side skips GI whenever hatching is on, and the NPR
+ *   backend's props carry no GI keys to send anyway.
  */
 function makeExporter(
   ctx: WorkerContext,
   snapshot: RenderSettingsSnapshot,
+  npr: boolean,
 ): UmbreonSceneExporter {
   const exporter = ctx.strMgr.createHandler("umbreon", 2) as UmbreonSceneExporter;
   if (!exporter) throw new Error("cannot create umbreon exporter");
@@ -129,14 +146,36 @@ function makeExporter(
   // there unless this is asked for.
   exporter.contactEdges = boolVal(ub, "contactEdges", false);
 
-  // Diffuse global illumination (pt1 path-traced integrator).
-  exporter.useGI = boolVal(ub, "useGI", false);
-  exporter.giSamples = numVal(ub, "giSamples", 32);
-  exporter.giIntensity = numVal(ub, "giIntensity", 1.0);
-  exporter.giEnvIntensity = numVal(ub, "giEnvIntensity", 1.0);
-  const denoise = DENOISE_MODE[strVal(ub, "denoise", "OIDN")] ?? DENOISE_MODE.OIDN;
-  exporter.giDenoise = denoise.giDenoise; // pt1Denoise: OIDN on the indirect buffer
-  exporter.denoiser = denoise.denoiser; // full-frame post-pass (0 = None, 1 = a-trous)
+  if (npr) {
+    // NPR tone hatching. Colors are sent only while their Custom switch is
+    // on; an empty string tells the exporter to keep the style's own colors
+    // (richardson's warm paper, its per-section ink).
+    exporter.hatchEnable = true;
+    exporter.hatchStyle = strVal(ub, "hatchStyle", "richardson");
+    exporter.hatchDensity = numVal(ub, "hatchDensity", 1.0);
+    exporter.hatchWidthScale = numVal(ub, "hatchWidthScale", 1.0);
+    const coloring =
+      HATCH_COLORING[strVal(ub, "hatchColoring", "Style default")] ??
+      HATCH_COLORING["Style default"];
+    exporter.hatchBase = coloring.base;
+    exporter.hatchInk = coloring.ink;
+    exporter.hatchInkColor = boolVal(ub, "hatchCustomInk", false)
+      ? strVal(ub, "hatchInkColor", "#000000")
+      : "";
+    exporter.hatchPaperColor = boolVal(ub, "hatchCustomPaper", false)
+      ? strVal(ub, "hatchPaperColor", "#ffffff")
+      : "";
+    exporter.hatchDefaultEdges = boolVal(ub, "hatchDefaultEdges", true);
+  } else {
+    // Diffuse global illumination (pt1 path-traced integrator).
+    exporter.useGI = boolVal(ub, "useGI", false);
+    exporter.giSamples = numVal(ub, "giSamples", 32);
+    exporter.giIntensity = numVal(ub, "giIntensity", 1.0);
+    exporter.giEnvIntensity = numVal(ub, "giEnvIntensity", 1.0);
+    const denoise = DENOISE_MODE[strVal(ub, "denoise", "OIDN")] ?? DENOISE_MODE.OIDN;
+    exporter.giDenoise = denoise.giDenoise; // pt1Denoise: OIDN on the indirect buffer
+    exporter.denoiser = denoise.denoiser; // full-frame post-pass (0 = None, 1 = a-trous)
+  }
 
   return exporter;
 }
@@ -179,79 +218,96 @@ function makeHandle(
   };
 }
 
-export const umbreonBackend: RenderBackend = {
-  id: "umbreon",
+/**
+ * Build one umbreon-based backend. The plain and the NPR backend share the
+ * whole in-process render cycle and differ only in the exporter block
+ * `makeExporter` writes (GI vs hatch), so a single factory keeps them from
+ * drifting apart.
+ */
+function createUmbreonBackend(id: string, npr: boolean): RenderBackend {
+  return {
+    id,
 
-  // No input file to write: umbreon renders straight to the output PNG in
-  // `beginInProcess`. Carry only the workdir so `outputImagePath` can derive
-  // the target path (the shared `exportScene -> outputImagePath` convention).
-  exportScene(_ctx, _scene, _snapshot, workDir): ExportedScene {
-    return { inputPath: "", workDir, blendTable: {} };
-  },
+    // No input file to write: umbreon renders straight to the output PNG in
+    // `beginInProcess`. Carry only the workdir so `outputImagePath` can derive
+    // the target path (the shared `exportScene -> outputImagePath` convention).
+    exportScene(_ctx, _scene, _snapshot, workDir): ExportedScene {
+      return { inputPath: "", workDir, blendTable: {} };
+    },
 
-  outputImagePath(exported: ExportedScene): string {
-    return path.join(exported.workDir, "render.png");
-  },
+    outputImagePath(exported: ExportedScene): string {
+      return path.join(exported.workDir, "render.png");
+    },
 
-  beginInProcess(
-    ctx: WorkerContext,
-    scene: Scene,
-    snapshot: RenderSettingsSnapshot,
-    outputPath: string,
-  ): InProcessRender {
-    const exporter = makeExporter(ctx, snapshot);
-    exporter.camera = "__current";
+    beginInProcess(
+      ctx: WorkerContext,
+      scene: Scene,
+      snapshot: RenderSettingsSnapshot,
+      outputPath: string,
+    ): InProcessRender {
+      const exporter = makeExporter(ctx, snapshot, npr);
+      exporter.camera = "__current";
 
-    exporter.attach(scene);
-    try {
+      exporter.attach(scene);
+      try {
+        exporter.setPath(outputPath);
+        // Build the scene (this call) and start the ray trace on a background
+        // C++ thread; returns immediately so the pipeline can poll for
+        // progress.
+        exporter.beginRender();
+      } catch (e) {
+        // A failed start must not leave the scene attached: the exporter would
+        // keep holding the C++ scene reference until it is garbage-collected.
+        exporter.detach();
+        throw e;
+      }
+
+      return makeHandle(exporter, () => exporter.detach());
+    },
+
+    beginInProcessAnimFrame(
+      ctx: WorkerContext,
+      animMgr: AnimMgr,
+      snapshot: RenderSettingsSnapshot,
+      outputPath: string,
+    ): InProcessRender {
+      const exporter = makeExporter(ctx, snapshot, npr);
       exporter.setPath(outputPath);
-      // Build the scene (this call) and start the ray trace on a background C++
-      // thread; returns immediately so the pipeline can poll for progress.
-      exporter.beginRender();
-    } catch (e) {
-      // A failed start must not leave the scene attached: the exporter would
-      // keep holding the C++ scene reference until it is garbage-collected.
-      exporter.detach();
-      throw e;
-    }
 
-    return makeHandle(exporter, () => exporter.detach());
-  },
+      // beginFrame() attaches the scene, applies this frame's animation state
+      // and hands over the animation's own camera -- so no attach() and no
+      // `camera` name here (an explicit camera object wins over the name
+      // anyway). The frame stays applied until endFrame(), which is what lets
+      // the ray trace run asynchronously in between.
+      if (!animMgr.beginFrame(exporter)) {
+        throw new Error("the animation has no frame left to render");
+      }
+      try {
+        exporter.beginRender();
+      } catch (e) {
+        animMgr.endFrame(exporter);
+        throw e;
+      }
 
-  beginInProcessAnimFrame(
-    ctx: WorkerContext,
-    animMgr: AnimMgr,
-    snapshot: RenderSettingsSnapshot,
-    outputPath: string,
-  ): InProcessRender {
-    const exporter = makeExporter(ctx, snapshot);
-    exporter.setPath(outputPath);
+      return makeHandle(exporter, () => animMgr.endFrame(exporter));
+    },
 
-    // beginFrame() attaches the scene, applies this frame's animation state and
-    // hands over the animation's own camera -- so no attach() and no `camera`
-    // name here (an explicit camera object wins over the name anyway). The
-    // frame stays applied until endFrame(), which is what lets the ray trace
-    // run asynchronously in between.
-    if (!animMgr.beginFrame(exporter)) {
-      throw new Error("the animation has no frame left to render");
-    }
-    try {
-      exporter.beginRender();
-    } catch (e) {
-      animMgr.endFrame(exporter);
-      throw e;
-    }
+    // Never invoked for an in-process backend (renderJob branches on
+    // `beginInProcess` before touching these); defensive stubs.
+    buildTasks(_exported, _snapshot, _binaries: RenderBinaries): RenderTaskSpec[] {
+      throw new Error("umbreon renders in-process; buildTasks is unused");
+    },
 
-    return makeHandle(exporter, () => animMgr.endFrame(exporter));
-  },
+    parseProgress(_stdout: string): number | null {
+      return null;
+    },
+  };
+}
 
-  // Never invoked for an in-process backend (renderJob branches on
-  // `beginInProcess` before touching these); defensive stubs.
-  buildTasks(_exported, _snapshot, _binaries: RenderBinaries): RenderTaskSpec[] {
-    throw new Error("umbreon renders in-process; buildTasks is unused");
-  },
+export const umbreonBackend: RenderBackend = createUmbreonBackend("umbreon", false);
 
-  parseProgress(_stdout: string): number | null {
-    return null;
-  },
-};
+/** Umbreon with the NPR tone-hatching pass (ink-drawing output). */
+export const umbreonNprBackend: RenderBackend = createUmbreonBackend(
+  "umbreon_npr",
+  true,
+);
