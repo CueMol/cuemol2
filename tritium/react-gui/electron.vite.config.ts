@@ -46,6 +46,22 @@ const workerExternal = [
   'path',
 ]
 
+// ---------------------------------------------------------------------------
+// Developer-only UI flag (__DEV_UI__)
+// ---------------------------------------------------------------------------
+// Some sidebar UI exists only for development / design review -- currently the
+// "Component Catalog" activity-bar view (CatalogPane1-3). It is gated on the
+// compile-time constant __DEV_UI__ so that a release build drops the branches
+// and, by tree-shaking, the CatalogPane modules themselves.
+//
+// Release packaging (packaging/package.sh, and the package:dir script) sets
+// CUEMOL_RELEASE=1 before running electron-vite build. A plain
+// `electron-vite build` / `electron-vite dev` -- i.e. every developer run,
+// including `electron-vite preview` of that build -- keeps the dev UI. Note
+// that import.meta.env.DEV cannot be used for this: `preview` runs a
+// production bundle, so DEV is already false in a normal debug run.
+const devUi = process.env.CUEMOL_RELEASE !== '1'
+
 const workerGlobals: Record<string, string> = {
   // Map the external to a require() call executed at IIFE init time.
   // Electron's nodeIntegrationInWorker injects the global require.
@@ -64,6 +80,9 @@ export default defineConfig({
   },
   renderer: {
     plugins: [react(), tsconfigPaths()],
+    define: {
+      __DEV_UI__: JSON.stringify(devUi),
+    },
     build: {
       rollupOptions: {
         // Two HTML entries: the main window (index.html) and the modeless

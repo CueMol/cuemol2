@@ -30,13 +30,25 @@ interface ActivityItemDef {
   label: string;
 }
 
-/** Ordered list of activity-bar buttons rendered top-to-bottom. */
-const ITEMS: ActivityItemDef[] = [
+/**
+ * Build the ordered list of activity-bar buttons rendered top-to-bottom.
+ *
+ * @param devUi - Whether developer-only views are part of this build. The
+ *   Component Catalog is a design-review showcase, so it is present in
+ *   developer builds only; see `__DEV_UI__` in electron.vite.config.ts.
+ * @returns The buttons in top-to-bottom order.
+ */
+export const buildActivityItems = (devUi: boolean): ActivityItemDef[] => [
   { id: "explorer", icon: "activity.explorer", label: "Explorer" },
   { id: "selection", icon: "activity.selection", label: "Selection" },
   { id: "crystal", icon: "activity.crystal", label: "Crystal" },
-  { id: "catalog", icon: "activity.catalog", label: "Component Catalog" },
+  ...(devUi
+    ? [{ id: "catalog", icon: "activity.catalog", label: "Component Catalog" } as ActivityItemDef]
+    : []),
 ];
+
+/** Ordered list of activity-bar buttons rendered top-to-bottom. */
+const ITEMS: ActivityItemDef[] = buildActivityItems(__DEV_UI__);
 
 // ------------------------------------------------------------
 // Component

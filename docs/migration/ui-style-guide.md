@@ -23,6 +23,8 @@ label+control の UI (フォーム行・テキスト入力・select・numeric・
 - **2 桁の裸 cell** = `NumberCell`。
 真にカタログに無い時のみ、`_form-kit.css` にサイズを 1 定義して**先にカタログへ追加**する。カタログ調査を飛ばして Blueprint 直叩き/独自 CSS で作ると、既存の verified 実装とサイズ・デザインが食い違い手戻りする (このガイドが防ぎたい再発そのもの)。
 
+> **Component Catalog は開発ビルド専用**: activity bar の "Component Catalog" view は `__DEV_UI__` (compile-time flag) で gate されており、`electron-vite dev` / 通常の `electron-vite build` (= `task build_tritium` + `task run_tritium`) でのみ表示される。release packaging (`tritium/packaging/package.sh`) は `CUEMOL_RELEASE=1` を立てるので、CatalogPane1-3 は tree-shaking で bundle ごと落ちる。カタログに component を追加しても製品ビルドには入らない。
+
 | コンポーネント | 用途 | canonical サイズ (source) |
 |---|---|---|
 | `FieldSection` | **pane 内の最上位グループ** (`title` = グループ見出し + 任意の中身) | title は `.type-group-label` role, section 間 gap は親 container の `gap: --form-section-gap` |

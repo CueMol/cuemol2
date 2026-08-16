@@ -8,6 +8,12 @@ declare module '*.png' {
   export default src
 }
 
+// Compile-time flag for developer-only UI (currently the Component Catalog
+// activity-bar view). Substituted by the `define` entry in
+// electron.vite.config.ts / vitest.config.ts: true for developer builds and
+// tests, false when packaging/package.sh builds a release (CUEMOL_RELEASE=1).
+declare const __DEV_UI__: boolean
+
 // Shared IPC types exposed as globals using TypeScript import() type syntax.
 // This works in script-mode .d.ts files without requiring export {} or declare global.
 type PaneCollapseState  = import('../../shared/ipcTypes').PaneCollapseState
