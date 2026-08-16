@@ -6,7 +6,10 @@
  * granularity tracked in `docs/migration/uxp-inventory/panels.md`:
  *
  *   - `panel.coloring.shell`        -- renderer selector + coloring-type
- *                                     dropdown chrome (this component)
+ *                                     dropdown chrome (this component). The
+ *                                     "Paint coloring" row is a submenu of the
+ *                                     scene's `*Paint` style presets (UXP
+ *                                     `onPaintColShowing`), not a leaf item.
  *   - `panel.coloring.deck.paint`   -- Paint table (inline editor)
  *   - `panel.coloring.deck.solid`   -- defaultcolor picker
  *   - `panel.coloring.deck.undef`   -- "select a renderer" placeholder
@@ -62,6 +65,7 @@ import { CueColorField } from '../../h3-kit/colorpicker/CueColorField'
 import { ColorPickerProvider } from '../../h3-kit/colorpicker/ColorPickerContext'
 import { MultiGradSection } from '../multigrad/MultiGradSection'
 import { usePaintCapableRenderers } from '../../hooks/usePaintCapableRenderers'
+import { usePaintColoringStyles } from '../../hooks/usePaintColoringStyles'
 import { useRendererColoringState } from '../../hooks/useRendererColoringState'
 import { useElePotMapObjects } from '../../hooks/useElePotMapObjects'
 import { useMolCoordObjects } from '../../hooks/useMolCoordObjects'
@@ -90,6 +94,12 @@ interface ColoringModeItem {
     /** Shown only when the renderer exposes a `multi_grad` gradient. */
     multigradOnly?: boolean
 }
+
+/**
+ * Marker for the "Paint coloring" row: it is not a leaf item but a submenu
+ * whose entries are built at render time (see `paintSubmenuItems`).
+ */
+const PAINT_SUBMENU_ID = 'paint-type-paint'
 
 const COLORING_MODE_ITEMS: ColoringModeItem[] = [
     { label: 'Paint coloring',          coloringId: 'paint-type-paint',    enabled: true  },
@@ -715,6 +725,26 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
         enabled: isMolFancActive,
     })
 
+    // "Paint coloring" submenu entries (UXP `onPaintColShowing`): a renderer
+    // gets the scene's `*Paint` style presets (Default / Woody / Red / ...),
+    // applied as a style; an object has no `style` property so it only gets
+    // the plain "Default" PaintColoring.
+    const { styles: paintStyles } = usePaintColoringStyles({ cm, sceneId })
+    const paintSubmenuItems = useMemo((): {
+        key: string
+        label: string
+        coloringId: RendColoringId
+    }[] => {
+        if (target?.targetKind === 'object') {
+            return [{ key: 'default', label: 'Default', coloringId: 'paint-type-paint' }]
+        }
+        return paintStyles.map((s) => ({
+            key: s.name,
+            label: s.label,
+            coloringId: `style-${s.name}` as RendColoringId,
+        }))
+    }, [target?.targetKind, paintStyles])
+
     // -- Mutation handlers --
     const requireTarget = useCallback(
         (): {
@@ -1044,29 +1074,47 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
                                         // `coloring` (contour / gpu_*) offer
                                         // only Multi-gradient; isosurf has
                                         // `coloring` (MOLFANC) and offers
-                                        // the full paint set.
+                                        // the full paint set. "Paint coloring"
+                                        // renders as a submenu of style
+                                        // presets rather than a leaf item.
                                         .filter((it) =>
                                             it.multigradOnly
                                                 ? multiGradCapable
                                                 : it.surfaceOnly
                                                   ? hasColoring && isSurface
                                                   : hasColoring)
-                                        .map((it, i) => (
-                                            <MenuItem
-                                                key={i}
-                                                text={
-                                                    it.enabled
-                                                        ? it.label
-                                                        : `${it.label} (coming soon)`
-                                                }
-                                                disabled={!it.enabled}
-                                                onClick={() => {
-                                                    if (it.enabled && it.coloringId) {
-                                                        onSelectMode(it.coloringId)
+                                        .map((it, i) =>
+                                            it.coloringId === PAINT_SUBMENU_ID ? (
+                                                <MenuItem
+                                                    key={i}
+                                                    text={it.label}
+                                                    disabled={paintSubmenuItems.length === 0}
+                                                >
+                                                    {paintSubmenuItems.map((s) => (
+                                                        <MenuItem
+                                                            key={s.key}
+                                                            text={s.label}
+                                                            onClick={() => onSelectMode(s.coloringId)}
+                                                        />
+                                                    ))}
+                                                </MenuItem>
+                                            ) : (
+                                                <MenuItem
+                                                    key={i}
+                                                    text={
+                                                        it.enabled
+                                                            ? it.label
+                                                            : `${it.label} (coming soon)`
                                                     }
-                                                }}
-                                            />
-                                        ))}
+                                                    disabled={!it.enabled}
+                                                    onClick={() => {
+                                                        if (it.enabled && it.coloringId) {
+                                                            onSelectMode(it.coloringId)
+                                                        }
+                                                    }}
+                                                />
+                                            ),
+                                        )}
                                 </Menu>
                             }
                         >

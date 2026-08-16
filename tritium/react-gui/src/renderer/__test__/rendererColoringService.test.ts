@@ -390,8 +390,28 @@ describe('setRendererColoring — isosurf (MOLFANC) cases', () => {
         expect(setColormode).toHaveBeenCalledWith('solid')
     })
 
-    it('paint-type-solid on molsurf does not touch colormode (unchanged behavior)', () => {
+    // molsurf is colormode-governed like isosurf: the Coloring panel is the
+    // only UI that can move its colormode (the Inspector row was dropped), so
+    // Solid / Reset must take it back to "solid" -- otherwise the MOLFANC /
+    // potential / multigrad path keeps overriding the solid defaultcolor.
+    it('paint-type-solid on molsurf also switches colormode back to "solid"', () => {
         const { ctx, resetProp, setColormode } = makeFixture({ typeName: 'molsurf' })
+        services.setRendererColoring(ctx, baseArgs('paint-type-solid'))
+        expect(resetProp).toHaveBeenCalledWith('coloring')
+        expect(setColormode).toHaveBeenCalledWith('solid')
+    })
+
+    it('paint-type-resetdef on molsurf resets both coloring and colormode', () => {
+        const { ctx, resetProp } = makeFixture({ typeName: 'molsurf' })
+        services.setRendererColoring(ctx, baseArgs('paint-type-resetdef'))
+        expect(resetProp).toHaveBeenCalledWith('coloring')
+        expect(resetProp).toHaveBeenCalledWith('colormode')
+    })
+
+    // dsurface has no "solid" entry in its colormode enumdef, so the Solid
+    // item must leave colormode alone there.
+    it('paint-type-solid on dsurface leaves colormode alone', () => {
+        const { ctx, resetProp, setColormode } = makeFixture({ typeName: 'dsurface' })
         services.setRendererColoring(ctx, baseArgs('paint-type-solid'))
         expect(resetProp).toHaveBeenCalledWith('coloring')
         expect(setColormode).not.toHaveBeenCalled()

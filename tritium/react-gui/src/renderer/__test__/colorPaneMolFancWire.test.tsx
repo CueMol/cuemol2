@@ -4,8 +4,10 @@
  *
  *   - Coloring dropdown: isosurf (has `coloring`) offers the full paint set
  *     (Paint/Solid/CPK/Bfac/Rainbow) + Multi-gradient + Reset, but NOT the
- *     Electrostatic-potential item (surface renderers only); clicking Paint
- *     fires setRendererColoring with 'paint-type-paint'.
+ *     Electrostatic-potential item (surface renderers only); "Paint coloring"
+ *     is a submenu of the scene's `*Paint` style presets (UXP
+ *     `onPaintColShowing`) whose entries fire setRendererColoring with
+ *     'style-<name>'.
  *   - "Coloring mol" selector: shown above the class deck in molecule
  *     colormode, lists the scene's MolCoord objects, and commits a change
  *     through setRendererColoringTarget; hidden outside molecule mode.
@@ -71,6 +73,13 @@ const ISOSURF_MOLECULE_PAINT = {
     molFancTarget: 'mol1',
 }
 
+/** `*Paint` style presets, as `getPaintColoringStyles` returns them. */
+const PAINT_STYLES = [
+    { name: 'DefaultHSCPaint', label: 'Default' },
+    { name: 'WoodyHSCPaint', label: 'Woody' },
+    { name: 'RedHSCPaint', label: 'Red' },
+]
+
 interface MockCm {
     invokeService: ReturnType<typeof vi.fn>
 }
@@ -108,6 +117,9 @@ function makeCm(coloringState: Record<string, unknown>): MockCm {
             if (name === 'listElePotMapObjects') {
                 return Promise.resolve({ ok: true, objects: [] })
             }
+            if (name === 'getPaintColoringStyles') {
+                return Promise.resolve({ ok: true, entries: PAINT_STYLES })
+            }
             return Promise.resolve({ ok: true })
         }),
     }
@@ -118,6 +130,15 @@ async function mountWith(coloringState: Record<string, unknown>) {
     const handle = mountTree(<ColorPane cm={cm as never} sceneId={SCENE_ID} />)
     await flushPromises()
     return { cm, ...handle }
+}
+
+/**
+ * Visible label of a menu item. Blueprint appends a screen-reader-only
+ * "Open sub menu" caption to submenu parents; strip it so the expectations
+ * read as the labels the user sees.
+ */
+function menuText(item: Element): string {
+    return (item.textContent ?? '').replace(/Open sub menu$/, '')
 }
 
 /** The select that offers the scene's molecules (the Coloring mol selector). */
@@ -133,14 +154,14 @@ describe('ColorPane MOLFANC wire (isosurf)', () => {
     beforeEach(() => vi.clearAllMocks())
 
     it('isosurf dropdown offers the paint set + Multi-gradient but no Elepot', async () => {
-        const { cm, container, unmount } = await mountWith(ISOSURF_SOLID)
+        const { container, unmount } = await mountWith(ISOSURF_SOLID)
         const trigger = Array.from(
             container.querySelectorAll('button'),
         ).find((b) => b.textContent?.includes('Coloring')) as HTMLButtonElement
         await act(async () => { trigger.click() })
         await flushPromises()
         const items = Array.from(document.querySelectorAll('.bp5-menu-item'))
-        expect(items.map((i) => i.textContent)).toEqual([
+        expect(items.map(menuText)).toEqual([
             'Paint coloring',
             'Solid coloring',
             'CPK coloring',
@@ -149,14 +170,49 @@ describe('ColorPane MOLFANC wire (isosurf)', () => {
             'Multi-gradient coloring',
             'Reset to default style',
         ])
-        const paint = items.find((i) => i.textContent === 'Paint coloring')!
-        await act(async () => { (paint as HTMLElement).click() })
+        unmount()
+    })
+
+    it('"Paint coloring" is a submenu of style presets applying style-<name>', async () => {
+        const { cm, container, unmount } = await mountWith(ISOSURF_SOLID)
+        expect(cm.invokeService).toHaveBeenCalledWith('getPaintColoringStyles', {
+            sceneId: SCENE_ID,
+        })
+        const trigger = Array.from(
+            container.querySelectorAll('button'),
+        ).find((b) => b.textContent?.includes('Coloring')) as HTMLButtonElement
+        await act(async () => { trigger.click() })
+        await flushPromises()
+        const paint = Array.from(document.querySelectorAll('.bp5-menu-item')).find(
+            (i) => menuText(i) === 'Paint coloring',
+        )!
+        // Blueprint opens a submenu on hover (interactionKind "hover", 150ms
+        // default open delay). React derives onMouseEnter from the bubbling
+        // mouseover event, so dispatch that and wait out the delay for real --
+        // fake timers do not reliably flush React 18 state from timer
+        // callbacks.
+        await act(async () => {
+            paint.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+        })
+        await act(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 250))
+        })
+        await flushPromises()
+        const labels = PAINT_STYLES.map((s) => s.label)
+        const sub = Array.from(document.querySelectorAll('.bp5-menu-item')).filter(
+            (i) => labels.includes(menuText(i)),
+        )
+        expect(sub.map(menuText)).toEqual(labels)
+
+        await act(async () => {
+            (sub.find((i) => menuText(i) === 'Woody') as HTMLElement).click()
+        })
         await flushPromises()
         expect(cm.invokeService).toHaveBeenCalledWith('setRendererColoring', {
             sceneId: SCENE_ID,
             rendId: REND_ID,
             targetKind: 'renderer',
-            coloringId: 'paint-type-paint',
+            coloringId: 'style-WoodyHSCPaint',
         })
         unmount()
     })

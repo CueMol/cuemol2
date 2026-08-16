@@ -48,6 +48,19 @@ import type {
 } from './types';
 
 /**
+ * Renderers whose rendered color is governed by `colormode` on top of the
+ * `coloring` scheme: molsurf's MOLFANC and the isosurf map renderer's
+ * nearest-atom coloring. Both carry a "solid" entry in their colormode
+ * enumdef (rendering the plain `defaultcolor`), so the Coloring panel must
+ * move `colormode` alongside `coloring` -- otherwise switching to Solid
+ * leaves the MOLFANC / potential / multigrad path overriding the solid
+ * color. dsurface is excluded: its colormode has no "solid" entry.
+ */
+function isColormodeGoverned(rend: Renderer): boolean {
+    return isMolSurf(rend) || isMapSurf(rend);
+}
+
+/**
  * Force `colormode = "molecule"` on renderers whose coloring only applies
  * in molecule mode (molsurf's MOLFANC, and the isosurf map renderer's
  * nearest-atom coloring). On these renderers the MOLFANC path also needs a
@@ -56,7 +69,7 @@ import type {
  * `paint-type-elepot`). No-op for every other renderer.
  */
 function forceMoleculeColormode(scene: Scene, rend: Renderer): void {
-    if (!isMolSurf(rend) && !isMapSurf(rend)) return;
+    if (!isColormodeGoverned(rend)) return;
     (rend as unknown as { colormode: string }).colormode = 'molecule';
     const target = readMolFancTargetOrNull(rend);
     if (target === '') {
@@ -202,24 +215,27 @@ export function setRendererColoring(
         case 'paint-type-solid':
             // UXP `setRendColoring`: Solid routes through
             // `resetProp("coloring")`; the unknown deck then shows the
-            // renderer's defaultcolor picker. On the isosurf map renderer
-            // the mesh color is governed by colormode, so also switch it
-            // back to "solid" -- otherwise the MOLFANC nearest-atom path
-            // keeps overriding the solid color.
+            // renderer's defaultcolor picker. On the colormode-governed
+            // surfaces (molsurf / isosurf) the rendered color is picked by
+            // colormode, so also switch it back to "solid" -- otherwise the
+            // MOLFANC / potential / multigrad path keeps overriding the solid
+            // color and the deck's picker looks dead. This is also the only
+            // route back to "solid" for those renderers, so it must stay
+            // reachable from the panel.
             withUndoTxn(scene, 'Reset coloring', () => {
                 rend.resetProp('coloring');
-                if (isMapSurf(rend)) {
+                if (isColormodeGoverned(rend)) {
                     (rend as unknown as { colormode: string }).colormode = 'solid';
                 }
             });
             return { ok: true };
         case 'paint-type-resetdef':
             // "Reset to default style": restore the style-inherited coloring.
-            // On isosurf also reset colormode to its default ("solid") so the
-            // renderer returns to its true default state.
+            // On molsurf / isosurf also reset colormode to its default
+            // ("solid") so the renderer returns to its true default state.
             withUndoTxn(scene, 'Reset coloring', () => {
                 rend.resetProp('coloring');
-                if (isMapSurf(rend)) {
+                if (isColormodeGoverned(rend)) {
                     rend.resetProp('colormode');
                 }
             });

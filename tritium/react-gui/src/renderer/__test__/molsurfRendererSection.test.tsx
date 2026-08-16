@@ -8,11 +8,13 @@
  *   - the registry resolves `type_name === "molsurf"` to a single "MolSurf"
  *     section (default-expanded);
  *   - the curated rows render (Drawing mode / Line/Point size / Selection mol /
- *     Selection / Coloring mode); the dsurface-only Surface type / Detail and
- *     unrelated props (elepot) produce no rows;
+ *     Selection); the dsurface-only Surface type / Detail and unrelated props
+ *     (elepot) produce no rows;
+ *   - `colormode` is present in the entry list but produces NO row -- coloring
+ *     is owned by the Coloring panel (ColorPane), which is the only place that
+ *     can edit the colors that go with the mode;
  *   - "Drawing mode" writes `drawmode`; Line/Point size is disabled while the
  *     mode is "fill" and enabled for line / point (UXP updateDisabledState);
- *   - "Coloring mode" writes `colormode`;
  *   - "Selection mol" writes the raw `target` name and keeps the current value
  *     selectable (no "(none)" entry).
  */
@@ -117,12 +119,23 @@ describe('MolSurfMainSection', () => {
     const { container, unmount } = mountTree(
       <MolSurfMainSection entries={entries} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
     )
-    for (const label of ['Drawing mode', 'Line/Point size', 'Selection mol', 'Selection', 'Coloring mode']) {
+    for (const label of ['Drawing mode', 'Line/Point size', 'Selection mol', 'Selection']) {
       expect(rowByLabel(container, label), label).not.toBeNull()
     }
     expect(rowByLabel(container, 'Surface type')).toBeNull()
     expect(rowByLabel(container, 'Detail')).toBeNull()
-    expect(container.querySelectorAll('.h3-form-prop-row').length).toBe(5)
+    expect(container.querySelectorAll('.h3-form-prop-row').length).toBe(4)
+    unmount()
+  })
+
+  it('does not surface a coloring-mode row even though colormode is in the entries', () => {
+    // Coloring belongs to the Coloring panel (ColorPane): the Inspector row
+    // could switch the mode but never edit the colors that go with it.
+    const { container, unmount } = mountTree(
+      <MolSurfMainSection entries={molsurfEntries()} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+    )
+    expect(molsurfEntries().some((e) => e.key === 'colormode')).toBe(true)
+    expect(rowByLabel(container, 'Coloring mode')).toBeNull()
     unmount()
   })
 
@@ -142,18 +155,6 @@ describe('MolSurfMainSection', () => {
     )
     expect(rowByLabel(line.container, 'Line/Point size')!.querySelector('.h3-form-drag-disabled')).toBeNull()
     line.unmount()
-  })
-
-  it('writes the coloring mode', () => {
-    const onSet = vi.fn()
-    const { container, unmount } = mountTree(
-      <MolSurfMainSection entries={molsurfEntries()} onSet={onSet} onReset={vi.fn()} sceneId={1} nodeId={2} />,
-    )
-    const select = rowByLabel(container, 'Coloring mode')!.querySelector('select') as HTMLSelectElement
-    expect(Array.from(select.options).map((o) => o.value)).toEqual(['solid', 'molecule', 'potential'])
-    selectValue(select, 'potential')
-    expect(onSet).toHaveBeenCalledWith('colormode', 'enum', 'potential')
-    unmount()
   })
 
   it('commits the Selection mol target and keeps the current value selectable (no "(none)")', () => {

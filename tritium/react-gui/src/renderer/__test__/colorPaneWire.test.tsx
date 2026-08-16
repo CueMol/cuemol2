@@ -176,6 +176,7 @@ function mutationCalls(cm: MockCm): Array<[string, unknown]> {
         'listPaintCapableRenderers',
         'getRendererColoringState',
         'listElePotMapObjects',
+        'getPaintColoringStyles',
     ])
     return cm.invokeService.mock.calls.filter(
         (c) => !reads.has(c[0] as string),

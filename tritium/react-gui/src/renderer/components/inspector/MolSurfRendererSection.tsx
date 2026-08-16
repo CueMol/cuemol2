@@ -17,11 +17,22 @@
  *   - Line/Point size: `width` (drag-numeric, px, realtime; off while filled)
  *   - Selection mol  : `target` (reference MolCoord object name)
  *   - Selection      : `showsel` (atoms to draw the surface around)
- *   - Coloring mode  : `colormode` (solid / molecule / potential)
  *
  * Parity note (`molsurf-page.js` `updateDisabledState`): Line/Point size is
  * disabled while the drawing mode is "fill". The elepot / ramp coloring params
  * are owned by the Coloring panel (not on the MolSurf tab) and stay out.
+ *
+ * @remarks The UXP "Coloring mode" menulist (`colormode`) is deliberately NOT
+ * on this section: every mode it offered is reachable from the Coloring panel
+ * (`ColorPane`) -- Solid coloring -> "solid", Paint/CPK/Bfac/Rainbow ->
+ * "molecule", Electrostatic potential -> "potential", Multi-gradient coloring
+ * -> "multigrad" -- and only the panel can edit the colors that go with the
+ * mode. Same Inspector/Coloring-panel split as isosurf and dsurface. The raw
+ * `colormode` property stays editable through the Generic tab.
+ *
+ * `target` / `showsel` stay here: they also drive which part of the surface is
+ * drawn, and the panel's "Coloring mol" selector only appears while
+ * `colormode === "molecule"`.
  *
  * Backed by the same live getGenericProps / setGenericProp bridge as the common
  * page; each property is looked up by key and its row renders nothing when the
@@ -40,17 +51,10 @@ const DRAWMODE_LABELS: Record<string, string> = {
   line: "Wireframe",
   point: "Dots",
 };
-/** Coloring-mode labels (UXP `msurf-paintmode` menuitems). */
-const COLORMODE_LABELS: Record<string, string> = {
-  solid: "Solid color",
-  molecule: "By molecule",
-  potential: "By potential",
-  multigrad: "Multi-gradient",
-};
 
 /**
  * "MolSurf" section: drawing mode, line/point size, the reference-molecule
- * target, the shown selection and the coloring mode.
+ * target and the shown selection.
  */
 export const MolSurfMainSection: React.FC<RendererPropSectionProps> = ({
   entries,
@@ -65,7 +69,6 @@ export const MolSurfMainSection: React.FC<RendererPropSectionProps> = ({
   const width = get("width");
   const target = get("target");
   const showsel = get("showsel");
-  const colormode = get("colormode");
 
   // Line/Point size only matters for line / point modes (UXP updateDisabledState).
   const widthDisabled = drawmode ? String(drawmode.value) === "fill" : false;
@@ -112,15 +115,6 @@ export const MolSurfMainSection: React.FC<RendererPropSectionProps> = ({
           onSet={onSet}
           onReset={onReset}
           sceneId={sceneId}
-        />
-      )}
-      {colormode && (
-        <MappedEnumRow
-          entry={colormode}
-          label="Coloring mode"
-          labels={COLORMODE_LABELS}
-          onSet={onSet}
-          onReset={onReset}
         />
       )}
     </>
