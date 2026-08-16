@@ -41,10 +41,18 @@
 /* ── Field grid (aligned label column + filling control) ──
  * A grid whose rows share one label-column width so every control's left edge
  * lines up (Blender-style property rows). Rows use display:contents so their
- * label/control become direct grid items of the container. See FieldGrid.tsx. */
+ * label/control become direct grid items of the container. See FieldGrid.tsx.
+ *
+ * The control track carries a floor rather than a bare `1fr`. An `fr` track
+ * gives up space before an `auto` one does, so with `auto 1fr` a narrowing
+ * pane squeezed the controls all the way down while the label column sat at
+ * its full max-content width -- the labels never truncated. With the floor the
+ * controls stop shrinking at a usable width and the label column takes over,
+ * and because it is ONE shared track every label ellipsises by the same
+ * amount (which is the point of the grid). */
 .h3-form-grid {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(var(--form-grid-control-min), 1fr);
   column-gap: var(--space-3);
   row-gap: var(--form-row-gap);
   align-items: center;
@@ -55,9 +63,15 @@
   display: contents;
 }
 
+/* Left-aligned with a trailing ellipsis, matching the inline `Field` label.
+   `text-align: right` cannot be combined with `text-overflow: ellipsis`: a
+   right-aligned line overflows at its START edge, where `text-overflow` does
+   not apply, so a label too long for the column was silently clipped mid-word
+   ("Carbon" -> "arbon") instead of ellipsising. Filling the column rather than
+   hugging the text (no `justify-self: end`) is what gives the ellipsis
+   somewhere to land. */
 .h3-form-grid-label {
-  justify-self: end;
-  text-align: right;
+  text-align: left;
   font-size: var(--type-label-fs);
   font-weight: var(--type-label-fw);
   line-height: var(--lh-snug);
@@ -800,9 +814,14 @@
    `.h3-form-sliderfield-stepper` with explicit +/- buttons that commit on
    click (see SliderField.tsx). */
 .h3-form-sliderfield-number {
-  flex: 0 0 52px;
-  width: 52px;
-  min-width: 52px;
+  /* Digit capacity, not a hand-picked pixel count: `ch` is the "0" advance, so
+     this is literally "fits 4 digits" plus the padding and border. Four covers
+     every consumer -- the widest value any of them reaches is 9999 (the
+     trajectory dialog's every-N-th-frame), and the Rainbow hue tops out at
+     360. The previous 52px fit about six digits and left the box visibly
+     oversized next to its three-digit values. */
+  flex: 0 0 auto;
+  width: calc(4ch + var(--space-2) * 2 + 2px);
   height: var(--field-h-sm);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);

@@ -8,7 +8,10 @@
  * `FieldGrid` is the grid container; each `FieldGridRow` contributes a label
  * cell and a control cell. Rows use `display: contents` so their label/control
  * become direct grid items of the container -- that is what lets the auto
- * label column size to the widest label and stay shared across rows.
+ * label column size to the widest label and stay shared across rows. When the
+ * container narrows past the control column's floor
+ * (`--form-grid-control-min`) the shared label column truncates, so every row
+ * ellipsises by the same amount instead of each finding its own width.
  *
  * Like the rest of the catalog these own layout only: sizing/spacing/typography
  * come from `.h3-form-grid*` in `styles/_form-kit.css`. No size props are exposed,
