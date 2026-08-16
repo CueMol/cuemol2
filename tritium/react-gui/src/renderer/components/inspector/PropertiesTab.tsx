@@ -133,6 +133,7 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
       <AccordionGroup initialOpen={initialOpen}>
         <RendererCommonSection
           entries={displayEntries}
+          rendererType={rendererType}
           onSet={onSet}
           onSetMany={onSetMany}
           onReset={onReset}

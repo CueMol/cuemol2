@@ -20,6 +20,15 @@ export interface FieldProps {
     /** Render label and control on one line (e.g. for a SwitchField). */
     inline?: boolean;
     /**
+     * Inline rows only: put the control first and pack the pair to the start,
+     * so the row reads `[switch] Label ......` instead of the default
+     * `Label ...... [switch]`. Use it for a switch that reads as a
+     * checkbox-style opt-in for the control below it (the dialogs' "Use
+     * selection" toggle), where the default split would strand the switch on
+     * the far side of the dialog.
+     */
+    controlFirst?: boolean;
+    /**
      * Layout-only class for positioning the row within its parent (e.g. a
      * flex child). Must NOT be used to set sizes -- sizing lives in the kit.
      */
@@ -27,9 +36,33 @@ export interface FieldProps {
     children: React.ReactNode;
 }
 
-export const Field: React.FC<FieldProps> = ({ label, inline, className, children }) => (
-    <div className={`h3-form-field-row${inline ? ' h3-form-inline' : ''}${className ? ` ${className}` : ''}`}>
-        <label className="h3-form-field-label">{label}</label>
-        <div className="h3-form-field-control">{children}</div>
-    </div>
-);
+export const Field: React.FC<FieldProps> = ({
+    label,
+    inline,
+    controlFirst,
+    className,
+    children,
+}) => {
+    const labelNode = <label className="h3-form-field-label">{label}</label>;
+    const controlNode = <div className="h3-form-field-control">{children}</div>;
+    const rowClass =
+        'h3-form-field-row'
+        + (inline ? ' h3-form-inline' : '')
+        + (inline && controlFirst ? ' h3-form-control-first' : '')
+        + (className ? ` ${className}` : '');
+    return (
+        <div className={rowClass}>
+            {inline && controlFirst ? (
+                <>
+                    {controlNode}
+                    {labelNode}
+                </>
+            ) : (
+                <>
+                    {labelNode}
+                    {controlNode}
+                </>
+            )}
+        </div>
+    );
+};

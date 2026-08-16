@@ -29,6 +29,7 @@ import {
     TextField,
     SelectField,
     SwitchField,
+    CheckboxField,
     NumericField,
     ButtonRow,
     FormButton,
@@ -66,6 +67,38 @@ describe('form-kit catalog', () => {
             </Field>,
         )
         expect(container.querySelector('.h3-form-field-row.h3-form-inline')).not.toBeNull()
+        unmount()
+    })
+
+    // `controlFirst` is a layout variant, so both halves of its contract have
+    // to hold: the modifier class (the CSS hangs the packing off it) and the
+    // control preceding the label in the DOM.
+    it('Field inline controlFirst puts the control before the label', () => {
+        const { container, unmount } = mountTree(
+            <Field label="Use selection" inline controlFirst>
+                <span>ctrl</span>
+            </Field>,
+        )
+        const row = container.querySelector(
+            '.h3-form-field-row.h3-form-inline.h3-form-control-first',
+        ) as HTMLElement
+        expect(row).not.toBeNull()
+        expect(Array.from(row.children).map((c) => c.className)).toEqual([
+            'h3-form-field-control',
+            'h3-form-field-label',
+        ])
+        unmount()
+    })
+
+    it('Field controlFirst is ignored without inline (stack rows keep label first)', () => {
+        const { container, unmount } = mountTree(
+            <Field label="Use selection" controlFirst>
+                <span>ctrl</span>
+            </Field>,
+        )
+        expect(container.querySelector('.h3-form-control-first')).toBeNull()
+        const row = container.querySelector('.h3-form-field-row') as HTMLElement
+        expect(row.children[0].className).toBe('h3-form-field-label')
         unmount()
     })
 
@@ -153,6 +186,18 @@ describe('form-kit catalog', () => {
             <SwitchField checked={false} onChange={onChange} />,
         )
         const input = container.querySelector('.h3-form-switch input') as HTMLInputElement
+        expect(input).not.toBeNull()
+        act(() => { input.click() })
+        expect(onChange).toHaveBeenCalledWith(true)
+        unmount()
+    })
+
+    it('CheckboxField emits .h3-form-checkbox and fires onChange(boolean)', () => {
+        const onChange = vi.fn()
+        const { container, unmount } = mountTree(
+            <CheckboxField checked={false} onChange={onChange} />,
+        )
+        const input = container.querySelector('.h3-form-checkbox input') as HTMLInputElement
         expect(input).not.toBeNull()
         act(() => { input.click() })
         expect(onChange).toHaveBeenCalledWith(true)

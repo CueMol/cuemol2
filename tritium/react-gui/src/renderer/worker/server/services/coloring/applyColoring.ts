@@ -17,6 +17,7 @@ import { withUndoTxn } from '../withUndoTxn';
 import { getSceneOrNull } from '../helpers/sceneResolver';
 import { remove as styleRemove, push as stylePush } from '../helpers/styleutil';
 import { makeColor } from '../helpers/makeColor';
+import { createDefPaintColoring } from '../helpers/defPaintColoring';
 import {
     resolveColoringTarget,
     isMolSurf,
@@ -48,6 +49,19 @@ import type {
 } from './types';
 
 /**
+ * Renderers whose rendered color is governed by `colormode` on top of the
+ * `coloring` scheme: molsurf's MOLFANC and the isosurf map renderer's
+ * nearest-atom coloring. Both carry a "solid" entry in their colormode
+ * enumdef (rendering the plain `defaultcolor`), so the Coloring panel must
+ * move `colormode` alongside `coloring` -- otherwise switching to Solid
+ * leaves the MOLFANC / potential / multigrad path overriding the solid
+ * color. dsurface is excluded: its colormode has no "solid" entry.
+ */
+function isColormodeGoverned(rend: Renderer): boolean {
+    return isMolSurf(rend) || isMapSurf(rend);
+}
+
+/**
  * Force `colormode = "molecule"` on renderers whose coloring only applies
  * in molecule mode (molsurf's MOLFANC, and the isosurf map renderer's
  * nearest-atom coloring). On these renderers the MOLFANC path also needs a
@@ -56,7 +70,7 @@ import type {
  * `paint-type-elepot`). No-op for every other renderer.
  */
 function forceMoleculeColormode(scene: Scene, rend: Renderer): void {
-    if (!isMolSurf(rend) && !isMapSurf(rend)) return;
+    if (!isColormodeGoverned(rend)) return;
     (rend as unknown as { colormode: string }).colormode = 'molecule';
     const target = readMolFancTargetOrNull(rend);
     if (target === '') {
@@ -91,17 +105,38 @@ function applyStyleColoring(scene: Scene, rend: Renderer, styleName: string): vo
 /**
  * Apply a `paint-type-XXX` coloring by instantiating a fresh coloring object
  * and assigning it. On molsurf / isosurf, also force colormode = "molecule".
+ * `init` runs on the fresh object before it is assigned (the CPK variants use
+ * it to pin the carbon colour).
  */
 function applyObjColoring(
     ctx: WorkerContext,
     scene: Scene,
     rend: Renderer,
     coloringClassName: string,
+    init?: (coloring: ColoringScheme) => void,
 ): void {
     const coloring = ctx.svc.createObj(coloringClassName) as ColoringScheme;
+    init?.(coloring);
     forceMoleculeColormode(scene, rend);
     (rend as unknown as MolRenderer).coloring = coloring;
 }
+
+/**
+ * Carbon colour per CPK variant (UXP `setRendColoring`). The three ids build
+ * the same `CPKColoring` and differ only in `col_C`: the default binds carbon
+ * to the molecule colour, the two gray variants pin it (dark reads on a light
+ * background, light on a dark one). The values mirror the DefaultCPKColoring /
+ * DarkCPKColoring / LightCPKColoring styles in `data/default_style.xml`, which
+ * the renderer context menu applies -- picking "CPK coloring" in the Coloring
+ * panel and "CPK molcol" in the context menu now land on the same colours.
+ * Without this the fresh object kept the C++ default (a pale yellow), which
+ * matched neither.
+ */
+const CPK_CARBON_COLORS: Record<string, string> = {
+    'paint-type-cpk': '$molcol',
+    'paint-type-cpk-darkgray': '#404040',
+    'paint-type-cpk-lightgray': '#C0C0C0',
+};
 
 /** Scene wrapper type for the multigrad helpers below. */
 type SceneW = Parameters<typeof findFirstScalarMapName>[0];
@@ -190,36 +225,52 @@ export function setRendererColoring(
             });
             return { ok: true };
         case 'paint-type-paint':
+            // UXP `createDefPaintColoring`: the Default entry seeds the four
+            // secondary-structure rows rather than handing back an empty
+            // table, which read as "the menu did nothing".
             withUndoTxn(scene, 'Change coloring', () => {
-                applyObjColoring(ctx, scene, rend, 'PaintColoring');
+                const coloring = createDefPaintColoring(ctx, scene.uid);
+                if (!coloring) return;
+                forceMoleculeColormode(scene, rend);
+                (rend as unknown as MolRenderer).coloring = coloring;
             });
             return { ok: true };
         case 'paint-type-cpk':
+        case 'paint-type-cpk-darkgray':
+        case 'paint-type-cpk-lightgray': {
+            const carbon = CPK_CARBON_COLORS[args.coloringId];
             withUndoTxn(scene, 'Change coloring', () => {
-                applyObjColoring(ctx, scene, rend, 'CPKColoring');
+                applyObjColoring(ctx, scene, rend, 'CPKColoring', (coloring) => {
+                    (coloring as unknown as { col_C: AbstractColor }).col_C =
+                        makeColor(ctx, carbon, scene.uid);
+                });
             });
             return { ok: true };
+        }
         case 'paint-type-solid':
             // UXP `setRendColoring`: Solid routes through
             // `resetProp("coloring")`; the unknown deck then shows the
-            // renderer's defaultcolor picker. On the isosurf map renderer
-            // the mesh color is governed by colormode, so also switch it
-            // back to "solid" -- otherwise the MOLFANC nearest-atom path
-            // keeps overriding the solid color.
+            // renderer's defaultcolor picker. On the colormode-governed
+            // surfaces (molsurf / isosurf) the rendered color is picked by
+            // colormode, so also switch it back to "solid" -- otherwise the
+            // MOLFANC / potential / multigrad path keeps overriding the solid
+            // color and the deck's picker looks dead. This is also the only
+            // route back to "solid" for those renderers, so it must stay
+            // reachable from the panel.
             withUndoTxn(scene, 'Reset coloring', () => {
                 rend.resetProp('coloring');
-                if (isMapSurf(rend)) {
+                if (isColormodeGoverned(rend)) {
                     (rend as unknown as { colormode: string }).colormode = 'solid';
                 }
             });
             return { ok: true };
         case 'paint-type-resetdef':
             // "Reset to default style": restore the style-inherited coloring.
-            // On isosurf also reset colormode to its default ("solid") so the
-            // renderer returns to its true default state.
+            // On molsurf / isosurf also reset colormode to its default
+            // ("solid") so the renderer returns to its true default state.
             withUndoTxn(scene, 'Reset coloring', () => {
                 rend.resetProp('coloring');
-                if (isMapSurf(rend)) {
+                if (isColormodeGoverned(rend)) {
                     rend.resetProp('colormode');
                 }
             });

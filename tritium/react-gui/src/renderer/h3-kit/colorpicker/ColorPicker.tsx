@@ -314,7 +314,11 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
                         </Tooltip>
                     ) : (
                         <span
-                            className={'h3-color-swatch' + (isMol ? ' h3-color-swatch--mol' : '')}
+                            className={
+                                'h3-color-swatch'
+                                + (isMol ? ' h3-color-swatch--mol' : '')
+                                + (disabled ? ' h3-color-swatch--disabled' : '')
+                            }
                             style={{ background: swatchColor }}
                         />
                     )}

@@ -40,6 +40,8 @@ export { DragNumericField } from './DragNumericField';
 export type { DragNumericFieldProps, DragNumericFieldHandle } from './DragNumericField';
 export { SwitchField } from './SwitchField';
 export type { SwitchFieldProps } from './SwitchField';
+export { CheckboxField } from './CheckboxField';
+export type { CheckboxFieldProps } from './CheckboxField';
 export { RadioField } from './RadioField';
 export type { RadioFieldProps, RadioFieldOption } from './RadioField';
 export { ColorField } from './ColorField';

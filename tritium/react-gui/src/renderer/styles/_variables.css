@@ -249,6 +249,10 @@
   --field-row-pad: var(--space-1);     /* vertical padding around one field row */
   --form-row-gap: var(--space-1);      /* gap between rows in a FieldGroup */
   --form-section-gap: var(--space-3);  /* gap between form sections */
+  /* FieldGrid: floor for the control column, so a narrowing pane truncates the
+     shared label column instead of collapsing the controls to nothing. Sized to
+     hold a swatch + a short value + the dropdown chevron. */
+  --form-grid-control-min: calc(120px * var(--ui-scale));
   --field-btn-h: var(--ctrl-h-sm);     /* compact form button height */
   --field-segment-compact-h: 16px;     /* SegmentField compact-variant segment height */
 

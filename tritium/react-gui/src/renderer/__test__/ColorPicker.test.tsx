@@ -26,6 +26,8 @@ function setInputValue(input: HTMLInputElement, value: string): void {
  *     reverts the draft
  *   - the caret opens one popover whose segmented switch defaults to the
  *     RGB slider panel, and choosing the Palette segment swaps the body
+ *   - `disabled` reaches the swatch as a modifier class (its CSS hook), not
+ *     just the text box / caret
  *
  * Theme is mocked (the widget reads it only for the Blueprint dark portal
  * class); the worker `cm` is a stub whose `invokeService` returns canned
@@ -73,6 +75,29 @@ describe('ColorPicker', () => {
         const input = container.querySelector('input.bp5-input') as HTMLInputElement
         expect(input.value).toBe('#0000FF')
         unmount()
+    })
+
+    // The swatch is the part of the widget the eye lands on, so the disabled
+    // state has to reach it too (the CSS hangs off this modifier class).
+    it('marks the swatch disabled so the colour reads as inactive', async () => {
+        const cm = makeCm()
+        const off = mountTree(
+            <ColorPicker value="#0000FF" sceneId={3} cm={cm as never} onChange={vi.fn()} />,
+        )
+        await act(async () => { await flushPromises() })
+        expect(
+            off.container.querySelector('.h3-color-swatch--disabled'),
+        ).toBeNull()
+        off.unmount()
+
+        const on = mountTree(
+            <ColorPicker value="#0000FF" sceneId={3} cm={cm as never} disabled onChange={vi.fn()} />,
+        )
+        await act(async () => { await flushPromises() })
+        expect(
+            on.container.querySelector('.h3-color-swatch--disabled'),
+        ).not.toBeNull()
+        on.unmount()
     })
 
     it('commits a valid text edit with completed=true', async () => {

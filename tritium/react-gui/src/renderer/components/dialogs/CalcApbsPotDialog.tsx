@@ -31,6 +31,7 @@ import {
     NumericField,
     SegmentField,
     SelectField,
+    CheckboxField,
     SwitchField,
     TextField,
 } from '../../h3-kit/form'
@@ -202,8 +203,8 @@ export function CalcApbsPotDialog({
                             selectedId={objId}
                             onChange={setObjId}
                         />
-                        <Field label="Use selection" inline>
-                            <SwitchField
+                        <Field label="Use selection" inline controlFirst>
+                            <CheckboxField
                                 checked={useSel}
                                 onChange={setUseSel}
                                 disabled={controlsDisabled || objId === undefined}

@@ -4,7 +4,7 @@
  * (`MolSurfObj`) from a molecule. Ports the UXP `tools/makesurf.xul` +
  * `makesurf.js` dialog (built-in surface algorithm, not external MSMS):
  *   - Target molecule (`ObjectSelect`).
- *   - Optional atom selection (`SwitchField` enable + `MolSelList`).
+ *   - Optional atom selection (`CheckboxField` gate + `MolSelList`).
  *   - Surface object name (`TextField`; prefilled with a unique `sf_<molname>`
  *     via `proposeMolSurfName` and refreshed when the molecule changes, like
  *     UXP `makeSugName`).
@@ -23,7 +23,7 @@
 import React, { useEffect, useState } from 'react'
 import { useCueMol } from '../../hooks/useCueMol'
 import { useMolEditCommit } from '../../hooks/useMolEditCommit'
-import { ComboBoxField, Field, FieldSection, NumericField, SwitchField, TextField } from '../../h3-kit/form'
+import { CheckboxField, ComboBoxField, Field, FieldSection, NumericField, TextField } from '../../h3-kit/form'
 import { DialogShell } from './DialogShell'
 import { MolPicker } from './MolPicker'
 import { MolSelList } from '../../h3-kit/MolSelList/MolSelList'
@@ -139,8 +139,8 @@ export function MakeMolSurfDialog({
                             selectedId={objId}
                             onChange={setObjId}
                         />
-                        <Field label="Use selection" inline>
-                            <SwitchField
+                        <Field label="Use selection" inline controlFirst>
+                            <CheckboxField
                                 checked={useSel}
                                 onChange={setUseSel}
                                 disabled={submitting || objId === undefined}

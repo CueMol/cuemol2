@@ -23,6 +23,7 @@ import {
   DragNumericField,
   TimeField,
   SwitchField,
+  CheckboxField,
 } from "../../h3-kit/form";
 
 /* --- Props --- */
@@ -127,6 +128,11 @@ export const CatalogPane1: React.FC<CatalogPane1Props> = ({
               </Field>
               <Field label="SwitchField" inline>
                 <SwitchField checked={sw} onChange={setSw} />
+              </Field>
+              {/* Opt-in gate: the box leads and the slack trails after the
+                  label, so the row reads "[x] enables what follows". */}
+              <Field label="CheckboxField (inline controlFirst)" inline controlFirst>
+                <CheckboxField checked={sw} onChange={setSw} />
               </Field>
             </FieldGroup>
 

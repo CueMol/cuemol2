@@ -6,7 +6,8 @@
  * `dialog.property.*` renderer dialog. Renders two accordion groups:
  *   - "Basic settings": Name, Selection, Visible, Locked, Material, Opacity
  *   - "Edge lines": Edge type, Width, Color (Width/Color disabled when the
- *     edge type is "none", matching UXP `updateEnabledState`)
+ *     edge type is "none", matching UXP `updateEnabledState`). Suppressed
+ *     entirely for the line-only renderer types (see `NO_EDGE_LINE_TYPES`).
  *
  * It is backed by the same live `getGenericProps` / `setGenericProp` bridge as
  * the Generic tab: each field is looked up by property key in the live entry
@@ -273,30 +274,52 @@ export const NumInputRow: React.FC<NumInputRowProps> = ({
 };
 
 export interface EnumRowProps extends RowProps {
+  /**
+   * Offer these options, in this order. Entries not present in the property's
+   * `enumdef` are dropped. Use it to fix the display order -- the `enumdef`
+   * from C++ getPropsJSON is alphabetical, which is rarely the natural order
+   * (e.g. the edge type reads none -> edges -> silhouette, not the alphabetical
+   * edges -> none -> silhouette). Defaults to the full `enumdef`.
+   */
+  options?: string[];
   disabled?: boolean;
 }
 
 /**
  * Dropdown committed immediately (e.g. Edge type). Options come from the
- * property's `enumdef` (raw C++ string IDs).
+ * property's `enumdef` (raw C++ string IDs), optionally restricted / reordered
+ * by `options`.
  *
  * Exported so renderer-type-specific sections reuse the same enum row contract.
  */
-export const EnumRow: React.FC<EnumRowProps> = ({ entry, label, onSet, onReset, disabled }) => (
-  <PropertyField label={label} {...resetProps(entry, onReset)}>
-    <SelectField
-      value={String(entry.value)}
-      disabled={disabled || entry.readonly}
-      onChange={(v) => onSet(entry.key, entry.type, v)}
-    >
-      {(entry.enumdef ?? [String(entry.value)]).map((opt) => (
-        <option key={opt} value={opt}>
-          {opt}
-        </option>
-      ))}
-    </SelectField>
-  </PropertyField>
-);
+export const EnumRow: React.FC<EnumRowProps> = ({
+  entry,
+  label,
+  options,
+  onSet,
+  onReset,
+  disabled,
+}) => {
+  const allOptions = entry.enumdef ?? [String(entry.value)];
+  const shownOptions = options
+    ? options.filter((o) => allOptions.includes(o))
+    : allOptions;
+  return (
+    <PropertyField label={label} {...resetProps(entry, onReset)}>
+      <SelectField
+        value={String(entry.value)}
+        disabled={disabled || entry.readonly}
+        onChange={(v) => onSet(entry.key, entry.type, v)}
+      >
+        {shownOptions.map((opt) => (
+          <option key={opt} value={opt}>
+            {opt}
+          </option>
+        ))}
+      </SelectField>
+    </PropertyField>
+  );
+};
 
 export interface MappedEnumRowProps extends RowProps {
   /** Display text per raw enum ID (value stays the raw C++ string ID). */
@@ -508,11 +531,32 @@ const MaterialRow: React.FC<SelRowProps> = ({ entry, label, onSet, onReset, scen
 // Component
 // ------------------------------------------------------------
 
-export const RendererCommonSection: React.FC<RendererPropSectionProps> = ({
+/** Edge-type options in reading order (the C++ enumdef is alphabetical). */
+const EGTYPE_OPTIONS = ["none", "edges", "silhouette"];
+
+/**
+ * Renderer types whose "Edge lines" block is suppressed. Edge / silhouette
+ * lines are derived from surface geometry (see the C++ `getEdgeLineType()`
+ * checks in MapSurfRenderer / MolSurfRenderer / DirectSurfRenderer), so a
+ * renderer that draws only lines -- `simple` / `trace` (bond lines) and
+ * `contour` (a wireframe map mesh) -- has no faces to outline and the three
+ * properties are dead knobs there. They inherit `egtype` / `eglinew` /
+ * `egcolor` from the C++ `Renderer` base regardless, so the gate has to be
+ * by type rather than by property presence.
+ */
+const NO_EDGE_LINE_TYPES = new Set(["simple", "trace", "contour"]);
+
+interface RendererCommonSectionProps extends RendererPropSectionProps {
+  /** Renderer `type_name`; gates blocks that do not apply to the type. */
+  rendererType?: string;
+}
+
+export const RendererCommonSection: React.FC<RendererCommonSectionProps> = ({
   entries,
   onSet,
   onReset,
   sceneId,
+  rendererType,
 }) => {
   const byKey = new Map<string, GenericPropEntry>();
   for (const e of entries) byKey.set(e.key, e);
@@ -532,7 +576,9 @@ export const RendererCommonSection: React.FC<RendererPropSectionProps> = ({
   const edgeOff = egtype ? String(egtype.value) === "none" : false;
 
   const hasBasic = name || sel || visible || locked || material || alpha;
-  const hasEdge = egtype || eglinew || egcolor;
+  const hasEdge =
+    (egtype || eglinew || egcolor) &&
+    !NO_EDGE_LINE_TYPES.has(rendererType ?? "");
 
   return (
     <>
@@ -592,7 +638,13 @@ export const RendererCommonSection: React.FC<RendererPropSectionProps> = ({
       {hasEdge && (
         <AccordionSection title="Edge lines" defaultExpanded>
           {egtype && (
-            <EnumRow entry={egtype} label="Edge type" onSet={onSet} onReset={onReset} />
+            <EnumRow
+              entry={egtype}
+              label="Edge type"
+              options={EGTYPE_OPTIONS}
+              onSet={onSet}
+              onReset={onReset}
+            />
           )}
           {eglinew && (
             <NumRow

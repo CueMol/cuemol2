@@ -83,16 +83,37 @@ function typeInto(input: HTMLInputElement, value: string): void {
   input.dispatchEvent(new Event('input', { bubbles: true }))
 }
 
-function render(entries: GenericPropEntry[], onSet = vi.fn(), onReset = vi.fn()) {
+function render(
+  entries: GenericPropEntry[],
+  onSet = vi.fn(),
+  onReset = vi.fn(),
+  rendererType?: string,
+) {
   const r = mountTree(
     <RendererCommonSection
       entries={entries}
+      rendererType={rendererType}
       onSet={onSet}
       onReset={onReset}
       sceneId={1}
     />,
   )
   return { ...r, onSet, onReset }
+}
+
+/** The three edge-line properties, as C++ reports them (enumdef alphabetical). */
+function edgeEntries(egtype = 'none'): GenericPropEntry[] {
+  return [
+    entry({
+      key: 'egtype',
+      type: 'enum',
+      value: egtype,
+      // getPropsJSON returns the enumdef alphabetically.
+      enumdef: ['edges', 'none', 'silhouette'],
+    }),
+    entry({ key: 'eglinew', type: 'real', value: 0.1 }),
+    entry({ key: 'egcolor', type: 'object<AbstractColor>', value: 'blue' }),
+  ]
 }
 
 describe('RendererCommonSection', () => {
@@ -187,6 +208,44 @@ describe('RendererCommonSection', () => {
     ])
     act(() => (container.querySelector('[data-testid="molsel"]') as HTMLElement).click())
     expect(onSet).toHaveBeenCalledWith('sel', 'object<MolSelection>', 'newsel')
+    unmount()
+  })
+
+  // The C++ enumdef is alphabetical; the row fixes the reading order instead.
+  it('offers the edge types as none -> edges -> silhouette', () => {
+    const { container, unmount } = render(edgeEntries())
+    const select = rowByLabel(container, 'Edge type')!.querySelector(
+      'select',
+    ) as HTMLSelectElement
+    expect(Array.from(select.options).map((o) => o.value)).toEqual([
+      'none',
+      'edges',
+      'silhouette',
+    ])
+    unmount()
+  })
+
+  // Line-only renderers have no faces to outline, so the whole block is a set
+  // of dead knobs there even though C++ still exposes the three properties.
+  it.each(['simple', 'trace', 'contour'])(
+    'suppresses the Edge lines block for the %s renderer',
+    (rendererType) => {
+      const { container, unmount } = render(
+        edgeEntries(),
+        vi.fn(),
+        vi.fn(),
+        rendererType,
+      )
+      expect(rowByLabel(container, 'Edge type')).toBeNull()
+      expect(rowByLabel(container, 'Width')).toBeNull()
+      expect(container.querySelector('[data-testid="egcolor"]')).toBeNull()
+      unmount()
+    },
+  )
+
+  it('keeps the Edge lines block for a surface renderer', () => {
+    const { container, unmount } = render(edgeEntries(), vi.fn(), vi.fn(), 'molsurf')
+    expect(rowByLabel(container, 'Edge type')).not.toBeNull()
     unmount()
   })
 

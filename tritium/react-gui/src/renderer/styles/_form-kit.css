@@ -28,13 +28,31 @@
   justify-content: space-between;
 }
 
+/* Control-first inline variant (`Field controlFirst`): the control leads and
+   the pair packs to the start, so the row reads `[switch] Label ......` with
+   the slack trailing after the label instead of splitting the two apart. The
+   gap sits on top of the switch's own 4px focus-ring gutter, giving the same
+   ~10px pill-to-text distance a Blueprint switch label gets. */
+.h3-form-field-row.h3-form-inline.h3-form-control-first {
+  justify-content: flex-start;
+  gap: var(--space-3);
+}
+
 /* ── Field grid (aligned label column + filling control) ──
  * A grid whose rows share one label-column width so every control's left edge
  * lines up (Blender-style property rows). Rows use display:contents so their
- * label/control become direct grid items of the container. See FieldGrid.tsx. */
+ * label/control become direct grid items of the container. See FieldGrid.tsx.
+ *
+ * The control track carries a floor rather than a bare `1fr`. An `fr` track
+ * gives up space before an `auto` one does, so with `auto 1fr` a narrowing
+ * pane squeezed the controls all the way down while the label column sat at
+ * its full max-content width -- the labels never truncated. With the floor the
+ * controls stop shrinking at a usable width and the label column takes over,
+ * and because it is ONE shared track every label ellipsises by the same
+ * amount (which is the point of the grid). */
 .h3-form-grid {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(var(--form-grid-control-min), 1fr);
   column-gap: var(--space-3);
   row-gap: var(--form-row-gap);
   align-items: center;
@@ -45,9 +63,15 @@
   display: contents;
 }
 
+/* Left-aligned with a trailing ellipsis, matching the inline `Field` label.
+   `text-align: right` cannot be combined with `text-overflow: ellipsis`: a
+   right-aligned line overflows at its START edge, where `text-overflow` does
+   not apply, so a label too long for the column was silently clipped mid-word
+   ("Carbon" -> "arbon") instead of ellipsising. Filling the column rather than
+   hugging the text (no `justify-self: end`) is what gives the ellipsis
+   somewhere to land. */
 .h3-form-grid-label {
-  justify-self: end;
-  text-align: right;
+  text-align: left;
   font-size: var(--type-label-fs);
   font-weight: var(--type-label-fw);
   line-height: var(--lh-snug);
@@ -790,9 +814,14 @@
    `.h3-form-sliderfield-stepper` with explicit +/- buttons that commit on
    click (see SliderField.tsx). */
 .h3-form-sliderfield-number {
-  flex: 0 0 52px;
-  width: 52px;
-  min-width: 52px;
+  /* Digit capacity, not a hand-picked pixel count: `ch` is the "0" advance, so
+     this is literally "fits 4 digits" plus the padding and border. Four covers
+     every consumer -- the widest value any of them reaches is 9999 (the
+     trajectory dialog's every-N-th-frame), and the Rainbow hue tops out at
+     360. The previous 52px fit about six digits and left the box visibly
+     oversized next to its three-digit values. */
+  flex: 0 0 auto;
+  width: calc(4ch + var(--space-2) * 2 + 2px);
   height: var(--field-h-sm);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -910,6 +939,118 @@
 .h3-form-switch.bp5-switch {
   margin-bottom: 0;
   font-size: var(--fs-lg);
+}
+
+/* Compact pill. Keyed on the Blueprint class rather than .h3-form-switch so
+   every switch in the app picks it up (the kit's SwitchField and the Generic
+   tab's .insp-switch alike) -- control sizing has one source, this file.
+ *
+ * Blueprint's indicator is 28x16 (`font-size: 16px`, `min-width: 1.75em`,
+ * `height: 1em`) -- a full-size-form control that, once its focus ring was
+ * added, spilled out of the kit's 20-22px control rows and onto the
+ * neighbouring label. At --icon-sm the pill is 21x12 and the focused widget
+ * (ring below) claims 25x16, which sits inside the row with room to spare.
+ *
+ * Every dimension is em-based off the indicator's own font-size (the knob is
+ * `1em - 4px`), so this one token scales pill, knob and ring together. */
+.bp5-control.bp5-switch .bp5-control-indicator {
+  font-size: var(--icon-sm);
+  /* Blueprint's -3px optical nudge went with the 16px pill in a block line
+     box; the flex row below centres it instead. */
+  margin-top: 0;
+}
+
+/* Blueprint reserves a 38px text indent on the label and pulls the indicator
+   back into it so a switch label clears the pill (a float-era layout). The
+   flex row below places pill and label directly, so drop that machinery and
+   let the gutter + gap own the spacing. */
+.bp5-control.bp5-switch:not(.bp5-align-right) {
+  padding-inline-start: 0;
+}
+
+/* Focus ring: 1px at a 1px offset, drawn tight to the pill. Blueprint's own is
+   2px at a 2px offset, a 4px halo that landed on whatever sat beside the
+   control (it was overlapping the "Center view on molecule after loading"
+   label in the file-open dialog). Same weight as the radio circle and
+   .h3-form-btn. Kept as an outline rather than an inset ring because a checked
+   pill is filled with the accent colour, where an inset ring would vanish. */
+.bp5-control.bp5-switch input:focus ~ .bp5-control-indicator,
+.bp5-control.bp5-switch input:focus-visible ~ .bp5-control-indicator {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Gutter around the pill. Sized for clear space beyond the 2px ring halo, so a
+   neighbouring label never sits against the ring. */
+.bp5-control.bp5-switch:not(.bp5-align-right) .bp5-control-indicator {
+  margin-inline-start: var(--space-2);
+  margin-inline-end: var(--space-2);
+}
+
+/* A real control-row box so the ring has vertical room too (same reason as the
+   radio option row above), and so a switch row lines up with the text / select
+   rows around it: --field-h (22px) clears the 20px focused pill.
+ *
+ * The `gap` applies only when the switch renders a label of its own, and then
+ * restores Blueprint's ~10px pill-to-text distance (4px gutter + 6px gap) so
+ * the ring keeps 6px of daylight before the text. A label-less SwitchField has
+ * a single flex item, so the gap collapses and it stays flush in its row.
+ *
+ * `margin-bottom` is deliberately not set here -- the per-surface rules
+ * (.h3-form-switch / .insp-switch / .fod-switch) own the inter-row spacing. */
+.bp5-control.bp5-switch {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--field-h);
+}
+
+/* ── Checkbox ──
+ * Same story as the switch above, and the same treatment. Blueprint's box is
+ * 16px square (`font-size: 16px`, `width/height: 1em`) with a 2px focus
+ * outline at a 2px offset, so a focused checkbox claims 24px -- taller than
+ * the line box it sits in, which made it overflow its row and collide with
+ * the label. --icon-md brings the box to 14px, and the ring below to 18px, so
+ * it fits the 22px control row with room on every side. The checkmark is a
+ * viewBox-only SVG background on a 1em ::before, so it scales with the token.
+ *
+ * Keyed on the Blueprint class so every checkbox picks it up -- the file-open
+ * panes, the symmetry / camera / PDB dialogs and the Generic tab alike. */
+.bp5-control.bp5-checkbox .bp5-control-indicator {
+  font-size: var(--icon-md);
+  /* Blueprint's -3px optical nudge went with the 16px box in a block line
+     box; the flex row below centres it instead. */
+  margin-top: 0;
+}
+
+/* Blueprint reserves a 26px text indent on the label and pulls the indicator
+   back into it (a float-era layout). The flex row below places box and label
+   directly, so drop that machinery and let the gutter + gap own the spacing. */
+.bp5-control.bp5-checkbox:not(.bp5-align-right) {
+  padding-inline-start: 0;
+}
+
+/* Focus ring: 1px at a 1px offset, tight to the box (see the switch above). */
+.bp5-control.bp5-checkbox input:focus ~ .bp5-control-indicator,
+.bp5-control.bp5-checkbox input:focus-visible ~ .bp5-control-indicator {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Gutter around the box, sized for clear space beyond the 2px ring halo. */
+.bp5-control.bp5-checkbox:not(.bp5-align-right) .bp5-control-indicator {
+  margin-inline-start: var(--space-2);
+  margin-inline-end: var(--space-2);
+}
+
+/* A real control-row box (see the switch above). The `gap` applies only when
+   the checkbox renders a label of its own; `margin-bottom` is left to the
+   per-surface rules. */
+.bp5-control.bp5-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--field-h);
 }
 
 /* ── Radio group ──

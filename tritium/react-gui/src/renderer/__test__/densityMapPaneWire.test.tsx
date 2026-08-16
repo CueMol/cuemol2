@@ -9,6 +9,10 @@
  *       picking the already-active mode fires NOTHING);
  *   - color commit                       -> setMapRendererProp { propName: 'color', value }
  *   - "Redraw" button                    -> redrawMapCenter { sceneId, rendId, viewId }
+ *   - coloring scope: the pane edits the solid color only. The mode menu has
+ *     no multi-gradient entry and no gradient editor is embedded (both moved
+ *     to the Coloring panel); the swatch is disabled outside solid colormode
+ *     while "Solid color" stays available as the way back.
  *
  * (showUnitCellRenderer / Cell is already pinned by symmetryPaneWire.test.tsx
  * at the same wire, so it is intentionally not re-tested here; the numeric
@@ -30,16 +34,20 @@ vi.mock('../hooks/useCueMolEventListener', () => ({
     useCueMolEventListener: () => undefined,
 }))
 
-// Colour field seam: a button that fires onCommit with a fixed colour.
+// Colour field seam: a button that fires onCommit with a fixed colour and
+// surfaces `disabled` so the colormode gating can be asserted.
 vi.mock('../h3-kit/colorpicker/CueColorField', () => ({
     CueColorField: ({
         onCommit,
+        disabled,
     }: {
         onCommit: (v: string) => void
+        disabled?: boolean
     }) => (
         <button
             type="button"
             data-testid="color-commit"
+            disabled={disabled}
             onClick={() => onCommit('#445566')}
         />
     ),
@@ -261,21 +269,17 @@ describe('DensityMapPane wire', () => {
         ) as HTMLElement[]
     }
 
-    it('"Multi-gradient color" menu routes through setRendererColoring', async () => {
-        const { cm, container, unmount } = await mountPane(false, 'solid')
+    // Coloring beyond the plain solid color belongs to the Coloring panel:
+    // this pane must not offer a second way in.
+    it('the mode menu offers no multi-gradient entry', async () => {
+        const { container, unmount } = await mountPane(false, 'solid')
         const items = await openModeMenu(container)
-        const mgItem = items.find((el) =>
-            el.textContent?.includes('Multi-gradient color'),
-        )
-        expect(mgItem).toBeTruthy()
-        await act(async () => { mgItem!.click() })
-        await flushPromises()
-        expect(cm.invokeService).toHaveBeenCalledWith('setRendererColoring', {
-            sceneId: SCENE_ID,
-            rendId: REND_ID,
-            targetKind: 'renderer',
-            coloringId: 'paint-type-multigrad',
-        })
+        expect(
+            items.some((el) => el.textContent?.includes('Multi-gradient')),
+        ).toBe(false)
+        expect(
+            items.some((el) => el.textContent?.includes('Solid color')),
+        ).toBe(true)
         unmount()
     })
 
@@ -299,17 +303,24 @@ describe('DensityMapPane wire', () => {
         unmount()
     })
 
-    it('multigrad mode hides the color swatch and embeds MultiGradSection', async () => {
-        const { container, unmount } = await mountPane(false, 'multigrad')
-        expect(container.querySelector('[data-testid="color-commit"]')).toBeNull()
-        expect(container.querySelector('.mg-stopbar')).not.toBeNull()
-        unmount()
-    })
+    // The swatch stays mounted outside solid colormode but goes inactive --
+    // it must never write a color the renderer does not draw.
+    it('the swatch is disabled outside solid colormode and never embeds a gradient editor', async () => {
+        const mg = await mountPane(false, 'multigrad')
+        const mgSwatch = mg.container.querySelector(
+            '[data-testid="color-commit"]',
+        ) as HTMLButtonElement
+        expect(mgSwatch).not.toBeNull()
+        expect(mgSwatch.disabled).toBe(true)
+        expect(mg.container.querySelector('.mg-stopbar')).toBeNull()
+        mg.unmount()
 
-    it('solid mode shows the swatch and no gradient editor', async () => {
-        const { container, unmount } = await mountPane(false, 'solid')
-        expect(container.querySelector('[data-testid="color-commit"]')).not.toBeNull()
-        expect(container.querySelector('.mg-stopbar')).toBeNull()
-        unmount()
+        const solid = await mountPane(false, 'solid')
+        const solidSwatch = solid.container.querySelector(
+            '[data-testid="color-commit"]',
+        ) as HTMLButtonElement
+        expect(solidSwatch.disabled).toBe(false)
+        expect(solid.container.querySelector('.mg-stopbar')).toBeNull()
+        solid.unmount()
     })
 })

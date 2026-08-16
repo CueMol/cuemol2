@@ -176,6 +176,7 @@ function mutationCalls(cm: MockCm): Array<[string, unknown]> {
         'listPaintCapableRenderers',
         'getRendererColoringState',
         'listElePotMapObjects',
+        'getPaintColoringStyles',
     ])
     return cm.invokeService.mock.calls.filter(
         (c) => !reads.has(c[0] as string),
@@ -229,6 +230,31 @@ describe('ColorPane wire', () => {
             propName: 'col_C',
             propValue: '#112233',
         })
+        unmount()
+    })
+
+    // The seven element labels differ enough in length that per-row labels
+    // ellipsised to different widths once the pane narrowed, leaving the
+    // swatches unaligned. A shared grid label column is what keeps them lined
+    // up, so pin the layout (all seven rows in ONE grid), not just the wire.
+    it('CPK deck lays its seven rows out in a single shared-label grid', async () => {
+        const { container, unmount } = await mountWith({
+            ok: true,
+            className: 'CPKColoring',
+            cpkColors: {
+                colC: '#aaaaaa', colN: '#0000ff', colO: '#ff0000',
+                colS: '#ffff00', colP: '#ff8000', colH: '#ffffff', colX: '#888888',
+            },
+        })
+        const grids = container.querySelectorAll('.h3-form-grid')
+        expect(grids).toHaveLength(1)
+        const labels = Array.from(
+            grids[0].querySelectorAll('.h3-form-grid-label'),
+        ).map((l) => l.textContent)
+        expect(labels).toEqual([
+            'Carbon', 'Nitrogen', 'Oxygen', 'Sulfur',
+            'Phosphorus', 'Hydrogen', 'Others',
+        ])
         unmount()
     })
 

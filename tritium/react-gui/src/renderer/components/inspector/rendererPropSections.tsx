@@ -380,8 +380,9 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
   // MolSurfRenderer ("molsurf"): UXP molsurf-propdlg "MolSurf" tab (shared
   // molsurf-page with dsurface, but Surface type / Detail / Atom radii are
   // dsurface-only while the "Selection mol" target is molsurf-only). One section:
-  // drawing mode, line/point size (off for fill), reference-molecule target,
-  // shown selection, and coloring mode.
+  // drawing mode, line/point size (off for fill), reference-molecule target and
+  // shown selection. Coloring (colormode + the colors that go with it) is owned
+  // by the Coloring panel (ColorPane), same as isosurf and dsurface.
   molsurf: [
     {
       key: "molsurf-main",

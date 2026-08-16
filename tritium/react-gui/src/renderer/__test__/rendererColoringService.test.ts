@@ -84,7 +84,14 @@ function makeFixture(opts: MakeFixtureOpts = {}) {
         rollbackUndoTxn,
     }
 
-    const createObj = vi.fn((cls: string) => ({ __coloring: cls }))
+    // `PaintColoring` gets an `append` seam so the default-painting rows the
+    // Default entry seeds are observable (see `createDefPaintColoring`).
+    const appendPaint = vi.fn()
+    const createObj = vi.fn((cls: string) =>
+        cls === 'PaintColoring'
+            ? { __coloring: cls, append: appendPaint }
+            : { __coloring: cls },
+    )
 
     const styleNamesJSON = opts.styleNamesJSON ?? {}
     const getStyleNamesJSON = vi.fn((id: number) => styleNamesJSON[id] ?? '[]')
@@ -98,7 +105,8 @@ function makeFixture(opts: MakeFixtureOpts = {}) {
     return {
         ctx, scene, rend, applyStyles, resetProp, setColoring, setColormode,
         setTarget, setProp,
-        createObj, getStyleNamesJSON, startUndoTxn, commitUndoTxn, rollbackUndoTxn,
+        createObj, appendPaint, getStyleNamesJSON, startUndoTxn, commitUndoTxn,
+        rollbackUndoTxn,
         getStyle: () => styleValue,
     }
 }
@@ -310,12 +318,24 @@ vi.mock('../worker/server/services/helpers/makeColor', () => ({
 describe('setRendererColoring — Phase 1 new cases', () => {
     beforeEach(() => vi.clearAllMocks())
 
-    it('paint-type-paint instantiates PaintColoring and assigns', () => {
-        const { ctx, createObj, setColoring } = makeFixture()
+    // The Default entry must hand back the default PAINTING, not a bare
+    // PaintColoring -- an empty table read as "the menu did nothing".
+    it('paint-type-paint assigns a PaintColoring seeded with the default painting', () => {
+        const { ctx, createObj, setColoring, appendPaint } = makeFixture()
         const res = services.setRendererColoring(ctx, baseArgs('paint-type-paint'))
         expect(res).toEqual({ ok: true })
         expect(createObj).toHaveBeenCalledWith('PaintColoring')
-        expect(setColoring).toHaveBeenCalledWith({ __coloring: 'PaintColoring' })
+        // makeSel / makeColor are mocked to `{ __sel }` / `{ __color }`; the
+        // scene uid (7) scopes both.
+        expect(appendPaint.mock.calls).toEqual([
+            [{ __sel: 'sheet', __uid: 7 }, { __color: 'SteelBlue', __uid: 7 }],
+            [{ __sel: 'helix', __uid: 7 }, { __color: 'khaki', __uid: 7 }],
+            [{ __sel: 'nucleic', __uid: 7 }, { __color: 'yellow', __uid: 7 }],
+            [{ __sel: '*', __uid: 7 }, { __color: 'FloralWhite', __uid: 7 }],
+        ])
+        expect(setColoring).toHaveBeenCalledWith(
+            expect.objectContaining({ __coloring: 'PaintColoring' }),
+        )
     })
 
     it('paint-type-solid calls resetProp("coloring") without instantiating', () => {
@@ -390,8 +410,28 @@ describe('setRendererColoring — isosurf (MOLFANC) cases', () => {
         expect(setColormode).toHaveBeenCalledWith('solid')
     })
 
-    it('paint-type-solid on molsurf does not touch colormode (unchanged behavior)', () => {
+    // molsurf is colormode-governed like isosurf: the Coloring panel is the
+    // only UI that can move its colormode (the Inspector row was dropped), so
+    // Solid / Reset must take it back to "solid" -- otherwise the MOLFANC /
+    // potential / multigrad path keeps overriding the solid defaultcolor.
+    it('paint-type-solid on molsurf also switches colormode back to "solid"', () => {
         const { ctx, resetProp, setColormode } = makeFixture({ typeName: 'molsurf' })
+        services.setRendererColoring(ctx, baseArgs('paint-type-solid'))
+        expect(resetProp).toHaveBeenCalledWith('coloring')
+        expect(setColormode).toHaveBeenCalledWith('solid')
+    })
+
+    it('paint-type-resetdef on molsurf resets both coloring and colormode', () => {
+        const { ctx, resetProp } = makeFixture({ typeName: 'molsurf' })
+        services.setRendererColoring(ctx, baseArgs('paint-type-resetdef'))
+        expect(resetProp).toHaveBeenCalledWith('coloring')
+        expect(resetProp).toHaveBeenCalledWith('colormode')
+    })
+
+    // dsurface has no "solid" entry in its colormode enumdef, so the Solid
+    // item must leave colormode alone there.
+    it('paint-type-solid on dsurface leaves colormode alone', () => {
+        const { ctx, resetProp, setColormode } = makeFixture({ typeName: 'dsurface' })
         services.setRendererColoring(ctx, baseArgs('paint-type-solid'))
         expect(resetProp).toHaveBeenCalledWith('coloring')
         expect(setColormode).not.toHaveBeenCalled()
@@ -631,7 +671,14 @@ function makeRichFixture(opts: MakeRichOpts) {
         rollbackUndoTxn,
     }
 
-    const createObj = vi.fn((cls: string) => ({ __coloring: cls }))
+    // `PaintColoring` gets an `append` seam so the default-painting rows the
+    // Default entry seeds are observable (see `createDefPaintColoring`).
+    const appendPaint = vi.fn()
+    const createObj = vi.fn((cls: string) =>
+        cls === 'PaintColoring'
+            ? { __coloring: cls, append: appendPaint }
+            : { __coloring: cls },
+    )
 
     const ctx = {
         sceMgr: { getScene: vi.fn(() => (sceneExists ? scene : null)) },
@@ -1075,12 +1122,22 @@ describe('targetKind: "object" routes to scene.getObject', () => {
 describe('setRendererColoring -- paint-type-cpk', () => {
     beforeEach(() => vi.clearAllMocks())
 
-    it('instantiates CPKColoring and assigns under undo', () => {
+    // The three CPK ids build the same object and differ only in col_C, so pin
+    // the carbon colour per id -- that IS the whole contract between them.
+    it.each([
+        ['paint-type-cpk', '$molcol'],
+        ['paint-type-cpk-darkgray', '#404040'],
+        ['paint-type-cpk-lightgray', '#C0C0C0'],
+    ] as const)('%s instantiates CPKColoring with col_C=%s under undo', (id, carbon) => {
         const { ctx, createObj, setColoring, startUndoTxn } = makeFixture()
-        const res = services.setRendererColoring(ctx, baseArgs('paint-type-cpk'))
+        const res = services.setRendererColoring(ctx, baseArgs(id))
         expect(res).toEqual({ ok: true })
         expect(createObj).toHaveBeenCalledWith('CPKColoring')
-        expect(setColoring).toHaveBeenCalledWith({ __coloring: 'CPKColoring' })
+        expect(setColoring).toHaveBeenCalledWith({
+            __coloring: 'CPKColoring',
+            // makeColor is mocked to `{ __color, __uid }`; uid is scene.uid.
+            col_C: { __color: carbon, __uid: 7 },
+        })
         expect(startUndoTxn).toHaveBeenCalledWith('Change coloring')
     })
 })

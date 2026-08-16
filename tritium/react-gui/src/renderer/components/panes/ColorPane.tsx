@@ -6,7 +6,10 @@
  * granularity tracked in `docs/migration/uxp-inventory/panels.md`:
  *
  *   - `panel.coloring.shell`        -- renderer selector + coloring-type
- *                                     dropdown chrome (this component)
+ *                                     dropdown chrome (this component). The
+ *                                     "Paint coloring" row is a submenu of the
+ *                                     scene's `*Paint` style presets (UXP
+ *                                     `onPaintColShowing`), not a leaf item.
  *   - `panel.coloring.deck.paint`   -- Paint table (inline editor)
  *   - `panel.coloring.deck.solid`   -- defaultcolor picker
  *   - `panel.coloring.deck.undef`   -- "select a renderer" placeholder
@@ -40,6 +43,8 @@ import { SectionHeader } from './SectionHeader'
 import { AppIcon } from '../AppIcon'
 import {
     Field,
+    FieldGrid,
+    FieldGridRow,
     ColorField,
     SelectField,
     SliderField,
@@ -62,6 +67,7 @@ import { CueColorField } from '../../h3-kit/colorpicker/CueColorField'
 import { ColorPickerProvider } from '../../h3-kit/colorpicker/ColorPickerContext'
 import { MultiGradSection } from '../multigrad/MultiGradSection'
 import { usePaintCapableRenderers } from '../../hooks/usePaintCapableRenderers'
+import { usePaintColoringStyles } from '../../hooks/usePaintColoringStyles'
 import { useRendererColoringState } from '../../hooks/useRendererColoringState'
 import { useElePotMapObjects } from '../../hooks/useElePotMapObjects'
 import { useMolCoordObjects } from '../../hooks/useMolCoordObjects'
@@ -91,10 +97,21 @@ interface ColoringModeItem {
     multigradOnly?: boolean
 }
 
+/**
+ * Marker for the "Paint coloring" row: it is not a leaf item but a submenu
+ * whose entries are built at render time (see `paintSubmenuItems`).
+ */
+const PAINT_SUBMENU_ID = 'paint-type-paint'
+
 const COLORING_MODE_ITEMS: ColoringModeItem[] = [
     { label: 'Paint coloring',          coloringId: 'paint-type-paint',    enabled: true  },
     { label: 'Solid coloring',          coloringId: 'paint-type-solid',    enabled: true  },
+    // The three CPK entries differ only in the carbon colour, matching the
+    // Default / Darkgray / Lightgray CPK styles the renderer context menu
+    // offers. Labels follow those styles' `desc`.
     { label: 'CPK coloring',            coloringId: 'paint-type-cpk',      enabled: true  },
+    { label: 'CPK (darkgray carbon)',   coloringId: 'paint-type-cpk-darkgray',  enabled: true },
+    { label: 'CPK (lightgray carbon)',  coloringId: 'paint-type-cpk-lightgray', enabled: true },
     { label: 'Bfac/Occ coloring',       coloringId: 'paint-type-bfac',     enabled: true  },
     { label: 'Rainbow coloring',        coloringId: 'paint-type-rainbow',  enabled: true  },
     { label: 'Electrostatic potential', coloringId: 'paint-type-elepot',   enabled: true, surfaceOnly: true },
@@ -371,17 +388,39 @@ interface CpkDeckProps {
     onCommit: (propName: string, value: string) => void
 }
 
-/** Mirrors UXP `coloring-deck-cpk.xul`: 7 per-element colour pickers. */
+/** The deck's rows, in UXP `coloring-deck-cpk.xul` order. */
+const CPK_ELEMENTS: { label: string; prop: string; key: keyof CpkColors }[] = [
+    { label: 'Carbon',     prop: 'col_C', key: 'colC' },
+    { label: 'Nitrogen',   prop: 'col_N', key: 'colN' },
+    { label: 'Oxygen',     prop: 'col_O', key: 'colO' },
+    { label: 'Sulfur',     prop: 'col_S', key: 'colS' },
+    { label: 'Phosphorus', prop: 'col_P', key: 'colP' },
+    { label: 'Hydrogen',   prop: 'col_H', key: 'colH' },
+    { label: 'Others',     prop: 'col_X', key: 'colX' },
+]
+
+/**
+ * Mirrors UXP `coloring-deck-cpk.xul`: 7 per-element colour pickers.
+ *
+ * Laid out with `FieldGrid` rather than a stack of inline `Field`s so the
+ * labels share one column. With per-row labels each one ellipsised at its own
+ * width once the pane narrowed ("Phosp..." vs "Sul..."), which pushed every
+ * swatch to a different x -- the element names here are long enough and
+ * different enough in length for that to show at ordinary pane widths.
+ */
 const CpkDeck: React.FC<CpkDeckProps> = ({ colors, onCommit }) => (
     <div className="color-deck-scroll">
         <div className="color-section-label">CPK coloring:</div>
-        <Field label="Carbon"     inline><ColorField value={colors.colC} onCommit={(v) => onCommit('col_C', v)} /></Field>
-        <Field label="Nitrogen"   inline><ColorField value={colors.colN} onCommit={(v) => onCommit('col_N', v)} /></Field>
-        <Field label="Oxygen"     inline><ColorField value={colors.colO} onCommit={(v) => onCommit('col_O', v)} /></Field>
-        <Field label="Sulfur"     inline><ColorField value={colors.colS} onCommit={(v) => onCommit('col_S', v)} /></Field>
-        <Field label="Phosphorus" inline><ColorField value={colors.colP} onCommit={(v) => onCommit('col_P', v)} /></Field>
-        <Field label="Hydrogen"   inline><ColorField value={colors.colH} onCommit={(v) => onCommit('col_H', v)} /></Field>
-        <Field label="Others"     inline><ColorField value={colors.colX} onCommit={(v) => onCommit('col_X', v)} /></Field>
+        <FieldGrid>
+            {CPK_ELEMENTS.map(({ label, prop, key }) => (
+                <FieldGridRow key={prop} label={label}>
+                    <ColorField
+                        value={colors[key]}
+                        onCommit={(v) => onCommit(prop, v)}
+                    />
+                </FieldGridRow>
+            ))}
+        </FieldGrid>
     </div>
 )
 
@@ -715,6 +754,26 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
         enabled: isMolFancActive,
     })
 
+    // "Paint coloring" submenu entries (UXP `onPaintColShowing`): a renderer
+    // gets the scene's `*Paint` style presets (Default / Woody / Red / ...),
+    // applied as a style; an object has no `style` property so it only gets
+    // the plain "Default" PaintColoring.
+    const { styles: paintStyles } = usePaintColoringStyles({ cm, sceneId })
+    const paintSubmenuItems = useMemo((): {
+        key: string
+        label: string
+        coloringId: RendColoringId
+    }[] => {
+        if (target?.targetKind === 'object') {
+            return [{ key: 'default', label: 'Default', coloringId: 'paint-type-paint' }]
+        }
+        return paintStyles.map((s) => ({
+            key: s.name,
+            label: s.label,
+            coloringId: `style-${s.name}` as RendColoringId,
+        }))
+    }, [target?.targetKind, paintStyles])
+
     // -- Mutation handlers --
     const requireTarget = useCallback(
         (): {
@@ -1044,29 +1103,47 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
                                         // `coloring` (contour / gpu_*) offer
                                         // only Multi-gradient; isosurf has
                                         // `coloring` (MOLFANC) and offers
-                                        // the full paint set.
+                                        // the full paint set. "Paint coloring"
+                                        // renders as a submenu of style
+                                        // presets rather than a leaf item.
                                         .filter((it) =>
                                             it.multigradOnly
                                                 ? multiGradCapable
                                                 : it.surfaceOnly
                                                   ? hasColoring && isSurface
                                                   : hasColoring)
-                                        .map((it, i) => (
-                                            <MenuItem
-                                                key={i}
-                                                text={
-                                                    it.enabled
-                                                        ? it.label
-                                                        : `${it.label} (coming soon)`
-                                                }
-                                                disabled={!it.enabled}
-                                                onClick={() => {
-                                                    if (it.enabled && it.coloringId) {
-                                                        onSelectMode(it.coloringId)
+                                        .map((it, i) =>
+                                            it.coloringId === PAINT_SUBMENU_ID ? (
+                                                <MenuItem
+                                                    key={i}
+                                                    text={it.label}
+                                                    disabled={paintSubmenuItems.length === 0}
+                                                >
+                                                    {paintSubmenuItems.map((s) => (
+                                                        <MenuItem
+                                                            key={s.key}
+                                                            text={s.label}
+                                                            onClick={() => onSelectMode(s.coloringId)}
+                                                        />
+                                                    ))}
+                                                </MenuItem>
+                                            ) : (
+                                                <MenuItem
+                                                    key={i}
+                                                    text={
+                                                        it.enabled
+                                                            ? it.label
+                                                            : `${it.label} (coming soon)`
                                                     }
-                                                }}
-                                            />
-                                        ))}
+                                                    disabled={!it.enabled}
+                                                    onClick={() => {
+                                                        if (it.enabled && it.coloringId) {
+                                                            onSelectMode(it.coloringId)
+                                                        }
+                                                    }}
+                                                />
+                                            ),
+                                        )}
                                 </Menu>
                             }
                         >
