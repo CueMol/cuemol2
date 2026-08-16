@@ -39,6 +39,7 @@ import { RENDER_BACKENDS } from "../../data/renderBackends";
  */
 const GROUP_ORDER = [
   "Camera",
+  "Hatching",
   "Antialiasing",
   "Quality",
   "Edges",

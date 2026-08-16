@@ -124,6 +124,52 @@ runtime_class UmbreonSceneExporter extends SceneExporter
   /// full-frame post-pass denoiser (0 = None, 1 = AtrousBilateral, 2 = OIDN)
   property integer denoiser => m_nDenoiser;
 
+  //////////
+  // NPR tone-hatching pass (umbreon --hatch): the image becomes an ink
+  // drawing where hatch marks carry the shading tone on a paper base. GI is
+  // not used while this is on (umbreon force-disables it under the default
+  // ink mode), so drive it with raytracing or AO lighting only.
+
+  /// enable the NPR tone-hatching pass
+  property boolean hatchEnable => m_bHatchEnable;
+
+  /// hatch style: an umbreon look (richardson / ink-cross / manga) or layer
+  /// preset (pen-cross / pencil / engraving / stipple / screentone-60 /
+  /// manga-square). Unknown names fall back to richardson with a warning in
+  /// the render log.
+  property string hatchStyle => m_sHatchStyle;
+
+  /// mark density multiplier: every layer's lattice pitch is divided by it,
+  /// so 2 doubles the number of hatch lines / halftone dots
+  property real hatchDensity => m_dHatchDensity;
+
+  /// mark width multiplier over the style's per-layer stroke widths
+  property real hatchWidthScale => m_dHatchWidthScale;
+
+  /// base (fill) model override: "paper" (bare paper between the marks) or
+  /// "albedo" (flat unshaded fill of each section's own color); empty (the
+  /// default) keeps the style's own base
+  property string hatchBase => m_sHatchBase;
+
+  /// ink model override: "fixed" (one ink color) or "albedo" (each section
+  /// draws in its own color); empty (the default) keeps the style's own ink
+  property string hatchInk => m_sHatchInk;
+
+  /// ink color override as a "#RRGGBB" hex string (display-encoded); empty
+  /// (the default) keeps the style's own ink model, e.g. richardson draws
+  /// each section in its own color
+  property string hatchInkColor => m_sHatchInkColor;
+
+  /// paper (background) color override as a "#RRGGBB" hex string
+  /// (display-encoded); empty (the default) keeps the style's own paper,
+  /// e.g. richardson's warm drawing paper
+  property string hatchPaperColor => m_sHatchPaperColor;
+
+  /// give sections whose renderer requests no edge lines a default silhouette
+  /// contour in the ink color; sections with renderer-side edge settings keep
+  /// their own style
+  property boolean hatchDefaultEdges => m_bHatchDefaultEdges;
+
   ////////////////////
   // Asynchronous render (non-blocking, with progress + cancel).
   //

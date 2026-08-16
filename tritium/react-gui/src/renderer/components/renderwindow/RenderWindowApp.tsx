@@ -43,9 +43,11 @@ export const RenderWindowApp: React.FC = () => {
   // Default the movie output to the app-managed folder and remember the
   // settings across window closes (see hooks/useMovieOutputPrefs.ts).
   const movieOutput = useMovieOutputPrefs(settings.movie, settings.updateMovie);
+  // Both umbreon-based backends (plain and NPR) ride the same in-process
+  // exporter, so one availability flag gates them together.
   const backendIds = umbreonAvailable
     ? RENDER_BACKEND_IDS
-    : RENDER_BACKEND_IDS.filter((id) => id !== "umbreon");
+    : RENDER_BACKEND_IDS.filter((id) => id !== "umbreon" && id !== "umbreon_npr");
 
   // Rendering > Image / Movie rendering both open this window and pin its
   // output mode. The request is a state object with a seq, so re-picking the

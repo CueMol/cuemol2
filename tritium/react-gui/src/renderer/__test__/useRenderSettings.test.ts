@@ -378,3 +378,42 @@ describe('useRenderSettings quality axes', () => {
         h.unmount();
     });
 });
+
+// The NPR backend restricts the same machinery: hatch ink mode discards the
+// shaded color (umbreon force-disables GI there), so it offers raytracing and
+// AO only and starts on plain raytracing.
+describe('useRenderSettings NPR backend', () => {
+    const nprHook = () => {
+        const h = makeRenderHook(() => useRenderSettings());
+        act(() => h.result.setBackend('umbreon_npr'));
+        return h;
+    };
+
+    it('starts on raytracing with no GI axis', () => {
+        const h = nprHook();
+        expect(h.result.lighting).toBe('none');
+        expect(h.result.qualitySteps).toEqual({
+            aa: 'high',
+            ao: 'medium',
+            shadows: 'off',
+        });
+        expect(valueOf(h.result.backendProps, 'aoEnabled')).toBe(false);
+        // The hatch pass is the point of the backend, so its style and the
+        // density multiplier are present from the start.
+        expect(valueOf(h.result.backendProps, 'hatchStyle')).toBe('richardson');
+        expect(valueOf(h.result.backendProps, 'hatchDensity')).toBe(1.0);
+        h.unmount();
+    });
+
+    it('setLighting("ao") is reported back (the enable patch reaches a real prop)', () => {
+        const h = nprHook();
+        act(() => h.result.setLighting('ao'));
+        // A patch key with no matching PropDef would be dropped, leaving
+        // `lighting` stuck on "none" -- this pins that it is not.
+        expect(h.result.lighting).toBe('ao');
+        expect(valueOf(h.result.backendProps, 'aoEnabled')).toBe(true);
+        act(() => h.result.setLighting('none'));
+        expect(h.result.lighting).toBe('none');
+        h.unmount();
+    });
+});

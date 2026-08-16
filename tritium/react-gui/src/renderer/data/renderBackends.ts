@@ -235,6 +235,90 @@ const UMBREON_QUALITY: RenderQualityConfig = {
   ],
 };
 
+/**
+ * Umbreon (NPR) backend: the same in-process ray tracer with umbreon's NPR
+ * tone-hatching pass on top -- the image becomes an ink drawing whose hatch
+ * marks carry the shading tone. Shares every umbreon prop except the GI
+ * group: hatch ink mode discards the shaded color, so umbreon force-disables
+ * GI, and offering it would be a dead control.
+ */
+const UMBREON_NPR_PROPS: PropDef[] = [
+  // --- Hatching (the pass that defines this backend) ---
+  // Styles are umbreon's looks (paper/ink model + tone recipe + layers:
+  // richardson / ink-cross / manga) followed by its layer presets (marks
+  // only); the C++ side resolves the name through applyHatchLook first,
+  // then applyHatchPreset.
+  { key: "hatchStyle",   label: "Style", type: "enum", value: "richardson", group: "Hatching",
+    options: ["richardson", "ink-cross", "manga", "pen-cross", "pencil",
+              "engraving", "stipple", "screentone-60", "manga-square"] },
+  // The manual's four base/ink coloring patterns, applied over any style:
+  // ink on paper (pen figure), colored ink on paper (colored pencil --
+  // richardson's own mode), ink on a flat fill of each renderer's color
+  // (comic), colored ink on that fill (print-like). "Style default" keeps
+  // the style's model -- without it every mark preset is fixed black on
+  // white paper. Mapped to the exporter's hatchBase/hatchInk pair by
+  // HATCH_COLORING in UmbreonBackend.
+  { key: "hatchColoring", label: "Coloring", type: "enum", value: "Style default", group: "Hatching",
+    options: ["Style default", "Ink on paper", "Colored ink on paper",
+              "Ink on color fill", "Colored ink on color fill"] },
+  // Multipliers over the style's own layer values, so the relative pitches
+  // of a multi-layer look survive: density divides every lattice pitch
+  // (2 = twice as many lines / halftone dots), width scales the marks.
+  { key: "hatchDensity",    label: "Mark density", type: "real", value: 1.0, group: "Hatching", min: 0.25, max: 4, step: 0.05 },
+  { key: "hatchWidthScale", label: "Mark width",   type: "real", value: 1.0, group: "Hatching", min: 0.25, max: 4, step: 0.05 },
+  // Ink/paper overrides are gated by the Custom switches: the styles carry
+  // their own colors (richardson's warm paper, its per-section ink), which
+  // an always-on black/white default would silently destroy. The backend
+  // sends the color only while the switch is on.
+  { key: "hatchCustomInk",   label: "Custom ink color",   type: "boolean", value: false, group: "Hatching" },
+  { key: "hatchInkColor",    label: "Ink color",          type: "color", value: "#000000", group: "Hatching" },
+  { key: "hatchCustomPaper", label: "Custom paper color", type: "boolean", value: false, group: "Hatching" },
+  { key: "hatchPaperColor",  label: "Paper color",        type: "color", value: "#ffffff", group: "Hatching" },
+  // Give renderers WITHOUT edge-line settings a default contour (the manual
+  // pairs hatching with contour edges); renderers with their own edge lines
+  // keep their configured color / width / mode either way.
+  { key: "hatchDefaultEdges", label: "Default contour edges", type: "boolean", value: true, group: "Hatching" },
+  ...UMBREON_PROPS.filter((p) => p.group !== "Global Illumination"),
+];
+
+/**
+ * NPR quality axes: umbreon's minus everything GI. The lighting selector
+ * keeps only Raytrace / AO (defaulting to plain raytracing -- the manual's
+ * own art direction: AO darkening muddies the hatch tone, so it is an
+ * opt-in), matching the C++ side, which skips GI whenever hatching is on.
+ *
+ * The enable patches reference only `aoEnabled`: this backend has no useGI
+ * prop, and a patch key without a matching PropDef is dropped by the settings
+ * hook, which would leave `lightingOf` unable to ever match the AO option.
+ */
+const UMBREON_NPR_QUALITY: RenderQualityConfig = {
+  lightings: [
+    { id: "none", label: "Raytrace only", enable: { aoEnabled: false } },
+    {
+      id: "ao",
+      label: "Ambient Occlusion",
+      enable: { aoEnabled: true },
+      group: "Ambient Occlusion",
+    },
+  ],
+  defaultLighting: "none",
+  lightingKeys: ["aoEnabled"],
+  axes: UMBREON_QUALITY.axes.filter((a) => a.key !== "gi"),
+};
+
+/**
+ * Common props the umbreon backends do not read (POV-Ray-only): stereo is
+ * unsupported, blendpng post-blend is POV-Ray's layer compositing, umbreon
+ * renders in-process (no CPU-thread knob), and pixel labels are POV-only.
+ */
+const UMBREON_UNSUPPORTED_COMMON_KEYS = [
+  "stereoMode",
+  "stereoDepth",
+  "numThreads",
+  "postBlend",
+  "pixelLabels",
+];
+
 /** All registered rendering backends, keyed by id. */
 export const RENDER_BACKENDS: Record<RenderBackendId, RenderBackendDescriptor> = {
   povray: {
@@ -255,16 +339,23 @@ export const RENDER_BACKENDS: Record<RenderBackendId, RenderBackendDescriptor> =
     ],
     props: UMBREON_PROPS,
     quality: UMBREON_QUALITY,
-    // Common props the umbreon backend does not read (POV-Ray-only): stereo is
-    // unsupported, blendpng post-blend is POV-Ray's layer compositing, umbreon
-    // renders in-process (no CPU-thread knob), and pixel labels are POV-only.
-    unsupportedCommonKeys: [
-      "stereoMode",
-      "stereoDepth",
-      "numThreads",
-      "postBlend",
-      "pixelLabels",
+    unsupportedCommonKeys: UMBREON_UNSUPPORTED_COMMON_KEYS,
+  },
+  umbreon_npr: {
+    id: "umbreon_npr",
+    label: "Umbreon (NPR)",
+    groups: [
+      // Hatching first and expanded: the style select is what this backend
+      // is about; everything below it is shared umbreon tuning.
+      { key: "Hatching", defaultExpanded: true },
+      { key: "Antialiasing", defaultExpanded: false },
+      { key: "Ambient Occlusion", defaultExpanded: false },
+      { key: "Shadows", defaultExpanded: false },
+      { key: "Edges", defaultExpanded: false },
     ],
+    props: UMBREON_NPR_PROPS,
+    quality: UMBREON_NPR_QUALITY,
+    unsupportedCommonKeys: UMBREON_UNSUPPORTED_COMMON_KEYS,
   },
 };
 

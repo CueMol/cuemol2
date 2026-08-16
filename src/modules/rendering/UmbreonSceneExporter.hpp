@@ -122,6 +122,32 @@ namespace render {
     /// full-frame post-pass denoiser (0 = None, 1 = AtrousBilateral, 2 = OIDN)
     int m_nDenoiser;
 
+    /// NPR tone-hatching pass (ink drawing); default off
+    bool m_bHatchEnable;
+
+    /// hatch style: an umbreon look or layer-preset name; unknown names fall
+    /// back to richardson with a warning in the render log
+    LString m_sHatchStyle;
+
+    /// mark density multiplier (2 = twice as many lines / dots)
+    double m_dHatchDensity;
+
+    /// mark width multiplier over the style's per-layer widths
+    double m_dHatchWidthScale;
+
+    /// base / ink model overrides ("paper"/"albedo", "fixed"/"albedo");
+    /// empty = keep the hatch style's own model
+    LString m_sHatchBase;
+    LString m_sHatchInk;
+
+    /// ink / paper color overrides as "#RRGGBB" hex strings (display-encoded);
+    /// empty = keep the hatch style's own colors
+    LString m_sHatchInkColor;
+    LString m_sHatchPaperColor;
+
+    /// give sections without renderer-side edge lines a default contour
+    bool m_bHatchDefaultEdges;
+
     /// Asynchronous render context, created by beginRender() and released by
     /// endRender(). Held across the poll phase so the scene walk + background
     /// ray trace outlive a single scriptable call. Null when no render is in

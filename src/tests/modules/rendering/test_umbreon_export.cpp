@@ -1595,3 +1595,155 @@ TEST(UmbreonExport, ContactEdgesInkTheCrossSectionIntersection)
     EXPECT_EQ(runsOn, 3);
     EXPECT_GT(inkOn, inkOff + 30);
 }
+
+namespace {
+
+const int kHatchDim = 64;
+
+/// Render one sphere with the NPR tone-hatching pass. `edgeLines` gives the
+/// section renderer-side edge lines (red, so its ink is distinguishable from
+/// the black default contour); `paperHex` empty keeps the style's own paper.
+void renderHatchedSphere(bool edgeLines, bool defaultEdges,
+                         const char *style, float paperR, float paperG,
+                         float paperB, bool paperSet,
+                         std::vector<unsigned char> &outPix)
+{
+    const double kViewH = 6.0;
+
+    UmbreonDisplayContext ctx;
+    ctx.init();
+
+    ctx.setPerspective(false);
+    ctx.setViewDist(100.0);
+    ctx.setZoom(kViewH);
+    ctx.setLineScale(kViewH / kHatchDim);
+    // A blue scene background, so a paper-colored background is unmistakably
+    // the hatch pass' doing and not the scene's.
+    ctx.setBgColor(gfx::SolidColor::createRGB(0.0, 0.0, 1.0));
+    ctx.loadIdent();
+
+    ctx.enableEdgeLines(edgeLines);
+    if (edgeLines) {
+        ctx.setEdgeLineType(gfx::DisplayContext::ELT_SILHOUETTE);
+        ctx.setEdgeLineWidth(2.0 * kViewH / kHatchDim);
+        ctx.setEdgeLineColor(gfx::SolidColor::createRGB(1.0, 0.0, 0.0));
+    }
+
+    ctx.startRender();
+    ctx.startSection("mol");
+    ctx.color(gfx::SolidColor::createRGB(0.2, 0.8, 0.2));
+    ctx.sphere(1.8, Vector4D(0.0, 0.0, 0.0));
+    ctx.endSection();
+
+    UmbreonRenderParams prm;
+    prm.width = kHatchDim;
+    prm.height = kHatchDim;
+    prm.supersample = 2;
+    prm.hatchEnable = true;
+    prm.hatchStyle = style;
+    prm.hatchDefaultEdges = defaultEdges;
+    prm.hatchPaperColorSet = paperSet;
+    prm.hatchPaperColor[0] = paperR;
+    prm.hatchPaperColor[1] = paperG;
+    prm.hatchPaperColor[2] = paperB;
+
+    int ow = 0, oh = 0, ncomp = 0;
+    ctx.render(prm, ow, oh, ncomp, outPix);
+    ASSERT_EQ(outPix.size(),
+              static_cast<std::size_t>(kHatchDim * kHatchDim * 3));
+}
+
+/// Pixel at (x, y) of an RGB frame.
+void pixelAt(const std::vector<unsigned char> &pix, int x, int y, int rgb[3])
+{
+    const std::size_t i = (static_cast<std::size_t>(y) * kHatchDim + x) * 3;
+    for (int k = 0; k < 3; ++k) rgb[k] = pix[i + k];
+}
+
+}  // namespace
+
+// The NPR pass repaints the picture as an ink drawing: the surface is no
+// longer the shaded object color but the paper base with ink marks on it, and
+// the paper reaches the BACKGROUND too. umbreon paints its paper over surface
+// pixels only ("the paper color only fills the object interior"), which left a
+// custom paper color looking inert against the scene background -- the display
+// context therefore points the background (and the fog fading into it) at the
+// resolved paper.
+TEST(UmbreonExport, HatchInkModePaintsThePaperOverTheBackgroundToo)
+{
+    std::vector<unsigned char> pix;
+    // A saturated magenta paper: no shading path could produce it by accident.
+    renderHatchedSphere(false, true, "ink-cross", 1.0f, 0.0f, 1.0f, true, pix);
+
+    int corner[3];
+    pixelAt(pix, 1, 1, corner);
+    EXPECT_GT(corner[0], 200);
+    EXPECT_LT(corner[1], 60);
+    EXPECT_GT(corner[2], 200);
+
+    // The sphere's interior is drawn on that paper rather than left green:
+    // paper between the marks, ink on them, so no pixel keeps the object hue.
+    std::size_t nGreen = 0;
+    for (std::size_t i = 0; i + 2 < pix.size(); i += 3) {
+        if (pix[i + 1] > pix[i] + 20 && pix[i + 1] > pix[i + 2] + 20) ++nGreen;
+    }
+    EXPECT_EQ(nGreen, 0u);
+}
+
+// Contour edges under NPR: the manual pairs the tone pass with contour lines,
+// so a section whose renderer asks for none still gets a default contour in
+// the ink color. A section that DOES configure edge lines keeps its own style
+// -- the default must not overwrite the renderer's color or width.
+TEST(UmbreonExport, HatchDefaultEdgesRespectTheRendererEdgeStyle)
+{
+    // Count strongly-red pixels: only the renderer's own red edge color can
+    // produce them (the default contour is black, the paper white).
+    auto countRedInk = [](const std::vector<unsigned char> &pix) {
+        std::size_t n = 0;
+        for (std::size_t i = 0; i + 2 < pix.size(); i += 3) {
+            if (pix[i] > 150 && pix[i + 1] < 90 && pix[i + 2] < 90) ++n;
+        }
+        return n;
+    };
+    // ... and near-black pixels for the default contour.
+    auto countDarkInk = [](const std::vector<unsigned char> &pix) {
+        std::size_t n = 0;
+        for (std::size_t i = 0; i + 2 < pix.size(); i += 3) {
+            if (pix[i] < 60 && pix[i + 1] < 60 && pix[i + 2] < 60) ++n;
+        }
+        return n;
+    };
+
+    // No renderer-side edges: the default contour supplies the outline.
+    std::vector<unsigned char> pixDefault;
+    renderHatchedSphere(false, true, "ink-cross", 1.0f, 1.0f, 1.0f, true,
+                        pixDefault);
+    EXPECT_GT(countDarkInk(pixDefault), 40u);
+    EXPECT_EQ(countRedInk(pixDefault), 0u);
+
+    // Renderer-side red edges: its color survives the default-contour pass.
+    std::vector<unsigned char> pixRenderer;
+    renderHatchedSphere(true, true, "ink-cross", 1.0f, 1.0f, 1.0f, true,
+                        pixRenderer);
+    EXPECT_GT(countRedInk(pixRenderer), 40u);
+
+    // Turning the default off leaves an unconfigured section without a
+    // contour, so the outline ink disappears (the hatch marks stay).
+    std::vector<unsigned char> pixOff;
+    renderHatchedSphere(false, false, "ink-cross", 1.0f, 1.0f, 1.0f, true,
+                        pixOff);
+    EXPECT_LT(countDarkInk(pixOff), countDarkInk(pixDefault));
+}
+
+// An unknown style name must not silently fall back to umbreon's built-in
+// defaults (a different picture from any style the UI offers): the context
+// warns and renders richardson, so the frame matches an explicit richardson.
+TEST(UmbreonExport, UnknownHatchStyleFallsBackToRichardson)
+{
+    std::vector<unsigned char> pixBogus, pixRichardson;
+    renderHatchedSphere(false, true, "no-such-style", 0.0f, 0.0f, 0.0f, false,
+                        pixBogus);
+    renderHatchedSphere(false, true, "richardson", 0.0f, 0.0f, 0.0f, false,
+                        pixRichardson);
+    EXPECT_EQ(pixBogus, pixRichardson);
+}

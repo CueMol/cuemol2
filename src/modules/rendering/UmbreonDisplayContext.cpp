@@ -17,6 +17,7 @@
 #ifdef HAVE_UMBREON
 #  include <umbreon/umbreon.hpp>
 #  include <umbreon/log.hpp>
+#  include <umbreon/npr/hatch_shade.hpp>
 #  include <cmath>
 #  include <cstdint>
 #  include <map>
@@ -920,7 +921,11 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
   // albedo multiply -- direct lighting and albedo stay noise-free -- which needs
   // umbreon built with UMBREON_WITH_OIDN (linked from the deplibs OIDN bundle;
   // see src/cmake/umbreon.cmake).
-  if (prm.giEnabled) {
+  // Hatch ink mode discards the shaded color, so umbreon force-disables GI
+  // with a warning when both are on. Decide it here instead (same policy as
+  // the aaMode fallback above), so the render never plans GI work it will
+  // then drop.
+  if (prm.giEnabled && !prm.hatchEnable) {
     opt.gi = true;
     opt.giIntegrator = 2;
     opt.pt1Spp = (prm.giSamples > 0) ? prm.giSamples : 32;
@@ -934,12 +939,95 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
   // a no-op at 0, so it is set unconditionally.
   opt.denoiser = prm.denoiser;
 
+  // NPR tone hatching: the image becomes an ink drawing whose hatch marks
+  // carry the shading tone on a paper base.
+  if (prm.hatchEnable) {
+    opt.hatch.enable = true;
+    // The style name is either a look (paper/ink model + tone recipe +
+    // layers) or a layer preset. Try the look first -- looks are the
+    // recognizable drawing styles and the two namespaces do not overlap.
+    // An unknown name warns into the render log and falls back to
+    // richardson, so a typo degrades to a valid drawing instead of the
+    // built-in defaults silently changing the look.
+    const std::string style = prm.hatchStyle.c_str();
+    if (!umbreon::applyHatchLook(opt.hatch, style) &&
+        !umbreon::applyHatchPreset(opt.hatch, style)) {
+      umbreon::logMessage(umbreon::LogLevel::Warning,
+                          "unknown hatch style '%s'; using richardson",
+                          style.c_str());
+      umbreon::applyHatchLook(opt.hatch, "richardson");
+    }
+    // Density / width are MULTIPLIERS over the style's per-layer values
+    // (density divides every lattice pitch: 2 = twice as many lines/dots).
+    // Scaling instead of overwriting preserves the relative pitches of a
+    // multi-layer look, which one absolute pitch would collapse.
+    const float density =
+        (prm.hatchDensity > 0.0) ? float(prm.hatchDensity) : 1.0f;
+    const float widthScale =
+        (prm.hatchWidthScale > 0.0) ? float(prm.hatchWidthScale) : 1.0f;
+    for (umbreon::HatchLayer &l : opt.hatch.layers) {
+      l.spacingPx /= density;
+      l.widthPx *= widthScale;
+    }
+    // Base / ink model overrides (the manual's four coloring patterns).
+    // Applied after the style so a coloring pick works on top of ANY style:
+    // e.g. stipple + "albedo" base = stippled comic fill. Empty keeps the
+    // style's own model (richardson stays a colored-pencil drawing).
+    if (prm.hatchBase.equalsIgnoreCase("paper"))
+      opt.hatch.base = umbreon::HatchBase::Paper;
+    else if (prm.hatchBase.equalsIgnoreCase("albedo"))
+      opt.hatch.base = umbreon::HatchBase::Albedo;
+    bool inkModeSet = true;
+    if (prm.hatchInk.equalsIgnoreCase("fixed"))
+      opt.hatch.ink = umbreon::HatchInk::Fixed;
+    else if (prm.hatchInk.equalsIgnoreCase("albedo"))
+      opt.hatch.ink = umbreon::HatchInk::FromAlbedo;
+    else
+      inkModeSet = false;
+    // Ink / paper overrides, only when the exporter parsed an explicit
+    // color: the styles carry their own (richardson's warm paper, its
+    // albedo-derived ink), which an unconditional default would destroy.
+    if (prm.hatchInkColorSet) {
+      // Absent an explicit ink model, a fixed override color implies
+      // fixed-ink mode; leaving FromAlbedo would silently ignore the
+      // user's pick under richardson. An explicit "albedo" ink wins (the
+      // fixed color is then simply unused).
+      if (!inkModeSet)
+        opt.hatch.ink = umbreon::HatchInk::Fixed;
+      for (int k = 0; k < 3; ++k)
+        opt.hatch.inkColor[k] = prm.hatchInkColor[k];
+    }
+    if (prm.hatchPaperColorSet) {
+      for (int k = 0; k < 3; ++k)
+        opt.hatch.paperColor[k] = prm.hatchPaperColor[k];
+    }
+    // umbreon paints the paper over SURFACE pixels only; the pixels around
+    // the drawing keep the scene background (the manual: "the paper color
+    // only fills the object interior, not the background"). For a drawing
+    // the sheet IS the paper, and a mismatched background both breaks that
+    // illusion and makes a paper-color pick look inert -- so point the
+    // background, and the fog that fades into it, at the resolved paper.
+    // The two meet exactly: with CueMol's assumedGamma = 1 both the painted
+    // paper and the background reach the PNG as these display values.
+    scene.background = umbreon::Vec3(
+        opt.hatch.paperColor[0], opt.hatch.paperColor[1],
+        opt.hatch.paperColor[2]);
+    scene.fog.color = scene.background;
+  }
+
   // Native screen-space (Freestyle-style) edge lines. Enabled when any section
   // requested edge lines; each section's natures + edge color live in
   // scene.groupEdgeStyle (captured in appendIntData). The analytic silhouettes
   // of spheres/cylinders are outlined too (strokeEdges.analytic defaults on), so
   // ball-and-stick is edged without folding it into the mesh.
-  if (m_pImpl->anyEdges) {
+  //
+  // Under NPR hatching the manual pairs the tone pass with contour edges, so
+  // hatchDefaultEdges additionally runs the pass even when NO section asked
+  // for edge lines: sections whose renderer configured edges keep their
+  // captured per-section style, and only the all-disabled entries get the
+  // default contour filled in below.
+  const bool defaultContours = prm.hatchEnable && prm.hatchDefaultEdges;
+  if (m_pImpl->anyEdges || defaultContours) {
     opt.strokeEdges.enable = true;
     opt.strokeEdges.silhouette = true;
     opt.strokeEdges.border = true;
@@ -981,6 +1069,39 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
     if (m_pImpl->groupEdgeStyle.size() < std::size_t(m_pImpl->nextGroup))
       m_pImpl->groupEdgeStyle.resize(std::size_t(m_pImpl->nextGroup));
     scene.groupEdgeStyle = m_pImpl->groupEdgeStyle;
+
+    // NPR default contours: give each section whose renderer requested no
+    // edge lines (its EdgeStyle is all-disabled) a silhouette + border
+    // contour in the ink color, mirroring what a bare "--edges on" seeds in
+    // the umbreon CLI. Sections WITH renderer-side settings were styled in
+    // appendIntData and are left untouched, so per-renderer edge color /
+    // width / mode still win.
+    if (defaultContours) {
+      float er = 0.0f, eg = 0.0f, eb = 0.0f;
+      if (prm.hatchInkColorSet) {
+        er = prm.hatchInkColor[0];
+        eg = prm.hatchInkColor[1];
+        eb = prm.hatchInkColor[2];
+      }
+      for (umbreon::EdgeStyle &es : scene.groupEdgeStyle) {
+        bool anyCls = false;
+        for (const umbreon::EdgeClassStyle &cs : es.cls)
+          anyCls = anyCls || cs.enabled;
+        if (anyCls)
+          continue;
+        const int slots[2] = {int(umbreon::EdgeClass::Silhouette),
+                              int(umbreon::EdgeClass::Object)};
+        for (int k = 0; k < 2; ++k) {
+          umbreon::EdgeClassStyle &cs = es.cls[slots[k]];
+          cs.enabled = true;
+          cs.color[0] = er;
+          cs.color[1] = eg;
+          cs.color[2] = eb;
+          cs.opacity = 1.0f;
+          cs.width = float(EDGE_THICKNESS_PX);
+        }
+      }
+    }
   }
 
   // %g: aoDistance defaults to the 1e20 "unlimited" sentinel, which %f would
