@@ -11,12 +11,23 @@
  *     "Use absolute contour level" radio pair -- toggles `use_abslevel`.
  *   - Redraw button (`redrawMapCenter`) and Cell button (reuses
  *     `showUnitCellRenderer` from the symmetry panel).
- *   - Solid color swatch (hidden in multigrad mode, UXP parity) and the
- *     Solid / Multi-gradient radio pair in the dropdown menu; multigrad
- *     mode embeds the shared `MultiGradSection` editor inline.
+ *   - Solid color swatch + a "Solid color" item in the dropdown menu.
  *   - Transparency / Level / Extent sliders, with sigma-to-absolute
  *     unit conversion handled inline (UXP `updateWidget` /
  *     `validateWidget` parity).
+ *
+ * @remarks Coloring here is deliberately the *simple* half only: the solid
+ * color. Everything richer -- switching to multi-gradient, editing the
+ * gradient stops, the MOLFANC / potential schemes an isosurf map renderer
+ * supports -- lives in the Coloring panel (`ColorPane`), so the two panels do
+ * not offer overlapping editors for the same property. Deviation from UXP
+ * `densitymap-panel`, which carried its own Solid / Multi-gradient radio pair
+ * and opened the modal gradient editor from here.
+ *
+ * Consequences for the widgets below: the swatch is disabled whenever
+ * `colormode !== "solid"` (it would write a color the renderer does not draw),
+ * while the "Solid color" menu item stays enabled so this panel can always
+ * bring a map back to solid without a detour through the Coloring panel.
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -47,7 +58,6 @@ import {
 import { useCueMolEventListener } from '../../hooks/useCueMolEventListener'
 import { CueColorField } from '../../h3-kit/colorpicker/CueColorField'
 import { ColorPickerProvider } from '../../h3-kit/colorpicker/ColorPickerContext'
-import { MultiGradSection } from '../multigrad/MultiGradSection'
 import { fireService } from '../../utils/fireService'
 
 /**
@@ -285,29 +295,21 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
         [state, setProp],
     )
 
-    const isMultiGrad = state?.colormode === 'multigrad'
+    // Only the plain solid color is editable from this panel; every other
+    // colormode is owned by the Coloring panel (see the file header).
+    const isSolid = state?.colormode === 'solid'
 
-    // Solid / Multi-gradient radio pair (UXP densitymap-panel parity).
-    // Multigrad routes through `setRendererColoring` so the color-map
-    // default + empty-gradient seed logic is shared with ColorPane;
-    // solid is a plain colormode write.
-    const onPickColorMode = useCallback(
-        (multigrad: boolean) => {
-            if (!state || isMultiGrad === multigrad) return
-            if (!cm || activeSceneId === undefined || selectedRendId === undefined) return
-            if (multigrad) {
-                fireService(cm, 'setRendererColoring', {
-                    sceneId: activeSceneId,
-                    rendId: selectedRendId,
-                    targetKind: 'renderer',
-                    coloringId: 'paint-type-multigrad',
-                })
-            } else {
-                setProp('colormode', 'solid')
-            }
-        },
-        [cm, activeSceneId, selectedRendId, state, isMultiGrad, setProp],
-    )
+    /**
+     * "Solid color": bring the renderer back to the one mode this panel can
+     * edit. A plain `colormode` write (not `setRendererColoring`) because the
+     * map renderers without a `coloring` property (contour / gpu_*) would
+     * throw on the `resetProp("coloring")` that path performs. No-op when the
+     * renderer is already solid.
+     */
+    const onPickSolidColor = useCallback(() => {
+        if (!state || isSolid) return
+        setProp('colormode', 'solid')
+    }, [state, isSolid, setProp])
 
     const disabled = state == null
     const sigma = String.fromCharCode(0x03c3)
@@ -368,25 +370,14 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
             <MenuDivider />
             <MenuItem
                 icon={
-                    state != null && !isMultiGrad ? (
+                    isSolid ? (
                         <AppIcon name="ui.check" aria-hidden />
                     ) : (
                         CHECK_SPACER
                     )
                 }
                 text="Solid color"
-                onClick={() => onPickColorMode(false)}
-            />
-            <MenuItem
-                icon={
-                    isMultiGrad ? (
-                        <AppIcon name="ui.check" aria-hidden />
-                    ) : (
-                        CHECK_SPACER
-                    )
-                }
-                text="Multi-gradient color"
-                onClick={() => onPickColorMode(true)}
+                onClick={onPickSolidColor}
             />
         </Menu>
     )
@@ -403,7 +394,7 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
             {!collapsed && (
                 <div className="sp-pane-fill">
                     {/* Renderer selector + mode menu */}
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <div className="denmap-row">
                         <HTMLSelect
                             value={selectedRendId ?? ''}
                             onChange={(e) => {
@@ -437,32 +428,26 @@ export const DensityMapPane: React.FC<DensityMapPaneProps> = ({
                         </Popover>
                     </div>
 
-                    {/* Redraw / Cell / color row (swatch hidden in
-                      * multigrad mode, UXP parity) */}
-                    <div className="color-solid-row">
+                    {/* Action row: the two buttons split the pane width. */}
+                    <div className="denmap-row denmap-button-row">
                         <Button small onClick={onRedraw} disabled={disabled}>
                             Redraw
                         </Button>
                         <Button small onClick={onShowCell} disabled={disabled}>
                             Cell
                         </Button>
-                        {!isMultiGrad && (
-                            <CueColorField
-                                value={state?.color ?? ''}
-                                onCommit={(v) => setProp('color', v)}
-                                disabled={disabled}
-                            />
-                        )}
                     </div>
 
-                    {/* Inline gradient editor (shared with ColorPane) */}
-                    {isMultiGrad && (
-                        <MultiGradSection
-                            cm={cm}
-                            sceneId={activeSceneId}
-                            rendId={selectedRendId ?? null}
+                    {/* Solid-color row. The swatch stays in place but goes
+                      * inactive outside solid colormode -- the renderer would
+                      * not draw the color it writes. */}
+                    <div className="denmap-row">
+                        <CueColorField
+                            value={state?.color ?? ''}
+                            onCommit={(v) => setProp('color', v)}
+                            disabled={disabled || !isSolid}
                         />
-                    )}
+                    </div>
 
                     {/* Numeric rows */}
                     <FieldGrid>

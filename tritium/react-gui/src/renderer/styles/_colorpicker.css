@@ -37,6 +37,23 @@ button.h3-color-swatch {
   border-color: var(--accent);
 }
 
+/* Disabled: the text box and caret already dim, but the swatch is the part the
+   eye lands on, so without this the widget looked identical in both states and
+   a read-only colour field read as editable. The fill keeps its hue (so the
+   current colour is still legible) while being desaturated and faded, and the
+   border drops to the subtle tone. `filter` also fades the --mol dashed accent
+   border, which is intended: every part of the widget goes inert together.
+   `background-blend-mode` is not used -- the fill is an inline style, so a
+   layered overlay would have to be a pseudo-element and that would sit above
+   the --warn tooltip target. */
+.h3-color-swatch--disabled,
+button.h3-color-swatch:disabled {
+  opacity: 0.45;
+  filter: grayscale(0.65);
+  border-color: var(--border-subtle);
+  cursor: default;
+}
+
 .h3-color-textbox {
   flex: 1;
   min-width: 0;

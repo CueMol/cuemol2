@@ -352,6 +352,28 @@
   min-width: 120px;
 }
 
+/* ─── Density Map Panel ─── */
+/* The pane's horizontal control rows: the renderer selector + level-mode
+   caret, the Redraw / Cell actions, and the solid-colour swatch. All carry
+   this class so the inter-control gap has one source of truth and matches the
+   pane's own inter-section rhythm (sp-pane-fill's gap) -- previously the rows
+   had no rule at all and their controls sat flush against each other. */
+.denmap-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
+/* Action row: Redraw and Cell split the pane width evenly instead of hugging
+   their labels, so the row reads as one full-width control block above the
+   colour swatch. `flex: 1` (not Blueprint's `fill`) because the gap has to
+   stay -- `fill` sets width:100% and would fight the flex distribution. */
+.denmap-button-row > .bp5-button {
+  flex: 1;
+  min-width: 0;
+}
+
 /* ─── Component Catalog gallery (CatalogPane1-3 showcase) ─── */
 .catalog-note {
   margin-top: var(--form-section-gap);
