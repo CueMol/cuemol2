@@ -16,7 +16,7 @@
     "lint:comments": "node scripts/check-comment-ascii.mjs",
     "package:mac": "bash ../packaging/package-mac.sh",
     "package:win": "bash ../packaging/package.sh --win --x64",
-    "package:dir": "electron-vite build && electron-builder --dir --arm64"
+    "package:dir": "CUEMOL_RELEASE=1 electron-vite build && electron-builder --dir --arm64"
   },
   "dependencies": {
     "@blueprintjs/core": "^5.13.0",

@@ -25,8 +25,11 @@ REACT_GUI="$REPO_ROOT/react-gui"
 bash "$SCRIPT_DIR/collect-cuemol2-runtime.sh"
 
 # --- 2. electron-vite build -------------------------------------------------
+# CUEMOL_RELEASE=1 flips the __DEV_UI__ compile-time flag off (see
+# react-gui/electron.vite.config.ts), so developer-only UI -- currently the
+# Component Catalog sidebar view -- is not built into a shipped bundle.
 cd "$REACT_GUI"
-pnpm exec electron-vite build
+CUEMOL_RELEASE=1 pnpm exec electron-vite build
 
 # --- 3. electron-builder ----------------------------------------------------
 # Derive the bundle version from the master QM_VERSION (single source of truth:

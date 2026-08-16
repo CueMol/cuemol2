@@ -386,7 +386,11 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         ),
       },
     ],
-    catalog: [
+    /* Developer-only view: the whole entry (and, by tree-shaking, the
+     * CatalogPane modules) is dropped from a release build. `__DEV_UI__` is
+     * referenced inline rather than through a shared const so the bundler can
+     * fold the branch away -- see electron.vite.config.ts. */
+    ...(__DEV_UI__ ? { catalog: [
       {
         id: "catalog1",
         defaultSize: 280,
@@ -416,7 +420,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           />
         ),
       },
-    ],
+    ] } : {}),
   }), [
     cm, activeSceneId, activeMolViewId,
     viewProjection, viewCenterMark,
