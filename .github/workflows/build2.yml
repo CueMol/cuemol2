@@ -436,6 +436,11 @@ jobs:
   release_build:
     needs: [build_posix, build_win_x64]
     runs-on: ubuntu-latest
+    # Only scope needed here: download-artifact uses the run's own runtime
+    # token, and the release step writes to contents. Stated explicitly so the
+    # job keeps working if the repository default is ever set to read-only.
+    permissions:
+      contents: write
     steps:
     - name: Download All Artifacts
       if: env.BUILD_MODE == 'full'
@@ -446,8 +451,59 @@ jobs:
     # - run: |
     #     ls -lR
 
+    # Only the release-notes file is needed from the tree; a full checkout here
+    # would drag in the whole uxp_gui tree for one markdown file.
+    - name: Checkout release notes
+      if: startsWith(github.ref, 'refs/tags/') && env.BUILD_MODE == 'full'
+      uses: actions/checkout@v4
+      with:
+        sparse-checkout: docs/release_notes
+
+    # Resolve the release body before publishing. Without a body the release is
+    # created empty: action-gh-release writes no body of its own and does not
+    # copy an annotated tag's message either -- v2.3.7.484 shipped that way.
+    #
+    # Preferred source is a hand-written note committed as
+    # docs/release_notes/<tag>.md, because a list of PR titles does not tell a
+    # user what changed for them. GitHub's generator is the fallback, so a
+    # release can never again go out with an empty body just because nobody
+    # prepared a note.
+    #
+    # Resolved here rather than via `generate_release_notes: true` on the step
+    # below because two workflows attach to the same tag -- build_linux.yml also
+    # calls action-gh-release, so either can create the release first. An
+    # explicitly passed body is applied on create *and* on update, whereas the
+    # action's README does not define whether generate_release_notes still
+    # applies once the release exists. This makes the outcome order-independent,
+    # and build_linux.yml's later attach cannot clobber it (the action retains
+    # existing info for keys a caller leaves unset).
+    - name: Resolve release notes
+      if: startsWith(github.ref, 'refs/tags/') && env.BUILD_MODE == 'full'
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        set -euo pipefail
+        NOTES="docs/release_notes/${GITHUB_REF_NAME}.md"
+        if [ -f "$NOTES" ]; then
+          echo "using hand-written notes: $NOTES"
+          cp "$NOTES" release_notes.md
+        else
+          echo "no $NOTES -- falling back to GitHub-generated notes"
+          # previous_tag_name omitted: GitHub picks the preceding release.
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/releases/generate-notes" \
+            -f "tag_name=${GITHUB_REF_NAME}" \
+            --jq .body > release_notes.md
+        fi
+        echo "--- release body ---"
+        cat release_notes.md
+
     - name: Release
       uses: softprops/action-gh-release@v2
-      if: startsWith(github.ref, 'refs/tags/')
+      # Guard matches the artifact download above: a tag push always resolves
+      # BUILD_MODE to 'full', so requiring both keeps the two steps from
+      # drifting apart and publishing a release with no files attached.
+      if: startsWith(github.ref, 'refs/tags/') && env.BUILD_MODE == 'full'
       with:
         files: artifacts/*
+        body_path: release_notes.md

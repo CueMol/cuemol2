@@ -163,8 +163,13 @@ jobs:
           tritium/react-gui/release/*.deb
         if-no-files-found: error
 
-    # On a tag, attach the Linux artifacts to the GitHub release (appends to the
-    # release that build2.yml's release_build creates for the same tag).
+    # On a tag, attach the Linux artifacts to the GitHub release for the same
+    # tag -- creating it if this job wins the race against build2.yml's
+    # release_build.
+    #
+    # Deliberately passes no `body`: the action retains existing release info
+    # for keys the caller leaves unset, so this step can never overwrite the
+    # notes build2.yml generates, whichever workflow gets there first.
     - name: Attach Linux artifacts to release
       if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v2

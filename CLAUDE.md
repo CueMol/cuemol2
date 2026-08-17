@@ -33,8 +33,15 @@ Recurring operations are [Task](https://taskfile.dev) targets run from
 | `task bump_version_rev` | Bump revision number `x.y.REV.build` |
 
 Version bump wraps `bump_version_{build,rev}.sh` (bump-my-version) and edits
-`.bumpversion.cfg`, `src/_version.h`, `uxp_gui/cuemol2/config/version.txt`. Commit
-message convention: `chore(version): bump build number to <x.y.z.b>`.
+`.bumpversion.cfg`, `src/_version.h`, `uxp_gui/cuemol2/config/version.txt`. The
+scripts make no git commit or tag (`commit = False` / `tag = False`). Commit
+message convention: `chore(version): bump build number to <x.y.z.b>` when only
+the build moves, `chore(version): bump version <old> -> <new>` when the revision
+moves too.
+
+Releases are cut by pushing a `v*` tag, which is the only trigger for the release
+build; see `docs/release_notes/README.md` for the procedure and the release-note
+convention.
 
 ---
 
