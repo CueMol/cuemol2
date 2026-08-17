@@ -8,8 +8,9 @@
   /* Display-only: must never receive drag events, or it would storm
      dragenter/dragleave and swallow the drop itself. */
   pointer-events: none;
+  /* Dim only -- no window-frame outline. The centered box carries the
+     message; a border around the whole window read as too loud. */
   background: var(--overlay-focus);
-  border: 2px dashed var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;

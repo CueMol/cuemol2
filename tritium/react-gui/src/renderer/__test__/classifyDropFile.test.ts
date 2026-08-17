@@ -9,7 +9,11 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { classifyDropFile } from '../utils/classifyDropFile'
+import {
+  classifyDropFile,
+  dragItemsMayContainOpenable,
+  isDeniedMime,
+} from '../utils/classifyDropFile'
 import type { ElectronFileFilter } from '../../shared/ipcTypes'
 
 /** Shape getOpenFilters returns: All Supported + concrete rows + All Files. */
@@ -79,5 +83,72 @@ describe('classifyDropFile', () => {
   it('reports unsupported for unknown and extension-less names', () => {
     expect(classifyDropFile('README.txt', OBJ_FILTERS, SCENE_FILTERS).kind).toBe('unsupported')
     expect(classifyDropFile('Makefile', OBJ_FILTERS, SCENE_FILTERS).kind).toBe('unsupported')
+  })
+})
+
+describe('isDeniedMime', () => {
+  it('denies documents, media and archives', () => {
+    const denied = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.oasis.opendocument.text',
+      'application/vnd.apple.pages',
+      'image/png',
+      'video/mp4',
+      'audio/mpeg',
+      'application/zip',
+      'text/html',
+    ]
+    for (const m of denied) expect(isDeniedMime(m), m).toBe(true)
+  })
+
+  it('allows the types CueMol formats actually arrive as', () => {
+    // Anything not certainly a document/media/archive must stay droppable:
+    // .pdb is typeless or text/plain depending on the OS, .pdb.gz is gzip.
+    const allowed = ['', '  ', 'application/gzip', 'application/x-gzip', 'text/plain',
+      'application/octet-stream', 'chemical/x-pdb']
+    for (const m of allowed) expect(isDeniedMime(m), m).toBe(false)
+  })
+
+  it('matches case-insensitively', () => {
+    expect(isDeniedMime('IMAGE/PNG')).toBe(true)
+    expect(isDeniedMime('Application/PDF')).toBe(true)
+  })
+})
+
+describe('dragItemsMayContainOpenable', () => {
+  const items = (specs: Array<{ kind: string; type: string }>) =>
+    ({
+      length: specs.length,
+      ...Object.fromEntries(specs.map((s, i) => [i, s])),
+    }) as unknown as DataTransferItemList
+
+  it('rejects a drag whose every file is a denied type', () => {
+    expect(
+      dragItemsMayContainOpenable(
+        items([
+          { kind: 'file', type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
+          { kind: 'file', type: 'application/pdf' },
+        ]),
+      ),
+    ).toBe(false)
+  })
+
+  it('accepts a mixed drag so the openable file still loads', () => {
+    expect(
+      dragItemsMayContainOpenable(
+        items([{ kind: 'file', type: '' }, { kind: 'file', type: 'application/pdf' }]),
+      ),
+    ).toBe(true)
+  })
+
+  it('fails open when no file item is readable', () => {
+    // Item list absent, empty, or carrying only non-file entries: fall back to
+    // accepting and let the post-drop extension check decide.
+    expect(dragItemsMayContainOpenable(undefined)).toBe(true)
+    expect(dragItemsMayContainOpenable(items([]))).toBe(true)
+    expect(dragItemsMayContainOpenable(items([{ kind: 'string', type: 'text/plain' }]))).toBe(true)
   })
 })

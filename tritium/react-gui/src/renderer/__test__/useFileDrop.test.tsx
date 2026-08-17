@@ -42,7 +42,13 @@ function makeCm() {
   }
 }
 
-/** DataTransfer stand-in for a file drag (jsdom has no implementation). */
+/**
+ * DataTransfer stand-in for a file drag (jsdom has no implementation).
+ *
+ * `items` is omitted so the MIME pre-check fails open, matching a platform
+ * that reports no usable item types; makeTypedFileDataTransfer covers the
+ * case where types are available.
+ */
 function makeFileDataTransfer(names: string[]) {
   return {
     types: ['Files'],
@@ -50,6 +56,20 @@ function makeFileDataTransfer(names: string[]) {
     dropEffect: '',
   }
 }
+
+/** As above, but with a readable `items` list carrying MIME types. */
+function makeTypedFileDataTransfer(files: Array<{ name: string; type: string }>) {
+  const items = files.map((f) => ({ kind: 'file', type: f.type }))
+  return {
+    types: ['Files'],
+    files: files.map((f) => ({ name: f.name })),
+    items: { length: items.length, ...Object.fromEntries(items.map((it, i) => [i, it])) },
+    dropEffect: '',
+  }
+}
+
+const DOCX_MIME =
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 
 /** DataTransfer stand-in for an in-app drag (tab reorder / scene node move). */
 function makeInternalDataTransfer() {
@@ -118,6 +138,43 @@ describe('useFileDrop', () => {
     // and scene-tree moves break.
     const internalOver = fireWindowDrag('dragover', makeInternalDataTransfer())
     expect(internalOver.defaultPrevented).toBe(false)
+
+    handle.unmount()
+  })
+
+  it('refuses a drag of only unopenable types, showing no overlay', () => {
+    const { handle } = mountFileDrop()
+    const dt = makeTypedFileDataTransfer([{ name: 'report.docx', type: DOCX_MIME }])
+
+    // Not prevented -> the OS shows its no-drop cursor and no drop fires.
+    fireWindowDrag('dragenter', dt)
+    const over = fireWindowDrag('dragover', dt)
+    expect(over.defaultPrevented).toBe(false)
+    expect(handle.result.isDragActive).toBe(false)
+
+    handle.unmount()
+  })
+
+  it('accepts a drag mixing an openable file with an unopenable one', async () => {
+    const { handle, objSpy } = mountFileDrop()
+    // .pdb has no OS-known MIME type, so it arrives with an empty type.
+    const dt = makeTypedFileDataTransfer([
+      { name: '1abc.pdb', type: '' },
+      { name: 'report.docx', type: DOCX_MIME },
+    ])
+
+    const over = fireWindowDrag('dragover', dt)
+    expect(over.defaultPrevented).toBe(true)
+    fireWindowDrag('dragenter', dt)
+    expect(handle.result.isDragActive).toBe(true)
+
+    // The docx is reported after the drop, not silently dropped.
+    fireWindowDrag('drop', dt)
+    await flushPromises()
+    expect(objSpy).toHaveBeenCalledTimes(1)
+    expect(objSpy.mock.calls[0][0]).toMatchObject({ path: '/drop/1abc.pdb' })
+    expect(showErrorAlert).toHaveBeenCalledTimes(1)
+    expect(showErrorAlert.mock.calls[0][0].message).toContain('report.docx')
 
     handle.unmount()
   })

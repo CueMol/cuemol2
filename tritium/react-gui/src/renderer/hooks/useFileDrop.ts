@@ -21,6 +21,7 @@ import { useShowErrorAlert } from '../components/dialogs/ErrorAlertDialogProvide
 import type { AsyncCueMol } from '../worker/client/AsyncCueMol'
 import {
   classifyDropFile,
+  dragItemsMayContainOpenable,
   IOH_CAT_OBJREADER,
   IOH_CAT_SCEREADER,
 } from '../utils/classifyDropFile'
@@ -28,6 +29,20 @@ import {
 /** True when the drag carries OS files (not an in-app DnD payload). */
 function hasFiles(e: DragEvent): boolean {
   return !!e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files')
+}
+
+/**
+ * True when the drag should be offered as a drop target: it carries files and
+ * at least one of them might be openable.
+ *
+ * A drag of only unopenable types (a .docx, an image) is left un-prevented so
+ * the OS shows its no-drop cursor and no drop event ever fires -- the file
+ * never looks droppable in the first place. Names and contents are invisible
+ * until the drop, so this can only go by MIME type and deliberately fails
+ * open (see dragItemsMayContainOpenable).
+ */
+function isAcceptableDrag(e: DragEvent): boolean {
+  return hasFiles(e) && dragItemsMayContainOpenable(e.dataTransfer?.items)
 }
 
 /**
@@ -122,18 +137,20 @@ export function useFileDrop({ cm }: { cm: AsyncCueMol | null }): { isDragActive:
   }
 
   useEffect(() => {
+    // enter/leave use the same predicate, and a drag's item types cannot
+    // change mid-gesture, so the depth counter stays balanced.
     const onDragEnter = (e: DragEvent) => {
-      if (!hasFiles(e)) return
+      if (!isAcceptableDrag(e)) return
       depthRef.current += 1
       setDragActive(true)
     }
     const onDragLeave = (e: DragEvent) => {
-      if (!hasFiles(e)) return
+      if (!isAcceptableDrag(e)) return
       depthRef.current = Math.max(0, depthRef.current - 1)
       if (depthRef.current === 0) setDragActive(false)
     }
     const onDragOver = (e: DragEvent) => {
-      if (!hasFiles(e)) return
+      if (!isAcceptableDrag(e)) return
       // preventDefault on every dragover is required to stay a valid drop
       // target; without it the drop reverts to Chromium's default (navigate
       // to file://).
@@ -142,6 +159,9 @@ export function useFileDrop({ cm }: { cm: AsyncCueMol | null }): { isDragActive:
       if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'
     }
     const onDrop = (e: DragEvent) => {
+      // Guarded on hasFiles, not isAcceptableDrag: a rejected drag never
+      // reaches here (its dragover was not prevented), and if one somehow
+      // does, the per-file extension check still reports what it cannot open.
       if (!hasFiles(e)) return
       e.preventDefault()
       e.stopPropagation()
