@@ -217,4 +217,11 @@ export interface ElectronAPI {
    * The callback shape matches the channel's payload type.
    */
   onPush<C extends PushChannel>(channel: C, callback: PushCallback<C>): () => void
+
+  /**
+   * Resolve the on-disk path of a File dragged in from the OS
+   * (Electron webUtils.getPathForFile). Returns '' for a File that
+   * does not originate from the filesystem.
+   */
+  getPathForFile(file: File): string
 }

@@ -34,6 +34,17 @@ if (process.env.CUEMOL_FRESH_PREFS && process.env.CUEMOL_FRESH_PREFS !== '0') {
   console.log('[Main] CUEMOL_FRESH_PREFS set -- clean profile at ' + freshDir)
 }
 
+// An OS file dropped outside the renderer's drop handler (or before React
+// mounts, or onto the Rendering window) must never navigate an app window
+// to file:// -- that would replace the UI with the file's contents.
+// loadFile/loadURL don't fire will-navigate, and reload keeps the same URL,
+// so both stay unaffected.
+app.on('web-contents-created', (_event, contents) => {
+  contents.on('will-navigate', (event, url) => {
+    if (url !== contents.getURL()) event.preventDefault()
+  })
+})
+
 app.whenReady().then(() => {
   // Dev runs have no .app bundle to take the dock icon from (see appIcon.ts).
   applyDevDockIcon()

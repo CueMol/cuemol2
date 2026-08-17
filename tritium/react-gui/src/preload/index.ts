@@ -8,7 +8,7 @@
  * method; every new channel is one entry in the map.
  */
 
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import type {
   ElectronAPI,
   InvokeArgs,
@@ -31,6 +31,10 @@ const api: ElectronAPI = {
     }
     ipcRenderer.on(channel, handler)
     return () => ipcRenderer.removeListener(channel, handler)
+  },
+
+  getPathForFile(file: File): string {
+    return webUtils.getPathForFile(file)
   },
 }
 
