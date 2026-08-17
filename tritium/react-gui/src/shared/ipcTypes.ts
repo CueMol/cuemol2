@@ -166,6 +166,18 @@ export interface FileErrorData {
   error: string
 }
 
+/**
+ * A batch of files the OS asked the app to open: command-line arguments, a
+ * macOS 'open-file' Apple Event (Finder double-click, Open With, Dock drop,
+ * Dock recent document), or a second launch handed over by 'second-instance'.
+ */
+export interface ShellOpenRequest {
+  /** Absolute, de-duplicated paths of files that exist, in the OS's order. */
+  paths: string[]
+  /** Absolute paths that were named but are not existing files. */
+  missing: string[]
+}
+
 // - App path -
 
 export interface AppPathInfo {

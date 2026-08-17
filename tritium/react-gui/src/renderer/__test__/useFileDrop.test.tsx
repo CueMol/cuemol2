@@ -14,6 +14,7 @@ import { makeRenderHook, setupElectronAPI, teardownElectronAPI, flushPromises } 
 import { CommandProvider, useCommands } from '../commands/CommandRegistry'
 import { CmdId } from '../commands/ids'
 import { useFileDrop } from '../hooks/useFileDrop'
+import { resetOpenFilePathsForTests } from '../hooks/useOpenFilePaths'
 
 void React
 
@@ -121,6 +122,9 @@ function mountFileDrop(
 describe('useFileDrop', () => {
   beforeEach(() => {
     showErrorAlert.mockClear()
+    // The batch mutex is module-level (shared with the shell-open path), so a
+    // case that leaves a batch running would silently starve the next one.
+    resetOpenFilePathsForTests()
     setupElectronAPI({ getPathForFile: vi.fn((f: { name: string }) => `/drop/${f.name}`) })
   })
   afterEach(() => {

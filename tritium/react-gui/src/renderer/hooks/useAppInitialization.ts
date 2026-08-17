@@ -15,7 +15,7 @@
  * ref.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { NewSceneAction } from './useNewSceneAction';
 
 interface UseAppInitializationOptions {
@@ -23,11 +23,25 @@ interface UseAppInitializationOptions {
   newScene: NewSceneAction;
 }
 
+interface UseAppInitializationResult {
+  /**
+   * True once the launch scene has been dealt with, successfully or not.
+   *
+   * Gates work that must not race the initial scene. `useShellOpenFiles` waits
+   * on it so a .qsc named on the command line loads in place into this first
+   * empty tab (`openNewScene` checks `isSceneJustCreated`) instead of opening a
+   * second one. Set on failure too: a missing launch scene degrades the
+   * in-place load to a fresh tab, but must never strand the file.
+   */
+  initialSceneSettled: boolean;
+}
+
 export function useAppInitialization({
   cueMolReady,
   newScene,
-}: UseAppInitializationOptions): void {
+}: UseAppInitializationOptions): UseAppInitializationResult {
   const initialSceneCreatedRef = useRef(false);
+  const [initialSceneSettled, setInitialSceneSettled] = useState(false);
 
   useEffect(() => {
     if (!cueMolReady) return;
@@ -42,7 +56,10 @@ export function useAppInitialization({
         // Allow retry on next ready/newScene change in case of failure.
         initialSceneCreatedRef.current = false;
       }
+      setInitialSceneSettled(true);
     })();
     return () => { cancelled = true; };
   }, [cueMolReady, newScene]);
+
+  return { initialSceneSettled };
 }
