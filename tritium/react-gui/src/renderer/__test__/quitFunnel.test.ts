@@ -54,6 +54,12 @@ const app = {
   exit: appExit,
   getPath: vi.fn(() => '/tmp'),
   isPackaged: false,
+  // main/index.ts takes the single-instance lock at module scope; grant it so
+  // the rest of its module body (including the before-quit registration under
+  // test) runs. The losing-instance behaviour is covered by
+  // shellOpenLifecycle.test.ts.
+  requestSingleInstanceLock: vi.fn(() => true),
+  focus: vi.fn(),
 }
 
 const ipcMain = {

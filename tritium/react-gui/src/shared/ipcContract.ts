@@ -30,6 +30,7 @@ import type {
   RenderWindowStateUpdate,
   SceneCtxAction,
   SceneCtxMenuPayload,
+  ShellOpenRequest,
   TextCtxAction,
   TextCtxShowPayload,
   UiState,
@@ -82,6 +83,7 @@ export interface InvokeChannels {
   [IPC.FILE_BACKUP_RENAME]:{ req: { path: string };
                              res: { ok: boolean; backed: boolean; error?: string } }
   [IPC.SHELL_OPEN_PATH]:   { req: { path: string };      res: { ok: boolean; error?: string } }
+  [IPC.SHELL_FILES_TAKE]:  { req: void;                  res: ShellOpenRequest }
   [IPC.SHELL_REVEAL_PATH]: { req: { path: string };      res: { ok: boolean } }
   [IPC.LAYOUT_LOAD]:       { req: void;                  res: LayoutState | null }
   [IPC.LAYOUT_SAVE]:       { req: LayoutState;           res: void }
@@ -159,6 +161,7 @@ export interface InvokeChannels {
 }
 
 export interface PushChannels {
+  [IPC.SHELL_FILES_PENDING]: void
   [IPC.OBJ_FILE_OPENED]:   FileOpenedData
   [IPC.SCENE_FILE_OPENED]: FileOpenedData
   [IPC.FILE_ERROR]:        FileErrorData
@@ -217,4 +220,11 @@ export interface ElectronAPI {
    * The callback shape matches the channel's payload type.
    */
   onPush<C extends PushChannel>(channel: C, callback: PushCallback<C>): () => void
+
+  /**
+   * Resolve the on-disk path of a File dragged in from the OS
+   * (Electron webUtils.getPathForFile). Returns '' for a File that
+   * does not originate from the filesystem.
+   */
+  getPathForFile(file: File): string
 }

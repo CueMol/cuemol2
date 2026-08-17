@@ -133,6 +133,7 @@ export function setupElectronAPI(overrides: Record<string, unknown> = {}): Recor
     platform: 'linux',
     invoke: vi.fn().mockResolvedValue(undefined),
     onPush: vi.fn().mockReturnValue(() => undefined),
+    getPathForFile: vi.fn(() => ''),
     ...overrides,
   }
   ;(window as any).electronAPI = api

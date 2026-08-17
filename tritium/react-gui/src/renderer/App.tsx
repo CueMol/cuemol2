@@ -45,6 +45,9 @@ import { useSceneExportCaps } from "./hooks/useSceneExportCaps";
 import { useUndoRedoState } from "./hooks/useUndoRedoState";
 import { useCommandRegistrations } from "./hooks/useCommandRegistrations";
 import { useRecentFiles } from "./hooks/useRecentFiles";
+import { useFileDrop } from "./hooks/useFileDrop";
+import { useShellOpenFiles } from "./hooks/useShellOpenFiles";
+import { FileDropOverlay } from "./components/FileDropOverlay";
 import { useCommands } from "./commands/CommandRegistry";
 import { CmdId } from "./commands/ids";
 import type { ViewCenterMark } from "../shared/ipcTypes";
@@ -267,7 +270,7 @@ const App: React.FC = () => {
   const newScene = useNewSceneAction({ cm, addMolTab, addMolViewTab });
 
   // First scene/view on launch (StrictMode guarded)
-  useAppInitialization({ cueMolReady, newScene });
+  const { initialSceneSettled } = useAppInitialization({ cueMolReady, newScene });
 
   // Keep the active scene/view bound to the active CONTENT tab: activate the
   // worker view for a molview tab, or clear the active molview when a
@@ -403,6 +406,12 @@ const App: React.FC = () => {
   });
 
   const cueMolBusy = useCueMolBusy();
+
+  // --- OS file drag-and-drop open (window-level, UXP dragdropopen parity) ---
+  const { isDragActive } = useFileDrop({ cm });
+
+  // --- OS shell / command-line file open (UXP openFromShell parity) ---
+  useShellOpenFiles({ cm, cueMolReady, initialSceneSettled });
 
   // Same flag also drives a global wait cursor, so the busy state is visible
   // wherever the pointer is -- not only in the status bar.
@@ -612,6 +621,8 @@ const App: React.FC = () => {
         busy={cueMolBusy}
         statusMessage={statusMessage}
       />
+
+      {isDragActive && <FileDropOverlay />}
     </div>
     </IconContext.Provider>
     </ActiveToolProvider>

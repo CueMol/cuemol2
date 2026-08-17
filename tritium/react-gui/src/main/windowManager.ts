@@ -103,7 +103,35 @@ function handleWindowClose(win: BrowserWindow, event: Electron.Event): void {
 
 const isMac = process.platform === 'darwin'
 
+// --- Main window ---
+
+let mainWindow: BrowserWindow | null = null
+
+/**
+ * The main application window, or null before it exists / after it closed.
+ *
+ * Symmetric with getRenderWindow(). Use this rather than
+ * BrowserWindow.getAllWindows()[0], which can return the Rendering window.
+ */
+export function getMainWindow(): BrowserWindow | null {
+  return mainWindow && !mainWindow.isDestroyed() ? mainWindow : null
+}
+
+/** Bring the main window to the front, restoring it if minimized. */
+export function focusMainWindow(): void {
+  const win = getMainWindow()
+  if (!win) return
+  if (win.isMinimized()) win.restore()
+  win.show()
+  win.focus()
+}
+
 export function createWindow(): void {
+  // registerIpcHandlers() calls ipcMain.handle() unguarded, so a second call
+  // would throw on the first duplicate channel. Only one main window exists
+  // by design.
+  if (getMainWindow()) return
+
   const saved = loadWindowBounds()
   const boundsOnScreen = saved ? isVisibleOnAnyDisplay(saved) : false
 
@@ -145,6 +173,8 @@ export function createWindow(): void {
       preload: join(__dirname, '../preload/index.js'),
     },
   })
+
+  mainWindow = win
 
   if (!isMac) {
     win.setMenuBarVisibility(false)
@@ -219,6 +249,7 @@ export function createWindow(): void {
   // createOrFocusRenderWindow), so it does not auto-close with it. Close it
   // here so all windows are gone -> 'window-all-closed' fires -> the app quits.
   win.on('closed', () => {
+    if (mainWindow === win) mainWindow = null
     if (renderWindow && !renderWindow.isDestroyed()) renderWindow.close()
   })
 

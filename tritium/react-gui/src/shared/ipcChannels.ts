@@ -22,6 +22,9 @@ export const IPC = {
   FILE_BACKUP_RENAME: 'file:backupRename',
   SHELL_OPEN_PATH:    'shell:openPath',       // invoke: open a file with the OS default app
   SHELL_REVEAL_PATH:  'shell:revealPath',     // invoke: reveal a file in Finder / Explorer
+  // Files the OS asked US to open (Finder double-click, argv, second-instance).
+  // The payload always travels by pull -- see main/shellOpenQueue.ts.
+  SHELL_FILES_TAKE:   'shell-files:take',     // invoke: drain + clear the queue
   LAYOUT_LOAD:    'layout:load',
   LAYOUT_SAVE:    'layout:save',
   UI_LOAD:        'ui:load',
@@ -35,6 +38,10 @@ export const IPC = {
   RECENT_CLEAR: 'recent:clear',
 
   // push channels (main -> renderer, no reply)
+  // Wake-up ping for SHELL_FILES_TAKE. Carries no payload on purpose: a push
+  // sent before the renderer subscribes is dropped, so the queue in main stays
+  // the single source of truth and a reload re-pulls it.
+  SHELL_FILES_PENDING: 'shell-files:pending',
   OBJ_FILE_OPENED:   'file:obj-opened',
   SCENE_FILE_OPENED: 'file:scene-opened',
   FILE_ERROR:        'file:error',

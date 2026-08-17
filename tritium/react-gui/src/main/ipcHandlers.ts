@@ -22,6 +22,7 @@ import { showSceneContextMenu } from './sceneContextMenu'
 import { inferContentFirst } from './helpers/inferContentFirst'
 import { rebuildApplicationMenu, setMenuBlocked, updateMenuState, withMenuBlocked } from './menu'
 import { addRecent, clearRecents, getRecents } from './recentFiles'
+import { takeShellOpen } from './shellOpenQueue'
 import {
   clearCloseWatchdog,
   setAppQuitting,
@@ -265,6 +266,11 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
 
   handleInvoke(IPC.FILE_EXISTS, (_event, payload) => handleFileExists(payload.path))
 
+  // Hand over the files the OS asked us to open. Read-and-clear is atomic on
+  // main's single thread, so a request arriving while this invoke is in flight
+  // is kept for the next batch (main pings SHELL_FILES_PENDING again).
+  handleInvoke(IPC.SHELL_FILES_TAKE, () => takeShellOpen())
+
   // Open a produced file (e.g. a rendered movie) in the OS default app.
   handleInvoke(IPC.SHELL_OPEN_PATH, async (_event, { path: p }) => {
     const error = await shell.openPath(p)
@@ -410,6 +416,8 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
    * enough to raise the main window above it. Minimized / hidden are restored
    * first so the entry always ends with the window on screen.
    */
+  // Kept local rather than delegating to windowManager.focusMainWindow():
+  // windowManager already imports this module, and the window is in hand here.
   handleInvoke(IPC.WINDOW_FOCUS_MAIN, () => {
     if (mainWindow.isDestroyed()) return
     if (mainWindow.isMinimized()) mainWindow.restore()

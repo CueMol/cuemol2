@@ -2,7 +2,10 @@ import { app, BrowserWindow, nativeTheme, session } from 'electron'
 import os from 'os'
 import path from 'path'
 import fs from 'fs'
-import { createWindow } from './windowManager'
+import { createWindow, focusMainWindow, getMainWindow } from './windowManager'
+import { parseFileArgs, resolveShellPaths, type ParsedFileArgs } from './helpers/parseFileArgs'
+import { enqueueShellOpen } from './shellOpenQueue'
+import { IPC } from '../shared/ipcChannels'
 import { applyDevDockIcon } from './helpers/appIcon'
 import { loadUi } from './stateStore'
 import { isAppQuitting, isForceQuit, setAppQuitting } from './quitState'
@@ -34,7 +37,86 @@ if (process.env.CUEMOL_FRESH_PREFS && process.env.CUEMOL_FRESH_PREFS !== '0') {
   console.log('[Main] CUEMOL_FRESH_PREFS set -- clean profile at ' + freshDir)
 }
 
+// --- Single instance + OS shell file open (UXP openFromShell parity) ---
+
+// Placed after the CUEMOL_FRESH_PREFS override above: the lock lives under
+// userData, so a fresh-prefs dev run deliberately gets its own lock domain and
+// can run alongside a normal one.
+const gotSingleInstanceLock = app.requestSingleInstanceLock()
+
+if (!gotSingleInstanceLock) {
+  // requestSingleInstanceLock() has already handed our argv and cwd to the
+  // primary instance, which opens the files. Every side effect below is gated
+  // on this flag rather than relying on app.quit() winning the race: quit is
+  // asynchronous, whenReady() can still resolve, and will-quit's
+  // clearRenderHistory() would wipe the RUNNING instance's history (the
+  // history directory is a fixed path under os.tmpdir()).
+  console.log('[Main] another instance owns the single-instance lock; exiting')
+  app.quit()
+}
+
+/**
+ * Queue a shell-open batch and wake the renderer.
+ *
+ * The paths themselves always travel by pull (see main/shellOpenQueue.ts); the
+ * push only says "there is something to take", so a request queued before the
+ * window exists is picked up by the renderer's startup pull.
+ */
+function acceptShellOpen(req: ParsedFileArgs): void {
+  if (req.paths.length === 0 && req.missing.length === 0) return
+  enqueueShellOpen(req)
+  // Main window only -- the Rendering window has no CueMol worker.
+  const win = getMainWindow()
+  if (win) win.webContents.send(IPC.SHELL_FILES_PENDING)
+}
+
+// macOS delivers a Finder double-click, "Open With", a Dock-tile drop and a
+// Dock recent-document click as an 'open-file' Apple Event -- never in argv.
+// It can fire before 'ready', so the listener is registered here at module
+// scope. Without preventDefault() Electron warns and the path is lost. A
+// multi-file open produces one event per file.
+app.on('open-file', (event, filePath) => {
+  event.preventDefault()
+  if (!gotSingleInstanceLock) return
+  acceptShellOpen(resolveShellPaths([filePath], process.cwd()))
+})
+
+if (gotSingleInstanceLock) {
+  // A second launch hands its command line here instead of starting another
+  // app. UXP cuemol2-cmdline.js parity: raise the running window and open into
+  // it, never create a second one.
+  app.on('second-instance', (_event, argv, workingDirectory) => {
+    focusMainWindow()
+    // Pull the app forward from whichever app the user launched us from.
+    if (process.platform === 'darwin') app.focus({ steal: true })
+    acceptShellOpen(
+      parseFileArgs({ argv, isPackaged: app.isPackaged, cwd: workingDirectory }),
+    )
+  })
+
+  // Command-line file arguments. Read at module scope: the queue tolerates
+  // being filled before any window exists.
+  acceptShellOpen(
+    parseFileArgs({ argv: process.argv, isPackaged: app.isPackaged, cwd: process.cwd() }),
+  )
+}
+
+// An OS file dropped outside the renderer's drop handler (or before React
+// mounts, or onto the Rendering window) must never navigate an app window
+// to file:// -- that would replace the UI with the file's contents.
+// loadFile/loadURL don't fire will-navigate, and reload keeps the same URL,
+// so both stay unaffected.
+app.on('web-contents-created', (_event, contents) => {
+  contents.on('will-navigate', (event, url) => {
+    if (url !== contents.getURL()) event.preventDefault()
+  })
+})
+
 app.whenReady().then(() => {
+  // app.quit() above is asynchronous, so this can still run in the instance
+  // that lost the lock. It must not create a window or touch shared state.
+  if (!gotSingleInstanceLock) return
+
   // Dev runs have no .app bundle to take the dock icon from (see appIcon.ts).
   applyDevDockIcon()
 
@@ -68,6 +150,10 @@ app.whenReady().then(() => {
 // The render history is per-run: its images are temp files and the settings
 // that produced them are not persisted either.
 app.on('will-quit', () => {
+  // Guarded: the history directory is a fixed path under os.tmpdir(), shared by
+  // every instance. Without this, an instance that loses the single-instance
+  // lock and quits would wipe the running instance's render history.
+  if (!gotSingleInstanceLock) return
   clearRenderHistory()
 })
 

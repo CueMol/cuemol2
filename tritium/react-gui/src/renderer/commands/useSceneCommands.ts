@@ -153,7 +153,10 @@ export function useSceneCommands({
         (data: FileOpenedData | undefined) => {
             if (!data) return
             if (!cm) return
-            ;(async () => {
+            // Return the promise so callers that await the dispatch (OS file
+            // drop opens files sequentially) observe completion; existing
+            // fire-and-forget callers are unaffected.
+            return (async () => {
                 try {
                     // Pass `data.contentFirst` here too -- the renderer-list
                     // lookup and the actual load must resolve to the same
@@ -268,7 +271,7 @@ export function useSceneCommands({
         CmdId.OpenSceneByPath,
         (path: string | undefined) => {
             if (!path) return
-            openNewScene(path).catch((e: unknown) =>
+            return openNewScene(path).catch((e: unknown) =>
                 console.error('openNewScene failed:', e),
             )
         },

@@ -145,6 +145,68 @@ mac:
   identity: null
   hardenedRuntime: false
   gatekeeperAssess: false
+  # Document types, so a shell open (Finder "Open With", a Dock-tile drop, a
+  # Dock recent document) reaches app.on('open-file'). Trimmed from the UXP
+  # list in uxp_gui/cuemol2/app/macbuild/Contents/Info.plist.in.
+  #
+  # `rank: Alternate` is load-bearing: CueMol2 (UXP) declares no LSHandlerRank
+  # and so gets the implicit "Default" rank, which outranks Alternate. That
+  # keeps CueMol2 the double-click handler while CueMol3 still appears in
+  # "Open With" and accepts a Dock drop. electron-builder maps ext / name /
+  # role / rank straight onto CFBundleTypeExtensions / CFBundleTypeName /
+  # CFBundleTypeRole / LSHandlerRank, so no hand-written extendInfo is needed.
+  # `icon` is omitted, which falls back to the app icon -- there is no
+  # document icon yet.
+  #
+  # Deliberately under `mac:` and NOT at the top level: a top-level
+  # fileAssociations would also feed the NSIS installer, whose APP_ASSOCIATE
+  # macro overwrites HKLM\Software\Classes\.qsc and would steal the Windows
+  # default from CueMol2's Inno Setup registration. Windows and Linux still
+  # open files passed on the command line.
+  #
+  # .pdb.gz is absent on purpose: macOS sees only the trailing `gz`, so
+  # declaring it would claim every gzip file.
+  fileAssociations:
+    - ext: qsc
+      name: CueMol Scene
+      role: Editor          # CueMol writes .qsc (File > Save Scene)
+      rank: Alternate
+    - ext: [pdb, ent]
+      name: PDB Coordinates
+      role: Viewer
+      rank: Alternate
+    - ext: [cif, mmcif]
+      name: mmCIF Coordinates
+      role: Viewer
+      rank: Alternate
+    - ext: mol2
+      name: Sybyl Mol2 Coordinates
+      role: Viewer
+      rank: Alternate
+    - ext: [sdf, mol]
+      name: MOL/SDF Coordinates
+      role: Viewer
+      rank: Alternate
+    - ext: [ccp4, map, mrc]
+      name: CCP4 Density Map
+      role: Viewer
+      rank: Alternate
+    - ext: mtz
+      name: MTZ Structure Factor
+      role: Viewer
+      rank: Alternate
+    - ext: cns
+      name: XPLOR/CNS Density Map
+      role: Viewer
+      rank: Alternate
+    - ext: dx
+      name: APBS Potential Map
+      role: Viewer
+      rank: Alternate
+    - ext: [brix, omap]
+      name: BRIX Density Map
+      role: Viewer
+      rank: Alternate
 
 win:
   # x64 NSIS installer (assisted wizard; see the nsis: block below). The native
