@@ -453,11 +453,18 @@ jobs:
 
     # Only the release-notes file is needed from the tree; a full checkout here
     # would drag in the whole uxp_gui tree for one markdown file.
+    #
+    # Checked out into its own directory, NOT the workspace root: actions/checkout
+    # defaults to clean: true, which runs `git clean -ffdx` and would delete the
+    # untracked artifacts/ directory downloaded above. v2.3.8.494 was published
+    # with its notes but no assets that way ("Pattern 'artifacts/*' does not match
+    # any files").
     - name: Checkout release notes
       if: startsWith(github.ref, 'refs/tags/') && env.BUILD_MODE == 'full'
       uses: actions/checkout@v4
       with:
         sparse-checkout: docs/release_notes
+        path: _release_notes
 
     # Resolve the release body before publishing. Without a body the release is
     # created empty: action-gh-release writes no body of its own and does not
@@ -483,7 +490,7 @@ jobs:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         set -euo pipefail
-        NOTES="docs/release_notes/${GITHUB_REF_NAME}.md"
+        NOTES="_release_notes/docs/release_notes/${GITHUB_REF_NAME}.md"
         if [ -f "$NOTES" ]; then
           echo "using hand-written notes: $NOTES"
           cp "$NOTES" release_notes.md
@@ -497,6 +504,21 @@ jobs:
         fi
         echo "--- release body ---"
         cat release_notes.md
+
+    # action-gh-release only warns ("Pattern ... does not match any files") and
+    # still succeeds when its glob is empty, so an assetless release publishes
+    # silently -- which is how v2.3.8.494 first went out. Fail loudly instead.
+    - name: Check artifacts are present
+      if: startsWith(github.ref, 'refs/tags/') && env.BUILD_MODE == 'full'
+      run: |
+        set -euo pipefail
+        count=$(find artifacts -type f | wc -l)
+        echo "artifacts to attach: $count"
+        find artifacts -type f -printf '  %p\n'
+        if [ "$count" -eq 0 ]; then
+          echo "::error::No artifacts to attach -- refusing to publish an empty release."
+          exit 1
+        fi
 
     - name: Release
       uses: softprops/action-gh-release@v2
