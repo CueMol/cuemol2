@@ -91,7 +91,7 @@ export const PropertyField: React.FC<PropertyFieldProps> = ({
                             className="h3-form-prop-reset"
                             minimal
                             small
-                            icon={<AppIcon name="ui.undo" aria-hidden />}
+                            icon={<AppIcon name="ui.resetDefaults" aria-hidden />}
                             aria-label={
                                 defaultValueLabel !== undefined
                                     ? `Reset to default (${defaultValueLabel})`

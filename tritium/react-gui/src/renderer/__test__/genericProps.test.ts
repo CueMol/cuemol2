@@ -205,11 +205,13 @@ describe('genericProps services', () => {
             getPropsJSON: vi.fn(() => PROPS_JSON),
             setProp: vi.fn(),
             resetProp: vi.fn(),
+            hasProp: vi.fn(() => true),
         };
         const viewTarget = {
             getPropsJSON: vi.fn(() => PROPS_JSON),
             setProp: vi.fn(),
             resetProp: vi.fn(),
+            hasProp: vi.fn(() => true),
         };
         const scene = {
             getRenderer: vi.fn(() => target),
@@ -282,6 +284,21 @@ describe('genericProps services', () => {
         expect(target.resetProp).toHaveBeenNthCalledWith(3, 'width');
         expect(res.ok).toBe(true);
         expect(res.entries.map((e) => e.key)).toEqual(['alpha']);
+    });
+
+    it('resetGenericProps skips props the target no longer has (UXP hasProp guard)', () => {
+        const { ctx, scene, target } = makeEnv();
+        // `coloring` reset swapped the parent object, so `coloring.xxx` is gone.
+        target.hasProp = vi.fn((name: string) => name !== 'coloring.xxx');
+        const res = services.resetGenericProps(ctx, {
+            ...ref, propNames: ['coloring', 'coloring.xxx', 'alpha'],
+        });
+        expect(target.resetProp).toHaveBeenCalledTimes(2);
+        expect(target.resetProp).toHaveBeenNthCalledWith(1, 'coloring');
+        expect(target.resetProp).toHaveBeenNthCalledWith(2, 'alpha');
+        expect(scene.commitUndoTxn).toHaveBeenCalledTimes(1);
+        expect(scene.rollbackUndoTxn).not.toHaveBeenCalled();
+        expect(res.ok).toBe(true);
     });
 
     it('resetGenericProps is a no-op for an empty key list', () => {

@@ -327,7 +327,18 @@ function resetGenericProps(
 
     try {
         withUndoTxn(scene, label, () => {
-            for (const name of args.propNames) target.resetProp(name);
+            for (const name of args.propNames) {
+                // Skip props that vanished because a parent object property
+                // was swapped earlier in this very loop (e.g. resetting
+                // `coloring` before `coloring.xxx`) -- UXP resetAllToDefault's
+                // `cuemol.hasProp` guard. Unexpected errors still roll back
+                // the whole txn below.
+                if (!target.hasProp(name)) {
+                    console.warn(`resetGenericProps: skipping missing prop "${name}"`);
+                    continue;
+                }
+                target.resetProp(name);
+            }
         });
     } catch (e) {
         console.warn('resetGenericProps failed:', e);

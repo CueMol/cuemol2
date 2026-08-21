@@ -18,6 +18,12 @@ import { SEM_OBJECT, SEM_RENDERER, SEM_CAMERA, SEM_ANY } from "../event";
 
 void React;
 
+// The mode bar's Reset-all button reads the theme for its confirm Alert; the
+// harness mounts without a ThemeProvider, so stub the hook.
+vi.mock("../contexts/ThemeContext", () => ({
+  useTheme: () => ({ theme: "light" }),
+}));
+
 import { AnimElementInspector } from "../components/inspector/AnimElementInspector";
 
 function detail(over: {

@@ -169,8 +169,6 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
   const editingRef = useRef(false);
   // Generic-tab fetch token + live mirrors read inside event handlers.
   const genericToken = useRef(0);
-  const modeRef = useRef(mode);
-  modeRef.current = mode;
   const genericEntriesRef = useRef(genericEntries);
   genericEntriesRef.current = genericEntries;
 
@@ -221,10 +219,12 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
       });
   }, []);
 
-  // SEM_ANIM keeps both views in sync; refetch the generic table only when shown.
+  // SEM_ANIM keeps both views in sync. The generic table is refetched in both
+  // modes: the mode bar's Reset-all button derives its enabled state from
+  // genericEntries, so they must stay live on the Properties tab too.
   const handleAnimEvent = useCallback(() => {
     refetch();
-    if (modeRef.current === "generic") refetchGeneric();
+    refetchGeneric();
   }, [refetch, refetchGeneric]);
 
   // Fetch on mount + element/scene change.
@@ -292,11 +292,11 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
     debounceMs: 50,
   });
 
-  // Lazily (re)fetch the generic list when that tab is shown or the element
-  // changes while it is shown.
+  // (Re)fetch the generic list on element change -- in both modes, since the
+  // mode bar's Reset-all enabled state reads it (see handleAnimEvent).
   useEffect(() => {
-    if (mode === "generic") refetchGeneric();
-  }, [mode, sceneId, uid, refetchGeneric]);
+    refetchGeneric();
+  }, [sceneId, uid, refetchGeneric]);
 
   /** Write one prop; adopt the returned (re-resolved) detail. */
   const commit = useCallback(
@@ -402,12 +402,12 @@ export const AnimElementInspector: React.FC<AnimElementInspectorProps> = ({
           { label: "Generic", value: "generic" },
         ]}
       />
-      {mode === "generic" && (
-        <InspectorResetAllButton
-          canResetAll={modifiedKeys(genericEntries).length > 0}
-          onResetAll={handleResetAll}
-        />
-      )}
+      {/* Available in both modes (they edit the same properties), matching
+          InspectorPanel's mode bar. */}
+      <InspectorResetAllButton
+        canResetAll={modifiedKeys(genericEntries).length > 0}
+        onResetAll={handleResetAll}
+      />
     </div>
   );
 
