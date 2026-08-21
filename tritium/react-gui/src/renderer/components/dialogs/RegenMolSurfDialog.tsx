@@ -16,12 +16,12 @@
  * OK commits via the `regenMolSurf` worker service under one undo txn.
  */
 
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useCueMol } from '../../hooks/useCueMol'
 import { useMolEditCommit } from '../../hooks/useMolEditCommit'
-import { ComboBoxField, Field, FieldSection, TextField } from '../../h3-kit/form'
+import { Field, FieldSection, SliderField, TextField } from '../../h3-kit/form'
 import { DialogShell } from './DialogShell'
-import { DENSITY_PRESETS, useMolSurfDensity } from './molSurfDensity'
+import { clampDensity, DENSITY_MAX, DENSITY_MIN } from './molSurfDensity'
 
 export interface RegenMolSurfDialogResult {
     ok: boolean
@@ -54,17 +54,16 @@ export function RegenMolSurfDialog({
 }: Props): React.JSX.Element {
     const { cm } = useCueMol()
 
-    const {
-        density, setDensity, draft: densityDraft, onDraftChange: handleDensityChange,
-    } = useMolSurfDensity(origDensity)
+    const [density, setDensity] = useState<number>(clampDensity(origDensity))
 
     // The provider keeps this component mounted across show/hide cycles, so
     // the density has to be re-seeded from the freshly pre-fetched `orig_den`
-    // every time the dialog opens on a (possibly different) surface.
+    // every time the dialog opens on a (possibly different) surface. Clamped
+    // into the slider range (a stored density can exceed it).
     useEffect(() => {
         if (!visible) return
-        setDensity(origDensity >= 1 ? Math.round(origDensity) : 1)
-    }, [visible, objId, origDensity, setDensity])
+        setDensity(clampDensity(origDensity))
+    }, [visible, objId, origDensity])
 
     const { submitting, errorMsg, run: handleOk } =
         useMolEditCommit({
@@ -111,14 +110,15 @@ export function RegenMolSurfDialog({
             </FieldSection>
 
             <FieldSection title="Surface">
-                <Field label="Point density (/A)">
-                    <ComboBoxField
-                        value={densityDraft}
-                        onChange={handleDensityChange}
-                        options={DENSITY_PRESETS}
-                        disabled={submitting}
-                    />
-                </Field>
+                <SliderField
+                    label="Point density (/A)"
+                    value={density}
+                    min={DENSITY_MIN}
+                    max={DENSITY_MAX}
+                    step={1}
+                    onCommit={setDensity}
+                    disabled={submitting}
+                />
             </FieldSection>
         </DialogShell>
     )
