@@ -34,6 +34,7 @@ export interface CommandMap {
   [CmdId.UiCutSurfByPlaneDialog]: { args: void;         result: void }
   [CmdId.UiReassignProt2ndryDialog]: { args: void;      result: void }
   [CmdId.UiMolSuperpose]:      { args: void;            result: void }
+  [CmdId.UiMorphAnimDialog]:   { args: void;            result: void }
 
   // Tabs
   [CmdId.TabNew]:              { args: void;            result: void }

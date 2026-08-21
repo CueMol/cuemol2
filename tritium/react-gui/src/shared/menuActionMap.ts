@@ -137,7 +137,7 @@ export const MENU_ACTION_MAP = {
   [IPC.MENU_MOL_SUPERPOSE]:    { dispatch: 'ui.molSuperpose',    deliver: 'generic' },
   [IPC.MENU_INTERACTION]:      { dispatch: 'ui.interactionAnalysisDialog', deliver: 'generic' },
   [IPC.MENU_REASSIGN_2NDRY]:   { dispatch: 'ui.reassignProt2ndryDialog', deliver: 'generic' },
-  [IPC.MENU_MORPH_ANIM]:       { dispatch: MENU_DISPATCH_UNIMPLEMENTED, deliver: 'generic' },
+  [IPC.MENU_MORPH_ANIM]:       { dispatch: 'ui.morphAnimDialog', deliver: 'generic' },
   [IPC.MENU_MOL_SURF]:         { dispatch: 'ui.makeMolSurfDialog', deliver: 'generic' },
   [IPC.MENU_SURF_CUTTER]:      { dispatch: 'ui.cutSurfByPlaneDialog', deliver: 'generic' },
   [IPC.MENU_APBS]:             { dispatch: 'ui.calcApbsPotDialog', deliver: 'generic' },

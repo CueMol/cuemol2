@@ -224,6 +224,7 @@ export interface AppPathInfo {
 export type NaviCtxAction =
   | 'centerAt'
   | 'centerAtSymm'
+  | 'createSymmMol'
   | 'selectAtom'
   | 'selectResid'
   | 'selectChain'

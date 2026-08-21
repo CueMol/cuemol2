@@ -54,7 +54,7 @@ export function buildNaviCtxMenuNodes(payload: Omit<NaviCtxMenuPayload, 'x' | 'y
       ? [
           { type: 'separator' } as Node,
           { label: 'Center at SYMM atom', action: 'centerAtSymm' } as Node,
-          { label: 'Create SYMM mol...', enabled: false } as Node,
+          { label: 'Create SYMM mol...', action: 'createSymmMol' } as Node,
         ]
       : []),
   ]

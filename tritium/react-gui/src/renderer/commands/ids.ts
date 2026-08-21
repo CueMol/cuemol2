@@ -27,6 +27,7 @@ export const CmdId = {
   UiCutSurfByPlaneDialog: 'ui.cutSurfByPlaneDialog', // no args
   UiReassignProt2ndryDialog: 'ui.reassignProt2ndryDialog', // no args
   UiMolSuperpose:     'ui.molSuperpose',     // no args
+  UiMorphAnimDialog:  'ui.morphAnimDialog',  // no args -- morph animation setup
 
   // Tab management
   TabNew:             'tab.new',             // no args

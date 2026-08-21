@@ -5,12 +5,16 @@ import type { NaviCtxAction } from '../../shared/ipcTypes';
 import { IPC } from '../../shared/ipcChannels';
 import { buildNaviCtxMenuNodes } from '../../shared/naviCtxMenu';
 import { useShowContextMenu } from '../components/menu/ContextMenuProvider';
+import { useShowNewRendererDialog } from '../components/dialogs/NewRendererDialogProvider';
+import { useShowErrorAlert } from '../components/dialogs/ErrorAlertDialogProvider';
 
 export function useNaviContextMenu(): {
     openContextMenu: (hit: HitTestResult, viewId: number, x: number, y: number) => Promise<void>;
 } {
     const { cm } = useCueMol();
     const showContextMenu = useShowContextMenu();
+    const showNewRenderer = useShowNewRendererDialog();
+    const showErrorAlert = useShowErrorAlert();
 
     const openContextMenu = useCallback(async (
         hit: HitTestResult,
@@ -45,6 +49,39 @@ export function useNaviContextMenu(): {
                     await cm.invokeService('naviCenterAtSymm', { viewId, objId, rendId: hit.rend_id, atomId, symmId: hit.symm_id });
                 }
                 break;
+            case 'createSymmMol': {
+                // UXP navi-toolribbon `createSymmObj`: materialize the hit
+                // symmetry image as a new MolCoord via the shared
+                // NewRendererDialog (its object-name field edits the new name).
+                if (hit.symm_id == null) break;
+                const opts = await cm.invokeService('getCreateSymmMolOptions', {
+                    viewId, objId, symmName: hit.symm_name ?? '',
+                });
+                if (!opts.ok) break;
+                if (opts.rendererTypes.length === 0 && opts.presetTypes.length === 0) break;
+                const dlg = await showNewRenderer({
+                    sceneId: opts.sceneId,
+                    objName: opts.objName,
+                    objClassName: opts.objClassName,
+                    rendererTypes: opts.rendererTypes,
+                    presetTypes: opts.presetTypes,
+                    defaultName: opts.defaultRendName,
+                    isMol: true,
+                });
+                if (!dlg) break;
+                const objName = dlg.rendOpts.objectName.trim() || opts.objName;
+                const res = await cm.invokeService('createSymmMol', {
+                    viewId, objId, rendId: hit.rend_id, symmId: hit.symm_id,
+                    objName, rendOpts: dlg.rendOpts,
+                });
+                if (!res.ok) {
+                    await showErrorAlert({
+                        title: 'Create SYMM mol',
+                        message: `Create symm mol failed: ${res.error ?? 'unknown error'}`,
+                    });
+                }
+                break;
+            }
             case 'selectAtom':
                 await cm.invokeService('naviCtxSelect', { viewId, objId, atomId, mode: 'atom' });
                 break;
@@ -100,7 +137,7 @@ export function useNaviContextMenu(): {
                 await cm.invokeService('naviCtxAround', { viewId, objId, distance: 10, byres: false });
                 break;
         }
-    }, [cm, showContextMenu]);
+    }, [cm, showContextMenu, showNewRenderer, showErrorAlert]);
 
     return { openContextMenu };
 }

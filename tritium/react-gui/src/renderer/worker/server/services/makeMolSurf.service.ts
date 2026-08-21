@@ -27,6 +27,7 @@ import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { WorkerContext } from '../types/WorkerContext';
 import { getSceneOrNull } from './helpers/sceneResolver';
 import { makeSel } from './helpers/makeSel';
+import { uniqName } from './helpers/uniqName';
 import { withUndoTxn } from './withUndoTxn';
 
 export interface MakeMolSurfArgs {
@@ -62,19 +63,6 @@ export interface ProposeMolSurfNameArgs {
 export interface ProposeMolSurfNameResult {
     /** Suggested unique surface name, or '' when the molecule is missing. */
     name: string;
-}
-
-/**
- * Pick the first available name from the sequence `${prefix}`, `${prefix}(1)`,
- * `${prefix}(2)`, ... -- matches UXP `util.makeUniqName2` used by `makeSugName`.
- */
-function uniqName(prefix: string, exists: (name: string) => boolean): string {
-    if (!exists(prefix)) return prefix;
-    for (let i = 1; i < 10000; i++) {
-        const candidate = `${prefix}(${i})`;
-        if (!exists(candidate)) return candidate;
-    }
-    return prefix;
 }
 
 /**

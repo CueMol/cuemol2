@@ -15,9 +15,11 @@ import type { PresetTypeEntry, RendererOptions } from '../fopen-opt-dlgs/types'
  * the shared `useRendererOptions` hook -- the same behaviour layer the
  * file-open dialog uses.
  *
- * The object-name field is not editable here because we are attaching to
- * an existing object -- UXP's same dialog sets `bEditObjName=false` when
- * called from `setupRendByObjID`.
+ * The object-name field is editable and the edited value is returned in
+ * `rendOpts.objectName`. The attach-to-existing-object flows (scene panel
+ * "New Renderer") ignore it, matching UXP `bEditObjName=false`; the
+ * "Create SYMM mol..." flow consumes it as the new object's name, matching
+ * UXP `bEditObjName=true`.
  */
 export interface NewRendererDialogResult {
     rendOpts: RendererOptions

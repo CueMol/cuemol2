@@ -90,6 +90,7 @@ describe('useMenuDispatch -- channel to CmdId mapping', () => {
     ['menu:change-resid-num',   CmdId.UiChangeResidueIndexDialog, undefined],
     ['menu:merge-mol',          CmdId.UiMergeMolDialog,    undefined],
     ['menu:reassign-2ndry',     CmdId.UiReassignProt2ndryDialog, undefined],
+    ['menu:morph-anim',         CmdId.UiMorphAnimDialog,   undefined],
     ['menu:save-file-as',       CmdId.ObjectSaveAs,        undefined],
     ['menu:save-current-view',  CmdId.SaveCurrentView,     undefined],
     ['menu:reload-scene',       CmdId.SceneReload,         undefined],

@@ -37,6 +37,7 @@ import { CutSurfByPlaneDialogProvider } from '../components/dialogs/CutSurfByPla
 import { ExportPngOptionsDialogProvider } from '../components/dialogs/ExportPngOptionsDialogProvider'
 import { ReassignProt2ndryDialogProvider } from '../components/dialogs/ReassignProt2ndryDialogProvider'
 import { MolSuperposeDialogProvider } from '../components/dialogs/MolSuperposeDialogProvider'
+import { MorphAnimDialogProvider } from '../components/dialogs/MorphAnimDialogProvider'
 import { ErrorAlertDialogProvider } from '../components/dialogs/ErrorAlertDialogProvider'
 import { EditCameraVisFlagsDialogProvider } from '../components/dialogs/EditCameraVisFlagsDialogProvider'
 import { EditInteractionListDialogProvider } from '../components/dialogs/EditInteractionListDialogProvider'
@@ -75,6 +76,7 @@ export const DialogProvider = composeProviders([
   ExportPngOptionsDialogProvider,
   ReassignProt2ndryDialogProvider,
   MolSuperposeDialogProvider,
+  MorphAnimDialogProvider,
   ErrorAlertDialogProvider,
   EditCameraVisFlagsDialogProvider,
   EditInteractionListDialogProvider,

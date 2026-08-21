@@ -104,7 +104,7 @@ function resolveTarget(
     return { obj, groupName };
 }
 
-function getNewRendererOptions(
+export function getNewRendererOptions(
     ctx: WorkerContext,
     args: GetNewRendererOptionsArgs,
 ): GetNewRendererOptionsResult {

@@ -28,6 +28,17 @@ vi.mock('../hooks/useCueMol', () => ({
     useCueMol: () => ({ cueMolReady: true, cm: mockCm }),
 }));
 
+// The hook pulls dialog hooks whose providers live in DialogContext; mock
+// the provider modules so the hook can mount with ContextMenuProvider only.
+const mockShowNewRenderer = vi.fn();
+const mockShowErrorAlert = vi.fn();
+vi.mock('../components/dialogs/NewRendererDialogProvider', () => ({
+    useShowNewRendererDialog: () => mockShowNewRenderer,
+}));
+vi.mock('../components/dialogs/ErrorAlertDialogProvider', () => ({
+    useShowErrorAlert: () => mockShowErrorAlert,
+}));
+
 const mockShowMenu = vi.fn();
 
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
@@ -76,6 +87,8 @@ let hookHandle: ReturnType<typeof makeRenderHook<ReturnType<typeof useNaviContex
 beforeEach(() => {
     vi.clearAllMocks();
     mockShowMenu.mockResolvedValue(null);
+    mockShowNewRenderer.mockResolvedValue(null);
+    mockShowErrorAlert.mockResolvedValue(undefined);
     // electronAPI exposes a generic `invoke(channel, payload)`. Route
     // NAVI_CTX_SHOW through to mockShowMenu so existing assertions on the
     // payload object remain valid. platform 'darwin' selects the native
@@ -206,6 +219,102 @@ describe('useNaviContextMenu', () => {
             await hookHandle.result.openContextMenu(hit, 1, 0, 0);
         });
         expect(callsFor('naviCtxToggleSidechain')).toContainEqual({ viewId: 1, objId: hit.obj_id });
+    });
+
+    describe('createSymmMol', () => {
+        const SYMM_OPTS = {
+            ok: true,
+            sceneId: 7,
+            objName: 'mol1 2_555',
+            objClassName: 'MolCoord',
+            rendererTypes: ['simple', 'ribbon'],
+            presetTypes: [],
+            defaultRendName: 'simple1',
+        };
+        const REND_OPTS = {
+            objectName: 'mol1 edited',
+            rendererType: 'ribbon',
+            rendererName: 'ribbon1',
+            selectionEnabled: false,
+            selection: '*',
+            centerView: true,
+        };
+
+        function routeServices(createResult: unknown = { ok: true, newObjId: 99 }) {
+            mockCm.invokeService.mockImplementation((name: string) => {
+                if (name === 'getCreateSymmMolOptions') return Promise.resolve(SYMM_OPTS);
+                if (name === 'createSymmMol') return Promise.resolve(createResult);
+                return Promise.resolve({ ok: true });
+            });
+        }
+
+        it('prefetches options, shows the dialog, and dispatches the create wire', async () => {
+            mockShowMenu.mockResolvedValue('createSymmMol');
+            routeServices();
+            mockShowNewRenderer.mockResolvedValue({ rendOpts: REND_OPTS });
+            const hit = makeHit({ rendtype: '*symm', symm_id: 5, symm_name: '2_555' });
+
+            await act(async () => {
+                await hookHandle.result.openContextMenu(hit, 1, 0, 0);
+            });
+
+            expect(callsFor('getCreateSymmMolOptions')).toContainEqual({
+                viewId: 1, objId: hit.obj_id, symmName: '2_555',
+            });
+            expect(mockShowNewRenderer).toHaveBeenCalledWith({
+                sceneId: 7,
+                objName: 'mol1 2_555',
+                objClassName: 'MolCoord',
+                rendererTypes: ['simple', 'ribbon'],
+                presetTypes: [],
+                defaultName: 'simple1',
+                isMol: true,
+            });
+            // The edited object name from the dialog wins over the suggestion.
+            expect(callsFor('createSymmMol')).toContainEqual({
+                viewId: 1, objId: hit.obj_id, rendId: hit.rend_id, symmId: 5,
+                objName: 'mol1 edited', rendOpts: REND_OPTS,
+            });
+            expect(mockShowErrorAlert).not.toHaveBeenCalled();
+        });
+
+        it('does not create when the dialog is cancelled', async () => {
+            mockShowMenu.mockResolvedValue('createSymmMol');
+            routeServices();
+            mockShowNewRenderer.mockResolvedValue(null);
+            const hit = makeHit({ rendtype: '*symm', symm_id: 5, symm_name: '2_555' });
+
+            await act(async () => {
+                await hookHandle.result.openContextMenu(hit, 1, 0, 0);
+            });
+
+            expect(callsFor('createSymmMol')).toHaveLength(0);
+        });
+
+        it('is a no-op when symm_id is missing from the hit', async () => {
+            mockShowMenu.mockResolvedValue('createSymmMol');
+            await act(async () => {
+                await hookHandle.result.openContextMenu(makeHit(), 1, 0, 0);
+            });
+            expect(callsFor('getCreateSymmMolOptions')).toHaveLength(0);
+            expect(mockShowNewRenderer).not.toHaveBeenCalled();
+        });
+
+        it('shows an error alert when the service reports failure', async () => {
+            mockShowMenu.mockResolvedValue('createSymmMol');
+            routeServices({ ok: false, error: 'copyAtoms failed' });
+            mockShowNewRenderer.mockResolvedValue({ rendOpts: REND_OPTS });
+            const hit = makeHit({ rendtype: '*symm', symm_id: 5, symm_name: '2_555' });
+
+            await act(async () => {
+                await hookHandle.result.openContextMenu(hit, 1, 0, 0);
+            });
+
+            expect(mockShowErrorAlert).toHaveBeenCalledWith({
+                title: 'Create SYMM mol',
+                message: 'Create symm mol failed: copyAtoms failed',
+            });
+        });
     });
 
     it.each([
