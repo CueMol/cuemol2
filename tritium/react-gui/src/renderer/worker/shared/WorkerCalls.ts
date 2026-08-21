@@ -60,6 +60,16 @@ import type {
   MoveTrajectoryBlockArgs,
   TrajBlockEditResult,
 } from '../server/services/trajectory.service'
+import type {
+  ConvertToMorphMolArgs,
+  ConvertToMorphMolResult,
+  GetMorphFramesArgs,
+  GetMorphFramesResult,
+  AddMorphFrameFromFileArgs,
+  AddMorphFrameFromMolArgs,
+  RemoveMorphFrameArgs,
+  MorphFrameEditResult,
+} from '../server/services/morphMol.service'
 import type { LoadSceneArgs } from '../server/services/loadScene.service'
 import type {
   StreamLoadFromUrlArgs,
@@ -310,6 +320,12 @@ import type {
   GetRendPresetTypesResult,
 } from '../server/services/getNewRendererOptions.service'
 import type {
+  GetCreateSymmMolOptionsArgs,
+  GetCreateSymmMolOptionsResult,
+  CreateSymmMolArgs,
+  CreateSymmMolResult,
+} from '../server/services/createSymmMol.service'
+import type {
   CreateStyleSetArgs,
   CreateStyleSetResult,
   DestroyStyleSetArgs,
@@ -529,6 +545,11 @@ export interface ServiceMap {
   appendTrajectoryBlock:      { args: AppendTrajectoryBlockArgs;       result: AppendTrajectoryBlockResult }
   removeTrajectoryBlock:      { args: RemoveTrajectoryBlockArgs;       result: TrajBlockEditResult }
   moveTrajectoryBlock:        { args: MoveTrajectoryBlockArgs;         result: TrajBlockEditResult }
+  convertToMorphMol:          { args: ConvertToMorphMolArgs;           result: ConvertToMorphMolResult }
+  getMorphFrames:             { args: GetMorphFramesArgs;              result: GetMorphFramesResult }
+  addMorphFrameFromFile:      { args: AddMorphFrameFromFileArgs;       result: MorphFrameEditResult }
+  addMorphFrameFromMol:       { args: AddMorphFrameFromMolArgs;        result: MorphFrameEditResult }
+  removeMorphFrame:           { args: RemoveMorphFrameArgs;            result: MorphFrameEditResult }
   loadScene:                  { args: LoadSceneArgs;                   result: { ok: boolean } }
   streamLoadFromUrl:          { args: StreamLoadFromUrlArgs;           result: StreamLoadFromUrlResult }
   streamLoadDensityMap:       { args: StreamLoadDensityMapArgs;        result: StreamLoadDensityMapResult }
@@ -675,6 +696,8 @@ export interface ServiceMap {
   naviCtxInvertSel:           { args: NaviCtxObjArgs;                  result: { ok: boolean } }
   naviCtxToggleSidechain:     { args: NaviCtxObjArgs;                  result: { ok: boolean } }
   naviCtxAround:              { args: NaviCtxAroundArgs;               result: { ok: boolean } }
+  getCreateSymmMolOptions:    { args: GetCreateSymmMolOptionsArgs;     result: GetCreateSymmMolOptionsResult }
+  createSymmMol:              { args: CreateSymmMolArgs;               result: CreateSymmMolResult }
   listSceneObjects:           { args: ListSceneObjectsArgs;            result: ListSceneObjectsResult }
   getSymmetryPanelInfo:       { args: GetSymmetryPanelInfoArgs;        result: GetSymmetryPanelInfoResult }
   getSpaceGroupNames:         { args: GetSpaceGroupNamesArgs;          result: GetSpaceGroupNamesResult }

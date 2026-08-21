@@ -12,6 +12,7 @@
  *   - `UiCutSurfByPlaneDialog` -> `CutSurfByPlaneDialog` (UXP `tools/surf-cutbyplane`).
  *   - `UiReassignProt2ndryDialog` -> `ReassignProt2ndryDialog` (UXP `tools/prot2ndry-tool`).
  *   - `UiMolSuperpose` -> `MolSuperposeDialog` (UXP `tools/ssm_sup`).
+ *   - `UiMorphAnimDialog` -> `MorphAnimDialog` (UXP `tools/morphanim-tool`).
  *
  * Each command resolves the active scene, opens the dialog (which owns its
  * own commit via a worker service), and returns. Future tool dialogs
@@ -33,6 +34,7 @@ import { useShowInteractionAnalysisDialog } from '../components/dialogs/Interact
 import { useShowCutSurfByPlaneDialog } from '../components/dialogs/CutSurfByPlaneDialogProvider'
 import { useShowReassignProt2ndryDialog } from '../components/dialogs/ReassignProt2ndryDialogProvider'
 import { useShowMolSuperposeDialog } from '../components/dialogs/MolSuperposeDialogProvider'
+import { useShowMorphAnimDialog } from '../components/dialogs/MorphAnimDialogProvider'
 
 interface UseToolCommandsOptions {
     cm: AsyncCueMol | null
@@ -53,6 +55,7 @@ export function useToolCommands({
     const showCutSurfByPlaneDialog = useShowCutSurfByPlaneDialog()
     const showReassignProt2ndryDialog = useShowReassignProt2ndryDialog()
     const showMolSuperposeDialog = useShowMolSuperposeDialog()
+    const showMorphAnimDialog = useShowMorphAnimDialog()
 
     /**
      * Register a command that resolves the active scene/view before running
@@ -116,5 +119,9 @@ export function useToolCommands({
 
     useActiveSceneCommand(CmdId.UiMolSuperpose, (info) => {
         void showMolSuperposeDialog({ sceneId: info.scene_uid, viewId: info.view_id })
+    })
+
+    useActiveSceneCommand(CmdId.UiMorphAnimDialog, (info) => {
+        void showMorphAnimDialog({ sceneId: info.scene_uid })
     })
 }

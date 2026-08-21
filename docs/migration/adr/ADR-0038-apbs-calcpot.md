@@ -1,6 +1,6 @@
 # ADR-0038: APBS electrostatic-potential tool — modal + inline progress, Settings-owned exe paths
 
-- Status: accepted (host E2E pending)
+- Status: accepted (host E2E verified 2026-08-21)
 - Date: 2026-07-12
 - Mapping rows: [`dialog.tool.apbs-calcpot`](../mapping/tool_dlgs.md#dialogtoolapbs-calcpot)
 
