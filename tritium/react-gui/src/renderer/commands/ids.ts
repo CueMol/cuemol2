@@ -49,6 +49,7 @@ export const CmdId = {
   // Undo/redo
   Undo:               'edit.undo',           // no args
   Redo:               'edit.redo',           // no args
+  ClearUndo:          'edit.clearUndo',      // no args -- discard undo/redo history
 
   // View operations
   ViewPerspective:    'view.perspective',    // no args

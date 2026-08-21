@@ -30,7 +30,7 @@ Status values:
 |----|-------|---------|--------|----|-----|-------|
 | [`menu.color`](../uxp-inventory/menus.md#menucolor) | `h3-kit/colorpicker/PalettePanel.tsx` | merged | done | | [ADR-0020](../adr/ADR-0020-color-picker-widget.md) | UXP color-menu presets merged into the color picker Palette panel (grayscale + 7 hue rows x 7 sat/bri variations). |
 | [`menu.cuemol2.file`](../uxp-inventory/menus.md#menucuemol2file) | `menuTemplate` / `MenuBar` / `useMenuDispatch` / `useFileCommands` | split | done | | [ADR-0008](../adr/ADR-0008-get-pdb-streaming.md), [ADR-0009](../adr/ADR-0009-open-recent-mru.md), [ADR-0012](../adr/ADR-0012-save-scene-parity.md), [ADR-0014](../adr/ADR-0014-file-menu-save-reload.md), [ADR-0016](../adr/ADR-0016-window-close-quit-funnel.md) | 14/14 resolved. All items wired; New Window dropped (Electron cannot host multiple OS windows on one shared backend, 2026-07-11) and Open web page dropped. |
-| [`menu.cuemol2.edit`](../uxp-inventory/menus.md#menucuemol2edit) | `menuTemplate` / `MenuBar` / `useMenuDispatch` | split | wip | | | 7/8 wired (Undo / Redo + Merge molecule / Delete mol atoms / Change chain ID / Change residue number, each opening its tool dialog via `ui.*Dialog`, + Options opening the Settings tab). Clear undo data remains stubbed. |
+| [`menu.cuemol2.edit`](../uxp-inventory/menus.md#menucuemol2edit) | `menuTemplate` / `MenuBar` / `useMenuDispatch` / `useUndoRedoState` | split | done | | | 8/8 wired (Undo / Redo + Clear undo data (`edit.clearUndo` -> `clearUndoData` service, UXP `Qm2Main.clearUndoData` parity) + Merge molecule / Delete mol atoms / Change chain ID / Change residue number, each opening its tool dialog via `ui.*Dialog`, + Options opening the Settings tab). |
 | [`menu.cuemol2.rendering`](../uxp-inventory/menus.md#menucuemol2rendering) | `menuTemplate` / `MenuBar` / `useMenuDispatch` / `runSceneExportFlow` / `useSceneExportCaps` / `RenderWindowApp` | split | done | | [ADR-0037](../adr/ADR-0037-scene-export-capability-gate.md) | 3/3 resolved. UXP's POV-Ray rendering + Animation rendering became backend-neutral **Image rendering... / Movie rendering...** (2026-08-04): both open the modeless Rendering window and activate its Still / Movie output mode there (`ui.renderWindow.image` / `ui.renderWindow.movie`), the backend (POV-Ray / Umbreon) being a setting inside that window. Export scene submenu (PNG / Umbreon / POV / STL / MQO) wired and capability-gated -- an exporter not compiled into the running libcuemol2 (e.g. Umbreon without HAVE_UMBREON) is hidden from the submenu via a startup probe (ADR-0037). |
 | [`menu.cuemol2.scene`](../uxp-inventory/menus.md#menucuemol2scene) | `menuTemplate` / `MenuBar` / `useMenuDispatch` / `sceneBgColor.service` | split | wip | | | 2/4 wired (Background White / Black). Use color proofing + Properties… stubbed (scene ctxmenu has color-proofing wired; menu path + scene property editor still pending). |
 | [`menu.cuemol2.view`](../uxp-inventory/menus.md#menucuemol2view) | `menuTemplate` / `MenuBar` / `useMenuDispatch` / `useViewCommands` / `viewProjection.service` | split | done | | | 7/7 resolved. Perspective / Orthographic + Center mark Cross / Axis / None + View property (`ui.viewProperty` -> docked Generic inspector) wired; Hardware stereo dropped. |
@@ -48,7 +48,7 @@ Completion counts treat `wired` / `native` as complete and `dropped` / `merged` 
 |-------|---------:|------------:|-----------:|-------|
 | `menu.color` | 1 | 0 | 100% | Presets merged into the color picker Palette panel (see ADR-0020) |
 | `menu.cuemol2.file` | 14 | 0 | 100% | All wired; New Window + Open web page dropped (both count resolved) |
-| `menu.cuemol2.edit` | 7 | 1 | 88% | Undo / Redo + Merge / Delete / Change chain / Change resid + Options (Settings tab) wired; Clear undo stub |
+| `menu.cuemol2.edit` | 8 | 0 | 100% | Undo / Redo / Clear undo + Merge / Delete / Change chain / Change resid + Options (Settings tab) all wired |
 | `menu.cuemol2.rendering` | 3 | 0 | 100% | Image rendering + Movie rendering (Rendering window, Still / Movie mode) + Export scene all wired |
 | `menu.cuemol2.scene` | 2 | 2 | 50% | Background White / Black wired; Use color proofing + Properties stubbed |
 | `menu.cuemol2.view` | 7 | 0 | 100% | Projection + Center mark + View property wired; Hardware stereo dropped |
@@ -57,8 +57,8 @@ Completion counts treat `wired` / `native` as complete and `dropped` / `merged` 
 | `menu.cuemol2.help` | 6 | 0 | 100% | About wired; plugins / config / addon-mgr / console / updates dropped (Mozilla-specific) |
 | `menu.cuemol2-macos` | 7 | 0 | 100% | OS-native items complete; Preferences opens the Settings tab |
 | `menu.cuemol2-scripts` | 1 | 0 | 100% | Dropped intentionally because Electron module loading replaces the XUL script overlay |
-| **`menu.cuemol2` subtotal** | **50** | **5** | **91%** | Sum of the 8 `menu.cuemol2.*` group rows (55 item-level points; 7 dropped + 1 merged count resolved, 5 stub outstanding -- Mol morphing animation wired 2026-08-21) |
-| **Total** | **59** | **5** | **92%** | 64 inventory-derived menu migration points (color 1 + cuemol2 55 + macos 7 + scripts 1) |
+| **`menu.cuemol2` subtotal** | **52** | **3** | **95%** | Sum of the 8 `menu.cuemol2.*` group rows (55 item-level points; 7 dropped + 1 merged count resolved, 3 stub outstanding -- Clear undo wired 2026-08-21; note the Scene rows are stale, see `_audit-260821.md`) |
+| **Total** | **61** | **3** | **95%** | 64 inventory-derived menu migration points (color 1 + cuemol2 55 + macos 7 + scripts 1) |
 
 ## Menu Item Implementation Status
 
@@ -104,7 +104,7 @@ View menu state notes:
 | File | Quit/Exit | `role: quit` | Electron role + `before-quit` → per-window `win.on('close')` confirm funnel (see macOS App > Quit CueMol) | wired | Non-macOS File menu item — same window-close confirm funnel as macOS; the X button also routes through it. See [ADR-0016](../adr/ADR-0016-window-close-quit-funnel.md). |
 | Edit | Undo | `undo` / `menu:undo` | `CmdId.Undo` | wired | Owned by `useUndoRedoState`; disabled at stack bottom via `MENU_UPDATE_STATE` (UXP `updateCmdUndoState` parity). Toolbar has a multi-step history dropdown ([ADR-0013](../adr/ADR-0013-toolbar-ribbon-port.md)) |
 | Edit | Redo | `redo` / `menu:redo` | `CmdId.Redo` | wired | Owned by `useUndoRedoState`; disabled when redo stack empty. macOS accelerator override |
-| Edit | Clear undo data | `clear-undo` / `menu:clear-undo` | `MENU_GENERIC` -> `console.warn` | stub | Command not connected |
+| Edit | Clear undo data | `clear-undo` / `menu:clear-undo` | `CmdId.ClearUndo` -> `clearUndoData` service | wired | Discards the active scene's undo/redo history (`scene.clearUndoData()`); toolbar/menu state refreshes via SCE_SCENE_UNDOINFO + explicit refresh (UXP `updateCmdUndoState` parity) |
 | Edit | Merge molecule... | `merge-mol` / `menu:merge-mol` | `ui.mergeMolDialog` command -> merge-molecule dialog | wired | Opens the merge-molecule tool dialog (`dialog.tool.mol-merge`) |
 | Edit | Delete mol atoms... | `delete-mol-atoms` / `menu:delete-mol-atoms` | `ui.deleteMolDialog` command -> delete-atoms dialog | wired | Opens the delete-atoms tool dialog (`dialog.tool.mol-delete`) |
 | Edit | Change chain ID... | `change-chain-id` / `menu:change-chain-id` | `ui.changeChainIdDialog` command -> change-chain dialog | wired | Opens the change-chain-ID tool dialog (`dialog.tool.chg-chname`) |

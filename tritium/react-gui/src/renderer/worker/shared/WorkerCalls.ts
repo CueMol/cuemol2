@@ -385,7 +385,7 @@ import type {
   ReloadCameraFromSrcArgs,
   ReloadCameraFromSrcResult,
 } from '../server/services/cameraFile.service'
-import type { UndoArgs, GetUndoStateArgs, UndoState } from '../server/services/undo.service'
+import type { UndoArgs, GetUndoStateArgs, UndoState, ClearUndoDataArgs } from '../server/services/undo.service'
 import type {
   ValidateSelectionArgs,
   ValidateSelectionResult,
@@ -561,6 +561,7 @@ export interface ServiceMap {
   redo:                       { args: RedoArgs;                        result: { ok: boolean } }
   undo:                       { args: UndoArgs;                        result: { ok: boolean } }
   getUndoState:               { args: GetUndoStateArgs;                result: UndoState }
+  clearUndoData:              { args: ClearUndoDataArgs;               result: { ok: boolean } }
   getSceneSaveInfo:           { args: GetSceneSaveInfoArgs;            result: GetSceneSaveInfoResult }
   saveScene:                  { args: SaveSceneArgs;                   result: SaveSceneResult }
   exportScene:                { args: ExportSceneArgs;                 result: ExportSceneResult }

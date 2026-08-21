@@ -55,6 +55,7 @@ export interface CommandMap {
   // Edit
   [CmdId.Undo]:                { args: void;            result: void }
   [CmdId.Redo]:                { args: void;            result: void }
+  [CmdId.ClearUndo]:           { args: void;            result: void }
 
   // View
   [CmdId.ViewPerspective]:     { args: void;            result: void }

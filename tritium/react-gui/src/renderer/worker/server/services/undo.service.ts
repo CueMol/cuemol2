@@ -49,4 +49,20 @@ function getUndoState(ctx: WorkerContext, args: GetUndoStateArgs): UndoState {
     };
 }
 
-export const services = { undo, getUndoState };
+export interface ClearUndoDataArgs {
+    sceneId: number;
+}
+
+/**
+ * Discard the scene's whole undo/redo history (Edit > Clear undo data;
+ * UXP `Qm2Main.clearUndoData`). Not wrapped in a txn -- it clears the txn
+ * stack itself. C++ fires SCE_SCENE_UNDOINFO, so subscribed UI refreshes.
+ */
+function clearUndoData(ctx: WorkerContext, args: ClearUndoDataArgs): { ok: boolean } {
+    const scene = ctx.sceMgr.getScene(args.sceneId);
+    if (!scene) return { ok: false };
+    scene.clearUndoData();
+    return { ok: true };
+}
+
+export const services = { undo, getUndoState, clearUndoData };

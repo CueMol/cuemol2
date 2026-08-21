@@ -70,6 +70,7 @@ describe('useMenuDispatch -- channel to CmdId mapping', () => {
     [IPC.MENU_CLOSE_TAB,        CmdId.TabClose,           'molview-1'],
     [IPC.MENU_UNDO,             CmdId.Undo,               undefined],
     [IPC.MENU_REDO,             CmdId.Redo,               undefined],
+    ['menu:clear-undo',         CmdId.ClearUndo,          undefined],
     [IPC.MENU_NEW_SCENE,        CmdId.SceneNew,           undefined],
     [IPC.MENU_OPEN_SCENE,       CmdId.UiOpenSceneDialog,  undefined],
     [IPC.MENU_VIEW_PERSPECTIVE, CmdId.ViewPerspective,    undefined],

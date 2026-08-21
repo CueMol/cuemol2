@@ -3,7 +3,7 @@ import { services as undoServices } from '../worker/server/services/undo.service
 import { services as redoServices } from '../worker/server/services/redo.service'
 import type { WorkerContext } from '../worker/server/types/WorkerContext'
 
-const { undo: undoFn, getUndoState: getUndoStateFn } = undoServices
+const { undo: undoFn, getUndoState: getUndoStateFn, clearUndoData: clearUndoDataFn } = undoServices
 const { redo: redoFn } = redoServices
 
 function makeCtx() {
@@ -148,5 +148,27 @@ describe('getUndoState service', () => {
             undoDescs: [],
             redoDescs: [],
         })
+    })
+})
+
+describe('clearUndoData service', () => {
+    it('is registered as "clearUndoData"', () => {
+        expect('clearUndoData' in undoServices).toBe(true)
+    })
+
+    it('calls scene.clearUndoData()', () => {
+        const clear = vi.fn()
+        const ctx = {
+            sceMgr: { getScene: vi.fn(() => ({ clearUndoData: clear })) },
+        } as unknown as WorkerContext
+        expect(clearUndoDataFn(ctx, { sceneId: 1 })).toEqual({ ok: true })
+        expect(clear).toHaveBeenCalled()
+    })
+
+    it('returns { ok: false } without touching anything when the scene is missing', () => {
+        const ctx = {
+            sceMgr: { getScene: vi.fn(() => null) },
+        } as unknown as WorkerContext
+        expect(clearUndoDataFn(ctx, { sceneId: 99 })).toEqual({ ok: false })
     })
 })
