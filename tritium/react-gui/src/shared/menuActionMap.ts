@@ -102,7 +102,7 @@ export const MENU_ACTION_MAP = {
   [IPC.MENU_UNDO]:             { dispatch: 'edit.undo',          deliver: 'dedicated-direct' },
   [IPC.MENU_REDO]:             { dispatch: 'edit.redo',          deliver: 'dedicated-direct' },
   [IPC.MENU_SELECT_ALL]:       { dispatch: MENU_DISPATCH_SELECT_ALL, deliver: 'generic' },
-  [IPC.MENU_CLEAR_UNDO]:       { dispatch: MENU_DISPATCH_UNIMPLEMENTED, deliver: 'generic' },
+  [IPC.MENU_CLEAR_UNDO]:       { dispatch: 'edit.clearUndo',     deliver: 'generic' },
   [IPC.MENU_MERGE_MOL]:        { dispatch: 'ui.mergeMolDialog',  deliver: 'generic' },
   [IPC.MENU_DELETE_MOL_ATOMS]: { dispatch: 'ui.deleteMolDialog', deliver: 'generic' },
   [IPC.MENU_CHANGE_CHAIN_ID]:  { dispatch: 'ui.changeChainIdDialog', deliver: 'generic' },

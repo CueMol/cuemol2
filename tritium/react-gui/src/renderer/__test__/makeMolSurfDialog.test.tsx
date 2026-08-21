@@ -150,51 +150,60 @@ describe('MakeMolSurfDialog commit wire', () => {
         handle.unmount()
     })
 
-    it('density is an editable combobox with 1-5 presets; picking one updates the commit payload', async () => {
+    /** The density SliderField row, found by its label (the probe-radius
+     *  NumericField lives in the same dialog, so queries must be scoped). */
+    function densityRow(): HTMLElement {
+        const row = Array.from(
+            document.body.querySelectorAll('.h3-form-sliderfield-row'),
+        ).find(
+            (r) =>
+                r.querySelector('.h3-form-sliderfield-label')?.textContent ===
+                'Point density (/A)',
+        )
+        if (!row) throw new Error('density slider row not found')
+        return row as HTMLElement
+    }
+
+    it('density is a slider+stepper field; stepping up updates the commit payload', async () => {
         routeInvoke(() => ({ ok: true }))
         const handle = mount()
         await flushPromises()
 
-        const chevron = document.body.querySelector(
-            '.h3-form-combobox-caret',
-        ) as HTMLButtonElement
-        expect(chevron).toBeTruthy()
-        await act(async () => { chevron.click() })
-        const items = Array.from(document.querySelectorAll('.bp5-menu-item')).map(
-            (el) => el.textContent,
-        )
-        expect(items).toEqual(['1', '2', '3', '4', '5'])
-        const three = Array.from(document.querySelectorAll('.bp5-menu-item')).find(
-            (el) => el.textContent === '3',
-        ) as HTMLElement
-        await act(async () => { three.click() })
+        const up = densityRow().querySelector('[aria-label="Increment"]') as HTMLButtonElement
+        expect(up).toBeTruthy()
+        await act(async () => { up.click() })
+        await act(async () => { up.click() })
 
         await act(async () => { okButton().click() })
         await flushPromises()
 
+        // Default 1 stepped up twice.
         expect((commitCalls()[0][1] as Record<string, unknown>).density).toBe(3)
         handle.unmount()
     })
 
-    it('density accepts free-typed values outside the preset list', async () => {
+    it('a typed density commits on blur and is clamped into 1-10', async () => {
         routeInvoke(() => ({ ok: true }))
         const handle = mount()
         await flushPromises()
 
-        const input = document.body.querySelector('.h3-form-combobox input') as HTMLInputElement
+        const input = densityRow().querySelector('.h3-form-sliderfield-number') as HTMLInputElement
         expect(input).toBeTruthy()
         const setter = Object.getOwnPropertyDescriptor(
             window.HTMLInputElement.prototype, 'value',
         )?.set
         act(() => {
-            setter?.call(input, '7')
+            setter?.call(input, '15')
             input.dispatchEvent(new Event('input', { bubbles: true }))
+        })
+        act(() => {
+            input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
         })
 
         await act(async () => { okButton().click() })
         await flushPromises()
 
-        expect((commitCalls()[0][1] as Record<string, unknown>).density).toBe(7)
+        expect((commitCalls()[0][1] as Record<string, unknown>).density).toBe(10)
         handle.unmount()
     })
 

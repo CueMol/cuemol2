@@ -30,6 +30,7 @@ import {
   CaretUp,
   Check,
   Circle,
+  ClockCounterClockwise,
   CloudArrowDown,
   CornersOut,
   Copy,
@@ -164,6 +165,9 @@ export const APP_ICONS = {
   "ui.filter": { lib: "phosphor", Comp: Funnel },
   "ui.undo": { lib: "phosphor", Comp: ArrowUUpLeft },
   "ui.redo": { lib: "phosphor", Comp: ArrowUUpRight },
+  // Restore-to-default (clock + CCW arrow) -- deliberately distinct from the
+  // undo/redo U-turn arrows so reset buttons cannot be mistaken for Undo.
+  "ui.resetDefaults": { lib: "phosphor", Comp: ClockCounterClockwise },
   "ui.zoomIn": { lib: "phosphor", Comp: MagnifyingGlassPlus },
   "ui.zoomOut": { lib: "phosphor", Comp: MagnifyingGlassMinus },
   "ui.zoomToFit": { lib: "phosphor", Comp: CornersOut },

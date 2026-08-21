@@ -120,9 +120,20 @@ export function useUndoRedoState({
       .finally(() => { void refresh() })
   }, [cm, refresh])
 
+  const clearUndo = useCallback(() => {
+    const sceneId = getActiveSceneInfoRef.current()?.scene_uid
+    if (!cm || sceneId === undefined) return
+    cm.invokeService('clearUndoData', { sceneId })
+      .catch((e: unknown) => console.error('clearUndoData failed:', e))
+      .finally(() => { void refresh() })
+  }, [cm, refresh])
+
   // Menu Cmd+Z / Cmd+Shift+Z and the toolbar main buttons route here.
   useRegisterCommand(CmdId.Undo, () => { pickUndo(0) })
   useRegisterCommand(CmdId.Redo, () => { pickRedo(0) })
+  // Edit > Clear undo data (UXP Qm2Main.clearUndoData). The explicit refresh
+  // mirrors UXP updateCmdUndoState; the SCE_SCENE_UNDOINFO event also fires.
+  useRegisterCommand(CmdId.ClearUndo, () => { clearUndo() })
 
   // Tab switch: rescope the listener and pull a fresh snapshot.
   useEffect(() => {

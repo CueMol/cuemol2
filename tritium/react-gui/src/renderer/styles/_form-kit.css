@@ -1053,6 +1053,15 @@
   min-height: var(--field-h);
 }
 
+/* Kit checkbox (`CheckboxField`): a bare box that lives inside a Field row,
+   which owns all row spacing. Blueprint's 10px inter-control margin-bottom
+   made the flex-centred row centre the box's MARGIN box, floating the visible
+   box above the Field label's centre line ("Use selection" rows). Same reset
+   the kit switch carries via .h3-form-switch. */
+.h3-form-checkbox.bp5-checkbox {
+  margin-bottom: 0;
+}
+
 /* ── Radio group ──
  * Laid out with flex rather than Blueprint's `inline` prop so the spacing is a
  * token and the options wrap by themselves in a narrow pane -- a caller never

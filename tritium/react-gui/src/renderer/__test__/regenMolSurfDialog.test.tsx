@@ -117,18 +117,23 @@ describe('RegenMolSurfDialog', () => {
         handle.unmount()
     })
 
-    it('a typed density flows into the commit payload', async () => {
+    it('a typed density commits on blur and flows into the commit payload', async () => {
         routeInvoke(() => ({ ok: true }))
         const handle = mount()
         await flushPromises()
 
-        const input = document.body.querySelector('.h3-form-combobox input') as HTMLInputElement
+        const input = document.body.querySelector(
+            '.h3-form-sliderfield-number',
+        ) as HTMLInputElement
         const setter = Object.getOwnPropertyDescriptor(
             window.HTMLInputElement.prototype, 'value',
         )?.set
         act(() => {
             setter?.call(input, '5')
             input.dispatchEvent(new Event('input', { bubbles: true }))
+        })
+        act(() => {
+            input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
         })
 
         await act(async () => { okButton().click() })

@@ -76,6 +76,7 @@ const DISPATCH_HANDLED: ReadonlySet<string> = new Set<string>([
   IPC.MENU_SCENE_PROPS,
   IPC.MENU_ABOUT,
   IPC.MENU_GET_PDB,
+  'menu:clear-undo',
   'menu:change-chain-id',
   'menu:delete-mol-atoms',
   'menu:change-resid-num',
@@ -112,7 +113,6 @@ const DISPATCH_HANDLED: ReadonlySet<string> = new Set<string>([
  * intentional placeholder from an accidental typo.
  */
 const UNIMPLEMENTED_ALLOWLIST: ReadonlySet<string> = new Set<string>([
-  'menu:clear-undo',
   'menu:perf-meas',
 ])
 
@@ -128,8 +128,8 @@ describe('menu pipeline -- exhaustiveness', () => {
     expect(uncovered).toEqual([])
   })
 
-  it('the unimplemented allowlist has exactly 2 entries (not-yet-ported placeholders)', () => {
-    expect(UNIMPLEMENTED_ALLOWLIST.size).toBe(2)
+  it('the unimplemented allowlist has exactly 1 entry (not-yet-ported placeholder)', () => {
+    expect(UNIMPLEMENTED_ALLOWLIST.size).toBe(1)
   })
 
   it('no allowlisted channel is also dispatch-handled (the two sets are disjoint)', () => {

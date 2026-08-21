@@ -8,9 +8,8 @@
  *   - Surface object name (`TextField`; prefilled with a unique `sf_<molname>`
  *     via `proposeMolSurfName` and refreshed when the molecule changes, like
  *     UXP `makeSugName`).
- *   - Point density (/A): an editable `ComboBoxField` with common presets
- *     (1-5) -- picking a typical density is more common than dialing in an
- *     arbitrary one, so a preset list beats a bare numeric stepper. Probe
+ *   - Point density (/A): a `SliderField` (slider + number box + stepper)
+ *     clamped to the shared 1-10 integer range (`molSurfDensity.ts`). Probe
  *     radius (A) stays a plain numeric input. Defaults match the UXP XUL:
  *     density = 1 (min, no explicit value), probe radius = 1.4.
  *   - OK commits via the `makeMolSurf` worker service under one undo txn.
@@ -23,12 +22,12 @@
 import React, { useEffect, useState } from 'react'
 import { useCueMol } from '../../hooks/useCueMol'
 import { useMolEditCommit } from '../../hooks/useMolEditCommit'
-import { CheckboxField, ComboBoxField, Field, FieldSection, NumericField, TextField } from '../../h3-kit/form'
+import { CheckboxField, Field, FieldSection, NumericField, SliderField, TextField } from '../../h3-kit/form'
 import { DialogShell } from './DialogShell'
 import { MolPicker } from './MolPicker'
 import { MolSelList } from '../../h3-kit/MolSelList/MolSelList'
 import { pushHistory } from '../../h3-kit/MolSelList/selHistory'
-import { DEFAULT_DENSITY, DENSITY_PRESETS, useMolSurfDensity } from './molSurfDensity'
+import { DEFAULT_DENSITY, DENSITY_MAX, DENSITY_MIN } from './molSurfDensity'
 
 export interface MakeMolSurfDialogResult {
     ok: boolean
@@ -59,9 +58,7 @@ export function MakeMolSurfDialog({
     const [surfName, setSurfName] = useState<string>('')
     const [probeRadius, setProbeRadius] = useState<number>(DEFAULT_PROBE_RADIUS)
 
-    const {
-        density, setDensity, draft: densityDraft, onDraftChange: handleDensityChange,
-    } = useMolSurfDensity(DEFAULT_DENSITY)
+    const [density, setDensity] = useState<number>(DEFAULT_DENSITY)
 
     // Commit handler + submitting/errorMsg state + reset-on-open. The molecule
     // id is intentionally NOT reset (last-picked persists); the surface name is
@@ -164,14 +161,15 @@ export function MakeMolSurfDialog({
                                 disabled={submitting}
                             />
                         </Field>
-                        <Field label="Point density (/A)">
-                            <ComboBoxField
-                                value={densityDraft}
-                                onChange={handleDensityChange}
-                                options={DENSITY_PRESETS}
-                                disabled={submitting}
-                            />
-                        </Field>
+                        <SliderField
+                            label="Point density (/A)"
+                            value={density}
+                            min={DENSITY_MIN}
+                            max={DENSITY_MAX}
+                            step={1}
+                            onCommit={setDensity}
+                            disabled={submitting}
+                        />
                         <Field label="Probe radius (A)">
                             <NumericField
                                 value={probeRadius}
