@@ -9,10 +9,25 @@
  * property type (string / integer / real / boolean / enum). Changes are
  * applied live - there is no OK/Cancel. The "default" checkbox restores the
  * C++ default for resettable properties.
+ *
+ * Every control comes from the form-kit catalog (`h3-kit/form`), so control
+ * height and spacing have their single source in `_form-kit.css` and the
+ * `--field-*` tokens. The detail editor deliberately uses the bare controls
+ * rather than `PropertyField`: the selected property is already named by the
+ * header above the editor, so a second label would repeat it, and the
+ * reset affordance here is the "default" checkbox rather than the inspector
+ * row's hover button.
  */
 
 import React, { useState } from "react";
-import { InputGroup, NumericInput, Switch, HTMLSelect, Checkbox } from "@blueprintjs/core";
+import {
+  CheckboxField,
+  Field,
+  NumericField,
+  SelectField,
+  SwitchField,
+  TextField,
+} from "../../h3-kit/form";
 import { AppIcon } from "../AppIcon";
 import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
 import { useColumnResize } from "../../hooks/useColumnResize";
@@ -73,8 +88,11 @@ const DetailEditor: React.FC<DetailEditorProps> = ({ entry, atDefault, onSetValu
   // re-enables the widget without changing the value (UXP: `defaultToggleCheck`).
   const disabled = entry.readonly || atDefault;
 
-  // Local draft for text / numeric widgets, committed on blur / Enter.
+  // Local drafts committed on blur / Enter. Text keeps the raw string;
+  // NumericField owns its own in-progress text and hands back numbers, so
+  // the numeric draft is a number.
   const [draft, setDraft] = useState<string>(String(entry.value));
+  const [numDraft, setNumDraft] = useState<number>(Number(entry.value));
 
   const commitText = () => {
     if (draft !== String(entry.value)) {
@@ -82,59 +100,51 @@ const DetailEditor: React.FC<DetailEditorProps> = ({ entry, atDefault, onSetValu
     }
   };
 
-  const commitNumber = () => {
-    const parsed = Number(draft);
-    if (!Number.isNaN(parsed) && parsed !== Number(entry.value)) {
-      onSetValue(entry.key, entry.type, parsed);
+  const commitNumber = (value: number) => {
+    if (!Number.isNaN(value) && value !== Number(entry.value)) {
+      onSetValue(entry.key, entry.type, value);
     }
   };
 
   if (entry.type === "boolean") {
     return (
-      <Switch
+      <SwitchField
         checked={Boolean(entry.value)}
         disabled={disabled}
-        onChange={(e) =>
-          onSetValue(entry.key, entry.type, (e.target as HTMLInputElement).checked)
-        }
-        className="insp-switch"
+        onChange={(c) => onSetValue(entry.key, entry.type, c)}
       />
     );
   }
 
   if (entry.type === "enum") {
     return (
-      <HTMLSelect
+      <SelectField
         fill
         value={String(entry.value)}
         disabled={disabled}
-        onChange={(e) => onSetValue(entry.key, entry.type, e.target.value)}
-        className="insp-select h3-form-select"
+        onChange={(v) => onSetValue(entry.key, entry.type, v)}
       >
         {(entry.enumdef ?? [String(entry.value)]).map((opt) => (
           <option key={opt} value={opt}>
             {opt}
           </option>
         ))}
-      </HTMLSelect>
+      </SelectField>
     );
   }
 
   if (entry.type === "integer" || entry.type === "real") {
+    // No slider: a generic property carries no range to scale one against.
+    // `onRelease` (blur / Enter) is the commit -- `onChange` fires per
+    // keystroke and would write one undo step per digit.
     return (
-      <NumericInput
-        small
-        fill
-        value={draft}
+      <NumericField
+        slider={false}
+        value={numDraft}
         disabled={disabled}
-        stepSize={entry.type === "integer" ? 1 : 0.1}
-        minorStepSize={null}
-        onValueChange={(_n, s) => setDraft(s)}
-        onBlur={commitNumber}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") commitNumber();
-        }}
-        className="insp-numeric-input"
+        step={entry.type === "integer" ? 1 : 0.1}
+        onChange={setNumDraft}
+        onRelease={commitNumber}
       />
     );
   }
@@ -142,17 +152,15 @@ const DetailEditor: React.FC<DetailEditorProps> = ({ entry, atDefault, onSetValu
   // string, and the unsupported object<...> fallback (raw display).
   const unsupported = entry.type.startsWith("object");
   return (
-    <InputGroup
-      small
+    <TextField
       fill
       value={draft}
       disabled={disabled || unsupported}
-      onChange={(e) => setDraft(e.target.value)}
+      onChange={setDraft}
       onBlur={commitText}
       onKeyDown={(e) => {
         if (e.key === "Enter") commitText();
       }}
-      className="insp-input"
     />
   );
 };
@@ -187,21 +195,18 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ entry, onSetValue, onResetVal
         <span className="insp-generic-detail-type">{entry.type}</span>
       </div>
       <div className="insp-generic-detail-editor">
-        <Checkbox
-          label="default"
-          checked={atDefault}
-          disabled={entry.readonly || !entry.hasdefault}
-          onChange={(e) => {
-            // Checking restores the C++ default; unchecking only re-enables
-            // the widget so the next edit can set a non-default value.
-            if ((e.target as HTMLInputElement).checked) {
-              onResetValue(entry.key);
-            } else {
-              setDefaultCleared(true);
-            }
-          }}
-          className="insp-generic-default-check"
-        />
+        <Field label="default" inline controlFirst className="insp-generic-default-check">
+          <CheckboxField
+            checked={atDefault}
+            disabled={entry.readonly || !entry.hasdefault}
+            onChange={(checked) => {
+              // Checking restores the C++ default; unchecking only re-enables
+              // the widget so the next edit can set a non-default value.
+              if (checked) onResetValue(entry.key);
+              else setDefaultCleared(true);
+            }}
+          />
+        </Field>
         <DetailEditor entry={entry} atDefault={atDefault} onSetValue={onSetValue} />
       </div>
     </>
@@ -237,14 +242,12 @@ export const GenericTab: React.FC<GenericTabProps> = ({
     <div className="insp-generic-tab">
       {/* Search / filter bar */}
       <div className="insp-generic-filter">
-        <InputGroup
-          small
+        <TextField
           fill
           leftIcon={<AppIcon name="ui.search" aria-hidden />}
           placeholder="Filter properties…"
           value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="insp-input"
+          onChange={setFilter}
         />
       </div>
 
