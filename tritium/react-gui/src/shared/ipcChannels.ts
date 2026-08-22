@@ -98,7 +98,6 @@ export const IPC = {
   MENU_MOL_SURF:      'menu:mol-surf',
   MENU_SURF_CUTTER:   'menu:surf-cutter',
   MENU_APBS:          'menu:apbs',
-  MENU_PERF_MEAS:     'menu:perf-meas',
   MENU_WINDOW_MAIN:   'menu:window-main',
   MENU_WINDOW_RENDER: 'menu:window-render',
 

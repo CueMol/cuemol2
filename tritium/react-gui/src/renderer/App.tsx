@@ -291,17 +291,6 @@ const App: React.FC = () => {
 
   const activeMolViewId = tabs.find((t) => t.id === activeTab && t.type === 'molview')?.viewId;
 
-  // TEMPORARY dev affordance: expose the CueMol client and active view id on
-  // window so the AO/AA render pipeline can be toggled from the devtools console
-  // before a real GUI control is ported, e.g.
-  //   await window.__cm.invokeService('devRenderOpts',
-  //       { viewId: window.__activeViewId, aoEnabled: true })
-  // Remove together with devRenderOpts.service.ts once the UI ships.
-  useEffect(() => {
-    (window as unknown as Record<string, unknown>).__cm = cm;
-    (window as unknown as Record<string, unknown>).__activeViewId = activeMolViewId;
-  }, [cm, activeMolViewId]);
-
   // --- Render: Rendering-window bridge ---
 
   // All render UI lives in the modeless Rendering window; this bridge owns

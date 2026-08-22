@@ -111,10 +111,12 @@ const DISPATCH_HANDLED: ReadonlySet<string> = new Set<string>([
  * useMenuDispatch hits its `default: console.warn(...)` branch for these. They
  * MUST stay in the template (UXP parity) -- this list distinguishes an
  * intentional placeholder from an accidental typo.
+ *
+ * Currently empty: every template item dispatches. The list (and the
+ * `MENU_DISPATCH_UNIMPLEMENTED` marker it pairs with) is kept as the guard
+ * rail for the next placeholder -- an unlisted one fails the test below.
  */
-const UNIMPLEMENTED_ALLOWLIST: ReadonlySet<string> = new Set<string>([
-  'menu:perf-meas',
-])
+const UNIMPLEMENTED_ALLOWLIST: ReadonlySet<string> = new Set<string>([])
 
 describe('menu pipeline -- exhaustiveness', () => {
   it('every template ipcChannel is dispatch-handled or explicitly unimplemented', () => {
@@ -128,8 +130,10 @@ describe('menu pipeline -- exhaustiveness', () => {
     expect(uncovered).toEqual([])
   })
 
-  it('the unimplemented allowlist has exactly 1 entry (not-yet-ported placeholder)', () => {
-    expect(UNIMPLEMENTED_ALLOWLIST.size).toBe(1)
+  it('the unimplemented allowlist is empty (every template item dispatches)', () => {
+    // Ratchet: a new not-yet-ported placeholder has to be added here
+    // deliberately, so one cannot appear unnoticed.
+    expect([...UNIMPLEMENTED_ALLOWLIST]).toEqual([])
   })
 
   it('no allowlisted channel is also dispatch-handled (the two sets are disjoint)', () => {
