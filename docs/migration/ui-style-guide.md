@@ -21,6 +21,7 @@ label+control の UI (フォーム行・テキスト入力・select・numeric・
 - **drag で増減する数値** = `DragNumericField` (`NumericField` ではない)。
 - **時間 (ms) の入力** = `TimeField` (`DragNumericField` を直接組まない)。
 - **2 桁の裸 cell** = `NumberCell`。
+- **ベクトル (x/y/z)** = `VectorField` (`NumberCell` を自前で並べない)。
 真にカタログに無い時のみ、`_form-kit.css` にサイズを 1 定義して**先にカタログへ追加**する。カタログ調査を飛ばして Blueprint 直叩き/独自 CSS で作ると、既存の verified 実装とサイズ・デザインが食い違い手戻りする (このガイドが防ぎたい再発そのもの)。
 
 > **Component Catalog は開発ビルド専用**: activity bar の "Component Catalog" view は `__DEV_UI__` (compile-time flag) で gate されており、`electron-vite dev` / 通常の `electron-vite build` (= `task build_tritium` + `task run_tritium`) でのみ表示される。release packaging (`tritium/packaging/package.sh`) は `CUEMOL_RELEASE=1` を立てるので、CatalogPane1-3 は tree-shaking で bundle ごと落ちる。カタログに component を追加しても製品ビルドには入らない。
@@ -41,6 +42,7 @@ label+control の UI (フォーム行・テキスト入力・select・numeric・
 | `CheckboxField` | **opt-in ゲート** (「以下のグループを有効にする」トグル。`inline controlFirst` の Field 内で使い `[x] Label ......` に読ませる) | Blueprint Checkbox (box は `--icon-md` スケール、focus ring 1px/offset 1px) |
 | `RadioField` | **設定としての二者択一/N択** (名前の付いた選択肢を並べて 1 つ選ぶ)。横並び + 幅が足りなければ自動で折返し (向きは選ばない) | ラベル `--fs-lg`, 間隔 `--space-5` (`.h3-form-radio-group`) |
 | `ColorField` | 色 (`CueColorField` の薄いラッパ) | - |
+| `VectorField` | 3/4 成分ベクトル。x/y/z(/w) の `NumberCell` を並べる。値は C++ `qlib::Vector4D` の `(x,y,z[,w])` 文字列で往復し、成分数は入力を保持 | 配置のみ `.h3-form-vector*`; cell は `NumberCell` の `--field-cell-w`/`--field-h-sm` |
 | `ButtonRow` / `FormButton` | コンパクトボタンの行 / ボタン | 高 `--field-btn-h`, ラベル `--fs-base` |
 | `SegmentField` | **view/モード切替** (`Named\|History`, pane 上部の tab strip)。**設定行には使わない** — pane 内だとタブがもう 1 段あるように読める | 高 `--field-btn-h`, ラベル `--fs-base` (= `FormButton` と同一, `.h3-form-segmented`) |
 

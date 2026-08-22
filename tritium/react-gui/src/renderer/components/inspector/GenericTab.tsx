@@ -22,11 +22,14 @@
 import React, { useState } from "react";
 import {
   CheckboxField,
+  ColorField,
   Field,
   NumericField,
   SelectField,
   SwitchField,
   TextField,
+  TimeField,
+  VectorField,
 } from "../../h3-kit/form";
 import { AppIcon } from "../AppIcon";
 import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
@@ -59,6 +62,56 @@ interface GenericTabProps {
 // ------------------------------------------------------------
 // Display helpers
 // ------------------------------------------------------------
+
+/**
+ * Convert the C++ `qlib::LScrTime` string form to milliseconds.
+ *
+ * The format is `[[H:]M:]S[.mmm]`, but the fractional part is NOT a decimal
+ * fraction of a second: `LScrTime::toString` writes it with `fromInt` and
+ * `setStrValue` reads it back with `toInt`, so `"1.50"` is 1 s + 50 ms, not
+ * 1.5 s. The form-kit `parseTime` reads that same text as a decimal fraction
+ * (correct for its own `formatMs` output, which zero-pads to 3 digits), so it
+ * cannot be used here -- it would turn 1050 ms into 1500 ms.
+ *
+ * Returns null for anything malformed, so the caller can fall back to the raw
+ * text editor instead of silently showing 0.
+ */
+export function cppTimeToMs(text: string): number | null {
+  const trimmed = text.trim();
+  if (trimmed === "") return null;
+  const parts = trimmed.split(":");
+  if (parts.length > 3) return null;
+
+  const last = parts[parts.length - 1];
+  const dot = last.indexOf(".");
+  const secStr = dot >= 0 ? last.slice(0, dot) : last;
+  const msStr = dot >= 0 ? last.slice(dot + 1) : "0";
+  if (dot >= 0 && last.indexOf(".", dot + 1) >= 0) return null;
+
+  const nums = [...parts.slice(0, -1), secStr === "" ? "0" : secStr, msStr];
+  if (nums.some((n) => !/^\d+$/.test(n))) return null;
+
+  const ms = Number(nums[nums.length - 1]);
+  const sec = Number(nums[nums.length - 2]);
+  const min = parts.length >= 2 ? Number(nums[nums.length - 3]) : 0;
+  const hour = parts.length >= 3 ? Number(nums[0]) : 0;
+  return ((hour * 60 + min) * 60 + sec) * 1000 + ms;
+}
+
+/** Inverse of `cppTimeToMs`, matching `LScrTime::toString` exactly. */
+export function msToCppTime(msTotal: number): string {
+  const v = Math.max(0, Math.round(msTotal || 0));
+  const ms = v % 1000;
+  const totalSec = Math.floor(v / 1000);
+  const sec = totalSec % 60;
+  const totalMin = Math.floor(totalSec / 60);
+  const min = totalMin % 60;
+  const hour = Math.floor(totalMin / 60);
+  const tail = ms !== 0 ? `${sec}.${ms}` : String(sec);
+  if (hour !== 0) return `${hour}:${min}:${tail}`;
+  if (min !== 0) return `${min}:${tail}`;
+  return tail;
+}
 
 /** Render a value for the read-only table cell. */
 function displayValue(entry: GenericPropEntry): string {
@@ -149,7 +202,49 @@ const DetailEditor: React.FC<DetailEditorProps> = ({ entry, atDefault, onSetValu
     );
   }
 
-  // string, and the unsupported object<...> fallback (raw display).
+  // Object-valued properties arrive as their C++ string form, because
+  // `LScrObjBase::getPropsJSONImpl` emits `toString()` for any object whose
+  // `isStrConv()` is true (color, selection, vector, time). Each editor
+  // below reads and writes that same string, so the write path is the
+  // ordinary `setProp` -- no new worker contract.
+  if (entry.type.startsWith("object<AbstractColor")) {
+    return (
+      <ColorField
+        value={String(entry.value)}
+        onCommit={(v) => onSetValue(entry.key, entry.type, v)}
+        disabled={disabled}
+      />
+    );
+  }
+
+  if (entry.type.startsWith("object<Vector")) {
+    return (
+      <VectorField
+        value={String(entry.value)}
+        onCommit={(v) => onSetValue(entry.key, entry.type, v)}
+        disabled={disabled}
+      />
+    );
+  }
+
+  if (entry.type.startsWith("object<TimeValue")) {
+    // TimeField works in ms; the property string is the C++ timecode, whose
+    // fractional part is an integer ms count rather than a decimal fraction
+    // (see cppTimeToMs). An unparseable value falls through to the text
+    // editor so it stays fixable rather than silently reading as 0.
+    const ms = cppTimeToMs(String(entry.value));
+    if (ms !== null) {
+      return (
+        <TimeField
+          value={ms}
+          onCommit={(v) => onSetValue(entry.key, entry.type, msToCppTime(v))}
+          disabled={disabled}
+        />
+      );
+    }
+  }
+
+  // string, and the remaining object<...> types (raw read-only display).
   const unsupported = entry.type.startsWith("object");
   return (
     <TextField

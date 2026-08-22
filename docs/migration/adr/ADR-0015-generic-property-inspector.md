@@ -1,7 +1,7 @@
 # ADR-0015: Generic property inspector — docked pane, live-apply, getPropsJSON bridge
 
-- Status: accepted (color / vector / timeval widgets pending; nested-object
-  editing enabled 2026-06-03 — see Update)
+- Status: accepted (nested-object editing enabled 2026-06-03, colour / vector /
+  timeval editors added 2026-08-22 — see Updates)
 - Date: 2026-05-16
 - Mapping rows: [`overlay.propeditor-generic`](../mapping/overlay.md#overlaypropeditor-generic)
 
@@ -117,3 +117,39 @@ helix / sheet / coil section shapes (`helix.*` / `sheet.*` / `coil.*` /
 - Tests: `__test__/genericProps.test.ts` (parser + service undo-txn
   contract), `__test__/useInspectorState.test.ts` (invokeService wire).
 - Related: ADR-0004 (renderer context menu — per-type style dialogs).
+
+## Update (2026-08-22) — colour / vector / timeval editors
+
+The three value types this ADR left pending are wired, and the tab's controls
+now all come from the form-kit catalog.
+
+Every one of these properties already arrives as text: `getPropsJSONImpl` emits
+`toString()` for any object whose `isStrConv()` is true, which covers colour,
+selection, `qlib::Vector4D` and `qlib::LScrTime` alike. So each editor reads and
+rewrites that same string and the write path stays the ordinary `setProp` — no
+worker contract changed, and no new C++ API was needed.
+
+- **Colour** (`object<AbstractColor$>`) reuses the app-wide `ColorField`. The
+  Generic tab already renders inside `InspectorPanel`'s `ColorPickerProvider`,
+  so the scene-scoped Named / Mol picker modes work with no extra wiring.
+- **Vector** (`object<Vector>`) gets a new form-kit `VectorField`: one
+  `NumberCell` per component, labelled x / y / z (/ w). It reads and writes the
+  `(x,y,z[,w])` form of `Vector4D::toString` / `fromStringS` and preserves the
+  incoming component count.
+- **Time** (`object<TimeValue>`) reuses `TimeField`, but **not** the form-kit
+  `parseTime` / `formatMs` pair. `LScrTime::toString` writes the fractional part
+  as an integer millisecond count (`fromInt`) and `setStrValue` reads it back
+  with `toInt`, so `"1.50"` means 1 s + 50 ms. `parseTime` reads that text as a
+  decimal fraction — correct for its own zero-padded output, but it would turn
+  1050 ms into 1500 ms. `cppTimeToMs` / `msToCppTime` in `GenericTab.tsx` mirror
+  the C++ pair instead, and a value neither can parse falls through to the raw
+  text editor rather than silently displaying 0.
+
+Still read-only at the top level: object types whose `isStrConv()` is false
+(Matrix, Quat, TubeSection, …). Those emit a `<node>` container row and remain
+editable through their dot-path children, which is the nested-object path the
+2026-06-03 update added.
+
+- Tests: `__test__/genericObjectEditors.test.tsx` pins both string-form
+  converters (including the integer-milliseconds trap and the malformed-input
+  fallback) and which control each type gets.

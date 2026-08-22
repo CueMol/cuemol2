@@ -518,6 +518,28 @@
   opacity: 0.5;
 }
 
+/* -- Vector field (x/y/z[/w] cells; C++ qlib::Vector4D) -- */
+/* VectorField composes NumberCell, so the cells keep their own sizing;
+   this rule only lays the axis-labelled pairs out in a row. */
+.h3-form-vector {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.h3-form-vector-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.h3-form-vector-axis {
+  color: var(--text-muted);
+  font-size: var(--fs-md);
+}
+
 /* -- Time field (M:SS.mmm text editor; UXP timeedit) -- */
 /* TimeField = a DragNumericField preset (drag-scrub / spin buttons / typed
    timecode); this rule only pins its canonical width and digit alignment. */
