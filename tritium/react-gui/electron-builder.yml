@@ -161,8 +161,11 @@ mac:
   # Deliberately under `mac:` and NOT at the top level: a top-level
   # fileAssociations would also feed the NSIS installer, whose APP_ASSOCIATE
   # macro overwrites HKLM\Software\Classes\.qsc and would steal the Windows
-  # default from CueMol2's Inno Setup registration. Windows and Linux still
-  # open files passed on the command line.
+  # default from CueMol2's Inno Setup registration. Windows instead gets an
+  # "Open with"-only registration (Applications + OpenWithList, no ProgID, no
+  # default claimed) via build/installer.nsh (nsis.include below) -- keep its
+  # extension list in sync with this one. Linux still opens files passed on
+  # the command line.
   #
   # .pdb.gz is absent on purpose: macOS sees only the trailing `gz`, so
   # declaring it would claim every gzip file.
@@ -235,6 +238,10 @@ nsis:
   createDesktopShortcut: true
   createStartMenuShortcut: true
   # deleteAppDataOnUninstall: false  # default -- keep user settings on uninstall
+  # customInstall/customUnInstall macros: register CueMol3 as an "Open with"
+  # candidate for its file types WITHOUT claiming the default handler (the
+  # Windows analogue of mac.fileAssociations rank: Alternate above).
+  include: build/installer.nsh
 
 linux:
   # x64 AppImage + deb. The native addon's shared libs are staged in

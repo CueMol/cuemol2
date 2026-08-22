@@ -116,6 +116,20 @@ describe('parseFileArgs', () => {
     expect(r.missing).toEqual(['/d/somedir'])
   })
 
+  it('treats a Windows drive-letter path as a path, not a URL scheme', () => {
+    // "C:\..." must never be mistaken for a URL with scheme "c" -- this is
+    // the Explorer "Open with" / shell-association argv shape on Windows.
+    const r = parseFileArgs({
+      argv: ['exe', 'C:\\data\\1crn.pdb'],
+      isPackaged: true,
+      cwd: 'C:\\work',
+      isFile: allExist,
+    })
+    expect(r.paths).toHaveLength(1)
+    expect(r.paths[0].endsWith('1crn.pdb')).toBe(true)
+    expect(r.missing).toEqual([])
+  })
+
   it('resolves a file: URL and discards any other scheme', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     const r = parseFileArgs({
