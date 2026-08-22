@@ -245,7 +245,7 @@
    Blueprint's own string icons render as a wrapping <span class="bp5-icon">, so
    their SVG is not a direct child of the group; action buttons / spinners are
    wrapped in .bp5-input-action. Applies to every small input group regardless
-   of consumer class (h3-form-input, insp-input, ...). */
+   of consumer class. */
 .bp5-input-group.bp5-small > svg {
   position: absolute;
   top: 0;
@@ -942,8 +942,8 @@
 }
 
 /* Compact pill. Keyed on the Blueprint class rather than .h3-form-switch so
-   every switch in the app picks it up (the kit's SwitchField and the Generic
-   tab's .insp-switch alike) -- control sizing has one source, this file.
+   every switch in the app picks it up wherever it comes from -- control
+   sizing has one source, this file.
  *
  * Blueprint's indicator is 28x16 (`font-size: 16px`, `min-width: 1.75em`,
  * `height: 1em`) -- a full-size-form control that, once its focus ring was
@@ -997,7 +997,7 @@
  * a single flex item, so the gap collapses and it stays flush in its row.
  *
  * `margin-bottom` is deliberately not set here -- the per-surface rules
- * (.h3-form-switch / .insp-switch / .fod-switch) own the inter-row spacing. */
+ * (.h3-form-switch / .fod-switch) own the inter-row spacing. */
 .bp5-control.bp5-switch {
   display: flex;
   align-items: center;

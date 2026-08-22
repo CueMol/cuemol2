@@ -278,30 +278,6 @@
   font-style: italic;
 }
 
-/* ── Input overrides ── */
-.insp-input.bp5-input-group .bp5-input,
-.insp-input.bp5-input-group input {
-  background: var(--bg-input) !important;
-  border: 1px solid var(--border) !important;
-  color: var(--text-primary) !important;
-  font-size: var(--fs-lg);
-  height: var(--field-h);
-  border-radius: var(--radius-md);
-  caret-color: var(--accent);
-}
-
-.insp-input.bp5-input-group .bp5-input:focus,
-.insp-input.bp5-input-group input:focus {
-  border-color: var(--accent) !important;
-  box-shadow: 0 0 0 1px var(--accent) !important;
-}
-
-.insp-input.bp5-input-group .bp5-icon {
-  color: var(--text-muted);
-}
-
-/* Select look (height / border / chevron) comes from the form-kit `.h3-form-select`
-   class (styles/_form-kit.css); `.insp-select` carries layout only. */
 
 /* ── Numeric row (slider + input) ── */
 .insp-numeric-row {
@@ -357,47 +333,6 @@
 .insp-slider .bp5-slider-handle:focus {
   outline: none;
   box-shadow: 0 0 0 2px var(--accent), 0 1px 3px var(--slider-handle-shadow);
-}
-
-/* Numeric input — fixed compact column that never shrinks or overflows. */
-.insp-numeric-input.bp5-numeric-input {
-  flex: 0 0 68px;
-  width: 68px;
-  min-width: 68px;
-}
-
-/* Keep the inner field within the fixed numeric-input width. */
-.insp-numeric-input .bp5-input-group {
-  width: 100%;
-  min-width: 0;
-}
-
-.insp-numeric-input .bp5-input-group .bp5-input {
-  background: var(--bg-input) !important;
-  border: 1px solid var(--border) !important;
-  color: var(--text-primary) !important;
-  font-size: var(--fs-md);
-  height: var(--field-h-sm);
-  width: 100%;
-  text-align: right;
-  padding-right: var(--space-2);
-  border-radius: var(--radius-md);
-  caret-color: var(--accent);
-}
-
-.insp-numeric-input .bp5-input-group .bp5-input:focus {
-  border-color: var(--accent) !important;
-  box-shadow: 0 0 0 1px var(--accent) !important;
-}
-
-.insp-numeric-input .bp5-button-group {
-  display: none; /* hide spinner buttons for compact layout */
-}
-
-/* ── Switch overrides ── */
-.insp-switch.bp5-switch {
-  margin-bottom: 0;
-  font-size: var(--fs-lg);
 }
 
 /* ═══════════════════════════════════════════════════════════

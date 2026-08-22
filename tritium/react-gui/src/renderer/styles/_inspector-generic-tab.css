@@ -19,23 +19,8 @@
   background: var(--bg-surface);
 }
 
-/* Compact search field. */
-.insp-generic-filter .insp-input.bp5-input-group .bp5-input {
-  height: 24px;
-  border-radius: var(--radius-lg);
-  font-size: var(--fs-lg);
-  background: var(--bg-input);
-  box-shadow: inset 0 0 0 1px var(--border);
-}
-
-.insp-generic-filter .insp-input.bp5-input-group .bp5-input:focus {
-  box-shadow: inset 0 0 0 1px var(--accent), 0 0 0 2px var(--accent-glow);
-}
-
-.insp-generic-filter .insp-input.bp5-input-group .bp5-icon {
-  margin: var(--space-2);
-  color: var(--text-muted);
-}
+/* The search field is a form-kit TextField; its height, radius and focus
+   ring come from `.h3-form-input` in _form-kit.css. */
 
 /* ── Scrollable table wrapper ── */
 .insp-generic-table-wrap {
@@ -207,11 +192,8 @@
   min-width: 0;
 }
 
-.insp-generic-default-check.bp5-checkbox {
-  margin: 0;
+.insp-generic-default-check {
   flex-shrink: 0;
-  font-size: var(--fs-lg);
-  color: var(--text-primary);
 }
 
 /* Hint shown when no row is selected. */
