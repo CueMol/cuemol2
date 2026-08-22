@@ -1,6 +1,6 @@
 # ADR-0004: Renderer context menu — Coloring, Paint, Style, Change-type
 
-- Status: accepted (Edit / Create style dialogs in-app verification pending)
+- Status: accepted (Edit / Create style dialogs verified in-app 2026-08-22)
 - Date: 2026-05-13
 - Mapping rows: [`panel.workspace.ctxmenu.renderer`](../mapping/panels.md#panelworkspacectxmenurenderer)
 
@@ -146,9 +146,21 @@ UXP `apply_rend_style.xul` / `rendstyle_create.xul`.
 
 ### Known issues
 
-**Edit / Create style dialogs do not behave correctly in-app yet
-(2026-05-13).** Worker services + dialog UI are wired but in-app
-verification shows incorrect behaviour. Deferred for triage.
+**Resolved 2026-08-22 — Edit / Create style dialogs.** From 2026-05-13 this
+ADR recorded that the two dialogs "do not behave correctly in-app", deferred
+for triage. The re-check found nothing wrong: both work. Verified in-app --
+the Add popup's three sections and their already-applied exclusion, the
+applied styles reaching the rendering, style reordering with working
+undo/redo, and Create style writing a correctly named style into the chosen
+set (visible afterwards in the Explorer scene context menu).
+
+A line-by-line comparison against UXP (`style/apply_rend_style.js`,
+`style/rendstyle_create.js`) had already found the ported logic equivalent at
+every step -- list parse, low/high priority order, insert position, move
+up/down, the `join(',')` + `applyStyles` commit inside one undo txn -- so
+either the original observation was of a defect fixed incidentally since, or
+it was a misreading of the priority order. No code change was needed to close
+it.
 
 ### Pending
 
