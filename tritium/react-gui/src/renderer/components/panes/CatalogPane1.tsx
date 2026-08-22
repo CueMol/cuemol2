@@ -22,6 +22,7 @@ import {
   NumericField,
   DragNumericField,
   TimeField,
+  VectorField,
   SwitchField,
   CheckboxField,
 } from "../../h3-kit/form";
@@ -45,6 +46,7 @@ export const CatalogPane1: React.FC<CatalogPane1Props> = ({
   const [num2, setNum2] = useState(8);
   const [drag, setDrag] = useState(1.0);
   const [timeMs, setTimeMs] = useState(1500);
+  const [vec, setVec] = useState('(1,2,3)');
   const [sw, setSw] = useState(true);
   const [filter, setFilter] = useState("");
 
@@ -125,6 +127,9 @@ export const CatalogPane1: React.FC<CatalogPane1Props> = ({
               </Field>
               <Field label="TimeField (drag / spin / typed timecode)">
                 <TimeField value={timeMs} onCommit={setTimeMs} />
+              </Field>
+              <Field label="VectorField (x/y/z cells; qlib::Vector4D text)">
+                <VectorField value={vec} onCommit={setVec} />
               </Field>
               <Field label="SwitchField" inline>
                 <SwitchField checked={sw} onChange={setSw} />

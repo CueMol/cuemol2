@@ -36,6 +36,8 @@ export { RejectNumberInput } from './RejectNumberInput';
 export type { RejectNumberInputProps } from './RejectNumberInput';
 export { NumberCell } from './NumberCell';
 export type { NumberCellProps } from './NumberCell';
+export { VectorField, parseVector, formatVector } from './VectorField';
+export type { VectorFieldProps } from './VectorField';
 export { DragNumericField } from './DragNumericField';
 export type { DragNumericFieldProps, DragNumericFieldHandle } from './DragNumericField';
 export { SwitchField } from './SwitchField';
