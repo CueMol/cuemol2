@@ -5,6 +5,13 @@
 - **Scan date**: 2026-04-20
 - **Target directory**: `uxp_gui/cuemol2/`
 
+> **Snapshot semantics.** The counts and file lists below describe the UXP
+> source *as of the scan date*; they are not re-derived when upstream changes.
+> Known delta since then: `exportqsl-opt-dlg.xul` was deleted upstream
+> (commit `ca8cec02`), so the working tree now holds 99 `.xul` files, not the
+> 100 recorded here. Re-run the scan per `_spec.md` rather than hand-editing
+> the numbers.
+
 ---
 
 ## Directory Structure (2–3 levels)
