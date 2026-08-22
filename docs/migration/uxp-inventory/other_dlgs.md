@@ -2,6 +2,11 @@
 
 > ⚠️ このファイルは Claude Code による自動生成です。手修正しないでください。
 > 再生成する場合は `_spec.md` に従ってください。
+>
+> ⓘ 本ファイルは scan 時点の UXP ソースのスナップショットであり、以後の upstream 変更は
+> 反映されない。既知の差分: `dialog.exportqsl-opt` が参照する
+> `exportqsl-opt-dlg.xul` は upstream から削除済み (commit `ca8cec02`)。entry は
+> scan 時点の記録として残す (移行判断は `mapping/other_dlgs.md` 側が保持)。
 
 - Generated: 2026-04-20
 - Source: `uxp_gui/cuemol2/`
