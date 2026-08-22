@@ -59,7 +59,10 @@ function resolveArg(arg: string, cwd: string): string | null {
   // keeps a slice mismatch from trying to open the working directory.
   if (arg === '.' || arg === '..') return null
 
-  if (/^[a-z][a-z0-9+.-]*:/i.test(arg)) {
+  // A scheme must be two or more characters here: RFC 3986 allows one-letter
+  // schemes, but a single letter followed by ':' is indistinguishable from a
+  // Windows drive-letter path ("C:\1crn.pdb"), which must resolve as a path.
+  if (/^[a-z][a-z0-9+.-]+:/i.test(arg)) {
     // Only file: URLs name a local file. Anything else (http:, cuemol:) is
     // dropped, matching UXP convCmdLineFiles, which resolves -url through
     // nsIFileURL and discards what fails the cast.
