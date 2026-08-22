@@ -1,6 +1,6 @@
 # ADR-0031: Scene rendering properties in the Inspector Property tab
 
-- Status: accepted (host E2E pending)
+- Status: accepted (host E2E verified 2026-08-22)
 - Date: 2026-06-14
 - Mapping rows: [`dialog.property.scene`](../mapping/prop_dlgs.md#dialogpropertyscene)
 
