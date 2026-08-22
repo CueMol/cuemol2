@@ -54,6 +54,8 @@ resolved by the C++ compiler.
   prematurely fire PaintSelCell's blur-commit. Enabling it there would require
   portal-aware blur handling and is deferred. PaintSelCell therefore keeps the
   native picker (the two are mutually exclusive per `enableBuilder`).
+  (Superseded: the `enableBuilder` opt-in is gone -- `MolSelList` always hosts
+  the builder popover, so PaintSelCell, which wraps it, gets the builder too.)
 - The popover content has a fixed `min-height` and the term list scrolls, so
   switching Builder / Library / History tabs does not resize the popover and
   trigger a Popper reposition (the tabs otherwise have very different heights).
@@ -82,9 +84,8 @@ resolved by the C++ compiler.
   `src/tests/modules/molstr/test_selcommand.cpp` (SelectionBuilder
   emitted-syntax guards pin `chain 'A'` / `elem C` / `not (resn HOH)` /
   `chain 'A' and not (resn HOH)` against the real compiler).
-- Future work: portal-aware blur to enable the builder in PaintSelCell;
-  surfacing in SelectionPane; advanced operators (`around` / `byres` / ...).
-  (The latter two are done: the builder ships in `SelectionPane`
-  ([ADR-0051](ADR-0051-selection-pane-live-sel.md)) and the Mod tab covers
-  `around` / `byres` / `expand`
-  ([ADR-0044](ADR-0044-selection-quick-pick.md)).)
+- Future work (all three are now done): the builder reaches PaintSelCell via
+  `MolSelList` (the `enableBuilder` opt-in was removed); it ships in
+  `SelectionPane` ([ADR-0051](ADR-0051-selection-pane-live-sel.md)); and the
+  Mod tab covers the advanced operators `around` / `byres` / `expand`
+  ([ADR-0044](ADR-0044-selection-quick-pick.md)).
