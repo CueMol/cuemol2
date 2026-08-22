@@ -7,22 +7,26 @@
  * UXP shows them all at once, with no per-mol selector. The chain-name
  * column on the left labels each row "<chain>:<molname>".
  *
- * Phase 1 covers:
- *   - Canvas-rendered chain x residue grid (1 cell per residue, cyan
- *     background when `residue.sel === true`)
- *   - per-residue marker (red stroked rect) at the last clicked position
- *   - sticky position ruler (UXP `ruler_canvas`) above the seq canvas
- *   - left-side chain name column synced to vertical scroll
- *   - left-click toggles a single residue's selection through the
- *     `toggleResidueSelection` worker (ResidRangeSet-based; mirrors UXP
- *     `panel.toggleResidSel`)
- *   - right-click context menu with `Center here` enabled; the remaining
- *     12 UXP items are listed disabled to pin the menu shape for Phase
- *     2/3 wiring.
+ * Layout: a Canvas-rendered chain x residue grid (one cell per residue,
+ * cyan background when `residue.sel === true`), a per-residue marker (red
+ * stroked rect) at the last clicked position, a sticky position ruler
+ * (UXP `ruler_canvas`) above the grid, and a left-side chain-name column
+ * synced to the vertical scroll.
  *
- * Phase 2 (drag range select + shift+click range extend with green
- * tracking rect) and Phase 3 (around / invert / clear / copy ctx items)
- * are deferred.
+ * Selection input mirrors UXP `seqpanel.js`:
+ *   - plain click toggles one residue via the `toggleResidueSelection`
+ *     worker (ResidRangeSet-based; UXP `panel.toggleResidSel`)
+ *   - dragging from residue A to B calls `rangeSelectResidues` with
+ *     `toggle=true`, and shift+click on a previously marked position
+ *     extends with `toggle=false`; both draw a green tracking rect and
+ *     use `setPointerCapture` (the UXP `setCapture` equivalent)
+ *   - the context menu wires every UXP `seq_ctxtmenu` item: Center here,
+ *     Toggle sel, Around 3/5/7/10 and Around Byresid 3/5/7/10, Unselect
+ *     all, Invert sel, and Copy sequence.
+ *
+ * Selection state is kept in sync through SEM_PROPCHG `sel` events, which
+ * refetch only the affected molecule's rows via `getSeqPanelData`'s
+ * `molIds` filter.
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -110,7 +114,7 @@ interface ThemeColors {
     selection: string
     /** Click marker stroke. */
     marker: string
-    /** Drag tracking rect stroke (Phase 2). */
+    /** Drag tracking rect stroke. */
     track: string
     /** Ruler tick + label color. */
     ruler: string
@@ -227,7 +231,7 @@ function drawRuler(
 /**
  * Draw the chain x residue grid. Mirrors UXP `panel.renderSeq` minus
  * the marker (rendered as a DOM overlay so click latency is not gated
- * on a full canvas redraw) and the green drag-tracking rect (Phase 2).
+ * on a full canvas redraw) and the green drag-tracking rect.
  */
 function drawSeq(
     canvas: HTMLCanvasElement,
@@ -452,7 +456,7 @@ export const SequencePanel: React.FC<SequencePanelProps> = ({
         })
     }, [])
 
-    // --- Drag / pointer flow (Phase 2) ---
+    // --- Drag / pointer flow ---
     //
     // Mirrors UXP `onMouseDown` / `onMouseMoved` / `onMouseUp` (plus
     // `setCapture`) in `bottom-panels/seqpanel.js`. The full decision
@@ -619,9 +623,8 @@ export const SequencePanel: React.FC<SequencePanelProps> = ({
         setTrackRect(null)
     }, [])
 
-    // Context menu: Phase 1 wires Center here only; the rest of the UXP
-    // items are listed disabled so the menu shape is review-able. The
-    // residue label header mirrors UXP `seq-ctm-reslabel`.
+    // Context menu: every UXP `seq_ctxtmenu` item is wired. The residue
+    // label header mirrors UXP `seq-ctm-reslabel`.
     const onCanvasContextMenu = useCallback(
         (event: React.MouseEvent<HTMLCanvasElement>) => {
             event.preventDefault()

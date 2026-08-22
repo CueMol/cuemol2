@@ -16,8 +16,8 @@ import {
   MENU_ACTION_MAP,
   MENU_DISPATCH_RECENT_CLEAR,
   MENU_DISPATCH_SELECT_ALL,
-  MENU_DISPATCH_UNIMPLEMENTED,
   isMenuActionChannel,
+  isUnimplementedMenuAction,
   type MenuActionChannel,
 } from '../../shared/menuActionMap'
 import { selectAllInScope } from '../utils/selectAllScope'
@@ -70,7 +70,7 @@ export function useMenuDispatch(activeTab: string | null): {
       }
 
       const entry = MENU_ACTION_MAP[channel]
-      if (entry.dispatch === MENU_DISPATCH_UNIMPLEMENTED) {
+      if (isUnimplementedMenuAction(channel)) {
         console.warn('menu action not yet implemented:', channel)
         return
       }

@@ -373,6 +373,13 @@ interface DeferredDeckProps {
     className: string
 }
 
+/**
+ * Fallback deck for any coloring class `renderClassDeck` has no editor
+ * for. It is reachable in normal use, not dead code: a scene can carry
+ * coloring classes the panel does not edit (`ScriptColoring`, for one),
+ * so the deck names the class and points at the modes that are editable
+ * rather than rendering an empty panel.
+ */
 const DeferredDeck: React.FC<DeferredDeckProps> = ({ className }) => (
     <div className="color-deferred-deck">
         <div className="color-section-label">{className}</div>

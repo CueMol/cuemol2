@@ -141,7 +141,6 @@ export const MENU_ACTION_MAP = {
   [IPC.MENU_MOL_SURF]:         { dispatch: 'ui.makeMolSurfDialog', deliver: 'generic' },
   [IPC.MENU_SURF_CUTTER]:      { dispatch: 'ui.cutSurfByPlaneDialog', deliver: 'generic' },
   [IPC.MENU_APBS]:             { dispatch: 'ui.calcApbsPotDialog', deliver: 'generic' },
-  [IPC.MENU_PERF_MEAS]:        { dispatch: MENU_DISPATCH_UNIMPLEMENTED, deliver: 'generic' },
 
   // --- Window ---
   // Both raise a window rather than acting on the scene; the Rendering entry
@@ -187,7 +186,13 @@ export const GENERIC_RELAY_CHANNELS: readonly MenuActionChannel[] = (
  */
 export const MENU_PASS_THROUGH_CHANNELS = DEDICATED_DIRECT_CHANNELS
 
-/** True iff this channel is a genuinely-unimplemented placeholder. */
+/**
+ * True iff this channel is a genuinely-unimplemented placeholder.
+ *
+ * No entry carries the marker today, so the inferred `dispatch` union has no
+ * overlap with it and a direct comparison is a type error. The widening cast
+ * keeps the check working for the next placeholder that needs one.
+ */
 export function isUnimplementedMenuAction(ch: MenuActionChannel): boolean {
-  return MENU_ACTION_MAP[ch].dispatch === MENU_DISPATCH_UNIMPLEMENTED
+  return (MENU_ACTION_MAP[ch].dispatch as string) === MENU_DISPATCH_UNIMPLEMENTED
 }

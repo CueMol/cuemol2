@@ -142,10 +142,6 @@ import type {
   SetViewInputParamsArgs,
 } from '../server/services/viewInputParams.service'
 import type {
-  DevRenderOptsArgs,
-  DevRenderOptsResult,
-} from '../server/services/devRenderOpts.service'
-import type {
   CompileColorArgs,
   CompileColorResult,
   GetNamedColorsArgs,
@@ -724,7 +720,6 @@ export interface ServiceMap {
   getMapRendererState:        { args: GetMapRendererStateArgs;         result: GetMapRendererStateResult }
   setMapRendererProp:         { args: SetMapRendererPropArgs;          result: SetMapRendererPropResult }
   redrawMapCenter:            { args: RedrawMapCenterArgs;             result: RedrawMapCenterResult }
-  devRenderOpts:              { args: DevRenderOptsArgs;               result: DevRenderOptsResult }
   animListTimeline:           { args: AnimListTimelineArgs;            result: AnimTimeline }
   animGetMgrState:            { args: AnimGetMgrStateArgs;             result: AnimMgrState }
   animPlay:                   { args: AnimPlayArgs;                    result: AnimTransportResult }

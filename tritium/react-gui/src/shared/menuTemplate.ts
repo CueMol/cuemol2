@@ -185,11 +185,10 @@ export const APP_MENU: AppMenuGroup[] = [
       { id: 'mol-surf',       label: 'Mol surface generation...',    ipcChannel: IPC.MENU_MOL_SURF },
       { id: 'surf-cutter',    label: 'Mol surface cutter...',        ipcChannel: IPC.MENU_SURF_CUTTER },
       { id: 'apbs',           label: 'APBS elepot calculation...',   ipcChannel: IPC.MENU_APBS },
-      // Execute script is not carried forward (no plan to implement); the
-      // item and its channel were removed 2026-08-04 rather than left as a
-      // dead entry.
-      { type: 'separator' },
-      { id: 'perf-meas',      label: 'Performance measure',         ipcChannel: IPC.MENU_PERF_MEAS },
+      // Execute script (2026-08-04) and Performance measure (2026-08-22) are
+      // not carried forward; both items and their channels were removed
+      // rather than left as dead entries. The C++ side of the latter
+      // (SceneManager.enablePerfMeas / disablePerfMeas) is untouched.
     ],
   },
 
