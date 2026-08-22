@@ -97,6 +97,7 @@ export interface InvokeChannels {
   [IPC.MENU_INVOKE_ROLE]:  { req: string;                res: void }
   [IPC.WINDOW_CLOSE_PROCEED]: { req: { proceed: boolean }; res: void }
   [IPC.WINDOW_FOCUS_MAIN]: { req: void;                  res: void }
+  [IPC.WINDOW_SET_TITLE]:  { req: { subtitle: string }; res: void }
   // Rendering window relay (see ipcChannels.ts for direction of each leg)
   [IPC.RENDER_WINDOW_OPEN]:    { req: RenderWindowOpenOptions; res: void }
   [IPC.RENDER_WINDOW_COMMAND]: { req: RenderWindowCommand;     res: void }

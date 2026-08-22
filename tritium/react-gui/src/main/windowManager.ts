@@ -16,6 +16,7 @@ import { registerRenderWindowIpc } from './renderWindowIpc'
 import { createMenu } from './menu'
 import { registerTextContextMenu } from './textContextMenu'
 import { getDevIconPath } from './helpers/appIcon'
+import { APP_PRODUCT_NAME } from '../shared/appInfo'
 import { IPC } from '../shared/ipcChannels'
 import {
   clearCloseWatchdog,
@@ -141,7 +142,9 @@ export function createWindow(): void {
     ...(boundsOnScreen ? { x: saved!.x, y: saved!.y } : {}),
     minWidth: 400,
     minHeight: 300,
-    title: 'CueMol',
+    // Base title; the renderer appends the active scene:view through
+    // IPC.WINDOW_SET_TITLE (UXP `Qm2Main.setWindowTitle` parity).
+    title: APP_PRODUCT_NAME,
     backgroundColor: '#1e2028',
     // Window / taskbar icon for an unpackaged run on Windows and Linux
     // (undefined once packaged, and ignored on macOS -- see appIcon.ts).

@@ -113,6 +113,10 @@ export const IPC = {
   // open-or-focus channel, RENDER_WINDOW_OPEN).
   WINDOW_FOCUS_MAIN: 'window:focus-main',       // invoke: any renderer -> main
 
+  // Main-window title: the renderer owns the active scene/view, so it pushes
+  // the subtitle and main composes '<product> - <subtitle>'.
+  WINDOW_SET_TITLE: 'window:set-title',        // invoke: renderer -> main
+
   // Renderer/Worker crash reporting + fallback UI's Quit button
   CRASH_REPORT: 'app:crash-report',
   FORCE_QUIT:   'app:force-quit',

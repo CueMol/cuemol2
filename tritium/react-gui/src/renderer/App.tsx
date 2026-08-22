@@ -57,6 +57,7 @@ import { useBusyCursor } from "./hooks/useBusyCursor";
 import { useShowConfirmCloseTabDialog } from "./components/dialogs/ConfirmCloseTabDialogProvider";
 import { useRenderConfig } from "./contexts/RenderConfigContext";
 import { useWindowCloseHandler } from "./hooks/useWindowCloseHandler";
+import { useWindowTitleSync } from "./hooks/useWindowTitleSync";
 
 const App: React.FC = () => {
 
@@ -426,6 +427,9 @@ const App: React.FC = () => {
 
   // --- Text clipboard context menu (Windows/Linux React menu path) ---
   useTextContextMenu();
+
+  // --- OS window title follows the active scene (UXP setWindowTitle) ---
+  useWindowTitleSync(tabs, activeTab);
 
   // --- Derived sidebar sub-panel state ---
 
