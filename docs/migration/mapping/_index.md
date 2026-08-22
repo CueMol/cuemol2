@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-08-23 (**`widget.mainview` を自身のスコープで close、残り 1 行に** (**counts: done 138 -> 139 / wip 2 -> 1**、Custom Widget も 13/13 全 done)。この行は「`other.cuemol2` に追従」として open のままだったが、inventory が `tabmolview` に挙げる機能は全て移植済みだった: multi-tab GL コンテナ、drag 並べ替え可能なタブ、タブごとの label / close ボタン / context menu、camera state (`rotQuat` / `viewCenter` / `zoom` / `slab` / `distance`) と `rotateView` / `translateView` / zoom / slab 操作 (`viewXform.service`)。**inventory の 2 行は移植ではなく検証で解消**: 「middle-click close」は UXP の挙動ではない (`mainViewBindings.xml:423` の `mousedown button=1` ハンドラは `clientTop` に触れてレイアウトを強制するだけで何も閉じない)、タブの context menu は既存の tab-strip メニューがそれにあたる。`other.cuemol2` に残る Linux shell association はアプリ全体の packaging 課題で `tabmolview` の surface を持たないため、この行を gate しない)
 - Updated: 2026-08-23 (**toolbar の object Save を drop して Toolbar カテゴリ 2/2 全 done** (**counts: done 137 -> 138 / wip 3 -> 2**)。`toolbar.cuemol2-ribbon` に残っていた mock の Save ボタンは、調べた結果 **UXP に移植元が存在しなかった**: UXP のリボン (`topbar/cuemol2-ribbon.xul`) は New Tab / Open File / **Save As** / Open Scene / Reload Scene / Save Scene / Get PDB / Undo / Redo で object Save を持たず、File メニューも "Save File As…" のみで、object の overwrite-in-place は UXP のどこにも無い。実装すればパリティを埋めるどころか独自機能の追加になるため、ボタンと Toolbar の `mock` item kind (これが最後の利用者) ごと撤去し、未使用になった `toolbar.save` アイコンキーも削除。テストは「mock は dispatch しない」から「dead button が無い (Save は無く Save As / Save Scene はある)」を pin する形に置換。ADR-0013 の Status と Update 節も更新。**残る wip は 2 行のみ**: `other.cuemol2` の Linux shell association と、それに追従する `widget.mainview`)
 - Updated: 2026-08-23 (**multi-select Copy を実装 + style Reload の実態を記録し、Panel カテゴリが 27/27 全 done に** (**counts: done 135 -> 137 / wip 5 -> 3**)。(1) **`panel.workspace.ctxmenu.multi` の Copy を実装**: 新 worker service `copyNodes` が選択を `StreamManager.arrayToXML` で直列化 (UXP `multiRendCopyImpl` のグループ名なし経路)。選択されたグループは自身ではなくメンバー renderer を寄与する。UXP の 2 つの拒否 (型混在 / 複数 object) を alert 文言ごと再現し、型チェックでは `rendGroup` を `renderer` に畳む (UXP `convElemNodeTypes` と同一)。clipboard entry は kind `renderer` / form `rendArray` で単一グループ copy と同形にしたため、paste と Paste gating は無改修 (UXP も両者を `qscrendary` に入れる)。テスト 8 件 (worker 6 / dispatch 2)。(2) **`panel.workspace.ctxmenu.style` の Reload は移植漏れではなかった**: UXP の `onStyReloadFile` 自体が `alert("Not implemented!!")` (`workspace_panel.js:1670`) で、tritium はそれを忠実に写した inert な項目。独自実装を足す方がパリティから外れるため、その旨を記録して done 化)
 - Updated: 2026-08-23 (**owner 判断 3 件を反映して 2 行 done 化** (**counts: done 133 -> 135 / wip 7 -> 5**、実装変更なし)。(1) **rect-select drag は完了済み**だった: `toolbar.cuemol2-ribbon` の「pending」は 2026-06-17 `ecefbacd` 以降 stale で、`RectSelectOverlay` がラバーバンドを描き `rectSelect` worker service で確定するところまで実装済み。同行の残りは object Save (mock ボタン) のみ。(2) **Window > Panels サブメニューを drop**: UXP は個々のサイドパネルの表示/非表示を切り替えたが、tritium の ActivityBar は 1 グループずつ表示し全体で折りたたむ構造なので、per-panel visibility という結び付け先が存在しない。これで `menu.cuemol2.window` は 5/5 resolved となり **Menu カテゴリは 11/11 全 done**、menus の item-level も 67/67 = 100%。(3) **`panel.molstruct` を done 化**: UXP 側の surface は全て移植済みで、残る展開レイテンシ (Blueprint `Tree` の `Collapse` state machine 起因) は**移植の欠落ではなく tritium 側の性能課題**のため、この行を open にしておく理由にならない。ADR-0018 で react-arborist 置換とあわせて追跡継続)
@@ -123,10 +124,10 @@
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 16 | 16 | 0 | 0 | 0 | 0 |
 | Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 18 | 0 | 0 | 0 | 0 |
 | Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 21 | 0 | 0 | 0 | 0 |
-| Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 12 | 1 | 0 | 0 | 0 |
+| Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 13 | 0 | 0 | 0 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 28 | 0 | 0 | 0 | 0 |
 | Other | [other.md](other.md) | 4 | 3 | 1 | 0 | 0 | 0 |
-| **Total** | | **140** | **138** | **2** | **0** | **0** | **0** |
+| **Total** | | **140** | **139** | **1** | **0** | **0** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -178,7 +179,6 @@
 | ID | React | Notes |
 |----|-------|-------|
 | [`other.cuemol2`](other.md#othercuemol2) | `App` / `ContentArea` / `TabBar` / `SidePanel` / `BottomPanel` / `StatusBar` / `ConfirmCloseTabDialog` / `useWindowCloseHandler` / `useFileDrop` / `useShellOpenFiles` | Main window layout (panels, tab view, status bar) + window-close/quit funnel wired (cmd-Q + close button share one confirm funnel, ADR-0016 supersedes ADR-0010). Canvas lifecycle: ADR-0011. OS file drag-and-drop open (`useFileDrop`) and OS shell / command-line open (`useShellOpenFiles`, single-instance + macOS `open-file` + argv) wired; `.js`/`.py` script open and Windows/Linux shell association not ported |
-| [`widget.mainview`](custom_widgets.md) | `ContentArea` / `TabBar` / `MolViewPane` | merged: UXP `tabmolview` multi-tab GL view (drag-reorderable tabs) realised by ContentArea + reorderable TabBar hosting the permanently-mounted MolViewPane canvas (ADR-0011). Tracked under `other.cuemol2` |
 ---
 
 ## Unstarted
