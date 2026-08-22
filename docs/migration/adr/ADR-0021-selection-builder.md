@@ -58,7 +58,10 @@ resolved by the C++ compiler.
   switching Builder / Library / History tabs does not resize the popover and
   trigger a Popper reposition (the tabs otherwise have very different heights).
 - `SelectionPane` (its own `TextArea`, not MolSelList) does not get the builder
-  in v1; surfacing it there would mean duplicating the composer.
+  in v1; surfacing it there would mean duplicating the composer. (Superseded:
+  the 2026-08-07 redesign embeds the same shared builder component in the pane
+  rather than duplicating it -- see
+  [ADR-0051](ADR-0051-selection-pane-live-sel.md).)
 - The Macros tab shows real built-in definitions copied statically from
   `data/default_style.xml`; these can drift if the built-in defs change (noted
   in code).
@@ -81,3 +84,7 @@ resolved by the C++ compiler.
   `chain 'A' and not (resn HOH)` against the real compiler).
 - Future work: portal-aware blur to enable the builder in PaintSelCell;
   surfacing in SelectionPane; advanced operators (`around` / `byres` / ...).
+  (The latter two are done: the builder ships in `SelectionPane`
+  ([ADR-0051](ADR-0051-selection-pane-live-sel.md)) and the Mod tab covers
+  `around` / `byres` / `expand`
+  ([ADR-0044](ADR-0044-selection-quick-pick.md)).)
