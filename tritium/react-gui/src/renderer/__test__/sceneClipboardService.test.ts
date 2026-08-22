@@ -104,6 +104,7 @@ function buildCtx(opts: BuildCtxOpts & {
     // tests override per-call via the `restoredStyle` arg below.
     const fromXML = vi.fn((_: unknown) => restored)
     const rendGrpToXML = vi.fn(() => ({ __byteArray: true, __ary: true }))
+    const arrayToXML = vi.fn(() => ({ __byteArray: true, __multi: true }))
     const rendArrayFromXML = vi.fn(() => opts.restoredArray ?? [])
     // Identity: tests hand wrapper-shaped mocks straight through.
     const createWrapper = vi.fn((n: unknown) => n)
@@ -125,14 +126,14 @@ function buildCtx(opts: BuildCtxOpts & {
 
     const ctx = {
         sceMgr: { getScene: vi.fn(() => mockScene) },
-        strMgr: { toXML, fromXML, rendGrpToXML, rendArrayFromXML, createWrapper },
+        strMgr: { toXML, fromXML, rendGrpToXML, arrayToXML, rendArrayFromXML, createWrapper },
         svc: { getService },
     } as unknown as WorkerContext
 
     return {
         ctx, mockScene, sourceObj, sourceRend, targetObj, targetGroup, restored,
         addObject, attachRenderer, toXML, fromXML,
-        rendGrpToXML, rendArrayFromXML, createWrapper,
+        rendGrpToXML, arrayToXML, rendArrayFromXML, createWrapper,
         createdGroup, setCreatedGroupName,
         setObjName, setRendName,
         startUndoTxn, commitUndoTxn,
@@ -197,6 +198,83 @@ describe('sceneClipboard.copyNode', () => {
         mockScene.getObject.mockReturnValue(null)
         const res = services.copyNode(ctx, { sceneId: 1, nodeId: 99, nodeType: 'object' })
         expect(res.ok).toBe(false)
+    })
+})
+
+describe('sceneClipboard.copyNodes (multi-selection copy)', () => {
+    // Mirrors UXP `onMultiCopy`: renderers go through arrayToXML, and the
+    // two refusals it alerts on are reported back rather than half-copied.
+    it('serializes a renderer multi-selection with arrayToXML', () => {
+        const h = buildCtx()
+        const res = services.copyNodes(h.ctx, {
+            sceneId: 7,
+            nodeIds: [100, 101],
+            nodeTypes: ['renderer', 'renderer'],
+        })
+        expect(res).toEqual({ ok: true, kind: 'renderer' })
+        expect(h.arrayToXML).toHaveBeenCalledTimes(1)
+        // rendGrpToXML is the single-group path and must stay out of it.
+        expect(h.rendGrpToXML).not.toHaveBeenCalled()
+        // The entry is the same shape a group copy leaves, so paste and the
+        // ctxmenu's Paste gating need no extra case.
+        expect(services.getClipboardKind(h.ctx, {}).kind).toBe('renderer')
+    })
+
+    it('serializes a group\'s members, never the group shell itself', () => {
+        // The harness's group stub exposes no matching children, so the
+        // expansion yields nothing and the copy is refused rather than
+        // writing an empty array to the clipboard.
+        const h = buildCtx()
+        const res = services.copyNodes(h.ctx, {
+            sceneId: 7,
+            nodeIds: [888],
+            nodeTypes: ['rendGroup'],
+        })
+        expect(res.ok).toBe(false)
+        expect(h.arrayToXML).not.toHaveBeenCalled()
+    })
+
+    it('refuses a mixed-type selection (UXP alerts here)', () => {
+        const h = buildCtx()
+        const res = services.copyNodes(h.ctx, {
+            sceneId: 7,
+            nodeIds: [10, 100],
+            nodeTypes: ['object', 'renderer'],
+        })
+        expect(res).toEqual({ ok: false, kind: null, reason: 'mixed' })
+        expect(h.arrayToXML).not.toHaveBeenCalled()
+    })
+
+    it('refuses multiple objects, as UXP does', () => {
+        const h = buildCtx()
+        const res = services.copyNodes(h.ctx, {
+            sceneId: 7,
+            nodeIds: [10, 11],
+            nodeTypes: ['object', 'object'],
+        })
+        expect(res).toEqual({ ok: false, kind: null, reason: 'objectUnsupported' })
+        expect(h.arrayToXML).not.toHaveBeenCalled()
+    })
+
+    it('treats a group as a renderer for the type check', () => {
+        // UXP `convElemNodeTypes` folds rendGroup into renderer, so a mix of
+        // the two is NOT "mixed".
+        const h = buildCtx()
+        const res = services.copyNodes(h.ctx, {
+            sceneId: 7,
+            nodeIds: [100, 888],
+            nodeTypes: ['renderer', 'rendGroup'],
+        })
+        // Not refused as 'mixed'; the plain renderer still makes it in.
+        expect(res.reason).toBeUndefined()
+        expect(res.ok).toBe(true)
+    })
+
+    it('leaves the clipboard alone when the selection is empty', () => {
+        const h = buildCtx()
+        const res = services.copyNodes(h.ctx, { sceneId: 7, nodeIds: [], nodeTypes: [] })
+        expect(res.ok).toBe(false)
+        expect(h.arrayToXML).not.toHaveBeenCalled()
     })
 })
 

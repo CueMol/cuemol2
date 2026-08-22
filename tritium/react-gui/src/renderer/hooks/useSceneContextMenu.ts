@@ -74,6 +74,9 @@ export interface UseSceneContextMenuOptions {
     selectedIds?: Set<string>
     bulkSetNodeVisible?: (ids: Iterable<string>, visible: boolean) => Promise<boolean>
     bulkDeleteNodes?: (ids: Iterable<string>) => Promise<boolean>
+    bulkCopyNodes?: (
+        ids: Iterable<string>,
+    ) => Promise<{ ok: boolean; reason?: 'mixed' | 'objectUnsupported' }>
     /** Style-set ops (create / read-only toggle / file load-save). */
     createStyleSet: (name: string) => Promise<{ ok: boolean; newId: number }>
     toggleStyleSetReadOnly: (
@@ -119,7 +122,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
     openNewCameraFlow: () => Promise<void>
 } {
     const { cm, sceneId, activeViewId, createCamera, createRendererOnObject,
-            selectedIds, bulkSetNodeVisible, bulkDeleteNodes } = opts
+            selectedIds, bulkSetNodeVisible, bulkDeleteNodes, bulkCopyNodes } = opts
 
     const showContextMenu = useShowContextMenu()
 
@@ -264,7 +267,7 @@ export function useSceneContextMenu(opts: UseSceneContextMenuOptions): {
             })
         },
         [
-            cm, sceneId, opts, selectedIds, bulkSetNodeVisible, bulkDeleteNodes,
+            cm, sceneId, opts, selectedIds, bulkSetNodeVisible, bulkDeleteNodes, bulkCopyNodes,
             showSceneCtxMenu,
             showErrorAlert, showTextPrompt, showApplyRendStyle, showCreateRendStyle, showEditCameraVisFlags, showEditInteractionList, showRegenMolSurf, showStyleEditor,
             openNewRendererFlow, openNewCameraFlow,

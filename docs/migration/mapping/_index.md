@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-08-23 (**multi-select Copy を実装 + style Reload の実態を記録し、Panel カテゴリが 27/27 全 done に** (**counts: done 135 -> 137 / wip 5 -> 3**)。(1) **`panel.workspace.ctxmenu.multi` の Copy を実装**: 新 worker service `copyNodes` が選択を `StreamManager.arrayToXML` で直列化 (UXP `multiRendCopyImpl` のグループ名なし経路)。選択されたグループは自身ではなくメンバー renderer を寄与する。UXP の 2 つの拒否 (型混在 / 複数 object) を alert 文言ごと再現し、型チェックでは `rendGroup` を `renderer` に畳む (UXP `convElemNodeTypes` と同一)。clipboard entry は kind `renderer` / form `rendArray` で単一グループ copy と同形にしたため、paste と Paste gating は無改修 (UXP も両者を `qscrendary` に入れる)。テスト 8 件 (worker 6 / dispatch 2)。(2) **`panel.workspace.ctxmenu.style` の Reload は移植漏れではなかった**: UXP の `onStyReloadFile` 自体が `alert("Not implemented!!")` (`workspace_panel.js:1670`) で、tritium はそれを忠実に写した inert な項目。独自実装を足す方がパリティから外れるため、その旨を記録して done 化)
 - Updated: 2026-08-23 (**owner 判断 3 件を反映して 2 行 done 化** (**counts: done 133 -> 135 / wip 7 -> 5**、実装変更なし)。(1) **rect-select drag は完了済み**だった: `toolbar.cuemol2-ribbon` の「pending」は 2026-06-17 `ecefbacd` 以降 stale で、`RectSelectOverlay` がラバーバンドを描き `rectSelect` worker service で確定するところまで実装済み。同行の残りは object Save (mock ボタン) のみ。(2) **Window > Panels サブメニューを drop**: UXP は個々のサイドパネルの表示/非表示を切り替えたが、tritium の ActivityBar は 1 グループずつ表示し全体で折りたたむ構造なので、per-panel visibility という結び付け先が存在しない。これで `menu.cuemol2.window` は 5/5 resolved となり **Menu カテゴリは 11/11 全 done**、menus の item-level も 67/67 = 100%。(3) **`panel.molstruct` を done 化**: UXP 側の surface は全て移植済みで、残る展開レイテンシ (Blueprint `Tree` の `Collapse` state machine 起因) は**移植の欠落ではなく tritium 側の性能課題**のため、この行を open にしておく理由にならない。ADR-0018 で react-arborist 置換とあわせて追跡継続)
 - Updated: 2026-08-22 (**scene tree の Shift+click range select を実装** (**counts: done 132 -> 133 / wip 8 -> 7**、`panel.workspace.tree` done 昇格)。これまで multi-select は Cmd クリックの 1 件ずつ追加のみだった。`useSceneTree.selectRangeTo` がアンカー (現在の主選択) からクリック行までを一括選択し、**アンカーは動かない**ので続けて Shift+クリックすると同じ起点から範囲を伸縮できる (Finder パリティ; 縮めると外れた行は選択解除)。Shift+Cmd は置換ではなく union。**範囲の順序は描画順でなければならない**ため、`ScenePane` が Blueprint に渡す `treeContents` を平坦化した `visibleRowIds` を hook に渡す設計にした (scene tree を直接辿ると折りたたみ配下の見えない行まで範囲に入る)。端点が非表示なら hook・handler とも no-op で通常クリックにフォールバック。テスト 10 件 (hook 5: 上下方向 / 同一アンカーからの再伸縮 / additive / 端点欠落、ScenePane 5: 可視順序から折りたたみ配下が除かれること等)。`panel.workspace.ctxmenu.multi` の残りは Copy (renderer 限定・同親のみ) のみ)
 - Updated: 2026-08-22 (**host E2E 待ちだった 3 行を owner 確認済みとして close + script D&D を drop** (**counts: done 129 -> 132 / wip 11 -> 8**、実装変更なし)。`dialog.property.scene` (AO の enable/disable ゲートと realtime drag + 単一 undo、`aa_method` None/FXAA/SMAA、bgcolor、colour-proofing のプロファイル自動投入)、`overlay.config-misc` (atom-label コントロールのライブプレビュー、インストール済みシステムフォントの列挙、再起動をまたぐ `user_styles.xml` 永続化)、`overlay.config-mouse` (Auto-detect 既定でホイールズームとトラックパッドピンチが両立し切替時にステータスバー通知、sensitivity / pick precision の再起動後保持) を確認済みとして done。対応する ADR-0031 / ADR-0032 / ADR-0036 の Status からも host E2E pending を除去 (ADR-0032 は Phase 3 auto-detect まで verified)。あわせて `other.cuemol2` の `.js`/`.py` script drop を **drop** (owner 判断: tritium にスクリプト実行経路自体が無く、drop を活かすには先に実行基盤の構築が必要で、他に要求元も無い)。同行の残りは Linux shell association のみ)
@@ -115,7 +116,7 @@
 
 | Category | File | Total | done | wip | review | todo | frozen |
 |----------|------|------:|-----:|----:|-------:|-----:|-------:|
-| Panel | [panels.md](panels.md) | 27 | 25 | 2 | 0 | 0 | 0 |
+| Panel | [panels.md](panels.md) | 27 | 27 | 0 | 0 | 0 | 0 |
 | Menu | [menus.md](menus.md) | 11 | 11 | 0 | 0 | 0 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 1 | 1 | 0 | 0 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 16 | 16 | 0 | 0 | 0 | 0 |
@@ -124,7 +125,7 @@
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 12 | 1 | 0 | 0 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 28 | 0 | 0 | 0 | 0 |
 | Other | [other.md](other.md) | 4 | 3 | 1 | 0 | 0 | 0 |
-| **Total** | | **140** | **135** | **5** | **0** | **0** | **0** |
+| **Total** | | **140** | **137** | **3** | **0** | **0** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -178,8 +179,6 @@
 | [`toolbar.cuemol2-ribbon`](toolbars.md#toolbarcuemol2-ribbon) | `Toolbar` / `ViewportToolPalette` / `useNaviClickHandler` / `useMeasureClickHandler` / `NaviContextMenu` / `MeasureOptionsPopover` | Context menu actions (center/select/around/invert/sidechain) done; measure tool distance/angle/torsion done (ADR-0023); Create SYMM mol done (ADR-0049); object Save + rect-select drag pending |
 | [`other.cuemol2`](other.md#othercuemol2) | `App` / `ContentArea` / `TabBar` / `SidePanel` / `BottomPanel` / `StatusBar` / `ConfirmCloseTabDialog` / `useWindowCloseHandler` / `useFileDrop` / `useShellOpenFiles` | Main window layout (panels, tab view, status bar) + window-close/quit funnel wired (cmd-Q + close button share one confirm funnel, ADR-0016 supersedes ADR-0010). Canvas lifecycle: ADR-0011. OS file drag-and-drop open (`useFileDrop`) and OS shell / command-line open (`useShellOpenFiles`, single-instance + macOS `open-file` + argv) wired; `.js`/`.py` script open and Windows/Linux shell association not ported |
 | [`widget.mainview`](custom_widgets.md) | `ContentArea` / `TabBar` / `MolViewPane` | merged: UXP `tabmolview` multi-tab GL view (drag-reorderable tabs) realised by ContentArea + reorderable TabBar hosting the permanently-mounted MolViewPane canvas (ADR-0011). Tracked under `other.cuemol2` |
-| [`panel.workspace.ctxmenu.multi`](panels.md#panelworkspacectxmenumulti) | `useSceneContextMenu` / `main/sceneContextMenu` (multi) / `bulkSceneNodeOps.service` | Right-clicking a multi-selected row opens a multi-only menu: Show / Hide / Delete via `bulkSetNodeVisible` / `bulkDeleteNode` (single undo txn per batch); worker + in-app multi-select OK; pending: Copy (clipboard is single-item) |
-| [`panel.workspace.ctxmenu.style`](panels.md#panelworkspacectxmenustyle) | `useSceneContextMenu` / `main/sceneContextMenu` (style) / `styleOps.service` / `styleFile.service` / `sceneClipboard.service` (style kind) / `sceneOps.deleteNode` (style branch) | New Style + Copy / Paste + Delete + Style file Load / Save / Save As (Reload stub) + Read-only toggle wired; `sceneTree.service` switched to `getStyleSetsJSON` so style nodes carry real C++ uids + `styleInfo`. Editor dialog (Phase 5a) pending. |
 ---
 
 ## Unstarted

@@ -402,6 +402,7 @@ export type SceneCtxAction =
   | { kind: 'cameraApplyToView'; withVisFlags: boolean }
   | { kind: 'cameraEditVisFlags' }
   | { kind: 'cameraClearVisFlags' }
+  | { kind: 'multiCopy' }
   | { kind: 'multiShow' }
   | { kind: 'multiHide' }
   | { kind: 'multiDelete' }

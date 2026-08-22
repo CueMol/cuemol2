@@ -58,7 +58,16 @@ export interface SceneTreeNodeOps {
      */
     bulkSetNodeVisible: (ids: Iterable<string>, visible: boolean) => Promise<boolean>
     bulkDeleteNodes: (ids: Iterable<string>) => Promise<boolean>
+    /** UXP `onMultiCopy`; `reason` carries its refusal cases. */
+    bulkCopyNodes: (ids: Iterable<string>) => Promise<BulkCopyResult>
     resolveNodeName: (id: string) => string
+}
+
+/** Outcome of a multi-selection copy. */
+export interface BulkCopyResult {
+    ok: boolean
+    /** 'mixed' or 'objectUnsupported' when the worker declined. */
+    reason?: 'mixed' | 'objectUnsupported'
 }
 
 export function useSceneTreeNodeOps(
@@ -326,6 +335,31 @@ export function useSceneTreeNodeOps(
         [cm, sceneIdRef, resolveBulkItems],
     )
 
+
+    /**
+     * Copy a multi-selection to the clipboard (UXP `onMultiCopy`).
+     *
+     * Resolves the same way the other bulk ops do, then hands the worker
+     * the ids with their types so it can apply UXP's two refusals (mixed
+     * kinds, multiple objects). Returns the worker's reason so the caller
+     * can surface UXP's alert text.
+     */
+    const bulkCopyNodes = useCallback(
+        async (ids: Iterable<string>): Promise<BulkCopyResult> => {
+            const sid = sceneIdRef.current
+            if (!cm || sid === undefined) return { ok: false }
+            const items = resolveBulkItems(ids)
+            if (items.length === 0) return { ok: false }
+            const res = await cm.invokeService('copyNodes', {
+                sceneId: sid,
+                nodeIds: items.map((i) => i.nodeId),
+                nodeTypes: items.map((i) => i.nodeType),
+            })
+            return { ok: res?.ok === true, reason: res?.reason }
+        },
+        [cm, sceneIdRef, resolveBulkItems],
+    )
+
     const resolveNodeName = useCallback(
         (id: string): string => {
             const numId = Number(id)
@@ -348,6 +382,7 @@ export function useSceneTreeNodeOps(
         moveSceneNode,
         bulkSetNodeVisible,
         bulkDeleteNodes,
+        bulkCopyNodes,
         resolveNodeName,
     }
 }
