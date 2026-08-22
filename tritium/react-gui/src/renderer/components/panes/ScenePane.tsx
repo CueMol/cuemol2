@@ -71,6 +71,13 @@ interface ScenePaneProps {
      * When omitted, modifier-clicks fall back to single-select.
      */
     onToggleSelect?: (id: string) => void;
+    /**
+     * Shift+click range select. Receives the clicked id, the ids of every
+     * currently visible row in display order, and whether the range should
+     * be added to the existing selection (Shift+Cmd) rather than replace it.
+     * When omitted, Shift+click falls back to single-select.
+     */
+    onSelectRange?: (id: string, visibleIds: string[], additive: boolean) => void;
     onToggleVisibility: (id: string) => void;
     onAddObject?: () => void;
     onAddRenderer?: () => void;
@@ -150,6 +157,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
     selectedIds,
     onSelect,
     onToggleSelect,
+    onSelectRange,
     onToggleVisibility,
     onAddRenderer,
     onDeleteSelected,
@@ -305,6 +313,10 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
         if (sceneNode) expandChangeRef.current?.(sceneNode, true);
     }, [nodeLookup]);
 
+    // Visible-row order for Shift+click, kept in a ref because the handler
+    // below is declared before `treeContents` (which it is derived from).
+    const visibleRowIdsRef = useRef<string[]>([]);
+
     const handleNodeClick = useCallback(
         (
             node: TreeNodeInfo,
@@ -312,9 +324,22 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
             e: React.MouseEvent<HTMLElement>,
         ) => {
             const idStr = String(node.id);
+            // Shift extends from the anchor (the current primary selection)
+            // across the rows as displayed; Shift+Cmd unions instead of
+            // replacing. If either end is not currently visible the handler
+            // is a no-op and we fall through to a plain click below.
+            if (e.shiftKey && onSelectRange && selectedId) {
+                // Read through a ref: `visibleRowIds` is derived from
+                // `treeContents`, which is declared after this handler.
+                const visible = visibleRowIdsRef.current;
+                if (visible.includes(selectedId) && visible.includes(idStr)) {
+                    clearRenameTimer();
+                    onSelectRange(idStr, visible, e.metaKey || e.ctrlKey);
+                    return;
+                }
+            }
             // Cmd (macOS) or Ctrl (other) toggles the node in the multi-
-            // select set. Shift+click contiguous range-select is not
-            // supported - multi-select is additive-only via Cmd-click.
+            // select set.
             if ((e.metaKey || e.ctrlKey) && onToggleSelect) {
                 clearRenameTimer();
                 onToggleSelect(idStr);
@@ -339,7 +364,7 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
             onSelect(idStr);
         },
         [
-            onSelect, onToggleSelect, selectedId, selectedIds,
+            onSelect, onToggleSelect, onSelectRange, selectedId, selectedIds,
             nodeLookup, isRenameableType, scheduleRename, clearRenameTimer,
         ],
     );
@@ -722,6 +747,26 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
         onMoveNode, handleDragStart, handleDragOver, handleDrop, handleDragEnd,
         dropIndicator, editingNodeId, commitEdit, cancelEdit,
     ]);
+
+    /**
+     * Ids of every row the tree currently draws, in display order --
+     * the ordering Shift+click ranges over. Derived from `treeContents`
+     * rather than from the scene tree so a collapsed subtree's rows are
+     * excluded, matching what the user can actually see and click.
+     */
+    const visibleRowIds = useMemo<string[]>(() => {
+        const ids: string[] = [];
+        const walk = (nodes: TreeNodeInfo[]): void => {
+            for (const n of nodes) {
+                ids.push(String(n.id));
+                if (n.isExpanded && n.childNodes) walk(n.childNodes);
+            }
+        };
+        walk(treeContents);
+        return ids;
+    }, [treeContents]);
+
+    visibleRowIdsRef.current = visibleRowIds;
 
     return (
         <div className="sp-pane">

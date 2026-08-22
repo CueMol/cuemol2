@@ -512,6 +512,66 @@ describe('useSceneTree — selection state', () => {
         h.unmount()
     })
 
+    it('selectRangeTo selects the rows between the anchor and the target', async () => {
+        const cm = makeCm()
+        const h = await mountReady(cm)
+        const visible = ['a', 'b', 'c', 'd', 'e']
+        act(() => { h.result.setSelectedId('b') })
+        act(() => { h.result.selectRangeTo('d', visible) })
+        expect(h.result.selectedIds).toEqual(new Set(['b', 'c', 'd']))
+        h.unmount()
+    })
+
+    it('selectRangeTo works upwards from the anchor too', async () => {
+        const cm = makeCm()
+        const h = await mountReady(cm)
+        const visible = ['a', 'b', 'c', 'd', 'e']
+        act(() => { h.result.setSelectedId('d') })
+        act(() => { h.result.selectRangeTo('b', visible) })
+        expect(h.result.selectedIds).toEqual(new Set(['b', 'c', 'd']))
+        h.unmount()
+    })
+
+    it('selectRangeTo re-extends from the same anchor, replacing the previous range', async () => {
+        // Finder parity: the anchor does not move, so shrinking the range
+        // deselects the rows that fell outside it.
+        const cm = makeCm()
+        const h = await mountReady(cm)
+        const visible = ['a', 'b', 'c', 'd', 'e']
+        act(() => { h.result.setSelectedId('b') })
+        act(() => { h.result.selectRangeTo('e', visible) })
+        expect(h.result.selectedIds).toEqual(new Set(['b', 'c', 'd', 'e']))
+        act(() => { h.result.selectRangeTo('c', visible) })
+        expect(h.result.selectedIds).toEqual(new Set(['b', 'c']))
+        h.unmount()
+    })
+
+    it('selectRangeTo with additive unions the range instead of replacing', async () => {
+        const cm = makeCm()
+        const h = await mountReady(cm)
+        const visible = ['a', 'b', 'c', 'd', 'e']
+        act(() => { h.result.setSelectedId('a') })
+        act(() => { h.result.toggleInSelection('e') })
+        expect(h.result.selectedIds).toEqual(new Set(['a', 'e']))
+        // Anchor is now 'e' (toggle moves the primary); extend back to 'c'.
+        act(() => { h.result.selectRangeTo('c', visible, true) })
+        expect(h.result.selectedIds).toEqual(new Set(['a', 'c', 'd', 'e']))
+        h.unmount()
+    })
+
+    it('selectRangeTo is a no-op when either end is not visible', async () => {
+        // e.g. the anchor's row was collapsed away -- the caller falls back
+        // to a plain click rather than selecting a bogus range.
+        const cm = makeCm()
+        const h = await mountReady(cm)
+        act(() => { h.result.setSelectedId('b') })
+        act(() => { h.result.selectRangeTo('d', ['c', 'd', 'e']) })
+        expect(h.result.selectedIds).toEqual(new Set(['b']))
+        act(() => { h.result.selectRangeTo('zz', ['a', 'b', 'c']) })
+        expect(h.result.selectedIds).toEqual(new Set(['b']))
+        h.unmount()
+    })
+
     it('selectedHasOps reflects the selected node type', async () => {
         const cm = makeCm()
         const h = await mountReady(cm)
