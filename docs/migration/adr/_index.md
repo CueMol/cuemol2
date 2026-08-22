@@ -38,7 +38,7 @@ Architecture Decision Records for the UXP → tritium migration.
 | [ADR-0001](ADR-0001-scene-tree-dnd.md) | Scene-tree drag-and-drop detection strategy | accepted (in-app verification pending) | 2026-05-12 | `panel.workspace.tree` |
 | [ADR-0002](ADR-0002-scene-tree-inline-rename.md) | Scene-tree inline rename — three triggers, single controller | accepted | 2026-05-13 | `panel.workspace.tree` |
 | [ADR-0003](ADR-0003-object-ctxmenu-phases.md) | Object context menu — phase decomposition and per-phase choices | accepted | 2026-05-12 | `panel.workspace.ctxmenu.object` |
-| [ADR-0004](ADR-0004-renderer-ctxmenu.md) | Renderer context menu — Coloring, Paint, Style, Change-type | accepted (Edit/Create style dialog pending) | 2026-05-13 | `panel.workspace.ctxmenu.renderer` |
+| [ADR-0004](ADR-0004-renderer-ctxmenu.md) | Renderer context menu — Coloring, Paint, Style, Change-type | accepted (Edit / Create style dialogs verified in-app 2026-08-22) | 2026-05-13 | `panel.workspace.ctxmenu.renderer` |
 | [ADR-0005](ADR-0005-camera-name-keyed.md) | Camera operations are name-keyed at the worker boundary | accepted | 2026-05-13 | `panel.workspace.ctxmenu.camera` |
 | [ADR-0006](ADR-0006-stylesets-uid-readonly.md) | StyleSets — uid keying, read-only toggle, save/load semantics | accepted | 2026-05-13 | `panel.workspace.ctxmenu.style` |
 | [ADR-0007](ADR-0007-scene-tree-multi-select.md) | Scene-tree multi-select bulk dispatch | accepted | 2026-05-12 | `panel.workspace.ctxmenu.multi`, `panel.workspace.tree` |
