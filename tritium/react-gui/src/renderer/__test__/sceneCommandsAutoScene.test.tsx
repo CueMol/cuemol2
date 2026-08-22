@@ -1,7 +1,7 @@
 /**
  * @file __test__/sceneCommandsAutoScene.test.tsx
  * @description Pins the "load with no active view creates a scene" behaviour of
- * useSceneCommands. From the welcome tab (or after every molview tab is closed)
+ * useSceneCommands. With no tab open (or after every molview tab is closed)
  * getActiveSceneInfo() is undefined; File > Open and Get PDB must then create a
  * fresh scene + view (a new tab) and load into it, instead of silently doing
  * nothing. An existing active scene is used as-is, and an unsupported file /

@@ -274,9 +274,9 @@ const App: React.FC = () => {
 
   // Keep the active scene/view bound to the active CONTENT tab: activate the
   // worker view for a molview tab, or clear the active molview when a
-  // non-molview tab (Settings / welcome) is shown, so the Explorer /
-  // Inspector / File Open all follow the visible tab and treat a
-  // non-molview tab as "no active scene".
+  // non-molview tab (Settings) is shown or no tab is open, so the Explorer /
+  // Inspector / File Open all follow the visible tab and treat that state
+  // as "no active scene".
   useEffect(() => {
     const tab = tabs.find((t) => t.id === activeTab);
     if (tab?.type === 'molview' && tab.viewId !== undefined) {

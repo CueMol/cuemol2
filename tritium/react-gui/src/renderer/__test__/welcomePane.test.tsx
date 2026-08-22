@@ -1,5 +1,6 @@
 /**
- * Degrade-detection tests for the welcome screen.
+ * Degrade-detection tests for the empty-state start screen (WelcomePane),
+ * shown when no content tab is open.
  *
  * The pane went stale once already -- it hard-coded "CueMol2" after the
  * product was renamed, and listed two shortcuts ("New Scene", "Run Script")

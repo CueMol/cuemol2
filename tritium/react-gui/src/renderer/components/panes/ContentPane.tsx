@@ -5,10 +5,9 @@
  *
  * | Tab type        | Rendered component                    |
  * |-----------------|---------------------------------------|
- * | `"welcome"`     | `WelcomePane` (start screen)          |
  * | `"settings"`    | `SettingsPane` (app settings)         |
  * | `"molview"`     | `MolViewPane` (WebGL canvas)          |
- * | none            | `WelcomePane`                         |
+ * | none            | `WelcomePane` (empty-state watermark) |
  *
  * MolViewPane is kept permanently mounted to preserve the WebGL context and
  * OffscreenCanvas binding. It is hidden with `display:none` when another
@@ -50,14 +49,11 @@ interface ContentPaneProps {
 // Helpers
 // ---------------------------------------------
 
-/** Map a tab to its content node. Returns null for molview (handled separately). */
+/** Map a tab to its content node; the no-tab empty state falls back to the
+ *  WelcomePane watermark. Molview is handled separately (permanent mount). */
 const renderContent = (tab: TabData | undefined): React.ReactNode => {
-  if (!tab) return <WelcomePane />;
-  switch (tab.type) {
-    case "settings": return <SettingsPane />;
-    case "welcome":
-    default: return <WelcomePane />;
-  }
+  if (tab?.type === "settings") return <SettingsPane />;
+  return <WelcomePane />;
 };
 
 // ---------------------------------------------
@@ -73,7 +69,7 @@ export const ContentPane: React.FC<ContentPaneProps> = ({
 }) => {
   const hasMolViewTab = tabs.some((t) => t.type === "molview");
   // The molview canvas is visible -- and thus the viewport tools apply -- only
-  // when a molview tab is active, never on welcome / settings.
+  // when a molview tab is active, never on Settings or the empty state.
   const molViewVisible = activeTab?.type === "molview";
 
   // Once a molview tab has existed, keep MolViewPane mounted permanently.

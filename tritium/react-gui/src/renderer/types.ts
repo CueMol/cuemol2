@@ -47,11 +47,13 @@ export interface TreeNodeData {
  *
  * | Type             | Rendered as                              |
  * |------------------|------------------------------------------|
- * | `"welcome"`      | WelcomePane (start screen)               |
  * | `"settings"`     | SettingsPane (application settings)      |
  * | `"molview"`      | MolViewPane (WebGL molecule view)        |
+ *
+ * When no tab is open, ContentPane shows the WelcomePane watermark as the
+ * empty-state fallback (VSCode-like); that state is not a tab type.
  */
-export type TabType = "welcome" | "settings" | "molview";
+export type TabType = "settings" | "molview";
 
 /**
  * Metadata for a single editor tab.

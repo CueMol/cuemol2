@@ -9,6 +9,19 @@ import { act } from 'react';
 import { makeRenderHook } from './helpers/testHarness';
 import { useTabManager } from '../hooks/useTabManager';
 
+describe('useTabManager — initial state', () => {
+    it('starts with no tabs and no active tab (VSCode-like empty state)', () => {
+        // The empty tab list is what makes ContentPane fall back to the
+        // WelcomePane watermark on launch; a re-introduced startup tab would
+        // silently regress that behaviour.
+        const h = makeRenderHook(() => useTabManager());
+
+        expect(h.result.tabs).toEqual([]);
+        expect(h.result.activeTab).toBe('');
+        h.unmount();
+    });
+});
+
 describe('useTabManager — molview tab title update', () => {
     it('updateMolViewTabTitle rewrites only the matching molview tab', () => {
         const h = makeRenderHook(() => useTabManager());

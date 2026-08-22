@@ -1,5 +1,7 @@
 /**
- * Tab content pane shown when no file is open in the editor.
+ * Empty-state watermark shown in the content area when no tab is open
+ * (VSCode-like). Not a tab pane itself -- ContentPane renders it as the
+ * fallback when the tab list is empty.
  *
  * Displays the app branding and the shortcuts for getting started. Both are
  * quoted from their single sources rather than retyped: the name from

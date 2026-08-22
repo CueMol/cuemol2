@@ -24,8 +24,9 @@ interface MolTabDispatch {
   setActiveViewByID: (view_id: number) => void
   /**
    * Clear the active molview (no entry active). Used when a non-molview content
-   * tab (Settings / render result / welcome) becomes active, so the derived
-   * "active scene" follows the visible tab and is undefined while none is shown.
+   * tab (Settings / render result) becomes active or every tab is closed, so the
+   * derived "active scene" follows the visible tab and is undefined while none
+   * is shown.
    */
   clearActiveView: () => void
   getActiveViewID: () => number | undefined
