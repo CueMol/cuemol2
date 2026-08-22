@@ -1,6 +1,6 @@
 # ADR-0032: View-input wheel binding and tritium mouse/trackpad preset switch
 
-- Status: accepted (Phase 1/2 host E2E verified; Phase 3 auto-detect host E2E pending)
+- Status: accepted (host E2E verified through Phase 3 auto-detect, 2026-08-22)
 - Date: 2026-06-15
 - Mapping rows: [`overlay.config-mouse`](../mapping/overlay.md#overlayconfig-mouse)
 

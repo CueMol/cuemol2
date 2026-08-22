@@ -1,6 +1,6 @@
 # ADR-0036: Settings panel wiring — atom-label & view-input defaults via user style, mock cleanup
 
-- Status: accepted (host E2E pending)
+- Status: accepted (host E2E verified 2026-08-22)
 - Date: 2026-07-05
 - Mapping rows: [`overlay.config-misc`](../mapping/overlay.md#overlayconfig-misc), [`overlay.config-mouse`](../mapping/overlay.md#overlayconfig-mouse)
 
