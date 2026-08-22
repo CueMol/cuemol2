@@ -4,9 +4,7 @@
  * UXP ribbon Home tab into a single, tab-less Navbar.
  *
  * Buttons are defined declaratively in `TOOLBAR_ITEMS`. Real buttons dispatch
- * through the renderer-internal command bus (`useCommands().dispatch`); mock
- * buttons are placed for layout parity but have no command backing yet
- * (object Save / Save As / Reload Scene -- see ADR-0013).
+ * through the renderer-internal command bus (`useCommands().dispatch`).
  */
 
 import React, { useRef } from "react";
@@ -23,7 +21,6 @@ import type { UndoRedoState } from "../hooks/useUndoRedoState";
 
 type ToolbarItem =
   | { kind: "cmd"; id: string; icon: AppIconKey; text: string; cmd: CmdId; requiresScene?: boolean }
-  | { kind: "mock"; id: string; icon: AppIconKey; text: string }
   | { kind: "divider"; id: string }
   | { kind: "undo"; id: string }
   | { kind: "redo"; id: string };
@@ -32,7 +29,6 @@ const TOOLBAR_ITEMS: ToolbarItem[] = [
   { kind: "cmd", id: "new-tab", icon: "toolbar.newTab", text: "New Tab", cmd: CmdId.TabNew },
   { kind: "divider", id: "d1" },
   { kind: "cmd", id: "open-file", icon: "toolbar.openFile", text: "Open File", cmd: CmdId.UiOpenObjDialog },
-  { kind: "mock", id: "save", icon: "toolbar.save", text: "Save" },
   { kind: "cmd", id: "save-as", icon: "toolbar.saveAs", text: "Save As", cmd: CmdId.ObjectSaveAs, requiresScene: true },
   { kind: "divider", id: "d2" },
   { kind: "cmd", id: "open-scene", icon: "toolbar.openScene", text: "Open Scene", cmd: CmdId.UiOpenSceneDialog },
@@ -101,20 +97,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({ undoRedo, hasScene }) => {
                 dispatch(item.cmd).catch((e: unknown) =>
                   console.error(`${item.cmd} failed:`, e),
                 )
-              }
-            />
-          </Tooltip>
-        );
-      case "mock":
-        // Placeholder: command not implemented yet (see ADR-0013).
-        return (
-          <Tooltip key={item.id} content={collapsed ? item.text : ""}>
-            <Button
-              minimal
-              icon={<AppIcon name={item.icon} size={16} aria-hidden />}
-              text={item.text}
-              onClick={() =>
-                console.warn(`[Toolbar] "${item.text}" is not implemented yet`)
               }
             />
           </Tooltip>

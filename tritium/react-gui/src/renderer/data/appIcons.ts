@@ -131,7 +131,6 @@ export const APP_ICONS = {
   // Top toolbar.
   "toolbar.newTab": { lib: "phosphor", Comp: Plus },
   "toolbar.openFile": { lib: "phosphor", Comp: File },
-  "toolbar.save": { lib: "phosphor", Comp: FloppyDisk },
   "toolbar.saveAs": { lib: "phosphor", Comp: FloppyDiskBack },
   "toolbar.openScene": { lib: "phosphor", Comp: FolderOpen },
   "toolbar.reloadScene": { lib: "phosphor", Comp: ArrowClockwise },

@@ -1,6 +1,6 @@
 # ADR-0013: Top Toolbar — UXP ribbon port as a tab-less Navbar
 
-- Status: accepted (object Save pending; Reload Scene and undo/redo history done)
+- Status: accepted (object Save dropped 2026-08-23; everything else done)
 - Date: 2026-05-16
 - Mapping rows: [`toolbar.cuemol2-ribbon`](../mapping/toolbars.md)
 
@@ -60,6 +60,16 @@ out of scope for this change.
 > event) + tab switch, and pushes the enabled flags to the native Edit menu via
 > `MENU_UPDATE_STATE`. Picking history entry `i` calls `scene.undo(i)` (undoes
 > `i+1` txns). Only the object `Save` button remains mock.
+>
+> **Update (2026-08-23):** the object `Save` button is **dropped**, not
+> implemented. It had no UXP counterpart to port: the UXP ribbon
+> (`topbar/cuemol2-ribbon.xul`) has New Tab / Open File / Save As / Open
+> Scene / Reload Scene / Save Scene / Get PDB / Undo / Redo and no object
+> Save, and the UXP File menu offers only "Save File As…" -- overwrite-in-
+> place for an object does not exist anywhere in UXP. Implementing one would
+> have invented behaviour rather than closed a gap, so the button and the
+> Toolbar's `mock` item kind (this was its last user) were removed. No mock
+> buttons remain.
 
 ## Consequences
 
