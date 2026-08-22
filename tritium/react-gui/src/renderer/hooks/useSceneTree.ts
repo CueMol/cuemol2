@@ -83,6 +83,15 @@ export interface SceneTreeCoreState {
      * the primary becomes `id` (the most-recently-touched).
      */
     toggleInSelection: (id: string) => void
+    /**
+     * Shift+click: select every row between the anchor and `id` inclusive,
+     * in the visible order the caller supplies. `additive` (Shift+Cmd)
+     * unions the range with the current set instead of replacing it. The
+     * anchor is the previous primary `selectedId` and does NOT move, so a
+     * second Shift+click re-extends from the same origin (Finder parity).
+     * No-op when either end is missing from `visibleIds`.
+     */
+    selectRangeTo: (id: string, visibleIds: string[], additive?: boolean) => void
     refetch: () => void
 }
 
@@ -152,6 +161,28 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         })
     }, [selectedId])
 
+    const selectRangeTo = useCallback(
+        (id: string, visibleIds: string[], additive = false) => {
+            if (id === '') return
+            const from = visibleIds.indexOf(selectedId)
+            const to = visibleIds.indexOf(id)
+            // Either end missing (e.g. the anchor's row was collapsed away):
+            // the caller falls back to a plain click.
+            if (from < 0 || to < 0) return
+            const [lo, hi] = from <= to ? [from, to] : [to, from]
+            const range = visibleIds.slice(lo, hi + 1)
+            setSelectedIds((prev) => {
+                if (!additive) return new Set(range)
+                const next = new Set(prev)
+                for (const r of range) next.add(r)
+                return next
+            })
+            // The anchor stays put so repeated Shift+clicks re-extend from the
+            // same origin; only the set grows or shrinks.
+        },
+        [selectedId],
+    )
+
     // Latest sceneId in a ref so refetch identity stays stable.
     const sceneIdRef = useRef<number | undefined>(sceneId)
     sceneIdRef.current = sceneId
@@ -218,6 +249,7 @@ export function useSceneTree({ cm, sceneId }: UseSceneTreeOptions): UseSceneTree
         selectedHasOps,
         setSelectedId,
         toggleInSelection,
+        selectRangeTo,
         refetch,
         ...nodeOps,
         ...rendererOps,
