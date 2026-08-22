@@ -97,14 +97,14 @@ describe('useWindowCloseHandler (UXP-parity window-close chain)', () => {
     const tabs: TabData[] = [
       { id: 'molview-1', title: 'A', icon: 'file.molview', type: 'molview', viewId: 1 },
       { id: 'molview-2', title: 'B', icon: 'file.molview', type: 'molview', viewId: 2 },
-      { id: 'welcome',    title: 'W', icon: 'file.welcome', type: 'welcome' },
+      { id: '__settings__', title: 'S', icon: 'file.settings', type: 'settings' },
     ]
     const h = mount({ tabs, closeResults: [true, true, true] })
 
     await h.triggerCloseRequest()
 
     expect(h.handleCloseTab.mock.calls.map((c) => c[0])).toEqual([
-      'molview-1', 'molview-2', 'welcome',
+      'molview-1', 'molview-2', '__settings__',
     ])
     // setActiveTab is called only for molview tabs (UXP parity: switch to
     // the tab being closed so the user sees the confirm dialog target).

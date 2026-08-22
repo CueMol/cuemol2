@@ -23,10 +23,10 @@ export function useTabManager(opts?: {
   /** Called before closing a molview tab. Return true to proceed, false to abort. */
   confirmCloseTab?: (viewId: number) => Promise<boolean>;
 }) {
-  const [tabs, setTabs] = useState<TabData[]>([
-    { id: "welcome", title: "Welcome", icon: "file.welcome", type: "welcome" },
-  ]);
-  const [activeTab, setActiveTab] = useState("welcome");
+  // Start with no tabs (VSCode-like): ContentPane renders the WelcomePane
+  // watermark as the empty-state fallback until the first tab opens.
+  const [tabs, setTabs] = useState<TabData[]>([]);
+  const [activeTab, setActiveTab] = useState("");
 
   // Keep a ref so async handleCloseTab can read current tabs without stale closure.
   const tabsRef = useRef<TabData[]>(tabs);

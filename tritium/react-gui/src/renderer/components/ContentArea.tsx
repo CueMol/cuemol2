@@ -17,7 +17,7 @@
  * |  TabBar  (draggable tabs)                   |  <- useTabDragDrop
  * +---------------------------------------------+
  * |  ContentPane                                |
- * |  (code view / ConfigPane / WelcomeScreen)   |
+ * |  (MolViewPane / SettingsPane / WelcomePane) |
  * +---------------------------------------------+
  * ```
  *

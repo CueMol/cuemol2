@@ -35,7 +35,7 @@ interface RenderPanelProps {
   /**
    * Whether the active content tab has a scene to render. Gates the panel's
    * render controls (Start button, Render Settings shortcut): a non-renderable
-   * tab (Settings / welcome) disables them instead of leaving controls that
+   * state (Settings tab, or no open tab) disables them instead of leaving controls that
    * silently do nothing. Stop is never gated -- an in-flight job stays
    * cancellable regardless of the active tab.
    */

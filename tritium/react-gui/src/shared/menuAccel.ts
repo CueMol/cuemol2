@@ -4,7 +4,8 @@
  *
  * Electron accelerators are written platform-neutrally ('CmdOrCtrl+Shift+O')
  * and resolved by the OS for the native menu, but any UI that prints a
- * shortcut itself -- the Windows/Linux menu bar, the welcome screen -- has to
+ * shortcut itself -- the Windows/Linux menu bar, the empty-state start
+ * screen -- has to
  * spell it out. macOS uses the modifier glyphs in their canonical order and no
  * separators; everywhere else the words joined by '+'.
  */

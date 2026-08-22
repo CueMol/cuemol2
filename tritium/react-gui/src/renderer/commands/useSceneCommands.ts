@@ -103,7 +103,7 @@ export function useSceneCommands({
     useRegisterCommand(CmdId.SceneNew, () => openNewScene())
 
     // Resolve the active scene/view, creating a fresh scene + view (a new tab)
-    // when none is active (welcome tab, or every molview tab closed). UXP always
+    // when none is active (no tab open, or every molview tab closed). UXP always
     // kept an active view, so a load always had somewhere to go; tritium has no
     // implicit scene, so the load commands below create one on demand instead of
     // silently doing nothing.

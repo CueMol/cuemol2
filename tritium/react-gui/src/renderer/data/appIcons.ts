@@ -93,7 +93,6 @@ import {
   Globe,
   Hand,
   HandPointing,
-  House,
   Intersect,
   Key,
   Palette,
@@ -218,7 +217,6 @@ export const APP_ICONS = {
   "node.atom": { lib: "phosphor", Comp: Circle, weight: "fill" },
 
   // Editor tabs (tab-type and file-extension driven).
-  "file.welcome": { lib: "phosphor", Comp: House },
   "file.settings": { lib: "phosphor", Comp: Gear },
   "file.molview": { lib: "phosphor", Comp: Cube },
   "file.render": { lib: "phosphor", Comp: Image },
