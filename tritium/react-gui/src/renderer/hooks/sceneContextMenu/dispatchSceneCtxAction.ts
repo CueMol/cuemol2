@@ -66,6 +66,9 @@ export interface DispatchSceneCtxActionCtx {
     selectedIds?: Set<string>
     bulkSetNodeVisible?: (ids: Iterable<string>, visible: boolean) => Promise<boolean>
     bulkDeleteNodes?: (ids: Iterable<string>) => Promise<boolean>
+    bulkCopyNodes?: (
+        ids: Iterable<string>,
+    ) => Promise<{ ok: boolean; reason?: 'mixed' | 'objectUnsupported' }>
 
     // Style-set callbacks.
     createStyleSet: (name: string) => Promise<{ ok: boolean; newId: number }>
@@ -530,6 +533,24 @@ export async function dispatchSceneCtxAction(
                 })
             } catch (err) {
                 console.warn('setCameraVisFlags failed:', err)
+            }
+            return
+        }
+        case 'multiCopy': {
+            if (!ctx.bulkCopyNodes || !ctx.selectedIds) return
+            const res = await ctx.bulkCopyNodes(ctx.selectedIds)
+            if (res.ok) return
+            // UXP alerts on both refusals; keep its wording.
+            if (res.reason === 'mixed') {
+                await ctx.showErrorAlert({
+                    title: 'Copy',
+                    message: 'Multiple items with different types selected.',
+                })
+            } else if (res.reason === 'objectUnsupported') {
+                await ctx.showErrorAlert({
+                    title: 'Copy',
+                    message: 'Multiple copy of object: not supported.',
+                })
             }
             return
         }

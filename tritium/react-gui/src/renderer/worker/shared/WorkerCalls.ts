@@ -205,6 +205,8 @@ import type {
 } from '../server/services/getSeqPanelData.service'
 import type {
   CopyNodeArgs,
+  CopyNodesArgs,
+  CopyNodesResult,
   CopyNodeResult,
   PasteNodeArgs,
   PasteNodeResult,
@@ -596,6 +598,7 @@ export interface ServiceMap {
   centerOnResidue:            { args: CenterOnResidueArgs;             result: CenterOnResidueResult }
   getSeqPanelData:            { args: GetSeqPanelDataArgs;             result: GetSeqPanelDataResult }
   copyNode:                   { args: CopyNodeArgs;                    result: CopyNodeResult }
+  copyNodes:                  { args: CopyNodesArgs;                   result: CopyNodesResult }
   pasteNode:                  { args: PasteNodeArgs;                   result: PasteNodeResult }
   getClipboardKind:           { args: GetClipboardKindArgs;            result: GetClipboardKindResult }
   setRendererColoring:        { args: SetRendererColoringArgs;         result: SetRendererColoringResult }

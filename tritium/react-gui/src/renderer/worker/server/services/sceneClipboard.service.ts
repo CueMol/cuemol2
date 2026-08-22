@@ -487,8 +487,92 @@ function uniqueStyleName(
     return `${prefix}_${Date.now()}`;
 }
 
+
+export interface CopyNodesArgs {
+    sceneId: number;
+    /** Tree-row ids of the selected nodes, in display order. */
+    nodeIds: number[];
+    /** Node type per id, positionally aligned with `nodeIds`. */
+    nodeTypes: string[];
+}
+
+export interface CopyNodesResult {
+    ok: boolean;
+    kind: ClipboardKind | null;
+    /**
+     * Why a copy was refused, so the caller can show UXP's alert text:
+     * 'mixed' -- the selection spans more than one kind;
+     * 'objectUnsupported' -- multiple objects, which UXP declines too.
+     */
+    reason?: 'mixed' | 'objectUnsupported';
+}
+
+/** UXP `convElemNodeTypes`: a group counts as a renderer for type checking. */
+function normalizeNodeType(type: string): string {
+    return type === 'rendGroup' ? 'renderer' : type;
+}
+
+/**
+ * Copy a multi-selection to the clipboard (UXP `onMultiCopy`).
+ *
+ * UXP refuses two cases outright and this mirrors both: a selection of
+ * mixed kinds, and multiple objects ("Multiple copy of object: not
+ * supported"). What remains is a set of renderers -- possibly including
+ * groups, which count as renderers for the type check -- serialized with
+ * `arrayToXML` exactly as `multiRendCopyImpl` does when it has no group
+ * name to embed.
+ *
+ * The entry lands as kind 'renderer' / form 'rendArray', the same shape a
+ * single-group copy produces, so paste and the ctxmenu's Paste gating need
+ * no new case (UXP likewise puts both under clipboard type "qscrendary").
+ */
+function copyNodes(ctx: WorkerContext, args: CopyNodesArgs): CopyNodesResult {
+    const scene = getSceneOrNull(ctx, args.sceneId);
+    if (!scene) return { ok: false, kind: null };
+    if (args.nodeIds.length === 0) return { ok: false, kind: null };
+
+    const kinds = new Set(args.nodeTypes.map(normalizeNodeType));
+    if (kinds.size !== 1) return { ok: false, kind: null, reason: 'mixed' };
+    const [only] = [...kinds];
+    if (only !== 'renderer') {
+        // Objects are the only other multi-selectable kind; UXP declines
+        // them explicitly, and styles / cameras never reach the multi menu.
+        return { ok: false, kind: null, reason: 'objectUnsupported' };
+    }
+
+    // A selected group contributes its member renderers, matching what a
+    // single-group copy serializes.
+    const natives: unknown[] = [];
+    for (let i = 0; i < args.nodeIds.length; ++i) {
+        const rend = scene.getRenderer(args.nodeIds[i]) as Renderer | null;
+        if (!rend) continue;
+        if (args.nodeTypes[i] === 'rendGroup') {
+            for (const child of listGroupChildRenderers(scene, rend)) {
+                natives.push((child as unknown as { wrapped: unknown }).wrapped);
+            }
+        } else {
+            natives.push((rend as unknown as { wrapped: unknown }).wrapped);
+        }
+    }
+    if (natives.length === 0) return { ok: false, kind: null };
+
+    const xml = ctx.strMgr.arrayToXML(natives);
+    if (!xml) return { ok: false, kind: null };
+
+    clipboard = {
+        kind: 'renderer',
+        xml,
+        sourceName: '',
+        sourceClassName: '*multi',
+        form: 'rendArray',
+        sourceGroupName: '',
+    };
+    return { ok: true, kind: 'renderer' };
+}
+
 export const services = {
     copyNode,
+    copyNodes,
     pasteNode,
     getClipboardKind,
 };

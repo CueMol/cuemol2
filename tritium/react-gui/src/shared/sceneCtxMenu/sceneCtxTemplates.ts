@@ -46,6 +46,8 @@ export function buildTemplate(payload: SceneCtxMenuPayload): SceneCtxNode[] {
         return [
             { label: `${multi.length} items selected`, enabled: false },
             { type: 'separator' },
+            { label: 'Copy', action: { kind: 'multiCopy' } },
+            { type: 'separator' },
             { label: 'Show', action: { kind: 'multiShow' } },
             { label: 'Hide', action: { kind: 'multiHide' } },
             { type: 'separator' },

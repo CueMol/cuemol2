@@ -107,12 +107,18 @@ describe('Toolbar', () => {
     t.unmount()
   })
 
-  it('mock buttons do not dispatch any command', () => {
+  it('carries no dead buttons -- every one dispatches', () => {
+    // The bar used to hold a mock "Save" (object overwrite-save) that only
+    // logged a warning. UXP has no such button -- its ribbon offers Save As
+    // and Save Scene only, and there is no object overwrite-save anywhere in
+    // its File menu either -- so it was removed rather than implemented.
     const t = mountTree(<Toolbar undoRedo={makeUndoRedo()} hasScene={true} />)
-    // Object overwrite-save ("Save") has no command yet -- stays mock.
-    dispatch.mockClear()
-    clickButton(t.container, 'Save')
-    expect(dispatch).not.toHaveBeenCalled()
+    const labels = Array.from(t.container.querySelectorAll('button')).map((b) =>
+      b.textContent?.trim(),
+    )
+    expect(labels).not.toContain('Save')
+    expect(labels).toContain('Save As')
+    expect(labels).toContain('Save Scene')
     t.unmount()
   })
 

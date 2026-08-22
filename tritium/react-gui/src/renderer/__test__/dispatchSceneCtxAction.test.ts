@@ -45,6 +45,7 @@ function makeCtx(overrides: Partial<DispatchSceneCtxActionCtx> = {}): DispatchSc
         createRendererOnObject: vi.fn().mockResolvedValue(true),
         bulkSetNodeVisible: vi.fn().mockResolvedValue(true),
         bulkDeleteNodes: vi.fn().mockResolvedValue(true),
+        bulkCopyNodes: vi.fn().mockResolvedValue({ ok: true }),
         createStyleSet: vi.fn().mockResolvedValue({ ok: true, newId: 1 }),
         toggleStyleSetReadOnly: vi.fn().mockResolvedValue({ ok: true, readonly: true }),
         loadStyleSetFromFile: vi.fn().mockResolvedValue(true),
@@ -221,6 +222,27 @@ describe('dispatchSceneCtxAction — multi-select cases', () => {
         const ctx = makeCtx({ selectedIds })
         await dispatchSceneCtxAction(objectNode(), { kind: 'multiDelete' } as SceneCtxAction, ctx)
         expect(ctx.bulkDeleteNodes).toHaveBeenCalledWith(selectedIds)
+    })
+
+    it('multiCopy -> bulkCopyNodes(ids), no alert on success', async () => {
+        const ctx = makeCtx({ selectedIds })
+        await dispatchSceneCtxAction(objectNode(), { kind: 'multiCopy' } as SceneCtxAction, ctx)
+        expect(ctx.bulkCopyNodes).toHaveBeenCalledWith(selectedIds)
+        expect(ctx.showErrorAlert).not.toHaveBeenCalled()
+    })
+
+    it('multiCopy surfaces UXP\'s wording for each refusal', async () => {
+        for (const [reason, message] of [
+            ['mixed', 'Multiple items with different types selected.'],
+            ['objectUnsupported', 'Multiple copy of object: not supported.'],
+        ] as const) {
+            const ctx = makeCtx({
+                selectedIds,
+                bulkCopyNodes: vi.fn().mockResolvedValue({ ok: false, reason }),
+            })
+            await dispatchSceneCtxAction(objectNode(), { kind: 'multiCopy' } as SceneCtxAction, ctx)
+            expect(ctx.showErrorAlert).toHaveBeenCalledWith({ title: 'Copy', message })
+        }
     })
 
     it('multi cases are no-ops when the bulk callbacks are not wired', async () => {
