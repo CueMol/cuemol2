@@ -16,6 +16,7 @@ import type {
   InvokeRes,
 } from '../shared/ipcContract'
 import type { AppPathInfo, FileDialogOptions } from '../shared/ipcTypes'
+import { APP_PRODUCT_NAME } from '../shared/appInfo'
 import { loadLayout, saveLayout, loadUi, saveUi } from './stateStore'
 import { showNaviContextMenu } from './naviContextMenu'
 import { showSceneContextMenu } from './sceneContextMenu'
@@ -423,5 +424,16 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
     if (mainWindow.isMinimized()) mainWindow.restore()
     mainWindow.show()
     mainWindow.focus()
+  })
+
+  // Window title: '<product> - <scene>:<view>', or the bare product name
+  // when no molview tab is active. Mirrors UXP `Qm2Main.setWindowTitle`;
+  // the renderer owns the active scene/view so it supplies the subtitle.
+  handleInvoke(IPC.WINDOW_SET_TITLE, (_event, { subtitle }) => {
+    if (mainWindow.isDestroyed()) return
+    const trimmed = subtitle.trim()
+    mainWindow.setTitle(
+      trimmed ? `${APP_PRODUCT_NAME} - ${trimmed}` : APP_PRODUCT_NAME,
+    )
   })
 }
