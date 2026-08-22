@@ -118,8 +118,16 @@ flags in <name>" txn). Menu item disabled when `vis_size === 0`.
 
 ### Pending
 
-- Edit vis flags dialog (Phase 6c)
-- Properties — depends on the per-type property editor (Phase 5)
+- *(none)*
+
+Edit vis flags landed in Phase 6c (`EditCameraVisFlagsDialog` /
+`cameraVisFlags.service`, [ADR-0026](ADR-0026-camera-vis-flags-editor.md)).
+
+The "Properties — depends on the per-type property editor (Phase 5)" item was
+dropped 2026-08-22 as unfounded: UXP's own `wspcPanelCameraCtxtMenu`
+(`workspace_panel.xul:290-330`) has no Properties entry — New Camera / Delete /
+Copy / Paste / Camera file / Save from view / Apply to view / vis-flag items only
+— so the tritium camera menu already matches it item for item and nothing is owed.
 
 ### Related ADRs
 
