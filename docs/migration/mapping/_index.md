@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-08-23 (**owner 判断 3 件を反映して 2 行 done 化** (**counts: done 133 -> 135 / wip 7 -> 5**、実装変更なし)。(1) **rect-select drag は完了済み**だった: `toolbar.cuemol2-ribbon` の「pending」は 2026-06-17 `ecefbacd` 以降 stale で、`RectSelectOverlay` がラバーバンドを描き `rectSelect` worker service で確定するところまで実装済み。同行の残りは object Save (mock ボタン) のみ。(2) **Window > Panels サブメニューを drop**: UXP は個々のサイドパネルの表示/非表示を切り替えたが、tritium の ActivityBar は 1 グループずつ表示し全体で折りたたむ構造なので、per-panel visibility という結び付け先が存在しない。これで `menu.cuemol2.window` は 5/5 resolved となり **Menu カテゴリは 11/11 全 done**、menus の item-level も 67/67 = 100%。(3) **`panel.molstruct` を done 化**: UXP 側の surface は全て移植済みで、残る展開レイテンシ (Blueprint `Tree` の `Collapse` state machine 起因) は**移植の欠落ではなく tritium 側の性能課題**のため、この行を open にしておく理由にならない。ADR-0018 で react-arborist 置換とあわせて追跡継続)
 - Updated: 2026-08-22 (**scene tree の Shift+click range select を実装** (**counts: done 132 -> 133 / wip 8 -> 7**、`panel.workspace.tree` done 昇格)。これまで multi-select は Cmd クリックの 1 件ずつ追加のみだった。`useSceneTree.selectRangeTo` がアンカー (現在の主選択) からクリック行までを一括選択し、**アンカーは動かない**ので続けて Shift+クリックすると同じ起点から範囲を伸縮できる (Finder パリティ; 縮めると外れた行は選択解除)。Shift+Cmd は置換ではなく union。**範囲の順序は描画順でなければならない**ため、`ScenePane` が Blueprint に渡す `treeContents` を平坦化した `visibleRowIds` を hook に渡す設計にした (scene tree を直接辿ると折りたたみ配下の見えない行まで範囲に入る)。端点が非表示なら hook・handler とも no-op で通常クリックにフォールバック。テスト 10 件 (hook 5: 上下方向 / 同一アンカーからの再伸縮 / additive / 端点欠落、ScenePane 5: 可視順序から折りたたみ配下が除かれること等)。`panel.workspace.ctxmenu.multi` の残りは Copy (renderer 限定・同親のみ) のみ)
 - Updated: 2026-08-22 (**host E2E 待ちだった 3 行を owner 確認済みとして close + script D&D を drop** (**counts: done 129 -> 132 / wip 11 -> 8**、実装変更なし)。`dialog.property.scene` (AO の enable/disable ゲートと realtime drag + 単一 undo、`aa_method` None/FXAA/SMAA、bgcolor、colour-proofing のプロファイル自動投入)、`overlay.config-misc` (atom-label コントロールのライブプレビュー、インストール済みシステムフォントの列挙、再起動をまたぐ `user_styles.xml` 永続化)、`overlay.config-mouse` (Auto-detect 既定でホイールズームとトラックパッドピンチが両立し切替時にステータスバー通知、sensitivity / pick precision の再起動後保持) を確認済みとして done。対応する ADR-0031 / ADR-0032 / ADR-0036 の Status からも host E2E pending を除去 (ADR-0032 は Phase 3 auto-detect まで verified)。あわせて `other.cuemol2` の `.js`/`.py` script drop を **drop** (owner 判断: tritium にスクリプト実行経路自体が無く、drop を活かすには先に実行基盤の構築が必要で、他に要求元も無い)。同行の残りは Linux shell association のみ)
 - Updated: 2026-08-22 (**"Properties は stub" を理由に wip だった 3 行を是正して done 化** (**counts: done 126 -> 129 / wip 14 -> 11**、実装変更なし)。`panel.workspace.ctxmenu.{scene,rendgroup}` の「Properties は panel 共通の read-only stub、実エディタは Phase 5」は、2026-05-19 `a99d46f9` で docked Inspector に置き換わって以降**事実と異なっていた** (`dispatchSceneCtxAction` の `property` アクション -> `useSceneTreeController` の `showProperty: showGeneric` で、toolbar の Property ボタンと同一経路)。PR #493 で `panel.workspace.toolbar` について是正したのと同じ誤りが 2 行に残っていた形。`panel.workspace.ctxmenu.camera` の「Pending: Properties (Phase 5)」は**そもそも根拠がなかった**: UXP の `wspcPanelCameraCtxtMenu` (workspace_panel.xul:290-330) に Properties 項目は存在せず、tritium の camera メニューは項目単位で一致している。なお `panel.molstruct` の Properties ボタン (disabled) は UXP の `onBtnPropCmd` が空実装 (molstruct-panel.js:421) であることの意図的パリティで、同行が wip なのは展開時の性能課題 (ADR-0018) が理由なので据え置き)
@@ -114,8 +115,8 @@
 
 | Category | File | Total | done | wip | review | todo | frozen |
 |----------|------|------:|-----:|----:|-------:|-----:|-------:|
-| Panel | [panels.md](panels.md) | 27 | 24 | 3 | 0 | 0 | 0 |
-| Menu | [menus.md](menus.md) | 11 | 10 | 1 | 0 | 0 | 0 |
+| Panel | [panels.md](panels.md) | 27 | 25 | 2 | 0 | 0 | 0 |
+| Menu | [menus.md](menus.md) | 11 | 11 | 0 | 0 | 0 | 0 |
 | Toolbar | [toolbars.md](toolbars.md) | 2 | 1 | 1 | 0 | 0 | 0 |
 | Dialog\_property | [prop\_dlgs.md](prop_dlgs.md) | 16 | 16 | 0 | 0 | 0 | 0 |
 | Dialog\_other | [other\_dlgs.md](other_dlgs.md) | 18 | 18 | 0 | 0 | 0 | 0 |
@@ -123,7 +124,7 @@
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 12 | 1 | 0 | 0 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 28 | 0 | 0 | 0 | 0 |
 | Other | [other.md](other.md) | 4 | 3 | 1 | 0 | 0 | 0 |
-| **Total** | | **140** | **133** | **7** | **0** | **0** | **0** |
+| **Total** | | **140** | **135** | **5** | **0** | **0** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -179,8 +180,6 @@
 | [`widget.mainview`](custom_widgets.md) | `ContentArea` / `TabBar` / `MolViewPane` | merged: UXP `tabmolview` multi-tab GL view (drag-reorderable tabs) realised by ContentArea + reorderable TabBar hosting the permanently-mounted MolViewPane canvas (ADR-0011). Tracked under `other.cuemol2` |
 | [`panel.workspace.ctxmenu.multi`](panels.md#panelworkspacectxmenumulti) | `useSceneContextMenu` / `main/sceneContextMenu` (multi) / `bulkSceneNodeOps.service` | Right-clicking a multi-selected row opens a multi-only menu: Show / Hide / Delete via `bulkSetNodeVisible` / `bulkDeleteNode` (single undo txn per batch); worker + in-app multi-select OK; pending: Copy (clipboard is single-item) |
 | [`panel.workspace.ctxmenu.style`](panels.md#panelworkspacectxmenustyle) | `useSceneContextMenu` / `main/sceneContextMenu` (style) / `styleOps.service` / `styleFile.service` / `sceneClipboard.service` (style kind) / `sceneOps.deleteNode` (style branch) | New Style + Copy / Paste + Delete + Style file Load / Save / Save As (Reload stub) + Read-only toggle wired; `sceneTree.service` switched to `getStyleSetsJSON` so style nodes carry real C++ uids + `styleInfo`. Editor dialog (Phase 5a) pending. |
-| [`panel.molstruct`](panels.md#panelmolstruct) | `MolStructPane` / `useMolStructure` / `selStrFromTree` / `getMolStructure.service` / `applyMolSelString.service` | Phase 1+2: molecule selector + lazy chain/residue/atom tree (per-chain & per-residue cache, self-heal on missing) + multi-select + Select / Center / Zoom (ADR-0018). Known issue: first-expand stagger from Blueprint `Tree` Collapse JS state machine (virtualization swap deferred). |
-| [`menu.cuemol2.window`](menus.md#menucuemol2window) | `menuTemplate` / `MenuBar` / `useMenuDispatch` / `useWindowCommands` | 4/5 resolved. Topbar / log / panel-layout and the Windows sub-menu dropped; the **Panels sub-menu** is the one outstanding item -- UXP toggles each side panel's visibility while tritium's ActivityBar shows one group at a time, so a tritium-native mapping onto the ActivityBar entries is planned |
 ---
 
 ## Unstarted
