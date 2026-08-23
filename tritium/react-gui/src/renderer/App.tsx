@@ -23,6 +23,7 @@ import { StatusBar } from "./components/StatusBar";
 import { InspectorPanel } from "./components/panels/InspectorPanel";
 
 import { installSelectAllScope } from "./utils/selectAllScope";
+import { installClipboardScopeTracking } from './utils/editClipboard';
 
 import { useLayoutPersistence } from "./hooks/useLayoutPersistence";
 import { useTextContextMenu } from "./hooks/useTextContextMenu";
@@ -424,6 +425,11 @@ const App: React.FC = () => {
   // Track the active selectable region so Cmd+A / Edit > Select All target only
   // the focused field or that region (e.g. the log panel), never the whole GUI.
   useEffect(() => installSelectAllScope(), []);
+
+  // --- Clipboard scope tracking ---
+  // Remember which panel the user last worked in, so Edit > Cut/Copy/Paste
+  // reaches it even when the click moved focus into the menu itself.
+  useEffect(() => installClipboardScopeTracking(), []);
 
   // --- Text clipboard context menu (Windows/Linux React menu path) ---
   useTextContextMenu();

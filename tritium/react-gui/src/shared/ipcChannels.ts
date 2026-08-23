@@ -75,6 +75,12 @@ export const IPC = {
   MENU_SAVE_CURRENT_VIEW: 'menu:save-current-view',
   MENU_RELOAD_SCENE:  'menu:reload-scene',
   MENU_SELECT_ALL:    'menu:select-all',
+  // Clipboard items are custom rather than Electron roles so the renderer can
+  // route them by focus: a text field gets the native edit, a scene-tree or
+  // paint-deck selection gets the node / row clipboard. See utils/editClipboard.
+  MENU_EDIT_CUT:      'menu:edit-cut',
+  MENU_EDIT_COPY:     'menu:edit-copy',
+  MENU_EDIT_PASTE:    'menu:edit-paste',
   MENU_CLEAR_UNDO:    'menu:clear-undo',
   MENU_MERGE_MOL:     'menu:merge-mol',
   MENU_DELETE_MOL_ATOMS: 'menu:delete-mol-atoms',

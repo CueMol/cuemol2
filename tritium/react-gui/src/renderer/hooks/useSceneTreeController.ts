@@ -21,6 +21,9 @@ import type { AsyncCueMol } from "../worker/client/AsyncCueMol";
 import type { SceneTreeNode } from "../worker/shared/sceneTreeTypes";
 import type { UseSceneTreeResult } from "./useSceneTree";
 import { useSceneContextMenu } from "./useSceneContextMenu";
+import { useClipboardScope } from "./useClipboardScope";
+import { findTypedNode } from "./sceneTree/sceneTreeNodeUtils";
+import { useShowErrorAlert } from "../components/dialogs/ErrorAlertDialogProvider";
 
 export interface UseSceneTreeControllerArgs {
   /** The `useSceneTree` result, owned by `App` and passed in whole. */
@@ -57,6 +60,10 @@ export function useSceneTreeController({
     renameNode,
     renameCamera,
     applyCameraToView,
+    copyNode,
+    pasteNode,
+    bulkCopyNodes,
+    bulkDeleteNodes,
   } = scene;
 
   // --- Inline-rename controller ---
@@ -123,6 +130,98 @@ export function useSceneTreeController({
     },
     [setNodeUiCollapsed],
   );
+
+  // --- Edit-menu clipboard (Cmd+C / X / V over the scene tree) ---
+  //
+  // The same three operations the context menu offers, reached by keyboard.
+  // `ScenePane` marks its scroll wrapper `data-clipboard-scope="scene-tree"`,
+  // and `utils/editClipboard.ts` routes here only when the tree -- not a text
+  // field -- is where the user is working.
+
+  const showErrorAlert = useShowErrorAlert();
+
+  /**
+   * Copy the selection to the OS clipboard.
+   *
+   * A multi-selection goes through `bulkCopyNodes`, which refuses a mixed
+   * set and multiple objects exactly as UXP did; surface those the same way
+   * the ctxmenu's multiCopy does.
+   *
+   * @returns whether anything reached the clipboard (Cut needs to know).
+   */
+  const copySelection = useCallback(async (): Promise<boolean> => {
+    if (selectedIds.size > 1) {
+      const res = await bulkCopyNodes(selectedIds);
+      if (res.ok) return true;
+      if (res.reason === "mixed") {
+        await showErrorAlert({
+          title: "Copy",
+          message: "Multiple items with different types selected.",
+        });
+      } else if (res.reason === "objectUnsupported") {
+        await showErrorAlert({
+          title: "Copy",
+          message: "Multiple copy of object: not supported.",
+        });
+      }
+      return false;
+    }
+    if (!selectedId) return false;
+    const found = findTypedNode(tree, selectedId);
+    if (!found) return false;
+    return copyNode(found.node);
+  }, [tree, selectedId, selectedIds, copyNode, bulkCopyNodes, showErrorAlert]);
+
+  /**
+   * Cut: copy, then delete -- but only once the payload is actually on the
+   * clipboard, so a failed copy never destroys the selection. The delete
+   * carries its own undo transaction, so one Cmd+Z brings the nodes back.
+   *
+   * This has no UXP counterpart (the legacy app had no Cut for scene nodes);
+   * it exists because Cmd+X is expected to work wherever Cmd+C does.
+   */
+  const cutSelection = useCallback(async (): Promise<void> => {
+    const ids = selectedIds.size > 1 ? new Set(selectedIds) : null;
+    const id = selectedId;
+    if (!(await copySelection())) return;
+    if (ids) {
+      await bulkDeleteNodes(ids);
+      return;
+    }
+    if (id) await deleteNode(id);
+  }, [copySelection, selectedId, selectedIds, deleteNode, bulkDeleteNodes]);
+
+  /**
+   * Paste onto the selected row -- the ctxmenu Paste, by keyboard.
+   *
+   * The empty-selection check is explicit because `Number('')` is 0, which
+   * resolves to the scene root: without it a stray Cmd+V with nothing
+   * selected would paste into the scene.
+   */
+  const pasteOntoSelection = useCallback(async (): Promise<void> => {
+    if (!selectedId) return;
+    const found = findTypedNode(tree, selectedId);
+    if (!found) return;
+    await pasteNode(found.node);
+  }, [tree, selectedId, pasteNode]);
+
+  useClipboardScope("scene-tree", {
+    cut: () => {
+      void cutSelection().catch((err: unknown) =>
+        console.warn("scene cut failed:", err),
+      );
+    },
+    copy: () => {
+      void copySelection().catch((err: unknown) =>
+        console.warn("scene copy failed:", err),
+      );
+    },
+    paste: () => {
+      void pasteOntoSelection().catch((err: unknown) =>
+        console.warn("scene paste failed:", err),
+      );
+    },
+  });
 
   // --- Context menu + shared New Renderer / New Camera flows ---
 

@@ -31,7 +31,7 @@ import type {
   SceneCtxAction,
   SceneCtxMenuPayload,
   ShellOpenRequest,
-  TextCtxAction,
+  TextEditAction,
   TextCtxShowPayload,
   UiState,
   ViewSizePx,
@@ -170,7 +170,7 @@ export interface InvokeChannels {
   [IPC.CLIPBOARD_CUEMOL_PEEK]:  { req: void; res: CuemolClipPeekRes }
   [IPC.NAVI_CTX_SHOW]:     { req: NaviCtxMenuPayload;    res: NaviCtxAction | null }
   [IPC.SCENE_CTX_SHOW]:    { req: SceneCtxMenuPayload;   res: SceneCtxAction | null }
-  [IPC.TEXT_CTX_ACTION]:   { req: Exclude<TextCtxAction, 'selectAll'>; res: void }
+  [IPC.TEXT_CTX_ACTION]:   { req: TextEditAction;         res: void }
   [IPC.CRASH_REPORT]:      { req: CrashReport;           res: void }
   [IPC.FORCE_QUIT]:        { req: void;                  res: void }
 }

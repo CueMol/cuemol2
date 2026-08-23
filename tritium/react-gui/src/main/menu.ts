@@ -5,8 +5,8 @@
  * React MenuBar can read the same data without pulling in Electron APIs.
  */
 
-import { app, Menu } from 'electron'
-import type { BrowserWindow, MenuItemConstructorOptions } from 'electron'
+import { app, Menu, webContents } from 'electron'
+import type { BrowserWindow, MenuItemConstructorOptions, WebContents } from 'electron'
 import path from 'path'
 import { IPC } from '../shared/ipcChannels'
 import { APP_MENU } from '../shared/menuTemplate'
@@ -96,7 +96,44 @@ function buildSpecificHandlers(
   for (const ch of GENERIC_RELAY_CHANNELS) {
     handlers[ch] = () => mainWindow.webContents.send(IPC.MENU_GENERIC, ch)
   }
+
+  // Edit actions whose meaning depends on focus. The main window routes them
+  // through the renderer (see utils/editClipboard.ts); any OTHER focused
+  // window -- the Rendering window, a devtools pane -- has no such routing and
+  // only ever wants the native edit. Cut/Copy/Paste used to be Electron roles,
+  // which did this implicitly; keeping it explicit here preserves that.
+  const focusRouted: [string, NativeEditAction][] = [
+    [IPC.MENU_EDIT_CUT, 'cut'],
+    [IPC.MENU_EDIT_COPY, 'copy'],
+    [IPC.MENU_EDIT_PASTE, 'paste'],
+    [IPC.MENU_UNDO, 'undo'],
+    [IPC.MENU_REDO, 'redo'],
+  ]
+  for (const [ch, native] of focusRouted) {
+    const toRenderer = handlers[ch] ?? (() => mainWindow.webContents.send(IPC.MENU_GENERIC, ch))
+    handlers[ch] = () => {
+      const focused = webContents.getFocusedWebContents()
+      if (focused && focused.id !== mainWindow.webContents.id) {
+        runNativeEdit(focused, native)
+        return
+      }
+      toRenderer()
+    }
+  }
   return handlers
+}
+
+/** Native edit actions a focused webContents can run against its own selection. */
+type NativeEditAction = 'cut' | 'copy' | 'paste' | 'undo' | 'redo'
+
+function runNativeEdit(wc: WebContents, action: NativeEditAction): void {
+  switch (action) {
+    case 'cut': wc.cut(); break
+    case 'copy': wc.copy(); break
+    case 'paste': wc.paste(); break
+    case 'undo': wc.undo(); break
+    case 'redo': wc.redo(); break
+  }
 }
 
 /**

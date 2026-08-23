@@ -35,15 +35,19 @@ function editItem(id: string): AppMenuItem | undefined {
 
 describe('APP_MENU Edit clipboard items', () => {
   it.each([
-    ['cut', 'cut'],
-    ['copy', 'copy'],
-    ['paste', 'paste'],
-  ])('%s is a pure role item delegated to Electron', (id, role) => {
+    ['cut', 'menu:edit-cut', 'CmdOrCtrl+X'],
+    ['copy', 'menu:edit-copy', 'CmdOrCtrl+C'],
+    ['paste', 'menu:edit-paste', 'CmdOrCtrl+V'],
+  ])('%s is a focus-routed ipcChannel item, not a native role', (id, channel, accel) => {
+    // A role item would run natively before the renderer saw the keystroke,
+    // which is precisely what the scene-tree / paint-deck routing needs to
+    // intercept. Declaring the channel means we must also declare the
+    // accelerator, since Electron only supplies one for roles.
     const item = editItem(id)
     expect(item).toBeDefined()
-    expect(item?.role).toBe(role)
-    // No ipcChannel -> main/menu.ts hands it to Electron natively.
-    expect(item?.ipcChannel).toBeUndefined()
+    expect(item?.role).toBeUndefined()
+    expect(item?.ipcChannel).toBe(channel)
+    expect(item?.accelerator).toBe(accel)
   })
 
   it('select-all is a scoped ipcChannel item, not a native role', () => {

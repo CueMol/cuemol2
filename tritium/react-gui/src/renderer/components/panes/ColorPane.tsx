@@ -74,6 +74,7 @@ import { useMolCoordObjects } from '../../hooks/useMolCoordObjects'
 import { PaintSelCell } from './PaintSelCell'
 import { fireService } from '../../utils/fireService'
 import { IPC } from '../../../shared/ipcChannels'
+import { useClipboardScope } from '../../hooks/useClipboardScope'
 
 // ------------------------------------------------------------
 // Coloring type dropdown items
@@ -270,7 +271,16 @@ const PaintTable: React.FC<PaintTableProps> = ({
     return (
         <>
             <div className="color-section-label">Paint coloring:</div>
-            <div className="color-table-wrap">
+            {/* Marks the paint deck as the target of Edit > Cut/Copy/Paste
+                while the user is working here. tabIndex keeps the wrapper
+                focusable so a row click parks focus inside the scope; the
+                handlers are registered by useClipboardScope below. */}
+            <div
+                className="color-table-wrap"
+                tabIndex={-1}
+                data-clipboard-scope="paint-deck"
+                style={{ outline: 'none' }}
+            >
                 <table className="color-table">
                     <thead>
                         <tr>
@@ -318,7 +328,7 @@ const PaintTable: React.FC<PaintTableProps> = ({
                 </table>
             </div>
 
-            <div className="color-actions">
+            <div className="color-actions" data-clipboard-scope="paint-deck">
                 <ButtonGroup minimal>
                     <Tooltip content="Add row" placement="top" compact>
                         <Button
@@ -1227,6 +1237,20 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
             </>
         )
     }
+
+    // --- Edit-menu clipboard (Cmd+C / X / V over the paint deck) ---
+    // Registered only while the Paint deck is the visible one: the other
+    // decks have no rows to copy, and an idle registration would answer for
+    // a panel that shows nothing to act on.
+    useClipboardScope(
+        'paint-deck',
+        {
+            cut: () => onClipboardTake('cut'),
+            copy: () => onClipboardTake('copy'),
+            paste: onPasteRows,
+        },
+        className === PAINT_DECK_CLASS,
+    )
 
     // Also disabled while the first coloring-state fetch is in flight, so
     // the dropdown never opens with capability flags still unknown.

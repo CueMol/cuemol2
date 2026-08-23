@@ -25,6 +25,25 @@ const mocks = vi.hoisted(() => ({
   openNewRendererFlow: vi.fn().mockResolvedValue(undefined),
   openNewCameraFlow: vi.fn().mockResolvedValue(undefined),
   ctxMenuArgs: { current: null as Record<string, unknown> | null },
+  showErrorAlert: vi.fn().mockResolvedValue(undefined),
+}));
+// Same reason: the controller now asks for the error-alert dialog so the
+// keyboard Copy can report UXP's multi-copy refusals.
+vi.mock('../components/dialogs/ErrorAlertDialogProvider', () => ({
+  useShowErrorAlert: () => mocks.showErrorAlert,
+}));
+
+// Capture what the controller registers as its clipboard scope, so the
+// keyboard path can be driven without the DOM plumbing (covered separately
+// in editClipboard.test.ts).
+const registered = new Map<string, { cut: () => void; copy: () => void; paste: () => void }>();
+vi.mock('../hooks/useClipboardScope', () => ({
+  useClipboardScope: (
+    id: string,
+    handlers: { cut: () => void; copy: () => void; paste: () => void },
+  ) => {
+    registered.set(id, handlers);
+  },
 }));
 vi.mock('../hooks/useSceneContextMenu', () => ({
   useSceneContextMenu: (opts: Record<string, unknown>) => {
@@ -58,6 +77,10 @@ function makeScene(overrides: Record<string, unknown> = {}) {
     renameNode: vi.fn().mockResolvedValue(true),
     renameCamera: vi.fn().mockResolvedValue(true),
     applyCameraToView: vi.fn().mockResolvedValue(true),
+    copyNode: vi.fn().mockResolvedValue(true),
+    pasteNode: vi.fn().mockResolvedValue(true),
+    bulkCopyNodes: vi.fn().mockResolvedValue({ ok: true }),
+    bulkDeleteNodes: vi.fn().mockResolvedValue(true),
     ...overrides,
   };
 }
@@ -81,6 +104,7 @@ function renderController(
 
 beforeEach(() => {
   vi.clearAllMocks();
+  registered.clear();
   mocks.ctxMenuArgs.current = null;
 });
 
@@ -258,5 +282,112 @@ describe('useSceneTreeController toolbar handlers', () => {
     expect(mocks.openNewCameraFlow).toHaveBeenCalledTimes(1);
     expect(mocks.openNewRendererFlow).not.toHaveBeenCalled();
     h.unmount();
+  });
+});
+
+// --- Keyboard clipboard scope (Cmd+C / X / V over the scene tree) ---
+
+describe('useSceneTreeController clipboard scope', () => {
+  /** A one-node tree so findTypedNode can resolve the selection. */
+  const treeWith = (id: number) =>
+    node({ id: 0, type: 'scene', children: [node({ id, type: 'renderer' })] });
+
+  /** Mount the controller and hand back the registered scope handlers. */
+  function mountScope(scene: Scene) {
+    const h = renderController(scene);
+    const handlers = registered.get('scene-tree');
+    if (!handlers) throw new Error('scene-tree scope was not registered');
+    return { h, handlers };
+  }
+
+  it('registers under the id ScenePane tags its wrapper with', () => {
+    const { h } = mountScope(makeScene());
+    expect(registered.has('scene-tree')).toBe(true);
+    h.unmount();
+  });
+
+  it('copies the single selected node', async () => {
+    const scene = makeScene({ tree: treeWith(42), selectedId: '42' });
+    const { h, handlers } = mountScope(scene);
+    await act(async () => { handlers.copy(); });
+    expect(scene.copyNode).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 42 }),
+    );
+    expect(scene.bulkCopyNodes).not.toHaveBeenCalled();
+    h.unmount();
+  });
+
+  it('routes a multi-selection through bulkCopyNodes', async () => {
+    const ids = new Set(['42', '43']);
+    const scene = makeScene({ tree: treeWith(42), selectedId: '42', selectedIds: ids });
+    const { h, handlers } = mountScope(scene);
+    await act(async () => { handlers.copy(); });
+    expect(scene.bulkCopyNodes).toHaveBeenCalledWith(ids);
+    expect(scene.copyNode).not.toHaveBeenCalled();
+    h.unmount();
+  });
+
+  it('reports UXP\'s refusals for a multi-copy', async () => {
+    const scene = makeScene({
+      tree: treeWith(42),
+      selectedIds: new Set(['42', '43']),
+      bulkCopyNodes: vi.fn().mockResolvedValue({ ok: false, reason: 'mixed' }),
+    });
+    const { h, handlers } = mountScope(scene);
+    await act(async () => { handlers.copy(); });
+    expect(mocks.showErrorAlert).toHaveBeenCalledWith({
+      title: 'Copy',
+      message: 'Multiple items with different types selected.',
+    });
+    h.unmount();
+  });
+
+  it('cuts by copying first and deleting only once the copy landed', async () => {
+    const scene = makeScene({ tree: treeWith(42), selectedId: '42' });
+    const { h, handlers } = mountScope(scene);
+    await act(async () => { handlers.cut(); });
+    expect(scene.copyNode).toHaveBeenCalled();
+    expect(scene.deleteNode).toHaveBeenCalledWith('42');
+    h.unmount();
+  });
+
+  it('does NOT delete when the copy failed', async () => {
+    // Losing the selection to a clipboard write that never happened would
+    // be unrecoverable from the user's point of view.
+    const scene = makeScene({
+      tree: treeWith(42),
+      selectedId: '42',
+      copyNode: vi.fn().mockResolvedValue(false),
+    });
+    const { h, handlers } = mountScope(scene);
+    await act(async () => { handlers.cut(); });
+    expect(scene.deleteNode).not.toHaveBeenCalled();
+    h.unmount();
+  });
+
+  it('cuts a multi-selection through the bulk delete', async () => {
+    const ids = new Set(['42', '43']);
+    const scene = makeScene({ tree: treeWith(42), selectedId: '42', selectedIds: ids });
+    const { h, handlers } = mountScope(scene);
+    await act(async () => { handlers.cut(); });
+    expect(scene.bulkDeleteNodes).toHaveBeenCalledWith(ids);
+    expect(scene.deleteNode).not.toHaveBeenCalled();
+    h.unmount();
+  });
+
+  it('pastes onto the selected node, and no-ops without a selection', async () => {
+    const scene = makeScene({ tree: treeWith(42), selectedId: '42' });
+    const { h, handlers } = mountScope(scene);
+    await act(async () => { handlers.paste(); });
+    expect(scene.pasteNode).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 42 }),
+    );
+    h.unmount();
+
+    const empty = makeScene({ tree: treeWith(42), selectedId: '' });
+    const m2 = mountScope(empty);
+    await act(async () => { m2.handlers.paste(); });
+    expect(empty.pasteNode).not.toHaveBeenCalled();
+    m2.h.unmount();
   });
 });

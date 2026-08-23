@@ -94,6 +94,10 @@ import {
     setupElectronAPI,
     teardownElectronAPI,
 } from './helpers/testHarness'
+import {
+    _resetClipboardScopesForTest,
+    getClipboardScopeForTest,
+} from '../utils/editClipboard'
 
 /** Set a controlled input's value so React's onChange fires (native setter). */
 function setInputValue(el: HTMLInputElement, value: string): void {
@@ -626,6 +630,83 @@ describe('ColorPane wire', () => {
         expect(cm.invokeService).toHaveBeenCalledWith('setRendererColoring', {
             ...TARGET,
             coloringId: 'paint-type-cpk',
+        })
+        unmount()
+    })
+})
+
+// --- Keyboard clipboard scope (Cmd+C / X / V over the paint deck) ---
+//
+// The Edit menu routes to a registered scope rather than to the buttons, so
+// the two paths could drift apart. These pin that they do the same thing,
+// and that a deck with no rows to act on does not claim the shortcut.
+
+describe('ColorPane clipboard scope', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        _resetClipboardScopesForTest()
+    })
+    afterEach(() => {
+        teardownElectronAPI()
+    })
+
+    /** The handlers ColorPane registered, or null when it registered none. */
+    function paintScope() {
+        return getClipboardScopeForTest('paint-deck')
+    }
+
+    it('registers while the Paint deck is showing, and not otherwise', async () => {
+        const solid = await mountWith({
+            ok: true, className: 'SolidColoring', defaultColor: '#000000',
+        })
+        expect(paintScope()).toBeNull()
+        solid.unmount()
+
+        const paint = await mountWith({
+            ok: true, className: 'PaintColoring', paintEntries: [],
+        })
+        expect(paintScope()).not.toBeNull()
+        paint.unmount()
+    })
+
+    const PAINT_ROWS_2 = [
+        { idx: 0, selStr: 'aname N', colorValue: '#ff0000' },
+        { idx: 1, selStr: 'aname CA', colorValue: '#00ff00' },
+    ]
+
+    /** Mount the Paint deck with row 1 selected; returns the scope handlers. */
+    async function mountWithRowSelected() {
+        const view = await mountWith(
+            { ok: true, className: 'PaintColoring', paintEntries: PAINT_ROWS_2 },
+            true,
+        )
+        const row = view.container.querySelectorAll('.color-row')[1] as HTMLElement
+        await act(async () => { row.click() })
+        await flushPromises()
+        const scope = paintScope()
+        if (!scope) throw new Error('paint-deck scope was not registered')
+        return { ...view, scope }
+    }
+
+    // One mount per action: copy/cut/paste each move the row selection, so
+    // chaining them in a single mount would assert against a stale index.
+    it.each([
+        ['copy', 'copyPaintEntries', { idxs: [1] }],
+        ['cut', 'cutPaintEntries', { idxs: [1] }],
+    ] as const)('%s reaches the same service as its button', async (action, service, args) => {
+        const { cm, scope, unmount } = await mountWithRowSelected()
+        await act(async () => { scope[action]() })
+        await flushPromises()
+        expect(cm.invokeService).toHaveBeenCalledWith(service, { ...TARGET, ...args })
+        unmount()
+    })
+
+    it('paste reaches pastePaintEntries with the selected row and clipboard rows', async () => {
+        const { cm, scope, unmount } = await mountWithRowSelected()
+        await act(async () => { scope.paste() })
+        await flushPromises()
+        expect(cm.invokeService).toHaveBeenCalledWith('pastePaintEntries', {
+            ...TARGET, idx: 1, entries: CLIP_ROWS,
         })
         unmount()
     })
