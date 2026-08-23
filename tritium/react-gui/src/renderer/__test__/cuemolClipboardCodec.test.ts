@@ -165,6 +165,28 @@ describe('Format B: text envelope', () => {
     }
   })
 
+  it('emits the exact wire text the CueMol2 side also produces', () => {
+    // A golden, because the envelope is a two-implementation contract:
+    // `qsc-copipe.js` builds the same three lines from XPCOM primitives.
+    // Any drift here -- key order, an omitted field, a missing newline --
+    // is a silent interop break, so the bytes are pinned literally.
+    expect(encodeEnvelope({ kind: 'renderer', form: 'single' }, utf8('<a/>')))
+      .toBe('CueMolClipboard/1\n{"kind":"renderer","form":"single"}\nPGEvPg==\n')
+    expect(encodeEnvelope({ kind: 'paint' }, utf8('[{"sel":"*","col":"#fff"}]')))
+      .toBe(
+        'CueMolClipboard/1\n{"kind":"paint","form":"single"}\n' +
+          'W3sic2VsIjoiKiIsImNvbCI6IiNmZmYifV0=\n',
+      )
+    // `name` is optional on the wire: the CueMol2 side never sets one, and
+    // paste does not depend on it, so an omitted name must still parse.
+    expect(decodeEnvelope(
+      'CueMolClipboard/1\n{"kind":"object","form":"single"}\nPGEvPg==\n',
+    )).toEqual({
+      meta: { kind: 'object', form: 'single', name: '' },
+      bytes: utf8('<a/>'),
+    })
+  })
+
   it('reads the header without decoding the body', () => {
     // The Paste gate uses this on a payload that may be megabytes.
     const text = encodeEnvelope({ kind: 'object', name: 'mol1' }, bytes)

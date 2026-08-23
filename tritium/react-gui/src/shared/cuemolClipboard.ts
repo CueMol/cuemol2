@@ -166,10 +166,15 @@ function cleanLine(line: string): string {
     return line.replace(/^﻿/, '').replace(/\r$/, '').trim();
 }
 
-/** Build the text envelope for a payload. */
+/**
+ * Build the text envelope for a payload.
+ *
+ * `kind` and `form` are always written, in that order, and `name` only
+ * when non-empty -- the CueMol2 side emits exactly the same shape, so a
+ * given payload produces byte-identical text in both apps.
+ */
 export function encodeEnvelope(meta: ClipMeta, bytes: Uint8Array): string {
-    const head: ClipMeta = { kind: meta.kind };
-    if (meta.form && meta.form !== 'single') head.form = meta.form;
+    const head: ClipMeta = { kind: meta.kind, form: meta.form ?? 'single' };
     if (meta.name) head.name = meta.name;
     return `${ENVELOPE_MAGIC}\n${JSON.stringify(head)}\n${Buffer.from(bytes).toString('base64')}\n`;
 }

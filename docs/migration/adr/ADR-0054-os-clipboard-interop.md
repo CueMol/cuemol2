@@ -85,6 +85,12 @@ CueMolClipboard/1
 デコードするので折り返し・CRLF・末尾改行に耐える)。base64 にするのは object ペイロードが
 非整形 XML + バイナリチャンクでテキスト経路の再エンコードに耐えないため。
 
+meta は `kind` と `form` を常にこの順で書き、`name` は非空のときだけ足す。**同じペイロードから
+両アプリがバイト同一のテキストを生成する**ようにするためで、tritium 側はゴールデンテストで
+その並びを literal に pin してある (`cuemolClipboardCodec.test.ts`)。`name` は CueMol2 側が
+持たない (copy 呼び出しに名前を渡す口が無い) が、paste は復元 XML 内の名前を優先するので
+欠けていても支障はない。
+
 ### 書き分けと読み取り
 
 Electron は 1 回の書き込みで 1 形式しか置けない (`clipboard.writeBuffer` は
