@@ -1,5 +1,6 @@
 # Migration Mapping — Index
 
+- Updated: 2026-08-23 (**Linux shell association を実装し、mapping 140/140 全 done — UXP -> tritium 移行台帳完了** (**counts: done 139 -> 140 / wip 1 -> 0**)。`electron-builder.yml` の `linux.fileAssociations` に 16 拡張子を登録。app-builder-lib が mimeType から .desktop の `MimeType=` 行と shared-mime-info XML を自動生成し、deb では `/usr/share/mime/packages/` に配置、stock の after-install が `update-mime-database` + `update-desktop-database` を実行することを node_modules の実装 (LinuxTargetHelper / FpmTarget / after-install.tpl) で確認済み。**1 エントリ 1 拡張子が必須** (生成器は `*.${ext}` を文字列のまま埋めるため、mac のような ext 配列だと `*.pdb,ent` という壊れた glob になる)。他プラットフォーム同様 default は主張しない candidacy のみ (MimeType 登録は user の `mimeapps.list` を上書きしない = freedesktop 版 `rank: Alternate`)。起動ファイルは argv / second-instance argv 経由で既存の shell-open queue が処理。MIME 名は chemical-mime-data に慣例があるもの (pdb/cif/mmcif/mol2/sdf/mol) は chemical/x-*、他は app 固有の x- 名。3 プラットフォームの拡張子リスト同期と Linux 固有制約 (1 ext / mimeType 必須 / 裸の gz 禁止) を pin する vitest guard (`fileAssociationSync.test.ts`, 6 cases) を追加。AppImage は同じ .desktop メタデータを内包するが、登録は user の統合ツール依存である旨を記録)
 - Updated: 2026-08-23 (**`widget.mainview` を自身のスコープで close、残り 1 行に** (**counts: done 138 -> 139 / wip 2 -> 1**、Custom Widget も 13/13 全 done)。この行は「`other.cuemol2` に追従」として open のままだったが、inventory が `tabmolview` に挙げる機能は全て移植済みだった: multi-tab GL コンテナ、drag 並べ替え可能なタブ、タブごとの label / close ボタン / context menu、camera state (`rotQuat` / `viewCenter` / `zoom` / `slab` / `distance`) と `rotateView` / `translateView` / zoom / slab 操作 (`viewXform.service`)。**inventory の 2 行は移植ではなく検証で解消**: 「middle-click close」は UXP の挙動ではない (`mainViewBindings.xml:423` の `mousedown button=1` ハンドラは `clientTop` に触れてレイアウトを強制するだけで何も閉じない)、タブの context menu は既存の tab-strip メニューがそれにあたる。`other.cuemol2` に残る Linux shell association はアプリ全体の packaging 課題で `tabmolview` の surface を持たないため、この行を gate しない)
 - Updated: 2026-08-23 (**toolbar の object Save を drop して Toolbar カテゴリ 2/2 全 done** (**counts: done 137 -> 138 / wip 3 -> 2**)。`toolbar.cuemol2-ribbon` に残っていた mock の Save ボタンは、調べた結果 **UXP に移植元が存在しなかった**: UXP のリボン (`topbar/cuemol2-ribbon.xul`) は New Tab / Open File / **Save As** / Open Scene / Reload Scene / Save Scene / Get PDB / Undo / Redo で object Save を持たず、File メニューも "Save File As…" のみで、object の overwrite-in-place は UXP のどこにも無い。実装すればパリティを埋めるどころか独自機能の追加になるため、ボタンと Toolbar の `mock` item kind (これが最後の利用者) ごと撤去し、未使用になった `toolbar.save` アイコンキーも削除。テストは「mock は dispatch しない」から「dead button が無い (Save は無く Save As / Save Scene はある)」を pin する形に置換。ADR-0013 の Status と Update 節も更新。**残る wip は 2 行のみ**: `other.cuemol2` の Linux shell association と、それに追従する `widget.mainview`)
 - Updated: 2026-08-23 (**multi-select Copy を実装 + style Reload の実態を記録し、Panel カテゴリが 27/27 全 done に** (**counts: done 135 -> 137 / wip 5 -> 3**)。(1) **`panel.workspace.ctxmenu.multi` の Copy を実装**: 新 worker service `copyNodes` が選択を `StreamManager.arrayToXML` で直列化 (UXP `multiRendCopyImpl` のグループ名なし経路)。選択されたグループは自身ではなくメンバー renderer を寄与する。UXP の 2 つの拒否 (型混在 / 複数 object) を alert 文言ごと再現し、型チェックでは `rendGroup` を `renderer` に畳む (UXP `convElemNodeTypes` と同一)。clipboard entry は kind `renderer` / form `rendArray` で単一グループ copy と同形にしたため、paste と Paste gating は無改修 (UXP も両者を `qscrendary` に入れる)。テスト 8 件 (worker 6 / dispatch 2)。(2) **`panel.workspace.ctxmenu.style` の Reload は移植漏れではなかった**: UXP の `onStyReloadFile` 自体が `alert("Not implemented!!")` (`workspace_panel.js:1670`) で、tritium はそれを忠実に写した inert な項目。独自実装を足す方がパリティから外れるため、その旨を記録して done 化)
@@ -126,8 +127,8 @@
 | Dialog\_tool | [tool\_dlgs.md](tool_dlgs.md) | 21 | 21 | 0 | 0 | 0 | 0 |
 | Custom Widget | [custom\_widgets.md](custom_widgets.md) | 13 | 13 | 0 | 0 | 0 | 0 |
 | Overlay | [overlay.md](overlay.md) | 28 | 28 | 0 | 0 | 0 | 0 |
-| Other | [other.md](other.md) | 4 | 3 | 1 | 0 | 0 | 0 |
-| **Total** | | **140** | **139** | **1** | **0** | **0** | **0** |
+| Other | [other.md](other.md) | 4 | 4 | 0 | 0 | 0 | 0 |
+| **Total** | | **140** | **140** | **0** | **0** | **0** | **0** |
 
 > frozen = `blocked` status in mapping files
 
@@ -176,10 +177,7 @@
 
 ## In Progress (wip / review)
 
-| ID | React | Notes |
-|----|-------|-------|
-| [`other.cuemol2`](other.md#othercuemol2) | `App` / `ContentArea` / `TabBar` / `SidePanel` / `BottomPanel` / `StatusBar` / `ConfirmCloseTabDialog` / `useWindowCloseHandler` / `useFileDrop` / `useShellOpenFiles` | Main window layout (panels, tab view, status bar) + window-close/quit funnel wired (cmd-Q + close button share one confirm funnel, ADR-0016 supersedes ADR-0010). Canvas lifecycle: ADR-0011. OS file drag-and-drop open (`useFileDrop`) and OS shell / command-line open (`useShellOpenFiles`, single-instance + macOS `open-file` + argv) wired; `.js`/`.py` script open and Windows/Linux shell association not ported |
----
+*(none — all 140 rows are done as of 2026-08-23)*
 
 ## Unstarted
 
