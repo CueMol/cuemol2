@@ -1,8 +1,14 @@
 # ADR-0053: Paint deck clipboard (Cut / Copy / Paste) and Delete all
 
-- Status: accepted
+- Status: accepted (clipboard スコープの判断のみ [ADR-0054](ADR-0054-os-clipboard-interop.md) が supersede)
 - Date: 2026-08-23
 - Mapping rows: [`panel.coloring.deck.paint`](../mapping/panels.md#panelcoloringdeckpaint)
+
+> **2026-08-23 追記**: 本 ADR の決定 1「clipboard のスコープ = worker 内 module singleton」は
+> [ADR-0054](ADR-0054-os-clipboard-interop.md) で OS クリップボードに置き換えられた
+> (CueMol2 との相互運用と、将来の tritium 複数インスタンス間 copy&paste のため)。
+> 決定 2 (Cut = 1 txn) と決定 3 (paste 位置 / 逆順挿入)、および行を文字列で保持して
+> 貼り付け先で再コンパイルする方針はそのまま有効で、むしろプロセスを跨げる根拠になっている。
 
 ## Context
 

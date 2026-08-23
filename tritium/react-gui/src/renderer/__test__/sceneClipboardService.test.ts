@@ -1,9 +1,50 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import {
-    services,
-    _resetClipboardForTest,
+/**
+ * Worker-side scene Copy / Paste.
+ *
+ * The services are stateless -- copy returns the serialized bytes and paste
+ * takes them back -- because the clipboard itself is the OS clipboard (see
+ * `main/cuemolClipboard.ts`). `copyPaste` below threads the payload the way
+ * the renderer + main relay does, so these tests exercise the same wire the
+ * app uses.
+ */
+import { describe, it, expect, vi } from 'vitest'
+import { services } from '../worker/server/services/sceneClipboard.service'
+import type {
+    CopyNodeArgs,
+    CopyNodeResult,
+    PasteNodeArgs,
+    PasteNodeResult,
 } from '../worker/server/services/sceneClipboard.service'
 import type { WorkerContext } from '../worker/server/types/WorkerContext'
+
+/**
+ * Round-trip a copy result into a paste call, as the renderer does via the
+ * OS clipboard. Splitting these would let a change break the pairing
+ * silently, so every paste test goes through here.
+ */
+function copyPaste(
+    ctx: WorkerContext,
+    copyArgs: CopyNodeArgs,
+    pasteArgs: Omit<PasteNodeArgs, 'kind' | 'bytes' | 'form' | 'name'>,
+): PasteNodeResult {
+    const c = services.copyNode(ctx, copyArgs)
+    return pasteCopied(ctx, c, pasteArgs)
+}
+
+/** Paste an already-taken copy result. */
+function pasteCopied(
+    ctx: WorkerContext,
+    c: CopyNodeResult,
+    pasteArgs: Omit<PasteNodeArgs, 'kind' | 'bytes' | 'form' | 'name'>,
+): PasteNodeResult {
+    return services.pasteNode(ctx, {
+        ...pasteArgs,
+        kind: c.kind!,
+        form: c.form,
+        name: c.name,
+        bytes: c.bytes!,
+    })
+}
 
 interface BuildCtxOpts {
     /** Existing object names in the destination scene (for paste uniquification). */
@@ -124,10 +165,20 @@ function buildCtx(opts: BuildCtxOpts & {
     }
     const getService = vi.fn(() => styleMgr)
 
+    // Stand-in for the N-API ByteArray <-> Uint8Array bridge. The real one
+    // is symmetric and origin-agnostic: any non-empty byte buffer inflates
+    // into a ByteArray, which is what makes a payload from another process
+    // pasteable at all.
+    const copyToTypedArray = vi.fn(() => new Uint8Array([1, 2, 3]))
+    const copyFromTypedArray = vi.fn((b: Uint8Array) => ({
+        __byteArray: true,
+        __bytes: b,
+    }))
+
     const ctx = {
         sceMgr: { getScene: vi.fn(() => mockScene) },
         strMgr: { toXML, fromXML, rendGrpToXML, arrayToXML, rendArrayFromXML, createWrapper },
-        svc: { getService },
+        svc: { getService, copyToTypedArray, copyFromTypedArray },
     } as unknown as WorkerContext
 
     return {
@@ -139,25 +190,23 @@ function buildCtx(opts: BuildCtxOpts & {
         startUndoTxn, commitUndoTxn,
         styleMgr, sourceStyleSet,
         getStyleSet, hasStyleSet, registerStyleSet,
+        copyToTypedArray, copyFromTypedArray,
     }
 }
-
-beforeEach(() => {
-    _resetClipboardForTest()
-})
 
 describe('sceneClipboard.copyNode', () => {
     it('object copy stores XML + class info and returns kind=object', () => {
         const { ctx, toXML } = buildCtx()
         const res = services.copyNode(ctx, { sceneId: 1, nodeId: 10, nodeType: 'object' })
-        expect(res).toEqual({ ok: true, kind: 'object' })
+        expect(res).toMatchObject({ ok: true, kind: 'object', form: 'single', name: 'mol1' })
+        expect(res.bytes).toBeInstanceOf(Uint8Array)
         expect(toXML).toHaveBeenCalledTimes(1)
     })
 
     it('renderer copy returns kind=renderer (via scene.getRenderer)', () => {
         const { ctx, mockScene, toXML } = buildCtx()
         const res = services.copyNode(ctx, { sceneId: 1, nodeId: 100, nodeType: 'renderer' })
-        expect(res).toEqual({ ok: true, kind: 'renderer' })
+        expect(res).toMatchObject({ ok: true, kind: 'renderer', form: 'single' })
         expect(mockScene.getRenderer).toHaveBeenCalledWith(100)
         expect(toXML).toHaveBeenCalled()
     })
@@ -172,15 +221,14 @@ describe('sceneClipboard.copyNode', () => {
             (id?: number) =>
                 id === 50 ? grp : id === 100 ? member : id === 101 ? stranger : null)
         const res = services.copyNode(ctx, { sceneId: 1, nodeId: 50, nodeType: 'rendGroup' })
-        expect(res).toEqual({ ok: true, kind: 'renderer' })
         // Natives of group members only (unwrapped via .wrapped); the
         // group renderer itself and non-members are excluded.
         expect(rendGrpToXML).toHaveBeenCalledWith([{ __native: 1 }], 'grpA')
         expect(toXML).not.toHaveBeenCalled()
-        // Public clipboard kind stays 'renderer' so ctxmenu Paste gating
-        // is unchanged (UXP qscrend | qscrendary equivalence).
-        expect(services.getClipboardKind(ctx, {})).toEqual({
-            kind: 'renderer', sourceName: 'grpA',
+        // Kind stays 'renderer' so ctxmenu Paste gating is unchanged (UXP
+        // qscrend | qscrendary equivalence); form distinguishes the shape.
+        expect(res).toMatchObject({
+            ok: true, kind: 'renderer', form: 'rendArray', name: 'grpA',
         })
     })
 
@@ -211,13 +259,10 @@ describe('sceneClipboard.copyNodes (multi-selection copy)', () => {
             nodeIds: [100, 101],
             nodeTypes: ['renderer', 'renderer'],
         })
-        expect(res).toEqual({ ok: true, kind: 'renderer' })
+        expect(res).toMatchObject({ ok: true, kind: 'renderer', form: 'rendArray' })
         expect(h.arrayToXML).toHaveBeenCalledTimes(1)
         // rendGrpToXML is the single-group path and must stay out of it.
         expect(h.rendGrpToXML).not.toHaveBeenCalled()
-        // The entry is the same shape a group copy leaves, so paste and the
-        // ctxmenu's Paste gating need no extra case.
-        expect(services.getClipboardKind(h.ctx, {}).kind).toBe('renderer')
     })
 
     it('serializes a group\'s members, never the group shell itself', () => {
@@ -270,7 +315,7 @@ describe('sceneClipboard.copyNodes (multi-selection copy)', () => {
         expect(res.ok).toBe(true)
     })
 
-    it('leaves the clipboard alone when the selection is empty', () => {
+    it('refuses an empty selection rather than writing an empty payload', () => {
         const h = buildCtx()
         const res = services.copyNodes(h.ctx, { sceneId: 7, nodeIds: [], nodeTypes: [] })
         expect(res.ok).toBe(false)
@@ -279,16 +324,17 @@ describe('sceneClipboard.copyNodes (multi-selection copy)', () => {
 })
 
 describe('sceneClipboard.pasteNode', () => {
-    it('returns ok:false when clipboard is empty', () => {
+    it('returns ok:false when the clipboard held no payload', () => {
         const { ctx } = buildCtx()
-        const res = services.pasteNode(ctx, { sceneId: 1 })
-        expect(res.ok).toBe(false)
+        expect(services.pasteNode(ctx, {
+            sceneId: 1, kind: 'object', bytes: new Uint8Array(),
+        }).ok).toBe(false)
     })
 
     it('object paste calls fromXML + scene.addObject under undo txn', () => {
         const { ctx, fromXML, addObject, startUndoTxn, commitUndoTxn } = buildCtx()
-        services.copyNode(ctx, { sceneId: 1, nodeId: 10, nodeType: 'object' })
-        const res = services.pasteNode(ctx, { sceneId: 1 })
+        const res = copyPaste(ctx,
+            { sceneId: 1, nodeId: 10, nodeType: 'object' }, { sceneId: 1 })
         expect(res.ok).toBe(true)
         expect(res.newId).toBe(200)
         expect(startUndoTxn).toHaveBeenCalledWith('Paste object')
@@ -299,8 +345,8 @@ describe('sceneClipboard.pasteNode', () => {
 
     it('object paste uniquifies the name on conflict (mol1 → mol1_1)', () => {
         const { ctx, setObjName } = buildCtx({ existingObjectNames: ['mol1'] })
-        services.copyNode(ctx, { sceneId: 1, nodeId: 10, nodeType: 'object' })
-        const res = services.pasteNode(ctx, { sceneId: 1 })
+        const res = copyPaste(ctx,
+            { sceneId: 1, nodeId: 10, nodeType: 'object' }, { sceneId: 1 })
         expect(res.newName).toBe('mol1_1')
         expect(setObjName).toHaveBeenCalledWith('mol1_1')
     })
@@ -313,8 +359,9 @@ describe('sceneClipboard.pasteNode', () => {
             uid: 555,
         }
         const { ctx, attachRenderer } = buildCtx({ restored })
-        services.copyNode(ctx, { sceneId: 1, nodeId: 100, nodeType: 'renderer' })
-        const res = services.pasteNode(ctx, { sceneId: 1, targetObjId: 999 })
+        const res = copyPaste(ctx,
+            { sceneId: 1, nodeId: 100, nodeType: 'renderer' },
+            { sceneId: 1, targetObjId: 999 })
         expect(res.ok).toBe(true)
         expect(attachRenderer).toHaveBeenCalledWith(restored)
         expect(setName).toHaveBeenCalledWith('rend1')
@@ -322,8 +369,8 @@ describe('sceneClipboard.pasteNode', () => {
 
     it('renderer paste returns ok:false when targetObjId is omitted', () => {
         const { ctx } = buildCtx()
-        services.copyNode(ctx, { sceneId: 1, nodeId: 100, nodeType: 'renderer' })
-        const res = services.pasteNode(ctx, { sceneId: 1 })
+        const res = copyPaste(ctx,
+            { sceneId: 1, nodeId: 100, nodeType: 'renderer' }, { sceneId: 1 })
         expect(res.ok).toBe(false)
     })
 
@@ -337,8 +384,9 @@ describe('sceneClipboard.pasteNode', () => {
             restored,
             existingRendererNames: ['rend1'],
         })
-        services.copyNode(ctx, { sceneId: 1, nodeId: 100, nodeType: 'renderer' })
-        const res = services.pasteNode(ctx, { sceneId: 1, targetObjId: 999 })
+        const res = copyPaste(ctx,
+            { sceneId: 1, nodeId: 100, nodeType: 'renderer' },
+            { sceneId: 1, targetObjId: 999 })
         expect(res.newName).toBe('rend1_1')
         expect(setName).toHaveBeenCalledWith('rend1_1')
     })
@@ -352,8 +400,9 @@ describe('sceneClipboard.pasteNode', () => {
             get group() { return '' },
         }
         const { ctx } = buildCtx({ restored })
-        services.copyNode(ctx, { sceneId: 1, nodeId: 100, nodeType: 'renderer' })
-        services.pasteNode(ctx, { sceneId: 1, targetObjId: 999 })
+        copyPaste(ctx,
+            { sceneId: 1, nodeId: 100, nodeType: 'renderer' },
+            { sceneId: 1, targetObjId: 999 })
         expect(setGroup).toHaveBeenCalledWith('')
     })
 
@@ -368,8 +417,9 @@ describe('sceneClipboard.pasteNode', () => {
         const { ctx, targetGroup, targetObj, attachRenderer, startUndoTxn } = buildCtx({
             restored,
         })
-        services.copyNode(ctx, { sceneId: 1, nodeId: 100, nodeType: 'renderer' })
-        const res = services.pasteNode(ctx, { sceneId: 1, targetGroupId: 888 })
+        const res = copyPaste(ctx,
+            { sceneId: 1, nodeId: 100, nodeType: 'renderer' },
+            { sceneId: 1, targetGroupId: 888 })
         expect(res.ok).toBe(true)
         expect(targetGroup.getClientObj).toHaveBeenCalled()
         expect(setGroup).toHaveBeenCalledWith('grpA')
@@ -391,8 +441,9 @@ describe('sceneClipboard.pasteNode', () => {
             restored,
             existingRendererNames: ['rend1'],
         })
-        services.copyNode(ctx, { sceneId: 1, nodeId: 100, nodeType: 'renderer' })
-        const res = services.pasteNode(ctx, { sceneId: 1, targetGroupId: 888 })
+        const res = copyPaste(ctx,
+            { sceneId: 1, nodeId: 100, nodeType: 'renderer' },
+            { sceneId: 1, targetGroupId: 888 })
         expect(res.newName).toBe('rend1_1')
         expect(setName).toHaveBeenCalledWith('rend1_1')
     })
@@ -400,8 +451,9 @@ describe('sceneClipboard.pasteNode', () => {
     it('targetGroupId returns ok:false when the group has no resolvable client mol', () => {
         const { ctx, targetGroup } = buildCtx()
         targetGroup.getClientObj.mockReturnValueOnce(null as unknown as never)
-        services.copyNode(ctx, { sceneId: 1, nodeId: 100, nodeType: 'renderer' })
-        const res = services.pasteNode(ctx, { sceneId: 1, targetGroupId: 888 })
+        const res = copyPaste(ctx,
+            { sceneId: 1, nodeId: 100, nodeType: 'renderer' },
+            { sceneId: 1, targetGroupId: 888 })
         expect(res.ok).toBe(false)
     })
 
@@ -421,20 +473,20 @@ describe('sceneClipboard.pasteNode', () => {
         return { rend, setName, setGroup }
     }
 
-    /** Seed the clipboard with a rendArray entry (deep rendGroup copy). */
-    function seedRendArrayClipboard(ctx: WorkerContext) {
+    /** Take a rendArray copy (deep rendGroup copy) to paste back. */
+    function takeRendArrayCopy(ctx: WorkerContext) {
         // Default fixture: getRenderer(50) -> sourceRend (no members), so
-        // this stores form='rendArray' XML; paste output is then driven by
+        // this yields form='rendArray' XML; paste output is then driven by
         // the restoredArray option.
-        services.copyNode(ctx, { sceneId: 1, nodeId: 50, nodeType: 'rendGroup' })
+        return services.copyNode(ctx, { sceneId: 1, nodeId: 50, nodeType: 'rendGroup' })
     }
 
     it('rendArray paste onto a rendGroup row joins the clicked group (XML group name ignored)', () => {
         const a = makeArrayRend('r1')
         const b = makeArrayRend('r2')
         const f = buildCtx({ restoredArray: ['srcGrp', a.rend, b.rend] })
-        seedRendArrayClipboard(f.ctx)
-        const res = services.pasteNode(f.ctx, { sceneId: 1, targetGroupId: 888 })
+        const res = pasteCopied(f.ctx, takeRendArrayCopy(f.ctx),
+            { sceneId: 1, targetGroupId: 888 })
         expect(res.ok).toBe(true)
         expect(f.startUndoTxn).toHaveBeenCalledWith('Paste renderers')
         expect(f.rendArrayFromXML).toHaveBeenCalledWith(expect.anything(), 1)
@@ -454,8 +506,8 @@ describe('sceneClipboard.pasteNode', () => {
             restoredArray: ['srcGrp', a.rend],
             existingSceneRendNames: ['srcGrp'],
         })
-        seedRendArrayClipboard(f.ctx)
-        const res = services.pasteNode(f.ctx, { sceneId: 1, targetObjId: 999 })
+        const res = pasteCopied(f.ctx, takeRendArrayCopy(f.ctx),
+            { sceneId: 1, targetObjId: 999 })
         expect(res.ok).toBe(true)
         expect(f.targetObj.createRenderer).toHaveBeenCalledWith('*group')
         // 'srcGrp' is taken scene-wide -> uniquified to 'srcGrp_1'.
@@ -470,8 +522,8 @@ describe('sceneClipboard.pasteNode', () => {
         const a = makeArrayRend('r1')
         const bad = makeArrayRend('rX', { compatible: false })
         const f = buildCtx({ restoredArray: ['', a.rend, bad.rend] })
-        seedRendArrayClipboard(f.ctx)
-        const res = services.pasteNode(f.ctx, { sceneId: 1, targetObjId: 999 })
+        const res = pasteCopied(f.ctx, takeRendArrayCopy(f.ctx),
+            { sceneId: 1, targetObjId: 999 })
         expect(res.ok).toBe(true)
         expect(f.targetObj.createRenderer).not.toHaveBeenCalled()
         expect(a.setGroup).toHaveBeenCalledWith('')
@@ -516,7 +568,14 @@ describe('sceneClipboard camera branch (Phase 5b)', () => {
         const ctx = {
             sceMgr: { getScene: vi.fn(() => scene) },
             strMgr: { toXML, fromXML },
-            svc: { getService: vi.fn(() => null) },
+            svc: {
+                getService: vi.fn(() => null),
+                copyToTypedArray: vi.fn(() => new Uint8Array([1, 2, 3])),
+                copyFromTypedArray: vi.fn((b: Uint8Array) => ({
+                    __byteArray: true,
+                    __bytes: b,
+                })),
+            },
         } as unknown as WorkerContext
         return {
             ctx, scene, sourceCam, restoredCam,
@@ -536,17 +595,16 @@ describe('sceneClipboard camera branch (Phase 5b)', () => {
         const ok = services.copyNode(ctx, {
             sceneId: 1, nodeId: -1000, nodeType: 'camera', cameraName: 'cam0',
         })
-        expect(ok).toEqual({ ok: true, kind: 'camera' })
+        expect(ok).toMatchObject({ ok: true, kind: 'camera', name: 'cam0' })
         expect(getCameraRef).toHaveBeenCalledWith('cam0')
         expect(toXML).toHaveBeenCalled()
     })
 
     it('camera paste calls scene.setCamera + notifyLoaded under "Paste camera" txn', () => {
         const { ctx, setCamera, restoredCam, startUndoTxn } = buildCameraCtx()
-        services.copyNode(ctx, {
+        const res = copyPaste(ctx, {
             sceneId: 1, nodeId: -1000, nodeType: 'camera', cameraName: 'cam0',
-        })
-        const res = services.pasteNode(ctx, { sceneId: 1 })
+        }, { sceneId: 1 })
         expect(res.ok).toBe(true)
         expect(res.newName).toBe('cam0')
         expect(startUndoTxn).toHaveBeenCalledWith('Paste camera')
@@ -556,20 +614,26 @@ describe('sceneClipboard camera branch (Phase 5b)', () => {
 
     it('camera paste uniquifies on name collision via copy{i}_<orig>', () => {
         const { ctx, setCamera } = buildCameraCtx({ existingNames: ['cam0'] })
-        services.copyNode(ctx, {
+        const res = copyPaste(ctx, {
             sceneId: 1, nodeId: -1000, nodeType: 'camera', cameraName: 'cam0',
-        })
-        const res = services.pasteNode(ctx, { sceneId: 1 })
+        }, { sceneId: 1 })
         expect(res.newName).toBe('copy1_cam0')
         expect(setCamera).toHaveBeenCalledWith('copy1_cam0', expect.anything())
     })
 
-    it('getClipboardKind returns "camera" after a camera copy', () => {
-        const { ctx } = buildCameraCtx()
-        services.copyNode(ctx, {
+    it('pastes a payload that carries no source name (a foreign copy)', () => {
+        // A payload copied in CueMol2 arrives with no metadata beyond its
+        // kind, so every branch has to fall back to the name inside the
+        // restored XML. Camera paste is the one that reads it first.
+        const { ctx, setCamera } = buildCameraCtx()
+        const c = services.copyNode(ctx, {
             sceneId: 1, nodeId: -1000, nodeType: 'camera', cameraName: 'cam0',
         })
-        expect(services.getClipboardKind(ctx, {}).kind).toBe('camera')
+        const res = services.pasteNode(ctx, {
+            sceneId: 1, kind: 'camera', bytes: c.bytes!,
+        })
+        expect(res.newName).toBe('cam0')
+        expect(setCamera).toHaveBeenCalledWith('cam0', expect.anything())
     })
 })
 
@@ -588,7 +652,7 @@ describe('sceneClipboard style branch (Phase 5c)', () => {
         const res = services.copyNode(ctx, {
             sceneId: 1, nodeId: 700, nodeType: 'style', scopeId: 1,
         })
-        expect(res).toEqual({ ok: true, kind: 'style' })
+        expect(res).toMatchObject({ ok: true, kind: 'style', name: 'mystyle' })
         expect(getStyleSet).toHaveBeenCalledWith(700)
         expect(toXML).toHaveBeenCalled()
     })
@@ -602,10 +666,9 @@ describe('sceneClipboard style branch (Phase 5c)', () => {
         }
         const { ctx, fromXML, registerStyleSet, startUndoTxn, commitUndoTxn } =
             buildCtx({ restored: restoredStyle })
-        services.copyNode(ctx, {
+        const res = copyPaste(ctx, {
             sceneId: 1, nodeId: 700, nodeType: 'style', scopeId: 1,
-        })
-        const res = services.pasteNode(ctx, { sceneId: 1 })
+        }, { sceneId: 1 })
         expect(res.ok).toBe(true)
         expect(fromXML).toHaveBeenCalled()
         expect(startUndoTxn).toHaveBeenCalledWith('Paste style')
@@ -624,10 +687,9 @@ describe('sceneClipboard style branch (Phase 5c)', () => {
             sourceStyleSet: { name: 'mystyle' },
             existingStyleNames: ['mystyle'],
         })
-        services.copyNode(ctx, {
+        const res = copyPaste(ctx, {
             sceneId: 1, nodeId: 700, nodeType: 'style', scopeId: 1,
-        })
-        const res = services.pasteNode(ctx, { sceneId: 1 })
+        }, { sceneId: 1 })
         expect(res.ok).toBe(true)
         expect(res.newName).toBe('mystyle_1')
         expect(setName).toHaveBeenCalledWith('mystyle_1')
@@ -636,44 +698,42 @@ describe('sceneClipboard style branch (Phase 5c)', () => {
     it('style paste reports ok:false when registerStyleSet fails', () => {
         const restoredStyle = { get name() { return 's' }, set name(_v: string) {} }
         const { ctx } = buildCtx({ restored: restoredStyle, registerOk: false })
-        services.copyNode(ctx, {
+        const res = copyPaste(ctx, {
             sceneId: 1, nodeId: 700, nodeType: 'style', scopeId: 1,
-        })
-        const res = services.pasteNode(ctx, { sceneId: 1 })
+        }, { sceneId: 1 })
         expect(res.ok).toBe(false)
-    })
-
-    it('getClipboardKind returns "style" after a style copy', () => {
-        const { ctx } = buildCtx()
-        services.copyNode(ctx, {
-            sceneId: 1, nodeId: 700, nodeType: 'style', scopeId: 1,
-        })
-        expect(services.getClipboardKind(ctx, {}).kind).toBe('style')
     })
 })
 
-describe('sceneClipboard.getClipboardKind', () => {
-    it('returns kind:null when clipboard is empty', () => {
-        const { ctx } = buildCtx()
-        expect(services.getClipboardKind(ctx, {})).toEqual({ kind: null, sourceName: '' })
-    })
-
-    it('returns object kind + sourceName after object copy', () => {
-        const { ctx } = buildCtx()
-        services.copyNode(ctx, { sceneId: 1, nodeId: 10, nodeType: 'object' })
-        expect(services.getClipboardKind(ctx, {})).toEqual({ kind: 'object', sourceName: 'mol1' })
-    })
-
-    it('returns renderer kind after renderer copy', () => {
-        const { ctx } = buildCtx()
-        services.copyNode(ctx, { sceneId: 1, nodeId: 100, nodeType: 'renderer' })
-        expect(services.getClipboardKind(ctx, {})).toEqual({ kind: 'renderer', sourceName: 'rend1' })
-    })
-
-    it('the singleton survives across separate ctx instances (same worker process)', () => {
+describe('sceneClipboard statelessness', () => {
+    // The services hold no clipboard of their own: the OS clipboard is the
+    // only state. That is what lets a payload cross to another CueMol
+    // process, and what stops a stale worker cache from shadowing a copy
+    // made elsewhere.
+    it('copy leaves nothing behind for a later paste to find', () => {
         const a = buildCtx()
         services.copyNode(a.ctx, { sceneId: 1, nodeId: 10, nodeType: 'object' })
+        // A paste that is not handed the payload has nothing to restore,
+        // even in the same worker process.
         const b = buildCtx()
-        expect(services.getClipboardKind(b.ctx, {}).kind).toBe('object')
+        expect(services.pasteNode(b.ctx, {
+            sceneId: 1, kind: 'object', bytes: new Uint8Array(),
+        }).ok).toBe(false)
+        expect(b.fromXML).not.toHaveBeenCalled()
+    })
+
+    it('pastes a payload produced by a different ctx (another window)', () => {
+        const a = buildCtx()
+        const copied = services.copyNode(a.ctx, {
+            sceneId: 1, nodeId: 10, nodeType: 'object',
+        })
+        // The bytes are the whole contract; the destination re-inflates
+        // them through its own ByteArray bridge.
+        const b = buildCtx()
+        const res = services.pasteNode(b.ctx, {
+            sceneId: 1, kind: 'object', bytes: copied.bytes!,
+        })
+        expect(b.copyFromTypedArray).toHaveBeenCalledWith(copied.bytes)
+        expect(res.ok).toBe(true)
     })
 })

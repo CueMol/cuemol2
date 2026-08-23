@@ -12,6 +12,7 @@
 
 import type { AsyncCueMol } from '../../worker/client/AsyncCueMol'
 import type { SceneTreeNode } from '../../worker/shared/sceneTreeTypes'
+import { IPC } from '../../../shared/ipcChannels'
 
 /**
  * Renderer type names that don't support a `coloring` property -- matches
@@ -95,14 +96,17 @@ export async function buildSceneCtxPayload(
         node.type === 'renderer' && node.className === 'atomintr'
 
     // Pre-fetch clipboard state so main can enable Paste items correctly.
+    // Peek rather than read: the payload may be megabytes and the menu only
+    // needs to know what kind is there. Asked on every menu open, so a copy
+    // made in another app (or another CueMol instance) is seen immediately.
+    // Paint rows share the clipboard but are not a scene node, so they read
+    // as "nothing to paste" here.
     let clipboardKind: 'object' | 'renderer' | 'style' | 'camera' | null = null
-    if (cm) {
-        try {
-            const r = await cm.invokeService('getClipboardKind', {})
-            clipboardKind = r?.kind ?? null
-        } catch (err) {
-            console.warn('getClipboardKind failed:', err)
-        }
+    try {
+        const r = await window.electronAPI?.invoke(IPC.CLIPBOARD_CUEMOL_PEEK)
+        clipboardKind = r && r.kind !== 'paint' ? r.kind : null
+    } catch (err) {
+        console.warn('clipboard peek failed:', err)
     }
 
     // Pre-fetch renderer-specific submenu data in parallel.

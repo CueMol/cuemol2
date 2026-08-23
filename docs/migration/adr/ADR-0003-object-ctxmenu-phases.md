@@ -32,7 +32,10 @@ worker.
 
 **Phase 4a — Copy / Paste.** Worker-singleton clipboard
 (`StreamManager.toXML/fromXML`); pasted renderer name uniquified against
-the parent mol's existing renderers.
+the parent mol's existing renderers. *(2026-08-23: the worker singleton was
+replaced by the OS clipboard -- see
+[ADR-0054](ADR-0054-os-clipboard-interop.md). The serialization and the
+name-uniquification are unchanged.)*
 
 **Phase 4d — New Renderer.** `getNewRendererOptions` pre-fetches
 `{rendererTypes, defaultName, objName, objClassName, isMol, targetObjId,

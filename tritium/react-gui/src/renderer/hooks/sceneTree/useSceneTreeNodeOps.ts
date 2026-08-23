@@ -12,7 +12,60 @@ import type {
     SceneTreeNode,
 } from '../../worker/shared/sceneTreeTypes'
 import type { SelectMolKind } from '../../../shared/ipcTypes'
+import { IPC } from '../../../shared/ipcChannels'
 import { findNode, findTypedNode } from './sceneTreeNodeUtils'
+
+/** What a copy service returns for the caller to put on the clipboard. */
+interface SceneClipPayload {
+    ok: boolean
+    kind: 'object' | 'renderer' | 'style' | 'camera' | null
+    form?: 'single' | 'rendArray'
+    name?: string
+    bytes?: Uint8Array
+}
+
+/**
+ * Hand a freshly serialized node to the main process, which owns the OS
+ * clipboard. Copy is only "done" once the payload is actually on the
+ * clipboard, so a failed write reports failure rather than leaving the user
+ * with a Paste that silently does the wrong thing.
+ */
+async function writeSceneClip(res: SceneClipPayload | undefined): Promise<boolean> {
+    if (res?.ok !== true || !res.kind || !res.bytes) return false
+    const api = window.electronAPI
+    if (!api) return false
+    try {
+        const w = await api.invoke(IPC.CLIPBOARD_CUEMOL_WRITE, {
+            kind: res.kind,
+            form: res.form,
+            name: res.name,
+            bytes: res.bytes,
+        })
+        return w?.ok === true
+    } catch (err) {
+        console.warn('clipboard write failed:', err)
+        return false
+    }
+}
+
+/**
+ * Pull a scene-node payload off the OS clipboard. Paint rows live on the
+ * same clipboard but are not a scene node, so they are refused here.
+ */
+async function readSceneClip(): Promise<
+    { kind: 'object' | 'renderer' | 'style' | 'camera'; form: 'single' | 'rendArray'; name: string; bytes: Uint8Array } | null
+> {
+    const api = window.electronAPI
+    if (!api) return null
+    try {
+        const clip = await api.invoke(IPC.CLIPBOARD_CUEMOL_READ)
+        if (!clip || clip.kind === 'paint') return null
+        return clip
+    } catch (err) {
+        console.warn('clipboard read failed:', err)
+        return null
+    }
+}
 
 export interface SceneTreeNodeOps {
     toggleVisibility: (id: string) => void
@@ -29,9 +82,9 @@ export interface SceneTreeNodeOps {
     renameNode: (id: string, newName: string) => Promise<boolean>
     /** Apply an object-mol selection (e.g. around / by-residue). */
     selectObjectMol: (id: string, kind: SelectMolKind) => Promise<boolean>
-    /** Copy a node (object / renderer / rendGroup) to the worker clipboard. */
+    /** Copy a node (object / renderer / rendGroup) to the OS clipboard. */
     copyNode: (node: SceneTreeNode) => Promise<boolean>
-    /** Paste from the worker clipboard onto a target node. */
+    /** Paste whatever scene node is on the OS clipboard onto a target node. */
     pasteNode: (node: SceneTreeNode) => Promise<boolean>
     /**
      * Drag-drop reorder. Caller supplies a fully-resolved args object:
@@ -226,7 +279,7 @@ export function useSceneTreeNodeOps(
                 scopeId,
                 cameraName,
             })
-            return res?.ok === true
+            return writeSceneClip(res)
         },
         [cm, sceneIdRef],
     )
@@ -250,7 +303,9 @@ export function useSceneTreeNodeOps(
             } else if (target.type === 'rendGroup') {
                 args = { sceneId: sid, targetGroupId: target.id }
             }
-            const res = await cm.invokeService('pasteNode', args)
+            const clip = await readSceneClip()
+            if (!clip) return false
+            const res = await cm.invokeService('pasteNode', { ...args, ...clip })
             return res?.ok === true
         },
         [cm, sceneIdRef],
@@ -355,7 +410,8 @@ export function useSceneTreeNodeOps(
                 nodeIds: items.map((i) => i.nodeId),
                 nodeTypes: items.map((i) => i.nodeType),
             })
-            return { ok: res?.ok === true, reason: res?.reason }
+            if (res?.ok !== true) return { ok: false, reason: res?.reason }
+            return { ok: await writeSceneClip(res) }
         },
         [cm, sceneIdRef, resolveBulkItems],
     )

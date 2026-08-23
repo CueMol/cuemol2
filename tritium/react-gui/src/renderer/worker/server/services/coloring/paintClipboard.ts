@@ -1,15 +1,18 @@
 /**
  * @file worker/server/services/coloring/paintClipboard.ts
- * @description Paint-deck clipboard (Copy / Cut / Paste) and the
+ * @description Paint-deck Copy / Cut / Paste row transfer and the
  * Delete-all list mutation. Mirrors UXP `coloring-panel.js`
  * `onCopy` / `onCut` / `onPaste` / `onDeleteCmd` (delete-all branch).
  *
- * The clipboard is a worker-process-local module singleton, the same shape
- * `sceneClipboard.service.ts` uses for scene nodes: the worker is
- * single-threaded so every service shares it, and nothing has to thread it
- * through WorkerContext. Rows are held as the C++ string forms rather than
- * as live wrappers, so a paste recompiles against the destination scene --
- * UXP got the same property from encoding the clipboard as JSON.
+ * These services are **stateless**: Copy and Cut return the rows they read
+ * and Paste takes rows as an argument. The clipboard itself is the OS
+ * clipboard, owned by the main process (`main/cuemolClipboard.ts`), so a
+ * paint selection can be exchanged with the UXP CueMol2 app and between
+ * CueMol3 instances.
+ *
+ * Rows travel as the C++ string forms and are recompiled against the
+ * destination scene on paste, which is what makes a cross-scene (and
+ * cross-process) paste meaningful at all.
  *
  * Runs in the Web Worker thread; C++ wrappers are called synchronously.
  */
@@ -31,17 +34,8 @@ import type {
     PastePaintEntriesArgs,
     PastePaintEntriesResult,
     ClearPaintEntriesArgs,
-    GetPaintClipboardInfoArgs,
-    GetPaintClipboardInfoResult,
     PaintMutationResult,
 } from './types';
-
-let clipboard: PaintClipboardEntry[] = [];
-
-/** Test helper: reset the singleton between cases. Not in the service map. */
-export function _resetPaintClipboardForTest(): void {
-    clipboard = [];
-}
 
 /** The live PaintColoring of a target, refetched after materialization. */
 function liveColoring(rend: Renderer): PaintColoring {
@@ -67,50 +61,51 @@ function readEntries(coloring: PaintColoring, idxs: number[]): PaintClipboardEnt
 }
 
 /**
- * Shared prologue for Copy and Cut: resolve the target and snapshot the
- * requested rows onto the clipboard. Returns the resolved target plus the
- * indices actually taken, or null when nothing could be copied (the
- * clipboard is then left untouched).
+ * Shared prologue for Copy and Cut: resolve the target and read the
+ * requested rows. Returns the resolved target, the rows, and the indices
+ * actually taken; null when nothing could be read.
  */
-function snapshotToClipboard(
+function takeRows(
     ctx: WorkerContext,
     args: CopyPaintEntriesArgs,
-): { target: PaintTarget; idxs: number[] } | null {
+): { target: PaintTarget; idxs: number[]; entries: PaintClipboardEntry[] } | null {
     const target = resolvePaintTarget(ctx, args);
     if (!target) return null;
     const idxs = normalizeIdxs(args.idxs, target.coloring.size);
     if (idxs.length === 0) return null;
-    const picked = readEntries(target.coloring, idxs);
-    if (picked.length === 0) return null;
-    clipboard = picked;
-    return { target, idxs };
+    const entries = readEntries(target.coloring, idxs);
+    if (entries.length === 0) return null;
+    return { target, idxs, entries };
 }
 
-/** Copy the selected paint rows to the clipboard (UXP `onCopy`). */
+/** Read the selected paint rows for the caller to copy (UXP `onCopy`). */
 export function copyPaintEntries(
     ctx: WorkerContext,
     args: CopyPaintEntriesArgs,
 ): CopyPaintEntriesResult {
-    const taken = snapshotToClipboard(ctx, args);
-    return { ok: taken !== null, count: clipboard.length };
+    const taken = takeRows(ctx, args);
+    if (!taken) return { ok: false, entries: [] };
+    return { ok: true, entries: taken.entries };
 }
 
 /**
- * Cut the selected paint rows: copy, then delete under one undo
+ * Cut the selected paint rows: read them, then delete under one undo
  * transaction.
  *
  * UXP `onCut` chains `onCopy` + `onDeleteCmd`, and only the delete half
  * opens a transaction -- the copy touches no scene state. One txn is
  * therefore both the UXP behaviour and the one a user expects: a single
- * Undo puts the cut rows back.
+ * Undo puts the cut rows back. The caller writes the returned rows to the
+ * clipboard afterwards; if that write fails the rows are already gone, but
+ * that single Undo restores them.
  */
 export function cutPaintEntries(
     ctx: WorkerContext,
     args: CopyPaintEntriesArgs,
 ): CopyPaintEntriesResult {
-    const taken = snapshotToClipboard(ctx, args);
-    if (!taken) return { ok: false, count: clipboard.length };
-    const { target, idxs } = taken;
+    const taken = takeRows(ctx, args);
+    if (!taken) return { ok: false, entries: [] };
+    const { target, idxs, entries } = taken;
 
     withUndoTxn(target.scene, 'Cut paint entry', () => {
         materializeColoringIfDefault(target.rend);
@@ -121,30 +116,31 @@ export function cutPaintEntries(
             live.removeAt(idxs[i]);
         }
     });
-    return { ok: true, count: clipboard.length };
+    return { ok: true, entries };
 }
 
 /**
- * Paste the clipboard rows into the target's PaintColoring (UXP
- * `onPaste` / `_pasteImpl`).
+ * Insert clipboard rows into the target's PaintColoring (UXP `onPaste` /
+ * `_pasteImpl`).
  *
  * With a row selected the block is inserted before it; with no selection
- * it is appended. Entries whose selection or colour no longer compiles
+ * it is appended. Entries whose selection or colour does not compile
  * against the destination scene are skipped rather than failing the whole
- * paste, matching UXP's per-entry try/catch.
+ * paste, matching UXP's per-entry try/catch -- which is what lets a
+ * payload written by another scene, or another app, paste as far as it can.
  */
 export function pastePaintEntries(
     ctx: WorkerContext,
     args: PastePaintEntriesArgs,
 ): PastePaintEntriesResult {
     const empty: PastePaintEntriesResult = { ok: false, count: 0, startIdx: -1 };
-    if (clipboard.length === 0) return empty;
+    if (!Array.isArray(args.entries) || args.entries.length === 0) return empty;
     const target = resolvePaintTarget(ctx, args);
     if (!target) return empty;
     const { scene, rend, coloring } = target;
 
     const adds: { sel: SelCommand; col: AbstractColor }[] = [];
-    for (const entry of clipboard) {
+    for (const entry of args.entries) {
         try {
             const sel = makeSel(ctx, entry.selStr, scene.uid);
             if (!sel) continue;
@@ -194,16 +190,4 @@ export function clearPaintEntries(
         liveColoring(rend).clear();
     });
     return { ok: true };
-}
-
-/**
- * Report how many rows the paint clipboard holds, so the panel can gate
- * its Paste affordance (UXP left this as a TODO in `onCtxtMenuShowing`
- * and always offered Paste).
- */
-export function getPaintClipboardInfo(
-    _ctx: WorkerContext,
-    _args: GetPaintClipboardInfoArgs,
-): GetPaintClipboardInfoResult {
-    return { count: clipboard.length };
 }

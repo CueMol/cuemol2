@@ -1,11 +1,14 @@
 /**
  * @file __test__/paintClipboardService.test.ts
- * @description Degrade-detection tests for the Paint deck's clipboard
- * services (Copy / Cut / Paste) and Delete-all.
+ * @description Degrade-detection tests for the Paint deck's Copy / Cut /
+ * Paste row transfer and Delete-all.
  *
- * What is pinned here is the behaviour that is easy to break silently:
- *   - the clipboard holds *strings*, so a paste recompiles against the
- *     destination scene rather than reusing the source wrappers;
+ * The services are stateless -- the OS clipboard is the only state -- so
+ * Copy returns rows and Paste takes them. What is pinned here is the
+ * behaviour that is easy to break silently:
+ *   - rows travel as *strings*, so a paste recompiles against the
+ *     destination scene rather than reusing the source wrappers (the whole
+ *     reason a cross-scene or cross-process paste means anything);
  *   - insert-before pastes in reverse so the block keeps clipboard order
  *     (UXP `_pasteImpl`), while no selection appends;
  *   - Cut deletes descending under ONE undo txn, so a single Undo restores
@@ -15,7 +18,6 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { services } from '../worker/server/services/rendererColoring.service'
-import { _resetPaintClipboardForTest } from '../worker/server/services/coloring/paintClipboard'
 import type { WorkerContext } from '../worker/server/types/WorkerContext'
 
 interface FixtureOpts {
@@ -135,45 +137,54 @@ const TARGET = { sceneId: 1, rendId: 100 } as const
 
 beforeEach(() => {
     vi.clearAllMocks()
-    _resetPaintClipboardForTest()
 })
 
 describe('copyPaintEntries', () => {
-    it('snapshots the selected rows and reports the clipboard size', () => {
+    it('returns the selected rows as their string forms', () => {
         const { ctx, startUndoTxn } = makeFixture()
         expect(services.copyPaintEntries(ctx, { ...TARGET, idxs: [0, 2] }))
-            .toEqual({ ok: true, count: 2 })
+            .toEqual({
+                ok: true,
+                entries: [
+                    { selStr: 'A', colorValue: '#f00' },
+                    { selStr: 'C', colorValue: '#00f' },
+                ],
+            })
         // Copying is a pure read: no scene mutation, so no undo entry.
         expect(startUndoTxn).not.toHaveBeenCalled()
     })
 
     it('normalizes the index list (sorted, de-duplicated, in range)', () => {
         const { ctx, coloring } = makeFixture()
-        expect(services.copyPaintEntries(ctx, { ...TARGET, idxs: [2, 0, 2, 9, -1] }))
-            .toEqual({ ok: true, count: 2 })
+        expect(services.copyPaintEntries(ctx, { ...TARGET, idxs: [2, 0, 2, 9, -1] }).ok)
+            .toBe(true)
         expect(coloring.getSelAt.mock.calls.map((c) => c[0])).toEqual([0, 2])
     })
 
-    it('leaves the previous clipboard content when a copy is refused', () => {
+    it('returns nothing to copy for an empty selection', () => {
         const { ctx } = makeFixture()
-        services.copyPaintEntries(ctx, { ...TARGET, idxs: [0] })
-        // Empty selection: the count still reports what Paste would insert.
         expect(services.copyPaintEntries(ctx, { ...TARGET, idxs: [] }))
-            .toEqual({ ok: false, count: 1 })
+            .toEqual({ ok: false, entries: [] })
     })
 
     it('refuses when the target has no PaintColoring', () => {
         const { ctx } = makeFixture({ coloringClass: 'CPKColoring' })
         expect(services.copyPaintEntries(ctx, { ...TARGET, idxs: [0] }))
-            .toEqual({ ok: false, count: 0 })
+            .toEqual({ ok: false, entries: [] })
     })
 })
 
 describe('cutPaintEntries', () => {
-    it('copies then deletes descending under a single undo txn', () => {
+    it('returns the rows then deletes descending under a single undo txn', () => {
         const { ctx, list, removeAt, startUndoTxn, commitUndoTxn } = makeFixture()
         expect(services.cutPaintEntries(ctx, { ...TARGET, idxs: [0, 2] }))
-            .toEqual({ ok: true, count: 2 })
+            .toEqual({
+                ok: true,
+                entries: [
+                    { selStr: 'A', colorValue: '#f00' },
+                    { selStr: 'C', colorValue: '#00f' },
+                ],
+            })
         // Descending order: removing 0 first would shift 2 out from under us.
         expect(removeAt.mock.calls.map((c) => c[0])).toEqual([2, 0])
         expect(list.map(selOf)).toEqual(['B'])
@@ -187,25 +198,31 @@ describe('cutPaintEntries', () => {
         expect(setColoring).toHaveBeenCalledWith(coloring)
     })
 
-    it('deletes nothing when the copy half finds no rows', () => {
+    it('deletes nothing when the read half finds no rows', () => {
         const { ctx, removeAt, startUndoTxn } = makeFixture()
         expect(services.cutPaintEntries(ctx, { ...TARGET, idxs: [7] }))
-            .toEqual({ ok: false, count: 0 })
+            .toEqual({ ok: false, entries: [] })
         expect(removeAt).not.toHaveBeenCalled()
         expect(startUndoTxn).not.toHaveBeenCalled()
     })
 })
 
 describe('pastePaintEntries', () => {
+    /** Copy from one fixture and paste into another, as the clipboard does. */
+    function copiedFrom(f: ReturnType<typeof makeFixture>, idxs: number[]) {
+        return services.copyPaintEntries(f.ctx, { ...TARGET, idxs }).entries
+    }
+
     it('recompiles the stored strings against the destination scene', () => {
-        const src = makeFixture()
-        services.copyPaintEntries(src.ctx, { ...TARGET, idxs: [0] })
+        const entries = copiedFrom(makeFixture(), [0])
 
         // A different renderer in a different scene: paste must not reuse
-        // the source wrappers, it must compile "A" / "#f00" afresh.
+        // the source wrappers, it must compile "A" / "#f00" afresh. This is
+        // what makes a payload from another scene -- or another CueMol
+        // process -- usable at all.
         const dst = makeFixture({ rows: [] })
         expect(dst.compileColor).not.toHaveBeenCalled()
-        expect(services.pastePaintEntries(dst.ctx, { ...TARGET, idx: null }))
+        expect(services.pastePaintEntries(dst.ctx, { ...TARGET, idx: null, entries }))
             .toEqual({ ok: true, count: 1, startIdx: 0 })
         expect(dst.compileColor).toHaveBeenCalledWith('#f00', 7)
         expect(dst.append).toHaveBeenCalledTimes(1)
@@ -213,17 +230,17 @@ describe('pastePaintEntries', () => {
     })
 
     it('appends at the end when no row is selected', () => {
-        const { ctx, list } = makeFixture()
-        services.copyPaintEntries(ctx, { ...TARGET, idxs: [0, 1] })
-        expect(services.pastePaintEntries(ctx, { ...TARGET, idx: null }))
+        const f = makeFixture()
+        const entries = copiedFrom(f, [0, 1])
+        expect(services.pastePaintEntries(f.ctx, { ...TARGET, idx: null, entries }))
             .toEqual({ ok: true, count: 2, startIdx: 3 })
-        expect(list).toHaveLength(5)
+        expect(f.list).toHaveLength(5)
     })
 
     it('inserts before the selected row, keeping clipboard order', () => {
         const { ctx, list, insertBefore } = makeFixture()
-        services.copyPaintEntries(ctx, { ...TARGET, idxs: [0, 1] })
-        expect(services.pastePaintEntries(ctx, { ...TARGET, idx: 2 }))
+        const entries = services.copyPaintEntries(ctx, { ...TARGET, idxs: [0, 1] }).entries
+        expect(services.pastePaintEntries(ctx, { ...TARGET, idx: 2, entries }))
             .toEqual({ ok: true, count: 2, startIdx: 2 })
         // Inserted at a fixed index in reverse, so A precedes B on the list.
         expect(insertBefore.mock.calls.map((c) => c[0])).toEqual([2, 2])
@@ -231,17 +248,19 @@ describe('pastePaintEntries', () => {
     })
 
     it('skips rows whose selection no longer compiles', () => {
-        const src = makeFixture()
-        services.copyPaintEntries(src.ctx, { ...TARGET, idxs: [0, 1] })
+        // A selection naming something the destination scene does not have
+        // -- the common case when the payload came from elsewhere. UXP
+        // drops the row and pastes the rest; so do we.
+        const entries = copiedFrom(makeFixture(), [0, 1])
         const dst = makeFixture({ rows: [], badSels: ['A'] })
-        expect(services.pastePaintEntries(dst.ctx, { ...TARGET, idx: null }))
+        expect(services.pastePaintEntries(dst.ctx, { ...TARGET, idx: null, entries }))
             .toEqual({ ok: true, count: 1, startIdx: 0 })
         expect(dst.append).toHaveBeenCalledTimes(1)
     })
 
-    it('is a no-op with an empty clipboard', () => {
+    it('is a no-op when handed no rows', () => {
         const { ctx, startUndoTxn, append } = makeFixture()
-        expect(services.pastePaintEntries(ctx, { ...TARGET, idx: null }))
+        expect(services.pastePaintEntries(ctx, { ...TARGET, idx: null, entries: [] }))
             .toEqual({ ok: false, count: 0, startIdx: -1 })
         expect(startUndoTxn).not.toHaveBeenCalled()
         expect(append).not.toHaveBeenCalled()
@@ -267,11 +286,16 @@ describe('clearPaintEntries', () => {
     })
 })
 
-describe('getPaintClipboardInfo', () => {
-    it('reports the row count so the panel can gate Paste', () => {
-        const { ctx } = makeFixture()
-        expect(services.getPaintClipboardInfo(ctx, {})).toEqual({ count: 0 })
+describe('statelessness', () => {
+    // The services keep no clipboard of their own -- the OS clipboard is
+    // the only state -- so a copy is invisible to a later paste that was
+    // not handed the rows.
+    it('a copy leaves nothing behind for a paste to find', () => {
+        const { ctx, append, startUndoTxn } = makeFixture()
         services.copyPaintEntries(ctx, { ...TARGET, idxs: [0, 1] })
-        expect(services.getPaintClipboardInfo(ctx, {})).toEqual({ count: 2 })
+        expect(services.pastePaintEntries(ctx, { ...TARGET, idx: null, entries: [] }).ok)
+            .toBe(false)
+        expect(append).not.toHaveBeenCalled()
+        expect(startUndoTxn).not.toHaveBeenCalled()
     })
 })

@@ -15,6 +15,7 @@ import { registerIpcHandlers } from './ipcHandlers'
 import { registerRenderWindowIpc } from './renderWindowIpc'
 import { createMenu } from './menu'
 import { registerTextContextMenu } from './textContextMenu'
+import { registerCuemolClipboardIpc } from './cuemolClipboard'
 import { getDevIconPath } from './helpers/appIcon'
 import { APP_PRODUCT_NAME } from '../shared/appInfo'
 import { IPC } from '../shared/ipcChannels'
@@ -237,6 +238,7 @@ export function createWindow(): void {
   trackWindowState(win, loadWindowBounds, saveWindowBounds)
   registerTextContextMenu(win)
   registerIpcHandlers(win)
+  registerCuemolClipboardIpc()
   registerRenderWindowIpc({
     mainWindow: win,
     getRenderWindow,

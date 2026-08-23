@@ -8,7 +8,9 @@
  * the internals while this file keeps passing unchanged.
  */
 
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { IPC } from '../../shared/ipcChannels'
+import { setupElectronAPI, teardownElectronAPI } from './helpers/testHarness'
 import React from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
@@ -135,7 +137,28 @@ async function mountReady(cm: any): Promise<ReturnType<typeof mountHook>> {
     return h
 }
 
-afterEach(() => { vi.clearAllMocks() })
+/**
+ * The clipboard lives in the main process now, so copy/paste routes
+ * renderer -> main -> worker. Stub both directions: WRITE accepts, READ
+ * hands back a renderer payload.
+ */
+const CLIP_BYTES = new Uint8Array([1, 2, 3])
+function stubClipboardApi(): void {
+    setupElectronAPI({
+        invoke: vi.fn((ch: string) => {
+            if (ch === IPC.CLIPBOARD_CUEMOL_WRITE) return Promise.resolve({ ok: true })
+            if (ch === IPC.CLIPBOARD_CUEMOL_READ) {
+                return Promise.resolve({
+                    kind: 'renderer', form: 'single', name: 'rend1', bytes: CLIP_BYTES,
+                })
+            }
+            return Promise.resolve(undefined)
+        }) as never,
+    })
+}
+
+beforeEach(() => { stubClipboardApi() })
+afterEach(() => { vi.clearAllMocks(); teardownElectronAPI() })
 
 // --- Fetch / subscribe ---
 
@@ -242,10 +265,16 @@ const WIRE_CASES: WireCase[] = [
         payload: { sceneId: SCENE_ID, nodeId: 900, nodeType: 'camera', cameraName: 'cam1' },
     },
     {
+        // The clipboard payload read from main is threaded into the worker
+        // call, so the paste is driven by the OS clipboard, not by state
+        // the worker kept from its own copy.
         name: 'pasteNode (object target)',
         run: (r) => r.pasteNode(objectNode()),
         channel: 'pasteNode',
-        payload: { sceneId: SCENE_ID, targetObjId: 42 },
+        payload: {
+            sceneId: SCENE_ID, targetObjId: 42,
+            kind: 'renderer', form: 'single', name: 'rend1', bytes: CLIP_BYTES,
+        },
     },
     {
         name: 'setRendererColoring',
