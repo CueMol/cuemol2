@@ -1,9 +1,12 @@
-# ADR-0055: Cmd+C / X / V をフォーカス文脈で振り分ける (undo/redo も含む)
+# Cmd+C / X / V をフォーカス文脈で振り分ける (undo/redo も含む)
 
 - Status: accepted
 - Date: 2026-08-23
-- Mapping rows: [`menu.cuemol2.edit`](../mapping/menus.md#menucuemol2edit), [`panel.workspace.tree`](../mapping/panels.md#panelworkspacetree), [`panel.coloring.deck.paint`](../mapping/panels.md#panelcoloringdeckpaint)
-- Related: [ADR-0054](ADR-0054-os-clipboard-interop.md) (クリップボード本体)
+- Related mapping rows: [`menu.cuemol2.edit`](../migration/mapping/menus.md#menucuemol2edit), [`panel.workspace.tree`](../migration/mapping/panels.md#panelworkspacetree), [`panel.coloring.deck.paint`](../migration/mapping/panels.md#panelcoloringdeckpaint)
+- Related: [OS clipboard interop](os-clipboard-interop.md) (クリップボード本体)
+
+これは UXP からの migration に関する判断ではないため、`docs/migration/adr/` ではなく
+ここに置いている (migration ADR は migration 専用に保つ)。
 
 ## Context
 
@@ -90,7 +93,7 @@ main 側では 5 チャネル (EDIT_CUT/COPY/PASTE + MENU_UNDO/REDO) に
 - クリップボードの**内容自体は undo 対象外**。Cut を undo すると行/ノードは戻るが、
   クリップボードは cut したものを保持し続ける (一般的なアプリと同じ)
 - 残る制約: paint deck の行選択は単一行のままなので Cmd+C も 1 行のみ
-  ([ADR-0053](ADR-0053-paint-deck-clipboard.md) の parity gap は未解消)
+  ([ADR-0053](../migration/adr/ADR-0053-paint-deck-clipboard.md) の parity gap は未解消)
 
 ## Notes
 

@@ -184,6 +184,16 @@ core (@cuemol/core): C++ addon + auto-generated TypeScript wrappers
 - `docs/migration/uxp-inventory/*.md` は auto-generated 扱いなので、手編集が必要な場合でも migration 進捗情報を入れない
 
 ADR (Architecture Decision Records) の運用:
+
+**まず置き場所を選ぶ (最重要)**: `docs/migration/adr/` は **UXP -> tritium の移植判断専用**。
+UXP に無かった機能の追加、build / packaging、内部アーキテクチャの設計記録は
+`docs/architecture/<topic>.md` に置き、`docs/architecture/_index.md` に 1 項目追加する
+(トピック名で命名。`ADR-NNNN` 連番は migration 側の固有ルールなので持ち込まない)。
+判断基準は「UXP のどの surface を移植したのか説明できるか」。できないなら architecture 側。
+mapping 行に関連していても、**主題が新規機能なら architecture 側**に置き、mapping の Notes
+からリンクする。
+
+以下は `docs/migration/adr/` (移植判断) についての運用:
 - 設計判断・UXP parity 戦略・既知バグの詳細は `docs/migration/adr/ADR-NNNN-<slug>.md` に切り出す
 - mapping の Notes 列は **1–2 文の要約 + ADR リンク** に留める。次のいずれかに当たる場合は ADR を作る:
   - Notes に書きたい設計判断が **3 文 (約 200 字) を超える**

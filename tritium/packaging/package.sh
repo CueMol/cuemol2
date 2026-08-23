@@ -42,6 +42,11 @@ SEMVER="$(printf '%s' "$QM_VERSION" | cut -d. -f1-3)"
 BUILD_NO="$(printf '%s' "$QM_VERSION" | cut -d. -f4)"
 echo "package: QM_VERSION=$QM_VERSION -> version=$SEMVER buildVersion=${BUILD_NO:-<none>}"
 
+# The artifact filenames want all four parts, which ${version} cannot give them
+# (it is the semver above). electron-builder expands ${env.CM_FULL_VERSION} in
+# artifactName / dmg.title, so export the unsplit value for it.
+export CM_FULL_VERSION="$QM_VERSION"
+
 EB_ARGS=("$@" --config.extraMetadata.version="$SEMVER")
 if [ -n "$BUILD_NO" ]; then
   EB_ARGS+=(--config.buildVersion="$BUILD_NO")
