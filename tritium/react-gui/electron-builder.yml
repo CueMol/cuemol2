@@ -163,9 +163,9 @@ mac:
   # macro overwrites HKLM\Software\Classes\.qsc and would steal the Windows
   # default from CueMol2's Inno Setup registration. Windows instead gets an
   # "Open with"-only registration (Applications + OpenWithList, no ProgID, no
-  # default claimed) via build/installer.nsh (nsis.include below) -- keep its
-  # extension list in sync with this one. Linux still opens files passed on
-  # the command line.
+  # default claimed) via build/installer.nsh (nsis.include below), and Linux
+  # gets a MimeType'd desktop entry + shared-mime-info XML via
+  # linux.fileAssociations -- keep all three extension lists in sync.
   #
   # .pdb.gz is absent on purpose: macOS sees only the trailing `gz`, so
   # declaring it would claim every gzip file.
@@ -255,3 +255,79 @@ linux:
     - target: deb
       arch: x64
   category: Education
+  # Shell association (the Linux analogue of mac.fileAssociations above; keep
+  # the three platform lists in sync). electron-builder derives everything from
+  # the mimeType fields here:
+  #   - the .desktop entry gets a MimeType= line (and its Exec already carries
+  #     %U), so file managers list CueMol3 under "Open With";
+  #   - a shared-mime-info XML is generated from ext+mimeType+description and,
+  #     for the deb, installed to /usr/share/mime/packages/<executable>.xml;
+  #     the stock deb after-install then runs update-mime-database and
+  #     update-desktop-database (app-builder-lib templates/linux/
+  #     after-install.tpl), so the globs resolve right after install.
+  # A launched file arrives on argv / second-instance argv, which
+  # main/index.ts already parses into the shell-open queue.
+  #
+  # Like the other two platforms this claims candidacy, not the default:
+  # a MimeType listing never overrides the user's mimeapps.list defaults,
+  # which is the freedesktop-native form of `rank: Alternate`.
+  #
+  # One ext per entry, unlike the mac list: the Linux mime-XML generator emits
+  # `*.${ext}` verbatim, so an ext ARRAY would produce a broken glob like
+  # "*.pdb,ent" (app-builder-lib LinuxTargetHelper.computeMimeTypeFiles).
+  # Repeating a mimeType across entries is fine -- shared-mime-info merges the
+  # duplicate <mime-type> elements and a duplicate in MimeType= is harmless.
+  # chemical/x-* names follow the chemical-mime-data conventions where one
+  # exists (pdb / cif / mmcif / mol2 / sdf / mol); the rest are app-scoped
+  # x- names, which shared-mime-info also merges if another package defines
+  # them. The AppImage carries the same .desktop metadata; whether it is
+  # registered is up to the user's integration tool (e.g. AppImageLauncher).
+  fileAssociations:
+    - ext: qsc
+      mimeType: application/x-cuemol-scene
+      description: CueMol Scene
+    - ext: pdb
+      mimeType: chemical/x-pdb
+      description: PDB Coordinates
+    - ext: ent
+      mimeType: chemical/x-pdb
+      description: PDB Coordinates
+    - ext: cif
+      mimeType: chemical/x-cif
+      description: mmCIF Coordinates
+    - ext: mmcif
+      mimeType: chemical/x-mmcif
+      description: mmCIF Coordinates
+    - ext: mol2
+      mimeType: chemical/x-mol2
+      description: Sybyl Mol2 Coordinates
+    - ext: sdf
+      mimeType: chemical/x-mdl-sdfile
+      description: MOL/SDF Coordinates
+    - ext: mol
+      mimeType: chemical/x-mdl-molfile
+      description: MOL/SDF Coordinates
+    - ext: ccp4
+      mimeType: application/x-ccp4-map
+      description: CCP4 Density Map
+    - ext: map
+      mimeType: application/x-ccp4-map
+      description: CCP4 Density Map
+    - ext: mrc
+      mimeType: application/x-ccp4-map
+      description: CCP4 Density Map
+    - ext: mtz
+      mimeType: application/x-mtz
+      description: MTZ Structure Factor
+    - ext: cns
+      mimeType: application/x-xplor-map
+      description: XPLOR/CNS Density Map
+    - ext: dx
+      mimeType: application/x-apbs-potential-map
+      description: APBS Potential Map
+    - ext: brix
+      mimeType: application/x-brix-map
+      description: BRIX Density Map
+    - ext: omap
+      mimeType: application/x-brix-map
+      description: BRIX Density Map
