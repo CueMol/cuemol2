@@ -52,9 +52,20 @@ npmRebuild: false
 # not do ad-hoc in electron-builder 25.x -- see the mac: block and the hook).
 afterPack: build/afterPack.js
 
-# Deterministic, scope-free artifact names across all targets. The package name
-# is scoped (@cuemol/react-gui); without this the deb target derives a filename
-# containing '/' and fpm fails. Uses productName instead.
+# Fallback artifact name. The package name is scoped (@cuemol/react-gui);
+# without an explicit template the deb target derives a filename containing '/'
+# and fpm fails, so this has to stay set even though every shipped target
+# overrides it below.
+#
+# The shipped names are per-target (dmg / nsis / appImage / deb) because this
+# generic template cannot say what a user needs to know from the filename:
+#   - ${arch} expands to each target's own spelling (arm64 / x64 / x86_64 /
+#     amd64), so one release carried four different words for two machines;
+#   - ${version} is the 3-part semver electron-builder requires, which drops
+#     the build number that distinguishes two builds of the same revision;
+#   - nothing marks which OS a file is for, or whether it installs something
+#     or IS the app.
+# See the artifactName under each target, and ADR-0056.
 artifactName: ${productName}-${version}-${arch}.${ext}
 
 directories:
@@ -137,6 +148,12 @@ mac:
     - target: dmg
       arch: arm64
   category: public.app-category.education
+  # OS and arch are literal, not ${arch}: the point of the override is to name
+  # one spelling per machine, and each target above declares exactly one arch
+  # (pinned by __test__/artifactNaming.test.ts, which is what makes a literal
+  # safe here). CM_FULL_VERSION is the 4-part QM_VERSION exported by
+  # packaging/package.sh -- ${version} would drop the build number.
+  artifactName: ${productName}-${env.CM_FULL_VERSION}-macOS-arm64-Installer.${ext}
   # Ad-hoc signing is done by the afterPack hook (build/afterPack.js), not by
   # electron-builder. electron-builder 25.x treats `identity: "-"` as a keychain
   # identity name, finds none, and *skips* signing -- leaving the bundle with no
@@ -221,17 +238,40 @@ win:
   target:
     - target: nsis
       arch: x64
+  # 'Setup' rather than 'Installer': the Windows convention, and it keeps the
+  # .exe from reading as the application itself.
+  artifactName: ${productName}-${env.CM_FULL_VERSION}-Windows-x64-Setup.${ext}
+
+# DMG presentation. Without this block every visual falls back to a default
+# derived from the app icon, so the downloaded disk image and the app inside it
+# looked the same in Finder. `icon` is the mounted volume's icon and the icon
+# Finder shows for the .dmg file itself. The window layout (dmg.contents) is
+# deliberately left at the default -- the legacy CueMol2 build dressed its DMG
+# with a background image and a .DS_Store (uxp_gui/cuemol2/installer/Makefile.in),
+# which is a separate piece of design work.
+dmg:
+  icon: build/installer-icon.icns
+  # `title` is deliberately left at its default ("${productName} ${version}").
+  # It does NOT expand ${env.*} -- setting it to the 4-part version mounted a
+  # volume literally named 'CueMol3 ${env.CM_FULL_VERSION}' (verified on a real
+  # build) -- and ${version} is only the 3-part semver, so there is no way to
+  # match the filename here. The volume name is transient; the filename is what
+  # the user keeps.
 
 # NSIS options apply to the win nsis target above.
 # Assisted (wizard) installer, not the silent one-click default:
 # welcome -> choose install dir -> install -> finish. perMachine installs to
 # Program Files for all users (UAC elevation), the conventional layout scientific
-# desktop apps ship. installerIcon / uninstallerIcon are auto-detected from
-# build/icon.ico. The addon resolves cuemol2.dll from its own directory and
+# desktop apps ship. installerIcon / uninstallerIcon are set explicitly to the
+# badged installer artwork so the downloaded .exe does not look identical to the
+# installed app in Explorer; the app's own icon stays build/icon.ico, picked up
+# by name from buildResources. The addon resolves cuemol2.dll from its own directory and
 # sysconfig.xml via process.resourcesPath (both install-dir relative), so a
 # Program Files install works unchanged; runtime writes go to per-user
 # electron userData (%APPDATA%), never into the install dir.
 nsis:
+  installerIcon: build/installer-icon.ico
+  uninstallerIcon: build/installer-icon.ico
   oneClick: false
   perMachine: true
   allowToChangeInstallationDirectory: true
@@ -255,6 +295,11 @@ linux:
     - target: deb
       arch: x64
   category: Education
+  # No role word on either: an AppImage IS the application, and a .deb is a
+  # package whose extension already says so. Only dmg and exe, which hand the
+  # user something to run before they have the app, carry one. 'x64' overrides
+  # the target-native spellings (x86_64 / amd64) so one release uses one word.
+  artifactName: ${productName}-${env.CM_FULL_VERSION}-Linux-x64.${ext}
   # Shell association (the Linux analogue of mac.fileAssociations above; keep
   # the three platform lists in sync). electron-builder derives everything from
   # the mimeType fields here:

@@ -20,9 +20,17 @@ electron-vite + electron-builder による配布物のビルド手順と、**未
 
 | OS | コマンド | 成果物 (`tritium/react-gui/release/`) |
 |----|----------|----------------------------------------|
-| macOS (arm64) | `cd tritium/react-gui && pnpm run package:mac` | `CueMol3-<version>-arm64.dmg` |
-| Windows (x64) | `cd tritium/react-gui && pnpm run package:win` | `CueMol3-<version>-x64.exe`（NSIS インストーラー） |
-| Linux (x64) | `bash tritium/packaging/package.sh --linux --x64` | `CueMol3-<version>-x64.AppImage` / `.deb` |
+| macOS (arm64) | `cd tritium/react-gui && pnpm run package:mac` | `CueMol3-<version>-macOS-arm64-Installer.dmg` |
+| Windows (x64) | `cd tritium/react-gui && pnpm run package:win` | `CueMol3-<version>-Windows-x64-Setup.exe`（NSIS インストーラー） |
+| Linux (x64) | `bash tritium/packaging/package.sh --linux --x64` | `CueMol3-<version>-Linux-x64.AppImage` / `.deb` |
+
+`<version>` は `src/_version.h` の `QM_VERSION` そのまま（4 桁、例 `2.3.9.498`）。
+ファイル名は OS・arch・役割（インストーラか本体か）が読み取れる形に統一してある
+（`dmg` / `exe` だけが `Installer` / `Setup` を名乗り、AppImage はアプリ本体そのものなので
+名乗らない）。DMG のボリュームアイコンと NSIS ウィザードのアイコンは、アプリアイコンに
+インストールバッジを重ねた `build/installer-icon.*` を使う — ダウンロードしたものが
+アプリ本体と同じ見た目にならないようにするため。詳細は
+[ADR-0056](../../docs/migration/adr/ADR-0056-release-artifact-identity.md)。
 
 CI（`.github/workflows/build2.yml`）も同じ経路で macOS DMG と Windows NSIS `.exe` を生成・upload する。
 

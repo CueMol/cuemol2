@@ -12,11 +12,19 @@ Generated into build/, which is electron-builder's buildResources directory,
 so every target picks its file up by name with no electron-builder.yml entry:
 
   icon.icns  macOS    .app bundle icon
-  icon.ico   Windows  installer + .exe icon
+  icon.ico   Windows  .exe icon
   icon.png   Linux    electron-builder derives the icon set from it, and
                       main/helpers/appIcon.ts uses it as the dev-run window /
                       dock icon (Electron's nativeImage reads PNG only, so a
                       PNG has to be tracked for that path to work)
+
+Plus the installer artwork, which is the same icon with an install badge on it
+(see `badged()`). A downloaded installer that looks identical to the app it
+installs tells the user nothing, so these are referenced explicitly from
+electron-builder.yml rather than auto-detected:
+
+  installer-icon.icns  macOS    DMG volume icon (dmg.icon)
+  installer-icon.ico   Windows  NSIS installer + uninstaller icon
 
 Plus one renderer-side asset, which is bundled by Vite rather than read from
 build/ (nothing outside src/ is importable from the renderer):
@@ -53,7 +61,7 @@ import tempfile
 from pathlib import Path
 
 try:
-    from PIL import Image
+    from PIL import Image, ImageDraw
 except ImportError:
     sys.exit("Pillow is required: pip3 install Pillow")
 
@@ -88,6 +96,23 @@ MENUBAR_PNG_SIZE = 256
 # rim once the icon is downscaled to 16px.
 TIGHT_MARGIN = 0.02
 
+# Install badge geometry, all as fractions so the badge scales with the canvas.
+# 0.38 was chosen against renders at 16 / 24 / 32 / 200px: large enough that the
+# arrow still reads at 24px and the badge remains a distinct blue dot at 16px,
+# small enough that it does not swallow the artwork at icon sizes. Going up to
+# 0.46 buys nothing at 16px (already just a dot) and costs the app icon's
+# recognisability at large sizes.
+BADGE_DIAMETER = 0.38
+BADGE_MARGIN = 0.02          # gap between the badge and the canvas edge
+BADGE_RING = 0.09            # white ring thickness, fraction of the diameter
+BADGE_FILL = (21, 101, 192, 255)      # blue disc
+BADGE_RING_FILL = (255, 255, 255, 255)
+BADGE_GLYPH = (255, 255, 255, 255)    # the arrow
+# Supersampling factor for drawing the badge. PIL's ellipse/polygon are
+# aliased; drawing large and downscaling with LANCZOS is what makes the rim
+# clean at every output size.
+BADGE_SS = 8
+
 
 def load_master(path: Path) -> Image.Image:
     if not path.exists():
@@ -118,6 +143,51 @@ def tightened(img: Image.Image) -> Image.Image:
     return canvas
 
 
+def _badge(diameter: int) -> Image.Image:
+    """Draw the install badge: a white-ringed blue disc with a down arrow.
+
+    Rendered at BADGE_SS times the requested size and downscaled, because
+    PIL draws no antialiasing of its own.
+    """
+    n = diameter * BADGE_SS
+    badge = Image.new("RGBA", (n, n), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(badge)
+
+    draw.ellipse((0, 0, n - 1, n - 1), fill=BADGE_RING_FILL)
+    ring = n * BADGE_RING
+    draw.ellipse((ring, ring, n - 1 - ring, n - 1 - ring), fill=BADGE_FILL)
+
+    # Arrow inside the disc: a stem with a triangular head, sized off the
+    # inner circle so the ring thickness cannot squeeze it.
+    inner = n - 2 * ring
+    cx = n / 2
+    height = inner * 0.54
+    top = (n - height) / 2
+    bottom = top + height
+    head_w = inner * 0.46
+    stem_w = inner * 0.17
+    shoulder = bottom - head_w * 0.62
+
+    draw.rectangle((cx - stem_w / 2, top, cx + stem_w / 2, shoulder), fill=BADGE_GLYPH)
+    draw.polygon(
+        [(cx - head_w / 2, shoulder), (cx + head_w / 2, shoulder), (cx, bottom)],
+        fill=BADGE_GLYPH,
+    )
+    return badge.resize((diameter, diameter), Image.LANCZOS)
+
+
+def badged(img: Image.Image) -> Image.Image:
+    """Composite the install badge onto the bottom-right of the artwork."""
+    out = img.copy()
+    n = out.width
+    diameter = max(1, int(round(n * BADGE_DIAMETER)))
+    margin = int(round(n * BADGE_MARGIN))
+    pos = (n - diameter - margin, n - diameter - margin)
+    badge = _badge(diameter)
+    out.alpha_composite(badge, pos)
+    return out
+
+
 def resized(img: Image.Image, size: int) -> Image.Image:
     if img.width == size:
         return img.copy()
@@ -128,9 +198,9 @@ def report(path: Path) -> None:
     print(f"wrote {path.relative_to(REACT_GUI_DIR)} ({path.stat().st_size} bytes)")
 
 
-def make_icns(img: Image.Image) -> None:
+def make_icns(img: Image.Image, out_name: str = "icon.icns") -> None:
     if not shutil.which("iconutil"):
-        print("skip icon.icns: iconutil not available (macOS only)")
+        print(f"skip {out_name}: iconutil not available (macOS only)")
         return
     with tempfile.TemporaryDirectory() as tmp:
         iconset = Path(tmp) / "icon.iconset"
@@ -139,7 +209,7 @@ def make_icns(img: Image.Image) -> None:
             suffix = "" if scale == 1 else "@2x"
             name = f"icon_{base}x{base}{suffix}.png"
             resized(img, base * scale).save(iconset / name, "PNG")
-        out = BUILD_DIR / "icon.icns"
+        out = BUILD_DIR / out_name
         subprocess.run(
             ["iconutil", "-c", "icns", str(iconset), "-o", str(out)],
             check=True,
@@ -147,7 +217,7 @@ def make_icns(img: Image.Image) -> None:
         report(out)
 
 
-def make_ico(img: Image.Image) -> None:
+def make_ico(img: Image.Image, out_name: str = "icon.ico") -> None:
     # Every member is pre-resized and handed over through append_images, so
     # each one is downscaled with LANCZOS rather than by the ICO writer.
     #
@@ -156,7 +226,7 @@ def make_ico(img: Image.Image) -> None:
     # image, so starting from the 16x16 frame silently yields a
     # single-member .ico.
     frames = [resized(img, s) for s in ICO_SIZES]
-    out = BUILD_DIR / "icon.ico"
+    out = BUILD_DIR / out_name
     img.save(
         out,
         format="ICO",
@@ -193,6 +263,13 @@ def main() -> None:
     print(f"tightened for the small-icon outputs: {tight.width}x{tight.width}")
     make_ico(tight)
     make_menubar_png(tight)
+
+    # Installer artwork. Each badges the same source its app-icon counterpart
+    # uses, so the two differ only by the badge: the .icns keeps the master's
+    # border (it is shown large, as a DMG volume), the .ico is badged from the
+    # tightened copy (Explorer draws it at 16px).
+    make_icns(badged(img), "installer-icon.icns")
+    make_ico(badged(tight), "installer-icon.ico")
 
 
 if __name__ == "__main__":

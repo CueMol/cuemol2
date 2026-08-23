@@ -92,7 +92,7 @@ tag push 時のリリース成果物は旧 UXP GUI のみ。
 |---|---|---|
 | 3-1 | packaging matrix job 追加 (macos-15 / windows-2022 / ubuntu-22.04)。core ビルド後に per-platform package を実行し成果物を upload-artifact | cicd-1/2, staging-2, nativepy-3, drift-6 |
 | 3-2 | Taskfile に `package_tritium` task 追加 (ローカルと CI が同一経路を共有、env 契約一元化) | staging-2 |
-| 3-3 | VERSION 注入と命名整合: `build2.yml` 既存 VERSION を electron-builder へ注入、`artifactName` を明示し CI artifact 命名 (`cuemol2_${VERSION}_${os}_${arch}`) と整合 | cicd-6, version-4/5 |
+| 3-3 | VERSION 注入と命名整合: `build2.yml` 既存 VERSION を electron-builder へ注入、`artifactName` を明示し CI artifact 命名 (`cuemol2_${VERSION}_${os}_${arch}`) と整合 *(2026-08-23: この命名は [ADR-0056](ADR-0056-release-artifact-identity.md) が supersede。単一テンプレートの `${arch}` がターゲットごとに別表記へ展開されて OS も役割も読めないファイル名になっていたため、per-target `artifactName` へ移行した)* | cicd-6, version-4/5 |
 | 3-4 | リリース連携: packaging job を `release_build` の `needs` に追加、tag push 時のみ実行 (ad-hoc dev DMG 漏れ防止)、添付前に bundle smoke 検証 (.node / sysconfig.xml 存在) | cicd-7 |
 | 3-5 | PR 向け軽量 smoke: `package:dir` (高速) で staging/asar/rpath regression 検出。`package:dir` を staging 経由に修正 or 削除 | drift-6/7 |
 
