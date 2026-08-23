@@ -280,11 +280,14 @@ export interface MovePaintEntryArgs {
 }
 
 /**
- * One row on the paint clipboard, held as the C++ string forms of the
- * entry (`MolSelection.toString()` / `AbstractColor.toString()`) rather
- * than as live wrappers. Strings survive the source renderer being
- * deleted and recompile against whichever scene the paste targets, which
- * is what UXP's JSON `qscpaint` flavour gave for free.
+ * One paint row as it travels to and from the clipboard: the C++ string
+ * forms of the entry (`MolSelection.toString()` /
+ * `AbstractColor.toString()`) rather than live wrappers. Strings survive
+ * the source renderer being deleted and recompile against whichever scene
+ * the paste targets -- the property UXP's JSON `qscpaint` flavour has.
+ *
+ * The wire spelling on the clipboard is UXP's (`sel` / `col`); the
+ * translation lives in `shared/cuemolClipboard.ts`.
  */
 export interface PaintClipboardEntry {
     selStr: string;
@@ -301,13 +304,13 @@ export interface CopyPaintEntriesArgs {
 }
 
 /**
- * Result of Copy / Cut. `count` is how many rows the clipboard holds
- * afterwards -- on a refused copy that is the untouched previous content,
- * so the caller can always use it to gate its Paste affordance.
+ * Result of Copy / Cut: the rows read, for the caller to put on the OS
+ * clipboard. Empty when nothing could be read (the caller then leaves the
+ * clipboard untouched).
  */
 export interface CopyPaintEntriesResult {
     ok: boolean;
-    count: number;
+    entries: PaintClipboardEntry[];
 }
 
 export interface PastePaintEntriesArgs {
@@ -319,6 +322,8 @@ export interface PastePaintEntriesArgs {
      * Mirrors UXP `_getPaintSelImpl` returning -1 for an empty selection.
      */
     idx: number | null;
+    /** Rows to insert, as read from the clipboard. */
+    entries: PaintClipboardEntry[];
 }
 
 export interface PastePaintEntriesResult {
@@ -333,16 +338,6 @@ export interface ClearPaintEntriesArgs {
     sceneId: number;
     rendId: number;
     targetKind?: ColoringTargetKind;
-}
-
-export interface GetPaintClipboardInfoArgs {
-    /** Empty payload; ServiceMap requires an args shape. */
-    _?: never;
-}
-
-export interface GetPaintClipboardInfoResult {
-    /** Rows currently on the paint clipboard. */
-    count: number;
 }
 
 export interface SetRendererDefaultColorArgs {

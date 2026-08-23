@@ -5,6 +5,8 @@
  * process boundaries. Import from here instead of defining locally.
  */
 
+import type { ClipForm, ClipKind, PaintClipEntry } from './cuemolClipboard'
+
 // - Layout -
 
 /** Collapse state for sidebar sub-panels, keyed by pane id. */
@@ -822,6 +824,42 @@ export type RenderWindowStateUpdate =
    * rides along with the context pushes, which fire on every progress tick.
    */
   | { kind: 'framePreview'; preview: RenderFramePreviewWire | null }
+
+// - CueMol clipboard (scene nodes + paint rows on the OS clipboard) -
+
+/**
+ * Payload written to the OS clipboard.
+ *
+ * Split by kind because the two carry different things across the boundary:
+ * a scene node travels as the serialized XML bytes the worker produced,
+ * while paint rows travel as their DTOs and are turned into UXP's
+ * `qscpaint` JSON by main (the codec lives in one place -- see
+ * `shared/cuemolClipboard.ts`).
+ */
+export type CuemolClipWriteReq =
+  | {
+      kind: 'object' | 'renderer' | 'camera' | 'style'
+      /** Renderer payload shape; 'rendArray' for a group / multi copy. */
+      form?: ClipForm
+      /** Display hint carried in the text envelope only. */
+      name?: string
+      bytes: Uint8Array
+    }
+  | { kind: 'paint'; entries: PaintClipEntry[] }
+
+/** What was found on the clipboard, in the same split as the write request. */
+export type CuemolClipReadRes =
+  | {
+      kind: 'object' | 'renderer' | 'camera' | 'style'
+      form: ClipForm
+      name: string
+      bytes: Uint8Array
+    }
+  | { kind: 'paint'; entries: PaintClipEntry[] }
+  | null
+
+/** Identity of the clipboard content, for gating Paste affordances. */
+export type CuemolClipPeekRes = { kind: ClipKind; name: string } | null
 
 /** Pixel size of the main window's molview canvas ("Current view" preset). */
 export interface ViewSizePx {

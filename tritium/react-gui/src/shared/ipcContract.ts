@@ -37,6 +37,9 @@ import type {
   ViewSizePx,
   RenderImageRef,
   RenderViewCamera,
+  CuemolClipWriteReq,
+  CuemolClipReadRes,
+  CuemolClipPeekRes,
 } from './ipcTypes'
 
 export interface InvokeChannels {
@@ -154,6 +157,17 @@ export interface InvokeChannels {
     req: { moviePath: string; defaultName: string }
     res: { canceled: boolean; filePath?: string; error?: string }
   }
+  /**
+   * CueMol clipboard. WRITE / READ move the payload; PEEK reports only what
+   * is on the clipboard, so a context menu can gate Paste without pulling a
+   * multi-megabyte object payload across the boundary.
+   */
+  [IPC.CLIPBOARD_CUEMOL_WRITE]: {
+    req: CuemolClipWriteReq
+    res: { ok: boolean; error?: string }
+  }
+  [IPC.CLIPBOARD_CUEMOL_READ]:  { req: void; res: CuemolClipReadRes }
+  [IPC.CLIPBOARD_CUEMOL_PEEK]:  { req: void; res: CuemolClipPeekRes }
   [IPC.NAVI_CTX_SHOW]:     { req: NaviCtxMenuPayload;    res: NaviCtxAction | null }
   [IPC.SCENE_CTX_SHOW]:    { req: SceneCtxMenuPayload;   res: SceneCtxAction | null }
   [IPC.TEXT_CTX_ACTION]:   { req: Exclude<TextCtxAction, 'selectAll'>; res: void }

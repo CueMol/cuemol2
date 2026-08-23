@@ -43,7 +43,6 @@ import {
     cutPaintEntries,
     pastePaintEntries,
     clearPaintEntries,
-    getPaintClipboardInfo,
 } from './coloring/paintClipboard';
 import {
     getPaintColoringStyles,
@@ -101,8 +100,6 @@ export type {
     PastePaintEntriesArgs,
     PastePaintEntriesResult,
     ClearPaintEntriesArgs,
-    GetPaintClipboardInfoArgs,
-    GetPaintClipboardInfoResult,
     SetRendererDefaultColorArgs,
     SetRendererDefaultColorResult,
     SetColoringPropArgs,
@@ -146,7 +143,6 @@ export const services = {
     cutPaintEntries,
     pastePaintEntries,
     clearPaintEntries,
-    getPaintClipboardInfo,
     setRendererDefaultColor,
     setColoringProp,
     listElePotMapObjects,

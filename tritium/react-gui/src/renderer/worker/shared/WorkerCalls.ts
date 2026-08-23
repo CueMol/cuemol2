@@ -210,8 +210,6 @@ import type {
   CopyNodeResult,
   PasteNodeArgs,
   PasteNodeResult,
-  GetClipboardKindArgs,
-  GetClipboardKindResult,
 } from '../server/services/sceneClipboard.service'
 import type {
   SetRendererColoringArgs,
@@ -240,8 +238,6 @@ import type {
   PastePaintEntriesArgs,
   PastePaintEntriesResult,
   ClearPaintEntriesArgs,
-  GetPaintClipboardInfoArgs,
-  GetPaintClipboardInfoResult,
   SetRendererDefaultColorArgs,
   SetRendererDefaultColorResult,
   SetColoringPropArgs,
@@ -607,7 +603,6 @@ export interface ServiceMap {
   copyNode:                   { args: CopyNodeArgs;                    result: CopyNodeResult }
   copyNodes:                  { args: CopyNodesArgs;                   result: CopyNodesResult }
   pasteNode:                  { args: PasteNodeArgs;                   result: PasteNodeResult }
-  getClipboardKind:           { args: GetClipboardKindArgs;            result: GetClipboardKindResult }
   setRendererColoring:        { args: SetRendererColoringArgs;         result: SetRendererColoringResult }
   getPaintColoringStyles:     { args: GetPaintColoringStylesArgs;      result: GetPaintColoringStylesResult }
   paintRendererSelection:     { args: PaintRendererSelectionArgs;      result: PaintRendererSelectionResult }
@@ -624,7 +619,6 @@ export interface ServiceMap {
   cutPaintEntries:            { args: CopyPaintEntriesArgs;            result: CopyPaintEntriesResult }
   pastePaintEntries:          { args: PastePaintEntriesArgs;           result: PastePaintEntriesResult }
   clearPaintEntries:          { args: ClearPaintEntriesArgs;           result: PaintMutationResult }
-  getPaintClipboardInfo:      { args: GetPaintClipboardInfoArgs;       result: GetPaintClipboardInfoResult }
   setRendererDefaultColor:    { args: SetRendererDefaultColorArgs;     result: SetRendererDefaultColorResult }
   setColoringProp:            { args: SetColoringPropArgs;             result: SetColoringPropResult }
   listElePotMapObjects:       { args: ListElePotMapObjectsArgs;        result: ListElePotMapObjectsResult }

@@ -73,6 +73,7 @@ import { useElePotMapObjects } from '../../hooks/useElePotMapObjects'
 import { useMolCoordObjects } from '../../hooks/useMolCoordObjects'
 import { PaintSelCell } from './PaintSelCell'
 import { fireService } from '../../utils/fireService'
+import { IPC } from '../../../shared/ipcChannels'
 
 // ------------------------------------------------------------
 // Coloring type dropdown items
@@ -769,25 +770,30 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
         setSelectedRow(null)
     }, [selectedKey])
 
-    // Rows on the worker-local paint clipboard; gates the Paste button.
-    // Copy / Cut update it from their result, so the only reason to ask the
-    // worker is a fresh mount (the panel can be collapsed and reopened, or
-    // the clipboard filled before this pane first rendered).
-    const [clipboardCount, setClipboardCount] = useState(0)
+    // Whether the OS clipboard holds paint rows; gates the Paste button.
+    // Electron has no clipboard-change event, so this is re-asked on mount
+    // and on every window focus -- which is exactly the moment the user
+    // comes back from copying rows in CueMol2 or another CueMol3 window.
+    const [canPastePaint, setCanPastePaint] = useState(false)
     useEffect(() => {
-        if (!cm) return
         let cancelled = false
-        cm.invokeService('getPaintClipboardInfo', {})
-            .then((res) => {
-                if (!cancelled) setClipboardCount(res.count)
-            })
-            .catch((err: unknown) =>
-                console.warn('getPaintClipboardInfo failed:', err),
-            )
+        const refresh = (): void => {
+            window.electronAPI
+                ?.invoke(IPC.CLIPBOARD_CUEMOL_PEEK)
+                .then((res) => {
+                    if (!cancelled) setCanPastePaint(res?.kind === 'paint')
+                })
+                .catch((err: unknown) =>
+                    console.warn('clipboard peek failed:', err),
+                )
+        }
+        refresh()
+        window.addEventListener('focus', refresh)
         return () => {
             cancelled = true
+            window.removeEventListener('focus', refresh)
         }
-    }, [cm])
+    }, [])
 
     const target = selectedKey ? parseTargetKey(selectedKey) : null
 
@@ -952,8 +958,11 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
     }, [cm, requireTarget])
 
     /**
-     * Copy / Cut the selected row onto the worker-local paint clipboard.
-     * The result carries the new clipboard size, which gates Paste.
+     * Copy / Cut the selected row onto the OS clipboard.
+     *
+     * Cut deletes in the worker first and writes afterwards, mirroring UXP
+     * `onCut` (= onCopy + onDeleteCmd) as one undo step. If the clipboard
+     * write then fails the rows are gone, but a single Undo restores them.
      */
     const onClipboardTake = useCallback(
         (mode: 'copy' | 'cut') => {
@@ -961,9 +970,14 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
             if (!t || !cm || selectedRow === null) return
             const name = mode === 'cut' ? 'cutPaintEntries' : 'copyPaintEntries'
             cm.invokeService(name, { ...t, idxs: [selectedRow] })
-                .then((res) => {
-                    setClipboardCount(res.count)
-                    if (mode === 'cut' && res.ok) setSelectedRow(null)
+                .then(async (res) => {
+                    if (!res.ok || res.entries.length === 0) return
+                    if (mode === 'cut') setSelectedRow(null)
+                    const w = await window.electronAPI?.invoke(
+                        IPC.CLIPBOARD_CUEMOL_WRITE,
+                        { kind: 'paint', entries: res.entries },
+                    )
+                    setCanPastePaint(w?.ok === true)
                 })
                 .catch((err: unknown) => console.warn(`${name} failed:`, err))
         },
@@ -973,13 +987,27 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
     const onPasteRows = useCallback(() => {
         const t = requireTarget()
         if (!t || !cm) return
-        // UXP `_getPaintSelImpl`: insert before the selected row, or append
-        // when nothing is selected.
-        cm.invokeService('pastePaintEntries', { ...t, idx: selectedRow })
-            .then((res) => {
+        void (async () => {
+            try {
+                const clip = await window.electronAPI?.invoke(
+                    IPC.CLIPBOARD_CUEMOL_READ,
+                )
+                if (clip?.kind !== 'paint') {
+                    setCanPastePaint(false)
+                    return
+                }
+                // UXP `_getPaintSelImpl`: insert before the selected row, or
+                // append when nothing is selected.
+                const res = await cm.invokeService('pastePaintEntries', {
+                    ...t,
+                    idx: selectedRow,
+                    entries: clip.entries,
+                })
                 if (res.ok) setSelectedRow(res.startIdx)
-            })
-            .catch((err: unknown) => console.warn('pastePaintEntries failed:', err))
+            } catch (err) {
+                console.warn('pastePaintEntries failed:', err)
+            }
+        })()
     }, [cm, requireTarget, selectedRow])
 
     const onUpdateCell = useCallback(
@@ -1166,7 +1194,7 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
                         onCut={() => onClipboardTake('cut')}
                         onCopy={() => onClipboardTake('copy')}
                         onPaste={onPasteRows}
-                        canPaste={clipboardCount > 0}
+                        canPaste={canPastePaint}
                         sceneId={sceneId}
                         molId={parentMolId}
                     />

@@ -1,13 +1,20 @@
 /**
  * @file worker/server/services/sceneClipboard.service.ts
- * @description Internal scene clipboard for Copy / Paste of object,
- * renderer, style and camera nodes.
+ * @description Serialize / restore scene nodes (object, renderer, style,
+ * camera) for Copy / Paste.
  *
  * Runs in the Web Worker thread; C++ wrappers are called synchronously.
- * The clipboard is a worker-process-local module singleton: the worker is
- * single-threaded so every service shares this state, and there is no need
- * to thread it through WorkerContext. Copied XML is held as a C++ ByteArray
- * reference (not a JS string) since the clipboard never leaves the worker.
+ *
+ * These services are **stateless**: copy returns the serialized bytes and
+ * paste takes them back as an argument. The clipboard itself is the OS
+ * clipboard, owned by the main process (`main/cuemolClipboard.ts`), so that
+ * a payload can be exchanged with the UXP CueMol2 app and -- once the
+ * single-instance lock is lifted -- between two CueMol3 instances. A worker
+ * cache in front of it would go stale the moment another process copied,
+ * which is exactly the case it would exist to serve.
+ *
+ * XML crosses the boundary as raw bytes (`copyToTypedArray`) because a
+ * C++ ByteArray reference is meaningless outside this thread.
  */
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
@@ -22,35 +29,20 @@ import { listGroupChildRenderers } from './helpers/groupChildren';
 
 export type ClipboardKind = 'object' | 'renderer' | 'style' | 'camera';
 
-interface ClipboardEntry {
-    kind: ClipboardKind;
-    xml: ByteArray;
-    sourceName: string;
-    sourceClassName: string;
-    /**
-     * Scope id used to look up an existing entry of the same kind at
-     * paste time (currently only used by style paste to detect a
-     * name collision under the destination scene).
-     */
-    sourceScopeId?: number;
-    /**
-     * XML payload shape for kind 'renderer'. 'single' (or absent) is one
-     * renderer serialized with toXML; 'rendArray' is a renderer array
-     * serialized with rendGrpToXML (UXP clipboard type "qscrendary" --
-     * element 0 of the restored array is the source group name). The
-     * public clipboard kind stays 'renderer' for both so ctxmenu Paste
-     * gating matches UXP (qscrend | qscrendary enable the same item).
-     */
-    form?: 'single' | 'rendArray';
-    /** Group name embedded in a 'rendArray' payload ('' when none). */
-    sourceGroupName?: string;
-}
+/**
+ * XML payload shape for kind 'renderer'. 'single' is one renderer
+ * serialized with toXML; 'rendArray' is a renderer array serialized with
+ * rendGrpToXML / arrayToXML (UXP clipboard type "qscrendary" -- element 0
+ * of the restored array is the source group name). The clipboard kind
+ * stays 'renderer' for both so ctxmenu Paste gating matches UXP
+ * (qscrend | qscrendary enable the same item).
+ */
+export type ClipboardForm = 'single' | 'rendArray';
 
-let clipboard: ClipboardEntry | null = null;
-
-/** Test helper: reset the singleton between cases. Not exported via the service map. */
-export function _resetClipboardForTest(): void {
-    clipboard = null;
+/** Copy the bytes of a serialized ByteArray out of the C++ heap. */
+function xmlToBytes(ctx: WorkerContext, xml: ByteArray): Uint8Array | null {
+    const bytes = ctx.svc.copyToTypedArray(xml) as Uint8Array | null;
+    return bytes && bytes.length > 0 ? bytes : null;
 }
 
 export interface CopyNodeArgs {
@@ -74,16 +66,22 @@ export interface CopyNodeArgs {
 
 export interface CopyNodeResult {
     ok: boolean;
-    /** What kind landed in the clipboard (renderer for both renderer and rendGroup). */
+    /** What was serialized (renderer for both renderer and rendGroup). */
     kind: ClipboardKind | null;
+    /** Payload shape; 'single' for everything but a group copy. */
+    form?: ClipboardForm;
+    /** Source node name, carried as a display hint only. */
+    name?: string;
+    /** Serialized XML bytes, for the caller to put on the clipboard. */
+    bytes?: Uint8Array;
 }
 
 /**
- * Serialize a scene node to XML and place it on the clipboard.
+ * Serialize a scene node to XML and return its bytes.
  *
  * Resolves the target by `nodeType` (object / renderer / rendGroup /
- * style / camera); renderer and rendGroup both land as kind `'renderer'`.
- * Copying a global-scope (scopeId 0) style is rejected.
+ * style / camera); renderer and rendGroup both come back as kind
+ * `'renderer'`. Copying a global-scope (scopeId 0) style is rejected.
  */
 function copyNode(ctx: WorkerContext, args: CopyNodeArgs): CopyNodeResult {
     const scene = getSceneOrNull(ctx, args.sceneId);
@@ -91,17 +89,13 @@ function copyNode(ctx: WorkerContext, args: CopyNodeArgs): CopyNodeResult {
 
     let target: LScrObject | null = null;
     let sourceName = '';
-    let sourceClassName = '';
     let kind: ClipboardKind;
-    let sourceScopeId: number | undefined;
 
     if (args.nodeType === 'object') {
         const obj = scene.getObject(args.nodeId) as CueMolObject | null;
         if (!obj) return { ok: false, kind: null };
         target = obj as unknown as LScrObject;
         sourceName = safeRead(() => obj.name) ?? '';
-        sourceClassName =
-            safeRead(() => (obj as unknown as { className: string }).className) ?? '';
         kind = 'object';
     } else if (args.nodeType === 'camera') {
         if (!args.cameraName) return { ok: false, kind: null };
@@ -111,7 +105,6 @@ function copyNode(ctx: WorkerContext, args: CopyNodeArgs): CopyNodeResult {
         if (!cam) return { ok: false, kind: null };
         target = cam;
         sourceName = args.cameraName;
-        sourceClassName = 'Camera';
         kind = 'camera';
     } else if (args.nodeType === 'style') {
         // UXP `onCopyStyle` rejects global (scope==0) styles before
@@ -128,8 +121,6 @@ function copyNode(ctx: WorkerContext, args: CopyNodeArgs): CopyNodeResult {
         if (!set) return { ok: false, kind: null };
         target = set;
         sourceName = safeRead(() => (set as unknown as { name: string }).name) ?? '';
-        sourceClassName = 'StyleSet';
-        sourceScopeId = args.scopeId;
         kind = 'style';
     } else if (args.nodeType === 'rendGroup') {
         // Deep-copy the group: serialize its member renderers (not the
@@ -146,35 +137,46 @@ function copyNode(ctx: WorkerContext, args: CopyNodeArgs): CopyNodeResult {
         );
         const xml = ctx.strMgr.rendGrpToXML(natives, grpName);
         if (!xml) return { ok: false, kind: null };
-        clipboard = {
+        const bytes = xmlToBytes(ctx, xml);
+        if (!bytes) return { ok: false, kind: null };
+        return {
+            ok: true,
             kind: 'renderer',
-            xml,
-            sourceName: grpName,
-            sourceClassName: '*group',
             form: 'rendArray',
-            sourceGroupName: grpName,
+            name: grpName,
+            bytes,
         };
-        return { ok: true, kind: 'renderer' };
     } else {
         // single renderer
         const rend = scene.getRenderer(args.nodeId) as Renderer | null;
         if (!rend) return { ok: false, kind: null };
         target = rend as unknown as LScrObject;
         sourceName = safeRead(() => rend.name) ?? '';
-        sourceClassName =
-            safeRead(() => (rend as unknown as { type_name: string }).type_name) ?? '';
         kind = 'renderer';
     }
 
     const xml = ctx.strMgr.toXML(target);
     if (!xml) return { ok: false, kind: null };
+    const bytes = xmlToBytes(ctx, xml);
+    if (!bytes) return { ok: false, kind: null };
 
-    clipboard = { kind, xml, sourceName, sourceClassName, sourceScopeId };
-    return { ok: true, kind };
+    return { ok: true, kind, form: 'single', name: sourceName, bytes };
 }
 
 export interface PasteNodeArgs {
     sceneId: number;
+    /** What the payload holds, from the clipboard read. */
+    kind: ClipboardKind;
+    /** Serialized XML bytes to restore. */
+    bytes: Uint8Array;
+    /** Payload shape; defaults to 'single'. */
+    form?: ClipboardForm;
+    /**
+     * Source node name, used only as the fallback when the restored XML
+     * carries no usable name. A payload copied in another app supplies no
+     * name, which is why every branch prefers the restored object's own.
+     */
+    name?: string;
     /** When pasting a renderer onto an object row, the object's uid. */
     targetObjId?: number;
     /**
@@ -195,21 +197,32 @@ export interface PasteNodeResult {
 }
 
 /**
- * Restore the clipboard entry into the destination scene.
+ * Restore a serialized payload into the destination scene.
  *
- * Branches by clipboard kind. The pasted node is uniquified against the
- * destination (objects / renderers / styles gain a `_<i>` suffix, cameras
- * a `copy<i>_` prefix). A renderer paste targets either an object row
- * (`targetObjId`) or a rendgroup row (`targetGroupId`). Wrapped in an undo
- * transaction.
+ * Branches by kind. The pasted node is uniquified against the destination
+ * (objects / renderers / styles gain a `_<i>` suffix, cameras a `copy<i>_`
+ * prefix). A renderer paste targets either an object row (`targetObjId`)
+ * or a rendgroup row (`targetGroupId`). Wrapped in an undo transaction.
  */
 function pasteNode(ctx: WorkerContext, args: PasteNodeArgs): PasteNodeResult {
     const empty: PasteNodeResult = { ok: false, newId: null, newName: '' };
-    const entry = clipboard;
-    if (!entry) return empty;
+    if (!args.bytes || args.bytes.length === 0) return empty;
 
     const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return empty;
+
+    // Rebuild the C++ ByteArray the XML readers expect. Everything below
+    // then runs exactly as it did when the payload came from a worker-local
+    // clipboard, which is why an externally-produced payload needs no
+    // special case.
+    const xml = ctx.svc.copyFromTypedArray(args.bytes) as ByteArray | null;
+    if (!xml) return empty;
+    const entry = {
+        kind: args.kind,
+        xml,
+        sourceName: args.name ?? '',
+        form: args.form ?? 'single',
+    };
 
     if (entry.kind === 'camera') {
         // Paste a Camera under the destination scene (UXP `onCameraPaste`).
@@ -241,8 +254,8 @@ function pasteNode(ctx: WorkerContext, args: PasteNodeArgs): PasteNodeResult {
 
     if (entry.kind === 'style') {
         // Paste a StyleSet under the destination scene (UXP `onPasteStyle`).
-        // The scope is always `sceneId`; the source `sourceScopeId` only
-        // matters for the copy-side gate.
+        // The scope is always the destination `sceneId`; the source scope
+        // only ever mattered for the copy-side gate.
         const styleMgr = ctx.svc.getService('StyleManager') as unknown as
             | {
                   hasStyleSet: (name: string, scopeId: number) => number;
@@ -402,26 +415,6 @@ function pasteNode(ctx: WorkerContext, args: PasteNodeArgs): PasteNodeResult {
     return { ok: true, newId, newName };
 }
 
-export interface GetClipboardKindArgs {
-    /** Empty payload; ServiceMap requires an args shape. */
-    _?: never;
-}
-
-export interface GetClipboardKindResult {
-    kind: ClipboardKind | null;
-    /** Source label for UI hint, e.g. "Paste 'mol1'". */
-    sourceName: string;
-}
-
-/** Report the current clipboard kind and source label (for UI hints). */
-function getClipboardKind(
-    _ctx: WorkerContext,
-    _args: GetClipboardKindArgs,
-): GetClipboardKindResult {
-    if (!clipboard) return { kind: null, sourceName: '' };
-    return { kind: clipboard.kind, sourceName: clipboard.sourceName };
-}
-
 // --- helpers ---
 
 
@@ -499,6 +492,12 @@ export interface CopyNodesArgs {
 export interface CopyNodesResult {
     ok: boolean;
     kind: ClipboardKind | null;
+    /** Always 'rendArray' when ok -- a multi copy is a renderer array. */
+    form?: ClipboardForm;
+    /** Empty: a multi copy has no single source name. */
+    name?: string;
+    /** Serialized XML bytes, for the caller to put on the clipboard. */
+    bytes?: Uint8Array;
     /**
      * Why a copy was refused, so the caller can show UXP's alert text:
      * 'mixed' -- the selection spans more than one kind;
@@ -558,21 +557,14 @@ function copyNodes(ctx: WorkerContext, args: CopyNodesArgs): CopyNodesResult {
 
     const xml = ctx.strMgr.arrayToXML(natives);
     if (!xml) return { ok: false, kind: null };
+    const bytes = xmlToBytes(ctx, xml);
+    if (!bytes) return { ok: false, kind: null };
 
-    clipboard = {
-        kind: 'renderer',
-        xml,
-        sourceName: '',
-        sourceClassName: '*multi',
-        form: 'rendArray',
-        sourceGroupName: '',
-    };
-    return { ok: true, kind: 'renderer' };
+    return { ok: true, kind: 'renderer', form: 'rendArray', name: '', bytes };
 }
 
 export const services = {
     copyNode,
     copyNodes,
     pasteNode,
-    getClipboardKind,
 };

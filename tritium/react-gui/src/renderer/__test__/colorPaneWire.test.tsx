@@ -25,7 +25,7 @@
  */
 
 import React from 'react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act } from 'react'
 
 void React
@@ -87,7 +87,13 @@ vi.mock('../components/panes/PaintSelCell', () => ({
 }))
 
 import { ColorPane } from '../components/panes/ColorPane'
-import { mountTree, flushPromises } from './helpers/testHarness'
+import { IPC } from '../../shared/ipcChannels'
+import {
+    mountTree,
+    flushPromises,
+    setupElectronAPI,
+    teardownElectronAPI,
+} from './helpers/testHarness'
 
 /** Set a controlled input's value so React's onChange fires (native setter). */
 function setInputValue(el: HTMLInputElement, value: string): void {
@@ -106,6 +112,27 @@ function blurInput(el: HTMLInputElement): void {
 
 const SCENE_ID = 7
 const REND_ID = 100
+
+/** Rows the stubbed copy/cut services hand back for the clipboard write. */
+const CLIP_ROWS = [{ selStr: 'aname CA', colorValue: '#00ff00' }]
+
+/** Stub the main-process clipboard channels the paint deck now uses. */
+function stubClipboard(hasPaint: boolean): ReturnType<typeof setupElectronAPI> {
+    return setupElectronAPI({
+        invoke: vi.fn((ch: string) => {
+            if (ch === IPC.CLIPBOARD_CUEMOL_PEEK) {
+                return Promise.resolve(hasPaint ? { kind: 'paint', name: '' } : null)
+            }
+            if (ch === IPC.CLIPBOARD_CUEMOL_READ) {
+                return Promise.resolve(
+                    hasPaint ? { kind: 'paint', entries: CLIP_ROWS } : null,
+                )
+            }
+            if (ch === IPC.CLIPBOARD_CUEMOL_WRITE) return Promise.resolve({ ok: true })
+            return Promise.resolve(undefined)
+        }) as never,
+    })
+}
 
 interface ColoringState {
     ok: boolean
@@ -130,14 +157,11 @@ interface MockCm {
  * Build a cm mock whose fetch services route the pane to a chosen deck, and
  * whose mutation services resolve ok. `coloringState` controls the deck.
  */
-function makeCm(coloringState: ColoringState, clipboardCount = 0): MockCm {
+function makeCm(coloringState: ColoringState): MockCm {
     return {
         invokeService: vi.fn((name: string) => {
-            if (name === 'getPaintClipboardInfo') {
-                return Promise.resolve({ count: clipboardCount })
-            }
             if (name === 'copyPaintEntries' || name === 'cutPaintEntries') {
-                return Promise.resolve({ ok: true, count: 1 })
+                return Promise.resolve({ ok: true, entries: CLIP_ROWS })
             }
             if (name === 'pastePaintEntries') {
                 return Promise.resolve({ ok: true, count: 1, startIdx: 0 })
@@ -169,9 +193,16 @@ function makeCm(coloringState: ColoringState, clipboardCount = 0): MockCm {
     }
 }
 
-/** Mount ColorPane with a single auto-selected renderer + given deck state. */
-async function mountWith(state: ColoringState, clipboardCount = 0) {
-    const cm = makeCm(state, clipboardCount)
+/**
+ * Mount ColorPane with a single auto-selected renderer + given deck state.
+ *
+ * `clipboardHasPaint` drives the stubbed OS clipboard: the pane asks main
+ * whether paint rows are on it (Paste gating) rather than asking the worker,
+ * so rows copied in another window or in CueMol2 are pasteable.
+ */
+async function mountWith(state: ColoringState, clipboardHasPaint = false) {
+    stubClipboard(clipboardHasPaint)
+    const cm = makeCm(state)
     const handle = mountTree(
         <ColorPane cm={cm as never} sceneId={SCENE_ID} />,
     )
@@ -186,7 +217,6 @@ function mutationCalls(cm: MockCm): Array<[string, unknown]> {
         'getRendererColoringState',
         'listElePotMapObjects',
         'getPaintColoringStyles',
-        'getPaintClipboardInfo',
     ])
     return cm.invokeService.mock.calls.filter(
         (c) => !reads.has(c[0] as string),
@@ -198,6 +228,9 @@ const TARGET = { sceneId: SCENE_ID, rendId: REND_ID, targetKind: 'renderer' }
 describe('ColorPane wire', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+    })
+    afterEach(() => {
+        teardownElectronAPI()
     })
 
     // --- Color control kind: Solid deck default-color picker ---
@@ -448,10 +481,10 @@ describe('ColorPane wire', () => {
         return el as HTMLButtonElement
     }
 
-    async function mountPaintDeckWithRowSelected(clipboardCount = 0) {
+    async function mountPaintDeckWithRowSelected(clipboardHasPaint = false) {
         const view = await mountWith(
             { ok: true, className: 'PaintColoring', paintEntries: PAINT_ROWS },
-            clipboardCount,
+            clipboardHasPaint,
         )
         const row = view.container.querySelectorAll('.color-row')[1] as HTMLElement
         await act(async () => { row.click() })
@@ -459,42 +492,56 @@ describe('ColorPane wire', () => {
         return view
     }
 
-    it('Paint Copy fires copyPaintEntries with the selected row index', async () => {
+    it('Paint Copy reads the row then writes it to the OS clipboard', async () => {
         const { cm, container, unmount } = await mountPaintDeckWithRowSelected()
+        const api = window.electronAPI as unknown as { invoke: ReturnType<typeof vi.fn> }
         await act(async () => { actionBtn(container, 'Copy row').click() })
         await flushPromises()
         expect(cm.invokeService).toHaveBeenCalledWith('copyPaintEntries', {
             ...TARGET,
             idxs: [1],
         })
+        // The rows the worker read must reach main, or nothing is on the
+        // clipboard for another window / CueMol2 to paste.
+        expect(api.invoke).toHaveBeenCalledWith(IPC.CLIPBOARD_CUEMOL_WRITE, {
+            kind: 'paint',
+            entries: CLIP_ROWS,
+        })
         unmount()
     })
 
-    it('Paint Cut fires cutPaintEntries with the selected row index', async () => {
+    it('Paint Cut deletes in the worker and writes the rows out', async () => {
         const { cm, container, unmount } = await mountPaintDeckWithRowSelected()
+        const api = window.electronAPI as unknown as { invoke: ReturnType<typeof vi.fn> }
         await act(async () => { actionBtn(container, 'Cut row').click() })
         await flushPromises()
         expect(cm.invokeService).toHaveBeenCalledWith('cutPaintEntries', {
             ...TARGET,
             idxs: [1],
         })
+        expect(api.invoke).toHaveBeenCalledWith(IPC.CLIPBOARD_CUEMOL_WRITE, {
+            kind: 'paint',
+            entries: CLIP_ROWS,
+        })
         unmount()
     })
 
-    it('Paint Paste is gated on the clipboard and passes the selected row as idx', async () => {
-        // Empty clipboard: the button is disabled, so a click fires nothing.
-        const empty = await mountPaintDeckWithRowSelected(0)
+    it('Paint Paste is gated on the OS clipboard and passes the selected row as idx', async () => {
+        // Nothing on the clipboard: the button is disabled.
+        const empty = await mountPaintDeckWithRowSelected(false)
         expect(actionBtn(empty.container, 'Paste rows').disabled).toBe(true)
         empty.unmount()
 
-        const { cm, container, unmount } = await mountPaintDeckWithRowSelected(2)
+        const { cm, container, unmount } = await mountPaintDeckWithRowSelected(true)
         const paste = actionBtn(container, 'Paste rows')
         expect(paste.disabled).toBe(false)
         await act(async () => { paste.click() })
         await flushPromises()
+        // The rows come from the clipboard, not from worker-held state.
         expect(cm.invokeService).toHaveBeenCalledWith('pastePaintEntries', {
             ...TARGET,
             idx: 1,
+            entries: CLIP_ROWS,
         })
         unmount()
     })
@@ -502,13 +549,14 @@ describe('ColorPane wire', () => {
     it('Paint Paste with no row selected appends (idx null)', async () => {
         const { cm, container, unmount } = await mountWith(
             { ok: true, className: 'PaintColoring', paintEntries: PAINT_ROWS },
-            1,
+            true,
         )
         await act(async () => { actionBtn(container, 'Paste rows').click() })
         await flushPromises()
         expect(cm.invokeService).toHaveBeenCalledWith('pastePaintEntries', {
             ...TARGET,
             idx: null,
+            entries: CLIP_ROWS,
         })
         unmount()
     })

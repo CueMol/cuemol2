@@ -4,11 +4,30 @@
  * main process renders -- the gates double as the visibility filter.
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import {
     buildSceneCtxPayload,
     nodeMenuLabel,
 } from '../hooks/sceneContextMenu/buildSceneCtxPayload'
+import { IPC } from '../../shared/ipcChannels'
+import { setupElectronAPI, teardownElectronAPI } from './helpers/testHarness'
+
+/**
+ * Stub the OS-clipboard peek. Paste gating no longer asks the worker: the
+ * clipboard lives in the main process so a copy made in another app (or
+ * another CueMol window) is visible here.
+ */
+function stubClipboardPeek(res: { kind: string; name: string } | null): void {
+    setupElectronAPI({
+        invoke: vi.fn((ch: string) =>
+            Promise.resolve(ch === IPC.CLIPBOARD_CUEMOL_PEEK ? res : undefined),
+        ) as never,
+    })
+}
+
+afterEach(() => {
+    teardownElectronAPI()
+})
 
 const objectNode = (overrides: Record<string, unknown> = {}): any => ({
     id: 1, type: 'object', name: 'mol1', className: 'MolCoord',
@@ -149,8 +168,8 @@ describe('buildSceneCtxPayload — regenerate surface gate', () => {
 
 describe('buildSceneCtxPayload — pre-fetch dispatch', () => {
     it('renderer node fans out the four parallel pre-fetches, plus clipboardKind', async () => {
+        stubClipboardPeek({ kind: 'object', name: 'mol1' })
         const cm = makeCm({
-            getClipboardKind: { kind: 'object' },
             getPaintColoringStyles: { entries: [{ name: 'a', label: 'A' }] },
             getRendererPaintInfo: { canPaint: true },
             getRendererStyleEntries: { ok: true, typeStyles: [], edgeStyles: [] },
@@ -209,6 +228,14 @@ describe('buildSceneCtxPayload — pre-fetch dispatch', () => {
         expect(p.supportsColoring).toBe(true)
         expect(p.clipboardKind).toBeNull()
         expect(p.paintStyles).toEqual([])
+    })
+
+    it('reports no pasteable node when the clipboard holds paint rows', async () => {
+        // Paint rows share the OS clipboard with scene nodes, so the scene
+        // ctxmenu has to reject them rather than offer a Paste that fails.
+        stubClipboardPeek({ kind: 'paint', name: '' })
+        const p = await buildSceneCtxPayload(makeCm(), 7, rendererNode())
+        expect(p.clipboardKind).toBeNull()
     })
 
     it('passes node.styleInfo through for style nodes', async () => {

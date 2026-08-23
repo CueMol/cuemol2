@@ -149,6 +149,23 @@ export class WorkerService {
         return this._cm.fromTypedArray(src);
     }
 
+    /**
+     * Copy a ByteArray's bytes out into a new Uint8Array.
+     *
+     * The copying pair rather than the zero-copy `toTypedArray` /
+     * `fromTypedArray`: these cross the worker boundary (clipboard payloads
+     * are structured-cloned to the renderer), so the buffer must not alias
+     * C++-owned memory whose ByteArray may be collected.
+     */
+    copyToTypedArray(src: any): any {
+        return this._cm.copyToTypedArray(src);
+    }
+
+    /** Build a new ByteArray holding a copy of a TypedArray's bytes. */
+    copyFromTypedArray(src: any): any | null {
+        return this._cm.copyFromTypedArray(src);
+    }
+
     private _buildContext(): WorkerContext {
         return {
             svc: this,
