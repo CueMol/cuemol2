@@ -47,8 +47,6 @@ function archesIn(section: string): string[] {
 const mac = topLevelSection(builderYml, 'mac')
 const win = topLevelSection(builderYml, 'win')
 const linux = topLevelSection(builderYml, 'linux')
-const dmg = topLevelSection(builderYml, 'dmg')
-const nsis = topLevelSection(builderYml, 'nsis')
 
 /** The four shipped targets, keyed by the section that names them. */
 const TARGETS = [
@@ -106,28 +104,12 @@ describe('release artifact names identify OS, arch and role', () => {
   })
 })
 
-describe('installers are visually distinct from the app', () => {
-  it('points the DMG volume and the NSIS wizard at the badged artwork', () => {
-    expect(dmg).toMatch(/^\s*icon:\s*build\/installer-icon\.icns\s*$/m)
-    expect(nsis).toMatch(/^\s*installerIcon:\s*build\/installer-icon\.ico\s*$/m)
-    expect(nsis).toMatch(/^\s*uninstallerIcon:\s*build\/installer-icon\.ico\s*$/m)
-  })
-
-  it('ships both installer icons and both app icons', () => {
-    // The app icons are found by name from buildResources, so nothing else
-    // would notice if one went missing.
-    for (const f of [
-      'installer-icon.icns', 'installer-icon.ico',
-      'icon.icns', 'icon.ico', 'icon.png',
-    ]) {
+describe('icons', () => {
+  it('ships the app icon for every platform', () => {
+    // Found by name from buildResources (there is no icon: key), so nothing
+    // else would notice if one went missing.
+    for (const f of ['icon.icns', 'icon.ico', 'icon.png']) {
       expect(existsSync(join(root, 'build', f)), f).toBe(true)
     }
-  })
-
-  it('does not try to put the 4-part version in the DMG volume title', () => {
-    // dmg.title does not expand ${env.*}: a build with it set mounted a volume
-    // literally named 'CueMol3 ${env.CM_FULL_VERSION}'. Leaving the key unset
-    // is the only correct option, so pin that it stays unset.
-    expect(dmg).not.toMatch(/^\s*title:/m)
   })
 })

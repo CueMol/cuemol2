@@ -1,4 +1,4 @@
-# ADR-0056: リリース成果物が自分の OS と役割を名乗る — 命名規約とインストーラアイコン
+# ADR-0056: リリース成果物が自分の OS と役割を名乗る — 命名規約
 
 - Status: accepted
 - Date: 2026-08-23
@@ -28,7 +28,8 @@ CueMol3-2.3.8-amd64.deb      CueMol3-2.3.8-x86_64.AppImage
    `cuemol2_2.3.8.494_macOS_ARM64.tar.bz2` と 4 桁で、表記が食い違っている
 5. **アイコンが全部同じ** — `electron-builder.yml` に `icon:` キーも `dmg:` ブロックも無く、
    `build/icon.{icns,ico,png}` の 1 セットが buildResources の名前解決で拾われて、
-   アプリ本体・DMG ボリューム・NSIS インストーラ exe・アンインストーラのすべてに使われていた
+   アプリ本体・DMG ボリューム・NSIS インストーラ exe・アンインストーラのすべてに使われている
+   (本 ADR ではファイル名のみを扱い、アイコンは現状維持とした。理由は後述)
 
 旧 CueMol2 (UXP) は `cuemol2-2.3.0.461.win64.installer.exe` という命名で **OS トークンと
 `installer` の役割語**を持ち、DMG には専用の `disk.icns` ボリュームアイコンと `background.png`、
@@ -60,23 +61,30 @@ CueMol3-2.3.9.498-Linux-x64.deb
   パッケージ名 (`@cuemol/react-gui`) 由来のファイル名に `/` が入って fpm が落ちる事故
   (`electron-builder.yml` の既存コメントが記録している) を防ぐフォールバックとして機能し続ける
 
-### 2. インストーラ専用アイコン
+### 2. アイコンは現状維持 (今回は変更しない)
 
-`scripts/make-icons.py` を拡張し、master から `build/installer-icon.icns` /
-`installer-icon.ico` を追加生成する。アプリアイコンの右下に **青い円 + 白い下向き矢印**の
-インストールバッジを Pillow で描いて重ねたもので、外部アセットを足さず master 1 枚から
-再生成できる既存スクリプトの設計に合わせている。
+アプリアイコンにインストールバッジ (青円 + 白い下向き矢印) を重ねた専用アイコンを作り、
+`dmg.icon` と `nsis.installerIcon` に割り当てるところまで実装して**撤回した**。
+実物をレンダリングして確認した結果と、そこから分かった事実による。
 
-`dmg.icon` と `nsis.installerIcon` / `uninstallerIcon` にこれを指定する。
-**アプリ本体のアイコンは変更しない** (`build/icon.*` の名前解決は従来どおり)。
+- **バッジでは一目で区別がつかない** (owner 判断)。48px 以上なら矢印が読めるが、
+  ダウンロードフォルダで実際に効くサイズでは「アプリアイコンに小さな点が付いたもの」にしか
+  見えない
+- **macOS は元々問題が小さい**。DMG はマウントするとディスクとして現れるので、アプリとの
+  違いは形式そのものから歴然としている
+- **electron-builder では「NSIS の default アイコンに任せる」ができない**。
+  `installerIcon` 未設定時のフォールバックは NSIS 組み込みアイコンではなく**アプリアイコン**
+  (`app-builder-lib/out/targets/nsis/NsisTarget.js:176` —
+  `getResource(options.installerIcon, "installerIcon.ico") || packager.getIconPath()`)。
+  NSIS 本来の `modern-install.ico` が使われるのはアプリにアイコンが無いときだけ
+- **NSIS 同梱アイコンを vendor する案も見送り**。実物を展開して確認したところ
+  (`nsis-3.0.5.0.7z` の `Contrib/Graphics/Icons/`)、`modern-install` 系はいずれも
+  **アイコン内に "NSIS" のロゴが描かれており**、かつ最大 48px。CueMol のインストーラが
+  インストーラ作成ツールのブランドを表示することになり、アプリアイコンより悪い
 
-バッジ径は canvas の **0.38**。16 / 24 / 32 / 200px でレンダリングして比較して決めた:
-0.46 では大きい側でアプリアイコンの識別性を損なう割に、16px では結局どちらも「青い点」で
-差が出ない。0.38 なら 24px で矢印が読め、16px でも青い点として区別がつき、大きいサイズで
-元の絵を潰さない。
-
-AppImage / deb は本体アイコン (`icon.png`) のままで正しい — Linux パッケージのアイコンとは
-デスクトップエントリのアイコン、すなわちアプリ本体のアイコンだから。
+したがってアイコンは触らず、**役割の識別はファイル名 (`...-Windows-x64-Setup.exe`) が担う**。
+専用のインストーラアートワーク (バッジではなく、箱・パッケージを主体にした別構図) を描くのは
+デザイン作業として別途。
 
 ## Consequences
 
@@ -92,31 +100,25 @@ AppImage / deb は本体アイコン (`icon.png`) のままで正しい — Linu
   `${env.*}` を展開せず、実ビルドで `CueMol3 ${env.CM_FULL_VERSION}` という名前の
   ボリュームがマウントされた (実機確認済み)。`${version}` は 3 桁なのでファイル名と揃える
   手段が無い。ボリューム名は一時的で、ユーザーの手元に残るのはファイル名なので既定に戻した
-- **`.dmg` ファイル自体のアイコンは変わらない。** `dmg.icon` が設定するのはマウント後の
-  ボリュームアイコンで、Finder 上の `.dmg` ファイルは汎用のディスクイメージアイコンのまま。
-  これはアプリアイコンとは別物なので識別性の目的は満たすが、完全なカスタムアイコンを
-  `.dmg` ファイルに付けるには electron-builder の外で `Rez`/`SetFile` を回す必要がある
+- **アイコンによる識別は未解決のまま残る。** Explorer 上では `Setup.exe` がインストール後の
+  アプリと同じ絵になる。ファイル名では区別できるので実害は限定的だが、完全な解決には
+  専用アートワークが要る (上記)
 - **リポジトリの master PNG とトラック済みアプリアイコンが一致していない**ことが作業中に
-  判明した。`/Users/user1/proj64/cuemol3-app-icon-master.png` から `make-icons.py` を回すと
-  アプリアイコンが実際に変わる (512px で最大チャンネル差 255)。今回の
-  `installer-icon.*` はトラック済み `icon.icns` の 1024px スライスから生成しており
-  アプリと同じ絵柄になっているが、**次に `task make_tritium_icons` を回す人は
-  アプリアイコンごと変わることを承知しておく必要がある**
+  判明した。`~/proj64/cuemol3-app-icon-master.png` から `make-icons.py` を回すとアプリ
+  アイコンが実際に変わる (512px で最大チャンネル差 255)。今回アイコンは触っていないので
+  影響しないが、**次に `task make_tritium_icons` を回す人はアプリアイコンごと変わることを
+  承知しておく必要がある**
 - DMG ウィンドウの住み分け (`dmg.contents` によるアイコン配置・背景画像) は今回やっていない。
   electron-builder の既定で Applications シンボリックリンクと背景は既に入っており
   (実ビルドで確認)、旧 CueMol2 相当の作り込みは別作業
 
 ## Notes
 
-- 実装: `tritium/react-gui/electron-builder.yml` (per-target `artifactName` ×3、`dmg:` 新設、
-  `nsis:` に installerIcon / uninstallerIcon)、`tritium/packaging/package.sh`
-  (`export CM_FULL_VERSION`)、`tritium/react-gui/scripts/make-icons.py`
-  (`_badge()` / `badged()` + 2 出力、`make_icns`/`make_ico` の出力名パラメータ化)、
-  `build/installer-icon.{icns,ico}` (生成物)
-- テスト: `__test__/artifactNaming.test.ts` 18 件。`fileAssociationSync.test.ts` と同じ
+- 実装: `tritium/react-gui/electron-builder.yml` (per-target `artifactName` ×3)、
+  `tritium/packaging/package.sh` (`export CM_FULL_VERSION`)
+- テスト: `__test__/artifactNaming.test.ts` 16 件。`fileAssociationSync.test.ts` と同じ
   regex 方式で `electron-builder.yml` を読む
 - 実機確認 (macOS arm64): `task package_tritium` →
-  `CueMol3-2.3.9.498-macOS-arm64-Installer.dmg` が出力され、マウントしたボリュームの
-  `.VolumeIcon.icns` が `build/installer-icon.icns` と**バイト一致**、
-  `Applications` シンボリックリンクも既定で同梱されることを確認。
+  `CueMol3-2.3.9.498-macOS-arm64-Installer.dmg` が出力されること、
+  `Applications` シンボリックリンクが既定で同梱されることを確認。
   Windows / Linux は CI 依存 (ローカル環境なし)
