@@ -1,9 +1,12 @@
-# ADR-0056: リリース成果物が自分の OS と役割を名乗る — 命名規約とインストーラアイコン
+# リリース成果物が自分の OS と役割を名乗る — 命名規約とインストーラアイコン
 
 - Status: accepted
 - Date: 2026-08-23
-- Mapping rows: (なし — packaging の課題で mapping 行を持たない)
-- Supersedes: [ADR-0030](ADR-0030-tritium-packaging-renovation.md) の命名に関する記述 (項目 3-3)
+- Related mapping rows: (なし — packaging の課題で mapping 行を持たない)
+- Supersedes: [tritium packaging renovation](tritium-packaging-renovation.md) の命名に関する記述 (項目 3-3)
+
+これは UXP からの migration に関する判断ではないため、`docs/migration/adr/` ではなく
+ここに置いている (migration ADR は migration 専用に保つ)。
 
 ## Context
 

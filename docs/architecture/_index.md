@@ -1,8 +1,16 @@
 # Architecture documents
 
-Cross-cutting design notes for the C++ libcuemol2 core. One file per
-topic. Topics here cover contracts and invariants that span multiple
-modules and that are not obvious from any single header.
+Cross-cutting design notes for libcuemol2 (C++) and the tritium app. One
+file per topic. Topics here cover contracts and invariants that span
+multiple modules and that are not obvious from any single header, plus
+the design records for features and infrastructure that are **not** part
+of the UXP -> tritium migration.
+
+Migration decisions live in [`../migration/adr/`](../migration/adr/_index.md)
+and are numbered `ADR-NNNN`; documents here are named after their topic
+instead. If a change ports a UXP surface it belongs there; if it adds
+something UXP never had, or concerns build / packaging / internal
+architecture, it belongs here.
 
 - [C++ Scripting Bridge](cpp-scripting-bridge.md) -- metaclass macros
   (`MC_DYNCLASS` / `MC_SCRIPTABLE`), the `getClassObj` vs
@@ -53,4 +61,25 @@ modules and that are not obvious from any single header.
   (umbreon 側のスレッド/TBB バグではない)。renderer プロセス内からの自己修復は
   原理的に不可能なため、対策は Electron main プロセス側 (renderer backgrounding
   の無効化、powerSaveBlocker、外部からの taskpolicy 解除) に限られる。
-
+- [tritium packaging / release-build renovation](tritium-packaging-renovation.md)
+  (日本語) -- tritium を配布可能な形にするまでの設計記録。electron-builder による
+  3 OS パッケージング、libcuemol2 ランタイムの staging、release-cadence gating、
+  tag -> GitHub Release の配線、Electron 33->42 更新。署名 / notarization (Phase 4) は未了。
+- [リリース成果物が自分の OS と役割を名乗る](release-artifact-identity.md) (日本語) --
+  installer のファイル名とアイコンの規約。単一 `artifactName` テンプレートの `${arch}` が
+  ターゲットごとに別表記へ展開されるため、1 リリースが 2 機種向けに 4 語の arch を出し、
+  OS 名も「本体かインストーラか」も読めなかった。per-target 命名への移行と、Phosphor の
+  `BoxArrowDown` を使ったインストーラ専用アイコン。バッジ案 / NSIS 同梱アイコン案の却下理由も記録。
+- [Copy&Paste を OS クリップボードへ](os-clipboard-interop.md) (日本語) --
+  scene ノードと paint 行の clipboard を worker 内 singleton から OS クリップボードへ移す設計。
+  UXP 版 CueMol2 との相互運用と、将来 tritium を複数起動したときのインスタンス間 copy&paste が
+  目的。macOS では Gecko がカスタム flavor を pasteboard に出さないという発見と、
+  そこから決まった 2 フォーマット構成 (legacy native / text envelope)。
+- [Cmd+C / X / V をフォーカス文脈で振り分ける](focus-aware-edit-shortcuts.md) (日本語) --
+  同じキーがテキスト欄・scene tree・paint deck で別の意味を持つようにする routing の設計。
+  Electron の clipboard role では表現できない理由 (macOS はメニューの key equivalent が
+  web content より先にキーを取る)、Win/Linux の React メニューが DOM フォーカスを奪う問題、
+  および「テキスト欄で Cmd+Z が scene undo を走らせる」既存バグの修正。
+- [ObjProxyBridge `_objSlot` ownership and lifetime](objslot-ownership.md) --
+  the worker-side object bridge's slot ownership rules and when a slot may be
+  released, from the renderer/worker refactoring work.

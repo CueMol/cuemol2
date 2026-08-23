@@ -87,5 +87,6 @@ renderers. Binary paths are configured in the SettingsPane
 - App-bundle packaging of the POV-Ray / blendpng binaries: **done on macOS**
   (staged into the DMG under `Resources/bundle_apps/povray` + `Resources/cuemol2/bin/blendpng`
   by `collect-cuemol2-runtime.sh` + `electron-builder.yml` extraResources; see
-  ADR-0030). Paths are still user-overridable in Settings; Windows/Linux staging
+  [tritium packaging renovation](../../architecture/tritium-packaging-renovation.md)).
+  Paths are still user-overridable in Settings; Windows/Linux staging
   is a follow-up.

@@ -1,9 +1,9 @@
-# ADR-0054: Copy&Paste を OS クリップボードへ — CueMol2 相互運用とインスタンス間対応
+# Copy&Paste を OS クリップボードへ — CueMol2 相互運用とインスタンス間対応
 
 - Status: accepted
 - Date: 2026-08-23
-- Mapping rows: [`panel.workspace.ctxmenu.object`](../mapping/panels.md#panelworkspacectxmenuobject), [`panel.workspace.ctxmenu.renderer`](../mapping/panels.md#panelworkspacectxmenurenderer), [`panel.workspace.ctxmenu.rendgroup`](../mapping/panels.md#panelworkspacectxmenurendgroup), [`panel.workspace.ctxmenu.camera`](../mapping/panels.md#panelworkspacectxmenucamera), [`panel.workspace.ctxmenu.style`](../mapping/panels.md#panelworkspacectxmenustyle), [`panel.workspace.ctxmenu.multi`](../mapping/panels.md#panelworkspacectxmenumulti), [`panel.coloring.deck.paint`](../mapping/panels.md#panelcoloringdeckpaint)
-- Supersedes: [ADR-0003](ADR-0003-object-ctxmenu-phases.md) Phase 4a と [ADR-0053](ADR-0053-paint-deck-clipboard.md) の「clipboard スコープ = worker 内 singleton」判断
+- Related mapping rows: [`panel.workspace.ctxmenu.object`](../migration/mapping/panels.md#panelworkspacectxmenuobject), [`panel.workspace.ctxmenu.renderer`](../migration/mapping/panels.md#panelworkspacectxmenurenderer), [`panel.workspace.ctxmenu.rendgroup`](../migration/mapping/panels.md#panelworkspacectxmenurendgroup), [`panel.workspace.ctxmenu.camera`](../migration/mapping/panels.md#panelworkspacectxmenucamera), [`panel.workspace.ctxmenu.style`](../migration/mapping/panels.md#panelworkspacectxmenustyle), [`panel.workspace.ctxmenu.multi`](../migration/mapping/panels.md#panelworkspacectxmenumulti), [`panel.coloring.deck.paint`](../migration/mapping/panels.md#panelcoloringdeckpaint)
+- Supersedes: [ADR-0003](../migration/adr/ADR-0003-object-ctxmenu-phases.md) Phase 4a と [ADR-0053](../migration/adr/ADR-0053-paint-deck-clipboard.md) の「clipboard スコープ = worker 内 singleton」判断
 
 ## Context
 

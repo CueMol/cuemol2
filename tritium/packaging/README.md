@@ -1,7 +1,7 @@
 # CueMol3 (tritium) packaging / 配布手順
 
 electron-vite + electron-builder による配布物のビルド手順と、**未署名配布時の注意**をまとめる。
-設計判断・スコープの詳細は [ADR-0030](../../docs/migration/adr/ADR-0030-tritium-packaging-renovation.md) を参照。
+設計判断・スコープの詳細は [tritium packaging renovation](../../docs/architecture/tritium-packaging-renovation.md) を参照。
 
 ## 前提
 
@@ -31,7 +31,7 @@ electron-vite + electron-builder による配布物のビルド手順と、**未
 `build/installer-icon.*`（Phosphor の `BoxArrowDown` をアプリと同じ charcoal のタイルに載せたもの、
 `scripts/make-installer-icon.py` で生成）。ダウンロードしたものがインストール後のアプリと
 同じ見た目にならないようにするため。詳細は
-[ADR-0056](../../docs/migration/adr/ADR-0056-release-artifact-identity.md)。
+[release artifact identity](../../docs/architecture/release-artifact-identity.md)。
 
 CI（`.github/workflows/build2.yml`）も同じ経路で macOS DMG と Windows NSIS `.exe` を生成・upload する。
 
@@ -48,7 +48,9 @@ Windows は **ウィザード型 NSIS インストーラー**（assisted install
 
 ## 未署名配布に関する注意（重要）
 
-現状の配布物は **未署名**（コード署名 / notarization は ADR-0030 **Phase 4** の後続作業）。
+現状の配布物は **未署名**（コード署名 / notarization は
+[tritium packaging renovation](../../docs/architecture/tritium-packaging-renovation.md)
+の **Phase 4** の後続作業）。
 このため一般エンドユーザー向けではなく **dev / internal 配布専用**。初回起動時に OS の警告が出るので、
 以下の手順で回避する。
 
@@ -74,5 +76,6 @@ Web からダウンロードした `.dmg` は quarantine 属性が付き、そ�
 2. 表示される **「実行」** ボタンをクリック
 
 署名（EV/OV 証明書または Azure Trusted Signing）を導入すればこの警告は解消される。導入方針は
-ADR-0030 Phase 4 を参照（`electron-builder.yml` の `win.certificateFile` / `win.azureSignOptions`
+[tritium packaging renovation](../../docs/architecture/tritium-packaging-renovation.md)
+の Phase 4 を参照（`electron-builder.yml` の `win.certificateFile` / `win.azureSignOptions`
 を差し込み、`CSC_*` を CI secret 化する設計になっている）。

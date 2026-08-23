@@ -1,8 +1,11 @@
-# ADR-0033: ObjProxyBridge `_objSlot` ownership and lifetime
+# ObjProxyBridge `_objSlot` ownership and lifetime
 
 - Status: accepted (design-out -- bridge removed; leak no longer reachable)
 - Date: 2026-06-16
-- Mapping rows: (none -- worker-bridge infra; tracked by refactoring plan T15 / PR-A)
+- Related mapping rows: (none -- worker-bridge infra; tracked by refactoring plan T15 / PR-A)
+
+This is not a UXP -> tritium migration decision, so it lives here rather
+than in `docs/migration/adr/` (those stay migration-only).
 
 ## Decision (2026-06-16)
 
