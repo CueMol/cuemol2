@@ -336,6 +336,10 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
       case 'cut': wc.cut(); break
       case 'copy': wc.copy(); break
       case 'paste': wc.paste(); break
+      // Reached only from the Edit-menu shortcuts, when focus is in a text
+      // field: Cmd+Z there must undo the typing, not the scene.
+      case 'undo': wc.undo(); break
+      case 'redo': wc.redo(); break
     }
   })
 

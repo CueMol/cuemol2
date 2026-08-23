@@ -16,11 +16,15 @@ import {
   MENU_ACTION_MAP,
   MENU_DISPATCH_RECENT_CLEAR,
   MENU_DISPATCH_SELECT_ALL,
+  MENU_DISPATCH_EDIT_CUT,
+  MENU_DISPATCH_EDIT_COPY,
+  MENU_DISPATCH_EDIT_PASTE,
   isMenuActionChannel,
   isUnimplementedMenuAction,
   type MenuActionChannel,
 } from '../../shared/menuActionMap'
 import { selectAllInScope } from '../utils/selectAllScope'
+import { dispatchEditClipboard, dispatchEditUndoRedo } from '../utils/editClipboard'
 
 /** Dependencies a per-channel menu handler needs from the hook closure. */
 interface MenuDispatchCtx {
@@ -33,6 +37,9 @@ interface MenuDispatchCtx {
  * Special-cased menu channels that do NOT dispatch a plain no-arg command:
  *   - MENU_CLOSE_TAB    : dispatches with the active tab id, guarded on it
  *   - MENU_SELECT_ALL   : runs selectAllInScope() directly (no command bus)
+ *   - MENU_EDIT_*       : resolve by focus (utils/editClipboard.ts)
+ *   - MENU_UNDO/REDO    : native text undo while a field has focus, otherwise
+ *                         the scene-level command
  *   - MENU_CLEAR_RECENT : invokes IPC.RECENT_CLEAR directly
  * Every other channel uses the generic path: dispatch(map.dispatch) with no
  * args. Genuinely-unimplemented channels are caught before lookup and warn.
@@ -48,6 +55,22 @@ const SPECIAL_HANDLERS = {
     // Scoped Select All: focused field or active selectable region only,
     // never the whole document. See utils/selectAllScope.ts.
     selectAllInScope()
+  },
+  // Clipboard actions resolve by focus: text field -> native edit, scene
+  // tree -> node copy/paste, paint deck -> row copy/paste.
+  [IPC.MENU_EDIT_CUT]: () => { dispatchEditClipboard('cut') },
+  [IPC.MENU_EDIT_COPY]: () => { dispatchEditClipboard('copy') },
+  [IPC.MENU_EDIT_PASTE]: () => { dispatchEditClipboard('paste') },
+  // Undo / Redo are scene-level, EXCEPT while a text field has focus -- there
+  // the user means the typing, not the scene. Without this the scene undo
+  // fires whenever the scene has an undo stack, whatever is focused.
+  [IPC.MENU_UNDO]: ({ dispatch, logErr }: MenuDispatchCtx) => {
+    if (dispatchEditUndoRedo('undo')) return
+    dispatch('edit.undo').catch(logErr('edit.undo:'))
+  },
+  [IPC.MENU_REDO]: ({ dispatch, logErr }: MenuDispatchCtx) => {
+    if (dispatchEditUndoRedo('redo')) return
+    dispatch('edit.redo').catch(logErr('edit.redo:'))
   },
   [IPC.MENU_CLEAR_RECENT]: ({ logErr }: MenuDispatchCtx) => {
     window.electronAPI?.invoke(IPC.RECENT_CLEAR).catch(logErr('recent.clear:'))
@@ -87,7 +110,10 @@ export function useMenuDispatch(activeTab: string | null): {
       // cast sidesteps the variadic-tuple union without weakening that contract.
       if (
         entry.dispatch === MENU_DISPATCH_SELECT_ALL ||
-        entry.dispatch === MENU_DISPATCH_RECENT_CLEAR
+        entry.dispatch === MENU_DISPATCH_RECENT_CLEAR ||
+        entry.dispatch === MENU_DISPATCH_EDIT_CUT ||
+        entry.dispatch === MENU_DISPATCH_EDIT_COPY ||
+        entry.dispatch === MENU_DISPATCH_EDIT_PASTE
       ) {
         // These markers must be handled by SPECIAL_HANDLERS above; reaching
         // here means the table and the markers drifted.

@@ -37,7 +37,6 @@ interface MenuBarProps {
   recentFiles?: RecentFileEntry[]
 }
 
-const EXEC_COMMAND_ROLES = new Set<AppMenuRole>(['cut', 'copy', 'paste', 'selectAll'])
 
 /**
  * Windows / Linux menu bar. Owns the open-menu and dropdown-position state
@@ -106,7 +105,9 @@ export const MenuBar: React.FC<MenuBarProps> = ({ activeTab, viewProjection = nu
   const visibleGroups = APP_MENU.filter((g) => !g.darwinOnly)
 
   return (
-    <div className="menubar" ref={barRef} role="menubar">
+    // data-keep-clipboard-scope: clicking the menu must not clear which panel
+    // the user was working in, or Edit > Copy would have no target.
+    <div className="menubar" ref={barRef} role="menubar" data-keep-clipboard-scope>
       {/* App icon at the left edge (VS Code-style), before the menu groups. */}
       <img className="menubar__app-icon" src={appIcon} alt="" aria-hidden="true" />
       {visibleGroups.map((group) => {
@@ -151,14 +152,14 @@ export const MenuBar: React.FC<MenuBarProps> = ({ activeTab, viewProjection = nu
   )
 }
 
-/** Run a standard menu role: edit roles via `execCommand`, others via IPC. */
+/**
+ * Run a standard menu role through the main process.
+ *
+ * The clipboard roles used to be handled here with `document.execCommand`,
+ * but Cut / Copy / Paste and Select All are all channel-backed menu items
+ * now (they resolve by focus -- see utils/editClipboard.ts), so nothing
+ * reaches this function with an edit role any more.
+ */
 function handleRole(role: AppMenuRole): void {
-  if (EXEC_COMMAND_ROLES.has(role)) {
-    // execCommand is deprecated but remains the most reliable way to trigger
-    // cut/copy/paste/selectAll on the focused element in a sandboxed renderer.
-    // eslint-disable-next-line @typescript-eslint/no-deprecated
-    document.execCommand(role === 'selectAll' ? 'selectAll' : role)
-  } else {
-    window.electronAPI?.invoke(IPC.MENU_INVOKE_ROLE, role)
-  }
+  window.electronAPI?.invoke(IPC.MENU_INVOKE_ROLE, role)
 }

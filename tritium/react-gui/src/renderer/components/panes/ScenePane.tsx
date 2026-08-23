@@ -833,6 +833,10 @@ export const ScenePane: React.FC<ScenePaneProps> = ({
                 <div
                     className="sp-pane-scroll"
                     tabIndex={-1}
+                    // Marks the tree as the target of Edit > Cut/Copy/Paste
+                    // while the user is working here; the handlers are
+                    // registered in useSceneTreeController.
+                    data-clipboard-scope="scene-tree"
                     onKeyDown={handleTreeKeyDown}
                     onDragLeave={handleTreeDragLeave}
                     style={{ outline: 'none' }}

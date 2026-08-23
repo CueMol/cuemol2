@@ -75,6 +75,14 @@ export interface MenuActionEntry {
 export const MENU_DISPATCH_SELECT_ALL = 'select-all'
 export const MENU_DISPATCH_RECENT_CLEAR = 'recent-clear'
 export const MENU_DISPATCH_UNIMPLEMENTED = 'unimplemented'
+/**
+ * Clipboard + undo markers. These resolve by FOCUS rather than to a fixed
+ * command: a text field gets the native edit, the scene tree gets node
+ * copy/paste, the paint deck gets row copy/paste. See utils/editClipboard.
+ */
+export const MENU_DISPATCH_EDIT_CUT = 'edit-cut'
+export const MENU_DISPATCH_EDIT_COPY = 'edit-copy'
+export const MENU_DISPATCH_EDIT_PASTE = 'edit-paste'
 
 /**
  * The map. Keys are IPC channel strings (= menuTemplate ipcChannel values).
@@ -101,6 +109,9 @@ export const MENU_ACTION_MAP = {
   // --- Edit ---
   [IPC.MENU_UNDO]:             { dispatch: 'edit.undo',          deliver: 'dedicated-direct' },
   [IPC.MENU_REDO]:             { dispatch: 'edit.redo',          deliver: 'dedicated-direct' },
+  [IPC.MENU_EDIT_CUT]:         { dispatch: MENU_DISPATCH_EDIT_CUT,   deliver: 'generic' },
+  [IPC.MENU_EDIT_COPY]:        { dispatch: MENU_DISPATCH_EDIT_COPY,  deliver: 'generic' },
+  [IPC.MENU_EDIT_PASTE]:       { dispatch: MENU_DISPATCH_EDIT_PASTE, deliver: 'generic' },
   [IPC.MENU_SELECT_ALL]:       { dispatch: MENU_DISPATCH_SELECT_ALL, deliver: 'generic' },
   [IPC.MENU_CLEAR_UNDO]:       { dispatch: 'edit.clearUndo',     deliver: 'generic' },
   [IPC.MENU_MERGE_MOL]:        { dispatch: 'ui.mergeMolDialog',  deliver: 'generic' },

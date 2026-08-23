@@ -260,6 +260,16 @@ export interface NaviCtxMenuPayload {
 /** Edit-role picked from the text clipboard context menu. */
 export type TextCtxAction = 'cut' | 'copy' | 'paste' | 'selectAll'
 
+/**
+ * A native text-editing action run against the focused element by the main
+ * process (`webContents.cut()` and friends).
+ *
+ * Superset of the context menu's roles: the Edit-menu shortcuts route here
+ * when focus is in a text field, and that includes undo / redo, which the
+ * context menu never offers.
+ */
+export type TextEditAction = 'cut' | 'copy' | 'paste' | 'undo' | 'redo'
+
 /** Subset of Electron's `ContextMenuParams.editFlags` the menu consumes. */
 export interface TextCtxEditFlags {
   canCut: boolean

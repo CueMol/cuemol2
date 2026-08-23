@@ -18,7 +18,15 @@ import { CmdId } from '../commands/ids'
 import type { CommandKey } from '../commands/CommandMap'
 import { IPC } from '../../shared/ipcChannels'
 import { useMenuDispatch } from '../hooks/useMenuDispatch'
-import { makeRenderHook } from './helpers/testHarness'
+import {
+  makeRenderHook,
+  setupElectronAPI,
+  teardownElectronAPI,
+} from './helpers/testHarness'
+import {
+  _resetClipboardScopesForTest,
+  registerClipboardScope,
+} from '../utils/editClipboard'
 
 const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   React.createElement(CommandProvider, null, children)
@@ -164,6 +172,79 @@ describe('useMenuDispatch -- dispatchOpenRecent (MRU reader reuse)', () => {
     expect(captured.length).toBe(1)
     expect(captured[0].id).toBe(CmdId.OpenSceneByPath)
     expect(captured[0].args).toBe('/x/s.qsc')
+    h.unmount()
+  })
+})
+
+// --- Focus-aware Edit actions ---
+//
+// Cmd+Z used to run the scene undo whatever was focused, so undoing a typo
+// in a text field could roll back the scene instead. These pin the split.
+
+describe('useMenuDispatch -- Edit actions resolve by focus', () => {
+  let api: ReturnType<typeof setupElectronAPI>
+
+  beforeEach(() => {
+    api = setupElectronAPI()
+    _resetClipboardScopesForTest()
+  })
+  afterEach(() => {
+    teardownElectronAPI()
+    document.body.innerHTML = ''
+  })
+
+  /** Native edit actions main was asked to run. */
+  const nativeCalls = (): string[] =>
+    api.invoke.mock.calls
+      .filter((c: unknown[]) => c[0] === IPC.TEXT_CTX_ACTION)
+      .map((c: unknown[]) => c[1] as string)
+
+  function focusInput(): void {
+    const input = document.createElement('input')
+    document.body.appendChild(input)
+    input.focus()
+  }
+
+  it('undo/redo run natively while a text field has focus', async () => {
+    const { h, captured } = setupHarness()
+    focusInput()
+    h.result.dispatchMenuChannel(IPC.MENU_UNDO)
+    h.result.dispatchMenuChannel(IPC.MENU_REDO)
+    await Promise.resolve()
+    expect(nativeCalls()).toEqual(['undo', 'redo'])
+    expect(captured).toEqual([])
+    h.unmount()
+  })
+
+  it('undo/redo fall through to the scene commands otherwise', async () => {
+    const { h, captured } = setupHarness()
+    h.result.dispatchMenuChannel(IPC.MENU_UNDO)
+    h.result.dispatchMenuChannel(IPC.MENU_REDO)
+    await Promise.resolve()
+    expect(nativeCalls()).toEqual([])
+    expect(captured.map((c) => c.id)).toEqual([CmdId.Undo, CmdId.Redo])
+    h.unmount()
+  })
+
+  it('clipboard channels reach the registered panel scope', async () => {
+    const scope = { cut: vi.fn(), copy: vi.fn(), paste: vi.fn() }
+    registerClipboardScope('scene-tree', scope)
+    const host = document.createElement('div')
+    host.dataset.clipboardScope = 'scene-tree'
+    host.tabIndex = -1
+    document.body.appendChild(host)
+    host.focus()
+
+    const { h, captured } = setupHarness()
+    h.result.dispatchMenuChannel(IPC.MENU_EDIT_COPY)
+    h.result.dispatchMenuChannel(IPC.MENU_EDIT_CUT)
+    h.result.dispatchMenuChannel(IPC.MENU_EDIT_PASTE)
+    await Promise.resolve()
+    expect(scope.copy).toHaveBeenCalledTimes(1)
+    expect(scope.cut).toHaveBeenCalledTimes(1)
+    expect(scope.paste).toHaveBeenCalledTimes(1)
+    // These are not command-bus actions.
+    expect(captured).toEqual([])
     h.unmount()
   })
 })

@@ -86,14 +86,17 @@ export const APP_MENU: AppMenuGroup[] = [
       { id: 'undo', label: 'Undo', accelerator: 'CmdOrCtrl+Z', acceleratorMac: 'CmdOrCtrl+Z', ipcChannel: IPC.MENU_UNDO },
       { id: 'redo', label: 'Redo', accelerator: 'CmdOrCtrl+Y', acceleratorMac: 'Shift+CmdOrCtrl+Z', ipcChannel: IPC.MENU_REDO },
       { type: 'separator' },
-      // Standard clipboard items. Cut/Copy/Paste are pure roles (no ipcChannel)
-      // so the main-process menu delegates them entirely to Electron, which
-      // assigns the default Cmd/Ctrl accelerators and runs them natively against
-      // the focused element / webContents selection. Without these on macOS the
-      // keyboard shortcuts are not delivered and clipboard fails app-wide.
-      { id: 'cut',   label: 'Cut',   role: 'cut' },
-      { id: 'copy',  label: 'Copy',  role: 'copy' },
-      { id: 'paste', label: 'Paste', role: 'paste' },
+      // Clipboard items are custom, not Electron roles, because what they mean
+      // depends on focus: a text field gets the native edit, the scene tree
+      // gets node copy/paste, the paint deck gets row copy/paste. A role item
+      // would run natively before the renderer ever saw the keystroke -- on
+      // macOS the menu's key equivalent wins over the web content -- so the
+      // routing has to start here. `utils/editClipboard.ts` resolves the
+      // target; the accelerators must be declared explicitly now that Electron
+      // no longer supplies them.
+      { id: 'cut',   label: 'Cut',   accelerator: 'CmdOrCtrl+X', ipcChannel: IPC.MENU_EDIT_CUT },
+      { id: 'copy',  label: 'Copy',  accelerator: 'CmdOrCtrl+C', ipcChannel: IPC.MENU_EDIT_COPY },
+      { id: 'paste', label: 'Paste', accelerator: 'CmdOrCtrl+V', ipcChannel: IPC.MENU_EDIT_PASTE },
       // Select All is NOT a native role: Electron's selectAll selects the whole
       // document (every GUI text node) when focus is not in an editable field.
       // Route it through the renderer (selectAllInScope) so it targets only the
