@@ -30,6 +30,7 @@ import {
   CaretUp,
   Check,
   Circle,
+  ClipboardText,
   ClockCounterClockwise,
   CloudArrowDown,
   CornersOut,
@@ -67,6 +68,7 @@ import {
   SkipBack,
   SkipForward,
   SlidersHorizontal,
+  Scissors,
   SquaresFour,
   Stack,
   Stop,
@@ -175,7 +177,11 @@ export const APP_ICONS = {
   "ui.add": { lib: "phosphor", Comp: Plus },
   "ui.remove": { lib: "phosphor", Comp: Minus },
   "ui.trash": { lib: "phosphor", Comp: Trash },
+  // Clipboard trio. Copy reuses `ui.duplicate` (same glyph, already the
+  // copy-to-clipboard button in RenderResultPane).
   "ui.duplicate": { lib: "phosphor", Comp: Copy },
+  "ui.cut": { lib: "phosphor", Comp: Scissors },
+  "ui.paste": { lib: "phosphor", Comp: ClipboardText },
   "ui.arrowUp": { lib: "phosphor", Comp: ArrowUp },
   "ui.arrowDown": { lib: "phosphor", Comp: ArrowDown },
   "ui.caretUp": { lib: "phosphor", Comp: CaretUp },

@@ -235,6 +235,13 @@ import type {
   UpdatePaintEntryArgs,
   MovePaintEntryArgs,
   PaintMutationResult,
+  CopyPaintEntriesArgs,
+  CopyPaintEntriesResult,
+  PastePaintEntriesArgs,
+  PastePaintEntriesResult,
+  ClearPaintEntriesArgs,
+  GetPaintClipboardInfoArgs,
+  GetPaintClipboardInfoResult,
   SetRendererDefaultColorArgs,
   SetRendererDefaultColorResult,
   SetColoringPropArgs,
@@ -613,6 +620,11 @@ export interface ServiceMap {
   removePaintEntry:           { args: RemovePaintEntryArgs;            result: PaintMutationResult }
   updatePaintEntry:           { args: UpdatePaintEntryArgs;            result: PaintMutationResult }
   movePaintEntry:             { args: MovePaintEntryArgs;              result: PaintMutationResult }
+  copyPaintEntries:           { args: CopyPaintEntriesArgs;            result: CopyPaintEntriesResult }
+  cutPaintEntries:            { args: CopyPaintEntriesArgs;            result: CopyPaintEntriesResult }
+  pastePaintEntries:          { args: PastePaintEntriesArgs;           result: PastePaintEntriesResult }
+  clearPaintEntries:          { args: ClearPaintEntriesArgs;           result: PaintMutationResult }
+  getPaintClipboardInfo:      { args: GetPaintClipboardInfoArgs;       result: GetPaintClipboardInfoResult }
   setRendererDefaultColor:    { args: SetRendererDefaultColorArgs;     result: SetRendererDefaultColorResult }
   setColoringProp:            { args: SetColoringPropArgs;             result: SetColoringPropResult }
   listElePotMapObjects:       { args: ListElePotMapObjectsArgs;        result: ListElePotMapObjectsResult }

@@ -130,9 +130,18 @@ interface MockCm {
  * Build a cm mock whose fetch services route the pane to a chosen deck, and
  * whose mutation services resolve ok. `coloringState` controls the deck.
  */
-function makeCm(coloringState: ColoringState): MockCm {
+function makeCm(coloringState: ColoringState, clipboardCount = 0): MockCm {
     return {
         invokeService: vi.fn((name: string) => {
+            if (name === 'getPaintClipboardInfo') {
+                return Promise.resolve({ count: clipboardCount })
+            }
+            if (name === 'copyPaintEntries' || name === 'cutPaintEntries') {
+                return Promise.resolve({ ok: true, count: 1 })
+            }
+            if (name === 'pastePaintEntries') {
+                return Promise.resolve({ ok: true, count: 1, startIdx: 0 })
+            }
             if (name === 'listPaintCapableRenderers') {
                 return Promise.resolve({
                     ok: true,
@@ -161,8 +170,8 @@ function makeCm(coloringState: ColoringState): MockCm {
 }
 
 /** Mount ColorPane with a single auto-selected renderer + given deck state. */
-async function mountWith(state: ColoringState) {
-    const cm = makeCm(state)
+async function mountWith(state: ColoringState, clipboardCount = 0) {
+    const cm = makeCm(state, clipboardCount)
     const handle = mountTree(
         <ColorPane cm={cm as never} sceneId={SCENE_ID} />,
     )
@@ -177,6 +186,7 @@ function mutationCalls(cm: MockCm): Array<[string, unknown]> {
         'getRendererColoringState',
         'listElePotMapObjects',
         'getPaintColoringStyles',
+        'getPaintClipboardInfo',
     ])
     return cm.invokeService.mock.calls.filter(
         (c) => !reads.has(c[0] as string),
@@ -420,6 +430,105 @@ describe('ColorPane wire', () => {
             colorValue: '#FFFFFF',
         })
         unmount()
+    })
+
+    // --- Paint clipboard row: Copy / Cut / Paste / Remove all ---
+    //
+    // These four act on the row the user selected, so each test clicks the
+    // row first. The buttons are found by aria-label, not by position, so
+    // reordering the toolbar does not silently retarget a test.
+    const PAINT_ROWS = [
+        { idx: 0, selStr: 'aname N', colorValue: '#ff0000' },
+        { idx: 1, selStr: 'aname CA', colorValue: '#00ff00' },
+    ]
+
+    function actionBtn(container: HTMLElement, label: string): HTMLButtonElement {
+        const el = container.querySelector(`.color-actions button[aria-label="${label}"]`)
+        if (!el) throw new Error(`action button "${label}" not rendered`)
+        return el as HTMLButtonElement
+    }
+
+    async function mountPaintDeckWithRowSelected(clipboardCount = 0) {
+        const view = await mountWith(
+            { ok: true, className: 'PaintColoring', paintEntries: PAINT_ROWS },
+            clipboardCount,
+        )
+        const row = view.container.querySelectorAll('.color-row')[1] as HTMLElement
+        await act(async () => { row.click() })
+        await flushPromises()
+        return view
+    }
+
+    it('Paint Copy fires copyPaintEntries with the selected row index', async () => {
+        const { cm, container, unmount } = await mountPaintDeckWithRowSelected()
+        await act(async () => { actionBtn(container, 'Copy row').click() })
+        await flushPromises()
+        expect(cm.invokeService).toHaveBeenCalledWith('copyPaintEntries', {
+            ...TARGET,
+            idxs: [1],
+        })
+        unmount()
+    })
+
+    it('Paint Cut fires cutPaintEntries with the selected row index', async () => {
+        const { cm, container, unmount } = await mountPaintDeckWithRowSelected()
+        await act(async () => { actionBtn(container, 'Cut row').click() })
+        await flushPromises()
+        expect(cm.invokeService).toHaveBeenCalledWith('cutPaintEntries', {
+            ...TARGET,
+            idxs: [1],
+        })
+        unmount()
+    })
+
+    it('Paint Paste is gated on the clipboard and passes the selected row as idx', async () => {
+        // Empty clipboard: the button is disabled, so a click fires nothing.
+        const empty = await mountPaintDeckWithRowSelected(0)
+        expect(actionBtn(empty.container, 'Paste rows').disabled).toBe(true)
+        empty.unmount()
+
+        const { cm, container, unmount } = await mountPaintDeckWithRowSelected(2)
+        const paste = actionBtn(container, 'Paste rows')
+        expect(paste.disabled).toBe(false)
+        await act(async () => { paste.click() })
+        await flushPromises()
+        expect(cm.invokeService).toHaveBeenCalledWith('pastePaintEntries', {
+            ...TARGET,
+            idx: 1,
+        })
+        unmount()
+    })
+
+    it('Paint Paste with no row selected appends (idx null)', async () => {
+        const { cm, container, unmount } = await mountWith(
+            { ok: true, className: 'PaintColoring', paintEntries: PAINT_ROWS },
+            1,
+        )
+        await act(async () => { actionBtn(container, 'Paste rows').click() })
+        await flushPromises()
+        expect(cm.invokeService).toHaveBeenCalledWith('pastePaintEntries', {
+            ...TARGET,
+            idx: null,
+        })
+        unmount()
+    })
+
+    it('Paint Remove all fires clearPaintEntries and is disabled on an empty list', async () => {
+        const { cm, container, unmount } = await mountWith({
+            ok: true,
+            className: 'PaintColoring',
+            paintEntries: PAINT_ROWS,
+        })
+        await act(async () => { actionBtn(container, 'Remove all rows').click() })
+        await flushPromises()
+        expect(cm.invokeService).toHaveBeenCalledWith('clearPaintEntries', TARGET)
+        unmount()
+
+        const empty = await mountWith({
+            ok: true, className: 'PaintColoring', paintEntries: [],
+        })
+        expect(actionBtn(empty.container, 'Remove all rows').disabled).toBe(true)
+        empty.unmount()
     })
 
     // --- Paint cell color edit -> updatePaintEntry (merge keeps selStr) ---

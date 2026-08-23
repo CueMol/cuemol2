@@ -229,6 +229,13 @@ interface PaintTableProps {
     onMoveUp: () => void
     onMoveDown: () => void
     onUpdate: (idx: number, field: 'selStr' | 'colorValue', value: string) => void
+    /** Clear the whole list (UXP `paintpanel-delallbtn`). */
+    onRemoveAll: () => void
+    onCut: () => void
+    onCopy: () => void
+    onPaste: () => void
+    /** True while the worker-local paint clipboard holds at least one row. */
+    canPaste: boolean
     /** sceneId required for MolSelList named-def lookup. */
     sceneId: number
     /**
@@ -249,6 +256,11 @@ const PaintTable: React.FC<PaintTableProps> = ({
     onMoveUp,
     onMoveDown,
     onUpdate,
+    onRemoveAll,
+    onCut,
+    onCopy,
+    onPaste,
+    canPaste,
     sceneId,
     molId,
 }) => {
@@ -311,6 +323,7 @@ const PaintTable: React.FC<PaintTableProps> = ({
                         <Button
                             small
                             icon={<AppIcon name="ui.add" aria-hidden />}
+                            aria-label="Add row"
                             className="color-action-btn"
                             onClick={onAdd}
                         />
@@ -319,6 +332,7 @@ const PaintTable: React.FC<PaintTableProps> = ({
                         <Button
                             small
                             icon={<AppIcon name="ui.remove" aria-hidden />}
+                            aria-label="Remove row"
                             className="color-action-btn"
                             onClick={onRemove}
                             disabled={!isRowSelected}
@@ -328,6 +342,7 @@ const PaintTable: React.FC<PaintTableProps> = ({
                         <Button
                             small
                             icon={<AppIcon name="ui.arrowUp" aria-hidden />}
+                            aria-label="Move row up"
                             className="color-action-btn"
                             onClick={onMoveUp}
                             disabled={!isRowSelected || selectedIdx === 0}
@@ -337,12 +352,63 @@ const PaintTable: React.FC<PaintTableProps> = ({
                         <Button
                             small
                             icon={<AppIcon name="ui.arrowDown" aria-hidden />}
+                            aria-label="Move row down"
                             className="color-action-btn"
                             onClick={onMoveDown}
                             disabled={
                                 !isRowSelected ||
                                 (selectedIdx !== null && selectedIdx >= entries.length - 1)
                             }
+                        />
+                    </Tooltip>
+                    <Tooltip content="Remove all rows" placement="top" compact>
+                        <Button
+                            small
+                            icon={<AppIcon name="ui.trash" aria-hidden />}
+                            aria-label="Remove all rows"
+                            className="color-action-btn"
+                            onClick={onRemoveAll}
+                            disabled={entries.length === 0}
+                        />
+                    </Tooltip>
+                </ButtonGroup>
+                <ButtonGroup minimal>
+                    <Tooltip content="Cut row" placement="top" compact>
+                        <Button
+                            small
+                            icon={<AppIcon name="ui.cut" aria-hidden />}
+                            aria-label="Cut row"
+                            className="color-action-btn"
+                            onClick={onCut}
+                            disabled={!isRowSelected}
+                        />
+                    </Tooltip>
+                    <Tooltip content="Copy row" placement="top" compact>
+                        <Button
+                            small
+                            icon={<AppIcon name="ui.duplicate" aria-hidden />}
+                            aria-label="Copy row"
+                            className="color-action-btn"
+                            onClick={onCopy}
+                            disabled={!isRowSelected}
+                        />
+                    </Tooltip>
+                    <Tooltip
+                        content={
+                            isRowSelected
+                                ? 'Paste before the selected row'
+                                : 'Paste at the end'
+                        }
+                        placement="top"
+                        compact
+                    >
+                        <Button
+                            small
+                            icon={<AppIcon name="ui.paste" aria-hidden />}
+                            aria-label="Paste rows"
+                            className="color-action-btn"
+                            onClick={onPaste}
+                            disabled={!canPaste}
                         />
                     </Tooltip>
                 </ButtonGroup>
@@ -703,6 +769,26 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
         setSelectedRow(null)
     }, [selectedKey])
 
+    // Rows on the worker-local paint clipboard; gates the Paste button.
+    // Copy / Cut update it from their result, so the only reason to ask the
+    // worker is a fresh mount (the panel can be collapsed and reopened, or
+    // the clipboard filled before this pane first rendered).
+    const [clipboardCount, setClipboardCount] = useState(0)
+    useEffect(() => {
+        if (!cm) return
+        let cancelled = false
+        cm.invokeService('getPaintClipboardInfo', {})
+            .then((res) => {
+                if (!cancelled) setClipboardCount(res.count)
+            })
+            .catch((err: unknown) =>
+                console.warn('getPaintClipboardInfo failed:', err),
+            )
+        return () => {
+            cancelled = true
+        }
+    }, [cm])
+
     const target = selectedKey ? parseTargetKey(selectedKey) : null
 
     // Parent mol uid for the currently-selected target. Forwarded to
@@ -857,6 +943,44 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
         },
         [cm, requireTarget, selectedRow, entries.length],
     )
+
+    const onRemoveAllRows = useCallback(() => {
+        const t = requireTarget()
+        if (!t || !cm) return
+        fireService(cm, 'clearPaintEntries', t)
+        setSelectedRow(null)
+    }, [cm, requireTarget])
+
+    /**
+     * Copy / Cut the selected row onto the worker-local paint clipboard.
+     * The result carries the new clipboard size, which gates Paste.
+     */
+    const onClipboardTake = useCallback(
+        (mode: 'copy' | 'cut') => {
+            const t = requireTarget()
+            if (!t || !cm || selectedRow === null) return
+            const name = mode === 'cut' ? 'cutPaintEntries' : 'copyPaintEntries'
+            cm.invokeService(name, { ...t, idxs: [selectedRow] })
+                .then((res) => {
+                    setClipboardCount(res.count)
+                    if (mode === 'cut' && res.ok) setSelectedRow(null)
+                })
+                .catch((err: unknown) => console.warn(`${name} failed:`, err))
+        },
+        [cm, requireTarget, selectedRow],
+    )
+
+    const onPasteRows = useCallback(() => {
+        const t = requireTarget()
+        if (!t || !cm) return
+        // UXP `_getPaintSelImpl`: insert before the selected row, or append
+        // when nothing is selected.
+        cm.invokeService('pastePaintEntries', { ...t, idx: selectedRow })
+            .then((res) => {
+                if (res.ok) setSelectedRow(res.startIdx)
+            })
+            .catch((err: unknown) => console.warn('pastePaintEntries failed:', err))
+    }, [cm, requireTarget, selectedRow])
 
     const onUpdateCell = useCallback(
         (idx: number, field: 'selStr' | 'colorValue', value: string) => {
@@ -1038,6 +1162,11 @@ export const ColorPane: React.FC<ColorPaneProps> = ({
                         onMoveUp={() => onMoveRow('up')}
                         onMoveDown={() => onMoveRow('down')}
                         onUpdate={onUpdateCell}
+                        onRemoveAll={onRemoveAllRows}
+                        onCut={() => onClipboardTake('cut')}
+                        onCopy={() => onClipboardTake('copy')}
+                        onPaste={onPasteRows}
+                        canPaste={clipboardCount > 0}
                         sceneId={sceneId}
                         molId={parentMolId}
                     />

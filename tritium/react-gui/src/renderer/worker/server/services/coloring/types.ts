@@ -279,6 +279,72 @@ export interface MovePaintEntryArgs {
     toIdx: number;
 }
 
+/**
+ * One row on the paint clipboard, held as the C++ string forms of the
+ * entry (`MolSelection.toString()` / `AbstractColor.toString()`) rather
+ * than as live wrappers. Strings survive the source renderer being
+ * deleted and recompile against whichever scene the paste targets, which
+ * is what UXP's JSON `qscpaint` flavour gave for free.
+ */
+export interface PaintClipboardEntry {
+    selStr: string;
+    colorValue: string;
+}
+
+/** Args for both Copy and Cut; Cut additionally removes the rows. */
+export interface CopyPaintEntriesArgs {
+    sceneId: number;
+    rendId: number;
+    targetKind?: ColoringTargetKind;
+    /** Row indices to copy. Order and duplicates do not matter. */
+    idxs: number[];
+}
+
+/**
+ * Result of Copy / Cut. `count` is how many rows the clipboard holds
+ * afterwards -- on a refused copy that is the untouched previous content,
+ * so the caller can always use it to gate its Paste affordance.
+ */
+export interface CopyPaintEntriesResult {
+    ok: boolean;
+    count: number;
+}
+
+export interface PastePaintEntriesArgs {
+    sceneId: number;
+    rendId: number;
+    targetKind?: ColoringTargetKind;
+    /**
+     * Insert before this row; `null` (no row selected) appends at the end.
+     * Mirrors UXP `_getPaintSelImpl` returning -1 for an empty selection.
+     */
+    idx: number | null;
+}
+
+export interface PastePaintEntriesResult {
+    ok: boolean;
+    /** Rows actually inserted; entries that fail to compile are skipped. */
+    count: number;
+    /** Index of the first pasted row, or -1 when nothing was inserted. */
+    startIdx: number;
+}
+
+export interface ClearPaintEntriesArgs {
+    sceneId: number;
+    rendId: number;
+    targetKind?: ColoringTargetKind;
+}
+
+export interface GetPaintClipboardInfoArgs {
+    /** Empty payload; ServiceMap requires an args shape. */
+    _?: never;
+}
+
+export interface GetPaintClipboardInfoResult {
+    /** Rows currently on the paint clipboard. */
+    count: number;
+}
+
 export interface SetRendererDefaultColorArgs {
     sceneId: number;
     rendId: number;
