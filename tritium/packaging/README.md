@@ -27,7 +27,10 @@ electron-vite + electron-builder による配布物のビルド手順と、**未
 `<version>` は `src/_version.h` の `QM_VERSION` そのまま（4 桁、例 `2.3.9.498`）。
 ファイル名は OS・arch・役割（インストーラか本体か）が読み取れる形に統一してある
 （`dmg` / `exe` だけが `Installer` / `Setup` を名乗り、AppImage はアプリ本体そのものなので
-名乗らない）。詳細は
+名乗らない）。DMG のボリュームアイコンと NSIS インストーラ / アンインストーラのアイコンは
+`build/installer-icon.*`（Phosphor の `BoxArrowDown` をアプリと同じ charcoal のタイルに載せたもの、
+`scripts/make-installer-icon.py` で生成）。ダウンロードしたものがインストール後のアプリと
+同じ見た目にならないようにするため。詳細は
 [ADR-0056](../../docs/migration/adr/ADR-0056-release-artifact-identity.md)。
 
 CI（`.github/workflows/build2.yml`）も同じ経路で macOS DMG と Windows NSIS `.exe` を生成・upload する。
