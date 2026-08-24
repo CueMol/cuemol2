@@ -71,6 +71,9 @@ jobs:
       # does find_package(umbreon CONFIG REQUIRED): a default of ON would break
       # configure for any local checkout that has not run `task install_umbreon`.
       ENABLE_UMBREON: "ON"
+      # Ship the MeshMS SES surface backend (same opt-in rationale as umbreon:
+      # src/cmake/meshms.cmake does find_package(MeshMS CONFIG REQUIRED)).
+      ENABLE_MESHMS: "ON"
 
     steps:
     - name: Show build mode
@@ -142,6 +145,21 @@ jobs:
       with:
         basedir: ${{ github.workspace }}/target
         ref: ${{ env.UMBREON_GIT_REF }}
+
+    # MeshMS is built from source (CueMol/MeshMS at MESHMS_GIT_REF); its only
+    # dependency, oneTBB, comes prebuilt in the deplibs bundle. libcuemol2 then
+    # links it via find_package(MeshMS), resolving TBB to the same bundled copy.
+    - name: Read meshms git ref
+      shell: bash
+      run: |
+        . build_scripts/deplibs.env
+        echo "MESHMS_GIT_REF=$MESHMS_GIT_REF" >> $GITHUB_ENV
+
+    - name: Build+install MeshMS
+      uses: ./build_scripts/build_meshms_posix
+      with:
+        basedir: ${{ github.workspace }}/target
+        ref: ${{ env.MESHMS_GIT_REF }}
 
     - name: Build libcuemol2
       uses: ./build_scripts/build_libcuemol2_posix
@@ -241,6 +259,7 @@ jobs:
       # See the build_posix job: umbreon is opted into per-workflow, not by
       # flipping the build script default.
       ENABLE_UMBREON: "ON"
+      ENABLE_MESHMS: "ON"
     steps:
     - uses: actions/checkout@v4
       with:
@@ -326,6 +345,20 @@ jobs:
       with:
         basedir: ${{ github.workspace }}\target
         ref: ${{ env.UMBREON_GIT_REF }}
+
+    # See the build_posix job. build_meshms_posix/run.sh cygpath-normalizes its
+    # arguments, so the same action serves the MSVC leg.
+    - name: Read meshms git ref
+      shell: bash
+      run: |
+        . build_scripts/deplibs.env
+        echo "MESHMS_GIT_REF=$MESHMS_GIT_REF" >> $GITHUB_ENV
+
+    - name: Build+install MeshMS
+      uses: ./build_scripts/build_meshms_posix
+      with:
+        basedir: ${{ github.workspace }}\target
+        ref: ${{ env.MESHMS_GIT_REF }}
 
     - name: Build libcuemol2
       uses: ./build_scripts/build_libcuemol2_posix

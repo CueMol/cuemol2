@@ -16,6 +16,14 @@
 #include <modules/molstr/Selection.hpp>
 #include <modules/molstr/molstr.hpp>
 
+#include <memory>
+
+namespace meshms {
+  // Opaque MeshMS RS-component cache (defined inside libMeshMS; only ever held
+  // through a shared_ptr here, so no MeshMS header is needed in this header).
+  struct RSCache;
+}
+
 namespace surface {
 
   using qlib::Vector4D;
@@ -48,6 +56,16 @@ namespace surface {
       FTID_DBG7 = 7
     };
 #endif
+
+    /// SES generation backend (see the sesbackend property)
+    enum {
+      /// MeshMS where this build has it, BALL otherwise
+      SESBK_AUTO = 0,
+      /// MeshMS analytic SES (falls back to BALL if unavailable or failing)
+      SESBK_MESHMS = 1,
+      /// The vendored BALL implementation
+      SESBK_BALL = 2
+    };
 
   private:
     //
@@ -208,6 +226,26 @@ namespace surface {
 
     double m_dProbeRad;
 
+    /// SES generation backends (implemented in MolSurfBuilder.cpp).
+    /// The MeshMS variant exists only in HAVE_MESHMS builds; it is declared
+    /// unconditionally and simply never referenced otherwise.
+    void buildSESWithBALL(const std::vector<Vector4D> &pr_ary, double density,
+                          double probe_r);
+    void buildSESWithMeshMS(const std::vector<Vector4D> &pr_ary, double density,
+                            double probe_r);
+
+    /// Requested SES backend (SESBK_*); resolved per generation
+    int m_nSesBackend;
+
+    /// MeshMS density-independent RS cache for fast re-meshing when only the
+    /// density changes (non-persistent; never serialized). Reused only when
+    /// the inputs below match the new request exactly.
+    std::shared_ptr<meshms::RSCache> m_pMeshMSCache;
+
+    /// Inputs m_pMeshMSCache was computed from (validity check on reuse)
+    std::vector<Vector4D> m_meshMSCachedAry;
+    double m_dMeshMSCachedProbeR;
+
   public:
     void setOrigMolName(const LString &nm) { m_sOrigMol = nm; }
     const LString &getOrigMolName() const { return m_sOrigMol; }
@@ -220,6 +258,10 @@ namespace surface {
 
     void setOrigProbeRad(double val) { m_dProbeRad = val; }
     double getOrigProbeRad() const { return m_dProbeRad; }
+
+    /// SES backend to use for the next generation (SESBK_*)
+    void setSesBackend(int n) { m_nSesBackend = n; }
+    int getSesBackend() const { return m_nSesBackend; }
 
 
     void regenerateSES(double density, double probe_r=-1.0, SelectionPtr pSel=SelectionPtr());

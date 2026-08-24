@@ -57,6 +57,11 @@ export interface RegenMolSurfArgs {
     objId: number;
     /** New point density (/A); coerced to an integer >= 1. */
     density: number;
+    /**
+     * SES backend for this regeneration (C++ `sesbackend` enum id). Omitted or
+     * 'auto' leaves the object's default, which follows the build.
+     */
+    backend?: 'auto' | 'meshms' | 'ball';
 }
 
 export interface RegenMolSurfResult {
@@ -158,6 +163,12 @@ function regenMolSurf(
 
     const density = coerceDensity(args.density);
     return tryUndoTxn(scene, 'Regenerate mol surface', () => {
+        // `sesbackend` is an enum property: the generated wrapper types it as
+        // number, but the C++ layer takes/returns the string id.
+        if (args.backend && args.backend !== 'auto') {
+            (surf as unknown as { sesbackend: string }).sesbackend =
+                args.backend;
+        }
         surf.regenerateSES1(density);
     });
 }

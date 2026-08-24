@@ -35,6 +35,12 @@ REM (src/cmake/umbreon.cmake). Keep in sync with build_libcuemol2_posix/run.sh.
 if "%ENABLE_UMBREON%"=="" SET ENABLE_UMBREON=OFF
 SET UMBREON_OPT=-DENABLE_UMBREON=%ENABLE_UMBREON% -Dembree_DIR=%BASEDIR%\embree-%EMBREE_VER%\lib\cmake\embree-%EMBREE_VER% -Dumbreon_DIR=%BASEDIR%\umbreon\lib\cmake\umbreon -DOpenImageDenoise_DIR=%BASEDIR%\oidn-%OIDN_VER%\lib\cmake\OpenImageDenoise-%OIDN_VER%
 
+REM MeshMS SES surface backend is off by default. When on, libcuemol2 finds it
+REM from the deplibs prefix; install it first (install_meshms). Keep in sync
+REM with build_libcuemol2_posix/run.sh.
+if "%ENABLE_MESHMS%"=="" SET ENABLE_MESHMS=OFF
+SET MESHMS_OPT=-DENABLE_MESHMS=%ENABLE_MESHMS% -DMeshMS_DIR=%BASEDIR%\meshms\lib\cmake\MeshMS
+
 SET SCRIPT_DIR=%~dp0
 echo SCRIPT_DIR: %SCRIPT_DIR%
 if "%GITHUB_WORKSPACE%"=="" (
@@ -86,6 +92,7 @@ cmake -G Ninja -S %TOP_DIR% -B %BUILDDIR% ^
  -DENABLE_TYPESCRIPT=ON ^
  %TBB_OPT% ^
  %UMBREON_OPT% ^
+ %MESHMS_OPT% ^
  -DCGAL_DO_NOT_WARN_ABOUT_CMAKE_BUILD_TYPE=TRUE ^
  -DCGAL_DISABLE_GMP=TRUE ^
  -DCGAL_HEADER_ONLY=TRUE ^

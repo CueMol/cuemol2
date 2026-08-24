@@ -22,6 +22,16 @@
 #include "BALL/STRUCTURE/triangulatedSES.h"
 #include "BALL/STRUCTURE/triangulatedSAS.h"
 
+#include <chrono>
+#include <cstdlib>
+
+#ifdef HAVE_MESHMS
+#include <array>
+#include <cmath>
+#include <stdexcept>
+#include <meshms/capi.hpp>
+#endif
+
 #include "MolSurfObj.hpp"
 #include "MolSurfEditInfo.hpp"
 
@@ -48,13 +58,193 @@ namespace {
     return false;
   }
 
+  /// What MolSurfObj::SESBK_AUTO resolves to, evaluated once per process.
+  /// Normally MeshMS where it is compiled in (HAVE_MESHMS) and BALL otherwise;
+  /// the CUEMOL_SES_BACKEND environment variable ("ball" / "meshms") overrides
+  /// that default for headless runs and CI, where no GUI can set the object's
+  /// sesbackend property. Returns true when BALL is the default.
+  bool isBallBackendDefault()
+  {
+    static const bool s_bBall = []() -> bool {
+#ifdef HAVE_MESHMS
+      const bool bDefaultBall = false;
+#else
+      const bool bDefaultBall = true;
+#endif
+      const char *env = std::getenv("CUEMOL_SES_BACKEND");
+      if (env == NULL || env[0] == '\0')
+        return bDefaultBall;
+
+      const LString sel(env);
+      if (sel.equalsIgnoreCase("ball"))
+        return true;
+      if (sel.equalsIgnoreCase("meshms")) {
+#ifdef HAVE_MESHMS
+        return false;
+#else
+        LOG_DPRINTLN("MolSurfBuilder> CUEMOL_SES_BACKEND=meshms requested, but "
+                     "this build has no MeshMS support --> using BALL");
+        return true;
+#endif
+      }
+
+      LOG_DPRINTLN("MolSurfBuilder> unknown CUEMOL_SES_BACKEND='%s' "
+                   "(expected 'ball' or 'meshms') --> using default", env);
+      return bDefaultBall;
+    }();
+    return s_bBall;
+  }
+
 }
+
+#ifdef HAVE_MESHMS
+
+namespace {
+  /// Bit-exact array comparison for the RS-cache validity check
+  /// (Vector4D::operator== compares with a tolerance, unsuitable here).
+  bool sphereArysEqual(const std::vector<Vector4D> &a, const std::vector<Vector4D> &b)
+  {
+    if (a.size()!=b.size())
+      return false;
+    for (size_t i=0; i<a.size(); ++i) {
+      if (a[i].x()!=b[i].x() || a[i].y()!=b[i].y() ||
+          a[i].z()!=b[i].z() || a[i].w()!=b[i].w())
+        return false;
+    }
+    return true;
+  }
+}
+
+/// Converts the BALL-style point density to MeshMS's target triangle edge
+/// length. BALL has no single definition of "density": it subdivides arcs at
+/// round(arc_length * sqrt(density)) -- an edge length of 1/sqrt(density) --
+/// but picks the icosphere refinement of its convex patches from
+/// 4^n ~ (4*density*PI*r^2 - 12)/30, i.e. roughly density*area/3 vertices,
+/// which is markedly coarser. MeshMS applies one edge length to every patch
+/// type, so a plain 1/sqrt(density) reproduces BALL's arcs but ends up finer
+/// overall.
+///
+/// SES_MESH_SIZE_COEFF restores parity: measured over 1crn / 1YJO / barstar at
+/// density 1, 2 and 4, MeshMS emitted 1.39x BALL's vertices on average, so the
+/// edge length is scaled by sqrt(1.39). Neither backend is linear in density
+/// (BALL quantizes with round() and 4x icosphere steps, MeshMS by its
+/// advancing front), so the residual spread stays around +/-20% -- close is
+/// the most this conversion can be.
+static const double SES_MESH_SIZE_COEFF = 1.18;
+
+/// MeshMS backend: analytic SES via libMeshMS.
+/// Throws (std::exception) on failure; the caller falls back to BALL.
+void MolSurfObj::buildSESWithMeshMS(const std::vector<Vector4D> &pr_ary,
+                                    double density, double probe_r)
+{
+  const double mesh_size = SES_MESH_SIZE_COEFF / std::sqrt(density);
+
+  std::vector< std::array<double,4> > xyzr(pr_ary.size());
+  for (size_t i=0; i<pr_ary.size(); ++i)
+    xyzr[i] = { pr_ary[i].x(), pr_ary[i].y(), pr_ary[i].z(), pr_ary[i].w() };
+
+  // Reuse the density-independent RS cache when the geometry and probe are
+  // unchanged (the common regenerate-with-new-density case); otherwise
+  // recompute it and remember the inputs it was built from.
+  if (m_pMeshMSCache.get()==NULL ||
+      m_dMeshMSCachedProbeR!=probe_r ||
+      !sphereArysEqual(m_meshMSCachedAry, pr_ary)) {
+    m_pMeshMSCache = meshms::compute_rs_from_array(xyzr, probe_r);
+    m_meshMSCachedAry = pr_ary;
+    m_dMeshMSCachedProbeR = probe_r;
+  }
+  else {
+    MB_DPRINTLN("MolSurfBuilder> MeshMS RS cache hit; re-meshing only");
+  }
+
+  meshms::MeshResult mesh =
+      meshms::build_mesh_from_cache(m_pMeshMSCache, mesh_size, /*fuse=*/true);
+  mesh = meshms::remove_flaps(mesh);
+
+  const int nverts = (int) mesh.verts.size();
+  const int nfaces = (int) mesh.faces.size();
+  if (nverts<1 || nfaces<1)
+    throw std::runtime_error("MeshMS returned an empty mesh");
+
+  setVertSize(nverts);
+  setFaceSize(nfaces);
+  for (int i=0; i<nverts; ++i) {
+    setVertex(i,
+              Vector4D(mesh.verts[i][0], mesh.verts[i][1], mesh.verts[i][2]),
+              Vector4D(mesh.vnormals[i][0], mesh.vnormals[i][1], mesh.vnormals[i][2]));
+  }
+  for (int i=0; i<nfaces; ++i)
+    setFace(i, mesh.faces[i][0], mesh.faces[i][1], mesh.faces[i][2]);
+
+  MB_DPRINTLN("MolSurfBuilder> MeshMS mesh_size=%f", mesh_size);
+}
+
+#endif // HAVE_MESHMS
 
 void MolSurfObj::createSESFromArray(const std::vector<Vector4D> &pr_ary, double density, double probe_r)
 {
+  // Backend-independent input validation (both paths behave identically)
+  if (pr_ary.empty()) {
+    MB_THROW(qlib::RuntimeException, "MolSurfBuilder> SES generation failed: no atoms");
+    return;
+  }
+  if (density<=0.0) {
+    MB_THROW(qlib::RuntimeException, "MolSurfBuilder> SES generation failed: invalid density");
+    return;
+  }
+
+  // Resolve the requested backend (the sesbackend property, settable from the
+  // GUI; SESBK_AUTO defers to the process default).
+  const bool bUseBall =
+      (m_nSesBackend == SESBK_BALL) ||
+      (m_nSesBackend == SESBK_AUTO && isBallBackendDefault());
+
+  // Time the whole generation so the two backends can be compared directly.
+  const char *backend = "BALL";
+  const std::chrono::steady_clock::time_point t0 =
+      std::chrono::steady_clock::now();
+
+#ifdef HAVE_MESHMS
+  bool bDone = false;
+  if (!bUseBall) {
+    try {
+      buildSESWithMeshMS(pr_ary, density, probe_r);
+      backend = "MeshMS";
+      bDone = true;
+    }
+    catch (const std::exception &e) {
+      LOG_DPRINTLN("MolSurfBuilder> MeshMS SES failed (%s); falling back to BALL", e.what());
+    }
+    catch (...) {
+      LOG_DPRINTLN("MolSurfBuilder> MeshMS SES failed (unknown error); falling back to BALL");
+    }
+    if (!bDone)
+      backend = "BALL (MeshMS fallback)";
+  }
+  if (!bDone)
+    buildSESWithBALL(pr_ary, density, probe_r);
+#else
+  // No MeshMS in this build: BALL is the only backend, whatever was requested.
+  (void) bUseBall;
+  buildSESWithBALL(pr_ary, density, probe_r);
+#endif
+
+  const double build_ms = std::chrono::duration<double, std::milli>(
+                              std::chrono::steady_clock::now() - t0)
+                              .count();
+  LOG_DPRINTLN("MolSurfBuilder> SES built by %s in %.1f ms: "
+               "atoms=%d, verts=%d, faces=%d (density=%.2f, probe=%.2f)",
+               backend, build_ms, (int) pr_ary.size(),
+               getVertSize(), getFaceSize(), density, probe_r);
+}
+
+/// BALL backend: the original vendored-BALL SES path, kept compiled in every
+/// build as the fallback when the MeshMS backend fails.
+void MolSurfObj::buildSESWithBALL(const std::vector<Vector4D> &pr_ary, double density, double probe_r)
+{
   Vector4D pos;
   int i, natoms = pr_ary.size();
-  
+
   std::vector< BALL::TSphere3<double> > spheres(natoms);
   for (i=0; i<natoms; ++i)
     spheres[i] = BALL::TSphere3<double>(BALL::TVector3<double>(pr_ary[i].x(), pr_ary[i].y(), pr_ary[i].z()), pr_ary[i].w());
