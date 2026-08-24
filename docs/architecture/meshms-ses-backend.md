@@ -106,6 +106,38 @@ createSESFromArray(pr_ary, density, probe_r)
   発火は `LOG_DPRINTLN` で必ず可視化する (黙って遅い BALL に落ち続けるのを
   検知するため)。BALL を将来削除する際は、フォールバックを再 throw に置換する。
 
+### density → mesh_size の校正
+
+**BALL には density の単一の定義が無い**。同じ値を 2 通りに使い分けている:
+
+1. **弧の分割** (`triangulatedSES.cpp`): `round(arc_length * sqrt(density))`
+   → 実効的な辺長は `1/sqrt(density)`
+2. **凸球面パッチ** (`SESTriangulator::numberOfRefinements`):
+   `4^n ~ (4*density*PI*r^2 - 12)/30` で icosphere の細分レベルを選ぶ
+   → 頂点数はおよそ `density * area / 3` で、1 よりかなり粗い
+
+MeshMS は 1 つの辺長を全パッチ種別に均一に適用するので、素朴に
+`1/sqrt(density)` とすると BALL の弧分割には一致するが、球面パッチの分だけ
+全体として細かくなる。実測 (1crn / 1YJO / barstar × density 1, 2, 4) で
+**平均 1.39 倍 (density=1 では 1.54 倍)** の頂点数だった。
+
+そこで `SES_MESH_SIZE_COEFF = 1.18` (= sqrt(1.39)) を掛けて MeshMS 側だけを
+校正した。**BALL の経路は従来の挙動のまま**にしてある (既存シーンの
+`orig_den` と GUI スライダーの意味を変えないため、合わせに行くのは新実装側)。
+
+校正後の同条件での頂点数比 (MeshMS / BALL):
+
+| 分子 | density=1 | density=2 | density=4 |
+|---|---|---|---|
+| 1crn | 1.14 | 0.93 | 1.05 |
+| 1YJO | 1.19 | 1.03 | 0.91 |
+| barstar | 1.22 | 1.01 | 1.07 |
+
+平均 1.06 (範囲 0.91–1.22)。**完全一致はしない**: 両者とも density に対して
+頂点数が線形に増えない (BALL は `round()` の量子化と icosphere の 4 倍刻み、
+MeshMS は advancing front の離散化) ため、どんな単一係数でも ±20% 程度の
+ばらつきは残る。これはこの変換の原理的な限界で、係数の調整不足ではない。
+
 ### バックエンドの切り替えと所要時間ログ
 
 **同じ構造に対して新旧を A/B できる**ように、バックエンドは GUI から選べる。
@@ -148,9 +180,8 @@ MolSurfBuilder> SES built by BALL in 3.1 ms: atoms=2, verts=316, faces=628 (dens
 CI (Linux) は MeshMS 既定での全 ctest に加えて、`CUEMOL_SES_BACKEND=ball` で
 `-L test_surface` を再実行する。フォールバック先として残す BALL 経路が
 腐らないようにするため。
-- **density → mesh_size 変換**: BALL の density は点密度 (点/Å²)、MeshMS の
-  mesh_size は目標三角形辺長 (Å)。`mesh_size = 1/sqrt(density)` で変換する
-  (GUI の整数スライダー 1–10 → 1.0–0.32 Å。MeshMS CLI 既定 0.5 = density 4 相当)。
+- **density → mesh_size 変換**: `mesh_size = 1.18 / sqrt(density)`。
+  **BALL 側は一切変更せず、MeshMS 側だけをこの係数で合わせている**。詳細は下記。
 - **メッシュ後処理**: `build_mesh(fuse=true)` → `remove_flaps()` (MeshMS CLI の
   標準シーケンス)。`close_cusps` は atom_id / face_type を失い重いので不使用。
 - **winding**: MeshMS の faces は MSMS 規約 (外向き CCW)。cuemol2 の

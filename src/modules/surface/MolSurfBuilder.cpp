@@ -115,13 +115,29 @@ namespace {
   }
 }
 
-/// MeshMS backend: analytic SES via libMeshMS. The BALL "density" (points per
-/// area) maps to MeshMS's target triangle edge length as 1/sqrt(density).
+/// Converts the BALL-style point density to MeshMS's target triangle edge
+/// length. BALL has no single definition of "density": it subdivides arcs at
+/// round(arc_length * sqrt(density)) -- an edge length of 1/sqrt(density) --
+/// but picks the icosphere refinement of its convex patches from
+/// 4^n ~ (4*density*PI*r^2 - 12)/30, i.e. roughly density*area/3 vertices,
+/// which is markedly coarser. MeshMS applies one edge length to every patch
+/// type, so a plain 1/sqrt(density) reproduces BALL's arcs but ends up finer
+/// overall.
+///
+/// SES_MESH_SIZE_COEFF restores parity: measured over 1crn / 1YJO / barstar at
+/// density 1, 2 and 4, MeshMS emitted 1.39x BALL's vertices on average, so the
+/// edge length is scaled by sqrt(1.39). Neither backend is linear in density
+/// (BALL quantizes with round() and 4x icosphere steps, MeshMS by its
+/// advancing front), so the residual spread stays around +/-20% -- close is
+/// the most this conversion can be.
+static const double SES_MESH_SIZE_COEFF = 1.18;
+
+/// MeshMS backend: analytic SES via libMeshMS.
 /// Throws (std::exception) on failure; the caller falls back to BALL.
 void MolSurfObj::buildSESWithMeshMS(const std::vector<Vector4D> &pr_ary,
                                     double density, double probe_r)
 {
-  const double mesh_size = 1.0 / std::sqrt(density);
+  const double mesh_size = SES_MESH_SIZE_COEFF / std::sqrt(density);
 
   std::vector< std::array<double,4> > xyzr(pr_ary.size());
   for (size_t i=0; i<pr_ary.size(); ++i)

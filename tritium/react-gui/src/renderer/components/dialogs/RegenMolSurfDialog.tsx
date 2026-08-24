@@ -19,10 +19,10 @@
 import React, { useEffect, useState } from 'react'
 import { useCueMol } from '../../hooks/useCueMol'
 import { useMolEditCommit } from '../../hooks/useMolEditCommit'
-import { Field, FieldSection, SegmentField, SliderField, TextField } from '../../h3-kit/form'
+import { Field, FieldSection, SelectField, SliderField, TextField } from '../../h3-kit/form'
 import { DialogShell } from './DialogShell'
 import { clampDensity, DENSITY_MAX, DENSITY_MIN } from './molSurfDensity'
-import { BACKEND_OPTIONS, DEFAULT_BACKEND, MolSurfBackend } from './molSurfBackend'
+import { asBackend, BACKEND_OPTIONS, DEFAULT_BACKEND, MolSurfBackend } from './molSurfBackend'
 
 export interface RegenMolSurfDialogResult {
     ok: boolean
@@ -123,12 +123,17 @@ export function RegenMolSurfDialog({
                     disabled={submitting}
                 />
                 <Field label="Algorithm">
-                    <SegmentField<MolSurfBackend>
+                    <SelectField
                         value={backend}
-                        options={BACKEND_OPTIONS}
-                        onValueChange={setBackend}
+                        onChange={(v) => setBackend(asBackend(v))}
                         disabled={submitting}
-                    />
+                    >
+                        {BACKEND_OPTIONS.map((o) => (
+                            <option key={o.value} value={o.value}>
+                                {o.label}
+                            </option>
+                        ))}
+                    </SelectField>
                 </Field>
             </FieldSection>
         </DialogShell>

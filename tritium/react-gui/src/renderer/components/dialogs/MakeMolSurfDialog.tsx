@@ -22,13 +22,13 @@
 import React, { useEffect, useState } from 'react'
 import { useCueMol } from '../../hooks/useCueMol'
 import { useMolEditCommit } from '../../hooks/useMolEditCommit'
-import { CheckboxField, Field, FieldSection, NumericField, SegmentField, SliderField, TextField } from '../../h3-kit/form'
+import { CheckboxField, Field, FieldSection, NumericField, SelectField, SliderField, TextField } from '../../h3-kit/form'
 import { DialogShell } from './DialogShell'
 import { MolPicker } from './MolPicker'
 import { MolSelList } from '../../h3-kit/MolSelList/MolSelList'
 import { pushHistory } from '../../h3-kit/MolSelList/selHistory'
 import { DEFAULT_DENSITY, DENSITY_MAX, DENSITY_MIN } from './molSurfDensity'
-import { BACKEND_OPTIONS, DEFAULT_BACKEND, MolSurfBackend } from './molSurfBackend'
+import { asBackend, BACKEND_OPTIONS, DEFAULT_BACKEND, MolSurfBackend } from './molSurfBackend'
 
 export interface MakeMolSurfDialogResult {
     ok: boolean
@@ -185,12 +185,17 @@ export function MakeMolSurfDialog({
                             />
                         </Field>
                         <Field label="Algorithm">
-                            <SegmentField<MolSurfBackend>
+                            <SelectField
                                 value={backend}
-                                options={BACKEND_OPTIONS}
-                                onValueChange={setBackend}
+                                onChange={(v) => setBackend(asBackend(v))}
                                 disabled={submitting}
-                            />
+                            >
+                                {BACKEND_OPTIONS.map((o) => (
+                                    <option key={o.value} value={o.value}>
+                                        {o.label}
+                                    </option>
+                                ))}
+                            </SelectField>
                         </Field>
                     </FieldSection>
         </DialogShell>
