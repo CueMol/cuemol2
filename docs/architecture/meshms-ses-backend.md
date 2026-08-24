@@ -39,6 +39,54 @@ oneTBB は既にバンドルに含まれる。
   `find_package(... REQUIRED)` なので、`task install_meshms` 未実行の checkout
   で default ON だと configure が壊れる。CI は workflow env で ON を注入する。
 
+## 最適化ポリシー (deploy ビルド)
+
+`build_meshms_posix/run.sh` は MeshMS を **deploy 向け設定**でビルドする。
+どちらも環境変数で上書き可能
+(`MESHMS_FP=strict MESHMS_ARCH= task install_meshms` で bit-exact / baseline ISA)。
+
+**`MESHMS_FP=fast`** — MeshMS が cuemol2/cuemol3 の deploy 用として文書化している
+FP ポリシー。FMA 契約、math errno / trapping math / signed zeros の無効化、
+reciprocal division、そして `pysq() == x*x` (GCC と MSVC で libm の `pow` 呼び出し
+56 箇所が消える。AppleClang は既に畳んでいるので macOS では効果が小さい)。
+bit-exact な golden gate を諦める代わりに、MeshMS 側の equivalence gate
+(`tests/test_fp_gate.cpp`) で検証される。
+
+`-ffast-math` / `-Ofast` は MeshMS がどちらのポリシーでも**拒否**する
+(configure 時に FATAL_ERROR)。理由は cuemol2 にとって本質的で、記録しておく価値がある:
+`-ffinite-math-only` は `isfinite()` を定数に畳んでしまい deploy gate の NaN 検出を
+無効化する。`-ffast-math` / `-Ofast` / `-funsafe-math-optimizations` は GCC の
+crtfastmath.o link spec に一致し、**cuemol2 プロセス全体に FTZ/DAZ を設定**して
+しまう — ライブラリとしてリンクされる立場では受け入れられない。
+
+**`MESHMS_ARCH=avx2`** — x86-64-v3 (AVX2 + FMA + BMI)。上記の contraction は
+「命令が実在すること」が前提で、x86-64 の既定ベースラインには FMA が無いため、
+これを指定しないと x86-64 では FMA が 1 つも出ない。非 x86 ターゲット
+(Apple Silicon) では MeshMS 側が自動的に無視するので、1 つのスクリプトから
+無条件に渡して安全 (`-- MeshMS: MESHMS_ARCH=avx2 ignored on arm64`)。
+`avx2` 以外の値は verbatim で `-march=` に渡るので、ローカル専用なら
+`MESHMS_ARCH=native` も使える (再配布物には絶対に使わないこと)。
+
+> **注意**: これにより x86-64 リリース成果物の最低 CPU 要件が Haswell / Zen
+> (2013 年以降) に上がる。それ以前の CPU では表面生成時に SIGILL でクラッシュする。
+> cuemol2 本体は `-march` を一切指定していないので、この下限を持ち込むのは
+> MeshMS のオブジェクトコードだけである。macOS 15 が動く Intel Mac は全て AVX2 を
+> 持つため、実質的に影響するのは Windows / Linux の古いマシン。
+
+**`MESHMS_LTO` は使わない** (MeshMS 既定の OFF のまま)。LTO でビルドした static lib は
+bitcode を持ち、消費側のツールチェーン一致が要求される (MeshMS のドキュメント記載) 一方、
+cuemol2 は LTO 無しでリンクする。効果も未計測なので、3 プラットフォームの CI を
+不安定にする価値は無いと判断した。必要になれば個別に検証して追加する。
+
+**`MESHMS_NATIVE` も使わない**: `-march=native` はビルドマシンの ISA を焼き込み、
+他所で SIGILL する。CI は再配布物を作るので論外。
+
+> **バージョン依存**: これらのオプションは MeshMS の FP ポリシー導入
+> (CueMol/MeshMS#8) 以降にのみ存在する。それ以前の MeshMS に渡しても CMake は
+> **警告を出すだけで configure は成功する** (未使用キャッシュ変数)。つまり
+> 「ビルドは通るのに最適化が黙って効かない」状態になり得るので、`MESHMS_GIT_REF`
+> がこのオプションを持つ ref を指していることを前提とする。
+
 ## createSESFromArray のバックエンド分岐
 
 `MolSurfObj::createSESFromArray()` (`src/modules/surface/MolSurfBuilder.cpp`)

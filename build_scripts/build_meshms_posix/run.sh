@@ -45,6 +45,29 @@ BUILD_DIR=$BASEDIR/tmp/meshms_build
 # debugging a poisoned cache.
 rm -rf "$BUILD_DIR"
 
+# Deploy-oriented optimization (MeshMS OPTIMIZATION.md). Both knobs are
+# overridable from the environment, e.g. `MESHMS_FP=strict MESHMS_ARCH= \
+# task install_meshms` for a bit-exact, baseline-ISA build.
+#
+#   MESHMS_FP=fast -- the FP policy MeshMS documents for cuemol2/cuemol3 deploy
+#     builds: FMA contraction, no math errno / trapping math / signed zeros,
+#     reciprocal division, and pysq() == x*x, which removes 56 libm pow calls on
+#     GCC and MSVC (AppleClang already folds them). It trades the bit-exact
+#     golden gate for speed and is verified upstream by an equivalence gate
+#     instead. -ffast-math / -Ofast remain rejected by MeshMS either way: they
+#     would disable isfinite() or set FTZ/DAZ for the whole cuemol2 process.
+#
+#   MESHMS_ARCH=avx2 -- x86-64-v3 (AVX2 + FMA + BMI). The contraction above can
+#     only emit an FMA if the target actually has the instruction, and the
+#     default x86-64 baseline does not. MeshMS ignores this alias on non-x86
+#     targets, so passing it unconditionally is safe on Apple Silicon too. Any
+#     other value passes through verbatim (`MESHMS_ARCH=native` for a local
+#     machine-specific build -- never for a redistributable one).
+#     NOTE: this raises the CPU floor of the x86-64 release artifacts to
+#     Haswell / Zen (2013+); older CPUs would SIGILL inside the surface code.
+MESHMS_FP=${MESHMS_FP-fast}
+MESHMS_ARCH=${MESHMS_ARCH-avx2}
+
 # PIC is mandatory: the static libMeshMS.a is linked into the libcuemol2
 # SHARED library. MESHMS_BUILD_{TESTS,CLI,TOOLS} default to ON in a top-level
 # MeshMS build; turn them off so only the library target is configured.
@@ -53,6 +76,8 @@ cmake -G Ninja -S "$MESHMS_SRC" -B "$BUILD_DIR" \
       -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
       -DCMAKE_PREFIX_PATH="$BASEDIR" \
       -DTBB_DIR="$BASEDIR/tbb-$TBB_VER/lib/cmake/TBB" \
+      -DMESHMS_FP="$MESHMS_FP" \
+      -DMESHMS_ARCH="$MESHMS_ARCH" \
       -DMESHMS_BUILD_TESTS=OFF \
       -DMESHMS_BUILD_CLI=OFF \
       -DMESHMS_BUILD_TOOLS=OFF \
