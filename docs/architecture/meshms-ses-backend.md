@@ -73,6 +73,13 @@ crtfastmath.o link spec に一致し、**cuemol2 プロセス全体に FTZ/DAZ �
 > MeshMS のオブジェクトコードだけである。macOS 15 が動く Intel Mac は全て AVX2 を
 > 持つため、実質的に影響するのは Windows / Linux の古いマシン。
 
+**`MESHMS_TBB=ON`** — 並列ステージ。MeshMS の既定も ON だが、deploy ビルドの
+性能を左右するうえに**失敗が静か**なので明示的に渡す: TBB が見つからない場合、
+MeshMS は警告を出すだけでシリアルビルドになる。そのため install 後に
+`MeshMSTargets.cmake` を検査し、`MESHMS_WITH_TBB` / `MESHMS_FP_FAST` の
+マーカーが無ければ **run.sh を exit 1 で落とす**。TBB_DIR の設定ミスで
+数倍遅いメッシャーが green なビルドとして出荷されるのを防ぐため。
+
 **`MESHMS_LTO` は使わない** (MeshMS 既定の OFF のまま)。LTO でビルドした static lib は
 bitcode を持ち、消費側のツールチェーン一致が要求される (MeshMS のドキュメント記載) 一方、
 cuemol2 は LTO 無しでリンクする。効果も未計測なので、3 プラットフォームの CI を

@@ -65,8 +65,13 @@ rm -rf "$BUILD_DIR"
 #     machine-specific build -- never for a redistributable one).
 #     NOTE: this raises the CPU floor of the x86-64 release artifacts to
 #     Haswell / Zen (2013+); older CPUs would SIGILL inside the surface code.
+#
+#   MESHMS_TBB=ON -- the parallel stages. ON is also MeshMS's default, but it is
+#     passed explicitly because it is load-bearing for a deploy build and the
+#     failure mode is silent (see the post-install assert below).
 MESHMS_FP=${MESHMS_FP-fast}
 MESHMS_ARCH=${MESHMS_ARCH-avx2}
+MESHMS_TBB=${MESHMS_TBB-ON}
 
 # PIC is mandatory: the static libMeshMS.a is linked into the libcuemol2
 # SHARED library. MESHMS_BUILD_{TESTS,CLI,TOOLS} default to ON in a top-level
@@ -78,6 +83,7 @@ cmake -G Ninja -S "$MESHMS_SRC" -B "$BUILD_DIR" \
       -DTBB_DIR="$BASEDIR/tbb-$TBB_VER/lib/cmake/TBB" \
       -DMESHMS_FP="$MESHMS_FP" \
       -DMESHMS_ARCH="$MESHMS_ARCH" \
+      -DMESHMS_TBB="$MESHMS_TBB" \
       -DMESHMS_BUILD_TESTS=OFF \
       -DMESHMS_BUILD_CLI=OFF \
       -DMESHMS_BUILD_TOOLS=OFF \
@@ -88,3 +94,18 @@ cmake -G Ninja -S "$MESHMS_SRC" -B "$BUILD_DIR" \
 # public headers and the find_package() config.
 cmake --build "$BUILD_DIR" --target MeshMS --parallel
 cmake --install "$BUILD_DIR"
+
+# Assert the deploy build really is the parallel, fast-FP one. MeshMS only
+# WARNS when MESHMS_TBB=ON but oneTBB is not found and then builds serially, so
+# a mis-set TBB_DIR would otherwise ship a several-fold slower surface mesher
+# with a green build. The exported target records what was actually compiled in.
+TARGETS_CMAKE="$BASEDIR/meshms/lib/cmake/MeshMS/MeshMSTargets.cmake"
+if [ "$MESHMS_TBB" = "ON" ] && ! grep -q MESHMS_WITH_TBB "$TARGETS_CMAKE"; then
+    echo "ERROR: MeshMS was built WITHOUT oneTBB (serial mesher)." >&2
+    echo "       Check TBB_DIR=$BASEDIR/tbb-$TBB_VER/lib/cmake/TBB" >&2
+    exit 1
+fi
+if [ "$MESHMS_FP" = "fast" ] && ! grep -q MESHMS_FP_FAST "$TARGETS_CMAKE"; then
+    echo "ERROR: MeshMS was built without the fast FP policy." >&2
+    exit 1
+fi
