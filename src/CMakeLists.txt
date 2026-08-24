@@ -56,6 +56,15 @@ if (ENABLE_UMBREON)
   SET(HAVE_UMBREON "1")
 endif ()
 
+# MeshMS analytic SES surface backend (optional; gated by ENABLE_MESHMS).
+# Consumed from the deplibs prefix via find_package(MeshMS CONFIG), which pulls
+# in the same bundled oneTBB (single runtime). Install it first with
+# build_scripts `task install_meshms`.
+if (ENABLE_MESHMS)
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/meshms.cmake)
+  SET(HAVE_MESHMS "1")
+endif ()
+
 #####
 
 # OpenGL/GUI

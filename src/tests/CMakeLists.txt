@@ -160,6 +160,7 @@ add_executable(test_surface
   modules/surface/test_distfield_surf.cpp
   modules/surface/test_ply_reader.cpp
   modules/surface/test_molsurf_serialize.cpp
+  modules/surface/test_ses_from_array.cpp
 )
 target_include_directories(test_surface PRIVATE
   ${CMAKE_SOURCE_DIR}/src

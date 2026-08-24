@@ -64,6 +64,15 @@ tasks:
     cmds:
       - bash build_umbreon_posix/run.sh "{{.WORKDIR}}" "{{.UMBREON_SRC}}"
 
+  install_meshms:
+    desc: "Build+install MeshMS into the deplibs prefix (override source dir with MESHMS_SRC=...)"
+    vars:
+      # MeshMS is checked out parallel to the cuemol2 repo (same convention as
+      # umbreon above; the repo directory name is capitalized "MeshMS").
+      MESHMS_SRC: '{{.MESHMS_SRC | default (printf "%s/../../MeshMS" .ROOT_DIR)}}'
+    cmds:
+      - bash build_meshms_posix/run.sh "{{.WORKDIR}}" "{{.MESHMS_SRC}}"
+
   #####
 
   bump_version_build:

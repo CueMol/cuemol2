@@ -95,6 +95,9 @@
 /* Define if the umbreon (Embree) ray-tracing backend is available */
 #cmakedefine HAVE_UMBREON
 
+/* Define if the MeshMS SES molecular-surface backend is available */
+#cmakedefine HAVE_MESHMS
+
 /* Use OpenGL */
 #cmakedefine BUILD_OPENGL_SYSDEP
 #cmakedefine USE_OPENGL

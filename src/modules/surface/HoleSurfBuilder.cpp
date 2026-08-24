@@ -114,10 +114,11 @@ void HoleSurfBuilder::doit()
 
   std::vector< Vector4D > pore(npore);
 
+  // NOTE: cen_ary[].w() carries the pore radius set by findPath(), and the
+  // whole-Vector4D copy passes it to createSESFromArray as the sphere radius.
   for (int i=0, isl=0; i<npore; ++i, isl+=nskip) {
     pore[i] = cen_ary[isl];
-    // pore[i].w() = rad_ary[isl];
-  }  
+  }
 
   LOG_DPRINTLN("Creating surface for pore %d pts", npore);
   m_pRes->createSESFromArray(pore, m_den, m_prober);

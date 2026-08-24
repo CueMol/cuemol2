@@ -83,3 +83,8 @@ architecture, it belongs here.
 - [ObjProxyBridge `_objSlot` ownership and lifetime](objslot-ownership.md) --
   the worker-side object bridge's slot ownership rules and when a slot may be
   released, from the renderer/worker refactoring work.
+- [MeshMS SES Surface Backend](meshms-ses-backend.md) (日本語) --
+  SES 生成バックエンドを外部 static lib MeshMS へ (ENABLE_MESHMS、BALL は
+  フォールバックとして併存)。umbreon 1:1 のビルド配線、density → mesh_size
+  変換、例外時 BALL フォールバック、RSCache による density 変更時の再生成
+  高速化、MeshMS 側の多成分/孤立原子対応、atom_id → MSVert::info 見送りの判断。

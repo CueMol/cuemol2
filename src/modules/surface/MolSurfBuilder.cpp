@@ -22,6 +22,13 @@
 #include "BALL/STRUCTURE/triangulatedSES.h"
 #include "BALL/STRUCTURE/triangulatedSAS.h"
 
+#ifdef HAVE_MESHMS
+#include <array>
+#include <cmath>
+#include <stdexcept>
+#include <meshms/capi.hpp>
+#endif
+
 #include "MolSurfObj.hpp"
 #include "MolSurfEditInfo.hpp"
 
@@ -50,11 +57,110 @@ namespace {
 
 }
 
+#ifdef HAVE_MESHMS
+
+namespace {
+  /// Bit-exact array comparison for the RS-cache validity check
+  /// (Vector4D::operator== compares with a tolerance, unsuitable here).
+  bool sphereArysEqual(const std::vector<Vector4D> &a, const std::vector<Vector4D> &b)
+  {
+    if (a.size()!=b.size())
+      return false;
+    for (size_t i=0; i<a.size(); ++i) {
+      if (a[i].x()!=b[i].x() || a[i].y()!=b[i].y() ||
+          a[i].z()!=b[i].z() || a[i].w()!=b[i].w())
+        return false;
+    }
+    return true;
+  }
+}
+
+/// MeshMS backend: analytic SES via libMeshMS. The BALL "density" (points per
+/// area) maps to MeshMS's target triangle edge length as 1/sqrt(density).
+/// Throws (std::exception) on failure; the caller falls back to BALL.
+void MolSurfObj::buildSESWithMeshMS(const std::vector<Vector4D> &pr_ary,
+                                    double density, double probe_r)
+{
+  const double mesh_size = 1.0 / std::sqrt(density);
+
+  std::vector< std::array<double,4> > xyzr(pr_ary.size());
+  for (size_t i=0; i<pr_ary.size(); ++i)
+    xyzr[i] = { pr_ary[i].x(), pr_ary[i].y(), pr_ary[i].z(), pr_ary[i].w() };
+
+  // Reuse the density-independent RS cache when the geometry and probe are
+  // unchanged (the common regenerate-with-new-density case); otherwise
+  // recompute it and remember the inputs it was built from.
+  if (m_pMeshMSCache.get()==NULL ||
+      m_dMeshMSCachedProbeR!=probe_r ||
+      !sphereArysEqual(m_meshMSCachedAry, pr_ary)) {
+    m_pMeshMSCache = meshms::compute_rs_from_array(xyzr, probe_r);
+    m_meshMSCachedAry = pr_ary;
+    m_dMeshMSCachedProbeR = probe_r;
+  }
+  else {
+    MB_DPRINTLN("MolSurfBuilder> MeshMS RS cache hit; re-meshing only");
+  }
+
+  meshms::MeshResult mesh =
+      meshms::build_mesh_from_cache(m_pMeshMSCache, mesh_size, /*fuse=*/true);
+  mesh = meshms::remove_flaps(mesh);
+
+  const int nverts = (int) mesh.verts.size();
+  const int nfaces = (int) mesh.faces.size();
+  if (nverts<1 || nfaces<1)
+    throw std::runtime_error("MeshMS returned an empty mesh");
+
+  setVertSize(nverts);
+  setFaceSize(nfaces);
+  for (int i=0; i<nverts; ++i) {
+    setVertex(i,
+              Vector4D(mesh.verts[i][0], mesh.verts[i][1], mesh.verts[i][2]),
+              Vector4D(mesh.vnormals[i][0], mesh.vnormals[i][1], mesh.vnormals[i][2]));
+  }
+  for (int i=0; i<nfaces; ++i)
+    setFace(i, mesh.faces[i][0], mesh.faces[i][1], mesh.faces[i][2]);
+
+  LOG_DPRINTLN("MolSurfBuilder> MeshMS SES done (%d verts, %d faces, mesh_size=%f)",
+               nverts, nfaces, mesh_size);
+}
+
+#endif // HAVE_MESHMS
+
 void MolSurfObj::createSESFromArray(const std::vector<Vector4D> &pr_ary, double density, double probe_r)
+{
+  // Backend-independent input validation (both paths behave identically)
+  if (pr_ary.empty()) {
+    MB_THROW(qlib::RuntimeException, "MolSurfBuilder> SES generation failed: no atoms");
+    return;
+  }
+  if (density<=0.0) {
+    MB_THROW(qlib::RuntimeException, "MolSurfBuilder> SES generation failed: invalid density");
+    return;
+  }
+
+#ifdef HAVE_MESHMS
+  try {
+    buildSESWithMeshMS(pr_ary, density, probe_r);
+    return;
+  }
+  catch (const std::exception &e) {
+    LOG_DPRINTLN("MolSurfBuilder> MeshMS SES failed (%s); falling back to BALL", e.what());
+  }
+  catch (...) {
+    LOG_DPRINTLN("MolSurfBuilder> MeshMS SES failed (unknown error); falling back to BALL");
+  }
+#endif
+
+  buildSESWithBALL(pr_ary, density, probe_r);
+}
+
+/// BALL backend: the original vendored-BALL SES path, kept compiled in every
+/// build as the fallback when the MeshMS backend fails.
+void MolSurfObj::buildSESWithBALL(const std::vector<Vector4D> &pr_ary, double density, double probe_r)
 {
   Vector4D pos;
   int i, natoms = pr_ary.size();
-  
+
   std::vector< BALL::TSphere3<double> > spheres(natoms);
   for (i=0; i<natoms; ++i)
     spheres[i] = BALL::TSphere3<double>(BALL::TVector3<double>(pr_ary[i].x(), pr_ary[i].y(), pr_ary[i].z()), pr_ary[i].w());

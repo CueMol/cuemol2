@@ -1,0 +1,32 @@
+name: 'Build+install MeshMS (posix)'
+description: 'Checkout CueMol/MeshMS and install libMeshMS into the deplibs prefix'
+
+inputs:
+  basedir:
+    description: 'deplibs base dir'
+    required: true
+  ref:
+    description: 'CueMol/MeshMS git ref to build'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+
+  - name: Checkout MeshMS
+    uses: actions/checkout@v4
+    with:
+      repository: CueMol/MeshMS
+      ref: ${{ inputs.ref }}
+      path: meshms-src
+
+  - name: Build+install MeshMS into the deplibs prefix
+    shell: bash
+    run: |
+      if [[ "$RUNNER_OS" == "Windows" ]]; then
+        WS=$(cygpath -u "$GITHUB_WORKSPACE")
+      else
+        WS="$GITHUB_WORKSPACE"
+      fi
+      cd "$WS"
+      bash build_scripts/build_meshms_posix/run.sh "${{ inputs.basedir }}" "$WS/meshms-src"

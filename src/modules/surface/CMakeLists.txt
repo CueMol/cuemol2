@@ -106,6 +106,14 @@ endif ()
 
 target_link_libraries(surface PRIVATE qlib gfx qsys molstr CGAL::CGAL)
 
+# MeshMS analytic SES backend. Only linked when ENABLE_MESHMS is on; the
+# MolSurfBuilder source guards its MeshMS usage with HAVE_MESHMS (and falls
+# back to the vendored BALL path), so the default build links no MeshMS
+# symbols. Include paths come from the imported target.
+if (ENABLE_MESHMS)
+  target_link_libraries(surface PRIVATE MeshMS::MeshMS)
+endif ()
+
 MCWRAPGEN_SCR_WRAPPERS(surface)
 
 # install(TARGETS surface

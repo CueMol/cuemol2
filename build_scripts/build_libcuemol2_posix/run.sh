@@ -127,6 +127,7 @@ cmake -G "$GENERATOR" \
       -DTBB_DIR=$BASEDIR/tbb-$TBB_VER/lib/cmake/TBB \
       -Dembree_DIR=$BASEDIR/embree-$EMBREE_VER/lib/cmake/embree-$EMBREE_VER \
       -Dumbreon_DIR=$BASEDIR/umbreon/lib/cmake/umbreon \
+      -DMeshMS_DIR=$BASEDIR/meshms/lib/cmake/MeshMS \
       -DOpenImageDenoise_DIR=$BASEDIR/oidn-$OIDN_VER/lib/cmake/OpenImageDenoise-$OIDN_VER \
       $PYTHON_OPT \
       -DBUILD_NODEJS_BINDINGS=$BUILD_NODEJS_BINDINGS \
@@ -134,6 +135,7 @@ cmake -G "$GENERATOR" \
       -DBUILD_XPCJS_BINDINGS=ON \
       -DENABLE_TBB=${ENABLE_TBB:-ON} \
       -DENABLE_UMBREON=${ENABLE_UMBREON:-OFF} \
+      -DENABLE_MESHMS=${ENABLE_MESHMS:-OFF} \
       -DCGAL_DO_NOT_WARN_ABOUT_CMAKE_BUILD_TYPE=TRUE \
       -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
       -DCGAL_DISABLE_GMP=TRUE \

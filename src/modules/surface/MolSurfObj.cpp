@@ -26,6 +26,7 @@ MolSurfObj::MolSurfObj()
   m_pMolSel = SelectionPtr(new molstr::SelCommand());
   m_dDensity = 0.0;
   m_dProbeRad = 0.0;
+  m_dMeshMSCachedProbeR = -1.0;
 }
 
 MolSurfObj::~MolSurfObj()
