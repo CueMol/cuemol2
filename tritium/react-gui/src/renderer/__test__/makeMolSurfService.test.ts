@@ -38,14 +38,17 @@ interface FakeRend {
 
 function makeSurfObj(uid: number) {
     const rend: FakeRend = {}
+    const setBackend = vi.fn()
     const surf = {
         uid,
         name: '',
+        get sesbackend(): string { return 'auto' },
+        set sesbackend(v: string) { setBackend(v) },
         createSESFromMol: vi.fn(),
         forceEmbed: vi.fn(),
         createRenderer: vi.fn(() => rend),
     }
-    return { surf, rend }
+    return { surf, rend, setBackend }
 }
 
 function makeCtx(opts: {
@@ -56,7 +59,7 @@ function makeCtx(opts: {
     sceneId?: number
 }) {
     const sid = opts.sceneId ?? 100
-    const { surf, rend } = makeSurfObj(opts.surfUid ?? 555)
+    const { surf, rend, setBackend } = makeSurfObj(opts.surfUid ?? 555)
     const objNames = new Set(opts.existingObjNames ?? [])
     const rendNames = new Set(opts.existingRendNames ?? [])
     const scene = {
@@ -76,7 +79,7 @@ function makeCtx(opts: {
         sceMgr: { getScene: vi.fn((id: number) => (id === sid ? scene : null)) },
         svc: { createObj },
     } as unknown as WorkerContext
-    return { ctx, scene, surf, rend, createObj }
+    return { ctx, scene, surf, rend, createObj, setBackend }
 }
 
 describe('makeMolSurf', () => {
@@ -182,9 +185,38 @@ describe('makeMolSurf', () => {
     })
 })
 
-describe('proposeMolSurfName', () => {
+describe('makeMolSurf backend selection', () => {
     beforeEach(() => vi.clearAllMocks())
 
+    it('sets sesbackend when an explicit backend is requested', () => {
+        const { ctx, surf, setBackend } = makeCtx({ mol: { name: 'm' } })
+        makeMolSurf(ctx, {
+            sceneId: 100, objId: 1, selStr: '', surfName: 's',
+            density: 1, probeRadius: 1.4, backend: 'ball',
+        })
+        expect(setBackend).toHaveBeenCalledWith('ball')
+        // The property is set BEFORE the generation it applies to.
+        expect(setBackend.mock.invocationCallOrder[0]).toBeLessThan(
+            (surf.createSESFromMol as ReturnType<typeof vi.fn>)
+                .mock.invocationCallOrder[0],
+        )
+    })
+
+    it.each([['auto'], [undefined]])(
+        'leaves sesbackend untouched for backend=%s',
+        (backend) => {
+            const { ctx, setBackend } = makeCtx({ mol: { name: 'm' } })
+            makeMolSurf(ctx, {
+                sceneId: 100, objId: 1, selStr: '', surfName: 's',
+                density: 1, probeRadius: 1.4,
+                backend: backend as 'auto' | undefined,
+            })
+            expect(setBackend).not.toHaveBeenCalled()
+        },
+    )
+})
+
+describe('proposeMolSurfName', () => {
     it('suggests sf_<molname> for the target molecule (UXP makeSugName)', () => {
         const { ctx } = makeCtx({ mol: { name: '1crn' } })
         expect(proposeMolSurfName(ctx, { sceneId: 100, objId: 1 })).toEqual({

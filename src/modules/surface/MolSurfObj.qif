@@ -26,7 +26,18 @@ runtime_class MolSurfObj extends Object
 
   property real orig_den => redirect(getOrigDen, setOrigDen);
   property real orig_prad => redirect(getOrigProbeRad, setOrigProbeRad);
-  
+
+  /// SES generation backend, applied by the next create/regenerate call.
+  /// "auto" uses MeshMS where this build has it and BALL otherwise; "meshms"
+  /// still falls back to BALL if the generation fails.
+  enumdef sesbackend {
+    auto = surface::MolSurfObj::SESBK_AUTO;
+    meshms = surface::MolSurfObj::SESBK_MESHMS;
+    ball = surface::MolSurfObj::SESBK_BALL;
+  }
+  property enum sesbackend => redirect(getSesBackend, setSesBackend);
+  default sesbackend = "auto";
+
   //////////
 
   /// Cut surface by a plane

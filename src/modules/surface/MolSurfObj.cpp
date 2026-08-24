@@ -27,6 +27,7 @@ MolSurfObj::MolSurfObj()
   m_dDensity = 0.0;
   m_dProbeRad = 0.0;
   m_dMeshMSCachedProbeR = -1.0;
+  m_nSesBackend = SESBK_AUTO;
 }
 
 MolSurfObj::~MolSurfObj()

@@ -19,9 +19,10 @@
 import React, { useEffect, useState } from 'react'
 import { useCueMol } from '../../hooks/useCueMol'
 import { useMolEditCommit } from '../../hooks/useMolEditCommit'
-import { Field, FieldSection, SliderField, TextField } from '../../h3-kit/form'
+import { Field, FieldSection, SegmentField, SliderField, TextField } from '../../h3-kit/form'
 import { DialogShell } from './DialogShell'
 import { clampDensity, DENSITY_MAX, DENSITY_MIN } from './molSurfDensity'
+import { BACKEND_OPTIONS, DEFAULT_BACKEND, MolSurfBackend } from './molSurfBackend'
 
 export interface RegenMolSurfDialogResult {
     ok: boolean
@@ -55,6 +56,7 @@ export function RegenMolSurfDialog({
     const { cm } = useCueMol()
 
     const [density, setDensity] = useState<number>(clampDensity(origDensity))
+    const [backend, setBackend] = useState<MolSurfBackend>(DEFAULT_BACKEND)
 
     // The provider keeps this component mounted across show/hide cycles, so
     // the density has to be re-seeded from the freshly pre-fetched `orig_den`
@@ -74,6 +76,7 @@ export function RegenMolSurfDialog({
                     sceneId,
                     objId,
                     density,
+                    backend,
                 }),
                 onSuccess: () => onConfirm({ ok: true }),
                 fallbackError: 'Failed to generate molecular surface',
@@ -119,6 +122,14 @@ export function RegenMolSurfDialog({
                     onCommit={setDensity}
                     disabled={submitting}
                 />
+                <Field label="Algorithm">
+                    <SegmentField<MolSurfBackend>
+                        value={backend}
+                        options={BACKEND_OPTIONS}
+                        onValueChange={setBackend}
+                        disabled={submitting}
+                    />
+                </Field>
             </FieldSection>
         </DialogShell>
     )

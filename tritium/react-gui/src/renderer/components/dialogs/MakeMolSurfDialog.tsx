@@ -22,12 +22,13 @@
 import React, { useEffect, useState } from 'react'
 import { useCueMol } from '../../hooks/useCueMol'
 import { useMolEditCommit } from '../../hooks/useMolEditCommit'
-import { CheckboxField, Field, FieldSection, NumericField, SliderField, TextField } from '../../h3-kit/form'
+import { CheckboxField, Field, FieldSection, NumericField, SegmentField, SliderField, TextField } from '../../h3-kit/form'
 import { DialogShell } from './DialogShell'
 import { MolPicker } from './MolPicker'
 import { MolSelList } from '../../h3-kit/MolSelList/MolSelList'
 import { pushHistory } from '../../h3-kit/MolSelList/selHistory'
 import { DEFAULT_DENSITY, DENSITY_MAX, DENSITY_MIN } from './molSurfDensity'
+import { BACKEND_OPTIONS, DEFAULT_BACKEND, MolSurfBackend } from './molSurfBackend'
 
 export interface MakeMolSurfDialogResult {
     ok: boolean
@@ -59,6 +60,7 @@ export function MakeMolSurfDialog({
     const [probeRadius, setProbeRadius] = useState<number>(DEFAULT_PROBE_RADIUS)
 
     const [density, setDensity] = useState<number>(DEFAULT_DENSITY)
+    const [backend, setBackend] = useState<MolSurfBackend>(DEFAULT_BACKEND)
 
     // Commit handler + submitting/errorMsg state + reset-on-open. The molecule
     // id is intentionally NOT reset (last-picked persists); the surface name is
@@ -84,6 +86,7 @@ export function MakeMolSurfDialog({
                         surfName,
                         density,
                         probeRadius,
+                        backend,
                     }),
                     onSuccess: () => {
                         if (effSelStr.trim() !== '') pushHistory(effSelStr.trim())
@@ -178,6 +181,14 @@ export function MakeMolSurfDialog({
                                 max={10}
                                 step={0.1}
                                 slider={false}
+                                disabled={submitting}
+                            />
+                        </Field>
+                        <Field label="Algorithm">
+                            <SegmentField<MolSurfBackend>
+                                value={backend}
+                                options={BACKEND_OPTIONS}
+                                onValueChange={setBackend}
                                 disabled={submitting}
                             />
                         </Field>

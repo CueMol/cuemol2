@@ -112,7 +112,7 @@ describe('RegenMolSurfDialog', () => {
         await flushPromises()
 
         expect(commitCalls()).toHaveLength(1)
-        expect(commitCalls()[0][1]).toEqual({ sceneId: 7, objId: 42, density: 3 })
+        expect(commitCalls()[0][1]).toEqual({ sceneId: 7, objId: 42, density: 3, backend: 'auto' })
         expect(handle.captured).toEqual({ ok: true })
         handle.unmount()
     })
@@ -167,7 +167,7 @@ describe('RegenMolSurfDialog', () => {
         await flushPromises()
 
         const last = commitCalls()[commitCalls().length - 1][1] as Record<string, unknown>
-        expect(last).toEqual({ sceneId: 7, objId: 43, density: 2 })
+        expect(last).toEqual({ sceneId: 7, objId: 43, density: 2, backend: 'auto' })
         handle.unmount()
     })
 

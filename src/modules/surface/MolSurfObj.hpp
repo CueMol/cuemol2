@@ -57,6 +57,16 @@ namespace surface {
     };
 #endif
 
+    /// SES generation backend (see the sesbackend property)
+    enum {
+      /// MeshMS where this build has it, BALL otherwise
+      SESBK_AUTO = 0,
+      /// MeshMS analytic SES (falls back to BALL if unavailable or failing)
+      SESBK_MESHMS = 1,
+      /// The vendored BALL implementation
+      SESBK_BALL = 2
+    };
+
   private:
     //
     //  Surface Data
@@ -224,6 +234,9 @@ namespace surface {
     void buildSESWithMeshMS(const std::vector<Vector4D> &pr_ary, double density,
                             double probe_r);
 
+    /// Requested SES backend (SESBK_*); resolved per generation
+    int m_nSesBackend;
+
     /// MeshMS density-independent RS cache for fast re-meshing when only the
     /// density changes (non-persistent; never serialized). Reused only when
     /// the inputs below match the new request exactly.
@@ -245,6 +258,10 @@ namespace surface {
 
     void setOrigProbeRad(double val) { m_dProbeRad = val; }
     double getOrigProbeRad() const { return m_dProbeRad; }
+
+    /// SES backend to use for the next generation (SESBK_*)
+    void setSesBackend(int n) { m_nSesBackend = n; }
+    int getSesBackend() const { return m_nSesBackend; }
 
 
     void regenerateSES(double density, double probe_r=-1.0, SelectionPtr pSel=SelectionPtr());

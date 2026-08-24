@@ -105,6 +105,49 @@ createSESFromArray(pr_ary, density, probe_r)
   なし)。想定外の入力・数値縮退では従来実績のある BALL 経路に落ちる。
   発火は `LOG_DPRINTLN` で必ず可視化する (黙って遅い BALL に落ち続けるのを
   検知するため)。BALL を将来削除する際は、フォールバックを再 throw に置換する。
+
+### バックエンドの切り替えと所要時間ログ
+
+**同じ構造に対して新旧を A/B できる**ように、バックエンドは GUI から選べる。
+移行期のための機能で、BALL を削除する際に一緒に落とす。
+
+**選択の経路**: `MolSurfObj` の `sesbackend` enum プロパティ
+(`auto` / `meshms` / `ball`、既定 `auto`) を、生成の直前に worker service が設定する。
+qif の enum property なので C++ 側では文字列 ID で受け渡しされる。
+
+```
+MakeMolSurfDialog / RegenMolSurfDialog  (SegmentField "Algorithm")
+  -> makeMolSurf / regenMolSurf service  (args.backend)
+    -> surf.sesbackend = 'ball'          (auto のときは設定しない)
+      -> createSESFromMol / regenerateSES1
+```
+
+`createSESFromMol` / `regenerateSES1` のシグネチャは変えずに済んでいる点が重要
+(プロパティを先に設定する方式にしたため、qif メソッドの引数追加が不要)。
+
+`SESBK_AUTO` の解決先はプロセスごとに一度だけ決まる。通常は
+「`HAVE_MESHMS` があれば MeshMS、無ければ BALL」だが、環境変数
+`CUEMOL_SES_BACKEND` (`ball` / `meshms`) がそれを上書きする —
+GUI を持たない headless 実行や CI で BALL 経路を回すため
+(`qlib::parallel.hpp` の `CUEMOL_TBB_THREADS` と同じ流儀)。優先順位は
+**プロパティ (GUI) > 環境変数 > ビルド既定**。
+
+`createSESFromArray` は生成全体を `std::chrono::steady_clock` で計測し、
+どちらの経路を通ったかと一緒に 1 行で出力する (同モジュールの
+`DirectSurfRenderer2` の計測ログと同じ形式):
+
+```
+MolSurfBuilder> SES built by MeshMS in 2.6 ms: atoms=2, verts=430, faces=856 (density=4.00, probe=1.40)
+MolSurfBuilder> SES built by BALL in 3.1 ms: atoms=2, verts=316, faces=628 (density=4.00, probe=1.40)
+```
+
+フォールバックが発動した場合は `BALL (MeshMS fallback)` と表示されるので、
+「MeshMS のつもりが実は BALL だった」を取り違えない。頂点数も出るため、
+同じ density 指定に対する両バックエンドの解像度の違いも同時に読める。
+
+CI (Linux) は MeshMS 既定での全 ctest に加えて、`CUEMOL_SES_BACKEND=ball` で
+`-L test_surface` を再実行する。フォールバック先として残す BALL 経路が
+腐らないようにするため。
 - **density → mesh_size 変換**: BALL の density は点密度 (点/Å²)、MeshMS の
   mesh_size は目標三角形辺長 (Å)。`mesh_size = 1/sqrt(density)` で変換する
   (GUI の整数スライダー 1–10 → 1.0–0.32 Å。MeshMS CLI 既定 0.5 = density 4 相当)。

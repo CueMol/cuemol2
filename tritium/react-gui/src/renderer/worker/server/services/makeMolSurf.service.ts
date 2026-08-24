@@ -42,6 +42,11 @@ export interface MakeMolSurfArgs {
     density: number;
     /** Probe radius (A); coerced to >= 0.1 (default 1.4). */
     probeRadius: number;
+    /**
+     * SES backend for this generation (C++ `sesbackend` enum id). Omitted or
+     * 'auto' leaves the object's default, which follows the build.
+     */
+    backend?: 'auto' | 'meshms' | 'ball';
 }
 
 export interface MakeMolSurfResult {
@@ -116,6 +121,12 @@ function makeMolSurf(
     try {
         withUndoTxn(scene, 'Create mol surface', () => {
             const surf = ctx.svc.createObj('MolSurfObj') as MolSurfObj;
+            // `sesbackend` is an enum property: the generated wrapper types it
+            // as number, but the C++ layer takes/returns the string id.
+            if (args.backend && args.backend !== 'auto') {
+                (surf as unknown as { sesbackend: string }).sesbackend =
+                    args.backend;
+            }
             surf.createSESFromMol(
                 mol as unknown as MolCoord,
                 sel as unknown as MolSelection,

@@ -22,6 +22,9 @@
 #include "BALL/STRUCTURE/triangulatedSES.h"
 #include "BALL/STRUCTURE/triangulatedSAS.h"
 
+#include <chrono>
+#include <cstdlib>
+
 #ifdef HAVE_MESHMS
 #include <array>
 #include <cmath>
@@ -53,6 +56,43 @@ namespace {
     // other conf ID --> NG
     MB_DPRINTLN("MS> Atom %s alt=%c ignored", pAtom->formatMsg().c_str(), confid);
     return false;
+  }
+
+  /// What MolSurfObj::SESBK_AUTO resolves to, evaluated once per process.
+  /// Normally MeshMS where it is compiled in (HAVE_MESHMS) and BALL otherwise;
+  /// the CUEMOL_SES_BACKEND environment variable ("ball" / "meshms") overrides
+  /// that default for headless runs and CI, where no GUI can set the object's
+  /// sesbackend property. Returns true when BALL is the default.
+  bool isBallBackendDefault()
+  {
+    static const bool s_bBall = []() -> bool {
+#ifdef HAVE_MESHMS
+      const bool bDefaultBall = false;
+#else
+      const bool bDefaultBall = true;
+#endif
+      const char *env = std::getenv("CUEMOL_SES_BACKEND");
+      if (env == NULL || env[0] == '\0')
+        return bDefaultBall;
+
+      const LString sel(env);
+      if (sel.equalsIgnoreCase("ball"))
+        return true;
+      if (sel.equalsIgnoreCase("meshms")) {
+#ifdef HAVE_MESHMS
+        return false;
+#else
+        LOG_DPRINTLN("MolSurfBuilder> CUEMOL_SES_BACKEND=meshms requested, but "
+                     "this build has no MeshMS support --> using BALL");
+        return true;
+#endif
+      }
+
+      LOG_DPRINTLN("MolSurfBuilder> unknown CUEMOL_SES_BACKEND='%s' "
+                   "(expected 'ball' or 'meshms') --> using default", env);
+      return bDefaultBall;
+    }();
+    return s_bBall;
   }
 
 }
@@ -120,8 +160,7 @@ void MolSurfObj::buildSESWithMeshMS(const std::vector<Vector4D> &pr_ary,
   for (int i=0; i<nfaces; ++i)
     setFace(i, mesh.faces[i][0], mesh.faces[i][1], mesh.faces[i][2]);
 
-  LOG_DPRINTLN("MolSurfBuilder> MeshMS SES done (%d verts, %d faces, mesh_size=%f)",
-               nverts, nfaces, mesh_size);
+  MB_DPRINTLN("MolSurfBuilder> MeshMS mesh_size=%f", mesh_size);
 }
 
 #endif // HAVE_MESHMS
@@ -138,20 +177,49 @@ void MolSurfObj::createSESFromArray(const std::vector<Vector4D> &pr_ary, double 
     return;
   }
 
+  // Resolve the requested backend (the sesbackend property, settable from the
+  // GUI; SESBK_AUTO defers to the process default).
+  const bool bUseBall =
+      (m_nSesBackend == SESBK_BALL) ||
+      (m_nSesBackend == SESBK_AUTO && isBallBackendDefault());
+
+  // Time the whole generation so the two backends can be compared directly.
+  const char *backend = "BALL";
+  const std::chrono::steady_clock::time_point t0 =
+      std::chrono::steady_clock::now();
+
 #ifdef HAVE_MESHMS
-  try {
-    buildSESWithMeshMS(pr_ary, density, probe_r);
-    return;
+  bool bDone = false;
+  if (!bUseBall) {
+    try {
+      buildSESWithMeshMS(pr_ary, density, probe_r);
+      backend = "MeshMS";
+      bDone = true;
+    }
+    catch (const std::exception &e) {
+      LOG_DPRINTLN("MolSurfBuilder> MeshMS SES failed (%s); falling back to BALL", e.what());
+    }
+    catch (...) {
+      LOG_DPRINTLN("MolSurfBuilder> MeshMS SES failed (unknown error); falling back to BALL");
+    }
+    if (!bDone)
+      backend = "BALL (MeshMS fallback)";
   }
-  catch (const std::exception &e) {
-    LOG_DPRINTLN("MolSurfBuilder> MeshMS SES failed (%s); falling back to BALL", e.what());
-  }
-  catch (...) {
-    LOG_DPRINTLN("MolSurfBuilder> MeshMS SES failed (unknown error); falling back to BALL");
-  }
+  if (!bDone)
+    buildSESWithBALL(pr_ary, density, probe_r);
+#else
+  // No MeshMS in this build: BALL is the only backend, whatever was requested.
+  (void) bUseBall;
+  buildSESWithBALL(pr_ary, density, probe_r);
 #endif
 
-  buildSESWithBALL(pr_ary, density, probe_r);
+  const double build_ms = std::chrono::duration<double, std::milli>(
+                              std::chrono::steady_clock::now() - t0)
+                              .count();
+  LOG_DPRINTLN("MolSurfBuilder> SES built by %s in %.1f ms: "
+               "atoms=%d, verts=%d, faces=%d (density=%.2f, probe=%.2f)",
+               backend, build_ms, (int) pr_ary.size(),
+               getVertSize(), getFaceSize(), density, probe_r);
 }
 
 /// BALL backend: the original vendored-BALL SES path, kept compiled in every

@@ -119,6 +119,19 @@ jobs:
         set -eux
         ctest --test-dir ${{ github.workspace }}/target/build_libcuemol2 --output-on-failure
 
+    # This job builds with ENABLE_MESHMS=ON, so the run above covers only the
+    # MeshMS SES path. BALL stays compiled in as its fallback, so re-run the
+    # backend-independent surface contract against it (one env var, ~1 s) to
+    # keep the fallback from rotting.
+    - name: Run gtest (BALL SES backend)
+      shell: bash
+      env:
+        CUEMOL_SES_BACKEND: ball
+      run: |
+        set -eux
+        ctest --test-dir ${{ github.workspace }}/target/build_libcuemol2 \
+              --output-on-failure -L test_surface
+
     - name: Build python module
       uses: ./build_scripts/build_pymod_posix
       with:

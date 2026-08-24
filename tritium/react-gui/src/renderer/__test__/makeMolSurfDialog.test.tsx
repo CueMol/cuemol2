@@ -119,6 +119,7 @@ describe('MakeMolSurfDialog commit wire', () => {
             surfName: 'sf_mol1',
             density: 1,
             probeRadius: 1.4,
+            backend: 'auto',
         })
         expect(handle.captured).toEqual({ ok: true })
         handle.unmount()
