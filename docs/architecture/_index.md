@@ -48,6 +48,11 @@ architecture, it belongs here.
   blendpng の `solvebeta` + 逐次 lerp との対応、POV-Ray で再現しない理由
   (`blendTab` の alpha 量子化と `>= 0.95` 不透明扱い)、半透明 group どうしが
   重なる場合に残るオーバーシュートの限界。
+- [umbreon (NPR) hatch layer editor と shading knob](umbreon-hatch-layer-editor.md) (日本語) --
+  Rendering window の NPR backend で hatch style をテンプレートとして C++ から読み込み、layer
+  構成 (太さ・密度・randomness) と shading (Strength / Curve) を編集してレンダーする設計。
+  Rendering window は worker を持たないため main 経由の 3 チャンネルリレー、dirty のときだけ
+  spec テキストを snapshot に載せる判断、form-kit による UI 構成、契約行一覧、制約と今後。
 - [umbreon の Electron メモリ制約と process 分離設計](umbreon-process-isolation.md)
   (日本語) -- tritium で umbreon GI(OIDN) が大解像度で crash する既知問題の根本原因
   (Chromium PartitionAlloc の OOM crash, OS 制限ではない)、検討した各対策と却下理由、

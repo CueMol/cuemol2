@@ -37,6 +37,7 @@ import type {
   ViewSizePx,
   RenderImageRef,
   RenderViewCamera,
+  HatchStyleSpecReply,
   CuemolClipWriteReq,
   CuemolClipReadRes,
   CuemolClipPeekRes,
@@ -110,6 +111,11 @@ export interface InvokeChannels {
   [IPC.RENDER_VIEW_CAMERA_GET]: { req: { viewId: number }; res: RenderViewCamera | null }
   [IPC.RENDER_VIEW_CAMERA_REPLY]: {
     req: { reqId: number; camera: RenderViewCamera | null }
+    res: void
+  }
+  [IPC.RENDER_HATCH_STYLE_GET]: { req: { style: string }; res: HatchStyleSpecReply }
+  [IPC.RENDER_HATCH_STYLE_REPLY]: {
+    req: { reqId: number; result: HatchStyleSpecReply }
     res: void
   }
   /**
@@ -203,6 +209,7 @@ export interface PushChannels {
   [IPC.RENDER_WINDOW_MODE_PUSH]:  RenderWindowModeRequest
   [IPC.RENDER_VIEW_SIZE_REQUEST]: { reqId: number }
   [IPC.RENDER_VIEW_CAMERA_REQUEST]: { reqId: number; viewId: number }
+  [IPC.RENDER_HATCH_STYLE_REQUEST]: { reqId: number; style: string }
 }
 
 export type InvokeChannel = keyof InvokeChannels

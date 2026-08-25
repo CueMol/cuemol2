@@ -28,6 +28,7 @@ import type {
 } from './renderTypes'
 
 import type { AppInfoResult } from '../server/services/appInfo.service'
+import type { GetHatchStyleSpecArgs, GetHatchStyleSpecResult } from '../server/services/hatchStyleSpec.service'
 import type { DrainLogMessagesResult } from '../server/services/drainLogMessages.service'
 import type { AnimListTimelineArgs, AnimGetMgrStateArgs, AnimPlayArgs, AnimPauseArgs, AnimStopArgs, AnimGoTimeArgs, AnimSetLoopArgs, AnimSetStartCamArgs, AnimTransportResult, AnimSetElementTimeArgs, AnimAddElementArgs, AnimRemoveElementArgs, AnimMoveElementArgs, AnimEditResult, AnimAddResult } from '../server/services/animation.service'
 import type { GetAnimElementDetailArgs, GetAnimElementDetailResult, SetAnimElementPropArgs, SetAnimElementPropResult, GetAnimTargetOptionsArgs, GetAnimTargetOptionsResult, GetAnimElementGenericPropsArgs, SetAnimElementGenericPropArgs, ResetAnimElementGenericPropsArgs, AnimGenericPropsResult } from '../server/services/animDetail.service'
@@ -675,6 +676,7 @@ export interface ServiceMap {
   saveCameraToCurrentSrc:     { args: SaveCameraToCurrentSrcArgs;      result: SaveCameraToCurrentSrcResult }
   reloadCameraFromSrc:        { args: ReloadCameraFromSrcArgs;         result: ReloadCameraFromSrcResult }
   getViewProjection:          { args: ViewProjectionArgs;              result: ViewProjectionResult }
+  getHatchStyleSpec:          { args: GetHatchStyleSpecArgs;           result: GetHatchStyleSpecResult }
   setViewProjection:          { args: ViewProjectionArgs;              result: ViewProjectionResult }
   getViewCenterMark:          { args: ViewCenterMarkArgs;              result: ViewCenterMarkResult }
   setViewCenterMark:          { args: ViewCenterMarkArgs;              result: ViewCenterMarkResult }

@@ -70,7 +70,7 @@ const UMBREON_PROPS: PropDef[] = [
   // 3 = the "aa" axis' default step, which every fresh backend selection
   // applies anyway; declared to match so the three places that state a
   // supersampling default (here, the axis, UmbreonBackend's fallback) agree.
-  { key: "supersample",   label: "Supersampling",      type: "integer", value: 3,    group: "Antialiasing", min: 1, max: 8,    step: 1 },
+  { key: "supersample",   label: "Supersampling",      type: "integer", value: 3,    group: "Antialiasing", min: 1, max: 8,    step: 1, slider: true },
   // --- Ambient Occlusion (off by default via the aoEnabled switch, like
   //     Shadows/GI; the backend maps aoEnabled=false to aoSamples 0) ---
   { key: "aoEnabled",     label: "Enable AO",          type: "boolean", value: false, group: "Ambient Occlusion" },
@@ -264,8 +264,8 @@ const UMBREON_NPR_PROPS: PropDef[] = [
   // Multipliers over the style's own layer values, so the relative pitches
   // of a multi-layer look survive: density divides every lattice pitch
   // (2 = twice as many lines / halftone dots), width scales the marks.
-  { key: "hatchDensity",    label: "Mark density", type: "real", value: 1.0, group: "Hatching", min: 0.25, max: 4, step: 0.05 },
-  { key: "hatchWidthScale", label: "Mark width",   type: "real", value: 1.0, group: "Hatching", min: 0.25, max: 4, step: 0.05 },
+  { key: "hatchDensity",    label: "Mark density", type: "real", value: 1.0, group: "Hatching", min: 0.25, max: 4, step: 0.05, slider: true },
+  { key: "hatchWidthScale", label: "Mark width",   type: "real", value: 1.0, group: "Hatching", min: 0.25, max: 4, step: 0.05, slider: true },
   // Ink/paper overrides are gated by the Custom switches: the styles carry
   // their own colors (richardson's warm paper, its per-section ink), which
   // an always-on black/white default would silently destroy. The backend

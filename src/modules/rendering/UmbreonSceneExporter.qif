@@ -143,8 +143,27 @@ runtime_class UmbreonSceneExporter extends SceneExporter
   /// so 2 doubles the number of hatch lines / halftone dots
   property real hatchDensity => m_dHatchDensity;
 
-  /// mark width multiplier over the style's per-layer stroke widths
+  /// mark size multiplier over the style's per-layer sizes: the line width
+  /// of Line layers, the dot scale of Dot / Stipple layers
   property real hatchWidthScale => m_dHatchWidthScale;
+
+  /// hand-edited mark layers as umbreon spec text ("layer:" lines, one per
+  /// layer; the text getHatchStyleSpec returns, edited). A non-empty text
+  /// replaces the style's layers; empty (the default) keeps them
+  property string hatchLayersSpec => m_sHatchLayersSpec;
+
+  /// hand-edited tone recipe / ink model as spec text ("tone:" / "ink:"
+  /// lines) overriding the keys it names; empty (the default) keeps the
+  /// style's own
+  property string hatchToneSpec => m_sHatchToneSpec;
+
+  /// ink-amount multiplier (umbreon ToneRecipe::strength): scales the
+  /// coverage a display tone asks for; 1 = the style's own
+  property real hatchToneStrength => m_dHatchToneStrength;
+
+  /// ink-amount curve multiplier (umbreon ToneRecipe::curve): > 1 keeps the
+  /// mid tones lighter, < 1 fills them in; 1 = the style's own
+  property real hatchToneCurve => m_dHatchToneCurve;
 
   /// base (fill) model override: "paper" (bare paper between the marks) or
   /// "albedo" (flat unshaded fill of each section's own color); empty (the
@@ -169,6 +188,12 @@ runtime_class UmbreonSceneExporter extends SceneExporter
   /// contour in the ink color; sections with renderer-side edge settings keep
   /// their own style
   property boolean hatchDefaultEdges => m_bHatchDefaultEdges;
+
+  /// resolve a hatch style name (as hatchStyle takes it) and return it as
+  /// umbreon spec text ("layer:" / "tone:" / "ink:" lines), the editable
+  /// template behind hatchLayersSpec / hatchToneSpec; "" for an unknown
+  /// name or without umbreon
+  string getHatchStyleSpec(string name);
 
   ////////////////////
   // Asynchronous render (non-blocking, with progress + cancel).

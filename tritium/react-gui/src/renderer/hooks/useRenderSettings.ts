@@ -42,6 +42,35 @@ import {
 } from "../data/renderSettings";
 import { RENDER_BACKENDS, DEFAULT_RENDER_BACKEND } from "../data/renderBackends";
 import type { RenderSettingsSnapshot } from "../data/renderResult";
+import {
+  cloneHatchSpec,
+  formatHatchLayersSpec,
+  formatHatchToneSpec,
+  isSameHatchSpec,
+  newHatchLayer,
+  nextHatchLayerId,
+  parseHatchSpec,
+  type HatchInk,
+  type HatchLayer,
+  type HatchLayerKind,
+  type HatchSpec,
+  type HatchTone,
+} from "../data/hatchSpec";
+
+/**
+ * The NPR hatch look being edited. The selected style (backend prop
+ * "hatchStyle") is a template: `template` is what the C++ side resolved it
+ * to, `spec` the editable copy. Both are null until the template arrives (or
+ * while the backend is not umbreon_npr).
+ */
+export interface HatchEditState {
+  /** Style name the template / spec belong to ("" = none loaded). */
+  style: string;
+  template: HatchSpec | null;
+  spec: HatchSpec | null;
+}
+
+const INITIAL_HATCH: HatchEditState = { style: "", template: null, spec: null };
 
 /** Deep-copy a PropDef list so edits never mutate the shared defaults. */
 const cloneProps = (props: PropDef[]): PropDef[] => props.map((p) => ({ ...p }));
@@ -141,6 +170,7 @@ export function useRenderSettings(
   const [movie, setMovie] = useState<MovieSettings>(DEFAULT_MOVIE_SETTINGS);
   // Once the user (or a restore) picks a backend, stop auto-defaulting to umbreon.
   const userPickedRef = useRef(false);
+  const [hatch, setHatch] = useState<HatchEditState>(INITIAL_HATCH);
 
   /** Switch the active backend, keeping common settings, resetting backend ones. */
   const applyBackend = useCallback((id: RenderBackendId) => {
@@ -148,6 +178,7 @@ export function useRenderSettings(
     // Start the new backend on its default method + default step of every
     // axis, so the quality dropdowns and the prop values agree from the start.
     setBackendProps(cloneProps(backendPropsWithDefaults(id)));
+    setHatch(INITIAL_HATCH);
   }, []);
 
   /** User-initiated backend switch (sticks against the umbreon auto-default). */
@@ -240,6 +271,12 @@ export function useRenderSettings(
       if (key === "width" || key === "height") {
         setPreset(DEFAULT_RENDER_PRESET);
       }
+      // A new hatch style is a new template: drop the edited look and let the
+      // template hook fetch the style (no confirmation -- the state is
+      // window-local, and the "Edited" badge tells the user it will go).
+      if (key === "hatchStyle") {
+        setHatch(INITIAL_HATCH);
+      }
       // An edit needs no bookkeeping: each axis' dropdown reads back from the
       // values, so it drops to Custom -- or lands on another step -- by itself.
     },
@@ -306,6 +343,92 @@ export function useRenderSettings(
     }
   }, [applyPresetSize]);
 
+  // --- NPR hatch look (layer editor) ---
+
+  /** The selected hatch style (umbreon_npr backend prop). */
+  const hatchStyle = String(readVal(backendProps, "hatchStyle") ?? "");
+  /** True once the template of the selected style is held. */
+  const hatchLoaded = hatch.template !== null && hatch.style === hatchStyle;
+  /** True while the edited look differs from the style's template. */
+  const hatchDirty =
+    hatch.spec !== null &&
+    hatch.template !== null &&
+    !isSameHatchSpec(hatch.spec, hatch.template);
+
+  /**
+   * Take the template the C++ side resolved `style` to. A reply for a style
+   * that is no longer selected is dropped; a look restored from a snapshot is
+   * kept and only the template is filled in behind it.
+   */
+  const applyHatchTemplate = useCallback(
+    (style: string, spec: HatchSpec) => {
+      if (style !== hatchStyle) return;
+      setHatch((prev) => ({
+        style,
+        template: spec,
+        spec: prev.spec ?? cloneHatchSpec(spec),
+      }));
+    },
+    [hatchStyle],
+  );
+
+  const updateHatchSpec = useCallback((fn: (spec: HatchSpec) => HatchSpec) => {
+    setHatch((prev) => (prev.spec ? { ...prev, spec: fn(prev.spec) } : prev));
+  }, []);
+
+  /** Patch one layer; the other layers keep their identity (memoised rows). */
+  const updateHatchLayer = useCallback(
+    (id: string, patch: Partial<HatchLayer>) =>
+      updateHatchSpec((spec) => ({
+        ...spec,
+        layers: spec.layers.map((l) => (l.id === id ? { ...l, ...patch } : l)),
+      })),
+    [updateHatchSpec],
+  );
+
+  const addHatchLayer = useCallback(
+    (kind: HatchLayerKind) =>
+      updateHatchSpec((spec) => ({ ...spec, layers: [...spec.layers, newHatchLayer(kind)] })),
+    [updateHatchSpec],
+  );
+
+  const removeHatchLayer = useCallback(
+    (id: string) =>
+      updateHatchSpec((spec) => ({ ...spec, layers: spec.layers.filter((l) => l.id !== id) })),
+    [updateHatchSpec],
+  );
+
+  /** Insert a copy right after the layer. */
+  const duplicateHatchLayer = useCallback(
+    (id: string) =>
+      updateHatchSpec((spec) => {
+        const i = spec.layers.findIndex((l) => l.id === id);
+        if (i < 0) return spec;
+        const copy: HatchLayer = { ...spec.layers[i], id: nextHatchLayerId(), extra: { ...spec.layers[i].extra } };
+        const layers = [...spec.layers];
+        layers.splice(i + 1, 0, copy);
+        return { ...spec, layers };
+      }),
+    [updateHatchSpec],
+  );
+
+  const updateHatchTone = useCallback(
+    (patch: Partial<HatchTone>) =>
+      updateHatchSpec((spec) => ({ ...spec, tone: { ...spec.tone, ...patch } })),
+    [updateHatchSpec],
+  );
+
+  const updateHatchInk = useCallback(
+    (patch: Partial<HatchInk>) =>
+      updateHatchSpec((spec) => ({ ...spec, ink: { ...spec.ink, ...patch } })),
+    [updateHatchSpec],
+  );
+
+  /** Back to the style's own look. */
+  const resetHatchToTemplate = useCallback(() => {
+    setHatch((prev) => (prev.template ? { ...prev, spec: cloneHatchSpec(prev.template) } : prev));
+  }, []);
+
   /** Frozen copy of the current settings, used for a render result. */
   const getSnapshot = useCallback(
     (): RenderSettingsSnapshot => ({
@@ -314,8 +437,18 @@ export function useRenderSettings(
       commonProps: cloneProps(commonProps),
       backendProps: cloneProps(backendProps),
       ...(mode === "movie" ? { movie: { ...movie } } : {}),
+      // The edited look travels only while it differs from the template, so
+      // an untouched style renders through the C++ side's own configuration.
+      ...(backend === "umbreon_npr" && hatchDirty && hatch.spec
+        ? {
+            hatch: {
+              layersSpec: formatHatchLayersSpec(hatch.spec.layers),
+              toneSpec: formatHatchToneSpec(hatch.spec.tone, hatch.spec.ink),
+            },
+          }
+        : {}),
     }),
-    [mode, backend, commonProps, backendProps, movie],
+    [mode, backend, commonProps, backendProps, movie, hatch.spec, hatchDirty],
   );
 
   /** Load settings from a snapshot (used by "Re-render"). */
@@ -331,6 +464,17 @@ export function useRenderSettings(
     // Restored sizes are explicit, so no size preset is active. The quality
     // dropdowns need no reset: they read the restored values back.
     setPreset(DEFAULT_RENDER_PRESET);
+    // An edited look comes back as the spec; its template is fetched again
+    // (applyHatchTemplate keeps the spec and only fills the template in).
+    setHatch(
+      snapshot.hatch
+        ? {
+            style: String(readVal(snapshot.backendProps, "hatchStyle") ?? ""),
+            template: null,
+            spec: parseHatchSpec(snapshot.hatch.layersSpec + "\n" + snapshot.hatch.toneSpec),
+          }
+        : INITIAL_HATCH,
+    );
   }, []);
 
   /**
@@ -374,5 +518,17 @@ export function useRenderSettings(
     applyViewCamera,
     getSnapshot,
     restore,
+    hatch,
+    hatchStyle,
+    hatchLoaded,
+    hatchDirty,
+    applyHatchTemplate,
+    updateHatchLayer,
+    addHatchLayer,
+    removeHatchLayer,
+    duplicateHatchLayer,
+    updateHatchTone,
+    updateHatchInk,
+    resetHatchToTemplate,
   } as const;
 }

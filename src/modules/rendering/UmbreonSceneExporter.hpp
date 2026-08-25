@@ -132,8 +132,17 @@ namespace render {
     /// mark density multiplier (2 = twice as many lines / dots)
     double m_dHatchDensity;
 
-    /// mark width multiplier over the style's per-layer widths
+    /// mark size multiplier over the style's per-layer sizes (line width /
+    /// dot scale)
     double m_dHatchWidthScale;
+
+    /// hand-edited layers / tone as umbreon spec text; empty = the style's
+    LString m_sHatchLayersSpec;
+    LString m_sHatchToneSpec;
+
+    /// ink-amount multipliers over the resolved tone recipe
+    double m_dHatchToneStrength;
+    double m_dHatchToneCurve;
 
     /// base / ink model overrides ("paper"/"albedo", "fixed"/"albedo");
     /// empty = keep the hatch style's own model
@@ -169,6 +178,10 @@ namespace render {
 
     /// render the scene and write the image (synchronous; blocks until done)
     void write() override;
+
+    /// Resolve a hatch style name and return it as umbreon spec text (the
+    /// layer editor's template); "" for an unknown name or without umbreon.
+    LString getHatchStyleSpec(const LString &name) const;
 
     /////////////////////////////////
     // Asynchronous render: drive with beginRender() -> poll -> endRender().

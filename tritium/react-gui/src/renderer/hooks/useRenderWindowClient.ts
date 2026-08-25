@@ -28,6 +28,7 @@ import type {
   RenderWindowModeRequest,
   RenderWindowStateUpdate,
   RenderViewCamera,
+  HatchStyleSpecReply,
   ViewSizePx,
 } from "../../shared/ipcTypes";
 import type { RenderJob } from "./useRenderJob";
@@ -102,6 +103,8 @@ export function useRenderWindowClient(): {
   getViewSize: () => Promise<ViewSizePx | null>;
   /** The target view's camera settings, used to default the Camera group. */
   getViewCamera: (viewId: number) => Promise<RenderViewCamera | null>;
+  /** A hatch style resolved to its spec text (the NPR layer editor's template). */
+  getHatchStyleSpec: (style: string) => Promise<HatchStyleSpecReply>;
   /** The result currently on screen (a history entry), or null. */
   shownResult: RenderResult | null;
   /**
@@ -330,6 +333,19 @@ export function useRenderWindowClient(): {
     [],
   );
 
+  const getHatchStyleSpec = useCallback(
+    async (style: string): Promise<HatchStyleSpecReply> => {
+      const api = window.electronAPI;
+      if (!api) return { ok: false, error: "no electron api" };
+      try {
+        return await api.invoke(IPC.RENDER_HATCH_STYLE_GET, { style });
+      } catch (e: unknown) {
+        return { ok: false, error: e instanceof Error ? e.message : String(e) };
+      }
+    },
+    [],
+  );
+
   const getViewSize = useCallback(async (): Promise<ViewSizePx | null> => {
     const api = window.electronAPI;
     if (!api) return null;
@@ -354,6 +370,7 @@ export function useRenderWindowClient(): {
     showSource,
     getViewSize,
     getViewCamera,
+    getHatchStyleSpec,
     shownResult,
     shownImage,
     goBack,

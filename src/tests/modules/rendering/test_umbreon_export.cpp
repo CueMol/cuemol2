@@ -7,6 +7,7 @@
 #include <gfx/SolidColor.hpp>
 #include <qlib/Vector4D.hpp>
 
+#include <functional>
 #include <vector>
 
 using qlib::Vector4D;
@@ -1603,10 +1604,12 @@ const int kHatchDim = 64;
 /// Render one sphere with the NPR tone-hatching pass. `edgeLines` gives the
 /// section renderer-side edge lines (red, so its ink is distinguishable from
 /// the black default contour); `paperHex` empty keeps the style's own paper.
-void renderHatchedSphere(bool edgeLines, bool defaultEdges,
-                         const char *style, float paperR, float paperG,
-                         float paperB, bool paperSet,
-                         std::vector<unsigned char> &outPix)
+/// `tweak` may adjust the render params before the render (hatch overrides).
+void renderHatchedSphere(
+    bool edgeLines, bool defaultEdges, const char *style, float paperR,
+    float paperG, float paperB, bool paperSet,
+    std::vector<unsigned char> &outPix,
+    const std::function<void(UmbreonRenderParams &)> &tweak = {})
 {
     const double kViewH = 6.0;
 
@@ -1646,6 +1649,7 @@ void renderHatchedSphere(bool edgeLines, bool defaultEdges,
     prm.hatchPaperColor[0] = paperR;
     prm.hatchPaperColor[1] = paperG;
     prm.hatchPaperColor[2] = paperB;
+    if (tweak) tweak(prm);
 
     int ow = 0, oh = 0, ncomp = 0;
     ctx.render(prm, ow, oh, ncomp, outPix);
@@ -1658,6 +1662,16 @@ void pixelAt(const std::vector<unsigned char> &pix, int x, int y, int rgb[3])
 {
     const std::size_t i = (static_cast<std::size_t>(y) * kHatchDim + x) * 3;
     for (int k = 0; k < 3; ++k) rgb[k] = pix[i + k];
+}
+
+/// Near-black pixels (ink marks and contour) of an RGB frame.
+std::size_t countInk(const std::vector<unsigned char> &pix)
+{
+    std::size_t n = 0;
+    for (std::size_t i = 0; i + 2 < pix.size(); i += 3) {
+        if (pix[i] < 60 && pix[i + 1] < 60 && pix[i + 2] < 60) ++n;
+    }
+    return n;
 }
 
 }  // namespace
@@ -1746,4 +1760,94 @@ TEST(UmbreonExport, UnknownHatchStyleFallsBackToRichardson)
     renderHatchedSphere(false, true, "richardson", 0.0f, 0.0f, 0.0f, false,
                         pixRichardson);
     EXPECT_EQ(pixBogus, pixRichardson);
+}
+
+// Mark width reaches the dot screens too: umbreon scales a Dot layer's
+// dotScale (a dot gain) where it scales a Line layer's width, so the halftone
+// styles no longer ignore the slider.
+TEST(UmbreonExport, HatchWidthScaleChangesDotScreens)
+{
+    for (const char *style : {"screentone-60", "manga"}) {
+        std::vector<unsigned char> pixOne, pixTwo;
+        renderHatchedSphere(false, false, style, 1.0f, 1.0f, 1.0f, true, pixOne,
+                            [](UmbreonRenderParams &p) { p.hatchWidthScale = 1.0; });
+        renderHatchedSphere(false, false, style, 1.0f, 1.0f, 1.0f, true, pixTwo,
+                            [](UmbreonRenderParams &p) { p.hatchWidthScale = 2.0; });
+        EXPECT_NE(pixOne, pixTwo) << style;
+        EXPECT_GT(countInk(pixTwo), countInk(pixOne)) << style;
+    }
+}
+
+// A hand-edited layer spec replaces the style's layers; a malformed one is
+// reported into the render log and ignored, so the render still runs with
+// the style itself.
+TEST(UmbreonExport, HatchLayersSpecOverridesTheStyleLayers)
+{
+    std::vector<unsigned char> pixPlain, pixSpec, pixBad;
+    renderHatchedSphere(false, false, "ink-cross", 1.0f, 1.0f, 1.0f, true,
+                        pixPlain);
+    renderHatchedSphere(false, false, "ink-cross", 1.0f, 1.0f, 1.0f, true,
+                        pixSpec, [](UmbreonRenderParams &p) {
+                            p.hatchLayersSpec =
+                                "layer: kind=line,angle=0,spacing=8,subdiv=0,"
+                                "width=3,tonehi=1,tonelo=0.9,fade=0";
+                        });
+    EXPECT_NE(pixPlain, pixSpec);
+
+    UmbreonDisplayContext::drainLog();
+    renderHatchedSphere(false, false, "ink-cross", 1.0f, 1.0f, 1.0f, true,
+                        pixBad, [](UmbreonRenderParams &p) {
+                            p.hatchLayersSpec = "layer: bogus=1";
+                        });
+    EXPECT_EQ(pixPlain, pixBad);
+    const LString log = UmbreonDisplayContext::drainLog();
+    EXPECT_NE(log.indexOf("hatch layers spec ignored"), -1) << log.c_str();
+}
+
+// The style template a host loads (hatchStyleSpec) sent back unedited
+// reproduces the style's own picture, for the layers and for the tone / ink
+// model alike.
+TEST(UmbreonExport, HatchStyleSpecRoundTripsToTheSamePixels)
+{
+    const LString spec = UmbreonDisplayContext::hatchStyleSpec("richardson");
+    ASSERT_FALSE(spec.isEmpty());
+    int nLayers = 0;
+    const std::string text = spec.c_str();
+    for (std::size_t pos = text.find("layer:"); pos != std::string::npos;
+         pos = text.find("layer:", pos + 1))
+        ++nLayers;
+    EXPECT_EQ(nLayers, 3);
+    EXPECT_NE(spec.indexOf("tone:"), -1);
+    EXPECT_NE(spec.indexOf("ink:"), -1);
+    EXPECT_TRUE(UmbreonDisplayContext::hatchStyleSpec("no-such-style").isEmpty());
+
+    // The paper is pinned explicitly on both sides: the spec carries colors
+    // as #rrggbb, and richardson's warm paper is not exactly representable.
+    std::vector<unsigned char> pixPlain, pixLayers, pixTone;
+    renderHatchedSphere(false, true, "richardson", 0.94f, 0.92f, 0.86f, true,
+                        pixPlain);
+    renderHatchedSphere(false, true, "richardson", 0.94f, 0.92f, 0.86f, true,
+                        pixLayers, [&](UmbreonRenderParams &p) {
+                            p.hatchLayersSpec = spec;
+                        });
+    EXPECT_EQ(pixPlain, pixLayers);
+    renderHatchedSphere(false, true, "richardson", 0.94f, 0.92f, 0.86f, true,
+                        pixTone, [&](UmbreonRenderParams &p) {
+                            p.hatchToneSpec = spec;
+                        });
+    EXPECT_EQ(pixPlain, pixTone);
+}
+
+// Ink amount: the strength multiplier darkens the drawing monotonically.
+TEST(UmbreonExport, HatchToneStrengthScalesTheInk)
+{
+    std::vector<unsigned char> pixHalf, pixOne, pixTwo;
+    renderHatchedSphere(false, false, "ink-cross", 1.0f, 1.0f, 1.0f, true, pixHalf,
+                        [](UmbreonRenderParams &p) { p.hatchToneStrength = 0.5; });
+    renderHatchedSphere(false, false, "ink-cross", 1.0f, 1.0f, 1.0f, true, pixOne,
+                        [](UmbreonRenderParams &p) { p.hatchToneStrength = 1.0; });
+    renderHatchedSphere(false, false, "ink-cross", 1.0f, 1.0f, 1.0f, true, pixTwo,
+                        [](UmbreonRenderParams &p) { p.hatchToneStrength = 2.0; });
+    EXPECT_GT(meanLevel(pixHalf), meanLevel(pixOne));
+    EXPECT_GT(meanLevel(pixOne), meanLevel(pixTwo));
 }

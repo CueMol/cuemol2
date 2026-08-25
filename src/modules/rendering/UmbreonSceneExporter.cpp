@@ -147,6 +147,8 @@ UmbreonSceneExporter::UmbreonSceneExporter()
        m_dGiEnvIntensity(1.0), m_bGiDenoise(true), m_nDenoiser(0),
        m_bHatchEnable(false), m_sHatchStyle("richardson"),
        m_dHatchDensity(1.0), m_dHatchWidthScale(1.0),
+       m_sHatchLayersSpec(""), m_sHatchToneSpec(""),
+       m_dHatchToneStrength(1.0), m_dHatchToneCurve(1.0),
        m_sHatchBase(""), m_sHatchInk(""),
        m_sHatchInkColor(""), m_sHatchPaperColor(""),
        m_bHatchDefaultEdges(true),
@@ -242,12 +244,21 @@ void UmbreonSceneExporter::setupContext(UmbreonDisplayContext &ctx,
   prm.hatchStyle = m_sHatchStyle;
   prm.hatchDensity = m_dHatchDensity;
   prm.hatchWidthScale = m_dHatchWidthScale;
+  prm.hatchLayersSpec = m_sHatchLayersSpec;
+  prm.hatchToneSpec = m_sHatchToneSpec;
+  prm.hatchToneStrength = m_dHatchToneStrength;
+  prm.hatchToneCurve = m_dHatchToneCurve;
   prm.hatchBase = m_sHatchBase;
   prm.hatchInk = m_sHatchInk;
   prm.hatchInkColorSet = parseHexColor(m_sHatchInkColor, prm.hatchInkColor);
   prm.hatchPaperColorSet =
       parseHexColor(m_sHatchPaperColor, prm.hatchPaperColor);
   prm.hatchDefaultEdges = m_bHatchDefaultEdges;
+}
+
+LString UmbreonSceneExporter::getHatchStyleSpec(const LString &name) const
+{
+  return UmbreonDisplayContext::hatchStyleSpec(name);
 }
 
 void UmbreonSceneExporter::write()

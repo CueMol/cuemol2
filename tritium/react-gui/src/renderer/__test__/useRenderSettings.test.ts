@@ -9,6 +9,7 @@ import { describe, it, expect } from 'vitest';
 import { act } from 'react';
 import { makeRenderHook } from './helpers/testHarness';
 import { useRenderSettings } from '../hooks/useRenderSettings';
+import { parseHatchSpec } from '../data/hatchSpec';
 
 const valueOf = (props: { key: string; value: unknown }[], key: string) =>
     props.find((p) => p.key === key)?.value;
@@ -414,6 +415,107 @@ describe('useRenderSettings NPR backend', () => {
         expect(valueOf(h.result.backendProps, 'aoEnabled')).toBe(true);
         act(() => h.result.setLighting('none'));
         expect(h.result.lighting).toBe('none');
+        h.unmount();
+    });
+});
+
+// The NPR hatch look: the selected style is a template loaded from C++, the
+// edited copy travels with the render only while it differs from it.
+describe('useRenderSettings hatch look', () => {
+    const TEMPLATE = 'layer: kind=line,width=1\nlayer: kind=dot\ntone: strength=1\nink: base=paper\n';
+    const template = () => parseHatchSpec(TEMPLATE);
+
+    const mountNpr = () => {
+        const h = makeRenderHook(() => useRenderSettings({ umbreonAvailable: true }));
+        act(() => h.result.setBackend('umbreon_npr'));
+        return h;
+    };
+
+    it('starts without a look and loads the selected style as template', () => {
+        const h = mountNpr();
+        expect(h.result.hatchStyle).toBe('richardson');
+        expect(h.result.hatch.spec).toBeNull();
+        expect(h.result.hatchLoaded).toBe(false);
+        act(() => h.result.applyHatchTemplate('richardson', template()));
+        expect(h.result.hatchLoaded).toBe(true);
+        expect(h.result.hatchDirty).toBe(false);
+        expect(h.result.hatch.spec?.layers).toHaveLength(2);
+        // The editable copy is not the template object.
+        expect(h.result.hatch.spec).not.toBe(h.result.hatch.template);
+        h.unmount();
+    });
+
+    it('ignores a template for a style that is no longer selected', () => {
+        const h = mountNpr();
+        act(() => h.result.applyHatchTemplate('manga', template()));
+        expect(h.result.hatch.spec).toBeNull();
+        h.unmount();
+    });
+
+    it('edits mark the look dirty and travel in the snapshot; reset clears them', () => {
+        const h = mountNpr();
+        act(() => h.result.applyHatchTemplate('richardson', template()));
+        expect(h.result.getSnapshot().hatch).toBeUndefined();
+        const [first, second] = h.result.hatch.spec!.layers;
+        act(() => h.result.updateHatchLayer(first.id, { width: 2 }));
+        expect(h.result.hatchDirty).toBe(true);
+        // Untouched layers keep their identity (memoised rows).
+        expect(h.result.hatch.spec!.layers[1]).toBe(second);
+        act(() => h.result.updateHatchTone({ strength: 2 }));
+        const snap = h.result.getSnapshot();
+        expect(snap.hatch?.layersSpec).toContain('width=2');
+        expect(snap.hatch?.toneSpec).toContain('strength=2');
+        act(() => h.result.resetHatchToTemplate());
+        expect(h.result.hatchDirty).toBe(false);
+        expect(h.result.getSnapshot().hatch).toBeUndefined();
+        h.unmount();
+    });
+
+    it('adds, duplicates and removes layers', () => {
+        const h = mountNpr();
+        act(() => h.result.applyHatchTemplate('richardson', template()));
+        act(() => h.result.addHatchLayer('stipple'));
+        expect(h.result.hatch.spec!.layers.map((l) => l.kind)).toEqual(['line', 'dot', 'stipple']);
+        const first = h.result.hatch.spec!.layers[0];
+        act(() => h.result.duplicateHatchLayer(first.id));
+        const layers = h.result.hatch.spec!.layers;
+        expect(layers).toHaveLength(4);
+        expect(layers[1].kind).toBe('line');
+        expect(layers[1].id).not.toBe(first.id);
+        act(() => h.result.removeHatchLayer(layers[1].id));
+        expect(h.result.hatch.spec!.layers).toHaveLength(3);
+        h.unmount();
+    });
+
+    it('a new style or backend drops the look', () => {
+        const h = mountNpr();
+        act(() => h.result.applyHatchTemplate('richardson', template()));
+        act(() => h.result.handleChange('hatchStyle', 'manga'));
+        expect(h.result.hatchStyle).toBe('manga');
+        expect(h.result.hatch.spec).toBeNull();
+        expect(h.result.hatchLoaded).toBe(false);
+        act(() => h.result.applyHatchTemplate('manga', template()));
+        act(() => h.result.setBackend('umbreon'));
+        expect(h.result.hatch.spec).toBeNull();
+        h.unmount();
+    });
+
+    it('restores an edited look from a snapshot and keeps it when the template arrives', () => {
+        const h = mountNpr();
+        act(() => h.result.applyHatchTemplate('richardson', template()));
+        act(() => h.result.updateHatchTone({ strength: 3 }));
+        const snap = h.result.getSnapshot();
+        act(() => h.result.handleChange('hatchStyle', 'manga'));
+        act(() => h.result.restore(snap));
+        expect(h.result.hatchStyle).toBe('richardson');
+        expect(h.result.hatchLoaded).toBe(false);
+        expect(h.result.hatch.spec?.tone.strength).toBe(3);
+        act(() => h.result.applyHatchTemplate('richardson', template()));
+        expect(h.result.hatch.spec?.tone.strength).toBe(3);
+        expect(h.result.hatchDirty).toBe(true);
+        // A snapshot without a look restores none.
+        act(() => h.result.restore({ ...snap, hatch: undefined }));
+        expect(h.result.hatch.spec).toBeNull();
         h.unmount();
     });
 });

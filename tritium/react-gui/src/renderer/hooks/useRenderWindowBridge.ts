@@ -25,6 +25,7 @@ import type {
   RenderJobWire,
   RenderTargetViewWire,
   RenderViewCamera,
+  HatchStyleSpecReply,
   RenderWindowCommand,
   RenderWindowStateUpdate,
   ViewSizePx,
@@ -247,10 +248,26 @@ export function useRenderWindowBridge(args: UseRenderWindowBridgeArgs): void {
         )
         .catch(() => reply(null));
     });
+    // Hatch style template for the render window's NPR layer editor: resolve
+    // the style name through the worker (the C++ umbreon exporter).
+    const offHatch = api.onPush(IPC.RENDER_HATCH_STYLE_REQUEST, ({ reqId, style }) => {
+      const reply = (result: HatchStyleSpecReply) =>
+        api.invoke(IPC.RENDER_HATCH_STYLE_REPLY, { reqId, result }).catch(() => {});
+      if (!cm) {
+        reply({ ok: false, error: "no worker" });
+        return;
+      }
+      cm.invokeService("getHatchStyleSpec", { style })
+        .then((res) => reply(res ?? { ok: false, error: "no reply" }))
+        .catch((e: unknown) =>
+          reply({ ok: false, error: e instanceof Error ? e.message : String(e) }),
+        );
+    });
     return () => {
       offExec();
       offSize();
       offCamera();
+      offHatch();
     };
   }, [execCommand, cm]);
 }

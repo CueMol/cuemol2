@@ -19,6 +19,7 @@ import {
   ComboBoxField,
   SwitchField,
   ColorField,
+  SliderField,
 } from "../../h3-kit/form";
 
 // ------------------------------------------------------------
@@ -66,11 +67,27 @@ interface NumericEditorProps {
  * When `prop.inline` is set the field renders as a compact plain number box
  * (no drag) with the label beside it on a single row -- used by the
  * render-settings width / height fields, where a drag control and a two-row
- * layout are both unwanted.
+ * layout are both unwanted. When `prop.slider` is set it renders the
+ * slider + number + stepper row instead (settings adjusted by feel within a
+ * known range, e.g. the NPR hatch multipliers).
  */
 export const NumericEditor: React.FC<NumericEditorProps> = ({ prop, onChange }) => {
   const step = prop.step ?? (prop.type === "integer" ? 1 : 0.01);
   const decimals = prop.decimals ?? (prop.type === "integer" ? 0 : undefined);
+  if (prop.slider) {
+    // SliderField carries its own label; no Field wrapper (double label).
+    return (
+      <SliderField
+        label={prop.label}
+        value={Number(prop.value)}
+        min={prop.min ?? 0}
+        max={prop.max ?? 100}
+        step={step}
+        unit={prop.unit}
+        onCommit={(v) => onChange(prop.key, v)}
+      />
+    );
+  }
   if (prop.inline) {
     return (
       <Field label={prop.label} inline>

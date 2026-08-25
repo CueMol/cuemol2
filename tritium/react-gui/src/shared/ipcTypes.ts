@@ -659,6 +659,8 @@ export interface RenderSettingsSnapshotWire {
   backend: string
   commonProps: RenderPropDefWire[]
   backendProps: RenderPropDefWire[]
+  /** Edited NPR hatch look as spec text (mirrors RenderHatchSnapshot). */
+  hatch?: { layersSpec: string; toneSpec: string }
   /** Movie settings (mirrors MovieSettings); absent for a still render. */
   movie?: {
     outputDir: string
@@ -758,6 +760,16 @@ export interface RenderViewCamera {
   /** True = perspective projection, false = orthographic. */
   perspective: boolean
 }
+
+/**
+ * Reply of the hatch-style template round trip: a style name resolved to
+ * umbreon's spec text by the main window's worker (the render window has no
+ * worker of its own). `ok: false` carries the reason (unknown style, a build
+ * without umbreon, a timeout).
+ */
+export type HatchStyleSpecReply =
+  | { ok: true; spec: string }
+  | { ok: false; error: string }
 
 /** Output mode of the Rendering window (mirrors renderer-side RenderMode). */
 export type RenderWindowMode = 'still' | 'movie'
