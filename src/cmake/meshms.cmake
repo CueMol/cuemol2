@@ -10,7 +10,7 @@
 # libcuemol2 (and umbreon/Embree) uses, keeping exactly one oneTBB runtime in
 # the process.
 #
-# The consumer includes only <meshms/capi.hpp>, a C++17-clean facade; MeshMS
+# The consumer includes only <meshms/meshms.hpp>, a C++17-clean facade; MeshMS
 # itself is compiled as C++20 but does not force that onto its consumers.
 
 find_package(MeshMS CONFIG REQUIRED)

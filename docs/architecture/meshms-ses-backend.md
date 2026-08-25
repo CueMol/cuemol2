@@ -32,7 +32,7 @@ oneTBB は既にバンドルに含まれる。
 - oneTBB は単一実体: `MeshMSConfig.cmake` の `find_dependency(TBB)` が、
   libcuemol2 configure に渡る同じ `-DTBB_DIR` (deplibs の static oneTBB) で
   解決される。別の TBB を持ち込まないこと。
-- 消費側が include するのは `<meshms/capi.hpp>` のみ (C++17-clean facade。
+- 消費側が include するのは `<meshms/meshms.hpp>` のみ (C++17-clean facade。
   MeshMS 本体は C++20 ビルドだが `cxx_std_20` は PRIVATE)。
 - `ENABLE_MESHMS=ON` はキャッシュ変数: ON/OFF 切替は `task rebuild_libcuemol2`
   (再 configure) が必要。default OFF なのは umbreon と同じ理由 —
