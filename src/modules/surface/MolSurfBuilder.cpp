@@ -29,7 +29,7 @@
 #include <array>
 #include <cmath>
 #include <stdexcept>
-#include <meshms/capi.hpp>
+#include <meshms/meshms.hpp>
 #endif
 
 #include "MolSurfObj.hpp"
