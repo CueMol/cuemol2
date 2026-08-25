@@ -27,6 +27,8 @@ import { RenderImageViewer } from "../panes/RenderImageViewer";
 import { RenderPanel } from "../panels/RenderPanel";
 import { RenderSettingsPane } from "./RenderSettingsPane";
 import { useRenderSettings } from "../../hooks/useRenderSettings";
+import { useHatchTemplate } from "../../hooks/useHatchTemplate";
+import type { HatchLookEditorProps } from "../inspector/HatchLookEditor";
 import { useMovieOutputPrefs } from "../../hooks/useMovieOutputPrefs";
 import { isRenderJobActive } from "../../hooks/useRenderJob";
 import { useRenderWindowClient } from "../../hooks/useRenderWindowClient";
@@ -40,6 +42,46 @@ export const RenderWindowApp: React.FC = () => {
   // the main window); otherwise fall back to the static default (POV-Ray).
   const umbreonAvailable = client.state.umbreonAvailable;
   const settings = useRenderSettings({ umbreonAvailable });
+  // NPR hatch layer editor: the selected style is loaded from the C++ side as
+  // an editable template (through the main window's worker).
+  const isNpr = settings.backend === "umbreon_npr";
+  const hatchTemplate = useHatchTemplate({
+    enabled: isNpr,
+    style: settings.hatchStyle,
+    loaded: settings.hatchLoaded,
+    fetchSpec: client.getHatchStyleSpec,
+    onLoaded: settings.applyHatchTemplate,
+  });
+  const numSetting = (key: string, def: number): number => {
+    const v = Number(settings.backendProps.find((p) => p.key === key)?.value);
+    return Number.isFinite(v) ? v : def;
+  };
+  // The fill under the marks: the Coloring pick, or the style's own base.
+  const coloring = String(settings.backendProps.find((p) => p.key === "hatchColoring")?.value ?? "");
+  const baseIsAlbedo =
+    coloring === "Style default"
+      ? settings.hatch.spec?.ink.base === "albedo"
+      : coloring.includes("color fill");
+  const hatchEditor: HatchLookEditorProps | undefined = isNpr
+    ? {
+        styleName: settings.hatchStyle,
+        density: numSetting("hatchDensity", 1),
+        widthScale: numSetting("hatchWidthScale", 1),
+        supersample: numSetting("supersample", 3),
+        env: { aoEnabled: settings.lighting === "ao", baseIsAlbedo },
+        spec: settings.hatch.spec,
+        dirty: settings.hatchDirty,
+        status: hatchTemplate.status,
+        error: hatchTemplate.error,
+        onLayerChange: settings.updateHatchLayer,
+        onLayerAdd: settings.addHatchLayer,
+        onLayerRemove: settings.removeHatchLayer,
+        onLayerDuplicate: settings.duplicateHatchLayer,
+        onToneChange: settings.updateHatchTone,
+        onInkChange: settings.updateHatchInk,
+        onReset: settings.resetHatchToTemplate,
+      }
+    : undefined;
   // Default the movie output to the app-managed folder and remember the
   // settings across window closes (see hooks/useMovieOutputPrefs.ts).
   const movieOutput = useMovieOutputPrefs(settings.movie, settings.updateMovie);
@@ -307,6 +349,7 @@ export const RenderWindowApp: React.FC = () => {
             onUseCustomDir={movieOutput.selectCustomDir}
             onPickFolder={handlePickFolder}
             movieDisabled={jobActive}
+            hatch={hatchEditor}
           />
         </Allotment.Pane>
       </Allotment>

@@ -78,6 +78,8 @@ function setupApi() {
         exec: (cmd: unknown) => pushCbs.get(IPC.RENDER_WINDOW_EXEC)?.(cmd),
         requestViewSize: (reqId: number) =>
             pushCbs.get(IPC.RENDER_VIEW_SIZE_REQUEST)?.({ reqId }),
+        requestHatchStyle: (reqId: number, style: string) =>
+            pushCbs.get(IPC.RENDER_HATCH_STYLE_REQUEST)?.({ reqId, style }),
         stateUpdates: () =>
             (api.invoke as ReturnType<typeof vi.fn>).mock.calls
                 .filter((c) => c[0] === IPC.RENDER_WINDOW_STATE)
@@ -299,5 +301,42 @@ describe('useRenderWindowBridge', () => {
         });
         h.unmount();
         document.body.removeChild(canvas);
+    });
+});
+
+// Hatch style template round trip: the render window's layer editor asks for
+// a style, the main window resolves it through the worker and replies.
+describe('useRenderWindowBridge hatch style template', () => {
+    const cmWith = (result: unknown) => ({
+        subscribeRenderProgress: vi.fn(() => () => {}),
+        invokeService: vi.fn((name: string) =>
+            name === 'getHatchStyleSpec' ? Promise.resolve(result) : Promise.resolve({ ok: true }),
+        ),
+    });
+
+    it('resolves the style through the worker and replies with the spec', async () => {
+        const { api, requestHatchStyle } = setupApi();
+        const cm = cmWith({ ok: true, spec: 'layer: kind=line\n' });
+        const h = mountBridge(cm);
+        act(() => { requestHatchStyle(5, 'ink-cross'); });
+        await flushPromises();
+        expect(cm.invokeService).toHaveBeenCalledWith('getHatchStyleSpec', { style: 'ink-cross' });
+        expect(api.invoke).toHaveBeenCalledWith(IPC.RENDER_HATCH_STYLE_REPLY, {
+            reqId: 5,
+            result: { ok: true, spec: 'layer: kind=line\n' },
+        });
+        h.unmount();
+    });
+
+    it('replies ok: false without a worker', async () => {
+        const { api, requestHatchStyle } = setupApi();
+        const h = mountBridge(null);
+        act(() => { requestHatchStyle(6, 'manga'); });
+        await flushPromises();
+        const reply = (api.invoke as ReturnType<typeof vi.fn>).mock.calls
+            .find((c) => c[0] === IPC.RENDER_HATCH_STYLE_REPLY)?.[1] as { reqId: number; result: { ok: boolean } };
+        expect(reply.reqId).toBe(6);
+        expect(reply.result.ok).toBe(false);
+        h.unmount();
     });
 });

@@ -19,6 +19,18 @@ export interface RenderSource {
   viewId?: number;
 }
 
+/**
+ * A hand-edited NPR hatch look, as the umbreon spec text the exporter takes.
+ * Present only while the look differs from its style's template; absent, the
+ * style renders with its own layers and tone (the default C++ path).
+ */
+export interface RenderHatchSnapshot {
+  /** `layer:` lines (replace the style's layers). */
+  layersSpec: string;
+  /** `tone:` / `ink:` lines (override the style's tone recipe / ink model). */
+  toneSpec: string;
+}
+
 /** Frozen copy of the render settings used for a result. */
 export interface RenderSettingsSnapshot {
   /** Whether this render produces one image or the animation's frames. */
@@ -28,6 +40,8 @@ export interface RenderSettingsSnapshot {
   backendProps: PropDef[];
   /** Movie settings; only present when mode is "movie". */
   movie?: MovieSettings;
+  /** Edited hatch look (umbreon_npr only, and only while edited). */
+  hatch?: RenderHatchSnapshot;
 }
 
 /**

@@ -425,6 +425,19 @@ LString UmbreonDisplayContext::drainLog()
 #endif
 }
 
+LString UmbreonDisplayContext::hatchStyleSpec(const LString &style)
+{
+#ifdef HAVE_UMBREON
+  umbreon::HatchOptions opt;
+  if (!umbreon::applyHatchStyle(opt, style.c_str()))
+    return LString();
+  return LString(umbreon::hatchStyleToSpec(opt).c_str());
+#else
+  (void)style;
+  return LString();
+#endif
+}
+
 UmbreonDisplayContext::~UmbreonDisplayContext()
 {
 }
@@ -950,24 +963,51 @@ void UmbreonDisplayContext::buildSceneAndOptions(const UmbreonRenderParams &prm)
     // richardson, so a typo degrades to a valid drawing instead of the
     // built-in defaults silently changing the look.
     const std::string style = prm.hatchStyle.c_str();
-    if (!umbreon::applyHatchLook(opt.hatch, style) &&
-        !umbreon::applyHatchPreset(opt.hatch, style)) {
+    if (!umbreon::applyHatchStyle(opt.hatch, style)) {
       umbreon::logMessage(umbreon::LogLevel::Warning,
                           "unknown hatch style '%s'; using richardson",
                           style.c_str());
-      umbreon::applyHatchLook(opt.hatch, "richardson");
+      umbreon::applyHatchStyle(opt.hatch, "richardson");
     }
-    // Density / width are MULTIPLIERS over the style's per-layer values
-    // (density divides every lattice pitch: 2 = twice as many lines/dots).
+    // Hand-edited layers / tone (the GUI's layer editor sends the style it
+    // loaded through hatchStyleSpec() back, edited). Layers replace the
+    // style's, tone / ink keys override; a malformed text is reported and
+    // ignored so the render still runs with the style itself.
+    if (!prm.hatchLayersSpec.isEmpty()) {
+      std::string err;
+      if (!umbreon::applyHatchSpec(opt.hatch, prm.hatchLayersSpec.c_str(),
+                                   umbreon::kHatchSpecLayers, &err))
+        umbreon::logMessage(umbreon::LogLevel::Warning,
+                            "hatch layers spec ignored: %s", err.c_str());
+    }
+    if (!prm.hatchToneSpec.isEmpty()) {
+      std::string err;
+      if (!umbreon::applyHatchSpec(
+              opt.hatch, prm.hatchToneSpec.c_str(),
+              umbreon::kHatchSpecTone | umbreon::kHatchSpecInk, &err))
+        umbreon::logMessage(umbreon::LogLevel::Warning,
+                            "hatch tone spec ignored: %s", err.c_str());
+    }
+    // Ink amount: multipliers over the resolved recipe.
+    if (prm.hatchToneStrength > 0.0)
+      opt.hatch.tone.strength *= float(prm.hatchToneStrength);
+    if (prm.hatchToneCurve > 0.0)
+      opt.hatch.tone.curve *= float(prm.hatchToneCurve);
+    // Density / size are MULTIPLIERS over the per-layer values (density
+    // divides every lattice pitch: 2 = twice as many lines/dots; the size
+    // scales a Line layer's width and a Dot / Stipple layer's dot scale).
     // Scaling instead of overwriting preserves the relative pitches of a
     // multi-layer look, which one absolute pitch would collapse.
     const float density =
         (prm.hatchDensity > 0.0) ? float(prm.hatchDensity) : 1.0f;
-    const float widthScale =
+    const float sizeScale =
         (prm.hatchWidthScale > 0.0) ? float(prm.hatchWidthScale) : 1.0f;
     for (umbreon::HatchLayer &l : opt.hatch.layers) {
       l.spacingPx /= density;
-      l.widthPx *= widthScale;
+      if (l.kind == umbreon::LayerKind::Line)
+        l.widthPx *= sizeScale;
+      else
+        l.dotScale *= sizeScale;
     }
     // Base / ink model overrides (the manual's four coloring patterns).
     // Applied after the style so a coloring pick works on top of ANY style:

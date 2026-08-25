@@ -367,3 +367,41 @@ describe('useRenderWindowClient render history', () => {
         h.unmount();
     });
 });
+
+// The render window asks main for a hatch style's spec text; a failed invoke
+// is folded into the reply shape (the editor shows it, nothing throws).
+describe('useRenderWindowClient.getHatchStyleSpec', () => {
+    afterEach(() => teardownElectronAPI());
+
+    const mountWithInvoke = (invoke: (channel: string, payload?: unknown) => Promise<unknown>) => {
+        const api = setupElectronAPI({
+            onPush: vi.fn(() => () => {}),
+            invoke: vi.fn(invoke),
+        });
+        const h = makeRenderHook(() => useRenderWindowClient());
+        return { api, h };
+    };
+
+    it('invokes RENDER_HATCH_STYLE_GET with the style and returns the reply', async () => {
+        const { api, h } = mountWithInvoke((channel) =>
+            channel === IPC.RENDER_HATCH_STYLE_GET
+                ? Promise.resolve({ ok: true, spec: 'layer: kind=dot\n' })
+                : Promise.resolve(undefined),
+        );
+        const reply = await h.result.getHatchStyleSpec('manga');
+        expect(api.invoke).toHaveBeenCalledWith(IPC.RENDER_HATCH_STYLE_GET, { style: 'manga' });
+        expect(reply).toEqual({ ok: true, spec: 'layer: kind=dot\n' });
+        h.unmount();
+    });
+
+    it('turns a rejected invoke into ok: false', async () => {
+        const { h } = mountWithInvoke((channel) =>
+            channel === IPC.RENDER_HATCH_STYLE_GET
+                ? Promise.reject(new Error('relay down'))
+                : Promise.resolve(undefined),
+        );
+        const reply = await h.result.getHatchStyleSpec('manga');
+        expect(reply).toEqual({ ok: false, error: 'relay down' });
+        h.unmount();
+    });
+});

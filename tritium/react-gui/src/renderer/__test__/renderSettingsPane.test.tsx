@@ -14,7 +14,7 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { act } from 'react';
-import { mountTree } from './helpers/testHarness';
+import { mountTree, openAccordion } from './helpers/testHarness';
 
 void React;
 
@@ -33,6 +33,8 @@ import {
   type RenderMode,
 } from '../data/renderSettings';
 import { RENDER_BACKENDS } from '../data/renderBackends';
+import { parseHatchSpec } from '../data/hatchSpec';
+import type { HatchLookEditorProps } from '../components/inspector/HatchLookEditor';
 
 function mountPane(
   opts: {
@@ -41,6 +43,7 @@ function mountPane(
     movie?: Partial<typeof DEFAULT_MOVIE_SETTINGS>;
     onUseTempDir?: () => void;
     onUseCustomDir?: () => void;
+    hatch?: HatchLookEditorProps;
   } = {},
 ): ReturnType<typeof mountTree> {
   const backend = opts.backend ?? 'povray';
@@ -64,8 +67,32 @@ function mountPane(
       onUseTempDir={opts.onUseTempDir ?? vi.fn()}
       onUseCustomDir={opts.onUseCustomDir ?? vi.fn()}
       onPickFolder={vi.fn()}
+      hatch={opts.hatch}
     />,
   );
+}
+
+/** Props of the NPR hatch layer editor with a three-layer template. */
+function hatchProps(over: Partial<HatchLookEditorProps> = {}): HatchLookEditorProps {
+  return {
+    styleName: 'richardson',
+    density: 1,
+    widthScale: 1,
+    supersample: 3,
+    env: { aoEnabled: false, baseIsAlbedo: false },
+    spec: parseHatchSpec('layer: kind=line\nlayer: kind=dot\nlayer: kind=stipple\ntone: strength=1'),
+    dirty: false,
+    status: 'ready',
+    error: null,
+    onLayerChange: vi.fn(),
+    onLayerAdd: vi.fn(),
+    onLayerRemove: vi.fn(),
+    onLayerDuplicate: vi.fn(),
+    onToneChange: vi.fn(),
+    onInkChange: vi.fn(),
+    onReset: vi.fn(),
+    ...over,
+  };
 }
 
 /** Click the tab button carrying the given label. */
@@ -275,6 +302,120 @@ describe('RenderSettingsPane Image tab backend filtering', () => {
     const text = container.textContent ?? '';
     expect(text).toContain('Post-render alpha blending');
     expect(text).toContain('Pixel labels');
+    unmount();
+  });
+});
+
+// The NPR hatch layer editor is its own "Detail" tab: the Render tab keeps
+// the style pick and its multipliers, the tab holds the loaded style's layers
+// (as rows), Strength / Curve as the only always-visible shading controls,
+// and the template actions. The tab exists only with the editor props (NPR).
+describe('RenderSettingsPane Detail tab', () => {
+  const tabLabels = (container: HTMLElement) =>
+    Array.from(container.querySelectorAll('.mode-bar button')).map((b) => (b.textContent ?? '').trim());
+
+  it('offers the tab only with the editor props', () => {
+    const plain = mountPane({ backend: 'umbreon_npr' });
+    expect(tabLabels(plain.container)).not.toContain('Detail');
+    plain.unmount();
+    const withEditor = mountPane({ backend: 'umbreon_npr', hatch: hatchProps() });
+    expect(tabLabels(withEditor.container)).toContain('Detail');
+    withEditor.unmount();
+  });
+
+  it('shows the layers and the shading section on the tab, not on the Render tab', () => {
+    const { container, unmount } = mountPane({ backend: 'umbreon_npr', hatch: hatchProps() });
+    selectTab(container, 'Render');
+    expect(container.querySelectorAll('.hatch-layer').length).toBe(0);
+    expect(container.textContent ?? '').toContain('Style');
+    selectTab(container, 'Detail');
+    const text = container.textContent ?? '';
+    expect(text).toContain('Style template: richardson');
+    expect(text).toContain('Layers');
+    expect(text).toContain('Shading');
+    expect(container.querySelectorAll('.hatch-layer').length).toBe(3);
+    // Strength / Curve stay visible; the rest waits under Advanced.
+    expect(text).toContain('Strength');
+    expect(text).toContain('Curve');
+    expect(text).not.toContain('Contour darkening');
+    // Line rows show the width, dot rows the dot scale.
+    expect(text).toContain('Width');
+    expect(text).toContain('Dot scale');
+    unmount();
+  });
+
+  it('wires the add button and gates Reset on an edited look', () => {
+    const props = hatchProps();
+    const { container, unmount } = mountPane({ backend: 'umbreon_npr', hatch: props });
+    selectTab(container, 'Detail');
+    const buttons = Array.from(container.querySelectorAll('button'));
+    const addLine = buttons.find((b) => (b.textContent ?? '').trim() === 'Line');
+    expect(addLine).toBeDefined();
+    act(() => { addLine!.click(); });
+    expect(props.onLayerAdd).toHaveBeenCalledWith('line');
+    const reset = buttons.find((b) => (b.textContent ?? '').includes('Reset to style')) as HTMLButtonElement;
+    expect(reset.disabled).toBe(true);
+    unmount();
+    const edited = mountPane({ backend: 'umbreon_npr', hatch: hatchProps({ dirty: true }) });
+    selectTab(edited.container, 'Detail');
+    const reset2 = Array.from(edited.container.querySelectorAll('button'))
+      .find((b) => (b.textContent ?? '').includes('Reset to style')) as HTMLButtonElement;
+    expect(reset2.disabled).toBe(false);
+    expect(edited.container.textContent ?? '').toContain('Edited');
+    edited.unmount();
+  });
+
+  it('shows the Render tab multipliers as effective values, only when they are not 1', () => {
+    const neutral = mountPane({ backend: 'umbreon_npr', hatch: hatchProps() });
+    selectTab(neutral.container, 'Detail');
+    expect(neutral.container.textContent ?? '').not.toContain('Render tab multipliers');
+    expect(neutral.container.querySelectorAll('.hatch-effective').length).toBe(0);
+    neutral.unmount();
+    const scaled = mountPane({
+      backend: 'umbreon_npr',
+      hatch: hatchProps({
+        density: 2,
+        widthScale: 1.5,
+        spec: parseHatchSpec('layer: kind=line,spacing=10,width=1\nlayer: kind=dot,spacing=5,dotscale=2'),
+      }),
+    });
+    selectTab(scaled.container, 'Detail');
+    const text = scaled.container.textContent ?? '';
+    expect(text).toContain('Mark density x2, Mark width x1.5');
+    // Pitch / density, line width and dot scale * width scale.
+    expect(text).toContain('effective 5 px at Mark density x2');
+    expect(text).toContain('effective 1.5 px at Mark width x1.5');
+    expect(text).toContain('effective 3 at Mark width x1.5');
+    scaled.unmount();
+  });
+
+  it('hides fields a layer kind ignores and flags a pitch pinned at the minimum', () => {
+    const { container, unmount } = mountPane({
+      backend: 'umbreon_npr',
+      hatch: hatchProps({
+        supersample: 3,
+        spec: parseHatchSpec('layer: kind=stipple,spacing=0.5'),
+      }),
+    });
+    selectTab(container, 'Detail');
+    openAccordion(container, 'Randomness / Advanced');
+    const text = container.textContent ?? '';
+    expect(text).toContain('Shape exponent');
+    expect(text).not.toContain('Nesting levels');
+    expect(text).not.toContain('Merge to solid');
+    // 0.5 px * ss 3 = 1.5 px on the ink grid: below the 2 px minimum.
+    expect(text).toContain('minimum pitch');
+    unmount();
+  });
+
+  it('shows the load status while the template is missing', () => {
+    const { container, unmount } = mountPane({
+      backend: 'umbreon_npr',
+      hatch: hatchProps({ spec: null, status: 'error', error: 'unknown hatch style: x' }),
+    });
+    selectTab(container, 'Detail');
+    expect(container.textContent ?? '').toContain('unknown hatch style: x');
+    expect(container.querySelectorAll('.hatch-layer').length).toBe(0);
     unmount();
   });
 });

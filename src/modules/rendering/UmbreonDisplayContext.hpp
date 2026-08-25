@@ -100,8 +100,22 @@ namespace render {
     /// (not an absolute pitch) so the relative pitches of a multi-layer look
     /// are preserved.
     double hatchDensity = 1.0;
-    /// Mark width multiplier over the style's per-layer widths.
+    /// Mark size multiplier over the style's per-layer sizes: the line width
+    /// of Line layers, the dot scale of Dot / Stipple layers.
     double hatchWidthScale = 1.0;
+    /// Hand-edited mark layers as umbreon spec text ("layer:" lines; see
+    /// umbreon applyHatchSpec). Applied after the style, so a non-empty text
+    /// REPLACES the style's layers; empty keeps them. A malformed text warns
+    /// into the render log and is ignored.
+    qlib::LString hatchLayersSpec;
+    /// Hand-edited tone recipe / ink model as spec text ("tone:" / "ink:"
+    /// lines), overriding the keys it names; empty keeps the style's own.
+    qlib::LString hatchToneSpec;
+    /// Ink-amount multipliers over the resolved tone recipe (umbreon
+    /// ToneRecipe::strength / curve): strength scales the coverage a display
+    /// tone asks for, curve bends the response (> 1 = lighter mid tones).
+    double hatchToneStrength = 1.0;
+    double hatchToneCurve = 1.0;
     /// Base / ink model overrides (umbreon --hatch-base / --hatch-ink). The
     /// four combinations are the manual's coloring patterns: paper+fixed =
     /// pen figure, paper+albedo = colored pencil (richardson), albedo+fixed =
@@ -195,6 +209,13 @@ namespace render {
     /// it over as newline-separated text for the host's render log. Empty when
     /// nothing was reported. Safe to call from any thread.
     static LString drainLog();
+
+    /// Resolve a hatch style name (look or mark preset, as hatchStyle takes
+    /// it) on fresh options and return it as umbreon spec text: the
+    /// "layer:" / "tone:" / "ink:" lines a host loads as an editable
+    /// template and sends back through hatchLayersSpec / hatchToneSpec.
+    /// Empty for an unknown name, or when built without umbreon.
+    static LString hatchStyleSpec(const LString &style);
 
     void finishAsyncRender(int &outWidth, int &outHeight, int &outNcomp,
                            std::vector<unsigned char> &outRGBA,

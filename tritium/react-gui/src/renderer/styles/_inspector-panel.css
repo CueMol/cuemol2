@@ -419,3 +419,50 @@
 .atomintr-stipple-caption {
   color: var(--text-secondary);
 }
+
+/* ═══════════════════════════════════════════════════════════
+   NPR hatch layer editor (render settings > Hatching)
+   ═══════════════════════════════════════════════════════════ */
+
+.hatch-look {
+  display: flex;
+  flex-direction: column;
+  gap: var(--form-section-gap);
+}
+
+.hatch-look-actions {
+  align-items: center;
+}
+
+.hatch-layer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--form-row-gap);
+}
+
+.hatch-layer-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.hatch-layer-head .type-row {
+  flex: 1;
+  min-width: 0;
+}
+
+.hatch-look-status {
+  color: var(--text-muted);
+}
+
+.hatch-look-status.is-error {
+  color: var(--accent-red);
+}
+
+.hatch-look-edited {
+  color: var(--text-muted);
+}
+
+.hatch-effective {
+  color: var(--text-muted);
+}

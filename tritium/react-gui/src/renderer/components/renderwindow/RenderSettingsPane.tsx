@@ -1,13 +1,15 @@
 /**
  * @file components/renderwindow/RenderSettingsPane.tsx
  * @description Right pane of the Rendering window: the render settings, split
- * into two tabs behind one header.
+ * into tabs behind one header.
  *
  * "Image" holds everything describing the produced file (size, output toggles,
  * and the movie output settings in movie mode) and opens first, since size is
  * what a render is set up around; "Render" holds the backend-driven groups
  * (Camera / Quality / Edges / the backend's own). The split keeps a single
- * scrolling column short enough to scan in a narrow pane.
+ * scrolling column short enough to scan in a narrow pane. The Umbreon (NPR)
+ * backend adds a "Detail" tab with the hatch layer editor (the Render tab's
+ * Hatching group keeps the style pick and its simple multipliers).
  *
  * The header and the tab strip are the shared .panel-header / .mode-bar roles
  * the main window's Inspector uses, so the two panes are titled and switched
@@ -21,6 +23,7 @@ import React, { useState } from "react";
 import { SegmentField } from "../../h3-kit/form";
 import { AppIcon } from "../AppIcon";
 import { RenderSettingsEditor } from "../inspector/RenderSettingsEditor";
+import { HatchLookEditor, type HatchLookEditorProps } from "../inspector/HatchLookEditor";
 import { RenderImageTab } from "./RenderImageTab";
 import { RENDER_BACKENDS } from "../../data/renderBackends";
 import type { PropDef } from "../../data/rendererProperties";
@@ -34,7 +37,7 @@ import type {
 } from "../../data/renderSettings";
 
 /** Which settings tab is visible. */
-type RenderSettingsTab = "render" | "image";
+type RenderSettingsTab = "render" | "image" | "hatch";
 
 interface RenderSettingsPaneProps {
   /** Currently selected backend (drives the Render tab's groups). */
@@ -73,6 +76,8 @@ interface RenderSettingsPaneProps {
   onPickFolder?: () => void;
   /** Disable the movie controls (a render is in flight). */
   movieDisabled?: boolean;
+  /** NPR hatch layer editor: adds the "Detail" tab (umbreon_npr only). */
+  hatch?: HatchLookEditorProps;
 }
 
 export const RenderSettingsPane: React.FC<RenderSettingsPaneProps> = ({
@@ -94,8 +99,12 @@ export const RenderSettingsPane: React.FC<RenderSettingsPaneProps> = ({
   onUseCustomDir,
   onPickFolder,
   movieDisabled = false,
+  hatch,
 }) => {
   const [tab, setTab] = useState<RenderSettingsTab>("image");
+  // The Detail tab exists only while the NPR backend is active; leaving the
+  // backend while on it falls back to the Render tab.
+  const activeTab: RenderSettingsTab = tab === "hatch" && !hatch ? "render" : tab;
 
   return (
     <div className="render-window-settings">
@@ -106,17 +115,22 @@ export const RenderSettingsPane: React.FC<RenderSettingsPaneProps> = ({
 
       <div className="render-window-settings-tabbar mode-bar">
         <SegmentField<RenderSettingsTab>
-          value={tab}
+          value={activeTab}
           onValueChange={setTab}
           options={[
             { label: "Image", value: "image" },
             { label: "Render", value: "render" },
+            ...(hatch ? [{ label: "Detail", value: "hatch" as const }] : []),
           ]}
         />
       </div>
 
       <div className="render-window-settings-body">
-        {tab === "render" ? (
+        {activeTab === "hatch" && hatch ? (
+          <div className="insp-properties-tab">
+            <HatchLookEditor {...hatch} />
+          </div>
+        ) : activeTab === "render" ? (
           <RenderSettingsEditor
             backend={backend}
             commonProps={commonProps}

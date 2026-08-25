@@ -517,3 +517,40 @@ describe('umbreonNprBackend.beginInProcess', () => {
         expect(exporter.useGI).toBe(true)
     })
 })
+
+// The edited hatch look (layer editor) rides the snapshot as spec text and is
+// forwarded verbatim; without it the exporter keeps the style's own layers.
+describe('umbreonNprBackend hatch spec forwarding', () => {
+    const base = (): RenderSettingsSnapshot => ({
+        mode: 'still',
+        backend: 'umbreon_npr',
+        commonProps: [p('width', 64), p('height', 64), p('unit', 'px'), p('dpi', 600)],
+        backendProps: [p('hatchStyle', 'richardson')],
+    })
+    const begin = (backend: typeof umbreonBackend, snapshot: RenderSettingsSnapshot) => {
+        const exporter = makeExporter()
+        const ctx = { strMgr: { createHandler: vi.fn(() => exporter) } } as unknown as WorkerContext
+        backend.beginInProcess!(ctx, {} as never, snapshot, '/o.png')
+        return exporter
+    }
+
+    it('forwards the layers and tone spec text verbatim', () => {
+        const exporter = begin(umbreonNprBackend, {
+            ...base(),
+            hatch: { layersSpec: 'layer: kind=line,width=2\n', toneSpec: 'tone: strength=2\nink: tonefog=off\n' },
+        })
+        expect(exporter.hatchLayersSpec).toBe('layer: kind=line,width=2\n')
+        expect(exporter.hatchToneSpec).toBe('tone: strength=2\nink: tonefog=off\n')
+    })
+
+    it('sends nothing for an unedited look, and never on the plain umbreon backend', () => {
+        expect(begin(umbreonNprBackend, base()).hatchLayersSpec).toBeUndefined()
+        const plain = begin(umbreonBackend, {
+            ...base(),
+            backend: 'umbreon',
+            hatch: { layersSpec: 'layer: kind=line\n', toneSpec: '' },
+        })
+        expect(plain.hatchLayersSpec).toBeUndefined()
+        expect(plain.hatchEnable).toBeUndefined()
+    })
+})

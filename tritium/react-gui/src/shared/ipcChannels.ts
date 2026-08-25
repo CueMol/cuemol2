@@ -142,6 +142,9 @@ export const IPC = {
   RENDER_VIEW_CAMERA_GET:     'render-window:view-camera-get',     // invoke: render window -> main
   RENDER_VIEW_CAMERA_REQUEST: 'render-window:view-camera-request', // push:   main -> main window
   RENDER_VIEW_CAMERA_REPLY:   'render-window:view-camera-reply',   // invoke: main window -> main
+  RENDER_HATCH_STYLE_GET:     'render-window:hatch-style-get',     // invoke: render window -> main
+  RENDER_HATCH_STYLE_REQUEST: 'render-window:hatch-style-request', // push:   main -> main window
+  RENDER_HATCH_STYLE_REPLY:   'render-window:hatch-style-reply',   // invoke: main window -> main
   RENDER_HISTORY_STORE:     'render-window:history-store',     // invoke: main window -> main
   RENDER_HISTORY_READ:      'render-window:history-read',      // invoke: render window -> main
   RENDER_IMAGE_SAVE:        'render-window:image-save',        // invoke: render window -> main

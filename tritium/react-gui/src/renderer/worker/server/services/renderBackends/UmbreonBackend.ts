@@ -166,6 +166,13 @@ function makeExporter(
       ? strVal(ub, "hatchPaperColor", "#ffffff")
       : "";
     exporter.hatchDefaultEdges = boolVal(ub, "hatchDefaultEdges", true);
+    // A hand-edited look (the layer editor). The snapshot carries it only
+    // while the look differs from the style's template, so an untouched style
+    // renders through the C++ side's own layers and tone, byte-identically.
+    if (snapshot.hatch) {
+      exporter.hatchLayersSpec = snapshot.hatch.layersSpec;
+      exporter.hatchToneSpec = snapshot.hatch.toneSpec;
+    }
   } else {
     // Diffuse global illumination (pt1 path-traced integrator).
     exporter.useGI = boolVal(ub, "useGI", false);

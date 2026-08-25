@@ -51,4 +51,10 @@ export interface PropDef {
    * used by the render-settings width/height fields.
    */
   inline?: boolean;
+  /**
+   * Numeric props only: render the slider + number box + stepper row
+   * (`SliderField`) instead of the drag field. For settings adjusted by feel
+   * within a known range (the NPR hatch multipliers).
+   */
+  slider?: boolean;
 }

@@ -22,6 +22,7 @@ import { IPC } from '../shared/ipcChannels'
 import type {
   RenderImageRef,
   RenderViewCamera,
+  HatchStyleSpecReply,
   RenderWindowMode,
   ViewSizePx,
 } from '../shared/ipcTypes'
@@ -175,6 +176,37 @@ export function registerRenderWindowIpc(deps: RenderWindowIpcDeps): void {
 
   handleInvoke(IPC.RENDER_VIEW_CAMERA_REPLY, (_event, { reqId, camera }) => {
     pendingCam.get(reqId)?.(camera)
+  })
+
+  // --- Hatch style template round trip ---
+  //
+  // Same shape again: the NPR layer editor loads the selected hatch style as
+  // spec text, which only the main window's worker (the C++ side) can
+  // resolve. A timeout reads as a failed load, not as an empty style.
+
+  let nextHatchReqId = 1
+  const pendingHatch = new Map<number, (result: HatchStyleSpecReply) => void>()
+
+  handleInvoke(IPC.RENDER_HATCH_STYLE_GET, (_event, { style }) => {
+    const unavailable: HatchStyleSpecReply = { ok: false, error: 'main window unavailable' }
+    if (mainWindow.isDestroyed()) return Promise.resolve(unavailable)
+    const reqId = nextHatchReqId++
+    return new Promise<HatchStyleSpecReply>((resolve) => {
+      const timer = setTimeout(() => {
+        pendingHatch.delete(reqId)
+        resolve({ ok: false, error: 'timeout' })
+      }, VIEW_SIZE_TIMEOUT_MS)
+      pendingHatch.set(reqId, (result) => {
+        clearTimeout(timer)
+        pendingHatch.delete(reqId)
+        resolve(result)
+      })
+      mainWindow.webContents.send(IPC.RENDER_HATCH_STYLE_REQUEST, { reqId, style })
+    })
+  })
+
+  handleInvoke(IPC.RENDER_HATCH_STYLE_REPLY, (_event, { reqId, result }) => {
+    pendingHatch.get(reqId)?.(result)
   })
 
   // --- Render history ---
