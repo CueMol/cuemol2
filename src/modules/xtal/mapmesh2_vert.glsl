@@ -17,8 +17,11 @@ layout(std140) uniform DrawParamsBlock {
     vec4  u_color;     // offset 16
 };
 
-// Volume data field texture buffer (sampler must stay outside UBO)
-uniform usamplerBuffer dataFieldTex;
+// Volume data field: R8 2D lookup texture (sampler must stay outside UBO).
+// The linear voxel index (column fastest) wraps onto
+// (index % width, index / width) with the width read back from the texture;
+// buffer textures do not exist in WebGL2 / GLSL ES 3.00.
+uniform highp sampler2D dataFieldTex;
 
 // Marching-cubes lookup tables (static arrays; kept as regular uniforms)
 uniform ivec3 ivdel[12];
@@ -30,7 +33,10 @@ out float v_fogCoord;
 uint getDensity(ivec3 iv)
 {
     int index = iv.x + ncol * (iv.y + nrow * iv.z);
-    return uint(texelFetch(dataFieldTex, index).r);
+    int w = textureSize(dataFieldTex, 0).x;
+    ivec2 tc = ivec2(index % w, index / w);
+    // R8 texel: normalized 0..1, back to the byte value
+    return uint(texelFetch(dataFieldTex, tc, 0).r * 255.0 + 0.5);
 }
 
 /// get the crossing value between d0 and d1 (uses isolevel)

@@ -148,9 +148,13 @@ boundary で切り取った region を budget 由来の stride で** 表示し�
   `ensureCrossArraySize` で拡張) を埋める。描画側は `translate(m_nSt*)` の後に `scale(m_nStep)` を掛ける。
   display list しか持たないので、`updateViewRegion()` の `invalidateGeomCache()` = display cache 破棄で
   次フレームに再生成される
-- `GLSLMapMeshRenderer2::make3DTexMapFull()`: 同じ region/stride で buffer texture を作る
+- `GLSLMapMeshRenderer2::make3DTexMapFull()`: 同じ region/stride で voxel block を GPU に上げる
   (`extractBlockBytes` で取り出すだけなので再構築は軽い)。box モードの `maxExtent` は hardcode 100 ではなく
-  `bufsize` から出す
+  `bufsize` から出す。voxel block は `MapBufTex` が **R8 の 2D lookup texture** (`gfx::DataTexture`;
+  linear index を幅 4096 の row-major に巻く) として upload し、vertex shader (`mapmesh2_vert.glsl`) は
+  `textureSize()` / `texelFetch` で参照する。以前の buffer texture (`usamplerBuffer`) は WebGL2 / GLSL ES 3.00
+  に無く、tritium (`ElecDisplayContext` は `BufTexRep` 未実装) では shader が compile できず何も描けなかった。
+  data texture は immutable なので region が変わるたびに作り直す
 - `extractBlock` / `extractBlockBytes` (`ScalarObject` 既定 = `atFloat/atByte` 走査; `DensityMap` は行ポインタ +
   LUT + TBB): map-local index の strided sub-block を連続配列にコピー。範囲外は PBC なら剰余で wrap、
   そうでなければ fill

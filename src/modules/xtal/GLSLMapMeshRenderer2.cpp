@@ -141,7 +141,9 @@ void GLSLMapMeshRenderer2::unloading()
     delete m_pGpuPrim;
     m_pGpuPrim = nullptr;
 
-    // m_mapBufTex destructor handles GPU resource cleanup
+    // release the lookup texture while the view context is still alive
+    m_mapBufTex.invalidate();
+    m_bMapTexOK = false;
 
     super_t::unloading();
 }
@@ -235,21 +237,10 @@ void GLSLMapMeshRenderer2::make3DTexMap(DisplayContext *pdc, ScalarObject *pMap,
     int nrow = int(vmax.y() - vmin.y());
     int nsec = int(vmax.z() - vmin.z());
 
-    bool bReuse;
     MapBufTex::DataArray &maptmp = m_mapBufTex.m_data;
-
-    if (qlib::abs(maptmp.cols() - ncol) < 1 &&
-        qlib::abs(maptmp.rows() - nrow) < 1 &&
-        qlib::abs(maptmp.secs() - nsec) < 1) {
-        MB_DPRINTLN("reuse texture");
-        ncol = maptmp.cols();
-        nrow = maptmp.rows();
-        nsec = maptmp.secs();
-        bReuse = true;
-    } else {
+    if (int(maptmp.cols()) != ncol || int(maptmp.rows()) != nrow ||
+        int(maptmp.secs()) != nsec)
         maptmp.resize(ncol, nrow, nsec);
-        bReuse = false;
-    }
 
     m_nActCol = ncol;
     m_nActRow = nrow;
@@ -266,12 +257,8 @@ void GLSLMapMeshRenderer2::make3DTexMap(DisplayContext *pdc, ScalarObject *pMap,
                 maptmp.at(i, j, k) = getMap(pMap, stcol + i, strow + j, stsec + k);
             }
 
-    // Sync to GPU
-    if (!bReuse || !m_mapBufTex.isValid()) {
-        m_mapBufTex.create(pdc);
-    } else {
-        m_mapBufTex.update();
-    }
+    // Sync to GPU (the lookup texture is immutable: re-created per region)
+    if (!m_mapBufTex.create(pdc)) return;
 
     {
         const double siglevel = getSigLevel();
@@ -314,9 +301,9 @@ void GLSLMapMeshRenderer2::make3DTexMapFull(DisplayContext *pdc, ScalarObject *p
     const int nn[3] = {rc.span / s + 1, rr.span / s + 1, rs.span / s + 1};
 
     MapBufTex::DataArray &maptmp = m_mapBufTex.m_data;
-    const bool bReuse = (maptmp.cols() == nn[0] && maptmp.rows() == nn[1] &&
-                         maptmp.secs() == nn[2]);
-    if (!bReuse) maptmp.resize(nn[0], nn[1], nn[2]);
+    if (int(maptmp.cols()) != nn[0] || int(maptmp.rows()) != nn[1] ||
+        int(maptmp.secs()) != nn[2])
+        maptmp.resize(nn[0], nn[1], nn[2]);
 
     ScalarObject::MapBlockSpec sp;
     sp.start[0] = rc.start - st[0];
@@ -340,11 +327,8 @@ void GLSLMapMeshRenderer2::make3DTexMapFull(DisplayContext *pdc, ScalarObject *p
     const int chi[3] = {rc.start + rc.span, rr.start + rr.span, rs.start + rs.span};
     setCurRegion(clo, chi, s);
 
-    if (!bReuse || !m_mapBufTex.isValid()) {
-        m_mapBufTex.create(pdc);
-    } else {
-        m_mapBufTex.update();
-    }
+    // Sync to GPU (the lookup texture is immutable: re-created per region)
+    if (!m_mapBufTex.create(pdc)) return;
 
     {
         const double siglevel = getSigLevel();
