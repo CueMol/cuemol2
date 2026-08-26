@@ -21,7 +21,7 @@
  */
 
 import React, { useEffect, useState } from "react";
-import { NumRow, SelRow, resetProps } from "./RendererCommonSection";
+import { NumRow, NumInputRow, BoolRow, MappedEnumRow, SelRow, resetProps } from "./RendererCommonSection";
 import { PropertyField, SelectField, SwitchField } from "../../h3-kit/form";
 import { objectFilters } from "../../h3-kit/ObjectSelect";
 import { useCueMol } from "../../hooks/useCueMol";
@@ -280,6 +280,107 @@ export const LimitDisplayRows: React.FC<LimitDisplayRowsProps> = ({
           unit="Å"
           disabled={!limitOn}
         />
+      )}
+    </>
+  );
+};
+
+// --- Region / level of detail (cryo-EM map mode) ---
+
+/** Display labels of the `region_mode` enum (raw C++ IDs stay the values). */
+export const REGION_MODE_LABELS: Record<string, string> = {
+  auto: "Auto",
+  box: "Box around center",
+  full: "Full map",
+};
+const REGION_MODE_ORDER = ["auto", "box", "full"];
+
+/** Display labels of the `lod` enum (marching / sampling stride). */
+export const LOD_LABELS: Record<string, string> = {
+  auto: "Auto",
+  step1: "1 (full resolution)",
+  step2: "2",
+  step4: "4",
+  step8: "8",
+};
+const LOD_ORDER = ["auto", "step1", "step2", "step4", "step8"];
+
+/**
+ * Effective region policy of a map renderer from its entries: the
+ * read-only `region_mode_resolved` when the addon exposes it, else the raw
+ * `region_mode` (an explicit full; "auto" is treated as box).
+ */
+export function effectiveRegionMode(entries: GenericPropEntry[]): "box" | "full" {
+  const resolved = entries.find((e) => e.key === "region_mode_resolved");
+  if (resolved) return String(resolved.value) === "full" ? "full" : "box";
+  const raw = entries.find((e) => e.key === "region_mode");
+  return raw && String(raw.value) === "full" ? "full" : "box";
+}
+
+interface RegionLodRowsProps {
+  entries: GenericPropEntry[];
+  onSet: RendererPropSectionProps["onSet"];
+  onReset: RendererPropSectionProps["onReset"];
+  /** Show the `zoom_refine` switch (isosurf only) */
+  showZoomRefine?: boolean;
+}
+
+/**
+ * The cryo-EM map mode rows shared by the map renderers: "Region"
+ * (`region_mode`), "Level of detail" (`lod`), and, in the full region only,
+ * "LoD budget" (`lod_budget`) and optionally "Refine on zoom" (`zoom_refine`).
+ * Each row renders only when its property exists on the renderer.
+ */
+export const RegionLodRows: React.FC<RegionLodRowsProps> = ({
+  entries,
+  onSet,
+  onReset,
+  showZoomRefine,
+}) => {
+  const get = (key: string) => entries.find((e) => e.key === key);
+  const regionMode = get("region_mode");
+  const lod = get("lod");
+  const lodBudget = get("lod_budget");
+  const zoomRefine = get("zoom_refine");
+  const isFull = effectiveRegionMode(entries) === "full";
+
+  return (
+    <>
+      {regionMode && (
+        <MappedEnumRow
+          entry={regionMode}
+          label="Region"
+          labels={REGION_MODE_LABELS}
+          options={REGION_MODE_ORDER}
+          onSet={onSet}
+          onReset={onReset}
+        />
+      )}
+      {lod && (
+        <MappedEnumRow
+          entry={lod}
+          label="Level of detail"
+          labels={LOD_LABELS}
+          options={LOD_ORDER}
+          onSet={onSet}
+          onReset={onReset}
+        />
+      )}
+      {lodBudget && isFull && (
+        <NumInputRow
+          key={`lod_budget:${lodBudget.value}`}
+          entry={lodBudget}
+          label="LoD budget"
+          onSet={onSet}
+          onReset={onReset}
+          min={1}
+          max={256}
+          step={1}
+          unit="Mcell"
+        />
+      )}
+      {showZoomRefine && zoomRefine && isFull && (
+        <BoolRow entry={zoomRefine} label="Refine on zoom" onSet={onSet} onReset={onReset} />
       )}
     </>
   );

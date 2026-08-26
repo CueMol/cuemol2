@@ -19,6 +19,64 @@ ScalarObject::~ScalarObject()
 {
 }
 
+namespace {
+  inline int wrapIndex(int x, int n)
+  {
+    const int r = x % n;
+    return (r < 0) ? r + n : r;
+  }
+}
+
+void ScalarObject::extractBlock(const MapBlockSpec &spec, bool pbc, float fill,
+                                float *out) const
+{
+  const int nc = getColNo(), nr = getRowNo(), ns = getSecNo();
+  const int s = (spec.step < 1) ? 1 : spec.step;
+  size_t o = 0;
+  for (int ko = 0; ko < spec.size[2]; ++ko) {
+    const int k = spec.start[2] + ko * s;
+    for (int jo = 0; jo < spec.size[1]; ++jo) {
+      const int j = spec.start[1] + jo * s;
+      for (int io = 0; io < spec.size[0]; ++io, ++o) {
+        const int i = spec.start[0] + io * s;
+        if (pbc) {
+          out[o] = (nc > 0 && nr > 0 && ns > 0)
+            ? float(atFloat(wrapIndex(i, nc), wrapIndex(j, nr), wrapIndex(k, ns)))
+            : fill;
+        }
+        else {
+          out[o] = isInBoundary(i, j, k) ? float(atFloat(i, j, k)) : fill;
+        }
+      }
+    }
+  }
+}
+
+void ScalarObject::extractBlockBytes(const MapBlockSpec &spec, bool pbc,
+                                     unsigned char fill, unsigned char *out) const
+{
+  const int nc = getColNo(), nr = getRowNo(), ns = getSecNo();
+  const int s = (spec.step < 1) ? 1 : spec.step;
+  size_t o = 0;
+  for (int ko = 0; ko < spec.size[2]; ++ko) {
+    const int k = spec.start[2] + ko * s;
+    for (int jo = 0; jo < spec.size[1]; ++jo) {
+      const int j = spec.start[1] + jo * s;
+      for (int io = 0; io < spec.size[0]; ++io, ++o) {
+        const int i = spec.start[0] + io * s;
+        if (pbc) {
+          out[o] = (nc > 0 && nr > 0 && ns > 0)
+            ? atByte(wrapIndex(i, nc), wrapIndex(j, nr), wrapIndex(k, ns))
+            : fill;
+        }
+        else {
+          out[o] = isInBoundary(i, j, k) ? atByte(i, j, k) : fill;
+        }
+      }
+    }
+  }
+}
+
 void ScalarObject::calcBaseHistogram()
 {
   m_dHisMin = getMinDensity();

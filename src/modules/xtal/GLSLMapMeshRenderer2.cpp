@@ -7,6 +7,7 @@
 
 #include "GLSLMapMeshRenderer2.hpp"
 #include "DensityMap.hpp"
+#include "MapLod.hpp"
 
 #include <qsys/ScrEventManager.hpp>
 #include <qsys/ViewEvent.hpp>
@@ -24,6 +25,9 @@ GLSLMapMeshRenderer2::GLSLMapMeshRenderer2() : super_t()
 {
     m_bChkShaderDone = false;
     m_nBufSize = 100;
+    m_nLod = LOD_AUTO;
+    m_nLodBudget = 16;
+    m_nStep = 1;
     m_lw = 1.0;
     m_bPBC = false;
     m_bAutoUpdate = true;
@@ -89,6 +93,13 @@ void GLSLMapMeshRenderer2::viewChanged(qsys::ViewEvent &ev)
 
     Vector4D c = pView->getViewCenter();
 
+    if (getEffectiveRegionMode() == REGION_FULL) {
+        // the whole block is shown: follow the view without rebuilding
+        setCenterQuiet(c);
+        setDefaultPropFlag("center", false);
+        return;
+    }
+
     if (m_bDragUpdate) {
         if (nType == qsys::ViewEvent::VWE_PROPCHG ||
             nType == qsys::ViewEvent::VWE_PROPCHG_DRG) {
@@ -146,6 +157,12 @@ void GLSLMapMeshRenderer2::invalidateDisplayCache()
 void GLSLMapMeshRenderer2::make3DTexMap(DisplayContext *pdc, ScalarObject *pMap,
                                         DensityMap *pXtal)
 {
+    if (getEffectiveRegionMode() == REGION_FULL) {
+        make3DTexMapFull(pdc, pMap);
+        return;
+    }
+    m_nStep = 1;
+
     const Vector4D cent = getCenter();
     const double extent = getExtent();
 
@@ -272,6 +289,74 @@ void GLSLMapMeshRenderer2::make3DTexMap(DisplayContext *pdc, ScalarObject *pMap,
     m_bMapTexOK = true;
 }
 
+void GLSLMapMeshRenderer2::make3DTexMapFull(DisplayContext *pdc, ScalarObject *pMap)
+{
+    // Full region mode: the whole block at the budget-derived stride
+    // (aligned to the block start), copied into the buffer texture with
+    // extractBlockBytes(); no periodic wrap.
+    m_bPBC = false;
+
+    m_nMapColNo = pMap->getColNo();
+    m_nMapRowNo = pMap->getRowNo();
+    m_nMapSecNo = pMap->getSecNo();
+
+    const int st[3] = {pMap->getStartCol(), pMap->getStartRow(), pMap->getStartSec()};
+    const int n[3] = {pMap->getColNo(), pMap->getRowNo(), pMap->getSecNo()};
+    if (n[0] <= 0 || n[1] <= 0 || n[2] <= 0) return;
+
+    int s = m_nLod;
+    if (s == LOD_AUTO)
+        s = lodStepForBudget(n[0], n[1], n[2], (long long) m_nLodBudget << 20);
+    if (s < 1) s = 1;
+
+    const LodRange rc = lodAlignRange(st[0], st[0] + n[0] - 1, st[0], n[0], s);
+    const LodRange rr = lodAlignRange(st[1], st[1] + n[1] - 1, st[1], n[1], s);
+    const LodRange rs = lodAlignRange(st[2], st[2] + n[2] - 1, st[2], n[2], s);
+    const int nn[3] = {rc.span / s + 1, rr.span / s + 1, rs.span / s + 1};
+
+    MapBufTex::DataArray &maptmp = m_mapBufTex.m_data;
+    const bool bReuse = (maptmp.cols() == nn[0] && maptmp.rows() == nn[1] &&
+                         maptmp.secs() == nn[2]);
+    if (!bReuse) maptmp.resize(nn[0], nn[1], nn[2]);
+
+    ScalarObject::MapBlockSpec sp;
+    sp.start[0] = rc.start - st[0];
+    sp.start[1] = rr.start - st[1];
+    sp.start[2] = rs.start - st[2];
+    sp.size[0] = nn[0];
+    sp.size[1] = nn[1];
+    sp.size[2] = nn[2];
+    sp.step = s;
+    pMap->extractBlockBytes(sp, false, 0, &maptmp.at(0, 0, 0));
+
+    m_nStCol = rc.start;
+    m_nStRow = rr.start;
+    m_nStSec = rs.start;
+    m_nActCol = nn[0];
+    m_nActRow = nn[1];
+    m_nActSec = nn[2];
+    m_nStep = s;
+
+    if (!bReuse || !m_mapBufTex.isValid()) {
+        m_mapBufTex.create(pdc);
+    } else {
+        m_mapBufTex.update();
+    }
+
+    {
+        const double siglevel = getSigLevel();
+        const double level = pMap->getRmsdDensity() * siglevel;
+        double lvtmp = floor((level - pMap->getLevelBase()) / pMap->getLevelStep());
+        unsigned int lv = (unsigned int)lvtmp;
+        if (lvtmp < 0) lv = 0;
+        if (lvtmp > 0xFF) lv = 0xFF;
+        m_isolevel = lv;
+    }
+
+    MB_DPRINTLN("GLSLMapMesh2> full region %dx%dx%d samples, step %d", nn[0], nn[1], nn[2], s);
+    m_bMapTexOK = true;
+}
+
 void GLSLMapMeshRenderer2::display(DisplayContext *pdc)
 {
     if (!m_bChkShaderDone) initShader(pdc);
@@ -314,6 +399,9 @@ void GLSLMapMeshRenderer2::display(DisplayContext *pdc)
 
     vtmp = Vector4D(m_nStCol, m_nStRow, m_nStSec);
     pdc->translate(vtmp);
+
+    // strided samples: one texture cell spans m_nStep grid nodes
+    if (m_nStep > 1) pdc->scale(Vector4D(m_nStep, m_nStep, m_nStep));
 
     renderGPU(pdc);
 

@@ -133,15 +133,25 @@ full では無視。`center` は view に追従するが (`setCenterQuiet`)、fu
 
 ### contour / gpu_mapmesh
 
-現時点では full 非対応: 実効 full でも box 経路を使い、PBC だけ `isPBCEligible()` で抑止する
-(EM map で折返しが消える)。`MapMeshRenderer` の固定 `bufsize³` crossing 配列を region/step サイズで
-確保し直す追随は後続。
+両 renderer とも full モードでは **ブロック全体を budget 由来の stride で** 表示する (view 連動の refine は
+isosurf のみ)。`lod` / `lod_budget` プロパティを各 renderer に持ち、contour の既定 budget は 2 Mcell
+(線分を cell ごとに描くので isosurf より小さい)、gpu_mapmesh は 16 Mcell。
+
+- `MapMeshRenderer::generateFull()`: `lodAlignRange` で整列した range を `ScalarObject::extractBlockBytes()`
+  で strided block に取り出し、crossing 配列 (足りなければ `ensureCrossArraySize` で拡張) を埋める。
+  描画側は `translate(m_nSt*)` の後に `scale(m_nStep)` を掛ける
+- `GLSLMapMeshRenderer2::make3DTexMapFull()`: 同じ range/stride で buffer texture を作る
+- full モードの `viewChanged` は `setCenterQuiet` で center を追従させるだけ (再生成しない)
+- `extractBlock` / `extractBlockBytes` (`ScalarObject` 既定 = `atFloat/atByte` 走査; `DensityMap` は行ポインタ +
+  LUT + TBB): map-local index の strided sub-block を連続配列にコピー。範囲外は PBC なら剰余で wrap、
+  そうでなければ fill
 
 ## GUI (tritium)
 
-- `inspector/IsosurfRendererSection.tsx`: "Region" (`region_mode`)、"Level of detail" (`lod`)、
-  "LoD budget" (`lod_budget`) と "Refine on zoom" (`zoom_refine`; いずれも full のみ)。実効値は readonly
-  `region_mode_resolved` から取り、full では box 専用の "Max grid size" / "Use periodic boundary" を隠す
+- `inspector/MapRendererCommon.tsx` の `RegionLodRows`: "Region" (`region_mode`)、"Level of detail" (`lod`)、
+  "LoD budget" (`lod_budget`; full のみ)、"Refine on zoom" (`zoom_refine`; isosurf の full のみ)。isosurf / contour の
+  両 section で使い、実効値は readonly `region_mode_resolved` から取る。full では box 専用の "Max grid size" /
+  "Buffer size" / "Use periodic boundary" を隠す
 - `DensityMapPane`: `MapRendererState.regionResolved` / `mapType` を追加し、full では Extent スライダを無効化
 - `DensityMap.map_type` は enum なので generic Properties タブで編集できる
 - file-open ダイアログ (`fopen-opt-dlgs/panes/Ccp4MapOptionsPane.tsx`): "Map type" (auto / crystallographic /
@@ -238,8 +248,9 @@ full では無視。`center` は view に追従するが (`setCenterQuiet`)、fu
 
 ## ロードマップ (未実装)
 
-2. `extractBlock()` (gpu_mapmesh / MapBufTex 用の strided sub-block 抽出)、mdtools の lazy frame load
-4. contour / gpu_mapmesh の full 追随、`lod*` の `MapRenderer.qif` への hoist
+- mdtools の trajectory reader の lazy frame load (seekable stream interface は用意済み)
+- contour / gpu_mapmesh の view 連動 refine (現状は isosurf のみ)
+- float32 格納 (`MapStorage::Byte8|Float32` の runtime 切替)、file-backed pyramid
 
 ## テスト
 
@@ -256,6 +267,8 @@ full では無視。`center` は view に追従するが (`setCenterQuiet`)、fu
   (seek 再読込)・gzip (buffered)・truncate/normalize・subsample・max_voxels・probeHeader を
   `setMapFloatArray` 参照と全 voxel 比較
 - `test_qdfmap_roundtrip.cpp` — QDF 往復でサンプル・統計・配置・map kind・origin が保存される
+- `test_map_block_extract.cpp` — `extractBlock/extractBlockBytes` を直接走査と比較 (PBC / clip / stride / 負 start)
+- `test_mapmesh_full.cpp` — contour の full モード (budget stride、明示 stride、buffer 拡張、結晶 map は box のまま)
 - `test_mapsurf_viewregion.cpp` — 128³ map / budget 1 Mcell で view box の切取り・stride 選択・
   boundary bbox・ヒステリシス (パン / zoom-in / zoom-out / map 外)
 - `test_mapsurf_pin.cpp` — P5 (PBC)、P7 (非零 start)、P8 (奇数サイズ stride 2)、P9 (full == P1)、

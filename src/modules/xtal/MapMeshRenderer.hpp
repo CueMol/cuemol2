@@ -53,6 +53,41 @@ namespace xtal {
     int getBufSize() const { return m_nBufSize; }
     void setBufSize(int nsize);
 
+  public:
+    enum {
+      LOD_AUTO = 0,
+    };
+
+  private:
+    /// Level of detail: LOD_AUTO or an explicit grid stride. Full region
+    /// mode marches the whole block at the budget-derived stride; box mode
+    /// keeps stride 1 (the crossing buffers bound the box instead).
+    int m_nLod;
+
+    /// Cell budget of the automatic level of detail in full region mode
+    /// (in units of 2^20 grid cells; contour lines are drawn per cell, so
+    /// this is smaller than the isosurface budget)
+    int m_nLodBudget;
+
+  public:
+    int getLod() const { return m_nLod; }
+    void setLod(int n) {
+      if (m_nLod == n)
+        return;
+      m_nLod = n;
+      super_t::invalidateDisplayCache();
+    }
+
+    int getLodBudget() const { return m_nLodBudget; }
+    void setLodBudget(int n) {
+      if (n < 1)
+        n = 1;
+      if (m_nLodBudget == n)
+        return;
+      m_nLodBudget = n;
+      super_t::invalidateDisplayCache();
+    }
+
   private:
     /// Periodic boundary flag
     /// (default: false; set true, if map contains the entire of unit cell)
@@ -80,6 +115,9 @@ namespace xtal {
 
     int m_nActCol, m_nActRow, m_nActSec;
     int m_nStCol, m_nStRow, m_nStSec;
+
+    /// grid stride of the current range (full region mode; 1 in box mode)
+    int m_nStep;
 
     /// section array for x(column) direction
     qlib::ByteMap *m_pXCrsLst;
@@ -126,8 +164,25 @@ namespace xtal {
     /// Generate contour level lines
     bool generate(ScalarObject *pMap, DensityMap *pXtal);
 
+    /// Full region mode: the whole block at the budget-derived stride,
+    /// sampled through extractBlockBytes() into the crossing buffers
+    bool generateFull(ScalarObject *pMap, DensityMap *pXtal, unsigned int lv);
+
+    /// Range of the last generate() (absolute cell-grid node index of the
+    /// first sample, number of samples, stride); for tests
+    int getStCol() const { return m_nStCol; }
+    int getStRow() const { return m_nStRow; }
+    int getStSec() const { return m_nStSec; }
+    int getActCol() const { return m_nActCol; }
+    int getActRow() const { return m_nActRow; }
+    int getActSec() const { return m_nActSec; }
+    int getStep() const { return m_nStep; }
+
     /// Set internal buffer size
     bool setCrossArraySize(int ncol, int nrow, int nsec);
+
+    /// Grow the crossing buffers to hold at least (ncol, nrow, nsec)
+    void ensureCrossArraySize(int ncol, int nrow, int nsec);
     /// Get internal buffer size (in col direction)
     int getColCrsSize() const { return m_nColCrs; }
     int getRowCrsSize() const { return m_nRowCrs; }

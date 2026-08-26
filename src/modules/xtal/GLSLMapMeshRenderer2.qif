@@ -26,6 +26,21 @@ runtime_class GLSLMapMeshRenderer2 extends MapRenderer
   property integer bufsize => redirect(getBufSize, setBufSize);
   default bufsize = 100;
 
+  /// Level of detail in full region mode
+  enumdef lod {
+    auto = xtal::GLSLMapMeshRenderer2::LOD_AUTO;
+    step1 = 1;
+    step2 = 2;
+    step4 = 4;
+    step8 = 8;
+  }
+  property enum lod => redirect(getLod, setLod);
+  default lod = "auto";
+
+  /// Cell budget of the automatic level of detail (2^20 cells)
+  property integer lod_budget => redirect(getLodBudget, setLodBudget);
+  default lod_budget = 16;
+
   property boolean autoupdate => m_bAutoUpdate;
   default autoupdate = true;
 

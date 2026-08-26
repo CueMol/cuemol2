@@ -26,12 +26,18 @@
 
 import React from "react";
 import { NumRow, NumInputRow, BoolRow } from "./RendererCommonSection";
-import { CenterUpdateRow, LimitDisplayRows } from "./MapRendererCommon";
+import {
+  CenterUpdateRow,
+  LimitDisplayRows,
+  RegionLodRows,
+  effectiveRegionMode,
+} from "./MapRendererCommon";
 import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
 import type { RendererPropSectionProps } from "./rendererPropSections";
 
 /**
- * "Contour" section: center update, line width, buffer size, periodic boundary,
+ * "Contour" section: center update, region / level of detail (cryo-EM map
+ * mode; buffer size and periodic boundary are box-region only), line width,
  * and the shared limit-display block.
  */
 export const ContourMainSection: React.FC<RendererPropSectionProps> = ({
@@ -47,6 +53,11 @@ export const ContourMainSection: React.FC<RendererPropSectionProps> = ({
   const bufsize = get("bufsize");
   const usePbc = get("use_pbc");
 
+  // In the full region (cryo-EM maps) the whole map is generated at the
+  // budget stride, so the box-only knobs (buffer size, periodic boundary)
+  // do not apply.
+  const isFull = effectiveRegionMode(entries) === "full";
+
   return (
     <>
       <CenterUpdateRow
@@ -55,6 +66,7 @@ export const ContourMainSection: React.FC<RendererPropSectionProps> = ({
         onSetMany={onSetMany}
         onReset={onReset}
       />
+      <RegionLodRows entries={entries} onSet={onSet} onReset={onReset} />
       {width && (
         <NumRow
           entry={width}
@@ -68,7 +80,7 @@ export const ContourMainSection: React.FC<RendererPropSectionProps> = ({
           realtime
         />
       )}
-      {bufsize && (
+      {bufsize && !isFull && (
         <NumInputRow
           key={`bufsize:${bufsize.value}`}
           entry={bufsize}
@@ -80,7 +92,7 @@ export const ContourMainSection: React.FC<RendererPropSectionProps> = ({
           step={10}
         />
       )}
-      {usePbc && (
+      {usePbc && !isFull && (
         <BoolRow
           entry={usePbc}
           label="Use periodic boundary"

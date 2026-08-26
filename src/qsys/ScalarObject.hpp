@@ -72,6 +72,31 @@ namespace qsys {
     /// Convert grid index to orthogonal coordinate (in angstrom)
     virtual Vector4D convToOrth(const Vector4D &index) const =0;
 
+    //////////
+    // Strided sub-block extraction (level-of-detail renderers)
+
+    /// A sub-block of the sample grid: start is the map-local grid index of
+    /// the first sample (may be negative or past the block), size the
+    /// number of samples per axis in the output, and step the stride in
+    /// grid nodes between output samples.
+    struct MapBlockSpec {
+      int start[3];
+      int size[3];
+      int step;
+    };
+
+    /// Copy the strided sub-block into out (size[0]*size[1]*size[2]
+    /// values, column fastest). Samples outside the map wrap by the map
+    /// dimensions when pbc is true, otherwise they take fill. The default
+    /// walks atFloat(); quantized implementations override it with a fast
+    /// row-wise copy.
+    virtual void extractBlock(const MapBlockSpec &spec, bool pbc, float fill,
+                              float *out) const;
+
+    /// Byte (atByte) version of extractBlock
+    virtual void extractBlockBytes(const MapBlockSpec &spec, bool pbc,
+                                   unsigned char fill, unsigned char *out) const;
+
     LString getHistogramJSON(double min, double max, int nbins);
 
     /// Drop the cached base histogram (call whenever the samples change)

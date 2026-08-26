@@ -25,6 +25,22 @@ runtime_class MapMeshRenderer extends MapRenderer
   property integer bufsize => redirect(getBufSize, setBufSize);
   default bufsize = 100;
 
+  /// Level of detail in full region mode: auto (budget-derived stride) or
+  /// an explicit grid stride
+  enumdef lod {
+    auto = xtal::MapMeshRenderer::LOD_AUTO;
+    step1 = 1;
+    step2 = 2;
+    step4 = 4;
+    step8 = 8;
+  }
+  property enum lod => redirect(getLod, setLod);
+  default lod = "auto";
+
+  /// Cell budget of the automatic level of detail (2^20 cells)
+  property integer lod_budget => redirect(getLodBudget, setLodBudget);
+  default lod_budget = 2;
+
   /// Automatically update the map center as view center (only in mouseUp event)
   property boolean autoupdate => m_bAutoUpdate;
   default autoupdate = true;

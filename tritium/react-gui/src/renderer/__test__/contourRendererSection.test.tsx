@@ -129,10 +129,15 @@ function contourEntries(over?: {
   autoupdate?: boolean
   dragupdate?: boolean
   bndryMol?: string
+  regionResolved?: string
 }): GenericPropEntry[] {
   return [
     entry({ key: 'autoupdate', type: 'boolean', value: over?.autoupdate ?? true }),
     entry({ key: 'dragupdate', type: 'boolean', value: over?.dragupdate ?? false }),
+    entry({ key: 'region_mode', type: 'enum', value: 'auto', enumdef: ['auto', 'box', 'full'] }),
+    entry({ key: 'region_mode_resolved', type: 'string', value: over?.regionResolved ?? 'box', readonly: true }),
+    entry({ key: 'lod', type: 'enum', value: 'auto', enumdef: ['auto', 'step1', 'step2', 'step4', 'step8'] }),
+    entry({ key: 'lod_budget', type: 'integer', value: 2 }),
     entry({ key: 'width', type: 'real', value: 1.0 }),
     entry({ key: 'bufsize', type: 'integer', value: 100 }),
     entry({ key: 'use_pbc', type: 'boolean', value: true }),
@@ -164,6 +169,8 @@ describe('ContourMainSection', () => {
       <ContourMainSection entries={entries} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
     )
     expect(rowByLabel(container, 'Center update')).not.toBeNull()
+    expect(rowByLabel(container, 'Region')).not.toBeNull()
+    expect(rowByLabel(container, 'Level of detail')).not.toBeNull()
     expect(rowByLabel(container, 'Line width')).not.toBeNull()
     expect(rowByLabel(container, 'Buffer size')).not.toBeNull()
     expect(rowByLabel(container, 'Use periodic boundary')).not.toBeNull()
@@ -171,8 +178,29 @@ describe('ContourMainSection', () => {
     expect(rowByLabel(container, 'Target')).not.toBeNull()
     expect(rowByLabel(container, 'Selection')).not.toBeNull()
     expect(rowByLabel(container, 'Distance')).not.toBeNull()
-    // Exactly the eight curated rows -- coloring props produce no row.
-    expect(container.querySelectorAll('.h3-form-prop-row').length).toBe(8)
+    // The LoD budget only applies to the full region; no zoom refinement
+    // on the contour renderer.
+    expect(rowByLabel(container, 'LoD budget')).toBeNull()
+    expect(rowByLabel(container, 'Refine on zoom')).toBeNull()
+    // Exactly the ten curated rows -- coloring props produce no row.
+    expect(container.querySelectorAll('.h3-form-prop-row').length).toBe(10)
+    unmount()
+  })
+
+  it('hides the box-only rows and shows the LoD budget in the full region', () => {
+    const { container, unmount } = mountTree(
+      <ContourMainSection
+        entries={contourEntries({ regionResolved: 'full' })}
+        onSet={vi.fn()}
+        onReset={vi.fn()}
+        sceneId={1}
+        nodeId={2}
+      />,
+    )
+    expect(rowByLabel(container, 'Buffer size')).toBeNull()
+    expect(rowByLabel(container, 'Use periodic boundary')).toBeNull()
+    expect(rowByLabel(container, 'LoD budget')).not.toBeNull()
+    expect(rowByLabel(container, 'Refine on zoom')).toBeNull()
     unmount()
   })
 

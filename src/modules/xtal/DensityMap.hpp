@@ -186,6 +186,13 @@ namespace xtal {
     /// Read-only access to the sample storage (section chunks)
     const qlib::ChunkedArray3D<quint8> &getByteMap() const { return m_map; }
 
+    /// Fast strided sub-block copies (row pointers, parallel over the
+    /// output sections)
+    void extractBlock(const MapBlockSpec &spec, bool pbc, float fill,
+                      float *out) const override;
+    void extractBlockBytes(const MapBlockSpec &spec, bool pbc,
+                           unsigned char fill, unsigned char *out) const override;
+
     /// Density level such that the given fraction of the samples lies at
     /// or above it (frac 0.01 = the level enclosing the top 1 percent of
     /// the grid points; the ChimeraX initial-contour rule). Computed from

@@ -43,6 +43,41 @@ private:
     /// Internal buffer size (default: 100x100x100 points)
     int m_nBufSize;
 
+  public:
+    enum {
+        LOD_AUTO = 0,
+    };
+
+  private:
+    /// Level of detail in full region mode (LOD_AUTO or a grid stride)
+    int m_nLod;
+
+    /// Cell budget of the automatic level of detail (2^20 cells)
+    int m_nLodBudget;
+
+    /// grid stride of the current texture (1 in box mode)
+    int m_nStep;
+
+  public:
+    int getLod() const { return m_nLod; }
+    void setLod(int n)
+    {
+        if (m_nLod == n) return;
+        m_nLod = n;
+        invalidateDisplayCache();
+    }
+    int getLodBudget() const { return m_nLodBudget; }
+    void setLodBudget(int n)
+    {
+        if (n < 1) n = 1;
+        if (m_nLodBudget == n) return;
+        m_nLodBudget = n;
+        invalidateDisplayCache();
+    }
+    int getStep() const { return m_nStep; }
+
+  private:
+
     /// Periodic boundary flag
     bool m_bPBC;
 
@@ -115,6 +150,10 @@ public:
     ///////////////////////////////////////////////////////////////
 
     void make3DTexMap(DisplayContext *pdc, ScalarObject *pMap, DensityMap *pXtal);
+
+    /// Full region mode texture (whole block at the budget stride)
+
+    void make3DTexMapFull(DisplayContext *pdc, ScalarObject *pMap);
 
     ///////////////////////////////////////////////////////////////
 

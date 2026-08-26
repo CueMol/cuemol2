@@ -44,34 +44,15 @@
  */
 
 import React from "react";
+import { NumRow, NumInputRow, BoolRow, EnumRow } from "./RendererCommonSection";
 import {
-  NumRow,
-  NumInputRow,
-  BoolRow,
-  EnumRow,
-  MappedEnumRow,
-} from "./RendererCommonSection";
-import { CenterUpdateRow, LimitDisplayRows } from "./MapRendererCommon";
+  CenterUpdateRow,
+  LimitDisplayRows,
+  RegionLodRows,
+  effectiveRegionMode,
+} from "./MapRendererCommon";
 import type { GenericPropEntry } from "../../worker/server/services/genericProps.service";
 import type { RendererPropSectionProps } from "./rendererPropSections";
-
-/** Display labels of the `region_mode` enum (raw C++ IDs stay the values). */
-export const REGION_MODE_LABELS: Record<string, string> = {
-  auto: "Auto",
-  box: "Box around center",
-  full: "Full map",
-};
-const REGION_MODE_ORDER = ["auto", "box", "full"];
-
-/** Display labels of the `lod` enum (marching stride). */
-export const LOD_LABELS: Record<string, string> = {
-  auto: "Auto",
-  step1: "1 (full resolution)",
-  step2: "2",
-  step4: "4",
-  step8: "8",
-};
-const LOD_ORDER = ["auto", "step1", "step2", "step4", "step8"];
 
 /**
  * "Isosurf" section: center update, drawing mode, line/point size, max grid
@@ -92,23 +73,13 @@ export const IsosurfMainSection: React.FC<RendererPropSectionProps> = ({
   const maxGrids = get("max_grids");
   const cullface = get("cullface");
   const usePbc = get("use_pbc");
-  const regionMode = get("region_mode");
-  const regionResolved = get("region_mode_resolved");
-  const lod = get("lod");
-  const lodBudget = get("lod_budget");
-  const zoomRefine = get("zoom_refine");
 
   // Line/Point size only matters for line / point modes (UXP updateDisabledState).
   const widthDisabled = drawmode ? String(drawmode.value) === "fill" : false;
 
-  // Effective region policy: the read-only resolved prop when available,
-  // else the raw prop (an explicit box / full; "auto" is treated as box).
-  const effectiveRegion = regionResolved
-    ? String(regionResolved.value)
-    : regionMode && String(regionMode.value) === "full"
-      ? "full"
-      : "box";
-  const isFull = effectiveRegion === "full";
+  // In the full region the box-only knobs (max grid size, periodic
+  // boundary) do not apply.
+  const isFull = effectiveRegionMode(entries) === "full";
 
   return (
     <>
@@ -118,42 +89,7 @@ export const IsosurfMainSection: React.FC<RendererPropSectionProps> = ({
         onSetMany={onSetMany}
         onReset={onReset}
       />
-      {regionMode && (
-        <MappedEnumRow
-          entry={regionMode}
-          label="Region"
-          labels={REGION_MODE_LABELS}
-          options={REGION_MODE_ORDER}
-          onSet={onSet}
-          onReset={onReset}
-        />
-      )}
-      {lod && (
-        <MappedEnumRow
-          entry={lod}
-          label="Level of detail"
-          labels={LOD_LABELS}
-          options={LOD_ORDER}
-          onSet={onSet}
-          onReset={onReset}
-        />
-      )}
-      {lodBudget && isFull && (
-        <NumInputRow
-          key={`lod_budget:${lodBudget.value}`}
-          entry={lodBudget}
-          label="LoD budget"
-          onSet={onSet}
-          onReset={onReset}
-          min={1}
-          max={256}
-          step={1}
-          unit="Mcell"
-        />
-      )}
-      {zoomRefine && isFull && (
-        <BoolRow entry={zoomRefine} label="Refine on zoom" onSet={onSet} onReset={onReset} />
-      )}
+      <RegionLodRows entries={entries} onSet={onSet} onReset={onReset} showZoomRefine />
       {drawmode && (
         <EnumRow entry={drawmode} label="Drawing mode" onSet={onSet} onReset={onReset} />
       )}

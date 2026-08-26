@@ -189,6 +189,82 @@ bool DensityMap::getBaseHistogram(std::vector<qint64> &hist, double &hmin,
   return true;
 }
 
+namespace {
+  inline int wrapIdx(int x, int n)
+  {
+    const int r = x % n;
+    return (r < 0) ? r + n : r;
+  }
+
+  /// Shared body of the byte / float block extraction: one output section
+  /// per task, rows copied with the map's row pointers; Conv maps a stored
+  /// byte to the output value.
+  template <class T, class Conv>
+  void extractBlockImpl(const qlib::ChunkedArray3D<quint8> &map,
+                        const qsys::ScalarObject::MapBlockSpec &spec, bool pbc,
+                        T fill, T *out, Conv conv)
+  {
+    const int nc = map.cols(), nr = map.rows(), ns = map.secs();
+    const int s = (spec.step < 1) ? 1 : spec.step;
+    const size_t nrowOut = size_t(spec.size[0]);
+    const size_t nsliceOut = nrowOut * size_t(spec.size[1]);
+    const bool bEmpty = (nc <= 0 || nr <= 0 || ns <= 0);
+
+    qlib::parallel_for(0, (size_t) spec.size[2], [&](size_t ko) {
+      T *plane = out + ko * nsliceOut;
+      const int k = spec.start[2] + int(ko) * s;
+      if (bEmpty || (!pbc && (k < 0 || k >= ns))) {
+        std::fill(plane, plane + nsliceOut, fill);
+        return;
+      }
+      const int kk = pbc ? wrapIdx(k, ns) : k;
+      for (int jo = 0; jo < spec.size[1]; ++jo) {
+        T *o = plane + size_t(jo) * nrowOut;
+        const int j = spec.start[1] + jo * s;
+        if (!pbc && (j < 0 || j >= nr)) {
+          std::fill(o, o + nrowOut, fill);
+          continue;
+        }
+        const quint8 *row = map.row(pbc ? wrapIdx(j, nr) : j, kk);
+        const int i0 = spec.start[0];
+        const int i1 = i0 + (spec.size[0] - 1) * s;
+        if (!pbc && i0 >= 0 && i1 < nc) {
+          // whole row inside: no per-sample test
+          for (int io = 0; io < spec.size[0]; ++io)
+            o[io] = conv(row[i0 + io * s]);
+        }
+        else {
+          for (int io = 0; io < spec.size[0]; ++io) {
+            const int i = i0 + io * s;
+            if (pbc)
+              o[io] = conv(row[wrapIdx(i, nc)]);
+            else
+              o[io] = (i < 0 || i >= nc) ? fill : conv(row[i]);
+          }
+        }
+      }
+    });
+  }
+}
+
+void DensityMap::extractBlock(const MapBlockSpec &spec, bool pbc, float fill,
+                              float *out) const
+{
+  // the same value lattice atFloat() returns (double math, then float)
+  float lut[256];
+  for (int b = 0; b < 256; ++b)
+    lut[b] = float(double(b) * m_dLevelStep + m_dLevelBase);
+  extractBlockImpl<float>(m_map, spec, pbc, fill, out,
+                          [&](quint8 b) { return lut[b]; });
+}
+
+void DensityMap::extractBlockBytes(const MapBlockSpec &spec, bool pbc,
+                                   unsigned char fill, unsigned char *out) const
+{
+  extractBlockImpl<unsigned char>(m_map, spec, pbc, fill, out,
+                                  [](quint8 b) { return b; });
+}
+
 double DensityMap::getLevelAtTopFraction(double frac) const
 {
   if (m_map.empty())
