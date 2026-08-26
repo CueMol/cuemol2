@@ -233,7 +233,11 @@ isosurf のみ)。`lod` / `lod_budget` プロパティを各 renderer に持ち�
 - 軸置換: `axsect == Z` かつ恒等なら slice への行コピー、それ以外は要素ごとに `rotate()` で散らして書く
   (追加メモリ 0)
 - `subsample` (既定 1): 各軸 n 点おきに格納。map 寸法・cell grid・start がすべて n で割り切れることを要求
-  (`getColGridSize = a/nx` と start の整合)。`setMapParams(start/n, nx/n)` で grid が n 倍に粗くなる
+  (`getColGridSize = a/nx` と start の整合)。`setMapParams(start/n, nx/n)` で grid が n 倍に粗くなる。
+  **subsample で捨てた標本は LoD では戻らない**: 格納された map 自体が粗い (例: 768³ を subsample 8 で
+  読むと 96³ = 0.86 Mcell) ので budget 内に収まり stride は常に 1、zoom しても細密化しない。
+  細部が要るときは subsample を下げて読み直す (ChimeraX の `step` は表示時の間引きなので毎回戻せるが、
+  こちらは読込時に捨てるトレードオフ)
 - `max_voxels` (既定 0 = 無制限): 格納 voxel 数がこれを超えると割当て前に例外
 - `probeHeader(path)` (qif): 1024 byte だけ読み JSON (nc/nr/ns, mode, nvoxels, storage_bytes, ispg, nversion,
   exttyp, origin, dmin/dmax/dmean/rms) を返す。`.gz` は decode して読む。GUI が open 前に大 map の確認や

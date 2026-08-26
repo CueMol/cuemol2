@@ -48,6 +48,15 @@ label+control の UI (フォーム行・テキスト入力・select・numeric・
 
 **真偽トグルの使い分け**: `SwitchField` = **値そのものが真偽** (Visible / Locked / Use hydrogen atoms)。行は `Label ...... [switch]` (`Field inline`) で、ラベルが左端に揃い property 行と整列する。`CheckboxField` = **下に続く control を有効化する opt-in ゲート** (dialog の Use selection)。行は `[x] Label ......` (`Field inline controlFirst`) で、チェックボックスが先に来て「これを入れると下が使える」と読ませる。**判断基準は「値か、ゲートか」**であり、見た目の好みで選ばない。
 
+**生 Blueprint を使う dialog でも判断基準は同じ**: file-open のオプションペイン
+(`components/fopen-opt-dlgs/panes/*`) はまだカタログ化されておらず Blueprint の `Switch` / `Checkbox` を
+直に使うが、**「値か、ゲートか」の判断はそのまま適用する**。下に続く control を有効化するトグル
+(MTZ の Phase / Weight、CCP4 map の Truncate minimum / maximum、Renderer options の Selection) は
+`Checkbox`、それ自体が設定値のトグル (PDB の Load model / anisou、CCP4 map の Normalize、
+Center view on molecule after loading) は `Switch`。**二値だから、あるいは見た目を揃えたいからという
+理由で `Switch` に寄せない**。後でカタログへ寄せるときは `Checkbox` → `CheckboxField`、
+`Switch` → `SwitchField` にそのまま対応させる。
+
 **「1 つ選ぶ」系の使い分け**: `SegmentField` = **view の切替** (`.mode-bar` に置く tab strip)、`RadioField` = **設定の N 択** (選択肢に名前があり、並べて見せたい)、`SelectField` = 選択肢が多い / 一覧を畳みたいとき、`SwitchField` = 本当に on/off の真偽値。二値だからといって `SwitchField` を選ぶと「どちらか選ぶ」ではなく「有効/無効」に読まれる。
 
 **なぜカタログか (最重要)**: トークン (`--space-*` / `--ctrl-h-*`) は「どの値か」を統一するが、**値を選ぶ行為自体がサイズ選び**になり強制力にならない (typography の `.type-*` role がテキストで解決したのと同じ問題が、コントロール高・行・余白の軸に残っていた)。カタログコンポーネントは **size props を公開しない** ので、**同じコンポーネントを使えば必ず同じサイズ**になる。これが「コンポーネント追加のたびにサイズがおかしくなる」再発を仕組みで防ぐ唯一の方法。
@@ -75,7 +84,7 @@ label+control の UI (フォーム行・テキスト入力・select・numeric・
 | compact button | 20/22/24/26px がファイル毎 | `FormButton` (`--field-btn-h`) |
 | segmented control | `.inspector-mode-bar` の直書き override / 各所の生 `SegmentedControl` | `SegmentField` (`--field-btn-h`, `.h3-form-segmented`) |
 
-**済**: form-kit、Inspector `PropEditors`/モード切替 (`SegmentField`)、`ObjectSelect`、`SelectionPane`/`SelectionBuilder` (最上位グループは `FieldSection`, 下位は `Field`)、`MolSelList` (Named/History 切替も `SegmentField`)、`LogPanel`/`RenderPanel` ツールバー、catalog gallery (`DummyPane3` = activity bar の Component Catalog)。**残 (新規変更時にカタログへ寄せる)**: `RenderSettingsEditor` の直接 `.insp-*`、`SettingRow`(`.config-setting`)、`SliderNumericField`(`.h3-slider-*`)、`_dialog.css` の 26px 入力 (高さは `--field-*` トークンに揃え済み)。
+**済**: form-kit、Inspector `PropEditors`/モード切替 (`SegmentField`)、`ObjectSelect`、`SelectionPane`/`SelectionBuilder` (最上位グループは `FieldSection`, 下位は `Field`)、`MolSelList` (Named/History 切替も `SegmentField`)、`LogPanel`/`RenderPanel` ツールバー、catalog gallery (`DummyPane3` = activity bar の Component Catalog)。**残 (新規変更時にカタログへ寄せる)**: `RenderSettingsEditor` の直接 `.insp-*`、`SettingRow`(`.config-setting`)、`SliderNumericField`(`.h3-slider-*`)、`_dialog.css` の 26px 入力 (高さは `--field-*` トークンに揃え済み)、file-open のオプションペイン (`fopen-opt-dlgs/panes/*`; 生 Blueprint `Switch`/`Checkbox`/`HTMLSelect`/`NumericInput` のまま。値/ゲートの使い分けは上記のとおり守る)。
 
 ---
 

@@ -9,10 +9,15 @@
  * dialog probed the file header (`probe`), the pane shows the grid size and
  * warns about a very large map, suggesting a subsample that keeps the stored
  * voxel count under the large-map threshold.
+ *
+ * Toggle kinds follow the value / gate rule of
+ * `docs/migration/ui-style-guide.md`: "Normalize" is a value (Switch), while
+ * the two truncation toggles gate the numeric fields below them and are
+ * therefore Checkboxes.
  */
 
 import React, { useState } from 'react';
-import { Switch, NumericInput, FormGroup, Divider, HTMLSelect, Callout } from '@blueprintjs/core';
+import { Switch, Checkbox, NumericInput, FormGroup, Divider, HTMLSelect, Callout } from '@blueprintjs/core';
 import type { Ccp4MapOptions, MapTypeChoice } from '../types';
 import type { MapHeaderInfo } from '../../../worker/server/services/probeMapHeader.service';
 import { LARGE_MAP_VOXELS, suggestSubsample } from '../../../worker/server/services/probeMapHeader.service';
@@ -112,11 +117,12 @@ export const Ccp4MapOptionsPane: React.FC<Ccp4MapOptionsPaneProps> = ({ options,
       />
       <Divider />
       <div className="fod-section-title">Truncation (sigma)</div>
-      <Switch
+      {/* Gate for the Minimum field below -> Checkbox, not Switch
+        * (ui-style-guide.md: value = switch, opt-in gate = checkbox). */}
+      <Checkbox
         label="Truncate minimum"
         checked={options.truncateMinEnabled}
-        onChange={(e) => onChange({ ...options, truncateMinEnabled: e.target.checked })}
-        className="fod-switch"
+        onChange={(e) => onChange({ ...options, truncateMinEnabled: e.currentTarget.checked })}
       />
       <FormGroup label="Minimum" labelFor="ccp4-min" className="fod-form-group">
         <NumericInput
@@ -130,11 +136,11 @@ export const Ccp4MapOptionsPane: React.FC<Ccp4MapOptionsPaneProps> = ({ options,
           fill
         />
       </FormGroup>
-      <Switch
+      {/* Gate for the Maximum field below (see above) */}
+      <Checkbox
         label="Truncate maximum"
         checked={options.truncateMaxEnabled}
-        onChange={(e) => onChange({ ...options, truncateMaxEnabled: e.target.checked })}
-        className="fod-switch"
+        onChange={(e) => onChange({ ...options, truncateMaxEnabled: e.currentTarget.checked })}
       />
       <FormGroup label="Maximum" labelFor="ccp4-max" className="fod-form-group">
         <NumericInput
