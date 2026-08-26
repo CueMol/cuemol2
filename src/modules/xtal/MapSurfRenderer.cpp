@@ -208,7 +208,11 @@ void MapSurfRenderer::viewChanged(qsys::ViewEvent &ev)
 
 void MapSurfRenderer::setMaxGrids(int n)
 {
+  if (m_nMaxGrid == n)
+    return;
   m_nMaxGrid = n;
+  // the max extent clamps the box range, so this is a geometry change
+  invalidateGeomCache();
 
   /*
   if (getClientObj().isnull())
@@ -339,11 +343,16 @@ void MapSurfRenderer::render(DisplayContext *pdl)
   ScalarObject *pMap = getScalarObj();
   m_pCMap = pMap;
 
-  // check and setup mol boundary data
-  setupMolBndry();
-
-  // generate map-range information
-  makerange();
+  // The mol boundary and the map range are only recomputed when the mesh
+  // is rebuilt: the cached vertices are in cell-grid coordinates relative
+  // to the range start (setupXformMat translates by it), so a color-only
+  // display-list rebuild must keep the range the cache was built with. In
+  // full region mode the view box may have moved inside the hysteresis
+  // margin since, and recomputing the range here would shift the surface.
+  if (!m_bMeshCacheValid) {
+    setupMolBndry();
+    makerange();
+  }
 
   pdl->pushMatrix();
   setupXformMat(pdl);
@@ -1339,9 +1348,12 @@ void MapSurfRenderer::display(DisplayContext *pdc)
       (getColorMode()==MapRenderer::MAPREND_MOLFANC && !m_bAidValid);
 
   if (bNeedBuild) {
-    // check and setup mol boundary data + map-range info (as render() does)
-    setupMolBndry();
-    makerange();
+    // mol boundary + map-range info only for a geometry rebuild (see
+    // render(): the mesh cache is relative to the range start)
+    if (!m_bMeshCacheValid) {
+      setupMolBndry();
+      makerange();
+    }
 
     setupColorEnv();
 

@@ -113,6 +113,12 @@ step が細かい」という決定則だけを借りた。本実装は **view �
   `worldBoxToGrid()` は 8 corner を逆 xform → `-origin` → orthToFrac → ×interval して AABB を取るので
   非直交セルでも動く (逆行列の丸めで node 境界が 2.9999999 になるため 1e-4 の epsilon で外側に丸める)
 - gtest では TimerImpl が無く `setTimer` は無視されるので、テストは `setViewBox()` → `updateViewRegion()` を直接呼ぶ
+- **不変条件**: mesh cache の頂点は range 始点相対の cell-grid 座標で、`setupXformMat` が
+  `translate(m_nStCol, ...)` を掛ける。したがって `setupMolBndry()` / `makerange()` は **mesh cache を作り直す
+  ときだけ** 呼ぶ (`render()` / `display()` の `!m_bMeshCacheValid` 分岐)。色のみの無効化 (alpha / color /
+  coloring) で range を再計算すると、ヒステリシスで再構築を見送った後の view box から別の range が出て、
+  古い cache とずれる (透明度変更で表示範囲が壊れる不具合の原因)。`max_grids` も range を変えるので
+  `invalidateGeomCache()` する
 
 MC カーネル (`runMarchingCubes` / `marchCubeCell` / `getGrdNorm2`) は `m_nBinFac` の代わりに作業変数
 `m_nStep` を使う。stride > 1 のみに効く 2 つの修正を同時に入れた:
