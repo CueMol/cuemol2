@@ -38,6 +38,7 @@ import type { CreateViewInSceneArgs, CreateViewInSceneResult } from '../server/s
 import type { GetCompatibleRendererNamesArgs, GetCompatibleRendererNamesResult } from '../server/services/getCompatibleRendererNames.service'
 import type { GetMtzColumnInfoArgs, GetMtzColumnInfoResult } from '../server/services/getMtzColumnInfo.service'
 import type { GetReaderDefaultOptionsArgs, GetReaderDefaultOptionsResult } from '../server/services/getReaderDefaultOptions.service'
+import type { ProbeMapHeaderArgs, ProbeMapHeaderResult } from '../server/services/probeMapHeader.service'
 import type { GetOpenFiltersArgs } from '../server/services/getOpenFilters.service'
 import type { GetSceneCloseInfoArgs, GetSceneCloseInfoResult } from '../server/services/getSceneCloseInfo.service'
 import type { IsSceneJustCreatedArgs, IsSceneJustCreatedResult } from '../server/services/isSceneJustCreated.service'
@@ -530,6 +531,7 @@ export interface ServiceMap {
   getCompatibleRendererNames: { args: GetCompatibleRendererNamesArgs;  result: GetCompatibleRendererNamesResult }
   getMtzColumnInfo:           { args: GetMtzColumnInfoArgs;            result: GetMtzColumnInfoResult }
   getReaderDefaultOptions:    { args: GetReaderDefaultOptionsArgs;     result: GetReaderDefaultOptionsResult }
+  probeMapHeader:             { args: ProbeMapHeaderArgs;              result: ProbeMapHeaderResult }
   getOpenFilters:             { args: GetOpenFiltersArgs;              result: ElectronFileFilter[] }
   getSceneCloseInfo:          { args: GetSceneCloseInfoArgs;           result: GetSceneCloseInfoResult }
   isSceneJustCreated:         { args: IsSceneJustCreatedArgs;          result: IsSceneJustCreatedResult }

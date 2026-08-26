@@ -84,6 +84,9 @@ export function applyReaderOptions(
             r.min = o.truncateMin;
             r.truncate_max = o.truncateMaxEnabled;
             r.max = o.truncateMax;
+            // mapType is not a reader property; loadObject applies it to
+            // the DensityMap after read().
+            r.subsample = o.subsample;
             return;
         }
         case 'msms': {

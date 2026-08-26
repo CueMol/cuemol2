@@ -144,6 +144,15 @@ full では無視。`center` は view に追従するが (`setCenterQuiet`)、fu
   `region_mode_resolved` から取り、full では box 専用の "Max grid size" / "Use periodic boundary" を隠す
 - `DensityMapPane`: `MapRendererState.regionResolved` / `mapType` を追加し、full では Extent スライダを無効化
 - `DensityMap.map_type` は enum なので generic Properties タブで編集できる
+- file-open ダイアログ (`fopen-opt-dlgs/panes/Ccp4MapOptionsPane.tsx`): "Map type" (auto / crystallographic /
+  cryo-EM; reader property ではなく読込後に `obj.map_type` へ書く `applyMapTypeChoice`) と "Subsample"
+  (reader の `subsample`)。ダイアログは `probeMapHeader` service (`CCP4MapReader.probeHeader`) でヘッダを
+  読み、grid サイズと格納メモリを表示、256 Mvoxel (ChimeraX `voxel_limit_for_open`) を超えると警告と
+  推奨 subsample (`suggestSubsample`) を出す
+- 読込後 (`loadObject.service.ts` → `helpers/emMapDefaults.ts`): map が `em` に解決されたら renderer に
+  `level = getLevelAtTopFraction(0.01)` (上位 1% を囲む絶対 level、ChimeraX の初期 contour 規則) と
+  `use_abslevel = true` を設定し、ダイアログの "recenter view" が有効なら `DensityMap.fitView` で全 view を
+  map 全体に合わせる (map renderer の `center` 既定 (0,0,0) は ORIGIN 配置の EM map の外にあるため)
 
 ## 既知の非互換 (リリースノート記載事項)
 
@@ -230,8 +239,6 @@ full では無視。`center` は view に追従するが (`setCenterQuiet`)、fu
 ## ロードマップ (未実装)
 
 2. `extractBlock()` (gpu_mapmesh / MapBufTex 用の strided sub-block 抽出)、mdtools の lazy frame load
-3. EM 初期レベル (上位 1% rank; `DensityMap::getLevelAtTopFraction()`) と tritium の open flow
-   (`map_type` 選択、`probeHeader()` による大 map の確認ダイアログ)
 4. contour / gpu_mapmesh の full 追随、`lod*` の `MapRenderer.qif` への hoist
 
 ## テスト
@@ -253,4 +260,6 @@ full では無視。`center` は view に追従するが (`setCenterQuiet`)、fu
   boundary bbox・ヒステリシス (パン / zoom-in / zoom-out / map 外)
 - `test_mapsurf_pin.cpp` — P5 (PBC)、P7 (非零 start)、P8 (奇数サイズ stride 2)、P9 (full == P1)、
   P10 (full step 2 == P2)、P11 (view box で切り取った full region、cap 有り)。step 1 の pin (P1/P3/P4/P5/P7) は無変更
-- tritium: `isosurfRendererSection.test.tsx`、`densityMapPanelOpsService.test.ts`、`densityMapPaneWire.test.tsx`
+- tritium: `isosurfRendererSection.test.tsx`、`densityMapPanelOpsService.test.ts`、`densityMapPaneWire.test.tsx`、
+  `emMapDefaults.test.ts`、`probeMapHeaderService.test.ts`、`applyReaderOptions.test.ts`、
+  `mapReaderDefaultsToFormatOptions.test.ts`

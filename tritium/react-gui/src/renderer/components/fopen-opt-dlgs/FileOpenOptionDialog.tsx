@@ -42,6 +42,7 @@ import type { GetMtzColumnInfoResult } from '../../worker/server/services/getMtz
 import { PdbOptionsPane } from './panes/PdbOptionsPane';
 import { MtzOptionsPane } from './panes/MtzOptionsPane';
 import { Ccp4MapOptionsPane } from './panes/Ccp4MapOptionsPane';
+import type { MapHeaderInfo } from '../../worker/server/services/probeMapHeader.service';
 import { MsmsOptionsPane } from './panes/MsmsOptionsPane';
 import { NamdCoorOptionsPane } from './panes/NamdCoorOptionsPane';
 import { AmberPrmtopOptionsPane } from './panes/AmberPrmtopOptionsPane';
@@ -150,6 +151,9 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
   // MTZ column info read from the file header (null until loaded / non-MTZ).
   const [mtzColumnInfo, setMtzColumnInfo] = useState<GetMtzColumnInfoResult | null>(null);
   const mtzSeqRef = useRef(0);
+  // CCP4/MRC header probe (grid size / large-map warning in the map pane)
+  const [mapProbe, setMapProbe] = useState<MapHeaderInfo | null>(null);
+  const probeSeqRef = useRef(0);
 
   // Reset format state when a new file is shown (filePath changes between
   // opens). Renderer-options reset is handled by the shared hook on the
@@ -165,6 +169,8 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
     objNameSeqRef.current += 1;
     mtzSeqRef.current += 1;
     readerOptSeqRef.current += 1;
+    probeSeqRef.current += 1;
+    setMapProbe(null);
   }
 
   // Effect: resolve a scene-wide unique object name when the dialog opens or
@@ -209,6 +215,24 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
           gridSpacing: 0.25,
         },
       });
+    })();
+  }, [cm, visible, filePath, formatKind]);
+
+  // Effect: when a CCP4/MRC map is shown, read its header (size, mode,
+  // statistics) so the map pane can show the grid and warn about a very
+  // large map before the whole file is read.
+  useEffect(() => {
+    if (!visible || !cm || formatKind !== 'ccp4map') return;
+    const seq = ++probeSeqRef.current;
+    (async () => {
+      let res: { ok: boolean; info: MapHeaderInfo | null } | undefined;
+      try {
+        res = await cm.invokeService('probeMapHeader', { filePath });
+      } catch {
+        res = undefined;
+      }
+      if (seq !== probeSeqRef.current) return; // stale
+      setMapProbe(res && res.ok ? res.info : null);
     })();
   }, [cm, visible, filePath, formatKind]);
 
@@ -357,6 +381,7 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
                   <Ccp4MapOptionsPane
                     options={formatOptions.options}
                     onChange={(opts: Ccp4MapOptions) => setFormatOptions({ kind: 'ccp4map', options: opts })}
+                    probe={mapProbe}
                   />
                 )}
                 {formatKind === 'msms' && formatOptions.kind === 'msms' && (

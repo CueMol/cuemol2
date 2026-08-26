@@ -27,6 +27,7 @@ import { setupRenderer } from './setupRenderer.service';
 import { withUndoTxn } from './withUndoTxn';
 import { pickReaderName, OBJREADER_CATEGORY } from './helpers/pickReaderName';
 import { applyReaderOptions } from './helpers/applyReaderOptions';
+import { applyMapTypeChoice, applyEmMapDefaults, fitViewsToMap } from './helpers/emMapDefaults';
 
 const log = console;
 
@@ -108,9 +109,18 @@ function loadObject(ctx: WorkerContext, args: LoadObjectArgs): { ok: boolean } {
 
         (obj as unknown as { name: string }).name =
             args.options.renderer.objectName || fileStem(args.filePath);
+        // The dialog's map kind override (DensityMap.map_type) goes on the
+        // object, so it must be set before the renderer resolves its region.
+        applyMapTypeChoice(obj, args.options.format);
         (scene as unknown as { addObject: (o: CObject) => void }).addObject(obj);
 
-        setupRenderer(ctx, obj, args.options.renderer);
+        const rend = setupRenderer(ctx, obj, args.options.renderer);
+        // Cryo-EM map: absolute level enclosing the top 1% of the grid and
+        // the whole map in view (the renderer's center default is the
+        // origin, which is not in the map for an MRC ORIGIN placement).
+        if (rend && applyEmMapDefaults(obj, rend) && args.options.renderer.centerView) {
+            fitViewsToMap(scene, obj);
+        }
         return { ok: true };
     });
 }

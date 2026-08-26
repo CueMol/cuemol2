@@ -39,12 +39,22 @@ export interface MtzOptions {
   gridSpacing: number;
 }
 
+/** DensityMap `map_type` values offered by the CCP4/MRC option pane. */
+export type MapTypeChoice = 'auto' | 'xtal' | 'em';
+
 export interface Ccp4MapOptions {
   normalize: boolean;
   truncateMinEnabled: boolean;
   truncateMin: number;
   truncateMaxEnabled: boolean;
   truncateMax: number;
+  /**
+   * Map kind override applied to the loaded DensityMap (`map_type`), not a
+   * reader property: 'auto' keeps the header-based detection.
+   */
+  mapType: MapTypeChoice;
+  /** CCP4MapReader `subsample`: keep every n-th grid point on each axis. */
+  subsample: number;
 }
 
 export interface MsmsOptions {
@@ -178,6 +188,8 @@ export function getDefaultCcp4MapOptions(): Ccp4MapOptions {
     truncateMin: 0,
     truncateMaxEnabled: false,
     truncateMax: 0,
+    mapType: 'auto',
+    subsample: 1,
   };
 }
 
@@ -280,7 +292,9 @@ export function isFormatOptionsModified(options: FormatOptions, defaults: Format
         o.truncateMinEnabled !== d.truncateMinEnabled ||
         o.truncateMin !== d.truncateMin ||
         o.truncateMaxEnabled !== d.truncateMaxEnabled ||
-        o.truncateMax !== d.truncateMax
+        o.truncateMax !== d.truncateMax ||
+        o.mapType !== d.mapType ||
+        o.subsample !== d.subsample
       );
     }
     case 'msms':
@@ -344,6 +358,8 @@ export function mapReaderDefaultsToFormatOptions(kind: FormatKind, v: ReaderDefa
           truncateMin: v.min ?? 0,
           truncateMaxEnabled: !!v.truncate_max,
           truncateMax: v.max ?? 0,
+          mapType: 'auto',
+          subsample: v.subsample ?? 1,
         },
       };
     default:

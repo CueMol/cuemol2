@@ -109,6 +109,7 @@ describe('applyReaderOptions', () => {
                 normalize: true,
                 truncateMinEnabled: true, truncateMin: -4,
                 truncateMaxEnabled: false, truncateMax: 6,
+                mapType: 'em', subsample: 2,
             },
         }
         applyReaderOptions(reader as unknown as ObjReader, 'ccp4map', fmt)
@@ -116,7 +117,10 @@ describe('applyReaderOptions', () => {
             normalize: true,
             truncate_min: true, min: -4,
             truncate_max: false, max: 6,
+            subsample: 2,
         })
+        // mapType is an object property, not a reader property
+        expect('map_type' in reader).toBe(false)
     })
 
     it('msms: sets vertex_file when present', () => {
