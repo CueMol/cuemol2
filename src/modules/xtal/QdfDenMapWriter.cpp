@@ -130,6 +130,12 @@ void QdfDenMapWriter::writeData()
   o.defFloat32("rmax");
   o.defFloat32("rmea");
   o.defFloat32("rsig");
+  // map kind detected at load time and the MRC origin (trailing fields:
+  // older readers stop at rsig and skip the rest of the record)
+  o.defInt8("mtype");
+  o.defFloat32("orgx");
+  o.defFloat32("orgy");
+  o.defFloat32("orgz");
 
   int nx = m_pObj->getColNo();
   int ny = m_pObj->getRowNo();
@@ -158,6 +164,12 @@ void QdfDenMapWriter::writeData()
     o.writeFloat32("rmax", (qfloat32) m_pObj->getMaxDensity());
     o.writeFloat32("rmea", (qfloat32) m_pObj->getMeanDensity());
     o.writeFloat32("rsig", (qfloat32) m_pObj->getRmsdDensity());
+
+    o.writeInt8("mtype", qint8(m_pObj->getDetectedMapType()));
+    const qlib::Vector4D vorig = m_pObj->getOrigin();
+    o.writeFloat32("orgx", (qfloat32) vorig.x());
+    o.writeFloat32("orgy", (qfloat32) vorig.y());
+    o.writeFloat32("orgz", (qfloat32) vorig.z());
 
     o.endRecord();
   }

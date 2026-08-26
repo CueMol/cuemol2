@@ -135,6 +135,18 @@ void QdfDenMapReader::readData()
   qfloat32 rmean = o.readFloat32("rmea");
   qfloat32 rsig = o.readFloat32("rsig");
 
+  // map kind / origin (absent in chunks written before the cryo-EM mode:
+  // those maps stay crystallographic with a zero origin)
+  if (o.isDefined("mtype")) {
+    const int mtype = o.readInt8("mtype");
+    const qfloat32 ox = o.readFloat32("orgx");
+    const qfloat32 oy = o.readFloat32("orgy");
+    const qfloat32 oz = o.readFloat32("orgz");
+    if (mtype==DensityMap::MAPTYPE_EM || mtype==DensityMap::MAPTYPE_XTAL)
+      m_pObj->setDetectedMapType(mtype);
+    m_pObj->setOrigin(qlib::Vector4D(ox, oy, oz));
+  }
+
   o.endRecord();
 
   m_pObj->setMapParams(stx, sty, stz, intx, inty, intz);

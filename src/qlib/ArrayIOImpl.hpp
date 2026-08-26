@@ -47,6 +47,17 @@ namespace qlib {
 
       /// get source URI of this stream
       LString getSrcURI() const override;
+
+      // in-memory sources are seekable
+      bool isSeekable() const override { return true; }
+      qint64 tell() const override { return m_pos; }
+      bool seekTo(qint64 pos) override
+      {
+        if (pos<0 || pos>(qint64) m_data.size())
+          return false;
+        m_pos = (int) pos;
+        return true;
+      }
     };
     
     /// Array output implementation

@@ -24,6 +24,21 @@ runtime_class CCP4MapReader extends ObjReader
   property boolean truncate_max => m_bTruncMax;
   property real max => m_dMax;
 
+  /// Keep every n-th grid point on each axis (1 = full grid)
+  property integer subsample => m_nSubsample;
+  default subsample = 1;
+
+  /// Upper bound of the stored voxel count (0 = unlimited)
+  property real max_voxels => m_dMaxVoxels;
+  default max_voxels = 0.0;
+
+  /// Quantize from the header DMIN/DMAX in one pass when valid
+  property boolean use_header_stats => m_bUseHdrStats;
+  default use_header_stats = true;
+
+  /// Header summary (JSON) of a map file without reading its data
+  string probeHeader(string path);
+
 };
 
 #endif

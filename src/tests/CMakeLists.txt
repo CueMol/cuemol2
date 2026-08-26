@@ -41,6 +41,7 @@ add_executable(test_qlib
   qlib/test_limited_in_stream.cpp
   qlib/test_parallel.cpp
   qlib/test_chunked_array3d.cpp
+  qlib/test_seekable_stream.cpp
 )
 target_include_directories(test_qlib PRIVATE
   ${CMAKE_SOURCE_DIR}/src
@@ -182,6 +183,7 @@ add_executable(test_xtal
   modules/xtal/test_main.cpp
   modules/xtal/test_atomposmap2.cpp
   modules/xtal/test_ccp4_origin.cpp
+  modules/xtal/test_ccp4map_stream.cpp
   modules/xtal/test_map_histogram.cpp
   modules/xtal/test_mapkind_detect.cpp
   modules/xtal/test_maplod.cpp
@@ -191,6 +193,7 @@ add_executable(test_xtal
   modules/xtal/test_mapsurf_pin.cpp
   modules/xtal/test_mapsurf_viewregion.cpp
   modules/xtal/test_multigrad_undo.cpp
+  modules/xtal/test_qdfmap_roundtrip.cpp
   modules/xtal/test_quant_step.cpp
 )
 target_include_directories(test_xtal PRIVATE

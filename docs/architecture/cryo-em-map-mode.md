@@ -151,6 +151,9 @@ full では無視。`center` は view に追従するが (`setCenterQuiet`)、fu
 - `binning > 1` の isosurf は末尾キューブ判定と法線 stride の修正で見た目が僅かに変わる
   (pin テスト P2 / P8 の checksum を再取得; 頂点位置は不変)
 - `DensityMap::getCenter()` の修正で、`NXSTART != 0` の結晶 map の「object center」が正しい位置になる
+- CCP4/MRC の mode 0 (byte) map は他 mode と同じ数値経路で量子化されるため、`atFloat` の値が raw byte
+  格納時とは異なる (従来の値は base/step と不整合だった)。header の DMIN/DMAX が有効な file は 1 pass で
+  量子化されるので、実 range と header が僅かに違う場合は byte 値が ±1 変わり得る
 
 ## メモリ層 (`qlib::ChunkedArray3D`)
 
@@ -178,10 +181,55 @@ full では無視。`center` は view に追従するが (`setCenterQuiet`)、fu
   (ChimeraX の初期 contour 規則、EM の初期レベル用)
 - 孤児ファイル `DenRealMap.cpp` を削除
 
+## reader streaming と seekable stream
+
+### `qlib::InStream` の random access (`isSeekable` / `tell` / `seekTo`, 64bit)
+
+- `detail::InImpl` に既定 (非対応: false / -1 / false) を置き、`InStream` は `getImpl()` に委譲する。
+  `FormatInStream` / `BinInStream` / `CCP4InStream` のような「実装を素通しする adaptor」は元の seek 可否を
+  そのまま継承し、間に decoder (gzip / xz / base64) が入ると非 seekable になる
+- 実装: `PosixFIOImpl` (`ftello` / `fseeko`、Windows は `_ftelli64` / `_fseeki64`)、`ArrayInImpl` (文字列
+  ストリーム)。`FileInStream::getFilePos/setFilePos` は `int` から `qint64` に
+- mdtools の trajectory reader (DCD / TRR / XTC / AmberNetCDF) には「portable seekable-stream interface が
+  develop に入るまで lazy load を保留」とあり、このインターフェースがその前提になる (lazy load 自体は未実装)
+
+### `CCP4MapReader` の section streaming
+
+旧実装は float 全読み (4 byte/voxel) + ByteMap (1 byte/voxel) でピーク 5 byte/voxel、かつ float 一時 buffer が
+単一割当てだった。新実装は section (ncol × nrow) 単位で decode → 変換 → 統計 → 量子化して
+`DensityMap::sliceBytes()` に直書きする (ピーク ≈ 1 byte/voxel + 1 section):
+
+- 量子化区間の決定ポリシー (量子化には範囲が先に必要で、gzip は 2 pass できない):
+  1. header の DMIN/DMAX/DMEAN が有効 (finite, DMIN < DMAX, DMIN ≤ DMEAN ≤ DMAX) → **1 pass**。
+     読了後に実 min/max が区間を `0.5 step` 以上はみ出していれば「header が嘘」なので、seekable なら
+     data 先頭に `seekTo` して実 range で読み直し、非 seekable なら警告してクリップ
+  2. header stats 無効 + seekable → 統計 pass → `seekTo` → 量子化 pass
+  3. 非 seekable (gzip 等) → decode 済み map を `ChunkedArray3D<float>` に buffer → 統計 → 量子化
+  reader property `use_header_stats` (既定 true) で 1 を無効化できる
+- `truncate_min/max` / `normalize` は値ごとの affine 変換として streaming 中に適用 (header の RMS / mean 基準、
+  従来と同じ)。区間も同じ変換を通す
+- data mode: 0 (int8/uint8; IMOD スタンプで符号判定)、1 (int16)、2 (float32)、6 (uint16)、12 (fp16、
+  手書き変換)。未知 mode は `FileFormatException` (従来は黙って空 map)。**mode 0 は他 mode と同じ数値経路で
+  量子化する** (従来は raw byte をそのまま格納し `base=min, step=(max-min)/256` で `atFloat` が整合しなかった)
+- 軸置換: `axsect == Z` かつ恒等なら slice への行コピー、それ以外は要素ごとに `rotate()` で散らして書く
+  (追加メモリ 0)
+- `subsample` (既定 1): 各軸 n 点おきに格納。map 寸法・cell grid・start がすべて n で割り切れることを要求
+  (`getColGridSize = a/nx` と start の整合)。`setMapParams(start/n, nx/n)` で grid が n 倍に粗くなる
+- `max_voxels` (既定 0 = 無制限): 格納 voxel 数がこれを超えると割当て前に例外
+- `probeHeader(path)` (qif): 1024 byte だけ読み JSON (nc/nr/ns, mode, nvoxels, storage_bytes, ispg, nversion,
+  exttyp, origin, dmin/dmax/dmean/rms) を返す。`.gz` は decode して読む。GUI が open 前に大 map の確認や
+  subsample 提案を出すための材料 (ChimeraX `voxel_limit_for_open` 相当; ダイアログ自体は未実装)
+
+### QDF 永続化
+
+`hdr` レコードの末尾に `mtype` (int8: 判定された map kind) と `orgx/orgy/orgz` (float32) を追加。
+`QdfInStream::endRecord()` は未読フィールドを読み飛ばすので旧バージョンも新ファイルを読める。新 reader は
+`isDefined("mtype")` で旧ファイルを判定し、無ければ xtal / origin 0。サンプル本体は
+`QdfOutStream::writeFxRecords()` で section 単位に書く。
+
 ## ロードマップ (未実装)
 
-2. reader streaming: section 単位読込 (ピーク 5 → 1 byte/voxel)、header stats による 1 pass 量子化、
-   mode 1/6/12、`subsample`、`probeHeader()` による open 前ガード、`extractBlock()`
+2. `extractBlock()` (gpu_mapmesh / MapBufTex 用の strided sub-block 抽出)、mdtools の lazy frame load
 3. EM 初期レベル (上位 1% rank; `DensityMap::getLevelAtTopFraction()`) と tritium の open flow
    (`map_type` 選択、`probeHeader()` による大 map の確認ダイアログ)
 4. contour / gpu_mapmesh の full 追随、`lod*` の `MapRenderer.qif` への hoist
@@ -196,6 +244,11 @@ full では無視。`center` は view に追従するが (`setCenterQuiet`)、fu
   `Array3D` と一致、copy/move/resize
 - `test_map_histogram.cpp` — `getHistogramJSON` が直接 rebinning と一致、再ロードで cache 破棄、
   `getLevelAtTopFraction`
+- `src/tests/qlib/test_seekable_stream.cpp` — 文字列 / file / 二進 adaptor の seek、gzip は非 seekable
+- `test_ccp4map_stream.cpp` — 合成 MRC で全軸順・BE・mode 0/1/6・header stats 無効 (2 pass)・嘘 header
+  (seek 再読込)・gzip (buffered)・truncate/normalize・subsample・max_voxels・probeHeader を
+  `setMapFloatArray` 参照と全 voxel 比較
+- `test_qdfmap_roundtrip.cpp` — QDF 往復でサンプル・統計・配置・map kind・origin が保存される
 - `test_mapsurf_viewregion.cpp` — 128³ map / budget 1 Mcell で view box の切取り・stride 選択・
   boundary bbox・ヒステリシス (パン / zoom-in / zoom-out / map 外)
 - `test_mapsurf_pin.cpp` — P5 (PBC)、P7 (非零 start)、P8 (奇数サイズ stride 2)、P9 (full == P1)、

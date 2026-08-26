@@ -8,6 +8,7 @@
 #define INPUT_OUTPUT_STREAM_IMPL_HPP_
 
 #include "qlib.hpp"
+#include "LTypes.hpp"
 #include "LString.hpp"
 
 namespace qlib {
@@ -41,6 +42,23 @@ namespace qlib {
 
       /// get source URI of this stream
       virtual LString getSrcURI() const =0;
+
+      ///////////////////////
+      // Random access (optional). File-backed and in-memory sources
+      // implement these; filters and decoders (gzip, xz, base64) keep the
+      // defaults and are not seekable. Positions are 64-bit byte offsets
+      // from the start of the source.
+
+      /// True when tell()/seekTo() are supported by this source
+      virtual bool isSeekable() const { return false; }
+
+      /// Current byte offset from the start, or -1 when not seekable
+      virtual qint64 tell() const { return -1; }
+
+      /// Move to an absolute byte offset. Returns false when not seekable
+      /// (or the position is out of range); the stream position is then
+      /// unchanged.
+      virtual bool seekTo(qint64 pos) { return false; }
 
     };
 

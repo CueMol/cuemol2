@@ -172,6 +172,34 @@ public:
     m_fp = NULL;
   }
 
+  ///////////////////////
+  // 64-bit random access (InImpl seekable interface)
+
+  bool isSeekable() const override {
+    if (m_fp==NULL) return false;
+    // pipes / terminals report an error here; regular files succeed
+    return tell()>=0;
+  }
+
+  qint64 tell() const override {
+    if (m_fp==NULL) return -1;
+#ifdef _WIN32
+    const __int64 res = ::_ftelli64(m_fp);
+#else
+    const off_t res = ::ftello(m_fp);
+#endif
+    return (res<0) ? -1 : (qint64) res;
+  }
+
+  bool seekTo(qint64 pos) override {
+    if (m_fp==NULL || pos<0) return false;
+#ifdef _WIN32
+    return ::_fseeki64(m_fp, (__int64) pos, SEEK_SET)==0;
+#else
+    return ::fseeko(m_fp, (off_t) pos, SEEK_SET)==0;
+#endif
+  }
+
   int seek(int pos, int mode) override {
     switch (mode) {
     default:

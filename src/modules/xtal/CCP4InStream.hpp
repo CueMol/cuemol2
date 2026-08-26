@@ -160,6 +160,12 @@ public:
 
   void fetch_byteArray(quint8 *buf, size_t size);
 
+  /// True when the file integer byte order differs from the native one
+  bool isIntByteSwap() const { return m_intType!=m_intNativeType; }
+
+  /// True when the file float byte order differs from the native one
+  bool isFloatByteSwap() const { return m_fltType!=m_fltNativeType; }
+
 private:
 
   /**
