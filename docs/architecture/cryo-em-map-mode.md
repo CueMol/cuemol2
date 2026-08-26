@@ -84,7 +84,7 @@ start index は 0 扱い (両方非零なら警告、ChimeraX と同じ規則)�
 `makerange()` の冒頭で実効 region が `full` なら `makerangeFull()` に分岐する。既存の box 経路は
 PBC 判定の置換と `m_nStep` の設定以外は触っていない。
 
-`makerangeFull()` (`computeFullRegion()` で region と stride を決めてから整列する):
+`makerangeFull()` (`MapRenderer::computeFullRegion()` で region と stride を決めてから整列する):
 1. region = 格納ブロック全体 (絶対セル格子 index) を、**パディング済み view box** (下記) と
    molecule boundary の bbox ± `bndry_rng` で切り取る。view box がブロックと交差しなければブロック全体
 2. stride `s` = 明示 `lod`、または `lodStepForBudget()` (ChimeraX `limit_voxels`): **その region の**
@@ -98,9 +98,13 @@ PBC 判定の置換と `m_nStep` の設定以外は触っていない。
 ### zoom 連動 refine (`zoom_refine`, 既定 true)
 
 ChimeraX には camera 連動の LoD は無く (region は手動 crop / zone / `step` コマンド)、「region が小さいほど
-step が細かい」という決定則だけを借りた。本実装は **view の可視範囲から region を自動導出**する:
+step が細かい」という決定則だけを借りた。本実装は **view の可視範囲から region を自動導出**する。
+ロジックは `MapRenderer` 基底に置き (`lod` / `lod_budget` / `zoom_refine` プロパティ、view box、
+built region、`computeFullRegion()` / `worldBoxToGrid()` / `updateViewRegion()` / timer)、isosurf /
+contour / gpu_mapmesh の 3 renderer が共有する。各 renderer は full モードの `viewChanged()` を
+`handleFullModeViewEvent()` に委譲し、range を組んだら `setCurRegion()` で報告する:
 
-- `viewChanged()` は full モードで `"zoom"` / `"setCamera"` / `"center"` (drag は `dragupdate` 時のみ) /
+- `handleFullModeViewEvent()` は `"zoom"` / `"setCamera"` / `"center"` (drag は `dragupdate` 時のみ) /
   `VWE_SIZECHG` を受け、`center` は `setCenterQuiet()` で無効化せずに追従させ、
   view box = `center ± 0.5 * zoom * max(1, aspect)` (`View::getZoom()` は表示高さ [Å]、奥行きも同じ)
   を `setViewBox()` に入れて 150 ms の one-shot timer (`qlib::TimerListener`,
@@ -133,15 +137,20 @@ full では無視。`center` は view に追従するが (`setCenterQuiet`)、fu
 
 ### contour / gpu_mapmesh
 
-両 renderer とも full モードでは **ブロック全体を budget 由来の stride で** 表示する (view 連動の refine は
-isosurf のみ)。`lod` / `lod_budget` プロパティを各 renderer に持ち、contour の既定 budget は 2 Mcell
+両 renderer とも full モードでは isosurf と同じ `MapRenderer::computeFullRegion()` で **view box /
+boundary で切り取った region を budget 由来の stride で** 表示し、zoom 連動 refine も共有する。
+`lod` / `lod_budget` / `zoom_refine` は `MapRenderer.qif` の共通プロパティ (名前は hoist 前と同じなので
+`.qsc` 互換)。contour だけ `MapMeshRenderer.qif` で `lod_budget` の既定を 2 Mcell に上書きする
 (線分を cell ごとに描くので isosurf より小さい)、gpu_mapmesh は 16 Mcell。
 
-- `MapMeshRenderer::generateFull()`: `lodAlignRange` で整列した range を `ScalarObject::extractBlockBytes()`
-  で strided block に取り出し、crossing 配列 (足りなければ `ensureCrossArraySize` で拡張) を埋める。
-  描画側は `translate(m_nSt*)` の後に `scale(m_nStep)` を掛ける
-- `GLSLMapMeshRenderer2::make3DTexMapFull()`: 同じ range/stride で buffer texture を作る
-- full モードの `viewChanged` は `setCenterQuiet` で center を追従させるだけ (再生成しない)
+- `MapMeshRenderer::generateFull()`: `computeFullRegion()` の region を `lodAlignRange` で整列し、
+  `ScalarObject::extractBlockBytes()` で strided block に取り出して crossing 配列 (足りなければ
+  `ensureCrossArraySize` で拡張) を埋める。描画側は `translate(m_nSt*)` の後に `scale(m_nStep)` を掛ける。
+  display list しか持たないので、`updateViewRegion()` の `invalidateGeomCache()` = display cache 破棄で
+  次フレームに再生成される
+- `GLSLMapMeshRenderer2::make3DTexMapFull()`: 同じ region/stride で buffer texture を作る
+  (`extractBlockBytes` で取り出すだけなので再構築は軽い)。box モードの `maxExtent` は hardcode 100 ではなく
+  `bufsize` から出す
 - `extractBlock` / `extractBlockBytes` (`ScalarObject` 既定 = `atFloat/atByte` 走査; `DensityMap` は行ポインタ +
   LUT + TBB): map-local index の strided sub-block を連続配列にコピー。範囲外は PBC なら剰余で wrap、
   そうでなければ fill
@@ -149,9 +158,10 @@ isosurf のみ)。`lod` / `lod_budget` プロパティを各 renderer に持ち�
 ## GUI (tritium)
 
 - `inspector/MapRendererCommon.tsx` の `RegionLodRows`: "Region" (`region_mode`)、"Level of detail" (`lod`)、
-  "LoD budget" (`lod_budget`; full のみ)、"Refine on zoom" (`zoom_refine`; isosurf の full のみ)。isosurf / contour の
+  "LoD budget" (`lod_budget`; full のみ)、"Refine on zoom" (`zoom_refine`; full のみ)。isosurf / contour の
   両 section で使い、実効値は readonly `region_mode_resolved` から取る。full では box 専用の "Max grid size" /
-  "Buffer size" / "Use periodic boundary" を隠す
+  "Buffer size" / "Use periodic boundary" を隠す。`gpu_mapmesh` は contour と同じプロパティ集合なので
+  `rendererPropSections` の registry で `ContourMainSection` を再利用する (title "GPU contour")
 - `DensityMapPane`: `MapRendererState.regionResolved` / `mapType` を追加し、full では Extent スライダを無効化
 - `DensityMap.map_type` は enum なので generic Properties タブで編集できる
 - file-open ダイアログ (`fopen-opt-dlgs/panes/Ccp4MapOptionsPane.tsx`): "Map type" (auto / crystallographic /
@@ -188,7 +198,8 @@ isosurf のみ)。`lod` / `lod_budget` プロパティを各 renderer に持ち�
   直書き → `endByteMap(min,max,mean,rmsd)`。`setMapFloatArray`/`setMapByteArray` は内部でこれを使う
   (stats ループの算術は `MapSurfPin` の bitwise 保証のため不変)。Brix / QDF reader は temp 配列を廃して直書き、
   QDF writer は `QdfOutStream::writeFxRecords()` (新設) で section 単位に書く (voxel ごとの
-  `startRecord/writeInt8/endRecord` を排除)。voxel 数 > 2^31 の QDF 書出しは `defData` の int32 制約で例外
+  `startRecord/writeInt8/endRecord` を排除)。voxel 数 > 2^31 の map は `defData` の int32 制約を避けて
+  MAP2 形式 (下記) に分割する
 - 64bit 化: `int ntotal = ncol*nrow*nsect` を `size_t` に (CCP4 / Xplor / QDF / ElePotMap / MapFFT /
   `QdfStream::readFxRecords`)
 - histogram: `ScalarObject::getBaseHistogram()` フックを追加し、`DensityMap` は **256-bin の byte histogram
@@ -250,10 +261,16 @@ isosurf のみ)。`lod` / `lod_budget` プロパティを各 renderer に持ち�
 `isDefined("mtype")` で旧ファイルを判定し、無ければ xtal / origin 0。サンプル本体は
 `QdfOutStream::writeFxRecords()` で section 単位に書く。
 
+**MAP2 (voxel 数 > 2^31)**: QDF の data チャンクは record 数が int32 なので、1 チャンクに収まらない map は
+file type を `MAP2` にして `bmap` チャンクを **section 単位で複数に分割**する (各チャンク ≤ 2^31 record、
+1 section が 2^31 を超える map は例外)。`hdr` の末尾に `nchk` (チャンク数) / `csec` (チャンクあたり section 数)
+を MAP2 のときだけ足し、reader は `MAP1` / `MAP2` の両方を受け、MAP2 では `nchk` 個の `bmap` を順に
+`sliceBytes()` へ読む。収まる map は従来どおり `MAP1` 1 チャンクで byte 列も不変。旧 CueMol は `MAP2` を
+signature 不一致で明示的に拒否する。`QdfDenMapWriter::setChunkLimit()` はテスト用に閾値を下げるフック。
+
 ## ロードマップ (未実装)
 
 - mdtools の trajectory reader の lazy frame load (seekable stream interface は用意済み)
-- contour / gpu_mapmesh の view 連動 refine (現状は isosurf のみ)
 - float32 格納 (`MapStorage::Byte8|Float32` の runtime 切替)、file-backed pyramid
 
 ## テスト
@@ -270,11 +287,15 @@ isosurf のみ)。`lod` / `lod_budget` プロパティを各 renderer に持ち�
 - `test_ccp4map_stream.cpp` — 合成 MRC で全軸順・BE・mode 0/1/6・header stats 無効 (2 pass)・嘘 header
   (seek 再読込)・gzip (buffered)・truncate/normalize・subsample・max_voxels・probeHeader を
   `setMapFloatArray` 参照と全 voxel 比較
-- `test_qdfmap_roundtrip.cpp` — QDF 往復でサンプル・統計・配置・map kind・origin が保存される
+- `test_qdfmap_roundtrip.cpp` — QDF 往復でサンプル・統計・配置・map kind・origin が保存される;
+  閾値を下げた MAP2 分割 (2+1 section / 1 section ずつ) の往復、section がチャンクに収まらない場合の例外
 - `test_map_block_extract.cpp` — `extractBlock/extractBlockBytes` を直接走査と比較 (PBC / clip / stride / 負 start)
 - `test_mapmesh_full.cpp` — contour の full モード (budget stride、明示 stride、buffer 拡張、結晶 map は box のまま)
 - `test_mapsurf_viewregion.cpp` — 128³ map / budget 1 Mcell で view box の切取り・stride 選択・
   boundary bbox・ヒステリシス (パン / zoom-in / zoom-out / map 外)
+- `test_mapmesh_viewregion.cpp` — contour で同じ view 連動 refine (`generate()` の range が view box で
+  切り取られ stride 1 になる、ヒステリシス、box モードは無視)、3 renderer が `lod` / `lod_budget` /
+  `zoom_refine` を持ち contour の既定 budget が 2 であること
 - `test_mapsurf_pin.cpp` — P5 (PBC)、P7 (非零 start)、P8 (奇数サイズ stride 2)、P9 (full == P1)、
   P10 (full step 2 == P2)、P11 (view box で切り取った full region、cap 有り)。step 1 の pin (P1/P3/P4/P5/P7) は無変更
 - tritium: `isosurfRendererSection.test.tsx`、`densityMapPanelOpsService.test.ts`、`densityMapPaneWire.test.tsx`、

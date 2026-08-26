@@ -189,6 +189,7 @@ add_executable(test_xtal
   modules/xtal/test_mapkind_detect.cpp
   modules/xtal/test_maplod.cpp
   modules/xtal/test_mapmesh_full.cpp
+  modules/xtal/test_mapmesh_viewregion.cpp
   modules/xtal/test_maprenderer_color.cpp
   modules/xtal/test_maprenderer_region.cpp
   modules/xtal/test_mapsurf_molfanc.cpp

@@ -42,30 +42,10 @@ runtime_class MapSurfRenderer extends MapRenderer
   property real width => redirect(getLineWidth, setLineWidth);
   default width = 1.2;
 
-  /// Binning factor (marching stride in box region mode; superseded by lod)
+  /// Binning factor (marching stride in box region mode; superseded by the
+  /// lod property of MapRenderer)
   property integer binning => redirect(getBinFac, setBinFac);
   default binning = 1;
-
-  /// Level of detail: auto (binning in box mode, budget-derived stride in
-  /// full mode) or an explicit marching stride
-  enumdef lod {
-    auto = xtal::MapSurfRenderer::LOD_AUTO;
-    step1 = 1;
-    step2 = 2;
-    step4 = 4;
-    step8 = 8;
-  }
-  property enum lod => redirect(getLod, setLod);
-  default lod = "auto";
-
-  /// Cell budget of the automatic level of detail in full region mode
-  /// (in units of 2^20 marching-cubes cells)
-  property integer lod_budget => redirect(getLodBudget, setLodBudget);
-  default lod_budget = 16;
-
-  /// Refine the level of detail from the view in full region mode
-  property boolean zoom_refine => redirect(isZoomRefine, setZoomRefine);
-  default zoom_refine = true;
 
   /// Max grid size (in grid unit; default=100x100x100 grid)
   property real max_grids => redirect(getMaxGrids, setMaxGrids);

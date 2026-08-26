@@ -1,10 +1,11 @@
 /**
  * @file components/inspector/MapRendererCommon.tsx
  * @description Shared curated property rows for the `MapRenderer`-derived
- * renderers (contour `MapMeshRenderer` / isosurf `MapSurfRenderer`). These
- * renderers expose an identical "Center update" mode and "Limit display by"
- * block on top of their own per-type controls, so both pieces live here as a
- * single source of truth.
+ * renderers (contour `MapMeshRenderer` / isosurf `MapSurfRenderer` /
+ * gpu_mapmesh `GLSLMapMeshRenderer2`). These renderers expose an identical
+ * "Center update" mode, "Limit display by" block and cryo-EM region / level
+ * of detail rows on top of their own per-type controls, so those pieces live
+ * here as a single source of truth.
  *
  * Parity notes (`contour-propdlg.js` / `isosurf-propdlg.js`):
  *   - "Center update" is a tri-state menulist over two booleans: None =
@@ -321,21 +322,19 @@ interface RegionLodRowsProps {
   entries: GenericPropEntry[];
   onSet: RendererPropSectionProps["onSet"];
   onReset: RendererPropSectionProps["onReset"];
-  /** Show the `zoom_refine` switch (isosurf only) */
-  showZoomRefine?: boolean;
 }
 
 /**
- * The cryo-EM map mode rows shared by the map renderers: "Region"
- * (`region_mode`), "Level of detail" (`lod`), and, in the full region only,
- * "LoD budget" (`lod_budget`) and optionally "Refine on zoom" (`zoom_refine`).
- * Each row renders only when its property exists on the renderer.
+ * The cryo-EM map mode rows shared by the map renderers (all three carry the
+ * C++ `MapRenderer` properties): "Region" (`region_mode`), "Level of detail"
+ * (`lod`), and, in the full region only, "LoD budget" (`lod_budget`) and
+ * "Refine on zoom" (`zoom_refine`). Each row renders only when its property
+ * exists on the renderer.
  */
 export const RegionLodRows: React.FC<RegionLodRowsProps> = ({
   entries,
   onSet,
   onReset,
-  showZoomRefine,
 }) => {
   const get = (key: string) => entries.find((e) => e.key === key);
   const regionMode = get("region_mode");
@@ -379,7 +378,7 @@ export const RegionLodRows: React.FC<RegionLodRowsProps> = ({
           unit="Mcell"
         />
       )}
-      {showZoomRefine && zoomRefine && isFull && (
+      {zoomRefine && isFull && (
         <BoolRow entry={zoomRefine} label="Refine on zoom" onSet={onSet} onReset={onReset} />
       )}
     </>

@@ -89,7 +89,7 @@ export const IsosurfMainSection: React.FC<RendererPropSectionProps> = ({
         onSetMany={onSetMany}
         onReset={onReset}
       />
-      <RegionLodRows entries={entries} onSet={onSet} onReset={onReset} showZoomRefine />
+      <RegionLodRows entries={entries} onSet={onSet} onReset={onReset} />
       {drawmode && (
         <EnumRow entry={drawmode} label="Drawing mode" onSet={onSet} onReset={onReset} />
       )}

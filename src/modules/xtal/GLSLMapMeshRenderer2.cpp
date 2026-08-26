@@ -25,12 +25,11 @@ GLSLMapMeshRenderer2::GLSLMapMeshRenderer2() : super_t()
 {
     m_bChkShaderDone = false;
     m_nBufSize = 100;
-    m_nLod = LOD_AUTO;
-    m_nLodBudget = 16;
     m_nStep = 1;
     m_lw = 1.0;
     m_bPBC = false;
     m_bAutoUpdate = true;
+    m_bDragUpdate = false;
     m_pGpuPrim = nullptr;
     m_bMapTexOK = false;
 }
@@ -52,9 +51,9 @@ double GLSLMapMeshRenderer2::getMaxExtent() const
 {
     ScalarObject *pMap = qlib::ensureNotNull(getScalarObj());
 
-    const double xmax = 100 * pMap->getColGridSize() / 2.0;
-    const double ymax = 100 * pMap->getRowGridSize() / 2.0;
-    const double zmax = 100 * pMap->getSecGridSize() / 2.0;
+    const double xmax = m_nBufSize * pMap->getColGridSize() / 2.0;
+    const double ymax = m_nBufSize * pMap->getRowGridSize() / 2.0;
+    const double zmax = m_nBufSize * pMap->getSecGridSize() / 2.0;
 
     return qlib::min(xmax, qlib::min(ymax, zmax));
 }
@@ -80,6 +79,14 @@ void GLSLMapMeshRenderer2::viewChanged(qsys::ViewEvent &ev)
 {
     const int nType = ev.getType();
 
+    if (getEffectiveRegionMode() == REGION_FULL) {
+        // Full region mode: the center follows the view without rebuilding
+        // and the visible box drives the debounced region refinement
+        handleFullModeViewEvent(ev, m_bAutoUpdate, m_bDragUpdate);
+        return;
+    }
+
+    // Box region mode: the historical center following
     if (nType != qsys::ViewEvent::VWE_PROPCHG &&
         nType != qsys::ViewEvent::VWE_PROPCHG_DRG)
         return;
@@ -92,13 +99,6 @@ void GLSLMapMeshRenderer2::viewChanged(qsys::ViewEvent &ev)
     if (pView == NULL) return;
 
     Vector4D c = pView->getViewCenter();
-
-    if (getEffectiveRegionMode() == REGION_FULL) {
-        // the whole block is shown: follow the view without rebuilding
-        setCenterQuiet(c);
-        setDefaultPropFlag("center", false);
-        return;
-    }
 
     if (m_bDragUpdate) {
         if (nType == qsys::ViewEvent::VWE_PROPCHG ||
@@ -291,9 +291,10 @@ void GLSLMapMeshRenderer2::make3DTexMap(DisplayContext *pdc, ScalarObject *pMap,
 
 void GLSLMapMeshRenderer2::make3DTexMapFull(DisplayContext *pdc, ScalarObject *pMap)
 {
-    // Full region mode: the whole block at the budget-derived stride
-    // (aligned to the block start), copied into the buffer texture with
-    // extractBlockBytes(); no periodic wrap.
+    // Full region mode: the block clipped to the padded view box /
+    // molecule boundary at the budget-derived stride (aligned to the block
+    // start), copied into the buffer texture with extractBlockBytes(); no
+    // periodic wrap.
     m_bPBC = false;
 
     m_nMapColNo = pMap->getColNo();
@@ -304,14 +305,12 @@ void GLSLMapMeshRenderer2::make3DTexMapFull(DisplayContext *pdc, ScalarObject *p
     const int n[3] = {pMap->getColNo(), pMap->getRowNo(), pMap->getSecNo()};
     if (n[0] <= 0 || n[1] <= 0 || n[2] <= 0) return;
 
-    int s = m_nLod;
-    if (s == LOD_AUTO)
-        s = lodStepForBudget(n[0], n[1], n[2], (long long) m_nLodBudget << 20);
-    if (s < 1) s = 1;
+    int lo[3], hi[3], s;
+    computeFullRegion(pMap, lo, hi, s);
 
-    const LodRange rc = lodAlignRange(st[0], st[0] + n[0] - 1, st[0], n[0], s);
-    const LodRange rr = lodAlignRange(st[1], st[1] + n[1] - 1, st[1], n[1], s);
-    const LodRange rs = lodAlignRange(st[2], st[2] + n[2] - 1, st[2], n[2], s);
+    const LodRange rc = lodAlignRange(lo[0], hi[0], st[0], n[0], s);
+    const LodRange rr = lodAlignRange(lo[1], hi[1], st[1], n[1], s);
+    const LodRange rs = lodAlignRange(lo[2], hi[2], st[2], n[2], s);
     const int nn[3] = {rc.span / s + 1, rr.span / s + 1, rs.span / s + 1};
 
     MapBufTex::DataArray &maptmp = m_mapBufTex.m_data;
@@ -336,6 +335,10 @@ void GLSLMapMeshRenderer2::make3DTexMapFull(DisplayContext *pdc, ScalarObject *p
     m_nActRow = nn[1];
     m_nActSec = nn[2];
     m_nStep = s;
+
+    const int clo[3] = {rc.start, rr.start, rs.start};
+    const int chi[3] = {rc.start + rc.span, rr.start + rr.span, rs.start + rs.span};
+    setCurRegion(clo, chi, s);
 
     if (!bReuse || !m_mapBufTex.isValid()) {
         m_mapBufTex.create(pdc);

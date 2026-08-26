@@ -72,6 +72,28 @@ runtime_class MapRenderer extends Renderer
   /// Effective region policy ("box" or "full")
   property string region_mode_resolved => redirect(getRegionModeResolvedStr, XXX) (readonly);
 
+  /// Level of detail: auto (the historical stride in box mode, the
+  /// budget-derived stride of the displayed region in full mode) or an
+  /// explicit grid stride
+  enumdef lod {
+    auto = xtal::MapRenderer::LOD_AUTO;
+    step1 = 1;
+    step2 = 2;
+    step4 = 4;
+    step8 = 8;
+  }
+  property enum lod => redirect(getLod, setLod);
+  default lod = "auto";
+
+  /// Cell budget of the automatic level of detail in full region mode
+  /// (in units of 2^20 cells)
+  property integer lod_budget => redirect(getLodBudget, setLodBudget);
+  default lod_budget = 16;
+
+  /// Refine the level of detail from the view in full region mode
+  property boolean zoom_refine => redirect(isZoomRefine, setZoomRefine);
+  default zoom_refine = true;
+
   /// Contour level mode
   property boolean use_abslevel => redirect(isUseAbsLev, setUseAbsLev);
   default use_abslevel = false;

@@ -53,41 +53,6 @@ namespace xtal {
     int getBufSize() const { return m_nBufSize; }
     void setBufSize(int nsize);
 
-  public:
-    enum {
-      LOD_AUTO = 0,
-    };
-
-  private:
-    /// Level of detail: LOD_AUTO or an explicit grid stride. Full region
-    /// mode marches the whole block at the budget-derived stride; box mode
-    /// keeps stride 1 (the crossing buffers bound the box instead).
-    int m_nLod;
-
-    /// Cell budget of the automatic level of detail in full region mode
-    /// (in units of 2^20 grid cells; contour lines are drawn per cell, so
-    /// this is smaller than the isosurface budget)
-    int m_nLodBudget;
-
-  public:
-    int getLod() const { return m_nLod; }
-    void setLod(int n) {
-      if (m_nLod == n)
-        return;
-      m_nLod = n;
-      super_t::invalidateDisplayCache();
-    }
-
-    int getLodBudget() const { return m_nLodBudget; }
-    void setLodBudget(int n) {
-      if (n < 1)
-        n = 1;
-      if (m_nLodBudget == n)
-        return;
-      m_nLodBudget = n;
-      super_t::invalidateDisplayCache();
-    }
-
   private:
     /// Periodic boundary flag
     /// (default: false; set true, if map contains the entire of unit cell)
@@ -164,8 +129,10 @@ namespace xtal {
     /// Generate contour level lines
     bool generate(ScalarObject *pMap, DensityMap *pXtal);
 
-    /// Full region mode: the whole block at the budget-derived stride,
-    /// sampled through extractBlockBytes() into the crossing buffers
+    /// Full region mode: the block clipped to the padded view box /
+    /// molecule boundary (MapRenderer::computeFullRegion) at the
+    /// budget-derived stride, sampled through extractBlockBytes() into the
+    /// crossing buffers
     bool generateFull(ScalarObject *pMap, DensityMap *pXtal, unsigned int lv);
 
     /// Range of the last generate() (absolute cell-grid node index of the

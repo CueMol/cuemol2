@@ -37,7 +37,7 @@ MapMeshRenderer::MapMeshRenderer()
   m_bPBC = false;
   m_bAutoUpdate = true;
   m_bDragUpdate = false;
-  m_nLod = LOD_AUTO;
+  // contour lines are drawn per cell: a smaller budget than the isosurface
   m_nLodBudget = 2;
   m_nStep = 1;
   m_nActCol = m_nActRow = m_nActSec = 0;
@@ -406,9 +406,10 @@ void MapMeshRenderer::ensureCrossArraySize(int ncol, int nrow, int nsec)
 
 bool MapMeshRenderer::generateFull(ScalarObject *pMap, DensityMap *pXtal, unsigned int lv)
 {
-  // No periodic wrap in full region mode; the range is the whole stored
-  // block, sampled every m_nStep nodes (aligned to the block start as the
-  // isosurface does), and the crossing buffers grow to the sample count.
+  // No periodic wrap in full region mode; the range is the stored block
+  // clipped to the padded view box / molecule boundary, sampled every
+  // m_nStep nodes (aligned to the block start as the isosurface does), and
+  // the crossing buffers grow to the sample count.
   m_bPBC = false;
 
   m_nMapColNo = pMap->getColNo();
@@ -420,15 +421,12 @@ bool MapMeshRenderer::generateFull(ScalarObject *pMap, DensityMap *pXtal, unsign
   if (n[0]<=0 || n[1]<=0 || n[2]<=0)
     return false;
 
-  int s = m_nLod;
-  if (s==LOD_AUTO)
-    s = lodStepForBudget(n[0], n[1], n[2], (long long) m_nLodBudget << 20);
-  if (s<1)
-    s = 1;
+  int lo[3], hi[3], s;
+  computeFullRegion(pMap, lo, hi, s);
 
-  const LodRange rc = lodAlignRange(st[0], st[0]+n[0]-1, st[0], n[0], s);
-  const LodRange rr = lodAlignRange(st[1], st[1]+n[1]-1, st[1], n[1], s);
-  const LodRange rs = lodAlignRange(st[2], st[2]+n[2]-1, st[2], n[2], s);
+  const LodRange rc = lodAlignRange(lo[0], hi[0], st[0], n[0], s);
+  const LodRange rr = lodAlignRange(lo[1], hi[1], st[1], n[1], s);
+  const LodRange rs = lodAlignRange(lo[2], hi[2], st[2], n[2], s);
 
   // sample counts (nodes) per axis
   const int nn[3] = {rc.span/s + 1, rr.span/s + 1, rs.span/s + 1};
@@ -498,7 +496,12 @@ bool MapMeshRenderer::generateFull(ScalarObject *pMap, DensityMap *pXtal, unsign
   m_nStSec = rs.start;
   m_nStep = s;
 
-  MB_DPRINTLN("MapMesh> full region %dx%dx%d samples, step %d", nn[0], nn[1], nn[2], s);
+  const int clo[3] = {rc.start, rr.start, rs.start};
+  const int chi[3] = {rc.start + rc.span, rr.start + rr.span, rs.start + rs.span};
+  setCurRegion(clo, chi, s);
+
+  MB_DPRINTLN("MapMesh> full region [%d,%d]x[%d,%d]x[%d,%d], %dx%dx%d samples, step %d",
+              clo[0], chi[0], clo[1], chi[1], clo[2], chi[2], nn[0], nn[1], nn[2], s);
   return true;
 }
 
@@ -912,7 +915,15 @@ qlib::uid_t MapMeshRenderer::detachObj()
 void MapMeshRenderer::viewChanged(qsys::ViewEvent &ev)
 {
   const int nType = ev.getType();
-  
+
+  if (getEffectiveRegionMode()==REGION_FULL) {
+    // Full region mode: the center follows the view without regenerating
+    // and the visible box drives the debounced region refinement
+    handleFullModeViewEvent(ev, m_bAutoUpdate, m_bDragUpdate);
+    return;
+  }
+
+  // Box region mode: the historical center following
   if (nType!=qsys::ViewEvent::VWE_PROPCHG &&
       nType!=qsys::ViewEvent::VWE_PROPCHG_DRG)
     return;
@@ -928,13 +939,6 @@ void MapMeshRenderer::viewChanged(qsys::ViewEvent &ev)
     return;
 
   Vector4D c = pView->getViewCenter();
-
-  if (getEffectiveRegionMode()==REGION_FULL) {
-    // the whole block is shown: follow the view without regenerating
-    setCenterQuiet(c);
-    setDefaultPropFlag("center", false);
-    return;
-  }
 
   if (m_bDragUpdate) {
     if (nType==qsys::ViewEvent::VWE_PROPCHG ||

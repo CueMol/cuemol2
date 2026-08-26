@@ -11,7 +11,6 @@
 
 #include <qsys/ScalarObject.hpp>
 #include <qsys/ViewEvent.hpp>
-#include <qlib/TimerEvent.hpp>
 #include <modules/molstr/molstr.hpp>
 #include <modules/molstr/BSPTree.hpp>
 
@@ -34,8 +33,7 @@ namespace xtal {
 
   class MapSurfRenderer : public MapRenderer,
                           public molstr::ColSchmHolder,
-                          public qsys::ViewEventListener,
-                          public qlib::TimerListener
+                          public qsys::ViewEventListener
   {
     MC_SCRIPTABLE;
     MC_CLONEABLE;
@@ -122,80 +120,6 @@ namespace xtal {
       invalidateGeomCache();
     }
 
-  public:
-    enum {
-      LOD_AUTO = 0,
-    };
-
-  private:
-    /// Level of detail: LOD_AUTO or an explicit marching stride. In auto
-    /// mode the stride is the binning factor in box region mode and the
-    /// budget-derived stride in full region mode.
-    int m_nLod;
-
-    /// Cell budget of the automatic level of detail in full region mode
-    /// (in units of 2^20 marching-cubes cells)
-    int m_nLodBudget;
-
-  public:
-    int getLod() const { return m_nLod; }
-    void setLod(int n) {
-      if (m_nLod == n)
-        return;
-      m_nLod = n;
-      invalidateGeomCache();
-    }
-
-    int getLodBudget() const { return m_nLodBudget; }
-    void setLodBudget(int n) {
-      if (n < 1)
-        n = 1;
-      if (m_nLodBudget == n)
-        return;
-      m_nLodBudget = n;
-      invalidateGeomCache();
-    }
-
-  private:
-    /// Refine the level of detail from the view in full region mode: the
-    /// marched region is the visible box (padded), so zooming in shrinks
-    /// the region and lowers the stride under the same cell budget.
-    bool m_bZoomRefine;
-
-  public:
-    bool isZoomRefine() const { return m_bZoomRefine; }
-    void setZoomRefine(bool b) {
-      if (m_bZoomRefine == b)
-        return;
-      m_bZoomRefine = b;
-      invalidateGeomCache();
-    }
-
-    /// Set the view box (world coordinates, cube of half size half around
-    /// cent) the full region mode refines to; viewChanged() feeds it from
-    /// the view, tests set it directly.
-    void setViewBox(const Vector4D &cent, double half);
-
-    /// Padding factor of the marched region around the view box (so small
-    /// pans stay inside the region and do not rebuild)
-    static constexpr double VIEW_REGION_PAD = 1.5;
-
-    /// Region the full region mode marches for the current view box and
-    /// molecule boundary: whole block clipped to the padded view box, and
-    /// the stride under the cell budget. lo/hi are absolute cell-grid node
-    /// indices (closed range, not yet stride-aligned).
-    void computeFullRegion(ScalarObject *pMap, int lo[3], int hi[3],
-                           int &step) const;
-
-    /// Decide whether the view box moved out of the marched region or
-    /// allows a finer stride, and invalidate the geometry if so. Returns
-    /// true when a rebuild was requested. Debounced timer target of the
-    /// view events; callable directly (tests).
-    bool updateViewRegion();
-
-    /// Timer event handling (TimerListener impl): debounced view update
-    bool onTimer(double t, qlib::time_value curr, bool bLast) override;
-
   private:
     /// Max grid size (default=100x100x100 grid)
     int m_nMaxGrid;
@@ -273,19 +197,6 @@ namespace xtal {
     /// (full region mode; the gen-surf path always caps)
     bool m_bCapDisplay;
 
-    /// View box (world coordinates): a cube of half size m_dViewHalf
-    /// around m_vViewCenter; valid once a view event was received
-    bool m_bViewBoxValid;
-    Vector4D m_vViewCenter;
-    double m_dViewHalf;
-
-    /// Region marched by the last makerangeFull() (absolute cell-grid node
-    /// indices, closed range, stride-aligned) and its stride; invalid until
-    /// the first full-mode range and after every geometry invalidation
-    bool m_bCurRegionValid;
-    int m_nCurLo[3], m_nCurHi[3];
-    int m_nCurStep;
-
     /// for debug
     std::deque<Vector4D> m_tmpv;
     
@@ -341,19 +252,10 @@ namespace xtal {
     void makerange();
 
     /// Full region mode range: the stored block clipped to the padded view
-    /// box / molecule boundary, marched at the budget-derived (or explicit)
-    /// stride with the nodes aligned to the stride relative to the block
-    /// start
+    /// box / molecule boundary (MapRenderer::computeFullRegion), marched at
+    /// the budget-derived (or explicit) stride with the nodes aligned to
+    /// the stride relative to the block start
     void makerangeFull(ScalarObject *pMap);
-
-    /// Convert a world-coordinate box to the absolute cell-grid node range
-    /// it covers, clipped to the stored block. Returns false when the box
-    /// does not overlap the block.
-    bool worldBoxToGrid(ScalarObject *pMap, const Vector4D &vmin,
-                        const Vector4D &vmax, int lo[3], int hi[3]) const;
-
-    /// Register the debounced view-region update timer
-    void scheduleViewRegionUpdate();
 
     void renderImpl(DisplayContext *pdl);
 

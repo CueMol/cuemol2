@@ -315,6 +315,18 @@ export const RENDERER_SECTION_REGISTRY: Record<string, RendererPropSectionDef[]>
       Component: ContourMainSection,
     },
   ],
+  // GLSLMapMeshRenderer2 ("gpu_mapmesh"): the GPU marching-squares contour.
+  // No UXP dialog of its own; it carries the same property set as the
+  // contour renderer (both extend MapRenderer, same width / bufsize /
+  // autoupdate / dragupdate), so the contour section is reused verbatim.
+  gpu_mapmesh: [
+    {
+      key: "gpu-mapmesh-main",
+      title: "GPU contour",
+      defaultExpanded: true,
+      Component: ContourMainSection,
+    },
+  ],
   // MapSurfRenderer ("isosurf"): UXP isosurf-propdlg "Map" tab. One section --
   // drawing mode, line/point size (off for fill), max grid size, back-face
   // culling, plus the Center update / Limit display block shared with contour
