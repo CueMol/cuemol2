@@ -10,6 +10,7 @@
  *   - Region                : `region_mode` (auto / box / full)
  *   - Level of detail       : `lod` (auto / 1 / 2 / 4 / 8 stride)
  *   - LoD budget            : `lod_budget` (stepper, Mcells; full region only)
+ *   - Refine on zoom        : `zoom_refine` (switch; full region only)
  *   - Drawing Mode          : `drawmode` (fill / line / point)
  *   - Line/Point size       : `width` (drag-numeric, px, realtime; off for fill)
  *   - Max grid size         : `max_grids` (stepper; box region only)
@@ -95,6 +96,7 @@ export const IsosurfMainSection: React.FC<RendererPropSectionProps> = ({
   const regionResolved = get("region_mode_resolved");
   const lod = get("lod");
   const lodBudget = get("lod_budget");
+  const zoomRefine = get("zoom_refine");
 
   // Line/Point size only matters for line / point modes (UXP updateDisabledState).
   const widthDisabled = drawmode ? String(drawmode.value) === "fill" : false;
@@ -148,6 +150,9 @@ export const IsosurfMainSection: React.FC<RendererPropSectionProps> = ({
           step={1}
           unit="Mcell"
         />
+      )}
+      {zoomRefine && isFull && (
+        <BoolRow entry={zoomRefine} label="Refine on zoom" onSet={onSet} onReset={onReset} />
       )}
       {drawmode && (
         <EnumRow entry={drawmode} label="Drawing mode" onSet={onSet} onReset={onReset} />

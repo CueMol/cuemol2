@@ -187,6 +187,7 @@ add_executable(test_xtal
   modules/xtal/test_maprenderer_region.cpp
   modules/xtal/test_mapsurf_molfanc.cpp
   modules/xtal/test_mapsurf_pin.cpp
+  modules/xtal/test_mapsurf_viewregion.cpp
   modules/xtal/test_multigrad_undo.cpp
   modules/xtal/test_quant_step.cpp
 )

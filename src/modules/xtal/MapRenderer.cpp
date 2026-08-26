@@ -28,6 +28,7 @@ MapRenderer::MapRenderer()
   //m_dMapRange = 15.0;
 
   m_bUseMolBndry = false;
+  m_bBndryBBox = false;
   m_bUseAbsLev = false;
   m_nRegionMode = REGION_AUTO;
 
@@ -185,6 +186,7 @@ void MapRenderer::setupMolBndry()
 {
   m_boundary.clear();
   m_bUseMolBndry = false;
+  m_bBndryBBox = false;
 
   if (m_strBndryMol.isEmpty())
     return;
@@ -210,8 +212,22 @@ void MapRenderer::setupMolBndry()
   for (aiter.first(), i=0;
        aiter.hasMore() && i<natoms ;
        aiter.next(), ++i) {
-    m_boundary.setAt(i, aiter.get()->getPos(), aiter.getID());
+    const Vector4D pos = aiter.get()->getPos();
+    m_boundary.setAt(i, pos, aiter.getID());
+    if (i==0) {
+      m_vBndryMin = pos;
+      m_vBndryMax = pos;
+    }
+    else {
+      m_vBndryMin.x() = qlib::min(m_vBndryMin.x(), pos.x());
+      m_vBndryMin.y() = qlib::min(m_vBndryMin.y(), pos.y());
+      m_vBndryMin.z() = qlib::min(m_vBndryMin.z(), pos.z());
+      m_vBndryMax.x() = qlib::max(m_vBndryMax.x(), pos.x());
+      m_vBndryMax.y() = qlib::max(m_vBndryMax.y(), pos.y());
+      m_vBndryMax.z() = qlib::max(m_vBndryMax.z(), pos.z());
+    }
   }
+  m_bBndryBBox = (natoms>0);
 
   m_boundary.build();
   m_bUseMolBndry = true;

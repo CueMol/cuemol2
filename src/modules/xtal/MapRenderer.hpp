@@ -71,6 +71,13 @@ namespace xtal {
       return m_center;
     }
 
+    /// Set the center without invalidating the geometry (full region mode
+    /// keeps the center property following the view for a later switch to
+    /// box mode, while the marched region is driven by the view box).
+    void setCenterQuiet(const Vector4D &v) {
+      m_center = v;
+    }
+
   private:
     /// contour level in sigma scale
     double m_dSigLevel;
@@ -297,9 +304,27 @@ namespace xtal {
 
     double m_dBndryRng;
 
+    /// Bounding box of the boundary atoms (world coordinates; valid while
+    /// m_bUseMolBndry and at least one atom was found)
+    bool m_bBndryBBox;
+    Vector4D m_vBndryMin, m_vBndryMax;
+
   public:
     void setupMolBndry();
-    
+
+    bool isUseMolBndry() const { return m_bUseMolBndry; }
+
+    /// Bounding box of the boundary atoms, expanded by the boundary range
+    /// (world coordinates). Returns false when no boundary is in effect.
+    bool getBndryBBox(Vector4D &rmin, Vector4D &rmax) const {
+      if (!m_bUseMolBndry || !m_bBndryBBox)
+        return false;
+      const Vector4D d(m_dBndryRng, m_dBndryRng, m_dBndryRng);
+      rmin = m_vBndryMin - d;
+      rmax = m_vBndryMax + d;
+      return true;
+    }
+
     bool inMolBndry(ScalarObject *pMap, int nx, int ny, int nz) const
     {
       if (!m_bUseMolBndry)

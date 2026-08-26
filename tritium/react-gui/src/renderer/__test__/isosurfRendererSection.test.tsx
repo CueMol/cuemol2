@@ -113,6 +113,7 @@ function isosurfEntries(over?: {
     entry({ key: 'region_mode_resolved', type: 'string', value: over?.regionResolved ?? 'box', readonly: true }),
     entry({ key: 'lod', type: 'enum', value: 'auto', enumdef: ['auto', 'step1', 'step2', 'step4', 'step8'] }),
     entry({ key: 'lod_budget', type: 'integer', value: 16 }),
+    entry({ key: 'zoom_refine', type: 'boolean', value: true }),
     entry({ key: 'drawmode', type: 'enum', value: over?.drawmode ?? 'fill', enumdef: ['fill', 'line', 'point'] }),
     entry({ key: 'width', type: 'real', value: 1.2 }),
     entry({ key: 'max_grids', type: 'real', value: 100 }),
@@ -163,8 +164,10 @@ describe('IsosurfMainSection', () => {
     ]) {
       expect(rowByLabel(container, label), label).not.toBeNull()
     }
-    // The LoD budget only applies to the full region and stays hidden in box.
+    // The LoD budget and zoom refinement only apply to the full region and
+    // stay hidden in box.
     expect(rowByLabel(container, 'LoD budget')).toBeNull()
+    expect(rowByLabel(container, 'Refine on zoom')).toBeNull()
     expect(container.querySelectorAll('.h3-form-prop-row').length).toBe(12)
     unmount()
   })
@@ -212,6 +215,11 @@ describe('IsosurfMainSection', () => {
     act(() => typeInto(input, '32'))
     act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })))
     expect(onSet).toHaveBeenCalledWith('lod_budget', 'integer', 32)
+
+    const refine = rowByLabel(container, 'Refine on zoom')
+    expect(refine).not.toBeNull()
+    act(() => switchIn(refine!).click())
+    expect(onSet).toHaveBeenCalledWith('zoom_refine', 'boolean', false)
     unmount()
   })
 

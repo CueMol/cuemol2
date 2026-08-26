@@ -15,6 +15,7 @@
 #include <gfx/MarchingCubes.hpp>
 #include <gfx/Mesh.hpp>
 #include <qlib/parallel.hpp>
+#include <qlib/EventManager.hpp>
 
 #include <unordered_map>
 
@@ -58,6 +59,14 @@ MapSurfRenderer::MapSurfRenderer()
   m_nStep = 1;
   m_bCapDisplay = false;
 
+  m_bZoomRefine = true;
+  m_bViewBoxValid = false;
+  m_dViewHalf = 0.0;
+  m_bCurRegionValid = false;
+  m_nCurStep = 1;
+  for (int i=0; i<3; ++i)
+    m_nCurLo[i] = m_nCurHi[i] = 0;
+
   m_bGenSurfMode = false;
 
   m_bMeshCacheValid = false;
@@ -74,6 +83,7 @@ MapSurfRenderer::~MapSurfRenderer()
   // for safety, remove from event manager is needed here...
   ScrEventManager *pSEM = ScrEventManager::getInstance();
   pSEM->removeViewListener(this);
+  qlib::EventManager::getInstance()->removeTimer(this);
 
   if (m_pAtomPosMap!=NULL)
     delete m_pAtomPosMap;
@@ -115,19 +125,63 @@ qlib::uid_t MapSurfRenderer::detachObj()
 void MapSurfRenderer::viewChanged(qsys::ViewEvent &ev)
 {
   const int nType = ev.getType();
-  
+
   if (nType!=qsys::ViewEvent::VWE_PROPCHG &&
-      nType!=qsys::ViewEvent::VWE_PROPCHG_DRG)
+      nType!=qsys::ViewEvent::VWE_PROPCHG_DRG &&
+      nType!=qsys::ViewEvent::VWE_SIZECHG)
+    return;
+
+  qsys::View *pView = ev.getTargetPtr();
+  if (pView==NULL)
+    return;
+
+  if (getEffectiveRegionMode()==REGION_FULL) {
+    // Full region mode: the center follows the view without a rebuild
+    // (it only matters for a later switch to box mode), and the visible
+    // box feeds the debounced region refinement; updateViewRegion()
+    // decides whether the box left the marched region or allows a finer
+    // stride, so a pan or wheel burst costs at most one rebuild.
+    const LString descr = ev.getDescr();
+    const bool bSize = (nType==qsys::ViewEvent::VWE_SIZECHG);
+    const bool bCenter = !bSize && descr.equals("center");
+    const bool bZoom = !bSize &&
+        (descr.equals("zoom") || descr.equals("setCamera"));
+    if (!bSize && !bCenter && !bZoom)
+      return;
+    if (nType==qsys::ViewEvent::VWE_PROPCHG_DRG && !m_bDragUpdate)
+      return;
+
+    const Vector4D c = pView->getViewCenter();
+    if (bCenter && (m_bAutoUpdate || m_bDragUpdate)) {
+      setCenterQuiet(c);
+      setDefaultPropFlag("center", false);
+    }
+
+    if (!m_bZoomRefine)
+      return;
+
+    // Visible box: the zoom is the visible height (angstrom), the width
+    // follows the aspect ratio; the depth is taken equal to the larger of
+    // the two (the slab depth is usually far deeper than the map).
+    const double zoom = pView->getZoom();
+    const int w = pView->getWidth();
+    const int h = pView->getHeight();
+    const double aspect = (w>0 && h>0) ? double(w)/double(h) : 1.0;
+    const double half = 0.5 * zoom * qlib::max(1.0, aspect);
+    setViewBox(c, half);
+    scheduleViewRegionUpdate();
+    return;
+  }
+
+  // Box region mode: the historical center following (a center change is
+  // a geometry change of the center +- extent box).
+  if (nType==qsys::ViewEvent::VWE_SIZECHG)
     return;
 
   if (!m_bAutoUpdate && !m_bDragUpdate)
     return;
 
   if (!ev.getDescr().equals("center"))
-    return;
-
-  qsys::View *pView = ev.getTargetPtr();
-  if (pView==NULL)
     return;
 
   Vector4D c = pView->getViewCenter();
@@ -433,38 +487,24 @@ void MapSurfRenderer::makerange()
 void MapSurfRenderer::makerangeFull(ScalarObject *pMap)
 {
   // Full region mode: no periodic wrap, the surface is closed at the
-  // region boundary, and the range is the whole stored block in absolute
-  // cell-grid node indices. (Later phases intersect this region with the
-  // view box / molecule boundary before choosing the stride.)
+  // region boundary, and the range is the stored block clipped to the
+  // padded view box / molecule boundary, in absolute cell-grid node
+  // indices.
   m_bPBC = false;
   m_bCapDisplay = true;
 
-  const int sc = pMap->getStartCol();
-  const int sr = pMap->getStartRow();
-  const int ss = pMap->getStartSec();
-  const int nc = pMap->getColNo();
-  const int nr = pMap->getRowNo();
-  const int ns = pMap->getSecNo();
+  int lo[3], hi[3], s;
+  computeFullRegion(pMap, lo, hi, s);
 
-  const int lo[3] = {sc, sr, ss};
-  const int hi[3] = {sc+nc-1, sr+nr-1, ss+ns-1};
-
-  // Stride: explicit lod step, or the smallest power of two that keeps
-  // the marched cell count under the budget.
-  int s = m_nLod;
-  if (s==LOD_AUTO) {
-    const long long budget = (long long) m_nLodBudget << 20;
-    s = lodStepForBudget(hi[0]-lo[0]+1, hi[1]-lo[1]+1, hi[2]-lo[2]+1, budget);
-  }
-  if (s<1)
-    s = 1;
+  const int st[3] = {pMap->getStartCol(), pMap->getStartRow(), pMap->getStartSec()};
+  const int n[3] = {pMap->getColNo(), pMap->getRowNo(), pMap->getSecNo()};
 
   // Align the sample nodes to multiples of the stride relative to the
   // block start; the aligned span never passes the last aligned node, so
   // no cube reads past the block.
-  const LodRange rc = lodAlignRange(lo[0], hi[0], sc, nc, s);
-  const LodRange rr = lodAlignRange(lo[1], hi[1], sr, nr, s);
-  const LodRange rs = lodAlignRange(lo[2], hi[2], ss, ns, s);
+  const LodRange rc = lodAlignRange(lo[0], hi[0], st[0], n[0], s);
+  const LodRange rr = lodAlignRange(lo[1], hi[1], st[1], n[1], s);
+  const LodRange rs = lodAlignRange(lo[2], hi[2], st[2], n[2], s);
 
   m_nStCol = rc.start;
   m_nStRow = rr.start;
@@ -474,8 +514,223 @@ void MapSurfRenderer::makerangeFull(ScalarObject *pMap)
   m_nActSec = rs.span;
   m_nStep = s;
 
-  MB_DPRINTLN("MapSurfRend> full region %dx%dx%d nodes, step %d",
-              nc, nr, ns, s);
+  m_nCurLo[0] = rc.start;
+  m_nCurLo[1] = rr.start;
+  m_nCurLo[2] = rs.start;
+  m_nCurHi[0] = rc.start + rc.span;
+  m_nCurHi[1] = rr.start + rr.span;
+  m_nCurHi[2] = rs.start + rs.span;
+  m_nCurStep = s;
+  m_bCurRegionValid = true;
+
+  MB_DPRINTLN("MapSurfRend> full region [%d,%d]x[%d,%d]x[%d,%d] of %dx%dx%d nodes, step %d",
+              m_nCurLo[0], m_nCurHi[0], m_nCurLo[1], m_nCurHi[1],
+              m_nCurLo[2], m_nCurHi[2], n[0], n[1], n[2], s);
+}
+
+bool MapSurfRenderer::worldBoxToGrid(ScalarObject *pMap,
+                                     const Vector4D &vmin, const Vector4D &vmax,
+                                     int lo[3], int hi[3]) const
+{
+  DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
+
+  // inverse of the object xform (world --> map orthogonal coordinates)
+  const Matrix4D &xfm = pMap->getXformMatrix();
+  const bool bXfm = !xfm.isIdent();
+  Matrix3D rmat;
+  Vector4D tr;
+  if (bXfm) {
+    rmat = xfm.getMatrix3D();
+    rmat = rmat.invert();
+    tr = xfm.getTransPart();
+  }
+
+  const Vector4D vorig = pMap->getOrigin();
+
+  // grid-index bounding box of the eight corners (the cell may be skewed)
+  Vector4D gmin, gmax;
+  for (int i=0; i<8; ++i) {
+    Vector4D p((i&1) ? vmax.x() : vmin.x(),
+               (i&2) ? vmax.y() : vmin.y(),
+               (i&4) ? vmax.z() : vmin.z());
+    if (bXfm) {
+      p -= tr;
+      p = rmat.mulvec(p);
+    }
+    p -= vorig;
+    if (pXtal!=NULL) {
+      pXtal->getXtalInfo().orthToFrac(p);
+      p.x() *= pXtal->getColInterval();
+      p.y() *= pXtal->getRowInterval();
+      p.z() *= pXtal->getSecInterval();
+    }
+    else {
+      p.x() /= pMap->getColGridSize();
+      p.y() /= pMap->getRowGridSize();
+      p.z() /= pMap->getSecGridSize();
+    }
+    if (i==0) {
+      gmin = p;
+      gmax = p;
+    }
+    else {
+      gmin.x() = qlib::min(gmin.x(), p.x());
+      gmin.y() = qlib::min(gmin.y(), p.y());
+      gmin.z() = qlib::min(gmin.z(), p.z());
+      gmax.x() = qlib::max(gmax.x(), p.x());
+      gmax.y() = qlib::max(gmax.y(), p.y());
+      gmax.z() = qlib::max(gmax.z(), p.z());
+    }
+  }
+
+  const int st[3] = {pMap->getStartCol(), pMap->getStartRow(), pMap->getStartSec()};
+  const int n[3] = {pMap->getColNo(), pMap->getRowNo(), pMap->getSecNo()};
+  const double dmin[3] = {gmin.x(), gmin.y(), gmin.z()};
+  const double dmax[3] = {gmax.x(), gmax.y(), gmax.z()};
+
+  // The fractional conversion goes through the numerically inverted cell
+  // matrix, so a box edge sitting on a node comes back as 2.9999999 or
+  // 3.0000001; snap within a small tolerance before rounding outward.
+  const double eps = 1.0e-4;
+  for (int a=0; a<3; ++a) {
+    lo[a] = qlib::max(int(floor(dmin[a] + eps)), st[a]);
+    hi[a] = qlib::min(int(ceil(dmax[a] - eps)), st[a]+n[a]-1);
+    if (lo[a]>hi[a])
+      return false;
+  }
+  return true;
+}
+
+void MapSurfRenderer::computeFullRegion(ScalarObject *pMap, int lo[3], int hi[3],
+                                        int &step) const
+{
+  const int st[3] = {pMap->getStartCol(), pMap->getStartRow(), pMap->getStartSec()};
+  const int n[3] = {pMap->getColNo(), pMap->getRowNo(), pMap->getSecNo()};
+  for (int a=0; a<3; ++a) {
+    lo[a] = st[a];
+    hi[a] = st[a]+n[a]-1;
+  }
+
+  // Clip to the padded view box. A view box that misses the block
+  // altogether falls back to the whole block: the coarse whole map keeps
+  // the user oriented, and there is nothing better to show.
+  if (m_bZoomRefine && m_bViewBoxValid) {
+    const double h = m_dViewHalf * VIEW_REGION_PAD;
+    const Vector4D d(h, h, h);
+    int vlo[3], vhi[3];
+    if (worldBoxToGrid(pMap, m_vViewCenter - d, m_vViewCenter + d, vlo, vhi)) {
+      for (int a=0; a<3; ++a) {
+        lo[a] = qlib::max(lo[a], vlo[a]);
+        hi[a] = qlib::min(hi[a], vhi[a]);
+      }
+    }
+  }
+
+  // Clip to the molecule boundary box: the boundary masks every cell
+  // outside it, so marching them only wastes budget.
+  Vector4D bmin, bmax;
+  if (getBndryBBox(bmin, bmax)) {
+    int blo[3], bhi[3];
+    if (worldBoxToGrid(pMap, bmin, bmax, blo, bhi)) {
+      int tlo[3], thi[3];
+      bool bEmpty = false;
+      for (int a=0; a<3; ++a) {
+        tlo[a] = qlib::max(lo[a], blo[a]);
+        thi[a] = qlib::min(hi[a], bhi[a]);
+        if (tlo[a]>thi[a])
+          bEmpty = true;
+      }
+      if (!bEmpty) {
+        for (int a=0; a<3; ++a) {
+          lo[a] = tlo[a];
+          hi[a] = thi[a];
+        }
+      }
+    }
+  }
+
+  // Stride: explicit lod step, or the smallest power of two that keeps
+  // the marched cell count of this region under the budget.
+  step = m_nLod;
+  if (step==LOD_AUTO) {
+    const long long budget = (long long) m_nLodBudget << 20;
+    step = lodStepForBudget(hi[0]-lo[0]+1, hi[1]-lo[1]+1, hi[2]-lo[2]+1, budget);
+  }
+  if (step<1)
+    step = 1;
+}
+
+void MapSurfRenderer::setViewBox(const Vector4D &cent, double half)
+{
+  m_vViewCenter = cent;
+  m_dViewHalf = qlib::max(half, 0.0);
+  m_bViewBoxValid = true;
+}
+
+void MapSurfRenderer::scheduleViewRegionUpdate()
+{
+  // One pending timer per listener: a burst of view events (wheel zoom,
+  // drag) collapses into one update after the last event.
+  qlib::EventManager::getInstance()->setTimerMilliSec(this, 150.0);
+}
+
+bool MapSurfRenderer::onTimer(double t, qlib::time_value curr, bool bLast)
+{
+  if (!bLast)
+    return true;
+  updateViewRegion();
+  return false;
+}
+
+bool MapSurfRenderer::updateViewRegion()
+{
+  ScalarObject *pMap = getScalarObj();
+  if (pMap==NULL)
+    return false;
+  if (getEffectiveRegionMode()!=REGION_FULL ||
+      !m_bZoomRefine || !m_bViewBoxValid)
+    return false;
+
+  if (!m_bCurRegionValid) {
+    invalidateGeomCache();
+    return true;
+  }
+
+  // A finer stride fits the budget for the new view box: refine.
+  int lo[3], hi[3], step;
+  computeFullRegion(pMap, lo, hi, step);
+  if (step < m_nCurStep) {
+    invalidateGeomCache();
+    return true;
+  }
+
+  // Otherwise the (unpadded) view box must still lie inside the marched
+  // region; the padding absorbs small pans. A coarser fresh stride alone
+  // does not rebuild: the finer surface on screen still covers the view.
+  const Vector4D d(m_dViewHalf, m_dViewHalf, m_dViewHalf);
+  int vlo[3], vhi[3];
+  if (!worldBoxToGrid(pMap, m_vViewCenter - d, m_vViewCenter + d, vlo, vhi))
+    return false;   // the view left the map: keep what is shown
+  Vector4D bmin, bmax;
+  if (getBndryBBox(bmin, bmax)) {
+    // the marched region is also clipped to the boundary box
+    int blo[3], bhi[3];
+    if (worldBoxToGrid(pMap, bmin, bmax, blo, bhi)) {
+      for (int a=0; a<3; ++a) {
+        vlo[a] = qlib::max(vlo[a], blo[a]);
+        vhi[a] = qlib::min(vhi[a], bhi[a]);
+      }
+    }
+  }
+  for (int a=0; a<3; ++a) {
+    if (vlo[a]>vhi[a])
+      continue;
+    if (vlo[a] < m_nCurLo[a] || vhi[a] > m_nCurHi[a]) {
+      invalidateGeomCache();
+      return true;
+    }
+  }
+  return false;
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -796,6 +1051,7 @@ void MapSurfRenderer::invalidateMeshCache()
   std::vector<CachedVert>().swap(m_meshCache);
   m_bMeshCacheValid = false;
   m_bAidValid = false;
+  m_bCurRegionValid = false;
   m_trigGpuPrim.invalidate();
   super_t::invalidateDisplayCache();
 }
@@ -1135,6 +1391,7 @@ void MapSurfRenderer::display(DisplayContext *pdc)
 void MapSurfRenderer::unloading()
 {
   m_trigGpuPrim.invalidate();
+  qlib::EventManager::getInstance()->removeTimer(this);
   super_t::unloading();
 }
 

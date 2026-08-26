@@ -404,6 +404,27 @@ TEST_F(MapSurfPin, FullRegionStep2)
                   /*area*/ 52.900922, /*checksum*/ 242977.127854);
 }
 
+// P11: full region mode clipped to a view box: (6,6,6) +- 2 A padded 1.5x
+// to +-3 A gives the node range [3,9] on every axis. The surface is cut
+// by the region boundary and closed with caps (the bbox is exactly the
+// region box), unlike the box-mode P1 which leaves it open.
+TEST_F(MapSurfPin, FullRegionViewCrop)
+{
+    xtal::DensityMap *pMap = dynamic_cast<xtal::DensityMap *>(m_pObj.get());
+    ASSERT_NE(pMap, nullptr);
+    pMap->setDetectedMapType(xtal::DensityMap::MAPTYPE_EM);
+    m_pMSR->setViewBox(Vector4D(6.0, 6.0, 6.0), 2.0);
+
+    const SurfSummary s = summarize();
+    ASSERT_GT(s.nverts, 0);
+    expectSummary(s, "P11",
+                  /*nverts*/ 660,
+                  /*bbox*/ 3.000000, 3.000000, 3.831297,
+                  8.409676, 7.105779, 8.105779,
+                  /*centroid*/ 5.170610, 4.642984, 5.634449,
+                  /*area*/ 66.017100, /*checksum*/ 7083127.227520);
+}
+
 // P6: two runs must be bitwise identical (catches nondeterminism in-process).
 TEST_F(MapSurfPin, RunTwiceBitwise)
 {

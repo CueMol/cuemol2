@@ -84,15 +84,35 @@ start index は 0 扱い (両方非零なら警告、ChimeraX と同じ規則)�
 `makerange()` の冒頭で実効 region が `full` なら `makerangeFull()` に分岐する。既存の box 経路は
 PBC 判定の置換と `m_nStep` の設定以外は触っていない。
 
-`makerangeFull()`:
-1. region = 格納ブロック全体 (絶対セル格子 index)。将来 view box / molecule boundary の bbox と交差させる
-2. stride `s` = 明示 `lod`、または `lodStepForBudget()` (ChimeraX `limit_voxels`): セル数が
-   `lod_budget << 20` を超える間 `s *= 2` (等方・2 の冪、上限 64)。16 Mcell 既定で
-   256³ → 1、300³ / 512³ → 2、1024³ → 4
+`makerangeFull()` (`computeFullRegion()` で region と stride を決めてから整列する):
+1. region = 格納ブロック全体 (絶対セル格子 index) を、**パディング済み view box** (下記) と
+   molecule boundary の bbox ± `bndry_rng` で切り取る。view box がブロックと交差しなければブロック全体
+2. stride `s` = 明示 `lod`、または `lodStepForBudget()` (ChimeraX `limit_voxels`): **その region の**
+   セル数が `lod_budget << 20` を超える間 `s *= 2` (等方・2 の冪、上限 64)。16 Mcell 既定で全域なら
+   256³ → 1、300³ / 512³ → 2、1024³ → 4。region が小さいほど stride が下がる
 3. `lodAlignRange()`: サンプルノードを **ブロック start 基準で s の倍数に整列**
    (ChimeraX `step_aligned_region`)。region を動かしても同じノードを踏むので、隣接 region 間で面が連続する。
    span はブロック最後の整列ノードを越えない (どのキューブもブロック外を読まない)
 4. `m_bPBC = false`、`m_bCapDisplay = true` (表示経路でも region 境界を閉じる = ChimeraX `cap_faces`)
+
+### zoom 連動 refine (`zoom_refine`, 既定 true)
+
+ChimeraX には camera 連動の LoD は無く (region は手動 crop / zone / `step` コマンド)、「region が小さいほど
+step が細かい」という決定則だけを借りた。本実装は **view の可視範囲から region を自動導出**する:
+
+- `viewChanged()` は full モードで `"zoom"` / `"setCamera"` / `"center"` (drag は `dragupdate` 時のみ) /
+  `VWE_SIZECHG` を受け、`center` は `setCenterQuiet()` で無効化せずに追従させ、
+  view box = `center ± 0.5 * zoom * max(1, aspect)` (`View::getZoom()` は表示高さ [Å]、奥行きも同じ)
+  を `setViewBox()` に入れて 150 ms の one-shot timer (`qlib::TimerListener`,
+  `EventManager::setTimerMilliSec`; 同一 listener の再登録は置換) を張る
+- timer 満了で `updateViewRegion()`: (1) 新しい view box で計算した stride が現 region の stride より細かければ
+  再構築 (zoom-in の細密化)、(2) それ以外は **パディング無しの view box** が現 region (1.5 倍パディング) に
+  収まっていれば何もしない、はみ出せば再構築。zoom-out で fresh stride が粗くなっても、view が region 内なら
+  画面上の細かい面をそのまま使う (ヒステリシス)。view が map 外に出たときも現状維持
+- 再構築は `invalidateGeomCache()` → 次フレームの `display()` で `makerangeFull()` から作り直す。
+  `worldBoxToGrid()` は 8 corner を逆 xform → `-origin` → orthToFrac → ×interval して AABB を取るので
+  非直交セルでも動く (逆行列の丸めで node 境界が 2.9999999 になるため 1e-4 の epsilon で外側に丸める)
+- gtest では TimerImpl が無く `setTimer` は無視されるので、テストは `setViewBox()` → `updateViewRegion()` を直接呼ぶ
 
 MC カーネル (`runMarchingCubes` / `marchCubeCell` / `getGrdNorm2`) は `m_nBinFac` の代わりに作業変数
 `m_nStep` を使う。stride > 1 のみに効く 2 つの修正を同時に入れた:
@@ -102,7 +122,8 @@ MC カーネル (`runMarchingCubes` / `marchCubeCell` / `getGrdNorm2`) は `m_nB
 - 法線を「±1 ノード」から「±stride」の中央差分に (粗い面に ±1 微分は高周波ノイズ)
 
 `generateSurfObj()` は表示と同じ region / stride を使う。`extent` / `max_grids` / `maxExtent` は
-full では無視、`center` は将来の zoom-crop の中心として残す。
+full では無視。`center` は view に追従するが (`setCenterQuiet`)、full では region を決めない
+(box モードに切り替えたときの中心として残る)。
 
 ### contour / gpu_mapmesh
 
@@ -113,8 +134,8 @@ full では無視、`center` は将来の zoom-crop の中心として残す。
 ## GUI (tritium)
 
 - `inspector/IsosurfRendererSection.tsx`: "Region" (`region_mode`)、"Level of detail" (`lod`)、
-  "LoD budget" (`lod_budget`, full のみ)。実効値は readonly `region_mode_resolved` から取り、full では
-  box 専用の "Max grid size" / "Use periodic boundary" を隠す
+  "LoD budget" (`lod_budget`) と "Refine on zoom" (`zoom_refine`; いずれも full のみ)。実効値は readonly
+  `region_mode_resolved` から取り、full では box 専用の "Max grid size" / "Use periodic boundary" を隠す
 - `DensityMapPane`: `MapRendererState.regionResolved` / `mapType` を追加し、full では Extent スライダを無効化
 - `DensityMap.map_type` は enum なので generic Properties タブで編集できる
 
@@ -131,9 +152,8 @@ full では無視、`center` は将来の zoom-crop の中心として残す。
    64bit 添字、256-bin 無損失 histogram
 2. reader streaming: section 単位読込 (ピーク 5 → 1 byte/voxel)、header stats による 1 pass 量子化、
    mode 1/6/12、`subsample`、`probeHeader()` による open 前ガード、`extractBlock()`
-3. zoom 連動 refine: view の可視範囲 (`View::getZoom()` = 表示高さ) から region を導出して budget step を再計算
-   (ChimeraX には camera 連動 LoD は無く手動 crop; region → step の決定則だけを借りる)、
-   `TimerListener` によるデバウンスとヒステリシス、full モードの表示 cap、EM 初期レベル (上位 1% rank)
+3. EM 初期レベル (上位 1% rank; `DensityMap::getLevelAtTopFraction()`) と tritium の open flow
+   (`map_type` 選択、`probeHeader()` による大 map の確認ダイアログ)
 4. contour / gpu_mapmesh の full 追随、`lod*` の `MapRenderer.qif` への hoist
 
 ## テスト
@@ -142,6 +162,8 @@ full では無視、`center` は将来の zoom-crop の中心として残す。
 - `test_maplod.cpp` — `lodStepForBudget` / `lodAlignRange`
 - `test_maprenderer_region.cpp` — map_type / region_mode の解決、PBC 適格、`getCenter()`、origin の座標変換
 - `test_ccp4_origin.cpp` — 合成 MRC (1024 byte header + float) で ORIGIN / 判定 / label 読込
+- `test_mapsurf_viewregion.cpp` — 128³ map / budget 1 Mcell で view box の切取り・stride 選択・
+  boundary bbox・ヒステリシス (パン / zoom-in / zoom-out / map 外)
 - `test_mapsurf_pin.cpp` — P5 (PBC)、P7 (非零 start)、P8 (奇数サイズ stride 2)、P9 (full == P1)、
-  P10 (full step 2 == P2)。step 1 の pin (P1/P3/P4/P5/P7) は無変更
+  P10 (full step 2 == P2)、P11 (view box で切り取った full region、cap 有り)。step 1 の pin (P1/P3/P4/P5/P7) は無変更
 - tritium: `isosurfRendererSection.test.tsx`、`densityMapPanelOpsService.test.ts`、`densityMapPaneWire.test.tsx`

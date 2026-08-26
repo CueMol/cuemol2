@@ -63,6 +63,10 @@ runtime_class MapSurfRenderer extends MapRenderer
   property integer lod_budget => redirect(getLodBudget, setLodBudget);
   default lod_budget = 16;
 
+  /// Refine the level of detail from the view in full region mode
+  property boolean zoom_refine => redirect(isZoomRefine, setZoomRefine);
+  default zoom_refine = true;
+
   /// Max grid size (in grid unit; default=100x100x100 grid)
   property real max_grids => redirect(getMaxGrids, setMaxGrids);
   default max_grids = 100;
