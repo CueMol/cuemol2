@@ -192,8 +192,29 @@ describe('getMapRendererState', () => {
             minLevel: -5,
             maxExtent: 60,
             denSigma: 0.42,
+            // neither the renderer nor the parent expose the resolved
+            // region / map kind here (older addon shape) -> empty strings
+            regionResolved: '',
+            mapType: '',
             defaults: { alpha: true, siglevel: false, extent: false },
         })
+    })
+
+    it('surfaces the resolved region policy and map kind when exposed', () => {
+        const parent = { den_sigma: 1, map_type_resolved: 'em' }
+        const rend = {
+            alpha: 1, extent: 15, siglevel: 1.1, use_abslevel: true,
+            maxLevel: 5, minLevel: -5, maxExtent: 100,
+            region_mode_resolved: 'full',
+            color: { toString: () => '#0000FF' },
+            getClientObj: () => parent,
+        }
+        const scene = makeUndoScene(100)
+        scene.getRenderer = vi.fn(() => rend)
+        const ctx = makeCtx({ scene })
+        const { state } = getMapRendererState(ctx, { sceneId: 100, rendId: 11 })
+        expect(state?.regionResolved).toBe('full')
+        expect(state?.mapType).toBe('em')
     })
 
     it('falls back to denSigma=1 when getClientObj() throws', () => {

@@ -163,6 +163,18 @@ export interface MapRendererState {
     /** Sigma scale factor from the parent ScalarObject; falls back to 1. */
     denSigma: number;
     /**
+     * Effective display region policy ("box" or "full") from the renderer's
+     * read-only `region_mode_resolved`. In the full region the whole map is
+     * marched, so the Extent slider has no effect. Empty string when the
+     * renderer has no such prop (older addon).
+     */
+    regionResolved: string;
+    /**
+     * Effective map kind ("xtal" or "em") from the parent DensityMap's
+     * read-only `map_type_resolved`; empty string for other scalar objects.
+     */
+    mapType: string;
+    /**
      * Per-prop default flags (flag-based, from the C++ default state) for the
      * realtime-drag props. The panel freezes these at drag start so the commit /
      * abort restore can revert the default flag, not just the value.
@@ -205,7 +217,8 @@ function getMapRendererState(
         maxLevel: number;
         minLevel: number;
         maxExtent: number;
-        getClientObj: () => { den_sigma: number } | null;
+        region_mode_resolved: string;
+        getClientObj: () => { den_sigma: number; map_type_resolved?: string } | null;
     };
 
     const denSigma = safeRead(() => {
@@ -213,6 +226,17 @@ function getMapRendererState(
         const v = obj ? obj.den_sigma : 1;
         return Number.isFinite(v) && v > 0 ? v : 1;
     }, 1);
+
+    const regionResolved = safeRead(() => {
+        const v = r.region_mode_resolved as unknown;
+        return typeof v === 'string' ? v : '';
+    }, '');
+
+    const mapType = safeRead(() => {
+        const obj = r.getClientObj();
+        const v = obj ? (obj.map_type_resolved as unknown) : '';
+        return typeof v === 'string' ? v : '';
+    }, '');
 
     const color = safeRead(() => {
         const c = r.color;
@@ -236,6 +260,8 @@ function getMapRendererState(
             minLevel: safeRead(() => r.minLevel, -10),
             maxExtent: safeRead(() => r.maxExtent, 100),
             denSigma,
+            regionResolved,
+            mapType,
             defaults,
         },
     };

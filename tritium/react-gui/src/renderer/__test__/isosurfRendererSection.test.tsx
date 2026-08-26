@@ -100,10 +100,19 @@ function switchIn(row: HTMLElement): HTMLInputElement {
   return row.querySelector('input[type="checkbox"]') as HTMLInputElement
 }
 
-function isosurfEntries(over?: { drawmode?: string; bndryMol?: string }): GenericPropEntry[] {
+function isosurfEntries(over?: {
+  drawmode?: string
+  bndryMol?: string
+  regionMode?: string
+  regionResolved?: string
+}): GenericPropEntry[] {
   return [
     entry({ key: 'autoupdate', type: 'boolean', value: true }),
     entry({ key: 'dragupdate', type: 'boolean', value: false }),
+    entry({ key: 'region_mode', type: 'enum', value: over?.regionMode ?? 'auto', enumdef: ['auto', 'box', 'full'] }),
+    entry({ key: 'region_mode_resolved', type: 'string', value: over?.regionResolved ?? 'box', readonly: true }),
+    entry({ key: 'lod', type: 'enum', value: 'auto', enumdef: ['auto', 'step1', 'step2', 'step4', 'step8'] }),
+    entry({ key: 'lod_budget', type: 'integer', value: 16 }),
     entry({ key: 'drawmode', type: 'enum', value: over?.drawmode ?? 'fill', enumdef: ['fill', 'line', 'point'] }),
     entry({ key: 'width', type: 'real', value: 1.2 }),
     entry({ key: 'max_grids', type: 'real', value: 100 }),
@@ -140,6 +149,8 @@ describe('IsosurfMainSection', () => {
     )
     for (const label of [
       'Center update',
+      'Region',
+      'Level of detail',
       'Drawing mode',
       'Line/Point size',
       'Max grid size',
@@ -152,7 +163,65 @@ describe('IsosurfMainSection', () => {
     ]) {
       expect(rowByLabel(container, label), label).not.toBeNull()
     }
-    expect(container.querySelectorAll('.h3-form-prop-row').length).toBe(10)
+    // The LoD budget only applies to the full region and stays hidden in box.
+    expect(rowByLabel(container, 'LoD budget')).toBeNull()
+    expect(container.querySelectorAll('.h3-form-prop-row').length).toBe(12)
+    unmount()
+  })
+
+  it('writes region_mode and lod as raw enum ids with friendly labels', () => {
+    const onSet = vi.fn()
+    const { container, unmount } = mountTree(
+      <IsosurfMainSection entries={isosurfEntries()} onSet={onSet} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+    )
+    const region = rowByLabel(container, 'Region')!.querySelector('select') as HTMLSelectElement
+    expect(Array.from(region.options).map((o) => o.value)).toEqual(['auto', 'box', 'full'])
+    expect(Array.from(region.options).map((o) => o.textContent)).toEqual([
+      'Auto',
+      'Box around center',
+      'Full map',
+    ])
+    selectValue(region, 'full')
+    expect(onSet).toHaveBeenCalledWith('region_mode', 'enum', 'full')
+
+    const lod = rowByLabel(container, 'Level of detail')!.querySelector('select') as HTMLSelectElement
+    expect(Array.from(lod.options).map((o) => o.value)).toEqual(['auto', 'step1', 'step2', 'step4', 'step8'])
+    selectValue(lod, 'step2')
+    expect(onSet).toHaveBeenCalledWith('lod', 'enum', 'step2')
+    unmount()
+  })
+
+  it('hides the box-only rows and shows the LoD budget in the full region', () => {
+    // The effective region comes from the read-only resolved prop (auto on
+    // a cryo-EM map resolves to full).
+    const onSet = vi.fn()
+    const { container, unmount } = mountTree(
+      <IsosurfMainSection
+        entries={isosurfEntries({ regionMode: 'auto', regionResolved: 'full' })}
+        onSet={onSet}
+        onReset={vi.fn()}
+        sceneId={1}
+        nodeId={2}
+      />,
+    )
+    expect(rowByLabel(container, 'Max grid size')).toBeNull()
+    expect(rowByLabel(container, 'Use periodic boundary')).toBeNull()
+    const budget = rowByLabel(container, 'LoD budget')
+    expect(budget).not.toBeNull()
+    const input = budget!.querySelector('input') as HTMLInputElement
+    act(() => typeInto(input, '32'))
+    act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })))
+    expect(onSet).toHaveBeenCalledWith('lod_budget', 'integer', 32)
+    unmount()
+  })
+
+  it('falls back to the raw region_mode when the resolved prop is absent', () => {
+    const entries = isosurfEntries({ regionMode: 'full' }).filter((e) => e.key !== 'region_mode_resolved')
+    const { container, unmount } = mountTree(
+      <IsosurfMainSection entries={entries} onSet={vi.fn()} onReset={vi.fn()} sceneId={1} nodeId={2} />,
+    )
+    expect(rowByLabel(container, 'Max grid size')).toBeNull()
+    expect(rowByLabel(container, 'LoD budget')).not.toBeNull()
     unmount()
   })
 
