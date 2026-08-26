@@ -48,14 +48,16 @@ label+control の UI (フォーム行・テキスト入力・select・numeric・
 
 **真偽トグルの使い分け**: `SwitchField` = **値そのものが真偽** (Visible / Locked / Use hydrogen atoms)。行は `Label ...... [switch]` (`Field inline`) で、ラベルが左端に揃い property 行と整列する。`CheckboxField` = **下に続く control を有効化する opt-in ゲート** (dialog の Use selection)。行は `[x] Label ......` (`Field inline controlFirst`) で、チェックボックスが先に来て「これを入れると下が使える」と読ませる。**判断基準は「値か、ゲートか」**であり、見た目の好みで選ばない。
 
-**生 Blueprint を使う dialog でも判断基準は同じ**: file-open のオプションペイン
-(`components/fopen-opt-dlgs/panes/*`) はまだカタログ化されておらず Blueprint の `Switch` / `Checkbox` を
-直に使うが、**「値か、ゲートか」の判断はそのまま適用する**。下に続く control を有効化するトグル
-(MTZ の Phase / Weight、CCP4 map の Truncate minimum / maximum、Renderer options の Selection) は
-`Checkbox`、それ自体が設定値のトグル (PDB の Load model / anisou、CCP4 map の Normalize、
-Center view on molecule after loading) は `Switch`。**二値だから、あるいは見た目を揃えたいからという
-理由で `Switch` に寄せない**。後でカタログへ寄せるときは `Checkbox` → `CheckboxField`、
-`Switch` → `SwitchField` にそのまま対応させる。
+**dialog も同じカタログで組む**: file-open のオプションペイン (`components/fopen-opt-dlgs/panes/*`) は
+form-kit より前に作られたため長らく生 Blueprint (`Switch` / `FormGroup` / `HTMLSelect` / `InputGroup` /
+`NumericInput`) のままだったが、**カタログを使わない理由が無かった**ので `Field` / `FieldSection` /
+`SwitchField` / `CheckboxField` / `SelectField` / `TextField` / `NumericField` / `FormButton` へ移行済み。
+dialog だからという理由でカタログを外れない (サイズが 26px 系に分裂する原因になる)。ゲート/値の対応は
+下に続く control を有効化するトグル (MTZ の Phase / Weight、CCP4 map の Truncate minimum / maximum、
+Renderer options の Selection) が `CheckboxField`、それ自体が設定値のトグル (PDB の Load model / anisou、
+CCP4 map の Normalize、Center view on molecule after loading) が `SwitchField`。**二値だから、あるいは
+見た目を揃えたいからという理由で `SwitchField` に寄せない**。`.fod-section` のような dialog 側の
+class は padding / 区切り線などの chrome だけを持ち、行やコントロールのサイズは持たない。
 
 **「1 つ選ぶ」系の使い分け**: `SegmentField` = **view の切替** (`.mode-bar` に置く tab strip)、`RadioField` = **設定の N 択** (選択肢に名前があり、並べて見せたい)、`SelectField` = 選択肢が多い / 一覧を畳みたいとき、`SwitchField` = 本当に on/off の真偽値。二値だからといって `SwitchField` を選ぶと「どちらか選ぶ」ではなく「有効/無効」に読まれる。
 
@@ -84,7 +86,7 @@ Center view on molecule after loading) は `Switch`。**二値だから、ある
 | compact button | 20/22/24/26px がファイル毎 | `FormButton` (`--field-btn-h`) |
 | segmented control | `.inspector-mode-bar` の直書き override / 各所の生 `SegmentedControl` | `SegmentField` (`--field-btn-h`, `.h3-form-segmented`) |
 
-**済**: form-kit、Inspector `PropEditors`/モード切替 (`SegmentField`)、`ObjectSelect`、`SelectionPane`/`SelectionBuilder` (最上位グループは `FieldSection`, 下位は `Field`)、`MolSelList` (Named/History 切替も `SegmentField`)、`LogPanel`/`RenderPanel` ツールバー、catalog gallery (`DummyPane3` = activity bar の Component Catalog)。**残 (新規変更時にカタログへ寄せる)**: `RenderSettingsEditor` の直接 `.insp-*`、`SettingRow`(`.config-setting`)、`SliderNumericField`(`.h3-slider-*`)、`_dialog.css` の 26px 入力 (高さは `--field-*` トークンに揃え済み)、file-open のオプションペイン (`fopen-opt-dlgs/panes/*`; 生 Blueprint `Switch`/`Checkbox`/`HTMLSelect`/`NumericInput` のまま。値/ゲートの使い分けは上記のとおり守る)。
+**済**: form-kit、Inspector `PropEditors`/モード切替 (`SegmentField`)、`ObjectSelect`、`SelectionPane`/`SelectionBuilder` (最上位グループは `FieldSection`, 下位は `Field`)、`MolSelList` (Named/History 切替も `SegmentField`)、`LogPanel`/`RenderPanel` ツールバー、catalog gallery (`DummyPane3` = activity bar の Component Catalog)、file-open オプションペイン (`fopen-opt-dlgs/panes/*`; `.fod-section` は padding/区切り線のみ)。**残 (新規変更時にカタログへ寄せる)**: `RenderSettingsEditor` の直接 `.insp-*`、`SettingRow`(`.config-setting`)、`SliderNumericField`(`.h3-slider-*`)、`_dialog.css` の 26px 入力 (高さは `--field-*` トークンに揃え済み)。
 
 ---
 

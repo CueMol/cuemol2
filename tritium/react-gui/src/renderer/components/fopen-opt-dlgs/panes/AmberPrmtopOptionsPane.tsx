@@ -7,9 +7,8 @@
  * picker filtered to those extensions. Leaving the path empty performs a
  * topology-only load (atoms at default positions).
  */
-
 import React, { useCallback } from 'react';
-import { InputGroup, FormGroup, Button, ControlGroup } from '@blueprintjs/core';
+import { Field, FieldSection, FormButton, TextField } from '../../../h3-kit/form';
 import type { AmberPrmtopOptions } from '../types';
 import { IPC } from '../../../../shared/ipcChannels';
 
@@ -36,24 +35,19 @@ export const AmberPrmtopOptionsPane: React.FC<AmberPrmtopOptionsPaneProps> = ({ 
 
   return (
     <div className="fod-section">
-      <div className="fod-section-title">Coordinates</div>
-      <FormGroup
-        label="Coordinate file (inpcrd / rst7)"
-        labelFor="amber-coord"
-        helperText="Optional. Leave empty to load topology only (atoms at zero)."
-        className="fod-form-group"
-      >
-        <ControlGroup fill>
-          <InputGroup
-            id="amber-coord"
-            placeholder="/path/to/system.rst7"
-            value={options.coordFilePath}
-            onChange={(e) => onChange({ coordFilePath: e.target.value })}
-            fill
-          />
-          <Button text="Change..." onClick={handleBrowse} />
-        </ControlGroup>
-      </FormGroup>
+      <FieldSection title="Coordinates">
+        <Field label="Coordinate file (inpcrd / rst7)">
+          <div className="fod-path-row">
+            <TextField
+              value={options.coordFilePath}
+              placeholder="/path/to/system.rst7"
+              onChange={(v) => onChange({ coordFilePath: v })}
+            />
+            <FormButton text="Change..." onClick={handleBrowse} />
+          </div>
+        </Field>
+        <div className="fod-hint">Optional. Leave empty to load topology only (atoms at zero).</div>
+      </FieldSection>
     </div>
   );
 };

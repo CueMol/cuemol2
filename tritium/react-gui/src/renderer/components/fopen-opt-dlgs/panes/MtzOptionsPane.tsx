@@ -1,51 +1,62 @@
 /**
  * @file panes/MtzOptionsPane.tsx
- * @description Option pane for MTZ reflection data files. Mirrors the UXP
- * fopen-mtzopt-page: amplitude / phase / weight columns are chosen from
- * dropdowns populated by the actual column labels in the file, phase and
- * weight are each gated by a checkbox (disabled when the file has no column
- * of that type), and resolution / grid spacing follow the UXP controls.
+ * @description Option pane for MTZ reflection files: which columns feed the
+ * FFT (amplitude / phase / weight) and the map parameters.
+ *
+ * Built from the h3-kit form catalog. The Phase / Weight toggles GATE their
+ * column selectors, so they are checkboxes (`Field inline controlFirst` +
+ * `CheckboxField`); see the value / gate rule in
+ * `docs/migration/ui-style-guide.md`.
+ *
+ * Column lists come from the MTZ header (`getMtzColumnInfo`); a column class
+ * with no columns disables its row and shows "(none)".
  */
 
-import React, { useState } from 'react';
-import { Checkbox, HTMLSelect, NumericInput, FormGroup } from '@blueprintjs/core';
+import React from 'react';
+import {
+  CheckboxField,
+  Field,
+  FieldSection,
+  NumericField,
+  SelectField,
+} from '../../../h3-kit/form';
 import type { MtzOptions } from '../types';
 import type { GetMtzColumnInfoResult } from '../../../worker/server/services/getMtzColumnInfo.service';
 
 interface MtzOptionsPaneProps {
   options: MtzOptions;
   onChange: (updated: MtzOptions) => void;
-  /** Column info read from the file; null while the header is being read. */
   columnInfo: GetMtzColumnInfoResult | null;
 }
 
-// UXP grid-spacing presets (fopen-mtzopt-page.xul).
 const GRID_PRESETS = [
-  { label: 'Fine (0.25)', value: 0.25 },
-  { label: 'Coarse (0.33)', value: 0.333333 },
+  { label: 'Fine (0.20 A)', value: 0.2 },
+  { label: 'Normal (0.25 A)', value: 0.25 },
+  { label: 'Coarse (0.33 A)', value: 0.33 },
+  { label: 'Very coarse (0.50 A)', value: 0.5 },
 ];
 
-// UXP's resolution textbox uses decimalplaces="1" / increment="0.1", so every
-// shown value and bound is rounded to a single decimal place. Match that here
-// rather than exposing the reader's raw shell limit (e.g. 1.69923983).
 function round1(x: number): number {
   return Math.round(x * 10) / 10;
 }
 
 export const MtzOptionsPane: React.FC<MtzOptionsPaneProps> = ({ options, onChange, columnInfo }) => {
-  // Raw text held while the resolution field is being edited. Blueprint's
-  // NumericInput is fully controlled once `value` is set, so without this an
-  // empty / transiently-invalid keystroke has no onValueChange to move
-  // `value`, and the field immediately snaps back to the last digit instead
-  // of letting the user clear it. Mirrors the fix applied to the h3-kit
-  // NumericField.
-  const [resoEdit, setResoEdit] = useState<string | null>(null);
-
-  if (!columnInfo || !columnInfo.ok) {
+  if (!columnInfo) {
     return (
       <div className="fod-section">
-        <div className="fod-section-title">Column Selection</div>
-        <div className="fod-hint">Reading MTZ header...</div>
+        <FieldSection title="Column Selection">
+          <div className="fod-hint">Reading MTZ header...</div>
+        </FieldSection>
+      </div>
+    );
+  }
+
+  if (!columnInfo.ok) {
+    return (
+      <div className="fod-section">
+        <FieldSection title="Column Selection">
+          <div className="fod-hint">Could not read the MTZ header.</div>
+        </FieldSection>
       </div>
     );
   }
@@ -64,93 +75,76 @@ export const MtzOptionsPane: React.FC<MtzOptionsPaneProps> = ({ options, onChang
   const resoMin = round1(columnInfo.maxRes);
   const resoMax = round1(columnInfo.minRes);
 
-  const renderColumnSelect = (
-    id: string,
+  const columnSelect = (
     cols: string[],
     value: string,
     disabled: boolean,
     onSelect: (v: string) => void,
   ) => (
-    <HTMLSelect
-      id={id}
-      className="h3-form-select"
-      value={value}
-      disabled={disabled}
-      onChange={(e) => onSelect(e.currentTarget.value)}
-      fill
-    >
+    <SelectField value={value} disabled={disabled} onChange={onSelect}>
       {cols.length === 0 && <option value="">(none)</option>}
       {cols.map((name) => (
         <option key={name} value={name}>{name}</option>
       ))}
-    </HTMLSelect>
+    </SelectField>
   );
 
   return (
     <div className="fod-section">
-      <div className="fod-section-title">Column Selection</div>
+      <FieldSection title="Column Selection">
+        <Field label="Amplitude (F)">
+          {columnSelect(fCols, options.columnF, !hasF, (v) => onChange({ ...options, columnF: v }))}
+        </Field>
 
-      <FormGroup label="Amplitude (F)" labelFor="mtz-col-f" className="fod-form-group">
-        {renderColumnSelect('mtz-col-f', fCols, options.columnF, !hasF, (v) =>
-          onChange({ ...options, columnF: v }),
-        )}
-      </FormGroup>
+        <Field label="Phase" inline controlFirst>
+          <CheckboxField
+            checked={options.phaseEnabled && hasP}
+            disabled={!hasP}
+            onChange={(checked) => onChange({ ...options, phaseEnabled: checked })}
+          />
+        </Field>
+        <Field label="Phase column">
+          {columnSelect(pCols, options.columnPhi, !hasP || !options.phaseEnabled, (v) =>
+            onChange({ ...options, columnPhi: v }),
+          )}
+        </Field>
 
-      <FormGroup className="fod-form-group">
-        <Checkbox
-          label="Phase"
-          checked={options.phaseEnabled && hasP}
-          disabled={!hasP}
-          onChange={(e) => onChange({ ...options, phaseEnabled: e.currentTarget.checked })}
-        />
-        {renderColumnSelect('mtz-col-phi', pCols, options.columnPhi, !hasP || !options.phaseEnabled, (v) =>
-          onChange({ ...options, columnPhi: v }),
-        )}
-      </FormGroup>
+        <Field label="Weight" inline controlFirst>
+          <CheckboxField
+            checked={options.weightEnabled && hasW}
+            disabled={!hasW}
+            onChange={(checked) => onChange({ ...options, weightEnabled: checked })}
+          />
+        </Field>
+        <Field label="Weight column">
+          {columnSelect(wCols, options.columnW, !hasW || !options.weightEnabled, (v) =>
+            onChange({ ...options, columnW: v }),
+          )}
+        </Field>
+      </FieldSection>
 
-      <FormGroup className="fod-form-group">
-        <Checkbox
-          label="Weight"
-          checked={options.weightEnabled && hasW}
-          disabled={!hasW}
-          onChange={(e) => onChange({ ...options, weightEnabled: e.currentTarget.checked })}
-        />
-        {renderColumnSelect('mtz-col-w', wCols, options.columnW, !hasW || !options.weightEnabled, (v) =>
-          onChange({ ...options, columnW: v }),
-        )}
-      </FormGroup>
-
-      <div className="fod-section-title" style={{ marginTop: 12 }}>Map Parameters</div>
-      <FormGroup label="Max resolution (A)" labelFor="mtz-reso" className="fod-form-group">
-        <NumericInput
-          id="mtz-reso"
-          value={resoEdit ?? String(options.resolutionLimit)}
-          onValueChange={(val, s) => {
-            setResoEdit(s);
-            if (!isNaN(val)) onChange({ ...options, resolutionLimit: round1(val) });
-          }}
-          onBlur={() => setResoEdit(null)}
-          min={resoMin > 0 ? resoMin : undefined}
-          max={resoMax > 0 ? resoMax : undefined}
-          stepSize={0.1}
-          minorStepSize={null}
-          majorStepSize={null}
-          fill
-        />
-      </FormGroup>
-      <FormGroup label="Grid spacing (A)" labelFor="mtz-grid" className="fod-form-group">
-        <HTMLSelect
-          id="mtz-grid"
-          className="h3-form-select"
-          value={options.gridSpacing}
-          onChange={(e) => onChange({ ...options, gridSpacing: parseFloat(e.currentTarget.value) })}
-          fill
-        >
-          {GRID_PRESETS.map((p) => (
-            <option key={p.label} value={p.value}>{p.label}</option>
-          ))}
-        </HTMLSelect>
-      </FormGroup>
+      <FieldSection title="Map Parameters">
+        <Field label="Max resolution (A)">
+          <NumericField
+            slider={false}
+            value={options.resolutionLimit}
+            min={resoMin > 0 ? resoMin : undefined}
+            max={resoMax > 0 ? resoMax : undefined}
+            step={0.1}
+            onChange={(v) => onChange({ ...options, resolutionLimit: round1(v) })}
+          />
+        </Field>
+        <Field label="Grid spacing (A)">
+          <SelectField
+            value={String(options.gridSpacing)}
+            onChange={(v) => onChange({ ...options, gridSpacing: parseFloat(v) })}
+          >
+            {GRID_PRESETS.map((p) => (
+              <option key={p.label} value={p.value}>{p.label}</option>
+            ))}
+          </SelectField>
+        </Field>
+      </FieldSection>
     </div>
   );
 };

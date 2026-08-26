@@ -76,9 +76,19 @@ function setSelectValue(select: HTMLSelectElement, value: string): void {
     select.dispatchEvent(new Event('change', { bubbles: true }))
 }
 
-function getById<T extends HTMLElement>(id: string): T {
-    const el = document.body.querySelector('#' + id) as T | null
-    if (!el) throw new Error(`#${id} not found in mounted tree`)
+/**
+ * Locate a control by the label of its form-kit `Field` row. The panes are
+ * built from the h3-kit catalog, which owns the row markup, so the tests
+ * address controls the way a user does (by their visible label) instead of
+ * by an element id the catalog does not expose.
+ */
+function controlByLabel<T extends HTMLElement>(label: string, sel: string): T {
+    const lab = Array.from(document.body.querySelectorAll('.h3-form-field-label'))
+        .find((l) => (l.textContent ?? '').trim() === label)
+    if (!lab) throw new Error(`field row "${label}" not found in mounted tree`)
+    const row = lab.closest('.h3-form-field-row') as HTMLElement | null
+    const el = row?.querySelector(sel) as T | null
+    if (!el) throw new Error(`"${sel}" not found in the "${label}" row`)
     return el
 }
 
@@ -148,7 +158,7 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
             prefix: 'simple',
             sceneId: 7,
         })
-        const rendNameInput = getById<HTMLInputElement>('rend-name')
+        const rendNameInput = controlByLabel<HTMLInputElement>('Renderer name', 'input')
         expect(rendNameInput.value).toBe('simple1')
         handle.unmount()
     })
@@ -165,7 +175,7 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
             tryBare: true,
             suffix: 'parens',
         })
-        const objNameInput = getById<HTMLInputElement>('rend-objname')
+        const objNameInput = controlByLabel<HTMLInputElement>('Object name', 'input')
         expect(objNameInput.value).toBe('1mbn')
         handle.unmount()
     })
@@ -175,7 +185,7 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
         await flushPromises()
         mockCm.invokeService.mockClear()
 
-        const select = getById<HTMLSelectElement>('rend-type')
+        const select = controlByLabel<HTMLSelectElement>('Renderer type', 'select')
         await act(async () => { setSelectValue(select, 'ribbon') })
         await flushPromises()
 
@@ -184,7 +194,7 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
         expect(sceneRendCalls[sceneRendCalls.length - 1]).toMatchObject({
             kind: 'sceneRenderer', prefix: 'ribbon', sceneId: 7,
         })
-        const rendNameInput = getById<HTMLInputElement>('rend-name')
+        const rendNameInput = controlByLabel<HTMLInputElement>('Renderer name', 'input')
         expect(rendNameInput.value).toBe('ribbon1')
         handle.unmount()
     })
@@ -193,13 +203,13 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
         const handle = mount()
         await flushPromises()
 
-        const rendNameInput = getById<HTMLInputElement>('rend-name')
+        const rendNameInput = controlByLabel<HTMLInputElement>('Renderer name', 'input')
         await act(async () => { setInputValue(rendNameInput, 'myrend') })
         await flushPromises()
         expect(rendNameInput.value).toBe('myrend')
 
         mockCm.invokeService.mockClear()
-        const select = getById<HTMLSelectElement>('rend-type')
+        const select = controlByLabel<HTMLSelectElement>('Renderer type', 'select')
         await act(async () => { setSelectValue(select, 'ribbon') })
         await flushPromises()
 
@@ -213,7 +223,7 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
         const handle = mount()
         await flushPromises()
 
-        const rendNameInput = getById<HTMLInputElement>('rend-name')
+        const rendNameInput = controlByLabel<HTMLInputElement>('Renderer name', 'input')
         // user types
         await act(async () => { setInputValue(rendNameInput, 'myrend') })
         await flushPromises()
@@ -222,7 +232,7 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
         await flushPromises()
 
         mockCm.invokeService.mockClear()
-        const select = getById<HTMLSelectElement>('rend-type')
+        const select = controlByLabel<HTMLSelectElement>('Renderer type', 'select')
         await act(async () => { setSelectValue(select, 'cartoon') })
         await flushPromises()
 
@@ -241,7 +251,7 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
         const handle = mount()
         await flushPromises()
 
-        const rendNameInput = getById<HTMLInputElement>('rend-name')
+        const rendNameInput = controlByLabel<HTMLInputElement>('Renderer name', 'input')
         expect(rendNameInput.value).toBe('simple1')
 
         // Ignore the initial mount fetches.
@@ -268,7 +278,7 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
         const handle = mount()
         await flushPromises()
 
-        const rendNameInput = getById<HTMLInputElement>('rend-name')
+        const rendNameInput = controlByLabel<HTMLInputElement>('Renderer name', 'input')
         mockCm.invokeService.mockClear()
 
         // Simulate three keystrokes: 'a', 'ab', 'abc'.
@@ -288,7 +298,7 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
         setDefaultRendType('MolCoord', 'ribbon')
         const handle = mount()
         await flushPromises()
-        const select = getById<HTMLSelectElement>('rend-type')
+        const select = controlByLabel<HTMLSelectElement>('Renderer type', 'select')
         expect(select.value).toBe('ribbon')
         const sceneRendCalls = proposeArgs().filter((a) => a.kind === 'sceneRenderer')
         expect(sceneRendCalls[0]).toMatchObject({
@@ -301,7 +311,7 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
         setDefaultRendType('MolCoord', 'spaghetti')
         const handle = mount()
         await flushPromises()
-        const select = getById<HTMLSelectElement>('rend-type')
+        const select = controlByLabel<HTMLSelectElement>('Renderer type', 'select')
         expect(select.value).toBe('simple')
         handle.unmount()
     })
@@ -310,7 +320,7 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
         const handle = mount()
         await flushPromises()
 
-        const select = getById<HTMLSelectElement>('rend-type')
+        const select = controlByLabel<HTMLSelectElement>('Renderer type', 'select')
         await act(async () => { setSelectValue(select, 'ribbon') })
         await flushPromises()
 
@@ -355,7 +365,7 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
         const handle = mount()
         // Don't flush yet -- initial sceneRenderer probe is pending.
         // Switch type A -> B without resolving A first.
-        const select = getById<HTMLSelectElement>('rend-type')
+        const select = controlByLabel<HTMLSelectElement>('Renderer type', 'select')
         await act(async () => { setSelectValue(select, 'ribbon') })
         await act(async () => { setSelectValue(select, 'cartoon') })
 
@@ -374,7 +384,7 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
         })
         await flushPromises()
 
-        const rendNameInput = getById<HTMLInputElement>('rend-name')
+        const rendNameInput = controlByLabel<HTMLInputElement>('Renderer name', 'input')
         expect(rendNameInput.value).toBe('cartoon1')
         handle.unmount()
     })
@@ -387,7 +397,7 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
         })
         await flushPromises()
 
-        const select = getById<HTMLSelectElement>('rend-type')
+        const select = controlByLabel<HTMLSelectElement>('Renderer type', 'select')
         const groups = Array.from(select.querySelectorAll('optgroup'))
         expect(groups.map((g) => g.label)).toEqual(['Presets', 'Renderer types'])
         // Plain type stays the default selection.
@@ -395,7 +405,7 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
 
         await act(async () => { setSelectValue(select, 'Default1RendPreset') })
         await flushPromises()
-        expect(getById<HTMLInputElement>('rend-name').value).toBe('default1_1')
+        expect(controlByLabel<HTMLInputElement>('Renderer name', 'input').value).toBe('default1_1')
 
         const openBtn = findByText(document.body, 'button', 'Open') as HTMLButtonElement
         await act(async () => { openBtn.click() })
@@ -408,7 +418,7 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
     it('keeps the flat option list (no optgroup) when presetTypes is absent', async () => {
         const handle = mount()
         await flushPromises()
-        const select = getById<HTMLSelectElement>('rend-type')
+        const select = controlByLabel<HTMLSelectElement>('Renderer type', 'select')
         expect(select.querySelectorAll('optgroup').length).toBe(0)
         expect(select.querySelectorAll('option').length).toBe(3)
         handle.unmount()

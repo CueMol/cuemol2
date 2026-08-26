@@ -46,23 +46,19 @@
   flex-shrink: 0;
 }
 
-/* Section container */
+/* Section container: dialog chrome (padding + separator) only. The group
+   heading and the label+control rows inside come from the h3-kit form
+   catalog (FieldSection / Field), which owns their typography and spacing. */
 .fod-section {
   padding: var(--space-4) var(--space-5);
   border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: var(--form-section-gap);
 }
 
 .fod-section:last-child {
   border-bottom: none;
-}
-
-.fod-section-title {
-  font-size: var(--fs-base);
-  font-weight: var(--fw-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.05em; /* relative em unit; intentionally not a variable */
-  color: var(--text-secondary);
-  margin-bottom: var(--space-4);
 }
 
 /* Inline hint / placeholder text (e.g. "Reading MTZ header...") */
@@ -71,28 +67,17 @@
   color: var(--text-secondary);
 }
 
-/* Switch rows */
-.fod-switch {
-  margin-bottom: var(--space-2);
+/* Path field + "Change..." button on one line. Layout only -- the field and
+   the button own their own sizes (h3-kit form catalog). */
+.fod-path-row {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
 }
 
-.fod-switch:last-child {
-  margin-bottom: 0;
-}
-
-/* Form group overrides for compact layout */
-.fod-form-group {
-  margin-bottom: var(--space-4);
-}
-
-.fod-form-group:last-child {
-  margin-bottom: 0;
-}
-
-.fod-form-group .bp5-label {
-  font-size: var(--fs-lg);
-  color: var(--text-secondary);
-  margin-bottom: 3px;
+.fod-path-row > :first-child {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 /* Collapsible disclosure section (format-specific options) */
