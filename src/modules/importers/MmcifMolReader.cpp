@@ -72,6 +72,15 @@ int MmcifMolReader::canHandleContent(qlib::InStream &ins) const
     if (line.startsWith("#")) continue;
     if (line.startsWith("_atom_site.")) return CONTENT_YES;
     if (line.startsWith("_refln.")) return CONTENT_NO;
+    // The coordinate loop of a current PDB entry starts hundreds of KB
+    // into the file (271 KB for 5IRE, 462 KB for 7A6A), well past any
+    // sane sniff cap. These categories describe the coordinate model and
+    // never appear in a structure-factor CIF, and they sit in the first
+    // ~10 KB, so they settle the verdict early.
+    if (line.startsWith("_entity.") ||
+        line.startsWith("_entity_poly.") ||
+        line.startsWith("_struct_asym.") ||
+        line.startsWith("_atom_type.")) return CONTENT_YES;
   }
   return CONTENT_UNKNOWN;
 }

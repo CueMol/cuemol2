@@ -66,6 +66,33 @@ static const char *const COMMENT_ONLY_CIF =
     "loop_\n"
     "_something_else.foo\n";
 
+// Current PDB entry shape: the coordinate loop sits far past any sniff
+// cap, but the coordinate-model categories appear in the header. Both
+// sniffers must settle on them (YES for the mol reader, NO for the map
+// reader) without reaching `_atom_site.`.
+static const char *const COORD_CIF_LATE_ATOM_SITE =
+    "data_5IRE\n"
+    "_entry.id   5IRE\n"
+    "loop_\n"
+    "_entity.id\n"
+    "_entity.type\n"
+    "1 polymer\n"
+    "loop_\n"
+    "_entity_poly.entity_id\n"
+    "1 polypeptide(L)\n"
+    "# ... hundreds of KB of header would follow, then _atom_site.\n";
+
+// Structure-factor CIF header before its `_refln.` loop: the coordinate
+// categories must NOT appear, so the early markers cannot misfire.
+static const char *const SF_CIF_WITH_HEADER =
+    "data_r5iresf\n"
+    "_cell.length_a   798.72\n"
+    "_symmetry.space_group_name_H-M   'P 1'\n"
+    "_diffrn_radiation_wavelength.id   1\n"
+    "loop_\n"
+    "_refln.index_h\n"
+    "0 0 0 1.0\n";
+
 // Non-CIF text: neither category appears. Sniffer returns UNKNOWN.
 static const char *const NON_CIF =
     "HEADER    PROTEIN                                   01-JAN-00\n"
@@ -119,6 +146,21 @@ TEST(MmcifMolReaderSniffTest, MixedCifReturnsYesOnAtomSiteFirst)
     EXPECT_EQ(sniff(reader, MIXED_CIF), ObjReader::CONTENT_YES);
 }
 
+// A modern PDB mmCIF is recognised from its header categories, without
+// the sniffer having to reach the far-away `_atom_site.` loop.
+TEST(MmcifMolReaderSniffTest, CoordCifWithLateAtomSiteReturnsYes)
+{
+    MmcifMolReader reader;
+    EXPECT_EQ(sniff(reader, COORD_CIF_LATE_ATOM_SITE), ObjReader::CONTENT_YES);
+}
+
+// The early coordinate markers must not fire on a structure-factor CIF.
+TEST(MmcifMolReaderSniffTest, SfCifWithHeaderReturnsNo)
+{
+    MmcifMolReader reader;
+    EXPECT_EQ(sniff(reader, SF_CIF_WITH_HEADER), ObjReader::CONTENT_NO);
+}
+
 TEST(MmcifMolReaderSniffTest, CommentOnlyReturnsUnknown)
 {
     MmcifMolReader reader;
@@ -145,6 +187,21 @@ TEST(MmcifMapReaderSniffTest, CoordCifReturnsNo)
 {
     MmcifMapReader reader;
     EXPECT_EQ(sniff(reader, COORD_CIF), ObjReader::CONTENT_NO);
+}
+
+// The coordinate-model categories reject a coordinate CIF long before
+// its far-away `_atom_site.` loop.
+TEST(MmcifMapReaderSniffTest, CoordCifWithLateAtomSiteReturnsNo)
+{
+    MmcifMapReader reader;
+    EXPECT_EQ(sniff(reader, COORD_CIF_LATE_ATOM_SITE), ObjReader::CONTENT_NO);
+}
+
+// ... and they must not fire on a structure-factor header.
+TEST(MmcifMapReaderSniffTest, SfCifWithHeaderReturnsYes)
+{
+    MmcifMapReader reader;
+    EXPECT_EQ(sniff(reader, SF_CIF_WITH_HEADER), ObjReader::CONTENT_YES);
 }
 
 // In the mixed sample, the coord category appears *before* the refln

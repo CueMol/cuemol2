@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { WorkerContext } from '../worker/server/types/WorkerContext'
 import { services } from '../worker/server/services/getCompatibleRendererNames.service'
+import { DEFAULT_SNIFF_CAP } from '../worker/shared/sniffConfig'
 
 const { getCompatibleRendererNames } = services
 
@@ -172,7 +173,7 @@ describe('getCompatibleRendererNames — .cif ambiguity (regression)', () => {
             sniffResult: 'mmcif',  // canHandleContent disambiguation hit
         } as never)
         const result = getCompatibleRendererNames(env.ctx, { filePath: '1mbn.cif' })
-        expect(env.searchReaderByContent).toHaveBeenCalledWith('1mbn.cif', 'mmcifmap,mmcif', 0, false, 65536)
+        expect(env.searchReaderByContent).toHaveBeenCalledWith('1mbn.cif', 'mmcifmap,mmcif', 0, false, DEFAULT_SNIFF_CAP)
         expect(env.createHandler).toHaveBeenCalledWith('mmcif', 0)
         expect(result).toEqual({ types: ['simple', 'cartoon', 'tube', 'ribbon'], objType: 'MolCoord', readerName: 'mmcif' })
     })
@@ -206,7 +207,7 @@ describe('getCompatibleRendererNames — .cif ambiguity (regression)', () => {
             filePath: '1mbn.cif',
             contentFirst: true,
         })
-        expect(env.searchReaderByContent).toHaveBeenCalledWith('1mbn.cif', 'mmcifmap,mmcif', 0, false, 65536)
+        expect(env.searchReaderByContent).toHaveBeenCalledWith('1mbn.cif', 'mmcifmap,mmcif', 0, false, DEFAULT_SNIFF_CAP)
         expect(env.createHandler).toHaveBeenCalledWith('mmcif', 0)
         expect(result).toEqual({ types: ['simple', 'cartoon', 'tube', 'ribbon'], objType: 'MolCoord', readerName: 'mmcif' })
     })
