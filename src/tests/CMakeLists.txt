@@ -40,6 +40,7 @@ add_executable(test_qlib
   qlib/test_lprocmgr.cpp
   qlib/test_limited_in_stream.cpp
   qlib/test_parallel.cpp
+  qlib/test_chunked_array3d.cpp
 )
 target_include_directories(test_qlib PRIVATE
   ${CMAKE_SOURCE_DIR}/src
@@ -181,6 +182,7 @@ add_executable(test_xtal
   modules/xtal/test_main.cpp
   modules/xtal/test_atomposmap2.cpp
   modules/xtal/test_ccp4_origin.cpp
+  modules/xtal/test_map_histogram.cpp
   modules/xtal/test_mapkind_detect.cpp
   modules/xtal/test_maplod.cpp
   modules/xtal/test_maprenderer_color.cpp

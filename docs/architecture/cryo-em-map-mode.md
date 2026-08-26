@@ -152,10 +152,34 @@ full では無視。`center` は view に追従するが (`setCenterQuiet`)、fu
   (pin テスト P2 / P8 の checksum を再取得; 頂点位置は不変)
 - `DensityMap::getCenter()` の修正で、`NXSTART != 0` の結晶 map の「object center」が正しい位置になる
 
+## メモリ層 (`qlib::ChunkedArray3D`)
+
+- `DensityMap` の格納を `qlib::ByteMap *` (単一 `new T[n]`) から `qlib::ChunkedArray3D<quint8>` (値メンバ) に変更。
+  section 軸で 8 MiB 以下の chunk に分割して 1 chunk = 1 割当て。根拠: Electron の PartitionAlloc は
+  ~1 MiB 超を direct map にし、単一割当て上限が約 2 GiB なので 1300³ の byte map や 800³ の float 一時
+  buffer がそこで落ちる。chunk 内の並びは `Array3D` と同じ (column 最速) なので slice / row は連続領域、
+  chunk 数 1 なら byte 互換
+- `Array3D` (`ByteMap.hpp`) は `data()` 連続ポインタ契約 (GL texture upload 等) を使う利用者がいるので
+  in-place で chunk 化せず、`getSize()`/添字を `size_t` にしただけ。`MapMeshRenderer` の crossing 配列、
+  `MapBufTex`、`ElePotMap` は表示部分集合 / 小 map なので据え置き
+- reader 向け API: `beginByteMap(ncol,nrow,nsec, MapQuant{base,step})` → `sliceBytes(k)` に section 単位で
+  直書き → `endByteMap(min,max,mean,rmsd)`。`setMapFloatArray`/`setMapByteArray` は内部でこれを使う
+  (stats ループの算術は `MapSurfPin` の bitwise 保証のため不変)。Brix / QDF reader は temp 配列を廃して直書き、
+  QDF writer は `QdfOutStream::writeFxRecords()` (新設) で section 単位に書く (voxel ごとの
+  `startRecord/writeInt8/endRecord` を排除)。voxel 数 > 2^31 の QDF 書出しは `defData` の int32 制約で例外
+- 64bit 化: `int ntotal = ncol*nrow*nsect` を `size_t` に (CCP4 / Xplor / QDF / ElePotMap / MapFFT /
+  `QdfStream::readFxRecords`)
+- histogram: `ScalarObject::getBaseHistogram()` フックを追加し、`DensityMap` は **256-bin の byte histogram
+  (無損失)** を chunk 並列で初回要求時に 1 回計算して返す (従来は全 voxel を仮想 `atFloat` で走査し
+  `rmsd/1000` 幅の巨大 vector を作っていた)。汎用経路は `qint64` count・bins 上限 65536。
+  `invalidateHistogram()` を `beginByteMap/endByteMap` で呼ぶ (再ロードで古い histogram が残る不具合も修正)。
+  `getHistogramJSON()` の JSON 契約は不変
+- `DensityMap::getLevelAtTopFraction(frac)` (qif 公開): byte histogram から「上位 frac の voxel を囲む level」を返す
+  (ChimeraX の初期 contour 規則、EM の初期レベル用)
+- 孤児ファイル `DenRealMap.cpp` を削除
+
 ## ロードマップ (未実装)
 
-1. メモリ層: `qlib::ChunkedArray3D<T>` (k-section 境界 8 MiB chunk; PartitionAlloc の 2 GiB 単一割当て上限対策)、
-   64bit 添字、256-bin 無損失 histogram
 2. reader streaming: section 単位読込 (ピーク 5 → 1 byte/voxel)、header stats による 1 pass 量子化、
    mode 1/6/12、`subsample`、`probeHeader()` による open 前ガード、`extractBlock()`
 3. EM 初期レベル (上位 1% rank; `DensityMap::getLevelAtTopFraction()`) と tritium の open flow
@@ -168,6 +192,10 @@ full では無視。`center` は view に追従するが (`setCenterQuiet`)、fu
 - `test_maplod.cpp` — `lodStepForBudget` / `lodAlignRange`
 - `test_maprenderer_region.cpp` — map_type / region_mode の解決、PBC 適格、`getCenter()`、origin の座標変換
 - `test_ccp4_origin.cpp` — 合成 MRC (1024 byte header + float) で ORIGIN / 判定 / label 読込
+- `src/tests/qlib/test_chunked_array3d.cpp` — Layout の 64bit 計算、複数 chunk での `at/row/slice/chunkData` が
+  `Array3D` と一致、copy/move/resize
+- `test_map_histogram.cpp` — `getHistogramJSON` が直接 rebinning と一致、再ロードで cache 破棄、
+  `getLevelAtTopFraction`
 - `test_mapsurf_viewregion.cpp` — 128³ map / budget 1 Mcell で view box の切取り・stride 選択・
   boundary bbox・ヒステリシス (パン / zoom-in / zoom-out / map 外)
 - `test_mapsurf_pin.cpp` — P5 (PBC)、P7 (非零 start)、P8 (奇数サイズ stride 2)、P9 (full == P1)、

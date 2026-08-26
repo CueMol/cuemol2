@@ -139,76 +139,63 @@ void QdfDenMapReader::readData()
 
   m_pObj->setMapParams(stx, sty, stz, intx, inty, intz);
 
-  const int ntotal = nx*ny*nz;
-  LOG_DPRINTLN("QdfDenMap> map size (%d,%d,%d)=%d", nx, ny, nz, ntotal);
+  const size_t ntotal = size_t(nx)*size_t(ny)*size_t(nz);
+  LOG_DPRINTLN("QdfDenMap> map size (%d,%d,%d)=%lld", nx, ny, nz, (long long) ntotal);
 
   ///////////////////
 
   int ndata = readDataDef("bmap");
-  if (ndata!=ntotal) {
+  if (ndata<0 || size_t(ndata)!=ntotal) {
     MB_THROW(qlib::FileFormatException, "inconsistent data (ndata!=nx*ny*nz)");
     return;
   }
-  
-  //  allocate memory
-  qbyte *buf = MB_NEW qbyte[ntotal];
-  LOG_DPRINTLN("QdfDenMap> memory allocation %f Mbytes", double(ntotal*4.0)/(1024.0*1024.0));
-  if (buf==NULL) {
-    MB_THROW(qlib::OutOfMemoryException, "cannot allocate memory");
-    return;
-  }
+
+  // The samples are read section by section straight into the map
+  // storage (no whole-map temporary buffer). Same quantization as the
+  // historical setMapByteArray() path.
+  DensityMap::MapQuant q;
+  q.base = rmin;
+  q.step = (double(rmax) - double(rmin))/256.0;
+  m_pObj->beginByteMap(nx, ny, nz, q);
 
   m_nx = nx;
   m_ny = ny;
   m_nz = nz;
   if (!o.isIntByteSwap())
-    readDataArray2(buf);
+    readDataArray2();
   else
-    readDataArray(buf);
-  
+    readDataArray();
 
-  m_pObj->setMapByteArray(buf, nx, ny, nz,
-                          rmin, rmax, rmean, rsig);
-  
+  m_pObj->endByteMap(rmin, rmax, rmean, rsig);
 }
 
-void QdfDenMapReader::readDataArray(qbyte *buf)
+void QdfDenMapReader::readDataArray()
 {
   QdfInStream &o = getStream();
   o.readRecordDef();
 
   for (int iz=0; iz<m_nz; iz++) {
+    qbyte *pslice = m_pObj->sliceBytes(iz);
     for (int iy=0; iy<m_ny; iy++) {
+      qbyte *prow = pslice + size_t(iy)*size_t(m_nx);
       for (int ix=0; ix<m_nx; ix++) {
         startRecord();
-        qbyte rho = qbyte(o.readInt8("v"));
+        prow[ix] = qbyte(o.readInt8("v"));
         endRecord();
-        const int ii = ix + (iy + iz*m_ny)*m_nx;
-        buf[ii] = rho;
       }
     }
   }
 }
 
-void QdfDenMapReader::readDataArray2(qbyte *buf)
+void QdfDenMapReader::readDataArray2()
 {
   QdfInStream &o = getStream();
   o.readRecordDef();
 
-  const int ntotal = m_nx*m_ny*m_nz;
-  o.readFxRecords(ntotal, buf, sizeof (qbyte)*ntotal);
-/*
-  for (int iz=0; iz<m_nz; iz++) {
-    for (int iy=0; iy<m_ny; iy++) {
-      for (int ix=0; ix<m_nx; ix++) {
-        startRecord();
-        qbyte rho = qbyte(o.readInt8("v"));
-        endRecord();
-        const int ii = ix + (iy + iz*m_ny)*m_nx;
-        buf[ii] = rho;
-      }
-    }
-  }*/
+  // one readFxRecords() per section keeps every read under the int range
+  const size_t nslice = size_t(m_nx)*size_t(m_ny);
+  for (int iz=0; iz<m_nz; iz++)
+    o.readFxRecords(int(nslice), m_pObj->sliceBytes(iz), int(nslice));
 }
 
 

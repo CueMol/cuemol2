@@ -352,6 +352,10 @@ namespace qsys {
     void startRecord();
     void endRecord();
 
+    /// Write nrec fixed-size records from the buffer without byte swapping
+    /// (counterpart of QdfInStream::readFxRecords)
+    void writeFxRecords(int nrec, const void *pbuf, int nbufsz);
+
     void writeStr(const LString &name, const LString &value);
     void writeFixedStr(const LString &name, const LString &value);
     void writeBool(const LString &name, bool value);

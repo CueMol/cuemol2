@@ -45,6 +45,9 @@ runtime_class DensityMap extends ScalarObject
 
   void fitView(object<View$> pView, boolean dummy);
 
+  /// Density level enclosing the top fraction of the grid points
+  real getLevelAtTopFraction(real frac);
+
 };
 
 #endif

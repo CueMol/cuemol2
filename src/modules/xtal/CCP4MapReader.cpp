@@ -327,11 +327,11 @@ bool CCP4MapReader::read(qlib::InStream &arg)
   }
 
   // read float density map
-  int ntotal = ncol*nrow*nsect;
+  const size_t ntotal = size_t(ncol)*size_t(nrow)*size_t(nsect);
 
   if (nmode==MRC_TYPE_FLOAT) {
     float *fbuf = MB_NEW float[ntotal];
-    LOG_DPRINT("memory allocation %d bytes\n", ntotal*sizeof (float));
+    LOG_DPRINT("memory allocation %.1f MB\n", double(ntotal)*sizeof (float)/(1024.0*1024.0));
     if (fbuf==NULL) {
       MB_THROW(qlib::OutOfMemoryException, "CCP4MapReader read: cannot allocate memory");
       return false;
@@ -341,19 +341,19 @@ bool CCP4MapReader::read(qlib::InStream &arg)
 
     if (m_bTruncMin) {
       LOG_DPRINTLN("CCP4Map> Truncate map lower than: %f sigma", m_dMin);
-      for (int i=0; i<ntotal; ++i)
+      for (size_t i=0; i<ntotal; ++i)
         fbuf[i] = qlib::max(fbuf[i], float(m_dMin * rhosig));
     }
 
     if (m_bTruncMax) {
       LOG_DPRINTLN("CCP4Map> Truncate map higher than: %f sigma", m_dMax);
-      for (int i=0; i<ntotal; ++i)
+      for (size_t i=0; i<ntotal; ++i)
         fbuf[i] = qlib::min(fbuf[i], float(m_dMax * rhosig));
     }
 
     if (m_bNormalize) {
       LOG_DPRINTLN("CCP4Map> Normalizing map by sig=%f, mean=%f", rhosig, rhomean);
-      for (int i=0; i<ntotal; ++i) {
+      for (size_t i=0; i<ntotal; ++i) {
         double v = fbuf[i];
         v = (v - rhomean)/rhosig;
         fbuf[i] = float(v);
@@ -369,7 +369,7 @@ bool CCP4MapReader::read(qlib::InStream &arg)
   }
   else if (nmode==MRC_TYPE_BYTE) {
     quint8 *buf = MB_NEW quint8[ntotal];
-    LOG_DPRINT("memory allocation %d bytes\n", ntotal*sizeof(quint8));
+    LOG_DPRINT("memory allocation %.1f MB\n", double(ntotal)/(1024.0*1024.0));
     if (buf==NULL) {
       MB_THROW(qlib::OutOfMemoryException, "CCP4MapReader read: cannot allocate memory");
       return false;
@@ -380,7 +380,7 @@ bool CCP4MapReader::read(qlib::InStream &arg)
     double sum = 0.0;
     double fmin = 1.0e10;
     double fmax = -1.0e10;
-    for (int i=0; i<ntotal; ++i){
+    for (size_t i=0; i<ntotal; ++i){
       double val = double(buf[i]);
       sum += val;
       fmin = qlib::min(fmin, val);
@@ -388,7 +388,7 @@ bool CCP4MapReader::read(qlib::InStream &arg)
     }
     double aver = sum/double(ntotal);
     sum = 0.0;
-    for (int i=0; i<ntotal; ++i){
+    for (size_t i=0; i<ntotal; ++i){
       double val = double(buf[i]);
       sum += (val-aver)*(val-aver);
     }
@@ -397,19 +397,19 @@ bool CCP4MapReader::read(qlib::InStream &arg)
     /*
     if (m_bTruncMin) {
       LOG_DPRINTLN("Truncate map lower than: %f sigma", m_dMin);
-      for (int i=0; i<ntotal; ++i)
+      for (size_t i=0; i<ntotal; ++i)
         fbuf[i] = qlib::max(fbuf[i], float(m_dMin * rhosig));
     }
 
     if (m_bTruncMax) {
       LOG_DPRINTLN("Truncate map higher than: %f sigma", m_dMax);
-      for (int i=0; i<ntotal; ++i)
+      for (size_t i=0; i<ntotal; ++i)
         fbuf[i] = qlib::min(fbuf[i], float(m_dMax * rhosig));
     }
 
     if (m_bNormalize) {
       LOG_DPRINTLN("Normalize map");
-      for (int i=0; i<ntotal; ++i) {
+      for (size_t i=0; i<ntotal; ++i) {
         double v = fbuf[i];
         v = (v - rhomean)/rhosig;
         fbuf[i] = float(v);

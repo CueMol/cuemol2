@@ -156,9 +156,9 @@ public:
     @param size size to read.
     @return returns true if succeeded.
    */
-  void fetch_floatArray(float *fbuf, int size);
+  void fetch_floatArray(float *fbuf, size_t size);
 
-  void fetch_byteArray(quint8 *buf, int size);
+  void fetch_byteArray(quint8 *buf, size_t size);
 
 private:
 

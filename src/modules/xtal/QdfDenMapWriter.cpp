@@ -165,18 +165,23 @@ void QdfDenMapWriter::writeData()
 
   ////////////////
   // Map (bytemap)
-  int nsize = nx*ny*nz;
-  o.defData("bmap", nsize);
+  const size_t ntotal = size_t(nx)*size_t(ny)*size_t(nz);
+  if (ntotal > size_t(0x7fffffff)) {
+    // the QDF data-record count is a 32-bit int
+    MB_THROW(qlib::FileFormatException,
+             "QdfDenMapWriter: map too large for the QDF map chunk (> 2^31 voxels)");
+    return;
+  }
+  o.defData("bmap", int(ntotal));
   o.defInt8("v");
 
   o.startData();
+  // one-byte records need no byte swapping: write each section's samples
+  // as one fixed-record block straight from the map storage
+  const size_t nslice = size_t(nx)*size_t(ny);
+  const qlib::ChunkedArray3D<quint8> &bmap = m_pObj->getByteMap();
   for (int k=0; k<nz; k++)
-    for (int j=0; j<ny; j++)
-      for (int i=0; i<nx; i++) {
-        o.startRecord();
-        o.writeInt8("v", qint8( m_pObj->atByte(i,j,k) ));
-        o.endRecord();
-      }
+    o.writeFxRecords(int(nslice), bmap.slice(k), int(nslice));
 
   o.endData();
 

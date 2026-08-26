@@ -24,33 +24,41 @@ void ScalarObject::calcBaseHistogram()
   m_dHisMin = getMinDensity();
   m_dHisMax = getMaxDensity();
 
-  // ???
+  // Implementations with quantized storage provide the base histogram
+  // directly (lossless and cheap); otherwise scan the samples.
+  m_bashist.clear();
+  if (getBaseHistogram(m_bashist, m_dBaseMin, m_dBinSz) && !m_bashist.empty()) {
+    MB_DPRINTLN("ScalarObj.hist> basehist (impl) nbins=%d", (int) m_bashist.size());
+    return;
+  }
+  m_bashist.clear();
+
+  // Generic path: bins of rmsd/1000, capped so a wide-range map does not
+  // allocate an unbounded table (the rebinning in getHistogramJSON copes
+  // with any base bin width).
   double dbinw = getRmsdDensity()/1000.0;
-  
-  int nbins = int( (m_dHisMax-m_dHisMin)/dbinw );
+  long long lnbins = (dbinw > 0.0) ? (long long) ((m_dHisMax-m_dHisMin)/dbinw) : 0;
+  if (lnbins < 1) lnbins = 1;
+  if (lnbins > 65536) lnbins = 65536;
+  const int nbins = (int) lnbins;
 
   MB_DPRINTLN("ScalarObj.hist> basehist nbins=%d", nbins);
 
-  m_bashist.resize(nbins);
+  m_dBaseMin = m_dHisMin;
   m_dBinSz = (m_dHisMax-m_dHisMin)/double(nbins);
+  m_bashist.assign(nbins, 0);
 
-  for (int i=0; i<nbins; ++i)
-    m_bashist[i] = 0;
-  
-  int ni = getColNo();
-  int nj = getRowNo();
-  int nk = getSecNo();
+  const int ni = getColNo();
+  const int nj = getRowNo();
+  const int nk = getSecNo();
 
-  for (int i=0; i<ni; ++i)
+  for (int k=0; k<nk; ++k)
     for (int j=0; j<nj; ++j)
-      for (int k=0; k<nk; ++k) {
-        int ind = (int) ::floor( (atFloat(i,j,k)-m_dHisMin)/m_dBinSz );
-        if (ind<0 || ind>=nbins) {
-          //MB_DPRINTLN("ERROR!! invalid density value at (%d,%d,%d)=%f", i,j,k,rho);
-        }
-        else {
-          m_bashist[ind]++;
-        }
+      for (int i=0; i<ni; ++i) {
+        const double a = (atFloat(i,j,k)-m_dBaseMin)/m_dBinSz;
+        if (a < 0.0 || a >= double(nbins))
+          continue;
+        m_bashist[(int) ::floor(a)]++;
       }
 }
 
@@ -79,8 +87,9 @@ LString ScalarObject::getHistogramJSON(double min, double max, int nbins)
   
   double xlo, xhi, delo, dehi, rho;
   int ilo, ihi;
-  for (j=0; j<m_bashist.size(); ++j) {
-    xlo = m_dHisMin + double(j)*m_dBinSz;
+  const int nbase = (int) m_bashist.size();
+  for (j=0; j<nbase; ++j) {
+    xlo = m_dBaseMin + double(j)*m_dBinSz;
     xhi = xlo + m_dBinSz;
     // get index/delta for the new bin size
     getInd(xlo, min, dbinw, ilo, delo);
@@ -93,35 +102,31 @@ LString ScalarObject::getHistogramJSON(double min, double max, int nbins)
       continue;
     }
     
+    const double cnt = double(m_bashist[j]);
+    if (cnt == 0.0)
+      continue;
+
     if (ilo==ihi) {
       // both lo&hi are in one range (ilo) of the new histogram
       // --> simply add to hist[ilo]
-      histo[ilo] += m_bashist[j];
+      histo[ilo] += cnt;
     }
     else {
-      double rhosum = 0.0;
-
       rho = ( ((ilo+1)*dbinw + min) - xlo ) / m_dBinSz;
-      rhosum += rho;
-      MB_DPRINTLN("ilo=%d rho=%f", ilo, rho);
       if (0<=ilo && ilo<nbins) {
-        histo[ilo] += m_bashist[j] * rho;
+        histo[ilo] += cnt * rho;
       }
-      
+
       for (i=ilo+1; i<ihi; ++i) {
         rho = dbinw / m_dBinSz;
-        rhosum += rho;
-        MB_DPRINTLN("i=%d rho=%f", i, rho);
         if (0<=i && i<nbins) {
-          histo[i] += m_bashist[j] * rho;
+          histo[i] += cnt * rho;
         }
       }
 
       rho = ( xhi - (ihi*dbinw + min) ) / m_dBinSz;
-      rhosum += rho;
-      MB_DPRINTLN("ihi=%d rho=%f", ihi, rho);
       if (0<=ihi && ihi<nbins) {
-        histo[ihi] += m_bashist[j] * rho;
+        histo[ihi] += cnt * rho;
       }
     }
   }

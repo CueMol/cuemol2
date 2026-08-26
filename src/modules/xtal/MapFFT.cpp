@@ -333,18 +333,18 @@ void MapFFT::doFFT()
     checkMapResoln();
     calcgrid();
     int ncc = m_nc / 2 + 1;
-    int ninalloc, noutalloc;
+    size_t ninalloc, noutalloc;
 
 #ifdef HERMIT
-    ninalloc = sizeof(fftwf_complex) * m_na * m_nb * ncc;
-    noutalloc = sizeof(float) * m_na * m_nb * m_nc;
+    ninalloc = sizeof(fftwf_complex) * size_t(m_na) * size_t(m_nb) * size_t(ncc);
+    noutalloc = sizeof(float) * size_t(m_na) * size_t(m_nb) * size_t(m_nc);
     std::complex<float> *in = (std::complex<float> *)fftwf_malloc(ninalloc);
     float *out = (float *)fftwf_malloc(noutalloc);
 #define IND(h, k, l) ((l) + ncc * ((k) + m_nb * (h)))
 #define NCS ncc
 #else
-    ninalloc = sizeof(fftwf_complex) * m_na * m_nb * m_nc;
-    noutalloc = sizeof(fftwf_complex) * m_na * m_nb * m_nc;
+    ninalloc = sizeof(fftwf_complex) * size_t(m_na) * size_t(m_nb) * size_t(m_nc);
+    noutalloc = sizeof(fftwf_complex) * size_t(m_na) * size_t(m_nb) * size_t(m_nc);
     std::complex<float> *in = (std::complex<float> *)fftwf_malloc(ninalloc);
     std::complex<float> *out = (std::complex<float> *)fftwf_malloc(noutalloc);
 #define IND(h, k, l) ((l) + m_nc * ((k) + m_nb * (h)))

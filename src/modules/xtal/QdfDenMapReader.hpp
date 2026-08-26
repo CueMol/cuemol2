@@ -64,8 +64,8 @@ namespace xtal {
 
     int m_nx, m_ny, m_nz;
     
-    void readDataArray(qbyte *);
-    void readDataArray2(qbyte *);
+    void readDataArray();
+    void readDataArray2();
 
   };
 

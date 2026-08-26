@@ -59,8 +59,8 @@ bool ElePotMap::setMapFloatArray(const float *array,
   rhomean=0.0, sqmean=0.0,
   rhodev=0.0;
 
-  const int ntotal = ncol*nrow*nsect;
-  for (int i=0; i<ntotal; i++) {
+  const size_t ntotal = size_t(ncol)*size_t(nrow)*size_t(nsect);
+  for (size_t i=0; i<ntotal; i++) {
     double rho = (double)array[i];
     rhomean += rho/float(ntotal);
     sqmean += rho*rho/float(ntotal);
