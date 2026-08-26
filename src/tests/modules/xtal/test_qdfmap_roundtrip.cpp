@@ -41,9 +41,12 @@ DensityMap *makeMap(qsys::ObjectPtr &rpObj)
     return pMap;
 }
 
-std::string writeQdf(const qsys::ObjectPtr &pObj)
+/// Write the map; chunkLimit lowers the records-per-chunk limit of the
+/// writer (0 keeps the default) to force the split MAP2 layout
+std::string writeQdf(const qsys::ObjectPtr &pObj, size_t chunkLimit = 0)
 {
     QdfDenMapWriter writer;
+    if (chunkLimit > 0) writer.setChunkLimit(chunkLimit);
     writer.attach(pObj);
     StrOutStream outs;
     writer.write(outs);
@@ -127,4 +130,59 @@ TEST(QdfMapRoundTrip, MapKindAndOrigin)
     ASSERT_NE(pDst2, nullptr);
     EXPECT_EQ(pDst2->getDetectedMapType(), DensityMap::MAPTYPE_XTAL);
     EXPECT_TRUE(pDst2->getOrigin().isZero3D());
+}
+
+// The default writer keeps the single-chunk MAP1 layout.
+TEST(QdfMapRoundTrip, DefaultLayoutIsMap1)
+{
+    qsys::ObjectPtr pSrcObj;
+    makeMap(pSrcObj);
+    const std::string image = writeQdf(pSrcObj);
+    EXPECT_NE(image.find("MAP1"), std::string::npos);
+    EXPECT_EQ(image.find("MAP2"), std::string::npos);
+}
+
+// A map with more voxels than one chunk holds is written as MAP2 with the
+// samples split into whole-section chunks, and reads back identically.
+// The 5x4x3 map (20 samples per section, 60 in total) splits into 2 + 1
+// sections under a 40-record limit and into three chunks under 20.
+TEST(QdfMapRoundTrip, SplitChunksRoundTrip)
+{
+    const size_t limits[2] = {40, 20};
+    for (size_t il = 0; il < 2; ++il) {
+        qsys::ObjectPtr pSrcObj, pDstObj;
+        DensityMap *pSrc = makeMap(pSrcObj);
+        pSrc->setDetectedMapType(DensityMap::MAPTYPE_EM);
+        pSrc->setOrigin(Vector4D(1.0, 2.0, 3.0));
+
+        const std::string image = writeQdf(pSrcObj, limits[il]);
+        EXPECT_NE(image.find("MAP2"), std::string::npos) << "limit " << limits[il];
+        EXPECT_EQ(image.find("MAP1"), std::string::npos) << "limit " << limits[il];
+
+        DensityMap *pDst = readQdf(image, pDstObj);
+        ASSERT_NE(pDst, nullptr) << "limit " << limits[il];
+        ASSERT_EQ(pDst->getSecNo(), pSrc->getSecNo());
+        for (int k = 0; k < pSrc->getSecNo(); ++k)
+            for (int j = 0; j < pSrc->getRowNo(); ++j)
+                for (int i = 0; i < pSrc->getColNo(); ++i)
+                    ASSERT_EQ(pDst->atByte(i, j, k), pSrc->atByte(i, j, k))
+                        << "limit " << limits[il] << " at " << i << "," << j << "," << k;
+        EXPECT_NEAR(pDst->getRmsdDensity(), pSrc->getRmsdDensity(), 1e-6);
+        EXPECT_EQ(pDst->getStartRow(), -1);
+        EXPECT_EQ(pDst->getDetectedMapType(), DensityMap::MAPTYPE_EM);
+        EXPECT_NEAR(pDst->getOrigin().z(), 3.0, 1e-6);
+    }
+}
+
+// A section that does not fit one chunk cannot be written.
+TEST(QdfMapRoundTrip, SectionLargerThanChunkThrows)
+{
+    qsys::ObjectPtr pSrcObj;
+    makeMap(pSrcObj);
+    QdfDenMapWriter writer;
+    writer.setChunkLimit(10);   // 20 samples per section
+    writer.attach(pSrcObj);
+    StrOutStream outs;
+    EXPECT_THROW(writer.write(outs), qlib::FileFormatException);
+    writer.detach();
 }

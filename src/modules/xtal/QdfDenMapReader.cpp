@@ -63,11 +63,14 @@ bool QdfDenMapReader::read(qlib::InStream &ins)
 
   start(ins);
 
+  // MAP1: one bmap chunk; MAP2: the samples split into several bmap
+  // chunks of whole sections (maps with more than 2^31 voxels)
   LString sft = getFileType();
-  if (!sft.equals("MAP1")) {
+  if (!sft.equals("MAP1") && !sft.equals("MAP2")) {
     MB_THROW(qlib::FileFormatException, "QdfDen invalid file format signature: "+sft);
     return false;
   }
+  m_bSplit = sft.equals("MAP2");
 
   readData();
 
@@ -147,20 +150,33 @@ void QdfDenMapReader::readData()
     m_pObj->setOrigin(qlib::Vector4D(ox, oy, oz));
   }
 
+  // MAP2: chunking of the sample block
+  int nchunk = 1;
+  int nsecChunk = nz;
+  if (m_bSplit) {
+    if (!o.isDefined("nchk") || !o.isDefined("csec")) {
+      MB_THROW(qlib::FileFormatException, "MAP2 header lacks the chunking fields");
+      return;
+    }
+    nchunk = o.readInt32("nchk");
+    nsecChunk = o.readInt32("csec");
+    if (nchunk<1 || nsecChunk<1 ||
+        (long long) nchunk * (long long) nsecChunk < (long long) nz) {
+      MB_THROW(qlib::FileFormatException, "inconsistent MAP2 chunking");
+      return;
+    }
+  }
+
   o.endRecord();
 
   m_pObj->setMapParams(stx, sty, stz, intx, inty, intz);
 
-  const size_t ntotal = size_t(nx)*size_t(ny)*size_t(nz);
-  LOG_DPRINTLN("QdfDenMap> map size (%d,%d,%d)=%lld", nx, ny, nz, (long long) ntotal);
+  const size_t nslice = size_t(nx)*size_t(ny);
+  const size_t ntotal = nslice*size_t(nz);
+  LOG_DPRINTLN("QdfDenMap> map size (%d,%d,%d)=%lld (%d chunk(s))",
+               nx, ny, nz, (long long) ntotal, nchunk);
 
   ///////////////////
-
-  int ndata = readDataDef("bmap");
-  if (ndata<0 || size_t(ndata)!=ntotal) {
-    MB_THROW(qlib::FileFormatException, "inconsistent data (ndata!=nx*ny*nz)");
-    return;
-  }
 
   // The samples are read section by section straight into the map
   // storage (no whole-map temporary buffer). Same quantization as the
@@ -173,20 +189,33 @@ void QdfDenMapReader::readData()
   m_nx = nx;
   m_ny = ny;
   m_nz = nz;
-  if (!o.isIntByteSwap())
-    readDataArray2();
-  else
-    readDataArray();
+
+  for (int ic=0; ic<nchunk; ++ic) {
+    const int k0 = ic*nsecChunk;
+    const int k1 = qlib::min(nz, k0 + nsecChunk);
+    const size_t nexpect = nslice*size_t(k1-k0);
+
+    int ndata = readDataDef("bmap");
+    if (ndata<0 || size_t(ndata)!=nexpect) {
+      MB_THROW(qlib::FileFormatException, "inconsistent data (ndata!=nx*ny*nsec)");
+      return;
+    }
+    o.readRecordDef();
+
+    if (!o.isIntByteSwap())
+      readDataArray2(k0, k1);
+    else
+      readDataArray(k0, k1);
+  }
 
   m_pObj->endByteMap(rmin, rmax, rmean, rsig);
 }
 
-void QdfDenMapReader::readDataArray()
+void QdfDenMapReader::readDataArray(int k0, int k1)
 {
   QdfInStream &o = getStream();
-  o.readRecordDef();
 
-  for (int iz=0; iz<m_nz; iz++) {
+  for (int iz=k0; iz<k1; iz++) {
     qbyte *pslice = m_pObj->sliceBytes(iz);
     for (int iy=0; iy<m_ny; iy++) {
       qbyte *prow = pslice + size_t(iy)*size_t(m_nx);
@@ -199,14 +228,13 @@ void QdfDenMapReader::readDataArray()
   }
 }
 
-void QdfDenMapReader::readDataArray2()
+void QdfDenMapReader::readDataArray2(int k0, int k1)
 {
   QdfInStream &o = getStream();
-  o.readRecordDef();
 
   // one readFxRecords() per section keeps every read under the int range
   const size_t nslice = size_t(m_nx)*size_t(m_ny);
-  for (int iz=0; iz<m_nz; iz++)
+  for (int iz=k0; iz<k1; iz++)
     o.readFxRecords(int(nslice), m_pObj->sliceBytes(iz), int(nslice));
 }
 

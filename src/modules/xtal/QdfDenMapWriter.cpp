@@ -18,6 +18,8 @@ using qsys::QdfOutStream;
 MC_DYNCLASS_IMPL(QdfDenMapWriter, QdfDenMapWriter, qlib::LSpecificClass<QdfDenMapWriter>);
 
 QdfDenMapWriter::QdfDenMapWriter()
+     : m_pObj(NULL), m_nChunkLimit(size_t(0x7fffffff)),
+       m_bSplit(false), m_nSecChunk(0), m_nChunks(0)
 {
 }
 
@@ -68,9 +70,30 @@ bool QdfDenMapWriter::write(qlib::OutStream &outs)
 
   m_pObj = pObj;
 
+  // Chunking of the sample block: the QDF data-record count is a 32-bit
+  // int, so a map with more voxels than one chunk holds is written as
+  // MAP2, with the samples split into consecutive "bmap" chunks of whole
+  // sections (older readers reject the MAP2 signature explicitly).
+  const size_t nslice = size_t(pObj->getColNo())*size_t(pObj->getRowNo());
+  const int nz = pObj->getSecNo();
+  const size_t ntotal = nslice*size_t(nz);
+  if (nslice > m_nChunkLimit) {
+    m_pObj = NULL;
+    MB_THROW(qlib::FileFormatException,
+             "QdfDenMapWriter: a map section exceeds the QDF chunk record limit");
+    return false;
+  }
+  m_bSplit = (ntotal > m_nChunkLimit);
+  m_nSecChunk = nz;
+  if (m_bSplit && nslice>0)
+    m_nSecChunk = int(qlib::min(size_t(nz), m_nChunkLimit/nslice));
+  if (m_nSecChunk<1)
+    m_nSecChunk = 1;
+  m_nChunks = (nz<=0) ? 1 : (nz + m_nSecChunk - 1)/m_nSecChunk;
+
   start(outs);
 
-  getStream().writeFileType("MAP1");
+  getStream().writeFileType(m_bSplit ? "MAP2" : "MAP1");
 
   writeData();
 
@@ -136,6 +159,11 @@ void QdfDenMapWriter::writeData()
   o.defFloat32("orgx");
   o.defFloat32("orgy");
   o.defFloat32("orgz");
+  if (m_bSplit) {
+    // MAP2 only: number of bmap chunks and sections per chunk
+    o.defInt32("nchk");
+    o.defInt32("csec");
+  }
 
   int nx = m_pObj->getColNo();
   int ny = m_pObj->getRowNo();
@@ -170,33 +198,34 @@ void QdfDenMapWriter::writeData()
     o.writeFloat32("orgx", (qfloat32) vorig.x());
     o.writeFloat32("orgy", (qfloat32) vorig.y());
     o.writeFloat32("orgz", (qfloat32) vorig.z());
+    if (m_bSplit) {
+      o.writeInt32("nchk", m_nChunks);
+      o.writeInt32("csec", m_nSecChunk);
+    }
 
     o.endRecord();
   }
   o.endData();
 
   ////////////////
-  // Map (bytemap)
-  const size_t ntotal = size_t(nx)*size_t(ny)*size_t(nz);
-  if (ntotal > size_t(0x7fffffff)) {
-    // the QDF data-record count is a 32-bit int
-    MB_THROW(qlib::FileFormatException,
-             "QdfDenMapWriter: map too large for the QDF map chunk (> 2^31 voxels)");
-    return;
-  }
-  o.defData("bmap", int(ntotal));
-  o.defInt8("v");
-
-  o.startData();
-  // one-byte records need no byte swapping: write each section's samples
-  // as one fixed-record block straight from the map storage
+  // Map (bytemap): one "bmap" chunk per m_nSecChunk sections (a single
+  // chunk holding every section in the MAP1 layout)
   const size_t nslice = size_t(nx)*size_t(ny);
   const qlib::ChunkedArray3D<quint8> &bmap = m_pObj->getByteMap();
-  for (int k=0; k<nz; k++)
-    o.writeFxRecords(int(nslice), bmap.slice(k), int(nslice));
+  for (int ic=0; ic<m_nChunks; ++ic) {
+    const int k0 = ic*m_nSecChunk;
+    const int k1 = qlib::min(nz, k0 + m_nSecChunk);
 
-  o.endData();
+    o.defData("bmap", int(nslice*size_t(k1-k0)));
+    o.defInt8("v");
 
+    o.startData();
+    // one-byte records need no byte swapping: write each section's
+    // samples as one fixed-record block straight from the map storage
+    for (int k=k0; k<k1; k++)
+      o.writeFxRecords(int(nslice), bmap.slice(k), int(nslice));
+    o.endData();
+  }
 }
 
 
