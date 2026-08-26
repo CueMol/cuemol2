@@ -2,6 +2,7 @@
 import type { WorkerContext } from '../types/WorkerContext';
 import type { ObjReader } from '@cuemol/core/src/wrappers/ObjReader';
 import { pickReaderName, OBJREADER_CATEGORY } from './helpers/pickReaderName';
+import { isLegacyRendererType } from './helpers/rendererFilter';
 
 const log = console;
 const RENDERER_TEST_TYPES = new Set(['ms2test', 'symm']);
@@ -72,7 +73,9 @@ function getCompatibleRendererNames(
     const types = rendTypesStr
         .split(',')
         .map((s: string) => s.trim())
-        .filter((s: string) => s.length > 0 && s.charAt(0) !== '*' && !RENDERER_TEST_TYPES.has(s));
+        .filter((s: string) =>
+            s.length > 0 && s.charAt(0) !== '*' && !RENDERER_TEST_TYPES.has(s) &&
+            !isLegacyRendererType(s));
 
     return { types, objType, readerName };
 }

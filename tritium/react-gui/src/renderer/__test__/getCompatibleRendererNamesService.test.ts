@@ -55,6 +55,19 @@ function makeEnv(opts: {
 describe('getCompatibleRendererNames — explicit readerName branch', () => {
     beforeEach(() => { vi.clearAllMocks() })
 
+    it('hides legacy renderer types (gpu_mapmesh) from the density-map type list', () => {
+        const env = makeEnv({
+            readerRendTypes: { ccp4map: 'contour,isosurf,gpu_mapmesh,gpu_mapvol,*unitcell' },
+            readerClassNames: { ccp4map: 'DensityMap' },
+            info: [],
+        })
+        const result = getCompatibleRendererNames(env.ctx, {
+            filePath: 'emd_11668.map',
+            readerName: 'ccp4map',
+        })
+        expect(result.types).toEqual(['contour', 'isosurf', 'gpu_mapvol'])
+    })
+
     it('uses createHandler(readerName, 0) directly without consulting getInfoJSON2', () => {
         const env = makeEnv({
             readerRendTypes: { mmcif: 'simple,cartoon,tube,ribbon' },

@@ -155,6 +155,10 @@ boundary で切り取った region を budget 由来の stride で** 表示し�
   `textureSize()` / `texelFetch` で参照する。以前の buffer texture (`usamplerBuffer`) は WebGL2 / GLSL ES 3.00
   に無く、tritium (`ElecDisplayContext` は `BufTexRep` 未実装) では shader が compile できず何も描けなかった。
   data texture は immutable なので region が変わるたびに作り直す
+- **gpu_mapmesh は新規作成の選択肢に出さない** (線幅が固定で、CPU の contour より遅い)。renderer 種別リストを
+  作る 3 つの worker service (file-open の renderer type / New renderer dialog / Change type メニュー) が
+  `helpers/rendererFilter.ts` の `isLegacyRendererType()` で除外する。C++ の登録は残すので、過去の `.qsc` に
+  含まれる gpu_mapmesh は従来どおり読み込まれ・描画され・Inspector / Density map pane で操作できる
 - `extractBlock` / `extractBlockBytes` (`ScalarObject` 既定 = `atFloat/atByte` 走査; `DensityMap` は行ポインタ +
   LUT + TBB): map-local index の strided sub-block を連続配列にコピー。範囲外は PBC なら剰余で wrap、
   そうでなければ fill

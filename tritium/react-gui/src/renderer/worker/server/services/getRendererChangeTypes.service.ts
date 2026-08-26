@@ -9,6 +9,7 @@ import type { Renderer } from '@cuemol/core/src/wrappers/Renderer';
 import type { Object as CueMolObject } from '@cuemol/core/src/wrappers/Object';
 import type { WorkerContext } from '../types/WorkerContext';
 import { getSceneOrNull } from './helpers/sceneResolver';
+import { isLegacyRendererType } from './helpers/rendererFilter';
 
 export interface GetRendererChangeTypesArgs {
     sceneId: number;
@@ -68,6 +69,7 @@ function getRendererChangeTypes(
             if (s === currentType) return false;
             if (s.startsWith('*')) return false;
             if (s === 'atomintr' || s === 'disorder') return false;
+            if (isLegacyRendererType(s)) return false;
             return true;
         });
 

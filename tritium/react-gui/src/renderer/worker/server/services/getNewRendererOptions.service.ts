@@ -13,6 +13,7 @@ import type { WorkerContext } from '../types/WorkerContext';
 import type { PresetTypeEntry } from '../../../components/fopen-opt-dlgs/types';
 import { getSceneOrNull } from './helpers/sceneResolver';
 import { fetchStyleEntries } from './helpers/styleEntries';
+import { isLegacyRendererType } from './helpers/rendererFilter';
 
 const NON_MOL_CLASSES = new Set(['ElePotMap', 'MolSurfObj', 'DensityMap']);
 
@@ -138,6 +139,7 @@ export function getNewRendererOptions(
             if (!s) return false;
             if (s.startsWith('*')) return false;
             if (s === 'atomintr' || s === 'disorder') return false;
+            if (isLegacyRendererType(s)) return false;
             return true;
         });
 

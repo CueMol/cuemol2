@@ -97,6 +97,19 @@ describe('getNewRendererOptions.service', () => {
         expect(res.objClassName).toBe('PDBMol')
     })
 
+    it('hides legacy renderer types (gpu_mapmesh) from the type list', () => {
+        const f = makeFixture({
+            objClassName: 'DensityMap',
+            compatible: 'contour,isosurf,gpu_mapmesh,gpu_mapvol,*unitcell',
+        })
+        const res = services.getNewRendererOptions(f.ctx, {
+            sceneId: 1, sourceNodeId: 10, sourceNodeType: 'object',
+        })
+        expect(res.ok).toBe(true)
+        expect(res.rendererTypes).toEqual(['contour', 'isosurf', 'gpu_mapvol'])
+        expect(res.defaultName).toBe('contour1')
+    })
+
     it('renderer source: resolves parent obj via getClientObj + inherits rend.group', () => {
         const f = makeFixture({ rendGroup: 'grpA' })
         const res = services.getNewRendererOptions(f.ctx, {
