@@ -160,16 +160,17 @@ void GLSLMapMeshRenderer2::make3DTexMap(DisplayContext *pdc, ScalarObject *pMap,
         xt.orthToFrac(vmin);
         xt.orthToFrac(vmax);
 
-        m_bPBC = false;
+        // check PBC (the stored block must span the whole cell)
         const double dimx = pMap->getColGridSize() * pMap->getColNo();
         const double dimy = pMap->getRowGridSize() * pMap->getRowNo();
         const double dimz = pMap->getSecGridSize() * pMap->getSecNo();
         const double cea = xt.a();
         const double ceb = xt.b();
         const double cec = xt.c();
-        if (qlib::isNear4(dimx, cea) && qlib::isNear4(dimy, ceb) &&
-            qlib::isNear4(dimz, cec))
-            m_bPBC = true;
+        const bool bSpansCell = qlib::isNear4(dimx, cea) &&
+                                qlib::isNear4(dimy, ceb) &&
+                                qlib::isNear4(dimz, cec);
+        m_bPBC = isPBCEligible(pXtal, bSpansCell);
     }
 
     if (pXtal != NULL) {
@@ -291,7 +292,9 @@ void GLSLMapMeshRenderer2::display(DisplayContext *pdc)
 
     pdc->pushMatrix();
 
-    if (pXtal == NULL) pdc->translate(pMap->getOrigin());
+    // map origin (MRC ORIGIN for DensityMap; zero for crystallographic maps)
+    const Vector4D vorig = pMap->getOrigin();
+    if (pXtal == NULL || !vorig.isZero3D()) pdc->translate(vorig);
 
     if (pXtal != NULL) {
         Matrix3D orthmat = pXtal->getXtalInfo().getOrthMat();

@@ -26,7 +26,15 @@ DensityMap::DensityMap()
   // m_pRealMap = NULL;
   m_dLevelBase = m_dLevelStep = 0.0;
 
+  m_nMapType = MAPTYPE_AUTO;
+  m_nDetectedType = MAPTYPE_XTAL;
+
 //  m_bUseMolBndry = false;
+}
+
+LString DensityMap::getMapTypeResolvedStr() const
+{
+  return (getEffectiveMapType() == MAPTYPE_EM) ? LString("em") : LString("xtal");
 }
 
 DensityMap::~DensityMap()
@@ -188,9 +196,11 @@ Vector4D DensityMap::getCenter() const
   m_xtalInfo.fracToOrth(fcen);
   return fcen;
 */
-  Vector4D tv(double(m_nStartCol+m_nCols)/2.0,
-              double(m_nStartRow+m_nRows)/2.0,
-              double(m_nStartSec+m_nSecs)/2.0);
+  // Block center in map-local grid index (convToOrth adds the start
+  // indices), so the start must not be halved along with the size.
+  Vector4D tv(double(m_nCols)/2.0,
+              double(m_nRows)/2.0,
+              double(m_nSecs)/2.0);
   tv = convToOrth(tv);
   return tv;
 }
@@ -235,6 +245,9 @@ double DensityMap::getValueAt(const Vector4D &pos) const
     tv = rmat.mulvec(tv);
   }
 
+  // map origin (MRC ORIGIN; zero for crystallographic maps)
+  tv -= m_vOrigin;
+
   m_xtalInfo.orthToFrac(tv);
   
   tv.x() *= double(getColInterval());
@@ -270,6 +283,9 @@ bool DensityMap::isInRange(const Vector4D &pos) const
     tv -= tr;
     tv = rmat.mulvec(tv);
   }
+
+  // map origin (MRC ORIGIN; zero for crystallographic maps)
+  tv -= m_vOrigin;
 
   m_xtalInfo.orthToFrac(tv);
   
@@ -310,6 +326,8 @@ Vector4D DensityMap::convToOrth(const Vector4D &index) const
   m_xtalInfo.fracToOrth(tv);
 
   // tv is now in orthogonal coord.
+  // map origin (MRC ORIGIN; zero for crystallographic maps)
+  tv += m_vOrigin;
 
   const Matrix4D &xfm = getXformMatrix();
   if (!xfm.isIdent()) {
@@ -414,7 +432,7 @@ unsigned char DensityMap::getAtWithBndry(int nx, int ny, int nz) const
 
 Vector4D DensityMap::getOrigin() const
 {
-  return Vector4D(0,0,0);
+  return m_vOrigin;
 }
 
 double DensityMap::getColGridSize() const
@@ -520,6 +538,10 @@ void DensityMap::fitView(const qsys::ViewPtr &pView, bool dummy) const
 
     // get object xform
     Matrix4D xform = getXformMatrix();
+
+    // map origin (MRC ORIGIN; zero for crystallographic maps)
+    if (!m_vOrigin.isZero3D())
+      xform.matprod( Matrix4D::makeTransMat(m_vOrigin) );
 
     // get frac-->orth matrix
     Matrix3D orthmat = getXtalInfo().getOrthMat();

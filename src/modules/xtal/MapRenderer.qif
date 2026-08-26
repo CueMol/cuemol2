@@ -59,6 +59,19 @@ runtime_class MapRenderer extends Renderer
   property boolean use_pbc => redirect(isUsePBC, setUsePBC);
   default use_pbc = true;
 
+  /// Display region policy: auto (full for cryo-EM maps, box otherwise),
+  /// box (center +- extent) or full (the whole map block)
+  enumdef region_mode {
+    auto = xtal::MapRenderer::REGION_AUTO;
+    box = xtal::MapRenderer::REGION_BOX;
+    full = xtal::MapRenderer::REGION_FULL;
+  }
+  property enum region_mode => redirect(getRegionMode, setRegionMode);
+  default region_mode = "auto";
+
+  /// Effective region policy ("box" or "full")
+  property string region_mode_resolved => redirect(getRegionModeResolvedStr, XXX) (readonly);
+
   /// Contour level mode
   property boolean use_abslevel => redirect(isUseAbsLev, setUseAbsLev);
   default use_abslevel = false;

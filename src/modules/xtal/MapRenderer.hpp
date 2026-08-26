@@ -149,6 +149,45 @@ namespace xtal {
     }
     bool isUsePBC() const { return m_bUsePBC; }
 
+    //////////////////
+
+  public:
+    /// Display region policy (region_mode property values)
+    enum {
+      REGION_AUTO = 0,
+      REGION_BOX = 1,
+      REGION_FULL = 2,
+    };
+
+  private:
+    /// Display region policy (REGION_*). AUTO resolves to FULL for cryo-EM
+    /// maps and to BOX (center +- extent, the historical behavior) for
+    /// everything else.
+    int m_nRegionMode;
+
+  public:
+    int getRegionMode() const { return m_nRegionMode; }
+    void setRegionMode(int n) {
+      if (m_nRegionMode == n)
+        return;
+      m_nRegionMode = n;
+      invalidateGeomCache();
+    }
+
+    /// Effective region policy (REGION_BOX or REGION_FULL). Resolved at
+    /// render time: the map kind is only known after the reader ran, which
+    /// happens after the renderer properties are deserialized.
+    int getEffectiveRegionMode() const;
+
+    /// Effective region policy as a string ("box" or "full")
+    LString getRegionModeResolvedStr() const;
+
+    /// Periodic-boundary eligibility of the current display: pMap must be a
+    /// periodic (crystallographic) DensityMap whose stored block spans the
+    /// whole cell (bSpansCell, computed by the caller from the grid size),
+    /// use_pbc must be on, and the effective region policy must not be FULL.
+    bool isPBCEligible(const ScalarObject *pMap, bool bSpansCell) const;
+
 
   private:
     /// Absolute contour level flag
@@ -213,6 +252,9 @@ namespace xtal {
     LString toString() const override;
 
     void propChanged(qlib::LPropEvent &ev) override;
+
+    /// object-changed event handler (map_type changes of the client map)
+    void objectChanged(qsys::ObjectEvent &ev) override;
 
     ///////////////////////////////////////////
 

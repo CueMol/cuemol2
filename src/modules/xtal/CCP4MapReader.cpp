@@ -9,6 +9,7 @@
 #include "CCP4MapReader.hpp"
 #include "CCP4InStream.hpp"
 #include "DensityMap.hpp"
+#include "MapKindDetect.hpp"
 
 #include <qlib/StringStream.hpp>
 #include <qlib/ClassRegistry.hpp>
@@ -172,6 +173,9 @@ bool CCP4MapReader::read(qlib::InStream &arg)
   int nspgrp, nsymbt;
   int axcol, axrow, axsect;
   float rhomin, rhomax, rhomean;
+  char exttyp[5];
+  int nversion;
+  float origin[3];
   {
     // read number of (col,row,sec)
     hdrin.fetch_int(ncol);
@@ -218,12 +222,21 @@ bool CCP4MapReader::read(qlib::InStream &arg)
     hdrin.fetch_int(nspgrp);
     hdrin.fetch_int(nsymbt);
 
-    hdrin.skip(56);
+    // words 25-26: extra
+    hdrin.skip(8);
+
+    // words 27-28: EXTTYP / NVERSION (MRC2014; zero in older files)
+    hdrin.readFully(exttyp, 0, 4);
+    exttyp[4] = '\0';
+    hdrin.fetch_int(nversion);
+
+    // words 29-38: extra
+    hdrin.skip(40);
   }
 
   bool bSigned = false;
   {
-    // read additional MRC specific data
+    // words 39-40: IMOD stamp / flags
     int imodStamp, imodFlags;
     hdrin.fetch_int(imodStamp);
     hdrin.fetch_int(imodFlags);
@@ -231,9 +244,14 @@ bool CCP4MapReader::read(qlib::InStream &arg)
       LOG_DPRINTLN("CCP4Map> imodStamp==1146047817 (use imodFlags)");
       bSigned = imodFlags&0x01;
     }
-    //o2kx = pf[49];
-    //o2ky = pf[50];
-    //o2kz = pf[51];
+
+    // words 41-49: extra
+    hdrin.skip(36);
+
+    // words 50-52: ORIGIN (MRC2000/2014; zero or unused in CCP4 files)
+    hdrin.fetch_float(origin[0]);
+    hdrin.fetch_float(origin[1]);
+    hdrin.fetch_float(origin[2]);
   }
 
   LOG_DPRINT("CCP4Map> Header Info:\n");
@@ -248,12 +266,67 @@ bool CCP4MapReader::read(qlib::InStream &arg)
   LOG_DPRINT("  map maximum density  : %f\n", rhomax);
   LOG_DPRINT("  map mean density     : %f\n", rhomean);
   LOG_DPRINT("  map density r.m.s.d. : %f\n", rhosig);
+  LOG_DPRINT("  exttyp/nversion : %s / %d\n", exttyp, nversion);
+  LOG_DPRINT("  origin : (%f,%f,%f)\n", origin[0], origin[1], origin[2]);
 
   //////////////////////////////////////
+  // word 56: NLABL, words 57-256: labels (10 x 80 chars)
+
+  int nlabl = 0;
+  in.fetch_int(nlabl);
+  char labels[800];
+  in.readFully(labels, 0, 800);
+
+  // skip the symmetry records
+  in.skip(nsymbt);
+
+  //////////////////////////////////////
+  // Map kind (crystallographic / cryo-EM) and origin
+
+  {
+    MrcHeaderInfo hinfo;
+    hinfo.nc = ncol;
+    hinfo.nr = nrow;
+    hinfo.ns = nsect;
+    hinfo.ncstart = stacol;
+    hinfo.nrstart = starow;
+    hinfo.nsstart = stasect;
+    hinfo.nx = nx;
+    hinfo.ny = ny;
+    hinfo.nz = nz;
+    hinfo.alpha = alpha;
+    hinfo.beta = beta;
+    hinfo.gamma = gamma;
+    hinfo.ispg = nspgrp;
+    hinfo.nversion = nversion;
+    hinfo.exttyp = exttyp;
+    hinfo.hasOrigin = mrcOriginIsValid(origin);
+    for (int i=0; i<3; ++i)
+      hinfo.origin[i] = origin[i];
+    if (nlabl<0) nlabl = 0;
+    if (nlabl>10) nlabl = 10;
+    for (int i=0; i<nlabl; ++i)
+      hinfo.labels.push_back(LString(labels + i*80, 80));
+
+    const int nkind = detectMapKind(hinfo);
+    pMap->setDetectedMapType(nkind);
+    LOG_DPRINTLN("CCP4Map> map kind: %s",
+                 (nkind==MAPKIND_EM) ? "cryo-EM" : "crystallographic");
+
+    if (hinfo.hasOrigin) {
+      // A non-zero ORIGIN places grid index (0,0,0) in absolute
+      // coordinates; the start indices are then not used (ChimeraX
+      // convention), so both being set is reported.
+      pMap->setOrigin(qlib::Vector4D(origin[0], origin[1], origin[2]));
+      if (stacol!=0 || starow!=0 || stasect!=0) {
+        LOG_DPRINTLN("CCP4Map> both ORIGIN and NxSTART are non-zero; "
+                     "ORIGIN takes precedence");
+        stacol = starow = stasect = 0;
+      }
+    }
+  }
 
   // read float density map
-  in.skip((256*4+nsymbt)-(HDR_SIZE+3*4));
-  // fseek(fp, 256*4+nsymbt, SEEK_SET);
   int ntotal = ncol*nrow*nsect;
 
   if (nmode==MRC_TYPE_FLOAT) {

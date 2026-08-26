@@ -65,6 +65,27 @@ namespace xtal {
     double m_dLevelBase;
     double m_dLevelStep;
 
+  public:
+    /// Map kind (map_type property values). AUTO resolves to the kind
+    /// detected by the reader; XTAL/EM are explicit user overrides.
+    enum {
+      MAPTYPE_AUTO = 0,
+      MAPTYPE_XTAL = 1,
+      MAPTYPE_EM = 2,
+    };
+
+  private:
+    /// Map kind property (MAPTYPE_*)
+    int m_nMapType;
+
+    /// Map kind detected by the reader (MAPTYPE_XTAL or MAPTYPE_EM;
+    /// readers without header evidence leave the XTAL default)
+    int m_nDetectedType;
+
+    /// Map origin in orthogonal coordinates (MRC2014 ORIGIN). Zero for
+    /// crystallographic maps, which are placed by the start indices only.
+    Vector4D m_vOrigin;
+
     ///////////////////////////////////////////////
 
   public:
@@ -159,6 +180,32 @@ namespace xtal {
     int getSecInterval() const { return m_nSecInt; }
 
     const CrystalInfo &getXtalInfo() const { return m_xtalInfo; }
+
+    ///////////////////////////////////////////////////////////////
+    // Map kind (crystallographic / cryo-EM) and origin
+
+    /// map_type property (MAPTYPE_*)
+    int getMapType() const { return m_nMapType; }
+    void setMapType(int n) { m_nMapType = n; }
+
+    /// Set the kind detected by the reader (MAPTYPE_XTAL or MAPTYPE_EM)
+    void setDetectedMapType(int n) { m_nDetectedType = n; }
+    int getDetectedMapType() const { return m_nDetectedType; }
+
+    /// Effective kind: the property unless it is AUTO, else the detected one
+    int getEffectiveMapType() const {
+      return (m_nMapType == MAPTYPE_AUTO) ? m_nDetectedType : m_nMapType;
+    }
+
+    /// True when the map is periodic (crystallographic). Renderers combine
+    /// this with use_pbc and the whole-cell coverage test.
+    bool isPeriodic() const { return getEffectiveMapType() == MAPTYPE_XTAL; }
+
+    /// Effective kind as a string ("xtal" or "em"; map_type_resolved prop)
+    LString getMapTypeResolvedStr() const;
+
+    /// Set the map origin (orthogonal coordinates, angstrom)
+    void setOrigin(const Vector4D &v) { m_vOrigin = v; }
 
     ////////////////////////////////////////////
     // Data chunk serialization

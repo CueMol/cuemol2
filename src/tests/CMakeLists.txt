@@ -180,7 +180,11 @@ gtest_discover_tests(test_surface PROPERTIES LABELS "test_surface")
 add_executable(test_xtal
   modules/xtal/test_main.cpp
   modules/xtal/test_atomposmap2.cpp
+  modules/xtal/test_ccp4_origin.cpp
+  modules/xtal/test_mapkind_detect.cpp
+  modules/xtal/test_maplod.cpp
   modules/xtal/test_maprenderer_color.cpp
+  modules/xtal/test_maprenderer_region.cpp
   modules/xtal/test_mapsurf_molfanc.cpp
   modules/xtal/test_mapsurf_pin.cpp
   modules/xtal/test_multigrad_undo.cpp

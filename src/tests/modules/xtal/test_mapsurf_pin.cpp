@@ -237,7 +237,10 @@ TEST_F(MapSurfPin, DefaultSurface)
                   /*area*/ 69.305242, /*checksum*/ 7610693.011298);
 }
 
-// P2: binning factor 2 exercises the strided cell iteration.
+// P2: binning factor 2 exercises the strided cell iteration. The
+// checksum was re-captured when the vertex normals became central
+// differences over one stride (they were +-1 node at any stride); the
+// vertex positions are unchanged.
 TEST_F(MapSurfPin, BinFac2)
 {
     m_pMSR->setBinFac(2);
@@ -248,7 +251,7 @@ TEST_F(MapSurfPin, BinFac2)
                   /*bbox*/ 2.247477, 2.872503, 3.843344,
                   8.187305, 7.093184, 7.771781,
                   /*centroid*/ 5.691435, 4.680012, 5.422827,
-                  /*area*/ 52.900922, /*checksum*/ 241464.930009);
+                  /*area*/ 52.900922, /*checksum*/ 242977.127854);
 }
 
 // P3: negative iso-level exercises the normal-flip branch.
@@ -341,7 +344,8 @@ TEST_F(MapSurfPin, NonZeroStart)
 // P8: odd grid size with binning 2. With 13 nodes per axis the last stride
 // cube [10,12] is complete, so no cube may read past the block; pins the
 // tail-cube boundary test of the strided iteration (P2 covers the even case
-// where the last stride cube is incomplete).
+// where the last stride cube is incomplete). Checksum re-captured with the
+// stride-wide normals (see P2).
 TEST_F(MapSurfPin, OddSizeBinFac2)
 {
     xtal::MapSurfRenderer *pMSR =
@@ -355,7 +359,49 @@ TEST_F(MapSurfPin, OddSizeBinFac2)
                   /*bbox*/ 2.166022, 2.820098, 3.775218,
                   8.268761, 7.145958, 7.854132,
                   /*centroid*/ 5.630172, 4.618672, 5.305923,
-                  /*area*/ 56.548720, /*checksum*/ 284916.969119);
+                  /*area*/ 56.548720, /*checksum*/ 285869.518535);
+}
+
+// P9: full region mode (the map is flagged cryo-EM): the whole block is
+// marched at stride 1 with the surface closed at the block boundary. The
+// field never reaches the block boundary above the level, so no caps are
+// emitted and the result must equal P1 (box mode covering the same block).
+TEST_F(MapSurfPin, FullRegion)
+{
+    xtal::DensityMap *pMap = dynamic_cast<xtal::DensityMap *>(m_pObj.get());
+    ASSERT_NE(pMap, nullptr);
+    pMap->setDetectedMapType(xtal::DensityMap::MAPTYPE_EM);
+    ASSERT_EQ(m_pMSR->getEffectiveRegionMode(), xtal::MapRenderer::REGION_FULL);
+
+    const SurfSummary s = summarize();
+    ASSERT_GT(s.nverts, 0);
+    expectSummary(s, "P9",
+                  /*nverts*/ 684,
+                  /*bbox*/ 1.906816, 2.831297, 3.831297,
+                  8.409676, 7.105779, 8.105779,
+                  /*centroid*/ 5.004821, 4.650756, 5.644807,
+                  /*area*/ 69.305242, /*checksum*/ 7610693.011298);
+}
+
+// P10: full region mode with an explicit stride of 2. On the 12-node
+// block the aligned span is 10 nodes, i.e. the same five complete stride
+// cubes per axis that the box path marches after its tail-cube check, so
+// the result must equal P2.
+TEST_F(MapSurfPin, FullRegionStep2)
+{
+    xtal::DensityMap *pMap = dynamic_cast<xtal::DensityMap *>(m_pObj.get());
+    ASSERT_NE(pMap, nullptr);
+    pMap->setDetectedMapType(xtal::DensityMap::MAPTYPE_EM);
+    m_pMSR->setLod(2);
+
+    const SurfSummary s = summarize();
+    ASSERT_GT(s.nverts, 0);
+    expectSummary(s, "P10",
+                  /*nverts*/ 120,
+                  /*bbox*/ 2.247477, 2.872503, 3.843344,
+                  8.187305, 7.093184, 7.771781,
+                  /*centroid*/ 5.691435, 4.680012, 5.422827,
+                  /*area*/ 52.900922, /*checksum*/ 242977.127854);
 }
 
 // P6: two runs must be bitwise identical (catches nondeterminism in-process).

@@ -7,6 +7,7 @@
 #include <common.h>
 
 #include "MapRenderer.hpp"
+#include "DensityMap.hpp"
 
 #include <qsys/ScalarObject.hpp>
 #include <gfx/SolidColor.hpp>
@@ -28,6 +29,7 @@ MapRenderer::MapRenderer()
 
   m_bUseMolBndry = false;
   m_bUseAbsLev = false;
+  m_nRegionMode = REGION_AUTO;
 
   m_pGrad = qsys::MultiGradientPtr(MB_NEW qsys::MultiGradient());
   super_t::setupParentData("multi_grad");
@@ -83,6 +85,59 @@ void MapRenderer::setLevel(double value)
 
   double sig = pMap->getRmsdDensity();
   setSigLevel(value/sig);
+}
+
+///////////////////////////////////////////////////
+// Display region policy / periodic boundary
+
+int MapRenderer::getEffectiveRegionMode() const
+{
+  if (m_nRegionMode != REGION_AUTO)
+    return m_nRegionMode;
+
+  const DensityMap *pXtal = dynamic_cast<const DensityMap *>(getScalarObj());
+  if (pXtal != NULL &&
+      pXtal->getEffectiveMapType() == DensityMap::MAPTYPE_EM)
+    return REGION_FULL;
+
+  return REGION_BOX;
+}
+
+LString MapRenderer::getRegionModeResolvedStr() const
+{
+  return (getEffectiveRegionMode() == REGION_FULL) ? LString("full")
+                                                   : LString("box");
+}
+
+bool MapRenderer::isPBCEligible(const ScalarObject *pMap, bool bSpansCell) const
+{
+  const DensityMap *pXtal = dynamic_cast<const DensityMap *>(pMap);
+  if (pXtal == NULL)
+    return false;
+  if (!isUsePBC())
+    return false;
+  if (!pXtal->isPeriodic())
+    return false;
+  if (!bSpansCell)
+    return false;
+  if (getEffectiveRegionMode() == REGION_FULL)
+    return false;
+  return true;
+}
+
+void MapRenderer::objectChanged(qsys::ObjectEvent &ev)
+{
+  // The map kind decides the effective region policy and the PBC
+  // eligibility, so a map_type change of the client map is a geometry
+  // change of every renderer on it.
+  if (ev.getType() == qsys::ObjectEvent::OBE_PROPCHG &&
+      ev.getTarget() == getClientObjID()) {
+    qlib::LPropEvent *pPE = ev.getPropEvent();
+    if (pPE != NULL && pPE->getName().equals("map_type"))
+      invalidateGeomCache();
+  }
+
+  super_t::objectChanged(ev);
 }
 
 ///////////////////////////////////////////////////
