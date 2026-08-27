@@ -67,13 +67,23 @@ clipboard 上の順序を保つ (UXP は `adds.reverse()` してから前挿入�
   有効だったので、これは UXP からの改善方向の逸脱。gate 用に
   `getPaintClipboardInfo` を置き、Copy/Cut は結果の `count` で、pane の初回
   mount 時のみ問い合わせで同期する。
-- **複数行の Cut / Copy は service 契約としては可能だが、UI からは 1 行のみ。**
-  service は `idxs: number[]` を受け、正規化 (昇順・重複除去・範囲外除去) と
-  降順削除まで実装済みだが、tritium の PaintTable は単一行選択
-  (`selectedRow: number | null`) なので呼び出し側は常に 1 要素を渡す。UXP の
-  tree は `seltype="multiple"` だったため、これは残存する parity gap。table を
-  複数選択にするのは Add / Delete / Move の全ハンドラと `PaintSelCell` の
-  focus 追従に波及する別作業で、4 コマンドの移植とは独立している。
+- ~~**複数行の Cut / Copy は service 契約としては可能だが、UI からは 1 行のみ。**~~
+  **[2026-08-27 解消]** service は当初から `idxs: number[]` を受け、正規化
+  (昇順・重複除去・範囲外除去) と降順削除まで実装済みだったが、tritium の
+  PaintTable が単一行選択 (`selectedRow: number | null`) だったため呼び出し側は
+  常に 1 要素を渡していた。UXP の tree は `seltype="multiple"` だったので、これは
+  残存する parity gap だった。PaintTable に `selectedRows: Set<number>` +
+  anchor を入れて Cmd/Ctrl+click トグルと Shift+range に対応し、Delete / Cut /
+  Copy が選択全体に効くようになった。複数削除用には `removePaintEntries` を
+  追加 (降順削除・単一 txn)。**Move up/down は単一選択のまま**にした — UXP は
+  multi 対応だが `nodes[0]` / `nodes[nlen-1]` だけをアンカーにするため非連続の
+  選択を連続ブロックへ畳んでしまい、ユーザーの並びを壊す。意図的な逸脱。
+- **[2026-08-27] Cut / Copy / Paste / Delete all は toolbar から context menu へ移した。**
+  当初はこの ADR の判断どおり `.color-actions` にボタンとして置いたが、8 個は
+  パネルを狭めると 2 行に折り返してしまう。UXP の配置 (`paintPanelCtxtMenu`)
+  に戻し、toolbar は Add / Delete / Move up / Move down の 4 つだけにして
+  `flex-wrap: nowrap` を保証した。キーボードの Cmd+X/C/V は `paint-deck` の
+  clipboard scope 経由で変わらず効く。
 - clipboard は worker の生存期間だけ持続する。アプリ再起動で失われるが、
   scene ノード clipboard と同じ寿命なので挙動は一貫している。
 - paste 時に compile できなかった行 (名前付き選択が貼り付け先の scene に無い等)
